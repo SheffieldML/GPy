@@ -1,3 +1,7 @@
+# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
+
 import numpy as np
 
 def linear_grid(D, n = 100, min_max = (-100, 100)):

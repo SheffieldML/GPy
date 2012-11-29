@@ -1,3 +1,7 @@
+# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
+
 import Tango
 import pylab as pb
 import numpy as np

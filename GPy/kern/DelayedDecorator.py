@@ -1,3 +1,7 @@
+# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
+
 from new import instancemethod
 #this is here so that we can have nice syntatic sugar when taking gradients
 # See the transform_gradients decorator in kern

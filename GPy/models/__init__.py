@@ -1,3 +1,7 @@
+# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
+
 from GP_regression import GP_regression
 from sparse_GP_regression import sparse_GP_regression
 from GPLVM import GPLVM

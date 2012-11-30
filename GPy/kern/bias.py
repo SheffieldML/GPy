@@ -9,10 +9,10 @@ import hashlib
 class bias(kernpart):
     def __init__(self,D,variance=1.):
         """
-        Arguments
-        ----------
-        D: int - the number of input dimensions
-        variance: float
+        :param D: the number of input dimensions
+        :type D: int
+        :param variance: the variance of the kernel
+        :type variance: float
         """
         self.D = D
         self.Nparam = 1
@@ -30,19 +30,16 @@ class bias(kernpart):
         return ['variance']
 
     def K(self,X,X2,target):
-        if X2 is None: X2 = X
-        np.add(self.variance, target,target)
+        target += self.variance
 
     def Kdiag(self,X,target):
-        np.add(target,self.variance,target)
+        target += self.variance
 
-    def dK_dtheta(self,X,X2,target):
-        """Return shape is NxMx(Ntheta)"""
-        if X2 is None: X2 = X
-        np.add(target[:,:,0],1., target[:,:,0])
+    def dK_dtheta(self,partial,X,X2,target):
+        target += partial.sum()
 
-    def dKdiag_dtheta(self,X,target):
-        np.add(target[:,0],1.,target[:,0])
+    def dKdiag_dtheta(self,partial,X,target):
+        target += partial.sum()
 
     def dK_dX(self, X, X2, target):
         pass

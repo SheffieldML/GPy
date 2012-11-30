@@ -63,7 +63,7 @@ class rbf(kernpart):
         self._K_computations(X,X2)
         _K_dist = X[:,None,:]-X2[None,:,:]
         dK_dX = np.transpose(-self.variance*self._K_dvar[:,:,np.newaxis]*_K_dist/self.lengthscale2,(1,0,2))
-        target += np.sum(dK_dX*partial[:,:,None],1)
+        target += np.sum(dK_dX*partial[:,:,None],0)
 
     def dKdiag_dX(self,X,target):
         pass

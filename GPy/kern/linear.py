@@ -37,20 +37,16 @@ class linear(kernpart):
     def Kdiag(self,X,target):
         np.add(target,np.sum(self.variance*np.square(X),-1),target)
 
-    def dK_dtheta(self,X,X2,target):
+    def dK_dtheta(self,partial,X,X2,target):
         """
         Computes the derivatives wrt theta
         Return shape is NxMx(Ntheta)
-
         """
+        product = np.dot(X, X2.T)
+        target += np.sum(product*partial)
 
-        if X2 is None: X2 = X
-        product = np.dot(X, X2.T)[:,:, None]#X[:,None,:]*X2[None,:,:]
-        target += product
-
-    def dK_dX(self,X,X2,target):
-        if X2 is None: X2 = X
-        np.add(target,X2[:,None,:]*self.variance,target)
+    def dK_dX(self,partial,X,X2,target):
+        target += self.variance * np.sum(partial[:,None,:]*X2.T[None,:,:],-1)
 
     # def psi0(self,Z,mu,S,target):
     #     expected = np.square(mu) + S

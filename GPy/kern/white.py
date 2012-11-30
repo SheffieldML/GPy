@@ -15,7 +15,7 @@ class white(kernpart):
     """
     def __init__(self,D,variance=1.):
         self.D = D
-        self.Nparam = 1.
+        self.Nparam = 1
         self.name = 'white'
         self.set_param(np.array([variance]).flatten())
 

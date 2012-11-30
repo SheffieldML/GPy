@@ -170,12 +170,12 @@ class kern(parameterised):
         [p.dK_dtheta(partial,X[s1,i_s],X2[s2,i_s],target[ps]) for p,i_s,ps,s1,s2 in zip(self.parts, self.input_slices, self.param_slices, slices1, slices2)]
         return target
 
-    def dK_dX(self,X,X2=None,slices1=None,slices2=None):
+    def dK_dX(self,partial,X,X2=None,slices1=None,slices2=None):
         if X2 is None:
             X2 = X
         slices1, slices2 = self._process_slices(slices1,slices2)
-        target = np.zeros((X2.shape[0],X.shape[0],X.shape[1]))
-        [p.dK_dX(X[s1],X2[s2],target[s2,s1,:]) for p,ps,s1,s2 in zip(self.parts, self.param_slices,slices1,slices2)]
+        target = np.zeros_like(X)
+        [p.dK_dX(partial,X[s1],X2[s2],target[s1,:]) for p,ps,s1,s2 in zip(self.parts, self.param_slices,slices1,slices2)]
         return target
 
     def Kdiag(self,X,slices=None):

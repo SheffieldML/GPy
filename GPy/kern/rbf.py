@@ -6,7 +6,7 @@ from kernpart import kernpart
 import numpy as np
 import hashlib
 
-class rbf(kernpart): 
+class rbf(kernpart):
     """
     Radial Basis Function kernel, aka squared-exponential or Gaussian kernel.
 
@@ -55,13 +55,15 @@ class rbf(kernpart):
         target[0] += np.sum(self._K_dvar*partial)
         target[1] += np.sum(self._K_dvar*self.variance*self._K_dist2/self.lengthscale*partial)
 
-    def dKdiag_dtheta(self,X,target):
-        target[0] += partial
+    def dKdiag_dtheta(self,partial,X,target):
+        #NB: derivative of diagonal elements wrt lengthscale is 0
+        target[0] += np.sum(partial)
 
-    def dK_dX(self,X,X2,target):
+    def dK_dX(self,partial,X,X2,target):
         self._K_computations(X,X2)
         _K_dist = X[:,None,:]-X2[None,:,:]
-        target += np.transpose(-self.variance*self._K_dvar[:,:,np.newaxis]*_K_dist/self.lengthscale2,(1,0,2))
+        dK_dX = np.transpose(-self.variance*self._K_dvar[:,:,np.newaxis]*_K_dist/self.lengthscale2,(1,0,2))
+        target += np.sum(dK_dX*partial[:,:,None],1)
 
     def dKdiag_dX(self,X,target):
         pass

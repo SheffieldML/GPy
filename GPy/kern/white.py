@@ -45,7 +45,7 @@ class white(kernpart):
     def dKdiag_dtheta(self,X,target):
         np.add(target[:,0],1.,target[:,0])
 
-    def dK_dX(self,X,X2,target):
+    def dK_dX(self,partial,X,X2,target):
         pass
 
     def dKdiag_dX(self,X,target):

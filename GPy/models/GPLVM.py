@@ -46,11 +46,8 @@ class GPLVM(GP_regression):
     def log_likelihood_gradients(self):
         dL_dK = self.dL_dK()
 
-        dK_dtheta = self.kern.dK_dtheta(self.X)
-        dL_dtheta = (dK_dtheta*dL_dK[:,:,None]).sum(0).sum(0)
-
-        dK_dX = self.kern.dK_dX(self.X)
-        dL_dX = 2.*np.sum(dL_dK[:,:,None]*dK_dX,0)
+        dL_dtheta = self.kern.dK_dtheta(dL_dK,self.X)
+        dL_dX = 2*self.kern.dK_dX(dL_dK,self.X)
 
         return np.hstack((dL_dX.flatten(),dL_dtheta))
 

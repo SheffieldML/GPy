@@ -51,7 +51,7 @@ class linear_ARD(kernpart):
         target += (partial[:,:,None]*product).sum(0).sum(0)
 
     def dK_dX(self,partial,X,X2,target):
-        target += (((X[:, None, :] * self.variances) + target) * partial[:,:, None]).sum(0)
+        target += (((X2[:, None, :] * self.variances)) * partial[:,:, None]).sum(0)
 
     def psi0(self,Z,mu,S,target):
         expected = np.square(mu) + S

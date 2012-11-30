@@ -9,3 +9,4 @@ from warped_GP import warpedGP
 from GP_EP import GP_EP
 from generalized_FITC import generalized_FITC
 from sparse_GPLVM import sparse_GPLVM
+from uncertain_input_GP_regression import uncertain_input_GP_regression

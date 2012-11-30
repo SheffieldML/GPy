@@ -54,33 +54,33 @@ class white(kernpart):
     def psi0(self,Z,mu,S,target):
         target += self.variance
 
-    def dpsi0_dtheta(self,Z,mu,S,target):
-        target += 1.
+    def dpsi0_dtheta(self,partial,Z,mu,S,target):
+        target += partial.sum()
 
-    def dpsi0_dmuS(self,Z,mu,S,target_mu,target_S):
+    def dpsi0_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         pass
 
     def psi1(self,Z,mu,S,target):
         pass
 
-    def dpsi1_dtheta(self,Z,mu,S,target):
+    def dpsi1_dtheta(self,partial,Z,mu,S,target):
         pass
 
-    def dpsi1_dZ(self,Z,mu,S,target):
+    def dpsi1_dZ(self,partial,Z,mu,S,target):
         pass
 
-    def dpsi1_dmuS(self,Z,mu,S,target_mu,target_S):
+    def dpsi1_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         pass
 
     def psi2(self,Z,mu,S,target):
         pass
 
-    def dpsi2_dZ(self,Z,mu,S,target):
+    def dpsi2_dZ(self,partial,Z,mu,S,target):
         pass
 
-    def dpsi2_dtheta(self,Z,mu,S,target):
+    def dpsi2_dtheta(self,partial,Z,mu,S,target):
         pass
 
-    def dpsi2_dmuS(self,Z,mu,S,target_mu,target_S):
+    def dpsi2_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         pass
 

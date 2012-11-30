@@ -9,7 +9,7 @@ from .. import kern
 from ..core import model
 from ..util.linalg import pdinv,mdot
 from ..util.plot import gpplot
-from ..inference.Expectation_Propagation import EP,Full,DTC,FITC
+from ..inference.Expectation_Propagation import EP,Full,FITC
 from ..inference.likelihoods import likelihood,probit
 
 class generalized_FITC(model):
@@ -17,14 +17,12 @@ class generalized_FITC(model):
         """
         Naish-Guzman, A. and Holden, S. (2008) implemantation of EP with FITC.
 
-        Arguments
-        ---------
-        X : input observations
-        likelihood : Output's likelihood (likelihood class)
-        kernel : a GPy kernel
-        inducing : Either an array specifying the inducing points location or a scalar defining their number.
-        epsilon_ep : EP convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
-        powerep : Power-EP parameters (eta,delta) - 2x1 numpy array (floats)
+        :param X: input observations
+        :param likelihood: Output's likelihood (likelihood class)
+        :param kernel: a GPy kernel
+        :param inducing:  Either an array specifying the inducing points location or a scalar defining their number.
+        :param epsilon_ep: EP convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
+        :param powerep: Power-EP parameters (eta,delta) - 2x1 numpy array (floats)
         """
         assert isinstance(kernel,kern.kern)
         self.likelihood = likelihood

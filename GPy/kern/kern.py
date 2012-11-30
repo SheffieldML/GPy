@@ -166,8 +166,8 @@ class kern(parameterised):
         slices1, slices2 = self._process_slices(slices1,slices2)
         if X2 is None:
             X2 = X
-        target = np.zeros((X.shape[0],X2.shape[0],self.Nparam))
-        [p.dK_dtheta(X[s1,i_s],X2[s2,i_s],target[s1,s2,ps]) for p,i_s,ps,s1,s2 in zip(self.parts, self.input_slices, self.param_slices, slices1, slices2)]
+        target = np.zeros(self.Nparam)
+        [p.dK_dtheta(partial,X[s1,i_s],X2[s2,i_s],target[ps]) for p,i_s,ps,s1,s2 in zip(self.parts, self.input_slices, self.param_slices, slices1, slices2)]
         return target
 
     def dK_dX(self,X,X2=None,slices1=None,slices2=None):
@@ -185,11 +185,13 @@ class kern(parameterised):
         [p.Kdiag(X[s,i_s],target=target[s]) for p,i_s,s in zip(self.parts,self.input_slices,slices)]
         return target
 
-    def dKdiag_dtheta(self,X,slices=None):
+    def dKdiag_dtheta(self,partial,X,slices=None):
         assert X.shape[1]==self.D
+        assert len(partial.shape)==1
+        assert partial.size==X.shape[0]
         slices = self._process_slices(slices,False)
-        target = np.zeros((X.shape[0],self.Nparam))
-        [p.dKdiag_dtheta(X[s,i_s],target[s,ps]) for p,i_s,s,ps in zip(self.parts,self.input_slices,slices,self.param_slices)]
+        target = np.zeros(self.Nparam)
+        [p.dKdiag_dtheta(partial,X[s,i_s],target[ps]) for p,i_s,s,ps in zip(self.parts,self.input_slices,slices,self.param_slices)]
         return target
 
     def dKdiag_dX(self, X, slices=None):

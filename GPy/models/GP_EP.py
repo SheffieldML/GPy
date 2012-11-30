@@ -7,7 +7,7 @@ import pylab as pb
 from scipy import stats, linalg
 from .. import kern
 from ..inference.Expectation_Propagation import EP,Full
-from ..inference.likelihoods import likelihood,probit,poisson,gaussian
+from ..inference.likelihoods import likelihood,probit#,poisson,gaussian
 from ..core import model
 from ..util.linalg import pdinv,jitchol
 from ..util.plot import gpplot

@@ -9,7 +9,7 @@ import sys, pdb
 from parameterised import parameterised, truncate_pad
 import priors
 from ..util.linalg import jitchol
-from ..inference import optimization, SGD
+from ..inference import optimization
 
 class model(parameterised):
     def __init__(self):

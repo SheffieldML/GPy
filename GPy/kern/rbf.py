@@ -50,14 +50,13 @@ class rbf(kernpart):
     def Kdiag(self,X,target):
         np.add(target,self.variance,target)
 
-    def dK_dtheta(self,X,X2,target):
-        """Return shape is NxMx(Ntheta)"""
+    def dK_dtheta(self,partial,X,X2,target):
         self._K_computations(X,X2)
-        target[:,:,0] += self._K_dvar
-        target[:,:,1] += self._K_dvar*self.variance*self._K_dist2/self.lengthscale
+        target[0] += np.sum(self._K_dvar*partial)
+        target[1] += np.sum(self._K_dvar*self.variance*self._K_dist2/self.lengthscale*partial)
 
     def dKdiag_dtheta(self,X,target):
-        np.add(target[:,0],1.,target[:,0])
+        target[0] += partial
 
     def dK_dX(self,X,X2,target):
         self._K_computations(X,X2)

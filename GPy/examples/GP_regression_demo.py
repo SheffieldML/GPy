@@ -19,18 +19,14 @@ pb.close('all')
 X = np.random.uniform(-3.,3.,(20,1))
 Y = np.sin(X)+np.random.randn(20,1)*0.05
 
-# construct kernel
-rbf =  GPy.kern.rbf(1)
-noise = GPy.kern.white(1)
-kernel = rbf + noise
-
 # create simple GP model
-m = GPy.models.GP_regression(X,Y, kernel=kernel)
+m = GPy.models.GP_regression(X,Y)
 
 # contrain all parameters to be positive
 m.constrain_positive('')
+
 # optimize and plot
-m.optimize('rasm', max_f_eval = 1000)
+m.optimize('tnc', max_f_eval = 1000)
 m.plot()
 print(m)
 
@@ -41,11 +37,6 @@ print(m)
 X = np.random.uniform(-3.,3.,(40,2))
 Y = np.sin(X[:,0:1]) * np.sin(X[:,1:2])+np.random.randn(40,1)*0.05
 
-# construct kernel
-rbf =  GPy.kern.rbf(2)
-noise = GPy.kern.white(2)
-kernel = rbf + noise
-
 # create simple GP model
 m = GPy.models.GP_regression(X,Y)
 
@@ -53,7 +44,7 @@ m = GPy.models.GP_regression(X,Y)
 m.constrain_positive('')
 # optimize and plot
 pb.figure()
-m.optimize('rasm', max_f_eval = 1000)
+m.optimize('tnc', max_f_eval = 1000)
 m.plot()
 print(m)
 

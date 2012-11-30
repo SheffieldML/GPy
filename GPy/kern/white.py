@@ -37,10 +37,10 @@ class white(kernpart):
     def Kdiag(self,X,target):
         target += self.variance
 
-    def dK_dtheta(self,X,X2,target):
+    def dK_dtheta(self,partial,X,X2,target):
         if X.shape==X2.shape:
             if np.all(X==X2):
-                np.add(target[:,:,0],np.eye(X.shape[0]),target[:,:,0])
+                target += np.trace(partial)
 
     def dKdiag_dtheta(self,X,target):
         np.add(target[:,0],1.,target[:,0])
@@ -50,7 +50,7 @@ class white(kernpart):
 
     def dKdiag_dX(self,X,target):
         pass
-        
+
     def psi0(self,Z,mu,S,target):
         target += self.variance
 

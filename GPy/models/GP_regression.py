@@ -29,7 +29,7 @@ class GP_regression(model):
 
     def __init__(self,X,Y,kernel=None,normalize_X=False,normalize_Y=False, Xslices=None):
         if kernel is None:
-            kernel = kern.rbf(X.shape[1]) + kern.bias(X.shape[1]) + kern.white(X.shape[1])
+            kernel = kern.rbf(X.shape[1]) + kern.white(X.shape[1])
 
         # parse arguments
         self.Xslices = Xslices
@@ -103,7 +103,7 @@ class GP_regression(model):
         return dL_dK
 
     def log_likelihood_gradients(self):
-        return self.kern.dK_dtheta(self.X,partial=self.dL_dK())
+        return self.kern.dK_dtheta(partial=self.dL_dK(),X=self.X)
 
     def predict(self,Xnew, slices=None):
         """

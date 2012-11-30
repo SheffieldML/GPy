@@ -41,8 +41,8 @@ class bias(kernpart):
     def dKdiag_dtheta(self,partial,X,target):
         target += partial.sum()
 
-    def dK_dX(self, X, X2, target):
+    def dK_dX(self, partial,X, X2, target):
         pass
 
-    def dKdiag_dX(self,X,target):
+    def dKdiag_dX(self,partial,X,target):
         pass

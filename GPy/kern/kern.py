@@ -4,53 +4,8 @@
 
 import numpy as np
 from ..core.parameterised import parameterised
-from DelayedDecorator import DelayedDecorator
 from functools import partial
 from kernpart import kernpart
-
-class transform_gradients_(object):
-    """
-    A decorator for gradient transformation. Accounts for constraining and tying.
-
-    NB: this uses the Delayed_decorator class so allow it to decorate bound methods
-    """
-    def __init__(self,f):
-        self.f = f
-    def __call__(self,*args,**kwargs):
-        kern = args[0]
-        x = kern.get_param()
-        g = self.f(*args,**kwargs)
-
-        #first roll the axes of gradients. This is because we always want to acces the first axis,
-        #else slicing becomes more difficult
-        g = np.rollaxis(g,-1)
-
-        ##TODO: the shape of the gradients is slightly problematic
-
-        if len(g.shape)==2:
-            x_reshape = (-1,1)
-        elif len(g.shape)==3:
-            x_reshape = (-1,1,1)
-        else:
-            raise NotImplementedError
-
-        #do the simple transforms first
-        np.multiply(g[kern.constrained_positive_indices], x[kern.constrained_positive_indices].reshape(x_reshape),g[kern.constrained_positive_indices])
-        np.multiply(g[kern.constrained_negative_indices], x[kern.constrained_negative_indices].reshape(x_reshape),g[kern.constrained_negative_indices])
-        [np.multiply(g[i], ((x[i]-l)*(h-x[i])/(h-l)).reshape(x_reshape), g[i]) for i,l,h in zip(kern.constrained_bounded_indices, kern.constrained_bounded_lowers, kern.constrained_bounded_uppers)]
-
-        #work out which gradients need to be added (tieing)
-        [np.sum(g[i],g[i[0]], axis=0) for i in kern.tied_indices]
-
-        #work out which gradients are simply cut out (due to fixing)
-        if len(kern.tied_indices) or len(kern.constrained_fixed_indices):
-            to_remove = np.hstack((kern.constrained_fixed_indices+[t[1:] for t in kern.tied_indices]))
-            g =  np.delete(g,to_remove,axis=0)
-
-        return np.swapaxes(np.rollaxis(g,0,-1),-1,-2) # undo the rolling of the axes
-
-transform_gradients = partial(DelayedDecorator,transform_gradients_)
-#transform_param = partial(DelayedDecorator,_transform_param) TODO
 
 
 
@@ -199,7 +154,6 @@ class kern(parameterised):
         [p.K(X[s1,i_s],X2[s2,i_s],target=target[s1,s2]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
         return target
 
-    #@transform_gradients
     def dK_dtheta(self,X,X2=None,slices1=None,slices2=None):
         """Return shape is NxMx(Ntheta)"""
         assert X.shape[1]==self.D
@@ -225,7 +179,6 @@ class kern(parameterised):
         [p.Kdiag(X[s,i_s],target=target[s]) for p,i_s,s in zip(self.parts,self.input_slices,slices)]
         return target
 
-    #@transform_gradients
     def dKdiag_dtheta(self,X,slices=None):
         assert X.shape[1]==self.D
         slices = self._process_slices(slices,False)
@@ -245,7 +198,6 @@ class kern(parameterised):
         [p.psi0(Z,mu,S,target) for p in self.parts]
         return target
 
-    #@transform_gradients
     def dpsi0_dtheta(self,Z,mu,S):
         target = np.zeros((mu.shape[0],self.Nparam))
         [p.dpsi0_dtheta(Z,mu,S,target[s]) for p,s in zip(self.parts, self.param_slices)]
@@ -262,7 +214,6 @@ class kern(parameterised):
         [p.psi1(Z,mu,S,target=target) for p in self.parts]
         return target
 
-    #@transform_gradients
     def dpsi1_dtheta(self,Z,mu,S):
         """N,M,(Ntheta)"""
         target = np.zeros((mu.shape[0],Z.shape[0],self.Nparam))
@@ -290,7 +241,6 @@ class kern(parameterised):
         [p.psi2(Z,mu,S,target=target) for p in self.parts]
         return target
 
-    #@transform_gradients
     def dpsi2_dtheta(self,Z,mu,S):
         """Returns shape (N,M,M,Ntheta)"""
         target = np.zeros((Z.shape[0],Z.shape[0],self.Nparam))

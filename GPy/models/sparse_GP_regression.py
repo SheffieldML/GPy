@@ -52,7 +52,6 @@ class sparse_GP_regression(GP_regression):
         self._compute_kernel_matrices()
         self._computations()
 
-
     def _compute_kernel_matrices(self):
         # kernel computations, using BGPLVM notation
         #TODO: the following can be switched out in the case of uncertain inputs (or the BGPLVM!)
@@ -62,16 +61,6 @@ class sparse_GP_regression(GP_regression):
         self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices).sum()
         self.psi1 = self.kern.K(self.Z,self.X)
         self.psi2 = np.dot(self.psi1,self.psi1.T)
-
-        #self.dKmm_dtheta = self.kern.dK_dtheta(self.Z)
-        #self.dpsi0_dtheta = self.kern.dKdiag_dtheta(self.X).sum(0)
-        #self.dpsi1_dtheta = self.kern.dK_dtheta(self.Z,self.X)
-        #tmp = np.dot(self.psi1, self.dpsi1_dtheta)
-        #self.dpsi2_dtheta = tmp + tmp.transpose(1,0,2)
-
-        #self.dpsi1_dZ = self.kern.dK_dX(self.Z,self.X)
-        #self.dpsi2_dZ = np.tensordot(self.psi1,self.dpsi1_dZ,((1),(0)))*2.0
-        #self.dKmm_dZ = self.kern.dK_dX(self.Z)
 
     def _computations(self):
         # TODO find routine to multiply triangular matrices
@@ -100,13 +89,6 @@ class sparse_GP_regression(GP_regression):
                          - self.beta**3 * 0.5 * self.G)
 
         # Computes dL_dKmm TODO: nicer precomputations
-
-        # tmp = self.beta*mdot(self.LBL_inv, self.psi2, self.Kmmi)
-        # self.dL_dKmm = -self.beta * self.D * 0.5 * mdot(self.Lmi.T, self.A, self.Lmi) # dB
-        # self.dL_dKmm += -0.5 * self.D * (- self.LBL_inv - tmp - tmp.T + self.Kmmi) # dC
-        # tmp = (mdot(self.LBL_inv, self.psi1YYpsi1, self.Kmmi)
-        #        - self.beta*mdot(self.G, self.psi2, self.Kmmi))
-        # self.dL_dKmm += -0.5*self.beta2*(tmp + tmp.T - self.G)
 
         tmp = self.beta*mdot(self.LBL_inv, self.psi2, self.Kmmi)
         self.dL_dKmm = -self.beta * self.D * 0.5 * mdot(self.Lmi.T, self.A, self.Lmi) # dB

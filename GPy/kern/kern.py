@@ -167,7 +167,7 @@ class kern(parameterised):
         if X2 is None:
             X2 = X
         target = np.zeros(self.Nparam)
-        [p.dK_dtheta(partial,X[s1,i_s],X2[s2,i_s],target[ps]) for p,i_s,ps,s1,s2 in zip(self.parts, self.input_slices, self.param_slices, slices1, slices2)]
+        [p.dK_dtheta(partial[s1,s2],X[s1,i_s],X2[s2,i_s],target[ps]) for p,i_s,ps,s1,s2 in zip(self.parts, self.input_slices, self.param_slices, slices1, slices2)]
         return target
 
     def dK_dX(self,partial,X,X2=None,slices1=None,slices2=None):
@@ -175,7 +175,7 @@ class kern(parameterised):
             X2 = X
         slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros_like(X)
-        [p.dK_dX(partial,X[s1],X2[s2],target[s1,:]) for p,ps,s1,s2 in zip(self.parts, self.param_slices,slices1,slices2)]
+        [p.dK_dX(partial[s1,s2],X[s1,i_s],X2[s2,i_s],target[s1,i_s]) for p,i_s,ps,s1,s2 in zip(self.parts,self.input_slices, self.param_slices,slices1,slices2)]
         return target
 
     def Kdiag(self,X,slices=None):
@@ -191,14 +191,14 @@ class kern(parameterised):
         assert partial.size==X.shape[0]
         slices = self._process_slices(slices,False)
         target = np.zeros(self.Nparam)
-        [p.dKdiag_dtheta(partial,X[s,i_s],target[ps]) for p,i_s,s,ps in zip(self.parts,self.input_slices,slices,self.param_slices)]
+        [p.dKdiag_dtheta(partial[s],X[s,i_s],target[ps]) for p,i_s,s,ps in zip(self.parts,self.input_slices,slices,self.param_slices)]
         return target
 
     def dKdiag_dX(self, X, slices=None):
         assert X.shape[1]==self.D
         slices = self._process_slices(slices,False)
-        target = np.zeros((X.shape[0],X.shape[0],X.shape[1]))
-        [p.dKdiag_dX(X[s,i_s],target[s,:,:]) for p,i_s,s in zip(self.parts,self.input_slices,slices)]
+        target = np.zeros_like(X)
+        [p.dKdiag_dX(partial[s],X[s,i_s],target[s,i_s]) for p,i_s,s in zip(self.parts,self.input_slices,slices)]
         return target
 
     def psi0(self,Z,mu,S,slices_mu=None,slices_Z=None):

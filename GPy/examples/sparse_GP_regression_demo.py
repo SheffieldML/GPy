@@ -21,7 +21,7 @@ X = np.random.uniform(-3.,3.,(N,1))
 Y = np.sin(X)+np.random.randn(N,1)*0.05
 
 # construct kernel
-rbf =  GPy.kern.Matern52(1)
+rbf =  GPy.kern.rbf(1)
 noise = GPy.kern.white(1)
 kernel = rbf + noise
 
@@ -37,7 +37,7 @@ m1.constrain_positive('(variance|lengthscale|precision)')
 #check gradient FIXME unit test please
 m1.checkgrad()
 # optimize and plot
-m1.optimize('bfgs', messages = 1)
+m1.optimize('tnc', messages = 1)
 m1.plot()
 # print(m1)
 

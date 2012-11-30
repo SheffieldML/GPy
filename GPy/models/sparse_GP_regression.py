@@ -63,15 +63,15 @@ class sparse_GP_regression(GP_regression):
         self.psi1 = self.kern.K(self.Z,self.X)
         self.psi2 = np.dot(self.psi1,self.psi1.T)
 
-        self.dKmm_dtheta = self.kern.dK_dtheta(self.Z)
-        self.dpsi0_dtheta = self.kern.dKdiag_dtheta(self.X).sum(0)
-        self.dpsi1_dtheta = self.kern.dK_dtheta(self.Z,self.X)
-        tmp = np.dot(self.psi1, self.dpsi1_dtheta)
-        self.dpsi2_dtheta = tmp + tmp.transpose(1,0,2)
+        #self.dKmm_dtheta = self.kern.dK_dtheta(self.Z)
+        #self.dpsi0_dtheta = self.kern.dKdiag_dtheta(self.X).sum(0)
+        #self.dpsi1_dtheta = self.kern.dK_dtheta(self.Z,self.X)
+        #tmp = np.dot(self.psi1, self.dpsi1_dtheta)
+        #self.dpsi2_dtheta = tmp + tmp.transpose(1,0,2)
 
-        self.dpsi1_dZ = self.kern.dK_dX(self.Z,self.X)
-        self.dpsi2_dZ = np.tensordot(self.psi1,self.dpsi1_dZ,((1),(0)))*2.0
-        self.dKmm_dZ = self.kern.dK_dX(self.Z)
+        #self.dpsi1_dZ = self.kern.dK_dX(self.Z,self.X)
+        #self.dpsi2_dZ = np.tensordot(self.psi1,self.dpsi1_dZ,((1),(0)))*2.0
+        #self.dKmm_dZ = self.kern.dK_dX(self.Z)
 
     def _computations(self):
         # TODO find routine to multiply triangular matrices
@@ -92,7 +92,7 @@ class sparse_GP_regression(GP_regression):
         self.G =  mdot(self.LBL_inv, self.psi1YYpsi1, self.LBL_inv.T)
 
         # Computes dL_dpsi
-        self.dL_dpsi0 = - 0.5 * self.D * self.beta
+        self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
         dC_dpsi1 = (self.LLambdai.T[:,:, None, None] * self.Y) # this is sane.
         tmp = (dC_dpsi1*self.C[None,:,None,:]).sum(1).sum(-1)
         self.dL_dpsi1 = self.beta2 * tmp
@@ -145,29 +145,34 @@ class sparse_GP_regression(GP_regression):
         return np.squeeze(dA_dbeta + dB_dbeta + dC_dbeta + dD_dbeta + dE_dbeta)
 
     def dL_dtheta(self):
-        dL_dtheta = (self.dL_dpsi0 * self.dpsi0_dtheta + (self.dL_dpsi1[:,:, None] * self.dpsi1_dtheta).sum(0).sum(0)
-                     + (self.dL_dpsi2[:, :, None] * self.dpsi2_dtheta).sum(0).sum(0)
-                     + (self.dL_dKmm[:, :, None] * self.dKmm_dtheta).sum(0).sum(0))
+        #re-cast computations in psi2 back to psi1:
+        dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
+
+        dL_dtheta = self.kern.dK_dtheta(self.dL_dKmm,self.Z)
+        dL_dtheta += self.kern.dK_dtheta(dL_dpsi1,self.Z,self.X)
+        dL_dtheta += self.kern.dKdiag_dtheta(self.dL_dpsi0, self.X)
+
         return dL_dtheta
 
     def dL_dZ(self):
-        dL_dZ = ((self.dL_dpsi1[:,:,None]*self.dpsi1_dZ.swapaxes(0,1)).sum(1)
-                 + (self.dL_dpsi2[:, :, None] * self.dpsi2_dZ).sum(0)
-                 + 2.0*(self.dL_dKmm[:, :, None] * self.dKmm_dZ).sum(0))
-        return dL_dZ
+        #re-cast computations in psi2 back to psi1:
+        dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
 
+        dL_dZ = 2.*self.kern.dK_dX(self.dL_dKmm,self.Z,)#factor of two becase of vertical and horizontal 'stripes' in dKmm_dZ
+        dL_dZ += self.kern.dK_dX(dL_dpsi1,self.Z,self.X)
+        return dL_dZ
 
     def log_likelihood_gradients(self):
         return np.hstack([self.dL_dZ().flatten(), self.dL_dbeta(), self.dL_dtheta()])
 
-    def _raw_predict(self,_Xnew,slices):
+    def _raw_predict(self,Xnew,slices):
         """Internal helper function for making predictions, does not account for normalisation"""
 
-        Kx = self.kern.K(self.Z, _Xnew, self.Xslices, slices)
-        Kxx = self.kern.K(_Xnew, slices1=slices, slices2=slices)
+        Kx = self.kern.K(self.Z, Xnew)
+        Kxx = self.kern.K(Xnew)
 
         mu = self.beta * mdot(Kx.T, self.LBL_inv, self.psi1Y)
-        var = Kxx - mdot(Kx.T, (self.Kmmi - self.LBL_inv), Kx) + np.eye(_Xnew.shape[0])/self.beta # TODO: This beta doesn't belong here in the EP case.
+        var = Kxx - mdot(Kx.T, (self.Kmmi - self.LBL_inv), Kx) + np.eye(Xnew.shape[0])/self.beta # TODO: This beta doesn't belong here in the EP case.
         return mu,var
 
     def plot(self,*args,**kwargs):

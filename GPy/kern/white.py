@@ -42,13 +42,13 @@ class white(kernpart):
             if np.all(X==X2):
                 target += np.trace(partial)
 
-    def dKdiag_dtheta(self,X,target):
-        np.add(target[:,0],1.,target[:,0])
+    def dKdiag_dtheta(self,partial,X,target):
+        target += np.sum(partial)
 
     def dK_dX(self,partial,X,X2,target):
         pass
 
-    def dKdiag_dX(self,X,target):
+    def dKdiag_dX(self,partial,X,target):
         pass
 
     def psi0(self,Z,mu,S,target):

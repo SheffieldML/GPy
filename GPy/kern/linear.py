@@ -48,6 +48,9 @@ class linear(kernpart):
     def dK_dX(self,partial,X,X2,target):
         target += self.variance * np.sum(partial[:,None,:]*X2.T[None,:,:],-1)
 
+    def dKdiag_dtheta(self,partial,X,target):
+        target += np.sum(partial*np.square(X).sum(1))
+
     # def psi0(self,Z,mu,S,target):
     #     expected = np.square(mu) + S
     #     np.add(target,np.sum(self.variance*expected),target)

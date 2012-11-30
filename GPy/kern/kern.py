@@ -8,8 +8,6 @@ from functools import partial
 from kernpart import kernpart
 
 
-
-
 class kern(parameterised):
     def __init__(self,D,parts=[], input_slices=None):
         """
@@ -20,7 +18,8 @@ class kern(parameterised):
          - Correleated output models
          - multi-view learning
 
-        Hadamard product and outer-product kernels will require a new class TODO.
+        Hadamard product and outer-product kernels will require a new class.
+        This feature is currently WONTFIX. for small number sof inputs, you can use the sympy kernel for this.
 
         :param D: The dimensioality of the kernel's input space
         :type D: int
@@ -50,8 +49,6 @@ class kern(parameterised):
         self.compute_param_slices()
 
         parameterised.__init__(self)
-
-        #TODO: Xslices can be passed so that we can compute hierarchical and strutured kernels. these also need implementing for the psi statistics (straightforward)
 
     def compute_param_slices(self):
         """create a set of slices that can index the parameters of each part"""
@@ -122,7 +119,7 @@ class kern(parameterised):
         other_input_indices = [sl.indices(other.D) for sl in other.input_slices]
         other_input_slices = [slice(i[0]+self.D,i[1]+self.D,i[2]) for i in other_input_indices]
 
-        newkern =  kern(D,self.parts+other.parts, self_input_slices + other_input_slices)
+        newkern = kern(D, self.parts + other.parts, self_input_slices + other_input_slices)
 
         #transfer constraints:
         newkern.constrained_positive_indices = np.hstack((self.constrained_positive_indices, self.Nparam + other.constrained_positive_indices))
@@ -134,7 +131,6 @@ class kern(parameterised):
         newkern.constrained_fixed_values = self.constrained_fixed_values + other.constrained_fixed_values
         newkern.tied_indices = self.tied_indices + [self.Nparam + x for x in other.tied_indices]
         return newkern
-
 
     def get_param(self):
         return np.hstack([p.get_param() for p in self.parts])
@@ -154,8 +150,18 @@ class kern(parameterised):
         [p.K(X[s1,i_s],X2[s2,i_s],target=target[s1,s2]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
         return target
 
-    def dK_dtheta(self,X,X2=None,slices1=None,slices2=None):
-        """Return shape is NxMx(Ntheta)"""
+    def dK_dtheta(self,partial,X,X2=None,slices1=None,slices2=None):
+        """
+        :param partial: An array of partial derivaties, dL_dK
+        :type partial: Np.ndarray (N x M)
+        :param X: Observed data inputs
+        :type X: np.ndarray (N x D)
+        :param X2: Observed dara inputs (optional, defaults to X)
+        :type X2: np.ndarray (M x D)
+        :param slices1: a slice object for each kernel part, describing which data are affected by each kernel part
+        :type slices1: list of slice objects, or list of booleans
+        :param slices2: slices for X2
+        """
         assert X.shape[1]==self.D
         slices1, slices2 = self._process_slices(slices1,slices2)
         if X2 is None:

@@ -13,13 +13,13 @@ Q = 1
 D = 2
 #generate GPLVM-like data
 X = np.random.rand(N, Q)
-k = GPy.kern.rbf(Q, 1.0, 2.0) + GPy.kern.white(Q, 0.0001)
+k = GPy.kern.rbf(Q, 1.0, 2.0) + GPy.kern.white(Q, 0.00001)
 K = k.K(X)
 Y = np.random.multivariate_normal(np.zeros(N),K,D).T
 
-m = GPy.models.sparse_GPLVM(Y, Q, M = 7)
+m = GPy.models.sparse_GPLVM(Y, Q, M = 10)
 m.constrain_positive('(rbf|bias|noise)')
-m.constrain_bounded('white', 1e-3, 1.0)
+m.constrain_bounded('white', 1e-3, 0.1)
 # m.plot()
 
 pb.figure()

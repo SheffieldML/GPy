@@ -65,7 +65,7 @@ class rbf(kernpart):
         dK_dX = np.transpose(-self.variance*self._K_dvar[:,:,np.newaxis]*_K_dist/self.lengthscale2,(1,0,2))
         target += np.sum(dK_dX*partial.T[:,:,None],0)
 
-    def dKdiag_dX(self,X,target):
+    def dKdiag_dX(self,partial,X,target):
         pass
 
     def _K_computations(self,X,X2):

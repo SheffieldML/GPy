@@ -194,7 +194,7 @@ class kern(parameterised):
         [p.dKdiag_dtheta(partial[s],X[s,i_s],target[ps]) for p,i_s,s,ps in zip(self.parts,self.input_slices,slices,self.param_slices)]
         return target
 
-    def dKdiag_dX(self, X, slices=None):
+    def dKdiag_dX(self, partial, X, slices=None):
         assert X.shape[1]==self.D
         slices = self._process_slices(slices,False)
         target = np.zeros_like(X)

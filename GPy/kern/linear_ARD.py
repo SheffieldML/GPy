@@ -21,7 +21,7 @@ class linear_ARD(kernpart):
             assert variances.shape==(self.D,)
         else:
             variances = np.ones(self.D)
-        self.Nparam = self.D
+        self.Nparam = int(self.D)
         self.name = 'linear'
         self.set_param(variances)
 
@@ -46,22 +46,12 @@ class linear_ARD(kernpart):
     def Kdiag(self,X,target):
         np.add(target,np.sum(self.variances*np.square(X),-1),target)
 
-    def dK_dtheta(self,X,X2,target):
-        """
-        Computes the derivatives wrt theta
-        Return shape is NxMx(Ntheta)
-
-        """
-        
-        if X2 is None: X2 = X
+    def dK_dtheta(self,partial,X,X2,target):
         product = X[:,None,:]*X2[None,:,:]
-        target += product
+        target += (partial[:,:,None]*product).sum(0).sum(0)
 
-    def dK_dX(self,X,X2,target):
-        if X2 is None: X2 = X
-        #product = X[:,None,:]*X2[None,:,:]
-        #scaled_product = product/self.variances2
-        np.add(target,X2[:,None,:]*self.variances,target)
+    def dK_dX(self,partial,X,X2,target):
+        target += (((X[:, None, :] * self.variances) + target) * partial[:,:, None]).sum(0)
 
     def psi0(self,Z,mu,S,target):
         expected = np.square(mu) + S

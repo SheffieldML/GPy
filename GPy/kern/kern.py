@@ -201,70 +201,80 @@ class kern(parameterised):
         [p.dKdiag_dX(partial[s],X[s,i_s],target[s,i_s]) for p,i_s,s in zip(self.parts,self.input_slices,slices)]
         return target
 
-    def psi0(self,Z,mu,S,slices_mu=None,slices_Z=None):
+    def psi0(self,Z,mu,S,slices=None):
+        slices = self._process_slices(slices,False)
         target = np.zeros(mu.shape[0])
-        [p.psi0(Z,mu,S,target) for p in self.parts]
+        [p.psi0(Z,mu[s],S[s],target[s]) for p,s in zip(self.parts,slices)]
         return target
 
-    def dpsi0_dtheta(self,Z,mu,S):
-        target = np.zeros((mu.shape[0],self.Nparam))
-        [p.dpsi0_dtheta(Z,mu,S,target[s]) for p,s in zip(self.parts, self.param_slices)]
+    def dpsi0_dtheta(self,partial,Z,mu,S,slices=None):
+        slices = self._process_slices(slices,False)
+        target = np.zeros(self.Nparam)
+        [p.dpsi0_dtheta(partial[s],Z,mu[s],S[s],target[ps]) for p,ps,s in zip(self.parts, self.param_slices,slices)]
         return target
 
-    def dpsi0_dmuS(self,Z,mu,S):
+    def dpsi0_dmuS(self,partial,Z,mu,S,slices=None):
+        slices = self._process_slices(slices,False)
         target_mu,target_S = np.zeros_like(mu),np.zeros_like(S)
-        [p.dpsi0_dmuS(Z,mu,S,target_mu,target_S) for p in self.parts]
+        [p.dpsi0_dmuS(partial,Z,mu[s],S[s],target_mu[s],target_S[s]) for p,s in zip(self.parts,slices)]
         return target_mu,target_S
 
-    def psi1(self,Z,mu,S):
+    def psi1(self,Z,mu,S,slices1=None,slices2=None):
         """Think N,M,Q """
+        slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros((mu.shape[0],Z.shape[0]))
-        [p.psi1(Z,mu,S,target=target) for p in self.parts]
+        [p.psi1(Z[s2],mu[s1],S[s1],target[s1,s2]) for p,s1,s2 in zip(self.parts,slices1,slices2)]
         return target
 
-    def dpsi1_dtheta(self,Z,mu,S):
+    def dpsi1_dtheta(self,partial,Z,mu,S,slices1=None,slices2=None):
         """N,M,(Ntheta)"""
-        target = np.zeros((mu.shape[0],Z.shape[0],self.Nparam))
-        [p.dpsi1_dtheta(Z,mu,S,target[:,:,s]) for p,s in zip(self.parts, self.param_slices)]
+        slices1, slices2 = self._process_slices(slices1,slices2)
+        target = np.zeros((self.Nparam))
+        [p.dpsi1_dtheta(partial[s2,s1],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[ps]) for p,ps,s1,s2,i_s in zip(self.parts, self.param_slices,slices1,slices2,self.input_slices)]
         return target
 
-    def dpsi1_dZ(self,Z,mu,S):
+    def dpsi1_dZ(self,partial,Z,mu,S,slices1=None,slices2=None):
         """N,M,Q"""
-        target = np.zeros((mu.shape[0],Z.shape[0],Z.shape[1]))
-        [p.dpsi1_dZ(Z,mu,S,target) for p in self.parts]
+        slices1, slices2 = self._process_slices(slices1,slices2)
+        target = np.zeros_like(Z)
+        [p.dpsi1_dZ(partial[s2,s1],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s2,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
         return target
 
-    def dpsi1_dmuS(self,Z,mu,S):
+    def dpsi1_dmuS(self,partial,Z,mu,S,slices1=None,slices2=None):
         """return shapes are N,M,Q"""
-        target_mu, target_S = np.zeros((2,mu.shape[0],Z.shape[0],Z.shape[1]))
-        [p.dpsi1_dmuS(Z,mu,S,target_mu=target_mu,target_S = target_S) for p in self.parts]
+        slices1, slices2 = self._process_slices(slices1,slices2)
+        target_mu, target_S = np.zeros((2,mu.shape[0],mu.shape[1]))
+        [p.dpsi1_dmuS(partial[s2,s1],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target_mu[s1,i_s],target_S[s1,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
         return target_mu, target_S
 
-    def psi2(self,Z,mu,S):
+    def psi2(self,Z,mu,S,slices1=None,slices2=None):
         """
         :Z: np.ndarray of inducing inputs (M x Q)
         : mu, S: np.ndarrays of means and variacnes (each N x Q)
         :returns psi2: np.ndarray (N,M,M,Q) """
-        target = np.zeros((mu.shape[0],Z.shape[0],Z.shape[0]))
-        [p.psi2(Z,mu,S,target=target) for p in self.parts]
+        target = np.zeros((Z.shape[0],Z.shape[0]))
+        slices1, slices2 = self._process_slices(slices1,slices2)
+        [p.psi2(Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s2,s2]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
         return target
 
-    def dpsi2_dtheta(self,Z,mu,S):
+    def dpsi2_dtheta(self,partial,Z,mu,S,slices1=None,slices2=None):
         """Returns shape (N,M,M,Ntheta)"""
-        target = np.zeros((Z.shape[0],Z.shape[0],self.Nparam))
-        [p.dpsi2_dtheta(Z,mu,S,target[:,:,s]) for p,s in zip(self.parts, self.param_slices)]
+        slices1, slices2 = self._process_slices(slices1,slices2)
+        target = np.zeros(self.Nparam)
+        [p.dpsi2_dtheta(partial[s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[ps]) for p,i_s,s1,s2,ps in zip(self.parts,self.input_slices,slices1,slices2,self.param_slices)]
         return target
 
-    def dpsi2_dZ(self,Z,mu,S):
-        """N,M,M,Q"""
-        target = np.zeros((mu.shape[0],Z.shape[0],Z.shape[0],Z.shape[1]))
-        [p.dpsi2_dZ(Z,mu,S,target) for p in self.parts]
+    def dpsi2_dZ(self,partial,Z,mu,S,slices1=None,slices2=None):
+        slices1, slices2 = self._process_slices(slices1,slices2)
+        target = np.zeros_like(Z)
+        [p.dpsi2_dZ(partial[s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s2,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
         return target
 
-    def dpsi2_dmuS(self,Z,mu,S):
+    def dpsi2_dmuS(self,Z,mu,S,slices1=None,slices2=None):
         """return shapes are N,M,M,Q"""
-        target_mu, target_S = np.zeros((2,mu.shape[0],Z.shape[0],Z.shape[0],Z.shape[1]))
-        [p.dpsi2_dmuS(Z,mu,S,target_mu=target_mu,target_S = target_S) for p in self.parts]
+        slices1, slices2 = self._process_slices(slices1,slices2)
+        target_mu, target_S = np.zeros((2,mu.shape[0],mu.shape[1]))
+        [p.dpsi2_dmuS(partial[s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target_mu[s1,i_s],target_S[s1,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
 
         #TODO: there are some extra terms to compute here!
         return target_mu, target_S

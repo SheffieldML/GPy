@@ -17,7 +17,7 @@ class rbf(kernpart):
     :param lengthscale: the lengthscale of the kernel
     :type lengthscale: float
 
-    .. Note: for rbf with different lengthscales on each dimension, see rbf_ARD
+    .. Note: for rbf with different lengthscale on each dimension, see rbf_ARD
     """
 
     def __init__(self,D,variance=1.,lengthscale=1.):
@@ -81,80 +81,88 @@ class rbf(kernpart):
             self._K_exponent = -0.5*self._K_dist2
             self._K_dvar = np.exp(-0.5*self._K_dist2)
 
-if __name__=='__main__':
-    #run some simple tests on the kernel (TODO:move these to unititest)
-    #TODO: these are broken in this new structure!
-    N = 10
-    M = 5
-    Q = 3
+    def psi0(self,Z,mu,S,target):
+        target += self.variance
 
-    Z = np.random.randn(M,Q)
-    mu = np.random.randn(N,Q)
-    S = np.random.rand(N,Q)
+    def dpsi0_dtheta(self,partial,Z,mu,S,target):
+        target[0] += 1.
 
-    var = 2.5
-    lengthscales = np.ones(Q)*0.7
+    def dpsi0_dmuS(self,Z,mu,S,target_mu,target_S):
+        pass
 
-    k = rbf(Q,var,lengthscales)
+    def psi1(self,Z,mu,S,target):
+        self._psi_computations(Z,mu,S)
+        target += self._psi1
 
-    from checkgrad import checkgrad
+    def dpsi1_dtheta(self,partial,Z,mu,S,target):
+        self._psi_computations(Z,mu,S)
+        denom_deriv = S[:,None,:]/(self.lengthscale**3+self.lengthscale*S[:,None,:])
+        d_length = self._psi1[:,:,None]*(self.lengthscale*np.square(self._psi1_dist/(self.lengthscale2+S[:,None,:])) + denom_deriv)
+        target[0] += np.sum(partial*self._psi1/self.variance)
+        target[1] += np.sum(d_length*partial[:,:,None])
 
-    def k_theta_test(param,k):
-        k.set_param(param)
-        K = k.K(Z)
-        dK_dtheta = k.dK_dtheta(Z)
-        f = np.sum(K)
-        df = dK_dtheta.sum(0).sum(0)
-        return f,np.array(df)
-    print "dk_dtheta_test"
-    checkgrad(k_theta_test,np.random.randn(1+Q),args=(k,))
+    def dpsi1_dZ(self,partial,Z,mu,S,target):
+        self._psi_computations(Z,mu,S)
+        target += np.sum(partial[:,:,None]*-self._psi1[:,:,None]*self._psi1_dist/self.lengthscale2/self._psi1_denom,0)
 
+    def dpsi1_dmuS(self,partial,Z,mu,S,target_mu,target_S):
+        self._psi_computations(Z,mu,S)
+        tmp = self._psi1[:,:,None]/self.lengthscale2/self._psi1_denom
+        target_mu += np.sum(partial*tmp*self._psi1_dist,1)
+        target_S += np.sum(partial*0.5*tmp*(self._psi1_dist_sq-1),1)
 
-    def psi1_mu_test(mu,k):
-        mu = mu.reshape(N,Q)
-        f = np.sum(k.psi1(Z,mu,S))
-        df = k.dpsi1_dmuS(Z,mu,S)[0].sum(1)
-        return f,df.flatten()
-    print "psi1_mu_test"
-    checkgrad(psi1_mu_test,np.random.randn(N*Q),args=(k,))
+    def psi2(self,Z,mu,S,target):
+        self._psi_computations(Z,mu,S)
+        target += self._psi2.sum(0) #TODO: psi2 should be NxMxM (for het. noise)
 
-    def psi1_S_test(S,k):
-        S = S.reshape(N,Q)
-        f = np.sum(k.psi1(Z,mu,S))
-        df = k.dpsi1_dmuS(Z,mu,S)[1].sum(1)
-        return f,df.flatten()
-    print "psi1_S_test"
-    checkgrad(psi1_S_test,np.random.rand(N*Q),args=(k,))
+    def dpsi2_dtheta(self,partial,Z,mu,S,target):
+        """Shape N,M,M,Ntheta"""
+        self._psi_computations(Z,mu,S)
+        d_var = np.sum(2.*self._psi2/self.variance,0)
+        d_length = self._psi2[:,:,:,None]*(0.5*self._psi2_Zdist_sq*self._psi2_denom + 2.*self._psi2_mudist_sq + 2.*S[:,None,None,:]/self.lengthscale2)/(self.lengthscale*self._psi2_denom)
+        d_length = d_length.sum(0)
+        target[0] += np.sum(partial*d_var)
+        target[1] += np.sum(d_length*partial)
 
-    def psi1_theta_test(theta,k):
-        k.set_param(theta)
-        f = np.sum(k.psi1(Z,mu,S))
-        df = np.array([np.sum(grad) for grad in k.dpsi1_dtheta(Z,mu,S)])
-        return f,df
-    print "psi1_theta_test"
-    checkgrad(psi1_theta_test,np.random.rand(1+Q),args=(k,))
+    def dpsi2_dZ(self,partial,Z,mu,S,target):
+        """Returns shape N,M,M,Q"""
+        self._psi_computations(Z,mu,S)
+        dZ = self._psi2[:,:,:,None]/self.lengthscale2*(-0.5*self._psi2_Zdist + self._psi2_mudist/self._psi2_denom)
+        target += np.sum(partial[None,:,:,None]*dZ,0).sum(1)
 
+    def dpsi2_dmuS(self,Z,mu,S,target_mu,target_S):
+        """Think N,M,M,Q """
+        self._psi_computations(Z,mu,S)
+        tmp = self._psi2[:,:,:,None]/self.lengthscale2/self._psi2_denom
+        target_mu += (partial*-tmp*2.*self._psi2_mudist).sum(1).sum(1)
+        target_S += (partial*tmp*(2.*self._psi2_mudist_sq-1)).sum(1).sum(1)
 
-    def psi2_mu_test(mu,k):
-        mu = mu.reshape(N,Q)
-        f = np.sum(k.psi2(Z,mu,S))
-        df = k.dpsi2_dmuS(Z,mu,S)[0].sum(1).sum(1)
-        return f,df.flatten()
-    print "psi2_mu_test"
-    checkgrad(psi2_mu_test,np.random.randn(N*Q),args=(k,))
+    def _psi_computations(self,Z,mu,S):
+        #here are the "statistics" for psi1 and psi2
+        if not np.all(Z==self._Z):
+            #Z has changed, compute Z specific stuff
+            self._psi2_Zhat = 0.5*(Z[:,None,:] +Z[None,:,:]) # M,M,Q
+            self._psi2_Zdist = Z[:,None,:]-Z[None,:,:] # M,M,Q
+            self._psi2_Zdist_sq = np.square(self._psi2_Zdist)/self.lengthscale2 # M,M,Q
+            self._Z = Z
 
-    def psi2_S_test(S,k):
-        S = S.reshape(N,Q)
-        f = np.sum(k.psi2(Z,mu,S))
-        df = k.dpsi2_dmuS(Z,mu,S)[1].sum(1).sum(1)
-        return f,df.flatten()
-    print "psi2_S_test"
-    checkgrad(psi2_S_test,np.random.rand(N*Q),args=(k,))
+        if not (np.all(Z==self._Z) and np.all(mu==self._mu) and np.all(S==self._S)):
+            #something's changed. recompute EVERYTHING
 
-    def psi2_theta_test(theta,k):
-        k.set_param(theta)
-        f = np.sum(k.psi2(Z,mu,S))
-        df = np.array([np.sum(grad) for grad in k.dpsi2_dtheta(Z,mu,S)])
-        return f,df
-    print "psi2_theta_test"
-    checkgrad(psi2_theta_test,np.random.rand(1+Q),args=(k,))
+            #TODO: make more efficient for large Q (using NDL's dot product trick)
+            #psi1
+            self._psi1_denom = S[:,None,:]/self.lengthscale2 + 1.
+            self._psi1_dist = Z[None,:,:]-mu[:,None,:]
+            self._psi1_dist_sq = np.square(self._psi1_dist)/self.lengthscale2/self._psi1_denom
+            self._psi1_exponent = -0.5*np.sum(self._psi1_dist_sq+np.log(self._psi1_denom),-1)
+            self._psi1 = self.variance*np.exp(self._psi1_exponent)
+
+            #psi2
+            self._psi2_denom = 2.*S[:,None,None,:]/self.lengthscale2+1. # N,M,M,Q
+            self._psi2_mudist = mu[:,None,None,:]-self._psi2_Zhat #N,M,M,Q
+            self._psi2_mudist_sq = np.square(self._psi2_mudist)/(self.lengthscale2*self._psi2_denom)
+            self._psi2_exponent = np.sum(-self._psi2_Zdist_sq/4. -self._psi2_mudist_sq -0.5*np.log(self._psi2_denom),-1) #N,M,M
+            self._psi2 = np.square(self.variance)*np.exp(self._psi2_exponent) # N,M,M
+
+            self._Z, self._mu, self._S = Z, mu,S
+

@@ -7,7 +7,7 @@ from ..util.linalg import mdot, jitchol, chol_inv, pdinv
 from ..util.plot import gpplot
 from .. import kern
 from ..inference.likelihoods import likelihood
-from GP_regression import GP_regression
+from sparse_GP_regression import sparse_GP_regression
 
 class uncertain_input_GP_regression(sparse_GP_regression):
     """
@@ -33,6 +33,7 @@ class uncertain_input_GP_regression(sparse_GP_regression):
     """
 
     def __init__(self,X,Y,X_uncertainty,kernel=None, beta=100., Z=None,Zslices=None,M=10,normalize_X=False,normalize_Y=False):
+        self.X_uncertainty = X_uncertainty
         sparse_GP_regression.__init__(self, X, Y, kernel = kernel, beta = beta, normalize_X = normalize_X, normalize_Y = normalize_Y)
         self.trYYT = np.sum(np.square(self.Y))
 
@@ -40,22 +41,22 @@ class uncertain_input_GP_regression(sparse_GP_regression):
         # kernel computations, using BGPLVM notation
         #TODO: slices for psi statistics (easy enough)
         self.Kmm = self.kern.K(self.Z)
-        self.psi0 = self.kern.psi0(self.X,slices=self.Xslices).sum()
-        self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty)
+        self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty).sum()
+        self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
         self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty)
 
     def dL_dtheta(self):
         #re-cast computations in psi2 back to psi1:
         dL_dtheta = self.kern.dK_dtheta(self.dL_dKmm,self.Z)
         dL_dtheta += self.kern.dpsi0_dtheta(self.dL_dpsi0, self.Z,self.X,self.X_uncertainty)
-        dL_dtheta += self.kern.dpsi1_dtheta(self.dL_dpsi1,self.Z,self.X, self.X_uncertainty)
-        dL_dtheta += self.kern.dpsi2_dtheta(self.dL_dpsi2,self.Z,self.X, self.X_uncertainty)
+        dL_dtheta += self.kern.dpsi1_dtheta(self.dL_dpsi1.T,self.Z,self.X, self.X_uncertainty)
+        dL_dtheta += self.kern.dpsi2_dtheta(self.dL_dpsi2,self.Z,self.X, self.X_uncertainty) # for multiple_beta, dL_dpsi2 will be a different shape
         return dL_dtheta
 
     def dL_dZ(self):
         dL_dZ = 2.*self.kern.dK_dX(self.dL_dKmm,self.Z,)#factor of two becase of vertical and horizontal 'stripes' in dKmm_dZ
-        dL_dZ += self.kern.dpsi1_dZ(dL_dpsi1,self.Z,self.X, self.X_uncertainty)
-        dL_dZ += self.kern.dpsi2_dZ(dL_dpsi2,self.Z,self.X, self.X_uncertainty)
+        dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1.T,self.Z,self.X, self.X_uncertainty)
+        dL_dZ += self.kern.dpsi2_dZ(self.dL_dpsi2,self.Z,self.X, self.X_uncertainty)
         return dL_dZ
 
     def plot(self,*args,**kwargs):
@@ -65,5 +66,5 @@ class uncertain_input_GP_regression(sparse_GP_regression):
         """
         sparse_GP_regression.plot(self,*args,**kwargs)
         if self.Q==1:
-            pb.errorbar(self.X[:,0], pb.ylim(0) ,xerr=2*np.sqrt(self.X_uncertainty.flatten()))
+            pb.errorbar(self.X[:,0], pb.ylim()[0]+np.zeros(self.N), xerr=2*np.sqrt(self.X_uncertainty.flatten()))
 

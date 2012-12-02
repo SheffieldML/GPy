@@ -10,6 +10,10 @@ from .. import kern
 from ..inference.likelihoods import likelihood
 from GP_regression import GP_regression
 
+#Still TODO:
+# make use of slices properly (kernel can now do this)
+# enable heteroscedatic noise (kernel will need to compute psi2 as a (NxMxM) array)
+
 class sparse_GP_regression(GP_regression):
     """
     Variational sparse GP model (Regression)
@@ -41,7 +45,7 @@ class sparse_GP_regression(GP_regression):
             self.Z = Z
             self.M = Z.shape[1]
 
-        GP_regression.__init__(self, X, Y, kernel = kernel, normalize_X = normalize_X, normalize_Y = normalize_Y)
+        GP_regression.__init__(self, X, Y, kernel=kernel, normalize_X=normalize_X, normalize_Y=normalize_Y)
         self.trYYT = np.sum(np.square(self.Y))
 
     def set_param(self, p):
@@ -64,8 +68,9 @@ class sparse_GP_regression(GP_regression):
 
     def _computations(self):
         # TODO find routine to multiply triangular matrices
-        self.psi1Y = np.dot(self.psi1, self.Y)
-        self.psi1YYpsi1 = np.dot(self.psi1Y, self.psi1Y.T)
+        self.V = self.beta*self.Y
+        self.psi1V = np.dot(self.psi1, self.V)
+        self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
         self.Lm = jitchol(self.Kmm)
         self.Lmi = chol_inv(self.Lm)
         self.Kmmi = np.dot(self.Lmi.T, self.Lmi)
@@ -77,24 +82,19 @@ class sparse_GP_regression(GP_regression):
         self.LLambdai = np.dot(self.LBi, self.Lmi)
         self.trace_K = self.psi0 - np.trace(self.A)
         self.LBL_inv = mdot(self.Lmi.T, self.Bi, self.Lmi)
-        self.C = mdot(self.LLambdai, self.psi1Y)
-        self.G =  mdot(self.LBL_inv, self.psi1YYpsi1, self.LBL_inv.T)
+        self.C = mdot(self.LLambdai, self.psi1V)
+        self.G =  mdot(self.LBL_inv, self.psi1VVpsi1, self.LBL_inv.T)
 
-        # Computes dL_dpsi
+        # Compute dL_dpsi
         self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
-        dC_dpsi1 = (self.LLambdai.T[:,:, None, None] * self.Y) # this is sane.
-        tmp = (dC_dpsi1*self.C[None,:,None,:]).sum(1).sum(-1)
-        self.dL_dpsi1 = self.beta2 * tmp
-        self.dL_dpsi2 = (- 0.5 * self.D * self.beta * (self.LBL_inv - self.Kmmi)
-                         - self.beta**3 * 0.5 * self.G)
+        dC_dpsi1 = (self.LLambdai.T[:,:, None, None] * self.V)
+        self.dL_dpsi1 = (dC_dpsi1*self.C[None,:,None,:]).sum(1).sum(-1)
+        self.dL_dpsi2 = - 0.5 * self.beta * (self.D*(self.LBL_inv - self.Kmmi) + self.G)
 
-        # Computes dL_dKmm TODO: nicer precomputations
-
+        # Compute dL_dKmm
         self.dL_dKmm = -0.5 * self.beta * self.D * mdot(self.Lmi.T, self.A, self.Lmi) # dB
         self.dL_dKmm += -0.5 * self.D * (- self.LBL_inv - 2.*self.beta*mdot(self.LBL_inv, self.psi2, self.Kmmi) + self.Kmmi) # dC
-        tmp = (mdot(self.LBL_inv, self.psi1YYpsi1, self.Kmmi)
-               - self.beta*mdot(self.G, self.psi2, self.Kmmi))
-        self.dL_dKmm += -0.5*self.beta2*(tmp + tmp.T - self.G) # dE
+        self.dL_dKmm +=  np.dot(np.dot(self.G,self.beta*self.psi2) - np.dot(self.LBL_inv, self.psi1VVpsi1), self.Kmmi) + 0.5*self.G # dE
 
     def get_param(self):
         return np.hstack([self.Z.flatten(),self.beta,self.kern.extract_param()])
@@ -103,29 +103,35 @@ class sparse_GP_regression(GP_regression):
         return sum([['iip_%i_%i'%(i,j) for i in range(self.Z.shape[0])] for j in range(self.Z.shape[1])],[]) + ['noise_precision']+self.kern.extract_param_names()
 
     def log_likelihood(self):
+        """
+        Compute the (lower bound on the) log marginal likelihood
+        """
         A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.beta))
         B = -0.5*self.beta*self.D*self.trace_K
         C = -self.D * np.sum(np.log(np.diag(self.LB)))
         D = -0.5*self.beta*self.trYYT
-        E = +0.5*self.beta2*np.sum(self.psi1YYpsi1 * self.LBL_inv)
-
+        E = +0.5*np.sum(self.psi1VVpsi1 * self.LBL_inv)
         return A+B+C+D+E
 
     def dL_dbeta(self):
-        """ compute the gradient of the log likelihood wrt beta.
-        TODO: suport heteroscedatic noise"""
+        """
+        Compute the gradient of the log likelihood wrt beta.
+        TODO: suport heteroscedatic noise
+        """
 
         dA_dbeta =   0.5 * self.N*self.D/self.beta
         dB_dbeta = - 0.5 * self.D * self.trace_K
         dC_dbeta = - 0.5 * self.D * np.sum(self.Bi*self.A)
         dD_dbeta = - 0.5 * self.trYYT
-        tmp = mdot(self.LBi.T, self.LLambdai, self.psi1Y)
-        dE_dbeta = (self.beta * np.sum(np.square(self.C)) - 0.5 * self.beta2
-                    * np.sum(self.A * np.dot(tmp, tmp.T)))
+        tmp = mdot(self.LBi.T, self.LLambdai, self.psi1V)
+        dE_dbeta = np.sum(np.square(self.C))/self.beta - 0.5 * np.sum(self.A * np.dot(tmp, tmp.T))
 
         return np.squeeze(dA_dbeta + dB_dbeta + dC_dbeta + dD_dbeta + dE_dbeta)
 
     def dL_dtheta(self):
+        """
+        Compute and return the derivative of the log marginal likelihood wrt the parameters of the kernel
+        """
         #re-cast computations in psi2 back to psi1:
         dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
 
@@ -146,17 +152,17 @@ class sparse_GP_regression(GP_regression):
     def log_likelihood_gradients(self):
         return np.hstack([self.dL_dZ().flatten(), self.dL_dbeta(), self.dL_dtheta()])
 
-    def _raw_predict(self,Xnew,slices):
+    def _raw_predict(self, Xnew, slices):
         """Internal helper function for making predictions, does not account for normalisation"""
 
         Kx = self.kern.K(self.Z, Xnew)
         Kxx = self.kern.K(Xnew)
 
-        mu = self.beta * mdot(Kx.T, self.LBL_inv, self.psi1Y)
+        mu = mdot(Kx.T, self.LBL_inv, self.psi1V)
         var = Kxx - mdot(Kx.T, (self.Kmmi - self.LBL_inv), Kx) + np.eye(Xnew.shape[0])/self.beta # TODO: This beta doesn't belong here in the EP case.
         return mu,var
 
-    def plot(self,*args,**kwargs):
+    def plot(self, *args, **kwargs):
         """
         Plot the fitted model: just call the GP_regression plot function and then add inducing inputs
         """

@@ -142,6 +142,9 @@ class sparse_GP_regression(GP_regression):
         return dL_dtheta
 
     def dL_dZ(self):
+        """
+        The derivative of the bound wrt the inducing inputs Z
+        """
         #re-cast computations in psi2 back to psi1:
         dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
 

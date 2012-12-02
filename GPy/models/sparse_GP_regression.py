@@ -91,8 +91,7 @@ class sparse_GP_regression(GP_regression):
         # Computes dL_dKmm TODO: nicer precomputations
 
         self.dL_dKmm = -0.5 * self.beta * self.D * mdot(self.Lmi.T, self.A, self.Lmi) # dB
-        tmp = self.beta*mdot(self.LBL_inv, self.psi2, self.Kmmi)
-        self.dL_dKmm += -0.5 * self.D * (- self.LBL_inv - tmp - tmp.T + self.Kmmi) # dC #TODO: is tmp PD? save some computations here
+        self.dL_dKmm += -0.5 * self.D * (- self.LBL_inv - 2.*self.beta*mdot(self.LBL_inv, self.psi2, self.Kmmi) + self.Kmmi) # dC
         tmp = (mdot(self.LBL_inv, self.psi1YYpsi1, self.Kmmi)
                - self.beta*mdot(self.G, self.psi2, self.Kmmi))
         self.dL_dKmm += -0.5*self.beta2*(tmp + tmp.T - self.G) # dE

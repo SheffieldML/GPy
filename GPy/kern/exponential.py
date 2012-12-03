@@ -62,7 +62,7 @@ class exponential(kernpart):
         np.add(target,self.variance,target)
 
     def dK_dtheta(self,partial,X,X2,target):
-        """derivative of the cross-covariance matrix with respect to the parameters (shape is NxMxNparam)"""
+        """derivative of the covariance matrix with respect to the parameters."""
         if X2 is None: X2 = X
         dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))
         invdist = 1./np.where(dist!=0.,dist,np.inf)
@@ -73,12 +73,12 @@ class exponential(kernpart):
         target[1:] += (dl*partial[:,:,None]).sum(0).sum(0)
 
     def dKdiag_dtheta(self,partial,X,target): 
-        """derivative of the diagonal of the covariance matrix with respect to the parameters (shape is NxNparam)"""
+        """derivative of the diagonal of the covariance matrix with respect to the parameters."""
         #NB: derivative of diagonal elements wrt lengthscale is 0
         target[0] += np.sum(partial)
 
     def dK_dX(self,X,X2,target):
-        """derivative of the covariance matrix with respect to X (*! shape is NxMxD !*)."""
+        """derivative of the covariance matrix with respect to X."""
         if X2 is None: X2 = X
         dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))[:,:,None]
         ddist_dX = (X[:,None,:]-X2[None,:,:])/self.lengthscales**2/np.where(dist!=0.,dist,np.inf)

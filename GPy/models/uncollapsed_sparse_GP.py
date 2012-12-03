@@ -17,6 +17,8 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
     :type X: np.ndarray (N x Q)
     :param Y: observed data
     :type Y: np.ndarray of observations (N x D)
+    :param q_u: canonical parameters of the distribution squasehd into a 1D array
+    :type q_u: np.ndarray
     :param kernel : the kernel/covariance function. See link kernels
     :type kernel: a GPy kernel
     :param Z: inducing inputs (optional, see note)
@@ -30,20 +32,15 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
     :type normalize_(X|Y): bool
     """
 
-    def __init__(self, X, Y, q_u=None, kernel=None, beta=100., Z=None,Zslices=None,M=10,normalize_X=False,normalize_Y=False):
+    def __init__(self, X, Y, q_u=None, *args, **kwargs)
         D = Y.shape[1]
         if q_u is None:
             if Z is None:
-                self.q_u_mean = np.zeros((M,D))
-                self.q_u_cov = np.eye(M) #note: each output dist will have the same covariance...
-                self.q_u_prec = np.eye(M)
+                M = Z.shape[0]
             else:
-                self.q_u_mean = np.zeros((Z.shape[0],D))
-                self.q_u_cov = np.eye(Z.shape[0])
-                self.q_u_prec = np.eye(Z.shape[0])
-
-
-        sparse_GP_regression.__init__(self, X, Y, kernel=kernel, normalize_X=normalize_X, normalize_Y=normalize_Y)
+                M=M
+            self.set_vb_param(np.hstack((np.ones(M*D)),np.eye(M).flatten()))
+        sparse_GP_regression.__init__(self, X, Y, *args, **kwargs)
 
     def _computations(self):
         self.V = self.beta*self.Y
@@ -58,7 +55,6 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
 
         # Compute dL_dpsi
         self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
-        dC_dpsi1 = 
         self.dL_dpsi1 = 
         self.dL_dpsi2 = 
 
@@ -104,13 +100,16 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         self.q_u_cov = np.dot(self.q_u_cov_L,self.q_u_cov_L.T)
         self.q_u_mean = -2.*np.dot(self.q_u_cov,vb_param[:self.M*self.D].reshape(self.M,self.D))
 
+        self.q_u_expectation = (self.q_u_mean, np.dot(self.q_u_mean,self.q_u_mean.T)+self.q_u_cov)
+
+        self.q_u_canonical = (np.dot(self.q_u_prec, self.q_u_mean),-0.5*self.q_u_prec)
         #TODO: computations now?
 
     def get_vb_param(self):
         """
-        Return the canonical paramters of the distribution q(u)
+        Return the canonical parameters of the distribution q(u)
         """
-        return np.hstack((-0.5*np.dot(self.q_u_prec, self.q_u_mean).flatten()-0.5*self.q_u_prec.flatten()))
+        return np.hstack([e.flatten() for e in self.q_u_canonical])
 
     def vb_grad_natgrad(self):
         """

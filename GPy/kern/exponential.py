@@ -37,25 +37,56 @@ class exponential(kernpart):
     def get_param(self):
         """return the value of the parameters."""
         return np.hstack((self.variance,self.lengthscales))
+
     def set_param(self,x):
         """set the value of the parameters."""
         assert x.size==(self.D+1)
         self.variance = x[0]
         self.lengthscales = x[1:]
+
     def get_param_names(self):
         """return parameter names."""
         if self.D==1:
             return ['variance','lengthscale']
         else:
             return ['variance']+['lengthscale_%i'%i for i in range(self.lengthscales.size)]
+
     def K(self,X,X2,target):
         """Compute the covariance matrix between X and X2."""
         if X2 is None: X2 = X
         dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))
         np.add(self.variance*np.exp(-dist), target,target)
+
     def Kdiag(self,X,target):
         """Compute the diagonal of the covariance matrix associated to X."""
         np.add(target,self.variance,target)
+
+    def dK_dtheta(self,partial,X,X2,target):
+        """derivative of the cross-covariance matrix with respect to the parameters (shape is NxMxNparam)"""
+        if X2 is None: X2 = X
+        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))
+        invdist = 1./np.where(dist!=0.,dist,np.inf)
+        dist2M = np.square(X[:,None,:]-X2[None,:,:])/self.lengthscales**3
+        dvar = np.exp(-dist)
+        dl = self.variance*dvar[:,:,None]*dist2M*invdist[:,:,None]
+        target[0] += np.sum(dvar*partial)
+        target[1:] += (dl*partial[:,:,None]).sum(0).sum(0)
+
+    def dKdiag_dtheta(self,partial,X,target): 
+        """derivative of the diagonal of the covariance matrix with respect to the parameters (shape is NxNparam)"""
+        #NB: derivative of diagonal elements wrt lengthscale is 0
+        target[0] += np.sum(partial)
+
+    def dK_dX(self,X,X2,target):
+        """derivative of the covariance matrix with respect to X (*! shape is NxMxD !*)."""
+        if X2 is None: X2 = X
+        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))[:,:,None]
+        ddist_dX = (X[:,None,:]-X2[None,:,:])/self.lengthscales**2/np.where(dist!=0.,dist,np.inf)
+        dK_dX = - np.transpose(self.variance*np.exp(-dist)*ddist_dX,(1,0,2))
+        target += np.sum(dK_dX*partial.T[:,:,None],0)
+
+    def dKdiag_dX(self,X,target):
+        pass
 
     def Gram_matrix(self,F,F1,lower,upper):
         """
@@ -78,29 +109,6 @@ class exponential(kernpart):
                 G[i,j] = G[j,i] = integrate.quad(lambda x : L(x,i)*L(x,j),lower,upper)[0]
         Flower = np.array([f(lower) for f in F])[:,None]
         return(self.lengthscales/2./self.variance * G + 1./self.variance * np.dot(Flower,Flower.T))
-
-    def dK_dtheta(self,X,X2,target):
-        """derivative of the cross-covariance matrix with respect to the parameters (shape is NxMxNparam)"""
-        if X2 is None: X2 = X
-        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))
-        invdist = 1./np.where(dist!=0.,dist,np.inf)
-        dist2M = np.square(X[:,None,:]-X2[None,:,:])/self.lengthscales**3
-        dvar = np.exp(-dist)
-        dl = self.variance*dvar[:,:,None]*dist2M*invdist[:,:,np.newaxis]
-        np.add(target[:,:,0],dvar, target[:,:,0])
-        np.add(target[:,:,1:],dl, target[:,:,1:])
-    def dKdiag_dtheta(self,X,target):
-        """derivative of the diagonal of the covariance matrix with respect to the parameters (shape is NxNparam)"""
-        np.add(target[:,0],1.,target[:,0])
-    def dK_dX(self,X,X2,target):
-        """derivative of the covariance matrix with respect to X (*! shape is NxMxD !*)."""
-        if X2 is None: X2 = X
-        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))[:,:,None]
-        ddist_dX = (X[:,None,:]-X2[None,:,:])/self.lengthscales**2/np.where(dist!=0.,dist,np.inf)
-        target += - np.transpose(self.variance*np.exp(-dist)*ddist_dX,(1,0,2))
-    def dKdiag_dX(self,X,target):
-        pass
-
 
 
 

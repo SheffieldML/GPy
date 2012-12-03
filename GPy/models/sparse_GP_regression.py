@@ -26,6 +26,8 @@ class sparse_GP_regression(GP_regression):
     :type kernel: a GPy kernel
     :param Z: inducing inputs (optional, see note)
     :type Z: np.ndarray (M x Q) | None
+    :param X_uncertainty: The uncertainty in the measurements of X (Gaussian variance)
+    :type X_uncertainty: np.ndarray (N x Q) | None
     :param Zslices: slices for the inducing inputs (see slicing TODO: link)
     :param M : Number of inducing points (optional, default 10. Ignored if Z is not None)
     :type M: int
@@ -44,6 +46,12 @@ class sparse_GP_regression(GP_regression):
             assert Z.shape[1]==X.shape[1]
             self.Z = Z
             self.M = Z.shape[1]
+        if X_uncertainty is None:
+            self.has_uncertain_inputs=False
+        else:
+            assert X_uncertainty.shape==X.shape
+            self.has_uncertain_inputs=False
+            self.X_uncertainty = X_uncertainty
 
         GP_regression.__init__(self, X, Y, kernel=kernel, normalize_X=normalize_X, normalize_Y=normalize_Y)
         self.trYYT = np.sum(np.square(self.Y))
@@ -58,13 +66,17 @@ class sparse_GP_regression(GP_regression):
 
     def _compute_kernel_matrices(self):
         # kernel computations, using BGPLVM notation
-        #TODO: the following can be switched out in the case of uncertain inputs (or the BGPLVM!)
         #TODO: slices for psi statistics (easy enough)
 
         self.Kmm = self.kern.K(self.Z)
-        self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices).sum()
-        self.psi1 = self.kern.K(self.Z,self.X)
-        self.psi2 = np.dot(self.psi1,self.psi1.T)
+        if self.has_uncertain_inputs:
+            self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty).sum()
+            self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
+            self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty)
+        else:
+            self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices).sum()
+            self.psi1 = self.kern.K(self.Z,self.X)
+            self.psi2 = np.dot(self.psi1,self.psi1.T)
 
     def _computations(self):
         # TODO find routine to multiply triangular matrices
@@ -132,12 +144,16 @@ class sparse_GP_regression(GP_regression):
         """
         Compute and return the derivative of the log marginal likelihood wrt the parameters of the kernel
         """
-        #re-cast computations in psi2 back to psi1:
-        dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
-
         dL_dtheta = self.kern.dK_dtheta(self.dL_dKmm,self.Z)
-        dL_dtheta += self.kern.dK_dtheta(dL_dpsi1,self.Z,self.X)
-        dL_dtheta += self.kern.dKdiag_dtheta(self.dL_dpsi0, self.X)
+        if self.has_uncertain_inputs:
+            dL_dtheta += self.kern.dpsi0_dtheta(self.dL_dpsi0, self.Z,self.X,self.X_uncertainty)
+            dL_dtheta += self.kern.dpsi1_dtheta(self.dL_dpsi1.T,self.Z,self.X, self.X_uncertainty)
+            dL_dtheta += self.kern.dpsi2_dtheta(self.dL_dpsi2,self.Z,self.X, self.X_uncertainty) # for multiple_beta, dL_dpsi2 will be a different shape
+        else:
+            #re-cast computations in psi2 back to psi1:
+            dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
+            dL_dtheta += self.kern.dK_dtheta(dL_dpsi1,self.Z,self.X)
+            dL_dtheta += self.kern.dKdiag_dtheta(self.dL_dpsi0, self.X)
 
         return dL_dtheta
 
@@ -145,11 +161,14 @@ class sparse_GP_regression(GP_regression):
         """
         The derivative of the bound wrt the inducing inputs Z
         """
-        #re-cast computations in psi2 back to psi1:
-        dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
-
         dL_dZ = 2.*self.kern.dK_dX(self.dL_dKmm,self.Z,)#factor of two becase of vertical and horizontal 'stripes' in dKmm_dZ
-        dL_dZ += self.kern.dK_dX(dL_dpsi1,self.Z,self.X)
+        if self.has_uncertain_inputs:
+            dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1.T,self.Z,self.X, self.X_uncertainty)
+            dL_dZ += self.kern.dpsi2_dZ(self.dL_dpsi2,self.Z,self.X, self.X_uncertainty)
+        else:
+            #re-cast computations in psi2 back to psi1:
+            dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
+            dL_dZ += self.kern.dK_dX(dL_dpsi1,self.Z,self.X)
         return dL_dZ
 
     def log_likelihood_gradients(self):
@@ -172,5 +191,7 @@ class sparse_GP_regression(GP_regression):
         GP_regression.plot(self,*args,**kwargs)
         if self.Q==1:
             pb.plot(self.Z,self.Z*0+pb.ylim()[0],'k|',mew=1.5,markersize=12)
+            if self.has_uncertain_inputs:
+                pb.errorbar(self.X[:,0], pb.ylim()[0]+np.zeros(self.N), xerr=2*np.sqrt(self.X_uncertainty.flatten()))
         if self.Q==2:
             pb.plot(self.Z[:,0],self.Z[:,1],'wo')

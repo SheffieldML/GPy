@@ -18,6 +18,7 @@ class model(parameterised):
         self.optimization_runs = []
         self.sampling_runs = []
         self.set_param(self.get_param())
+        self.preferred_optimizer = 'tnc'
     def get_param(self):
         raise NotImplementedError, "this needs to be implemented to utilise the model class"
     def set_param(self,x):
@@ -161,15 +162,19 @@ class model(parameterised):
         else:
             self.expand_param(initial_parameters)
 
-    def optimize(self, optimizer = 'tnc', start = None, **kwargs):
+    def optimize(self, optimizer=None, start=None, **kwargs):
         """
         Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
         kwargs are passed to the optimizer. They can be:
 
         :max_f_eval: maximum number of function evaluations
-        :messages: whether to display during optimisatio
+        :messages: whether to display during optimisation
+        :param optimzer: whice optimizer to use (defaults to self.preferred optimizer)
+        :type optimzer: string TODO: valid strings?
 
         """
+        if optimizer is None:
+            optimizer = self.preferred_optimizer
 
         def f(x):
             self.expand_param(x)

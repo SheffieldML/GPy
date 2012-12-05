@@ -37,7 +37,7 @@ class sparse_GP_regression(GP_regression):
     :type normalize_(X|Y): bool
     """
 
-    def __init__(self,X,Y,kernel=None, beta=100., Z=None,Zslices=None,M=10,normalize_X=False,normalize_Y=False):
+    def __init__(self,X,Y,kernel=None, X_uncertainty=None, beta=100., Z=None,Zslices=None,M=10,normalize_X=False,normalize_Y=False):
         self.beta = beta
         if Z is None:
             self.Z = np.random.permutation(X.copy())[:M]
@@ -55,6 +55,10 @@ class sparse_GP_regression(GP_regression):
 
         GP_regression.__init__(self, X, Y, kernel=kernel, normalize_X=normalize_X, normalize_Y=normalize_Y)
         self.trYYT = np.sum(np.square(self.Y))
+
+        #normalise X uncertainty also
+        if self.has_uncertain_inputs:
+            self.X_uncertainty /= np.square(self._Xstd)
 
     def set_param(self, p):
         self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)

@@ -9,7 +9,7 @@ import pylab as pb
 import datetime as dt
 
 class Optimizer():
-    def __init__(self, x_init, f_fp, f, fp , messages = False, max_f_eval = 1e4, ftol = None, gtol = None, xtol = None):
+    def __init__(self, x_init, f_fp, f, fp , messages=False, max_f_eval=1e4, ftol=None, gtol=None, xtol=None):
         """
         Superclass for all the optimizers.
 

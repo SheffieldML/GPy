@@ -19,7 +19,7 @@ class finite_dimensional(kernpart):
         self.D = D
         self.F = F
         self.G = G
-        self.G_1 ,tmp = pdinv(G)
+        self.G_1 ,L,Li,logdet = pdinv(G)
         self.n = F.shape[0]
         if weights is not None:
             assert weights.shape==(self.n,)

@@ -51,7 +51,7 @@ class Full(EP_base):
         self.K = K
         self.N = self.K.shape[0]
         EP_base.__init__(self,likelihood,*args,**kwargs)
-    def fit_EP(self):
+    def fit_EP(self,messages=False):
         """
         The expectation-propagation algorithm.
         For nomenclature see Rasmussen & Williams 2006 (pag. 52-60)
@@ -115,6 +115,8 @@ class Full(EP_base):
             epsilon_np2 = np.mean(self.v_tilde-self.np2[-1]**2)
             self.np1.append(self.tau_tilde.copy())
             self.np2.append(self.v_tilde.copy())
+            if messages:
+                print "EP iteration %i, epsiolon %d"%(self.iterations,epsilon_np1)
 
 class FITC(EP_base):
     """

@@ -9,20 +9,22 @@ import pylab as pb
 import datetime as dt
 
 class Optimizer():
+    """
+    Superclass for all the optimizers.
+
+    :param x_init: initial set of parameters
+    :param f_fp: function that returns the function AND the gradients at the same time
+    :param f: function to optimize
+    :param fp: gradients
+    :param messages: print messages from the optimizer?
+    :type messages: (True | False)
+    :param max_f_eval: maximum number of function evaluations
+    
+    :rtype: optimizer object.
+    
+    """	
     def __init__(self, x_init, f_fp, f, fp , messages = False, max_f_eval = 1e4, ftol = None, gtol = None, xtol = None):
-        """
-        Superclass for all the optimizers.
 
-        Arguments:
-
-        x_init: initial set of parameters
-        f_fp: function that returns the function AND the gradients at the same time
-        f: function to optimize
-        fp: gradients
-        messages: print messages from the optimizer? (True | False)
-        max_f_eval: maximum number of function evaluations
-
-        """
         self.opt_name = None
         self.f_fp = f_fp
         self.f = f
@@ -47,7 +49,7 @@ class Optimizer():
         self.time = str(end-start)
 
     def opt(self):
-        raise NotImplementedError, "this needs to be implemented to utilise the optimizer class"
+        raise NotImplementedError, "this needs to be implemented to use the optimizer class"
 
     def plot(self):
         if self.trace == None:
@@ -136,8 +138,7 @@ class opt_simplex(Optimizer):
 
     def opt(self):
         """
-        The simplex optimizer does not require gradients, which
-        is great during development. Otherwise it's a bit slow.
+        The simplex optimizer does not require gradients.
         """
 
         statuses = ['Converged', 'Maximum number of function evaluations made','Maximum number of iterations reached']
@@ -164,11 +165,11 @@ class opt_simplex(Optimizer):
 # class opt_rasm(Optimizer):
 #     def __init__(self, *args, **kwargs):
 #         Optimizer.__init__(self, *args, **kwargs)
-#         self.opt_name = "Rasmussen's SCG"
+#         self.opt_name = "Rasmussen's Conjugate Gradient"
 
 #     def opt(self):
 #         """
-#         Run Rasmussen's SCG optimizer
+#         Run Rasmussen's Conjugate Gradient optimizer
 #         """
 
 #         assert self.f_fp != None, "Rasmussen's minimizer requires f_fp"

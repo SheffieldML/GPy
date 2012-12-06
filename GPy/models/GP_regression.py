@@ -29,7 +29,7 @@ class GP_regression(model):
 
     def __init__(self,X,Y,kernel=None,normalize_X=False,normalize_Y=False, Xslices=None):
         if kernel is None:
-            kernel = kern.rbf(X.shape[1]) + kern.white(X.shape[1]) + kern.bias(X.shape[1])
+            kernel = kern.rbf(X.shape[1]) + kern.bias(X.shape[1]) + kern.white(X.shape[1])
 
         # parse arguments
         self.Xslices = Xslices

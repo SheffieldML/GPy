@@ -167,7 +167,7 @@ class model(parameterised):
         kwargs are passed to the optimizer. They can be:
 
         :max_f_eval: maximum number of function evaluations
-        :messages: whether to display during optimisatio
+        :messages: whether to display during optimisation
 
         """
 

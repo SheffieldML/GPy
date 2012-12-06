@@ -11,45 +11,21 @@ from ..util.linalg import pdinv,mdot,jitchol
 from ..util.plot import gpplot
 from .. import kern
 
-class EP:
-    def __init__(self,covariance,likelihood,Kmn=None,Knn_diag=None,epsilon=1e-3,powerep=[1.,1.]):
-        """
-        Expectation Propagation
+class EP_base:
+    """
+    Expectation Propagation.
 
-        Arguments
-        ---------
-        X : input observations
-        likelihood : Output's likelihood (likelihood class)
-        kernel :  a GPy kernel (kern class)
-        inducing : Either an array specifying the inducing points location or a sacalar defining their number. None value for using a non-sparse model is used.
-        powerep : Power-EP parameters (eta,delta) - 2x1 numpy array (floats)
-        epsilon : Convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
-        """
+    This is just the base class for expectation propagation. We'll extend it for full and sparse EP.
+    """
+    def __init__(self,likelihood,epsilon=1e-3,powerep=[1.,1.]):
         self.likelihood = likelihood
-        assert covariance.shape[0] == covariance.shape[1]
-        if Kmn is not None:
-            self.Kmm = covariance
-            self.Kmn = Kmn
-            self.M = self.Kmn.shape[0]
-            self.N = self.Kmn.shape[1]
-            assert self.M < self.N, 'The number of inducing inputs must be smaller than the number of observations'
-        else:
-            self.K = covariance
-            self.N = self.K.shape[0]
-        if Knn_diag is not None:
-            self.Knn_diag = Knn_diag
-            assert len(Knn_diag) == self.N, 'Knn_diagonal has size different from N'
-
         self.epsilon = epsilon
         self.eta, self.delta = powerep
         self.jitter = 1e-12
 
-        """
-        Initial values - Likelihood approximation parameters:
-        p(y|f) = t(f|tau_tilde,v_tilde)
-        """
-        self.tau_tilde = np.zeros(self.N)
-        self.v_tilde = np.zeros(self.N)
+        #Initial values - Likelihood approximation parameters:
+        #p(y|f) = t(f|tau_tilde,v_tilde)
+        self.restart_EP()
 
     def restart_EP(self):
         """
@@ -59,7 +35,22 @@ class EP:
         self.v_tilde = np.zeros(self.N)
         self.mu = np.zeros(self.N)
 
-class Full(EP):
+class Full(EP_base):
+    """
+    :param likelihood: Output's likelihood (e.g. probit)
+    :type likelihood: GPy.inference.likelihood instance
+    :param K: prior covariance matrix
+    :type K: np.ndarray (N x N)
+    :param likelihood: Output's likelihood (e.g. probit)
+    :type likelihood: GPy.inference.likelihood instance
+    :param epsilon: Convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
+    :param powerep: Power-EP parameters (eta,delta) - 2x1 numpy array (floats)
+    """
+    def __init__(self,K,likelihood,*args,**kwargs):
+        assert K.shape[0] == K.shape[1]
+        self.K = K
+        self.N = self.K.shape[0]
+        EP_base.__init__(self,likelihood,*args,**kwargs)
     def fit_EP(self):
         """
         The expectation-propagation algorithm.
@@ -78,15 +69,16 @@ class Full(EP):
         sigma_ = 1./tau_
         mu_ = v_/tau_
         """
-        self.tau_ = np.empty(self.N,dtype=float)
-        self.v_ = np.empty(self.N,dtype=float)
+
+        self.tau_ = np.empty(self.N,dtype=np.float64)
+        self.v_ = np.empty(self.N,dtype=np.float64)
 
         #Initial values - Marginal moments
-        z = np.empty(self.N,dtype=float)
-        self.Z_hat = np.empty(self.N,dtype=float)
-        phi = np.empty(self.N,dtype=float)
-        mu_hat = np.empty(self.N,dtype=float)
-        sigma2_hat = np.empty(self.N,dtype=float)
+        z = np.empty(self.N,dtype=np.float64)
+        self.Z_hat = np.empty(self.N,dtype=np.float64)
+        phi = np.empty(self.N,dtype=np.float64)
+        mu_hat = np.empty(self.N,dtype=np.float64)
+        sigma2_hat = np.empty(self.N,dtype=np.float64)
 
         #Approximation
         epsilon_np1 = self.epsilon + 1.
@@ -95,8 +87,7 @@ class Full(EP):
         self.np1 = [self.tau_tilde.copy()]
         self.np2 = [self.v_tilde.copy()]
         while epsilon_np1 > self.epsilon or epsilon_np2 > self.epsilon:
-            update_order = np.arange(self.N)
-            random.shuffle(update_order)
+            update_order = np.random.permutation(self.N)
             for i in update_order:
                 #Cavity distribution parameters
                 self.tau_[i] = 1./self.Sigma[i,i] - self.eta*self.tau_tilde[i]
@@ -120,14 +111,33 @@ class Full(EP):
             V,info = linalg.flapack.dtrtrs(L,Sroot_tilde_K,lower=1)
             self.Sigma = self.K - np.dot(V.T,V)
             self.mu = np.dot(self.Sigma,self.v_tilde)
-            epsilon_np1 = sum((self.tau_tilde-self.np1[-1])**2)/self.N
-            epsilon_np2 = sum((self.v_tilde-self.np2[-1])**2)/self.N
+            epsilon_np1 = np.mean(self.tau_tilde-self.np1[-1]**2)
+            epsilon_np2 = np.mean(self.v_tilde-self.np2[-1]**2)
             self.np1.append(self.tau_tilde.copy())
             self.np2.append(self.v_tilde.copy())
 
-            self.np2.append(self.v_tilde.copy())
+class FITC(EP_base):
+    """
+    :param likelihood: Output's likelihood (e.g. probit)
+    :type likelihood: GPy.inference.likelihood instance
+    :param Knn_diag: The diagonal elements of Knn is a 1D vector
+    :param Kmn: The 'cross' variance between inducing inputs and data
+    :param Kmm: the covariance matrix of the inducing inputs
+    :param likelihood: Output's likelihood (e.g. probit)
+    :type likelihood: GPy.inference.likelihood instance
+    :param epsilon: Convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
+    :param powerep: Power-EP parameters (eta,delta) - 2x1 numpy array (floats)
+    """
+    def __init__(self,likelihood,Knn_diag,Kmn,Kmm,*args,**kwargs)
+        self.Knn_diag = Knn_diag
+        self.Kmn = Kmn
+        self.Kmm = Kmm
+        self.M = self.Kmn.shape[0]
+        self.N = self.Kmn.shape[1]
+        assert self.M <= self.N, 'The number of inducing inputs must be smaller than the number of observations'
+        assert len(Knn_diag) == self.N, 'Knn_diagonal has size different from N'
+        EP_base.__init__(self,likelihood,*args,**kwargs)
 
-class FITC(EP):
     def fit_EP(self):
         """
         The expectation-propagation algorithm with sparse pseudo-input.
@@ -166,15 +176,15 @@ class FITC(EP):
         sigma_ = 1./tau_
         mu_ = v_/tau_
         """
-        self.tau_ = np.empty(self.N,dtype=float)
-        self.v_ = np.empty(self.N,dtype=float)
+        self.tau_ = np.empty(self.N,dtype=np.float64)
+        self.v_ = np.empty(self.N,dtype=np.float64)
 
         #Initial values - Marginal moments
-        z = np.empty(self.N,dtype=float)
-        self.Z_hat = np.empty(self.N,dtype=float)
-        phi = np.empty(self.N,dtype=float)
-        mu_hat = np.empty(self.N,dtype=float)
-        sigma2_hat = np.empty(self.N,dtype=float)
+        z = np.empty(self.N,dtype=np.float64)
+        self.Z_hat = np.empty(self.N,dtype=np.float64)
+        phi = np.empty(self.N,dtype=np.float64)
+        mu_hat = np.empty(self.N,dtype=np.float64)
+        sigma2_hat = np.empty(self.N,dtype=np.float64)
 
         #Approximation
         epsilon_np1 = 1

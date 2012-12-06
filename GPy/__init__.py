@@ -6,5 +6,5 @@ import kern
 import models
 import inference
 import util
-import examples
+#import examples TODO: discuss!
 from core import priors

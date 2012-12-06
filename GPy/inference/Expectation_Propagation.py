@@ -128,7 +128,7 @@ class FITC(EP_base):
     :param epsilon: Convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
     :param powerep: Power-EP parameters (eta,delta) - 2x1 numpy array (floats)
     """
-    def __init__(self,likelihood,Knn_diag,Kmn,Kmm,*args,**kwargs)
+    def __init__(self,likelihood,Knn_diag,Kmn,Kmm,*args,**kwargs):
         self.Knn_diag = Knn_diag
         self.Kmn = Kmn
         self.Kmm = Kmm

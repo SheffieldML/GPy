@@ -46,19 +46,14 @@ def _mdot_r(a,b):
 
 def jitchol(A,maxtries=5):
     """
-    Arguments
-    ---------
-    A : An almost pd square matrix
+    :param A : An almost pd square matrix
 
-    Returns
-    -------
-    cholesky(K)
+    :rval L: the Cholesky decomposition of A
 
-    Notes
-    -----
-    Adds jitter to K, to enforce positive-definiteness
-    if stuff breaks, please check:
-    np.allclose(sp.linalg.cholesky(XXT, lower = True), np.triu(sp.linalg.cho_factor(XXT)[0]).T)
+    .. Note:
+      Adds jitter to K, to enforce positive-definiteness
+      if stuff breaks, please check:
+      np.allclose(sp.linalg.cholesky(XXT, lower = True), np.triu(sp.linalg.cho_factor(XXT)[0]).T)
     """
     try:
         return linalg.cholesky(A, lower = True)
@@ -139,7 +134,7 @@ def PCA(Y, Q):
 
     Returns
     -------
-    X - NxQ np.array of dimensionality reduced data
+    :rval X: - NxQ np.array of dimensionality reduced data
     W - QxD mapping from X to Y
     """
     if not np.allclose(Y.mean(axis=0), 0.0):

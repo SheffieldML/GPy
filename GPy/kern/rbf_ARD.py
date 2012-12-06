@@ -30,6 +30,7 @@ class rbf_ARD(kernpart):
 
     def get_param(self):
         return np.hstack((self.variance,self.lengthscales))
+
     def set_param(self,x):
         assert x.size==(self.D+1)
         self.variance = x[0]
@@ -37,61 +38,73 @@ class rbf_ARD(kernpart):
         self.lengthscales2 = np.square(self.lengthscales)
         #reset cached results
         self._Z, self._mu, self._S = np.empty(shape=(3,1)) # cached versions of Z,mu,S
+
     def get_param_names(self):
         if self.D==1:
             return ['variance','lengthscale']
         else:
             return ['variance']+['lengthscale_%i'%i for i in range(self.lengthscales.size)]
+
     def K(self,X,X2,target):
         self._K_computations(X,X2)
         np.add(self.variance*self._K_dvar, target,target)
+
     def Kdiag(self,X,target):
         np.add(target,self.variance,target)
-    def dK_dtheta(self,X,X2,target):
-        """Return shape is NxMx(Ntheta)"""
+
+    def dK_dtheta(self,partial,X,X2,target):
         self._K_computations(X,X2)
         dl = self._K_dvar[:,:,None]*self.variance*self._K_dist2/self.lengthscales
-        np.add(target[:,:,0],self._K_dvar, target[:,:,0])
-        np.add(target[:,:,1:],dl, target[:,:,1:])
+        target[0] += np.sum(self._K_dvar*partial)
+        target[1:] += (dl*partial[:,:,None]).sum(0).sum(0)
+
     def dKdiag_dtheta(self,X,target):
-        np.add(target[:,0],1.,target[:,0])
+        target[0] += np.sum(partial)
+
     def dK_dX(self,X,X2,target):
         self._K_computations(X,X2)
         dZ = self.variance*self._K_dvar[:,:,None]*self._K_dist/self.lengthscales2
-        np.add(target,-dZ.transpose(1,0,2),target)
+        dK_dX = -dZ.transpose(1,0,2)
+        target += np.sum(dK_dX*partial.T[:,:,None],0)
+
+    def dKdiag_dX(self,partial,X,target):
+        pass
+
     def psi0(self,Z,mu,S,target):
-        np.add(target, self.variance, target)
-    def dpsi0_dtheta(self,Z,mu,S,target):
-        target[:,0] += 1.
+        target += self.variance
+
+    def dpsi0_dtheta(self,partial,Z,mu,S,target):
+        target[0] += 1.
+
     def dpsi0_dmuS(self,Z,mu,S,target_mu,target_S):
         pass
+
     def psi1(self,Z,mu,S,target):
-        """Think N,M,Q """
         self._psi_computations(Z,mu,S)
         np.add(target, self._psi1,target)
 
-    def dpsi1_dtheta(self,Z,mu,S,target):
-        """N,Q,(Ntheta)"""
+    def dpsi1_dtheta(self,partial,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
         denom_deriv = S[:,None,:]/(self.lengthscales**3+self.lengthscales*S[:,None,:])
         d_length = self._psi1[:,:,None]*(self.lengthscales*np.square(self._psi1_dist/(self.lengthscales2+S[:,None,:])) + denom_deriv)
-        target[:,:,0] += self._psi1/self.variance
-        target[:,:,1:] += d_length
-    def dpsi1_dZ(self,Z,mu,S,target):
+        target[0] += np.sum(partial*self._psi1/self.variance)
+        target[1:] += (d_length*partial[:,:,None]).sum(0).sum(0)
+
+    def dpsi1_dZ(self,partial,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
         np.add(target,-self._psi1[:,:,None]*self._psi1_dist/self.lengthscales2/self._psi1_denom,target)
+        target += np.sum(partial[:,:,None]*-self._psi1[:,:,None]*self._psi1_dist/self.lengthscales2/self._psi1_denom,0)
 
-    def dpsi1_dmuS(self,Z,mu,S,target_mu,target_S):
+    def dpsi1_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         """return shapes are N,M,Q"""
         self._psi_computations(Z,mu,S)
         tmp = self._psi1[:,:,None]/self.lengthscales2/self._psi1_denom
-        np.add(target_mu,tmp*self._psi1_dist,target_mu)
-        np.add(target_S, 0.5*tmp*(self._psi1_dist_sq-1), target_S)
+        target_mu += np.sum(partial*tmp*self._psi1_dist,1)
+        target_S += np.sum(partial*0.5*tmp*(self._psi1_dist_sq-1),1)
 
     def psi2(self,Z,mu,S,target):
-        """shape N,M,M"""
         self._psi_computations(Z,mu,S)
-        np.add(target, self._psi2,target)
+        target += self._psi2.sum(0) #TODO: psi2 should be NxMxM (for het. noise)
 
     def dpsi2_dtheta(self,Z,mu,S,target):
         """Shape N,M,M,Ntheta"""
@@ -99,21 +112,21 @@ class rbf_ARD(kernpart):
         d_var = np.sum(2.*self._psi2/self.variance,0)
         d_length = self._psi2[:,:,:,None]*(0.5*self._psi2_Zdist_sq*self._psi2_denom + 2.*self._psi2_mudist_sq + 2.*S[:,None,None,:]/self.lengthscales2)/(self.lengthscales*self._psi2_denom)
         d_length = d_length.sum(0)
-        target[:,:,0] += d_var
-        target[:,:,1:] += d_length
+        target[0] += np.sum(partial*d_var)
+        target[1:] += (d_length*partial[:,:,None]).sum(0).sum(0)
 
     def dpsi2_dZ(self,Z,mu,S,target):
         """Returns shape N,M,M,Q"""
         self._psi_computations(Z,mu,S)
         dZ = self._psi2[:,:,:,None]/self.lengthscales2*(-0.5*self._psi2_Zdist + self._psi2_mudist/self._psi2_denom)
-        target += dZ
+        target += np.sum(partial[None,:,:,None]*dZ,0).sum(1)
 
     def dpsi2_dmuS(self,Z,mu,S,target_mu,target_S):
         """Think N,M,M,Q """
         self._psi_computations(Z,mu,S)
         tmp = self._psi2[:,:,:,None]/self.lengthscales2/self._psi2_denom
-        np.add(target_mu, -tmp*(2.*self._psi2_mudist),target_mu) #N,M,M,Q
-        np.add(target_S, tmp*(2.*self._psi2_mudist_sq-1), target_S) #N,M,M,Q
+        target_mu += (partial*-tmp*2.*self._psi2_mudist).sum(1).sum(1)
+        target_S += (partial*tmp*(2.*self._psi2_mudist_sq-1)).sum(1).sum(1)
 
     def _K_computations(self,X,X2):
         if not (np.all(X==self._X) and np.all(X2==self._X2)):

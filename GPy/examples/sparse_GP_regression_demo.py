@@ -12,6 +12,7 @@ import GPy
 np.random.seed(2)
 pb.ion()
 N = 500
+M = 5
 
 ######################################
 ## 1 dimensional example
@@ -26,7 +27,7 @@ noise = GPy.kern.white(1)
 kernel = rbf + noise
 
 # create simple GP model
-m1 = GPy.models.sparse_GP_regression(X,Y,kernel, M = 10)
+m1 = GPy.models.sparse_GP_regression(X, Y, kernel, M=M)
 
 # contrain all parameters to be positive
 m1.constrain_positive('(variance|lengthscale|precision)')

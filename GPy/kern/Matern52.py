@@ -33,32 +33,60 @@ class Matern52(kernpart):
         self.Nparam = self.D + 1
         self.name = 'Mat52'
         self.set_param(np.hstack((variance,lengthscales)))
-        self._Z, self._mu, self._S = np.empty(shape=(3,1)) # cached versions of Z,mu,S
+        
 
     def get_param(self):
         """return the value of the parameters."""
         return np.hstack((self.variance,self.lengthscales))
+
     def set_param(self,x):
         """set the value of the parameters."""
         assert x.size==(self.D+1)
         self.variance = x[0]
         self.lengthscales = x[1:]
-        self.lengthscales2 = np.square(self.lengthscales)
-        self._Z, self._mu, self._S = np.empty(shape=(3,1)) # cached versions of Z,mu,S
+
     def get_param_names(self):
         """return parameter names."""
         if self.D==1:
             return ['variance','lengthscale']
         else:
             return ['variance']+['lengthscale_%i'%i for i in range(self.lengthscales.size)]
+
     def K(self,X,X2,target):
         """Compute the covariance matrix between X and X2."""
         if X2 is None: X2 = X
         dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))
         np.add(self.variance*(1+np.sqrt(5.)*dist+5./3*dist**2)*np.exp(-np.sqrt(5.)*dist), target,target)
+
     def Kdiag(self,X,target):
         """Compute the diagonal of the covariance matrix associated to X."""
         np.add(target,self.variance,target)
+
+    def dK_dtheta(self,partial,X,X2,target):
+        """derivative of the covariance matrix with respect to the parameters."""
+        if X2 is None: X2 = X
+        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))
+        invdist = 1./np.where(dist!=0.,dist,np.inf)
+        dist2M = np.square(X[:,None,:]-X2[None,:,:])/self.lengthscales**3
+        dvar = (1+np.sqrt(5.)*dist+5./3*dist**2)*np.exp(-np.sqrt(5.)*dist)
+        dl = (self.variance * 5./3 * dist * (1 + np.sqrt(5.)*dist ) * np.exp(-np.sqrt(5.)*dist))[:,:,np.newaxis] * dist2M*invdist[:,:,np.newaxis]
+        target[0] += np.sum(dvar*partial)
+        target[1:] += (dl*partial[:,:,None]).sum(0).sum(0)
+
+    def dKdiag_dtheta(self,X,target):
+        """derivative of the diagonal of the covariance matrix with respect to the parameters."""
+        target[0] += np.sum(partial)
+
+    def dK_dX(self,X,X2,target):
+        """derivative of the covariance matrix with respect to X."""
+        if X2 is None: X2 = X
+        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))[:,:,None]
+        ddist_dX = (X[:,None,:]-X2[None,:,:])/self.lengthscales**2/np.where(dist!=0.,dist,np.inf)
+        dK_dX += -  np.transpose(self.variance*5./3*dist*(1+np.sqrt(5)*dist)*np.exp(-np.sqrt(5)*dist)*ddist_dX,(1,0,2))
+        target += np.sum(dK_dX*partial.T[:,:,None],0)
+
+    def dKdiag_dX(self,X,target):
+        pass
 
     def Gram_matrix(self,F,F1,F2,F3,lower,upper):
         """
@@ -91,26 +119,5 @@ class Matern52(kernpart):
         orig2 = 3./5*self.lengthscales**2 * ( np.dot(F1lower,F1lower.T) + 1./8*np.dot(Flower,F2lower.T) + 1./8*np.dot(F2lower,Flower.T))
         return(1./self.variance* (G_coef*G + orig + orig2))
 
-    def dK_dtheta(self,X,X2,target):
-        """derivative of the cross-covariance matrix with respect to the parameters (shape is NxMxNparam)"""
-        if X2 is None: X2 = X
-        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))
-        invdist = 1./np.where(dist!=0.,dist,np.inf)
-        dist2M = np.square(X[:,None,:]-X2[None,:,:])/self.lengthscales**3
-        dvar = (1+np.sqrt(5.)*dist+5./3*dist**2)*np.exp(-np.sqrt(5.)*dist)
-        dl = (self.variance * 5./3 * dist * (1 + np.sqrt(5.)*dist ) * np.exp(-np.sqrt(5.)*dist))[:,:,np.newaxis] * dist2M*invdist[:,:,np.newaxis]
-        np.add(target[:,:,0],dvar, target[:,:,0])
-        np.add(target[:,:,1:],dl, target[:,:,1:])
-    def dKdiag_dtheta(self,X,target):
-        """derivative of the diagonal of the covariance matrix with respect to the parameters (shape is NxNparam)"""
-        np.add(target[:,0],1.,target[:,0])
-    def dK_dX(self,X,X2,target):
-        """derivative of the covariance matrix with respect to X (*! shape is NxMxD !*)."""
-        if X2 is None: X2 = X
-        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))[:,:,None]
-        ddist_dX = (X[:,None,:]-X2[None,:,:])/self.lengthscales**2/np.where(dist!=0.,dist,np.inf)
-        target += -  np.transpose(self.variance*5./3*dist*(1+np.sqrt(5)*dist)*np.exp(-np.sqrt(5)*dist)*ddist_dX,(1,0,2))
-    def dKdiag_dX(self,X,target):
-        pass
 
 

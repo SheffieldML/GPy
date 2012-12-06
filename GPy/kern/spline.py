@@ -6,7 +6,7 @@ from kernpart import kernpart
 import numpy as np
 import hashlib
 def theta(x):
-    """Heavisdie step function"""
+    """Heaviside step function"""
     return np.where(x>=0.,1.,0.)
 
 class spline(kernpart):

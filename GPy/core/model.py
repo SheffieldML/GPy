@@ -171,7 +171,6 @@ class model(parameterised):
         :messages: whether to display during optimisation
         :param optimzer: whice optimizer to use (defaults to self.preferred optimizer)
         :type optimzer: string TODO: valid strings?
-
         """
         if optimizer is None:
             optimizer = self.preferred_optimizer

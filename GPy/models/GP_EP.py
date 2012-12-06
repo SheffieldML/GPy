@@ -26,6 +26,9 @@ class GP_EP(model):
         :param powerep: power-EP parameters [$\eta$,$\delta$], defaults to [1.,1.] (list)
         :rtype: GPy model class.
         """
+        if kernel is None:
+            kernel = kern.rbf(X.shape[1]) + kern.bias(X.shape[1]) + kern.white(X.shape[1])
+
         assert isinstance(kernel,kern.kern), 'kernel is not a kern instance'
         self.likelihood = likelihood
         self.Y = self.likelihood.Y

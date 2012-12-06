@@ -8,7 +8,13 @@ import hashlib
 
 class rbf(kernpart):
     """
-    Radial Basis Function kernel, aka squared-exponential or Gaussian kernel.
+    Radial Basis Function kernel, aka squared-exponential, exponentiated quadratic or Gaussian kernel.
+
+    .. math::
+
+       k(r) = \sigma^2 \exp(- \frac{r^2}{2\ell}) \qquad \qquad \\text{ where  } r = \sqrt{\frac{\sum_{i=1}^d (x_i-x^\prime_i)^2}{\ell^2}}
+
+    where \ell is the lengthscale, \alpha the smoothness, \sigma^2 the variance and d the dimensionality of the input.
 
     :param D: the number of input dimensions
     :type D: int
@@ -44,6 +50,8 @@ class rbf(kernpart):
         return ['variance','lengthscale']
 
     def K(self,X,X2,target):
+        if X2 is None:
+            X2 = X
         self._K_computations(X,X2)
         np.add(self.variance*self._K_dvar, target,target)
 
@@ -78,7 +86,9 @@ class rbf(kernpart):
                 self._K_dist2 = (-2.*XXT + np.diag(XXT)[:,np.newaxis] + np.diag(XXT)[np.newaxis,:])/self.lengthscale2
             else:
                 self._K_dist2 = (-2.*XXT + np.sum(np.square(X),1)[:,None] + np.sum(np.square(X2),1)[None,:])/self.lengthscale2
-            self._K_exponent = -0.5*self._K_dist2
+            # TODO Remove comments if this is fine.
+            # Commented out by Neil as doesn't seem to be used elsewhere.
+            #self._K_exponent = -0.5*self._K_dist2
             self._K_dvar = np.exp(-0.5*self._K_dist2)
 
     def psi0(self,Z,mu,S,target):

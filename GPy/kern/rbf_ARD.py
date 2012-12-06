@@ -61,7 +61,7 @@ class rbf_ARD(kernpart):
     def dKdiag_dtheta(self,X,target):
         target[0] += np.sum(partial)
 
-    def dK_dX(self,X,X2,target):
+    def dK_dX(self,partial,X,X2,target):
         self._K_computations(X,X2)
         dZ = self.variance*self._K_dvar[:,:,None]*self._K_dist/self.lengthscales2
         dK_dX = -dZ.transpose(1,0,2)

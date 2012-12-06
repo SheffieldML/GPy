@@ -162,6 +162,20 @@ class model(parameterised):
         else:
             self.expand_param(initial_parameters)
 
+    def ensure_default_constraints(self,warn=False):
+        """
+        Ensure that any variables which should clearly be positive have been constrained somehow.
+        """
+        positive_strings = ['variance','lengthscale', 'precision']
+        for s in positive_strings:
+            for i in self.grep_param_names(s):
+                if not (i in self.all_constrained_indices()):
+                    name = self.get_param_names()[i]
+                    self.constrain_positive(name)
+                    if warn:
+                        print "Warning! constraining %s postive"%name
+
+
     def optimize(self, optimizer=None, start=None, **kwargs):
         """
         Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.

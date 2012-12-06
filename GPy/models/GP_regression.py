@@ -87,7 +87,7 @@ class GP_regression(model):
         if self.Youter is None:
             return -0.5*np.trace(mdot(self.Y.T,self.Ki,self.Y))
         else:
-            return -0.5*np.sum(np.multiply(self.Ki, self.Y))
+            return -0.5*np.sum(np.multiply(self.Ki, self.Youter))
 
     def log_likelihood(self):
         complexity_term = -0.5*self.N*self.D*np.log(2.*np.pi) - self.D*self.hld

@@ -47,9 +47,7 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         self.V = self.beta*self.Y
         self.psi1V = np.dot(self.psi1, self.V)
         self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
-        self.Lm = jitchol(self.Kmm)
-        self.Lmi = chol_inv(self.Lm)
-        self.Kmmi = np.dot(self.Lmi.T, self.Lmi)
+        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
         self.A = mdot(self.Lmi, self.psi2, self.Lmi.T)
         self.B = np.eye(self.M) + self.beta * self.A
         self.Lambda = mdot(self.Lmi.T,self.B,sel.Lmi)
@@ -89,16 +87,19 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
 
     def _raw_predict(self, Xnew, slices):
         """Internal helper function for making predictions, does not account for normalisation"""
-
-        #TODO
+        Kx = self.kern.cross_compute(Xnew)
+        Kxx = self.kern.compute_new(Xnew)
+        mu = mdot(Kx.T,self.Kmmi,self.mu)
+        tmp = self.Kmmi- mdot(self.Kmmi,self.q_u_cov,self.Kmmi)
+        var = Kxx - mdot(Kx.T,tmp,Kx) + np.eye(Xnew.shape[0])/self.beta
         return mu,var
+
 
     def set_vb_param(self,vb_param):
         """set the distribution q(u) from the canonical parameters"""
         self.q_u_prec = -2.*vb_param[self.M*self.D:].reshape(self.M,self.M)
-        self.q_u_prec_L = jitchol(self.q_u_prec)
-        self.q_u_cov_L = chol_inv(self.q_u_prec_L)
-        self.q_u_cov = np.dot(self.q_u_cov_L,self.q_u_cov_L.T)
+        self.q_u_cov, q_u_Li, q_u_L, tmp = pdinv(self.q_u_prec)
+        self.q_u_logdet = -tmp
         self.q_u_mean = -2.*np.dot(self.q_u_cov,vb_param[:self.M*self.D].reshape(self.M,self.D))
 
         self.q_u_expectation = (self.q_u_mean, np.dot(self.q_u_mean,self.q_u_mean.T)+self.q_u_cov)

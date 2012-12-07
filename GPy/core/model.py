@@ -29,7 +29,8 @@ class model(parameterised):
         raise NotImplementedError, "this needs to be implemented to utilise the model class"
 
     def set_prior(self,which,what):
-        """sets priors on the model parameters.
+        """
+        Sets priors on the model parameters.
 
         Arguments
         ---------
@@ -78,6 +79,29 @@ class model(parameterised):
         #store the prior in a local list
         for w in which:
             self.priors[w] = what
+
+    def get(self,name):
+        """
+        get a model parameter by name
+        """
+        matches = self.grep_param_names(name)
+        if len(matches):
+            return self.get_param()[matches]
+        else:
+            raise AttributeError, "no parameter matches %s"%name
+
+    def set(self,name,val):
+        """
+        Set a model parameter by name
+        """
+        matches = self.grep_param_names(name)
+        if len(matches):
+            x = self.get_param()
+            x[matches] = val
+            self.set_param(x)
+        else:
+            raise AttributeError, "no parameter matches %s"%name
+
 
 
     def log_prior(self):

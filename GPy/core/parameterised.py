@@ -29,7 +29,7 @@ def truncate_pad(string,width,align='m'):
         else:
             raise ValueError
 
-class parameterised:
+class parameterised(object):
     def __init__(self):
         """
         This is the base class for model and kernel. Mostly just handles tieing and constraining of parameters

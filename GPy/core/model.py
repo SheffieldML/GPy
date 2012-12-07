@@ -189,7 +189,7 @@ class model(parameterised):
             start = self.extract_param()
 
         optimizer = optimization.get_optimizer(optimizer)
-        opt = optimizer(start, f_fp=f_fp,f=f,fp=fp, **kwargs)
+        opt = optimizer(start, f_fp=f_fp,f=f,fp=fp,model = self,**kwargs)
         opt.run()
         self.optimization_runs.append(opt)
 

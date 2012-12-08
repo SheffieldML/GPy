@@ -87,11 +87,11 @@ class sparse_GP_regression(GP_regression):
         self.psi1V = np.dot(self.psi1, self.V)
         self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
         self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
-        self.A = mdot(self.Lmi, self.psi2, self.Lmi.T)
-        self.B = np.eye(self.M) + self.beta * self.A
+        self.A = mdot(self.Lmi, self.beta*self.psi2, self.Lmi.T)
+        self.B = np.eye(self.M) + self.A
         self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
         self.LLambdai = np.dot(self.LBi, self.Lmi)
-        self.trace_K = self.psi0 - np.trace(self.A)
+        self.trace_K = self.psi0 - np.trace(self.A)/self.beta
         self.LBL_inv = mdot(self.Lmi.T, self.Bi, self.Lmi)
         self.C = mdot(self.LLambdai, self.psi1V)
         self.G =  mdot(self.LBL_inv, self.psi1VVpsi1, self.LBL_inv.T)
@@ -102,7 +102,7 @@ class sparse_GP_regression(GP_regression):
         self.dL_dpsi2 = - 0.5 * self.beta * (self.D*(self.LBL_inv - self.Kmmi) + self.G)
 
         # Compute dL_dKmm
-        self.dL_dKmm = -0.5 * self.beta * self.D * mdot(self.Lmi.T, self.A, self.Lmi) # dB
+        self.dL_dKmm = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi) # dB
         self.dL_dKmm += -0.5 * self.D * (- self.LBL_inv - 2.*self.beta*mdot(self.LBL_inv, self.psi2, self.Kmmi) + self.Kmmi) # dC
         self.dL_dKmm +=  np.dot(np.dot(self.G,self.beta*self.psi2) - np.dot(self.LBL_inv, self.psi1VVpsi1), self.Kmmi) + 0.5*self.G # dE
 
@@ -126,15 +126,14 @@ class sparse_GP_regression(GP_regression):
     def dL_dbeta(self):
         """
         Compute the gradient of the log likelihood wrt beta.
-        TODO: suport heteroscedatic noise
         """
-
+        #TODO: suport heteroscedatic noise
         dA_dbeta =   0.5 * self.N*self.D/self.beta
         dB_dbeta = - 0.5 * self.D * self.trace_K
-        dC_dbeta = - 0.5 * self.D * np.sum(self.Bi*self.A)
+        dC_dbeta = - 0.5 * self.D * np.sum(self.Bi*self.A)/self.beta
         dD_dbeta = - 0.5 * self.trYYT
         tmp = mdot(self.LBi.T, self.LLambdai, self.psi1V)
-        dE_dbeta = np.sum(np.square(self.C))/self.beta - 0.5 * np.sum(self.A * np.dot(tmp, tmp.T))
+        dE_dbeta = (np.sum(np.square(self.C)) - 0.5 * np.sum(self.A * np.dot(tmp, tmp.T)))/self.beta
 
         return np.squeeze(dA_dbeta + dB_dbeta + dC_dbeta + dD_dbeta + dE_dbeta)
 

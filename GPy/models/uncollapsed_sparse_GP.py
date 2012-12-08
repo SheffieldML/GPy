@@ -39,7 +39,7 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
                 self.M = Z.shape[0]
             else:
                 self.M = M
-            q_u = np.hstack((np.ones(self.M*self.D),-0.5*np.eye(self.M).flatten()))
+            q_u = np.hstack((np.zeros(self.M*self.D),-0.5*np.eye(self.M).flatten()))
         self.set_vb_param(q_u)
         sparse_GP_regression.__init__(self, X, Y, M=M,*args, **kwargs)
 
@@ -49,8 +49,8 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         self.psi1V = np.dot(self.psi1, self.V)
         self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
         self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
-        self.A = self.beta * mdot(self.Lmi, self.psi2, self.Lmi.T)
-        self.B = np.eye(self.M) * self.A
+        self.A = mdot(self.Lmi, self.beta*self.psi2, self.Lmi.T)
+        self.B = np.eye(self.M) + self.A
         self.Lambda = mdot(self.Lmi.T,self.B,self.Lmi)
         self.trace_K = self.psi0 - np.trace(self.A)/self.beta
         self.projected_mean = mdot(self.psi1.T,self.Kmmi,self.q_u_expectation[0])
@@ -70,10 +70,10 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         """
         A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.beta))
         B = -0.5*self.beta*self.D*self.trace_K
-        C = -0.5*self.D *(self.Kmm_logdet + np.sum(self.Lambda * self.q_u_expectation[1]) + self.M/2.)
+        C = -0.5*self.D *(self.Kmm_logdet + np.sum(self.Lambda * self.q_u_expectation[1]) - self.M*self.D)
         D = -0.5*self.beta*self.trYYT
         E = np.sum(np.dot(self.V.T,self.projected_mean))
-        return A+B+C+D+E
+        return A+B#+C+D+E
 
     def dL_dbeta(self):
         """

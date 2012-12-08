@@ -32,35 +32,37 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
     :type normalize_(X|Y): bool
     """
 
-    def __init__(self, X, Y, q_u=None, *args, **kwargs)
-        D = Y.shape[1]
+    def __init__(self, X, Y, q_u=None, M=10, *args, **kwargs):
+        self.D = Y.shape[1]
         if q_u is None:
-            if Z is None:
-                M = Z.shape[0]
+            if 'Z' in kwargs.keys():
+                self.M = Z.shape[0]
             else:
-                M=M
-            q_u = np.hstack((np.ones(M*D)),np.eye(M).flatten())
+                self.M = M
+            q_u = np.hstack((np.ones(self.M*self.D),-0.5*np.eye(self.M).flatten()))
         self.set_vb_param(q_u)
-        sparse_GP_regression.__init__(self, X, Y, *args, **kwargs)
+        sparse_GP_regression.__init__(self, X, Y, M=M,*args, **kwargs)
 
     def _computations(self):
         self.V = self.beta*self.Y
+        self.VmT = np.dot(self.V,self.q_u_expectation[0].T)
         self.psi1V = np.dot(self.psi1, self.V)
         self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
         self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
-        self.A = mdot(self.Lmi, self.psi2, self.Lmi.T)
-        self.B = np.eye(self.M) + self.beta * self.A
-        self.Lambda = mdot(self.Lmi.T,self.B,sel.Lmi)
+        self.A = self.beta * mdot(self.Lmi, self.psi2, self.Lmi.T)
+        self.B = np.eye(self.M) * self.A
+        self.Lambda = mdot(self.Lmi.T,self.B,self.Lmi)
+        self.trace_K = self.psi0 - np.trace(self.A)/self.beta
+        self.projected_mean = mdot(self.psi1.T,self.Kmmi,self.q_u_expectation[0])
 
         # Compute dL_dpsi
         self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
-        self.dL_dpsi1 = 
-        self.dL_dpsi2 = 
+        self.dL_dpsi1 = np.dot(self.VmT,self.Kmmi).T
+        self.dL_dpsi2 = - 0.5 * self.beta * (-self.D*self.Kmmi + mdot(self.Kmmi,self.q_u_expectation[1],self.Kmmi))
 
         # Compute dL_dKmm
-        self.dL_dKmm = 
-        self.dL_dKmm += 
-        self.dL_dKmm += 
+        tmp =  np.dot(0.5*np.eye(self.M) + np.dot(self.A,self.Kmmi),self.q_u_expectation[1]) -0.5*self.Kmm - np.dot(self.psi1,self.VmT)
+        self.dL_dKmm = mdot(self.Kmmi,tmp,self.Kmmi)
 
     def log_likelihood(self):
         """
@@ -68,10 +70,10 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         """
         A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.beta))
         B = -0.5*self.beta*self.D*self.trace_K
-        C = -self.D *(self.Kmm_hld +0.5*np.sum(self.Lambda * self.mmT_S) + self.M/2.)
-        E = -0.5*self.beta*self.trYYT
-        F = np.sum(np.dot(self.V.T,self.projected_mean))
-        return A+B+C+D+E+F
+        C = -0.5*self.D *(self.Kmm_logdet + np.sum(self.Lambda * self.q_u_expectation[1]) + self.M/2.)
+        D = -0.5*self.beta*self.trYYT
+        E = np.sum(np.dot(self.V.T,self.projected_mean))
+        return A+B+C+D+E
 
     def dL_dbeta(self):
         """
@@ -80,18 +82,18 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         """
         dA_dbeta =   0.5 * self.N*self.D/self.beta
         dB_dbeta = - 0.5 * self.D * self.trace_K
-        dC_dbeta = - 0.5 * self.D * #TODO
+        dC_dbeta = - 0.5 * self.D * 1.#TODO
         dD_dbeta = - 0.5 * self.trYYT
 
-        return np.squeeze(dA_dbeta + dB_dbeta + dC_dbeta + dD_dbeta + dE_dbeta)
+        return np.squeeze(dA_dbeta + dB_dbeta + dC_dbeta + dD_dbeta)
 
     def _raw_predict(self, Xnew, slices):
         """Internal helper function for making predictions, does not account for normalisation"""
-        Kx = self.kern.cross_compute(Xnew)
-        Kxx = self.kern.compute_new(Xnew)
-        mu = mdot(Kx.T,self.Kmmi,self.mu)
+        Kx = self.kern.K(Xnew,self.Z)
+        Kxx = self.kern.K(Xnew)
+        mu = mdot(Kx,self.Kmmi,self.q_u_expectation[0])
         tmp = self.Kmmi- mdot(self.Kmmi,self.q_u_cov,self.Kmmi)
-        var = Kxx - mdot(Kx.T,tmp,Kx) + np.eye(Xnew.shape[0])/self.beta
+        var = Kxx - mdot(Kx,tmp,Kx.T) + np.eye(Xnew.shape[0])/self.beta
         return mu,var
 
 
@@ -100,7 +102,7 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         self.q_u_prec = -2.*vb_param[self.M*self.D:].reshape(self.M,self.M)
         self.q_u_cov, q_u_Li, q_u_L, tmp = pdinv(self.q_u_prec)
         self.q_u_logdet = -tmp
-        self.q_u_mean = -2.*np.dot(self.q_u_cov,vb_param[:self.M*self.D].reshape(self.M,self.D))
+        self.q_u_mean = np.dot(self.q_u_cov,vb_param[:self.M*self.D].reshape(self.M,self.D))
 
         self.q_u_expectation = (self.q_u_mean, np.dot(self.q_u_mean,self.q_u_mean.T)+self.q_u_cov)
 
@@ -127,4 +129,6 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         add the distribution q(u) to the plot from sparse_GP_regression
         """
         sparse_GP_regression.plot(self,*args,**kwargs)
-        #TODO: plot the q(u) dist.
+        if self.Q==1:
+            pb.errorbar(self.Z[:,0],self.q_u_expectation[0][:,0],yerr=2*np.sqrt(np.diag(self.q_u_cov)),fmt=None,ecolor='b')
+

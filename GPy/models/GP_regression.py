@@ -83,9 +83,8 @@ class GP_regression(model):
         """
         Computes the model fit using Youter if it's available
         """
-
         if self.Youter is None:
-            return -0.5*np.trace(mdot(self.Y.T,self.Ki,self.Y))
+            return -0.5*np.sum(np.square(np.dot(self.Li,self.Y)))
         else:
             return -0.5*np.sum(np.multiply(self.Ki, self.Youter))
 

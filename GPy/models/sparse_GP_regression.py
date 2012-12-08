@@ -1,7 +1,6 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-
 import numpy as np
 import pylab as pb
 from ..util.linalg import mdot, jitchol, chol_inv, pdinv
@@ -50,7 +49,7 @@ class sparse_GP_regression(GP_regression):
             self.has_uncertain_inputs=False
         else:
             assert X_uncertainty.shape==X.shape
-            self.has_uncertain_inputs=False
+            self.has_uncertain_inputs=True
             self.X_uncertainty = X_uncertainty
 
         GP_regression.__init__(self, X, Y, kernel=kernel, normalize_X=normalize_X, normalize_Y=normalize_Y)
@@ -99,8 +98,7 @@ class sparse_GP_regression(GP_regression):
 
         # Compute dL_dpsi
         self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
-        dC_dpsi1 = (self.LLambdai.T[:,:, None, None] * self.V)
-        self.dL_dpsi1 = (dC_dpsi1*self.C[None,:,None,:]).sum(1).sum(-1)
+        self.dL_dpsi1 = (self.LLambdai.T[:,:,None,None]*self.V*self.C[None,:,None,:]).sum(1).sum(-1)
         self.dL_dpsi2 = - 0.5 * self.beta * (self.D*(self.LBL_inv - self.Kmmi) + self.G)
 
         # Compute dL_dKmm

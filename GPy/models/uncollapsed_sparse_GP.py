@@ -61,7 +61,8 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         self.dL_dpsi2 = - 0.5 * self.beta * (-self.D*self.Kmmi + mdot(self.Kmmi,self.q_u_expectation[1],self.Kmmi))
 
         # Compute dL_dKmm
-        tmp =  np.dot(0.5*np.eye(self.M) + np.dot(self.A,self.Kmmi),self.q_u_expectation[1]) -0.5*self.Kmm - np.dot(self.psi1,self.VmT)
+        tmp =  np.dot(self.A,self.Kmmi)
+        tmp =  0.5*np.dot(np.eye(self.M) + tmp + tmp.T, self.q_u_expectation[1]) -0.5*self.Kmm - np.dot(self.psi1,self.VmT)
         self.dL_dKmm = mdot(self.Kmmi,tmp,self.Kmmi)
 
     def log_likelihood(self):
@@ -70,10 +71,10 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         """
         A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.beta))
         B = -0.5*self.beta*self.D*self.trace_K
-        C = -0.5*self.D *(self.Kmm_logdet + np.sum(self.Lambda * self.q_u_expectation[1]) - self.M*self.D)
+        C = -0.5*self.D *(self.Kmm_logdet-self.q_u_logdet + np.sum(self.Lambda * self.q_u_expectation[1]) - self.M*self.D)
         D = -0.5*self.beta*self.trYYT
         E = np.sum(np.dot(self.V.T,self.projected_mean))
-        return A+B#+C+D+E
+        return A+B+C+D+E
 
     def dL_dbeta(self):
         """
@@ -82,8 +83,9 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         """
         dA_dbeta =   0.5 * self.N*self.D/self.beta
         dB_dbeta = - 0.5 * self.D * self.trace_K
-        dC_dbeta = - 0.5 * self.D * 1.#TODO
+        dC_dbeta = - 0.5 * self.D * np.sum(self.q_u_expectation[1]*mdot(self.Kmmi,self.psi2,self.Kmmi))
         dD_dbeta = - 0.5 * self.trYYT
+        dE_dbeta = np.sum(np.dot(self.Y.T,self.projected_mean))
 
         return np.squeeze(dA_dbeta + dB_dbeta + dC_dbeta + dD_dbeta)
 

@@ -1,9 +1,7 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-
 from scipy import optimize
-# import rasmussens_minimize as rasm
 import pdb
 import pylab as pb
 import datetime as dt
@@ -19,11 +17,11 @@ class Optimizer():
     :param messages: print messages from the optimizer?
     :type messages: (True | False)
     :param max_f_eval: maximum number of function evaluations
-    
+
     :rtype: optimizer object.
-    
-    """	
-    def __init__(self, x_init, f_fp, f, fp , messages=False, max_f_eval=1e4, ftol=None, gtol=None, xtol=None):
+
+    """
+    def __init__(self, x_init, f_fp, f, fp , messages=False, max_f_eval=1e4, ftol=None, gtol=None, xtol=None, **kwargs):
         self.opt_name = None
         self.f_fp = f_fp
         self.f = f
@@ -193,10 +191,14 @@ class opt_simplex(Optimizer):
 #         self.trace = opt_result[1]
 
 def get_optimizer(f_min):
+    # import rasmussens_minimize as rasm
+    from SGD import opt_SGD
+    
     optimizers = {'fmin_tnc': opt_tnc,
           # 'rasmussen': opt_rasm,
           'simplex': opt_simplex,
-          'lbfgsb': opt_lbfgsb}
+          'lbfgsb': opt_lbfgsb,
+          'sgd': opt_SGD}
 
     for opt_name in optimizers.keys():
         if opt_name.lower().find(f_min.lower()) != -1:

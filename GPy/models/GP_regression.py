@@ -71,7 +71,7 @@ class GP_regression(model):
     def set_param(self,p):
         self.kern.expand_param(p)
         self.K = self.kern.K(self.X,slices1=self.Xslices)
-        self.Ki,self.hld = pdinv(self.K)
+        self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
 
     def get_param(self):
         return self.kern.extract_param()
@@ -90,7 +90,7 @@ class GP_regression(model):
             return -0.5*np.sum(np.multiply(self.Ki, self.Youter))
 
     def log_likelihood(self):
-        complexity_term = -0.5*self.N*self.D*np.log(2.*np.pi) - self.D*self.hld
+        complexity_term = -0.5*self.N*self.D*np.log(2.*np.pi) - 0.5*self.D*self.K_logdet
         return complexity_term + self._model_fit_term()
 
     def dL_dK(self):

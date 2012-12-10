@@ -6,7 +6,7 @@ import numpy as np
 import pylab as pb
 from scipy import stats, linalg
 from .. import kern
-from ..inference.Expectation_Propagation import EP,Full
+from ..inference.Expectation_Propagation import Full
 from ..inference.likelihoods import likelihood,probit#,poisson,gaussian
 from ..core import model
 from ..util.linalg import pdinv,jitchol

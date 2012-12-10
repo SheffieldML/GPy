@@ -46,19 +46,14 @@ def _mdot_r(a,b):
 
 def jitchol(A,maxtries=5):
     """
-    Arguments
-    ---------
-    A : An almost pd square matrix
+    :param A : An almost pd square matrix
 
-    Returns
-    -------
-    cholesky(K)
+    :rval L: the Cholesky decomposition of A
 
-    Notes
-    -----
-    Adds jitter to K, to enforce positive-definiteness
-    if stuff breaks, please check:
-    np.allclose(sp.linalg.cholesky(XXT, lower = True), np.triu(sp.linalg.cho_factor(XXT)[0]).T)
+    .. Note:
+      Adds jitter to K, to enforce positive-definiteness
+      if stuff breaks, please check:
+      np.allclose(sp.linalg.cholesky(XXT, lower = True), np.triu(sp.linalg.cho_factor(XXT)[0]).T)
     """
     try:
         return linalg.cholesky(A, lower = True)
@@ -78,23 +73,23 @@ def jitchol(A,maxtries=5):
 
 def pdinv(A):
     """
-    Arguments
-    ---------
     :param A: A DxD pd numpy array
 
-    Returns
-    -------
-    inv : the inverse of A
-    hld: 0.5* the log of the determinant of A
+    :rval Ai: the inverse of A
+    :rtype Ai: np.ndarray
+    :rval L: the Cholesky decomposition of A
+    :rtype L: np.ndarray
+    :rval Li: the Cholesky decomposition of Ai
+    :rtype Li: np.ndarray
+    :rval logdet: the log of the determinant of A
+    :rtype logdet: float64
     """
     L = jitchol(A)
-    hld = np.sum(np.log(np.diag(L)))
+    logdet = 2.*np.sum(np.log(np.diag(L)))
+    Li = chol_inv(L)
+    Ai = np.dot(Li.T,Li) #TODO: get the flapack routine form multiplying triangular matrices
 
-    inv = sp.lib.lapack.flapack.dpotri(L)[0]
-    # inv = linalg.flapack.dpotri(L,lower = 1)[0]
-    inv = np.tril(inv)+np.tril(inv,-1).T
-
-    return inv, hld
+    return Ai, L, Li, logdet
 
 
 def chol_inv(L):
@@ -139,7 +134,7 @@ def PCA(Y, Q):
 
     Returns
     -------
-    X - NxQ np.array of dimensionality reduced data
+    :rval X: - NxQ np.array of dimensionality reduced data
     W - QxD mapping from X to Y
     """
     if not np.allclose(Y.mean(axis=0), 0.0):

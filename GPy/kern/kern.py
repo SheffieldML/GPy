@@ -99,6 +99,7 @@ class kern(parameterised):
         newkern.constrained_fixed_values = self.constrained_fixed_values + other.constrained_fixed_values
         newkern.tied_indices = self.tied_indices + [self.Nparam + x for x in other.tied_indices]
         return newkern
+
     def add(self,other):
         """
         Add another kernel to this one. Both kernels are defined on the same _space_
@@ -139,7 +140,13 @@ class kern(parameterised):
         [p.set_param(x[s]) for p, s in zip(self.parts, self.param_slices)]
 
     def get_param_names(self):
-        return sum([[k.name+'_'+str(i)+'_'+n for n in k.get_param_names()] for i,k in enumerate(self.parts)],[])
+        #this is a bit nasty: we wat to distinguish between parts with the same name by appending a count
+        part_names = np.array([k.name for k in self.parts],dtype=np.str)
+        counts = [np.sum(part_names==ni) for i, ni in enumerate(part_names)]
+        cum_counts = [np.sum(part_names[i:]==ni) for i, ni in enumerate(part_names)]
+        names = [name+'_'+str(cum_count) if count>1 else name for name,count,cum_count in zip(part_names,counts,cum_counts)]
+
+        return sum([[name+'_'+n for n in k.get_param_names()] for name,k in zip(names,self.parts)],[])
 
     def K(self,X,X2=None,slices1=None,slices2=None):
         assert X.shape[1]==self.D

@@ -39,7 +39,8 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
                 M = Z.shape[0]
             else:
                 M=M
-            self.set_vb_param(np.hstack((np.ones(M*D)),np.eye(M).flatten()))
+            q_u = np.hstack((np.ones(M*D)),np.eye(M).flatten())
+        self.set_vb_param(q_u)
         sparse_GP_regression.__init__(self, X, Y, *args, **kwargs)
 
     def _computations(self):

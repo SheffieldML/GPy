@@ -139,13 +139,13 @@ class GradientTests(unittest.TestCase):
         m.constrain_positive('(linear|bias|white)')
         self.assertTrue(m.checkgrad())
 
-    def test_simple_GP_EP(self):
+    def test_GP_EP(self):
         N = 20
         X = np.hstack([np.random.rand(N/2)+1,np.random.rand(N/2)-1])[:,None]
         k = GPy.kern.rbf(1) + GPy.kern.white(1)
         Y = np.hstack([np.ones(N/2),-np.ones(N/2)])[:,None]
         likelihood = GPy.inference.likelihoods.probit(Y)
-        m = GPy.models.simple_GP_EP(X,likelihood,k)
+        m = GPy.models.GP_EP(X,likelihood,k)
         m.constrain_positive('(var|len)')
         m.approximate_likelihood()
         self.assertTrue(m.checkgrad())

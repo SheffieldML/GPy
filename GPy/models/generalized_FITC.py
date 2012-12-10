@@ -9,7 +9,7 @@ from .. import kern
 from ..core import model
 from ..util.linalg import pdinv,mdot
 from ..util.plot import gpplot
-from ..inference.Expectation_Propagation import EP,Full,FITC
+from ..inference.Expectation_Propagation import FITC
 from ..inference.likelihoods import likelihood,probit
 
 class generalized_FITC(model):
@@ -62,7 +62,7 @@ class generalized_FITC(model):
     def posterior_param(self):
         self.Knn_diag = self.kernel.Kdiag(self.X)
         self.Kmm = self.kernel.K(self.Z)
-        self.Kmmi, self.Kmm_hld = pdinv(self.Kmm)
+        self.Kmmi, self.Lmm, self.Lmmi, self.Kmm_logdet = pdinv(self.Kmm)
         self.Knm = self.kernel.K(self.X,self.Z)
         self.KmmiKmn = np.dot(self.Kmmi,self.Knm.T)
         self.Qnn = np.dot(self.Knm,self.KmmiKmn)
@@ -72,10 +72,10 @@ class generalized_FITC(model):
         self.Taut = self.ep_approx.tau_tilde/(1.+ self.ep_approx.tau_tilde*self.Diag0)
         self.KmnTaut = self.Knm.T*self.Taut[None,:]
         self.KmnTautKnm = np.dot(self.KmnTaut, self.Knm)
-        self.Woodbury_inv, self.Woodbury_hld = pdinv(self.Kmm + self.KmnTautKnm)
+        self.Woodbury_inv, self.Wood_L, self.Wood_Li, self.Woodbury_logdet = pdinv(self.Kmm + self.KmnTautKnm)
         self.Qnn_diag = self.Knn_diag - np.diag(self.Qnn) + 1./self.ep_approx.tau_tilde
         self.Qi = -np.dot(self.KmnTaut.T, np.dot(self.Woodbury_inv,self.KmnTaut)) + np.diag(self.Taut)
-        self.hld = 0.5*np.sum(np.log(self.Diag0 + 1./self.ep_approx.tau_tilde)) - self.Kmm_hld + self.Woodbury_hld
+        self.hld = 0.5*np.sum(np.log(self.Diag0 + 1./self.ep_approx.tau_tilde)) - 0.5*self.Kmm_logdet + 0.5*self.Woodbury_logdet
 
         self.Diag = self.Diag0/(1.+ self.Diag0 * self.ep_approx.tau_tilde)
         self.P = (self.Diag / self.Diag0)[:,None] * self.Knm

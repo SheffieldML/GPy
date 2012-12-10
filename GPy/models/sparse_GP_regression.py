@@ -87,14 +87,10 @@ class sparse_GP_regression(GP_regression):
         self.V = self.beta*self.Y
         self.psi1V = np.dot(self.psi1, self.V)
         self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
-        self.Lm = jitchol(self.Kmm)
-        self.Lmi = chol_inv(self.Lm)
-        self.Kmmi = np.dot(self.Lmi.T, self.Lmi)
+        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
         self.A = mdot(self.Lmi, self.psi2, self.Lmi.T)
         self.B = np.eye(self.M) + self.beta * self.A
-        self.LB = jitchol(self.B)
-        self.LBi = chol_inv(self.LB)
-        self.Bi = np.dot(self.LBi.T, self.LBi)
+        self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
         self.LLambdai = np.dot(self.LBi, self.Lmi)
         self.trace_K = self.psi0 - np.trace(self.A)
         self.LBL_inv = mdot(self.Lmi.T, self.Bi, self.Lmi)
@@ -124,7 +120,7 @@ class sparse_GP_regression(GP_regression):
         """
         A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.beta))
         B = -0.5*self.beta*self.D*self.trace_K
-        C = -self.D * np.sum(np.log(np.diag(self.LB)))
+        C = -0.5*self.D * self.B_logdet
         D = -0.5*self.beta*self.trYYT
         E = +0.5*np.sum(self.psi1VVpsi1 * self.LBL_inv)
         return A+B+C+D+E

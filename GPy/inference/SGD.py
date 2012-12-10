@@ -16,12 +16,9 @@ class opt_SGD(Optimizer):
 
     """
 
-    def __init__(self, start, f_fp, f, fp, iterations = 10, learning_rate = 1e-4, momentum = 0.9, model = None, messages = False, batch_size = 1, self_paced = False, **kwargs):
+    def __init__(self, start, iterations = 10, learning_rate = 1e-4, momentum = 0.9, model = None, messages = False, batch_size = 1, self_paced = False, **kwargs):
         self.opt_name = "Stochastic Gradient Descent"
 
-        self.f = f
-        self.fp = fp
-        self.f_fp = f_fp
         self.model = model
         self.iterations = iterations
         self.momentum = momentum
@@ -115,7 +112,7 @@ class opt_SGD(Optimizer):
         else:
             raise NotImplementedError
 
-    def step_with_missing_data(self, X, Y, step, shapes):
+    def step_with_missing_data(self, f_fp, X, Y, step, shapes):
         N, Q = X.shape
         samples = self.non_null_samples(self.model.Y)
         j = self.subset_parameter_vector(self.x_opt, samples, shapes)
@@ -129,7 +126,7 @@ class opt_SGD(Optimizer):
         b,p = self.shift_constraints(j)
 
         momentum_term = self.momentum * step[j]
-        f, fp = self.f_fp(self.x_opt[j])
+        f, fp = f_fp(self.x_opt[j])
         step[j] = self.learning_rate[j] * fp
         self.x_opt[j] -= step[j] + momentum_term
 
@@ -137,7 +134,7 @@ class opt_SGD(Optimizer):
 
         return f, step, self.model.N
 
-    def opt(self):
+    def opt(self, f_fp=None, f=None, fp=None):
         self.x_opt = self.model.get_param()
         X, Y = self.model.X.copy(), self.model.Y.copy()
         N, Q = self.model.X.shape
@@ -165,11 +162,11 @@ class opt_SGD(Optimizer):
 
                 if missing_data:
                     shapes = self.get_param_shapes(N, Q)
-                    f, step, Nj = self.step_with_missing_data(X, Y, step, shapes)
+                    f, step, Nj = self.step_with_missing_data(f_fp, X, Y, step, shapes)
                 else:
                     Nj = N
                     momentum_term = self.momentum * step # compute momentum using update(t-1)
-                    f, fp = self.f_fp(self.x_opt)
+                    f, fp = f_fp(self.x_opt)
                     step = self.learning_rate * fp # compute update(t)
                     self.x_opt -= step + momentum_term
 

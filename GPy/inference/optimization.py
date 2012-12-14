@@ -170,12 +170,12 @@ class opt_rasm(Optimizer):
         Optimizer.__init__(self, *args, **kwargs)
         self.opt_name = "Rasmussen's Conjugate Gradient"
 
-    def opt(self):
+    def opt(self, f_fp = None, f = None, fp = None):
         """
         Run Rasmussen's Conjugate Gradient optimizer
         """
 
-        assert self.f_fp != None, "Rasmussen's minimizer requires f_fp"
+        assert f_fp != None, "Rasmussen's minimizer requires f_fp"
         statuses = ['Converged', 'Line search failed', 'Maximum number of f evaluations reached',
                 'NaNs in optimization']
 
@@ -187,8 +187,8 @@ class opt_rasm(Optimizer):
         if self.gtol is not None:
             print "WARNING: minimize doesn't have an gtol arg, so I'm going to ignore it"
 
-        opt_result = rasm.minimize(self.x_init, self.f_fp, (), messages = self.messages,
-                maxnumfuneval = self.max_f_eval)
+        opt_result = rasm.minimize(self.x_init, f_fp, (), messages = self.messages,
+                                   maxnumfuneval = self.max_f_eval)
         self.x_opt = opt_result[0]
         self.f_opt = opt_result[1][-1]
         self.funct_eval = opt_result[2]

@@ -61,8 +61,10 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         self.dL_dpsi2 = 0.5 * self.beta * self.D * (self.Kmmi - mdot(self.Kmmi,self.q_u_expectation[1],self.Kmmi))
 
         # Compute dL_dKmm
-        tmp = -0.5*self.beta*self.D*self.psi2 -0.5*self.D*self.Kmm +0.5*self.D*(self.q_u_expectation[1]) + 0.5*self.beta*mdot(self.psi2,self.Kmmi,self.q_u_expectation[1]) + 0.5*self.beta*mdot(self.q_u_expectation[1],self.Kmmi, self.psi2)
-        tmptmp = - np.dot(self.q_u_expectation[0],self.psi1V.T)*0.5
+        tmp = 0.5*self.beta*mdot(self.psi2,self.Kmmi,self.q_u_expectation[1])
+        tmp += tmp.T
+        tmp += 0.5*self.D*(-self.beta*self.psi2 - self.Kmm + self.q_u_expectation[1])
+        tmptmp = - 0.5*np.dot(self.q_u_expectation[0],self.psi1V.T)
         tmp += tmptmp + tmptmp.T
         self.dL_dKmm = mdot(self.Kmmi,tmp,self.Kmmi)
 

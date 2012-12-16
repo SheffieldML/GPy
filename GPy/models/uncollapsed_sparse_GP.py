@@ -125,7 +125,14 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
 
         Note that the natural gradient in either is given by the gradient in the other (See Hensman et al 2012 Fast Variational inference in the conjugate exponential Family)
         """
-        foobar #TODO
+        dL_dmmT_S = -0.5*self.Lambda+self.q_u_canonical[1]
+        dL_dm = np.dot(self.Kmmi,self.psi1V) - self.q_u_canonical[0]
+
+        #dL_dSim = 
+        #dL_dmhSi = 
+
+        return np.hstack((dL_dm.flatten(),dL_dmmT_S.flatten()))  # natgrad only, grad TODO
+
 
     def plot(self, *args, **kwargs):
         """

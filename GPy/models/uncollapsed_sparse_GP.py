@@ -61,12 +61,10 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         self.dL_dpsi2 = 0.5 * self.beta * self.D * (self.Kmmi - mdot(self.Kmmi,self.q_u_expectation[1],self.Kmmi))
 
         # Compute dL_dKmm
-        tmp = 0.5*self.beta*mdot(self.psi2,self.Kmmi,self.q_u_expectation[1])
+        tmp = self.beta*mdot(self.psi2,self.Kmmi,self.q_u_expectation[1]) -np.dot(self.q_u_expectation[0],self.psi1V.T)
         tmp += tmp.T
-        tmp += 0.5*self.D*(-self.beta*self.psi2 - self.Kmm + self.q_u_expectation[1])
-        tmptmp = - 0.5*np.dot(self.q_u_expectation[0],self.psi1V.T)
-        tmp += tmptmp + tmptmp.T
-        self.dL_dKmm = mdot(self.Kmmi,tmp,self.Kmmi)
+        tmp += self.D*(-self.beta*self.psi2 - self.Kmm + self.q_u_expectation[1])
+        self.dL_dKmm = 0.5*mdot(self.Kmmi,tmp,self.Kmmi)
 
     def log_likelihood(self):
         """
@@ -127,7 +125,7 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
 
         Note that the natural gradient in either is given by the gradient in the other (See Hensman et al 2012 Fast Variational inference in the conjugate exponential Family)
         """
-        dL_dmmT_S = -0.5*self.Lambda+self.q_u_canonical[1]
+        dL_dmmT_S = -0.5*self.Lambda-self.q_u_canonical[1]
         dL_dm = np.dot(self.Kmmi,self.psi1V) - self.q_u_canonical[0]
 
         #dL_dSim = 

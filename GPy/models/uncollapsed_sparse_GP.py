@@ -36,12 +36,12 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         self.D = Y.shape[1]
         if q_u is None:
             if 'Z' in kwargs.keys():
-                self.M = Z.shape[0]
+                self.M = kwargs['Z'].shape[0]
             else:
                 self.M = M
             q_u = np.hstack((np.random.randn(self.M*self.D),-0.5*np.eye(self.M).flatten()))
         self.set_vb_param(q_u)
-        sparse_GP_regression.__init__(self, X, Y, M=M,*args, **kwargs)
+        sparse_GP_regression.__init__(self, X, Y, M=self.M,*args, **kwargs)
 
     def _computations(self):
         self.V = self.beta*self.Y
@@ -57,12 +57,13 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
 
         # Compute dL_dpsi
         self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
-        self.dL_dpsi1 = np.dot(self.VmT,self.Kmmi).T*0 # This is the correct term for E I think...
+        self.dL_dpsi1 = np.dot(self.VmT,self.Kmmi).T # This is the correct term for E I think...
         self.dL_dpsi2 = 0.5 * self.beta * self.D * (self.Kmmi - mdot(self.Kmmi,self.q_u_expectation[1],self.Kmmi))
 
         # Compute dL_dKmm
         tmp = -0.5*self.beta*self.D*self.psi2 -0.5*self.D*self.Kmm +0.5*self.D*(self.q_u_expectation[1]) + 0.5*self.beta*mdot(self.psi2,self.Kmmi,self.q_u_expectation[1]) + 0.5*self.beta*mdot(self.q_u_expectation[1],self.Kmmi, self.psi2)
-        #tmp = - np.dot(self.q_u_expectation[0],self.psi1V.T)
+        tmptmp = - np.dot(self.q_u_expectation[0],self.psi1V.T)*0.5
+        tmp += tmptmp + tmptmp.T
         self.dL_dKmm = mdot(self.Kmmi,tmp,self.Kmmi)
 
     def log_likelihood(self):
@@ -74,7 +75,7 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         C = -0.5*self.D *(self.Kmm_logdet-self.q_u_logdet + np.sum(self.Lambda * self.q_u_expectation[1]) - self.M)
         D = -0.5*self.beta*self.trYYT
         E = np.sum(np.dot(self.V.T,self.projected_mean))
-        return A+B+C+D
+        return A+B+C+D+E
 
     def dL_dbeta(self):
         """

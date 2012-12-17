@@ -22,8 +22,9 @@ class GPLVM(GP_regression):
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, Y, Q, init='PCA', **kwargs):
-        X = self.initialise_latent(init, Q, Y)
+    def __init__(self, Y, Q, init='PCA', X = None, **kwargs):
+        if X is None:
+            X = self.initialise_latent(init, Q, Y)
         GP_regression.__init__(self, X, Y, **kwargs)
 
     def initialise_latent(self, init, Q, Y):

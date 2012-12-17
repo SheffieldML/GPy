@@ -54,6 +54,18 @@ class spkern(kernpart):
         #self.compute_psi_stats()
         self._gen_code()
 
+        self.weave_kwargs = {\
+            'support_code':self._function_code,\
+            'include_dirs':[tempfile.gettempdir(), os.path.join(current_dir,'symbolic/')],\
+            'headers':['"sympy_helpers.h"'],\
+            'sources':[os.path.join(current_dir,"symbolic/sympy_helpers.cpp")],\
+            #'extra_compile_args':['-ftree-vectorize', '-mssse3', '-ftree-vectorizer-verbose=5'],\
+            'extra_compile_args':[],\
+            'extra_link_args':['-lgomp'],\
+            'verbose':True}
+
+
+
     def __add__(self,other):
         return spkern(self._sp_k+other._sp_k)
 
@@ -221,42 +233,42 @@ class spkern(kernpart):
 
     def K(self,X,Z,target):
         param = self._param
-        weave.inline(self._K_code,arg_names=['target','X','Z','param'],support_code=self._function_code,include_dirs=[tempfile.gettempdir(),os.path.join(current_dir,'kern/') ],headers=['"sympy_helpers.h"','<omp.h>'],sources=[os.path.join(current_dir,"kern/sympy_helpers.cpp")],extra_compile_args=['-fopenmp'],extra_link_args=['-lgomp'])
+        weave.inline(self._K_code,arg_names=['target','X','Z','param'],**self.weave_kwargs)
         return target
 
     def Kdiag(self,X,target):
         param = self._param
-        weave.inline(self._Kdiag_code,arg_names=['target','X','param'],support_code=self._function_code,include_dirs=[tempfile.gettempdir(), os.path.join(current_dir,'kern/')],headers=['"sympy_helpers.h"'],sources=[os.path.join(current_dir,"kern/sympy_helpers.cpp")],extra_compile_args=['-fopenmp'],extra_link_args=['-lgomp'])
+        weave.inline(self._Kdiag_code,arg_names=['target','X','param'],**self.weave_kwargs)
         return target
 
     def dK_dtheta(self,partial,X,Z,target):
         param = self._param
-        weave.inline(self._dK_dtheta_code,arg_names=['target','X','Z','param','partial'],support_code=self._function_code,include_dirs=[tempfile.gettempdir(), os.path.join(current_dir,'kern/')],headers=['"sympy_helpers.h"','<omp.h>'],sources=[os.path.join(current_dir,"kern/sympy_helpers.cpp")],extra_compile_args=['-fopenmp'],extra_link_args=['-lgomp'])
+        weave.inline(self._dK_dtheta_code,arg_names=['target','X','Z','param','partial'],**self.weave_kwargs)
         return target
 
     def dKdiag_dtheta(self,partial,X,target):
         param = self._param
         Z = X
-        weave.inline(self._dKdiag_dtheta_code,arg_names=['target','X','Z','param','partial'],support_code=self._function_code,include_dirs=[tempfile.gettempdir(), os.path.join(current_dir,'kern/')],headers=['"sympy_helpers.h"'],sources=[os.path.join(current_dir,"kern/sympy_helpers.cpp")])
+        weave.inline(self._dKdiag_dtheta_code,arg_names=['target','X','Z','param','partial'],**self.weave_kwargs)
         return target
 
     def dK_dX(self,partial,X,Z,target):
         target = np.zeros_like(X)
         param = self._param
-        weave.inline(self._dK_dX_code,arg_names=['target','X','Z','param','partial'],support_code=self._function_code,include_dirs=[tempfile.gettempdir(), os.path.join(current_dir,'kern/')],headers=['"sympy_helpers.h"','<omp.h>'],sources=[os.path.join(current_dir,"kern/sympy_helpers.cpp")],extra_compile_args=['-fopenmp'],extra_link_args=['-lgomp'])
+        weave.inline(self._dK_dX_code,arg_names=['target','X','Z','param','partial'],**self.weave_kwargs)
         return target
 
     #def dK_dZ(self,X,Z,partial=None):
         ##TODO: this function might not be necessary
         #target = np.zeros_like(Z)
         #param = self._param
-        #weave.inline(self._dK_dZ_code,arg_names=['target','X','Z','param','partial'],support_code=self._function_code,include_dirs=[tempfile.gettempdir(), os.path.join(current_dir,'kern/')],headers=['"sympy_helpers.h"','<omp.h>'],sources=[os.path.join(current_dir,"kern/sympy_helpers.cpp")],extra_compile_args=['-fopenmp'],extra_link_args=['-lgomp'])
+        #weave.inline(self._dK_dZ_code,arg_names=['target','X','Z','param','partial'],**self.weave_kwargs)
         #return target
 
     def dKdiag_dX(self,partial,X,target):
         param = self._param
         Z = X
-        weave.inline(self._dKdiag_dX_code,arg_names=['target','X','Z','param','partial'],support_code=self._function_code,include_dirs=[tempfile.gettempdir(), os.path.join(current_dir,'kern/')],headers=['"sympy_helpers.h"'],sources=[os.path.join(current_dir,"kern/sympy_helpers.cpp")])
+        weave.inline(self._dKdiag_dX_code,arg_names=['target','X','Z','param','partial'],**self.weave_kwargs)
         return target
 
     def set_param(self,param):

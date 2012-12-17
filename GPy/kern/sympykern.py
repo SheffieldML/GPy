@@ -199,23 +199,6 @@ class spkern(kernpart):
         %s
         """%(gradient_funcs,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
-        #Here's some code to do gradients wrt z (should be the same as for X, but this is easier
-        gradient_funcs_Z = "\n".join(["target[j*D+%i] += partial[i*M+j]*dk_dz%i(%s);"%(q,q,arglist) for q in range(self.D)])
-        self._dK_dZ_code = \
-        """
-        int i;
-        int j;
-        int N = partial_array->dimensions[0];
-        int M = partial_array->dimensions[1];
-        int D = X_array->dimensions[1];
-        for (i=0;i<N; i++){
-            for (j=0; j<M; j++){
-                %s
-            }
-        }
-        %s
-        """%(gradient_funcs_Z,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
-
         #now for gradients of Kdiag wrt X
         self._dKdiag_dX_code= \
         """
@@ -261,13 +244,6 @@ class spkern(kernpart):
         param = self._param
         weave.inline(self._dK_dX_code,arg_names=['target','X','Z','param','partial'],**self.weave_kwargs)
         return target
-
-    #def dK_dZ(self,X,Z,partial=None):
-        ##TODO: this function might not be necessary
-        #target = np.zeros_like(Z)
-        #param = self._param
-        #weave.inline(self._dK_dZ_code,arg_names=['target','X','Z','param','partial'],**self.weave_kwargs)
-        #return target
 
     def dKdiag_dX(self,partial,X,target):
         param = self._param

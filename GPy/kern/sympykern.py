@@ -56,15 +56,13 @@ class spkern(kernpart):
 
         self.weave_kwargs = {\
             'support_code':self._function_code,\
-            'include_dirs':[tempfile.gettempdir(), os.path.join(current_dir,'symbolic/')],\
+            'include_dirs':[tempfile.gettempdir(), os.path.join(current_dir,'kern/')],\
             'headers':['"sympy_helpers.h"'],\
-            'sources':[os.path.join(current_dir,"symbolic/sympy_helpers.cpp")],\
+            'sources':[os.path.join(current_dir,"kern/sympy_helpers.cpp")],\
             #'extra_compile_args':['-ftree-vectorize', '-mssse3', '-ftree-vectorizer-verbose=5'],\
             'extra_compile_args':[],\
             'extra_link_args':['-lgomp'],\
             'verbose':True}
-
-
 
     def __add__(self,other):
         return spkern(self._sp_k+other._sp_k)
@@ -126,13 +124,14 @@ class spkern(kernpart):
         int N = target_array->dimensions[0];
         int M = target_array->dimensions[1];
         int D = X_array->dimensions[1];
-        //#pragma omp parallel for private(j)
+        #pragma omp parallel for private(j)
         for (i=0;i<N;i++){
             for (j=0;j<M;j++){
                 target[i*M+j] = k(%s);
             }
         }
-        """%(arglist)
+        %s
+        """%(arglist,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
         diag_arglist = re.sub('Z','X',arglist)
         diag_arglist = re.sub('j','i',diag_arglist)
@@ -142,11 +141,12 @@ class spkern(kernpart):
         int i;
         int N = target_array->dimensions[0];
         int D = X_array->dimensions[1];
-        //#pragma omp parallel for
+        #pragma omp parallel for
         for (i=0;i<N;i++){
                 target[i] = k(%s);
         }
-        """%diag_arglist
+        %s
+        """%(diag_arglist,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
         #here's some code to compute gradients
         funclist = '\n'.join([' '*16 + 'target[%i] += partial[i*M+j]*dk_d%s(%s);'%(i,theta.name,arglist) for i,theta in  enumerate(self._sp_theta)])
@@ -157,13 +157,14 @@ class spkern(kernpart):
         int N = partial_array->dimensions[0];
         int M = partial_array->dimensions[1];
         int D = X_array->dimensions[1];
-        //#pragma omp parallel for private(j)
+        #pragma omp parallel for private(j)
         for (i=0;i<N;i++){
             for (j=0;j<M;j++){
 %s
             }
         }
-        """%funclist
+        %s
+        """%(funclist,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
         #here's some code to compute gradients for Kdiag TODO: thius is yucky.
         diag_funclist = re.sub('Z','X',funclist,count=0)
@@ -177,7 +178,8 @@ class spkern(kernpart):
         for (i=0;i<N;i++){
                 %s
         }
-        """%diag_funclist
+        %s
+        """%(diag_funclist,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
         #Here's some code to do gradients wrt x
         gradient_funcs = "\n".join(["target[i*D+%i] += partial[i*M+j]*dk_dx%i(%s);"%(q,q,arglist) for q in range(self.D)])
@@ -188,13 +190,14 @@ class spkern(kernpart):
         int N = partial_array->dimensions[0];
         int M = partial_array->dimensions[1];
         int D = X_array->dimensions[1];
-        //#pragma omp parallel for private(j)
+        #pragma omp parallel for private(j)
         for (i=0;i<N; i++){
             for (j=0; j<M; j++){
                 %s
             }
         }
-        """%gradient_funcs
+        %s
+        """%(gradient_funcs,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
         #Here's some code to do gradients wrt z (should be the same as for X, but this is easier
         gradient_funcs_Z = "\n".join(["target[j*D+%i] += partial[i*M+j]*dk_dz%i(%s);"%(q,q,arglist) for q in range(self.D)])
@@ -210,8 +213,8 @@ class spkern(kernpart):
                 %s
             }
         }
-        """%gradient_funcs_Z
-
+        %s
+        """%(gradient_funcs_Z,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
         #now for gradients of Kdiag wrt X
         self._dKdiag_dX_code= \
@@ -225,7 +228,8 @@ class spkern(kernpart):
             j = i;
             %s
         }
-        """%gradient_funcs
+        %s
+        """%(gradient_funcs,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
 
         #TODO: insert multiple functions here via string manipulation

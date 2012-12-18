@@ -140,5 +140,5 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         """
         sparse_GP_regression.plot(self,*args,**kwargs)
         if self.Q==1:
-            pb.errorbar(self.Z[:,0],self.q_u_expectation[0][:,0],yerr=2*np.sqrt(np.diag(self.q_u_cov)),fmt=None,ecolor='b')
+            pb.errorbar(self.Z[:,0],self.q_u_expectation[0][:,0],yerr=2.*np.sqrt(np.diag(self.q_u_cov)),fmt=None,ecolor='b')
 

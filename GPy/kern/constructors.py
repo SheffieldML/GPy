@@ -188,3 +188,9 @@ def rbf_sympy(D,variance=1., lengthscale=1.):
     dist = parse_expr(dist_string)
     f =  rbf_variance*sp.exp(-dist/(2*rbf_lengthscale**2))
     return kern(D,[spkern(D,f,np.array([variance,lengthscale]))])
+
+def sympykern(D,k):
+    """
+    A kernel from a symbolic sympy representation
+    """
+    return kern(D,[spkern(D,k)])

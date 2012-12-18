@@ -98,7 +98,7 @@ class sparse_GP_regression(GP_regression):
 
         # Compute dL_dpsi
         self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
-        self.dL_dpsi1 = (self.LLambdai.T[:,:,None,None]*self.V*self.C[None,:,None,:]).sum(1).sum(-1)
+        self.dL_dpsi1 = mdot(self.LLambdai.T,self.C,self.V.T)
         self.dL_dpsi2 = - 0.5 * self.beta * (self.D*(self.LBL_inv - self.Kmmi) + self.G)
 
         # Compute dL_dKmm

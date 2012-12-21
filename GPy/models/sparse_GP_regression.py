@@ -171,14 +171,19 @@ class sparse_GP_regression(GP_regression):
     def log_likelihood_gradients(self):
         return np.hstack([self.dL_dZ().flatten(), self.dL_dbeta(), self.dL_dtheta()])
 
-    def _raw_predict(self, Xnew, slices):
+    def _raw_predict(self, Xnew, slices, full_cov=False):
         """Internal helper function for making predictions, does not account for normalisation"""
 
         Kx = self.kern.K(self.Z, Xnew)
-        Kxx = self.kern.K(Xnew)
-
         mu = mdot(Kx.T, self.LBL_inv, self.psi1V)
-        var = Kxx - mdot(Kx.T, (self.Kmmi - self.LBL_inv), Kx) + np.eye(Xnew.shape[0])/self.beta # TODO: This beta doesn't belong here in the EP case.
+
+        if full_cov:
+            Kxx = self.kern.K(Xnew)
+            var = Kxx - mdot(Kx.T, (self.Kmmi - self.LBL_inv), Kx) + np.eye(Xnew.shape[0])/self.beta # TODO: This beta doesn't belong here in the EP case.
+        else:
+            Kxx = self.kern.Kdiag(Xnew)
+            var = Kxx - np.sum(Kx*np.dot(self.Kmmi - self.LBL_inv, Kx),0) + 1./self.beta # TODO: This beta doesn't belong here in the EP case.
+
         return mu,var
 
     def plot(self, *args, **kwargs):

@@ -47,8 +47,8 @@ class spkern(kernpart):
         self.set_param(param)
 
         #Differentiate!
-        self._sp_dk_dtheta = [sp.diff(k,theta) for theta in self._sp_theta]
-        self._sp_dk_dx = [sp.diff(k,xi) for xi in self._sp_x]
+        self._sp_dk_dtheta = [sp.diff(k,theta).simplify() for theta in self._sp_theta]
+        self._sp_dk_dx = [sp.diff(k,xi).simplify() for xi in self._sp_x]
         #self._sp_dk_dz = [sp.diff(k,zi) for zi in self._sp_z]
 
         #self.compute_psi_stats()
@@ -124,7 +124,7 @@ class spkern(kernpart):
         int N = target_array->dimensions[0];
         int M = target_array->dimensions[1];
         int D = X_array->dimensions[1];
-        #pragma omp parallel for private(j)
+        //#pragma omp parallel for private(j)
         for (i=0;i<N;i++){
             for (j=0;j<M;j++){
                 target[i*M+j] = k(%s);
@@ -141,7 +141,7 @@ class spkern(kernpart):
         int i;
         int N = target_array->dimensions[0];
         int D = X_array->dimensions[1];
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (i=0;i<N;i++){
                 target[i] = k(%s);
         }
@@ -157,7 +157,7 @@ class spkern(kernpart):
         int N = partial_array->dimensions[0];
         int M = partial_array->dimensions[1];
         int D = X_array->dimensions[1];
-        #pragma omp parallel for private(j)
+        //#pragma omp parallel for private(j)
         for (i=0;i<N;i++){
             for (j=0;j<M;j++){
 %s
@@ -190,10 +190,13 @@ class spkern(kernpart):
         int N = partial_array->dimensions[0];
         int M = partial_array->dimensions[1];
         int D = X_array->dimensions[1];
-        #pragma omp parallel for private(j)
+        //#pragma omp parallel for private(j)
         for (i=0;i<N; i++){
             for (j=0; j<M; j++){
                 %s
+                //if(isnan(target[i*D+2])){printf("%%f\\n",dk_dx2(X[i*D+0], X[i*D+1], X[i*D+2], Z[j*D+0], Z[j*D+1], Z[j*D+2], param[0], param[1], param[2], param[3], param[4], param[5]));}
+                //if(isnan(target[i*D+2])){printf("%%f,%%f,%%i,%%i\\n", X[i*D+2], Z[j*D+2],i,j);}
+
             }
         }
         %s

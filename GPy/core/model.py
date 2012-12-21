@@ -286,7 +286,7 @@ class model(parameterised):
         return '\n'.join(s)
 
 
-    def checkgrad(self, verbose = True, include_priors=False, step=1e-6, tolerance = 1e-3, *args):
+    def checkgrad(self, verbose=False, include_priors=False, step=1e-6, tolerance = 1e-3, *args):
         """
         Check the gradient of the model by comparing to a numerical estimate.
         If the overall gradient fails, invividual components are tested.
@@ -313,12 +313,12 @@ class model(parameterised):
             print " Gradient ratio = ", ratio, '\n'
             sys.stdout.flush()
 
-        if not (np.abs(1.-ratio)>tolerance):
+        if (np.abs(1.-ratio)<tolerance) and not np.isnan(ratio):
             if verbose:
                 print 'Gradcheck passed'
         else:
             if verbose:
-                print "Global ratio far from unity. Testing individual gradients\n"
+                print "Global check failed. Testing individual gradients\n"
             try:
                 names = self.extract_param_names()
             except NotImplementedError:

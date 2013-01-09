@@ -44,7 +44,7 @@ class sparse_GP_regression(GP_regression):
         else:
             assert Z.shape[1]==X.shape[1]
             self.Z = Z
-            self.M = Z.shape[1]
+            self.M = Z.shape[0]
         if X_uncertainty is None:
             self.has_uncertain_inputs=False
         else:

@@ -36,7 +36,9 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         self.D = Y.shape[1]
         if q_u is None:
             if 'Z' in kwargs.keys():
+                print kwargs['Z']
                 self.M = kwargs['Z'].shape[0]
+                print self.M
             else:
                 self.M = M
             q_u = np.hstack((np.random.randn(self.M*self.D),-0.5*np.eye(self.M).flatten()))
@@ -90,13 +92,18 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
 
         return np.squeeze(dA_dbeta + dB_dbeta + dC_dbeta + dD_dbeta + dE_dbeta)
 
-    def _raw_predict(self, Xnew, slices):
+    def _raw_predict(self, Xnew, slices,full_cov=False):
         """Internal helper function for making predictions, does not account for normalisation"""
         Kx = self.kern.K(Xnew,self.Z)
-        Kxx = self.kern.K(Xnew)
         mu = mdot(Kx,self.Kmmi,self.q_u_expectation[0])
+
         tmp = self.Kmmi- mdot(self.Kmmi,self.q_u_cov,self.Kmmi)
-        var = Kxx - mdot(Kx,tmp,Kx.T) + np.eye(Xnew.shape[0])/self.beta
+        if full_cov:
+            Kxx = self.kern.K(Xnew)
+            var = Kxx - mdot(Kx,tmp,Kx.T) + np.eye(Xnew.shape[0])/self.beta
+        else:
+            Kxx = self.kern.Kdiag(Xnew)
+            var = Kxx - np.sum(Kx*np.dot(Kx,tmp),1) + 1./self.beta
         return mu,var
 
 
@@ -126,6 +133,7 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         Note that the natural gradient in either is given by the gradient in the other (See Hensman et al 2012 Fast Variational inference in the conjugate exponential Family)
         """
         dL_dmmT_S = -0.5*self.Lambda-self.q_u_canonical[1]
+        #dL_dm = np.dot(self.Kmmi,self.psi1V) - np.dot(self.Lambda,self.q_u_mean)
         dL_dm = np.dot(self.Kmmi,self.psi1V) - self.q_u_canonical[0]
 
         #dL_dSim = 

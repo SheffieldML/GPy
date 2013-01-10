@@ -1,5 +1,4 @@
 import os
-import posix
 import pylab as pb
 import numpy as np
 import GPy

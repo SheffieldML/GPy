@@ -22,7 +22,7 @@ Zmin = Z.min()
 Z = (Z-Zmin)/(Zmax-Zmin) - 0.5
 
 m = GPy.models.warpedGP(X, Z, warping_terms = 2)
-m.constrain_positive('(tanh_a|tanh_b|rbf|white|bias)')
+m.constrain_positive('(tanh_a|tanh_b|tanh_d|rbf|white|bias)')
 m.randomize()
 plt.figure()
 plt.xlabel('predicted f(Z)')

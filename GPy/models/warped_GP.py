@@ -20,10 +20,10 @@ class warpedGP(GP_regression):
     def __init__(self, X, Y, warping_function = None, warping_terms = 3, **kwargs):
 
         if warping_function == None:
-            self.warping_function = TanhWarpingFunction(warping_terms)
-            # self.warping_params = np.random.randn(self.warping_function.n_terms, 3)
-            self.warping_params = np.ones((self.warping_function.n_terms, 3))*0.0 # TODO better init
-            self.warp_params_shape = (self.warping_function.n_terms, 3) # todo get this from the subclass
+            self.warping_function = TanhWarpingFunction_d(warping_terms)
+            self.warping_params = (np.random.randn(self.warping_function.n_terms*3+1,) * 1)
+            # self.warping_params = np.ones((self.warping_function.n_terms*3 + 1,)) # TODO better init
+            # self.warp_params_shape = (self.warping_function.n_terms, 4) # todo get this from the subclass
 
         self.Z = Y.copy()
         self.N, self.D = Y.shape
@@ -31,7 +31,7 @@ class warpedGP(GP_regression):
         GP_regression.__init__(self, X, self.Y, **kwargs)
 
     def set_param(self, x):
-        self.warping_params = x[:self.warping_function.num_parameters].reshape(self.warp_params_shape).copy()
+        self.warping_params = x[:self.warping_function.num_parameters]
         self.transform_data()
         GP_regression.set_param(self, x[self.warping_function.num_parameters:].copy())
 
@@ -63,15 +63,17 @@ class warpedGP(GP_regression):
         ll_grads = GP_regression.log_likelihood_gradients(self)
         alpha = np.dot(self.Ki, self.Y.flatten())
         warping_grads = self.warping_function_gradients(alpha)
+
+        warping_grads = np.append(warping_grads[:,:-1].flatten(), warping_grads[0,-1])
         return np.hstack((warping_grads.flatten(), ll_grads.flatten()))
 
     def warping_function_gradients(self, Kiy):
         grad_y = self.warping_function.fgrad_y(self.Z, self.warping_params)
         grad_y_psi, grad_psi = self.warping_function.fgrad_y_psi(self.Z, self.warping_params,
                                                                  return_covar_chain = True)
-
         djac_dpsi = ((1.0/grad_y[:,:, None, None])*grad_y_psi).sum(axis=0).sum(axis=0)
         dquad_dpsi = (Kiy[:,None,None,None] * grad_psi).sum(axis=0).sum(axis=0)
+
 
         return -dquad_dpsi + djac_dpsi
 

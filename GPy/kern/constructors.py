@@ -21,6 +21,7 @@ from Brownian import Brownian as Brownianpart
 #TODO these s=constructors are not as clean as we'd like. Tidy the code up
 #using meta-classes to make the objects construct properly wthout them.
 
+
 def rbf(D,variance=1., lengthscale=1.):
     """
     Construct an RBF kernel
@@ -170,3 +171,32 @@ def Brownian(D,variance=1.):
     """
     part = Brownianpart(D,variance)
     return kern(D, [part])
+
+import sympy as sp
+from sympykern import spkern
+from sympy.parsing.sympy_parser import parse_expr
+
+def rbf_sympy(D,ARD=False,variance=1., lengthscale=1.):
+    """
+    Radial Basis Function covariance.
+    """
+    X = [sp.var('x%i'%i) for i in range(D)]
+    Z = [sp.var('z%i'%i) for i in range(D)]
+    rbf_variance = sp.var('rbf_variance',positive=True)
+    if ARD:
+        rbf_lengthscales = [sp.var('rbf_lengthscale_%i'%i,positive=True) for i in range(D)]
+        dist_string = ' + '.join(['(x%i-z%i)**2/rbf_lengthscale_%i**2'%(i,i,i) for i in range(D)])
+        dist = parse_expr(dist_string)
+        f =  rbf_variance*sp.exp(-dist/2.)
+    else:
+        rbf_lengthscale = sp.var('rbf_lengthscale',positive=True)
+        dist_string = ' + '.join(['(x%i-z%i)**2'%(i,i) for i in range(D)])
+        dist = parse_expr(dist_string)
+        f =  rbf_variance*sp.exp(-dist/(2*rbf_lengthscale**2))
+    return kern(D,[spkern(D,f)])
+
+def sympykern(D,k):
+    """
+    A kernel from a symbolic sympy representation
+    """
+    return kern(D,[spkern(D,k)])

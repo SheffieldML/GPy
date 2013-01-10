@@ -29,7 +29,8 @@ class model(parameterised):
         raise NotImplementedError, "this needs to be implemented to utilise the model class"
 
     def set_prior(self,which,what):
-        """sets priors on the model parameters.
+        """
+        Sets priors on the model parameters.
 
         Arguments
         ---------
@@ -78,6 +79,29 @@ class model(parameterised):
         #store the prior in a local list
         for w in which:
             self.priors[w] = what
+
+    def get(self,name):
+        """
+        get a model parameter by name
+        """
+        matches = self.grep_param_names(name)
+        if len(matches):
+            return self.get_param()[matches]
+        else:
+            raise AttributeError, "no parameter matches %s"%name
+
+    def set(self,name,val):
+        """
+        Set a model parameter by name
+        """
+        matches = self.grep_param_names(name)
+        if len(matches):
+            x = self.get_param()
+            x[matches] = val
+            self.set_param(x)
+        else:
+            raise AttributeError, "no parameter matches %s"%name
+
 
 
     def log_prior(self):
@@ -262,7 +286,7 @@ class model(parameterised):
         return '\n'.join(s)
 
 
-    def checkgrad(self, verbose = True, include_priors=False, step=1e-6, tolerance = 1e-3, *args):
+    def checkgrad(self, verbose=False, include_priors=False, step=1e-6, tolerance = 1e-3, *args):
         """
         Check the gradient of the model by comparing to a numerical estimate.
         If the overall gradient fails, invividual components are tested.
@@ -289,12 +313,12 @@ class model(parameterised):
             print " Gradient ratio = ", ratio, '\n'
             sys.stdout.flush()
 
-        if not (np.abs(1.-ratio)>tolerance):
+        if (np.abs(1.-ratio)<tolerance) and not np.isnan(ratio):
             if verbose:
                 print 'Gradcheck passed'
         else:
             if verbose:
-                print "Global ratio far from unity. Testing individual gradients\n"
+                print "Global check failed. Testing individual gradients\n"
             try:
                 names = self.extract_param_names()
             except NotImplementedError:

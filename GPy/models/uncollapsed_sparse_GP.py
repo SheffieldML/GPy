@@ -32,37 +32,41 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
     :type normalize_(X|Y): bool
     """
 
-    def __init__(self, X, Y, q_u=None, *args, **kwargs)
-        D = Y.shape[1]
+    def __init__(self, X, Y, q_u=None, M=10, *args, **kwargs):
+        self.D = Y.shape[1]
         if q_u is None:
-            if Z is None:
-                M = Z.shape[0]
+            if 'Z' in kwargs.keys():
+                print kwargs['Z']
+                self.M = kwargs['Z'].shape[0]
+                print self.M
             else:
-                M=M
-            q_u = np.hstack((np.ones(M*D)),np.eye(M).flatten())
+                self.M = M
+            q_u = np.hstack((np.random.randn(self.M*self.D),-0.5*np.eye(self.M).flatten()))
         self.set_vb_param(q_u)
-        sparse_GP_regression.__init__(self, X, Y, *args, **kwargs)
+        sparse_GP_regression.__init__(self, X, Y, M=self.M,*args, **kwargs)
 
     def _computations(self):
         self.V = self.beta*self.Y
+        self.VmT = np.dot(self.V,self.q_u_expectation[0].T)
         self.psi1V = np.dot(self.psi1, self.V)
         self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
-        self.Lm = jitchol(self.Kmm)
-        self.Lmi = chol_inv(self.Lm)
-        self.Kmmi = np.dot(self.Lmi.T, self.Lmi)
-        self.A = mdot(self.Lmi, self.psi2, self.Lmi.T)
-        self.B = np.eye(self.M) + self.beta * self.A
-        self.Lambda = mdot(self.Lmi.T,self.B,sel.Lmi)
+        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
+        self.A = mdot(self.Lmi, self.beta*self.psi2, self.Lmi.T)
+        self.B = np.eye(self.M) + self.A
+        self.Lambda = mdot(self.Lmi.T,self.B,self.Lmi)
+        self.trace_K = self.psi0 - np.trace(self.A)/self.beta
+        self.projected_mean = mdot(self.psi1.T,self.Kmmi,self.q_u_expectation[0])
 
         # Compute dL_dpsi
         self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
-        self.dL_dpsi1 = 
-        self.dL_dpsi2 = 
+        self.dL_dpsi1 = np.dot(self.VmT,self.Kmmi).T # This is the correct term for E I think...
+        self.dL_dpsi2 = 0.5 * self.beta * self.D * (self.Kmmi - mdot(self.Kmmi,self.q_u_expectation[1],self.Kmmi))
 
         # Compute dL_dKmm
-        self.dL_dKmm = 
-        self.dL_dKmm += 
-        self.dL_dKmm += 
+        tmp = self.beta*mdot(self.psi2,self.Kmmi,self.q_u_expectation[1]) -np.dot(self.q_u_expectation[0],self.psi1V.T)
+        tmp += tmp.T
+        tmp += self.D*(-self.beta*self.psi2 - self.Kmm + self.q_u_expectation[1])
+        self.dL_dKmm = 0.5*mdot(self.Kmmi,tmp,self.Kmmi)
 
     def log_likelihood(self):
         """
@@ -70,10 +74,10 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         """
         A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.beta))
         B = -0.5*self.beta*self.D*self.trace_K
-        C = -self.D *(self.Kmm_hld +0.5*np.sum(self.Lambda * self.mmT_S) + self.M/2.)
-        E = -0.5*self.beta*self.trYYT
-        F = np.sum(np.dot(self.V.T,self.projected_mean))
-        return A+B+C+D+E+F
+        C = -0.5*self.D *(self.Kmm_logdet-self.q_u_logdet + np.sum(self.Lambda * self.q_u_expectation[1]) - self.M)
+        D = -0.5*self.beta*self.trYYT
+        E = np.sum(np.dot(self.V.T,self.projected_mean))
+        return A+B+C+D+E
 
     def dL_dbeta(self):
         """
@@ -82,24 +86,33 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         """
         dA_dbeta =   0.5 * self.N*self.D/self.beta
         dB_dbeta = - 0.5 * self.D * self.trace_K
-        dC_dbeta = - 0.5 * self.D * #TODO
+        dC_dbeta = - 0.5 * self.D * np.sum(self.q_u_expectation[1]*mdot(self.Kmmi,self.psi2,self.Kmmi))
         dD_dbeta = - 0.5 * self.trYYT
+        dE_dbeta = np.sum(np.dot(self.Y.T,self.projected_mean))
 
         return np.squeeze(dA_dbeta + dB_dbeta + dC_dbeta + dD_dbeta + dE_dbeta)
 
-    def _raw_predict(self, Xnew, slices):
+    def _raw_predict(self, Xnew, slices,full_cov=False):
         """Internal helper function for making predictions, does not account for normalisation"""
+        Kx = self.kern.K(Xnew,self.Z)
+        mu = mdot(Kx,self.Kmmi,self.q_u_expectation[0])
 
-        #TODO
+        tmp = self.Kmmi- mdot(self.Kmmi,self.q_u_cov,self.Kmmi)
+        if full_cov:
+            Kxx = self.kern.K(Xnew)
+            var = Kxx - mdot(Kx,tmp,Kx.T) + np.eye(Xnew.shape[0])/self.beta
+        else:
+            Kxx = self.kern.Kdiag(Xnew)
+            var = Kxx - np.sum(Kx*np.dot(Kx,tmp),1) + 1./self.beta
         return mu,var
+
 
     def set_vb_param(self,vb_param):
         """set the distribution q(u) from the canonical parameters"""
         self.q_u_prec = -2.*vb_param[self.M*self.D:].reshape(self.M,self.M)
-        self.q_u_prec_L = jitchol(self.q_u_prec)
-        self.q_u_cov_L = chol_inv(self.q_u_prec_L)
-        self.q_u_cov = np.dot(self.q_u_cov_L,self.q_u_cov_L.T)
-        self.q_u_mean = -2.*np.dot(self.q_u_cov,vb_param[:self.M*self.D].reshape(self.M,self.D))
+        self.q_u_cov, q_u_Li, q_u_L, tmp = pdinv(self.q_u_prec)
+        self.q_u_logdet = -tmp
+        self.q_u_mean = np.dot(self.q_u_cov,vb_param[:self.M*self.D].reshape(self.M,self.D))
 
         self.q_u_expectation = (self.q_u_mean, np.dot(self.q_u_mean,self.q_u_mean.T)+self.q_u_cov)
 
@@ -119,11 +132,21 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
 
         Note that the natural gradient in either is given by the gradient in the other (See Hensman et al 2012 Fast Variational inference in the conjugate exponential Family)
         """
-        foobar #TODO
+        dL_dmmT_S = -0.5*self.Lambda-self.q_u_canonical[1]
+        #dL_dm = np.dot(self.Kmmi,self.psi1V) - np.dot(self.Lambda,self.q_u_mean)
+        dL_dm = np.dot(self.Kmmi,self.psi1V) - self.q_u_canonical[0]
+
+        #dL_dSim = 
+        #dL_dmhSi = 
+
+        return np.hstack((dL_dm.flatten(),dL_dmmT_S.flatten()))  # natgrad only, grad TODO
+
 
     def plot(self, *args, **kwargs):
         """
         add the distribution q(u) to the plot from sparse_GP_regression
         """
         sparse_GP_regression.plot(self,*args,**kwargs)
-        #TODO: plot the q(u) dist.
+        if self.Q==1:
+            pb.errorbar(self.Z[:,0],self.q_u_expectation[0][:,0],yerr=2.*np.sqrt(np.diag(self.q_u_cov)),fmt=None,ecolor='b')
+

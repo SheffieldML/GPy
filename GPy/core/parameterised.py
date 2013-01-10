@@ -215,7 +215,7 @@ class parameterised(object):
         else:
             self.constrained_fixed_values.append(self.get_param()[self.constrained_fixed_indices[-1]])
 
-        self.constrained_fixed_values.append(value)
+        #self.constrained_fixed_values.append(value)
         self.expand_param(self.extract_param())
 
     def extract_param(self):

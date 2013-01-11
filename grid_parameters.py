@@ -16,11 +16,14 @@ Y = np.sin(X) + np.random.randn(*X.shape)/np.sqrt(50.)
 k = GPy.kern.rbf(1)
 
 
-m = GPy.models.sparse_GP_regression(X,Y,Z=Z,kernel=k)
-m.constrain_fixed('iip')
+models = [GPy.models.sparse_GP_regression(X,Y,Z=Z,kernel=k),
+    GPy.models.sgp_debugB(X,Y,Z=Z,kernel=k),
+    GPy.models.sgp_debugC(X,Y,Z=Z,kernel=k),
+    GPy.models.sgp_debugE(X,Y,Z=Z,kernel=k)]
+#[m.constrain_fixed('iip') for m in models]
 #m.constrain_fixed('white',1e-6)
-m.constrain_fixed('precision',50)
-m.ensure_default_constraints()
+#[m.constrain_fixed('precision',50) for m in models]
+#[m.ensure_default_constraints() for m in models]
 
 
 xx,yy = np.mgrid[1.5:4:0+resolution*1j,-2:2:0+resolution*1j]
@@ -28,24 +31,16 @@ xx,yy = np.mgrid[1.5:4:0+resolution*1j,-2:2:0+resolution*1j]
 lls = []
 cgs = []
 for l,v in zip(xx.flatten(),yy.flatten()):
-    m.set('lengthscale',l)
-    m.set('rbf_variance',10.**v)
-    lls.append(m.log_likelihood())
-    cgs.append(m.checkgrad())
-    #m.plot()
+    [m.set('lengthscale',l) for m in models]
+    [m.set('rbf_variance',10.**v) for m in models]
+    lls.append(models[0].log_likelihood())
+    cgs.append([m.checkgrad(verbose=0) for m in models])
 
 lls = np.array(lls).reshape(resolution,resolution)
-cgs = np.array(cgs,dtype=np.float64).reshape(resolution,resolution)
+cgs = np.array(zip(*cgs),dtype=np.float64).reshape(-1,resolution,resolution)
 
-pb.contourf(xx,yy,lls,np.linspace(-500,560,100),linewidths=2,cmap=pb.cm.jet)
-pb.colorbar()
-pb.scatter(xx.flatten(),yy.flatten(),10,cgs.flatten(),linewidth=0,cmap=pb.cm.gray)
-pb.figure()
-#pb.imshow(lls,origin='upper',cmap=pb.cm.jet,extent=[xx[0,0],xx[-1,0],yy[0].min(),yy[0].max()],vmin=-500)
-pb.scatter(xx.flatten(),yy.flatten(),10,lls.flatten(),linewidth=0,cmap=pb.cm.jet)
-pb.colorbar()
-pb.figure()
-#pb.imshow(cgs,origin='upper',cmap=pb.cm.jet,extent=[xx[0,0],xx[-1,0],yy[0].min(),yy[0].max()])
-pb.scatter(xx.flatten(),yy.flatten(),10,cgs.flatten(),linewidth=0,cmap=pb.cm.jet)
-pb.colorbar()
+for cg in cgs:
+    pb.figure()
+    pb.contourf(xx,yy,lls,cmap=pb.cm.jet)
+    pb.scatter(xx.flatten(),yy.flatten(),12,cg.flatten(),cmap=pb.cm.gray)
 

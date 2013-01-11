@@ -363,7 +363,8 @@ class model(parameterised):
                     grad_string = "{0:^{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name,r,d,g, ng, c0 = cols[0]+9, c1 = cols[1], c2 = cols[2], c3 = cols[3], c4 = cols[4])
                     print grad_string
 
-            print ''
-            
+            if verbose:
+                print ''
+
             return False
         return True

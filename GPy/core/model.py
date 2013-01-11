@@ -339,10 +339,12 @@ class model(parameterised):
                 ratio = (f1-f2)/(2*step*gradient)
                 difference = np.abs((f1-f2)/2/step - gradient)
                 if verbose:
-                    print "{0:10s}   ratio: {1:15f}   difference: {2:15f}   analytical: {3:15f}    numerical: {4:15f}".format(names[i], float(ratio), float(difference), gradient, float(numerical_gradient)),
                     if (np.abs(ratio-1)<tolerance):
-                        print " "+'\033[92m' + u"\u2713" + '\033[0m' # green chackmark
+                        formatted_name = "\033[92m {0:10s} \033[0m".format(names[i])
                     else:
-                        print " "+'\033[91m' + u"\u2717" + '\033[0m' # red crossmark
+                        formatted_name = "\033[91m {0:10s} \033[0m".format(names[i])
+                        
+                    print formatted_name + "   ratio: {0:15f}   difference: {1:15f}   analytical: {2:15f}    numerical: {3:15f}\n".format(float(ratio), float(difference), gradient, float(numerical_gradient)),
+        
             return False
         return True

@@ -34,7 +34,7 @@ for l,v in zip(xx.flatten(),yy.flatten()):
     [m.set('lengthscale',l) for m in models]
     [m.set('rbf_variance',10.**v) for m in models]
     lls.append(models[0].log_likelihood())
-    cgs.append([m.checkgrad(verbose=0) for m in models])
+    cgs.append([m.checkgrad(verbose=0,return_ratio=True) for m in models])
 
 lls = np.array(lls).reshape(resolution,resolution)
 cgs = np.array(zip(*cgs),dtype=np.float64).reshape(-1,resolution,resolution)
@@ -42,5 +42,7 @@ cgs = np.array(zip(*cgs),dtype=np.float64).reshape(-1,resolution,resolution)
 for cg in cgs:
     pb.figure()
     pb.contourf(xx,yy,lls,cmap=pb.cm.jet)
-    pb.scatter(xx.flatten(),yy.flatten(),12,cg.flatten(),cmap=pb.cm.gray)
+    pb.colorbar()
+    pb.scatter(xx.flatten(),yy.flatten(),20,np.log(np.abs(cg.flatten())),cmap=pb.cm.gray,linewidth=0)
+    pb.colorbar()
 

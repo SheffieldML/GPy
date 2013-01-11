@@ -36,3 +36,6 @@ nosetests.xml
 
 #vim
 *.swp
+
+#bfgs optimiser leaves this lying around
+iterate.dat

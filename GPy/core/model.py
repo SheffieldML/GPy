@@ -29,7 +29,8 @@ class model(parameterised):
         raise NotImplementedError, "this needs to be implemented to utilise the model class"
 
     def set_prior(self,which,what):
-        """sets priors on the model parameters.
+        """
+        Sets priors on the model parameters.
 
         Arguments
         ---------
@@ -78,6 +79,29 @@ class model(parameterised):
         #store the prior in a local list
         for w in which:
             self.priors[w] = what
+
+    def get(self,name):
+        """
+        get a model parameter by name
+        """
+        matches = self.grep_param_names(name)
+        if len(matches):
+            return self.get_param()[matches]
+        else:
+            raise AttributeError, "no parameter matches %s"%name
+
+    def set(self,name,val):
+        """
+        Set a model parameter by name
+        """
+        matches = self.grep_param_names(name)
+        if len(matches):
+            x = self.get_param()
+            x[matches] = val
+            self.set_param(x)
+        else:
+            raise AttributeError, "no parameter matches %s"%name
+
 
 
     def log_prior(self):
@@ -262,7 +286,7 @@ class model(parameterised):
         return '\n'.join(s)
 
 
-    def checkgrad(self, verbose = True, include_priors=False, step=1e-6, tolerance = 1e-3, *args):
+    def checkgrad(self, verbose=False, include_priors=False, step=1e-6, tolerance = 1e-3, *args):
         """
         Check the gradient of the model by comparing to a numerical estimate.
         If the overall gradient fails, invividual components are tested.
@@ -284,21 +308,33 @@ class model(parameterised):
         numerical_gradient = (f1-f2)/(2*dx)
         ratio = (f1-f2)/(2*np.dot(dx,gradient))
         if verbose:
-            #print "gradient = ",gradient
-            #print "numerical gradient = ",numerical_gradient
-            print " Gradient ratio = ", ratio, '\n'
+            print "Gradient ratio = ", ratio, '\n'
             sys.stdout.flush()
 
-        if not (np.abs(1.-ratio)>tolerance):
+        if (np.abs(1.-ratio)<tolerance) and not np.isnan(ratio):
             if verbose:
                 print 'Gradcheck passed'
         else:
             if verbose:
-                print "Global ratio far from unity. Testing individual gradients\n"
-            try:
-                names = self.extract_param_names()
-            except NotImplementedError:
-                names = ['Variable %i'%i for i in range(len(x))]
+                print "Global check failed. Testing individual gradients\n"
+
+                try:
+                    names = self.extract_param_names()
+                except NotImplementedError:
+                    names = ['Variable %i'%i for i in range(len(x))]
+
+                # Prepare for pretty-printing
+                header = ['Name', 'Ratio', 'Difference', 'Analytical', 'Numerical']
+                max_names = max([len(names[i]) for i in range(len(names))] + [len(header[0])])
+                float_len = 10
+                cols = [max_names]
+                cols.extend([max(float_len, len(header[i])) for i in range(1, len(header))])
+                cols = np.array(cols) + 5
+                header_string = ["{h:^{col}}".format(h = header[i], col = cols[i]) for i in range(len(cols))]
+                header_string = map(lambda x: '|'.join(x), [header_string])
+                separator = '-'*len(header_string[0])
+                print '\n'.join([header_string[0], separator])
+
             for i in range(len(x)):
                 xx = x.copy()
                 xx[i] += step
@@ -314,11 +350,20 @@ class model(parameterised):
                 numerical_gradient = (f1-f2)/(2*step)
                 ratio = (f1-f2)/(2*step*gradient)
                 difference = np.abs((f1-f2)/2/step - gradient)
+
                 if verbose:
-                    print "{0:10s}   ratio: {1:15f}   difference: {2:15f}   analytical: {3:15f}    numerical: {4:15f}".format(names[i], float(ratio), float(difference), gradient, float(numerical_gradient)),
                     if (np.abs(ratio-1)<tolerance):
-                        print " "+'\033[92m' + u"\u2713" + '\033[0m' # green chackmark
+                        formatted_name = "\033[92m {0} \033[0m".format(names[i])
                     else:
-                        print " "+'\033[91m' + u"\u2717" + '\033[0m' # red crossmark
+                        formatted_name = "\033[91m {0} \033[0m".format(names[i])
+                    r = '%.6f' % float(ratio)
+                    d = '%.6f' % float(difference)
+                    g = '%.6f' % gradient
+                    ng = '%.6f' % float(numerical_gradient)
+                    grad_string = "{0:^{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name,r,d,g, ng, c0 = cols[0]+9, c1 = cols[1], c2 = cols[2], c3 = cols[3], c4 = cols[4])
+                    print grad_string
+
+            print ''
+            
             return False
         return True

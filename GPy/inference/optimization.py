@@ -3,7 +3,13 @@
 
 
 from scipy import optimize
-# import rasmussens_minimize as rasm
+
+try:
+    import rasmussens_minimize as rasm
+    rasm_available = True
+except ImportError:
+    rasm_available = False
+
 import pdb
 import pylab as pb
 import datetime as dt
@@ -38,7 +44,7 @@ class Optimizer():
         self.gtol = gtol
         self.ftol = ftol
         self.model = model
-        
+
     def run(self, **kwargs):
         start = dt.datetime.now()
         self.opt(**kwargs)
@@ -159,46 +165,48 @@ class opt_simplex(Optimizer):
         self.trace = None
 
 
-# class opt_rasm(Optimizer):
-#     def __init__(self, *args, **kwargs):
-#         Optimizer.__init__(self, *args, **kwargs)
-#         self.opt_name = "Rasmussen's Conjugate Gradient"
+class opt_rasm(Optimizer):
+    def __init__(self, *args, **kwargs):
+        Optimizer.__init__(self, *args, **kwargs)
+        self.opt_name = "Rasmussen's Conjugate Gradient"
 
-#     def opt(self):
-#         """
-#         Run Rasmussen's Conjugate Gradient optimizer
-#         """
+    def opt(self, f_fp = None, f = None, fp = None):
+        """
+        Run Rasmussen's Conjugate Gradient optimizer
+        """
 
-#         assert self.f_fp != None, "Rasmussen's minimizer requires f_fp"
-#         statuses = ['Converged', 'Line search failed', 'Maximum number of f evaluations reached',
-#                 'NaNs in optimization']
+        assert f_fp != None, "Rasmussen's minimizer requires f_fp"
+        statuses = ['Converged', 'Line search failed', 'Maximum number of f evaluations reached',
+                'NaNs in optimization']
 
-#         opt_dict = {}
-#         if self.xtol is not None:
-#             print "WARNING: minimize doesn't have an xtol arg, so I'm going to ignore it"
-#         if self.ftol is not None:
-#             print "WARNING: minimize doesn't have an ftol arg, so I'm going to ignore it"
-#         if self.gtol is not None:
-#             print "WARNING: minimize doesn't have an gtol arg, so I'm going to ignore it"
+        opt_dict = {}
+        if self.xtol is not None:
+            print "WARNING: minimize doesn't have an xtol arg, so I'm going to ignore it"
+        if self.ftol is not None:
+            print "WARNING: minimize doesn't have an ftol arg, so I'm going to ignore it"
+        if self.gtol is not None:
+            print "WARNING: minimize doesn't have an gtol arg, so I'm going to ignore it"
 
-#         opt_result = rasm.minimize(self.x_init, self.f_fp, (), messages = self.messages,
-#                 maxnumfuneval = self.max_f_eval)
-#         self.x_opt = opt_result[0]
-#         self.f_opt = opt_result[1][-1]
-#         self.funct_eval = opt_result[2]
-#         self.status = statuses[opt_result[3]]
+        opt_result = rasm.minimize(self.x_init, f_fp, (), messages = self.messages,
+                                   maxnumfuneval = self.max_f_eval)
+        self.x_opt = opt_result[0]
+        self.f_opt = opt_result[1][-1]
+        self.funct_eval = opt_result[2]
+        self.status = statuses[opt_result[3]]
 
-#         self.trace = opt_result[1]
+        self.trace = opt_result[1]
 
 def get_optimizer(f_min):
     # import rasmussens_minimize as rasm
     from SGD import opt_SGD
     
     optimizers = {'fmin_tnc': opt_tnc,
-          # 'rasmussen': opt_rasm,
           'simplex': opt_simplex,
           'lbfgsb': opt_lbfgsb,
           'sgd': opt_SGD}
+
+    if rasm_available:
+        optimizers['rasmussen'] = opt_rasm
 
     for opt_name in optimizers.keys():
         if opt_name.lower().find(f_min.lower()) != -1:

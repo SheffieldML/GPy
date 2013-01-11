@@ -182,7 +182,7 @@ class kern(parameterised):
             X2 = X
         slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros_like(X)
-        [p.dK_dX(partial[s1,s2],X[s1,i_s],X2[s2,i_s],target[s1,i_s]) for p,i_s,ps,s1,s2 in zip(self.parts,self.input_slices, self.param_slices,slices1,slices2)]
+        [p.dK_dX(partial[s1,s2],X[s1,i_s],X2[s2,i_s],target[s1,i_s]) for p, i_s, s1, s2 in zip(self.parts, self.input_slices, slices1, slices2)]
         return target
 
     def Kdiag(self,X,slices=None):

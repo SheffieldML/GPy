@@ -22,7 +22,7 @@ class warpedGP(GP_regression):
         if warping_function == None:
             self.warping_function = TanhWarpingFunction(warping_terms)
             # self.warping_params = np.random.randn(self.warping_function.n_terms, 3)
-            self.warping_params = np.ones((self.warping_function.n_terms, 3))*1.0 # TODO better init
+            self.warping_params = np.ones((self.warping_function.n_terms, 3))*0.0 # TODO better init
             self.warp_params_shape = (self.warping_function.n_terms, 3) # todo get this from the subclass
 
         self.Z = Y.copy()

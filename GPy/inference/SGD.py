@@ -187,6 +187,6 @@ class opt_SGD(Optimizer):
             self.trace.append(self.f_opt)
             if self.messages != 0:
                 sys.stdout.write('\r' + ' '*len(status)*2 + '  \r')
-                status = "SGD Iteration: {0: 3d}/{1: 3d}  f: {2: 2.3f}\n".format(it, self.iterations, self.f_opt)
+                status = "SGD Iteration: {0: 3d}/{1: 3d}  f: {2: 2.3f}\n".format(it+1, self.iterations, self.f_opt)
                 sys.stdout.write(status)
                 sys.stdout.flush()

@@ -8,7 +8,7 @@ pb.close('all')
 
 N = 1000
 M = 10
-resolution=5
+resolution=3
 
 X = np.linspace(0,12,N)[:,None]
 Z = np.linspace(0,12,M)[:,None] # inducing points (fixed for now)
@@ -41,8 +41,8 @@ cgs = np.array(zip(*cgs),dtype=np.float64).reshape(-1,resolution,resolution)
 
 for cg in cgs:
     pb.figure()
-    pb.contourf(xx,yy,lls,cmap=pb.cm.jet)
+    pb.contourf(xx,yy,lls,50,cmap=pb.cm.gray)
     pb.colorbar()
-    pb.scatter(xx.flatten(),yy.flatten(),20,np.log(np.abs(cg.flatten())),cmap=pb.cm.gray,linewidth=0)
+    pb.scatter(xx.flatten(),yy.flatten(),20,np.log(np.abs(cg.flatten())),cmap=pb.cm.jet,linewidth=0)
     pb.colorbar()
 

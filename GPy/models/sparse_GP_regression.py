@@ -37,6 +37,7 @@ class sparse_GP_regression(GP_regression):
     """
 
     def __init__(self,X,Y,kernel=None, X_uncertainty=None, beta=100., Z=None,Zslices=None,M=10,normalize_X=False,normalize_Y=False):
+        self.stabilit_multiplier = 1.
         self.beta = beta
         if Z is None:
             self.Z = np.random.permutation(X.copy())[:M]
@@ -88,7 +89,7 @@ class sparse_GP_regression(GP_regression):
         self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
         self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
         self.A = mdot(self.Lmi, self.beta*self.psi2, self.Lmi.T)
-        self.B = np.eye(self.M) + self.A
+        self.B = np.eye(self.M)*self.stabilit_multiplier + self.A
         self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
         self.LLambdai = np.dot(self.LBi, self.Lmi)
         self.trace_K = self.psi0 - np.trace(self.A)/self.beta
@@ -200,18 +201,7 @@ class sparse_GP_regression(GP_regression):
 
 class sgp_debugB(sparse_GP_regression):
     def _computations(self):
-        self.V = self.beta*self.Y
-        self.psi1V = np.dot(self.psi1, self.V)
-        self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
-        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
-        self.A = mdot(self.Lmi, self.beta*self.psi2, self.Lmi.T)
-        self.B = np.eye(self.M) + self.A
-        self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
-        self.LLambdai = np.dot(self.LBi, self.Lmi)
-        self.trace_K = self.psi0 - np.trace(self.A)/self.beta
-        self.LBL_inv = mdot(self.Lmi.T, self.Bi, self.Lmi)
-        self.C = mdot(self.LLambdai, self.psi1V)
-        self.G =  mdot(self.LBL_inv, self.psi1VVpsi1, self.LBL_inv.T)
+        sparse_GP_regression._computations(self)
 
         # Compute dL_dpsi
         self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
@@ -241,18 +231,7 @@ class sgp_debugB(sparse_GP_regression):
 
 class sgp_debugC(sparse_GP_regression):
     def _computations(self):
-        self.V = self.beta*self.Y
-        self.psi1V = np.dot(self.psi1, self.V)
-        self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
-        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
-        self.A = mdot(self.Lmi, self.beta*self.psi2, self.Lmi.T)
-        self.B = np.eye(self.M) + self.A
-        self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
-        self.LLambdai = np.dot(self.LBi, self.Lmi)
-        self.trace_K = self.psi0 - np.trace(self.A)/self.beta
-        self.LBL_inv = mdot(self.Lmi.T, self.Bi, self.Lmi)
-        self.C = mdot(self.LLambdai, self.psi1V)
-        self.G =  mdot(self.LBL_inv, self.psi1VVpsi1, self.LBL_inv.T)
+        sparse_GP_regression._computations(self)
 
         # Compute dL_dpsi
         self.dL_dpsi0 = np.zeros(self.N)
@@ -282,18 +261,7 @@ class sgp_debugC(sparse_GP_regression):
 
 class sgp_debugE(sparse_GP_regression):
     def _computations(self):
-        self.V = self.beta*self.Y
-        self.psi1V = np.dot(self.psi1, self.V)
-        self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
-        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
-        self.A = mdot(self.Lmi, self.beta*self.psi2, self.Lmi.T)
-        self.B = np.eye(self.M) + self.A
-        self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
-        self.LLambdai = np.dot(self.LBi, self.Lmi)
-        self.trace_K = self.psi0 - np.trace(self.A)/self.beta
-        self.LBL_inv = mdot(self.Lmi.T, self.Bi, self.Lmi)
-        self.C = mdot(self.LLambdai, self.psi1V)
-        self.G =  mdot(self.LBL_inv, self.psi1VVpsi1, self.LBL_inv.T)
+        sparse_GP_regression._computations(self)
 
         # Compute dL_dpsi
         self.dL_dpsi0 = np.zeros(self.N)

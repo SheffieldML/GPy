@@ -47,7 +47,9 @@ class GP_regression(model):
         if normalize_X:
             self._Xmean = X.mean(0)[None,:]
             self._Xstd = X.std(0)[None,:]
-            self.X = (X.copy()- self._Xmean) / self._Xstd
+            self.X = (X.copy() - self._Xmean) / self._Xstd
+            if hasattr(self,'Z'):
+                self.Z = (self.Z - self._Xmean) / self._Xstd
         else:
             self._Xmean = np.zeros((1,self.X.shape[1]))
             self._Xstd = np.ones((1,self.X.shape[1]))
@@ -83,9 +85,8 @@ class GP_regression(model):
         """
         Computes the model fit using Youter if it's available
         """
-
         if self.Youter is None:
-            return -0.5*np.trace(mdot(self.Y.T,self.Ki,self.Y))
+            return -0.5*np.sum(np.square(np.dot(self.Li,self.Y)))
         else:
             return -0.5*np.sum(np.multiply(self.Ki, self.Youter))
 
@@ -105,7 +106,7 @@ class GP_regression(model):
     def log_likelihood_gradients(self):
         return self.kern.dK_dtheta(partial=self.dL_dK(),X=self.X)
 
-    def predict(self,Xnew, slices=None):
+    def predict(self,Xnew, slices=None, full_cov=False):
         """
 
         Predict the function(s) at the new point(s) Xnew.
@@ -116,6 +117,8 @@ class GP_regression(model):
         :type Xnew: np.ndarray, Nnew x self.Q
         :param slices:  specifies which outputs kernel(s) the Xnew correspond to (see below)
         :type slices: (None, list of slice objects, list of ints)
+        :param full_cov: whether to return the folll covariance matrix, or just the diagonal
+        :type full_cov: bool
         :rtype: posterior mean,  a Numpy array, Nnew x self.D
         :rtype: posterior variance, a Numpy array, Nnew x Nnew x (self.D)
 
@@ -125,29 +128,42 @@ class GP_regression(model):
              - If a list of slices, the i^th slice specifies which data are affected by the i^th kernel part
              - If a list of booleans, specifying which kernel parts are active
 
-           If self.D > 1, the return shape of var is Nnew x Nnew x self.D. If self.D == 1, the return shape is Nnew x Nnew.
+           If full_cov and self.D > 1, the return shape of var is Nnew x Nnew x self.D. If self.D == 1, the return shape is Nnew x Nnew.
            This is to allow for different normalisations of the output dimensions.
+
 
         """
 
         #normalise X values
         Xnew = (Xnew.copy() - self._Xmean) / self._Xstd
-        mu, var = self._raw_predict(Xnew,slices)
+        mu, var = self._raw_predict(Xnew, slices, full_cov)
 
         #un-normalise
         mu = mu*self._Ystd + self._Ymean
-        if self.D==1:
-            var *= np.square(self._Ystd)
+        if full_cov:
+            if self.D==1:
+                var *= np.square(self._Ystd)
+            else:
+                var = var[:,:,None] * np.square(self._Ystd)
         else:
-            var = var[:,:,None] * np.square(self._Ystd)
+            if self.D==1:
+                var *= np.square(np.squeeze(self._Ystd))
+            else:
+                var = var[:,None] * np.square(self._Ystd)
+
         return mu,var
 
-    def _raw_predict(self,_Xnew,slices):
+    def _raw_predict(self,_Xnew,slices, full_cov=False):
         """Internal helper function for making predictions, does not account for normalisation"""
         Kx = self.kern.K(self.X,_Xnew, slices1=self.Xslices,slices2=slices)
-        Kxx = self.kern.K(_Xnew, slices1=slices,slices2=slices)
         mu = np.dot(np.dot(Kx.T,self.Ki),self.Y)
-        var = Kxx - np.dot(np.dot(Kx.T,self.Ki),Kx)
+        KiKx = np.dot(self.Ki,Kx)
+        if full_cov:
+            Kxx = self.kern.K(_Xnew, slices1=slices,slices2=slices)
+            var = Kxx - np.dot(KiKx.T,Kx)
+        else:
+            Kxx = self.kern.Kdiag(_Xnew, slices=slices)
+            var = Kxx - np.sum(np.multiply(KiKx,Kx),0)
         return mu, var
 
     def plot(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None):

@@ -8,41 +8,50 @@ pb.close('all')
 
 N = 1000
 M = 10
-resolution=3
+resolution=5
 
 X = np.linspace(0,12,N)[:,None]
 Z = np.linspace(0,12,M)[:,None] # inducing points (fixed for now)
 Y = np.sin(X) + np.random.randn(*X.shape)/np.sqrt(50.)
-k = GPy.kern.rbf(1)
-
+#k = GPy.kern.rbf(1)
+k = GPy.kern.Matern32(1) + GPy.kern.white(1)
 
 models = [GPy.models.sparse_GP_regression(X,Y,Z=Z,kernel=k),
     GPy.models.sgp_debugB(X,Y,Z=Z,kernel=k),
-    GPy.models.sgp_debugC(X,Y,Z=Z,kernel=k),
-    GPy.models.sgp_debugE(X,Y,Z=Z,kernel=k)]
-#[m.constrain_fixed('iip') for m in models]
-#m.constrain_fixed('white',1e-6)
-#[m.constrain_fixed('precision',50) for m in models]
-#[m.ensure_default_constraints() for m in models]
+    GPy.models.sgp_debugC(X,Y,Z=Z,kernel=k)]#,
+    #GPy.models.sgp_debugE(X,Y,Z=Z,kernel=k)]
 
+[m.constrain_fixed('white',0.001) for m in models]
 
-xx,yy = np.mgrid[1.5:4:0+resolution*1j,-2:2:0+resolution*1j]
+#xx,yy = np.mgrid[1.5:4:0+resolution*1j,-2:2:0+resolution*1j]
+xx,yy = np.mgrid[3:16:0+resolution*1j,-2:2:0+resolution*1j]
 
 lls = []
 cgs = []
+grads = []
+count = 0
 for l,v in zip(xx.flatten(),yy.flatten()):
+    count += 1
+    print count, 'of', resolution**2
+    sys.stdout.flush()
+
     [m.set('lengthscale',l) for m in models]
-    [m.set('rbf_variance',10.**v) for m in models]
-    lls.append(models[0].log_likelihood())
+    [m.set('_variance',10.**v) for m in models]
+    lls.append([m.log_likelihood() for m in models])
+    grads.append([m.log_likelihood_gradients() for m in models])
     cgs.append([m.checkgrad(verbose=0,return_ratio=True) for m in models])
 
-lls = np.array(lls).reshape(resolution,resolution)
-cgs = np.array(zip(*cgs),dtype=np.float64).reshape(-1,resolution,resolution)
+lls = np.array(zip(*lls)).reshape(-1,resolution,resolution)
+cgs = np.array(zip(*cgs)).reshape(-1,resolution,resolution)
 
-for cg in cgs:
+for ll,cg in zip(lls,cgs):
     pb.figure()
-    pb.contourf(xx,yy,lls,50,cmap=pb.cm.gray)
+    pb.contourf(xx,yy,ll,100,cmap=pb.cm.gray)
     pb.colorbar()
+    try:
+        pb.contour(xx,yy,np.exp(ll),colors='k')
+    except:
+        pass
     pb.scatter(xx.flatten(),yy.flatten(),20,np.log(np.abs(cg.flatten())),cmap=pb.cm.jet,linewidth=0)
     pb.colorbar()
 

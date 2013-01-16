@@ -269,7 +269,9 @@ class sgp_debugE(sparse_GP_regression):
         self.dL_dpsi2 = - 0.5 * self.beta * (self.G)
 
         # Compute dL_dKmm
-        self.dL_dKmm =  np.dot(np.dot(self.G,self.beta*self.psi2) - np.dot(self.LBL_inv, self.psi1VVpsi1), self.Kmmi) + 0.5*self.G # dE
+        tmp = mdot(self.beta*self.psi2, self.Kmmi, self.psi1VVpsi1)
+        self.dL_dKmm = -0.5*mdot(self.Kmmi,tmp + tmp.T + self.psi1VVpsi1,self.Kmmi)
+        #self.dL_dKmm =  np.dot(np.dot(self.G,self.beta*self.psi2) - np.dot(self.LBL_inv, self.psi1VVpsi1), self.Kmmi) + 0.5*self.G # dE
 
     def log_likelihood(self):
         A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.beta))

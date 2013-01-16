@@ -77,7 +77,7 @@ class exponential(kernpart):
         #NB: derivative of diagonal elements wrt lengthscale is 0
         target[0] += np.sum(partial)
 
-    def dK_dX(self,X,X2,target):
+    def dK_dX(self,partial,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
         if X2 is None: X2 = X
         dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))[:,:,None]

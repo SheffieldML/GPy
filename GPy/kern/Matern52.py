@@ -33,7 +33,6 @@ class Matern52(kernpart):
         self.Nparam = self.D + 1
         self.name = 'Mat52'
         self.set_param(np.hstack((variance,lengthscales)))
-        
 
     def get_param(self):
         """return the value of the parameters."""
@@ -77,12 +76,12 @@ class Matern52(kernpart):
         """derivative of the diagonal of the covariance matrix with respect to the parameters."""
         target[0] += np.sum(partial)
 
-    def dK_dX(self,X,X2,target):
+    def dK_dX(self,partial,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
         if X2 is None: X2 = X
         dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))[:,:,None]
         ddist_dX = (X[:,None,:]-X2[None,:,:])/self.lengthscales**2/np.where(dist!=0.,dist,np.inf)
-        dK_dX += -  np.transpose(self.variance*5./3*dist*(1+np.sqrt(5)*dist)*np.exp(-np.sqrt(5)*dist)*ddist_dX,(1,0,2))
+        dK_dX = -  np.transpose(self.variance*5./3*dist*(1+np.sqrt(5)*dist)*np.exp(-np.sqrt(5)*dist)*ddist_dX,(1,0,2))
         target += np.sum(dK_dX*partial.T[:,:,None],0)
 
     def dKdiag_dX(self,X,target):
@@ -97,11 +96,11 @@ class Matern52(kernpart):
         :param F1: vector of derivatives of F
         :type F1: np.array
         :param F2: vector of second derivatives of F
-        :type F2: np.array 
+        :type F2: np.array
         :param F3: vector of third derivatives of F
-        :type F3: np.array    
+        :type F3: np.array
         :param lower,upper: boundaries of the input domain
-        :type lower,upper: floats  
+        :type lower,upper: floats
         """
         assert self.D == 1
         def L(x,i):

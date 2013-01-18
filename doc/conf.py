@@ -27,6 +27,14 @@ import sys, os
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
 
+# ----------------------- READTHEDOCS ------------------
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+
+if on_rtd:
+  sys.path.append("../GPy")
+  os.system("pwd")
+  os.system("sphinx-apidoc -f -o . ../GPy")
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -284,9 +292,3 @@ epub_copyright = u'2013, Author'
 # Allow duplicate toc entries.
 #epub_tocdup = True
 
-# ----------------------- READTHEDOCS ------------------
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-
-if on_rtd:
-  os.system("pwd")
-  os.system("sphinx-apidoc -f -o . ../GPy")

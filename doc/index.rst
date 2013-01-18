@@ -1,15 +1,10 @@
 .. GPy documentation master file, created by
-   sphinx-quickstart on Fri Jan 18 15:30:28 2013.
+   sphinx-quickstart on Fri Jan 18 17:36:01 2013.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
 Welcome to GPy's documentation!
 ===============================
-
-Added old command again
-And another thing
-Now what if I add this other hting
-Just checking another thing
 
 Contents:
 
@@ -17,7 +12,6 @@ Contents:
    :maxdepth: 4
 
    GPy
-   setup
 
 
 Indices and tables

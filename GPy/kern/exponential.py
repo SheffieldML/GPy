@@ -19,8 +19,10 @@ class exponential(kernpart):
     :type D: int
     :param variance: the variance :math:`\sigma^2`
     :type variance: float
-    :param lengthscale: the lengthscales :math:`\ell_i`
-    :type lengthscale: np.ndarray of size (D,)
+    :param lengthscale: the vector of lengthscale :math:`\ell_i`
+    :type lengthscale: np.ndarray of size (1,) or (D,) depending on ARD
+    :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one single lengthscale parameter \ell), otherwise there is one lengthscale parameter per dimension.
+    :type ARD: Boolean
     :rtype: kernel object
 
     """

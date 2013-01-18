@@ -42,49 +42,64 @@ class GradientTests(unittest.TestCase):
         # contrain all parameters to be positive
         self.assertTrue(m.checkgrad())
 
-    def test_gp_regression_rbf_white_kern_1d(self):
+    def test_gp_regression_rbf_1d(self):
         ''' Testing the GP regression with rbf kernel with white kernel on 1d data '''
         rbf = GPy.kern.rbf(1)
         self.check_model_with_white(rbf, model_type='GP_regression', dimension=1)
 
-    def test_GP_regression_rbf_ARD_white_kern_2D(self):
-        ''' Testing the GP regression with rbf and white kernel on 2d data '''
-        k = GPy.kern.rbf_ARD(2)
-        self.check_model_with_white(k, model_type='GP_regression', dimension=2)
-
-    def test_GP_regression_rbf_white_kern_2D(self):
+    def test_GP_regression_rbf_2D(self):
         ''' Testing the GP regression with rbf and white kernel on 2d data '''
         rbf = GPy.kern.rbf(2)
         self.check_model_with_white(rbf, model_type='GP_regression', dimension=2)
 
-    def test_GP_regression_matern52_kern_1D(self):
+    def test_GP_regression_rbf_ARD_2D(self):
+        ''' Testing the GP regression with rbf and white kernel on 2d data '''
+        k = GPy.kern.rbf(2,ARD=True)
+        self.check_model_with_white(k, model_type='GP_regression', dimension=2)
+
+    def test_GP_regression_matern52_1D(self):
         ''' Testing the GP regression with matern52 kernel on 1d data '''
         matern52 = GPy.kern.Matern52(1)
         self.check_model_with_white(matern52, model_type='GP_regression', dimension=1)
 
-    def test_GP_regression_matern52_kern_2D(self):
+    def test_GP_regression_matern52_2D(self):
         ''' Testing the GP regression with matern52 kernel on 2d data '''
         matern52 = GPy.kern.Matern52(2)
         self.check_model_with_white(matern52, model_type='GP_regression', dimension=2)
 
-    def test_GP_regression_matern32_kern_1D(self):
+    def test_GP_regression_matern52_ARD_2D(self):
+        ''' Testing the GP regression with matern52 kernel on 2d data '''
+        matern52 = GPy.kern.Matern52(2,ARD=True)
+        self.check_model_with_white(matern52, model_type='GP_regression', dimension=2)
+
+    def test_GP_regression_matern32_1D(self):
         ''' Testing the GP regression with matern32 kernel on 1d data '''
         matern32 = GPy.kern.Matern32(1)
         self.check_model_with_white(matern32, model_type='GP_regression', dimension=1)
 
-    def test_GP_regression_matern32_kern_2D(self):
+    def test_GP_regression_matern32_2D(self):
         ''' Testing the GP regression with matern32 kernel on 2d data '''
         matern32 = GPy.kern.Matern32(2)
         self.check_model_with_white(matern32, model_type='GP_regression', dimension=2)
 
-    def test_GP_regression_exponential_kern_1D(self):
+    def test_GP_regression_matern32_ARD_2D(self):
+        ''' Testing the GP regression with matern32 kernel on 2d data '''
+        matern32 = GPy.kern.Matern32(2,ARD=True)
+        self.check_model_with_white(matern32, model_type='GP_regression', dimension=2)
+
+    def test_GP_regression_exponential_1D(self):
         ''' Testing the GP regression with exponential kernel on 1d data '''
         exponential = GPy.kern.exponential(1)
         self.check_model_with_white(exponential, model_type='GP_regression', dimension=1)
 
-    def test_GP_regression_exponential_kern_2D(self):
+    def test_GP_regression_exponential_2D(self):
         ''' Testing the GP regression with exponential kernel on 2d data '''
         exponential = GPy.kern.exponential(2)
+        self.check_model_with_white(exponential, model_type='GP_regression', dimension=2)
+
+    def test_GP_regression_exponential_ARD_2D(self):
+        ''' Testing the GP regression with exponential kernel on 2d data '''
+        exponential = GPy.kern.exponential(2,ARD=True)
         self.check_model_with_white(exponential, model_type='GP_regression', dimension=2)
 
     def test_GP_regression_bias_kern_1D(self):

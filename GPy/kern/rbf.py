@@ -8,13 +8,13 @@ import hashlib
 
 class rbf(kernpart):
     """
-    Radial Basis Function kernel, aka squared-exponential, exponentiated quadratic or Gaussian kernel.
+    Radial Basis Function kernel, aka squared-exponential, exponentiated quadratic or Gaussian kernel:
 
     .. math::
 
-       k(r) = \sigma^2 \exp(- \frac{r^2}{2\ell}) \qquad \qquad \\text{ where  } r = \sqrt{\frac{\sum_{i=1}^d (x_i-x^\prime_i)^2}{\ell^2}}
+       k(r) = \sigma^2 \exp(- \frac{1}{2}r^2) \qquad \qquad \\text{ where  } r^2 = \sum_{i=1}^d \frac{ (x_i-x^\prime_i)^2}{\ell_i^2}}
 
-    where \ell is the lengthscale, \alpha the smoothness, \sigma^2 the variance and d the dimensionality of the input.
+    where \ell_i is the lengthscale, \sigma^2 the variance and d the dimensionality of the input.
 
     :param D: the number of input dimensions
     :type D: int
@@ -37,8 +37,7 @@ class rbf(kernpart):
             if lengthscale is not None:
                 assert lengthscale.shape == (1,)
             else:
-                lengthscale = np.ones(1)
-        
+                lengthscale = np.ones(1)     
         else:
             self.Nparam = self.D + 1
             self.name = 'rbf_ARD'
@@ -109,11 +108,10 @@ class rbf(kernpart):
             self._X2 = X2
             if X2 is None: X2 = X
             self._K_dist = X[:,None,:]-X2[None,:,:] # this can be computationally heavy
-            self._params = np.empty(shape=(1,0))#ensure the next section gets called
+            self._params = np.empty(shape=(1,0))    #ensure the next section gets called
         if not np.all(self._params == self._get_params()):
             self._params == self._get_params()
-            self._K_dist2 = np.square(self._K_dist/self.lengthscale) 
-            #self._K_exponent = -0.5*self._K_dist2.sum(-1) #ND: commented out because seems not to be used
+            self._K_dist2 = np.square(self._K_dist/self.lengthscale)
             self._K_dvar = np.exp(-0.5*self._K_dist2.sum(-1))
 
     def psi0(self,Z,mu,S,target):

@@ -11,8 +11,8 @@ import numpy as np
 import GPy
 np.random.seed(2)
 pb.ion()
-N = 500
-M = 5
+N = 1200
+M = 20
 
 ######################################
 ## 1 dimensional example
@@ -27,20 +27,21 @@ noise = GPy.kern.white(1)
 kernel = rbf + noise
 
 # create simple GP model
-m1 = GPy.models.sparse_GP_regression(X, Y, kernel, M=M)
+m = GPy.models.sparse_GP_regression(X, Y, kernel, M=M)
 
 # contrain all parameters to be positive
-m1.constrain_positive('(variance|lengthscale|precision)')
-#m1.constrain_positive('(variance|lengthscale)')
-#m1.constrain_fixed('prec',10.)
+m.constrain_positive('(variance|lengthscale|precision)')
+#m.constrain_positive('(variance|lengthscale)')
+#m.constrain_fixed('prec',10.)
 
 
 #check gradient FIXME unit test please
-m1.checkgrad()
+m.checkgrad(verbose=1)
+stop
 # optimize and plot
-m1.optimize('tnc', messages = 1)
-m1.plot()
-# print(m1)
+m.optimize('tnc', messages = 1)
+m.plot()
+# print(m)
 
 ######################################
 ## 2 dimensional example

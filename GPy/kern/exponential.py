@@ -49,13 +49,13 @@ class exponential(kernpart):
 
     def _set_params(self,x):
         """set the value of the parameters."""
-        assert x.size==(self.D+1)
+        assert x.size == self.Nparam
         self.variance = x[0]
         self.lengthscale = x[1:]
 
     def _get_param_names(self):
         """return parameter names."""
-        if self.Nparam==2:
+        if self.Nparam == 2:
             return ['variance','lengthscale']
         else:
             return ['variance']+['lengthscale_%i'%i for i in range(self.lengthscale.size)]
@@ -84,7 +84,6 @@ class exponential(kernpart):
         else:
             dl = self.variance*dvar*dist2M.sum(-1)*invdist
             target[1] += np.sum(dl*partial)
-            #foo
 
     def dKdiag_dtheta(self,partial,X,target): 
         """derivative of the diagonal of the covariance matrix with respect to the parameters."""

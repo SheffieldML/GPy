@@ -198,7 +198,7 @@ class model(parameterised):
                 else:
                     raise e
         if len(self.optimization_runs):
-            i = np.argmax([o.f_opt for o in self.optimization_runs])
+            i = np.argmin([o.f_opt for o in self.optimization_runs])
             self._set_params_transformed(self.optimization_runs[i].x_opt)
         else:
             self._set_params_transformed(initial_parameters)

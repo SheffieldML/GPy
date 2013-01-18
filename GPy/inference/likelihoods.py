@@ -99,6 +99,6 @@ class probit(likelihood):
     def predictive_mean(self,mu,variance):
         return stats.norm.cdf(mu/np.sqrt(1+variance))
 
-    def log_likelihood_gradients():
+    def _log_likelihood_gradients():
         raise NotImplementedError
 

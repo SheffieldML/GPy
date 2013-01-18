@@ -66,7 +66,7 @@ class parameterised(object):
         if hasattr(self,'prior'):
             pass
 
-        self.expand_param(self.extract_param())# sets tied parameters to single value
+        self._set_params_transformed(self._get_params_transformed())# sets tied parameters to single value
 
     def untie_everything(self):
         """Unties all parameters by setting tied_indices to an empty list."""
@@ -87,7 +87,7 @@ class parameterised(object):
 
         Returns
         -------
-        the indices of self.get_param_names which match the regular expression.
+        the indices of self._get_param_names which match the regular expression.
 
         Notes
         -----
@@ -96,9 +96,9 @@ class parameterised(object):
 
         if type(expr) is str:
             expr = re.compile(expr)
-            return np.nonzero([expr.search(name) for name in self.get_param_names()])[0]
+            return np.nonzero([expr.search(name) for name in self._get_param_names()])[0]
         elif type(expr) is re._pattern_type:
-            return np.nonzero([expr.search(name) for name in self.get_param_names()])[0]
+            return np.nonzero([expr.search(name) for name in self._get_param_names()])[0]
         else:
             return expr
 
@@ -115,11 +115,11 @@ class parameterised(object):
         assert not np.any(matches[:,None]==self.all_constrained_indices()), "Some indices are already constrained"
         self.constrained_positive_indices = np.hstack((self.constrained_positive_indices, matches))
         #check to ensure constraint is in place
-        x = self.get_param()
+        x = self._get_params()
         for i,xx in enumerate(x):
             if (xx<0) & (i in matches):
                 x[i] = -xx
-        self.set_param(x)
+        self._set_params(x)
 
 
     def unconstrain(self,which):
@@ -163,11 +163,11 @@ class parameterised(object):
         assert not np.any(matches[:,None]==self.all_constrained_indices()), "Some indices are already constrained"
         self.constrained_negative_indices = np.hstack((self.constrained_negative_indices, matches))
         #check to ensure constraint is in place
-        x = self.get_param()
+        x = self._get_params()
         for i,xx in enumerate(x):
             if (xx>0.) and (i in matches):
                 x[i] = -xx
-        self.set_param(x)
+        self._set_params(x)
 
 
 
@@ -187,11 +187,11 @@ class parameterised(object):
         self.constrained_bounded_uppers.append(upper)
         self.constrained_bounded_lowers.append(lower)
         #check to ensure constraint is in place
-        x = self.get_param()
+        x = self._get_params()
         for i,xx in enumerate(x):
             if ((xx<=lower)|(xx>=upper)) & (i in matches):
                 x[i] = sigmoid(xx)*(upper-lower) + lower
-        self.set_param(x)
+        self._set_params(x)
 
 
     def constrain_fixed(self, which, value = None):
@@ -213,14 +213,14 @@ class parameterised(object):
         if value != None:
             self.constrained_fixed_values.append(value)
         else:
-            self.constrained_fixed_values.append(self.get_param()[self.constrained_fixed_indices[-1]])
+            self.constrained_fixed_values.append(self._get_params()[self.constrained_fixed_indices[-1]])
 
         #self.constrained_fixed_values.append(value)
-        self.expand_param(self.extract_param())
+        self._set_params_transformed(self._get_params_transformed())
 
-    def extract_param(self):
-        """use self.get_param to get the 'true' parameters of the model, which are then tied, constrained and fixed"""
-        x = self.get_param()
+    def _get_params_transformed(self):
+        """use self._get_params to get the 'true' parameters of the model, which are then tied, constrained and fixed"""
+        x = self._get_params()
         x[self.constrained_positive_indices] = np.log(x[self.constrained_positive_indices])
         x[self.constrained_negative_indices] = np.log(-x[self.constrained_negative_indices])
         [np.put(x,i,np.log(np.clip(x[i]-l,1e-10,np.inf)/np.clip(h-x[i],1e-10,np.inf))) for i,l,h in zip(self.constrained_bounded_indices, self.constrained_bounded_lowers, self.constrained_bounded_uppers)]
@@ -232,8 +232,8 @@ class parameterised(object):
             return x
 
 
-    def expand_param(self,x):
-        """ takes the vector x, which is then modified (by untying, reparameterising or inserting fixed values), and then call self.set_param"""
+    def _set_params_transformed(self,x):
+        """ takes the vector x, which is then modified (by untying, reparameterising or inserting fixed values), and then call self._set_params"""
 
         #work out how many places are fixed, and where they are. tricky logic!
         Nfix_places = 0.
@@ -257,14 +257,14 @@ class parameterised(object):
         xx[self.constrained_positive_indices] = np.exp(xx[self.constrained_positive_indices])
         xx[self.constrained_negative_indices] = -np.exp(xx[self.constrained_negative_indices])
         [np.put(xx,i,low+sigmoid(xx[i])*(high-low)) for i,low,high in zip(self.constrained_bounded_indices, self.constrained_bounded_lowers, self.constrained_bounded_uppers)]
-        self.set_param(xx)
+        self._set_params(xx)
 
-    def extract_param_names(self):
+    def _get_param_names_transformed(self):
         """
         Returns the parameter names as propagated after constraining,
-        tying or fixing, i.e. a list of the same length as extract_param()
+        tying or fixing, i.e. a list of the same length as _get_params_transformed()
         """
-        n =  self.get_param_names()
+        n =  self._get_param_names()
 
         #remove/concatenate the tied parameter names
         if len(self.tied_indices):
@@ -294,13 +294,13 @@ class parameterised(object):
         """
         Return a string describing the parameter names and their ties and constraints
         """
-        names = self.get_param_names()
+        names = self._get_param_names()
         N = len(names)
 
         if not N:
             return "This object has no free parameters."
         header = ['Name','Value','Constraints','Ties']
-        values = self.get_param() #map(str,self.get_param())
+        values = self._get_params() #map(str,self._get_params())
         #sort out the constraints
         constraints = ['']*len(names)
         for i in self.constrained_positive_indices:

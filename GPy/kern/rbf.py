@@ -46,16 +46,16 @@ class rbf(kernpart):
             else:
                 lengthscale = np.ones(self.D)
 
-        self.set_param(np.hstack((variance,lengthscale)))        
+        self._set_params(np.hstack((variance,lengthscale)))        
 
         #initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3,1))
         self._X, self._X2, self._params = np.empty(shape=(3,1))
 
-    def get_param(self):
+    def _get_params(self):
         return np.hstack((self.variance,self.lengthscale))
 
-    def set_param(self,x):
+    def _set_params(self,x):
         assert x.size==(self.Nparam)
         self.variance = x[0]
         self.lengthscale = x[1:]
@@ -64,7 +64,7 @@ class rbf(kernpart):
         self._X, self._X2, self._params = np.empty(shape=(3,1))
         self._Z, self._mu, self._S = np.empty(shape=(3,1)) # cached versions of Z,mu,S
 
-    def get_param_names(self):
+    def _get_param_names(self):
         if self.Nparam == 2:
             return ['variance','lengthscale']
         else:
@@ -109,8 +109,8 @@ class rbf(kernpart):
             if X2 is None: X2 = X
             self._K_dist = X[:,None,:]-X2[None,:,:] # this can be computationally heavy
             self._params = np.empty(shape=(1,0))#ensure the next section gets called
-        if not np.all(self._params == self.get_param()):
-            self._params == self.get_param()
+        if not np.all(self._params == self._get_params()):
+            self._params == self._get_params()
             self._K_dist2 = np.square(self._K_dist/self.lengthscale) 
             #self._K_exponent = -0.5*self._K_dist2.sum(-1) #ND: commented out because seems not to be used
             self._K_dvar = np.exp(-0.5*self._K_dist2.sum(-1))

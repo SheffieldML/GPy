@@ -70,16 +70,16 @@ class GP_regression(model):
 
         model.__init__(self)
 
-    def set_param(self,p):
-        self.kern.expand_param(p)
+    def _set_params(self,p):
+        self.kern._set_params_transformed(p)
         self.K = self.kern.K(self.X,slices1=self.Xslices)
         self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
 
-    def get_param(self):
-        return self.kern.extract_param()
+    def _get_params(self):
+        return self.kern._get_params_transformed()
 
-    def get_param_names(self):
-        return self.kern.extract_param_names()
+    def _get_param_names(self):
+        return self.kern._get_param_names_transformed()
 
     def _model_fit_term(self):
         """
@@ -103,7 +103,7 @@ class GP_regression(model):
 
         return dL_dK
 
-    def log_likelihood_gradients(self):
+    def _log_likelihood_gradients(self):
         return self.kern.dK_dtheta(partial=self.dL_dK(),X=self.X)
 
     def predict(self,Xnew, slices=None, full_cov=False):

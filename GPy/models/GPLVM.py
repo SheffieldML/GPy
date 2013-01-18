@@ -33,18 +33,18 @@ class GPLVM(GP_regression):
         else:
             return np.random.randn(Y.shape[0], Q)
 
-    def get_param_names(self):
+    def _get_param_names(self):
         return (sum([['X_%i_%i'%(n,q) for n in range(self.N)] for q in range(self.Q)],[])
-                + self.kern.extract_param_names())
+                + self.kern._get_param_names_transformed())
 
-    def get_param(self):
-        return np.hstack((self.X.flatten(), self.kern.extract_param()))
+    def _get_params(self):
+        return np.hstack((self.X.flatten(), self.kern._get_params_transformed()))
 
-    def set_param(self,x):
+    def _set_params(self,x):
         self.X = x[:self.X.size].reshape(self.N,self.Q).copy()
-        GP_regression.set_param(self, x[self.X.size:])
+        GP_regression._set_params(self, x[self.X.size:])
 
-    def log_likelihood_gradients(self):
+    def _log_likelihood_gradients(self):
         dL_dK = self.dL_dK()
 
         dL_dtheta = self.kern.dK_dtheta(dL_dK,self.X)

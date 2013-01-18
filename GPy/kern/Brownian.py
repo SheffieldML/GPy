@@ -23,16 +23,16 @@ class Brownian(kernpart):
         assert self.D==1, "Brownian motion in 1D only"
         self.Nparam = 1.
         self.name = 'Brownian'
-        self.set_param(np.array([variance]).flatten())
+        self._set_params(np.array([variance]).flatten())
 
-    def get_param(self):
+    def _get_params(self):
         return self.variance
 
-    def set_param(self,x):
+    def _set_params(self,x):
         assert x.shape==(1,)
         self.variance = x
 
-    def get_param_names(self):
+    def _get_param_names(self):
         return ['variance']
 
     def K(self,X,X2,target):

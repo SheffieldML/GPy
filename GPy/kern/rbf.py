@@ -21,7 +21,7 @@ class rbf(kernpart):
     :param variance: the variance of the kernel
     :type variance: float
     :param lengthscale: the vector of lengthscale of the kernel
-    :type lengthscale: np.ndarray
+    :type lengthscale: np.ndarray od size (1,) or (D,) depending on ARD
     :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one single lengthscale parameter \ell), otherwise there is one lengthscale parameter per dimension.
     :type ARD: Boolean
 

@@ -19,42 +19,53 @@ class Matern52(kernpart):
     :type D: int
     :param variance: the variance :math:`\sigma^2`
     :type variance: float
-    :param lengthscale: the lengthscales :math:`\ell_i`
-    :type lengthscale: np.ndarray of size (D,)
+    :param lengthscale: the vector of lengthscale :math:`\ell_i`
+    :type lengthscale: np.ndarray of size (1,) or (D,) depending on ARD
+    :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one single lengthscale parameter \ell), otherwise there is one lengthscale parameter per dimension.
+    :type ARD: Boolean
     :rtype: kernel object
 
     """
-    def __init__(self,D,variance=1.,lengthscales=None):
+    def __init__(self,D,variance=1.,lengthscale=None,ARD=False):
         self.D = D
-        if lengthscales is not None:
-            assert lengthscales.shape==(self.D,)
+        self.ARD = ARD
+        if ARD == False:
+            self.Nparam = 2
+            self.name = 'Mat32'
+            if lengthscale is not None:
+                assert lengthscale.shape == (1,)
+            else:
+                lengthscale = np.ones(1)
         else:
-            lengthscales = np.ones(self.D)
-        self.Nparam = self.D + 1
-        self.name = 'Mat52'
-        self._set_params(np.hstack((variance,lengthscales)))
+            self.Nparam = self.D + 1
+            self.name = 'Mat32_ARD'
+            if lengthscale is not None:
+                assert lengthscale.shape == (self.D,)
+            else:
+                lengthscale = np.ones(self.D)
+        self._set_params(np.hstack((variance,lengthscale)))
 
     def _get_params(self):
         """return the value of the parameters."""
-        return np.hstack((self.variance,self.lengthscales))
+        return np.hstack((self.variance,self.lengthscale))
 
     def _set_params(self,x):
         """set the value of the parameters."""
-        assert x.size==(self.D+1)
+        assert x.size == self.Nparam
         self.variance = x[0]
-        self.lengthscales = x[1:]
+        self.lengthscale = x[1:]
 
     def _get_param_names(self):
         """return parameter names."""
-        if self.D==1:
+        if self.Nparam == 2:
             return ['variance','lengthscale']
         else:
-            return ['variance']+['lengthscale_%i'%i for i in range(self.lengthscales.size)]
+            return ['variance']+['lengthscale_%i'%i for i in range(self.lengthscale.size)]
 
     def K(self,X,X2,target):
         """Compute the covariance matrix between X and X2."""
         if X2 is None: X2 = X
-        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))
+        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscale),-1))
         np.add(self.variance*(1+np.sqrt(5.)*dist+5./3*dist**2)*np.exp(-np.sqrt(5.)*dist), target,target)
 
     def Kdiag(self,X,target):
@@ -64,13 +75,19 @@ class Matern52(kernpart):
     def dK_dtheta(self,partial,X,X2,target):
         """derivative of the covariance matrix with respect to the parameters."""
         if X2 is None: X2 = X
-        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))
+        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscale),-1))
         invdist = 1./np.where(dist!=0.,dist,np.inf)
-        dist2M = np.square(X[:,None,:]-X2[None,:,:])/self.lengthscales**3
+        dist2M = np.square(X[:,None,:]-X2[None,:,:])/self.lengthscale**3
         dvar = (1+np.sqrt(5.)*dist+5./3*dist**2)*np.exp(-np.sqrt(5.)*dist)
-        dl = (self.variance * 5./3 * dist * (1 + np.sqrt(5.)*dist ) * np.exp(-np.sqrt(5.)*dist))[:,:,np.newaxis] * dist2M*invdist[:,:,np.newaxis]
         target[0] += np.sum(dvar*partial)
-        target[1:] += (dl*partial[:,:,None]).sum(0).sum(0)
+        if self.ARD:
+            dl = (self.variance * 5./3 * dist * (1 + np.sqrt(5.)*dist ) * np.exp(-np.sqrt(5.)*dist))[:,:,np.newaxis] * dist2M*invdist[:,:,np.newaxis]
+            #dl = (self.variance* 3 * dist * np.exp(-np.sqrt(3.)*dist))[:,:,np.newaxis] * dist2M*invdist[:,:,np.newaxis]
+            target[1:] += (dl*partial[:,:,None]).sum(0).sum(0)
+        else:
+            dl = (self.variance * 5./3 * dist * (1 + np.sqrt(5.)*dist ) * np.exp(-np.sqrt(5.)*dist)) * dist2M.sum(-1)*invdist
+            #dl = (self.variance* 3 * dist * np.exp(-np.sqrt(3.)*dist)) * dist2M.sum(-1)*invdist
+            target[1] += np.sum(dl*partial)
 
     def dKdiag_dtheta(self,X,target):
         """derivative of the diagonal of the covariance matrix with respect to the parameters."""
@@ -79,8 +96,8 @@ class Matern52(kernpart):
     def dK_dX(self,partial,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
         if X2 is None: X2 = X
-        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))[:,:,None]
-        ddist_dX = (X[:,None,:]-X2[None,:,:])/self.lengthscales**2/np.where(dist!=0.,dist,np.inf)
+        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscale),-1))[:,:,None]
+        ddist_dX = (X[:,None,:]-X2[None,:,:])/self.lengthscale**2/np.where(dist!=0.,dist,np.inf)
         dK_dX = -  np.transpose(self.variance*5./3*dist*(1+np.sqrt(5)*dist)*np.exp(-np.sqrt(5)*dist)*ddist_dX,(1,0,2))
         target += np.sum(dK_dX*partial.T[:,:,None],0)
 
@@ -104,18 +121,18 @@ class Matern52(kernpart):
         """
         assert self.D == 1
         def L(x,i):
-            return(5*np.sqrt(5)/self.lengthscales**3*F[i](x) + 15./self.lengthscales**2*F1[i](x)+ 3*np.sqrt(5)/self.lengthscales*F2[i](x) + F3[i](x))
+            return(5*np.sqrt(5)/self.lengthscale**3*F[i](x) + 15./self.lengthscale**2*F1[i](x)+ 3*np.sqrt(5)/self.lengthscale*F2[i](x) + F3[i](x))
         n = F.shape[0]
         G = np.zeros((n,n))
         for i in range(n):
             for j in range(i,n):
                 G[i,j] = G[j,i] = integrate.quad(lambda x : L(x,i)*L(x,j),lower,upper)[0]
-        G_coef = 3.*self.lengthscales**5/(400*np.sqrt(5))
+        G_coef = 3.*self.lengthscale**5/(400*np.sqrt(5))
         Flower = np.array([f(lower) for f in F])[:,None]
         F1lower = np.array([f(lower) for f in F1])[:,None]
         F2lower = np.array([f(lower) for f in F2])[:,None]
-        orig = 9./8*np.dot(Flower,Flower.T) + 9.*self.lengthscales**4/200*np.dot(F2lower,F2lower.T)
-        orig2 = 3./5*self.lengthscales**2 * ( np.dot(F1lower,F1lower.T) + 1./8*np.dot(Flower,F2lower.T) + 1./8*np.dot(F2lower,Flower.T))
+        orig = 9./8*np.dot(Flower,Flower.T) + 9.*self.lengthscale**4/200*np.dot(F2lower,F2lower.T)
+        orig2 = 3./5*self.lengthscale**2 * ( np.dot(F1lower,F1lower.T) + 1./8*np.dot(Flower,F2lower.T) + 1./8*np.dot(F2lower,Flower.T))
         return(1./self.variance* (G_coef*G + orig + orig2))
 
 

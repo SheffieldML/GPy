@@ -8,8 +8,6 @@ Simple Gaussian Processes classification
 import pylab as pb
 import numpy as np
 import GPy
-pb.ion()
-pb.close('all')
 
 default_seed=10000
 ######################################
@@ -27,7 +25,7 @@ def crescent_data(model_type='Full', inducing=10, seed=default_seed):
     likelihood = GPy.inference.likelihoods.probit(data['Y'])
 
     if model_type=='Full':
-        m = GPy.models.simple_GP_EP(data['X'],likelihood)
+        m = GPy.models.GP_EP(data['X'],likelihood)
     else:
         # create sparse GP EP model
         m = GPy.models.sparse_GP_EP(data['X'],likelihood=likelihood,inducing=inducing,ep_proxy=model_type)
@@ -49,7 +47,7 @@ def oil():
     likelihood = GPy.inference.likelihoods.probit(data['Y'][:, 0:1])
 
     # create simple GP model
-    m = GPy.models.simple_GP_EP(data['X'],likelihood)
+    m = GPy.models.GP_EP(data['X'],likelihood)
 
     # contrain all parameters to be positive
     m.constrain_positive('')

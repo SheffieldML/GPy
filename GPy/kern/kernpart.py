@@ -16,11 +16,11 @@ class kernpart(object):
         self.Nparam = 1
         self.name = 'unnamed'
 
-    def get_param(self):
+    def _get_params(self):
         raise NotImplementedError
-    def set_param(self,x):
+    def _set_params(self,x):
         raise NotImplementedError
-    def get_param_names(self):
+    def _get_param_names(self):
         raise NotImplementedError
     def K(self,X,X2,target):
         raise NotImplementedError

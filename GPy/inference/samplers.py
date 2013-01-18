@@ -73,12 +73,12 @@ class Metropolis_Hastings:
 
     def predict(self,function,args):
         """Make a prediction for the function, to which we will pass the additional arguments"""
-        param = self.model.get_param()
+        param = self.model._get_params()
         fs = []
         for p in self.chain:
-            self.model.set_param(p)
+            self.model._set_params(p)
             fs.append(function(*args))
-        self.model.set_param(param)# reset model to starting state
+        self.model._set_params(param)# reset model to starting state
         return fs
 
 

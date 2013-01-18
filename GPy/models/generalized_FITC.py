@@ -42,14 +42,14 @@ class generalized_FITC(model):
         self.jitter = 1e-12
         model.__init__(self)
 
-    def set_param(self,p):
+    def _set_params(self,p):
         self.kernel.expand_param(p[0:-self.Z.size])
         self.Z = p[-self.Z.size:].reshape(self.M,self.D)
 
-    def get_param(self):
+    def _get_params(self):
         return np.hstack([self.kernel.extract_param(),self.Z.flatten()])
 
-    def get_param_names(self):
+    def _get_param_names(self):
         return self.kernel.extract_param_names()+['iip_%i'%i for i in range(self.Z.size)]
 
     def approximate_likelihood(self):
@@ -214,7 +214,7 @@ class generalized_FITC(model):
         """
         self.epsilon_em = epsilon
         log_likelihood_change = self.epsilon_em + 1.
-        self.parameters_path = [self.kernel.get_param()]
+        self.parameters_path = [self.kernel._get_params()]
         self.approximate_likelihood()
         self.site_approximations_path = [[self.ep_approx.tau_tilde,self.ep_approx.v_tilde]]
         self.inducing_inputs_path = [self.Z]
@@ -235,7 +235,7 @@ class generalized_FITC(model):
             else:
                 self.approximate_likelihood()
                 self.log_likelihood_path.append(self.log_likelihood())
-                self.parameters_path.append(self.kernel.get_param())
+                self.parameters_path.append(self.kernel._get_params())
                 self.site_approximations_path.append([self.ep_approx.tau_tilde,self.ep_approx.v_tilde])
                 self.inducing_inputs_path.append(self.Z)
             iteration += 1

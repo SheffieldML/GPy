@@ -70,15 +70,15 @@ class GP_regression(model):
 
         model.__init__(self)
 
-    def set_param(self,p):
+    def _set_params(self,p):
         self.kern.expand_param(p)
         self.K = self.kern.K(self.X,slices1=self.Xslices)
         self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
 
-    def get_param(self):
+    def _get_params(self):
         return self.kern.extract_param()
 
-    def get_param_names(self):
+    def _get_param_names(self):
         return self.kern.extract_param_names()
 
     def _model_fit_term(self):

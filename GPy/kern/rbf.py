@@ -30,23 +30,23 @@ class rbf(kernpart):
         self.D = D
         self.Nparam = 2
         self.name = 'rbf'
-        self.set_param(np.hstack((variance,lengthscale)))
+        self._set_params(np.hstack((variance,lengthscale)))
 
         #initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3,1))
         self._X, self._X2, self._params = np.empty(shape=(3,1))
 
-    def get_param(self):
+    def _get_params(self):
         return np.hstack((self.variance,self.lengthscale))
 
-    def set_param(self,x):
+    def _set_params(self,x):
         self.variance, self.lengthscale = x
         self.lengthscale2 = np.square(self.lengthscale)
         #reset cached results
         self._X, self._X2, self._params = np.empty(shape=(3,1))
         self._Z, self._mu, self._S = np.empty(shape=(3,1)) # cached versions of Z,mu,S
 
-    def get_param_names(self):
+    def _get_param_names(self):
         return ['variance','lengthscale']
 
     def K(self,X,X2,target):

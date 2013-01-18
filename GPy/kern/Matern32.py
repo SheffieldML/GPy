@@ -34,19 +34,19 @@ class Matern32(kernpart):
             lengthscales = np.ones(self.D)
         self.Nparam = self.D + 1
         self.name = 'Mat32'
-        self.set_param(np.hstack((variance,lengthscales)))
+        self._set_params(np.hstack((variance,lengthscales)))
 
-    def get_param(self):
+    def _get_params(self):
         """return the value of the parameters."""
         return np.hstack((self.variance,self.lengthscales))
 
-    def set_param(self,x):
+    def _set_params(self,x):
         """set the value of the parameters."""
         assert x.size==(self.D+1)
         self.variance = x[0]
         self.lengthscales = x[1:]
 
-    def get_param_names(self):
+    def _get_param_names(self):
         """return parameter names."""
         if self.D==1:
             return ['variance','lengthscale']

@@ -33,7 +33,7 @@ class WarpingFunction(object):
         """inverse function transformation"""
         raise NotImplementedError
 
-    def get_param_names(self):
+    def _get_param_names(self):
         raise NotImplementedError
 
     def plot(self, psi, xmin, xmax):
@@ -151,7 +151,7 @@ class TanhWarpingFunction(WarpingFunction):
 
         return gradients
 
-    def get_param_names(self):
+    def _get_param_names(self):
         variables = ['a', 'b', 'c']
         names = sum([['warp_tanh_%s_t%i' % (variables[n],q) for n in range(3)] for q in range(self.n_terms)],[])
         return names

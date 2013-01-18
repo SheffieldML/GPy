@@ -22,16 +22,16 @@ class rbf_ARD(kernpart):
             lengthscales = np.ones(self.D)
         self.Nparam = self.D + 1
         self.name = 'rbf_ARD'
-        self.set_param(np.hstack((variance,lengthscales)))
+        self._set_params(np.hstack((variance,lengthscales)))
 
         #initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3,1))
         self._X, self._X2, self._params = np.empty(shape=(3,1))
 
-    def get_param(self):
+    def _get_params(self):
         return np.hstack((self.variance,self.lengthscales))
 
-    def set_param(self,x):
+    def _set_params(self,x):
         assert x.size==(self.D+1)
         self.variance = x[0]
         self.lengthscales = x[1:]
@@ -39,7 +39,7 @@ class rbf_ARD(kernpart):
         #reset cached results
         self._Z, self._mu, self._S = np.empty(shape=(3,1)) # cached versions of Z,mu,S
 
-    def get_param_names(self):
+    def _get_param_names(self):
         if self.D==1:
             return ['variance','lengthscale']
         else:
@@ -135,8 +135,8 @@ class rbf_ARD(kernpart):
             if X2 is None: X2 = X
             self._K_dist = X[:,None,:]-X2[None,:,:] # this can be computationally heavy
             self._params = np.empty(shape=(1,0))#ensure the next section gets called
-        if not np.all(self._params == self.get_param()):
-            self._params == self.get_param()
+        if not np.all(self._params == self._get_params()):
+            self._params == self._get_params()
             self._K_dist2 = np.square(self._K_dist/self.lengthscales)
             self._K_exponent = -0.5*self._K_dist2.sum(-1)
             self._K_dvar = np.exp(-0.5*self._K_dist2.sum(-1))
@@ -189,7 +189,7 @@ if __name__=='__main__':
     from checkgrad import checkgrad
 
     def k_theta_test(param,k):
-        k.set_param(param)
+        k._set_params(param)
         K = k.K(Z)
         dK_dtheta = k.dK_dtheta(Z)
         f = np.sum(K)
@@ -216,7 +216,7 @@ if __name__=='__main__':
     checkgrad(psi1_S_test,np.random.rand(N*Q),args=(k,))
 
     def psi1_theta_test(theta,k):
-        k.set_param(theta)
+        k._set_params(theta)
         f = np.sum(k.psi1(Z,mu,S))
         df = np.array([np.sum(grad) for grad in k.dpsi1_dtheta(Z,mu,S)])
         return f,df
@@ -241,7 +241,7 @@ if __name__=='__main__':
     checkgrad(psi2_S_test,np.random.rand(N*Q),args=(k,))
 
     def psi2_theta_test(theta,k):
-        k.set_param(theta)
+        k._set_params(theta)
         f = np.sum(k.psi2(Z,mu,S))
         df = np.array([np.sum(grad) for grad in k.dpsi2_dtheta(Z,mu,S)])
         return f,df

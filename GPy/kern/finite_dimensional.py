@@ -27,15 +27,15 @@ class finite_dimensional(kernpart):
             weights = np.ones(self.n)
         self.Nparam = self.n + 1
         self.name = 'finite_dim'
-        self.set_param(np.hstack((variance,weights)))
+        self._set_params(np.hstack((variance,weights)))
 
-    def get_param(self):
+    def _get_params(self):
         return np.hstack((self.variance,self.weights))
-    def set_param(self,x):
+    def _set_params(self,x):
         assert x.size == (self.Nparam)
         self.variance = x[0]
         self.weights = x[1:]
-    def get_param_names(self):
+    def _get_param_names(self):
         if self.n==1:
             return ['variance','weight']
         else:

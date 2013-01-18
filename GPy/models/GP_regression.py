@@ -79,7 +79,7 @@ class GP_regression(model):
         return self.kern._get_params_transformed()
 
     def _get_param_names(self):
-        return self.kern._get_params_names_transformed()
+        return self.kern._get_param_names_transformed()
 
     def _model_fit_term(self):
         """

@@ -20,43 +20,52 @@ class Matern32(kernpart):
     :type D: int
     :param variance: the variance :math:`\sigma^2`
     :type variance: float
-    :param lengthscale: the lengthscales :math:`\ell_i`
+    :param lengthscale: the lengthscale :math:`\ell_i`
     :type lengthscale: np.ndarray of size (D,)
     :rtype: kernel object
 
     """
 
-    def __init__(self,D,variance=1.,lengthscales=None):
+    def __init__(self,D,variance=1.,lengthscale=None,ARD=False):
         self.D = D
-        if lengthscales is not None:
-            assert lengthscales.shape==(self.D,)
+        self.ARD = ARD
+        if ARD == False:
+            self.Nparam = 2
+            self.name = 'Mat32'
+            if lengthscale is not None:
+                assert lengthscale.shape == (1,)
+            else:
+                lengthscale = np.ones(1)
         else:
-            lengthscales = np.ones(self.D)
-        self.Nparam = self.D + 1
-        self.name = 'Mat32'
-        self._set_params(np.hstack((variance,lengthscales)))
+            self.Nparam = self.D + 1
+            self.name = 'Mat32_ARD'
+            if lengthscale is not None:
+                assert lengthscale.shape == (self.D,)
+            else:
+                lengthscale = np.ones(self.D)
+        self._set_params(np.hstack((variance,lengthscale)))
 
     def _get_params(self):
         """return the value of the parameters."""
-        return np.hstack((self.variance,self.lengthscales))
+        return np.hstack((self.variance,self.lengthscale))
 
     def _set_params(self,x):
         """set the value of the parameters."""
-        assert x.size==(self.D+1)
+        assert x.size == self.Nparam
         self.variance = x[0]
-        self.lengthscales = x[1:]
+        self.lengthscale = x[1:]
 
     def _get_param_names(self):
         """return parameter names."""
-        if self.D==1:
+        if self.Nparam == 2:
             return ['variance','lengthscale']
         else:
-            return ['variance']+['lengthscale_%i'%i for i in range(self.lengthscales.size)]
+            return ['variance']+['lengthscale_%i'%i for i in range(self.lengthscale.size)]
 
     def K(self,X,X2,target):
         """Compute the covariance matrix between X and X2."""
         if X2 is None: X2 = X
-        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))
+        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscale),-1))
         np.add(self.variance*(1+np.sqrt(3.)*dist)*np.exp(-np.sqrt(3.)*dist), target,target)
 
     def Kdiag(self,X,target):
@@ -66,13 +75,20 @@ class Matern32(kernpart):
     def dK_dtheta(self,partial,X,X2,target):
         """derivative of the covariance matrix with respect to the parameters."""
         if X2 is None: X2 = X
-        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))
+        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscale),-1))
         dvar = (1+np.sqrt(3.)*dist)*np.exp(-np.sqrt(3.)*dist)
         invdist = 1./np.where(dist!=0.,dist,np.inf)
-        dist2M = np.square(X[:,None,:]-X2[None,:,:])/self.lengthscales**3
-        dl = (self.variance* 3 * dist * np.exp(-np.sqrt(3.)*dist))[:,:,np.newaxis] * dist2M*invdist[:,:,np.newaxis]
+        dist2M = np.square(X[:,None,:]-X2[None,:,:])/self.lengthscale**3
+        #dl = (self.variance* 3 * dist * np.exp(-np.sqrt(3.)*dist))[:,:,np.newaxis] * dist2M*invdist[:,:,np.newaxis]
         target[0] += np.sum(dvar*partial)
-        target[1:] += (dl*partial[:,:,None]).sum(0).sum(0)
+        if self.ARD == True:
+            dl = (self.variance* 3 * dist * np.exp(-np.sqrt(3.)*dist))[:,:,np.newaxis] * dist2M*invdist[:,:,np.newaxis]
+            #dl = self.variance*dvar[:,:,None]*dist2M*invdist[:,:,None]
+            target[1:] += (dl*partial[:,:,None]).sum(0).sum(0)
+        else:
+            dl = (self.variance* 3 * dist * np.exp(-np.sqrt(3.)*dist)) * dist2M.sum(-1)*invdist
+            #dl = self.variance*dvar*dist2M.sum(-1)*invdist
+            target[1] += np.sum(dl*partial)
 
     def dKdiag_dtheta(self,partial,X,target):
         """derivative of the diagonal of the covariance matrix with respect to the parameters."""
@@ -81,8 +97,8 @@ class Matern32(kernpart):
     def dK_dX(self,partial,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
         if X2 is None: X2 = X
-        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscales),-1))[:,:,None]
-        ddist_dX = (X[:,None,:]-X2[None,:,:])/self.lengthscales**2/np.where(dist!=0.,dist,np.inf)
+        dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscale),-1))[:,:,None]
+        ddist_dX = (X[:,None,:]-X2[None,:,:])/self.lengthscale**2/np.where(dist!=0.,dist,np.inf)
         dK_dX = - np.transpose(3*self.variance*dist*np.exp(-np.sqrt(3)*dist)*ddist_dX,(1,0,2))
         target += np.sum(dK_dX*partial.T[:,:,None],0)
 
@@ -104,7 +120,7 @@ class Matern32(kernpart):
         """
         assert self.D == 1
         def L(x,i):
-            return(3./self.lengthscales**2*F[i](x) + 2*np.sqrt(3)/self.lengthscales*F1[i](x) + F2[i](x))
+            return(3./self.lengthscale**2*F[i](x) + 2*np.sqrt(3)/self.lengthscale*F1[i](x) + F2[i](x))
         n = F.shape[0]
         G = np.zeros((n,n))
         for i in range(n):
@@ -114,5 +130,5 @@ class Matern32(kernpart):
         F1lower = np.array([f(lower) for f in F1])[:,None]
         #print "OLD \n", np.dot(F1lower,F1lower.T), "\n \n"
         #return(G)
-        return(self.lengthscales**3/(12.*np.sqrt(3)*self.variance) * G + 1./self.variance*np.dot(Flower,Flower.T) + self.lengthscales**2/(3.*self.variance)*np.dot(F1lower,F1lower.T))
+        return(self.lengthscale**3/(12.*np.sqrt(3)*self.variance) * G + 1./self.variance*np.dot(Flower,Flower.T) + self.lengthscale**2/(3.*self.variance)*np.dot(F1lower,F1lower.T))
 

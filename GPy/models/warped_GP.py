@@ -48,9 +48,9 @@ class warpedGP(GP_regression):
 
         # this supports the 'smart' behaviour in GP_regression
         if self.D > self.N:
-            self.Youter = np.dot(self.Y, self.Y.T)
+            self.YYT = np.dot(self.Y, self.Y.T)
         else:
-            self.Youter = None
+            self.YYT = None
 
         return self.Y
 

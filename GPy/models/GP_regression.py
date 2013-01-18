@@ -63,10 +63,10 @@ class GP_regression(model):
             self._Ystd = np.ones((1,self.Y.shape[1]))
 
         if self.D > self.N:
-            # then it's more efficient to store Youter
-            self.Youter = np.dot(self.Y, self.Y.T)
+            # then it's more efficient to store YYT
+            self.YYT = np.dot(self.Y, self.Y.T)
         else:
-            self.Youter = None
+            self.YYT = None
 
         model.__init__(self)
 
@@ -83,23 +83,23 @@ class GP_regression(model):
 
     def _model_fit_term(self):
         """
-        Computes the model fit using Youter if it's available
+        Computes the model fit using YYT if it's available
         """
-        if self.Youter is None:
+        if self.YYT is None:
             return -0.5*np.sum(np.square(np.dot(self.Li,self.Y)))
         else:
-            return -0.5*np.sum(np.multiply(self.Ki, self.Youter))
+            return -0.5*np.sum(np.multiply(self.Ki, self.YYT))
 
     def log_likelihood(self):
         complexity_term = -0.5*self.N*self.D*np.log(2.*np.pi) - 0.5*self.D*self.K_logdet
         return complexity_term + self._model_fit_term()
 
     def dL_dK(self):
-        if self.Youter is None:
+        if self.YYT is None:
             alpha = np.dot(self.Ki,self.Y)
             dL_dK = 0.5*(np.dot(alpha,alpha.T)-self.D*self.Ki)
         else:
-            dL_dK = 0.5*(mdot(self.Ki, self.Youter, self.Ki) - self.D*self.Ki)
+            dL_dK = 0.5*(mdot(self.Ki, self.YYT, self.Ki) - self.D*self.Ki)
 
         return dL_dK
 

@@ -289,4 +289,4 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 if on_rtd:
   os.system("pwd")
-  os.system("sphinx-apidoc -f -o . ./GPy")
+  os.system("sphinx-apidoc -f -o . ../GPy")

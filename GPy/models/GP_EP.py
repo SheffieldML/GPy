@@ -42,13 +42,13 @@ class GP_EP(model):
         model.__init__(self)
 
     def _set_params(self,p):
-        self.kernel.expand_param(p)
+        self.kernel._set_params_transformed(p)
 
     def _get_params(self):
-        return self.kernel.extract_param()
+        return self.kernel._get_params_transformed()
 
     def _get_param_names(self):
-        return self.kernel.extract_param_names()
+        return self.kernel._get_param_names_transformed()
 
     def approximate_likelihood(self):
         self.ep_approx = Full(self.K,self.likelihood,epsilon=self.epsilon_ep,powerep=[self.eta,self.delta])
@@ -150,8 +150,8 @@ class GP_EP(model):
             log_likelihood_change = log_likelihood_new - self.log_likelihood_path[-1]
             if log_likelihood_change < 0:
                 print 'log_likelihood decrement'
-                self.kernel.expand_param(self.parameters_path[-1])
-                self.kernM.expand_param(self.parameters_path[-1])
+                self.kernel._set_params_transformed(self.parameters_path[-1])
+                self.kernM._set_params_transformed(self.parameters_path[-1])
             else:
                 self.approximate_likelihood()
                 self.log_likelihood_path.append(self.log_likelihood())

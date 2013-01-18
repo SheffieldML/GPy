@@ -43,14 +43,14 @@ class generalized_FITC(model):
         model.__init__(self)
 
     def _set_params(self,p):
-        self.kernel.expand_param(p[0:-self.Z.size])
+        self.kernel._set_params_transformed(p[0:-self.Z.size])
         self.Z = p[-self.Z.size:].reshape(self.M,self.D)
 
     def _get_params(self):
-        return np.hstack([self.kernel.extract_param(),self.Z.flatten()])
+        return np.hstack([self.kernel._get_params_transformed(),self.Z.flatten()])
 
     def _get_param_names(self):
-        return self.kernel.extract_param_names()+['iip_%i'%i for i in range(self.Z.size)]
+        return self.kernel._get_param_names_transformed()+['iip_%i'%i for i in range(self.Z.size)]
 
     def approximate_likelihood(self):
         self.Kmm = self.kernel.K(self.Z)
@@ -227,7 +227,7 @@ class generalized_FITC(model):
             log_likelihood_change = log_likelihood_new - self.log_likelihood_path[-1]
             if log_likelihood_change < 0:
                 print 'log_likelihood decrement'
-                self.kernel.expand_param(self.parameters_path[-1])
+                self.kernel._set_params_transformed(self.parameters_path[-1])
                 self.kernM = self.kernel.copy()
                 slef.kernM.expand_X(self.iducing_inputs_path[-1])
                 self.__init__(self.kernel,self.likelihood,kernM=self.kernM,powerep=[self.eta,self.delta],epsilon_ep = self.epsilon_ep, epsilon_em = self.epsilon_em)

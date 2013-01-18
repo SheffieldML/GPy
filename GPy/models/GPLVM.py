@@ -35,10 +35,10 @@ class GPLVM(GP_regression):
 
     def _get_param_names(self):
         return (sum([['X_%i_%i'%(n,q) for n in range(self.N)] for q in range(self.Q)],[])
-                + self.kern.extract_param_names())
+                + self.kern._get_param_names_transformed())
 
     def _get_params(self):
-        return np.hstack((self.X.flatten(), self.kern.extract_param()))
+        return np.hstack((self.X.flatten(), self.kern._get_params_transformed()))
 
     def _set_params(self,x):
         self.X = x[:self.X.size].reshape(self.N,self.Q).copy()

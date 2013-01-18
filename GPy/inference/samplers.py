@@ -17,7 +17,7 @@ class Metropolis_Hastings:
     def __init__(self,model,cov=None):
         """Metropolis Hastings, with tunings according to Gelman et al. """
         self.model = model
-        current = self.model.extract_param()
+        current = self.model._get_params_transformed()
         self.D = current.size
         self.chains = []
         if cov is None:
@@ -32,19 +32,19 @@ class Metropolis_Hastings:
         if start is None:
             self.model.randomize()
         else:
-            self.model.expand_param(start)
+            self.model._set_params_transformed(start)
 
 
 
     def sample(self, Ntotal, Nburn, Nthin, tune=True, tune_throughout=False, tune_interval=400):
-        current = self.model.extract_param()
+        current = self.model._get_params_transformed()
         fcurrent = self.model.log_likelihood() + self.model.log_prior()
         accepted = np.zeros(Ntotal,dtype=np.bool)
         for it in range(Ntotal):
             print "sample %d of %d\r"%(it,Ntotal),
             sys.stdout.flush()
             prop = np.random.multivariate_normal(current, self.cov*self.scale*self.scale)
-            self.model.expand_param(prop)
+            self.model._set_params_transformed(prop)
             fprop = self.model.log_likelihood() + self.model.log_prior()
 
             if fprop>fcurrent:#sample accepted, going 'uphill'

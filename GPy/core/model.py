@@ -115,7 +115,7 @@ class model(parameterised):
         [np.put(ret,i,p.lnpdf_grad(xx)) for i,(p,xx) in enumerate(zip(self.priors,x)) if not p is None]
         return ret
 
-    def extract_gradients(self):
+    def _log_likelihood_gradients_transformed(self):
         """
         Use self.log_likelihood_gradients and self.prior_gradients to get the gradients of the model.
         Adjust the gradient for constraints and ties, return.
@@ -138,14 +138,14 @@ class model(parameterised):
         Make this draw from the prior if one exists, else draw from N(0,1)
         """
         #first take care of all parameters (from N(0,1))
-        x = self.extract_param()
+        x = self._get_params_transformed()
         x = np.random.randn(x.size)
-        self.expand_param(x)
+        self._set_params_transformed(x)
         #now draw from prior where possible
         x = self._get_params()
         [np.put(x,i,p.rvs(1)) for i,p in enumerate(self.priors) if not p is None]
         self._set_params(x)
-        self.expand_param(self.extract_param())#makes sure all of the tied parameters get the same init (since there's only one prior object...)
+        self._set_params_transformed(self._get_params_transformed())#makes sure all of the tied parameters get the same init (since there's only one prior object...)
 
 
     def optimize_restarts(self, Nrestarts=10, robust=False, verbose=True, **kwargs):
@@ -165,7 +165,7 @@ class model(parameterised):
         :verbose: whether to show informations about the current restart
         """
 
-        initial_parameters = self.extract_param()
+        initial_parameters = self._get_params_transformed()
         for i in range(Nrestarts):
             try:
                 self.randomize()
@@ -182,9 +182,9 @@ class model(parameterised):
                     raise e
         if len(self.optimization_runs):
             i = np.argmax([o.f_opt for o in self.optimization_runs])
-            self.expand_param(self.optimization_runs[i].x_opt)
+            self._set_params_transformed(self.optimization_runs[i].x_opt)
         else:
-            self.expand_param(initial_parameters)
+            self._set_params_transformed(initial_parameters)
 
     def ensure_default_constraints(self,warn=False):
         """
@@ -214,24 +214,24 @@ class model(parameterised):
             optimizer = self.preferred_optimizer
 
         def f(x):
-            self.expand_param(x)
+            self._set_params_transformed(x)
             return -self.log_likelihood()-self.log_prior()
         def fp(x):
-            self.expand_param(x)
-            return -self.extract_gradients()
+            self._set_params_transformed(x)
+            return -self._log_likelihood_gradients_transformed()
         def f_fp(x):
-            self.expand_param(x)
-            return -self.log_likelihood()-self.log_prior(),-self.extract_gradients()
+            self._set_params_transformed(x)
+            return -self.log_likelihood()-self.log_prior(),-self._log_likelihood_gradients_transformed()
 
         if start == None:
-            start = self.extract_param()
+            start = self._get_params_transformed()
 
         optimizer = optimization.get_optimizer(optimizer)
         opt = optimizer(start, model = self, **kwargs)
         opt.run(f_fp=f_fp, f=f, fp=fp)
         self.optimization_runs.append(opt)
 
-        self.expand_param(opt.x_opt)
+        self._set_params_transformed(opt.x_opt)
 
     def optimize_SGD(self, momentum = 0.1, learning_rate = 0.01, iterations = 20, **kwargs):
         # assert self.Y.shape[1] > 1, "SGD only works with D > 1"
@@ -292,18 +292,18 @@ class model(parameterised):
         If the overall gradient fails, invividual components are tested.
         """
 
-        x = self.extract_param().copy()
+        x = self._get_params_transformed().copy()
 
         #choose a random direction to step in:
         dx = step*np.sign(np.random.uniform(-1,1,x.size))
 
         #evaulate around the point x
-        self.expand_param(x+dx)
-        f1,g1 = self.log_likelihood() + self.log_prior(), self.extract_gradients()
-        self.expand_param(x-dx)
-        f2,g2 = self.log_likelihood() + self.log_prior(), self.extract_gradients()
-        self.expand_param(x)
-        gradient = self.extract_gradients()
+        self._set_params_transformed(x+dx)
+        f1,g1 = self.log_likelihood() + self.log_prior(), self._log_likelihood_gradients_transformed()
+        self._set_params_transformed(x-dx)
+        f2,g2 = self.log_likelihood() + self.log_prior(), self._log_likelihood_gradients_transformed()
+        self._set_params_transformed(x)
+        gradient = self._log_likelihood_gradients_transformed()
 
         numerical_gradient = (f1-f2)/(2*dx)
         ratio = (f1-f2)/(2*np.dot(dx,gradient))
@@ -319,7 +319,7 @@ class model(parameterised):
                 print "Global check failed. Testing individual gradients\n"
 
                 try:
-                    names = self.extract_param_names()
+                    names = self._get_param_names_transformed()
                 except NotImplementedError:
                     names = ['Variable %i'%i for i in range(len(x))]
 
@@ -338,13 +338,13 @@ class model(parameterised):
             for i in range(len(x)):
                 xx = x.copy()
                 xx[i] += step
-                self.expand_param(xx)
-                f1,g1 = self.log_likelihood() + self.log_prior(), self.extract_gradients()[i]
+                self._set_params_transformed(xx)
+                f1,g1 = self.log_likelihood() + self.log_prior(), self._log_likelihood_gradients_transformed()[i]
                 xx[i] -= 2.*step
-                self.expand_param(xx)
-                f2,g2 = self.log_likelihood() + self.log_prior(), self.extract_gradients()[i]
-                self.expand_param(x)
-                gradient = self.extract_gradients()[i]
+                self._set_params_transformed(xx)
+                f2,g2 = self.log_likelihood() + self.log_prior(), self._log_likelihood_gradients_transformed()[i]
+                self._set_params_transformed(x)
+                gradient = self._log_likelihood_gradients_transformed()[i]
 
 
                 numerical_gradient = (f1-f2)/(2*step)

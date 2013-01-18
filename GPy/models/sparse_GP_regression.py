@@ -107,10 +107,10 @@ class sparse_GP_regression(GP_regression):
         self.dL_dKmm +=  np.dot(np.dot(self.G,self.beta*self.psi2) - np.dot(self.LBL_inv, self.psi1VVpsi1), self.Kmmi) + 0.5*self.G # dE
 
     def _get_params(self):
-        return np.hstack([self.Z.flatten(),self.beta,self.kern.extract_param()])
+        return np.hstack([self.Z.flatten(),self.beta,self.kern._get_params_transformed()])
 
     def _get_param_names(self):
-        return sum([['iip_%i_%i'%(i,j) for i in range(self.Z.shape[0])] for j in range(self.Z.shape[1])],[]) + ['noise_precision']+self.kern.extract_param_names()
+        return sum([['iip_%i_%i'%(i,j) for i in range(self.Z.shape[0])] for j in range(self.Z.shape[1])],[]) + ['noise_precision']+self.kern._get_param_names_transformed()
 
     def log_likelihood(self):
         """

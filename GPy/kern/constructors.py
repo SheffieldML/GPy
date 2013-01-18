@@ -6,7 +6,6 @@ import numpy as np
 from kern import kern
 
 from rbf import rbf as rbfpart
-from rbf_ARD import rbf_ARD as rbf_ARD_part
 from white import white as whitepart
 from linear import linear as linearpart
 from linear_ARD import linear_ARD as linear_ARD_part

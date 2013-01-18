@@ -121,7 +121,7 @@ class GradientTests(unittest.TestCase):
         """ Testing GPLVM with rbf + bias and white kernel """
         N, Q, D = 50, 1, 2
         X = np.random.rand(N, Q)
-        k = GPy.kern.rbf(Q, 0.5, 0.9) + GPy.kern.bias(Q, 0.1) + GPy.kern.white(Q, 0.05)
+        k = GPy.kern.rbf(Q, 0.5, 0.9*np.ones((1,))) + GPy.kern.bias(Q, 0.1) + GPy.kern.white(Q, 0.05)
         K = k.K(X)
         Y = np.random.multivariate_normal(np.zeros(N),K,D).T
         m = GPy.models.GPLVM(Y, Q, kernel = k)

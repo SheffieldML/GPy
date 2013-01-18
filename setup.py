@@ -26,7 +26,7 @@ setup(name = 'GPy',
       long_description=read('README.md'),
       #ext_modules =  [Extension(name = 'GPy.kern.lfmUpsilonf2py',
       #          sources = ['GPy/kern/src/lfmUpsilonf2py.f90'])],
-      install_requires=['numpy>=1.6', 'scipy>=0.9','matplotlib>=1.1'],
+      install_requires=['numpy>=1.6', 'scipy','matplotlib>=1.1'],
       setup_requires=['sphinx'],
       cmdclass = {'build_sphinx': BuildDoc},
       classifiers=[

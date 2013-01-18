@@ -25,15 +25,15 @@ class spline(kernpart):
         assert self.D==1
         self.Nparam = 1
         self.name = 'spline'
-        self.set_param(np.squeeze(variance))
+        self._set_params(np.squeeze(variance))
 
-    def get_param(self):
+    def _get_params(self):
         return self.variance
 
-    def set_param(self,x):
+    def _set_params(self,x):
         self.variance = x
 
-    def get_param_names(self):
+    def _get_param_names(self):
         return ['variance']
 
     def K(self,X,X2,target):

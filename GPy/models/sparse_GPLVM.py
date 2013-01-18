@@ -27,16 +27,16 @@ class sparse_GPLVM(sparse_GP_regression, GPLVM):
         X = self.initialise_latent(init, Q, Y)
         sparse_GP_regression.__init__(self, X, Y, **kwargs)
 
-    def get_param_names(self):
+    def _get_param_names(self):
         return (sum([['X_%i_%i'%(n,q) for n in range(self.N)] for q in range(self.Q)],[])
-                + sparse_GP_regression.get_param_names(self))
+                + sparse_GP_regression._get_param_names(self))
 
-    def get_param(self):
-        return np.hstack((self.X.flatten(), sparse_GP_regression.get_param(self)))
+    def _get_params(self):
+        return np.hstack((self.X.flatten(), sparse_GP_regression._get_params(self)))
 
-    def set_param(self,x):
+    def _set_params(self,x):
         self.X = x[:self.X.size].reshape(self.N,self.Q).copy()
-        sparse_GP_regression.set_param(self, x[self.X.size:])
+        sparse_GP_regression._set_params(self, x[self.X.size:])
 
     def log_likelihood(self):
         return sparse_GP_regression.log_likelihood(self)
@@ -49,8 +49,8 @@ class sparse_GPLVM(sparse_GP_regression, GPLVM):
 
         return dL_dX
 
-    def log_likelihood_gradients(self):
-        return np.hstack((self.dL_dX().flatten(), sparse_GP_regression.log_likelihood_gradients(self)))
+    def _log_likelihood_gradients(self):
+        return np.hstack((self.dL_dX().flatten(), sparse_GP_regression._log_likelihood_gradients(self)))
 
     def plot(self):
         GPLVM.plot(self)

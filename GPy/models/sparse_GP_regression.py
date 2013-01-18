@@ -59,10 +59,10 @@ class sparse_GP_regression(GP_regression):
         if self.has_uncertain_inputs:
             self.X_uncertainty /= np.square(self._Xstd)
 
-    def set_param(self, p):
+    def _set_params(self, p):
         self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
         self.beta = p[self.M*self.Q]
-        self.kern.set_param(p[self.Z.size + 1:])
+        self.kern._set_params(p[self.Z.size + 1:])
         self.beta2 = self.beta**2
         self._compute_kernel_matrices()
         self._computations()
@@ -106,11 +106,11 @@ class sparse_GP_regression(GP_regression):
         self.dL_dKmm += -0.5 * self.D * (- self.LBL_inv - 2.*self.beta*mdot(self.LBL_inv, self.psi2, self.Kmmi) + self.Kmmi) # dC
         self.dL_dKmm +=  np.dot(np.dot(self.G,self.beta*self.psi2) - np.dot(self.LBL_inv, self.psi1VVpsi1), self.Kmmi) + 0.5*self.G # dE
 
-    def get_param(self):
-        return np.hstack([self.Z.flatten(),self.beta,self.kern.extract_param()])
+    def _get_params(self):
+        return np.hstack([self.Z.flatten(),self.beta,self.kern._get_params_transformed()])
 
-    def get_param_names(self):
-        return sum([['iip_%i_%i'%(i,j) for i in range(self.Z.shape[0])] for j in range(self.Z.shape[1])],[]) + ['noise_precision']+self.kern.extract_param_names()
+    def _get_param_names(self):
+        return sum([['iip_%i_%i'%(i,j) for i in range(self.Z.shape[0])] for j in range(self.Z.shape[1])],[]) + ['noise_precision']+self.kern._get_param_names_transformed()
 
     def log_likelihood(self):
         """
@@ -168,7 +168,7 @@ class sparse_GP_regression(GP_regression):
             dL_dZ += self.kern.dK_dX(dL_dpsi1,self.Z,self.X)
         return dL_dZ
 
-    def log_likelihood_gradients(self):
+    def _log_likelihood_gradients(self):
         return np.hstack([self.dL_dZ().flatten(), self.dL_dbeta(), self.dL_dtheta()])
 
     def _raw_predict(self, Xnew, slices, full_cov=False):

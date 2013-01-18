@@ -22,7 +22,7 @@ from Brownian import Brownian as Brownianpart
 #using meta-classes to make the objects construct properly wthout them.
 
 
-def rbf(D,variance=1., lengthscale=1.):
+def rbf(D,variance=1., lengthscale=None,ARD=False):
     """
     Construct an RBF kernel
 
@@ -32,22 +32,10 @@ def rbf(D,variance=1., lengthscale=1.):
     :type variance: float
     :param lengthscale: the lengthscale of the kernel
     :type lengthscale: float
+    :param ARD: Auto Relevance Determination (one lengthscale per dimension)
+    :type ARD: Boolean
     """
-    part = rbfpart(D,variance,lengthscale)
-    return kern(D, [part])
-
-def rbf_ARD(D,variance=1., lengthscales=None):
-    """
-    Construct an RBF kernel with Automatic Relevance Determination (ARD)
-
-    :param D: dimensionality of the kernel, obligatory
-    :type D: int
-    :param variance: the variance of the kernel
-    :type variance: float
-    :param lengthscales: the lengthscales of the kernel
-    :type lengthscales: None|np.ndarray
-    """
-    part = rbf_ARD_part(D,variance,lengthscales)
+    part = rbfpart(D,variance,lengthscale,ARD)
     return kern(D, [part])
 
 def linear(D,lengthscales=None):
@@ -86,43 +74,52 @@ def white(D,variance=1.):
     part = whitepart(D,variance)
     return kern(D, [part])
 
-def exponential(D,variance=1., lengthscales=None):
+def exponential(D,variance=1., lengthscale=None, ARD=False):
     """
-     Construct a exponential kernel.
+    Construct an exponential kernel
 
-     Arguments
-     ---------
-     D (int), obligatory
-     variance (float)
-     lengthscales (np.ndarray)
+    :param D: dimensionality of the kernel, obligatory
+    :type D: int
+    :param variance: the variance of the kernel
+    :type variance: float
+    :param lengthscale: the lengthscale of the kernel
+    :type lengthscale: float
+    :param ARD: Auto Relevance Determination (one lengthscale per dimension)
+    :type ARD: Boolean
     """
-    part = exponentialpart(D,variance, lengthscales)
+    part = exponentialpart(D,variance, lengthscale, ARD)
     return kern(D, [part])
 
-def Matern32(D,variance=1., lengthscales=None):
+def Matern32(D,variance=1., lengthscale=None, ARD=False):
     """
      Construct a Matern 3/2 kernel.
 
-     Arguments
-     ---------
-     D (int), obligatory
-     variance (float)
-     lengthscales (np.ndarray)
+    :param D: dimensionality of the kernel, obligatory
+    :type D: int
+    :param variance: the variance of the kernel
+    :type variance: float
+    :param lengthscale: the lengthscale of the kernel
+    :type lengthscale: float
+    :param ARD: Auto Relevance Determination (one lengthscale per dimension)
+    :type ARD: Boolean
     """
-    part = Matern32part(D,variance, lengthscales)
+    part = Matern32part(D,variance, lengthscale, ARD)
     return kern(D, [part])
 
-def Matern52(D,variance=1., lengthscales=None):
+def Matern52(D,variance=1., lengthscale=None, ARD=False):
     """
      Construct a Matern 5/2 kernel.
 
-     Arguments
-     ---------
-     D (int), obligatory
-     variance (float)
-     lengthscales (np.ndarray)
+    :param D: dimensionality of the kernel, obligatory
+    :type D: int
+    :param variance: the variance of the kernel
+    :type variance: float
+    :param lengthscale: the lengthscale of the kernel
+    :type lengthscale: float
+    :param ARD: Auto Relevance Determination (one lengthscale per dimension)
+    :type ARD: Boolean
     """
-    part = Matern52part(D,variance, lengthscales)
+    part = Matern52part(D,variance, lengthscale, ARD)
     return kern(D, [part])
 
 def bias(D,variance=1.):

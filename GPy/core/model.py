@@ -80,19 +80,22 @@ class model(parameterised):
         for w in which:
             self.priors[w] = what
 
-    def get(self,name):
+    def get(self,name, return_names=False):
         """
-        get a model parameter by name
+        Get a model parameter by name. The name is applied as a regular expression and all parameters that match that regular expression are returned. 
         """
         matches = self.grep_param_names(name)
         if len(matches):
-            return self._get_params()[matches]
+            if return_names:
+                return self._get_params()[matches], np.asarray(self._get_param_names())[matches].tolist()
+            else:
+                return self._get_params()[matches]
         else:
             raise AttributeError, "no parameter matches %s"%name
 
     def set(self,name,val):
         """
-        Set a model parameter by name
+        Set model parameter(s) by name. The name is provided as a regular expression. All parameters matching that regular expression are set to ghe given value.
         """
         matches = self.grep_param_names(name)
         if len(matches):
@@ -101,6 +104,20 @@ class model(parameterised):
             self._set_params(x)
         else:
             raise AttributeError, "no parameter matches %s"%name
+
+    def get_gradient(self,name, return_names=False):
+        """
+        Get model gradient(s) by name. The name is applied as a regular expression and all parameters that match that regular expression are returned. 
+        """
+        matches = self.grep_param_names(name)
+        if len(matches):
+            if return_names:
+                return self._log_likelihood_gradients()[matches],  np.asarray(self._get_param_names())[matches].tolist()
+            else:
+                return self._log_likelihood_gradients()[matches]
+        else:
+            raise AttributeError, "no parameter matches %s"%name
+
 
 
 

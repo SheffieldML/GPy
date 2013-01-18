@@ -17,10 +17,8 @@ def toy_rbf_1d():
     # create simple GP model
     m = GPy.models.GP_regression(data['X'],data['Y'])
 
-    # contrain all parameters to be positive
-    m.constrain_positive('')
-
     # optimize
+    m.ensure_default_constraints()
     m.optimize()
 
     # plot
@@ -35,10 +33,8 @@ def rogers_girolami_olympics():
     # create simple GP model
     m = GPy.models.GP_regression(data['X'],data['Y'])
 
-    # contrain all parameters to be positive
-    m.constrain_positive('')
-
     # optimize
+    m.ensure_default_constraints()
     m.optimize()
 
     # plot
@@ -57,10 +53,8 @@ def toy_rbf_1d_50():
     # create simple GP model
     m = GPy.models.GP_regression(data['X'],data['Y'])
 
-    # contrain all parameters to be positive
-    m.constrain_positive('')
-
     # optimize
+    m.ensure_default_constraints()
     m.optimize()
 
     # plot
@@ -75,10 +69,8 @@ def silhouette():
     # create simple GP model
     m = GPy.models.GP_regression(data['X'],data['Y'])
 
-    # contrain all parameters to be positive
-    m.constrain_positive('')
-
     # optimize
+    m.ensure_default_constraints()
     m.optimize()
 
     print(m)
@@ -118,20 +110,15 @@ def multiple_optima(gene_number=937,resolution=80, model_restarts=10, seed=10000
         kern = GPy.kern.rbf(1, variance=np.random.exponential(1.), lengthscale=np.random.exponential(50.)) + GPy.kern.white(1,variance=np.random.exponential(1.))
         
         m = GPy.models.GP_regression(data['X'],data['Y'], kernel=kern)
-        params = m._get_params()
-        optim_point_x[0] = params[1]
-        optim_point_y[0] = np.log10(params[0]) - np.log10(params[2]);
-        
-        # contrain all parameters to be positive
-        m.constrain_positive('')
+        optim_point_x[0] = m.get('rbf_lengthscale')
+        optim_point_y[0] = np.log10(m.get('rbf_variance')) - np.log10(m.get('white_variance'));
         
         # optimize
+        m.ensure_default_constraints()
         m.optimize(xtol=1e-6,ftol=1e-6)
 
-        params = m._get_params()
-        optim_point_x[1] = params[1]
-        optim_point_y[1] = np.log10(params[0]) - np.log10(params[2]);
-        print(m)
+        optim_point_x[1] = m.get('rbf_lengthscale')
+        optim_point_y[1] = np.log10(m.get('rbf_variance')) - np.log10(m.get('white_variance'));
         
         pb.arrow(optim_point_x[0], optim_point_y[0], optim_point_x[1]-optim_point_x[0], optim_point_y[1]-optim_point_y[0], label=str(i), head_length=1, head_width=0.5, fc='k', ec='k')
         models.append(m)

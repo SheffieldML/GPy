@@ -78,7 +78,7 @@ class GP_EP(model):
         L3 = sum(np.log(self.ep_approx.Z_hat))
         return L1 + L2A + L2B + L3
 
-    def log_likelihood_gradients(self):
+    def _log_likelihood_gradients(self):
         dK_dp = self.kernel.dK_dtheta(self.X)
         self.dK_dp = dK_dp
         aux1,info_1 = linalg.flapack.dtrtrs(self.L,np.dot(self.Sroot_tilde_K,self.ep_approx.v_tilde),lower=1)

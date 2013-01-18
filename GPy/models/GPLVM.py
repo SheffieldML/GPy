@@ -44,7 +44,7 @@ class GPLVM(GP_regression):
         self.X = x[:self.X.size].reshape(self.N,self.Q).copy()
         GP_regression._set_params(self, x[self.X.size:])
 
-    def log_likelihood_gradients(self):
+    def _log_likelihood_gradients(self):
         dL_dK = self.dL_dK()
 
         dL_dtheta = self.kern.dK_dtheta(dL_dK,self.X)

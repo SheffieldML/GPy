@@ -59,8 +59,8 @@ class warpedGP(GP_regression):
         jacobian = self.warping_function.fgrad_y(self.Z, self.warping_params)
         return ll + np.log(jacobian).sum()
 
-    def log_likelihood_gradients(self):
-        ll_grads = GP_regression.log_likelihood_gradients(self)
+    def _log_likelihood_gradients(self):
+        ll_grads = GP_regression._log_likelihood_gradients(self)
         alpha = np.dot(self.Ki, self.Y.flatten())
         warping_grads = self.warping_function_gradients(alpha)
         return np.hstack((warping_grads.flatten(), ll_grads.flatten()))

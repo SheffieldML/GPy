@@ -25,7 +25,7 @@ class model(parameterised):
         raise NotImplementedError, "this needs to be implemented to utilise the model class"
     def log_likelihood(self):
         raise NotImplementedError, "this needs to be implemented to utilise the model class"
-    def log_likelihood_gradients(self):
+    def _log_likelihood_gradients(self):
         raise NotImplementedError, "this needs to be implemented to utilise the model class"
 
     def set_prior(self,which,what):
@@ -108,7 +108,7 @@ class model(parameterised):
         """evaluate the prior"""
         return np.sum([p.lnpdf(x) for p, x in zip(self.priors,self._get_params()) if p is not None])
 
-    def log_prior_gradients(self):
+    def _log_prior_gradients(self):
         """evaluate the gradients of the priors"""
         x = self._get_params()
         ret = np.zeros(x.size)
@@ -120,7 +120,7 @@ class model(parameterised):
         Use self.log_likelihood_gradients and self.prior_gradients to get the gradients of the model.
         Adjust the gradient for constraints and ties, return.
         """
-        g = self.log_likelihood_gradients() + self.log_prior_gradients()
+        g = self._log_likelihood_gradients() + self._log_prior_gradients()
         x = self._get_params()
         g[self.constrained_positive_indices] = g[self.constrained_positive_indices]*x[self.constrained_positive_indices]
         g[self.constrained_negative_indices] = g[self.constrained_negative_indices]*x[self.constrained_negative_indices]

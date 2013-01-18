@@ -49,8 +49,8 @@ class sparse_GPLVM(sparse_GP_regression, GPLVM):
 
         return dL_dX
 
-    def log_likelihood_gradients(self):
-        return np.hstack((self.dL_dX().flatten(), sparse_GP_regression.log_likelihood_gradients(self)))
+    def _log_likelihood_gradients(self):
+        return np.hstack((self.dL_dX().flatten(), sparse_GP_regression._log_likelihood_gradients(self)))
 
     def plot(self):
         GPLVM.plot(self)

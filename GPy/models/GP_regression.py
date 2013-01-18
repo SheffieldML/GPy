@@ -103,7 +103,7 @@ class GP_regression(model):
 
         return dL_dK
 
-    def log_likelihood_gradients(self):
+    def _log_likelihood_gradients(self):
         return self.kern.dK_dtheta(partial=self.dL_dK(),X=self.X)
 
     def predict(self,Xnew, slices=None, full_cov=False):

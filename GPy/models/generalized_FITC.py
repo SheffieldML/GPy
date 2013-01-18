@@ -99,7 +99,7 @@ class generalized_FITC(model):
         E = .5*np.sum((self.ep_approx.v_/self.ep_approx.tau_ - self.mu_tilde.flatten())**2/(1./self.ep_approx.tau_ + 1./self.ep_approx.tau_tilde))
         return  A + B + C + D + E
 
-    def log_likelihood_gradients(self):
+    def _log_likelihood_gradients(self):
         dKmm_dtheta = self.kernel.dK_dtheta(self.Z)
         dKnn_dtheta = self.kernel.dK_dtheta(self.X)
         dKmn_dtheta = self.kernel.dK_dtheta(self.Z,self.X)

@@ -168,7 +168,7 @@ class sparse_GP_regression(GP_regression):
             dL_dZ += self.kern.dK_dX(dL_dpsi1,self.Z,self.X)
         return dL_dZ
 
-    def log_likelihood_gradients(self):
+    def _log_likelihood_gradients(self):
         return np.hstack([self.dL_dZ().flatten(), self.dL_dbeta(), self.dL_dtheta()])
 
     def _raw_predict(self, Xnew, slices, full_cov=False):

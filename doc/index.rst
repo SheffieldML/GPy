@@ -6,6 +6,7 @@
 Welcome to GPy's documentation!
 ===============================
 
+And another thing
 Now what if I add this other hting
 Just checking another thing
 

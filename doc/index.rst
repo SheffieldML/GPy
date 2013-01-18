@@ -1,16 +1,21 @@
 .. GPy documentation master file, created by
-   sphinx-quickstart on Wed Jan  9 15:21:20 2013.
+   sphinx-quickstart on Fri Jan 18 15:30:28 2013.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
 Welcome to GPy's documentation!
 ===============================
 
+Now what if I add this other hting
+Just checking another thing
+
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
 
+   GPy
+   setup
 
 
 Indices and tables

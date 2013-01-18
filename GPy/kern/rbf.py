@@ -20,17 +20,33 @@ class rbf(kernpart):
     :type D: int
     :param variance: the variance of the kernel
     :type variance: float
-    :param lengthscale: the lengthscale of the kernel
-    :type lengthscale: float
+    :param lengthscale: the vector of lengthscale of the kernel
+    :type lengthscale: np.ndarray
+    :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one single lengthscale parameter \ell), otherwise there is one lengthscale parameter per dimension.
+    :type ARD: Boolean
 
-    .. Note: for rbf with different lengthscale on each dimension, see rbf_ARD
     """
 
-    def __init__(self,D,variance=1.,lengthscale=1.):
+    def __init__(self,D,variance=1.,lengthscale=None,ARD=False):
         self.D = D
-        self.Nparam = 2
-        self.name = 'rbf'
-        self.set_param(np.hstack((variance,lengthscale)))
+        self.ARD = ARD
+        if ARD == False:
+            self.Nparam = 2
+            self.name = 'rbf'
+            if lengthscale is not None:
+                assert lengthscale.shape == (1,)
+            else:
+                lengthscale = np.ones(1)
+        
+        else:
+            self.Nparam = self.D + 1
+            self.name = 'rbf_ARD'
+            if lengthscale is not None:
+                assert lengthscale.shape == (self.D,)
+            else:
+                lengthscale = np.ones(self.D)
+
+        self.set_param(np.hstack((variance,lengthscale)))        
 
         #initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3,1))
@@ -40,14 +56,19 @@ class rbf(kernpart):
         return np.hstack((self.variance,self.lengthscale))
 
     def set_param(self,x):
-        self.variance, self.lengthscale = x
+        assert x.size==(self.Nparam)
+        self.variance = x[0]
+        self.lengthscale = x[1:]
         self.lengthscale2 = np.square(self.lengthscale)
         #reset cached results
         self._X, self._X2, self._params = np.empty(shape=(3,1))
         self._Z, self._mu, self._S = np.empty(shape=(3,1)) # cached versions of Z,mu,S
 
     def get_param_names(self):
-        return ['variance','lengthscale']
+        if self.Nparam == 2:
+            return ['variance','lengthscale']
+        else:
+            return ['variance']+['lengthscale_%i'%i for i in range(self.lengthscale.size)]        
 
     def K(self,X,X2,target):
         if X2 is None:
@@ -61,7 +82,12 @@ class rbf(kernpart):
     def dK_dtheta(self,partial,X,X2,target):
         self._K_computations(X,X2)
         target[0] += np.sum(self._K_dvar*partial)
-        target[1] += np.sum(self._K_dvar*self.variance*self._K_dist2/self.lengthscale*partial)
+        if self.ARD == True:
+            dl = self._K_dvar[:,:,None]*self.variance*self._K_dist2/self.lengthscale
+            target[1:] += (dl*partial[:,:,None]).sum(0).sum(0)
+        else:
+            target[1] += np.sum(self._K_dvar*self.variance*(self._K_dist2.sum(-1))/self.lengthscale*partial)
+        #np.sum(self._K_dvar*self.variance*self._K_dist2/self.lengthscale*partial)
 
     def dKdiag_dtheta(self,partial,X,target):
         #NB: derivative of diagonal elements wrt lengthscale is 0
@@ -81,15 +107,13 @@ class rbf(kernpart):
             self._X = X
             self._X2 = X2
             if X2 is None: X2 = X
-            XXT = np.dot(X,X2.T)
-            if X is X2:
-                self._K_dist2 = (-2.*XXT + np.diag(XXT)[:,np.newaxis] + np.diag(XXT)[np.newaxis,:])/self.lengthscale2
-            else:
-                self._K_dist2 = (-2.*XXT + np.sum(np.square(X),1)[:,None] + np.sum(np.square(X2),1)[None,:])/self.lengthscale2
-            # TODO Remove comments if this is fine.
-            # Commented out by Neil as doesn't seem to be used elsewhere.
-            #self._K_exponent = -0.5*self._K_dist2
-            self._K_dvar = np.exp(-0.5*self._K_dist2)
+            self._K_dist = X[:,None,:]-X2[None,:,:] # this can be computationally heavy
+            self._params = np.empty(shape=(1,0))#ensure the next section gets called
+        if not np.all(self._params == self.get_param()):
+            self._params == self.get_param()
+            self._K_dist2 = np.square(self._K_dist/self.lengthscale) 
+            #self._K_exponent = -0.5*self._K_dist2.sum(-1) #ND: commented out because seems not to be used
+            self._K_dvar = np.exp(-0.5*self._K_dist2.sum(-1))
 
     def psi0(self,Z,mu,S,target):
         target += self.variance
@@ -132,7 +156,7 @@ class rbf(kernpart):
         d_length = self._psi2[:,:,:,None]*(0.5*self._psi2_Zdist_sq*self._psi2_denom + 2.*self._psi2_mudist_sq + 2.*S[:,None,None,:]/self.lengthscale2)/(self.lengthscale*self._psi2_denom)
         d_length = d_length.sum(0)
         target[0] += np.sum(partial*d_var)
-        target[1] += np.sum(d_length*partial)
+        target[1:] += (d_length*partial[:,:,None]).sum(0).sum(0)
 
     def dpsi2_dZ(self,partial,Z,mu,S,target):
         """Returns shape N,M,M,Q"""
@@ -175,4 +199,3 @@ class rbf(kernpart):
             self._psi2 = np.square(self.variance)*np.exp(self._psi2_exponent) # N,M,M
 
             self._Z, self._mu, self._S = Z, mu,S
-

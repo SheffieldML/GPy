@@ -22,7 +22,7 @@ from Brownian import Brownian as Brownianpart
 #using meta-classes to make the objects construct properly wthout them.
 
 
-def rbf(D,variance=1., lengthscale=1.):
+def rbf(D,variance=1., lengthscale=None,ARD=False):
     """
     Construct an RBF kernel
 
@@ -33,7 +33,7 @@ def rbf(D,variance=1., lengthscale=1.):
     :param lengthscale: the lengthscale of the kernel
     :type lengthscale: float
     """
-    part = rbfpart(D,variance,lengthscale)
+    part = rbfpart(D,variance,lengthscale,ARD)
     return kern(D, [part])
 
 def rbf_ARD(D,variance=1., lengthscales=None):

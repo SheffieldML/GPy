@@ -288,5 +288,5 @@ epub_copyright = u'2013, Author'
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 if on_rtd:
-  os.system("sphinx-apidoc -f -o . ../GPy")
-#sphinx-apidoc . -o doc -H 'GPy' -f
+  os.system("pwd")
+  os.system("sphinx-apidoc -f -o . ../")

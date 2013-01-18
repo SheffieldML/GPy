@@ -12,7 +12,7 @@ import GPy
 np.random.seed(2)
 pb.ion()
 N = 1200
-M = 20
+M = 5
 
 ######################################
 ## 1 dimensional example

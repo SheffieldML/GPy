@@ -60,10 +60,11 @@ class sparse_GP_regression(GP_regression):
         if self.has_uncertain_inputs:
             self.X_uncertainty /= np.square(self._Xstd)
 
-    def _compute_kernel_matrices(self):
-        # kernel computations, using BGPLVM notation
+    def _computations(self):
+        # TODO find routine to multiply triangular matrices
         #TODO: slices for psi statistics (easy enough)
 
+        # kernel computations, using BGPLVM notation
         self.Kmm = self.kern.K(self.Z)
         if self.has_uncertain_inputs:
             self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty).sum()
@@ -75,19 +76,16 @@ class sparse_GP_regression(GP_regression):
             self.psi1 = self.kern.K(self.Z,self.X)
             #self.psi2 = np.dot(self.psi1,self.psi1.T)
             #self.psi2 = self.psi1.T[:,:,None]*self.psi1.T[:,None,:]
-            self.psi1_scaled = self.psi1/self.scale_factor
-            #self.psi2_scaled = psi1_scaled.T[:,:,None]*psi1_scaled.T[:,None,:]
-            self.psi2_scaled = np.dot(self.psi1_scaled,self.psi1_scaled.T)
+            tmp = self.psi1/(self.scale_factor/np.sqrt(self.beta))
+            self.psi2_beta_scaled = np.dot(tmp,tmp.T)
 
-    def _computations(self):
-        # TODO find routine to multiply triangular matrices
         sf = self.scale_factor
         sf2 = sf**2
 
-        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
+        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)#+np.eye(self.M)*1e-3)
 
         self.V = (self.beta/self.scale_factor)*self.Y
-        self.A = mdot(self.Lmi, self.beta*self.psi2_scaled, self.Lmi.T)
+        self.A = mdot(self.Lmi, self.psi2_beta_scaled, self.Lmi.T)
         self.B = np.eye(self.M)/sf2 + self.A
 
         self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
@@ -106,8 +104,8 @@ class sparse_GP_regression(GP_regression):
 
         # Compute dL_dKmm
         self.dL_dKmm = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi)*sf2 # dB
-        self.dL_dKmm += -0.5 * self.D * (- self.C/sf2 - 2.*self.beta*mdot(self.C, self.psi2_scaled, self.Kmmi) + self.Kmmi) # dC
-        self.dL_dKmm +=  np.dot(np.dot(self.E*sf2, self.beta*self.psi2_scaled) - np.dot(self.C, self.psi1VVpsi1), self.Kmmi) + 0.5*self.E # dD
+        self.dL_dKmm += -0.5 * self.D * (- self.C/sf2 - 2.*mdot(self.C, self.psi2_beta_scaled, self.Kmmi) + self.Kmmi) # dC
+        self.dL_dKmm +=  np.dot(np.dot(self.E*sf2, self.psi2_beta_scaled) - np.dot(self.C, self.psi1VVpsi1), self.Kmmi) + 0.5*self.E # dD
 
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
@@ -122,8 +120,6 @@ class sparse_GP_regression(GP_regression):
         self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
         self.beta = p[self.M*self.Q]
         self.kern.set_param(p[self.Z.size + 1:])
-        self.beta2 = self.beta**2
-        self._compute_kernel_matrices()
         self._computations()
 
     def get_param(self):
@@ -139,10 +135,9 @@ class sparse_GP_regression(GP_regression):
         #TODO: suport heteroscedatic noise
         sf2 = self.scale_factor**2
         dA_dbeta =   0.5 * self.N*self.D/self.beta - 0.5 * self.trYYT
-        dB_dbeta = - 0.5 * self.D * self.psi0 - np.trace(self.A)/self.beta*sf2
+        dB_dbeta = - 0.5 * self.D * (self.psi0 - np.trace(self.A)/self.beta*sf2)
         dC_dbeta = - 0.5 * self.D * np.sum(self.Bi*self.A)/self.beta
-        tmp = mdot(self.Bi, self.Lmi, self.psi1V)
-        dD_dbeta = (np.sum(np.square(self.C)) - 0.5 * np.sum(self.A * np.dot(tmp, tmp.T)))/self.beta
+        dD_dbeta = np.sum((self.C - 0.5 * mdot(self.C,self.psi2_beta_scaled,self.C) ) * self.psi1VVpsi1 )/self.beta
 
         return np.squeeze(dA_dbeta + dB_dbeta + dC_dbeta + dD_dbeta)
 
@@ -184,14 +179,14 @@ class sparse_GP_regression(GP_regression):
         """Internal helper function for making predictions, does not account for normalisation"""
 
         Kx = self.kern.K(self.Z, Xnew)
-        mu = mdot(Kx.T, self.LBL_inv, self.psi1V)
+        mu = mdot(Kx.T, self.C/self.scale_factor, self.psi1V)
 
         if full_cov:
             Kxx = self.kern.K(Xnew)
-            var = Kxx - mdot(Kx.T, (self.Kmmi - self.LBL_inv), Kx) + np.eye(Xnew.shape[0])/self.beta # TODO: This beta doesn't belong here in the EP case.
+            var = Kxx - mdot(Kx.T, (self.Kmmi - self.C/self.scale_factor**2), Kx) + np.eye(Xnew.shape[0])/self.beta # TODO: This beta doesn't belong here in the EP case.
         else:
             Kxx = self.kern.Kdiag(Xnew)
-            var = Kxx - np.sum(Kx*np.dot(self.Kmmi - self.LBL_inv, Kx),0) + 1./self.beta # TODO: This beta doesn't belong here in the EP case.
+            var = Kxx - np.sum(Kx*np.dot(self.Kmmi - self.C/self.scale_factor**2, Kx),0) + 1./self.beta # TODO: This beta doesn't belong here in the EP case.
 
         return mu,var
 

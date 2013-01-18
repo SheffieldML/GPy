@@ -6,8 +6,8 @@ import GPy
 
 pb.close('all')
 
-N = 1000
-M = 10
+N = 200
+M = 15
 resolution=5
 
 X = np.linspace(0,12,N)[:,None]
@@ -16,15 +16,22 @@ Y = np.sin(X) + np.random.randn(*X.shape)/np.sqrt(50.)
 #k = GPy.kern.rbf(1)
 k = GPy.kern.Matern32(1) + GPy.kern.white(1)
 
-models = [GPy.models.sparse_GP_regression(X,Y,Z=Z,kernel=k),
-    GPy.models.sgp_debugB(X,Y,Z=Z,kernel=k),
-    GPy.models.sgp_debugC(X,Y,Z=Z,kernel=k)]#,
+models = [GPy.models.sparse_GP_regression(X,Y,Z=Z,kernel=k)
+    ,GPy.models.sparse_GP_regression(X,Y,Z=Z,kernel=k)
+    ,GPy.models.sparse_GP_regression(X,Y,Z=Z,kernel=k)
+    ,GPy.models.sparse_GP_regression(X,Y,Z=Z,kernel=k)]
+models[0].scale_factor = 1.
+models[1].scale_factor = 10.
+models[2].scale_factor = 100.
+models[3].scale_factor = 1000.
+    #GPy.models.sgp_debugB(X,Y,Z=Z,kernel=k),
+    #GPy.models.sgp_debugC(X,Y,Z=Z,kernel=k)]#,
     #GPy.models.sgp_debugE(X,Y,Z=Z,kernel=k)]
 
-[m.constrain_fixed('white',0.001) for m in models]
+[m.constrain_fixed('white',0.1) for m in models]
 
 #xx,yy = np.mgrid[1.5:4:0+resolution*1j,-2:2:0+resolution*1j]
-xx,yy = np.mgrid[3:16:0+resolution*1j,-2:2:0+resolution*1j]
+xx,yy = np.mgrid[3:16:0+resolution*1j,-2:1:0+resolution*1j]
 
 lls = []
 cgs = []

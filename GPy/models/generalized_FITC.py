@@ -91,9 +91,9 @@ class generalized_FITC(model):
 
     def log_likelihood(self):
         self.posterior_param()
-        self.Youter = np.dot(self.mu_tilde,self.mu_tilde.T)
+        self.YYT = np.dot(self.mu_tilde,self.mu_tilde.T)
         A = -self.hld
-        B = -.5*np.sum(self.Qi*self.Youter)
+        B = -.5*np.sum(self.Qi*self.YYT)
         C = sum(np.log(self.ep_approx.Z_hat))
         D = .5*np.sum(np.log(1./self.ep_approx.tau_tilde + 1./self.ep_approx.tau_))
         E = .5*np.sum((self.ep_approx.v_/self.ep_approx.tau_ - self.mu_tilde.flatten())**2/(1./self.ep_approx.tau_ + 1./self.ep_approx.tau_tilde))

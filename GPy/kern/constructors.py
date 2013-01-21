@@ -215,7 +215,7 @@ def periodic_exponential(D=1,variance=1., lengthscale=None, period=2*np.pi,n_fre
     :param n_freq: the number of frequencies considered for the periodic subspace
     :type n_freq: int
     """
-    part = periodic_exponentialpart(D,variance, lengthscale, ARD)
+    part = periodic_exponentialpart(D,variance, lengthscale, period, n_freq, lower, upper)
     return kern(D, [part])
 
 def periodic_Matern32(D,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,lower=0.,upper=4*np.pi):
@@ -233,7 +233,7 @@ def periodic_Matern32(D,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,
      :param n_freq: the number of frequencies considered for the periodic subspace
      :type n_freq: int
     """
-    part = periodic_Matern32part(D,variance, lengthscale, ARD)
+    part = periodic_Matern32part(D,variance, lengthscale, period, n_freq, lower, upper)
     return kern(D, [part])
 
 def periodic_Matern52(D,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,lower=0.,upper=4*np.pi):
@@ -251,5 +251,5 @@ def periodic_Matern52(D,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,
      :param n_freq: the number of frequencies considered for the periodic subspace
      :type n_freq: int
     """
-    part = periodic_Matern52part(D,variance, lengthscale, ARD)
+    part = periodic_Matern52part(D,variance, lengthscale, period, n_freq, lower, upper)
     return kern(D, [part])

@@ -133,20 +133,20 @@ class kern(parameterised):
         newkern.tied_indices = self.tied_indices + [self.Nparam + x for x in other.tied_indices]
         return newkern
 
-    def get_param(self):
-        return np.hstack([p.get_param() for p in self.parts])
+    def _get_params(self):
+        return np.hstack([p._get_params() for p in self.parts])
 
-    def set_param(self,x):
-        [p.set_param(x[s]) for p, s in zip(self.parts, self.param_slices)]
+    def _set_params(self,x):
+        [p._set_params(x[s]) for p, s in zip(self.parts, self.param_slices)]
 
-    def get_param_names(self):
+    def _get_param_names(self):
         #this is a bit nasty: we wat to distinguish between parts with the same name by appending a count
         part_names = np.array([k.name for k in self.parts],dtype=np.str)
         counts = [np.sum(part_names==ni) for i, ni in enumerate(part_names)]
         cum_counts = [np.sum(part_names[i:]==ni) for i, ni in enumerate(part_names)]
         names = [name+'_'+str(cum_count) if count>1 else name for name,count,cum_count in zip(part_names,counts,cum_counts)]
 
-        return sum([[name+'_'+n for n in k.get_param_names()] for name,k in zip(names,self.parts)],[])
+        return sum([[name+'_'+n for n in k._get_param_names()] for name,k in zip(names,self.parts)],[])
 
     def K(self,X,X2=None,slices1=None,slices2=None):
         assert X.shape[1]==self.D

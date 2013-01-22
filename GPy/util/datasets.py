@@ -90,7 +90,7 @@ def toy_rbf_1d(seed=default_seed):
     N = 500
     X = np.random.uniform(low=-1.0, high=1.0, size=(N, numIn))
     X.sort(axis=0)
-    rbf = GPy.kern.rbf(numIn, variance=1., lengthscale=0.25)
+    rbf = GPy.kern.rbf(numIn, variance=1., lengthscale=np.array((0.25,)))
     white = GPy.kern.white(numIn, variance=1e-2)
     kernel = rbf + white
     K = kernel.K(X)

@@ -20,16 +20,16 @@ class linear(kernpart):
             variance = 1.0
         self.Nparam = 1
         self.name = 'linear'
-        self.set_param(variance)
+        self._set_params(variance)
         self._Xcache, self._X2cache = np.empty(shape=(2,))
 
-    def get_param(self):
+    def _get_params(self):
         return self.variance
 
-    def set_param(self,x):
+    def _set_params(self,x):
         self.variance = x
 
-    def get_param_names(self):
+    def _get_param_names(self):
         return ['variance']
 
     def K(self,X,X2,target):

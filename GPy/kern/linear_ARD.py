@@ -23,16 +23,16 @@ class linear_ARD(kernpart):
             variances = np.ones(self.D)
         self.Nparam = int(self.D)
         self.name = 'linear'
-        self.set_param(variances)
+        self._set_params(variances)
 
-    def get_param(self):
+    def _get_params(self):
         return self.variances
 
-    def set_param(self,x):
+    def _set_params(self,x):
         assert x.size==(self.Nparam)
         self.variances = x
 
-    def get_param_names(self):
+    def _get_param_names(self):
         if self.D==1:
             return ['variance']
         else:

@@ -13,7 +13,7 @@ from GP_regression import GP_regression
 
 class warpedGP(GP_regression):
     """
-    TODO: fucking docstrings!
+    TODO: fecking docstrings!
 
     @nfusi: I'#ve hacked a little on this, but no guarantees. J.
     """
@@ -30,17 +30,17 @@ class warpedGP(GP_regression):
         self.transform_data()
         GP_regression.__init__(self, X, self.Y, **kwargs)
 
-    def set_param(self, x):
+    def _set_params(self, x):
         self.warping_params = x[:self.warping_function.num_parameters]
         self.transform_data()
-        GP_regression.set_param(self, x[self.warping_function.num_parameters:].copy())
+        GP_regression._set_params(self, x[self.warping_function.num_parameters:].copy())
 
-    def get_param(self):
-        return np.hstack((self.warping_params.flatten().copy(), GP_regression.get_param(self).copy()))
+    def _get_params(self):
+        return np.hstack((self.warping_params.flatten().copy(), GP_regression._get_params(self).copy()))
 
-    def get_param_names(self):
-        warping_names = self.warping_function.get_param_names()
-        param_names = GP_regression.get_param_names(self)
+    def _get_param_names(self):
+        warping_names = self.warping_function._get_param_names()
+        param_names = GP_regression._get_param_names(self)
         return warping_names + param_names
 
     def transform_data(self):
@@ -48,9 +48,9 @@ class warpedGP(GP_regression):
 
         # this supports the 'smart' behaviour in GP_regression
         if self.D > self.N:
-            self.Youter = np.dot(self.Y, self.Y.T)
+            self.YYT = np.dot(self.Y, self.Y.T)
         else:
-            self.Youter = None
+            self.YYT = None
 
         return self.Y
 
@@ -59,8 +59,8 @@ class warpedGP(GP_regression):
         jacobian = self.warping_function.fgrad_y(self.Z, self.warping_params)
         return ll + np.log(jacobian).sum()
 
-    def log_likelihood_gradients(self):
-        ll_grads = GP_regression.log_likelihood_gradients(self)
+    def _log_likelihood_gradients(self):
+        ll_grads = GP_regression._log_likelihood_gradients(self)
         alpha = np.dot(self.Ki, self.Y.flatten())
         warping_grads = self.warping_function_gradients(alpha)
 
@@ -83,7 +83,7 @@ class warpedGP(GP_regression):
     def predict(self, X, in_unwarped_space = False, **kwargs):
         mu, var = GP_regression.predict(self, X, **kwargs)
 
-        # The plot() function calls set_param() before calling predict()
+        # The plot() function calls _set_params() before calling predict()
         # this is causing the observations to be plotted in the transformed
         # space (where Y lives), making the plot looks very wrong
         # if the predictions are made in the untransformed space

@@ -265,7 +265,7 @@ class TanhWarpingFunction_d(WarpingFunction):
 
         return gradients
 
-    def get_param_names(self):
+    def _get_param_names(self):
         variables = ['a', 'b', 'c', 'd']
         names = sum([['warp_tanh_%s_t%i' % (variables[n],q) for n in range(3)] for q in range(self.n_terms)],[])
         names.append('warp_tanh_d')

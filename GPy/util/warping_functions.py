@@ -81,7 +81,7 @@ class TanhWarpingFunction(WarpingFunction):
         iterations: number of N.R. iterations
 
         """
-
+        
         y = y.copy()
         z = np.ones_like(y)
 

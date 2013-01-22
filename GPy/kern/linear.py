@@ -65,7 +65,7 @@ class linear(kernpart):
             self._X2cache = X2
             self._dot_product = np.dot(X,X2.T) 
         else:
-            # print "Cache hit!"
+            #print "Cache hit!"
             pass # TODO: insert debug message here (logging framework)
 
 

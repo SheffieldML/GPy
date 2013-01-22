@@ -91,6 +91,6 @@ class warpedGP(GP_regression):
         # just a quick fix until I figure out something smarter.
         if in_unwarped_space:
             mu = self.warping_function.f_inv(mu, self.warping_params)
-            var = self.warping_function.f_inv(var, self.warping_params)
+            var = self.warping_function.f_inv(var[:, None], self.warping_params)
 
         return mu, var

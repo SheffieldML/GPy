@@ -138,6 +138,7 @@ class poisson(likelihood):
         width = 3./np.log(max(self.Y[i],2))
 
         # Simpson's approximamtion
+        #TODO explain this algorithm
         A = opt - width
         B = opt + width
         K =  10*int(np.log(max(self.Y[i],150)))

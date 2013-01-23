@@ -197,7 +197,7 @@ class gaussian(likelihood):
             pb.plot(U,np.ones(U.shape[0])*self.Y.min()*.8,'r|',mew=1.5,markersize=12)
 
     def predictive_mean(self,mu,Sigma):
-        return mu #return stats.poisson.pmf(h)
+        return mu
 
     def _log_likelihood_gradients():
         raise NotImplementedError

@@ -102,3 +102,5 @@ class probit(likelihood):
     def _log_likelihood_gradients():
         raise NotImplementedError
 
+class poisson(likelihood):
+    pass

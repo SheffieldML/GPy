@@ -9,7 +9,7 @@ import pylab as pb
 from ..util.plot import gpplot
 
 class likelihood:
-    def __init__(self,Y):
+    def __init__(self,Y,location=0,scale=1):
         """
         Likelihood class for doing Expectation propagation
 
@@ -18,6 +18,8 @@ class likelihood:
         """
         self.Y = Y
         self.N = self.Y.shape[0]
+        self.location = location
+        self.scale = scale
 
     def plot1Da(self,X_new,Mean_new,Var_new,X_u,Mean_u,Var_u):
         """

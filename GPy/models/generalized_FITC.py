@@ -9,7 +9,8 @@ from .. import kern
 from ..core import model
 from ..util.linalg import pdinv,mdot
 from ..util.plot import gpplot
-from ..inference.Expectation_Propagation import FITC
+#from ..inference.Expectation_Propagation import FITC
+from ..inference.EP import FITC
 from ..inference.likelihoods import likelihood,probit
 
 class generalized_FITC(model):

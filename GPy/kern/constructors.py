@@ -16,6 +16,9 @@ from bias import bias as biaspart
 from finite_dimensional import finite_dimensional as finite_dimensionalpart
 from spline import spline as splinepart
 from Brownian import Brownian as Brownianpart
+from periodic_exponential import periodic_exponential as periodic_exponentialpart
+from periodic_Matern32 import periodic_Matern32 as periodic_Matern32part
+from periodic_Matern52 import periodic_Matern52 as periodic_Matern52part
 
 #TODO these s=constructors are not as clean as we'd like. Tidy the code up
 #using meta-classes to make the objects construct properly wthout them.
@@ -196,3 +199,57 @@ def sympykern(D,k):
     A kernel from a symbolic sympy representation
     """
     return kern(D,[spkern(D,k)])
+
+def periodic_exponential(D=1,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,lower=0.,upper=4*np.pi):
+    """
+    Construct an periodic exponential kernel
+
+    :param D: dimensionality, only defined for D=1
+    :type D: int
+    :param variance: the variance of the kernel
+    :type variance: float
+    :param lengthscale: the lengthscale of the kernel
+    :type lengthscale: float
+    :param period: the period
+    :type period: float
+    :param n_freq: the number of frequencies considered for the periodic subspace
+    :type n_freq: int
+    """
+    part = periodic_exponentialpart(D,variance, lengthscale, period, n_freq, lower, upper)
+    return kern(D, [part])
+
+def periodic_Matern32(D,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,lower=0.,upper=4*np.pi):
+    """
+     Construct a periodic Matern 3/2 kernel.
+
+     :param D: dimensionality, only defined for D=1
+     :type D: int
+     :param variance: the variance of the kernel
+     :type variance: float
+     :param lengthscale: the lengthscale of the kernel
+     :type lengthscale: float
+     :param period: the period
+     :type period: float
+     :param n_freq: the number of frequencies considered for the periodic subspace
+     :type n_freq: int
+    """
+    part = periodic_Matern32part(D,variance, lengthscale, period, n_freq, lower, upper)
+    return kern(D, [part])
+
+def periodic_Matern52(D,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,lower=0.,upper=4*np.pi):
+    """
+     Construct a periodic Matern 5/2 kernel.
+
+     :param D: dimensionality, only defined for D=1
+     :type D: int
+     :param variance: the variance of the kernel
+     :type variance: float
+     :param lengthscale: the lengthscale of the kernel
+     :type lengthscale: float
+     :param period: the period
+     :type period: float
+     :param n_freq: the number of frequencies considered for the periodic subspace
+     :type n_freq: int
+    """
+    part = periodic_Matern52part(D,variance, lengthscale, period, n_freq, lower, upper)
+    return kern(D, [part])

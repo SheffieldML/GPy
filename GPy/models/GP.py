@@ -1,47 +1,47 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
+
 import numpy as np
 import pylab as pb
-from scipy import stats, linalg
 from .. import kern
+from ..core import model
+from ..util.linalg import pdinv,mdot
+from ..util.plot import gpplot, Tango
 from ..inference.EP import Full
 from ..inference.likelihoods import likelihood,probit,poisson,gaussian
-from ..core import model
-from ..util.linalg import pdinv,mdot #,jitchol
-from ..util.plot import gpplot, Tango
 
-class GP_EP2(model):
-    def __init__(self,X,likelihood,kernel=None,normalize_X=False,Xslices=None,epsilon_ep=1e-3,epsion_em=.1,powerep=[1.,1.]):
-        """
-        Simple Gaussian Process with Non-Gaussian likelihood
+class GP(model):
+    """
+    Gaussian Process model for regression
 
-        Arguments
-        ---------
-        :param X: input observations (NxD numpy.darray)
-        :param likelihood: a GPy likelihood (likelihood class)
-        :param kernel: a GPy kernel, defaults to rbf+white
-        :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
-        :type normalize_X: False|True
-        :param epsilon_ep: convergence criterion for the Expectation Propagation algorithm, defaults to 1e-3
-        :param powerep: power-EP parameters [$\eta$,$\delta$], defaults to [1.,1.] (list)
-        :param Xslices: how the X,Y data co-vary in the kernel (i.e. which "outputs" they correspond to). See (link:slicing)
-        :rtype: model object.
-        """
-        #.. Note:: Multiple independent outputs are allowed using columns of Y #TODO add this note?
-        if kernel is None:
-            kernel = kern.rbf(X.shape[1]) + kern.bias(X.shape[1]) + kern.white(X.shape[1])
+    :param X: input observations
+    :param Y: observed values
+    :param kernel: a GPy kernel, defaults to rbf+white
+    :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
+    :type normalize_X: False|True
+    :param normalize_Y:  whether to normalize the input data before computing (predictions will be in original scales)
+    :type normalize_Y: False|True
+    :param Xslices: how the X,Y data co-vary in the kernel (i.e. which "outputs" they correspond to). See (link:slicing)
+    :rtype: model object
+
+    .. Note:: Multiple independent outputs are allowed using columns of Y
+
+    """
+
+    def __init__(self,X,Y=None,kernel=None,normalize_X=False,normalize_Y=False, Xslices=None,likelihood=None,epsilon_ep=1e-3,epsion_em=.1,powerep=[1.,1.]):
+        #TODO: specify beta parameter explicitely
 
         # parse arguments
         self.Xslices = Xslices
-        assert isinstance(kernel, kern.kern)
-        self.likelihood = likelihood
-        self.kern = kernel
         self.X = X
-        assert len(self.X.shape)==2
-        assert self.X.shape[0] == self.likelihood.Y.shape[0]
-        self.D = self.likelihood.Y.shape[1]
         self.N, self.Q = self.X.shape
+        assert len(self.X.shape)==2
+        if kernel is None:
+            kernel = kern.rbf(X.shape[1]) + kern.bias(X.shape[1]) + kern.white(X.shape[1])
+        else:
+            assert isinstance(kernel, kern.kern)
+        self.kern = kernel
 
         #here's some simple normalisation
         if normalize_X:
@@ -54,73 +54,95 @@ class GP_EP2(model):
             self._Xmean = np.zeros((1,self.X.shape[1]))
             self._Xstd = np.ones((1,self.X.shape[1]))
 
-        #THIS PART IS NOT NEEDED
-        """
-        if normalize_Y:
-            self._Ymean = Y.mean(0)[None,:]
-            self._Ystd = Y.std(0)[None,:]
-            self.Y = (Y.copy()- self._Ymean) / self._Ystd
-        else:
-            self._Ymean = np.zeros((1,self.Y.shape[1]))
-            self._Ystd = np.ones((1,self.Y.shape[1]))
 
+        # Y - likelihood related variables, these might change whether using EP or not
+        if likelihood is None:
+            assert Y is not None, "Either Y or likelihood must be defined"
+            self.likelihood = gaussian(Y)
+        else:
+            self.likelihood = likelihood
+        assert len(self.likelihood.Y.shape)==2
+        assert self.X.shape[0] == self.likelihood.Y.shape[0]
+        self.N, self.D = self.likelihood.Y.shape
+
+        if isinstance(self.likelihood,gaussian):
+            self.EP = False
+            self.Y = Y
+
+            #here's some simple normalisation
+            if normalize_Y:
+                self._Ymean = Y.mean(0)[None,:]
+                self._Ystd = Y.std(0)[None,:]
+                self.Y = (Y.copy()- self._Ymean) / self._Ystd
+            else:
+                self._Ymean = np.zeros((1,self.Y.shape[1]))
+                self._Ystd = np.ones((1,self.Y.shape[1]))
+
+            if self.D > self.N:
+                # then it's more efficient to store YYT
+                self.YYT = np.dot(self.Y, self.Y.T)
+            else:
+                self.YYT = None
+
+        else:
+            # Y is defined after approximating the likelihood
+            self.EP = True
+            self.eta,self.delta = powerep
+            self.epsilon_ep = epsilon_ep
+            self.tau_tilde = np.ones([self.N,self.D])
+            self.v_tilde = np.zeros([self.N,self.D])
+            self.tau_ = np.ones([self.N,self.D])
+            self.v_ = np.zeros([self.N,self.D])
+            self.Z_hat = np.ones([self.N,self.D])
+
+        model.__init__(self)
+
+    def _set_params(self,p):
+        # TODO: remove beta when using EP
+        self.kern._set_params_transformed(p)
+        if not self.EP:
+            self.K = self.kern.K(self.X,slices1=self.Xslices)
+            self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
+        else:
+            self._ep_covariance()
+
+    def _get_params(self):
+        # TODO: remove beta when using EP
+        return self.kern._get_params_transformed()
+
+    def _get_param_names(self):
+        # TODO: remove beta when using EP
+        return self.kern._get_param_names_transformed()
+
+    def approximate_likelihood(self):
+        assert not isinstance(self.likelihood, gaussian), "EP is only available for non-gaussian likelihoods"
+        self.ep_approx = Full(self.K,self.likelihood,epsilon=self.epsilon_ep,powerep=[self.eta,self.delta])
+        self.tau_tilde, self.v_tilde, self.Z_hat, self.tau_, self.v_=self.ep_approx.fit_EP()
+        # Y: EP likelihood is defined as a regression model for mu_tilde
+        self.Y = self.v_tilde/self.tau_tilde
+        self._Ymean = np.zeros((1,self.Y.shape[1]))
+        self._Ystd = np.ones((1,self.Y.shape[1]))
         if self.D > self.N:
             # then it's more efficient to store YYT
             self.YYT = np.dot(self.Y, self.Y.T)
         else:
             self.YYT = None
-        """
-        self.eta,self.delta = powerep
-        self.epsilon_ep = epsilon_ep
-        self.tau_tilde = np.ones([self.N,self.D])
-        self.v_tilde = np.zeros([self.N,self.D])
-        self.tau_ = np.ones([self.N,self.D])
-        self.v_ = np.zeros([self.N,self.D])
-        self.Z_hat = np.ones([self.N,self.D])
-        model.__init__(self)
-
-    def _set_params(self,p):
-        self.kern._set_params_transformed(p)
-        self.K = self.kern.K(self.X,slices1=self.Xslices)
-        self._ep_params()
-
-    def _get_params(self):
-        return self.kern._get_params_transformed()
-
-    def _get_param_names(self):
-        return self.kern._get_param_names_transformed()
-
-    def approximate_likelihood(self):
-        self.ep_approx = Full(self.K,self.likelihood,epsilon=self.epsilon_ep,powerep=[self.eta,self.delta])
-        self.tau_tilde, self.v_tilde, self.Z_hat, self.tau_, self.v_=self.ep_approx.fit_EP()
-        self._ep_params()
-
-    def _ep_params(self):
-        # Posterior mean and Variance computation
-        self.Sroot_tilde_K =  np.sqrt(self.tau_tilde)*self.K
-        B = np.eye(self.N) + np.sqrt(self.tau_tilde.flatten())[None,:]*self.Sroot_tilde_K
-        self.Bi,self.L,self.Li,B_logdet = pdinv(B)
-        V = np.dot(self.Li,self.Sroot_tilde_K)
-        self.Sigma = self.K - np.dot(V.T,V) #posterior variance
-        self.mu = np.dot(self.Sigma,self.v_tilde) #posterior mean
-        # Kernel plus noise variance term
-        self.Kplus = self.K + np.diag(1./self.tau_tilde.flatten())
-        self.Kplusi,self.Lplus,self.Lplusi,self.Kplus_logdet = pdinv(self.Kplus)
-        # Y: EP likelihood is defined as a regression model for mu_tilde
-        self.Y = self.v_tilde/self.tau_tilde
-        self._Ymean = np.zeros((1,self.Y.shape[1]))
-        self._Ystd = np.ones((1,self.Y.shape[1]))
-        self.YYT = None #np.dot(self.Y, self.Y.T)
         self.mu_ = self.v_/self.tau_
+        self._ep_covariance()
+
+    def _ep_covariance(self):
+        # Kernel plus noise variance term
+        self.K = self.kern.K(self.X,slices1=self.Xslices) + np.diag(1./self.tau_tilde.flatten())
+        self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
 
     def _model_fit_term(self):
         """
         Computes the model fit using YYT if it's available
         """
         if self.YYT is None:
-            return -0.5*np.sum(np.square(np.dot(self.Lplusi,self.Y)))
+            return -0.5*np.sum(np.square(np.dot(self.Li,self.Y)))
         else:
-            return -0.5*np.sum(np.multiply(self.Kplusi, self.YYT))
+            return -0.5*np.sum(np.multiply(self.Ki, self.YYT))
 
     def _normalization_term(self):
         """
@@ -138,14 +160,21 @@ class GP_EP2(model):
         matrix K* = K + diag(1./tau_tilde) plus a normalization term.
         """
         complexity_term = -0.5*self.D*self.Kplus_logdet
-        return complexity_term + self._model_fit_term() + self._normalization_term()
+        normalization_term = 0 if self.EP == False else self.normalization_term()
+        return complexity_term + normalization_term + self._model_fit_term()
+
+
+    def log_likelihood(self):
+        complexity_term = -0.5*self.N*self.D*np.log(2.*np.pi) - 0.5*self.D*self.K_logdet
+        return complexity_term + self._model_fit_term()
 
     def dL_dK(self):
         if self.YYT is None:
-            alpha = np.dot(self.Kplusi,self.Y)
-            dL_dK = 0.5*(np.dot(alpha,alpha.T)-self.D*self.Kplusi)
+            alpha = np.dot(self.Ki,self.Y)
+            dL_dK = 0.5*(np.dot(alpha,alpha.T)-self.D*self.Ki)
         else:
-            dL_dK = 0.5*(mdot(self.Kplusi, self.YYT, self.Kplusi) - self.D*self.Kplusi)
+            dL_dK = 0.5*(mdot(self.Ki, self.YYT, self.Ki) - self.D*self.Ki)
+
         return dL_dK
 
     def _log_likelihood_gradients(self):
@@ -200,20 +229,17 @@ class GP_EP2(model):
 
     def _raw_predict(self,_Xnew,slices, full_cov=False):
         """Internal helper function for making predictions, does not account for normalisation"""
-        K_x = self.kern.K(self.X,_Xnew,slices1=self.Xslices,slices2=slices)
-        aux2 = mdot(self.Bi,self.Sroot_tilde_K,self.v_tilde)
-        zeta = np.sqrt(self.tau_tilde)*aux2
-        f = np.dot(K_x.T,self.v_tilde-zeta)
-        v = mdot(self.Li,np.sqrt(self.tau_tilde)*K_x)
+        Kx = self.kern.K(self.X,_Xnew, slices1=self.Xslices,slices2=slices)
+        mu = np.dot(np.dot(Kx.T,self.Ki),self.Y)
+        KiKx = np.dot(self.Ki,Kx)
         if full_cov:
-            Kxx = self.kern.K(_Xnew,slices1=slices,slices2=slices)
-            var = Kxx - np.dot(v.T,v)
-            var_diag = np.diag(var)[:,None]
+            Kxx = self.kern.K(_Xnew, slices1=slices,slices2=slices)
+            var = Kxx - np.dot(KiKx.T,Kx)
         else:
             Kxx = self.kern.Kdiag(_Xnew, slices=slices)
-            var_diag = (Kxx - np.sum(v**2,-2))[:,None]
-        phi = self.likelihood.predictive_mean(f,var_diag)
-        return f, var_diag, phi
+            var = Kxx - np.sum(np.multiply(KiKx,Kx),0)
+        phi = None if not self.EP else self.likelihood.predictive_mean(mu,var)
+        return mu, var, phi
 
     def plot(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None):
         """
@@ -241,7 +267,8 @@ class GP_EP2(model):
         Y = self.Y[which_data,:]
 
         Xorig = X*self._Xstd + self._Xmean
-        Yorig = Y*self._Ystd + self._Ymean
+        Yorig = Y*self._Ystd + self._Ymean if not self.EP else self.likelihood.Y
+
         if plot_limits is None:
             xmin,xmax = Xorig.min(0),Xorig.max(0)
             xmin, xmax = xmin-0.2*(xmax-xmin), xmax+0.2*(xmax-xmin)
@@ -252,23 +279,29 @@ class GP_EP2(model):
 
         if self.X.shape[1]==1:
             Xnew = np.linspace(xmin,xmax,resolution or 200)[:,None]
-            #m,v,phi = self.predict(Xnew,slices=which_functions)
-            #gpplot(Xnew,m,v)
-            mu_f, var_f, phi_f = self.predict(Xnew,slices=which_functions)
-            pb.subplot(211)
-            self.likelihood.plot1Da(X=Xnew,mean=mu_f,var=var_f,Z=self.X,mean_Z=self.mu,var_Z=np.diag(self.Sigma))
+            m,v,phi = self.predict(Xnew,slices=which_functions)
+            if self.EP:
+                pb.subplot(211)
+
+            gpplot(Xnew,m,v)
             if samples:
                 s = np.random.multivariate_normal(m.flatten(),v,samples)
                 pb.plot(Xnew.flatten(),s.T, alpha = 0.4, c='#3465a4', linewidth = 0.8)
-            pb.xlim(xmin,xmax)
-            pb.subplot(212)
-            self.likelihood.plot1Db(self.X,Xnew,phi_f)
+
+            if not self.EP:
+                pb.plot(Xorig,Yorig,'kx',mew=1.5)
+                pb.xlim(xmin,xmax)
+            else:
+                pb.xlim(xmin,xmax)
+                pb.subplot(212)
+                self.likelihood.plot1Db(self.X,Xnew,phi)
+                pb.xlim(xmin,xmax)
 
         elif self.X.shape[1]==2:
             resolution = 50 or resolution
             xx,yy = np.mgrid[xmin[0]:xmax[0]:1j*resolution,xmin[1]:xmax[1]:1j*resolution]
             Xtest = np.vstack((xx.flatten(),yy.flatten())).T
-            zz,vv = self.predict(Xtest,slices=which_functions)
+            zz,vv,phi = self.predict(Xtest,slices=which_functions)
             zz = zz.reshape(resolution,resolution)
             pb.contour(xx,yy,zz,vmin=zz.min(),vmax=zz.max(),cmap=pb.cm.jet)
             pb.scatter(Xorig[:,0],Xorig[:,1],40,Yorig,linewidth=0,cmap=pb.cm.jet,vmin=zz.min(),vmax=zz.max())

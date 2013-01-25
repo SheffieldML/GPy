@@ -62,7 +62,7 @@ class GP_EP(model):
         self.L = jitchol(B)
         V,info = linalg.flapack.dtrtrs(self.L,self.Sroot_tilde_K,lower=1)
         self.Sigma = self.K - np.dot(V.T,V)
-        self.mu = np.dot(self.Sigma,self.ep_approx.v_tilde)
+        self.mu = np.dot(self.Sigma,self.ep_approx.v_tilde) * self.Z_hat
 
     def log_likelihood(self):
         """

@@ -11,3 +11,4 @@ from GP_EP2 import GP_EP2
 from generalized_FITC import generalized_FITC
 from sparse_GPLVM import sparse_GPLVM
 from uncollapsed_sparse_GP import uncollapsed_sparse_GP
+from GP import GP

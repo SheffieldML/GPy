@@ -60,7 +60,7 @@ class Full(EP):
     def fit_EP(self):
         """
         The expectation-propagation algorithm.
-        For nomenclature see Rasmussen & Williams 2006 (pag. 52-60)
+        For nomenclature see Rasmussen & Williams 2006.
         """
         #Prior distribution parameters: p(f|X) = N(f|0,K)
         #self.K = self.kernel.K(self.X,self.X)
@@ -84,8 +84,6 @@ class Full(EP):
         phi = np.empty(self.N,dtype=float)
         mu_hat = np.empty(self.N,dtype=float)
         sigma2_hat = np.empty(self.N,dtype=float)
-        self.mu_hat = mu_hat #TODO erase me
-        self.sigma2_hat = sigma2_hat #TODO erase me
 
         #Approximation
         epsilon_np1 = self.epsilon + 1.
@@ -95,21 +93,16 @@ class Full(EP):
         self.np2 = [self.v_tilde.copy()]
         while epsilon_np1 > self.epsilon or epsilon_np2 > self.epsilon:
             update_order = np.arange(self.N)
-            #random.shuffle(update_order) #TODO uncomment
+            random.shuffle(update_order)
             for i in update_order:
                 #Cavity distribution parameters
                 self.tau_[i] = 1./self.Sigma[i,i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = self.mu[i]/self.Sigma[i,i] - self.eta*self.v_tilde[i]
                 #Marginal moments
                 self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood.moments_match(i,self.tau_[i],self.v_[i])
-                self.mu_hat[i] = mu_hat[i] #TODO erase me
-                self.sigma2_hat[i] = sigma2_hat[i] #TODO erase me
-                #if i == 3:
-                #    a = b
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./self.Sigma[i,i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - self.mu[i]/self.Sigma[i,i])
-                print Delta_tau
                 self.tau_tilde[i] = self.tau_tilde[i] + Delta_tau
                 self.v_tilde[i] = self.v_tilde[i] + Delta_v
                 #Posterior distribution parameters update
@@ -128,6 +121,7 @@ class Full(EP):
             epsilon_np2 = sum((self.v_tilde-self.np2[-1])**2)/self.N
             self.np1.append(self.tau_tilde.copy())
             self.np2.append(self.v_tilde.copy())
+        return self.tau_tilde[:,None], self.v_tilde[:,None], self.Z_hat[:,None], self.tau_[:,None], self.v_[:,None]
 
 class DTC(EP):
     def fit_EP(self):

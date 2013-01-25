@@ -25,14 +25,15 @@ seed=default_seed
 data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
 likelihood = GPy.inference.likelihoods.probit(data['Y'][:, 0:1])
 
-m = GPy.models.GP_EP2(data['X'],likelihood)
+m = GPy.models.GP(data['X'],likelihood=likelihood)
 
-#m.constrain_positive('var')
-#m.constrain_positive('len')
-#m.tie_param('lengthscale')
+m.constrain_positive('var')
+m.constrain_positive('len')
+m.tie_param('lengthscale')
 m.approximate_likelihood()
+print m.checkgrad()
 # Optimize and plot
-#m.optimize()
+m.optimize()
 #m.em(plot_all=False) # EM algorithm
 m.plot()
 

@@ -57,7 +57,7 @@ class GP_EP(model):
     def posterior_param(self):
         self.K = self.kernel.K(self.X)
         self.Sroot_tilde_K =  np.sqrt(self.ep_approx.tau_tilde)[:,None]*self.K
-        B = np.eye(self.N) + np.sqrt(self.ep_approx.tau_tilde)[None,:]*self.Sroot_tilde_K
+        B = np.eye(self.N) + np.sqrt(self.ep_approx.tau_tilde)*self.Sroot_tilde_K
         #self.L = np.linalg.cholesky(B)
         self.L = jitchol(B)
         V,info = linalg.flapack.dtrtrs(self.L,self.Sroot_tilde_K,lower=1)

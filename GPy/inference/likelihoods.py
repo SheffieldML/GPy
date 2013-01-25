@@ -32,7 +32,7 @@ class likelihood:
         """
         assert X_new.shape[1] == 1, 'Number of dimensions must be 1'
         gpplot(X_new,Mean_new,Var_new)
-        pb.errorbar(X_u,Mean_u,2*np.sqrt(Var_u),fmt='r+')
+        pb.errorbar(X_u.flatten(),Mean_u.flatten(),2*np.sqrt(Var_u.flatten()),fmt='r+')
         pb.plot(X_u,Mean_u,'ro')
 
     def plot2D(self,X,X_new,F_new,U=None):

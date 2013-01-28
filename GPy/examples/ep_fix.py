@@ -35,5 +35,6 @@ print m.checkgrad()
 m.optimize()
 #m.em(plot_all=False) # EM algorithm
 m.plot(samples=3)
+m.EM()
 
 print(m)

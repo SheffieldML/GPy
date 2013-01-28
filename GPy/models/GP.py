@@ -29,8 +29,8 @@ class GP(model):
 
     """
 
-    def __init__(self,X,Y=None,kernel=None,normalize_X=False,normalize_Y=False, Xslices=None,likelihood=None,epsilon_ep=1e-3,epsion_em=.1,powerep=[1.,1.]):
-        #TODO: specify beta parameter explicitely
+    def __init__(self,X,Y=None,kernel=None,normalize_X=False,normalize_Y=False, Xslices=None,likelihood=None,epsilon_ep=1e-3,epsion_em=.1,power_ep=[1.,1.]):
+        #TODO: make beta parameter explicit
 
         # parse arguments
         self.Xslices = Xslices
@@ -87,7 +87,7 @@ class GP(model):
         else:
             # Y is defined after approximating the likelihood
             self.EP = True
-            self.eta,self.delta = powerep
+            self.eta,self.delta = power_ep
             self.epsilon_ep = epsilon_ep
             self.tau_tilde = np.ones([self.N,self.D])
             self.v_tilde = np.zeros([self.N,self.D])
@@ -116,7 +116,7 @@ class GP(model):
 
     def approximate_likelihood(self):
         assert not isinstance(self.likelihood, gaussian), "EP is only available for non-gaussian likelihoods"
-        self.ep_approx = Full(self.K,self.likelihood,epsilon=self.epsilon_ep,powerep=[self.eta,self.delta])
+        self.ep_approx = Full(self.K,self.likelihood,epsilon=self.epsilon_ep,power_ep=[self.eta,self.delta])
         self.tau_tilde, self.v_tilde, self.Z_hat, self.tau_, self.v_=self.ep_approx.fit_EP()
         # Y: EP likelihood is defined as a regression model for mu_tilde
         self.Y = self.v_tilde/self.tau_tilde

@@ -23,10 +23,17 @@ seed=default_seed
 :param inducing : number of inducing variables (only used for 'FITC' or 'DTC').
 :type inducing: int
 """
-data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
-likelihood = GPy.inference.likelihoods.probit(data['Y'][:, 0:1])
 
-m = GPy.models.GP(data['X'],likelihood=likelihood)
+X = np.arange(0,100,5)[:,None]
+F = np.round(np.sin(X/18.) + .1*X)
+E = np.random.randint(-3,3,20)[:,None]
+Y = F + E
+pb.plot(X,F,'k-')
+pb.plot(X,Y,'ro')
+pb.figure()
+likelihood = GPy.inference.likelihoods.poisson(Y,scale=4.)
+
+m = GPy.models.GP(X,likelihood=likelihood)
 #m = GPy.models.GP(data['X'],Y=likelihood.Y)
 
 m.constrain_positive('var')

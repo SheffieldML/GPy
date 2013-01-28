@@ -37,7 +37,7 @@ class sparse_GP_regression(GP_regression):
     """
 
     def __init__(self,X,Y,kernel=None, X_uncertainty=None, beta=100., Z=None,Zslices=None,M=10,normalize_X=False,normalize_Y=False):
-        self.scale_factor = 1e1
+        self.scale_factor = 10.0
         self.beta = beta
         if Z is None:
             self.Z = np.random.permutation(X.copy())[:M]
@@ -70,7 +70,8 @@ class sparse_GP_regression(GP_regression):
             self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty).sum()
             self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
             self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty)
-            raise NotImplementedError, "scale psi2 (in kern?)"
+            # raise NotImplementedError, "scale psi2 (in kern?)"
+            self.psi2_beta_scaled = self.psi2*(self.beta/self.scale_factor**2)
         else:
             self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices).sum()
             self.psi1 = self.kern.K(self.Z,self.X)
@@ -292,5 +293,3 @@ class sgp_debugE(sparse_GP_regression):
         tmp = mdot(self.LBi.T, self.LLambdai, self.psi1V)
         dE_dbeta = (np.sum(np.square(self.C)) - 0.5 * np.sum(self.A * np.dot(tmp, tmp.T)))/self.beta
         return np.squeeze(dE_dbeta)
-
-

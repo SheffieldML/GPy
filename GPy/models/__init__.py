@@ -10,3 +10,4 @@ from GP_EP import GP_EP
 from generalized_FITC import generalized_FITC
 from sparse_GPLVM import sparse_GPLVM
 from uncollapsed_sparse_GP import uncollapsed_sparse_GP
+from BGPLVM import Bayesian_GPLVM

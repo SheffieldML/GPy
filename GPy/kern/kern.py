@@ -277,7 +277,7 @@ class kern(parameterised):
         [p.dpsi2_dZ(partial[s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s2,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
         return target
 
-    def dpsi2_dmuS(self,Z,mu,S,slices1=None,slices2=None):
+    def dpsi2_dmuS(self,partial,Z,mu,S,slices1=None,slices2=None):
         """return shapes are N,M,M,Q"""
         slices1, slices2 = self._process_slices(slices1,slices2)
         target_mu, target_S = np.zeros((2,mu.shape[0],mu.shape[1]))

@@ -97,7 +97,7 @@ class rbf(kernpart):
     def dpsi0_dtheta(self,partial,Z,mu,S,target):
         target[0] += 1.
 
-    def dpsi0_dmuS(self,Z,mu,S,target_mu,target_S):
+    def dpsi0_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         pass
 
     def psi1(self,Z,mu,S,target):
@@ -118,8 +118,8 @@ class rbf(kernpart):
     def dpsi1_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         self._psi_computations(Z,mu,S)
         tmp = self._psi1[:,:,None]/self.lengthscale2/self._psi1_denom
-        target_mu += np.sum(partial*tmp*self._psi1_dist,1)
-        target_S += np.sum(partial*0.5*tmp*(self._psi1_dist_sq-1),1)
+        target_mu += np.sum(partial.T[:, :, None]*tmp*self._psi1_dist,1)
+        target_S += np.sum(partial.T[:, :, None]*0.5*tmp*(self._psi1_dist_sq-1),1)
 
     def psi2(self,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
@@ -140,12 +140,12 @@ class rbf(kernpart):
         dZ = self._psi2[:,:,:,None]/self.lengthscale2*(-0.5*self._psi2_Zdist + self._psi2_mudist/self._psi2_denom)
         target += np.sum(partial[None,:,:,None]*dZ,0).sum(1)
 
-    def dpsi2_dmuS(self,Z,mu,S,target_mu,target_S):
+    def dpsi2_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         """Think N,M,M,Q """
         self._psi_computations(Z,mu,S)
         tmp = self._psi2[:,:,:,None]/self.lengthscale2/self._psi2_denom
-        target_mu += (partial*-tmp*2.*self._psi2_mudist).sum(1).sum(1)
-        target_S += (partial*tmp*(2.*self._psi2_mudist_sq-1)).sum(1).sum(1)
+        target_mu += (partial[None,:,:,None]*-tmp*2.*self._psi2_mudist).sum(1).sum(1)
+        target_S += (partial[None,:,:,None]*tmp*(2.*self._psi2_mudist_sq-1)).sum(1).sum(1)
 
     def _psi_computations(self,Z,mu,S):
         #here are the "statistics" for psi1 and psi2

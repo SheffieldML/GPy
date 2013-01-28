@@ -21,7 +21,7 @@ class likelihood:
         self.location = location
         self.scale = scale
 
-    def plot1Da(self,X_new,Mean_new,Var_new,X_u,Mean_u,Var_u):
+    def plot1Da(self,X,mean,var,Z=None,mean_Z=None,var_Z=None):
         """
         Plot the predictive distribution of the GP model for 1-dimensional inputs
 
@@ -32,10 +32,18 @@ class likelihood:
         :param Mean_u: mean values at X_u
         :param Var_new: variance values at X_u
         """
-        assert X_new.shape[1] == 1, 'Number of dimensions must be 1'
-        gpplot(X_new,Mean_new,Var_new)
-        pb.errorbar(X_u,Mean_u,2*np.sqrt(Var_u),fmt='r+')
-        pb.plot(X_u,Mean_u,'ro')
+        assert X.shape[1] == 1, 'Number of dimensions must be 1'
+        gpplot(X,mean,var.flatten())
+        pb.errorbar(Z.flatten(),mean_Z.flatten(),2*np.sqrt(var_Z.flatten()),fmt='r+')
+        pb.plot(Z,mean_Z,'ro')
+
+    def plot1Db(self,X_obs,X,phi,Z=None):
+        assert X_obs.shape[1] == 1, 'Number of dimensions must be 1'
+        gpplot(X,phi,np.zeros(X.shape[0]))
+        pb.plot(X_obs,(self.Y+1)/2,'kx',mew=1.5)
+        pb.ylim(-0.2,1.2)
+        if Z is not None:
+            pb.plot(Z,Z*0+.5,'r|',mew=1.5,markersize=12)
 
     def plot2D(self,X,X_new,F_new,U=None):
         """
@@ -90,16 +98,11 @@ class probit(likelihood):
         sigma2_hat = 1./tau_i - (phi/((tau_i**2+tau_i)*Z_hat))*(z+phi/Z_hat)
         return Z_hat, mu_hat, sigma2_hat
 
-    def plot1Db(self,X,X_new,F_new,U=None):
-        assert X.shape[1] == 1, 'Number of dimensions must be 1'
-        gpplot(X_new,F_new,np.zeros(X_new.shape[0]))
-        pb.plot(X,(self.Y+1)/2,'kx',mew=1.5)
-        pb.ylim(-0.2,1.2)
-        if U is not None:
-            pb.plot(U,U*0+.5,'r|',mew=1.5,markersize=12)
 
-    def predictive_mean(self,mu,variance):
-        return stats.norm.cdf(mu/np.sqrt(1+variance))
+    def predictive_mean(self,mu,var):
+        mu = mu.flatten()
+        var = var.flatten()
+        return stats.norm.cdf(mu/np.sqrt(1+var))
 
     def _log_likelihood_gradients():
         raise NotImplementedError

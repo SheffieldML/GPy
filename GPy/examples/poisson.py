@@ -31,7 +31,7 @@ Y = F + E
 pb.plot(X,F,'k-')
 pb.plot(X,Y,'ro')
 pb.figure()
-likelihood = GPy.inference.likelihoods.poisson(Y,scale=4.)
+likelihood = GPy.inference.likelihoods.poisson(Y,scale=6.)
 
 m = GPy.models.GP(X,likelihood=likelihood)
 #m = GPy.models.GP(data['X'],Y=likelihood.Y)

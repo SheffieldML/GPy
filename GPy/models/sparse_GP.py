@@ -37,7 +37,7 @@ class sparse_GP(GP):
     :type normalize_(X|Y): bool
     """
 
-    def __init__(self,X,Y,kernel=None, X_uncertainty=None, beta=100., Z=None,Zslices=None,M=10,normalize_X=False,normalize_Y=False,likelihood=None,method_ep='DTC',epsilon_ep=1e-3,epsilon_em=.1,power_ep=[1.,1.]):
+    def __init__(self,X,Y=None,kernel=None, X_uncertainty=None, beta=100., Z=None,Zslices=None,M=10,normalize_X=False,normalize_Y=False,likelihood=None,method_ep='DTC',epsilon_ep=1e-3,epsilon_em=.1,power_ep=[1.,1.]):
 
         if Z is None:
             self.Z = np.random.permutation(X.copy())[:M]
@@ -53,10 +53,8 @@ class sparse_GP(GP):
             self.has_uncertain_inputs=True
             self.X_uncertainty = X_uncertainty
 
-
-        self.beta = beta #FIXME
-        GP.__init__(self, X, Y, kernel=kernel, normalize_X=normalize_X, normalize_Y=normalize_Y,likelihood=likelihood,epsilon_ep=epsilon_ep,epsion_em=epsilon_em,power_ep=power_ep)
-        self.beta = beta if isinstance(likelihood,gaussian) else self.tau_tilde #TODO this should be defined in GP.__init__
+        GP.__init__(self, X=X, Y=Y, kernel=kernel, normalize_X=normalize_X, normalize_Y=normalize_Y,likelihood=likelihood,epsilon_ep=epsilon_ep,epsilon_em=epsilon_em,power_ep=power_ep)
+        self.trYYT = np.sum(np.square(self.Y)) if not self.EP else None
 
 
         #normalise X uncertainty also
@@ -74,9 +72,54 @@ class sparse_GP(GP):
         else:
             self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
             self.kern._set_params(p[self.Z.size:])
-            #self._compute_kernel_matrices() this is replaced by _ep_covariance
-            self._ep_covariance()
+            #self._compute_kernel_matrices() this is replaced by _ep_kernel_matrices
+            self._ep_kernel_matrices()
             self._ep_computations()
+
+    def _compute_kernel_matrices(self):
+        # kernel computations, using BGPLVM notation
+        #TODO: slices for psi statistics (easy enough)
+
+        self.Kmm = self.kern.K(self.Z)
+        if self.has_uncertain_inputs:
+            if self.hetero_noise:
+                raise NotImplementedError, "uncertain ips and het noise not yet supported"
+            else:
+                self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty).sum()
+                self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
+                self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty)
+        else:
+            if self.hetero_noise:
+                print "rick's stuff here"
+            else:
+                self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices).sum()
+                self.psi1 = self.kern.K(self.Z,self.X)
+                self.psi2 = np.dot(self.psi1,self.psi1.T)
+
+    def _computations(self):
+        # TODO find routine to multiply triangular matrices
+        self.V = self.beta*self.Y
+        self.psi1V = np.dot(self.psi1, self.V)
+        self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
+        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
+        self.A = mdot(self.Lmi, self.beta*self.psi2, self.Lmi.T)
+        self.B = np.eye(self.M) + self.A
+        self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
+        self.LLambdai = np.dot(self.LBi, self.Lmi)
+        self.trace_K = self.psi0 - np.trace(self.A)/self.beta
+        self.LBL_inv = mdot(self.Lmi.T, self.Bi, self.Lmi)
+        self.C = mdot(self.LLambdai, self.psi1V)
+        self.G =  mdot(self.LBL_inv, self.psi1VVpsi1, self.LBL_inv.T)
+
+        # Compute dL_dpsi
+        self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
+        self.dL_dpsi1 = mdot(self.LLambdai.T,self.C,self.V.T)
+        self.dL_dpsi2 = - 0.5 * self.beta * (self.D*(self.LBL_inv - self.Kmmi) + self.G)
+
+        # Compute dL_dKmm
+        self.dL_dKmm = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi) # dB
+        self.dL_dKmm += -0.5 * self.D * (- self.LBL_inv - 2.*self.beta*mdot(self.LBL_inv, self.psi2, self.Kmmi) + self.Kmmi) # dC
+        self.dL_dKmm +=  np.dot(np.dot(self.G,self.beta*self.psi2) - np.dot(self.LBL_inv, self.psi1VVpsi1), self.Kmmi) + 0.5*self.G # dE
 
     def approximate_likelihood(self):
         assert not isinstance(self.likelihood, gaussian), "EP is only available for non-gaussian likelihoods"
@@ -88,6 +131,22 @@ class sparse_GP(GP):
         else:
             self.ep_approx = Full(self.X,self.likelihood,self.kernel,inducing=None,epsilon=self.epsilon_ep,power_ep=[self.eta,self.delta])
         self.beta, self.v_tilde, self.Z_hat, self.tau_, self.v_=self.ep_approx.fit_EP()
+        self._ep_kernel_matrices()
+        self._computations()
+
+    def _ep_kernel_matrices(self):
+        self.Kmm = self.kern.K(self.Z)
+        if self.has_uncertain_inputs:
+            self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty).sum()
+            self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
+            self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty) #FIXME include beta
+        else:
+            self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices)
+            self.psi1 = self.kern.K(self.Z,self.X)
+            self.psi2 = np.dot(self.psi1,self.psi1.T)
+            self.psi2_beta_scaled = np.dot(self.psi1,self.beta*self.psi1.T)
+
+    def _ep_computations(self):
         # Y: EP likelihood is defined as a regression model for mu_tilde
         self.Y = self.v_tilde/self.beta
         self._Ymean = np.zeros((1,self.Y.shape[1]))
@@ -99,50 +158,17 @@ class sparse_GP(GP):
         else:
             self.YYT = None
         self.mu_ = self.v_/self.tau_
-        self._ep_covariance()
-        self._computations()
-
-    def _ep_covariance(self):
-        self.Kmm = self.kern.K(self.Z)
-        if self.has_uncertain_inputs:
-            self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty).sum()
-            self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
-            self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty) #FIXME include beta
-        else:
-            #self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices).sum()
-            self.Knn_diag = self.kern.Kdiag(self.X,slices=self.Xslices)
-            self.psi0 = (self.beta*self.Knn_diag).sum() #TODO check dimensions
-            self.psi1 = self.kern.K(self.Z,self.X)
-            #self.psi2 = np.dot(self.psi1,self.psi1.T)
-            self.psi2 = np.dot(self.psi1,self.beta*self.psi1.T)
-
-    def _compute_kernel_matrices(self):
-        # kernel computations, using BGPLVM notation
-        #TODO: slices for psi statistics (easy enough)
-
-        self.Kmm = self.kern.K(self.Z)
-        if self.has_uncertain_inputs:
-            self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty).sum()
-            self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
-            self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty)
-        else:
-            self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices).sum()
-            self.psi1 = self.kern.K(self.Z,self.X)
-            self.psi2 = np.dot(self.psi1,self.psi1.T)
-
-    def _ep_computations(self):
         # TODO find routine to multiply triangular matrices
         self.V = self.beta*self.Y
         self.psi1V = np.dot(self.psi1, self.V)
         self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
         self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
         #self.A = mdot(self.Lmi, self.beta*self.psi2, self.Lmi.T)
-        self.A = mdot(self.Lmi, self.psi2, self.Lmi.T)
+        self.A = mdot(self.Lmi, self.psi2_beta_scaled, self.Lmi.T)
         self.B = np.eye(self.M) + self.A
         self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
         self.LLambdai = np.dot(self.LBi, self.Lmi)
-        #self.trace_K = self.psi0 - np.sum(np.dot(self.Lmi,self.psi1)**2,-1) #TODO check
-        self.trace_K = self.psi0 - np.trace(self.A)
+        self.trace_K = self.psi0.sum() - np.trace(self.A)
         self.LBL_inv = mdot(self.Lmi.T, self.Bi, self.Lmi)
         self.C = mdot(self.LLambdai, self.psi1V)
         self.G =  mdot(self.LBL_inv, self.psi1VVpsi1, self.LBL_inv.T)
@@ -176,10 +202,15 @@ class sparse_GP(GP):
         Compute the (lower bound on the) log marginal likelihood
         """
         beta_logdet = self.N*self.D*np.log(self.beta) if not self.EP else self.D*np.sum(np.log(self.beta))
-        A = -0.5*self.N*self.D*(np.log(2.*np.pi)) - 0.5*beta_logdet
-        B = -0.5*self.beta*self.D*self.trace_K if not self.EP else -0.5*self.D*self.trace_K
+        if self.hetero_noise:
+            A = foo
+            B = bar
+            D = -0.5*self.trbetaYYT
+        else:
+            A = -0.5*self.N*self.D*(np.log(2.*np.pi)) - 0.5*beta_logdet
+            B = -0.5*self.beta*self.D*self.trace_K if not self.EP else -0.5*self.D*self.trace_K
+            D = -0.5*self.beta*self.trYYT
         C = -0.5*self.D * self.B_logdet
-        D = -0.5*self.beta*self.trYYT if not self.EP else -0.5*self.trbetaYYT
         E = +0.5*np.sum(self.psi1VVpsi1 * self.LBL_inv)
         return A+B+C+D+E
 
@@ -243,13 +274,14 @@ class sparse_GP(GP):
             noise_term = 1./self.beta if not self.EP else 0
             Kxx = self.kern.Kdiag(Xnew)
             var = Kxx - np.sum(Kx*np.dot(self.Kmmi - self.LBL_inv, Kx),0) + noise_term
-        return mu,var
+        return mu,var,None#TODO add phi for EP
 
     def plot(self, *args, **kwargs):
         """
         Plot the fitted model: just call the GP_regression plot function and then add inducing inputs
         """
-        GP_regression.plot(self,*args,**kwargs)
+        #GP_regression.plot(self,*args,**kwargs)
+        GP.plot(self,*args,**kwargs)
         if self.Q==1:
             pb.plot(self.Z,self.Z*0+pb.ylim()[0],'k|',mew=1.5,markersize=12)
             if self.has_uncertain_inputs:

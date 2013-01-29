@@ -106,31 +106,31 @@ class rbf_ARD(kernpart):
 
     def psi2(self,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
-        target += self._psi2.sum(0) #TODO: psi2 should be NxMxM (for het. noise)
+        target += self._psi2
 
     def dpsi2_dtheta(self,partial,Z,mu,S,target):
         """Shape N,M,M,Ntheta"""
         self._psi_computations(Z,mu,S)
-        d_var = np.sum(2.*self._psi2/self.variance,0)
+        d_var = 2.*self._psi2/self.variance
         d_length = self._psi2[:,:,:,None]*(0.5*self._psi2_Zdist_sq*self._psi2_denom + 2.*self._psi2_mudist_sq + 2.*S[:,None,None,:]/self.lengthscales2)/(self.lengthscales*self._psi2_denom)
-        d_length = d_length.sum(0)
+        # d_length = d_length.sum(0)
         target[0] += np.sum(partial*d_var)
-        target[1:] += (d_length*partial[:,:,None]).sum(0).sum(0)
+        target[1:] += (d_length*partial[:,:,:,None]).sum(0).sum(0).sum(0)
 
     def dpsi2_dZ(self,partial,Z,mu,S,target):
         """Returns shape N,M,M,Q"""
         self._psi_computations(Z,mu,S)
         term1 = 0.5*self._psi2_Zdist/self.lengthscales2 # M, M, Q
         term2 = self._psi2_mudist/self._psi2_denom/self.lengthscales2 # N, M, M, Q
-        dZ = self._psi2[:,:,:,None] * (term1[None] + term2) 
-        target += (partial[None,:,:,None]*dZ).sum(0).sum(0)
+        dZ = self._psi2[:,:,:,None] * (term1[None] + term2)
+        target += (partial[:,:,:,None]*dZ).sum(0).sum(0)
 
     def dpsi2_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         """Think N,M,M,Q """
         self._psi_computations(Z,mu,S)
         tmp = self._psi2[:,:,:,None]/self.lengthscales2/self._psi2_denom
-        target_mu += (partial[None,:,:,None]*-tmp*2.*self._psi2_mudist).sum(1).sum(1)
-        target_S += (partial[None,:,:,None]*tmp*(2.*self._psi2_mudist_sq-1)).sum(1).sum(1)
+        target_mu += (partial[:,:,:,None]*-tmp*2.*self._psi2_mudist).sum(1).sum(1)
+        target_S += (partial[:,:,:,None]*tmp*(2.*self._psi2_mudist_sq-1)).sum(1).sum(1)
 
     def _K_computations(self,X,X2):
         if not (np.all(X==self._X) and np.all(X2==self._X2)):

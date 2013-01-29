@@ -70,7 +70,7 @@ class sparse_GP_regression(GP_regression):
             self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty).sum()
             self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
             self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty)
-            self.psi2_beta_scaled = self.psi2*(self.beta/self.scale_factor**2)
+            self.psi2_beta_scaled = (self.psi2*(self.beta/self.scale_factor**2)).sum(0)
         else:
             self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices).sum()
             self.psi1 = self.kern.K(self.Z,self.X)
@@ -98,9 +98,9 @@ class sparse_GP_regression(GP_regression):
         # Compute dL_dpsi
         self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
         self.dL_dpsi1 = mdot(self.V, self.psi1V.T,self.C).T
-        self.dL_dpsi2 = 0.5 * self.beta * self.D * self.Kmmi # dB
-        self.dL_dpsi2 += - 0.5 * self.beta/sf2 * self.D * self.C # dC
-        self.dL_dpsi2 += - 0.5 * self.beta * self.E # dD
+        self.dL_dpsi2 = 0.5 * self.beta * self.D * self.Kmmi[None,:,:] # dB
+        self.dL_dpsi2 += - 0.5 * self.beta/sf2 * self.D * self.C[None,:,:] # dC
+        self.dL_dpsi2 += - 0.5 * self.beta * self.E[None,:,:] # dD
 
         # Compute dL_dKmm
         self.dL_dKmm = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi)*sf2 # dB
@@ -152,7 +152,7 @@ class sparse_GP_regression(GP_regression):
             dL_dtheta += self.kern.dpsi2_dtheta(self.dL_dpsi2,self.Z,self.X, self.X_uncertainty) # for multiple_beta, dL_dpsi2 will be a different shape
         else:
             #re-cast computations in psi2 back to psi1:
-            dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
+            dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2.sum(0),self.psi1)
             dL_dtheta += self.kern.dK_dtheta(dL_dpsi1,self.Z,self.X)
             dL_dtheta += self.kern.dKdiag_dtheta(self.dL_dpsi0, self.X)
 
@@ -168,7 +168,7 @@ class sparse_GP_regression(GP_regression):
             dL_dZ += 2.*self.kern.dpsi2_dZ(self.dL_dpsi2,self.Z,self.X, self.X_uncertainty) # 'stripes'
         else:
             #re-cast computations in psi2 back to psi1:
-            dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
+            dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2.sum(0),self.psi1)
             dL_dZ += self.kern.dK_dX(dL_dpsi1,self.Z,self.X)
         return dL_dZ
 

@@ -21,6 +21,27 @@ class likelihood:
         self.location = location
         self.scale = scale
 
+    def plot1D(self,X,mean,var,Z=None,mean_Z=None,var_Z=None,samples=0):
+        """
+        Plot the predictive distribution of the GP model for 1-dimensional inputs
+
+        :param X: The points at which to make a prediction
+        :param Mean: mean values at X
+        :param Var: variance values at X
+        :param Z: Set of points to be highlighted in the plot, i.e. inducing points
+        :param mean_Z: mean values at Z
+        :param var_Z: variance values at Z
+        :samples: Number of samples to plot
+        """
+        assert X.shape[1] == 1, 'Number of dimensions must be 1'
+        gpplot(X,mean,var.flatten())
+        if samples: #NOTE why don't we put samples as a parameter of gpplot
+            s = np.random.multivariate_normal(mean.flatten(),np.diag(var),samples)
+            pb.plot(X.flatten(),s.T, alpha = 0.4, c='#3465a4', linewidth = 0.8)
+        #pb.subplot(211)
+        #self.plot1Da(X,mean,var,Z,mean_Z,var_Z)
+
+
     def plot1Da(self,X,mean,var,Z=None,mean_Z=None,var_Z=None):
         """
         Plot the predictive distribution of the GP model for 1-dimensional inputs
@@ -37,6 +58,7 @@ class likelihood:
         pb.errorbar(Z.flatten(),mean_Z.flatten(),2*np.sqrt(var_Z.flatten()),fmt='r+')
         pb.plot(Z,mean_Z,'ro')
 
+    """
     def plot1Db(self,X_obs,X,phi,Z=None):
         assert X_obs.shape[1] == 1, 'Number of dimensions must be 1'
         gpplot(X,phi,np.zeros(X.shape[0]))
@@ -45,6 +67,7 @@ class likelihood:
         if Z is not None:
             pb.plot(Z,Z*0+.5,'r|',mew=1.5,markersize=12)
 
+    """
     def plot2D(self,X,X_new,F_new,U=None):
         """
         Predictive distribution of the fitted GP model for 2-dimensional inputs
@@ -98,7 +121,6 @@ class probit(likelihood):
         sigma2_hat = 1./tau_i - (phi/((tau_i**2+tau_i)*Z_hat))*(z+phi/Z_hat)
         return Z_hat, mu_hat, sigma2_hat
 
-
     def predictive_mean(self,mu,var):
         mu = mu.flatten()
         var = var.flatten()
@@ -106,6 +128,14 @@ class probit(likelihood):
 
     def _log_likelihood_gradients():
         raise NotImplementedError
+
+    def plot(self,X,phi,X_obs,Z=None):
+        assert X_obs.shape[1] == 1, 'Number of dimensions must be 1'
+        gpplot(X,phi,np.zeros(X.shape[0]))
+        pb.plot(X_obs,(self.Y+1)/2,'kx',mew=1.5)
+        if Z is not None:
+            pb.plot(Z,Z*0+.5,'r|',mew=1.5,markersize=12)
+        pb.ylim(-0.2,1.2)
 
 class poisson(likelihood):
     """

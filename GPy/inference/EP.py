@@ -110,7 +110,6 @@ class Full(EP):
                 self.Sigma = self.Sigma - Delta_tau/(1.+ Delta_tau*self.Sigma[i,i])*np.dot(si,si.T)
                 self.mu = np.dot(self.Sigma,self.v_tilde)
                 self.iterations += 1
-                print self.tau_tilde[i] #TODO erase me
             #Sigma recomptutation with Cholesky decompositon
             Sroot_tilde_K = np.sqrt(self.tau_tilde)[:,None]*(self.K)
             B = np.eye(self.N) + np.sqrt(self.tau_tilde)[None,:]*Sroot_tilde_K
@@ -122,7 +121,13 @@ class Full(EP):
             epsilon_np2 = sum((self.v_tilde-self.np2[-1])**2)/self.N
             self.np1.append(self.tau_tilde.copy())
             self.np2.append(self.v_tilde.copy())
-        return self.tau_tilde[:,None], self.v_tilde[:,None], self.Z_hat[:,None], self.tau_[:,None], self.v_[:,None]
+
+        #Variables to be called from GP
+        mu_tilde = self.v_tilde/self.tau_tilde #When calling EP, this variable is used instead of Y in the GP model
+        sigma_sum = 1./self.tau_ + 1./self.tau_tilde
+        mu_diff_2 = (self.v_/self.tau_ - mu_tilde)**2
+        Z_ep = np.sum(np.log(self.Z_hat)) + 0.5*np.sum(np.log(sigma_sum)) + 0.5*np.sum(mu_diff_2/sigma_sum) #Normalization constant
+        return self.tau_tilde[:,None], mu_tilde[:,None], Z_ep
 
 class DTC(EP):
     def fit_EP(self):

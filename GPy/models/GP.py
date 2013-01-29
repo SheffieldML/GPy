@@ -13,7 +13,7 @@ from ..inference.likelihoods import likelihood,probit,poisson,gaussian
 
 class GP(model):
     """
-    Gaussian Process model for regression
+    Gaussian Process model for regression and EP
 
     :param X: input observations
     :param Y: observed values
@@ -35,7 +35,7 @@ class GP(model):
     #TODO: make beta parameter explicit
     #TODO: when using EP, predict needs to return 3 values otherwise it just needs 2. At the moment predict returns 3 values in any case.
 
-    def __init__(self,X,Y=None,kernel=None,normalize_X=False,normalize_Y=False, Xslices=None,likelihood=None,epsilon_ep=1e-3,epsilon_em=.1,power_ep=[1.,1.]):
+    def __init__(self,X,Y=None,kernel=None,normalize_X=False,normalize_Y=False, Xslices=None,likelihood=None,epsilon_ep=1e-3,power_ep=[1.,1.]):
 
         # parse arguments
         self.Xslices = Xslices
@@ -121,6 +121,9 @@ class GP(model):
         return self.kern._get_param_names_transformed()
 
     def approximate_likelihood(self):
+        """
+        Approximates a non-gaussian likelihood using Expectation Propagation
+        """
         assert not isinstance(self.likelihood, gaussian), "EP is only available for non-gaussian likelihoods"
         self.ep_approx = Full(self.K,self.likelihood,epsilon = self.epsilon_ep,power_ep=[self.eta,self.delta])
         self.beta, self.Y,  self.Z_ep = self.ep_approx.fit_EP()
@@ -170,7 +173,6 @@ class GP(model):
 
     def predict(self,Xnew, slices=None, full_cov=False):
         """
-
         Predict the function(s) at the new point(s) Xnew.
 
         Arguments
@@ -192,7 +194,6 @@ class GP(model):
 
            If full_cov and self.D > 1, the return shape of var is Nnew x Nnew x self.D. If self.D == 1, the return shape is Nnew x Nnew.
            This is to allow for different normalisations of the output dimensions.
-
 
         """
 
@@ -228,33 +229,6 @@ class GP(model):
             var = Kxx - np.sum(np.multiply(KiKx,Kx),0)
         phi = None if not self.EP else self.likelihood.predictive_mean(mu,var)
         return mu, var, phi
-
-    def EM(self,max_f_eval=20,epsilon=.1,plot_all=False): #TODO check this makes sense
-        """
-        Fits sparse_EP and optimizes the hyperparametes iteratively until convergence is achieved.
-        """
-        self.epsilon_em = epsilon
-        log_likelihood_change = self.epsilon_em + 1.
-        self.parameters_path = [self._get_params()]
-        self.approximate_likelihood()
-        self.site_approximations_path = [[self.ep_approx.tau_tilde,self.ep_approx.v_tilde]]
-        self.log_likelihood_path = [self.log_likelihood()]
-        iteration = 0
-        while log_likelihood_change > self.epsilon_em:
-            print 'EM iteration', iteration
-            self.optimize(max_f_eval = max_f_eval)
-            log_likelihood_new = self.log_likelihood()
-            log_likelihood_change = log_likelihood_new - self.log_likelihood_path[-1]
-            if log_likelihood_change < 0:
-                print 'log_likelihood decrement'
-                self._set_params(self.parameters_path[-1])
-                self.kern._set_params(self.parameters_path[-1])
-            else:
-                self.approximate_likelihood()
-                self.log_likelihood_path.append(self.log_likelihood())
-                self.parameters_path.append(self._get_params())
-                self.site_approximations_path.append([self.ep_approx.tau_tilde,self.ep_approx.v_tilde])
-            iteration += 1
 
     def plot(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None):
         """

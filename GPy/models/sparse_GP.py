@@ -35,9 +35,13 @@ class sparse_GP(GP):
     :type beta: float
     :param normalize_(X|Y) : whether to normalize the data before computing (predictions will be in original scales)
     :type normalize_(X|Y): bool
+    :parm likelihood: a GPy likelihood, defaults to gaussian
+    :param epsilon_ep: convergence criterion for the Expectation Propagation algorithm, defaults to 0.1
+    :param powerep: power-EP parameters [$\eta$,$\delta$], defaults to [1.,1.]
+    :type powerep: list
     """
 
-    def __init__(self,X,Y=None,kernel=None, X_uncertainty=None, beta=100., Z=None,Zslices=None,M=10,normalize_X=False,normalize_Y=False,likelihood=None,method_ep='DTC',epsilon_ep=1e-3,epsilon_em=.1,power_ep=[1.,1.]):
+    def __init__(self,X,Y=None,kernel=None,X_uncertainty=None,beta=100.,Z=None,Zslices=None,M=10,normalize_X=False,normalize_Y=False,likelihood=None,method_ep='DTC',epsilon_ep=1e-3,power_ep=[1.,1.]):
 
         if Z is None:
             self.Z = np.random.permutation(X.copy())[:M]
@@ -53,7 +57,7 @@ class sparse_GP(GP):
             self.has_uncertain_inputs=True
             self.X_uncertainty = X_uncertainty
 
-        GP.__init__(self, X=X, Y=Y, kernel=kernel, normalize_X=normalize_X, normalize_Y=normalize_Y,likelihood=likelihood,epsilon_ep=epsilon_ep,epsilon_em=epsilon_em,power_ep=power_ep)
+        GP.__init__(self, X=X, Y=Y, kernel=kernel, normalize_X=normalize_X, normalize_Y=normalize_Y,likelihood=likelihood,epsilon_ep=epsilon_ep,power_ep=power_ep)
         self.trYYT = np.sum(np.square(self.Y)) if not self.EP else None
 
 
@@ -91,6 +95,9 @@ class sparse_GP(GP):
         else:
             if self.hetero_noise:
                 print "rick's stuff here"
+
+
+
             else:
                 self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices).sum()
                 self.psi1 = self.kern.K(self.Z,self.X)

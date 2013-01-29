@@ -29,8 +29,8 @@ m = GPy.models.GP(data['X'],likelihood=likelihood)
 m.ensure_default_constraints()
 
 # Optimize and plot
-if not isinstance(m.likelihood,GPy.inference.likelihoods.gaussian):
-    m.approximate_likelihood()
+#if not isinstance(m.likelihood,GPy.inference.likelihoods.gaussian):
+#    m.approximate_likelihood()
 #m.optimize()
 m.EM()
 

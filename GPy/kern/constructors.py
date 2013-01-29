@@ -8,7 +8,6 @@ from kern import kern
 from rbf import rbf as rbfpart
 from white import white as whitepart
 from linear import linear as linearpart
-from linear_ARD import linear_ARD as linear_ARD_part
 from exponential import exponential as exponentialpart
 from Matern32 import Matern32 as Matern32part
 from Matern52 import Matern52 as Matern52part
@@ -40,28 +39,17 @@ def rbf(D,variance=1., lengthscale=None,ARD=False):
     part = rbfpart(D,variance,lengthscale,ARD)
     return kern(D, [part])
 
-def linear(D,lengthscales=None):
+def linear(D,variances=None,ARD=True):
     """
      Construct a linear kernel.
 
      Arguments
      ---------
      D (int), obligatory
-     lengthscales (np.ndarray)
+     variances (np.ndarray)
+     ARD (boolean)
     """
-    part = linearpart(D,lengthscales)
-    return kern(D, [part])
-
-def linear_ARD(D,lengthscales=None):
-    """
-     Construct a linear ARD kernel.
-
-     Arguments
-     ---------
-     D (int), obligatory
-     lengthscales (np.ndarray)
-    """
-    part = linear_ARD_part(D,lengthscales)
+    part = linearpart(D,variances,ARD)
     return kern(D, [part])
 
 def white(D,variance=1.):

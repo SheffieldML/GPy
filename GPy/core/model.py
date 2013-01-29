@@ -397,7 +397,7 @@ class model(parameterised):
         :type optimzer: string TODO: valid strings?
 
         """
-        assert self.EP, "EM not available for gaussian likelihood"
+        assert self.EP, "EM is not available for gaussian likelihood"
         log_change = epsilon + 1.
         self.log_likelihood_record = []
         self.gp_params_record = []

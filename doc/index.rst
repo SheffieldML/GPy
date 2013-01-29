@@ -5,6 +5,14 @@
 
 Welcome to GPy's documentation!
 ===============================
+For a quick start, you can have a look at one of the tutorials:
+
+* `Basic Gaussian process regression <tuto_GP_regression.html>`_  
+* Advanced GP regression (Forthcoming)
+* Kernel manipulation (Forthcoming)
+* Writting kernels (Forthcoming)
+
+You may also be interested by some examples in the GPy/examples folder.
 
 Contents:
 

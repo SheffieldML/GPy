@@ -381,6 +381,43 @@ class model(parameterised):
                     print grad_string
 
             print ''
-            
             return False
         return True
+
+    def EM(self,epsilon=.1,**kwargs):
+        """
+        Expectation maximization for Expectation Propagation.
+
+        kwargs are passed to the optimize function. They can be:
+
+        :epsilon: convergence criterion
+        :max_f_eval: maximum number of function evaluations
+        :messages: whether to display during optimisation
+        :param optimzer: whice optimizer to use (defaults to self.preferred optimizer)
+        :type optimzer: string TODO: valid strings?
+
+        """
+        assert self.EP, "EM not available for gaussian likelihood"
+        log_change = epsilon + 1.
+        self.log_likelihood_record = []
+        self.gp_params_record = []
+        self.ep_params_record = []
+        iteration = 0
+        last_value = -np.exp(1000)
+        while log_change > epsilon or not iteration:
+            print 'EM iteration %s' %iteration
+            self.approximate_likelihood()
+            self.optimize(**kwargs)
+            new_value = self.log_likelihood()
+            log_change = new_value - last_value
+            if log_change > epsilon:
+                self.log_likelihood_record.append(new_value)
+                self.gp_params_record.append(self._get_params())
+                self.ep_params_record.append((self.beta,self.Y,self.Z_ep))
+                last_value = new_value
+            else:
+                convergence = False
+                self.beta, self.Y,  self.Z_ep = self.ep_params_record[-1]
+                self._set_params(self.gp_params_record[-1])
+                print "Log-likelihood decrement: %s \nLast iteration discarded." %log_change
+            iteration += 1

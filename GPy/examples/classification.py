@@ -76,11 +76,10 @@ def toy_linear_1d_classification(model_type='Full', inducing=4, seed=default_see
 
     # create simple GP model
     if model_type=='Full':
-        m = GPy.models.simple_GP_EP(data['X'],likelihood)
+        m = GPy.models.GP_EP(data['X'],likelihood)
     else:
         # create sparse GP EP model
         m = GPy.models.sparse_GP_EP(data['X'],likelihood=likelihood,inducing=inducing,ep_proxy=model_type)
-            
 
     m.constrain_positive('var')
     m.constrain_positive('len')

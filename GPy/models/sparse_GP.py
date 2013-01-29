@@ -7,7 +7,7 @@ from ..util.linalg import mdot, jitchol, chol_inv, pdinv
 from ..util.plot import gpplot
 from .. import kern
 from GP import GP
-from ..inference.EP import Full
+from ..inference.EP import Full,DTC,FITC
 from ..inference.likelihoods import likelihood,probit,poisson,gaussian
 
 #Still TODO:
@@ -36,6 +36,8 @@ class sparse_GP(GP):
     :param normalize_(X|Y) : whether to normalize the data before computing (predictions will be in original scales)
     :type normalize_(X|Y): bool
     :parm likelihood: a GPy likelihood, defaults to gaussian
+    :param method_ep: sparse approximation used by Expectation Propagation algorithm, defaults to DTC
+    :type M: string (Full|DTC|FITC)
     :param epsilon_ep: convergence criterion for the Expectation Propagation algorithm, defaults to 0.1
     :param powerep: power-EP parameters [$\eta$,$\delta$], defaults to [1.,1.]
     :type powerep: list
@@ -58,17 +60,22 @@ class sparse_GP(GP):
             self.X_uncertainty = X_uncertainty
 
         GP.__init__(self, X=X, Y=Y, kernel=kernel, normalize_X=normalize_X, normalize_Y=normalize_Y,likelihood=likelihood,epsilon_ep=epsilon_ep,power_ep=power_ep)
-        self.trYYT = np.sum(np.square(self.Y)) if not self.EP else None
 
         #normalise X uncertainty also
         if self.has_uncertain_inputs:
             self.X_uncertainty /= np.square(self._Xstd)
 
+        if not self.EP:
+            self.trYYT = np.sum(np.square(self.Y))
+        else:
+            self.method_ep = method_ep
+
+
     def _set_params(self, p):
         self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
         if not self.EP:
-            #self.beta = p[self.M*self.Q]
-            self.beta = np.repeat(p[self.M*self.Q],self.N)[:,None]
+            self.beta = p[self.M*self.Q]
+            #self.beta = np.repeat(p[self.M*self.Q],self.N)[:,None]
             self.kern._set_params(p[self.Z.size + 1:])
             self.beta2 = self.beta**2
         else:
@@ -76,7 +83,7 @@ class sparse_GP(GP):
             if self.Y is None:
                 self.Y = np.ones([self.N,1])
         self._compute_kernel_matrices()
-        self._computations()
+        self._computations() #NOTE At this point computations of dL are not needed
 
     def _get_params(self):
         if not self.EP:
@@ -123,24 +130,29 @@ class sparse_GP(GP):
         self.G =  mdot(self.LBL_inv, self.psi1VVpsi1, self.LBL_inv.T)
 
         # Compute dL_dpsi
-        self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones([self.N,1])
+        self.dL_dpsi0 = - 0.5 * self.D * self.beta.flatten() * np.ones(self.N)
         self.dL_dpsi1 = mdot(self.LLambdai.T,self.C,self.V.T)
-        self.dL_dpsi2 = - 0.5 * self.beta * (self.D*(self.LBL_inv - self.Kmmi) + self.G)
+        #self.dL_dpsi2 = - 0.5 * self.beta * (self.D*(self.LBL_inv - self.Kmmi) + self.G)
+        self.dL_dpsi2 = - 0.5 * (self.D*(self.LBL_inv - self.Kmmi) + self.G)
 
         # Compute dL_dKmm
         self.dL_dKmm = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi) # dB
-        self.dL_dKmm += -0.5 * self.D * (- self.LBL_inv - 2.*self.beta*mdot(self.LBL_inv, self.psi2, self.Kmmi) + self.Kmmi) # dC
-        self.dL_dKmm +=  np.dot(np.dot(self.G,self.beta*self.psi2) - np.dot(self.LBL_inv, self.psi1VVpsi1), self.Kmmi) + 0.5*self.G # dE
+        #self.dL_dKmm += -0.5 * self.D * (- self.LBL_inv - 2.*self.beta*mdot(self.LBL_inv, self.psi2, self.Kmmi) + self.Kmmi) # dC
+        self.dL_dKmm += -0.5 * self.D * (- self.LBL_inv - 2.*mdot(self.LBL_inv, self.psi2_beta_scaled, self.Kmmi) + self.Kmmi) # dC
+        #self.dL_dKmm +=  np.dot(np.dot(self.G,self.beta*self.psi2) - np.dot(self.LBL_inv, self.psi1VVpsi1), self.Kmmi) + 0.5*self.G # dE
+        self.dL_dKmm +=  np.dot(np.dot(self.G,self.psi2_beta_scaled) - np.dot(self.LBL_inv, self.psi1VVpsi1), self.Kmmi) + 0.5*self.G # dE
 
     def approximate_likelihood(self):
         assert not isinstance(self.likelihood, gaussian), "EP is only available for non-gaussian likelihoods"
-        if self.ep_proxy == 'DTC':
+        if self.method_ep == 'DTC':
             self.ep_approx = DTC(self.Kmm,self.likelihood,self.psi1,epsilon=self.epsilon_ep,power_ep=[self.eta,self.delta])
-        elif self.ep_proxy == 'FITC':
+        elif self.method_ep == 'FITC':
             self.ep_approx = FITC(self.Kmm,self.likelihood,self.psi1,self.psi0,epsilon=self.epsilon_ep,power_ep=[self.eta,self.delta])
         else:
             self.ep_approx = Full(self.X,self.likelihood,self.kernel,inducing=None,epsilon=self.epsilon_ep,power_ep=[self.eta,self.delta])
         self.beta, self.Y, self.Z_ep = self.ep_approx.fit_EP()
+        print "Aqui toy"
+        self.trbetaYYT = np.sum(np.square(self.Y)*self.beta)
         self._computations()
 
     def log_likelihood(self):
@@ -149,30 +161,11 @@ class sparse_GP(GP):
         """
         if not self.EP:
             A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.beta))
+            D = -0.5*self.beta*self.trYYT
         else:
             A = -0.5*self.D*(self.N*np.log(2.*np.pi) - np.sum(np.log(self.beta)))
-        B = -0.5*self.D*self.trace_K
-        C = -0.5*self.D * self.B_logdet
-        D = -0.5*self.beta*self.trYYT
-        E = +0.5*np.sum(self.psi1VVpsi1 * self.LBL_inv)
-        return A+B+C+D+E
-
-
-
-
-    def log_likelihood(self):
-        """
-        Compute the (lower bound on the) log marginal likelihood
-        """
-        beta_logdet = self.N*self.D*np.log(self.beta) if not self.EP else self.D*np.sum(np.log(self.beta))
-        if self.hetero_noise:
-            A = foo
-            B = bar
             D = -0.5*self.trbetaYYT
-        else:
-            A = -0.5*self.N*self.D*(np.log(2.*np.pi)) - 0.5*beta_logdet
-            B = -0.5*self.beta*self.D*self.trace_K if not self.EP else -0.5*self.D*self.trace_K
-            D = -0.5*self.beta*self.trYYT
+        B = -0.5*self.D*self.trace_K
         C = -0.5*self.D * self.B_logdet
         E = +0.5*np.sum(self.psi1VVpsi1 * self.LBL_inv)
         return A+B+C+D+E
@@ -223,21 +216,33 @@ class sparse_GP(GP):
         return dL_dZ
 
     def _log_likelihood_gradients(self):
-        return np.hstack([self.dL_dZ().flatten(), self.dL_dbeta(), self.dL_dtheta()])
+        if not self.EP:
+            return np.hstack([self.dL_dZ().flatten(), self.dL_dbeta(), self.dL_dtheta()])
+        else:
+            return np.hstack([self.dL_dZ().flatten(), self.dL_dtheta()])
 
     def _raw_predict(self, Xnew, slices, full_cov=False):
         """Internal helper function for making predictions, does not account for normalisation"""
         Kx = self.kern.K(self.Z, Xnew)
         mu = mdot(Kx.T, self.LBL_inv, self.psi1V)
+        phi = None
         if full_cov:
-            noise_term = np.eye(Xnew.shape[0])/self.beta if not self.EP else 0
             Kxx = self.kern.K(Xnew)
-            var = Kxx - mdot(Kx.T, (self.Kmmi - self.LBL_inv), Kx) + noise_term
+            var = Kxx - mdot(Kx.T, (self.Kmmi - self.LBL_inv), Kx)
+            if not self.EP:
+                var += np.eye(Xnew.shape[0])/self.beta # TODO: This beta doesn't belong here in the EP case.
+            else:
+                raise NotImplementedError, "full_cov = True not implemented for EP"
+                #var = np.diag(var)[:,None]
+                #phi = self.likelihood.predictive_mean(mu,var)
         else:
-            noise_term = 1./self.beta if not self.EP else 0
             Kxx = self.kern.Kdiag(Xnew)
-            var = Kxx - np.sum(Kx*np.dot(self.Kmmi - self.LBL_inv, Kx),0) + noise_term
-        return mu,var,None#TODO add phi for EP
+            var = Kxx - np.sum(Kx*np.dot(self.Kmmi - self.LBL_inv, Kx),0)
+            if not self.EP:
+                var += 1./self.beta # TODO: This beta doesn't belong here in the EP case.
+            else:
+                phi = self.likelihood.predictive_mean(mu,var)
+        return mu,var,phi
 
     def plot(self, *args, **kwargs):
         """

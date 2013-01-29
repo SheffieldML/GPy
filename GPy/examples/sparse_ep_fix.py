@@ -31,18 +31,17 @@ noise = GPy.kern.white(1)
 kernel = rbf + noise
 
 # create simple GP model
-#m1 = GPy.models.sparse_GP(X, Y, kernel, M=M)
-m1 = GPy.models.sparse_GP(X,Y=None, kernel=kernel, M=M,likelihood= likelihood)
+m = GPy.models.sparse_GP(X,Y=None, kernel=kernel, M=M,likelihood= likelihood)
+#m = GPy.models.sparse_GP(X, Y, kernel, M=M)
 
-print m1.checkgrad()
 # contrain all parameters to be positive
-m1.constrain_positive('(variance|lengthscale|precision)')
-#m1.constrain_positive('(variance|lengthscale)')
-#m1.constrain_fixed('prec',10.)
-
+m.ensure_default_constraints()
+if not isinstance(m.likelihood,GPy.inference.likelihoods.gaussian):
+    m.approximate_likelihood()
+print m.checkgrad()
 #check gradient FIXME unit test please
 # optimize and plot
-m1.optimize('tnc', messages = 1)
-m1.plot()
-# print(m1)
+#m.optimize('tnc', messages = 1)
+m.plot(samples=3,full_cov=False)
+# print(m)
 

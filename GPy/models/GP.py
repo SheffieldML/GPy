@@ -73,7 +73,6 @@ class GP(model):
             self.EP = False
             self.Y = Y
             self.beta = 100.#FIXME beta should be an explicit parameter for this model
-
             # Here's some simple normalisation
             if normalize_Y:
                 self._Ymean = Y.mean(0)[None,:]
@@ -88,8 +87,9 @@ class GP(model):
                 self.YYT = np.dot(self.Y, self.Y.T)
             else:
                 self.YYT = None
-
         else:
+            if self.D > 1:
+                raise NotImplementedError, "EP is not implemented for D > 1"
             # Y is defined after approximating the likelihood
             self.EP = True
             self.eta,self.delta = power_ep

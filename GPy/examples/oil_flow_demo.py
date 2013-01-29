@@ -31,7 +31,7 @@ N, D = Y.shape
 Y -= Y.mean(axis=0)
 #Y /= Y.std(axis=0)
 
-Q = 7
+Q = 10
 k = GPy.kern.rbf_ARD(Q) + GPy.kern.white(Q)
 m = GPy.models.Bayesian_GPLVM(Y, Q, kernel = k, M = 12)
 m.constrain_positive('(rbf|bias|S|white|noise)')

@@ -57,12 +57,6 @@ class Bayesian_GPLVM(sparse_GP_regression, GPLVM):
 
         return np.hstack((dL_dmu.flatten(), dL_dS.flatten()))
 
-
     def log_likelihood_gradients(self):
         return np.hstack((self.dL_dmuS().flatten(), sparse_GP_regression.log_likelihood_gradients(self)))
 
-    def plot(self):
-        GPLVM.plot(self)
-        #passing Z without a small amout of jitter will induce the white kernel where we don;t want it!
-        mu, var = sparse_GP_regression.predict(self, self.Z+np.random.randn(*self.Z.shape)*0.0001)
-        pb.plot(mu[:, 0] , mu[:, 1], 'ko')

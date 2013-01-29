@@ -26,15 +26,14 @@ likelihood = GPy.inference.likelihoods.probit(data['Y'][:, 0:1])
 
 m = GPy.models.GP(data['X'],likelihood=likelihood)
 #m = GPy.models.GP(data['X'],likelihood.Y)
-
 m.ensure_default_constraints()
+
+# Optimize and plot
 if not isinstance(m.likelihood,GPy.inference.likelihoods.gaussian):
     m.approximate_likelihood()
-print m.checkgrad()
-# Optimize and plot
-m.optimize()
-#m.em(plot_all=False) # EM algorithm
-m.plot(samples=3)
+#m.optimize()
 m.EM()
 
+print m.log_likelihood()
+m.plot(samples=3)
 print(m)

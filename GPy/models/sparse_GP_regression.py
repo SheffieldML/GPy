@@ -37,7 +37,7 @@ class sparse_GP_regression(GP_regression):
     """
 
     def __init__(self,X,Y,kernel=None, X_uncertainty=None, beta=100., Z=None,Zslices=None,M=10,normalize_X=False,normalize_Y=False):
-        self.scale_factor = 10.0
+        self.scale_factor = 1000.0
         self.beta = beta
         if Z is None:
             self.Z = np.random.permutation(X.copy())[:M]
@@ -70,7 +70,6 @@ class sparse_GP_regression(GP_regression):
             self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty).sum()
             self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
             self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty)
-            # raise NotImplementedError, "scale psi2 (in kern?)"
             self.psi2_beta_scaled = self.psi2*(self.beta/self.scale_factor**2)
         else:
             self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices).sum()
@@ -163,10 +162,10 @@ class sparse_GP_regression(GP_regression):
         """
         The derivative of the bound wrt the inducing inputs Z
         """
-        dL_dZ = 2.*self.kern.dK_dX(self.dL_dKmm,self.Z,)#factor of two becase of vertical and horizontal 'stripes' in dKmm_dZ
+        dL_dZ = 2.*self.kern.dK_dX(self.dL_dKmm,self.Z)#factor of two becase of vertical and horizontal 'stripes' in dKmm_dZ
         if self.has_uncertain_inputs:
-            dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1.T,self.Z,self.X, self.X_uncertainty)
-            dL_dZ += self.kern.dpsi2_dZ(self.dL_dpsi2,self.Z,self.X, self.X_uncertainty)
+            dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1,self.Z,self.X, self.X_uncertainty)
+            dL_dZ += 2.*self.kern.dpsi2_dZ(self.dL_dpsi2,self.Z,self.X, self.X_uncertainty) # 'stripes'
         else:
             #re-cast computations in psi2 back to psi1:
             dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)

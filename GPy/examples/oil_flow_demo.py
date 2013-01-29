@@ -20,26 +20,28 @@ def plot_oil(X, theta, labels, label):
     plt.plot(flow_type[:,0], flow_type[:,1], 'bx')
     plt.title(label)
 
-data = pickle.load(open('../util/datasets/oil_flow_3classes.pickle', 'r'))
+data = pickle.load(open('../../../GPy_assembla/datasets/oil_flow_3classes.pickle', 'r'))
 
 Y = data['DataTrn']
 N, D = Y.shape
-selected = np.random.permutation(N)[:200]
+selected = np.random.permutation(N)#[:200]
 labels = data['DataTrnLbls'][selected]
 Y = Y[selected]
 N, D = Y.shape
 Y -= Y.mean(axis=0)
-Y /= Y.std(axis=0)
+#Y /= Y.std(axis=0)
 
-Q = 2
-m1 = GPy.models.sparse_GPLVM(Y, Q, M = 15)
-m1.constrain_positive('(rbf|bias|noise)')
-m1.constrain_bounded('white', 1e-6, 1.0)
+Q = 7
+k = GPy.kern.rbf_ARD(Q) + GPy.kern.white(Q)
+m = GPy.models.Bayesian_GPLVM(Y, Q, kernel = k, M = 12)
+m.constrain_positive('(rbf|bias|S|white|noise)')
+# m.constrain_bounded('white', 1e-6, 100.0)
+# m.constrain_bounded('noise', 1e-4, 1000.0)
 
-plot_oil(m1.X, np.array([1,1]), labels, 'PCA initialization')
+plot_oil(m.X, np.array([1,1]), labels, 'PCA initialization')
 # m.optimize(messages = True)
-m1.optimize('bfgs', messages = True)
-plot_oil(m1.X, np.array([1,1]), labels, 'sparse GPLVM')
+m.optimize('tnc', messages = True)
+plot_oil(m.X, m.kern.parts[0].lengthscales, labels, 'B-GPLVM')
 # pb.figure()
 # m.plot()
 # pb.title('PCA initialisation')
@@ -47,7 +49,7 @@ plot_oil(m1.X, np.array([1,1]), labels, 'sparse GPLVM')
 # m.optimize(messages = 1)
 # m.plot()
 # pb.title('After optimisation')
-m = GPy.models.GPLVM(Y, Q)
-m.constrain_positive('(white|rbf|bias|noise)')
-m.optimize()
-plot_oil(m.X, np.array([1,1]), labels, 'GPLVM')
+# m = GPy.models.GPLVM(Y, Q)
+# m.constrain_positive('(white|rbf|bias|noise)')
+# m.optimize()
+# plot_oil(m.X, np.array([1,1]), labels, 'GPLVM')

@@ -95,7 +95,7 @@ class rbf(kernpart):
         target += self.variance
 
     def dpsi0_dtheta(self,partial,Z,mu,S,target):
-        target[0] += 1.
+        target[0] += np.sum(partial)
 
     def dpsi0_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         pass
@@ -113,7 +113,9 @@ class rbf(kernpart):
 
     def dpsi1_dZ(self,partial,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
-        target += np.sum(partial[:,:,None]*-self._psi1[:,:,None]*self._psi1_dist/self.lengthscale2/self._psi1_denom,0)
+        denominator = (self.lengthscale2*(self._psi1_denom))
+        dpsi1_dZ = - self._psi1[:,:,None] * ((self._psi1_dist/denominator))
+        target += np.sum(partial.T[:,:,None] * dpsi1_dZ, 0)
 
     def dpsi1_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         self._psi_computations(Z,mu,S)
@@ -132,13 +134,14 @@ class rbf(kernpart):
         d_length = self._psi2[:,:,:,None]*(0.5*self._psi2_Zdist_sq*self._psi2_denom + 2.*self._psi2_mudist_sq + 2.*S[:,None,None,:]/self.lengthscale2)/(self.lengthscale*self._psi2_denom)
         d_length = d_length.sum(0)
         target[0] += np.sum(partial*d_var)
-        target[1] += np.sum(d_length*partial)
+        target[1] += np.sum(d_length*partial[:,:,None])
 
     def dpsi2_dZ(self,partial,Z,mu,S,target):
-        """Returns shape N,M,M,Q"""
         self._psi_computations(Z,mu,S)
-        dZ = self._psi2[:,:,:,None]/self.lengthscale2*(-0.5*self._psi2_Zdist + self._psi2_mudist/self._psi2_denom)
-        target += np.sum(partial[None,:,:,None]*dZ,0).sum(1)
+        term1 = 0.5*self._psi2_Zdist/self.lengthscale2 # M, M, Q
+        term2 = self._psi2_mudist/self._psi2_denom/self.lengthscale2 # N, M, M, Q
+        dZ = self._psi2[:,:,:,None] * (term1[None] + term2) 
+        target += (partial[None,:,:,None]*dZ).sum(0).sum(0)
 
     def dpsi2_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         """Think N,M,M,Q """
@@ -175,4 +178,3 @@ class rbf(kernpart):
             self._psi2 = np.square(self.variance)*np.exp(self._psi2_exponent) # N,M,M
 
             self._Z, self._mu, self._S = Z, mu,S
-

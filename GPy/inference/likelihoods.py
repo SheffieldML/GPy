@@ -9,65 +9,18 @@ import pylab as pb
 from ..util.plot import gpplot
 
 class likelihood:
-    def __init__(self,Y,location=0,scale=1):
-        """
-        Likelihood class for doing Expectation propagation
+    """
+    Likelihood class for doing Expectation propagation
 
-        :param Y: observed output (Nx1 numpy.darray)
-        ..Note:: Y values allowed depend on the likelihood used
-        """
+    :param Y: observed output (Nx1 numpy.darray)
+    ..Note:: Y values allowed depend on the likelihood used
+    """
+    def __init__(self,Y,location=0,scale=1):
         self.Y = Y
         self.N = self.Y.shape[0]
         self.location = location
         self.scale = scale
 
-    def plot1D(self,X,mean,var,Z=None,mean_Z=None,var_Z=None,samples=0):
-        """
-        Plot the predictive distribution of the GP model for 1-dimensional inputs
-
-        :param X: The points at which to make a prediction
-        :param Mean: mean values at X
-        :param Var: variance values at X
-        :param Z: Set of points to be highlighted in the plot, i.e. inducing points
-        :param mean_Z: mean values at Z
-        :param var_Z: variance values at Z
-        :samples: Number of samples to plot
-        """
-        assert X.shape[1] == 1, 'Number of dimensions must be 1'
-        gpplot(X,mean,var.flatten())
-        if samples: #NOTE why don't we put samples as a parameter of gpplot
-            s = np.random.multivariate_normal(mean.flatten(),np.diag(var),samples)
-            pb.plot(X.flatten(),s.T, alpha = 0.4, c='#3465a4', linewidth = 0.8)
-        #pb.subplot(211)
-        #self.plot1Da(X,mean,var,Z,mean_Z,var_Z)
-
-
-    def plot1Da(self,X,mean,var,Z=None,mean_Z=None,var_Z=None):
-        """
-        Plot the predictive distribution of the GP model for 1-dimensional inputs
-
-        :param X_new: The points at which to make a prediction
-        :param Mean_new: mean values at X_new
-        :param Var_new: variance values at X_new
-        :param X_u: input (inducing)  points used to train the model
-        :param Mean_u: mean values at X_u
-        :param Var_new: variance values at X_u
-        """
-        assert X.shape[1] == 1, 'Number of dimensions must be 1'
-        gpplot(X,mean,var.flatten())
-        pb.errorbar(Z.flatten(),mean_Z.flatten(),2*np.sqrt(var_Z.flatten()),fmt='r+')
-        pb.plot(Z,mean_Z,'ro')
-
-    """
-    def plot1Db(self,X_obs,X,phi,Z=None):
-        assert X_obs.shape[1] == 1, 'Number of dimensions must be 1'
-        gpplot(X,phi,np.zeros(X.shape[0]))
-        pb.plot(X_obs,(self.Y+1)/2,'kx',mew=1.5)
-        pb.ylim(-0.2,1.2)
-        if Z is not None:
-            pb.plot(Z,Z*0+.5,'r|',mew=1.5,markersize=12)
-
-    """
     def plot2D(self,X,X_new,F_new,U=None):
         """
         Predictive distribution of the fitted GP model for 2-dimensional inputs
@@ -106,6 +59,10 @@ class probit(likelihood):
     L(x) = \\Phi (Y_i*f_i)
     $$
     """
+    def __init__(self,Y,location=0,scale=1):
+        assert np.sum(np.abs(Y)-1) == 0, "Output values must be either -1 or 1"
+        likelihood.__init__(self,Y,location,scale)
+
     def moments_match(self,i,tau_i,v_i):
         """
         Moments match of the marginal approximation in EP algorithm
@@ -146,6 +103,10 @@ class poisson(likelihood):
     L(x) = \exp(\lambda) * \lambda**Y_i / Y_i!
     $$
     """
+    def __init__(self,Y,location=0,scale=1):
+        assert len(Y[Y<0]) == 0, "Output cannot have negative values"
+        likelihood.__init__(self,Y,location,scale)
+
     def moments_match(self,i,tau_i,v_i):
         """
         Moments match of the marginal approximation in EP algorithm
@@ -203,19 +164,18 @@ class poisson(likelihood):
         sigma2_hat = m2 - mu_hat**2 # Second central moment
         return float(Z_hat), float(mu_hat), float(sigma2_hat)
 
-    def plot1Db(self,X,X_new,F_new,F2_new=None,U=None):
-        pb.subplot(212)
-        #gpplot(X_new,F_new,np.sqrt(F2_new))
-        pb.plot(X_new,F_new)#,np.sqrt(F2_new)) #FIXME
-        pb.plot(X,self.Y,'kx',mew=1.5)
-        if U is not None:
-            pb.plot(U,np.ones(U.shape[0])*self.Y.min()*.8,'r|',mew=1.5,markersize=12)
     def predictive_mean(self,mu,variance):
         return np.exp(mu*self.scale + self.location)
-    def predictive_variance(self,mu,variance):
-        return mu
+
     def _log_likelihood_gradients():
         raise NotImplementedError
+
+    def plot(self,X,phi,X_obs,Z=None):
+        assert X_obs.shape[1] == 1, 'Number of dimensions must be 1'
+        gpplot(X,phi,np.zeros(X.shape[0]))
+        pb.plot(X_obs,self.Y,'kx',mew=1.5)
+        if Z is not None:
+            pb.plot(Z,Z*0+pb.ylim()[0],'k|',mew=1.5,markersize=12)
 
 class gaussian(likelihood):
     """

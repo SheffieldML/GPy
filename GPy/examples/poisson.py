@@ -25,16 +25,14 @@ seed=default_seed
 """
 
 X = np.arange(0,100,5)[:,None]
-F = np.round(np.sin(X/18.) + .1*X)
-E = np.random.randint(-3,3,20)[:,None]
+F = np.round(np.sin(X/18.) + .1*X) + np.arange(5,25)[:,None]
+E = np.random.randint(-5,5,20)[:,None]
 Y = F + E
-pb.plot(X,F,'k-')
-pb.plot(X,Y,'ro')
 pb.figure()
-likelihood = GPy.inference.likelihoods.poisson(Y,scale=6.)
+likelihood = GPy.inference.likelihoods.poisson(Y,scale=1.)
 
 m = GPy.models.GP(X,likelihood=likelihood)
-#m = GPy.models.GP(data['X'],Y=likelihood.Y)
+#m = GPy.models.GP(X,Y=likelihood.Y)
 
 m.constrain_positive('var')
 m.constrain_positive('len')

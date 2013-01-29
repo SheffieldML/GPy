@@ -6,7 +6,7 @@ import numpy as np
 from ..core.parameterised import parameterised
 from functools import partial
 from kernpart import kernpart
-
+import itertools
 
 class kern(parameterised):
     def __init__(self,D,parts=[], input_slices=None):
@@ -262,6 +262,15 @@ class kern(parameterised):
         target = np.zeros((mu.shape[0],Z.shape[0],Z.shape[0]))
         slices1, slices2 = self._process_slices(slices1,slices2)
         [p.psi2(Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s1,s2,s2]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
+
+        # MASSIVE TODO: do something smart for white
+        # "crossterms"
+        psi1_matrices = [np.zeros((mu.shape[0], Z.shape[0])) for p in self.parts]
+        [p.psi1(Z[s2],mu[s1],S[s1],psi1_target[s1,s2]) for p,s1,s2,psi1_target in zip(self.parts,slices1,slices2, psi1_matrices)]
+        for a,b in itertools.combinations(psi1_matrices, 2):
+            tmp = np.multiply(a,b)
+            target += tmp[:,None,:] + tmp[:, :,None]
+
         return target
 
     def dpsi2_dtheta(self,partial,Z,mu,S,slices1=None,slices2=None):
@@ -269,12 +278,27 @@ class kern(parameterised):
         slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros(self.Nparam)
         [p.dpsi2_dtheta(partial[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[ps]) for p,i_s,s1,s2,ps in zip(self.parts,self.input_slices,slices1,slices2,self.param_slices)]
+
+
+        # "crossterms"
+        # 1. get all the psi1 statistics
+        psi1_matrices = [np.zeros((mu.shape[0], Z.shape[0])) for p in self.parts]
+        [p.psi1(Z[s2],mu[s1],S[s1],psi1_target[s1,s2]) for p,s1,s2,psi1_target in zip(self.parts,slices1,slices2, psi1_matrices)]
+        # 2. get all the dpsi1/dtheta gradients
+        psi1_gradients = [np.zeros(self.Nparam) for p in self.parts]
+        [p.dpsi1_dtheta(partial[s2,s1],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[ps]) for p,ps,s1,s2,i_s in zip(self.parts, self.param_slices,slices1,slices2,self.input_slices)]
+        # 3. multiply them somehow
+        for a,b in itertools.combinations(range(len(psi1_matrices)), 2):
+            psi2_cross = np.multiply(psi1, psi1_grad) # some newaxis of this
+            target += psi2_cross[:,None,:] + psi2_cross[:, :,None]
+
         return target
 
     def dpsi2_dZ(self,partial,Z,mu,S,slices1=None,slices2=None):
         slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros_like(Z)
         [p.dpsi2_dZ(partial[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s2,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
+
         return target
 
     def dpsi2_dmuS(self,partial,Z,mu,S,slices1=None,slices2=None):

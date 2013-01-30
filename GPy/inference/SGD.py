@@ -58,7 +58,7 @@ class opt_SGD(Optimizer):
 
         for s in param_shapes:
             N, Q = s
-            X = x[i:N*Q].reshape(N, Q)
+            X = x[i:i+N*Q].reshape(N, Q)
             X = X[samples]
             subset = np.append(subset, X.flatten())
             i += N*Q
@@ -92,10 +92,19 @@ class opt_SGD(Optimizer):
                         self.model.constrained_bounded_indices[b] = self.model.constrained_bounded_indices[b][mask]
 
 
+        # here we shif the positive constraints. We cycle through each positive
+        # constraint
         positive = self.model.constrained_positive_indices.copy()
+        mask = (np.ones_like(positive) == 1)
         for p in range(len(positive)):
-            pos = np.where(j == self.model.constrained_positive_indices[p])[0][0]
-            self.model.constrained_positive_indices[p] = pos
+            # we now check whether the constrained index appears in the j vector
+            # (the vector of the "active" indices)
+            pos = np.where(j == self.model.constrained_positive_indices[p])[0]
+            if len(pos) == 1:
+                self.model.constrained_positive_indices[p] = pos
+            else:
+                mask[p] = False
+        self.model.constrained_positive_indices = self.model.constrained_positive_indices[mask]
 
         return (bounded_i, bounded_l, bounded_u), positive
 
@@ -109,6 +118,8 @@ class opt_SGD(Optimizer):
         model_name = self.model.__class__.__name__
         if model_name == 'GPLVM':
             return [(N, Q)]
+        if model_name == 'Bayesian_GPLVM':
+            return [(N, Q), (N, Q)]
         else:
             raise NotImplementedError
 
@@ -119,14 +130,20 @@ class opt_SGD(Optimizer):
         self.model.N = samples.sum()
         self.model.X = X[samples]
         self.model.Y = self.model.Y[samples]
+        model_name = self.model.__class__.__name__
 
+        import pdb; pdb.set_trace()
+        if model_name == 'Bayesian_GPLVM':
+            self.model.trYYT = np.sum(np.square(self.model.Y))
+            
         if self.model.N == 0:
             return 0, step, self.model.N
 
-        b,p = self.shift_constraints(j)
+        b, p = self.shift_constraints(j)
 
         momentum_term = self.momentum * step[j]
         f, fp = f_fp(self.x_opt[j])
+
         step[j] = self.learning_rate[j] * fp
         self.x_opt[j] -= step[j] + momentum_term
 

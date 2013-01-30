@@ -37,7 +37,7 @@ class sparse_GP_regression(GP_regression):
     """
 
     def __init__(self,X,Y,kernel=None, X_uncertainty=None, beta=100., Z=None,Zslices=None,M=10,normalize_X=False,normalize_Y=False):
-        self.scale_factor = 1000.0
+        self.scale_factor = 100.0
         self.beta = beta
         if Z is None:
             self.Z = np.random.permutation(X.copy())[:M]

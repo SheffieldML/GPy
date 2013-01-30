@@ -20,9 +20,12 @@ class Bayesian_GPLVM(sparse_GP_regression, GPLVM):
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, Y, Q, init='PCA', **kwargs):
-        X = self.initialise_latent(init, Q, Y)
-        S = np.ones_like(X) * 1e-2# 
+    def __init__(self, Y, Q, X = None, S = None, init='PCA', **kwargs):
+        if X == None:
+            X = self.initialise_latent(init, Q, Y)
+        if S == None:
+            S = np.ones_like(X) * 1e-2
+
         sparse_GP_regression.__init__(self, X, Y, X_uncertainty = S, **kwargs)
 
     def get_param_names(self):
@@ -59,4 +62,3 @@ class Bayesian_GPLVM(sparse_GP_regression, GPLVM):
 
     def log_likelihood_gradients(self):
         return np.hstack((self.dL_dmuS().flatten(), sparse_GP_regression.log_likelihood_gradients(self)))
-

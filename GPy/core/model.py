@@ -303,7 +303,7 @@ class model(parameterised):
         return '\n'.join(s)
 
 
-    def checkgrad(self, verbose=False, include_priors=False, step=1e-6, tolerance = 1e-3, *args):
+    def checkgrad(self, verbose=False, include_priors=False, step=1e-6, tolerance = 1e-3, return_ratio=False, *args):
         """
         Check the gradient of the model by comparing to a numerical estimate.
         If the overall gradient fails, invividual components are tested.
@@ -323,12 +323,12 @@ class model(parameterised):
         gradient = self._log_likelihood_gradients_transformed()
 
         numerical_gradient = (f1-f2)/(2*dx)
-        ratio = (f1-f2)/(2*np.dot(dx,gradient))
+        global_ratio = (f1-f2)/(2*np.dot(dx,gradient))
         if verbose:
-            print "Gradient ratio = ", ratio, '\n'
+            print "Gradient ratio = ", global_ratio, '\n'
             sys.stdout.flush()
 
-        if (np.abs(1.-ratio)<tolerance) and not np.isnan(ratio):
+        if (np.abs(1.-global_ratio)<tolerance) and not np.isnan(global_ratio):
             if verbose:
                 print 'Gradcheck passed'
         else:
@@ -380,7 +380,15 @@ class model(parameterised):
                     grad_string = "{0:^{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name,r,d,g, ng, c0 = cols[0]+9, c1 = cols[1], c2 = cols[2], c3 = cols[3], c4 = cols[4])
                     print grad_string
 
-            print ''
-            
-            return False
-        return True
+            if verbose:
+                print ''
+
+            if return_ratio:
+                return global_ratio
+            else:
+                return False
+
+        if return_ratio:
+            return global_ratio
+        else:
+            return True

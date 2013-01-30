@@ -79,6 +79,7 @@ class Matern52(kernpart):
         invdist = 1./np.where(dist!=0.,dist,np.inf)
         dist2M = np.square(X[:,None,:]-X2[None,:,:])/self.lengthscale**3
         dvar = (1+np.sqrt(5.)*dist+5./3*dist**2)*np.exp(-np.sqrt(5.)*dist)
+        dl = (self.variance * 5./3 * dist * (1 + np.sqrt(5.)*dist ) * np.exp(-np.sqrt(5.)*dist))[:,:,np.newaxis] * dist2M*invdist[:,:,np.newaxis]
         target[0] += np.sum(dvar*partial)
         if self.ARD:
             dl = (self.variance * 5./3 * dist * (1 + np.sqrt(5.)*dist ) * np.exp(-np.sqrt(5.)*dist))[:,:,np.newaxis] * dist2M*invdist[:,:,np.newaxis]

@@ -285,7 +285,7 @@ class GP(model):
 
             if self.EP:
                 pb.subplot(212)
-                self.likelihood.plot(Xnew,phi,self.X)
+                self.likelihood.plot(Xnew,m,v,phi,self.X,samples=samples)
                 pb.xlim(xmin,xmax)
 
         elif self.X.shape[1]==2:

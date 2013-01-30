@@ -43,6 +43,6 @@ print m.checkgrad()
 # Optimize and plot
 m.optimize()
 #m.em(plot_all=False) # EM algorithm
-m.plot()
+m.plot(samples=4)
 
 print(m)

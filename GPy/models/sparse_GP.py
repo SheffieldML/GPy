@@ -151,7 +151,6 @@ class sparse_GP(GP):
         else:
             self.ep_approx = Full(self.X,self.likelihood,self.kernel,inducing=None,epsilon=self.epsilon_ep,power_ep=[self.eta,self.delta])
         self.beta, self.Y, self.Z_ep = self.ep_approx.fit_EP()
-        print "Aqui toy"
         self.trbetaYYT = np.sum(np.square(self.Y)*self.beta)
         self._computations()
 

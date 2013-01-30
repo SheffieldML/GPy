@@ -14,6 +14,7 @@ pb.ion()
 N = 500
 M = 5
 
+pb.close('all')
 ######################################
 ## 1 dimensional example
 
@@ -42,6 +43,7 @@ print m.checkgrad()
 #check gradient FIXME unit test please
 # optimize and plot
 #m.optimize('tnc', messages = 1)
+m.EM()
 m.plot(samples=3,full_cov=False)
 # print(m)
 

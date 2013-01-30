@@ -58,5 +58,5 @@ class Bayesian_GPLVM(sparse_GP_regression, GPLVM):
         return np.hstack((dL_dmu.flatten(), dL_dS.flatten()))
 
     def _log_likelihood_gradients(self):
-        return np.hstack((self.dL_dmuS().flatten(), sparse_GP_regression.log_likelihood_gradients(self)))
+        return np.hstack((self.dL_dmuS().flatten(), sparse_GP_regression._log_likelihood_gradients(self)))
 

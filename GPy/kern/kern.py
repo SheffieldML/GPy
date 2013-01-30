@@ -284,6 +284,8 @@ class kern(parameterised):
         # 1. get all the psi1 statistics
         psi1_matrices = [np.zeros((mu.shape[0], Z.shape[0])) for p in self.parts]
         [p.psi1(Z[s2],mu[s1],S[s1],psi1_target[s1,s2]) for p,s1,s2,psi1_target in zip(self.parts,slices1,slices2, psi1_matrices)]
+        partial1 = np.zeros_like(partial1)
+
         # 2. get all the dpsi1/dtheta gradients
         psi1_gradients = [np.zeros(self.Nparam) for p in self.parts]
         [p.dpsi1_dtheta(partial1[s2,s1],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],psi1g_target[ps]) for p,ps,s1,s2,i_s,psi1g_target in zip(self.parts, self.param_slices,slices1,slices2,self.input_slices,psi1_gradients)]
@@ -292,7 +294,7 @@ class kern(parameterised):
         for a,b in itertools.combinations(range(len(psi1_matrices)), 2):
             gne = (psi1_gradients[a][None]*psi1_matrices[b].sum(0)[:,None]).sum(0)
 
-            target += 0#(gne[None] + gne[:, None]).sum(0)
+            target += (gne[None] + gne[:, None]).sum(0)
         return target
 
     def dpsi2_dZ(self,partial,Z,mu,S,slices1=None,slices2=None):

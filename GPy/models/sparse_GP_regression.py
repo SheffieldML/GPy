@@ -107,6 +107,20 @@ class sparse_GP_regression(GP_regression):
         self.dL_dKmm += -0.5 * self.D * (- self.C/sf2 - 2.*mdot(self.C, self.psi2_beta_scaled, self.Kmmi) + self.Kmmi) # dC
         self.dL_dKmm +=  np.dot(np.dot(self.E*sf2, self.psi2_beta_scaled) - np.dot(self.C, self.psi1VVpsi1), self.Kmmi) + 0.5*self.E # dD
 
+
+    def _set_params(self, p):
+        self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
+        self.beta = p[self.M*self.Q]
+        self.kern._set_params(p[self.Z.size + 1:])
+        self._computations()
+
+    def _get_params(self):
+        return np.hstack([self.Z.flatten(),self.beta,self.kern._get_params_transformed()])
+
+    def _get_param_names(self):
+        return sum([['iip_%i_%i'%(i,j) for i in range(self.Z.shape[0])] for j in range(self.Z.shape[1])],[]) + ['noise_precision']+self.kern._get_param_names_transformed()
+
+        
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
         sf2 = self.scale_factor**2
@@ -116,18 +130,9 @@ class sparse_GP_regression(GP_regression):
         D = +0.5*np.sum(self.psi1VVpsi1 * self.C)
         return A+B+C+D
 
-    def set_param(self, p):
-        self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
-        self.beta = p[self.M*self.Q]
-        self.kern.set_param(p[self.Z.size + 1:])
-        self._computations()
-
-    def get_param(self):
-        return np.hstack([self.Z.flatten(),self.beta,self.kern.extract_param()])
-
-    def get_param_names(self):
-        return sum([['iip_%i_%i'%(i,j) for i in range(self.Z.shape[0])] for j in range(self.Z.shape[1])],[]) + ['noise_precision']+self.kern.extract_param_names()
-
+    def _log_likelihood_gradients(self):
+        return np.hstack([self.dL_dZ().flatten(), self.dL_dbeta(), self.dL_dtheta()])
+    
     def dL_dbeta(self):
         """
         Compute the gradient of the log likelihood wrt beta.
@@ -171,9 +176,6 @@ class sparse_GP_regression(GP_regression):
             dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2.sum(0),self.psi1)
             dL_dZ += self.kern.dK_dX(dL_dpsi1,self.Z,self.X)
         return dL_dZ
-
-    def log_likelihood_gradients(self):
-        return np.hstack([self.dL_dZ().flatten(), self.dL_dbeta(), self.dL_dtheta()])
 
     def _raw_predict(self, Xnew, slices, full_cov=False):
         """Internal helper function for making predictions, does not account for normalisation"""

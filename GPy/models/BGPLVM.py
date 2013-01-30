@@ -25,12 +25,12 @@ class Bayesian_GPLVM(sparse_GP_regression, GPLVM):
         S = np.ones_like(X) * 1e-2# 
         sparse_GP_regression.__init__(self, X, Y, X_uncertainty = S, **kwargs)
 
-    def get_param_names(self):
+    def _get_param_names(self):
         X_names = sum([['X_%i_%i'%(n,q) for n in range(self.N)] for q in range(self.Q)],[])
         S_names = sum([['S_%i_%i'%(n,q) for n in range(self.N)] for q in range(self.Q)],[])
-        return (X_names + S_names + sparse_GP_regression.get_param_names(self))
+        return (X_names + S_names + sparse_GP_regression._get_param_names(self))
 
-    def get_param(self):
+    def _get_params(self):
         """
         Horizontally stacks the parameters in order to present them to the optimizer.
         The resulting 1-D array has this structure:
@@ -40,13 +40,13 @@ class Bayesian_GPLVM(sparse_GP_regression, GPLVM):
         ===============================================================
 
         """
-        return np.hstack((self.X.flatten(), self.X_uncertainty.flatten(), sparse_GP_regression.get_param(self)))
+        return np.hstack((self.X.flatten(), self.X_uncertainty.flatten(), sparse_GP_regression._get_params(self)))
 
-    def set_param(self,x):
+    def _set_params(self,x):
         N, Q = self.N, self.Q
         self.X = x[:self.X.size].reshape(N,Q).copy()
         self.X_uncertainty = x[(N*Q):(2*N*Q)].reshape(N,Q).copy()
-        sparse_GP_regression.set_param(self, x[(2*N*Q):])
+        sparse_GP_regression._set_params(self, x[(2*N*Q):])
 
     def dL_dmuS(self):
         dL_dmu_psi0, dL_dS_psi0 = self.kern.dpsi1_dmuS(self.dL_dpsi1,self.Z,self.X,self.X_uncertainty)
@@ -57,6 +57,6 @@ class Bayesian_GPLVM(sparse_GP_regression, GPLVM):
 
         return np.hstack((dL_dmu.flatten(), dL_dS.flatten()))
 
-    def log_likelihood_gradients(self):
+    def _log_likelihood_gradients(self):
         return np.hstack((self.dL_dmuS().flatten(), sparse_GP_regression.log_likelihood_gradients(self)))
 

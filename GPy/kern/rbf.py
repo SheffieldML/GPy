@@ -32,7 +32,7 @@ class rbf(kernpart):
     def __init__(self,D,variance=1.,lengthscale=None,ARD=False):
         self.D = D
         self.ARD = ARD
-        if ARD == False:
+        if not ARD:
             self.Nparam = 2
             self.name = 'rbf'
             if lengthscale is not None:

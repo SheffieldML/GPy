@@ -9,7 +9,7 @@ np.random.seed(1)
 print "sparse GPLVM with RBF kernel"
 
 N = 100
-M = 4
+M = 8
 Q = 1
 D = 2
 #generate GPLVM-like data
@@ -19,9 +19,7 @@ K = k.K(X)
 Y = np.random.multivariate_normal(np.zeros(N),K,D).T
 
 m = GPy.models.sparse_GPLVM(Y, Q, M=M)
-m.constrain_positive('(rbf|bias|noise)')
-m.constrain_bounded('white', 1e-3, 0.1)
-# m.plot()
+m.constrain_positive('(rbf|bias|noise|white)')
 
 pb.figure()
 m.plot()

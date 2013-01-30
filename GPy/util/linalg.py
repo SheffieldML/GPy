@@ -63,8 +63,8 @@ def jitchol(A,maxtries=5):
             raise linalg.LinAlgError, "not pd: negative diagonal elements"
         jitter= diagA.mean()*1e-6
         for i in range(1,maxtries+1):
+            print 'Warning: adding jitter of '+str(jitter)
             try:
-                print 'Warning: adding jitter of '+str(jitter)
                 return linalg.cholesky(A+np.eye(A.shape[0])*jitter, lower = True)
             except:
                 jitter *= 10

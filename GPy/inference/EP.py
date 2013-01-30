@@ -136,7 +136,7 @@ class DTC(EP):
         q(f|X) = int_{df}{N(f|KfuKuu_invu,diag(Kff-Qff)*N(u|0,Kuu)} = N(f|0,Sigma0)
         Sigma0 = Qnn = Knm*Kmmi*Kmn
         """
-        self.Kmmi, self.Kmm_hld = pdinv(self.Kmm)
+        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
         self.KmnKnm = np.dot(self.Kmn, self.Kmn.T)
         self.KmmiKmn = np.dot(self.Kmmi,self.Kmn)
         self.Qnn_diag = np.sum(self.Kmn*self.KmmiKmn,-2)
@@ -222,7 +222,7 @@ class FITC(EP):
         q(f|X) = int_{df}{N(f|KfuKuu_invu,diag(Kff-Qff)*N(u|0,Kuu)} = N(f|0,Sigma0)
         Sigma0 = diag(Knn-Qnn) + Qnn, Qnn = Knm*Kmmi*Kmn
         """
-        self.Kmmi, self.Kmm_hld = pdinv(self.Kmm)
+        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
         self.P0 = self.Kmn.T
         self.KmnKnm = np.dot(self.P0.T, self.P0)
         self.KmmiKmn = np.dot(self.Kmmi,self.P0.T)

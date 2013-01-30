@@ -6,7 +6,8 @@ import numpy as np
 from ..core.parameterised import parameterised
 from functools import partial
 from kernpart import kernpart
-
+import itertools
+import GPy
 
 class kern(parameterised):
     def __init__(self,D,parts=[], input_slices=None):
@@ -44,7 +45,6 @@ class kern(parameterised):
 
         for p in self.parts:
             assert isinstance(p,kernpart), "bad kernel part"
-
 
         self.compute_param_slices()
 
@@ -131,6 +131,67 @@ class kern(parameterised):
         newkern.constrained_fixed_indices = self.constrained_fixed_indices + [self.Nparam + x for x in other.constrained_fixed_indices]
         newkern.constrained_fixed_values = self.constrained_fixed_values + other.constrained_fixed_values
         newkern.tied_indices = self.tied_indices + [self.Nparam + x for x in other.tied_indices]
+        return newkern
+
+    def __mul__(self,other):
+        """
+        Shortcut for `prod_orthogonal`. Note that `+` assumes that we sum 2 kernels defines on the same space whereas `*` assumes that the kernels are defined on different subspaces.
+        """
+        return self.prod_orthogonal(other)
+
+    def prod_orthogonal(self,other):
+        """
+        multiply two kernels. Both kernels are defined on separate spaces. Note that the constrains on the parameters of the kernels to multiply will be lost.
+        :param other: the other kernel to be added
+        :type other: GPy.kern
+        """
+        K1 = self.copy()
+        K2 = other.copy()
+        K1.unconstrain('')
+        K2.unconstrain('')
+
+        prev_ties = K1.tied_indices + [arr + K1.Nparam for arr in K2.tied_indices]
+        K1.untie_everything()
+        K2.untie_everything()
+
+        D = K1.D + K2.D
+
+        newkernparts = [GPy.kern.product_orthogonal(k1,k2).parts[0] for k1, k2 in itertools.product(K1.parts,K2.parts)]
+
+        slices = []
+        for sl1, sl2 in itertools.product(K1.input_slices,K2.input_slices):
+            s1, s2 = [False]*K1.D, [False]*K2.D
+            s1[sl1], s2[sl2] = [True], [True]
+            slices += [s1+s2]
+
+        newkern = kern(D, newkernparts, slices)
+
+        # create the ties
+        K1_param = []
+        n = 0
+        for k1 in K1.parts:
+            K1_param += [range(n,n+k1.Nparam)]
+            n += k1.Nparam
+        n = 0
+        K2_param = []
+        for k2 in K2.parts:
+            K2_param += [range(K1.Nparam+n,K1.Nparam+n+k2.Nparam)]
+            n += k2.Nparam
+        index_param = []
+        for p1 in K1_param:
+            for p2 in K2_param:
+                index_param += [0] + p1[1:] + p2[1:]
+        index_param = np.array(index_param)
+
+        # follow the previous ties
+        for arr in prev_ties:
+            for j in arr:
+                index_param[np.where(index_param==j)[0]] = arr[0]
+
+        # tie
+        for i in np.unique(index_param)[1:]:
+            newkern.tie_param(np.where(index_param==i)[0])
+
         return newkern
 
     def _get_params(self):

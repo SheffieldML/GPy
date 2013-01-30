@@ -94,7 +94,7 @@ class parameterised(object):
         Other objects are passed through - i.e. integers which were'nt meant for grepping
         """
 
-        if type(expr) is str:
+        if type(expr) in [str, np.string_, np.str]:
             expr = re.compile(expr)
             return np.nonzero([expr.search(name) for name in self._get_param_names()])[0]
         elif type(expr) is re._pattern_type:

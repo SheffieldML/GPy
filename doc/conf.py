@@ -90,34 +90,6 @@ import sys, os
                             #dtype=lambda _: Mock(_mock_repr='np.dtype(\'float32\')'))
 #sys.modules['scipy.constants'] = Mock(pi=math.pi, G=6.67364e-11)
 
-##############################################################################
-##
-## Mock out imports with C dependencies because ReadTheDocs can't build them.
-class Mock(object):
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def __call__(self, *args, **kwargs):
-        return Mock()
-
-    @classmethod
-    def __getattr__(cls, name):
-        if name in ('__file__', '__path__'):
-            return '/dev/null'
-        elif name[0] == name[0].upper():
-            mockType = type(name, (), {})
-            mockType.__module__ = __name__
-            return mockType
-        else:
-            return Mock()
-
-#sys.path.append("../GPy")
-#import mock
-
-print "Mocking"
-MOCK_MODULES = ['pylab', 'matplotlib', 'sympy', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser']#'matplotlib', 'matplotlib.color', 'matplotlib.pyplot', 'pylab' ]
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = Mock()
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -157,6 +129,35 @@ extensions = ['matplotlib.sphinxext.ipython_directive',
               #'inheritance_diagram',
               #'numpydoc'] 
 print "finished importing"
+
+##############################################################################
+##
+## Mock out imports with C dependencies because ReadTheDocs can't build them.
+class Mock(object):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        return Mock()
+
+    @classmethod
+    def __getattr__(cls, name):
+        if name in ('__file__', '__path__'):
+            return '/dev/null'
+        elif name[0] == name[0].upper():
+            mockType = type(name, (), {})
+            mockType.__module__ = __name__
+            return mockType
+        else:
+            return Mock()
+
+#sys.path.append("../GPy")
+#import mock
+
+print "Mocking"
+MOCK_MODULES = ['pylab', 'matplotlib', 'sympy', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser']#'matplotlib', 'matplotlib.color', 'matplotlib.pyplot', 'pylab' ]
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = Mock()
 
 # ----------------------- READTHEDOCS ------------------
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'

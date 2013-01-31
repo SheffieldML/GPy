@@ -144,7 +144,7 @@ sys.path.append(os.path.abspath('./sphinxext'))
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 print "Importing extensions"
               
-extensions = [#'ipython_directive',
+extensions = ['ipython_directive',
               'sphinx.ext.autodoc', 'sphinx.ext.viewcode'
               #'matplotlib.sphinxext.mathmpl',
               #'matplotlib.sphinxext.only_directives',

@@ -14,32 +14,52 @@
 import sys, os
 
 #Mocking uninstalled modules: https://read-the-docs.readthedocs.org/en/latest/faq.html
+
+# To avoid problem with ReadTheDocs and compiled extensions.
 class Mock(object):
-    def __init__(self, *args, **kwargs):
+    """Special Healpix values for masked pixels.
+    """
+    pi = 3.141516
+    class Axes(object):
+        pass
+    class Locator(object):
+        pass
+    class Normalize(object):
+        pass
+    def __init__(self, *args):
+        """Mock init
+        """
         pass
 
-    def __call__(self, *args, **kwargs):
+    def __getattr__(self, name):
+        return Mock
+
+    def __div__(self, x):
         return Mock()
 
-    @classmethod
-    def __getattr__(cls, name):
-        if name in ('__file__', '__path__'):
-            return '/dev/null'
-        elif name[0] == name[0].upper():
-            mockType = type(name, (), {})
-            mockType.__module__ = __name__
-            return mockType
-        else:
-            return Mock()
+    def __getitem__(self, idx):
+        return str(Mock())
 
-MOCK_MODULES = ['pylab', 'packages.pylab']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = Mock()
+try:
+    import GPy
+except exceptions.ImportError:
+    MOCK_MODULES = ['matplotlib', 'pylab', 'matplotlib.colors',
+                    'matplotlib.cbook', 'pyfits',
+                    'numpy']
+
+    for mod_name in MOCK_MODULES:
+        sys.modules[mod_name] = Mock()
+    
+
+# If your extensions are in another directory, add it here. If the directory
+# is relative to the documentation root, use os.path.abspath to make it
+# absolute, like shown here.
+sys.path.append(os.path.abspath('.'))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('.'))
 
 # -- General configuration -----------------------------------------------------
 

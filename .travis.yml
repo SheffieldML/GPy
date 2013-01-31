@@ -10,3 +10,11 @@ virtualenv:
 before_install: 
   - sudo apt-get install -qq python-scipy python-pip
   - sudo apt-get install -qq python-matplotlib
+
+install:
+  - pip install sphinx 
+  - pip install nose
+  - pip install . --use-mirrors
+# command to run tests, e.g. python setup.py test
+script: 
+  - nosetests GPy/testing

@@ -3,7 +3,6 @@
 
 
 import matplotlib as mpl
-
 import pylab as pb
 import sys
 #sys.path.append('/home/james/mlprojects/sitran_cluster/')
@@ -15,12 +14,12 @@ def removeRightTicks(ax=None):
     ax = ax or pb.gca()
     for i, line in enumerate(ax.get_yticklines()):
         if i%2 == 1:   # odd indices
-            line.set_visible(False) 
+            line.set_visible(False)
 def removeUpperTicks(ax=None):
     ax = ax or pb.gca()
     for i, line in enumerate(ax.get_xticklines()):
         if i%2 == 1:   # odd indices
-            line.set_visible(False) 
+            line.set_visible(False)
 def fewerXticks(ax=None,divideby=2):
     ax = ax or pb.gca()
     ax.set_xticks(ax.get_xticks()[::divideby])
@@ -126,8 +125,6 @@ cdict_RB = {'red' :((0.,coloursRGB['mediumRed'][0]/256.,coloursRGB['mediumRed'][
             'blue':((0.,coloursRGB['mediumRed'][2]/256.,coloursRGB['mediumRed'][2]/256.),
                       (.5,coloursRGB['mediumPurple'][2]/256.,coloursRGB['mediumPurple'][2]/256.),
                       (1.,coloursRGB['mediumBlue'][2]/256.,coloursRGB['mediumBlue'][2]/256.))}
-cmap_RB = mpl.colors.LinearSegmentedColormap('TangoRedBlue',cdict_RB,256)
-
 
 cdict_BGR = {'red' :((0.,coloursRGB['mediumBlue'][0]/256.,coloursRGB['mediumBlue'][0]/256.),
                      (.5,coloursRGB['mediumGreen'][0]/256.,coloursRGB['mediumGreen'][0]/256.),
@@ -138,7 +135,7 @@ cdict_BGR = {'red' :((0.,coloursRGB['mediumBlue'][0]/256.,coloursRGB['mediumBlue
             'blue':((0.,coloursRGB['mediumBlue'][2]/256.,coloursRGB['mediumBlue'][2]/256.),
                       (.5,coloursRGB['mediumGreen'][2]/256.,coloursRGB['mediumGreen'][2]/256.),
                       (1.,coloursRGB['mediumRed'][2]/256.,coloursRGB['mediumRed'][2]/256.))}
-cmap_BGR = mpl.colors.LinearSegmentedColormap('TangoRedBlue',cdict_BGR,256)
+
 
 cdict_Alu = {'red' :((0./5,coloursRGB['Aluminium1'][0]/256.,coloursRGB['Aluminium1'][0]/256.),
                      (1./5,coloursRGB['Aluminium2'][0]/256.,coloursRGB['Aluminium2'][0]/256.),
@@ -158,13 +155,12 @@ cdict_Alu = {'red' :((0./5,coloursRGB['Aluminium1'][0]/256.,coloursRGB['Aluminiu
                      (3./5,coloursRGB['Aluminium4'][2]/256.,coloursRGB['Aluminium4'][2]/256.),
                      (4./5,coloursRGB['Aluminium5'][2]/256.,coloursRGB['Aluminium5'][2]/256.),
                      (5./5,coloursRGB['Aluminium6'][2]/256.,coloursRGB['Aluminium6'][2]/256.))}
-cmap_Alu = mpl.colors.LinearSegmentedColormap('TangoAluminium',cdict_Alu,256)
-
+# cmap_Alu = mpl.colors.LinearSegmentedColormap('TangoAluminium',cdict_Alu,256)
+# cmap_BGR = mpl.colors.LinearSegmentedColormap('TangoRedBlue',cdict_BGR,256)
+# cmap_RB = mpl.colors.LinearSegmentedColormap('TangoRedBlue',cdict_RB,256)
 if __name__=='__main__':
     import pylab as pb
     pb.figure()
     pb.pcolor(pb.rand(10,10),cmap=cmap_RB)
     pb.colorbar()
     pb.show()
-
-    

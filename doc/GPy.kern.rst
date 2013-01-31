@@ -89,18 +89,34 @@ kern Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`linear_ARD` Module
-------------------------
+:mod:`periodic_Matern32` Module
+-------------------------------
 
-.. automodule:: GPy.kern.linear_ARD
+.. automodule:: GPy.kern.periodic_Matern32
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`rbf-testing` Module
--------------------------
+:mod:`periodic_Matern52` Module
+-------------------------------
 
-.. automodule:: GPy.kern.rbf-testing
+.. automodule:: GPy.kern.periodic_Matern52
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`periodic_exponential` Module
+----------------------------------
+
+.. automodule:: GPy.kern.periodic_exponential
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`product_orthogonal` Module
+--------------------------------
+
+.. automodule:: GPy.kern.product_orthogonal
     :members:
     :undoc-members:
     :show-inheritance:

@@ -31,14 +31,14 @@ class Matern52(kernpart):
         self.ARD = ARD
         if ARD == False:
             self.Nparam = 2
-            self.name = 'Mat32'
+            self.name = 'Mat52'
             if lengthscale is not None:
                 assert lengthscale.shape == (1,)
             else:
                 lengthscale = np.ones(1)
         else:
             self.Nparam = self.D + 1
-            self.name = 'Mat32_ARD'
+            self.name = 'Mat52_ARD'
             if lengthscale is not None:
                 assert lengthscale.shape == (self.D,)
             else:

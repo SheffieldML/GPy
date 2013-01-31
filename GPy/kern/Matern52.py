@@ -13,14 +13,14 @@ class Matern52(kernpart):
 
     .. math::
 
-       k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r) \qquad \qquad \\text{ where  } r = \sqrt{\sum_{i=1}^D \\frac{(x_i-y_i)^2}{\ell_i^2} }
+       k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r) \\qquad \\qquad \\text{ where  } r = \sqrt{\sum_{i=1}^D \\frac{(x_i-y_i)^2}{\ell_i^2} }
 
     :param D: the number of input dimensions
     :type D: int
     :param variance: the variance :math:`\sigma^2`
     :type variance: float
     :param lengthscale: the vector of lengthscale :math:`\ell_i`
-    :type lengthscale: np.ndarray of size (1,) or (D,) depending on ARD
+    :type lengthscale: array or list of the appropriate size (or float if there is only one lengthscale parameter)
     :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one single lengthscale parameter \ell), otherwise there is one lengthscale parameter per dimension.
     :type ARD: Boolean
     :rtype: kernel object
@@ -33,17 +33,19 @@ class Matern52(kernpart):
             self.Nparam = 2
             self.name = 'Mat52'
             if lengthscale is not None:
-                assert lengthscale.shape == (1,)
+                lengthscale = np.asarray(lengthscale)
+                assert lengthscale.size == 1, "Only one lengthscale needed for non-ARD kernel"
             else:
                 lengthscale = np.ones(1)
         else:
             self.Nparam = self.D + 1
-            self.name = 'Mat52_ARD'
+            self.name = 'Mat52'
             if lengthscale is not None:
-                assert lengthscale.shape == (self.D,)
+                lengthscale = np.asarray(lengthscale)
+                assert lengthscale.size == self.D, "bad number of lengthscales"
             else:
                 lengthscale = np.ones(self.D)
-        self._set_params(np.hstack((variance,lengthscale)))
+        self._set_params(np.hstack((variance,lengthscale.flatten())))
 
     def _get_params(self):
         """return the value of the parameters."""

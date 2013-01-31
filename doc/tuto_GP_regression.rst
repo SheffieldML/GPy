@@ -147,12 +147,9 @@ The flag ``ARD=True`` in the definition of the Matern kernel specifies that we w
 
     Contour plot of the best predictor (posterior mean).
 
-.. plot::
+.. ipython::
 
-   import matplotlib.pyplot as plt
-   import numpy as np
-   x = np.random.randn(1000)
-   plt.hist( x, 20)
-   plt.grid()
-   plt.title(r'Normal: $\mu=%.2f, \sigma=%.2f$'%(x.mean(), x.std()))
-   plt.show()
+   In [136]: x = 2
+
+   In [137]: x**3
+   Out[137]: 8

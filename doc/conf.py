@@ -114,6 +114,7 @@ class Mock(object):
 #sys.path.append("../GPy")
 #import mock
 
+print "Mocking"
 MOCK_MODULES = ['pylab', 'matplotlib', 'sympy', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser']#'matplotlib', 'matplotlib.color', 'matplotlib.pyplot', 'pylab' ]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
@@ -123,6 +124,7 @@ for mod_name in MOCK_MODULES:
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('..'))
 
+print "Adding path"
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
 # absolute, like shown here.
@@ -162,7 +164,8 @@ if on_rtd:
   os.system("sphinx-apidoc -f -o . ../GPy")
   #os.system("cd ..")
   #os.system("cd ./docs")
-print "Compiled files
+
+print "Compiled files"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

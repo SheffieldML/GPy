@@ -29,7 +29,7 @@ class opt_SGD(Optimizer):
         self.batch_size = batch_size
         self.self_paced = self_paced
 
-        num_params = len(self.model.get_param())
+        num_params = len(self.model._get_params())
         if isinstance(self.learning_rate, float):
             self.learning_rate = np.ones((num_params,)) * self.learning_rate
 
@@ -135,7 +135,7 @@ class opt_SGD(Optimizer):
         import pdb; pdb.set_trace()
         if model_name == 'Bayesian_GPLVM':
             self.model.trYYT = np.sum(np.square(self.model.Y))
-            
+
         if self.model.N == 0:
             return 0, step, self.model.N
 
@@ -152,7 +152,7 @@ class opt_SGD(Optimizer):
         return f, step, self.model.N
 
     def opt(self, f_fp=None, f=None, fp=None):
-        self.x_opt = self.model.get_param()
+        self.x_opt = self.model._get_params()
         X, Y = self.model.X.copy(), self.model.Y.copy()
         N, Q = self.model.X.shape
         D = self.model.Y.shape[1]
@@ -168,7 +168,7 @@ class opt_SGD(Optimizer):
 
             b = len(features)/self.batch_size
             features = [features[i::b] for i in range(b)]
-            step = np.zeros_like(self.model.get_param())
+            step = np.zeros_like(self.model._get_params())
             LL = []
             count = 0
 

@@ -322,6 +322,7 @@ def skip(app, what, name, obj, skip, options):
 def setup(app):
     app.connect("autodoc-skip-member", skip)
 
+
 #############################################################################
 #
 # Mock out imports with C dependencies because ReadTheDocs can't build them.
@@ -344,7 +345,7 @@ class Mock(object):
             return Mock()
 
 MOCK_MODULES = ['matplotlib', 'matplotlib.pyplot', 
-                'numpy', 'numpy.linalg', 'pylab'
+                'pylab'
                 ]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()

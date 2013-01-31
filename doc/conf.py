@@ -344,7 +344,7 @@ class Mock(object):
         else:
             return Mock()
 
-MOCK_MODULES = ['matplotlib', 'matplotlib.pyplot', 
+MOCK_MODULES = [#'matplotlib', 'matplotlib.pyplot', 
                 'pylab'
                 ]
 for mod_name in MOCK_MODULES:

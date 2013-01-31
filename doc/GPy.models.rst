@@ -9,6 +9,14 @@ models Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`BGPLVM` Module
+--------------------
+
+.. automodule:: GPy.models.BGPLVM
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`GPLVM` Module
 -------------------
 

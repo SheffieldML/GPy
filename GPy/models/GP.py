@@ -29,7 +29,6 @@ class GP(model):
     .. Note:: Multiple independent outputs are allowed using columns of Y
 
     """
-    #TODO: when using EP, predict needs to return 3 values otherwise it just needs 2. At the moment predict returns 3 values in any case.
 
     def __init__(self, X, kernel, likelihood, normalize_X=False, Xslices=None):
 
@@ -164,7 +163,7 @@ class GP(model):
         """
         #normalise X values
         Xnew = (Xnew.copy() - self._Xmean) / self._Xstd
-        mu, var, phi = self._raw_predict(Xnew, slices, full_cov=full_cov)
+        mu, var = self._raw_predict(Xnew, slices, full_cov=full_cov)
 
         #now push through likelihood TODO
 
@@ -208,25 +207,9 @@ class GP(model):
 
         if self.X.shape[1]==1:
             Xnew = np.linspace(xmin,xmax,resolution or 200)[:,None]
-<<<<<<< HEAD
             m,v = self._raw_predict(Xnew,slices=which_functions,full_cov=False)
             lower, upper = m.flatten() - 2.*np.sqrt(v) , m.flatten()+ 2.*np.sqrt(v)
             gpplot(Xnew,m,lower,upper)
-=======
-            m,v = self.predict(Xnew,slices=which_functions,full_cov=full_cov)
-            if self.EP:
-                pb.subplot(211)
-            gpplot(Xnew,m,v)
-            if samples: #NOTE why don't we put samples as a parameter of gpplot
-                s = np.random.multivariate_normal(m.flatten(),np.diag(v.flatten()),samples)
-                pb.plot(Xnew.flatten(),s.T, alpha = 0.4, c='#3465a4', linewidth = 0.8)
-            pb.plot(Xorig,Yorig,'kx',mew=1.5)
-            pb.xlim(xmin,xmax)
-
-            if self.EP:
-                phi_m, phi_v, phi_l, phi_u = self.likelihood.predictive_values(m,v)
->>>>>>> 9feae765dc2253edaa37b25e3417a364e5b9acdc
-
             pb.plot(X,Y,'kx',mew=1.5)
             pb.xlim(xmin,xmax)
         elif self.X.shape[1]==2:

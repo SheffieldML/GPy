@@ -17,7 +17,7 @@ K = k.K(X)
 Y = np.random.multivariate_normal(np.zeros(N),K,D).T
 
 # k = GPy.kern.rbf(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
-k = GPy.kern.rbf(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)
+k = GPy.kern.linear(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)
 m = GPy.models.Bayesian_GPLVM(Y, Q, kernel = k,  M=M)
 m.constrain_positive('(rbf|bias|noise|white|S)')
 # m.constrain_fixed('S', 1)

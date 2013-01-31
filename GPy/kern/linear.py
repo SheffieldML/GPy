@@ -47,6 +47,7 @@ class linear(kernpart):
     def _set_params(self,x):
         assert x.size==(self.Nparam)
         self.variances = x
+        self.variances2 = np.square(self.variances)
 
     def _get_param_names(self):
         if self.Nparam == 1:
@@ -63,17 +64,6 @@ class linear(kernpart):
             self._K_computations(X, X2)
             target += self.variances * self._dot_product
 
-    def _K_computations(self,X,X2):
-        if X2 is None:
-            X2 = X
-        if not (np.all(X==self._Xcache) and np.all(X2==self._X2cache)):
-            self._Xcache = X
-            self._X2cache = X2
-            self._dot_product = np.dot(X,X2.T)
-        else:
-            # print "Cache hit!"
-            pass # TODO: insert debug message here (logging framework)
-
     def Kdiag(self,X,target):
         np.add(target,np.sum(self.variances*np.square(X),-1),target)
 
@@ -88,17 +78,21 @@ class linear(kernpart):
     def dK_dX(self,partial,X,X2,target):
         target += (((X2[:, None, :] * self.variances)) * partial[:,:, None]).sum(0)
 
+    #---------------------------------------#
+    #             PSI statistics            #
+    #---------------------------------------#
+
     def psi0(self,Z,mu,S,target):
         expected = np.square(mu) + S
         target += np.sum(self.variances*expected)
 
-    def dpsi0_dtheta(self,Z,mu,S,target):
+    def dpsi0_dtheta(self,partial,Z,mu,S,target):
         expected = np.square(mu) + S
-        return -2.*np.sum(expected,0)
+        target += (partial[:, None] * (-2.*np.sum(expected,0))).sum()
 
-    def dpsi0_dmuS(self,Z,mu,S,target_mu,target_S):
-        np.add(target_mu,2*mu*self.variances,target_mu)
-        np.add(target_S,self.variances,target_S)
+    def dpsi0_dmuS(self,partial, Z,mu,S,target_mu,target_S):
+        target_mu += partial[:, None] * (2*mu*self.variances)
+        target_S += partial[:, None] * self.variances
 
     def dpsi0_dZ(self,Z,mu,S,target):
         pass
@@ -107,37 +101,54 @@ class linear(kernpart):
         """the variance, it does nothing"""
         self.K(mu,Z,target)
 
-    def dpsi1_dtheta(self,Z,mu,S,target):
+    def dpsi1_dtheta(self,partial,Z,mu,S,target):
         """the variance, it does nothing"""
-        self.dK_dtheta(mu,Z,target)
+        self.dK_dtheta(partial,mu,Z,target)
 
-    def dpsi1_dmuS(self,Z,mu,S,target_mu,target_S):
+    def dpsi1_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         """Do nothing for S, it does not affect psi1"""
-        np.add(target_mu,Z/self.variances2,target_mu)
+        target_mu += (partial.T[:,:, None]*(Z/self.variances)).sum(1)
 
-    def dpsi1_dZ(self,Z,mu,S,target):
-        self.dK_dX(mu,Z,target)
+    def dpsi1_dZ(self,partial,Z,mu,S,target):
+        self.dK_dX(partial.T,Z,mu,target)
 
     def psi2(self,Z,mu,S,target):
-        """Think N,M,M,Q """
+        """
+        returns N,M,M matrix
+        """
         mu2_S = np.square(mu)+S# N,Q,
         ZZ = Z[:,None,:]*Z[None,:,:] # M,M,Q
-        psi2 = ZZ*np.square(self.variances)*mu2_S
-        np.add(target, psi2.sum(-1),target) # M,M
+        psi2 = ZZ*np.square(self.variances)*mu2_S[:, None, None, :]
+        target += psi2.sum(-1)
 
-    def dpsi2_dtheta(self,Z,mu,S,target):
+    def dpsi2_dtheta(self,partial,Z,mu,S,target):
         mu2_S = np.square(mu)+S# N,Q,
         ZZ = Z[:,None,:]*Z[None,:,:] # M,M,Q
-        target += 2.*ZZ*mu2_S*self.variances
+        target += (partial[:,:,:,None]*(2.*ZZ*mu2_S[:,None,None,:]*self.variances)).sum()
 
-    def dpsi2_dmuS(self,Z,mu,S,target_mu,target_S):
+    def dpsi2_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         """Think N,M,M,Q """
         mu2_S = np.sum(np.square(mu)+S,0)# Q,
         ZZ = Z[:,None,:]*Z[None,:,:] # M,M,Q
         tmp = ZZ*np.square(self.variances) # M,M,Q
-        np.add(target_mu, tmp*2.*mu[:,None,None,:],target_mu) #N,M,M,Q
-        np.add(target_S, tmp, target_S) #N,M,M,Q
+        target_mu += (partial[:,:,:,None]*tmp*2.*mu[:,None,None,:]).sum(1).sum(1)
+        target_S += (partial[:,:,:,None]*tmp).sum(1).sum(1)
 
-    def dpsi2_dZ(self,Z,mu,S,target):
+    def dpsi2_dZ(self,partial,Z,mu,S,target):
         mu2_S = np.sum(np.square(mu)+S,0)# Q,
-        target += Z[:,None,:]*np.square(self.variances)*mu2_S
+        target += (partial[:,:,:,None]* (Z * mu2_S * np.square(self.variances))).sum(0).sum(0)
+
+    #---------------------------------------#
+    #            Precomputations            #
+    #---------------------------------------#
+
+    def _K_computations(self,X,X2):
+        if X2 is None:
+            X2 = X
+        if not (np.all(X==self._Xcache) and np.all(X2==self._X2cache)):
+            self._Xcache = X
+            self._X2cache = X2
+            self._dot_product = np.dot(X,X2.T)
+        else:
+            # print "Cache hit!"
+            pass # TODO: insert debug message here (logging framework)

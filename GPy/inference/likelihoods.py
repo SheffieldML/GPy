@@ -9,7 +9,7 @@ import pylab as pb
 from ..util.plot import gpplot
 
 class likelihood:
-    def __init__(self,Y):
+    def __init__(self,Y,location=0,scale=1):
         """
         Likelihood class for doing Expectation propagation
 
@@ -18,6 +18,8 @@ class likelihood:
         """
         self.Y = Y
         self.N = self.Y.shape[0]
+        self.location = location
+        self.scale = scale
 
     def plot1Da(self,X_new,Mean_new,Var_new,X_u,Mean_u,Var_u):
         """
@@ -99,6 +101,119 @@ class probit(likelihood):
     def predictive_mean(self,mu,variance):
         return stats.norm.cdf(mu/np.sqrt(1+variance))
 
-    def log_likelihood_gradients():
+    def _log_likelihood_gradients():
         raise NotImplementedError
 
+class poisson(likelihood):
+    """
+    Poisson likelihood
+    Y is expected to take values in {0,1,2,...}
+    -----
+    $$
+    L(x) = \exp(\lambda) * \lambda**Y_i / Y_i!
+    $$
+    """
+    def moments_match(self,i,tau_i,v_i):
+        """
+        Moments match of the marginal approximation in EP algorithm
+
+        :param i: number of observation (int)
+        :param tau_i: precision of the cavity distribution (float)
+        :param v_i: mean/variance of the cavity distribution (float)
+        """
+        mu = v_i/tau_i
+        sigma = np.sqrt(1./tau_i)
+        def poisson_norm(f):
+            """
+            Product of the likelihood and the cavity distribution
+            """
+            pdf_norm_f = stats.norm.pdf(f,loc=mu,scale=sigma)
+            rate = np.exp( (f*self.scale)+self.location)
+            poisson = stats.poisson.pmf(float(self.Y[i]),rate)
+            return pdf_norm_f*poisson
+
+        def log_pnm(f):
+            """
+            Log of poisson_norm
+            """
+            return -(-.5*(f-mu)**2/sigma**2 - np.exp( (f*self.scale)+self.location) + ( (f*self.scale)+self.location)*self.Y[i])
+
+        """
+        Golden Search and Simpson's Rule
+        --------------------------------
+        Simpson's Rule is used to calculate the moments mumerically, it needs a grid of points as input.
+        Golden Search is used to find the mode in the poisson_norm distribution and define around it the grid for Simpson's Rule
+        """
+        #TODO golden search & simpson's rule can be defined in the general likelihood class, rather than in each specific case.
+
+        #Golden search
+        golden_A = -1 if self.Y[i] == 0 else np.array([np.log(self.Y[i]),mu]).min() #Lower limit
+        golden_B = np.array([np.log(self.Y[i]),mu]).max() #Upper limit
+        golden_A = (golden_A - self.location)/self.scale
+        golden_B = (golden_B - self.location)/self.scale
+        opt = sp.optimize.golden(log_pnm,brack=(golden_A,golden_B)) #Better to work with log_pnm than with poisson_norm
+
+        # Simpson's approximation
+        width = 3./np.log(max(self.Y[i],2))
+        A = opt - width #Lower limit
+        B = opt + width #Upper limit
+        K =  10*int(np.log(max(self.Y[i],150))) #Number of points in the grid, we DON'T want K to be the same number for every case
+        h = (B-A)/K # length of the intervals
+        grid_x = np.hstack([np.linspace(opt-width,opt,K/2+1)[1:-1], np.linspace(opt,opt+width,K/2+1)]) # grid of points (X axis)
+        x = np.hstack([A,B,grid_x[range(1,K,2)],grid_x[range(2,K-1,2)]]) # grid_x rearranged, just to make Simpson's algorithm easier
+        zeroth = np.hstack([poisson_norm(A),poisson_norm(B),[4*poisson_norm(f) for f in grid_x[range(1,K,2)]],[2*poisson_norm(f) for f in grid_x[range(2,K-1,2)]]]) # grid of points (Y axis) rearranged like x
+        first = zeroth*x
+        second = first*x
+        Z_hat = sum(zeroth)*h/3 # Zero-th moment
+        mu_hat = sum(first)*h/(3*Z_hat) # First moment
+        m2 = sum(second)*h/(3*Z_hat) # Second moment
+        sigma2_hat = m2 - mu_hat**2 # Second central moment
+        return float(Z_hat), float(mu_hat), float(sigma2_hat)
+
+    def plot1Db(self,X,X_new,F_new,F2_new=None,U=None):
+        pb.subplot(212)
+        #gpplot(X_new,F_new,np.sqrt(F2_new))
+        pb.plot(X_new,F_new)#,np.sqrt(F2_new)) #FIXME
+        pb.plot(X,self.Y,'kx',mew=1.5)
+        if U is not None:
+            pb.plot(U,np.ones(U.shape[0])*self.Y.min()*.8,'r|',mew=1.5,markersize=12)
+    def predictive_mean(self,mu,variance):
+        return np.exp(mu*self.scale + self.location)
+    def predictive_variance(self,mu,variance):
+        return mu
+    def _log_likelihood_gradients():
+        raise NotImplementedError
+
+class gaussian(likelihood):
+    """
+    Gaussian likelihood
+    Y is expected to take values in (-inf,inf)
+    """
+    def moments_match(self,i,tau_i,v_i):
+        """
+        Moments match of the marginal approximation in EP algorithm
+
+        :param i: number of observation (int)
+        :param tau_i: precision of the cavity distribution (float)
+        :param v_i: mean/variance of the cavity distribution (float)
+        """
+        mu = v_i/tau_i
+        sigma = np.sqrt(1./tau_i)
+        s = 1. if self.Y[i] == 0 else 1./self.Y[i]
+        sigma2_hat = 1./(1./sigma**2 + 1./s**2)
+        mu_hat = sigma2_hat*(mu/sigma**2 + self.Y[i]/s**2)
+        Z_hat = 1./np.sqrt(2*np.pi) * 1./np.sqrt(sigma**2+s**2) * np.exp(-.5*(mu-self.Y[i])**2/(sigma**2 + s**2))
+        return Z_hat, mu_hat, sigma2_hat
+
+    def plot1Db(self,X,X_new,F_new,U=None):
+        assert X.shape[1] == 1, 'Number of dimensions must be 1'
+        gpplot(X_new,F_new,np.zeros(X_new.shape[0]))
+        pb.plot(X,self.Y,'kx',mew=1.5)
+        if U is not None:
+            pb.plot(U,np.ones(U.shape[0])*self.Y.min()*.8,'r|',mew=1.5,markersize=12)
+
+    def predictive_mean(self,mu,Sigma):
+        return mu
+
+    def _log_likelihood_gradients():
+        raise NotImplementedError

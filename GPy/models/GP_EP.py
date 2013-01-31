@@ -41,14 +41,14 @@ class GP_EP(model):
         self.K = self.kernel.K(self.X)
         model.__init__(self)
 
-    def set_param(self,p):
-        self.kernel.expand_param(p)
+    def _set_params(self,p):
+        self.kernel._set_params_transformed(p)
 
-    def get_param(self):
-        return self.kernel.extract_param()
+    def _get_params(self):
+        return self.kernel._get_params_transformed()
 
-    def get_param_names(self):
-        return self.kernel.extract_param_names()
+    def _get_param_names(self):
+        return self.kernel._get_param_names_transformed()
 
     def approximate_likelihood(self):
         self.ep_approx = Full(self.K,self.likelihood,epsilon=self.epsilon_ep,powerep=[self.eta,self.delta])
@@ -78,7 +78,7 @@ class GP_EP(model):
         L3 = sum(np.log(self.ep_approx.Z_hat))
         return L1 + L2A + L2B + L3
 
-    def log_likelihood_gradients(self):
+    def _log_likelihood_gradients(self):
         dK_dp = self.kernel.dK_dtheta(self.X)
         self.dK_dp = dK_dp
         aux1,info_1 = linalg.flapack.dtrtrs(self.L,np.dot(self.Sroot_tilde_K,self.ep_approx.v_tilde),lower=1)
@@ -138,7 +138,7 @@ class GP_EP(model):
         """
         self.epsilon_em = epsilon
         log_likelihood_change = self.epsilon_em + 1.
-        self.parameters_path = [self.kernel.get_param()]
+        self.parameters_path = [self.kernel._get_params()]
         self.approximate_likelihood()
         self.site_approximations_path = [[self.ep_approx.tau_tilde,self.ep_approx.v_tilde]]
         self.log_likelihood_path = [self.log_likelihood()]
@@ -150,11 +150,11 @@ class GP_EP(model):
             log_likelihood_change = log_likelihood_new - self.log_likelihood_path[-1]
             if log_likelihood_change < 0:
                 print 'log_likelihood decrement'
-                self.kernel.expand_param(self.parameters_path[-1])
-                self.kernM.expand_param(self.parameters_path[-1])
+                self.kernel._set_params_transformed(self.parameters_path[-1])
+                self.kernM._set_params_transformed(self.parameters_path[-1])
             else:
                 self.approximate_likelihood()
                 self.log_likelihood_path.append(self.log_likelihood())
-                self.parameters_path.append(self.kernel.get_param())
+                self.parameters_path.append(self.kernel._get_params())
                 self.site_approximations_path.append([self.ep_approx.tau_tilde,self.ep_approx.v_tilde])
             iteration += 1

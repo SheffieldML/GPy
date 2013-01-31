@@ -63,47 +63,47 @@ class GP_regression(model):
             self._Ystd = np.ones((1,self.Y.shape[1]))
 
         if self.D > self.N:
-            # then it's more efficient to store Youter
-            self.Youter = np.dot(self.Y, self.Y.T)
+            # then it's more efficient to store YYT
+            self.YYT = np.dot(self.Y, self.Y.T)
         else:
-            self.Youter = None
+            self.YYT = None
 
         model.__init__(self)
 
-    def set_param(self,p):
-        self.kern.expand_param(p)
+    def _set_params(self,p):
+        self.kern._set_params_transformed(p)
         self.K = self.kern.K(self.X,slices1=self.Xslices)
         self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
 
-    def get_param(self):
-        return self.kern.extract_param()
+    def _get_params(self):
+        return self.kern._get_params_transformed()
 
-    def get_param_names(self):
-        return self.kern.extract_param_names()
+    def _get_param_names(self):
+        return self.kern._get_param_names_transformed()
 
     def _model_fit_term(self):
         """
-        Computes the model fit using Youter if it's available
+        Computes the model fit using YYT if it's available
         """
-        if self.Youter is None:
+        if self.YYT is None:
             return -0.5*np.sum(np.square(np.dot(self.Li,self.Y)))
         else:
-            return -0.5*np.sum(np.multiply(self.Ki, self.Youter))
+            return -0.5*np.sum(np.multiply(self.Ki, self.YYT))
 
     def log_likelihood(self):
         complexity_term = -0.5*self.N*self.D*np.log(2.*np.pi) - 0.5*self.D*self.K_logdet
         return complexity_term + self._model_fit_term()
 
     def dL_dK(self):
-        if self.Youter is None:
+        if self.YYT is None:
             alpha = np.dot(self.Ki,self.Y)
             dL_dK = 0.5*(np.dot(alpha,alpha.T)-self.D*self.Ki)
         else:
-            dL_dK = 0.5*(mdot(self.Ki, self.Youter, self.Ki) - self.D*self.Ki)
+            dL_dK = 0.5*(mdot(self.Ki, self.YYT, self.Ki) - self.D*self.Ki)
 
         return dL_dK
 
-    def log_likelihood_gradients(self):
+    def _log_likelihood_gradients(self):
         return self.kern.dK_dtheta(partial=self.dL_dK(),X=self.X)
 
     def predict(self,Xnew, slices=None, full_cov=False):

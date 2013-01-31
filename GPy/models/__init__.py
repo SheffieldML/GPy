@@ -3,7 +3,7 @@
 
 
 from GP_regression import GP_regression
-from sparse_GP_regression import sparse_GP_regression, sgp_debugB, sgp_debugC, sgp_debugE
+from sparse_GP_regression import sparse_GP_regression
 from GPLVM import GPLVM
 from warped_GP import warpedGP
 from GP_EP import GP_EP

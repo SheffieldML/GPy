@@ -8,46 +8,68 @@ import hashlib
 
 class rbf(kernpart):
     """
-    Radial Basis Function kernel, aka squared-exponential, exponentiated quadratic or Gaussian kernel.
+    Radial Basis Function kernel, aka squared-exponential, exponentiated quadratic or Gaussian kernel:
 
     .. math::
 
-       k(r) = \sigma^2 \exp(- \frac{r^2}{2\ell}) \qquad \qquad \\text{ where  } r = \sqrt{\frac{\sum_{i=1}^d (x_i-x^\prime_i)^2}{\ell^2}}
+       k(r) = \sigma^2 \exp(- \frac{1}{2}r^2) \qquad \qquad \\text{ where  } r^2 = \sum_{i=1}^d \frac{ (x_i-x^\prime_i)^2}{\ell_i^2}}
 
-    where \ell is the lengthscale, \alpha the smoothness, \sigma^2 the variance and d the dimensionality of the input.
+    where \ell_i is the lengthscale, \sigma^2 the variance and d the dimensionality of the input.
 
     :param D: the number of input dimensions
     :type D: int
     :param variance: the variance of the kernel
     :type variance: float
-    :param lengthscale: the lengthscale of the kernel
-    :type lengthscale: float
+    :param lengthscale: the vector of lengthscale of the kernel
+    :type lengthscale: np.ndarray od size (1,) or (D,) depending on ARD
+    :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one single lengthscale parameter \ell), otherwise there is one lengthscale parameter per dimension.
+    :type ARD: Boolean
+    :rtype: kernel object
 
     .. Note: for rbf with different lengthscale on each dimension, see rbf_ARD
     """
 
-    def __init__(self,D,variance=1.,lengthscale=1.):
+    def __init__(self,D,variance=1.,lengthscale=None,ARD=False):
         self.D = D
-        self.Nparam = 2
-        self.name = 'rbf'
-        self.set_param(np.hstack((variance,lengthscale)))
+        self.ARD = ARD
+        if not ARD:
+            self.Nparam = 2
+            self.name = 'rbf'
+            if lengthscale is not None:
+                assert lengthscale.shape == (1,)
+            else:
+                lengthscale = np.ones(1)
+        else:
+            self.Nparam = self.D + 1
+            self.name = 'rbf_ARD'
+            if lengthscale is not None:
+                assert lengthscale.shape == (self.D,)
+            else:
+                lengthscale = np.ones(self.D)
+
+        self._set_params(np.hstack((variance,lengthscale)))
 
         #initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3,1))
         self._X, self._X2, self._params = np.empty(shape=(3,1))
 
-    def get_param(self):
+    def _get_params(self):
         return np.hstack((self.variance,self.lengthscale))
 
-    def set_param(self,x):
-        self.variance, self.lengthscale = x
+    def _set_params(self,x):
+        assert x.size==(self.Nparam)
+        self.variance = x[0]
+        self.lengthscale = x[1:]
         self.lengthscale2 = np.square(self.lengthscale)
         #reset cached results
         self._X, self._X2, self._params = np.empty(shape=(3,1))
         self._Z, self._mu, self._S = np.empty(shape=(3,1)) # cached versions of Z,mu,S
 
-    def get_param_names(self):
-        return ['variance','lengthscale']
+    def _get_param_names(self):
+        if self.Nparam == 2:
+            return ['variance','lengthscale']
+        else:
+            return ['variance']+['lengthscale_%i'%i for i in range(self.lengthscale.size)]
 
     def K(self,X,X2,target):
         if X2 is None:
@@ -61,7 +83,12 @@ class rbf(kernpart):
     def dK_dtheta(self,partial,X,X2,target):
         self._K_computations(X,X2)
         target[0] += np.sum(self._K_dvar*partial)
-        target[1] += np.sum(self._K_dvar*self.variance*self._K_dist2/self.lengthscale*partial)
+        if self.ARD == True:
+            dl = self._K_dvar[:,:,None]*self.variance*self._K_dist2/self.lengthscale
+            target[1:] += (dl*partial[:,:,None]).sum(0).sum(0)
+        else:
+            target[1] += np.sum(self._K_dvar*self.variance*(self._K_dist2.sum(-1))/self.lengthscale*partial)
+        #np.sum(self._K_dvar*self.variance*self._K_dist2/self.lengthscale*partial)
 
     def dKdiag_dtheta(self,partial,X,target):
         #NB: derivative of diagonal elements wrt lengthscale is 0
@@ -76,20 +103,10 @@ class rbf(kernpart):
     def dKdiag_dX(self,partial,X,target):
         pass
 
-    def _K_computations(self,X,X2):
-        if not (np.all(X==self._X) and np.all(X2==self._X2)):
-            self._X = X
-            self._X2 = X2
-            if X2 is None: X2 = X
-            XXT = np.dot(X,X2.T)
-            if X is X2:
-                self._K_dist2 = (-2.*XXT + np.diag(XXT)[:,np.newaxis] + np.diag(XXT)[np.newaxis,:])/self.lengthscale2
-            else:
-                self._K_dist2 = (-2.*XXT + np.sum(np.square(X),1)[:,None] + np.sum(np.square(X2),1)[None,:])/self.lengthscale2
-            # TODO Remove comments if this is fine.
-            # Commented out by Neil as doesn't seem to be used elsewhere.
-            #self._K_exponent = -0.5*self._K_dist2
-            self._K_dvar = np.exp(-0.5*self._K_dist2)
+
+    #---------------------------------------#
+    #             PSI statistics            #
+    #---------------------------------------#
 
     def psi0(self,Z,mu,S,target):
         target += self.variance
@@ -109,7 +126,11 @@ class rbf(kernpart):
         denom_deriv = S[:,None,:]/(self.lengthscale**3+self.lengthscale*S[:,None,:])
         d_length = self._psi1[:,:,None]*(self.lengthscale*np.square(self._psi1_dist/(self.lengthscale2+S[:,None,:])) + denom_deriv)
         target[0] += np.sum(partial*self._psi1/self.variance)
-        target[1] += np.sum(d_length*partial[:,:,None])
+        dpsi1_dlength = d_length*partial[:,:,None]
+        if not self.ARD:
+            target[1] += dpsi1_dlength.sum()
+        else:
+            target[1:] += dpsi1_dlength.sum(0).sum(0)
 
     def dpsi1_dZ(self,partial,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
@@ -125,30 +146,52 @@ class rbf(kernpart):
 
     def psi2(self,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
-        target += self._psi2.sum(0) #TODO: psi2 should be NxMxM (for het. noise)
+        target += self._psi2
 
     def dpsi2_dtheta(self,partial,Z,mu,S,target):
         """Shape N,M,M,Ntheta"""
         self._psi_computations(Z,mu,S)
-        d_var = np.sum(2.*self._psi2/self.variance,0)
+        d_var = 2.*self._psi2/self.variance
         d_length = self._psi2[:,:,:,None]*(0.5*self._psi2_Zdist_sq*self._psi2_denom + 2.*self._psi2_mudist_sq + 2.*S[:,None,None,:]/self.lengthscale2)/(self.lengthscale*self._psi2_denom)
         d_length = d_length.sum(0)
         target[0] += np.sum(partial*d_var)
-        target[1] += np.sum(d_length*partial[:,:,None])
+        dpsi2_dlength = d_length*partial[:,:,:,None]
+        if not self.ARD:
+            target[1] += dpsi2_dlength.sum()
+        else:
+            target[1:] += dpsi2_dlength.sum(0).sum(0).sum(0)
 
     def dpsi2_dZ(self,partial,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
         term1 = 0.5*self._psi2_Zdist/self.lengthscale2 # M, M, Q
         term2 = self._psi2_mudist/self._psi2_denom/self.lengthscale2 # N, M, M, Q
-        dZ = self._psi2[:,:,:,None] * (term1[None] + term2) 
-        target += (partial[None,:,:,None]*dZ).sum(0).sum(0)
+        dZ = self._psi2[:,:,:,None] * (term1[None] + term2)
+        target += (partial[:,:,:,None]*dZ).sum(0).sum(0) # <----------------- TODO not sure about the first ':' here, should be a None (WAS a none in the debug branch)
+
 
     def dpsi2_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         """Think N,M,M,Q """
         self._psi_computations(Z,mu,S)
         tmp = self._psi2[:,:,:,None]/self.lengthscale2/self._psi2_denom
-        target_mu += (partial[None,:,:,None]*-tmp*2.*self._psi2_mudist).sum(1).sum(1)
-        target_S += (partial[None,:,:,None]*tmp*(2.*self._psi2_mudist_sq-1)).sum(1).sum(1)
+        target_mu += (partial[:,:,:,None]*-tmp*2.*self._psi2_mudist).sum(1).sum(1)
+        target_S += (partial[:,:,:,None]*tmp*(2.*self._psi2_mudist_sq-1)).sum(1).sum(1)
+
+
+    #---------------------------------------#
+    #            Precomputations            #
+    #---------------------------------------#
+
+    def _K_computations(self,X,X2):
+        if not (np.all(X==self._X) and np.all(X2==self._X2)):
+            self._X = X
+            self._X2 = X2
+            if X2 is None: X2 = X
+            self._K_dist = X[:,None,:]-X2[None,:,:] # this can be computationally heavy
+            self._params = np.empty(shape=(1,0))    #ensure the next section gets called
+        if not np.all(self._params == self._get_params()):
+            self._params == self._get_params()
+            self._K_dist2 = np.square(self._K_dist/self.lengthscale)
+            self._K_dvar = np.exp(-0.5*self._K_dist2.sum(-1))
 
     def _psi_computations(self,Z,mu,S):
         #here are the "statistics" for psi1 and psi2

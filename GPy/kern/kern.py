@@ -133,20 +133,20 @@ class kern(parameterised):
         newkern.tied_indices = self.tied_indices + [self.Nparam + x for x in other.tied_indices]
         return newkern
 
-    def get_param(self):
-        return np.hstack([p.get_param() for p in self.parts])
+    def _get_params(self):
+        return np.hstack([p._get_params() for p in self.parts])
 
-    def set_param(self,x):
-        [p.set_param(x[s]) for p, s in zip(self.parts, self.param_slices)]
+    def _set_params(self,x):
+        [p._set_params(x[s]) for p, s in zip(self.parts, self.param_slices)]
 
-    def get_param_names(self):
+    def _get_param_names(self):
         #this is a bit nasty: we wat to distinguish between parts with the same name by appending a count
         part_names = np.array([k.name for k in self.parts],dtype=np.str)
         counts = [np.sum(part_names==ni) for i, ni in enumerate(part_names)]
         cum_counts = [np.sum(part_names[i:]==ni) for i, ni in enumerate(part_names)]
         names = [name+'_'+str(cum_count) if count>1 else name for name,count,cum_count in zip(part_names,counts,cum_counts)]
 
-        return sum([[name+'_'+n for n in k.get_param_names()] for name,k in zip(names,self.parts)],[])
+        return sum([[name+'_'+n for n in k._get_param_names()] for name,k in zip(names,self.parts)],[])
 
     def K(self,X,X2=None,slices1=None,slices2=None):
         assert X.shape[1]==self.D
@@ -284,6 +284,8 @@ class kern(parameterised):
         # 1. get all the psi1 statistics
         psi1_matrices = [np.zeros((mu.shape[0], Z.shape[0])) for p in self.parts]
         [p.psi1(Z[s2],mu[s1],S[s1],psi1_target[s1,s2]) for p,s1,s2,psi1_target in zip(self.parts,slices1,slices2, psi1_matrices)]
+        partial1 = np.zeros_like(partial1)
+
         # 2. get all the dpsi1/dtheta gradients
         psi1_gradients = [np.zeros(self.Nparam) for p in self.parts]
         [p.dpsi1_dtheta(partial1[s2,s1],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],psi1g_target[ps]) for p,ps,s1,s2,i_s,psi1g_target in zip(self.parts, self.param_slices,slices1,slices2,self.input_slices,psi1_gradients)]
@@ -292,7 +294,7 @@ class kern(parameterised):
         for a,b in itertools.combinations(range(len(psi1_matrices)), 2):
             gne = (psi1_gradients[a][None]*psi1_matrices[b].sum(0)[:,None]).sum(0)
 
-            target += 0#(gne[None] + gne[:, None]).sum(0)
+            target += (gne[None] + gne[:, None]).sum(0)
         return target
 
     def dpsi2_dZ(self,partial,Z,mu,S,slices1=None,slices2=None):

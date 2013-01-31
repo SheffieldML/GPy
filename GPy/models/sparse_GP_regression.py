@@ -107,6 +107,20 @@ class sparse_GP_regression(GP_regression):
         self.dL_dKmm += -0.5 * self.D * (- self.C/sf2 - 2.*mdot(self.C, self.psi2_beta_scaled, self.Kmmi) + self.Kmmi) # dC
         self.dL_dKmm +=  np.dot(np.dot(self.E*sf2, self.psi2_beta_scaled) - np.dot(self.C, self.psi1VVpsi1), self.Kmmi) + 0.5*self.E # dD
 
+
+    def _set_params(self, p):
+        self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
+        self.beta = p[self.M*self.Q]
+        self.kern._set_params(p[self.Z.size + 1:])
+        self._computations()
+
+    def _get_params(self):
+        return np.hstack([self.Z.flatten(),self.beta,self.kern._get_params_transformed()])
+
+    def _get_param_names(self):
+        return sum([['iip_%i_%i'%(i,j) for i in range(self.Z.shape[0])] for j in range(self.Z.shape[1])],[]) + ['noise_precision']+self.kern._get_param_names_transformed()
+
+        
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
         sf2 = self.scale_factor**2
@@ -116,18 +130,9 @@ class sparse_GP_regression(GP_regression):
         D = +0.5*np.sum(self.psi1VVpsi1 * self.C)
         return A+B+C+D
 
-    def set_param(self, p):
-        self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
-        self.beta = p[self.M*self.Q]
-        self.kern.set_param(p[self.Z.size + 1:])
-        self._computations()
-
-    def get_param(self):
-        return np.hstack([self.Z.flatten(),self.beta,self.kern.extract_param()])
-
-    def get_param_names(self):
-        return sum([['iip_%i_%i'%(i,j) for i in range(self.Z.shape[0])] for j in range(self.Z.shape[1])],[]) + ['noise_precision']+self.kern.extract_param_names()
-
+    def _log_likelihood_gradients(self):
+        return np.hstack([self.dL_dZ().flatten(), self.dL_dbeta(), self.dL_dtheta()])
+    
     def dL_dbeta(self):
         """
         Compute the gradient of the log likelihood wrt beta.
@@ -172,9 +177,6 @@ class sparse_GP_regression(GP_regression):
             dL_dZ += self.kern.dK_dX(dL_dpsi1,self.Z,self.X)
         return dL_dZ
 
-    def log_likelihood_gradients(self):
-        return np.hstack([self.dL_dZ().flatten(), self.dL_dbeta(), self.dL_dtheta()])
-
     def _raw_predict(self, Xnew, slices, full_cov=False):
         """Internal helper function for making predictions, does not account for normalisation"""
 
@@ -201,94 +203,3 @@ class sparse_GP_regression(GP_regression):
                 pb.errorbar(self.X[:,0], pb.ylim()[0]+np.zeros(self.N), xerr=2*np.sqrt(self.X_uncertainty.flatten()))
         if self.Q==2:
             pb.plot(self.Z[:,0],self.Z[:,1],'wo')
-
-class sgp_debugB(sparse_GP_regression):
-    def _computations(self):
-        sparse_GP_regression._computations(self)
-
-        # Compute dL_dpsi
-        self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
-        self.dL_dpsi1 = np.zeros_like(self.psi1)
-        self.dL_dpsi2 = - 0.5 * self.beta * (self.D*( - self.Kmmi))
-
-        # Compute dL_dKmm
-        self.dL_dKmm = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi) # dB
-
-    def log_likelihood(self):
-        A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.beta))
-        B = -0.5*self.beta*self.D*self.trace_K
-        C = -0.5*self.D * self.B_logdet
-        D = -0.5*self.beta*self.trYYT
-        E = +0.5*np.sum(self.psi1VVpsi1 * self.LBL_inv)
-        return B
-
-    def dL_dbeta(self):
-        dA_dbeta =   0.5 * self.N*self.D/self.beta
-        dB_dbeta = - 0.5 * self.D * self.trace_K
-        dC_dbeta = - 0.5 * self.D * np.sum(self.Bi*self.A)/self.beta
-        dD_dbeta = - 0.5 * self.trYYT
-        tmp = mdot(self.LBi.T, self.LLambdai, self.psi1V)
-        dE_dbeta = (np.sum(np.square(self.C)) - 0.5 * np.sum(self.A * np.dot(tmp, tmp.T)))/self.beta
-        return np.squeeze(dB_dbeta)
-
-
-class sgp_debugC(sparse_GP_regression):
-    def _computations(self):
-        sparse_GP_regression._computations(self)
-
-        # Compute dL_dpsi
-        self.dL_dpsi0 = np.zeros(self.N)
-        self.dL_dpsi1 = np.zeros_like(self.psi1)
-        self.dL_dpsi2 = - 0.5 * self.beta * (self.D*(self.LBL_inv))
-
-        # Compute dL_dKmm
-        self.dL_dKmm = -0.5 * self.D * (- self.LBL_inv - 2.*self.beta*mdot(self.LBL_inv, self.psi2, self.Kmmi) + self.Kmmi) # dC
-
-    def log_likelihood(self):
-        A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.beta))
-        B = -0.5*self.beta*self.D*self.trace_K
-        C = -0.5*self.D * self.B_logdet
-        D = -0.5*self.beta*self.trYYT
-        E = +0.5*np.sum(self.psi1VVpsi1 * self.LBL_inv)
-        return C
-
-    def dL_dbeta(self):
-        dA_dbeta =   0.5 * self.N*self.D/self.beta
-        dB_dbeta = - 0.5 * self.D * self.trace_K
-        dC_dbeta = - 0.5 * self.D * np.sum(self.Bi*self.A)/self.beta
-        dD_dbeta = - 0.5 * self.trYYT
-        tmp = mdot(self.LBi.T, self.LLambdai, self.psi1V)
-        dE_dbeta = (np.sum(np.square(self.C)) - 0.5 * np.sum(self.A * np.dot(tmp, tmp.T)))/self.beta
-        return np.squeeze(dC_dbeta)
-
-
-class sgp_debugE(sparse_GP_regression):
-    def _computations(self):
-        sparse_GP_regression._computations(self)
-
-        # Compute dL_dpsi
-        self.dL_dpsi0 = np.zeros(self.N)
-        self.dL_dpsi1 = np.zeros_like(self.psi1)
-        self.dL_dpsi2 = - 0.5 * self.beta * (self.G)
-
-        # Compute dL_dKmm
-        tmp = mdot(self.beta*self.psi2, self.Kmmi, self.psi1VVpsi1)
-        self.dL_dKmm = -0.5*mdot(self.Kmmi,tmp + tmp.T + self.psi1VVpsi1,self.Kmmi)
-        #self.dL_dKmm =  np.dot(np.dot(self.G,self.beta*self.psi2) - np.dot(self.LBL_inv, self.psi1VVpsi1), self.Kmmi) + 0.5*self.G # dE
-
-    def log_likelihood(self):
-        A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.beta))
-        B = -0.5*self.beta*self.D*self.trace_K
-        C = -0.5*self.D * self.B_logdet
-        D = -0.5*self.beta*self.trYYT
-        E = +0.5*np.sum(self.psi1VVpsi1 * self.LBL_inv)
-        return E
-
-    def dL_dbeta(self):
-        dA_dbeta =   0.5 * self.N*self.D/self.beta
-        dB_dbeta = - 0.5 * self.D * self.trace_K
-        dC_dbeta = - 0.5 * self.D * np.sum(self.Bi*self.A)/self.beta
-        dD_dbeta = - 0.5 * self.trYYT
-        tmp = mdot(self.LBi.T, self.LLambdai, self.psi1V)
-        dE_dbeta = (np.sum(np.square(self.C)) - 0.5 * np.sum(self.A * np.dot(tmp, tmp.T)))/self.beta
-        return np.squeeze(dE_dbeta)

@@ -6,10 +6,8 @@ import numpy as np
 from kern import kern
 
 from rbf import rbf as rbfpart
-from rbf_ARD import rbf_ARD as rbf_ARD_part
 from white import white as whitepart
 from linear import linear as linearpart
-from linear_ARD import linear_ARD as linear_ARD_part
 from exponential import exponential as exponentialpart
 from Matern32 import Matern32 as Matern32part
 from Matern52 import Matern52 as Matern52part
@@ -17,12 +15,15 @@ from bias import bias as biaspart
 from finite_dimensional import finite_dimensional as finite_dimensionalpart
 from spline import spline as splinepart
 from Brownian import Brownian as Brownianpart
+from periodic_exponential import periodic_exponential as periodic_exponentialpart
+from periodic_Matern32 import periodic_Matern32 as periodic_Matern32part
+from periodic_Matern52 import periodic_Matern52 as periodic_Matern52part
 
 #TODO these s=constructors are not as clean as we'd like. Tidy the code up
 #using meta-classes to make the objects construct properly wthout them.
 
 
-def rbf(D,variance=1., lengthscale=1.):
+def rbf(D,variance=1., lengthscale=None,ARD=False):
     """
     Construct an RBF kernel
 
@@ -32,46 +33,23 @@ def rbf(D,variance=1., lengthscale=1.):
     :type variance: float
     :param lengthscale: the lengthscale of the kernel
     :type lengthscale: float
+    :param ARD: Auto Relevance Determination (one lengthscale per dimension)
+    :type ARD: Boolean
     """
-    part = rbfpart(D,variance,lengthscale)
+    part = rbfpart(D,variance,lengthscale,ARD)
     return kern(D, [part])
 
-def rbf_ARD(D,variance=1., lengthscales=None):
-    """
-    Construct an RBF kernel with Automatic Relevance Determination (ARD)
-
-    :param D: dimensionality of the kernel, obligatory
-    :type D: int
-    :param variance: the variance of the kernel
-    :type variance: float
-    :param lengthscales: the lengthscales of the kernel
-    :type lengthscales: None|np.ndarray
-    """
-    part = rbf_ARD_part(D,variance,lengthscales)
-    return kern(D, [part])
-
-def linear(D,lengthscales=None):
+def linear(D,variances=None,ARD=True):
     """
      Construct a linear kernel.
 
      Arguments
      ---------
      D (int), obligatory
-     lengthscales (np.ndarray)
+     variances (np.ndarray)
+     ARD (boolean)
     """
-    part = linearpart(D,lengthscales)
-    return kern(D, [part])
-
-def linear_ARD(D,lengthscales=None):
-    """
-     Construct a linear ARD kernel.
-
-     Arguments
-     ---------
-     D (int), obligatory
-     lengthscales (np.ndarray)
-    """
-    part = linear_ARD_part(D,lengthscales)
+    part = linearpart(D,variances,ARD)
     return kern(D, [part])
 
 def white(D,variance=1.):
@@ -86,43 +64,52 @@ def white(D,variance=1.):
     part = whitepart(D,variance)
     return kern(D, [part])
 
-def exponential(D,variance=1., lengthscales=None):
+def exponential(D,variance=1., lengthscale=None, ARD=False):
     """
-     Construct a exponential kernel.
+    Construct an exponential kernel
 
-     Arguments
-     ---------
-     D (int), obligatory
-     variance (float)
-     lengthscales (np.ndarray)
+    :param D: dimensionality of the kernel, obligatory
+    :type D: int
+    :param variance: the variance of the kernel
+    :type variance: float
+    :param lengthscale: the lengthscale of the kernel
+    :type lengthscale: float
+    :param ARD: Auto Relevance Determination (one lengthscale per dimension)
+    :type ARD: Boolean
     """
-    part = exponentialpart(D,variance, lengthscales)
+    part = exponentialpart(D,variance, lengthscale, ARD)
     return kern(D, [part])
 
-def Matern32(D,variance=1., lengthscales=None):
+def Matern32(D,variance=1., lengthscale=None, ARD=False):
     """
      Construct a Matern 3/2 kernel.
 
-     Arguments
-     ---------
-     D (int), obligatory
-     variance (float)
-     lengthscales (np.ndarray)
+    :param D: dimensionality of the kernel, obligatory
+    :type D: int
+    :param variance: the variance of the kernel
+    :type variance: float
+    :param lengthscale: the lengthscale of the kernel
+    :type lengthscale: float
+    :param ARD: Auto Relevance Determination (one lengthscale per dimension)
+    :type ARD: Boolean
     """
-    part = Matern32part(D,variance, lengthscales)
+    part = Matern32part(D,variance, lengthscale, ARD)
     return kern(D, [part])
 
-def Matern52(D,variance=1., lengthscales=None):
+def Matern52(D,variance=1., lengthscale=None, ARD=False):
     """
      Construct a Matern 5/2 kernel.
 
-     Arguments
-     ---------
-     D (int), obligatory
-     variance (float)
-     lengthscales (np.ndarray)
+    :param D: dimensionality of the kernel, obligatory
+    :type D: int
+    :param variance: the variance of the kernel
+    :type variance: float
+    :param lengthscale: the lengthscale of the kernel
+    :type lengthscale: float
+    :param ARD: Auto Relevance Determination (one lengthscale per dimension)
+    :type ARD: Boolean
     """
-    part = Matern52part(D,variance, lengthscales)
+    part = Matern52part(D,variance, lengthscale, ARD)
     return kern(D, [part])
 
 def bias(D,variance=1.):
@@ -200,3 +187,57 @@ def sympykern(D,k):
     A kernel from a symbolic sympy representation
     """
     return kern(D,[spkern(D,k)])
+
+def periodic_exponential(D=1,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,lower=0.,upper=4*np.pi):
+    """
+    Construct an periodic exponential kernel
+
+    :param D: dimensionality, only defined for D=1
+    :type D: int
+    :param variance: the variance of the kernel
+    :type variance: float
+    :param lengthscale: the lengthscale of the kernel
+    :type lengthscale: float
+    :param period: the period
+    :type period: float
+    :param n_freq: the number of frequencies considered for the periodic subspace
+    :type n_freq: int
+    """
+    part = periodic_exponentialpart(D,variance, lengthscale, period, n_freq, lower, upper)
+    return kern(D, [part])
+
+def periodic_Matern32(D,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,lower=0.,upper=4*np.pi):
+    """
+     Construct a periodic Matern 3/2 kernel.
+
+     :param D: dimensionality, only defined for D=1
+     :type D: int
+     :param variance: the variance of the kernel
+     :type variance: float
+     :param lengthscale: the lengthscale of the kernel
+     :type lengthscale: float
+     :param period: the period
+     :type period: float
+     :param n_freq: the number of frequencies considered for the periodic subspace
+     :type n_freq: int
+    """
+    part = periodic_Matern32part(D,variance, lengthscale, period, n_freq, lower, upper)
+    return kern(D, [part])
+
+def periodic_Matern52(D,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,lower=0.,upper=4*np.pi):
+    """
+     Construct a periodic Matern 5/2 kernel.
+
+     :param D: dimensionality, only defined for D=1
+     :type D: int
+     :param variance: the variance of the kernel
+     :type variance: float
+     :param lengthscale: the lengthscale of the kernel
+     :type lengthscale: float
+     :param period: the period
+     :type period: float
+     :param n_freq: the number of frequencies considered for the periodic subspace
+     :type n_freq: int
+    """
+    part = periodic_Matern52part(D,variance, lengthscale, period, n_freq, lower, upper)
+    return kern(D, [part])

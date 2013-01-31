@@ -44,7 +44,7 @@ class spkern(kernpart):
         if param is None:
             param = np.ones(self.Nparam)
         assert param.size==self.Nparam
-        self.set_param(param)
+        self._set_params(param)
 
         #Differentiate!
         self._sp_dk_dtheta = [sp.diff(k,theta).simplify() for theta in self._sp_theta]
@@ -247,12 +247,12 @@ class spkern(kernpart):
         Z = X
         weave.inline(self._dKdiag_dX_code,arg_names=['target','X','Z','param','partial'],**self.weave_kwargs)
 
-    def set_param(self,param):
+    def _set_params(self,param):
         #print param.flags['C_CONTIGUOUS']
         self._param = param.copy()
 
-    def get_param(self):
+    def _get_params(self):
         return self._param
 
-    def get_param_names(self):
+    def _get_param_names(self):
         return [x.name for x in self._sp_theta]

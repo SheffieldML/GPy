@@ -15,44 +15,42 @@ import sys, os, exceptions
 
 #Mocking uninstalled modules: https://read-the-docs.readthedocs.org/en/latest/faq.html
 
-# To avoid problem with ReadTheDocs and compiled extensions.
-class Mock(object):
-    """Special Healpix values for masked pixels.
-    """
-    #pi = 3.141516
-    #class Axes(object):
-        #pass
-    #class Locator(object):
-        #pass
-    #class Normalize(object):
-        #pass
-    #class LinearSegmentedColormap(object):
-        #pass
-    def __init__(self, *args):
-        """Mock init
-        """
-        pass
+# If extensions (or modules to document with autodoc) are in another directory,
+# add these directories to sys.path here. If the directory is relative to the
+# documentation root, use os.path.abspath to make it absolute, like shown here.
+sys.path.insert(0, os.path.abspath(
+    os.path.join(os.pardir,os.pardir)))
 
-    def __getattr__(self, name):
-        return Mock
-
-    def __div__(self, x):
-        return Mock()
-
-    def __getitem__(self, idx):
-        return str(Mock())
-
+# -- Mocking modules for Read the Docs compatibility ---------------------------
 try:
-    import GPy
-except exceptions.ImportError:
-    MOCK_MODULES = ['matplotlib', 'pylab', 'matplotlib.colors',
-                    'matplotlib.cbook', 'pyfits', 'numpy', 'matplotlib', 
-                    'matplotlib.cm', 'matplotlib.patches', 'matplotlib.projections', 
-                    'matplotlib.projections.polar', 'matplotlib.pyplot', 
-                    'matplotlib.text', 'matplotlib.ticker']
+    import scipy
+    import numpy
+    import pylab
+except ImportError:
+    from mock import MagicMock
 
+    MOCK_MODULES = ['numpy', 'quantities', 'scipy', 'scipy.spatial',
+                    'scipy.spatial.distance']
     for mod_name in MOCK_MODULES:
-        sys.modules[mod_name] = Mock()
+        sys.modules[mod_name] = MagicMock()
+
+    # Needed for spykeutils.plot.Dialog.PlotDialog
+    #class QDialog:
+        #pass
+    #class PlotManager:
+        #pass
+    #sys.modules['PyQt4.QtGui'].QDialog = QDialog
+    #sys.modules['guiqwt.plot'].PlotManager = PlotManager
+
+    ## Needed for spykeutils.plot.guiqwt_tools
+    #class CommandTool:
+        #pass
+    #class InteractiveTool:
+        #pass
+    #sys.modules['guiqwt.tools'].CommandTool = CommandTool
+    #sys.modules['guiqwt.tools'].InteractiveTool = InteractiveTool
+
+import Gpy
     
 
 # If your extensions are in another directory, add it here. If the directory

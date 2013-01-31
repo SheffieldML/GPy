@@ -21,7 +21,7 @@ class linear(kernpart):
     :rtype: kernel object
     """
 
-    def __init__(self,D,variances=None,ARD=True):
+    def __init__(self,D,variances=None,ARD=False):
         self.D = D
         self.ARD = ARD
         if ARD == False:

@@ -75,6 +75,7 @@ class rbf(kernpart):
     def K(self,X,X2,target):
         if X2 is None:
             X2 = X
+
         self._K_computations(X,X2)
         np.add(self.variance*self._K_dvar, target,target)
 

@@ -90,48 +90,23 @@ import sys, os
                             #dtype=lambda _: Mock(_mock_repr='np.dtype(\'float32\')'))
 #sys.modules['scipy.constants'] = Mock(pi=math.pi, G=6.67364e-11)
 
-##############################################################################
-##
-## Mock out imports with C dependencies because ReadTheDocs can't build them.
-#class Mock(object):
-    #def __init__(self, *args, **kwargs):
-        #pass
-
-    #def __call__(self, *args, **kwargs):
-        #return Mock()
-
-    #@classmethod
-    #def __getattr__(cls, name):
-        #if name in ('__file__', '__path__'):
-            #return '/dev/null'
-        #elif name[0] == name[0].upper():
-            #mockType = type(name, (), {})
-            #mockType.__module__ = __name__
-            #return mockType
-        #else:
-            #return Mock()
-
-sys.path.append("../GPy")
-import mock
-
-MOCK_MODULES = ['pylab', 'matplotlib']#'matplotlib', 'matplotlib.color', 'matplotlib.pyplot', 'pylab' ]
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('..'))
+#sys.path.insert(0, os.path.abspath('..'))
 
+print "Adding path"
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
 # absolute, like shown here.
-#sys.path.append(os.path.abspath('.'))
+#sys.path.append(os.path.abspath('./sphinxext'))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
+#sys.path.insert(0, os.path.abspath('./sphinxext'))
 
 # -- General configuration -----------------------------------------------------
 
@@ -140,7 +115,49 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
+print "Importing extensions"
+              
+extensions = [#'ipython_directive',
+              'sphinx.ext.autodoc', 'sphinx.ext.viewcode'
+              #'matplotlib.sphinxext.mathmpl',
+              #'matplotlib.sphinxext.only_directives',
+              #'matplotlib.sphinxext.plot_directive',
+              #'ipython_directive'
+            ]
+              #'sphinx.ext.doctest',
+              #'ipython_console_highlighting',
+              #'inheritance_diagram',
+              #'numpydoc'] 
+print "finished importing"
+
+##############################################################################
+##
+## Mock out imports with C dependencies because ReadTheDocs can't build them.
+class Mock(object):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        return Mock()
+
+    @classmethod
+    def __getattr__(cls, name):
+        if name in ('__file__', '__path__'):
+            return '/dev/null'
+        elif name[0] == name[0].upper():
+            mockType = type(name, (), {})
+            mockType.__module__ = __name__
+            return mockType
+        else:
+            return Mock()
+
+#sys.path.append("../GPy")
+#import mock
+
+print "Mocking"
+MOCK_MODULES = ['pylab', 'matplotlib', 'sympy', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser']#'matplotlib', 'matplotlib.color', 'matplotlib.pyplot', 'pylab' ]
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = Mock()
 
 # ----------------------- READTHEDOCS ------------------
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
@@ -151,6 +168,8 @@ if on_rtd:
   os.system("sphinx-apidoc -f -o . ../GPy")
   #os.system("cd ..")
   #os.system("cd ./docs")
+
+print "Compiled files"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

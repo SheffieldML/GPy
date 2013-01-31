@@ -114,7 +114,7 @@ class Mock(object):
 #sys.path.append("../GPy")
 #import mock
 
-MOCK_MODULES = ['pylab', 'matplotlib', 'sympy', 'sympy.utilities']#'matplotlib', 'matplotlib.color', 'matplotlib.pyplot', 'pylab' ]
+MOCK_MODULES = ['pylab', 'matplotlib', 'sympy', 'sympy.utilities', 'sympy.utilities.codegen']#'matplotlib', 'matplotlib.color', 'matplotlib.pyplot', 'pylab' ]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
 

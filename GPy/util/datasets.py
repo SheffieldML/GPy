@@ -116,7 +116,7 @@ def toy_linear_1d_classification(seed=default_seed):
     return {'X': X, 'Y':  sample_class(2.*X), 'F': 2.*X}
 
 def rogers_girolami_olympics():
-    olympic_data = scipy.io.loadmat('/home/neil/public_html/olympics.mat')['male100']
+    olympic_data = scipy.io.loadmat(os.path.join(data_path, 'olympics.mat'))['male100']
     X = olympic_data[:, 0][:, None]
     Y= olympic_data[:, 1][:, None]
     return {'X': X, 'Y': Y, 'info': "Olympic sprint times for 100 m men from 1896 until 2008. Example is from Rogers and Girolami's First Course in Machine Learning."}

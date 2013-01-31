@@ -101,6 +101,9 @@ pygments_style = 'sphinx'
 # a list of builtin themes.
 html_theme = 'default'
 
+# This is to revert to the default theme on readthedocs
+html_style = '/default.css'
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -291,4 +294,3 @@ epub_copyright = u'2013, Author'
 
 # Allow duplicate toc entries.
 #epub_tocdup = True
-

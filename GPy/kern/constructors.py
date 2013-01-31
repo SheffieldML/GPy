@@ -18,7 +18,7 @@ from Brownian import Brownian as Brownianpart
 from periodic_exponential import periodic_exponential as periodic_exponentialpart
 from periodic_Matern32 import periodic_Matern32 as periodic_Matern32part
 from periodic_Matern52 import periodic_Matern52 as periodic_Matern52part
-
+from product_orthogonal import product_orthogonal as product_orthogonalpart
 #TODO these s=constructors are not as clean as we'd like. Tidy the code up
 #using meta-classes to make the objects construct properly wthout them.
 
@@ -241,3 +241,14 @@ def periodic_Matern52(D,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,
     """
     part = periodic_Matern52part(D,variance, lengthscale, period, n_freq, lower, upper)
     return kern(D, [part])
+
+def product_orthogonal(k1,k2):
+    """
+     Construct a product kernel
+     
+    :param k1, k2: the kernels to multiply
+    :type k1, k2: kernpart
+    :rtype: kernel object
+    """
+    part = product_orthogonalpart(k1,k2)
+    return kern(k1.D+k2.D, [part])

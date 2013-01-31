@@ -18,39 +18,7 @@ import sys, os, exceptions
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath(
-    os.path.join(os.pardir,os.pardir)))
-
-# -- Mocking modules for Read the Docs compatibility ---------------------------
-try:
-    import scipy
-    import numpy
-    import pylab
-except ImportError:
-    from unittest.mock import MagicMock
-
-    MOCK_MODULES = ['numpy', 'pylab', 'scipy']
-    for mod_name in MOCK_MODULES:
-        sys.modules[mod_name] = MagicMock()
-
-    # Needed for spykeutils.plot.Dialog.PlotDialog
-    #class QDialog:
-        #pass
-    #class PlotManager:
-        #pass
-    #sys.modules['PyQt4.QtGui'].QDialog = QDialog
-    #sys.modules['guiqwt.plot'].PlotManager = PlotManager
-
-    ## Needed for spykeutils.plot.guiqwt_tools
-    #class CommandTool:
-        #pass
-    #class InteractiveTool:
-        #pass
-    #sys.modules['guiqwt.tools'].CommandTool = CommandTool
-    #sys.modules['guiqwt.tools'].InteractiveTool = InteractiveTool
-
-import GPy
-    
+sys.path.insert(0, os.path.abspath('../'))
 
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
@@ -340,3 +308,43 @@ epub_copyright = u'2013, Author'
 
 # Allow duplicate toc entries.
 #epub_tocdup = True
+
+#############################################################################
+#
+# Include constructors in all the docs
+# Got this method from:
+# http://stackoverflow.com/questions/5599254/how-to-use-sphinxs-autodoc-to-document-a-classs-init-self-method
+def skip(app, what, name, obj, skip, options):
+    if name == "__init__":
+        return False
+    return skip
+
+def setup(app):
+    app.connect("autodoc-skip-member", skip)
+
+#############################################################################
+#
+# Mock out imports with C dependencies because ReadTheDocs can't build them.
+class Mock(object):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        return Mock()
+
+    @classmethod
+    def __getattr__(cls, name):
+        if name in ('__file__', '__path__'):
+            return '/dev/null'
+        elif name[0] == name[0].upper():
+            mockType = type(name, (), {})
+            mockType.__module__ = __name__
+            return mockType
+        else:
+            return Mock()
+
+MOCK_MODULES = ['matplotlib', 'matplotlib.pyplot', 
+                'numpy', 'numpy.linalg', 'pylab'
+                ]
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = Mock()

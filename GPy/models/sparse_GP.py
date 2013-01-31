@@ -7,8 +7,6 @@ from ..util.linalg import mdot, jitchol, chol_inv, pdinv
 from ..util.plot import gpplot
 from .. import kern
 from GP import GP
-from ..inference.EP import Full,DTC,FITC
-from ..inference.likelihoods import likelihood,probit,poisson,gaussian
 
 
 #Still TODO:

@@ -8,8 +8,6 @@ from .. import kern
 from ..core import model
 from ..util.linalg import pdinv,mdot
 from ..util.plot import gpplot, Tango
-from ..inference.EP import Full # TODO: tidy
-from ..inference import likelihoods
 
 class GP(model):
     """
@@ -55,8 +53,6 @@ class GP(model):
             self._Xstd = np.ones((1,self.X.shape[1]))
 
         self.likelihood = likelihood
-        self.Y = self.likelihood.Y
-        self.YYT = self.likelihood.YYT # TODO: this is ugly. what about sufficient_stats?
         assert self.X.shape[0] == self.likelihood.Y.shape[0]
         self.N, self.D = self.likelihood.Y.shape
 
@@ -67,18 +63,16 @@ class GP(model):
         self.likelihood._set_params(p[self.kern.Nparam:])
 
         self.K = self.kern.K(self.X,slices1=self.Xslices)
-        self.K += np.diag(self.likelihood_variance)
+        self.K += self.likelihood.variance
 
         self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
 
         #the gradient of the likelihood wrt the covariance matrix
-        if self.YYT is None:
-            self._alpha = np.dot(self.Ki,self.Y)
-            self._alpha2 = np.square(self._alpha)
-            self.dL_dK = 0.5*(np.dot(self._alpha,self._alpha.T)-self.D*self.Ki)
+        if self.likelihood.YYT is None:
+            alpha = np.dot(self.Ki,self.likelihood.Y)
+            self.dL_dK = 0.5*(np.dot(alpha,alpha.T)-self.D*self.Ki)
         else:
-            tmp = mdot(self.Ki, self.YYT, self.Ki)
-            self._alpha2 = np.diag(tmp)
+            tmp = mdot(self.Ki, self.likelihood.YYT, self.Ki)
             self.dL_dK = 0.5*(tmp - self.D*self.Ki)
 
     def _get_params(self):
@@ -95,16 +89,15 @@ class GP(model):
         this function does nothing
         """
         self.likelihood.fit(self.K)
-        self.Y, self.YYT, self.likelihood_variance, self.likelihood_Z = self.likelihood.sufficient_stats() # TODO: just store these in the likelihood?
 
     def _model_fit_term(self):
         """
         Computes the model fit using YYT if it's available
         """
-        if self.YYT is None:
-            return -0.5*np.sum(np.square(np.dot(self.Li,self.Y)))
+        if self.likelihood.YYT is None:
+            return -0.5*np.sum(np.square(np.dot(self.Li,self.likelihood.Y)))
         else:
-            return -0.5*np.sum(np.multiply(self.Ki, self.YYT))
+            return -0.5*np.sum(np.multiply(self.Ki, self.likelihood.YYT))
 
     def log_likelihood(self):
         """
@@ -114,7 +107,7 @@ class GP(model):
         model for a new variable Y* = v_tilde/tau_tilde, with a covariance
         matrix K* = K + diag(1./tau_tilde) plus a normalization term.
         """
-        return -0.5*self.D*self.K_logdet + self.model_fit_term() + self.likelihood.Z
+        return -0.5*self.D*self.K_logdet + self._model_fit_term() + self.likelihood.Z
 
 
     def _log_likelihood_gradients(self):
@@ -125,7 +118,7 @@ class GP(model):
 
         For the likelihood parameters, pass in alpha = K^-1 y
         """
-        return np.hstack((self.kern.dK_dtheta(partial=self.dL_dK(),X=self.X), self.likelihood._gradients(self.alpha2)))
+        return np.hstack((self.kern.dK_dtheta(partial=self.dL_dK,X=self.X), self.likelihood._gradients(partial=self.dL_dK)))
 
     def _raw_predict(self,_Xnew,slices, full_cov=False):
         """
@@ -133,7 +126,7 @@ class GP(model):
         for normalisation or likelihood
         """
         Kx = self.kern.K(self.X,_Xnew, slices1=self.Xslices,slices2=slices)
-        mu = np.dot(np.dot(Kx.T,self.Ki),self.Y)
+        mu = np.dot(np.dot(Kx.T,self.Ki),self.likelihood.Y)
         KiKx = np.dot(self.Ki,Kx)
         if full_cov:
             Kxx = self.kern.K(_Xnew, slices1=slices,slices2=slices)
@@ -177,8 +170,10 @@ class GP(model):
 
         return mean, _5pc, _95pc
 
-    def plot(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None,full_cov=False):
+    def raw_plot(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None):
         """
+        Plot the GP's view of the world, where the data is normalised and the likelihood is Gaussian
+
         :param samples: the number of a posteriori samples to plot
         :param which_data: which if the training data to plot (default all)
         :type which_data: 'all' or a slice object to slice self.X, self.Y
@@ -194,19 +189,17 @@ class GP(model):
 
         Can plot only part of the data and part of the posterior functions using which_data and which_functions
         """
+
         if which_functions=='all':
             which_functions = [True]*self.kern.Nparts
         if which_data=='all':
             which_data = slice(None)
 
         X = self.X[which_data,:]
-        Y = self.Y[which_data,:]
-
-        Xorig = X*self._Xstd + self._Xmean
-        Yorig = Y*self._Ystd + self._Ymean #NOTE For EP this is v_tilde/beta
+        Y = self.likelihood.Y[which_data,:]
 
         if plot_limits is None:
-            xmin,xmax = Xorig.min(0),Xorig.max(0)
+            xmin,xmax = X.min(0),X.max(0)
             xmin, xmax = xmin-0.2*(xmax-xmin), xmax+0.2*(xmax-xmin)
         elif len(plot_limits)==2:
             xmin, xmax = plot_limits
@@ -215,27 +208,17 @@ class GP(model):
 
         if self.X.shape[1]==1:
             Xnew = np.linspace(xmin,xmax,resolution or 200)[:,None]
-            m,v,phi = self.predict(Xnew,slices=which_functions,full_cov=full_cov)
-            if self.EP:
-                pb.subplot(211)
-            gpplot(Xnew,m,v)
+            m,v = self._raw_predict(Xnew,slices=which_functions,full_cov=False)
+            lower, upper = m.flatten() - 2.*np.sqrt(v) , m.flatten()+ 2.*np.sqrt(v)
+            gpplot(Xnew,m,lower,upper)
 
-            if samples: #NOTE why don't we put samples as a parameter of gpplot
-                s = np.random.multivariate_normal(m.flatten(),np.diag(v.flatten()),samples)
-                pb.plot(Xnew.flatten(),s.T, alpha = 0.4, c='#3465a4', linewidth = 0.8)
-            pb.plot(Xorig,Yorig,'kx',mew=1.5)
+            pb.plot(X,Y,'kx',mew=1.5)
             pb.xlim(xmin,xmax)
-
-            if self.EP:
-                pb.subplot(212)
-                self.likelihood.plot(Xnew,m,v,phi,self.X,samples=samples)
-                pb.xlim(xmin,xmax)
-
         elif self.X.shape[1]==2:
-            resolution = 50 or resolution
+            resolution = resolution or 50
             xx,yy = np.mgrid[xmin[0]:xmax[0]:1j*resolution,xmin[1]:xmax[1]:1j*resolution]
             Xtest = np.vstack((xx.flatten(),yy.flatten())).T
-            zz,vv,phi = self.predict(Xtest,slices=which_functions,full_cov=full_cov)
+            zz,vv = self._raw_predict(Xtest,slices=which_functions,full_cov=False)
             zz = zz.reshape(resolution,resolution)
             pb.contour(xx,yy,zz,vmin=zz.min(),vmax=zz.max(),cmap=pb.cm.jet)
             pb.scatter(Xorig[:,0],Xorig[:,1],40,Yorig,linewidth=0,cmap=pb.cm.jet,vmin=zz.min(),vmax=zz.max())
@@ -244,3 +227,10 @@ class GP(model):
 
         else:
             raise NotImplementedError, "Cannot plot GPs with more than two input dimensions"
+
+        def plot(self):
+            """
+            Plot the data's view of the world, with non-normalised values and GP predictions passed through the likelihood
+            """
+            pass# TODO!!!!!
+

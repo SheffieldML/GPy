@@ -1,12 +1,9 @@
 import numpy as np
 import random
-import pylab as pb #TODO erase me
 from scipy import stats, linalg
-from .likelihoods import likelihood
 from ..core import model
 from ..util.linalg import pdinv,mdot,jitchol
 from ..util.plot import gpplot
-from .. import kern
 
 class EP:
     def __init__(self,data,likelihood_function,epsilon=1e-3,power_ep=[1.,1.]):
@@ -15,12 +12,8 @@ class EP:
 
         Arguments
         ---------
-        X : input observations
-        likelihood : Output's likelihood (likelihood class)
-        kernel :  a GPy kernel (kern class)
-        inducing : Either an array specifying the inducing points location or a sacalar defining their number. None value for using a non-sparse model is used.
-        power_ep : Power-EP parameters (eta,delta) - 2x1 numpy array (floats)
         epsilon : Convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
+        likelihood_function : a likelihood function (see likelihood_functions.py)
         """
         self.likelihood_function = likelihood_function
         self.epsilon = epsilon
@@ -48,7 +41,6 @@ class EP:
         For nomenclature see Rasmussen & Williams 2006.
         """
         #Prior distribution parameters: p(f|X) = N(f|0,K)
-        #self.K = self.kernel.K(self.X,self.X)
 
         #Initial values - Posterior distribution parameters: q(f|X,Y) = N(f|mu,Sigma)
         self.mu = np.zeros(self.N)

@@ -6,7 +6,7 @@ import Tango
 import pylab as pb
 import numpy as np
 
-def gpplot(x,mu,var,edgecol=Tango.coloursHex['darkBlue'],fillcol=Tango.coloursHex['lightBlue'],axes=None,**kwargs):
+def gpplot(x,mu,lower,upper,edgecol=Tango.coloursHex['darkBlue'],fillcol=Tango.coloursHex['lightBlue'],axes=None,**kwargs):
     if axes is None:
         axes = pb.gca()
     mu = mu.flatten()
@@ -15,21 +15,15 @@ def gpplot(x,mu,var,edgecol=Tango.coloursHex['darkBlue'],fillcol=Tango.coloursHe
     #here's the mean
     axes.plot(x,mu,color=edgecol,linewidth=2)
 
-    #ensure variance is a vector
-    if len(var.shape)>1:
-        err = 2*np.sqrt(np.diag(var))
-    else:
-        err = 2*np.sqrt(var)
-
-    #here's the 2*std box
+    #here's the box
     kwargs['linewidth']=0.5
     if not 'alpha' in kwargs.keys():
         kwargs['alpha'] = 0.3
-    axes.fill(np.hstack((x,x[::-1])),np.hstack((mu+err,mu[::-1]-err[::-1])),color=fillcol,**kwargs)
+    axes.fill(np.hstack((x,x[::-1])),np.hstack((upper,lower[::-1])),color=fillcol,**kwargs)
 
     #this is the edge:
-    axes.plot(x,mu+err,color=edgecol,linewidth=0.2)
-    axes.plot(x,mu-err,color=edgecol,linewidth=0.2)
+    axes.plot(x,upper,color=edgecol,linewidth=0.2)
+    axes.plot(x,lower,color=edgecol,linewidth=0.2)
 
 def removeRightTicks(ax=None):
     ax = ax or pb.gca()

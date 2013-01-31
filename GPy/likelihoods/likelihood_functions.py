@@ -192,10 +192,10 @@ class poisson(likelihood):
             pb.plot(Z,Z*0+pb.ylim()[0],'k|',mew=1.5,markersize=12)
 
 class gaussian(likelihood):
-        """
-        Gaussian likelihood
-        Y is expected to take values in (-inf,inf)
-        """
+    """
+    Gaussian likelihood
+    Y is expected to take values in (-inf,inf)
+    """
     def moments_match(self,i,tau_i,v_i):
         """
         Moments match of the marginal approximation in EP algorithm
@@ -221,6 +221,3 @@ class gaussian(likelihood):
 
     def _log_likelihood_gradients():
         raise NotImplementedError
-            else:
-                var = var[:,None] * np.square(self._Ystd)
-

@@ -19,15 +19,15 @@ import sys, os, exceptions
 class Mock(object):
     """Special Healpix values for masked pixels.
     """
-    pi = 3.141516
-    class Axes(object):
-        pass
-    class Locator(object):
-        pass
-    class Normalize(object):
-        pass
-    class LinearSegmentedColormap(object):
-        pass
+    #pi = 3.141516
+    #class Axes(object):
+        #pass
+    #class Locator(object):
+        #pass
+    #class Normalize(object):
+        #pass
+    #class LinearSegmentedColormap(object):
+        #pass
     def __init__(self, *args):
         """Mock init
         """
@@ -45,7 +45,11 @@ class Mock(object):
 try:
     import GPy
 except exceptions.ImportError:
-    MOCK_MODULES = ['pylab']
+    MOCK_MODULES = ['matplotlib', 'pylab', 'matplotlib.colors',
+                    'matplotlib.cbook', 'pyfits', 'numpy', 'matplotlib', 
+                    'matplotlib.cm', 'matplotlib.patches', 'matplotlib.projections', 
+                    'matplotlib.projections.polar', 'matplotlib.pyplot', 
+                    'matplotlib.text', 'matplotlib.ticker']
 
     for mod_name in MOCK_MODULES:
         sys.modules[mod_name] = Mock()

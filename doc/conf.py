@@ -45,8 +45,7 @@ class Mock(object):
 try:
     import GPy
 except exceptions.ImportError:
-    MOCK_MODULES = ['matplotlib', 'pylab', 'matplotlib.colors',
-                    'matplotlib.cbook', 'pyfits', 'numpy']
+    MOCK_MODULES = ['pylab']
 
     for mod_name in MOCK_MODULES:
         sys.modules[mod_name] = Mock()

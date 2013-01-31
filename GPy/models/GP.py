@@ -73,7 +73,6 @@ class GP(model):
             self.EP = False
             self.Y = Y
             self.beta = 100.#FIXME beta should be an explicit parameter for this model
-
             # Here's some simple normalisation
             if normalize_Y:
                 self._Ymean = Y.mean(0)[None,:]
@@ -88,8 +87,9 @@ class GP(model):
                 self.YYT = np.dot(self.Y, self.Y.T)
             else:
                 self.YYT = None
-
         else:
+            if self.D > 1:
+                raise NotImplementedError, "EP is not implemented for D > 1"
             # Y is defined after approximating the likelihood
             self.EP = True
             self.eta,self.delta = power_ep
@@ -196,7 +196,6 @@ class GP(model):
            This is to allow for different normalisations of the output dimensions.
 
         """
-
         #normalise X values
         Xnew = (Xnew.copy() - self._Xmean) / self._Xstd
         mu, var, phi = self._raw_predict(Xnew, slices, full_cov)
@@ -224,13 +223,18 @@ class GP(model):
         if full_cov:
             Kxx = self.kern.K(_Xnew, slices1=slices,slices2=slices)
             var = Kxx - np.dot(KiKx.T,Kx)
+            if self.EP:
+                raise NotImplementedError, "full_cov = True not implemented for EP"
+                #var = np.diag(var)[:,None]
+                #phi = self.likelihood.predictive_mean(mu,var)
         else:
             Kxx = self.kern.Kdiag(_Xnew, slices=slices)
             var = Kxx - np.sum(np.multiply(KiKx,Kx),0)
-        phi = None if not self.EP else self.likelihood.predictive_mean(mu,var)
+            if self.EP:
+                phi = self.likelihood.predictive_mean(mu,var)
         return mu, var, phi
 
-    def plot(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None):
+    def plot(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None,full_cov=False):
         """
         :param samples: the number of a posteriori samples to plot
         :param which_data: which if the training data to plot (default all)
@@ -268,27 +272,27 @@ class GP(model):
 
         if self.X.shape[1]==1:
             Xnew = np.linspace(xmin,xmax,resolution or 200)[:,None]
-            m,v,phi = self.predict(Xnew,slices=which_functions)
+            m,v,phi = self.predict(Xnew,slices=which_functions,full_cov=full_cov)
             if self.EP:
                 pb.subplot(211)
             gpplot(Xnew,m,v)
 
             if samples: #NOTE why don't we put samples as a parameter of gpplot
-                s = np.random.multivariate_normal(m.flatten(),np.diag(v),samples)
+                s = np.random.multivariate_normal(m.flatten(),np.diag(v.flatten()),samples)
                 pb.plot(Xnew.flatten(),s.T, alpha = 0.4, c='#3465a4', linewidth = 0.8)
             pb.plot(Xorig,Yorig,'kx',mew=1.5)
             pb.xlim(xmin,xmax)
 
             if self.EP:
                 pb.subplot(212)
-                self.likelihood.plot(Xnew,phi,self.X)
+                self.likelihood.plot(Xnew,m,v,phi,self.X,samples=samples)
                 pb.xlim(xmin,xmax)
 
         elif self.X.shape[1]==2:
             resolution = 50 or resolution
             xx,yy = np.mgrid[xmin[0]:xmax[0]:1j*resolution,xmin[1]:xmax[1]:1j*resolution]
             Xtest = np.vstack((xx.flatten(),yy.flatten())).T
-            zz,vv,phi = self.predict(Xtest,slices=which_functions)
+            zz,vv,phi = self.predict(Xtest,slices=which_functions,full_cov=full_cov)
             zz = zz.reshape(resolution,resolution)
             pb.contour(xx,yy,zz,vmin=zz.min(),vmax=zz.max(),cmap=pb.cm.jet)
             pb.scatter(Xorig[:,0],Xorig[:,1],40,Yorig,linewidth=0,cmap=pb.cm.jet,vmin=zz.min(),vmax=zz.max())

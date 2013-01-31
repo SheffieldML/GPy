@@ -83,12 +83,20 @@ class probit(likelihood):
         var = var.flatten()
         return stats.norm.cdf(mu/np.sqrt(1+var))
 
+    def predictive_var(self,mu,var):
+        p=self.predictive_mean(mu,var)
+        return p*(1-p)
+
     def _log_likelihood_gradients():
         raise NotImplementedError
 
-    def plot(self,X,phi,X_obs,Z=None):
+    def plot(self,X,mu,var,phi,X_obs,Z=None,samples=0):
         assert X_obs.shape[1] == 1, 'Number of dimensions must be 1'
-        gpplot(X,phi,np.zeros(X.shape[0]))
+        phi_var = self.predictive_var(mu,var)
+        gpplot(X,phi,phi_var)
+        if samples:
+            phi_samples = np.vstack([np.random.binomial(1,phi.flatten()) for s in range(samples)])
+            pb.plot(X,phi_samples.T,'x', alpha = 0.4, c='#3465a4' )
         pb.plot(X_obs,(self.Y+1)/2,'kx',mew=1.5)
         if Z is not None:
             pb.plot(Z,Z*0+.5,'r|',mew=1.5,markersize=12)
@@ -164,16 +172,22 @@ class poisson(likelihood):
         sigma2_hat = m2 - mu_hat**2 # Second central moment
         return float(Z_hat), float(mu_hat), float(sigma2_hat)
 
-    def predictive_mean(self,mu,variance):
+    def predictive_mean(self,mu,var):
         return np.exp(mu*self.scale + self.location)
+
+    def predictive_var(self,mu,var):
+        return predictive_mean(mu,var)
 
     def _log_likelihood_gradients():
         raise NotImplementedError
 
-    def plot(self,X,phi,X_obs,Z=None):
+    def plot(self,X,mu,var,phi,X_obs,Z=None,samples=0):
         assert X_obs.shape[1] == 1, 'Number of dimensions must be 1'
-        gpplot(X,phi,np.zeros(X.shape[0]))
+        gpplot(X,phi,phi.flatten())
         pb.plot(X_obs,self.Y,'kx',mew=1.5)
+        if samples:
+            phi_samples = np.vstack([np.random.poisson(phi.flatten(),phi.size) for s in range(samples)])
+            pb.plot(X,phi_samples.T, alpha = 0.4, c='#3465a4', linewidth = 0.8)
         if Z is not None:
             pb.plot(Z,Z*0+pb.ylim()[0],'k|',mew=1.5,markersize=12)
 

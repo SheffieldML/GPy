@@ -14,6 +14,7 @@ pb.ion()
 N = 500
 M = 5
 
+pb.close('all')
 ######################################
 ## 1 dimensional example
 
@@ -31,18 +32,29 @@ noise = GPy.kern.white(1)
 kernel = rbf + noise
 
 # create simple GP model
-#m1 = GPy.models.sparse_GP(X, Y, kernel, M=M)
-m1 = GPy.models.sparse_GP(X,Y=None, kernel=kernel, M=M,likelihood= likelihood)
+#m = GPy.models.sparse_GP(X,Y=None, kernel=kernel, M=M,likelihood= likelihood)
 
-print m1.checkgrad()
 # contrain all parameters to be positive
-m1.constrain_positive('(variance|lengthscale|precision)')
-#m1.constrain_positive('(variance|lengthscale)')
-#m1.constrain_fixed('prec',10.)
+#m.constrain_fixed('prec',100.)
+m = GPy.models.sparse_GP(X, Y, kernel, M=M)
+m.ensure_default_constraints()
+#if not isinstance(m.likelihood,GPy.inference.likelihoods.gaussian):
+#    m.approximate_likelihood()
+print m.checkgrad()
+m.optimize('tnc', messages = 1)
+m.plot(samples=3)
+print m
 
-#check gradient FIXME unit test please
-# optimize and plot
-m1.optimize('tnc', messages = 1)
-m1.plot()
-# print(m1)
+n = GPy.models.sparse_GP(X,Y=None, kernel=kernel, M=M,likelihood= likelihood)
+n.ensure_default_constraints()
+if not isinstance(n.likelihood,GPy.inference.likelihoods.gaussian):
+    n.approximate_likelihood()
+print n.checkgrad()
+pb.figure()
+n.plot()
 
+"""
+m = GPy.models.sparse_GP_regression(X, Y, kernel, M=M)
+m.ensure_default_constraints()
+print m.checkgrad()
+"""

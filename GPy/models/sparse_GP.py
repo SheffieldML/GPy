@@ -7,8 +7,9 @@ from ..util.linalg import mdot, jitchol, chol_inv, pdinv
 from ..util.plot import gpplot
 from .. import kern
 from GP import GP
-from ..inference.EP import Full
+from ..inference.EP import Full,DTC,FITC
 from ..inference.likelihoods import likelihood,probit,poisson,gaussian
+
 
 #Still TODO:
 # make use of slices properly (kernel can now do this)
@@ -35,10 +36,6 @@ class sparse_GP(GP):
     :type beta: float
     :param normalize_(X|Y) : whether to normalize the data before computing (predictions will be in original scales)
     :type normalize_(X|Y): bool
-    :parm likelihood: a GPy likelihood, defaults to gaussian
-    :param epsilon_ep: convergence criterion for the Expectation Propagation algorithm, defaults to 0.1
-    :param powerep: power-EP parameters [$\eta$,$\delta$], defaults to [1.,1.]
-    :type powerep: list
     """
 
     def __init__(self,X,Y=None,kernel=None,X_uncertainty=None,beta=100.,Z=None,Zslices=None,M=10,normalize_X=False,normalize_Y=False,likelihood=None,method_ep='DTC',epsilon_ep=1e-3,power_ep=[1.,1.]):
@@ -58,139 +55,31 @@ class sparse_GP(GP):
             self.X_uncertainty = X_uncertainty
 
         GP.__init__(self, X=X, Y=Y, kernel=kernel, normalize_X=normalize_X, normalize_Y=normalize_Y,likelihood=likelihood,epsilon_ep=epsilon_ep,power_ep=power_ep)
-        self.trYYT = np.sum(np.square(self.Y)) if not self.EP else None
 
+        #normalise X uncertainty also
+        if self.has_uncertain_inputs:
+            self.X_uncertainty /= np.square(self._Xstd)
+
+        if not self.EP:
+            self.trYYT = np.sum(np.square(self.Y))
+        else:
+            self.method_ep = method_ep
 
         #normalise X uncertainty also
         if self.has_uncertain_inputs:
             self.X_uncertainty /= np.square(self._Xstd)
 
     def _set_params(self, p):
+        self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
         if not self.EP:
-            self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
             self.beta = p[self.M*self.Q]
             self.kern._set_params(p[self.Z.size + 1:])
-            self.beta2 = self.beta**2
-            self._compute_kernel_matrices()
-            self._computations()
         else:
-            self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
             self.kern._set_params(p[self.Z.size:])
-            #self._compute_kernel_matrices() this is replaced by _ep_kernel_matrices
-            self._ep_kernel_matrices()
-            self._ep_computations()
-
-    def _compute_kernel_matrices(self):
-        # kernel computations, using BGPLVM notation
-        #TODO: slices for psi statistics (easy enough)
-
-        self.Kmm = self.kern.K(self.Z)
-        if self.has_uncertain_inputs:
-            if self.hetero_noise:
-                raise NotImplementedError, "uncertain ips and het noise not yet supported"
-            else:
-                self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty).sum()
-                self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
-                self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty)
-        else:
-            if self.hetero_noise:
-                print "rick's stuff here"
-
-
-
-            else:
-                self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices).sum()
-                self.psi1 = self.kern.K(self.Z,self.X)
-                self.psi2 = np.dot(self.psi1,self.psi1.T)
-
-    def _computations(self):
-        # TODO find routine to multiply triangular matrices
-        self.V = self.beta*self.Y
-        self.psi1V = np.dot(self.psi1, self.V)
-        self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
-        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
-        self.A = mdot(self.Lmi, self.beta*self.psi2, self.Lmi.T)
-        self.B = np.eye(self.M) + self.A
-        self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
-        self.LLambdai = np.dot(self.LBi, self.Lmi)
-        self.trace_K = self.psi0 - np.trace(self.A)/self.beta
-        self.LBL_inv = mdot(self.Lmi.T, self.Bi, self.Lmi)
-        self.C = mdot(self.LLambdai, self.psi1V)
-        self.G =  mdot(self.LBL_inv, self.psi1VVpsi1, self.LBL_inv.T)
-
-        # Compute dL_dpsi
-        self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
-        self.dL_dpsi1 = mdot(self.LLambdai.T,self.C,self.V.T)
-        self.dL_dpsi2 = - 0.5 * self.beta * (self.D*(self.LBL_inv - self.Kmmi) + self.G)
-
-        # Compute dL_dKmm
-        self.dL_dKmm = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi) # dB
-        self.dL_dKmm += -0.5 * self.D * (- self.LBL_inv - 2.*self.beta*mdot(self.LBL_inv, self.psi2, self.Kmmi) + self.Kmmi) # dC
-        self.dL_dKmm +=  np.dot(np.dot(self.G,self.beta*self.psi2) - np.dot(self.LBL_inv, self.psi1VVpsi1), self.Kmmi) + 0.5*self.G # dE
-
-    def approximate_likelihood(self):
-        assert not isinstance(self.likelihood, gaussian), "EP is only available for non-gaussian likelihoods"
-        if self.ep_proxy == 'DTC':
-            self.ep_approx = DTC(self.Kmm,self.likelihood,self.psi1,epsilon=self.epsilon_ep,power_ep=[self.eta,self.delta])
-        elif self.ep_proxy == 'FITC':
-            self.Knn_diag = self.kern.psi0(self.Z,self.X, self.X_uncertainty) #TODO psi0 already calculates this
-            self.ep_approx = FITC(self.Kmm,self.likelihood,self.psi1,self.Knn_diag,epsilon=self.epsilon_ep,power_ep=[self.eta,self.delta])
-        else:
-            self.ep_approx = Full(self.X,self.likelihood,self.kernel,inducing=None,epsilon=self.epsilon_ep,power_ep=[self.eta,self.delta])
-        self.beta, self.v_tilde, self.Z_hat, self.tau_, self.v_=self.ep_approx.fit_EP()
-        self._ep_kernel_matrices()
+            if self.Y is None:
+                self.Y = np.ones([self.N,1])
+        self._compute_kernel_matrices()
         self._computations()
-
-    def _ep_kernel_matrices(self):
-        self.Kmm = self.kern.K(self.Z)
-        if self.has_uncertain_inputs:
-            self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty).sum()
-            self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
-            self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty) #FIXME include beta
-        else:
-            self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices)
-            self.psi1 = self.kern.K(self.Z,self.X)
-            self.psi2 = np.dot(self.psi1,self.psi1.T)
-            self.psi2_beta_scaled = np.dot(self.psi1,self.beta*self.psi1.T)
-
-    def _ep_computations(self):
-        # Y: EP likelihood is defined as a regression model for mu_tilde
-        self.Y = self.v_tilde/self.beta
-        self._Ymean = np.zeros((1,self.Y.shape[1]))
-        self._Ystd = np.ones((1,self.Y.shape[1]))
-        self.trbetaYYT = np.sum(self.beta*np.square(self.Y))
-        if self.D > self.N:
-            # then it's more efficient to store YYT
-            self.YYT = np.dot(self.Y, self.Y.T)
-        else:
-            self.YYT = None
-        self.mu_ = self.v_/self.tau_
-        # TODO find routine to multiply triangular matrices
-        self.V = self.beta*self.Y
-        self.psi1V = np.dot(self.psi1, self.V)
-        self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
-        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
-        #self.A = mdot(self.Lmi, self.beta*self.psi2, self.Lmi.T)
-        self.A = mdot(self.Lmi, self.psi2_beta_scaled, self.Lmi.T)
-        self.B = np.eye(self.M) + self.A
-        self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
-        self.LLambdai = np.dot(self.LBi, self.Lmi)
-        self.trace_K = self.psi0.sum() - np.trace(self.A)
-        self.LBL_inv = mdot(self.Lmi.T, self.Bi, self.Lmi)
-        self.C = mdot(self.LLambdai, self.psi1V)
-        self.G =  mdot(self.LBL_inv, self.psi1VVpsi1, self.LBL_inv.T)
-
-        # Compute dL_dpsi
-        #self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
-        self.dL_dpsi0 = - 0.5 * self.D * self.beta.flatten() * np.ones(self.N) #TODO check
-        self.dL_dpsi1 = mdot(self.LLambdai.T,self.C,self.V.T)
-        #self.dL_dpsi2 = - 0.5 * self.beta * (self.D*(self.LBL_inv - self.Kmmi) + self.G)
-        self.dL_dpsi2 = - 0.5 * self.beta * (self.D*(self.LBL_inv - self.Kmmi) + self.G)
-
-        # Compute dL_dKmm
-        self.dL_dKmm = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi) # dB
-        self.dL_dKmm += -0.5 * self.D * (- self.LBL_inv - 2.*self.beta*mdot(self.LBL_inv, self.psi2, self.Kmmi) + self.Kmmi) # dC
-        self.dL_dKmm +=  np.dot(np.dot(self.G,self.beta*self.psi2) - np.dot(self.LBL_inv, self.psi1VVpsi1), self.Kmmi) + 0.5*self.G # dE
 
     def _get_params(self):
         if not self.EP:
@@ -204,19 +93,84 @@ class sparse_GP(GP):
         else:
             return sum([['iip_%i_%i'%(i,j) for i in range(self.Z.shape[0])] for j in range(self.Z.shape[1])],[]) + self.kern._get_param_names_transformed()
 
+
+    def _compute_kernel_matrices(self):
+        # kernel computations, using BGPLVM notation
+        #TODO: slices for psi statistics (easy enough)
+
+        self.Kmm = self.kern.K(self.Z)
+        if self.has_uncertain_inputs:
+            if not self.EP:
+                self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty)#.sum() NOTE psi0 is now a vector
+                self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
+                self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty)
+                #self.psi2_beta_scaled = ?
+            else:
+                raise NotImplementedError, "uncertain_inputs not yet supported for EP"
+        else:
+            self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices)#.sum()
+            self.psi1 = self.kern.K(self.Z,self.X)
+            self.psi2 = np.dot(self.psi1,self.psi1.T)
+            self.psi2_beta_scaled = np.dot(self.psi1,self.beta*self.psi1.T)
+
+    def _computations(self):
+        # TODO find routine to multiply triangular matrices
+        self.V = self.beta*self.Y
+        self.psi1V = np.dot(self.psi1, self.V)
+        self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
+        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
+        self.A = mdot(self.Lmi, self.psi2_beta_scaled, self.Lmi.T)
+        self.B = np.eye(self.M) + self.A
+        self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
+        self.LLambdai = np.dot(self.LBi, self.Lmi)
+        self.LBL_inv = mdot(self.Lmi.T, self.Bi, self.Lmi)
+        self.C = mdot(self.LLambdai, self.psi1V)
+        self.G =  mdot(self.LBL_inv, self.psi1VVpsi1, self.LBL_inv.T)
+        self.trace_K_beta_scaled = (self.psi0*self.beta).sum() - np.trace(self.A)
+        if not self.EP:
+            self.trace_K = self.psi0.sum() - np.trace(self.A)/self.beta
+
+        # Compute dL_dpsi
+        self.dL_dpsi1 = mdot(self.LLambdai.T,self.C,self.V.T)
+        if not self.EP:
+            self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
+            if self.has_uncertain_inputs:
+                self.dL_dpsi2 = - 0.5 * self.beta * (self.D*(self.LBL_inv - self.Kmmi) + self.G)
+            else:
+                self.dL_dpsi2_ = - 0.5 * (self.D*(self.LBL_inv - self.Kmmi) + self.G)
+        else:
+            self.dL_dpsi0 = - 0.5 * self.D * self.beta.flatten()
+            if not self.has_uncertain_inputs:
+                self.dL_dpsi2_ = - 0.5 * (self.D*(self.LBL_inv - self.Kmmi) + self.G)
+
+        # Compute dL_dKmm
+        self.dL_dKmm = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi) # dB
+        self.dL_dKmm += -0.5 * self.D * (- self.LBL_inv - 2.*mdot(self.LBL_inv, self.psi2_beta_scaled, self.Kmmi) + self.Kmmi) # dC
+        self.dL_dKmm +=  np.dot(np.dot(self.G,self.psi2_beta_scaled) - np.dot(self.LBL_inv, self.psi1VVpsi1), self.Kmmi) + 0.5*self.G # dE
+
+    def approximate_likelihood(self):
+        assert not isinstance(self.likelihood, gaussian), "EP is only available for non-gaussian likelihoods"
+        if self.method_ep == 'DTC':
+            self.ep_approx = DTC(self.Kmm,self.likelihood,self.psi1,epsilon=self.epsilon_ep,power_ep=[self.eta,self.delta])
+        elif self.method_ep == 'FITC':
+            self.ep_approx = FITC(self.Kmm,self.likelihood,self.psi1,self.psi0,epsilon=self.epsilon_ep,power_ep=[self.eta,self.delta])
+        else:
+            self.ep_approx = Full(self.X,self.likelihood,self.kernel,inducing=None,epsilon=self.epsilon_ep,power_ep=[self.eta,self.delta])
+        self.beta, self.Y, self.Z_ep = self.ep_approx.fit_EP()
+        self.trbetaYYT = np.sum(np.square(self.Y)*self.beta)
+        self._computations()
+
     def log_likelihood(self):
         """
         Compute the (lower bound on the) log marginal likelihood
         """
-        beta_logdet = self.N*self.D*np.log(self.beta) if not self.EP else self.D*np.sum(np.log(self.beta))
-        if self.hetero_noise:
-            A = foo
-            B = bar
-            D = -0.5*self.trbetaYYT
-        else:
-            A = -0.5*self.N*self.D*(np.log(2.*np.pi)) - 0.5*beta_logdet
-            B = -0.5*self.beta*self.D*self.trace_K if not self.EP else -0.5*self.D*self.trace_K
+        if not self.EP:
+            A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.beta))
             D = -0.5*self.beta*self.trYYT
+        else:
+            A = -0.5*self.D*(self.N*np.log(2.*np.pi) - np.sum(np.log(self.beta)))
+            D = -0.5*self.trbetaYYT
+        B = -0.5*self.D*self.trace_K_beta_scaled
         C = -0.5*self.D * self.B_logdet
         E = +0.5*np.sum(self.psi1VVpsi1 * self.LBL_inv)
         return A+B+C+D+E
@@ -246,7 +200,7 @@ class sparse_GP(GP):
             dL_dtheta += self.kern.dpsi2_dtheta(self.dL_dpsi2,self.Z,self.X, self.X_uncertainty) # for multiple_beta, dL_dpsi2 will be a different shape
         else:
             #re-cast computations in psi2 back to psi1:
-            dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
+            dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2_,self.beta.T*self.psi1) #dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
             dL_dtheta += self.kern.dK_dtheta(dL_dpsi1,self.Z,self.X)
             dL_dtheta += self.kern.dKdiag_dtheta(self.dL_dpsi0, self.X)
 
@@ -262,32 +216,41 @@ class sparse_GP(GP):
             dL_dZ += self.kern.dpsi2_dZ(self.dL_dpsi2,self.Z,self.X, self.X_uncertainty)
         else:
             #re-cast computations in psi2 back to psi1:
-            dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
+            dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2_,self.beta.T*self.psi1)#dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
             dL_dZ += self.kern.dK_dX(dL_dpsi1,self.Z,self.X)
         return dL_dZ
 
     def _log_likelihood_gradients(self):
-        return np.hstack([self.dL_dZ().flatten(), self.dL_dbeta(), self.dL_dtheta()])
+        if not self.EP:
+            return np.hstack([self.dL_dZ().flatten(), self.dL_dbeta(), self.dL_dtheta()])
+        else:
+            return np.hstack([self.dL_dZ().flatten(), self.dL_dtheta()])
 
     def _raw_predict(self, Xnew, slices, full_cov=False):
         """Internal helper function for making predictions, does not account for normalisation"""
         Kx = self.kern.K(self.Z, Xnew)
         mu = mdot(Kx.T, self.LBL_inv, self.psi1V)
+        phi = None
         if full_cov:
-            noise_term = np.eye(Xnew.shape[0])/self.beta if not self.EP else 0
             Kxx = self.kern.K(Xnew)
-            var = Kxx - mdot(Kx.T, (self.Kmmi - self.LBL_inv), Kx) + noise_term
+            var = Kxx - mdot(Kx.T, (self.Kmmi - self.LBL_inv), Kx)
+            if not self.EP:
+                var += np.eye(Xnew.shape[0])/self.beta
+            else:
+                raise NotImplementedError, "full_cov = True not implemented for EP"
         else:
-            noise_term = 1./self.beta if not self.EP else 0
             Kxx = self.kern.Kdiag(Xnew)
-            var = Kxx - np.sum(Kx*np.dot(self.Kmmi - self.LBL_inv, Kx),0) + noise_term
-        return mu,var,None#TODO add phi for EP
+            var = Kxx - np.sum(Kx*np.dot(self.Kmmi - self.LBL_inv, Kx),0)
+            if not self.EP:
+                var += 1./self.beta
+            else:
+                phi = self.likelihood.predictive_mean(mu,var)
+        return mu,var,phi
 
     def plot(self, *args, **kwargs):
         """
         Plot the fitted model: just call the GP_regression plot function and then add inducing inputs
         """
-        #GP_regression.plot(self,*args,**kwargs)
         GP.plot(self,*args,**kwargs)
         if self.Q==1:
             pb.plot(self.Z,self.Z*0+pb.ylim()[0],'k|',mew=1.5,markersize=12)

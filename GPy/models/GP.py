@@ -208,9 +208,24 @@ class GP(model):
 
         if self.X.shape[1]==1:
             Xnew = np.linspace(xmin,xmax,resolution or 200)[:,None]
+<<<<<<< HEAD
             m,v = self._raw_predict(Xnew,slices=which_functions,full_cov=False)
             lower, upper = m.flatten() - 2.*np.sqrt(v) , m.flatten()+ 2.*np.sqrt(v)
             gpplot(Xnew,m,lower,upper)
+=======
+            m,v = self.predict(Xnew,slices=which_functions,full_cov=full_cov)
+            if self.EP:
+                pb.subplot(211)
+            gpplot(Xnew,m,v)
+            if samples: #NOTE why don't we put samples as a parameter of gpplot
+                s = np.random.multivariate_normal(m.flatten(),np.diag(v.flatten()),samples)
+                pb.plot(Xnew.flatten(),s.T, alpha = 0.4, c='#3465a4', linewidth = 0.8)
+            pb.plot(Xorig,Yorig,'kx',mew=1.5)
+            pb.xlim(xmin,xmax)
+
+            if self.EP:
+                phi_m, phi_v, phi_l, phi_u = self.likelihood.predictive_values(m,v)
+>>>>>>> 9feae765dc2253edaa37b25e3417a364e5b9acdc
 
             pb.plot(X,Y,'kx',mew=1.5)
             pb.xlim(xmin,xmax)
@@ -228,9 +243,9 @@ class GP(model):
         else:
             raise NotImplementedError, "Cannot plot GPs with more than two input dimensions"
 
-        def plot(self):
-            """
-            Plot the data's view of the world, with non-normalised values and GP predictions passed through the likelihood
-            """
-            pass# TODO!!!!!
+    def plot(self):
+        """
+        Plot the data's view of the world, with non-normalised values and GP predictions passed through the likelihood
+        """
+        pass# TODO!!!!!
 

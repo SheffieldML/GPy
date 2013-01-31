@@ -146,5 +146,3 @@ The flag ``ARD=True`` in the definition of the Matern kernel specifies that we w
     :height: 350px
 
     Contour plot of the best predictor (posterior mean).
-
-Changed it

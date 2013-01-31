@@ -106,7 +106,7 @@ print "Adding path"
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('./sphinxext'))
+#sys.path.insert(0, os.path.abspath('./sphinxext'))
 
 # -- General configuration -----------------------------------------------------
 
@@ -117,8 +117,7 @@ sys.path.insert(0, os.path.abspath('./sphinxext'))
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 print "Importing extensions"
               
-print sys.path
-extensions = ['ipython_directive',
+extensions = [#'ipython_directive',
               'sphinx.ext.autodoc', 'sphinx.ext.viewcode'
               #'matplotlib.sphinxext.mathmpl',
               #'matplotlib.sphinxext.only_directives',

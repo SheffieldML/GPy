@@ -36,13 +36,15 @@ class rbf(kernpart):
         if not ARD:
             self.Nparam = 2
             if lengthscale is not None:
-                assert lengthscale.size == 1
+                lengthscale = np.asarray(lengthscale)
+                assert lengthscale.size == 1, "Only one lengthscale needed for non-ARD kernel"
             else:
                 lengthscale = np.ones(1)
         else:
             self.Nparam = self.D + 1
             if lengthscale is not None:
-                assert lengthscale.size == self.D
+                lengthscale = np.asarray(lengthscale)
+                assert lengthscale.size == self.D, "bad number of lengthscales"
             else:
                 lengthscale = np.ones(self.D)
 

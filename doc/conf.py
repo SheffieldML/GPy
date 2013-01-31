@@ -33,10 +33,7 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if on_rtd:
   sys.path.append("../GPy")
   os.system("pwd")
-  os.system("cd ..")
-  #os.system("sphinx-apidoc -f -o . ../GPy")
-  os.system("sphinx-apidoc -f -o ./docs ./GPy")
-  os.system("cd ./docs")
+  os.system("sphinx-apidoc -f -o . ../GPy")
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

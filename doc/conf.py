@@ -114,7 +114,7 @@ class Mock(object):
 #sys.path.append("../GPy")
 #import mock
 
-MOCK_MODULES = ['pylab']#, 'matplotlib', 'sympy', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser']#'matplotlib', 'matplotlib.color', 'matplotlib.pyplot', 'pylab' ]
+MOCK_MODULES = ['pylab', 'matplotlib', 'sympy', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser']#'matplotlib', 'matplotlib.color', 'matplotlib.pyplot', 'pylab' ]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
 
@@ -140,16 +140,18 @@ sys.path.append(os.path.abspath('sphinxext'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
+print "Importing extensions"
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode',
-              'matplotlib.sphinxext.mathmpl',
-              'matplotlib.sphinxext.only_directives',
+              #'matplotlib.sphinxext.mathmpl',
+              #'matplotlib.sphinxext.only_directives',
               'matplotlib.sphinxext.plot_directive',
-              'matplotlib.sphinxext.ipython_directive'
+              #'matplotlib.sphinxext.ipython_directive'
             ]
               #'sphinx.ext.doctest',
               #'ipython_console_highlighting',
               #'inheritance_diagram',
               #'numpydoc'] 
+print "finished importing"
 
 # ----------------------- READTHEDOCS ------------------
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
@@ -160,6 +162,7 @@ if on_rtd:
   os.system("sphinx-apidoc -f -o . ../GPy")
   #os.system("cd ..")
   #os.system("cd ./docs")
+print "Compiled files
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

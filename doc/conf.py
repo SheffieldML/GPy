@@ -93,26 +93,26 @@ import sys, os
 ##############################################################################
 ##
 ## Mock out imports with C dependencies because ReadTheDocs can't build them.
-#class Mock(object):
-    #def __init__(self, *args, **kwargs):
-        #pass
+class Mock(object):
+    def __init__(self, *args, **kwargs):
+        pass
 
-    #def __call__(self, *args, **kwargs):
-        #return Mock()
+    def __call__(self, *args, **kwargs):
+        return Mock()
 
-    #@classmethod
-    #def __getattr__(cls, name):
-        #if name in ('__file__', '__path__'):
-            #return '/dev/null'
-        #elif name[0] == name[0].upper():
-            #mockType = type(name, (), {})
-            #mockType.__module__ = __name__
-            #return mockType
-        #else:
-            #return Mock()
+    @classmethod
+    def __getattr__(cls, name):
+        if name in ('__file__', '__path__'):
+            return '/dev/null'
+        elif name[0] == name[0].upper():
+            mockType = type(name, (), {})
+            mockType.__module__ = __name__
+            return mockType
+        else:
+            return Mock()
 
-sys.path.append("../GPy")
-import mock
+#sys.path.append("../GPy")
+#import mock
 
 MOCK_MODULES = ['pylab', 'matplotlib']#'matplotlib', 'matplotlib.color', 'matplotlib.pyplot', 'pylab' ]
 for mod_name in MOCK_MODULES:
@@ -121,7 +121,7 @@ for mod_name in MOCK_MODULES:
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('..'))
+#sys.path.insert(0, os.path.abspath('..'))
 
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it

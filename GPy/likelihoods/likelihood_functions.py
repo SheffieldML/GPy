@@ -19,35 +19,6 @@ class likelihood:
         self.location = location
         self.scale = scale
 
-    def plot2D(self,X,X_new,F_new,U=None):
-        """
-        Predictive distribution of the fitted GP model for 2-dimensional inputs
-
-        :param X_new: The points at which to make a prediction
-        :param Mean_new: mean values at X_new
-        :param Var_new: variance values at X_new
-        :param X_u: input points used to train the model
-        :param Mean_u: mean values at X_u
-        :param Var_new: variance values at X_u
-        """
-        N,D = X_new.shape
-        assert D == 2, 'Number of dimensions must be 2'
-        n = np.sqrt(N)
-        x1min = X_new[:,0].min()
-        x1max = X_new[:,0].max()
-        x2min = X_new[:,1].min()
-        x2max = X_new[:,1].max()
-        pb.imshow(F_new.reshape(n,n),extent=(x1min,x1max,x2max,x2min),vmin=0,vmax=1)
-        pb.colorbar()
-        C1 = np.arange(self.N)[self.Y.flatten()==1]
-        C2 = np.arange(self.N)[self.Y.flatten()==-1]
-        [pb.plot(X[i,0],X[i,1],'ro') for i in C1]
-        [pb.plot(X[i,0],X[i,1],'bo') for i in C2]
-        pb.xlim(x1min,x1max)
-        pb.ylim(x2min,x2max)
-        if U is not None:
-            [pb.plot(a,b,'wo') for a,b in U]
-
 class probit(likelihood):
     """
     Probit likelihood
@@ -76,31 +47,22 @@ class probit(likelihood):
         sigma2_hat = 1./tau_i - (phi/((tau_i**2+tau_i)*Z_hat))*(z+phi/Z_hat)
         return Z_hat, mu_hat, sigma2_hat
 
-    def predictive_mean(self,mu,var):
+    def predictive_values(self,mu,var,all=False):
+        """
+        Compute  mean, variance, and conficence interval (percentiles 5 and 95) of the  prediction
+        """
         mu = mu.flatten()
         var = var.flatten()
-        return stats.norm.cdf(mu/np.sqrt(1+var))
-
-    def predictive_quantiles(self,mu,var):
-        #p=self.predictive_mean(mu,var)
-        #return p*(1-p)
-        raise NotImplementedError #TODO
+        mean = stats.norm.cdf(mu/np.sqrt(1+var))
+        if all:
+            p_05 = np.zeros([mu.size])
+            p_95 = np.ones([mu.size])
+            return mean, mean*(1-mean),p_05,p_95
+        else:
+            return mean
 
     def _log_likelihood_gradients():
         return np.zeros(0) # there are no parameters of whcih to compute the gradients
-
-    def plot(self,X,mu,var,phi,X_obs,Z=None,samples=0):
-        #TODO: remove me
-        assert X_obs.shape[1] == 1, 'Number of dimensions must be 1'
-        phi_var = self.predictive_var(mu,var)
-        gpplot(X,phi,phi_var)
-        if samples:
-            phi_samples = np.vstack([np.random.binomial(1,phi.flatten()) for s in range(samples)])
-            pb.plot(X,phi_samples.T,'x', alpha = 0.4, c='#3465a4' )
-        pb.plot(X_obs,(self.Y+1)/2,'kx',mew=1.5)
-        if Z is not None:
-            pb.plot(Z,Z*0+.5,'r|',mew=1.5,markersize=12)
-        pb.ylim(-0.2,1.2)
 
 class poisson(likelihood):
     """
@@ -172,11 +134,18 @@ class poisson(likelihood):
         sigma2_hat = m2 - mu_hat**2 # Second central moment
         return float(Z_hat), float(mu_hat), float(sigma2_hat)
 
-    def predictive_mean(self,mu,var):
-        return np.exp(mu*self.scale + self.location)
-
-    def predictive_var(self,mu,var):
-        return predictive_mean(mu,var)
+    def predictive_values(self,mu,var,all=False):
+        """
+        Compute  mean, variance, and conficence interval (percentiles 5 and 95) of the  prediction
+        """
+        mean = np.exp(mu*self.scale + self.location)
+        if all:
+            tmp = stats.poisson.ppf(np.array([.05,.95]),mu)
+            p_05 = tmp[:,0]
+            p_95 = tmp[:,1]
+            return mean,mean,p_05,p_95
+        else:
+            return mean
 
     def _log_likelihood_gradients():
         raise NotImplementedError
@@ -211,13 +180,6 @@ class gaussian(likelihood):
         mu_hat = sigma2_hat*(mu/sigma**2 + self.Y[i]/s**2)
         Z_hat = 1./np.sqrt(2*np.pi) * 1./np.sqrt(sigma**2+s**2) * np.exp(-.5*(mu-self.Y[i])**2/(sigma**2 + s**2))
         return Z_hat, mu_hat, sigma2_hat
-
-    def plot1Db(self,X,X_new,F_new,U=None):
-        assert X.shape[1] == 1, 'Number of dimensions must be 1'
-        gpplot(X_new,F_new,np.zeros(X_new.shape[0]))
-        pb.plot(X,self.Y,'kx',mew=1.5)
-        if U is not None:
-            pb.plot(U,np.ones(U.shape[0])*self.Y.min()*.8,'r|',mew=1.5,markersize=12)
 
     def _log_likelihood_gradients():
         raise NotImplementedError

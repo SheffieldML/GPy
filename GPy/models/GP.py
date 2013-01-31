@@ -215,11 +215,10 @@ class GP(model):
 
         if self.X.shape[1]==1:
             Xnew = np.linspace(xmin,xmax,resolution or 200)[:,None]
-            m,v,phi = self.predict(Xnew,slices=which_functions,full_cov=full_cov)
+            m,v = self.predict(Xnew,slices=which_functions,full_cov=full_cov)
             if self.EP:
                 pb.subplot(211)
             gpplot(Xnew,m,v)
-
             if samples: #NOTE why don't we put samples as a parameter of gpplot
                 s = np.random.multivariate_normal(m.flatten(),np.diag(v.flatten()),samples)
                 pb.plot(Xnew.flatten(),s.T, alpha = 0.4, c='#3465a4', linewidth = 0.8)
@@ -227,9 +226,7 @@ class GP(model):
             pb.xlim(xmin,xmax)
 
             if self.EP:
-                pb.subplot(212)
-                self.likelihood.plot(Xnew,m,v,phi,self.X,samples=samples)
-                pb.xlim(xmin,xmax)
+                phi_m, phi_v, phi_l, phi_u = self.likelihood.predictive_values(m,v)
 
         elif self.X.shape[1]==2:
             resolution = 50 or resolution

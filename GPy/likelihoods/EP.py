@@ -18,7 +18,6 @@ class EP:
         self.likelihood_function = likelihood_function
         self.epsilon = epsilon
         self.eta, self.delta = power_ep
-        self.jitter = 1e-12 # TODO: is this needed?
 
         """
         Initial values - Likelihood approximation parameters:
@@ -26,6 +25,16 @@ class EP:
         """
         self.tau_tilde = np.zeros(self.N)
         self.v_tilde = np.zeros(self.N)
+
+    def predictive_values(self,mu,var):
+        return self.likelihood_function.predictive_values(mu,var)
+
+    def _get_params(self):
+        return np.zeros(0)
+    def _get_param_names(self):
+        return []
+    def _set_params(self,p):
+        pass # TODO: the EP likelihood might want to take some parameters...
 
     def _compute_GP_variables(self):
         #Variables to be called from GP

@@ -164,9 +164,10 @@ class GP(model):
         """
         #normalise X values
         Xnew = (Xnew.copy() - self._Xmean) / self._Xstd
-        mu, var, phi = self._raw_predict(Xnew, slices, full_cov=full_cov)
+        mu, var = self._raw_predict(Xnew, slices, full_cov=full_cov)
 
         #now push through likelihood TODO
+        mean, _5pc, _95pc = self.likelihood.predictive_values(mu, var)
 
         return mean, _5pc, _95pc
 

@@ -49,7 +49,7 @@ class probit(likelihood):
 
     def predictive_values(self,mu,var,all=False):
         """
-        Compute  mean, variance, and conficence interval (percentiles 5 and 95) of the  prediction
+        Compute  mean, and conficence interval (percentiles 5 and 95) of the  prediction
         """
         mu = mu.flatten()
         var = var.flatten()
@@ -57,7 +57,7 @@ class probit(likelihood):
         if all:
             p_05 = np.zeros([mu.size])
             p_95 = np.ones([mu.size])
-            return mean, mean*(1-mean),p_05,p_95
+            return mean, p_05, p_95
         else:
             return mean
 
@@ -136,14 +136,14 @@ class poisson(likelihood):
 
     def predictive_values(self,mu,var,all=False):
         """
-        Compute  mean, variance, and conficence interval (percentiles 5 and 95) of the  prediction
+        Compute  mean, and conficence interval (percentiles 5 and 95) of the  prediction
         """
         mean = np.exp(mu*self.scale + self.location)
         if all:
             tmp = stats.poisson.ppf(np.array([.05,.95]),mu)
             p_05 = tmp[:,0]
             p_95 = tmp[:,1]
-            return mean,mean,p_05,p_95
+            return mean,p_05,p_95
         else:
             return mean
 

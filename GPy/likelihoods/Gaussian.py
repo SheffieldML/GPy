@@ -29,6 +29,16 @@ class Gaussian:
         self._variance = x
         self.variance = np.eye(self.N)*self._variance
 
+    def predictive_values(self,mu,var):
+        """
+        Un-normalise the prediction and add the likelihood variance, then return the 5%, 95% interval
+        """
+        mean = mu*self._std + self._mean
+        true_var = (var + self._variance)*self._std**2
+        _5pc = mean + mean - 2.*np.sqrt(var)
+        _95pc = mean + 2.*np.sqrt(var)
+        return mean, _5pc, _95pc
+
     def fit(self):
         """
         No approximations needed

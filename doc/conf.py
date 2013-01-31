@@ -82,12 +82,13 @@ MOCK_MODULES = [
     'matplotlib.dates', 'scipy.optimize', 'scipy.ndimage',
     'matplotlib.figure', 'scipy.ndimage.interpolation', 'bs4']
 for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = Mock(pi=math.pi, G=6.67364e-11)
+    sys.modules[mod_name] = Mock()
 
-sys.modules['numpy'] = Mock(pi=math.pi, G=6.67364e-11,
-                            ndarray=type('ndarray', (), {}),
-                            dtype=lambda _: Mock(_mock_repr='np.dtype(\'float32\')'))
-sys.modules['scipy.constants'] = Mock(pi=math.pi, G=6.67364e-11)
+
+#sys.modules['numpy'] = Mock(pi=math.pi, G=6.67364e-11,
+                            #ndarray=type('ndarray', (), {}),
+                            #dtype=lambda _: Mock(_mock_repr='np.dtype(\'float32\')'))
+#sys.modules['scipy.constants'] = Mock(pi=math.pi, G=6.67364e-11)
 
 ##############################################################################
 ##

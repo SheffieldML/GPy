@@ -128,7 +128,7 @@ print "Adding path"
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
 # absolute, like shown here.
-sys.path.append(os.path.abspath('sphinxext'))
+#sys.path.append(os.path.abspath('sphinxext'))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -147,8 +147,8 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode',
               #'matplotlib.sphinxext.mathmpl',
               #'matplotlib.sphinxext.only_directives',
               #'matplotlib.sphinxext.plot_directive',
-              'matplotlib.sphinxext.ipython_directive',
-              'ipython_directive'
+              #'matplotlib.sphinxext.ipython_directive',
+              #'ipython_directive'
             ]
               #'sphinx.ext.doctest',
               #'ipython_console_highlighting',

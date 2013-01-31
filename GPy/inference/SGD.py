@@ -159,6 +159,7 @@ class opt_SGD(Optimizer):
         missing_data = self.check_for_missing(self.model.Y)
         self.model.Youter = None # this is probably not very efficient
         self.model.YYT = None
+        step = np.zeros_like(self.model._get_params())
 
         for it in range(self.iterations):
             if it == 0 or self.self_paced is False:
@@ -168,7 +169,6 @@ class opt_SGD(Optimizer):
 
             b = len(features)/self.batch_size
             features = [features[i::b] for i in range(b)]
-            step = np.zeros_like(self.model._get_params())
             LL = []
             count = 0
 

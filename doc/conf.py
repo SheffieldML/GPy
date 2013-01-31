@@ -144,11 +144,12 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode',
               'matplotlib.sphinxext.mathmpl',
               'matplotlib.sphinxext.only_directives',
               'matplotlib.sphinxext.plot_directive',
-              'matplotlib.sphinxext.ipython_directive',
-              'sphinx.ext.doctest',
-              'ipython_console_highlighting',
-              'inheritance_diagram',
-              'numpydoc'] 
+              'matplotlib.sphinxext.ipython_directive'
+            ]
+              #'sphinx.ext.doctest',
+              #'ipython_console_highlighting',
+              #'inheritance_diagram',
+              #'numpydoc'] 
 
 # ----------------------- READTHEDOCS ------------------
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'

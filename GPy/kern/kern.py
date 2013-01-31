@@ -4,9 +4,9 @@
 
 import numpy as np
 from ..core.parameterised import parameterised
-from functools import partial
 from kernpart import kernpart
-
+import itertools
+from product_orthogonal import product_orthogonal 
 
 class kern(parameterised):
     def __init__(self,D,parts=[], input_slices=None):
@@ -44,7 +44,6 @@ class kern(parameterised):
 
         for p in self.parts:
             assert isinstance(p,kernpart), "bad kernel part"
-
 
         self.compute_param_slices()
 
@@ -131,6 +130,67 @@ class kern(parameterised):
         newkern.constrained_fixed_indices = self.constrained_fixed_indices + [self.Nparam + x for x in other.constrained_fixed_indices]
         newkern.constrained_fixed_values = self.constrained_fixed_values + other.constrained_fixed_values
         newkern.tied_indices = self.tied_indices + [self.Nparam + x for x in other.tied_indices]
+        return newkern
+
+    def __mul__(self,other):
+        """
+        Shortcut for `prod_orthogonal`. Note that `+` assumes that we sum 2 kernels defines on the same space whereas `*` assumes that the kernels are defined on different subspaces.
+        """
+        return self.prod_orthogonal(other)
+
+    def prod_orthogonal(self,other):
+        """
+        multiply two kernels. Both kernels are defined on separate spaces. Note that the constrains on the parameters of the kernels to multiply will be lost.
+        :param other: the other kernel to be added
+        :type other: GPy.kern
+        """
+        K1 = self.copy()
+        K2 = other.copy()
+        K1.unconstrain('')
+        K2.unconstrain('')
+
+        prev_ties = K1.tied_indices + [arr + K1.Nparam for arr in K2.tied_indices]
+        K1.untie_everything()
+        K2.untie_everything()
+
+        D = K1.D + K2.D
+
+        newkernparts = [product_orthogonal(k1,k2).parts[0] for k1, k2 in itertools.product(K1.parts,K2.parts)]
+
+        slices = []
+        for sl1, sl2 in itertools.product(K1.input_slices,K2.input_slices):
+            s1, s2 = [False]*K1.D, [False]*K2.D
+            s1[sl1], s2[sl2] = [True], [True]
+            slices += [s1+s2]
+
+        newkern = kern(D, newkernparts, slices)
+
+        # create the ties
+        K1_param = []
+        n = 0
+        for k1 in K1.parts:
+            K1_param += [range(n,n+k1.Nparam)]
+            n += k1.Nparam
+        n = 0
+        K2_param = []
+        for k2 in K2.parts:
+            K2_param += [range(K1.Nparam+n,K1.Nparam+n+k2.Nparam)]
+            n += k2.Nparam
+        index_param = []
+        for p1 in K1_param:
+            for p2 in K2_param:
+                index_param += [0] + p1[1:] + p2[1:]
+        index_param = np.array(index_param)
+
+        # follow the previous ties
+        for arr in prev_ties:
+            for j in arr:
+                index_param[np.where(index_param==j)[0]] = arr[0]
+
+        # tie
+        for i in np.unique(index_param)[1:]:
+            newkern.tie_param(np.where(index_param==i)[0])
+
         return newkern
 
     def _get_params(self):
@@ -259,29 +319,56 @@ class kern(parameterised):
         :Z: np.ndarray of inducing inputs (M x Q)
         : mu, S: np.ndarrays of means and variacnes (each N x Q)
         :returns psi2: np.ndarray (N,M,M,Q) """
-        target = np.zeros((Z.shape[0],Z.shape[0]))
+        target = np.zeros((mu.shape[0],Z.shape[0],Z.shape[0]))
         slices1, slices2 = self._process_slices(slices1,slices2)
-        [p.psi2(Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s2,s2]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
+        [p.psi2(Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s1,s2,s2]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
+
+        # MASSIVE TODO: do something smart for white
+        # "crossterms"
+        psi1_matrices = [np.zeros((mu.shape[0], Z.shape[0])) for p in self.parts]
+        [p.psi1(Z[s2],mu[s1],S[s1],psi1_target[s1,s2]) for p,s1,s2,psi1_target in zip(self.parts,slices1,slices2, psi1_matrices)]
+        for a,b in itertools.combinations(psi1_matrices, 2):
+            tmp = np.multiply(a,b)
+            target += tmp[:,None,:] + tmp[:, :,None]
+
         return target
 
-    def dpsi2_dtheta(self,partial,Z,mu,S,slices1=None,slices2=None):
+    def dpsi2_dtheta(self,partial,partial1,Z,mu,S,slices1=None,slices2=None):
         """Returns shape (N,M,M,Ntheta)"""
         slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros(self.Nparam)
-        [p.dpsi2_dtheta(partial[s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[ps]) for p,i_s,s1,s2,ps in zip(self.parts,self.input_slices,slices1,slices2,self.param_slices)]
+        [p.dpsi2_dtheta(partial[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[ps]) for p,i_s,s1,s2,ps in zip(self.parts,self.input_slices,slices1,slices2,self.param_slices)]
+
+
+        # "crossterms"
+        # 1. get all the psi1 statistics
+        psi1_matrices = [np.zeros((mu.shape[0], Z.shape[0])) for p in self.parts]
+        [p.psi1(Z[s2],mu[s1],S[s1],psi1_target[s1,s2]) for p,s1,s2,psi1_target in zip(self.parts,slices1,slices2, psi1_matrices)]
+        partial1 = np.zeros_like(partial1)
+
+        # 2. get all the dpsi1/dtheta gradients
+        psi1_gradients = [np.zeros(self.Nparam) for p in self.parts]
+        [p.dpsi1_dtheta(partial1[s2,s1],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],psi1g_target[ps]) for p,ps,s1,s2,i_s,psi1g_target in zip(self.parts, self.param_slices,slices1,slices2,self.input_slices,psi1_gradients)]
+
+        # 3. multiply them somehow
+        for a,b in itertools.combinations(range(len(psi1_matrices)), 2):
+            gne = (psi1_gradients[a][None]*psi1_matrices[b].sum(0)[:,None]).sum(0)
+
+            target += (gne[None] + gne[:, None]).sum(0)
         return target
 
     def dpsi2_dZ(self,partial,Z,mu,S,slices1=None,slices2=None):
         slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros_like(Z)
-        [p.dpsi2_dZ(partial[s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s2,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
+        [p.dpsi2_dZ(partial[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s2,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
+
         return target
 
-    def dpsi2_dmuS(self,Z,mu,S,slices1=None,slices2=None):
+    def dpsi2_dmuS(self,partial,Z,mu,S,slices1=None,slices2=None):
         """return shapes are N,M,M,Q"""
         slices1, slices2 = self._process_slices(slices1,slices2)
         target_mu, target_S = np.zeros((2,mu.shape[0],mu.shape[1]))
-        [p.dpsi2_dmuS(partial[s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target_mu[s1,i_s],target_S[s1,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
+        [p.dpsi2_dmuS(partial[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target_mu[s1,i_s],target_S[s1,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
 
         #TODO: there are some extra terms to compute here!
         return target_mu, target_S

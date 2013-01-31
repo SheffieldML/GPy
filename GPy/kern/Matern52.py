@@ -31,14 +31,14 @@ class Matern52(kernpart):
         self.ARD = ARD
         if ARD == False:
             self.Nparam = 2
-            self.name = 'Mat32'
+            self.name = 'Mat52'
             if lengthscale is not None:
                 assert lengthscale.shape == (1,)
             else:
                 lengthscale = np.ones(1)
         else:
             self.Nparam = self.D + 1
-            self.name = 'Mat32_ARD'
+            self.name = 'Mat52_ARD'
             if lengthscale is not None:
                 assert lengthscale.shape == (self.D,)
             else:
@@ -79,6 +79,7 @@ class Matern52(kernpart):
         invdist = 1./np.where(dist!=0.,dist,np.inf)
         dist2M = np.square(X[:,None,:]-X2[None,:,:])/self.lengthscale**3
         dvar = (1+np.sqrt(5.)*dist+5./3*dist**2)*np.exp(-np.sqrt(5.)*dist)
+        dl = (self.variance * 5./3 * dist * (1 + np.sqrt(5.)*dist ) * np.exp(-np.sqrt(5.)*dist))[:,:,np.newaxis] * dist2M*invdist[:,:,np.newaxis]
         target[0] += np.sum(dvar*partial)
         if self.ARD:
             dl = (self.variance * 5./3 * dist * (1 + np.sqrt(5.)*dist ) * np.exp(-np.sqrt(5.)*dist))[:,:,np.newaxis] * dist2M*invdist[:,:,np.newaxis]

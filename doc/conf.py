@@ -27,7 +27,7 @@ try:
     import numpy
     import pylab
 except ImportError:
-    from mock import MagicMock
+    from unittest.mock import MagicMock
 
     MOCK_MODULES = ['numpy', 'pylab', 'scipy']
     for mod_name in MOCK_MODULES:

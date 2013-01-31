@@ -43,7 +43,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 if on_rtd:
-  sys.path.append("../GPy")
+  #sys.path.append("../GPy")
   os.system("pwd")
   #os.system("cd ..")
   os.system("sphinx-apidoc -f -o . ../GPy")
@@ -314,38 +314,38 @@ epub_copyright = u'2013, Author'
 # Include constructors in all the docs
 # Got this method from:
 # http://stackoverflow.com/questions/5599254/how-to-use-sphinxs-autodoc-to-document-a-classs-init-self-method
-def skip(app, what, name, obj, skip, options):
-    if name == "__init__":
-        return False
-    return skip
+#def skip(app, what, name, obj, skip, options):
+    #if name == "__init__":
+        #return False
+    #return skip
 
-def setup(app):
-    app.connect("autodoc-skip-member", skip)
+#def setup(app):
+    #app.connect("autodoc-skip-member", skip)
 
 
-#############################################################################
-#
-# Mock out imports with C dependencies because ReadTheDocs can't build them.
-class Mock(object):
-    def __init__(self, *args, **kwargs):
-        pass
+##############################################################################
+##
+## Mock out imports with C dependencies because ReadTheDocs can't build them.
+#class Mock(object):
+    #def __init__(self, *args, **kwargs):
+        #pass
 
-    def __call__(self, *args, **kwargs):
-        return Mock()
+    #def __call__(self, *args, **kwargs):
+        #return Mock()
 
-    @classmethod
-    def __getattr__(cls, name):
-        if name in ('__file__', '__path__'):
-            return '/dev/null'
-        elif name[0] == name[0].upper():
-            mockType = type(name, (), {})
-            mockType.__module__ = __name__
-            return mockType
-        else:
-            return Mock()
+    #@classmethod
+    #def __getattr__(cls, name):
+        #if name in ('__file__', '__path__'):
+            #return '/dev/null'
+        #elif name[0] == name[0].upper():
+            #mockType = type(name, (), {})
+            #mockType.__module__ = __name__
+            #return mockType
+        #else:
+            #return Mock()
 
-MOCK_MODULES = [#'matplotlib', 'matplotlib.pyplot', 
-                'pylab'
-                ]
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = Mock()
+#MOCK_MODULES = [#'matplotlib', 'matplotlib.pyplot', 
+                #'pylab'
+                #]
+#for mod_name in MOCK_MODULES:
+    #sys.modules[mod_name] = Mock()

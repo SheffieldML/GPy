@@ -9,7 +9,7 @@ from ..util.plot import gpplot
 from .. import kern
 
 class EP:
-    def __init__(self,covariance,likelihood,Kmn=None,Knn_diag=None,epsilon=1e-3,power_ep=[1.,1.]):
+    def __init__(self,data,likelihood_function,epsilon=1e-3,power_ep=[1.,1.]):
         """
         Expectation Propagation
 
@@ -22,24 +22,10 @@ class EP:
         power_ep : Power-EP parameters (eta,delta) - 2x1 numpy array (floats)
         epsilon : Convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
         """
-        self.likelihood = likelihood
-        assert covariance.shape[0] == covariance.shape[1]
-        if Kmn is not None:
-            self.Kmm = covariance
-            self.Kmn = Kmn
-            self.M = self.Kmn.shape[0]
-            self.N = self.Kmn.shape[1]
-            assert self.M < self.N, 'The number of inducing inputs must be smaller than the number of observations'
-        else:
-            self.K = covariance
-            self.N = self.K.shape[0]
-        if Knn_diag is not None:
-            self.Knn_diag = Knn_diag
-            assert len(Knn_diag) == self.N, 'Knn_diagonal has size different from N'
-
+        self.likelihood_function = likelihood_function
         self.epsilon = epsilon
         self.eta, self.delta = power_ep
-        self.jitter = 1e-12
+        self.jitter = 1e-12 # TODO: is this needed?
 
         """
         Initial values - Likelihood approximation parameters:
@@ -54,10 +40,9 @@ class EP:
         sigma_sum = 1./self.tau_ + 1./self.tau_tilde
         mu_diff_2 = (self.v_/self.tau_ - mu_tilde)**2
         Z_ep = np.sum(np.log(self.Z_hat)) + 0.5*np.sum(np.log(sigma_sum)) + 0.5*np.sum(mu_diff_2/sigma_sum) #Normalization constant
-        return self.tau_tilde[:,None], mu_tilde[:,None], Z_ep
+        self.Y, self.beta, self.Z = self.tau_tilde[:,None], mu_tilde[:,None], Z_ep
 
-class Full(EP):
-    def fit_EP(self):
+    def fit_full(self,K):
         """
         The expectation-propagation algorithm.
         For nomenclature see Rasmussen & Williams 2006.
@@ -66,8 +51,8 @@ class Full(EP):
         #self.K = self.kernel.K(self.X,self.X)
 
         #Initial values - Posterior distribution parameters: q(f|X,Y) = N(f|mu,Sigma)
-        self.mu=np.zeros(self.N)
-        self.Sigma=self.K.copy()
+        self.mu = np.zeros(self.N)
+        self.Sigma = K.copy()
 
         """
         Initial values - Cavity distribution parameters:
@@ -111,11 +96,11 @@ class Full(EP):
                 self.mu = np.dot(self.Sigma,self.v_tilde)
                 self.iterations += 1
             #Sigma recomptutation with Cholesky decompositon
-            Sroot_tilde_K = np.sqrt(self.tau_tilde)[:,None]*(self.K)
+            Sroot_tilde_K = np.sqrt(self.tau_tilde)[:,None]*K
             B = np.eye(self.N) + np.sqrt(self.tau_tilde)[None,:]*Sroot_tilde_K
             L = jitchol(B)
             V,info = linalg.flapack.dtrtrs(L,Sroot_tilde_K,lower=1)
-            self.Sigma = self.K - np.dot(V.T,V)
+            self.Sigma = K - np.dot(V.T,V)
             self.mu = np.dot(self.Sigma,self.v_tilde)
             epsilon_np1 = sum((self.tau_tilde-self.np1[-1])**2)/self.N
             epsilon_np2 = sum((self.v_tilde-self.np2[-1])**2)/self.N
@@ -124,32 +109,33 @@ class Full(EP):
 
         return self._compute_GP_variables()
 
-class DTC(EP):
-    def fit_EP(self):
+    def fit_DTC(self, Knn_diag, Kmn, Kmm):
         """
         The expectation-propagation algorithm with sparse pseudo-input.
         For nomenclature see ... 2013.
         """
+
+        #TODO: this doesn;t work with uncertain inputs! 
 
         """
         Prior approximation parameters:
         q(f|X) = int_{df}{N(f|KfuKuu_invu,diag(Kff-Qff)*N(u|0,Kuu)} = N(f|0,Sigma0)
         Sigma0 = Qnn = Knm*Kmmi*Kmn
         """
-        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
-        self.KmnKnm = np.dot(self.Kmn, self.Kmn.T)
-        self.KmmiKmn = np.dot(self.Kmmi,self.Kmn)
-        self.Qnn_diag = np.sum(self.Kmn*self.KmmiKmn,-2)
-        self.LLT0 = self.Kmm.copy()
+        Kmmi, Lm, Lmi, Kmm_logdet = pdinv(Kmm)
+        KmnKnm = np.dot(Kmn, Kmn.T)
+        KmmiKmn = np.dot(Kmmi,self.Kmn)
+        Qnn_diag = np.sum(Kmn*KmmiKmn,-2)
+        LLT0 = Kmm.copy()
 
         """
         Posterior approximation: q(f|y) = N(f| mu, Sigma)
         Sigma = Diag + P*R.T*R*P.T + K
         mu = w + P*gamma
         """
-        self.mu = np.zeros(self.N)
-        self.LLT = self.Kmm.copy()
-        self.Sigma_diag = self.Qnn_diag.copy()
+        mu = np.zeros(self.N)
+        LLT = Kmm.copy()
+        Sigma_diag = Qnn_diag.copy()
 
         """
         Initial values - Cavity distribution parameters:
@@ -157,12 +143,12 @@ class DTC(EP):
         sigma_ = 1./tau_
         mu_ = v_/tau_
         """
-        self.tau_ = np.empty(self.N,dtype=float)
-        self.v_ = np.empty(self.N,dtype=float)
+        tau_ = np.empty(self.N,dtype=float)
+        v_ = np.empty(self.N,dtype=float)
 
         #Initial values - Marginal moments
         z = np.empty(self.N,dtype=float)
-        self.Z_hat = np.empty(self.N,dtype=float)
+        Z_hat = np.empty(self.N,dtype=float)
         phi = np.empty(self.N,dtype=float)
         mu_hat = np.empty(self.N,dtype=float)
         sigma2_hat = np.empty(self.N,dtype=float)
@@ -171,47 +157,45 @@ class DTC(EP):
         epsilon_np1 = 1
         epsilon_np2 = 1
        	self.iterations = 0
-        self.np1 = [self.tau_tilde.copy()]
-        self.np2 = [self.v_tilde.copy()]
+        np1 = [tau_tilde.copy()]
+        np2 = [v_tilde.copy()]
         while epsilon_np1 > self.epsilon or epsilon_np2 > self.epsilon:
-            update_order = np.arange(self.N)
-            random.shuffle(update_order)
+            update_order = np.random.permutation(self.N)
             for i in update_order:
                 #Cavity distribution parameters
-                self.tau_[i] = 1./self.Sigma_diag[i] - self.eta*self.tau_tilde[i]
-                self.v_[i] = self.mu[i]/self.Sigma_diag[i] - self.eta*self.v_tilde[i]
+                tau_[i] = 1./Sigma_diag[i] - self.eta*tau_tilde[i]
+                v_[i] = mu[i]/Sigma_diag[i] - self.eta*v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood.moments_match(i,self.tau_[i],self.v_[i])
+                Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood_function.moments_match(self.data[i],tau_[i],v_[i])
                 #Site parameters update
-                Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./self.Sigma_diag[i])
-                Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - self.mu[i]/self.Sigma_diag[i])
-                self.tau_tilde[i] = self.tau_tilde[i] + Delta_tau
-                self.v_tilde[i] = self.v_tilde[i] + Delta_v
+                Delta_tau = delta/self.eta*(1./sigma2_hat[i] - 1./Sigma_diag[i])
+                Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma_diag[i])
+                tau_tilde[i] = tau_tilde[i] + Delta_tau
+                v_tilde[i] = v_tilde[i] + Delta_v
                 #Posterior distribution parameters update
-                self.LLT = self.LLT + np.outer(self.Kmn[:,i],self.Kmn[:,i])*Delta_tau
-                L = jitchol(self.LLT)
-                V,info = linalg.flapack.dtrtrs(L,self.Kmn,lower=1)
-                self.Sigma_diag = np.sum(V*V,-2)
+                LLT = LLT + np.outer(Kmn[:,i],Kmn[:,i])*Delta_tau
+                L = jitchol(LLT)
+                V,info = linalg.flapack.dtrtrs(L,Kmn,lower=1)
+                Sigma_diag = np.sum(V*V,-2)
                 si = np.sum(V.T*V[:,i],-1)
-                self.mu = self.mu + (Delta_v-Delta_tau*self.mu[i])*si
+                mu = mu + (Delta_v-Delta_tau*mu[i])*si
                 self.iterations += 1
             #Sigma recomputation with Cholesky decompositon
-            self.LLT0 = self.LLT0 + np.dot(self.Kmn*self.tau_tilde[None,:],self.Kmn.T)
-            self.L = jitchol(self.LLT)
-            V,info = linalg.flapack.dtrtrs(L,self.Kmn,lower=1)
+            LLT0 = LLT0 + np.dot(Kmn*tau_tilde[None,:],Kmn.T)
+            L = jitchol(LLT)
+            V,info = linalg.flapack.dtrtrs(L,Kmn,lower=1)
             V2,info = linalg.flapack.dtrtrs(L.T,V,lower=0)
-            self.Sigma_diag = np.sum(V*V,-2)
-            Knmv_tilde = np.dot(self.Kmn,self.v_tilde)
-            self.mu = np.dot(V2.T,Knmv_tilde)
-            epsilon_np1 = sum((self.tau_tilde-self.np1[-1])**2)/self.N
-            epsilon_np2 = sum((self.v_tilde-self.np2[-1])**2)/self.N
-            self.np1.append(self.tau_tilde.copy())
-            self.np2.append(self.v_tilde.copy())
+            Sigma_diag = np.sum(V*V,-2)
+            Knmv_tilde = np.dot(Kmn,v_tilde)
+            mu = np.dot(V2.T,Knmv_tilde)
+            epsilon_np1 = sum((tau_tilde-np1[-1])**2)/self.N
+            epsilon_np2 = sum((v_tilde-np2[-1])**2)/self.N
+            np1.append(tau_tilde.copy())
+            np2.append(v_tilde.copy())
 
-        return self._compute_GP_variables()
+        self._compute_GP_variables()
 
-class FITC(EP):
-    def fit_EP(self):
+    def fit_FITC(self, Knn_diag, Kmn):
         """
         The expectation-propagation algorithm with sparse pseudo-input.
         For nomenclature see Naish-Guzman and Holden, 2008.

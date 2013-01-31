@@ -1,4 +1,4 @@
-# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2012, 2013 Ricardo Andrade
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
@@ -15,9 +15,7 @@ class likelihood:
     :param Y: observed output (Nx1 numpy.darray)
     ..Note:: Y values allowed depend on the likelihood used
     """
-    def __init__(self,Y,location=0,scale=1):
-        self.Y = Y
-        self.N = self.Y.shape[0]
+    def __init__(self,location=0,scale=1):
         self.location = location
         self.scale = scale
 
@@ -59,11 +57,10 @@ class probit(likelihood):
     L(x) = \\Phi (Y_i*f_i)
     $$
     """
-    def __init__(self,Y,location=0,scale=1):
-        assert np.sum(np.abs(Y)-1) == 0, "Output values must be either -1 or 1"
+    def __init__(self,location=0,scale=1):
         likelihood.__init__(self,Y,location,scale)
 
-    def moments_match(self,i,tau_i,v_i):
+    def moments_match(self,data_i,tau_i,v_i):
         """
         Moments match of the marginal approximation in EP algorithm
 
@@ -71,10 +68,11 @@ class probit(likelihood):
         :param tau_i: precision of the cavity distribution (float)
         :param v_i: mean/variance of the cavity distribution (float)
         """
-        z = self.Y[i]*v_i/np.sqrt(tau_i**2 + tau_i)
+        # TODO: some version of assert np.sum(np.abs(Y)-1) == 0, "Output values must be either -1 or 1"
+        z = data_i*v_i/np.sqrt(tau_i**2 + tau_i)
         Z_hat = stats.norm.cdf(z)
         phi = stats.norm.pdf(z)
-        mu_hat = v_i/tau_i + self.Y[i]*phi/(Z_hat*np.sqrt(tau_i**2 + tau_i))
+        mu_hat = v_i/tau_i + data_i*phi/(Z_hat*np.sqrt(tau_i**2 + tau_i))
         sigma2_hat = 1./tau_i - (phi/((tau_i**2+tau_i)*Z_hat))*(z+phi/Z_hat)
         return Z_hat, mu_hat, sigma2_hat
 
@@ -83,14 +81,16 @@ class probit(likelihood):
         var = var.flatten()
         return stats.norm.cdf(mu/np.sqrt(1+var))
 
-    def predictive_var(self,mu,var):
-        p=self.predictive_mean(mu,var)
-        return p*(1-p)
+    def predictive_quantiles(self,mu,var):
+        #p=self.predictive_mean(mu,var)
+        #return p*(1-p)
+        raise NotImplementedError #TODO
 
     def _log_likelihood_gradients():
-        raise NotImplementedError
+        return np.zeros(0) # there are no parameters of whcih to compute the gradients
 
     def plot(self,X,mu,var,phi,X_obs,Z=None,samples=0):
+        #TODO: remove me
         assert X_obs.shape[1] == 1, 'Number of dimensions must be 1'
         phi_var = self.predictive_var(mu,var)
         gpplot(X,phi,phi_var)
@@ -192,13 +192,10 @@ class poisson(likelihood):
             pb.plot(Z,Z*0+pb.ylim()[0],'k|',mew=1.5,markersize=12)
 
 class gaussian(likelihood):
-    """
-    Gaussian likelihood
-    Y is expected to take values in (-inf,inf)
-    """
-        self.variance = variance
-        self._data = Y
-        self.
+        """
+        Gaussian likelihood
+        Y is expected to take values in (-inf,inf)
+        """
     def moments_match(self,i,tau_i,v_i):
         """
         Moments match of the marginal approximation in EP algorithm

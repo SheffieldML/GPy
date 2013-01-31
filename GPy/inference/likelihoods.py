@@ -196,6 +196,9 @@ class gaussian(likelihood):
     Gaussian likelihood
     Y is expected to take values in (-inf,inf)
     """
+        self.variance = variance
+        self._data = Y
+        self.
     def moments_match(self,i,tau_i,v_i):
         """
         Moments match of the marginal approximation in EP algorithm
@@ -219,8 +222,8 @@ class gaussian(likelihood):
         if U is not None:
             pb.plot(U,np.ones(U.shape[0])*self.Y.min()*.8,'r|',mew=1.5,markersize=12)
 
-    def predictive_mean(self,mu,Sigma):
-        return mu
-
     def _log_likelihood_gradients():
         raise NotImplementedError
+            else:
+                var = var[:,None] * np.square(self._Ystd)
+

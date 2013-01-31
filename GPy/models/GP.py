@@ -8,23 +8,22 @@ from .. import kern
 from ..core import model
 from ..util.linalg import pdinv,mdot
 from ..util.plot import gpplot, Tango
-from ..inference.EP import Full
-from ..inference.likelihoods import likelihood,probit,poisson,gaussian
+from ..inference.EP import Full # TODO: tidy
+from ..inference import likelihoods
 
 class GP(model):
     """
     Gaussian Process model for regression and EP
 
     :param X: input observations
-    :param Y: observed values
     :param kernel: a GPy kernel, defaults to rbf+white
+    :parm likelihood: a GPy likelihood
     :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_X: False|True
     :param normalize_Y:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_Y: False|True
     :param Xslices: how the X,Y data co-vary in the kernel (i.e. which "outputs" they correspond to). See (link:slicing)
     :rtype: model object
-    :parm likelihood: a GPy likelihood, defaults to gaussian
     :param epsilon_ep: convergence criterion for the Expectation Propagation algorithm, defaults to 0.1
     :param powerep: power-EP parameters [$\eta$,$\delta$], defaults to [1.,1.]
     :type powerep: list
@@ -32,23 +31,19 @@ class GP(model):
     .. Note:: Multiple independent outputs are allowed using columns of Y
 
     """
-    #TODO: make beta parameter explicit
     #TODO: when using EP, predict needs to return 3 values otherwise it just needs 2. At the moment predict returns 3 values in any case.
 
-    def __init__(self,X,Y=None,kernel=None,normalize_X=False,normalize_Y=False, Xslices=None,likelihood=None,epsilon_ep=1e-3,power_ep=[1.,1.]):
+    def __init__(self, X, kernel, likelihood, normalize_X=False, Xslices=None):
 
         # parse arguments
         self.Xslices = Xslices
         self.X = X
-        self.N, self.Q = self.X.shape
         assert len(self.X.shape)==2
-        if kernel is None:
-            kernel = kern.rbf(X.shape[1]) + kern.bias(X.shape[1]) + kern.white(X.shape[1])
-        else:
-            assert isinstance(kernel, kern.kern)
+        self.N, self.Q = self.X.shape
+        assert isinstance(kernel, kern.kern)
         self.kern = kernel
 
-        #here's some simple normalisation
+        #here's some simple normalisation for the inputs
         if normalize_X:
             self._Xmean = X.mean(0)[None,:]
             self._Xstd = X.std(0)[None,:]
@@ -59,82 +54,48 @@ class GP(model):
             self._Xmean = np.zeros((1,self.X.shape[1]))
             self._Xstd = np.ones((1,self.X.shape[1]))
 
-        # Y - likelihood related variables, these might change whether using EP or not
-        if likelihood is None:
-            assert Y is not None, "Either Y or likelihood must be defined"
-            self.likelihood = gaussian(Y)
-        else:
-            self.likelihood = likelihood
-        assert len(self.likelihood.Y.shape)==2
+        self.likelihood = likelihood
+        self.Y = self.likelihood.Y
+        self.YYT = self.likelihood.YYT # TODO: this is ugly. what about sufficient_stats?
         assert self.X.shape[0] == self.likelihood.Y.shape[0]
         self.N, self.D = self.likelihood.Y.shape
-
-        if isinstance(self.likelihood,gaussian):
-            self.EP = False
-            self.Y = Y
-            self.beta = 100.#FIXME beta should be an explicit parameter for this model
-            # Here's some simple normalisation
-            if normalize_Y:
-                self._Ymean = Y.mean(0)[None,:]
-                self._Ystd = Y.std(0)[None,:]
-                self.Y = (Y.copy()- self._Ymean) / self._Ystd
-            else:
-                self._Ymean = np.zeros((1,self.Y.shape[1]))
-                self._Ystd = np.ones((1,self.Y.shape[1]))
-
-            if self.D > self.N:
-                # then it's more efficient to store YYT
-                self.YYT = np.dot(self.Y, self.Y.T)
-            else:
-                self.YYT = None
-        else:
-            if self.D > 1:
-                raise NotImplementedError, "EP is not implemented for D > 1"
-            # Y is defined after approximating the likelihood
-            self.EP = True
-            self.eta,self.delta = power_ep
-            self.epsilon_ep = epsilon_ep
-            self.beta = np.ones([self.N,self.D])
-            self.Z_ep = 0
-            self.Y = None
-            self._Ymean = np.zeros((1,self.D))
-            self._Ystd = np.ones((1,self.D))
 
         model.__init__(self)
 
     def _set_params(self,p):
-        # TODO: add beta when not using EP
-        self.kern._set_params_transformed(p)
+        self.kern._set_params_transformed(p[:self.kern.Nparam])
+        self.likelihood._set_params(p[self.kern.Nparam:])
+
         self.K = self.kern.K(self.X,slices1=self.Xslices)
-        if self.EP:
-            self.K += np.diag(1./self.beta.flatten())
-        #else:
-        #    self.beta = p[-1]
+        self.K += np.diag(self.likelihood_variance)
+
         self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
+
+        #the gradient of the likelihood wrt the covariance matrix
+        if self.YYT is None:
+            self._alpha = np.dot(self.Ki,self.Y)
+            self._alpha2 = np.square(self._alpha)
+            self.dL_dK = 0.5*(np.dot(self._alpha,self._alpha.T)-self.D*self.Ki)
+        else:
+            tmp = mdot(self.Ki, self.YYT, self.Ki)
+            self._alpha2 = np.diag(tmp)
+            self.dL_dK = 0.5*(tmp - self.D*self.Ki)
 
     def _get_params(self):
-        # TODO: add beta when not using EP
-        return self.kern._get_params_transformed()
+        return np.hstack((self.kern._get_params_transformed(), self.likelihood._get_params()))
 
     def _get_param_names(self):
-        # TODO: add beta when not using EP
-        return self.kern._get_param_names_transformed()
+        return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
-    def approximate_likelihood(self):
+    def update_likelihood_approximation(self):
         """
         Approximates a non-gaussian likelihood using Expectation Propagation
+
+        For a Gaussian (or direct: TODO) likelihood, no iteration is required:
+        this function does nothing
         """
-        assert not isinstance(self.likelihood, gaussian), "EP is only available for non-gaussian likelihoods"
-        self.ep_approx = Full(self.K,self.likelihood,epsilon = self.epsilon_ep,power_ep=[self.eta,self.delta])
-        self.beta, self.Y,  self.Z_ep = self.ep_approx.fit_EP()
-        if self.D > self.N:
-            # then it's more efficient to store YYT
-            self.YYT = np.dot(self.Y, self.Y.T)
-        else:
-            self.YYT = None
-        # Kernel plus noise variance term
-        self.K = self.kern.K(self.X,slices1=self.Xslices) + np.diag(1./self.beta.flatten())
-        self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
+        self.likelihood.fit(self.K)
+        self.Y, self.YYT, self.likelihood_variance, self.likelihood_Z = self.likelihood.sufficient_stats() # TODO: just store these in the likelihood?
 
     def _model_fit_term(self):
         """
@@ -147,29 +108,41 @@ class GP(model):
 
     def log_likelihood(self):
         """
-        The log marginal likelihood for an EP model can be written as the log likelihood of
-        a regression model for a new variable Y* = v_tilde/tau_tilde, with a covariance
+        The log marginal likelihood of the GP.
+
+        For an EP model,  can be written as the log likelihood of a regression
+        model for a new variable Y* = v_tilde/tau_tilde, with a covariance
         matrix K* = K + diag(1./tau_tilde) plus a normalization term.
         """
-        L = -0.5*selff.D*self.K_logdet + self.model_fit_term()
-        if self.EP:
-            L += self.normalisation_term()
-        return L
+        return -0.5*self.D*self.K_logdet + self.model_fit_term() + self.likelihood.Z
 
-    def log_likelihood(self):
-        complexity_term = -0.5*self.N*self.D*np.log(2.*np.pi) - 0.5*self.D*self.K_logdet
-        return complexity_term + self._model_fit_term()
-
-    def dL_dK(self):
-        if self.YYT is None:
-            alpha = np.dot(self.Ki,self.Y)
-            dL_dK = 0.5*(np.dot(alpha,alpha.T)-self.D*self.Ki)
-        else:
-            dL_dK = 0.5*(mdot(self.Ki, self.YYT, self.Ki) - self.D*self.Ki)
-        return dL_dK
 
     def _log_likelihood_gradients(self):
-        return self.kern.dK_dtheta(partial=self.dL_dK(),X=self.X)
+        """
+        The gradient of all parameters.
+
+        For the kernel parameters, use the chain rule via dL_dK
+
+        For the likelihood parameters, pass in alpha = K^-1 y
+        """
+        return np.hstack((self.kern.dK_dtheta(partial=self.dL_dK(),X=self.X), self.likelihood._gradients(self.alpha2)))
+
+    def _raw_predict(self,_Xnew,slices, full_cov=False):
+        """
+        Internal helper function for making predictions, does not account
+        for normalisation or likelihood
+        """
+        Kx = self.kern.K(self.X,_Xnew, slices1=self.Xslices,slices2=slices)
+        mu = np.dot(np.dot(Kx.T,self.Ki),self.Y)
+        KiKx = np.dot(self.Ki,Kx)
+        if full_cov:
+            Kxx = self.kern.K(_Xnew, slices1=slices,slices2=slices)
+            var = Kxx - np.dot(KiKx.T,Kx)
+        else:
+            Kxx = self.kern.Kdiag(_Xnew, slices=slices)
+            var = Kxx - np.sum(np.multiply(KiKx,Kx),0)
+        return mu, var
+
 
     def predict(self,Xnew, slices=None, full_cov=False):
         """
@@ -198,41 +171,11 @@ class GP(model):
         """
         #normalise X values
         Xnew = (Xnew.copy() - self._Xmean) / self._Xstd
-        mu, var, phi = self._raw_predict(Xnew, slices, full_cov)
+        mu, var, phi = self._raw_predict(Xnew, slices, full_cov=full_cov)
 
-        #un-normalise
-        mu = mu*self._Ystd + self._Ymean
-        if full_cov:
-            if self.D==1:
-                var *= np.square(self._Ystd)
-            else:
-                var = var[:,:,None] * np.square(self._Ystd)
-        else:
-            if self.D==1:
-                var *= np.square(np.squeeze(self._Ystd))
-            else:
-                var = var[:,None] * np.square(self._Ystd)
+        #now push through likelihood TODO
 
-        return mu,var,phi
-
-    def _raw_predict(self,_Xnew,slices, full_cov=False):
-        """Internal helper function for making predictions, does not account for normalisation"""
-        Kx = self.kern.K(self.X,_Xnew, slices1=self.Xslices,slices2=slices)
-        mu = np.dot(np.dot(Kx.T,self.Ki),self.Y)
-        KiKx = np.dot(self.Ki,Kx)
-        if full_cov:
-            Kxx = self.kern.K(_Xnew, slices1=slices,slices2=slices)
-            var = Kxx - np.dot(KiKx.T,Kx)
-            if self.EP:
-                raise NotImplementedError, "full_cov = True not implemented for EP"
-                #var = np.diag(var)[:,None]
-                #phi = self.likelihood.predictive_mean(mu,var)
-        else:
-            Kxx = self.kern.Kdiag(_Xnew, slices=slices)
-            var = Kxx - np.sum(np.multiply(KiKx,Kx),0)
-            if self.EP:
-                phi = self.likelihood.predictive_mean(mu,var)
-        return mu, var, phi
+        return mean, _5pc, _95pc
 
     def plot(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None,full_cov=False):
         """

@@ -29,8 +29,7 @@ try:
 except ImportError:
     from mock import MagicMock
 
-    MOCK_MODULES = ['numpy', 'quantities', 'scipy', 'scipy.spatial',
-                    'scipy.spatial.distance']
+    MOCK_MODULES = ['numpy', 'pylab', 'scipy']
     for mod_name in MOCK_MODULES:
         sys.modules[mod_name] = MagicMock()
 
@@ -50,7 +49,7 @@ except ImportError:
     #sys.modules['guiqwt.tools'].CommandTool = CommandTool
     #sys.modules['guiqwt.tools'].InteractiveTool = InteractiveTool
 
-import Gpy
+import GPy
     
 
 # If your extensions are in another directory, add it here. If the directory

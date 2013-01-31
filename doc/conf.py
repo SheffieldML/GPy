@@ -59,7 +59,7 @@ import sys, os
         #return 1
 
     #__len__ = __int__ = __long__ = __index__ = __hash__
-    
+
     #def __oct__(self):
         #return '01'
 
@@ -116,9 +116,10 @@ print "Adding path"
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 print "Importing extensions"
-              
+
 extensions = [#'ipython_directive',
-              'sphinx.ext.autodoc', 'sphinx.ext.viewcode'
+              'sphinx.ext.autodoc', 'sphinx.ext.viewcode',
+              'sphinx.ext.pngmath'
               #'matplotlib.sphinxext.mathmpl',
               #'matplotlib.sphinxext.only_directives',
               #'matplotlib.sphinxext.plot_directive',
@@ -127,7 +128,7 @@ extensions = [#'ipython_directive',
               #'sphinx.ext.doctest',
               #'ipython_console_highlighting',
               #'inheritance_diagram',
-              #'numpydoc'] 
+              #'numpydoc']
 print "finished importing"
 
 ##############################################################################
@@ -443,5 +444,3 @@ epub_copyright = u'2013, Author'
 
 #def setup(app):
     #app.connect("autodoc-skip-member", skip)
-
-

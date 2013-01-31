@@ -120,7 +120,7 @@ class sparse_GP_regression(GP_regression):
     def _get_param_names(self):
         return sum([['iip_%i_%i'%(i,j) for i in range(self.Z.shape[0])] for j in range(self.Z.shape[1])],[]) + ['noise_precision']+self.kern._get_param_names_transformed()
 
-        
+
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
         sf2 = self.scale_factor**2
@@ -132,7 +132,7 @@ class sparse_GP_regression(GP_regression):
 
     def _log_likelihood_gradients(self):
         return np.hstack([self.dL_dZ().flatten(), self.dL_dbeta(), self.dL_dtheta()])
-    
+
     def dL_dbeta(self):
         """
         Compute the gradient of the log likelihood wrt beta.

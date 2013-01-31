@@ -132,7 +132,6 @@ class opt_SGD(Optimizer):
         self.model.Y = self.model.Y[samples]
         model_name = self.model.__class__.__name__
 
-        import pdb; pdb.set_trace()
         if model_name == 'Bayesian_GPLVM':
             self.model.trYYT = np.sum(np.square(self.model.Y))
 
@@ -159,6 +158,7 @@ class opt_SGD(Optimizer):
         self.trace = []
         missing_data = self.check_for_missing(self.model.Y)
         self.model.Youter = None # this is probably not very efficient
+        self.model.YYT = None
 
         for it in range(self.iterations):
             if it == 0 or self.self_paced is False:
@@ -176,7 +176,7 @@ class opt_SGD(Optimizer):
                 count += 1
                 self.model.D = len(j)
                 self.model.Y = Y[:, j]
-
+                self.model.trYYT = np.sum(np.square(self.model.Y))
                 if missing_data:
                     shapes = self.get_param_shapes(N, Q)
                     f, step, Nj = self.step_with_missing_data(f_fp, X, Y, step, shapes)

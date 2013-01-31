@@ -26,6 +26,8 @@ class Mock(object):
         pass
     class Normalize(object):
         pass
+    class LinearSegmentedColormap(object):
+        pass
     def __init__(self, *args):
         """Mock init
         """
@@ -44,8 +46,7 @@ try:
     import GPy
 except exceptions.ImportError:
     MOCK_MODULES = ['matplotlib', 'pylab', 'matplotlib.colors',
-                    'matplotlib.cbook', 'pyfits',
-                    'numpy']
+                    'matplotlib.cbook', 'pyfits', 'numpy']
 
     for mod_name in MOCK_MODULES:
         sys.modules[mod_name] = Mock()

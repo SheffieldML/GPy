@@ -26,28 +26,27 @@ class rbf(kernpart):
     :type ARD: Boolean
     :rtype: kernel object
 
-    .. Note: for rbf with different lengthscale on each dimension, see rbf_ARD
+    .. Note: this object implements both the ARD and 'spherical' version of the function
     """
 
     def __init__(self,D,variance=1.,lengthscale=None,ARD=False):
         self.D = D
+        self.name = 'rbf'
         self.ARD = ARD
         if not ARD:
             self.Nparam = 2
-            self.name = 'rbf'
             if lengthscale is not None:
-                assert lengthscale.shape == (1,)
+                assert lengthscale.size == 1
             else:
                 lengthscale = np.ones(1)
         else:
             self.Nparam = self.D + 1
-            self.name = 'rbf_ARD'
             if lengthscale is not None:
-                assert lengthscale.shape == (self.D,)
+                assert lengthscale.size == self.D
             else:
                 lengthscale = np.ones(self.D)
 
-        self._set_params(np.hstack((variance,lengthscale)))
+        self._set_params(np.hstack((variance,lengthscale.flatten())))
 
         #initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3,1))

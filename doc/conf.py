@@ -23,12 +23,12 @@ import sys, os, exceptions
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
 # absolute, like shown here.
-sys.path.append(os.path.abspath('.'))
+#sys.path.append(os.path.abspath('.'))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('.'))
+#sys.path.insert(0, os.path.abspath('.'))
 
 # -- General configuration -----------------------------------------------------
 
@@ -43,7 +43,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 if on_rtd:
-  #sys.path.append("../GPy")
+  sys.path.append("../GPy")
   os.system("pwd")
   #os.system("cd ..")
   os.system("sphinx-apidoc -f -o . ../GPy")

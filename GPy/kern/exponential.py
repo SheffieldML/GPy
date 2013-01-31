@@ -13,7 +13,7 @@ class exponential(kernpart):
 
     .. math::
 
-       k(r) = \sigma^2 \exp(- r) \\qquad \\qquad \\text{ where  } r = \sqrt{\sum_{i=1}^D \\frac{(x_i-y_i)^2}{\ell_i^2} }
+       k(r) = \sigma^2 \exp(- r) \ \ \ \ \  \\text{ where  } r = \sqrt{\sum_{i=1}^D \\frac{(x_i-y_i)^2}{\ell_i^2} }
 
     :param D: the number of input dimensions
     :type D: int

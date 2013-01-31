@@ -3,7 +3,7 @@
 Gaussian process regression tutorial
 *************************************
 
-We will see in this tutorial the basics for building a 1 dimensional and a 2 dimensional Gaussian process model, also known as a kriging model.
+We will see in this tutorial the basics for building a 1 dimensional and a 2 dimensional Gaussian process regression model, also known as a kriging model.
 
 We first import the libraries we will need: ::
 
@@ -61,7 +61,7 @@ gives the following output: ::
 
     GP regression model before optimization of the parameters. The shaded region corresponds to 95% confidence intervals (ie +/- 2 standard deviation).
 
-The default values of the kernel parameters may not be relevant for the current data (for example, the confidence intervals seems too wide on the previous figure). A common approach is find the values of the parameters that maximize the likelihood of the data. There are two steps for doing that with GPy:
+The default values of the kernel parameters may not be relevant for the current data (for example, the confidence intervals seems too wide on the previous figure). A common approach is to find the values of the parameters that maximize the likelihood of the data. There are two steps for doing that with GPy:
 
 * Constrain the parameters of the kernel to ensure the kernel will always be a valid covariance structure (For example, we don\'t want some variances to be negative!).
 * Run the optimization

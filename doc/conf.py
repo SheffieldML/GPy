@@ -111,6 +111,7 @@ import sys, os
         #else:
             #return Mock()
 
+sys.path.append("../GPy")
 import mock
 
 MOCK_MODULES = ['pylab', 'matplotlib']#'matplotlib', 'matplotlib.color', 'matplotlib.pyplot', 'pylab' ]
@@ -120,7 +121,7 @@ for mod_name in MOCK_MODULES:
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('..'))
 
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
@@ -147,8 +148,8 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if on_rtd:
   sys.path.append("../GPy")
   os.system("pwd")
-  #os.system("cd ..")
   os.system("sphinx-apidoc -f -o . ../GPy")
+  #os.system("cd ..")
   #os.system("cd ./docs")
 
 # Add any paths that contain templates here, relative to this directory.

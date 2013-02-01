@@ -84,7 +84,7 @@ def toy_linear_1d_classification(seed=default_seed):
     likelihood = GPy.likelihoods.EP(data['Y'][:, 0:1],distribution)
 
     # Model definition
-    m = GPy.models.GP(data['X'],kernel,likelihood=likelihood)
+    m = GPy.models.GP(data['X'],likelihood=likelihood,kernel=kernel)
 
     # Optimize
     """
@@ -98,9 +98,9 @@ def toy_linear_1d_classification(seed=default_seed):
 
     # Plot
     pb.subplot(211)
-    m.plot_GP()
+    m.plot_internal()
     pb.subplot(212)
-    m.plot_output()
+    m.plot()
     print(m)
 
     return m

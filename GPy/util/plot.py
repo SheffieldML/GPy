@@ -70,10 +70,11 @@ def align_subplots(N,M,xlim=None, ylim=None):
         else:
             removeUpperTicks()
 
-def x_frame(X,plot_limits=None,resolution=None):
+def x_frame1D(X,plot_limits=None,resolution=None):
     """
     Internal helper function for making plots, returns a set of input values to plot as well as lower and upper limits
     """
+    assert X.shape[1] ==1, "x_frame1D is defined for one-dimensional inputs"
     if plot_limits is None:
         xmin,xmax = X.min(0),X.max(0)
         xmin, xmax = xmin-0.2*(xmax-xmin), xmax+0.2*(xmax-xmin)
@@ -82,12 +83,24 @@ def x_frame(X,plot_limits=None,resolution=None):
     else:
         raise ValueError, "Bad limits for plotting"
 
-    if X.shape[1]==1:
-        Xnew = np.linspace(xmin,xmax,resolution or 200)[:,None]
-    elif X.shape[1]==2:
-        resolution = resolution or 50
-        xx,yy = np.mgrid[xmin[0]:xmax[0]:1j*resolution,xmin[1]:xmax[1]:1j*resolution]
-        Xnew = np.vstack((xx.flatten(),yy.flatten())).T
-    else:
-        raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
+    Xnew = np.linspace(xmin,xmax,resolution or 200)[:,None]
     return Xnew, xmin, xmax
+
+def x_frame2D(X,plot_limits=None,resolution=None):
+    """
+    Internal helper function for making plots, returns a set of input values to plot as well as lower and upper limits
+    """
+    assert X.shape[1] ==2, "x_frame2D is defined for two-dimensional inputs"
+    if plot_limits is None:
+        xmin,xmax = X.min(0),X.max(0)
+        xmin, xmax = xmin-0.2*(xmax-xmin), xmax+0.2*(xmax-xmin)
+    elif len(plot_limits)==2:
+        xmin, xmax = plot_limits
+    else:
+        raise ValueError, "Bad limits for plotting"
+
+    resolution = resolution or 50
+    xx,yy = np.mgrid[xmin[0]:xmax[0]:1j*resolution,xmin[1]:xmax[1]:1j*resolution]
+    Xnew = np.vstack((xx.flatten(),yy.flatten())).T
+    return Xnew, xx,yy,xmin, xmax
+

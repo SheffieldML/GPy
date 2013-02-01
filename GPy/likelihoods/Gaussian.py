@@ -42,7 +42,7 @@ class Gaussian(likelihood):
         """
         mean = mu*self._std + self._mean
         true_var = (var + self._variance)*self._std**2
-        _5pc = mean + mean - 2.*np.sqrt(var)
+        _5pc = mean + - 2.*np.sqrt(var)
         _95pc = mean + 2.*np.sqrt(var)
         return mean, _5pc, _95pc
 

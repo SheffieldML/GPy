@@ -70,16 +70,23 @@ class sparse_GP(GP):
             self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty).sum()
             self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
             self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty)
-            self.psi2_beta_scaled = (self.psi2*(self.beta/sf2)).sum(0)
+            if self.likelihood.is_heteroscedastic:
+                self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision.reshape(self.N,1,1)/sf2)).sum(0)
+                #TODO: what is the likelihood is heterscedatic and there are multiple independent outputs?
+            else:
+                self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision/sf2)).sum(0)
         else:
             self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices).sum()
             self.psi1 = self.kern.K(self.Z,self.X)
-            tmp = self.psi1*(np.sqrt(self.likelihood.beta)/sf)
+            if self.likelihood.is_heteroscedastic:
+                tmp = self.psi1*(np.sqrt(self.likelihood.precision.reshape(self.N,1))/sf)
+            else:
+                tmp = self.psi1*(np.sqrt(self.likelihood.precision)/sf)
             self.psi2_beta_scaled = np.dot(tmp,tmp.T)
 
-        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)#+np.eye(self.M)*1e-3)
+        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
 
-        self.V = (self.likelihood.beta/self.scale_factor)*self.Y
+        self.V = (self.likelihood.precision/self.scale_factor)*self.Y
         self.A = mdot(self.Lmi, self.psi2_beta_scaled, self.Lmi.T)
         self.B = np.eye(self.M)/sf2 + self.A
 

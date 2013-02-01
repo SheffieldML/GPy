@@ -50,7 +50,7 @@ class EP(likelihood):
         mu_diff_2 = (self.v_/self.tau_ - mu_tilde)**2
         self.Z = np.sum(np.log(self.Z_hat)) + 0.5*np.sum(np.log(sigma_sum)) + 0.5*np.sum(mu_diff_2/sigma_sum) #Normalization constant, aka Z_ep
 
-        self.Y = mu_tilde[:,None]
+        self.Y =  mu_tilde[:,None]
         self.YYT = np.dot(self.Y,self.Y.T)
         self.precision = self.tau_tilde
         self.covariance_matrix = np.diag(1./self.precision)

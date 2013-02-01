@@ -1,11 +1,9 @@
 import numpy as np
-import random
 from scipy import stats, linalg
-#from ..core import model
 from ..util.linalg import pdinv,mdot,jitchol
-from ..util.plot import gpplot
+from likelihood import likelihood
 
-class EP:
+class EP(likelihood):
     def __init__(self,data,likelihood_function,epsilon=1e-3,power_ep=[1.,1.]):
         """
         Expectation Propagation
@@ -20,11 +18,10 @@ class EP:
         self.eta, self.delta = power_ep
         self.data = data
         self.N = self.data.size
+        self.is_heteroscedastic = True
 
-        """
-        Initial values - Likelihood approximation parameters:
-        p(y|f) = t(f|tau_tilde,v_tilde)
-        """
+        #Initial values - Likelihood approximation parameters:
+        #p(y|f) = t(f|tau_tilde,v_tilde)
         self.tau_tilde = np.zeros(self.N)
         self.v_tilde = np.zeros(self.N)
 
@@ -51,9 +48,11 @@ class EP:
         mu_tilde = self.v_tilde/self.tau_tilde #When calling EP, this variable is used instead of Y in the GP model
         sigma_sum = 1./self.tau_ + 1./self.tau_tilde
         mu_diff_2 = (self.v_/self.tau_ - mu_tilde)**2
-        Z_ep = np.sum(np.log(self.Z_hat)) + 0.5*np.sum(np.log(sigma_sum)) + 0.5*np.sum(mu_diff_2/sigma_sum) #Normalization constant
-        self.Y, self.beta, self.Z =  mu_tilde[:,None],self.tau_tilde[:,None], Z_ep
-        self.variance = np.diag(1./self.beta.flatten())
+        self.Z = np.sum(np.log(self.Z_hat)) + 0.5*np.sum(np.log(sigma_sum)) + 0.5*np.sum(mu_diff_2/sigma_sum) #Normalization constant, aka Z_ep
+
+        self.Y =  mu_tilde[:,None]
+        self.precsion = self.tau_tilde[:,None]
+        self.covariance_matrix = np.diag(1./self.precision)
 
     def fit_full(self,K):
         """

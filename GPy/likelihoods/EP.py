@@ -31,7 +31,7 @@ class EP(likelihood):
         self.Z = np.sum(np.log(self.Z_hat)) + 0.5*np.sum(np.log(sigma_sum)) + 0.5*np.sum(mu_diff_2/sigma_sum) #Normalization constant, aka Z_ep
 
         self.Y =  mu_tilde[:,None]
-        self.precsion = self.tau_tilde
+        self.precision = self.tau_tilde[:,None]
         self.covariance_matrix = np.diag(1./self.precision)
 
     def fit_full(self,K):

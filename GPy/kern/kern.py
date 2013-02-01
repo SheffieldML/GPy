@@ -155,7 +155,7 @@ class kern(parameterised):
 
         D = K1.D + K2.D
 
-        newkernparts = [product_orthogonal(k1,k2).parts[0] for k1, k2 in itertools.product(K1.parts,K2.parts)]
+        newkernparts = [product_orthogonal(k1,k2) for k1, k2 in itertools.product(K1.parts,K2.parts)]
 
         slices = []
         for sl1, sl2 in itertools.product(K1.input_slices,K2.input_slices):

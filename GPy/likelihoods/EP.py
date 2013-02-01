@@ -16,12 +16,32 @@ class EP(likelihood):
         self.likelihood_function = likelihood_function
         self.epsilon = epsilon
         self.eta, self.delta = power_ep
+        self.data = data
+        self.N = self.data.size
         self.is_heteroscedastic = True
 
         #Initial values - Likelihood approximation parameters:
         #p(y|f) = t(f|tau_tilde,v_tilde)
         self.tau_tilde = np.zeros(self.N)
         self.v_tilde = np.zeros(self.N)
+
+        #initial values for the GP variables
+        self.Y = np.zeros((self.N,1))
+        self.covariance_matrix = np.eye(self.N)
+        self.Z = 0
+        self.YYT = None
+
+    def predictive_values(self,mu,var):
+        return self.likelihood_function.predictive_values(mu,var)
+
+    def _get_params(self):
+        return np.zeros(0)
+    def _get_param_names(self):
+        return []
+    def _set_params(self,p):
+        pass # TODO: the EP likelihood might want to take some parameters...
+    def _gradients(self,partial):
+        return np.zeros(0) # TODO: the EP likelihood might want to take some parameters...
 
     def _compute_GP_variables(self):
         #Variables to be called from GP
@@ -31,7 +51,8 @@ class EP(likelihood):
         self.Z = np.sum(np.log(self.Z_hat)) + 0.5*np.sum(np.log(sigma_sum)) + 0.5*np.sum(mu_diff_2/sigma_sum) #Normalization constant, aka Z_ep
 
         self.Y =  mu_tilde[:,None]
-        self.precision = self.tau_tilde[:,None]
+        self.YYT = np.dot(self.Y,self.Y.T)
+        self.precision = self.tau_tilde
         self.covariance_matrix = np.diag(1./self.precision)
 
     def fit_full(self,K):
@@ -41,6 +62,8 @@ class EP(likelihood):
         """
         #Prior distribution parameters: p(f|X) = N(f|0,K)
 
+        self.tau_tilde = np.zeros(self.N)
+        self.v_tilde = np.zeros(self.N)
         #Initial values - Posterior distribution parameters: q(f|X,Y) = N(f|mu,Sigma)
         self.mu = np.zeros(self.N)
         self.Sigma = K.copy()
@@ -73,8 +96,9 @@ class EP(likelihood):
                 #Cavity distribution parameters
                 self.tau_[i] = 1./self.Sigma[i,i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = self.mu[i]/self.Sigma[i,i] - self.eta*self.v_tilde[i]
+                print 1./self.Sigma[i,i],self.tau_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood.moments_match(i,self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood_function.moments_match(self.data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./self.Sigma[i,i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - self.mu[i]/self.Sigma[i,i])
@@ -85,6 +109,7 @@ class EP(likelihood):
                 self.Sigma = self.Sigma - Delta_tau/(1.+ Delta_tau*self.Sigma[i,i])*np.dot(si,si.T)
                 self.mu = np.dot(self.Sigma,self.v_tilde)
                 self.iterations += 1
+                print self.tau_tilde[i]
             #Sigma recomptutation with Cholesky decompositon
             Sroot_tilde_K = np.sqrt(self.tau_tilde)[:,None]*K
             B = np.eye(self.N) + np.sqrt(self.tau_tilde)[None,:]*Sroot_tilde_K
@@ -105,7 +130,7 @@ class EP(likelihood):
         For nomenclature see ... 2013.
         """
 
-        #TODO: this doesn;t work with uncertain inputs! 
+        #TODO: this doesn;t work with uncertain inputs!
 
         """
         Prior approximation parameters:
@@ -246,7 +271,7 @@ class EP(likelihood):
                 self.tau_[i] = 1./self.Sigma_diag[i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = self.mu[i]/self.Sigma_diag[i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood.moments_match(i,self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood_function.moments_match(data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./self.Sigma_diag[i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - self.mu[i]/self.Sigma_diag[i])

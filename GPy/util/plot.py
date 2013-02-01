@@ -11,6 +11,8 @@ def gpplot(x,mu,lower,upper,edgecol=Tango.coloursHex['darkBlue'],fillcol=Tango.c
         axes = pb.gca()
     mu = mu.flatten()
     x = x.flatten()
+    lower = lower.flatten()
+    upper = upper.flatten()
 
     #here's the mean
     axes.plot(x,mu,color=edgecol,linewidth=2)

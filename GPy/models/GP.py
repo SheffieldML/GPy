@@ -7,7 +7,7 @@ import pylab as pb
 from .. import kern
 from ..core import model
 from ..util.linalg import pdinv,mdot
-from ..util.plot import gpplot, Tango
+from ..util.plot import gpplot,x_frame, Tango
 from ..likelihoods import EP
 
 class GP(model):
@@ -175,37 +175,7 @@ class GP(model):
         return mean, _5pc, _95pc
 
 
-    def _x_frame(self,plot_limits=None,which_data='all',which_functions='all',resolution=None):
-        """
-        Internal helper function for making plots, return a set of new input values to plot as well as lower and upper limits
-        """
-        if which_functions=='all':
-            which_functions = [True]*self.kern.Nparts
-        if which_data=='all':
-            which_data = slice(None)
-
-        X = self.X[which_data,:]
-        Y = self.likelihood.Y[which_data,:]
-
-        if plot_limits is None:
-            xmin,xmax = X.min(0),X.max(0)
-            xmin, xmax = xmin-0.2*(xmax-xmin), xmax+0.2*(xmax-xmin)
-        elif len(plot_limits)==2:
-            xmin, xmax = plot_limits
-        else:
-            raise ValueError, "Bad limits for plotting"
-
-        if self.X.shape[1]==1:
-            Xnew = np.linspace(xmin,xmax,resolution or 200)[:,None]
-        elif self.X.shape[1]==2:
-            resolution = resolution or 50
-            xx,yy = np.mgrid[xmin[0]:xmax[0]:1j*resolution,xmin[1]:xmax[1]:1j*resolution]
-            Xnew = np.vstack((xx.flatten(),yy.flatten())).T
-        else:
-            raise NotImplementedError, "Cannot plot GPs with more than two input dimensions"
-        return Xnew, xmin, xmax
-
-    def plot(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None,full_cov=False):
+    def plot_GP(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None,full_cov=False):
         """
         Plot the GP's view of the world, where the data is normalised and the likelihood is Gaussian
 
@@ -223,21 +193,29 @@ class GP(model):
           - In higher dimensions, we've no implemented this yet !TODO!
 
         Can plot only part of the data and part of the posterior functions using which_data and which_functions
-        """
-        """
         Plot the data's view of the world, with non-normalised values and GP predictions passed through the likelihood
         """
-        Xnew, xmin, xmax = self._x_frame()
-        m,v = self._raw_predict(Xnew)
-        if isinstance(self.likelihood,EP):
-            pb.subplot(211)
+        if which_functions=='all':
+            which_functions = [True]*self.kern.Nparts
+        if which_data=='all':
+            which_data = slice(None)
+
+        Xnew, xmin, xmax = x_frame(self.X, plot_limits=plot_limits)
+
+        m,v = self._raw_predict(Xnew, slices=which_functions)
         gpplot(Xnew,m,m-np.sqrt(v),m+np.sqrt(v))
-        pb.plot(self.X,self.likelihood.Y,'kx',mew=1.5)
+        pb.plot(self.X[which_data],self.likelihood.Y[which_data],'kx',mew=1.5)
         pb.xlim(xmin,xmax)
 
-        if isinstance(self.likelihood,EP):
-            pb.subplot(212)
-            phi_m,phi_l,phi_u = self.likelihood.predictive_values(m,v)
-            gpplot(Xnew,phi_m,phi_l,phi_u)
-            pb.plot(self.X,self.likelihood.data,'kx',mew=1.5)
-            pb.xlim(xmin,xmax)
+    def plot_output(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None,full_cov=False):
+        if which_functions=='all':
+            which_functions = [True]*self.kern.Nparts
+        if which_data=='all':
+            which_data = slice(None)
+        Xnew, xmin, xmax = x_frame(self.X, plot_limits=plot_limits)
+        m, lower, upper = self.predict(Xnew, slices=which_functions)
+        gpplot(Xnew,m, lower, upper)
+        pb.plot(self.X[which_data],self.likelihood.data[which_data],'kx',mew=1.5)
+        ymin,ymax = self.likelihood.data.min()*1.2,self.likelihood.data.max()*1.2
+        pb.xlim(xmin,xmax)
+        pb.ylim(ymin,ymax)

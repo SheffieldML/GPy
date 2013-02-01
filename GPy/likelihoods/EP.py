@@ -67,8 +67,8 @@ class EP(likelihood):
         self.tau_tilde = np.zeros(self.N)
         self.v_tilde = np.zeros(self.N)
         #Initial values - Posterior distribution parameters: q(f|X,Y) = N(f|mu,Sigma)
-        self.mu = np.zeros(self.N)
-        self.Sigma = K.copy()
+        mu = np.zeros(self.N)
+        Sigma = K.copy()
 
         """
         Initial values - Cavity distribution parameters:
@@ -96,29 +96,27 @@ class EP(likelihood):
             update_order = np.random.permutation(self.N)
             for i in update_order:
                 #Cavity distribution parameters
-                self.tau_[i] = 1./self.Sigma[i,i] - self.eta*self.tau_tilde[i]
-                self.v_[i] = self.mu[i]/self.Sigma[i,i] - self.eta*self.v_tilde[i]
-                print 1./self.Sigma[i,i],self.tau_tilde[i]
+                self.tau_[i] = 1./Sigma[i,i] - self.eta*self.tau_tilde[i]
+                self.v_[i] = mu[i]/Sigma[i,i] - self.eta*self.v_tilde[i]
                 #Marginal moments
                 self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood_function.moments_match(self.data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
-                Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./self.Sigma[i,i])
-                Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - self.mu[i]/self.Sigma[i,i])
+                Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma[i,i])
+                Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma[i,i])
                 self.tau_tilde[i] = self.tau_tilde[i] + Delta_tau
                 self.v_tilde[i] = self.v_tilde[i] + Delta_v
                 #Posterior distribution parameters update
-                si=self.Sigma[:,i].reshape(self.N,1)
-                self.Sigma = self.Sigma - Delta_tau/(1.+ Delta_tau*self.Sigma[i,i])*np.dot(si,si.T)
-                self.mu = np.dot(self.Sigma,self.v_tilde)
+                si=Sigma[:,i].reshape(self.N,1)
+                Sigma = Sigma - Delta_tau/(1.+ Delta_tau*Sigma[i,i])*np.dot(si,si.T)
+                mu = np.dot(Sigma,self.v_tilde)
                 self.iterations += 1
-                print self.tau_tilde[i]
             #Sigma recomptutation with Cholesky decompositon
             Sroot_tilde_K = np.sqrt(self.tau_tilde)[:,None]*K
             B = np.eye(self.N) + np.sqrt(self.tau_tilde)[None,:]*Sroot_tilde_K
             L = jitchol(B)
             V,info = linalg.flapack.dtrtrs(L,Sroot_tilde_K,lower=1)
-            self.Sigma = K - np.dot(V.T,V)
-            self.mu = np.dot(self.Sigma,self.v_tilde)
+            Sigma = K - np.dot(V.T,V)
+            mu = np.dot(Sigma,self.v_tilde)
             epsilon_np1 = sum((self.tau_tilde-self.np1[-1])**2)/self.N
             epsilon_np2 = sum((self.v_tilde-self.np2[-1])**2)/self.N
             self.np1.append(self.tau_tilde.copy())
@@ -141,7 +139,7 @@ class EP(likelihood):
         """
         Kmmi, Lm, Lmi, Kmm_logdet = pdinv(Kmm)
         KmnKnm = np.dot(Kmn, Kmn.T)
-        KmmiKmn = np.dot(Kmmi,self.Kmn)
+        KmmiKmn = np.dot(Kmmi,Kmn)
         Qnn_diag = np.sum(Kmn*KmmiKmn,-2)
         LLT0 = Kmm.copy()
 
@@ -223,13 +221,13 @@ class EP(likelihood):
         q(f|X) = int_{df}{N(f|KfuKuu_invu,diag(Kff-Qff)*N(u|0,Kuu)} = N(f|0,Sigma0)
         Sigma0 = diag(Knn-Qnn) + Qnn, Qnn = Knm*Kmmi*Kmn
         """
-        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
-        self.P0 = self.Kmn.T
-        self.KmnKnm = np.dot(self.P0.T, self.P0)
-        self.KmmiKmn = np.dot(self.Kmmi,self.P0.T)
-        self.Qnn_diag = np.sum(self.P0.T*self.KmmiKmn,-2)
-        self.Diag0 = self.Knn_diag - self.Qnn_diag
-        self.R0 = jitchol(self.Kmmi).T
+        Kmmi, self.Lm, self.Lmi, Kmm_logdet = pdinv(Kmm)
+        P0 = Kmn.T
+        KmnKnm = np.dot(P0.T, P0)
+        KmmiKmn = np.dot(Kmmi,P0.T)
+        Qnn_diag = np.sum(P0.T*KmmiKmn,-2)
+        Diag0 = Knn_diag - Qnn_diag
+        R0 = jitchol(Kmmi).T
 
         """
         Posterior approximation: q(f|y) = N(f| mu, Sigma)
@@ -238,11 +236,11 @@ class EP(likelihood):
         """
         self.w = np.zeros(self.N)
         self.gamma = np.zeros(self.M)
-        self.mu = np.zeros(self.N)
-        self.P = self.P0.copy()
-        self.R = self.R0.copy()
-        self.Diag = self.Diag0.copy()
-        self.Sigma_diag = self.Knn_diag
+        mu = np.zeros(self.N)
+        P = P0.copy()
+        R = R0.copy()
+        Diag = Diag0.copy()
+        Sigma_diag = Knn_diag
 
         """
         Initial values - Cavity distribution parameters:
@@ -270,41 +268,41 @@ class EP(likelihood):
             update_order = np.random.permutation(self.N)
             for i in update_order:
                 #Cavity distribution parameters
-                self.tau_[i] = 1./self.Sigma_diag[i] - self.eta*self.tau_tilde[i]
-                self.v_[i] = self.mu[i]/self.Sigma_diag[i] - self.eta*self.v_tilde[i]
+                self.tau_[i] = 1./Sigma_diag[i] - self.eta*self.tau_tilde[i]
+                self.v_[i] = mu[i]/Sigma_diag[i] - self.eta*self.v_tilde[i]
                 #Marginal moments
                 self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood_function.moments_match(data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
-                Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./self.Sigma_diag[i])
-                Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - self.mu[i]/self.Sigma_diag[i])
+                Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma_diag[i])
+                Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma_diag[i])
                 self.tau_tilde[i] = self.tau_tilde[i] + Delta_tau
                 self.v_tilde[i] = self.v_tilde[i] + Delta_v
                 #Posterior distribution parameters update
-                dtd1 = Delta_tau*self.Diag[i] + 1.
-                dii = self.Diag[i]
-                self.Diag[i] = dii - (Delta_tau * dii**2.)/dtd1
-                pi_ = self.P[i,:].reshape(1,self.M)
-                self.P[i,:] = pi_ - (Delta_tau*dii)/dtd1 * pi_
-                Rp_i = np.dot(self.R,pi_.T)
-                RTR = np.dot(self.R.T,np.dot(np.eye(self.M) - Delta_tau/(1.+Delta_tau*self.Sigma_diag[i]) * np.dot(Rp_i,Rp_i.T),self.R))
-                self.R = jitchol(RTR).T
+                dtd1 = Delta_tau*Diag[i] + 1.
+                dii = Diag[i]
+                Diag[i] = dii - (Delta_tau * dii**2.)/dtd1
+                pi_ = P[i,:].reshape(1,self.M)
+                P[i,:] = pi_ - (Delta_tau*dii)/dtd1 * pi_
+                Rp_i = np.dot(R,pi_.T)
+                RTR = np.dot(R.T,np.dot(np.eye(self.M) - Delta_tau/(1.+Delta_tau*Sigma_diag[i]) * np.dot(Rp_i,Rp_i.T),R))
+                R = jitchol(RTR).T
                 self.w[i] = self.w[i] + (Delta_v - Delta_tau*self.w[i])*dii/dtd1
-                self.gamma = self.gamma + (Delta_v - Delta_tau*self.mu[i])*np.dot(RTR,self.P[i,:].T)
-                self.RPT = np.dot(self.R,self.P.T)
-                self.Sigma_diag = self.Diag + np.sum(self.RPT.T*self.RPT.T,-1)
-                self.mu = self.w + np.dot(self.P,self.gamma)
+                self.gamma = self.gamma + (Delta_v - Delta_tau*mu[i])*np.dot(RTR,P[i,:].T)
+                RPT = np.dot(R,P.T)
+                Sigma_diag = Diag + np.sum(RPT.T*RPT.T,-1)
+                mu = self.w + np.dot(P,self.gamma)
                 self.iterations += 1
             #Sigma recomptutation with Cholesky decompositon
-            self.Diag = self.Diag0/(1.+ self.Diag0 * self.tau_tilde)
-            self.P = (self.Diag / self.Diag0)[:,None] * self.P0
-            self.RPT0 = np.dot(self.R0,self.P0.T)
-            L = jitchol(np.eye(self.M) + np.dot(self.RPT0,(1./self.Diag0 - self.Diag/(self.Diag0**2))[:,None]*self.RPT0.T))
-            self.R,info = linalg.flapack.dtrtrs(L,self.R0,lower=1)
-            self.RPT = np.dot(self.R,self.P.T)
-            self.Sigma_diag = self.Diag + np.sum(self.RPT.T*self.RPT.T,-1)
-            self.w = self.Diag * self.v_tilde
-            self.gamma = np.dot(self.R.T, np.dot(self.RPT,self.v_tilde))
-            self.mu = self.w + np.dot(self.P,self.gamma)
+            Diag = Diag0/(1.+ Diag0 * self.tau_tilde)
+            P = (Diag / Diag0)[:,None] * P0
+            RPT0 = np.dot(R0,P0.T)
+            L = jitchol(np.eye(self.M) + np.dot(RPT0,(1./Diag0 - Diag/(Diag0**2))[:,None]*RPT0.T))
+            R,info = linalg.flapack.dtrtrs(L,R0,lower=1)
+            RPT = np.dot(R,P.T)
+            Sigma_diag = Diag + np.sum(RPT.T*RPT.T,-1)
+            self.w = Diag * self.v_tilde
+            self.gamma = np.dot(R.T, np.dot(RPT,self.v_tilde))
+            mu = self.w + np.dot(P,self.gamma)
             epsilon_np1 = sum((self.tau_tilde-self.np1[-1])**2)/self.N
             epsilon_np2 = sum((self.v_tilde-self.np2[-1])**2)/self.N
             self.np1.append(self.tau_tilde.copy())

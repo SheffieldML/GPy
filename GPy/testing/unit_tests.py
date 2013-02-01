@@ -154,17 +154,16 @@ class GradientTests(unittest.TestCase):
         m.constrain_positive('(linear|bias|white)')
         self.assertTrue(m.checkgrad())
 
-    def test_GP_EP(self):
-        return # Disabled TODO
+    def test_GP_EP_probit(self):
         N = 20
-        X = np.hstack([np.random.rand(N/2)+1,np.random.rand(N/2)-1])[:,None]
-        k = GPy.kern.rbf(1) + GPy.kern.white(1)
-        Y = np.hstack([np.ones(N/2),-np.ones(N/2)])[:,None]
-        likelihood = GPy.inference.likelihoods.probit(Y)
-        m = GPy.models.GP_EP(X,likelihood,k)
-        m.constrain_positive('(var|len)')
-        m.approximate_likelihood()
-        self.assertTrue(m.checkgrad())
+        X = np.hstack([np.random.normal(5,2,N/2),np.random.normal(10,2,N/2)])[:,None]
+        Y = np.hstack([np.ones(N/2),np.repeat(-1,N/2)])[:,None]
+        kernel = GPy.kern.rbf(1)
+        distribution = GPy.likelihoods.likelihood_functions.probit()
+        likelihood = GPy.likelihoods.EP(Y,distribution)
+        m = GPy.models.GP(X,kernel,likelihood=likelihood)
+        m.ensure_default_constraints()
+        self.assertTrue(m.EPEM)
 
     @unittest.skip("FITC will be broken for a while")
     def test_generalized_FITC(self):

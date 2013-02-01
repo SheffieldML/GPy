@@ -2,6 +2,7 @@ import numpy as np
 
 class Gaussian:
     def __init__(self,data,variance=1.,normalize=False):
+        self.is_heteroscedastic = False
         self.data = data
         self.N,D = data.shape
         self.Z = 0. # a correction factor which accounts for the approximation made
@@ -19,6 +20,7 @@ class Gaussian:
         self.YYT = np.dot(self.Y,self.Y.T)
         self._set_params(np.asarray(variance))
 
+
     def _get_params(self):
         return np.asarray(self._variance)
 
@@ -27,7 +29,8 @@ class Gaussian:
 
     def _set_params(self,x):
         self._variance = x
-        self.variance = np.eye(self.N)*self._variance
+        self.covariance_matrix = np.eye(self.N)*self._variance
+        self.precision = 1./self._variance
 
     def fit(self):
         """

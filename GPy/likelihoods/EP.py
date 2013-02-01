@@ -18,12 +18,10 @@ class EP:
         self.likelihood_function = likelihood_function
         self.epsilon = epsilon
         self.eta, self.delta = power_ep
-        self.jitter = 1e-12 # TODO: is this needed?
+        self.is_heteroscedastic = True
 
-        """
-        Initial values - Likelihood approximation parameters:
-        p(y|f) = t(f|tau_tilde,v_tilde)
-        """
+        #Initial values - Likelihood approximation parameters:
+        #p(y|f) = t(f|tau_tilde,v_tilde)
         self.tau_tilde = np.zeros(self.N)
         self.v_tilde = np.zeros(self.N)
 
@@ -32,8 +30,11 @@ class EP:
         mu_tilde = self.v_tilde/self.tau_tilde #When calling EP, this variable is used instead of Y in the GP model
         sigma_sum = 1./self.tau_ + 1./self.tau_tilde
         mu_diff_2 = (self.v_/self.tau_ - mu_tilde)**2
-        Z_ep = np.sum(np.log(self.Z_hat)) + 0.5*np.sum(np.log(sigma_sum)) + 0.5*np.sum(mu_diff_2/sigma_sum) #Normalization constant
-        self.Y, self.beta, self.Z = self.tau_tilde[:,None], mu_tilde[:,None], Z_ep
+        self.Z = np.sum(np.log(self.Z_hat)) + 0.5*np.sum(np.log(sigma_sum)) + 0.5*np.sum(mu_diff_2/sigma_sum) #Normalization constant, aka Z_ep
+
+        self.Y =  mu_tilde[:,None]
+        self.precsion = self.tau_tilde
+        self.covariance_matrix = np.diag(1./self.precision)
 
     def fit_full(self,K):
         """

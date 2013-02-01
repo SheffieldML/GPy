@@ -8,18 +8,18 @@ import scipy as sp
 import pylab as pb
 from ..util.plot import gpplot
 
-class likelihood:
+class likelihood_function:
     """
     Likelihood class for doing Expectation propagation
 
     :param Y: observed output (Nx1 numpy.darray)
-    ..Note:: Y values allowed depend on the likelihood used
+    ..Note:: Y values allowed depend on the likelihood_function used
     """
     def __init__(self,location=0,scale=1):
         self.location = location
         self.scale = scale
 
-class probit(likelihood):
+class probit(likelihood_function):
     """
     Probit likelihood
     Y is expected to take values in {-1,1}
@@ -29,7 +29,7 @@ class probit(likelihood):
     $$
     """
     def __init__(self,location=0,scale=1):
-        likelihood.__init__(self,Y,location,scale)
+        likelihood_function.__init__(self,Y,location,scale)
 
     def moments_match(self,data_i,tau_i,v_i):
         """
@@ -64,7 +64,7 @@ class probit(likelihood):
     def _log_likelihood_gradients():
         return np.zeros(0) # there are no parameters of whcih to compute the gradients
 
-class poisson(likelihood):
+class poisson(likelihood_function):
     """
     Poisson likelihood
     Y is expected to take values in {0,1,2,...}
@@ -75,7 +75,7 @@ class poisson(likelihood):
     """
     def __init__(self,Y,location=0,scale=1):
         assert len(Y[Y<0]) == 0, "Output cannot have negative values"
-        likelihood.__init__(self,Y,location,scale)
+        likelihood_function.__init__(self,Y,location,scale)
 
     def moments_match(self,i,tau_i,v_i):
         """
@@ -160,7 +160,7 @@ class poisson(likelihood):
         if Z is not None:
             pb.plot(Z,Z*0+pb.ylim()[0],'k|',mew=1.5,markersize=12)
 
-class gaussian(likelihood):
+class gaussian(likelihood_function):
     """
     Gaussian likelihood
     Y is expected to take values in (-inf,inf)

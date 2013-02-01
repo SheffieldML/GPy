@@ -65,7 +65,7 @@ class GP(model):
         self.likelihood._set_params(p[self.kern.Nparam:])
 
         self.K = self.kern.K(self.X,slices1=self.Xslices)
-        self.K += self.likelihood.variance
+        self.K += self.likelihood.covariance_matrix
 
         self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
 
@@ -90,7 +90,7 @@ class GP(model):
         For a Gaussian (or direct: TODO) likelihood, no iteration is required:
         this function does nothing
         """
-        self.likelihood.fit_full(self.kern.compute(self.X))
+        self.likelihood.fit_full(self.kern.K(self.X))
         self._set_params(self._get_params()) # update the GP
 
     def _model_fit_term(self):

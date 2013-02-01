@@ -4,7 +4,7 @@
 
 """
 Simple Gaussian Processes classification 1D
-Probit likelihood
+probit likelihood
 """
 import pylab as pb
 import numpy as np
@@ -26,7 +26,7 @@ Y = np.hstack([np.ones(N/2),np.repeat(-1,N/2)])[:,None]
 kernel = GPy.kern.rbf(1)
 
 # Define likelihood
-distribution = GPy.likelihoods.likelihood_functions.Probit()
+distribution = GPy.likelihoods.likelihood_functions.probit()
 likelihood_object = GPy.likelihoods.EP(Y,distribution)
 
 # Model definition

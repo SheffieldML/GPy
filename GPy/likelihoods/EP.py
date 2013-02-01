@@ -27,7 +27,7 @@ class EP(likelihood):
 
         #initial values for the GP variables
         self.Y = np.zeros((self.N,1))
-        self.variance = np.zeros((self.N,self.N))#np.eye(self.N)
+        self.covariance_matrix = np.eye(self.N)
         self.Z = 0
         self.YYT = None
 
@@ -50,8 +50,9 @@ class EP(likelihood):
         mu_diff_2 = (self.v_/self.tau_ - mu_tilde)**2
         self.Z = np.sum(np.log(self.Z_hat)) + 0.5*np.sum(np.log(sigma_sum)) + 0.5*np.sum(mu_diff_2/sigma_sum) #Normalization constant, aka Z_ep
 
-        self.Y =  mu_tilde[:,None]
-        self.precsion = self.tau_tilde[:,None]
+        self.Y = mu_tilde[:,None]
+        self.YYT = np.dot(self.Y,self.Y.T)
+        self.precision = self.tau_tilde
         self.covariance_matrix = np.diag(1./self.precision)
 
     def fit_full(self,K):
@@ -61,9 +62,11 @@ class EP(likelihood):
         """
         #Prior distribution parameters: p(f|X) = N(f|0,K)
 
+        self.tau_tilde = np.zeros(self.N)
+        self.v_tilde = np.zeros(self.N)
         #Initial values - Posterior distribution parameters: q(f|X,Y) = N(f|mu,Sigma)
         self.mu = np.zeros(self.N)
-        self.Sigma = K.copy() - self.variance.copy()
+        self.Sigma = K.copy()
 
         """
         Initial values - Cavity distribution parameters:

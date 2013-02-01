@@ -10,6 +10,7 @@ from parameterised import parameterised, truncate_pad
 import priors
 from ..util.linalg import jitchol
 from ..inference import optimization
+from .. import likelihoods
 
 class model(parameterised):
     def __init__(self):
@@ -401,7 +402,7 @@ class model(parameterised):
         :type optimzer: string TODO: valid strings?
 
         """
-        assert self.EP, "EM is not available for gaussian likelihood"
+        assert isinstance(self.likelihood,likelihoods.EP), "EM is not available for Gaussian likelihoods"
         log_change = epsilon + 1.
         self.log_likelihood_record = []
         self.gp_params_record = []
@@ -410,18 +411,18 @@ class model(parameterised):
         last_value = -np.exp(1000)
         while log_change > epsilon or not iteration:
             print 'EM iteration %s' %iteration
-            self.approximate_likelihood()
+            self.update_likelihood_approximation()
             self.optimize(**kwargs)
             new_value = self.log_likelihood()
             log_change = new_value - last_value
             if log_change > epsilon:
                 self.log_likelihood_record.append(new_value)
                 self.gp_params_record.append(self._get_params())
-                self.ep_params_record.append((self.beta,self.Y,self.Z_ep))
+                #self.ep_params_record.append((self.beta,self.Y,self.Z_ep))
                 last_value = new_value
             else:
                 convergence = False
-                self.beta, self.Y,  self.Z_ep = self.ep_params_record[-1]
+                #self.beta, self.Y,  self.Z_ep = self.ep_params_record[-1]
                 self._set_params(self.gp_params_record[-1])
                 print "Log-likelihood decrement: %s \nLast iteration discarded." %log_change
             iteration += 1

@@ -8,6 +8,7 @@ from .. import kern
 from ..core import model
 from ..util.linalg import pdinv,mdot
 from ..util.plot import gpplot, Tango
+from ..likelihoods import EP
 
 class GP(model):
     """
@@ -52,8 +53,10 @@ class GP(model):
             self._Xstd = np.ones((1,self.X.shape[1]))
 
         self.likelihood = likelihood
-        assert self.X.shape[0] == self.likelihood.Y.shape[0]
-        self.N, self.D = self.likelihood.Y.shape
+        #assert self.X.shape[0] == self.likelihood.Y.shape[0]
+        #self.N, self.D = self.likelihood.Y.shape
+        assert self.X.shape[0] == self.likelihood.data.shape[0]
+        self.N, self.D = self.likelihood.data.shape
 
         model.__init__(self)
 
@@ -87,7 +90,11 @@ class GP(model):
         For a Gaussian (or direct: TODO) likelihood, no iteration is required:
         this function does nothing
         """
-        self.likelihood.fit(self.K)
+        self.likelihood.fit_full(self.K)
+        # Recompute K + noise_term
+        self.K = self.kern.K(self.X,slices1=self.Xslices)
+        self.K += self.likelihood.variance
+        self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
 
     def _model_fit_term(self):
         """
@@ -119,7 +126,7 @@ class GP(model):
         """
         return np.hstack((self.kern.dK_dtheta(partial=self.dL_dK,X=self.X), self.likelihood._gradients(partial=self.dL_dK)))
 
-    def _raw_predict(self,_Xnew,slices, full_cov=False):
+    def _raw_predict(self,_Xnew,slices=None, full_cov=False):
         """
         Internal helper function for making predictions, does not account
         for normalisation or likelihood
@@ -129,11 +136,11 @@ class GP(model):
         KiKx = np.dot(self.Ki,Kx)
         if full_cov:
             Kxx = self.kern.K(_Xnew, slices1=slices,slices2=slices)
-            var = Kxx - np.dot(KiKx.T,Kx)
+            var = Kxx - np.dot(KiKx.T,Kx) #NOTE is the shape of v right?
         else:
             Kxx = self.kern.Kdiag(_Xnew, slices=slices)
             var = Kxx - np.sum(np.multiply(KiKx,Kx),0)
-        return mu, var
+        return mu, var[:,None]
 
 
     def predict(self,Xnew, slices=None, full_cov=False):
@@ -170,26 +177,11 @@ class GP(model):
 
         return mean, _5pc, _95pc
 
-    def raw_plot(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None):
+
+    def _x_frame(self,plot_limits=None,which_data='all',which_functions='all',resolution=None):
         """
-        Plot the GP's view of the world, where the data is normalised and the likelihood is Gaussian
-
-        :param samples: the number of a posteriori samples to plot
-        :param which_data: which if the training data to plot (default all)
-        :type which_data: 'all' or a slice object to slice self.X, self.Y
-        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
-        :param which_functions: which of the kernel functions to plot (additively)
-        :type which_functions: list of bools
-        :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
-
-        Plot the posterior of the GP.
-          - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
-          - In two dimsensions, a contour-plot shows the mean predicted function
-          - In higher dimensions, we've no implemented this yet !TODO!
-
-        Can plot only part of the data and part of the posterior functions using which_data and which_functions
+        Internal helper function for making plots, return a set of new input values to plot as well as lower and upper limits
         """
-
         if which_functions=='all':
             which_functions = [True]*self.kern.Nparts
         if which_data=='all':
@@ -208,28 +200,47 @@ class GP(model):
 
         if self.X.shape[1]==1:
             Xnew = np.linspace(xmin,xmax,resolution or 200)[:,None]
-            m,v = self._raw_predict(Xnew,slices=which_functions,full_cov=False)
-            lower, upper = m.flatten() - 2.*np.sqrt(v) , m.flatten()+ 2.*np.sqrt(v)
-            gpplot(Xnew,m,lower,upper)
-            pb.plot(X,Y,'kx',mew=1.5)
-            pb.xlim(xmin,xmax)
         elif self.X.shape[1]==2:
             resolution = resolution or 50
             xx,yy = np.mgrid[xmin[0]:xmax[0]:1j*resolution,xmin[1]:xmax[1]:1j*resolution]
-            Xtest = np.vstack((xx.flatten(),yy.flatten())).T
-            zz,vv = self._raw_predict(Xtest,slices=which_functions,full_cov=False)
-            zz = zz.reshape(resolution,resolution)
-            pb.contour(xx,yy,zz,vmin=zz.min(),vmax=zz.max(),cmap=pb.cm.jet)
-            pb.scatter(Xorig[:,0],Xorig[:,1],40,Yorig,linewidth=0,cmap=pb.cm.jet,vmin=zz.min(),vmax=zz.max())
-            pb.xlim(xmin[0],xmax[0])
-            pb.ylim(xmin[1],xmax[1])
-
+            Xnew = np.vstack((xx.flatten(),yy.flatten())).T
         else:
             raise NotImplementedError, "Cannot plot GPs with more than two input dimensions"
+        return Xnew, xmin, xmax
 
-    def plot(self):
+    def plot(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None,full_cov=False):
+        """
+        Plot the GP's view of the world, where the data is normalised and the likelihood is Gaussian
+
+        :param samples: the number of a posteriori samples to plot
+        :param which_data: which if the training data to plot (default all)
+        :type which_data: 'all' or a slice object to slice self.X, self.Y
+        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
+        :param which_functions: which of the kernel functions to plot (additively)
+        :type which_functions: list of bools
+        :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
+
+        Plot the posterior of the GP.
+          - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
+          - In two dimsensions, a contour-plot shows the mean predicted function
+          - In higher dimensions, we've no implemented this yet !TODO!
+
+        Can plot only part of the data and part of the posterior functions using which_data and which_functions
+        """
         """
         Plot the data's view of the world, with non-normalised values and GP predictions passed through the likelihood
         """
-        pass# TODO!!!!!
+        Xnew, xmin, xmax = self._x_frame()
+        m,v = self._raw_predict(Xnew)
+        if isinstance(self.likelihood,EP):
+            pb.subplot(211)
+        gpplot(Xnew,m,m-np.sqrt(v),m+np.sqrt(v))
+        pb.plot(self.X,self.likelihood.Y,'kx',mew=1.5)
+        pb.xlim(xmin,xmax)
 
+        if isinstance(self.likelihood,EP):
+            pb.subplot(212)
+            phi_m,phi_l,phi_u = self.likelihood.predictive_values(m,v)
+            gpplot(Xnew,phi_m,phi_l,phi_u)
+            pb.plot(self.X,self.likelihood.data,'kx',mew=1.5)
+            pb.xlim(xmin,xmax)

@@ -39,7 +39,7 @@ class Gaussian:
         _95pc = mean + 2.*np.sqrt(var)
         return mean, _5pc, _95pc
 
-    def fit(self):
+    def fit_full(self):
         """
         No approximations needed
         """

@@ -1,7 +1,7 @@
 import numpy as np
 import random
 from scipy import stats, linalg
-from ..core import model
+#from ..core import model
 from ..util.linalg import pdinv,mdot,jitchol
 from ..util.plot import gpplot
 
@@ -18,6 +18,8 @@ class EP:
         self.likelihood_function = likelihood_function
         self.epsilon = epsilon
         self.eta, self.delta = power_ep
+        self.data = data
+        self.N = self.data.size
 
         """
         Initial values - Likelihood approximation parameters:
@@ -25,6 +27,12 @@ class EP:
         """
         self.tau_tilde = np.zeros(self.N)
         self.v_tilde = np.zeros(self.N)
+
+        #initial values for the GP variables
+        self.Y = np.zeros((self.N,1))
+        self.variance = np.zeros((self.N,self.N))#np.eye(self.N)
+        self.Z = 0
+        self.YYT = None
 
     def predictive_values(self,mu,var):
         return self.likelihood_function.predictive_values(mu,var)
@@ -35,6 +43,8 @@ class EP:
         return []
     def _set_params(self,p):
         pass # TODO: the EP likelihood might want to take some parameters...
+    def _gradients(self,partial):
+        return np.zeros(0) # TODO: the EP likelihood might want to take some parameters...
 
     def _compute_GP_variables(self):
         #Variables to be called from GP
@@ -42,7 +52,8 @@ class EP:
         sigma_sum = 1./self.tau_ + 1./self.tau_tilde
         mu_diff_2 = (self.v_/self.tau_ - mu_tilde)**2
         Z_ep = np.sum(np.log(self.Z_hat)) + 0.5*np.sum(np.log(sigma_sum)) + 0.5*np.sum(mu_diff_2/sigma_sum) #Normalization constant
-        self.Y, self.beta, self.Z = self.tau_tilde[:,None], mu_tilde[:,None], Z_ep
+        self.Y, self.beta, self.Z =  mu_tilde[:,None],self.tau_tilde[:,None], Z_ep
+        self.variance = np.diag(1./self.beta.flatten())
 
     def fit_full(self,K):
         """
@@ -53,7 +64,7 @@ class EP:
 
         #Initial values - Posterior distribution parameters: q(f|X,Y) = N(f|mu,Sigma)
         self.mu = np.zeros(self.N)
-        self.Sigma = K.copy()
+        self.Sigma = K.copy() - self.variance.copy()
 
         """
         Initial values - Cavity distribution parameters:
@@ -78,14 +89,14 @@ class EP:
         self.np1 = [self.tau_tilde.copy()]
         self.np2 = [self.v_tilde.copy()]
         while epsilon_np1 > self.epsilon or epsilon_np2 > self.epsilon:
-            update_order = np.arange(self.N)
-            random.shuffle(update_order)
+            update_order = np.random.permutation(self.N)
             for i in update_order:
                 #Cavity distribution parameters
                 self.tau_[i] = 1./self.Sigma[i,i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = self.mu[i]/self.Sigma[i,i] - self.eta*self.v_tilde[i]
+                print 1./self.Sigma[i,i],self.tau_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood.moments_match(i,self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood_function.moments_match(self.data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./self.Sigma[i,i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - self.mu[i]/self.Sigma[i,i])
@@ -96,6 +107,7 @@ class EP:
                 self.Sigma = self.Sigma - Delta_tau/(1.+ Delta_tau*self.Sigma[i,i])*np.dot(si,si.T)
                 self.mu = np.dot(self.Sigma,self.v_tilde)
                 self.iterations += 1
+                print self.tau_tilde[i]
             #Sigma recomptutation with Cholesky decompositon
             Sroot_tilde_K = np.sqrt(self.tau_tilde)[:,None]*K
             B = np.eye(self.N) + np.sqrt(self.tau_tilde)[None,:]*Sroot_tilde_K
@@ -116,7 +128,7 @@ class EP:
         For nomenclature see ... 2013.
         """
 
-        #TODO: this doesn;t work with uncertain inputs! 
+        #TODO: this doesn;t work with uncertain inputs!
 
         """
         Prior approximation parameters:
@@ -251,14 +263,13 @@ class EP:
         self.np1 = [self.tau_tilde.copy()]
         self.np2 = [self.v_tilde.copy()]
         while epsilon_np1 > self.epsilon or epsilon_np2 > self.epsilon:
-            update_order = np.arange(self.N)
-            random.shuffle(update_order)
+            update_order = np.random.permutation(self.N)
             for i in update_order:
                 #Cavity distribution parameters
                 self.tau_[i] = 1./self.Sigma_diag[i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = self.mu[i]/self.Sigma_diag[i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood.moments_match(i,self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood_function.moments_match(data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./self.Sigma_diag[i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - self.mu[i]/self.Sigma_diag[i])

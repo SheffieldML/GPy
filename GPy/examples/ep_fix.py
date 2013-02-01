@@ -3,7 +3,8 @@
 
 
 """
-Simple Gaussian Processes classification
+Simple Gaussian Processes classification 1D
+Probit likelihood
 """
 import pylab as pb
 import numpy as np
@@ -12,28 +13,31 @@ pb.ion()
 
 pb.close('all')
 
-model_type='Full'
-inducing=4
-"""Simple 1D classification example.
-:param model_type: type of model to fit ['Full', 'FITC', 'DTC'].
-:param seed : seed value for data generation (default is 4).
-:type seed: int
-:param inducing : number of inducing variables (only used for 'FITC' or 'DTC').
-:type inducing: int
-"""
-data = GPy.util.datasets.toy_linear_1d_classification(seed=0)
-likelihood = GPy.inference.likelihoods.probit(data['Y'][:, 0:1])
+# Inputs
+N = 30
+X1 = np.random.normal(5,2,N/2)
+X2 = np.random.normal(10,2,N/2)
+X = np.hstack([X1,X2])[:,None]
 
-m = GPy.models.GP(data['X'],likelihood=likelihood)
-#m = GPy.models.GP(data['X'],likelihood.Y)
+# Outputs
+Y = np.hstack([np.ones(N/2),np.repeat(-1,N/2)])[:,None]
+
+# Kernel object
+kernel = GPy.kern.rbf(1)
+
+# Define likelihood
+distribution = GPy.likelihoods.likelihood_functions.Probit()
+likelihood_object = GPy.likelihoods.EP(Y,distribution)
+
+# Model definition
+m = GPy.models.GP(X,kernel,likelihood=likelihood_object)
 m.ensure_default_constraints()
+m.update_likelihood_approximation()
+#m.checkgrad(verbose=1)
+m.optimize()
+print "Round 2"
+m.update_likelihood_approximation()
 
-# Optimize and plot
-#if not isinstance(m.likelihood,GPy.inference.likelihoods.gaussian):
-#    m.approximate_likelihood()
-#m.optimize()
-m.EM()
-
-print m.log_likelihood()
-m.plot(samples=3)
-print(m)
+#m.EPEM()
+#m.plot()
+#print(m)

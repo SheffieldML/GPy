@@ -7,6 +7,7 @@ from scipy import stats
 import scipy as sp
 import pylab as pb
 from ..util.plot import gpplot
+#from . import EP
 
 class likelihood:
     """
@@ -19,7 +20,7 @@ class likelihood:
         self.location = location
         self.scale = scale
 
-class probit(likelihood):
+class Probit(likelihood):
     """
     Probit likelihood
     Y is expected to take values in {-1,1}
@@ -28,8 +29,6 @@ class probit(likelihood):
     L(x) = \\Phi (Y_i*f_i)
     $$
     """
-    def __init__(self,location=0,scale=1):
-        likelihood.__init__(self,Y,location,scale)
 
     def moments_match(self,data_i,tau_i,v_i):
         """
@@ -47,24 +46,18 @@ class probit(likelihood):
         sigma2_hat = 1./tau_i - (phi/((tau_i**2+tau_i)*Z_hat))*(z+phi/Z_hat)
         return Z_hat, mu_hat, sigma2_hat
 
-    def predictive_values(self,mu,var,all=False):
+    def predictive_values(self,mu,var):
         """
         Compute  mean, and conficence interval (percentiles 5 and 95) of the  prediction
         """
         mu = mu.flatten()
         var = var.flatten()
         mean = stats.norm.cdf(mu/np.sqrt(1+var))
-        if all:
-            p_05 = np.zeros([mu.size])
-            p_95 = np.ones([mu.size])
-            return mean, p_05, p_95
-        else:
-            return mean
+        p_05 = np.zeros([mu.size])
+        p_95 = np.ones([mu.size])
+        return mean, p_05, p_95
 
-    def _log_likelihood_gradients():
-        return np.zeros(0) # there are no parameters of whcih to compute the gradients
-
-class poisson(likelihood):
+class Poisson(likelihood):
     """
     Poisson likelihood
     Y is expected to take values in {0,1,2,...}
@@ -73,9 +66,6 @@ class poisson(likelihood):
     L(x) = \exp(\lambda) * \lambda**Y_i / Y_i!
     $$
     """
-    def __init__(self,Y,location=0,scale=1):
-        assert len(Y[Y<0]) == 0, "Output cannot have negative values"
-        likelihood.__init__(self,Y,location,scale)
 
     def moments_match(self,i,tau_i,v_i):
         """
@@ -134,52 +124,12 @@ class poisson(likelihood):
         sigma2_hat = m2 - mu_hat**2 # Second central moment
         return float(Z_hat), float(mu_hat), float(sigma2_hat)
 
-    def predictive_values(self,mu,var,all=False):
+    def predictive_values(self,mu,var):
         """
         Compute  mean, and conficence interval (percentiles 5 and 95) of the  prediction
         """
         mean = np.exp(mu*self.scale + self.location)
-        if all:
-            tmp = stats.poisson.ppf(np.array([.05,.95]),mu)
-            p_05 = tmp[:,0]
-            p_95 = tmp[:,1]
-            return mean,p_05,p_95
-        else:
-            return mean
-
-    def _log_likelihood_gradients():
-        raise NotImplementedError
-
-    def plot(self,X,mu,var,phi,X_obs,Z=None,samples=0):
-        assert X_obs.shape[1] == 1, 'Number of dimensions must be 1'
-        gpplot(X,phi,phi.flatten())
-        pb.plot(X_obs,self.Y,'kx',mew=1.5)
-        if samples:
-            phi_samples = np.vstack([np.random.poisson(phi.flatten(),phi.size) for s in range(samples)])
-            pb.plot(X,phi_samples.T, alpha = 0.4, c='#3465a4', linewidth = 0.8)
-        if Z is not None:
-            pb.plot(Z,Z*0+pb.ylim()[0],'k|',mew=1.5,markersize=12)
-
-class gaussian(likelihood):
-    """
-    Gaussian likelihood
-    Y is expected to take values in (-inf,inf)
-    """
-    def moments_match(self,i,tau_i,v_i):
-        """
-        Moments match of the marginal approximation in EP algorithm
-
-        :param i: number of observation (int)
-        :param tau_i: precision of the cavity distribution (float)
-        :param v_i: mean/variance of the cavity distribution (float)
-        """
-        mu = v_i/tau_i
-        sigma = np.sqrt(1./tau_i)
-        s = 1. if self.Y[i] == 0 else 1./self.Y[i]
-        sigma2_hat = 1./(1./sigma**2 + 1./s**2)
-        mu_hat = sigma2_hat*(mu/sigma**2 + self.Y[i]/s**2)
-        Z_hat = 1./np.sqrt(2*np.pi) * 1./np.sqrt(sigma**2+s**2) * np.exp(-.5*(mu-self.Y[i])**2/(sigma**2 + s**2))
-        return Z_hat, mu_hat, sigma2_hat
-
-    def _log_likelihood_gradients():
-        raise NotImplementedError
+        tmp = stats.poisson.ppf(np.array([.05,.95]),mu)
+        p_05 = tmp[:,0]
+        p_95 = tmp[:,1]
+        return mean,p_05,p_95

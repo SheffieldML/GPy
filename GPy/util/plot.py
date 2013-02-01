@@ -70,4 +70,24 @@ def align_subplots(N,M,xlim=None, ylim=None):
         else:
             removeUpperTicks()
 
+def x_frame(X,plot_limits=None,resolution=None):
+    """
+    Internal helper function for making plots, returns a set of input values to plot as well as lower and upper limits
+    """
+    if plot_limits is None:
+        xmin,xmax = X.min(0),X.max(0)
+        xmin, xmax = xmin-0.2*(xmax-xmin), xmax+0.2*(xmax-xmin)
+    elif len(plot_limits)==2:
+        xmin, xmax = plot_limits
+    else:
+        raise ValueError, "Bad limits for plotting"
 
+    if X.shape[1]==1:
+        Xnew = np.linspace(xmin,xmax,resolution or 200)[:,None]
+    elif X.shape[1]==2:
+        resolution = resolution or 50
+        xx,yy = np.mgrid[xmin[0]:xmax[0]:1j*resolution,xmin[1]:xmax[1]:1j*resolution]
+        Xnew = np.vstack((xx.flatten(),yy.flatten())).T
+    else:
+        raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
+    return Xnew, xmin, xmax

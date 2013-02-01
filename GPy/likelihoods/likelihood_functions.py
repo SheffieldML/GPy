@@ -7,7 +7,6 @@ from scipy import stats
 import scipy as sp
 import pylab as pb
 from ..util.plot import gpplot
-#from . import EP
 
 class likelihood_function:
     """

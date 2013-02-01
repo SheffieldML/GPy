@@ -4,6 +4,7 @@ from likelihood import likelihood
 class Gaussian(likelihood):
     def __init__(self,data,variance=1.,normalize=False):
         self.is_heteroscedastic = False
+        self.Nparams = 1
         self.data = data
         self.N,D = data.shape
         self.Z = 0. # a correction factor which accounts for the approximation made
@@ -18,7 +19,9 @@ class Gaussian(likelihood):
             self._std = np.ones((1,D))
             self.Y = self.data
 
+        #TODO: make this work efficiently (only compute YYT if D>>N)
         self.YYT = np.dot(self.Y,self.Y.T)
+        self.trYYT = np.trace(self.YYT)
         self._set_params(np.asarray(variance))
 
 
@@ -50,4 +53,4 @@ class Gaussian(likelihood):
         pass
 
     def _gradients(self,partial):
-        return np.sum(np.diag(partial))
+        return np.sum(partial)

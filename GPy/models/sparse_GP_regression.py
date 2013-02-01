@@ -3,11 +3,11 @@
 
 
 import numpy as np
-from GP import GP
+from sparse_GP import sparse_GP
 from .. import likelihoods
 from .. import kern
 
-class GP_regression(GP):
+class sparse_GP_regression(sparse_GP):
     """
     Gaussian Process model for regression
 
@@ -27,10 +27,18 @@ class GP_regression(GP):
 
     """
 
-    def __init__(self,X,Y,kernel=None,normalize_X=False,normalize_Y=False, Xslices=None):
+    def __init__(self,X,Y,kernel=None,normalize_X=False,normalize_Y=False, Xslices=None,Z=None, M=10):
+        #kern defaults to rbf
         if kernel is None:
-            kernel = kern.rbf(X.shape[1])
+            kernel = kern.rbf(X.shape[1]) + kern.white(X.shape[1],1e-3)
 
+        #Z defaults to a subset of the data
+        if Z is None:
+            Z = np.random.permutation(X.copy())[:M]
+        else:
+            assert Z.shape[1]==X.shape[1]
+
+        #likelihood defaults to Gaussian
         likelihood = likelihoods.Gaussian(Y,normalize=normalize_Y)
 
-        GP.__init__(self, X, likelihood, kernel, normalize_X=normalize_X, Xslices=Xslices)
+        sparse_GP.__init__(self, X, likelihood, kernel, Z, normalize_X=normalize_X, Xslices=Xslices)

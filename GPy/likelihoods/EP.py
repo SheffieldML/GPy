@@ -19,6 +19,7 @@ class EP(likelihood):
         self.data = data
         self.N = self.data.size
         self.is_heteroscedastic = True
+        self.Nparams = 0
 
         #Initial values - Likelihood approximation parameters:
         #p(y|f) = t(f|tau_tilde,v_tilde)
@@ -28,6 +29,7 @@ class EP(likelihood):
         #initial values for the GP variables
         self.Y = np.zeros((self.N,1))
         self.covariance_matrix = np.eye(self.N)
+        self.precision = np.ones(self.N)
         self.Z = 0
         self.YYT = None
 

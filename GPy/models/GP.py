@@ -31,7 +31,7 @@ class GP(model):
 
     """
 
-    def __init__(self, X, kernel, likelihood, normalize_X=False, Xslices=None):
+    def __init__(self, X, likelihood, kernel, normalize_X=False, Xslices=None):
 
         # parse arguments
         self.Xslices = Xslices
@@ -121,7 +121,7 @@ class GP(model):
 
         For the likelihood parameters, pass in alpha = K^-1 y
         """
-        return np.hstack((self.kern.dK_dtheta(partial=self.dL_dK,X=self.X), self.likelihood._gradients(partial=self.dL_dK)))
+        return np.hstack((self.kern.dK_dtheta(partial=self.dL_dK,X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
 
     def _raw_predict(self,_Xnew,slices=None, full_cov=False):
         """

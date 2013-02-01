@@ -6,7 +6,6 @@ import pylab as pb
 from ..util.linalg import mdot, jitchol, chol_inv, pdinv
 from ..util.plot import gpplot
 from .. import kern
-from ..inference.likelihoods import likelihood
 from GP import GP
 
 #Still TODO:
@@ -34,16 +33,15 @@ class sparse_GP(GP):
     :type normalize_(X|Y): bool
     """
 
-    def __init__(self,X,likelihood,kernel, X_uncertainty=None, Z=None,Zslices=None,M=10,normalize_X=False):
-        self.scale_factor = 1000.0# a scaling factor to help keep the algorithm stable
+    def __init__(self, X, likelihood, kernel, Z, X_uncertainty=None, Xslices=None,Zslices=None, normalize_X=False):
+        self.scale_factor = 1.0# a scaling factor to help keep the algorithm stable
 
-        if Z is None:
-            self.Z = np.random.permutation(X.copy())[:M]
-            self.M = M
-        else:
-            assert Z.shape[1]==X.shape[1]
-            self.Z = Z
-            self.M = Z.shape[0]
+        self.Z = Z
+        self.Zslices = Zslices
+        self.Xslices = Xslices
+        self.M = Z.shape[0]
+        self.likelihood = likelihood
+
         if X_uncertainty is None:
             self.has_uncertain_inputs=False
         else:
@@ -51,7 +49,7 @@ class sparse_GP(GP):
             self.has_uncertain_inputs=True
             self.X_uncertainty = X_uncertainty
 
-        GP.__init__(self, X, Y, kernel=kernel, normalize_X=normalize_X, Xslices=Xslices)
+        GP.__init__(self, X, likelihood, kernel=kernel, normalize_X=normalize_X, Xslices=Xslices)
 
         #normalise X uncertainty also
         if self.has_uncertain_inputs:
@@ -67,7 +65,7 @@ class sparse_GP(GP):
         # kernel computations, using BGPLVM notation
         self.Kmm = self.kern.K(self.Z)
         if self.has_uncertain_inputs:
-            self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty).sum()
+            self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncerTainty)
             self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
             self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty)
             if self.likelihood.is_heteroscedastic:
@@ -76,17 +74,18 @@ class sparse_GP(GP):
             else:
                 self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision/sf2)).sum(0)
         else:
-            self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices).sum()
+            self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices)
             self.psi1 = self.kern.K(self.Z,self.X)
             if self.likelihood.is_heteroscedastic:
                 tmp = self.psi1*(np.sqrt(self.likelihood.precision.reshape(self.N,1))/sf)
             else:
                 tmp = self.psi1*(np.sqrt(self.likelihood.precision)/sf)
             self.psi2_beta_scaled = np.dot(tmp,tmp.T)
+            self.psi2 = self.psi1.T[:,:,None]*self.psi1.T[:,None,:] # TODO: remove me for efficiency and stability
 
         self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
 
-        self.V = (self.likelihood.precision/self.scale_factor)*self.Y
+        self.V = (self.likelihood.precision/self.scale_factor)*self.likelihood.Y
         self.A = mdot(self.Lmi, self.psi2_beta_scaled, self.Lmi.T)
         self.B = np.eye(self.M)/sf2 + self.A
 
@@ -97,27 +96,38 @@ class sparse_GP(GP):
         self.C = mdot(self.Lmi.T, self.Bi, self.Lmi)
         self.E = mdot(self.C, self.psi1VVpsi1/sf2, self.C.T)
 
-        # Compute dL_dpsi # FIXME
-        self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
+        # Compute dL_dpsi # FIXME: this is untested for the het. case
+        self.dL_dpsi0 = - 0.5 * self.D * self.likelihood.precision * np.ones(self.N)
         self.dL_dpsi1 = mdot(self.V, self.psi1V.T,self.C).T
-        self.dL_dpsi2 = 0.5 * self.beta * self.D * self.Kmmi[None,:,:] # dB
-        self.dL_dpsi2 += - 0.5 * self.beta/sf2 * self.D * self.C[None,:,:] # dC
-        self.dL_dpsi2 += - 0.5 * self.beta * self.E[None,:,:] # dD
+        if self.likelihood.is_heteroscedastic:
+            self.dL_dpsi2 = 0.5 * self.likelihood.precision[:,None,None] * self.D * self.Kmmi[None,:,:] # dB
+            self.dL_dpsi2 += - 0.5 * self.likelihood.precision[:,None,None]/sf2 * self.D * self.C[None,:,:] # dC
+            self.dL_dpsi2 += - 0.5 * self.likelihood.precision[:,None,None]* self.E[None,:,:] # dD
+        else:
+            self.dL_dpsi2 = 0.5 * self.likelihood.precision * self.D * self.Kmmi[None,:,:] # dB
+            self.dL_dpsi2 += - 0.5 * self.likelihood.precision/sf2 * self.D * self.C[None,:,:] # dC
+            self.dL_dpsi2 += - 0.5 * self.likelihood.precision * self.E[None,:,:] # dD
 
         # Compute dL_dKmm
         self.dL_dKmm = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi)*sf2 # dB
         self.dL_dKmm += -0.5 * self.D * (- self.C/sf2 - 2.*mdot(self.C, self.psi2_beta_scaled, self.Kmmi) + self.Kmmi) # dC
         self.dL_dKmm +=  np.dot(np.dot(self.E*sf2, self.psi2_beta_scaled) - np.dot(self.C, self.psi1VVpsi1), self.Kmmi) + 0.5*self.E # dD
 
+        #the partial derivative vector for the likelihood
+        self.partial_for_likelihood = - 0.5 * self.D*self.likelihood.precision + 0.5 * (self.likelihood.Y**2).sum(1)*self.likelihood.precision**2 #dA
+        self.partial_for_likelihood +=  0.5 * self.D * (self.psi0*self.likelihood.precision**2 - (self.psi2*self.Kmmi[None,:,:]*self.likelihood.precision[:,None,None]**2).sum(1).sum(1)/sf2) #dB
+        #self.partial_for_likelihood +=  0.5 * self.D * np.sum(self.Bi*self.A)*self.likelihood.precision #dC
+        #self.partial_for_likelihood += -np.diag(np.dot((self.C - 0.5 * mdot(self.C,self.psi2_beta_scaled,self.C) ) , self.psi1VVpsi1 ))*self.likelihood.precision #dD
+
 
     def _set_params(self, p):
         self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
-        self.beta = p[self.M*self.Q] # FIXME
-        self.kern._set_params(p[self.Z.size + 1:])
+        self.kern._set_params(p[self.Z.size:self.Z.size+self.kern.Nparam])
+        self.likelihood._set_params(p[self.Z.size+self.kern.Nparam:])
         self._computations()
 
     def _get_params(self):
-        return np.hstack([self.Z.flatten(),GP._get_params(self))
+        return np.hstack([self.Z.flatten(),GP._get_params(self)])
 
     def _get_param_names(self):
         return sum([['iip_%i_%i'%(i,j) for i in range(self.Z.shape[0])] for j in range(self.Z.shape[1])],[]) + GP._get_param_names(self)
@@ -125,24 +135,17 @@ class sparse_GP(GP):
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
         sf2 = self.scale_factor**2
-        A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.beta)) -0.5*self.beta*self.trYYT # FIXME
-        B = -0.5*self.D*(self.beta*self.psi0-np.trace(self.A)*sf2)# FIXME
+        if self.likelihood.is_heteroscedastic:
+            A = -0.5*self.N*self.D*np.log(2.*np.pi) +0.5*np.sum(np.log(self.likelihood.precision)) -0.5*np.sum(self.V*self.likelihood.Y)
+        else:
+            A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.likelihood.precision)) -0.5*self.likelihood.precision*self.likelihood.trYYT
+        B = -0.5*self.D*(np.sum(self.likelihood.precision*self.psi0) - np.trace(self.A)*sf2)
         C = -0.5*self.D * (self.B_logdet + self.M*np.log(sf2))
         D = +0.5*np.sum(self.psi1VVpsi1 * self.C)
         return A+B+C+D
 
     def _log_likelihood_gradients(self):
-        return np.hstack([self.dL_dZ().flatten(), GP._log_likelihood_gradients(self)])
-
-        # FIXME: move this into the lieklihood class
-    def dL_dbeta(self):
-        sf2 = self.scale_factor**2
-        dA_dbeta =   0.5 * self.N*self.D/self.beta - 0.5 * self.trYYT
-        dB_dbeta = - 0.5 * self.D * (self.psi0 - np.trace(self.A)/self.beta*sf2)
-        dC_dbeta = - 0.5 * self.D * np.sum(self.Bi*self.A)/self.beta
-        dD_dbeta = np.sum((self.C - 0.5 * mdot(self.C,self.psi2_beta_scaled,self.C) ) * self.psi1VVpsi1 )/self.beta
-
-        return np.squeeze(dA_dbeta + dB_dbeta + dC_dbeta + dD_dbeta)
+        return np.hstack((self.dL_dZ().flatten(), self.dL_dtheta(), self.likelihood._gradients(partial=self.partial_for_likelihood)))
 
     def dL_dtheta(self):
         """

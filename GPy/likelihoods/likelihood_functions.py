@@ -20,11 +20,7 @@ class likelihood_function:
         self.location = location
         self.scale = scale
 
-<<<<<<< HEAD
-class Probit(likelihood):
-=======
 class probit(likelihood_function):
->>>>>>> 346f9dd8bd3207959b87ded258e55aeb094f1ea3
     """
     Probit likelihood
     Y is expected to take values in {-1,1}
@@ -33,11 +29,6 @@ class probit(likelihood_function):
     L(x) = \\Phi (Y_i*f_i)
     $$
     """
-<<<<<<< HEAD
-=======
-    def __init__(self,location=0,scale=1):
-        likelihood_function.__init__(self,Y,location,scale)
->>>>>>> 346f9dd8bd3207959b87ded258e55aeb094f1ea3
 
     def moments_match(self,data_i,tau_i,v_i):
         """
@@ -66,11 +57,7 @@ class probit(likelihood_function):
         p_95 = np.ones([mu.size])
         return mean, p_05, p_95
 
-<<<<<<< HEAD
-class Poisson(likelihood):
-=======
-class poisson(likelihood_function):
->>>>>>> 346f9dd8bd3207959b87ded258e55aeb094f1ea3
+class Poisson(likelihood_function):
     """
     Poisson likelihood
     Y is expected to take values in {0,1,2,...}
@@ -79,13 +66,6 @@ class poisson(likelihood_function):
     L(x) = \exp(\lambda) * \lambda**Y_i / Y_i!
     $$
     """
-<<<<<<< HEAD
-=======
-    def __init__(self,Y,location=0,scale=1):
-        assert len(Y[Y<0]) == 0, "Output cannot have negative values"
-        likelihood_function.__init__(self,Y,location,scale)
->>>>>>> 346f9dd8bd3207959b87ded258e55aeb094f1ea3
-
     def moments_match(self,i,tau_i,v_i):
         """
         Moments match of the marginal approximation in EP algorithm
@@ -148,54 +128,7 @@ class poisson(likelihood_function):
         Compute  mean, and conficence interval (percentiles 5 and 95) of the  prediction
         """
         mean = np.exp(mu*self.scale + self.location)
-<<<<<<< HEAD
         tmp = stats.poisson.ppf(np.array([.05,.95]),mu)
         p_05 = tmp[:,0]
         p_95 = tmp[:,1]
         return mean,p_05,p_95
-=======
-        if all:
-            tmp = stats.poisson.ppf(np.array([.05,.95]),mu)
-            p_05 = tmp[:,0]
-            p_95 = tmp[:,1]
-            return mean,mean,p_05,p_95
-        else:
-            return mean
-
-    def _log_likelihood_gradients():
-        raise NotImplementedError
-
-    def plot(self,X,mu,var,phi,X_obs,Z=None,samples=0):
-        assert X_obs.shape[1] == 1, 'Number of dimensions must be 1'
-        gpplot(X,phi,phi.flatten())
-        pb.plot(X_obs,self.Y,'kx',mew=1.5)
-        if samples:
-            phi_samples = np.vstack([np.random.poisson(phi.flatten(),phi.size) for s in range(samples)])
-            pb.plot(X,phi_samples.T, alpha = 0.4, c='#3465a4', linewidth = 0.8)
-        if Z is not None:
-            pb.plot(Z,Z*0+pb.ylim()[0],'k|',mew=1.5,markersize=12)
-
-class gaussian(likelihood_function):
-    """
-    Gaussian likelihood
-    Y is expected to take values in (-inf,inf)
-    """
-    def moments_match(self,i,tau_i,v_i):
-        """
-        Moments match of the marginal approximation in EP algorithm
-
-        :param i: number of observation (int)
-        :param tau_i: precision of the cavity distribution (float)
-        :param v_i: mean/variance of the cavity distribution (float)
-        """
-        mu = v_i/tau_i
-        sigma = np.sqrt(1./tau_i)
-        s = 1. if self.Y[i] == 0 else 1./self.Y[i]
-        sigma2_hat = 1./(1./sigma**2 + 1./s**2)
-        mu_hat = sigma2_hat*(mu/sigma**2 + self.Y[i]/s**2)
-        Z_hat = 1./np.sqrt(2*np.pi) * 1./np.sqrt(sigma**2+s**2) * np.exp(-.5*(mu-self.Y[i])**2/(sigma**2 + s**2))
-        return Z_hat, mu_hat, sigma2_hat
-
-    def _log_likelihood_gradients():
-        raise NotImplementedError
->>>>>>> 346f9dd8bd3207959b87ded258e55aeb094f1ea3

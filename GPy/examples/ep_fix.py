@@ -36,8 +36,8 @@ m.update_likelihood_approximation()
 #m.checkgrad(verbose=1)
 m.optimize()
 print "Round 2"
-m.update_likelihood_approximation()
+#rm.update_likelihood_approximation()
 
 #m.EPEM()
-#m.plot()
+m.plot()
 #print(m)

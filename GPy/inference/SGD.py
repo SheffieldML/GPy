@@ -165,18 +165,18 @@ class opt_SGD(Optimizer):
             if it == 0 or self.self_paced is False:
                 features = np.random.permutation(Y.shape[1])
             else:
-                features = np.argsort(LL)[::-1]
+                features = np.argsort(NLL)#[::-1]
 
             b = len(features)/self.batch_size
             features = [features[i::b] for i in range(b)]
-            LL = []
+            NLL = []
             count = 0
 
             for j in features:
                 count += 1
                 self.model.D = len(j)
                 self.model.Y = Y[:, j]
-                self.model.trYYT = np.sum(np.square(self.model.Y))
+                # self.model.trYYT = np.sum(np.square(self.model.Y))
                 if missing_data:
                     shapes = self.get_param_shapes(N, Q)
                     f, step, Nj = self.step_with_missing_data(f_fp, X, Y, step, shapes)
@@ -188,14 +188,14 @@ class opt_SGD(Optimizer):
                     self.x_opt -= step + momentum_term
 
                 if self.messages == 2:
-                    status = "evaluating {feature: 5d}/{tot: 5d} \t f: {f: 2.3f} \t non-missing: {nm: 4d}\r".format(feature = count, tot = len(features), f = -f, nm = Nj)
+                    status = "evaluating {feature: 5d}/{tot: 5d} \t f: {f: 2.3f} \t non-missing: {nm: 4d}\r".format(feature = count, tot = len(features), f = f, nm = Nj)
                     sys.stdout.write(status)
                     sys.stdout.flush()
 
-                LL.append(-f)
+                NLL.append(f)
 
             # should really be a sum(), but earlier samples in the iteration will have a very crappy ll
-            self.f_opt = np.mean(LL)
+            self.f_opt = np.mean(NLL)
             self.model.N = N
             self.model.Y = Y
             self.model.X = X

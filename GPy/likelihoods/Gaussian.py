@@ -1,6 +1,7 @@
 import numpy as np
+from likelihood import likelihood
 
-class Gaussian:
+class Gaussian(likelihood):
     def __init__(self,data,variance=1.,normalize=False):
         self.is_heteroscedastic = False
         self.data = data

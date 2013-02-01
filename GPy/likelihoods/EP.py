@@ -1,11 +1,9 @@
 import numpy as np
-import random
 from scipy import stats, linalg
-from ..core import model
 from ..util.linalg import pdinv,mdot,jitchol
-from ..util.plot import gpplot
+from likelihood import likelihood
 
-class EP:
+class EP(likelihood):
     def __init__(self,data,likelihood_function,epsilon=1e-3,power_ep=[1.,1.]):
         """
         Expectation Propagation
@@ -70,8 +68,7 @@ class EP:
         self.np1 = [self.tau_tilde.copy()]
         self.np2 = [self.v_tilde.copy()]
         while epsilon_np1 > self.epsilon or epsilon_np2 > self.epsilon:
-            update_order = np.arange(self.N)
-            random.shuffle(update_order)
+            update_order = np.random.permutation(self.N)
             for i in update_order:
                 #Cavity distribution parameters
                 self.tau_[i] = 1./self.Sigma[i,i] - self.eta*self.tau_tilde[i]
@@ -243,8 +240,7 @@ class EP:
         self.np1 = [self.tau_tilde.copy()]
         self.np2 = [self.v_tilde.copy()]
         while epsilon_np1 > self.epsilon or epsilon_np2 > self.epsilon:
-            update_order = np.arange(self.N)
-            random.shuffle(update_order)
+            update_order = np.random.permutation(self.N)
             for i in update_order:
                 #Cavity distribution parameters
                 self.tau_[i] = 1./self.Sigma_diag[i] - self.eta*self.tau_tilde[i]

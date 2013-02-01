@@ -65,7 +65,7 @@ class sparse_GP(GP):
         # kernel computations, using BGPLVM notation
         self.Kmm = self.kern.K(self.Z)
         if self.has_uncertain_inputs:
-            self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncerTainty)
+            self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty)
             self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
             self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty)
             if self.likelihood.is_heteroscedastic:

@@ -207,6 +207,7 @@ class GP_regression(model):
             m,v = self.predict(Xnew,slices=which_functions)
             gpplot(Xnew,m,v)
             if samples:
+                m,v = self.predict(Xnew,slices=which_functions,full_cov=True)
                 s = np.random.multivariate_normal(m.flatten(),v,samples)
                 pb.plot(Xnew.flatten(),s.T, alpha = 0.4, c='#3465a4', linewidth = 0.8)
             pb.plot(Xorig,Yorig,'kx',mew=1.5)

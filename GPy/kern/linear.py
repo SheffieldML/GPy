@@ -30,7 +30,7 @@ class linear(kernpart):
             if variances is not None:
                 if isinstance(variances, float):
                     variances = np.array([variances])
-                    
+
                 assert variances.shape == (1,)
             else:
                 variances = np.ones(1)

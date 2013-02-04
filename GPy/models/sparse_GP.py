@@ -114,10 +114,23 @@ class sparse_GP(GP):
         self.dL_dKmm +=  np.dot(np.dot(self.E*sf2, self.psi2_beta_scaled) - np.dot(self.C, self.psi1VVpsi1), self.Kmmi) + 0.5*self.E # dD
 
         #the partial derivative vector for the likelihood
-        self.partial_for_likelihood = - 0.5 * self.D*self.likelihood.precision + 0.5 * (self.likelihood.Y**2).sum(1)*self.likelihood.precision**2 #dA
-        self.partial_for_likelihood +=  0.5 * self.D * (self.psi0*self.likelihood.precision**2 - (self.psi2*self.Kmmi[None,:,:]*self.likelihood.precision[:,None,None]**2).sum(1).sum(1)/sf2) #dB
-        #self.partial_for_likelihood +=  0.5 * self.D * np.sum(self.Bi*self.A)*self.likelihood.precision #dC
-        #self.partial_for_likelihood += -np.diag(np.dot((self.C - 0.5 * mdot(self.C,self.psi2_beta_scaled,self.C) ) , self.psi1VVpsi1 ))*self.likelihood.precision #dD
+        if self.likelihood.Nparams ==0:
+            #save computation here.
+            self.partial_for_likelihood = None
+        elif self.likelihood.is_heteroscedastic:
+            raise NotImplementedError, "heteroscedatic derivates not implemented"
+            #self.partial_for_likelihood = - 0.5 * self.D*self.likelihood.precision + 0.5 * (self.likelihood.Y**2).sum(1)*self.likelihood.precision**2 #dA
+            #self.partial_for_likelihood +=  0.5 * self.D * (self.psi0*self.likelihood.precision**2 - (self.psi2*self.Kmmi[None,:,:]*self.likelihood.precision[:,None,None]**2).sum(1).sum(1)/sf2) #dB
+            #self.partial_for_likelihood +=  0.5 * self.D * np.sum(self.Bi*self.A)*self.likelihood.precision #dC
+            #self.partial_for_likelihood += -np.diag(np.dot((self.C - 0.5 * mdot(self.C,self.psi2_beta_scaled,self.C) ) , self.psi1VVpsi1 ))*self.likelihood.precision #dD
+        else:
+            #likelihood is not heterscedatic
+            beta = self.likelihood.precision
+            dbeta =   0.5 * self.N*self.D/beta - 0.5 * np.sum(np.square(self.likelihood.Y))
+            dbeta += - 0.5 * self.D * (self.psi0.sum() - np.trace(self.A)/beta*sf2)
+            dbeta += - 0.5 * self.D * np.sum(self.Bi*self.A)/beta
+            dbeta += np.sum((self.C - 0.5 * mdot(self.C,self.psi2_beta_scaled,self.C) ) * self.psi1VVpsi1 )/beta
+            self.partial_for_likelihood = -dbeta*self.likelihood.precision
 
 
     def _set_params(self, p):
@@ -195,9 +208,9 @@ class sparse_GP(GP):
 
     def plot(self, *args, **kwargs):
         """
-        Plot the fitted model: just call the GP_regression plot function and then add inducing inputs
+        Plot the fitted model: just call the GP plot function and then add inducing inputs
         """
-        GP_regression.plot(self,*args,**kwargs)
+        GP.plot(self,*args,**kwargs)
         if self.Q==1:
             pb.plot(self.Z,self.Z*0+pb.ylim()[0],'k|',mew=1.5,markersize=12)
             if self.has_uncertain_inputs:

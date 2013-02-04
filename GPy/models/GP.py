@@ -133,7 +133,7 @@ class GP(model):
         KiKx = np.dot(self.Ki,Kx)
         if full_cov:
             Kxx = self.kern.K(_Xnew, slices1=slices,slices2=slices)
-            var = Kxx - np.dot(KiKx.T,Kx) #NOTE is the shape of v right?
+            var = Kxx - np.dot(KiKx.T,Kx) #NOTE this won't work for plotting
         else:
             Kxx = self.kern.Kdiag(_Xnew, slices=slices)
             var = Kxx - np.sum(np.multiply(KiKx,Kx),0)

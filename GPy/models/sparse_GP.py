@@ -196,15 +196,14 @@ class sparse_GP(GP):
 
         Kx = self.kern.K(self.Z, Xnew)
         mu = mdot(Kx.T, self.C/self.scale_factor, self.psi1V)
-
         if full_cov:
             Kxx = self.kern.K(Xnew)
-            var = Kxx - mdot(Kx.T, (self.Kmmi - self.C/self.scale_factor**2), Kx)
+            var = Kxx - mdot(Kx.T, (self.Kmmi - self.C/self.scale_factor**2), Kx) #NOTE thiswon't work for plotting
         else:
             Kxx = self.kern.Kdiag(Xnew)
             var = Kxx - np.sum(Kx*np.dot(self.Kmmi - self.C/self.scale_factor**2, Kx),0)
 
-        return mu,var
+        return mu,var[:,None]
 
     def plot(self, *args, **kwargs):
         """

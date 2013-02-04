@@ -8,9 +8,10 @@ import sys, pdb
 from .. import kern
 from ..core import model
 from ..util.linalg import pdinv, PCA
-from GP_regression import GP_regression
+from GP import GP
+from ..likelihoods import Gaussian
 
-class GPLVM(GP_regression):
+class GPLVM(GP):
     """
     Gaussian Process Latent Variable Model
 
@@ -22,10 +23,13 @@ class GPLVM(GP_regression):
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, Y, Q, init='PCA', X = None, **kwargs):
+    def __init__(self, Y, Q, init='PCA', X = None, kernel=None, **kwargs):
         if X is None:
             X = self.initialise_latent(init, Q, Y)
-        GP_regression.__init__(self, X, Y, **kwargs)
+        if kernel is None:
+            kernel = kern.rbf(Q) + kern.bias(Q)
+        likelihood = Gaussian(Y)
+        GP.__init__(self, X, likelihood, kernel, **kwargs)
 
     def initialise_latent(self, init, Q, Y):
         if init == 'PCA':
@@ -34,23 +38,19 @@ class GPLVM(GP_regression):
             return np.random.randn(Y.shape[0], Q)
 
     def _get_param_names(self):
-        return (sum([['X_%i_%i'%(n,q) for n in range(self.N)] for q in range(self.Q)],[])
-                + self.kern._get_param_names_transformed())
+        return sum([['X_%i_%i'%(n,q) for n in range(self.N)] for q in range(self.Q)],[]) + GP._get_param_names(self)
 
     def _get_params(self):
-        return np.hstack((self.X.flatten(), self.kern._get_params_transformed()))
+        return np.hstack((self.X.flatten(), GP._get_params(self)))
 
     def _set_params(self,x):
         self.X = x[:self.X.size].reshape(self.N,self.Q).copy()
-        GP_regression._set_params(self, x[self.X.size:])
+        GP._set_params(self, x[self.X.size:])
 
     def _log_likelihood_gradients(self):
-        dL_dK = self.dL_dK()
+        dL_dX = 2.*self.kern.dK_dX(self.dL_dK,self.X)
 
-        dL_dtheta = self.kern.dK_dtheta(dL_dK,self.X)
-        dL_dX = 2*self.kern.dK_dX(dL_dK,self.X)
-
-        return np.hstack((dL_dX.flatten(),dL_dtheta))
+        return np.hstack((dL_dX.flatten(),GP._log_likelihood_gradients(self)))
 
     def plot(self):
         assert self.Y.shape[1]==2

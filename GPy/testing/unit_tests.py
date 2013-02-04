@@ -160,8 +160,8 @@ class GradientTests(unittest.TestCase):
         Y = np.hstack([np.ones(N/2),np.repeat(-1,N/2)])[:,None]
         kernel = GPy.kern.rbf(1)
         distribution = GPy.likelihoods.likelihood_functions.probit()
-        likelihood = GPy.likelihoods.EP(Y,distribution)
-        m = GPy.models.GP(X,kernel,likelihood=likelihood)
+        likelihood = GPy.likelihoods.EP(Y, distribution)
+        m = GPy.models.GP(X, likelihood, kernel)
         m.ensure_default_constraints()
         self.assertTrue(m.EPEM)
 

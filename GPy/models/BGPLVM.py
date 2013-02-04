@@ -33,7 +33,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         kernel = kern.rbf(Q) + kern.white(Q)
 
         S = np.ones_like(X) * 1e-2#
-        sparse_GP.__init__(self, X, Gaussian(Y), X_uncertainty = S, Z=Z,**kwargs)
+        sparse_GP.__init__(self, X, Gaussian(Y), X_uncertainty=S, Z=Z,**kwargs)
 
     def _get_param_names(self):
         X_names = sum([['X_%i_%i'%(n,q) for n in range(self.N)] for q in range(self.Q)],[])
@@ -46,7 +46,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         The resulting 1-D array has this structure:
 
         ===============================================================
-        |       mu       |        S        |    Z    | beta |  theta  |
+        |       mu       |        S        |    Z    | theta |  beta  |
         ===============================================================
 
         """

@@ -32,7 +32,7 @@ class Gaussian(likelihood):
         return ["noise variance"]
 
     def _set_params(self,x):
-        self._variance = x
+        self._variance = float(x)
         self.covariance_matrix = np.eye(self.N)*self._variance
         self.precision = 1./self._variance
 

@@ -130,7 +130,7 @@ class sparse_GP(GP):
             dbeta += - 0.5 * self.D * (self.psi0.sum() - np.trace(self.A)/beta*sf2)
             dbeta += - 0.5 * self.D * np.sum(self.Bi*self.A)/beta
             dbeta += np.sum((self.C - 0.5 * mdot(self.C,self.psi2_beta_scaled,self.C) ) * self.psi1VVpsi1 )/beta
-            self.partial_for_likelihood = -dbeta*self.likelihood.precision
+            self.partial_for_likelihood = -dbeta*self.likelihood.precision**2
 
 
     def _set_params(self, p):

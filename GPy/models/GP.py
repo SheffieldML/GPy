@@ -153,7 +153,8 @@ class GP(model):
         :param full_cov: whether to return the folll covariance matrix, or just the diagonal
         :type full_cov: bool
         :rtype: posterior mean,  a Numpy array, Nnew x self.D
-        :rtype: posterior variance, a Numpy array, Nnew x Nnew x (self.D)
+        :rtype: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
+        :rtype: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.D
 
         .. Note:: "slices" specifies how the the points X_new co-vary wich the training points.
 
@@ -167,12 +168,12 @@ class GP(model):
         """
         #normalise X values
         Xnew = (Xnew.copy() - self._Xmean) / self._Xstd
-        mu, var = self._raw_predict(Xnew, slices, full_cov=full_cov)
+        mu, var = self._raw_predict(Xnew, slices, full_cov)
 
         #now push through likelihood TODO
         mean, _5pc, _95pc = self.likelihood.predictive_values(mu, var)
 
-        return mean, _5pc, _95pc
+        return mean, var, _5pc, _95pc
 
 
     def plot_internal(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None,full_cov=False):
@@ -206,9 +207,9 @@ class GP(model):
             gpplot(Xnew,m,m-np.sqrt(v),m+np.sqrt(v))
             pb.plot(self.X[which_data],self.likelihood.Y[which_data],'kx',mew=1.5)
             pb.xlim(xmin,xmax)
-        elif self.X.shape[1]==2:
+        elif self.X.shape[1] == 2:
             resolution = resolution or 50
-            Xnew, xmin, xmax,xx,yy = x_frame2D(self.X, plot_limits,resolution)
+            Xnew, xmin, xmax, xx, yy = x_frame2D(self.X, plot_limits,resolution)
             m,v = self._raw_predict(Xnew, slices=which_functions)
             m = m.reshape(resolution,resolution).T
             pb.contour(xx,yy,m,vmin=m.min(),vmax=m.max(),cmap=pb.cm.jet)
@@ -226,17 +227,18 @@ class GP(model):
 
         if self.X.shape[1] == 1:
             Xnew, xmin, xmax = x_frame1D(self.X, plot_limits=plot_limits)
-            m, lower, upper = self.predict(Xnew, slices=which_functions)
+            m, var, lower, upper = self.predict(Xnew, slices=which_functions)
             gpplot(Xnew,m, lower, upper)
             pb.plot(self.X[which_data],self.likelihood.data[which_data],'kx',mew=1.5)
-            ymin,ymax = self.likelihood.data.min()*1.2,self.likelihood.data.max()*1.2
+            ymin,ymax = lower.min(),upper.max() #self.likelihood.data.min()*1.2,self.likelihood.data.max()*1.2
             pb.xlim(xmin,xmax)
             pb.ylim(ymin,ymax)
+            
         elif self.X.shape[1]==2:
             resolution = resolution or 50
             Xnew, xx, yy, xmin, xmax = x_frame2D(self.X, plot_limits,resolution)
             x, y = np.linspace(xmin[0],xmax[0],resolution), np.linspace(xmin[1],xmax[1],resolution)
-            m,lower,upper = self.predict(Xnew, slices=which_functions)
+            m, var, lower, upper = self.predict(Xnew, slices=which_functions)
             m = m.reshape(resolution,resolution).T
             pb.contour(x,y,m,vmin=m.min(),vmax=m.max(),cmap=pb.cm.jet)
             Yf = self.likelihood.Y.flatten()

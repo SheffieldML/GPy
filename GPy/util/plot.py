@@ -102,5 +102,4 @@ def x_frame2D(X,plot_limits=None,resolution=None):
     resolution = resolution or 50
     xx,yy = np.mgrid[xmin[0]:xmax[0]:1j*resolution,xmin[1]:xmax[1]:1j*resolution]
     Xnew = np.vstack((xx.flatten(),yy.flatten())).T
-    return Xnew, xx,yy,xmin, xmax
-
+    return Xnew, xx, yy, xmin, xmax

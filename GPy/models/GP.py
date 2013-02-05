@@ -206,13 +206,13 @@ class GP(model):
             gpplot(Xnew,m,m-np.sqrt(v),m+np.sqrt(v))
             pb.plot(self.X[which_data],self.likelihood.Y[which_data],'kx',mew=1.5)
             pb.xlim(xmin,xmax)
-        elif X.shape[1]==2:
+        elif self.X.shape[1]==2:
             resolution = resolution or 50
-            Xnew, xmin, xmax,xx,yy = x_frame2D(self.X, plot_limits=plot_limits)
+            Xnew, xmin, xmax,xx,yy = x_frame2D(self.X, plot_limits,resolution)
             m,v = self._raw_predict(Xnew, slices=which_functions)
-            m = m.reshape(resolution,resolution)
-            pb.contour(xx,yy,zz,vmin=zz.min(),vmax=zz.max(),cmap=pb.cm.jet)
-            pb.scatter(Xorig[:,0],Xorig[:,1],40,Yorig,linewidth=0,cmap=pb.cm.jet,vmin=zz.min(),vmax=zz.max())
+            m = m.reshape(resolution,resolution).T
+            pb.contour(xx,yy,m,vmin=m.min(),vmax=m.max(),cmap=pb.cm.jet)
+            pb.scatter(Xorig[:,0],Xorig[:,1],40,Yorig,linewidth=0,cmap=pb.cm.jet,vmin=m.min(), vmax=m.max())
             pb.xlim(xmin[0],xmax[0])
             pb.ylim(xmin[1],xmax[1])
         else:
@@ -232,17 +232,16 @@ class GP(model):
             ymin,ymax = self.likelihood.data.min()*1.2,self.likelihood.data.max()*1.2
             pb.xlim(xmin,xmax)
             pb.ylim(ymin,ymax)
-        elif X.shape[1]==2:
+        elif self.X.shape[1]==2:
             resolution = resolution or 50
-            Xnew, xmin, xmax,xx,yy = x_frame2D(self.X, plot_limits=plot_limits)
-            m,v = self.predict(Xnew, slices=which_functions)
-            m = m.reshape(resolution,resolution)
-            pb.contour(xx,yy,zz,vmin=zz.min(),vmax=zz.max(),cmap=pb.cm.jet)
-            pb.scatter(Xorig[:,0],Xorig[:,1],40,Yorig,linewidth=0,cmap=pb.cm.jet,vmin=zz.min(),vmax=zz.max())
+            Xnew, xx, yy, xmin, xmax = x_frame2D(self.X, plot_limits,resolution)
+            x, y = np.linspace(xmin[0],xmax[0],resolution), np.linspace(xmin[1],xmax[1],resolution)
+            m,lower,upper = self.predict(Xnew, slices=which_functions)
+            m = m.reshape(resolution,resolution).T
+            pb.contour(x,y,m,vmin=m.min(),vmax=m.max(),cmap=pb.cm.jet)
+            Yf = self.likelihood.Y.flatten()
+            pb.scatter(self.X[:,0], self.X[:,1], 40, Yf, cmap=pb.cm.jet,vmin=m.min(),vmax=m.max(), linewidth=0.)
             pb.xlim(xmin[0],xmax[0])
             pb.ylim(xmin[1],xmax[1])
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
-
-
-

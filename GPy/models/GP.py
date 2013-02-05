@@ -137,7 +137,8 @@ class GP(model):
         else:
             Kxx = self.kern.Kdiag(_Xnew, slices=slices)
             var = Kxx - np.sum(np.multiply(KiKx,Kx),0)
-        return mu, var[:,None]
+            var = var[:,None]
+        return mu, var
 
 
     def predict(self,Xnew, slices=None, full_cov=False):
@@ -171,12 +172,12 @@ class GP(model):
         mu, var = self._raw_predict(Xnew, slices, full_cov)
 
         #now push through likelihood TODO
-        mean, _5pc, _95pc = self.likelihood.predictive_values(mu, var)
+        mean, _025pm, _975pm = self.likelihood.predictive_values(mu, var)
 
-        return mean, var, _5pc, _95pc
+        return mean, var, _025pm, _975pm
 
 
-    def plot_internal(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None,full_cov=False):
+    def plot_f(self, samples=0, plot_limits=None, which_data='all', which_functions='all', resolution=None, full_cov=False):
         """
         Plot the GP's view of the world, where the data is normalised and the likelihood is Gaussian
 
@@ -203,8 +204,17 @@ class GP(model):
 
         if self.X.shape[1] == 1:
             Xnew, xmin, xmax = x_frame1D(self.X, plot_limits=plot_limits)
-            m,v = self._raw_predict(Xnew, slices=which_functions)
-            gpplot(Xnew,m,m-np.sqrt(v),m+np.sqrt(v))
+            if samples == 0:
+                m,v = self._raw_predict(Xnew, slices=which_functions)
+                gpplot(Xnew,m,m-2*np.sqrt(v),m+2*np.sqrt(v))
+                pb.plot(self.X[which_data],self.likelihood.Y[which_data],'kx',mew=1.5)
+            else:
+                m,v = self._raw_predict(Xnew, slices=which_functions,full_cov=True)
+                Ysim = np.random.multivariate_normal(m.flatten(),v,samples)
+                gpplot(Xnew,m,m-2*np.sqrt(np.diag(v)[:,None]),m+2*np.sqrt(np.diag(v))[:,None])
+                for i in range(samples):
+                    pb.plot(Xnew,Ysim[i,:],Tango.coloursHex['darkBlue'],linewidth=0.25)
+
             pb.plot(self.X[which_data],self.likelihood.Y[which_data],'kx',mew=1.5)
             pb.xlim(xmin,xmax)
         elif self.X.shape[1] == 2:
@@ -220,6 +230,7 @@ class GP(model):
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
     def plot(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None,full_cov=False):
+        # TODO include samples
         if which_functions=='all':
             which_functions = [True]*self.kern.Nparts
         if which_data=='all':
@@ -230,10 +241,10 @@ class GP(model):
             m, var, lower, upper = self.predict(Xnew, slices=which_functions)
             gpplot(Xnew,m, lower, upper)
             pb.plot(self.X[which_data],self.likelihood.data[which_data],'kx',mew=1.5)
-            ymin,ymax = lower.min(),upper.max() #self.likelihood.data.min()*1.2,self.likelihood.data.max()*1.2
+            ymin,ymax = lower.min(),upper.max()
             pb.xlim(xmin,xmax)
             pb.ylim(ymin,ymax)
-            
+
         elif self.X.shape[1]==2:
             resolution = resolution or 50
             Xnew, xx, yy, xmin, xmax = x_frame2D(self.X, plot_limits,resolution)

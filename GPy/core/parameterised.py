@@ -102,6 +102,11 @@ class parameterised(object):
         else:
             return expr
 
+    def Nparam_transformed(self):
+            ties = 0
+            for ar in self.tied_indices:
+                ties += ar.size - 1
+            return self.Nparam - len(self.constrained_fixed_indices) - ties
 
     def constrain_positive(self, which):
         """
@@ -146,8 +151,6 @@ class parameterised(object):
             self.constrained_fixed_indices, self.constrained_fixed_values = list(self.constrained_fixed_indices), list(self.constrained_fixed_values)
         else:
             self.constrained_fixed_indices, self.constrained_fixed_values = [],[]
-
-
 
 
 

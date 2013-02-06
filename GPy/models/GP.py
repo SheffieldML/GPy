@@ -62,7 +62,9 @@ class GP(model):
 
     def _set_params(self,p):
         self.kern._set_params_transformed(p[:self.kern.Nparam])
-        self.likelihood._set_params(p[self.kern.Nparam:])
+        #self.likelihood._set_params(p[self.kern.Nparam:])               # test by Nicolas
+        self.likelihood._set_params(p[self.kern.Nparam_transformed():])    # test by Nicolas
+
 
         self.K = self.kern.K(self.X,slices1=self.Xslices)
         self.K += self.likelihood.covariance_matrix

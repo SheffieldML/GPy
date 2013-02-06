@@ -236,6 +236,8 @@ class kern(parameterised):
             X2 = X
         target = np.zeros(self.Nparam)
         [p.dK_dtheta(partial[s1,s2],X[s1,i_s],X2[s2,i_s],target[ps]) for p,i_s,ps,s1,s2 in zip(self.parts, self.input_slices, self.param_slices, slices1, slices2)]
+
+	#TODO: transform the gradients here!
         return target
 
     def dK_dX(self,partial,X,X2=None,slices1=None,slices2=None):

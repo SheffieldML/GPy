@@ -44,6 +44,10 @@ class linear(kernpart):
                 variances = np.ones(self.D)
         self._set_params(variances)
 
+        #initialize cache
+        self._Z, self._mu, self._S = np.empty(shape=(3,1))
+        self._X, self._X2, self._params = np.empty(shape=(3,1))
+
     def _get_params(self):
         return self.variances
 
@@ -86,12 +90,12 @@ class linear(kernpart):
     #---------------------------------------#
 
     def psi0(self,Z,mu,S,target):
-        expected = np.square(mu) + S
-        target += np.sum(self.variances*expected)
+        self._psi_computations(Z,mu,S)
+        target += np.sum(self.variances*self.mu2_S)
 
     def dpsi0_dtheta(self,partial,Z,mu,S,target):
-        expected = np.square(mu) + S
-        target += (partial[:, None] * (np.sum(expected,0))).sum()
+        self._psi_computations(Z,mu,S)
+        target += (partial[:, None] * (np.sum(self.mu2_S,0))).sum()
 
     def dpsi0_dmuS(self,partial, Z,mu,S,target_mu,target_S):
         target_mu += partial[:, None] * (2.0*mu*self.variances) * mu.shape[0]
@@ -110,7 +114,8 @@ class linear(kernpart):
 
     def dpsi1_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         """Do nothing for S, it does not affect psi1"""
-        target_mu += (partial.T[:,:, None]*(Z*self.variances)).sum(1) 
+        self._psi_computations(Z,mu,S)
+        target_mu += (partial.T[:,:, None]*(Z*self.variances)).sum(1)
 
     def dpsi1_dZ(self,partial,Z,mu,S,target):
         self.dK_dX(partial.T,Z,mu,target)
@@ -119,25 +124,24 @@ class linear(kernpart):
         """
         returns N,M,M matrix
         """
-        mu2_S = np.square(mu)+S# N,Q,
-        ZZ = Z[:,None,:]*Z[None,:,:] # M,M,Q
-        psi2 = ZZ*np.square(self.variances)*mu2_S[:, None, None, :]
+        self._psi_computations(Z,mu,S)
+        psi2 = self.ZZ*np.square(self.variances)*self.mu2_S[:, None, None, :]
         target += psi2.sum(-1)
 
     def dpsi2_dtheta(self,partial,Z,mu,S,target):
-        mu2_S = np.square(mu)+S# N,Q,
-        ZZ = Z[:,None,:]*Z[None,:,:] # M,M,Q
-        target += (partial[:,:,:,None]*(2.*ZZ*mu2_S[:,None,None,:]*self.variances)).sum()
+        self._psi_computations(Z,mu,S)
+        target += (partial[:,:,:,None]*(2.*self.ZZ*self.mu2_S[:,None,None,:]*self.variances)).sum()
 
     def dpsi2_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         """Think N,M,M,Q """
-        ZZ = Z[:,None,:]*Z[None,:,:] # M,M,Q
-        tmp = ZZ*np.square(self.variances) # M,M,Q
+        self._psi_computations(Z,mu,S)
+        tmp = self.ZZ*np.square(self.variances) # M,M,Q
         target_mu += (partial[:,:,:,None]*tmp*2.*mu[:,None,None,:]).sum(1).sum(1)
         target_S += (partial[:,:,:,None]*tmp).sum(1).sum(1)
 
     def dpsi2_dZ(self,partial,Z,mu,S,target):
-        mu2_S = np.sum(np.square(mu)+S,0)# Q,
+        self._psi_computations(Z,mu,S)
+        mu2_S = np.sum(self.mu2_S,0)# Q,
         target += (partial[:,:,:,None]* (Z * mu2_S * np.square(self.variances))).sum(0).sum(1)
 
     #---------------------------------------#
@@ -154,3 +158,13 @@ class linear(kernpart):
         else:
             # print "Cache hit!"
             pass # TODO: insert debug message here (logging framework)
+
+    def _psi_computations(self,Z,mu,S):
+        #here are the "statistics" for psi1 and psi2
+        if not np.all(Z==self._Z):
+            #Z has changed, compute Z specific stuff
+            self.ZZ = Z[:,None,:]*Z[None,:,:] # M,M,Q
+            self._Z = Z
+        if not (np.all(Z==self._Z) and np.all(mu==self._mu) and np.all(S==self._S)):
+            self.mu2_S = np.square(mu)+S
+            self._Z, self._mu, self._S = Z, mu,S

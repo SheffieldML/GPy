@@ -30,7 +30,7 @@ class linear(kernpart):
             if variances is not None:
                 if isinstance(variances, float):
                     variances = np.array([variances])
-                    
+
                 assert variances.shape == (1,)
             else:
                 variances = np.ones(1)
@@ -91,11 +91,11 @@ class linear(kernpart):
 
     def dpsi0_dtheta(self,partial,Z,mu,S,target):
         expected = np.square(mu) + S
-        target += (partial[:, None] * (-2.*np.sum(expected,0))).sum()
+        target += (partial[:, None] * (np.sum(expected,0))).sum()
 
     def dpsi0_dmuS(self,partial, Z,mu,S,target_mu,target_S):
-        target_mu += partial[:, None] * (2*mu*self.variances)
-        target_S += partial[:, None] * self.variances
+        target_mu += partial[:, None] * (2.0*mu*self.variances) * mu.shape[0]
+        target_S += partial[:, None] * self.variances * mu.shape[0]
 
     def dpsi0_dZ(self,Z,mu,S,target):
         pass
@@ -110,7 +110,7 @@ class linear(kernpart):
 
     def dpsi1_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         """Do nothing for S, it does not affect psi1"""
-        target_mu += (partial.T[:,:, None]*(Z/self.variances)).sum(1)
+        target_mu += (partial.T[:,:, None]*(Z*self.variances)).sum(1) 
 
     def dpsi1_dZ(self,partial,Z,mu,S,target):
         self.dK_dX(partial.T,Z,mu,target)
@@ -131,7 +131,6 @@ class linear(kernpart):
 
     def dpsi2_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         """Think N,M,M,Q """
-        mu2_S = np.sum(np.square(mu)+S,0)# Q,
         ZZ = Z[:,None,:]*Z[None,:,:] # M,M,Q
         tmp = ZZ*np.square(self.variances) # M,M,Q
         target_mu += (partial[:,:,:,None]*tmp*2.*mu[:,None,None,:]).sum(1).sum(1)
@@ -139,7 +138,7 @@ class linear(kernpart):
 
     def dpsi2_dZ(self,partial,Z,mu,S,target):
         mu2_S = np.sum(np.square(mu)+S,0)# Q,
-        target += (partial[:,:,:,None]* (Z * mu2_S * np.square(self.variances))).sum(0).sum(0)
+        target += (partial[:,:,:,None]* (Z * mu2_S * np.square(self.variances))).sum(0).sum(1)
 
     #---------------------------------------#
     #            Precomputations            #

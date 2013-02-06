@@ -123,13 +123,15 @@ class opt_SGD(Optimizer):
         else:
             raise NotImplementedError
 
-    def step_with_missing_data(self, f_fp, X, Y, step, shapes):
+    def step_with_missing_data(self, f_fp, X, step, shapes):
         N, Q = X.shape
         samples = self.non_null_samples(self.model.Y)
         j = self.subset_parameter_vector(self.x_opt, samples, shapes)
         self.model.N = samples.sum()
         self.model.X = X[samples]
         self.model.Y = self.model.Y[samples]
+        # self.model.Y -= self.model.Y.mean() # <----------------- WARNING!!!!
+        # self.model.Y /= self.model.Y.std()
         model_name = self.model.__class__.__name__
 
         if model_name == 'Bayesian_GPLVM':
@@ -142,11 +144,7 @@ class opt_SGD(Optimizer):
 
         momentum_term = self.momentum * step[j]
 
-        try:
-            f, fp = f_fp(self.x_opt[j])
-        except Exception:
-            return 0, step, self.model.N
-
+        f, fp = f_fp(self.x_opt[j])
         step[j] = self.learning_rate[j] * fp
         self.x_opt[j] -= step[j] + momentum_term
 
@@ -183,8 +181,10 @@ class opt_SGD(Optimizer):
                 self.model.Y = Y[:, j]
                 # self.model.trYYT = np.sum(np.square(self.model.Y))
                 if missing_data:
+                    if self.model.Y.std() == 0.0 or self.model.Y.shape[0] == 0:
+                        continue
                     shapes = self.get_param_shapes(N, Q)
-                    f, step, Nj = self.step_with_missing_data(f_fp, X, Y, step, shapes)
+                    f, step, Nj = self.step_with_missing_data(f_fp, X, step, shapes)
                 else:
                     Nj = N
                     momentum_term = self.momentum * step # compute momentum using update(t-1)

@@ -1,4 +1,6 @@
 import numpy as np
+import scipy as sp
+import scipy.sparse
 from optimization import Optimizer
 from scipy import linalg, optimize
 import copy
@@ -123,13 +125,19 @@ class opt_SGD(Optimizer):
         else:
             raise NotImplementedError
 
-    def step_with_missing_data(self, f_fp, X, step, shapes):
+    def step_with_missing_data(self, f_fp, X, step, shapes, sparse_matrix):
         N, Q = X.shape
-        samples = self.non_null_samples(self.model.Y)
+        if not sparse_matrix:
+            samples = self.non_null_samples(self.model.Y)
+            self.model.N = samples.sum()
+            self.model.Y = self.model.Y[samples]
+        else:
+            samples = self.model.Y.nonzero()[0]
+            self.model.N = len(samples)
+            self.model.Y = np.asarray(self.model.Y[samples].todense(), dtype = np.float64)
+
         j = self.subset_parameter_vector(self.x_opt, samples, shapes)
-        self.model.N = samples.sum()
         self.model.X = X[samples]
-        self.model.Y = self.model.Y[samples]
         # self.model.Y -= self.model.Y.mean() # <----------------- WARNING!!!!
         # self.model.Y /= self.model.Y.std()
         model_name = self.model.__class__.__name__
@@ -158,7 +166,10 @@ class opt_SGD(Optimizer):
         N, Q = self.model.X.shape
         D = self.model.Y.shape[1]
         self.trace = []
-        missing_data = self.check_for_missing(self.model.Y)
+        sparse_matrix = sp.sparse.issparse(self.model.Y)
+        missing_data = True
+        if not sparse_matrix:
+            missing_data = self.check_for_missing(self.model.Y)
         self.model.Youter = None # this is probably not very efficient
         self.model.YYT = None
         step = np.zeros_like(self.model._get_params())
@@ -178,13 +189,14 @@ class opt_SGD(Optimizer):
             for j in features:
                 count += 1
                 self.model.D = len(j)
-                self.model.Y = Y[:, j]
+                self.model.Y = Y[:, j:j+1]
+
                 # self.model.trYYT = np.sum(np.square(self.model.Y))
-                if missing_data:
-                    if self.model.Y.std() == 0.0 or self.model.Y.shape[0] == 0:
-                        continue
+                if missing_data or sparse_matrix:
+                    # if self.model.Y.std() == 0.0 or self.model.Y.shape[0] == 0: <--- not sure about this
+                    #     continue
                     shapes = self.get_param_shapes(N, Q)
-                    f, step, Nj = self.step_with_missing_data(f_fp, X, step, shapes)
+                    f, step, Nj = self.step_with_missing_data(f_fp, X, step, shapes, sparse_matrix)
                 else:
                     Nj = N
                     momentum_term = self.momentum * step # compute momentum using update(t-1)

@@ -20,11 +20,19 @@ def crescent_data(model_type='Full', inducing=10, seed=default_seed): #FIXME
     :param inducing : number of inducing variables (only used for 'FITC' or 'DTC').
     :type inducing: int
     """
+
     data = GPy.util.datasets.crescent_data(seed=seed)
-    likelihood = GPy.inference.likelihoods.probit(data['Y'])
+
+    # Kernel object
+    kernel = GPy.kern.rbf(data['X'].shape[1])
+
+    # Likelihood object
+    distribution = GPy.likelihoods.likelihood_functions.probit()
+    likelihood = GPy.likelihoods.EP(data['Y'],distribution)
+
 
     if model_type=='Full':
-        m = GPy.models.GP_EP(data['X'],likelihood)
+        m = GPy.models.GP(data['X'],likelihood,kernel)
     else:
         # create sparse GP EP model
         m = GPy.models.sparse_GP_EP(data['X'],likelihood=likelihood,inducing=inducing,ep_proxy=model_type)
@@ -33,7 +41,7 @@ def crescent_data(model_type='Full', inducing=10, seed=default_seed): #FIXME
     print(m)
 
     # optimize
-    m.em()
+    m.optimize()
     print(m)
 
     # plot
@@ -53,7 +61,7 @@ def oil():
     likelihood = GPy.likelihoods.EP(data['Y'][:, 0:1],distribution)
 
     # Create GP model
-    m = GPy.models.GP(data['X'],kernel,likelihood=likelihood)
+    m = GPy.models.GP(data['X'],likelihood=likelihood,kernel=kernel)
 
     # Contrain all parameters to be positive
     m.constrain_positive('')
@@ -71,17 +79,18 @@ def toy_linear_1d_classification(seed=default_seed):
     Simple 1D classification example
     :param seed : seed value for data generation (default is 4).
     :type seed: int
-    :type inducing: int
     """
 
     data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
+    Y = data['Y'][:, 0:1]
+    Y[Y == -1] = 0
 
     # Kernel object
     kernel = GPy.kern.rbf(1)
 
     # Likelihood object
     distribution = GPy.likelihoods.likelihood_functions.probit()
-    likelihood = GPy.likelihoods.EP(data['Y'][:, 0:1],distribution)
+    likelihood = GPy.likelihoods.EP(Y,distribution)
 
     # Model definition
     m = GPy.models.GP(data['X'],likelihood=likelihood,kernel=kernel)
@@ -98,7 +107,7 @@ def toy_linear_1d_classification(seed=default_seed):
 
     # Plot
     pb.subplot(211)
-    m.plot_internal()
+    m.plot_f()
     pb.subplot(212)
     m.plot()
     print(m)

@@ -243,7 +243,7 @@ class GP(model):
             m, var, lower, upper = self.predict(Xnew, slices=which_functions)
             gpplot(Xnew,m, lower, upper)
             pb.plot(self.X[which_data],self.likelihood.data[which_data],'kx',mew=1.5)
-            ymin,ymax = lower.min(),upper.max()
+            ymin,ymax = self.likelihood.data.min() -.1*(upper.max()-lower.min()), self.likelihood.data.max()+.1*(upper.max()-lower.min())
             pb.xlim(xmin,xmax)
             pb.ylim(ymin,ymax)
 

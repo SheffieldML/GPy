@@ -45,6 +45,7 @@ By default, some observation noise is added to the modle. The functions ``print`
     m.plot()
 
 gives the following output: ::
+
     Marginal log-likelihood: -4.479e+00
            Name        |  Value   |  Constraints  |  Ties  |  Prior  
     -----------------------------------------------------------------
@@ -78,7 +79,7 @@ Once the constrains have been imposed, the model can be optimized::
 
     m.optimize()
 
-If we want to perform some restarts to try to improve the result of the optimization, we can use the optimize_restart function::
+If we want to perform some restarts to try to improve the result of the optimization, we can use the ``optimize_restart`` function::
 
     m.optimize_restarts(Nrestarts = 10)
 
@@ -128,7 +129,7 @@ Here is a 2 dimensional example::
     m.plot()
     print(m)
 
-The flag ``ARD=True`` in the definition of the Matern kernel specifies that we want one lengthscale parameter per dimension (ie the GP is not isotropic). The output of the last 2 lines is::
+The flag ``ARD=True`` in the definition of the Matern kernel specifies that we want one lengthscale parameter per dimension (ie the GP is not isotropic). The output of the last two lines is::
 
     Marginal log-likelihood: 6.682e+01
              Name          |  Value   |  Constraints  |  Ties  |  Prior  

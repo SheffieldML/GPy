@@ -22,13 +22,11 @@ For this toy example, we assume we have the following inputs and outputs::
 
 Note that the observations Y include some noise.
 
-The first step is to define the covariance kernel we want to use for the model. We choose here a kernel based on Gaussian kernel (i.e. rbf or square exponential) plus some white noise::
+The first step is to define the covariance kernel we want to use for the model. We choose here a kernel based on Gaussian kernel (i.e. rbf or square exponential)::
 
-    Gaussian = GPy.kern.rbf(D=1)
-    noise = GPy.kern.white(D=1)
-    kernel = Gaussian + noise
+    kernel = GPy.kern.rbf(D=1, variance=1., lengthscale=1.)
 
-The parameter ``D`` stands for the dimension of the input space. Note that many other kernels are implemented such as:
+The parameter ``D`` stands for the dimension of the input space. The parameters ``variance`` and ``lengthscale`` are optional. Note that many other kernels are implemented such as:
 
 * linear (``GPy.kern.linear``)
 * exponential kernel (``GPy.kern.exponential``)
@@ -41,19 +39,18 @@ The inputs required for building the model are the observations and the kernel::
 
     m = GPy.models.GP_regression(X,Y,kernel)
 
-The functions ``print`` and ``plot`` give an insight of the model we have just build. The code::
+By default, some observation noise is added to the modle. The functions ``print`` and ``plot`` give an insight of the model we have just build. The code::
 
     print m
     m.plot()
 
 gives the following output: ::
-
-    Marginal log-likelihood: -2.281e+01
+    Marginal log-likelihood: -4.479e+00
            Name        |  Value   |  Constraints  |  Ties  |  Prior  
     -----------------------------------------------------------------
        rbf_variance    |  1.0000  |               |        |         
       rbf_lengthscale  |  1.0000  |               |        |         
-      white_variance   |  1.0000  |               |        |         
+      noise variance   |  1.0000  |               |        |         
 
 .. figure::  Figures/tuto_GP_regression_m1.png
     :align:   center
@@ -75,7 +72,7 @@ but it is also possible to set a range on to constrain one parameter to be fixed
     m.unconstrain('')                            # Required to remove the previous constrains
     m.constrain_positive('rbf_variance')
     m.constrain_bounded('lengthscale',1.,10. )
-    m.constrain_fixed('white',0.0025)
+    m.constrain_fixed('noise',0.0025)
 
 Once the constrains have been imposed, the model can be optimized::
 
@@ -87,12 +84,12 @@ If we want to perform some restarts to try to improve the result of the optimiza
 
 Once again, we can use ``print(m)`` and ``m.plot()`` to look at the resulting model  resulting model::
 
-    Marginal log-likelihood: 2.001e+01
+    Marginal log-likelihood: 3.603e+01
            Name        |  Value   |  Constraints  |  Ties  |  Prior  
     -----------------------------------------------------------------
-       rbf_variance    |  0.8033  |     (+ve)     |        |         
-      rbf_lengthscale  |  1.8033  |  (1.0, 10.0)  |        |         
-      white_variance   |  0.0025  |     Fixed     |        |               
+       rbf_variance    |  0.8151  |     (+ve)     |        |         
+      rbf_lengthscale  |  1.8037  |  (1.0, 10.0)  |        |         
+      noise variance   |  0.0025  |     Fixed     |        |         
 
 .. figure::  Figures/tuto_GP_regression_m2.png
     :align:   center
@@ -133,13 +130,14 @@ Here is a 2 dimensional example::
 
 The flag ``ARD=True`` in the definition of the Matern kernel specifies that we want one lengthscale parameter per dimension (ie the GP is not isotropic). The output of the last 2 lines is::
 
-    Marginal log-likelihood: 2.893e+01
-               Name            |  Value   |  Constraints  |  Ties  |  Prior  
-    -------------------------------------------------------------------------
-        Mat52_ARD_variance     |  0.4094  |     (+ve)     |        |         
-      Mat52_ARD_lengthscale_0  |  2.1060  |     (+ve)     |        |         
-      Mat52_ARD_lengthscale_1  |  2.0546  |     (+ve)     |        |         
-          white_variance       |  0.0012  |     (+ve)     |        |         
+    Marginal log-likelihood: 6.682e+01
+             Name          |  Value   |  Constraints  |  Ties  |  Prior  
+    ---------------------------------------------------------------------
+        Mat52_variance     |  0.3860  |     (+ve)     |        |         
+      Mat52_lengthscale_0  |  2.0578  |     (+ve)     |        |         
+      Mat52_lengthscale_1  |  1.8542  |     (+ve)     |        |         
+        white_variance     |  0.0023  |     (+ve)     |        |         
+        noise variance     |  0.0000  |     (+ve)     |        |         
 
 .. figure::  Figures/tuto_GP_regression_m3.png
     :align:   center

@@ -38,6 +38,7 @@ class probit(likelihood_function):
         :param v_i: mean/variance of the cavity distribution (float)
         """
         # TODO: some version of assert np.sum(np.abs(Y)-1) == 0, "Output values must be either -1 or 1"
+        if data_i == 0: data_i = -1 #NOTE Binary classification works better classes {-1,1}, 1D-plotting works better with classes {0,1}.
         z = data_i*v_i/np.sqrt(tau_i**2 + tau_i)
         Z_hat = stats.norm.cdf(z)
         phi = stats.norm.pdf(z)
@@ -52,9 +53,9 @@ class probit(likelihood_function):
         mu = mu.flatten()
         var = var.flatten()
         mean = stats.norm.cdf(mu/np.sqrt(1+var))
-        p_05 = np.zeros(mu.shape)#np.zeros([mu.size])
-        p_95 = np.zeros(mu.shape)#np.ones([mu.size])
-        return mean, p_05, p_95
+        p_025 = np.zeros(mu.shape)
+        p_975 = np.ones(mu.shape)
+        return mean, p_025, p_975
 
 class Poisson(likelihood_function):
     """
@@ -65,7 +66,7 @@ class Poisson(likelihood_function):
     L(x) = \exp(\lambda) * \lambda**Y_i / Y_i!
     $$
     """
-    def moments_match(self,i,tau_i,v_i):
+    def moments_match(self,data_i,tau_i,v_i):
         """
         Moments match of the marginal approximation in EP algorithm
 
@@ -81,14 +82,14 @@ class Poisson(likelihood_function):
             """
             pdf_norm_f = stats.norm.pdf(f,loc=mu,scale=sigma)
             rate = np.exp( (f*self.scale)+self.location)
-            poisson = stats.poisson.pmf(float(self.Y[i]),rate)
+            poisson = stats.poisson.pmf(float(data_i),rate)
             return pdf_norm_f*poisson
 
         def log_pnm(f):
             """
             Log of poisson_norm
             """
-            return -(-.5*(f-mu)**2/sigma**2 - np.exp( (f*self.scale)+self.location) + ( (f*self.scale)+self.location)*self.Y[i])
+            return -(-.5*(f-mu)**2/sigma**2 - np.exp( (f*self.scale)+self.location) + ( (f*self.scale)+self.location)*data_i)
 
         """
         Golden Search and Simpson's Rule
@@ -99,17 +100,17 @@ class Poisson(likelihood_function):
         #TODO golden search & simpson's rule can be defined in the general likelihood class, rather than in each specific case.
 
         #Golden search
-        golden_A = -1 if self.Y[i] == 0 else np.array([np.log(self.Y[i]),mu]).min() #Lower limit
-        golden_B = np.array([np.log(self.Y[i]),mu]).max() #Upper limit
+        golden_A = -1 if data_i == 0 else np.array([np.log(data_i),mu]).min() #Lower limit
+        golden_B = np.array([np.log(data_i),mu]).max() #Upper limit
         golden_A = (golden_A - self.location)/self.scale
         golden_B = (golden_B - self.location)/self.scale
         opt = sp.optimize.golden(log_pnm,brack=(golden_A,golden_B)) #Better to work with log_pnm than with poisson_norm
 
         # Simpson's approximation
-        width = 3./np.log(max(self.Y[i],2))
+        width = 3./np.log(max(data_i,2))
         A = opt - width #Lower limit
         B = opt + width #Upper limit
-        K =  10*int(np.log(max(self.Y[i],150))) #Number of points in the grid, we DON'T want K to be the same number for every case
+        K =  10*int(np.log(max(data_i,150))) #Number of points in the grid, we DON'T want K to be the same number for every case
         h = (B-A)/K # length of the intervals
         grid_x = np.hstack([np.linspace(opt-width,opt,K/2+1)[1:-1], np.linspace(opt,opt+width,K/2+1)]) # grid of points (X axis)
         x = np.hstack([A,B,grid_x[range(1,K,2)],grid_x[range(2,K-1,2)]]) # grid_x rearranged, just to make Simpson's algorithm easier
@@ -127,7 +128,7 @@ class Poisson(likelihood_function):
         Compute  mean, and conficence interval (percentiles 5 and 95) of the  prediction
         """
         mean = np.exp(mu*self.scale + self.location)
-        tmp = stats.poisson.ppf(np.array([.05,.95]),mu)
-        p_05 = tmp[:,0]
-        p_95 = tmp[:,1]
-        return mean,p_05,p_95
+        tmp = stats.poisson.ppf(np.array([.025,.975]),mean)
+        p_025 = tmp[:,0]
+        p_975 = tmp[:,1]
+        return mean,p_025,p_975

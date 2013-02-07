@@ -205,11 +205,10 @@ class opt_SGD(Optimizer):
                     self.x_opt -= step + momentum_term
 
                 if self.messages == 2:
-                    if count == last_printed_count + 20 or count == 0:
-                        status = "evaluating {feature: 5d}/{tot: 5d} \t f: {f: 2.3f} \t non-missing: {nm: 4d}\r".format(feature = count, tot = len(features), f = f, nm = Nj)
-                        sys.stdout.write(status)
-                        sys.stdout.flush()
-                        last_printed_count = count
+                    status = "evaluating {feature: 5d}/{tot: 5d} \t f: {f: 2.3f} \t non-missing: {nm: 4d}\r".format(feature = count, tot = len(features), f = f, nm = Nj)
+                    sys.stdout.write(status)
+                    sys.stdout.flush()
+                    last_printed_count = count
 
                 NLL.append(f)
 

@@ -95,7 +95,11 @@ class linear(kernpart):
 
     def dpsi0_dtheta(self,partial,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
-        target += (partial[:, None] * (np.sum(self.mu2_S,0))).sum()
+        tmp = (partial[:, None] * (np.sum(self.mu2_S,0)))
+        if self.ARD:
+            target += tmp.sum(0)
+        else:
+            target += tmp.sum()
 
     def dpsi0_dmuS(self,partial, Z,mu,S,target_mu,target_S):
         target_mu += partial[:, None] * (2.0*mu*self.variances) * mu.shape[0]
@@ -130,7 +134,12 @@ class linear(kernpart):
 
     def dpsi2_dtheta(self,partial,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
-        target += (partial[:,:,:,None]*(2.*self.ZZ*self.mu2_S[:,None,None,:]*self.variances)).sum()
+        tmp = (partial[:,:,:,None]*(2.*self.ZZ*self.mu2_S[:,None,None,:]*self.variances))
+        if self.ARD:
+            target += tmp.sum(0).sum(0).sum(0)
+        else:
+            target += tmp.sum()
+
 
     def dpsi2_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         """Think N,M,M,Q """

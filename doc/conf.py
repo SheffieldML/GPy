@@ -60,7 +60,7 @@ sys.path.append(os.path.abspath('sphinxext'))
 print "Importing extensions"
 
 extensions = ['sphinx.ext.autodoc',
-              'sphinx.ext.doctest',
+              #'sphinx.ext.doctest'
               'sphinx.ext.viewcode',
               'sphinx.ext.pngmath'
               #'ipython_directive',
@@ -106,6 +106,9 @@ for mod_name in MOCK_MODULES:
 
 # ----------------------- READTHEDOCS ------------------
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+
+import GPy
+version = GPy.__version__
 
 if on_rtd:
     sys.path.append("../GPy")

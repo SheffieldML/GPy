@@ -390,3 +390,5 @@ epub_copyright = u'2013, Author'
 
 #def setup(app):
     #app.connect("autodoc-skip-member", skip)
+
+autodoc_member_order = "source"

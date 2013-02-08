@@ -37,6 +37,9 @@ try:
 except ImportError:
     print "no sphinx"
 
+APP_DIR = os.path.normpath(os.path.join(os.getcwd(), '../..'))
+sys.path.insert(0, APP_DIR)
+
 #sys.path.insert(0, os.getcwd() + "/..")
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -116,9 +119,11 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 if on_rtd:
     #sys.path.insert(0, os.getcwd() + "/../GPy")
-    sys.path.append(os.getcwd() + "/../GPy")
+    #sys.path.append(os.getcwd() + "/../GPy")
+    print "I am here"
     os.system("pwd")
-    os.system("sphinx-apidoc -f -o . " + os.getcwd() + "/../GPy")
+    os.system("ls ../")
+    os.system("sphinx-apidoc -f -o . ../GPy")
     #os.system("cd ..")
     #os.system("cd ./docs")
 

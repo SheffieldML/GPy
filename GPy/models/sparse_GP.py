@@ -198,7 +198,7 @@ class sparse_GP(GP):
         mu = mdot(Kx.T, self.C/self.scale_factor, self.psi1V)
         if full_cov:
             Kxx = self.kern.K(Xnew)
-            var = Kxx - mdot(Kx.T, (self.Kmmi - self.C/self.scale_factor**2), Kx) #NOTE thiswon't work for plotting
+            var = Kxx - mdot(Kx.T, (self.Kmmi - self.C/self.scale_factor**2), Kx) #NOTE this won't work for plotting
         else:
             Kxx = self.kern.Kdiag(Xnew)
             var = Kxx - np.sum(Kx*np.dot(self.Kmmi - self.C/self.scale_factor**2, Kx),0)
@@ -211,7 +211,6 @@ class sparse_GP(GP):
         """
         GP.plot(self,*args,**kwargs)
         if self.Q==1:
-            pb.plot(self.Z,self.Z*0+pb.ylim()[0],'k|',mew=1.5,markersize=12)
             if self.has_uncertain_inputs:
                 pb.errorbar(self.X[:,0], pb.ylim()[0]+np.zeros(self.N), xerr=2*np.sqrt(self.X_uncertainty.flatten()))
         if self.Q==2:

@@ -33,6 +33,14 @@ examples Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`poisson` Module
+---------------------
+
+.. automodule:: GPy.examples.poisson
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`regression` Module
 ------------------------
 
@@ -53,6 +61,14 @@ examples Package
 ---------------------------------------
 
 .. automodule:: GPy.examples.sparse_GP_regression_demo
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`sparse_ep_fix` Module
+---------------------------
+
+.. automodule:: GPy.examples.sparse_ep_fix
     :members:
     :undoc-members:
     :show-inheritance:

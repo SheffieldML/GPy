@@ -119,13 +119,26 @@ for mod_name in MOCK_MODULES:
 # ----------------------- READTHEDOCS ------------------
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
+on_rtd = True
 if on_rtd:
     #sys.path.insert(0, os.getcwd() + "/../GPy")
     #sys.path.append(os.getcwd() + "/../GPy")
     print "I am here"
-    print(os.system("pwd"))
-    print(os.system("ls ../"))
-    os.system("sphinx-apidoc -f -o . ../GPy")
+    #print(os.system("pwd"))
+    #print(os.system("ls ../"))
+    #os.system("sphinx-apidoc -f -o . ../GPy")
+
+    import subprocess
+
+    proc = subprocess.Popen("pwd", stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    print "program output:", out
+    proc = subprocess.Popen("ls ../", stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    print "program output:", out
+    proc = subprocess.Popen("sphinx-apidoc -f -o . ../GPy", stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    print "program output:", out
     #os.system("cd ..")
     #os.system("cd ./docs")
 

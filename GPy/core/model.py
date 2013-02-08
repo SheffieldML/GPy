@@ -10,7 +10,7 @@ from parameterised import parameterised, truncate_pad
 import priors
 from ..util.linalg import jitchol
 from ..inference import optimization
-from .. import likelihoods
+from GPy import likelihoods
 
 class model(parameterised):
     def __init__(self):

@@ -37,9 +37,9 @@ try:
 except ImportError:
     print "no sphinx"
 
-APP_DIR = os.path.normpath(os.path.join(os.getcwd(), '../'))
+#APP_DIR = os.path.normpath(os.path.join(os.getcwd(), '../'))
 #PACKAGE_DIR1 = os.path.normpath(os.path.join(os.getcwd(), '../'))
-sys.path.insert(0, APP_DIR)
+#sys.path.insert(0, APP_DIR)
 #sys.path.insert(0, PACKAGE_DIR1)
 #sys.path.insert(0, os.path.abspath('../GPy'))
 print "sys.path:", sys.path

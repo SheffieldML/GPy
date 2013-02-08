@@ -30,7 +30,7 @@ class GP(model):
     .. Note:: Multiple independent outputs are allowed using columns of Y
 
     """
-
+    #FIXME normalize vs normalise
     def __init__(self, X, likelihood, kernel, normalize_X=False, Xslices=None):
 
         # parse arguments
@@ -216,9 +216,14 @@ class GP(model):
                 gpplot(Xnew,m,m-2*np.sqrt(np.diag(v)[:,None]),m+2*np.sqrt(np.diag(v))[:,None])
                 for i in range(samples):
                     pb.plot(Xnew,Ysim[i,:],Tango.coloursHex['darkBlue'],linewidth=0.25)
-
             pb.plot(self.X[which_data],self.likelihood.Y[which_data],'kx',mew=1.5)
             pb.xlim(xmin,xmax)
+            ymin,ymax = min(np.append(self.likelihood.Y,m-2*np.sqrt(np.diag(v)[:,None]))), max(np.append(self.likelihood.Y,m+2*np.sqrt(np.diag(v)[:,None])))
+            ymin, ymax = ymin - 0.1*(ymax - ymin), ymax + 0.1*(ymax - ymin)
+            pb.ylim(ymin,ymax)
+            if hasattr(self,'Z'):
+                pb.plot(self.Z,self.Z*0+pb.ylim()[0],'r|',mew=1.5,markersize=12)
+
         elif self.X.shape[1] == 2:
             resolution = resolution or 50
             Xnew, xmin, xmax, xx, yy = x_frame2D(self.X, plot_limits,resolution)
@@ -239,16 +244,22 @@ class GP(model):
             which_data = slice(None)
 
         if self.X.shape[1] == 1:
-            Xnew, xmin, xmax = x_frame1D(self.X, plot_limits=plot_limits)
+
+            Xu = self.X * self._Xstd + self._Xmean #NOTE self.X are the normalized values now
+
+            Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
             m, var, lower, upper = self.predict(Xnew, slices=which_functions)
             gpplot(Xnew,m, lower, upper)
-            pb.plot(self.X[which_data],self.likelihood.data[which_data],'kx',mew=1.5)
+            pb.plot(Xu[which_data],self.likelihood.data[which_data],'kx',mew=1.5)
             ymin,ymax = min(np.append(self.likelihood.data,lower)), max(np.append(self.likelihood.data,upper))
             ymin, ymax = ymin - 0.1*(ymax - ymin), ymax + 0.1*(ymax - ymin)
             pb.xlim(xmin,xmax)
             pb.ylim(ymin,ymax)
+            if hasattr(self,'Z'):
+                Zu = self.Z*self._Xstd + self._Xmean
+                pb.plot(Zu,Zu*0+pb.ylim()[0],'r|',mew=1.5,markersize=12)
 
-        elif self.X.shape[1]==2:
+        elif self.X.shape[1]==2: #FIXME
             resolution = resolution or 50
             Xnew, xx, yy, xmin, xmax = x_frame2D(self.X, plot_limits,resolution)
             x, y = np.linspace(xmin[0],xmax[0],resolution), np.linspace(xmin[1],xmax[1],resolution)

@@ -83,7 +83,7 @@ class model(parameterised):
 
     def get(self,name, return_names=False):
         """
-        Get a model parameter by name. The name is applied as a regular expression and all parameters that match that regular expression are returned. 
+        Get a model parameter by name. The name is applied as a regular expression and all parameters that match that regular expression are returned.
         """
         matches = self.grep_param_names(name)
         if len(matches):
@@ -108,7 +108,7 @@ class model(parameterised):
 
     def get_gradient(self,name, return_names=False):
         """
-        Get model gradient(s) by name. The name is applied as a regular expression and all parameters that match that regular expression are returned. 
+        Get model gradient(s) by name. The name is applied as a regular expression and all parameters that match that regular expression are returned.
         """
         matches = self.grep_param_names(name)
         if len(matches):

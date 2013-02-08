@@ -71,13 +71,16 @@ except ImportError:
     from md5 import md5
 
 # Third-party
-import matplotlib
+try:
+    import matplotlib
+    matplotlib.use('Agg')
+except ImportError:
+    print "Couldn't find matplotlib"
+
 import sphinx
 from docutils.parsers.rst import directives
 from docutils import nodes
 from sphinx.util.compat import Directive
-
-matplotlib.use('Agg')
 
 # Our own
 from IPython import Config, InteractiveShell
@@ -828,3 +831,5 @@ if __name__=='__main__':
         os.mkdir('_static')
     test()
     print 'All OK? Check figures in _static/'
+
+

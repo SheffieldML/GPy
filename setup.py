@@ -28,7 +28,7 @@ setup(name = 'GPy',
       #          sources = ['GPy/kern/src/lfmUpsilonf2py.f90'])],
       install_requires=['sympy', 'numpy>=1.6', 'scipy>=0.9','matplotlib>=1.1'],
       setup_requires=['sphinx'],
-      cmdclass = {'build_sphinx': BuildDoc},
+      #cmdclass = {'build_sphinx': BuildDoc},
       classifiers=[
       "Development Status :: 1 - Alpha",
       "Topic :: Machine Learning",

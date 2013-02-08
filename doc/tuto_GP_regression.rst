@@ -2,22 +2,6 @@
 Gaussian process regression tutorial
 *************************************
 
-.. ipython:: python
-
-    print "Hello world"
-    X = [[1, 10], [1, 20], [1, -2]]
-
-.. plot::
-
-    import matplotlib.pyplot as plt
-    import numpy as np
-    x = np.random.randn(1000)
-    plt.hist( x, 20)
-    plt.grid()
-    plt.title(r'Normal: $\mu=%.2f, \sigma=%.2f$'%(x.mean(), x.std()))
-    plt.show()
-
-
 We will see in this tutorial the basics for building a 1 dimensional and a 2 dimensional Gaussian process regression model, also known as a kriging model.
 
 We first import the libraries we will need: ::

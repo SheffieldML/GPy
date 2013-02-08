@@ -13,11 +13,6 @@ if NOT "%PAPER%" == "" (
 	set I18NSPHINXOPTS=-D latex_paper_size=%PAPER% %I18NSPHINXOPTS%
 )
 
-
-echo "Sphinx details"
-echo "%SPHINXBUILD%"
-echo "%ALLSPHINXOPTS%"
-
 if "%1" == "" goto help
 
 if "%1" == "help" (

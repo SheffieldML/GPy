@@ -90,9 +90,11 @@ extensions = ['sphinx.ext.autodoc',
               'ipython_directive',
               'ipython_console_highlighting',
               #'mathmpl',
-              'only_directives',
-              'plot_directive',
+              #'only_directives',
+              'matplotlib.sphinxext.plot_directive'
+              #'plot_directive'
              ]
+plot_formats = [('png', 80), ('pdf', 50)]
 
 print "finished importing"
 
@@ -122,7 +124,7 @@ class Mock(object):
 #import mock
 
 print "Mocking"
-MOCK_MODULES = ['pylab', 'matplotlib', 'sympy', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser']
+MOCK_MODULES = ['pylab', 'sympy', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser']
 #'matplotlib', 'matplotlib.color', 'matplotlib.pyplot', 'pylab' ]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()

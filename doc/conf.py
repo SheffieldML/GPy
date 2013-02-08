@@ -103,7 +103,6 @@ class Mock(object):
         else:
             return Mock()
 
-#sys.path.append("../GPy")
 #import mock
 
 print "Mocking"
@@ -115,10 +114,9 @@ for mod_name in MOCK_MODULES:
 # ----------------------- READTHEDOCS ------------------
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
-import GPy
-
 if on_rtd:
-    sys.path.append("../GPy")
+    sys.path.insert(0, os.getcwd() + "/../GPy")
+    #sys.path.append("../GPy")
     os.system("pwd")
     os.system("sphinx-apidoc -f -o . ../GPy")
     #os.system("cd ..")

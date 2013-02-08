@@ -1,13 +1,11 @@
-
-.. ipython:: python
-
-    print "Hello world"
-    X = [[1, 10], [1, 20], [1, -2]]
-
-
 *************************************
 Gaussian process regression tutorial
 *************************************
+
+#.. ipython:: python
+#
+#    print "Hello world"
+#    X = [[1, 10], [1, 20], [1, -2]]
 
 We will see in this tutorial the basics for building a 1 dimensional and a 2 dimensional Gaussian process regression model, also known as a kriging model.
 

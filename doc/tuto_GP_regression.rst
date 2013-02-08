@@ -2,28 +2,6 @@
 Gaussian process regression tutorial
 *************************************
 
-
-.. ipython:: python
-
-    import numpy as np
-    import GPy as gpy
-
-    """run a simple demonstration of a standard gaussian process fitting it to data sampled from an rbf covariance."""
-    data = gpy.util.datasets.toy_rbf_1d()
-
-    # create simple gp model
-    m = gpy.models.GP_regression(data['X'],data['Y'])
-
-    # optimize
-    m.ensure_default_constraints()
-    m.optimize()
-
-    print(m)
-
-    # plot
-    m.plot()
-
-
 We will see in this tutorial the basics for building a 1 dimensional and a 2 dimensional Gaussian process regression model, also known as a kriging model.
 
 We first import the libraries we will need: ::

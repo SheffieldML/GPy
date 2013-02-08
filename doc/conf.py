@@ -37,7 +37,7 @@ try:
 except ImportError:
     print "no sphinx"
 
-sys.path.insert(0, os.getcwd() + "/..")
+#sys.path.insert(0, os.getcwd() + "/..")
 #parent = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 #sys.path.insert(0, parent)
 #sys.path.append(parent)

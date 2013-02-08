@@ -86,7 +86,7 @@ print "Importing extensions"
 extensions = ['sphinx.ext.autodoc',
               #'sphinx.ext.doctest'
               'sphinx.ext.viewcode',
-              'sphinx.ext.pngmath'
+              'sphinx.ext.pngmath',
               'ipython_directive',
               'ipython_console_highlighting.py'
               #'matplotlib.sphinxext.mathmpl',

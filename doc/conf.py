@@ -125,6 +125,8 @@ on_rtd = True
 if on_rtd:
     print "I am here"
 
+    sys.path.append('../GPy')
+
     import subprocess
 
     proc = subprocess.Popen("pwd", stdout=subprocess.PIPE, shell=True)

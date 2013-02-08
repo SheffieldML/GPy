@@ -139,16 +139,18 @@ class opt_SGD(Optimizer):
 
         j = self.subset_parameter_vector(self.x_opt, samples, shapes)
         self.model.X = X[samples]
+
+        if self.model.N == 0 or self.model.Y.std() == 0.0:
+            return 0, step, self.model.N
+
         if self.center:
             self.model.Y -= self.model.Y.mean()
             self.model.Y /= self.model.Y.std()
+
         model_name = self.model.__class__.__name__
 
         if model_name == 'Bayesian_GPLVM':
             self.model.trYYT = np.sum(np.square(self.model.Y))
-
-        if self.model.N == 0:
-            return 0, step, self.model.N
 
         b, p = self.shift_constraints(j)
 
@@ -175,12 +177,12 @@ class opt_SGD(Optimizer):
         self.model.Youter = None # this is probably not very efficient
         self.model.YYT = None
         num_params = self.model._get_params()
+        step = np.zeros_like(num_params)
 
         if self.center:
             print "WARNING: centering the data"
 
         for it in range(self.iterations):
-            step = np.zeros_like(num_params)
 
             if it == 0 or self.self_paced is False:
                 features = np.random.permutation(Y.shape[1])
@@ -211,9 +213,10 @@ class opt_SGD(Optimizer):
                 if self.messages == 2:
                     status = "evaluating {feature: 5d}/{tot: 5d} \t f: {f: 2.3f} \t non-missing: {nm: 4d}\r".format(feature = count, tot = len(features), f = f, nm = Nj)
 
+
                     # TODO: remove this, it's only for debugging
                     if self.model.__class__.__name__ == 'Bayesian_GPLVM':
-                        beta = np.exp(self.x_opt)[-7]
+                        beta = np.exp(self.x_opt)[-8]
                         status = "evaluating {feature: 5d}/{tot: 5d} \t f: {f: 2.3f} \t non-missing: {nm: 4d} \t inv_bbeta: {beta: 1.5f}\r".format(feature = count, tot = len(features), f = f, nm = Nj, beta = 1./beta)
 
                     sys.stdout.write(status)

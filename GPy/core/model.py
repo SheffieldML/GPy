@@ -10,7 +10,7 @@ from parameterised import parameterised, truncate_pad
 import priors
 from ..util.linalg import jitchol
 from ..inference import optimization
-from .. import likelihoods
+from ..likelihoods import EP
 
 class model(parameterised):
     def __init__(self):
@@ -402,7 +402,7 @@ class model(parameterised):
         :type optimzer: string TODO: valid strings?
 
         """
-        assert isinstance(self.likelihood,likelihoods.EP), "EM is not available for Gaussian likelihoods"
+        assert isinstance(self.likelihood,EP), "EM is not available for Gaussian likelihoods"
         log_change = epsilon + 1.
         self.log_likelihood_record = []
         self.gp_params_record = []

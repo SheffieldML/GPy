@@ -1,4 +1,10 @@
 
+.. ipython:: python
+
+    print "Hello world"
+    X = [[1, 10], [1, 20], [1, -2]]
+
+
 *************************************
 Gaussian process regression tutorial
 *************************************

@@ -12,7 +12,7 @@ We first import the libraries we will need: ::
     import numpy as np
     import GPy
 
-1 dimensional model
+1-dimensional model
 ===================
 
 For this toy example, we assume we have the following inputs and outputs::
@@ -99,7 +99,7 @@ Once again, we can use ``print(m)`` and ``m.plot()`` to look at the resulting mo
     GP regression model after optimization of the parameters.
 
 
-2 dimensional example
+2-dimensional example
 =====================
 
 Here is a 2 dimensional example::

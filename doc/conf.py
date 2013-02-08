@@ -19,7 +19,7 @@ print "sys.path:", sys.path
 try:
     import numpy
     print "numpy: %s, %s" % (numpy.__version__, numpy.__file__)
-except ImportError:
+except importerror:
     print "no numpy"
 try:
     import matplotlib
@@ -27,10 +27,15 @@ try:
 except ImportError:
     print "no matplotlib"
 try:
-    import IPython
-    print "ipython: %s, %s" % (IPython.__version__, IPython.__file__)
-except ImportError:
+    import ipython
+    print "ipython: %s, %s" % (ipython.__version__, ipython.__file__)
+except importerror:
     print "no ipython"
+try:
+    import sphinx
+    print "sphinx: %s, %s" % (sphinx.__version__, sphinx.__file__)
+except importerror:
+    print "no sphinx"
 
 sys.path.insert(0, os.getcwd() + "/..")
 
@@ -53,7 +58,7 @@ sys.path.append(os.path.abspath('sphinxext'))
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.1.3'
+#needs_sphinx = '1.0'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.

@@ -132,7 +132,7 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 on_rtd = True
 if on_rtd:
     print "I am here"
-    #sys.path.append(os.path.abspath('../GPy'))
+    sys.path.append(os.path.abspath('../GPy'))
 
     import subprocess
 

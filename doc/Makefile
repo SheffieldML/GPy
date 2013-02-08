@@ -41,6 +41,10 @@ help:
 clean:
 	-rm -rf $(BUILDDIR)/*
 
+CWD=$(shell sphinx-apidoc -f -o . ../GPy)
+all:
+	@echo api build: $(CWD).
+
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo

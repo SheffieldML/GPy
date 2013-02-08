@@ -37,8 +37,8 @@ try:
 except ImportError:
     print "no sphinx"
 
-parent = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-sys.path.insert(0, parent)
+#parent = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+#sys.path.insert(0, parent)
 #sys.path.append(parent)
 
 #parent = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'GPy'))
@@ -132,6 +132,7 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 on_rtd = True
 if on_rtd:
     print "I am here"
+    #sys.path.append(os.path.abspath('../GPy'))
 
     import subprocess
 

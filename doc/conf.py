@@ -134,7 +134,11 @@ if on_rtd:
     proc = subprocess.Popen("sphinx-apidoc -f -o . ../GPy", stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
     print "program output:", out
-    proc = subprocess.Popen("locate matplotlib", stdout=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen("whereis numpy", stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    print "program output:", out
+    print "MATPLOTLIB BABY"
+    proc = subprocess.Popen("whereis matplotlib", stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
     print "program output:", out
     #os.system("cd ..")

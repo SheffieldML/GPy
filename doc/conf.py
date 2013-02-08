@@ -37,20 +37,6 @@ try:
 except ImportError:
     print "no sphinx"
 
-#sys.path.insert(0, os.getcwd() + "/..")
-#parent = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-#sys.path.insert(0, parent)
-#sys.path.append(parent)
-
-#parent = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'GPy'))
-#sys.path.insert(0, parent)
-#sys.path.append(parent)
-
-#APP_DIR = os.path.normpath(os.path.join(os.getcwd(), '../'))
-#PACKAGE_DIR1 = os.path.normpath(os.path.join(os.getcwd(), '../'))
-#sys.path.insert(0, APP_DIR)
-#sys.path.insert(0, PACKAGE_DIR1)
-#sys.path.insert(0, os.path.abspath('../GPy'))
 print "sys.path:", sys.path
 
 #sys.path.insert(0, os.getcwd() + "/..")
@@ -88,10 +74,10 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.viewcode',
               'sphinx.ext.pngmath',
               'ipython_directive',
-              'ipython_console_highlighting',
+              'ipython_console_highlighting'
+              #'matplotlib.sphinxext.plot_directive'
               #'mathmpl',
               #'only_directives',
-              'matplotlib.sphinxext.plot_directive'
               #'plot_directive'
              ]
 plot_formats = [('png', 80), ('pdf', 50)]
@@ -146,6 +132,9 @@ if on_rtd:
     (out, err) = proc.communicate()
     print "program output:", out
     proc = subprocess.Popen("sphinx-apidoc -f -o . ../GPy", stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    print "program output:", out
+    proc = subprocess.Popen("locate matplotlib", stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
     print "program output:", out
     #os.system("cd ..")

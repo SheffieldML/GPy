@@ -81,7 +81,7 @@ Let us assume that we want to define an ANOVA kernel with a Matern 3/2 kernel fo
     Kanova = (k_cst + k_mat) * (k_cst + k_mat)
     print Kanova
 
-Note the ties between the lengthscales of ``Kanova`` to keep the number of lengthscales equal to 2. On the other hand, there are four variance terms in the new parameterization: one for each term of the right hand sign of the equation above. We can illustrate the use of this kernel on a toy example::
+Note the ties between the lengthscales of ``Kanova`` to keep the number of lengthscales equal to 2. On the other hand, there are four variance terms in the new parameterization: one for each term of the right hand part of the above equation. We can illustrate the use of this kernel on a toy example::
 
     # sample inputs and outputs
     X = np.random.uniform(-3.,3.,(40,2))

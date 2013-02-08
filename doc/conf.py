@@ -87,8 +87,8 @@ extensions = ['sphinx.ext.autodoc',
               #'sphinx.ext.doctest'
               'sphinx.ext.viewcode',
               'sphinx.ext.pngmath'
-              #'ipython_directive',
-              #'ipython_console_highlighting.py'
+              'ipython_directive',
+              'ipython_console_highlighting.py'
               #'matplotlib.sphinxext.mathmpl',
               #'matplotlib.sphinxext.only_directives',
               #'matplotlib.sphinxext.plot_directive',

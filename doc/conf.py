@@ -37,7 +37,7 @@ try:
 except ImportError:
     print "no sphinx"
 
-sys.path.insert(0, os.getcwd() + "/..")
+#sys.path.insert(0, os.getcwd() + "/..")
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

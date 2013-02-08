@@ -12,7 +12,7 @@ First we import the libraries we will need ::
 
 For most kernels, the dimension is the only mandatory parameter to define a kernel object. However, it is also possible to specify the values of the parameters. For example, the three following commands are valid for defining a squared exponential kernel (ie rbf or Gaussian) ::
 
-    ker1 = GPy.kern.rbf(D=1)  # Equivalent to ker1 = GPy.kern.rbf(D=1, variance=1., lengthscale=1.)
+    ker1 = GPy.kern.rbf(1)  # Equivalent to ker1 = GPy.kern.rbf(D=1, variance=1., lengthscale=1.)
     ker2 = GPy.kern.rbf(D=1, variance = 1.5, lengthscale=2.)
     ker3 = GPy.kern.rbf(1, .5, .5)
 
@@ -27,43 +27,6 @@ A `plot` and a `print` functions are implemented to represent kernel objects ::
 .. figure::  Figures/tuto_kern_overview_basicdef.png
     :align:   center
     :height: 350px
-
-::
-
-    import pylab as pb
-    import numpy as np
-    import GPy
-    pb.ion()
-
-    ker1 = GPy.kern.rbf(D=1)  # Equivalent to ker1 = GPy.kern.rbf(D=1, variance=1., lengthscale=1.)
-    ker2 = GPy.kern.rbf(D=1, variance = .75, lengthscale=3.)
-    ker3 = GPy.kern.rbf(1, .5, .25)
-
-    ker1.plot()
-    ker2.plot()
-    ker3.plot()
-    #pb.savefig("Figures/tuto_kern_overview_basicdef.png")
-
-    kernels = [GPy.kern.rbf(1), GPy.kern.exponential(1), GPy.kern.Matern32(1), GPy.kern.Matern52(1),  GPy.kern.Brownian(1), GPy.kern.bias(1), GPy.kern.linear(1), GPy.kern.spline(1), GPy.kern.periodic_exponential(1), GPy.kern.periodic_Matern32(1), GPy.kern.periodic_Matern52(1), GPy.kern.white(1)]
-    kernel_names = ["GPy.kern.rbf", "GPy.kern.exponential", "GPy.kern.Matern32", "GPy.kern.Matern52", "GPy.kern.Brownian", "GPy.kern.bias", "GPy.kern.linear", "GPy.kern.spline", "GPy.kern.periodic_exponential", "GPy.kern.periodic_Matern32", "GPy.kern.periodic_Matern52", "GPy.kern.white"]
-    
-    pb.figure(figsize=(16,12))
-    pb.subplots_adjust(wspace=.5, hspace=.5)
-    for i, kern in enumerate(kernels):
-       pb.subplot(3,4,i+1)
-       kern.plot(x=7.5,plot_limits=[0.00001,15.])
-       pb.title(kernel_names[i]+ '\n')
-       #pb.axes([.1,.1,.8,.7])
-       #pb.figtext(.5,.9,'Foo Bar', fontsize=18, ha='center')
-       #pb.figtext(.5,.85,'Lorem ipsum dolor sit amet, consectetur adipiscing elit',fontsize=10,ha='center')
-
-    # actual plot for the noise
-    i = 11
-    X = np.linspace(0.,15.,201)
-    WN = 0*X
-    WN[100] = 1.
-    pb.subplot(3,4,i+1)
-    pb.plot(X,WN,'b')
 
 Implemented kernels
 ===================
@@ -90,21 +53,17 @@ In ``GPy``, kernel objects can be combined with the usual ``+`` and ``*`` operat
     ker_prod = k1 * k2
     print ker_prod
 
-Note that by default, the operator ``+`` adds kernels defined on the same input space whereas ``*`` assumes that the kernels are defined on different input spaces. ::
-    
-    ker_add.D
-    ker_prod.D
+Note that by default, the operator ``+`` adds kernels defined on the same input space whereas ``*`` assumes that the kernels are defined on different input spaces. Here for example ``ker_add.D`` will return ``1`` whereas ``ker_prod.D`` will return ``2``.
 
 In order to add kernels defined on the different input spaces, the required command is::
 
     ker_add_orth = k1.add_orthogonal(k2)
 
-The resulting kernel is
-    ker_add_orth.plot(plot_limits=[[-10,-10],[10,10]])
-
 .. figure::  Figures/tuto_kern_overview_add_orth.png
     :align:  center
     :height: 350px
+
+    Output of ``ker_add_orth.plot(plot_limits=[[-10,-10],[10,10]])``.
 
 Example : Building an ANOVA kernel
 ==================================
@@ -167,3 +126,39 @@ The submodels can be represented with the option ``which_function`` of ``plot``:
 .. figure::  Figures/tuto_kern_overview_mANOVAdec.png
     :align:  center
     :height: 200px
+
+
+..  import pylab as pb
+    import numpy as np
+    import GPy
+    pb.ion()
+
+    ker1 = GPy.kern.rbf(D=1)  # Equivalent to ker1 = GPy.kern.rbf(D=1, variance=1., lengthscale=1.)
+    ker2 = GPy.kern.rbf(D=1, variance = .75, lengthscale=3.)
+    ker3 = GPy.kern.rbf(1, .5, .25)
+
+    ker1.plot()
+    ker2.plot()
+    ker3.plot()
+    #pb.savefig("Figures/tuto_kern_overview_basicdef.png")
+
+    kernels = [GPy.kern.rbf(1), GPy.kern.exponential(1), GPy.kern.Matern32(1), GPy.kern.Matern52(1),  GPy.kern.Brownian(1), GPy.kern.bias(1), GPy.kern.linear(1), GPy.kern.spline(1), GPy.kern.periodic_exponential(1), GPy.kern.periodic_Matern32(1), GPy.kern.periodic_Matern52(1), GPy.kern.white(1)]
+    kernel_names = ["GPy.kern.rbf", "GPy.kern.exponential", "GPy.kern.Matern32", "GPy.kern.Matern52", "GPy.kern.Brownian", "GPy.kern.bias", "GPy.kern.linear", "GPy.kern.spline", "GPy.kern.periodic_exponential", "GPy.kern.periodic_Matern32", "GPy.kern.periodic_Matern52", "GPy.kern.white"]
+    
+    pb.figure(figsize=(16,12))
+    pb.subplots_adjust(wspace=.5, hspace=.5)
+    for i, kern in enumerate(kernels):
+       pb.subplot(3,4,i+1)
+       kern.plot(x=7.5,plot_limits=[0.00001,15.])
+       pb.title(kernel_names[i]+ '\n')
+       #pb.axes([.1,.1,.8,.7])
+       #pb.figtext(.5,.9,'Foo Bar', fontsize=18, ha='center')
+       #pb.figtext(.5,.85,'Lorem ipsum dolor sit amet, consectetur adipiscing elit',fontsize=10,ha='center')
+
+    # actual plot for the noise
+    i = 11
+    X = np.linspace(0.,15.,201)
+    WN = 0*X
+    WN[100] = 1.
+    pb.subplot(3,4,i+1)
+    pb.plot(X,WN,'b')

@@ -10,8 +10,8 @@ from ..core import model
 from ..util.linalg import pdinv,mdot
 from ..util.plot import gpplot
 #from ..inference.Expectation_Propagation import FITC
-from ..inference.EP import FITC
-from ..inference.likelihoods import likelihood,probit
+from ..likelihoods.EP import FITC
+from ..likelihoods import likelihood,probit
 
 class generalized_FITC(model):
     def __init__(self,X,likelihood,kernel=None,inducing=10,epsilon_ep=1e-3,powerep=[1.,1.]):

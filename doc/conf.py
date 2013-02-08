@@ -19,7 +19,7 @@ print "sys.path:", sys.path
 try:
     import numpy
     print "numpy: %s, %s" % (numpy.__version__, numpy.__file__)
-except importerror:
+except ImportError:
     print "no numpy"
 try:
     import matplotlib
@@ -29,12 +29,12 @@ except ImportError:
 try:
     import ipython
     print "ipython: %s, %s" % (ipython.__version__, ipython.__file__)
-except importerror:
+except ImportError:
     print "no ipython"
 try:
     import sphinx
     print "sphinx: %s, %s" % (sphinx.__version__, sphinx.__file__)
-except importerror:
+except ImportError:
     print "no sphinx"
 
 sys.path.insert(0, os.getcwd() + "/..")

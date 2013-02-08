@@ -115,8 +115,8 @@ for mod_name in MOCK_MODULES:
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 if on_rtd:
-    sys.path.append("../GPy")
-    import GPy
+    sys.path.insert(0, os.getcwd() + "/../GPy")
+    #sys.path.append("../GPy")
     os.system("pwd")
     os.system("sphinx-apidoc -f -o . ../GPy")
     #os.system("cd ..")

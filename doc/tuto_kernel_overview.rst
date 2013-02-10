@@ -74,12 +74,25 @@ In two dimensions ANOVA kernels have the following form:
 
     k_{ANOVA}(x,y) = \prod_{i=1}^2 (1 + k_i(x_i,y_i)) = 1 + k_1(x_1,y_1) + k_2(x_2,y_2) + k_1(x_1,y_1) \times k_2(x_2,y_2).
 
-Let us assume that we want to define an ANOVA kernel with a Matern 3/2 kernel for :math:`k_i`. As seen previously, we can define this kernel as follow::
+Let us assume that we want to define an ANOVA kernel with a Matern 3/2 kernel for :math:`k_i`. As seen previously, we can define this kernel as follows ::
 
     k_cst = GPy.kern.bias(1,variance=1.)
     k_mat = GPy.kern.Matern52(1,variance=1., lengthscale=3)
     Kanova = (k_cst + k_mat) * (k_cst + k_mat)
     print Kanova
+
+Printing the resulting kernel outputs the following ::
+
+                     Name                  |  Value   |  Constraints  |  Ties  
+    ---------------------------------------------------------------------------
+           bias<times>bias_variance        |  1.0000  |               |        
+           bias<times>Mat52_variance       |  1.0000  |               |        
+      bias<times>Mat52_Mat52_lengthscale   |  3.0000  |               |  (1)   
+           Mat52<times>bias_variance       |  1.0000  |               |        
+      Mat52<times>bias_Mat52_lengthscale   |  3.0000  |               |  (0)   
+          Mat52<times>Mat52_variance       |  1.0000  |               |        
+      Mat52<times>Mat52_Mat52_lengthscale  |  3.0000  |               |  (0)   
+      Mat52<times>Mat52_Mat52_lengthscale  |  3.0000  |               |  (1)
 
 Note the ties between the lengthscales of ``Kanova`` to keep the number of lengthscales equal to 2. On the other hand, there are four variance terms in the new parameterization: one for each term of the right hand part of the above equation. We can illustrate the use of this kernel on a toy example::
 

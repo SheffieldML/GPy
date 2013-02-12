@@ -6,7 +6,7 @@ import pylab as pb
 from ..util.linalg import mdot, jitchol, chol_inv, pdinv
 from ..util.plot import gpplot
 from .. import kern
-from ..inference.likelihoods import likelihood
+from ..likelihoods import likelihood
 from sparse_GP_regression import sparse_GP_regression
 
 class uncollapsed_sparse_GP(sparse_GP_regression):
@@ -136,8 +136,8 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         #dL_dm = np.dot(self.Kmmi,self.psi1V) - np.dot(self.Lambda,self.q_u_mean)
         dL_dm = np.dot(self.Kmmi,self.psi1V) - self.q_u_canonical[0]
 
-        #dL_dSim = 
-        #dL_dmhSi = 
+        #dL_dSim =
+        #dL_dmhSi =
 
         return np.hstack((dL_dm.flatten(),dL_dmmT_S.flatten()))  # natgrad only, grad TODO
 

@@ -10,6 +10,7 @@ from parameterised import parameterised, truncate_pad
 import priors
 from ..util.linalg import jitchol
 from ..inference import optimization
+from .. import likelihoods
 
 class model(parameterised):
     def __init__(self):
@@ -82,7 +83,7 @@ class model(parameterised):
 
     def get(self,name, return_names=False):
         """
-        Get a model parameter by name. The name is applied as a regular expression and all parameters that match that regular expression are returned. 
+        Get a model parameter by name. The name is applied as a regular expression and all parameters that match that regular expression are returned.
         """
         matches = self.grep_param_names(name)
         if len(matches):
@@ -107,7 +108,7 @@ class model(parameterised):
 
     def get_gradient(self,name, return_names=False):
         """
-        Get model gradient(s) by name. The name is applied as a regular expression and all parameters that match that regular expression are returned. 
+        Get model gradient(s) by name. The name is applied as a regular expression and all parameters that match that regular expression are returned.
         """
         matches = self.grep_param_names(name)
         if len(matches):
@@ -303,54 +304,62 @@ class model(parameterised):
         return '\n'.join(s)
 
 
-    def checkgrad(self, verbose=False, include_priors=False, step=1e-6, tolerance = 1e-3, return_ratio=False, *args):
+    def checkgrad(self, verbose=False, include_priors=False, step=1e-6, tolerance = 1e-3):
         """
         Check the gradient of the model by comparing to a numerical estimate.
-        If the overall gradient fails, invividual components are tested.
+        If the verbose flag is passed, invividual components are tested (and printed)
+
+        :param verbose: If True, print a "full" checking of each parameter
+        :type verbose: bool
+        :param step: The size of the step around which to linearise the objective
+        :type step: float (defaul 1e-6)
+        :param tolerance: the tolerance allowed (see note)
+        :type tolerance: float (default 1e-3)
+
+        Note:-
+           The gradient is considered correct if the ratio of the analytical
+           and numerical gradients is within <tolerance> of unity.
         """
 
         x = self._get_params_transformed().copy()
 
-        #choose a random direction to step in:
-        dx = step*np.sign(np.random.uniform(-1,1,x.size))
+        if not verbose:
+            #just check the global ratio
+            dx = step*np.sign(np.random.uniform(-1,1,x.size))
 
-        #evaulate around the point x
-        self._set_params_transformed(x+dx)
-        f1,g1 = self.log_likelihood() + self.log_prior(), self._log_likelihood_gradients_transformed()
-        self._set_params_transformed(x-dx)
-        f2,g2 = self.log_likelihood() + self.log_prior(), self._log_likelihood_gradients_transformed()
-        self._set_params_transformed(x)
-        gradient = self._log_likelihood_gradients_transformed()
+            #evaulate around the point x
+            self._set_params_transformed(x+dx)
+            f1,g1 = self.log_likelihood() + self.log_prior(), self._log_likelihood_gradients_transformed()
+            self._set_params_transformed(x-dx)
+            f2,g2 = self.log_likelihood() + self.log_prior(), self._log_likelihood_gradients_transformed()
+            self._set_params_transformed(x)
+            gradient = self._log_likelihood_gradients_transformed()
 
-        numerical_gradient = (f1-f2)/(2*dx)
-        global_ratio = (f1-f2)/(2*np.dot(dx,gradient))
-        if verbose:
-            print "Gradient ratio = ", global_ratio, '\n'
-            sys.stdout.flush()
+            numerical_gradient = (f1-f2)/(2*dx)
+            global_ratio = (f1-f2)/(2*np.dot(dx,gradient))
 
-        if (np.abs(1.-global_ratio)<tolerance) and not np.isnan(global_ratio):
-            if verbose:
-                print 'Gradcheck passed'
+            if (np.abs(1.-global_ratio)<tolerance) and not np.isnan(global_ratio):
+                return True
+            else:
+                return False
         else:
-            if verbose:
-                print "Global check failed. Testing individual gradients\n"
+            #check the gradient of each parameter individually, and do some pretty printing
+            try:
+                names = self._get_param_names_transformed()
+            except NotImplementedError:
+                names = ['Variable %i'%i for i in range(len(x))]
 
-                try:
-                    names = self._get_param_names_transformed()
-                except NotImplementedError:
-                    names = ['Variable %i'%i for i in range(len(x))]
-
-                # Prepare for pretty-printing
-                header = ['Name', 'Ratio', 'Difference', 'Analytical', 'Numerical']
-                max_names = max([len(names[i]) for i in range(len(names))] + [len(header[0])])
-                float_len = 10
-                cols = [max_names]
-                cols.extend([max(float_len, len(header[i])) for i in range(1, len(header))])
-                cols = np.array(cols) + 5
-                header_string = ["{h:^{col}}".format(h = header[i], col = cols[i]) for i in range(len(cols))]
-                header_string = map(lambda x: '|'.join(x), [header_string])
-                separator = '-'*len(header_string[0])
-                print '\n'.join([header_string[0], separator])
+            # Prepare for pretty-printing
+            header = ['Name', 'Ratio', 'Difference', 'Analytical', 'Numerical']
+            max_names = max([len(names[i]) for i in range(len(names))] + [len(header[0])])
+            float_len = 10
+            cols = [max_names]
+            cols.extend([max(float_len, len(header[i])) for i in range(1, len(header))])
+            cols = np.array(cols) + 5
+            header_string = ["{h:^{col}}".format(h = header[i], col = cols[i]) for i in range(len(cols))]
+            header_string = map(lambda x: '|'.join(x), [header_string])
+            separator = '-'*len(header_string[0])
+            print '\n'.join([header_string[0], separator])
 
             for i in range(len(x)):
                 xx = x.copy()
@@ -368,27 +377,52 @@ class model(parameterised):
                 ratio = (f1-f2)/(2*step*gradient)
                 difference = np.abs((f1-f2)/2/step - gradient)
 
-                if verbose:
-                    if (np.abs(ratio-1)<tolerance):
-                        formatted_name = "\033[92m {0} \033[0m".format(names[i])
-                    else:
-                        formatted_name = "\033[91m {0} \033[0m".format(names[i])
-                    r = '%.6f' % float(ratio)
-                    d = '%.6f' % float(difference)
-                    g = '%.6f' % gradient
-                    ng = '%.6f' % float(numerical_gradient)
-                    grad_string = "{0:^{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name,r,d,g, ng, c0 = cols[0]+9, c1 = cols[1], c2 = cols[2], c3 = cols[3], c4 = cols[4])
-                    print grad_string
+                if (np.abs(ratio-1)<tolerance):
+                    formatted_name = "\033[92m {0} \033[0m".format(names[i])
+                else:
+                    formatted_name = "\033[91m {0} \033[0m".format(names[i])
+                r = '%.6f' % float(ratio)
+                d = '%.6f' % float(difference)
+                g = '%.6f' % gradient
+                ng = '%.6f' % float(numerical_gradient)
+                grad_string = "{0:^{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name,r,d,g, ng, c0 = cols[0]+9, c1 = cols[1], c2 = cols[2], c3 = cols[3], c4 = cols[4])
+                print grad_string
 
-            if verbose:
-                print ''
+    def EPEM(self,epsilon=.1,**kwargs):
+        """
+        TODO: Should this not bein the GP class?
+        Expectation maximization for Expectation Propagation.
 
-            if return_ratio:
-                return global_ratio
+        kwargs are passed to the optimize function. They can be:
+
+        :epsilon: convergence criterion
+        :max_f_eval: maximum number of function evaluations
+        :messages: whether to display during optimisation
+        :param optimzer: whice optimizer to use (defaults to self.preferred optimizer)
+        :type optimzer: string TODO: valid strings?
+
+        """
+        assert isinstance(self.likelihood,likelihoods.EP), "EM is not available for Gaussian likelihoods"
+        log_change = epsilon + 1.
+        self.log_likelihood_record = []
+        self.gp_params_record = []
+        self.ep_params_record = []
+        iteration = 0
+        last_value = -np.exp(1000)
+        while log_change > epsilon or not iteration:
+            print 'EM iteration %s' %iteration
+            self.update_likelihood_approximation()
+            self.optimize(**kwargs)
+            new_value = self.log_likelihood()
+            log_change = new_value - last_value
+            if log_change > epsilon:
+                self.log_likelihood_record.append(new_value)
+                self.gp_params_record.append(self._get_params())
+                #self.ep_params_record.append((self.beta,self.Y,self.Z_ep))
+                last_value = new_value
             else:
-                return False
-
-        if return_ratio:
-            return global_ratio
-        else:
-            return True
+                convergence = False
+                #self.beta, self.Y,  self.Z_ep = self.ep_params_record[-1]
+                self._set_params(self.gp_params_record[-1])
+                print "Log-likelihood decrement: %s \nLast iteration discarded." %log_change
+            iteration += 1

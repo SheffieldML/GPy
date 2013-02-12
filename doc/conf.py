@@ -11,101 +11,49 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys
+import os
 
-#Mocking uninstalled modules: https://read-the-docs.readthedocs.org/en/latest/faq.html
+print "python exec:", sys.executable
+print "sys.path:", sys.path
+try:
+    import numpy
+    print "numpy: %s, %s" % (numpy.__version__, numpy.__file__)
+except ImportError:
+    print "no numpy"
+try:
+    import matplotlib
+    print "matplotlib: %s, %s" % (matplotlib.__version__, matplotlib.__file__)
+except ImportError:
+    print "no matplotlib"
+try:
+    import ipython
+    print "ipython: %s, %s" % (ipython.__version__, ipython.__file__)
+except ImportError:
+    print "no ipython"
+try:
+    import sphinx
+    print "sphinx: %s, %s" % (sphinx.__version__, sphinx.__file__)
+except ImportError:
+    print "no sphinx"
 
-#class Mock(object):
-    #__all__ = []
-    #def __init__(self, *args, **kwargs):
-        #for key, value in kwargs.iteritems():
-            #setattr(self, key, value)
-
-    #def __call__(self, *args, **kwargs):
-        #return Mock()
-
-    #__add__  = __mul__  = __getitem__ = __setitem__ = \
-#__delitem__ = __sub__ =  __floordiv__ = __mod__ = __divmod__ = \
-#__pow__ = __lshift__ = __rshift__ = __and__ = __xor__ = __or__ = \
-#__rmul__  = __rsub__  = __rfloordiv__ = __rmod__ = __rdivmod__ = \
-#__rpow__ = __rlshift__ = __rrshift__ = __rand__ = __rxor__ = __ror__ = \
-#__imul__  = __isub__  = __ifloordiv__ = __imod__ = __idivmod__ = \
-#__ipow__ = __ilshift__ = __irshift__ = __iand__ = __ixor__ = __ior__ = \
-#__neg__ = __pos__ = __abs__ = __invert__ = __call__
-
-    #def __getattr__(self, name):
-        #if name in ('__file__', '__path__'):
-            #return '/dev/null'
-        #if name == 'sqrt':
-            #return math.sqrt
-        #elif name[0] != '_' and name[0] == name[0].upper():
-            #return type(name, (), {})
-        #else:
-            #return Mock(**vars(self))
-
-    #def __lt__(self, *args, **kwargs):
-        #return True
-
-    #__nonzero__ = __le__ = __eq__ = __ne__ = __gt__ = __ge__ = __contains__ = \
-#__lt__
-
-
-    #def __repr__(self):
-        ## Use _mock_repr to fake the __repr__ call
-        #res = getattr(self, "_mock_repr")
-        #return res if isinstance(res, str) else "Mock"
-
-    #def __hash__(self):
-        #return 1
-
-    #__len__ = __int__ = __long__ = __index__ = __hash__
-    
-    #def __oct__(self):
-        #return '01'
-
-    #def __hex__(self):
-        #return '0x1'
-
-    #def __float__(self):
-        #return 0.1
-
-    #def __complex__(self):
-        #return 1j
-
-
-#MOCK_MODULES = [
-    #'pylab', 'scipy', 'matplotlib', 'matplotlib.pyplot', 'pyfits',
-    #'scipy.constants.constants', 'matplotlib.cm',
-    #'matplotlib.image', 'matplotlib.colors', 'sunpy.cm',
-    #'pandas', 'pandas.io', 'pandas.io.parsers',
-    #'suds', 'matplotlib.ticker', 'matplotlib.colorbar',
-    #'matplotlib.dates', 'scipy.optimize', 'scipy.ndimage',
-    #'matplotlib.figure', 'scipy.ndimage.interpolation', 'bs4']
-#for mod_name in MOCK_MODULES:
-    #sys.modules[mod_name] = Mock()
-
-
-#sys.modules['numpy'] = Mock(pi=math.pi, G=6.67364e-11,
-                            #ndarray=type('ndarray', (), {}),
-                            #dtype=lambda _: Mock(_mock_repr='np.dtype(\'float32\')'))
-#sys.modules['scipy.constants'] = Mock(pi=math.pi, G=6.67364e-11)
-
+print "sys.path:", sys.path
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('..'))
+#sys.path.insert(0, os.path.abspath('../GPy'))
 
-print "Adding path"
+#print "sys.path.after:", sys.path
+
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
 # absolute, like shown here.
-#sys.path.append(os.path.abspath('./sphinxext'))
+sys.path.append(os.path.abspath('sphinxext'))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
 #sys.path.insert(0, os.path.abspath('./sphinxext'))
 
 # -- General configuration -----------------------------------------------------
@@ -116,23 +64,24 @@ print "Adding path"
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 print "Importing extensions"
-              
-extensions = [#'ipython_directive',
-              'sphinx.ext.autodoc', 'sphinx.ext.viewcode'
-              #'matplotlib.sphinxext.mathmpl',
-              #'matplotlib.sphinxext.only_directives',
-              #'matplotlib.sphinxext.plot_directive',
-              #'ipython_directive'
-            ]
-              #'sphinx.ext.doctest',
-              #'ipython_console_highlighting',
-              #'inheritance_diagram',
-              #'numpydoc'] 
+
+extensions = ['sphinx.ext.autodoc',
+              #'sphinx.ext.doctest'
+              'sphinx.ext.viewcode',
+              'sphinx.ext.pngmath',
+              'ipython_directive',
+              'ipython_console_highlighting'
+              #'matplotlib.sphinxext.plot_directive'
+             ]
+plot_formats = [('png', 80), ('pdf', 50)]
+
 print "finished importing"
 
 ##############################################################################
 ##
 ## Mock out imports with C dependencies because ReadTheDocs can't build them.
+#############################################################################
+
 class Mock(object):
     def __init__(self, *args, **kwargs):
         pass
@@ -151,23 +100,38 @@ class Mock(object):
         else:
             return Mock()
 
-#sys.path.append("../GPy")
 #import mock
 
 print "Mocking"
-MOCK_MODULES = ['pylab', 'matplotlib', 'sympy', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser']#'matplotlib', 'matplotlib.color', 'matplotlib.pyplot', 'pylab' ]
+MOCK_MODULES = ['pylab', 'sympy', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser', 'matplotlib']
+#'matplotlib', 'matplotlib.color', 'matplotlib.pyplot', 'pylab' ]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
 
 # ----------------------- READTHEDOCS ------------------
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
+on_rtd = True
 if on_rtd:
-  sys.path.append("../GPy")
-  os.system("pwd")
-  os.system("sphinx-apidoc -f -o . ../GPy")
-  #os.system("cd ..")
-  #os.system("cd ./docs")
+    sys.path.append(os.path.abspath('../GPy'))
+
+    import subprocess
+
+    proc = subprocess.Popen("pwd", stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    print "program output:", out
+    proc = subprocess.Popen("ls ../", stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    print "program output:", out
+    proc = subprocess.Popen("sphinx-apidoc -f -o . ../GPy", stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    print "program output:", out
+    #proc = subprocess.Popen("whereis numpy", stdout=subprocess.PIPE, shell=True)
+    #(out, err) = proc.communicate()
+    #print "program output:", out
+    #proc = subprocess.Popen("whereis matplotlib", stdout=subprocess.PIPE, shell=True)
+    #(out, err) = proc.communicate()
+    #print "program output:", out
 
 print "Compiled files"
 
@@ -317,21 +281,21 @@ htmlhelp_basename = 'GPydoc'
 # -- Options for LaTeX output --------------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'GPy.tex', u'GPy Documentation',
-   u'Author', 'manual'),
+    ('index', 'GPy.tex', u'GPy Documentation',
+    u'Author', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -374,9 +338,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'GPy', u'GPy Documentation',
-   u'Author', 'GPy', 'One line description of project.',
-   'Miscellaneous'),
+    ('index', 'GPy', u'GPy Documentation',
+    u'Author', 'GPy', 'One line description of project.',
+    'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.
@@ -431,17 +395,4 @@ epub_copyright = u'2013, Author'
 # Allow duplicate toc entries.
 #epub_tocdup = True
 
-#############################################################################
-#
-# Include constructors in all the docs
-# Got this method from:
-# http://stackoverflow.com/questions/5599254/how-to-use-sphinxs-autodoc-to-document-a-classs-init-self-method
-#def skip(app, what, name, obj, skip, options):
-    #if name == "__init__":
-        #return False
-    #return skip
-
-#def setup(app):
-    #app.connect("autodoc-skip-member", skip)
-
-
+autodoc_member_order = "source"

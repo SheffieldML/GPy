@@ -3,6 +3,7 @@
 
 
 import numpy as np
+import pylab as pb
 from ..core.parameterised import parameterised
 from kernpart import kernpart
 import itertools
@@ -155,7 +156,7 @@ class kern(parameterised):
 
         D = K1.D + K2.D
 
-        newkernparts = [product_orthogonal(k1,k2).parts[0] for k1, k2 in itertools.product(K1.parts,K2.parts)]
+        newkernparts = [product_orthogonal(k1,k2) for k1, k2 in itertools.product(K1.parts,K2.parts)]
 
         slices = []
         for sl1, sl2 in itertools.product(K1.input_slices,K2.input_slices):
@@ -235,6 +236,8 @@ class kern(parameterised):
             X2 = X
         target = np.zeros(self.Nparam)
         [p.dK_dtheta(partial[s1,s2],X[s1,i_s],X2[s2,i_s],target[ps]) for p,i_s,ps,s1,s2 in zip(self.parts, self.input_slices, self.param_slices, slices1, slices2)]
+
+	#TODO: transform the gradients here!
         return target
 
     def dK_dX(self,partial,X,X2=None,slices1=None,slices2=None):
@@ -372,3 +375,59 @@ class kern(parameterised):
 
         #TODO: there are some extra terms to compute here!
         return target_mu, target_S
+
+    def plot(self, x = None, plot_limits=None,which_functions='all',resolution=None):
+        if which_functions=='all':
+            which_functions = [True]*self.Nparts
+        if self.D == 1:
+            if x is None:
+                x = np.zeros((1,1))
+            else:
+                x = np.asarray(x)
+                assert x.size == 1, "The size of the fixed variable x is not 1"
+                x = x.reshape((1,1))
+
+            if plot_limits == None:
+                xmin, xmax = (x-5).flatten(), (x+5).flatten()
+            elif len(plot_limits) == 2:
+                xmin, xmax = plot_limits
+            else:
+                raise ValueError, "Bad limits for plotting"
+
+            Xnew = np.linspace(xmin,xmax,resolution or 201)[:,None]
+            Kx = self.K(Xnew,x,slices2=which_functions)
+            pb.plot(Xnew,Kx)
+            pb.xlim(xmin,xmax)
+            pb.xlabel("x")
+            pb.ylabel("k(x,%0.1f)" %x)
+
+        elif self.D == 2:
+            if x is None:
+                x = np.zeros((1,2))
+            else:
+                x = np.asarray(x)
+                assert x.size == 2, "The size of the fixed variable x is not 2"
+                x = x.reshape((1,2))
+
+            if plot_limits == None:
+                xmin, xmax = (x-5).flatten(), (x+5).flatten()
+            elif len(plot_limits) == 2:
+                xmin, xmax = plot_limits
+            else:
+                raise ValueError, "Bad limits for plotting"
+
+            resolution = resolution or 51
+            xx,yy = np.mgrid[xmin[0]:xmax[0]:1j*resolution,xmin[1]:xmax[1]:1j*resolution]
+            xg = np.linspace(xmin[0],xmax[0],resolution)
+            yg = np.linspace(xmin[1],xmax[1],resolution)
+            Xnew = np.vstack((xx.flatten(),yy.flatten())).T
+            Kx = self.K(Xnew,x,slices2=which_functions)
+            Kx = Kx.reshape(resolution,resolution).T
+            pb.contour(xg,yg,Kx,vmin=Kx.min(),vmax=Kx.max(),cmap=pb.cm.jet)
+            pb.xlim(xmin[0],xmax[0])
+            pb.ylim(xmin[1],xmax[1])
+            pb.xlabel("x1")
+            pb.ylabel("x2")
+            pb.title("k(x1,x2 ; %0.1f,%0.1f)" %(x[0,0],x[0,1]) )
+        else:
+            raise NotImplementedError, "Cannot plot a kernel with more than two input dimensions"

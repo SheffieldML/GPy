@@ -12,7 +12,7 @@ class rbf(kernpart):
 
     .. math::
 
-       k(r) = \sigma^2 \exp(- \frac{1}{2}r^2) \qquad \qquad \\text{ where  } r^2 = \sum_{i=1}^d \frac{ (x_i-x^\prime_i)^2}{\ell_i^2}}
+       k(r) = \sigma^2 \exp(- \frac{1}{2}r^2) \ \ \ \ \  \\text{ where  } r^2 = \sum_{i=1}^d \frac{ (x_i-x^\prime_i)^2}{\ell_i^2}}
 
     where \ell_i is the lengthscale, \sigma^2 the variance and d the dimensionality of the input.
 
@@ -21,7 +21,7 @@ class rbf(kernpart):
     :param variance: the variance of the kernel
     :type variance: float
     :param lengthscale: the vector of lengthscale of the kernel
-    :type lengthscale: np.ndarray od size (1,) or (D,) depending on ARD
+    :type lengthscale: array or list of the appropriate size (or float if there is only one lengthscale parameter)
     :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one single lengthscale parameter \ell), otherwise there is one lengthscale parameter per dimension.
     :type ARD: Boolean
     :rtype: kernel object

@@ -102,8 +102,8 @@ class linear(kernpart):
             target += tmp.sum()
 
     def dpsi0_dmuS(self,partial, Z,mu,S,target_mu,target_S):
-        target_mu += partial[:, None] * (2.0*mu*self.variances) * mu.shape[0]
-        target_S += partial[:, None] * self.variances * mu.shape[0]
+        target_mu += np.sum(partial[:, None],0) * (2.0*mu*self.variances)
+        target_S += np.sum(partial[:, None] * self.variances, 0)
 
     def dpsi0_dZ(self,Z,mu,S,target):
         pass
@@ -140,7 +140,6 @@ class linear(kernpart):
         else:
             target += tmp.sum()
 
-
     def dpsi2_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         """Think N,M,M,Q """
         self._psi_computations(Z,mu,S)
@@ -174,6 +173,6 @@ class linear(kernpart):
             #Z has changed, compute Z specific stuff
             self.ZZ = Z[:,None,:]*Z[None,:,:] # M,M,Q
             self._Z = Z
-        if not (np.all(Z==self._Z) and np.all(mu==self._mu) and np.all(S==self._S)):
+        if not (np.all(mu==self._mu) and np.all(S==self._S)):
             self.mu2_S = np.square(mu)+S
-            self._Z, self._mu, self._S = Z, mu,S
+            self._mu, self._S = mu, S

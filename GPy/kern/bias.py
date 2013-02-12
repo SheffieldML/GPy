@@ -73,9 +73,9 @@ class bias(kernpart):
 
     def dpsi1_dmuS(self, partial, Z, mu, S, target_mu, target_S):
         pass
-
+ 
     def dpsi2_dtheta(self, partial, Z, mu, S, target):
-        target += 2.*self.variance*partial.sum()
+        target += np.sum(2.*self.variance*partial)
 
     def dpsi2_dZ(self, partial, Z, mu, S, target):
         pass

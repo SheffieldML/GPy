@@ -6,7 +6,7 @@ import numpy as np
 from ..core.parameterised import parameterised
 from kernpart import kernpart
 import itertools
-from product_orthogonal import product_orthogonal 
+from product_orthogonal import product_orthogonal
 
 class kern(parameterised):
     def __init__(self,D,parts=[], input_slices=None):
@@ -323,15 +323,22 @@ class kern(parameterised):
         slices1, slices2 = self._process_slices(slices1,slices2)
         [p.psi2(Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s1,s2,s2]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
 
-        # MASSIVE TODO: do something smart for white
-        # "crossterms"
+
+        # "crossterms". Here we are recomputing psi1 for white (we don't need to), but it's
+        # not really expensive, since it's just a matrix of zeroes.
         # psi1_matrices = [np.zeros((mu.shape[0], Z.shape[0])) for p in self.parts]
         # [p.psi1(Z[s2],mu[s1],S[s1],psi1_target[s1,s2]) for p,s1,s2,psi1_target in zip(self.parts,slices1,slices2, psi1_matrices)]
+
+        crossterms = 0.0
+        # for 3 kernels this returns something like
+        # [(0,1), (0,2), (1,2)]
+        # in theory, we should also account for (1,0), (2,0) and so on, but
+        # the transpose deals exactly with that
         # for a,b in itertools.combinations(psi1_matrices, 2):
         #     tmp = np.multiply(a,b)
-        #     target += tmp[:,None,:] + tmp[:, :,None]
+        #     crossterms += tmp[:,None,:] + tmp[:, :,None]
 
-        return target
+        return target + crossterms
 
     def dpsi2_dtheta(self,partial,partial1,Z,mu,S,slices1=None,slices2=None):
         """Returns shape (N,M,M,Ntheta)"""
@@ -339,22 +346,26 @@ class kern(parameterised):
         target = np.zeros(self.Nparam)
         [p.dpsi2_dtheta(partial[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[ps]) for p,i_s,s1,s2,ps in zip(self.parts,self.input_slices,slices1,slices2,self.param_slices)]
 
-
         # # "crossterms"
         # # 1. get all the psi1 statistics
         # psi1_matrices = [np.zeros((mu.shape[0], Z.shape[0])) for p in self.parts]
         # [p.psi1(Z[s2],mu[s1],S[s1],psi1_target[s1,s2]) for p,s1,s2,psi1_target in zip(self.parts,slices1,slices2, psi1_matrices)]
-        # partial1 = np.zeros_like(partial1)
 
+        # partial1 = np.ones_like(partial1)
         # # 2. get all the dpsi1/dtheta gradients
         # psi1_gradients = [np.zeros(self.Nparam) for p in self.parts]
         # [p.dpsi1_dtheta(partial1[s2,s1],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],psi1g_target[ps]) for p,ps,s1,s2,i_s,psi1g_target in zip(self.parts, self.param_slices,slices1,slices2,self.input_slices,psi1_gradients)]
 
+
         # # 3. multiply them somehow
         # for a,b in itertools.combinations(range(len(psi1_matrices)), 2):
-        #     gne = (psi1_gradients[a][None]*psi1_matrices[b].sum(0)[:,None]).sum(0)
 
-        #     target += (gne[None] + gne[:, None]).sum(0)
+        #     tmp = (psi1_gradients[a][None, None] * psi1_matrices[b][:,:, None])
+        #     # target += (tmp[None] + tmp[:,None]).sum(0).sum(0).sum(0)
+        #     # gne = (psi1_gradients[a].sum()*psi1_matrices[b].sum())
+        #     # target += gne
+        #     #target += (gne[None] + gne[:, None]).sum(0)
+        #     target += (partial.sum(0)[:,:,None] * (tmp[:, None] + tmp[:,:,None]).sum(0)).sum(0).sum(0)
         return target
 
     def dpsi2_dZ(self,partial,Z,mu,S,slices1=None,slices2=None):

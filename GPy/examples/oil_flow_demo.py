@@ -7,7 +7,7 @@ import numpy as np
 import pylab as pb
 import GPy
 import pylab as plt
-np.random.seed(1)
+np.random.seed(3)
 
 def plot_oil(X, theta, labels, label):
     plt.figure()
@@ -24,25 +24,27 @@ data = pickle.load(open('../../../GPy_assembla/datasets/oil_flow_3classes.pickle
 
 Y = data['DataTrn']
 N, D = Y.shape
-selected = np.random.permutation(N)#[:200]
+selected = np.random.permutation(N)[:350]
 labels = data['DataTrnLbls'][selected]
 Y = Y[selected]
 N, D = Y.shape
 Y -= Y.mean(axis=0)
-#Y /= Y.std(axis=0)
+# Y /= Y.std(axis=0)
 
-Q = 10
-k = GPy.kern.rbf_ARD(Q) + GPy.kern.white(Q)
-m = GPy.models.Bayesian_GPLVM(Y, Q, kernel = k, M = 12)
-m.constrain_positive('(rbf|bias|S|white|noise)')
-# m.constrain_bounded('white', 1e-6, 100.0)
-# m.constrain_bounded('noise', 1e-4, 1000.0)
+Q = 5
+k = GPy.kern.linear(Q, ARD = False) + GPy.kern.white(Q)
+m = GPy.models.Bayesian_GPLVM(Y, Q, kernel = k, M = 20)
+m.constrain_positive('(rbf|bias|S|linear|white|noise)')
 
-plot_oil(m.X, np.array([1,1]), labels, 'PCA initialization')
-# m.optimize(messages = True)
-m.optimize('tnc', messages = True)
-plot_oil(m.X, m.kern.parts[0].lengthscales, labels, 'B-GPLVM')
-# pb.figure()
+# m.unconstrain('noise')
+# m.constrain_fixed('noise_precision', 50.0)
+# m.unconstrain('white')
+# m.constrain_bounded('white', 1e-6, 10.0)
+# plot_oil(m.X, np.array([1,1]), labels, 'PCA initialization')
+m.optimize(messages = True)
+# m.optimize('tnc', messages = True)
+plot_oil(m.X, m.kern.parts[0].lengthscale, labels, 'B-GPLVM')
+# # pb.figure()
 # m.plot()
 # pb.title('PCA initialisation')
 # pb.figure()

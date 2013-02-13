@@ -22,7 +22,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, Y, Q, init='PCA', M=10, Z=None, **kwargs):
+    def __init__(self, Y, Q, init='PCA', M=10, Z=None, kernel=None, **kwargs):
         X = self.initialise_latent(init, Q, Y)
 
         if Z is None:
@@ -30,10 +30,11 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         else:
             assert Z.shape[1]==X.shape[1]
 
-        kernel = kern.rbf(Q) + kern.white(Q)
+        if kernel is None:
+            kernel = kern.rbf(Q) + kern.white(Q)
 
         S = np.ones_like(X) * 1e-2#
-        sparse_GP.__init__(self, X, Gaussian(Y), X_uncertainty=S, Z=Z,**kwargs)
+        sparse_GP.__init__(self, X, Gaussian(Y), kernel, Z=Z, X_uncertainty=S, **kwargs)
 
     def _get_param_names(self):
         X_names = sum([['X_%i_%i'%(n,q) for n in range(self.N)] for q in range(self.Q)],[])

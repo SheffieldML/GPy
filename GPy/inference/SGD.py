@@ -129,28 +129,29 @@ class opt_SGD(Optimizer):
     def step_with_missing_data(self, f_fp, X, step, shapes, sparse_matrix):
         N, Q = X.shape
         if not sparse_matrix:
-            samples = self.non_null_samples(self.model.Y)
+            samples = self.non_null_samples(self.model.likelihood.Y)
             self.model.N = samples.sum()
-            self.model.Y = self.model.Y[samples]
+            self.model.likelihood.Y = self.model.likelihood.Y[samples]
         else:
-            samples = self.model.Y.nonzero()[0]
+            samples = self.model.likelihood.Y.nonzero()[0]
             self.model.N = len(samples)
-            self.model.Y = np.asarray(self.model.Y[samples].todense(), dtype = np.float64)
+            self.model.likelihood.Y = np.asarray(self.model.likelihood.Y[samples].todense(), dtype = np.float64)
 
+        self.model.likelihood.N = self.model.N
         j = self.subset_parameter_vector(self.x_opt, samples, shapes)
         self.model.X = X[samples]
 
-        if self.model.N == 0 or self.model.Y.std() == 0.0:
+        if self.model.N == 0 or self.model.likelihood.Y.std() == 0.0:
             return 0, step, self.model.N
 
         if self.center:
-            self.model.Y -= self.model.Y.mean()
-            self.model.Y /= self.model.Y.std()
+            self.model.likelihood.Y -= self.model.likelihood.Y.mean()
+            self.model.likelihood.Y /= self.model.likelihood.Y.std()
 
         model_name = self.model.__class__.__name__
 
         if model_name == 'Bayesian_GPLVM':
-            self.model.trYYT = np.sum(np.square(self.model.Y))
+            self.model.likelihood.trYYT = np.sum(np.square(self.model.likelihood.Y))
 
         b, p = self.shift_constraints(j)
 
@@ -166,16 +167,15 @@ class opt_SGD(Optimizer):
 
     def opt(self, f_fp=None, f=None, fp=None):
         self.x_opt = self.model._get_params_transformed()
-        X, Y = self.model.X.copy(), self.model.Y.copy()
+        X, Y = self.model.X.copy(), self.model.likelihood.Y.copy()
         N, Q = self.model.X.shape
-        D = self.model.Y.shape[1]
+        D = self.model.likelihood.Y.shape[1]
         self.trace = []
-        sparse_matrix = sp.sparse.issparse(self.model.Y)
+        sparse_matrix = sp.sparse.issparse(self.model.likelihood.Y)
         missing_data = True
         if not sparse_matrix:
-            missing_data = self.check_for_missing(self.model.Y)
-        self.model.Youter = None # this is probably not very efficient
-        self.model.YYT = None
+            missing_data = self.check_for_missing(self.model.likelihood.Y)
+        self.model.likelihood.YYT = None
         num_params = self.model._get_params()
         step = np.zeros_like(num_params)
 
@@ -198,7 +198,7 @@ class opt_SGD(Optimizer):
             for j in features:
                 count += 1
                 self.model.D = len(j)
-                self.model.Y = Y[:, j]
+                self.model.likelihood.Y = Y[:, j]
                 # self.model.trYYT = np.sum(np.square(self.model.Y))
                 if missing_data or sparse_matrix:
                     shapes = self.get_param_shapes(N, Q)
@@ -228,7 +228,8 @@ class opt_SGD(Optimizer):
             # should really be a sum(), but earlier samples in the iteration will have a very crappy ll
             self.f_opt = np.mean(NLL)
             self.model.N = N
-            self.model.Y = Y
+            self.model.likelihood.N = N
+            self.model.likelihood.Y = Y
             self.model.X = X
             self.model.D = D
             # self.model.Youter = np.dot(Y, Y.T)

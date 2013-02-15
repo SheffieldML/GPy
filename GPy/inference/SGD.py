@@ -175,19 +175,16 @@ class opt_SGD(Optimizer):
         missing_data = True
         if not sparse_matrix:
             missing_data = self.check_for_missing(self.model.likelihood.Y)
+
         self.model.likelihood.YYT = None
         num_params = self.model._get_params()
         step = np.zeros_like(num_params)
 
-        if self.center:
-            print "WARNING: centering the data"
-
         for it in range(self.iterations):
-
             if it == 0 or self.self_paced is False:
                 features = np.random.permutation(Y.shape[1])
             else:
-                features = np.argsort(NLL)#[::-1]
+                features = np.argsort(NLL)
 
             b = len(features)/self.batch_size
             features = [features[i::b] for i in range(b)]
@@ -198,9 +195,7 @@ class opt_SGD(Optimizer):
             for j in features:
                 count += 1
                 self.model.D = len(j)
-                self.model.likelihood.D = self.model.D
                 self.model.likelihood.Y = Y[:, j]
-                self.model.likelihood.YYT = np.dot(self.model.likelihood.Y, self.model.likelihood.Y.T)
 
                 if missing_data or sparse_matrix:
                     shapes = self.get_param_shapes(N, Q)
@@ -213,14 +208,8 @@ class opt_SGD(Optimizer):
                     self.x_opt -= step + momentum_term
 
                 if self.messages == 2:
-                    status = "evaluating {feature: 5d}/{tot: 5d} \t f: {f: 2.3f} \t non-missing: {nm: 4d}\r".format(feature = count, tot = len(features), f = f, nm = Nj)
-
-
-                    # TODO: remove this, it's only for debugging
-                    if self.model.__class__.__name__ == 'Bayesian_GPLVM':
-                        beta = np.exp(self.x_opt)[-1]
-                        status = "evaluating {feature: 5d}/{tot: 5d} \t f: {f: 2.3f} \t non-missing: {nm: 4d} \t inv_bbeta: {beta: 1.5f}\r".format(feature = count, tot = len(features), f = f, nm = Nj, beta = beta)
-
+                    noise = np.exp(self.x_opt)[-1]
+                    status = "evaluating {feature: 5d}/{tot: 5d} \t f: {f: 2.3f} \t non-missing: {nm: 4d}\t noise: {noise: 2.4f}\r".format(feature = count, tot = len(features), f = f, nm = Nj, noise = noise)
                     sys.stdout.write(status)
                     sys.stdout.flush()
                     last_printed_count = count
@@ -233,8 +222,7 @@ class opt_SGD(Optimizer):
             self.model.X = X
             self.model.D = D
             self.model.likelihood.N = N
-            self.model.likelihood.N = N
-            self.model.likelihood.D = D
+            self.model.likelihood.Y = Y
 
             # self.model.Youter = np.dot(Y, Y.T)
             self.trace.append(self.f_opt)

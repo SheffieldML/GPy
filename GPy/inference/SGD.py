@@ -201,6 +201,7 @@ class opt_SGD(Optimizer):
                 self.model.likelihood.D = self.model.D
                 self.model.likelihood.Y = Y[:, j]
                 self.model.likelihood.YYT = np.dot(self.model.likelihood.Y, self.model.likelihood.Y.T)
+
                 if missing_data or sparse_matrix:
                     shapes = self.get_param_shapes(N, Q)
                     f, step, Nj = self.step_with_missing_data(f_fp, X, step, shapes, sparse_matrix)

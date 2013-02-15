@@ -22,19 +22,21 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, Y, Q, X = None, init='PCA', M=10, Z=None, kernel=None, **kwargs):
+    def __init__(self, Y, Q, X = None, S = None, init='PCA', M=10, Z=None, kernel=None, **kwargs):
         if X == None:
             X = self.initialise_latent(init, Q, Y)
 
+        if S is None:
+            S = np.ones_like(X) * 1e-2#
+
         if Z is None:
             Z = np.random.permutation(X.copy())[:M]
-        else:
-            assert Z.shape[1]==X.shape[1]
+        assert Z.shape[1]==X.shape[1]
 
         if kernel is None:
             kernel = kern.rbf(Q) + kern.white(Q)
 
-        S = np.ones_like(X) * 1e-2#
+
         sparse_GP.__init__(self, X, Gaussian(Y), kernel, Z=Z, X_uncertainty=S, **kwargs)
 
     def _get_param_names(self):
@@ -67,7 +69,17 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         dL_dmu = dL_dmu_psi0 + dL_dmu_psi1 + dL_dmu_psi2
         dL_dS = dL_dS_psi0 + dL_dS_psi1 + dL_dS_psi2
 
-        return np.hstack((dL_dmu.flatten(), dL_dS.flatten()))
+        dKL_dS = (1. - (1./self.X_uncertainty))*0.5
+        dKL_dmu = self.X
+        return np.hstack(((dL_dmu - dKL_dmu).flatten(), (dL_dS - dKL_dS).flatten()))
+
+    def KL_divergence(self):
+        var_mean = np.square(self.X).sum()
+        var_S = np.sum(self.X_uncertainty - np.log(self.X_uncertainty))
+        return 0.5*(var_mean + var_S) - 0.5*self.Q*self.N
+
+    def log_likelihood(self):
+        return sparse_GP.log_likelihood(self) - self.KL_divergence()
 
     def _log_likelihood_gradients(self):
         return np.hstack((self.dL_dmuS().flatten(), sparse_GP._log_likelihood_gradients(self)))

@@ -107,9 +107,11 @@ class sparse_GP(GP):
             self.dL_dpsi2 += - 0.5 * self.likelihood.precision[:,None,None]/sf2 * self.D * self.C[None,:,:] # dC
             self.dL_dpsi2 += - 0.5 * self.likelihood.precision[:,None,None]* self.E[None,:,:] # dD
         else:
-            self.dL_dpsi2 = 0.5 * self.likelihood.precision * self.D * self.Kmmi[None,:,:] # dB
-            self.dL_dpsi2 += - 0.5 * self.likelihood.precision/sf2 * self.D * self.C[None,:,:] # dC
-            self.dL_dpsi2 += - 0.5 * self.likelihood.precision * self.E[None,:,:] # dD
+            self.dL_dpsi2 = 0.5 * self.likelihood.precision * self.D * self.Kmmi # dB
+            self.dL_dpsi2 += - 0.5 * self.likelihood.precision/sf2 * self.D * self.C # dC
+            self.dL_dpsi2 += - 0.5 * self.likelihood.precision * self.E # dD
+            #repeat for each of the N psi_2 matrices
+            self.dL_dpsi2 = np.repeat(self.dL_dpsi2[None,:,:],self.N,axis=0)
 
         # Compute dL_dKmm
         self.dL_dKmm = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi)*sf2 # dB

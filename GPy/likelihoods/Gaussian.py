@@ -19,12 +19,12 @@ class Gaussian(likelihood):
             self._std = np.ones((1,D))
             self.Y = self.data
 
-        # if self.D > self.N:
-        self.YYT = np.dot(self.Y,self.Y.T)
-        self.trYYT = np.trace(self.YYT)
-        # else:
-        #     self.YYT = None
-        #     self.trYYT = None
+        if D > self.N:
+            self.YYT = np.dot(self.Y,self.Y.T)
+            self.trYYT = np.trace(self.YYT)
+        else:
+            self.YYT = None
+            self.trYYT = None
 
         self._set_params(np.asarray(variance))
 

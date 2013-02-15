@@ -49,6 +49,9 @@ class sparse_GP(GP):
             self.has_uncertain_inputs=True
             self.X_uncertainty = X_uncertainty
 
+        if not self.likelihood.is_heteroscedastic:
+            self.likelihood.trYYT = np.trace(np.dot(self.likelihood.Y, self.likelihood.Y.T)) # TODO: something more elegant here?
+
         GP.__init__(self, X, likelihood, kernel=kernel, normalize_X=normalize_X, Xslices=Xslices)
 
         #normalise X uncertainty also

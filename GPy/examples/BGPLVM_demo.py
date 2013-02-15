@@ -6,8 +6,8 @@ import pylab as pb
 import GPy
 np.random.seed(123344)
 
-N = 3
-M = 2
+N = 10
+M = 3
 Q = 2
 D = 4
 #generate GPLVM-like data
@@ -16,7 +16,7 @@ k = GPy.kern.rbf(Q) + GPy.kern.white(Q, 0.00001)
 K = k.K(X)
 Y = np.random.multivariate_normal(np.zeros(N),K,D).T
 
-k = GPy.kern.bias(Q) #+ GPy.kern.white(Q)
+k = GPy.kern.linear(Q, ARD = True) + GPy.kern.white(Q)
 # k = GPy.kern.rbf(Q) + GPy.kern.rbf(Q) + GPy.kern.white(Q)
 # k = GPy.kern.rbf(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
 # k = GPy.kern.rbf(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)

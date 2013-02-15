@@ -155,21 +155,20 @@ class rbf(kernpart):
         self._psi_computations(Z,mu,S)
         d_var = 2.*self._psi2/self.variance
         d_length = self._psi2[:,:,:,None]*(0.5*self._psi2_Zdist_sq*self._psi2_denom + 2.*self._psi2_mudist_sq + 2.*S[:,None,None,:]/self.lengthscale2)/(self.lengthscale*self._psi2_denom)
-        d_length = d_length.sum(0)
+
         target[0] += np.sum(partial*d_var)
         dpsi2_dlength = d_length*partial[:,:,:,None]
         if not self.ARD:
             target[1] += dpsi2_dlength.sum()
         else:
             target[1:] += dpsi2_dlength.sum(0).sum(0).sum(0)
-
+            
     def dpsi2_dZ(self,partial,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
         term1 = 0.5*self._psi2_Zdist/self.lengthscale2 # M, M, Q
         term2 = self._psi2_mudist/self._psi2_denom/self.lengthscale2 # N, M, M, Q
         dZ = self._psi2[:,:,:,None] * (term1[None] + term2)
-        target += (partial[:,:,:,None]*dZ).sum(0).sum(0) # <----------------- TODO not sure about the first ':' here, should be a None (WAS a none in the debug branch)
-
+        target += (partial[:,:,:,None]*dZ).sum(0).sum(0)
 
     def dpsi2_dmuS(self,partial,Z,mu,S,target_mu,target_S):
         """Think N,M,M,Q """

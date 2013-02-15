@@ -90,22 +90,19 @@ class linear(kernpart):
 
     def psi0(self,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
-        target += np.sum(self.variances*self.mu2_S)
+        target += np.sum(self.variances*self.mu2_S,1)
 
     def dpsi0_dtheta(self,partial,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
-        tmp = (partial[:, None] * (np.sum(self.mu2_S,0)))
+        tmp = partial[:, None] * self.mu2_S
         if self.ARD:
             target += tmp.sum(0)
         else:
             target += tmp.sum()
 
     def dpsi0_dmuS(self,partial, Z,mu,S,target_mu,target_S):
-        target_mu += np.sum(partial[:, None],0) * (2.0*mu*self.variances)
-        target_S += np.sum(partial[:, None] * self.variances, 0)
-
-    def dpsi0_dZ(self,Z,mu,S,target):
-        pass
+        target_mu += partial[:, None] * (2.0*mu*self.variances)
+        target_S += partial[:, None] * self.variances
 
     def psi1(self,Z,mu,S,target):
         """the variance, it does nothing"""
@@ -149,7 +146,7 @@ class linear(kernpart):
     def dpsi2_dZ(self,partial,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
         mu2_S = np.sum(self.mu2_S,0)# Q,
-        target += (partial[:,:,:,None]* (Z * mu2_S * np.square(self.variances))).sum(0).sum(1)
+        target += (partial[:,:,:,None] * (self.mu2_S[:,None,None,:]*(Z*np.square(self.variances)[None,:])[None,None,:,:])).sum(0).sum(1)
 
     #---------------------------------------#
     #            Precomputations            #

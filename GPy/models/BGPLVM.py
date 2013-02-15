@@ -22,8 +22,9 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, Y, Q, init='PCA', M=10, Z=None, kernel=None, **kwargs):
-        X = self.initialise_latent(init, Q, Y)
+    def __init__(self, Y, Q, X = None, init='PCA', M=10, Z=None, kernel=None, **kwargs):
+        if X == None:
+            X = self.initialise_latent(init, Q, Y)
 
         if Z is None:
             Z = np.random.permutation(X.copy())[:M]
@@ -70,4 +71,3 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 
     def _log_likelihood_gradients(self):
         return np.hstack((self.dL_dmuS().flatten(), sparse_GP._log_likelihood_gradients(self)))
-

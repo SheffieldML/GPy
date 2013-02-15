@@ -198,8 +198,9 @@ class opt_SGD(Optimizer):
             for j in features:
                 count += 1
                 self.model.D = len(j)
+                self.model.likelihood.D = self.model.D
                 self.model.likelihood.Y = Y[:, j]
-                # self.model.trYYT = np.sum(np.square(self.model.Y))
+                self.model.likelihood.YYT = np.dot(self.model.likelihood.Y, self.model.likelihood.Y.T)
                 if missing_data or sparse_matrix:
                     shapes = self.get_param_shapes(N, Q)
                     f, step, Nj = self.step_with_missing_data(f_fp, X, step, shapes, sparse_matrix)
@@ -216,8 +217,8 @@ class opt_SGD(Optimizer):
 
                     # TODO: remove this, it's only for debugging
                     if self.model.__class__.__name__ == 'Bayesian_GPLVM':
-                        beta = np.exp(self.x_opt)[-8]
-                        status = "evaluating {feature: 5d}/{tot: 5d} \t f: {f: 2.3f} \t non-missing: {nm: 4d} \t inv_bbeta: {beta: 1.5f}\r".format(feature = count, tot = len(features), f = f, nm = Nj, beta = 1./beta)
+                        beta = np.exp(self.x_opt)[-1]
+                        status = "evaluating {feature: 5d}/{tot: 5d} \t f: {f: 2.3f} \t non-missing: {nm: 4d} \t inv_bbeta: {beta: 1.5f}\r".format(feature = count, tot = len(features), f = f, nm = Nj, beta = beta)
 
                     sys.stdout.write(status)
                     sys.stdout.flush()
@@ -228,10 +229,12 @@ class opt_SGD(Optimizer):
             # should really be a sum(), but earlier samples in the iteration will have a very crappy ll
             self.f_opt = np.mean(NLL)
             self.model.N = N
-            self.model.likelihood.N = N
-            self.model.likelihood.Y = Y
             self.model.X = X
             self.model.D = D
+            self.model.likelihood.N = N
+            self.model.likelihood.N = N
+            self.model.likelihood.D = D
+
             # self.model.Youter = np.dot(Y, Y.T)
             self.trace.append(self.f_opt)
             if self.messages != 0:

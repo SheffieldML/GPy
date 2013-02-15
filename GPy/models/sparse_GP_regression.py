@@ -6,7 +6,7 @@ import numpy as np
 from sparse_GP import sparse_GP
 from .. import likelihoods
 from .. import kern
-from ..inference.likelihoods import likelihood
+from ..likelihoods import likelihood
 from GP_regression import GP_regression
 
 class sparse_GP_regression(sparse_GP):

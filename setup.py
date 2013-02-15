@@ -3,7 +3,7 @@
 
 import os
 from numpy.distutils.core import Extension, setup
-from sphinx.setup_command import BuildDoc
+#from sphinx.setup_command import BuildDoc
 
 # Version number
 version = '0.1.3'
@@ -19,7 +19,7 @@ setup(name = 'GPy',
       license = "BSD 3-clause",
       keywords = "machine-learning gaussian-processes kernels",
       url = "http://ml.sheffield.ac.uk/GPy/",
-      packages = ['GPy', 'GPy.core', 'GPy.kern', 'GPy.util', 'GPy.models', 'GPy.inference', 'GPy.examples'],
+      packages = ['GPy', 'GPy.core', 'GPy.kern', 'GPy.util', 'GPy.models', 'GPy.inference', 'GPy.examples', 'GPy.likelihoods'],
       package_dir={'GPy': 'GPy'},
       package_data = {'GPy': ['GPy/examples']},
       py_modules = ['GPy.__init__'],
@@ -27,8 +27,11 @@ setup(name = 'GPy',
       #ext_modules =  [Extension(name = 'GPy.kern.lfmUpsilonf2py',
       #          sources = ['GPy/kern/src/lfmUpsilonf2py.f90'])],
       install_requires=['sympy', 'numpy>=1.6', 'scipy>=0.9','matplotlib>=1.1'],
-      setup_requires=['sphinx'],
-      cmdclass = {'build_sphinx': BuildDoc},
+      extras_require = {
+        'docs':['Sphinx', 'ipython'],
+      },
+      #setup_requires=['sphinx'],
+      #cmdclass = {'build_sphinx': BuildDoc},
       classifiers=[
       "Development Status :: 1 - Alpha",
       "Topic :: Machine Learning",

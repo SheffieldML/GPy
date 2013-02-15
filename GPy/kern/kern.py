@@ -6,7 +6,7 @@ import numpy as np
 from ..core.parameterised import parameterised
 from kernpart import kernpart
 import itertools
-from product_orthogonal import product_orthogonal
+from product_orthogonal import product_orthogonal 
 
 class kern(parameterised):
     def __init__(self,D,parts=[], input_slices=None):
@@ -155,7 +155,7 @@ class kern(parameterised):
 
         D = K1.D + K2.D
 
-        newkernparts = [product_orthogonal(k1,k2).parts[0] for k1, k2 in itertools.product(K1.parts,K2.parts)]
+        newkernparts = [product_orthogonal(k1,k2) for k1, k2 in itertools.product(K1.parts,K2.parts)]
 
         slices = []
         for sl1, sl2 in itertools.product(K1.input_slices,K2.input_slices):
@@ -235,6 +235,8 @@ class kern(parameterised):
             X2 = X
         target = np.zeros(self.Nparam)
         [p.dK_dtheta(partial[s1,s2],X[s1,i_s],X2[s2,i_s],target[ps]) for p,i_s,ps,s1,s2 in zip(self.parts, self.input_slices, self.param_slices, slices1, slices2)]
+
+	#TODO: transform the gradients here!
         return target
 
     def dK_dX(self,partial,X,X2=None,slices1=None,slices2=None):
@@ -322,6 +324,7 @@ class kern(parameterised):
         target = np.zeros((mu.shape[0],Z.shape[0],Z.shape[0]))
         slices1, slices2 = self._process_slices(slices1,slices2)
         [p.psi2(Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s1,s2,s2]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
+
 
 
         # "crossterms". Here we are recomputing psi1 for white (we don't need to), but it's

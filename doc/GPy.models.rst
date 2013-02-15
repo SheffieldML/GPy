@@ -17,18 +17,18 @@ models Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`GPLVM` Module
--------------------
+:mod:`GP` Module
+----------------
 
-.. automodule:: GPy.models.GPLVM
+.. automodule:: GPy.models.GP
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`GP_EP` Module
+:mod:`GPLVM` Module
 -------------------
 
-.. automodule:: GPy.models.GP_EP
+.. automodule:: GPy.models.GPLVM
     :members:
     :undoc-members:
     :show-inheritance:
@@ -41,10 +41,10 @@ models Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`generalized_FITC` Module
-------------------------------
+:mod:`sparse_GP` Module
+-----------------------
 
-.. automodule:: GPy.models.generalized_FITC
+.. automodule:: GPy.models.sparse_GP
     :members:
     :undoc-members:
     :show-inheritance:

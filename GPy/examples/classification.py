@@ -3,16 +3,15 @@
 
 
 """
-Simple Gaussian Processes classification
+Gaussian Processes classification
 """
 import pylab as pb
 import numpy as np
 import GPy
 
 default_seed=10000
-######################################
-## 2 dimensional example
-def crescent_data(model_type='Full', inducing=10, seed=default_seed):
+
+def crescent_data(model_type='Full', inducing=10, seed=default_seed): #FIXME
     """Run a Gaussian process classification on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
 
     :param model_type: type of model to fit ['Full', 'FITC', 'DTC'].
@@ -21,20 +20,28 @@ def crescent_data(model_type='Full', inducing=10, seed=default_seed):
     :param inducing : number of inducing variables (only used for 'FITC' or 'DTC').
     :type inducing: int
     """
+
     data = GPy.util.datasets.crescent_data(seed=seed)
-    likelihood = GPy.inference.likelihoods.probit(data['Y'])
+
+    # Kernel object
+    kernel = GPy.kern.rbf(data['X'].shape[1])
+
+    # Likelihood object
+    distribution = GPy.likelihoods.likelihood_functions.probit()
+    likelihood = GPy.likelihoods.EP(data['Y'],distribution)
+
 
     if model_type=='Full':
-        m = GPy.models.GP_EP(data['X'],likelihood)
+        m = GPy.models.GP(data['X'],likelihood,kernel)
     else:
         # create sparse GP EP model
         m = GPy.models.sparse_GP_EP(data['X'],likelihood=likelihood,inducing=inducing,ep_proxy=model_type)
 
-    m.approximate_likelihood()
+    m.update_likelihood_approximation()
     print(m)
 
     # optimize
-    m.em()
+    m.optimize()
     print(m)
 
     # plot
@@ -42,54 +49,67 @@ def crescent_data(model_type='Full', inducing=10, seed=default_seed):
     return m
 
 def oil():
-    """Run a Gaussian process classification on the oil data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood."""
+    """
+    Run a Gaussian process classification on the oil data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
+    """
     data = GPy.util.datasets.oil()
-    likelihood = GPy.inference.likelihoods.probit(data['Y'][:, 0:1])
+    # Kernel object
+    kernel = GPy.kern.rbf(12)
 
-    # create simple GP model
-    m = GPy.models.GP_EP(data['X'],likelihood)
+    # Likelihood object
+    distribution = GPy.likelihoods.likelihood_functions.probit()
+    likelihood = GPy.likelihoods.EP(data['Y'][:, 0:1],distribution)
 
-    # contrain all parameters to be positive
+    # Create GP model
+    m = GPy.models.GP(data['X'],likelihood=likelihood,kernel=kernel)
+
+    # Contrain all parameters to be positive
     m.constrain_positive('')
     m.tie_param('lengthscale')
-    m.approximate_likelihood()
+    m.update_likelihood_approximation()
 
-    # optimize
+    # Optimize
     m.optimize()
 
-    # plot
-    #m.plot()
     print(m)
     return m
 
-def toy_linear_1d_classification(model_type='Full', inducing=4, seed=default_seed):
-    """Simple 1D classification example.
-    :param model_type: type of model to fit ['Full', 'FITC', 'DTC'].
+def toy_linear_1d_classification(seed=default_seed):
+    """
+    Simple 1D classification example
     :param seed : seed value for data generation (default is 4).
     :type seed: int
-    :param inducing : number of inducing variables (only used for 'FITC' or 'DTC').
-    :type inducing: int
     """
+
     data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
-    likelihood = GPy.inference.likelihoods.probit(data['Y'][:, 0:1])
-    assert model_type in ('Full','DTC','FITC')
+    Y = data['Y'][:, 0:1]
+    Y[Y == -1] = 0
 
-    # create simple GP model
-    if model_type=='Full':
-        m = GPy.models.simple_GP_EP(data['X'],likelihood)
-    else:
-        # create sparse GP EP model
-        m = GPy.models.sparse_GP_EP(data['X'],likelihood=likelihood,inducing=inducing,ep_proxy=model_type)
-            
+    # Kernel object
+    kernel = GPy.kern.rbf(1)
 
-    m.constrain_positive('var')
-    m.constrain_positive('len')
-    m.tie_param('lengthscale')
-    m.approximate_likelihood()
+    # Likelihood object
+    distribution = GPy.likelihoods.likelihood_functions.probit()
+    likelihood = GPy.likelihoods.EP(Y,distribution)
 
-    # Optimize and plot
-    m.em(plot_all=False) # EM algorithm
+    # Model definition
+    m = GPy.models.GP(data['X'],likelihood=likelihood,kernel=kernel)
+
+    # Optimize
+    """
+    EPEM runs a loop that consists of two steps:
+    1) EP likelihood approximation:
+        m.update_likelihood_approximation()
+    2) Parameters optimization:
+        m.optimize()
+    """
+    m.EPEM()
+
+    # Plot
+    pb.subplot(211)
+    m.plot_f()
+    pb.subplot(212)
     m.plot()
-
     print(m)
+
     return m

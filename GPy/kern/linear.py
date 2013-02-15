@@ -15,34 +15,33 @@ class linear(kernpart):
     :param D: the number of input dimensions
     :type D: int
     :param variances: the vector of variances :math:`\sigma^2_i`
-    :type variances: np.ndarray of size (1,) or (D,) depending on ARD
-    :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one single variance parameter \sigma^2), otherwise there is one variance parameter per dimension.
+    :type variances: array or list of the appropriate size (or float if there is only one variance parameter)
+    :param ARD: Auto Relevance Determination. If equal to "False", the kernel has only one variance parameter \sigma^2, otherwise there is one variance parameter per dimension.
     :type ARD: Boolean
     :rtype: kernel object
     """
 
-    def __init__(self,D,variances=None,ARD=True):
+    def __init__(self,D,variances=None,ARD=False):
         self.D = D
         self.ARD = ARD
         if ARD == False:
             self.Nparam = 1
             self.name = 'linear'
             if variances is not None:
-                if isinstance(variances, float):
-                    variances = np.array([variances])
-
-                assert variances.shape == (1,)
+                variances = np.asarray(variances)
+                assert variances.size == 1, "Only one variance needed for non-ARD kernel"
             else:
                 variances = np.ones(1)
             self._Xcache, self._X2cache = np.empty(shape=(2,))
         else:
             self.Nparam = self.D
-            self.name = 'linear_ARD'
+            self.name = 'linear'
             if variances is not None:
-                assert variances.shape == (self.D,)
+                variances = np.asarray(variances)
+                assert variances.size == self.D, "bad number of lengthscales"
             else:
                 variances = np.ones(self.D)
-        self._set_params(variances)
+        self._set_params(variances.flatten())
 
         #initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3,1))

@@ -28,7 +28,7 @@ class sparse_GPLVM(sparse_GP_regression, GPLVM):
         sparse_GP_regression.__init__(self, X, Y, **kwargs)
 
     def _get_param_names(self):
-        return (sum([['X_%i_%i'%(n,q) for n in range(self.N)] for q in range(self.Q)],[])
+        return (sum([['X_%i_%i'%(n,q) for q in range(self.Q)] for n in range(self.N)],[])
                 + sparse_GP_regression._get_param_names(self))
 
     def _get_params(self):

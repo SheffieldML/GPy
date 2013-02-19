@@ -40,8 +40,8 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         sparse_GP.__init__(self, X, Gaussian(Y), kernel, Z=Z, X_uncertainty=S, **kwargs)
 
     def _get_param_names(self):
-        X_names = sum([['X_%i_%i'%(n,q) for n in range(self.N)] for q in range(self.Q)],[])
-        S_names = sum([['S_%i_%i'%(n,q) for n in range(self.N)] for q in range(self.Q)],[])
+        X_names = sum([['X_%i_%i'%(n,q) for q in range(self.Q)] for n in range(self.N)],[])
+        S_names = sum([['S_%i_%i'%(n,q) for q in range(self.Q)] for n in range(self.N)],[])
         return (X_names + S_names + sparse_GP._get_param_names(self))
 
     def _get_params(self):

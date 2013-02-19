@@ -38,7 +38,7 @@ class GPLVM(GP):
             return np.random.randn(Y.shape[0], Q)
 
     def _get_param_names(self):
-        return sum([['X_%i_%i'%(n,q) for n in range(self.N)] for q in range(self.Q)],[]) + GP._get_param_names(self)
+        return sum([['X_%i_%i'%(n,q) for q in range(self.Q)] for n in range(self.N)],[]) + GP._get_param_names(self)
 
     def _get_params(self):
         return np.hstack((self.X.flatten(), GP._get_params(self)))

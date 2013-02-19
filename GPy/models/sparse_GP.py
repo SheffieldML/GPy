@@ -148,7 +148,7 @@ class sparse_GP(GP):
         return np.hstack([self.Z.flatten(),GP._get_params(self)])
 
     def _get_param_names(self):
-        return sum([['iip_%i_%i'%(i,j) for i in range(self.Z.shape[0])] for j in range(self.Z.shape[1])],[]) + GP._get_param_names(self)
+        return sum([['iip_%i_%i'%(i,j) for j in range(self.Z.shape[1])] for i in range(self.Z.shape[0])],[]) + GP._get_param_names(self)
 
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """

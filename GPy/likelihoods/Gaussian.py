@@ -6,14 +6,15 @@ class Gaussian(likelihood):
         self.is_heteroscedastic = False
         self.Nparams = 1
         self.Z = 0. # a correction factor which accounts for the approximation made
+        N, self.D = data.shape
 
         #normalisation
         if normalize:
             self._mean = data.mean(0)[None,:]
             self._std = data.std(0)[None,:]
         else:
-            self._mean = np.zeros((1,D))
-            self._std = np.ones((1,D))
+            self._mean = np.zeros((1,self.D))
+            self._std = np.ones((1,self.D))
 
         self.set_data(data)
 
@@ -22,6 +23,7 @@ class Gaussian(likelihood):
     def set_data(self,data):
         self.data = data
         self.N,D = data.shape
+        assert D == self.D
         self.Y = (self.data - self._mean)/self._std
         if D > self.N:
             self.YYT = np.dot(self.Y,self.Y.T)

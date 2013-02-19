@@ -9,5 +9,5 @@ from sparse_GP_regression import sparse_GP_regression
 from GPLVM import GPLVM
 from warped_GP import warpedGP
 from sparse_GPLVM import sparse_GPLVM
-#from uncollapsed_sparse_GP import uncollapsed_sparse_GP
+from uncollapsed_sparse_GP import uncollapsed_sparse_GP
 from BGPLVM import Bayesian_GPLVM

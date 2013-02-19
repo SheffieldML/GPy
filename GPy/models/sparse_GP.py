@@ -176,7 +176,11 @@ class sparse_GP(GP):
             dL_dtheta += self.kern.dpsi2_dtheta(self.dL_dpsi2,self.dL_dpsi1.T, self.Z,self.X, self.X_uncertainty)
         else:
             #re-cast computations in psi2 back to psi1:
-            dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2.sum(0),self.psi1)
+            #dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2.sum(0),self.psi1)
+            if not self.likelihood.is_heteroscedastic:
+                dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2[0,:,:],self.psi1)
+            else:
+                raise NotImplementedError, "TODO"
             dL_dtheta += self.kern.dK_dtheta(dL_dpsi1,self.Z,self.X)
             dL_dtheta += self.kern.dKdiag_dtheta(self.dL_dpsi0, self.X)
 
@@ -192,7 +196,10 @@ class sparse_GP(GP):
             dL_dZ += 2.*self.kern.dpsi2_dZ(self.dL_dpsi2,self.Z,self.X, self.X_uncertainty) # 'stripes'
         else:
             #re-cast computations in psi2 back to psi1:
-            dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2.sum(0),self.psi1)
+            if not self.likelihood.is_heteroscedastic:
+                dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2[0,:,:],self.psi1)
+            else:
+                raise NotImplementedError, "TODO"
             dL_dZ += self.kern.dK_dX(dL_dpsi1,self.Z,self.X)
         return dL_dZ
 

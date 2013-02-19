@@ -4,19 +4,17 @@
 import numpy as np
 import pylab as pb
 from ..util.linalg import mdot, jitchol, chol_inv, pdinv
-from ..util.plot import gpplot
 from .. import kern
 from ..likelihoods import likelihood
-from sparse_GP_regression import sparse_GP_regression
+from sparse_GP import sparse_GP
 
-class uncollapsed_sparse_GP(sparse_GP_regression):
+class uncollapsed_sparse_GP(sparse_GP):
     """
     Variational sparse GP model (Regression), where the approximating distribution q(u) is represented explicitly
 
     :param X: inputs
     :type X: np.ndarray (N x Q)
-    :param Y: observed data
-    :type Y: np.ndarray of observations (N x D)
+    :param likelihood: GPy likelihood class, containing observed data
     :param q_u: canonical parameters of the distribution squasehd into a 1D array
     :type q_u: np.ndarray
     :param kernel : the kernel/covariance function. See link kernels
@@ -24,29 +22,35 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
     :param Z: inducing inputs (optional, see note)
     :type Z: np.ndarray (M x Q) | None
     :param Zslices: slices for the inducing inputs (see slicing TODO: link)
-    :param M : Number of inducing points (optional, default 10. Ignored if Z is not None)
-    :type M: int
-    :param beta: noise precision. TODO> ignore beta if doing EP
-    :type beta: float
-    :param normalize_(X|Y) : whether to normalize the data before computing (predictions will be in original scales)
-    :type normalize_(X|Y): bool
+    :param normalize_X : whether to normalize the data before computing (predictions will be in original scales)
+    :type normalize_X: bool
     """
 
-    def __init__(self, X, Y, q_u=None, M=10, *args, **kwargs):
+    def __init__(self, X, likelihood, kernel, Z, q_u=None, **kwargs):
         self.D = Y.shape[1]
+        self.M = kwargs['Z'].shape[0]
         if q_u is None:
-            if 'Z' in kwargs.keys():
-                print kwargs['Z']
-                self.M = kwargs['Z'].shape[0]
-                print self.M
-            else:
-                self.M = M
             q_u = np.hstack((np.random.randn(self.M*self.D),-0.5*np.eye(self.M).flatten()))
         self.set_vb_param(q_u)
-        sparse_GP_regression.__init__(self, X, Y, M=self.M,*args, **kwargs)
+        sparse_GP.__init__(self, X, likelihood, kernel, Z, **kwargs)
 
     def _computations(self):
-        self.V = self.beta*self.Y
+        # kernel computations, using BGPLVM notation
+        self.Kmm = self.kern.K(self.Z)
+        if self.has_uncertain_inputs:
+            raise NotImplementedError
+        else:
+            self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices)
+            self.psi1 = self.kern.K(self.Z,self.X)
+            if self.likelihood.is_heteroscedastic:
+                raise NotImplementedError
+            else:
+                tmp = self.psi1*(np.sqrt(self.likelihood.precision)/sf)
+            self.psi2_beta_scaled = np.dot(tmp,tmp.T)
+            self.psi2 = self.psi1.T[:,:,None]*self.psi1.T[:,None,:]
+
+
+        self.V = self.likelihood.precision*self.Y
         self.VmT = np.dot(self.V,self.q_u_expectation[0].T)
         self.psi1V = np.dot(self.psi1, self.V)
         self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
@@ -68,6 +72,15 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         tmp += self.D*(-self.beta*self.psi2 - self.Kmm + self.q_u_expectation[1])
         self.dL_dKmm = 0.5*mdot(self.Kmmi,tmp,self.Kmmi)
 
+        #Compute the gradient of the log likelihood wrt noise variance
+        #TODO: suport heteroscedatic noise
+        dbeta =   0.5 * self.N*self.D/self.beta
+        dbeta += - 0.5 * self.D * self.trace_K
+        dbeta += - 0.5 * self.D * np.sum(self.q_u_expectation[1]*mdot(self.Kmmi,self.psi2,self.Kmmi))
+        dbeta += - 0.5 * self.trYYT
+        dbeta += np.sum(np.dot(self.Y.T,self.projected_mean))
+        self.partial_for_likelihood = -dbeta*self.likelihood.precision**2
+
     def log_likelihood(self):
         """
         Compute the (lower bound on the) log marginal likelihood
@@ -78,19 +91,6 @@ class uncollapsed_sparse_GP(sparse_GP_regression):
         D = -0.5*self.beta*self.trYYT
         E = np.sum(np.dot(self.V.T,self.projected_mean))
         return A+B+C+D+E
-
-    def dL_dbeta(self):
-        """
-        Compute the gradient of the log likelihood wrt beta.
-        TODO: suport heteroscedatic noise
-        """
-        dA_dbeta =   0.5 * self.N*self.D/self.beta
-        dB_dbeta = - 0.5 * self.D * self.trace_K
-        dC_dbeta = - 0.5 * self.D * np.sum(self.q_u_expectation[1]*mdot(self.Kmmi,self.psi2,self.Kmmi))
-        dD_dbeta = - 0.5 * self.trYYT
-        dE_dbeta = np.sum(np.dot(self.Y.T,self.projected_mean))
-
-        return np.squeeze(dA_dbeta + dB_dbeta + dC_dbeta + dD_dbeta + dE_dbeta)
 
     def _raw_predict(self, Xnew, slices,full_cov=False):
         """Internal helper function for making predictions, does not account for normalisation"""

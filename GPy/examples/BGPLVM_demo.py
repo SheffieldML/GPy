@@ -8,21 +8,19 @@ np.random.seed(123344)
 
 N = 10
 M = 3
-Q = 4
-D = 5
+Q = 2
+D = 4
 #generate GPLVM-like data
 X = np.random.rand(N, Q)
 k = GPy.kern.rbf(Q) + GPy.kern.white(Q, 0.00001)
 K = k.K(X)
 Y = np.random.multivariate_normal(np.zeros(N),K,D).T
 
-<<<<<<< HEAD
-k = GPy.kern.rbf(Q) + GPy.kern.rbf(Q) + GPy.kern.white(Q)
-# k = GPy.kern.linear(Q, ARD = True)  + GPy.kern.white(Q, 0.00001)
-=======
+k = GPy.kern.linear(Q, ARD = True) + GPy.kern.white(Q)
+# k = GPy.kern.rbf(Q) + GPy.kern.rbf(Q) + GPy.kern.white(Q)
 # k = GPy.kern.rbf(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
-k = GPy.kern.rbf(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)
->>>>>>> master
+# k = GPy.kern.rbf(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)
+
 m = GPy.models.Bayesian_GPLVM(Y, Q, kernel = k,  M=M)
 m.constrain_positive('(rbf|bias|noise|white|S)')
 # m.constrain_fixed('S', 1)

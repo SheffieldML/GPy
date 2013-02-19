@@ -34,7 +34,7 @@ class sparse_GP(GP):
     """
 
     def __init__(self, X, likelihood, kernel, Z, X_uncertainty=None, Xslices=None,Zslices=None, normalize_X=False):
-        self.scale_factor = 1.0# a scaling factor to help keep the algorithm stable
+        self.scale_factor = 100.0# a scaling factor to help keep the algorithm stable
 
         self.Z = Z
         self.Zslices = Zslices

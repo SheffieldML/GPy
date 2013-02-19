@@ -32,7 +32,7 @@ Y -= Y.mean(axis=0)
 # Y /= Y.std(axis=0)
 
 Q = 5
-k = GPy.kern.linear(Q, ARD = False) + GPy.kern.white(Q)
+k = GPy.kern.linear(Q, ARD = True) + GPy.kern.white(Q)
 m = GPy.models.Bayesian_GPLVM(Y, Q, kernel = k, M = 20)
 m.constrain_positive('(rbf|bias|S|linear|white|noise)')
 
@@ -43,7 +43,7 @@ m.constrain_positive('(rbf|bias|S|linear|white|noise)')
 # plot_oil(m.X, np.array([1,1]), labels, 'PCA initialization')
 m.optimize(messages = True)
 # m.optimize('tnc', messages = True)
-plot_oil(m.X, m.kern.parts[0].lengthscale, labels, 'B-GPLVM')
+# plot_oil(m.X, m.kern.parts[0].lengthscale, labels, 'B-GPLVM')
 # # pb.figure()
 # m.plot()
 # pb.title('PCA initialisation')

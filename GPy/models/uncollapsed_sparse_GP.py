@@ -134,7 +134,6 @@ class uncollapsed_sparse_GP(sparse_GP):
         """
         dL_dmmT_S = -0.5*self.Lambda-self.q_u_canonical[1]
         dL_dm = np.dot(self.Kmmi,self.psi1V) - np.dot(self.Lambda,self.q_u_mean)
-        #dL_dm = np.dot(self.Kmmi,self.psi1V) - self.q_u_canonical[0]
 
         #dL_dSim =
         #dL_dmhSi =

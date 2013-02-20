@@ -36,7 +36,7 @@ class Gaussian(likelihood):
         return np.asarray(self._variance)
 
     def _get_param_names(self):
-        return ["noise variance"]
+        return ["noise_variance"]
 
     def _set_params(self,x):
         self._variance = float(x)

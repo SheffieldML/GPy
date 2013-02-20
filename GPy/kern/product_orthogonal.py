@@ -4,7 +4,7 @@
 from kernpart import kernpart
 import numpy as np
 import hashlib
-from scipy import integrate
+#from scipy import integrate # This may not be necessary (Nicolas, 20th Feb)
 
 class product_orthogonal(kernpart):
     """
@@ -16,13 +16,12 @@ class product_orthogonal(kernpart):
 
     """
     def __init__(self,k1,k2):
-        assert k1._get_param_names()[0] == 'variance' and k2._get_param_names()[0] == 'variance', "Error: The multipication of kernels is only defined when the first parameters of the kernels to multiply is the variance."
         self.D = k1.D + k2.D
-        self.Nparam = k1.Nparam + k2.Nparam - 1
+        self.Nparam = k1.Nparam + k2.Nparam
         self.name = k1.name + '<times>' + k2.name
         self.k1 = k1
         self.k2 = k2
-        self._set_params(np.hstack((k1._get_params()[0]*k2._get_params()[0], k1._get_params()[1:],k2._get_params()[1:])))
+        self._set_params(np.hstack((k1._get_params(),k2._get_params())))
 
     def _get_params(self):
         """return the value of the parameters."""
@@ -30,14 +29,14 @@ class product_orthogonal(kernpart):
 
     def _set_params(self,x):
         """set the value of the parameters."""
-        self.k1._set_params(np.hstack((1.,x[1:self.k1.Nparam])))
-        self.k2._set_params(np.hstack((1.,x[self.k1.Nparam:])))
+        self.k1._set_params(x[:self.k1.Nparam])
+        self.k2._set_params(x[self.k1.Nparam:])
         self.params = x
 
     def _get_param_names(self):
         """return parameter names."""
-        return ['variance']+[self.k1.name + '_' + self.k1._get_param_names()[i+1] for i in range(self.k1.Nparam-1)] +  [self.k2.name + '_' + self.k2._get_param_names()[i+1] for i in range(self.k2.Nparam-1)]
-
+        return [self.k1.name + '_' + param_name for param_name in self.k1._get_param_names()] + [self.k2.name + '_' + param_name for param_name in self.k1._get_param_names()]
+    
     def K(self,X,X2,target):
         """Compute the covariance matrix between X and X2."""
         if X2 is None: X2 = X
@@ -71,7 +70,7 @@ class product_orthogonal(kernpart):
         target[0] += np.sum(K1*K2*partial)
         target[1:self.k1.Nparam] += self.params[0]* k1_target[1:]
         target[self.k1.Nparam:] += self.params[0]* k2_target[1:]
-        
+
     def dKdiag_dtheta(self,partial,X,target):
         """derivative of the diagonal of the covariance matrix with respect to the parameters."""
         target[0] += 1

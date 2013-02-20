@@ -310,7 +310,7 @@ class model(parameterised):
         return '\n'.join(s)
 
 
-    def checkgrad(self, verbose=False, include_priors=False, step=1e-6, tolerance = 1e-3):
+    def checkgrad(self, target_param = None, verbose=False, step=1e-6, tolerance = 1e-3):
         """
         Check the gradient of the model by comparing to a numerical estimate.
         If the verbose flag is passed, invividual components are tested (and printed)
@@ -367,7 +367,12 @@ class model(parameterised):
             separator = '-'*len(header_string[0])
             print '\n'.join([header_string[0], separator])
 
-            for i in range(len(x)):
+            if target_param is None:
+                param_list = range(len(x))
+            else:
+                param_list = self.grep_param_names(target_param)
+                
+            for i in param_list:
                 xx = x.copy()
                 xx[i] += step
                 self._set_params_transformed(xx)

@@ -333,8 +333,7 @@ class parameterised(object):
         header_string = ["{h:^{col}}".format(h = header[i], col = cols[i]) for i in range(len(cols))]
         header_string = map(lambda x: '|'.join(x), [header_string])
         separator = '-'*len(header_string[0])
-        param_string = ["{n:^{c0}}|{v:^{c1}}|{c:^{c2}}|{t:^{c3}}".format(n = names[i], v = values[i], c = constraints[i], t = ties[i],
-                                                                        c0 = cols[0], c1 = cols[1], c2 = cols[2], c3 = cols[3]) for i in range(len(values))]
+        param_string = ["{n:^{c0}}|{v:^{c1}}|{c:^{c2}}|{t:^{c3}}".format(n = names[i], v = values[i], c = constraints[i], t = ties[i], c0 = cols[0], c1 = cols[1], c2 = cols[2], c3 = cols[3]) for i in range(len(values))]
 
 
         return ('\n'.join([header_string[0], separator]+param_string)) + '\n'

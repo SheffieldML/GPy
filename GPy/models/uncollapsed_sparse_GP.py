@@ -27,10 +27,10 @@ class uncollapsed_sparse_GP(sparse_GP):
     """
 
     def __init__(self, X, likelihood, kernel, Z, q_u=None, **kwargs):
-        self.D = Y.shape[1]
-        self.M = kwargs['Z'].shape[0]
+        self.M = Z.shape[0]
         if q_u is None:
-            q_u = np.hstack((np.random.randn(self.M*self.D),-0.5*np.eye(self.M).flatten()))
+            q_u = np.hstack((np.random.randn(self.M*likelihood.D),-0.5*np.eye(self.M).flatten()))
+            self.likelihood = likelihood
         self.set_vb_param(q_u)
         sparse_GP.__init__(self, X, likelihood, kernel, Z, **kwargs)
 
@@ -62,21 +62,21 @@ class uncollapsed_sparse_GP(sparse_GP):
         self.projected_mean = mdot(self.psi1.T,self.Kmmi,self.q_u_expectation[0])
 
         # Compute dL_dpsi
-        self.dL_dpsi0 = - 0.5 * self.D * self.beta * np.ones(self.N)
+        self.dL_dpsi0 = - 0.5 * self.likelihood.D * self.beta * np.ones(self.N)
         self.dL_dpsi1 = np.dot(self.VmT,self.Kmmi).T # This is the correct term for E I think...
-        self.dL_dpsi2 = 0.5 * self.beta * self.D * (self.Kmmi - mdot(self.Kmmi,self.q_u_expectation[1],self.Kmmi))
+        self.dL_dpsi2 = 0.5 * self.beta * self.likelihood.D * (self.Kmmi - mdot(self.Kmmi,self.q_u_expectation[1],self.Kmmi))
 
         # Compute dL_dKmm
         tmp = self.beta*mdot(self.psi2,self.Kmmi,self.q_u_expectation[1]) -np.dot(self.q_u_expectation[0],self.psi1V.T)
         tmp += tmp.T
-        tmp += self.D*(-self.beta*self.psi2 - self.Kmm + self.q_u_expectation[1])
+        tmp += self.likelihood.D*(-self.beta*self.psi2 - self.Kmm + self.q_u_expectation[1])
         self.dL_dKmm = 0.5*mdot(self.Kmmi,tmp,self.Kmmi)
 
         #Compute the gradient of the log likelihood wrt noise variance
         #TODO: suport heteroscedatic noise
-        dbeta =   0.5 * self.N*self.D/self.beta
-        dbeta += - 0.5 * self.D * self.trace_K
-        dbeta += - 0.5 * self.D * np.sum(self.q_u_expectation[1]*mdot(self.Kmmi,self.psi2,self.Kmmi))
+        dbeta =   0.5 * self.N*self.likelihood.D/self.beta
+        dbeta += - 0.5 * self.likelihood.D * self.trace_K
+        dbeta += - 0.5 * self.likelihood.D * np.sum(self.q_u_expectation[1]*mdot(self.Kmmi,self.psi2,self.Kmmi))
         dbeta += - 0.5 * self.trYYT
         dbeta += np.sum(np.dot(self.Y.T,self.projected_mean))
         self.partial_for_likelihood = -dbeta*self.likelihood.precision**2
@@ -85,9 +85,9 @@ class uncollapsed_sparse_GP(sparse_GP):
         """
         Compute the (lower bound on the) log marginal likelihood
         """
-        A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.beta))
-        B = -0.5*self.beta*self.D*self.trace_K
-        C = -0.5*self.D *(self.Kmm_logdet-self.q_u_logdet + np.sum(self.Lambda * self.q_u_expectation[1]) - self.M)
+        A = -0.5*self.N*self.likelihood.D*(np.log(2.*np.pi) - np.log(self.beta))
+        B = -0.5*self.beta*self.likelihood.D*self.trace_K
+        C = -0.5*self.likelihood.D *(self.Kmm_logdet-self.q_u_logdet + np.sum(self.Lambda * self.q_u_expectation[1]) - self.M)
         D = -0.5*self.beta*self.trYYT
         E = np.sum(np.dot(self.V.T,self.projected_mean))
         return A+B+C+D+E
@@ -100,21 +100,21 @@ class uncollapsed_sparse_GP(sparse_GP):
         tmp = self.Kmmi- mdot(self.Kmmi,self.q_u_cov,self.Kmmi)
         if full_cov:
             Kxx = self.kern.K(Xnew)
-            var = Kxx - mdot(Kx,tmp,Kx.T) + np.eye(Xnew.shape[0])/self.beta
+            var = Kxx - mdot(Kx,tmp,Kx.T)
         else:
             Kxx = self.kern.Kdiag(Xnew)
-            var = Kxx - np.sum(Kx*np.dot(Kx,tmp),1) + 1./self.beta
+            var = (Kxx - np.sum(Kx*np.dot(Kx,tmp),1))[:,None]
         return mu,var
 
 
     def set_vb_param(self,vb_param):
         """set the distribution q(u) from the canonical parameters"""
-        self.q_u_prec = -2.*vb_param[self.M*self.D:].reshape(self.M,self.M)
+        self.q_u_prec = -2.*vb_param[-self.M**2:].reshape(self.M, self.M)
         self.q_u_cov, q_u_Li, q_u_L, tmp = pdinv(self.q_u_prec)
         self.q_u_logdet = -tmp
-        self.q_u_mean = np.dot(self.q_u_cov,vb_param[:self.M*self.D].reshape(self.M,self.D))
+        self.q_u_mean = np.dot(self.q_u_cov,vb_param[:self.M*self.likelihood.D].reshape(self.M,self.likelihood.D))
 
-        self.q_u_expectation = (self.q_u_mean, np.dot(self.q_u_mean,self.q_u_mean.T)+self.q_u_cov)
+        self.q_u_expectation = (self.q_u_mean, np.dot(self.q_u_mean,self.q_u_mean.T)+self.q_u_cov*self.likelihood.D)
 
         self.q_u_canonical = (np.dot(self.q_u_prec, self.q_u_mean),-0.5*self.q_u_prec)
         #TODO: computations now?
@@ -133,8 +133,7 @@ class uncollapsed_sparse_GP(sparse_GP):
         Note that the natural gradient in either is given by the gradient in the other (See Hensman et al 2012 Fast Variational inference in the conjugate exponential Family)
         """
         dL_dmmT_S = -0.5*self.Lambda-self.q_u_canonical[1]
-        #dL_dm = np.dot(self.Kmmi,self.psi1V) - np.dot(self.Lambda,self.q_u_mean)
-        dL_dm = np.dot(self.Kmmi,self.psi1V) - self.q_u_canonical[0]
+        dL_dm = np.dot(self.Kmmi,self.psi1V) - np.dot(self.Lambda,self.q_u_mean)
 
         #dL_dSim =
         #dL_dmhSi =
@@ -144,9 +143,9 @@ class uncollapsed_sparse_GP(sparse_GP):
 
     def plot(self, *args, **kwargs):
         """
-        add the distribution q(u) to the plot from sparse_GP_regression
+        add the distribution q(u) to the plot from sparse_GP
         """
-        sparse_GP_regression.plot(self,*args,**kwargs)
+        sparse_GP.plot(self,*args,**kwargs)
         if self.Q==1:
             pb.errorbar(self.Z[:,0],self.q_u_expectation[0][:,0],yerr=2.*np.sqrt(np.diag(self.q_u_cov)),fmt=None,ecolor='b')
 

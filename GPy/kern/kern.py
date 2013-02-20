@@ -8,6 +8,7 @@ from ..core.parameterised import parameterised
 from kernpart import kernpart
 import itertools
 from product_orthogonal import product_orthogonal
+from product import product
 
 class kern(parameterised):
     def __init__(self,D,parts=[], input_slices=None):
@@ -137,11 +138,33 @@ class kern(parameterised):
         """
         Shortcut for `prod_orthogonal`. Note that `+` assumes that we sum 2 kernels defines on the same space whereas `*` assumes that the kernels are defined on different subspaces.
         """
-        return self.prod_orthogonal(other)
+        return self.prod(other)
+
+    def prod(self,other):
+        """
+        multiply two kernels defined on the same spaces.
+        :param other: the other kernel to be added
+        :type other: GPy.kern
+        """
+        K1 = self.copy()
+        K2 = other.copy()
+
+        newkernparts = [product(k1,k2) for k1, k2 in itertools.product(K1.parts,K2.parts)]
+
+        slices = []
+        for sl1, sl2 in itertools.product(K1.input_slices,K2.input_slices):
+            s1, s2 = [False]*K1.D, [False]*K2.D
+            s1[sl1], s2[sl2] = [True], [True]
+            slices += [s1+s2]
+
+        newkern = kern(K1.D, newkernparts, slices)
+        newkern._follow_constrains(K1,K2)
+
+        return newkern
 
     def prod_orthogonal(self,other):
         """
-        multiply two kernels. Both kernels are defined on separate spaces. Note that the constrains on the parameters of the kernels to multiply will be lost.
+        multiply two kernels. Both kernels are defined on separate spaces.
         :param other: the other kernel to be added
         :type other: GPy.kern
         """
@@ -158,7 +181,7 @@ class kern(parameterised):
 
         newkern = kern(K1.D + K2.D, newkernparts, slices)
         newkern._follow_constrains(K1,K2)
-        
+
         return newkern
 
     def _follow_constrains(self,K1,K2):

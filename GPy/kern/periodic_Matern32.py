@@ -21,13 +21,14 @@ class periodic_Matern32(kernpart):
     """
 
     def __init__(self,D=1,variance=1.,lengthscale=None,period=2*np.pi,n_freq=10,lower=0.,upper=4*np.pi):
-        assert D==1
+        assert D==1, "Periodic kernels are only defined for D=1"
         self.name = 'periodic_Mat32'
         self.D = D
         if lengthscale is not None:
-            assert lengthscale.shape==(self.D,)
+            lengthscale = np.asarray(lengthscale)
+            assert lengthscale.size == 1, "Wrong size: only one lengthscale needed"
         else:
-            lengthscale = np.ones(self.D)
+            lengthscale = np.ones(1)
         self.lower,self.upper = lower, upper
         self.Nparam = 3
         self.n_freq = n_freq

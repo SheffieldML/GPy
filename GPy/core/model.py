@@ -294,8 +294,13 @@ class model(parameterised):
         strs = [str(p) if p is not None else '' for p in self.priors]
         width = np.array(max([len(p) for p in strs] + [5])) + 4
 
-        MLL = self.log_likelihood() + self.log_prior()
-        s[0] = 'Marginal log-likelihood: {0:.3e}\n'.format(MLL) + s[0]
+        log_like = self.log_likelihood()
+        log_prior = self.log_prior()
+        obj_funct = '\nLog-likelihood: {0:.3e}'.format(log_like)
+        if len(''.join(strs)) != 0:
+            obj_funct += ', Log prior: {0:.3e}, LL+prior = {0:.3e}'.format(log_prior, log_like + log_prior)
+        obj_funct += '\n\n'
+        s[0] = obj_funct + s[0]
         s[0] += "|{h:^{col}}".format(h = 'Prior', col = width)
         s[1] += '-'*(width + 1)
 

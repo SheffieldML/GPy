@@ -435,7 +435,7 @@ class kern(parameterised):
             Xnew = np.vstack((xx.flatten(),yy.flatten())).T
             Kx = self.K(Xnew,x,slices2=which_functions)
             Kx = Kx.reshape(resolution,resolution).T
-            pb.contour(xg,yg,Kx,vmin=Kx.min(),vmax=Kx.max(),cmap=pb.cm.jet)
+            pb.contour(xg,yg,Kx,vmin=Kx.min(),vmax=Kx.max(),cmap=pb.cm.jet,*args,**kwargs)
             pb.xlim(xmin[0],xmax[0])
             pb.ylim(xmin[1],xmax[1])
             pb.xlabel("x1")

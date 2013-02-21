@@ -33,7 +33,7 @@ should return::
 
 .. figure::  Figures/tuto_kern_overview_basicplot.png
     :align:   center
-    :height: 350px
+    :height: 300px
 
 Implemented kernels
 ===================
@@ -105,7 +105,7 @@ A shortcut for ``add`` and ``prod`` is provided by the usual ``+`` and ``*`` ope
     Y = np.random.multivariate_normal(np.zeros(501),k.K(X),1)
 
 ..  # plot
-    pb.figure(figsize=(8,4))
+    pb.figure(figsize=(10,4))
     pb.subplot(1,2,1)
     k.plot()
     pb.subplot(1,2,2)
@@ -115,7 +115,7 @@ A shortcut for ``add`` and ``prod`` is provided by the usual ``+`` and ``*`` ope
 
 .. figure::  Figures/tuto_kern_overview_multperdecay.png
     :align:  center
-    :height: 350px
+    :height: 300px
 
 Example : Building an ANOVA kernel
 ==================================
@@ -130,23 +130,27 @@ Let us assume that we want to define an ANOVA kernel with a Matern 3/2 kernel fo
 
     k_cst = GPy.kern.bias(1,variance=1.)
     k_mat = GPy.kern.Matern52(1,variance=1., lengthscale=3)
-    Kanova = (k_cst + k_mat) * (k_cst + k_mat)
+    Kanova = (k_cst + k_mat).prod_orthogonal(k_cst + k_mat)
     print Kanova
 
 Printing the resulting kernel outputs the following ::
 
                      Name                  |  Value   |  Constraints  |  Ties  
     ---------------------------------------------------------------------------
-           bias<times>bias_variance        |  1.0000  |               |        
-           bias<times>Mat52_variance       |  1.0000  |               |        
-      bias<times>Mat52_Mat52_lengthscale   |  3.0000  |               |  (1)   
-           Mat52<times>bias_variance       |  1.0000  |               |        
-      Mat52<times>bias_Mat52_lengthscale   |  3.0000  |               |  (0)   
-          Mat52<times>Mat52_variance       |  1.0000  |               |        
-      Mat52<times>Mat52_Mat52_lengthscale  |  3.0000  |               |  (0)   
-      Mat52<times>Mat52_Mat52_lengthscale  |  3.0000  |               |  (1)
+         bias<times>bias_bias_variance     |  1.0000  |               |  (0)   
+         bias<times>bias_bias_variance     |  1.0000  |               |  (3)   
+        bias<times>Mat52_bias_variance     |  1.0000  |               |  (0)   
+        bias<times>Mat52_Mat52_variance    |  1.0000  |               |  (4)   
+      bias<times>Mat52_Mat52_lengthscale   |  3.0000  |               |  (5)   
+        Mat52<times>bias_Mat52_variance    |  1.0000  |               |  (1)   
+      Mat52<times>bias_Mat52_lengthscale   |  3.0000  |               |  (2)   
+        Mat52<times>bias_bias_variance     |  1.0000  |               |  (3)   
+       Mat52<times>Mat52_Mat52_variance    |  1.0000  |               |  (1)   
+      Mat52<times>Mat52_Mat52_lengthscale  |  3.0000  |               |  (2)   
+       Mat52<times>Mat52_Mat52_variance    |  1.0000  |               |  (4)   
+      Mat52<times>Mat52_Mat52_lengthscale  |  3.0000  |               |  (5)   
 
-Note the ties between the lengthscales of ``Kanova`` to keep the number of lengthscales equal to 2. On the other hand, there are four variance terms in the new parameterization: one for each term of the right hand part of the above equation. We can illustrate the use of this kernel on a toy example::
+Note the ties between the parameters of ``Kanova`` that reflect the links between the parameters of the kernparts objects. We can illustrate the use of this kernel on a toy example::
 
     # sample inputs and outputs
     X = np.random.uniform(-3.,3.,(40,2))
@@ -154,12 +158,12 @@ Note the ties between the lengthscales of ``Kanova`` to keep the number of lengt
 
     # Create GP regression model
     m = GPy.models.GP_regression(X,Y,Kanova)
+    pb.figure(figsize=(5,5))
     m.plot()
-
 
 .. figure::  Figures/tuto_kern_overview_mANOVA.png
     :align:  center
-    :height: 350px
+    :height: 300px
 
 As :math:`k_{ANOVA}` corresponds to the sum of 4 kernels, the best predictor can be splited in a sum of 4 functions 
 
@@ -171,7 +175,7 @@ As :math:`k_{ANOVA}` corresponds to the sum of 4 kernels, the best predictor can
 
 The submodels can be represented with the option ``which_function`` of ``plot``: ::
     
-    pb.figure(figsize=(20,5))
+    pb.figure(figsize=(20,3))
     pb.subplots_adjust(wspace=0.5)
     pb.subplot(1,5,1)
     m.plot()
@@ -187,10 +191,11 @@ The submodels can be represented with the option ``which_function`` of ``plot``:
     pb.ylabel("+   ",rotation='horizontal',fontsize='30')
     m.plot(which_functions=[False,False,False,True])
 
+..  pb.savefig('tuto_kern_overview_mANOVAdec.png',bbox_inches='tight')
 
 .. figure::  Figures/tuto_kern_overview_mANOVAdec.png
     :align:  center
-    :height: 200px
+    :height: 300px
 
 
 ..  import pylab as pb

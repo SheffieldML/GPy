@@ -44,15 +44,10 @@ Many kernels are already implemented in GPy. Here is a summary of most of them:
     :align:  center
     :height: 800px
 
-On the other hand, it is possible to use the `sympy` package to build new kernels. This will be the subject of another tutorial.
+On the other hand, it is possible to use the `sympy` package to build new kernels. This will be the subject of another tutorial.    
 
-
-Constraining the parameters
-===========================
-
-
-Operations to combine kernel
-============================
+Operations to combine kernels
+=============================
 
 In ``GPy``, two kernel objects can be added or multiplied. In both cases, two kinds of operations are possible since one can assume that the kernels to add/multiply are defined on the same space or on different subspaces. In other words, it is possible to use two kernels :math:`k_1,\ k_2` over :math:`\mathbb{R} \times \mathbb{R}` to create 
 
@@ -116,6 +111,53 @@ A shortcut for ``add`` and ``prod`` is provided by the usual ``+`` and ``*`` ope
 .. figure::  Figures/tuto_kern_overview_multperdecay.png
     :align:  center
     :height: 300px
+
+
+Constraining the parameters
+===========================
+
+Various constrains can be applied to the parameters of a kernel::
+
+    * ``constrain_fixed`` to fix the value of a parameter (the value will not be modified during optimisation)
+    * ``constrain_positive`` to make sure the parameter is greater than 0.
+    * ``constrain_bounded`` to impose the parameter to be in a given range.
+    * ``tie_param`` to impose the value of two (or more) parameters to be equal.
+
+When calling one of these functions, the parameters to constrain can either by specified by a regular expression that matches its name or by a number that corresponds to the rank of the parameter. Here is an example ::
+
+    k1 = GPy.kern.rbf(1)
+    k2 = GPy.kern.Matern32(1)
+    k3 = GPy.kern.white(1)
+
+    k = k1 + k2 + k3
+    print k
+
+    k.constrain_positive('var')
+    k.constrain_fixed(np.array([1]),1.75)
+    k.tie_param('len')
+    k.unconstrain('white')
+    k.constrain_bounded('white',lower=1e-5,upper=.5)
+    print k
+    
+with output::
+
+            Name         |  Value   |  Constraints  |  Ties  
+    ---------------------------------------------------------
+        rbf_variance     |  1.0000  |               |        
+       rbf_lengthscale   |  1.0000  |               |        
+       Mat32_variance    |  1.0000  |               |        
+      Mat32_lengthscale  |  1.0000  |               |        
+       white_variance    |  1.0000  |               |        
+    
+    
+            Name         |  Value   |  Constraints   |  Ties  
+    ----------------------------------------------------------
+        rbf_variance     |  1.0000  |     (+ve)      |        
+       rbf_lengthscale   |  1.7500  |     Fixed      |  (0)   
+       Mat32_variance    |  1.0000  |     (+ve)      |        
+      Mat32_lengthscale  |  1.7500  |                |  (0)   
+       white_variance    |  0.3655  |  (1e-05, 0.5)  |        
+  
 
 Example : Building an ANOVA kernel
 ==================================

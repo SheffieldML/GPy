@@ -42,7 +42,8 @@ class sparse_GPLVM(sparse_GP_regression, GPLVM):
         return sparse_GP_regression.log_likelihood(self)
 
     def dL_dX(self):
-        dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
+        #dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
+	dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2[0,:,:],self.psi1)
 
         dL_dX = self.kern.dKdiag_dX(self.dL_dpsi0,self.X)
         dL_dX += self.kern.dK_dX(dL_dpsi1.T,self.X,self.Z)
@@ -55,5 +56,5 @@ class sparse_GPLVM(sparse_GP_regression, GPLVM):
     def plot(self):
         GPLVM.plot(self)
         #passing Z without a small amout of jitter will induce the white kernel where we don;t want it!
-        mu, var = sparse_GP_regression.predict(self, self.Z+np.random.randn(*self.Z.shape)*0.0001)
+        mu, var, upper, lower = sparse_GP_regression.predict(self, self.Z+np.random.randn(*self.Z.shape)*0.0001)
         pb.plot(mu[:, 0] , mu[:, 1], 'ko')

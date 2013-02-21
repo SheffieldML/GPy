@@ -24,7 +24,7 @@ A ``print`` and a ``plot`` functions are implemented to represent kernel objects
     ker2.plot()
     ker3.plot()
 
-should return::
+return::
 
            Name        |  Value   |  Constraints  |  Ties  
     -------------------------------------------------------
@@ -49,12 +49,12 @@ On the other hand, it is possible to use the `sympy` package to build new kernel
 Operations to combine kernels
 =============================
 
-In ``GPy``, two kernel objects can be added or multiplied. In both cases, two kinds of operations are possible since one can assume that the kernels to add/multiply are defined on the same space or on different subspaces. In other words, it is possible to use two kernels :math:`k_1,\ k_2` over :math:`\mathbb{R} \times \mathbb{R}` to create 
+In ``GPy``, kernel objects can be added or multiplied. In both cases, two kinds of operations are possible since one can assume that the kernels to add/multiply are defined on the same space or on different subspaces. In other words, it is possible to use two kernels :math:`k_1,\ k_2` over :math:`\mathbb{R} \times \mathbb{R}` to create 
 
     * a kernel over :math:`\mathbb{R} \times \mathbb{R}`:  :math:`k(x,y) = k_1(x,y) \times k_2(x,y)`
-    * a kernel over :math:`\mathbb{R}^2 \times \mathbb{R}^2`:  :math:`k(x,y) = k_1(x_1,y_1) \times k_2(x_2,y_2)`
+    * a kernel over :math:`\mathbb{R}^2 \times \mathbb{R}^2`:  :math:`k(\mathbf{x},\mathbf{y}) = k_1(x_1,y_1) \times k_2(x_2,y_2)`
 
-These two options are available in GPy under the name ``prod`` and ``prod_orthogonal`` (resp ``add`` and ``add_orthogonal`` for the addition). Here is a quick example ::
+These two options are available in GPy under the name ``prod`` and ``prod_orthogonal`` (resp. ``add`` and ``add_orthogonal`` for the addition). Here is a quick example ::
 
     k1 = GPy.kern.rbf(1,1.,2.)
     k2 = GPy.kern.Matern32(1, 0.5, 0.2)
@@ -112,11 +112,15 @@ A shortcut for ``add`` and ``prod`` is provided by the usual ``+`` and ``*`` ope
     :align:  center
     :height: 300px
 
+In general, ``kern`` objects can be seen as a sum of ``kernparts`` objects, where the later are covariance functions denied on the same space ::
+
+    k = (k1+k2)*(k1+k2)
+    print k.parts[0].name, '\n', k.parts[1].name, '\n', k.parts[2].name, '\n', k.parts[3].name
 
 Constraining the parameters
 ===========================
 
-Various constrains can be applied to the parameters of a kernel::
+Various constrains can be applied to the parameters of a kernel
 
     * ``constrain_fixed`` to fix the value of a parameter (the value will not be modified during optimisation)
     * ``constrain_positive`` to make sure the parameter is greater than 0.
@@ -237,7 +241,7 @@ The submodels can be represented with the option ``which_function`` of ``plot``:
 
 .. figure::  Figures/tuto_kern_overview_mANOVAdec.png
     :align:  center
-    :height: 300px
+    :height: 250px
 
 
 ..  import pylab as pb

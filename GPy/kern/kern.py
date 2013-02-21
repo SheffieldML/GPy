@@ -50,6 +50,18 @@ class kern(parameterised):
 
         parameterised.__init__(self)
 
+    def _transform_gradients(self,g):
+        x = self._get_params()
+        g[self.constrained_positive_indices] = g[self.constrained_positive_indices]*x[self.constrained_positive_indices]
+        g[self.constrained_negative_indices] = g[self.constrained_negative_indices]*x[self.constrained_negative_indices]
+        [np.put(g,i,g[i]*(x[i]-l)*(h-x[i])/(h-l)) for i,l,h in zip(self.constrained_bounded_indices, self.constrained_bounded_lowers, self.constrained_bounded_uppers)]
+        [np.put(g,i,v) for i,v in [(t[0],np.sum(g[t])) for t in self.tied_indices]]
+        if len(self.tied_indices) or len(self.constrained_fixed_indices):
+            to_remove = np.hstack((self.constrained_fixed_indices+[t[1:] for t in self.tied_indices]))
+            return np.delete(g,to_remove)
+        else:
+            return g
+
     def compute_param_slices(self):
         """create a set of slices that can index the parameters of each part"""
         self.param_slices = []
@@ -237,8 +249,7 @@ class kern(parameterised):
         target = np.zeros(self.Nparam)
         [p.dK_dtheta(partial[s1,s2],X[s1,i_s],X2[s2,i_s],target[ps]) for p,i_s,ps,s1,s2 in zip(self.parts, self.input_slices, self.param_slices, slices1, slices2)]
 
-	#TODO: transform the gradients here!
-        return target
+        return self._transform_gradients(target)
 
     def dK_dX(self,partial,X,X2=None,slices1=None,slices2=None):
         if X2 is None:
@@ -262,7 +273,7 @@ class kern(parameterised):
         slices = self._process_slices(slices,False)
         target = np.zeros(self.Nparam)
         [p.dKdiag_dtheta(partial[s],X[s,i_s],target[ps]) for p,i_s,s,ps in zip(self.parts,self.input_slices,slices,self.param_slices)]
-        return target
+        return self._transform_gradients(target)
 
     def dKdiag_dX(self, partial, X, slices=None):
         assert X.shape[1]==self.D
@@ -281,7 +292,7 @@ class kern(parameterised):
         slices = self._process_slices(slices,False)
         target = np.zeros(self.Nparam)
         [p.dpsi0_dtheta(partial[s],Z,mu[s],S[s],target[ps]) for p,ps,s in zip(self.parts, self.param_slices,slices)]
-        return target
+        return self._transform_gradients(target)
 
     def dpsi0_dmuS(self,partial,Z,mu,S,slices=None):
         slices = self._process_slices(slices,False)
@@ -301,7 +312,7 @@ class kern(parameterised):
         slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros((self.Nparam))
         [p.dpsi1_dtheta(partial[s2,s1],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[ps]) for p,ps,s1,s2,i_s in zip(self.parts, self.param_slices,slices1,slices2,self.input_slices)]
-        return target
+        return self._transform_gradients(target)
 
     def dpsi1_dZ(self,partial,Z,mu,S,slices1=None,slices2=None):
         """N,M,Q"""
@@ -370,7 +381,7 @@ class kern(parameterised):
         #     # target += gne
         #     #target += (gne[None] + gne[:, None]).sum(0)
         #     target += (partial.sum(0)[:,:,None] * (tmp[:, None] + tmp[:,:,None]).sum(0)).sum(0).sum(0)
-        return target
+        return self._transform_gradients(target)
 
     def dpsi2_dZ(self,partial,Z,mu,S,slices1=None,slices2=None):
         slices1, slices2 = self._process_slices(slices1,slices2)

@@ -112,10 +112,17 @@ A shortcut for ``add`` and ``prod`` is provided by the usual ``+`` and ``*`` ope
     :align:  center
     :height: 300px
 
-In general, ``kern`` objects can be seen as a sum of ``kernparts`` objects, where the later are covariance functions denied on the same space ::
+In general, ``kern`` objects can be seen as a sum of ``kernparts`` objects, where the later are covariance functions denied on the same space. For example, the following code ::
 
     k = (k1+k2)*(k1+k2)
     print k.parts[0].name, '\n', k.parts[1].name, '\n', k.parts[2].name, '\n', k.parts[3].name
+
+returns ::
+
+    rbf<times>rbf 
+    rbf<times>periodic_Mat52 
+    periodic_Mat52<times>rbf 
+    periodic_Mat52<times>periodic_Mat52
 
 Constraining the parameters
 ===========================

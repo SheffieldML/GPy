@@ -28,9 +28,8 @@ should return::
 
            Name        |  Value   |  Constraints  |  Ties  
     -------------------------------------------------------
-       rbf_variance    |  1.0000  |               |        
-      rbf_lengthscale  |  1.0000  |               |        
-
+       rbf_variance    |  0.7500  |               |        
+      rbf_lengthscale  |  2.0000  |               |        
 
 .. figure::  Figures/tuto_kern_overview_basicdef.png
     :align:   center
@@ -50,7 +49,12 @@ On the other hand, it is possible to use the `sympy` package to build new kernel
 Operations to combine kernel
 ============================
 
-In ``GPy``, kernel objects can be combined with the usual ``+`` and ``*`` operators. ::
+In ``GPy``, two kernel objects can be added or multiplied. In both cases, two kinds of operations are possible since one can assume that the kernels to add/multiply are defined on the same space or on different subspaces. In other words, it is possible to use two kernels :math:`k_1,\ k_2` over :math:`\mathbb{R} \times \mathbb{R}` to create 
+
+    * a kernel over :math:`\mathbb{R} \times \mathbb{R}`: :math:`k(x,y) = k_1(x,y) \times k_2(x,y)`
+    * a kernel over .. :math:`\mathbb{R}^2 \times \mathbb{R}^2`: :math:`k(x,y) = k_1(x_1,y_1) \times k_2(x_2,y_2)`
+
+ multiplied combined with the usual ``+`` and ``*`` operators. ::
     
     k1 = GPy.kern.rbf(1,variance=1., lengthscale=2)
     k2 = GPy.kern.Matern32(1,variance=1., lengthscale=2)

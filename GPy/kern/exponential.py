@@ -102,7 +102,7 @@ class exponential(kernpart):
         dK_dX = - np.transpose(self.variance*np.exp(-dist)*ddist_dX,(1,0,2))
         target += np.sum(dK_dX*partial.T[:,:,None],0)
 
-    def dKdiag_dX(self,X,target):
+    def dKdiag_dX(self,partial,X,target):
         pass
 
     def Gram_matrix(self,F,F1,lower,upper):

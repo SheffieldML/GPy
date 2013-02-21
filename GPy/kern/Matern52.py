@@ -104,7 +104,7 @@ class Matern52(kernpart):
         dK_dX = -  np.transpose(self.variance*5./3*dist*(1+np.sqrt(5)*dist)*np.exp(-np.sqrt(5)*dist)*ddist_dX,(1,0,2))
         target += np.sum(dK_dX*partial.T[:,:,None],0)
 
-    def dKdiag_dX(self,X,target):
+    def dKdiag_dX(self,partial,X,target):
         pass
 
     def Gram_matrix(self,F,F1,F2,F3,lower,upper):

@@ -8,6 +8,7 @@ from ..core.parameterised import parameterised
 from kernpart import kernpart
 import itertools
 from product_orthogonal import product_orthogonal
+from product import product
 
 class kern(parameterised):
     def __init__(self,D,parts=[], input_slices=None):
@@ -149,24 +150,38 @@ class kern(parameterised):
         """
         Shortcut for `prod_orthogonal`. Note that `+` assumes that we sum 2 kernels defines on the same space whereas `*` assumes that the kernels are defined on different subspaces.
         """
-        return self.prod_orthogonal(other)
+        return self.prod(other)
 
-    def prod_orthogonal(self,other):
+    def prod(self,other):
         """
-        multiply two kernels. Both kernels are defined on separate spaces. Note that the constrains on the parameters of the kernels to multiply will be lost.
+        multiply two kernels defined on the same spaces.
         :param other: the other kernel to be added
         :type other: GPy.kern
         """
         K1 = self.copy()
         K2 = other.copy()
-        K1.unconstrain('')
-        K2.unconstrain('')
 
-        prev_ties = K1.tied_indices + [arr + K1.Nparam for arr in K2.tied_indices]
-        K1.untie_everything()
-        K2.untie_everything()
+        newkernparts = [product(k1,k2) for k1, k2 in itertools.product(K1.parts,K2.parts)]
 
-        D = K1.D + K2.D
+        slices = []
+        for sl1, sl2 in itertools.product(K1.input_slices,K2.input_slices):
+            s1, s2 = [False]*K1.D, [False]*K2.D
+            s1[sl1], s2[sl2] = [True], [True]
+            slices += [s1+s2]
+
+        newkern = kern(K1.D, newkernparts, slices)
+        newkern._follow_constrains(K1,K2)
+
+        return newkern
+
+    def prod_orthogonal(self,other):
+        """
+        multiply two kernels. Both kernels are defined on separate spaces.
+        :param other: the other kernel to be added
+        :type other: GPy.kern
+        """
+        K1 = self.copy()
+        K2 = other.copy()
 
         newkernparts = [product_orthogonal(k1,k2) for k1, k2 in itertools.product(K1.parts,K2.parts)]
 
@@ -176,9 +191,14 @@ class kern(parameterised):
             s1[sl1], s2[sl2] = [True], [True]
             slices += [s1+s2]
 
-        newkern = kern(D, newkernparts, slices)
+        newkern = kern(K1.D + K2.D, newkernparts, slices)
+        newkern._follow_constrains(K1,K2)
 
-        # create the ties
+        return newkern
+
+    def _follow_constrains(self,K1,K2):
+
+        # Build the array that allows to go from the initial indices of the param to the new ones
         K1_param = []
         n = 0
         for k1 in K1.parts:
@@ -192,19 +212,40 @@ class kern(parameterised):
         index_param = []
         for p1 in K1_param:
             for p2 in K2_param:
-                index_param += [0] + p1[1:] + p2[1:]
+                index_param += p1 + p2
         index_param = np.array(index_param)
+
+        # Get the ties and constrains of the kernels before the multiplication
+        prev_ties = K1.tied_indices + [arr + K1.Nparam for arr in K2.tied_indices]
+
+        prev_constr_pos = np.append(K1.constrained_positive_indices, K1.Nparam + K2.constrained_positive_indices)
+        prev_constr_neg = np.append(K1.constrained_negative_indices, K1.Nparam + K2.constrained_negative_indices)
+
+        prev_constr_fix = K1.constrained_fixed_indices + [arr + K1.Nparam for arr in K2.constrained_fixed_indices]
+        prev_constr_fix_values = K1.constrained_fixed_values + K2.constrained_fixed_values
+
+        prev_constr_bou = K1.constrained_bounded_indices + [arr + K1.Nparam for arr in K2.constrained_bounded_indices]
+        prev_constr_bou_low = K1.constrained_bounded_lowers + K2.constrained_bounded_lowers
+        prev_constr_bou_upp = K1.constrained_bounded_uppers + K2.constrained_bounded_uppers
 
         # follow the previous ties
         for arr in prev_ties:
             for j in arr:
                 index_param[np.where(index_param==j)[0]] = arr[0]
 
-        # tie
-        for i in np.unique(index_param)[1:]:
-            newkern.tie_param(np.where(index_param==i)[0])
-
-        return newkern
+        # ties and constrains
+        for i in range(K1.Nparam + K2.Nparam):
+            index = np.where(index_param==i)[0]
+            if index.size > 1:
+                self.tie_param(index)
+        for i in prev_constr_pos:
+            self.constrain_positive(np.where(index_param==i)[0])
+        for i in prev_constr_neg:
+            self.constrain_neg(np.where(index_param==i)[0])
+        for j, i in enumerate(prev_constr_fix):
+            self.constrain_fixed(np.where(index_param==i)[0],prev_constr_fix_values[j])
+        for j, i in enumerate(prev_constr_bou):
+            self.constrain_bounded(np.where(index_param==i)[0],prev_constr_bou_low[j],prev_constr_bou_upp[j])
 
     def _get_params(self):
         return np.hstack([p._get_params() for p in self.parts])
@@ -446,7 +487,7 @@ class kern(parameterised):
             Xnew = np.vstack((xx.flatten(),yy.flatten())).T
             Kx = self.K(Xnew,x,slices2=which_functions)
             Kx = Kx.reshape(resolution,resolution).T
-            pb.contour(xg,yg,Kx,vmin=Kx.min(),vmax=Kx.max(),cmap=pb.cm.jet)
+            pb.contour(xg,yg,Kx,vmin=Kx.min(),vmax=Kx.max(),cmap=pb.cm.jet,*args,**kwargs)
             pb.xlim(xmin[0],xmax[0])
             pb.ylim(xmin[1],xmax[1])
             pb.xlabel("x1")

@@ -113,6 +113,14 @@ kern Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`product` Module
+---------------------
+
+.. automodule:: GPy.kern.product
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`product_orthogonal` Module
 --------------------------------
 

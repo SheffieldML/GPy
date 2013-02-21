@@ -1,6 +1,14 @@
 inference Package
 =================
 
+:mod:`SGD` Module
+-----------------
+
+.. automodule:: GPy.inference.SGD
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`optimization` Module
 --------------------------
 

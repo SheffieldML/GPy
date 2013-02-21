@@ -13,16 +13,24 @@ First we import the libraries we will need ::
 For most kernels, the dimension is the only mandatory parameter to define a kernel object. However, it is also possible to specify the values of the parameters. For example, the three following commands are valid for defining a squared exponential kernel (ie rbf or Gaussian) ::
 
     ker1 = GPy.kern.rbf(1)  # Equivalent to ker1 = GPy.kern.rbf(D=1, variance=1., lengthscale=1.)
-    ker2 = GPy.kern.rbf(D=1, variance = 1.5, lengthscale=2.)
+    ker2 = GPy.kern.rbf(D=1, variance = .75, lengthscale=2.)
     ker3 = GPy.kern.rbf(1, .5, .5)
 
-A `plot` and a `print` functions are implemented to represent kernel objects ::
+A ``print`` and a ``plot`` functions are implemented to represent kernel objects. The commands ::
     
-    print ker1
+    print ker2
 
     ker1.plot()
     ker2.plot()
     ker3.plot()
+
+should return::
+
+           Name        |  Value   |  Constraints  |  Ties  
+    -------------------------------------------------------
+       rbf_variance    |  1.0000  |               |        
+      rbf_lengthscale  |  1.0000  |               |        
+
 
 .. figure::  Figures/tuto_kern_overview_basicdef.png
     :align:   center

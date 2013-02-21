@@ -31,7 +31,7 @@ should return::
        rbf_variance    |  0.7500  |               |        
       rbf_lengthscale  |  2.0000  |               |        
 
-.. figure::  Figures/tuto_kern_overview_basicdef.png
+.. figure::  Figures/tuto_kern_overview_basicplot.png
     :align:   center
     :height: 350px
 
@@ -51,19 +51,67 @@ Operations to combine kernel
 
 In ``GPy``, two kernel objects can be added or multiplied. In both cases, two kinds of operations are possible since one can assume that the kernels to add/multiply are defined on the same space or on different subspaces. In other words, it is possible to use two kernels :math:`k_1,\ k_2` over :math:`\mathbb{R} \times \mathbb{R}` to create 
 
-    * a kernel over :math:`\mathbb{R} \times \mathbb{R}`: :math:`k(x,y) = k_1(x,y) \times k_2(x,y)`
-    * a kernel over .. :math:`\mathbb{R}^2 \times \mathbb{R}^2`: :math:`k(x,y) = k_1(x_1,y_1) \times k_2(x_2,y_2)`
+    * a kernel over :math:`\mathbb{R} \times \mathbb{R}`:  :math:`k(x,y) = k_1(x,y) \times k_2(x,y)`
+    * a kernel over :math:`\mathbb{R}^2 \times \mathbb{R}^2`:  :math:`k(x,y) = k_1(x_1,y_1) \times k_2(x_2,y_2)`
 
- multiplied combined with the usual ``+`` and ``*`` operators. ::
+These two options are available in GPy under the name ``prod`` and ``prod_orthogonal`` (resp ``add`` and ``add_orthogonal`` for the addition). Here is a quick example ::
+
+    k1 = GPy.kern.rbf(1,1.,2.)
+    k2 = GPy.kern.Matern32(1, 0.5, 0.2)
+
+    # Product of kernels
+    k_prod = k1.prod(k2)
+    k_prodorth = k1.prod_orthogonal(k2)
+
+    # Sum of kernels
+    k_add = k1.add(k2)
+    k_addorth = k1.add_orthogonal(k2)    
+
+    # plots
+    pb.figure(figsize=(8,8))
+    pb.subplot(2,2,1)
+    k_prod.plot()
+    pb.title('prod')
+    pb.subplot(2,2,2)
+    k_prodorth.plot()
+    pb.title('prod_orthogonal')
+    pb.subplot(2,2,3)
+    k_add.plot()
+    pb.title('add')
+    pb.subplot(2,2,4)
+    k_addorth.plot()
+    pb.title('add_orthogonal')
+    pb.subplots_adjust(wspace=0.3, hspace=0.3)
+
+.. figure::  Figures/tuto_kern_overview_multadd.png
+    :align:  center
+    :height: 1500px
+
+A shortcut for ``add`` and ``prod`` is provided by the usual ``+`` and ``*`` operators. Here is another example where we create a periodic kernel with some decay ::
     
-    k1 = GPy.kern.rbf(1,variance=1., lengthscale=2)
-    k2 = GPy.kern.Matern32(1,variance=1., lengthscale=2)
+    k1 = GPy.kern.rbf(1,1.,2)
+    k2 = GPy.kern.periodic_Matern52(1,variance=1e3, lengthscale=1, period = 1.5, lower=-5., upper = 5)
 
-    ker_add = k1 + k2
-    print ker_add
+    k = k1 * k2  # equivalent to k = k1.prod(k2)
+    print k
 
-    ker_prod = k1 * k2
-    print ker_prod
+    # Simulate sample paths
+    X = np.linspace(-5,5,501)[:,None]
+    Y = np.random.multivariate_normal(np.zeros(501),k.K(X),1)
+
+..  # plot
+    pb.figure(figsize=(8,4))
+    pb.subplot(1,2,1)
+    k.plot()
+    pb.subplot(1,2,2)
+    pb.plot(X,Y.T)
+    pb.ylabel("Sample path")
+    pb.subplots_adjust(wspace=0.3)
+
+.. figure::  Figures/tuto_kern_overview_multperdecay.png
+    :align:  center
+    :height: 800px
+
 
 Note that by default, the operator ``+`` adds kernels defined on the same input space whereas ``*`` assumes that the kernels are defined on different input spaces. Here for example ``ker_add.D`` will return ``1`` whereas ``ker_prod.D`` will return ``2``.
 

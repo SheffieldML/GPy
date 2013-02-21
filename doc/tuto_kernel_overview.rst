@@ -46,6 +46,11 @@ Many kernels are already implemented in GPy. Here is a summary of most of them:
 
 On the other hand, it is possible to use the `sympy` package to build new kernels. This will be the subject of another tutorial.
 
+
+Constraining the parameters
+===========================
+
+
 Operations to combine kernel
 ============================
 
@@ -67,7 +72,7 @@ These two options are available in GPy under the name ``prod`` and ``prod_orthog
     k_add = k1.add(k2)
     k_addorth = k1.add_orthogonal(k2)    
 
-    # plots
+..  # plots
     pb.figure(figsize=(8,8))
     pb.subplot(2,2,1)
     k_prod.plot()
@@ -85,7 +90,7 @@ These two options are available in GPy under the name ``prod`` and ``prod_orthog
 
 .. figure::  Figures/tuto_kern_overview_multadd.png
     :align:  center
-    :height: 1500px
+    :height: 500px
 
 A shortcut for ``add`` and ``prod`` is provided by the usual ``+`` and ``*`` operators. Here is another example where we create a periodic kernel with some decay ::
     
@@ -110,20 +115,7 @@ A shortcut for ``add`` and ``prod`` is provided by the usual ``+`` and ``*`` ope
 
 .. figure::  Figures/tuto_kern_overview_multperdecay.png
     :align:  center
-    :height: 800px
-
-
-Note that by default, the operator ``+`` adds kernels defined on the same input space whereas ``*`` assumes that the kernels are defined on different input spaces. Here for example ``ker_add.D`` will return ``1`` whereas ``ker_prod.D`` will return ``2``.
-
-In order to add kernels defined on the different input spaces, the required command is::
-
-    ker_add_orth = k1.add_orthogonal(k2)
-
-.. figure::  Figures/tuto_kern_overview_add_orth.png
-    :align:  center
     :height: 350px
-
-    Output of ``ker_add_orth.plot(plot_limits=[[-10,-10],[10,10]])``.
 
 Example : Building an ANOVA kernel
 ==================================

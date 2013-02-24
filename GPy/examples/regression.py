@@ -20,7 +20,6 @@ def toy_rbf_1d():
     # optimize
     m.ensure_default_constraints()
     m.optimize()
-
     # plot
     m.plot()
     print(m)

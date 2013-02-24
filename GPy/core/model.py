@@ -5,6 +5,8 @@
 import numpy as np
 from scipy import optimize
 import sys, pdb
+import multiprocessing as mp
+from GPy.util.misc import opt_wrapper
 #import numdifftools as ndt
 from parameterised import parameterised, truncate_pad
 import priors
@@ -166,7 +168,7 @@ class model(parameterised):
         self._set_params_transformed(self._get_params_transformed())#makes sure all of the tied parameters get the same init (since there's only one prior object...)
 
 
-    def optimize_restarts(self, Nrestarts=10, robust=False, verbose=True, **kwargs):
+    def optimize_restarts(self, Nrestarts=10, robust=False, verbose=True, parallel=False, num_processes=None, **kwargs):
         """
         Perform random restarts of the model, and set the model to the best
         seen solution.
@@ -181,23 +183,43 @@ class model(parameterised):
         :max_f_eval: maximum number of function evaluations
         :messages: whether to display during optimisation
         :verbose: whether to show informations about the current restart
+        :parallel: whether to run each restart as a separate process. It relies on the multiprocessing module.
+        :num_processes: number of workers in the multiprocessing pool
+        
+        ..Note: If num_processes is None, the number of workes in the multiprocessing pool is automatically
+        set to the number of processors on the current machine.
+
+
         """
 
         initial_parameters = self._get_params_transformed()
+
+        if parallel:
+            jobs = []
+            pool = mp.Pool(processes=num_processes)
+            for i in range(Nrestarts):
+                job = pool.apply_async(opt_wrapper, args = (self,), kwds = kwargs)
+                jobs.append(job)
+
+            pool.close() # signal that no more data coming in
+            pool.join()  # wait for all the tasks to complete
+
         for i in range(Nrestarts):
             try:
-                self.randomize()
-                self.optimize(**kwargs)
-                if verbose:
-                    print("Optimization restart {0}/{1}, f = {2}".format(i+1,
-                                                                      Nrestarts,
-                                                                      self.optimization_runs[-1].f_opt))
+                if not parallel:
+                    self.randomize()
+                    self.optimize(**kwargs)
+                else:
+                    self.optimization_runs.append(jobs[i].get())
 
+                if verbose:
+                    print("Optimization restart {0}/{1}, f = {2}".format(i+1, Nrestarts, self.optimization_runs[-1].f_opt))
             except Exception as e:
                 if robust:
                     print("Warning - optimization restart {0}/{1} failed".format(i+1, Nrestarts))
                 else:
                     raise e
+
         if len(self.optimization_runs):
             i = np.argmin([o.f_opt for o in self.optimization_runs])
             self._set_params_transformed(self.optimization_runs[i].x_opt)
@@ -371,7 +393,7 @@ class model(parameterised):
                 param_list = range(len(x))
             else:
                 param_list = self.grep_param_names(target_param)
-                
+
             for i in param_list:
                 xx = x.copy()
                 xx[i] += step

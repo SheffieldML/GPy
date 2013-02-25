@@ -185,7 +185,7 @@ class model(parameterised):
         :verbose: whether to show informations about the current restart
         :parallel: whether to run each restart as a separate process. It relies on the multiprocessing module.
         :num_processes: number of workers in the multiprocessing pool
-        
+
         ..Note: If num_processes is None, the number of workes in the multiprocessing pool is automatically
         set to the number of processors on the current machine.
 
@@ -198,6 +198,7 @@ class model(parameterised):
             jobs = []
             pool = mp.Pool(processes=num_processes)
             for i in range(Nrestarts):
+                self.randomize()
                 job = pool.apply_async(opt_wrapper, args = (self,), kwds = kwargs)
                 jobs.append(job)
 

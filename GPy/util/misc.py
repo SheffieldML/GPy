@@ -9,7 +9,6 @@ def opt_wrapper(m, **kwargs):
     This function just wraps the optimization procedure of a GPy
     object so that optimize() pickleable (necessary for multiprocessing).
     """
-    m.randomize()
     m.optimize(**kwargs)
     return m.optimization_runs[-1]
 

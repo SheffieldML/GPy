@@ -7,15 +7,14 @@ import scipy as sp
 import pdb, sys, pickle
 import matplotlib.pylab as plt
 import GPy
-np.random.seed(3)
+np.random.seed(1)
 
 N = 100
 # sample inputs and outputs
 X = np.random.uniform(-np.pi,np.pi,(N,1))
 Y = np.sin(X)+np.random.randn(N,1)*0.05
 # Y += np.abs(Y.min()) + 0.5
-Z = np.exp(Y)# Y**(1/3.0)
-
+Z = np.exp(3.0*Y)#Y**(1/3.0)
 # rescaling targets?
 Zmax = Z.max()
 Zmin = Z.min()
@@ -23,12 +22,21 @@ Z = (Z-Zmin)/(Zmax-Zmin) - 0.5
 
 m = GPy.models.warpedGP(X, Z, warping_terms = 2)
 m.constrain_positive('(tanh_a|tanh_b|tanh_d|rbf|noise|bias)')
+# m.unconstrain('tanh_d')
+# m.constrain_fixed('tanh_d', 1.0)
+
+# lognormal = GPy.priors.log_Gaussian(1.0, 2.0) # 1,2
+# gaussian = GPy.priors.Gaussian(0, 10) # 0, 10
+# m.set_prior('tanh_c', gaussian)
+# m.set_prior('(tanh_b|tanh_a)', lognormal)
+
 m.randomize()
 plt.figure()
 plt.xlabel('predicted f(Z)')
 plt.ylabel('actual f(Z)')
 plt.plot(m.likelihood.Y, Y, 'o', alpha = 0.5, label = 'before training')
-m.optimize(messages = True)
+# m.optimize(messages = True)
+m.optimize_restarts(4, parallel = True)
 plt.plot(m.likelihood.Y, Y, 'o', alpha = 0.5, label = 'after training')
 plt.legend(loc = 0)
 m.plot_warping()

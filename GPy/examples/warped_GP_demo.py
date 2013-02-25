@@ -7,7 +7,7 @@ import scipy as sp
 import pdb, sys, pickle
 import matplotlib.pylab as plt
 import GPy
-np.random.seed(1)
+np.random.seed(3)
 
 N = 100
 # sample inputs and outputs
@@ -22,14 +22,14 @@ Zmin = Z.min()
 Z = (Z-Zmin)/(Zmax-Zmin) - 0.5
 
 m = GPy.models.warpedGP(X, Z, warping_terms = 2)
-m.constrain_positive('(tanh_a|tanh_b|tanh_d|rbf|white|bias)')
+m.constrain_positive('(tanh_a|tanh_b|tanh_d|rbf|noise|bias)')
 m.randomize()
 plt.figure()
 plt.xlabel('predicted f(Z)')
 plt.ylabel('actual f(Z)')
-plt.plot(m.Y, Y, 'o', alpha = 0.5, label = 'before training')
+plt.plot(m.likelihood.Y, Y, 'o', alpha = 0.5, label = 'before training')
 m.optimize(messages = True)
-plt.plot(m.Y, Y, 'o', alpha = 0.5, label = 'after training')
+plt.plot(m.likelihood.Y, Y, 'o', alpha = 0.5, label = 'after training')
 plt.legend(loc = 0)
 m.plot_warping()
 plt.figure()
@@ -37,7 +37,7 @@ plt.title('warped GP fit')
 m.plot()
 
 m1 = GPy.models.GP_regression(X, Z)
-m1.constrain_positive('(rbf|white|bias)')
+m1.constrain_positive('(rbf|noise|bias)')
 m1.randomize()
 m1.optimize(messages = True)
 plt.figure()

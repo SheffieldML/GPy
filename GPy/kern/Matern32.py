@@ -14,14 +14,14 @@ class Matern32(kernpart):
 
     .. math::
 
-       k(r) = \sigma^2 (1 + \sqrt{3} r) \exp(- \sqrt{3} r) \qquad \qquad \\text{ where  } r = \sqrt{\sum_{i=1}^D \\frac{(x_i-y_i)^2}{\ell_i^2} }
+       k(r) = \\sigma^2 (1 + \\sqrt{3} r) \exp(- \sqrt{3} r) \\ \\ \\ \\  \\text{ where  } r = \sqrt{\sum_{i=1}^D \\frac{(x_i-y_i)^2}{\ell_i^2} }
 
     :param D: the number of input dimensions
     :type D: int
     :param variance: the variance :math:`\sigma^2`
     :type variance: float
     :param lengthscale: the vector of lengthscale :math:`\ell_i`
-    :type lengthscale: np.ndarray of size (1,) or (D,) depending on ARD
+    :type lengthscale: array or list of the appropriate size (or float if there is only one lengthscale parameter)
     :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one single lengthscale parameter \ell), otherwise there is one lengthscale parameter per dimension.
     :type ARD: Boolean
     :rtype: kernel object
@@ -35,17 +35,19 @@ class Matern32(kernpart):
             self.Nparam = 2
             self.name = 'Mat32'
             if lengthscale is not None:
-                assert lengthscale.shape == (1,)
+                lengthscale = np.asarray(lengthscale)
+                assert lengthscale.size == 1, "Only one lengthscale needed for non-ARD kernel"
             else:
                 lengthscale = np.ones(1)
         else:
             self.Nparam = self.D + 1
-            self.name = 'Mat32_ARD'
+            self.name = 'Mat32'
             if lengthscale is not None:
-                assert lengthscale.shape == (self.D,)
+                lengthscale = np.asarray(lengthscale)
+                assert lengthscale.size == self.D, "bad number of lengthscales"
             else:
                 lengthscale = np.ones(self.D)
-        self._set_params(np.hstack((variance,lengthscale)))
+        self._set_params(np.hstack((variance,lengthscale.flatten())))
 
     def _get_params(self):
         """return the value of the parameters."""
@@ -104,7 +106,7 @@ class Matern32(kernpart):
         dK_dX = - np.transpose(3*self.variance*dist*np.exp(-np.sqrt(3)*dist)*ddist_dX,(1,0,2))
         target += np.sum(dK_dX*partial.T[:,:,None],0)
 
-    def dKdiag_dX(self,X,target):
+    def dKdiag_dX(self,partial,X,target):
         pass
 
     def Gram_matrix(self,F,F1,F2,lower,upper):
@@ -116,9 +118,9 @@ class Matern32(kernpart):
         :param F1: vector of derivatives of F
         :type F1: np.array
         :param F2: vector of second derivatives of F
-        :type F2: np.array    
+        :type F2: np.array
         :param lower,upper: boundaries of the input domain
-        :type lower,upper: floats  
+        :type lower,upper: floats
         """
         assert self.D == 1
         def L(x,i):
@@ -133,4 +135,3 @@ class Matern32(kernpart):
         #print "OLD \n", np.dot(F1lower,F1lower.T), "\n \n"
         #return(G)
         return(self.lengthscale**3/(12.*np.sqrt(3)*self.variance) * G + 1./self.variance*np.dot(Flower,Flower.T) + self.lengthscale**2/(3.*self.variance)*np.dot(F1lower,F1lower.T))
-

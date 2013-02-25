@@ -4,6 +4,16 @@
 
 import numpy as np
 
+def opt_wrapper(m, **kwargs):
+    """
+    This function just wraps the optimization procedure of a GPy
+    object so that optimize() pickleable (necessary for multiprocessing).
+    """
+    m.randomize()
+    m.optimize(**kwargs)
+    return m.optimization_runs[-1]
+
+
 def linear_grid(D, n = 100, min_max = (-100, 100)):
     """
     Creates a D-dimensional grid of n linearly spaced points
@@ -27,7 +37,7 @@ def kmm_init(X, m = 10):
     This is the same initialization algorithm that is used
     in Kmeans++. It's quite simple and very useful to initialize
     the locations of the inducing points in sparse GPs.
-    
+
     :param X: data
     :param m: number of inducing points
     """

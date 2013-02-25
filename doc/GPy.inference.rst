@@ -1,18 +1,10 @@
 inference Package
 =================
 
-:mod:`Expectation_Propagation` Module
--------------------------------------
+:mod:`SGD` Module
+-----------------
 
-.. automodule:: GPy.inference.Expectation_Propagation
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`likelihoods` Module
--------------------------
-
-.. automodule:: GPy.inference.likelihoods
+.. automodule:: GPy.inference.SGD
     :members:
     :undoc-members:
     :show-inheritance:

@@ -15,8 +15,10 @@ Subpackages
 .. toctree::
 
     GPy.core
+    GPy.examples
     GPy.inference
     GPy.kern
+    GPy.likelihoods
     GPy.models
     GPy.util
 

@@ -47,6 +47,10 @@ class bias(kernpart):
     def dKdiag_dX(self,partial,X,target):
         pass
 
+    #---------------------------------------#
+    #             PSI statistics            #
+    #---------------------------------------#
+
     def psi0(self, Z, mu, S, target):
         target += self.variance
 
@@ -59,14 +63,18 @@ class bias(kernpart):
     def dpsi0_dtheta(self, partial, Z, mu, S, target):
         target += partial.sum()
 
+    def dpsi1_dtheta(self, partial, Z, mu, S, target):
+        target += partial.sum()
+
+    def dpsi2_dtheta(self, partial, Z, mu, S, target):
+        target += 2.*self.variance*partial.sum()
+
+    
     def dpsi0_dZ(self, partial, Z, mu, S, target):
         pass
 
     def dpsi0_dmuS(self, partial, Z, mu, S, target_mu, target_S):
         pass
-
-    def dpsi1_dtheta(self, partial, Z, mu, S, target):
-        target += partial.sum()
 
     def dpsi1_dZ(self, partial, Z, mu, S, target):
         pass
@@ -74,12 +82,8 @@ class bias(kernpart):
     def dpsi1_dmuS(self, partial, Z, mu, S, target_mu, target_S):
         pass
 
-    def dpsi2_dtheta(self, partial, Z, mu, S, target):
-        target += 2.*self.variance*partial.sum()
-
     def dpsi2_dZ(self, partial, Z, mu, S, target):
         pass
 
     def dpsi2_dmuS(self, partial, Z, mu, S, target_mu, target_S):
         pass
-

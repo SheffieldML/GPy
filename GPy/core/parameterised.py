@@ -94,7 +94,7 @@ class parameterised(object):
         Other objects are passed through - i.e. integers which were'nt meant for grepping
         """
 
-        if type(expr) is str:
+        if type(expr) in [str, np.string_, np.str]:
             expr = re.compile(expr)
             return np.nonzero([expr.search(name) for name in self._get_param_names()])[0]
         elif type(expr) is re._pattern_type:
@@ -102,6 +102,11 @@ class parameterised(object):
         else:
             return expr
 
+    def Nparam_transformed(self):
+            ties = 0
+            for ar in self.tied_indices:
+                ties += ar.size - 1
+            return self.Nparam - len(self.constrained_fixed_indices) - ties
 
     def constrain_positive(self, which):
         """
@@ -146,8 +151,6 @@ class parameterised(object):
             self.constrained_fixed_indices, self.constrained_fixed_values = list(self.constrained_fixed_indices), list(self.constrained_fixed_values)
         else:
             self.constrained_fixed_indices, self.constrained_fixed_values = [],[]
-
-
 
 
 
@@ -330,8 +333,7 @@ class parameterised(object):
         header_string = ["{h:^{col}}".format(h = header[i], col = cols[i]) for i in range(len(cols))]
         header_string = map(lambda x: '|'.join(x), [header_string])
         separator = '-'*len(header_string[0])
-        param_string = ["{n:^{c0}}|{v:^{c1}}|{c:^{c2}}|{t:^{c3}}".format(n = names[i], v = values[i], c = constraints[i], t = ties[i],
-                                                                        c0 = cols[0], c1 = cols[1], c2 = cols[2], c3 = cols[3]) for i in range(len(values))]
+        param_string = ["{n:^{c0}}|{v:^{c1}}|{c:^{c2}}|{t:^{c3}}".format(n = names[i], v = values[i], c = constraints[i], t = ties[i], c0 = cols[0], c1 = cols[1], c2 = cols[2], c3 = cols[3]) for i in range(len(values))]
 
 
         return ('\n'.join([header_string[0], separator]+param_string)) + '\n'

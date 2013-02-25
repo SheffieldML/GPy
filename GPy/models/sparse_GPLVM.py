@@ -28,7 +28,7 @@ class sparse_GPLVM(sparse_GP_regression, GPLVM):
         sparse_GP_regression.__init__(self, X, Y, **kwargs)
 
     def _get_param_names(self):
-        return (sum([['X_%i_%i'%(n,q) for n in range(self.N)] for q in range(self.Q)],[])
+        return (sum([['X_%i_%i'%(n,q) for q in range(self.Q)] for n in range(self.N)],[])
                 + sparse_GP_regression._get_param_names(self))
 
     def _get_params(self):
@@ -42,7 +42,8 @@ class sparse_GPLVM(sparse_GP_regression, GPLVM):
         return sparse_GP_regression.log_likelihood(self)
 
     def dL_dX(self):
-        dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
+        #dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
+	dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2[0,:,:],self.psi1)
 
         dL_dX = self.kern.dKdiag_dX(self.dL_dpsi0,self.X)
         dL_dX += self.kern.dK_dX(dL_dpsi1.T,self.X,self.Z)
@@ -55,5 +56,5 @@ class sparse_GPLVM(sparse_GP_regression, GPLVM):
     def plot(self):
         GPLVM.plot(self)
         #passing Z without a small amout of jitter will induce the white kernel where we don;t want it!
-        mu, var = sparse_GP_regression.predict(self, self.Z+np.random.randn(*self.Z.shape)*0.0001)
+        mu, var, upper, lower = sparse_GP_regression.predict(self, self.Z+np.random.randn(*self.Z.shape)*0.0001)
         pb.plot(mu[:, 0] , mu[:, 1], 'ko')

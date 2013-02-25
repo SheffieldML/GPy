@@ -197,9 +197,13 @@ class opt_rasm(Optimizer):
         self.trace = opt_result[1]
 
 def get_optimizer(f_min):
+    # import rasmussens_minimize as rasm
+    from SGD import opt_SGD
+    
     optimizers = {'fmin_tnc': opt_tnc,
           'simplex': opt_simplex,
-          'lbfgsb': opt_lbfgsb}
+          'lbfgsb': opt_lbfgsb,
+          'sgd': opt_SGD}
 
     if rasm_available:
         optimizers['rasmussen'] = opt_rasm

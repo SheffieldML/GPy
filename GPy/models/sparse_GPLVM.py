@@ -42,11 +42,8 @@ class sparse_GPLVM(sparse_GP_regression, GPLVM):
         return sparse_GP_regression.log_likelihood(self)
 
     def dL_dX(self):
-        #dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2,self.psi1)
-	dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(self.dL_dpsi2[0,:,:],self.psi1)
-
         dL_dX = self.kern.dKdiag_dX(self.dL_dpsi0,self.X)
-        dL_dX += self.kern.dK_dX(dL_dpsi1.T,self.X,self.Z)
+        dL_dX += self.kern.dK_dX(self.dL_dpsi1,self.X,self.Z)
 
         return dL_dX
 

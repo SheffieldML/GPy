@@ -378,6 +378,26 @@ class kern(parameterised):
         slices1, slices2 = self._process_slices(slices1,slices2)
         [p.psi2(Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s1,s2,s2]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
 
+        #compute the "cross" terms
+        for p1, p2 in itertools.combinations(self.parts,2):
+            #white doesn;t compine with anything
+            if p1.name=='white' or p2.name=='white':
+                pass
+            #rbf X bias
+            elif p1.name=='bias' and p2.name=='rbf':
+                target += p1.variance*(p2._psi1[:,:,None]+p2._psi1[:,None,:])
+            elif p2.name=='bias' and p1.name=='rbf':
+                target += p2.variance*(p1._psi1[:,:,None]+p1._psi1[:,None,:])
+            #rbf X linear
+            elif p1.name=='linear' and p2.name=='rbf':
+                raise NotImplementedError #TODO
+            elif p2.name=='linear' and p1.name=='rbf':
+                raise NotImplementedError #TODO
+            else:
+                raise NotImplementedError, "psi2 cannot be computed for this kernel"
+
+
+
 
 
         # "crossterms". Here we are recomputing psi1 for white (we don't need to), but it's
@@ -401,6 +421,31 @@ class kern(parameterised):
         slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros(self.Nparam)
         [p.dpsi2_dtheta(partial[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[ps]) for p,i_s,s1,s2,ps in zip(self.parts,self.input_slices,slices1,slices2,self.param_slices)]
+
+        #compute the "cross" terms
+        #TODO: better looping
+        for i1, i2 in itertools.combinations(range(len(self.parts)),2):
+            p1,p2 = self.parts[i1], self.parts[i2]
+            ipsl1, ipsl2 = self.input_slices[i1], self.input_slices[i2]
+            ps1, ps2 = self.param_slices[i1], self.param_slices[i2]
+
+            #white doesn;t compine with anything
+            if p1.name=='white' or p2.name=='white':
+                pass
+            #rbf X bias
+            elif p1.name=='bias' and p2.name=='rbf':
+                p2.dpsi1_dtheta(partial.sum(1)*p1.variance,Z,mu,S,target[ps2])
+                p1.dpsi1_dtheta(partial.sum(1)*p2._psi1,Z,mu,S,target[ps1])
+            elif p2.name=='bias' and p1.name=='rbf':
+                p1.dpsi1_dtheta(partial.sum(1)*p2.variance,Z,mu,S,target[ps1])
+                p2.dpsi1_dtheta(partial.sum(1)*p1._psi1,Z,mu,S,target[ps2])
+            #rbf X linear
+            elif p1.name=='linear' and p2.name=='rbf':
+                raise NotImplementedError #TODO
+            elif p2.name=='linear' and p1.name=='rbf':
+                raise NotImplementedError #TODO
+            else:
+                raise NotImplementedError, "psi2 cannot be computed for this kernel"
 
         # # "crossterms"
         # # 1. get all the psi1 statistics
@@ -428,6 +473,26 @@ class kern(parameterised):
         slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros_like(Z)
         [p.dpsi2_dZ(partial[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s2,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
+
+        #compute the "cross" terms
+        #TODO: slices (need to iterate around the input slices also...)
+        for p1, p2 in itertools.combinations(self.parts,2):
+            #white doesn;t compine with anything
+            if p1.name=='white' or p2.name=='white':
+                pass
+            #rbf X bias
+            elif p1.name=='bias' and p2.name=='rbf':
+                target += p2.dpsi1_dX(partial.sum(1)*p1.variance,Z,mu,S)
+            elif p2.name=='bias' and p1.name=='rbf':
+                target += p1.dpsi1_dZ(partial.sum(2)*p2.variance,Z,mu,S)
+            #rbf X linear
+            elif p1.name=='linear' and p2.name=='rbf':
+                raise NotImplementedError #TODO
+            elif p2.name=='linear' and p1.name=='rbf':
+                raise NotImplementedError #TODO
+            else:
+                raise NotImplementedError, "psi2 cannot be computed for this kernel"
+
 
         return target
 

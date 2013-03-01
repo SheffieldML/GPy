@@ -172,7 +172,7 @@ class periodic_Matern32(kernpart):
         #np.add(target[:,:,2],dK_dper, target[:,:,2])
         target[2] += np.sum(dK_dper*partial)
 
-def dKdiag_dtheta(self,partial,X,target):
+    def dKdiag_dtheta(self,partial,X,target):
         """derivative of the diagonal covariance matrix with respect to the parameters"""
         FX  = self._cos(self.basis_alpha[None,:],self.basis_omega[None,:],self.basis_phi[None,:])(X)
 

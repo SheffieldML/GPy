@@ -60,6 +60,12 @@ class GP(model):
 
         model.__init__(self)
 
+    def dL_dZ(self):
+        """
+        TODO: one day we might like to learn Z by gradient methods?
+        """
+        return np.zeros_like(self.Z)
+
     def _set_params(self,p):
         self.kern._set_params_transformed(p[:self.kern.Nparam])
         #self.likelihood._set_params(p[self.kern.Nparam:])               # test by Nicolas
@@ -236,7 +242,12 @@ class GP(model):
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
-    def plot(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None,full_cov=False):
+    def plot(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None,levels=20):
+        """
+        TODO: Docstrings!
+        :param levels: for 2D plotting, the number of contour levels to use
+
+        """
         # TODO include samples
         if which_functions=='all':
             which_functions = [True]*self.kern.Nparts
@@ -265,7 +276,7 @@ class GP(model):
             x, y = np.linspace(xmin[0],xmax[0],resolution), np.linspace(xmin[1],xmax[1],resolution)
             m, var, lower, upper = self.predict(Xnew, slices=which_functions)
             m = m.reshape(resolution,resolution).T
-            pb.contour(x,y,m,vmin=m.min(),vmax=m.max(),cmap=pb.cm.jet)
+            pb.contour(x,y,m,vmin=m.min(),vmax=m.max(),cmap=pb.cm.jet,levels=levels)
             Yf = self.likelihood.Y.flatten()
             pb.scatter(self.X[:,0], self.X[:,1], 40, Yf, cmap=pb.cm.jet,vmin=m.min(),vmax=m.max(), linewidth=0.)
             pb.xlim(xmin[0],xmax[0])

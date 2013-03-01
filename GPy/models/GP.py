@@ -276,7 +276,7 @@ class GP(model):
             x, y = np.linspace(xmin[0],xmax[0],resolution), np.linspace(xmin[1],xmax[1],resolution)
             m, var, lower, upper = self.predict(Xnew, slices=which_functions)
             m = m.reshape(resolution,resolution).T
-            pb.contour(x,y,m,vmin=m.min(),vmax=m.max(),cmap=pb.cm.jet,levels=levels)
+            pb.contour(x,y,m,levels,vmin=m.min(),vmax=m.max(),cmap=pb.cm.jet)
             Yf = self.likelihood.Y.flatten()
             pb.scatter(self.X[:,0], self.X[:,1], 40, Yf, cmap=pb.cm.jet,vmin=m.min(),vmax=m.max(), linewidth=0.)
             pb.xlim(xmin[0],xmax[0])

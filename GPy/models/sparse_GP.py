@@ -58,6 +58,19 @@ class sparse_GP(GP):
         if self.has_uncertain_inputs:
             self.X_uncertainty /= np.square(self._Xstd)
 
+
+    def _compute_kernel_matrices(self):
+        # kernel computations, using BGPLVM notation
+        self.Kmm = self.kern.K(self.Z)
+        if self.has_uncertain_inputs:
+            self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty)
+            self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
+            self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty)
+        else:
+            self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices)
+            self.psi1 = self.kern.K(self.Z,self.X)
+            self.psi2 = None
+
     def _computations(self):
         # TODO find routine to multiply triangular matrices
         #TODO: slices for psi statistics (easy enough)
@@ -65,25 +78,20 @@ class sparse_GP(GP):
         sf = self.scale_factor
         sf2 = sf**2
 
-        # kernel computations, using BGPLVM notation
-        self.Kmm = self.kern.K(self.Z)
-        if self.has_uncertain_inputs:
-            self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty)
-            self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
-            self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty)
-            if self.likelihood.is_heteroscedastic:
+        #The rather complex computations of psi2_beta_scaled
+        if self.likelihood.is_heteroscedastic:
+            assert self.likelihood.D == 1 #TODO: what is the likelihood is heterscedatic and there are multiple independent outputs?
+            if self.has_uncertain_inputs:
                 self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision.reshape(self.N,1,1)/sf2)).sum(0)
-                #TODO: what is the likelihood is heterscedatic and there are multiple independent outputs?
             else:
-                self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision/sf2)).sum(0)
+                tmp = self.psi1*(np.sqrt(self.likelihood.precision.reshape(1,self.N))/sf)
+                self.psi2_beta_scaled = np.dot(tmp,tmp.T)
         else:
-            self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices)
-            self.psi1 = self.kern.K(self.Z,self.X)
-            if self.likelihood.is_heteroscedastic:
-                tmp = self.psi1*(np.sqrt(self.likelihood.precision.reshape(self.N,1))/sf)
+            if self.has_uncertain_inputs:
+                self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision/sf2)).sum(0)
             else:
                 tmp = self.psi1*(np.sqrt(self.likelihood.precision)/sf)
-            self.psi2_beta_scaled = np.dot(tmp,tmp.T)
+                self.psi2_beta_scaled = np.dot(tmp,tmp.T)
 
         self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
 
@@ -149,6 +157,7 @@ class sparse_GP(GP):
         self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
         self.kern._set_params(p[self.Z.size:self.Z.size+self.kern.Nparam])
         self.likelihood._set_params(p[self.Z.size+self.kern.Nparam:])
+        self._compute_kernel_matrices()
         self._computations()
 
     def _get_params(self):

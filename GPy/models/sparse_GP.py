@@ -84,7 +84,7 @@ class sparse_GP(GP):
             if self.has_uncertain_inputs:
                 self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision.reshape(self.N,1,1)/sf2)).sum(0)
             else:
-                tmp = self.psi1*(np.sqrt(self.likelihood.precision.reshape(1,self.N))/sf)
+                tmp = self.psi1.T*(np.sqrt(self.likelihood.precision.reshape(1,self.N))/sf)
                 self.psi2_beta_scaled = np.dot(tmp,tmp.T)
         else:
             if self.has_uncertain_inputs:

@@ -171,3 +171,66 @@ class periodic_Matern32(kernpart):
         target[1] += np.sum(dK_dlen*partial)
         #np.add(target[:,:,2],dK_dper, target[:,:,2])
         target[2] += np.sum(dK_dper*partial)
+
+    def dKdiag_dtheta(self,partial,X,target):
+        """derivative of the diagonal covariance matrix with respect to the parameters"""
+        FX  = self._cos(self.basis_alpha[None,:],self.basis_omega[None,:],self.basis_phi[None,:])(X)
+
+        La = np.column_stack((self.a[0]*np.ones((self.n_basis,1)),self.a[1]*self.basis_omega, self.a[2]*self.basis_omega**2))
+        Lo = np.column_stack((self.basis_omega,self.basis_omega,self.basis_omega))
+        Lp = np.column_stack((self.basis_phi,self.basis_phi+np.pi/2,self.basis_phi+np.pi))
+        r,omega,phi =  self._cos_factorization(La,Lo,Lp)
+        Gint = self._int_computation( r,omega,phi, r,omega,phi)
+
+        Flower = np.array(self._cos(self.basis_alpha,self.basis_omega,self.basis_phi)(self.lower))[:,None]
+        F1lower = np.array(self._cos(self.basis_alpha*self.basis_omega,self.basis_omega,self.basis_phi+np.pi/2)(self.lower))[:,None]
+
+        #dK_dvar
+        dK_dvar = 1./self.variance*mdot(FX,self.Gi,FX.T)
+
+        #dK_dlen
+        da_dlen = [-6/self.lengthscale**3,-2*np.sqrt(3)/self.lengthscale**2,0.]
+        db_dlen = [0.,2*self.lengthscale/3.]
+        dLa_dlen =  np.column_stack((da_dlen[0]*np.ones((self.n_basis,1)),da_dlen[1]*self.basis_omega,da_dlen[2]*self.basis_omega**2))
+        r1,omega1,phi1 = self._cos_factorization(dLa_dlen,Lo,Lp)
+        dGint_dlen = self._int_computation(r1,omega1,phi1, r,omega,phi)
+        dGint_dlen = dGint_dlen + dGint_dlen.T
+        dG_dlen = self.lengthscale**2/(4*np.sqrt(3))*Gint + self.lengthscale**3/(12*np.sqrt(3))*dGint_dlen + db_dlen[0]*np.dot(Flower,Flower.T) + db_dlen[1]*np.dot(F1lower,F1lower.T)
+        dK_dlen = -mdot(FX,self.Gi,dG_dlen/self.variance,self.Gi,FX.T)
+
+        #dK_dper
+        dFX_dper  = self._cos(-self.basis_alpha[None,:]*self.basis_omega[None,:]/self.period*X ,self.basis_omega[None,:],self.basis_phi[None,:]+np.pi/2)(X)
+
+        dLa_dper = np.column_stack((-self.a[0]*self.basis_omega/self.period, -self.a[1]*self.basis_omega**2/self.period, -self.a[2]*self.basis_omega**3/self.period))
+        dLp_dper = np.column_stack((self.basis_phi+np.pi/2,self.basis_phi+np.pi,self.basis_phi+np.pi*3/2))
+        r1,omega1,phi1 =  self._cos_factorization(dLa_dper,Lo,dLp_dper)
+
+        IPPprim1 =  self.upper*(1./(omega+omega1.T)*np.cos((omega+omega1.T)*self.upper+phi+phi1.T-np.pi/2)  +  1./(omega-omega1.T)*np.cos((omega-omega1.T)*self.upper+phi-phi1.T-np.pi/2))
+        IPPprim1 -= self.lower*(1./(omega+omega1.T)*np.cos((omega+omega1.T)*self.lower+phi+phi1.T-np.pi/2)  +  1./(omega-omega1.T)*np.cos((omega-omega1.T)*self.lower+phi-phi1.T-np.pi/2))
+        IPPprim2 =  self.upper*(1./(omega+omega1.T)*np.cos((omega+omega1.T)*self.upper+phi+phi1.T-np.pi/2)  + self.upper*np.cos(phi-phi1.T))
+        IPPprim2 -= self.lower*(1./(omega+omega1.T)*np.cos((omega+omega1.T)*self.lower+phi+phi1.T-np.pi/2)  + self.lower*np.cos(phi-phi1.T))
+        IPPprim = np.where(np.isnan(IPPprim1),IPPprim2,IPPprim1)
+
+        IPPint1 =  1./(omega+omega1.T)**2*np.cos((omega+omega1.T)*self.upper+phi+phi1.T-np.pi)  +  1./(omega-omega1.T)**2*np.cos((omega-omega1.T)*self.upper+phi-phi1.T-np.pi)
+        IPPint1 -= 1./(omega+omega1.T)**2*np.cos((omega+omega1.T)*self.lower+phi+phi1.T-np.pi)  +  1./(omega-omega1.T)**2*np.cos((omega-omega1.T)*self.lower+phi-phi1.T-np.pi)
+        IPPint2 =  1./(omega+omega1.T)**2*np.cos((omega+omega1.T)*self.upper+phi+phi1.T-np.pi)  + 1./2*self.upper**2*np.cos(phi-phi1.T)
+        IPPint2 -= 1./(omega+omega1.T)**2*np.cos((omega+omega1.T)*self.lower+phi+phi1.T-np.pi)  + 1./2*self.lower**2*np.cos(phi-phi1.T)
+        IPPint = np.where(np.isnan(IPPint1),IPPint2,IPPint1)
+
+        dLa_dper2 = np.column_stack((-self.a[1]*self.basis_omega/self.period, -2*self.a[2]*self.basis_omega**2/self.period))
+        dLp_dper2 = np.column_stack((self.basis_phi+np.pi/2,self.basis_phi+np.pi))
+        r2,omega2,phi2 =  self._cos_factorization(dLa_dper2,Lo[:,0:2],dLp_dper2)
+
+        dGint_dper = np.dot(r,r1.T)/2 * (IPPprim - IPPint) +  self._int_computation(r2,omega2,phi2, r,omega,phi)
+        dGint_dper = dGint_dper + dGint_dper.T
+
+        dFlower_dper  = np.array(self._cos(-self.lower*self.basis_alpha*self.basis_omega/self.period,self.basis_omega,self.basis_phi+np.pi/2)(self.lower))[:,None]
+        dF1lower_dper = np.array(self._cos(-self.lower*self.basis_alpha*self.basis_omega**2/self.period,self.basis_omega,self.basis_phi+np.pi)(self.lower)+self._cos(-self.basis_alpha*self.basis_omega/self.period,self.basis_omega,self.basis_phi+np.pi/2)(self.lower))[:,None]
+
+        dG_dper = 1./self.variance*(self.lengthscale**3/(12*np.sqrt(3))*dGint_dper + self.b[0]*(np.dot(dFlower_dper,Flower.T)+np.dot(Flower,dFlower_dper.T)) + self.b[1]*(np.dot(dF1lower_dper,F1lower.T)+np.dot(F1lower,dF1lower_dper.T)))
+
+        dK_dper = 2* mdot(dFX_dper,self.Gi,FX.T) - mdot(FX,self.Gi,dG_dper,self.Gi,FX.T)
+
+        target[0] += np.sum(np.diag(dK_dvar)*partial)
+        target[1] += np.sum(np.diag(dK_dlen)*partial)
+        target[2] += np.sum(np.diag(dK_dper)*partial)

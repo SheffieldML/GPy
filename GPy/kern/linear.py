@@ -92,6 +92,13 @@ class linear(kernpart):
         self._psi_computations(Z,mu,S)
         target += np.sum(self.variances*self.mu2_S,1)
 
+    def dKdiag_dtheta(self,partial, X, target):
+        tmp = partial[:,None]*X**2
+        if self.ARD:
+            target += tmp.sum(0)
+        else:
+            target += tmp.sum()
+
     def dpsi0_dtheta(self,partial,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
         tmp = partial[:, None] * self.mu2_S

@@ -84,7 +84,6 @@ class sparse_GP(GP):
             else:
                 tmp = self.psi1*(np.sqrt(self.likelihood.precision)/sf)
             self.psi2_beta_scaled = np.dot(tmp,tmp.T)
-            self.psi2 = self.psi1.T[:,:,None]*self.psi1.T[:,None,:] # TODO: remove me for efficiency and stability
 
         self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
 

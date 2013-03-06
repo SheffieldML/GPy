@@ -16,6 +16,22 @@ class KernelTests(unittest.TestCase):
         print m
         self.assertTrue(m.checkgrad())
 
+    def coregionalisation_test(self):
+        X1 = np.random.rand(50,1)*8
+        X2 = np.random.rand(30,1)*5
+        index = np.vstack((np.zeros_like(X1),np.ones_like(X2)))
+        X = np.hstack((np.vstack((X1,X2)),index))
+        Y1 = np.sin(X1) + np.random.randn(*X1.shape)*0.05
+        Y2 = np.sin(X2) + np.random.randn(*X2.shape)*0.05 + 2.
+        Y = np.vstack((Y1,Y2))
+
+        k1 = GPy.kern.rbf(1) + GPy.kern.bias(1)
+        k2 = GPy.kern.coregionalise(2,1)
+        k = k1.prod_orthogonal(k2)
+        m = GPy.models.GP_regression(X,Y,kernel=k)
+        self.assertTrue(m.checkgrad())
+
+
 
 
 if __name__ == "__main__":

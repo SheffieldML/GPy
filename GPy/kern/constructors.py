@@ -21,6 +21,7 @@ from periodic_Matern52 import periodic_Matern52 as periodic_Matern52part
 from product import product as productpart
 from product_orthogonal import product_orthogonal as product_orthogonalpart
 from symmetric import symmetric as symmetric_part
+from coregionalise import coregionalise as coregionalise_part
 #TODO these s=constructors are not as clean as we'd like. Tidy the code up
 #using meta-classes to make the objects construct properly wthout them.
 
@@ -273,4 +274,9 @@ def symmetric(k):
     k_ = k.copy()
     k_.parts = [symmetric_part(p) for p in k.parts]
     return k_
+
+def coregionalise(Nout,R=1, W=None, kappa=None):
+    p = coregionalise_part(Nout,R,W,kappa)
+    return kern(1,[p])
+
 

@@ -75,6 +75,74 @@ def silhouette():
     print(m)
     return m
 
+def coregionalisation_toy2():
+    """
+    A simple demonstration of coregionalisation on two sinusoidal functions
+    """
+    X1 = np.random.rand(50,1)*8
+    X2 = np.random.rand(30,1)*5
+    index = np.vstack((np.zeros_like(X1),np.ones_like(X2)))
+    X = np.hstack((np.vstack((X1,X2)),index))
+    Y1 = np.sin(X1) + np.random.randn(*X1.shape)*0.05
+    Y2 = np.sin(X2) + np.random.randn(*X2.shape)*0.05 + 2.
+    Y = np.vstack((Y1,Y2))
+
+    k1 = GPy.kern.rbf(1) + GPy.kern.bias(1)
+    k2 = GPy.kern.coregionalise(2,1)
+    k = k1.prod_orthogonal(k2)
+    m = GPy.models.GP_regression(X,Y,kernel=k)
+    m.constrain_fixed('rbf_var',1.)
+    m.constrain_positive('kappa')
+    m.ensure_default_constraints()
+    m.optimize()
+
+    pb.figure()
+    Xtest1 = np.hstack((np.linspace(0,9,100)[:,None],np.zeros((100,1))))
+    Xtest2 = np.hstack((np.linspace(0,9,100)[:,None],np.ones((100,1))))
+    mean, var,low,up = m.predict(Xtest1)
+    GPy.util.plot.gpplot(Xtest1[:,0],mean,low,up)
+    mean, var,low,up = m.predict(Xtest2)
+    GPy.util.plot.gpplot(Xtest2[:,0],mean,low,up)
+    pb.plot(X1[:,0],Y1[:,0],'rx',mew=2)
+    pb.plot(X2[:,0],Y2[:,0],'gx',mew=2)
+    return m
+
+
+
+
+def coregionalisation_toy():
+    """
+    A simple demonstration of coregionalisation on two sinusoidal functions
+    """
+    X1 = np.random.rand(50,1)*8
+    X2 = np.random.rand(30,1)*5
+    index = np.vstack((np.zeros_like(X1),np.ones_like(X2)))
+    X = np.hstack((np.vstack((X1,X2)),index))
+    Y1 = np.sin(X1) + np.random.randn(*X1.shape)*0.05
+    Y2 = -np.sin(X2) + np.random.randn(*X2.shape)*0.05
+    Y = np.vstack((Y1,Y2))
+
+    k1 = GPy.kern.rbf(1)
+    k2 = GPy.kern.coregionalise(2,1)
+    k = k1.prod_orthogonal(k2)
+    m = GPy.models.GP_regression(X,Y,kernel=k)
+    m.constrain_fixed('rbf_var',1.)
+    m.constrain_positive('kappa')
+    m.ensure_default_constraints()
+    m.optimize()
+
+    pb.figure()
+    Xtest1 = np.hstack((np.linspace(0,9,100)[:,None],np.zeros((100,1))))
+    Xtest2 = np.hstack((np.linspace(0,9,100)[:,None],np.ones((100,1))))
+    mean, var,low,up = m.predict(Xtest1)
+    GPy.util.plot.gpplot(Xtest1[:,0],mean,low,up)
+    mean, var,low,up = m.predict(Xtest2)
+    GPy.util.plot.gpplot(Xtest2[:,0],mean,low,up)
+    pb.plot(X1[:,0],Y1[:,0],'rx',mew=2)
+    pb.plot(X2[:,0],Y2[:,0],'gx',mew=2)
+    return m
+
+
 
 def multiple_optima(gene_number=937,resolution=80, model_restarts=10, seed=10000):
     """Show an example of a multimodal error surface for Gaussian process regression. Gene 939 has bimodal behaviour where the noisey mode is higher."""
@@ -160,3 +228,4 @@ def contour_data(data, length_scales, log_SNRs, signal_kernel_call=GPy.kern.rbf)
             length_scale_lls.append(model.log_likelihood())
         lls.append(length_scale_lls)
     return np.array(lls)
+

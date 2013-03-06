@@ -157,13 +157,29 @@ class GradientTests(unittest.TestCase):
     def test_GP_EP_probit(self):
         N = 20
         X = np.hstack([np.random.normal(5,2,N/2),np.random.normal(10,2,N/2)])[:,None]
-        Y = np.hstack([np.ones(N/2),np.repeat(-1,N/2)])[:,None]
+        Y = np.hstack([np.ones(N/2),np.zeros(N/2)])[:,None]
         kernel = GPy.kern.rbf(1)
         distribution = GPy.likelihoods.likelihood_functions.probit()
         likelihood = GPy.likelihoods.EP(Y, distribution)
         m = GPy.models.GP(X, likelihood, kernel)
         m.ensure_default_constraints()
-        self.assertTrue(m.EPEM)
+        m.update_likelihood_approximation()
+        self.assertTrue(m.checkgrad())
+        #self.assertTrue(m.EPEM)
+
+    def test_sparse_EP_DTC_probit(self):
+        N = 20
+        X = np.hstack([np.random.normal(5,2,N/2),np.random.normal(10,2,N/2)])[:,None]
+        Y = np.hstack([np.ones(N/2),np.zeros(N/2)])[:,None]
+        Z = np.linspace(0,15,4)[:,None]
+        kernel = GPy.kern.rbf(1)
+        distribution = GPy.likelihoods.likelihood_functions.probit()
+        likelihood = GPy.likelihoods.EP(Y, distribution)
+        m = GPy.models.sparse_GP(X, likelihood, kernel,Z)
+        m.ensure_default_constraints()
+        m.update_likelihood_approximation()
+        self.assertTrue(m.checkgrad())
+
 
     @unittest.skip("FITC will be broken for a while")
     def test_generalized_FITC(self):

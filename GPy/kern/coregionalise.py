@@ -46,8 +46,8 @@ class coregionalise(kernpart):
             index2 = index
         else:
             index2 = np.asarray(index2,dtype=np.int)
-        ii,jj = np.meshgrid(index,index2)
-        target += self.B[ii,jj].T
+        ii,jj = np.meshgrid(index2,index)
+        target += self.B[ii,jj]
 
     def Kdiag(self,index,target):
         target += np.diag(self.B)[np.asarray(index,dtype=np.int).flatten()]
@@ -58,26 +58,47 @@ class coregionalise(kernpart):
             index2 = index
         else:
             index2 = np.asarray(index2,dtype=np.int)
-        ii,jj = np.meshgrid(index,index2)
+        ii,jj = np.meshgrid(index2,index)
         PK = np.zeros((self.R,self.R))
-        dkappa = np.zeros(self.Nout)
         partial_small = np.zeros_like(self.B)
         for i in range(self.Nout):
             for j in range(self.Nout):
-                partial_small[j,i] = np.sum(partial[(ii==i)*(jj==j)])
-        #print partial_small
+                partial_small[i,j] = np.sum(partial[(ii==i)*(jj==j)])
         dkappa = np.diag(partial_small)
 
-        ##target += (((X2[:, None, :] * self.variances)) * partial[:,:, None]).sum(0)
         dW = 2.*(self.W[:,None,:]*partial_small[:,:,None]).sum(0)
 
         target += np.hstack([dW.flatten(),dkappa])
 
     def dKdiag_dtheta(self,partial,index,target):
-        raise NotImplementedError
+        index = np.asarray(index,dtype=np.int).flatten()
+        partial_small = np.zeros(self.Nout)
+        for i in range(self.Nout):
+            partial_small[i] += np.sum(partial[index==i])
+        dW = 2.*self.W*partial_small[:,None]
+        dkappa = partial_small
+        target += np.hstack([dW.flatten(),dkappa])
 
     def dK_dX(self,partial,X,X2,target):
         pass
 
+    def dKdiag_dthetai_(self,partial,index,target):
+        index = np.asarray(index,dtype=np.int)
+        index2 = index
+        ii,jj = np.meshgrid(index2,index)
+        PK = np.zeros((self.R,self.R))
+        partial_small = np.zeros_like(self.B)
+        for i in range(self.Nout):
+            for j in range(self.Nout):
+                partial_small[j,i] = np.sum(partial[np.diag((ii==i)*(jj==j))])
+        #print partial_small
+        dkappa = np.diag(partial_small)
+
+        ##target += (((X2[:, None, :] * self.variances)) * partial[:,:, None]).sum(0)
+        partial_small = np.diag(np.diag(partial_small))
+        #dW = 2.*(self.W[:,None,:]*partial_small[:,:,None]).sum(0)
+        dW = 2.
+
+        target += np.hstack([dW.flatten(),dkappa])
 
 

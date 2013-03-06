@@ -72,7 +72,7 @@ class GP(model):
         self.likelihood._set_params(p[self.kern.Nparam_transformed():])    # test by Nicolas
 
 
-        self.K = self.kern.K(self.X,slices1=self.Xslices)
+        self.K = self.kern.K(self.X,slices1=self.Xslices,slices2=self.Xslices)
         self.K += self.likelihood.covariance_matrix
 
         self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
@@ -129,7 +129,7 @@ class GP(model):
 
         For the likelihood parameters, pass in alpha = K^-1 y
         """
-        return np.hstack((self.kern.dK_dtheta(partial=self.dL_dK,X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        return np.hstack((self.kern.dK_dtheta(partial=self.dL_dK,X=self.X,slices1=self.Xslices,slices2=self.Xslices), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
 
     def _raw_predict(self,_Xnew,slices=None, full_cov=False):
         """

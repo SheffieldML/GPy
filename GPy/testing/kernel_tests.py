@@ -16,7 +16,7 @@ class KernelTests(unittest.TestCase):
         print m
         self.assertTrue(m.checkgrad())
 
-    def coregionalisation_test(self):
+    def test_coregionalisation(self):
         X1 = np.random.rand(50,1)*8
         X2 = np.random.rand(30,1)*5
         index = np.vstack((np.zeros_like(X1),np.ones_like(X2)))

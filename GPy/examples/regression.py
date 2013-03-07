@@ -123,7 +123,7 @@ def coregionalisation_toy():
     Y = np.vstack((Y1,Y2))
 
     k1 = GPy.kern.rbf(1)
-    k2 = GPy.kern.coregionalise(2,1)
+    k2 = GPy.kern.coregionalise(2,2)
     k = k1.prod_orthogonal(k2)
     m = GPy.models.GP_regression(X,Y,kernel=k)
     m.constrain_fixed('rbf_var',1.)
@@ -147,8 +147,8 @@ def coregionalisation_sparse():
     """
     A simple demonstration of coregionalisation on two sinusoidal functions
     """
-    X1 = np.random.rand(500,1)*8
-    X2 = np.random.rand(300,1)*5
+    X1 = np.random.rand(50,1)*8
+    X2 = np.random.rand(30,1)*5
     index = np.vstack((np.zeros_like(X1),np.ones_like(X2)))
     X = np.hstack((np.vstack((X1,X2)),index))
     Y1 = np.sin(X1) + np.random.randn(*X1.shape)*0.05
@@ -158,7 +158,7 @@ def coregionalisation_sparse():
     Z = np.hstack((np.random.rand(25,1)*8,np.random.randint(0,2,25)[:,None]))
 
     k1 = GPy.kern.rbf(1)
-    k2 = GPy.kern.coregionalise(2,2)
+    k2 = GPy.kern.coregionalise(2,1)
     k = k1.prod_orthogonal(k2) + GPy.kern.white(2,0.001)
 
     m = GPy.models.sparse_GP_regression(X,Y,kernel=k,Z=Z)
@@ -178,7 +178,6 @@ def coregionalisation_sparse():
     pb.plot(X1[:,0],Y1[:,0],'rx',mew=2)
     pb.plot(X2[:,0],Y2[:,0],'gx',mew=2)
     return m
-
 
 
 def multiple_optima(gene_number=937,resolution=80, model_restarts=10, seed=10000):

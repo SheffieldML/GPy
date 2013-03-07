@@ -4,6 +4,7 @@
 from kernpart import kernpart
 import numpy as np
 from GPy.util.linalg import mdot, pdinv
+import pdb
 
 class coregionalise(kernpart):
     """
@@ -37,7 +38,6 @@ class coregionalise(kernpart):
         self.B = np.dot(self.W,self.W.T) + np.diag(self.kappa)
 
     def _get_param_names(self):
-
         return sum([['W%i_%i'%(i,j) for j in range(self.R)] for i in range(self.Nout)],[]) + ['kappa_%i'%i for i in range(self.Nout)]
 
     def K(self,index,index2,target):
@@ -46,7 +46,8 @@ class coregionalise(kernpart):
             index2 = index
         else:
             index2 = np.asarray(index2,dtype=np.int)
-        ii,jj = np.meshgrid(index2,index)
+        ii,jj = np.meshgrid(index,index2)
+        ii,jj = ii.T, jj.T
         target += self.B[ii,jj]
 
     def Kdiag(self,index,target):
@@ -58,19 +59,22 @@ class coregionalise(kernpart):
             index2 = index
         else:
             index2 = np.asarray(index2,dtype=np.int)
-        ii,jj = np.meshgrid(index2,index)
-        PK = np.zeros((self.R,self.R))
+        ii,jj = np.meshgrid(index,index2)
+        ii,jj = ii.T, jj.T
+
         partial_small = np.zeros_like(self.B)
         for i in range(self.Nout):
-            for j in range(self.Nout):
-                partial_small[i,j] = np.sum(partial[(ii==i)*(jj==j)])
-        dkappa = np.diag(partial_small)
+            for j in range(i,self.Nout):
+                tmp = np.sum(partial[(ii==i)*(jj==j)])
+                partial_small[i,j] = tmp
+                partial_small[j,i] = tmp
 
+        dkappa = np.diag(partial_small)
         dW = 2.*(self.W[:,None,:]*partial_small[:,:,None]).sum(0)
 
         target += np.hstack([dW.flatten(),dkappa])
 
-    def dKdiag_dtheta_foo(self,partial,index,target):
+    def dKdiag_dtheta(self,partial,index,target):
         index = np.asarray(index,dtype=np.int).flatten()
         partial_small = np.zeros(self.Nout)
         for i in range(self.Nout):
@@ -82,7 +86,5 @@ class coregionalise(kernpart):
     def dK_dX(self,partial,X,X2,target):
         pass
 
-    def dKdiag_dtheta(self,partial,index,target):
-        self.dK_dtheta(np.diag(partial),index,index,target)
 
 

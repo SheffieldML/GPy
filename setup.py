@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import os
-from numpy.distutils.core import Extension, setup
+from setuptools import setup
+#from numpy.distutils.core import Extension, setup
 #from sphinx.setup_command import BuildDoc
 
 # Version number

@@ -72,7 +72,7 @@ class sparse_GP(GP):
             self.psi2 = None
 
     def _computations(self):
-        # TODO find routine to multiply triangular matrices
+        #TODO: find routine to multiply triangular matrices
         #TODO: slices for psi statistics (easy enough)
 
         sf = self.scale_factor
@@ -106,7 +106,7 @@ class sparse_GP(GP):
         self.C = mdot(self.Lmi.T, self.Bi, self.Lmi)
         self.E = mdot(self.C, self.psi1VVpsi1/sf2, self.C.T)
 
-        # Compute dL_dpsi # FIXME: this is untested for the het. case
+        # Compute dL_dpsi # FIXME: this is untested for the heterscedastic + uncertin inputs case
         self.dL_dpsi0 = - 0.5 * self.D * (self.likelihood.precision * np.ones([self.N,1])).flatten()
         self.dL_dpsi1 = mdot(self.V, self.psi1V.T,self.C).T
         if self.likelihood.is_heteroscedastic:
@@ -180,7 +180,8 @@ class sparse_GP(GP):
         if self.has_uncertain_inputs:
             raise NotImplementedError, "EP approximation not implemented for uncertain inputs"
         else:
-            self.likelihood.fit_DTC(self.Kmm,self.psi1)
+            #self.likelihood.fit_DTC(self.Kmm,self.psi1)
+            self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
             self._set_params(self._get_params()) # update the GP
 
     def log_likelihood(self):

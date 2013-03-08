@@ -94,7 +94,8 @@ def coregionalisation_toy2():
     m.constrain_fixed('rbf_var',1.)
     m.constrain_positive('kappa')
     m.ensure_default_constraints()
-    m.optimize()
+    m.optimize('sim',max_f_eval=5000,messages=1)
+    #m.optimize()
 
     pb.figure()
     Xtest1 = np.hstack((np.linspace(0,9,100)[:,None],np.zeros((100,1))))
@@ -129,7 +130,7 @@ def coregionalisation_toy():
     m.constrain_fixed('rbf_var',1.)
     m.constrain_positive('kappa')
     m.ensure_default_constraints()
-    m.optimize()
+    #m.optimize()
 
     pb.figure()
     Xtest1 = np.hstack((np.linspace(0,9,100)[:,None],np.zeros((100,1))))
@@ -147,26 +148,29 @@ def coregionalisation_sparse():
     """
     A simple demonstration of coregionalisation on two sinusoidal functions
     """
-    X1 = np.random.rand(50,1)*8
-    X2 = np.random.rand(30,1)*5
+    X1 = np.random.rand(500,1)*8
+    X2 = np.random.rand(300,1)*5
     index = np.vstack((np.zeros_like(X1),np.ones_like(X2)))
     X = np.hstack((np.vstack((X1,X2)),index))
     Y1 = np.sin(X1) + np.random.randn(*X1.shape)*0.05
     Y2 = -np.sin(X2) + np.random.randn(*X2.shape)*0.05
     Y = np.vstack((Y1,Y2))
 
-    Z = np.hstack((np.random.rand(25,1)*8,np.random.randint(0,2,25)[:,None]))
+    M = 40
+    Z = np.hstack((np.random.rand(M,1)*8,np.random.randint(0,2,M)[:,None]))
+    #Z = X.copy()
 
     k1 = GPy.kern.rbf(1)
-    k2 = GPy.kern.coregionalise(2,1)
+    k2 = GPy.kern.coregionalise(2,2)
     k = k1.prod_orthogonal(k2) + GPy.kern.white(2,0.001)
 
     m = GPy.models.sparse_GP_regression(X,Y,kernel=k,Z=Z)
+    m.scale_factor = 10000.
     m.constrain_fixed('rbf_var',1.)
     m.constrain_positive('kappa')
     m.constrain_fixed('iip')
     m.ensure_default_constraints()
-    #m.optimize()
+    m.optimize_restarts(5,robust=True,messages=1)
 
     pb.figure()
     Xtest1 = np.hstack((np.linspace(0,9,100)[:,None],np.zeros((100,1))))
@@ -177,6 +181,10 @@ def coregionalisation_sparse():
     GPy.util.plot.gpplot(Xtest2[:,0],mean,low,up)
     pb.plot(X1[:,0],Y1[:,0],'rx',mew=2)
     pb.plot(X2[:,0],Y2[:,0],'gx',mew=2)
+    y = pb.ylim()[0]
+    pb.plot(Z[:,0][Z[:,1]==0],np.zeros(np.sum(Z[:,1]==0))+y,'r|',mew=2)
+    pb.plot(Z[:,0][Z[:,1]==1],np.zeros(np.sum(Z[:,1]==1))+y,'g|',mew=2)
+    print Z
     return m
 
 

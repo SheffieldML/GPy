@@ -64,13 +64,13 @@ class coregionalise(kernpart):
 
         partial_small = np.zeros_like(self.B)
         for i in range(self.Nout):
-            for j in range(i,self.Nout):
+            for j in range(self.Nout):
                 tmp = np.sum(partial[(ii==i)*(jj==j)])
                 partial_small[i,j] = tmp
-                partial_small[j,i] = tmp
 
         dkappa = np.diag(partial_small)
-        dW = 2.*(self.W[:,None,:]*partial_small[:,:,None]).sum(0)
+        partial_small += partial_small.T
+        dW = (self.W[:,None,:]*partial_small[:,:,None]).sum(0)
 
         target += np.hstack([dW.flatten(),dkappa])
 

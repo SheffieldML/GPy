@@ -40,8 +40,8 @@ class product_orthogonal(kernpart):
     def K(self,X,X2,target):
         """Compute the covariance matrix between X and X2."""
         if X2 is None: X2 = X
-        target1 = np.zeros((X.shape[0],X2.shape[0]))
-        target2 = np.zeros((X.shape[0],X2.shape[0]))
+        target1 = np.zeros_like(target)
+        target2 = np.zeros_like(target)
         self.k1.K(X[:,:self.k1.D],X2[:,:self.k1.D],target1)
         self.k2.K(X[:,self.k1.D:],X2[:,self.k1.D:],target2)
         target += target1 * target2

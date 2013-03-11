@@ -7,8 +7,8 @@ import pylab as pb
 from ..core.parameterised import parameterised
 from kernpart import kernpart
 import itertools
-from product_orthogonal import product_orthogonal
-from product import product
+from prod_orthogonal import prod_orthogonal
+from prod import prod
 
 class kern(parameterised):
     def __init__(self,D,parts=[], input_slices=None):
@@ -161,7 +161,7 @@ class kern(parameterised):
         K1 = self.copy()
         K2 = other.copy()
 
-        newkernparts = [product(k1,k2) for k1, k2 in itertools.product(K1.parts,K2.parts)]
+        newkernparts = [prod(k1,k2) for k1, k2 in itertools.product(K1.parts,K2.parts)]
 
         slices = []
         for sl1, sl2 in itertools.product(K1.input_slices,K2.input_slices):
@@ -183,7 +183,7 @@ class kern(parameterised):
         K1 = self.copy()
         K2 = other.copy()
 
-        newkernparts = [product_orthogonal(k1,k2) for k1, k2 in itertools.product(K1.parts,K2.parts)]
+        newkernparts = [prod_orthogonal(k1,k2) for k1, k2 in itertools.product(K1.parts,K2.parts)]
 
         slices = []
         for sl1, sl2 in itertools.product(K1.input_slices,K2.input_slices):

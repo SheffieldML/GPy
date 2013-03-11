@@ -46,7 +46,6 @@ def GPLVM_oil_100():
     # create simple GP model
     m = GPy.models.GPLVM(data['X'], 2)
 
-
     # optimize
     m.ensure_default_constraints()
     m.optimize()

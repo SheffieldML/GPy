@@ -120,7 +120,7 @@ def sparse_toy_linear_1d_classification(seed=default_seed):
     Y[Y == -1] = 0
 
     # Kernel object
-    kernel = GPy.kern.rbf(1)
+    kernel = GPy.kern.rbf(1) + GPy.kern.white(1)
 
     # Likelihood object
     distribution = GPy.likelihoods.likelihood_functions.probit()
@@ -129,8 +129,8 @@ def sparse_toy_linear_1d_classification(seed=default_seed):
     Z = np.random.uniform(data['X'].min(),data['X'].max(),(10,1))
 
     # Model definition
-    m = GPy.models.sparse_GP(data['X'],likelihood=likelihood,kernel=kernel,Z=Z,normalize_X=True)
-    m.set('len',.5)
+    m = GPy.models.sparse_GP(data['X'],likelihood=likelihood,kernel=kernel,Z=Z,normalize_X=False)
+    m.set('len',2.)
 
     m.ensure_default_constraints()
     # Optimize

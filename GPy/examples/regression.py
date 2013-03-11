@@ -194,7 +194,7 @@ def multiple_optima(gene_number=937,resolution=80, model_restarts=10, seed=10000
     # Remove the mean (no bias kernel to ensure signal/noise is in RBF/white)
     data['Y'] = data['Y'] - np.mean(data['Y'])
 
-    lls = GPy.examples.regression.contour_data(data, length_scales, log_SNRs, GPy.kern.rbf)
+    lls = GPy.examples.regression._contour_data(data, length_scales, log_SNRs, GPy.kern.rbf)
     pb.contour(length_scales, log_SNRs, np.exp(lls), 20)
     ax = pb.gca()
     pb.xlabel('length scale')
@@ -229,7 +229,7 @@ def multiple_optima(gene_number=937,resolution=80, model_restarts=10, seed=10000
     ax.set_ylim(ylim)
     return (models, lls)
 
-def contour_data(data, length_scales, log_SNRs, signal_kernel_call=GPy.kern.rbf):
+def _contour_data(data, length_scales, log_SNRs, signal_kernel_call=GPy.kern.rbf):
     """Evaluate the GP objective function for a given data set for a range of signal to noise ratios and a range of lengthscales.
 
     :data_set: A data set from the utils.datasets director.

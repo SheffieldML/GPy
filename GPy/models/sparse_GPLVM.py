@@ -55,3 +55,7 @@ class sparse_GPLVM(sparse_GP_regression, GPLVM):
         #passing Z without a small amout of jitter will induce the white kernel where we don;t want it!
         mu, var, upper, lower = sparse_GP_regression.predict(self, self.Z+np.random.randn(*self.Z.shape)*0.0001)
         pb.plot(mu[:, 0] , mu[:, 1], 'ko')
+
+    def plot_latent(self, *args, **kwargs):
+        input_1, input_2 = GPLVM.plot_latent(*args, **kwargs)
+        pb.plot(m.Z[:, input_1], m.Z[:, input_2], '^w')

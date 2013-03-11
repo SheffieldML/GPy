@@ -22,7 +22,7 @@ We advise the reader to start with copy-pasting an existing kernel and to modify
 
 **Header**
 
-The header is similar to all kernels::
+The header is similar to all kernels: ::
 
     from kernpart import kernpart
     import numpy as np
@@ -35,7 +35,7 @@ The implementation of this function in mandatory.
 
 For all kernparts the first parameter ``D`` corresponds to the dimension of the input space, and the following parameters stand for the parameterization of the kernel.
 
-The following attributes are compulsory: ``self.D`` (the dimension, integer), ``self.name`` (name of the kernel, string), ``self.Nparam`` (number of parameters, integer).::
+The following attributes are compulsory: ``self.D`` (the dimension, integer), ``self.name`` (name of the kernel, string), ``self.Nparam`` (number of parameters, integer). ::
 
     def __init__(self,D,variance=1.,lengthscale=1.,power=1.):
         assert D == 1, "For this kernel we assume D=1"
@@ -50,7 +50,7 @@ The following attributes are compulsory: ``self.D`` (the dimension, integer), ``
 
 The implementation of this function in mandatory.
 
-This function returns a one dimensional array of length ``self.Nparam`` containing the value of the parameters.::
+This function returns a one dimensional array of length ``self.Nparam`` containing the value of the parameters. ::
 
     def _get_params(self):
         return np.hstack((self.variance,self.lengthscale,self.power))
@@ -59,7 +59,7 @@ This function returns a one dimensional array of length ``self.Nparam`` containi
 
 The implementation of this function in mandatory.
 
-The input is a one dimensional array of length ``self.Nparam`` containing the value of the parameters. The function has no output but it updates the values of the attribute associated to the parameters (such as ``self.variance``, ``self.lengthscale``, ...).::
+The input is a one dimensional array of length ``self.Nparam`` containing the value of the parameters. The function has no output but it updates the values of the attribute associated to the parameters (such as ``self.variance``, ``self.lengthscale``, ...). ::
 
     def _set_params(self,x):
         self.variance = x[0]
@@ -70,7 +70,7 @@ The input is a one dimensional array of length ``self.Nparam`` containing the va
 
 The implementation of this function in mandatory.
 
-It returns a list of strings of length ``self.Nparam`` corresponding to the parameter names.::
+It returns a list of strings of length ``self.Nparam`` corresponding to the parameter names. ::
 
     def _get_param_names(self):
         return ['variance','lengthscale','power']
@@ -79,7 +79,7 @@ It returns a list of strings of length ``self.Nparam`` corresponding to the para
 
 The implementation of this function in mandatory.
 
-This function is used to compute the covariance matrix associated with the inputs X, X2 (np.arrays with arbitrary number of line (say :math:`n_1`, :math:`n_2`) and ``self.D`` columns). This function does not returns anything but it adds the :math:`n_1 \times n_2` covariance matrix to the kernpart to the object ``target`` (a :math:`n_1 \times n_2` np.array). This trick allows to compute the covariance matrix of a kernel containing many kernparts with a limited memory use.::
+This function is used to compute the covariance matrix associated with the inputs X, X2 (np.arrays with arbitrary number of line (say :math:`n_1`, :math:`n_2`) and ``self.D`` columns). This function does not returns anything but it adds the :math:`n_1 \times n_2` covariance matrix to the kernpart to the object ``target`` (a :math:`n_1 \times n_2` np.array). This trick allows to compute the covariance matrix of a kernel containing many kernparts with a limited memory use. ::
 
     def K(self,X,X2,target):
         if X2 is None: X2 = X
@@ -90,7 +90,7 @@ This function is used to compute the covariance matrix associated with the input
 
 The implementation of this function in mandatory.
 
-This function is similar to ``K`` but it computes only the values of the kernel on the diagonal. Thus, ``target`` is a 1-dimensional np.array of length :math:`n_1`.::
+This function is similar to ``K`` but it computes only the values of the kernel on the diagonal. Thus, ``target`` is a 1-dimensional np.array of length :math:`n_1`. ::
 
     def Kdiag(self,X,target):
         target += self.variance    
@@ -100,7 +100,7 @@ This function is similar to ``K`` but it computes only the values of the kernel 
 
 This function is required for the optimization of the parameters.
 
-Computes the derivative of the likelihood. As previously, the values are added to the object target which is a 1-dimensional np.array of length ``self.Nparam``. For example, if the kernel is parameterized by :math:`\sigma^2,\ \theta`, then :math:`\frac{dL}{d\sigma^2} = \frac{dL}{d K} \frac{dK}{d\sigma^2}` is added to the first element of target and :math:`\frac{dL}{d\theta} = \frac{dL}{d K} \frac{dK}{d\theta}` to the second.::
+Computes the derivative of the likelihood. As previously, the values are added to the object target which is a 1-dimensional np.array of length ``self.Nparam``. For example, if the kernel is parameterized by :math:`\sigma^2,\ \theta`, then :math:`\frac{dL}{d\sigma^2} = \frac{dL}{d K} \frac{dK}{d\sigma^2}` is added to the first element of target and :math:`\frac{dL}{d\theta} = \frac{dL}{d K} \frac{dK}{d\theta}` to the second. ::
 
     def dK_dtheta(self,dL_dK,X,X2,target):
         if X2 is None: X2 = X
@@ -119,7 +119,7 @@ Computes the derivative of the likelihood. As previously, the values are added t
 
 This function is required for BGPLVM, sparse models and uncertain inputs.
 
-As previously, target is an ``self.Nparam`` array and :math:`\frac{dL}{d Kdiag} \frac{dKdiag}{dparam}` is added to each element.::
+As previously, target is an ``self.Nparam`` array and :math:`\frac{dL}{d Kdiag} \frac{dKdiag}{dparam}` is added to each element. ::
 
     def dKdiag_dtheta(self,dL_dKdiag,X,target):
         target[0] += np.sum(dL_dKdiag)
@@ -129,7 +129,7 @@ As previously, target is an ``self.Nparam`` array and :math:`\frac{dL}{d Kdiag} 
 
 This function is required for GPLVM, BGPLVM, sparse models and uncertain inputs.
 
-Computes the derivative of the likelihood with respect to the inputs ``X`` (a :math:`n \times D` np.array). The result is added to target which is a :math:`n \times D` np.array.::
+Computes the derivative of the likelihood with respect to the inputs ``X`` (a :math:`n \times D` np.array). The result is added to target which is a :math:`n \times D` np.array. ::
 
     def dK_dX(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
@@ -141,7 +141,7 @@ Computes the derivative of the likelihood with respect to the inputs ``X`` (a :m
 
 **dKdiag_dX(self,dL_dKdiag,X,target)**
 
-This function is required for BGPLVM, sparse models and uncertain inputs. As for ``dKdiag_dtheta``, :math:`\frac{dL}{d Kdiag} \frac{dKdiag}{dX}` is added to each element of target.::
+This function is required for BGPLVM, sparse models and uncertain inputs. As for ``dKdiag_dtheta``, :math:`\frac{dL}{d Kdiag} \frac{dKdiag}{dX}` is added to each element of target. ::
 
     def dKdiag_dX(self,dL_dKdiag,X,target):
         pass
@@ -167,7 +167,7 @@ The following line should be added in the preamble of the file::
 
     from rational_quadratic import rational_quadratic as rational_quadratic_part
 
-as well as the following block::
+as well as the following block ::
 
     def rational_quadratic(D,variance=1., lengthscale=1., power=1.):
         part = rational_quadraticpart(D,variance, lengthscale, power)

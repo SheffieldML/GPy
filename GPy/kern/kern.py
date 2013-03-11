@@ -237,7 +237,7 @@ class kern(parameterised):
         for i in range(K1.Nparam + K2.Nparam):
             index = np.where(index_param==i)[0]
             if index.size > 1:
-                self.tie_param(index)
+                self.tie_params(index)
         for i in prev_constr_pos:
             self.constrain_positive(np.where(index_param==i)[0])
         for i in prev_constr_neg:
@@ -391,9 +391,13 @@ class kern(parameterised):
                 target += p2.variance*(p1._psi1[:,:,None]+p1._psi1[:,None,:])
             #linear X bias
             elif p1.name=='bias' and p2.name=='linear':
-                raise NotImplementedError
+                tmp = np.zeros((mu.shape[0],Z.shape[0]))
+                p2.psi1(Z,mu,S,tmp)
+                target += p1.variance*(tmp[:,:,None] + tmp[:,None,:])
             elif p2.name=='bias' and p1.name=='linear':
-                raise NotImplementedError
+                tmp = np.zeros((mu.shape[0],Z.shape[0]))
+                p1.psi1(Z,mu,S,tmp)
+                target += p2.variance*(tmp[:,:,None] + tmp[:,None,:])
             #rbf X linear
             elif p1.name=='linear' and p2.name=='rbf':
                 raise NotImplementedError #TODO
@@ -426,6 +430,11 @@ class kern(parameterised):
             elif p2.name=='bias' and p1.name=='rbf':
                 p1.dpsi1_dtheta(dL_dpsi2.sum(1)*p2.variance*2.,Z,mu,S,target[ps1])
                 p2.dpsi1_dtheta(dL_dpsi2.sum(1)*p1._psi1*2.,Z,mu,S,target[ps2])
+            #linear X bias
+            elif p1.name=='bias' and p2.name=='linear':
+                p2.dpsi1_dtheta(dL_dpsi2.sum(1)*p1.variance*2., Z, mu, S, target[ps1])
+            elif p2.name=='bias' and p1.name=='linear':
+                p1.dpsi1_dtheta(dL_dpsi2.sum(1)*p2.variance*2., Z, mu, S, target[ps1])
             #rbf X linear
             elif p1.name=='linear' and p2.name=='rbf':
                 raise NotImplementedError #TODO
@@ -451,6 +460,11 @@ class kern(parameterised):
                 p2.dpsi1_dX(dL_dpsi2.sum(1).T*p1.variance,Z,mu,S,target)
             elif p2.name=='bias' and p1.name=='rbf':
                 p1.dpsi1_dZ(dL_dpsi2.sum(1).T*p2.variance,Z,mu,S,target)
+            #linear X bias
+            elif p1.name=='bias' and p2.name=='linear':
+                p2.dpsi1_dZ(dL_dpsi2.sum(1).T*p1.variance, Z, mu, S, target)
+            elif p2.name=='bias' and p1.name=='linear':
+                p1.dpsi1_dZ(dL_dpsi2.sum(1).T*p2.variance, Z, mu, S, target)
             #rbf X linear
             elif p1.name=='linear' and p2.name=='rbf':
                 raise NotImplementedError #TODO
@@ -478,6 +492,11 @@ class kern(parameterised):
                 p2.dpsi1_dmuS(dL_dpsi2.sum(1).T*p1.variance*2.,Z,mu,S,target_mu,target_S)
             elif p2.name=='bias' and p1.name=='rbf':
                 p1.dpsi1_dmuS(dL_dpsi2.sum(1).T*p2.variance*2.,Z,mu,S,target_mu,target_S)
+            #linear X bias
+            elif p1.name=='bias' and p2.name=='linear':
+                p2.dpsi1_dmuS(dL_dpsi2.sum(1).T*p1.variance*2., Z, mu, S, target_mu, target_S)
+            elif p2.name=='bias' and p1.name=='linear':
+                p1.dpsi1_dmuS(dL_dpsi2.sum(1).T*p2.variance*2., Z, mu, S, target_mu, target_S)
             #rbf X linear
             elif p1.name=='linear' and p2.name=='rbf':
                 raise NotImplementedError #TODO

@@ -27,11 +27,14 @@ def checkgrads_generator(model):
         self._checkgrad(model)
     return model_checkgrads
 """
+
 def model_checkgrads(model):
     assert model.checkgrad() is True
 
+
 def model_instance(model):
     assert model.checkgrad() is True
+
 
 def test_models():
     examples_path = os.path.dirname(GPy.examples.__file__)
@@ -39,7 +42,12 @@ def test_models():
     for loader, module_name, is_pkg in pkgutil.iter_modules([examples_path]):
         #Load examples
         module_examples = loader.find_module(module_name).load_module(module_name)
-        functions = [ func for func in [inspect.getmembers(module_examples, predicate=inspect.isfunction)[0]] if func[0].startswith('_') is False ]
+        print "MODULE", module_examples
+        print "Before"
+        print inspect.getmembers(module_examples, predicate=inspect.isfunction)
+        functions = [ func for func in inspect.getmembers(module_examples, predicate=inspect.isfunction) if func[0].startswith('_') is False ]
+        print "After"
+        print functions
         for example in functions:
             print "Testing example: ", example[0]
             #Generate model
@@ -59,7 +67,7 @@ def test_models():
             """
             model_checkgrads.description = 'test_checkgrads_%s' % example[0]
             yield model_checkgrads, model
-            model_instance.description = 'test_checkgrads_%s' % example[0]
+            model_instance.description = 'test_instance_%s' % example[0]
             yield model_instance, model
 
 if __name__ == "__main__":

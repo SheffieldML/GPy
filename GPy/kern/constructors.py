@@ -22,6 +22,7 @@ from prod import prod as prodpart
 from prod_orthogonal import prod_orthogonal as prod_orthogonalpart
 from symmetric import symmetric as symmetric_part
 from coregionalise import coregionalise as coregionalise_part
+from rational_quadratic import rational_quadratic as rational_quadraticpart
 #TODO these s=constructors are not as clean as we'd like. Tidy the code up
 #using meta-classes to make the objects construct properly wthout them.
 
@@ -280,3 +281,18 @@ def coregionalise(Nout,R=1, W=None, kappa=None):
     return kern(1,[p])
 
 
+def rational_quadratic(D,variance=1., lengthscale=1., power=1.):
+    """
+     Construct rational quadratic kernel.
+
+    :param D: the number of input dimensions
+    :type D: int (D=1 is the only value currently supported)
+    :param variance: the variance :math:`\sigma^2`
+    :type variance: float
+    :param lengthscale: the lengthscale :math:`\ell`
+    :type lengthscale: float
+    :rtype: kern object
+
+    """
+    part = rational_quadraticpart(D,variance, lengthscale, power)
+    return kern(D, [part])

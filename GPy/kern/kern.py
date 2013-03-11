@@ -444,9 +444,9 @@ class kern(parameterised):
                 pass
             #rbf X bias
             elif p1.name=='bias' and p2.name=='rbf':
-                target += p2.dpsi1_dX(dL_dpsi2.sum(1)*p1.variance,Z,mu,S,target)
+                p2.dpsi1_dX(dL_dpsi2.sum(1)*p1.variance,Z,mu,S,target)
             elif p2.name=='bias' and p1.name=='rbf':
-                target += p1.dpsi1_dZ(dL_dpsi2.sum(2)*p2.variance,Z,mu,S,target)
+                p1.dpsi1_dZ(dL_dpsi2.sum(2)*p2.variance,Z,mu,S,target)
             #rbf X linear
             elif p1.name=='linear' and p2.name=='rbf':
                 raise NotImplementedError #TODO
@@ -471,9 +471,9 @@ class kern(parameterised):
                 pass
             #rbf X bias
             elif p1.name=='bias' and p2.name=='rbf':
-                target += p2.dpsi1_dmuS(partial.sum(1)*p1.variance,Z,mu,S,target_mu,target_S)
+                p2.dpsi1_dmuS(partial.sum(1)*p1.variance,Z,mu,S,target_mu,target_S)
             elif p2.name=='bias' and p1.name=='rbf':
-                target += p1.dpsi1_dmuS(partial.sum(2)*p2.variance,Z,mu,S,target_mu,target_S)
+                p1.dpsi1_dmuS(partial.sum(2)*p2.variance,Z,mu,S,target_mu,target_S)
             #rbf X linear
             elif p1.name=='linear' and p2.name=='rbf':
                 raise NotImplementedError #TODO

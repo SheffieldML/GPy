@@ -6,7 +6,7 @@ import numpy as np
 import hashlib
 #from scipy import integrate # This may not be necessary (Nicolas, 20th Feb)
 
-class product_orthogonal(kernpart):
+class prod_orthogonal(kernpart):
     """
     Computes the product of 2 kernels
 

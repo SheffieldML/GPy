@@ -399,7 +399,7 @@ class kern(parameterised):
 
         return target
 
-    def dpsi2_dtheta(self,dL_dpsi2,partial1,Z,mu,S,slices1=None,slices2=None):
+    def dpsi2_dtheta(self,dL_dpsi2,Z,mu,S,slices1=None,slices2=None):
         """Returns shape (N,M,M,Ntheta)"""
         slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros(self.Nparam)

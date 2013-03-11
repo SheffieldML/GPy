@@ -10,6 +10,7 @@ from ..core import model
 from ..util.linalg import pdinv, PCA
 from GP import GP
 from ..likelihoods import Gaussian
+from .. import util
 
 class GPLVM(GP):
     """
@@ -59,5 +60,63 @@ class GPLVM(GP):
         mu, var, upper, lower = self.predict(Xnew)
         pb.plot(mu[:,0], mu[:,1],'k',linewidth=1.5)
 
-    def plot_latent(self):
-        raise NotImplementedError
+    def plot_latent(self,labels=None, which_indices=None, resolution=50):
+        """
+        :param labels: a np.array of size self.N containing labels for the points (can be number, strings, etc)
+        :param resolution: the resolution of the grid on which to evaluate the predictive variance
+        """
+
+        if labels is None:
+            labels = np.ones(self.N)
+        if which_indices is None:
+            if self.Q==1:
+                input_1 = 0
+                input_2 = None
+            if self.Q==2:
+                input_1, input_2 = 0,1
+            else:
+                #try to find a linear of RBF kern in the kernel
+                k = [p for p in self.kern.parts if p.name in ['rbf','linear']]
+                if (not len(k)==1) or (not k[0].ARD):
+                    raise ValueError, "cannot Atomatically determine which dimensions to plot, please pass 'which_indices'"
+                k = k[0]
+                if k.name=='rbf':
+                    input_1, input_2 = np.argsort(k.lengthscales)[:2]
+                elif k.name=='linear':
+                    input_1, input_2 = np.argsort(k.variances)[::-1][:2]
+
+        #first, plot the output variance as a function of the latent space
+        Xtest, xx,yy,xmin,xmax = util.plot.x_frame2D(self.X[:,[input_1, input_2]],resolution=resolution)
+        mu, var, low, up = self.predict(Xtest)
+        pb.imshow(var.reshape(resolution,resolution).T[::-1,:],extent=[xmin[0],xmax[0],xmin[1],xmax[1]],cmap=pb.cm.binary,interpolation='bilinear')
+
+
+        for i,ul in enumerate(np.unique(labels)):
+            if type(ul) is np.string_:
+                this_label = ul
+            elif type(ul) is np.int64:
+                this_label = 'class %i'%ul
+            else:
+                this_label = 'class %i'%i
+
+            index = np.nonzero(labels==ul)[0]
+            if self.Q==1:
+                x = self.X[index,input_1]
+                y = np.zeros(index.size)
+            else:
+                x = self.X[index,input_1]
+                y = self.X[index,input_2]
+            pb.plot(x,y,marker='o',color=util.plot.Tango.nextMedium(),mew=0,label=this_label,linewidth=0)
+
+        pb.xlabel('latent dimension %i'%input_1)
+        pb.ylabel('latent dimension %i'%input_2)
+
+        if not np.all(labels==1.):
+            pb.legend(loc=0,numpoints=1)
+
+        pb.xlim(xmin[0],xmax[0])
+        pb.ylim(xmin[1],xmax[1])
+
+
+
+        

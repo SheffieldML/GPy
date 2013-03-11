@@ -138,7 +138,7 @@ def tuto_kernel_overview():
 
     k.constrain_positive('var')
     k.constrain_fixed(np.array([1]),1.75)
-    k.tie_param('len')
+    k.tie_params('len')
     k.unconstrain('white')
     k.constrain_bounded('white',lower=1e-5,upper=.5)
     print k

@@ -8,7 +8,7 @@ import GPy
 class KernelTests(unittest.TestCase):
     def test_kerneltie(self):
         K = GPy.kern.rbf(5, ARD=True)
-        K.tie_param('[01]')
+        K.tie_params('[01]')
         K.constrain_fixed('2')
         X = np.random.rand(5,5)
         Y = np.ones((5,1))

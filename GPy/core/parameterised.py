@@ -56,7 +56,7 @@ class parameterised(object):
         return copy.deepcopy(self)
 
 
-    def tie_param(self, which):
+    def tie_params(self, which):
         matches = self.grep_param_names(which)
         assert matches.size > 0, "need at least something to tie together"
         if len(self.tied_indices):

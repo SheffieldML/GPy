@@ -62,7 +62,7 @@ def oil():
 
     # Contrain all parameters to be positive
     m.constrain_positive('')
-    m.tie_param('lengthscale')
+    m.tie_params('lengthscale')
     m.update_likelihood_approximation()
 
     # Optimize

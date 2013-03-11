@@ -13,7 +13,7 @@ class ExamplesTests(unittest.TestCase):
         pass
 
     def test_all_examples(self):
-        pass
+        examples_module = __import__("GPy").examples
         #Load models
 
         #Loop through models

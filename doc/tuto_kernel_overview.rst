@@ -2,6 +2,7 @@
 ****************************
 tutorial : A kernel overview
 ****************************
+The aim of this tutorial is to give a better understanding of the kernel objects in GPy and to list the ones that are already implemented. The code shown in this tutorial can be found without the comments at GPy/examples/tuto_kernel_overview.py.
 
 First we import the libraries we will need ::
 
@@ -38,7 +39,7 @@ return::
 Implemented kernels
 ===================
 
-Many kernels are already implemented in GPy. Here is a summary of most of them:
+Many kernels are already implemented in GPy. A comprehensive list can be found `here <kernel_implementation.html>`_ . The following figure gives a summary of most of them:
 
 .. figure::  Figures/tuto_kern_overview_allkern.png
     :align:  center

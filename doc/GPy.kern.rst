@@ -49,6 +49,14 @@ kern Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`coregionalise` Module
+---------------------------
+
+.. automodule:: GPy.kern.coregionalise
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`exponential` Module
 -------------------------
 
@@ -113,18 +121,18 @@ kern Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`product` Module
----------------------
+:mod:`prod` Module
+------------------
 
-.. automodule:: GPy.kern.product
+.. automodule:: GPy.kern.prod
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`product_orthogonal` Module
---------------------------------
+:mod:`prod_orthogonal` Module
+-----------------------------
 
-.. automodule:: GPy.kern.product_orthogonal
+.. automodule:: GPy.kern.prod_orthogonal
     :members:
     :undoc-members:
     :show-inheritance:
@@ -141,6 +149,14 @@ kern Package
 --------------------
 
 .. automodule:: GPy.kern.spline
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`symmetric` Module
+-----------------------
+
+.. automodule:: GPy.kern.symmetric
     :members:
     :undoc-members:
     :show-inheritance:

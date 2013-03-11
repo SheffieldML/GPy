@@ -54,7 +54,7 @@ class sparse_GP(GP):
 
         GP.__init__(self, X, likelihood, kernel=kernel, normalize_X=normalize_X, Xslices=Xslices)
 
-        #normalise X uncertainty also
+        #normalize X uncertainty also
         if self.has_uncertain_inputs:
             self.X_uncertainty /= np.square(self._Xstd)
 
@@ -208,7 +208,7 @@ class sparse_GP(GP):
         if self.has_uncertain_inputs:
             dL_dtheta += self.kern.dpsi0_dtheta(self.dL_dpsi0, self.Z,self.X,self.X_uncertainty)
             dL_dtheta += self.kern.dpsi1_dtheta(self.dL_dpsi1.T,self.Z,self.X, self.X_uncertainty)
-            dL_dtheta += self.kern.dpsi2_dtheta(self.dL_dpsi2,self.dL_dpsi1.T, self.Z,self.X, self.X_uncertainty)
+            dL_dtheta += self.kern.dpsi2_dtheta(self.dL_dpsi2, self.Z,self.X, self.X_uncertainty)
         else:
             dL_dtheta += self.kern.dK_dtheta(self.dL_dpsi1,self.Z,self.X)
             dL_dtheta += self.kern.dKdiag_dtheta(self.dL_dpsi0, self.X)
@@ -228,7 +228,7 @@ class sparse_GP(GP):
         return dL_dZ
 
     def _raw_predict(self, Xnew, slices, full_cov=False):
-        """Internal helper function for making predictions, does not account for normalisation"""
+        """Internal helper function for making predictions, does not account for normalization"""
 
         Kx = self.kern.K(self.Z, Xnew)
         mu = mdot(Kx.T, self.C/self.scale_factor, self.psi1V)

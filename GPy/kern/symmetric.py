@@ -51,7 +51,7 @@ class symmetric(kernpart):
         self.k.K(X,AX2,target)
         self.k.K(AX,AX2,target)
 
-    def dK_dtheta(self,partial,X,X2,target):
+    def dK_dtheta(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to the parameters."""
         AX = np.dot(X,self.transform)
         if X2 is None:
@@ -59,13 +59,13 @@ class symmetric(kernpart):
             ZX2 = AX
         else:
             AX2 = np.dot(X2, self.transform)
-        self.k.dK_dtheta(partial,X,X2,target)
-        self.k.dK_dtheta(partial,AX,X2,target)
-        self.k.dK_dtheta(partial,X,AX2,target)
-        self.k.dK_dtheta(partial,AX,AX2,target)
+        self.k.dK_dtheta(dL_dK,X,X2,target)
+        self.k.dK_dtheta(dL_dK,AX,X2,target)
+        self.k.dK_dtheta(dL_dK,X,AX2,target)
+        self.k.dK_dtheta(dL_dK,AX,AX2,target)
 
 
-    def dK_dX(self,partial,X,X2,target):
+    def dK_dX(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
         AX = np.dot(X,self.transform)
         if X2 is None:
@@ -73,10 +73,10 @@ class symmetric(kernpart):
             ZX2 = AX
         else:
             AX2 = np.dot(X2, self.transform)
-        self.k.dK_dX(partial, X, X2, target)
-        self.k.dK_dX(partial, AX, X2, target)
-        self.k.dK_dX(partial, X, AX2, target)
-        self.k.dK_dX(partial, AX ,AX2, target)
+        self.k.dK_dX(dL_dK, X, X2, target)
+        self.k.dK_dX(dL_dK, AX, X2, target)
+        self.k.dK_dX(dL_dK, X, AX2, target)
+        self.k.dK_dX(dL_dK, AX ,AX2, target)
 
     def Kdiag(self,X,target):
         """Compute the diagonal of the covariance matrix associated to X."""
@@ -84,9 +84,9 @@ class symmetric(kernpart):
         self.K(X,X,foo)
         target += np.diag(foo)
 
-    def dKdiag_dX(self,partial,X,target):
+    def dKdiag_dX(self,dL_dKdiag,X,target):
         raise NotImplementedError
 
-    def dKdiag_dtheta(self,partial,X,target):
+    def dKdiag_dtheta(self,dL_dKdiag,X,target):
         """Compute the diagonal of the covariance matrix associated to X."""
         raise NotImplementedError

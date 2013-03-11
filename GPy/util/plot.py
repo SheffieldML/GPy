@@ -6,7 +6,7 @@ import Tango
 import pylab as pb
 import numpy as np
 
-def gpplot(x,mu,lower,upper,edgecol=Tango.coloursHex['darkBlue'],fillcol=Tango.coloursHex['lightBlue'],axes=None,**kwargs):
+def gpplot(x,mu,lower,upper,edgecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue'],axes=None,**kwargs):
     if axes is None:
         axes = pb.gca()
     mu = mu.flatten()

@@ -2,7 +2,7 @@
 Gaussian process regression tutorial
 *************************************
 
-We will see in this tutorial the basics for building a 1 dimensional and a 2 dimensional Gaussian process regression model, also known as a kriging model. The code shown in this tutorial can be found without the comments at GPy/examples/tuto_GP_regression.py.
+We will see in this tutorial the basics for building a 1 dimensional and a 2 dimensional Gaussian process regression model, also known as a kriging model. The code shown in this tutorial can be obtained at GPy/examples/tutorials.py, or by running ``GPy.examples.tutorials.tuto_GP_regression()``.
 
 We first import the libraries we will need: ::
 

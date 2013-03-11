@@ -110,7 +110,7 @@ class EP(likelihood):
             Sroot_tilde_K = np.sqrt(self.tau_tilde)[:,None]*K
             B = np.eye(self.N) + np.sqrt(self.tau_tilde)[None,:]*Sroot_tilde_K
             L = jitchol(B)
-            V,info = linalg.flapack.dtrtrs(L,Sroot_tilde_K,lower=1)
+            V,info = linalg.lapack.flapack.dtrtrs(L,Sroot_tilde_K,lower=1)
             Sigma = K - np.dot(V.T,V)
             mu = np.dot(Sigma,self.v_tilde)
             epsilon_np1 = sum((self.tau_tilde-self.np1[-1])**2)/self.N
@@ -187,7 +187,7 @@ class EP(likelihood):
                 #Posterior distribution parameters update
                 LLT = LLT + np.outer(Kmn[:,i],Kmn[:,i])*Delta_tau
                 L = jitchol(LLT)
-                V,info = linalg.flapack.dtrtrs(L,Kmn,lower=1)
+                V,info = linalg.lapack.flapack.dtrtrs(L,Kmn,lower=1)
                 Sigma_diag = np.sum(V*V,-2)
                 si = np.sum(V.T*V[:,i],-1)
                 mu = mu + (Delta_v-Delta_tau*mu[i])*si
@@ -195,8 +195,8 @@ class EP(likelihood):
             #Sigma recomputation with Cholesky decompositon
             LLT0 = LLT0 + np.dot(Kmn*self.tau_tilde[None,:],Kmn.T)
             L = jitchol(LLT)
-            V,info = linalg.flapack.dtrtrs(L,Kmn,lower=1)
-            V2,info = linalg.flapack.dtrtrs(L.T,V,lower=0)
+            V,info = linalg.lapack.flapack.dtrtrs(L,Kmn,lower=1)
+            V2,info = linalg.lapack.flapack.dtrtrs(L.T,V,lower=0)
             Sigma_diag = np.sum(V*V,-2)
             Knmv_tilde = np.dot(Kmn,self.v_tilde)
             mu = np.dot(V2.T,Knmv_tilde)
@@ -295,7 +295,7 @@ class EP(likelihood):
             P = (Diag / Diag0)[:,None] * P0
             RPT0 = np.dot(R0,P0.T)
             L = jitchol(np.eye(M) + np.dot(RPT0,(1./Diag0 - Diag/(Diag0**2))[:,None]*RPT0.T))
-            R,info = linalg.flapack.dtrtrs(L,R0,lower=1)
+            R,info = linalg.lapack.flapack.dtrtrs(L,R0,lower=1)
             RPT = np.dot(R,P.T)
             Sigma_diag = Diag + np.sum(RPT.T*RPT.T,-1)
             self.w = Diag * self.v_tilde

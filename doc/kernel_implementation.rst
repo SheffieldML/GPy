@@ -3,15 +3,45 @@
 List of implemented kernels
 ***************************
 
-The :math:`\checkmark` symbol represents the functions that have been implemented for each kernel.
+The following table shows the implemented kernels in GPy and gives the details of the implemented function for each kernel.
 
-..  |tick|
+====================  ===========  ======  ======= =========== =============== ======= =========== ====== ====== =======
+NAME                  get/set      K       Kdiag   dK_dtheta   dKdiag_dtheta   dK_dX   dKdiag_dX   psi0   psi1   psi2
+====================  ===========  ======  ======= =========== =============== ======= =========== ====== ====== =======
+bias                  |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|      |tick| |tick| |tick|
+--------------------  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
+Brownian              |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|                                                
+--------------------  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
+exponential           |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|
+--------------------  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
+finite_dimensional    |tick|       |tick|  |tick|  |tick|      |tick| 
+--------------------  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
+linear                |tick|       |tick|  |tick|  |tick|      |tick|          |tick|              |tick| |tick| |tick|
+--------------------  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
+Matern32              |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|        
+--------------------  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
+Matern52              |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|
+--------------------  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
+periodic_exponential  |tick|       |tick|  |tick|  |tick|      |tick|
+--------------------  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
+periodic_Matern32     |tick|       |tick|  |tick|  |tick|      |tick|
+--------------------  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
+periodic_Matern52     |tick|       |tick|  |tick|  |tick|      |tick|
+--------------------  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
+rbf                   |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|      |tick| |tick| |tick|
+--------------------  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
+spline                |tick|       |tick|  |tick|  |tick|      |tick|                  |tick|     
+--------------------  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
+white                 |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|      |tick| |tick| |tick|
+====================  ===========  ======  ======= =========== =============== ======= =========== ====== ====== =======
 
-..  |tick| image:: tick.png
+Depending on the use, all functions may not be required
 
+    * ``get/set, K, Kdiag``: compulsory
+    * ``dK_dtheta``: necessary to optimize the model
+    * ``dKdiag_dtheta``: sparse models, BGPLVM, GPs with uncertain inputs
+    * ``dK_dX``: sparse models, GPLVM, BGPLVM, GPs with uncertain inputs
+    * ``dKdiag_dX``: sparse models, BGPLVM, GPs with uncertain inputs
+    * ``psi0, psi1, psi2``: BGPLVM, GPs with uncertain inputs
 
-======  ===========  ===  ======= =========== =============== ======= =========== ====== ====== =======
- NAME     get/set    K    Kdiag   dK_dtheta   dKdiag_dtheta   dK_dX   dKdiag_dX   psi0   psi1   psi2
-======  ===========  ===  ======= =========== =============== ======= =========== ====== ====== =======
-rbf     \\checkmark   y  
-======  ===========  ===  ======= =========== =============== ======= =========== ====== ====== =======
+..  |tick| image:: Figures/tick.png

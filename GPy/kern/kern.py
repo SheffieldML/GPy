@@ -271,10 +271,10 @@ class kern(parameterised):
         [p.K(X[s1,i_s],X2[s2,i_s],target=target[s1,s2]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
         return target
 
-    def dK_dtheta(self,partial,X,X2=None,slices1=None,slices2=None):
+    def dK_dtheta(self,dL_dK,X,X2=None,slices1=None,slices2=None):
         """
-        :param partial: An array of partial derivaties, dL_dK
-        :type partial: Np.ndarray (N x M)
+        :param dL_dK: An array of dL_dK derivaties, dL_dK
+        :type dL_dK: Np.ndarray (N x M)
         :param X: Observed data inputs
         :type X: np.ndarray (N x D)
         :param X2: Observed dara inputs (optional, defaults to X)
@@ -288,16 +288,16 @@ class kern(parameterised):
         if X2 is None:
             X2 = X
         target = np.zeros(self.Nparam)
-        [p.dK_dtheta(partial[s1,s2],X[s1,i_s],X2[s2,i_s],target[ps]) for p,i_s,ps,s1,s2 in zip(self.parts, self.input_slices, self.param_slices, slices1, slices2)]
+        [p.dK_dtheta(dL_dK[s1,s2],X[s1,i_s],X2[s2,i_s],target[ps]) for p,i_s,ps,s1,s2 in zip(self.parts, self.input_slices, self.param_slices, slices1, slices2)]
 
         return self._transform_gradients(target)
 
-    def dK_dX(self,partial,X,X2=None,slices1=None,slices2=None):
+    def dK_dX(self,dL_dK,X,X2=None,slices1=None,slices2=None):
         if X2 is None:
             X2 = X
         slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros_like(X)
-        [p.dK_dX(partial[s1,s2],X[s1,i_s],X2[s2,i_s],target[s1,i_s]) for p, i_s, s1, s2 in zip(self.parts, self.input_slices, slices1, slices2)]
+        [p.dK_dX(dL_dK[s1,s2],X[s1,i_s],X2[s2,i_s],target[s1,i_s]) for p, i_s, s1, s2 in zip(self.parts, self.input_slices, slices1, slices2)]
         return target
 
     def Kdiag(self,X,slices=None):
@@ -307,20 +307,20 @@ class kern(parameterised):
         [p.Kdiag(X[s,i_s],target=target[s]) for p,i_s,s in zip(self.parts,self.input_slices,slices)]
         return target
 
-    def dKdiag_dtheta(self,partial,X,slices=None):
+    def dKdiag_dtheta(self,dL_dKdiag,X,slices=None):
         assert X.shape[1]==self.D
-        assert len(partial.shape)==1
-        assert partial.size==X.shape[0]
+        assert len(dL_dKdiag.shape)==1
+        assert dL_dKdiag.size==X.shape[0]
         slices = self._process_slices(slices,False)
         target = np.zeros(self.Nparam)
-        [p.dKdiag_dtheta(partial[s],X[s,i_s],target[ps]) for p,i_s,s,ps in zip(self.parts,self.input_slices,slices,self.param_slices)]
+        [p.dKdiag_dtheta(dL_dKdiag[s],X[s,i_s],target[ps]) for p,i_s,s,ps in zip(self.parts,self.input_slices,slices,self.param_slices)]
         return self._transform_gradients(target)
 
-    def dKdiag_dX(self, partial, X, slices=None):
+    def dKdiag_dX(self, dL_dKdiag, X, slices=None):
         assert X.shape[1]==self.D
         slices = self._process_slices(slices,False)
         target = np.zeros_like(X)
-        [p.dKdiag_dX(partial[s],X[s,i_s],target[s,i_s]) for p,i_s,s in zip(self.parts,self.input_slices,slices)]
+        [p.dKdiag_dX(dL_dKdiag[s],X[s,i_s],target[s,i_s]) for p,i_s,s in zip(self.parts,self.input_slices,slices)]
         return target
 
     def psi0(self,Z,mu,S,slices=None):
@@ -329,16 +329,16 @@ class kern(parameterised):
         [p.psi0(Z,mu[s],S[s],target[s]) for p,s in zip(self.parts,slices)]
         return target
 
-    def dpsi0_dtheta(self,partial,Z,mu,S,slices=None):
+    def dpsi0_dtheta(self,dL_dpsi0,Z,mu,S,slices=None):
         slices = self._process_slices(slices,False)
         target = np.zeros(self.Nparam)
-        [p.dpsi0_dtheta(partial[s],Z,mu[s],S[s],target[ps]) for p,ps,s in zip(self.parts, self.param_slices,slices)]
+        [p.dpsi0_dtheta(dL_dpsi0[s],Z,mu[s],S[s],target[ps]) for p,ps,s in zip(self.parts, self.param_slices,slices)]
         return self._transform_gradients(target)
 
-    def dpsi0_dmuS(self,partial,Z,mu,S,slices=None):
+    def dpsi0_dmuS(self,dL_dpsi0,Z,mu,S,slices=None):
         slices = self._process_slices(slices,False)
         target_mu,target_S = np.zeros_like(mu),np.zeros_like(S)
-        [p.dpsi0_dmuS(partial,Z,mu[s],S[s],target_mu[s],target_S[s]) for p,s in zip(self.parts,slices)]
+        [p.dpsi0_dmuS(dL_dpsi0,Z,mu[s],S[s],target_mu[s],target_S[s]) for p,s in zip(self.parts,slices)]
         return target_mu,target_S
 
     def psi1(self,Z,mu,S,slices1=None,slices2=None):
@@ -348,25 +348,25 @@ class kern(parameterised):
         [p.psi1(Z[s2],mu[s1],S[s1],target[s1,s2]) for p,s1,s2 in zip(self.parts,slices1,slices2)]
         return target
 
-    def dpsi1_dtheta(self,partial,Z,mu,S,slices1=None,slices2=None):
+    def dpsi1_dtheta(self,dL_dpsi1,Z,mu,S,slices1=None,slices2=None):
         """N,M,(Ntheta)"""
         slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros((self.Nparam))
-        [p.dpsi1_dtheta(partial[s2,s1],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[ps]) for p,ps,s1,s2,i_s in zip(self.parts, self.param_slices,slices1,slices2,self.input_slices)]
+        [p.dpsi1_dtheta(dL_dpsi1[s2,s1],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[ps]) for p,ps,s1,s2,i_s in zip(self.parts, self.param_slices,slices1,slices2,self.input_slices)]
         return self._transform_gradients(target)
 
-    def dpsi1_dZ(self,partial,Z,mu,S,slices1=None,slices2=None):
+    def dpsi1_dZ(self,dL_dpsi1,Z,mu,S,slices1=None,slices2=None):
         """N,M,Q"""
         slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros_like(Z)
-        [p.dpsi1_dZ(partial[s2,s1],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s2,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
+        [p.dpsi1_dZ(dL_dpsi1[s2,s1],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s2,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
         return target
 
-    def dpsi1_dmuS(self,partial,Z,mu,S,slices1=None,slices2=None):
+    def dpsi1_dmuS(self,dL_dpsi1,Z,mu,S,slices1=None,slices2=None):
         """return shapes are N,M,Q"""
         slices1, slices2 = self._process_slices(slices1,slices2)
         target_mu, target_S = np.zeros((2,mu.shape[0],mu.shape[1]))
-        [p.dpsi1_dmuS(partial[s2,s1],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target_mu[s1,i_s],target_S[s1,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
+        [p.dpsi1_dmuS(dL_dpsi1[s2,s1],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target_mu[s1,i_s],target_S[s1,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
         return target_mu, target_S
 
     def psi2(self,Z,mu,S,slices1=None,slices2=None):
@@ -399,10 +399,11 @@ class kern(parameterised):
 
         return target
 
-    def dpsi2_dtheta(self,partial,partial1,Z,mu,S,slices1=None,slices2=None):
+    def dpsi2_dtheta(self,dL_dpsi2,Z,mu,S,slices1=None,slices2=None):
+        """Returns shape (N,M,M,Ntheta)"""
         slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros(self.Nparam)
-        [p.dpsi2_dtheta(partial[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[ps]) for p,i_s,s1,s2,ps in zip(self.parts,self.input_slices,slices1,slices2,self.param_slices)]
+        [p.dpsi2_dtheta(dL_dpsi2[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[ps]) for p,i_s,s1,s2,ps in zip(self.parts,self.input_slices,slices1,slices2,self.param_slices)]
 
         #compute the "cross" terms
         #TODO: better looping
@@ -416,11 +417,11 @@ class kern(parameterised):
                 pass
             #rbf X bias
             elif p1.name=='bias' and p2.name=='rbf':
-                p2.dpsi1_dtheta(partial.sum(1)*p1.variance,Z,mu,S,target[ps2])
-                p1.dpsi1_dtheta(partial.sum(1)*p2._psi1,Z,mu,S,target[ps1])
+                p2.dpsi1_dtheta(dL_dpsi2.sum(1)*p1.variance,Z,mu,S,target[ps2])
+                p1.dpsi1_dtheta(dL_dpsi2.sum(1)*p2._psi1,Z,mu,S,target[ps1])
             elif p2.name=='bias' and p1.name=='rbf':
-                p1.dpsi1_dtheta(partial.sum(1)*p2.variance,Z,mu,S,target[ps1])
-                p2.dpsi1_dtheta(partial.sum(1)*p1._psi1,Z,mu,S,target[ps2])
+                p1.dpsi1_dtheta(dL_dpsi2.sum(1)*p2.variance,Z,mu,S,target[ps1])
+                p2.dpsi1_dtheta(dL_dpsi2.sum(1)*p1._psi1,Z,mu,S,target[ps2])
             #rbf X linear
             elif p1.name=='linear' and p2.name=='rbf':
                 raise NotImplementedError #TODO
@@ -431,10 +432,10 @@ class kern(parameterised):
 
         return self._transform_gradients(target)
 
-    def dpsi2_dZ(self,partial,Z,mu,S,slices1=None,slices2=None):
+    def dpsi2_dZ(self,dL_dpsi2,Z,mu,S,slices1=None,slices2=None):
         slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros_like(Z)
-        [p.dpsi2_dZ(partial[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s2,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
+        [p.dpsi2_dZ(dL_dpsi2[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s2,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
 
         #compute the "cross" terms
         for p1, p2 in itertools.combinations(self.parts,2):
@@ -443,9 +444,9 @@ class kern(parameterised):
                 pass
             #rbf X bias
             elif p1.name=='bias' and p2.name=='rbf':
-                target += p2.dpsi1_dX(partial.sum(1)*p1.variance,Z,mu,S,target)
+                p2.dpsi1_dX(dL_dpsi2.sum(1)*p1.variance,Z,mu,S,target)
             elif p2.name=='bias' and p1.name=='rbf':
-                target += p1.dpsi1_dZ(partial.sum(2)*p2.variance,Z,mu,S,target)
+                p1.dpsi1_dZ(dL_dpsi2.sum(2)*p2.variance,Z,mu,S,target)
             #rbf X linear
             elif p1.name=='linear' and p2.name=='rbf':
                 raise NotImplementedError #TODO
@@ -457,11 +458,11 @@ class kern(parameterised):
 
         return target
 
-    def dpsi2_dmuS(self,partial,Z,mu,S,slices1=None,slices2=None):
+    def dpsi2_dmuS(self,dL_dpsi2,Z,mu,S,slices1=None,slices2=None):
         """return shapes are N,M,M,Q"""
         slices1, slices2 = self._process_slices(slices1,slices2)
         target_mu, target_S = np.zeros((2,mu.shape[0],mu.shape[1]))
-        [p.dpsi2_dmuS(partial[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target_mu[s1,i_s],target_S[s1,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
+        [p.dpsi2_dmuS(dL_dpsi2[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target_mu[s1,i_s],target_S[s1,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
 
         #compute the "cross" terms
         for p1, p2 in itertools.combinations(self.parts,2):
@@ -470,9 +471,9 @@ class kern(parameterised):
                 pass
             #rbf X bias
             elif p1.name=='bias' and p2.name=='rbf':
-                target += p2.dpsi1_dmuS(partial.sum(1)*p1.variance,Z,mu,S,target_mu,target_S)
+                p2.dpsi1_dmuS(partial.sum(1)*p1.variance,Z,mu,S,target_mu,target_S)
             elif p2.name=='bias' and p1.name=='rbf':
-                target += p1.dpsi1_dmuS(partial.sum(2)*p2.variance,Z,mu,S,target_mu,target_S)
+                p1.dpsi1_dmuS(partial.sum(2)*p2.variance,Z,mu,S,target_mu,target_S)
             #rbf X linear
             elif p1.name=='linear' and p2.name=='rbf':
                 raise NotImplementedError #TODO

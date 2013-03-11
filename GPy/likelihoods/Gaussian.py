@@ -8,7 +8,7 @@ class Gaussian(likelihood):
         self.Z = 0. # a correction factor which accounts for the approximation made
         N, self.D = data.shape
 
-        #normalisation
+        #normaliztion
         if normalize:
             self._mean = data.mean(0)[None,:]
             self._std = data.std(0)[None,:]
@@ -45,7 +45,7 @@ class Gaussian(likelihood):
 
     def predictive_values(self,mu,var):
         """
-        Un-normalise the prediction and add the likelihood variance, then return the 5%, 95% interval
+        Un-normalize the prediction and add the likelihood variance, then return the 5%, 95% interval
         """
         mean = mu*self._std + self._mean
         true_var = (var + self._variance)*self._std**2

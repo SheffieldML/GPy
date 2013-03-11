@@ -3,8 +3,6 @@
 
 import os
 from setuptools import setup
-#from numpy.distutils.core import Extension, setup
-#from sphinx.setup_command import BuildDoc
 
 # Version number
 version = '0.1.3'
@@ -14,12 +12,12 @@ def read(fname):
 
 setup(name = 'GPy',
       version = version,
-      author = 'James Hensman, Nicolo Fusi, Ricardo Andrade, Nicolas Durrande, Alan Saul, Neil D. Lawrence',
+      author = read('AUTHORS.txt'),
       author_email = "james.hensman@gmail.com",
       description = ("The Gaussian Process Toolbox"),
       license = "BSD 3-clause",
       keywords = "machine-learning gaussian-processes kernels",
-      url = "http://ml.sheffield.ac.uk/GPy/",
+      url = "http://sheffieldml.github.com/GPy/",
       packages = ['GPy', 'GPy.core', 'GPy.kern', 'GPy.util', 'GPy.models', 'GPy.inference', 'GPy.examples', 'GPy.likelihoods'],
       package_dir={'GPy': 'GPy'},
       package_data = {'GPy': ['GPy/examples']},
@@ -34,7 +32,5 @@ setup(name = 'GPy',
       #setup_requires=['sphinx'],
       #cmdclass = {'build_sphinx': BuildDoc},
       classifiers=[
-      "Development Status :: 1 - Alpha",
-      "Topic :: Machine Learning",
       "License :: OSI Approved :: BSD License"],
       )

@@ -53,7 +53,7 @@ class coregionalise(kernpart):
     def Kdiag(self,index,target):
         target += np.diag(self.B)[np.asarray(index,dtype=np.int).flatten()]
 
-    def dK_dtheta(self,partial,index,index2,target):
+    def dK_dtheta(self,dL_dK,index,index2,target):
         index = np.asarray(index,dtype=np.int)
         if index2 is None:
             index2 = index
@@ -62,28 +62,28 @@ class coregionalise(kernpart):
         ii,jj = np.meshgrid(index,index2)
         ii,jj = ii.T, jj.T
 
-        partial_small = np.zeros_like(self.B)
+        dL_dK_small = np.zeros_like(self.B)
         for i in range(self.Nout):
             for j in range(self.Nout):
-                tmp = np.sum(partial[(ii==i)*(jj==j)])
-                partial_small[i,j] = tmp
+                tmp = np.sum(dL_dK[(ii==i)*(jj==j)])
+                dL_dK_small[i,j] = tmp
 
-        dkappa = np.diag(partial_small)
-        partial_small += partial_small.T
-        dW = (self.W[:,None,:]*partial_small[:,:,None]).sum(0)
+        dkappa = np.diag(dL_dK_small)
+        dL_dK_small += dL_dK_small.T
+        dW = (self.W[:,None,:]*dL_dK_small[:,:,None]).sum(0)
 
         target += np.hstack([dW.flatten(),dkappa])
 
-    def dKdiag_dtheta(self,partial,index,target):
+    def dKdiag_dtheta(self,dL_dKdiag,index,target):
         index = np.asarray(index,dtype=np.int).flatten()
-        partial_small = np.zeros(self.Nout)
+        dL_dKdiag_small = np.zeros(self.Nout)
         for i in range(self.Nout):
-            partial_small[i] += np.sum(partial[index==i])
-        dW = 2.*self.W*partial_small[:,None]
-        dkappa = partial_small
+            dL_dKdiag_small[i] += np.sum(dL_dKdiag[index==i])
+        dW = 2.*self.W*dL_dKdiag_small[:,None]
+        dkappa = dL_dKdiag_small
         target += np.hstack([dW.flatten(),dkappa])
 
-    def dK_dX(self,partial,X,X2,target):
+    def dK_dX(self,dL_dK,X,X2,target):
         pass
 
 

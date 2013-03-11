@@ -117,6 +117,4 @@ class GPLVM(GP):
         pb.xlim(xmin[0],xmax[0])
         pb.ylim(xmin[1],xmax[1])
 
-
-
-        
+        return input_1, input_2

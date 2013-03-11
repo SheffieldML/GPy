@@ -83,3 +83,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 
     def _log_likelihood_gradients(self):
         return np.hstack((self.dL_dmuS().flatten(), sparse_GP._log_likelihood_gradients(self)))
+
+    def plot_latent(self, *args, **kwargs):
+        input_1, input_2 = GPLVM.plot_latent(*args, **kwargs)
+        pb.plot(m.Z[:, input_1], m.Z[:, input_2], '^w')

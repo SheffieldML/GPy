@@ -55,7 +55,6 @@ class rbf(kernpart):
         self._X, self._X2, self._params = np.empty(shape=(3,1))
 
     def _get_params(self):
-        foo
         return np.hstack((self.variance,self.lengthscale))
 
     def _set_params(self,x):

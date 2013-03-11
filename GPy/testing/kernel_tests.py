@@ -13,7 +13,6 @@ class KernelTests(unittest.TestCase):
         X = np.random.rand(5,5)
         Y = np.ones((5,1))
         m = GPy.models.GP_regression(X,Y,K)
-        print m
         self.assertTrue(m.checkgrad())
 
     def test_coregionalisation(self):

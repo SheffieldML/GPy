@@ -192,17 +192,6 @@ class GradientTests(unittest.TestCase):
         m.approximate_likelihood()
         self.assertTrue(m.checkgrad())
 
-    def test_warped_GP(self):
-        xmin, xmax = 1, 2.5*np.pi
-        b, C, SNR = 1, 0, 0.1
-        X = np.linspace(xmin, xmax, 500)
-        y  = b*X + C + 1*np.sin(X)
-        y += 0.05*np.random.randn(len(X))
-        X, y = X[:, None], y[:, None]
-        m = GPy.models.warpedGP(X, y, warping_terms = 3)
-        m.constrain_positive('(tanh_a|tanh_b|rbf|white|bias)')
-        self.assertTrue(m.checkgrad())
-
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."

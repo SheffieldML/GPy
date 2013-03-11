@@ -46,7 +46,7 @@ def test_models():
         print "MODULE", module_examples
         print "Before"
         print inspect.getmembers(module_examples, predicate=inspect.isfunction)
-        functions = [ func for func in inspect.getmembers(module_examples, predicate=inspect.isfunction) if func[0].startswith('_') is False ]
+        functions = [ func for func in inspect.getmembers(module_examples, predicate=inspect.isfunction) if func[0].startswith('_') is False ][::-1]
         print "After"
         print functions
         for example in functions:

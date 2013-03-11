@@ -32,7 +32,5 @@ setup(name = 'GPy',
       #setup_requires=['sphinx'],
       #cmdclass = {'build_sphinx': BuildDoc},
       classifiers=[
-      "Development Status :: 1 - Alpha",
-      "Topic :: Machine Learning",
       "License :: OSI Approved :: BSD License"],
       )

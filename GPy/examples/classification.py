@@ -10,7 +10,6 @@ import numpy as np
 import GPy
 
 default_seed=10000
-
 def crescent_data(seed=default_seed): #FIXME
     """Run a Gaussian process classification on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
 

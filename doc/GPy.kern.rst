@@ -137,6 +137,14 @@ kern Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`rational_quadratic` Module
+--------------------------------
+
+.. automodule:: GPy.kern.rational_quadratic
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`rbf` Module
 -----------------
 

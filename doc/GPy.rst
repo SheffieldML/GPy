@@ -9,14 +9,6 @@ GPy Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`test_coreg` Module
-------------------------
-
-.. automodule:: GPy.test_coreg
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 Subpackages
 -----------
 

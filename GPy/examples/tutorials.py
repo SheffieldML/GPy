@@ -90,7 +90,7 @@ def tuto_kernel_overview():
 
     # Sum of kernels
     k_add = k1.add(k2)
-    k_addorth = k1.add_orthogonal(k2)    
+    k_addorth = k1.add_orthogonal(k2)
 
     pb.figure(figsize=(8,8))
     pb.subplot(2,2,1)
@@ -199,3 +199,10 @@ def tuto_kernel_overview():
     WN[100] = 1.
     pb.subplot(3,4,i+1)
     pb.plot(X,WN,'b')
+
+def model_interaction():
+    X = np.random.randn(20,1)
+    Y = np.sin(X) + np.random.randn(*X.shape)*0.01 + 5.
+    k = GPy.kern.rbf(1) + GPy.kern.bias(1)
+    return GPy.models.GP_regression(X,Y,kernel=k)
+

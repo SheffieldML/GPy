@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>GPy by SheffieldML</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">GPy</h1>
+        <p class="header">Gaussian processes framework in python</p>
+
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/SheffieldML/GPy/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/SheffieldML/GPy/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/SheffieldML/GPy">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/SheffieldML">SheffieldML</a></p>
+
+
+      </header>
+      <section>
+        <h1>GPy</h1>
+
+<p>In probability theory and statistics, a Gaussian process is a stochastic process whose realizations consist of random values associated with every point in a range of times (or of space) such that each such random variable has a normal distribution. Moreover, every finite collection of those random variables has a multivariate normal distribution. The concept of Gaussian processes is named after Carl Friedrich Gauss because it is based on the notion of the normal distribution which is often called the Gaussian distribution. In fact, one way of thinking of a Gaussian process is as an infinite-dimensional generalization of the multivariate normal distribution.
+A Gaussian processes framework in python</p>
+
+<p>A key fact of Gaussian processes is that they can be completely defined by their second-order statistics.[2] Thus, if a Gaussian process is assumed to have mean zero, defining the covariance function completely defines the process' behaviour. The covariance matrix K between all the pair of points x and x' specifies a distribution on functions and is known as the Gram matrix. Importantly, because every valid covariance function is a scalar product of vectors, by construction the matrix K is a non-negative definite matrix. Equivalently, the covariance function K is a non-negative definite function in the sense that for every pair x and x' , K(x,x')≥ 0, if K(,) &gt;0 then K is called positive definite. Importantly the non-negative definiteness of K enables its spectral decomposition using the Karhunen-Loeve expansion. Basic aspects that can be defined through the covariance function are the process' stationarity, isotropy, smoothness and periodicity.[6][7]
+Stationarity refers to the process' behaviour regarding the separation of any two points x and x' . If the process is stationary, it depends on their separation, x - x' , while if non-stationary it depends on the actual position of the points x and x'; an example of a stationary process is the Ornstein–Uhlenbeck process. On the contrary, the special case of an Ornstein–Uhlenbeck process, a Brownian motion process, is non-stationary.
+If the process depends only on |x - x'|, the Euclidean distance (not the direction) between x and x' then the process is considered isotropic. A process that is concurrently stationary and isotropic is considered to be homogeneous;[8] in practice these properties reflect the differences (or rather the lack of them) in the behaviour of the process given the location of the observer.
+Ultimately Gaussian processes translate as taking priors on functions and the smoothness of these priors can be induced by the covariance function.[6] If we expect that for "near-by" input points x and x' their corresponding output points y and y' to be "near-by" also, then the assumption of smoothness is present. If we wish to allow for significant displacement then we might choose a rougher covariance function. Extreme examples of the behaviour is the Ornstein–Uhlenbeck covariance function and the squared exponential where the former is never differentiable and the latter infinitely differentiable.</p>
+
+<ul>
+<li><a href="https://gpy.readthedocs.org/en/latest/">Online documentation</a></li>
+<li><a href="https://travis-ci.org/SheffieldML/GPy">Unit tests (Travis-CI)</a></li>
+</ul>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		
+  </body>
+</html>

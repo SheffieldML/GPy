@@ -39,7 +39,7 @@ return::
 Implemented kernels
 ===================
 
-Many kernels are already implemented in GPy. Here is a summary of most of them:
+Many kernels are already implemented in GPy. A comprehensive list can be found `here <kernel_implementation.html>`_ . The following figure gives a summary of most of them:
 
 .. figure::  Figures/tuto_kern_overview_allkern.png
     :align:  center

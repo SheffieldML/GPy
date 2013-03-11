@@ -6,3 +6,4 @@
 import classification
 import regression
 import unsupervised
+import tutorials

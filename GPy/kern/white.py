@@ -37,50 +37,50 @@ class white(kernpart):
     def Kdiag(self,X,target):
         target += self.variance
 
-    def dK_dtheta(self,partial,X,X2,target):
+    def dK_dtheta(self,dL_dK,X,X2,target):
         if X.shape==X2.shape:
             if np.all(X==X2):
-                target += np.trace(partial)
+                target += np.trace(dL_dK)
 
-    def dKdiag_dtheta(self,partial,X,target):
-        target += np.sum(partial)
+    def dKdiag_dtheta(self,dL_dKdiag,X,target):
+        target += np.sum(dL_dKdiag)
 
-    def dK_dX(self,partial,X,X2,target):
+    def dK_dX(self,dL_dK,X,X2,target):
         pass
 
-    def dKdiag_dX(self,partial,X,target):
+    def dKdiag_dX(self,dL_dKdiag,X,target):
         pass
 
     def psi0(self,Z,mu,S,target):
         target += self.variance
 
-    def dpsi0_dtheta(self,partial,Z,mu,S,target):
-        target += partial.sum()
+    def dpsi0_dtheta(self,dL_dpsi0,Z,mu,S,target):
+        target += dL_dpsi0.sum()
 
-    def dpsi0_dmuS(self,partial,Z,mu,S,target_mu,target_S):
+    def dpsi0_dmuS(self,dL_dpsi0,Z,mu,S,target_mu,target_S):
         pass
 
     def psi1(self,Z,mu,S,target):
         pass
 
-    def dpsi1_dtheta(self,partial,Z,mu,S,target):
+    def dpsi1_dtheta(self,dL_dpsi1,Z,mu,S,target):
         pass
 
-    def dpsi1_dZ(self,partial,Z,mu,S,target):
+    def dpsi1_dZ(self,dL_dpsi1,Z,mu,S,target):
         pass
 
-    def dpsi1_dmuS(self,partial,Z,mu,S,target_mu,target_S):
+    def dpsi1_dmuS(self,dL_dpsi1,Z,mu,S,target_mu,target_S):
         pass
 
     def psi2(self,Z,mu,S,target):
         pass
 
-    def dpsi2_dZ(self,partial,Z,mu,S,target):
+    def dpsi2_dZ(self,dL_dpsi2,Z,mu,S,target):
         pass
 
-    def dpsi2_dtheta(self,partial,Z,mu,S,target):
+    def dpsi2_dtheta(self,dL_dpsi2,Z,mu,S,target):
         pass
 
-    def dpsi2_dmuS(self,partial,Z,mu,S,target_mu,target_S):
+    def dpsi2_dmuS(self,dL_dpsi2,Z,mu,S,target_mu,target_S):
         pass
 

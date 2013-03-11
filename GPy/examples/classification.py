@@ -11,7 +11,7 @@ import GPy
 
 default_seed=10000
 
-def crescent_data(model_type='Full', inducing=10, seed=default_seed): #FIXME
+def crescent_data(seed=default_seed): #FIXME
     """Run a Gaussian process classification on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
 
     :param model_type: type of model to fit ['Full', 'FITC', 'DTC'].
@@ -31,11 +31,8 @@ def crescent_data(model_type='Full', inducing=10, seed=default_seed): #FIXME
     likelihood = GPy.likelihoods.EP(data['Y'],distribution)
 
 
-    if model_type=='Full':
-        m = GPy.models.GP(data['X'],likelihood,kernel)
-    else:
-        # create sparse GP EP model
-        m = GPy.models.sparse_GP_EP(data['X'],likelihood=likelihood,inducing=inducing,ep_proxy=model_type)
+    m = GPy.models.GP(data['X'],likelihood,kernel)
+    m.ensure_default_constraints()
 
     m.update_likelihood_approximation()
     print(m)
@@ -94,16 +91,13 @@ def toy_linear_1d_classification(seed=default_seed):
 
     # Model definition
     m = GPy.models.GP(data['X'],likelihood=likelihood,kernel=kernel)
+    m.ensure_default_constraints()
 
     # Optimize
-    """
-    EPEM runs a loop that consists of two steps:
-    1) EP likelihood approximation:
-        m.update_likelihood_approximation()
-    2) Parameters optimization:
-        m.optimize()
-    """
-    m.EPEM()
+    m.update_likelihood_approximation()
+    # Parameters optimization:
+    m.optimize()
+    #m.EPEM() #FIXME
 
     # Plot
     pb.subplot(211)

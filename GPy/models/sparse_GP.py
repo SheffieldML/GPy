@@ -72,7 +72,7 @@ class sparse_GP(GP):
             self.psi2 = None
 
     def _computations(self):
-        # TODO find routine to multiply triangular matrices
+        #TODO: find routine to multiply triangular matrices
         #TODO: slices for psi statistics (easy enough)
 
         sf = self.scale_factor
@@ -82,9 +82,9 @@ class sparse_GP(GP):
         if self.likelihood.is_heteroscedastic:
             assert self.likelihood.D == 1 #TODO: what is the likelihood is heterscedatic and there are multiple independent outputs?
             if self.has_uncertain_inputs:
-                self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision.reshape(self.N,1,1)/sf2)).sum(0)
+                self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision.flatten().reshape(self.N,1,1)/sf2)).sum(0)
             else:
-                tmp = self.psi1.T*(np.sqrt(self.likelihood.precision.reshape(1,self.N))/sf)
+                tmp = self.psi1*(np.sqrt(self.likelihood.precision.flatten().reshape(1,self.N))/sf)
                 self.psi2_beta_scaled = np.dot(tmp,tmp.T)
         else:
             if self.has_uncertain_inputs:
@@ -106,15 +106,19 @@ class sparse_GP(GP):
         self.C = mdot(self.Lmi.T, self.Bi, self.Lmi)
         self.E = mdot(self.C, self.psi1VVpsi1/sf2, self.C.T)
 
-        # Compute dL_dpsi # FIXME: this is untested for the het. case
-        self.dL_dpsi0 = - 0.5 * self.D * self.likelihood.precision * np.ones(self.N)
+        # Compute dL_dpsi # FIXME: this is untested for the heterscedastic + uncertin inputs case
+        self.dL_dpsi0 = - 0.5 * self.D * (self.likelihood.precision * np.ones([self.N,1])).flatten()
         self.dL_dpsi1 = mdot(self.V, self.psi1V.T,self.C).T
         if self.likelihood.is_heteroscedastic:
-            self.dL_dpsi2 = 0.5 * self.likelihood.precision[:,None,None] * self.D * self.Kmmi[None,:,:] # dB
-            self.dL_dpsi2 += - 0.5 * self.likelihood.precision[:,None,None]/sf2 * self.D * self.C[None,:,:] # dC
-            self.dL_dpsi2 += - 0.5 * self.likelihood.precision[:,None,None]* self.E[None,:,:] # dD
-            if not self.has_uncertain_inputs:
-                raise NotImplementedError, "TODO: recaste derivatibes in psi2 back into psi1"
+            if self.has_uncertain_inputs:
+                self.dL_dpsi2 = 0.5 * self.likelihood.precision[:,None,None] * self.D * self.Kmmi[None,:,:] # dB
+                self.dL_dpsi2 += - 0.5 * self.likelihood.precision[:,None,None]/sf2 * self.D * self.C[None,:,:] # dC
+                self.dL_dpsi2 += - 0.5 * self.likelihood.precision[:,None,None]* self.E[None,:,:] # dD
+            else:
+                self.dL_dpsi1 += mdot(self.Kmmi,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)) #dB
+                self.dL_dpsi1 += -mdot(self.C,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)/sf2) #dC
+                self.dL_dpsi1 += -mdot(self.E,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)) #dD
+                self.dL_dpsi2 = None
 
         else:
             self.dL_dpsi2 = 0.5 * self.likelihood.precision * self.D * self.Kmmi # dB
@@ -166,14 +170,29 @@ class sparse_GP(GP):
     def _get_param_names(self):
         return sum([['iip_%i_%i'%(i,j) for j in range(self.Z.shape[1])] for i in range(self.Z.shape[0])],[]) + GP._get_param_names(self)
 
+    def update_likelihood_approximation(self):
+        """
+        Approximates a non-gaussian likelihood using Expectation Propagation
+
+        For a Gaussian (or direct: TODO) likelihood, no iteration is required:
+        this function does nothing
+        """
+        if self.has_uncertain_inputs:
+            raise NotImplementedError, "EP approximation not implemented for uncertain inputs"
+        else:
+            self.likelihood.fit_DTC(self.Kmm,self.psi1)
+            #self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
+            self._set_params(self._get_params()) # update the GP
+
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
         sf2 = self.scale_factor**2
         if self.likelihood.is_heteroscedastic:
             A = -0.5*self.N*self.D*np.log(2.*np.pi) +0.5*np.sum(np.log(self.likelihood.precision)) -0.5*np.sum(self.V*self.likelihood.Y)
+            B = -0.5*self.D*(np.sum(self.likelihood.precision.flatten()*self.psi0) - np.trace(self.A)*sf2)
         else:
             A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.likelihood.precision)) -0.5*self.likelihood.precision*self.likelihood.trYYT
-        B = -0.5*self.D*(np.sum(self.likelihood.precision*self.psi0) - np.trace(self.A)*sf2)
+            B = -0.5*self.D*(np.sum(self.likelihood.precision*self.psi0) - np.trace(self.A)*sf2)
         C = -0.5*self.D * (self.B_logdet + self.M*np.log(sf2))
         D = +0.5*np.sum(self.psi1VVpsi1 * self.C)
         return A+B+C+D
@@ -221,14 +240,3 @@ class sparse_GP(GP):
             var = Kxx - np.sum(Kx*np.dot(self.Kmmi - self.C/self.scale_factor**2, Kx),0)
 
         return mu,var[:,None]
-
-    def plot(self, *args, **kwargs):
-        """
-        Plot the fitted model: just call the GP plot function and then add inducing inputs
-        """
-        GP.plot(self,*args,**kwargs)
-        if self.Q==1:
-            if self.has_uncertain_inputs:
-                pb.errorbar(self.X[:,0], pb.ylim()[0]+np.zeros(self.N), xerr=2*np.sqrt(self.X_uncertainty.flatten()))
-        if self.Q==2:
-            pb.plot(self.Z[:,0],self.Z[:,1],'wo')

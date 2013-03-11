@@ -26,31 +26,31 @@ class kernpart(object):
         raise NotImplementedError
     def Kdiag(self,X,target):
         raise NotImplementedError
-    def dK_dtheta(self,partial,X,X2,target):
+    def dK_dtheta(self,dL_dK,X,X2,target):
         raise NotImplementedError
-    def dKdiag_dtheta(self,partial,X,target):
+    def dKdiag_dtheta(self,dL_dKdiag,X,target):
         raise NotImplementedError
     def psi0(self,Z,mu,S,target):
         raise NotImplementedError
-    def dpsi0_dtheta(self,partial,Z,mu,S,target):
+    def dpsi0_dtheta(self,dL_dpsi0,Z,mu,S,target):
         raise NotImplementedError
-    def dpsi0_dmuS(self,partial,Z,mu,S,target_mu,target_S):
+    def dpsi0_dmuS(self,dL_dpsi0,Z,mu,S,target_mu,target_S):
         raise NotImplementedError
     def psi1(self,Z,mu,S,target):
         raise NotImplementedError
     def dpsi1_dtheta(self,Z,mu,S,target):
         raise NotImplementedError
-    def dpsi1_dZ(self,partial,Z,mu,S,target):
+    def dpsi1_dZ(self,dL_dpsi1,Z,mu,S,target):
         raise NotImplementedError
-    def dpsi1_dmuS(self,partial,Z,mu,S,target_mu,target_S):
+    def dpsi1_dmuS(self,dL_dpsi1,Z,mu,S,target_mu,target_S):
         raise NotImplementedError
     def psi2(self,Z,mu,S,target):
         raise NotImplementedError
-    def dpsi2_dZ(self,partial,Z,mu,S,target):
+    def dpsi2_dZ(self,dL_dpsi2,Z,mu,S,target):
         raise NotImplementedError
-    def dpsi2_dtheta(self,partial,Z,mu,S,target):
+    def dpsi2_dtheta(self,dL_dpsi2,Z,mu,S,target):
         raise NotImplementedError
-    def dpsi2_dmuS(self,partial,Z,mu,S,target_mu,target_S):
+    def dpsi2_dmuS(self,dL_dpsi2,Z,mu,S,target_mu,target_S):
         raise NotImplementedError
     def dK_dX(self,X,X2,target):
         raise NotImplementedError

@@ -180,8 +180,8 @@ class sparse_GP(GP):
         if self.has_uncertain_inputs:
             raise NotImplementedError, "EP approximation not implemented for uncertain inputs"
         else:
-            #self.likelihood.fit_DTC(self.Kmm,self.psi1)
-            self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
+            self.likelihood.fit_DTC(self.Kmm,self.psi1)
+            #self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
             self._set_params(self._get_params()) # update the GP
 
     def log_likelihood(self):
@@ -240,14 +240,3 @@ class sparse_GP(GP):
             var = Kxx - np.sum(Kx*np.dot(self.Kmmi - self.C/self.scale_factor**2, Kx),0)
 
         return mu,var[:,None]
-
-    def plot(self, *args, **kwargs):
-        """
-        Plot the fitted model: just call the GP plot function and then add inducing inputs
-        """
-        GP.plot(self,*args,**kwargs)
-        if self.Q==1:
-            if self.has_uncertain_inputs:
-                pb.errorbar(self.X[:,0], pb.ylim()[0]+np.zeros(self.N), xerr=2*np.sqrt(self.X_uncertainty.flatten()))
-        if self.Q==2:
-            pb.plot(self.Z[:,0],self.Z[:,1],'wo')

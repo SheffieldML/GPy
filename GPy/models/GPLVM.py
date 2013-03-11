@@ -81,13 +81,16 @@ class GPLVM(GP):
                     raise ValueError, "cannot Atomatically determine which dimensions to plot, please pass 'which_indices'"
                 k = k[0]
                 if k.name=='rbf':
-                    input_1, input_2 = np.argsort(k.lengthscales)[:2]
+                    input_1, input_2 = np.argsort(k.lengthscale)[:2]
                 elif k.name=='linear':
                     input_1, input_2 = np.argsort(k.variances)[::-1][:2]
 
         #first, plot the output variance as a function of the latent space
         Xtest, xx,yy,xmin,xmax = util.plot.x_frame2D(self.X[:,[input_1, input_2]],resolution=resolution)
-        mu, var, low, up = self.predict(Xtest)
+	Xtest_full = np.zeros((Xtest.shape[0], self.X.shape[1]))
+	Xtest_full[:, :2] = Xtest        
+	mu, var, low, up = self.predict(Xtest_full)
+	var = var[:, :2]
         pb.imshow(var.reshape(resolution,resolution).T[::-1,:],extent=[xmin[0],xmax[0],xmin[1],xmax[1]],cmap=pb.cm.binary,interpolation='bilinear')
 
 

@@ -8,9 +8,10 @@ Welcome to GPy's documentation!
 For a quick start, you can have a look at one of the tutorials:
 
 * `Basic Gaussian process regression <tuto_GP_regression.html>`_  
+* `Interacting with models <tuto_interacting_with_models.html>`_
 * `A kernel overview <tuto_kernel_overview.html>`_ 
 * Advanced GP regression (Forthcoming)
-* Writting kernels (Forthcoming)
+* Writing kernels (Forthcoming)
 
 You may also be interested by some examples in the GPy/examples folder.
 

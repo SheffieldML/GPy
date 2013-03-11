@@ -7,8 +7,8 @@ import pylab as pb
 from ..core.parameterised import parameterised
 from kernpart import kernpart
 import itertools
-from product_orthogonal import product_orthogonal
-from product import product
+from prod_orthogonal import prod_orthogonal
+from prod import prod
 
 class kern(parameterised):
     def __init__(self,D,parts=[], input_slices=None):
@@ -161,7 +161,7 @@ class kern(parameterised):
         K1 = self.copy()
         K2 = other.copy()
 
-        newkernparts = [product(k1,k2) for k1, k2 in itertools.product(K1.parts,K2.parts)]
+        newkernparts = [prod(k1,k2) for k1, k2 in itertools.product(K1.parts,K2.parts)]
 
         slices = []
         for sl1, sl2 in itertools.product(K1.input_slices,K2.input_slices):
@@ -183,7 +183,7 @@ class kern(parameterised):
         K1 = self.copy()
         K2 = other.copy()
 
-        newkernparts = [product_orthogonal(k1,k2) for k1, k2 in itertools.product(K1.parts,K2.parts)]
+        newkernparts = [prod_orthogonal(k1,k2) for k1, k2 in itertools.product(K1.parts,K2.parts)]
 
         slices = []
         for sl1, sl2 in itertools.product(K1.input_slices,K2.input_slices):
@@ -371,16 +371,17 @@ class kern(parameterised):
 
     def psi2(self,Z,mu,S,slices1=None,slices2=None):
         """
-        :Z: np.ndarray of inducing inputs (M x Q)
-        : mu, S: np.ndarrays of means and variacnes (each N x Q)
-        :returns psi2: np.ndarray (N,M,M,Q) """
+        :param Z: np.ndarray of inducing inputs (M x Q)
+        :param mu, S: np.ndarrays of means and variances (each N x Q)
+        :returns psi2: np.ndarray (N,M,M)
+        """
         target = np.zeros((mu.shape[0],Z.shape[0],Z.shape[0]))
         slices1, slices2 = self._process_slices(slices1,slices2)
         [p.psi2(Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s1,s2,s2]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
 
         #compute the "cross" terms
         for p1, p2 in itertools.combinations(self.parts,2):
-            #white doesn;t compine with anything
+            #white doesn;t combine with anything
             if p1.name=='white' or p2.name=='white':
                 pass
             #rbf X bias
@@ -396,28 +397,9 @@ class kern(parameterised):
             else:
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
 
-
-
-
-
-        # "crossterms". Here we are recomputing psi1 for white (we don't need to), but it's
-        # not really expensive, since it's just a matrix of zeroes.
-        # psi1_matrices = [np.zeros((mu.shape[0], Z.shape[0])) for p in self.parts]
-        # [p.psi1(Z[s2],mu[s1],S[s1],psi1_target[s1,s2]) for p,s1,s2,psi1_target in zip(self.parts,slices1,slices2, psi1_matrices)]
-
-        crossterms = 0.0
-        # for 3 kernels this returns something like
-        # [(0,1), (0,2), (1,2)]
-        # in theory, we should also account for (1,0), (2,0) and so on, but
-        # the transpose deals exactly with that
-        # for a,b in itertools.combinations(psi1_matrices, 2):
-        #     tmp = np.multiply(a,b)
-        #     crossterms += tmp[:,None,:] + tmp[:, :,None]
-
-        return target + crossterms
+        return target
 
     def dpsi2_dtheta(self,partial,partial1,Z,mu,S,slices1=None,slices2=None):
-        """Returns shape (N,M,M,Ntheta)"""
         slices1, slices2 = self._process_slices(slices1,slices2)
         target = np.zeros(self.Nparam)
         [p.dpsi2_dtheta(partial[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[ps]) for p,i_s,s1,s2,ps in zip(self.parts,self.input_slices,slices1,slices2,self.param_slices)]
@@ -429,7 +411,7 @@ class kern(parameterised):
             ipsl1, ipsl2 = self.input_slices[i1], self.input_slices[i2]
             ps1, ps2 = self.param_slices[i1], self.param_slices[i2]
 
-            #white doesn;t compine with anything
+            #white doesn;t combine with anything
             if p1.name=='white' or p2.name=='white':
                 pass
             #rbf X bias
@@ -447,26 +429,6 @@ class kern(parameterised):
             else:
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
 
-        # # "crossterms"
-        # # 1. get all the psi1 statistics
-        # psi1_matrices = [np.zeros((mu.shape[0], Z.shape[0])) for p in self.parts]
-        # [p.psi1(Z[s2],mu[s1],S[s1],psi1_target[s1,s2]) for p,s1,s2,psi1_target in zip(self.parts,slices1,slices2, psi1_matrices)]
-
-        # partial1 = np.ones_like(partial1)
-        # # 2. get all the dpsi1/dtheta gradients
-        # psi1_gradients = [np.zeros(self.Nparam) for p in self.parts]
-        # [p.dpsi1_dtheta(partial1[s2,s1],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],psi1g_target[ps]) for p,ps,s1,s2,i_s,psi1g_target in zip(self.parts, self.param_slices,slices1,slices2,self.input_slices,psi1_gradients)]
-
-
-        # # 3. multiply them somehow
-        # for a,b in itertools.combinations(range(len(psi1_matrices)), 2):
-
-        #     tmp = (psi1_gradients[a][None, None] * psi1_matrices[b][:,:, None])
-        #     # target += (tmp[None] + tmp[:,None]).sum(0).sum(0).sum(0)
-        #     # gne = (psi1_gradients[a].sum()*psi1_matrices[b].sum())
-        #     # target += gne
-        #     #target += (gne[None] + gne[:, None]).sum(0)
-        #     target += (partial.sum(0)[:,:,None] * (tmp[:, None] + tmp[:,:,None]).sum(0)).sum(0).sum(0)
         return self._transform_gradients(target)
 
     def dpsi2_dZ(self,partial,Z,mu,S,slices1=None,slices2=None):
@@ -475,16 +437,15 @@ class kern(parameterised):
         [p.dpsi2_dZ(partial[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target[s2,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
 
         #compute the "cross" terms
-        #TODO: slices (need to iterate around the input slices also...)
         for p1, p2 in itertools.combinations(self.parts,2):
-            #white doesn;t compine with anything
+            #white doesn;t combine with anything
             if p1.name=='white' or p2.name=='white':
                 pass
             #rbf X bias
             elif p1.name=='bias' and p2.name=='rbf':
-                target += p2.dpsi1_dX(partial.sum(1)*p1.variance,Z,mu,S)
+                target += p2.dpsi1_dX(partial.sum(1)*p1.variance,Z,mu,S,target)
             elif p2.name=='bias' and p1.name=='rbf':
-                target += p1.dpsi1_dZ(partial.sum(2)*p2.variance,Z,mu,S)
+                target += p1.dpsi1_dZ(partial.sum(2)*p2.variance,Z,mu,S,target)
             #rbf X linear
             elif p1.name=='linear' and p2.name=='rbf':
                 raise NotImplementedError #TODO
@@ -502,7 +463,24 @@ class kern(parameterised):
         target_mu, target_S = np.zeros((2,mu.shape[0],mu.shape[1]))
         [p.dpsi2_dmuS(partial[s1,s2,s2],Z[s2,i_s],mu[s1,i_s],S[s1,i_s],target_mu[s1,i_s],target_S[s1,i_s]) for p,i_s,s1,s2 in zip(self.parts,self.input_slices,slices1,slices2)]
 
-        #TODO: there are some extra terms to compute here!
+        #compute the "cross" terms
+        for p1, p2 in itertools.combinations(self.parts,2):
+            #white doesn;t combine with anything
+            if p1.name=='white' or p2.name=='white':
+                pass
+            #rbf X bias
+            elif p1.name=='bias' and p2.name=='rbf':
+                target += p2.dpsi1_dmuS(partial.sum(1)*p1.variance,Z,mu,S,target_mu,target_S)
+            elif p2.name=='bias' and p1.name=='rbf':
+                target += p1.dpsi1_dmuS(partial.sum(2)*p2.variance,Z,mu,S,target_mu,target_S)
+            #rbf X linear
+            elif p1.name=='linear' and p2.name=='rbf':
+                raise NotImplementedError #TODO
+            elif p2.name=='linear' and p1.name=='rbf':
+                raise NotImplementedError #TODO
+            else:
+                raise NotImplementedError, "psi2 cannot be computed for this kernel"
+
         return target_mu, target_S
 
     def plot(self, x = None, plot_limits=None,which_functions='all',resolution=None,*args,**kwargs):

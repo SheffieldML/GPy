@@ -30,6 +30,7 @@ def checkgrads_generator(model):
 """
 
 def model_checkgrads(model):
+    model.randomize()
     assert model.checkgrad()
 
 

@@ -90,7 +90,7 @@ class Matern52(kernpart):
         else:
             dl = (self.variance * 5./3 * dist * (1 + np.sqrt(5.)*dist ) * np.exp(-np.sqrt(5.)*dist)) * dist2M.sum(-1)*invdist
             #dl = (self.variance* 3 * dist * np.exp(-np.sqrt(3.)*dist)) * dist2M.sum(-1)*invdist
-            target[1] += np.sum(dl*dL_dKdiag)
+            target[1] += np.sum(dl*dL_dK)
 
     def dKdiag_dtheta(self,dL_dKdiag,X,target):
         """derivative of the diagonal of the covariance matrix with respect to the parameters."""

@@ -41,10 +41,6 @@ def rogers_girolami_olympics():
     print(m)
     return m
 
-def della_gatta_TRP63_gene_expression(number=942):
-    """Run a standard Gaussian process regression on the della Gatta et al TRP63 Gene Expression data set for a given gene number."""
-
-
 def toy_rbf_1d_50():
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
     data = GPy.util.datasets.toy_rbf_1d_50()
@@ -127,7 +123,7 @@ def coregionalisation_toy():
     m.constrain_fixed('rbf_var',1.)
     m.constrain_positive('kappa')
     m.ensure_default_constraints()
-    #m.optimize()
+    m.optimize()
 
     pb.figure()
     Xtest1 = np.hstack((np.linspace(0,9,100)[:,None],np.zeros((100,1))))
@@ -155,7 +151,6 @@ def coregionalisation_sparse():
 
     M = 40
     Z = np.hstack((np.random.rand(M,1)*8,np.random.randint(0,2,M)[:,None]))
-    #Z = X.copy()
 
     k1 = GPy.kern.rbf(1)
     k2 = GPy.kern.coregionalise(2,2)
@@ -181,7 +176,6 @@ def coregionalisation_sparse():
     y = pb.ylim()[0]
     pb.plot(Z[:,0][Z[:,1]==0],np.zeros(np.sum(Z[:,1]==0))+y,'r|',mew=2)
     pb.plot(Z[:,0][Z[:,1]==1],np.zeros(np.sum(Z[:,1]==1))+y,'g|',mew=2)
-    print Z
     return m
 
 

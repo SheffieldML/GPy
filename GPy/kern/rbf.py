@@ -12,7 +12,7 @@ class rbf(kernpart):
 
     .. math::
 
-       k(r) = \sigma^2 \exp(- \frac{1}{2}r^2) \ \ \ \ \  \\text{ where  } r^2 = \sum_{i=1}^d \frac{ (x_i-x^\prime_i)^2}{\ell_i^2}}
+       k(r) = \sigma^2 \exp \\bigg(- \\frac{1}{2} r^2 \\bigg) \ \ \ \ \  \\text{ where  } r^2 = \sum_{i=1}^d \\frac{ (x_i-x^\prime_i)^2}{\ell_i^2}
 
     where \ell_i is the lengthscale, \sigma^2 the variance and d the dimensionality of the input.
 

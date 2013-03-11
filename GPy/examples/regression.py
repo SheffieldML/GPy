@@ -108,9 +108,6 @@ def coregionalisation_toy2():
     pb.plot(X2[:,0],Y2[:,0],'gx',mew=2)
     return m
 
-
-
-
 def coregionalisation_toy():
     """
     A simple demonstration of coregionalisation on two sinusoidal functions
@@ -211,7 +208,7 @@ def multiple_optima(gene_number=937,resolution=80, model_restarts=10, seed=10000
 
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
-    
+
     # Now run a few optimizations
     models = []
     optim_point_x = np.empty(2)
@@ -219,18 +216,18 @@ def multiple_optima(gene_number=937,resolution=80, model_restarts=10, seed=10000
     np.random.seed(seed=seed)
     for i in range(0, model_restarts):
         kern = GPy.kern.rbf(1, variance=np.random.exponential(1.), lengthscale=np.random.exponential(50.)) + GPy.kern.white(1,variance=np.random.exponential(1.))
-        
+
         m = GPy.models.GP_regression(data['X'],data['Y'], kernel=kern)
         optim_point_x[0] = m.get('rbf_lengthscale')
         optim_point_y[0] = np.log10(m.get('rbf_variance')) - np.log10(m.get('white_variance'));
-        
+
         # optimize
         m.ensure_default_constraints()
         m.optimize(xtol=1e-6,ftol=1e-6)
 
         optim_point_x[1] = m.get('rbf_lengthscale')
         optim_point_y[1] = np.log10(m.get('rbf_variance')) - np.log10(m.get('white_variance'));
-        
+
         pb.arrow(optim_point_x[0], optim_point_y[0], optim_point_x[1]-optim_point_x[0], optim_point_y[1]-optim_point_y[0], label=str(i), head_length=1, head_width=0.5, fc='k', ec='k')
         models.append(m)
 
@@ -264,7 +261,7 @@ def contour_data(data, length_scales, log_SNRs, signal_kernel_call=GPy.kern.rbf)
             total_var = (np.dot(np.dot(data['Y'].T,GPy.util.linalg.pdinv(K)[0]), data['Y'])/data['Y'].shape[0])[0,0]
             noise_var *= total_var
             signal_var *= total_var
-            
+
             kernel = signal_kernel_call(1, variance=signal_var, lengthscale=length_scale) + GPy.kern.white(1, variance=noise_var)
 
             model = GPy.models.GP_regression(data['X'], data['Y'], kernel=kernel)
@@ -273,3 +270,70 @@ def contour_data(data, length_scales, log_SNRs, signal_kernel_call=GPy.kern.rbf)
         lls.append(length_scale_lls)
     return np.array(lls)
 
+def sparse_GP_regression_1D(N = 400, M = 5):
+    """Run a 1D example of a sparse GP regression."""
+    # sample inputs and outputs
+    X = np.random.uniform(-3.,3.,(N,1))
+    Y = np.sin(X)+np.random.randn(N,1)*0.05
+    # construct kernel
+    rbf =  GPy.kern.rbf(1)
+    noise = GPy.kern.white(1)
+    kernel = rbf + noise
+    # create simple GP model
+    m = GPy.models.sparse_GP_regression(X, Y, kernel, M=M)
+
+    m.constrain_positive('(variance|lengthscale|precision)')
+
+    m.checkgrad(verbose=1)
+    m.optimize('tnc', messages = 1)
+    m.plot()
+    return m
+
+def sparse_GP_regression_2D(N = 400, M = 50):
+    """Run a 2D example of a sparse GP regression."""
+    X = np.random.uniform(-3.,3.,(N,2))
+    Y = np.sin(X[:,0:1]) * np.sin(X[:,1:2])+np.random.randn(N,1)*0.05
+
+    # construct kernel
+    rbf =  GPy.kern.rbf(2)
+    noise = GPy.kern.white(2)
+    kernel = rbf + noise
+
+    # create simple GP model
+    m = GPy.models.sparse_GP_regression(X,Y,kernel, M = M)
+
+    # contrain all parameters to be positive (but not inducing inputs)
+    m.constrain_positive('(variance|lengthscale|precision)')
+    m.set('len',2.)
+
+    m.checkgrad()
+
+    # optimize and plot
+    pb.figure()
+    m.optimize('tnc', messages = 1)
+    m.plot()
+    print(m)
+    return m
+
+def uncertain_inputs_sparse_regression():
+    """Run a 1D example of a sparse GP regression with uncertain inputs."""
+    # sample inputs and outputs
+    S = np.ones((20,1))
+    X = np.random.uniform(-3.,3.,(20,1))
+    Y = np.sin(X)+np.random.randn(20,1)*0.05
+    likelihood = GPy.likelihoods.Gaussian(Y)
+    Z = np.random.uniform(-3.,3.,(7,1))
+
+    k = GPy.kern.rbf(1) + GPy.kern.white(1)
+
+    # create simple GP model
+    m = GPy.models.sparse_GP(X, likelihood, kernel=k, Z=Z, X_uncertainty=S)
+
+    # contrain all parameters to be positive
+    m.constrain_positive('(variance|prec)')
+
+    # optimize and plot
+    m.optimize('tnc', max_f_eval = 1000, messages=1)
+    m.plot()
+    print(m)
+    return m

@@ -3,7 +3,7 @@
 
 import numpy as np
 import pylab as pb
-from ..util.linalg import mdot, jitchol, chol_inv, pdinv
+from ..util.linalg import mdot, jitchol, chol_inv, pdinv, trace_dot
 from ..util.plot import gpplot
 from .. import kern
 from GP import GP
@@ -107,7 +107,7 @@ class sparse_GP(GP):
         self.C = np.dot(tmp,tmp.T)
         #self.C = mdot(self.Lmi.T, self.Bi, self.Lmi)
         #self.E = mdot(self.C, self.psi1VVpsi1/sf2, self.C.T)
-        tmp = np.dot(self.C,self.psi1V/sf)
+        tmp = np.dot(self.C/sf,self.psi1V)
         self.E = np.dot(tmp,tmp.T)
 
         # Compute dL_dpsi # FIXME: this is untested for the heterscedastic + uncertin inputs case
@@ -156,7 +156,7 @@ class sparse_GP(GP):
             beta = self.likelihood.precision
             dbeta =   0.5 * self.N*self.D/beta - 0.5 * np.sum(np.square(self.likelihood.Y))
             dbeta += - 0.5 * self.D * (self.psi0.sum() - np.trace(self.A)/beta*sf2)
-            dbeta += - 0.5 * self.D * np.sum(self.Bi*self.A)/beta
+            dbeta += - 0.5 * self.D * trace_dot(self.Bi,self.A)/beta
             dbeta += np.sum((self.C - 0.5 * mdot(self.C,self.psi2_beta_scaled,self.C) ) * self.psi1VVpsi1 )/beta
             self.partial_for_likelihood = -dbeta*self.likelihood.precision**2
 

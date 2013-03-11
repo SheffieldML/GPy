@@ -14,6 +14,13 @@ import types
 #import scipy.lib.lapack.flapack
 import scipy as sp
 
+def trace_dot(a,b):
+    """
+    efficiently compute the trace of the matrix product of a and b
+    """
+    assert a.shape==b.T.shape
+    return np.dot(a.flatten(),b.T.flatten())
+
 def mdot(*args):
    """Multiply all the arguments using matrix product rules.
    The output is equivalent to multiplying the arguments one by one

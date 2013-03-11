@@ -13,12 +13,12 @@ class ExamplesTests(unittest.TestCase):
         pass
 
     def test_all_examples(self):
+        pass
         #Load models
 
         #Loop through models
-        for model in models:
-
-            self.assertTrue(m.checkgrad())
+        #for model in models:
+            #self.assertTrue(m.checkgrad())
 
 
 if __name__ == "__main__":

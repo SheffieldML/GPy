@@ -35,16 +35,17 @@ class bias(kernpart):
     def Kdiag(self,X,target):
         target += self.variance
 
-    def dK_dtheta(self,partial,X,X2,target):
-        target += partial.sum()
+    def dK_dtheta(self,dL_dKdiag,X,X2,target):
+        target += dL_dKdiag.sum()
 
-    def dKdiag_dtheta(self,partial,X,target):
-        target += partial.sum()
 
-    def dK_dX(self, partial,X, X2, target):
+    def dKdiag_dtheta(self,dL_dKdiag,X,target):
+        target += dL_dKdiag.sum()
+
+    def dK_dX(self, dL_dK,X, X2, target):
         pass
 
-    def dKdiag_dX(self,partial,X,target):
+    def dKdiag_dX(self,dL_dKdiag,X,target):
         pass
 
     #---------------------------------------#
@@ -60,30 +61,29 @@ class bias(kernpart):
     def psi2(self, Z, mu, S, target):
         target += self.variance**2
 
-    def dpsi0_dtheta(self, partial, Z, mu, S, target):
-        target += partial.sum()
+    def dpsi0_dtheta(self, dL_dpsi0, Z, mu, S, target):
+        target += dL_dpsi0.sum()
 
-    def dpsi1_dtheta(self, partial, Z, mu, S, target):
-        target += partial.sum()
+    def dpsi1_dtheta(self, dL_dpsi1, Z, mu, S, target):
+        target += dL_dpsi1.sum()
 
-    def dpsi2_dtheta(self, partial, Z, mu, S, target):
-        target += 2.*self.variance*partial.sum()
+    def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S, target):
+        target += 2.*self.variance*dL_dpsi2.sum()
 
-    
-    def dpsi0_dZ(self, partial, Z, mu, S, target):
+    def dpsi0_dZ(self, dL_dpsi0, Z, mu, S, target):
         pass
 
-    def dpsi0_dmuS(self, partial, Z, mu, S, target_mu, target_S):
+    def dpsi0_dmuS(self, dL_dpsi0, Z, mu, S, target_mu, target_S):
         pass
 
-    def dpsi1_dZ(self, partial, Z, mu, S, target):
+    def dpsi1_dZ(self, dL_dpsi1, Z, mu, S, target):
         pass
 
-    def dpsi1_dmuS(self, partial, Z, mu, S, target_mu, target_S):
+    def dpsi1_dmuS(self, dL_dpsi1, Z, mu, S, target_mu, target_S):
         pass
 
-    def dpsi2_dZ(self, partial, Z, mu, S, target):
+    def dpsi2_dZ(self, dL_dpsi2, Z, mu, S, target):
         pass
 
-    def dpsi2_dmuS(self, partial, Z, mu, S, target_mu, target_S):
+    def dpsi2_dmuS(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
         pass

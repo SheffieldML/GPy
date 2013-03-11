@@ -129,7 +129,7 @@ class GP(model):
 
         For the likelihood parameters, pass in alpha = K^-1 y
         """
-        return np.hstack((self.kern.dK_dtheta(partial=self.dL_dK,X=self.X,slices1=self.Xslices,slices2=self.Xslices), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK,X=self.X,slices1=self.Xslices,slices2=self.Xslices), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
 
     def _raw_predict(self,_Xnew,slices=None, full_cov=False):
         """

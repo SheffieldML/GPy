@@ -6,7 +6,7 @@ import numpy as np
 import hashlib
 #from scipy import integrate # This may not be necessary (Nicolas, 20th Feb)
 
-class product(kernpart):
+class prod(kernpart):
     """
     Computes the product of 2 kernels that are defined on the same space
 

@@ -269,6 +269,8 @@ class GP(model):
             if hasattr(self,'Z'):
                 Zu = self.Z*self._Xstd + self._Xmean
                 pb.plot(Zu,Zu*0+pb.ylim()[0],'r|',mew=1.5,markersize=12)
+                if self.has_uncertain_inputs:
+                    pb.errorbar(self.X[:,0], pb.ylim()[0]+np.zeros(self.N), xerr=2*np.sqrt(self.X_uncertainty.flatten()))
 
         elif self.X.shape[1]==2: #FIXME
             resolution = resolution or 50
@@ -281,5 +283,8 @@ class GP(model):
             pb.scatter(self.X[:,0], self.X[:,1], 40, Yf, cmap=pb.cm.jet,vmin=m.min(),vmax=m.max(), linewidth=0.)
             pb.xlim(xmin[0],xmax[0])
             pb.ylim(xmin[1],xmax[1])
+            if hasattr(self,'Z'):
+                pb.plot(self.Z[:,0],self.Z[:,1],'wo')
+
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"

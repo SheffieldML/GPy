@@ -43,7 +43,7 @@ class sparse_GPLVM(sparse_GP_regression, GPLVM):
 
     def dL_dX(self):
         dL_dX = self.kern.dKdiag_dX(self.dL_dpsi0,self.X)
-        dL_dX += self.kern.dK_dX(self.dL_dpsi1,self.X,self.Z)
+        dL_dX += self.kern.dK_dX(self.dL_dpsi1.T,self.X,self.Z)
 
         return dL_dX
 

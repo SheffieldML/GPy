@@ -121,9 +121,6 @@ class model(parameterised):
         else:
             raise AttributeError, "no parameter matches %s"%name
 
-
-
-
     def log_prior(self):
         """evaluate the prior"""
         return np.sum([p.lnpdf(x) for p, x in zip(self.priors,self._get_params()) if p is not None])
@@ -135,12 +132,11 @@ class model(parameterised):
         [np.put(ret,i,p.lnpdf_grad(xx)) for i,(p,xx) in enumerate(zip(self.priors,x)) if not p is None]
         return ret
 
-    def _log_likelihood_gradients_transformed(self):
+    def _transform_gradients(self, g):
         """
-        Use self.log_likelihood_gradients and self.prior_gradients to get the gradients of the model.
-        Adjust the gradient for constraints and ties, return.
+        Takes a list of gradients and return an array of transformed gradients (positive/negative/tied/and so on)
         """
-        g = self._log_likelihood_gradients() + self._log_prior_gradients()
+
         x = self._get_params()
         g[self.constrained_positive_indices] = g[self.constrained_positive_indices]*x[self.constrained_positive_indices]
         g[self.constrained_negative_indices] = g[self.constrained_negative_indices]*x[self.constrained_negative_indices]
@@ -151,6 +147,7 @@ class model(parameterised):
             return np.delete(g,to_remove)
         else:
             return g
+
 
     def randomize(self):
         """
@@ -241,6 +238,27 @@ class model(parameterised):
                         print "Warning! constraining %s postive"%name
 
 
+    def objective_function(self, x):
+        """
+        The objective function passed to the optimizer. It combines the likelihood and the priors.
+        """
+        self._set_params_transformed(x)
+        return -self.log_likelihood() - self.log_prior()
+
+    def objective_function_gradients(self, x):
+        """
+        Gets the gradients from the likelihood and the priors.
+        """
+        self._set_params_transformed(x)
+        LL_gradients = self._transform_gradients(self._log_likelihood_gradients())
+        prior_gradients = self._transform_gradients(self._log_prior_gradients())
+        return -LL_gradients - prior_gradients
+
+    def objective_and_gradients(self, x):
+        obj_f = self.objective_function(x)
+        obj_grads = self.objective_function_gradients(x)
+        return obj_f, obj_grads
+
     def optimize(self, optimizer=None, start=None, **kwargs):
         """
         Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
@@ -254,22 +272,12 @@ class model(parameterised):
         if optimizer is None:
             optimizer = self.preferred_optimizer
 
-        def f(x):
-            self._set_params_transformed(x)
-            return -self.log_likelihood()-self.log_prior()
-        def fp(x):
-            self._set_params_transformed(x)
-            return -self._log_likelihood_gradients_transformed()
-        def f_fp(x):
-            self._set_params_transformed(x)
-            return -self.log_likelihood()-self.log_prior(),-self._log_likelihood_gradients_transformed()
-
         if start == None:
             start = self._get_params_transformed()
 
         optimizer = optimization.get_optimizer(optimizer)
         opt = optimizer(start, model = self, **kwargs)
-        opt.run(f_fp=f_fp, f=f, fp=fp)
+        opt.run(f_fp=self.objective_and_gradients, f=self.objective_function, fp=self.objective_function_gradients)
         self.optimization_runs.append(opt)
 
         self._set_params_transformed(opt.x_opt)
@@ -357,12 +365,9 @@ class model(parameterised):
             dx = step*np.sign(np.random.uniform(-1,1,x.size))
 
             #evaulate around the point x
-            self._set_params_transformed(x+dx)
-            f1,g1 = self.log_likelihood() + self.log_prior(), self._log_likelihood_gradients_transformed()
-            self._set_params_transformed(x-dx)
-            f2,g2 = self.log_likelihood() + self.log_prior(), self._log_likelihood_gradients_transformed()
-            self._set_params_transformed(x)
-            gradient = self._log_likelihood_gradients_transformed()
+            f1, g1 = self.objective_and_gradients(x+dx)
+            f2, g2 = self.objective_and_gradients(x-dx)
+            gradient = self.objective_function_gradients(x)
 
             numerical_gradient = (f1-f2)/(2*dx)
             global_ratio = (f1-f2)/(2*np.dot(dx,gradient))
@@ -398,14 +403,10 @@ class model(parameterised):
             for i in param_list:
                 xx = x.copy()
                 xx[i] += step
-                self._set_params_transformed(xx)
-                f1,g1 = self.log_likelihood() + self.log_prior(), self._log_likelihood_gradients_transformed()[i]
+                f1, g1 = self.objective_and_gradients(xx)
                 xx[i] -= 2.*step
-                self._set_params_transformed(xx)
-                f2,g2 = self.log_likelihood() + self.log_prior(), self._log_likelihood_gradients_transformed()[i]
-                self._set_params_transformed(x)
-                gradient = self._log_likelihood_gradients_transformed()[i]
-
+                f2, g2 = self.objective_and_gradients(xx)
+                gradient = self.objective_function_gradients(x)[i]
 
                 numerical_gradient = (f1-f2)/(2*step)
                 ratio = (f1-f2)/(2*step*gradient)

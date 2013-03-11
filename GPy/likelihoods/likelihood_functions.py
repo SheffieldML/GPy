@@ -37,8 +37,8 @@ class probit(likelihood_function):
         :param tau_i: precision of the cavity distribution (float)
         :param v_i: mean/variance of the cavity distribution (float)
         """
-        # TODO: some version of assert np.sum(np.abs(Y)-1) == 0, "Output values must be either -1 or 1"
-        if data_i == 0: data_i = -1 #NOTE Binary classification works better classes {-1,1}, 1D-plotting works better with classes {0,1}.
+        if data_i == 0: data_i = -1 #NOTE Binary classification algorithm works better with classes {-1,1}, 1D-plotting works better with classes {0,1}.
+        # TODO: some version of assert
         z = data_i*v_i/np.sqrt(tau_i**2 + tau_i)
         Z_hat = stats.norm.cdf(z)
         phi = stats.norm.pdf(z)

@@ -46,7 +46,7 @@ class periodic_Matern52(kernpart):
         r =  np.sqrt(r1**2 + r2**2)
         psi = np.where(r1 != 0, (np.arctan(r2/r1) + (r1<0.)*np.pi),np.arcsin(r2))
         return r,omega[:,0:1], psi
-    
+
     def _int_computation(self,r1,omega1,phi1,r2,omega2,phi2):
         Gint1 = 1./(omega1+omega2.T)*( np.sin((omega1+omega2.T)*self.upper+phi1+phi2.T) - np.sin((omega1+omega2.T)*self.lower+phi1+phi2.T)) + 1./(omega1-omega2.T)*( np.sin((omega1-omega2.T)*self.upper+phi1-phi2.T) - np.sin((omega1-omega2.T)*self.lower+phi1-phi2.T) )
         Gint2 = 1./(omega1+omega2.T)*( np.sin((omega1+omega2.T)*self.upper+phi1+phi2.T) - np.sin((omega1+omega2.T)*self.lower+phi1+phi2.T)) +  np.cos(phi1-phi2.T)*(self.upper-self.lower)
@@ -105,7 +105,7 @@ class periodic_Matern52(kernpart):
         FX  = self._cos(self.basis_alpha[None,:],self.basis_omega[None,:],self.basis_phi[None,:])(X)
         np.add(target,np.diag(mdot(FX,self.Gi,FX.T)),target)
 
-    def dK_dtheta(self,partial,X,X2,target):
+    def dK_dtheta(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to the parameters (shape is NxMxNparam)"""
         if X2 is None: X2 = X
         FX  = self._cos(self.basis_alpha[None,:],self.basis_omega[None,:],self.basis_phi[None,:])(X)
@@ -178,13 +178,13 @@ class periodic_Matern52(kernpart):
         dK_dper = mdot(dFX_dper,self.Gi,FX2.T) - mdot(FX,self.Gi,dG_dper,self.Gi,FX2.T) + mdot(FX,self.Gi,dFX2_dper.T)
 
         # np.add(target[:,:,0],dK_dvar, target[:,:,0])
-        target[0] += np.sum(dK_dvar*partial)
+        target[0] += np.sum(dK_dvar*dL_dK)
         #np.add(target[:,:,1],dK_dlen, target[:,:,1])
-        target[1] += np.sum(dK_dlen*partial)
+        target[1] += np.sum(dK_dlen*dL_dK)
         #np.add(target[:,:,2],dK_dper, target[:,:,2])
-        target[2] += np.sum(dK_dper*partial)
+        target[2] += np.sum(dK_dper*dL_dK)
 
-    def dKdiag_dtheta(self,partial,X,target):
+    def dKdiag_dtheta(self,dL_dKdiag,X,target):
         """derivative of the diagonal of the covariance matrix with respect to the parameters"""
         FX  = self._cos(self.basis_alpha[None,:],self.basis_omega[None,:],self.basis_phi[None,:])(X)
 
@@ -251,6 +251,6 @@ class periodic_Matern52(kernpart):
         dG_dper = 1./self.variance*(3*self.lengthscale**5/(400*np.sqrt(5))*dGint_dper + 0.5*dlower_terms_dper)
         dK_dper = 2*mdot(dFX_dper,self.Gi,FX.T) - mdot(FX,self.Gi,dG_dper,self.Gi,FX.T)
 
-        target[0] += np.sum(np.diag(dK_dvar)*partial)
-        target[1] += np.sum(np.diag(dK_dlen)*partial)
-        target[2] += np.sum(np.diag(dK_dper)*partial)
+        target[0] += np.sum(np.diag(dK_dvar)*dL_dKdiag)
+        target[1] += np.sum(np.diag(dK_dlen)*dL_dKdiag)
+        target[2] += np.sum(np.diag(dK_dper)*dL_dKdiag)

@@ -74,35 +74,35 @@ class exponential(kernpart):
         """Compute the diagonal of the covariance matrix associated to X."""
         np.add(target,self.variance,target)
 
-    def dK_dtheta(self,partial,X,X2,target):
+    def dK_dtheta(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to the parameters."""
         if X2 is None: X2 = X
         dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscale),-1))
         invdist = 1./np.where(dist!=0.,dist,np.inf)
         dist2M = np.square(X[:,None,:]-X2[None,:,:])/self.lengthscale**3
         dvar = np.exp(-dist)
-        target[0] += np.sum(dvar*partial)
+        target[0] += np.sum(dvar*dL_dK)
         if self.ARD == True:
             dl = self.variance*dvar[:,:,None]*dist2M*invdist[:,:,None]
-            target[1:] += (dl*partial[:,:,None]).sum(0).sum(0)
+            target[1:] += (dl*dL_dK[:,:,None]).sum(0).sum(0)
         else:
             dl = self.variance*dvar*dist2M.sum(-1)*invdist
-            target[1] += np.sum(dl*partial)
+            target[1] += np.sum(dl*dL_dK)
 
-    def dKdiag_dtheta(self,partial,X,target):
+    def dKdiag_dtheta(self,dL_dKdiag,X,target):
         """derivative of the diagonal of the covariance matrix with respect to the parameters."""
         #NB: derivative of diagonal elements wrt lengthscale is 0
-        target[0] += np.sum(partial)
+        target[0] += np.sum(dL_dKdiag)
 
-    def dK_dX(self,partial,X,X2,target):
+    def dK_dX(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
         if X2 is None: X2 = X
         dist = np.sqrt(np.sum(np.square((X[:,None,:]-X2[None,:,:])/self.lengthscale),-1))[:,:,None]
         ddist_dX = (X[:,None,:]-X2[None,:,:])/self.lengthscale**2/np.where(dist!=0.,dist,np.inf)
         dK_dX = - np.transpose(self.variance*np.exp(-dist)*ddist_dX,(1,0,2))
-        target += np.sum(dK_dX*partial.T[:,:,None],0)
+        target += np.sum(dK_dX*dL_dK.T[:,:,None],0)
 
-    def dKdiag_dX(self,partial,X,target):
+    def dKdiag_dX(self,dL_dKdiag,X,target):
         pass
 
     def Gram_matrix(self,F,F1,lower,upper):

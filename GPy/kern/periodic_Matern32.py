@@ -101,7 +101,7 @@ class periodic_Matern32(kernpart):
         FX  = self._cos(self.basis_alpha[None,:],self.basis_omega[None,:],self.basis_phi[None,:])(X)
         np.add(target,np.diag(mdot(FX,self.Gi,FX.T)),target)
 
-    def dK_dtheta(self,partial,X,X2,target):
+    def dK_dtheta(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to the parameters (shape is NxMxNparam)"""
         if X2 is None: X2 = X
         FX  = self._cos(self.basis_alpha[None,:],self.basis_omega[None,:],self.basis_phi[None,:])(X)
@@ -166,13 +166,13 @@ class periodic_Matern32(kernpart):
         dK_dper = mdot(dFX_dper,self.Gi,FX2.T) - mdot(FX,self.Gi,dG_dper,self.Gi,FX2.T) + mdot(FX,self.Gi,dFX2_dper.T)
 
         # np.add(target[:,:,0],dK_dvar, target[:,:,0])
-        target[0] += np.sum(dK_dvar*partial)
+        target[0] += np.sum(dK_dvar*dL_dK)
         #np.add(target[:,:,1],dK_dlen, target[:,:,1])
-        target[1] += np.sum(dK_dlen*partial)
+        target[1] += np.sum(dK_dlen*dL_dK)
         #np.add(target[:,:,2],dK_dper, target[:,:,2])
-        target[2] += np.sum(dK_dper*partial)
+        target[2] += np.sum(dK_dper*dL_dK)
 
-    def dKdiag_dtheta(self,partial,X,target):
+    def dKdiag_dtheta(self,dL_dKdiag,X,target):
         """derivative of the diagonal covariance matrix with respect to the parameters"""
         FX  = self._cos(self.basis_alpha[None,:],self.basis_omega[None,:],self.basis_phi[None,:])(X)
 
@@ -231,6 +231,6 @@ class periodic_Matern32(kernpart):
 
         dK_dper = 2* mdot(dFX_dper,self.Gi,FX.T) - mdot(FX,self.Gi,dG_dper,self.Gi,FX.T)
 
-        target[0] += np.sum(np.diag(dK_dvar)*partial)
-        target[1] += np.sum(np.diag(dK_dlen)*partial)
-        target[2] += np.sum(np.diag(dK_dper)*partial)
+        target[0] += np.sum(np.diag(dK_dvar)*dL_dKdiag)
+        target[1] += np.sum(np.diag(dK_dlen)*dL_dKdiag)
+        target[2] += np.sum(np.diag(dK_dper)*dL_dKdiag)

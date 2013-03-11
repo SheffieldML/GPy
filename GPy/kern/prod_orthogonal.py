@@ -46,7 +46,7 @@ class prod_orthogonal(kernpart):
         self.k2.K(X[:,self.k1.D:],X2[:,self.k1.D:],target2)
         target += target1 * target2
 
-    def dK_dtheta(self,partial,X,X2,target):
+    def dK_dtheta(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to the parameters."""
         if X2 is None: X2 = X
         K1 = np.zeros((X.shape[0],X2.shape[0]))
@@ -54,8 +54,8 @@ class prod_orthogonal(kernpart):
         self.k1.K(X[:,:self.k1.D],X2[:,:self.k1.D],K1)
         self.k2.K(X[:,self.k1.D:],X2[:,self.k1.D:],K2)
 
-        self.k1.dK_dtheta(partial*K2, X[:,:self.k1.D], X2[:,:self.k1.D], target[:self.k1.Nparam])
-        self.k2.dK_dtheta(partial*K1, X[:,self.k1.D:], X2[:,self.k1.D:], target[self.k1.Nparam:])
+        self.k1.dK_dtheta(dL_dK*K2, X[:,:self.k1.D], X2[:,:self.k1.D], target[:self.k1.Nparam])
+        self.k2.dK_dtheta(dL_dK*K1, X[:,self.k1.D:], X2[:,self.k1.D:], target[self.k1.Nparam:])
 
     def Kdiag(self,X,target):
         """Compute the diagonal of the covariance matrix associated to X."""
@@ -65,15 +65,15 @@ class prod_orthogonal(kernpart):
         self.k2.Kdiag(X[:,self.k1.D:],target2)
         target += target1 * target2
 
-    def dKdiag_dtheta(self,partial,X,target):
+    def dKdiag_dtheta(self,dL_dKdiag,X,target):
         K1 = np.zeros(X.shape[0])
         K2 = np.zeros(X.shape[0])
         self.k1.Kdiag(X[:,:self.k1.D],K1)
         self.k2.Kdiag(X[:,self.k1.D:],K2)
-        self.k1.dKdiag_dtheta(partial*K2,X[:,:self.k1.D],target[:self.k1.Nparam])
-        self.k2.dKdiag_dtheta(partial*K1,X[:,self.k1.D:],target[self.k1.Nparam:])
+        self.k1.dKdiag_dtheta(dL_dKdiag*K2,X[:,:self.k1.D],target[:self.k1.Nparam])
+        self.k2.dKdiag_dtheta(dL_dKdiag*K1,X[:,self.k1.D:],target[self.k1.Nparam:])
 
-    def dK_dX(self,partial,X,X2,target):
+    def dK_dX(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
         if X2 is None: X2 = X
         K1 = np.zeros((X.shape[0],X2.shape[0]))
@@ -81,15 +81,15 @@ class prod_orthogonal(kernpart):
         self.k1.K(X[:,0:self.k1.D],X2[:,0:self.k1.D],K1)
         self.k2.K(X[:,self.k1.D:],X2[:,self.k1.D:],K2)
 
-        self.k1.dK_dX(partial*K2, X[:,:self.k1.D], X2[:,:self.k1.D], target)
-        self.k2.dK_dX(partial*K1, X[:,self.k1.D:], X2[:,self.k1.D:], target)
+        self.k1.dK_dX(dL_dK*K2, X[:,:self.k1.D], X2[:,:self.k1.D], target)
+        self.k2.dK_dX(dL_dK*K1, X[:,self.k1.D:], X2[:,self.k1.D:], target)
 
-    def dKdiag_dX(self, partial, X, target):
+    def dKdiag_dX(self, dL_dKdiag, X, target):
         K1 = np.zeros(X.shape[0])
         K2 = np.zeros(X.shape[0])
         self.k1.Kdiag(X[:,0:self.k1.D],K1)
         self.k2.Kdiag(X[:,self.k1.D:],K2)
 
-        self.k1.dK_dX(partial*K2, X[:,:self.k1.D], target)
-        self.k2.dK_dX(partial*K1, X[:,self.k1.D:], target)
+        self.k1.dK_dX(dL_dKdiag*K2, X[:,:self.k1.D], target)
+        self.k2.dK_dX(dL_dKdiag*K1, X[:,self.k1.D:], target)
 

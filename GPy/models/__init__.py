@@ -10,4 +10,4 @@ from GPLVM import GPLVM
 from warped_GP import warpedGP
 from sparse_GPLVM import sparse_GPLVM
 from uncollapsed_sparse_GP import uncollapsed_sparse_GP
-from BGPLVM import Bayesian_GPLVM
+from Bayesian_GPLVM import Bayesian_GPLVM

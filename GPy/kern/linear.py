@@ -81,6 +81,13 @@ class linear(kernpart):
             self._K_computations(X, X2)
             target += np.sum(self._dot_product*dL_dK)
 
+    def dKdiag_dtheta(self,dL_dKdiag, X, target):
+        tmp = dL_dKdiag[:,None]*X**2
+        if self.ARD:
+            target += tmp.sum(0)
+        else:
+            target += tmp.sum()
+
     def dK_dX(self,dL_dK,X,X2,target):
         target += (((X2[:, None, :] * self.variances)) * dL_dK[:,:, None]).sum(0)
 
@@ -91,13 +98,6 @@ class linear(kernpart):
     def psi0(self,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
         target += np.sum(self.variances*self.mu2_S,1)
-
-    def dKdiag_dtheta(self,dL_dKdiag, X, target):
-        tmp = dL_dKdiag[:,None]*X**2
-        if self.ARD:
-            target += tmp.sum(0)
-        else:
-            target += tmp.sum()
 
     def dpsi0_dtheta(self,dL_dpsi0,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
@@ -134,6 +134,7 @@ class linear(kernpart):
         self._psi_computations(Z,mu,S)
         psi2 = self.ZZ*np.square(self.variances)*self.mu2_S[:, None, None, :]
         target += psi2.sum(-1)
+        #TODO: this could be faster using np.tensordot
 
     def dpsi2_dtheta(self,dL_dpsi2,Z,mu,S,target):
         self._psi_computations(Z,mu,S)

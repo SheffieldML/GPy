@@ -58,6 +58,7 @@ class BGPLVMTests(unittest.TestCase):
         m.randomize()
         self.assertTrue(m.checkgrad())
 
+    @unittest.skip('psi2 cross terms are NotImplemented for this combination')
     def test_linear_bias_kern(self):
         N, M, Q, D = 10, 3, 2, 4
         X = np.random.rand(N, Q)

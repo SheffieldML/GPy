@@ -103,8 +103,12 @@ class sparse_GP(GP):
 
         self.psi1V = np.dot(self.psi1, self.V)
         self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
-        self.C = mdot(self.Lmi.T, self.Bi, self.Lmi)
-        self.E = mdot(self.C, self.psi1VVpsi1/sf2, self.C.T)
+        tmp = np.dot(self.Lmi.T, self.LBi.T)
+        self.C = np.dot(tmp,tmp.T)
+        #self.C = mdot(self.Lmi.T, self.Bi, self.Lmi)
+        #self.E = mdot(self.C, self.psi1VVpsi1/sf2, self.C.T)
+        tmp = np.dot(self.C,self.psi1V/sf)
+        self.E = np.dot(tmp,tmp.T)
 
         # Compute dL_dpsi # FIXME: this is untested for the heterscedastic + uncertin inputs case
         self.dL_dpsi0 = - 0.5 * self.D * (self.likelihood.precision * np.ones([self.N,1])).flatten()

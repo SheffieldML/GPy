@@ -73,18 +73,10 @@ examples Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`tuto_GP_regression` Module
---------------------------------
+:mod:`tutorials` Module
+-----------------------
 
-.. automodule:: GPy.examples.tuto_GP_regression
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`tuto_kernel_overview` Module
-----------------------------------
-
-.. automodule:: GPy.examples.tuto_kernel_overview
+.. automodule:: GPy.examples.tutorials
     :members:
     :undoc-members:
     :show-inheritance:

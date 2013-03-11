@@ -6,13 +6,13 @@
 Code of Tutorials
 """
 
+import pylab as pb
+pb.ion()
+import numpy as np
+import GPy
+
 def tuto_GP_regression():
     """The detailed explanations of the commands used in this file can be found in the tutorial section"""
-
-    import pylab as pb
-    pb.ion()
-    import numpy as np
-    import GPy
 
     X = np.random.uniform(-3.,3.,(20,1))
     Y = np.sin(X) + np.random.randn(20,1)*0.05
@@ -39,11 +39,6 @@ def tuto_GP_regression():
     #  2-dimensional example  #
     ###########################
 
-    import pylab as pb
-    pb.ion()
-    import numpy as np
-    import GPy
-
     # sample inputs and outputs
     X = np.random.uniform(-3.,3.,(50,2))
     Y = np.sin(X[:,0:1]) * np.sin(X[:,1:2])+np.random.randn(50,1)*0.05
@@ -67,9 +62,6 @@ def tuto_GP_regression():
 
 def tuto_kernel_overview():
     """The detailed explanations of the commands used in this file can be found in the tutorial section"""
-    import pylab as pb
-    import numpy as np
-    import GPy
     pb.ion()
 
     ker1 = GPy.kern.rbf(1)  # Equivalent to ker1 = GPy.kern.rbf(D=1, variance=1., lengthscale=1.)

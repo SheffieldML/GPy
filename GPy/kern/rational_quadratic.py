@@ -11,7 +11,7 @@ class rational_quadratic(kernpart):
 
     .. math::
 
-       k(r) = \sigma^2 \left(1 + \frac{r^2}{2 \ell^2})^{- \alpha} \ \ \ \ \  \\text{ where  } r^2 = (x-y)^2
+       k(r) = \sigma^2 \\bigg( 1 + \\frac{r^2}{2 \ell^2} \\bigg)^{- \\alpha} \ \ \ \ \  \\text{ where  } r^2 = (x-y)^2
 
     :param D: the number of input dimensions
     :type D: int (D=1 is the only value currently supported)
@@ -19,6 +19,8 @@ class rational_quadratic(kernpart):
     :type variance: float
     :param lengthscale: the lengthscale :math:`\ell`
     :type lengthscale: float
+    :param power: the power :math:`\\alpha`
+    :type power: float
     :rtype: kernpart object
 
     """
@@ -76,4 +78,3 @@ class rational_quadratic(kernpart):
 
     def dKdiag_dX(self,dL_dKdiag,X,target):
         pass
-    

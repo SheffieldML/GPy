@@ -35,4 +35,13 @@ spline                |tick|       |tick|  |tick|  |tick|      |tick|           
 white                 |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|      |tick| |tick| |tick|
 ====================  ===========  ======  ======= =========== =============== ======= =========== ====== ====== =======
 
+Depending on the use, all functions may not be required
+
+    * ``get/set, K, Kdiag``: compulsory
+    * ``dK_dtheta``: necessary to optimize the model
+    * ``dKdiag_dtheta``: sparse models, BGPLVM, GPs with uncertain inputs
+    * ``dK_dX``: sparse models, GPLVM, BGPLVM, GPs with uncertain inputs
+    * ``dKdiag_dX``: sparse models, BGPLVM, GPs with uncertain inputs
+    * ``psi0, psi1, psi2``: BGPLVM, GPs with uncertain inputs
+
 ..  |tick| image:: Figures/tick.png

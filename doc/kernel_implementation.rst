@@ -8,13 +8,13 @@ The following table shows the implemented kernels in GPy and gives the details o
 ==================== =========== =====  ===========  ======  ======= =========== =============== ======= =========== ====== ====== =======
 NAME                  Dimension   ARD   get/set      K       Kdiag   dK_dtheta   dKdiag_dtheta   dK_dX   dKdiag_dX   psi0   psi1   psi2
 ==================== =========== =====  ===========  ======  ======= =========== =============== ======= =========== ====== ====== =======
-bias                 n           no     |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|      |tick| |tick| |tick|
+bias                 n                  |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|      |tick| |tick| |tick|
 -------------------- ----------- -----  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
-Brownian             1           no     |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|                 
+Brownian             1                  |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|                 
 -------------------- ----------- -----  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
 exponential          n           yes    |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|
 -------------------- ----------- -----  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
-finite_dimensional   n           no     |tick|       |tick|  |tick|  |tick|      |tick| 
+finite_dimensional   n                  |tick|       |tick|  |tick|  |tick|      |tick| 
 -------------------- ----------- -----  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
 linear               n           yes    |tick|       |tick|  |tick|  |tick|      |tick|          |tick|              |tick| |tick| |tick|
 -------------------- ----------- -----  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
@@ -22,19 +22,19 @@ Matern32             n           yes    |tick|       |tick|  |tick|  |tick|     
 -------------------- ----------- -----  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
 Matern52             n           yes    |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|
 -------------------- ----------- -----  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
-periodic_exponential 1           no     |tick|       |tick|  |tick|  |tick|      |tick|
+periodic_exponential 1                  |tick|       |tick|  |tick|  |tick|      |tick|
 -------------------- ----------- -----  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
-periodic_Matern32    1           no     |tick|       |tick|  |tick|  |tick|      |tick|
+periodic_Matern32    1                  |tick|       |tick|  |tick|  |tick|      |tick|
 -------------------- ----------- -----  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
-periodic_Matern52    1           no     |tick|       |tick|  |tick|  |tick|      |tick|
+periodic_Matern52    1                  |tick|       |tick|  |tick|  |tick|      |tick|
 -------------------- ----------- -----  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
-rational quadratic   1           no     |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|                           
+rational quadratic   1                  |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|                           
 -------------------- ----------- -----  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
 rbf                  n           yes    |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|      |tick| |tick| |tick|
 -------------------- ----------- -----  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
-spline               n           no     |tick|       |tick|  |tick|  |tick|      |tick|                  |tick|     
+spline               1                  |tick|       |tick|  |tick|  |tick|      |tick|                  |tick|     
 -------------------- ----------- -----  -----------  ------  ------- ----------- --------------- ------- ----------- ------ ------ -------
-white                n           no     |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|      |tick| |tick| |tick|
+white                n                  |tick|       |tick|  |tick|  |tick|      |tick|          |tick|  |tick|      |tick| |tick| |tick|
 ==================== =========== =====  ===========  ======  ======= =========== =============== ======= =========== ====== ====== =======
 
 Depending on the use, all functions may not be required

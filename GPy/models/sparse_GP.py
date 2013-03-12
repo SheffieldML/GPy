@@ -80,7 +80,7 @@ class sparse_GP(GP):
 
         #The rather complex computations of psi2_beta_scaled
         if self.likelihood.is_heteroscedastic:
-            assert self.likelihood.D == 1 #TODO: what is the likelihood is heterscedatic and there are multiple independent outputs?
+            assert self.likelihood.D == 1 #TODO: what if the likelihood is heterscedatic and there are multiple independent outputs?
             if self.has_uncertain_inputs:
                 self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision.flatten().reshape(self.N,1,1)/sf2)).sum(0)
             else:

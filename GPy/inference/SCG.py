@@ -24,7 +24,7 @@
 
 import numpy as np
 
-def SCG(f, gradf, x, optargs=(), maxiters=500, display=True, xtol=1e-6, ftol=1e-6):
+def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xtol=1e-6, ftol=1e-6):
     """
     Optimisation through Scaled Conjugate Gradients (SCG)
 
@@ -35,13 +35,12 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, display=True, xtol=1e-6, ftol=1e-
     Returns
     x the optimal value for x
     flog : a list of all the objective values
-    pointlog : a list of the x values tried
-    scalelog : a list of the scales used in optimisation (beta)
 
     """
 
     sigma0 = 1.0e-4
     fold = f(x, *optargs)	# Initial function value.
+    function_eval = 1
     fnow = fold
     gradnew = gradf(x, *optargs)	# Initial gradient.
     gradold = gradnew.copy()
@@ -51,10 +50,9 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, display=True, xtol=1e-6, ftol=1e-
     beta = 1.0				# Initial scale parameter.
     betamin = 1.0e-15 			# Lower bound on scale.
     betamax = 1.0e100			# Upper bound on scale.
+    status = "Not converged"
 
     flog = [fold]
-    pointlog = [x.copy()]
-    scalelog = [beta]
 
     iteration = 0
 
@@ -68,8 +66,6 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, display=True, xtol=1e-6, ftol=1e-
                 d = -gradnew
                 mu = np.dot(d, gradnew)
             kappa = np.dot(d, d)
-            #if kappa < eps():
-                #return x, flog, pointlog, scalelog
             sigma = sigma0/np.sqrt(kappa)
             xplus = x + sigma*d
             gplus = gradf(xplus, *optargs)
@@ -86,6 +82,12 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, display=True, xtol=1e-6, ftol=1e-
         # Calculate the comparison ratio.
         xnew = x + alpha*d
         fnew = f(xnew, *optargs)
+        function_eval += 1
+
+        if function_eval >= max_f_eval:
+            status = "Maximum number of function evaluations exceeded"
+            return x, flog, function_eval, status
+
         Delta = 2.*(fnew - fold)/(alpha*mu)
         if Delta  >= 0.:
             success = True
@@ -98,8 +100,6 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, display=True, xtol=1e-6, ftol=1e-
 
         # Store relevant variables
         flog.append(fnow)		# Current function value
-        pointlog.append(x)           # Current position
-        scalelog.append(beta)    # current scale parameter
 
         iteration += 1
         if display:
@@ -108,7 +108,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, display=True, xtol=1e-6, ftol=1e-
         if success:
             # Test for termination
             if np.max(np.abs(alpha*d)) < xtol or np.max(np.abs(fnew-fold)) < ftol:
-                return x, flog, pointlog, scalelog
+                return x, flog, function_eval, status
 
             else:
                 # Update variables for new position
@@ -117,7 +117,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, display=True, xtol=1e-6, ftol=1e-
                 gradnew = gradf(x, *optargs)
                 # If the gradient is zero then we are done.
                 if np.dot(gradnew,gradnew) == 0:
-                    return x, flog, pointlog, scalelog
+                    return x, flog, function_eval, status
 
         # Adjust beta according to comparison ratio.
         if Delta < 0.25:
@@ -136,7 +136,6 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, display=True, xtol=1e-6, ftol=1e-
 
     # If we get here, then we haven't terminated in the given number of
     # iterations.
-    if display:
-        print "maxiter exceeded"
+    status = "maxiter exceeded"
 
-    return x, flog, pointlog, scalelog
+    return x, flog, function_eval, status

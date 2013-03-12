@@ -1,18 +1,18 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-
+import pdb
+import pylab as pb
+import datetime as dt
 from scipy import optimize
+import numpy as np
 
 try:
     import rasmussens_minimize as rasm
     rasm_available = True
 except ImportError:
     rasm_available = False
-
-import pdb
-import pylab as pb
-import datetime as dt
+from SCG import SCG
 
 class Optimizer():
     """
@@ -29,7 +29,7 @@ class Optimizer():
     :rtype: optimizer object.
 
     """
-    def __init__(self, x_init, messages=False, model = None, max_f_eval=1e4, ftol=None, gtol=None, xtol=None):
+    def __init__(self, x_init, messages=False, model = None, max_f_eval=1e4, max_iters = 1e3, ftol=None, gtol=None, xtol=None):
         self.opt_name = None
         self.x_init = x_init
         self.messages = messages
@@ -38,6 +38,7 @@ class Optimizer():
         self.funct_eval = None
         self.status = None
         self.max_f_eval = int(max_f_eval)
+        self.max_iters = int(max_iters)
         self.trace = None
         self.time = "Not available"
         self.xtol = xtol
@@ -63,12 +64,13 @@ class Optimizer():
             pb.xlabel('Iteration')
             pb.ylabel('f(x)')
 
-    def diagnostics(self):
-        print "Optimizer: \t\t\t\t %s" % self.opt_name
-        print "f(x_opt): \t\t\t\t %.3f" % self.f_opt
-        print "Number of function evaluations: \t %d" % self.funct_eval
-        print "Optimization status: \t\t\t %s" % self.status
-        print "Time elapsed: \t\t\t\t %s" % self.time
+    def __str__(self):
+        diagnostics = "Optimizer: \t\t\t\t %s\n" % self.opt_name
+        diagnostics += "f(x_opt): \t\t\t\t %.3f\n" % self.f_opt
+        diagnostics += "Number of function evaluations: \t %d\n" % self.funct_eval
+        diagnostics += "Optimization status: \t\t\t %s\n" % self.status
+        diagnostics += "Time elapsed: \t\t\t\t %s\n" % self.time
+        return diagnostics
 
 class opt_tnc(Optimizer):
     def __init__(self, *args, **kwargs):
@@ -161,7 +163,6 @@ class opt_simplex(Optimizer):
         self.f_opt = opt_result[1]
         self.funct_eval = opt_result[3]
         self.status = statuses[opt_result[4]]
-
         self.trace = None
 
 
@@ -196,7 +197,7 @@ class opt_rasm(Optimizer):
 
         self.trace = opt_result[1]
 
-class opt_scg(Optimizer):
+class opt_SCG(Optimizer):
     def __init__(self, *args, **kwargs):
         Optimizer.__init__(self, *args, **kwargs)
         self.opt_name = "Scaled Conjugate Gradients"
@@ -204,15 +205,20 @@ class opt_scg(Optimizer):
     def opt(self, f_fp = None, f = None, fp = None):
         assert not f is None
         assert not fp is None
-        opt_result = SCG (f,fp,self.x_init, display=self.messages)
+        opt_result = SCG(f,fp,self.x_init, display=self.messages, maxiters=self.max_iters, max_f_eval=self.max_f_eval, xtol=self.xtol, ftol=self.ftol)
+        self.x_opt = opt_result[0]
+        self.trace = opt_result[1]
+        self.f_opt = self.trace[-1]
+        self.funct_eval = opt_result[2]
+        self.status = opt_result[3]
 
 def get_optimizer(f_min):
-    # import rasmussens_minimize as rasm
     from SGD import opt_SGD
-    
+
     optimizers = {'fmin_tnc': opt_tnc,
           'simplex': opt_simplex,
           'lbfgsb': opt_lbfgsb,
+          'scg': opt_SCG,
           'sgd': opt_SGD}
 
     if rasm_available:

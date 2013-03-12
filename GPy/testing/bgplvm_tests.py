@@ -15,7 +15,7 @@ class BGPLVMTests(unittest.TestCase):
         Y -= Y.mean(axis=0)
         k = GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
         m = GPy.models.Bayesian_GPLVM(Y, Q, kernel = k,  M=M)
-        m.constrain_positive('(rbf|bias|noise|white|S)')
+        m.ensure_default_constraints()
         m.randomize()
         self.assertTrue(m.checkgrad())
 
@@ -28,7 +28,7 @@ class BGPLVMTests(unittest.TestCase):
         Y -= Y.mean(axis=0)
         k = GPy.kern.linear(Q) + GPy.kern.white(Q, 0.00001)
         m = GPy.models.Bayesian_GPLVM(Y, Q, kernel = k,  M=M)
-        m.constrain_positive('(linear|bias|noise|white|S)')
+        m.ensure_default_constraints()
         m.randomize()
         self.assertTrue(m.checkgrad())
 
@@ -41,7 +41,7 @@ class BGPLVMTests(unittest.TestCase):
         Y -= Y.mean(axis=0)
         k = GPy.kern.rbf(Q) + GPy.kern.white(Q, 0.00001)
         m = GPy.models.Bayesian_GPLVM(Y, Q, kernel = k,  M=M)
-        m.constrain_positive('(rbf|bias|noise|white|S)')
+        m.ensure_default_constraints()
         m.randomize()
         self.assertTrue(m.checkgrad())
 
@@ -54,7 +54,7 @@ class BGPLVMTests(unittest.TestCase):
         Y -= Y.mean(axis=0)
         k = GPy.kern.rbf(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
         m = GPy.models.Bayesian_GPLVM(Y, Q, kernel = k,  M=M)
-        m.constrain_positive('(rbf|bias|noise|white|S)')
+        m.ensure_default_constraints()
         m.randomize()
         self.assertTrue(m.checkgrad())
 
@@ -68,9 +68,9 @@ class BGPLVMTests(unittest.TestCase):
         Y -= Y.mean(axis=0)
         k = GPy.kern.linear(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
         m = GPy.models.Bayesian_GPLVM(Y, Q, kernel = k,  M=M)
-        m.constrain_positive('(linear|bias|noise|white|S)')
+        m.ensure_default_constraints()
         m.randomize()
-        self.assertTrue(m.checkgrad())        
+        self.assertTrue(m.checkgrad())
 
 
 if __name__ == "__main__":

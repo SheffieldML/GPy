@@ -44,12 +44,14 @@ def GPLVM_oil_100():
     data = GPy.util.datasets.oil_100()
 
     # create simple GP model
-    m = GPy.models.GPLVM(data['X'], 2)
+    kernel = GPy.kern.rbf(6, ARD = True) + GPy.kern.bias(6)
+    m = GPy.models.GPLVM(data['X'], 6, kernel = kernel)
 
     # optimize
     m.ensure_default_constraints()
-    m.optimize()
+    m.optimize(messages=1)
 
     # plot
     print(m)
+    m.plot_latent(labels=data['Y'].argmax(axis=1))
     return m

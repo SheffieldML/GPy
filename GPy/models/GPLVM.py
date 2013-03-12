@@ -66,6 +66,8 @@ class GPLVM(GP):
         :param resolution: the resolution of the grid on which to evaluate the predictive variance
         """
 
+        util.plot.Tango.reset()
+        
         if labels is None:
             labels = np.ones(self.N)
         if which_indices is None:
@@ -88,7 +90,7 @@ class GPLVM(GP):
         #first, plot the output variance as a function of the latent space
         Xtest, xx,yy,xmin,xmax = util.plot.x_frame2D(self.X[:,[input_1, input_2]],resolution=resolution)
 	Xtest_full = np.zeros((Xtest.shape[0], self.X.shape[1]))
-	Xtest_full[:, :2] = Xtest        
+	Xtest_full[:, :2] = Xtest
 	mu, var, low, up = self.predict(Xtest_full)
 	var = var[:, :2]
         pb.imshow(var.reshape(resolution,resolution).T[::-1,:],extent=[xmin[0],xmax[0],xmin[1],xmax[1]],cmap=pb.cm.binary,interpolation='bilinear')

@@ -3,7 +3,7 @@
 
 import numpy as np
 import pylab as pb
-from ..util.linalg import mdot, jitchol, chol_inv, pdinv
+from ..util.linalg import mdot, jitchol, chol_inv, pdinv, trace_dot
 from ..util.plot import gpplot
 from .. import kern
 from GP import GP
@@ -80,7 +80,7 @@ class sparse_GP(GP):
 
         #The rather complex computations of psi2_beta_scaled
         if self.likelihood.is_heteroscedastic:
-            assert self.likelihood.D == 1 #TODO: what is the likelihood is heterscedatic and there are multiple independent outputs?
+            assert self.likelihood.D == 1 #TODO: what if the likelihood is heterscedatic and there are multiple independent outputs?
             if self.has_uncertain_inputs:
                 self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision.flatten().reshape(self.N,1,1)/sf2)).sum(0)
             else:
@@ -102,17 +102,16 @@ class sparse_GP(GP):
         self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
 
         self.psi1V = np.dot(self.psi1, self.V)
-        self.psi1VVpsi1 = np.dot(self.psi1V, self.psi1V.T)
         tmp = np.dot(self.Lmi.T, self.LBi.T)
         self.C = np.dot(tmp,tmp.T)
-        #self.C = mdot(self.Lmi.T, self.Bi, self.Lmi)
-        #self.E = mdot(self.C, self.psi1VVpsi1/sf2, self.C.T)
-        tmp = np.dot(self.C,self.psi1V/sf)
-        self.E = np.dot(tmp,tmp.T)
+        self.Cpsi1V = np.dot(self.C,self.psi1V)
+        self.Cpsi1VVpsi1 = np.dot(self.Cpsi1V,self.psi1V.T)
+        self.E = np.dot(self.Cpsi1VVpsi1,self.C)/sf2
 
         # Compute dL_dpsi # FIXME: this is untested for the heterscedastic + uncertin inputs case
         self.dL_dpsi0 = - 0.5 * self.D * (self.likelihood.precision * np.ones([self.N,1])).flatten()
-        self.dL_dpsi1 = mdot(self.V, self.psi1V.T,self.C).T
+        #self.dL_dpsi1 = mdot(self.V, self.psi1V.T,self.C).T
+        self.dL_dpsi1 = np.dot(self.Cpsi1V,self.V.T)
         if self.likelihood.is_heteroscedastic:
             if self.has_uncertain_inputs:
                 self.dL_dpsi2 = 0.5 * self.likelihood.precision[:,None,None] * self.D * self.Kmmi[None,:,:] # dB
@@ -138,8 +137,9 @@ class sparse_GP(GP):
 
         # Compute dL_dKmm
         self.dL_dKmm = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi)*sf2 # dB
-        self.dL_dKmm += -0.5 * self.D * (- self.C/sf2 - 2.*mdot(self.C, self.psi2_beta_scaled, self.Kmmi) + self.Kmmi) # dC
-        self.dL_dKmm +=  np.dot(np.dot(self.E*sf2, self.psi2_beta_scaled) - np.dot(self.C, self.psi1VVpsi1), self.Kmmi) + 0.5*self.E # dD
+        #self.dL_dKmm += -0.5 * self.D * (- self.C/sf2 - 2.*mdot(self.C, self.psi2_beta_scaled, self.Kmmi) + self.Kmmi) # dC
+        #self.dL_dKmm +=  np.dot(np.dot(self.E*sf2, self.psi2_beta_scaled) - self.Cpsi1VVpsi1, self.Kmmi) + 0.5*self.E # dD
+        self.dL_dKmm += 0.5*(self.D*(self.C/sf2 -self.Kmmi) + self.E) + np.dot(np.dot(self.D*self.C + self.E*sf2,self.psi2_beta_scaled) - self.Cpsi1VVpsi1,self.Kmmi) # d(C+D)
 
         #the partial derivative vector for the likelihood
         if self.likelihood.Nparams ==0:
@@ -156,8 +156,8 @@ class sparse_GP(GP):
             beta = self.likelihood.precision
             dbeta =   0.5 * self.N*self.D/beta - 0.5 * np.sum(np.square(self.likelihood.Y))
             dbeta += - 0.5 * self.D * (self.psi0.sum() - np.trace(self.A)/beta*sf2)
-            dbeta += - 0.5 * self.D * np.sum(self.Bi*self.A)/beta
-            dbeta += np.sum((self.C - 0.5 * mdot(self.C,self.psi2_beta_scaled,self.C) ) * self.psi1VVpsi1 )/beta
+            dbeta += - 0.5 * self.D * trace_dot(self.Bi,self.A)/beta
+            dbeta += np.trace(self.Cpsi1VVpsi1)/beta - 0.5 * trace_dot(np.dot(self.C,self.psi2_beta_scaled) , self.Cpsi1VVpsi1 )/beta
             self.partial_for_likelihood = -dbeta*self.likelihood.precision**2
 
 
@@ -198,7 +198,7 @@ class sparse_GP(GP):
             A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.likelihood.precision)) -0.5*self.likelihood.precision*self.likelihood.trYYT
             B = -0.5*self.D*(np.sum(self.likelihood.precision*self.psi0) - np.trace(self.A)*sf2)
         C = -0.5*self.D * (self.B_logdet + self.M*np.log(sf2))
-        D = +0.5*np.sum(self.psi1VVpsi1 * self.C)
+        D = 0.5*np.trace(self.Cpsi1VVpsi1)
         return A+B+C+D
 
     def _log_likelihood_gradients(self):

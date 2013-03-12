@@ -18,8 +18,7 @@ def trace_dot(a,b):
     """
     efficiently compute the trace of the matrix product of a and b
     """
-    assert a.shape==b.T.shape
-    return np.dot(a.flatten(),b.T.flatten())
+    return np.sum(a*b)
 
 def mdot(*args):
    """Multiply all the arguments using matrix product rules.

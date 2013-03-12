@@ -73,8 +73,8 @@ class rational_quadratic(kernpart):
         if X2 is None: X2 = X
         dist2 = np.square((X-X2.T)/self.lengthscale)
 
-        dX = -self.variance*self.power * (X-X2.T)/self.lengthscale**2 *  (1 + dist2/2./self.power)**(-self.power-1)
-        target += np.sum(dL_dK*dX)
+        dX = -self.variance*self.power * (X-X2.T)/self.lengthscale**2 *  (1 + dist2/2./self.lengthscale)**(-self.power-1)
+        target += np.sum(dL_dK*dX,1)[:,np.newaxis]
 
     def dKdiag_dX(self,dL_dKdiag,X,target):
         pass

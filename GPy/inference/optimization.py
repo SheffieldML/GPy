@@ -196,6 +196,16 @@ class opt_rasm(Optimizer):
 
         self.trace = opt_result[1]
 
+class opt_scg(Optimizer):
+    def __init__(self, *args, **kwargs):
+        Optimizer.__init__(self, *args, **kwargs)
+        self.opt_name = "Scaled Conjugate Gradients"
+
+    def opt(self, f_fp = None, f = None, fp = None):
+        assert not f is None
+        assert not fp is None
+        opt_result = SCG (f,fp,self.x_init, display=self.messages,
+
 def get_optimizer(f_min):
     # import rasmussens_minimize as rasm
     from SGD import opt_SGD

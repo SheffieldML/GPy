@@ -1,3 +1,7 @@
+# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
+
 from kernpart import kernpart
 import numpy as np
 from GPy.util.linalg import mdot, pdinv

@@ -6,7 +6,7 @@ from numpy.distutils.core import Extension, setup
 #from sphinx.setup_command import BuildDoc
 
 # Version number
-version = '0.1.3'
+version = '0.2'
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()

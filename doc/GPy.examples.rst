@@ -9,14 +9,6 @@ examples Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`BGPLVM_demo` Module
--------------------------
-
-.. automodule:: GPy.examples.BGPLVM_demo
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 :mod:`classification` Module
 ----------------------------
 
@@ -25,18 +17,18 @@ examples Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`oil_flow_demo` Module
----------------------------
+:mod:`dimensionality_reduction` Module
+--------------------------------------
 
-.. automodule:: GPy.examples.oil_flow_demo
+.. automodule:: GPy.examples.dimensionality_reduction
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`poisson` Module
----------------------
+:mod:`non_gaussian` Module
+--------------------------
 
-.. automodule:: GPy.examples.poisson
+.. automodule:: GPy.examples.non_gaussian
     :members:
     :undoc-members:
     :show-inheritance:
@@ -49,50 +41,10 @@ examples Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`sparse_GPLVM_demo` Module
--------------------------------
+:mod:`tutorials` Module
+-----------------------
 
-.. automodule:: GPy.examples.sparse_GPLVM_demo
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`sparse_GP_regression_demo` Module
----------------------------------------
-
-.. automodule:: GPy.examples.sparse_GP_regression_demo
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`sparse_ep_fix` Module
----------------------------
-
-.. automodule:: GPy.examples.sparse_ep_fix
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`uncertain_input_GP_regression_demo` Module
-------------------------------------------------
-
-.. automodule:: GPy.examples.uncertain_input_GP_regression_demo
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`uncollapsed_GP_demo` Module
----------------------------------
-
-.. automodule:: GPy.examples.uncollapsed_GP_demo
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`unsupervised` Module
---------------------------
-
-.. automodule:: GPy.examples.unsupervised
+.. automodule:: GPy.examples.tutorials
     :members:
     :undoc-members:
     :show-inheritance:

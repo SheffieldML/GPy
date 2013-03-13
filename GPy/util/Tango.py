@@ -25,7 +25,7 @@ def fewerXticks(ax=None,divideby=2):
     ax.set_xticks(ax.get_xticks()[::divideby])
 
 
-coloursHex = {\
+colorsHex = {\
 "Aluminium6":"#2e3436",\
 "Aluminium5":"#555753",\
 "Aluminium4":"#888a85",\
@@ -54,9 +54,9 @@ coloursHex = {\
 "mediumButter":"#edd400",\
 "darkButter":"#c4a000"}
 
-darkList = [coloursHex['darkBlue'],coloursHex['darkRed'],coloursHex['darkGreen'], coloursHex['darkOrange'], coloursHex['darkButter'], coloursHex['darkPurple'], coloursHex['darkChocolate'], coloursHex['Aluminium6']]
-mediumList = [coloursHex['mediumBlue'], coloursHex['mediumRed'],coloursHex['mediumGreen'], coloursHex['mediumOrange'], coloursHex['mediumButter'], coloursHex['mediumPurple'], coloursHex['mediumChocolate'], coloursHex['Aluminium5']]
-lightList = [coloursHex['lightBlue'], coloursHex['lightRed'],coloursHex['lightGreen'], coloursHex['lightOrange'], coloursHex['lightButter'], coloursHex['lightPurple'], coloursHex['lightChocolate'], coloursHex['Aluminium4']]
+darkList = [colorsHex['darkBlue'],colorsHex['darkRed'],colorsHex['darkGreen'], colorsHex['darkOrange'], colorsHex['darkButter'], colorsHex['darkPurple'], colorsHex['darkChocolate'], colorsHex['Aluminium6']]
+mediumList = [colorsHex['mediumBlue'], colorsHex['mediumRed'],colorsHex['mediumGreen'], colorsHex['mediumOrange'], colorsHex['mediumButter'], colorsHex['mediumPurple'], colorsHex['mediumChocolate'], colorsHex['Aluminium5']]
+lightList = [colorsHex['lightBlue'], colorsHex['lightRed'],colorsHex['lightGreen'], colorsHex['lightOrange'], colorsHex['lightButter'], colorsHex['lightPurple'], colorsHex['lightChocolate'], colorsHex['Aluminium4']]
 
 def currentDark():
     return darkList[-1]
@@ -76,85 +76,85 @@ def nextLight():
     return lightList[-1]
 
 def reset():
-    while not darkList[0]==coloursHex['darkBlue']:
+    while not darkList[0]==colorsHex['darkBlue']:
         darkList.append(darkList.pop(0))
-    while not mediumList[0]==coloursHex['mediumBlue']:
+    while not mediumList[0]==colorsHex['mediumBlue']:
         mediumList.append(mediumList.pop(0))
-    while not lightList[0]==coloursHex['lightBlue']:
+    while not lightList[0]==colorsHex['lightBlue']:
         lightList.append(lightList.pop(0))
 
 def setLightFigures():
-    mpl.rcParams['axes.edgecolor']=coloursHex['Aluminium6']
-    mpl.rcParams['axes.facecolor']=coloursHex['Aluminium2']
-    mpl.rcParams['axes.labelcolor']=coloursHex['Aluminium6']
-    mpl.rcParams['figure.edgecolor']=coloursHex['Aluminium6']
-    mpl.rcParams['figure.facecolor']=coloursHex['Aluminium2']
-    mpl.rcParams['grid.color']=coloursHex['Aluminium6']
-    mpl.rcParams['savefig.edgecolor']=coloursHex['Aluminium2']
-    mpl.rcParams['savefig.facecolor']=coloursHex['Aluminium2']
-    mpl.rcParams['text.color']=coloursHex['Aluminium6']
-    mpl.rcParams['xtick.color']=coloursHex['Aluminium6']
-    mpl.rcParams['ytick.color']=coloursHex['Aluminium6']
+    mpl.rcParams['axes.edgecolor']=colorsHex['Aluminium6']
+    mpl.rcParams['axes.facecolor']=colorsHex['Aluminium2']
+    mpl.rcParams['axes.labelcolor']=colorsHex['Aluminium6']
+    mpl.rcParams['figure.edgecolor']=colorsHex['Aluminium6']
+    mpl.rcParams['figure.facecolor']=colorsHex['Aluminium2']
+    mpl.rcParams['grid.color']=colorsHex['Aluminium6']
+    mpl.rcParams['savefig.edgecolor']=colorsHex['Aluminium2']
+    mpl.rcParams['savefig.facecolor']=colorsHex['Aluminium2']
+    mpl.rcParams['text.color']=colorsHex['Aluminium6']
+    mpl.rcParams['xtick.color']=colorsHex['Aluminium6']
+    mpl.rcParams['ytick.color']=colorsHex['Aluminium6']
 
 def setDarkFigures():
-    mpl.rcParams['axes.edgecolor']=coloursHex['Aluminium2']
-    mpl.rcParams['axes.facecolor']=coloursHex['Aluminium6']
-    mpl.rcParams['axes.labelcolor']=coloursHex['Aluminium2']
-    mpl.rcParams['figure.edgecolor']=coloursHex['Aluminium2']
-    mpl.rcParams['figure.facecolor']=coloursHex['Aluminium6']
-    mpl.rcParams['grid.color']=coloursHex['Aluminium2']
-    mpl.rcParams['savefig.edgecolor']=coloursHex['Aluminium6']
-    mpl.rcParams['savefig.facecolor']=coloursHex['Aluminium6']
-    mpl.rcParams['text.color']=coloursHex['Aluminium2']
-    mpl.rcParams['xtick.color']=coloursHex['Aluminium2']
-    mpl.rcParams['ytick.color']=coloursHex['Aluminium2']
+    mpl.rcParams['axes.edgecolor']=colorsHex['Aluminium2']
+    mpl.rcParams['axes.facecolor']=colorsHex['Aluminium6']
+    mpl.rcParams['axes.labelcolor']=colorsHex['Aluminium2']
+    mpl.rcParams['figure.edgecolor']=colorsHex['Aluminium2']
+    mpl.rcParams['figure.facecolor']=colorsHex['Aluminium6']
+    mpl.rcParams['grid.color']=colorsHex['Aluminium2']
+    mpl.rcParams['savefig.edgecolor']=colorsHex['Aluminium6']
+    mpl.rcParams['savefig.facecolor']=colorsHex['Aluminium6']
+    mpl.rcParams['text.color']=colorsHex['Aluminium2']
+    mpl.rcParams['xtick.color']=colorsHex['Aluminium2']
+    mpl.rcParams['ytick.color']=colorsHex['Aluminium2']
 
 def hex2rgb(hexcolor):
     hexcolor = [hexcolor[1+2*i:1+2*(i+1)] for i in range(3)]
     r,g,b = [int(n,16) for n in hexcolor]
     return (r,g,b)
 
-coloursRGB = dict([(k,hex2rgb(i)) for k,i in coloursHex.items()])
+colorsRGB = dict([(k,hex2rgb(i)) for k,i in colorsHex.items()])
 
-cdict_RB = {'red' :((0.,coloursRGB['mediumRed'][0]/256.,coloursRGB['mediumRed'][0]/256.),
-                     (.5,coloursRGB['mediumPurple'][0]/256.,coloursRGB['mediumPurple'][0]/256.),
-                     (1.,coloursRGB['mediumBlue'][0]/256.,coloursRGB['mediumBlue'][0]/256.)),
-            'green':((0.,coloursRGB['mediumRed'][1]/256.,coloursRGB['mediumRed'][1]/256.),
-                     (.5,coloursRGB['mediumPurple'][1]/256.,coloursRGB['mediumPurple'][1]/256.),
-                     (1.,coloursRGB['mediumBlue'][1]/256.,coloursRGB['mediumBlue'][1]/256.)),
-            'blue':((0.,coloursRGB['mediumRed'][2]/256.,coloursRGB['mediumRed'][2]/256.),
-                      (.5,coloursRGB['mediumPurple'][2]/256.,coloursRGB['mediumPurple'][2]/256.),
-                      (1.,coloursRGB['mediumBlue'][2]/256.,coloursRGB['mediumBlue'][2]/256.))}
+cdict_RB = {'red' :((0.,colorsRGB['mediumRed'][0]/256.,colorsRGB['mediumRed'][0]/256.),
+                     (.5,colorsRGB['mediumPurple'][0]/256.,colorsRGB['mediumPurple'][0]/256.),
+                     (1.,colorsRGB['mediumBlue'][0]/256.,colorsRGB['mediumBlue'][0]/256.)),
+            'green':((0.,colorsRGB['mediumRed'][1]/256.,colorsRGB['mediumRed'][1]/256.),
+                     (.5,colorsRGB['mediumPurple'][1]/256.,colorsRGB['mediumPurple'][1]/256.),
+                     (1.,colorsRGB['mediumBlue'][1]/256.,colorsRGB['mediumBlue'][1]/256.)),
+            'blue':((0.,colorsRGB['mediumRed'][2]/256.,colorsRGB['mediumRed'][2]/256.),
+                      (.5,colorsRGB['mediumPurple'][2]/256.,colorsRGB['mediumPurple'][2]/256.),
+                      (1.,colorsRGB['mediumBlue'][2]/256.,colorsRGB['mediumBlue'][2]/256.))}
 
-cdict_BGR = {'red' :((0.,coloursRGB['mediumBlue'][0]/256.,coloursRGB['mediumBlue'][0]/256.),
-                     (.5,coloursRGB['mediumGreen'][0]/256.,coloursRGB['mediumGreen'][0]/256.),
-                     (1.,coloursRGB['mediumRed'][0]/256.,coloursRGB['mediumRed'][0]/256.)),
-            'green':((0.,coloursRGB['mediumBlue'][1]/256.,coloursRGB['mediumBlue'][1]/256.),
-                     (.5,coloursRGB['mediumGreen'][1]/256.,coloursRGB['mediumGreen'][1]/256.),
-                     (1.,coloursRGB['mediumRed'][1]/256.,coloursRGB['mediumRed'][1]/256.)),
-            'blue':((0.,coloursRGB['mediumBlue'][2]/256.,coloursRGB['mediumBlue'][2]/256.),
-                      (.5,coloursRGB['mediumGreen'][2]/256.,coloursRGB['mediumGreen'][2]/256.),
-                      (1.,coloursRGB['mediumRed'][2]/256.,coloursRGB['mediumRed'][2]/256.))}
+cdict_BGR = {'red' :((0.,colorsRGB['mediumBlue'][0]/256.,colorsRGB['mediumBlue'][0]/256.),
+                     (.5,colorsRGB['mediumGreen'][0]/256.,colorsRGB['mediumGreen'][0]/256.),
+                     (1.,colorsRGB['mediumRed'][0]/256.,colorsRGB['mediumRed'][0]/256.)),
+            'green':((0.,colorsRGB['mediumBlue'][1]/256.,colorsRGB['mediumBlue'][1]/256.),
+                     (.5,colorsRGB['mediumGreen'][1]/256.,colorsRGB['mediumGreen'][1]/256.),
+                     (1.,colorsRGB['mediumRed'][1]/256.,colorsRGB['mediumRed'][1]/256.)),
+            'blue':((0.,colorsRGB['mediumBlue'][2]/256.,colorsRGB['mediumBlue'][2]/256.),
+                      (.5,colorsRGB['mediumGreen'][2]/256.,colorsRGB['mediumGreen'][2]/256.),
+                      (1.,colorsRGB['mediumRed'][2]/256.,colorsRGB['mediumRed'][2]/256.))}
 
 
-cdict_Alu = {'red' :((0./5,coloursRGB['Aluminium1'][0]/256.,coloursRGB['Aluminium1'][0]/256.),
-                     (1./5,coloursRGB['Aluminium2'][0]/256.,coloursRGB['Aluminium2'][0]/256.),
-                     (2./5,coloursRGB['Aluminium3'][0]/256.,coloursRGB['Aluminium3'][0]/256.),
-                     (3./5,coloursRGB['Aluminium4'][0]/256.,coloursRGB['Aluminium4'][0]/256.),
-                     (4./5,coloursRGB['Aluminium5'][0]/256.,coloursRGB['Aluminium5'][0]/256.),
-                     (5./5,coloursRGB['Aluminium6'][0]/256.,coloursRGB['Aluminium6'][0]/256.)),
-           'green' :((0./5,coloursRGB['Aluminium1'][1]/256.,coloursRGB['Aluminium1'][1]/256.),
-                     (1./5,coloursRGB['Aluminium2'][1]/256.,coloursRGB['Aluminium2'][1]/256.),
-                     (2./5,coloursRGB['Aluminium3'][1]/256.,coloursRGB['Aluminium3'][1]/256.),
-                     (3./5,coloursRGB['Aluminium4'][1]/256.,coloursRGB['Aluminium4'][1]/256.),
-                     (4./5,coloursRGB['Aluminium5'][1]/256.,coloursRGB['Aluminium5'][1]/256.),
-                     (5./5,coloursRGB['Aluminium6'][1]/256.,coloursRGB['Aluminium6'][1]/256.)),
-            'blue' :((0./5,coloursRGB['Aluminium1'][2]/256.,coloursRGB['Aluminium1'][2]/256.),
-                     (1./5,coloursRGB['Aluminium2'][2]/256.,coloursRGB['Aluminium2'][2]/256.),
-                     (2./5,coloursRGB['Aluminium3'][2]/256.,coloursRGB['Aluminium3'][2]/256.),
-                     (3./5,coloursRGB['Aluminium4'][2]/256.,coloursRGB['Aluminium4'][2]/256.),
-                     (4./5,coloursRGB['Aluminium5'][2]/256.,coloursRGB['Aluminium5'][2]/256.),
-                     (5./5,coloursRGB['Aluminium6'][2]/256.,coloursRGB['Aluminium6'][2]/256.))}
+cdict_Alu = {'red' :((0./5,colorsRGB['Aluminium1'][0]/256.,colorsRGB['Aluminium1'][0]/256.),
+                     (1./5,colorsRGB['Aluminium2'][0]/256.,colorsRGB['Aluminium2'][0]/256.),
+                     (2./5,colorsRGB['Aluminium3'][0]/256.,colorsRGB['Aluminium3'][0]/256.),
+                     (3./5,colorsRGB['Aluminium4'][0]/256.,colorsRGB['Aluminium4'][0]/256.),
+                     (4./5,colorsRGB['Aluminium5'][0]/256.,colorsRGB['Aluminium5'][0]/256.),
+                     (5./5,colorsRGB['Aluminium6'][0]/256.,colorsRGB['Aluminium6'][0]/256.)),
+           'green' :((0./5,colorsRGB['Aluminium1'][1]/256.,colorsRGB['Aluminium1'][1]/256.),
+                     (1./5,colorsRGB['Aluminium2'][1]/256.,colorsRGB['Aluminium2'][1]/256.),
+                     (2./5,colorsRGB['Aluminium3'][1]/256.,colorsRGB['Aluminium3'][1]/256.),
+                     (3./5,colorsRGB['Aluminium4'][1]/256.,colorsRGB['Aluminium4'][1]/256.),
+                     (4./5,colorsRGB['Aluminium5'][1]/256.,colorsRGB['Aluminium5'][1]/256.),
+                     (5./5,colorsRGB['Aluminium6'][1]/256.,colorsRGB['Aluminium6'][1]/256.)),
+            'blue' :((0./5,colorsRGB['Aluminium1'][2]/256.,colorsRGB['Aluminium1'][2]/256.),
+                     (1./5,colorsRGB['Aluminium2'][2]/256.,colorsRGB['Aluminium2'][2]/256.),
+                     (2./5,colorsRGB['Aluminium3'][2]/256.,colorsRGB['Aluminium3'][2]/256.),
+                     (3./5,colorsRGB['Aluminium4'][2]/256.,colorsRGB['Aluminium4'][2]/256.),
+                     (4./5,colorsRGB['Aluminium5'][2]/256.,colorsRGB['Aluminium5'][2]/256.),
+                     (5./5,colorsRGB['Aluminium6'][2]/256.,colorsRGB['Aluminium6'][2]/256.))}
 # cmap_Alu = mpl.colors.LinearSegmentedColormap('TangoAluminium',cdict_Alu,256)
 # cmap_BGR = mpl.colors.LinearSegmentedColormap('TangoRedBlue',cdict_BGR,256)
 # cmap_RB = mpl.colors.LinearSegmentedColormap('TangoRedBlue',cdict_RB,256)

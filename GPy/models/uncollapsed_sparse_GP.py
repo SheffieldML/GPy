@@ -93,7 +93,7 @@ class uncollapsed_sparse_GP(sparse_GP):
         return A+B+C+D+E
 
     def _raw_predict(self, Xnew, slices,full_cov=False):
-        """Internal helper function for making predictions, does not account for normalisation"""
+        """Internal helper function for making predictions, does not account for normalization"""
         Kx = self.kern.K(Xnew,self.Z)
         mu = mdot(Kx,self.Kmmi,self.q_u_expectation[0])
 

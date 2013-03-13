@@ -18,8 +18,11 @@ from Brownian import Brownian as Brownianpart
 from periodic_exponential import periodic_exponential as periodic_exponentialpart
 from periodic_Matern32 import periodic_Matern32 as periodic_Matern32part
 from periodic_Matern52 import periodic_Matern52 as periodic_Matern52part
-from product import product as productpart
-from product_orthogonal import product_orthogonal as product_orthogonalpart
+from prod import prod as prodpart
+from prod_orthogonal import prod_orthogonal as prod_orthogonalpart
+from symmetric import symmetric as symmetric_part
+from coregionalise import coregionalise as coregionalise_part
+from rational_quadratic import rational_quadratic as rational_quadraticpart
 #TODO these s=constructors are not as clean as we'd like. Tidy the code up
 #using meta-classes to make the objects construct properly wthout them.
 
@@ -243,7 +246,7 @@ def periodic_Matern52(D,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,
     part = periodic_Matern52part(D,variance, lengthscale, period, n_freq, lower, upper)
     return kern(D, [part])
 
-def product(k1,k2):
+def prod(k1,k2):
     """
      Construct a product kernel over D from two kernels over D
 
@@ -251,10 +254,10 @@ def product(k1,k2):
     :type k1, k2: kernpart
     :rtype: kernel object
     """
-    part = productpart(k1,k2)
+    part = prodpart(k1,k2)
     return kern(k1.D, [part])
 
-def product_orthogonal(k1,k2):
+def prod_orthogonal(k1,k2):
     """
      Construct a product kernel over D1 x D2 from a kernel over D1 and another over D2.
 
@@ -262,5 +265,34 @@ def product_orthogonal(k1,k2):
     :type k1, k2: kernpart
     :rtype: kernel object
     """
-    part = product_orthogonalpart(k1,k2)
+    part = prod_orthogonalpart(k1,k2)
     return kern(k1.D+k2.D, [part])
+
+def symmetric(k):
+    """
+    Construct a symmetrical kernel from an existing kernel
+    """
+    k_ = k.copy()
+    k_.parts = [symmetric_part(p) for p in k.parts]
+    return k_
+
+def coregionalise(Nout,R=1, W=None, kappa=None):
+    p = coregionalise_part(Nout,R,W,kappa)
+    return kern(1,[p])
+
+
+def rational_quadratic(D,variance=1., lengthscale=1., power=1.):
+    """
+     Construct rational quadratic kernel.
+
+    :param D: the number of input dimensions
+    :type D: int (D=1 is the only value currently supported)
+    :param variance: the variance :math:`\sigma^2`
+    :type variance: float
+    :param lengthscale: the lengthscale :math:`\ell`
+    :type lengthscale: float
+    :rtype: kern object
+
+    """
+    part = rational_quadraticpart(D,variance, lengthscale, power)
+    return kern(D, [part])

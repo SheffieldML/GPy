@@ -9,10 +9,10 @@ models Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`BGPLVM` Module
---------------------
+:mod:`Bayesian_GPLVM` Module
+----------------------------
 
-.. automodule:: GPy.models.BGPLVM
+.. automodule:: GPy.models.Bayesian_GPLVM
     :members:
     :undoc-members:
     :show-inheritance:

@@ -1,42 +1,61 @@
-Fails in weird ways if you pass a integer as the input instead of a double to the kernel.
+the predict method for GP_regression returns a covariance matrix which is a bad idea as this takes a lot to compute, it's also confusing for first time users. Should only be returned if the user explicitly requests it. 
+FIXED
 
-The Matern kernels (at least the 52) still is working in the ARD manner which means it wouldn't run for very large input dimension. Needs to be fixed to match the RBF.
-
-Implementing new covariances is too complicated at the moment. We need a barebones example of what to implement and where. Commenting in the covariance matrices needs to be improved. It's not clear to a user what all the psi parts are for. Maybe we need a cut down and simplified example to help with this (perhaps a cut down version of the RBF?). And then we should provide a simple list of what you need to do to get a new kernel going.
-
-Missing kernels: polynomial, rational quadratic.
-
-Kernel implementations are far to obscure. Need to be easily readable for a first time user.
-
-Need an implementation of scaled conjugate gradients for the optimizers.
-
-Need an implementation of gradient descent for the optimizers (works well with GP-LVM for small random initializations)
-
-Need Carl Rasmussen's permission to add his conjugate gradients algorithm. In fact, we can just provide a hook for it, and post a separate python implementation of his algorithm.
-
-Change get_param and set_param to get_params and set_params
-
-Get constrain param by default inside model creation.
-
-Randomize doesn't seem to cover a wide enough range for restarts ... try it for a model where inputs are widely spaced apart and length scale is too short. Sampling from N(0,1) is too conservative. Dangerous for people who naively use restarts. Since we have the model we could maybe come up with some sensible heuristics for setting these things. Maybe we should also consider having '.initialize()'. If we can't do this well we should disable the restart method.
-
-
-Tolerances for optimizers, do we need to introduce some standardization? At the moment does each have its own defaults?
-
-Do all optimizers work only in terms of function evaluations? Do we need to check for one that uses iterations?
+When computing kernel.K for kernels like rbf, you can't compute a version with rbf.K(X) you have to do rbf.K(X, X)
+FIXED
 
 Change Youter to YYT (Youter doesn't mean anything for matrices).
+FIXED
+
+Change get_param and set_param to get_params and set_params
+FIXED
+
+Fails in weird ways if you pass a integer as the input instead of a double to the kernel.
+FIXED
+
+The Matern kernels (at least the 52) still is working in the ARD manner which means it wouldn't run for very large input dimension. Needs to be fixed to match the RBF.
+FIXED
+
+Implementing new covariances is too complicated at the moment. We need a barebones example of what to implement and where. Commenting in the covariance matrices needs to be improved. It's not clear to a user what all the psi parts are for. Maybe we need a cut down and simplified example to help with this (perhaps a cut down version of the RBF?). And then we should provide a simple list of what you need to do to get a new kernel going.
+TODO, a priority for this release
+
+Missing kernels: polynomial, rational quadratic.
+TODO, should be straightforward when the above is fixed.
+
+Need an implementation of scaled conjugate gradients for the optimizers.
+UPSTREAM: scipy are tidying up the optimize module. let's wait for their next release. 
+
+Need an implementation of gradient descent for the optimizers (works well with GP-LVM for small random initializations)
+As above. 
+
+Need Carl Rasmussen's permission to add his conjugate gradients algorithm. In fact, we can just provide a hook for it, and post a separate python implementation of his algorithm.
+Any word from Carl yet?
+
+Get constrain param by default inside model creation.
+Well, we have ensure_default_constraints. There are some techinical difficulties in doing it inside model creation, so perhaps this is something for a later release.
 
 Bug when running classification.crescent_data()
+TODO.
+
+Do all optimizers work only in terms of function evaluations? Do we need to check for one that uses iterations?
+Upstream: Waiting for the new scipy, where the optimisers have been unified. Obviously it's be much better to be able to specify a unified set of args. 
+
+Tolerances for optimizers, do we need to introduce some standardization? At the moment does each have its own defaults?
+Upstream, as above
 
 A dictionary for parameter storage? So we can go through names easily?
+Wontfix. Dictionaries bring up all kinds of problems since they're not ordered. it's easy enough to do:
+for val, name in zip(m._get_params(), m._get_param_names()): foobar
 
 A flag on covariance functions that indicates when they are not associated with an underlying function (like white noise or a coregionalization matrix).
+TODO, agree this would be helpful.
 
 Diagonal noise covariance function
+TODO this is now straightforward using the likelihood framework, or as a kern. NF also requires a similar kind of kern function (a fixed form kernel)
 
 Long term: automatic Lagrange multiplier calculation for optimizers: constrain two parameters in an unusual way and the model automatically does the Lagrangian. Also augment the parameters with new ones, so define data variance to be white noise plus RBF variance and optimize over that and signal to noise ratio ... for example constrain the sum of variances to equal the known variance of the data.
 
-When computing kernel.K for kernels like rbf, you can't compute a version with rbf.K(X) you have to do rbf.K(X, X)
+Randomize doesn't seem to cover a wide enough range for restarts ... try it for a model where inputs are widely spaced apart and length scale is too short. Sampling from N(0,1) is too conservative. Dangerous for people who naively use restarts. Since we have the model we could maybe come up with some sensible heuristics for setting these things. Maybe we should also consider having '.initialize()'. If we can't do this well we should disable the restart method.
+Excellent proposal, but lots of work: suggest leaving for the next release?
 
-the predict method for GP_regression returns a covariance matrix which is a bad idea as this takes a lot to compute, it's also confusing for first time users. Should only be returned if the user explicitly requests it. 
+

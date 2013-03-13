@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-from numpy.distutils.core import Extension, setup
-#from sphinx.setup_command import BuildDoc
+from setuptools import setup
 
 # Version number
 version = '0.2'
@@ -13,12 +12,12 @@ def read(fname):
 
 setup(name = 'GPy',
       version = version,
-      author = 'James Hensman, Nicolo Fusi, Ricardo Andrade, Nicolas Durrande, Alan Saul, Neil D. Lawrence',
+      author = read('AUTHORS.txt'),
       author_email = "james.hensman@gmail.com",
       description = ("The Gaussian Process Toolbox"),
       license = "BSD 3-clause",
       keywords = "machine-learning gaussian-processes kernels",
-      url = "http://ml.sheffield.ac.uk/GPy/",
+      url = "http://sheffieldml.github.com/GPy/",
       packages = ['GPy', 'GPy.core', 'GPy.kern', 'GPy.util', 'GPy.models', 'GPy.inference', 'GPy.examples', 'GPy.likelihoods'],
       package_dir={'GPy': 'GPy'},
       package_data = {'GPy': ['GPy/examples']},
@@ -26,14 +25,12 @@ setup(name = 'GPy',
       long_description=read('README.md'),
       #ext_modules =  [Extension(name = 'GPy.kern.lfmUpsilonf2py',
       #          sources = ['GPy/kern/src/lfmUpsilonf2py.f90'])],
-      install_requires=['sympy', 'numpy>=1.6', 'scipy>=0.9','matplotlib>=1.1'],
+      install_requires=['sympy', 'numpy>=1.6', 'scipy>=0.9','matplotlib>=1.1', 'nose'],
       extras_require = {
         'docs':['Sphinx', 'ipython'],
       },
       #setup_requires=['sphinx'],
       #cmdclass = {'build_sphinx': BuildDoc},
       classifiers=[
-      "Development Status :: 1 - Alpha",
-      "Topic :: Machine Learning",
       "License :: OSI Approved :: BSD License"],
       )

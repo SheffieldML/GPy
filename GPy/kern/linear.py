@@ -74,16 +74,23 @@ class linear(kernpart):
     def Kdiag(self,X,target):
         np.add(target,np.sum(self.variances*np.square(X),-1),target)
 
-    def dK_dtheta(self,partial,X,X2,target):
+    def dK_dtheta(self,dL_dK,X,X2,target):
         if self.ARD:
             product = X[:,None,:]*X2[None,:,:]
-            target += (partial[:,:,None]*product).sum(0).sum(0)
+            target += (dL_dK[:,:,None]*product).sum(0).sum(0)
         else:
             self._K_computations(X, X2)
-            target += np.sum(self._dot_product*partial)
+            target += np.sum(self._dot_product*dL_dK)
 
-    def dK_dX(self,partial,X,X2,target):
-        target += (((X2[:, None, :] * self.variances)) * partial[:,:, None]).sum(0)
+    def dKdiag_dtheta(self,dL_dKdiag, X, target):
+        tmp = dL_dKdiag[:,None]*X**2
+        if self.ARD:
+            target += tmp.sum(0)
+        else:
+            target += tmp.sum()
+
+    def dK_dX(self,dL_dK,X,X2,target):
+        target += (((X2[:, None, :] * self.variances)) * dL_dK[:,:, None]).sum(0)
 
     #---------------------------------------#
     #             PSI statistics            #
@@ -93,33 +100,33 @@ class linear(kernpart):
         self._psi_computations(Z,mu,S)
         target += np.sum(self.variances*self.mu2_S,1)
 
-    def dpsi0_dtheta(self,partial,Z,mu,S,target):
+    def dpsi0_dtheta(self,dL_dpsi0,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
-        tmp = partial[:, None] * self.mu2_S
+        tmp = dL_dpsi0[:, None] * self.mu2_S
         if self.ARD:
             target += tmp.sum(0)
         else:
             target += tmp.sum()
 
-    def dpsi0_dmuS(self,partial, Z,mu,S,target_mu,target_S):
-        target_mu += partial[:, None] * (2.0*mu*self.variances)
-        target_S += partial[:, None] * self.variances
+    def dpsi0_dmuS(self,dL_dpsi0, Z,mu,S,target_mu,target_S):
+        target_mu += dL_dpsi0[:, None] * (2.0*mu*self.variances)
+        target_S += dL_dpsi0[:, None] * self.variances
 
     def psi1(self,Z,mu,S,target):
         """the variance, it does nothing"""
         self.K(mu,Z,target)
 
-    def dpsi1_dtheta(self,partial,Z,mu,S,target):
+    def dpsi1_dtheta(self,dL_dpsi1,Z,mu,S,target):
         """the variance, it does nothing"""
-        self.dK_dtheta(partial,mu,Z,target)
+        self.dK_dtheta(dL_dpsi1,mu,Z,target)
 
-    def dpsi1_dmuS(self,partial,Z,mu,S,target_mu,target_S):
+    def dpsi1_dmuS(self,dL_dpsi1,Z,mu,S,target_mu,target_S):
         """Do nothing for S, it does not affect psi1"""
         self._psi_computations(Z,mu,S)
-        target_mu += (partial.T[:,:, None]*(Z*self.variances)).sum(1)
+        target_mu += (dL_dpsi1.T[:,:, None]*(Z*self.variances)).sum(1)
 
-    def dpsi1_dZ(self,partial,Z,mu,S,target):
-        self.dK_dX(partial.T,Z,mu,target)
+    def dpsi1_dZ(self,dL_dpsi1,Z,mu,S,target):
+        self.dK_dX(dL_dpsi1.T,Z,mu,target)
 
     def psi2(self,Z,mu,S,target):
         """
@@ -128,26 +135,27 @@ class linear(kernpart):
         self._psi_computations(Z,mu,S)
         psi2 = self.ZZ*np.square(self.variances)*self.mu2_S[:, None, None, :]
         target += psi2.sum(-1)
+        #TODO: this could be faster using np.tensordot
 
-    def dpsi2_dtheta(self,partial,Z,mu,S,target):
+    def dpsi2_dtheta(self,dL_dpsi2,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
-        tmp = (partial[:,:,:,None]*(2.*self.ZZ*self.mu2_S[:,None,None,:]*self.variances))
+        tmp = (dL_dpsi2[:,:,:,None]*(2.*self.ZZ*self.mu2_S[:,None,None,:]*self.variances))
         if self.ARD:
             target += tmp.sum(0).sum(0).sum(0)
         else:
             target += tmp.sum()
 
-    def dpsi2_dmuS(self,partial,Z,mu,S,target_mu,target_S):
+    def dpsi2_dmuS(self,dL_dpsi2,Z,mu,S,target_mu,target_S):
         """Think N,M,M,Q """
         self._psi_computations(Z,mu,S)
         tmp = self.ZZ*np.square(self.variances) # M,M,Q
-        target_mu += (partial[:,:,:,None]*tmp*2.*mu[:,None,None,:]).sum(1).sum(1)
-        target_S += (partial[:,:,:,None]*tmp).sum(1).sum(1)
+        target_mu += (dL_dpsi2[:,:,:,None]*tmp*2.*mu[:,None,None,:]).sum(1).sum(1)
+        target_S += (dL_dpsi2[:,:,:,None]*tmp).sum(1).sum(1)
 
-    def dpsi2_dZ(self,partial,Z,mu,S,target):
+    def dpsi2_dZ(self,dL_dpsi2,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
         mu2_S = np.sum(self.mu2_S,0)# Q,
-        target += (partial[:,:,:,None] * (self.mu2_S[:,None,None,:]*(Z*np.square(self.variances)[None,:])[None,None,:,:])).sum(0).sum(1)
+        target += (dL_dpsi2[:,:,:,None] * (self.mu2_S[:,None,None,:]*(Z*np.square(self.variances)[None,:])[None,None,:,:])).sum(0).sum(1)
 
     #---------------------------------------#
     #            Precomputations            #

@@ -20,5 +20,6 @@ Subpackages
     GPy.kern
     GPy.likelihoods
     GPy.models
+    GPy.testing
     GPy.util
 

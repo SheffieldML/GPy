@@ -11,8 +11,14 @@ import re
 import pdb
 import cPickle
 import types
-import scipy.lib.lapack.flapack
+#import scipy.lib.lapack.flapack
 import scipy as sp
+
+def trace_dot(a,b):
+    """
+    efficiently compute the trace of the matrix product of a and b
+    """
+    return np.sum(a*b)
 
 def mdot(*args):
    """Multiply all the arguments using matrix product rules.
@@ -101,7 +107,7 @@ def chol_inv(L):
 
     """
 
-    return linalg.flapack.dtrtri(L, lower = True)[0]
+    return linalg.lapack.flapack.dtrtri(L, lower = True)[0]
 
 
 def multiple_pdinv(A):
@@ -118,7 +124,7 @@ def multiple_pdinv(A):
     N = A.shape[-1]
     chols = [jitchol(A[:,:,i]) for i in range(N)]
     halflogdets = [np.sum(np.log(np.diag(L[0]))) for L in chols]
-    invs = [linalg.flapack.dpotri(L[0],True)[0] for L in chols]
+    invs = [linalg.lapack.flapack.dpotri(L[0],True)[0] for L in chols]
     invs = [np.triu(I)+np.triu(I,1).T for I in invs]
     return np.dstack(invs),np.array(halflogdets)
 

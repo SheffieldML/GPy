@@ -41,7 +41,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 
     def _get_param_names(self):
         X_names = sum([['X_%i_%i'%(n,q) for q in range(self.Q)] for n in range(self.N)],[])
-        S_names = sum([['S_%i_%i'%(n,q) for q in range(self.Q)] for n in range(self.N)],[])
+        S_names = sum([['X_variance_%i_%i'%(n,q) for q in range(self.Q)] for n in range(self.N)],[])
         return (X_names + S_names + sparse_GP._get_param_names(self))
 
     def _get_params(self):
@@ -83,3 +83,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 
     def _log_likelihood_gradients(self):
         return np.hstack((self.dL_dmuS().flatten(), sparse_GP._log_likelihood_gradients(self)))
+
+    def plot_latent(self, *args, **kwargs):
+        input_1, input_2 = GPLVM.plot_latent(self, *args, **kwargs)
+        pb.plot(self.Z[:, input_1], self.Z[:, input_2], '^w')

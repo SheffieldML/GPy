@@ -2,6 +2,7 @@
 ****************************
 tutorial : A kernel overview
 ****************************
+The aim of this tutorial is to give a better understanding of the kernel objects in GPy and to list the ones that are already implemented. The code shown in this tutorial can be obtained at GPy/examples/tutorials.py or by running ``GPy.examples.tutorials.tuto_kernel_overview()``.
 
 First we import the libraries we will need ::
 
@@ -38,7 +39,7 @@ return::
 Implemented kernels
 ===================
 
-Many kernels are already implemented in GPy. Here is a summary of most of them:
+Many kernels are already implemented in GPy. The following figure gives a summary of most of them (a comprehensive list can be list can be found `here <kernel_implementation.html>`_):
 
 .. figure::  Figures/tuto_kern_overview_allkern.png
     :align:  center
@@ -132,7 +133,7 @@ Various constrains can be applied to the parameters of a kernel
     * ``constrain_fixed`` to fix the value of a parameter (the value will not be modified during optimisation)
     * ``constrain_positive`` to make sure the parameter is greater than 0.
     * ``constrain_bounded`` to impose the parameter to be in a given range.
-    * ``tie_param`` to impose the value of two (or more) parameters to be equal.
+    * ``tie_params`` to impose the value of two (or more) parameters to be equal.
 
 When calling one of these functions, the parameters to constrain can either by specified by a regular expression that matches its name or by a number that corresponds to the rank of the parameter. Here is an example ::
 
@@ -145,7 +146,7 @@ When calling one of these functions, the parameters to constrain can either by s
 
     k.constrain_positive('var')
     k.constrain_fixed(np.array([1]),1.75)
-    k.tie_param('len')
+    k.tie_params('len')
     k.unconstrain('white')
     k.constrain_bounded('white',lower=1e-5,upper=.5)
     print k

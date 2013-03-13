@@ -11,7 +11,7 @@ import GPy
 
 default_seed=10000
 
-def  toy_1d(seed=default_seed):
+def  toy_poisson_1d(seed=default_seed):
     """
     Simple 1D classification example
     :param seed : seed value for data generation (default is 4).

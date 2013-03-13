@@ -46,7 +46,7 @@ def oil_100(seed=default_seed):
     return {'X': X, 'Y': Y, 'info': "Subsample of the oil data extracting 100 values randomly without replacement."}
 
 def pumadyn(seed=default_seed):
-    # Data is variance 1, no need to normalise.
+    # Data is variance 1, no need to normalize.
     data = np.loadtxt(os.path.join(data_path, 'pumadyn-32nm/Dataset.data.gz'))
     indices = np.random.permutation(data.shape[0])
     indicesTrain = indices[0:7168]

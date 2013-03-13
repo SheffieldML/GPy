@@ -6,7 +6,7 @@ import numpy as np
 import hashlib
 #from scipy import integrate # This may not be necessary (Nicolas, 20th Feb)
 
-class product(kernpart):
+class prod(kernpart):
     """
     Computes the product of 2 kernels that are defined on the same space
 
@@ -55,7 +55,7 @@ class product(kernpart):
         self.k2.Kdiag(X,target2)
         target += target1 * target2
 
-    def dK_dtheta(self,partial,X,X2,target):
+    def dK_dtheta(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to the parameters."""
         if X2 is None: X2 = X
         K1 = np.zeros((X.shape[0],X2.shape[0]))
@@ -65,13 +65,13 @@ class product(kernpart):
 
         k1_target = np.zeros(self.k1.Nparam)
         k2_target = np.zeros(self.k2.Nparam)
-        self.k1.dK_dtheta(partial*K2, X, X2, k1_target)
-        self.k2.dK_dtheta(partial*K1, X, X2, k2_target)
+        self.k1.dK_dtheta(dL_dK*K2, X, X2, k1_target)
+        self.k2.dK_dtheta(dL_dK*K1, X, X2, k2_target)
 
         target[:self.k1.Nparam] += k1_target
         target[self.k1.Nparam:] += k2_target
 
-    def dK_dX(self,partial,X,X2,target):
+    def dK_dX(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
         if X2 is None: X2 = X
         K1 = np.zeros((X.shape[0],X2.shape[0]))
@@ -79,19 +79,19 @@ class product(kernpart):
         self.k1.K(X,X2,K1)
         self.k2.K(X,X2,K2)
 
-        self.k1.dK_dX(partial*K2, X, X2, target)
-        self.k2.dK_dX(partial*K1, X, X2, target)
+        self.k1.dK_dX(dL_dK*K2, X, X2, target)
+        self.k2.dK_dX(dL_dK*K1, X, X2, target)
 
-    def dKdiag_dX(self,partial,X,target):
+    def dKdiag_dX(self,dL_dKdiag,X,target):
         target1 = np.zeros((X.shape[0],))
         target2 = np.zeros((X.shape[0],))
         self.k1.Kdiag(X,target1)
         self.k2.Kdiag(X,target2)
 
-        self.k1.dKdiag_dX(partial*target2, X, target)
-        self.k2.dKdiag_dX(partial*target1, X, target)
+        self.k1.dKdiag_dX(dL_dKdiag*target2, X, target)
+        self.k2.dKdiag_dX(dL_dKdiag*target1, X, target)
 
-    def dKdiag_dtheta(self,partial,X,target):
+    def dKdiag_dtheta(self,dL_dKdiag,X,target):
         """Compute the diagonal of the covariance matrix associated to X."""
         target1 = np.zeros((X.shape[0],))
         target2 = np.zeros((X.shape[0],))
@@ -100,8 +100,8 @@ class product(kernpart):
 
         k1_target = np.zeros(self.k1.Nparam)
         k2_target = np.zeros(self.k2.Nparam)
-        self.k1.dKdiag_dtheta(partial*target2, X, k1_target)
-        self.k2.dKdiag_dtheta(partial*target1, X, k2_target)
+        self.k1.dKdiag_dtheta(dL_dKdiag*target2, X, k1_target)
+        self.k2.dKdiag_dtheta(dL_dKdiag*target1, X, k2_target)
 
         target[:self.k1.Nparam] += k1_target
         target[self.k1.Nparam:] += k2_target

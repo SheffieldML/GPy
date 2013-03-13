@@ -12,7 +12,7 @@ class rbf(kernpart):
 
     .. math::
 
-       k(r) = \sigma^2 \exp(- \frac{1}{2}r^2) \ \ \ \ \  \\text{ where  } r^2 = \sum_{i=1}^d \frac{ (x_i-x^\prime_i)^2}{\ell_i^2}}
+       k(r) = \sigma^2 \exp \\bigg(- \\frac{1}{2} r^2 \\bigg) \ \ \ \ \  \\text{ where  } r^2 = \sum_{i=1}^d \\frac{ (x_i-x^\prime_i)^2}{\ell_i^2}
 
     where \ell_i is the lengthscale, \sigma^2 the variance and d the dimensionality of the input.
 
@@ -82,27 +82,27 @@ class rbf(kernpart):
     def Kdiag(self,X,target):
         np.add(target,self.variance,target)
 
-    def dK_dtheta(self,partial,X,X2,target):
+    def dK_dtheta(self,dL_dK,X,X2,target):
         self._K_computations(X,X2)
-        target[0] += np.sum(self._K_dvar*partial)
+        target[0] += np.sum(self._K_dvar*dL_dK)
         if self.ARD == True:
             dl = self._K_dvar[:,:,None]*self.variance*self._K_dist2/self.lengthscale
-            target[1:] += (dl*partial[:,:,None]).sum(0).sum(0)
+            target[1:] += (dl*dL_dK[:,:,None]).sum(0).sum(0)
         else:
-            target[1] += np.sum(self._K_dvar*self.variance*(self._K_dist2.sum(-1))/self.lengthscale*partial)
-        #np.sum(self._K_dvar*self.variance*self._K_dist2/self.lengthscale*partial)
+            target[1] += np.sum(self._K_dvar*self.variance*(self._K_dist2.sum(-1))/self.lengthscale*dL_dK)
+        #np.sum(self._K_dvar*self.variance*self._K_dist2/self.lengthscale*dL_dK)
 
-    def dKdiag_dtheta(self,partial,X,target):
+    def dKdiag_dtheta(self,dL_dKdiag,X,target):
         #NB: derivative of diagonal elements wrt lengthscale is 0
-        target[0] += np.sum(partial)
+        target[0] += np.sum(dL_dKdiag)
 
-    def dK_dX(self,partial,X,X2,target):
+    def dK_dX(self,dL_dK,X,X2,target):
         self._K_computations(X,X2)
         _K_dist = X[:,None,:]-X2[None,:,:]
         dK_dX = np.transpose(-self.variance*self._K_dvar[:,:,np.newaxis]*_K_dist/self.lengthscale2,(1,0,2))
-        target += np.sum(dK_dX*partial.T[:,:,None],0)
+        target += np.sum(dK_dX*dL_dK.T[:,:,None],0)
 
-    def dKdiag_dX(self,partial,X,target):
+    def dKdiag_dX(self,dL_dKdiag,X,target):
         pass
 
 
@@ -113,69 +113,69 @@ class rbf(kernpart):
     def psi0(self,Z,mu,S,target):
         target += self.variance
 
-    def dpsi0_dtheta(self,partial,Z,mu,S,target):
-        target[0] += np.sum(partial)
+    def dpsi0_dtheta(self,dL_dpsi0,Z,mu,S,target):
+        target[0] += np.sum(dL_dpsi0)
 
-    def dpsi0_dmuS(self,partial,Z,mu,S,target_mu,target_S):
+    def dpsi0_dmuS(self,dL_dpsi0,Z,mu,S,target_mu,target_S):
         pass
 
     def psi1(self,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
         target += self._psi1
 
-    def dpsi1_dtheta(self,partial,Z,mu,S,target):
+    def dpsi1_dtheta(self,dL_dpsi1,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
         denom_deriv = S[:,None,:]/(self.lengthscale**3+self.lengthscale*S[:,None,:])
         d_length = self._psi1[:,:,None]*(self.lengthscale*np.square(self._psi1_dist/(self.lengthscale2+S[:,None,:])) + denom_deriv)
-        target[0] += np.sum(partial*self._psi1/self.variance)
-        dpsi1_dlength = d_length*partial[:,:,None]
+        target[0] += np.sum(dL_dpsi1*self._psi1/self.variance)
+        dpsi1_dlength = d_length*dL_dpsi1[:,:,None]
         if not self.ARD:
             target[1] += dpsi1_dlength.sum()
         else:
             target[1:] += dpsi1_dlength.sum(0).sum(0)
 
-    def dpsi1_dZ(self,partial,Z,mu,S,target):
+    def dpsi1_dZ(self,dL_dpsi1,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
         denominator = (self.lengthscale2*(self._psi1_denom))
         dpsi1_dZ = - self._psi1[:,:,None] * ((self._psi1_dist/denominator))
-        target += np.sum(partial.T[:,:,None] * dpsi1_dZ, 0)
+        target += np.sum(dL_dpsi1.T[:,:,None] * dpsi1_dZ, 0)
 
-    def dpsi1_dmuS(self,partial,Z,mu,S,target_mu,target_S):
+    def dpsi1_dmuS(self,dL_dpsi1,Z,mu,S,target_mu,target_S):
         self._psi_computations(Z,mu,S)
         tmp = self._psi1[:,:,None]/self.lengthscale2/self._psi1_denom
-        target_mu += np.sum(partial.T[:, :, None]*tmp*self._psi1_dist,1)
-        target_S += np.sum(partial.T[:, :, None]*0.5*tmp*(self._psi1_dist_sq-1),1)
+        target_mu += np.sum(dL_dpsi1.T[:, :, None]*tmp*self._psi1_dist,1)
+        target_S += np.sum(dL_dpsi1.T[:, :, None]*0.5*tmp*(self._psi1_dist_sq-1),1)
 
     def psi2(self,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
         target += self._psi2
 
-    def dpsi2_dtheta(self,partial,Z,mu,S,target):
+    def dpsi2_dtheta(self,dL_dpsi2,Z,mu,S,target):
         """Shape N,M,M,Ntheta"""
         self._psi_computations(Z,mu,S)
         d_var = 2.*self._psi2/self.variance
         d_length = self._psi2[:,:,:,None]*(0.5*self._psi2_Zdist_sq*self._psi2_denom + 2.*self._psi2_mudist_sq + 2.*S[:,None,None,:]/self.lengthscale2)/(self.lengthscale*self._psi2_denom)
 
-        target[0] += np.sum(partial*d_var)
-        dpsi2_dlength = d_length*partial[:,:,:,None]
+        target[0] += np.sum(dL_dpsi2*d_var)
+        dpsi2_dlength = d_length*dL_dpsi2[:,:,:,None]
         if not self.ARD:
             target[1] += dpsi2_dlength.sum()
         else:
             target[1:] += dpsi2_dlength.sum(0).sum(0).sum(0)
-            
-    def dpsi2_dZ(self,partial,Z,mu,S,target):
+
+    def dpsi2_dZ(self,dL_dpsi2,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
         term1 = 0.5*self._psi2_Zdist/self.lengthscale2 # M, M, Q
         term2 = self._psi2_mudist/self._psi2_denom/self.lengthscale2 # N, M, M, Q
         dZ = self._psi2[:,:,:,None] * (term1[None] + term2)
-        target += (partial[:,:,:,None]*dZ).sum(0).sum(0)
+        target += (dL_dpsi2[:,:,:,None]*dZ).sum(0).sum(0)
 
-    def dpsi2_dmuS(self,partial,Z,mu,S,target_mu,target_S):
+    def dpsi2_dmuS(self,dL_dpsi2,Z,mu,S,target_mu,target_S):
         """Think N,M,M,Q """
         self._psi_computations(Z,mu,S)
         tmp = self._psi2[:,:,:,None]/self.lengthscale2/self._psi2_denom
-        target_mu += (partial[:,:,:,None]*-tmp*2.*self._psi2_mudist).sum(1).sum(1)
-        target_S += (partial[:,:,:,None]*tmp*(2.*self._psi2_mudist_sq-1)).sum(1).sum(1)
+        target_mu += (dL_dpsi2[:,:,:,None]*-tmp*2.*self._psi2_mudist).sum(1).sum(1)
+        target_S += (dL_dpsi2[:,:,:,None]*tmp*(2.*self._psi2_mudist_sq-1)).sum(1).sum(1)
 
 
     #---------------------------------------#

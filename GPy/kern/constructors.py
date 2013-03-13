@@ -12,6 +12,7 @@ from exponential import exponential as exponentialpart
 from Matern32 import Matern32 as Matern32part
 from Matern52 import Matern52 as Matern52part
 from bias import bias as biaspart
+from fixed import fixed as fixedpart
 from finite_dimensional import finite_dimensional as finite_dimensionalpart
 from spline import spline as splinepart
 from Brownian import Brownian as Brownianpart
@@ -295,4 +296,17 @@ def rational_quadratic(D,variance=1., lengthscale=1., power=1.):
 
     """
     part = rational_quadraticpart(D,variance, lengthscale, power)
+    return kern(D, [part])
+
+def fixed(D, K, variance=1.):
+    """
+     Construct a fixed effect kernel.
+
+     Arguments
+     ---------
+     D (int), obligatory
+     K (np.array), obligatory
+     variance (float)
+    """
+    part = fixedpart(D, K, variance)
     return kern(D, [part])

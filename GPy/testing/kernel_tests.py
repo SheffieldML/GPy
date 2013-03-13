@@ -15,6 +15,17 @@ class KernelTests(unittest.TestCase):
         m = GPy.models.GP_regression(X,Y,K)
         self.assertTrue(m.checkgrad())
 
+    def test_fixedkernel(self):
+        """
+        Fixed effect kernel test
+        """
+        X = np.random.rand(30, 4)
+        K = np.dot(X, X.T)
+        kernel = GPy.kern.fixed(4, K)
+        Y = np.ones((30,1))
+        m = GPy.models.GP_regression(X,Y,kernel=kernel)
+        self.assertTrue(m.checkgrad())
+
     def test_coregionalisation(self):
         X1 = np.random.rand(50,1)*8
         X2 = np.random.rand(30,1)*5

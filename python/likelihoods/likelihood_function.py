@@ -1,62 +1,72 @@
-import GPy
-from scipy.special import gamma, gammaln
+from scipy.special import gammaln
+import numpy as np
+from GPy.likelihoods.likelihood_functions import likelihood_function
 
-class student_t(GPy.likelihoods.likelihood_function):
+
+class student_t(likelihood_function):
     """Student t likelihood distribution
     For nomanclature see Bayesian Data Analysis 2003 p576
 
-    $$\ln(\frac{\Gamma(\frac{(v+1)}{2})}{\Gamma(\sqrt(v \pi \Gamma(\frac{v}{2}))})+ \ln(1+\frac{(y_i-f_i)^2}{\sigma v})^{-\frac{(v+1)}{2}}$$
-    TODO:Double check this
+    $$\ln p(y_{i}|f_{i}) = \ln \Gamma(\frac{v+1}{2}) - \ln \Gamma(\frac{v}{2})\sqrt{v \pi}\sigma - \frac{v+1}{2}\ln (1 + \frac{1}{v}\left(\frac{y_{i} - f_{i}}{\sigma}\right)^2$$
 
     Laplace:
     Needs functions to calculate
     ln p(yi|fi)
     dln p(yi|fi)_dfi
-    d2ln p(yi|fi)_d2fi
+    d2ln p(yi|fi)_d2fifj
     """
     def __init__(self, deg_free, sigma=1):
         self.v = deg_free
         self.sigma = 1
 
-    def link_function(self, y_i, f_i):
-        """link_function $\ln p(y_i|f_i)$
-        $$\ln \Gamma(\frac{v+1}{2}) - \ln \Gamma(\frac{v}{2}) - \ln \frac{v \pi \sigma}{2} - \frac{v+1}{2}\ln (1 + \frac{(y_{i} - f_{i})^{2}}{v\sigma})$$
-        TODO: Double check this
+    def link_function(self, y, f):
+        """link_function $\ln p(y|f)$
+        $$\ln p(y_{i}|f_{i}) = \ln \Gamma(\frac{v+1}{2}) - \ln \Gamma(\frac{v}{2})\sqrt{v \pi}\sigma - \frac{v+1}{2}\ln (1 + \frac{1}{v}\left(\frac{y_{i} - f_{i}}{\sigma}\right)^2$$
 
-        :y_i: datum number i
-        :f_i: latent variable f_i
+        :y: datum number i
+        :f: latent variable f
         :returns: float(likelihood evaluated for this point)
 
         """
-        e = y_i - f_i
-        return gammaln((v+1)*0.5) - gammaln(v*0.5) - np.ln(v*np.pi*sigma)*0.5 - (v+1)*0.5*np.ln(1 + ((e/sigma)**2)/v) #Check the /v!
+        e = y - f
+        #print "Link ", y.shape, f.shape, e.shape
+        objective = (gammaln((self.v + 1) * 0.5)
+                - gammaln(self.v * 0.5)
+                + np.log(self.sigma * np.sqrt(self.v * np.pi))
+                - (self.v + 1) * 0.5
+                * np.log(1 + ((e**2 / self.sigma**2) / self.v))
+                )
+        return np.sum(objective)
 
-    def link_grad(self, y_i, f_i):
-        """gradient of the link function at y_i, given f_i w.r.t f_i
+    def link_grad(self, y, f):
+        """
+        Gradient of the link function at y, given f w.r.t f
 
-        derivative of log((gamma((v+1)/2)/gamma(sqrt(v*pi*gamma(v/2))))*(1+(t^2)/(a*v))^((-(v+1))/2)) with respect to t
-        $$\frac{(y_i - f_i)(v + 1)}{\sigma v (y_{i} - f_{i})^{2}}$$
-        TODO: Double check this
+        $$\frac{d}{df}p(y_{i}|f_{i}) = \frac{(v + 1)(y - f)}{v \sigma^{2} + (y_{i} - f_{i})^{2}}$$
 
-        :y_i: datum number i
-        :f_i: latent variable f_i
+        :y: datum number i
+        :f: latent variable f
         :returns: float(gradient of likelihood evaluated at this point)
 
         """
-        pass
+        e = y - f
+        #print "Grad ", y.shape, f.shape, e.shape
+        grad = ((self.v + 1) * e) / (self.v * (self.sigma**2) + (e**2))
+        return grad
 
-    def link_hess(self, y_i, f_i, f_j):
-        """hessian at this point (the hessian will be 0 unless i == j)
-        i.e. second derivative w.r.t f_i and f_j
-
-        second derivative of
-
-        :y_i: @todo
-        :f_i: @todo
-        :f_j: @todo
-        :returns: @todo
-
+    def link_hess(self, y, f):
         """
-        if f_i =
-        pass
+        Hessian at this point (if we are only looking at the link function not the prior) the hessian will be 0 unless i == j
+        i.e. second derivative link_function at y given f f_j  w.r.t f and f_j
 
+        Will return diaganol of hessian, since every where else it is 0
+
+        $$\frac{d^{2}p(y_{i}|f_{i})}{df^{2}} = \frac{(v + 1)(y - f)}{v \sigma^{2} + (y_{i} - f_{i})^{2}}$$
+
+        :y: datum number i
+        :f: latent variable f
+        :returns: float(second derivative of likelihood evaluated at this point)
+        """
+        e = y - f
+        hess = ((self.v + 1) * e) / ((((self.sigma**2)*self.v) + e**2)**2)
+        return hess

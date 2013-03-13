@@ -179,7 +179,7 @@ class GP(model):
         mu, var = self._raw_predict(Xnew, slices, full_cov)
 
         #now push through likelihood TODO
-        mean, _025pm, _975pm = self.likelihood.predictive_values(mu, var)
+        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var)
 
         return mean, var, _025pm, _975pm
 

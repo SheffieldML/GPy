@@ -51,7 +51,7 @@ class Gaussian(likelihood):
         true_var = (var + self._variance)*self._std**2
         _5pc = mean + - 2.*np.sqrt(true_var)
         _95pc = mean + 2.*np.sqrt(true_var)
-        return mean, _5pc, _95pc
+        return mean, true_var, _5pc, _95pc
 
     def fit_full(self):
         """

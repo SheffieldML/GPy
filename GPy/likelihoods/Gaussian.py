@@ -43,14 +43,24 @@ class Gaussian(likelihood):
         self.covariance_matrix = np.eye(self.N)*self._variance
         self.precision = 1./self._variance
 
-    def predictive_values(self,mu,var):
+    def predictive_values(self,mu,var, full_cov):
         """
         Un-normalize the prediction and add the likelihood variance, then return the 5%, 95% interval
         """
         mean = mu*self._std + self._mean
-        true_var = (var + self._variance)*self._std**2
-        _5pc = mean + - 2.*np.sqrt(true_var)
-        _95pc = mean + 2.*np.sqrt(true_var)
+        if full_cov:
+            if self.D >1:
+                raise NotImplementedError, "TODO"
+                #Note. for D>1, we need to re-normalise all the outputs independently.
+                # This will mess up computations of diag(true_var), below.
+                #note that the upper, lower quantiles should be the same shape as mean
+            true_var = (var + np.eye(var.shape[0])*self._variance)*self._std**2
+            _5pc = mean + - 2.*np.sqrt(np.diag(true_var))
+            _95pc = mean + 2.*np.sqrt(np.diag(true_var))
+        else:
+            true_var = (var + self._variance)*self._std**2
+            _5pc = mean + - 2.*np.sqrt(true_var)
+            _95pc = mean + 2.*np.sqrt(true_var)
         return mean, true_var, _5pc, _95pc
 
     def fit_full(self):

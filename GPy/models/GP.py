@@ -140,7 +140,7 @@ class GP(model):
         KiKx = np.dot(self.Ki,Kx)
         if full_cov:
             Kxx = self.kern.K(_Xnew, slices1=slices,slices2=slices)
-            var = Kxx - np.dot(KiKx.T,Kx) #NOTE this won't work for plotting
+            var = Kxx - np.dot(KiKx.T,Kx)
         else:
             Kxx = self.kern.Kdiag(_Xnew, slices=slices)
             var = Kxx - np.sum(np.multiply(KiKx,Kx),0)
@@ -179,7 +179,7 @@ class GP(model):
         mu, var = self._raw_predict(Xnew, slices, full_cov)
 
         #now push through likelihood TODO
-        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var)
+        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov)
 
         return mean, var, _025pm, _975pm
 

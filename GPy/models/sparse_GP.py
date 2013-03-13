@@ -153,13 +153,25 @@ class sparse_GP(GP):
             #self.partial_for_likelihood += -np.diag(np.dot((self.C - 0.5 * mdot(self.C,self.psi2_beta_scaled,self.C) ) , self.psi1VVpsi1 ))*self.likelihood.precision #dD
         else:
             #likelihood is not heterscedatic
-            beta = self.likelihood.precision
-            dbeta =   0.5 * self.N*self.D/beta - 0.5 * np.sum(np.square(self.likelihood.Y))
-            dbeta += - 0.5 * self.D * (self.psi0.sum() - np.trace(self.A)/beta*sf2)
-            dbeta += - 0.5 * self.D * trace_dot(self.Bi,self.A)/beta
-            dbeta += np.trace(self.Cpsi1VVpsi1)/beta - 0.5 * trace_dot(np.dot(self.C,self.psi2_beta_scaled) , self.Cpsi1VVpsi1 )/beta
-            self.partial_for_likelihood = -dbeta*self.likelihood.precision**2
+            self.partial_for_likelihood =   - 0.5 * self.N*self.D*self.likelihood.precision + 0.5 * np.sum(np.square(self.likelihood.Y))*self.likelihood.precision**2
+            self.partial_for_likelihood += 0.5 * self.D * (self.psi0.sum()*self.likelihood.precision**2 - np.trace(self.A)*self.likelihood.precision*sf2)
+            self.partial_for_likelihood += 0.5 * self.D * trace_dot(self.Bi,self.A)*self.likelihood.precision
+            self.partial_for_likelihood += self.likelihood.precision*(0.5*trace_dot(self.psi2_beta_scaled,self.E*sf2) - np.trace(self.Cpsi1VVpsi1))
 
+
+
+    def log_likelihood(self):
+        """ Compute the (lower bound on the) log marginal likelihood """
+        sf2 = self.scale_factor**2
+        if self.likelihood.is_heteroscedastic:
+            A = -0.5*self.N*self.D*np.log(2.*np.pi) +0.5*np.sum(np.log(self.likelihood.precision)) -0.5*np.sum(self.V*self.likelihood.Y)
+            B = -0.5*self.D*(np.sum(self.likelihood.precision.flatten()*self.psi0) - np.trace(self.A)*sf2)
+        else:
+            A = -0.5*self.N*self.D*(np.log(2.*np.pi) + np.log(self.likelihood._variance)) -0.5*self.likelihood.precision*self.likelihood.trYYT
+            B = -0.5*self.D*(np.sum(self.likelihood.precision*self.psi0) - np.trace(self.A)*sf2)
+        C = -0.5*self.D * (self.B_logdet + self.M*np.log(sf2))
+        D = 0.5*np.trace(self.Cpsi1VVpsi1)
+        return A+B+C+D
 
     def _set_params(self, p):
         self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
@@ -188,18 +200,6 @@ class sparse_GP(GP):
             #self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
             self._set_params(self._get_params()) # update the GP
 
-    def log_likelihood(self):
-        """ Compute the (lower bound on the) log marginal likelihood """
-        sf2 = self.scale_factor**2
-        if self.likelihood.is_heteroscedastic:
-            A = -0.5*self.N*self.D*np.log(2.*np.pi) +0.5*np.sum(np.log(self.likelihood.precision)) -0.5*np.sum(self.V*self.likelihood.Y)
-            B = -0.5*self.D*(np.sum(self.likelihood.precision.flatten()*self.psi0) - np.trace(self.A)*sf2)
-        else:
-            A = -0.5*self.N*self.D*(np.log(2.*np.pi) - np.log(self.likelihood.precision)) -0.5*self.likelihood.precision*self.likelihood.trYYT
-            B = -0.5*self.D*(np.sum(self.likelihood.precision*self.psi0) - np.trace(self.A)*sf2)
-        C = -0.5*self.D * (self.B_logdet + self.M*np.log(sf2))
-        D = 0.5*np.trace(self.Cpsi1VVpsi1)
-        return A+B+C+D
 
     def _log_likelihood_gradients(self):
         return np.hstack((self.dL_dZ().flatten(), self.dL_dtheta(), self.likelihood._gradients(partial=self.partial_for_likelihood)))

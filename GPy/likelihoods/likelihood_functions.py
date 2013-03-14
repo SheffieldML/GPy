@@ -48,14 +48,14 @@ class probit(likelihood_function):
 
     def predictive_values(self,mu,var):
         """
-        Compute  mean, and conficence interval (percentiles 5 and 95) of the  prediction
+        Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction
         """
         mu = mu.flatten()
         var = var.flatten()
         mean = stats.norm.cdf(mu/np.sqrt(1+var))
         p_025 = np.zeros(mu.shape)
         p_975 = np.ones(mu.shape)
-        return mean, p_025, p_975
+        return mean, np.nan*var, p_025, p_975 # TODO: better values here (mean is okay)
 
 class Poisson(likelihood_function):
     """
@@ -131,4 +131,4 @@ class Poisson(likelihood_function):
         tmp = stats.poisson.ppf(np.array([.025,.975]),mean)
         p_025 = tmp[:,0]
         p_975 = tmp[:,1]
-        return mean,p_025,p_975
+        return mean,np.nan*mean,p_025,p_975 # better variance here TODO

@@ -25,11 +25,16 @@ class likelihood:
     def _get_param_names(self):
         raise NotImplementedError
 
-    def _set_params(self,x):
+    def _set_params(self, x):
         raise NotImplementedError
 
     def fit(self):
         raise NotImplementedError
 
-    def _gradients(self,partial):
+    def _gradients(self, partial):
         raise NotImplementedError
+
+    def predictive_values(self, mu, var):
+        raise NotImplementedError
+
+

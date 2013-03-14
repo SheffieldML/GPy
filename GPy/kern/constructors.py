@@ -43,7 +43,7 @@ def rbf(D,variance=1., lengthscale=None,ARD=False):
     part = rbfpart(D,variance,lengthscale,ARD)
     return kern(D, [part])
 
-def linear(D,variances=None,ARD=True):
+def linear(D,variances=None,ARD=False):
     """
      Construct a linear kernel.
 

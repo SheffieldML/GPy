@@ -33,7 +33,9 @@ class EP(likelihood):
         self.Z = 0
         self.YYT = None
 
-    def predictive_values(self,mu,var):
+    def predictive_values(self,mu,var,full_cov):
+        if full_cov:
+            raise NotImplementedError, "Cannot make correlated predictions with an EP likelihood"
         return self.likelihood_function.predictive_values(mu,var)
 
     def _get_params(self):

@@ -5,13 +5,13 @@ from GPy.util.linalg import jitchol
 from functools import partial
 from GPy.likelihoods.likelihood import likelihood
 from GPy.util.linalg import pdinv,mdot
-
+from scipy.stats import norm
 
 
 class Laplace(likelihood):
     """Laplace approximation to a posterior"""
 
-    def __init__(self,data,likelihood_function):
+    def __init__(self, data, likelihood_function):
         """
         Laplace Approximation
 
@@ -42,7 +42,13 @@ class Laplace(likelihood):
         GPy expects a likelihood to be gaussian, so need to caluclate the points Y^{squiggle} and Z^{squiggle}
         that makes the posterior match that found by a laplace approximation to a non-gaussian likelihood
         """
-        z_hat = N(f_hat|f_hat, hess_hat) / self.height_unnormalised
+        #z_hat = N(f_hat|f_hat, hess_hat) / self.height_unnormalised
+        normalised_approx = norm(loc=self.f_hat, scale=self.hess_hat)
+        self.Z = normalised_approx.pdf(self.f_hat)/self.height_unnormalised
+        #self.Y =
+        #self.YYT =
+        #self.covariance_matrix =
+        #self.precision =
 
     def fit_full(self, K):
         """
@@ -51,11 +57,9 @@ class Laplace(likelihood):
         :K: Covariance matrix
         """
         f = np.zeros((self.N, 1))
-        print K.shape
-        print f.shape
-        print self.data.shape
+        #K = np.diag(np.ones(self.N))
         (Ki, _, _, log_Kdet) = pdinv(K)
-        obj_constant = (0.5 * log_Kdet) - ((0.5 * self.N) * np.log(2*np.pi))
+        obj_constant = (0.5 * log_Kdet) - ((0.5 * self.N) * np.log(2 * np.pi))
 
         #Find \hat(f) using a newton raphson optimizer for example
         #TODO: Add newton-raphson as subclass of optimizer class
@@ -77,11 +81,12 @@ class Laplace(likelihood):
             return np.squeeze(res)
 
         self.f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess)
+        print self.f_hat
 
         #At this point get the hessian matrix
-        self.hess_hat = obj_hess(f_hat)
+        self.hess_hat = obj_hess(self.f_hat)
 
         #Need to add the constant as we previously were trying to avoid computing it (seems like a small overhead though...)
-        self.height_unnormalised = obj(f_hat) #FIXME: Is it -1?
+        self.height_unnormalised = obj(self.f_hat) #FIXME: Is it -1?
 
-        return _compute_GP_variables()
+        return self._compute_GP_variables()

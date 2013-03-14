@@ -1,7 +1,7 @@
 import GPy
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import t
+from scipy.stats import t, norm
 from coxGP.python.likelihoods.Laplace import Laplace
 from coxGP.python.likelihoods.likelihood_function import student_t
 
@@ -11,12 +11,13 @@ def student_t_approx():
     Example of regressing with a student t likelihood
     """
     #Start a function, any function
-    X = np.sort(np.random.uniform(0, 15, 70))[:, None]
+    X = np.sort(np.random.uniform(0, 15, 100))[:, None]
     Y = np.sin(X)
 
     #Add student t random noise to datapoints
-    deg_free = 1
-    noise = t.rvs(deg_free, loc=1.8, scale=1, size=Y.shape)
+    deg_free = 2.5
+    t_rv = t(deg_free, loc=5, scale=1)
+    noise = t_rv.rvs(size=Y.shape)
     Y += noise
 
     # Kernel object
@@ -39,6 +40,19 @@ def student_t_approx():
     lap = Laplace(Y, likelihood_function)
     cov = kernel.K(X)
     lap.fit_full(cov)
+    #Get one sample (just look at a single Y
+    mode = float(lap.f_hat[0])
+    variance = float((deg_free/(deg_free-2))) #BUG: Not convinced this is giving reasonable variables
+    #variance = float((deg_free/(deg_free-2)) + np.diagonal(lap.hess_hat)[0]) #BUG: Not convinced this is giving reasonable variables
+    normalised_approx = norm(loc=mode, scale=variance)
+    print "Normal with mode %f, and variance %f" % (mode, variance)
+    print lap.height_unnormalised
+
+    test_range = np.arange(0, 10, 0.1)
+    print np.diagonal(lap.hess_hat)
+    plt.plot(test_range, t_rv.pdf(test_range))
+    plt.plot(test_range, normalised_approx.pdf(test_range))
+    plt.show()
 
 
 def noisy_laplace_approx():

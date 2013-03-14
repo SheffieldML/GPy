@@ -15,27 +15,27 @@ class student_t(likelihood_function):
     dln p(yi|fi)_dfi
     d2ln p(yi|fi)_d2fifj
     """
-    def __init__(self, deg_free, sigma=1):
+    def __init__(self, deg_free, sigma=2):
         self.v = deg_free
-        self.sigma = 1
+        self.sigma = sigma
 
     def link_function(self, y, f):
         """link_function $\ln p(y|f)$
         $$\ln p(y_{i}|f_{i}) = \ln \Gamma(\frac{v+1}{2}) - \ln \Gamma(\frac{v}{2})\sqrt{v \pi}\sigma - \frac{v+1}{2}\ln (1 + \frac{1}{v}\left(\frac{y_{i} - f_{i}}{\sigma}\right)^2$$
 
-        :y: datum number i
-        :f: latent variable f
+        :y: data
+        :f: latent variables f
         :returns: float(likelihood evaluated for this point)
 
         """
+        assert y.shape[0] == f.shape[0]
         e = y - f
-        #print "Link ", y.shape, f.shape, e.shape
         objective = (gammaln((self.v + 1) * 0.5)
-                - gammaln(self.v * 0.5)
-                + np.log(self.sigma * np.sqrt(self.v * np.pi))
-                - (self.v + 1) * 0.5
-                * np.log(1 + ((e**2 / self.sigma**2) / self.v))
-                )
+                     - gammaln(self.v * 0.5)
+                     + np.log(self.sigma * np.sqrt(self.v * np.pi))
+                     - (self.v + 1) * 0.5
+                     * np.log(1 + ((e**2 / self.sigma**2) / self.v))
+                     )
         return np.sum(objective)
 
     def link_grad(self, y, f):
@@ -44,13 +44,13 @@ class student_t(likelihood_function):
 
         $$\frac{d}{df}p(y_{i}|f_{i}) = \frac{(v + 1)(y - f)}{v \sigma^{2} + (y_{i} - f_{i})^{2}}$$
 
-        :y: datum number i
-        :f: latent variable f
-        :returns: float(gradient of likelihood evaluated at this point)
+        :y: data
+        :f: latent variables f
+        :returns: gradient of likelihood evaluated at points
 
         """
+        assert y.shape[0] == f.shape[0]
         e = y - f
-        #print "Grad ", y.shape, f.shape, e.shape
         grad = ((self.v + 1) * e) / (self.v * (self.sigma**2) + (e**2))
         return grad
 
@@ -63,10 +63,11 @@ class student_t(likelihood_function):
 
         $$\frac{d^{2}p(y_{i}|f_{i})}{df^{2}} = \frac{(v + 1)(y - f)}{v \sigma^{2} + (y_{i} - f_{i})^{2}}$$
 
-        :y: datum number i
-        :f: latent variable f
-        :returns: float(second derivative of likelihood evaluated at this point)
+        :y: data
+        :f: latent variables f
+        :returns: array which is diagonal of covariance matrix (second derivative of likelihood evaluated at points)
         """
+        assert y.shape[0] == f.shape[0]
         e = y - f
-        hess = ((self.v + 1) * e) / ((((self.sigma**2)*self.v) + e**2)**2)
+        hess = ((self.v + 1) * e) / ((((self.sigma**2) * self.v) + e**2)**2)
         return hess

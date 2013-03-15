@@ -185,7 +185,7 @@ class TanhWarpingFunction_d(WarpingFunction):
         return z
 
 
-    def f_inv(self, y, psi, iterations = 10):
+    def f_inv(self, y, psi, iterations = 30):
         """
         calculate the numerical inverse of f
 

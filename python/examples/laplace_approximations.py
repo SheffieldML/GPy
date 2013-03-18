@@ -41,18 +41,21 @@ def student_t_approx():
     cov = kernel.K(X)
     lap.fit_full(cov)
     #Get one sample (just look at a single Y
-    mode = float(lap.f_hat[0])
-    variance = float((deg_free/(deg_free-2))) #BUG: Not convinced this is giving reasonable variables
+    #mode = float(lap.f_hat[0])
+    #variance = float((deg_free/(deg_free-2))) #BUG: Not convinced this is giving reasonable variables
     #variance = float((deg_free/(deg_free-2)) + np.diagonal(lap.hess_hat)[0]) #BUG: Not convinced this is giving reasonable variables
-    normalised_approx = norm(loc=mode, scale=variance)
-    print "Normal with mode %f, and variance %f" % (mode, variance)
-    print lap.height_unnormalised
 
     test_range = np.arange(0, 10, 0.1)
-    print np.diagonal(lap.hess_hat)
     plt.plot(test_range, t_rv.pdf(test_range))
-    plt.plot(test_range, normalised_approx.pdf(test_range))
+    for i in xrange(X.shape[0]):
+        mode = lap.f_hat[i]
+        covariance = lap.hess_hat_i[i,i]
+        scaling = np.exp(lap.ln_z_hat)
+        normalised_approx = norm(loc=mode, scale=covariance)
+        print "Normal with mode %f, and variance %f" % (mode, covariance)
+        plt.plot(test_range, normalised_approx.pdf(test_range))
     plt.show()
+    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
 
 def noisy_laplace_approx():

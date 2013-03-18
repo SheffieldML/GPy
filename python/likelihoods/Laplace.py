@@ -1,12 +1,10 @@
 import numpy as np
 import scipy as sp
 import GPy
-from GPy.util.linalg import jitchol
+#from GPy.util.linalg import jitchol
 from functools import partial
 from GPy.likelihoods.likelihood import likelihood
 from GPy.util.linalg import pdinv,mdot
-from scipy.stats import norm
-
 
 class Laplace(likelihood):
     """Laplace approximation to a posterior"""
@@ -35,6 +33,8 @@ class Laplace(likelihood):
         #Inital values
         self.N, self.D = self.data.shape
 
+        self.NORMAL_CONST = -((0.5 * self.N) * np.log(2 * np.pi))
+
     def _compute_GP_variables(self):
         """
         Generates data Y which would give the normal distribution identical to the laplace approximation
@@ -59,12 +59,15 @@ class Laplace(likelihood):
         and $$\ln \tilde{z} = \ln z + \frac{N}{2}\ln 2\pi + \frac{1}{2}\tilde{Y}\tilde{\Sigma}^{-1}\tilde{Y}$$
 
         """
-        self.Sigma_tilde = self.hess_hat -
-        self.Z =
-        #self.Y =
-        #self.YYT =
-        #self.covariance_matrix =
-        #self.precision =
+        self.Sigma_tilde_i = self.hess_hat + self.Ki
+        #Do we really need to inverse Sigma_tilde_i? :(
+        (self.Sigma_tilde, _, _, self.log_Sig_i_det) = pdinv(self.Sigma_tilde_i)
+        Y_tilde = mdot(self.Sigma_tilde, self.hess_hat, self.f_hat) #f_hat? should be f but we must have optimized for them I guess?
+        self.Z_tilde = np.exp(self.ln_z_hat - self.NORMAL_CONST + (0.5 * mdot(Y_tilde, (self.Sigma_tilde_i, Y_tilde))))
+        self.Y = Y_tilde
+        self.covariance_matrix = self.Sigma_tilde
+        self.precision = np.diag(self.Sigma_tilde)[:, None]
+        self.YYT = np.dot(self.Y, self.Y)
 
     def fit_full(self, K):
         """
@@ -75,38 +78,40 @@ class Laplace(likelihood):
         f = np.zeros((self.N, 1))
         #K = np.diag(np.ones(self.N))
         (self.Ki, _, _, self.log_Kdet) = pdinv(K)
-        obj_constant = (0.5 * self.log_Kdet) - ((0.5 * self.N) * np.log(2 * np.pi))
-
+        LOG_K_CONST = -(0.5 * self.log_Kdet)
+        OBJ_CONST = self.NORMAL_CONST + LOG_K_CONST
         #Find \hat(f) using a newton raphson optimizer for example
         #TODO: Add newton-raphson as subclass of optimizer class
 
         #FIXME: Can we get rid of this horrible reshaping?
         def obj(f):
-            f = f[:, None]
-            res = -1 * (self.likelihood_function.link_function(self.data, f) - 0.5 * mdot(f.T, (self.Ki, f)) + obj_constant)
+            #f = f[:, None]
+            res = -1 * (self.likelihood_function.link_function(self.data[:,0], f) - 0.5 * mdot(f.T, (self.Ki, f)) + OBJ_CONST)
             return float(res)
 
         def obj_grad(f):
-            f = f[:, None]
-            res = -1 * (self.likelihood_function.link_grad(self.data, f) - mdot(self.Ki, f))
+            #f = f[:, None]
+            res = -1 * (self.likelihood_function.link_grad(self.data[:,0], f) - mdot(self.Ki, f))
             return np.squeeze(res)
 
         def obj_hess(f):
-            f = f[:, None]
-            res = -1 * (np.diag(self.likelihood_function.link_hess(self.data, f)) - self.Ki)
+            res = -1 * (np.diag(self.likelihood_function.link_hess(self.data[:,0], f)) - self.Ki)
             return np.squeeze(res)
 
         self.f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess)
         print self.f_hat
 
         #At this point get the hessian matrix
-        self.hess_hat = obj_hess(self.f_hat)
+        self.hess_hat = -1*np.diag(self.likelihood_function.link_hess(self.data[:,0], self.f_hat)) #-1*obj_hess(self.f_hat) + self.Ki
+        #self.hess_hat = -1*obj_hess(self.f_hat) + self.Ki
+        (self.hess_hat_i, _, _, self.log_hess_hat_det) = pdinv(self.hess_hat + self.Ki)
 
         #Need to add the constant as we previously were trying to avoid computing it (seems like a small overhead though...)
         self.height_unnormalised = -1*obj(self.f_hat) #FIXME: Is it - obj constant and *-1?
         #z_hat is how much we need to scale the normal distribution by to get the area of our approximation close to
         #the area of p(f)p(y|f) we do this by matching the height of the distributions at the mode
         #z_hat = -0.5*ln|H| - 0.5*ln|K| - 0.5*f_hat*K^{-1}*f_hat \sum_{n} ln p(y_n|f_n)
-        self.z_hat = np.exp(-0.5*np.log(np.linalg.det(hess_hat)) + self.height_unnormalised)
+        self.ln_z_hat = -0.5*np.log(self.log_hess_hat_det) + self.height_unnormalised - self.NORMAL_CONST #Unsure whether its log_hess or log_hess_i
+
 
         return self._compute_GP_variables()

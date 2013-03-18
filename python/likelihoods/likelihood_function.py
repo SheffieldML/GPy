@@ -28,7 +28,7 @@ class student_t(likelihood_function):
         :returns: float(likelihood evaluated for this point)
 
         """
-        assert y.shape[0] == f.shape[0]
+        assert y.shape == f.shape
         e = y - f
         objective = (gammaln((self.v + 1) * 0.5)
                      - gammaln(self.v * 0.5)
@@ -49,7 +49,7 @@ class student_t(likelihood_function):
         :returns: gradient of likelihood evaluated at points
 
         """
-        assert y.shape[0] == f.shape[0]
+        assert y.shape == f.shape
         e = y - f
         grad = ((self.v + 1) * e) / (self.v * (self.sigma**2) + (e**2))
         return grad
@@ -67,7 +67,8 @@ class student_t(likelihood_function):
         :f: latent variables f
         :returns: array which is diagonal of covariance matrix (second derivative of likelihood evaluated at points)
         """
-        assert y.shape[0] == f.shape[0]
+        assert y.shape == f.shape
         e = y - f
-        hess = ((self.v + 1) * e) / ((((self.sigma**2) * self.v) + e**2)**2)
+        #hess = ((self.v + 1) * e) / ((((self.sigma**2) * self.v) + e**2)**2)
+        hess = ((self.v + 1) * (e**2 - self.v*(self.sigma**2))) / ((((self.sigma**2) * self.v) + e**2)**2)
         return hess

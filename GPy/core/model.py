@@ -188,19 +188,23 @@ class model(parameterised):
 
 
         """
-
         initial_parameters = self._get_params_transformed()
 
         if parallel:
-            jobs = []
-            pool = mp.Pool(processes=num_processes)
-            for i in range(Nrestarts):
-                self.randomize()
-                job = pool.apply_async(opt_wrapper, args = (self,), kwds = kwargs)
-                jobs.append(job)
+            try:
+                jobs = []
+                pool = mp.Pool(processes=num_processes)
+                for i in range(Nrestarts):
+                    self.randomize()
+                    job = pool.apply_async(opt_wrapper, args = (self,), kwds = kwargs)
+                    jobs.append(job)
 
-            pool.close() # signal that no more data coming in
-            pool.join()  # wait for all the tasks to complete
+                pool.close() # signal that no more data coming in
+                pool.join()  # wait for all the tasks to complete
+            except KeyboardInterrupt:
+                print "Ctrl+c received, terminating and joining pool."
+                pool.terminate()
+                pool.join()
 
         for i in range(Nrestarts):
             try:

@@ -15,13 +15,13 @@ def student_t_approx():
     Y = np.sin(X)
 
     #Add student t random noise to datapoints
-    deg_free = 2.5
+    deg_free = 3.5
     t_rv = t(deg_free, loc=0, scale=1)
     noise = t_rv.rvs(size=Y.shape)
     Y += noise
 
     #Add some extreme value noise to some of the datapoints
-    #percent_corrupted = 0.05
+    #percent_corrupted = 0.15
     #corrupted_datums = int(np.round(Y.shape[0] * percent_corrupted))
     #indices = np.arange(Y.shape[0])
     #np.random.shuffle(indices)
@@ -31,11 +31,11 @@ def student_t_approx():
     #Y[corrupted_indices] += noise
 
     # Kernel object
-    #print X.shape
-    #kernel = GPy.kern.rbf(X.shape[1])
+    print X.shape
+    kernel = GPy.kern.rbf(X.shape[1])
 
-    ##A GP should completely break down due to the points as they get a lot of weight
-    ## create simple GP model
+    #A GP should completely break down due to the points as they get a lot of weight
+    # create simple GP model
     #m = GPy.models.GP_regression(X, Y, kernel=kernel)
 
     ## optimize
@@ -46,27 +46,27 @@ def student_t_approx():
     #print m
 
     #with a student t distribution, since it has heavy tails it should work well
-    #likelihood_function = student_t(deg_free, sigma=1)
-    #lap = Laplace(Y, likelihood_function)
-    #cov = kernel.K(X)
-    #lap.fit_full(cov)
+    likelihood_function = student_t(deg_free, sigma=1)
+    lap = Laplace(Y, likelihood_function)
+    cov = kernel.K(X)
+    lap.fit_full(cov)
 
-    #test_range = np.arange(0, 10, 0.1)
-    #plt.plot(test_range, t_rv.pdf(test_range))
-    #for i in xrange(X.shape[0]):
-        #mode = lap.f_hat[i]
-        #covariance = lap.hess_hat_i[i,i]
-        #scaling = np.exp(lap.ln_z_hat)
-        #normalised_approx = norm(loc=mode, scale=covariance)
-        #print "Normal with mode %f, and variance %f" % (mode, covariance)
-        #plt.plot(test_range, scaling*normalised_approx.pdf(test_range))
-    #plt.show()
-    #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+    test_range = np.arange(0, 10, 0.1)
+    plt.plot(test_range, t_rv.pdf(test_range))
+    for i in xrange(X.shape[0]):
+        mode = lap.f_hat[i]
+        covariance = lap.hess_hat_i[i,i]
+        scaling = np.exp(lap.ln_z_hat)
+        normalised_approx = norm(loc=mode, scale=covariance)
+        print "Normal with mode %f, and variance %f" % (mode, covariance)
+        plt.plot(test_range, scaling*normalised_approx.pdf(test_range))
+    plt.show()
+    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
     # Likelihood object
     t_distribution = student_t(deg_free, sigma=1)
     stu_t_likelihood = Laplace(Y, t_distribution)
-    kernel = GPy.kern.rbf(X.shape[1])
+    kernel = GPy.kern.rbf(X.shape[1]) + GPy.kern.bias(X.shape[1])
 
     m = GPy.models.GP(X, stu_t_likelihood, kernel)
     m.ensure_default_constraints()

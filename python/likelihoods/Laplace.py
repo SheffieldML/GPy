@@ -1,11 +1,11 @@
 import numpy as np
 import scipy as sp
 import GPy
-#from GPy.util.linalg import jitchol
+from scipy.linalg import cholesky, eig, inv
 from functools import partial
 from GPy.likelihoods.likelihood import likelihood
 from GPy.util.linalg import pdinv,mdot
-import numpy.testing.assert_array_equal
+#import numpy.testing.assert_array_equal
 
 class Laplace(likelihood):
     """Laplace approximation to a posterior"""
@@ -56,8 +56,8 @@ class Laplace(likelihood):
         pass # TODO: Laplace likelihood might want to take some parameters...
 
     def _gradients(self,partial):
+        return np.zeros(0) # TODO: Laplace likelihood might want to take some parameters...
         raise NotImplementedError
-        #return np.zeros(0) # TODO: Laplace likelihood might want to take some parameters...
 
     def _compute_GP_variables(self):
         """
@@ -83,16 +83,23 @@ class Laplace(likelihood):
         and $$\ln \tilde{z} = \ln z + \frac{N}{2}\ln 2\pi + \frac{1}{2}\tilde{Y}\tilde{\Sigma}^{-1}\tilde{Y}$$
 
         """
-        self.Sigma_tilde_i = self.hess_hat + self.Ki
+        self.Sigma_tilde_i = self.hess_hat_i #self.W #self.hess_hat_i - self.Ki
         #Do we really need to inverse Sigma_tilde_i? :(
-        (self.Sigma_tilde, _, _, self.log_Sig_i_det) = pdinv(self.Sigma_tilde_i)
-        Y_tilde = mdot(self.Sigma_tilde, self.hess_hat, self.f_hat) #f_hat? should be f but we must have optimized for them I guess?
-        self.Z_tilde = np.exp(self.ln_z_hat - self.NORMAL_CONST + (0.5 * mdot(Y_tilde.T, (self.Sigma_tilde_i, Y_tilde))))
+        if self.likelihood_function.log_concave:
+            (self.Sigma_tilde, _, _, _) = pdinv(self.Sigma_tilde_i)
+        else:
+            self.Sigma_tilde = inv(self.Sigma_tilde_i)
+        #f_hat? should be f but we must have optimized for them I guess?
+        Y_tilde = mdot(self.Sigma_tilde, self.hess_hat, self.f_hat)
+        self.Z_tilde = np.exp(self.ln_z_hat - self.NORMAL_CONST
+                              - 0.5*mdot(self.f_hat, self.hess_hat, self.f_hat)
+                              + 0.5*mdot(Y_tilde.T, (self.Sigma_tilde_i, Y_tilde))
+                              )
 
         self.Z = self.Z_tilde
         self.Y = Y_tilde
         self.covariance_matrix = self.Sigma_tilde
-        self.precision = 1/np.diag(self.Sigma_tilde)[:, None]
+        self.precision = 1 / np.diag(self.Sigma_tilde)[:, None]
         self.YYT = np.dot(self.Y, self.Y.T)
         import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
@@ -112,34 +119,41 @@ class Laplace(likelihood):
         #FIXME: Can we get rid of this horrible reshaping?
         def obj(f):
             #f = f[:, None]
-            res = -1 * (self.likelihood_function.link_function(self.data[:,0], f) - 0.5 * mdot(f.T, (self.Ki, f)) + OBJ_CONST)
+            res = -1 * (self.likelihood_function.link_function(self.data[:, 0], f) - 0.5 * mdot(f.T, (self.Ki, f)) + OBJ_CONST)
             return float(res)
 
         def obj_grad(f):
             #f = f[:, None]
-            res = -1 * (self.likelihood_function.link_grad(self.data[:,0], f) - mdot(self.Ki, f))
+            res = -1 * (self.likelihood_function.link_grad(self.data[:, 0], f) - mdot(self.Ki, f))
             return np.squeeze(res)
 
         def obj_hess(f):
-            res = -1 * (-np.diag(self.likelihood_function.link_hess(self.data[:,0], f)) - self.Ki)
+            res = -1 * (-np.diag(self.likelihood_function.link_hess(self.data[:, 0], f)) - self.Ki)
             return np.squeeze(res)
 
         self.f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess)
 
         #At this point get the hessian matrix
-        self.hess_hat = np.diag(self.likelihood_function.link_hess(self.data[:,0], self.f_hat)) + self.Ki
+        self.W = -np.diag(self.likelihood_function.link_hess(self.data[:, 0], self.f_hat))
+        self.hess_hat = self.Ki + self.W
         (self.hess_hat_i, _, _, self.log_hess_hat_det) = pdinv(self.hess_hat)
-        (self.hess_hat, _, _, self.log_hess_hat_i_det) = pdinv(self.hess_hat_i)
 
-        np.testing.assert_array_equal(self.hess_hat, hess_hat_new)
+        #Check hess_hat is positive definite
+        try:
+            cholesky(self.hess_hat)
+        except:
+            raise ValueError("Must be positive definite")
 
-        #Need to add the constant as we previously were trying to avoid computing it (seems like a small overhead though...)
-        #self.height_unnormalised = -1*obj(self.f_hat) #FIXME: Is it - obj constant and *-1?
+        #Check its eigenvalues are positive
+        eigenvalues = eig(self.hess_hat)
+        if not np.all(eigenvalues > 0):
+            raise ValueError("Eigen values not positive")
+
         #z_hat is how much we need to scale the normal distribution by to get the area of our approximation close to
         #the area of p(f)p(y|f) we do this by matching the height of the distributions at the mode
         #z_hat = -0.5*ln|H| - 0.5*ln|K| - 0.5*f_hat*K^{-1}*f_hat \sum_{n} ln p(y_n|f_n)
         #Unsure whether its log_hess or log_hess_i
-        self.ln_z_hat = -0.5*np.log(self.log_hess_hat_det) - 0.5*self.log_Kdet + self.likelihood_function.link_function(self.data[:,0], self.f_hat) - mdot(f.T, (self.Ki, f))
+        self.ln_z_hat = -0.5*np.log(self.log_hess_hat_det) - 0.5*self.log_Kdet + -1*self.likelihood_function.link_function(self.data[:,0], self.f_hat) - mdot(self.f_hat.T, (self.Ki, self.f_hat))
         import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
         return self._compute_GP_variables()

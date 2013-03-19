@@ -19,6 +19,9 @@ class student_t(likelihood_function):
         self.v = deg_free
         self.sigma = sigma
 
+        #FIXME: This should be in the superclass
+        self.log_concave = False
+
     def link_function(self, y, f):
         """link_function $\ln p(y|f)$
         $$\ln p(y_{i}|f_{i}) = \ln \Gamma(\frac{v+1}{2}) - \ln \Gamma(\frac{v}{2})\sqrt{v \pi}\sigma - \frac{v+1}{2}\ln (1 + \frac{1}{v}\left(\frac{y_{i} - f_{i}}{\sigma}\right)^2$$
@@ -70,7 +73,7 @@ class student_t(likelihood_function):
         assert y.shape == f.shape
         e = y - f
         #hess = ((self.v + 1) * e) / ((((self.sigma**2) * self.v) + e**2)**2)
-        hess = ((self.v + 1) * (e**2 - self.v*(self.sigma**2))) / ((((self.sigma**2) * self.v) + e**2)**2)
+        hess = ((self.v + 1)*(e**2 - self.v*(self.sigma**2))) / ((((self.sigma**2)*self.v) + e**2)**2)
         return hess
 
     def predictive_values(self, mu, var):

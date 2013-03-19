@@ -5,6 +5,7 @@ import GPy
 from functools import partial
 from GPy.likelihoods.likelihood import likelihood
 from GPy.util.linalg import pdinv,mdot
+import numpy.testing.assert_array_equal
 
 class Laplace(likelihood):
     """Laplace approximation to a posterior"""
@@ -35,6 +36,29 @@ class Laplace(likelihood):
 
         self.NORMAL_CONST = -((0.5 * self.N) * np.log(2 * np.pi))
 
+        #Initial values for the GP variables
+        self.Y = np.zeros((self.N,1))
+        self.covariance_matrix = np.eye(self.N)
+        self.precision = np.ones(self.N)[:,None]
+        self.Z = 0
+        self.YYT = None
+
+    def predictive_values(self,mu,var):
+        return self.likelihood_function.predictive_values(mu,var)
+
+    def _get_params(self):
+        return np.zeros(0)
+
+    def _get_param_names(self):
+        return []
+
+    def _set_params(self,p):
+        pass # TODO: Laplace likelihood might want to take some parameters...
+
+    def _gradients(self,partial):
+        raise NotImplementedError
+        #return np.zeros(0) # TODO: Laplace likelihood might want to take some parameters...
+
     def _compute_GP_variables(self):
         """
         Generates data Y which would give the normal distribution identical to the laplace approximation
@@ -63,11 +87,14 @@ class Laplace(likelihood):
         #Do we really need to inverse Sigma_tilde_i? :(
         (self.Sigma_tilde, _, _, self.log_Sig_i_det) = pdinv(self.Sigma_tilde_i)
         Y_tilde = mdot(self.Sigma_tilde, self.hess_hat, self.f_hat) #f_hat? should be f but we must have optimized for them I guess?
-        self.Z_tilde = np.exp(self.ln_z_hat - self.NORMAL_CONST + (0.5 * mdot(Y_tilde, (self.Sigma_tilde_i, Y_tilde))))
+        self.Z_tilde = np.exp(self.ln_z_hat - self.NORMAL_CONST + (0.5 * mdot(Y_tilde.T, (self.Sigma_tilde_i, Y_tilde))))
+
+        self.Z = self.Z_tilde
         self.Y = Y_tilde
         self.covariance_matrix = self.Sigma_tilde
-        self.precision = np.diag(self.Sigma_tilde)[:, None]
-        self.YYT = np.dot(self.Y, self.Y)
+        self.precision = 1/np.diag(self.Sigma_tilde)[:, None]
+        self.YYT = np.dot(self.Y, self.Y.T)
+        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
     def fit_full(self, K):
         """
@@ -76,7 +103,6 @@ class Laplace(likelihood):
         :K: Covariance matrix
         """
         f = np.zeros((self.N, 1))
-        #K = np.diag(np.ones(self.N))
         (self.Ki, _, _, self.log_Kdet) = pdinv(K)
         LOG_K_CONST = -(0.5 * self.log_Kdet)
         OBJ_CONST = self.NORMAL_CONST + LOG_K_CONST
@@ -95,23 +121,25 @@ class Laplace(likelihood):
             return np.squeeze(res)
 
         def obj_hess(f):
-            res = -1 * (np.diag(self.likelihood_function.link_hess(self.data[:,0], f)) - self.Ki)
+            res = -1 * (-np.diag(self.likelihood_function.link_hess(self.data[:,0], f)) - self.Ki)
             return np.squeeze(res)
 
         self.f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess)
-        print self.f_hat
 
         #At this point get the hessian matrix
-        self.hess_hat = -1*np.diag(self.likelihood_function.link_hess(self.data[:,0], self.f_hat)) #-1*obj_hess(self.f_hat) + self.Ki
-        #self.hess_hat = -1*obj_hess(self.f_hat) + self.Ki
-        (self.hess_hat_i, _, _, self.log_hess_hat_det) = pdinv(self.hess_hat + self.Ki)
+        self.hess_hat = np.diag(self.likelihood_function.link_hess(self.data[:,0], self.f_hat)) + self.Ki
+        (self.hess_hat_i, _, _, self.log_hess_hat_det) = pdinv(self.hess_hat)
+        (self.hess_hat, _, _, self.log_hess_hat_i_det) = pdinv(self.hess_hat_i)
+
+        np.testing.assert_array_equal(self.hess_hat, hess_hat_new)
 
         #Need to add the constant as we previously were trying to avoid computing it (seems like a small overhead though...)
-        self.height_unnormalised = -1*obj(self.f_hat) #FIXME: Is it - obj constant and *-1?
+        #self.height_unnormalised = -1*obj(self.f_hat) #FIXME: Is it - obj constant and *-1?
         #z_hat is how much we need to scale the normal distribution by to get the area of our approximation close to
         #the area of p(f)p(y|f) we do this by matching the height of the distributions at the mode
         #z_hat = -0.5*ln|H| - 0.5*ln|K| - 0.5*f_hat*K^{-1}*f_hat \sum_{n} ln p(y_n|f_n)
-        self.ln_z_hat = -0.5*np.log(self.log_hess_hat_det) + self.height_unnormalised - self.NORMAL_CONST #Unsure whether its log_hess or log_hess_i
-
+        #Unsure whether its log_hess or log_hess_i
+        self.ln_z_hat = -0.5*np.log(self.log_hess_hat_det) - 0.5*self.log_Kdet + self.likelihood_function.link_function(self.data[:,0], self.f_hat) - mdot(f.T, (self.Ki, f))
+        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
         return self._compute_GP_variables()

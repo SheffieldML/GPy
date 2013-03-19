@@ -1,7 +1,7 @@
 from scipy.special import gammaln
 import numpy as np
 from GPy.likelihoods.likelihood_functions import likelihood_function
-
+from scipy import stats
 
 class student_t(likelihood_function):
     """Student t likelihood distribution
@@ -72,3 +72,17 @@ class student_t(likelihood_function):
         #hess = ((self.v + 1) * e) / ((((self.sigma**2) * self.v) + e**2)**2)
         hess = ((self.v + 1) * (e**2 - self.v*(self.sigma**2))) / ((((self.sigma**2) * self.v) + e**2)**2)
         return hess
+
+    def predictive_values(self, mu, var):
+        """
+        Compute  mean, and conficence interval (percentiles 5 and 95) of the  prediction
+        """
+        mean = np.exp(mu)
+        p_025 = stats.t.ppf(025,mean)
+        p_975 = stats.t.ppf(975,mean)
+
+        #p_025 = tmp[:,0]
+        #p_975 = tmp[:,1]
+        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+        return mean,p_025,p_975
+

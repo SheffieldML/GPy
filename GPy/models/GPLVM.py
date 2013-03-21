@@ -67,7 +67,13 @@ class GPLVM(GP):
         """
 
         util.plot.Tango.reset()
-        
+
+        # this goes against the current standard in GPy, which currently is to not create
+        # figures in the plot() functions. I think the standard should be changed in order
+        # to accomodate cases like this
+        fig = pb.figure()
+        ax = fig.add_subplot(111)
+
         if labels is None:
             labels = np.ones(self.N)
         if which_indices is None:
@@ -86,15 +92,17 @@ class GPLVM(GP):
                     input_1, input_2 = np.argsort(k.lengthscale)[:2]
                 elif k.name=='linear':
                     input_1, input_2 = np.argsort(k.variances)[::-1][:2]
+        else:
+            input_1, input_2 = which_indices
 
         #first, plot the output variance as a function of the latent space
         Xtest, xx,yy,xmin,xmax = util.plot.x_frame2D(self.X[:,[input_1, input_2]],resolution=resolution)
-	Xtest_full = np.zeros((Xtest.shape[0], self.X.shape[1]))
-	Xtest_full[:, :2] = Xtest
-	mu, var, low, up = self.predict(Xtest_full)
-	var = var[:, :2]
-        pb.imshow(var.reshape(resolution,resolution).T[::-1,:],extent=[xmin[0],xmax[0],xmin[1],xmax[1]],cmap=pb.cm.binary,interpolation='bilinear')
-
+        Xtest_full = np.zeros((Xtest.shape[0], self.X.shape[1]))
+        Xtest_full[:, :2] = Xtest
+        mu, var, low, up = self.predict(Xtest_full)
+        var = var[:, :1] # FIXME: this was a :2
+        pb.imshow(var.reshape(resolution,resolution).T[::-1,:],
+                  extent=[xmin[0], xmax[0], xmin[1], xmax[1]], cmap=pb.cm.binary,interpolation='bilinear')
 
         for i,ul in enumerate(np.unique(labels)):
             if type(ul) is np.string_:
@@ -121,5 +129,6 @@ class GPLVM(GP):
 
         pb.xlim(xmin[0],xmax[0])
         pb.ylim(xmin[1],xmax[1])
-
+        pb.grid(b=False) # remove the grid if present, it doesn't look good
+        ax.set_aspect('auto') # set a nice aspect ratio
         return input_1, input_2

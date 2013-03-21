@@ -256,7 +256,7 @@ class model(parameterised):
         self._set_params_transformed(x)
         LL_gradients = self._transform_gradients(self._log_likelihood_gradients())
         prior_gradients = self._transform_gradients(self._log_prior_gradients())
-        return -LL_gradients - prior_gradients
+        return - LL_gradients - prior_gradients
 
     def objective_and_gradients(self, x):
         obj_f = self.objective_function(x)

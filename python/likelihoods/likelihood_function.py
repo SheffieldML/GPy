@@ -81,11 +81,7 @@ class student_t(likelihood_function):
         Compute  mean, and conficence interval (percentiles 5 and 95) of the  prediction
         """
         mean = np.exp(mu)
-        p_025 = stats.t.ppf(025,mean)
-        p_975 = stats.t.ppf(975,mean)
+        p_025 = stats.t.ppf(.025, mean)
+        p_975 = stats.t.ppf(.975, mean)
 
-        #p_025 = tmp[:,0]
-        #p_975 = tmp[:,1]
-        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
-        return mean,p_025,p_975
-
+        return mean, np.nan*mean, p_025, p_975

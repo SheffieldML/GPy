@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
 import GPy
-from scipy.linalg import cholesky, eig, inv
+from scipy.linalg import cholesky, eig, inv, det
 from functools import partial
 from GPy.likelihoods.likelihood import likelihood
 from GPy.util.linalg import pdinv,mdot
@@ -43,8 +43,10 @@ class Laplace(likelihood):
         self.Z = 0
         self.YYT = None
 
-    def predictive_values(self,mu,var):
-        return self.likelihood_function.predictive_values(mu,var)
+    def predictive_values(self, mu, var, full_cov):
+        if full_cov:
+            raise NotImplementedError("Cannot make correlated predictions with an EP likelihood")
+        return self.likelihood_function.predictive_values(mu, var)
 
     def _get_params(self):
         return np.zeros(0)
@@ -52,10 +54,10 @@ class Laplace(likelihood):
     def _get_param_names(self):
         return []
 
-    def _set_params(self,p):
+    def _set_params(self, p):
         pass # TODO: Laplace likelihood might want to take some parameters...
 
-    def _gradients(self,partial):
+    def _gradients(self, partial):
         return np.zeros(0) # TODO: Laplace likelihood might want to take some parameters...
         raise NotImplementedError
 
@@ -83,7 +85,13 @@ class Laplace(likelihood):
         and $$\ln \tilde{z} = \ln z + \frac{N}{2}\ln 2\pi + \frac{1}{2}\tilde{Y}\tilde{\Sigma}^{-1}\tilde{Y}$$
 
         """
-        self.Sigma_tilde_i = self.hess_hat_i #self.W #self.hess_hat_i - self.Ki
+        self.Sigma_tilde_i = self.W #self.hess_hat_i
+        #Check it isn't singular!
+        epsilon = 1e-2
+        """
+        if np.abs(det(self.Sigma_tilde_i)) < epsilon:
+            raise ValueError("inverse covariance must be non-singular to inverse!")
+        """
         #Do we really need to inverse Sigma_tilde_i? :(
         if self.likelihood_function.log_concave:
             (self.Sigma_tilde, _, _, _) = pdinv(self.Sigma_tilde_i)
@@ -91,12 +99,17 @@ class Laplace(likelihood):
             self.Sigma_tilde = inv(self.Sigma_tilde_i)
         #f_hat? should be f but we must have optimized for them I guess?
         Y_tilde = mdot(self.Sigma_tilde, self.hess_hat, self.f_hat)
-        self.Z_tilde = np.exp(self.ln_z_hat - self.NORMAL_CONST
-                              - 0.5*mdot(self.f_hat, self.hess_hat, self.f_hat)
-                              + 0.5*mdot(Y_tilde.T, (self.Sigma_tilde_i, Y_tilde))
-                              )
+        #Z_tilde = (self.ln_z_hat - self.NORMAL_CONST
+                        #- 0.5*mdot(self.f_hat, self.hess_hat, self.f_hat)
+                        #+ 0.5*mdot(Y_tilde.T, (self.Sigma_tilde_i, Y_tilde))
+                   #)
+        Z_tilde = (self.ln_z_hat - self.NORMAL_CONST
+                   + 0.5*self.log_hess_hat_det
+                   + 0.5*mdot(self.f_hat, self.Ki , self.f_hat)
+                   + 0.5*mdot(Y_tilde.T, (self.Sigma_tilde_i, Y_tilde))
+                   )
 
-        self.Z = self.Z_tilde
+        self.Z = Z_tilde
         self.Y = Y_tilde
         self.covariance_matrix = self.Sigma_tilde
         self.precision = 1 / np.diag(self.Sigma_tilde)[:, None]
@@ -128,7 +141,7 @@ class Laplace(likelihood):
             return np.squeeze(res)
 
         def obj_hess(f):
-            res = -1 * (-np.diag(self.likelihood_function.link_hess(self.data[:, 0], f)) - self.Ki)
+            res = -1 * (--np.diag(self.likelihood_function.link_hess(self.data[:, 0], f)) - self.Ki)
             return np.squeeze(res)
 
         self.f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess)
@@ -153,7 +166,10 @@ class Laplace(likelihood):
         #the area of p(f)p(y|f) we do this by matching the height of the distributions at the mode
         #z_hat = -0.5*ln|H| - 0.5*ln|K| - 0.5*f_hat*K^{-1}*f_hat \sum_{n} ln p(y_n|f_n)
         #Unsure whether its log_hess or log_hess_i
-        self.ln_z_hat = -0.5*np.log(self.log_hess_hat_det) - 0.5*self.log_Kdet + -1*self.likelihood_function.link_function(self.data[:,0], self.f_hat) - mdot(self.f_hat.T, (self.Ki, self.f_hat))
-        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+        self.ln_z_hat = (-0.5*self.log_hess_hat_det
+                         - 0.5*self.log_Kdet
+                         -1*self.likelihood_function.link_function(self.data[:,0], self.f_hat)
+                         - mdot(self.f_hat.T, (self.Ki, self.f_hat))
+                         )
 
         return self._compute_GP_variables()

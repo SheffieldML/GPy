@@ -15,8 +15,9 @@ def student_t_approx():
     Y = np.sin(X)
 
     #Add student t random noise to datapoints
-    deg_free = 3.5
-    t_rv = t(deg_free, loc=0, scale=1)
+    deg_free = 100000.5
+    real_var = 4
+    t_rv = t(deg_free, loc=0, scale=real_var)
     noise = t_rv.rvs(size=Y.shape)
     Y += noise
 
@@ -46,7 +47,7 @@ def student_t_approx():
     #print m
 
     #with a student t distribution, since it has heavy tails it should work well
-    likelihood_function = student_t(deg_free, sigma=1)
+    likelihood_function = student_t(deg_free, sigma=real_var)
     lap = Laplace(Y, likelihood_function)
     cov = kernel.K(X)
     lap.fit_full(cov)
@@ -64,7 +65,7 @@ def student_t_approx():
     import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
     # Likelihood object
-    t_distribution = student_t(deg_free, sigma=1)
+    t_distribution = student_t(deg_free, sigma=real_var)
     stu_t_likelihood = Laplace(Y, t_distribution)
     kernel = GPy.kern.rbf(X.shape[1]) + GPy.kern.bias(X.shape[1])
 
@@ -77,12 +78,16 @@ def student_t_approx():
 
     # optimize
     #m.optimize()
-    print(m)
+    #print(m)
 
     # plot
     m.plot()
     import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
+    m.optimize()
+    print(m)
+
+    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
     return m
 
 

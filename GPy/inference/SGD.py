@@ -242,8 +242,8 @@ class opt_SGD(Optimizer):
                     f, step, Nj = self.step_with_missing_data(f_fp, X, step, shapes, sparse_matrix)
                 else:
                     Nj = N
-                    # momentum_term = self.momentum * step # compute momentum using update(t-1)
                     f, fp = f_fp(self.x_opt)
+                    # momentum_term = self.momentum * step # compute momentum using update(t-1)
                     # step = self.learning_rate * fp # compute update(t)
                     # self.x_opt -= step + momentum_term
                     step = self.momentum * step + self.learning_rate * fp

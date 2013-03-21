@@ -27,7 +27,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             X = self.initialise_latent(init, Q, Y)
 
         if S is None:
-            S = np.ones_like(X) * 1e-2#
+            S = np.ones_like(X) * 0.5 + np.random.randn(*X.shape) * 1e-3
 
         if Z is None:
             Z = np.random.permutation(X.copy())[:M]

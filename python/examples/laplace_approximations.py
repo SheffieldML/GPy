@@ -11,15 +11,22 @@ def student_t_approx():
     Example of regressing with a student t likelihood
     """
     #Start a function, any function
-    X = np.sort(np.random.uniform(0, 15, 100))[:, None]
-    Y = np.sin(X)
+    X = np.linspace(0.0, 10.0, 100)[:, None]
+    Y = np.sin(X) + np.random.randn(*X.shape)*0.1
+    Yc = Y.copy()
+
+    Y = Y/Y.max()
+
+    Yc[10] += 5
+    Yc[15] += 20
+    Yc = Yc/Yc.max()
 
     #Add student t random noise to datapoints
-    deg_free = 100000.5
-    real_var = 4
-    t_rv = t(deg_free, loc=0, scale=real_var)
-    noise = t_rv.rvs(size=Y.shape)
-    Y += noise
+    deg_free = 1000000 #100000.5
+    real_var = 0.1
+    #t_rv = t(deg_free, loc=0, scale=real_var)
+    #noise = t_rvrvs(size=Y.shape)
+    #Y += noise
 
     #Add some extreme value noise to some of the datapoints
     #percent_corrupted = 0.15
@@ -30,64 +37,83 @@ def student_t_approx():
     #print corrupted_indices
     #noise = t_rv.rvs(size=(len(corrupted_indices), 1))
     #Y[corrupted_indices] += noise
-
+    plt.figure(1)
     # Kernel object
-    print X.shape
-    kernel = GPy.kern.rbf(X.shape[1])
+    kernel1 = GPy.kern.rbf(X.shape[1])
+    kernel2 = kernel1.copy()
+    kernel3 = kernel1.copy()
+    kernel4 = kernel1.copy()
 
-    #A GP should completely break down due to the points as they get a lot of weight
-    # create simple GP model
-    #m = GPy.models.GP_regression(X, Y, kernel=kernel)
-
-    ## optimize
+    #print "Clean Gaussian"
+    ##A GP should completely break down due to the points as they get a lot of weight
+    ## create simple GP model
+    #m = GPy.models.GP_regression(X, Y, kernel=kernel1)
+    ### optimize
     #m.ensure_default_constraints()
+    ##m.unconstrain('noise')
+    ##m.constrain_fixed('noise', 0.1)
     #m.optimize()
     ## plot
-    ##m.plot()
+    #plt.subplot(221)
+    #m.plot()
     #print m
 
-    #with a student t distribution, since it has heavy tails it should work well
-    likelihood_function = student_t(deg_free, sigma=real_var)
-    lap = Laplace(Y, likelihood_function)
-    cov = kernel.K(X)
-    lap.fit_full(cov)
+    ##Corrupt
+    #print "Corrupt Gaussian"
+    #m = GPy.models.GP_regression(X, Yc, kernel=kernel2)
+    #m.ensure_default_constraints()
+    ##m.unconstrain('noise')
+    ##m.constrain_fixed('noise', 0.1)
+    #m.optimize()
+    #plt.subplot(222)
+    #m.plot()
+    #print m
 
-    test_range = np.arange(0, 10, 0.1)
-    plt.plot(test_range, t_rv.pdf(test_range))
-    for i in xrange(X.shape[0]):
-        mode = lap.f_hat[i]
-        covariance = lap.hess_hat_i[i,i]
-        scaling = np.exp(lap.ln_z_hat)
-        normalised_approx = norm(loc=mode, scale=covariance)
-        print "Normal with mode %f, and variance %f" % (mode, covariance)
-        plt.plot(test_range, scaling*normalised_approx.pdf(test_range))
-    plt.show()
-    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+    ##with a student t distribution, since it has heavy tails it should work well
+    ##likelihood_function = student_t(deg_free, sigma=real_var)
+    ##lap = Laplace(Y, likelihood_function)
+    ##cov = kernel.K(X)
+    ##lap.fit_full(cov)
+
+    ##test_range = np.arange(0, 10, 0.1)
+    ##plt.plot(test_range, t_rv.pdf(test_range))
+    ##for i in xrange(X.shape[0]):
+        ##mode = lap.f_hat[i]
+        ##covariance = lap.hess_hat_i[i,i]
+        ##scaling = np.exp(lap.ln_z_hat)
+        ##normalised_approx = norm(loc=mode, scale=covariance)
+        ##print "Normal with mode %f, and variance %f" % (mode, covariance)
+        ##plt.plot(test_range, scaling*normalised_approx.pdf(test_range))
+    ##plt.show()
 
     # Likelihood object
-    t_distribution = student_t(deg_free, sigma=real_var)
+    t_distribution = student_t(deg_free, sigma=np.sqrt(real_var))
     stu_t_likelihood = Laplace(Y, t_distribution)
-    kernel = GPy.kern.rbf(X.shape[1]) + GPy.kern.bias(X.shape[1])
 
-    m = GPy.models.GP(X, stu_t_likelihood, kernel)
+    print "Clean student t"
+    m = GPy.models.GP(X, stu_t_likelihood, kernel3)
     m.ensure_default_constraints()
-
     m.update_likelihood_approximation()
-    print "NEW MODEL"
-    print(m)
-
     # optimize
-    #m.optimize()
-    #print(m)
-
-    # plot
-    m.plot()
-    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
-
     m.optimize()
     print(m)
+    # plot
+    plt.subplot(211)
+    m.plot_f()
+
+    print "Corrupt student t"
+    t_distribution = student_t(deg_free, sigma=np.sqrt(real_var))
+    corrupt_stu_t_likelihood = Laplace(Yc, t_distribution)
+    m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel4)
+    m.ensure_default_constraints()
+    m.update_likelihood_approximation()
+    m.optimize()
+    print(m)
+    plt.subplot(212)
+    m.plot_f()
 
     import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+
     return m
 
 

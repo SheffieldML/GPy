@@ -33,13 +33,15 @@ class Laplace(likelihood):
 
         #Inital values
         self.N, self.D = self.data.shape
+        self.is_heteroscedastic = True
+        self.Nparams = 0
 
         self.NORMAL_CONST = -((0.5 * self.N) * np.log(2 * np.pi))
 
         #Initial values for the GP variables
-        self.Y = np.zeros((self.N,1))
+        self.Y = np.zeros((self.N, 1))
         self.covariance_matrix = np.eye(self.N)
-        self.precision = np.ones(self.N)[:,None]
+        self.precision = np.ones(self.N)[:, None]
         self.Z = 0
         self.YYT = None
 
@@ -58,6 +60,7 @@ class Laplace(likelihood):
         pass # TODO: Laplace likelihood might want to take some parameters...
 
     def _gradients(self, partial):
+        #return np.zeros(0) # TODO: Laplace likelihood might want to take some parameters...
         return np.zeros(0) # TODO: Laplace likelihood might want to take some parameters...
         raise NotImplementedError
 
@@ -88,10 +91,8 @@ class Laplace(likelihood):
         self.Sigma_tilde_i = self.W #self.hess_hat_i
         #Check it isn't singular!
         epsilon = 1e-2
-        """
         if np.abs(det(self.Sigma_tilde_i)) < epsilon:
             raise ValueError("inverse covariance must be non-singular to inverse!")
-        """
         #Do we really need to inverse Sigma_tilde_i? :(
         if self.likelihood_function.log_concave:
             (self.Sigma_tilde, _, _, _) = pdinv(self.Sigma_tilde_i)
@@ -99,21 +100,17 @@ class Laplace(likelihood):
             self.Sigma_tilde = inv(self.Sigma_tilde_i)
         #f_hat? should be f but we must have optimized for them I guess?
         Y_tilde = mdot(self.Sigma_tilde, self.hess_hat, self.f_hat)
-        #Z_tilde = (self.ln_z_hat - self.NORMAL_CONST
-                        #- 0.5*mdot(self.f_hat, self.hess_hat, self.f_hat)
-                        #+ 0.5*mdot(Y_tilde.T, (self.Sigma_tilde_i, Y_tilde))
-                   #)
         Z_tilde = (self.ln_z_hat - self.NORMAL_CONST
-                   + 0.5*self.log_hess_hat_det
-                   + 0.5*mdot(self.f_hat, self.Ki , self.f_hat)
-                   + 0.5*mdot(Y_tilde.T, (self.Sigma_tilde_i, Y_tilde))
+                    + 0.5*mdot(self.f_hat, self.hess_hat, self.f_hat)
+                    + 0.5*mdot(Y_tilde.T, (self.Sigma_tilde_i, Y_tilde))
+                    - mdot(Y_tilde.T, (self.Sigma_tilde_i, self.f_hat))
                    )
 
         self.Z = Z_tilde
-        self.Y = Y_tilde
+        self.Y = Y_tilde[:, None]
+        self.YYT = np.dot(self.Y, self.Y.T)
         self.covariance_matrix = self.Sigma_tilde
         self.precision = 1 / np.diag(self.Sigma_tilde)[:, None]
-        self.YYT = np.dot(self.Y, self.Y.T)
         import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
     def fit_full(self, K):
@@ -122,6 +119,7 @@ class Laplace(likelihood):
         For nomenclature see Rasmussen & Williams 2006
         :K: Covariance matrix
         """
+        self.K = K.copy()
         f = np.zeros((self.N, 1))
         (self.Ki, _, _, self.log_Kdet) = pdinv(K)
         LOG_K_CONST = -(0.5 * self.log_Kdet)
@@ -148,6 +146,11 @@ class Laplace(likelihood):
 
         #At this point get the hessian matrix
         self.W = -np.diag(self.likelihood_function.link_hess(self.data[:, 0], self.f_hat))
+        if not self.likelihood_function.log_concave:
+            self.W[self.W < 0] = 1e-6 #FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+                                   #If the likelihood is non-log-concave. We wan't to say that there is a negative variance
+                                   #To cause the posterior to become less certain than the prior and likelihood,
+                                   #This is a property only held by non-log-concave likelihoods
         self.hess_hat = self.Ki + self.W
         (self.hess_hat_i, _, _, self.log_hess_hat_det) = pdinv(self.hess_hat)
 
@@ -166,10 +169,10 @@ class Laplace(likelihood):
         #the area of p(f)p(y|f) we do this by matching the height of the distributions at the mode
         #z_hat = -0.5*ln|H| - 0.5*ln|K| - 0.5*f_hat*K^{-1}*f_hat \sum_{n} ln p(y_n|f_n)
         #Unsure whether its log_hess or log_hess_i
-        self.ln_z_hat = (-0.5*self.log_hess_hat_det
-                         - 0.5*self.log_Kdet
-                         -1*self.likelihood_function.link_function(self.data[:,0], self.f_hat)
-                         - mdot(self.f_hat.T, (self.Ki, self.f_hat))
+        self.ln_z_hat = (- 0.5*self.log_hess_hat_det
+                         + 0.5*self.log_Kdet
+                         + self.likelihood_function.link_function(self.data[:,0], self.f_hat)
+                         - 0.5*mdot(self.f_hat.T, (self.Ki, self.f_hat))
                          )
 
         return self._compute_GP_variables()

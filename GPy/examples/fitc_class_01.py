@@ -42,8 +42,8 @@ m.ensure_default_constraints()
 m.update_likelihood_approximation()
 print m.checkgrad(verbose=1)
 # Parameters optimization:
-m.optimize()
-#m.EPEM() #FIXME
+#m.optimize()
+m.pseudo_EM() #FIXME
 
 # Plot
 pb.subplot(211)

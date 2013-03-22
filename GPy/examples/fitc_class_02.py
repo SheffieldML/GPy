@@ -25,15 +25,15 @@ likelihood = GPy.likelihoods.EP(data['Y'],distribution)
 sample = np.random.randint(0,data['X'].shape[0],10)
 Z = data['X'][sample,:]
 # create sparse GP EP model
-#m = GPy.models.sparse_GP(data['X'],likelihood=likelihood,kernel=kernel,Z=Z)
 m = GPy.models.generalized_FITC(data['X'],likelihood=likelihood,kernel=kernel,Z=Z)
 m.ensure_default_constraints()
 m.set('len',10.)
 
-m.update_likelihood_approximation()
+#m.update_likelihood_approximation()
 
 # optimize
-m.optimize()
+#m.optimize()
+m.pseudo_EM()
 print(m)
 
 # plot
@@ -48,17 +48,18 @@ kernel = GPy.kern.rbf(data['X'].shape[1]) + GPy.kern.white(data['X'].shape[1])
 distribution = GPy.likelihoods.likelihood_functions.probit()
 likelihood = GPy.likelihoods.EP(data['Y'],distribution)
 
-sample = np.random.randint(0,data['X'].shape[0],10)
-Z = data['X'][sample,:]
+#sample = np.random.randint(0,data['X'].shape[0],10)
+#Z = data['X'][sample,:]
 # create sparse GP EP model
 m = GPy.models.sparse_GP(data['X'],likelihood=likelihood,kernel=kernel,Z=Z)
 m.ensure_default_constraints()
 m.set('len',10.)
 
-m.update_likelihood_approximation()
+#m.update_likelihood_approximation()
 
 # optimize
-m.optimize()
+#m.optimize()
+m.pseudo_EM()
 print(m)
 
 # plot

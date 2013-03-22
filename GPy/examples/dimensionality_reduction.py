@@ -61,20 +61,21 @@ def BGPLVM_oil():
     data = GPy.util.datasets.oil()
     Y, X = data['Y'], data['X']
     X -= X.mean(axis=0)
-    # X /= X.std(axis=0)
+    X /= X.std(axis=0)
 
     Q = 10
     M = 30
 
     kernel = GPy.kern.rbf(Q, ARD = True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
     m = GPy.models.Bayesian_GPLVM(X, Q, kernel=kernel, M=M)
-    m.scale_factor = 10000.0
+    # m.scale_factor = 100.0
     m.constrain_positive('(white|noise|bias|X_variance|rbf_variance|rbf_length)')
     from sklearn import cluster
     km = cluster.KMeans(M, verbose=10)
     Z = km.fit(m.X).cluster_centers_
     # Z = GPy.util.misc.kmm_init(m.X, M)
     m.set('iip', Z)
+    m.set('bias', 1e-4)
     # optimize
     # m.ensure_default_constraints()
 

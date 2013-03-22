@@ -183,7 +183,7 @@ def crescent_data(num_data=200,seed=default_seed):
     for i in range(0, 4):
         num_data_part.append(round(((i+1)*num_data)/4.))
         num_data_part[i] -= num_data_total
-        print num_data_part[i]
+        #print num_data_part[i]
         part = np.random.normal(size=(num_data_part[i], 2))
         part = np.dot(np.dot(part, scales[i]), R) + means[i]
         Xparts.append(part)
@@ -201,5 +201,4 @@ def creep_data():
     features = [0]
     features.extend(range(2, 31))
     X = all_data[:,features].copy()
-    
     return {'X': X, 'y' : y}

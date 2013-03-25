@@ -247,7 +247,7 @@ class opt_SGD(Optimizer):
 
 
                 if self.messages == 2:
-                    noise = np.exp(self.x_opt)[-1]
+                    noise = self.model.likelihood._variance
                     status = "evaluating {feature: 5d}/{tot: 5d} \t f: {f: 2.3f} \t non-missing: {nm: 4d}\t noise: {noise: 2.4f}\r".format(feature = count, tot = len(features), f = f, nm = Nj, noise = noise)
                     sys.stdout.write(status)
                     sys.stdout.flush()

@@ -11,15 +11,15 @@ Simple 1D classification example
 """
 seed=10000
 
-data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
-X = data['X']
-Y = data['Y'][:, 0:1]
-Y[Y == -1] = 0
+#data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
+#X = data['X']
+#Y = data['Y'][:, 0:1]
+#Y[Y == -1] = 0
 
 
 
-#X = np.vstack((np.random.uniform(0,10,(10,1)),np.random.uniform(7,17,(10,1)),np.random.uniform(15,25,(10,1))))
-#Y = np.vstack((np.zeros((10,1)),np.ones((10,1)),np.zeros((10,1))))
+X = np.vstack((np.random.uniform(0,10,(10,1)),np.random.uniform(7,17,(10,1)),np.random.uniform(15,25,(10,1))))
+Y = np.vstack((np.zeros((10,1)),np.ones((10,1)),np.zeros((10,1))))
 
 # Kernel object
 kernel = GPy.kern.rbf(1) + GPy.kern.white(1)

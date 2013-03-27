@@ -66,7 +66,7 @@ def silhouette():
 
     # optimize
     m.ensure_default_constraints()
-    m.optimize()
+    m.optimize(messages=True)
 
     print(m)
     return m

@@ -85,12 +85,10 @@ class rbf(kernpart):
     def dK_dtheta(self,dL_dK,X,X2,target):
         self._K_computations(X,X2)
         target[0] += np.sum(self._K_dvar*dL_dK)
-        if self.ARD == True:
-            dl = self._K_dvar[:,:,None]*self.variance*self._K_dist2/self.lengthscale
-            target[1:] += (dl*dL_dK[:,:,None]).sum(0).sum(0)
+        if self.ARD:
+            [np.add(target[1+q:2+q],self.variance/self.lengthscale[q]**3*np.sum(self._K_dvar*dL_dK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.D)]
         else:
-            target[1] += np.sum(self._K_dvar*self.variance*(self._K_dist2.sum(-1))/self.lengthscale*dL_dK)
-        #np.sum(self._K_dvar*self.variance*self._K_dist2/self.lengthscale*dL_dK)
+            target[1] += np.sum(self._K_dvar*self.variance*self._K_dist2/self.lengthscale*dL_dK)
 
     def dKdiag_dtheta(self,dL_dKdiag,X,target):
         #NB: derivative of diagonal elements wrt lengthscale is 0
@@ -98,7 +96,7 @@ class rbf(kernpart):
 
     def dK_dX(self,dL_dK,X,X2,target):
         self._K_computations(X,X2)
-        _K_dist = X[:,None,:]-X2[None,:,:]
+        _K_dist = X[:,None,:]-X2[None,:,:] #don't cache this in _K_computations because it is high memory. If this function is being called, chances are we're not in the high memory arena.
         dK_dX = np.transpose(-self.variance*self._K_dvar[:,:,np.newaxis]*_K_dist/self.lengthscale2,(1,0,2))
         target += np.sum(dK_dX*dL_dK.T[:,:,None],0)
 
@@ -183,16 +181,18 @@ class rbf(kernpart):
     #---------------------------------------#
 
     def _K_computations(self,X,X2):
-        if not (np.all(X==self._X) and np.all(X2==self._X2)):
-            self._X = X
-            self._X2 = X2
+        if not (np.all(X==self._X) and np.all(X2==self._X2) and np.all(self._params == self._get_params())):
+            self._X = X.copy()
+            self._X2 = X2.copy()
+            self._params == self._get_params().copy()
             if X2 is None: X2 = X
-            self._K_dist = X[:,None,:]-X2[None,:,:] # this can be computationally heavy
-            self._params = np.empty(shape=(1,0))    #ensure the next section gets called
-        if not np.all(self._params == self._get_params()):
-            self._params == self._get_params()
-            self._K_dist2 = np.square(self._K_dist/self.lengthscale)
-            self._K_dvar = np.exp(-0.5*self._K_dist2.sum(-1))
+            #never do this: self._K_dist = X[:,None,:]-X2[None,:,:] # this can be computationally heavy
+            #_K_dist = X[:,None,:]-X2[None,:,:]
+            #_K_dist2 = np.square(_K_dist/self.lengthscale)
+            X = X/self.lengthscale
+            X2 = X2/self.lengthscale
+            self._K_dist2 = (-2.*np.dot(X, X2.T) + np.sum(np.square(X),1)[:,None] + np.sum(np.square(X2),1)[None,:])
+            self._K_dvar = np.exp(-0.5*self._K_dist2)
 
     def _psi_computations(self,Z,mu,S):
         #here are the "statistics" for psi1 and psi2

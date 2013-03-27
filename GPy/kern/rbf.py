@@ -86,9 +86,9 @@ class rbf(kernpart):
         self._K_computations(X,X2)
         target[0] += np.sum(self._K_dvar*dL_dK)
         if self.ARD:
-            [np.add(target[1+q:2+q],self.variance/self.lengthscale[q]**3*np.sum(self._K_dvar*dL_dK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.D)]
+            [np.add(target[1+q:2+q],(self.variance/self.lengthscale[q]**3)*np.sum(self._K_dvar*dL_dK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.D)]
         else:
-            target[1] += np.sum(self._K_dvar*self.variance*self._K_dist2/self.lengthscale*dL_dK)
+            target[1] += (self.variance/self.lengthscale)*np.sum(self._K_dvar*self._K_dist2*dL_dK)
 
     def dKdiag_dtheta(self,dL_dKdiag,X,target):
         #NB: derivative of diagonal elements wrt lengthscale is 0
@@ -97,7 +97,7 @@ class rbf(kernpart):
     def dK_dX(self,dL_dK,X,X2,target):
         self._K_computations(X,X2)
         _K_dist = X[:,None,:]-X2[None,:,:] #don't cache this in _K_computations because it is high memory. If this function is being called, chances are we're not in the high memory arena.
-        dK_dX = np.transpose(-self.variance*self._K_dvar[:,:,np.newaxis]*_K_dist/self.lengthscale2,(1,0,2))
+        dK_dX = (-self.variance/self.lengthscale2)*np.transpose(self._K_dvar[:,:,np.newaxis]*_K_dist,(1,0,2))
         target += np.sum(dK_dX*dL_dK.T[:,:,None],0)
 
     def dKdiag_dX(self,dL_dKdiag,X,target):

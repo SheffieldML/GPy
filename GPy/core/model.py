@@ -467,3 +467,5 @@ class model(parameterised):
                 if ll_change < epsilon:
                     stop = True
             iteration += 1
+            if stop:
+                print "%s iterations." %iteration

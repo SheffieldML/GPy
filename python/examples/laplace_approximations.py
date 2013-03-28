@@ -10,20 +10,23 @@ def student_t_approx():
     """
     Example of regressing with a student t likelihood
     """
+    real_var = 0.1
     #Start a function, any function
-    X = np.linspace(0.0, 10.0, 100)[:, None]
-    Y = np.sin(X) + np.random.randn(*X.shape)*0.1
+    X = np.linspace(0.0, 10.0, 30)[:, None]
+    Y = np.sin(X) + np.random.randn(*X.shape)*real_var
     Yc = Y.copy()
 
-    Y = Y/Y.max()
+    #Y = Y/Y.max()
 
-    Yc[10] += 5
-    Yc[15] += 20
-    Yc = Yc/Yc.max()
+    #Yc[10] += 100
+    Yc[25] += 10
+    Yc[23] += 10
+    Yc[24] += 10
+    #Yc = Yc/Yc.max()
 
     #Add student t random noise to datapoints
-    deg_free = 1000000 #100000.5
-    real_var = 0.1
+    deg_free = 20 #100000.5
+    real_sd = np.sqrt(real_var)
     #t_rv = t(deg_free, loc=0, scale=real_var)
     #noise = t_rvrvs(size=Y.shape)
     #Y += noise
@@ -38,36 +41,37 @@ def student_t_approx():
     #noise = t_rv.rvs(size=(len(corrupted_indices), 1))
     #Y[corrupted_indices] += noise
     plt.figure(1)
+    plt.suptitle('Gaussian likelihood')
     # Kernel object
     kernel1 = GPy.kern.rbf(X.shape[1])
     kernel2 = kernel1.copy()
     kernel3 = kernel1.copy()
     kernel4 = kernel1.copy()
 
-    #print "Clean Gaussian"
-    ##A GP should completely break down due to the points as they get a lot of weight
-    ## create simple GP model
-    #m = GPy.models.GP_regression(X, Y, kernel=kernel1)
-    ### optimize
-    #m.ensure_default_constraints()
-    ##m.unconstrain('noise')
-    ##m.constrain_fixed('noise', 0.1)
-    #m.optimize()
-    ## plot
-    #plt.subplot(221)
-    #m.plot()
-    #print m
+    print "Clean Gaussian"
+    #A GP should completely break down due to the points as they get a lot of weight
+    # create simple GP model
+    m = GPy.models.GP_regression(X, Y, kernel=kernel1)
+    ## optimize
+    m.ensure_default_constraints()
+    #m.unconstrain('noise')
+    #m.constrain_fixed('noise', 0.1)
+    m.optimize()
+    # plot
+    plt.subplot(211)
+    m.plot()
+    print m
 
     ##Corrupt
-    #print "Corrupt Gaussian"
-    #m = GPy.models.GP_regression(X, Yc, kernel=kernel2)
-    #m.ensure_default_constraints()
-    ##m.unconstrain('noise')
-    ##m.constrain_fixed('noise', 0.1)
-    #m.optimize()
-    #plt.subplot(222)
-    #m.plot()
-    #print m
+    print "Corrupt Gaussian"
+    m = GPy.models.GP_regression(X, Yc, kernel=kernel2)
+    m.ensure_default_constraints()
+    #m.unconstrain('noise')
+    #m.constrain_fixed('noise', 0.1)
+    m.optimize()
+    plt.subplot(212)
+    m.plot()
+    print m
 
     ##with a student t distribution, since it has heavy tails it should work well
     ##likelihood_function = student_t(deg_free, sigma=real_var)
@@ -86,9 +90,13 @@ def student_t_approx():
         ##plt.plot(test_range, scaling*normalised_approx.pdf(test_range))
     ##plt.show()
 
+    plt.figure(2)
+    plt.suptitle('Student-t likelihood')
+    edited_real_sd = real_sd
+
     # Likelihood object
-    t_distribution = student_t(deg_free, sigma=np.sqrt(real_var))
-    stu_t_likelihood = Laplace(Y, t_distribution)
+    t_distribution = student_t(deg_free, sigma=edited_real_sd)
+    stu_t_likelihood = Laplace(Yc, t_distribution)
 
     print "Clean student t"
     m = GPy.models.GP(X, stu_t_likelihood, kernel3)
@@ -100,9 +108,11 @@ def student_t_approx():
     # plot
     plt.subplot(211)
     m.plot_f()
+    plt.ylim(-2.5,2.5)
+    #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
     print "Corrupt student t"
-    t_distribution = student_t(deg_free, sigma=np.sqrt(real_var))
+    t_distribution = student_t(deg_free, sigma=edited_real_sd)
     corrupt_stu_t_likelihood = Laplace(Yc, t_distribution)
     m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel4)
     m.ensure_default_constraints()
@@ -110,8 +120,8 @@ def student_t_approx():
     m.optimize()
     print(m)
     plt.subplot(212)
-    m.plot_f()
-
+    m.plot()
+    plt.ylim(-2.5,2.5)
     import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
     return m

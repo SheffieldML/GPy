@@ -1,4 +1,5 @@
-from scipy.special import gammaln
+from scipy.special import gammaln, gamma
+from scipy import integrate
 import numpy as np
 from GPy.likelihoods.likelihood_functions import likelihood_function
 from scipy import stats
@@ -79,9 +80,68 @@ class student_t(likelihood_function):
     def predictive_values(self, mu, var):
         """
         Compute  mean, and conficence interval (percentiles 5 and 95) of the  prediction
-        """
-        mean = np.exp(mu)
-        p_025 = stats.t.ppf(.025, mean)
-        p_975 = stats.t.ppf(.975, mean)
 
-        return mean, np.nan*mean, p_025, p_975
+        Need to find what the variance is at the latent points for a student t*normal
+        (((g((v+1)/2))/(g(v/2)*s*sqrt(v*pi)))*(1+(1/v)*((y-f)/s)^2)^(-(v+1)/2))*((1/(s*sqrt(2*pi)))*exp(-(1/(2*(s^2)))*((y-f)^2)))
+
+(((g((v+1)/2))/(g(v/2)*s*sqrt(v*pi)))*(1+(1/v)*((y-f)/s)^2)^(-(v+1)/2))
+*((1/(s*sqrt(2*pi)))*exp(-(1/(2*(s^2)))*((y-f)^2)))
+        """
+        #p_025 = stats.t.ppf(.025, mu)
+        #p_975 = stats.t.ppf(.975, mu)
+
+        num_test_points = mu.shape[0]
+        #Each mu is the latent point f* at the test point x*,
+        #and the var is the gaussian variance at this point
+        #Take lots of samples from this, so we have lots of possible values
+        #for latent point f* for each test point x* weighted by how likely we were to pick it
+        print "Taking %d samples of f*".format(num_test_points)
+        num_f_samples = 10
+        num_y_samples = 10
+        student_t_means = np.random.normal(loc=mu, scale=np.sqrt(var), size=(num_test_points, num_f_samples))
+        print "Student t means shape: ", student_t_means.shape
+
+        #Now we have lots of f*, lets work out the likelihood of getting this by sampling
+        #from a student t centred on this point, sample many points from this distribution
+        #centred on f*
+        #for test_point, f in enumerate(student_t_means):
+            #print test_point
+            #print f.shape
+            #student_t_samples = stats.t.rvs(self.v, loc=f[:,None],
+                                            #scale=self.sigma,
+                                            #size=(num_f_samples, num_y_samples))
+            #print student_t_samples.shape
+
+        student_t_samples = stats.t.rvs(self.v, loc=student_t_means[:,None],
+                                        scale=self.sigma,
+                                        size=(num_test_points, num_y_samples, num_f_samples))
+        student_t_samples = np.reshape(student_t_samples,
+                                       (num_test_points, num_y_samples*num_f_samples))
+
+        #Now take the 97.5 and 0.25 percentile of these points
+        p_025 = stats.scoreatpercentile(student_t_samples, .025, axis=1)[:, None]
+        p_975 = stats.scoreatpercentile(student_t_samples, .975, axis=1)[:, None]
+
+        p_025 = 1+p_025
+        p_975 = 1+p_975
+
+        ##Alernenately we could sample from int p(y|f*)p(f*|x*) df*
+        def t_gaussian(f, mu, var):
+            return (((gamma((self.v+1)*0.5)) / (gamma(self.v*0.5)*self.sigma*np.sqrt(self.v*np.pi))) * ((1+(1/self.v)*(((mu-f)/self.sigma)**2))**(-(self.v+1)*0.5))
+                        * ((1/(np.sqrt(2*np.pi*var)))*np.exp(-(1/(2*var)) *((mu-f)**2)))
+                    )
+
+        def t_gauss_int(mu, var):
+            print "Mu: ", mu
+            print "var: ", var
+            result = integrate.quad(t_gaussian, -np.inf, 0.975, args=(mu, var))
+            print "Result: ", result
+            return result[0]
+
+        vec_t_gauss_int = np.vectorize(t_gauss_int)
+
+        p_025 = vec_t_gauss_int(mu, var)
+        p_975 = vec_t_gauss_int(mu, var)
+        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+
+        return mu, np.nan*mu, p_025, p_975

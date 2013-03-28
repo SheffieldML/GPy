@@ -88,11 +88,12 @@ class Laplace(likelihood):
         and $$\ln \tilde{z} = \ln z + \frac{N}{2}\ln 2\pi + \frac{1}{2}\tilde{Y}\tilde{\Sigma}^{-1}\tilde{Y}$$
 
         """
-        self.Sigma_tilde_i = self.W #self.hess_hat_i
+        self.Sigma_tilde_i = self.W
         #Check it isn't singular!
-        epsilon = 1e-2
+        epsilon = 1e-6
         if np.abs(det(self.Sigma_tilde_i)) < epsilon:
-            raise ValueError("inverse covariance must be non-singular to inverse!")
+            print "WARNING: Transformed covariance matrix is signular!"
+            #raise ValueError("inverse covariance must be non-singular to invert!")
         #Do we really need to inverse Sigma_tilde_i? :(
         if self.likelihood_function.log_concave:
             (self.Sigma_tilde, _, _, _) = pdinv(self.Sigma_tilde_i)
@@ -110,8 +111,12 @@ class Laplace(likelihood):
         self.Y = Y_tilde[:, None]
         self.YYT = np.dot(self.Y, self.Y.T)
         self.covariance_matrix = self.Sigma_tilde
-        self.precision = 1 / np.diag(self.Sigma_tilde)[:, None]
-        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+        #if not self.likelihood_function.log_concave:
+            #self.covariance_matrix[self.covariance_matrix < 0] = 1e+6 #FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+                                   ##If the likelihood is non-log-concave. We wan't to say that there is a negative variance
+                                   ##To cause the posterior to become less certain than the prior and likelihood,
+                                   ##This is a property only held by non-log-concave likelihoods
+        self.precision = 1 / np.diag(self.covariance_matrix)[:, None]
 
     def fit_full(self, K):
         """

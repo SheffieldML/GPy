@@ -88,7 +88,6 @@ class student_t(likelihood_function):
         Need to find what the variance is at the latent points for a student t*normal p(y*|f*)p(f*)
         (((g((v+1)/2))/(g(v/2)*s*sqrt(v*pi)))*(1+(1/v)*((y-f)/s)^2)^(-(v+1)/2))
         *((1/(s*sqrt(2*pi)))*exp(-(1/(2*(s^2)))*((y-f)^2)))
-
         """
 
         #We want the variance around test points y which comes from int p(y*|f*)p(f*) df*
@@ -143,9 +142,6 @@ class student_t(likelihood_function):
         #Now take the 97.5 and 0.25 percentile of these points
         p_025 = stats.scoreatpercentile(student_t_samples, .025, axis=1)[:, None]
         p_975 = stats.scoreatpercentile(student_t_samples, .975, axis=1)[:, None]
-
-        p_025 = 1+p_025
-        p_975 = 1+p_975
 
         ##Alernenately we could sample from int p(y|f*)p(f*|x*) df*
         def t_gaussian(f, mu, var):

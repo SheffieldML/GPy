@@ -73,12 +73,12 @@ def oil_100():
 
 def brendan_faces():
     data = GPy.util.datasets.brendan_faces()
-    Y = data['Y'][0:500, :]
-    m = GPy.models.GPLVM(Y, 2, init='rand')
+    Y = data['Y'][0:-1:10, :]
+    m = GPy.models.GPLVM(data['Y'], 2)
 
     # optimize
     m.ensure_default_constraints()
-    m.optimize(messages=1, max_f_eval=40)
+    m.optimize(messages=1, max_f_eval=10000)
 
     ax = m.plot_latent()
     y = m.likelihood.Y[0,:]
@@ -91,7 +91,7 @@ def brendan_faces():
 
 def stick():
     data = GPy.util.datasets.stick()
-    m = GPy.models.GPLVM(data['Y'], 2, init='rand')
+    m = GPy.models.GPLVM(data['Y'], 2)
     
     # optimize
     m.ensure_default_constraints()

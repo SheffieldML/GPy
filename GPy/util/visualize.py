@@ -14,19 +14,18 @@ class lvm:
         self.move_on = False
 
     def on_click(self, event):
-        print 'click', event.xdata, event.ydata
+        #print 'click', event.xdata, event.ydata
         if event.inaxes!=self.latent_axis: return
         self.move_on = not self.move_on
-        print
-        if self.called:
-            self.xs.append(event.xdata)
-            self.ys.append(event.ydata)
-            self.line.set_data(self.xs, self.ys)
-            self.line.figure.canvas.draw()
-        else:
-            self.xs = [event.xdata]
-            self.ys = [event.ydata]
-            self.line, = self.latent_axis.plot(event.xdata, event.ydata)
+        # if self.called:
+        #     self.xs.append(event.xdata)
+        #     self.ys.append(event.ydata)
+        #     self.line.set_data(self.xs, self.ys)
+        #     self.line.figure.canvas.draw()
+        # else:
+        #     self.xs = [event.xdata]
+        #     self.ys = [event.ydata]
+        #     self.line, = self.latent_axis.plot(event.xdata, event.ydata)
         self.called = True
     def on_move(self, event):
         if event.inaxes!=self.latent_axis: return
@@ -75,7 +74,7 @@ class image_show(data_show):
         self.invert = invert
         self.scale = scale
         self.set_image(vals/255.)
-        self.handle = self.axis.imshow(self.vals, interpolation='nearest')
+        self.handle = self.axis.imshow(self.vals, cmap=plt.cm.gray, interpolation='nearest')
         plt.show()
 
     def modify(self, vals):

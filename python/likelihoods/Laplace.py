@@ -1,16 +1,15 @@
 import numpy as np
 import scipy as sp
 import GPy
-from scipy.linalg import cholesky, eig, inv, det
-from functools import partial
+from scipy.linalg import cholesky, eig, inv, det, cho_solve
 from GPy.likelihoods.likelihood import likelihood
-from GPy.util.linalg import pdinv,mdot
+from GPy.util.linalg import pdinv, mdot, jitchol
 #import numpy.testing.assert_array_equal
 
 class Laplace(likelihood):
     """Laplace approximation to a posterior"""
 
-    def __init__(self, data, likelihood_function):
+    def __init__(self, data, likelihood_function, rasm=True):
         """
         Laplace Approximation
 
@@ -30,6 +29,7 @@ class Laplace(likelihood):
         """
         self.data = data
         self.likelihood_function = likelihood_function
+        self.rasm = rasm
 
         #Inital values
         self.N, self.D = self.data.shape
@@ -102,20 +102,16 @@ class Laplace(likelihood):
         #f_hat? should be f but we must have optimized for them I guess?
         Y_tilde = mdot(self.Sigma_tilde, self.hess_hat, self.f_hat)
         Z_tilde = (self.ln_z_hat - self.NORMAL_CONST
-                    + 0.5*mdot(self.f_hat, self.hess_hat, self.f_hat)
+                    + 0.5*mdot(self.f_hat.T, (self.hess_hat, self.f_hat))
                     + 0.5*mdot(Y_tilde.T, (self.Sigma_tilde_i, Y_tilde))
                     - mdot(Y_tilde.T, (self.Sigma_tilde_i, self.f_hat))
                    )
 
-        self.Z = Z_tilde
-        self.Y = Y_tilde[:, None]
+        #Convert to float as its (1, 1) and Z must be a scalar
+        self.Z = np.float64(Z_tilde)
+        self.Y = Y_tilde
         self.YYT = np.dot(self.Y, self.Y.T)
         self.covariance_matrix = self.Sigma_tilde
-        #if not self.likelihood_function.log_concave:
-            #self.covariance_matrix[self.covariance_matrix < 0] = 1e+6 #FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
-                                   ##If the likelihood is non-log-concave. We wan't to say that there is a negative variance
-                                   ##To cause the posterior to become less certain than the prior and likelihood,
-                                   ##This is a property only held by non-log-concave likelihoods
         self.precision = 1 / np.diag(self.covariance_matrix)[:, None]
 
     def fit_full(self, K):
@@ -125,32 +121,15 @@ class Laplace(likelihood):
         :K: Covariance matrix
         """
         self.K = K.copy()
-        f = np.zeros((self.N, 1))
-        (self.Ki, _, _, self.log_Kdet) = pdinv(K)
-        LOG_K_CONST = -(0.5 * self.log_Kdet)
-        OBJ_CONST = self.NORMAL_CONST + LOG_K_CONST
-        #Find \hat(f) using a newton raphson optimizer for example
-        #TODO: Add newton-raphson as subclass of optimizer class
-
-        #FIXME: Can we get rid of this horrible reshaping?
-        def obj(f):
-            #f = f[:, None]
-            res = -1 * (self.likelihood_function.link_function(self.data[:, 0], f) - 0.5 * mdot(f.T, (self.Ki, f)) + OBJ_CONST)
-            return float(res)
-
-        def obj_grad(f):
-            #f = f[:, None]
-            res = -1 * (self.likelihood_function.link_grad(self.data[:, 0], f) - mdot(self.Ki, f))
-            return np.squeeze(res)
-
-        def obj_hess(f):
-            res = -1 * (--np.diag(self.likelihood_function.link_hess(self.data[:, 0], f)) - self.Ki)
-            return np.squeeze(res)
-
-        self.f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess)
+        self.Ki, _, _, self.log_Kdet = pdinv(K)
+        if self.rasm:
+            self.f_hat = self.rasm_mode(K)
+        else:
+            self.f_hat = self.ncg_mode(K)
 
         #At this point get the hessian matrix
-        self.W = -np.diag(self.likelihood_function.link_hess(self.data[:, 0], self.f_hat))
+        self.W = -np.diag(self.likelihood_function.link_hess(self.data, self.f_hat))
+
         if not self.likelihood_function.log_concave:
             self.W[self.W < 0] = 1e-6 #FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                    #If the likelihood is non-log-concave. We wan't to say that there is a negative variance
@@ -176,8 +155,92 @@ class Laplace(likelihood):
         #Unsure whether its log_hess or log_hess_i
         self.ln_z_hat = (- 0.5*self.log_hess_hat_det
                          + 0.5*self.log_Kdet
-                         + self.likelihood_function.link_function(self.data[:,0], self.f_hat)
+                         + self.likelihood_function.link_function(self.data, self.f_hat)
+                         #+ self.likelihood_function.link_function(self.data, self.f_hat)
                          - 0.5*mdot(self.f_hat.T, (self.Ki, self.f_hat))
                          )
+        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
         return self._compute_GP_variables()
+
+    def ncg_mode(self, K):
+        """Find the mode using a normal ncg optimizer and inversion of K (numerically unstable but intuative)
+        :K: Covariance matrix
+        :returns: f_mode
+        """
+        self.K = K.copy()
+        f = np.zeros((self.N, 1))
+        (self.Ki, _, _, self.log_Kdet) = pdinv(K)
+        LOG_K_CONST = -(0.5 * self.log_Kdet)
+
+        #FIXME: Can we get rid of this horrible reshaping?
+        def obj(f):
+            res = -1 * (self.likelihood_function.link_function(self.data[:, 0], f) - 0.5 * mdot(f.T, (self.Ki, f))
+                        + self.NORMAL_CONST + LOG_K_CONST)
+            return float(res)
+
+        def obj_grad(f):
+            res = -1 * (self.likelihood_function.link_grad(self.data[:, 0], f) - mdot(self.Ki, f))
+            return np.squeeze(res)
+
+        def obj_hess(f):
+            res = -1 * (--np.diag(self.likelihood_function.link_hess(self.data[:, 0], f)) - self.Ki)
+            return np.squeeze(res)
+
+        f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess)
+        return f_hat[:, None]
+
+    def rasm_mode(self, K):
+        """
+        Rasmussens numerically stable mode finding
+        For nomenclature see Rasmussen & Williams 2006
+
+        :K: Covariance matrix
+        :returns: f_mode
+        """
+        f = np.zeros((self.N, 1))
+        new_obj = -np.inf
+        old_obj = np.inf
+
+        def obj(a, f):
+            #Careful of shape of data!
+            return -0.5*np.dot(a.T, f) + self.likelihood_function.link_function(self.data, f)
+
+        difference = np.inf
+        epsilon = 1e-16
+        step_size = 1
+        while difference > epsilon:
+            W = -np.diag(self.likelihood_function.link_hess(self.data, f))
+            if not self.likelihood_function.log_concave:
+                #if np.any(W < 0):
+                    #print "NEGATIVE VALUES :("
+                    #pass
+                W[W < 0] = 1e-6     #FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+                                    #If the likelihood is non-log-concave. We wan't to say that there is a negative variance
+                                    #To cause the posterior to become less certain than the prior and likelihood,
+                                    #This is a property only held by non-log-concave likelihoods
+            #W is diagnoal so its sqrt is just the sqrt of the diagonal elements
+            W_12 = np.sqrt(W)
+            B = np.eye(self.N) + mdot(W_12, K, W_12)
+            L = jitchol(B)
+            b = (np.dot(W, f) + step_size * self.likelihood_function.link_grad(self.data, f))
+            #TODO: Check L is lower
+            solve_L = cho_solve((L, True), mdot(W_12, (K, b)))
+            a = b - mdot(W_12, solve_L)
+            f = np.dot(K, a)
+            old_obj = new_obj
+            new_obj = obj(a, f)
+            difference = new_obj - old_obj
+            #print "Difference: ", new_obj - old_obj
+            if difference < 0:
+                #If the objective function isn't rising, restart optimization
+                print "Reducing step-size, restarting"
+                #objective function isn't increasing, try reducing step size
+                step_size *= 0.9
+                f = np.zeros((self.N, 1))
+                new_obj = -np.inf
+                old_obj = np.inf
+
+            difference = abs(difference)
+
+        return f

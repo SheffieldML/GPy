@@ -16,6 +16,9 @@ def student_t_approx():
     Y = np.sin(X) + np.random.randn(*X.shape)*real_var
     Yc = Y.copy()
 
+    X_full = np.linspace(0.0, 10.0, 500)[:, None]
+    Y_full = np.sin(X_full)
+
     #Y = Y/Y.max()
 
     Yc[10] += 100
@@ -25,7 +28,7 @@ def student_t_approx():
     #Yc = Yc/Yc.max()
 
     #Add student t random noise to datapoints
-    deg_free = 20 #100000.5
+    deg_free = 10
     real_sd = np.sqrt(real_var)
     #t_rv = t(deg_free, loc=0, scale=real_var)
     #noise = t_rvrvs(size=Y.shape)
@@ -47,6 +50,8 @@ def student_t_approx():
     kernel2 = kernel1.copy()
     kernel3 = kernel1.copy()
     kernel4 = kernel1.copy()
+    kernel5 = kernel1.copy()
+    kernel6 = kernel1.copy()
 
     print "Clean Gaussian"
     #A GP should completely break down due to the points as they get a lot of weight
@@ -58,6 +63,7 @@ def student_t_approx():
     # plot
     plt.subplot(211)
     m.plot()
+    plt.plot(X_full, Y_full)
     print m
 
     #Corrupt
@@ -67,40 +73,64 @@ def student_t_approx():
     m.optimize()
     plt.subplot(212)
     m.plot()
+    plt.plot(X_full, Y_full)
     print m
 
     plt.figure(2)
     plt.suptitle('Student-t likelihood')
     edited_real_sd = real_sd
 
-    # Likelihood object
+    print "Clean student t, ncg"
     t_distribution = student_t(deg_free, sigma=edited_real_sd)
-    stu_t_likelihood = Laplace(Y, t_distribution)
-
-    print "Clean student t"
+    stu_t_likelihood = Laplace(Y, t_distribution, rasm=False)
     m = GPy.models.GP(X, stu_t_likelihood, kernel3)
     m.ensure_default_constraints()
     m.update_likelihood_approximation()
-    # optimize
     m.optimize()
     print(m)
-    # plot
-    plt.subplot(211)
+    plt.subplot(221)
     m.plot()
-    plt.ylim(-2.5,2.5)
-    #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+    plt.plot(X_full, Y_full)
+    plt.ylim(-2.5, 2.5)
 
-    print "Corrupt student t"
+    print "Corrupt student t, ncg"
     t_distribution = student_t(deg_free, sigma=edited_real_sd)
-    corrupt_stu_t_likelihood = Laplace(Yc, t_distribution)
+    corrupt_stu_t_likelihood = Laplace(Yc.copy(), t_distribution, rasm=False)
+    m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel5)
+    m.ensure_default_constraints()
+    m.update_likelihood_approximation()
+    m.optimize()
+    print(m)
+    plt.subplot(223)
+    m.plot()
+    plt.plot(X_full, Y_full)
+    plt.ylim(-2.5, 2.5)
+
+    print "Clean student t, rasm"
+    t_distribution = student_t(deg_free, sigma=edited_real_sd)
+    stu_t_likelihood = Laplace(Y.copy(), t_distribution, rasm=True)
+    m = GPy.models.GP(X, stu_t_likelihood, kernel6)
+    m.ensure_default_constraints()
+    m.update_likelihood_approximation()
+    m.optimize()
+    print(m)
+    plt.subplot(222)
+    m.plot()
+    plt.plot(X_full, Y_full)
+    plt.ylim(-2.5, 2.5)
+
+    print "Corrupt student t, rasm"
+    t_distribution = student_t(deg_free, sigma=edited_real_sd)
+    corrupt_stu_t_likelihood = Laplace(Yc.copy(), t_distribution, rasm=True)
     m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel4)
     m.ensure_default_constraints()
     m.update_likelihood_approximation()
     m.optimize()
     print(m)
-    plt.subplot(212)
+    plt.subplot(224)
     m.plot()
-    plt.ylim(-2.5,2.5)
+    plt.plot(X_full, Y_full)
+    plt.ylim(-2.5, 2.5)
     import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
     ###with a student t distribution, since it has heavy tails it should work well

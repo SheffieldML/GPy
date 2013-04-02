@@ -146,9 +146,9 @@ def PCA(Y, Q):
     if not np.allclose(Y.mean(axis=0), 0.0):
         print "Y is not zero mean, centering it locally (GPy.util.linalg.PCA)"
         
-        Y -= Y.mean(axis=0) 
+        #Y -= Y.mean(axis=0) 
 
-    Z = linalg.svd(Y, full_matrices = False)
+    Z = linalg.svd(Y-Y.mean(axis=0), full_matrices = False)
     [X, W] = [Z[0][:,0:Q], np.dot(np.diag(Z[1]), Z[2]).T[:,0:Q]]
     v = X.std(axis=0)
     X /= v;

@@ -23,6 +23,10 @@ class student_t(likelihood_function):
         #FIXME: This should be in the superclass
         self.log_concave = False
 
+    @property
+    def variance(self):
+        return (self.v / float(self.v - 2)) * (self.sigma**2)
+
     def link_function(self, y, f):
         """link_function $\ln p(y|f)$
         $$\ln p(y_{i}|f_{i}) = \ln \Gamma(\frac{v+1}{2}) - \ln \Gamma(\frac{v}{2})\sqrt{v \pi}\sigma - \frac{v+1}{2}\ln (1 + \frac{1}{v}\left(\frac{y_{i} - f_{i}}{\sigma}\right)^2$$
@@ -79,14 +83,32 @@ class student_t(likelihood_function):
 
     def predictive_values(self, mu, var):
         """
-        Compute  mean, and conficence interval (percentiles 5 and 95) of the  prediction
+        Compute  mean, and conficence interval (percentiles 5 and 95) of the prediction
 
-        Need to find what the variance is at the latent points for a student t*normal
-        (((g((v+1)/2))/(g(v/2)*s*sqrt(v*pi)))*(1+(1/v)*((y-f)/s)^2)^(-(v+1)/2))*((1/(s*sqrt(2*pi)))*exp(-(1/(2*(s^2)))*((y-f)^2)))
+        Need to find what the variance is at the latent points for a student t*normal p(y*|f*)p(f*)
+        (((g((v+1)/2))/(g(v/2)*s*sqrt(v*pi)))*(1+(1/v)*((y-f)/s)^2)^(-(v+1)/2))
+        *((1/(s*sqrt(2*pi)))*exp(-(1/(2*(s^2)))*((y-f)^2)))
 
-(((g((v+1)/2))/(g(v/2)*s*sqrt(v*pi)))*(1+(1/v)*((y-f)/s)^2)^(-(v+1)/2))
-*((1/(s*sqrt(2*pi)))*exp(-(1/(2*(s^2)))*((y-f)^2)))
         """
+
+        #We want the variance around test points y which comes from int p(y*|f*)p(f*) df*
+        #Var(y*) = Var(E[y*|f*]) + E[Var(y*|f*)]
+        #Since we are given f* (mu) which is our mean (expected) value of y*|f* then the variance is the variance around this
+        #Which was also given to us as (var)
+        #We also need to know the expected variance of y* around samples f*, this is the variance of the student t distribution
+        #However the variance of the student t distribution is not dependent on f, only on sigma and the degrees of freedom
+        true_var = var + self.variance
+
+        #Now we have an analytical solution for the variances of the distribution p(y*|f*)p(f*) around our test points but we now
+        #need the 95 and 5 percentiles.
+        #FIXME: Hack, just pretend p(y*|f*)p(f*) is a gaussian and use the gaussian's percentiles
+        p_025 = mu - 2.*true_var
+        p_975 = mu + 2.*true_var
+
+        return mu, np.nan*mu, p_025, p_975
+
+    def sample_predicted_values(self, mu, var):
+        """ Experimental sample approches and numerical integration """
         #p_025 = stats.t.ppf(.025, mu)
         #p_975 = stats.t.ppf(.975, mu)
 
@@ -134,14 +156,13 @@ class student_t(likelihood_function):
         def t_gauss_int(mu, var):
             print "Mu: ", mu
             print "var: ", var
-            result = integrate.quad(t_gaussian, -np.inf, 0.975, args=(mu, var))
+            result = integrate.quad(t_gaussian, 0.025, 0.975, args=(mu, var))
             print "Result: ", result
             return result[0]
 
         vec_t_gauss_int = np.vectorize(t_gauss_int)
 
-        p_025 = vec_t_gauss_int(mu, var)
-        p_975 = vec_t_gauss_int(mu, var)
+        p = vec_t_gauss_int(mu, var)
+        p_025 = mu - p
+        p_975 = mu + p
         import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
-
-        return mu, np.nan*mu, p_025, p_975

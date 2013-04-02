@@ -18,7 +18,7 @@ def student_t_approx():
 
     #Y = Y/Y.max()
 
-    #Yc[10] += 100
+    Yc[10] += 100
     Yc[25] += 10
     Yc[23] += 10
     Yc[24] += 10
@@ -52,43 +52,22 @@ def student_t_approx():
     #A GP should completely break down due to the points as they get a lot of weight
     # create simple GP model
     m = GPy.models.GP_regression(X, Y, kernel=kernel1)
-    ## optimize
+    # optimize
     m.ensure_default_constraints()
-    #m.unconstrain('noise')
-    #m.constrain_fixed('noise', 0.1)
     m.optimize()
     # plot
     plt.subplot(211)
     m.plot()
     print m
 
-    ##Corrupt
+    #Corrupt
     print "Corrupt Gaussian"
     m = GPy.models.GP_regression(X, Yc, kernel=kernel2)
     m.ensure_default_constraints()
-    #m.unconstrain('noise')
-    #m.constrain_fixed('noise', 0.1)
     m.optimize()
     plt.subplot(212)
     m.plot()
     print m
-
-    ##with a student t distribution, since it has heavy tails it should work well
-    ##likelihood_function = student_t(deg_free, sigma=real_var)
-    ##lap = Laplace(Y, likelihood_function)
-    ##cov = kernel.K(X)
-    ##lap.fit_full(cov)
-
-    ##test_range = np.arange(0, 10, 0.1)
-    ##plt.plot(test_range, t_rv.pdf(test_range))
-    ##for i in xrange(X.shape[0]):
-        ##mode = lap.f_hat[i]
-        ##covariance = lap.hess_hat_i[i,i]
-        ##scaling = np.exp(lap.ln_z_hat)
-        ##normalised_approx = norm(loc=mode, scale=covariance)
-        ##print "Normal with mode %f, and variance %f" % (mode, covariance)
-        ##plt.plot(test_range, scaling*normalised_approx.pdf(test_range))
-    ##plt.show()
 
     plt.figure(2)
     plt.suptitle('Student-t likelihood')
@@ -96,7 +75,7 @@ def student_t_approx():
 
     # Likelihood object
     t_distribution = student_t(deg_free, sigma=edited_real_sd)
-    stu_t_likelihood = Laplace(Yc, t_distribution)
+    stu_t_likelihood = Laplace(Y, t_distribution)
 
     print "Clean student t"
     m = GPy.models.GP(X, stu_t_likelihood, kernel3)
@@ -107,7 +86,7 @@ def student_t_approx():
     print(m)
     # plot
     plt.subplot(211)
-    m.plot_f()
+    m.plot()
     plt.ylim(-2.5,2.5)
     #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
@@ -123,6 +102,23 @@ def student_t_approx():
     m.plot()
     plt.ylim(-2.5,2.5)
     import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+
+    ###with a student t distribution, since it has heavy tails it should work well
+    ###likelihood_function = student_t(deg_free, sigma=real_var)
+    ###lap = Laplace(Y, likelihood_function)
+    ###cov = kernel.K(X)
+    ###lap.fit_full(cov)
+
+    ###test_range = np.arange(0, 10, 0.1)
+    ###plt.plot(test_range, t_rv.pdf(test_range))
+    ###for i in xrange(X.shape[0]):
+        ###mode = lap.f_hat[i]
+        ###covariance = lap.hess_hat_i[i,i]
+        ###scaling = np.exp(lap.ln_z_hat)
+        ###normalised_approx = norm(loc=mode, scale=covariance)
+        ###print "Normal with mode %f, and variance %f" % (mode, covariance)
+        ###plt.plot(test_range, scaling*normalised_approx.pdf(test_range))
+    ###plt.show()
 
     return m
 

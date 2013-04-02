@@ -15,12 +15,12 @@ def sample_class(f):
     return c
 
 def della_gatta_TRP63_gene_expression(gene_number=None):
-    matData = scipy.io.loadmat(os.path.join(data_path, 'DellaGattadata.mat'))
-    X = np.double(matData['timepoints'])
+    mat_data = scipy.io.loadmat(os.path.join(data_path, 'DellaGattadata.mat'))
+    X = np.double(mat_data['timepoints'])
     if gene_number == None:
-        Y = matData['exprs_tp53_RMA']
+        Y = mat_data['exprs_tp53_RMA']
     else:
-        Y = matData['exprs_tp53_RMA'][:, gene_number]
+        Y = mat_data['exprs_tp53_RMA'][:, gene_number]
         if len(Y.shape) == 1:
             Y = Y[:, None]
     return {'X': X, 'Y': Y, 'info': "The full gene expression data set from della Gatta et al (http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2413161/) processed by RMA."}
@@ -60,28 +60,42 @@ def pumadyn(seed=default_seed):
     return {'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'info': "The puma robot arm data with 32 inputs. This data is the non linear case with medium noise (pumadyn-32nm). For training 7,168 examples are sampled without replacement."}
 
 
+def brendan_faces():
+    mat_data = scipy.io.loadmat(os.path.join(data_path, 'frey_rawface.mat'))
+    Y = mat_data['ff'].T
+    return {'Y': Y, 'info': "Face data made available by Brendan Frey"}
+
+
+
 
 def silhouette():
     # Ankur Agarwal and Bill Trigg's silhoutte data.
-    matData = scipy.io.loadmat(os.path.join(data_path, 'mocap', 'ankur', 'ankurDataPoseSilhouette.mat'))
-    inMean = np.mean(matData['Y'])
-    inScales = np.sqrt(np.var(matData['Y']))
-    X = matData['Y'] - inMean
+    mat_data = scipy.io.loadmat(os.path.join(data_path, 'mocap', 'ankur', 'ankurDataPoseSilhouette.mat'))
+    inMean = np.mean(mat_data['Y'])
+    inScales = np.sqrt(np.var(mat_data['Y']))
+    X = mat_data['Y'] - inMean
     X = X/inScales
-    Xtest = matData['Y_test'] - inMean
+    Xtest = mat_data['Y_test'] - inMean
     Xtest = Xtest/inScales
-    Y = matData['Z']
-    Ytest = matData['Z_test']
+    Y = mat_data['Z']
+    Ytest = mat_data['Z_test']
     return {'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'info': "Artificial silhouette simulation data developed from Agarwal and Triggs (2004)."}
 
+def stick():
+    Y, connect = GPy.util.mocap.load_text_data('run1', data_path)
+    Y = Y[0:-1:4, :]
+    lbls = 'connect'
+    return {'Y': Y, 'connect' : connect, 'info': "Stick man data from Ohio."}
+
+
 def swiss_roll_1000():
-    matData = scipy.io.loadmat(os.path.join(data_path, 'swiss_roll_data'))
-    Y = matData['X_data'][:, 0:1000].transpose()
+    mat_data = scipy.io.loadmat(os.path.join(data_path, 'swiss_roll_data'))
+    Y = mat_data['X_data'][:, 0:1000].transpose()
     return {'Y': Y, 'info': "Subsample of the swiss roll data extracting only the first 1000 values."}
 
 def swiss_roll():
-    matData = scipy.io.loadmat(os.path.join(data_path, 'swiss_roll_data.mat'))
-    Y = matData['X_data'][:, 0:3000].transpose()
+    mat_data = scipy.io.loadmat(os.path.join(data_path, 'swiss_roll_data.mat'))
+    Y = mat_data['X_data'][:, 0:3000].transpose()
     return {'Y': Y, 'info': "The first 3,000 points from the swiss roll data of Tennenbaum, de Silva and Langford (2001)."}
 
 def toy_rbf_1d(seed=default_seed):
@@ -202,3 +216,4 @@ def creep_data():
     features.extend(range(2, 31))
     X = all_data[:,features].copy()
     return {'X': X, 'y' : y}
+

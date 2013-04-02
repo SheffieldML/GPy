@@ -8,12 +8,17 @@ def load_text_data(dataset, directory, centre=True):
     # Remove markers where there is a NaN
     present_index = [i for i in range(points[0].shape[1]) if not (np.any(np.isnan(points[0][:, i])) or np.any(np.isnan(points[0][:, i])) or np.any(np.isnan(points[0][:, i])))]
 
+    point_names = point_names[present_index]
+    for i in range(3):
+        points[i] = points[i][:, present_index]
+        if centre:
+            points[i] = (points[i].T - points[i].mean(axis=1)).T 
+
     # Concatanate the X, Y and Z markers together
-    Y = np.concatenate((points[0][:, present_index], points[1][:, present_index], points[2][:, present_index]), axis=1)
-    if centre:
-        Y = Y - Y.mean(axis=0)
+    Y = np.concatenate((points[0], points[1], points[2]), axis=1)
     Y = Y/400.
-    return Y
+    connect = read_connections(os.path.join(directory, 'connections.txt'), point_names)
+    return Y, connect
 
 def parse_text(file_name):
     """Parse data from Ohio State University text mocap files (http://accad.osu.edu/research/mocap/mocap_data.htm)."""
@@ -23,7 +28,7 @@ def parse_text(file_name):
     point_names = np.array(fid.readline().split())[2:-1:3]
     fid.close()
     for i in range(len(point_names)):
-        point_names[i] = point_names[i][0:-3]
+        point_names[i] = point_names[i][0:-2]
 
     # Read the matrix data
     S = np.loadtxt(file_name, skiprows=1)
@@ -42,37 +47,28 @@ def parse_text(file_name):
 
     return points, point_names, times
 
-#def read_connections():
+def read_connections(file_name, point_names):
+    """Read a file detailing which markers should be connected to which for motion capture data."""
 
+    connections = []
+    fid = open(file_name, 'r')
+    line=fid.readline()
+    while(line):
+        connections.append(np.array(line.split(',')))
+        connections[-1][0] = connections[-1][0].strip()
+        connections[-1][1] = connections[-1][1].strip()
+        line = fid.readline()
+    connect = np.zeros((len(point_names), len(point_names)),dtype=bool)
+    for i in range(len(point_names)):
+        for j in range(len(point_names)):
+            for k in range(len(connections)):
+                if connections[k][0] == point_names[i] and connections[k][1] == point_names[j]:
+                    
+                    connect[i,j]=True
+                    connect[j,i]=True
+                    break
+    
+    return connect
 
-#     fid = fopen(fileName);
-#     i = 1;
-#     rem = fgets(fid);	
-#     while(rem ~= -1)		
-#         [token, rem] = strtok(rem, ',');
-#         connections{i, 1} = fliplr(deblank(fliplr(deblank(token))));
-#         [token, rem] = strtok(rem, ',');
-#         connections{i, 2} = fliplr(deblank(fliplr(deblank(token))));
-#         i = i + 1;
-#         rem = fgets(fid);	
-#     end
-
-#     connect = zeros(length(pointNames));
-#     fclose(fid);
-#     for i = 1:size(connections, 1);
-#         for j = 1:length(pointNames)
-#             if strcmp(pointNames{j}, connections{i, 1}) | ...
-#                 strcmp(pointNames{j}, connections{i, 2})
-#       for k = 1:length(pointNames)
-#         if k == j
-#           break
-#         end
-#         if strcmp(pointNames{k}, connections{i, 1}) | ...
-#               strcmp(pointNames{k}, connections{i, 2})
-#           connect(j, k) = 1;
-#         end
-#       end
-#     end
-#   end
-# end
-# connect = sparse(connect);      
+    
+  

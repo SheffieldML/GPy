@@ -73,7 +73,7 @@ def silhouette():
 
 def coregionalisation_toy2():
     """
-    A simple demonstration of coregionalisation on two sinusoidal functions
+    A simple demonstration of coregionalisation on two sinusoidal functions.
     """
     X1 = np.random.rand(50,1)*8
     X2 = np.random.rand(30,1)*5
@@ -106,7 +106,7 @@ def coregionalisation_toy2():
 
 def coregionalisation_toy():
     """
-    A simple demonstration of coregionalisation on two sinusoidal functions
+    A simple demonstration of coregionalisation on two sinusoidal functions.
     """
     X1 = np.random.rand(50,1)*8
     X2 = np.random.rand(30,1)*5
@@ -139,7 +139,7 @@ def coregionalisation_toy():
 
 def coregionalisation_sparse():
     """
-    A simple demonstration of coregionalisation on two sinusoidal functions
+    A simple demonstration of coregionalisation on two sinusoidal functions using sparse approximations.
     """
     X1 = np.random.rand(500,1)*8
     X2 = np.random.rand(300,1)*5

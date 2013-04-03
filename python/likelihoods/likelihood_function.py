@@ -47,7 +47,6 @@ class student_t(likelihood_function):
                      - (self.v + 1) * 0.5
                      * np.log(1 + ((e**2 / self.sigma**2) / self.v))
                      )
-        print (e**2).shape
         return np.sum(objective)
 
     def link_grad(self, y, f):

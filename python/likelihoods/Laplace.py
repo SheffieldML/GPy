@@ -159,7 +159,6 @@ class Laplace(likelihood):
                          #+ self.likelihood_function.link_function(self.data, self.f_hat)
                          - 0.5*mdot(self.f_hat.T, (self.Ki, self.f_hat))
                          )
-        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
         return self._compute_GP_variables()
 
@@ -190,7 +189,7 @@ class Laplace(likelihood):
         f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess)
         return f_hat[:, None]
 
-    def rasm_mode(self, K):
+    def rasm_mode(self, K, MAX_ITER=5000, MAX_RESTART=30):
         """
         Rasmussens numerically stable mode finding
         For nomenclature see Rasmussen & Williams 2006
@@ -209,7 +208,9 @@ class Laplace(likelihood):
         difference = np.inf
         epsilon = 1e-16
         step_size = 1
-        while difference > epsilon:
+        rs = 0
+        i = 0
+        while difference > epsilon and i < MAX_ITER and rs < MAX_RESTART:
             W = -np.diag(self.likelihood_function.link_hess(self.data, f))
             if not self.likelihood_function.log_concave:
                 #if np.any(W < 0):
@@ -223,7 +224,7 @@ class Laplace(likelihood):
             W_12 = np.sqrt(W)
             B = np.eye(self.N) + mdot(W_12, K, W_12)
             L = jitchol(B)
-            b = (np.dot(W, f) + step_size * self.likelihood_function.link_grad(self.data, f))
+            b = (np.dot(W, f) + step_size * self.likelihood_function.link_grad(self.data, f)[:, None])
             #TODO: Check L is lower
             solve_L = cho_solve((L, True), mdot(W_12, (K, b)))
             a = b - mdot(W_12, solve_L)
@@ -234,13 +235,16 @@ class Laplace(likelihood):
             #print "Difference: ", new_obj - old_obj
             if difference < 0:
                 #If the objective function isn't rising, restart optimization
-                print "Reducing step-size, restarting"
-                #objective function isn't increasing, try reducing step size
                 step_size *= 0.9
+                print "Objective function rose"
+                print "Reducing step-size to {ss:.3} and restarting optimization".format(ss=step_size)
+                #objective function isn't increasing, try reducing step size
                 f = np.zeros((self.N, 1))
                 new_obj = -np.inf
                 old_obj = np.inf
+                rs += 1
 
             difference = abs(difference)
+            i += 1
 
         return f

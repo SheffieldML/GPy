@@ -53,6 +53,7 @@ class periodic_Matern52(kernpart):
         psi = np.where(r1 != 0, (np.arctan(r2/r1) + (r1<0.)*np.pi),np.arcsin(r2))
         return r,omega[:,0:1], psi
 
+    @silence_errors
     def _int_computation(self,r1,omega1,phi1,r2,omega2,phi2):
         Gint1 = 1./(omega1+omega2.T)*( np.sin((omega1+omega2.T)*self.upper+phi1+phi2.T) - np.sin((omega1+omega2.T)*self.lower+phi1+phi2.T)) + 1./(omega1-omega2.T)*( np.sin((omega1-omega2.T)*self.upper+phi1-phi2.T) - np.sin((omega1-omega2.T)*self.lower+phi1-phi2.T) )
         Gint2 = 1./(omega1+omega2.T)*( np.sin((omega1+omega2.T)*self.upper+phi1+phi2.T) - np.sin((omega1+omega2.T)*self.lower+phi1+phi2.T)) +  np.cos(phi1-phi2.T)*(self.upper-self.lower)

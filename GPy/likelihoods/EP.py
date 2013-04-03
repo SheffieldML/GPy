@@ -33,6 +33,15 @@ class EP(likelihood):
         self.Z = 0
         self.YYT = None
 
+    def restart(self):
+        self.tau_tilde = np.zeros(self.N)
+        self.v_tilde = np.zeros(self.N)
+        self.Y = np.zeros((self.N,1))
+        self.covariance_matrix = np.eye(self.N)
+        self.precision = np.ones(self.N)[:,None]
+        self.Z = 0
+        self.YYT = None
+
     def predictive_values(self,mu,var,full_cov):
         if full_cov:
             raise NotImplementedError, "Cannot make correlated predictions with an EP likelihood"

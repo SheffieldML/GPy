@@ -100,12 +100,19 @@ class Laplace(likelihood):
         else:
             self.Sigma_tilde = inv(self.Sigma_tilde_i)
         #f_hat? should be f but we must have optimized for them I guess?
-        Y_tilde = mdot(self.Sigma_tilde, self.hess_hat, self.f_hat)
-        Z_tilde = (self.ln_z_hat - self.NORMAL_CONST
-                    + 0.5*mdot(self.f_hat.T, (self.hess_hat, self.f_hat))
-                    + 0.5*mdot(Y_tilde.T, (self.Sigma_tilde_i, Y_tilde))
-                    - mdot(Y_tilde.T, (self.Sigma_tilde_i, self.f_hat))
-                   )
+        #Y_tilde = mdot(self.Sigma_tilde, self.hess_hat_i, self.f_hat)
+        Y_tilde = mdot(self.Sigma_tilde, (self.Ki + self.W), self.f_hat)
+        #KW = np.dot(self.K, self.W)
+        #KW_i, _, _, _ = pdinv(KW)
+        #Y_tilde = mdot((KW_i + np.eye(self.N)), self.f_hat)
+        #Z_tilde = (self.ln_z_hat - self.NORMAL_CONST
+                    #+ 0.5*mdot(self.f_hat.T, (self.hess_hat, self.f_hat))
+                    #+ 0.5*mdot(Y_tilde.T, (self.Sigma_tilde_i, Y_tilde))
+                    #- mdot(Y_tilde.T, (self.Sigma_tilde_i, self.f_hat))
+                   #)
+        _, _, _, ln_W12_Bi_W12_i = pdinv(mdot(self.W_12, self.Bi, self.W_12))
+        f_Si_f = mdot(self.f_hat.T, self.Sigma_tilde_i, self.f_hat)
+        Z_tilde = -self.NORMAL_CONST + self.ln_z_hat -0.5*ln_W12_Bi_W12_i - 0.5*self.f_Ki_f - 0.5*f_Si_f
 
         #Convert to float as its (1, 1) and Z must be a scalar
         self.Z = np.float64(Z_tilde)
@@ -121,7 +128,7 @@ class Laplace(likelihood):
         :K: Covariance matrix
         """
         self.K = K.copy()
-        self.Ki, _, _, self.log_Kdet = pdinv(K)
+        self.Ki, _, _, log_Kdet = pdinv(K)
         if self.rasm:
             self.f_hat = self.rasm_mode(K)
         else:
@@ -135,32 +142,63 @@ class Laplace(likelihood):
                                    #If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                    #To cause the posterior to become less certain than the prior and likelihood,
                                    #This is a property only held by non-log-concave likelihoods
-        self.hess_hat = self.Ki + self.W
-        (self.hess_hat_i, _, _, self.log_hess_hat_det) = pdinv(self.hess_hat)
+        #TODO: Could save on computation when using rasm by returning these, means it isn't just a "mode finder" though
+        self.B, L, self.W_12 = self._compute_B_statistics(K, self.W)
+        self.Bi, _, _, B_det = pdinv(self.B)
+        #ln_W_det = np.linalg.det(self.W)
+        #ln_B_det = np.linalg.det(self.B)
+        ln_det = np.linalg.det(np.eye(self.N) - mdot(self.W_12, self.Bi, self.W_12, K))
+        b = np.dot(self.W, self.f_hat) + self.likelihood_function.link_grad(self.data, self.f_hat)[:, None]
+        #TODO: Check L is lower
+        solve_L = cho_solve((L, True), mdot(self.W_12, (K, b)))
+        a = b - mdot(self.W_12, solve_L)
+        self.f_Ki_f = np.dot(self.f_hat.T, a)
 
-        #Check hess_hat is positive definite
-        try:
-            cholesky(self.hess_hat)
-        except:
-            raise ValueError("Must be positive definite")
+        #self.hess_hat = self.Ki + self.W
+        #(self.hess_hat, _, _, self.log_hess_hat_i_det) = pdinv(self.hess_hat)
 
-        #Check its eigenvalues are positive
-        eigenvalues = eig(self.hess_hat)
-        if not np.all(eigenvalues > 0):
-            raise ValueError("Eigen values not positive")
+        ##Check hess_hat is positive definite
+        #try:
+            #cholesky(self.hess_hat)
+        #except:
+            #raise ValueError("Must be positive definite")
+
+        ##Check its eigenvalues are positive
+        #eigenvalues = eig(self.hess_hat)
+        #if not np.all(eigenvalues > 0):
+            #raise ValueError("Eigen values not positive")
 
         #z_hat is how much we need to scale the normal distribution by to get the area of our approximation close to
         #the area of p(f)p(y|f) we do this by matching the height of the distributions at the mode
         #z_hat = -0.5*ln|H| - 0.5*ln|K| - 0.5*f_hat*K^{-1}*f_hat \sum_{n} ln p(y_n|f_n)
         #Unsure whether its log_hess or log_hess_i
-        self.ln_z_hat = (- 0.5*self.log_hess_hat_det
-                         + 0.5*self.log_Kdet
-                         + self.likelihood_function.link_function(self.data, self.f_hat)
+        #self.ln_z_hat = (- 0.5*self.log_hess_hat_i_det
+                         #+ 0.5*self.log_Kdet
                          #+ self.likelihood_function.link_function(self.data, self.f_hat)
-                         - 0.5*mdot(self.f_hat.T, (self.Ki, self.f_hat))
+                         ##+ self.likelihood_function.link_function(self.data, self.f_hat)
+                         #- 0.5*mdot(self.f_hat.T, (self.Ki, self.f_hat))
+                         #)
+        self.ln_z_hat = (- 0.5*log_Kdet
+                         - 0.5*self.f_Ki_f
+                         + self.likelihood_function.link_function(self.data, self.f_hat)
+                         + 0.5*ln_det
                          )
 
         return self._compute_GP_variables()
+
+    def _compute_B_statistics(self, K, W):
+        """Rasmussen suggests the use of a numerically stable positive definite matrix B
+        Which has a positive diagonal element and can be easyily inverted
+
+        :K: Covariance matrix
+        :W: Negative hessian at a point (diagonal matrix)
+        :returns: (B, L)
+        """
+        #W is diagnoal so its sqrt is just the sqrt of the diagonal elements
+        W_12 = np.sqrt(W)
+        B = np.eye(K.shape[0]) + mdot(W_12, K, W_12)
+        L = jitchol(B)
+        return (B, L, W_12)
 
     def ncg_mode(self, K):
         """Find the mode using a normal ncg optimizer and inversion of K (numerically unstable but intuative)
@@ -189,7 +227,7 @@ class Laplace(likelihood):
         f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess)
         return f_hat[:, None]
 
-    def rasm_mode(self, K, MAX_ITER=5000, MAX_RESTART=30):
+    def rasm_mode(self, K, MAX_ITER=5000000000000000, MAX_RESTART=30):
         """
         Rasmussens numerically stable mode finding
         For nomenclature see Rasmussen & Williams 2006
@@ -206,11 +244,12 @@ class Laplace(likelihood):
             return -0.5*np.dot(a.T, f) + self.likelihood_function.link_function(self.data, f)
 
         difference = np.inf
-        epsilon = 1e-16
+        epsilon = 1e-6
         step_size = 1
         rs = 0
         i = 0
-        while difference > epsilon and i < MAX_ITER and rs < MAX_RESTART:
+        while difference > epsilon:# and i < MAX_ITER and rs < MAX_RESTART:
+            f_old = f.copy()
             W = -np.diag(self.likelihood_function.link_hess(self.data, f))
             if not self.likelihood_function.log_concave:
                 #if np.any(W < 0):
@@ -220,31 +259,48 @@ class Laplace(likelihood):
                                     #If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                     #To cause the posterior to become less certain than the prior and likelihood,
                                     #This is a property only held by non-log-concave likelihoods
-            #W is diagnoal so its sqrt is just the sqrt of the diagonal elements
-            W_12 = np.sqrt(W)
-            B = np.eye(self.N) + mdot(W_12, K, W_12)
-            L = jitchol(B)
-            b = (np.dot(W, f) + step_size * self.likelihood_function.link_grad(self.data, f)[:, None])
+            B, L, W_12 = self._compute_B_statistics(K, W)
+
+            W_f = np.dot(W, f)
+            grad = self.likelihood_function.link_grad(self.data, f)[:, None]
+            #Find K_i_f
+            b = W_f + grad
+            #b = np.dot(W, f) + np.dot(self.Ki, f)*(1-step_size) + step_size*self.likelihood_function.link_grad(self.data, f)[:, None]
             #TODO: Check L is lower
             solve_L = cho_solve((L, True), mdot(W_12, (K, b)))
             a = b - mdot(W_12, solve_L)
-            f = np.dot(K, a)
+            #f = np.dot(K, a)
+
+            #a should be equal to Ki*f now so should be able to use it
+            c = mdot(K, W_f) + f*(1-step_size) + step_size*np.dot(K, grad)
+            solve_L = cho_solve((L, True), mdot(W_12, c))
+            f = c - mdot(K, W_12, solve_L)
+
+            #K_w_f = mdot(K, (W, f))
+            #c = step_size*mdot(K, self.likelihood_function.link_grad(self.data, f)[:, None]) - step_size*f
+            #d = f + K_w_f + c
+            #solve_L = cho_solve((L, True), mdot(W_12, d))
+            #f = c - mdot(K, (W_12, solve_L))
+            #a = mdot(self.Ki, f)
+
+            tmp_old_obj = old_obj
             old_obj = new_obj
             new_obj = obj(a, f)
             difference = new_obj - old_obj
-            #print "Difference: ", new_obj - old_obj
+            #print "Difference: ", difference
             if difference < 0:
+                #print "Objective function rose", difference
                 #If the objective function isn't rising, restart optimization
                 step_size *= 0.9
-                print "Objective function rose"
-                print "Reducing step-size to {ss:.3} and restarting optimization".format(ss=step_size)
+                #print "Reducing step-size to {ss:.3} and restarting optimization".format(ss=step_size)
                 #objective function isn't increasing, try reducing step size
-                f = np.zeros((self.N, 1))
-                new_obj = -np.inf
-                old_obj = np.inf
+                #f = f_old #it's actually faster not to go back to old location and just zigzag across the mode
+                old_obj = tmp_old_obj
                 rs += 1
 
             difference = abs(difference)
             i += 1
 
+        self.i = i
+        print "{i} steps".format(i=i)
         return f

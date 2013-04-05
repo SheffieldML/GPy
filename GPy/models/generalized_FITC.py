@@ -76,11 +76,17 @@ class generalized_FITC(sparse_GP):
             # Compute generalized FITC's diagonal term of the covariance
             self.Qnn = mdot(self.psi1.T,self.Kmmi,self.psi1)
             self.Diag0 = self.psi0 - np.diag(self.Qnn)
-            self.Diag = self.Diag0/(1.+ self.Diag0 * self._precision.flatten())
+            Iplus_Dprod_i = 1./(1.+ self.Diag0 * self._precision.flatten())
+            self.Diag = self.Diag0 * Iplus_Dprod_i
+            #self.Diag = self.Diag0/(1.+ self.Diag0 * self._precision.flatten())
 
-            self.P = (self.Diag / self.Diag0)[:,None] * self.psi1.T
+
+            self.P = Iplus_Dprod_i[:,None] * self.psi1.T
+            #self.P = (self.Diag / self.Diag0)[:,None] * self.psi1.T
             self.RPT0 = np.dot(self.Lmi,self.psi1)
-            self.L = np.linalg.cholesky(np.eye(self.M) + np.dot(self.RPT0,(1./self.Diag0 - self.Diag/(self.Diag0**2))[:,None]*self.RPT0.T))
+            self.L = np.linalg.cholesky(np.eye(self.M) + np.dot(self.RPT0,((1. - Iplus_Dprod_i)/self.Diag0)[:,None]*self.RPT0.T))
+            #self.L = np.linalg.cholesky(np.eye(self.M) + np.dot(self.RPT0,(1./self.Diag0 - Iplus_Dprod_i/self.Diag0)[:,None]*self.RPT0.T))
+            #self.L = np.linalg.cholesky(np.eye(self.M) + np.dot(self.RPT0,(1./self.Diag0 - self.Diag/(self.Diag0**2))[:,None]*self.RPT0.T))
             self.R,info = linalg.flapack.dtrtrs(self.L,self.Lmi,lower=1)
             self.RPT = np.dot(self.R,self.P.T)
             self.Sigma = np.diag(self.Diag) + np.dot(self.RPT.T,self.RPT)
@@ -89,7 +95,7 @@ class generalized_FITC(sparse_GP):
             self.mu = self.w + np.dot(self.P,self.gamma)
 
             # Remove extra term from dL_dpsi1
-            self.dL_dpsi1 += -mdot(self.Kmmi,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)) #dB
+            self.dL_dpsi1 -= mdot(self.Kmmi,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)) #dB
         else:
             raise NotImplementedError, "homoscedastic fitc not implemented"
             # Remove extra term from dL_dpsi1
@@ -180,18 +186,6 @@ class generalized_FITC(sparse_GP):
                 var_ = Kxx_ + np.dot(KR0T,np.dot(Sigma_H - np.eye(self.M),KR0T.T))
                 var = (Kxx + np.sum(KR0T.T*np.dot(Sigma_H - np.eye(self.M),KR0T.T),0))[:,None]
             return mu_star[:,None],var
-            """
-            Kx = self.kern.K(self.Z, Xnew)
-            mu = mdot(Kx.T, self.C/self.scale_factor, self.psi1V)
-            if full_cov:
-                Kxx = self.kern.K(Xnew)
-                var = Kxx - mdot(Kx.T, (self.Kmmi - self.C/self.scale_factor**2), Kx) #NOTE this won't work for plotting
-            else:
-                Kxx = self.kern.Kdiag(Xnew)
-                var = Kxx - np.sum(Kx*np.dot(self.Kmmi - self.C/self.scale_factor**2, Kx),0)
-            a = kjk
-            return mu,var[:,None]
-            """
         else:
             raise NotImplementedError, "homoscedastic fitc not implemented"
             """

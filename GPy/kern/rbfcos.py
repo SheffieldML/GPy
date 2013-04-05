@@ -5,7 +5,6 @@
 
 from kernpart import kernpart
 import numpy as np
-import hashlib
 
 class rbfcos(kernpart):
     def __init__(self,D,variance=1.,frequencies=None,bandwidths=None,ARD=False):
@@ -32,13 +31,13 @@ class rbfcos(kernpart):
             self.Nparam = 3
             if frequencies is not None:
                 frequencies = np.asarray(frequencies)
-                assert frequencies.size == 1, "Only one frequency needed for non-ARD kernel"
+                assert frequencies.size == 1, "Exactly one frequency needed for non-ARD kernel"
             else:
                 frequencies = np.ones(1)
 
             if bandwidths is not None:
                 bandwidths = np.asarray(bandwidths)
-                assert bandwidths.size == 1, "Only one bandwidth needed for non-ARD kernel"
+                assert bandwidths.size == 1, "Exactly one bandwidth needed for non-ARD kernel"
             else:
                 bandwidths = np.ones(1)
 
@@ -74,14 +73,15 @@ class rbfcos(kernpart):
         np.add(target,self.variance,target)
 
     def dK_dtheta(self,dL_dK,X,X2,target):
+        self._K_computations(X,X2)
         target[0] += np.sum(dL_dK*self._dvar)
         if self.ARD:
             for q in xrange(self.D):
-                target[q+1] += -2.*np.pi*self.variance*np.sum(dL_dK*self._dvar*np.tan(2.*np.pi*self.dist[:,:,q]*self.frequencies[q])*self.dist[:,:,q])
-                target[q+1+self.D] += -2.*np.pi**2*self.variance*np.sum(dL_dK*self._dvar*self.dist2[:,:,q])
+                target[q+1] += -2.*np.pi*self.variance*np.sum(dL_dK*self._dvar*np.tan(2.*np.pi*self._dist[:,:,q]*self.frequencies[q])*self._dist[:,:,q])
+                target[q+1+self.D] += -2.*np.pi**2*self.variance*np.sum(dL_dK*self._dvar*self._dist2[:,:,q])
         else:
-            target[1] += -2.*np.pi*self.variance*np.sum(dL_dK*self._dvar*np.sum(np.tan(2.*np.pi*self.dist*self.frequencies)*self.dist,-1))
-            target[2] += -2.*np.pi**2*self.variance*np.sum(dL_dK*self._dvar*self.dist2.sum(-1))
+            target[1] += -2.*np.pi*self.variance*np.sum(dL_dK*self._dvar*np.sum(np.tan(2.*np.pi*self._dist*self.frequencies)*self._dist,-1))
+            target[2] += -2.*np.pi**2*self.variance*np.sum(dL_dK*self._dvar*self._dist2.sum(-1))
 
 
     def dKdiag_dtheta(self,dL_dKdiag,X,target):
@@ -102,8 +102,8 @@ class rbfcos(kernpart):
 
             #do the distances: this will be high memory for large D
             #NB: we don't take the abs of the dist because cos is symmetric
-            self.dist = X[:,None,:] - X2[None,:,:]
-            self.dist2 = np.square(self.dist)
+            self._dist = X[:,None,:] - X2[None,:,:]
+            self._dist2 = np.square(self._dist)
 
             #ensure the next section is computed:
             self._params = np.empty(self.Nparam)
@@ -111,7 +111,7 @@ class rbfcos(kernpart):
         if not np.all(self._params == self._get_params()):
             self._params == self._get_params().copy()
 
-            self._rbf_part = np.exp(-2.*np.pi**2*np.sum(self.dist2*self.bandwidths,-1))
-            self._cos_part = np.prod(np.cos(2.*np.pi*self.dist*self.frequencies),-1)
+            self._rbf_part = np.exp(-2.*np.pi**2*np.sum(self._dist2*self.bandwidths,-1))
+            self._cos_part = np.prod(np.cos(2.*np.pi*self._dist*self.frequencies),-1)
             self._dvar = self._rbf_part*self._cos_part
 

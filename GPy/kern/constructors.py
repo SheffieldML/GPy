@@ -24,6 +24,7 @@ from prod_orthogonal import prod_orthogonal as prod_orthogonalpart
 from symmetric import symmetric as symmetric_part
 from coregionalise import coregionalise as coregionalise_part
 from rational_quadratic import rational_quadratic as rational_quadraticpart
+from rbfcos import rbfcos as rbfcospart
 #TODO these s=constructors are not as clean as we'd like. Tidy the code up
 #using meta-classes to make the objects construct properly wthout them.
 
@@ -310,3 +311,10 @@ def fixed(D, K, variance=1.):
     """
     part = fixedpart(D, K, variance)
     return kern(D, [part])
+
+def rbfcos(D,variance=1.,frequencies=None,bandwidths=None,ARD=False):
+    """
+    construct a rbfcos kernel
+    """
+    part = rbfcospart(D,variance,frequencies,bandwidths,ARD)
+    return kern(D,[part])

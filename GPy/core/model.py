@@ -23,13 +23,13 @@ class model(parameterised):
         self._set_params(self._get_params())
         self.preferred_optimizer = 'tnc'
     def _get_params(self):
-        raise NotImplementedError, "this needs to be implemented to utilise the model class"
+        raise NotImplementedError, "this needs to be implemented to use the model class"
     def _set_params(self,x):
-        raise NotImplementedError, "this needs to be implemented to utilise the model class"
+        raise NotImplementedError, "this needs to be implemented to use the model class"
     def log_likelihood(self):
-        raise NotImplementedError, "this needs to be implemented to utilise the model class"
+        raise NotImplementedError, "this needs to be implemented to use the model class"
     def _log_likelihood_gradients(self):
-        raise NotImplementedError, "this needs to be implemented to utilise the model class"
+        raise NotImplementedError, "this needs to be implemented to use the model class"
 
     def set_prior(self,which,what):
         """

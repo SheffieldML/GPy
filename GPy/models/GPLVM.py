@@ -81,6 +81,7 @@ class GPLVM(GP):
                 k = [p for p in self.kern.parts if p.name in ['rbf','linear']]
                 if (not len(k)==1) or (not k[0].ARD):
                     raise ValueError, "cannot Atomatically determine which dimensions to plot, please pass 'which_indices'"
+                input_1, input_2 = self.lengthscale_order()
                 k = k[0]
                 if k.name=='rbf':
                     input_1, input_2 = np.argsort(k.lengthscale)[:2]
@@ -92,7 +93,7 @@ class GPLVM(GP):
 	Xtest_full = np.zeros((Xtest.shape[0], self.X.shape[1]))
 	Xtest_full[:, :2] = Xtest
 	mu, var, low, up = self.predict(Xtest_full)
-	var = var[:, :2]
+	var = var.mean(axis=1) # this was var[:, :2] edit by Neil
         pb.imshow(var.reshape(resolution,resolution).T[::-1,:],extent=[xmin[0],xmax[0],xmin[1],xmax[1]],cmap=pb.cm.binary,interpolation='bilinear')
 
 
@@ -122,4 +123,4 @@ class GPLVM(GP):
         pb.xlim(xmin[0],xmax[0])
         pb.ylim(xmin[1],xmax[1])
 
-        return input_1, input_2
+        return pb.gca() #input_1, input_2 temporary removal, to return axes.

@@ -3,6 +3,8 @@
 
 import numpy as np
 import pylab as pb
+from matplotlib import pyplot as plt
+
 import GPy
 
 default_seed = np.random.seed(123344)
@@ -54,4 +56,52 @@ def GPLVM_oil_100():
     # plot
     print(m)
     m.plot_latent(labels=data['Y'].argmax(axis=1))
+    return m
+
+def oil_100():
+    data = GPy.util.datasets.oil_100()
+    m = GPy.models.GPLVM(data['X'], 2)
+
+    # optimize
+    m.ensure_default_constraints()
+    m.optimize(messages=1, max_iters=2)
+
+    # plot
+    print(m)
+    #m.plot_latent(labels=data['Y'].argmax(axis=1))
+    return m
+
+def brendan_faces():
+    data = GPy.util.datasets.brendan_faces()
+    Y = data['Y'][0:-1:10, :]
+    m = GPy.models.GPLVM(data['Y'], 2)
+
+    # optimize
+    m.ensure_default_constraints()
+    m.optimize(messages=1, max_f_eval=10000)
+
+    ax = m.plot_latent()
+    y = m.likelihood.Y[0,:]
+    data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, invert=False, scale=False)
+    lvm_visualizer = GPy.util.visualize.lvm(m, data_show, ax)
+    raw_input('Press enter to finish')
+    plt.close('all')
+
+    return m
+
+def stick():
+    data = GPy.util.datasets.stick()
+    m = GPy.models.GPLVM(data['Y'], 2)
+    
+    # optimize
+    m.ensure_default_constraints()
+    m.optimize(messages=1, max_f_eval=10000)
+
+    ax = m.plot_latent()
+    y = m.likelihood.Y[0,:]
+    data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
+    lvm_visualizer = GPy.util.visualize.lvm(m, data_show, ax)
+    raw_input('Press enter to finish')
+    plt.close('all')
+
     return m

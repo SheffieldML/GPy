@@ -8,11 +8,12 @@ from coxGP.python.likelihoods.likelihood_function import student_t
 
 def timing():
     real_var = 0.1
-    times = 1000
+    times = 1
     deg_free = 10
     real_sd = np.sqrt(real_var)
     the_is = np.zeros(times)
-    X = np.linspace(0.0, 10.0, 30)[:, None]
+    X = np.linspace(0.0, 10.0, 500)[:, None]
+
     for a in xrange(times):
         Y = np.sin(X) + np.random.randn(*X.shape)*real_var
         Yc = Y.copy()
@@ -21,6 +22,8 @@ def timing():
         Yc[25] += 10
         Yc[23] += 10
         Yc[24] += 10
+        Yc[300] += 10
+        Yc[400] += 10000
 
         edited_real_sd = real_sd
         kernel1 = GPy.kern.rbf(X.shape[1])
@@ -33,9 +36,9 @@ def timing():
         m.optimize()
         the_is[a] = m.likelihood.i
 
+    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
     print the_is
     print np.mean(the_is)
-    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
 
 def student_t_approx():

@@ -128,7 +128,9 @@ class Laplace(likelihood):
         :K: Covariance matrix
         """
         self.K = K.copy()
-        self.Ki, _, _, log_Kdet = pdinv(K)
+        print "Inverting K"
+        #self.Ki, _, _, log_Kdet = pdinv(K)
+        print "K inverted, optimising"
         if self.rasm:
             self.f_hat = self.rasm_mode(K)
         else:
@@ -196,6 +198,7 @@ class Laplace(likelihood):
         """
         #W is diagnoal so its sqrt is just the sqrt of the diagonal elements
         W_12 = np.sqrt(W)
+        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
         B = np.eye(K.shape[0]) + mdot(W_12, K, W_12)
         L = jitchol(B)
         return (B, L, W_12)
@@ -205,9 +208,7 @@ class Laplace(likelihood):
         :K: Covariance matrix
         :returns: f_mode
         """
-        self.K = K.copy()
         f = np.zeros((self.N, 1))
-        (self.Ki, _, _, self.log_Kdet) = pdinv(K)
         LOG_K_CONST = -(0.5 * self.log_Kdet)
 
         #FIXME: Can we get rid of this horrible reshaping?
@@ -227,7 +228,7 @@ class Laplace(likelihood):
         f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess)
         return f_hat[:, None]
 
-    def rasm_mode(self, K, MAX_ITER=5000000000000000, MAX_RESTART=30):
+    def rasm_mode(self, K, MAX_ITER=500000, MAX_RESTART=50):
         """
         Rasmussens numerically stable mode finding
         For nomenclature see Rasmussen & Williams 2006
@@ -249,6 +250,7 @@ class Laplace(likelihood):
         rs = 0
         i = 0
         while difference > epsilon:# and i < MAX_ITER and rs < MAX_RESTART:
+            print "optimising"
             f_old = f.copy()
             W = -np.diag(self.likelihood_function.link_hess(self.data, f))
             if not self.likelihood_function.log_concave:
@@ -259,22 +261,25 @@ class Laplace(likelihood):
                                     #If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                     #To cause the posterior to become less certain than the prior and likelihood,
                                     #This is a property only held by non-log-concave likelihoods
+            print "Decomposing"
             B, L, W_12 = self._compute_B_statistics(K, W)
+            print "Finding f"
 
-            W_f = np.dot(W, f)
+            W_f = np.dot(W, f)#FIXME: Make this fast as W_12 is diagonal!
             grad = self.likelihood_function.link_grad(self.data, f)[:, None]
             #Find K_i_f
             b = W_f + grad
             #b = np.dot(W, f) + np.dot(self.Ki, f)*(1-step_size) + step_size*self.likelihood_function.link_grad(self.data, f)[:, None]
             #TODO: Check L is lower
-            solve_L = cho_solve((L, True), mdot(W_12, (K, b)))
-            a = b - mdot(W_12, solve_L)
+
+            solve_L = cho_solve((L, True), mdot(W_12, (K, b)))#FIXME: Make this fast as W_12 is diagonal!
+            a = b - mdot(W_12, solve_L)#FIXME: Make this fast as W_12 is diagonal!
             #f = np.dot(K, a)
 
             #a should be equal to Ki*f now so should be able to use it
             c = mdot(K, W_f) + f*(1-step_size) + step_size*np.dot(K, grad)
-            solve_L = cho_solve((L, True), mdot(W_12, c))
-            f = c - mdot(K, W_12, solve_L)
+            solve_L = cho_solve((L, True), mdot(W_12, c))#FIXME: Make this fast as W_12 is diagonal!
+            f = c - mdot(K, W_12, solve_L)#FIXME: Make this fast as W_12 is diagonal!
 
             #K_w_f = mdot(K, (W, f))
             #c = step_size*mdot(K, self.likelihood_function.link_grad(self.data, f)[:, None]) - step_size*f
@@ -302,5 +307,5 @@ class Laplace(likelihood):
             i += 1
 
         self.i = i
-        print "{i} steps".format(i=i)
+        #print "{i} steps".format(i=i)
         return f

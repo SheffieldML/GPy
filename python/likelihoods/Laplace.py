@@ -3,8 +3,14 @@ import scipy as sp
 import GPy
 from scipy.linalg import cholesky, eig, inv, det, cho_solve
 from GPy.likelihoods.likelihood import likelihood
-from GPy.util.linalg import pdinv, mdot, jitchol
+from GPy.util.linalg import pdinv, mdot, jitchol, chol_inv
+from scipy.linalg.lapack import dtrtrs
 #import numpy.testing.assert_array_equal
+
+#TODO: Move this to utils
+def det_ln_diag(A):
+    return np.log(np.diagonal(A)).sum()
+
 
 class Laplace(likelihood):
     """Laplace approximation to a posterior"""
@@ -60,7 +66,6 @@ class Laplace(likelihood):
         pass # TODO: Laplace likelihood might want to take some parameters...
 
     def _gradients(self, partial):
-        #return np.zeros(0) # TODO: Laplace likelihood might want to take some parameters...
         return np.zeros(0) # TODO: Laplace likelihood might want to take some parameters...
         raise NotImplementedError
 
@@ -99,9 +104,26 @@ class Laplace(likelihood):
             (self.Sigma_tilde, _, _, _) = pdinv(self.Sigma_tilde_i)
         else:
             self.Sigma_tilde = inv(self.Sigma_tilde_i)
-        #f_hat? should be f but we must have optimized for them I guess?
-        #Y_tilde = mdot(self.Sigma_tilde, self.hess_hat_i, self.f_hat)
         Y_tilde = mdot(self.Sigma_tilde, (self.Ki + self.W), self.f_hat)
+
+        #dtritri -> L -> L_i
+        #dtrtrs -> L.T*W, L_i -> (L.T*W)_i*L_i
+        #((L.T*w)_i + I)f_hat = y_tilde
+        L = jitchol(self.K)
+        Li = chol_inv(L)
+        Lt_W = np.dot(L.T, self.W)
+        if np.abs(det(Lt_W)) < epsilon:
+            print "WARNING: Transformed covariance matrix is signular!"
+        Lt_W_i_Li = dtrtrs(Lt_W, Li, lower=False)[0]
+        Y_tilde = np.dot(Lt_W_i_Li + np.eye(self.N), self.f_hat)
+        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+
+        #if np.abs(det(KW)) < epsilon:
+            #print "WARNING: Transformed covariance matrix is signular!"
+        #KW_i = inv(KW)
+        #Y_tilde = mdot(KW_i + np.eye(self.N), self.f_hat)
+
+        #Y_tilde = mdot(self.Sigma_tilde, (self.Ki + self.W), self.f_hat)
         #KW = np.dot(self.K, self.W)
         #KW_i, _, _, _ = pdinv(KW)
         #Y_tilde = mdot((KW_i + np.eye(self.N)), self.f_hat)
@@ -110,16 +132,38 @@ class Laplace(likelihood):
                     #+ 0.5*mdot(Y_tilde.T, (self.Sigma_tilde_i, Y_tilde))
                     #- mdot(Y_tilde.T, (self.Sigma_tilde_i, self.f_hat))
                    #)
-        _, _, _, ln_W12_Bi_W12_i = pdinv(mdot(self.W_12, self.Bi, self.W_12))
-        f_Si_f = mdot(self.f_hat.T, self.Sigma_tilde_i, self.f_hat)
-        Z_tilde = -self.NORMAL_CONST + self.ln_z_hat -0.5*ln_W12_Bi_W12_i - 0.5*self.f_Ki_f - 0.5*f_Si_f
+        #_, _, _, ln_W12_Bi_W12_i = pdinv(mdot(self.W_12, self.Bi, self.W_12))
+        #f_Si_f = mdot(self.f_hat.T, self.Sigma_tilde_i, self.f_hat)
+        #Z_tilde = -self.NORMAL_CONST + self.ln_z_hat -0.5*ln_W12_Bi_W12_i - 0.5*self.f_Ki_f - 0.5*f_Si_f
+
+        #f_W_f = mdot(self.f_hat.T, self.W, self.f_hat)
+        #f_Y_f = mdot(Y_tilde, self.W, Y_tilde)
+        #Z_tilde = (np.dot(self.W, self.f_hat) - 0.5*y_W_y + self.ln_z_hat
+                   #- 0.5*mdot(self.f_hat, (
+
+        f_Ki_W_f = mdot(self.f_hat.T, (self.Ki + self.W), self.f_hat)
+        y_W_f = mdot(Y_tilde.T, self.W, self.f_hat)
+        y_W_y = mdot(Y_tilde.T, self.W, Y_tilde)
+        self.ln_W_det = det_ln_diag(self.W)
+        Z_tilde = (self.NORMAL_CONST
+                   - 0.5*self.ln_K_det
+                   - 0.5*self.ln_W_det
+                   - 0.5*self.ln_Ki_W_i_det
+                   - 0.5*f_Ki_W_f
+                   - 0.5*y_W_y
+                   + y_W_f
+                   + self.ln_z_hat
+                   )
+
+        Sigma_tilde = inv(self.W) # Damn
 
         #Convert to float as its (1, 1) and Z must be a scalar
         self.Z = np.float64(Z_tilde)
         self.Y = Y_tilde
         self.YYT = np.dot(self.Y, self.Y.T)
-        self.covariance_matrix = self.Sigma_tilde
+        self.covariance_matrix = Sigma_tilde
         self.precision = 1 / np.diag(self.covariance_matrix)[:, None]
+        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
     def fit_full(self, K):
         """
@@ -128,9 +172,7 @@ class Laplace(likelihood):
         :K: Covariance matrix
         """
         self.K = K.copy()
-        print "Inverting K"
-        #self.Ki, _, _, log_Kdet = pdinv(K)
-        print "K inverted, optimising"
+        self.Ki, _, _, self.ln_K_det = pdinv(K)
         if self.rasm:
             self.f_hat = self.rasm_mode(K)
         else:
@@ -144,46 +186,24 @@ class Laplace(likelihood):
                                    #If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                    #To cause the posterior to become less certain than the prior and likelihood,
                                    #This is a property only held by non-log-concave likelihoods
+
         #TODO: Could save on computation when using rasm by returning these, means it isn't just a "mode finder" though
-        self.B, L, self.W_12 = self._compute_B_statistics(K, self.W)
+        self.B, self.B_chol, self.W_12 = self._compute_B_statistics(K, self.W)
         self.Bi, _, _, B_det = pdinv(self.B)
-        #ln_W_det = np.linalg.det(self.W)
-        #ln_B_det = np.linalg.det(self.B)
-        ln_det = np.linalg.det(np.eye(self.N) - mdot(self.W_12, self.Bi, self.W_12, K))
+
+        Ki_W_i = self.K - mdot(self.K, self.W_12, self.Bi, self.W_12, self.K)
+        self.ln_Ki_W_i_det = np.linalg.det(Ki_W_i)
+
         b = np.dot(self.W, self.f_hat) + self.likelihood_function.link_grad(self.data, self.f_hat)[:, None]
-        #TODO: Check L is lower
-        solve_L = cho_solve((L, True), mdot(self.W_12, (K, b)))
-        a = b - mdot(self.W_12, solve_L)
+        solve_chol = cho_solve((self.B_chol, True), mdot(self.W_12, (K, b)))
+        a = b - mdot(self.W_12, solve_chol)
         self.f_Ki_f = np.dot(self.f_hat.T, a)
 
-        #self.hess_hat = self.Ki + self.W
-        #(self.hess_hat, _, _, self.log_hess_hat_i_det) = pdinv(self.hess_hat)
-
-        ##Check hess_hat is positive definite
-        #try:
-            #cholesky(self.hess_hat)
-        #except:
-            #raise ValueError("Must be positive definite")
-
-        ##Check its eigenvalues are positive
-        #eigenvalues = eig(self.hess_hat)
-        #if not np.all(eigenvalues > 0):
-            #raise ValueError("Eigen values not positive")
-
-        #z_hat is how much we need to scale the normal distribution by to get the area of our approximation close to
-        #the area of p(f)p(y|f) we do this by matching the height of the distributions at the mode
-        #z_hat = -0.5*ln|H| - 0.5*ln|K| - 0.5*f_hat*K^{-1}*f_hat \sum_{n} ln p(y_n|f_n)
-        #Unsure whether its log_hess or log_hess_i
-        #self.ln_z_hat = (- 0.5*self.log_hess_hat_i_det
-                         #+ 0.5*self.log_Kdet
-                         #+ self.likelihood_function.link_function(self.data, self.f_hat)
-                         ##+ self.likelihood_function.link_function(self.data, self.f_hat)
-                         #- 0.5*mdot(self.f_hat.T, (self.Ki, self.f_hat))
-                         #)
-        self.ln_z_hat = (- 0.5*log_Kdet
+        self.ln_z_hat = (  self.NORMAL_CONST
                          - 0.5*self.f_Ki_f
+                         - 0.5*self.ln_K_det
+                         + 0.5*self.ln_Ki_W_i_det
                          + self.likelihood_function.link_function(self.data, self.f_hat)
-                         + 0.5*ln_det
                          )
 
         return self._compute_GP_variables()
@@ -198,7 +218,7 @@ class Laplace(likelihood):
         """
         #W is diagnoal so its sqrt is just the sqrt of the diagonal elements
         W_12 = np.sqrt(W)
-        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+        #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
         B = np.eye(K.shape[0]) + mdot(W_12, K, W_12)
         L = jitchol(B)
         return (B, L, W_12)
@@ -209,12 +229,12 @@ class Laplace(likelihood):
         :returns: f_mode
         """
         f = np.zeros((self.N, 1))
-        LOG_K_CONST = -(0.5 * self.log_Kdet)
 
         #FIXME: Can we get rid of this horrible reshaping?
+        #ONLY WORKS FOR 1D DATA
         def obj(f):
             res = -1 * (self.likelihood_function.link_function(self.data[:, 0], f) - 0.5 * mdot(f.T, (self.Ki, f))
-                        + self.NORMAL_CONST + LOG_K_CONST)
+                        + self.NORMAL_CONST)
             return float(res)
 
         def obj_grad(f):
@@ -249,21 +269,15 @@ class Laplace(likelihood):
         step_size = 1
         rs = 0
         i = 0
-        while difference > epsilon:# and i < MAX_ITER and rs < MAX_RESTART:
-            print "optimising"
+        while difference > epsilon:  # and i < MAX_ITER and rs < MAX_RESTART:
             f_old = f.copy()
             W = -np.diag(self.likelihood_function.link_hess(self.data, f))
             if not self.likelihood_function.log_concave:
-                #if np.any(W < 0):
-                    #print "NEGATIVE VALUES :("
-                    #pass
                 W[W < 0] = 1e-6     #FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                     #If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                     #To cause the posterior to become less certain than the prior and likelihood,
                                     #This is a property only held by non-log-concave likelihoods
-            print "Decomposing"
             B, L, W_12 = self._compute_B_statistics(K, W)
-            print "Finding f"
 
             W_f = np.dot(W, f)#FIXME: Make this fast as W_12 is diagonal!
             grad = self.likelihood_function.link_grad(self.data, f)[:, None]
@@ -272,14 +286,14 @@ class Laplace(likelihood):
             #b = np.dot(W, f) + np.dot(self.Ki, f)*(1-step_size) + step_size*self.likelihood_function.link_grad(self.data, f)[:, None]
             #TODO: Check L is lower
 
-            solve_L = cho_solve((L, True), mdot(W_12, (K, b)))#FIXME: Make this fast as W_12 is diagonal!
-            a = b - mdot(W_12, solve_L)#FIXME: Make this fast as W_12 is diagonal!
-            #f = np.dot(K, a)
-
             #a should be equal to Ki*f now so should be able to use it
             c = mdot(K, W_f) + f*(1-step_size) + step_size*np.dot(K, grad)
             solve_L = cho_solve((L, True), mdot(W_12, c))#FIXME: Make this fast as W_12 is diagonal!
             f = c - mdot(K, W_12, solve_L)#FIXME: Make this fast as W_12 is diagonal!
+
+            solve_L = cho_solve((L, True), mdot(W_12, (K, b)))#FIXME: Make this fast as W_12 is diagonal!
+            a = b - mdot(W_12, solve_L)#FIXME: Make this fast as W_12 is diagonal!
+            #f = np.dot(K, a)
 
             #K_w_f = mdot(K, (W, f))
             #c = step_size*mdot(K, self.likelihood_function.link_grad(self.data, f)[:, None]) - step_size*f
@@ -292,7 +306,6 @@ class Laplace(likelihood):
             old_obj = new_obj
             new_obj = obj(a, f)
             difference = new_obj - old_obj
-            #print "Difference: ", difference
             if difference < 0:
                 #print "Objective function rose", difference
                 #If the objective function isn't rising, restart optimization
@@ -307,5 +320,4 @@ class Laplace(likelihood):
             i += 1
 
         self.i = i
-        #print "{i} steps".format(i=i)
         return f

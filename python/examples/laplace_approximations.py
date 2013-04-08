@@ -140,7 +140,6 @@ def student_t_approx():
     m.plot()
     plt.plot(X_full, Y_full)
     plt.ylim(-2.5, 2.5)
-    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
     print "Clean student t, ncg"
     t_distribution = student_t(deg_free, sigma=edited_real_sd)

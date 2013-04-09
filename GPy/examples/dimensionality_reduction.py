@@ -42,16 +42,36 @@ def BGPLVM(seed = default_seed):
 
     return m
 
-def GPLVM_oil_100():
+def GPLVM_oil_100(optimize=True,M=15):
+    data = GPy.util.datasets.oil_100()
+
+    # create simple GP model
+    kernel = GPy.kern.rbf(6, ARD = True) + GPy.kern.bias(6)
+    m = GPy.models.Bayesian_GPLVM(data['X'], 6, kernel=kernel, M=M)
+    m.data_labels = data['Y'].argmax(axis=1)
+
+    # optimize
+    m.ensure_default_constraints()
+    if optimize:
+        m.optimize('scg',messages=1)
+
+    # plot
+    print(m)
+    m.plot_latent(labels=m.data_labels)
+    return m
+
+def BGPLVM_oil_100(optimize=True):
     data = GPy.util.datasets.oil_100()
 
     # create simple GP model
     kernel = GPy.kern.rbf(6, ARD = True) + GPy.kern.bias(6)
     m = GPy.models.GPLVM(data['X'], 6, kernel = kernel)
+    m.data_labels = data['Y'].argmax(axis=1)
 
     # optimize
     m.ensure_default_constraints()
-    m.optimize(messages=1)
+    if optimize:
+        m.optimize(messages=1)
 
     # plot
     print(m)

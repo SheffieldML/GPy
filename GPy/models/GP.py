@@ -269,7 +269,7 @@ class GP(model):
                 Zu = self.Z*self._Xstd + self._Xmean
                 pb.plot(Zu,Zu*0+pb.ylim()[0],'r|',mew=1.5,markersize=12)
                 if self.has_uncertain_inputs:
-                    pb.errorbar(self.X[:,0], pb.ylim()[0]+np.zeros(self.N), xerr=2*np.sqrt(self.X_uncertainty.flatten()))
+                    pb.errorbar(self.X[:,0], pb.ylim()[0]+np.zeros(self.N), xerr=2*np.sqrt(self.X_variance.flatten()))
 
         elif self.X.shape[1]==2: #FIXME
             resolution = resolution or 50

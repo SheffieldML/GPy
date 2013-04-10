@@ -68,12 +68,6 @@ class GPLVM(GP):
 
         util.plot.Tango.reset()
 
-        # this goes against the current standard in GPy, which currently is to not create
-        # figures in the plot() functions. I think the standard should be changed in order
-        # to accomodate cases like this
-        fig = pb.figure()
-        ax = fig.add_subplot(111)
-
         if labels is None:
             labels = np.ones(self.N)
         if which_indices is None:
@@ -83,15 +77,10 @@ class GPLVM(GP):
             if self.Q==2:
                 input_1, input_2 = 0,1
             else:
-                #try to find a linear of RBF kern in the kernel
-                k = [p for p in self.kern.parts if p.name in ['rbf','linear']]
-                if (not len(k)==1) or (not k[0].ARD):
+                try:
+                    input_1, input_2 = np.argsort(self.input_sensitivity())[:2]
+                except:
                     raise ValueError, "cannot Atomatically determine which dimensions to plot, please pass 'which_indices'"
-                k = k[0]
-                if k.name=='rbf':
-                    input_1, input_2 = np.argsort(k.lengthscale)[:2]
-                elif k.name=='linear':
-                    input_1, input_2 = np.argsort(k.variances)[::-1][:2]
         else:
             input_1, input_2 = which_indices
 
@@ -131,4 +120,4 @@ class GPLVM(GP):
         pb.ylim(xmin[1],xmax[1])
         pb.grid(b=False) # remove the grid if present, it doesn't look good
         ax.set_aspect('auto') # set a nice aspect ratio
-        return input_1, input_2
+        return pb.gca() #input_1, input_2 temporary removal, to return axes.

@@ -30,7 +30,7 @@ def pddet(A):
 class Laplace(likelihood):
     """Laplace approximation to a posterior"""
 
-    def __init__(self, data, likelihood_function, rasm=True):
+    def __init__(self, data, likelihood_function, extra_data=None, rasm=True):
         """
         Laplace Approximation
 
@@ -44,13 +44,15 @@ class Laplace(likelihood):
         Arguments
         ---------
 
-        :data: @todo
+        :data: array of data the likelihood function is approximating
         :likelihood_function: likelihood function - subclass of likelihood_function
+        :extra_data: additional data used by some likelihood functions, for example survival likelihoods need censoring data
         :rasm: Flag of whether to use rasmussens numerically stable mode finding or simple ncg optimisation
 
         """
         self.data = data
         self.likelihood_function = likelihood_function
+        self.extra_data = extra_data
         self.rasm = rasm
 
         #Inital values
@@ -179,7 +181,7 @@ class Laplace(likelihood):
             self.f_hat = self.ncg_mode(K)
 
         #At this point get the hessian matrix
-        self.W = -np.diag(self.likelihood_function.link_hess(self.data, self.f_hat))
+        self.W = -np.diag(self.likelihood_function.link_hess(self.data, self.f_hat, extra_data=self.extra_data))
 
         if not self.likelihood_function.log_concave:
             self.W[self.W < 0] = 1e-6  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
@@ -194,7 +196,7 @@ class Laplace(likelihood):
         Ki_W_i = self.K - mdot(self.K, self.W_12, self.Bi, self.W_12, self.K)
         self.ln_Ki_W_i_det = np.linalg.det(Ki_W_i)
 
-        b = np.dot(self.W, self.f_hat) + self.likelihood_function.link_grad(self.data, self.f_hat)[:, None]
+        b = np.dot(self.W, self.f_hat) + self.likelihood_function.link_grad(self.data, self.f_hat, extra_data=self.extra_data)[:, None]
         solve_chol = cho_solve((self.B_chol, True), mdot(self.W_12, (K, b)))
         a = b - mdot(self.W_12, solve_chol)
         self.f_Ki_f = np.dot(self.f_hat.T, a)
@@ -203,7 +205,7 @@ class Laplace(likelihood):
         self.ln_z_hat = (- 0.5*self.f_Ki_f
                          - 0.5*self.ln_K_det
                          + 0.5*self.ln_Ki_W_i_det
-                         + self.likelihood_function.link_function(self.data, self.f_hat)
+                         + self.likelihood_function.link_function(self.data, self.f_hat, extra_data=self.extra_data)
                          )
 
         return self._compute_GP_variables()
@@ -236,16 +238,16 @@ class Laplace(likelihood):
         #FIXME: Can we get rid of this horrible reshaping?
         #ONLY WORKS FOR 1D DATA
         def obj(f):
-            res = -1 * (self.likelihood_function.link_function(self.data[:, 0], f) - 0.5 * np.dot(f.T, np.dot(self.Ki, f))
+            res = -1 * (self.likelihood_function.link_function(self.data[:, 0], f, extra_data=self.extra_data) - 0.5 * np.dot(f.T, np.dot(self.Ki, f))
                         + self.NORMAL_CONST)
             return float(res)
 
         def obj_grad(f):
-            res = -1 * (self.likelihood_function.link_grad(self.data[:, 0], f) - np.dot(self.Ki, f))
+            res = -1 * (self.likelihood_function.link_grad(self.data[:, 0], f, extra_data=self.extra_data) - np.dot(self.Ki, f))
             return np.squeeze(res)
 
         def obj_hess(f):
-            res = -1 * (--np.diag(self.likelihood_function.link_hess(self.data[:, 0], f)) - self.Ki)
+            res = -1 * (--np.diag(self.likelihood_function.link_hess(self.data[:, 0], f, extra_data=self.extra_data)) - self.Ki)
             return np.squeeze(res)
 
         f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess)
@@ -267,7 +269,7 @@ class Laplace(likelihood):
 
         def obj(a, f):
             #Careful of shape of data!
-            return -0.5*np.dot(a.T, f) + self.likelihood_function.link_function(self.data, f)
+            return -0.5*np.dot(a.T, f) + self.likelihood_function.link_function(self.data, f, extra_data=self.extra_data)
 
         difference = np.inf
         epsilon = 1e-6
@@ -276,7 +278,7 @@ class Laplace(likelihood):
         i = 0
         while difference > epsilon and i < MAX_ITER and rs < MAX_RESTART:
             f_old = f.copy()
-            W = -np.diag(self.likelihood_function.link_hess(self.data, f))
+            W = -np.diag(self.likelihood_function.link_hess(self.data, f, extra_data=self.extra_data))
             if not self.likelihood_function.log_concave:
                 W[W < 0] = 1e-6     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                     # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
@@ -285,7 +287,7 @@ class Laplace(likelihood):
             B, L, W_12 = self._compute_B_statistics(K, W)
 
             W_f = np.dot(W, f)
-            grad = self.likelihood_function.link_grad(self.data, f)[:, None]
+            grad = self.likelihood_function.link_grad(self.data, f, extra_data=self.extra_data)[:, None]
             #Find K_i_f
             b = W_f + grad
 

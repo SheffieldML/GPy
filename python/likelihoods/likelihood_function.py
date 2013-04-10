@@ -4,6 +4,7 @@ import numpy as np
 from GPy.likelihoods.likelihood_functions import likelihood_function
 from scipy import stats
 
+
 class student_t(likelihood_function):
     """Student t likelihood distribution
     For nomanclature see Bayesian Data Analysis 2003 p576
@@ -24,15 +25,16 @@ class student_t(likelihood_function):
         self.log_concave = False
 
     @property
-    def variance(self):
+    def variance(self, extra_data=None):
         return (self.v / float(self.v - 2)) * (self.sigma**2)
 
-    def link_function(self, y, f):
+    def link_function(self, y, f, extra_data=None):
         """link_function $\ln p(y|f)$
         $$\ln p(y_{i}|f_{i}) = \ln \Gamma(\frac{v+1}{2}) - \ln \Gamma(\frac{v}{2})\sqrt{v \pi}\sigma - \frac{v+1}{2}\ln (1 + \frac{1}{v}\left(\frac{y_{i} - f_{i}}{\sigma}\right)^2$$
 
         :y: data
         :f: latent variables f
+        :extra_data: extra_data which is not used in student t distribution
         :returns: float(likelihood evaluated for this point)
 
         """
@@ -49,7 +51,7 @@ class student_t(likelihood_function):
                      )
         return np.sum(objective)
 
-    def link_grad(self, y, f):
+    def link_grad(self, y, f, extra_data=None):
         """
         Gradient of the link function at y, given f w.r.t f
 
@@ -57,6 +59,7 @@ class student_t(likelihood_function):
 
         :y: data
         :f: latent variables f
+        :extra_data: extra_data which is not used in student t distribution
         :returns: gradient of likelihood evaluated at points
 
         """
@@ -67,17 +70,18 @@ class student_t(likelihood_function):
         grad = ((self.v + 1) * e) / (self.v * (self.sigma**2) + (e**2))
         return np.squeeze(grad)
 
-    def link_hess(self, y, f):
+    def link_hess(self, y, f, extra_data=None):
         """
         Hessian at this point (if we are only looking at the link function not the prior) the hessian will be 0 unless i == j
         i.e. second derivative link_function at y given f f_j  w.r.t f and f_j
 
-        Will return diaganol of hessian, since every where else it is 0
+        Will return diagonal of hessian, since every where else it is 0
 
         $$\frac{d^{2}p(y_{i}|f_{i})}{df^{2}} = \frac{(v + 1)(y - f)}{v \sigma^{2} + (y_{i} - f_{i})^{2}}$$
 
         :y: data
         :f: latent variables f
+        :extra_data: extra_data which is not used in student t distribution
         :returns: array which is diagonal of covariance matrix (second derivative of likelihood evaluated at points)
         """
         y = np.squeeze(y)
@@ -139,7 +143,7 @@ class student_t(likelihood_function):
                                             #size=(num_f_samples, num_y_samples))
             #print student_t_samples.shape
 
-        student_t_samples = stats.t.rvs(self.v, loc=student_t_means[:,None],
+        student_t_samples = stats.t.rvs(self.v, loc=student_t_means[:, None],
                                         scale=self.sigma,
                                         size=(num_test_points, num_y_samples, num_f_samples))
         student_t_samples = np.reshape(student_t_samples,
@@ -152,7 +156,7 @@ class student_t(likelihood_function):
         ##Alernenately we could sample from int p(y|f*)p(f*|x*) df*
         def t_gaussian(f, mu, var):
             return (((gamma((self.v+1)*0.5)) / (gamma(self.v*0.5)*self.sigma*np.sqrt(self.v*np.pi))) * ((1+(1/self.v)*(((mu-f)/self.sigma)**2))**(-(self.v+1)*0.5))
-                        * ((1/(np.sqrt(2*np.pi*var)))*np.exp(-(1/(2*var)) *((mu-f)**2)))
+                    * ((1/(np.sqrt(2*np.pi*var)))*np.exp(-(1/(2*var)) *((mu-f)**2)))
                     )
 
         def t_gauss_int(mu, var):
@@ -167,4 +171,83 @@ class student_t(likelihood_function):
         p = vec_t_gauss_int(mu, var)
         p_025 = mu - p
         p_975 = mu + p
-        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+        return mu, np.nan*mu, p_025, p_975
+
+
+class weibull_survival(likelihood_function):
+    """Weibull t likelihood distribution for survival analysis with censoring
+        For nomanclature see Bayesian Survival Analysis
+
+    Laplace:
+    Needs functions to calculate
+    ln p(yi|fi)
+    dln p(yi|fi)_dfi
+    d2ln p(yi|fi)_d2fifj
+    """
+    def __init__(self, shape, scale):
+        self.shape = shape
+        self.scale = scale
+
+        #FIXME: This should be in the superclass
+        self.log_concave = True
+
+    def link_function(self, y, f, extra_data=None):
+        """
+        link_function $\ln p(y|f)$, i.e. log likelihood
+
+        $$\ln p(y|f) = v_{i}(\ln \alpha + (\alpha - 1)\ln y_{i} + f_{i}) - y_{i}^{\alpha}\exp(f_{i})$$
+
+        :y: time of event data
+        :f: latent variables f
+        :extra_data: the censoring indicator, 1 for censored, 0 for not
+        :returns: float(likelihood evaluated for this point)
+
+        """
+        y = np.squeeze(y)
+        f = np.squeeze(f)
+        assert y.shape == f.shape
+
+        v = extra_data
+        objective = v*(np.log(self.shape) + (self.shape - 1)*np.log(y) + f) - (y**self.shape)*np.exp(f)  # FIXME: CHECK THIS WITH BOOK, wheres scale?
+        return np.sum(objective)
+
+    def link_grad(self, y, f, extra_data=None):
+        """
+        Gradient of the link function at y, given f w.r.t f
+
+        $$\frac{d}{df} \ln p(y_{i}|f_{i}) = v_{i} - y_{i}\exp(f_{i})
+
+        :y: data
+        :f: latent variables f
+        :extra_data: the censoring indicator, 1 for censored, 0 for not
+        :returns: gradient of likelihood evaluated at points
+
+        """
+        y = np.squeeze(y)
+        f = np.squeeze(f)
+        assert y.shape == f.shape
+
+        v = extra_data
+        grad = v - (y**self.shape)*np.exp(f)
+        return np.squeeze(grad)
+
+    def link_hess(self, y, f, extra_data=None):
+        """
+        Hessian at this point (if we are only looking at the link function not the prior) the hessian will be 0 unless i == j
+        i.e. second derivative link_function at y given f f_j  w.r.t f and f_j
+
+        Will return diagonal of hessian, since every where else it is 0
+
+        $$\frac{d^{2}p(y_{i}|f_{i})}{df^{2}} = \frac{(v + 1)(y - f)}{v \sigma^{2} + (y_{i} - f_{i})^{2}}$$
+
+        :y: data
+        :f: latent variables f
+        :extra_data: extra_data which is not used hessian
+        :returns: array which is diagonal of covariance matrix (second derivative of likelihood evaluated at points)
+        """
+        y = np.squeeze(y)
+        f = np.squeeze(f)
+        assert y.shape == f.shape
+
+        hess = (y**self.shape)*np.exp(f)
+        return np.squeeze(hess)

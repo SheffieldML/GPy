@@ -217,8 +217,8 @@ class rbf(kernpart):
 
             #psi2
             self._psi2_denom = 2.*S[:,None,None,:]/self.lengthscale2+1. # N,M,M,Q
-            self._psi2_mudist = mu[:,None,None,:]-self._psi2_Zhat #N,M,M,Q
-            self._psi2_mudist_sq, self._psi2_exponent, _ = self.weave_stuff()
+            self._psi2_mudist, self._psi2_mudist_sq, self._psi2_exponent, _ = self.weave_psi2(mu,self._psi2_Zhat)
+            #self._psi2_mudist = mu[:,None,None,:]-self._psi2_Zhat #N,M,M,Q
             #self._psi2_mudist_sq = np.square(self._psi2_mudist)/(self.lengthscale2*self._psi2_denom)
             #self._psi2_exponent = np.sum(-self._psi2_Zdist_sq/4. -self._psi2_mudist_sq -0.5*np.log(self._psi2_denom),-1) #N,M,M
             self._psi2 = np.square(self.variance)*np.exp(self._psi2_exponent) # N,M,M
@@ -226,14 +226,18 @@ class rbf(kernpart):
             #store matrices for caching
             self._Z, self._mu, self._S = Z, mu,S
 
-    def weave_psi2(self):
+    def weave_psi2(self,mu,Zhat):
         weave_options = {'extra_compile_args': ['-O3']}
-        N,M,M,Q = self._psi2_mudist.shape
-        mudist = self._psi2_mudist
-        psi2_Zdist_sq = self._psi2_Zdist_sq
+
+        N,Q = mu.shape
+        M = Zhat.shape[0]
+
+        mudist = np.empty((N,M,M,Q))
         mudist_sq = np.empty((N,M,M,Q))
         psi2_exponent = np.zeros((N,M,M))
         psi2 = np.empty((N,M,M))
+
+        psi2_Zdist_sq = self._psi2_Zdist_sq
         half_log_psi2_denom = 0.5*np.log(self._psi2_denom).squeeze()
         variance_sq = float(np.square(self.variance))
         if self.ARD:
@@ -247,14 +251,23 @@ class rbf(kernpart):
             for (int m=0; m<M; m++){
                for (int mm=0; mm<(m+1); mm++){
                    for (int q=0; q<Q; q++){
-                       tmp = mudist(n,m,mm,q)*mudist(n,m,mm,q)/(lengthscale2(q)*_psi2_denom(n,q));
+                       //compute mudist
+                       tmp = mu(n,q) - Zhat(m,mm,q);
+                       mudist(n,m,mm,q) = tmp;
+                       mudist(n,mm,m,q) = tmp;
+
+                       //now mudist_sq
+                       tmp = tmp*tmp/lengthscale2(q)/_psi2_denom(n,q);
                        mudist_sq(n,m,mm,q) = tmp;
                        mudist_sq(n,mm,m,q) = tmp;
+
+                       //now psi2_exponent
                        tmp = -psi2_Zdist_sq(m,mm,q)/4.0 - tmp - half_log_psi2_denom(n,q);
                        psi2_exponent(n,mm,m) += tmp;
                        if (m !=mm){
                            psi2_exponent(n,m,mm) += tmp;
                        }
+                   //psi2 would be computed like this, but np is faster
                    //tmp = variance_sq*exp(psi2_exponent(n,m,mm));
                    //psi2(n,m,mm) = tmp;
                    //psi2(n,mm,m) = tmp;
@@ -263,6 +276,6 @@ class rbf(kernpart):
             }
         }
         """
-        weave.inline(code,support_code='#include "math.h"',arg_names=['N','M','Q','mudist_sq','mudist','lengthscale2','_psi2_denom','psi2_Zdist_sq','psi2_exponent','half_log_psi2_denom','psi2','variance_sq'],type_converters=weave.converters.blitz,**weave_options)
-        return mudist_sq, psi2_exponent, psi2
+        weave.inline(code,support_code='#include "math.h"',arg_names=['N','M','Q','mu','Zhat','mudist_sq','mudist','lengthscale2','_psi2_denom','psi2_Zdist_sq','psi2_exponent','half_log_psi2_denom','psi2','variance_sq'],type_converters=weave.converters.blitz,**weave_options)
+        return mudist,mudist_sq, psi2_exponent, psi2
 

@@ -7,6 +7,7 @@ from ..util.linalg import mdot, jitchol, chol_inv, pdinv, trace_dot
 from ..util.plot import gpplot
 from .. import kern
 from GP import GP
+from scipy import linalg
 
 #Still TODO:
 # make use of slices properly (kernel can now do this)
@@ -96,21 +97,26 @@ class sparse_GP(GP):
         self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
 
         self.V = (self.likelihood.precision/self.scale_factor)*self.likelihood.Y
-        self.A = mdot(self.Lmi, self.psi2_beta_scaled, self.Lmi.T)
+
+        #Compute A = L^-1 psi2 beta L^-T
+        tmp = linalg.lapack.flapack.dtrtrs(self.Lm,self.psi2_beta_scaled.T,lower=1)[0]
+        self.A = linalg.lapack.flapack.dtrtrs(self.Lm,np.asarray(tmp.T,order='F'),lower=1)[0]
+
         self.B = np.eye(self.M)/sf2 + self.A
 
         self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
 
         self.psi1V = np.dot(self.psi1, self.V)
-        tmp = np.dot(self.Lmi.T, self.LBi.T)
-        self.C = np.dot(tmp,tmp.T)
+        #tmp = np.dot(self.Lmi.T, self.LBi.T)
+        tmp = linalg.lapack.clapack.dtrtrs(self.Lm.T,np.asarray(self.LBi.T,order='C'),lower=0)[0]
+        self.C = np.dot(tmp,tmp.T) #TODO: tmp is triangular. replace with dtrmm (blas) when available
         self.Cpsi1V = np.dot(self.C,self.psi1V)
         self.Cpsi1VVpsi1 = np.dot(self.Cpsi1V,self.psi1V.T)
-        self.E = np.dot(self.Cpsi1VVpsi1,self.C)/sf2
+        #self.E = np.dot(self.Cpsi1VVpsi1,self.C)/sf2
+        self.E = np.dot(self.Cpsi1V/sf,self.Cpsi1V.T/sf)
 
         # Compute dL_dpsi # FIXME: this is untested for the heterscedastic + uncertin inputs case
         self.dL_dpsi0 = - 0.5 * self.D * (self.likelihood.precision * np.ones([self.N,1])).flatten()
-        #self.dL_dpsi1 = mdot(self.V, self.psi1V.T,self.C).T
         self.dL_dpsi1 = np.dot(self.Cpsi1V,self.V.T)
         if self.likelihood.is_heteroscedastic:
             if self.has_uncertain_inputs:

@@ -23,6 +23,7 @@
 
 
 import numpy as np
+import sys
 
 def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xtol=1e-6, ftol=1e-6):
     """
@@ -103,11 +104,13 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
 
         iteration += 1
         if display:
-            print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta
+            print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
+            sys.stdout.flush()
 
         if success:
             # Test for termination
-            if np.max(np.abs(alpha*d)) < xtol or np.max(np.abs(fnew-fold)) < ftol:
+            if (np.max(np.abs(alpha*d)) < xtol) or (np.abs(fnew-fold) < ftol):
+                status='converged'
                 return x, flog, function_eval, status
 
             else:

@@ -68,8 +68,6 @@ def BGPLVM_oil(optimize=True,N=100,Q=10,M=15):
     m = GPy.models.Bayesian_GPLVM(data['X'][:N], Q, kernel = kernel,M=M)
     m.data_labels = data['Y'][:N].argmax(axis=1)
 
-    #initial conditions
-
     # optimize
     if optimize:
         m.constrain_fixed('noise',0.05)

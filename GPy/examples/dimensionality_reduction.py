@@ -60,7 +60,7 @@ def GPLVM_oil_100(optimize=True,M=15):
     m.plot_latent(labels=m.data_labels)
     return m
 
-def BGPLVM_oil(optimize=True,N=100,Q=10,M=15):
+def BGPLVM_oil(optimize=True,N=100,Q=10,M=15,max_f_eval=300):
     data = GPy.util.datasets.oil()
 
     # create simple GP model
@@ -72,10 +72,10 @@ def BGPLVM_oil(optimize=True,N=100,Q=10,M=15):
     if optimize:
         m.constrain_fixed('noise',0.05)
         m.ensure_default_constraints()
-        m.optimize('scg',messages=1)
+        m.optimize('scg',messages=1,max_f_eval=max(80,max_f_eval))
         m.unconstrain('noise')
         m.constrain_positive('noise')
-        m.optimize('scg',messages=1)
+        m.optimize('scg',messages=1,max_f_eval=max(0,max_f_eval-80))
     else:
         m.ensure_default_constraints()
 
@@ -120,7 +120,7 @@ def brendan_faces():
 def stick():
     data = GPy.util.datasets.stick()
     m = GPy.models.GPLVM(data['Y'], 2)
-    
+
     # optimize
     m.ensure_default_constraints()
     m.optimize(messages=1, max_f_eval=10000)

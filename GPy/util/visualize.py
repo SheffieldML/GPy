@@ -4,7 +4,7 @@ import GPy
 import numpy as np
 
 class lvm:
-    def __init__(self, model, data_visualize, latent_axis):
+    def __init__(self, model, data_visualize, latent_axis, latent_index=[0,1], latent_dim=2):
         self.cid = latent_axis.figure.canvas.mpl_connect('button_press_event', self.on_click)
         self.cid = latent_axis.figure.canvas.mpl_connect('motion_notify_event', self.on_move)
         self.data_visualize = data_visualize
@@ -12,6 +12,8 @@ class lvm:
         self.latent_axis = latent_axis
         self.called = False
         self.move_on = False
+        self.latent_index = latent_index
+        self.latent_dim = latent_dim
 
     def on_click(self, event):
         #print 'click', event.xdata, event.ydata
@@ -32,7 +34,8 @@ class lvm:
         if self.called and self.move_on:
             # Call modify code on move
             #print 'move', event.xdata, event.ydata
-            latent_values = np.array((event.xdata, event.ydata))
+            latent_values = np.zeros((1,self.latent_dim))
+            latent_values[0,self.latent_index] = np.array([event.xdata, event.ydata])
             y = self.model.predict(latent_values)[0]
             self.data_visualize.modify(y)
             #print 'y', y
@@ -45,7 +48,7 @@ class data_show:
         # If no axes are defined, create some.
         if axis==None:
             fig = plt.figure()
-            self.axis = fig.add_subplot(111)            
+            self.axis = fig.add_subplot(111)
         else:
             self.axis = axis
 
@@ -57,7 +60,7 @@ class vector_show(data_show):
     def __init__(self, vals, axis=None):
         data_show.__init__(self, vals, axis)
         self.vals = vals.T
-        self.handle = plt.plot(np.arange(0, len(vals))[:, None], self.vals)[0]
+        self.handle = self.axis.plot(np.arange(0, len(vals))[:, None], self.vals)[0]
 
     def modify(self, vals):
         xdata, ydata = self.handle.get_data()
@@ -84,7 +87,7 @@ class image_show(data_show):
         self.handle.set_array(self.vals)
         #self.axis.figure.canvas.draw()
         plt.show()
-        
+
     def set_image(self, vals):
         self.vals = np.reshape(vals, self.dimensions, order='F')
         if self.transpose:
@@ -94,7 +97,7 @@ class image_show(data_show):
         #if self.invert:
         #    self.vals = -self.vals
 
-class stick_show(data_show): 
+class stick_show(data_show):
     """Show a three dimensional point cloud as a figure. Connect elements of the figure together using the matrix connect."""
 
     def __init__(self, vals, axis=None, connect=None):
@@ -159,6 +162,6 @@ class stick_show(data_show):
             self.line_handle = self.axis.plot(np.array(x), np.array(y), np.array(z), 'b-')
 
         self.axis.figure.canvas.draw()
-        
+
 
 

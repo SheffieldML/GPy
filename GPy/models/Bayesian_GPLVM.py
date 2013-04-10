@@ -95,3 +95,4 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             input_1, input_2 = which_indices
         ax = GPLVM.plot_latent(self, which_indices=[input_1, input_2],*args, **kwargs)
         ax.plot(self.Z[:, input_1], self.Z[:, input_2], '^w')
+        return ax

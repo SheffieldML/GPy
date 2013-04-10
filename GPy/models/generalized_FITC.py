@@ -19,8 +19,8 @@ class generalized_FITC(sparse_GP):
     :type likelihood: GPy.likelihood.(Gaussian | EP)
     :param kernel : the kernel/covariance function. See link kernels
     :type kernel: a GPy kernel
-    :param X_uncertainty: The uncertainty in the measurements of X (Gaussian variance)
-    :type X_uncertainty: np.ndarray (N x Q) | None
+    :param X_variance: The variance in the measurements of X (Gaussian variance)
+    :type X_variance: np.ndarray (N x Q) | None
     :param Z: inducing inputs (optional, see note)
     :type Z: np.ndarray (M x Q) | None
     :param Zslices: slices for the inducing inputs (see slicing TODO: link)
@@ -30,13 +30,13 @@ class generalized_FITC(sparse_GP):
     :type normalize_(X|Y): bool
     """
 
-    def __init__(self, X, likelihood, kernel, Z, X_uncertainty=None, Xslices=None,Zslices=None, normalize_X=False):
+    def __init__(self, X, likelihood, kernel, Z, X_variance=None, Xslices=None,Zslices=None, normalize_X=False):
 
         self.Z = Z
         self.M = self.Z.shape[0]
         self._precision = likelihood.precision
 
-        sparse_GP.__init__(self, X, likelihood, kernel=kernel, Z=self.Z, X_uncertainty=None, Xslices=None,Zslices=None, normalize_X=False)
+        sparse_GP.__init__(self, X, likelihood, kernel=kernel, Z=self.Z, X_variance=None, Xslices=None,Zslices=None, normalize_X=False)
 
     def _set_params(self, p):
         self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)

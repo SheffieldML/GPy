@@ -22,8 +22,8 @@ class sparse_GP(GP):
     :type likelihood: GPy.likelihood.(Gaussian | EP)
     :param kernel : the kernel/covariance function. See link kernels
     :type kernel: a GPy kernel
-    :param X_uncertainty: The uncertainty in the measurements of X (Gaussian variance)
-    :type X_uncertainty: np.ndarray (N x Q) | None
+    :param X_variance: The uncertainty in the measurements of X (Gaussian variance)
+    :type X_variance: np.ndarray (N x Q) | None
     :param Z: inducing inputs (optional, see note)
     :type Z: np.ndarray (M x Q) | None
     :param Zslices: slices for the inducing inputs (see slicing TODO: link)
@@ -33,7 +33,7 @@ class sparse_GP(GP):
     :type normalize_(X|Y): bool
     """
 
-    def __init__(self, X, likelihood, kernel, Z, X_uncertainty=None, Xslices=None,Zslices=None, normalize_X=False):
+    def __init__(self, X, likelihood, kernel, Z, X_variance=None, Xslices=None,Zslices=None, normalize_X=False):
         self.scale_factor = 100.0# a scaling factor to help keep the algorithm stable
 
         self.Z = Z
@@ -42,12 +42,12 @@ class sparse_GP(GP):
         self.M = Z.shape[0]
         self.likelihood = likelihood
 
-        if X_uncertainty is None:
+        if X_variance is None:
             self.has_uncertain_inputs=False
         else:
-            assert X_uncertainty.shape==X.shape
+            assert X_variance.shape==X.shape
             self.has_uncertain_inputs=True
-            self.X_uncertainty = X_uncertainty
+            self.X_variance = X_variance
 
         if not self.likelihood.is_heteroscedastic:
             self.likelihood.trYYT = np.trace(np.dot(self.likelihood.Y, self.likelihood.Y.T)) # TODO: something more elegant here?
@@ -56,16 +56,16 @@ class sparse_GP(GP):
 
         #normalize X uncertainty also
         if self.has_uncertain_inputs:
-            self.X_uncertainty /= np.square(self._Xstd)
+            self.X_variance /= np.square(self._Xstd)
 
 
     def _compute_kernel_matrices(self):
         # kernel computations, using BGPLVM notation
         self.Kmm = self.kern.K(self.Z)
         if self.has_uncertain_inputs:
-            self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty)
-            self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
-            self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty)
+            self.psi0 = self.kern.psi0(self.Z,self.X, self.X_variance)
+            self.psi1 = self.kern.psi1(self.Z,self.X, self.X_variance).T
+            self.psi2 = self.kern.psi2(self.Z,self.X, self.X_variance)
         else:
             self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices)
             self.psi1 = self.kern.K(self.Z,self.X)
@@ -210,9 +210,9 @@ class sparse_GP(GP):
         """
         dL_dtheta = self.kern.dK_dtheta(self.dL_dKmm,self.Z)
         if self.has_uncertain_inputs:
-            dL_dtheta += self.kern.dpsi0_dtheta(self.dL_dpsi0, self.Z,self.X,self.X_uncertainty)
-            dL_dtheta += self.kern.dpsi1_dtheta(self.dL_dpsi1.T,self.Z,self.X, self.X_uncertainty)
-            dL_dtheta += self.kern.dpsi2_dtheta(self.dL_dpsi2, self.Z,self.X, self.X_uncertainty)
+            dL_dtheta += self.kern.dpsi0_dtheta(self.dL_dpsi0, self.Z,self.X,self.X_variance)
+            dL_dtheta += self.kern.dpsi1_dtheta(self.dL_dpsi1.T,self.Z,self.X, self.X_variance)
+            dL_dtheta += self.kern.dpsi2_dtheta(self.dL_dpsi2, self.Z,self.X, self.X_variance)
         else:
             dL_dtheta += self.kern.dK_dtheta(self.dL_dpsi1,self.Z,self.X)
             dL_dtheta += self.kern.dKdiag_dtheta(self.dL_dpsi0, self.X)
@@ -225,8 +225,8 @@ class sparse_GP(GP):
         """
         dL_dZ = 2.*self.kern.dK_dX(self.dL_dKmm,self.Z)#factor of two becase of vertical and horizontal 'stripes' in dKmm_dZ
         if self.has_uncertain_inputs:
-            dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1,self.Z,self.X, self.X_uncertainty)
-            dL_dZ += 2.*self.kern.dpsi2_dZ(self.dL_dpsi2,self.Z,self.X, self.X_uncertainty) # 'stripes'
+            dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1,self.Z,self.X, self.X_variance)
+            dL_dZ += 2.*self.kern.dpsi2_dZ(self.dL_dpsi2,self.Z,self.X, self.X_variance) # 'stripes'
         else:
             dL_dZ += self.kern.dK_dX(self.dL_dpsi1,self.Z,self.X)
         return dL_dZ

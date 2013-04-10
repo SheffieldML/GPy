@@ -89,7 +89,7 @@ class GPLVM(GP):
         Xtest_full = np.zeros((Xtest.shape[0], self.X.shape[1]))
         Xtest_full[:, :2] = Xtest
         mu, var, low, up = self.predict(Xtest_full)
-        var = var[:, :1] # FIXME: this was a :2
+        var = var[:, :1] 
         pb.imshow(var.reshape(resolution,resolution).T[::-1,:],
                   extent=[xmin[0], xmax[0], xmin[1], xmax[1]], cmap=pb.cm.binary,interpolation='bilinear')
 
@@ -119,5 +119,6 @@ class GPLVM(GP):
         pb.xlim(xmin[0],xmax[0])
         pb.ylim(xmin[1],xmax[1])
         pb.grid(b=False) # remove the grid if present, it doesn't look good
+        ax = pb.gca()
         ax.set_aspect('auto') # set a nice aspect ratio
-        return pb.gca() #input_1, input_2 temporary removal, to return axes.
+        return ax

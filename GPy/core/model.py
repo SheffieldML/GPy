@@ -427,10 +427,10 @@ class model(parameterised):
                 grad_string = "{0:^{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name,r,d,g, ng, c0 = cols[0]+9, c1 = cols[1], c2 = cols[2], c3 = cols[3], c4 = cols[4])
                 print grad_string
 
-    def EPEM(self,epsilon=.1,**kwargs):
+    def pseudo_EM(self,epsilon=.1,**kwargs):
         """
         TODO: Should this not bein the GP class?
-        Expectation maximization for Expectation Propagation.
+        EM - like algorithm  for Expectation Propagation and Laplace approximation
 
         kwargs are passed to the optimize function. They can be:
 
@@ -441,27 +441,33 @@ class model(parameterised):
         :type optimzer: string TODO: valid strings?
 
         """
-        assert isinstance(self.likelihood,likelihoods.EP), "EM is not available for Gaussian likelihoods"
-        log_change = epsilon + 1.
-        self.log_likelihood_record = []
-        self.gp_params_record = []
-        self.ep_params_record = []
+        assert isinstance(self.likelihood,likelihoods.EP), "EPEM is only available for EP likelihoods"
+        ll_change = epsilon + 1.
         iteration = 0
-        last_value = -np.exp(1000)
-        while log_change > epsilon or not iteration:
-            print 'EM iteration %s' %iteration
+        last_ll = -np.exp(1000)
+
+        convergence = False
+        alpha = 0
+        stop = False
+
+        while not stop:
+            last_approximation = self.likelihood.copy()
+            last_params = self._get_params()
+
+            self.likelihood.restart()
             self.update_likelihood_approximation()
-            self.optimize(**kwargs)
-            new_value = self.log_likelihood()
-            log_change = new_value - last_value
-            if log_change > epsilon:
-                self.log_likelihood_record.append(new_value)
-                self.gp_params_record.append(self._get_params())
-                #self.ep_params_record.append((self.beta,self.Y,self.Z_ep))
-                last_value = new_value
+
+            new_ll = self.log_likelihood()
+            ll_change = new_ll - last_ll
+
+            if ll_change < 0:
+                self.likelihood = last_approximation #restore previous likelihood approximation
+                self._set_params(last_params) #restore model parameters
+                print "Log-likelihood decrement: %s \nLast likelihood update discarded." %ll_change
+                stop = True
             else:
-                convergence = False
-                #self.beta, self.Y,  self.Z_ep = self.ep_params_record[-1]
-                self._set_params(self.gp_params_record[-1])
-                print "Log-likelihood decrement: %s \nLast iteration discarded." %log_change
+                self.optimize(**kwargs)
+                last_ll = self.log_likelihood()
+                if ll_change < epsilon:
+                    stop = True
             iteration += 1

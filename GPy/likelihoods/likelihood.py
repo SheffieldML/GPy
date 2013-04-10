@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 class likelihood:
     """
@@ -37,4 +38,6 @@ class likelihood:
     def predictive_values(self, mu, var):
         raise NotImplementedError
 
-
+    def copy(self):
+        """ Returns a (deep) copy of the current likelihood """
+        return copy.deepcopy(self)

@@ -5,7 +5,7 @@ import os
 from setuptools import setup
 
 # Version number
-version = '0.2'
+version = '0.3.2'
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
@@ -18,7 +18,7 @@ setup(name = 'GPy',
       license = "BSD 3-clause",
       keywords = "machine-learning gaussian-processes kernels",
       url = "http://sheffieldml.github.com/GPy/",
-      packages = ['GPy', 'GPy.core', 'GPy.kern', 'GPy.util', 'GPy.models', 'GPy.inference', 'GPy.examples', 'GPy.likelihoods'],
+      packages = ['GPy', 'GPy.core', 'GPy.kern', 'GPy.util', 'GPy.models', 'GPy.inference', 'GPy.examples', 'GPy.likelihoods', 'GPy.testing'],
       package_dir={'GPy': 'GPy'},
       package_data = {'GPy': ['GPy/examples']},
       py_modules = ['GPy.__init__'],

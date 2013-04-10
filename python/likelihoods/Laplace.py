@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
 import GPy
-from scipy.linalg import cholesky, eig, inv, cho_solve
+from scipy.linalg import cholesky, eig, inv, cho_solve, det
 from numpy.linalg import cond
 from GPy.likelihoods.likelihood import likelihood
 from GPy.util.linalg import pdinv, mdot, jitchol, chol_inv
@@ -134,15 +134,24 @@ class Laplace(likelihood):
         y_W_f = mdot(Y_tilde.T, self.W, self.f_hat)
         y_W_y = mdot(Y_tilde.T, self.W, Y_tilde)
         ln_W_det = det_ln_diag(self.W)
-        Z_tilde = (self.NORMAL_CONST
-                   - 0.5*self.ln_K_det
-                   - 0.5*ln_W_det
-                   - 0.5*self.ln_Ki_W_i_det
-                   - 0.5*f_Ki_W_f
-                   - 0.5*y_W_y
-                   + y_W_f
+        Z_tilde = (- self.NORMAL_CONST
+                   + 0.5*self.ln_K_det
+                   + 0.5*ln_W_det
+                   + 0.5*self.ln_Ki_W_i_det
+                   + 0.5*f_Ki_W_f
+                   + 0.5*y_W_y
+                   - y_W_f
                    + self.ln_z_hat
                    )
+        #Z_tilde = (self.NORMAL_CONST
+                   #- 0.5*self.ln_K_det
+                   #- 0.5*ln_W_det
+                   #- 0.5*self.ln_Ki_W_i_det
+                   #- 0.5*f_Ki_W_f
+                   #- 0.5*y_W_y
+                   #+ y_W_f
+                   #+ self.ln_z_hat
+                   #)
 
         ##Check it isn't singular!
         if cond(self.W) > 1e14:
@@ -191,8 +200,7 @@ class Laplace(likelihood):
         self.f_Ki_f = np.dot(self.f_hat.T, a)
         self.ln_K_det = pddet(self.K)
 
-        self.ln_z_hat = (self.NORMAL_CONST
-                         - 0.5*self.f_Ki_f
+        self.ln_z_hat = (- 0.5*self.f_Ki_f
                          - 0.5*self.ln_K_det
                          + 0.5*self.ln_Ki_W_i_det
                          + self.likelihood_function.link_function(self.data, self.f_hat)

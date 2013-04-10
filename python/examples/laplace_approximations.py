@@ -12,7 +12,7 @@ def timing():
     deg_free = 10
     real_sd = np.sqrt(real_var)
     the_is = np.zeros(times)
-    X = np.linspace(0.0, 10.0, 500)[:, None]
+    X = np.linspace(0.0, 10.0, 300)[:, None]
 
     for a in xrange(times):
         Y = np.sin(X) + np.random.randn(*X.shape)*real_var
@@ -22,8 +22,8 @@ def timing():
         Yc[25] += 10
         Yc[23] += 10
         Yc[24] += 10
-        Yc[300] += 10
-        Yc[400] += 10000
+        Yc[250] += 10
+        #Yc[4] += 10000
 
         edited_real_sd = real_sd
         kernel1 = GPy.kern.rbf(X.shape[1])
@@ -36,7 +36,7 @@ def timing():
         m.optimize()
         the_is[a] = m.likelihood.i
 
-    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+    #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
     print the_is
     print np.mean(the_is)
 

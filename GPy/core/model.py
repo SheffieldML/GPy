@@ -229,13 +229,18 @@ class model(parameterised):
         Ensure that any variables which should clearly be positive have been constrained somehow.
         """
         positive_strings = ['variance','lengthscale', 'precision']
+        param_names = self._get_param_names()
+        currently_constrained = self.all_constrained_indices()
+        to_make_positive = []
         for s in positive_strings:
             for i in self.grep_param_names(s):
-                if not (i in self.all_constrained_indices()):
-                    name = self._get_param_names()[i]
-                    self.constrain_positive(name)
+                if not (i in currently_constrained):
+                    to_make_positive.append(param_names[i])
                     if warn:
                         print "Warning! constraining %s postive"%name
+        if len(to_make_positive):
+            self.constrain_positive('('+'|'.join(to_make_positive)+')')
+
 
 
     def objective_function(self, x):

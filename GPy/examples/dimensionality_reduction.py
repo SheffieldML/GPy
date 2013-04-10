@@ -47,7 +47,7 @@ def GPLVM_oil_100(optimize=True,M=15):
 
     # create simple GP model
     kernel = GPy.kern.rbf(6, ARD = True) + GPy.kern.bias(6)
-    m = GPy.models.Bayesian_GPLVM(data['X'], 6, kernel=kernel, M=M)
+    m = GPy.models.GPLVM(data['X'], 6, kernel=kernel, M=M)
     m.data_labels = data['Y'].argmax(axis=1)
 
     # optimize
@@ -60,22 +60,32 @@ def GPLVM_oil_100(optimize=True,M=15):
     m.plot_latent(labels=m.data_labels)
     return m
 
-def BGPLVM_oil_100(optimize=True):
-    data = GPy.util.datasets.oil_100()
+def BGPLVM_oil(optimize=True,N=100,Q=10,M=15):
+    data = GPy.util.datasets.oil()
 
     # create simple GP model
-    kernel = GPy.kern.rbf(6, ARD = True) + GPy.kern.bias(6)
-    m = GPy.models.GPLVM(data['X'], 6, kernel = kernel)
-    m.data_labels = data['Y'].argmax(axis=1)
+    kernel = GPy.kern.rbf(Q, ARD = True) + GPy.kern.bias(Q) + GPy.kern.white(Q,0.001)
+    m = GPy.models.Bayesian_GPLVM(data['X'][:N], Q, kernel = kernel,M=M)
+    m.data_labels = data['Y'][:N].argmax(axis=1)
+
+    #initial conditions
 
     # optimize
-    m.ensure_default_constraints()
     if optimize:
-        m.optimize(messages=1)
+        m.constrain_fixed('noise',0.05)
+        m.ensure_default_constraints()
+        m.optimize('scg',messages=1)
+        m.unconstrain('noise')
+        m.constrain_positive('noise')
+        m.optimize('scg',messages=1)
+    else:
+        m.ensure_default_constraints()
 
     # plot
     print(m)
-    m.plot_latent(labels=data['Y'].argmax(axis=1))
+    m.plot_latent(labels=m.data_labels)
+    pb.figure()
+    pb.bar(np.arange(m.kern.D),1./m.input_sensitivity())
     return m
 
 def oil_100():

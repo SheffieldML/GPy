@@ -67,7 +67,7 @@ class GPLVM(GP):
         """
 
         util.plot.Tango.reset()
-        
+
         if labels is None:
             labels = np.ones(self.N)
         if which_indices is None:
@@ -77,23 +77,19 @@ class GPLVM(GP):
             if self.Q==2:
                 input_1, input_2 = 0,1
             else:
-                #try to find a linear of RBF kern in the kernel
-                k = [p for p in self.kern.parts if p.name in ['rbf','linear']]
-                if (not len(k)==1) or (not k[0].ARD):
+                try:
+                    input_1, input_2 = np.argsort(self.input_sensitivity())[:2]
+                except:
                     raise ValueError, "cannot Atomatically determine which dimensions to plot, please pass 'which_indices'"
-                input_1, input_2 = self.lengthscale_order()
-                k = k[0]
-                if k.name=='rbf':
-                    input_1, input_2 = np.argsort(k.lengthscale)[:2]
-                elif k.name=='linear':
-                    input_1, input_2 = np.argsort(k.variances)[::-1][:2]
+        else:
+            input_1, input_2 = which_indices
 
         #first, plot the output variance as a function of the latent space
         Xtest, xx,yy,xmin,xmax = util.plot.x_frame2D(self.X[:,[input_1, input_2]],resolution=resolution)
-	Xtest_full = np.zeros((Xtest.shape[0], self.X.shape[1]))
-	Xtest_full[:, :2] = Xtest
-	mu, var, low, up = self.predict(Xtest_full)
-	var = var.mean(axis=1) # this was var[:, :2] edit by Neil
+        Xtest_full = np.zeros((Xtest.shape[0], self.X.shape[1]))
+        Xtest_full[:, :2] = Xtest
+        mu, var, low, up = self.predict(Xtest_full)
+        var = var.mean(axis=1) # this was var[:, :2] edit by Neil
         pb.imshow(var.reshape(resolution,resolution).T[::-1,:],extent=[xmin[0],xmax[0],xmin[1],xmax[1]],cmap=pb.cm.binary,interpolation='bilinear')
 
 

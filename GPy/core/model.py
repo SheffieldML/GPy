@@ -423,6 +423,28 @@ class model(parameterised):
                 grad_string = "{0:^{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name,r,d,g, ng, c0 = cols[0]+9, c1 = cols[1], c2 = cols[2], c3 = cols[3], c4 = cols[4])
                 print grad_string
 
+    def input_sensitivity(self):
+        """
+        return an array describing the sesitivity of the model to each input
+
+        NB. Right now, we're basing this on the lengthscales (or variances) of the kernel.
+        TODO: proper sensitivity analysis
+        """
+
+        if not hasattr(self,'kern'):
+            raise ValueError, "this model has no kernel"
+
+        k = [p for p in self.kern.parts if p.name in ['rbf','linear']]
+        if (not len(k)==1) or (not k[0].ARD):
+            raise ValueError, "cannot determine sensitivity for this kernel"
+        k = k[0]
+
+        if k.name=='rbf':
+            return k.lengthscale
+        elif k.name=='linear':
+            return 1./k.variances
+
+
     def pseudo_EM(self,epsilon=.1,**kwargs):
         """
         TODO: Should this not bein the GP class?
@@ -469,3 +491,4 @@ class model(parameterised):
             iteration += 1
             if stop:
                 print "%s iterations." %iteration
+

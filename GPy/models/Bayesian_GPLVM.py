@@ -22,12 +22,12 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, Y, Q, X = None, S = None, init='PCA', M=10, Z=None, kernel=None, **kwargs):
+    def __init__(self, Y, Q, X = None, X_uncertainty = None, init='PCA', M=10, Z=None, kernel=None, **kwargs):
         if X == None:
             X = self.initialise_latent(init, Q, Y)
 
-        if S is None:
-            S = np.ones_like(X) * 1e-2#
+        if X_uncertainty is None:
+            X_uncertainty = np.ones_like(X) * 0.5
 
         if Z is None:
             Z = np.random.permutation(X.copy())[:M]
@@ -37,7 +37,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             kernel = kern.rbf(Q) + kern.white(Q)
 
 
-        sparse_GP.__init__(self, X, Gaussian(Y), kernel, Z=Z, X_uncertainty=S, **kwargs)
+        sparse_GP.__init__(self, X, Gaussian(Y), kernel, Z=Z, X_uncertainty=X_uncertainty, **kwargs)
 
     def _get_param_names(self):
         X_names = sum([['X_%i_%i'%(n,q) for q in range(self.Q)] for n in range(self.N)],[])
@@ -84,6 +84,14 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
     def _log_likelihood_gradients(self):
         return np.hstack((self.dL_dmuS().flatten(), sparse_GP._log_likelihood_gradients(self)))
 
-    def plot_latent(self, *args, **kwargs):
-        input_1, input_2 = GPLVM.plot_latent(self, *args, **kwargs)
+    def plot_latent(self, which_indices=None,*args, **kwargs):
+
+        if which_indices is None:
+            try:
+                input_1, input_2 = np.argsort(self.input_sensitivity())[:2]
+            except:
+                raise ValueError, "cannot Atomatically determine which dimensions to plot, please pass 'which_indices'"
+        else:
+            input_1, input_2 = which_indices
+        GPLVM.plot_latent(self, which_indices=[input_1, input_2],*args, **kwargs)
         pb.plot(self.Z[:, input_1], self.Z[:, input_2], '^w')

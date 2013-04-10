@@ -3,6 +3,8 @@
 
 import numpy as np
 import pylab as pb
+from matplotlib import pyplot as plt
+
 import GPy
 
 default_seed = np.random.seed(123344)
@@ -40,18 +42,94 @@ def BGPLVM(seed = default_seed):
 
     return m
 
-def GPLVM_oil_100():
+def GPLVM_oil_100(optimize=True,M=15):
     data = GPy.util.datasets.oil_100()
 
     # create simple GP model
     kernel = GPy.kern.rbf(6, ARD = True) + GPy.kern.bias(6)
-    m = GPy.models.GPLVM(data['X'], 6, kernel = kernel)
+    m = GPy.models.GPLVM(data['X'], 6, kernel=kernel, M=M)
+    m.data_labels = data['Y'].argmax(axis=1)
 
     # optimize
     m.ensure_default_constraints()
-    m.optimize(messages=1)
+    if optimize:
+        m.optimize('scg',messages=1)
 
     # plot
     print(m)
-    m.plot_latent(labels=data['Y'].argmax(axis=1))
+    m.plot_latent(labels=m.data_labels)
+    return m
+
+def BGPLVM_oil(optimize=True,N=100,Q=10,M=15):
+    data = GPy.util.datasets.oil()
+
+    # create simple GP model
+    kernel = GPy.kern.rbf(Q, ARD = True) + GPy.kern.bias(Q) + GPy.kern.white(Q,0.001)
+    m = GPy.models.Bayesian_GPLVM(data['X'][:N], Q, kernel = kernel,M=M)
+    m.data_labels = data['Y'][:N].argmax(axis=1)
+
+    # optimize
+    if optimize:
+        m.constrain_fixed('noise',0.05)
+        m.ensure_default_constraints()
+        m.optimize('scg',messages=1)
+        m.unconstrain('noise')
+        m.constrain_positive('noise')
+        m.optimize('scg',messages=1)
+    else:
+        m.ensure_default_constraints()
+
+    # plot
+    print(m)
+    m.plot_latent(labels=m.data_labels)
+    pb.figure()
+    pb.bar(np.arange(m.kern.D),1./m.input_sensitivity())
+    return m
+
+def oil_100():
+    data = GPy.util.datasets.oil_100()
+    m = GPy.models.GPLVM(data['X'], 2)
+
+    # optimize
+    m.ensure_default_constraints()
+    m.optimize(messages=1, max_iters=2)
+
+    # plot
+    print(m)
+    #m.plot_latent(labels=data['Y'].argmax(axis=1))
+    return m
+
+def brendan_faces():
+    data = GPy.util.datasets.brendan_faces()
+    Y = data['Y'][0:-1:10, :]
+    m = GPy.models.GPLVM(data['Y'], 2)
+
+    # optimize
+    m.ensure_default_constraints()
+    m.optimize(messages=1, max_f_eval=10000)
+
+    ax = m.plot_latent()
+    y = m.likelihood.Y[0,:]
+    data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, invert=False, scale=False)
+    lvm_visualizer = GPy.util.visualize.lvm(m, data_show, ax)
+    raw_input('Press enter to finish')
+    plt.close('all')
+
+    return m
+
+def stick():
+    data = GPy.util.datasets.stick()
+    m = GPy.models.GPLVM(data['Y'], 2)
+    
+    # optimize
+    m.ensure_default_constraints()
+    m.optimize(messages=1, max_f_eval=10000)
+
+    ax = m.plot_latent()
+    y = m.likelihood.Y[0,:]
+    data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
+    lvm_visualizer = GPy.util.visualize.lvm(m, data_show, ax)
+    raw_input('Press enter to finish')
+    plt.close('all')
+
     return m

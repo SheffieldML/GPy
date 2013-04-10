@@ -12,6 +12,7 @@ from exponential import exponential as exponentialpart
 from Matern32 import Matern32 as Matern32part
 from Matern52 import Matern52 as Matern52part
 from bias import bias as biaspart
+from fixed import fixed as fixedpart
 from finite_dimensional import finite_dimensional as finite_dimensionalpart
 from spline import spline as splinepart
 from Brownian import Brownian as Brownianpart
@@ -23,6 +24,7 @@ from prod_orthogonal import prod_orthogonal as prod_orthogonalpart
 from symmetric import symmetric as symmetric_part
 from coregionalise import coregionalise as coregionalise_part
 from rational_quadratic import rational_quadratic as rational_quadraticpart
+from rbfcos import rbfcos as rbfcospart
 #TODO these s=constructors are not as clean as we'd like. Tidy the code up
 #using meta-classes to make the objects construct properly wthout them.
 
@@ -296,3 +298,23 @@ def rational_quadratic(D,variance=1., lengthscale=1., power=1.):
     """
     part = rational_quadraticpart(D,variance, lengthscale, power)
     return kern(D, [part])
+
+def fixed(D, K, variance=1.):
+    """
+     Construct a fixed effect kernel.
+
+     Arguments
+     ---------
+     D (int), obligatory
+     K (np.array), obligatory
+     variance (float)
+    """
+    part = fixedpart(D, K, variance)
+    return kern(D, [part])
+
+def rbfcos(D,variance=1.,frequencies=None,bandwidths=None,ARD=False):
+    """
+    construct a rbfcos kernel
+    """
+    part = rbfcospart(D,variance,frequencies,bandwidths,ARD)
+    return kern(D,[part])

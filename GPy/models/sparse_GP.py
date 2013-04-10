@@ -7,6 +7,7 @@ from ..util.linalg import mdot, jitchol, chol_inv, pdinv, trace_dot
 from ..util.plot import gpplot
 from .. import kern
 from GP import GP
+from scipy import linalg
 
 #Still TODO:
 # make use of slices properly (kernel can now do this)
@@ -22,8 +23,8 @@ class sparse_GP(GP):
     :type likelihood: GPy.likelihood.(Gaussian | EP)
     :param kernel : the kernel/covariance function. See link kernels
     :type kernel: a GPy kernel
-    :param X_uncertainty: The uncertainty in the measurements of X (Gaussian variance)
-    :type X_uncertainty: np.ndarray (N x Q) | None
+    :param X_variance: The uncertainty in the measurements of X (Gaussian variance)
+    :type X_variance: np.ndarray (N x Q) | None
     :param Z: inducing inputs (optional, see note)
     :type Z: np.ndarray (M x Q) | None
     :param Zslices: slices for the inducing inputs (see slicing TODO: link)
@@ -33,7 +34,7 @@ class sparse_GP(GP):
     :type normalize_(X|Y): bool
     """
 
-    def __init__(self, X, likelihood, kernel, Z, X_uncertainty=None, Xslices=None,Zslices=None, normalize_X=False):
+    def __init__(self, X, likelihood, kernel, Z, X_variance=None, Xslices=None,Zslices=None, normalize_X=False):
         self.scale_factor = 100.0# a scaling factor to help keep the algorithm stable
 
         self.Z = Z
@@ -42,12 +43,12 @@ class sparse_GP(GP):
         self.M = Z.shape[0]
         self.likelihood = likelihood
 
-        if X_uncertainty is None:
+        if X_variance is None:
             self.has_uncertain_inputs=False
         else:
-            assert X_uncertainty.shape==X.shape
+            assert X_variance.shape==X.shape
             self.has_uncertain_inputs=True
-            self.X_uncertainty = X_uncertainty
+            self.X_variance = X_variance
 
         if not self.likelihood.is_heteroscedastic:
             self.likelihood.trYYT = np.trace(np.dot(self.likelihood.Y, self.likelihood.Y.T)) # TODO: something more elegant here?
@@ -56,16 +57,16 @@ class sparse_GP(GP):
 
         #normalize X uncertainty also
         if self.has_uncertain_inputs:
-            self.X_uncertainty /= np.square(self._Xstd)
+            self.X_variance /= np.square(self._Xstd)
 
 
     def _compute_kernel_matrices(self):
         # kernel computations, using BGPLVM notation
         self.Kmm = self.kern.K(self.Z)
         if self.has_uncertain_inputs:
-            self.psi0 = self.kern.psi0(self.Z,self.X, self.X_uncertainty)
-            self.psi1 = self.kern.psi1(self.Z,self.X, self.X_uncertainty).T
-            self.psi2 = self.kern.psi2(self.Z,self.X, self.X_uncertainty)
+            self.psi0 = self.kern.psi0(self.Z,self.X, self.X_variance)
+            self.psi1 = self.kern.psi1(self.Z,self.X, self.X_variance).T
+            self.psi2 = self.kern.psi2(self.Z,self.X, self.X_variance)
         else:
             self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices)
             self.psi1 = self.kern.K(self.Z,self.X)
@@ -96,21 +97,26 @@ class sparse_GP(GP):
         self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
 
         self.V = (self.likelihood.precision/self.scale_factor)*self.likelihood.Y
-        self.A = mdot(self.Lmi, self.psi2_beta_scaled, self.Lmi.T)
+
+        #Compute A = L^-1 psi2 beta L^-T
+        tmp = linalg.lapack.flapack.dtrtrs(self.Lm,self.psi2_beta_scaled.T,lower=1)[0]
+        self.A = linalg.lapack.flapack.dtrtrs(self.Lm,np.asarray(tmp.T,order='F'),lower=1)[0]
+
         self.B = np.eye(self.M)/sf2 + self.A
 
         self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
 
         self.psi1V = np.dot(self.psi1, self.V)
-        tmp = np.dot(self.Lmi.T, self.LBi.T)
-        self.C = np.dot(tmp,tmp.T)
+        #tmp = np.dot(self.Lmi.T, self.LBi.T)
+        tmp = linalg.lapack.clapack.dtrtrs(self.Lm.T,np.asarray(self.LBi.T,order='C'),lower=0)[0]
+        self.C = np.dot(tmp,tmp.T) #TODO: tmp is triangular. replace with dtrmm (blas) when available
         self.Cpsi1V = np.dot(self.C,self.psi1V)
         self.Cpsi1VVpsi1 = np.dot(self.Cpsi1V,self.psi1V.T)
-        self.E = np.dot(self.Cpsi1VVpsi1,self.C)/sf2
+        #self.E = np.dot(self.Cpsi1VVpsi1,self.C)/sf2
+        self.E = np.dot(self.Cpsi1V/sf,self.Cpsi1V.T/sf)
 
         # Compute dL_dpsi # FIXME: this is untested for the heterscedastic + uncertin inputs case
         self.dL_dpsi0 = - 0.5 * self.D * (self.likelihood.precision * np.ones([self.N,1])).flatten()
-        #self.dL_dpsi1 = mdot(self.V, self.psi1V.T,self.C).T
         self.dL_dpsi1 = np.dot(self.Cpsi1V,self.V.T)
         if self.likelihood.is_heteroscedastic:
             if self.has_uncertain_inputs:
@@ -210,9 +216,9 @@ class sparse_GP(GP):
         """
         dL_dtheta = self.kern.dK_dtheta(self.dL_dKmm,self.Z)
         if self.has_uncertain_inputs:
-            dL_dtheta += self.kern.dpsi0_dtheta(self.dL_dpsi0, self.Z,self.X,self.X_uncertainty)
-            dL_dtheta += self.kern.dpsi1_dtheta(self.dL_dpsi1.T,self.Z,self.X, self.X_uncertainty)
-            dL_dtheta += self.kern.dpsi2_dtheta(self.dL_dpsi2, self.Z,self.X, self.X_uncertainty)
+            dL_dtheta += self.kern.dpsi0_dtheta(self.dL_dpsi0, self.Z,self.X,self.X_variance)
+            dL_dtheta += self.kern.dpsi1_dtheta(self.dL_dpsi1.T,self.Z,self.X, self.X_variance)
+            dL_dtheta += self.kern.dpsi2_dtheta(self.dL_dpsi2, self.Z,self.X, self.X_variance)
         else:
             dL_dtheta += self.kern.dK_dtheta(self.dL_dpsi1,self.Z,self.X)
             dL_dtheta += self.kern.dKdiag_dtheta(self.dL_dpsi0, self.X)
@@ -225,8 +231,8 @@ class sparse_GP(GP):
         """
         dL_dZ = 2.*self.kern.dK_dX(self.dL_dKmm,self.Z)#factor of two becase of vertical and horizontal 'stripes' in dKmm_dZ
         if self.has_uncertain_inputs:
-            dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1,self.Z,self.X, self.X_uncertainty)
-            dL_dZ += 2.*self.kern.dpsi2_dZ(self.dL_dpsi2,self.Z,self.X, self.X_uncertainty) # 'stripes'
+            dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1,self.Z,self.X, self.X_variance)
+            dL_dZ += 2.*self.kern.dpsi2_dZ(self.dL_dpsi2,self.Z,self.X, self.X_variance) # 'stripes'
         else:
             dL_dZ += self.kern.dK_dX(self.dL_dpsi1,self.Z,self.X)
         return dL_dZ

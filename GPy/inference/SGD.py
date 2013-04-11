@@ -3,8 +3,8 @@ import scipy as sp
 import scipy.sparse
 from optimization import Optimizer
 from scipy import linalg, optimize
-import copy
-import sys
+import pylab as plt
+import copy, sys, pickle
 
 class opt_SGD(Optimizer):
     """
@@ -18,7 +18,7 @@ class opt_SGD(Optimizer):
 
     """
 
-    def __init__(self, start, iterations = 10, learning_rate = 1e-4, momentum = 0.9, model = None, messages = False, batch_size = 1, self_paced = False, center = True, **kwargs):
+    def __init__(self, start, iterations = 10, learning_rate = 1e-4, momentum = 0.9, model = None, messages = False, batch_size = 1, self_paced = False, center = True, iteration_file = None, **kwargs):
         self.opt_name = "Stochastic Gradient Descent"
 
         self.model = model
@@ -31,6 +31,17 @@ class opt_SGD(Optimizer):
         self.batch_size = batch_size
         self.self_paced = self_paced
         self.center = center
+        self.param_traces = [('noise',[])]
+        self.iteration_file = iteration_file
+        # if len([p for p in self.model.kern.parts if p.name == 'bias']) == 1:
+        #     self.param_traces.append(('bias',[]))
+        # if len([p for p in self.model.kern.parts if p.name == 'linear']) == 1:
+        #     self.param_traces.append(('linear',[]))
+        # if len([p for p in self.model.kern.parts if p.name == 'rbf']) == 1:
+        #     self.param_traces.append(('rbf_var',[]))
+
+        self.param_traces = dict(self.param_traces)
+        self.fopt_trace = []
 
         num_params = len(self.model._get_params())
         if isinstance(self.learning_rate, float):
@@ -47,6 +58,18 @@ class opt_SGD(Optimizer):
         status += "Batch size: \t\t\t %d\n" % self.batch_size
         status += "Time elapsed: \t\t\t %s\n" % self.time
         return status
+
+    def plot_traces(self):
+        plt.figure()
+        plt.subplot(211)
+        plt.title('Parameters')
+        for k in self.param_traces.keys():
+            plt.plot(self.param_traces[k], label=k)
+        plt.legend(loc=0)
+        plt.subplot(212)
+        plt.title('Objective function')
+        plt.plot(self.fopt_trace)
+
 
     def non_null_samples(self, data):
         return (np.isnan(data).sum(axis=1) == 0)
@@ -128,38 +151,46 @@ class opt_SGD(Optimizer):
 
     def step_with_missing_data(self, f_fp, X, step, shapes, sparse_matrix):
         N, Q = X.shape
+
         if not sparse_matrix:
+            Y = self.model.likelihood.Y
             samples = self.non_null_samples(self.model.likelihood.Y)
             self.model.N = samples.sum()
-            self.model.likelihood.Y = self.model.likelihood.Y[samples]
+            Y = Y[samples]
         else:
             samples = self.model.likelihood.Y.nonzero()[0]
             self.model.N = len(samples)
-            self.model.likelihood.Y = np.asarray(self.model.likelihood.Y[samples].todense(), dtype = np.float64)
+            Y = np.asarray(self.model.likelihood.Y[samples].todense(), dtype = np.float64)
 
-        self.model.likelihood.N = self.model.N
+        if self.model.N == 0 or Y.std() == 0.0:
+            return 0, step, self.model.N
+
+        # FIXME: get rid of self.center, everything should be centered by default
+        self.model.likelihood._mean = Y.mean()
+        self.model.likelihood._std = Y.std()
+        self.model.likelihood.set_data(Y)
+
         j = self.subset_parameter_vector(self.x_opt, samples, shapes)
         self.model.X = X[samples]
 
-        if self.model.N == 0 or self.model.likelihood.Y.std() == 0.0:
-            return 0, step, self.model.N
-
-        if self.center:
-            self.model.likelihood.Y -= self.model.likelihood.Y.mean()
-            self.model.likelihood.Y /= self.model.likelihood.Y.std()
+        # if self.center:
+        #     self.model.likelihood.Y -= self.model.likelihood.Y.mean()
+        #     self.model.likelihood.Y /= self.model.likelihood.Y.std()
 
         model_name = self.model.__class__.__name__
 
         if model_name == 'Bayesian_GPLVM':
-            self.model.likelihood.trYYT = np.sum(np.square(self.model.likelihood.Y))
+            self.model.likelihood.YYT = np.dot(self.model.likelihood.Y, self.model.likelihood.Y.T)
+            self.model.likelihood.trYYT = np.trace(self.model.likelihood.YYT)
 
         b, p = self.shift_constraints(j)
-
-        momentum_term = self.momentum * step[j]
-
         f, fp = f_fp(self.x_opt[j])
-        step[j] = self.learning_rate[j] * fp
-        self.x_opt[j] -= step[j] + momentum_term
+        # momentum_term = self.momentum * step[j]
+        # step[j] = self.learning_rate[j] * fp
+        # self.x_opt[j] -= step[j] + momentum_term
+
+        step[j] = self.momentum * step[j] + self.learning_rate[j] * fp
+        self.x_opt[j] -= step[j]
 
         self.restore_constraints(b, p)
 
@@ -177,10 +208,14 @@ class opt_SGD(Optimizer):
             missing_data = self.check_for_missing(self.model.likelihood.Y)
 
         self.model.likelihood.YYT = None
+        self.model.likelihood.trYYT = None
+        self.model.likelihood._mean = 0.0
+        self.model.likelihood._std = 1.0
         num_params = self.model._get_params()
-        step = np.zeros_like(num_params)
 
+        step = np.zeros_like(num_params)
         for it in range(self.iterations):
+
             if it == 0 or self.self_paced is False:
                 features = np.random.permutation(Y.shape[1])
             else:
@@ -195,26 +230,35 @@ class opt_SGD(Optimizer):
             for j in features:
                 count += 1
                 self.model.D = len(j)
-                self.model.likelihood.Y = Y[:, j]
+                self.model.likelihood.D = len(j)
+                self.model.likelihood.set_data(Y[:, j])
 
                 if missing_data or sparse_matrix:
                     shapes = self.get_param_shapes(N, Q)
                     f, step, Nj = self.step_with_missing_data(f_fp, X, step, shapes, sparse_matrix)
                 else:
                     Nj = N
-                    momentum_term = self.momentum * step # compute momentum using update(t-1)
                     f, fp = f_fp(self.x_opt)
-                    step = self.learning_rate * fp # compute update(t)
-                    self.x_opt -= step + momentum_term
+                    # momentum_term = self.momentum * step # compute momentum using update(t-1)
+                    # step = self.learning_rate * fp # compute update(t)
+                    # self.x_opt -= step + momentum_term
+                    step = self.momentum * step + self.learning_rate * fp
+                    self.x_opt -= step
+
 
                 if self.messages == 2:
-                    noise = np.exp(self.x_opt)[-1]
+                    noise = self.model.likelihood._variance
                     status = "evaluating {feature: 5d}/{tot: 5d} \t f: {f: 2.3f} \t non-missing: {nm: 4d}\t noise: {noise: 2.4f}\r".format(feature = count, tot = len(features), f = f, nm = Nj, noise = noise)
                     sys.stdout.write(status)
                     sys.stdout.flush()
                     last_printed_count = count
-
+                    self.param_traces['noise'].append(noise)
                 NLL.append(f)
+
+                self.fopt_trace.append(f)
+
+                # for k in self.param_traces.keys():
+                #     self.param_traces[k].append(self.model.get(k)[0])
 
             # should really be a sum(), but earlier samples in the iteration will have a very crappy ll
             self.f_opt = np.mean(NLL)
@@ -222,12 +266,23 @@ class opt_SGD(Optimizer):
             self.model.X = X
             self.model.D = D
             self.model.likelihood.N = N
+            self.model.likelihood.D = D
             self.model.likelihood.Y = Y
 
             # self.model.Youter = np.dot(Y, Y.T)
             self.trace.append(self.f_opt)
+            if self.iteration_file is not None:
+                f = open(self.iteration_file + "iteration%d.pickle" % it, 'w')
+                data = [self.x_opt, self.fopt_trace, self.param_traces]
+                pickle.dump(data, f)
+                f.close()
+
             if self.messages != 0:
                 sys.stdout.write('\r' + ' '*len(status)*2 + '  \r')
                 status = "SGD Iteration: {0: 3d}/{1: 3d}  f: {2: 2.3f}\n".format(it+1, self.iterations, self.f_opt)
                 sys.stdout.write(status)
                 sys.stdout.flush()
+
+
+
+

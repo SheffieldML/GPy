@@ -51,6 +51,27 @@ class kern(parameterised):
 
         parameterised.__init__(self)
 
+
+    def plot_ARD(self):
+        """
+        If an ARD kernel is present, it bar-plots the ARD parameters
+
+        
+        """
+        for p in self.parts:
+            if hasattr(p, 'ARD') and p.ARD:
+                pb.figure()
+                pb.title('ARD parameters, %s kernel' % p.name)
+
+                if p.name == 'linear':
+                    ard_params = p.variances
+                else:
+                    ard_params = 1./p.lengthscale
+
+                pb.bar(np.arange(len(ard_params))-0.4, ard_params)
+
+
+
     def _transform_gradients(self,g):
         x = self._get_params()
         g[self.constrained_positive_indices] = g[self.constrained_positive_indices]*x[self.constrained_positive_indices]

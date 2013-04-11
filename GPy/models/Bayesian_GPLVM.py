@@ -93,5 +93,5 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
                 raise ValueError, "cannot Atomatically determine which dimensions to plot, please pass 'which_indices'"
         else:
             input_1, input_2 = which_indices
-        GPLVM.plot_latent(self, which_indices=[input_1, input_2],*args, **kwargs)
-        pb.plot(self.Z[:, input_1], self.Z[:, input_2], '^w')
+        ax = GPLVM.plot_latent(self, which_indices=[input_1, input_2],*args, **kwargs)
+        ax.plot(self.Z[:, input_1], self.Z[:, input_2], '^w')

@@ -107,32 +107,41 @@ def mrd_simulation():
     ard1[ard1 == 0] = 1E-10
     ard2[ard2 == 0] = 1E-10
 
-    ard1i = 1. / ard1
-    ard2i = 1. / ard2
+#     ard1i = 1. / ard1
+#     ard2i = 1. / ard2
 
-    # make_params = lambda ard: np.hstack([[1], ard, [1, .3]])
+#     k = GPy.kern.rbf(Q, ARD=True, lengthscale=ard1i) + GPy.kern.bias(Q, 0) + GPy.kern.white(Q, 0.0001)
+#     Y1 = np.random.multivariate_normal(np.zeros(N), k.K(X), D1).T
+#     Y1 -= Y1.mean(0)
+#
+#     k = GPy.kern.rbf(Q, ARD=True, lengthscale=ard2i) + GPy.kern.bias(Q, 0) + GPy.kern.white(Q, 0.0001)
+#     Y2 = np.random.multivariate_normal(np.zeros(N), k.K(X), D2).T
+#     Y2 -= Y2.mean(0)
+#     make_params = lambda ard: np.hstack([[1], ard, [1, .3]])
 
     D1, D2, N, M, Q = 50, 100, 150, 15, 4
-    X = np.random.randn(N, Q)
+    x = np.linspace(0, 2 * np.pi, N)[:, None]
 
-    k = GPy.kern.rbf(Q, ARD=True, lengthscale=ard1i) + GPy.kern.bias(Q, 0) + GPy.kern.white(Q, 0.0001)
-    Y1 = np.random.multivariate_normal(np.zeros(N), k.K(X), D1).T
-    Y1 -= Y1.mean(0)
+    s1 = np.vectorize(lambda x: np.sin(x))
+    s2 = np.vectorize(lambda x: np.cos(x))
+    sS = np.vectorize(lambda x: np.sin(2 * x))
 
-    k = GPy.kern.rbf(Q, ARD=True, lengthscale=ard2i) + GPy.kern.bias(Q, 0) + GPy.kern.white(Q, 0.0001)
-    Y2 = np.random.multivariate_normal(np.zeros(N), k.K(X), D2).T
-    Y2 -= Y2.mean(0)
+    S1 = np.hstack([s1(x), sS(x)])
+    S2 = np.hstack([s2(x), sS(x)])
 
-    k = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q, 1.0)
+    Y1 = S1.dot(np.random.randn(S1.shape[1], D1))
+    Y2 = S2.dot(np.random.randn(S2.shape[1], D2))
 
-    m = MRD(Y1, Y2, Q=Q, M=M, kernel=k, _debug=False)
+    k = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
+
+    m = MRD(Y1, Y2, Q=Q, M=M, kernel=k, init="PCA", _debug=False)
     m.ensure_default_constraints()
 
-    fig = pyplot.figure("expected", figsize=(8, 3))
-    ax = fig.add_subplot(121)
-    ax.bar(np.arange(ard1.size) + .1, ard1)
-    ax = fig.add_subplot(122)
-    ax.bar(np.arange(ard2.size) + .1, ard2)
+#     fig = pyplot.figure("expected", figsize=(8, 3))
+#     ax = fig.add_subplot(121)
+#     ax.bar(np.arange(ard1.size) + .1, ard1)
+#     ax = fig.add_subplot(122)
+#     ax.bar(np.arange(ard2.size) + .1, ard2)
 
     return m
 

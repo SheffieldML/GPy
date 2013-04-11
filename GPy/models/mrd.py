@@ -121,23 +121,60 @@ class MRD(model):
 
 
     def log_likelihood(self):
-        ll = self.gref.KL_divergence()
+        ll = +self.gref.KL_divergence()
         for g in self.bgplvms:
-            ll += sparse_GP.log_likelihood(g)
-        return ll
+            ll -= sparse_GP.log_likelihood(g)
+        return -ll
 
     def _log_likelihood_gradients(self):
-        dldmus = self.gref.dL_dmuS().flatten()
-        dldzt1 = sparse_GP._log_likelihood_gradients(self.gref)
-        return numpy.hstack((dldmus,
+        dLdmu, dLdS = reduce(lambda a, b: [a[0] + b[0], a[1] + b[1]], (g.dL_dmuS() for g in self.bgplvms))
+        dKLmu, dKLdS = self.gref.dKL_dmuS()
+        dLdmu -= dKLmu
+        dLdS -= dKLdS
+        dLdmuS = numpy.hstack((dLdmu.flatten(), dLdS.flatten())).flatten()
+        dldzt1 = reduce(lambda a, b: a + b, (sparse_GP._log_likelihood_gradients(g)[:self.MQ] for g in self.bgplvms))
+
+        return numpy.hstack((dLdmuS,
                              dldzt1,
                 numpy.hstack([numpy.hstack([g.dL_dtheta(),
                                             g.likelihood._gradients(\
                                                 partial=g.partial_for_likelihood)]) \
-                              for g in self.bgplvms[1:]])))
+                              for g in self.bgplvms])))
 
-    def plot_scales(self):
+    def plot_X(self):
+        fig = pylab.figure("MRD X", figsize=(4 * len(self.bgplvms), 3))
+        fig.clf()
+        for i, g in enumerate(self.bgplvms):
+            ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
+            ax.imshow(g.X)
+        pylab.draw()
+        fig.tight_layout()
+        return fig
+
+    def plot_predict(self):
+        fig = pylab.figure("MRD Predictions", figsize=(4 * len(self.bgplvms), 3))
+        fig.clf()
+        for i, g in enumerate(self.bgplvms):
+            ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
+            ax.imshow(g.predict(g.X)[0])
+        pylab.draw()
+        fig.tight_layout()
+        return fig
+
+    def plot_scales(self, *args, **kwargs):
         fig = pylab.figure("MRD Scales", figsize=(4 * len(self.bgplvms), 3))
         for i, g in enumerate(self.bgplvms):
             ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
-            g.kern.plot_ARD(ax=ax)
+            g.kern.plot_ARD(ax=ax, *args, **kwargs)
+        pylab.draw()
+        fig.tight_layout()
+        return fig
+
+    def plot_latent(self, *args, **kwargs):
+        fig = pylab.figure("MRD Latent Spaces", figsize=(4 * len(self.bgplvms), 3))
+        for i, g in enumerate(self.bgplvms):
+            ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
+            g.plot_latent(ax=ax, *args, **kwargs)
+        pylab.draw()
+        fig.tight_layout()
+        return fig

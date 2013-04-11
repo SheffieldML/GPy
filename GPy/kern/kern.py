@@ -70,7 +70,7 @@ class kern(parameterised):
                 ax.bar(np.arange(len(ard_params)) - 0.4, ard_params)
                 ax.set_xticks(np.arange(len(ard_params)),
                               ["${}$".format(i + 1) for i in range(len(ard_params))])
-
+        return ax
 
     def _transform_gradients(self,g):
         x = self._get_params()

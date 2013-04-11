@@ -60,7 +60,7 @@ class GPLVM(GP):
         mu, var, upper, lower = self.predict(Xnew)
         pb.plot(mu[:,0], mu[:,1],'k',linewidth=1.5)
 
-    def plot_latent(self,labels=None, which_indices=None, resolution=50):
+    def plot_latent(self, labels=None, which_indices=None, resolution=50, ax=pb.gca()):
         """
         :param labels: a np.array of size self.N containing labels for the points (can be number, strings, etc)
         :param resolution: the resolution of the grid on which to evaluate the predictive variance
@@ -90,7 +90,7 @@ class GPLVM(GP):
         Xtest_full[:, :2] = Xtest
         mu, var, low, up = self.predict(Xtest_full)
         var = var[:, :1] 
-        pb.imshow(var.reshape(resolution,resolution).T[::-1,:],
+        ax.imshow(var.reshape(resolution, resolution).T[::-1, :],
                   extent=[xmin[0], xmax[0], xmin[1], xmax[1]], cmap=pb.cm.binary,interpolation='bilinear')
 
         for i,ul in enumerate(np.unique(labels)):
@@ -110,15 +110,15 @@ class GPLVM(GP):
                 y = self.X[index,input_2]
             pb.plot(x,y,marker='o',color=util.plot.Tango.nextMedium(),mew=0,label=this_label,linewidth=0)
 
-        pb.xlabel('latent dimension %i'%input_1)
-        pb.ylabel('latent dimension %i'%input_2)
+        ax.set_xlabel('latent dimension %i' % input_1)
+        ax.set_ylabel('latent dimension %i' % input_2)
 
         if not np.all(labels==1.):
-            pb.legend(loc=0,numpoints=1)
+            ax.legend(loc=0, numpoints=1)
 
-        pb.xlim(xmin[0],xmax[0])
-        pb.ylim(xmin[1],xmax[1])
-        pb.grid(b=False) # remove the grid if present, it doesn't look good
-        ax = pb.gca()
+        ax.set_xlim(xmin[0], xmax[0])
+        ax.set_ylim(xmin[1], xmax[1])
+        ax.grid(b=False)  # remove the grid if present, it doesn't look good
+        # ax = pb.gca()
         ax.set_aspect('auto') # set a nice aspect ratio
         return ax

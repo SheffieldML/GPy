@@ -55,7 +55,7 @@ class GPLVM(GP):
 
     def plot(self):
         assert self.likelihood.Y.shape[1]==2
-        pb.scatter(self.likelihood.Y[:,0],self.likelihood.Y[:,1],40,self.X[:,0].copy(),linewidth=0,cmap=pb.cm.jet)
+        pb.scatter(self.likelihood.Y[:,0],self.likelihood.Y[:,1],40,self.X[:,0].copy(),linewidth=0,cmap=pb.cm.jet)  # @UndefinedVariable
         Xnew = np.linspace(self.X.min(),self.X.max(),200)[:,None]
         mu, var, upper, lower = self.predict(Xnew)
         pb.plot(mu[:,0], mu[:,1],'k',linewidth=1.5)
@@ -90,7 +90,7 @@ class GPLVM(GP):
         Xtest_full[:, :2] = Xtest
         mu, var, low, up = self.predict(Xtest_full)
         var = var.mean(axis=1) # this was var[:, :2] edit by Neil
-        pb.imshow(var.reshape(resolution,resolution).T[::-1,:],extent=[xmin[0],xmax[0],xmin[1],xmax[1]],cmap=pb.cm.binary,interpolation='bilinear')
+        pb.imshow(var.reshape(resolution,resolution).T[::-1,:],extent=[xmin[0],xmax[0],xmin[1],xmax[1]],cmap=pb.cm.binary,interpolation='bilinear')  # @UndefinedVariable
 
 
         for i,ul in enumerate(np.unique(labels)):

@@ -61,7 +61,7 @@ def GPLVM_oil_100(optimize=True, M=15):
     m.plot_latent(labels=m.data_labels)
     return m
 
-def BGPLVM_oil(optimize=True, N=100, Q=10, M=15):
+def BGPLVM_oil(optimize=True, N=100, Q=10, M=15, max_f_eval=300):
     data = GPy.util.datasets.oil()
 
     # create simple GP model
@@ -73,10 +73,10 @@ def BGPLVM_oil(optimize=True, N=100, Q=10, M=15):
     if optimize:
         m.constrain_fixed('noise', 0.05)
         m.ensure_default_constraints()
-        m.optimize('scg', messages=1)
+        m.optimize('scg', messages=1, max_f_eval=max(80, max_f_eval))
         m.unconstrain('noise')
         m.constrain_positive('noise')
-        m.optimize('scg', messages=1)
+        m.optimize('scg', messages=1, max_f_eval=max(0, max_f_eval - 80))
     else:
         m.ensure_default_constraints()
 
@@ -171,31 +171,31 @@ def stick():
 
     return m
 
+# def BGPLVM_oil():
+#     data = GPy.util.datasets.oil()
+#     Y, X = data['Y'], data['X']
+#     X -= X.mean(axis=0)
+#     X /= X.std(axis=0)
+#
+#     Q = 10
+#     M = 30
+#
+#     kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
+#     m = GPy.models.Bayesian_GPLVM(X, Q, kernel=kernel, M=M)
+#     # m.scale_factor = 100.0
+#     m.constrain_positive('(white|noise|bias|X_variance|rbf_variance|rbf_length)')
+#     from sklearn import cluster
+#     km = cluster.KMeans(M, verbose=10)
+#     Z = km.fit(m.X).cluster_centers_
+#     # Z = GPy.util.misc.kmm_init(m.X, M)
+#     m.set('iip', Z)
+#     m.set('bias', 1e-4)
+#     # optimize
+#     # m.ensure_default_constraints()
+#
+#     import pdb; pdb.set_trace()
+#     m.optimize('tnc', messages=1)
+#     print m
+#     m.plot_latent(labels=data['Y'].argmax(axis=1))
+#     return m
 
-def BGPLVM_oil():
-    data = GPy.util.datasets.oil()
-    Y, X = data['Y'], data['X']
-    X -= X.mean(axis=0)
-    X /= X.std(axis=0)
-
-    Q = 10
-    M = 30
-
-    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
-    m = GPy.models.Bayesian_GPLVM(X, Q, kernel=kernel, M=M)
-    # m.scale_factor = 100.0
-    m.constrain_positive('(white|noise|bias|X_variance|rbf_variance|rbf_length)')
-    from sklearn import cluster
-    km = cluster.KMeans(M, verbose=10)
-    Z = km.fit(m.X).cluster_centers_
-    # Z = GPy.util.misc.kmm_init(m.X, M)
-    m.set('iip', Z)
-    m.set('bias', 1e-4)
-    # optimize
-    # m.ensure_default_constraints()
-
-    import pdb; pdb.set_trace()
-    m.optimize('tnc', messages=1)
-    print m
-    m.plot_latent(labels=data['Y'].argmax(axis=1))
-    return m

@@ -41,20 +41,21 @@ class Brownian(kernpart):
     def Kdiag(self,X,target):
         target += self.variance*X.flatten()
 
-    def dK_dtheta(self,X,X2,target):
-        target += np.fmin(X,X2.T)
+    def dK_dtheta(self,dL_dK,X,X2,target):
+        target += np.sum(np.fmin(X,X2.T)*dL_dK)
 
-    def dKdiag_dtheta(self,X,target):
-        target += X.flatten()
+    def dKdiag_dtheta(self,dL_dKdiag,X,target):
+        target += np.dot(X.flatten(), dL_dKdiag)
 
-    def dK_dX(self,X,X2,target):
-        target += self.variance
-        target -= self.variance*theta(X-X2.T)
-        if X.shape==X2.shape:
-            if np.all(X==X2):
-                np.add(target[:,:,0],self.variance*np.diag(X2.flatten()-X.flatten()),target[:,:,0])
+    def dK_dX(self,dL_dK,X,X2,target):
+        raise NotImplementedError, "TODO"
+        #target += self.variance
+        #target -= self.variance*theta(X-X2.T)
+        #if X.shape==X2.shape:
+            #if np.all(X==X2):
+                #np.add(target[:,:,0],self.variance*np.diag(X2.flatten()-X.flatten()),target[:,:,0])
 
 
-    def dKdiag_dX(self,X,target):
-        target += self.variance
+    def dKdiag_dX(self,dL_dKdiag,X,target):
+        target += self.variance*dL_dKdiag[:,None]
 

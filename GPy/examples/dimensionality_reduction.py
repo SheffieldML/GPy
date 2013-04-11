@@ -3,7 +3,7 @@
 
 import numpy as np
 import pylab as pb
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, pyplot
 
 import GPy
 from GPy.models.mrd import MRD
@@ -101,22 +101,25 @@ def oil_100():
     return m
 
 def mrd_simulation():
-    num = 2
+    # num = 2
     ard1 = np.array([1., 1, 0, 0], dtype=float)
     ard2 = np.array([0., 1, 1, 0], dtype=float)
-    ard1[ard1 == 0] = 1E+10
-    ard2[ard2 == 0] = 1E+10
+    ard1[ard1 == 0] = 1E-10
+    ard2[ard2 == 0] = 1E-10
 
-    make_params = lambda ard: np.hstack([[1], ard, [1, .3]])
+    ard1i = 1. / ard1
+    ard2i = 1. / ard2
+
+    # make_params = lambda ard: np.hstack([[1], ard, [1, .3]])
 
     D1, D2, N, M, Q = 50, 100, 150, 15, 4
     X = np.random.randn(N, Q)
 
-    k = GPy.kern.rbf(Q, ARD=True, lengthscale=ard1) + GPy.kern.bias(Q, 1) + GPy.kern.white(Q, 0.0001)
+    k = GPy.kern.rbf(Q, ARD=True, lengthscale=ard1i) + GPy.kern.bias(Q, 0) + GPy.kern.white(Q, 0.0001)
     Y1 = np.random.multivariate_normal(np.zeros(N), k.K(X), D1).T
     Y1 -= Y1.mean(0)
 
-    k = GPy.kern.rbf(Q, ARD=True, lengthscale=ard2) + GPy.kern.bias(Q, 1) + GPy.kern.white(Q, 0.0001)
+    k = GPy.kern.rbf(Q, ARD=True, lengthscale=ard2i) + GPy.kern.bias(Q, 0) + GPy.kern.white(Q, 0.0001)
     Y2 = np.random.multivariate_normal(np.zeros(N), k.K(X), D2).T
     Y2 -= Y2.mean(0)
 
@@ -125,9 +128,12 @@ def mrd_simulation():
     m = MRD(Y1, Y2, Q=Q, M=M, kernel=k, _debug=False)
     m.ensure_default_constraints()
 
-    m.optimize(messages=1, max_f_eval=5000)
+    fig = pyplot.figure("expected", figsize=(8, 3))
+    ax = fig.add_subplot(121)
+    ax.bar(np.arange(ard1.size) + .1, ard1)
+    ax = fig.add_subplot(122)
+    ax.bar(np.arange(ard2.size) + .1, ard2)
 
-    import ipdb;ipdb.set_trace()
     return m
 
 def brendan_faces():
@@ -175,7 +181,7 @@ def BGPLVM_oil():
     Q = 10
     M = 30
 
-    kernel = GPy.kern.rbf(Q, ARD = True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
+    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
     m = GPy.models.Bayesian_GPLVM(X, Q, kernel=kernel, M=M)
     # m.scale_factor = 100.0
     m.constrain_positive('(white|noise|bias|X_variance|rbf_variance|rbf_length)')

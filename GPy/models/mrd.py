@@ -8,6 +8,8 @@ from GPy.models.Bayesian_GPLVM import Bayesian_GPLVM
 import numpy
 from GPy.models.sparse_GP import sparse_GP
 import itertools
+from matplotlib import pyplot
+import pylab
 
 
 class MRD(model):
@@ -103,17 +105,17 @@ class MRD(model):
 
     def _set_params(self, x):
         start = 0; end = self.NQ
-        X = x[start:end].reshape(self.N, self.Q)
+        X = x[start:end].reshape(self.N, self.Q).copy()
         start = end; end += start
-        X_var = x[start:end].reshape(self.N, self.Q)
+        X_var = x[start:end].reshape(self.N, self.Q).copy()
         start = end; end += self.MQ
-        Z = x[start:end].reshape(self.M, self.Q)
+        Z = x[start:end].reshape(self.M, self.Q).copy()
         thetas = x[end:]
 
         # set params for all others:
         for g, s, e in itertools.izip(self.bgplvms, self.nparams, self.nparams[1:]):
             self._set_var_params(g, X, X_var, Z)
-            self._set_kern_params(g, thetas[s:e])
+            self._set_kern_params(g, thetas[s:e].copy())
             g._compute_kernel_matrices()
             g._computations()
 
@@ -135,5 +137,7 @@ class MRD(model):
                               for g in self.bgplvms[1:]])))
 
     def plot_scales(self):
-        pass
-
+        fig = pylab.figure("MRD Scales", figsize=(4 * len(self.bgplvms), 3))
+        for i, g in enumerate(self.bgplvms):
+            ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
+            g.kern.plot_ARD(ax=ax)

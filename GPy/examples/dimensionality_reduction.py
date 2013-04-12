@@ -120,7 +120,7 @@ def brendan_faces():
 def stick():
     data = GPy.util.datasets.stick()
     m = GPy.models.GPLVM(data['Y'], 2)
-    
+
     # optimize
     m.ensure_default_constraints()
     m.optimize(messages=1, max_f_eval=10000)

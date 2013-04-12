@@ -163,6 +163,7 @@ class MRD(model):
 
     def plot_scales(self, *args, **kwargs):
         fig = pylab.figure("MRD Scales", figsize=(4 * len(self.bgplvms), 3))
+        fig.clf()
         for i, g in enumerate(self.bgplvms):
             ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
             g.kern.plot_ARD(ax=ax, *args, **kwargs)
@@ -172,6 +173,7 @@ class MRD(model):
 
     def plot_latent(self, *args, **kwargs):
         fig = pylab.figure("MRD Latent Spaces", figsize=(4 * len(self.bgplvms), 3))
+        fig.clf()
         for i, g in enumerate(self.bgplvms):
             ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
             g.plot_latent(ax=ax, *args, **kwargs)

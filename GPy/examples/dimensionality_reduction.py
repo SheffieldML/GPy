@@ -126,8 +126,8 @@ def mrd_simulation():
     s2 = np.vectorize(lambda x: np.cos(x))
     sS = np.vectorize(lambda x: np.sin(2 * x))
 
-    S1 = np.hstack([s1(x), sS(x)])
-    S2 = np.hstack([s2(x), sS(x)])
+    S1 = np.hstack([s1(x), sS(x)]) + .1 * np.random.randn(N, 2)
+    S2 = np.hstack([s2(x), sS(x)]) + .1 * np.random.randn(N, 2)
 
     Y1 = S1.dot(np.random.randn(S1.shape[1], D1))
     Y2 = S2.dot(np.random.randn(S2.shape[1], D2))

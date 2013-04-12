@@ -227,9 +227,8 @@ class rbf(kernpart):
 
     def weave_psi2(self,mu,Zhat):
         weave_options = {'headers'           : ['<omp.h>'],
-                         'extra_compile_args': ['-fopenmp -march=native'],
-                         'extra_link_args'   : ['-lgomp'],
-                         'compiler'          : 'gcc'}
+                         'extra_compile_args': ['-fopenmp -O3'],  #-march=native'],
+                         'extra_link_args'   : ['-lgomp']}
 
         N,Q = mu.shape
         M = Zhat.shape[0]

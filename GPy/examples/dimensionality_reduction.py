@@ -42,12 +42,12 @@ def BGPLVM(seed = default_seed):
 
     return m
 
-def GPLVM_oil_100(optimize=True,M=15):
+def GPLVM_oil_100(optimize=True):
     data = GPy.util.datasets.oil_100()
 
     # create simple GP model
     kernel = GPy.kern.rbf(6, ARD = True) + GPy.kern.bias(6)
-    m = GPy.models.GPLVM(data['X'], 6, kernel=kernel, M=M)
+    m = GPy.models.GPLVM(data['X'], 6, kernel=kernel)
     m.data_labels = data['Y'].argmax(axis=1)
 
     # optimize

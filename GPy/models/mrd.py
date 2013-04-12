@@ -10,7 +10,7 @@ from GPy.models.sparse_GP import sparse_GP
 import itertools
 from matplotlib import pyplot
 import pylab
-
+from GPy.util.linalg import PCA
 
 class MRD(model):
     """
@@ -22,7 +22,7 @@ class MRD(model):
     :type Ylist: [np.ndarray]
     :param names: names for different gplvm models
     :type names: [str]
-    :param Q: latent dimensionality
+    :param Q: latent dimensionality (will raise 
     :type Q: int
     :param init: initialisation method for the latent space
     :type init: 'PCA'|'random'
@@ -40,10 +40,11 @@ class MRD(model):
         kernel to use
     """
     def __init__(self, *Ylist, **kwargs):
-        self._debug = False
         if kwargs.has_key("_debug"):
             self._debug = kwargs['_debug']
             del kwargs['_debug']
+        else:
+            self._debug = False
         if kwargs.has_key("names"):
             self.names = kwargs['names']
             del kwargs['names']
@@ -55,14 +56,30 @@ class MRD(model):
             del kwargs['kernel']
         else:
             k = lambda: None
-        self.bgplvms = [Bayesian_GPLVM(Y, kernel=k(), **kwargs) for Y in Ylist]
+        if kwargs.has_key('init'):
+            init = kwargs['init']
+            del kwargs['init']
+        try:
+            self.Q = kwargs["Q"]
+        except KeyError:
+            raise ValueError("Need Q for MRD")
+        try:
+            self.M = kwargs["M"]
+        except KeyError:
+            self.M = 10
+
+
+        X = self._init_X(Ylist, init)
+        Z = numpy.random.permutation(X.copy())[:self.M]
+
+        self.bgplvms = [Bayesian_GPLVM(Y, kernel=k(), X=X, Z=Z, **kwargs) for Y in Ylist]
+
         self.gref = self.bgplvms[0]
         nparams = numpy.array([0] + [sparse_GP._get_params(g).size - g.Z.size for g in self.bgplvms])
         self.nparams = nparams.cumsum()
-        self.Q = self.gref.Q
+
         self.N = self.gref.N
         self.NQ = self.N * self.Q
-        self.M = self.gref.M
         self.MQ = self.M * self.Q
 
         model.__init__(self)  # @UndefinedVariable
@@ -87,9 +104,16 @@ class MRD(model):
         | mu | S | Z || theta1 | theta2 | .. | thetaN |
         =================================================================
         """
-        X = self.gref.X.flatten()
-        X_var = self.gref.X_variance.flatten()
-        Z = self.gref.Z.flatten()
+        X = self.gref.X.ravel()
+        X_var = self.gref.X_variance.ravel()
+        Z = self.gref.Z.ravel()
+
+        if self._debug:
+            for g in self.bgplvms:
+                assert numpy.allclose(g.X.ravel(), X)
+                assert numpy.allclose(g.X_variance.ravel(), X_var)
+                assert numpy.allclose(g.Z.ravel(), Z)
+
         thetas = [sparse_GP._get_params(g)[g.Z.size:] for g in self.bgplvms]
         params = numpy.hstack([X, X_var, Z, numpy.hstack(thetas)])
         return params
@@ -105,14 +129,20 @@ class MRD(model):
 
     def _set_params(self, x):
         start = 0; end = self.NQ
-        X = x[start:end].reshape(self.N, self.Q).copy()
+        X = x[start:end].reshape(self.N, self.Q)
         start = end; end += start
-        X_var = x[start:end].reshape(self.N, self.Q).copy()
+        X_var = x[start:end].reshape(self.N, self.Q)
         start = end; end += self.MQ
-        Z = x[start:end].reshape(self.M, self.Q).copy()
+        Z = x[start:end].reshape(self.M, self.Q)
         thetas = x[end:]
 
-        # set params for all others:
+        if self._debug:
+            for g in self.bgplvms:
+                assert numpy.allclose(g.X, self.gref.X)
+                assert numpy.allclose(g.X_variance, self.gref.X_variance)
+                assert numpy.allclose(g.Z, self.gref.Z)
+
+        # set params for all:
         for g, s, e in itertools.izip(self.bgplvms, self.nparams, self.nparams[1:]):
             self._set_var_params(g, X, X_var, Z)
             self._set_kern_params(g, thetas[s:e].copy())
@@ -121,10 +151,10 @@ class MRD(model):
 
 
     def log_likelihood(self):
-        ll = +self.gref.KL_divergence()
+        ll = -self.gref.KL_divergence()
         for g in self.bgplvms:
-            ll -= sparse_GP.log_likelihood(g)
-        return -ll
+            ll += sparse_GP.log_likelihood(g)
+        return ll
 
     def _log_likelihood_gradients(self):
         dLdmu, dLdS = reduce(lambda a, b: [a[0] + b[0], a[1] + b[1]], (g.dL_dmuS() for g in self.bgplvms))
@@ -140,6 +170,17 @@ class MRD(model):
                                             g.likelihood._gradients(\
                                                 partial=g.partial_for_likelihood)]) \
                               for g in self.bgplvms])))
+
+    def _init_X(self, Ylist, init='PCA_concat'):
+        if init in "PCA_concat":
+            X = PCA(numpy.hstack(Ylist), self.Q)[0]
+        elif init in "PCA_single":
+            X = numpy.zeros((Ylist[0].shape[0], self.Q))
+            for qs, Y in itertools.izip(numpy.array_split(numpy.arange(self.Q), len(Ylist)), Ylist):
+                X[:, qs] = PCA(Y, len(qs))[0]
+        else:  # init == 'random':
+            X = numpy.random.randn(Ylist[0].shape[0], self.Q)
+        return X
 
     def plot_X(self):
         fig = pylab.figure("MRD X", figsize=(4 * len(self.bgplvms), 3))
@@ -180,3 +221,19 @@ class MRD(model):
         pylab.draw()
         fig.tight_layout()
         return fig
+
+    def _debug_plot(self):
+        self.plot_X()
+        self.plot_latent()
+        self.plot_scales()
+
+    def _debug_optimize(self, opt='scg', maxiters=500, itersteps=10):
+        iters = 0
+        optstep = lambda: self.optimize(opt, messages=1, max_iters=itersteps)
+        self._debug_plot()
+        raw_input("enter to start debug")
+        while iters < maxiters:
+            optstep()
+            self._debug_plot()
+            iters += itersteps
+

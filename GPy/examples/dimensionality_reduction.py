@@ -100,7 +100,7 @@ def oil_100():
     # m.plot_latent(labels=data['Y'].argmax(axis=1))
     return m
 
-def mrd_simulation():
+def mrd_simulation(plot_sim=False):
     # num = 2
     ard1 = np.array([1., 1, 0, 0], dtype=float)
     ard2 = np.array([0., 1, 1, 0], dtype=float)
@@ -119,8 +119,8 @@ def mrd_simulation():
 #     Y2 -= Y2.mean(0)
 #     make_params = lambda ard: np.hstack([[1], ard, [1, .3]])
 
-    D1, D2, N, M, Q = 50, 100, 150, 15, 4
-    x = np.linspace(0, 2 * np.pi, N)[:, None]
+    D1, D2, N, M, Q = 5, 10, 150, 15, 3
+    x = np.linspace(0, 4 * np.pi, N)[:, None]
 
     s1 = np.vectorize(lambda x: np.sin(x))
     s2 = np.vectorize(lambda x: np.cos(x))
@@ -132,9 +132,30 @@ def mrd_simulation():
     Y1 = S1.dot(np.random.randn(S1.shape[1], D1))
     Y2 = S2.dot(np.random.randn(S2.shape[1], D2))
 
+    Y1 -= Y1.mean(0)
+    Y2 -= Y2.mean(0)
+
+    if plot_sim:
+        import pylab
+        fig = pylab.figure("MRD Simulation")
+        ax = fig.add_subplot(2, 2, 1)
+        ax.imshow(S1)
+        ax.set_title("S1")
+        ax = fig.add_subplot(2, 2, 2)
+        ax.imshow(S2)
+        ax.set_title("S2")
+        ax = fig.add_subplot(2, 2, 3)
+        ax.imshow(Y1)
+        ax.set_title("Y1")
+        ax = fig.add_subplot(2, 2, 4)
+        ax.imshow(Y2)
+        ax.set_title("Y2")
+        pylab.draw()
+        pylab.tight_layout()
+
     k = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
 
-    m = MRD(Y1, Y2, Q=Q, M=M, kernel=k, init="PCA", _debug=False)
+    m = MRD(Y1, Y2, Q=Q, M=M, kernel=k, init="concat", _debug=True)
     m.ensure_default_constraints()
 
 #     fig = pyplot.figure("expected", figsize=(8, 3))
@@ -144,6 +165,10 @@ def mrd_simulation():
 #     ax.bar(np.arange(ard2.size) + .1, ard2)
 
     return m
+
+def mrd_silhouette():
+
+    pass
 
 def brendan_faces():
     data = GPy.util.datasets.brendan_faces()

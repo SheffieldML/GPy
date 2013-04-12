@@ -155,8 +155,10 @@ def mrd_simulation(plot_sim=False):
 
     k = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
 
-    m = MRD(Y1, Y2, Q=Q, M=M, kernel=k, init="concat", _debug=True)
+    m = MRD(Y1, Y2, Q=Q, M=M, kernel=k, init="concat", _debug=False)
     m.ensure_default_constraints()
+    cstr = "noise|white"
+    m.unconstrain(cstr); m.constrain_bounded(cstr, 1e-3, 1.)
 
 #     fig = pyplot.figure("expected", figsize=(8, 3))
 #     ax = fig.add_subplot(121)

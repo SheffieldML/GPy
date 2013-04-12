@@ -11,4 +11,7 @@ from warped_GP import warpedGP
 from sparse_GPLVM import sparse_GPLVM
 from uncollapsed_sparse_GP import uncollapsed_sparse_GP
 from Bayesian_GPLVM import Bayesian_GPLVM
+import mrd
+MRD = mrd.MRD
+del mrd
 from generalized_FITC import generalized_FITC

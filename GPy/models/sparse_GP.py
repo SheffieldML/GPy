@@ -36,7 +36,7 @@ class sparse_GP(GP):
 
     def __init__(self, X, likelihood, kernel, Z, X_variance=None, Xslices=None,Zslices=None, normalize_X=False):
         self.scale_factor = 100.0# a scaling factor to help keep the algorithm stable
-
+        self.auto_scale_factor = False
         self.Z = Z
         self.Zslices = Zslices
         self.Xslices = Xslices
@@ -184,6 +184,8 @@ class sparse_GP(GP):
         self.kern._set_params(p[self.Z.size:self.Z.size+self.kern.Nparam])
         self.likelihood._set_params(p[self.Z.size+self.kern.Nparam:])
         self._compute_kernel_matrices()
+        if self.auto_scale_factor:
+            self.scale_factor = np.sqrt(self.psi2.sum(0).mean()*self.likelihood.precision)
         self._computations()
 
     def _get_params(self):

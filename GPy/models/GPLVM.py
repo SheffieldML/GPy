@@ -60,7 +60,7 @@ class GPLVM(GP):
         mu, var, upper, lower = self.predict(Xnew)
         pb.plot(mu[:,0], mu[:,1],'k',linewidth=1.5)
 
-    def plot_latent(self,labels=None, which_indices=None, resolution=50,ax=pb.gca()):
+    def plot_latent(self, labels=None, which_indices=None, resolution=50, ax=pb.gca()):
         """
         :param labels: a np.array of size self.N containing labels for the points (can be number, strings, etc)
         :param resolution: the resolution of the grid on which to evaluate the predictive variance
@@ -90,7 +90,7 @@ class GPLVM(GP):
         Xtest_full[:, :2] = Xtest
         mu, var, low, up = self.predict(Xtest_full)
         var = var[:, :1]
-        ax.imshow(var.reshape(resolution,resolution).T[::-1,:],
+        ax.imshow(var.reshape(resolution, resolution).T[::-1, :],
                   extent=[xmin[0], xmax[0], xmin[1], xmax[1]], cmap=pb.cm.binary,interpolation='bilinear')
 
         for i,ul in enumerate(np.unique(labels)):

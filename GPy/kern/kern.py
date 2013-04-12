@@ -52,7 +52,7 @@ class kern(parameterised):
         parameterised.__init__(self)
 
 
-    def plot_ARD(self):
+    def plot_ARD(self, ax=pb.gca()):
         """
         If an ARD kernel is present, it bar-plots the ARD parameters
 
@@ -60,17 +60,17 @@ class kern(parameterised):
         """
         for p in self.parts:
             if hasattr(p, 'ARD') and p.ARD:
-                pb.figure()
-                pb.title('ARD parameters, %s kernel' % p.name)
+                ax.set_title('ARD parameters, %s kernel' % p.name)
 
                 if p.name == 'linear':
                     ard_params = p.variances
                 else:
                     ard_params = 1./p.lengthscale
 
-                pb.bar(np.arange(len(ard_params))-0.4, ard_params)
-
-
+                ax.bar(np.arange(len(ard_params)) - 0.4, ard_params)
+                ax.set_xticks(np.arange(len(ard_params)),
+                              ["${}$".format(i + 1) for i in range(len(ard_params))])
+        return ax
 
     def _transform_gradients(self,g):
         x = self._get_params()

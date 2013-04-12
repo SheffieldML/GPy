@@ -75,7 +75,10 @@ class opt_SGD(Optimizer):
         return (np.isnan(data).sum(axis=1) == 0)
 
     def check_for_missing(self, data):
-        return np.isnan(data).sum() > 0
+        if sp.sparse.issparse(self.model.likelihood.Y):
+            return True
+        else:
+            return np.isnan(data).sum() > 0
 
     def subset_parameter_vector(self, x, samples, param_shapes):
         subset = np.array([], dtype = int)
@@ -149,10 +152,10 @@ class opt_SGD(Optimizer):
         else:
             raise NotImplementedError
 
-    def step_with_missing_data(self, f_fp, X, step, shapes, sparse_matrix):
+    def step_with_missing_data(self, f_fp, X, step, shapes):
         N, Q = X.shape
 
-        if not sparse_matrix:
+        if not sp.sparse.issparse(self.model.likelihood.Y):
             Y = self.model.likelihood.Y
             samples = self.non_null_samples(self.model.likelihood.Y)
             self.model.N = samples.sum()
@@ -165,17 +168,12 @@ class opt_SGD(Optimizer):
         if self.model.N == 0 or Y.std() == 0.0:
             return 0, step, self.model.N
 
-        # FIXME: get rid of self.center, everything should be centered by default
         self.model.likelihood._mean = Y.mean()
         self.model.likelihood._std = Y.std()
         self.model.likelihood.set_data(Y)
 
         j = self.subset_parameter_vector(self.x_opt, samples, shapes)
         self.model.X = X[samples]
-
-        # if self.center:
-        #     self.model.likelihood.Y -= self.model.likelihood.Y.mean()
-        #     self.model.likelihood.Y /= self.model.likelihood.Y.std()
 
         model_name = self.model.__class__.__name__
 
@@ -185,33 +183,31 @@ class opt_SGD(Optimizer):
 
         b, p = self.shift_constraints(j)
         f, fp = f_fp(self.x_opt[j])
-        # momentum_term = self.momentum * step[j]
-        # step[j] = self.learning_rate[j] * fp
-        # self.x_opt[j] -= step[j] + momentum_term
-
         step[j] = self.momentum * step[j] + self.learning_rate[j] * fp
         self.x_opt[j] -= step[j]
 
         self.restore_constraints(b, p)
+        # restore likelihood _mean and _std, otherwise when we call set_data(y) on
+        # the next feature, it will get normalized with the mean and std of this one.
+        self.model.likelihood._mean = 0
+        self.model.likelihood._std = 1
 
         return f, step, self.model.N
 
     def opt(self, f_fp=None, f=None, fp=None):
         self.x_opt = self.model._get_params_transformed()
         X, Y = self.model.X.copy(), self.model.likelihood.Y.copy()
-        N, Q = self.model.X.shape
-        D = self.model.likelihood.Y.shape[1]
-        self.trace = []
-        sparse_matrix = sp.sparse.issparse(self.model.likelihood.Y)
-        missing_data = True
-        if not sparse_matrix:
-            missing_data = self.check_for_missing(self.model.likelihood.Y)
 
         self.model.likelihood.YYT = None
         self.model.likelihood.trYYT = None
         self.model.likelihood._mean = 0.0
         self.model.likelihood._std = 1.0
+
+        N, Q = self.model.X.shape
+        D = self.model.likelihood.Y.shape[1]
         num_params = self.model._get_params()
+        self.trace = []
+        missing_data = self.check_for_missing(self.model.likelihood.Y)
 
         step = np.zeros_like(num_params)
         for it in range(self.iterations):
@@ -224,34 +220,26 @@ class opt_SGD(Optimizer):
             b = len(features)/self.batch_size
             features = [features[i::b] for i in range(b)]
             NLL = []
-            count = 0
-            last_printed_count = -1
 
-            for j in features:
-                count += 1
+            for count, j in enumerate(features):
                 self.model.D = len(j)
                 self.model.likelihood.D = len(j)
                 self.model.likelihood.set_data(Y[:, j])
 
-                if missing_data or sparse_matrix:
+                if missing_data:
                     shapes = self.get_param_shapes(N, Q)
-                    f, step, Nj = self.step_with_missing_data(f_fp, X, step, shapes, sparse_matrix)
+                    f, step, Nj = self.step_with_missing_data(f_fp, X, step, shapes)
                 else:
                     Nj = N
                     f, fp = f_fp(self.x_opt)
-                    # momentum_term = self.momentum * step # compute momentum using update(t-1)
-                    # step = self.learning_rate * fp # compute update(t)
-                    # self.x_opt -= step + momentum_term
                     step = self.momentum * step + self.learning_rate * fp
                     self.x_opt -= step
-
 
                 if self.messages == 2:
                     noise = self.model.likelihood._variance
                     status = "evaluating {feature: 5d}/{tot: 5d} \t f: {f: 2.3f} \t non-missing: {nm: 4d}\t noise: {noise: 2.4f}\r".format(feature = count, tot = len(features), f = f, nm = Nj, noise = noise)
                     sys.stdout.write(status)
                     sys.stdout.flush()
-                    last_printed_count = count
                     self.param_traces['noise'].append(noise)
                 NLL.append(f)
 
@@ -269,7 +257,6 @@ class opt_SGD(Optimizer):
             self.model.likelihood.D = D
             self.model.likelihood.Y = Y
 
-            # self.model.Youter = np.dot(Y, Y.T)
             self.trace.append(self.f_opt)
             if self.iteration_file is not None:
                 f = open(self.iteration_file + "iteration%d.pickle" % it, 'w')
@@ -282,7 +269,3 @@ class opt_SGD(Optimizer):
                 status = "SGD Iteration: {0: 3d}/{1: 3d}  f: {2: 2.3f}\n".format(it+1, self.iterations, self.f_opt)
                 sys.stdout.write(status)
                 sys.stdout.flush()
-
-
-
-

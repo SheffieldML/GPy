@@ -69,8 +69,8 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         return dKL_dmu, dKL_dS
 
     def dL_dmuS(self):
-        dL_dmu_psi0, dL_dS_psi0 = self.kern.dpsi1_dmuS(self.dL_dpsi1, self.Z, self.X, self.X_variance)
-        dL_dmu_psi1, dL_dS_psi1 = self.kern.dpsi0_dmuS(self.dL_dpsi0, self.Z, self.X, self.X_variance)
+        dL_dmu_psi0, dL_dS_psi0 = self.kern.dpsi0_dmuS(self.dL_dpsi0, self.Z, self.X, self.X_variance)
+        dL_dmu_psi1, dL_dS_psi1 = self.kern.dpsi1_dmuS(self.dL_dpsi1, self.Z, self.X, self.X_variance)
         dL_dmu_psi2, dL_dS_psi2 = self.kern.dpsi2_dmuS(self.dL_dpsi2, self.Z, self.X, self.X_variance)
         dL_dmu = dL_dmu_psi0 + dL_dmu_psi1 + dL_dmu_psi2
         dL_dS = dL_dS_psi0 + dL_dS_psi1 + dL_dS_psi2

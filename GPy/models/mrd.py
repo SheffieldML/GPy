@@ -225,6 +225,29 @@ class MRD(model):
         self.X = X
         return X
 
+    def plot_X_1d(self, colors=None):
+        if colors is None:
+            colors = pylab.gca()._get_lines.color_cycle
+        fig = pylab.figure(num="MRD X 1d", figsize=(4 * len(self.bgplvms), (2 * self.X.shape[1])))
+        fig.clf()
+        ax1 = fig.add_subplot(self.X.shape[1], 1, 1)
+        ax1.plot(self.X, c='k', alpha=.3)
+        plots = ax1.plot(self.X.T[0], c=colors.next())
+        for i in range(self.X.shape[1] - 1):
+            ax = fig.add_subplot(self.X.shape[1], 1, i + 2)
+            ax.plot(self.X, c='k', alpha=.3)
+            plots.extend(ax.plot(self.X.T[i + 1], c=colors.next()))
+            if i < self.X.shape[1] - 2:
+                ax.set_xticklabels('')
+        ax1.set_xticklabels('')
+        ax1.legend(plots, [r"$\mathbf{{X_{}}}$".format(i + 1) for i in range(self.X.shape[1])],
+                   bbox_to_anchor=(0., 1 + .01 * self.X.shape[1],
+                                   1., 1. + .01 * self.X.shape[1]), loc=3,
+                   ncol=self.X.shape[1], mode="expand", borderaxespad=0.)
+        pylab.draw()
+        fig.tight_layout(h_pad=.01, rect=(0, 0, 1, .95))
+        return fig
+
     def plot_X(self):
         fig = pylab.figure("MRD X", figsize=(4 * len(self.bgplvms), 3))
         fig.clf()
@@ -267,6 +290,7 @@ class MRD(model):
 
     def _debug_plot(self):
         self.plot_X()
+        self.plot_X_1d()
         self.plot_latent()
         self.plot_scales()
 

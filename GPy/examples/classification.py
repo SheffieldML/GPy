@@ -17,8 +17,7 @@ def crescent_data(seed=default_seed): #FIXME
     :param seed : seed value for data generation.
     :type seed: int
     :param inducing : number of inducing variables (only used for 'FITC' or 'DTC').
-    :type inducing: int
-    """
+    :type inducing: int """
 
     data = GPy.util.datasets.crescent_data(seed=seed)
 

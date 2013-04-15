@@ -1,10 +1,6 @@
 import GPy
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import t, norm
-from coxGP.python.likelihoods.Laplace import Laplace
-from coxGP.python.likelihoods.likelihood_function import student_t
-
 
 def timing():
     real_var = 0.1
@@ -28,15 +24,14 @@ def timing():
         edited_real_sd = real_sd
         kernel1 = GPy.kern.rbf(X.shape[1])
 
-        t_distribution = student_t(deg_free, sigma=edited_real_sd)
-        corrupt_stu_t_likelihood = Laplace(Yc.copy(), t_distribution, rasm=True)
+        t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
+        corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, rasm=True)
         m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel1)
         m.ensure_default_constraints()
         m.update_likelihood_approximation()
         m.optimize()
         the_is[a] = m.likelihood.i
 
-    #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
     print the_is
     print np.mean(the_is)
 
@@ -116,8 +111,8 @@ def student_t_approx():
     edited_real_sd = real_sd
 
     print "Clean student t, rasm"
-    t_distribution = student_t(deg_free, sigma=edited_real_sd)
-    stu_t_likelihood = Laplace(Y.copy(), t_distribution, rasm=True)
+    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
+    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, rasm=True)
     m = GPy.models.GP(X, stu_t_likelihood, kernel6)
     m.ensure_default_constraints()
     m.update_likelihood_approximation()
@@ -129,8 +124,8 @@ def student_t_approx():
     plt.ylim(-2.5, 2.5)
 
     print "Corrupt student t, rasm"
-    t_distribution = student_t(deg_free, sigma=edited_real_sd)
-    corrupt_stu_t_likelihood = Laplace(Yc.copy(), t_distribution, rasm=True)
+    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
+    corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, rasm=True)
     m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel4)
     m.ensure_default_constraints()
     m.update_likelihood_approximation()
@@ -142,8 +137,8 @@ def student_t_approx():
     plt.ylim(-2.5, 2.5)
 
     print "Clean student t, ncg"
-    t_distribution = student_t(deg_free, sigma=edited_real_sd)
-    stu_t_likelihood = Laplace(Y, t_distribution, rasm=False)
+    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
+    stu_t_likelihood = GPy.likelihoods.Laplace(Y, t_distribution, rasm=False)
     m = GPy.models.GP(X, stu_t_likelihood, kernel3)
     m.ensure_default_constraints()
     m.update_likelihood_approximation()
@@ -155,8 +150,8 @@ def student_t_approx():
     plt.ylim(-2.5, 2.5)
 
     print "Corrupt student t, ncg"
-    t_distribution = student_t(deg_free, sigma=edited_real_sd)
-    corrupt_stu_t_likelihood = Laplace(Yc.copy(), t_distribution, rasm=False)
+    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
+    corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, rasm=False)
     m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel5)
     m.ensure_default_constraints()
     m.update_likelihood_approximation()
@@ -169,8 +164,8 @@ def student_t_approx():
 
 
     ###with a student t distribution, since it has heavy tails it should work well
-    ###likelihood_function = student_t(deg_free, sigma=real_var)
-    ###lap = Laplace(Y, likelihood_function)
+    ###likelihood_functions = student_t(deg_free, sigma=real_var)
+    ###lap = Laplace(Y, likelihood_functions)
     ###cov = kernel.K(X)
     ###lap.fit_full(cov)
 

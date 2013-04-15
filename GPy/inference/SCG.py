@@ -105,7 +105,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         iteration += 1
         if display:
             print '\r',
-            print 'Iteration: {0:<5g}  Objective:{1:< 12g}  Scale:{2:< 12g}'.format(iteration, fnow, beta),
+            print 'Iteration: {0:>5g}  Objective:{1:> 12e}  Scale:{2:> 12e}'.format(iteration, fnow, beta),
             # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
             sys.stdout.flush()
 

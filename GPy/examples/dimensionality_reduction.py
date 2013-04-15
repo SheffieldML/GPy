@@ -118,12 +118,12 @@ def mrd_simulation(plot_sim=False):
 #     Y2 -= Y2.mean(0)
 #     make_params = lambda ard: np.hstack([[1], ard, [1, .3]])
 
-    D1, D2, D3, N, M, Q = 5, 5, 5, 150, 18, 5
+    D1, D2, D3, N, M, Q = 6, 7, 8, 150, 18, 5
     x = np.linspace(0, 2 * np.pi, N)[:, None]
 
     s1 = np.vectorize(lambda x: np.sin(x))
     s2 = np.vectorize(lambda x: np.cos(x))
-    s3 = np.vectorize(lambda x: np.cos(4 * x))
+    s3 = np.vectorize(lambda x:-np.exp(-np.cos(2 * x)))
     sS = np.vectorize(lambda x: np.sin(2 * x))
 
     s1 = s1(x)
@@ -131,6 +131,10 @@ def mrd_simulation(plot_sim=False):
     s3 = s3(x)
     sS = sS(x)
 
+    s1 -= s1.mean()
+    s2 -= s2.mean()
+    s3 -= s3.mean()
+    sS -= sS.mean()
     s1 /= np.abs(s1).max()
     s2 /= np.abs(s2).max()
     s3 /= np.abs(s3).max()
@@ -144,9 +148,9 @@ def mrd_simulation(plot_sim=False):
     Y2 = S2.dot(np.random.randn(S2.shape[1], D2))
     Y3 = S3.dot(np.random.randn(S3.shape[1], D3))
 
-    Y1 += .041 * np.random.randn(*Y1.shape)
-    Y2 += .041 * np.random.randn(*Y2.shape)
-    Y3 += .041 * np.random.randn(*Y3.shape)
+    Y1 += .1 * np.random.randn(*Y1.shape)
+    Y2 += .1 * np.random.randn(*Y2.shape)
+    Y3 += .1 * np.random.randn(*Y3.shape)
 
     Y1 -= Y1.mean(0)
     Y2 -= Y2.mean(0)
@@ -155,13 +159,13 @@ def mrd_simulation(plot_sim=False):
     Y2 /= Y2.std(0)
     Y3 /= Y3.std(0)
 
-    Slist = [s1, s2, s3, sS]
-    Ylist = [Y1, Y2, Y3]
+    Slist = [s1, s2, sS]
+    Ylist = [Y1, Y2]
 
     if plot_sim:
         import pylab
         import itertools
-        fig = pylab.figure("MRD Simulation", figsize=(12, 12))
+        fig = pylab.figure("MRD Simulation", figsize=(8, 6))
         fig.clf()
         ax = fig.add_subplot(2, 1, 1)
         labls = sorted(filter(lambda x: x.startswith("s"), locals()))
@@ -179,11 +183,11 @@ def mrd_simulation(plot_sim=False):
     from GPy import kern
     reload(mrd); reload(kern)
     k = kern.rbf(Q, ARD=True) + kern.bias(Q) + kern.white(Q)
-    m = mrd.MRD(*Ylist, Q=Q, M=M, kernel=k, init="concat", _debug=False)
+    m = mrd.MRD(*Ylist, Q=Q, M=M, kernel=k, init="single", _debug=False)
     m.ensure_default_constraints()
 
     # cstr = "noise|white|variance"
-    # m.unconstrain(cstr); m.constrain_bounded(cstr, 1e-6, 1.)
+    # m.unconstrain(cstr); m.constrain_bounded(cstr, 1e-10, 1.)
 
     m.auto_scale_factor = True
 

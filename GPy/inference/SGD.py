@@ -230,6 +230,8 @@ class opt_SGD(Optimizer):
                     shapes = self.get_param_shapes(N, Q)
                     f, step, Nj = self.step_with_missing_data(f_fp, X, step, shapes)
                 else:
+                    self.model.likelihood.YYT = np.dot(self.model.likelihood.Y, self.model.likelihood.Y.T)
+                    self.model.likelihood.trYYT = np.trace(self.model.likelihood.YYT)
                     Nj = N
                     f, fp = f_fp(self.x_opt)
                     step = self.momentum * step + self.learning_rate * fp

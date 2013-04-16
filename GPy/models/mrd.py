@@ -5,11 +5,12 @@ Created on 10 Apr 2013
 '''
 from GPy.core import model
 from GPy.models.Bayesian_GPLVM import Bayesian_GPLVM
-import numpy
 from GPy.models.sparse_GP import sparse_GP
+from GPy.util.linalg import PCA
+from scipy import linalg
+import numpy
 import itertools
 import pylab
-from GPy.util.linalg import PCA
 
 class MRD(model):
     """
@@ -23,8 +24,10 @@ class MRD(model):
     :type names: [str]
     :param Q: latent dimensionality (will raise 
     :type Q: int
-    :param init: initialisation method for the latent space
-    :type init: 'PCA'|'random'
+    :param initx: initialisation method for the latent space
+    :type initx: 'PCA'|'random'
+    :param initz: initialisation method for inducing inputs
+    :type initz: 'permute'|'random'
     :param X:
         Initial latent space
     :param X_variance:
@@ -38,6 +41,7 @@ class MRD(model):
     :param kernel:
         kernel to use
     """
+
     def __init__(self, *Ylist, **kwargs):
         if kwargs.has_key("_debug"):
             self._debug = kwargs['_debug']
@@ -55,24 +59,30 @@ class MRD(model):
             del kwargs['kernel']
         else:
             k = lambda: None
-        if kwargs.has_key('init'):
-            init = kwargs['init']
-            del kwargs['init']
+        if kwargs.has_key('initx'):
+            initx = kwargs['initx']
+            del kwargs['initx']
         else:
-            init = "PCA"
+            initx = "PCA"
+        if kwargs.has_key('initz'):
+            initz = kwargs['initz']
+            del kwargs['initz']
+        else:
+            initz = "permute"
         try:
             self.Q = kwargs["Q"]
         except KeyError:
             raise ValueError("Need Q for MRD")
         try:
             self.M = kwargs["M"]
+            del kwargs["M"]
         except KeyError:
             self.M = 10
 
         self._init = True
-        X = self._init_X(init, Ylist)
-        Z = numpy.random.permutation(X.copy())[:self.M]
-        self.bgplvms = [Bayesian_GPLVM(Y, kernel=k(), X=X, Z=Z, **kwargs) for Y in Ylist]
+        X = self._init_X(initx, Ylist)
+        Z = self._init_Z(initz, X)
+        self.bgplvms = [Bayesian_GPLVM(Y, kernel=k(), X=X, Z=Z, M=self.M, **kwargs) for Y in Ylist]
         del self._init
 
         self.gref = self.bgplvms[0]
@@ -92,6 +102,26 @@ class MRD(model):
     def X(self, X):
         try:
             self.propagate_param(X=X)
+        except AttributeError:
+            if not self._init:
+                raise AttributeError("bgplvm list not initialized")
+    @property
+    def Z(self):
+        return self.gref.Z
+    @Z.setter
+    def Z(self, Z):
+        try:
+            self.propagate_param(Z=Z)
+        except AttributeError:
+            if not self._init:
+                raise AttributeError("bgplvm list not initialized")
+    @property
+    def X_variance(self):
+        return self.gref.X_variance
+    @X_variance.setter
+    def X_variance(self, X_var):
+        try:
+            self.propagate_param(X_variance=X_var)
         except AttributeError:
             if not self._init:
                 raise AttributeError("bgplvm list not initialized")
@@ -119,6 +149,11 @@ class MRD(model):
         for key, val in kwargs.iteritems():
             for g in self.bgplvms:
                 g.__setattr__(key, val)
+
+    def randomize(self, initx='concat', initz='permute', *args, **kw):
+        super(MRD, self).randomize(*args, **kw)
+        self._init_X(initx, self.Ylist)
+        self._init_Z(initz, self.X)
 
     def _get_param_names(self):
         # X_names = sum([['X_%i_%i' % (n, q) for q in range(self.Q)] for n in range(self.N)], [])
@@ -154,14 +189,14 @@ class MRD(model):
         params = numpy.hstack([X, X_var, Z, numpy.hstack(thetas)])
         return params
 
-    def _set_var_params(self, g, X, X_var, Z):
-        g.X = X
-        g.X_variance = X_var
-        g.Z = Z
-
-    def _set_kern_params(self, g, p):
-        g.kern._set_params(p[:g.kern.Nparam])
-        g.likelihood._set_params(p[g.kern.Nparam:])
+#     def _set_var_params(self, g, X, X_var, Z):
+#         g.X = X.reshape(self.N, self.Q)
+#         g.X_variance = X_var.reshape(self.N, self.Q)
+#         g.Z = Z.reshape(self.M, self.Q)
+#
+#     def _set_kern_params(self, g, p):
+#         g.kern._set_params(p[:g.kern.Nparam])
+#         g.likelihood._set_params(p[g.kern.Nparam:])
 
     def _set_params(self, x):
         start = 0; end = self.NQ
@@ -225,25 +260,50 @@ class MRD(model):
         self.X = X
         return X
 
+
+    def _init_Z(self, init="permute", X=None):
+        if X is None:
+            X = self.X
+        if init in "permute":
+            Z = numpy.random.permutation(X.copy())[:self.M]
+        elif init in "random":
+            Z = numpy.random.randn(self.M, self.Q) * X.var()
+        self.Z = Z
+        return Z
+
     def plot_X_1d(self, colors=None):
-        if colors is None:
-            colors = pylab.gca()._get_lines.color_cycle
-        fig = pylab.figure(num="MRD X 1d", figsize=(4 * len(self.bgplvms), (2 * self.X.shape[1])))
+        fig = pylab.figure(num="MRD X 1d", figsize=(min(8, (3 * len(self.bgplvms))), min(12, (2 * self.X.shape[1]))))
         fig.clf()
         ax1 = fig.add_subplot(self.X.shape[1], 1, 1)
+        if colors is None:
+            colors = ax1._get_lines.color_cycle
         ax1.plot(self.X, c='k', alpha=.3)
         plots = ax1.plot(self.X.T[0], c=colors.next())
+        ax1.fill_between(numpy.arange(self.X.shape[0]),
+                         self.X.T[0] - 2 * numpy.sqrt(self.gref.X_variance.T[0]),
+                         self.X.T[0] + 2 * numpy.sqrt(self.gref.X_variance.T[0]),
+                         facecolor=plots[-1].get_color(),
+                         alpha=.3)
+        ax1.text(1, 1, r"$\mathbf{{X_{}}}".format(1),
+                 horizontalalignment='right',
+                 verticalalignment='top',
+                 transform=ax1.transAxes)
         for i in range(self.X.shape[1] - 1):
             ax = fig.add_subplot(self.X.shape[1], 1, i + 2)
             ax.plot(self.X, c='k', alpha=.3)
             plots.extend(ax.plot(self.X.T[i + 1], c=colors.next()))
+            ax.fill_between(numpy.arange(self.X.shape[0]),
+                            self.X.T[i + 1] - 2 * numpy.sqrt(self.gref.X_variance.T[i + 1]),
+                            self.X.T[i + 1] + 2 * numpy.sqrt(self.gref.X_variance.T[i + 1]),
+                            facecolor=plots[-1].get_color(),
+                            alpha=.3)
             if i < self.X.shape[1] - 2:
                 ax.set_xticklabels('')
         ax1.set_xticklabels('')
-        ax1.legend(plots, [r"$\mathbf{{X_{}}}$".format(i + 1) for i in range(self.X.shape[1])],
-                   bbox_to_anchor=(0., 1 + .01 * self.X.shape[1],
-                                   1., 1. + .01 * self.X.shape[1]), loc=3,
-                   ncol=self.X.shape[1], mode="expand", borderaxespad=0.)
+#         ax1.legend(plots, [r"$\mathbf{{X_{}}}$".format(i + 1) for i in range(self.X.shape[1])],
+#                    bbox_to_anchor=(0., 1 + .01 * self.X.shape[1],
+#                                    1., 1. + .01 * self.X.shape[1]), loc=3,
+#                    ncol=self.X.shape[1], mode="expand", borderaxespad=0.)
         pylab.draw()
         fig.tight_layout(h_pad=.01, rect=(0, 0, 1, .95))
         return fig

@@ -90,7 +90,7 @@ class GPLVM(GP):
         Xtest_full = np.zeros((Xtest.shape[0], self.X.shape[1]))
         Xtest_full[:, :2] = Xtest
         mu, var, low, up = self.predict(Xtest_full)
-        var = var[:, :1] 
+        var = var[:, :1]
         ax.imshow(var.reshape(resolution, resolution).T[::-1, :],
                   extent=[xmin[0], xmax[0], xmin[1], xmax[1]], cmap=pb.cm.binary,interpolation='bilinear')
 
@@ -109,17 +109,16 @@ class GPLVM(GP):
             else:
                 x = self.X[index,input_1]
                 y = self.X[index,input_2]
-            pb.plot(x,y,marker='o',color=util.plot.Tango.nextMedium(),mew=0,label=this_label,linewidth=0)
+            ax.plot(x,y,marker='o',color=util.plot.Tango.nextMedium(),mew=0,label=this_label,linewidth=0)
 
-        ax.set_xlabel('latent dimension %i' % input_1)
-        ax.set_ylabel('latent dimension %i' % input_2)
+        ax.set_xlabel('latent dimension %i'%input_1)
+        ax.set_ylabel('latent dimension %i'%input_2)
 
         if not np.all(labels==1.):
-            ax.legend(loc=0, numpoints=1)
+            ax.legend(loc=0,numpoints=1)
 
-        ax.set_xlim(xmin[0], xmax[0])
-        ax.set_ylim(xmin[1], xmax[1])
-        ax.grid(b=False)  # remove the grid if present, it doesn't look good
-        # ax = pb.gca()
+        ax.set_xlim(xmin[0],xmax[0])
+        ax.set_ylim(xmin[1],xmax[1])
+        ax.grid(b=False) # remove the grid if present, it doesn't look good
         ax.set_aspect('auto') # set a nice aspect ratio
         return ax

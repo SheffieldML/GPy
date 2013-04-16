@@ -220,7 +220,7 @@ class opt_SGD(Optimizer):
             b = len(features)/self.batch_size
             features = [features[i::b] for i in range(b)]
             NLL = []
-
+            import pylab as plt
             for count, j in enumerate(features):
                 self.model.D = len(j)
                 self.model.likelihood.D = len(j)
@@ -246,7 +246,11 @@ class opt_SGD(Optimizer):
                 NLL.append(f)
 
                 self.fopt_trace.append(f)
+                # fig = plt.figure('traces')
+                # plt.clf()
+                # plt.plot(self.param_traces['noise'])
 
+                # import pdb; pdb.set_trace()
                 # for k in self.param_traces.keys():
                 #     self.param_traces[k].append(self.model.get(k)[0])
 

@@ -6,6 +6,7 @@ import pylab as pb
 from matplotlib import pyplot as plt, pyplot
 
 import GPy
+from GPy.models.Bayesian_GPLVM import Bayesian_GPLVM
 
 default_seed = np.random.seed(123344)
 
@@ -46,7 +47,7 @@ def GPLVM_oil_100(optimize=True):
     data = GPy.util.datasets.oil_100()
 
     # create simple GP model
-    kernel = GPy.kern.rbf(6, ARD = True) + GPy.kern.bias(6)
+    kernel = GPy.kern.rbf(6, ARD=True) + GPy.kern.bias(6)
     m = GPy.models.GPLVM(data['X'], 6, kernel=kernel)
     m.data_labels = data['Y'].argmax(axis=1)
 
@@ -99,6 +100,92 @@ def oil_100():
     # m.plot_latent(labels=data['Y'].argmax(axis=1))
     return m
 
+def _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim=False):
+    x = np.linspace(0, 4 * np.pi, N)[:, None]
+    s1 = np.vectorize(lambda x: np.sin(x))
+    s2 = np.vectorize(lambda x: x * np.cos(x))
+    s3 = np.vectorize(lambda x: np.sin(2 * x))
+    sS = np.vectorize(lambda x:-np.exp(-np.cos(2 * x)))
+
+    s1 = s1(x)
+    s2 = s2(x)
+    s3 = s3(x)
+    sS = sS(x)
+
+    s1 -= s1.mean()
+    s2 -= s2.mean()
+    s3 -= s3.mean()
+    sS -= sS.mean()
+    s1 /= .5 * (np.abs(s1).max() - np.abs(s1).min())
+    s2 /= .5 * (np.abs(s2).max() - np.abs(s2).min())
+    s3 /= .5 * (np.abs(s3).max() - np.abs(s3).min())
+    sS /= .5 * (np.abs(sS).max() - np.abs(sS).min())
+
+    S1 = np.hstack([s1, sS])
+    S2 = np.hstack([s2, sS])
+    S3 = np.hstack([s3, sS])
+
+    Y1 = S1.dot(np.random.randn(S1.shape[1], D1))
+    Y2 = S2.dot(np.random.randn(S2.shape[1], D2))
+    Y3 = S3.dot(np.random.randn(S3.shape[1], D3))
+
+    Y1 += .5 * np.random.randn(*Y1.shape)
+    Y2 += .5 * np.random.randn(*Y2.shape)
+    Y3 += .5 * np.random.randn(*Y3.shape)
+
+    Y1 -= Y1.mean(0)
+    Y2 -= Y2.mean(0)
+    Y3 -= Y3.mean(0)
+    Y1 /= Y1.std(0)
+    Y2 /= Y2.std(0)
+    Y3 /= Y3.std(0)
+
+    slist = [s1, s2, s3, sS]
+    Ylist = [Y1, Y2, Y3]
+
+    if plot_sim:
+        import pylab
+        import itertools
+        fig = pylab.figure("MRD Simulation", figsize=(8, 6))
+        fig.clf()
+        ax = fig.add_subplot(2, 1, 1)
+        labls = sorted(filter(lambda x: x.startswith("s"), locals()))
+        for S, lab in itertools.izip(slist, labls):
+            ax.plot(S, label=lab)
+        ax.legend()
+        for i, Y in enumerate(Ylist):
+            ax = fig.add_subplot(2, len(Ylist), len(Ylist) + 1 + i)
+            ax.imshow(Y)
+            ax.set_title("Y{}".format(i + 1))
+        pylab.draw()
+        pylab.tight_layout()
+
+    return slist, [S1, S2, S3], Ylist
+
+def bgplvm_simulation(plot_sim=False):
+    D1, D2, D3, N, M, Q = 50, 34, 8, 100, 2, 6
+    slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim)
+
+    from GPy.models import mrd
+    from GPy import kern
+    reload(mrd); reload(kern)
+
+    Y = Ylist[0]
+
+    k = kern.linear(Q, ARD=True) + kern.bias(Q, .01) + kern.white(Q, .1)
+    m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k)
+    m.ensure_default_constraints()
+    m.set('noise', Y.var() / 100.)
+    m.auto_scale_factor = True
+
+    cstr = 'variance'
+    m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-20, 1.)
+
+    cstr = 'linear_variance'
+    m.unconstrain(cstr), m.constrain_positive(cstr)
+
+    return m
+
 def mrd_simulation(plot_sim=False):
     # num = 2
 #     ard1 = np.array([1., 1, 0, 0], dtype=float)
@@ -117,32 +204,8 @@ def mrd_simulation(plot_sim=False):
 #     Y2 = np.random.multivariate_normal(np.zeros(N), k.K(X), D2).T
 #     Y2 -= Y2.mean(0)
 #     make_params = lambda ard: np.hstack([[1], ard, [1, .3]])
-
-    D1, D2, D3, N, M, Q = 50, 100, 8, 300, 2, 6
-    x = np.linspace(0, 4 * np.pi, N)[:, None]
-
-    s1 = np.vectorize(lambda x: np.sin(x))
-    s2 = np.vectorize(lambda x: x * np.cos(x))
-    sS = np.vectorize(lambda x:-np.exp(-np.cos(2 * x)))
-    s3 = np.vectorize(lambda x: np.sin(2 * x))
-
-    s1 = s1(x)
-    s2 = s2(x)
-    s3 = s3(x)
-    sS = sS(x)
-
-    s1 -= s1.mean()
-    s2 -= s2.mean()
-    s3 -= s3.mean()
-    sS -= sS.mean()
-    s1 /= np.abs(s1).max()
-    s2 /= np.abs(s2).max()
-    s3 /= np.abs(s3).max()
-    sS /= np.abs(sS).max()
-
-    S1 = np.hstack([s1, sS])
-    S2 = np.hstack([s2, sS])
-    S3 = np.hstack([s3, sS])
+    D1, D2, D3, N, M, Q = 50, 34, 8, 100, 2, 6
+    slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim)
 
     from GPy.models import mrd
     from GPy import kern
@@ -153,41 +216,7 @@ def mrd_simulation(plot_sim=False):
 #     Y2 = np.random.multivariate_normal(np.zeros(N), k.K(S2), D2).T
 #     Y3 = np.random.multivariate_normal(np.zeros(N), k.K(S3), D3).T
 
-    Y1 = S1.dot(np.random.randn(S1.shape[1], D1))
-    Y2 = S2.dot(np.random.randn(S2.shape[1], D2))
-    Y3 = S3.dot(np.random.randn(S3.shape[1], D3))
-
-    Y1 += .5 * np.random.randn(*Y1.shape)
-    Y2 += .5 * np.random.randn(*Y2.shape)
-    Y3 += .5 * np.random.randn(*Y3.shape)
-
-    Y1 -= Y1.mean(0)
-    Y2 -= Y2.mean(0)
-    Y3 -= Y3.mean(0)
-
-    Y1 /= Y1.std(0)
-    Y2 /= Y2.std(0)
-    Y3 /= Y3.std(0)
-
-    Slist = [s1, s2, sS]
-    Ylist = [Y1]
-
-    if plot_sim:
-        import pylab
-        import itertools
-        fig = pylab.figure("MRD Simulation", figsize=(8, 6))
-        fig.clf()
-        ax = fig.add_subplot(2, 1, 1)
-        labls = sorted(filter(lambda x: x.startswith("s"), locals()))
-        for S, lab in itertools.izip(Slist, labls):
-            ax.plot(x, S, label=lab)
-        ax.legend()
-        for i, Y in enumerate(Ylist):
-            ax = fig.add_subplot(2, len(Ylist), len(Ylist) + 1 + i)
-            ax.imshow(Y)
-            ax.set_title("Y{}".format(i + 1))
-        pylab.draw()
-        pylab.tight_layout()
+    Ylist = [Ylist[0]]
 
     # k = kern.rbf(Q, ARD=True) + kern.bias(Q) + kern.white(Q)
 
@@ -199,29 +228,28 @@ def mrd_simulation(plot_sim=False):
     for i, Y in enumerate(Ylist):
         m.set('{}_noise'.format(i + 1), Y.var() / 100.)
 
-    cstr = "variance"
-    m.unconstrain(cstr); m.constrain_bounded(cstr, 1e-12, 1.)
+
+    cstr = 'variance'
+    m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-12, 1.)
+
+    cstr = 'linear_variance'
+    m.unconstrain(cstr), m.constrain_positive(cstr)
 
 #     print "initializing beta"
 #     cstr = "noise"
 #     m.unconstrain(cstr); m.constrain_fixed(cstr)
-#     import ipdb;ipdb.set_trace()
-#     m.optimize('scg', messages=1, max_f_eval=200)
-#
+#     m.optimize('scg', messages=1, max_f_eval=100)
+
 #     print "releasing beta"
 #     cstr = "noise"
 #     m.unconstrain(cstr);  m.constrain_positive(cstr)
 
+    np.seterr(all='call')
+    def ipdbonerr(errtype, flags):
+        import ipdb; ipdb.set_trace()
+    np.seterrcall(ipdbonerr)
 
-    m.auto_scale_factor = True
-
-#     fig = pyplot.figure("expected", figsize=(8, 3))
-#     ax = fig.add_subplot(121)
-#     ax.bar(np.arange(ard1.size) + .1, ard1)
-#     ax = fig.add_subplot(122)
-#     ax.bar(np.arange(ard2.size) + .1, ard2)
-
-    return m
+    return m  # , mtest
 
 def mrd_silhouette():
 

@@ -99,6 +99,7 @@ class sparse_GP(GP):
         self.V = (self.likelihood.precision/self.scale_factor)*self.likelihood.Y
 
         #Compute A = L^-1 psi2 beta L^-T
+        #self. A = mdot(self.Lmi,self.psi2_beta_scaled,self.Lmi.T)
         tmp = linalg.lapack.flapack.dtrtrs(self.Lm,self.psi2_beta_scaled.T,lower=1)[0]
         self.A = linalg.lapack.flapack.dtrtrs(self.Lm,np.asarray(tmp.T,order='F'),lower=1)[0]
 
@@ -142,9 +143,11 @@ class sparse_GP(GP):
 
 
         # Compute dL_dKmm
-        self.dL_dKmm = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi)*sf2 # dB
+        #self.dL_dKmm_old = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi)*sf2 # dB
         #self.dL_dKmm += -0.5 * self.D * (- self.C/sf2 - 2.*mdot(self.C, self.psi2_beta_scaled, self.Kmmi) + self.Kmmi) # dC
         #self.dL_dKmm +=  np.dot(np.dot(self.E*sf2, self.psi2_beta_scaled) - self.Cpsi1VVpsi1, self.Kmmi) + 0.5*self.E # dD
+        tmp = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(self.A),lower=1,trans=1)[0]
+        self.dL_dKmm = -0.5*self.D*sf2*linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1,trans=1)[0] #dA
         self.dL_dKmm += 0.5*(self.D*(self.C/sf2 -self.Kmmi) + self.E) + np.dot(np.dot(self.D*self.C + self.E*sf2,self.psi2_beta_scaled) - self.Cpsi1VVpsi1,self.Kmmi) # d(C+D)
 
         #the partial derivative vector for the likelihood

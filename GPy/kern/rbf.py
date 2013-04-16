@@ -239,13 +239,13 @@ class rbf(kernpart):
         psi2 = np.empty((N,M,M))
 
         psi2_Zdist_sq = self._psi2_Zdist_sq
-        half_log_psi2_denom = 0.5*np.log(self._psi2_denom).squeeze()
+        _psi2_denom = self._psi2_denom.squeeze().reshape(N,self.D)
+        half_log_psi2_denom = 0.5*np.log(self._psi2_denom).squeeze().reshape(N,self.D)
         variance_sq = float(np.square(self.variance))
         if self.ARD:
             lengthscale2 = self.lengthscale2
         else:
             lengthscale2 = np.ones(Q)*self.lengthscale2
-        _psi2_denom = self._psi2_denom.squeeze()
         code = """
         double tmp;
 

@@ -6,7 +6,6 @@ import pylab as pb
 from matplotlib import pyplot as plt, pyplot
 
 import GPy
-from GPy.models.mrd import MRD
 
 default_seed = np.random.seed(123344)
 
@@ -100,12 +99,12 @@ def oil_100():
     # m.plot_latent(labels=data['Y'].argmax(axis=1))
     return m
 
-def mrd_simulation():
+def mrd_simulation(plot_sim=False):
     # num = 2
-    ard1 = np.array([1., 1, 0, 0], dtype=float)
-    ard2 = np.array([0., 1, 1, 0], dtype=float)
-    ard1[ard1 == 0] = 1E-10
-    ard2[ard2 == 0] = 1E-10
+#     ard1 = np.array([1., 1, 0, 0], dtype=float)
+#     ard2 = np.array([0., 1, 1, 0], dtype=float)
+#     ard1[ard1 == 0] = 1E-10
+#     ard2[ard2 == 0] = 1E-10
 
 #     ard1i = 1. / ard1
 #     ard2i = 1. / ard2
@@ -119,23 +118,100 @@ def mrd_simulation():
 #     Y2 -= Y2.mean(0)
 #     make_params = lambda ard: np.hstack([[1], ard, [1, .3]])
 
-    D1, D2, N, M, Q = 50, 100, 150, 15, 4
-    x = np.linspace(0, 2 * np.pi, N)[:, None]
+    D1, D2, D3, N, M, Q = 50, 100, 8, 200, 2, 5
+    x = np.linspace(0, 8 * np.pi, N)[:, None]
 
     s1 = np.vectorize(lambda x: np.sin(x))
     s2 = np.vectorize(lambda x: np.cos(x))
-    sS = np.vectorize(lambda x: np.sin(2 * x))
+    s3 = np.vectorize(lambda x:-np.exp(-np.cos(2 * x)))
+    sS = np.vectorize(lambda x: x * np.sin(2 * x))
 
-    S1 = np.hstack([s1(x), sS(x)])
-    S2 = np.hstack([s2(x), sS(x)])
+    s1 = s1(x)
+    s2 = s2(x)
+    s3 = s3(x)
+    sS = sS(x)
+
+    s1 -= s1.mean()
+    s2 -= s2.mean()
+    s3 -= s3.mean()
+    sS -= sS.mean()
+    s1 /= np.abs(s1).max()
+    s2 /= np.abs(s2).max()
+    s3 /= np.abs(s3).max()
+    sS /= np.abs(sS).max()
+
+    S1 = np.hstack([s1, sS])
+    S2 = np.hstack([s2, sS])
+    S3 = np.hstack([s3, sS])
+
+    from GPy.models import mrd
+    from GPy import kern
+    reload(mrd); reload(kern)
+
+#    k = kern.rbf(2, ARD=True) + kern.bias(2) + kern.white(2)
+#     Y1 = np.random.multivariate_normal(np.zeros(N), k.K(S1), D1).T
+#     Y2 = np.random.multivariate_normal(np.zeros(N), k.K(S2), D2).T
+#     Y3 = np.random.multivariate_normal(np.zeros(N), k.K(S3), D3).T
 
     Y1 = S1.dot(np.random.randn(S1.shape[1], D1))
     Y2 = S2.dot(np.random.randn(S2.shape[1], D2))
+    Y3 = S3.dot(np.random.randn(S3.shape[1], D3))
 
-    k = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
+    Y1 += .5 * np.random.randn(*Y1.shape)
+    Y2 += .5 * np.random.randn(*Y2.shape)
+    Y3 += .5 * np.random.randn(*Y3.shape)
 
-    m = MRD(Y1, Y2, Q=Q, M=M, kernel=k, init="PCA", _debug=False)
+#     Y1 -= Y1.mean(0)
+#     Y2 -= Y2.mean(0)
+#     Y3 -= Y3.mean(0)
+
+    # Y1 /= Y1.std(0)
+    # Y2 /= Y2.std(0)
+    # Y3 /= Y3.std(0)
+
+    Slist = [s1, s2, sS]
+    Ylist = [Y1, Y2]
+
+    if plot_sim:
+        import pylab
+        import itertools
+        fig = pylab.figure("MRD Simulation", figsize=(8, 6))
+        fig.clf()
+        ax = fig.add_subplot(2, 1, 1)
+        labls = sorted(filter(lambda x: x.startswith("s"), locals()))
+        for S, lab in itertools.izip(Slist, labls):
+            ax.plot(x, S, label=lab)
+        ax.legend()
+        for i, Y in enumerate(Ylist):
+            ax = fig.add_subplot(2, len(Ylist), len(Ylist) + 1 + i)
+            ax.imshow(Y)
+            ax.set_title("Y{}".format(i + 1))
+        pylab.draw()
+        pylab.tight_layout()
+
+    # k = kern.rbf(Q, ARD=True) + kern.bias(Q) + kern.white(Q)
+    k = kern.linear(Q, ARD=True) + kern.bias(Q) + kern.white(Q)
+    m = mrd.MRD(*Ylist, Q=Q, M=M, kernel=k, initx="concat", _debug=False)
     m.ensure_default_constraints()
+
+    for i, Y in enumerate(Ylist):
+        m.set('{}_noise'.format(i + 1), Y.var() / 100.)
+
+#     import ipdb;ipdb.set_trace()
+    cstr = "variance"
+    m.unconstrain(cstr); m.constrain_bounded(cstr, 1e-15, 1.)
+
+#     print "initializing beta"
+#     cstr = "noise"
+#     m.unconstrain(cstr); m.constrain_fixed(cstr)
+#     m.optimize('scg', messages=1, max_f_eval=200)
+#
+#     print "releasing beta"
+#     cstr = "noise"
+#     m.unconstrain(cstr);  m.constrain_positive(cstr)
+
+
+    m.auto_scale_factor = True
 
 #     fig = pyplot.figure("expected", figsize=(8, 3))
 #     ax = fig.add_subplot(121)
@@ -144,6 +220,10 @@ def mrd_simulation():
 #     ax.bar(np.arange(ard2.size) + .1, ard2)
 
     return m
+
+def mrd_silhouette():
+
+    pass
 
 def brendan_faces():
     data = GPy.util.datasets.brendan_faces()

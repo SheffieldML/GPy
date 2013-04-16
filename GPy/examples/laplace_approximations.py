@@ -164,8 +164,8 @@ def student_t_approx():
 
 
     ###with a student t distribution, since it has heavy tails it should work well
-    ###likelihood_functions = student_t(deg_free, sigma=real_var)
-    ###lap = Laplace(Y, likelihood_functions)
+    ###likelihood_function = student_t(deg_free, sigma=real_var)
+    ###lap = Laplace(Y, likelihood_function)
     ###cov = kernel.K(X)
     ###lap.fit_full(cov)
 

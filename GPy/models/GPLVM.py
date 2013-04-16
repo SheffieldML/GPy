@@ -60,12 +60,13 @@ class GPLVM(GP):
         mu, var, upper, lower = self.predict(Xnew)
         pb.plot(mu[:,0], mu[:,1],'k',linewidth=1.5)
 
-    def plot_latent(self, labels=None, which_indices=None, resolution=50, ax=pb.gca()):
+    def plot_latent(self, labels=None, which_indices=None, resolution=50, ax=None):
         """
         :param labels: a np.array of size self.N containing labels for the points (can be number, strings, etc)
         :param resolution: the resolution of the grid on which to evaluate the predictive variance
         """
-
+        if ax is None:
+            ax = pb.gca()
         util.plot.Tango.reset()
 
         if labels is None:

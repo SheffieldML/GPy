@@ -118,13 +118,13 @@ def mrd_simulation(plot_sim=False):
 #     Y2 -= Y2.mean(0)
 #     make_params = lambda ard: np.hstack([[1], ard, [1, .3]])
 
-    D1, D2, D3, N, M, Q = 50, 100, 8, 200, 2, 5
-    x = np.linspace(0, 8 * np.pi, N)[:, None]
+    D1, D2, D3, N, M, Q = 50, 100, 8, 300, 2, 6
+    x = np.linspace(0, 4 * np.pi, N)[:, None]
 
     s1 = np.vectorize(lambda x: np.sin(x))
-    s2 = np.vectorize(lambda x: np.cos(x))
-    s3 = np.vectorize(lambda x:-np.exp(-np.cos(2 * x)))
-    sS = np.vectorize(lambda x: x * np.sin(2 * x))
+    s2 = np.vectorize(lambda x: x * np.cos(x))
+    sS = np.vectorize(lambda x:-np.exp(-np.cos(2 * x)))
+    s3 = np.vectorize(lambda x: np.sin(2 * x))
 
     s1 = s1(x)
     s2 = s2(x)
@@ -161,16 +161,16 @@ def mrd_simulation(plot_sim=False):
     Y2 += .5 * np.random.randn(*Y2.shape)
     Y3 += .5 * np.random.randn(*Y3.shape)
 
-#     Y1 -= Y1.mean(0)
-#     Y2 -= Y2.mean(0)
-#     Y3 -= Y3.mean(0)
+    Y1 -= Y1.mean(0)
+    Y2 -= Y2.mean(0)
+    Y3 -= Y3.mean(0)
 
-    # Y1 /= Y1.std(0)
-    # Y2 /= Y2.std(0)
-    # Y3 /= Y3.std(0)
+    Y1 /= Y1.std(0)
+    Y2 /= Y2.std(0)
+    Y3 /= Y3.std(0)
 
     Slist = [s1, s2, sS]
-    Ylist = [Y1, Y2]
+    Ylist = [Y1]
 
     if plot_sim:
         import pylab
@@ -190,20 +190,22 @@ def mrd_simulation(plot_sim=False):
         pylab.tight_layout()
 
     # k = kern.rbf(Q, ARD=True) + kern.bias(Q) + kern.white(Q)
-    k = kern.linear(Q, ARD=True) + kern.bias(Q) + kern.white(Q)
-    m = mrd.MRD(*Ylist, Q=Q, M=M, kernel=k, initx="concat", _debug=False)
+
+    k = kern.linear(Q, ARD=True) + kern.bias(Q, .01) + kern.white(Q, .1)
+    m = mrd.MRD(*Ylist, Q=Q, M=M, kernel=k, initx="concat", initz='permute', _debug=False)
     m.ensure_default_constraints()
+    ardvar = 5. / (m.X.max(axis=0) - m.X.min(axis=0))
 
     for i, Y in enumerate(Ylist):
         m.set('{}_noise'.format(i + 1), Y.var() / 100.)
 
-#     import ipdb;ipdb.set_trace()
     cstr = "variance"
-    m.unconstrain(cstr); m.constrain_bounded(cstr, 1e-15, 1.)
+    m.unconstrain(cstr); m.constrain_bounded(cstr, 1e-12, 1.)
 
 #     print "initializing beta"
 #     cstr = "noise"
 #     m.unconstrain(cstr); m.constrain_fixed(cstr)
+#     import ipdb;ipdb.set_trace()
 #     m.optimize('scg', messages=1, max_f_eval=200)
 #
 #     print "releasing beta"

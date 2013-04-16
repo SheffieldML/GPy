@@ -273,39 +273,28 @@ class MRD(model):
 
     def plot_X_1d(self, colors=None):
         fig = pylab.figure(num="MRD X 1d", figsize=(min(8, (3 * len(self.bgplvms))), min(12, (2 * self.X.shape[1]))))
-        fig.clf()
-        ax1 = fig.add_subplot(self.X.shape[1], 1, 1)
         if colors is None:
-            colors = ax1._get_lines.color_cycle
-        ax1.plot(self.X, c='k', alpha=.3)
-        plots = ax1.plot(self.X.T[0], c=colors.next())
-        ax1.fill_between(numpy.arange(self.X.shape[0]),
-                         self.X.T[0] - 2 * numpy.sqrt(self.gref.X_variance.T[0]),
-                         self.X.T[0] + 2 * numpy.sqrt(self.gref.X_variance.T[0]),
-                         facecolor=plots[-1].get_color(),
-                         alpha=.3)
-        ax1.text(1, 1, r"$\mathbf{{X_{}}}".format(1),
-                 horizontalalignment='right',
-                 verticalalignment='top',
-                 transform=ax1.transAxes)
-        for i in range(self.X.shape[1] - 1):
-            ax = fig.add_subplot(self.X.shape[1], 1, i + 2)
+            colors = pylab.gca()._get_lines.color_cycle
+            pylab.clf()
+        plots = []
+        for i in range(self.X.shape[1]):
+            ax = fig.add_subplot(self.X.shape[1], 1, i + 1)
             ax.plot(self.X, c='k', alpha=.3)
-            plots.extend(ax.plot(self.X.T[i + 1], c=colors.next()))
+            plots.extend(ax.plot(self.X.T[i], c=colors.next(), label=r"$\mathbf{{X_{}}}$".format(i)))
             ax.fill_between(numpy.arange(self.X.shape[0]),
-                            self.X.T[i + 1] - 2 * numpy.sqrt(self.gref.X_variance.T[i + 1]),
-                            self.X.T[i + 1] + 2 * numpy.sqrt(self.gref.X_variance.T[i + 1]),
+                            self.X.T[i] - 2 * numpy.sqrt(self.gref.X_variance.T[i]),
+                            self.X.T[i] + 2 * numpy.sqrt(self.gref.X_variance.T[i]),
                             facecolor=plots[-1].get_color(),
                             alpha=.3)
-            if i < self.X.shape[1] - 2:
+            ax.legend(borderaxespad=0.)
+            if i < self.X.shape[1] - 1:
                 ax.set_xticklabels('')
-        ax1.set_xticklabels('')
 #         ax1.legend(plots, [r"$\mathbf{{X_{}}}$".format(i + 1) for i in range(self.X.shape[1])],
 #                    bbox_to_anchor=(0., 1 + .01 * self.X.shape[1],
 #                                    1., 1. + .01 * self.X.shape[1]), loc=3,
 #                    ncol=self.X.shape[1], mode="expand", borderaxespad=0.)
         pylab.draw()
-        fig.tight_layout(h_pad=.01, rect=(0, 0, 1, .95))
+        fig.tight_layout(h_pad=.01)  # , rect=(0, 0, 1, .95))
         return fig
 
     def plot_X(self):

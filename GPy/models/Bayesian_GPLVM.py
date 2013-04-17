@@ -9,6 +9,7 @@ from sparse_GP import sparse_GP
 from GPy.util.linalg import pdinv
 from ..likelihoods import Gaussian
 from .. import kern
+from numpy.linalg.linalg import LinAlgError
 
 class Bayesian_GPLVM(sparse_GP, GPLVM):
     """
@@ -22,7 +23,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, Y, Q, X=None, X_variance=None, init='PCA', M=10, Z=None, kernel=None, **kwargs):
+    def __init__(self, Y, Q, X=None, X_variance=None, init='PCA', M=10, Z=None, kernel=None, oldpsave=5, **kwargs):
         if X == None:
             X = self.initialise_latent(init, Q, Y)
 
@@ -36,8 +37,20 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         if kernel is None:
             kernel = kern.rbf(Q) + kern.white(Q)
 
+        self.oldpsave = oldpsave
+        self._oldps = []
 
         sparse_GP.__init__(self, X, Gaussian(Y), kernel, Z=Z, X_variance=X_variance, **kwargs)
+
+    @property
+    def oldps(self):
+        return self._oldps
+    @oldps.setter
+    def oldps(self, p):
+        if len(self._oldps) == (self.oldpsave + 1):
+            self._oldps.pop()
+        # if len(self._oldps) == 0 or not np.any([np.any(np.abs(p - op) > 1e-5) for op in self._oldps]):
+        self._oldps.insert(0, p.copy())
 
     def _get_param_names(self):
         X_names = sum([['X_%i_%i' % (n, q) for q in range(self.Q)] for n in range(self.N)], [])
@@ -54,14 +67,19 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         ===============================================================
 
         """
-        return np.hstack((self.X.flatten(), self.X_variance.flatten(), sparse_GP._get_params(self)))
+        x = np.hstack((self.X.flatten(), self.X_variance.flatten(), sparse_GP._get_params(self)))
+        return x
 
-    def _set_params(self, x):
-        N, Q = self.N, self.Q
-        self.X = x[:self.X.size].reshape(N, Q).copy()
-        self.X_variance = x[(N * Q):(2 * N * Q)].reshape(N, Q).copy()
-        sparse_GP._set_params(self, x[(2 * N * Q):])
-
+    def _set_params(self, x, save_old=True):
+        try:
+            N, Q = self.N, self.Q
+            self.X = x[:self.X.size].reshape(N, Q).copy()
+            self.X_variance = x[(N * Q):(2 * N * Q)].reshape(N, Q).copy()
+            sparse_GP._set_params(self, x[(2 * N * Q):])
+            self.oldps = x
+        except (LinAlgError, FloatingPointError):
+            print "\rWARNING: Caught LinAlgError, reconstructing old state            "
+            self._set_params(self.oldps[-1], save_old=False)
 
     def dKL_dmuS(self):
         dKL_dS = (1. - (1. / self.X_variance)) * 0.5

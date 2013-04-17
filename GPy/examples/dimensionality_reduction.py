@@ -103,9 +103,9 @@ def oil_100():
 def _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim=False):
     x = np.linspace(0, 4 * np.pi, N)[:, None]
     s1 = np.vectorize(lambda x: np.sin(x))
-    s2 = np.vectorize(lambda x: x * np.cos(x))
-    s3 = np.vectorize(lambda x: np.sin(2 * x))
-    sS = np.vectorize(lambda x:-np.exp(-np.cos(2 * x)))
+    s2 = np.vectorize(lambda x: np.cos(x))
+    s3 = np.vectorize(lambda x:-np.exp(-np.cos(2 * x)))
+    sS = np.vectorize(lambda x: np.sin(2 * x))
 
     s1 = s1(x)
     s2 = s2(x)
@@ -162,27 +162,57 @@ def _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim=False):
 
     return slist, [S1, S2, S3], Ylist
 
-def bgplvm_simulation(plot_sim=False):
-    D1, D2, D3, N, M, Q = 50, 34, 8, 100, 2, 6
+def bgplvm_simulation(burnin='scg', plot_sim=False, max_f_eval=12):
+    D1, D2, D3, N, M, Q = 2000, 8, 8, 500, 2, 6
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim)
 
     from GPy.models import mrd
     from GPy import kern
     reload(mrd); reload(kern)
 
-    Y = Ylist[0]
+    Y = Ylist[1]
 
-    k = kern.linear(Q, ARD=True) + kern.bias(Q, .01) + kern.white(Q, .1)
+    k = kern.linear(Q, ARD=True) + kern.bias(Q, .0001) + kern.white(Q, .1)
     m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k)
-    m.ensure_default_constraints()
     m.set('noise', Y.var() / 100.)
-    m.auto_scale_factor = True
+#     m.auto_scale_factor = True
+#     m.scale_factor = 1.
 
-    cstr = 'variance'
-    m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-20, 1.)
+    m.ensure_default_constraints()
 
-    cstr = 'linear_variance'
-    m.unconstrain(cstr), m.constrain_positive(cstr)
+    if burnin:
+        print "initializing beta"
+        cstr = "noise"
+        m.unconstrain(cstr); m.constrain_fixed(cstr)
+        m.optimize(burnin, messages=1, max_f_eval=max_f_eval)
+
+        print "releasing beta"
+        cstr = "noise"
+        m.unconstrain(cstr);  m.constrain_positive(cstr)
+
+
+# #     cstr = 'variance'
+# #     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-10, 1.)
+#     cstr = 'X_\d'
+#     m.unconstrain(cstr), m.constrain_bounded(cstr, -100., 100.)
+#
+#     cstr = 'noise'
+#     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-3, 1.)
+#
+#     cstr = 'white'
+#     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-6, 1.)
+#
+#     cstr = 'linear_variance'
+#     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-10, 10.)  # m.constrain_positive(cstr)
+#
+#     cstr = 'X_variance'
+#     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-10, 1.)  # m.constrain_positive(cstr)
+
+#     np.seterr(all='call')
+#     def ipdbonerr(errtype, flags):
+#         import ipdb; ipdb.set_trace()
+#     np.seterrcall(ipdbonerr)
+
 
     return m
 
@@ -204,7 +234,7 @@ def mrd_simulation(plot_sim=False):
 #     Y2 = np.random.multivariate_normal(np.zeros(N), k.K(X), D2).T
 #     Y2 -= Y2.mean(0)
 #     make_params = lambda ard: np.hstack([[1], ard, [1, .3]])
-    D1, D2, D3, N, M, Q = 50, 34, 8, 100, 2, 6
+    D1, D2, D3, N, M, Q = 2000, 34, 8, 500, 3, 6
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim)
 
     from GPy.models import mrd
@@ -216,24 +246,23 @@ def mrd_simulation(plot_sim=False):
 #     Y2 = np.random.multivariate_normal(np.zeros(N), k.K(S2), D2).T
 #     Y3 = np.random.multivariate_normal(np.zeros(N), k.K(S3), D3).T
 
-    Ylist = [Ylist[0]]
+    Ylist = Ylist[0:2]
 
     # k = kern.rbf(Q, ARD=True) + kern.bias(Q) + kern.white(Q)
 
-    k = kern.linear(Q, ARD=True) + kern.bias(Q, .01) + kern.white(Q, .1)
+    k = kern.linear(Q, ARD=True) + kern.bias(Q, .01) + kern.white(Q, .001)
     m = mrd.MRD(*Ylist, Q=Q, M=M, kernel=k, initx="concat", initz='permute', _debug=False)
-    m.ensure_default_constraints()
-    ardvar = 5. / (m.X.max(axis=0) - m.X.min(axis=0))
 
     for i, Y in enumerate(Ylist):
         m.set('{}_noise'.format(i + 1), Y.var() / 100.)
 
+    m.ensure_default_constraints()
 
-    cstr = 'variance'
-    m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-12, 1.)
-
-    cstr = 'linear_variance'
-    m.unconstrain(cstr), m.constrain_positive(cstr)
+#     cstr = 'variance'
+#     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-12, 1.)
+#
+#     cstr = 'linear_variance'
+#     m.unconstrain(cstr), m.constrain_positive(cstr)
 
 #     print "initializing beta"
 #     cstr = "noise"

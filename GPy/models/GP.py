@@ -6,8 +6,8 @@ import numpy as np
 import pylab as pb
 from .. import kern
 from ..core import model
-from ..util.linalg import pdinv,mdot
-from ..util.plot import gpplot,x_frame1D,x_frame2D, Tango
+from ..util.linalg import pdinv, mdot
+from ..util.plot import gpplot, x_frame1D, x_frame2D, Tango
 from ..likelihoods import EP
 
 class GP(model):
@@ -35,25 +35,25 @@ class GP(model):
         # parse arguments
         self.Xslices = Xslices
         self.X = X
-        assert len(self.X.shape)==2
+        assert len(self.X.shape) == 2
         self.N, self.Q = self.X.shape
         assert isinstance(kernel, kern.kern)
         self.kern = kernel
 
-        #here's some simple normalization for the inputs
+        # here's some simple normalization for the inputs
         if normalize_X:
-            self._Xmean = X.mean(0)[None,:]
-            self._Xstd = X.std(0)[None,:]
+            self._Xmean = X.mean(0)[None, :]
+            self._Xstd = X.std(0)[None, :]
             self.X = (X.copy() - self._Xmean) / self._Xstd
-            if hasattr(self,'Z'):
+            if hasattr(self, 'Z'):
                 self.Z = (self.Z - self._Xmean) / self._Xstd
         else:
-            self._Xmean = np.zeros((1,self.X.shape[1]))
-            self._Xstd = np.ones((1,self.X.shape[1]))
+            self._Xmean = np.zeros((1, self.X.shape[1]))
+            self._Xstd = np.ones((1, self.X.shape[1]))
 
         self.likelihood = likelihood
-        #assert self.X.shape[0] == self.likelihood.Y.shape[0]
-        #self.N, self.D = self.likelihood.Y.shape
+        # assert self.X.shape[0] == self.likelihood.Y.shape[0]
+        # self.N, self.D = self.likelihood.Y.shape
         assert self.X.shape[0] == self.likelihood.data.shape[0]
         self.N, self.D = self.likelihood.data.shape
 
@@ -65,24 +65,24 @@ class GP(model):
         """
         return np.zeros_like(self.Z)
 
-    def _set_params(self,p):
+    def _set_params(self, p):
         self.kern._set_params_transformed(p[:self.kern.Nparam])
-        #self.likelihood._set_params(p[self.kern.Nparam:])               # test by Nicolas
-        self.likelihood._set_params(p[self.kern.Nparam_transformed():])    # test by Nicolas
+        # self.likelihood._set_params(p[self.kern.Nparam:])               # test by Nicolas
+        self.likelihood._set_params(p[self.kern.Nparam_transformed():])  # test by Nicolas
 
 
-        self.K = self.kern.K(self.X,slices1=self.Xslices,slices2=self.Xslices)
+        self.K = self.kern.K(self.X, slices1=self.Xslices, slices2=self.Xslices)
         self.K += self.likelihood.covariance_matrix
 
         self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
 
-        #the gradient of the likelihood wrt the covariance matrix
+        # the gradient of the likelihood wrt the covariance matrix
         if self.likelihood.YYT is None:
-            alpha = np.dot(self.Ki,self.likelihood.Y)
-            self.dL_dK = 0.5*(np.dot(alpha,alpha.T)-self.D*self.Ki)
+            alpha = np.dot(self.Ki, self.likelihood.Y)
+            self.dL_dK = 0.5 * (np.dot(alpha, alpha.T) - self.D * self.Ki)
         else:
             tmp = mdot(self.Ki, self.likelihood.YYT, self.Ki)
-            self.dL_dK = 0.5*(tmp - self.D*self.Ki)
+            self.dL_dK = 0.5 * (tmp - self.D * self.Ki)
 
     def _get_params(self):
         return np.hstack((self.kern._get_params_transformed(), self.likelihood._get_params()))
@@ -98,16 +98,16 @@ class GP(model):
         this function does nothing
         """
         self.likelihood.fit_full(self.kern.K(self.X))
-        self._set_params(self._get_params()) # update the GP
+        self._set_params(self._get_params())  # update the GP
 
     def _model_fit_term(self):
         """
         Computes the model fit using YYT if it's available
         """
         if self.likelihood.YYT is None:
-            return -0.5*np.sum(np.square(np.dot(self.Li,self.likelihood.Y)))
+            return -0.5 * np.sum(np.square(np.dot(self.Li, self.likelihood.Y)))
         else:
-            return -0.5*np.sum(np.multiply(self.Ki, self.likelihood.YYT))
+            return -0.5 * np.sum(np.multiply(self.Ki, self.likelihood.YYT))
 
     def log_likelihood(self):
         """
@@ -117,7 +117,7 @@ class GP(model):
         model for a new variable Y* = v_tilde/tau_tilde, with a covariance
         matrix K* = K + diag(1./tau_tilde) plus a normalization term.
         """
-        return -0.5*self.D*self.K_logdet + self._model_fit_term() + self.likelihood.Z
+        return -0.5 * self.D * self.K_logdet + self._model_fit_term() + self.likelihood.Z
 
 
     def _log_likelihood_gradients(self):
@@ -128,27 +128,27 @@ class GP(model):
 
         For the likelihood parameters, pass in alpha = K^-1 y
         """
-        return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK,X=self.X,slices1=self.Xslices,slices2=self.Xslices), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X, slices1=self.Xslices, slices2=self.Xslices), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
 
-    def _raw_predict(self,_Xnew,slices=None, full_cov=False):
+    def _raw_predict(self, _Xnew, slices=None, full_cov=False):
         """
         Internal helper function for making predictions, does not account
         for normalization or likelihood
         """
-        Kx = self.kern.K(self.X,_Xnew, slices1=self.Xslices,slices2=slices)
-        mu = np.dot(np.dot(Kx.T,self.Ki),self.likelihood.Y)
-        KiKx = np.dot(self.Ki,Kx)
+        Kx = self.kern.K(self.X, _Xnew, slices1=self.Xslices, slices2=slices)
+        mu = np.dot(np.dot(Kx.T, self.Ki), self.likelihood.Y)
+        KiKx = np.dot(self.Ki, Kx)
         if full_cov:
-            Kxx = self.kern.K(_Xnew, slices1=slices,slices2=slices)
-            var = Kxx - np.dot(KiKx.T,Kx)
+            Kxx = self.kern.K(_Xnew, slices1=slices, slices2=slices)
+            var = Kxx - np.dot(KiKx.T, Kx)
         else:
             Kxx = self.kern.Kdiag(_Xnew, slices=slices)
-            var = Kxx - np.sum(np.multiply(KiKx,Kx),0)
-            var = var[:,None]
+            var = Kxx - np.sum(np.multiply(KiKx, Kx), 0)
+            var = var[:, None]
         return mu, var
 
 
-    def predict(self,Xnew, slices=None, full_cov=False):
+    def predict(self, Xnew, slices=None, full_cov=False):
         """
         Predict the function(s) at the new point(s) Xnew.
 
@@ -174,11 +174,11 @@ class GP(model):
            This is to allow for different normalizations of the output dimensions.
 
         """
-        #normalize X values
+        # normalize X values
         Xnew = (Xnew.copy() - self._Xmean) / self._Xstd
         mu, var = self._raw_predict(Xnew, slices, full_cov)
 
-        #now push through likelihood TODO
+        # now push through likelihood TODO
         mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov)
 
         return mean, var, _025pm, _975pm
@@ -204,86 +204,90 @@ class GP(model):
         Can plot only part of the data and part of the posterior functions using which_data and which_functions
         Plot the data's view of the world, with non-normalized values and GP predictions passed through the likelihood
         """
-        if which_functions=='all':
-            which_functions = [True]*self.kern.Nparts
-        if which_data=='all':
+        if which_functions == 'all':
+            which_functions = [True] * self.kern.Nparts
+        if which_data == 'all':
             which_data = slice(None)
 
         if self.X.shape[1] == 1:
             Xnew, xmin, xmax = x_frame1D(self.X, plot_limits=plot_limits)
             if samples == 0:
-                m,v = self._raw_predict(Xnew, slices=which_functions)
-                gpplot(Xnew,m,m-2*np.sqrt(v),m+2*np.sqrt(v))
-                pb.plot(self.X[which_data],self.likelihood.Y[which_data],'kx',mew=1.5)
+                m, v = self._raw_predict(Xnew, slices=which_functions)
+                gpplot(Xnew, m, m - 2 * np.sqrt(v), m + 2 * np.sqrt(v))
+                pb.plot(self.X[which_data], self.likelihood.Y[which_data], 'kx', mew=1.5)
             else:
-                m,v = self._raw_predict(Xnew, slices=which_functions,full_cov=True)
-                Ysim = np.random.multivariate_normal(m.flatten(),v,samples)
-                gpplot(Xnew,m,m-2*np.sqrt(np.diag(v)[:,None]),m+2*np.sqrt(np.diag(v))[:,None])
+                m, v = self._raw_predict(Xnew, slices=which_functions, full_cov=True)
+                Ysim = np.random.multivariate_normal(m.flatten(), v, samples)
+                gpplot(Xnew, m, m - 2 * np.sqrt(np.diag(v)[:, None]), m + 2 * np.sqrt(np.diag(v))[:, None])
                 for i in range(samples):
-                    pb.plot(Xnew,Ysim[i,:],Tango.colorsHex['darkBlue'],linewidth=0.25)
-            pb.plot(self.X[which_data],self.likelihood.Y[which_data],'kx',mew=1.5)
-            pb.xlim(xmin,xmax)
-            ymin,ymax = min(np.append(self.likelihood.Y,m-2*np.sqrt(np.diag(v)[:,None]))), max(np.append(self.likelihood.Y,m+2*np.sqrt(np.diag(v)[:,None])))
-            ymin, ymax = ymin - 0.1*(ymax - ymin), ymax + 0.1*(ymax - ymin)
-            pb.ylim(ymin,ymax)
-            if hasattr(self,'Z'):
-                pb.plot(self.Z,self.Z*0+pb.ylim()[0],'r|',mew=1.5,markersize=12)
+                    pb.plot(Xnew, Ysim[i, :], Tango.colorsHex['darkBlue'], linewidth=0.25)
+            pb.plot(self.X[which_data], self.likelihood.Y[which_data], 'kx', mew=1.5)
+            pb.xlim(xmin, xmax)
+            ymin, ymax = min(np.append(self.likelihood.Y, m - 2 * np.sqrt(np.diag(v)[:, None]))), max(np.append(self.likelihood.Y, m + 2 * np.sqrt(np.diag(v)[:, None])))
+            ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
+            pb.ylim(ymin, ymax)
+            if hasattr(self, 'Z'):
+                pb.plot(self.Z, self.Z * 0 + pb.ylim()[0], 'r|', mew=1.5, markersize=12)
 
         elif self.X.shape[1] == 2:
             resolution = resolution or 50
-            Xnew, xmin, xmax, xx, yy = x_frame2D(self.X, plot_limits,resolution)
-            m,v = self._raw_predict(Xnew, slices=which_functions)
-            m = m.reshape(resolution,resolution).T
-            pb.contour(xx,yy,m,vmin=m.min(),vmax=m.max(),cmap=pb.cm.jet)
-            pb.scatter(Xorig[:,0],Xorig[:,1],40,Yorig,linewidth=0,cmap=pb.cm.jet,vmin=m.min(), vmax=m.max())
-            pb.xlim(xmin[0],xmax[0])
-            pb.ylim(xmin[1],xmax[1])
+            Xnew, xmin, xmax, xx, yy = x_frame2D(self.X, plot_limits, resolution)
+            m, v = self._raw_predict(Xnew, slices=which_functions)
+            m = m.reshape(resolution, resolution).T
+            pb.contour(xx, yy, m, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
+            pb.scatter(Xorig[:, 0], Xorig[:, 1], 40, Yorig, linewidth=0, cmap=pb.cm.jet, vmin=m.min(), vmax=m.max())
+            pb.xlim(xmin[0], xmax[0])
+            pb.ylim(xmin[1], xmax[1])
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
-    def plot(self,samples=0,plot_limits=None,which_data='all',which_functions='all',resolution=None,levels=20):
+    def plot(self, samples=0, plot_limits=None, which_data='all', which_functions='all', resolution=None, levels=20):
         """
         TODO: Docstrings!
         :param levels: for 2D plotting, the number of contour levels to use
 
         """
         # TODO include samples
-        if which_functions=='all':
-            which_functions = [True]*self.kern.Nparts
-        if which_data=='all':
+        if which_functions == 'all':
+            which_functions = [True] * self.kern.Nparts
+        if which_data == 'all':
             which_data = slice(None)
 
         if self.X.shape[1] == 1:
 
-            Xu = self.X * self._Xstd + self._Xmean #NOTE self.X are the normalized values now
+            Xu = self.X * self._Xstd + self._Xmean  # NOTE self.X are the normalized values now
 
             Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
             m, var, lower, upper = self.predict(Xnew, slices=which_functions)
-            gpplot(Xnew,m, lower, upper)
-            pb.plot(Xu[which_data],self.likelihood.data[which_data],'kx',mew=1.5)
-            ymin,ymax = min(np.append(self.likelihood.data,lower)), max(np.append(self.likelihood.data,upper))
-            ymin, ymax = ymin - 0.1*(ymax - ymin), ymax + 0.1*(ymax - ymin)
-            pb.xlim(xmin,xmax)
-            pb.ylim(ymin,ymax)
-            if hasattr(self,'Z'):
-                Zu = self.Z*self._Xstd + self._Xmean
-                pb.plot(Zu,Zu*0+pb.ylim()[0],'r|',mew=1.5,markersize=12)
-                if self.has_uncertain_inputs:
-                    pb.errorbar(self.X[:,0], pb.ylim()[0]+np.zeros(self.N), xerr=2*np.sqrt(self.X_variance.flatten()))
+            gpplot(Xnew, m, lower, upper)
+            pb.plot(Xu[which_data], self.likelihood.data[which_data], 'kx', mew=1.5)
+            if self.has_uncertain_inputs:
+                pb.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
+                            xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
+                            ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
 
-        elif self.X.shape[1]==2: #FIXME
+            ymin, ymax = min(np.append(self.likelihood.data, lower)), max(np.append(self.likelihood.data, upper))
+            ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
+            pb.xlim(xmin, xmax)
+            pb.ylim(ymin, ymax)
+            if hasattr(self, 'Z'):
+                Zu = self.Z * self._Xstd + self._Xmean
+                pb.plot(Zu, Zu * 0 + pb.ylim()[0], 'r|', mew=1.5, markersize=12)
+                    # pb.errorbar(self.X[:,0], pb.ylim()[0]+np.zeros(self.N), xerr=2*np.sqrt(self.X_variance.flatten()))
+
+        elif self.X.shape[1] == 2:  # FIXME
             resolution = resolution or 50
-            Xnew, xx, yy, xmin, xmax = x_frame2D(self.X, plot_limits,resolution)
-            x, y = np.linspace(xmin[0],xmax[0],resolution), np.linspace(xmin[1],xmax[1],resolution)
+            Xnew, xx, yy, xmin, xmax = x_frame2D(self.X, plot_limits, resolution)
+            x, y = np.linspace(xmin[0], xmax[0], resolution), np.linspace(xmin[1], xmax[1], resolution)
             m, var, lower, upper = self.predict(Xnew, slices=which_functions)
-            m = m.reshape(resolution,resolution).T
-            pb.contour(x,y,m,levels,vmin=m.min(),vmax=m.max(),cmap=pb.cm.jet)
+            m = m.reshape(resolution, resolution).T
+            pb.contour(x, y, m, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
             Yf = self.likelihood.Y.flatten()
-            pb.scatter(self.X[:,0], self.X[:,1], 40, Yf, cmap=pb.cm.jet,vmin=m.min(),vmax=m.max(), linewidth=0.)
-            pb.xlim(xmin[0],xmax[0])
-            pb.ylim(xmin[1],xmax[1])
-            if hasattr(self,'Z'):
-                pb.plot(self.Z[:,0],self.Z[:,1],'wo')
+            pb.scatter(self.X[:, 0], self.X[:, 1], 40, Yf, cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.)
+            pb.xlim(xmin[0], xmax[0])
+            pb.ylim(xmin[1], xmax[1])
+            if hasattr(self, 'Z'):
+                pb.plot(self.Z[:, 0], self.Z[:, 1], 'wo')
 
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"

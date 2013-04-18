@@ -82,7 +82,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             self._set_params(self.oldps[-1], save_old=False)
 
     def dKL_dmuS(self):
-        dKL_dS = (1. - (1. / self.X_variance)) * 0.5
+        dKL_dS = (1. - (1. / (self.X_variance))) * 0.5
         dKL_dmu = self.X
         return dKL_dmu, dKL_dS
 
@@ -101,13 +101,26 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         return 0.5 * (var_mean + var_S) - 0.5 * self.Q * self.N
 
     def log_likelihood(self):
-        return sparse_GP.log_likelihood(self) - self.KL_divergence()
+        ll = sparse_GP.log_likelihood(self)
+        kl = self.KL_divergence()
+        return ll + kl
 
     def _log_likelihood_gradients(self):
         dKL_dmu, dKL_dS = self.dKL_dmuS()
         dL_dmu, dL_dS = self.dL_dmuS()
         # TODO: find way to make faster
-        dbound_dmuS = np.hstack(((dL_dmu - dKL_dmu).flatten(), (dL_dS - dKL_dS).flatten()))
+
+        d_dmu = (dL_dmu + dKL_dmu).flatten()
+        d_dS = (dL_dS + dKL_dS).flatten()
+        # TEST KL: ====================
+        # d_dmu = (dKL_dmu).flatten()
+        # d_dS = (dKL_dS).flatten()
+        # ========================
+        # TEST L: ====================
+#         d_dmu = (dL_dmu).flatten()
+#         d_dS = (dL_dS).flatten()
+        # ========================
+        dbound_dmuS = np.hstack((d_dmu, d_dS))
         return np.hstack((dbound_dmuS.flatten(), sparse_GP._log_likelihood_gradients(self)))
 
     def plot_latent(self, which_indices=None, *args, **kwargs):

@@ -170,26 +170,30 @@ def bgplvm_simulation(burnin='scg', plot_sim=False, max_f_eval=12):
     from GPy import kern
     reload(mrd); reload(kern)
 
+
     Y = Ylist[1]
 
-    k = kern.linear(Q, ARD=True) + kern.bias(Q, .0001) + kern.white(Q, .1)
+    k = kern.linear(Q, ARD=True) + kern.white(Q, .00001)  # + kern.bias(Q)
     m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k)
-    m.set('noise', Y.var() / 100.)
+    # m.set('noise',)
 #     m.auto_scale_factor = True
 #     m.scale_factor = 1.
-
     m.ensure_default_constraints()
+
 
     if burnin:
         print "initializing beta"
         cstr = "noise"
-        m.unconstrain(cstr); m.constrain_fixed(cstr)
+        m.unconstrain(cstr); m.constrain_fixed(cstr, Y.var() / 100.)
         m.optimize(burnin, messages=1, max_f_eval=max_f_eval)
 
         print "releasing beta"
         cstr = "noise"
         m.unconstrain(cstr);  m.constrain_positive(cstr)
 
+    true_X = np.hstack((slist[1], slist[3], 0. * np.ones((N, Q - 2))))
+    m.set('X_\d', true_X)
+    m.constrain_fixed("X_\d")
 
 # #     cstr = 'variance'
 # #     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-10, 1.)

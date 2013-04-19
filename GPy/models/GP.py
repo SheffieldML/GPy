@@ -8,7 +8,7 @@ from .. import kern
 from ..core import model
 from ..util.linalg import pdinv,mdot
 from ..util.plot import gpplot,x_frame1D,x_frame2D, Tango
-from ..likelihoods import EP
+from ..likelihoods import EP, Laplace
 
 class GP(model):
     """
@@ -128,7 +128,19 @@ class GP(model):
 
         For the likelihood parameters, pass in alpha = K^-1 y
         """
-        return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK,X=self.X,slices1=self.Xslices,slices2=self.Xslices), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        if isinstance(self.likelihood, Laplace):
+            dL_dthetaK_explicit = self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X, slices1=self.Xslices, slices2=self.Xslices)
+            #Need to pass in a matrix of ones to get access to raw dK_dthetaK values without being chained
+            fake_dL_dKs = np.ones(self.dL_dK.shape)
+            dK_dthetaK = self.kern.dK_dtheta(dL_dK=fake_dL_dKs, X=self.X, slices1=self.Xslices, slices2=self.Xslices)
+
+            dL_dthetaK_implicit = self.likelihood._Kgradients(self.dL_dK, dK_dthetaK)
+            dL_dthetaK = dL_dthetaK_explicit + dL_dthetaK_implicit
+            dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))
+        else:
+            dL_dthetaK = self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X, slices1=self.Xslices, slices2=self.Xslices)
+            dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))
+        return np.hstack((dL_dthetaK, dL_dthetaL))
 
     def _raw_predict(self,_Xnew,slices=None, full_cov=False):
         """

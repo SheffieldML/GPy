@@ -20,6 +20,16 @@ class likelihood_function:
     def __init__(self,location=0,scale=1):
         self.location = location
         self.scale = scale
+        self.log_concave = True
+
+    def _get_params(self):
+        return np.zeros(0)
+
+    def _get_param_names(self):
+        return []
+
+    def _set_params(self, p):
+        pass
 
 class probit(likelihood_function):
     """
@@ -149,11 +159,21 @@ class student_t(likelihood_function):
     d2ln p(yi|fi)_d2fifj
     """
     def __init__(self, deg_free, sigma=2):
+        super(student_t, self).__init__()
         self.v = deg_free
         self.sigma = sigma
-
-        #FIXME: This should be in the superclass
         self.log_concave = False
+
+    def _get_params(self):
+        return np.asarray(self.sigma)
+
+    def _get_param_names(self):
+        return ["t_noise_variance"]
+
+    def _set_params(self, x):
+        self.sigma = float(x)
+        #self.covariance_matrix = np.eye(self.N)*self._variance
+        #self.precision = 1./self._variance
 
     @property
     def variance(self, extra_data=None):
@@ -221,6 +241,40 @@ class student_t(likelihood_function):
         e = y - f
         hess = ((self.v + 1)*(e**2 - self.v*(self.sigma**2))) / ((((self.sigma**2)*self.v) + e**2)**2)
         return np.squeeze(hess)
+
+    def d3link(self, y, f, extra_data=None):
+        """
+        Third order derivative link_function (log-likelihood ) at y given f f_j w.r.t f and f_j
+
+        $$\frac{-2(v+1)((f-y)^{3} - 3\sigma^{2}v(f-y))}{((f-y)^{2} + \sigma^{2}v)^{3}}$$
+        """
+        y = np.squeeze(y)
+        f = np.squeeze(f)
+        assert y.shape == f.shape
+        #NB f-y not y-f
+        e = f - y
+        d3link_d3f = (  (-2*(self.v + 1)*(e**3 - 3*(self.sigma**2)*self.v*e))
+                      / ((e**2 + (self.sigma**2)*self.v)**3)
+                     )
+        return d3link_d3f
+
+    def link_hess_grad_sigma(self, y, f, extra_data=None):
+        """
+        Gradient of the hessian w.r.t sigma parameter
+
+        $$\frac{2\sigma v(v+1)(\sigma^{2}v - 3(f-y)^2)}{((f-y)^{2} + \sigma^{2}v)^{3}}
+        """
+        y = np.squeeze(y)
+        f = np.squeeze(f)
+        assert y.shape == f.shape
+        e = y - f
+        hess_grad_sigma = (  (2*self.sigma*(self.v + 1)*((self.sigma**2)*self.v - 3*(e**2)))
+                           / ((e**2 + (self.sigma**2)*self.v)**3)
+                          )
+        return hess_grad_sigma
+
+    def _gradients(self, y, f, extra_data=None):
+        return [self.link_hess_grad_sigma] # list as we might learn many parameters
 
     def predictive_values(self, mu, var):
         """

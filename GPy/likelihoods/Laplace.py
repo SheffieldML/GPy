@@ -4,27 +4,8 @@ import GPy
 from scipy.linalg import cholesky, eig, inv, cho_solve, det
 from numpy.linalg import cond
 from GPy.likelihoods.likelihood import likelihood
-from GPy.util.linalg import pdinv, mdot, jitchol, chol_inv
+from GPy.util.linalg import pdinv, mdot, jitchol, chol_inv, det_ln_diag, pddet
 from scipy.linalg.lapack import dtrtrs
-
-#TODO: Move this to utils
-
-
-def det_ln_diag(A):
-    """
-    log determinant of a diagonal matrix
-    $$\ln |A| = \ln \prod{A_{ii}} = \sum{\ln A_{ii}}$$
-    """
-    return np.log(np.diagonal(A)).sum()
-
-
-def pddet(A):
-    """
-    Determinant of a positive definite matrix
-    """
-    L = cholesky(A)
-    logdetA = 2*sum(np.log(np.diag(L)))
-    return logdetA
 
 
 class Laplace(likelihood):
@@ -75,17 +56,92 @@ class Laplace(likelihood):
         return self.likelihood_function.predictive_values(mu, var)
 
     def _get_params(self):
-        return np.zeros(0)
+        return np.asarray(self.likelihood_function._get_params())
 
     def _get_param_names(self):
-        return []
+        return self.likelihood_function._get_param_names()
 
     def _set_params(self, p):
-        pass  # TODO: Laplace likelihood might want to take some parameters...
+        return self.likelihood_function._set_params()
+
+    def both_gradients(self, dL_d_K_Sigma, dK_dthetaK):
+        """
+        Find the gradients of the marginal likelihood w.r.t both thetaK and thetaL
+
+        dL_dthetaK differs from that of normal likelihoods as it has additional terms coming from
+        changes to y_tilde and changes to Sigma_tilde when the kernel parameters are adjusted
+
+        Similar terms arise when finding the gradients with respect to changes in the liklihood
+        parameters
+        """
+        return (self._Kgradients(dL_d_K_Sigma, dK_dthetaK), self._gradients(dL_d_K_Sigma))
+
+    def _shared_gradients_components(self):
+        dL_dytil = -np.dot((self.K+self.Sigma_tilde), self.Y)
+        dytil_dfhat = np.dot(self.Sigma_tilde, self.Ki) + np.eye(self.N) # or self.Wi__Ki_W?
+        return dL_dytil, dytil_dfhat
+
+    def _Kgradients(self, dL_d_K_Sigma, dK_dthetaK):
+        """
+                           #explicit                #implicit                     #implicit
+        dL_dtheta_K = (dL_dK * dK_dthetaK) + (dL_dytil * dytil_dthetaK) + (dL_dSigma * dSigma_dthetaK)
+        :param dL_d_K_Sigma: Derivative of marginal with respect to K_prior+Sigma_tilde (posterior covariance)
+        :param dK_dthetaK: explcit derivative of kernel with respect to its hyper paramers
+        :returns: dL_dthetaK - gradients of marginal likelihood w.r.t changes in K hyperparameters
+        """
+        dL_dytil, dytil_dfhat = self._shared_gradients_components()
+
+        I_KW_i, _, _, _ = pdinv(np.eye(self.N) + np.dot(self.K, self.W))
+        #FIXME: Careful dK_dthetaK is not the derivative with respect to the marginal just prior K!
+        dfhat_dthetaK = I_KW_i*dK_dthetaK*self.likelihood_function.link_grad(self.data, self.f_hat, self.extra_data)
+
+        dytil_dthetaK = dytil_dfhat*dfhat_dthetaK
+
+        #FIXME: Careful dL_dK = dL_d_K_Sigma
+        #FIXME: Careful the -D*0.5 in dL_d_K_sigma might need to be -0.5?
+        dL_dSigma = dL_d_K_Sigma
+        d3phi_d3fhat = self.likelihood_function.d3link(self.data, self.f_hat, self.extra_data)
+                     #explicit           #implicit
+        dSigmai_dthetaK = 0 #+ np.sum(d3phi_d3fhat*dfhat_dthetaK) #FIXME: CAREFUL OF THIS SUM! SHOULD SUM OVER FHAT NOT THETAS
+        dSigma_dthetaK = -mdot(self.Sigma_tilde, dSigmai_dthetaK, self.Sigma_tilde)
+
+        dL_dthetaK_implicit = dL_dytil*dytil_dthetaK + dL_dSigma*dSigma_dthetaK
+        return dL_dthetaK_implicit
 
     def _gradients(self, partial):
-        return np.zeros(0)  # TODO: Laplace likelihood might want to take some parameters...
-        raise NotImplementedError
+        """
+        Gradients with respect to likelihood parameters
+
+        Complicated, it differs for parameters of the kernel \theta_{K}, and
+        parameters of the likelihood, \theta_{L}
+
+        dL_dtheta_K = (dL_dK * dK_dthetaK) + (dL_dytil * dytil_dthetaK) + (dL_dSigma * dSigma_dthetaK)
+        dL_dtheta_L = (dL_dK * dK_dthetaL) + (dL_dytil * dytil_dthetaL) + (dL_dSigma * dSigma_dthetaL)
+        dL_dK*dK_dthetaL = 0
+
+        dytil_dthetaX = dytil_dfhat * dfhat_dthetaX
+        dytil_dfhat = Sigma*Ki + I
+
+        fhat = K*log_p(y|fhat)                                          from rasm p125
+        dfhat_dthetaK = (I + KW)i * dK_dthetaK * log_p(y|fhat)          from rasm p125
+
+        dSigma_dthetaX = dWi_dthetaX = -Wi * dW_dthetaX * Wi
+        dW_dthetaX = d_dthetaX[d2phi_d2fhat]
+        d2phi_d2fhat = Hessian function of likelihood
+
+        partial = dL_dK
+        """
+        dL_dytil, dytil_dfhat = self._shared_gradients_components()
+        dfhat_dthetaL = self.likelihood_function.df_dtheta()
+
+        dSigmai_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat, self.extra_data) #FIXME: Shouldn't this have a implicit component aswell?
+        dSigma_dthetaL = -mdot(self.Sigma_tilde, dSigmai_dthetaL, self.Sigma_tilde)
+        dL_dSigma = partial # partial is dL_dK but K here is K+Sigma_tilde.... which is fine in this case
+
+        dytil_dthetaL = dytil_dfhat*dfhat_dthetaL
+        dL_dthetaL = 0 + dL_dytil*dytil_dthetaL + dL_dSigma*dSigma_dthetaL
+        return dL_dthetaL
+        #return np.zeros(0)  # TODO: Laplace likelihood might want to take some parameters...
 
     def _compute_GP_variables(self):
         """
@@ -112,8 +168,9 @@ class Laplace(likelihood):
         $$\tilde{\Sigma} = W^{-1}$$
 
         """
-        epsilon = 1e-6
+        epsilon = 1e14
 
+        #Wi(Ki + W) = WiKi + I = KW_i + I = L_Lt_W_i + I = Wi_Lit_Li + I = Lt_W_i_Li + I
         #dtritri -> L -> L_i
         #dtrtrs -> L.T*W, L_i -> (L.T*W)_i*L_i
         #((L.T*w)_i + I)f_hat = y_tilde
@@ -122,11 +179,12 @@ class Laplace(likelihood):
         Lt_W = np.dot(L.T, self.W)
 
         ##Check it isn't singular!
-        if cond(Lt_W) > 1e14:
+        if cond(Lt_W) > epsilon:
             print "WARNING: L_inv.T * W matrix is singular,\nnumerical stability may be a problem"
 
         Lt_W_i_Li = dtrtrs(Lt_W, Li, lower=False)[0]
-        Y_tilde = np.dot(Lt_W_i_Li + np.eye(self.N), self.f_hat)
+        self.Wi__Ki_W = Lt_W_i_Li + np.eye(self.N)
+        Y_tilde = np.dot(self.Wi__Ki_W, self.f_hat)
 
         #f.T(Ki + W)f
         f_Ki_W_f = (np.dot(self.f_hat.T, cho_solve((L, True), self.f_hat))
@@ -156,16 +214,16 @@ class Laplace(likelihood):
                    #)
 
         ##Check it isn't singular!
-        if cond(self.W) > 1e14:
+        if cond(self.W) > epsilon:
             print "WARNING: Transformed covariance matrix is singular,\nnumerical stability may be a problem"
 
-        Sigma_tilde = inv(self.W)  # Damn
+        self.Sigma_tilde = inv(self.W)  # Damn
 
         #Convert to float as its (1, 1) and Z must be a scalar
         self.Z = np.float64(Z_tilde)
         self.Y = Y_tilde
         self.YYT = np.dot(self.Y, self.Y.T)
-        self.covariance_matrix = Sigma_tilde
+        self.covariance_matrix = self.Sigma_tilde
         self.precision = 1 / np.diag(self.covariance_matrix)[:, None]
 
     def fit_full(self, K):

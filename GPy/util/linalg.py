@@ -14,6 +14,21 @@ import types
 #import scipy.lib.lapack.flapack
 import scipy as sp
 
+def det_ln_diag(A):
+    """
+    log determinant of a diagonal matrix
+    $$\ln |A| = \ln \prod{A_{ii}} = \sum{\ln A_{ii}}$$
+    """
+    return np.log(np.diagonal(A)).sum()
+
+def pddet(A):
+    """
+    Determinant of a positive definite matrix
+    """
+    L = cholesky(A)
+    logdetA = 2*sum(np.log(np.diag(L)))
+    return logdetA
+
 def trace_dot(a,b):
     """
     efficiently compute the trace of the matrix product of a and b
@@ -166,8 +181,8 @@ def PCA(Y, Q):
     """
     if not np.allclose(Y.mean(axis=0), 0.0):
         print "Y is not zero mean, centering it locally (GPy.util.linalg.PCA)"
-        
-        #Y -= Y.mean(axis=0) 
+
+        #Y -= Y.mean(axis=0)
 
     Z = linalg.svd(Y-Y.mean(axis=0), full_matrices = False)
     [X, W] = [Z[0][:,0:Q], np.dot(np.diag(Z[1]), Z[2]).T[:,0:Q]]

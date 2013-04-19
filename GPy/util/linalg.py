@@ -25,7 +25,7 @@ def pddet(A):
     """
     Determinant of a positive definite matrix
     """
-    L = cholesky(A)
+    L = jitchol(A)
     logdetA = 2*sum(np.log(np.diag(L)))
     return logdetA
 

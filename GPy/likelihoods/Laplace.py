@@ -1,11 +1,12 @@
 import numpy as np
 import scipy as sp
 import GPy
-from scipy.linalg import cholesky, eig, inv, cho_solve, det
+from scipy.linalg import inv, cho_solve, det
 from numpy.linalg import cond
 from GPy.likelihoods.likelihood import likelihood
 from GPy.util.linalg import pdinv, mdot, jitchol, chol_inv, det_ln_diag, pddet
 from scipy.linalg.lapack import dtrtrs
+import pylab as plt
 
 
 class Laplace(likelihood):
@@ -62,7 +63,7 @@ class Laplace(likelihood):
         return self.likelihood_function._get_param_names()
 
     def _set_params(self, p):
-        return self.likelihood_function._set_params()
+        return self.likelihood_function._set_params(p)
 
     def both_gradients(self, dL_d_K_Sigma, dK_dthetaK):
         """
@@ -77,8 +78,8 @@ class Laplace(likelihood):
         return (self._Kgradients(dL_d_K_Sigma, dK_dthetaK), self._gradients(dL_d_K_Sigma))
 
     def _shared_gradients_components(self):
-        dL_dytil = -np.dot((self.K+self.Sigma_tilde), self.Y)
-        dytil_dfhat = np.dot(self.Sigma_tilde, self.Ki) + np.eye(self.N) # or self.Wi__Ki_W?
+        dL_dytil = -np.dot(self.Y.T, (self.K+self.Sigma_tilde))
+        dytil_dfhat = self.Wi__Ki_W # np.dot(self.Sigma_tilde, self.Ki) + np.eye(self.N) # or self.Wi__Ki_W?
         return dL_dytil, dytil_dfhat
 
     def _Kgradients(self, dL_d_K_Sigma, dK_dthetaK):
@@ -91,12 +92,18 @@ class Laplace(likelihood):
         """
         dL_dytil, dytil_dfhat = self._shared_gradients_components()
 
-        I_KW_i, _, _, _ = pdinv(np.eye(self.N) + np.dot(self.K, self.W))
+        A = np.eye(self.N) + np.dot(self.K, self.W)
+        plt.imshow(A)
+        plt.show()
+        I_KW_i, _, _, _ = pdinv(A)
+
         #FIXME: Careful dK_dthetaK is not the derivative with respect to the marginal just prior K!
-        dfhat_dthetaK = I_KW_i*dK_dthetaK*self.likelihood_function.link_grad(self.data, self.f_hat, self.extra_data)
+        #Derivative for each f dimension, for each of K's hyper parameters
+        dfhat_dthetaK = np.zeros((self.f_hat.shape[0], dK_dthetaK.shape[0]))
+        for ind_j, thetaj in enumerate(dK_dthetaK):
+            dfhat_dthetaK[:, ind_j] = mdot(I_KW_i, thetaj, self.likelihood_function.link_grad(self.data, self.f_hat, self.extra_data))
 
-        dytil_dthetaK = dytil_dfhat*dfhat_dthetaK
-
+        dytil_dthetaK = np.dot(dytil_dfhat, dfhat_dthetaK) # should be (D,thetaK)
         #FIXME: Careful dL_dK = dL_d_K_Sigma
         #FIXME: Careful the -D*0.5 in dL_d_K_sigma might need to be -0.5?
         dL_dSigma = dL_d_K_Sigma
@@ -105,8 +112,9 @@ class Laplace(likelihood):
         dSigmai_dthetaK = 0 #+ np.sum(d3phi_d3fhat*dfhat_dthetaK) #FIXME: CAREFUL OF THIS SUM! SHOULD SUM OVER FHAT NOT THETAS
         dSigma_dthetaK = -mdot(self.Sigma_tilde, dSigmai_dthetaK, self.Sigma_tilde)
 
-        dL_dthetaK_implicit = dL_dytil*dytil_dthetaK + dL_dSigma*dSigma_dthetaK
-        return dL_dthetaK_implicit
+        dL_dthetaK_implicit = np.sum(np.dot(dL_dytil, dytil_dthetaK), axis=0)# + np.dot(dL_dSigma, dSigma_dthetaK)
+        #dL_dthetaK_implicit = np.dot(dL_dytil.T, dytil_dthetaK.T)
+        return np.squeeze(dL_dthetaK_implicit)
 
     def _gradients(self, partial):
         """
@@ -132,16 +140,25 @@ class Laplace(likelihood):
         partial = dL_dK
         """
         dL_dytil, dytil_dfhat = self._shared_gradients_components()
-        dfhat_dthetaL = self.likelihood_function.df_dtheta()
+        dfhat_dthetaL, dSigmai_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat, self.extra_data) #FIXME: Shouldn't this have a implicit component aswell?
 
-        dSigmai_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat, self.extra_data) #FIXME: Shouldn't this have a implicit component aswell?
-        dSigma_dthetaL = -mdot(self.Sigma_tilde, dSigmai_dthetaL, self.Sigma_tilde)
+        #dSigmai_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat, self.extra_data) #FIXME: Shouldn't this have a implicit component aswell?
+        #Derivative for each f dimension, for each of K's hyper parameters
+        dSigma_dthetaL = np.empty((self.N, len(self.likelihood_function._get_param_names())))
+        for ind_l, dSigmai_dtheta_l in enumerate(dSigmai_dthetaL.T):
+            dSigma_dthetaL[:, ind_l] = -mdot(self.Sigma_tilde,
+                                             dSigmai_dtheta_l, # Careful, shouldn't this be (N, 1)?
+                                             self.Sigma_tilde
+                                             )
+
+        #TODO: This is Wi*A*Wi, can be more numerically stable with a trick
+        #dSigma_dthetaL = -mdot(self.Sigma_tilde, dSigmai_dthetaL, self.Sigma_tilde)
         dL_dSigma = partial # partial is dL_dK but K here is K+Sigma_tilde.... which is fine in this case
 
-        dytil_dthetaL = dytil_dfhat*dfhat_dthetaL
-        dL_dthetaL = 0 + dL_dytil*dytil_dthetaL + dL_dSigma*dSigma_dthetaL
-        return dL_dthetaL
-        #return np.zeros(0)  # TODO: Laplace likelihood might want to take some parameters...
+        #dytil_dthetaL = dytil_dfhat*dfhat_dthetaL
+        dytil_dthetaL = np.dot(dytil_dfhat, dfhat_dthetaL)
+        dL_dthetaL = 0 + np.dot(dL_dytil, dytil_dthetaL)# + np.dot(dL_dSigma, dSigma_dthetaL)
+        return np.squeeze(dL_dthetaL) #should be array of length *params-being optimized*, for student t just optimising 1 parameter, this is (1,)
 
     def _compute_GP_variables(self):
         """
@@ -335,7 +352,7 @@ class Laplace(likelihood):
         rs = 0
         i = 0
         while difference > epsilon and i < MAX_ITER and rs < MAX_RESTART:
-            f_old = f.copy()
+            #f_old = f.copy()
             W = -np.diag(self.likelihood_function.link_hess(self.data, f, extra_data=self.extra_data))
             if not self.likelihood_function.log_concave:
                 W[W < 0] = 1e-6     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur

@@ -159,10 +159,10 @@ class student_t(likelihood_function):
     d2ln p(yi|fi)_d2fifj
     """
     def __init__(self, deg_free, sigma=2):
-        super(student_t, self).__init__()
         self.v = deg_free
         self.sigma = sigma
         self.log_concave = False
+        #super(student_t, self).__init__()
 
     def _get_params(self):
         return np.asarray(self.sigma)
@@ -258,9 +258,9 @@ class student_t(likelihood_function):
                      )
         return d3link_d3f
 
-    def link_hess_grad_sigma(self, y, f, extra_data=None):
+    def link_hess_grad_std(self, y, f, extra_data=None):
         """
-        Gradient of the hessian w.r.t sigma parameter
+        Gradient of the hessian w.r.t sigma parameter (standard deviation)
 
         $$\frac{2\sigma v(v+1)(\sigma^{2}v - 3(f-y)^2)}{((f-y)^{2} + \sigma^{2}v)^{3}}
         """
@@ -273,8 +273,24 @@ class student_t(likelihood_function):
                           )
         return hess_grad_sigma
 
+    def link_grad_std(self, y, f, extra_data=None):
+        """
+        Gradient of the likelihood w.r.t sigma parameter (standard deviation)
+
+        $$\frac{-2\sigma(v+1)(y-f)}{(v\sigma^{2} + (y-f)^{2})^{2}}$$
+        """
+        y = np.squeeze(y)
+        f = np.squeeze(f)
+        assert y.shape == f.shape
+        e = y - f
+        grad_sigma = (  (-2*self.sigma*self.v*(self.v + 1)*e)
+                      / ((self.v*(self.sigma**2) + e**2)**2)
+                     )
+        return grad_sigma
+
     def _gradients(self, y, f, extra_data=None):
-        return [self.link_hess_grad_sigma] # list as we might learn many parameters
+        return [self.link_grad_std(y, f, extra_data=extra_data)[:, None],
+                self.link_hess_grad_std(y, f, extra_data=extra_data)[:, None]] # list as we might learn many parameters
 
     def predictive_values(self, mu, var):
         """
@@ -372,9 +388,7 @@ class weibull_survival(likelihood_function):
     def __init__(self, shape, scale):
         self.shape = shape
         self.scale = scale
-
-        #FIXME: This should be in the superclass
-        self.log_concave = True
+        self.log_concave = True # Or false?
 
     def link_function(self, y, f, extra_data=None):
         """

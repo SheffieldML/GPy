@@ -220,7 +220,7 @@ class opt_SGD(Optimizer):
             b = len(features)/self.batch_size
             features = [features[i::b] for i in range(b)]
             NLL = []
-
+            import pylab as plt
             for count, j in enumerate(features):
                 self.model.D = len(j)
                 self.model.likelihood.D = len(j)
@@ -230,6 +230,8 @@ class opt_SGD(Optimizer):
                     shapes = self.get_param_shapes(N, Q)
                     f, step, Nj = self.step_with_missing_data(f_fp, X, step, shapes)
                 else:
+                    self.model.likelihood.YYT = np.dot(self.model.likelihood.Y, self.model.likelihood.Y.T)
+                    self.model.likelihood.trYYT = np.trace(self.model.likelihood.YYT)
                     Nj = N
                     f, fp = f_fp(self.x_opt)
                     step = self.momentum * step + self.learning_rate * fp
@@ -244,7 +246,11 @@ class opt_SGD(Optimizer):
                 NLL.append(f)
 
                 self.fopt_trace.append(f)
+                # fig = plt.figure('traces')
+                # plt.clf()
+                # plt.plot(self.param_traces['noise'])
 
+                # import pdb; pdb.set_trace()
                 # for k in self.param_traces.keys():
                 #     self.param_traces[k].append(self.model.get(k)[0])
 

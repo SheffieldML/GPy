@@ -97,7 +97,7 @@ def jitchol_old(A,maxtries=5):
 
         raise linalg.LinAlgError,"not positive definite, even with jitter."
 
-def pdinv(A):
+def pdinv(A, *args):
     """
     :param A: A DxD pd numpy array
 
@@ -110,7 +110,7 @@ def pdinv(A):
     :rval logdet: the log of the determinant of A
     :rtype logdet: float64
     """
-    L = jitchol(A)
+    L = jitchol(A, *args)
     logdet = 2.*np.sum(np.log(np.diag(L)))
     Li = chol_inv(L)
     Ai = linalg.lapack.flapack.dpotri(L)[0]

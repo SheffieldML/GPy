@@ -9,6 +9,7 @@ from ..core import model
 from ..util.linalg import pdinv,mdot
 from ..util.plot import gpplot,x_frame1D,x_frame2D, Tango
 from ..likelihoods import EP
+from scipy import linalg
 
 class GP(model):
     """
@@ -78,10 +79,13 @@ class GP(model):
 
         #the gradient of the likelihood wrt the covariance matrix
         if self.likelihood.YYT is None:
-            alpha = np.dot(self.Ki,self.likelihood.Y)
+            #alpha = np.dot(self.Ki,self.likelihood.Y)
+            alpha,info = linalg.lapack.flapack.dpotrs(self.L,np.asfortranarray(self.likelihood.Y),lower=1)
             self.dL_dK = 0.5*(np.dot(alpha,alpha.T)-self.D*self.Ki)
         else:
-            tmp = mdot(self.Ki, self.likelihood.YYT, self.Ki)
+            #tmp = mdot(self.Ki, self.likelihood.YYT, self.Ki)
+            tmp,info = linalg.lapack.flapack.dpotrs(self.L,np.asfortranarray(self.likelihood.YYT),lower=1)
+            tmp,info = linalg.lapack.flapack.dpotrs(self.L,np.asfortranarray(tmp.T),lower=1)
             self.dL_dK = 0.5*(tmp - self.D*self.Ki)
 
     def _get_params(self):
@@ -105,9 +109,12 @@ class GP(model):
         Computes the model fit using YYT if it's available
         """
         if self.likelihood.YYT is None:
-            return -0.5*np.sum(np.square(np.dot(self.Li,self.likelihood.Y)))
+            #return -0.5*np.sum(np.square(np.dot(self.Li,self.likelihood.Y)))
+            tmp,info = linalg.lapack.flapack.dtrtrs(self.L,np.asfortranarray(self.likelihood.Y),lower=1)
+            return -0.5*np.sum(np.square(tmp))
         else:
             return -0.5*np.sum(np.multiply(self.Ki, self.likelihood.YYT))
+
 
     def log_likelihood(self):
         """
@@ -136,8 +143,11 @@ class GP(model):
         for normalization or likelihood
         """
         Kx = self.kern.K(self.X,_Xnew, slices1=self.Xslices,slices2=slices)
-        mu = np.dot(np.dot(Kx.T,self.Ki),self.likelihood.Y)
-        KiKx = np.dot(self.Ki,Kx)
+        #mu = np.dot(np.dot(Kx.T,self.Ki),self.likelihood.Y)
+        tmp,info = linalg.lapack.flapack.dpotrs(self.L,np.asfortranarray(self.likelihood.Y),lower=1)
+        mu = np.dot(Kx.T,tmp)
+        #KiKx = np.dot(self.Ki,Kx)
+        KiKx,info = linalg.lapack.flapack.dpotrs(self.L,np.asfortranarray(Kx),lower=1)
         if full_cov:
             Kxx = self.kern.K(_Xnew, slices1=slices,slices2=slices)
             var = Kxx - np.dot(KiKx.T,Kx)

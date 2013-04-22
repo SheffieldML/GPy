@@ -165,34 +165,40 @@ def Brownian(D,variance=1.):
     part = Brownianpart(D,variance)
     return kern(D, [part])
 
-import sympy as sp
-from sympykern import spkern
-from sympy.parsing.sympy_parser import parse_expr
+try:
+    import sympy as sp
+    from sympykern import spkern
+    from sympy.parsing.sympy_parser import parse_expr
+    sympy_available = True
+except ImportError:
+    sympy_available = False
 
-def rbf_sympy(D,ARD=False,variance=1., lengthscale=1.):
-    """
-    Radial Basis Function covariance.
-    """
-    X = [sp.var('x%i'%i) for i in range(D)]
-    Z = [sp.var('z%i'%i) for i in range(D)]
-    rbf_variance = sp.var('rbf_variance',positive=True)
-    if ARD:
-        rbf_lengthscales = [sp.var('rbf_lengthscale_%i'%i,positive=True) for i in range(D)]
-        dist_string = ' + '.join(['(x%i-z%i)**2/rbf_lengthscale_%i**2'%(i,i,i) for i in range(D)])
-        dist = parse_expr(dist_string)
-        f =  rbf_variance*sp.exp(-dist/2.)
-    else:
-        rbf_lengthscale = sp.var('rbf_lengthscale',positive=True)
-        dist_string = ' + '.join(['(x%i-z%i)**2'%(i,i) for i in range(D)])
-        dist = parse_expr(dist_string)
-        f =  rbf_variance*sp.exp(-dist/(2*rbf_lengthscale**2))
-    return kern(D,[spkern(D,f)])
+if sympy_available:
+    def rbf_sympy(D,ARD=False,variance=1., lengthscale=1.):
+        """
+        Radial Basis Function covariance.
+        """
+        X = [sp.var('x%i'%i) for i in range(D)]
+        Z = [sp.var('z%i'%i) for i in range(D)]
+        rbf_variance = sp.var('rbf_variance',positive=True)
+        if ARD:
+            rbf_lengthscales = [sp.var('rbf_lengthscale_%i'%i,positive=True) for i in range(D)]
+            dist_string = ' + '.join(['(x%i-z%i)**2/rbf_lengthscale_%i**2'%(i,i,i) for i in range(D)])
+            dist = parse_expr(dist_string)
+            f =  rbf_variance*sp.exp(-dist/2.)
+        else:
+            rbf_lengthscale = sp.var('rbf_lengthscale',positive=True)
+            dist_string = ' + '.join(['(x%i-z%i)**2'%(i,i) for i in range(D)])
+            dist = parse_expr(dist_string)
+            f =  rbf_variance*sp.exp(-dist/(2*rbf_lengthscale**2))
+        return kern(D,[spkern(D,f)])
 
-def sympykern(D,k):
-    """
-    A kernel from a symbolic sympy representation
-    """
-    return kern(D,[spkern(D,k)])
+    def sympykern(D,k):
+        """
+        A kernel from a symbolic sympy representation
+        """
+        return kern(D,[spkern(D,k)])
+del sympy_available
 
 def periodic_exponential(D=1,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,lower=0.,upper=4*np.pi):
     """

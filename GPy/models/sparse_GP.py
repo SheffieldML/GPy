@@ -239,10 +239,10 @@ class sparse_GP(GP):
         """
         The derivative of the bound wrt the inducing inputs Z
         """
-        dL_dZ = 2.*self.kern.dK_dX(self.dL_dKmm,self.Z)#factor of two becase of vertical and horizontal 'stripes' in dKmm_dZ
+        dL_dZ = 2.*self.kern.dK_dX(self.dL_dKmm, self.Z)  # factor of two becase of vertical and horizontal 'stripes' in dKmm_dZ
         if self.has_uncertain_inputs:
             dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1,self.Z,self.X, self.X_variance)
-            dL_dZ += 2.*self.kern.dpsi2_dZ(self.dL_dpsi2,self.Z,self.X, self.X_variance) # 'stripes'
+            dL_dZ += self.kern.dpsi2_dZ(self.dL_dpsi2, self.Z, self.X, self.X_variance)
         else:
             dL_dZ += self.kern.dK_dX(self.dL_dpsi1,self.Z,self.X)
         return dL_dZ

@@ -13,7 +13,6 @@ import priors
 from ..util.linalg import jitchol
 from ..inference import optimization
 from .. import likelihoods
-import re
 
 class model(parameterised):
     def __init__(self):
@@ -240,7 +239,7 @@ class model(parameterised):
         for s in positive_strings:
             for i in self.grep_param_names(s):
                 if not (i in currently_constrained):
-                    to_make_positive.append(re.escape(param_names[i]))
+                    to_make_positive.append(param_names[i])
                     if warn:
                         print "Warning! constraining %s postive"%name
         if len(to_make_positive):

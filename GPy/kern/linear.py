@@ -114,7 +114,7 @@ class linear(kernpart):
 
     def psi1(self,Z,mu,S,target):
         """the variance, it does nothing"""
-        self.K(mu,Z,target)
+        self._psi1 = self.K(mu, Z, target)
 
     def dpsi1_dtheta(self,dL_dpsi1,Z,mu,S,target):
         """the variance, it does nothing"""

@@ -440,11 +440,7 @@ class kern(parameterised):
         # TODO: better looping
         for i1, i2 in itertools.combinations(range(len(self.parts)), 2):
             p1, p2 = self.parts[i1], self.parts[i2]
-<<<<<<< Updated upstream
 #             ipsl1, ipsl2 = self.input_slices[i1], self.input_slices[i2]
-=======
-            ipsl1, ipsl2 = self.input_slices[i1], self.input_slices[i2]
->>>>>>> Stashed changes
             ps1, ps2 = self.param_slices[i1], self.param_slices[i2]
 
             # white doesn;t combine with anything
@@ -459,7 +455,6 @@ class kern(parameterised):
                 p2.dpsi1_dtheta(dL_dpsi2.sum(1) * p1._psi1 * 2., Z, mu, S, target[ps2])
             # linear X bias
             elif p1.name == 'bias' and p2.name == 'linear':
-<<<<<<< Updated upstream
                 p2.dpsi1_dtheta(dL_dpsi2.sum(1) * p1.variance * 2., Z, mu, S, target[ps2])  # [ps1])
                 psi1 = np.zeros((mu.shape[0], Z.shape[0]))
                 p2.psi1(Z, mu, S, psi1)
@@ -469,11 +464,6 @@ class kern(parameterised):
                 psi1 = np.zeros((mu.shape[0], Z.shape[0]))
                 p1.psi1(Z, mu, S, psi1)
                 p2.dpsi1_dtheta(dL_dpsi2.sum(1) * psi1 * 2., Z, mu, S, target[ps2])
-=======
-                p2.dpsi1_dtheta(dL_dpsi2.sum(1) * p1.variance * 2., Z, mu, S, target[ps1])
-            elif p2.name == 'bias' and p1.name == 'linear':
-                p1.dpsi1_dtheta(dL_dpsi2.sum(1) * p2.variance * 2., Z, mu, S, target[ps1])
->>>>>>> Stashed changes
             # rbf X linear
             elif p1.name == 'linear' and p2.name == 'rbf':
                 raise NotImplementedError  # TODO

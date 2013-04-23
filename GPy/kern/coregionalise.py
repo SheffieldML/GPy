@@ -62,11 +62,16 @@ class coregionalise(kernpart):
         ii,jj = np.meshgrid(index,index2)
         ii,jj = ii.T, jj.T
 
+        #dL_dK_small = np.zeros_like(self.B)
+        #for i in range(self.Nout):
+            #for j in range(self.Nout):
+                #tmp = np.sum(dL_dK[(ii==i)*(jj==j)])
+                #dL_dK_small[i,j] = tmp
+        #as above, but slightly faster
         dL_dK_small = np.zeros_like(self.B)
-        for i in range(self.Nout):
-            for j in range(self.Nout):
-                tmp = np.sum(dL_dK[(ii==i)*(jj==j)])
-                dL_dK_small[i,j] = tmp
+        where_i = [ii==i for i in xrange(self.Nout)]
+        where_j = [jj==j for j in xrange(self.Nout)]
+        [[np.put(dL_dK_small,i+self.Nout*j,np.sum(dL_dK[np.logical_and(wi,wj)])) for i,wi in enumerate(where_i)] for j,wj in enumerate(where_j)]
 
         dkappa = np.diag(dL_dK_small)
         dL_dK_small += dL_dK_small.T

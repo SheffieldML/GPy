@@ -455,10 +455,15 @@ class kern(parameterised):
                 p2.dpsi1_dtheta(dL_dpsi2.sum(1) * p1._psi1 * 2., Z, mu, S, target[ps2])
             # linear X bias
             elif p1.name == 'bias' and p2.name == 'linear':
-                p2.dpsi1_dtheta(dL_dpsi2.sum(1) * p1.variance * 2., Z, mu, S, target)
+                p2.dpsi1_dtheta(dL_dpsi2.sum(1) * p1.variance * 2., Z, mu, S, target[ps2])  # [ps1])
+                psi1 = np.zeros((mu.shape[0], Z.shape[0]))
+                p2.psi1(Z, mu, S, psi1)
+                p1.dpsi1_dtheta(dL_dpsi2.sum(1) * psi1 * 2., Z, mu, S, target[ps1])
             elif p2.name == 'bias' and p1.name == 'linear':
-                p1.dpsi1_dtheta(dL_dpsi2.sum(1) * p2.variance * 2., Z, mu, S, target)
-                pass
+                p1.dpsi1_dtheta(dL_dpsi2.sum(1) * p2.variance * 2., Z, mu, S, target[ps1])
+                psi1 = np.zeros((mu.shape[0], Z.shape[0]))
+                p1.psi1(Z, mu, S, psi1)
+                p2.dpsi1_dtheta(dL_dpsi2.sum(1) * psi1 * 2., Z, mu, S, target[ps2])
             # rbf X linear
             elif p1.name == 'linear' and p2.name == 'rbf':
                 raise NotImplementedError  # TODO

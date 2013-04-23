@@ -76,7 +76,7 @@ class independent_outputs(kernpart):
             X2,slices2 = X,slices
         else:
             X2,slices2 = X2[:,:-1],index_to_slices(X2[:,-1])
-        [[[self.k.dK_dtheta(X[s],X2[s2],target) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
+        [[[self.k.dK_dtheta(dL_dK,X[s],X2[s2],target) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
 
 
     def dK_dX(self,dL_dK,X,X2,target):
@@ -85,13 +85,13 @@ class independent_outputs(kernpart):
             X2,slices2 = X,slices
         else:
             X2,slices2 = X2[:,:-1],index_to_slices(X2[:,-1])
-        [[[self.k.dK_dX(X[s],X2[s2],target[s,:-1]) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
+        [[[self.k.dK_dX(dL_dK,X[s],X2[s2],target[s,:-1]) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
 
     def dKdiag_dX(self,dL_dKdiag,X,target):
         X,slices = X[:,:-1],index_to_slices(X[:,-1])
-        [[self.k.dKdiag_dX(X[s],target[s,:-1]) for s in slices_i] for slices_i in slices]
+        [[self.k.dKdiag_dX(dL_dKdiag,X[s],target[s,:-1]) for s in slices_i] for slices_i in slices]
 
 
     def dKdiag_dtheta(self,dL_dKdiag,X,target):
         X,slices = X[:,:-1],index_to_slices(X[:,-1])
-        [[self.k.dKdiag_dX(X[s],target) for s in slices_i] for slices_i in slices]
+        [[self.k.dKdiag_dX(dL_dKdiag,X[s],target) for s in slices_i] for slices_i in slices]

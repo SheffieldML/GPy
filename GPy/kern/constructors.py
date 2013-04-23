@@ -25,6 +25,7 @@ from symmetric import symmetric as symmetric_part
 from coregionalise import coregionalise as coregionalise_part
 from rational_quadratic import rational_quadratic as rational_quadraticpart
 from rbfcos import rbfcos as rbfcospart
+from independent_outputs import independent_outputs as independent_output_part
 #TODO these s=constructors are not as clean as we'd like. Tidy the code up
 #using meta-classes to make the objects construct properly wthout them.
 
@@ -324,3 +325,14 @@ def rbfcos(D,variance=1.,frequencies=None,bandwidths=None,ARD=False):
     """
     part = rbfcospart(D,variance,frequencies,bandwidths,ARD)
     return kern(D,[part])
+
+def independent_outputs(k):
+    """
+    Construct a kernel with independent outputs from an existing kernel
+    """
+    for sl in k.input_slices:
+        assert (sl.start is None) and (sl.stop is None), "cannot adjust input slices! (TODO)"
+    parts = [independent_output_part(p) for p in k.parts]
+    return kern(k.D+1,parts)
+
+

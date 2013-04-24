@@ -207,7 +207,7 @@ def bgplvm_simulation(burnin='scg', plot_sim=False,
 #     cstr = 'X_variance'
 #     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-3, 1.)
 
-    m.set('X_var', np.ones(N * Q) * .5 + np.random.randn(N * Q) * .01)
+    m['X_var'] = np.ones(N * Q) * .5 + np.random.randn(N * Q) * .01
 
 #     cstr = "iip"
 #     m.unconstrain(cstr); m.constrain_fixed(cstr)

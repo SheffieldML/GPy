@@ -84,37 +84,6 @@ class model(parameterised):
         for w in which:
             self.priors[w] = what
 
-    def __getitem__(self, name):
-        return self.get(name)
-
-    def __setitem(self, name, val):
-        return self.set(name, val)
-
-    def get(self, name, return_names=False):
-        """
-        Get a model parameter by name. The name is applied as a regular expression and all parameters that match that regular expression are returned.
-        """
-        matches = self.grep_param_names(name)
-        if len(matches):
-            if return_names:
-                return self._get_params()[matches], np.asarray(self._get_param_names())[matches].tolist()
-            else:
-                return self._get_params()[matches]
-        else:
-            raise AttributeError, "no parameter matches %s" % name
-
-    def set(self, name, val):
-        """
-        Set model parameter(s) by name. The name is provided as a regular expression. All parameters matching that regular expression are set to ghe given value.
-        """
-        matches = self.grep_param_names(name)
-        if len(matches):
-            x = self._get_params()
-            x[matches] = val
-            self._set_params(x)
-        else:
-            raise AttributeError, "no parameter matches %s" % name
-
     def get_gradient(self, name, return_names=False):
         """
         Get model gradient(s) by name. The name is applied as a regular expression and all parameters that match that regular expression are returned.

@@ -161,13 +161,26 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         ax.plot(self.Z[:, input_1], self.Z[:, input_2], '^w')
         return ax
 
-    def plot_X_1d(self, fig_num="MRD X 1d", axes=None, colors=None):
+    def plot_X_1d(self, fig=None, axes=None, fig_num="MRD X 1d", colors=None):
+        """
+        Plot latent space X in 1D:
+        
+            -if fig is given, create Q subplots in fig and plot in these
+            -if axes is given plot Q 1D latent space plots of X into each `axis`
+            -if neither fig nor axes is given create a figure with fig_num and plot in there
+            
+        colors:
+            
+            colors of different latent space dimensions Q
+        """
         import pylab
-
-        fig = pylab.figure(num=fig_num, figsize=(min(8, (3 * len(self.bgplvms))), min(12, (2 * self.X.shape[1]))))
+        if fig is None and axes is None:
+            fig = pylab.figure(num=fig_num, figsize=(8, min(12, (2 * self.X.shape[1]))))
         if colors is None:
             colors = pylab.gca()._get_lines.color_cycle
             pylab.clf()
+        else:
+            colors = iter(colors)
         plots = []
         for i in range(self.X.shape[1]):
             if axes is None:

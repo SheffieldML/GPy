@@ -109,8 +109,10 @@ class sparse_GP(GP):
 
         self.psi1V = np.dot(self.psi1, self.V)
         #tmp = np.dot(self.Lmi.T, self.LBi.T)
-        tmp = linalg.lapack.clapack.dtrtrs(self.Lm.T,np.asarray(self.LBi.T,order='C'),lower=0)[0]
-        self.C = np.dot(tmp,tmp.T) #TODO: tmp is triangular. replace with dtrmm (blas) when available
+        #tmp = linalg.lapack.clapack.dtrtrs(self.Lm.T,np.asarray(self.LBi.T,order='C'),lower=0)[0]
+        #self.C = np.dot(tmp,tmp.T) #TODO: tmp is triangular. replace with dtrmm (blas) when available
+        tmp = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(self.Bi),lower=1,trans=1)[0]
+        self.C = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1,trans=1)[0]
         self.Cpsi1V = np.dot(self.C,self.psi1V)
         self.Cpsi1VVpsi1 = np.dot(self.Cpsi1V,self.psi1V.T)
         #self.E = np.dot(self.Cpsi1VVpsi1,self.C)/sf2

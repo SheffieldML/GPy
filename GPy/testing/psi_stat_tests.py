@@ -57,6 +57,7 @@ class Test(unittest.TestCase):
     X_var = .5 * numpy.ones_like(X) + .4 * numpy.clip(numpy.random.randn(*X.shape), 0, 1)
     Z = numpy.random.permutation(X)[:M]
     Y = X.dot(numpy.random.randn(Q, D))
+    kernels = [GPy.kern.linear(Q), GPy.kern.rbf(Q), GPy.kern.bias(Q)]
 
     kernels = [GPy.kern.linear(Q), GPy.kern.rbf(Q), GPy.kern.bias(Q),
                GPy.kern.linear(Q) + GPy.kern.bias(Q),

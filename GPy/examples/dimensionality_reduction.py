@@ -112,14 +112,14 @@ def _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim=False):
     s3 = s3(x)
     sS = sS(x)
 
-    s1 -= s1.mean()
-    s2 -= s2.mean()
-    s3 -= s3.mean()
-    sS -= sS.mean()
-    s1 /= .5 * (np.abs(s1).max() - np.abs(s1).min())
-    s2 /= .5 * (np.abs(s2).max() - np.abs(s2).min())
-    s3 /= .5 * (np.abs(s3).max() - np.abs(s3).min())
-    sS /= .5 * (np.abs(sS).max() - np.abs(sS).min())
+#     s1 -= s1.mean()
+#     s2 -= s2.mean()
+#     s3 -= s3.mean()
+#     sS -= sS.mean()
+#     s1 /= .5 * (np.abs(s1).max() - np.abs(s1).min())
+#     s2 /= .5 * (np.abs(s2).max() - np.abs(s2).min())
+#     s3 /= .5 * (np.abs(s3).max() - np.abs(s3).min())
+#     sS /= .5 * (np.abs(sS).max() - np.abs(sS).min())
 
     S1 = np.hstack([s1, sS])
     S2 = np.hstack([s2, sS])
@@ -129,9 +129,9 @@ def _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim=False):
     Y2 = S2.dot(np.random.randn(S2.shape[1], D2))
     Y3 = S3.dot(np.random.randn(S3.shape[1], D3))
 
-    Y1 += .5 * np.random.randn(*Y1.shape)
-    Y2 += .5 * np.random.randn(*Y2.shape)
-    Y3 += .5 * np.random.randn(*Y3.shape)
+    Y1 += .3 * np.random.randn(*Y1.shape)
+    Y2 += .3 * np.random.randn(*Y2.shape)
+    Y3 += .3 * np.random.randn(*Y3.shape)
 
     Y1 -= Y1.mean(0)
     Y2 -= Y2.mean(0)
@@ -162,8 +162,11 @@ def _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim=False):
 
     return slist, [S1, S2, S3], Ylist
 
-def bgplvm_simulation(burnin='scg', plot_sim=False, max_f_eval=12):
-    D1, D2, D3, N, M, Q = 2000, 8, 8, 500, 2, 6
+def bgplvm_simulation(burnin='scg', plot_sim=False,
+                      max_burnin=100, true_X=False,
+                      do_opt=True,
+                      max_f_eval=1000):
+    D1, D2, D3, N, M, Q = 10, 8, 8, 50, 30, 5
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim)
 
     from GPy.models import mrd
@@ -171,53 +174,73 @@ def bgplvm_simulation(burnin='scg', plot_sim=False, max_f_eval=12):
     reload(mrd); reload(kern)
 
 
-    Y = Ylist[1]
+    Y = Ylist[0]
 
     k = kern.linear(Q, ARD=True) + kern.white(Q, .00001)  # + kern.bias(Q)
-    m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k)
+#     k = kern.white(Q, .00001) + kern.bias(Q)
+    m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k, _debug=True)
     # m.set('noise',)
+    m.ensure_default_constraints()
 #     m.auto_scale_factor = True
 #     m.scale_factor = 1.
-    m.ensure_default_constraints()
 
 
     if burnin:
         print "initializing beta"
         cstr = "noise"
-        m.unconstrain(cstr); m.constrain_fixed(cstr, Y.var() / 100.)
-        m.optimize(burnin, messages=1, max_f_eval=max_f_eval)
+        m.unconstrain(cstr); m.constrain_fixed(cstr, Y.var() / 70.)
+        m.optimize(burnin, messages=1, max_f_eval=max_burnin)
 
         print "releasing beta"
         cstr = "noise"
         m.unconstrain(cstr);  m.constrain_positive(cstr)
 
-    true_X = np.hstack((slist[1], slist[3], 0. * np.ones((N, Q - 2))))
-    m.set('X_\d', true_X)
-    m.constrain_fixed("X_\d")
+    if true_X:
+        true_X = np.hstack((slist[0], slist[3], 0. * np.ones((N, Q - 2))))
+        m.set('X_\d', true_X)
+        m.constrain_fixed("X_\d")
 
-# #     cstr = 'variance'
-# #     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-10, 1.)
+        cstr = 'X_variance'
+#         m.unconstrain(cstr), m.constrain_fixed(cstr, .0001)
+        m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-7, .1)
+
+#     cstr = 'X_variance'
+#     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-3, 1.)
+
+    m['X_var'] = np.ones(N * Q) * .5 + np.random.randn(N * Q) * .01
+
+#     cstr = "iip"
+#     m.unconstrain(cstr); m.constrain_fixed(cstr)
+
+#     cstr = 'variance'
+#     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-10, 1.)
 #     cstr = 'X_\d'
-#     m.unconstrain(cstr), m.constrain_bounded(cstr, -100., 100.)
+#     m.unconstrain(cstr), m.constrain_bounded(cstr, -10., 10.)
 #
 #     cstr = 'noise'
-#     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-3, 1.)
+#     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-5, 1.)
 #
 #     cstr = 'white'
 #     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-6, 1.)
 #
 #     cstr = 'linear_variance'
-#     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-10, 10.)  # m.constrain_positive(cstr)
-#
-#     cstr = 'X_variance'
-#     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-10, 1.)  # m.constrain_positive(cstr)
+#     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-10, 10.)
+
+#     cstr = 'variance'
+#     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-10, 10.)
 
 #     np.seterr(all='call')
 #     def ipdbonerr(errtype, flags):
 #         import ipdb; ipdb.set_trace()
 #     np.seterrcall(ipdbonerr)
 
-
+    if do_opt and burnin:
+        try:
+            m.optimize(burnin, messages=1, max_f_eval=max_f_eval)
+        except:
+            pass
+        finally:
+            return m
     return m
 
 def mrd_simulation(plot_sim=False):
@@ -261,6 +284,7 @@ def mrd_simulation(plot_sim=False):
         m.set('{}_noise'.format(i + 1), Y.var() / 100.)
 
     m.ensure_default_constraints()
+    m.auto_scale_factor = True
 
 #     cstr = 'variance'
 #     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-12, 1.)

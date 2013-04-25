@@ -232,8 +232,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         assert self._debug, "must enable _debug, to debug-plot"
         import pylab
 #         from mpl_toolkits.mplot3d import Axes3D
-        figs = [pylab.figure('BGPLVM DEBUG', figsize=(12, 4),
-                             tight_layout=True)]
+        figs = [pylab.figure('BGPLVM DEBUG', figsize=(12, 4))]
 #         fig.clf()
 
         # log like

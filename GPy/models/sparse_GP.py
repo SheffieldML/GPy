@@ -121,19 +121,22 @@ class sparse_GP(GP):
         self.dL_dpsi1 = np.dot(self.Cpsi1V,self.V.T)
         if self.likelihood.is_heteroscedastic:
             if self.has_uncertain_inputs:
-                self.dL_dpsi2 = 0.5 * self.likelihood.precision[:,None,None] * self.D * self.Kmmi[None,:,:] # dB
-                self.dL_dpsi2 += - 0.5 * self.likelihood.precision[:,None,None]/sf2 * self.D * self.C[None,:,:] # dC
-                self.dL_dpsi2 += - 0.5 * self.likelihood.precision[:,None,None]* self.E[None,:,:] # dD
+                #self.dL_dpsi2 = 0.5 * self.likelihood.precision[:,None,None] * self.D * self.Kmmi[None,:,:] # dB
+                #self.dL_dpsi2 += - 0.5 * self.likelihood.precision[:,None,None]/sf2 * self.D * self.C[None,:,:] # dC
+                #self.dL_dpsi2 += - 0.5 * self.likelihood.precision[:,None,None]* self.E[None,:,:] # dD
+                self.dL_dpsi2 = 0.5*self.likelihood.precision[:,None,None]*(self.D*(self.Kmmi - self.C/sf2) -self.E)[None,:,:]
             else:
-                self.dL_dpsi1 += mdot(self.Kmmi,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)) #dB
-                self.dL_dpsi1 += -mdot(self.C,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)/sf2) #dC
-                self.dL_dpsi1 += -mdot(self.E,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)) #dD
+                #self.dL_dpsi1 += mdot(self.Kmmi,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)) #dB
+                #self.dL_dpsi1 += -mdot(self.C,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)/sf2) #dC
+                #self.dL_dpsi1 += -mdot(self.E,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)) #dD
+                self.dL_dpsi1 += np.dot(self.Kmmi - self.C/sf2 -self.E,self.psi1*self.likelihood.precision.reshape(1,self.N))
                 self.dL_dpsi2 = None
 
         else:
-            self.dL_dpsi2 = 0.5 * self.likelihood.precision * self.D * self.Kmmi # dB
-            self.dL_dpsi2 += - 0.5 * self.likelihood.precision/sf2 * self.D * self.C # dC
-            self.dL_dpsi2 += - 0.5 * self.likelihood.precision * self.E # dD
+            #self.dL_dpsi2 = 0.5 * self.likelihood.precision * self.D * self.Kmmi # dB
+            #self.dL_dpsi2 += - 0.5 * self.likelihood.precision/sf2 * self.D * self.C # dC
+            #self.dL_dpsi2 += - 0.5 * self.likelihood.precision * self.E # dD
+            self.dL_dpsi2 = 0.5*self.likelihood.precision*(self.D*(self.Kmmi - self.C/sf2) -self.E)
             if self.has_uncertain_inputs:
                 #repeat for each of the N psi_2 matrices
                 self.dL_dpsi2 = np.repeat(self.dL_dpsi2[None,:,:],self.N,axis=0)
@@ -146,11 +149,11 @@ class sparse_GP(GP):
         #self.dL_dKmm_old = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi)*sf2 # dB
         #self.dL_dKmm += -0.5 * self.D * (- self.C/sf2 - 2.*mdot(self.C, self.psi2_beta_scaled, self.Kmmi) + self.Kmmi) # dC
         #self.dL_dKmm +=  np.dot(np.dot(self.E*sf2, self.psi2_beta_scaled) - self.Cpsi1VVpsi1, self.Kmmi) + 0.5*self.E # dD
-        tmp = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(self.A),lower=1,trans=1)[0]
+        tmp = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(self.B),lower=1,trans=1)[0]
         self.dL_dKmm = -0.5*self.D*sf2*linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1,trans=1)[0] #dA
         tmp = np.dot(self.D*self.C + self.E*sf2,self.psi2_beta_scaled) - self.Cpsi1VVpsi1
         tmp = linalg.lapack.flapack.dpotrs(self.Lm,np.asfortranarray(tmp.T),lower=1)[0].T
-        self.dL_dKmm += 0.5*(self.D*(self.C/sf2 -self.Kmmi) + self.E) +tmp # d(C+D)
+        self.dL_dKmm += 0.5*(self.D*self.C/sf2 + self.E) +tmp # d(C+D)
 
         #the partial derivative vector for the likelihood
         if self.likelihood.Nparams ==0:
@@ -196,6 +199,7 @@ class sparse_GP(GP):
         #        self.scale_factor = max(1,np.sqrt(self.psi2_beta_scaled.sum(0).mean()))
         #    else:
         #        self.scale_factor = np.sqrt(self.psi2.sum(0).mean()*self.likelihood.precision)
+        #self.scale_factor = 1.
         self._computations()
 
     def _get_params(self):

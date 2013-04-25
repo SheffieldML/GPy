@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt, pyplot
 
 import GPy
 from GPy.models.Bayesian_GPLVM import Bayesian_GPLVM
+from GPy.util.datasets import simulation_BGPLVM
 
 default_seed = np.random.seed(123344)
 
@@ -129,9 +130,9 @@ def _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim=False):
     Y2 = S2.dot(np.random.randn(S2.shape[1], D2))
     Y3 = S3.dot(np.random.randn(S3.shape[1], D3))
 
-    Y1 += .3 * np.random.randn(*Y1.shape)
-    Y2 += .3 * np.random.randn(*Y2.shape)
-    Y3 += .3 * np.random.randn(*Y3.shape)
+    Y1 += .2 * np.random.randn(*Y1.shape)
+    Y2 += .2 * np.random.randn(*Y2.shape)
+    Y3 += .2 * np.random.randn(*Y3.shape)
 
     Y1 -= Y1.mean(0)
     Y2 -= Y2.mean(0)
@@ -162,11 +163,31 @@ def _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim=False):
 
     return slist, [S1, S2, S3], Ylist
 
+def bgplvm_simulation_matlab_compare():
+    sim_data = simulation_BGPLVM()
+    Y = sim_data['Y']
+    S = sim_data['S']
+    mu = sim_data['mu']
+    M, [_, Q] = 20, mu.shape
+
+    from GPy.models import mrd
+    from GPy import kern
+    reload(mrd); reload(kern)
+    k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
+    m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k,
+                       # X=mu,
+                       # X_variance=S,
+                       _debug=True)
+    m.ensure_default_constraints()
+    m['noise'] = .01  # Y.var() / 100.
+    m['linear_variance'] = .01
+    return m
+
 def bgplvm_simulation(burnin='scg', plot_sim=False,
                       max_burnin=100, true_X=False,
                       do_opt=True,
                       max_f_eval=1000):
-    D1, D2, D3, N, M, Q = 10, 8, 8, 50, 30, 5
+    D1, D2, D3, N, M, Q = 10, 8, 8, 250, 10, 6
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim)
 
     from GPy.models import mrd
@@ -176,11 +197,13 @@ def bgplvm_simulation(burnin='scg', plot_sim=False,
 
     Y = Ylist[0]
 
-    k = kern.linear(Q, ARD=True) + kern.white(Q, .00001)  # + kern.bias(Q)
+    k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))  # + kern.bias(Q)
 #     k = kern.white(Q, .00001) + kern.bias(Q)
     m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k, _debug=True)
     # m.set('noise',)
     m.ensure_default_constraints()
+    m['noise'] = Y.var() / 100.
+    m['linear_variance'] = .001
 #     m.auto_scale_factor = True
 #     m.scale_factor = 1.
 
@@ -207,7 +230,7 @@ def bgplvm_simulation(burnin='scg', plot_sim=False,
 #     cstr = 'X_variance'
 #     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-3, 1.)
 
-    m['X_var'] = np.ones(N * Q) * .5 + np.random.randn(N * Q) * .01
+    # m['X_var'] = np.ones(N * Q) * .5 + np.random.randn(N * Q) * .01
 
 #     cstr = "iip"
 #     m.unconstrain(cstr); m.constrain_fixed(cstr)

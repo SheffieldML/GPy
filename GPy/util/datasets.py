@@ -4,14 +4,14 @@ import numpy as np
 import GPy
 import scipy.sparse
 import scipy.io
-data_path = os.path.join(os.path.dirname(__file__),'datasets')
-default_seed =10000
+data_path = os.path.join(os.path.dirname(__file__), 'datasets')
+default_seed = 10000
 
 # Some general utilities.
 def sample_class(f):
-    p = 1./(1.+np.exp(-f))
-    c = np.random.binomial(1,p)
-    c = np.where(c,1,-1)
+    p = 1. / (1. + np.exp(-f))
+    c = np.random.binomial(1, p)
+    c = np.where(c, 1, -1)
     return c
 
 def della_gatta_TRP63_gene_expression(gene_number=None):
@@ -25,6 +25,15 @@ def della_gatta_TRP63_gene_expression(gene_number=None):
             Y = Y[:, None]
     return {'X': X, 'Y': Y, 'info': "The full gene expression data set from della Gatta et al (http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2413161/) processed by RMA."}
 
+def simulation_BGPLVM():
+    mat_data = scipy.io.loadmat(os.path.join(data_path, 'BGPLVMSimulation.mat'))
+    Y = np.array(mat_data['Y'], dtype=float)
+    S = np.array(mat_data['initS'], dtype=float)
+    mu = np.array(mat_data['initMu'], dtype=float)
+    return {'Y': Y, 'S': S,
+            'mu' : mu,
+            'info': "Simulated test dataset generated in MATLAB to compare BGPLVM between python and MATLAB"}
+
 
 # The data sets
 def oil():
@@ -32,7 +41,7 @@ def oil():
     X = np.fromfile(fid, sep='\t').reshape((-1, 12))
     fid.close()
     fid = open(os.path.join(data_path, 'oil', 'DataTrnLbls.txt'))
-    Y = np.fromfile(fid, sep='\t').reshape((-1, 3))*2.-1.
+    Y = np.fromfile(fid, sep='\t').reshape((-1, 3)) * 2. - 1.
     fid.close()
     return {'X': X, 'Y': Y, 'info': "The oil data from Bishop and James (1993)."}
 
@@ -74,9 +83,9 @@ def silhouette():
     inMean = np.mean(mat_data['Y'])
     inScales = np.sqrt(np.var(mat_data['Y']))
     X = mat_data['Y'] - inMean
-    X = X/inScales
+    X = X / inScales
     Xtest = mat_data['Y_test'] - inMean
-    Xtest = Xtest/inScales
+    Xtest = Xtest / inScales
     Y = mat_data['Z']
     Ytest = mat_data['Z_test']
     return {'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'info': "Artificial silhouette simulation data developed from Agarwal and Triggs (2004)."}
@@ -102,13 +111,13 @@ def toy_rbf_1d(seed=default_seed):
     np.random.seed(seed=seed)
     numIn = 1
     N = 500
-    X = np.random.uniform(low=-1.0, high=1.0, size=(N, numIn))
+    X = np.random.uniform(low= -1.0, high=1.0, size=(N, numIn))
     X.sort(axis=0)
     rbf = GPy.kern.rbf(numIn, variance=1., lengthscale=np.array((0.25,)))
     white = GPy.kern.white(numIn, variance=1e-2)
     kernel = rbf + white
     K = kernel.K(X)
-    y = np.reshape(np.random.multivariate_normal(np.zeros(N), K), (N,1))
+    y = np.reshape(np.random.multivariate_normal(np.zeros(N), K), (N, 1))
     return {'X':X, 'Y':y, 'info': "Samples 500 values of a function from an RBF covariance with very small noise for inputs uniformly distributed between -1 and 1."}
 
 def toy_rbf_1d_50(seed=default_seed):
@@ -124,15 +133,15 @@ def toy_rbf_1d_50(seed=default_seed):
 
 def toy_linear_1d_classification(seed=default_seed):
     np.random.seed(seed=seed)
-    x1 = np.random.normal(-3,5,20)
-    x2 = np.random.normal(3,5,20)
-    X = (np.r_[x1,x2])[:,None]
+    x1 = np.random.normal(-3, 5, 20)
+    x2 = np.random.normal(3, 5, 20)
+    X = (np.r_[x1, x2])[:, None]
     return {'X': X, 'Y':  sample_class(2.*X), 'F': 2.*X}
 
 def rogers_girolami_olympics():
     olympic_data = scipy.io.loadmat(os.path.join(data_path, 'olympics.mat'))['male100']
     X = olympic_data[:, 0][:, None]
-    Y= olympic_data[:, 1][:, None]
+    Y = olympic_data[:, 1][:, None]
     return {'X': X, 'Y': Y, 'info': "Olympic sprint times for 100 m men from 1896 until 2008. Example is from Rogers and Girolami's First Course in Machine Learning."}
 # def movielens_small(partNo=1,seed=default_seed):
 #     np.random.seed(seed=seed)
@@ -169,7 +178,7 @@ def rogers_girolami_olympics():
 
 
 
-def crescent_data(num_data=200,seed=default_seed):
+def crescent_data(num_data=200, seed=default_seed):
     """Data set formed from a mixture of four Gaussians. In each class two of the Gaussians are elongated at right angles to each other and offset to form an approximation to the crescent data that is popular in semi-supervised learning as a toy problem.
     :param num_data_part: number of data to be sampled (default is 200).
     :type num_data: int
@@ -178,7 +187,7 @@ def crescent_data(num_data=200,seed=default_seed):
     np.random.seed(seed=seed)
     sqrt2 = np.sqrt(2)
     # Rotation matrix
-    R = np.array([[sqrt2/2, -sqrt2/2], [sqrt2/2, sqrt2/2]])
+    R = np.array([[sqrt2 / 2, -sqrt2 / 2], [sqrt2 / 2, sqrt2 / 2]])
     # Scaling matrices
     scales = []
     scales.append(np.array([[3, 0], [0, 1]]))
@@ -195,9 +204,9 @@ def crescent_data(num_data=200,seed=default_seed):
     num_data_part = []
     num_data_total = 0
     for i in range(0, 4):
-        num_data_part.append(round(((i+1)*num_data)/4.))
+        num_data_part.append(round(((i + 1) * num_data) / 4.))
         num_data_part[i] -= num_data_total
-        #print num_data_part[i]
+        # print num_data_part[i]
         part = np.random.normal(size=(num_data_part[i], 2))
         part = np.dot(np.dot(part, scales[i]), R) + means[i]
         Xparts.append(part)
@@ -205,7 +214,7 @@ def crescent_data(num_data=200,seed=default_seed):
     X = np.vstack((Xparts[0], Xparts[1], Xparts[2], Xparts[3]))
 
 
-    Y = np.vstack((np.ones((num_data_part[0]+num_data_part[1], 1)), -np.ones((num_data_part[2]+num_data_part[3], 1))))
+    Y = np.vstack((np.ones((num_data_part[0] + num_data_part[1], 1)), -np.ones((num_data_part[2] + num_data_part[3], 1))))
     return {'X':X, 'Y':Y, 'info': "Two separate classes of data formed approximately in the shape of two crescents."}
 
 
@@ -214,6 +223,6 @@ def creep_data():
     y = all_data[:, 1:2].copy()
     features = [0]
     features.extend(range(2, 31))
-    X = all_data[:,features].copy()
+    X = all_data[:, features].copy()
     return {'X': X, 'y' : y}
 

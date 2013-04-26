@@ -3,7 +3,7 @@
 
 import numpy as np
 import pylab as pb
-from ..util.linalg import mdot, jitchol, chol_inv, pdinv, trace_dot
+from ..util.linalg import mdot, jitchol, chol_inv, pdinv, trace_dot, tdot
 from ..util.plot import gpplot
 from .. import kern
 from GP import GP
@@ -50,9 +50,6 @@ class sparse_GP(GP):
             self.has_uncertain_inputs=True
             self.X_variance = X_variance
 
-        if not self.likelihood.is_heteroscedastic:
-            self.likelihood.trYYT = np.trace(np.dot(self.likelihood.Y, self.likelihood.Y.T)) # TODO: something more elegant here?
-
         GP.__init__(self, X, likelihood, kernel=kernel, normalize_X=normalize_X, Xslices=Xslices)
 
         #normalize X uncertainty also
@@ -86,13 +83,15 @@ class sparse_GP(GP):
                 self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision.flatten().reshape(self.N,1,1)/sf2)).sum(0)
             else:
                 tmp = self.psi1*(np.sqrt(self.likelihood.precision.flatten().reshape(1,self.N))/sf)
-                self.psi2_beta_scaled = np.dot(tmp,tmp.T)
+                #self.psi2_beta_scaled = np.dot(tmp,tmp.T)
+                self.psi2_beta_scaled = tdot(tmp)
         else:
             if self.has_uncertain_inputs:
                 self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision/sf2)).sum(0)
             else:
                 tmp = self.psi1*(np.sqrt(self.likelihood.precision)/sf)
-                self.psi2_beta_scaled = np.dot(tmp,tmp.T)
+                #self.psi2_beta_scaled = np.dot(tmp,tmp.T)
+                self.psi2_beta_scaled = tdot(tmp)
 
         self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
 
@@ -110,10 +109,11 @@ class sparse_GP(GP):
         self.psi1V = np.dot(self.psi1, self.V)
         tmp = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(self.Bi),lower=1,trans=1)[0]
         self.C = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1,trans=1)[0]
+        #TODO: can we multiply in C by forwardsubstitution?
         self.Cpsi1V = np.dot(self.C,self.psi1V)
         self.Cpsi1VVpsi1 = np.dot(self.Cpsi1V,self.psi1V.T)
-        #self.E = np.dot(self.Cpsi1VVpsi1,self.C)/sf2
-        self.E = np.dot(self.Cpsi1V/sf,self.Cpsi1V.T/sf)
+        #self.E = np.dot(self.Cpsi1V/sf,self.Cpsi1V.T/sf)
+        self.E = tdot(self.Cpsi1V/sf)
 
         # Compute dL_dpsi # FIXME: this is untested for the heterscedastic + uncertin inputs case
         self.dL_dpsi0 = - 0.5 * self.D * (self.likelihood.precision * np.ones([self.N,1])).flatten()
@@ -166,9 +166,9 @@ class sparse_GP(GP):
             #self.partial_for_likelihood += -np.diag(np.dot((self.C - 0.5 * mdot(self.C,self.psi2_beta_scaled,self.C) ) , self.psi1VVpsi1 ))*self.likelihood.precision #dD
         else:
             #likelihood is not heterscedatic
-            self.partial_for_likelihood =   - 0.5 * self.N*self.D*self.likelihood.precision + 0.5 * np.sum(np.square(self.likelihood.Y))*self.likelihood.precision**2
+            self.partial_for_likelihood =   - 0.5 * self.N*self.D*self.likelihood.precision + 0.5 * self.likelihood.trYYT*self.likelihood.precision**2
             self.partial_for_likelihood += 0.5 * self.D * (self.psi0.sum()*self.likelihood.precision**2 - np.trace(self.A)*self.likelihood.precision*sf2)
-            self.partial_for_likelihood += 0.5 * self.D * trace_dot(self.Bi,self.A)*self.likelihood.precision # TODO: unstable?
+            self.partial_for_likelihood += 0.5 * self.D * trace_dot(self.Bi,self.A)*self.likelihood.precision
             self.partial_for_likelihood += self.likelihood.precision*(0.5*trace_dot(self.psi2_beta_scaled,self.E*sf2) - np.trace(self.Cpsi1VVpsi1))
 
 

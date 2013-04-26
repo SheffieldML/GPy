@@ -30,7 +30,7 @@ class Gaussian(likelihood):
             self.trYYT = np.trace(self.YYT)
         else:
             self.YYT = None
-            self.trYYT = None
+            self.trYYT = np.sum(np.square(self.Y))
 
     def _get_params(self):
         return np.asarray(self._variance)

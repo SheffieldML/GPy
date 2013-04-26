@@ -30,17 +30,15 @@ class white(kernpart):
         return ['variance']
 
     def K(self,X,X2,target):
-        if X.shape==X2.shape:
-            if np.all(X==X2):
-                np.add(target,np.eye(X.shape[0])*self.variance,target)
+        if X2 is None:
+            target += np.eye(X.shape[0])*self.variance
 
     def Kdiag(self,X,target):
         target += self.variance
 
     def dK_dtheta(self,dL_dK,X,X2,target):
-        if X.shape==X2.shape:
-            if np.all(X==X2):
-                target += np.trace(dL_dK)
+        if X2 is None:
+            target += np.trace(dL_dK)
 
     def dKdiag_dtheta(self,dL_dKdiag,X,target):
         target += np.sum(dL_dKdiag)

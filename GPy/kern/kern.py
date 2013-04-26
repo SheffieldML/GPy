@@ -289,9 +289,11 @@ class kern(parameterised):
         assert X.shape[1] == self.D
         slices1, slices2 = self._process_slices(slices1, slices2)
         if X2 is None:
-            X2 = X
-        target = np.zeros((X.shape[0], X2.shape[0]))
-        [p.K(X[s1, i_s], X2[s2, i_s], target=target[s1, s2]) for p, i_s, s1, s2 in zip(self.parts, self.input_slices, slices1, slices2)]
+            target = np.zeros((X.shape[0], X.shape[0]))
+            [p.K(X[s1, i_s], None, target=target[s1, s2]) for p, i_s, s1, s2 in zip(self.parts, self.input_slices, slices1, slices2)]
+        else:
+            target = np.zeros((X.shape[0], X2.shape[0]))
+            [p.K(X[s1, i_s], X2[s2, i_s], target=target[s1, s2]) for p, i_s, s1, s2 in zip(self.parts, self.input_slices, slices1, slices2)]
         return target
 
     def dK_dtheta(self, dL_dK, X, X2=None, slices1=None, slices2=None):
@@ -308,10 +310,12 @@ class kern(parameterised):
         """
         assert X.shape[1] == self.D
         slices1, slices2 = self._process_slices(slices1, slices2)
-        if X2 is None:
-            X2 = X
         target = np.zeros(self.Nparam)
-        [p.dK_dtheta(dL_dK[s1, s2], X[s1, i_s], X2[s2, i_s], target[ps]) for p, i_s, ps, s1, s2 in zip(self.parts, self.input_slices, self.param_slices, slices1, slices2)]
+        if X2 is None:
+            [p.dK_dtheta(dL_dK[s1, s2], X[s1, i_s], None, target[ps]) for p, i_s, ps, s1, s2 in zip(self.parts, self.input_slices,self.param_slices, slices1, slices2)]
+        else:
+            [p.dK_dtheta(dL_dK[s1, s2], X[s1, i_s], X2[s2, i_s], target[ps]) for p, i_s, ps, s1, s2 in zip(self.parts, self.input_slices,self.param_slices, slices1, slices2)]
+
 
         return self._transform_gradients(target)
 

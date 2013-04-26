@@ -196,7 +196,7 @@ def tdot_blas(mat, out=None):
     if (mat.dtype != 'float64') or (len(mat.shape) != 2):
         return np.dot(mat, mat.T)
     nn = mat.shape[0]
-    if not out:
+    if out is None:
         out = np.zeros((nn,nn))
     else:
         assert(out.dtype == 'float64')
@@ -211,7 +211,7 @@ def tdot_blas(mat, out=None):
     # could avoid the copy. I also thought swapping to cblas API would allow use
     # of C order. However, I tried that and had errors with large matrices:
     # http://homepages.inf.ed.ac.uk/imurray2/code/tdot/tdot_broken.py
-    mat = mat.copy(order='F')
+    mat = np.asfortranarray(mat)
     TRANS = c_char('n')
     N = c_int(mat.shape[0])
     K = c_int(mat.shape[1])
@@ -225,7 +225,7 @@ def tdot_blas(mat, out=None):
     _blaslib.dsyrk_(byref(UPLO), byref(TRANS), byref(N), byref(K),
             byref(ALPHA), A, byref(LDA), byref(BETA), C, byref(LDC))
 
-    symmetrify(out.T)
+    symmetrify(out,upper=True)
 
     return out
 
@@ -235,7 +235,7 @@ def tdot(*args, **kwargs):
     else:
         return tdot_numpy(*args,**kwargs)
 
-def symmetrify(A):
+def symmetrify(A,upper=False):
     """
     Take the square matrix A and make it symmetrical by copting elements from the lower half to the upper
 
@@ -257,9 +257,13 @@ def symmetrify(A):
       }
     }
     """
-    if A.flags['C_CONTIGUOUS']:
+    if A.flags['C_CONTIGUOUS'] and upper:
+        weave.inline(f_contig_code,['A','N'])
+    elif A.flags['C_CONTIGUOUS'] and not upper:
         weave.inline(c_contig_code,['A','N'])
-    elif A.flags['F_CONTIGUOUS']:
+    elif A.flags['F_CONTIGUOUS'] and upper:
+        weave.inline(c_contig_code,['A','N'])
+    elif A.flags['F_CONTIGUOUS'] and not upper:
         weave.inline(f_contig_code,['A','N'])
     else:
         tmp = np.tril(A)

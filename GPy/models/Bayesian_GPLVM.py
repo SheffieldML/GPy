@@ -47,7 +47,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         self._debug = _debug
 
         if self._debug:
-            self.fcall = 0
+            self.f_call = 0
             self._count = itertools.count()
             self._savedklll = []
             self._savedparams = []
@@ -94,7 +94,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         except (LinAlgError, FloatingPointError, ZeroDivisionError):
             print "\rWARNING: Caught LinAlgError, continueing without setting            "
             if self._debug:
-                self._savederrors.append(self.fcall)
+                self._savederrors.append(self.f_call)
 #             if save_count > 10:
 #                 raise
 #             self._set_params(self.oldps[-1], save_old=False, save_count=save_count + 1)
@@ -242,9 +242,9 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         ax1.text(.5, .5, "Optimization", alpha=.3, transform=ax1.transAxes,
                  ha='center', va='center')
         kllls = np.array(self._savedklll)
-        LL, = ax1.plot(kllls[:, 0], kllls[:, 1] - kllls[:, 2], label=r'$\log p(\mathbf{Y})$', mew=1.5)
-        KL, = ax1.plot(kllls[:, 0], kllls[:, 2], label=r'$\mathcal{KL}(p||q)$', mew=1.5)
-        L, = ax1.plot(kllls[:, 0], kllls[:, 1], label=r'$L$', mew=1.5)  # \mathds{E}_{q(\mathbf{X})}[p(\mathbf{Y|X})\frac{p(\mathbf{X})}{q(\mathbf{X})}]
+        LL, = ax1.plot(kllls[:, 0], kllls[:, 1] - kllls[:, 2], '-', label=r'$\log p(\mathbf{Y})$', mew=1.5)
+        KL, = ax1.plot(kllls[:, 0], kllls[:, 2], '-', label=r'$\mathcal{KL}(p||q)$', mew=1.5)
+        L, = ax1.plot(kllls[:, 0], kllls[:, 1], '-', label=r'$L$', mew=1.5)  # \mathds{E}_{q(\mathbf{X})}[p(\mathbf{Y|X})\frac{p(\mathbf{X})}{q(\mathbf{X})}]
 
         param_dict = dict(self._savedparams)
         gradient_dict = dict(self._savedgradients)
@@ -361,10 +361,11 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         indicatorKL, = ax1.plot(kllls[self.showing, 0], kllls[self.showing, 2], 'o', c=KL.get_color())
         indicatorLL, = ax1.plot(kllls[self.showing, 0], kllls[self.showing, 1] - kllls[self.showing, 2], 'o', c=LL.get_color())
         indicatorL, = ax1.plot(kllls[self.showing, 0], kllls[self.showing, 1], 'o', c=L.get_color())
-        for err in self._savederrors:
-            ax1.plot(kllls[err, 0], kllls[err, 2], "*", c=KL.get_color())
-            ax1.plot(kllls[err, 0], kllls[err, 1] - kllls[err, 2], "*", c=LL.get_color())
-            ax1.plot(kllls[err, 0], kllls[err, 1], "*", c=L.get_color())
+#         for err in self._savederrors:
+#             if err < kllls.shape[0]:
+#                 ax1.scatter(kllls[err, 0], kllls[err, 2], s=50, marker=(5, 2), c=KL.get_color())
+#                 ax1.scatter(kllls[err, 0], kllls[err, 1] - kllls[err, 2], s=50, marker=(5, 2), c=LL.get_color())
+#                 ax1.scatter(kllls[err, 0], kllls[err, 1], s=50, marker=(5, 2), c=L.get_color())
 
 #         try:
 #             for f in figs:

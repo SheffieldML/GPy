@@ -108,9 +108,6 @@ class sparse_GP(GP):
         self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
 
         self.psi1V = np.dot(self.psi1, self.V)
-        #tmp = np.dot(self.Lmi.T, self.LBi.T)
-        #tmp = linalg.lapack.clapack.dtrtrs(self.Lm.T,np.asarray(self.LBi.T,order='C'),lower=0)[0]
-        #self.C = np.dot(tmp,tmp.T) #TODO: tmp is triangular. replace with dtrmm (blas) when available
         tmp = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(self.Bi),lower=1,trans=1)[0]
         self.C = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1,trans=1)[0]
         self.Cpsi1V = np.dot(self.C,self.psi1V)
@@ -171,7 +168,7 @@ class sparse_GP(GP):
             #likelihood is not heterscedatic
             self.partial_for_likelihood =   - 0.5 * self.N*self.D*self.likelihood.precision + 0.5 * np.sum(np.square(self.likelihood.Y))*self.likelihood.precision**2
             self.partial_for_likelihood += 0.5 * self.D * (self.psi0.sum()*self.likelihood.precision**2 - np.trace(self.A)*self.likelihood.precision*sf2)
-            self.partial_for_likelihood += 0.5 * self.D * trace_dot(self.Bi,self.A)*self.likelihood.precision
+            self.partial_for_likelihood += 0.5 * self.D * trace_dot(self.Bi,self.A)*self.likelihood.precision # TODO: unstable?
             self.partial_for_likelihood += self.likelihood.precision*(0.5*trace_dot(self.psi2_beta_scaled,self.E*sf2) - np.trace(self.Cpsi1VVpsi1))
 
 

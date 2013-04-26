@@ -215,10 +215,10 @@ class acclaim_skeleton(skeleton):
             self.load_skel(file_name)
 
     def to_xyz(self, channels):
-        rot_val = self.vertices[0].meta['orientation']
+        rot_val = list(self.vertices[0].meta['orientation'])
         for i in range(len(self.vertices[0].meta['rot_ind'])):
             rind = self.vertices[0].meta['rot_ind'][i]
-            if rind != 0:
+            if rind != -1:
                 rot_val[i] += channels[rind]
 
         self.vertices[0].meta['rot'] = rotation_matrix(rot_val[0],
@@ -227,11 +227,11 @@ class acclaim_skeleton(skeleton):
                                                        self.vertices[0].meta['axis_order'],
                                                        degrees=True)
         # vertex based store of the xyz location
-        self.vertices[0].meta['xyz'] = self.vertices[0].meta['offset']
+        self.vertices[0].meta['xyz'] = list(self.vertices[0].meta['offset'])
 
         for i in range(len(self.vertices[0].meta['pos_ind'])):
             pind = self.vertices[0].meta['pos_ind'][i]
-            if pind != 0:
+            if pind != -1:
                 self.vertices[0].meta['xyz'][i] += channels[pind]
 
 
@@ -253,7 +253,7 @@ class acclaim_skeleton(skeleton):
         rot_val = np.zeros(3)
         for j in range(len(self.vertices[ind].meta['rot_ind'])):
             rind = self.vertices[ind].meta['rot_ind'][j]
-            if rind != 0:
+            if rind != -1:
                 rot_val[j] = channels[rind]
             else:
                 rot_val[j] = 0
@@ -275,7 +275,8 @@ class acclaim_skeleton(skeleton):
 
         self.vertices[ind].meta['rot'] = np.dot(np.dot(np.dot(torient_inv,tdof),torient),self.vertices[parent].meta['rot'])
 
-        self.vertices[ind].meta['xyz'] += np.dot(self.vertices[ind].meta['offset'],self.vertices[ind].meta['rot'])
+
+        self.vertices[ind].meta['xyz'] = self.vertices[parent].meta['xyz'] + np.dot(self.vertices[ind].meta['offset'],self.vertices[ind].meta['rot'])
 
         for i in range(len(children)):
             cind = children[i]
@@ -524,6 +525,7 @@ class acclaim_skeleton(skeleton):
                 self.vertices[0].meta['orientation'] =  [float(parts[1]),
                                              float(parts[2]),
                                              float(parts[3])]
+                print self.vertices[0].meta['orientation']
             lin = self.read_line(fid)
         return lin
     
@@ -574,9 +576,9 @@ class acclaim_skeleton(skeleton):
         """Get indices for the skeleton from the channels when loading in channel data."""
 
         channels = self.vertices[index].meta['channels']
-        base_channel = start_val - 1
-        rot_ind = np.zeros(3)
-        pos_ind = np.zeros(3)
+        base_channel = start_val 
+        rot_ind = -np.ones(3, dtype=int)
+        pos_ind = -np.ones(3, dtype=int)
         for i in range(len(channels)):
             if channels[i]== 'Xrotation':
                 rot_ind[0] = base_channel + i

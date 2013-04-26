@@ -130,9 +130,9 @@ def _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim=False):
     Y2 = S2.dot(np.random.randn(S2.shape[1], D2))
     Y3 = S3.dot(np.random.randn(S3.shape[1], D3))
 
-    Y1 += .2 * np.random.randn(*Y1.shape)
-    Y2 += .2 * np.random.randn(*Y2.shape)
-    Y3 += .2 * np.random.randn(*Y3.shape)
+    Y1 += .1 * np.random.randn(*Y1.shape)
+    Y2 += .1 * np.random.randn(*Y2.shape)
+    Y3 += .1 * np.random.randn(*Y3.shape)
 
     Y1 -= Y1.mean(0)
     Y2 -= Y2.mean(0)
@@ -173,14 +173,15 @@ def bgplvm_simulation_matlab_compare():
     from GPy.models import mrd
     from GPy import kern
     reload(mrd); reload(kern)
-    k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
+    k = kern.rbf(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
     m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k,
-                       # X=mu,
-                       # X_variance=S,
+#                        X=mu,
+#                        X_variance=S,
                        _debug=True)
     m.ensure_default_constraints()
+    m.auto_scale_factor = True
     m['noise'] = .01  # Y.var() / 100.
-    m['linear_variance'] = .01
+    m['{}_variance'.format(k.parts[0].name)] = .01
     return m
 
 def bgplvm_simulation(burnin='scg', plot_sim=False,

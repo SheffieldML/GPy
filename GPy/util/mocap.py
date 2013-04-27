@@ -157,6 +157,13 @@ class skeleton(tree):
     def __init__(self):
         tree.__init__(self)
 
+    def connection_matrix(self):
+        connection = np.zeros((len(self.vertices), len(self.vertices)), dtype=bool)
+        for i in range(len(self.vertices)):
+            for j in range(len(self.vertices[i].children)):
+                connection[i, self.vertices[i].children[j]] = True
+        return connection
+
     def to_xyz(self, channels):
         raise NotImplementedError, "this needs to be implemented to use the skeleton class"
 
@@ -557,6 +564,7 @@ class acclaim_skeleton(skeleton):
                     lin = self.read_line(fid)
             else:
                 raise Error, 'Unrecognised file format'
+            self.finalize()
             
     def read_units(self, fid):
         """Read units from an acclaim skeleton file stream."""

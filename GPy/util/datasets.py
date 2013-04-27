@@ -225,49 +225,92 @@ def creep_data():
     X = all_data[:, features].copy()
     return {'X': X, 'y' : y}
 
-def cmu_35_walk_jog():
+def cmu_mocap_49_balance():
+    """Load CMU subject 49's one legged balancing motion that was used by Alvarez, Luengo and Lawrence at AISTATS 2009."""
+    train_motions = ['18', '19']
+    test_motions = ['20']
+    data = cmu_mocap('49', train_motions, test_motions, sample_every=4)
+    data['info'] = "One legged balancing motions from CMU data base subject 49. As used in Alvarez, Luengo and Lawrence at AISTATS 2009. It consists of " + data['info']
+    return data
 
-    skel = GPy.util.mocap.acclaim_skeleton(os.path.join(data_path, 'mocap', 'cmu', '35', '35.asf'))
-    examples = ['01', '02', '03', '04', '05', '06',
+def cmu_mocap_35_walk_jog():
+    """Load CMU subject 35's walking and jogging motions, the same data that was used by Taylor, Roweis and Hinton at NIPS 2007. but without their preprocessing. Also used by Lawrence at AISTATS 2007."""
+    train_motions = ['01', '02', '03', '04', '05', '06',
                 '07', '08', '09', '10', '11', '12',
                 '13', '14', '15', '16', '17', '19',
                 '20', '21', '22', '23', '24', '25',
                 '26', '28', '30', '31', '32', '33', '34']
-    test_examples = ['18', '29']
-    # Label differently for each sequence
-    exlbls = np.eye(31)
-    testexlbls = np.eye(2)
-    tot_length = 0
-    tot_test_length = 0
-    tY = []
-    tlbls = []
-    for i in range(len(examples)):
-        tmpchan = skel.load_channels(os.path.join(data_path, 'mocap', 'cmu', '35', '35_' + examples[i] + '.amc'))
-        tY.append(tmpchan[::4, :])
-        tlbls.append(np.tile(exlbls[i, :], (tY[i].shape[0], 1)))
-        tot_length += tY[i].shape[0]
-    Y = np.zeros((tot_length, tY[0].shape[1]))
-    lbls = np.zeros((tot_length, tlbls[0].shape[1]))
-    endInd = 0
-    for i in range(len(tY)):
-        startInd = endInd 
-        endInd += tY[i].shape[0]
-        Y[startInd:endInd, :] = tY[i]
-        lbls[startInd:endInd, :] = tlbls[i]
-    tYtest = []
-    tlblstest = [] 
-    for i in range(len(test_examples)):
-        tmpchan = skel.load_channels(os.path.join(data_path, 'mocap', 'cmu', '35', '35_' + test_examples[i] + '.amc'))
-        tYtest.append(tmpchan[::4, :])
-        tlblstest.append(np.tile(testexlbls[i, :], (tYtest[i].shape[0], 1)))
-        tot_test_length += tYtest[i].shape[0]
+    test_motions = ['18', '29']
+    data = cmu_mocap('35', train_motions, test_motions, sample_every=4)
+    data['info'] = "Walk and jog data from CMU data base subject 35. As used in Tayor, Roweis and Hinton at NIPS 2007, but without their pre-processing (i.e. as used by Lawrence at AISTATS 2007). It consists of " + data['info']
+    return data
 
-    Ytest = np.zeros((tot_test_length, tYtest[0].shape[1]))
-    lblstest = np.zeros((tot_test_length, tlblstest[0].shape[1]))
-    endInd = 0
-    for i in range(len(tYtest)):
-        startInd = endInd 
-        endInd += tYtest[i].shape[0]
-        Ytest[startInd:endInd, :] = tYtest[i]
-        lblstest[startInd:endInd, :] = tlblstest[i]
-    return {'Y': Y, 'lbls' : lbls, 'Ytest': Ytest, 'lblstest' : lblstest, 'info': "Walk and jog data from CMU data base subject 35."}
+def cmu_mocap(subject, train_motions, test_motions=[], sample_every=4):
+    """Load a given subject's training and test motions from the CMU motion capture data."""
+
+    # Load in subject skeleton.
+    subject_dir = os.path.join(data_path, 'mocap', 'cmu', subject)
+    skel = GPy.util.mocap.acclaim_skeleton(os.path.join(subject_dir, subject + '.asf'))
+
+    # Set up labels for each sequence
+    exlbls = np.eye(len(train_motions))
+
+    # Load sequences
+    tot_length = 0
+    temp_Y = []
+    temp_lbls = []
+    for i in range(len(train_motions)):
+        temp_chan = skel.load_channels(os.path.join(subject_dir, subject + '_' + train_motions[i] + '.amc'))
+        temp_Y.append(temp_chan[::sample_every, :])
+        temp_lbls.append(np.tile(exlbls[i, :], (temp_Y[i].shape[0], 1)))
+        tot_length += temp_Y[i].shape[0]
+
+    Y = np.zeros((tot_length, temp_Y[0].shape[1]))
+    lbls = np.zeros((tot_length, temp_lbls[0].shape[1]))
+
+    end_ind = 0
+    for i in range(len(temp_Y)):
+        start_ind = end_ind 
+        end_ind += temp_Y[i].shape[0]
+        Y[start_ind:end_ind, :] = temp_Y[i]
+        lbls[start_ind:end_ind, :] = temp_lbls[i]
+    if len(test_motions)>0:
+        temp_Ytest = []
+        temp_lblstest = [] 
+
+        testexlbls = np.eye(len(test_motions))
+        tot_test_length = 0
+        for i in range(len(test_motions)):
+            temp_chan = skel.load_channels(os.path.join(subject_dir, subject + '_' + test_motions[i] + '.amc'))
+            temp_Ytest.append(temp_chan[::sample_every, :])
+            temp_lblstest.append(np.tile(testexlbls[i, :], (temp_Ytest[i].shape[0], 1)))
+            tot_test_length += temp_Ytest[i].shape[0]
+
+        # Load test data
+        Ytest = np.zeros((tot_test_length, temp_Ytest[0].shape[1]))
+        lblstest = np.zeros((tot_test_length, temp_lblstest[0].shape[1]))
+
+        end_ind = 0
+        for i in range(len(temp_Ytest)):
+            start_ind = end_ind 
+            end_ind += temp_Ytest[i].shape[0]
+            Ytest[start_ind:end_ind, :] = temp_Ytest[i]
+            lblstest[start_ind:end_ind, :] = temp_lblstest[i]
+    else:
+        Ytest = None
+        lblstest = None
+
+    info = 'Subject: ' + subject + '. Training motions: '
+    for motion in train_motions:
+        info += motion + ', '
+    info = info[:-2]
+    if len(test_motions)>0:
+        info += '. Test motions: '
+        for motion in test_motions:
+            info += motion + ', '
+        info = info[:-2] + '.'
+    else:
+        info += '.'
+    if sample_every != 1:
+        info += ' Data is sub-sampled to every ' + str(sample_every) + ' frames.'
+    return {'Y': Y, 'lbls' : lbls, 'Ytest': Ytest, 'lblstest' : lblstest, 'info': info, 'skel': skel}

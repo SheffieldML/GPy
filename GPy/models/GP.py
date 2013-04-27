@@ -19,8 +19,6 @@ class GP(model):
     :parm likelihood: a GPy likelihood
     :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_X: False|True
-    :param normalize_Y:  whether to normalize the input data before computing (predictions will be in original scales)
-    :type normalize_Y: False|True
     :param Xslices: how the X,Y data co-vary in the kernel (i.e. which "outputs" they correspond to). See (link:slicing)
     :rtype: model object
     :param epsilon_ep: convergence criterion for the Expectation Propagation algorithm, defaults to 0.1

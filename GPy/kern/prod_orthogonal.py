@@ -39,11 +39,14 @@ class prod_orthogonal(kernpart):
 
     def K(self,X,X2,target):
         """Compute the covariance matrix between X and X2."""
-        if X2 is None: X2 = X
         target1 = np.zeros_like(target)
         target2 = np.zeros_like(target)
-        self.k1.K(X[:,:self.k1.D],X2[:,:self.k1.D],target1)
-        self.k2.K(X[:,self.k1.D:],X2[:,self.k1.D:],target2)
+        if X2 is None:
+            self.k1.K(X[:,:self.k1.D],None,target1)
+            self.k2.K(X[:,self.k1.D:],None,target2)
+        else:
+            self.k1.K(X[:,:self.k1.D],X2[:,:self.k1.D],target1)
+            self.k2.K(X[:,self.k1.D:],X2[:,self.k1.D:],target2)
         target += target1 * target2
 
     def dK_dtheta(self,dL_dK,X,X2,target):

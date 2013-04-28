@@ -5,10 +5,11 @@ from kernpart import kernpart
 import numpy as np
 from GPy.util.linalg import mdot, pdinv
 import pdb
+from scipy import weave
 
 class coregionalise(kernpart):
     """
-    Kernel for Intrisec Corregionalization Models
+    Kernel for Intrinsic Corregionalization Models
     """
     def __init__(self,Nout,R=1, W=None, kappa=None):
         self.D = 1
@@ -42,19 +43,70 @@ class coregionalise(kernpart):
 
     def K(self,index,index2,target):
         index = np.asarray(index,dtype=np.int)
+
+        #here's the old code (numpy)
+        #if index2 is None:
+            #index2 = index
+        #else:
+            #index2 = np.asarray(index2,dtype=np.int)
+        #false_target = target.copy()
+        #ii,jj = np.meshgrid(index,index2)
+        #ii,jj = ii.T, jj.T
+        #false_target += self.B[ii,jj]
+
         if index2 is None:
-            index2 = index
+            code="""
+            for(int i=0;i<N; i++){
+              target[i+i*N] += B[index[i]+Nout*index[i]];
+              for(int j=0; j<i; j++){
+                  target[j+i*N] += B[index[i]+Nout*index[j]];
+                  target[i+j*N] += target[j+i*N];
+                }
+              }
+            """
+            N,B,Nout = index.size, self.B, self.Nout
+            weave.inline(code,['target','index','N','B','Nout'])
         else:
             index2 = np.asarray(index2,dtype=np.int)
-        ii,jj = np.meshgrid(index,index2)
-        ii,jj = ii.T, jj.T
-        target += self.B[ii,jj]
+            code="""
+            for(int i=0;i<M; i++){
+              for(int j=0; j<N; j++){
+                  target[i+j*M] += B[Nout*index[j]+index2[i]];
+                }
+              }
+            """
+            N,M,B,Nout = index.size,index2.size, self.B, self.Nout
+            weave.inline(code,['target','index','index2','N','M','B','Nout'])
+
 
     def Kdiag(self,index,target):
         target += np.diag(self.B)[np.asarray(index,dtype=np.int).flatten()]
 
     def dK_dtheta(self,dL_dK,index,index2,target):
         index = np.asarray(index,dtype=np.int)
+        dL_dK_small = np.zeros_like(self.B)
+        if index2 is None:
+            index2 = index
+        else:
+            index2 = np.asarray(index2,dtype=np.int)
+
+        code="""
+        for(int i=0; i<M; i++){
+          for(int j=0; j<N; j++){
+            dL_dK_small[index[j] + Nout*index2[i]] += dL_dK[i+j*M];
+          }
+        }
+        """
+        N, M, Nout = index.size, index2.size, self.Nout
+        weave.inline(code, ['N','M','Nout','dL_dK','dL_dK_small','index','index2'])
+
+        dkappa = np.diag(dL_dK_small)
+        dL_dK_small += dL_dK_small.T
+        dW = (self.W[:,None,:]*dL_dK_small[:,:,None]).sum(0)
+
+        target += np.hstack([dW.flatten(),dkappa])
+
+    def dK_dtheta_old(self,dL_dK,index,index2,target):
         if index2 is None:
             index2 = index
         else:

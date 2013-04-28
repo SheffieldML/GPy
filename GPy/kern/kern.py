@@ -9,6 +9,7 @@ from kernpart import kernpart
 import itertools
 from prod_orthogonal import prod_orthogonal
 from prod import prod
+from ..util.linalg import symmetrify
 
 class kern(parameterised):
     def __init__(self, D, parts=[], input_slices=None):

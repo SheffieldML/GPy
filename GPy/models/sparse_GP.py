@@ -9,10 +9,6 @@ from .. import kern
 from GP import GP
 from scipy import linalg
 
-#Still TODO:
-# make use of slices properly (kernel can now do this)
-# enable heteroscedatic noise (kernel will need to compute psi2 as a (NxMxM) array)
-
 class sparse_GP(GP):
     """
     Variational sparse GP model
@@ -27,19 +23,16 @@ class sparse_GP(GP):
     :type X_variance: np.ndarray (N x Q) | None
     :param Z: inducing inputs (optional, see note)
     :type Z: np.ndarray (M x Q) | None
-    :param Zslices: slices for the inducing inputs (see slicing TODO: link)
     :param M : Number of inducing points (optional, default 10. Ignored if Z is not None)
     :type M: int
     :param normalize_(X|Y) : whether to normalize the data before computing (predictions will be in original scales)
     :type normalize_(X|Y): bool
     """
 
-    def __init__(self, X, likelihood, kernel, Z, X_variance=None, Xslices=None,Zslices=None, normalize_X=False):
+    def __init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False):
         self.scale_factor = 100.0# a scaling factor to help keep the algorithm stable
         self.auto_scale_factor = False
         self.Z = Z
-        self.Zslices = Zslices
-        self.Xslices = Xslices
         self.M = Z.shape[0]
         self.likelihood = likelihood
 
@@ -50,7 +43,7 @@ class sparse_GP(GP):
             self.has_uncertain_inputs=True
             self.X_variance = X_variance
 
-        GP.__init__(self, X, likelihood, kernel=kernel, normalize_X=normalize_X, Xslices=Xslices)
+        GP.__init__(self, X, likelihood, kernel=kernel, normalize_X=normalize_X)
 
         #normalize X uncertainty also
         if self.has_uncertain_inputs:
@@ -65,13 +58,12 @@ class sparse_GP(GP):
             self.psi1 = self.kern.psi1(self.Z,self.X, self.X_variance).T
             self.psi2 = self.kern.psi2(self.Z,self.X, self.X_variance)
         else:
-            self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices)
+            self.psi0 = self.kern.Kdiag(self.X)
             self.psi1 = self.kern.K(self.Z,self.X)
             self.psi2 = None
 
     def _computations(self):
         #TODO: find routine to multiply triangular matrices
-        #TODO: slices for psi statistics (easy enough)
 
         sf = self.scale_factor
         sf2 = sf**2
@@ -252,16 +244,16 @@ class sparse_GP(GP):
             dL_dZ += self.kern.dK_dX(self.dL_dpsi1,self.Z,self.X)
         return dL_dZ
 
-    def _raw_predict(self, Xnew, slices, full_cov=False):
+    def _raw_predict(self, Xnew, which_parts='all', full_cov=False):
         """Internal helper function for making predictions, does not account for normalization"""
 
         Kx = self.kern.K(self.Z, Xnew)
         mu = mdot(Kx.T, self.C/self.scale_factor, self.psi1V)
         if full_cov:
-            Kxx = self.kern.K(Xnew)
+            Kxx = self.kern.K(Xnew,which_parts=which_parts)
             var = Kxx - mdot(Kx.T, (self.Kmmi - self.C/self.scale_factor**2), Kx) #NOTE this won't work for plotting
         else:
-            Kxx = self.kern.Kdiag(Xnew)
+            Kxx = self.kern.Kdiag(Xnew,which_parts=which_parts)
             var = Kxx - np.sum(Kx*np.dot(self.Kmmi - self.C/self.scale_factor**2, Kx),0)
 
         return mu,var[:,None]

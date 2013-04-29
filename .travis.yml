@@ -12,6 +12,7 @@ before_install:
   - sudo apt-get install -qq python-matplotlib
 
 install:
+  - pip install --upgrade numpy==1.7.1 
   - pip install sphinx 
   - pip install nose
   - pip install . --use-mirrors

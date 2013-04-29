@@ -21,41 +21,35 @@ class prod_orthogonal(kernpart):
         self.name = k1.name + '<times>' + k2.name
         self.k1 = k1
         self.k2 = k2
+        self._X, self._X2, self._params = np.empty(shape=(3,1))
         self._set_params(np.hstack((k1._get_params(),k2._get_params())))
 
     def _get_params(self):
         """return the value of the parameters."""
-        return self.params
+        return np.hstack((self.k1._get_params(), self.k2._get_params()))
 
     def _set_params(self,x):
         """set the value of the parameters."""
         self.k1._set_params(x[:self.k1.Nparam])
         self.k2._set_params(x[self.k1.Nparam:])
-        self.params = x
 
     def _get_param_names(self):
         """return parameter names."""
         return [self.k1.name + '_' + param_name for param_name in self.k1._get_param_names()] + [self.k2.name + '_' + param_name for param_name in self.k2._get_param_names()]
 
     def K(self,X,X2,target):
-        """Compute the covariance matrix between X and X2."""
-        if X2 is None: X2 = X
-        target1 = np.zeros_like(target)
-        target2 = np.zeros_like(target)
-        self.k1.K(X[:,:self.k1.D],X2[:,:self.k1.D],target1)
-        self.k2.K(X[:,self.k1.D:],X2[:,self.k1.D:],target2)
-        target += target1 * target2
+        self._K_computations(X,X2)
+        target += self._K1 * self._K2
 
     def dK_dtheta(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to the parameters."""
-        if X2 is None: X2 = X
-        K1 = np.zeros((X.shape[0],X2.shape[0]))
-        K2 = np.zeros((X.shape[0],X2.shape[0]))
-        self.k1.K(X[:,:self.k1.D],X2[:,:self.k1.D],K1)
-        self.k2.K(X[:,self.k1.D:],X2[:,self.k1.D:],K2)
-
-        self.k1.dK_dtheta(dL_dK*K2, X[:,:self.k1.D], X2[:,:self.k1.D], target[:self.k1.Nparam])
-        self.k2.dK_dtheta(dL_dK*K1, X[:,self.k1.D:], X2[:,self.k1.D:], target[self.k1.Nparam:])
+        self._K_computations(X,X2)
+        if X2 is None:
+            self.k1.dK_dtheta(dL_dK*self._K2, X[:,:self.k1.D], None, target[:self.k1.Nparam])
+            self.k2.dK_dtheta(dL_dK*self._K1, X[:,self.k1.D:], None, target[self.k1.Nparam:])
+        else:
+            self.k1.dK_dtheta(dL_dK*self._K2, X[:,:self.k1.D], X2[:,:self.k1.D], target[:self.k1.Nparam])
+            self.k2.dK_dtheta(dL_dK*self._K1, X[:,self.k1.D:], X2[:,self.k1.D:], target[self.k1.Nparam:])
 
     def Kdiag(self,X,target):
         """Compute the diagonal of the covariance matrix associated to X."""
@@ -75,14 +69,9 @@ class prod_orthogonal(kernpart):
 
     def dK_dX(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
-        if X2 is None: X2 = X
-        K1 = np.zeros((X.shape[0],X2.shape[0]))
-        K2 = np.zeros((X.shape[0],X2.shape[0]))
-        self.k1.K(X[:,0:self.k1.D],X2[:,0:self.k1.D],K1)
-        self.k2.K(X[:,self.k1.D:],X2[:,self.k1.D:],K2)
-
-        self.k1.dK_dX(dL_dK*K2, X[:,:self.k1.D], X2[:,:self.k1.D], target)
-        self.k2.dK_dX(dL_dK*K1, X[:,self.k1.D:], X2[:,self.k1.D:], target)
+        self._K_computations(X,X2)
+        self.k1.dK_dX(dL_dK*self._K2, X[:,:self.k1.D], X2[:,:self.k1.D], target)
+        self.k2.dK_dX(dL_dK*self._K1, X[:,self.k1.D:], X2[:,self.k1.D:], target)
 
     def dKdiag_dX(self, dL_dKdiag, X, target):
         K1 = np.zeros(X.shape[0])
@@ -92,4 +81,21 @@ class prod_orthogonal(kernpart):
 
         self.k1.dK_dX(dL_dKdiag*K2, X[:,:self.k1.D], target)
         self.k2.dK_dX(dL_dKdiag*K1, X[:,self.k1.D:], target)
+
+    def _K_computations(self,X,X2):
+        if not (np.array_equal(X,self._X) and np.array_equal(X2,self._X2) and np.array_equal(self._params , self._get_params())):
+            self._X = X.copy()
+            self._params == self._get_params().copy()
+            if X2 is None:
+                self._X2 = None
+                self._K1 = np.zeros((X.shape[0],X.shape[0]))
+                self._K2 = np.zeros((X.shape[0],X.shape[0]))
+                self.k1.K(X[:,:self.k1.D],None,self._K1)
+                self.k2.K(X[:,self.k1.D:],None,self._K2)
+            else:
+                self._X2 = X2.copy()
+                self._K1 = np.zeros((X.shape[0],X2.shape[0]))
+                self._K2 = np.zeros((X.shape[0],X2.shape[0]))
+                self.k1.K(X[:,:self.k1.D],X2[:,:self.k1.D],self._K1)
+                self.k2.K(X[:,self.k1.D:],X2[:,self.k1.D:],self._K2)
 

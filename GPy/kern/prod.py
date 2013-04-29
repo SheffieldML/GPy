@@ -40,9 +40,12 @@ class prod(kernpart):
 
     def K(self,X,X2,target):
         """Compute the covariance matrix between X and X2."""
-        if X2 is None: X2 = X
-        target1 = np.zeros((X.shape[0],X2.shape[0]))
-        target2 = np.zeros((X.shape[0],X2.shape[0]))
+        if X2 is None:
+            target1 = np.zeros((X.shape[0],X2.shape[0]))
+            target2 = np.zeros((X.shape[0],X2.shape[0]))
+        else:
+            target1 = np.zeros((X.shape[0],X.shape[0]))
+            target2 = np.zeros((X.shape[0],X.shape[0]))
         self.k1.K(X,X2,target1)
         self.k2.K(X,X2,target2)
         target += target1 * target2

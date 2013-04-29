@@ -4,6 +4,7 @@
 
 from kernpart import kernpart
 import numpy as np
+from ..util.linalg import tdot
 
 class linear(kernpart):
     """
@@ -65,8 +66,11 @@ class linear(kernpart):
     def K(self,X,X2,target):
         if self.ARD:
             XX = X*np.sqrt(self.variances)
-            XX2 = X2*np.sqrt(self.variances)
-            target += np.dot(XX, XX2.T)
+            if X2 is None:
+                target += tdot(XX)
+            else:
+                XX2 = X2*np.sqrt(self.variances)
+                target += np.dot(XX, XX2.T)
         else:
             self._K_computations(X, X2)
             target += self.variances * self._dot_product
@@ -76,8 +80,11 @@ class linear(kernpart):
 
     def dK_dtheta(self,dL_dK,X,X2,target):
         if self.ARD:
-            product = X[:,None,:]*X2[None,:,:]
-            target += (dL_dK[:,:,None]*product).sum(0).sum(0)
+            if X2 is None:
+                [np.add(target[i:i+1],np.sum(dL_dK*tdot(X[:,i:i+1])),target[i:i+1]) for i in range(self.D)]
+            else:
+                product = X[:,None,:]*X2[None,:,:]
+                target += (dL_dK[:,:,None]*product).sum(0).sum(0)
         else:
             self._K_computations(X, X2)
             target += np.sum(self._dot_product*dL_dK)
@@ -133,9 +140,9 @@ class linear(kernpart):
         returns N,M,M matrix
         """
         self._psi_computations(Z,mu,S)
-        psi2 = self.ZZ*np.square(self.variances)*self.mu2_S[:, None, None, :]
-        target += psi2.sum(-1)
-        #TODO: this could be faster using np.tensordot
+        #psi2 = self.ZZ*np.square(self.variances)*self.mu2_S[:, None, None, :]
+        #target += psi2.sum(-1)
+        target += np.tensordot(self.ZZ[None,:,:,:]*np.square(self.variances),self.mu2_S[:, None, None, :],((3),(3))).squeeze().T
 
     def dpsi2_dtheta(self,dL_dpsi2,Z,mu,S,target):
         self._psi_computations(Z,mu,S)
@@ -156,28 +163,30 @@ class linear(kernpart):
         self._psi_computations(Z,mu,S)
         mu2_S = np.sum(self.mu2_S,0)# Q,
         target += (dL_dpsi2[:,:,:,None] * (self.mu2_S[:,None,None,:]*(Z*np.square(self.variances)[None,:])[None,None,:,:])).sum(0).sum(1)
+        #TODO: tensordot would gain some time here
 
     #---------------------------------------#
     #            Precomputations            #
     #---------------------------------------#
 
     def _K_computations(self,X,X2):
-        if X2 is None:
-            X2 = X
-        if not (np.all(X==self._Xcache) and np.all(X2==self._X2cache)):
-            self._Xcache = X
-            self._X2cache = X2
-            self._dot_product = np.dot(X,X2.T)
-        else:
-            # print "Cache hit!"
-            pass # TODO: insert debug message here (logging framework)
+        if not (np.array_equal(X, self._Xcache) and np.array_equal(X2, self._X2cache)):
+            self._Xcache = X.copy()
+            if X2 is None:
+                self._dot_product = tdot(X)
+                self._X2cache = None
+            else:
+                self._X2cache = X2.copy()
+                self._dot_product = np.dot(X,X2.T)
 
     def _psi_computations(self,Z,mu,S):
         #here are the "statistics" for psi1 and psi2
         if not np.all(Z==self._Z):
             #Z has changed, compute Z specific stuff
-            self.ZZ = Z[:,None,:]*Z[None,:,:] # M,M,Q
-            self._Z = Z
+            #self.ZZ = Z[:,None,:]*Z[None,:,:] # M,M,Q
+            self.ZZ = np.empty((Z.shape[0],Z.shape[0],Z.shape[1]),order='F')
+            [tdot(Z[:,i:i+1],self.ZZ[:,:,i].T) for i in xrange(Z.shape[1])]
+            self._Z = Z.copy()
         if not (np.all(mu==self._mu) and np.all(S==self._S)):
             self.mu2_S = np.square(mu)+S
-            self._mu, self._S = mu, S
+            self._mu, self._S = mu.copy(), S.copy()

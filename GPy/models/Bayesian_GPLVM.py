@@ -33,7 +33,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             X = self.initialise_latent(init, Q, Y)
 
         if X_variance is None:
-            X_variance = np.clip((np.ones_like(X) * 0.5) + .01 * np.random.randn(*X.shape), 0, 1)
+            X_variance = np.clip((np.ones_like(X) * 0.5) + .01 * np.random.randn(*X.shape), 0.001, 1)
 
         if Z is None:
             Z = np.random.permutation(X.copy())[:M]

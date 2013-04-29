@@ -6,6 +6,7 @@ from kernpart import kernpart
 import numpy as np
 import hashlib
 from scipy import weave
+from ..util.linalg import tdot
 
 class rbf(kernpart):
     """
@@ -74,11 +75,8 @@ class rbf(kernpart):
             return ['variance']+['lengthscale_%i'%i for i in range(self.lengthscale.size)]
 
     def K(self,X,X2,target):
-        if X2 is None:
-            X2 = X
-
         self._K_computations(X,X2)
-        np.add(self.variance*self._K_dvar, target,target)
+        target += self.variance*self._K_dvar
 
     def Kdiag(self,X,target):
         np.add(target,self.variance,target)
@@ -87,6 +85,7 @@ class rbf(kernpart):
         self._K_computations(X,X2)
         target[0] += np.sum(self._K_dvar*dL_dK)
         if self.ARD:
+            if X2 is None: X2 = X
             [np.add(target[1+q:2+q],(self.variance/self.lengthscale[q]**3)*np.sum(self._K_dvar*dL_dK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.D)]
         else:
             target[1] += (self.variance/self.lengthscale)*np.sum(self._K_dvar*self._K_dist2*dL_dK)
@@ -182,29 +181,31 @@ class rbf(kernpart):
     #---------------------------------------#
 
     def _K_computations(self,X,X2):
-        if not (np.all(X==self._X) and np.all(X2==self._X2) and np.all(self._params == self._get_params())):
+        if not (np.array_equal(X,self._X) and np.array_equal(X2,self._X2) and np.array_equal(self._params , self._get_params())):
             self._X = X.copy()
-            self._X2 = X2.copy()
             self._params == self._get_params().copy()
-            if X2 is None: X2 = X
-            #never do this: self._K_dist = X[:,None,:]-X2[None,:,:] # this can be computationally heavy
-            #_K_dist = X[:,None,:]-X2[None,:,:]
-            #_K_dist2 = np.square(_K_dist/self.lengthscale)
-            X = X/self.lengthscale
-            X2 = X2/self.lengthscale
-            self._K_dist2 = (-2.*np.dot(X, X2.T) + np.sum(np.square(X),1)[:,None] + np.sum(np.square(X2),1)[None,:])
+            if X2 is None:
+                self._X2 = None
+                X = X/self.lengthscale
+                Xsquare = np.sum(np.square(X),1)
+                self._K_dist2 = (-2.*tdot(X) + Xsquare[:,None] + Xsquare[None,:])
+            else:
+                self._X2 = X2.copy()
+                X = X/self.lengthscale
+                X2 = X2/self.lengthscale
+                self._K_dist2 = (-2.*np.dot(X, X2.T) + np.sum(np.square(X),1)[:,None] + np.sum(np.square(X2),1)[None,:])
             self._K_dvar = np.exp(-0.5*self._K_dist2)
 
     def _psi_computations(self,Z,mu,S):
         #here are the "statistics" for psi1 and psi2
-        if not np.all(Z==self._Z):
+        if not np.array_equal(Z, self._Z):
             #Z has changed, compute Z specific stuff
             self._psi2_Zhat = 0.5*(Z[:,None,:] +Z[None,:,:]) # M,M,Q
             self._psi2_Zdist = 0.5*(Z[:,None,:]-Z[None,:,:]) # M,M,Q
             self._psi2_Zdist_sq = np.square(self._psi2_Zdist/self.lengthscale) # M,M,Q
             self._Z = Z
 
-        if not (np.all(Z==self._Z) and np.all(mu==self._mu) and np.all(S==self._S)):
+        if not (np.array_equal(Z, self._Z) and np.array_equal(mu, self._mu) and np.array_equal(S, self._S)):
             #something's changed. recompute EVERYTHING
 
             #psi1

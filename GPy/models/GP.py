@@ -19,9 +19,6 @@ class GP(model):
     :parm likelihood: a GPy likelihood
     :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_X: False|True
-    :param normalize_Y:  whether to normalize the input data before computing (predictions will be in original scales)
-    :type normalize_Y: False|True
-    :param Xslices: how the X,Y data co-vary in the kernel (i.e. which "outputs" they correspond to). See (link:slicing)
     :rtype: model object
     :param epsilon_ep: convergence criterion for the Expectation Propagation algorithm, defaults to 0.1
     :param powerep: power-EP parameters [$\eta$,$\delta$], defaults to [1.,1.]
@@ -30,10 +27,9 @@ class GP(model):
     .. Note:: Multiple independent outputs are allowed using columns of Y
 
     """
-    def __init__(self, X, likelihood, kernel, normalize_X=False, Xslices=None):
+    def __init__(self, X, likelihood, kernel, normalize_X=False):
 
         # parse arguments
-        self.Xslices = Xslices
         self.X = X
         assert len(self.X.shape) == 2
         self.N, self.Q = self.X.shape
@@ -66,12 +62,12 @@ class GP(model):
         return np.zeros_like(self.Z)
 
     def _set_params(self, p):
-        self.kern._set_params_transformed(p[:self.kern.Nparam])
+        self.kern._set_params_transformed(p[:self.kern.Nparam_transformed()])
         # self.likelihood._set_params(p[self.kern.Nparam:])               # test by Nicolas
         self.likelihood._set_params(p[self.kern.Nparam_transformed():])  # test by Nicolas
 
 
-        self.K = self.kern.K(self.X, slices1=self.Xslices, slices2=self.Xslices)
+        self.K = self.kern.K(self.X)
         self.K += self.likelihood.covariance_matrix
 
         self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
@@ -94,7 +90,7 @@ class GP(model):
         """
         Approximates a non-gaussian likelihood using Expectation Propagation
 
-        For a Gaussian (or direct: TODO) likelihood, no iteration is required:
+        For a Gaussian likelihood, no iteration is required:
         this function does nothing
         """
         self.likelihood.fit_full(self.kern.K(self.X))
@@ -124,31 +120,33 @@ class GP(model):
         """
         The gradient of all parameters.
 
-        For the kernel parameters, use the chain rule via dL_dK
-
-        For the likelihood parameters, pass in alpha = K^-1 y
+        Note, we use the chain rule: dL_dtheta = dL_dK * d_K_dtheta
         """
-        return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X, slices1=self.Xslices, slices2=self.Xslices), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
 
-    def _raw_predict(self, _Xnew, slices=None, full_cov=False):
+    def _raw_predict(self, _Xnew, which_parts='all', full_cov=False):
         """
         Internal helper function for making predictions, does not account
         for normalization or likelihood
+
+         #TODO: which_parts does nothing
+
+
         """
-        Kx = self.kern.K(self.X, _Xnew, slices1=self.Xslices, slices2=slices)
+        Kx = self.kern.K(self.X, _Xnew,which_parts=which_parts)
         mu = np.dot(np.dot(Kx.T, self.Ki), self.likelihood.Y)
         KiKx = np.dot(self.Ki, Kx)
         if full_cov:
-            Kxx = self.kern.K(_Xnew, slices1=slices, slices2=slices)
+            Kxx = self.kern.K(_Xnew, which_parts=which_parts)
             var = Kxx - np.dot(KiKx.T, Kx)
         else:
-            Kxx = self.kern.Kdiag(_Xnew, slices=slices)
+            Kxx = self.kern.Kdiag(_Xnew, which_parts=which_parts)
             var = Kxx - np.sum(np.multiply(KiKx, Kx), 0)
             var = var[:, None]
         return mu, var
 
 
-    def predict(self, Xnew, slices=None, full_cov=False):
+    def predict(self, Xnew, which_parts='all', full_cov=False):
         """
         Predict the function(s) at the new point(s) Xnew.
 
@@ -156,19 +154,14 @@ class GP(model):
         ---------
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray, Nnew x self.Q
-        :param slices:  specifies which outputs kernel(s) the Xnew correspond to (see below)
-        :type slices: (None, list of slice objects, list of ints)
+        :param which_parts:  specifies which outputs kernel(s) to use in prediction
+        :type which_parts: ('all', list of bools)
         :param full_cov: whether to return the folll covariance matrix, or just the diagonal
         :type full_cov: bool
         :rtype: posterior mean,  a Numpy array, Nnew x self.D
         :rtype: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
         :rtype: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.D
 
-        .. Note:: "slices" specifies how the the points X_new co-vary wich the training points.
-
-             - If None, the new points covary throigh every kernel part (default)
-             - If a list of slices, the i^th slice specifies which data are affected by the i^th kernel part
-             - If a list of booleans, specifying which kernel parts are active
 
            If full_cov and self.D > 1, the return shape of var is Nnew x Nnew x self.D. If self.D == 1, the return shape is Nnew x Nnew.
            This is to allow for different normalizations of the output dimensions.
@@ -176,15 +169,15 @@ class GP(model):
         """
         # normalize X values
         Xnew = (Xnew.copy() - self._Xmean) / self._Xstd
-        mu, var = self._raw_predict(Xnew, slices, full_cov)
+        mu, var = self._raw_predict(Xnew, which_parts, full_cov)
 
-        # now push through likelihood TODO
+        # now push through likelihood
         mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov)
 
         return mean, var, _025pm, _975pm
 
 
-    def plot_f(self, samples=0, plot_limits=None, which_data='all', which_functions='all', resolution=None, full_cov=False):
+    def plot_f(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, full_cov=False):
         """
         Plot the GP's view of the world, where the data is normalized and the likelihood is Gaussian
 
@@ -192,8 +185,8 @@ class GP(model):
         :param which_data: which if the training data to plot (default all)
         :type which_data: 'all' or a slice object to slice self.X, self.Y
         :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
-        :param which_functions: which of the kernel functions to plot (additively)
-        :type which_functions: list of bools
+        :param which_parts: which of the kernel functions to plot (additively)
+        :type which_parts: 'all', or list of bools
         :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
 
         Plot the posterior of the GP.
@@ -204,19 +197,17 @@ class GP(model):
         Can plot only part of the data and part of the posterior functions using which_data and which_functions
         Plot the data's view of the world, with non-normalized values and GP predictions passed through the likelihood
         """
-        if which_functions == 'all':
-            which_functions = [True] * self.kern.Nparts
         if which_data == 'all':
             which_data = slice(None)
 
         if self.X.shape[1] == 1:
             Xnew, xmin, xmax = x_frame1D(self.X, plot_limits=plot_limits)
             if samples == 0:
-                m, v = self._raw_predict(Xnew, slices=which_functions)
+                m, v = self._raw_predict(Xnew, which_parts=which_parts)
                 gpplot(Xnew, m, m - 2 * np.sqrt(v), m + 2 * np.sqrt(v))
                 pb.plot(self.X[which_data], self.likelihood.Y[which_data], 'kx', mew=1.5)
             else:
-                m, v = self._raw_predict(Xnew, slices=which_functions, full_cov=True)
+                m, v = self._raw_predict(Xnew, which_parts=which_parts, full_cov=True)
                 Ysim = np.random.multivariate_normal(m.flatten(), v, samples)
                 gpplot(Xnew, m, m - 2 * np.sqrt(np.diag(v)[:, None]), m + 2 * np.sqrt(np.diag(v))[:, None])
                 for i in range(samples):
@@ -232,7 +223,7 @@ class GP(model):
         elif self.X.shape[1] == 2:
             resolution = resolution or 50
             Xnew, xmin, xmax, xx, yy = x_frame2D(self.X, plot_limits, resolution)
-            m, v = self._raw_predict(Xnew, slices=which_functions)
+            m, v = self._raw_predict(Xnew, which_parts=which_parts)
             m = m.reshape(resolution, resolution).T
             pb.contour(xx, yy, m, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
             pb.scatter(Xorig[:, 0], Xorig[:, 1], 40, Yorig, linewidth=0, cmap=pb.cm.jet, vmin=m.min(), vmax=m.max())
@@ -248,8 +239,6 @@ class GP(model):
 
         """
         # TODO include samples
-        if which_functions == 'all':
-            which_functions = [True] * self.kern.Nparts
         if which_data == 'all':
             which_data = slice(None)
 
@@ -258,7 +247,7 @@ class GP(model):
             Xu = self.X * self._Xstd + self._Xmean  # NOTE self.X are the normalized values now
 
             Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
-            m, var, lower, upper = self.predict(Xnew, slices=which_functions)
+            m, var, lower, upper = self.predict(Xnew, which_parts=which_parts)
             gpplot(Xnew, m, lower, upper)
             pb.plot(Xu[which_data], self.likelihood.data[which_data], 'kx', mew=1.5)
             if self.has_uncertain_inputs:
@@ -279,7 +268,7 @@ class GP(model):
             resolution = resolution or 50
             Xnew, xx, yy, xmin, xmax = x_frame2D(self.X, plot_limits, resolution)
             x, y = np.linspace(xmin[0], xmax[0], resolution), np.linspace(xmin[1], xmax[1], resolution)
-            m, var, lower, upper = self.predict(Xnew, slices=which_functions)
+            m, var, lower, upper = self.predict(Xnew, which_parts=which_parts)
             m = m.reshape(resolution, resolution).T
             pb.contour(x, y, m, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
             Yf = self.likelihood.Y.flatten()

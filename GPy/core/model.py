@@ -253,7 +253,7 @@ class model(parameterised):
 
         :max_f_eval: maximum number of function evaluations
         :messages: whether to display during optimisation
-        :param optimzer: whice optimizer to use (defaults to self.preferred optimizer)
+        :param optimzer: which optimizer to use (defaults to self.preferred optimizer)
         :type optimzer: string TODO: valid strings?
         """
         if optimizer is None:

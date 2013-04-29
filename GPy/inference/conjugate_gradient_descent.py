@@ -3,16 +3,15 @@ Created on 24 Apr 2013
 
 @author: maxz
 '''
-from multiprocessing.process import Process
 from GPy.inference.gradient_descent_update_rules import FletcherReeves
 import numpy
 from multiprocessing import Value
 from scipy.optimize.linesearch import line_search_wolfe1, line_search_wolfe2
-from multiprocessing.synchronize import Lock, Event
-from copy import deepcopy
+from multiprocessing.synchronize import Event
 from multiprocessing.queues import Queue
 from Queue import Empty
 import sys
+from threading import Thread
 
 RUNNING = "running"
 CONVERGED = "converged"
@@ -21,7 +20,9 @@ MAX_F_EVAL = "maximum number of function calls reached"
 LINE_SEARCH = "line search failed"
 KBINTERRUPT = "interrupted"
 
-class _Async_Optimization(Process):
+SENTINEL = None
+
+class _Async_Optimization(Thread):
     def __init__(self, f, df, x0, update_rule, runsignal,
                  report_every=10, messages=0, maxiter=5e3, max_f_eval=15e3,
                  gtol=1e-6, outqueue=None, *args, **kw):
@@ -67,6 +68,11 @@ class _Async_Optimization(Process):
         pass
         # print "callback done"
 
+    def callback_return(self, *a):
+        self.callback(*a)
+        self.outq.put(SENTINEL)
+        self.runsignal.clear()
+
     def run(self, *args, **kwargs):
         raise NotImplementedError("Overwrite this with optimization (for async use)")
         pass
@@ -91,7 +97,6 @@ class _CGDAsync(_Async_Optimization):
         it = 0
 
         while it < self.maxiter:
-            print self.runsignal.is_set()
             if not self.runsignal.is_set():
                 break
 
@@ -117,7 +122,7 @@ class _CGDAsync(_Async_Optimization):
                                                                  xi,
                                                                  si, gi,
                                                                  fi, fi_old)
-            if alphai is not None:
+            if alphai is not None and fi2 < fi:
                 fi, fi_old = fi2, fi_old2
             else:
                 alphai, _, _, fi, fi_old, gfi = \
@@ -130,30 +135,32 @@ class _CGDAsync(_Async_Optimization):
                     break
             if gfi is not None:
                 gi = gfi
-            xi += numpy.dot(alphai, si)
-            if self.messages:
-                sys.stdout.write("\r")
-                sys.stdout.flush()
-                sys.stdout.write("iteration: {0:> 6g}  f: {1:> 12F}  g: {2:> 12F}".format(it, fi, gi))
 
-            if it % self.report_every == 0:
-                self.callback(xi, fi, it, self.f_call.value, self.df_call.value, status)
+            if fi_old > fi:
+                gi, ur, si = self.reset(xi, *a, **kw)
+            else:
+                xi += numpy.dot(alphai, si)
+                if self.messages:
+                    sys.stdout.write("\r")
+                    sys.stdout.flush()
+                    sys.stdout.write("iteration: {0:> 6g}  f:{1:> 12e}  |g|:{2:> 12e}".format(it, fi, numpy.dot(gi.T, gi)))
+
+                if it % self.report_every == 0:
+                    self.callback(xi, fi, it, self.f_call.value, self.df_call.value, status)
             it += 1
         else:
             status = MAXITER
         # self.result = [xi, fi, it, self.f_call.value, self.df_call.value, status]
-        self.callback(xi, fi, it, self.f_call.value, self.df_call.value, status)
-        return
+        self.callback_return(xi, fi, it, self.f_call.value, self.df_call.value, status)
 
 class Async_Optimize(object):
-    callback = None
-    SENTINEL = object()
+    callback = lambda *x: None
     runsignal = Event()
 
     def async_callback_collect(self, q):
         while self.runsignal.is_set():
             try:
-                for ret in iter(lambda: q.get(timeout=1), self.SENTINEL):
+                for ret in iter(lambda: q.get(timeout=1), SENTINEL):
                     self.callback(*ret)
             except Empty:
                 pass
@@ -162,30 +169,32 @@ class Async_Optimize(object):
                    messages=0, maxiter=5e3, max_f_eval=15e3, gtol=1e-6,
                    report_every=10, *args, **kwargs):
         self.runsignal.set()
-        outqueue = Queue()
+        outqueue = Queue(5)
         if callback:
             self.callback = callback
-            collector = Process(target=self.async_callback_collect, args=(outqueue,))
-            collector.start()
+        c = Thread(target=self.async_callback_collect, args=(outqueue,))
+        c.start()
         p = _CGDAsync(f, df, x0, update_rule, self.runsignal,
                  report_every=report_every, messages=messages, maxiter=maxiter,
                  max_f_eval=max_f_eval, gtol=gtol, outqueue=outqueue, *args, **kwargs)
-        p.start()
-        return p
+        p.run()
+        return p, c
 
     def fmin(self, f, df, x0, callback=None, update_rule=FletcherReeves,
                    messages=0, maxiter=5e3, max_f_eval=15e3, gtol=1e-6,
                    report_every=10, *args, **kwargs):
-        p = self.fmin_async(f, df, x0, callback, update_rule, messages,
+        p, c = self.fmin_async(f, df, x0, callback, update_rule, messages,
                             maxiter, max_f_eval, gtol,
                             report_every, *args, **kwargs)
         while self.runsignal.is_set():
             try:
                 p.join(1)
+                c.join(1)
             except KeyboardInterrupt:
-                print "^C"
+                # print "^C"
                 self.runsignal.clear()
                 p.join()
+                c.join()
 
 class CGD(Async_Optimize):
     '''

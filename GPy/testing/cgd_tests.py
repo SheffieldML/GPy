@@ -47,10 +47,15 @@ if __name__ == "__main__":
     xopts = [x0.copy()]
     optplts, = ax.plot3D([x0[0]], [x0[1]], zs=f(x0), marker='o', color='r')
 
+    raw_input("enter to start optimize")
+
     def callback(x, *a, **kw):
         xopts.append(x.copy())
-        time.sleep(.3)
+#         time.sleep(.3)
         optplts._verts3d = [numpy.array(xopts)[:, 0], numpy.array(xopts)[:, 1], [f(xs) for xs in xopts]]
         fig.canvas.draw()
 
-    res = opt.fmin(f, df, x0, callback, messages=True, report_every=1)
+    res = opt.fmin(f, df, x0, callback, messages=True, maxiter=1000, report_every=1)
+
+    pylab.ion()
+    pylab.show()

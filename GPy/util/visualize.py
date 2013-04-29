@@ -184,71 +184,115 @@ class image_show(data_show):
         #if self.invert:
         #    self.vals = -self.vals
 
-class stick_show(data_show):
-    """Show a three dimensional point cloud as a figure. Connect elements of the figure together using the matrix connect."""
+
+class mocap_data_show(data_show):
+    """Base class for visualizing motion capture data."""
 
     def __init__(self, vals, axes=None, connect=None):
         if axes==None:
             fig = plt.figure()
             axes = fig.add_subplot(111, projection='3d')
         data_show.__init__(self, vals, axes)
-        self.vals = vals.reshape((3, vals.shape[1]/3)).T
-        self.x_lim = np.array([self.vals[:, 0].min(), self.vals[:, 0].max()])
-        self.y_lim = np.array([self.vals[:, 1].min(), self.vals[:, 1].max()])
-        self.z_lim = np.array([self.vals[:, 2].min(), self.vals[:, 2].max()])
-        self.points_handle = self.axes.scatter(self.vals[:, 0], self.vals[:, 1], self.vals[:, 2])
-        self.axes.set_xlim(self.x_lim)
-        self.axes.set_ylim(self.y_lim)
-        self.axes.set_zlim(self.z_lim)
-        self.axes.set_aspect(1)
-        self.axes.autoscale(enable=False)
 
         self.connect = connect
-        if not self.connect==None:
-            x = []
-            y = []
-            z = []
-            self.I, self.J = np.nonzero(self.connect)
-            for i in range(len(self.I)):
-                x.append(self.vals[self.I[i], 0])
-                x.append(self.vals[self.J[i], 0])
-                x.append(np.NaN)
-                y.append(self.vals[self.I[i], 1])
-                y.append(self.vals[self.J[i], 1])
-                y.append(np.NaN)
-                z.append(self.vals[self.I[i], 2])
-                z.append(self.vals[self.J[i], 2])
-                z.append(np.NaN)
-            self.line_handle = self.axes.plot(np.array(x), np.array(y), np.array(z), 'b-')
+        self.process_values(vals)
+        self.initialize_axes()
+        self.draw_vertices()
+        self.finalize_axes()
+        self.draw_edges()
         self.axes.figure.canvas.draw()
 
-    def modify(self, vals):
-        self.points_handle.remove()
-        self.line_handle[0].remove()
-        self.vals = vals.reshape((3, vals.shape[1]/3)).T
+    def draw_vertices(self):
         self.points_handle = self.axes.scatter(self.vals[:, 0], self.vals[:, 1], self.vals[:, 2])
-        self.axes.set_xlim(self.x_lim)
-        self.axes.set_ylim(self.y_lim)
-        self.axes.set_zlim(self.z_lim)
+        
+    def draw_edges(self):
         self.line_handle = []
         if not self.connect==None:
             x = []
             y = []
             z = []
             self.I, self.J = np.nonzero(self.connect)
-            for i in range(len(self.I)):
-                x.append(self.vals[self.I[i], 0])
-                x.append(self.vals[self.J[i], 0])
+            for i, j in zip(self.I, self.J):
+                x.append(self.vals[i, 0])
+                x.append(self.vals[j, 0])
                 x.append(np.NaN)
-                y.append(self.vals[self.I[i], 1])
-                y.append(self.vals[self.J[i], 1])
+                y.append(self.vals[i, 1])
+                y.append(self.vals[j, 1])
                 y.append(np.NaN)
-                z.append(self.vals[self.I[i], 2])
-                z.append(self.vals[self.J[i], 2])
+                z.append(self.vals[i, 2])
+                z.append(self.vals[j, 2])
                 z.append(np.NaN)
             self.line_handle = self.axes.plot(np.array(x), np.array(y), np.array(z), 'b-')
-
+            
+    def modify(self, vals):
+        self.process_values(vals)
+        self.initialize_axes_modify()
+        self.draw_vertices()
+        self.finalize_axes_modify()
+        self.draw_edges()
         self.axes.figure.canvas.draw()
 
+    def process_values(self, vals):
+        raise NotImplementedError, "this needs to be implemented to use the data_show class"
+
+    def initialize_axes(self):
+        """Set up the axes with the right limits and scaling."""
+        self.x_lim = np.array([self.vals[:, 0].min(), self.vals[:, 0].max()])
+        self.y_lim = np.array([self.vals[:, 1].min(), self.vals[:, 1].max()])
+        self.z_lim = np.array([self.vals[:, 2].min(), self.vals[:, 2].max()])
+
+    def initialize_axes_modify(self):
+        self.points_handle.remove()
+        self.line_handle[0].remove()
+
+    def finalize_axes(self):
+        self.axes.set_xlim(self.x_lim)
+        self.axes.set_ylim(self.y_lim)
+        self.axes.set_zlim(self.z_lim)
+        self.axes.set_aspect(1)
+        self.axes.autoscale(enable=False)
+
+    def finalize_axes_modify(self):
+        self.axes.set_xlim(self.x_lim)
+        self.axes.set_ylim(self.y_lim)
+        self.axes.set_zlim(self.z_lim)
 
 
+class stick_show(mocap_data_show):
+    """Show a three dimensional point cloud as a figure. Connect elements of the figure together using the matrix connect."""
+    def __init__(self, vals, axes=None, connect=None):
+        mocap_data_show.__init__(self, vals, axes, connect)
+
+    def process_values(self, vals):
+        self.vals = vals.reshape((3, vals.shape[1]/3)).T
+    
+class skeleton_show(mocap_data_show):
+    """data_show class for visualizing motion capture data encoded as a skeleton with angles."""
+    def __init__(self, vals, skel, padding=0, axes=None):
+        self.skel = skel
+        self.padding = padding
+        connect = skel.connection_matrix()
+        mocap_data_show.__init__(self, vals, axes, connect)
+
+    def process_values(self, vals):
+        if self.padding>0:
+            channels = np.zeros((vals.shape[0], vals.shape[1]+self.padding))
+            channels[:, 0:vals.shape[0]] = vals
+        else:
+            channels = vals
+        vals_mat = self.skel.to_xyz(channels.flatten())
+        self.vals = vals_mat
+        # Flip the Y and Z axes
+        self.vals[:, 0] = vals_mat[:, 0]
+        self.vals[:, 1] = vals_mat[:, 2]
+        self.vals[:, 2] = vals_mat[:, 1]
+        
+    def wrap_around(vals, lim, connect):
+        quot = lim[1] - lim[0]
+        vals = rem(vals, quot)+lim[0]
+        nVals = floor(vals/quot)
+        for i in range(connect.shape[0]):
+            for j in find(connect[i, :]):
+                if nVals[i] != nVals[j]:
+                    connect[i, j] = False
+        return vals, connect

@@ -23,20 +23,19 @@ class generalized_FITC(sparse_GP):
     :type X_variance: np.ndarray (N x Q) | None
     :param Z: inducing inputs (optional, see note)
     :type Z: np.ndarray (M x Q) | None
-    :param Zslices: slices for the inducing inputs (see slicing TODO: link)
     :param M : Number of inducing points (optional, default 10. Ignored if Z is not None)
     :type M: int
     :param normalize_(X|Y) : whether to normalize the data before computing (predictions will be in original scales)
     :type normalize_(X|Y): bool
     """
 
-    def __init__(self, X, likelihood, kernel, Z, X_variance=None, Xslices=None,Zslices=None, normalize_X=False):
+    def __init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False):
 
         self.Z = Z
         self.M = self.Z.shape[0]
         self._precision = likelihood.precision
 
-        sparse_GP.__init__(self, X, likelihood, kernel=kernel, Z=self.Z, X_variance=None, Xslices=None,Zslices=None, normalize_X=False)
+        sparse_GP.__init__(self, X, likelihood, kernel=kernel, Z=self.Z, X_variance=None, normalize_X=False)
 
     def _set_params(self, p):
         self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
@@ -145,7 +144,7 @@ class generalized_FITC(sparse_GP):
         D = 0.5*np.trace(self.Cpsi1VVpsi1)
         return A+C+D
 
-    def _raw_predict(self, Xnew, slices, full_cov=False):
+    def _raw_predict(self, Xnew, which_parts, full_cov=False):
         if self.likelihood.is_heteroscedastic:
             """
             Make a prediction for the generalized FITC model
@@ -174,16 +173,16 @@ class generalized_FITC(sparse_GP):
             self.mu_H = mu_H
             Sigma_H = C + np.dot(mu_u,np.dot(self.Sigma,mu_u.T))
             # q(f_star|y) = N(f_star|mu_star,sigma2_star)
-            Kx = self.kern.K(self.Z, Xnew)
+            Kx = self.kern.K(self.Z, Xnew, which_parts=which_parts)
             KR0T = np.dot(Kx.T,self.Lmi.T)
             mu_star = np.dot(KR0T,mu_H)
             if full_cov:
-                Kxx = self.kern.K(Xnew)
+                Kxx = self.kern.K(Xnew,which_parts=which_parts)
                 var = Kxx + np.dot(KR0T,np.dot(Sigma_H - np.eye(self.M),KR0T.T))
             else:
-                Kxx = self.kern.Kdiag(Xnew)
-                Kxx_ = self.kern.K(Xnew)
-                var_ = Kxx_ + np.dot(KR0T,np.dot(Sigma_H - np.eye(self.M),KR0T.T))
+                Kxx = self.kern.Kdiag(Xnew,which_parts=which_parts)
+                Kxx_ = self.kern.K(Xnew,which_parts=which_parts) # TODO: RA, is this line needed?
+                var_ = Kxx_ + np.dot(KR0T,np.dot(Sigma_H - np.eye(self.M),KR0T.T)) # TODO: RA, is this line needed?
                 var = (Kxx + np.sum(KR0T.T*np.dot(Sigma_H - np.eye(self.M),KR0T.T),0))[:,None]
             return mu_star[:,None],var
         else:

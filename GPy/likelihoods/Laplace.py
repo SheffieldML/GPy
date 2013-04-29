@@ -92,9 +92,12 @@ class Laplace(likelihood):
         """
         dL_dytil, dytil_dfhat = self._shared_gradients_components()
 
-        A = np.eye(self.N) + np.dot(self.K, self.W)
-        plt.imshow(A)
-        plt.show()
+        print "Computing K gradients"
+        I = np.eye(self.N)
+        C = np.dot(self.K, self.W)
+        A = I + C
+        #plt.imshow(A)
+        #plt.show()
         I_KW_i, _, _, _ = pdinv(A)
 
         #FIXME: Careful dK_dthetaK is not the derivative with respect to the marginal just prior K!
@@ -250,6 +253,8 @@ class Laplace(likelihood):
         :K: Covariance matrix
         """
         self.K = K.copy()
+        #assert np.all(self.K.T == self.K)
+        #self.K_safe = K.copy()
         if self.rasm:
             self.f_hat = self.rasm_mode(K)
         else:

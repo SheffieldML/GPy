@@ -9,7 +9,6 @@ from sparse_GP_regression import sparse_GP_regression
 from GPLVM import GPLVM
 from warped_GP import warpedGP
 from sparse_GPLVM import sparse_GPLVM
-from uncollapsed_sparse_GP import uncollapsed_sparse_GP
 from Bayesian_GPLVM import Bayesian_GPLVM
 from mrd import MRD
 from generalized_FITC import generalized_FITC

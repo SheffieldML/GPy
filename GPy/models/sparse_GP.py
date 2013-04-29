@@ -92,7 +92,7 @@ class sparse_GP(GP):
         #Compute A = L^-1 psi2 beta L^-T
         #self. A = mdot(self.Lmi,self.psi2_beta_scaled,self.Lmi.T)
         tmp = linalg.lapack.flapack.dtrtrs(self.Lm,self.psi2_beta_scaled.T,lower=1)[0]
-        self.A = linalg.lapack.flapack.dtrtrs(self.Lm,np.asarray(tmp.T,order='F'),lower=1)[0]
+        self.A = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1)[0]
 
         self.B = np.eye(self.M)/sf2 + self.A
 
@@ -101,11 +101,16 @@ class sparse_GP(GP):
         self.psi1V = np.dot(self.psi1, self.V)
         tmp = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(self.Bi),lower=1,trans=1)[0]
         self.C = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1,trans=1)[0]
-        #TODO: can we multiply in C by forwardsubstitution?
-        self.Cpsi1V = np.dot(self.C,self.psi1V)
-        self.Cpsi1VVpsi1 = np.dot(self.Cpsi1V,self.psi1V.T)
-        #self.E = np.dot(self.Cpsi1V/sf,self.Cpsi1V.T/sf)
+
+        #self.Cpsi1V = np.dot(self.C,self.psi1V)
+        #back substutue C into psi1V
+        tmp,info1 = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(self.psi1V),lower=1,trans=0)
+        tmp,info2 = linalg.lapack.flapack.dpotrs(self.LB,tmp,lower=1)
+        self.Cpsi1V,info3 = linalg.lapack.flapack.dtrtrs(self.Lm,tmp,lower=1,trans=1)
+
+        self.Cpsi1VVpsi1 = np.dot(self.Cpsi1V,self.psi1V.T) #TODO: stabilize?
         self.E = tdot(self.Cpsi1V/sf)
+
 
         # Compute dL_dpsi # FIXME: this is untested for the heterscedastic + uncertin inputs case
         self.dL_dpsi0 = - 0.5 * self.D * (self.likelihood.precision * np.ones([self.N,1])).flatten()

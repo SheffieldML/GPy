@@ -1,4 +1,4 @@
-# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+### Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
@@ -91,8 +91,8 @@ class GPLVM(GP):
         Xtest_full[:, :2] = Xtest
         mu, var, low, up = self.predict(Xtest_full)
         var = var[:, :1]
-        ax.imshow(var.reshape(resolution, resolution).T[::-1, :],
-                  extent=[xmin[0], xmax[0], xmin[1], xmax[1]], cmap=pb.cm.binary,interpolation='bilinear')
+        ax.imshow(var.reshape(resolution, resolution).T,
+                  extent=[xmin[0], xmax[0], xmin[1], xmax[1]], cmap=pb.cm.binary,interpolation='bilinear',origin='lower')
 
         for i,ul in enumerate(np.unique(labels)):
             if type(ul) is np.string_:

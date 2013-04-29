@@ -102,13 +102,14 @@ class sparse_GP(GP):
         tmp = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(self.Bi),lower=1,trans=1)[0]
         self.C = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1,trans=1)[0]
 
-        #self.Cpsi1V = np.dot(self.C,self.psi1V)
         #back substutue C into psi1V
         tmp,info1 = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(self.psi1V),lower=1,trans=0)
         tmp,info2 = linalg.lapack.flapack.dpotrs(self.LB,tmp,lower=1)
         self.Cpsi1V,info3 = linalg.lapack.flapack.dtrtrs(self.Lm,tmp,lower=1,trans=1)
+        #self.Cpsi1V = np.dot(self.C,self.psi1V)
 
-        self.Cpsi1VVpsi1 = np.dot(self.Cpsi1V,self.psi1V.T) #TODO: stabilize?
+        self.Cpsi1VVpsi1 = np.dot(self.Cpsi1V,self.psi1V.T)
+
         self.E = tdot(self.Cpsi1V/sf)
 
 

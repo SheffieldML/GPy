@@ -81,11 +81,19 @@ def BGPLVM_oil(optimize=True, N=100, Q=10, M=15, max_f_eval=300):
     else:
         m.ensure_default_constraints()
 
-    # plot
-    print(m)
-    m.plot_latent(labels=m.data_labels)
-    pb.figure()
-    pb.bar(np.arange(m.kern.D), 1. / m.input_sensitivity())
+    y = m.likelihood.Y[0, :]
+    fig,(latent_axes,hist_axes) = plt.subplots(1,2)
+    plt.sca(latent_axes)
+    m.plot_latent()
+    data_show = GPy.util.visualize.vector_show(y)
+    lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :], m, data_show, latent_axes=latent_axes, hist_axes=hist_axes)
+    raw_input('Press enter to finish')
+    plt.close('all')
+    # # plot
+    # print(m)
+    # m.plot_latent(labels=m.data_labels)
+    # pb.figure()
+    # pb.bar(np.arange(m.kern.D), 1. / m.input_sensitivity())
     return m
 
 def oil_100():
@@ -348,7 +356,7 @@ def brendan_faces():
     ax = m.plot_latent()
     y = m.likelihood.Y[0, :]
     data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, invert=False, scale=False)
-    lvm_visualizer = GPy.util.visualize.lvm(m, data_show, ax)
+    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :], m, data_show, ax)
     raw_input('Press enter to finish')
     plt.close('all')
 
@@ -365,7 +373,29 @@ def stick():
     ax = m.plot_latent()
     y = m.likelihood.Y[0, :]
     data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
-    lvm_visualizer = GPy.util.visualize.lvm(m, data_show, ax)
+    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :], m, data_show, ax)
+    raw_input('Press enter to finish')
+    plt.close('all')
+
+    return m
+
+def cmu_mocap(subject='35', motion=['01'], in_place=True):
+
+    data = GPy.util.datasets.cmu_mocap(subject, motion)
+    Y = data['Y']
+    if in_place:
+        # Make figure move in place.
+        data['Y'][:, 0:3]=0.0
+    m = GPy.models.GPLVM(data['Y'], 2, normalize_Y=True)
+
+    # optimize
+    m.ensure_default_constraints()
+    m.optimize(messages=1, max_f_eval=10000)
+
+    ax = m.plot_latent()
+    y = m.likelihood.Y[0, :]
+    data_show = GPy.util.visualize.skeleton_show(y[None, :], data['skel'])
+    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :], m, data_show, ax)
     raw_input('Press enter to finish')
     plt.close('all')
 

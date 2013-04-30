@@ -96,18 +96,8 @@ class lvm(data_show):
         pass
 
     def on_click(self, event):
-        #print 'click', event.xdata, event.ydata
         if event.inaxes!=self.latent_axes: return
         self.move_on = not self.move_on
-        # if self.called:
-        #     self.xs.append(event.xdata)
-        #     self.ys.append(event.ydata)
-        #     self.line.set_data(self.xs, self.ys)
-        #     self.line.figure.canvas.draw()
-        # else:
-        #     self.xs = [event.xdata]
-        #     self.ys = [event.ydata]
-        #     self.line, = self.latent_axes.plot(event.xdata, event.ydata)
         self.called = True
     def on_move(self, event):
         if event.inaxes!=self.latent_axes: return
@@ -120,7 +110,7 @@ class lvm(data_show):
 class lvm_subplots(lvm):
     """
     latent_axes is a np array of dimension np.ceil(Q/2) + 1,
-    one for each pair of the axes, and the last one for the sensitiity histogram
+    one for each pair of the axes, and the last one for the sensitiity bar chart
     """
     def __init__(self, vals, model, data_visualize, latent_axes=None, latent_index=[0,1]):
         lvm.__init__(self, vals, model,data_visualize,latent_axes,[0,1])
@@ -132,39 +122,39 @@ class lvm_subplots(lvm):
 
 class lvm_dimselect(lvm):
     """
-    A visualizer for latent variable models which allows selection of the latent dimensions to use by clicking on a histogram of their length scales.
+    A visualizer for latent variable models which allows selection of the latent dimensions to use by clicking on a bar chart of their length scales.
     """
-    def __init__(self, vals, model, data_visualize, latent_axes=None, hist_axes=None, latent_index=[0, 1]):
-        if latent_axes==None and hist_axes==None:
-            self.fig,(latent_axes,self.hist_axes) = plt.subplots(1,2)
-        elif hist_axes==None:
+    def __init__(self, vals, model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0, 1]):
+        if latent_axes==None and sense_axes==None:
+            self.fig,(latent_axes,self.sense_axes) = plt.subplots(1,2)
+        elif sense_axes==None:
             fig=plt.figure()
-            self.hist_axes = fig.add_subplot(111)
+            self.sense_axes = fig.add_subplot(111)
         else:
-            self.hist_axes = hist_axes
+            self.sense_axes = sense_axes
         
         lvm.__init__(self,vals,model,data_visualize,latent_axes,latent_index)
-        self.draw_histogram()
+        self.show_sensitivities()
         print "use left and right mouse butons to select dimensions"
 
-    def draw_histogram(self):
-        # A click in the histogram axis for selection a dimension.
-        self.hist_axes.cla()
-        self.hist_axes.bar(np.arange(self.model.Q),1./self.model.input_sensitivity(),color='b')
+    def show_sensitivities(self):
+        # A click in the bar chart axis for selection a dimension.
+        self.sense_axes.cla()
+        self.sense_axes.bar(np.arange(self.model.Q),1./self.model.input_sensitivity(),color='b')
 
         if self.latent_index[1] == self.latent_index[0]:
-            self.hist_axes.bar(np.array(self.latent_index[0]),1./self.model.input_sensitivity()[self.latent_index[0]],color='y')
-            self.hist_axes.bar(np.array(self.latent_index[1]),1./self.model.input_sensitivity()[self.latent_index[1]],color='y')
+            self.sense_axes.bar(np.array(self.latent_index[0]),1./self.model.input_sensitivity()[self.latent_index[0]],color='y')
+            self.sense_axes.bar(np.array(self.latent_index[1]),1./self.model.input_sensitivity()[self.latent_index[1]],color='y')
             
         else:
-            self.hist_axes.bar(np.array(self.latent_index[0]),1./self.model.input_sensitivity()[self.latent_index[0]],color='g')
-            self.hist_axes.bar(np.array(self.latent_index[1]),1./self.model.input_sensitivity()[self.latent_index[1]],color='r')
+            self.sense_axes.bar(np.array(self.latent_index[0]),1./self.model.input_sensitivity()[self.latent_index[0]],color='g')
+            self.sense_axes.bar(np.array(self.latent_index[1]),1./self.model.input_sensitivity()[self.latent_index[1]],color='r')
 
-        self.hist_axes.figure.canvas.draw()
+        self.sense_axes.figure.canvas.draw()
 
     def on_click(self, event):
 
-        if event.inaxes==self.hist_axes:
+        if event.inaxes==self.sense_axes:
             new_index = max(0,min(int(np.round(event.xdata-0.5)),self.model.Q-1))
             if event.button == 1:
                 # Make it red if and y-axis (red=port=left) if it is a left button click
@@ -173,7 +163,7 @@ class lvm_dimselect(lvm):
                 # Make it green and x-axis (green=starboard=right) if it is a right button click
                 self.latent_index[0] = new_index
                 
-            self.draw_histogram()
+            self.show_sensitivities()
 
             self.latent_axes.cla()
             self.model.plot_latent(which_indices=self.latent_index,
@@ -188,7 +178,6 @@ class lvm_dimselect(lvm):
 
 
     def on_move(self, event):
-        #print "move"
         if event.inaxes!=self.latent_axes: return
         if self.called and self.move_on:
             self.latent_values[self.latent_index[0]]=event.xdata

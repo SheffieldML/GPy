@@ -8,7 +8,7 @@ import sys, pdb
 import multiprocessing as mp
 from GPy.util.misc import opt_wrapper
 #import numdifftools as ndt
-from parameterised import parameterised, truncate_pad
+from parameterised import parameterised
 import priors
 from ..util.linalg import jitchol
 from ..inference import optimization
@@ -108,21 +108,14 @@ class model(parameterised):
         return ret
 
     def _transform_gradients(self, g):
-        """
-        Takes a list of gradients and return an array of transformed gradients (positive/negative/tied/and so on)
-        """
-
         x = self._get_params()
-        g[self.constrained_positive_indices] = g[self.constrained_positive_indices]*x[self.constrained_positive_indices]
-        g[self.constrained_negative_indices] = g[self.constrained_negative_indices]*x[self.constrained_negative_indices]
-        [np.put(g,i,g[i]*(x[i]-l)*(h-x[i])/(h-l)) for i,l,h in zip(self.constrained_bounded_indices, self.constrained_bounded_lowers, self.constrained_bounded_uppers)]
-        [np.put(g,i,v) for i,v in [(t[0],np.sum(g[t])) for t in self.tied_indices]]
-        if len(self.tied_indices) or len(self.constrained_fixed_indices):
-            to_remove = np.hstack((self.constrained_fixed_indices+[t[1:] for t in self.tied_indices]))
+        for index,constraint in zip(self.constrained_indices, self.constraints):
+            g[index] = g[index] * constraint.gradfactor(x[index])
+        if len(self.tied_indices) or len(self.fixed_indices):
+            to_remove = np.hstack((self.fixed_indices+[t[1:] for t in self.tied_indices]))
             return np.delete(g,to_remove)
         else:
             return g
-
 
     def randomize(self):
         """
@@ -207,7 +200,7 @@ class model(parameterised):
         """
         Ensure that any variables which should clearly be positive have been constrained somehow.
         """
-        positive_strings = ['variance','lengthscale', 'precision']
+        positive_strings = ['variance','lengthscale', 'precision', 'kappa']
         param_names = self._get_param_names()
         currently_constrained = self.all_constrained_indices()
         to_make_positive = []

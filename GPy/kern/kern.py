@@ -71,12 +71,10 @@ class kern(parameterised):
 
     def _transform_gradients(self, g):
         x = self._get_params()
-        g[self.constrained_positive_indices] = g[self.constrained_positive_indices] * x[self.constrained_positive_indices]
-        g[self.constrained_negative_indices] = g[self.constrained_negative_indices] * x[self.constrained_negative_indices]
-        [np.put(g, i, g[i] * (x[i] - l) * (h - x[i]) / (h - l)) for i, l, h in zip(self.constrained_bounded_indices, self.constrained_bounded_lowers, self.constrained_bounded_uppers)]
+        [np.put(x,i,x*t.gradfactor(x[i])) for i,t in zip(self.constrained_indices, self.constraints)]
         [np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
-        if len(self.tied_indices) or len(self.constrained_fixed_indices):
-            to_remove = np.hstack((self.constrained_fixed_indices + [t[1:] for t in self.tied_indices]))
+        if len(self.tied_indices) or len(self.fixed_indices):
+            to_remove = np.hstack((self.fixed_indices + [t[1:] for t in self.tied_indices]))
             return np.delete(g, to_remove)
         else:
             return g
@@ -93,13 +91,10 @@ class kern(parameterised):
         assert self.D == other.D
         newkern = kern(self.D, self.parts + other.parts, self.input_slices + other.input_slices)
         # transfer constraints:
-        newkern.constrained_positive_indices = np.hstack((self.constrained_positive_indices, self.Nparam + other.constrained_positive_indices))
-        newkern.constrained_negative_indices = np.hstack((self.constrained_negative_indices, self.Nparam + other.constrained_negative_indices))
-        newkern.constrained_bounded_indices = self.constrained_bounded_indices + [self.Nparam + x for x in other.constrained_bounded_indices]
-        newkern.constrained_bounded_lowers = self.constrained_bounded_lowers + other.constrained_bounded_lowers
-        newkern.constrained_bounded_uppers = self.constrained_bounded_uppers + other.constrained_bounded_uppers
-        newkern.constrained_fixed_indices = self.constrained_fixed_indices + [self.Nparam + x for x in other.constrained_fixed_indices]
-        newkern.constrained_fixed_values = self.constrained_fixed_values + other.constrained_fixed_values
+        newkern.constrained_indices = self.constrained_indices + [i+self.Nparam  for i in other.constrained_indices]
+        newkern.constraints = self.constraints + other.constraints
+        newkern.fixed_indices = self.fixed_indices + [self.Nparam + x for x in other.fixed_indices]
+        newkern.fixed_values = self.fixed_values + other.fixed_values
         newkern.tied_indices = self.tied_indices + [self.Nparam + x for x in other.tied_indices]
         return newkern
 
@@ -126,13 +121,12 @@ class kern(parameterised):
         newkern = kern(D, self.parts + other.parts, self_input_slices + other_input_slices)
 
         # transfer constraints:
-        newkern.constrained_positive_indices = np.hstack((self.constrained_positive_indices, self.Nparam + other.constrained_positive_indices))
-        newkern.constrained_negative_indices = np.hstack((self.constrained_negative_indices, self.Nparam + other.constrained_negative_indices))
-        newkern.constrained_bounded_indices = self.constrained_bounded_indices + [self.Nparam + x for x in other.constrained_bounded_indices]
-        newkern.constrained_bounded_lowers = self.constrained_bounded_lowers + other.constrained_bounded_lowers
+        newkern.constrained_indices = self.constrained_indices + [x+self.Nparam for x in other.constrained_indices]
+        newkern.constraints = self.constraints + other.constraints
+        newkern.fixed_indices = self.fixed_indices + [self.Nparam + x for x in other.fixed_indices]
+        newkern.fixed_values = self.fixed_values + other.fixed_values
+        newkern.constraints = self.constraints + other.constraints
         newkern.constrained_bounded_uppers = self.constrained_bounded_uppers + other.constrained_bounded_uppers
-        newkern.constrained_fixed_indices = self.constrained_fixed_indices + [self.Nparam + x for x in other.constrained_fixed_indices]
-        newkern.constrained_fixed_values = self.constrained_fixed_values + other.constrained_fixed_values
         newkern.tied_indices = self.tied_indices + [self.Nparam + x for x in other.tied_indices]
         return newkern
 
@@ -208,15 +202,11 @@ class kern(parameterised):
         # Get the ties and constrains of the kernels before the multiplication
         prev_ties = K1.tied_indices + [arr + K1.Nparam for arr in K2.tied_indices]
 
-        prev_constr_pos = np.append(K1.constrained_positive_indices, K1.Nparam + K2.constrained_positive_indices)
-        prev_constr_neg = np.append(K1.constrained_negative_indices, K1.Nparam + K2.constrained_negative_indices)
+        prev_constr_ind = [K1.constrained_indices] + [K1.Nparam + i for i in K2.constrained_indices]
+        prev_constr = K1.constraints + K2.constraints
 
-        prev_constr_fix = K1.constrained_fixed_indices + [arr + K1.Nparam for arr in K2.constrained_fixed_indices]
-        prev_constr_fix_values = K1.constrained_fixed_values + K2.constrained_fixed_values
-
-        prev_constr_bou = K1.constrained_bounded_indices + [arr + K1.Nparam for arr in K2.constrained_bounded_indices]
-        prev_constr_bou_low = K1.constrained_bounded_lowers + K2.constrained_bounded_lowers
-        prev_constr_bou_upp = K1.constrained_bounded_uppers + K2.constrained_bounded_uppers
+        prev_constr_fix = K1.fixed_indices + [arr + K1.Nparam for arr in K2.fixed_indices]
+        prev_constr_fix_values = K1.fixed_values + K2.fixed_values
 
         # follow the previous ties
         for arr in prev_ties:
@@ -228,14 +218,8 @@ class kern(parameterised):
             index = np.where(index_param == i)[0]
             if index.size > 1:
                 self.tie_params(index)
-        for i in prev_constr_pos:
-            self.constrain_positive(np.where(index_param == i)[0])
-        for i in prev_constr_neg:
-            self.constrain_neg(np.where(index_param == i)[0])
-        for j, i in enumerate(prev_constr_fix):
-            self.constrain_fixed(np.where(index_param == i)[0], prev_constr_fix_values[j])
-        for j, i in enumerate(prev_constr_bou):
-            self.constrain_bounded(np.where(index_param == i)[0], prev_constr_bou_low[j], prev_constr_bou_upp[j])
+        for i,t in zip(prev_constr_ind,prev_constr):
+            self.constrain(np.where(index_param == i)[0],t)
 
     def _get_params(self):
         return np.hstack([p._get_params() for p in self.parts])

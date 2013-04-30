@@ -171,10 +171,18 @@ class parameterised(object):
             return expr
 
     def Nparam_transformed(self):
-            ties = 0
-            for ar in self.tied_indices:
-                ties += ar.size - 1
-            return self.Nparam - len(self.constrained_fixed_indices) - ties
+        """
+        Compute the number of parameters after ties and fixing have been performed
+        """
+        ties = 0
+        for ti in self.tied_indices:
+            ties += ti.size - 1
+
+        fixes = 0
+        for fi in self.constrained_fixed_indices:
+            fixes += len(fi)
+
+        return self.Nparam - fixes - ties
 
     def constrain_positive(self, which):
         """

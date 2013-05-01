@@ -167,8 +167,9 @@ class parameterised(object):
             self.constrained_indices, self.constraints = list(self.constrained_indices), list(self.constraints)
 
         # fixed:
-        for i, indices in enumerate(self.fixed_indices):
-            self.fixed_indices[i] = np.delete(indices, np.nonzero(np.sum(indices[:, None] == matches[None, :], 1))[0])
+        self.fixed_values = [np.delete(values, np.nonzero(np.sum(indices[:, None] == matches[None, :], 1))[0]) for indices,values in zip(self.fixed_indices,self.fixed_values)]
+        self.fixed_indices = [np.delete(indices, np.nonzero(np.sum(indices[:, None] == matches[None, :], 1))[0]) for indices in self.fixed_indices]
+
         # remove empty elements
         tmp = [(i, v) for i, v in zip(self.fixed_indices, self.fixed_values) if len(i)]
         if tmp:

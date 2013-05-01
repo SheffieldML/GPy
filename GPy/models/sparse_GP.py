@@ -68,47 +68,49 @@ class sparse_GP(GP):
         sf = self.scale_factor
         sf2 = sf**2
 
-        #The rather complex computations of psi2_beta_scaled
+        #invert Kmm
+        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
+
+        #The rather complex computations of psi2_beta_scaled and self.A
         if self.likelihood.is_heteroscedastic:
             assert self.likelihood.D == 1 #TODO: what if the likelihood is heterscedatic and there are multiple independent outputs?
             if self.has_uncertain_inputs:
                 self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision.flatten().reshape(self.N,1,1)/sf2)).sum(0)
+                tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm,self.psi2_beta_scaled.T,lower=1)
+                self.A, _ = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1)
             else:
                 tmp = self.psi1*(np.sqrt(self.likelihood.precision.flatten().reshape(1,self.N))/sf)
-                #self.psi2_beta_scaled = np.dot(tmp,tmp.T)
                 self.psi2_beta_scaled = tdot(tmp)
+                tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp),lower=1)
+                self.A = tdot(tmp)
         else:
             if self.has_uncertain_inputs:
                 self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision/sf2)).sum(0)
+                tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm,self.psi2_beta_scaled.T,lower=1)
+                self.A, _ = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1)
             else:
                 tmp = self.psi1*(np.sqrt(self.likelihood.precision)/sf)
-                #self.psi2_beta_scaled = np.dot(tmp,tmp.T)
                 self.psi2_beta_scaled = tdot(tmp)
+                tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp),lower=1)
+                self.A = tdot(tmp)
 
-        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
-
-        self.V = (self.likelihood.precision/self.scale_factor)*self.likelihood.Y
-
-        #Compute A = L^-1 psi2 beta L^-T
-        #self. A = mdot(self.Lmi,self.psi2_beta_scaled,self.Lmi.T)
-        tmp = linalg.lapack.flapack.dtrtrs(self.Lm,self.psi2_beta_scaled.T,lower=1)[0]
-        self.A = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1)[0]
-
+        #invert B and compute C. C is the posterior covariance of u
         self.B = np.eye(self.M)/sf2 + self.A
-
         self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
-
-        self.psi1V = np.dot(self.psi1, self.V)
         tmp = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(self.Bi),lower=1,trans=1)[0]
         self.C = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1,trans=1)[0]
 
+        self.V = (self.likelihood.precision/self.scale_factor)*self.likelihood.Y
+        self.psi1V = np.dot(self.psi1, self.V)
+
         #back substutue C into psi1V
         tmp,info1 = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(self.psi1V),lower=1,trans=0)
+        self._P = tdot(tmp)
         tmp,info2 = linalg.lapack.flapack.dpotrs(self.LB,tmp,lower=1)
         self.Cpsi1V,info3 = linalg.lapack.flapack.dtrtrs(self.Lm,tmp,lower=1,trans=1)
         #self.Cpsi1V = np.dot(self.C,self.psi1V)
 
-        self.Cpsi1VVpsi1 = np.dot(self.Cpsi1V,self.psi1V.T)
+        self.Cpsi1VVpsi1 = np.dot(self.Cpsi1V,self.psi1V.T) #TODO: this dot can be eliminated
 
         self.E = tdot(self.Cpsi1V/sf)
 
@@ -130,24 +132,22 @@ class sparse_GP(GP):
                 self.dL_dpsi2 = None
 
         else:
-            #self.dL_dpsi2 = 0.5 * self.likelihood.precision * self.D * self.Kmmi # dB
-            #self.dL_dpsi2 += - 0.5 * self.likelihood.precision/sf2 * self.D * self.C # dC
-            #self.dL_dpsi2 += - 0.5 * self.likelihood.precision * self.E # dD
             self.dL_dpsi2 = 0.5*self.likelihood.precision*(self.D*(self.Kmmi - self.C/sf2) -self.E)
             if self.has_uncertain_inputs:
                 #repeat for each of the N psi_2 matrices
                 self.dL_dpsi2 = np.repeat(self.dL_dpsi2[None,:,:],self.N,axis=0)
             else:
+                #subsume back into psi1 (==Kmn)
                 self.dL_dpsi1 += 2.*np.dot(self.dL_dpsi2,self.psi1)
                 self.dL_dpsi2 = None
 
 
         # Compute dL_dKmm
-        #self.dL_dKmm_old = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi)*sf2 # dB
+        #self.dL_dKmm = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi)*sf2 # dB
         #self.dL_dKmm += -0.5 * self.D * (- self.C/sf2 - 2.*mdot(self.C, self.psi2_beta_scaled, self.Kmmi) + self.Kmmi) # dC
         #self.dL_dKmm +=  np.dot(np.dot(self.E*sf2, self.psi2_beta_scaled) - self.Cpsi1VVpsi1, self.Kmmi) + 0.5*self.E # dD
         tmp = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(self.B),lower=1,trans=1)[0]
-        self.dL_dKmm = -0.5*self.D*sf2*linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1,trans=1)[0] #dA
+        self.dL_dKmm = -0.5*self.D*sf2*linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1,trans=1)[0]
         tmp = np.dot(self.D*self.C + self.E*sf2,self.psi2_beta_scaled) - self.Cpsi1VVpsi1
         tmp = linalg.lapack.flapack.dpotrs(self.Lm,np.asfortranarray(tmp.T),lower=1)[0].T
         self.dL_dKmm += 0.5*(self.D*self.C/sf2 + self.E) +tmp # d(C+D)
@@ -196,7 +196,6 @@ class sparse_GP(GP):
         #        self.scale_factor = max(1,np.sqrt(self.psi2_beta_scaled.sum(0).mean()))
         #    else:
         #        self.scale_factor = np.sqrt(self.psi2.sum(0).mean()*self.likelihood.precision)
-        #self.scale_factor = 1.
         self._computations()
 
     def _get_params(self):

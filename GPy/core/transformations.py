@@ -56,7 +56,7 @@ class negative_exponent(transformation):
     def __init__(self):
         self.domain= 'negative'
     def f(self,x):
-        return -np.exp(self.x)
+        return -np.exp(x)
     def finv(self,x):
         return np.log(-x)
     def gradfactor(self,f):
@@ -65,7 +65,6 @@ class negative_exponent(transformation):
         return -np.abs(f)
     def __str__(self):
         return '(-ve)'
-
 
 class logistic(transformation):
     def __init__(self,lower,upper):

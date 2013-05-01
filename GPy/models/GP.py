@@ -50,8 +50,8 @@ class GP(model):
             self._Xmean = np.zeros((1, self.X.shape[1]))
             self._Xstd = np.ones((1, self.X.shape[1]))
 
-
-        self.has_uncertain_inputs = False
+        if not hasattr(self,'has_uncertain_inputs'):
+            self.has_uncertain_inputs = False
         model.__init__(self)
 
     def dL_dZ(self):

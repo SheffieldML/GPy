@@ -76,8 +76,13 @@ class sparse_GP(GP):
             assert self.likelihood.D == 1 #TODO: what if the likelihood is heterscedatic and there are multiple independent outputs?
             if self.has_uncertain_inputs:
                 self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision.flatten().reshape(self.N,1,1)/sf2)).sum(0)
-                tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm,self.psi2_beta_scaled.T,lower=1)
-                self.A, _ = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1)
+                evals, evecs = linalg.eigh(self.psi2_beta_scaled)
+                clipped_evals = np.clip(evals,0.,1e6) # TODO: make clipping configurable
+                if not np.allclose(evals, clipped_evals):
+                    print "Warning: clipping posterior eigenvalues"
+                tmp = evecs*np.sqrt(clipped_evals)
+                tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp),lower=1)
+                self.A = tdot(tmp)
             else:
                 tmp = self.psi1*(np.sqrt(self.likelihood.precision.flatten().reshape(1,self.N))/sf)
                 self.psi2_beta_scaled = tdot(tmp)
@@ -86,8 +91,14 @@ class sparse_GP(GP):
         else:
             if self.has_uncertain_inputs:
                 self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision/sf2)).sum(0)
-                tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm,self.psi2_beta_scaled.T,lower=1)
-                self.A, _ = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1)
+                evals, evecs = linalg.eigh(self.psi2_beta_scaled)
+                clipped_evals = np.clip(evals,0.,1e6) # TODO: make clipping configurable
+                if not np.allclose(evals, clipped_evals):
+                    print "Warning: clipping posterior eigenvalues"
+                tmp = evecs*np.sqrt(clipped_evals)
+                self.psi2_beta_scaled = tdot(tmp)
+                tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp),lower=1)
+                self.A = tdot(tmp)
             else:
                 tmp = self.psi1*(np.sqrt(self.likelihood.precision)/sf)
                 self.psi2_beta_scaled = tdot(tmp)

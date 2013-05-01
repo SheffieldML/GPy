@@ -176,12 +176,13 @@ def bgplvm_simulation_matlab_compare():
     Y = sim_data['Y']
     S = sim_data['S']
     mu = sim_data['mu']
-    M, [_, Q] = 20, mu.shape
+    M, (_, Q) = 30, mu.shape
 
     from GPy.models import mrd
     from GPy import kern
     reload(mrd); reload(kern)
-    k = kern.rbf(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
+    #k = kern.rbf(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
+    k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
     m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k,
 #                        X=mu,
 #                        X_variance=S,

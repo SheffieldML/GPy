@@ -143,14 +143,14 @@ class parameterised(object):
             return expr
 
     def Nparam_transformed(self):
-            removed = 0
-            for tie in self.tied_indices:
-                removed += tie.size - 1
+        removed = 0
+        for tie in self.tied_indices:
+            removed += tie.size - 1
 
-            for fix in self.fixed_indices:
-                removed += fix.size
+        for fix in self.fixed_indices:
+            removed += fix.size
 
-            return len(self._get_params()) - removed
+        return len(self._get_params()) - removed
 
     def unconstrain(self, which):
         """Unconstrain matching parameters.  does not untie parameters"""

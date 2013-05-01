@@ -9,21 +9,30 @@ import numpy as np
 import pylab
 
 __test__ = False
+np.random.seed(0)
+
+def ard(p):
+    try:
+        if p.ARD:
+            return "ARD"
+    except:
+        pass
+    return ""
 
 class Test(unittest.TestCase):
     D = 9
-    M = 5
-    Nsamples = 3e6
+    M = 3
+    Nsamples = 6e6
 
     def setUp(self):
         self.kerns = (
-                      GPy.kern.rbf(self.D), GPy.kern.rbf(self.D, ARD=True),
-                      GPy.kern.linear(self.D), GPy.kern.linear(self.D, ARD=True),
+#                       GPy.kern.rbf(self.D), GPy.kern.rbf(self.D, ARD=True),
+                      GPy.kern.linear(self.D, ARD=False), GPy.kern.linear(self.D, ARD=True),
                       GPy.kern.linear(self.D) + GPy.kern.bias(self.D),
-                      GPy.kern.rbf(self.D) + GPy.kern.bias(self.D),
+#                       GPy.kern.rbf(self.D) + GPy.kern.bias(self.D),
                       GPy.kern.linear(self.D) + GPy.kern.bias(self.D) + GPy.kern.white(self.D),
-                      GPy.kern.rbf(self.D) + GPy.kern.bias(self.D) + GPy.kern.white(self.D),
-                      GPy.kern.bias(self.D), GPy.kern.white(self.D),
+#                       GPy.kern.rbf(self.D) + GPy.kern.bias(self.D) + GPy.kern.white(self.D),
+#                       GPy.kern.bias(self.D), GPy.kern.white(self.D),
                       )
         self.q_x_mean = np.random.randn(self.D)
         self.q_x_variance = np.exp(np.random.randn(self.D))
@@ -66,18 +75,21 @@ class Test(unittest.TestCase):
                 K_ += K
                 diffs.append(((psi2 - (K_ / (i + 1))) ** 2).mean())
             K_ /= self.Nsamples / Nsamples
+            msg = "psi2: {}".format("+".join([p.name + ard(p) for p in kern.parts]))
             try:
-#                 pylab.figure("+".join([p.name for p in kern.parts]) + "psi2")
-#                 pylab.plot(diffs)
+                pylab.figure(msg)
+                pylab.plot(diffs)
                 self.assertTrue(np.allclose(psi2.squeeze(), K_,
                                             rtol=1e-1, atol=.1),
-                                msg="{}: not matching".format("+".join([p.name for p in kern.parts])))
+                                msg=msg + ": not matching")
             except:
-                print "{}: not matching".format(kern.parts[0].name)
+                import ipdb;ipdb.set_trace()
+                kern.psi2(self.Z, self.q_x_mean, self.q_x_variance)
+                print msg + ": not matching"
 
 if __name__ == "__main__":
     import sys;sys.argv = ['',
-                           'Test.test_psi0',
-                           'Test.test_psi1',
+#                            'Test.test_psi0',
+#                            'Test.test_psi1',
                            'Test.test_psi2']
     unittest.main()

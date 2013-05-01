@@ -106,18 +106,18 @@ if __name__ == "__main__":
     import sys
     interactive = 'i' in sys.argv
     if interactive:
-        N, M, Q, D = 30, 5, 4, 30
-        X = numpy.random.rand(N, Q)
-        k = GPy.kern.linear(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
-        K = k.K(X)
-        Y = numpy.random.multivariate_normal(numpy.zeros(N), K, D).T
-        Y -= Y.mean(axis=0)
-        k = GPy.kern.linear(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
-        m = GPy.models.Bayesian_GPLVM(Y, Q, kernel=k, M=M)
-        m.ensure_default_constraints()
-        m.randomize()
-#         self.assertTrue(m.checkgrad())
-
+#         N, M, Q, D = 30, 5, 4, 30
+#         X = numpy.random.rand(N, Q)
+#         k = GPy.kern.linear(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
+#         K = k.K(X)
+#         Y = numpy.random.multivariate_normal(numpy.zeros(N), K, D).T
+#         Y -= Y.mean(axis=0)
+#         k = GPy.kern.linear(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
+#         m = GPy.models.Bayesian_GPLVM(Y, Q, kernel=k, M=M)
+#         m.ensure_default_constraints()
+#         m.randomize()
+# #         self.assertTrue(m.checkgrad())
+        numpy.random.seed(0)
         Q = 5
         N = 50
         M = 10
@@ -126,11 +126,11 @@ if __name__ == "__main__":
         X_var = .5 * numpy.ones_like(X) + .4 * numpy.clip(numpy.random.randn(*X.shape), 0, 1)
         Z = numpy.random.permutation(X)[:M]
         Y = X.dot(numpy.random.randn(Q, D))
-        kernel = GPy.kern.bias(Q)
-
-        kernels = [GPy.kern.linear(Q), GPy.kern.rbf(Q), GPy.kern.bias(Q),
-               GPy.kern.linear(Q) + GPy.kern.bias(Q),
-               GPy.kern.rbf(Q) + GPy.kern.bias(Q)]
+#         kernel = GPy.kern.bias(Q)
+#
+#         kernels = [GPy.kern.linear(Q), GPy.kern.rbf(Q), GPy.kern.bias(Q),
+#                GPy.kern.linear(Q) + GPy.kern.bias(Q),
+#                GPy.kern.rbf(Q) + GPy.kern.bias(Q)]
 
 #         for k in kernels:
 #             m = PsiStatModel('psi1', X=X, X_variance=X_var, Z=Z,
@@ -143,11 +143,13 @@ if __name__ == "__main__":
 #                          M=M, kernel=kernel)
 #         m1 = PsiStatModel('psi1', X=X, X_variance=X_var, Z=Z,
 #                          M=M, kernel=kernel)
-        m2 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
-                         M=M, kernel=GPy.kern.rbf(Q))
+#         m2 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
+#                          M=M, kernel=GPy.kern.rbf(Q))
         m3 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
-                         M=M, kernel=GPy.kern.linear(Q) + GPy.kern.bias(Q))
-        m4 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
-                         M=M, kernel=GPy.kern.rbf(Q) + GPy.kern.bias(Q))
+                         M=M, kernel=GPy.kern.linear(Q))
+        m3.ensure_default_constraints()
+        # + GPy.kern.bias(Q))
+#         m4 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
+#                          M=M, kernel=GPy.kern.rbf(Q) + GPy.kern.bias(Q))
     else:
         unittest.main()

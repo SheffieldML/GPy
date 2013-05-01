@@ -308,6 +308,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         Slatentgrads = ax3.quiver(xlatent, S, Ulatent, Sg, color=colors,
                                   units=quiver_units, scale_units=quiver_scale_units,
                                   scale=quiver_scale)
+        ax3.set_ylim(0, 1.)
 
         xZ = np.tile(np.arange(0, Z.shape[0])[:, None], Z.shape[1])
         UZ = np.zeros_like(Z)
@@ -427,11 +428,11 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
                     cbarkmmdl.update_normal(imkmmdl)
 
                     ax2.relim()
-                    ax3.relim()
+                    # ax3.relim()
                     ax4.relim()
                     ax5.relim()
                     ax2.autoscale()
-                    ax3.autoscale()
+                    # ax3.autoscale()
                     ax4.autoscale()
                     ax5.autoscale()
 

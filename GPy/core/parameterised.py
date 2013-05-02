@@ -191,8 +191,8 @@ class parameterised(object):
         self.constrain(which, transformations.logistic(lower, upper))
 
     def all_constrained_indices(self):
-        if len(self.constrained_indices):
-            return np.hstack(self.constrained_indices)
+        if len(self.constrained_indices) or len(self.fixed_indices):
+            return np.hstack(self.constrained_indices + self.fixed_indices)
         else:
             return np.empty(shape=(0,))
 

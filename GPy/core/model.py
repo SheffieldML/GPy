@@ -117,6 +117,7 @@ class model(parameterised):
         x = self._get_params()
         for index,constraint in zip(self.constrained_indices, self.constraints):
             g[index] = g[index] * constraint.gradfactor(x[index])
+        [np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
         if len(self.tied_indices) or len(self.fixed_indices):
             to_remove = np.hstack((self.fixed_indices+[t[1:] for t in self.tied_indices]))
             return np.delete(g,to_remove)

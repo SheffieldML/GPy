@@ -48,11 +48,7 @@ class kern(parameterised):
 
 
     def plot_ARD(self, ax=None):
-        """
-        If an ARD kernel is present, it bar-plots the ARD parameters
-
-        
-        """
+        """If an ARD kernel is present, it bar-plots the ARD parameters"""
         if ax is None:
             ax = pb.gca()
         for p in self.parts:

@@ -200,13 +200,13 @@ class sparse_GP(GP):
         self.kern._set_params(p[self.Z.size:self.Z.size+self.kern.Nparam])
         self.likelihood._set_params(p[self.Z.size+self.kern.Nparam:])
         self._compute_kernel_matrices()
-        if self.auto_scale_factor:
-            self.scale_factor = np.sqrt(self.psi2.sum(0).mean()*self.likelihood.precision)
         #if self.auto_scale_factor:
-        #    if self.likelihood.is_heteroscedastic:
-        #        self.scale_factor = max(1,np.sqrt(self.psi2_beta_scaled.sum(0).mean()))
-        #    else:
-        #        self.scale_factor = np.sqrt(self.psi2.sum(0).mean()*self.likelihood.precision)
+        #    self.scale_factor = np.sqrt(self.psi2.sum(0).mean()*self.likelihood.precision)
+        if self.auto_scale_factor:
+            if self.likelihood.is_heteroscedastic:
+                self.scale_factor = max(100,np.sqrt(self.psi2_beta_scaled.sum(0).mean()))
+            else:
+                self.scale_factor = np.sqrt(self.psi2.sum(0).mean()*self.likelihood.precision)
         self._computations()
 
     def _get_params(self):

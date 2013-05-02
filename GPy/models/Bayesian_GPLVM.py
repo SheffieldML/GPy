@@ -54,6 +54,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             self._savedgradients = []
             self._savederrors = []
             self._savedpsiKmm = []
+
         sparse_GP.__init__(self, X, Gaussian(Y), kernel, Z=Z, X_variance=X_variance, **kwargs)
 
     @property

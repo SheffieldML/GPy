@@ -21,7 +21,8 @@ def ard(p):
 
 class Test(unittest.TestCase):
     D = 9
-    M = 3
+    M = 4
+    N = 3
     Nsamples = 6e6
 
     def setUp(self):
@@ -73,7 +74,7 @@ class Test(unittest.TestCase):
                 K = kern.K(q_x_sample_stripe, self.Z)
                 K = (K[:, :, None] * K[:, None, :]).mean(0)
                 K_ += K
-                diffs.append(((psi2 - (K_ / (i + 1))) ** 2).mean())
+                diffs.append(((psi2 - (K_ / (i + 1)))).mean())
             K_ /= self.Nsamples / Nsamples
             msg = "psi2: {}".format("+".join([p.name + ard(p) for p in kern.parts]))
             try:

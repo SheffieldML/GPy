@@ -52,16 +52,16 @@ class Test(unittest.TestCase):
     Q = 5
     N = 50
     M = 10
-    D = 10
+    D = 20
     X = numpy.random.randn(N, Q)
     X_var = .5 * numpy.ones_like(X) + .4 * numpy.clip(numpy.random.randn(*X.shape), 0, 1)
     Z = numpy.random.permutation(X)[:M]
     Y = X.dot(numpy.random.randn(Q, D))
-    kernels = [GPy.kern.linear(Q), GPy.kern.rbf(Q), GPy.kern.bias(Q)]
+    kernels = [GPy.kern.linear(Q, ARD=True, variances=numpy.random.rand(Q)), GPy.kern.rbf(Q, ARD=True), GPy.kern.bias(Q)]
 
-    kernels = [GPy.kern.linear(Q), GPy.kern.rbf(Q), GPy.kern.bias(Q),
-               GPy.kern.linear(Q) + GPy.kern.bias(Q),
-               GPy.kern.rbf(Q) + GPy.kern.bias(Q)]
+#     kernels = [GPy.kern.linear(Q), GPy.kern.rbf(Q), GPy.kern.bias(Q),
+#                GPy.kern.linear(Q) + GPy.kern.bias(Q),
+#                GPy.kern.rbf(Q) + GPy.kern.bias(Q)]
 
     def testPsi0(self):
         for k in self.kernels:
@@ -121,9 +121,9 @@ if __name__ == "__main__":
         Q = 5
         N = 50
         M = 10
-        D = 10
+        D = 15
         X = numpy.random.randn(N, Q)
-        X_var = .5 * numpy.ones_like(X) + .4 * numpy.clip(numpy.random.randn(*X.shape), 0, 1)
+        X_var = .5 * numpy.ones_like(X) + .1 * numpy.clip(numpy.random.randn(*X.shape), 0, 1)
         Z = numpy.random.permutation(X)[:M]
         Y = X.dot(numpy.random.randn(Q, D))
 #         kernel = GPy.kern.bias(Q)
@@ -146,7 +146,7 @@ if __name__ == "__main__":
 #         m2 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
 #                          M=M, kernel=GPy.kern.rbf(Q))
         m3 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
-                         M=M, kernel=GPy.kern.linear(Q))
+                         M=M, kernel=GPy.kern.linear(Q, ARD=True, variances=numpy.random.rand(Q)))
         m3.ensure_default_constraints()
         # + GPy.kern.bias(Q))
 #         m4 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,

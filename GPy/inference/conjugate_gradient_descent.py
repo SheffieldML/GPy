@@ -63,14 +63,15 @@ class _Async_Optimization(Thread):
         return f_w
 
     def callback(self, *a):
-        self.outq.put(a)
+        if self.outq is not None:
+            self.outq.put(a)
 #         self.parent and self.parent.callback(*a, **kw)
         pass
         # print "callback done"
 
     def callback_return(self, *a):
         self.callback(*a)
-        self.outq.put(self.SENTINEL)
+        self.callback(self.SENTINEL)
         self.runsignal.clear()
 
     def run(self, *args, **kwargs):
@@ -166,25 +167,27 @@ class Async_Optimize(object):
             except Empty:
                 pass
 
-    def fmin_async(self, f, df, x0, callback, update_rule=FletcherReeves,
+    def opt_async(self, f, df, x0, callback, update_rule=FletcherReeves,
                    messages=0, maxiter=5e3, max_f_eval=15e3, gtol=1e-6,
                    report_every=10, *args, **kwargs):
         self.runsignal.set()
-        outqueue = Queue()
+        c = None
+        outqueue = None
         if callback:
+            outqueue = Queue()
             self.callback = callback
-        c = Thread(target=self.async_callback_collect, args=(outqueue,))
-        c.start()
+            c = Thread(target=self.async_callback_collect, args=(outqueue,))
+            c.start()
         p = _CGDAsync(f, df, x0, update_rule, self.runsignal, self.SENTINEL,
                  report_every=report_every, messages=messages, maxiter=maxiter,
                  max_f_eval=max_f_eval, gtol=gtol, outqueue=outqueue, *args, **kwargs)
-        p.run()
+        p.start()
         return p, c
 
-    def fmin(self, f, df, x0, callback=None, update_rule=FletcherReeves,
+    def opt(self, f, df, x0, callback=None, update_rule=FletcherReeves,
                    messages=0, maxiter=5e3, max_f_eval=15e3, gtol=1e-6,
                    report_every=10, *args, **kwargs):
-        p, c = self.fmin_async(f, df, x0, callback, update_rule, messages,
+        p, c = self.opt_async(f, df, x0, callback, update_rule, messages,
                             maxiter, max_f_eval, gtol,
                             report_every, *args, **kwargs)
         while self.runsignal.is_set():
@@ -195,7 +198,8 @@ class Async_Optimize(object):
                 # print "^C"
                 self.runsignal.clear()
                 p.join()
-        if c.is_alive():
+                c.join()
+        if c and c.is_alive():
             print "WARNING: callback still running, optimisation done!"
         return p.result
 
@@ -208,11 +212,11 @@ class CGD(Async_Optimize):
     if df returns tuple (grad, natgrad) it will optimize according 
     to natural gradient rules
     '''
-    name = "Conjugate Gradient Descent"
+    opt_name = "Conjugate Gradient Descent"
 
-    def fmin_async(self, *a, **kw):
+    def opt_async(self, *a, **kw):
         """
-        fmin_async(self, f, df, x0, callback, update_rule=FletcherReeves,
+        opt_async(self, f, df, x0, callback, update_rule=FletcherReeves,
                messages=0, maxiter=5e3, max_f_eval=15e3, gtol=1e-6,
                report_every=10, *args, **kwargs)
         
@@ -240,11 +244,11 @@ class CGD(Async_Optimize):
         
         at end of optimization!
         """
-        return super(CGD, self).fmin_async(*a, **kw)
+        return super(CGD, self).opt_async(*a, **kw)
 
-    def fmin(self, *a, **kw):
+    def opt(self, *a, **kw):
         """
-        fmin(self, f, df, x0, callback=None, update_rule=FletcherReeves,
+        opt(self, f, df, x0, callback=None, update_rule=FletcherReeves,
                messages=0, maxiter=5e3, max_f_eval=15e3, gtol=1e-6,
                report_every=10, *args, **kwargs)
         
@@ -267,5 +271,5 @@ class CGD(Async_Optimize):
         
         at end of optimization
         """
-        return super(CGD, self).fmin(*a, **kw)
+        return super(CGD, self).opt(*a, **kw)
 

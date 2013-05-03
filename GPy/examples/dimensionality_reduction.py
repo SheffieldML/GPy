@@ -176,13 +176,12 @@ def bgplvm_simulation_matlab_compare():
     Y = sim_data['Y']
     S = sim_data['S']
     mu = sim_data['mu']
-    M, [_, Q] = 30, mu.shape
-    Q = 2
+    M, [_, Q] = 20, mu.shape
 
     from GPy.models import mrd
     from GPy import kern
     reload(mrd); reload(kern)
-    #k = kern.rbf(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
+    # k = kern.rbf(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
     k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
     m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k,
 #                        X=mu,
@@ -191,14 +190,11 @@ def bgplvm_simulation_matlab_compare():
     m.ensure_default_constraints()
     m.auto_scale_factor = True
     m['noise'] = Y.var() / 100.
+    m['linear_variance'] = .01
 
-    lscstr = '{}'.format(k.parts[0].name)
+#     lscstr = 'X_variance'
 #     m[lscstr] = .01
-    m.unconstrain(lscstr); m.constrain_fixed(lscstr, 10)
-
-    lscstr = 'X_variance'
-#     m[lscstr] = .01
-    m.unconstrain(lscstr); m.constrain_fixed(lscstr, .1)
+#     m.unconstrain(lscstr); m.constrain_fixed(lscstr, .1)
 
 #     cstr = 'white'
 #     m.unconstrain(cstr); m.constrain_bounded(cstr, .01, 1.)

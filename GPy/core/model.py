@@ -67,12 +67,12 @@ class model(parameterised):
 
         # check constraints are okay
         if isinstance(what, (priors.gamma, priors.log_Gaussian)):
-            constrained_positive_indices = [i for i,t in zip(self.constrained_indices, self.constraints) if t.domain=='positive']
+            constrained_positive_indices = [i for i, t in zip(self.constrained_indices, self.constraints) if t.domain == 'positive']
             if len(constrained_positive_indices):
                 constrained_positive_indices = np.hstack(constrained_positive_indices)
             else:
                 constrained_positive_indices = np.zeros(shape=(0,))
-            bad_constraints = np.setdiff1d(self.all_constrained_indices(),constrained_positive_indices)
+            bad_constraints = np.setdiff1d(self.all_constrained_indices(), constrained_positive_indices)
             assert not np.any(which[:, None] == bad_constraints), "constraint and prior incompatible"
             unconst = np.setdiff1d(which, constrained_positive_indices)
             if len(unconst):
@@ -115,12 +115,12 @@ class model(parameterised):
 
     def _transform_gradients(self, g):
         x = self._get_params()
-        for index,constraint in zip(self.constrained_indices, self.constraints):
+        for index, constraint in zip(self.constrained_indices, self.constraints):
             g[index] = g[index] * constraint.gradfactor(x[index])
         [np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
         if len(self.tied_indices) or len(self.fixed_indices):
-            to_remove = np.hstack((self.fixed_indices+[t[1:] for t in self.tied_indices]))
-            return np.delete(g,to_remove)
+            to_remove = np.hstack((self.fixed_indices + [t[1:] for t in self.tied_indices]))
+            return np.delete(g, to_remove)
         else:
             return g
 
@@ -207,7 +207,7 @@ class model(parameterised):
         """
         Ensure that any variables which should clearly be positive have been constrained somehow.
         """
-        positive_strings = ['variance','lengthscale', 'precision', 'kappa']
+        positive_strings = ['variance', 'lengthscale', 'precision', 'kappa']
         param_names = self._get_param_names()
         currently_constrained = self.all_constrained_indices()
         to_make_positive = []
@@ -359,10 +359,7 @@ class model(parameterised):
             numerical_gradient = (f1 - f2) / (2 * dx)
             global_ratio = (f1 - f2) / (2 * np.dot(dx, gradient))
 
-            if (np.abs(1. - global_ratio) < tolerance) and not np.isnan(global_ratio):
-                return True
-            else:
-                return False
+            return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gradient - numerical_gradient).mean() - 1) < tolerance
         else:
             # check the gradient of each parameter individually, and do some pretty printing
             try:
@@ -399,7 +396,7 @@ class model(parameterised):
                 ratio = (f1 - f2) / (2 * step * gradient)
                 difference = np.abs((f1 - f2) / 2 / step - gradient)
 
-                if (np.abs(ratio - 1) < tolerance):
+                if (np.abs(1. - ratio) < tolerance) or np.abs(difference) < tolerance:
                     formatted_name = "\033[92m {0} \033[0m".format(names[i])
                 else:
                     formatted_name = "\033[91m {0} \033[0m".format(names[i])

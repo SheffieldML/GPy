@@ -6,7 +6,6 @@ Created on 22 Apr 2013
 import unittest
 import numpy
 
-from GPy.models.Bayesian_GPLVM import Bayesian_GPLVM
 import GPy
 import itertools
 from GPy.core import model
@@ -48,7 +47,7 @@ class PsiStatModel(model):
         thetagrad = self.kern.__getattribute__("d" + self.which + "_dtheta")(numpy.ones_like(self.psi_), self.Z, self.X, self.X_variance).flatten()
         return numpy.hstack((psimu.flatten(), psiS.flatten(), psiZ.flatten(), thetagrad))
 
-class Test(unittest.TestCase):
+class DPsiStatTest(unittest.TestCase):
     Q = 5
     N = 50
     M = 10
@@ -57,17 +56,20 @@ class Test(unittest.TestCase):
     X_var = .5 * numpy.ones_like(X) + .4 * numpy.clip(numpy.random.randn(*X.shape), 0, 1)
     Z = numpy.random.permutation(X)[:M]
     Y = X.dot(numpy.random.randn(Q, D))
-    kernels = [GPy.kern.linear(Q, ARD=True, variances=numpy.random.rand(Q)), GPy.kern.rbf(Q, ARD=True), GPy.kern.bias(Q)]
+#     kernels = [GPy.kern.linear(Q, ARD=True, variances=numpy.random.rand(Q)), GPy.kern.rbf(Q, ARD=True), GPy.kern.bias(Q)]
 
-#     kernels = [GPy.kern.linear(Q), GPy.kern.rbf(Q), GPy.kern.bias(Q),
-#                GPy.kern.linear(Q) + GPy.kern.bias(Q),
-#                GPy.kern.rbf(Q) + GPy.kern.bias(Q)]
+    kernels = [GPy.kern.linear(Q), GPy.kern.rbf(Q), GPy.kern.bias(Q),
+               GPy.kern.linear(Q) + GPy.kern.bias(Q),
+               GPy.kern.rbf(Q) + GPy.kern.bias(Q)]
 
     def testPsi0(self):
         for k in self.kernels:
             m = PsiStatModel('psi0', X=self.X, X_variance=self.X_var, Z=self.Z,
                          M=self.M, kernel=k)
-            assert m.checkgrad(), "{} x psi0".format("+".join(map(lambda x: x.name, k.parts)))
+            try:
+                assert m.checkgrad(), "{} x psi0".format("+".join(map(lambda x: x.name, k.parts)))
+            except:
+                import ipdb;ipdb.set_trace()
 
 #     def testPsi1(self):
 #         for k in self.kernels:

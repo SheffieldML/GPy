@@ -192,10 +192,6 @@ def bgplvm_simulation_matlab_compare():
     m['noise'] = Y.var() / 100.
     m['linear_variance'] = .01
 
-#     lscstr = '{}'.format(k.parts[0].name)
-#     m[lscstr] = .01
-#     m.unconstrain(lscstr); m.constrain_fixed(lscstr, 10)
-
 #     lscstr = 'X_variance'
 #     m[lscstr] = .01
 #     m.unconstrain(lscstr); m.constrain_fixed(lscstr, .1)

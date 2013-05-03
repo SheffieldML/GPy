@@ -96,9 +96,9 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             print "\rWARNING: Caught LinAlgError, continueing without setting            "
             if self._debug:
                 self._savederrors.append(self.f_call)
-#             if save_count > 10:
-#                 raise
-#             self._set_params(self.oldps[-1], save_old=False, save_count=save_count + 1)
+            if save_count > 10:
+                raise
+            self._set_params(self.oldps[-1], save_old=False, save_count=save_count + 1)
 
     def dKL_dmuS(self):
         dKL_dS = (1. - (1. / (self.X_variance))) * 0.5

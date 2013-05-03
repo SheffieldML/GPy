@@ -14,7 +14,7 @@ from scipy.optimize.optimize import rosen, rosen_der
 class Test(unittest.TestCase):
 
     def testMinimizeSquare(self):
-        N = 2
+        N = 100
         A = numpy.random.rand(N) * numpy.eye(N)
         b = numpy.random.rand(N) * 0
         f = lambda x: numpy.dot(x.T.dot(A), x) - numpy.dot(x.T, b)
@@ -25,7 +25,7 @@ class Test(unittest.TestCase):
         restarts = 10
         for _ in range(restarts):
             try:
-                x0 = numpy.random.randn(N) * .5
+                x0 = numpy.random.randn(N) * 300
                 res = opt.opt(f, df, x0, messages=0,
                                maxiter=1000, gtol=1e-10)
                 assert numpy.allclose(res[0], 0, atol=1e-3)
@@ -37,10 +37,9 @@ class Test(unittest.TestCase):
             raise AssertionError("Test failed for {} restarts".format(restarts))
 
     def testRosen(self):
-        N = 2
+        N = 20
         f = rosen
         df = rosen_der
-        x0 = numpy.random.randn(N) * .5
 
         opt = CGD()
 
@@ -49,8 +48,8 @@ class Test(unittest.TestCase):
             try:
                 x0 = numpy.random.randn(N) * .5
                 res = opt.opt(f, df, x0, messages=0,
-                               maxiter=1000, gtol=1e-2)
-                assert numpy.allclose(res[0], 1, atol=.01)
+                               maxiter=5e2, gtol=1e-2)
+                assert numpy.allclose(res[0], 1, atol=.1)
                 break
             except:
                 # RESTART

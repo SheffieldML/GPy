@@ -63,14 +63,15 @@ class _Async_Optimization(Thread):
         return f_w
 
     def callback(self, *a):
-        self.outq.put(a)
+        if self.outq is not None:
+            self.outq.put(a)
 #         self.parent and self.parent.callback(*a, **kw)
         pass
         # print "callback done"
 
     def callback_return(self, *a):
         self.callback(*a)
-        self.outq.put(self.SENTINEL)
+        self.callback(self.SENTINEL)
         self.runsignal.clear()
 
     def run(self, *args, **kwargs):
@@ -170,16 +171,17 @@ class Async_Optimize(object):
                    messages=0, maxiter=5e3, max_f_eval=15e3, gtol=1e-6,
                    report_every=10, *args, **kwargs):
         self.runsignal.set()
-        outqueue = Queue()
         c = None
+        outqueue = None
         if callback:
+            outqueue = Queue()
             self.callback = callback
             c = Thread(target=self.async_callback_collect, args=(outqueue,))
             c.start()
         p = _CGDAsync(f, df, x0, update_rule, self.runsignal, self.SENTINEL,
                  report_every=report_every, messages=messages, maxiter=maxiter,
                  max_f_eval=max_f_eval, gtol=gtol, outqueue=outqueue, *args, **kwargs)
-        p.run()
+        p.start()
         return p, c
 
     def opt(self, f, df, x0, callback=None, update_rule=FletcherReeves,

@@ -170,14 +170,13 @@ class linear(kernpart):
     def dpsi2_dmuS(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
         """Think N,M,M,Q """
         self._psi_computations(Z, mu, S)
+        AZZA = self.ZA.T[:, None, :, None] * self.ZA[None, :, None, :]
+        AZZA += AZZA.swapaxes(1, 2)
         tmp = self.ZZ * np.square(self.variances)  # M,M,Q
         dS_old = (dL_dpsi2[:, :, :, None] * tmp).sum(1).sum(1)
-#         import ipdb;ipdb.set_trace()
+        import ipdb;ipdb.set_trace()
         target_S += dS_old
-#         target_mu += (dL_dpsi2[:, :, :, None] * tmp * 2.*mu[:, None, None, :]).sum(1).sum(1)
-        AZZA = np.dot(self.ZA.T, self.ZA)
-        AZZA += AZZA.T
-        dpsi2_dmu = (dL_dpsi2[:, :, :, None] * (AZZA[None, None, None, :, :] * mu[:, None, None, None, :]).sum(-1)).sum(1).sum(1)
+        dpsi2_dmu = (dL_dpsi2[:, :, :, None] * np.tensordot(mu, AZZA, ((-1), (0)))).sum(1).sum(1)
 #         twomu = mu[:,None,None,:,None] + mu[:,None,None,None,:]
 #         t = (dL_dpsi2[:, :, :, None, None] * tmp[None, :, :, :, None] * twomu).sum(1).sum(1).sum(1)
         target_mu += dpsi2_dmu

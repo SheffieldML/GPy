@@ -82,7 +82,7 @@ def BGPLVM_oil(optimize=True, N=100, Q=10, M=15, max_f_eval=300):
         m.ensure_default_constraints()
 
     y = m.likelihood.Y[0, :]
-    fig,(latent_axes,hist_axes) = plt.subplots(1,2)
+    fig, (latent_axes, hist_axes) = plt.subplots(1, 2)
     plt.sca(latent_axes)
     m.plot_latent()
     data_show = GPy.util.visualize.vector_show(y)
@@ -176,7 +176,8 @@ def bgplvm_simulation_matlab_compare():
     Y = sim_data['Y']
     S = sim_data['S']
     mu = sim_data['mu']
-    M, (_, Q) = 30, mu.shape
+    M, [_, Q] = 30, mu.shape
+    Q = 2
 
     from GPy.models import mrd
     from GPy import kern
@@ -189,8 +190,21 @@ def bgplvm_simulation_matlab_compare():
                        _debug=True)
     m.ensure_default_constraints()
     m.auto_scale_factor = True
-    m['noise'] = .01  # Y.var() / 100.
-    m['{}_variance'.format(k.parts[0].name)] = .01
+    m['noise'] = Y.var() / 100.
+
+    lscstr = '{}'.format(k.parts[0].name)
+#     m[lscstr] = .01
+    m.unconstrain(lscstr); m.constrain_fixed(lscstr, 10)
+
+    lscstr = 'X_variance'
+#     m[lscstr] = .01
+    m.unconstrain(lscstr); m.constrain_fixed(lscstr, .1)
+
+#     cstr = 'white'
+#     m.unconstrain(cstr); m.constrain_bounded(cstr, .01, 1.)
+
+#     cstr = 'noise'
+#     m.unconstrain(cstr); m.constrain_bounded(cstr, .01, 1.)
     return m
 
 def bgplvm_simulation(burnin='scg', plot_sim=False,
@@ -386,7 +400,7 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True):
     Y = data['Y']
     if in_place:
         # Make figure move in place.
-        data['Y'][:, 0:3]=0.0
+        data['Y'][:, 0:3] = 0.0
     m = GPy.models.GPLVM(data['Y'], 2, normalize_Y=True)
 
     # optimize

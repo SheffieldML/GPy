@@ -196,8 +196,9 @@ class EP(likelihood):
                 self.tau_tilde[i] = self.tau_tilde[i] + Delta_tau
                 self.v_tilde[i] = self.v_tilde[i] + Delta_v
                 #Posterior distribution parameters update
-                LLT = LLT + np.outer(Kmn[:,i],Kmn[:,i])*Delta_tau
-                L = jitchol(LLT)
+                #LLT = LLT + np.outer(Kmn[:,i],Kmn[:,i])*Delta_tau
+                #L = jitchol(LLT)
+                cholupdate(L,Kmn[:,i]*np.sqrt(Delta_tau))
                 V,info = linalg.lapack.flapack.dtrtrs(L,Kmn,lower=1)
                 Sigma_diag = np.sum(V*V,-2)
                 si = np.sum(V.T*V[:,i],-1)

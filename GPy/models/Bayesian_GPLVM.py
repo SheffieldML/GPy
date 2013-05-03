@@ -259,28 +259,28 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         ax2.text(.5, .5, r"$\mathbf{X}$", alpha=.5, transform=ax2.transAxes,
                  ha='center', va='center')
         figs[-1].canvas.draw()
-        figs[-1].tight_layout(rect=(0, 0, 1, .9))
+        figs[-1].tight_layout(rect=(0, 0, 1, .86))
 #         ax3 = pylab.subplot2grid(splotshape, (3, 0), 2, 4, sharex=ax2)
         figs.append(pylab.figure("BGPLVM DEBUG S", figsize=(12, 4)))
         ax3 = self._debug_get_axis(figs)
         ax3.text(.5, .5, r"$\mathbf{S}$", alpha=.5, transform=ax3.transAxes,
                  ha='center', va='center')
         figs[-1].canvas.draw()
-        figs[-1].tight_layout(rect=(0, 0, 1, .9))
+        figs[-1].tight_layout(rect=(0, 0, 1, .86))
 #         ax4 = pylab.subplot2grid(splotshape, (5, 0), 2, 2)
         figs.append(pylab.figure("BGPLVM DEBUG Z", figsize=(6, 4)))
         ax4 = self._debug_get_axis(figs)
         ax4.text(.5, .5, r"$\mathbf{Z}$", alpha=.5, transform=ax4.transAxes,
                  ha='center', va='center')
         figs[-1].canvas.draw()
-        figs[-1].tight_layout(rect=(0, 0, 1, .9))
+        figs[-1].tight_layout(rect=(0, 0, 1, .86))
 #         ax5 = pylab.subplot2grid(splotshape, (5, 2), 2, 2)
         figs.append(pylab.figure("BGPLVM DEBUG theta", figsize=(6, 4)))
         ax5 = self._debug_get_axis(figs)
         ax5.text(.5, .5, r"${\theta}$", alpha=.5, transform=ax5.transAxes,
                  ha='center', va='center')
         figs[-1].canvas.draw()
-        figs[-1].tight_layout(rect=(0, 0, 1, .9))
+        figs[-1].tight_layout(rect=(.15, 0, 1, .86))
         figs.append(pylab.figure("BGPLVM DEBUG Kmm", figsize=(12, 6)))
         fig = figs[-1]
         ax6 = fig.add_subplot(121)
@@ -345,16 +345,16 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 #                    loc=3, ncol=self.Q, bbox_to_anchor=(0, 1.15, 1, 1.15),
 #                    borderaxespad=0, mode="expand")
         ax2.legend(Xlatentplts, [r"$Q_{}$".format(i + 1) for i in range(self.Q)],
-                   loc=3, ncol=self.Q, bbox_to_anchor=(0, 1.01, 1, 1.01),
+                   loc=3, ncol=self.Q, bbox_to_anchor=(0, 1.1, 1, 1.1),
                    borderaxespad=0, mode="expand")
         ax3.legend(Xlatentplts, [r"$Q_{}$".format(i + 1) for i in range(self.Q)],
-                   loc=3, ncol=self.Q, bbox_to_anchor=(0, 1.01, 1, 1.01),
+                   loc=3, ncol=self.Q, bbox_to_anchor=(0, 1.1, 1, 1.1),
                    borderaxespad=0, mode="expand")
         ax4.legend(Xlatentplts, [r"$Q_{}$".format(i + 1) for i in range(self.Q)],
-                   loc=3, ncol=self.Q, bbox_to_anchor=(0, 1.01, 1, 1.01),
+                   loc=3, ncol=self.Q, bbox_to_anchor=(0, 1.1, 1, 1.1),
                    borderaxespad=0, mode="expand")
         ax5.legend(Xlatentplts, [r"$Q_{}$".format(i + 1) for i in range(self.Q)],
-                   loc=3, ncol=self.Q, bbox_to_anchor=(0, 1.01, 1, 1.01),
+                   loc=3, ncol=self.Q, bbox_to_anchor=(0, 1.1, 1, 1.1),
                    borderaxespad=0, mode="expand")
         Lleg = ax1.legend()
         Lleg.draggable()

@@ -26,7 +26,7 @@ class Test(unittest.TestCase):
         for _ in range(restarts):
             try:
                 x0 = numpy.random.randn(N) * .5
-                res = opt.fmin(f, df, x0, messages=0,
+                res = opt.opt(f, df, x0, messages=0,
                                maxiter=1000, gtol=1e-10)
                 assert numpy.allclose(res[0], 0, atol=1e-3)
                 break
@@ -48,7 +48,7 @@ class Test(unittest.TestCase):
         for _ in range(restarts):
             try:
                 x0 = numpy.random.randn(N) * .5
-                res = opt.fmin(f, df, x0, messages=0,
+                res = opt.opt(f, df, x0, messages=0,
                                maxiter=1000, gtol=1e-2)
                 assert numpy.allclose(res[0], 1, atol=.01)
                 break
@@ -103,7 +103,7 @@ if __name__ == "__main__":
         if r[-1] != RUNNING:
             res[0] = r
 
-    p, c = opt.fmin_async(f, df, x0.copy(), callback, messages=True, maxiter=1000,
+    p, c = opt.opt_async(f, df, x0.copy(), callback, messages=True, maxiter=1000,
                    report_every=20, gtol=1e-12)
 
 

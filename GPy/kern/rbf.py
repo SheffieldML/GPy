@@ -188,12 +188,12 @@ class rbf(kernpart):
                 self._X2 = None
                 X = X/self.lengthscale
                 Xsquare = np.sum(np.square(X),1)
-                self._K_dist2 = (-2.*tdot(X) + Xsquare[:,None] + Xsquare[None,:])
+                self._K_dist2 = -2.*tdot(X) + (Xsquare[:,None] + Xsquare[None,:])
             else:
                 self._X2 = X2.copy()
                 X = X/self.lengthscale
                 X2 = X2/self.lengthscale
-                self._K_dist2 = (-2.*np.dot(X, X2.T) + np.sum(np.square(X),1)[:,None] + np.sum(np.square(X2),1)[None,:])
+                self._K_dist2 = -2.*np.dot(X, X2.T) + (np.sum(np.square(X),1)[:,None] + np.sum(np.square(X2),1)[None,:])
             self._K_dvar = np.exp(-0.5*self._K_dist2)
 
     def _psi_computations(self,Z,mu,S):

@@ -82,11 +82,11 @@ def BGPLVM_oil(optimize=True, N=100, Q=10, M=15, max_f_eval=300):
         m.ensure_default_constraints()
 
     y = m.likelihood.Y[0, :]
-    fig,(latent_axes,hist_axes) = plt.subplots(1,2)
+    fig,(latent_axes,sense_axes) = plt.subplots(1,2)
     plt.sca(latent_axes)
     m.plot_latent()
     data_show = GPy.util.visualize.vector_show(y)
-    lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :], m, data_show, latent_axes=latent_axes, hist_axes=hist_axes)
+    lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :], m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
     raw_input('Press enter to finish')
     plt.close('all')
     # # plot

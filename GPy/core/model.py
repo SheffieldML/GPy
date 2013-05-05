@@ -416,9 +416,10 @@ class model(parameterised):
         """
         return an array describing the sesitivity of the model to each input
 
-        NB. Right now, we're basing this on the lengthscales (or variances) of the kernel.
-        TODO: proper sensitivity analysis
-        """
+        NB. Right now, we're basing this on the lengthscales (or
+        variances) of the kernel.  TODO: proper sensitivity analysis
+        where we integrate across the model inputs and evaluate the
+        effect on the variance of the model output.  """
 
         if not hasattr(self, 'kern'):
             raise ValueError, "this model has no kernel"

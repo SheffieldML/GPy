@@ -98,6 +98,7 @@ class Laplace(likelihood):
         A = I + C
         #plt.imshow(A)
         #plt.show()
+        ki, _, _, _ = pdinv(self.K)
         I_KW_i, _, _, _ = pdinv(A)
 
         #FIXME: Careful dK_dthetaK is not the derivative with respect to the marginal just prior K!

@@ -6,15 +6,9 @@ import numpy as np
 import pylab as pb
 from .. import kern
 from ..core import model
-<<<<<<< HEAD
-from ..util.linalg import pdinv,mdot
-from ..util.plot import gpplot,x_frame1D,x_frame2D, Tango
-from ..likelihoods import EP, Laplace
-=======
 from ..util.linalg import pdinv, mdot
 from ..util.plot import gpplot, x_frame1D, x_frame2D, Tango
-from ..likelihoods import EP
->>>>>>> upstream/devel
+from ..likelihoods import EP, Laplace
 
 class GP(model):
     """
@@ -34,6 +28,7 @@ class GP(model):
 
     """
     def __init__(self, X, likelihood, kernel, normalize_X=False):
+        self.has_uncertain_inputs=False
 
         # parse arguments
         self.X = X
@@ -128,12 +123,12 @@ class GP(model):
 
         Note, we use the chain rule: dL_dtheta = dL_dK * d_K_dtheta
         """
-        dL_dthetaK = self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X, slices1=self.Xslices, slices2=self.Xslices)
+        dL_dthetaK = self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X)
         if isinstance(self.likelihood, Laplace):
             dL_dthetaK_explicit = dL_dthetaK
             #Need to pass in a matrix of ones to get access to raw dK_dthetaK values without being chained
             fake_dL_dKs = np.ones(self.dL_dK.shape)
-            dK_dthetaK = self.kern.dK_dtheta(dL_dK=fake_dL_dKs, X=self.X, slices1=self.Xslices, slices2=self.Xslices)
+            dK_dthetaK = self.kern.dK_dtheta(dL_dK=fake_dL_dKs, X=self.X)
 
             dL_dthetaK_implicit = self.likelihood._Kgradients(self.dL_dK, dK_dthetaK)
             dL_dthetaK = dL_dthetaK_explicit + dL_dthetaK_implicit
@@ -251,7 +246,7 @@ class GP(model):
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
-    def plot(self, samples=0, plot_limits=None, which_data='all', which_functions='all', resolution=None, levels=20):
+    def plot(self, samples=0, plot_limits=None, which_data='all', which_functions='all', which_parts='all', resolution=None, levels=20):
         """
         TODO: Docstrings!
         :param levels: for 2D plotting, the number of contour levels to use

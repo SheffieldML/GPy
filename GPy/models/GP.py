@@ -116,7 +116,6 @@ class GP(model):
         """
         return -0.5 * self.D * self.K_logdet + self._model_fit_term() + self.likelihood.Z
 
-
     def _log_likelihood_gradients(self):
         """
         The gradient of all parameters.
@@ -132,9 +131,14 @@ class GP(model):
 
             dL_dthetaK_implicit = self.likelihood._Kgradients(self.dL_dK, dK_dthetaK)
             dL_dthetaK = dL_dthetaK_explicit + dL_dthetaK_implicit
+
+            print "dL_dthetaK_explicit: {dldkx}     dL_dthetaK_implicit: {dldki}        dL_dthetaK: {dldk}".format(dldkx=dL_dthetaK_explicit, dldki=dL_dthetaK_implicit, dldk=dL_dthetaK)
+
             dL_dthetaL = self.likelihood._gradients(partial=self.dL_dK)
         else:
+            print "dL_dthetaK: ", dL_dthetaK
             dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))
+        print "dL_dthetaL: ", dL_dthetaL
         return np.hstack((dL_dthetaK, dL_dthetaL))
         #return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
 

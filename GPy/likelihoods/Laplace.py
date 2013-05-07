@@ -5,7 +5,7 @@ from scipy.linalg import inv, cho_solve, det
 from numpy.linalg import cond
 from GPy.likelihoods.likelihood import likelihood
 from GPy.util.linalg import pdinv, mdot, jitchol, chol_inv, det_ln_diag, pddet
-from scipy.linalg.lapack import dtrtrs
+from scipy.linalg.flapack import dtrtrs
 import pylab as plt
 
 
@@ -63,6 +63,7 @@ class Laplace(likelihood):
         return self.likelihood_function._get_param_names()
 
     def _set_params(self, p):
+        print "Setting noise sd: ", p
         return self.likelihood_function._set_params(p)
 
     def both_gradients(self, dL_d_K_Sigma, dK_dthetaK):
@@ -79,7 +80,9 @@ class Laplace(likelihood):
 
     def _shared_gradients_components(self):
         dL_dytil = -np.dot(self.Y.T, (self.K+self.Sigma_tilde))
-        dytil_dfhat = self.Wi__Ki_W # np.dot(self.Sigma_tilde, self.Ki) + np.eye(self.N) # or self.Wi__Ki_W?
+        #dytil_dfhat = self.Wi__Ki_W # np.dot(self.Sigma_tilde, self.Ki) + np.eye(self.N) # or self.Wi__Ki_W?
+        Ki = inv(self.K)
+        dytil_dfhat = np.dot(self.Sigma_tilde, Ki) + np.eye(self.N) # or self.Wi__Ki_W?
         return dL_dytil, dytil_dfhat
 
     def _Kgradients(self, dL_d_K_Sigma, dK_dthetaK):
@@ -93,19 +96,26 @@ class Laplace(likelihood):
         dL_dytil, dytil_dfhat = self._shared_gradients_components()
 
         print "Computing K gradients"
+        print "dytil_dfhat: ", np.mean(dytil_dfhat)
         I = np.eye(self.N)
         C = np.dot(self.K, self.W)
         A = I + C
         #plt.imshow(A)
         #plt.show()
-        ki, _, _, _ = pdinv(self.K)
-        I_KW_i, _, _, _ = pdinv(A)
+
+        #FIXME: K ISNT SYMMETRIC SO NEITHER IS A AND IT MAKES IT NON-PD!
+        #ki, _, _, _ = pdinv(self.K)
+        #I_KW_i, _, _, _ = pdinv(A)
+
+        I_KW_i = inv(A)
+
 
         #FIXME: Careful dK_dthetaK is not the derivative with respect to the marginal just prior K!
         #Derivative for each f dimension, for each of K's hyper parameters
         dfhat_dthetaK = np.zeros((self.f_hat.shape[0], dK_dthetaK.shape[0]))
+        grad = self.likelihood_function.link_grad(self.data, self.f_hat, self.extra_data)
         for ind_j, thetaj in enumerate(dK_dthetaK):
-            dfhat_dthetaK[:, ind_j] = mdot(I_KW_i, thetaj, self.likelihood_function.link_grad(self.data, self.f_hat, self.extra_data))
+            dfhat_dthetaK[:, ind_j] = np.dot(I_KW_i, np.dot(thetaj, grad))
 
         dytil_dthetaK = np.dot(dytil_dfhat, dfhat_dthetaK) # should be (D,thetaK)
         #FIXME: Careful dL_dK = dL_d_K_Sigma
@@ -116,8 +126,11 @@ class Laplace(likelihood):
         dSigmai_dthetaK = 0 #+ np.sum(d3phi_d3fhat*dfhat_dthetaK) #FIXME: CAREFUL OF THIS SUM! SHOULD SUM OVER FHAT NOT THETAS
         dSigma_dthetaK = -mdot(self.Sigma_tilde, dSigmai_dthetaK, self.Sigma_tilde)
 
+        print "dL_dytil: ", np.mean(dL_dytil)
+        print "dytil_dthetaK: ", np.mean(dytil_dthetaK)
         dL_dthetaK_implicit = np.sum(np.dot(dL_dytil, dytil_dthetaK), axis=0)# + np.dot(dL_dSigma, dSigma_dthetaK)
         #dL_dthetaK_implicit = np.dot(dL_dytil.T, dytil_dthetaK.T)
+        import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
         return np.squeeze(dL_dthetaK_implicit)
 
     def _gradients(self, partial):

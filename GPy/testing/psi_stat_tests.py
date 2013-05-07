@@ -6,7 +6,6 @@ Created on 22 Apr 2013
 import unittest
 import numpy
 
-from GPy.models.Bayesian_GPLVM import Bayesian_GPLVM
 import GPy
 import itertools
 from GPy.core import model
@@ -48,16 +47,16 @@ class PsiStatModel(model):
         thetagrad = self.kern.__getattribute__("d" + self.which + "_dtheta")(numpy.ones_like(self.psi_), self.Z, self.X, self.X_variance).flatten()
         return numpy.hstack((psimu.flatten(), psiS.flatten(), psiZ.flatten(), thetagrad))
 
-class Test(unittest.TestCase):
+class DPsiStatTest(unittest.TestCase):
     Q = 5
     N = 50
     M = 10
-    D = 10
+    D = 20
     X = numpy.random.randn(N, Q)
     X_var = .5 * numpy.ones_like(X) + .4 * numpy.clip(numpy.random.randn(*X.shape), 0, 1)
     Z = numpy.random.permutation(X)[:M]
     Y = X.dot(numpy.random.randn(Q, D))
-    kernels = [GPy.kern.linear(Q), GPy.kern.rbf(Q), GPy.kern.bias(Q)]
+#     kernels = [GPy.kern.linear(Q, ARD=True, variances=numpy.random.rand(Q)), GPy.kern.rbf(Q, ARD=True), GPy.kern.bias(Q)]
 
     kernels = [GPy.kern.linear(Q), GPy.kern.rbf(Q), GPy.kern.bias(Q),
                GPy.kern.linear(Q) + GPy.kern.bias(Q),
@@ -67,7 +66,10 @@ class Test(unittest.TestCase):
         for k in self.kernels:
             m = PsiStatModel('psi0', X=self.X, X_variance=self.X_var, Z=self.Z,
                          M=self.M, kernel=k)
-            assert m.checkgrad(), "{} x psi0".format("+".join(map(lambda x: x.name, k.parts)))
+            try:
+                assert m.checkgrad(), "{} x psi0".format("+".join(map(lambda x: x.name, k.parts)))
+            except:
+                import ipdb;ipdb.set_trace()
 
 #     def testPsi1(self):
 #         for k in self.kernels:
@@ -106,31 +108,31 @@ if __name__ == "__main__":
     import sys
     interactive = 'i' in sys.argv
     if interactive:
-        N, M, Q, D = 30, 5, 4, 30
-        X = numpy.random.rand(N, Q)
-        k = GPy.kern.linear(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
-        K = k.K(X)
-        Y = numpy.random.multivariate_normal(numpy.zeros(N), K, D).T
-        Y -= Y.mean(axis=0)
-        k = GPy.kern.linear(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
-        m = GPy.models.Bayesian_GPLVM(Y, Q, kernel=k, M=M)
-        m.ensure_default_constraints()
-        m.randomize()
-#         self.assertTrue(m.checkgrad())
-
+#         N, M, Q, D = 30, 5, 4, 30
+#         X = numpy.random.rand(N, Q)
+#         k = GPy.kern.linear(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
+#         K = k.K(X)
+#         Y = numpy.random.multivariate_normal(numpy.zeros(N), K, D).T
+#         Y -= Y.mean(axis=0)
+#         k = GPy.kern.linear(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
+#         m = GPy.models.Bayesian_GPLVM(Y, Q, kernel=k, M=M)
+#         m.ensure_default_constraints()
+#         m.randomize()
+# #         self.assertTrue(m.checkgrad())
+        numpy.random.seed(0)
         Q = 5
         N = 50
         M = 10
-        D = 10
+        D = 15
         X = numpy.random.randn(N, Q)
-        X_var = .5 * numpy.ones_like(X) + .4 * numpy.clip(numpy.random.randn(*X.shape), 0, 1)
+        X_var = .5 * numpy.ones_like(X) + .1 * numpy.clip(numpy.random.randn(*X.shape), 0, 1)
         Z = numpy.random.permutation(X)[:M]
         Y = X.dot(numpy.random.randn(Q, D))
-        kernel = GPy.kern.bias(Q)
-
-        kernels = [GPy.kern.linear(Q), GPy.kern.rbf(Q), GPy.kern.bias(Q),
-               GPy.kern.linear(Q) + GPy.kern.bias(Q),
-               GPy.kern.rbf(Q) + GPy.kern.bias(Q)]
+#         kernel = GPy.kern.bias(Q)
+#
+#         kernels = [GPy.kern.linear(Q), GPy.kern.rbf(Q), GPy.kern.bias(Q),
+#                GPy.kern.linear(Q) + GPy.kern.bias(Q),
+#                GPy.kern.rbf(Q) + GPy.kern.bias(Q)]
 
 #         for k in kernels:
 #             m = PsiStatModel('psi1', X=X, X_variance=X_var, Z=Z,
@@ -143,11 +145,13 @@ if __name__ == "__main__":
 #                          M=M, kernel=kernel)
 #         m1 = PsiStatModel('psi1', X=X, X_variance=X_var, Z=Z,
 #                          M=M, kernel=kernel)
-        m2 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
-                         M=M, kernel=GPy.kern.rbf(Q))
+#         m2 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
+#                          M=M, kernel=GPy.kern.rbf(Q))
         m3 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
-                         M=M, kernel=GPy.kern.linear(Q) + GPy.kern.bias(Q))
-        m4 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
-                         M=M, kernel=GPy.kern.rbf(Q) + GPy.kern.bias(Q))
+                         M=M, kernel=GPy.kern.linear(Q, ARD=True, variances=numpy.random.rand(Q)))
+        m3.ensure_default_constraints()
+        # + GPy.kern.bias(Q))
+#         m4 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
+#                          M=M, kernel=GPy.kern.rbf(Q) + GPy.kern.bias(Q))
     else:
         unittest.main()

@@ -65,9 +65,11 @@ class probit(likelihood_function):
         mu = mu.flatten()
         var = var.flatten()
         mean = stats.norm.cdf(mu/np.sqrt(1+var))
-        p_025 = np.zeros(mu.shape)
-        p_975 = np.ones(mu.shape)
-        return mean, np.nan*var, p_025, p_975 # TODO: better values here (mean is okay)
+        norm_025 = [stats.norm.ppf(.025,m,v) for m,v in zip(mu,var)]
+        norm_975 = [stats.norm.ppf(.975,m,v) for m,v in zip(mu,var)]
+        p_025 = stats.norm.cdf(norm_025/np.sqrt(1+var))
+        p_975 = stats.norm.cdf(norm_975/np.sqrt(1+var))
+        return mean, np.nan*var, p_025, p_975 # TODO: var
 
 class Poisson(likelihood_function):
     """

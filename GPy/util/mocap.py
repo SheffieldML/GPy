@@ -532,7 +532,6 @@ class acclaim_skeleton(skeleton):
                 self.vertices[0].meta['orientation'] =  [float(parts[1]),
                                              float(parts[2]),
                                              float(parts[3])]
-                print self.vertices[0].meta['orientation']
             lin = self.read_line(fid)
         return lin
     

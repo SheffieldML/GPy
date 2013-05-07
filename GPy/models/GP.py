@@ -36,6 +36,9 @@ class GP(model):
         self.N, self.Q = self.X.shape
         assert isinstance(kernel, kern.kern)
         self.kern = kernel
+        self.likelihood = likelihood
+        assert self.X.shape[0] == self.likelihood.data.shape[0]
+        self.N, self.D = self.likelihood.data.shape
 
         # here's some simple normalization for the inputs
         if normalize_X:
@@ -48,12 +51,8 @@ class GP(model):
             self._Xmean = np.zeros((1, self.X.shape[1]))
             self._Xstd = np.ones((1, self.X.shape[1]))
 
-        self.likelihood = likelihood
-        # assert self.X.shape[0] == self.likelihood.Y.shape[0]
-        # self.N, self.D = self.likelihood.Y.shape
-        assert self.X.shape[0] == self.likelihood.data.shape[0]
-        self.N, self.D = self.likelihood.data.shape
-
+        if not hasattr(self,'has_uncertain_inputs'):
+            self.has_uncertain_inputs = False
         model.__init__(self)
 
     def dL_dZ(self):
@@ -250,7 +249,7 @@ class GP(model):
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
-    def plot(self, samples=0, plot_limits=None, which_data='all', which_functions='all', which_parts='all', resolution=None, levels=20):
+    def plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20):
         """
         TODO: Docstrings!
         :param levels: for 2D plotting, the number of contour levels to use

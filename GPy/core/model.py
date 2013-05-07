@@ -6,7 +6,7 @@ from .. import likelihoods
 from ..inference import optimization
 from ..util.linalg import jitchol
 from GPy.util.misc import opt_wrapper
-from parameterised import parameterised, truncate_pad
+from parameterised import parameterised
 from scipy import optimize
 import multiprocessing as mp
 import numpy as np
@@ -67,9 +67,14 @@ class model(parameterised):
 
         # check constraints are okay
         if isinstance(what, (priors.gamma, priors.log_Gaussian)):
-            assert not np.any(which[:, None] == self.constrained_negative_indices), "constraint and prior incompatible"
-            assert not np.any(which[:, None] == self.constrained_bounded_indices), "constraint and prior incompatible"
-            unconst = np.setdiff1d(which, self.constrained_positive_indices)
+            constrained_positive_indices = [i for i, t in zip(self.constrained_indices, self.constraints) if t.domain == 'positive']
+            if len(constrained_positive_indices):
+                constrained_positive_indices = np.hstack(constrained_positive_indices)
+            else:
+                constrained_positive_indices = np.zeros(shape=(0,))
+            bad_constraints = np.setdiff1d(self.all_constrained_indices(), constrained_positive_indices)
+            assert not np.any(which[:, None] == bad_constraints), "constraint and prior incompatible"
+            unconst = np.setdiff1d(which, constrained_positive_indices)
             if len(unconst):
                 print "Warning: constraining parameters to be positive:"
                 print '\n'.join([n for i, n in enumerate(self._get_param_names()) if i in unconst])
@@ -79,7 +84,6 @@ class model(parameterised):
             assert not np.any(which[:, None] == self.all_constrained_indices()), "constraint and prior incompatible"
         else:
             raise ValueError, "prior not recognised"
-
 
         # store the prior in a local list
         for w in which:
@@ -110,21 +114,15 @@ class model(parameterised):
         return ret
 
     def _transform_gradients(self, g):
-        """
-        Takes a list of gradients and return an array of transformed gradients (positive/negative/tied/and so on)
-        """
-
         x = self._get_params()
-        g[self.constrained_positive_indices] = g[self.constrained_positive_indices] * x[self.constrained_positive_indices]
-        g[self.constrained_negative_indices] = g[self.constrained_negative_indices] * x[self.constrained_negative_indices]
-        [np.put(g, i, g[i] * (x[i] - l) * (h - x[i]) / (h - l)) for i, l, h in zip(self.constrained_bounded_indices, self.constrained_bounded_lowers, self.constrained_bounded_uppers)]
+        for index, constraint in zip(self.constrained_indices, self.constraints):
+            g[index] = g[index] * constraint.gradfactor(x[index])
         [np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
-        if len(self.tied_indices) or len(self.constrained_fixed_indices):
-            to_remove = np.hstack((self.constrained_fixed_indices + [t[1:] for t in self.tied_indices]))
+        if len(self.tied_indices) or len(self.fixed_indices):
+            to_remove = np.hstack((self.fixed_indices + [t[1:] for t in self.tied_indices]))
             return np.delete(g, to_remove)
         else:
             return g
-
 
     def randomize(self):
         """
@@ -209,7 +207,7 @@ class model(parameterised):
         """
         Ensure that any variables which should clearly be positive have been constrained somehow.
         """
-        positive_strings = ['variance', 'lengthscale', 'precision']
+        positive_strings = ['variance', 'lengthscale', 'precision', 'kappa']
         param_names = self._get_param_names()
         currently_constrained = self.all_constrained_indices()
         to_make_positive = []
@@ -255,7 +253,7 @@ class model(parameterised):
 
         :max_f_eval: maximum number of function evaluations
         :messages: whether to display during optimisation
-        :param optimzer: whice optimizer to use (defaults to self.preferred optimizer)
+        :param optimzer: which optimizer to use (defaults to self.preferred optimizer)
         :type optimzer: string TODO: valid strings?
         """
         if optimizer is None:
@@ -361,10 +359,7 @@ class model(parameterised):
             numerical_gradient = (f1 - f2) / (2 * dx)
             global_ratio = (f1 - f2) / (2 * np.dot(dx, gradient))
 
-            if (np.abs(1. - global_ratio) < tolerance) and not np.isnan(global_ratio):
-                return True
-            else:
-                return False
+            return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gradient - numerical_gradient).mean() - 1) < tolerance
         else:
             # check the gradient of each parameter individually, and do some pretty printing
             try:
@@ -401,7 +396,7 @@ class model(parameterised):
                 ratio = (f1 - f2) / (2 * step * gradient)
                 difference = np.abs((f1 - f2) / 2 / step - gradient)
 
-                if (np.abs(ratio - 1) < tolerance):
+                if (np.abs(1. - ratio) < tolerance) or np.abs(difference) < tolerance:
                     formatted_name = "\033[92m {0} \033[0m".format(names[i])
                 else:
                     formatted_name = "\033[91m {0} \033[0m".format(names[i])
@@ -416,9 +411,10 @@ class model(parameterised):
         """
         return an array describing the sesitivity of the model to each input
 
-        NB. Right now, we're basing this on the lengthscales (or variances) of the kernel.
-        TODO: proper sensitivity analysis
-        """
+        NB. Right now, we're basing this on the lengthscales (or
+        variances) of the kernel.  TODO: proper sensitivity analysis
+        where we integrate across the model inputs and evaluate the
+        effect on the variance of the model output.  """
 
         if not hasattr(self, 'kern'):
             raise ValueError, "this model has no kernel"

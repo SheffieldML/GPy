@@ -36,6 +36,7 @@ def timing():
     print np.mean(the_is)
 
 def debug_student_t_noise_approx():
+    plot = False
     real_var = 0.1
     #Start a function, any function
     X = np.linspace(0.0, 10.0, 30)[:, None]
@@ -57,8 +58,6 @@ def debug_student_t_noise_approx():
     #Y += noise
 
     plt.close('all')
-    plt.figure(1)
-    plt.suptitle('Gaussian likelihood')
     # Kernel object
     kernel1 = GPy.kern.rbf(X.shape[1])
     kernel2 = kernel1.copy()
@@ -75,12 +74,14 @@ def debug_student_t_noise_approx():
     m.ensure_default_constraints()
     m.optimize()
     # plot
-    plt.subplot(131)
-    m.plot()
-    plt.plot(X_full, Y_full)
+    if plot:
+        plt.figure(1)
+        plt.suptitle('Gaussian likelihood')
+        plt.subplot(131)
+        m.plot()
+        plt.plot(X_full, Y_full)
     print m
 
-    plt.suptitle('Student-t likelihood')
     edited_real_sd = initial_var_guess #real_sd
 
     print "Clean student t, rasm"
@@ -91,10 +92,12 @@ def debug_student_t_noise_approx():
     m.update_likelihood_approximation()
     m.optimize()
     print(m)
-    plt.subplot(132)
-    m.plot()
-    plt.plot(X_full, Y_full)
-    plt.ylim(-2.5, 2.5)
+    if plot:
+        plt.suptitle('Student-t likelihood')
+        plt.subplot(132)
+        m.plot()
+        plt.plot(X_full, Y_full)
+        plt.ylim(-2.5, 2.5)
 
     print "Clean student t, ncg"
     t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
@@ -104,12 +107,13 @@ def debug_student_t_noise_approx():
     m.update_likelihood_approximation()
     m.optimize()
     print(m)
-    plt.subplot(133)
-    m.plot()
-    plt.plot(X_full, Y_full)
-    plt.ylim(-2.5, 2.5)
+    if plot:
+        plt.subplot(133)
+        m.plot()
+        plt.plot(X_full, Y_full)
+        plt.ylim(-2.5, 2.5)
 
-    plt.show()
+    #plt.show()
 
 def student_t_approx():
     """

@@ -125,19 +125,23 @@ class GP(model):
         if isinstance(self.likelihood, Laplace):
             dL_dthetaK_explicit = dL_dthetaK
             #Need to pass in a matrix of ones to get access to raw dK_dthetaK values without being chained
-            fake_dL_dKs = np.ones(self.dL_dK.shape)
+            fake_dL_dKs = np.eye(self.dL_dK.shape[0])
             dK_dthetaK = self.kern.dK_dtheta(dL_dK=fake_dL_dKs, X=self.X)
 
-            dL_dthetaK_implicit = self.likelihood._Kgradients(self.dL_dK, dK_dthetaK)
+            #We need the dL_dK where K is equal to the prior K, not K+Sigma as is the case now
+            dL_dthetaK_implicit = self.likelihood._Kgradients(dL_d_K_Sigma=self.dL_dK, dK_dthetaK=dK_dthetaK)
             dL_dthetaK = dL_dthetaK_explicit + dL_dthetaK_implicit
 
-            print "dL_dthetaK_explicit: {dldkx}     dL_dthetaK_implicit: {dldki}        dL_dthetaK: {dldk}".format(dldkx=dL_dthetaK_explicit, dldki=dL_dthetaK_implicit, dldk=dL_dthetaK)
+            #print "dL_dthetaK_explicit: {dldkx}     dL_dthetaK_implicit: {dldki}        dL_dthetaK: {dldk}".format(dldkx=dL_dthetaK_explicit, dldki=dL_dthetaK_implicit, dldk=dL_dthetaK)
 
-            dL_dthetaL = self.likelihood._gradients(partial=self.dL_dK)
-        else:
-            print "dL_dthetaK: ", dL_dthetaK
             dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))
-        print "dL_dthetaL: ", dL_dthetaL
+            print "Stacked dL_dthetaK, dL_dthetaL: ", np.hstack((dL_dthetaK, dL_dthetaL))
+            import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+        else:
+            #print "dL_dthetaK: ", dL_dthetaK
+            dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))
+            print "Stacked dL_dthetaK, dL_dthetaL: ", np.hstack((dL_dthetaK, dL_dthetaL))
+        #print "dL_dthetaL: ", dL_dthetaL
         return np.hstack((dL_dthetaK, dL_dthetaL))
         #return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
 

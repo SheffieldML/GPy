@@ -5,8 +5,8 @@ from scipy.linalg import inv, cho_solve, det
 from numpy.linalg import cond
 from likelihood import likelihood
 from ..util.linalg import pdinv, mdot, jitchol, chol_inv, det_ln_diag, pddet
-from scipy.linalg.flapack import dtrtrs
-import pylab as plt
+from scipy.linalg.lapack import dtrtrs
+#import pylab as plt
 
 
 class Laplace(likelihood):
@@ -79,9 +79,9 @@ class Laplace(likelihood):
         return (self._Kgradients(dL_d_K_Sigma, dK_dthetaK), self._gradients(dL_d_K_Sigma))
 
     def _shared_gradients_components(self):
-        dL_dytil = -np.dot(self.Y.T, (self.K+self.Sigma_tilde)) #or *0.5?
+        dL_dytil = -np.dot(self.Y.T, (self.K+self.Sigma_tilde)) #or *0.5? Shouldn't this be -y*R
         dytil_dfhat = self.Wi__Ki_W # np.dot(self.Sigma_tilde, self.Ki) + np.eye(self.N) # or self.Wi__Ki_W?
-        #Ki = inv(self.K)
+        #Ki, _, _, _ = pdinv(self.K)
         #dytil_dfhat = np.dot(self.Sigma_tilde, Ki) + np.eye(self.N) # or self.Wi__Ki_W?
         return dL_dytil, dytil_dfhat
 
@@ -95,9 +95,8 @@ class Laplace(likelihood):
         """
         dL_dytil, dytil_dfhat = self._shared_gradients_components()
 
-        d3phi_d3fhat = self.likelihood_function.d3link(self.data, self.f_hat, self.extra_data)
 
-        dSigma_dfhat = -np.dot(self.Sigma_tilde, np.dot(d3phi_d3fhat, self.Sigma_tilde))
+        #dSigma_dfhat = -np.dot(self.Sigma_tilde, np.dot(d3phi_d3fhat, self.Sigma_tilde))
 
         print "Computing K gradients"
         print "dytil_dfhat: ", np.mean(dytil_dfhat)
@@ -107,7 +106,8 @@ class Laplace(likelihood):
         #plt.imshow(A)
         #plt.show()
 
-        I_KW_i, _, _, _ = pdinv(A) #FIXME: WHY SO MUCH JITTER?!
+        #I_KW_i, _, _, _ = pdinv(A) #FIXME: WHY SO MUCH JITTER?!
+        I_KW_i = self.Bi # could use self.B_chol??
 
         #FIXME: Careful dK_dthetaK is not the derivative with respect to the marginal just prior K!
         #Derivative for each f dimension, for each of K's hyper parameters
@@ -117,25 +117,44 @@ class Laplace(likelihood):
             dfhat_dthetaK[:, ind_j] = np.dot(I_KW_i, np.dot(thetaj, grad))
 
         dytil_dthetaK = np.dot(dytil_dfhat, dfhat_dthetaK) # should be (D,thetaK)
-        #FIXME: Careful dL_dK = dL_d_K_Sigma
         #FIXME: Careful the -D*0.5 in dL_d_K_sigma might need to be -0.5?
         dL_dSigma = dL_d_K_Sigma
         #d3phi_d3fhat = self.likelihood_function.d3link(self.data, self.f_hat, self.extra_data)
                      #explicit           #implicit
-        dSigmai_dthetaK = 0 + np.dot(d3phi_d3fhat, dfhat_dthetaK)
-        dSigma_dthetaK = np.zeros((self.f_hat.shape[0], self.f_hat.shape[0], dK_dthetaK.shape[0]))
-        for ind_j, dSigmai_dthetaj in enumerate(dSigmai_dthetaK):
-            dSigma_dthetaK[:, :, ind_j] = -np.dot(self.Sigma_tilde, dSigmai_dthetaj*self.Sigma_tilde)
-
-        print "dL_dytil: ", np.mean(dL_dytil)
-        print "dytil_dthetaK: ", np.mean(dytil_dthetaK)
+        #dSigmai_dthetaK = 0 + np.dot(d3phi_d3fhat, dfhat_dthetaK)
+        #dSigma_dthetaK = np.zeros((self.f_hat.shape[0], self.f_hat.shape[0], dK_dthetaK.shape[0]))
+        d3likelihood_d3fhat = self.likelihood_function.d3link(self.data, self.f_hat, self.extra_data)
+        Wi = np.diagonal(self.Sigma_tilde) #Convenience
+        dSigma_dthetaK_explicit = 0
+        #Can just hadamard product as diagonal matricies multiplied are just multiplying elements
+        dWi_dfhat = np.diagflat(-1*Wi*(-1*d3likelihood_d3fhat)*Wi)
+        #dSigma_dthetaK_implicit = -np.sum(np.dot(dWi_dfhat, dfhat_dthetaK), axis=0)
+        dSigma_dthetaK_implicit = np.dot(dWi_dfhat, dfhat_dthetaK)
+        dSigma_dthetaK = dSigma_dthetaK_explicit + dSigma_dthetaK_implicit
+        #dSigma_dthetaK = 0 + np.dot(, dfhat_dthetaK)
+        #for ind_j, dSigmai_dthetaj in enumerate(dSigmai_dthetaK):
+            #dSigma_dthetaK_explicit = 0
+            #dSigma_dthetaK_implicit = -np.dot(Wi, dW_dfhat
+            #dSigma_dthetaK[:, :, ind_j] = -np.dot(self.Sigma_tilde, dSigmai_dthetaj*self.Sigma_tilde)
 
         #FIXME: Won't handle multi dimensional data
         dL_dthetaK_via_ytil = np.sum(np.dot(dL_dytil, dytil_dthetaK), axis=0)
-        dL_dthetaK_via_Sigma = np.sum(np.dot(dL_dSigma, dSigma_dthetaK), axis=(0,1))
+        dL_dthetaK_via_Sigma = np.sum(np.dot(dL_dSigma, dSigma_dthetaK), axis=0)
         dL_dthetaK_implicit = dL_dthetaK_via_ytil + dL_dthetaK_via_Sigma
         #dL_dthetaK_implicit = np.dot(dL_dytil.T, dytil_dthetaK.T)
-        import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+
+        #print "\n"
+        #print "dL_dytil: ", np.mean(dL_dytil)
+        #print "dytil_dthetaK: ", np.mean(dytil_dthetaK)
+        #print "dL_dthetaK_via_ytil: ", dL_dthetaK_via_ytil
+        #print "\n"
+        #print "dL_dSigma: ", np.mean(dL_dSigma)
+        #print "dSigma_dthetaK: ", np.mean(dSigma_dthetaK)
+        #print "dL_dthetaK_via_Sigma: ", dL_dthetaK_via_Sigma
+        #print "\n"
+        #print "dL_dthetaK_implicit: ", dL_dthetaK_implicit
+        #import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+
         return np.squeeze(dL_dthetaK_implicit)
 
     def _gradients(self, partial):
@@ -159,27 +178,51 @@ class Laplace(likelihood):
         dW_dthetaX = d_dthetaX[d2phi_d2fhat]
         d2phi_d2fhat = Hessian function of likelihood
 
-        partial = dL_dK
+        partial = dL_d_K_Sigma
         """
         dL_dytil, dytil_dfhat = self._shared_gradients_components()
-        dfhat_dthetaL, dSigmai_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat, self.extra_data) #FIXME: Shouldn't this have a implicit component aswell?
+        #dfhat_dthetaL, dSigmai_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat, self.extra_data) #FIXME: Shouldn't this have a implicit component aswell?
+
+        dlikelihood_dthetaL_explicit, d2likelihood_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat, self.extra_data) #FIXME: Shouldn't this have a implicit component aswell?
+        dlikelihood_dfhat = self.likelihood_function.link_hess(self.data, self.f_hat, self.extra_data)
+        dfhat_dthetaL_cyclic = 0 #what is this? how can dfhat_dthetaL be used in the value of itself?
+        dlikelihood_dthetaL_implicit = np.dot(dlikelihood_dfhat, dfhat_dthetaL_cyclic) # may need a sum over f
+        dfhat_dthetaL = np.dot(self.K, (dlikelihood_dthetaL_explicit + dlikelihood_dthetaL_implicit)[:, None])
+        dytil_dthetaL = np.dot(dytil_dfhat, dfhat_dthetaL)
+
+        #FIXME: Careful the -D*0.5 in dL_d_K_sigma might need to be -0.5?
+        dL_dSigma = partial #Is actually but can't rename it because of naming convention... dL_d_K_Sigma
+
+        Wi = np.diagonal(self.Sigma_tilde) #Convenience
+        #-1 as we are looking at W which is -1*d2log p(y|f)
+        #Can just hadamard product as diagonal matricies multiplied are just multiplying elements
+        dSigma_dthetaL_explicit = np.diagflat(-(Wi*(-1*d2likelihood_dthetaL)*Wi))
+
+        d3likelihood_d3fhat = self.likelihood_function.d3link(self.data, self.f_hat, self.extra_data)
+        dWi_dfhat = np.diagflat(-1*Wi*(-1*d3likelihood_d3fhat)*Wi)
+        dSigma_dthetaL_implicit = np.dot(dWi_dfhat, dfhat_dthetaL_cyclic)
+        dSigma_dthetaL = dSigma_dthetaL_explicit + dSigma_dthetaL_implicit
 
         #dSigmai_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat, self.extra_data) #FIXME: Shouldn't this have a implicit component aswell?
         #Derivative for each f dimension, for each of K's hyper parameters
-        dSigma_dthetaL = np.empty((self.N, len(self.likelihood_function._get_param_names())))
-        for ind_l, dSigmai_dtheta_l in enumerate(dSigmai_dthetaL.T):
-            dSigma_dthetaL[:, ind_l] = -mdot(self.Sigma_tilde,
-                                             dSigmai_dtheta_l, # Careful, shouldn't this be (N, 1)?
-                                             self.Sigma_tilde
-                                             )
+        #dSigma_dthetaL = np.empty((self.N, len(self.likelihood_function._get_param_names())))
+        #for ind_l, dSigmai_dtheta_l in enumerate(dSigmai_dthetaL.T):
+            #dSigma_dthetaL[:, ind_l] = -mdot(self.Sigma_tilde,
+                                             #dSigmai_dtheta_l, # Careful, shouldn't this be (N, 1)?
+                                             #self.Sigma_tilde
+                                             #)
 
         #TODO: This is Wi*A*Wi, can be more numerically stable with a trick
         #dSigma_dthetaL = -mdot(self.Sigma_tilde, dSigmai_dthetaL, self.Sigma_tilde)
-        dL_dSigma = partial # partial is dL_dK but K here is K+Sigma_tilde.... which is fine in this case
 
         #dytil_dthetaL = dytil_dfhat*dfhat_dthetaL
-        dytil_dthetaL = np.dot(dytil_dfhat, dfhat_dthetaL)
-        dL_dthetaL = 0 + np.dot(dL_dytil, dytil_dthetaL)# + np.dot(dL_dSigma, dSigma_dthetaL)
+        #dytil_dthetaL = np.dot(dytil_dfhat, dfhat_dthetaL)
+        #dL_dthetaL = 0 + np.dot(dL_dytil, dytil_dthetaL)# + np.dot(dL_dSigma, dSigma_dthetaL)
+
+        dL_dthetaL_via_ytil = np.sum(np.dot(dL_dytil, dytil_dthetaL), axis=0)
+        dL_dthetaL_via_Sigma = np.sum(np.dot(dL_dSigma, dSigma_dthetaL), axis=0)
+        dL_dthetaL = dL_dthetaL_via_ytil + dL_dthetaL_via_Sigma
+
         return np.squeeze(dL_dthetaL) #should be array of length *params-being optimized*, for student t just optimising 1 parameter, this is (1,)
 
     def _compute_GP_variables(self):

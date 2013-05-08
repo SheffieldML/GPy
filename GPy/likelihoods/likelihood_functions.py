@@ -248,17 +248,16 @@ class student_t(likelihood_function):
         """
         Third order derivative link_function (log-likelihood ) at y given f f_j w.r.t f and f_j
 
-        $$\frac{-2(v+1)((f-y)^{3} - 3\sigma^{2}v(f-y))}{((f-y)^{2} + \sigma^{2}v)^{3}}$$
+        $$\frac{2(v+1)((y-f)^{3} - 3\sigma^{2}v(y-f))}{((y-f)^{2} + \sigma^{2}v)^{3}}$$
         """
         y = np.squeeze(y)
         f = np.squeeze(f)
         assert y.shape == f.shape
-        #NB f-y not y-f
-        e = f - y
-        d3link_d3f = (  (-2*(self.v + 1)*(e**3 - 3*(self.sigma**2)*self.v*e))
+        e = y - f
+        d3link_d3f = (  (2*(self.v + 1)*(e**3 - 3*(self.sigma**2)*self.v*e))
                       / ((e**2 + (self.sigma**2)*self.v)**3)
                      )
-        return d3link_d3f
+        return np.squeeze(d3link_d3f)
 
     def link_hess_grad_std(self, y, f, extra_data=None):
         """
@@ -270,10 +269,10 @@ class student_t(likelihood_function):
         f = np.squeeze(f)
         assert y.shape == f.shape
         e = y - f
-        hess_grad_sigma = (  (2*self.sigma*(self.v + 1)*((self.sigma**2)*self.v - 3*(e**2)))
+        hess_grad_sigma = (  (2*self.sigma*self.v*(self.v + 1)*((self.sigma**2)*self.v - 3*(e**2)))
                            / ((e**2 + (self.sigma**2)*self.v)**3)
                           )
-        return hess_grad_sigma
+        return np.squeeze(hess_grad_sigma)
 
     def link_grad_std(self, y, f, extra_data=None):
         """
@@ -288,11 +287,11 @@ class student_t(likelihood_function):
         grad_sigma = (  (-2*self.sigma*self.v*(self.v + 1)*e)
                       / ((self.v*(self.sigma**2) + e**2)**2)
                      )
-        return grad_sigma
+        return np.squeeze(grad_sigma)
 
     def _gradients(self, y, f, extra_data=None):
-        return [self.link_grad_std(y, f, extra_data=extra_data)[:, None],
-                self.link_hess_grad_std(y, f, extra_data=extra_data)[:, None]] # list as we might learn many parameters
+        return [self.link_grad_std(y, f, extra_data=extra_data),
+                self.link_hess_grad_std(y, f, extra_data=extra_data)] # list as we might learn many parameters
 
     def predictive_values(self, mu, var):
         """

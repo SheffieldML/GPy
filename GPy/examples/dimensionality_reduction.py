@@ -207,7 +207,7 @@ def bgplvm_simulation(burnin='scg', plot_sim=False,
                       max_burnin=100, true_X=False,
                       do_opt=True,
                       max_f_eval=1000):
-    D1, D2, D3, N, M, Q = 10, 8, 8, 250, 10, 6
+    D1, D2, D3, N, M, Q = 15, 8, 8, 350, 3, 6
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim)
 
     from GPy.models import mrd

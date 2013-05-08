@@ -54,7 +54,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
     success = True  # Force calculation of directional derivs.
     nsuccess = 0  # nsuccess counts number of successes.
     beta = 1.0  # Initial scale parameter.
-    betamin = 1.0e-15  # Lower bound on scale.
+    betamin = 1.0e-25  # Lower bound on scale.
     betamax = 1.0e100  # Upper bound on scale.
     status = "Not converged"
 
@@ -116,7 +116,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
 
         if success:
             # Test for termination
-            if (np.dot(gradnew, gradnew)) <= gtol or (np.max(np.abs(alpha * d)) < xtol) or (np.abs(fnew - fold) < ftol):
+            if (np.max(np.abs(alpha * d)) < xtol) or (np.abs(fnew - fold) < ftol):
                 status = 'converged'
                 return x, flog, function_eval, status
 
@@ -140,6 +140,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         # in direction of negative gradient after nparams steps.
         if nsuccess == x.size:
             d = -gradnew
+#             beta = 1.  # TODO: betareset!!
             nsuccess = 0
         elif success:
             gamma = np.dot(gradold - gradnew, gradnew) / (mu)

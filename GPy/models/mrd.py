@@ -287,6 +287,9 @@ class MRD(model):
         else:
             return pylab.gcf()
 
+    def plot_X_1d(self):
+        return self.gref.plot_X_1d()
+
     def plot_X(self, fig_num="MRD Predictions", axes=None):
         fig = self._handle_plotting(fig_num, axes, lambda i, g, ax: ax.imshow(g.X))
         return fig

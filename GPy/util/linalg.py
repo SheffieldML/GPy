@@ -63,7 +63,7 @@ def _mdot_r(a,b):
 
 def jitchol(A,maxtries=5):
     A = np.asfortranarray(A)
-    L,info = linalg.lapack.dpotrf(A,lower=1)
+    L,info = linalg.lapack.flapack.dpotrf(A,lower=1)
     if info ==0:
         return L
     else:
@@ -124,7 +124,7 @@ def pdinv(A, *args):
     L = jitchol(A, *args)
     logdet = 2.*np.sum(np.log(np.diag(L)))
     Li = chol_inv(L)
-    Ai = linalg.lapack.dpotri(L)[0]
+    Ai = linalg.lapack.flapack.dpotri(L)[0]
     Ai = np.tril(Ai) + np.tril(Ai,-1).T
 
     return Ai, L, Li, logdet
@@ -139,7 +139,7 @@ def chol_inv(L):
 
     """
 
-    return linalg.lapack.dtrtri(L, lower = True)[0]
+    return linalg.lapack.flapack.dtrtri(L, lower = True)[0]
 
 
 def multiple_pdinv(A):
@@ -156,7 +156,7 @@ def multiple_pdinv(A):
     N = A.shape[-1]
     chols = [jitchol(A[:,:,i]) for i in range(N)]
     halflogdets = [np.sum(np.log(np.diag(L[0]))) for L in chols]
-    invs = [linalg.lapack.dpotri(L[0],True)[0] for L in chols]
+    invs = [linalg.lapack.flapack.dpotri(L[0],True)[0] for L in chols]
     invs = [np.triu(I)+np.triu(I,1).T for I in invs]
     return np.dstack(invs),np.array(halflogdets)
 
@@ -177,8 +177,8 @@ def PCA(Y, Q):
     """
     if not np.allclose(Y.mean(axis=0), 0.0):
         print "Y is not zero mean, centering it locally (GPy.util.linalg.PCA)"
-        
-        #Y -= Y.mean(axis=0) 
+
+        #Y -= Y.mean(axis=0)
 
     Z = linalg.svd(Y-Y.mean(axis=0), full_matrices = False)
     [X, W] = [Z[0][:,0:Q], np.dot(np.diag(Z[1]), Z[2]).T[:,0:Q]]

@@ -203,7 +203,7 @@ class model(parameterised):
         else:
             self._set_params_transformed(initial_parameters)
 
-    def ensure_default_constraints(self, warn=False):
+    def ensure_default_constraints(self):
         """
         Ensure that any variables which should clearly be positive have been constrained somehow.
         """
@@ -214,11 +214,11 @@ class model(parameterised):
         for s in positive_strings:
             for i in self.grep_param_names(s):
                 if not (i in currently_constrained):
-                    to_make_positive.append(re.escape(param_names[i]))
-                    if warn:
-                        print "Warning! constraining %s positive" % s
+                    #to_make_positive.append(re.escape(param_names[i]))
+                    to_make_positive.append(i)
         if len(to_make_positive):
-            self.constrain_positive('(' + '|'.join(to_make_positive) + ')')
+            #self.constrain_positive('(' + '|'.join(to_make_positive) + ')')
+            self.constrain_positive(np.asarray(to_make_positive))
 
 
 
@@ -411,9 +411,10 @@ class model(parameterised):
         """
         return an array describing the sesitivity of the model to each input
 
-        NB. Right now, we're basing this on the lengthscales (or variances) of the kernel.
-        TODO: proper sensitivity analysis
-        """
+        NB. Right now, we're basing this on the lengthscales (or
+        variances) of the kernel.  TODO: proper sensitivity analysis
+        where we integrate across the model inputs and evaluate the
+        effect on the variance of the model output.  """
 
         if not hasattr(self, 'kern'):
             raise ValueError, "this model has no kernel"

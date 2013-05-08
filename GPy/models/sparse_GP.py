@@ -81,7 +81,7 @@ class sparse_GP(GP):
 #                 psi2_beta_scaled = (self.psi2 * (self.likelihood.precision.flatten().reshape(self.N, 1, 1) / sf2)).sum(0)
                 psi2_beta_scaled = (self.psi2 * (self.likelihood.precision.flatten().reshape(self.N, 1, 1))).sum(0)
                 evals, evecs = linalg.eigh(psi2_beta_scaled)
-                clipped_evals = np.clip(evals, 0., 1e6)  # TODO: make clipping configurable
+                clipped_evals = np.clip(evals, 0., 1e15)  # TODO: make clipping configurable
                 if not np.allclose(evals, clipped_evals):
                     print "Warning: clipping posterior eigenvalues"
                 tmp = evecs * np.sqrt(clipped_evals)
@@ -97,7 +97,7 @@ class sparse_GP(GP):
 #                 psi2_beta_scaled = (self.psi2 * (self.likelihood.precision / sf2)).sum(0)
                 psi2_beta_scaled = (self.psi2 * (self.likelihood.precision)).sum(0)
                 evals, evecs = linalg.eigh(psi2_beta_scaled)
-                clipped_evals = np.clip(evals, 0., 1e6)  # TODO: make clipping configurable
+                clipped_evals = np.clip(evals, 0., 1e15)  # TODO: make clipping configurable
                 if not np.allclose(evals, clipped_evals):
                     print "Warning: clipping posterior eigenvalues"
                 tmp = evecs * np.sqrt(clipped_evals)
@@ -259,7 +259,7 @@ class sparse_GP(GP):
         Kmmi_LmiBLmi = backsub_both_sides(self.Lm, np.eye(self.M) - Bi)
 
         Kx = self.kern.K(self.Z, Xnew, which_parts=which_parts)
-        mu = np.dot(Kx.T, self.Cpsi1V / self.scale_factor)
+        mu = np.dot(Kx.T, self.Cpsi1V)  # / self.scale_factor)
         if full_cov:
             Kxx = self.kern.K(Xnew, which_parts=which_parts)
             var = Kxx - mdot(Kx.T, Kmmi_LmiBLmi, Kx)  # NOTE this won't work for plotting

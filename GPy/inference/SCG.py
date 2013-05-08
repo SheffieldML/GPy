@@ -54,7 +54,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
     success = True  # Force calculation of directional derivs.
     nsuccess = 0  # nsuccess counts number of successes.
     beta = 1.0  # Initial scale parameter.
-    betamin = 1.0e-25  # Lower bound on scale.
+    betamin = 1.0e-15  # Lower bound on scale.
     betamax = 1.0e100  # Upper bound on scale.
     status = "Not converged"
 

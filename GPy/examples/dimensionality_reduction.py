@@ -312,7 +312,7 @@ def mrd_simulation(plot_sim=False):
 #     Y2 = np.random.multivariate_normal(np.zeros(N), k.K(X), D2).T
 #     Y2 -= Y2.mean(0)
 #     make_params = lambda ard: np.hstack([[1], ard, [1, .3]])
-    D1, D2, D3, N, M, Q = 150, 250, 300, 700, 10, 7
+    D1, D2, D3, N, M, Q = 150, 250, 300, 700, 3, 7
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim)
 
     from GPy.models import mrd
@@ -328,7 +328,7 @@ def mrd_simulation(plot_sim=False):
 
     # k = kern.rbf(Q, ARD=True) + kern.bias(Q) + kern.white(Q)
 
-    k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
+    k = kern.linear(Q, [0.01] * Q, True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
     m = mrd.MRD(*Ylist, Q=Q, M=M, kernel=k, initx="concat", initz='permute', _debug=False)
 
     for i, Y in enumerate(Ylist):
@@ -347,7 +347,7 @@ def mrd_simulation(plot_sim=False):
     print "initializing beta"
     cstr = "noise"
     m.unconstrain(cstr); m.constrain_fixed(cstr)
-    m.optimize('scg', messages=1, max_f_eval=200, gtol=11)
+    m.optimize('scg', messages=1, max_f_eval=2e3, gtol=100)
 
     print "releasing beta"
     cstr = "noise"

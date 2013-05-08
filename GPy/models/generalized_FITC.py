@@ -9,6 +9,12 @@ from .. import kern
 from scipy import stats, linalg
 from sparse_GP import sparse_GP
 
+def backsub_both_sides(L,X):
+    """ Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky"""
+    tmp,_ = linalg.lapack.flapack.dtrtrs(L,np.asfortranarray(X),lower=1,trans=1)
+    return linalg.lapack.flapack.dtrtrs(L,np.asfortranarray(tmp.T),lower=1,trans=1)[0].T
+
+
 class generalized_FITC(sparse_GP):
     """
     Naish-Guzman, A. and Holden, S. (2008) implemantation of EP with FITC.
@@ -23,20 +29,19 @@ class generalized_FITC(sparse_GP):
     :type X_variance: np.ndarray (N x Q) | None
     :param Z: inducing inputs (optional, see note)
     :type Z: np.ndarray (M x Q) | None
-    :param Zslices: slices for the inducing inputs (see slicing TODO: link)
     :param M : Number of inducing points (optional, default 10. Ignored if Z is not None)
     :type M: int
     :param normalize_(X|Y) : whether to normalize the data before computing (predictions will be in original scales)
     :type normalize_(X|Y): bool
     """
 
-    def __init__(self, X, likelihood, kernel, Z, X_variance=None, Xslices=None,Zslices=None, normalize_X=False):
+    def __init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False):
 
         self.Z = Z
         self.M = self.Z.shape[0]
-        self._precision = likelihood.precision
+        self.true_precision = likelihood.precision
 
-        sparse_GP.__init__(self, X, likelihood, kernel=kernel, Z=self.Z, X_variance=None, Xslices=None,Zslices=None, normalize_X=False)
+        sparse_GP.__init__(self, X, likelihood, kernel=kernel, Z=self.Z, X_variance=None, normalize_X=False)
 
     def _set_params(self, p):
         self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
@@ -52,13 +57,16 @@ class generalized_FITC(sparse_GP):
 
         For a Gaussian (or direct: TODO) likelihood, no iteration is required:
         this function does nothing
+
+        Diag(Knn - Qnn) is added to the noise term to use the tools already implemented in sparse_GP.
+        The true precison is now 'true_precision' not 'precision'.
         """
         if self.has_uncertain_inputs:
             raise NotImplementedError, "FITC approximation not implemented for uncertain inputs"
         else:
             self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
-            self._precision = self.likelihood.precision # Save the true precision
-            self.likelihood.precision = self._precision/(1. + self._precision*self.Diag0[:,None]) # Add the diagonal element of the FITC approximation
+            self.true_precision = self.likelihood.precision # Save the true precision
+            self.likelihood.precision = self.true_precision/(1. + self.true_precision*self.Diag0[:,None]) # Add the diagonal element of the FITC approximation
             self._set_params(self._get_params()) # update the GP
 
     def _FITC_computations(self):
@@ -70,23 +78,23 @@ class generalized_FITC(sparse_GP):
             - removes the extra terms computed in the sparse_GP approximation
             - computes the likelihood gradients wrt the true precision.
         """
-        #NOTE the true precison is now '_precison' not 'precision'
+        #NOTE the true precison is now 'true_precision' not 'precision'
         if self.likelihood.is_heteroscedastic:
 
             # Compute generalized FITC's diagonal term of the covariance
-            self.Qnn = mdot(self.psi1.T,self.Kmmi,self.psi1)
+            self.Lmi,info = linalg.lapack.flapack.dtrtrs(self.Lm,np.eye(self.M),lower=1)
+            Lmipsi1 = np.dot(self.Lmi,self.psi1)
+            self.Qnn = np.dot(Lmipsi1.T,Lmipsi1)
+            #self.Kmmi, Lm, Lmi, Kmm_logdet = pdinv(self.Kmm)
+            #self.Qnn = mdot(self.psi1.T,self.Kmmi,self.psi1)
+            #a = kj
             self.Diag0 = self.psi0 - np.diag(self.Qnn)
-            Iplus_Dprod_i = 1./(1.+ self.Diag0 * self._precision.flatten())
+            Iplus_Dprod_i = 1./(1.+ self.Diag0 * self.true_precision.flatten())
             self.Diag = self.Diag0 * Iplus_Dprod_i
-            #self.Diag = self.Diag0/(1.+ self.Diag0 * self._precision.flatten())
-
 
             self.P = Iplus_Dprod_i[:,None] * self.psi1.T
-            #self.P = (self.Diag / self.Diag0)[:,None] * self.psi1.T
             self.RPT0 = np.dot(self.Lmi,self.psi1)
             self.L = np.linalg.cholesky(np.eye(self.M) + np.dot(self.RPT0,((1. - Iplus_Dprod_i)/self.Diag0)[:,None]*self.RPT0.T))
-            #self.L = np.linalg.cholesky(np.eye(self.M) + np.dot(self.RPT0,(1./self.Diag0 - Iplus_Dprod_i/self.Diag0)[:,None]*self.RPT0.T))
-            #self.L = np.linalg.cholesky(np.eye(self.M) + np.dot(self.RPT0,(1./self.Diag0 - self.Diag/(self.Diag0**2))[:,None]*self.RPT0.T))
             self.R,info = linalg.flapack.dtrtrs(self.L,self.Lmi,lower=1)
             self.RPT = np.dot(self.R,self.P.T)
             self.Sigma = np.diag(self.Diag) + np.dot(self.RPT.T,self.RPT)
@@ -95,7 +103,16 @@ class generalized_FITC(sparse_GP):
             self.mu = self.w + np.dot(self.P,self.gamma)
 
             # Remove extra term from dL_dpsi1
-            self.dL_dpsi1 -= mdot(self.Kmmi,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)) #dB
+            self.dL_dpsi1 -= mdot(self.Lmi.T,Lmipsi1*self.likelihood.precision.flatten().reshape(1,self.N))
+            #self.Kmmi, Lm, Lmi, Kmm_logdet = pdinv(self.Kmm)
+            #self.dL_dpsi1 -= mdot(self.Kmmi,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)) #dB
+
+            #########333333
+            #self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
+            #########333333
+
+
+
         else:
             raise NotImplementedError, "homoscedastic fitc not implemented"
             # Remove extra term from dL_dpsi1
@@ -141,11 +158,14 @@ class generalized_FITC(sparse_GP):
             A = -0.5*self.N*self.D*np.log(2.*np.pi) +0.5*np.sum(np.log(self.likelihood.precision)) -0.5*np.sum(self.V*self.likelihood.Y)
         else:
             A = -0.5*self.N*self.D*(np.log(2.*np.pi) + np.log(self.likelihood._variance)) -0.5*self.likelihood.precision*self.likelihood.trYYT
-        C = -0.5*self.D * (self.B_logdet + self.M*np.log(sf2))
-        D = 0.5*np.trace(self.Cpsi1VVpsi1)
+        C = -self.D * (np.sum(np.log(np.diag(self.LB))) + 0.5*self.M*np.log(sf2))
+        #C = -0.5*self.D * (self.B_logdet + self.M*np.log(sf2))
+        D = 0.5*np.sum(np.square(self._LBi_Lmi_psi1V))
+        #self.Cpsi1VVpsi1 = np.dot(self.Cpsi1V,self.psi1V.T)
+        #D_ = 0.5*np.trace(self.Cpsi1VVpsi1)
         return A+C+D
 
-    def _raw_predict(self, Xnew, slices, full_cov=False):
+    def _raw_predict(self, Xnew, which_parts, full_cov=False):
         if self.likelihood.is_heteroscedastic:
             """
             Make a prediction for the generalized FITC model
@@ -174,16 +194,16 @@ class generalized_FITC(sparse_GP):
             self.mu_H = mu_H
             Sigma_H = C + np.dot(mu_u,np.dot(self.Sigma,mu_u.T))
             # q(f_star|y) = N(f_star|mu_star,sigma2_star)
-            Kx = self.kern.K(self.Z, Xnew)
+            Kx = self.kern.K(self.Z, Xnew, which_parts=which_parts)
             KR0T = np.dot(Kx.T,self.Lmi.T)
             mu_star = np.dot(KR0T,mu_H)
             if full_cov:
-                Kxx = self.kern.K(Xnew)
+                Kxx = self.kern.K(Xnew,which_parts=which_parts)
                 var = Kxx + np.dot(KR0T,np.dot(Sigma_H - np.eye(self.M),KR0T.T))
             else:
-                Kxx = self.kern.Kdiag(Xnew)
-                Kxx_ = self.kern.K(Xnew)
-                var_ = Kxx_ + np.dot(KR0T,np.dot(Sigma_H - np.eye(self.M),KR0T.T))
+                Kxx = self.kern.Kdiag(Xnew,which_parts=which_parts)
+                Kxx_ = self.kern.K(Xnew,which_parts=which_parts) # TODO: RA, is this line needed?
+                var_ = Kxx_ + np.dot(KR0T,np.dot(Sigma_H - np.eye(self.M),KR0T.T)) # TODO: RA, is this line needed?
                 var = (Kxx + np.sum(KR0T.T*np.dot(Sigma_H - np.eye(self.M),KR0T.T),0))[:,None]
             return mu_star[:,None],var
         else:

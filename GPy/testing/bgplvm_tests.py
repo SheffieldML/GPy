@@ -60,7 +60,7 @@ class BGPLVMTests(unittest.TestCase):
 
     #@unittest.skip('psi2 cross terms are NotImplemented for this combination')
     def test_linear_bias_kern(self):
-        N, M, Q, D = 10, 3, 2, 4
+        N, M, Q, D = 30, 5, 4, 30
         X = np.random.rand(N, Q)
         k = GPy.kern.linear(Q) +  GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
         K = k.K(X)

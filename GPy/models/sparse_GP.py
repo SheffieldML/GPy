@@ -3,15 +3,16 @@
 
 import numpy as np
 import pylab as pb
-from ..util.linalg import mdot, jitchol, chol_inv, pdinv, trace_dot
+from ..util.linalg import mdot, jitchol, tdot, symmetrify
 from ..util.plot import gpplot
 from .. import kern
 from GP import GP
 from scipy import linalg
 
-#Still TODO:
-# make use of slices properly (kernel can now do this)
-# enable heteroscedatic noise (kernel will need to compute psi2 as a (NxMxM) array)
+def backsub_both_sides(L,X):
+    """ Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky"""
+    tmp,_ = linalg.lapack.flapack.dtrtrs(L,np.asfortranarray(X),lower=1,trans=1)
+    return linalg.lapack.flapack.dtrtrs(L,np.asfortranarray(tmp.T),lower=1,trans=1)[0].T
 
 class sparse_GP(GP):
     """
@@ -27,19 +28,16 @@ class sparse_GP(GP):
     :type X_variance: np.ndarray (N x Q) | None
     :param Z: inducing inputs (optional, see note)
     :type Z: np.ndarray (M x Q) | None
-    :param Zslices: slices for the inducing inputs (see slicing TODO: link)
     :param M : Number of inducing points (optional, default 10. Ignored if Z is not None)
     :type M: int
     :param normalize_(X|Y) : whether to normalize the data before computing (predictions will be in original scales)
     :type normalize_(X|Y): bool
     """
 
-    def __init__(self, X, likelihood, kernel, Z, X_variance=None, Xslices=None,Zslices=None, normalize_X=False):
+    def __init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False):
         self.scale_factor = 100.0# a scaling factor to help keep the algorithm stable
         self.auto_scale_factor = False
         self.Z = Z
-        self.Zslices = Zslices
-        self.Xslices = Xslices
         self.M = Z.shape[0]
         self.likelihood = likelihood
 
@@ -50,10 +48,7 @@ class sparse_GP(GP):
             self.has_uncertain_inputs=True
             self.X_variance = X_variance
 
-        if not self.likelihood.is_heteroscedastic:
-            self.likelihood.trYYT = np.trace(np.dot(self.likelihood.Y, self.likelihood.Y.T)) # TODO: something more elegant here?
-
-        GP.__init__(self, X, likelihood, kernel=kernel, normalize_X=normalize_X, Xslices=Xslices)
+        GP.__init__(self, X, likelihood, kernel=kernel, normalize_X=normalize_X)
 
         #normalize X uncertainty also
         if self.has_uncertain_inputs:
@@ -68,87 +63,89 @@ class sparse_GP(GP):
             self.psi1 = self.kern.psi1(self.Z,self.X, self.X_variance).T
             self.psi2 = self.kern.psi2(self.Z,self.X, self.X_variance)
         else:
-            self.psi0 = self.kern.Kdiag(self.X,slices=self.Xslices)
+            self.psi0 = self.kern.Kdiag(self.X)
             self.psi1 = self.kern.K(self.Z,self.X)
             self.psi2 = None
 
     def _computations(self):
-        #TODO: find routine to multiply triangular matrices
-        #TODO: slices for psi statistics (easy enough)
-
         sf = self.scale_factor
         sf2 = sf**2
 
-        #The rather complex computations of psi2_beta_scaled
+        #factor Kmm
+        self.Lm = jitchol(self.Kmm)
+
+        #The rather complex computations of self.A
         if self.likelihood.is_heteroscedastic:
             assert self.likelihood.D == 1 #TODO: what if the likelihood is heterscedatic and there are multiple independent outputs?
             if self.has_uncertain_inputs:
-                self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision.flatten().reshape(self.N,1,1)/sf2)).sum(0)
+                psi2_beta_scaled = (self.psi2*(self.likelihood.precision.flatten().reshape(self.N,1,1)/sf2)).sum(0)
+                evals, evecs = linalg.eigh(psi2_beta_scaled)
+                clipped_evals = np.clip(evals,0.,1e6) # TODO: make clipping configurable
+                if not np.allclose(evals, clipped_evals):
+                    print "Warning: clipping posterior eigenvalues"
+                tmp = evecs*np.sqrt(clipped_evals)
+                tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp),lower=1)
+                self.A = tdot(tmp)
             else:
                 tmp = self.psi1*(np.sqrt(self.likelihood.precision.flatten().reshape(1,self.N))/sf)
-                self.psi2_beta_scaled = np.dot(tmp,tmp.T)
+                tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp),lower=1)
+                self.A = tdot(tmp)
         else:
             if self.has_uncertain_inputs:
-                self.psi2_beta_scaled = (self.psi2*(self.likelihood.precision/sf2)).sum(0)
+                psi2_beta_scaled = (self.psi2*(self.likelihood.precision/sf2)).sum(0)
+                evals, evecs = linalg.eigh(psi2_beta_scaled)
+                clipped_evals = np.clip(evals,0.,1e6) # TODO: make clipping configurable
+                if not np.allclose(evals, clipped_evals):
+                    print "Warning: clipping posterior eigenvalues"
+                tmp = evecs*np.sqrt(clipped_evals)
+                tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp),lower=1)
+                self.A = tdot(tmp)
             else:
                 tmp = self.psi1*(np.sqrt(self.likelihood.precision)/sf)
-                self.psi2_beta_scaled = np.dot(tmp,tmp.T)
+                tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp),lower=1)
+                self.A = tdot(tmp)
 
-        self.Kmmi, self.Lm, self.Lmi, self.Kmm_logdet = pdinv(self.Kmm)
+        #factor B
+        self.B = np.eye(self.M)/sf2 + self.A
+        self.LB = jitchol(self.B)
 
         self.V = (self.likelihood.precision/self.scale_factor)*self.likelihood.Y
-
-        #Compute A = L^-1 psi2 beta L^-T
-        #self. A = mdot(self.Lmi,self.psi2_beta_scaled,self.Lmi.T)
-        tmp = linalg.lapack.flapack.dtrtrs(self.Lm,self.psi2_beta_scaled.T,lower=1)[0]
-        self.A = linalg.lapack.flapack.dtrtrs(self.Lm,np.asarray(tmp.T,order='F'),lower=1)[0]
-
-        self.B = np.eye(self.M)/sf2 + self.A
-
-        self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
-
         self.psi1V = np.dot(self.psi1, self.V)
-        #tmp = np.dot(self.Lmi.T, self.LBi.T)
-        tmp = linalg.lapack.clapack.dtrtrs(self.Lm.T,np.asarray(self.LBi.T,order='C'),lower=0)[0]
-        self.C = np.dot(tmp,tmp.T) #TODO: tmp is triangular. replace with dtrmm (blas) when available
-        self.Cpsi1V = np.dot(self.C,self.psi1V)
-        self.Cpsi1VVpsi1 = np.dot(self.Cpsi1V,self.psi1V.T)
-        #self.E = np.dot(self.Cpsi1VVpsi1,self.C)/sf2
-        self.E = np.dot(self.Cpsi1V/sf,self.Cpsi1V.T/sf)
 
-        # Compute dL_dpsi # FIXME: this is untested for the heterscedastic + uncertin inputs case
-        self.dL_dpsi0 = - 0.5 * self.D * (self.likelihood.precision * np.ones([self.N,1])).flatten()
-        self.dL_dpsi1 = np.dot(self.Cpsi1V,self.V.T)
-        if self.likelihood.is_heteroscedastic:
-            if self.has_uncertain_inputs:
-                self.dL_dpsi2 = 0.5 * self.likelihood.precision[:,None,None] * self.D * self.Kmmi[None,:,:] # dB
-                self.dL_dpsi2 += - 0.5 * self.likelihood.precision[:,None,None]/sf2 * self.D * self.C[None,:,:] # dC
-                self.dL_dpsi2 += - 0.5 * self.likelihood.precision[:,None,None]* self.E[None,:,:] # dD
-            else:
-                self.dL_dpsi1 += mdot(self.Kmmi,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)) #dB
-                self.dL_dpsi1 += -mdot(self.C,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)/sf2) #dC
-                self.dL_dpsi1 += -mdot(self.E,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)) #dD
-                self.dL_dpsi2 = None
-
-        else:
-            self.dL_dpsi2 = 0.5 * self.likelihood.precision * self.D * self.Kmmi # dB
-            self.dL_dpsi2 += - 0.5 * self.likelihood.precision/sf2 * self.D * self.C # dC
-            self.dL_dpsi2 += - 0.5 * self.likelihood.precision * self.E # dD
-            if self.has_uncertain_inputs:
-                #repeat for each of the N psi_2 matrices
-                self.dL_dpsi2 = np.repeat(self.dL_dpsi2[None,:,:],self.N,axis=0)
-            else:
-                self.dL_dpsi1 += 2.*np.dot(self.dL_dpsi2,self.psi1)
-                self.dL_dpsi2 = None
-
+        #back substutue C into psi1V
+        tmp,info1 = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(self.psi1V),lower=1,trans=0)
+        self._LBi_Lmi_psi1V,_ = linalg.lapack.flapack.dtrtrs(self.LB,np.asfortranarray(tmp),lower=1,trans=0)
+        tmp,info2 = linalg.lapack.flapack.dpotrs(self.LB,tmp,lower=1)
+        self.Cpsi1V,info3 = linalg.lapack.flapack.dtrtrs(self.Lm,tmp,lower=1,trans=1)
 
         # Compute dL_dKmm
-        #self.dL_dKmm_old = -0.5 * self.D * mdot(self.Lmi.T, self.A, self.Lmi)*sf2 # dB
-        #self.dL_dKmm += -0.5 * self.D * (- self.C/sf2 - 2.*mdot(self.C, self.psi2_beta_scaled, self.Kmmi) + self.Kmmi) # dC
-        #self.dL_dKmm +=  np.dot(np.dot(self.E*sf2, self.psi2_beta_scaled) - self.Cpsi1VVpsi1, self.Kmmi) + 0.5*self.E # dD
-        tmp = linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(self.A),lower=1,trans=1)[0]
-        self.dL_dKmm = -0.5*self.D*sf2*linalg.lapack.flapack.dtrtrs(self.Lm,np.asfortranarray(tmp.T),lower=1,trans=1)[0] #dA
-        self.dL_dKmm += 0.5*(self.D*(self.C/sf2 -self.Kmmi) + self.E) + np.dot(np.dot(self.D*self.C + self.E*sf2,self.psi2_beta_scaled) - self.Cpsi1VVpsi1,self.Kmmi) # d(C+D)
+        tmp = tdot(self._LBi_Lmi_psi1V)
+        self.DBi_plus_BiPBi = backsub_both_sides(self.LB, self.D*np.eye(self.M) + tmp)
+        tmp = -0.5*self.DBi_plus_BiPBi/sf2
+        tmp += -0.5*self.B*sf2*self.D
+        tmp += self.D*np.eye(self.M)
+        self.dL_dKmm = backsub_both_sides(self.Lm,tmp)
+
+        # Compute dL_dpsi # FIXME: this is untested for the heterscedastic + uncertain inputs case
+        self.dL_dpsi0 = - 0.5 * self.D * (self.likelihood.precision * np.ones([self.N,1])).flatten()
+        self.dL_dpsi1 = np.dot(self.Cpsi1V,self.V.T)
+        dL_dpsi2_beta = 0.5*backsub_both_sides(self.Lm,self.D*np.eye(self.M) - self.DBi_plus_BiPBi)
+        if self.likelihood.is_heteroscedastic:
+            if self.has_uncertain_inputs:
+                self.dL_dpsi2 = self.likelihood.precision[:,None,None]*dL_dpsi2_beta[None,:,:]
+            else:
+                self.dL_dpsi1 += 2.*np.dot(dL_dpsi2_beta,self.psi1*self.likelihood.precision.reshape(1,self.N))
+                self.dL_dpsi2 = None
+        else:
+            dL_dpsi2 = self.likelihood.precision*dL_dpsi2_beta
+            if self.has_uncertain_inputs:
+                #repeat for each of the N psi_2 matrices
+                self.dL_dpsi2 = np.repeat(dL_dpsi2[None,:,:],self.N,axis=0)
+            else:
+                #subsume back into psi1 (==Kmn)
+                self.dL_dpsi1 += 2.*np.dot(dL_dpsi2,self.psi1)
+                self.dL_dpsi2 = None
+
 
         #the partial derivative vector for the likelihood
         if self.likelihood.Nparams ==0:
@@ -156,16 +153,11 @@ class sparse_GP(GP):
             self.partial_for_likelihood = None
         elif self.likelihood.is_heteroscedastic:
             raise NotImplementedError, "heteroscedatic derivates not implemented"
-            #self.partial_for_likelihood = - 0.5 * self.D*self.likelihood.precision + 0.5 * (self.likelihood.Y**2).sum(1)*self.likelihood.precision**2 #dA
-            #self.partial_for_likelihood +=  0.5 * self.D * (self.psi0*self.likelihood.precision**2 - (self.psi2*self.Kmmi[None,:,:]*self.likelihood.precision[:,None,None]**2).sum(1).sum(1)/sf2) #dB
-            #self.partial_for_likelihood +=  0.5 * self.D * np.sum(self.Bi*self.A)*self.likelihood.precision #dC
-            #self.partial_for_likelihood += -np.diag(np.dot((self.C - 0.5 * mdot(self.C,self.psi2_beta_scaled,self.C) ) , self.psi1VVpsi1 ))*self.likelihood.precision #dD
         else:
             #likelihood is not heterscedatic
-            self.partial_for_likelihood =   - 0.5 * self.N*self.D*self.likelihood.precision + 0.5 * np.sum(np.square(self.likelihood.Y))*self.likelihood.precision**2
+            self.partial_for_likelihood =   - 0.5 * self.N*self.D*self.likelihood.precision + 0.5 * self.likelihood.trYYT*self.likelihood.precision**2
             self.partial_for_likelihood += 0.5 * self.D * (self.psi0.sum()*self.likelihood.precision**2 - np.trace(self.A)*self.likelihood.precision*sf2)
-            self.partial_for_likelihood += 0.5 * self.D * trace_dot(self.Bi,self.A)*self.likelihood.precision
-            self.partial_for_likelihood += self.likelihood.precision*(0.5*trace_dot(self.psi2_beta_scaled,self.E*sf2) - np.trace(self.Cpsi1VVpsi1))
+            self.partial_for_likelihood += self.likelihood.precision*(0.5*np.sum(self.A*self.DBi_plus_BiPBi) - np.sum(np.square(self._LBi_Lmi_psi1V)))
 
 
 
@@ -178,8 +170,8 @@ class sparse_GP(GP):
         else:
             A = -0.5*self.N*self.D*(np.log(2.*np.pi) + np.log(self.likelihood._variance)) -0.5*self.likelihood.precision*self.likelihood.trYYT
             B = -0.5*self.D*(np.sum(self.likelihood.precision*self.psi0) - np.trace(self.A)*sf2)
-        C = -0.5*self.D * (self.B_logdet + self.M*np.log(sf2))
-        D = 0.5*np.trace(self.Cpsi1VVpsi1)
+        C = -self.D * (np.sum(np.log(np.diag(self.LB))) + 0.5*self.M*np.log(sf2))
+        D = 0.5*np.sum(np.square(self._LBi_Lmi_psi1V))
         return A+B+C+D
 
     def _set_params(self, p):
@@ -187,13 +179,14 @@ class sparse_GP(GP):
         self.kern._set_params(p[self.Z.size:self.Z.size+self.kern.Nparam])
         self.likelihood._set_params(p[self.Z.size+self.kern.Nparam:])
         self._compute_kernel_matrices()
-        if self.auto_scale_factor:
-            self.scale_factor = np.sqrt(self.psi2.sum(0).mean()*self.likelihood.precision)
         #if self.auto_scale_factor:
-        #    if self.likelihood.is_heteroscedastic:
-        #        self.scale_factor = max(1,np.sqrt(self.psi2_beta_scaled.sum(0).mean()))
-        #    else:
-        #        self.scale_factor = np.sqrt(self.psi2.sum(0).mean()*self.likelihood.precision)
+        #    self.scale_factor = np.sqrt(self.psi2.sum(0).mean()*self.likelihood.precision)
+        #if self.auto_scale_factor:
+            #if self.likelihood.is_heteroscedastic:
+                #self.scale_factor = max(100,np.sqrt(self.psi2_beta_scaled.sum(0).mean()))
+            #else:
+                #self.scale_factor = np.sqrt(self.psi2.sum(0).mean()*self.likelihood.precision)
+        self.scale_factor = 1.
         self._computations()
 
     def _get_params(self):
@@ -239,24 +232,28 @@ class sparse_GP(GP):
         """
         The derivative of the bound wrt the inducing inputs Z
         """
-        dL_dZ = 2.*self.kern.dK_dX(self.dL_dKmm,self.Z)#factor of two becase of vertical and horizontal 'stripes' in dKmm_dZ
+        dL_dZ = 2.*self.kern.dK_dX(self.dL_dKmm, self.Z)  # factor of two becase of vertical and horizontal 'stripes' in dKmm_dZ
         if self.has_uncertain_inputs:
-            dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1,self.Z,self.X, self.X_variance)
-            dL_dZ += 2.*self.kern.dpsi2_dZ(self.dL_dpsi2,self.Z,self.X, self.X_variance) # 'stripes'
+            dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1, self.Z, self.X, self.X_variance)
+            dL_dZ += self.kern.dpsi2_dZ(self.dL_dpsi2, self.Z, self.X, self.X_variance)
         else:
-            dL_dZ += self.kern.dK_dX(self.dL_dpsi1,self.Z,self.X)
+            dL_dZ += self.kern.dK_dX(self.dL_dpsi1, self.Z, self.X)
         return dL_dZ
 
-    def _raw_predict(self, Xnew, slices, full_cov=False):
+    def _raw_predict(self, Xnew, which_parts='all', full_cov=False):
         """Internal helper function for making predictions, does not account for normalization"""
 
-        Kx = self.kern.K(self.Z, Xnew)
-        mu = mdot(Kx.T, self.C/self.scale_factor, self.psi1V)
+        Bi,_ = linalg.lapack.flapack.dpotri(self.LB,lower=0) # WTH? this lower switch should be 1, but that doesn't work!
+        symmetrify(Bi)
+        Kmmi_LmiBLmi = backsub_both_sides(self.Lm,np.eye(self.M) - Bi)
+
+        Kx = self.kern.K(self.Z, Xnew, which_parts=which_parts)
+        mu = np.dot(Kx.T, self.Cpsi1V/self.scale_factor)
         if full_cov:
-            Kxx = self.kern.K(Xnew)
-            var = Kxx - mdot(Kx.T, (self.Kmmi - self.C/self.scale_factor**2), Kx) #NOTE this won't work for plotting
+            Kxx = self.kern.K(Xnew,which_parts=which_parts)
+            var = Kxx - mdot(Kx.T, Kmmi_LmiBLmi, Kx) #NOTE this won't work for plotting
         else:
-            Kxx = self.kern.Kdiag(Xnew)
-            var = Kxx - np.sum(Kx*np.dot(self.Kmmi - self.C/self.scale_factor**2, Kx),0)
+            Kxx = self.kern.Kdiag(Xnew,which_parts=which_parts)
+            var = Kxx - np.sum(Kx*np.dot(Kmmi_LmiBLmi, Kx),0)
 
         return mu,var[:,None]

@@ -1,9 +1,12 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
+#tdot function courtesy of Ian Murray:
+# Iain Murray, April 2013. iain contactable via iainmurray.net
+# http://homepages.inf.ed.ac.uk/imurray2/code/tdot/tdot.py
 
 import numpy as np
-from scipy import linalg, optimize
+from scipy import linalg, optimize, weave
 import pylab as pb
 import Tango
 import sys
@@ -11,8 +14,16 @@ import re
 import pdb
 import cPickle
 import types
+import ctypes
+from ctypes import byref, c_char, c_int, c_double # TODO
 #import scipy.lib.lapack.flapack
 import scipy as sp
+
+try:
+    _blaslib = ctypes.cdll.LoadLibrary(np.core._dotblas.__file__)
+    _blas_available = True
+except:
+    _blas_available = False
 
 def trace_dot(a,b):
     """
@@ -61,7 +72,7 @@ def jitchol(A,maxtries=5):
             raise linalg.LinAlgError, "not pd: negative diagonal elements"
         jitter= diagA.mean()*1e-6
         for i in range(1,maxtries+1):
-            print '\rWarning: adding jitter of {:.10e}                        '.format(jitter),
+            print 'Warning: adding jitter of {:.10e}'.format(jitter)
             try:
                 return linalg.cholesky(A+np.eye(A.shape[0]).T*jitter, lower = True)
             except:
@@ -97,7 +108,7 @@ def jitchol_old(A,maxtries=5):
 
         raise linalg.LinAlgError,"not positive definite, even with jitter."
 
-def pdinv(A):
+def pdinv(A, *args):
     """
     :param A: A DxD pd numpy array
 
@@ -110,7 +121,7 @@ def pdinv(A):
     :rval logdet: the log of the determinant of A
     :rtype logdet: float64
     """
-    L = jitchol(A)
+    L = jitchol(A, *args)
     logdet = 2.*np.sum(np.log(np.diag(L)))
     Li = chol_inv(L)
     Ai = linalg.lapack.flapack.dpotri(L)[0]
@@ -175,3 +186,120 @@ def PCA(Y, Q):
     X /= v;
     W *= v;
     return X, W.T
+
+
+def tdot_numpy(mat,out=None):
+    return np.dot(mat,mat.T,out)
+
+def tdot_blas(mat, out=None):
+    """returns np.dot(mat, mat.T), but faster for large 2D arrays of doubles."""
+    if (mat.dtype != 'float64') or (len(mat.shape) != 2):
+        return np.dot(mat, mat.T)
+    nn = mat.shape[0]
+    if out is None:
+        out = np.zeros((nn,nn))
+    else:
+        assert(out.dtype == 'float64')
+        assert(out.shape == (nn,nn))
+        # FIXME: should allow non-contiguous out, and copy output into it:
+        assert(8 in out.strides)
+        # zeroing needed because of dumb way I copy across triangular answer
+        out[:] = 0.0
+
+    ## Call to DSYRK from BLAS
+    # If already in Fortran order (rare), and has the right sorts of strides I
+    # could avoid the copy. I also thought swapping to cblas API would allow use
+    # of C order. However, I tried that and had errors with large matrices:
+    # http://homepages.inf.ed.ac.uk/imurray2/code/tdot/tdot_broken.py
+    mat = np.asfortranarray(mat)
+    TRANS = c_char('n')
+    N = c_int(mat.shape[0])
+    K = c_int(mat.shape[1])
+    LDA = c_int(mat.shape[0])
+    UPLO = c_char('l')
+    ALPHA = c_double(1.0)
+    A = mat.ctypes.data_as(ctypes.c_void_p)
+    BETA = c_double(0.0)
+    C = out.ctypes.data_as(ctypes.c_void_p)
+    LDC = c_int(np.max(out.strides) / 8)
+    _blaslib.dsyrk_(byref(UPLO), byref(TRANS), byref(N), byref(K),
+            byref(ALPHA), A, byref(LDA), byref(BETA), C, byref(LDC))
+
+    symmetrify(out,upper=True)
+
+    return out
+
+def tdot(*args, **kwargs):
+    if _blas_available:
+        return tdot_blas(*args,**kwargs)
+    else:
+        return tdot_numpy(*args,**kwargs)
+
+def symmetrify(A,upper=False):
+    """
+    Take the square matrix A and make it symmetrical by copting elements from the lower half to the upper
+
+    works IN PLACE.
+    """
+    N,M = A.shape
+    assert N==M
+    c_contig_code = """
+    for (int i=1; i<N; i++){
+      for (int j=0; j<i; j++){
+        A[i+j*N] = A[i*N+j];
+      }
+    }
+    """
+    f_contig_code = """
+    for (int i=1; i<N; i++){
+      for (int j=0; j<i; j++){
+        A[i*N+j] = A[i+j*N];
+      }
+    }
+    """
+    if A.flags['C_CONTIGUOUS'] and upper:
+        weave.inline(f_contig_code,['A','N'])
+    elif A.flags['C_CONTIGUOUS'] and not upper:
+        weave.inline(c_contig_code,['A','N'])
+    elif A.flags['F_CONTIGUOUS'] and upper:
+        weave.inline(c_contig_code,['A','N'])
+    elif A.flags['F_CONTIGUOUS'] and not upper:
+        weave.inline(f_contig_code,['A','N'])
+    else:
+        tmp = np.tril(A)
+        A[:] = 0.0
+        A += tmp
+        A += np.tril(tmp,-1).T
+
+def symmetrify_murray(A):
+    A += A.T
+    nn = A.shape[0]
+    A[[range(nn),range(nn)]] /= 2.0
+
+def cholupdate(L,x):
+    """
+    update the LOWER cholesky factor of a pd matrix IN PLACE
+
+    if L is the lower chol. of K, then this function computes L_
+    where L_ is the lower chol of K + x*x^T
+    """
+    support_code = """
+    #include <math.h>
+    """
+    code="""
+    double r,c,s;
+    int j,i;
+    for(j=0; j<N; j++){
+      r = sqrt(L(j,j)*L(j,j) + x(j)*x(j));
+      c = r / L(j,j);
+      s = x(j) / L(j,j);
+      L(j,j) = r;
+      for (i=j+1; i<N; i++){
+        L(i,j) = (L(i,j) + s*x(i))/c;
+        x(i) = c*x(i) - s*L(i,j);
+      }
+    }
+    """
+    x = x.copy()
+    N = x.size
+    weave.inline(code, support_code=support_code, arg_names=['N','L','x'], type_converters=weave.converters.blitz)

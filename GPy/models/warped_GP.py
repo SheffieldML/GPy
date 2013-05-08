@@ -14,7 +14,7 @@ from .. import likelihoods
 from .. import kern
 
 class warpedGP(GP):
-    def __init__(self, X, Y, kernel=None, warping_function = None, warping_terms = 3, normalize_X=False, normalize_Y=False, Xslices=None):
+    def __init__(self, X, Y, kernel=None, warping_function = None, warping_terms = 3, normalize_X=False, normalize_Y=False):
 
         if kernel is None:
             kernel = kern.rbf(X.shape[1])
@@ -29,7 +29,7 @@ class warpedGP(GP):
         self.predict_in_warped_space = False
         likelihood = likelihoods.Gaussian(self.transform_data(), normalize=normalize_Y)
 
-        GP.__init__(self, X, likelihood, kernel, normalize_X=normalize_X, Xslices=Xslices)
+        GP.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
 
     def _scale_data(self, Y):
         self._Ymax = Y.max()

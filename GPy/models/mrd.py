@@ -271,90 +271,52 @@ class MRD(model):
         self.Z = Z
         return Z
 
-    def plot_X_1d(self, colors=None):
-        fig = pylab.figure(num="MRD X 1d", figsize=(min(8, (3 * len(self.bgplvms))), min(12, (2 * self.X.shape[1]))))
-        fig.clf()
-        ax1 = fig.add_subplot(self.X.shape[1], 1, 1)
-        if colors is None:
-            colors = ax1._get_lines.color_cycle
-        ax1.plot(self.X, c='k', alpha=.3)
-        plots = ax1.plot(self.X.T[0], c=colors.next())
-        ax1.fill_between(numpy.arange(self.X.shape[0]),
-                         self.X.T[0] - 2 * numpy.sqrt(self.gref.X_variance.T[0]),
-                         self.X.T[0] + 2 * numpy.sqrt(self.gref.X_variance.T[0]),
-                         facecolor=plots[-1].get_color(),
-                         alpha=.3)
-        ax1.text(1, 1, r"$\mathbf{{X_{}}}".format(1),
-                 horizontalalignment='right',
-                 verticalalignment='top',
-                 transform=ax1.transAxes)
-        for i in range(self.X.shape[1] - 1):
-            ax = fig.add_subplot(self.X.shape[1], 1, i + 2)
-            ax.plot(self.X, c='k', alpha=.3)
-            plots.extend(ax.plot(self.X.T[i + 1], c=colors.next()))
-            ax.fill_between(numpy.arange(self.X.shape[0]),
-                            self.X.T[i + 1] - 2 * numpy.sqrt(self.gref.X_variance.T[i + 1]),
-                            self.X.T[i + 1] + 2 * numpy.sqrt(self.gref.X_variance.T[i + 1]),
-                            facecolor=plots[-1].get_color(),
-                            alpha=.3)
-            if i < self.X.shape[1] - 2:
-                ax.set_xticklabels('')
-        ax1.set_xticklabels('')
-#         ax1.legend(plots, [r"$\mathbf{{X_{}}}$".format(i + 1) for i in range(self.X.shape[1])],
-#                    bbox_to_anchor=(0., 1 + .01 * self.X.shape[1],
-#                                    1., 1. + .01 * self.X.shape[1]), loc=3,
-#                    ncol=self.X.shape[1], mode="expand", borderaxespad=0.)
+    def _handle_plotting(self, fig_num, axes, plotf):
+        if axes is None:
+            fig = pylab.figure(num=fig_num, figsize=(4 * len(self.bgplvms), 3 * len(self.bgplvms)))
+        for i, g in enumerate(self.bgplvms):
+            if axes is None:
+                ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
+            else:
+                ax = axes[i]
+            plotf(i, g, ax)
         pylab.draw()
-        fig.tight_layout(h_pad=.01, rect=(0, 0, 1, .95))
+        if axes is None:
+            fig.tight_layout()
+            return fig
+        else:
+            return pylab.gcf()
+
+    def plot_X(self, fig_num="MRD Predictions", axes=None):
+        fig = self._handle_plotting(fig_num, axes, lambda i, g, ax: ax.imshow(g.X))
         return fig
 
-    def plot_X(self):
-        fig = pylab.figure("MRD X", figsize=(4 * len(self.bgplvms), 3))
-        fig.clf()
-        for i, g in enumerate(self.bgplvms):
-            ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
-            ax.imshow(g.X)
-        pylab.draw()
-        fig.tight_layout()
+    def plot_predict(self, fig_num="MRD Predictions", axes=None):
+        fig = self._handle_plotting(fig_num, axes, lambda i, g, ax: ax.imshow(g.predict(g.X)[0]))
         return fig
 
-    def plot_predict(self):
-        fig = pylab.figure("MRD Predictions", figsize=(4 * len(self.bgplvms), 3))
-        fig.clf()
-        for i, g in enumerate(self.bgplvms):
-            ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
-            ax.imshow(g.predict(g.X)[0])
-        pylab.draw()
-        fig.tight_layout()
+    def plot_scales(self, fig_num="MRD Scales", axes=None, *args, **kwargs):
+        fig = self._handle_plotting(fig_num, axes, lambda i, g, ax: g.kern.plot_ARD(ax=ax, *args, **kwargs))
         return fig
 
-    def plot_scales(self, *args, **kwargs):
-        fig = pylab.figure("MRD Scales", figsize=(4 * len(self.bgplvms), 3))
-        fig.clf()
-        for i, g in enumerate(self.bgplvms):
-            ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
-            g.kern.plot_ARD(ax=ax, *args, **kwargs)
-        pylab.draw()
-        fig.tight_layout()
-        return fig
-
-    def plot_latent(self, *args, **kwargs):
-        fig = pylab.figure("MRD Latent Spaces", figsize=(4 * len(self.bgplvms), 3))
-        fig.clf()
-        for i, g in enumerate(self.bgplvms):
-            ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
-            g.plot_latent(ax=ax, *args, **kwargs)
-        pylab.draw()
-        fig.tight_layout()
+    def plot_latent(self, fig_num="MRD Latent Spaces", axes=None, *args, **kwargs):
+        fig = self._handle_plotting(fig_num, axes, lambda i, g, ax: g.plot_latent(ax=ax, *args, **kwargs))
         return fig
 
     def _debug_plot(self):
-        self.plot_X()
         self.plot_X_1d()
-        self.plot_latent()
-        self.plot_scales()
+        fig = pylab.figure("MRD DEBUG PLOT", figsize=(4 * len(self.bgplvms), 9))
+        fig.clf()
+        axes = [fig.add_subplot(3, len(self.bgplvms), i + 1) for i in range(len(self.bgplvms))]
+        self.plot_X(axes=axes)
+        axes = [fig.add_subplot(3, len(self.bgplvms), i + len(self.bgplvms) + 1) for i in range(len(self.bgplvms))]
+        self.plot_latent(axes=axes)
+        axes = [fig.add_subplot(3, len(self.bgplvms), i + 2 * len(self.bgplvms) + 1) for i in range(len(self.bgplvms))]
+        self.plot_scales(axes=axes)
+        pylab.draw()
+        fig.tight_layout()
 
-    def _debug_optimize(self, opt='scg', maxiters=500, itersteps=10):
+    def _debug_optimize(self, opt='scg', maxiters=5000, itersteps=10):
         iters = 0
         optstep = lambda: self.optimize(opt, messages=1, max_f_eval=itersteps)
         self._debug_plot()

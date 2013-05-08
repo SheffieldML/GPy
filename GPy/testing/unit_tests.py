@@ -112,6 +112,16 @@ class GradientTests(unittest.TestCase):
         bias = GPy.kern.bias(2)
         self.check_model_with_white(bias, model_type='GP_regression', dimension=2)
 
+    def test_GP_regression_linear_kern_1D_ARD(self):
+        ''' Testing the GP regression with linear kernel on 1d data '''
+        linear = GPy.kern.linear(1,ARD=True)
+        self.check_model_with_white(linear, model_type='GP_regression', dimension=1)
+
+    def test_GP_regression_linear_kern_2D_ARD(self):
+        ''' Testing the GP regression with linear kernel on 2d data '''
+        linear = GPy.kern.linear(2,ARD=True)
+        self.check_model_with_white(linear, model_type='GP_regression', dimension=2)
+
     def test_GP_regression_linear_kern_1D(self):
         ''' Testing the GP regression with linear kernel on 1d data '''
         linear = GPy.kern.linear(1)

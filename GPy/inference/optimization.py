@@ -29,7 +29,8 @@ class Optimizer():
     :rtype: optimizer object.
 
     """
-    def __init__(self, x_init, messages=False, model = None, max_f_eval=1e4, max_iters = 1e3, ftol=None, gtol=None, xtol=None):
+    def __init__(self, x_init, messages=False, model=None, max_f_eval=1e4, max_iters=1e3,
+                 ftol=None, gtol=None, xtol=None):
         self.opt_name = None
         self.x_init = x_init
         self.messages = messages
@@ -205,7 +206,11 @@ class opt_SCG(Optimizer):
     def opt(self, f_fp = None, f = None, fp = None):
         assert not f is None
         assert not fp is None
-        opt_result = SCG(f,fp,self.x_init, display=self.messages, maxiters=self.max_iters, max_f_eval=self.max_f_eval, xtol=self.xtol, ftol=self.ftol)
+        opt_result = SCG(f, fp, self.x_init, display=self.messages,
+                         maxiters=self.max_iters,
+                         max_f_eval=self.max_f_eval,
+                         xtol=self.xtol, ftol=self.ftol,
+                         gtol=self.gtol)
         self.x_opt = opt_result[0]
         self.trace = opt_result[1]
         self.f_opt = self.trace[-1]

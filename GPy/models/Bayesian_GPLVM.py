@@ -54,6 +54,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             self._savedgradients = []
             self._savederrors = []
             self._savedpsiKmm = []
+            self._savedABCD = []
 
         sparse_GP.__init__(self, X, Gaussian(Y), kernel, Z=Z, X_variance=X_variance, **kwargs)
 
@@ -135,6 +136,17 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
                 self._savedparams.append([self.f_call, self._get_params()])
                 self._savedgradients.append([self.f_call, self._log_likelihood_gradients()])
                 self._savedpsiKmm.append([self.f_call, [self.Kmm, self.dL_dKmm]])
+                sf2 = self.scale_factor ** 2
+                if self.likelihood.is_heteroscedastic:
+                    A = -0.5 * self.N * self.D * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.likelihood.precision)) - 0.5 * np.sum(self.V * self.likelihood.Y)
+                    B = -0.5 * self.D * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A) * sf2)
+                else:
+                    A = -0.5 * self.N * self.D * (np.log(2.*np.pi) + np.log(self.likelihood._variance)) - 0.5 * self.likelihood.precision * self.likelihood.trYYT
+                    B = -0.5 * self.D * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self.A) * sf2)
+                C = -self.D * (np.sum(np.log(np.diag(self.LB))) + 0.5 * self.M * np.log(sf2))
+                D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
+                self._savedABCD.append([self.f_call, A, B, C, D])
+
         # print "\nkl:", kl, "ll:", ll
         return ll - kl
 
@@ -169,7 +181,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         ax.plot(self.Z[:, input_1], self.Z[:, input_2], '^w')
         return ax
 
-    def plot_X_1d(self, fig=None, axes=None, fig_num="MRD X 1d", colors=None):
+    def plot_X_1d(self, fig=None, axes=None, fig_num="LVM mu S 1d", colors=None):
         """
         Plot latent space X in 1D:
         
@@ -196,7 +208,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             else:
                 ax = axes[i]
             ax.plot(self.X, c='k', alpha=.3)
-            plots.extend(ax.plot(self.X.T[i], c=colors.next(), label=r"$\mathbf{{X_{}}}$".format(i)))
+            plots.extend(ax.plot(self.X.T[i], c=colors.next(), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
             ax.fill_between(np.arange(self.X.shape[0]),
                             self.X.T[i] - 2 * np.sqrt(self.X_variance.T[i]),
                             self.X.T[i] + 2 * np.sqrt(self.X_variance.T[i]),
@@ -251,6 +263,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         gradient_dict = dict(self._savedgradients)
         kmm_dict = dict(self._savedpsiKmm)
         iters = np.array(param_dict.keys())
+        ABCD_dict = np.array(self._savedABCD)
         self.showing = 0
 
 #         ax2 = pylab.subplot2grid(splotshape, (1, 0), 2, 4)
@@ -281,14 +294,26 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
                  ha='center', va='center')
         figs[-1].canvas.draw()
         figs[-1].tight_layout(rect=(.15, 0, 1, .86))
+#         figs.append(pylab.figure("BGPLVM DEBUG Kmm", figsize=(12, 6)))
+#         fig = figs[-1]
+#         ax6 = fig.add_subplot(121)
+#         ax6.text(.5, .5, r"${\mathbf{K}_{mm}}$", color='magenta', alpha=.5, transform=ax6.transAxes,
+#                  ha='center', va='center')
+#         ax7 = fig.add_subplot(122)
+#         ax7.text(.5, .5, r"${\frac{dL}{dK_{mm}}}$", color='magenta', alpha=.5, transform=ax7.transAxes,
+#                  ha='center', va='center')
         figs.append(pylab.figure("BGPLVM DEBUG Kmm", figsize=(12, 6)))
         fig = figs[-1]
-        ax6 = fig.add_subplot(121)
-        ax6.text(.5, .5, r"${\mathbf{K}_{mm}}$", color='magenta', alpha=.5, transform=ax6.transAxes,
+        ax8 = fig.add_subplot(121)
+        ax8.text(.5, .5, r"${\mathbf{A,B,C,D}}$", color='k', alpha=.5, transform=ax8.transAxes,
                  ha='center', va='center')
-        ax7 = fig.add_subplot(122)
-        ax7.text(.5, .5, r"${\frac{dL}{dK_{mm}}}$", color='magenta', alpha=.5, transform=ax7.transAxes,
-                 ha='center', va='center')
+        ax8.plot(ABCD_dict[:, 0], ABCD_dict[:, 1], label='A')
+        ax8.plot(ABCD_dict[:, 0], ABCD_dict[:, 2], label='B')
+        ax8.plot(ABCD_dict[:, 0], ABCD_dict[:, 3], label='C')
+        ax8.plot(ABCD_dict[:, 0], ABCD_dict[:, 4], label='D')
+        ax8.legend()
+        figs[-1].canvas.draw()
+        figs[-1].tight_layout(rect=(.15, 0, 1, .86))
 
         X, S, Z, theta = self._debug_filter_params(param_dict[self.showing])
         Xg, Sg, Zg, thetag = self._debug_filter_params(gradient_dict[self.showing])
@@ -330,16 +355,16 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         ax5.set_xticks(np.arange(len(theta)))
         ax5.set_xticklabels(self._get_param_names()[-len(theta):], rotation=17)
 
-        imkmm = ax6.imshow(kmm_dict[self.showing][0])
-        from mpl_toolkits.axes_grid1 import make_axes_locatable
-        divider = make_axes_locatable(ax6)
-        caxkmm = divider.append_axes("right", "5%", pad="1%")
-        cbarkmm = pylab.colorbar(imkmm, cax=caxkmm)
-
-        imkmmdl = ax7.imshow(kmm_dict[self.showing][1])
-        divider = make_axes_locatable(ax7)
-        caxkmmdl = divider.append_axes("right", "5%", pad="1%")
-        cbarkmmdl = pylab.colorbar(imkmmdl, cax=caxkmmdl)
+#         imkmm = ax6.imshow(kmm_dict[self.showing][0])
+#         from mpl_toolkits.axes_grid1 import make_axes_locatable
+#         divider = make_axes_locatable(ax6)
+#         caxkmm = divider.append_axes("right", "5%", pad="1%")
+#         cbarkmm = pylab.colorbar(imkmm, cax=caxkmm)
+#
+#         imkmmdl = ax7.imshow(kmm_dict[self.showing][1])
+#         divider = make_axes_locatable(ax7)
+#         caxkmmdl = divider.append_axes("right", "5%", pad="1%")
+#         cbarkmmdl = pylab.colorbar(imkmmdl, cax=caxkmmdl)
 
 #         Qleg = ax1.legend(Xlatentplts, [r"$Q_{}$".format(i + 1) for i in range(self.Q)],
 #                    loc=3, ncol=self.Q, bbox_to_anchor=(0, 1.15, 1, 1.15),
@@ -420,13 +445,13 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
                     thetagrads.set_offsets(np.array([xtheta.ravel(), theta.ravel()]).T)
                     thetagrads.set_UVC(Utheta, thetag)
 
-                    imkmm.set_data(kmm_dict[self.showing][0])
-                    imkmm.autoscale()
-                    cbarkmm.update_normal(imkmm)
-
-                    imkmmdl.set_data(kmm_dict[self.showing][1])
-                    imkmmdl.autoscale()
-                    cbarkmmdl.update_normal(imkmmdl)
+#                     imkmm.set_data(kmm_dict[self.showing][0])
+#                     imkmm.autoscale()
+#                     cbarkmm.update_normal(imkmm)
+#
+#                     imkmmdl.set_data(kmm_dict[self.showing][1])
+#                     imkmmdl.autoscale()
+#                     cbarkmmdl.update_normal(imkmmdl)
 
                     ax2.relim()
                     # ax3.relim()
@@ -452,4 +477,4 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         cidp = figs[0].canvas.mpl_connect('button_press_event', onclick)
         cidd = figs[0].canvas.mpl_connect('motion_notify_event', motion)
 
-        return ax1, ax2, ax3, ax4, ax5, ax6, ax7
+        return ax1, ax2, ax3, ax4, ax5  # , ax6, ax7

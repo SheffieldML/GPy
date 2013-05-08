@@ -3,7 +3,8 @@ Created on 24 Apr 2013
 
 @author: maxz
 '''
-from GPy.inference.gradient_descent_update_rules import FletcherReeves
+from GPy.inference.gradient_descent_update_rules import FletcherReeves, \
+    PolakRibiere
 from Queue import Empty
 from multiprocessing import Value
 from multiprocessing.queues import Queue
@@ -12,6 +13,7 @@ from scipy.optimize.linesearch import line_search_wolfe1, line_search_wolfe2
 from threading import Thread
 import numpy
 import sys
+import time
 
 RUNNING = "running"
 CONVERGED = "converged"
@@ -71,7 +73,10 @@ class _Async_Optimization(Thread):
 
     def callback_return(self, *a):
         self.callback(*a)
-        self.callback(self.SENTINEL)
+        if self.outq is not None:
+            self.outq.put(self.SENTINEL)
+        if self.messages:
+            print ""
         self.runsignal.clear()
 
     def run(self, *args, **kwargs):
@@ -105,7 +110,7 @@ class _CGDAsync(_Async_Optimization):
                 status = MAX_F_EVAL
 
             gi = -self.df(xi, *a, **kw)
-            if numpy.dot(gi.T, gi) < self.gtol:
+            if numpy.dot(gi.T, gi) <= self.gtol:
                 status = CONVERGED
                 break
             if numpy.isnan(numpy.dot(gi.T, gi)):
@@ -123,10 +128,8 @@ class _CGDAsync(_Async_Optimization):
                                                                  xi,
                                                                  si, gi,
                                                                  fi, fi_old)
-            if alphai is not None and fi2 < fi:
-                fi, fi_old = fi2, fi_old2
-            else:
-                alphai, _, _, fi, fi_old, gfi = \
+            if alphai is None:
+                alphai, _, _, fi2, fi_old2, gfi = \
                          line_search_wolfe2(self.f, self.df,
                                             xi, si, gi,
                                             fi, fi_old)
@@ -134,11 +137,14 @@ class _CGDAsync(_Async_Optimization):
                     # This line search also failed to find a better solution.
                     status = LINE_SEARCH
                     break
+            if fi2 < fi:
+                fi, fi_old = fi2, fi_old2
             if gfi is not None:
                 gi = gfi
 
             if numpy.isnan(fi) or fi_old < fi:
                 gi, ur, si = self.reset(xi, *a, **kw)
+
             else:
                 xi += numpy.dot(alphai, si)
                 if self.messages:
@@ -164,10 +170,11 @@ class Async_Optimize(object):
             try:
                 for ret in iter(lambda: q.get(timeout=1), self.SENTINEL):
                     self.callback(*ret)
+                self.runsignal.clear()
             except Empty:
                 pass
 
-    def opt_async(self, f, df, x0, callback, update_rule=FletcherReeves,
+    def opt_async(self, f, df, x0, callback, update_rule=PolakRibiere,
                    messages=0, maxiter=5e3, max_f_eval=15e3, gtol=1e-6,
                    report_every=10, *args, **kwargs):
         self.runsignal.set()
@@ -193,13 +200,21 @@ class Async_Optimize(object):
         while self.runsignal.is_set():
             try:
                 p.join(1)
-                # c.join(1)
+                if c: c.join(1)
             except KeyboardInterrupt:
                 # print "^C"
                 self.runsignal.clear()
                 p.join()
-                c.join()
+                if c: c.join()
         if c and c.is_alive():
+#             self.runsignal.set()
+#             while self.runsignal.is_set():
+#                 try:
+#                     c.join(.1)
+#                 except KeyboardInterrupt:
+#                     # print "^C"
+#                     self.runsignal.clear()
+#                     c.join()
             print "WARNING: callback still running, optimisation done!"
         return p.result
 

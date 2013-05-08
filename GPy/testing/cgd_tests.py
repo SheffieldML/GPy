@@ -26,12 +26,12 @@ class Test(unittest.TestCase):
         restarts = 10
         for _ in range(restarts):
             try:
-                x0 = numpy.random.randn(N) * 300
-                res = opt.opt(f, df, x0, messages=0,
-                               maxiter=1000, gtol=1e-10)
-                assert numpy.allclose(res[0], 0, atol=1e-3)
+                x0 = numpy.random.randn(N) * 10
+                res = opt.opt(f, df, x0, messages=0, maxiter=1000, gtol=1e-15)
+                assert numpy.allclose(res[0], 0, atol=1e-5)
                 break
-            except:
+            except AssertionError:
+                import ipdb;ipdb.set_trace()
                 # RESTART
                 pass
         else:
@@ -47,9 +47,9 @@ class Test(unittest.TestCase):
         restarts = 10
         for _ in range(restarts):
             try:
-                x0 = numpy.random.randn(N) * .5
+                x0 = (numpy.random.randn(N) * .5) + numpy.ones(N)
                 res = opt.opt(f, df, x0, messages=0,
-                               maxiter=5e2, gtol=1e-2)
+                               maxiter=1e3, gtol=1e-12)
                 assert numpy.allclose(res[0], 1, atol=.1)
                 break
             except:
@@ -68,10 +68,10 @@ if __name__ == "__main__":
     N = 2
     A = numpy.random.rand(N) * numpy.eye(N)
     b = numpy.random.rand(N) * 0
-#     f = lambda x: numpy.dot(x.T.dot(A), x) - numpy.dot(x.T, b)
-#     df = lambda x: numpy.dot(A, x) - b
-    f = rosen
-    df = rosen_der
+    f = lambda x: numpy.dot(x.T.dot(A), x) - numpy.dot(x.T, b)
+    df = lambda x: numpy.dot(A, x) - b
+#     f = rosen
+#     df = rosen_der
     x0 = (numpy.random.randn(N) * .5) + numpy.ones(N)
     print x0
 
@@ -86,7 +86,8 @@ if __name__ == "__main__":
         ax = fig.add_subplot(111, projection='3d')
 
     interpolation = 40
-    x, y = numpy.linspace(.5, 1.5, interpolation)[:, None], numpy.linspace(.5, 1.5, interpolation)[:, None]
+#     x, y = numpy.linspace(.5, 1.5, interpolation)[:, None], numpy.linspace(.5, 1.5, interpolation)[:, None]
+    x, y = numpy.linspace(-1, 1, interpolation)[:, None], numpy.linspace(-1, 1, interpolation)[:, None]
     X, Y = numpy.meshgrid(x, y)
     fXY = numpy.array([f(numpy.array([x, y])) for x, y in zip(X.flatten(), Y.flatten())]).reshape(interpolation, interpolation)
 

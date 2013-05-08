@@ -3,7 +3,8 @@ Created on 24 Apr 2013
 
 @author: maxz
 '''
-from GPy.inference.gradient_descent_update_rules import FletcherReeves
+from GPy.inference.gradient_descent_update_rules import FletcherReeves, \
+    PolakRibiere
 from Queue import Empty
 from multiprocessing import Value
 from multiprocessing.queues import Queue
@@ -173,7 +174,7 @@ class Async_Optimize(object):
             except Empty:
                 pass
 
-    def opt_async(self, f, df, x0, callback, update_rule=FletcherReeves,
+    def opt_async(self, f, df, x0, callback, update_rule=PolakRibiere,
                    messages=0, maxiter=5e3, max_f_eval=15e3, gtol=1e-6,
                    report_every=10, *args, **kwargs):
         self.runsignal.set()
@@ -199,12 +200,12 @@ class Async_Optimize(object):
         while self.runsignal.is_set():
             try:
                 p.join(1)
-                c.join(1)
+                if c: c.join(1)
             except KeyboardInterrupt:
                 # print "^C"
                 self.runsignal.clear()
                 p.join()
-                c.join()
+                if c: c.join()
         if c and c.is_alive():
 #             self.runsignal.set()
 #             while self.runsignal.is_set():

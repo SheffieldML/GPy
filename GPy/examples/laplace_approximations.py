@@ -36,7 +36,7 @@ def timing():
     print np.mean(the_is)
 
 def debug_student_t_noise_approx():
-    real_var = 0.2
+    real_var = 0.1
     #Start a function, any function
     X = np.linspace(0.0, 10.0, 30)[:, None]
     Y = np.sin(X) + np.random.randn(*X.shape)*real_var
@@ -44,7 +44,7 @@ def debug_student_t_noise_approx():
     X_full = np.linspace(0.0, 10.0, 500)[:, None]
     Y_full = np.sin(X_full)
 
-    #Y = Y/Y.max()
+    Y = Y/Y.max()
 
     #Add student t random noise to datapoints
     deg_free = 10000
@@ -56,6 +56,7 @@ def debug_student_t_noise_approx():
     #noise = t_rvrvs(size=Y.shape)
     #Y += noise
 
+    plt.close('all')
     plt.figure(1)
     plt.suptitle('Gaussian likelihood')
     # Kernel object

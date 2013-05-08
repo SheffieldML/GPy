@@ -3,8 +3,8 @@ import scipy as sp
 import GPy
 from scipy.linalg import inv, cho_solve, det
 from numpy.linalg import cond
-from GPy.likelihoods.likelihood import likelihood
-from GPy.util.linalg import pdinv, mdot, jitchol, chol_inv, det_ln_diag, pddet
+from likelihood import likelihood
+from ..util.linalg import pdinv, mdot, jitchol, chol_inv, det_ln_diag, pddet
 from scipy.linalg.flapack import dtrtrs
 import pylab as plt
 
@@ -79,10 +79,10 @@ class Laplace(likelihood):
         return (self._Kgradients(dL_d_K_Sigma, dK_dthetaK), self._gradients(dL_d_K_Sigma))
 
     def _shared_gradients_components(self):
-        dL_dytil = -np.dot(self.Y.T, (self.K+self.Sigma_tilde))
-        #dytil_dfhat = self.Wi__Ki_W # np.dot(self.Sigma_tilde, self.Ki) + np.eye(self.N) # or self.Wi__Ki_W?
-        Ki = inv(self.K)
-        dytil_dfhat = np.dot(self.Sigma_tilde, Ki) + np.eye(self.N) # or self.Wi__Ki_W?
+        dL_dytil = -np.dot(self.Y.T, (self.K+self.Sigma_tilde)) #or *0.5?
+        dytil_dfhat = self.Wi__Ki_W # np.dot(self.Sigma_tilde, self.Ki) + np.eye(self.N) # or self.Wi__Ki_W?
+        #Ki = inv(self.K)
+        #dytil_dfhat = np.dot(self.Sigma_tilde, Ki) + np.eye(self.N) # or self.Wi__Ki_W?
         return dL_dytil, dytil_dfhat
 
     def _Kgradients(self, dL_d_K_Sigma, dK_dthetaK):
@@ -95,6 +95,10 @@ class Laplace(likelihood):
         """
         dL_dytil, dytil_dfhat = self._shared_gradients_components()
 
+        d3phi_d3fhat = self.likelihood_function.d3link(self.data, self.f_hat, self.extra_data)
+
+        dSigma_dfhat = -np.dot(self.Sigma_tilde, np.dot(d3phi_d3fhat, self.Sigma_tilde))
+
         print "Computing K gradients"
         print "dytil_dfhat: ", np.mean(dytil_dfhat)
         I = np.eye(self.N)
@@ -103,12 +107,7 @@ class Laplace(likelihood):
         #plt.imshow(A)
         #plt.show()
 
-        #FIXME: K ISNT SYMMETRIC SO NEITHER IS A AND IT MAKES IT NON-PD!
-        #ki, _, _, _ = pdinv(self.K)
-        #I_KW_i, _, _, _ = pdinv(A)
-
-        I_KW_i = inv(A)
-
+        I_KW_i, _, _, _ = pdinv(A) #FIXME: WHY SO MUCH JITTER?!
 
         #FIXME: Careful dK_dthetaK is not the derivative with respect to the marginal just prior K!
         #Derivative for each f dimension, for each of K's hyper parameters
@@ -121,14 +120,20 @@ class Laplace(likelihood):
         #FIXME: Careful dL_dK = dL_d_K_Sigma
         #FIXME: Careful the -D*0.5 in dL_d_K_sigma might need to be -0.5?
         dL_dSigma = dL_d_K_Sigma
-        d3phi_d3fhat = self.likelihood_function.d3link(self.data, self.f_hat, self.extra_data)
+        #d3phi_d3fhat = self.likelihood_function.d3link(self.data, self.f_hat, self.extra_data)
                      #explicit           #implicit
-        dSigmai_dthetaK = 0 #+ np.sum(d3phi_d3fhat*dfhat_dthetaK) #FIXME: CAREFUL OF THIS SUM! SHOULD SUM OVER FHAT NOT THETAS
-        dSigma_dthetaK = -mdot(self.Sigma_tilde, dSigmai_dthetaK, self.Sigma_tilde)
+        dSigmai_dthetaK = 0 + np.dot(d3phi_d3fhat, dfhat_dthetaK)
+        dSigma_dthetaK = np.zeros((self.f_hat.shape[0], self.f_hat.shape[0], dK_dthetaK.shape[0]))
+        for ind_j, dSigmai_dthetaj in enumerate(dSigmai_dthetaK):
+            dSigma_dthetaK[:, :, ind_j] = -np.dot(self.Sigma_tilde, dSigmai_dthetaj*self.Sigma_tilde)
 
         print "dL_dytil: ", np.mean(dL_dytil)
         print "dytil_dthetaK: ", np.mean(dytil_dthetaK)
-        dL_dthetaK_implicit = np.sum(np.dot(dL_dytil, dytil_dthetaK), axis=0)# + np.dot(dL_dSigma, dSigma_dthetaK)
+
+        #FIXME: Won't handle multi dimensional data
+        dL_dthetaK_via_ytil = np.sum(np.dot(dL_dytil, dytil_dthetaK), axis=0)
+        dL_dthetaK_via_Sigma = np.sum(np.dot(dL_dSigma, dSigma_dthetaK), axis=(0,1))
+        dL_dthetaK_implicit = dL_dthetaK_via_ytil + dL_dthetaK_via_Sigma
         #dL_dthetaK_implicit = np.dot(dL_dytil.T, dytil_dthetaK.T)
         import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
         return np.squeeze(dL_dthetaK_implicit)

@@ -82,7 +82,7 @@ def BGPLVM_oil(optimize=True, N=100, Q=10, M=15, max_f_eval=300):
         m.ensure_default_constraints()
 
     y = m.likelihood.Y[0, :]
-    fig, (latent_axes, hist_axes) = plt.subplots(1, 2)
+    fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
     plt.sca(latent_axes)
     m.plot_latent()
     data_show = GPy.util.visualize.vector_show(y)
@@ -362,7 +362,7 @@ def brendan_faces():
 
     # optimize
     m.ensure_default_constraints()
-    m.optimize(messages=1, max_f_eval=10000)
+    # m.optimize(messages=1, max_f_eval=10000)
 
     ax = m.plot_latent()
     y = m.likelihood.Y[0, :]

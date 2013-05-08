@@ -16,7 +16,7 @@ import cPickle
 import types
 import ctypes
 from ctypes import byref, c_char, c_int, c_double # TODO
-#import scipy.lib.lapack.flapack
+#import scipy.lib.lapack
 import scipy as sp
 
 try:
@@ -63,7 +63,7 @@ def _mdot_r(a,b):
 
 def jitchol(A,maxtries=5):
     A = np.asfortranarray(A)
-    L,info = linalg.lapack.flapack.dpotrf(A,lower=1)
+    L,info = linalg.lapack.dpotrf(A,lower=1)
     if info ==0:
         return L
     else:
@@ -124,7 +124,7 @@ def pdinv(A, *args):
     L = jitchol(A, *args)
     logdet = 2.*np.sum(np.log(np.diag(L)))
     Li = chol_inv(L)
-    Ai = linalg.lapack.flapack.dpotri(L)[0]
+    Ai = linalg.lapack.dpotri(L)[0]
     Ai = np.tril(Ai) + np.tril(Ai,-1).T
 
     return Ai, L, Li, logdet
@@ -139,7 +139,7 @@ def chol_inv(L):
 
     """
 
-    return linalg.lapack.flapack.dtrtri(L, lower = True)[0]
+    return linalg.lapack.dtrtri(L, lower = True)[0]
 
 
 def multiple_pdinv(A):
@@ -156,7 +156,7 @@ def multiple_pdinv(A):
     N = A.shape[-1]
     chols = [jitchol(A[:,:,i]) for i in range(N)]
     halflogdets = [np.sum(np.log(np.diag(L[0]))) for L in chols]
-    invs = [linalg.lapack.flapack.dpotri(L[0],True)[0] for L in chols]
+    invs = [linalg.lapack.dpotri(L[0],True)[0] for L in chols]
     invs = [np.triu(I)+np.triu(I,1).T for I in invs]
     return np.dstack(invs),np.array(halflogdets)
 

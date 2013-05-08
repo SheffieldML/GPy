@@ -45,7 +45,7 @@ class GPLVM(GP):
         return np.hstack((self.X.flatten(), GP._get_params(self)))
 
     def _set_params(self,x):
-        self.X = x[:self.X.size].reshape(self.N,self.Q).copy()
+        self.X = x[:self.N*self.Q].reshape(self.N,self.Q).copy()
         GP._set_params(self, x[self.X.size:])
 
     def _log_likelihood_gradients(self):

@@ -86,6 +86,16 @@ class GP(model):
     def _get_param_names(self):
         return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
+    def _update_params_callback(self, p):
+        #FIXME:Check the transforming
+        #Set the new parameters of the kernel and likelihood within the optimization
+        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+        self.kern._set_params_transformed(p[:self.kern.Nparam_transformed()])
+        self.likelihood._set_params(p[self.kern.Nparam_transformed():])
+        #update the likelihood approximation within the optimisation with the current parameters
+        self.update_likelihood_approximation()
+        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+
     def update_likelihood_approximation(self):
         """
         Approximates a non-gaussian likelihood using Expectation Propagation

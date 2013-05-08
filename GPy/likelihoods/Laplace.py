@@ -63,7 +63,6 @@ class Laplace(likelihood):
         return self.likelihood_function._get_param_names()
 
     def _set_params(self, p):
-        print "Setting noise sd: ", p
         return self.likelihood_function._set_params(p)
 
     def both_gradients(self, dL_d_K_Sigma, dK_dthetaK):

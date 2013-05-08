@@ -166,6 +166,8 @@ class student_t(likelihood_function):
         self.log_concave = False
         #super(student_t, self).__init__()
 
+        self._set_params(np.asarray(sigma))
+
     def _get_params(self):
         return np.asarray(self.sigma)
 
@@ -174,6 +176,8 @@ class student_t(likelihood_function):
 
     def _set_params(self, x):
         self.sigma = float(x)
+        print "Setting student t sigma: ", x
+        print x
         #self.covariance_matrix = np.eye(self.N)*self._variance
         #self.precision = 1./self._variance
 

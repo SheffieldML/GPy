@@ -57,7 +57,6 @@ class FITC(sparse_GP):
         self.Diag0 = self.psi0 - np.diag(self.Qnn)
 
 
-
         self.beta_star = self.likelihood.precision/(1. + self.likelihood.precision*self.Diag0[:,None]) #Includes Diag0 in the precision
         self.V_star = self.beta_star * self.likelihood.Y
 
@@ -72,12 +71,10 @@ class FITC(sparse_GP):
             self.A = tdot(tmp)
 
 
-
-
-
         # factor B
         self.B = np.eye(self.M) + self.A
         self.LB = jitchol(self.B)
+        self.LBi,info = linalg.lapack.flapack.dtrtrs(self.LB,np.eye(self.M),lower=1)
 
         self.psi1V = np.dot(self.psi1, self.V_star)
 
@@ -93,9 +90,7 @@ class FITC(sparse_GP):
         dlogB_dpsi0 = -.5*self.kern.dKdiag_dtheta(self.beta_star,X=self.X)
         dlogB_dpsi1 = self.kern.dK_dtheta(b_psi1_Ki,self.X,self.Z)
         dlogB_dKmm = -.5*self.kern.dK_dtheta(Ki_pbp_Ki,X=self.Z)
-
         self.dlogB_dtheta = dlogB_dpsi0 + dlogB_dpsi1 + dlogB_dKmm
-
 
         # dyby_dtheta
         Kmmi = np.dot(self.Lmi.T,self.Lmi)
@@ -116,10 +111,21 @@ class FITC(sparse_GP):
             tmp = np.dot(psin_K.T,psin_K)
             dyby_dKmm = .5*V_n**2 * tmp
             dyby_dtheta += self.kern.dK_dtheta(dyby_dKmm,self.Z)
-
-
-        #self.dyby_dtheta = dyby_dpsi0 #+ dyby_dpsi1 + dyby_dKmm
         self.dyby_dtheta = dyby_dtheta
+
+        # dlogB_dtheta
+        #C_B
+        dlogKi_dKmm = -.5 * Kmmi
+        dlogB_dtheta = self.kern.dK_dtheta(dlogKi_dKmm,self.Z)
+        #C_A
+        #C_AA
+        LBiLmi = np.dot(self.LBi,self.Lmi)
+        partial = .5*np.dot(LBiLmi.T,LBiLmi)
+        dlogB_dtheta += self.kern.dK_dtheta(partial,self.Z)
+        #C_AB
+
+
+
 
 
 
@@ -131,7 +137,7 @@ class FITC(sparse_GP):
             raise NotImplementedError, "heteroscedatic derivates not implemented"
         else:
             # likelihood is not heterscedatic
-            self.partial_for_likelihood = 0
+            self.partial_for_likelihood = 0 #FIXME
             #self.partial_for_likelihood = -0.5 * self.N * self.D * self.likelihood.precision + 0.5 * self.likelihood.trYYT * self.likelihood.precision ** 2
             #self.partial_for_likelihood += 0.5 * self.D * (self.psi0.sum() * self.likelihood.precision ** 2 - np.trace(self.A) * self.likelihood.precision)
             #self.partial_for_likelihood += self.likelihood.precision * (0.5 * np.sum(self.A * self.DBi_plus_BiPBi) - np.sum(np.square(self._LBi_Lmi_psi1V)))
@@ -186,8 +192,8 @@ class FITC(sparse_GP):
     """
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
-        #A = -0.5 * self.N * self.D * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star))
-        A = - 0.5 * np.sum(self.V_star * self.likelihood.Y)
+        #A = -0.5 * self.N * self.D * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
+        C = -self.D * (np.sum(np.log(np.diag(self.LB))))
         """
         A = -0.5 * self.N * self.D * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
         #B = -0.5 * self.D * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A))
@@ -195,7 +201,7 @@ class FITC(sparse_GP):
         D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
         return A + C + D # +B
         """
-        return A
+        return C
 
 
     def _log_likelihood_gradients(self):
@@ -203,8 +209,9 @@ class FITC(sparse_GP):
         return np.hstack((self.dL_dZ().flatten(), self.dL_dtheta(), self.likelihood._gradients(partial=self.partial_for_likelihood)))
 
     def dL_dtheta(self):
-        #dL_dtheta = self.dlogB_dtheta
-        dL_dtheta = self.dyby_dtheta
+        dL_dtheta = self.dlogB_dtheta
+        #dL_dtheta = self.dyby_dtheta
+        dL_dtheta = self.dlogB_dtheta + self.dyby_dtheta
         """
         dL_dtheta = self.kern.dK_dtheta(self.dL_dKmm, self.Z)
         if self.has_uncertain_inputs:

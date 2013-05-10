@@ -32,6 +32,7 @@ class EP(likelihood):
         self.precision = np.ones(self.N)[:,None]
         self.Z = 0
         self.YYT = None
+        self.V = self.precision * self.Y
 
     def restart(self):
         self.tau_tilde = np.zeros(self.N)
@@ -41,6 +42,7 @@ class EP(likelihood):
         self.precision = np.ones(self.N)[:,None]
         self.Z = 0
         self.YYT = None
+        self.V = self.precision * self.Y
 
     def predictive_values(self,mu,var,full_cov):
         if full_cov:
@@ -67,6 +69,7 @@ class EP(likelihood):
         self.YYT = np.dot(self.Y,self.Y.T)
         self.covariance_matrix = np.diag(1./self.tau_tilde)
         self.precision = self.tau_tilde[:,None]
+        self.V = self.precision * self.Y
 
     def fit_full(self,K):
         """

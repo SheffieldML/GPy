@@ -21,6 +21,15 @@ class FITC(sparse_GP):
         self.Z = Z
         self.M = self.Z.shape[0]
         self.true_precision = likelihood.precision
+
+
+        #ERASEME
+        #N = likelihood.Y.size
+        #self.beta_star = np.random.rand(N,1)
+        #self.Kmm_ = kernel.K(self.Z).copy()
+        #self.Kmmi_,a,b,c = pdinv(self.Kmm_)
+        #self.psi1_ = kernel.K(self.Z,X).copy()
+
         sparse_GP.__init__(self, X, likelihood, kernel=kernel, Z=self.Z, X_variance=None, normalize_X=False)
 
     def _set_params(self, p):
@@ -48,6 +57,7 @@ class FITC(sparse_GP):
             self._set_params(self._get_params()) # update the GP
 
     def _computations(self):
+
         #factor Kmm
         self.Lm = jitchol(self.Kmm)
 
@@ -56,7 +66,24 @@ class FITC(sparse_GP):
         self.Qnn = np.dot(Lmipsi1.T,Lmipsi1)
         self.Diag0 = self.psi0 - np.diag(self.Qnn)
 
+        #TODO eraseme
+        """
+        self.psi1 = self.psi1_
+        self.Lm = jitchol(self.Kmm_)
+        self.Lmi,info = linalg.lapack.flapack.dtrtrs(self.Lm,np.eye(self.M),lower=1)
+        Lmipsi1 = np.dot(self.Lmi,self.psi1)
+        #self.true_psi1 = self.kern.K(self.Z,self.X)
+        #self.Qnn = mdot(self.true_psi1.T,self.Lmi.T,self.Lmi,self.true_psi1)
+        self.Kmmi, a,b,c = pdinv(self.Kmm)
+        self.Qnn = mdot(self.psi1.T,self.Kmmi,self.psi1)
+        #self.Diag0 = self.psi0 #- np.diag(self.Qnn)
+        self.Diag0 = - np.diag(self.Qnn)
+        #Kmmi,Lm,Lmi,logdetK = pdinv(self.Kmm)
+        #self.Lambda = self.Kmmi_ + mdot(self.Kmmi_,self.psi1_,self.beta_star*self.psi1_.T,self.Kmmi_) + np.eye(self.M)*100
+        #self.Lambdai, LLm, LLmi, self.logdetLambda = pdinv(self.Lambda)
+        """
 
+        #TODO uncomment
         self.beta_star = self.likelihood.precision/(1. + self.likelihood.precision*self.Diag0[:,None]) #Includes Diag0 in the precision
         self.V_star = self.beta_star * self.likelihood.Y
 
@@ -70,18 +97,15 @@ class FITC(sparse_GP):
             tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
             self.A = tdot(tmp)
 
-
         # factor B
         self.B = np.eye(self.M) + self.A
         self.LB = jitchol(self.B)
         self.LBi,info = linalg.lapack.flapack.dtrtrs(self.LB,np.eye(self.M),lower=1)
-
         self.psi1V = np.dot(self.psi1, self.V_star)
 
         # back substutue C into psi1V
         tmp, info1 = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(self.psi1V), lower=1, trans=0)
         self._LBi_Lmi_psi1V, _ = linalg.lapack.flapack.dtrtrs(self.LB, np.asfortranarray(tmp), lower=1, trans=0)
-
 
         # dlogbeta_dtheta
         Kmmipsi1 = np.dot(self.Lmi.T,Lmipsi1)
@@ -90,7 +114,7 @@ class FITC(sparse_GP):
         dlogB_dpsi0 = -.5*self.kern.dKdiag_dtheta(self.beta_star,X=self.X)
         dlogB_dpsi1 = self.kern.dK_dtheta(b_psi1_Ki,self.X,self.Z)
         dlogB_dKmm = -.5*self.kern.dK_dtheta(Ki_pbp_Ki,X=self.Z)
-        self.dlogB_dtheta = dlogB_dpsi0 + dlogB_dpsi1 + dlogB_dKmm
+        self.dlogbeta_dtheta = dlogB_dpsi0 + dlogB_dpsi1 + dlogB_dKmm
 
         # dyby_dtheta
         Kmmi = np.dot(self.Lmi.T,self.Lmi)
@@ -113,20 +137,44 @@ class FITC(sparse_GP):
             dyby_dtheta += self.kern.dK_dtheta(dyby_dKmm,self.Z)
         self.dyby_dtheta = dyby_dtheta
 
-        # dlogB_dtheta
+        # dlogB_dtheta : C
+
         #C_B
-        dlogKi_dKmm = -.5 * Kmmi
-        dlogB_dtheta = self.kern.dK_dtheta(dlogKi_dKmm,self.Z)
+        dC_B = -.5*Kmmi
+        C_B = self.kern.dK_dtheta(dC_B,self.Z) #check
+
         #C_A
-        #C_AA
         LBiLmi = np.dot(self.LBi,self.Lmi)
-        partial = .5*np.dot(LBiLmi.T,LBiLmi)
-        dlogB_dtheta += self.kern.dK_dtheta(partial,self.Z)
+        LBL_inv = np.dot(LBiLmi.T,LBiLmi)
+        dC_AA = .5*LBL_inv
+        C_AA = self.kern.dK_dtheta(dC_AA,self.Z) #check
+
         #C_AB
+        psi1beta = self.psi1*self.beta_star.T
+        dC_ABA = mdot(LBL_inv,psi1beta,Kmmipsi1.T)
+        C_ABA = self.kern.dK_dtheta(dC_ABA,self.Z)
+        dC_ABB = -np.dot(psi1beta.T,LBL_inv) #check
+        C_ABB = self.kern.dK_dtheta(dC_ABB,self.X,self.Z) #check
 
+        # C_ABC
+        betapsi1TLmiLBi = np.dot(psi1beta.T,LBiLmi.T)
+        alpha = np.array([np.dot(a.T,a) for a in betapsi1TLmiLBi])[:,None]
+        dC_ABCA = .5 *alpha
+        C_ABCA = self.kern.dKdiag_dtheta(dC_ABCA,self.X) #check
 
+        C_ABCB = 0
+        for psi1_n,alpha_n,X_n in zip(self.psi1.T,alpha,self.X):
+            dC_ABCB_n = - alpha_n * np.dot(psi1_n[None,:],Kmmi)
+            C_ABCB += self.kern.dK_dtheta(dC_ABCB_n,X_n[:,None],self.Z) #check
 
+        C_ABCC = 0
+        for psi1_n,alpha_n,X_n in zip(self.psi1.T,alpha,self.X):
+            psin_K = np.dot(psi1_n[None,:],Kmmi)
+            tmp = np.dot(psin_K.T,psin_K)
+            dC_ABCC = .5 * alpha_n * tmp
+            C_ABCC += self.kern.dK_dtheta(dC_ABCC,self.Z) #check
 
+        self.dlogB_dtheta = C_B + C_AA + C_ABA + C_ABB + C_ABCA + C_ABCB + C_ABCC
 
 
         # the partial derivative vector for the likelihood
@@ -144,55 +192,9 @@ class FITC(sparse_GP):
 
 
 
-        """
-        tmp, info2 = linalg.lapack.flapack.dpotrs(self.LB, tmp, lower=1)
-        self.Cpsi1V, info3 = linalg.lapack.flapack.dtrtrs(self.Lm, tmp, lower=1, trans=1)
-
-        # Compute dL_dKmm
-        tmp = tdot(self._LBi_Lmi_psi1V)
-        self.DBi_plus_BiPBi = backsub_both_sides(self.LB, self.D * np.eye(self.M) + tmp)
-        tmp = -0.5 * self.DBi_plus_BiPBi
-        tmp += -0.5 * self.B * self.D
-        tmp += self.D * np.eye(self.M)
-        self.dL_dKmm = backsub_both_sides(self.Lm, tmp)
-
-        # Compute dL_dpsi # FIXME: this is untested for the heterscedastic + uncertain inputs case
-        self.dL_dpsi0 = -0.5 * self.D * (self.likelihood.precision * np.ones([self.N, 1])).flatten()
-        self.dL_dpsi1 = np.dot(self.Cpsi1V, self.likelihood.V.T)
-        dL_dpsi2_beta = 0.5 * backsub_both_sides(self.Lm, self.D * np.eye(self.M) - self.DBi_plus_BiPBi)
-        if self.likelihood.is_heteroscedastic:
-            if self.has_uncertain_inputs:
-                self.dL_dpsi2 = self.likelihood.precision[:, None, None] * dL_dpsi2_beta[None, :, :]
-            else:
-                self.dL_dpsi1 += 2.*np.dot(dL_dpsi2_beta, self.psi1 * self.likelihood.precision.reshape(1, self.N))
-                self.dL_dpsi2 = None
-        else:
-            dL_dpsi2 = self.likelihood.precision * dL_dpsi2_beta
-            if self.has_uncertain_inputs:
-                # repeat for each of the N psi_2 matrices
-                self.dL_dpsi2 = np.repeat(dL_dpsi2[None, :, :], self.N, axis=0)
-            else:
-                # subsume back into psi1 (==Kmn)
-                self.dL_dpsi1 += 2.*np.dot(dL_dpsi2, self.psi1)
-                self.dL_dpsi2 = None
-
-
-        # the partial derivative vector for the likelihood
-        if self.likelihood.Nparams == 0:
-            # save computation here.
-            self.partial_for_likelihood = None
-        elif self.likelihood.is_heteroscedastic:
-            raise NotImplementedError, "heteroscedatic derivates not implemented"
-        else:
-            # likelihood is not heterscedatic
-            self.partial_for_likelihood = -0.5 * self.N * self.D * self.likelihood.precision + 0.5 * self.likelihood.trYYT * self.likelihood.precision ** 2
-            self.partial_for_likelihood += 0.5 * self.D * (self.psi0.sum() * self.likelihood.precision ** 2 - np.trace(self.A) * self.likelihood.precision)
-            self.partial_for_likelihood += self.likelihood.precision * (0.5 * np.sum(self.A * self.DBi_plus_BiPBi) - np.sum(np.square(self._LBi_Lmi_psi1V)))
-
-    """
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
-        #A = -0.5 * self.N * self.D * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
+        A = -0.5 * self.N * self.D * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
         C = -self.D * (np.sum(np.log(np.diag(self.LB))))
         """
         A = -0.5 * self.N * self.D * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
@@ -201,7 +203,7 @@ class FITC(sparse_GP):
         D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
         return A + C + D # +B
         """
-        return C
+        return A+C
 
 
     def _log_likelihood_gradients(self):
@@ -209,9 +211,11 @@ class FITC(sparse_GP):
         return np.hstack((self.dL_dZ().flatten(), self.dL_dtheta(), self.likelihood._gradients(partial=self.partial_for_likelihood)))
 
     def dL_dtheta(self):
-        dL_dtheta = self.dlogB_dtheta
+        #dL_dtheta = self.dlogB_dtheta
         #dL_dtheta = self.dyby_dtheta
-        dL_dtheta = self.dlogB_dtheta + self.dyby_dtheta
+        #dL_dtheta = self.dlogbeta_dtheta + self.dyby_dtheta
+        dL_dtheta = self.dlogB_dtheta
+        dL_dtheta = self.dlogbeta_dtheta + self.dyby_dtheta + self.dlogB_dtheta
         """
         dL_dtheta = self.kern.dK_dtheta(self.dL_dKmm, self.Z)
         if self.has_uncertain_inputs:

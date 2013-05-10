@@ -48,6 +48,7 @@ class logexp_clipped(transformation):
         return np.log(np.exp(f) - 1.)
     def gradfactor(self, f):
         ef = np.exp(f)
+        gf = (ef - 1.) / ef
         return np.where(f < 1e-6, 0, gf)
     def initialize(self,f):
         if np.any(f<0.):

@@ -39,8 +39,9 @@ class logexp(transformation):
         return '(+ve)'
 
 class logexp_clipped(transformation):
-    def __init__(self):
+    def __init__(self, lower=1e-12):
         self.domain = 'positive'
+        self.lower = lower
     def f(self, x):
         f = np.log(1. + np.exp(x))
         return f
@@ -49,13 +50,13 @@ class logexp_clipped(transformation):
     def gradfactor(self, f):
         ef = np.exp(f)
         gf = (ef - 1.) / ef
-        return np.where(f < 1e-6, 0, gf)
+        return np.where(f < self.lower, 0, gf)
     def initialize(self,f):
         if np.any(f<0.):
             print "Warning: changing parameters to satisfy constraints"
         return np.abs(f)
     def __str__(self):
-        return '(+ve)'
+        return '(+ve_c)'
 
 class exponent(transformation):
     def __init__(self):

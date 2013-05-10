@@ -34,6 +34,8 @@ class logexp(transformation):
         ef = np.exp(f)
         return (ef - 1.)/ef
     def initialize(self,f):
+        if np.any(f<0.):
+            print "Warning: changing parameters to satisfy constraints"
         return np.abs(f)
     def __str__(self):
         return '(+ve)'
@@ -48,6 +50,8 @@ class exponent(transformation):
     def gradfactor(self,f):
         return f
     def initialize(self,f):
+        if np.any(f<0.):
+            print "Warning: changing parameters to satisfy constraints"
         return np.abs(f)
     def __str__(self):
         return '(+ve)'
@@ -62,6 +66,8 @@ class negative_exponent(transformation):
     def gradfactor(self,f):
         return f
     def initialize(self,f):
+        if np.any(f>0.):
+            print "Warning: changing parameters to satisfy constraints"
         return -np.abs(f)
     def __str__(self):
         return '(-ve)'
@@ -79,7 +85,9 @@ class logistic(transformation):
     def gradfactor(self,f):
         return (f-self.lower)*(self.upper-f)/self.difference
     def initialize(self,f):
-        return self.f(f*0.)
+        if np.any(np.logical_or(f<self.lower,f>self.upper)):
+            print "Warning: changing parameters to satisfy constraints"
+        return np.where(np.logical_or(f<self.lower,f>self.upper),self.f(f*0.),f)
     def __str__(self):
         return '({},{})'.format(self.lower,self.upper)
 

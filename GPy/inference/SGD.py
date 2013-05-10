@@ -157,7 +157,7 @@ class opt_SGD(Optimizer):
         # self.model.constrained_bounded_uppers = b[2]
         # self.model.constrained_positive_indices = p
         self.model.constrained_indices = c
-        
+
     def get_param_shapes(self, N = None, Q = None):
         model_name = self.model.__class__.__name__
         if model_name == 'GPLVM':
@@ -186,6 +186,12 @@ class opt_SGD(Optimizer):
         self.model.likelihood._bias = Y.mean()
         self.model.likelihood._scale = Y.std()
         self.model.likelihood.set_data(Y)
+        # self.model.likelihood.V = self.model.likelihood.Y*self.model.likelihood.precision
+
+        sigma = self.model.likelihood._variance
+        self.model.likelihood._variance = None # invalidate cache
+        self.model.likelihood._set_params(sigma)
+
 
         j = self.subset_parameter_vector(self.x_opt, samples, shapes)
         self.model.X = X[samples]
@@ -232,7 +238,6 @@ class opt_SGD(Optimizer):
             else:
                 features = np.argsort(NLL)
 
-                import pdb; pdb.set_trace()
             b = len(features)/self.batch_size
             features = [features[i::b] for i in range(b)]
             NLL = []
@@ -241,6 +246,11 @@ class opt_SGD(Optimizer):
                 self.model.D = len(j)
                 self.model.likelihood.D = len(j)
                 self.model.likelihood.set_data(Y[:, j])
+                # self.model.likelihood.V = self.model.likelihood.Y*self.model.likelihood.precision
+
+                sigma = self.model.likelihood._variance
+                self.model.likelihood._variance = None # invalidate cache
+                self.model.likelihood._set_params(sigma)
 
                 if missing_data:
                     shapes = self.get_param_shapes(N, Q)

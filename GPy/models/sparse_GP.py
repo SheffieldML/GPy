@@ -104,7 +104,7 @@ class sparse_GP(GP):
                 tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
                 self.A = tdot(tmp)
             else:
-#                 tmp = self.psi1 * (np.sqrt(self.likelihood.precision) / sf)
+                # tmp = self.psi1 * (np.sqrt(self.likelihood.precision) / sf)
                 tmp = self.psi1 * (np.sqrt(self.likelihood.precision))
                 tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
                 self.A = tdot(tmp)
@@ -163,7 +163,7 @@ class sparse_GP(GP):
         else:
             # likelihood is not heterscedatic
             self.partial_for_likelihood = -0.5 * self.N * self.D * self.likelihood.precision + 0.5 * self.likelihood.trYYT * self.likelihood.precision ** 2
-#             self.partial_for_likelihood += 0.5 * self.D * (self.psi0.sum() * self.likelihood.precision ** 2 - np.trace(self.A) * self.likelihood.precision * sf2)
+            #  self.partial_for_likelihood += 0.5 * self.D * (self.psi0.sum() * self.likelihood.precision ** 2 - np.trace(self.A) * self.likelihood.precision * sf2)
             self.partial_for_likelihood += 0.5 * self.D * (self.psi0.sum() * self.likelihood.precision ** 2 - np.trace(self.A) * self.likelihood.precision)
             self.partial_for_likelihood += self.likelihood.precision * (0.5 * np.sum(self.A * self.DBi_plus_BiPBi) - np.sum(np.square(self._LBi_Lmi_psi1V)))
 
@@ -177,7 +177,7 @@ class sparse_GP(GP):
 #             B = -0.5 * self.D * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A) * sf2)
             B = -0.5 * self.D * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A))
         else:
-            A = -0.5 * self.N * self.D * (np.log(2.*np.pi) + np.log(self.likelihood._variance)) - 0.5 * self.likelihood.precision * self.likelihood.trYYT
+            A = -0.5 * self.N * self.D * (np.log(2.*np.pi) - np.log(self.likelihood.precision)) - 0.5 * self.likelihood.precision * self.likelihood.trYYT
 #             B = -0.5 * self.D * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self.A) * sf2)
             B = -0.5 * self.D * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self.A))
 #         C = -self.D * (np.sum(np.log(np.diag(self.LB))) + 0.5 * self.M * np.log(sf2))

@@ -9,6 +9,7 @@ from GPy.inference.conjugate_gradient_descent import CGD, RUNNING
 import pylab
 import time
 from scipy.optimize.optimize import rosen, rosen_der
+from GPy.inference.gradient_descent_update_rules import PolakRibiere
 
 
 class Test(unittest.TestCase):
@@ -25,12 +26,12 @@ class Test(unittest.TestCase):
         restarts = 10
         for _ in range(restarts):
             try:
-                x0 = numpy.random.randn(N) * 300
-                res = opt.opt(f, df, x0, messages=0,
-                               maxiter=1000, gtol=1e-10)
-                assert numpy.allclose(res[0], 0, atol=1e-3)
+                x0 = numpy.random.randn(N) * 10
+                res = opt.opt(f, df, x0, messages=0, maxiter=1000, gtol=1e-15)
+                assert numpy.allclose(res[0], 0, atol=1e-5)
                 break
-            except:
+            except AssertionError:
+                import ipdb;ipdb.set_trace()
                 # RESTART
                 pass
         else:
@@ -46,9 +47,9 @@ class Test(unittest.TestCase):
         restarts = 10
         for _ in range(restarts):
             try:
-                x0 = numpy.random.randn(N) * .5
+                x0 = (numpy.random.randn(N) * .5) + numpy.ones(N)
                 res = opt.opt(f, df, x0, messages=0,
-                               maxiter=5e2, gtol=1e-2)
+                               maxiter=1e3, gtol=1e-12)
                 assert numpy.allclose(res[0], 1, atol=.1)
                 break
             except:
@@ -67,14 +68,16 @@ if __name__ == "__main__":
     N = 2
     A = numpy.random.rand(N) * numpy.eye(N)
     b = numpy.random.rand(N) * 0
-#     f = lambda x: numpy.dot(x.T.dot(A), x) - numpy.dot(x.T, b)
-#     df = lambda x: numpy.dot(A, x) - b
-    f = rosen
-    df = rosen_der
-    x0 = numpy.random.randn(N) * .5
+    f = lambda x: numpy.dot(x.T.dot(A), x) - numpy.dot(x.T, b)
+    df = lambda x: numpy.dot(A, x) - b
+#     f = rosen
+#     df = rosen_der
+    x0 = (numpy.random.randn(N) * .5) + numpy.ones(N)
+    print x0
 
     opt = CGD()
 
+    pylab.ion()
     fig = pylab.figure("cgd optimize")
     if fig.axes:
         ax = fig.axes[0]
@@ -83,13 +86,14 @@ if __name__ == "__main__":
         ax = fig.add_subplot(111, projection='3d')
 
     interpolation = 40
+#     x, y = numpy.linspace(.5, 1.5, interpolation)[:, None], numpy.linspace(.5, 1.5, interpolation)[:, None]
     x, y = numpy.linspace(-1, 1, interpolation)[:, None], numpy.linspace(-1, 1, interpolation)[:, None]
     X, Y = numpy.meshgrid(x, y)
     fXY = numpy.array([f(numpy.array([x, y])) for x, y in zip(X.flatten(), Y.flatten())]).reshape(interpolation, interpolation)
 
     ax.plot_wireframe(X, Y, fXY)
     xopts = [x0.copy()]
-    optplts, = ax.plot3D([x0[0]], [x0[1]], zs=f(x0), marker='o', color='r')
+    optplts, = ax.plot3D([x0[0]], [x0[1]], zs=f(x0), marker='', color='r')
 
     raw_input("enter to start optimize")
     res = [0]
@@ -102,11 +106,7 @@ if __name__ == "__main__":
         if r[-1] != RUNNING:
             res[0] = r
 
-    p, c = opt.opt_async(f, df, x0.copy(), callback, messages=True, maxiter=1000,
-                   report_every=20, gtol=1e-12)
-
-
-    pylab.ion()
-    pylab.show()
+    res[0] = opt.opt(f, df, x0.copy(), callback, messages=True, maxiter=1000,
+                   report_every=7, gtol=1e-12, update_rule=PolakRibiere)
 
     pass

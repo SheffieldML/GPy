@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt, pyplot
 import GPy
 from GPy.models.Bayesian_GPLVM import Bayesian_GPLVM
 from GPy.util.datasets import simulation_BGPLVM
+from GPy.core.transformations import square, logexp_clipped
 
 default_seed = np.random.seed(123344)
 
@@ -62,33 +63,38 @@ def GPLVM_oil_100(optimize=True):
     m.plot_latent(labels=m.data_labels)
     return m
 
-def BGPLVM_oil(optimize=True, N=100, Q=10, M=15, max_f_eval=300):
+def BGPLVM_oil(optimize=True, N=100, Q=10, M=20, max_f_eval=300, plot=False):
     data = GPy.util.datasets.oil()
 
     # create simple GP model
-    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.001)
-    m = GPy.models.Bayesian_GPLVM(data['X'][:N], Q, kernel=kernel, M=M)
+    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
+    Y = data['X'][:N]
+    m = GPy.models.Bayesian_GPLVM(Y, Q, kernel=kernel, M=M)
     m.data_labels = data['Y'][:N].argmax(axis=1)
+
+    m.constrain('variance', logexp_clipped())
+    m.constrain('length', logexp_clipped())
+    m['lengt'] = 100.
+    m.ensure_default_constraints()
 
     # optimize
     if optimize:
-        m.constrain_fixed('noise', 0.05)
-        m.ensure_default_constraints()
-        m.optimize('scg', messages=1, max_f_eval=max(80, max_f_eval))
-        m.unconstrain('noise')
-        m.constrain_positive('noise')
-        m.optimize('scg', messages=1, max_f_eval=max(0, max_f_eval - 80))
-    else:
-        m.ensure_default_constraints()
+        m.unconstrain('noise'); m.constrain_fixed('noise', Y.var() / 100.)
+        m.optimize('scg', messages=1, max_f_eval=150)
 
-    y = m.likelihood.Y[0, :]
-    fig, (latent_axes, hist_axes) = plt.subplots(1, 2)
-    plt.sca(latent_axes)
-    m.plot_latent()
-    data_show = GPy.util.visualize.vector_show(y)
-    lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :], m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
-    raw_input('Press enter to finish')
-    plt.close('all')
+        m.unconstrain('noise')
+        m.constrain('noise', logexp_clipped())
+        m.optimize('scg', messages=1, max_f_eval=max_f_eval)
+
+    if plot:
+        y = m.likelihood.Y[0, :]
+        fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
+        plt.sca(latent_axes)
+        m.plot_latent()
+        data_show = GPy.util.visualize.vector_show(y)
+        lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :], m, data_show, latent_axes=latent_axes) # , sense_axes=sense_axes)
+        raw_input('Press enter to finish')
+        plt.close('all')
     # # plot
     # print(m)
     # m.plot_latent(labels=m.data_labels)
@@ -176,7 +182,7 @@ def bgplvm_simulation_matlab_compare():
     Y = sim_data['Y']
     S = sim_data['S']
     mu = sim_data['mu']
-    M, [_, Q] = 20, mu.shape
+    M, [_, Q] = 3, mu.shape
 
     from GPy.models import mrd
     from GPy import kern
@@ -186,7 +192,7 @@ def bgplvm_simulation_matlab_compare():
     m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k,
 #                        X=mu,
 #                        X_variance=S,
-                       _debug=True)
+                       _debug=False)
     m.ensure_default_constraints()
     m.auto_scale_factor = True
     m['noise'] = Y.var() / 100.
@@ -207,7 +213,7 @@ def bgplvm_simulation(burnin='scg', plot_sim=False,
                       max_burnin=100, true_X=False,
                       do_opt=True,
                       max_f_eval=1000):
-    D1, D2, D3, N, M, Q = 10, 8, 8, 250, 10, 6
+    D1, D2, D3, N, M, Q = 15, 8, 8, 350, 3, 6
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim)
 
     from GPy.models import mrd
@@ -217,10 +223,12 @@ def bgplvm_simulation(burnin='scg', plot_sim=False,
 
     Y = Ylist[0]
 
-    k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))  # + kern.bias(Q)
+    k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2)) # + kern.bias(Q)
 #     k = kern.white(Q, .00001) + kern.bias(Q)
     m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k, _debug=True)
     # m.set('noise',)
+    m.constrain('variance', logexp_clipped())
+
     m.ensure_default_constraints()
     m['noise'] = Y.var() / 100.
     m['linear_variance'] = .001
@@ -304,7 +312,7 @@ def mrd_simulation(plot_sim=False):
 #     Y2 = np.random.multivariate_normal(np.zeros(N), k.K(X), D2).T
 #     Y2 -= Y2.mean(0)
 #     make_params = lambda ard: np.hstack([[1], ard, [1, .3]])
-    D1, D2, D3, N, M, Q = 2000, 34, 8, 500, 3, 6
+    D1, D2, D3, N, M, Q = 150, 250, 300, 700, 3, 7
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim)
 
     from GPy.models import mrd
@@ -316,18 +324,19 @@ def mrd_simulation(plot_sim=False):
 #     Y2 = np.random.multivariate_normal(np.zeros(N), k.K(S2), D2).T
 #     Y3 = np.random.multivariate_normal(np.zeros(N), k.K(S3), D3).T
 
-    Ylist = Ylist[0:2]
+#     Ylist = Ylist[0:2]
 
     # k = kern.rbf(Q, ARD=True) + kern.bias(Q) + kern.white(Q)
 
-    k = kern.linear(Q, ARD=True) + kern.bias(Q, .01) + kern.white(Q, .001)
+    k = kern.linear(Q, [0.01] * Q, True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
     m = mrd.MRD(*Ylist, Q=Q, M=M, kernel=k, initx="concat", initz='permute', _debug=False)
 
     for i, Y in enumerate(Ylist):
-        m.set('{}_noise'.format(i + 1), Y.var() / 100.)
+        m['{}_noise'.format(i + 1)] = Y.var() / 100.
 
+    m.constrain('variance', logexp_clipped())
     m.ensure_default_constraints()
-    m.auto_scale_factor = True
+#     m.auto_scale_factor = True
 
 #     cstr = 'variance'
 #     m.unconstrain(cstr), m.constrain_bounded(cstr, 1e-12, 1.)
@@ -335,21 +344,21 @@ def mrd_simulation(plot_sim=False):
 #     cstr = 'linear_variance'
 #     m.unconstrain(cstr), m.constrain_positive(cstr)
 
-#     print "initializing beta"
-#     cstr = "noise"
-#     m.unconstrain(cstr); m.constrain_fixed(cstr)
-#     m.optimize('scg', messages=1, max_f_eval=100)
+    print "initializing beta"
+    cstr = "noise"
+    m.unconstrain(cstr); m.constrain_fixed(cstr)
+    m.optimize('scg', messages=1, max_f_eval=2e3, gtol=100)
 
-#     print "releasing beta"
-#     cstr = "noise"
-#     m.unconstrain(cstr);  m.constrain_positive(cstr)
+    print "releasing beta"
+    cstr = "noise"
+    m.unconstrain(cstr);  m.constrain(cstr, logexp_clipped())
 
-    np.seterr(all='call')
-    def ipdbonerr(errtype, flags):
-        import ipdb; ipdb.set_trace()
-    np.seterrcall(ipdbonerr)
+#     np.seterr(all='call')
+#     def ipdbonerr(errtype, flags):
+#         import ipdb; ipdb.set_trace()
+#     np.seterrcall(ipdbonerr)
 
-    return m  # , mtest
+    return m # , mtest
 
 def mrd_silhouette():
 

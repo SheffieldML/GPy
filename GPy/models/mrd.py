@@ -273,7 +273,7 @@ class MRD(model):
 
     def _handle_plotting(self, fig_num, axes, plotf):
         if axes is None:
-            fig = pylab.figure(num=fig_num, figsize=(4 * len(self.bgplvms), 3 * len(self.bgplvms)))
+            fig = pylab.figure(num=fig_num, figsize=(4 * len(self.bgplvms), 3))
         for i, g in enumerate(self.bgplvms):
             if axes is None:
                 ax = fig.add_subplot(1, len(self.bgplvms), i + 1)

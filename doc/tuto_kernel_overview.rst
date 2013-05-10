@@ -55,18 +55,18 @@ In ``GPy``, kernel objects can be added or multiplied. In both cases, two kinds 
     * a kernel over :math:`\mathbb{R} \times \mathbb{R}`:  :math:`k(x,y) = k_1(x,y) \times k_2(x,y)`
     * a kernel over :math:`\mathbb{R}^2 \times \mathbb{R}^2`:  :math:`k(\mathbf{x},\mathbf{y}) = k_1(x_1,y_1) \times k_2(x_2,y_2)`
 
-These two options are available in GPy under the name ``prod`` and ``prod_orthogonal`` (resp. ``add`` and ``add_orthogonal`` for the addition). Here is a quick example ::
+These two options are available in GPy using the flag ``tensor`` in the ``add`` and ``prod`` functions. Here is a quick example ::
 
     k1 = GPy.kern.rbf(1,1.,2.)
     k2 = GPy.kern.Matern32(1, 0.5, 0.2)
 
     # Product of kernels
-    k_prod = k1.prod(k2)
-    k_prodorth = k1.prod_orthogonal(k2)
+    k_prod = k1.prod(k2)                        # By default, tensor=False
+    k_prodtens = k1.prod(k2,tensor=True)
 
     # Sum of kernels
-    k_add = k1.add(k2)
-    k_addorth = k1.add_orthogonal(k2)    
+    k_add = k1.add(k2)                          # By default, tensor=False
+    k_addtens = k1.add(k2,tensor=True)    
 
 ..  # plots
     pb.figure(figsize=(8,8))
@@ -74,21 +74,21 @@ These two options are available in GPy under the name ``prod`` and ``prod_orthog
     k_prod.plot()
     pb.title('prod')
     pb.subplot(2,2,2)
-    k_prodorth.plot()
-    pb.title('prod_orthogonal')
+    k_prodtens.plot()
+    pb.title('tensor prod')
     pb.subplot(2,2,3)
     k_add.plot()
-    pb.title('add')
+    pb.title('sum')
     pb.subplot(2,2,4)
-    k_addorth.plot()
-    pb.title('add_orthogonal')
+    k_addtens.plot()
+    pb.title('tensor sum')
     pb.subplots_adjust(wspace=0.3, hspace=0.3)
 
 .. figure::  Figures/tuto_kern_overview_multadd.png
     :align:  center
     :height: 500px
 
-A shortcut for ``add`` and ``prod`` is provided by the usual ``+`` and ``*`` operators. Here is another example where we create a periodic kernel with some decay ::
+A shortcut for ``add`` and ``prod`` (with default flag ``tensor=False``) is provided by the usual ``+`` and ``*`` operators. Here is another example where we create a periodic kernel with some decay ::
     
     k1 = GPy.kern.rbf(1,1.,2)
     k2 = GPy.kern.periodic_Matern52(1,variance=1e3, lengthscale=1, period = 1.5, lower=-5., upper = 5)
@@ -113,7 +113,7 @@ A shortcut for ``add`` and ``prod`` is provided by the usual ``+`` and ``*`` ope
     :align:  center
     :height: 300px
 
-In general, ``kern`` objects can be seen as a sum of ``kernparts`` objects, where the later are covariance functions denied on the same space. For example, the following code ::
+In general, ``kern`` objects can be seen as a sum of ``kernparts`` objects, where the later are covariance functions defined on the same space. For example, the following code ::
 
     k = (k1+k2)*(k1+k2)
     print k.parts[0].name, '\n', k.parts[1].name, '\n', k.parts[2].name, '\n', k.parts[3].name
@@ -184,7 +184,7 @@ Let us assume that we want to define an ANOVA kernel with a Matern 3/2 kernel fo
 
     k_cst = GPy.kern.bias(1,variance=1.)
     k_mat = GPy.kern.Matern52(1,variance=1., lengthscale=3)
-    Kanova = (k_cst + k_mat).prod_orthogonal(k_cst + k_mat)
+    Kanova = (k_cst + k_mat).prod(k_cst + k_mat,tensor=True)
     print Kanova
 
 Printing the resulting kernel outputs the following ::
@@ -236,14 +236,14 @@ The submodels can be represented with the option ``which_function`` of ``plot``:
     pb.subplot(1,5,2)
     pb.ylabel("=   ",rotation='horizontal',fontsize='30')
     pb.subplot(1,5,3)
-    m.plot(which_functions=[False,True,False,False])
+    m.plot(which_parts=[False,True,False,False])
     pb.ylabel("cst          +",rotation='horizontal',fontsize='30')
     pb.subplot(1,5,4)
-    m.plot(which_functions=[False,False,True,False])
+    m.plot(which_parts=[False,False,True,False])
     pb.ylabel("+   ",rotation='horizontal',fontsize='30')
     pb.subplot(1,5,5)
     pb.ylabel("+   ",rotation='horizontal',fontsize='30')
-    m.plot(which_functions=[False,False,False,True])
+    m.plot(which_parts=[False,False,False,True])
 
 ..  pb.savefig('tuto_kern_overview_mANOVAdec.png',bbox_inches='tight')
 
@@ -252,7 +252,8 @@ The submodels can be represented with the option ``which_function`` of ``plot``:
     :height: 250px
 
 
-..  import pylab as pb
+..  # code
+    import pylab as pb
     import numpy as np
     import GPy
     pb.ion()

@@ -24,11 +24,18 @@ class FITC(sparse_GP):
 
 
         #ERASEME
-        #N = likelihood.Y.size
-        #self.beta_star = np.random.rand(N,1)
-        #self.Kmm_ = kernel.K(self.Z).copy()
-        #self.Kmmi_,a,b,c = pdinv(self.Kmm_)
-        #self.psi1_ = kernel.K(self.Z,X).copy()
+        N = likelihood.Y.size
+        self.beta_star = np.random.rand(N,1)
+        self.Kmm_ = kernel.K(self.Z).copy()
+        self.Kmmi_,a,b,c = pdinv(self.Kmm_)
+        self.psi1_ = kernel.K(self.Z,X).copy()
+
+        Haux = np.random.rand(self.M,self.M)
+        self.matA = np.dot(Haux,Haux.T) + np.eye(self.M)*100.
+        self.matV = np.random.rand(N,1)
+        self.H_ = np.dot(Haux,Haux.T) + np.eye(self.M)*3.
+        self.Hi_, l1,l2,l3 = pdinv(self.H_)
+        #self.V_star_ = np.random.rand(N,1)
 
         sparse_GP.__init__(self, X, likelihood, kernel=kernel, Z=self.Z, X_variance=None, normalize_X=False)
 
@@ -63,28 +70,28 @@ class FITC(sparse_GP):
 
         self.Lmi,info = linalg.lapack.flapack.dtrtrs(self.Lm,np.eye(self.M),lower=1)
         Lmipsi1 = np.dot(self.Lmi,self.psi1)
-        self.Qnn = np.dot(Lmipsi1.T,Lmipsi1)
+        self.Qnn = np.dot(Lmipsi1.T,Lmipsi1).copy()
         self.Diag0 = self.psi0 - np.diag(self.Qnn)
 
         #TODO eraseme
-        """
         self.psi1 = self.psi1_
         self.Lm = jitchol(self.Kmm_)
         self.Lmi,info = linalg.lapack.flapack.dtrtrs(self.Lm,np.eye(self.M),lower=1)
         Lmipsi1 = np.dot(self.Lmi,self.psi1)
-        #self.true_psi1 = self.kern.K(self.Z,self.X)
+        self.true_psi1 = self.kern.K(self.Z,self.X)
         #self.Qnn = mdot(self.true_psi1.T,self.Lmi.T,self.Lmi,self.true_psi1)
-        self.Kmmi, a,b,c = pdinv(self.Kmm)
-        self.Qnn = mdot(self.psi1.T,self.Kmmi,self.psi1)
+        #self.Kmmi, a,b,c = pdinv(self.Kmm)
+        #self.Qnn = mdot(self.psi1.T,self.Kmmi,self.psi1)
         #self.Diag0 = self.psi0 #- np.diag(self.Qnn)
-        self.Diag0 = - np.diag(self.Qnn)
+        #self.Diag0 = - np.diag(self.Qnn)
         #Kmmi,Lm,Lmi,logdetK = pdinv(self.Kmm)
         #self.Lambda = self.Kmmi_ + mdot(self.Kmmi_,self.psi1_,self.beta_star*self.psi1_.T,self.Kmmi_) + np.eye(self.M)*100
         #self.Lambdai, LLm, LLmi, self.logdetLambda = pdinv(self.Lambda)
-        """
 
         #TODO uncomment
-        self.beta_star = self.likelihood.precision/(1. + self.likelihood.precision*self.Diag0[:,None]) #Includes Diag0 in the precision
+        #self.beta_star = self.likelihood.precision/(1. + self.likelihood.precision*self.Diag0[:,None]) #Includes Diag0 in the precision
+        self.true_beta_star = self.likelihood.precision/(1. + self.likelihood.precision*self.Diag0[:,None]) #Includes Diag0 in the precision
+        self.true_V_star = self.true_beta_star * self.likelihood.Y
         self.V_star = self.beta_star * self.likelihood.Y
 
         # The rather complex computations of self.A
@@ -138,7 +145,6 @@ class FITC(sparse_GP):
         self.dyby_dtheta = dyby_dtheta
 
         # dlogB_dtheta : C
-
         #C_B
         dC_B = -.5*Kmmi
         C_B = self.kern.dK_dtheta(dC_B,self.Z) #check
@@ -176,6 +182,77 @@ class FITC(sparse_GP):
 
         self.dlogB_dtheta = C_B + C_AA + C_ABA + C_ABB + C_ABCA + C_ABCB + C_ABCC
 
+        # dD_dtheta
+
+        #FIXME
+        H = self.Kmm + mdot(self.psi1,self.beta_star*self.psi1.T)
+        H = self.Kmm_ + mdot(self.psi1,self.beta_star*self.psi1.T)
+        H = self.Kmm_ + mdot(self.psi1,self.true_beta_star*self.psi1.T)
+        Hi, LH, LHi, logdetH = pdinv(H)
+
+
+        self.q1 = .5* mdot(self.V_star.T,self.true_psi1.T,Hi,self.true_psi1,self.V_star)
+        self.q1 = .5* mdot(self.true_V_star.T,self.psi1.T,Hi,self.psi1,self.true_V_star)
+        #self.q1 = .5* mdot(self.true_V_star.T,self.true_psi1.T,Hi,self.true_psi1,self.true_V_star)
+        #self.q2 = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
+
+        # D_B
+        gamma_1 = mdot(VVT,self.psi1.T,Hi) #TODO restore
+        #gamma_1 = mdot(VVT,self.true_psi1.T,Hi)
+        dD_B = gamma_1
+        D_B = self.kern.dK_dtheta(dD_B,self.X,self.Z) #check
+
+        # D_C
+        #dD_CA = -.5 * mdot(Hi,self.psi1,gamma_1) #TODO restore
+        dD_CA = -.5 * mdot(Hi,self.true_psi1,gamma_1)
+        D_CA = self.kern.dK_dtheta(dD_CA,self.Z) #check
+
+        # D_CB
+        dD_CBA = - mdot(psi1beta.T,Hi,self.psi1,gamma_1)
+        D_CBA = self.kern.dK_dtheta(dD_CBA,self.X,self.Z)
+        # D_CBB
+        pHip = mdot(self.psi1.T,Hi,self.psi1)
+        gamma_2 = mdot(self.beta_star*pHip,self.V_star)
+        D_CBBA = .5 * self.kern.dKdiag_dtheta(gamma_2**2,self.X)
+
+        D_CBBB = 0
+        for psi1_n,gamma_n,X_n in zip(self.psi1.T,gamma_2,self.X):
+            dD_CBBB = - gamma_n**2 * np.dot(psi1_n[None,:],Kmmi)
+            D_CBBB += self.kern.dK_dtheta(dD_CBBB,X_n[:,None],self.Z)
+
+        D_CBBC = 0
+        for psi1_n,gamma_n,X_n in zip(self.psi1.T,gamma_2,self.X):
+            psin_K = np.dot(psi1_n[None,:],Kmmi)
+            tmp = np.dot(psin_K.T,psin_K)
+            dD_CBBC = .5*gamma_n**2 * tmp
+            D_CBBC += self.kern.dK_dtheta(dD_CBBC,self.Z)
+
+        # D_A
+        pHip = mdot(self.psi1.T,Hi,self.psi1) #TODO remove defined above
+        gamma_3 = self.true_V_star * mdot(self.true_V_star.T,pHip*self.true_beta_star).T
+        #gamma_3 = self.V_star * mdot(self.V_star.T,pHip*self.beta_star).T
+        dD_AA = - gamma_3
+        D_AA = self.kern.dKdiag_dtheta(dD_AA,self.X) #check
+
+        D_AB = 0
+        #for psi1_n,gamma_n,X_n in zip(self.psi1.T,gamma_3,self.X):
+        for psi1_n,gamma_n,X_n in zip(self.true_psi1.T,gamma_3,self.X):
+            dD_AB = 2. * gamma_n * np.dot(psi1_n[None,:],Kmmi)
+            D_AB += self.kern.dK_dtheta(dD_AB,X_n[:,None],self.Z) #check
+
+        D_AC = 0
+        #for psi1_n,gamma_n,X_n in zip(self.psi1.T,gamma_3,self.X):
+        for psi1_n,gamma_n,X_n in zip(self.true_psi1.T,gamma_3,self.X):
+            psin_K = np.dot(psi1_n[None,:],Kmmi)
+            tmp = np.dot(psin_K.T,psin_K)
+            dD_AC = - gamma_n * tmp
+            D_AC += self.kern.dK_dtheta(dD_AC,self.Z) #check
+
+        #self.dD_dtheta =  D_AA + D_AB + D_AC + D_B + D_CA + D_CBA + D_CBBA + D_CBBB + D_CBBC
+        self.dD_dtheta = D_AA + D_AB + D_AC
+        #self.q1 = .5* mdot(self.V_star_.T,self.true_psi1.T,self.Hi_,self.true_psi1,self.V_star_)
+
+
 
         # the partial derivative vector for the likelihood
         if self.likelihood.Nparams == 0:
@@ -194,8 +271,10 @@ class FITC(sparse_GP):
 
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
-        A = -0.5 * self.N * self.D * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
-        C = -self.D * (np.sum(np.log(np.diag(self.LB))))
+        #A = -0.5 * self.N * self.D * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
+        #C = -self.D * (np.sum(np.log(np.diag(self.LB))))
+        #D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
+        D = self.q1
         """
         A = -0.5 * self.N * self.D * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
         #B = -0.5 * self.D * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A))
@@ -203,7 +282,8 @@ class FITC(sparse_GP):
         D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
         return A + C + D # +B
         """
-        return A+C
+        #return A+C
+        return D
 
 
     def _log_likelihood_gradients(self):
@@ -214,8 +294,9 @@ class FITC(sparse_GP):
         #dL_dtheta = self.dlogB_dtheta
         #dL_dtheta = self.dyby_dtheta
         #dL_dtheta = self.dlogbeta_dtheta + self.dyby_dtheta
-        dL_dtheta = self.dlogB_dtheta
-        dL_dtheta = self.dlogbeta_dtheta + self.dyby_dtheta + self.dlogB_dtheta
+        #dL_dtheta = self.dlogbeta_dtheta + self.dyby_dtheta + self.dlogB_dtheta
+        dL_dtheta = self.dD_dtheta
+
         """
         dL_dtheta = self.kern.dK_dtheta(self.dL_dKmm, self.Z)
         if self.has_uncertain_inputs:

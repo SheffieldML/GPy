@@ -7,7 +7,6 @@ import pylab as pb
 from ..core.parameterised import parameterised
 from kernpart import kernpart
 import itertools
-from prod_orthogonal import prod_orthogonal
 from prod import prod
 from ..util.linalg import symmetrify
 
@@ -84,96 +83,72 @@ class kern(parameterised):
             count += p.Nparam
 
     def __add__(self, other):
-        assert self.D == other.D
-        newkern = kern(self.D, self.parts + other.parts, self.input_slices + other.input_slices)
-        # transfer constraints:
-        newkern.constrained_indices = self.constrained_indices + [i+self.Nparam  for i in other.constrained_indices]
-        newkern.constraints = self.constraints + other.constraints
-        newkern.fixed_indices = self.fixed_indices + [self.Nparam + x for x in other.fixed_indices]
-        newkern.fixed_values = self.fixed_values + other.fixed_values
-        newkern.tied_indices = self.tied_indices + [self.Nparam + x for x in other.tied_indices]
-        return newkern
+        """
+        Shortcut for `add`.
+        """
+        return self.add(other)
 
-    def add(self, other):
+    def add(self, other,tensor=False):
         """
         Add another kernel to this one. Both kernels are defined on the same _space_
         :param other: the other kernel to be added
         :type other: GPy.kern
         """
-        return self + other
+        if tensor:
+            D = self.D + other.D
+            self_input_slices = [slice(*sl.indices(self.D)) for sl in self.input_slices]
+            other_input_indices = [sl.indices(other.D) for sl in other.input_slices]
+            other_input_slices = [slice(i[0] + self.D, i[1] + self.D, i[2]) for i in other_input_indices]
 
-    def add_orthogonal(self, other):
-        """
-        Add another kernel to this one. Both kernels are defined on separate spaces
-        :param other: the other kernel to be added
-        :type other: GPy.kern
-        """
-        # deal with input slices
-        D = self.D + other.D
-        self_input_slices = [slice(*sl.indices(self.D)) for sl in self.input_slices]
-        other_input_indices = [sl.indices(other.D) for sl in other.input_slices]
-        other_input_slices = [slice(i[0] + self.D, i[1] + self.D, i[2]) for i in other_input_indices]
+            newkern = kern(D, self.parts + other.parts, self_input_slices + other_input_slices)
 
-        newkern = kern(D, self.parts + other.parts, self_input_slices + other_input_slices)
-
-        # transfer constraints:
-        newkern.constrained_indices = self.constrained_indices + [x+self.Nparam for x in other.constrained_indices]
-        newkern.constraints = self.constraints + other.constraints
-        newkern.fixed_indices = self.fixed_indices + [self.Nparam + x for x in other.fixed_indices]
-        newkern.fixed_values = self.fixed_values + other.fixed_values
-        newkern.constraints = self.constraints + other.constraints
-        newkern.constrained_bounded_uppers = self.constrained_bounded_uppers + other.constrained_bounded_uppers
-        newkern.tied_indices = self.tied_indices + [self.Nparam + x for x in other.tied_indices]
+            # transfer constraints:
+            newkern.constrained_indices = self.constrained_indices + [x+self.Nparam for x in other.constrained_indices]
+            newkern.constraints = self.constraints + other.constraints
+            newkern.fixed_indices = self.fixed_indices + [self.Nparam + x for x in other.fixed_indices]
+            newkern.fixed_values = self.fixed_values + other.fixed_values
+            newkern.constraints = self.constraints + other.constraints
+            newkern.tied_indices = self.tied_indices + [self.Nparam + x for x in other.tied_indices]
+        else:
+            assert self.D == other.D
+            newkern = kern(self.D, self.parts + other.parts, self.input_slices + other.input_slices)
+            # transfer constraints:
+            newkern.constrained_indices = self.constrained_indices + [i+self.Nparam  for i in other.constrained_indices]
+            newkern.constraints = self.constraints + other.constraints
+            newkern.fixed_indices = self.fixed_indices + [self.Nparam + x for x in other.fixed_indices]
+            newkern.fixed_values = self.fixed_values + other.fixed_values
+            newkern.tied_indices = self.tied_indices + [self.Nparam + x for x in other.tied_indices]
         return newkern
 
     def __mul__(self, other):
         """
-        Shortcut for `prod_orthogonal`. Note that `+` assumes that we sum 2 kernels defines on the same space whereas `*` assumes that the kernels are defined on different subspaces.
+        Shortcut for `prod`.
         """
         return self.prod(other)
 
-    def prod(self, other):
+    def prod(self, other,tensor=False):
         """
-        multiply two kernels defined on the same spaces.
+        multiply two kernels (either on the same space, or on the tensor product of the input space)
         :param other: the other kernel to be added
         :type other: GPy.kern
         """
         K1 = self.copy()
         K2 = other.copy()
 
-        newkernparts = [prod(k1, k2) for k1, k2 in itertools.product(K1.parts, K2.parts)]
-
         slices = []
-        for sl1, sl2 in itertools.product(K1.input_slices, K2.input_slices):
-            s1, s2 = [False] * K1.D, [False] * K2.D
+        for sl1, sl2 in itertools.product(K1.input_slices,K2.input_slices):
+            s1, s2 = [False]*K1.D, [False]*K2.D
             s1[sl1], s2[sl2] = [True], [True]
-            slices += [s1 + s2]
+            slices += [s1+s2]
 
-        newkern = kern(K1.D, newkernparts, slices)
+        newkernparts = [prod(k1, k2,tensor) for k1, k2 in itertools.product(K1.parts, K2.parts)]
+
+        if tensor:
+            newkern = kern(K1.D + K2.D, newkernparts, slices)
+        else:
+            newkern = kern(K1.D, newkernparts, slices)
+
         newkern._follow_constrains(K1, K2)
-
-        return newkern
-
-    def prod_orthogonal(self, other):
-        """
-        multiply two kernels. Both kernels are defined on separate spaces.
-        :param other: the other kernel to be added
-        :type other: GPy.kern
-        """
-        K1 = self.copy()
-        K2 = other.copy()
-
-        newkernparts = [prod_orthogonal(k1, k2) for k1, k2 in itertools.product(K1.parts, K2.parts)]
-
-        slices = []
-        for sl1, sl2 in itertools.product(K1.input_slices, K2.input_slices):
-            s1, s2 = [False] * K1.D, [False] * K2.D
-            s1[sl1], s2[sl2] = [True], [True]
-            slices += [s1 + s2]
-
-        newkern = kern(K1.D + K2.D, newkernparts, slices)
-        newkern._follow_constrains(K1, K2)
-
         return newkern
 
     def _follow_constrains(self, K1, K2):
@@ -469,9 +444,9 @@ class kern(parameterised):
 
         return target_mu, target_S
 
-    def plot(self, x=None, plot_limits=None, which_functions='all', resolution=None, *args, **kwargs):
-        if which_functions == 'all':
-            which_functions = [True] * self.Nparts
+    def plot(self, x=None, plot_limits=None, which_parts='all', resolution=None, *args, **kwargs):
+        if which_parts == 'all':
+            which_parts = [True] * self.Nparts
         if self.D == 1:
             if x is None:
                 x = np.zeros((1, 1))
@@ -488,7 +463,7 @@ class kern(parameterised):
                 raise ValueError, "Bad limits for plotting"
 
             Xnew = np.linspace(xmin, xmax, resolution or 201)[:, None]
-            Kx = self.K(Xnew, x, slices2=which_functions)
+            Kx = self.K(Xnew, x, which_parts)
             pb.plot(Xnew, Kx, *args, **kwargs)
             pb.xlim(xmin, xmax)
             pb.xlabel("x")
@@ -514,7 +489,7 @@ class kern(parameterised):
             xg = np.linspace(xmin[0], xmax[0], resolution)
             yg = np.linspace(xmin[1], xmax[1], resolution)
             Xnew = np.vstack((xx.flatten(), yy.flatten())).T
-            Kx = self.K(Xnew, x, slices2=which_functions)
+            Kx = self.K(Xnew, x, which_parts)
             Kx = Kx.reshape(resolution, resolution).T
             pb.contour(xg, yg, Kx, vmin=Kx.min(), vmax=Kx.max(), cmap=pb.cm.jet, *args, **kwargs)
             pb.xlim(xmin[0], xmax[0])

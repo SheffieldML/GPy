@@ -20,7 +20,6 @@ from periodic_exponential import periodic_exponential as periodic_exponentialpar
 from periodic_Matern32 import periodic_Matern32 as periodic_Matern32part
 from periodic_Matern52 import periodic_Matern52 as periodic_Matern52part
 from prod import prod as prodpart
-from prod_orthogonal import prod_orthogonal as prod_orthogonalpart
 from symmetric import symmetric as symmetric_part
 from coregionalise import coregionalise as coregionalise_part
 from rational_quadratic import rational_quadratic as rational_quadraticpart
@@ -255,7 +254,7 @@ def periodic_Matern52(D,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,
     part = periodic_Matern52part(D,variance, lengthscale, period, n_freq, lower, upper)
     return kern(D, [part])
 
-def prod(k1,k2):
+def prod(k1,k2,tensor=False):
     """
      Construct a product kernel over D from two kernels over D
 
@@ -263,19 +262,8 @@ def prod(k1,k2):
     :type k1, k2: kernpart
     :rtype: kernel object
     """
-    part = prodpart(k1,k2)
-    return kern(k1.D, [part])
-
-def prod_orthogonal(k1,k2):
-    """
-     Construct a product kernel over D1 x D2 from a kernel over D1 and another over D2.
-
-    :param k1, k2: the kernels to multiply
-    :type k1, k2: kernpart
-    :rtype: kernel object
-    """
-    part = prod_orthogonalpart(k1,k2)
-    return kern(k1.D+k2.D, [part])
+    part = prodpart(k1,k2,tensor)
+    return kern(part.D, [part])
 
 def symmetric(k):
     """

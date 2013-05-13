@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import stats, linalg
-from ..util.linalg import pdinv,mdot,jitchol
+from ..util.linalg import pdinv,mdot,jitchol,DSYR
 from likelihood import likelihood
 
 class EP(likelihood):
@@ -116,8 +116,9 @@ class EP(likelihood):
                 self.tau_tilde[i] += Delta_tau
                 self.v_tilde[i] += Delta_v
                 #Posterior distribution parameters update
-                si=Sigma[:,i:i+1]
-                Sigma -= Delta_tau/(1.+ Delta_tau*Sigma[i,i])*np.dot(si,si.T)#DSYR
+                DSYR(Sigma,Sigma[:,i].copy(), -float(Delta_tau/(1.+ Delta_tau*Sigma[i,i])))
+                #si=Sigma[:,i:i+1]
+                #Sigma -= Delta_tau/(1.+ Delta_tau*Sigma[i,i])*np.dot(si,si.T)#DSYR
                 mu = np.dot(Sigma,self.v_tilde)
                 self.iterations += 1
             #Sigma recomptutation with Cholesky decompositon

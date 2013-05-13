@@ -3,16 +3,11 @@
 
 import numpy as np
 import pylab as pb
-from ..util.linalg import mdot, jitchol, tdot, symmetrify
+from ..util.linalg import mdot, jitchol, tdot, symmetrify, backsub_both_sides
 from ..util.plot import gpplot
 from .. import kern
 from GP import GP
 from scipy import linalg
-
-def backsub_both_sides(L, X):
-    """ Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky"""
-    tmp, _ = linalg.lapack.flapack.dtrtrs(L, np.asfortranarray(X), lower=1, trans=1)
-    return linalg.lapack.flapack.dtrtrs(L, np.asfortranarray(tmp.T), lower=1, trans=1)[0].T
 
 class sparse_GP(GP):
     """

@@ -206,8 +206,9 @@ class opt_SGD(Optimizer):
         f, fp = f_fp(self.x_opt[j])
         step[j] = self.momentum * step[j] + self.learning_rate[j] * fp
         self.x_opt[j] -= step[j]
-
         self.restore_constraints(ci)
+
+        self.model.grads[j] = fp
         # restore likelihood _bias and _scale, otherwise when we call set_data(y) on
         # the next feature, it will get normalized with the mean and std of this one.
         self.model.likelihood._bias = 0
@@ -217,6 +218,8 @@ class opt_SGD(Optimizer):
 
     def opt(self, f_fp=None, f=None, fp=None):
         self.x_opt = self.model._get_params_transformed()
+        self.model.grads = np.zeros_like(self.x_opt)
+
         X, Y = self.model.X.copy(), self.model.likelihood.Y.copy()
 
         self.model.likelihood.YYT = None
@@ -287,7 +290,10 @@ class opt_SGD(Optimizer):
             self.model.likelihood.N = N
             self.model.likelihood.D = D
             self.model.likelihood.Y = Y
-
+            sigma = self.model.likelihood._variance
+            self.model.likelihood._variance = None # invalidate cache
+            self.model.likelihood._set_params(sigma)
+            
             self.trace.append(self.f_opt)
             if self.iteration_file is not None:
                 f = open(self.iteration_file + "iteration%d.pickle" % it, 'w')

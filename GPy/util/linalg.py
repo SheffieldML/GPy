@@ -321,3 +321,8 @@ def cholupdate(L,x):
     x = x.copy()
     N = x.size
     weave.inline(code, support_code=support_code, arg_names=['N','L','x'], type_converters=weave.converters.blitz)
+
+def backsub_both_sides(L, X):
+    """ Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky"""
+    tmp, _ = linalg.lapack.flapack.dtrtrs(L, np.asfortranarray(X), lower=1, trans=1)
+    return linalg.lapack.flapack.dtrtrs(L, np.asfortranarray(tmp.T), lower=1, trans=1)[0].T

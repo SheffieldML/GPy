@@ -17,6 +17,8 @@ def backsub_both_sides(L,X):
 
 class FITC(sparse_GP):
     def __init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False):
+
+        #self.fixed_beta_star = np.random.rand(X.shape[0],1) #TODO erase
         sparse_GP.__init__(self, X, likelihood, kernel=kernel, Z=Z, X_variance=None, normalize_X=False)
 
     def _set_params(self, p):
@@ -55,9 +57,10 @@ class FITC(sparse_GP):
         self.beta_star = self.likelihood.precision/(1. + self.likelihood.precision*self.Diag0[:,None]) #Includes Diag0 in the precision
         self.V_star = self.beta_star * self.likelihood.Y
 
-
-
-
+        #self.true_V_star = self.V_star.copy() #TODO eraseme
+        #self.true_beta_star = self.beta_star.copy() #TODO eraseme
+        #self.beta_star = self.fixed_beta_star.copy() #TODO eraseme
+        #self.V_star = self.beta_star * self.likelihood.Y #TODO eraseme
 
 
         # The rather complex computations of self.A
@@ -245,7 +248,7 @@ class FITC(sparse_GP):
             raise NotImplementedError, "heteroscedatic derivates not implemented"
         else:
             # likelihood is not heterscedatic
-            dbstar_dnoise = self.likelihood.precision * (self.beta_star**2 * self.Diag0[:,None] - self.beta_star) #check
+            dbstar_dnoise = self.likelihood.precision * (self.beta_star**2 * self.Diag0[:,None] - self.beta_star)
             #dbstar_dnoise = self.likelihood.precision * (self.true_beta_star**2 * self.Diag0[:,None] - self.true_beta_star) #TODO erase
             Lmi_psi1 = mdot(self.Lmi,self.psi1)
             LBiLmipsi1 = np.dot(self.LBi,Lmi_psi1)
@@ -253,27 +256,29 @@ class FITC(sparse_GP):
             aux_1 = self.likelihood.Y.T * np.dot(self._LBi_Lmi_psi1V.T,LBiLmipsi1)
             aux_2 = np.dot(LBiLmipsi1.T,self._LBi_Lmi_psi1V)
 
-            dA_dnoise = 0.5 * self.D * (dbstar_dnoise/self.beta_star).sum() - 0.5 * self.D * np.sum(self.likelihood.Y**2 * dbstar_dnoise) # check
-            dC_dnoise = -0.5 * np.sum(mdot(self.LBi.T,self.LBi,Lmi_psi1) *  Lmi_psi1 * dbstar_dnoise.T) #check
-            dC_dnoise = -0.5 * np.sum(mdot(self.LBi.T,self.LBi,Lmi_psi1) *  Lmi_psi1 * dbstar_dnoise.T) #check
+            dA_dnoise = 0.5 * self.D * (dbstar_dnoise/self.beta_star).sum() - 0.5 * self.D * np.sum(self.likelihood.Y**2 * dbstar_dnoise)
+            dC_dnoise = -0.5 * np.sum(mdot(self.LBi.T,self.LBi,Lmi_psi1) *  Lmi_psi1 * dbstar_dnoise.T)
+            dC_dnoise = -0.5 * np.sum(mdot(self.LBi.T,self.LBi,Lmi_psi1) *  Lmi_psi1 * dbstar_dnoise.T)
 
-            dD_dnoise_1 =  mdot(self.V_star*LBiLmipsi1.T,LBiLmipsi1*dbstar_dnoise.T*self.likelihood.Y.T) #check
-            #dD_dnoise_1 =  mdot(self.true_V_star*LBiLmipsi1.T,LBiLmipsi1*dbstar_dnoise.T*self.likelihood.Y.T) #TODO eraseme
-
+            dD_dnoise_1 =  mdot(self.V_star*LBiLmipsi1.T,LBiLmipsi1*dbstar_dnoise.T*self.likelihood.Y.T)
             alpha = mdot(LBiLmipsi1,self.V_star)
             alpha_ = mdot(LBiLmipsi1.T,alpha)
-            dD_dnoise_2 = -0.5 * self.D * np.sum(alpha_**2 * dbstar_dnoise ) #check
+            dD_dnoise_2 = -0.5 * self.D * np.sum(alpha_**2 * dbstar_dnoise )
 
+            dD_dnoise_1 = mdot(self.V_star.T,self.psi1.T,self.Lmi.T,self.LBi.T,self.LBi,self.Lmi,self.psi1,dbstar_dnoise*self.likelihood.Y)
+            dD_dnoise_2 = 0.5*mdot(self.V_star.T,self.psi1.T,Hi,self.psi1,dbstar_dnoise*self.psi1.T,Hi,self.psi1,self.V_star)
             dD_dnoise = dD_dnoise_1 + dD_dnoise_2
 
             self.partial_for_likelihood = dA_dnoise + dC_dnoise + dD_dnoise
+            self.partial_for_likelihood = dD_dnoise
 
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
         A = -0.5 * self.N * self.D * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
         C = -self.D * (np.sum(np.log(np.diag(self.LB))))
         D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
-        return A + C + D
+        #return A + C + D
+        return D
 
     def _log_likelihood_gradients(self):
         pass
@@ -283,8 +288,8 @@ class FITC(sparse_GP):
         if self.has_uncertain_inputs:
             raise NotImplementedError, "FITC approximation not implemented for uncertain inputs"
         else:
-            #dL_dtheta = self.dlogbeta_dtheta + self.dyby_dtheta #+ self.dlogB_dtheta + self.dD_dtheta
             dL_dtheta = self.dA_dtheta + self.dlogB_dtheta + self.dD_dtheta
+            dL_dtheta = self.dD_dtheta #TODO eraseme
         return dL_dtheta
 
     def dL_dZ(self):
@@ -292,6 +297,7 @@ class FITC(sparse_GP):
             raise NotImplementedError, "FITC approximation not implemented for uncertain inputs"
         else:
             dL_dZ = self.dA_dX + self.dlogB_dX + self.dD_dX
+            dL_dZ = self.dD_dX #TODO eraseme
         return dL_dZ
 
     def _raw_predict(self, Xnew, which_parts, full_cov=False):

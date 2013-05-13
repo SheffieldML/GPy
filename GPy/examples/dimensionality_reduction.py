@@ -92,7 +92,7 @@ def BGPLVM_oil(optimize=True, N=100, Q=10, M=20, max_f_eval=300, plot=False):
         plt.sca(latent_axes)
         m.plot_latent()
         data_show = GPy.util.visualize.vector_show(y)
-        lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :], m, data_show, latent_axes=latent_axes) # , sense_axes=sense_axes)
+        lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :].copy(), m, data_show, latent_axes=latent_axes) # , sense_axes=sense_axes)
         raw_input('Press enter to finish')
         plt.close('all')
     # # plot
@@ -376,7 +376,7 @@ def brendan_faces():
     ax = m.plot_latent()
     y = m.likelihood.Y[0, :]
     data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, invert=False, scale=False)
-    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :], m, data_show, ax)
+    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
     raw_input('Press enter to finish')
     plt.close('all')
 
@@ -389,11 +389,12 @@ def stick():
     # optimize
     m.ensure_default_constraints()
     m.optimize(messages=1, max_f_eval=10000)
+    m._set_params(m._get_params())
 
     ax = m.plot_latent()
     y = m.likelihood.Y[0, :]
     data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
-    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :], m, data_show, ax)
+    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
     raw_input('Press enter to finish')
     plt.close('all')
 
@@ -415,7 +416,7 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True):
     ax = m.plot_latent()
     y = m.likelihood.Y[0, :]
     data_show = GPy.util.visualize.skeleton_show(y[None, :], data['skel'])
-    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :], m, data_show, ax)
+    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
     raw_input('Press enter to finish')
     plt.close('all')
 

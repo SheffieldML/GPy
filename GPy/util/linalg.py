@@ -124,8 +124,9 @@ def pdinv(A, *args):
     L = jitchol(A, *args)
     logdet = 2.*np.sum(np.log(np.diag(L)))
     Li = chol_inv(L)
-    Ai = linalg.lapack.flapack.dpotri(L)[0]
-    Ai = np.tril(Ai) + np.tril(Ai,-1).T
+    Ai, _ = linalg.lapack.flapack.dpotri(L)
+    #Ai = np.tril(Ai) + np.tril(Ai,-1).T
+    symmetrify(Ai)
 
     return Ai, L, Li, logdet
 
@@ -235,6 +236,18 @@ def tdot(*args, **kwargs):
     else:
         return tdot_numpy(*args,**kwargs)
 
+def DSYR(A,x,alpha=1.):
+    N = c_int(A.shape[0])
+    LDA = c_int(A.shape[0])
+    UPLO = c_char('l')
+    ALPHA = c_double(alpha)
+    A_ = A.ctypes.data_as(ctypes.c_void_p)
+    x_ = x.ctypes.data_as(ctypes.c_void_p)
+    INCX = c_int(1)
+    _blaslib.dsyr_(byref(UPLO), byref(N), byref(ALPHA),
+            x_, byref(INCX), A_, byref(LDA))
+    symmetrify(A,upper=True)
+
 def symmetrify(A,upper=False):
     """
     Take the square matrix A and make it symmetrical by copting elements from the lower half to the upper
@@ -258,18 +271,19 @@ def symmetrify(A,upper=False):
     }
     """
     if A.flags['C_CONTIGUOUS'] and upper:
-        weave.inline(f_contig_code,['A','N'])
+        weave.inline(f_contig_code,['A','N'], extra_compile_args=['-O3'])
     elif A.flags['C_CONTIGUOUS'] and not upper:
-        weave.inline(c_contig_code,['A','N'])
+        weave.inline(c_contig_code,['A','N'], extra_compile_args=['-O3'])
     elif A.flags['F_CONTIGUOUS'] and upper:
-        weave.inline(c_contig_code,['A','N'])
+        weave.inline(c_contig_code,['A','N'], extra_compile_args=['-O3'])
     elif A.flags['F_CONTIGUOUS'] and not upper:
-        weave.inline(f_contig_code,['A','N'])
+        weave.inline(f_contig_code,['A','N'], extra_compile_args=['-O3'])
     else:
         tmp = np.tril(A)
         A[:] = 0.0
         A += tmp
         A += np.tril(tmp,-1).T
+
 
 def symmetrify_murray(A):
     A += A.T

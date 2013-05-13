@@ -113,11 +113,11 @@ class EP(likelihood):
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma[i,i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma[i,i])
-                self.tau_tilde[i] = self.tau_tilde[i] + Delta_tau
-                self.v_tilde[i] = self.v_tilde[i] + Delta_v
+                self.tau_tilde[i] += Delta_tau
+                self.v_tilde[i] += Delta_v
                 #Posterior distribution parameters update
-                si=Sigma[:,i].reshape(self.N,1)
-                Sigma = Sigma - Delta_tau/(1.+ Delta_tau*Sigma[i,i])*np.dot(si,si.T)
+                si=Sigma[:,i:i+1]
+                Sigma -= Delta_tau/(1.+ Delta_tau*Sigma[i,i])*np.dot(si,si.T)#DSYR
                 mu = np.dot(Sigma,self.v_tilde)
                 self.iterations += 1
             #Sigma recomptutation with Cholesky decompositon

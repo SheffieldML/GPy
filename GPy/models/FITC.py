@@ -271,7 +271,6 @@ class FITC(sparse_GP):
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
         A = -0.5 * self.N * self.D * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
-        #B = -0.5 * self.D * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A))
         C = -self.D * (np.sum(np.log(np.diag(self.LB))))
         D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
         return A + C + D
@@ -284,7 +283,7 @@ class FITC(sparse_GP):
         if self.has_uncertain_inputs:
             raise NotImplementedError, "FITC approximation not implemented for uncertain inputs"
         else:
-            #dL_dtheta = dL_dtheta = self.dlogbeta_dtheta + self.dyby_dtheta #+ self.dlogB_dtheta + self.dD_dtheta
+            #dL_dtheta = self.dlogbeta_dtheta + self.dyby_dtheta #+ self.dlogB_dtheta + self.dD_dtheta
             dL_dtheta = self.dA_dtheta + self.dlogB_dtheta + self.dD_dtheta
         return dL_dtheta
 

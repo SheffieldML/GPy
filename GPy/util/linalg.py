@@ -124,8 +124,9 @@ def pdinv(A, *args):
     L = jitchol(A, *args)
     logdet = 2.*np.sum(np.log(np.diag(L)))
     Li = chol_inv(L)
-    Ai = linalg.lapack.flapack.dpotri(L)[0]
-    Ai = np.tril(Ai) + np.tril(Ai,-1).T
+    Ai, _ = linalg.lapack.flapack.dpotri(L)
+    #Ai = np.tril(Ai) + np.tril(Ai,-1).T
+    symmetrify(Ai)
 
     return Ai, L, Li, logdet
 

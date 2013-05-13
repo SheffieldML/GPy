@@ -257,16 +257,20 @@ def symmetrify(A,upper=False):
     N,M = A.shape
     assert N==M
     c_contig_code = """
+    int iN;
     for (int i=1; i<N; i++){
+      iN = i*N;
       for (int j=0; j<i; j++){
-        A[i+j*N] = A[i*N+j];
+        A[i+j*N] = A[iN+j];
       }
     }
     """
     f_contig_code = """
+    int iN;
     for (int i=1; i<N; i++){
+      iN = i*N;
       for (int j=0; j<i; j++){
-        A[i*N+j] = A[i+j*N];
+        A[iN+j] = A[i+j*N];
       }
     }
     """

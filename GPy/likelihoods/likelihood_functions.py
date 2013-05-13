@@ -176,8 +176,6 @@ class student_t(likelihood_function):
 
     def _set_params(self, x):
         self.sigma = float(x)
-        print "Setting student t sigma: ", x
-        print x
         #self.covariance_matrix = np.eye(self.N)*self._variance
         #self.precision = 1./self._variance
 
@@ -288,7 +286,7 @@ class student_t(likelihood_function):
         f = np.squeeze(f)
         assert y.shape == f.shape
         e = y - f
-        grad_sigma = (  (-2*self.sigma*self.v*(self.v + 1)*e)
+        grad_sigma = (  (2*self.sigma*self.v*(self.v + 1)*e)
                       / ((self.v*(self.sigma**2) + e**2)**2)
                      )
         return np.squeeze(grad_sigma)

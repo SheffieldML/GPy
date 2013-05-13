@@ -66,6 +66,10 @@ class GP(model):
         # self.likelihood._set_params(p[self.kern.Nparam:])               # test by Nicolas
         self.likelihood._set_params(p[self.kern.Nparam_transformed():])  # test by Nicolas
 
+        if isinstance(self.likelihood, Laplace):
+            print "Updating approx: ", p
+            self.likelihood.fit_full(self.kern.K(self.X))
+            self.likelihood._set_params(self.likelihood._get_params())
 
         self.K = self.kern.K(self.X)
         self.K += self.likelihood.covariance_matrix
@@ -87,14 +91,12 @@ class GP(model):
         return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
     def _update_params_callback(self, p):
-        #FIXME:Check the transforming
-        #Set the new parameters of the kernel and likelihood within the optimization
-        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+        #parameters will be in transformed space
         self.kern._set_params_transformed(p[:self.kern.Nparam_transformed()])
+        #set_params_transformed for likelihood doesn't exist?
         self.likelihood._set_params(p[self.kern.Nparam_transformed():])
         #update the likelihood approximation within the optimisation with the current parameters
         self.update_likelihood_approximation()
-        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
     def update_likelihood_approximation(self):
         """
@@ -123,7 +125,9 @@ class GP(model):
         model for a new variable Y* = v_tilde/tau_tilde, with a covariance
         matrix K* = K + diag(1./tau_tilde) plus a normalization term.
         """
-        return -0.5 * self.D * self.K_logdet + self._model_fit_term() + self.likelihood.Z
+        l = -0.5 * self.D * self.K_logdet + self._model_fit_term() + self.likelihood.Z
+        print "Log likelihood: ", l
+        return l
 
     def _log_likelihood_gradients(self):
         """
@@ -135,7 +139,7 @@ class GP(model):
         if isinstance(self.likelihood, Laplace):
             dL_dthetaK_explicit = dL_dthetaK
             #Need to pass in a matrix of ones to get access to raw dK_dthetaK values without being chained
-            fake_dL_dKs = np.eye(self.dL_dK.shape[0])
+            fake_dL_dKs = np.eye(self.dL_dK.shape[0]) #FIXME: Check this is right...
             dK_dthetaK = self.kern.dK_dtheta(dL_dK=fake_dL_dKs, X=self.X)
 
             #We need the dL_dK where K is equal to the prior K, not K+Sigma as is the case now
@@ -145,13 +149,11 @@ class GP(model):
             #print "dL_dthetaK_explicit: {dldkx}     dL_dthetaK_implicit: {dldki}        dL_dthetaK: {dldk}".format(dldkx=dL_dthetaK_explicit, dldki=dL_dthetaK_implicit, dldk=dL_dthetaK)
 
             dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))
+            #print "dL_dthetaL: ", dL_dthetaL
             print "Stacked dL_dthetaK, dL_dthetaL: ", np.hstack((dL_dthetaK, dL_dthetaL))
-            import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
         else:
-            #print "dL_dthetaK: ", dL_dthetaK
             dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))
             print "Stacked dL_dthetaK, dL_dthetaL: ", np.hstack((dL_dthetaK, dL_dthetaL))
-        #print "dL_dthetaL: ", dL_dthetaL
         return np.hstack((dL_dthetaK, dL_dthetaL))
         #return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
 

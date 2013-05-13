@@ -63,6 +63,7 @@ class Laplace(likelihood):
         return self.likelihood_function._get_param_names()
 
     def _set_params(self, p):
+        #print "Setting laplace param with: ", p
         return self.likelihood_function._set_params(p)
 
     def both_gradients(self, dL_d_K_Sigma, dK_dthetaK):
@@ -78,10 +79,24 @@ class Laplace(likelihood):
         return (self._Kgradients(dL_d_K_Sigma, dK_dthetaK), self._gradients(dL_d_K_Sigma))
 
     def _shared_gradients_components(self):
-        dL_dytil = -np.dot(self.Y.T, (self.K+self.Sigma_tilde)) #or *0.5? Shouldn't this be -y*R
-        dytil_dfhat = self.Wi__Ki_W # np.dot(self.Sigma_tilde, self.Ki) + np.eye(self.N) # or self.Wi__Ki_W?
-        #Ki, _, _, _ = pdinv(self.K)
-        #dytil_dfhat = np.dot(self.Sigma_tilde, Ki) + np.eye(self.N) # or self.Wi__Ki_W?
+        dL_dytil = -np.dot(self.Y.T, inv(self.K+self.Sigma_tilde)) #or *0.5? Shouldn't this be -y*R
+
+        d3likelihood_d3fhat = self.likelihood_function.d3link(self.data, self.f_hat, self.extra_data)
+        Wi = np.diagonal(self.Sigma_tilde) #Convenience
+        #Can just hadamard product as diagonal matricies multiplied are just multiplying elements
+        dWi_dfhat = np.diagflat(-1*Wi*(-1*d3likelihood_d3fhat)*Wi)
+
+        Ki, _, _, _ = pdinv(self.K)
+        #dytil_dfhat_implicit = np.dot(dWi_dfhat, Ki) + np.eye(self.N)
+        #dytil_dfhat = np.dot(dWi_dfhat, Ki) + np.eye(self.N)
+
+        #Wi(Ki + W) = Wi__Ki_W using the last K prior given to fit_full
+        #dytil_dfhat_explicit = self.Wi__Ki_W
+        #dytil_dfhat = dytil_dfhat_explicit + dytil_dfhat_implicit
+        #dytil_dfhat1 = np.dot(self.Sigma_tilde, Ki) + np.eye(self.N) # or self.Wi__Ki_W? Theyre the same basically
+
+        a = mdot(dWi_dfhat, Ki, self.f_hat)
+        dytil_dfhat = mdot(dWi_dfhat, Ki, self.f_hat) + np.dot(self.Sigma_tilde, Ki) + np.eye(self.N)
         return dL_dytil, dytil_dfhat
 
     def _Kgradients(self, dL_d_K_Sigma, dK_dthetaK):
@@ -94,18 +109,18 @@ class Laplace(likelihood):
         """
         dL_dytil, dytil_dfhat = self._shared_gradients_components()
 
-
         #dSigma_dfhat = -np.dot(self.Sigma_tilde, np.dot(d3phi_d3fhat, self.Sigma_tilde))
 
-        print "Computing K gradients"
-        print "dytil_dfhat: ", np.mean(dytil_dfhat)
-        I = np.eye(self.N)
-        C = np.dot(self.K, self.W)
-        A = I + C
+        #print "Computing K gradients"
+        #print "dytil_dfhat: ", np.mean(dytil_dfhat)
+        #I = np.eye(self.N)
+        #C = np.dot(self.K, self.W)
+        #A = I + C
         #plt.imshow(A)
         #plt.show()
 
         #I_KW_i, _, _, _ = pdinv(A) #FIXME: WHY SO MUCH JITTER?!
+        #B = I + w12*K*w12
         I_KW_i = self.Bi # could use self.B_chol??
 
         #FIXME: Careful dK_dthetaK is not the derivative with respect to the marginal just prior K!
@@ -113,15 +128,22 @@ class Laplace(likelihood):
         dfhat_dthetaK = np.zeros((self.f_hat.shape[0], dK_dthetaK.shape[0]))
         grad = self.likelihood_function.link_grad(self.data, self.f_hat, self.extra_data)
         for ind_j, thetaj in enumerate(dK_dthetaK):
-            dfhat_dthetaK[:, ind_j] = np.dot(I_KW_i, np.dot(thetaj, grad))
+            #dfhat_dthetaK[:, ind_j] = np.dot(thetaj, grad) - np.dot(self.K, np.dot(I_KW_i, np.dot(thetaj, grad)))
+            dfhat_dthetaK[:, ind_j] = np.dot(I_KW_i, thetaj*grad)
 
+        print "dytil_dfhat: ", np.mean(dytil_dfhat), np.std(dytil_dfhat)
+        print "dfhat_dthetaK: ", np.mean(dfhat_dthetaK), np.std(dfhat_dthetaK)
         dytil_dthetaK = np.dot(dytil_dfhat, dfhat_dthetaK) # should be (D,thetaK)
+        print "dytil_dthetaK: ", np.mean(dytil_dthetaK), np.std(dytil_dthetaK)
+        print "\n"
+
         #FIXME: Careful the -D*0.5 in dL_d_K_sigma might need to be -0.5?
         dL_dSigma = dL_d_K_Sigma
         #d3phi_d3fhat = self.likelihood_function.d3link(self.data, self.f_hat, self.extra_data)
                      #explicit           #implicit
         #dSigmai_dthetaK = 0 + np.dot(d3phi_d3fhat, dfhat_dthetaK)
         #dSigma_dthetaK = np.zeros((self.f_hat.shape[0], self.f_hat.shape[0], dK_dthetaK.shape[0]))
+
         d3likelihood_d3fhat = self.likelihood_function.d3link(self.data, self.f_hat, self.extra_data)
         Wi = np.diagonal(self.Sigma_tilde) #Convenience
         dSigma_dthetaK_explicit = 0
@@ -140,19 +162,16 @@ class Laplace(likelihood):
         dL_dthetaK_via_ytil = np.sum(np.dot(dL_dytil, dytil_dthetaK), axis=0)
         dL_dthetaK_via_Sigma = np.sum(np.dot(dL_dSigma, dSigma_dthetaK), axis=0)
         dL_dthetaK_implicit = dL_dthetaK_via_ytil + dL_dthetaK_via_Sigma
-        #dL_dthetaK_implicit = np.dot(dL_dytil.T, dytil_dthetaK.T)
 
-        #print "\n"
-        #print "dL_dytil: ", np.mean(dL_dytil)
-        #print "dytil_dthetaK: ", np.mean(dytil_dthetaK)
-        #print "dL_dthetaK_via_ytil: ", dL_dthetaK_via_ytil
-        #print "\n"
-        #print "dL_dSigma: ", np.mean(dL_dSigma)
-        #print "dSigma_dthetaK: ", np.mean(dSigma_dthetaK)
-        #print "dL_dthetaK_via_Sigma: ", dL_dthetaK_via_Sigma
-        #print "\n"
-        #print "dL_dthetaK_implicit: ", dL_dthetaK_implicit
-        #import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+        print "dL_dytil: ", np.mean(dL_dytil), np.std(dL_dytil)
+        print "dytil_dthetaK: ", np.mean(dytil_dthetaK), np.std(dytil_dthetaK)
+        print "dL_dthetaK_via_ytil: ", dL_dthetaK_via_ytil
+        print "\n"
+        print "dL_dSigma: ", np.mean(dL_dSigma), np.std(dL_dSigma)
+        print "dSigma_dthetaK: ", np.mean(dSigma_dthetaK), np.std(dSigma_dthetaK)
+        print "dL_dthetaK_via_Sigma: ", dL_dthetaK_via_Sigma
+        print "\n"
+        print "dL_dthetaK_implicit: ", dL_dthetaK_implicit
 
         return np.squeeze(dL_dthetaK_implicit)
 
@@ -182,11 +201,15 @@ class Laplace(likelihood):
         dL_dytil, dytil_dfhat = self._shared_gradients_components()
         #dfhat_dthetaL, dSigmai_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat, self.extra_data) #FIXME: Shouldn't this have a implicit component aswell?
 
-        dlikelihood_dthetaL_explicit, d2likelihood_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat, self.extra_data) #FIXME: Shouldn't this have a implicit component aswell?
-        dlikelihood_dfhat = self.likelihood_function.link_hess(self.data, self.f_hat, self.extra_data)
-        dfhat_dthetaL_cyclic = 0 #what is this? how can dfhat_dthetaL be used in the value of itself?
-        dlikelihood_dthetaL_implicit = np.dot(dlikelihood_dfhat, dfhat_dthetaL_cyclic) # may need a sum over f
-        dfhat_dthetaL = np.dot(self.K, (dlikelihood_dthetaL_explicit + dlikelihood_dthetaL_implicit)[:, None])
+        dlikelihood_dthetaL, d2likelihood_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat, self.extra_data) #FIXME: Shouldn't this have a implicit component aswell?
+        dlikelihood_dfhat = self.likelihood_function.link_grad(self.data, self.f_hat, self.extra_data)
+        #dfhat_dthetaL_cyclic = 0 #FIXME: what is this? how can dfhat_dthetaL be used in the value of itself?
+        #dlikelihood_dthetaL_implicit = np.dot(dlikelihood_dfhat, dfhat_dthetaL_cyclic) # may need a sum over f
+        #dfhat_dthetaL = np.dot(self.K, (dlikelihood_dthetaL_explicit + dlikelihood_dthetaL_implicit)[:, None])
+        #KW_I_i, _, _, _ = pdinv(np.dot(self.K, self.W) + np.eye(self.N))
+        KW_I_i = self.Bi # could use self.B_chol??
+        dfhat_dthetaL = mdot(KW_I_i, (self.K, dlikelihood_dfhat))
+
         dytil_dthetaL = np.dot(dytil_dfhat, dfhat_dthetaL)
 
         #FIXME: Careful the -D*0.5 in dL_d_K_sigma might need to be -0.5?
@@ -199,7 +222,7 @@ class Laplace(likelihood):
 
         d3likelihood_d3fhat = self.likelihood_function.d3link(self.data, self.f_hat, self.extra_data)
         dWi_dfhat = np.diagflat(-1*Wi*(-1*d3likelihood_d3fhat)*Wi)
-        dSigma_dthetaL_implicit = np.dot(dWi_dfhat, dfhat_dthetaL_cyclic)
+        dSigma_dthetaL_implicit = np.dot(dWi_dfhat, dfhat_dthetaL)
         dSigma_dthetaL = dSigma_dthetaL_explicit + dSigma_dthetaL_implicit
 
         #dSigmai_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat, self.extra_data) #FIXME: Shouldn't this have a implicit component aswell?
@@ -219,8 +242,10 @@ class Laplace(likelihood):
         #dL_dthetaL = 0 + np.dot(dL_dytil, dytil_dthetaL)# + np.dot(dL_dSigma, dSigma_dthetaL)
 
         dL_dthetaL_via_ytil = np.sum(np.dot(dL_dytil, dytil_dthetaL), axis=0)
-        dL_dthetaL_via_Sigma = np.sum(np.dot(dL_dSigma, dSigma_dthetaL), axis=0)
+        dL_dthetaL_via_Sigma = np.sum(np.dot(dL_dSigma[:, None].T, dSigma_dthetaL), axis=0)
         dL_dthetaL = dL_dthetaL_via_ytil + dL_dthetaL_via_Sigma
+        dL_dthetaL_via_Sigma_old = np.sum(np.dot(dL_dSigma, dSigma_dthetaL), axis=0)
+        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
         return np.squeeze(dL_dthetaL) #should be array of length *params-being optimized*, for student t just optimising 1 parameter, this is (1,)
 
@@ -257,7 +282,7 @@ class Laplace(likelihood):
         #((L.T*w)_i + I)f_hat = y_tilde
         L = jitchol(self.K)
         Li = chol_inv(L)
-        Lt_W = np.dot(L.T, self.W)
+        Lt_W = np.dot(L.T, self.W) #FIXME: Can make Faster
 
         ##Check it isn't singular!
         if cond(Lt_W) > epsilon:
@@ -361,7 +386,6 @@ class Laplace(likelihood):
         """
         #W is diagnoal so its sqrt is just the sqrt of the diagonal elements
         W_12 = np.sqrt(W)
-        #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
         B = np.eye(K.shape[0]) + np.dot(W_12, np.dot(K, W_12))
         L = jitchol(B)
         return (B, L, W_12)

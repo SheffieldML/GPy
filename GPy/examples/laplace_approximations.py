@@ -52,7 +52,7 @@ def debug_student_t_noise_approx():
     real_sd = np.sqrt(real_var)
     print "Real noise: ", real_sd
 
-    initial_var_guess = 0.01
+    initial_var_guess = 1
     #t_rv = t(deg_free, loc=0, scale=real_var)
     #noise = t_rvrvs(size=Y.shape)
     #Y += noise
@@ -84,14 +84,21 @@ def debug_student_t_noise_approx():
 
     edited_real_sd = initial_var_guess #real_sd
 
+    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
     print "Clean student t, rasm"
     t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, rasm=True)
     m = GPy.models.GP(X, stu_t_likelihood, kernel6)
-    m.ensure_default_constraints()
+    #m.constrain_positive('rbf')
+    m.constrain_fixed('rbf_v', 1.0898)
+    m.constrain_fixed('rbf_l', 1.8651)
+    m.constrain_positive('t_noi')
+    #m.constrain_fixed('t_noise_variance', real_sd)
     m.update_likelihood_approximation()
-    m.optimize()
+    #m.optimize('lbfgsb', messages=True, callback=m._update_params_callback)
+    m.optimize('scg', messages=True)
     print(m)
+    return m
     if plot:
         plt.suptitle('Student-t likelihood')
         plt.subplot(132)
@@ -99,19 +106,19 @@ def debug_student_t_noise_approx():
         plt.plot(X_full, Y_full)
         plt.ylim(-2.5, 2.5)
 
-    print "Clean student t, ncg"
-    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
-    stu_t_likelihood = GPy.likelihoods.Laplace(Y, t_distribution, rasm=False)
-    m = GPy.models.GP(X, stu_t_likelihood, kernel3)
-    m.ensure_default_constraints()
-    m.update_likelihood_approximation()
-    m.optimize()
-    print(m)
-    if plot:
-        plt.subplot(133)
-        m.plot()
-        plt.plot(X_full, Y_full)
-        plt.ylim(-2.5, 2.5)
+    #print "Clean student t, ncg"
+    #t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
+    #stu_t_likelihood = GPy.likelihoods.Laplace(Y, t_distribution, rasm=False)
+    #m = GPy.models.GP(X, stu_t_likelihood, kernel3)
+    #m.ensure_default_constraints()
+    #m.update_likelihood_approximation()
+    #m.optimize()
+    #print(m)
+    #if plot:
+        #plt.subplot(133)
+        #m.plot()
+        #plt.plot(X_full, Y_full)
+        #plt.ylim(-2.5, 2.5)
 
     #plt.show()
 

@@ -252,7 +252,7 @@ class kern(parameterised):
             which_parts = [True]*self.Nparts
         assert X.shape[1] == self.D
         target = np.zeros(X.shape[0])
-        [p.Kdiag(X[:, i_s], target=target) for p, i_s in zip(self.parts, self.input_slices)]
+        [p.Kdiag(X[:, i_s], target=target) for p, i_s, part_on in zip(self.parts, self.input_slices, which_parts) if part_on]
         return target
 
     def dKdiag_dtheta(self, dL_dKdiag, X):

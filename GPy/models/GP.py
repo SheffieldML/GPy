@@ -3,10 +3,11 @@
 
 
 import numpy as np
+from scipy import linalg
 import pylab as pb
 from .. import kern
 from ..core import model
-from ..util.linalg import pdinv, mdot
+from ..util.linalg import pdinv, mdot, tdot
 from ..util.plot import gpplot, x_frame1D, x_frame2D, Tango
 from ..likelihoods import EP
 
@@ -58,13 +59,12 @@ class GP(model):
         """
         TODO: one day we might like to learn Z by gradient methods?
         """
+        #FIXME: this doesn;t live here.
         return np.zeros_like(self.Z)
 
     def _set_params(self, p):
         self.kern._set_params_transformed(p[:self.kern.Nparam_transformed()])
-        # self.likelihood._set_params(p[self.kern.Nparam:])               # test by Nicolas
-        self.likelihood._set_params(p[self.kern.Nparam_transformed():])  # test by Nicolas
-
+        self.likelihood._set_params(p[self.kern.Nparam_transformed():])
 
         self.K = self.kern.K(self.X)
         self.K += self.likelihood.covariance_matrix
@@ -73,10 +73,14 @@ class GP(model):
 
         # the gradient of the likelihood wrt the covariance matrix
         if self.likelihood.YYT is None:
-            alpha = np.dot(self.Ki, self.likelihood.Y)
-            self.dL_dK = 0.5 * (np.dot(alpha, alpha.T) - self.D * self.Ki)
+            #alpha = np.dot(self.Ki, self.likelihood.Y)
+            alpha,_ = linalg.lapack.flapack.dpotrs(self.L, self.likelihood.Y,lower=1)
+
+            self.dL_dK = 0.5 * (tdot(alpha) - self.D * self.Ki)
         else:
-            tmp = mdot(self.Ki, self.likelihood.YYT, self.Ki)
+            #tmp = mdot(self.Ki, self.likelihood.YYT, self.Ki)
+            tmp, _ = linalg.lapack.flapack.dpotrs(self.L, np.asfortranarray(self.likelihood.YYT), lower=1)
+            tmp, _ = linalg.lapack.flapack.dpotrs(self.L, np.asfortranarray(tmp.T), lower=1)
             self.dL_dK = 0.5 * (tmp - self.D * self.Ki)
 
     def _get_params(self):
@@ -100,7 +104,9 @@ class GP(model):
         Computes the model fit using YYT if it's available
         """
         if self.likelihood.YYT is None:
-            return -0.5 * np.sum(np.square(np.dot(self.Li, self.likelihood.Y)))
+            tmp, _ = linalg.lapack.flapack.dtrtrs(self.L, np.asfortranarray(self.likelihood.Y), lower=1)
+            return -0.5 * np.sum(np.square(tmp))
+            #return -0.5 * np.sum(np.square(np.dot(self.Li, self.likelihood.Y)))
         else:
             return -0.5 * np.sum(np.multiply(self.Ki, self.likelihood.YYT))
 
@@ -123,18 +129,15 @@ class GP(model):
         """
         return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
 
-    def _raw_predict(self, _Xnew, which_parts='all', full_cov=False):
+    def _raw_predict(self, _Xnew, which_parts='all', full_cov=False,stop=False):
         """
         Internal helper function for making predictions, does not account
         for normalization or likelihood
-
-         #TODO: which_parts does nothing
-
-
         """
-        Kx = self.kern.K(self.X, _Xnew,which_parts=which_parts)
-        mu = np.dot(np.dot(Kx.T, self.Ki), self.likelihood.Y)
-        KiKx = np.dot(self.Ki, Kx)
+        Kx = self.kern.K(_Xnew,self.X,which_parts=which_parts).T
+        #KiKx = np.dot(self.Ki, Kx)
+        KiKx, _ = linalg.lapack.flapack.dpotrs(self.L, np.asfortranarray(Kx), lower=1)
+        mu = np.dot(KiKx.T, self.likelihood.Y)
         if full_cov:
             Kxx = self.kern.K(_Xnew, which_parts=which_parts)
             var = Kxx - np.dot(KiKx.T, Kx)
@@ -142,6 +145,8 @@ class GP(model):
             Kxx = self.kern.Kdiag(_Xnew, which_parts=which_parts)
             var = Kxx - np.sum(np.multiply(KiKx, Kx), 0)
             var = var[:, None]
+        if stop:
+            debug_this
         return mu, var
 
 
@@ -178,7 +183,8 @@ class GP(model):
 
     def plot_f(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, full_cov=False):
         """
-        Plot the GP's view of the world, where the data is normalized and the likelihood is Gaussian
+        Plot the GP's view of the world, where the data is normalized and the
+        likelihood is Gaussian.
 
         :param samples: the number of a posteriori samples to plot
         :param which_data: which if the training data to plot (default all)
@@ -193,8 +199,8 @@ class GP(model):
           - In two dimsensions, a contour-plot shows the mean predicted function
           - In higher dimensions, we've no implemented this yet !TODO!
 
-        Can plot only part of the data and part of the posterior functions using which_data and which_functions
-        Plot the data's view of the world, with non-normalized values and GP predictions passed through the likelihood
+        Can plot only part of the data and part of the posterior functions
+        using which_data and which_functions
         """
         if which_data == 'all':
             which_data = slice(None)

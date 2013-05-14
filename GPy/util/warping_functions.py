@@ -81,7 +81,7 @@ class TanhWarpingFunction(WarpingFunction):
         iterations: number of N.R. iterations
 
         """
-        
+
         y = y.copy()
         z = np.ones_like(y)
 
@@ -176,7 +176,7 @@ class TanhWarpingFunction_d(WarpingFunction):
         mpsi = psi.copy()
         d = psi[-1]
         mpsi = mpsi[:self.num_parameters-1].reshape(self.n_terms, 3)
-        
+
         #3. transform data
         z = d*y.copy()
         for i in range(len(mpsi)):
@@ -185,7 +185,7 @@ class TanhWarpingFunction_d(WarpingFunction):
         return z
 
 
-    def f_inv(self, y, psi, iterations = 30):
+    def f_inv(self, z, psi, max_iterations = 1000):
         """
         calculate the numerical inverse of f
 
@@ -194,13 +194,19 @@ class TanhWarpingFunction_d(WarpingFunction):
 
         """
 
-        y = y.copy()
-        z = np.ones_like(y)
+        z = z.copy()
+        y = np.ones_like(z)
+        it = 0
+        update = np.inf
 
-        for i in range(iterations):
-            z -= (self.f(z, psi) - y)/self.fgrad_y(z,psi)
-
-        return z
+        while it == 0 or (np.abs(update).sum() > 1e-10 and it < max_iterations):
+            update = (self.f(y, psi) - z)/self.fgrad_y(y, psi)
+            y -= update
+            it += 1
+        if it == max_iterations:
+            print "WARNING!!! Maximum number of iterations reached in f_inv "
+            
+        return y
 
 
     def fgrad_y(self, y, psi, return_precalc = False):

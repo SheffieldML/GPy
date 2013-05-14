@@ -133,8 +133,8 @@ class GP(model):
 
         """
         Kx = self.kern.K(self.X, _Xnew,which_parts=which_parts)
-        mu = np.dot(np.dot(Kx.T, self.Ki), self.likelihood.Y)
         KiKx = np.dot(self.Ki, Kx)
+        mu = np.dot(KiKx.T, self.likelihood.Y)
         if full_cov:
             Kxx = self.kern.K(_Xnew, which_parts=which_parts)
             var = Kxx - np.dot(KiKx.T, Kx)

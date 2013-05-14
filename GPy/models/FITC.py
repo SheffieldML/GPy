@@ -33,7 +33,7 @@ class FITC(sparse_GP):
             self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
             self._set_params(self._get_params()) # update the GP
 
-    @profile
+    #@profile
     def _computations(self):
 
         #factor Kmm
@@ -85,26 +85,27 @@ class FITC(sparse_GP):
         gamma_2 = mdot(self.beta_star*pHip,self.V_star)
         gamma_3 = self.V_star * mdot(self.V_star.T,pHip*self.beta_star).T
 
-        dA_dpsi0_1 = -0.5 * self.beta_star
-        dA_dpsi0 = .5 * self.V_star**2
 
-        dC_dpsi0 = .5 *alpha
-        dD_dpsi0 = 0.5*mdot(self.beta_star*pHip,self.V_star)**2
-        dD_dpsi1 = gamma_1
-        dD_dpsi1 += -mdot(psi1beta.T,Hi,self.psi1,gamma_1)
-        dD_dpsi0 += -self.V_star * mdot(self.V_star.T,pHip*self.beta_star).T
 
+        dL_dpsi0 = -0.5 * self.beta_star#dA_dpsi0
+        dL_dpsi0 += .5 *alpha #dC_dpsi0
+        dL_dpsi0 += 0.5*mdot(self.beta_star*pHip,self.V_star)**2 - self.V_star * mdot(self.V_star.T,pHip*self.beta_star).T #dD_dpsi0
 
         dA_dpsi1 = b_psi1_Ki
         dC_dpsi1 = -np.dot(psi1beta.T,LBL_inv)
+        dD_dpsi1 = gamma_1
+        dD_dpsi1 += -mdot(psi1beta.T,Hi,self.psi1,gamma_1)
+
+        #dL_dpsi1 = b_psi1_Ki #dA_dpsi1
+        #dL_dpsi1 += -np.dot(psi1beta.T,LBL_inv) #dC_dpsi1
+        #dL_dpsi1 += gamma_1 - mdot(psi1beta.T,Hi,self.psi1,gamma_1) #dD_dpsi1
 
 
-        dA_dKmm = -0.5 * np.dot(Kmmipsi1,b_psi1_Ki)
-        dC_dKmm = -.5*Kmmi
-        dC_dKmm += .5*LBL_inv
-        dC_dKmm += mdot(LBL_inv,psi1beta,Kmmipsi1.T)
-        dD_dKmm = -.5 * mdot(Hi,self.psi1,gamma_1)
+        dL_dKmm = -0.5 * np.dot(Kmmipsi1,b_psi1_Ki) #dA_dKmm
+        dL_dKmm += -.5*Kmmi + .5*LBL_inv + mdot(LBL_inv,psi1beta,Kmmipsi1.T) #dC_dKmm
+        dL_dKmm += -.5 * mdot(Hi,self.psi1,gamma_1) #dD_dKmm
 
+        dA_dpsi0 = .5 * self.V_star**2
         dA_dpsi0_theta = self.kern.dKdiag_dtheta(dA_dpsi0,X=self.X)
 
 
@@ -140,6 +141,13 @@ class FITC(sparse_GP):
             _dD_dKmm_1 = .5*gamma_n**2 * np.dot(psin_K.T,psin_K)
             _dD_dKmm_2 = - gamma_n * np.dot(psin_K.T,psin_K)
 
+            _dKmm = .5*V_n**2 * np.dot(psin_K.T,psin_K) #Diag_dA_dKmm
+            _dKmm += .5 * alpha_n * np.dot(psin_K.T,psin_K) #Diag_dC_dKmm
+            _dKmm += .5*gamma_n**2 * np.dot(psin_K.T,psin_K) - gamma_n * np.dot(psin_K.T,psin_K) #Diag_dD_dKmm
+            _dKmm_dtheta =  self.kern.dK_dtheta(_dKmm,self.Z)
+
+
+
             dA_dpsi1_theta += self.kern.dK_dtheta(_dA_dpsi1,X_n[None,:],self.Z)
             _dC_dpsi1_dtheta += self.kern.dK_dtheta(_dC_dpsi1,X_n[None,:],self.Z)
             _dD_dpsi1_dtheta_1 += self.kern.dK_dtheta(_dD_dpsi1_1,X_n[None,:],self.Z)
@@ -162,23 +170,20 @@ class FITC(sparse_GP):
 
 
 
-        dA_dX_1 =  self.kern.dK_dX(dA_dpsi1.T,self.Z,self.X) + 2. * self.kern.dK_dX(dA_dKmm,X=self.Z)
-        dA_dtheta_1 =  self.kern.dKdiag_dtheta(dA_dpsi0_1,X=self.X) + self.kern.dK_dtheta(dA_dpsi1,self.X,self.Z) + self.kern.dK_dtheta(dA_dKmm,X=self.Z)
-
-        dA_dtheta_2 =  dA_dpsi0_theta + dA_dpsi1_theta + dA_dKmm_theta
-        dA_dX_2 =  dA_dpsi1_X + dA_dKmm_X
-
-        self.dA_dtheta = dA_dtheta_1 + dA_dtheta_2
-        self.dA_dX = dA_dX_1 + dA_dX_2
 
 
-        self.dlogB_dtheta = self.kern.dK_dtheta(dC_dKmm,self.Z) + self.kern.dK_dtheta(dC_dpsi1,self.X,self.Z) + self.kern.dKdiag_dtheta(dC_dpsi0,self.X) + _dC_dpsi1_dtheta + _dC_dKmm_dtheta
-        self.dlogB_dX = 2.*self.kern.dK_dX(dC_dKmm,self.Z) + self.kern.dK_dX(dC_dpsi1.T,self.Z,self.X) + _dC_dpsi1_dX + _dC_dKmm_dX
+        self._dL_dtheta = self.kern.dKdiag_dtheta(dL_dpsi0,self.X)
+        self._dL_dtheta += self.kern.dK_dtheta(dA_dpsi1 + dC_dpsi1 + dD_dpsi1,self.X,self.Z)
+        self._dL_dtheta += self.kern.dK_dtheta(dL_dKmm,X=self.Z)
+        self._dL_dtheta += dA_dpsi0_theta
+        self._dL_dtheta += dA_dKmm_theta + _dC_dKmm_dtheta + _dD_dKmm_dtheta_1 + _dD_dKmm_dtheta_2
+        self._dL_dtheta += dA_dpsi1_theta + _dC_dpsi1_dtheta + _dD_dpsi1_dtheta_2 + _dD_dpsi1_dtheta_1
 
 
-        self.dD_dtheta =  self.kern.dKdiag_dtheta(dD_dpsi0,self.X) + self.kern.dK_dtheta(dD_dKmm,self.Z) + self.kern.dK_dtheta(dD_dpsi1,self.X,self.Z) + _dD_dpsi1_dtheta_2 + _dD_dKmm_dtheta_2 +  _dD_dpsi1_dtheta_1 + _dD_dKmm_dtheta_1
 
-        self.dD_dX =  2.*self.kern.dK_dX(dD_dKmm,self.Z) + self.kern.dK_dX(dD_dpsi1.T,self.Z,self.X) + _dD_dpsi1_dX_2 + _dD_dKmm_dX_2 + _dD_dpsi1_dX_1 + _dD_dKmm_dX_1
+        self._dL_dX = self.kern.dK_dX(dA_dpsi1.T,self.Z,self.X) + self.kern.dK_dX(dC_dpsi1.T,self.Z,self.X) + self.kern.dK_dX(dD_dpsi1.T,self.Z,self.X)
+        self._dL_dX += 2. * self.kern.dK_dX(dL_dKmm,X=self.Z)
+        self._dL_dX += dA_dpsi1_X + dA_dKmm_X + _dC_dpsi1_dX + _dC_dKmm_dX + _dD_dpsi1_dX_2 + _dD_dKmm_dX_2 + _dD_dpsi1_dX_1 + _dD_dKmm_dX_1
 
 
 
@@ -228,14 +233,16 @@ class FITC(sparse_GP):
         if self.has_uncertain_inputs:
             raise NotImplementedError, "FITC approximation not implemented for uncertain inputs"
         else:
-            dL_dtheta = self.dA_dtheta + self.dlogB_dtheta + self.dD_dtheta
+            #dL_dtheta = self.dA_dtheta + self.dlogB_dtheta + self.dD_dtheta
+            dL_dtheta = self._dL_dtheta #FIXME
         return dL_dtheta
 
     def dL_dZ(self):
         if self.has_uncertain_inputs:
             raise NotImplementedError, "FITC approximation not implemented for uncertain inputs"
         else:
-            dL_dZ = self.dA_dX + self.dlogB_dX + self.dD_dX
+            #dL_dZ = self.dA_dX + self.dlogB_dX + self.dD_dX
+            dL_dZ = self._dL_dX #FIXME
         return dL_dZ
 
     def _raw_predict(self, Xnew, which_parts, full_cov=False):

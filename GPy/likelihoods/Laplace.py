@@ -201,24 +201,22 @@ class Laplace(likelihood):
         dL_dytil, dytil_dfhat = self._shared_gradients_components()
         #dfhat_dthetaL, dSigmai_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat, self.extra_data) #FIXME: Shouldn't this have a implicit component aswell?
 
-        dlikelihood_dthetaL, d2likelihood_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat, self.extra_data) #FIXME: Shouldn't this have a implicit component aswell?
+        dlikelihoodgrad_dthetaL, d2likelihood_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat, self.extra_data) #FIXME: Shouldn't this have a implicit component aswell?
         dlikelihood_dfhat = self.likelihood_function.link_grad(self.data, self.f_hat, self.extra_data)
-        #dfhat_dthetaL_cyclic = 0 #FIXME: what is this? how can dfhat_dthetaL be used in the value of itself?
-        #dlikelihood_dthetaL_implicit = np.dot(dlikelihood_dfhat, dfhat_dthetaL_cyclic) # may need a sum over f
-        #dfhat_dthetaL = np.dot(self.K, (dlikelihood_dthetaL_explicit + dlikelihood_dthetaL_implicit)[:, None])
         #KW_I_i, _, _, _ = pdinv(np.dot(self.K, self.W) + np.eye(self.N))
         KW_I_i = self.Bi # could use self.B_chol??
-        dfhat_dthetaL = mdot(KW_I_i, (self.K, dlikelihood_dfhat))
+        dfhat_dthetaL = mdot(KW_I_i, (self.K, dlikelihoodgrad_dthetaL))
+        #dfhat_dthetaL = np.zeros(dfhat_dthetaL.shape)[:, None]
 
         dytil_dthetaL = np.dot(dytil_dfhat, dfhat_dthetaL)
 
         #FIXME: Careful the -D*0.5 in dL_d_K_sigma might need to be -0.5?
-        dL_dSigma = partial #Is actually but can't rename it because of naming convention... dL_d_K_Sigma
+        dL_dSigma = np.diagflat(partial) #Is actually but can't rename it because of naming convention... dL_d_K_Sigma
 
         Wi = np.diagonal(self.Sigma_tilde) #Convenience
         #-1 as we are looking at W which is -1*d2log p(y|f)
         #Can just hadamard product as diagonal matricies multiplied are just multiplying elements
-        dSigma_dthetaL_explicit = np.diagflat(-(Wi*(-1*d2likelihood_dthetaL)*Wi))
+        dSigma_dthetaL_explicit = np.diagflat(-1*(Wi*(-1*d2likelihood_dthetaL)*Wi))
 
         d3likelihood_d3fhat = self.likelihood_function.d3link(self.data, self.f_hat, self.extra_data)
         dWi_dfhat = np.diagflat(-1*Wi*(-1*d3likelihood_d3fhat)*Wi)
@@ -242,10 +240,8 @@ class Laplace(likelihood):
         #dL_dthetaL = 0 + np.dot(dL_dytil, dytil_dthetaL)# + np.dot(dL_dSigma, dSigma_dthetaL)
 
         dL_dthetaL_via_ytil = np.sum(np.dot(dL_dytil, dytil_dthetaL), axis=0)
-        dL_dthetaL_via_Sigma = np.sum(np.dot(dL_dSigma[:, None].T, dSigma_dthetaL), axis=0)
+        dL_dthetaL_via_Sigma = np.sum(np.sum(np.dot(dL_dSigma, dSigma_dthetaL), axis=0))
         dL_dthetaL = dL_dthetaL_via_ytil + dL_dthetaL_via_Sigma
-        dL_dthetaL_via_Sigma_old = np.sum(np.dot(dL_dSigma, dSigma_dthetaL), axis=0)
-        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
         return np.squeeze(dL_dthetaL) #should be array of length *params-being optimized*, for student t just optimising 1 parameter, this is (1,)
 

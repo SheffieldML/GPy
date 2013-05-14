@@ -256,7 +256,7 @@ class student_t(likelihood_function):
         f = np.squeeze(f)
         assert y.shape == f.shape
         e = y - f
-        d3link_d3f = (  (2*(self.v + 1)*(e**3 - 3*(self.sigma**2)*self.v*e))
+        d3link_d3f = (  (2*(self.v + 1)*(-1*e)*(e**2 - 3*(self.sigma**2)*self.v))
                       / ((e**2 + (self.sigma**2)*self.v)**3)
                      )
         return np.squeeze(d3link_d3f)
@@ -286,7 +286,7 @@ class student_t(likelihood_function):
         f = np.squeeze(f)
         assert y.shape == f.shape
         e = y - f
-        grad_sigma = (  (2*self.sigma*self.v*(self.v + 1)*e)
+        grad_sigma = (  (-2*self.sigma*self.v*(self.v + 1)*e)
                       / ((self.v*(self.sigma**2) + e**2)**2)
                      )
         return np.squeeze(grad_sigma)

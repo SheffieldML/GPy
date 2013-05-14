@@ -95,10 +95,10 @@ def debug_student_t_noise_approx():
     m.constrain_positive('t_noi')
     #m.constrain_fixed('t_noise_variance', real_sd)
     m.update_likelihood_approximation()
-    #m.optimize('lbfgsb', messages=True, callback=m._update_params_callback)
-    m.optimize('scg', messages=True)
     print(m)
     return m
+    #m.optimize('lbfgsb', messages=True, callback=m._update_params_callback)
+    m.optimize('scg', messages=True)
     if plot:
         plt.suptitle('Student-t likelihood')
         plt.subplot(132)

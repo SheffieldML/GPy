@@ -33,7 +33,7 @@ class FITC(sparse_GP):
             self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
             self._set_params(self._get_params()) # update the GP
 
-    @profile
+    #@profile
     def _computations(self):
 
         #factor Kmm

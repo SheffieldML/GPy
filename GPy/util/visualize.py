@@ -217,16 +217,11 @@ class image_show(data_show):
         self.axes.figure.canvas.draw() # Teo - original line: plt.show()
 
     def set_image(self, vals):
-<<<<<<< HEAD
         dim = self.dimensions[0] * self.dimensions[1]
         self.vals = np.reshape(vals[0,dim*self.selectImage+np.array(range(dim))], self.dimensions, order='F')
-=======
-        self.vals = np.reshape(vals, self.dimensions, order='F').copy()
->>>>>>> 47a7df9756e47ba775eb04c72e41a31933013ea4
         if self.transpose:
             self.vals = self.vals.T.copy()
         if not self.scale:
-<<<<<<< HEAD
             self.vals = self.vals
         if self.invert:
             self.vals = -self.vals
@@ -242,12 +237,6 @@ class image_show(data_show):
         if not self.palette == []: # applying using an image palette (e.g. if the image has been quantized)
             self.vals = Image.fromarray(self.vals.astype('uint8'))
             self.vals.putpalette(self.palette) # palette is a list, must be loaded before calling this function
-=======
-            self.vals = self.vals.copy()
-        #if self.invert:
-        #    self.vals = -self.vals
->>>>>>> 47a7df9756e47ba775eb04c72e41a31933013ea4
-
 
 class mocap_data_show(data_show):
     """Base class for visualizing motion capture data."""

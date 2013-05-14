@@ -4,108 +4,108 @@
 from kernpart import kernpart
 import numpy as np
 import hashlib
-#from scipy import integrate # This may not be necessary (Nicolas, 20th Feb)
 
 class prod(kernpart):
     """
-    Computes the product of 2 kernels that are defined on the same space
+    Computes the product of 2 kernels
 
     :param k1, k2: the kernels to multiply
     :type k1, k2: kernpart
+    :param tensor: The kernels are either multiply as functions defined on the same input space (default) or on the product of the input spaces
+    :type tensor: Boolean
     :rtype: kernel object
 
     """
-    def __init__(self,k1,k2):
-        assert k1.D == k2.D, "Error: The input spaces of the kernels to multiply must have the same dimension"
-        self.D = k1.D
+    def __init__(self,k1,k2,tensor=False):
         self.Nparam = k1.Nparam + k2.Nparam
         self.name = k1.name + '<times>' + k2.name
         self.k1 = k1
         self.k2 = k2
+        if tensor:
+            self.D = k1.D + k2.D
+            self.slice1 = slice(0,self.k1.D)
+            self.slice2 = slice(self.k1.D,self.k1.D+self.k2.D)
+        else:
+            assert k1.D == k2.D, "Error: The input spaces of the kernels to sum don't have the same dimension."
+            self.D = k1.D
+            self.slice1 = slice(0,self.D)
+            self.slice2 = slice(0,self.D)
+
+        self._X, self._X2, self._params = np.empty(shape=(3,1))
         self._set_params(np.hstack((k1._get_params(),k2._get_params())))
 
     def _get_params(self):
         """return the value of the parameters."""
-        return self.params
+        return np.hstack((self.k1._get_params(), self.k2._get_params()))
 
     def _set_params(self,x):
         """set the value of the parameters."""
         self.k1._set_params(x[:self.k1.Nparam])
         self.k2._set_params(x[self.k1.Nparam:])
-        self.params = x
 
     def _get_param_names(self):
         """return parameter names."""
         return [self.k1.name + '_' + param_name for param_name in self.k1._get_param_names()] + [self.k2.name + '_' + param_name for param_name in self.k2._get_param_names()]
 
     def K(self,X,X2,target):
-        """Compute the covariance matrix between X and X2."""
-        if X2 is None:
-            target1 = np.zeros((X.shape[0],X2.shape[0]))
-            target2 = np.zeros((X.shape[0],X2.shape[0]))
-        else:
-            target1 = np.zeros((X.shape[0],X.shape[0]))
-            target2 = np.zeros((X.shape[0],X.shape[0]))
-        self.k1.K(X,X2,target1)
-        self.k2.K(X,X2,target2)
-        target += target1 * target2
-
-    def Kdiag(self,X,target):
-        """Compute the diagonal of the covariance matrix associated to X."""
-        target1 = np.zeros((X.shape[0],))
-        target2 = np.zeros((X.shape[0],))
-        self.k1.Kdiag(X,target1)
-        self.k2.Kdiag(X,target2)
-        target += target1 * target2
+        self._K_computations(X,X2)
+        target += self._K1 * self._K2
 
     def dK_dtheta(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to the parameters."""
-        if X2 is None: X2 = X
-        K1 = np.zeros((X.shape[0],X2.shape[0]))
-        K2 = np.zeros((X.shape[0],X2.shape[0]))
-        self.k1.K(X,X2,K1)
-        self.k2.K(X,X2,K2)
+        self._K_computations(X,X2)
+        if X2 is None:
+            self.k1.dK_dtheta(dL_dK*self._K2, X[:,self.slice1], None, target[:self.k1.Nparam])
+            self.k2.dK_dtheta(dL_dK*self._K1, X[:,self.slice2], None, target[self.k1.Nparam:])
+        else:
+            self.k1.dK_dtheta(dL_dK*self._K2, X[:,self.slice1], X2[:,self.slice1], target[:self.k1.Nparam])
+            self.k2.dK_dtheta(dL_dK*self._K1, X[:,self.slice2], X2[:,self.slice2], target[self.k1.Nparam:])
 
-        k1_target = np.zeros(self.k1.Nparam)
-        k2_target = np.zeros(self.k2.Nparam)
-        self.k1.dK_dtheta(dL_dK*K2, X, X2, k1_target)
-        self.k2.dK_dtheta(dL_dK*K1, X, X2, k2_target)
+    def Kdiag(self,X,target):
+        """Compute the diagonal of the covariance matrix associated to X."""
+        target1 = np.zeros(X.shape[0])
+        target2 = np.zeros(X.shape[0])
+        self.k1.Kdiag(X[:,self.slice1],target1)
+        self.k2.Kdiag(X[:,self.slice2],target2)
+        target += target1 * target2
 
-        target[:self.k1.Nparam] += k1_target
-        target[self.k1.Nparam:] += k2_target
+    def dKdiag_dtheta(self,dL_dKdiag,X,target):
+        K1 = np.zeros(X.shape[0])
+        K2 = np.zeros(X.shape[0])
+        self.k1.Kdiag(X[:,self.slice1],K1)
+        self.k2.Kdiag(X[:,self.slice2],K2)
+        self.k1.dKdiag_dtheta(dL_dKdiag*K2,X[:,self.slice1],target[:self.k1.Nparam])
+        self.k2.dKdiag_dtheta(dL_dKdiag*K1,X[:,self.slice2],target[self.k1.Nparam:])
 
     def dK_dX(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
-        if X2 is None: X2 = X
-        K1 = np.zeros((X.shape[0],X2.shape[0]))
-        K2 = np.zeros((X.shape[0],X2.shape[0]))
-        self.k1.K(X,X2,K1)
-        self.k2.K(X,X2,K2)
+        self._K_computations(X,X2)
+        self.k1.dK_dX(dL_dK*self._K2, X[:,self.slice1], X2[:,self.slice1], target)
+        self.k2.dK_dX(dL_dK*self._K1, X[:,self.slice2], X2[:,self.slice2], target)
 
-        self.k1.dK_dX(dL_dK*K2, X, X2, target)
-        self.k2.dK_dX(dL_dK*K1, X, X2, target)
+    def dKdiag_dX(self, dL_dKdiag, X, target):
+        K1 = np.zeros(X.shape[0])
+        K2 = np.zeros(X.shape[0])
+        self.k1.Kdiag(X[:,self.slice1],K1)
+        self.k2.Kdiag(X[:,self.slice2],K2)
 
-    def dKdiag_dX(self,dL_dKdiag,X,target):
-        target1 = np.zeros((X.shape[0],))
-        target2 = np.zeros((X.shape[0],))
-        self.k1.Kdiag(X,target1)
-        self.k2.Kdiag(X,target2)
+        self.k1.dK_dX(dL_dKdiag*K2, X[:,self.slice1], target)
+        self.k2.dK_dX(dL_dKdiag*K1, X[:,self.slice2], target)
 
-        self.k1.dKdiag_dX(dL_dKdiag*target2, X, target)
-        self.k2.dKdiag_dX(dL_dKdiag*target1, X, target)
-
-    def dKdiag_dtheta(self,dL_dKdiag,X,target):
-        """Compute the diagonal of the covariance matrix associated to X."""
-        target1 = np.zeros((X.shape[0],))
-        target2 = np.zeros((X.shape[0],))
-        self.k1.Kdiag(X,target1)
-        self.k2.Kdiag(X,target2)
-
-        k1_target = np.zeros(self.k1.Nparam)
-        k2_target = np.zeros(self.k2.Nparam)
-        self.k1.dKdiag_dtheta(dL_dKdiag*target2, X, k1_target)
-        self.k2.dKdiag_dtheta(dL_dKdiag*target1, X, k2_target)
-
-        target[:self.k1.Nparam] += k1_target
-        target[self.k1.Nparam:] += k2_target
+    def _K_computations(self,X,X2):
+        if not (np.array_equal(X,self._X) and np.array_equal(X2,self._X2) and np.array_equal(self._params , self._get_params())):
+            self._X = X.copy()
+            self._params == self._get_params().copy()
+            if X2 is None:
+                self._X2 = None
+                self._K1 = np.zeros((X.shape[0],X.shape[0]))
+                self._K2 = np.zeros((X.shape[0],X.shape[0]))
+                self.k1.K(X[:,self.slice1],None,self._K1)
+                self.k2.K(X[:,self.slice2],None,self._K2)
+            else:
+                self._X2 = X2.copy()
+                self._K1 = np.zeros((X.shape[0],X2.shape[0]))
+                self._K2 = np.zeros((X.shape[0],X2.shape[0]))
+                self.k1.K(X[:,self.slice1],X2[:,self.slice1],self._K1)
+                self.k2.K(X[:,self.slice2],X2[:,self.slice2],self._K2)
 

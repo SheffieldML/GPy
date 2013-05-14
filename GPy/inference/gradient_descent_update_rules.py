@@ -41,3 +41,13 @@ class FletcherReeves(GDUpdateRule):
         if tmp:
             return tmp / numpy.dot(self.gradold.T, self.gradnatold)
         return tmp
+
+class PolakRibiere(GDUpdateRule):
+    '''
+    Fletcher Reeves update rule for gamma
+    '''
+    def _gamma(self, *a, **kw):
+        tmp = numpy.dot((self.grad - self.gradold).T, self.gradnat)
+        if tmp:
+            return tmp / numpy.dot(self.gradold.T, self.gradnatold)
+        return tmp

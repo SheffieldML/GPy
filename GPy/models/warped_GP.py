@@ -23,12 +23,21 @@ class warpedGP(GP):
             self.warping_function = TanhWarpingFunction_d(warping_terms)
             self.warping_params = (np.random.randn(self.warping_function.n_terms*3+1,) * 1)
 
+        Y = self._scale_data(Y)
         self.has_uncertain_inputs = False
         self.Y_untransformed = Y.copy()
         self.predict_in_warped_space = False
         likelihood = likelihoods.Gaussian(self.transform_data(), normalize=normalize_Y)
 
         GP.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
+
+    def _scale_data(self, Y):
+        self._Ymax = Y.max()
+        self._Ymin = Y.min()
+        return (Y-self._Ymin)/(self._Ymax-self._Ymin) - 0.5
+
+    def _unscale_data(self, Y):
+        return (Y + 0.5)*(self._Ymax - self._Ymin) + self._Ymin
 
     def _set_params(self, x):
         self.warping_params = x[:self.warping_function.num_parameters]
@@ -79,5 +88,5 @@ class warpedGP(GP):
         if self.predict_in_warped_space:
             mu = self.warping_function.f_inv(mu, self.warping_params)
             var = self.warping_function.f_inv(var, self.warping_params)
-
+            mu = self._unscale_data(mu)
         return mu, var

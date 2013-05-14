@@ -29,7 +29,8 @@ class Optimizer():
     :rtype: optimizer object.
 
     """
-    def __init__(self, x_init, messages=False, model = None, max_f_eval=1e4, max_iters = 1e3, ftol=None, gtol=None, xtol=None, callback=None):
+    def __init__(self, x_init, messages=False, model=None, max_f_eval=1e4, max_iters=1e3,
+                 ftol=None, gtol=None, xtol=None):
         self.opt_name = None
         self.x_init = x_init
         self.messages = messages
@@ -45,7 +46,6 @@ class Optimizer():
         self.gtol = gtol
         self.ftol = ftol
         self.model = model
-        self.callback = callback
 
     def run(self, **kwargs):
         start = dt.datetime.now()
@@ -95,8 +95,6 @@ class opt_tnc(Optimizer):
             opt_dict['ftol'] = self.ftol
         if self.gtol is not None:
             opt_dict['pgtol'] = self.gtol
-        if self.callback is not None:
-            opt_dict['callback'] = self.callback
 
         opt_result = optimize.fmin_tnc(f_fp, self.x_init, messages = self.messages,
                        maxfun = self.max_f_eval, **opt_dict)
@@ -131,8 +129,6 @@ class opt_lbfgsb(Optimizer):
             print "WARNING: l-bfgs-b doesn't have an ftol arg, so I'm going to ignore it"
         if self.gtol is not None:
             opt_dict['pgtol'] = self.gtol
-        if self.callback is not None:
-            opt_dict['callback'] = self.callback
 
         opt_result = optimize.fmin_l_bfgs_b(f_fp, self.x_init, iprint = iprint,
                                             maxfun = self.max_f_eval, **opt_dict)
@@ -160,8 +156,6 @@ class opt_simplex(Optimizer):
             opt_dict['ftol'] = self.ftol
         if self.gtol is not None:
             print "WARNING: simplex doesn't have an gtol arg, so I'm going to ignore it"
-        if self.callback is not None:
-            opt_dict['callback'] = self.callback
 
         opt_result = optimize.fmin(f, self.x_init, (), disp = self.messages,
                    maxfun = self.max_f_eval, full_output=True, **opt_dict)
@@ -194,8 +188,6 @@ class opt_rasm(Optimizer):
             print "WARNING: minimize doesn't have an ftol arg, so I'm going to ignore it"
         if self.gtol is not None:
             print "WARNING: minimize doesn't have an gtol arg, so I'm going to ignore it"
-        if self.callback is not None:
-            print "WARNING: minimize doesn't have a callback arg, so I'm going to ignore it"
 
         opt_result = rasm.minimize(self.x_init, f_fp, (), messages = self.messages,
                                    maxnumfuneval = self.max_f_eval)
@@ -214,9 +206,11 @@ class opt_SCG(Optimizer):
     def opt(self, f_fp = None, f = None, fp = None):
         assert not f is None
         assert not fp is None
-        if self.callback is not None:
-            print "WARNING: SCG doesn't have a callback arg, so I'm going to ignore it"
-        opt_result = SCG(f,fp,self.x_init, display=self.messages, maxiters=self.max_iters, max_f_eval=self.max_f_eval, xtol=self.xtol, ftol=self.ftol)
+        opt_result = SCG(f, fp, self.x_init, display=self.messages,
+                         maxiters=self.max_iters,
+                         max_f_eval=self.max_f_eval,
+                         xtol=self.xtol, ftol=self.ftol,
+                         gtol=self.gtol)
         self.x_opt = opt_result[0]
         self.trace = opt_result[1]
         self.f_opt = self.trace[-1]

@@ -203,7 +203,7 @@ class model(parameterised):
         else:
             self._set_params_transformed(initial_parameters)
 
-    def ensure_default_constraints(self, warn=False):
+    def ensure_default_constraints(self):
         """
         Ensure that any variables which should clearly be positive have been constrained somehow.
         """
@@ -214,11 +214,11 @@ class model(parameterised):
         for s in positive_strings:
             for i in self.grep_param_names(s):
                 if not (i in currently_constrained):
-                    to_make_positive.append(re.escape(param_names[i]))
-                    if warn:
-                        print "Warning! constraining %s positive" % s
+                    #to_make_positive.append(re.escape(param_names[i]))
+                    to_make_positive.append(i)
         if len(to_make_positive):
-            self.constrain_positive('(' + '|'.join(to_make_positive) + ')')
+            #self.constrain_positive('(' + '|'.join(to_make_positive) + ')')
+            self.constrain_positive(np.asarray(to_make_positive))
 
 
 

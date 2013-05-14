@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import stats, linalg
-from ..util.linalg import pdinv,mdot,jitchol
+from ..util.linalg import pdinv,mdot,jitchol,DSYR
 from likelihood import likelihood
 
 class EP(likelihood):
@@ -32,6 +32,7 @@ class EP(likelihood):
         self.precision = np.ones(self.N)[:,None]
         self.Z = 0
         self.YYT = None
+        self.V = self.precision * self.Y
 
     def restart(self):
         self.tau_tilde = np.zeros(self.N)
@@ -41,6 +42,7 @@ class EP(likelihood):
         self.precision = np.ones(self.N)[:,None]
         self.Z = 0
         self.YYT = None
+        self.V = self.precision * self.Y
 
     def predictive_values(self,mu,var,full_cov):
         if full_cov:
@@ -67,6 +69,7 @@ class EP(likelihood):
         self.YYT = np.dot(self.Y,self.Y.T)
         self.covariance_matrix = np.diag(1./self.tau_tilde)
         self.precision = self.tau_tilde[:,None]
+        self.V = self.precision * self.Y
 
     def fit_full(self,K):
         """
@@ -110,11 +113,12 @@ class EP(likelihood):
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma[i,i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma[i,i])
-                self.tau_tilde[i] = self.tau_tilde[i] + Delta_tau
-                self.v_tilde[i] = self.v_tilde[i] + Delta_v
+                self.tau_tilde[i] += Delta_tau
+                self.v_tilde[i] += Delta_v
                 #Posterior distribution parameters update
-                si=Sigma[:,i].reshape(self.N,1)
-                Sigma = Sigma - Delta_tau/(1.+ Delta_tau*Sigma[i,i])*np.dot(si,si.T)
+                DSYR(Sigma,Sigma[:,i].copy(), -float(Delta_tau/(1.+ Delta_tau*Sigma[i,i])))
+                #si=Sigma[:,i:i+1]
+                #Sigma -= Delta_tau/(1.+ Delta_tau*Sigma[i,i])*np.dot(si,si.T)#DSYR
                 mu = np.dot(Sigma,self.v_tilde)
                 self.iterations += 1
             #Sigma recomptutation with Cholesky decompositon
@@ -196,9 +200,9 @@ class EP(likelihood):
                 self.tau_tilde[i] = self.tau_tilde[i] + Delta_tau
                 self.v_tilde[i] = self.v_tilde[i] + Delta_v
                 #Posterior distribution parameters update
-                #LLT = LLT + np.outer(Kmn[:,i],Kmn[:,i])*Delta_tau
-                #L = jitchol(LLT)
-                cholupdate(L,Kmn[:,i]*np.sqrt(Delta_tau))
+                LLT = LLT + np.outer(Kmn[:,i],Kmn[:,i])*Delta_tau
+                L = jitchol(LLT)
+                #cholUpdate(L,Kmn[:,i]*np.sqrt(Delta_tau))
                 V,info = linalg.lapack.flapack.dtrtrs(L,Kmn,lower=1)
                 Sigma_diag = np.sum(V*V,-2)
                 si = np.sum(V.T*V[:,i],-1)
@@ -251,6 +255,7 @@ class EP(likelihood):
         R = R0.copy()
         Diag = Diag0.copy()
         Sigma_diag = Knn_diag
+        RPT0 = np.dot(R0,P0.T)
 
         """
         Initial values - Cavity distribution parameters:
@@ -306,13 +311,7 @@ class EP(likelihood):
             Iplus_Dprod_i = 1./(1.+ Diag0 * self.tau_tilde)
             Diag = Diag0 * Iplus_Dprod_i
             P = Iplus_Dprod_i[:,None] * P0
-
-            #Diag = Diag0/(1.+ Diag0 * self.tau_tilde)
-            #P = (Diag / Diag0)[:,None] * P0
-            RPT0 = np.dot(R0,P0.T)
             L = jitchol(np.eye(M) + np.dot(RPT0,((1. - Iplus_Dprod_i)/Diag0)[:,None]*RPT0.T))
-            #L = jitchol(np.eye(M) + np.dot(RPT0,(1./Diag0 - Iplus_Dprod_i/Diag0)[:,None]*RPT0.T))
-            #L = jitchol(np.eye(M) + np.dot(RPT0,(1./Diag0 - Diag/(Diag0**2))[:,None]*RPT0.T))
             R,info = linalg.lapack.flapack.dtrtrs(L,R0,lower=1)
             RPT = np.dot(R,P.T)
             Sigma_diag = Diag + np.sum(RPT.T*RPT.T,-1)

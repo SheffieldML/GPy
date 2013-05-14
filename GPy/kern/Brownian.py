@@ -36,12 +36,16 @@ class Brownian(kernpart):
         return ['variance']
 
     def K(self,X,X2,target):
+        if X2 is None:
+            X2 = X
         target += self.variance*np.fmin(X,X2.T)
 
     def Kdiag(self,X,target):
         target += self.variance*X.flatten()
 
     def dK_dtheta(self,dL_dK,X,X2,target):
+        if X2 is None:
+            X2 = X
         target += np.sum(np.fmin(X,X2.T)*dL_dK)
 
     def dKdiag_dtheta(self,dL_dKdiag,X,target):

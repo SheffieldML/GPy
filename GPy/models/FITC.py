@@ -86,105 +86,89 @@ class FITC(sparse_GP):
         gamma_3 = self.V_star * mdot(self.V_star.T,pHip*self.beta_star).T
 
 
+        self._dL_dpsi0 = .5 * self.V_star**2 #dA_psi0????
+        self._dL_dpsi0 += -0.5 * self.beta_star#dA_dpsi0
+        self._dL_dpsi0 += .5 *alpha #dC_dpsi0
+        self._dL_dpsi0 += 0.5*mdot(self.beta_star*pHip,self.V_star)**2 - self.V_star * mdot(self.V_star.T,pHip*self.beta_star).T #dD_dpsi0
 
-        dL_dpsi0 = -0.5 * self.beta_star#dA_dpsi0
-        dL_dpsi0 += .5 *alpha #dC_dpsi0
-        dL_dpsi0 += 0.5*mdot(self.beta_star*pHip,self.V_star)**2 - self.V_star * mdot(self.V_star.T,pHip*self.beta_star).T #dD_dpsi0
+        self._dL_dpsi1 = b_psi1_Ki.copy() #dA_dpsi1
+        self._dL_dpsi1 += -np.dot(psi1beta.T,LBL_inv) #dC_dpsi1
+        self._dL_dpsi1 += gamma_1 - mdot(psi1beta.T,Hi,self.psi1,gamma_1) #dD_dpsi1
 
-        dA_dpsi1 = b_psi1_Ki
-        dC_dpsi1 = -np.dot(psi1beta.T,LBL_inv)
-        dD_dpsi1 = gamma_1
-        dD_dpsi1 += -mdot(psi1beta.T,Hi,self.psi1,gamma_1)
+        self._dL_dKmm = -0.5 * np.dot(Kmmipsi1,b_psi1_Ki) #dA_dKmm
+        self._dL_dKmm += -.5*Kmmi + .5*LBL_inv + mdot(LBL_inv,psi1beta,Kmmipsi1.T) #dC_dKmm
+        self._dL_dKmm += -.5 * mdot(Hi,self.psi1,gamma_1) #dD_dKmm
 
-        #dL_dpsi1 = b_psi1_Ki #dA_dpsi1
-        #dL_dpsi1 += -np.dot(psi1beta.T,LBL_inv) #dC_dpsi1
-        #dL_dpsi1 += gamma_1 - mdot(psi1beta.T,Hi,self.psi1,gamma_1) #dD_dpsi1
-
-
-        dL_dKmm = -0.5 * np.dot(Kmmipsi1,b_psi1_Ki) #dA_dKmm
-        dL_dKmm += -.5*Kmmi + .5*LBL_inv + mdot(LBL_inv,psi1beta,Kmmipsi1.T) #dC_dKmm
-        dL_dKmm += -.5 * mdot(Hi,self.psi1,gamma_1) #dD_dKmm
-
-        dA_dpsi0 = .5 * self.V_star**2
-        dA_dpsi0_theta = self.kern.dKdiag_dtheta(dA_dpsi0,X=self.X)
-
-
-        dA_dpsi1_theta = 0
-        dA_dpsi1_X = 0
-        dA_dKmm_theta = 0
-        dA_dKmm_X = 0
-        _dC_dpsi1_dtheta = 0
-        _dC_dpsi1_dX = 0
-        _dC_dKmm_dtheta = 0
-        _dC_dKmm_dX = 0
-        _dD_dpsi1_dtheta_1 = 0
-        _dD_dpsi1_dX_1 = 0
-        _dD_dKmm_dtheta_1 = 0
-        _dD_dKmm_dX_1 = 0
-        _dD_dpsi1_dtheta_2 = 0
-        _dD_dpsi1_dX_2 = 0
-        _dD_dKmm_dtheta_2 = 0
-        _dD_dKmm_dX_2 = 0
-
-
+        _dpsi1_dtheta = 0
+        _dpsi1_dX = 0
+        _dKmm_dtheta = 0
+        _dKmm_dX = 0
         for psi1_n,V_n,X_n,alpha_n,gamma_n,gamma_k in zip(self.psi1.T,self.V_star,self.X,alpha,gamma_2,gamma_3):
 
             psin_K = np.dot(psi1_n[None,:],Kmmi)
 
-            _dA_dpsi1 = -V_n**2 * np.dot(psi1_n[None,:],Kmmi)
-            _dC_dpsi1 = - alpha_n * np.dot(psi1_n[None,:],Kmmi)
-            _dD_dpsi1_1 = - gamma_n**2 * np.dot(psi1_n[None,:],Kmmi)
-            _dD_dpsi1_2 = 2. * gamma_k * np.dot(psi1_n[None,:],Kmmi)
-
-            _dA_dKmm = .5*V_n**2 * np.dot(psin_K.T,psin_K)
-            _dC_dKmm = .5 * alpha_n * np.dot(psin_K.T,psin_K)
-            _dD_dKmm_1 = .5*gamma_n**2 * np.dot(psin_K.T,psin_K)
-            _dD_dKmm_2 = - gamma_n * np.dot(psin_K.T,psin_K)
+            _dpsi1 = -V_n**2 * psin_K #Diag_dA_dpsi1
+            _dpsi1 += - alpha_n * psin_K #Diag_dC_dpsi1
+            _dpsi1 += - gamma_n**2 * psin_K + 2. * gamma_k * psin_K #Diag_dD_dpsi1
 
             _dKmm = .5*V_n**2 * np.dot(psin_K.T,psin_K) #Diag_dA_dKmm
             _dKmm += .5 * alpha_n * np.dot(psin_K.T,psin_K) #Diag_dC_dKmm
             _dKmm += .5*gamma_n**2 * np.dot(psin_K.T,psin_K) - gamma_n * np.dot(psin_K.T,psin_K) #Diag_dD_dKmm
-            _dKmm_dtheta =  self.kern.dK_dtheta(_dKmm,self.Z)
+
+            _dpsi1_dtheta += self.kern.dK_dtheta(_dpsi1,X_n[None,:],self.Z)
+            _dKmm_dtheta += self.kern.dK_dtheta(_dKmm,self.Z)
+
+            _dKmm_dX += 2.*self.kern.dK_dX(_dKmm ,self.Z)
+            _dpsi1_dX += self.kern.dK_dX(_dpsi1.T,self.Z,X_n[None,:])
+
+
+            #_dA_dpsi1 = -V_n**2 * np.dot(psi1_n[None,:],Kmmi)
+            #_dC_dpsi1 = - alpha_n * np.dot(psi1_n[None,:],Kmmi)
+            #_dD_dpsi1_1 = - gamma_n**2 * np.dot(psi1_n[None,:],Kmmi)
+            #_dD_dpsi1_2 = 2. * gamma_k * np.dot(psi1_n[None,:],Kmmi)
+
+
+            #dA_dpsi1_theta += self.kern.dK_dtheta(_dA_dpsi1,X_n[None,:],self.Z)
+            #_dC_dpsi1_dtheta += self.kern.dK_dtheta(_dC_dpsi1,X_n[None,:],self.Z)
+            #_dD_dpsi1_dtheta_1 += self.kern.dK_dtheta(_dD_dpsi1_1,X_n[None,:],self.Z)
+            #_dD_dpsi1_dtheta_2 += self.kern.dK_dtheta(_dD_dpsi1_2,X_n[None,:],self.Z)
+
+
+            #dA_dpsi1_X += self.kern.dK_dX(_dA_dpsi1.T,self.Z,X_n[None,:])
+            #_dC_dpsi1_dX += self.kern.dK_dX(_dC_dpsi1.T,self.Z,X_n[None,:])
+            #_dD_dpsi1_dX_1 += self.kern.dK_dX(_dD_dpsi1_1.T,self.Z,X_n[None,:])
+            #_dD_dpsi1_dX_2 += self.kern.dK_dX(_dD_dpsi1_2.T,self.Z,X_n[None,:])
 
 
 
-            dA_dpsi1_theta += self.kern.dK_dtheta(_dA_dpsi1,X_n[None,:],self.Z)
-            _dC_dpsi1_dtheta += self.kern.dK_dtheta(_dC_dpsi1,X_n[None,:],self.Z)
-            _dD_dpsi1_dtheta_1 += self.kern.dK_dtheta(_dD_dpsi1_1,X_n[None,:],self.Z)
-            _dD_dpsi1_dtheta_2 += self.kern.dK_dtheta(_dD_dpsi1_2,X_n[None,:],self.Z)
-
-            dA_dKmm_theta += self.kern.dK_dtheta(_dA_dKmm,self.Z)
-            _dC_dKmm_dtheta += self.kern.dK_dtheta(_dC_dKmm,self.Z)
-            _dD_dKmm_dtheta_1 += self.kern.dK_dtheta(_dD_dKmm_1,self.Z)
-            _dD_dKmm_dtheta_2 += self.kern.dK_dtheta(_dD_dKmm_2,self.Z)
-
-            dA_dpsi1_X += self.kern.dK_dX(_dA_dpsi1.T,self.Z,X_n[None,:])
-            _dC_dpsi1_dX += self.kern.dK_dX(_dC_dpsi1.T,self.Z,X_n[None,:])
-            _dD_dpsi1_dX_1 += self.kern.dK_dX(_dD_dpsi1_1.T,self.Z,X_n[None,:])
-            _dD_dpsi1_dX_2 += self.kern.dK_dX(_dD_dpsi1_2.T,self.Z,X_n[None,:])
-
-            dA_dKmm_X += 2.*self.kern.dK_dX(_dA_dKmm,self.Z)
-            _dC_dKmm_dX += 2.*self.kern.dK_dX(_dC_dKmm,self.Z)
-            _dD_dKmm_dX_1 += 2.*self.kern.dK_dX(_dD_dKmm_1,self.Z)
-            _dD_dKmm_dX_2 += 2.*self.kern.dK_dX(_dD_dKmm_2,self.Z)
+            #_dA_dKmm = .5*V_n**2 * np.dot(psin_K.T,psin_K)
+            #_dC_dKmm = .5 * alpha_n * np.dot(psin_K.T,psin_K)
+            #_dD_dKmm_1 = .5*gamma_n**2 * np.dot(psin_K.T,psin_K)
+            #_dD_dKmm_2 = - gamma_n * np.dot(psin_K.T,psin_K)
 
 
+            #dA_dKmm_theta += self.kern.dK_dtheta(_dA_dKmm,self.Z)
+            #_dC_dKmm_dtheta += self.kern.dK_dtheta(_dC_dKmm,self.Z)
+            #_dD_dKmm_dtheta_1 += self.kern.dK_dtheta(_dD_dKmm_1,self.Z)
+            #_dD_dKmm_dtheta_2 += self.kern.dK_dtheta(_dD_dKmm_2,self.Z)
 
 
-
-        self._dL_dtheta = self.kern.dKdiag_dtheta(dL_dpsi0,self.X)
-        self._dL_dtheta += self.kern.dK_dtheta(dA_dpsi1 + dC_dpsi1 + dD_dpsi1,self.X,self.Z)
-        self._dL_dtheta += self.kern.dK_dtheta(dL_dKmm,X=self.Z)
-        self._dL_dtheta += dA_dpsi0_theta
-        self._dL_dtheta += dA_dKmm_theta + _dC_dKmm_dtheta + _dD_dKmm_dtheta_1 + _dD_dKmm_dtheta_2
-        self._dL_dtheta += dA_dpsi1_theta + _dC_dpsi1_dtheta + _dD_dpsi1_dtheta_2 + _dD_dpsi1_dtheta_1
+            #dA_dKmm_X += 2.*self.kern.dK_dX(_dA_dKmm,self.Z)
+            #_dC_dKmm_dX += 2.*self.kern.dK_dX(_dC_dKmm,self.Z)
+            #_dD_dKmm_dX_1 += 2.*self.kern.dK_dX(_dD_dKmm_1,self.Z)
+            #_dD_dKmm_dX_2 += 2.*self.kern.dK_dX(_dD_dKmm_2,self.Z)
 
 
+        self._dL_dtheta = self.kern.dKdiag_dtheta(self._dL_dpsi0,self.X)
+        self._dL_dtheta += self.kern.dK_dtheta(self._dL_dpsi1,self.X,self.Z)
+        self._dL_dtheta += self.kern.dK_dtheta(self._dL_dKmm,X=self.Z)
+        self._dL_dtheta += _dKmm_dtheta
+        self._dL_dtheta += _dpsi1_dtheta
 
-        self._dL_dX = self.kern.dK_dX(dA_dpsi1.T,self.Z,self.X) + self.kern.dK_dX(dC_dpsi1.T,self.Z,self.X) + self.kern.dK_dX(dD_dpsi1.T,self.Z,self.X)
-        self._dL_dX += 2. * self.kern.dK_dX(dL_dKmm,X=self.Z)
-        self._dL_dX += dA_dpsi1_X + dA_dKmm_X + _dC_dpsi1_dX + _dC_dKmm_dX + _dD_dpsi1_dX_2 + _dD_dKmm_dX_2 + _dD_dpsi1_dX_1 + _dD_dKmm_dX_1
-
+        self._dL_dX = self.kern.dK_dX(self._dL_dpsi1.T,self.Z,self.X)
+        self._dL_dX += 2. * self.kern.dK_dX(self._dL_dKmm,X=self.Z)
+        self._dL_dX += _dpsi1_dX
+        self._dL_dX += _dKmm_dX
 
 
 

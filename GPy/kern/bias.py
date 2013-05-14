@@ -38,7 +38,6 @@ class bias(kernpart):
     def dK_dtheta(self,dL_dKdiag,X,X2,target):
         target += dL_dKdiag.sum()
 
-
     def dKdiag_dtheta(self,dL_dKdiag,X,target):
         target += dL_dKdiag.sum()
 

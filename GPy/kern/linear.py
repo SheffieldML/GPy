@@ -203,7 +203,7 @@ class linear(kernpart):
                 target_mu(n,q) += factor*tmp;
                 target_S(n,q) += factor*AZZA_2(q,m,mm,q);
               }
-            }  
+            }
           }
         }
         """

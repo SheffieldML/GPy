@@ -15,7 +15,7 @@ class data_show:
     """
 
     def __init__(self, vals, axes=None):
-        self.vals = vals
+        self.vals = vals.copy()
         # If no axes are defined, create some.
         if axes==None:
             fig = plt.figure()
@@ -33,12 +33,12 @@ class vector_show(data_show):
     """
     def __init__(self, vals, axes=None):
         data_show.__init__(self, vals, axes)
-        self.vals = vals.T
+        self.vals = vals.T.copy()
         self.handle = self.axes.plot(np.arange(0, len(vals))[:, None], self.vals)[0]
 
     def modify(self, vals):
         xdata, ydata = self.handle.get_data()
-        self.vals = vals.T
+        self.vals = vals.T.copy()
         self.handle.set_data(xdata, self.vals)
         self.axes.figure.canvas.draw()
 
@@ -53,7 +53,7 @@ class lvm(data_show):
         :param latent_axes: the axes where the latent visualization should be plotted.
         """
         if vals == None:
-            vals = model.X[0]
+            vals = model.X[0].copy()
 
         data_show.__init__(self, vals, axes=latent_axes)
 
@@ -77,14 +77,13 @@ class lvm(data_show):
         self.latent_index = latent_index
         self.latent_dim = model.Q
 
-        # The red cross which shows current latent point.        
+        # The red cross which shows current latent point.
         self.latent_values = vals
         self.latent_handle = self.latent_axes.plot([0],[0],'rx',mew=2)[0]
         self.modify(vals)
 
     def modify(self, vals):
         """When latent values are modified update the latent representation and ulso update the output visualization."""
-        
         y = self.model.predict(vals)[0]
         self.data_visualize.modify(y)
         self.latent_handle.set_data(vals[self.latent_index[0]], vals[self.latent_index[1]])
@@ -105,7 +104,7 @@ class lvm(data_show):
         if self.called and self.move_on:
             # Call modify code on move
             self.latent_values[self.latent_index[0]]=event.xdata
-            self.latent_values[self.latent_index[1]]=event.ydata            
+            self.latent_values[self.latent_index[1]]=event.ydata
             self.modify(self.latent_values)
 
 class lvm_subplots(lvm):
@@ -218,11 +217,16 @@ class image_show(data_show):
         self.axes.figure.canvas.draw() # Teo - original line: plt.show()
 
     def set_image(self, vals):
+<<<<<<< HEAD
         dim = self.dimensions[0] * self.dimensions[1]
         self.vals = np.reshape(vals[0,dim*self.selectImage+np.array(range(dim))], self.dimensions, order='F')
+=======
+        self.vals = np.reshape(vals, self.dimensions, order='F').copy()
+>>>>>>> 47a7df9756e47ba775eb04c72e41a31933013ea4
         if self.transpose:
-            self.vals = self.vals.T
+            self.vals = self.vals.T.copy()
         if not self.scale:
+<<<<<<< HEAD
             self.vals = self.vals
         if self.invert:
             self.vals = -self.vals
@@ -238,6 +242,11 @@ class image_show(data_show):
         if not self.palette == []: # applying using an image palette (e.g. if the image has been quantized)
             self.vals = Image.fromarray(self.vals.astype('uint8'))
             self.vals.putpalette(self.palette) # palette is a list, must be loaded before calling this function
+=======
+            self.vals = self.vals.copy()
+        #if self.invert:
+        #    self.vals = -self.vals
+>>>>>>> 47a7df9756e47ba775eb04c72e41a31933013ea4
 
 
 class mocap_data_show(data_show):
@@ -319,7 +328,7 @@ class stick_show(mocap_data_show):
         mocap_data_show.__init__(self, vals, axes, connect)
 
     def process_values(self, vals):
-        self.vals = vals.reshape((3, vals.shape[1]/3)).T
+        self.vals = vals.reshape((3, vals.shape[1]/3)).T.copy()
     
 class skeleton_show(mocap_data_show):
     """data_show class for visualizing motion capture data encoded as a skeleton with angles."""

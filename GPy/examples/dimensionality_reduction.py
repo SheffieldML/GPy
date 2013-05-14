@@ -63,7 +63,7 @@ def GPLVM_oil_100(optimize=True):
     m.plot_latent(labels=m.data_labels)
     return m
 
-def BGPLVM_oil(optimize=True, N=100, Q=10, M=15, max_f_eval=300, plot=False):
+def BGPLVM_oil(optimize=True, N=100, Q=10, M=20, max_f_eval=300, plot=False):
     data = GPy.util.datasets.oil()
 
     # create simple GP model
@@ -72,19 +72,19 @@ def BGPLVM_oil(optimize=True, N=100, Q=10, M=15, max_f_eval=300, plot=False):
     m = GPy.models.Bayesian_GPLVM(Y, Q, kernel=kernel, M=M)
     m.data_labels = data['Y'][:N].argmax(axis=1)
 
+    m.constrain('variance', logexp_clipped())
+    m.constrain('length', logexp_clipped())
+    m['lengt'] = 100.
+    m.ensure_default_constraints()
+
     # optimize
     if optimize:
-        m.constrain_fixed('noise', 1. / Y.var())
-        m.constrain('variance', logexp_clipped())
-        m['lengt'] = 1000
+        m.unconstrain('noise'); m.constrain_fixed('noise', Y.var() / 100.)
+        m.optimize('scg', messages=1, max_f_eval=150)
 
-        m.ensure_default_constraints()
-        m.optimize('scg', messages=1, max_f_eval=max(80, max_f_eval))
         m.unconstrain('noise')
-        m.constrain_positive('noise')
-        m.optimize('scg', messages=1, max_f_eval=max(0, max_f_eval - 80))
-    else:
-        m.ensure_default_constraints()
+        m.constrain('noise', logexp_clipped())
+        m.optimize('scg', messages=1, max_f_eval=max_f_eval)
 
     if plot:
         y = m.likelihood.Y[0, :]
@@ -92,7 +92,7 @@ def BGPLVM_oil(optimize=True, N=100, Q=10, M=15, max_f_eval=300, plot=False):
         plt.sca(latent_axes)
         m.plot_latent()
         data_show = GPy.util.visualize.vector_show(y)
-        lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :], m, data_show, latent_axes=latent_axes)  # , sense_axes=sense_axes)
+        lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :].copy(), m, data_show, latent_axes=latent_axes) # , sense_axes=sense_axes)
         raw_input('Press enter to finish')
         plt.close('all')
     # # plot
@@ -182,7 +182,7 @@ def bgplvm_simulation_matlab_compare():
     Y = sim_data['Y']
     S = sim_data['S']
     mu = sim_data['mu']
-    M, [_, Q] = 20, mu.shape
+    M, [_, Q] = 3, mu.shape
 
     from GPy.models import mrd
     from GPy import kern
@@ -192,7 +192,7 @@ def bgplvm_simulation_matlab_compare():
     m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k,
 #                        X=mu,
 #                        X_variance=S,
-                       _debug=True)
+                       _debug=False)
     m.ensure_default_constraints()
     m.auto_scale_factor = True
     m['noise'] = Y.var() / 100.
@@ -223,7 +223,7 @@ def bgplvm_simulation(burnin='scg', plot_sim=False,
 
     Y = Ylist[0]
 
-    k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))  # + kern.bias(Q)
+    k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2)) # + kern.bias(Q)
 #     k = kern.white(Q, .00001) + kern.bias(Q)
     m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k, _debug=True)
     # m.set('noise',)
@@ -358,7 +358,7 @@ def mrd_simulation(plot_sim=False):
 #         import ipdb; ipdb.set_trace()
 #     np.seterrcall(ipdbonerr)
 
-    return m  # , mtest
+    return m # , mtest
 
 def mrd_silhouette():
 
@@ -371,12 +371,12 @@ def brendan_faces():
 
     # optimize
     m.ensure_default_constraints()
-    # m.optimize(messages=1, max_f_eval=10000)
+    m.optimize(messages=1, max_f_eval=10000)
 
     ax = m.plot_latent()
     y = m.likelihood.Y[0, :]
     data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, invert=False, scale=False)
-    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :], m, data_show, ax)
+    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
     raw_input('Press enter to finish')
     plt.close('all')
 
@@ -389,11 +389,12 @@ def stick():
     # optimize
     m.ensure_default_constraints()
     m.optimize(messages=1, max_f_eval=10000)
+    m._set_params(m._get_params())
 
     ax = m.plot_latent()
     y = m.likelihood.Y[0, :]
     data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
-    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :], m, data_show, ax)
+    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
     raw_input('Press enter to finish')
     plt.close('all')
 
@@ -415,7 +416,7 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True):
     ax = m.plot_latent()
     y = m.likelihood.Y[0, :]
     data_show = GPy.util.visualize.skeleton_show(y[None, :], data['skel'])
-    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :], m, data_show, ax)
+    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
     raw_input('Press enter to finish')
     plt.close('all')
 

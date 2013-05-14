@@ -136,14 +136,16 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
                 self._savedparams.append([self.f_call, self._get_params()])
                 self._savedgradients.append([self.f_call, self._log_likelihood_gradients()])
                 self._savedpsiKmm.append([self.f_call, [self.Kmm, self.dL_dKmm]])
-                sf2 = self.scale_factor ** 2
+#                 sf2 = self.scale_factor ** 2
                 if self.likelihood.is_heteroscedastic:
                     A = -0.5 * self.N * self.D * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.likelihood.precision)) - 0.5 * np.sum(self.V * self.likelihood.Y)
-                    B = -0.5 * self.D * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A) * sf2)
+#                     B = -0.5 * self.D * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A) * sf2)
+                    B = -0.5 * self.D * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A))
                 else:
                     A = -0.5 * self.N * self.D * (np.log(2.*np.pi) + np.log(self.likelihood._variance)) - 0.5 * self.likelihood.precision * self.likelihood.trYYT
-                    B = -0.5 * self.D * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self.A) * sf2)
-                C = -self.D * (np.sum(np.log(np.diag(self.LB))) + 0.5 * self.M * np.log(sf2))
+#                     B = -0.5 * self.D * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self.A) * sf2)
+                    B = -0.5 * self.D * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self.A))
+                C = -self.D * (np.sum(np.log(np.diag(self.LB)))) # + 0.5 * self.M * np.log(sf2))
                 D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
                 self._savedABCD.append([self.f_call, A, B, C, D])
 

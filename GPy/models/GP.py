@@ -253,8 +253,9 @@ class GP(model):
 
             Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
             m, var, lower, upper = self.predict(Xnew, which_parts=which_parts)
-            gpplot(Xnew, m, lower, upper)
-            pb.plot(Xu[which_data], self.likelihood.data[which_data], 'kx', mew=1.5)
+            for d in range(m.shape[1]):
+                gpplot(Xnew, m[:,d], lower[:,d], upper[:,d])
+                pb.plot(Xu[which_data], self.likelihood.data[which_data,d], 'kx', mew=1.5)
             if self.has_uncertain_inputs:
                 pb.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
                             xerr=2 * np.sqrt(self.X_variance[which_data, 0]),

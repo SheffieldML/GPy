@@ -93,7 +93,7 @@ class MRD(model):
         self.NQ = self.N * self.Q
         self.MQ = self.M * self.Q
 
-        model.__init__(self)  # @UndefinedVariable
+        model.__init__(self) # @UndefinedVariable
 
     @property
     def X(self):
@@ -255,7 +255,7 @@ class MRD(model):
                 X[:, qs] = PCA(Y, len(qs))[0]
         elif init in "PCA_concat":
             X = PCA(numpy.hstack(Ylist), self.Q)[0]
-        else:  # init == 'random':
+        else: # init == 'random':
             X = numpy.random.randn(Ylist[0].shape[0], self.Q)
         self.X = X
         return X

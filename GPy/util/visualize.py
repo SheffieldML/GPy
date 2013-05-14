@@ -14,7 +14,7 @@ class data_show:
     """
 
     def __init__(self, vals, axes=None):
-        self.vals = vals
+        self.vals = vals.copy()
         # If no axes are defined, create some.
         if axes==None:
             fig = plt.figure()
@@ -32,12 +32,12 @@ class vector_show(data_show):
     """
     def __init__(self, vals, axes=None):
         data_show.__init__(self, vals, axes)
-        self.vals = vals.T
+        self.vals = vals.T.copy()
         self.handle = self.axes.plot(np.arange(0, len(vals))[:, None], self.vals)[0]
 
     def modify(self, vals):
         xdata, ydata = self.handle.get_data()
-        self.vals = vals.T
+        self.vals = vals.T.copy()
         self.handle.set_data(xdata, self.vals)
         self.axes.figure.canvas.draw()
 
@@ -52,7 +52,7 @@ class lvm(data_show):
         :param latent_axes: the axes where the latent visualization should be plotted.
         """
         if vals == None:
-            vals = model.X[0]
+            vals = model.X[0].copy()
 
         data_show.__init__(self, vals, axes=latent_axes)
 
@@ -76,7 +76,7 @@ class lvm(data_show):
         self.latent_index = latent_index
         self.latent_dim = model.Q
 
-        # The red cross which shows current latent point.        
+        # The red cross which shows current latent point.
         self.latent_values = vals
         self.latent_handle = self.latent_axes.plot([0],[0],'rx',mew=2)[0]
         self.modify(vals)
@@ -84,7 +84,6 @@ class lvm(data_show):
 
     def modify(self, vals):
         """When latent values are modified update the latent representation and ulso update the output visualization."""
-        
         y = self.model.predict(vals)[0]
         print y
         self.data_visualize.modify(y)
@@ -107,7 +106,7 @@ class lvm(data_show):
         if self.called and self.move_on:
             # Call modify code on move
             self.latent_values[self.latent_index[0]]=event.xdata
-            self.latent_values[self.latent_index[1]]=event.ydata            
+            self.latent_values[self.latent_index[1]]=event.ydata
             self.modify(self.latent_values)
 
     def show_sensitivities(self):
@@ -230,11 +229,11 @@ class image_show(data_show):
         plt.show()
 
     def set_image(self, vals):
-        self.vals = np.reshape(vals, self.dimensions, order='F')
+        self.vals = np.reshape(vals, self.dimensions, order='F').copy()
         if self.transpose:
-            self.vals = self.vals.T
+            self.vals = self.vals.T.copy()
         if not self.scale:
-            self.vals = self.vals
+            self.vals = self.vals.copy()
         #if self.invert:
         #    self.vals = -self.vals
 
@@ -318,8 +317,7 @@ class stick_show(mocap_data_show):
         mocap_data_show.__init__(self, vals, axes, connect)
 
     def process_values(self, vals):
-        self.vals = vals.reshape((3, vals.shape[1]/3)).T
-        print vals
+        self.vals = vals.reshape((3, vals.shape[1]/3)).T.copy()
 
 class skeleton_show(mocap_data_show):
     """data_show class for visualizing motion capture data encoded as a skeleton with angles."""

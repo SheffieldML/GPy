@@ -7,6 +7,7 @@ from scipy import stats
 import scipy as sp
 import pylab as pb
 from ..util.plot import gpplot
+from ..util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
 
 class likelihood_function:
     """
@@ -37,11 +38,11 @@ class probit(likelihood_function):
         :param tau_i: precision of the cavity distribution (float)
         :param v_i: mean/variance of the cavity distribution (float)
         """
-        if data_i == 0: data_i = -1 #NOTE Binary classification algorithm works better with classes {-1,1}, 1D-plotting works better with classes {0,1}.
+        #if data_i == 0: data_i = -1 #NOTE Binary classification algorithm works better with classes {-1,1}, 1D-plotting works better with classes {0,1}.
         # TODO: some version of assert
         z = data_i*v_i/np.sqrt(tau_i**2 + tau_i)
-        Z_hat = stats.norm.cdf(z)
-        phi = stats.norm.pdf(z)
+        Z_hat = std_norm_cdf(z)
+        phi = std_norm_pdf(z)
         mu_hat = v_i/tau_i + data_i*phi/(Z_hat*np.sqrt(tau_i**2 + tau_i))
         sigma2_hat = 1./tau_i - (phi/((tau_i**2+tau_i)*Z_hat))*(z+phi/Z_hat)
         return Z_hat, mu_hat, sigma2_hat

@@ -97,51 +97,66 @@ class opt_SGD(Optimizer):
         return subset
 
     def shift_constraints(self, j):
-        # back them up
-        bounded_i = copy.deepcopy(self.model.constrained_bounded_indices)
-        bounded_l = copy.deepcopy(self.model.constrained_bounded_lowers)
-        bounded_u = copy.deepcopy(self.model.constrained_bounded_uppers)
 
-        for b in range(len(bounded_i)): # for each group of constraints
-            for bc in range(len(bounded_i[b])):
-                pos = np.where(j == bounded_i[b][bc])[0]
+        constrained_indices = copy.deepcopy(self.model.constrained_indices)
+
+        for c, constraint in enumerate(constrained_indices):
+            mask = (np.ones_like(constrained_indices[c]) == 1)
+            for i in range(len(constrained_indices[c])):
+                pos = np.where(j == constrained_indices[c][i])[0]
                 if len(pos) == 1:
-                    pos2 = np.where(self.model.constrained_bounded_indices[b] == bounded_i[b][bc])[0][0]
-                    self.model.constrained_bounded_indices[b][pos2] = pos[0]
+                    self.model.constrained_indices[c][i] = pos
                 else:
-                    if len(self.model.constrained_bounded_indices[b]) == 1:
-                        # if it's the last index to be removed
-                        # the logic here is just a mess. If we remove the last one, then all the
-                        # b-indices change and we have to iterate through everything to find our
-                        # current index. Can't deal with this right now.
-                        raise NotImplementedError
+                    mask[i] = False
 
-                    else: # just remove it from the indices
-                        mask = self.model.constrained_bounded_indices[b] != bc
-                        self.model.constrained_bounded_indices[b] = self.model.constrained_bounded_indices[b][mask]
+            self.model.constrained_indices[c] = self.model.constrained_indices[c][mask]
+        return constrained_indices
+        # back them up
+        # bounded_i = copy.deepcopy(self.model.constrained_bounded_indices)
+        # bounded_l = copy.deepcopy(self.model.constrained_bounded_lowers)
+        # bounded_u = copy.deepcopy(self.model.constrained_bounded_uppers)
+
+        # for b in range(len(bounded_i)): # for each group of constraints
+        #     for bc in range(len(bounded_i[b])):
+        #         pos = np.where(j == bounded_i[b][bc])[0]
+        #         if len(pos) == 1:
+        #             pos2 = np.where(self.model.constrained_bounded_indices[b] == bounded_i[b][bc])[0][0]
+        #             self.model.constrained_bounded_indices[b][pos2] = pos[0]
+        #         else:
+        #             if len(self.model.constrained_bounded_indices[b]) == 1:
+        #                 # if it's the last index to be removed
+        #                 # the logic here is just a mess. If we remove the last one, then all the
+        #                 # b-indices change and we have to iterate through everything to find our
+        #                 # current index. Can't deal with this right now.
+        #                 raise NotImplementedError
+
+        #             else: # just remove it from the indices
+        #                 mask = self.model.constrained_bounded_indices[b] != bc
+        #                 self.model.constrained_bounded_indices[b] = self.model.constrained_bounded_indices[b][mask]
 
 
-        # here we shif the positive constraints. We cycle through each positive
-        # constraint
-        positive = self.model.constrained_positive_indices.copy()
-        mask = (np.ones_like(positive) == 1)
-        for p in range(len(positive)):
-            # we now check whether the constrained index appears in the j vector
-            # (the vector of the "active" indices)
-            pos = np.where(j == self.model.constrained_positive_indices[p])[0]
-            if len(pos) == 1:
-                self.model.constrained_positive_indices[p] = pos
-            else:
-                mask[p] = False
-        self.model.constrained_positive_indices = self.model.constrained_positive_indices[mask]
+        # # here we shif the positive constraints. We cycle through each positive
+        # # constraint
+        # positive = self.model.constrained_positive_indices.copy()
+        # mask = (np.ones_like(positive) == 1)
+        # for p in range(len(positive)):
+        #     # we now check whether the constrained index appears in the j vector
+        #     # (the vector of the "active" indices)
+        #     pos = np.where(j == self.model.constrained_positive_indices[p])[0]
+        #     if len(pos) == 1:
+        #         self.model.constrained_positive_indices[p] = pos
+        #     else:
+        #         mask[p] = False
+        # self.model.constrained_positive_indices = self.model.constrained_positive_indices[mask]
 
-        return (bounded_i, bounded_l, bounded_u), positive
+        # return (bounded_i, bounded_l, bounded_u), positive
 
-    def restore_constraints(self, b, p):
-        self.model.constrained_bounded_indices = b[0]
-        self.model.constrained_bounded_lowers = b[1]
-        self.model.constrained_bounded_uppers = b[2]
-        self.model.constrained_positive_indices = p
+    def restore_constraints(self, c):#b, p):
+        # self.model.constrained_bounded_indices = b[0]
+        # self.model.constrained_bounded_lowers = b[1]
+        # self.model.constrained_bounded_uppers = b[2]
+        # self.model.constrained_positive_indices = p
+        self.model.constrained_indices = c
 
     def get_param_shapes(self, N = None, Q = None):
         model_name = self.model.__class__.__name__
@@ -168,9 +183,15 @@ class opt_SGD(Optimizer):
         if self.model.N == 0 or Y.std() == 0.0:
             return 0, step, self.model.N
 
-        self.model.likelihood._mean = Y.mean()
-        self.model.likelihood._std = Y.std()
+        self.model.likelihood._bias = Y.mean()
+        self.model.likelihood._scale = Y.std()
         self.model.likelihood.set_data(Y)
+        # self.model.likelihood.V = self.model.likelihood.Y*self.model.likelihood.precision
+
+        sigma = self.model.likelihood._variance
+        self.model.likelihood._variance = None # invalidate cache
+        self.model.likelihood._set_params(sigma)
+
 
         j = self.subset_parameter_vector(self.x_opt, samples, shapes)
         self.model.X = X[samples]
@@ -181,27 +202,30 @@ class opt_SGD(Optimizer):
             self.model.likelihood.YYT = np.dot(self.model.likelihood.Y, self.model.likelihood.Y.T)
             self.model.likelihood.trYYT = np.trace(self.model.likelihood.YYT)
 
-        b, p = self.shift_constraints(j)
+        ci = self.shift_constraints(j)
         f, fp = f_fp(self.x_opt[j])
         step[j] = self.momentum * step[j] + self.learning_rate[j] * fp
         self.x_opt[j] -= step[j]
+        self.restore_constraints(ci)
 
-        self.restore_constraints(b, p)
-        # restore likelihood _mean and _std, otherwise when we call set_data(y) on
+        self.model.grads[j] = fp
+        # restore likelihood _bias and _scale, otherwise when we call set_data(y) on
         # the next feature, it will get normalized with the mean and std of this one.
-        self.model.likelihood._mean = 0
-        self.model.likelihood._std = 1
+        self.model.likelihood._bias = 0
+        self.model.likelihood._scale = 1
 
         return f, step, self.model.N
 
     def opt(self, f_fp=None, f=None, fp=None):
         self.x_opt = self.model._get_params_transformed()
+        self.model.grads = np.zeros_like(self.x_opt)
+
         X, Y = self.model.X.copy(), self.model.likelihood.Y.copy()
 
         self.model.likelihood.YYT = None
         self.model.likelihood.trYYT = None
-        self.model.likelihood._mean = 0.0
-        self.model.likelihood._std = 1.0
+        self.model.likelihood._bias = 0.0
+        self.model.likelihood._scale = 1.0
 
         N, Q = self.model.X.shape
         D = self.model.likelihood.Y.shape[1]
@@ -225,6 +249,11 @@ class opt_SGD(Optimizer):
                 self.model.D = len(j)
                 self.model.likelihood.D = len(j)
                 self.model.likelihood.set_data(Y[:, j])
+                # self.model.likelihood.V = self.model.likelihood.Y*self.model.likelihood.precision
+
+                sigma = self.model.likelihood._variance
+                self.model.likelihood._variance = None # invalidate cache
+                self.model.likelihood._set_params(sigma)
 
                 if missing_data:
                     shapes = self.get_param_shapes(N, Q)
@@ -250,7 +279,6 @@ class opt_SGD(Optimizer):
                 # plt.clf()
                 # plt.plot(self.param_traces['noise'])
 
-                # import pdb; pdb.set_trace()
                 # for k in self.param_traces.keys():
                 #     self.param_traces[k].append(self.model.get(k)[0])
 
@@ -262,7 +290,10 @@ class opt_SGD(Optimizer):
             self.model.likelihood.N = N
             self.model.likelihood.D = D
             self.model.likelihood.Y = Y
-
+            sigma = self.model.likelihood._variance
+            self.model.likelihood._variance = None # invalidate cache
+            self.model.likelihood._set_params(sigma)
+            
             self.trace.append(self.f_opt)
             if self.iteration_file is not None:
                 f = open(self.iteration_file + "iteration%d.pickle" % it, 'w')

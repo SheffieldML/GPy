@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import stats, linalg
-from ..util.linalg import pdinv,mdot,jitchol,DSYR,tdot
+from ..util.linalg import pdinv,mdot,jitchol,chol_inv,DSYR,tdot
 from likelihood import likelihood
 
 class EP(likelihood):
@@ -133,7 +133,6 @@ class EP(likelihood):
 
         return self._compute_GP_variables()
 
-    #@profile
     def fit_DTC(self, Kmm, Kmn):
         """
         The expectation-propagation algorithm with sparse pseudo-input.
@@ -150,7 +149,7 @@ class EP(likelihood):
         """
         KmnKnm = np.dot(Kmn,Kmn.T)
         Lm = jitchol(Kmm)
-        Lmi,info = linalg.lapack.flapack.dtrtrs(Lm,np.asfortranarray(np.eye(M)),lower=1,trans=1)
+        Lmi = chol_inv(Lm)
         Kmmi = np.dot(Lmi.T,Lmi)
         KmmiKmn = np.dot(Kmmi,Kmn)
         Qnn_diag = np.sum(Kmn*KmmiKmn,-2)
@@ -242,7 +241,9 @@ class EP(likelihood):
         q(f|X) = int_{df}{N(f|KfuKuu_invu,diag(Kff-Qff)*N(u|0,Kuu)} = N(f|0,Sigma0)
         Sigma0 = diag(Knn-Qnn) + Qnn, Qnn = Knm*Kmmi*Kmn
         """
-        Kmmi, self.Lm, self.Lmi, Kmm_logdet = pdinv(Kmm)
+        Lm = jitchol(Kmm)
+        Lmi = chol_inv(Lm)
+        Kmmi = np.dot(Lmi.T,Lmi)
         P0 = Kmn.T
         KmnKnm = np.dot(P0.T, P0)
         KmmiKmn = np.dot(Kmmi,P0.T)

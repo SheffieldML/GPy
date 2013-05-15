@@ -96,7 +96,10 @@ class Laplace(likelihood):
         #dytil_dfhat1 = np.dot(self.Sigma_tilde, Ki) + np.eye(self.N) # or self.Wi__Ki_W? Theyre the same basically
 
         a = mdot(dWi_dfhat, Ki, self.f_hat)
-        dytil_dfhat = mdot(dWi_dfhat, Ki, self.f_hat) + np.dot(self.Sigma_tilde, Ki) + np.eye(self.N)
+        b = np.dot(self.Sigma_tilde, Ki)
+        dytil_dfhat = - np.dot(dWi_dfhat, np.dot(Ki, self.f_hat)) + np.dot(self.Sigma_tilde, Ki) + np.eye(self.N)
+        #dytil_dfhat = - (np.dot(dWi_dfhat, Ki)*self.f_hat[:, None] + np.dot(self.Sigma_tilde, Ki)).sum(-1) + np.eye(self.N)
+        self.dytil_dfhat = dytil_dfhat
         return dL_dytil, dytil_dfhat
 
     def _Kgradients(self, dL_d_K_Sigma, dK_dthetaK):
@@ -330,19 +333,25 @@ class Laplace(likelihood):
 
     def fit_full(self, K):
         """
-        The laplace approximation algorithm
+        The laplace approximation algorithm, find K and expand hessian
         For nomenclature see Rasmussen & Williams 2006 - modified for numerical stability
         :K: Covariance matrix
         """
         self.K = K.copy()
-        #assert np.all(self.K.T == self.K)
-        #self.K_safe = K.copy()
+
+        #Find mode
         if self.rasm:
             self.f_hat = self.rasm_mode(K)
         else:
             self.f_hat = self.ncg_mode(K)
 
+        #Compute hessian and other variables at mode
+        self._compute_likelihood_variables()
+
+    def _compute_likelihood_variables(self):
         #At this point get the hessian matrix
+        #print "Data: ", self.data
+        #print "fhat: ", self.f_hat
         self.W = -np.diag(self.likelihood_function.link_hess(self.data, self.f_hat, extra_data=self.extra_data))
 
         if not self.likelihood_function.log_concave:
@@ -352,14 +361,14 @@ class Laplace(likelihood):
                                        #This is a property only held by non-log-concave likelihoods
 
         #TODO: Could save on computation when using rasm by returning these, means it isn't just a "mode finder" though
-        self.B, self.B_chol, self.W_12 = self._compute_B_statistics(K, self.W)
+        self.B, self.B_chol, self.W_12 = self._compute_B_statistics(self.K, self.W)
         self.Bi, _, _, B_det = pdinv(self.B)
 
         Ki_W_i = self.K - mdot(self.K, self.W_12, self.Bi, self.W_12, self.K)
         self.ln_Ki_W_i_det = np.linalg.det(Ki_W_i)
 
         b = np.dot(self.W, self.f_hat) + self.likelihood_function.link_grad(self.data, self.f_hat, extra_data=self.extra_data)[:, None]
-        solve_chol = cho_solve((self.B_chol, True), mdot(self.W_12, (K, b)))
+        solve_chol = cho_solve((self.B_chol, True), mdot(self.W_12, (self.K, b)))
         a = b - mdot(self.W_12, solve_chol)
         self.f_Ki_f = np.dot(self.f_hat.T, a)
         self.ln_K_det = pddet(self.K)

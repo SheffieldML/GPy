@@ -10,8 +10,7 @@ from scipy.special import gammaln, gamma
 from ..util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
 
 class likelihood_function:
-    """
-    Likelihood class for doing Expectation propagation
+    """ Likelihood class for doing Expectation propagation
 
     :param Y: observed output (Nx1 numpy.darray)
     ..Note:: Y values allowed depend on the likelihood_function used
@@ -241,6 +240,7 @@ class student_t(likelihood_function):
         y = np.squeeze(y)
         f = np.squeeze(f)
         assert y.shape == f.shape
+
         e = y - f
         hess = ((self.v + 1)*(e**2 - self.v*(self.sigma**2))) / ((((self.sigma**2)*self.v) + e**2)**2)
         return np.squeeze(hess)

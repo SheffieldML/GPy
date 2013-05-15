@@ -37,7 +37,7 @@ class KernelTests(unittest.TestCase):
 
         k1 = GPy.kern.rbf(1) + GPy.kern.bias(1)
         k2 = GPy.kern.coregionalise(2,1)
-        k = k1.prod_orthogonal(k2)
+        k = k1.prod(k2,tensor=True)
         m = GPy.models.GP_regression(X,Y,kernel=k)
         self.assertTrue(m.checkgrad())
 

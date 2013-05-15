@@ -3,8 +3,7 @@
 
 import numpy as np
 import pylab as pb
-from ..util.linalg import mdot, jitchol, tdot, symmetrify,pdinv
-#from ..util.linalg import mdot, jitchol, chol_inv, pdinv, trace_dot
+from ..util.linalg import mdot, jitchol, chol_inv, tdot, symmetrify,pdinv
 from ..util.plot import gpplot
 from .. import kern
 from scipy import stats, linalg
@@ -57,7 +56,7 @@ class FITC(sparse_GP):
         # factor B
         self.B = np.eye(self.M) + self.A
         self.LB = jitchol(self.B)
-        self.LBi,info = linalg.lapack.flapack.dtrtrs(self.LB,np.eye(self.M),lower=1)
+        self.LBi = chol_inv(self.LB)
         self.psi1V = np.dot(self.psi1, self.V_star)
 
         Lmi_psi1V, info = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(self.psi1V), lower=1, trans=0)
@@ -75,7 +74,7 @@ class FITC(sparse_GP):
         psi1beta = self.psi1*self.beta_star.T
         H = self.Kmm + mdot(self.psi1,psi1beta.T)
         LH = jitchol(H)
-        LHi,info = linalg.lapack.flapack.dtrtrs(LH,np.asfortranarray(np.eye(self.M)),lower=1,trans=0)
+        LHi = chol_inv(LH)
         Hi = np.dot(LHi.T,LHi)
 
         betapsi1TLmiLBi = np.dot(psi1beta.T,LBiLmi.T)
@@ -109,10 +108,10 @@ class FITC(sparse_GP):
         for i,V_n,alpha_n,gamma_n,gamma_k in zip(range(self.N),self.V_star,alpha,gamma_2,gamma_3):
             K_pp_K = np.dot(Kmmipsi1[:,i:(i+1)],Kmmipsi1[:,i:(i+1)].T)
 
-            #_dpsi1 = dA_dpsi1: yT*beta_star*y + Diag_dC_dpsi1 +Diag_dD_dpsi1
+            #Diag_dpsi1 = Diag_dA_dpsi1: yT*beta_star*y + Diag_dC_dpsi1 +Diag_dD_dpsi1
             _dpsi1 = (-V_n**2 - alpha_n + 2.*gamma_k - gamma_n**2) * Kmmipsi1.T[i:(i+1),:]
 
-            #_dKmm = dA_dKmm: yT*beta_star*y +Diag_dC_dKmm +Diag_dD_dKmm
+            #Diag_dKmm = Diag_dA_dKmm: yT*beta_star*y +Diag_dC_dKmm +Diag_dD_dKmm
             _dKmm = .5*(V_n**2 + alpha_n + gamma_n**2 - 2.*gamma_k) * K_pp_K #Diag_dD_dKmm
 
             self._dpsi1_dtheta += self.kern.dK_dtheta(_dpsi1,self.X[i:i+1,:],self.Z)
@@ -120,25 +119,6 @@ class FITC(sparse_GP):
 
             self._dKmm_dX += 2.*self.kern.dK_dX(_dKmm ,self.Z)
             self._dpsi1_dX += self.kern.dK_dX(_dpsi1.T,self.Z,self.X[i:i+1,:])
-
-        """
-        for psi1_n,V_n,X_n,alpha_n,gamma_n,gamma_k in zip(self.psi1.T,self.V_star,self.X,alpha,gamma_2,gamma_3):
-            psin_K = np.dot(psi1_n[None,:],Kmmi)
-            K_pp_K = np.dot(psin_K.T,psin_K)
-
-            #_dpsi1 = dA_dpsi1: yT*beta_star*y + Diag_dC_dpsi1 +Diag_dD_dpsi1
-            _dpsi1 = (-V_n**2 - alpha_n + 2.*gamma_k - gamma_n**2) * psin_K
-
-            #_dKmm = dA_dKmm: yT*beta_star*y +Diag_dC_dKmm +Diag_dD_dKmm
-            _dKmm = .5*(V_n**2 + alpha_n + gamma_n**2 - 2.*gamma_k) * K_pp_K #Diag_dD_dKmm
-
-            self._dpsi1_dtheta += self.kern.dK_dtheta(_dpsi1,X_n[None,:],self.Z)
-            self._dKmm_dtheta += self.kern.dK_dtheta(_dKmm,self.Z)
-
-            self._dKmm_dX += 2.*self.kern.dK_dX(_dKmm ,self.Z)
-            self._dpsi1_dX += self.kern.dK_dX(_dpsi1.T,self.Z,X_n[None,:])
-        """
-
 
         # the partial derivative vector for the likelihood
         if self.likelihood.Nparams == 0:

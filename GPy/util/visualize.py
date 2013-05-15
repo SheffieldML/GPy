@@ -4,6 +4,7 @@ import GPy
 import numpy as np
 import matplotlib as mpl
 import time
+import Image
 
 class data_show:
     """
@@ -190,39 +191,52 @@ class lvm_dimselect(lvm):
 
 
 
-
-
-
-
 class image_show(data_show):
     """Show a data vector as an image."""
-    def __init__(self, vals, axes=None, dimensions=(16,16), transpose=False, invert=False, scale=False):
+    def __init__(self, vals, axes=None, dimensions=(16,16), transpose=False, invert=False, scale=False, palette=[], presetMean = 0., presetSTD = -1., selectImage = 0):
         data_show.__init__(self, vals, axes)
         self.dimensions = dimensions
         self.transpose = transpose
         self.invert = invert
         self.scale = scale
-        self.set_image(vals/255.)
-        self.handle = self.axes.imshow(self.vals, cmap=plt.cm.gray, interpolation='nearest')
+        self.palette = palette
+        self.presetMean = presetMean
+        self.presetSTD = presetSTD
+        self.selectImage = selectImage # This is used when the y vector contains multiple images concatenated.
+
+        self.set_image(vals)
+        if not self.palette == []: # Can just show the image (self.set_image() took care of setting the palette)
+            self.handle = self.axes.imshow(self.vals, interpolation='nearest')
+        else: # Use a boring gray map.
+            self.handle = self.axes.imshow(self.vals, cmap=plt.cm.gray, interpolation='nearest')
         plt.show()
 
     def modify(self, vals):
-        self.set_image(vals/255.)
-        #self.handle.remove()
-        #self.handle = self.axes.imshow(self.vals)
+        self.set_image(vals)
         self.handle.set_array(self.vals)
-        #self.axes.figure.canvas.draw()
-        plt.show()
+        self.axes.figure.canvas.draw() # Teo - original line: plt.show()
 
     def set_image(self, vals):
-        self.vals = np.reshape(vals, self.dimensions, order='F').copy()
+        dim = self.dimensions[0] * self.dimensions[1]
+        self.vals = np.reshape(vals[0,dim*self.selectImage+np.array(range(dim))], self.dimensions, order='F')
         if self.transpose:
             self.vals = self.vals.T.copy()
         if not self.scale:
-            self.vals = self.vals.copy()
-        #if self.invert:
-        #    self.vals = -self.vals
+            self.vals = self.vals
+        if self.invert:
+            self.vals = -self.vals
 
+        # un-normalizing, for visualisation purposes:
+        if self.presetSTD >= 0: # The Mean is assumed to be in the range (0,255)
+            self.vals = self.vals*self.presetSTD + self.presetMean
+            # Clipping the values:
+            self.vals[self.vals < 0] = 0
+            self.vals[self.vals > 255] = 255
+        else:
+            self.vals = 255*(self.vals - self.vals.min())/(self.vals.max() - self.vals.min())
+        if not self.palette == []: # applying using an image palette (e.g. if the image has been quantized)
+            self.vals = Image.fromarray(self.vals.astype('uint8'))
+            self.vals.putpalette(self.palette) # palette is a list, must be loaded before calling this function
 
 class mocap_data_show(data_show):
     """Base class for visualizing motion capture data."""

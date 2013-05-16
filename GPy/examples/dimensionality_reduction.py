@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 
 import GPy
 from GPy.models.Bayesian_GPLVM import Bayesian_GPLVM
+from GPy.util.datasets import swiss_roll_generated
 
 default_seed = np.random.seed(123344)
 
@@ -61,14 +62,17 @@ def GPLVM_oil_100(optimize=True):
     m.plot_latent(labels=m.data_labels)
     return m
 
-def swiss_roll(optimize=True, N=1000, M=15, Q=4):
+def swiss_roll(optimize=True, N=1000, M=15, Q=4, sigma=.2, plot=False):
     from GPy.util.datasets import swiss_roll
     from GPy.core.transformations import logexp_clipped
 
-    data = swiss_roll(N=N)
+    data = swiss_roll_generated(N=N, sigma=sigma)
     Y = data['Y']
     Y -= Y.mean(0)
     Y /= Y.std(0)
+
+    t = data['t']
+    c = data['colors']
 
     try:
         from sklearn.manifold.isomap import Isomap
@@ -79,16 +83,33 @@ def swiss_roll(optimize=True, N=1000, M=15, Q=4):
     except ImportError:
         X = np.random.randn(N, Q)
 
+    if plot:
+        from mpl_toolkits import mplot3d
+        import pylab
+        fig = pylab.figure("Swiss Roll Data")
+        ax = fig.add_subplot(121, projection='3d')
+        ax.scatter(*Y.T, c=c)
+        ax.set_title("Swiss Roll")
+
+        ax = fig.add_subplot(122)
+        ax.scatter(*X.T[:2], c=c)
+        ax.set_title("Initialization")
+
+
     var = .5
-    S = (var * np.ones_like(X) + np.clip(np.random.randn(N, Q) * var ** 2, -(1 - var), (1 - var))) + .001
+    S = (var * np.ones_like(X) + np.clip(np.random.randn(N, Q) * var ** 2,
+                                         - (1 - var),
+                                         (1 - var))) + .001
     Z = np.random.permutation(X)[:M]
 
     kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, 2)
 
     m = Bayesian_GPLVM(Y, Q, X=X, X_variance=S, M=M, Z=Z, kernel=kernel)
+    m.data_colors = c
+    m.data_t = t
 
-#     m.constrain('variance|length', logexp_clipped())
-    m['lengthscale'] = X.var(0) / X.var(0).max()
+    m.constrain('variance|length', logexp_clipped())
+    m['lengthscale'] = X.var(0).max() / X.var(0)
     m['noise'] = Y.var() / 100.
     m.ensure_default_constraints()
 
@@ -96,36 +117,33 @@ def swiss_roll(optimize=True, N=1000, M=15, Q=4):
         m.optimize('scg', messages=1)
     return m
 
-def BGPLVM_oil(optimize=True, N=100, Q=10, M=10, max_f_eval=1e3, plot=False, **k):
+def BGPLVM_oil(optimize=True, N=100, Q=5, M=25, max_f_eval=4e3, plot=False, **k):
     data = GPy.util.datasets.oil()
     from GPy.core.transformations import logexp_clipped
+    np.random.seed(0)
 
     # create simple GP model
     kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
     Y = data['X'][:N]
-    Y -= Y.mean(0)
+    Yn = Y - Y.mean(0)
+    Yn /= Yn.std(0)
 
-    m = GPy.models.Bayesian_GPLVM(Y, Q, kernel=kernel, M=M, **k)
+    m = GPy.models.Bayesian_GPLVM(Yn, Q, kernel=kernel, M=M, **k)
     m.data_labels = data['Y'][:N].argmax(axis=1)
 
-    m.constrain('variance', logexp_clipped())
-    m.constrain('length', logexp_clipped())
-    m['lengt'] = 1.
-    m['noise'] = Y.var() / 100.
+#     m.constrain('variance', logexp_clipped())
+#     m.constrain('length', logexp_clipped())
+    m['lengt'] = m.X.var(0).max() / m.X.var(0)
+    m['noise'] = Yn.var() / 100.
 
     m.ensure_default_constraints()
 
     # optimize
     if optimize:
-        m.unconstrain('X'); m.constrain_fixed('X')
-        m.optimize('scg', messages=1, max_f_eval=10)
-        m.unconstrain('X'); m.constrain('X_var', logexp_clipped())
-
-        m.unconstrain('noise'); m.constrain_fixed('noise', Y.var() / 100.)
-        m.optimize('scg', messages=1, max_f_eval=150)
-
-        m.unconstrain('noise')
-        m.constrain('noise', logexp_clipped())
+#         m.unconstrain('noise'); m.constrain_fixed('noise')
+#         m.optimize('scg', messages=1, max_f_eval=200)
+#         m.unconstrain('noise')
+#         m.constrain('noise', logexp_clipped())
         m.optimize('scg', messages=1, max_f_eval=max_f_eval)
 
     if plot:

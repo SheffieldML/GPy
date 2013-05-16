@@ -27,7 +27,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 
     """
     def __init__(self, Y, Q, X=None, X_variance=None, init='PCA', M=10,
-                 Z=None, kernel=None, oldpsave=5, _debug=False,
+                 Z=None, kernel=None, oldpsave=10, _debug=False,
                  **kwargs):
         if X == None:
             X = self.initialise_latent(init, Q, Y)
@@ -167,8 +167,12 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 #         d_dmu = (dL_dmu).flatten()
 #         d_dS = (dL_dS).flatten()
         # ========================
-        dbound_dmuS = np.hstack((d_dmu, d_dS))
-        return np.hstack((dbound_dmuS.flatten(), sparse_GP._log_likelihood_gradients(self)))
+        self.dbound_dmuS = np.hstack((d_dmu, d_dS))
+        self.dbound_dZtheta = sparse_GP._log_likelihood_gradients(self)
+        return np.hstack((self.dbound_dmuS.flatten(), self.dbound_dZtheta))
+
+    def _log_likelihood_normal_gradients(self):
+        Si, _, _, _ = pdinv(self.X_variance)
 
     def plot_latent(self, which_indices=None, *args, **kwargs):
 
@@ -263,7 +267,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 
         param_dict = dict(self._savedparams)
         gradient_dict = dict(self._savedgradients)
-        kmm_dict = dict(self._savedpsiKmm)
+#         kmm_dict = dict(self._savedpsiKmm)
         iters = np.array(param_dict.keys())
         ABCD_dict = np.array(self._savedABCD)
         self.showing = 0

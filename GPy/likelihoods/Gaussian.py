@@ -14,7 +14,7 @@ class Gaussian(likelihood):
     def __init__(self, data, variance=1., normalize=False):
         self.is_heteroscedastic = False
         self.Nparams = 1
-        self.Z = 0.  # a correction factor which accounts for the approximation made
+        self.Z = 0. # a correction factor which accounts for the approximation made
         N, self.D = data.shape
 
         # normalization
@@ -54,8 +54,8 @@ class Gaussian(likelihood):
         x = float(x)
         if self._variance != x:
             self._variance = x
-            self.covariance_matrix = np.eye(self.N) * self._variance
             self.precision = 1. / self._variance
+            self.covariance_matrix = np.eye(self.N) * self._variance
             self.V = (self.precision) * self.Y
 
     def predictive_values(self, mu, var, full_cov):

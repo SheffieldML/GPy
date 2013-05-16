@@ -193,7 +193,7 @@ class lvm_dimselect(lvm):
 
 class image_show(data_show):
     """Show a data vector as an image."""
-    def __init__(self, vals, axes=None, dimensions=(16,16), transpose=False, invert=False, scale=False, palette=[], presetMean = 0., presetSTD = -1., selectImage = 0):
+    def __init__(self, vals, axes=None, dimensions=(16,16), transpose=False, invert=False, scale=False, palette=[], presetMean = 0., presetSTD = -1., selectImage=0):
         data_show.__init__(self, vals, axes)
         self.dimensions = dimensions
         self.transpose = transpose
@@ -214,15 +214,30 @@ class image_show(data_show):
     def modify(self, vals):
         self.set_image(vals)
         self.handle.set_array(self.vals)
-        self.axes.figure.canvas.draw() # Teo - original line: plt.show()
+        self.axes.figure.canvas.draw() 
 
     def set_image(self, vals):
         dim = self.dimensions[0] * self.dimensions[1]
-        self.vals = np.reshape(vals[0,dim*self.selectImage+np.array(range(dim))], self.dimensions, order='F')
+        nImg = np.sqrt(vals[0,].size/dim)
+        if nImg > 1 and nImg.is_integer(): # Show a mosaic of images
+            nImg = np.int(nImg)
+            self.vals = np.zeros((self.dimensions[0]*nImg, self.dimensions[1]*nImg))
+            for iR in range(nImg):
+                for iC in range(nImg):
+                    currImgId = iR*nImg + iC
+                    currImg = np.reshape(vals[0,dim*currImgId+np.array(range(dim))], self.dimensions, order='F')
+                    firstRow = iR*self.dimensions[0]
+                    lastRow = (iR+1)*self.dimensions[0]
+                    firstCol = iC*self.dimensions[1]
+                    lastCol = (iC+1)*self.dimensions[1]
+                    self.vals[firstRow:lastRow, firstCol:lastCol] = currImg
+
+        else: 
+            self.vals = np.reshape(vals[0,dim*self.selectImage+np.array(range(dim))], self.dimensions, order='F')
         if self.transpose:
             self.vals = self.vals.T.copy()
-        if not self.scale:
-            self.vals = self.vals
+        # if not self.scale:
+        #     self.vals = self.vals
         if self.invert:
             self.vals = -self.vals
 

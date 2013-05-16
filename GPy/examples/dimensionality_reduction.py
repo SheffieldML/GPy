@@ -109,7 +109,7 @@ def swiss_roll(optimize=True, N=1000, M=15, Q=4, sigma=.2, plot=False):
     m.data_t = t
 
     m.constrain('variance|length', logexp_clipped())
-    m['lengthscale'] = X.var(0).max() / X.var(0)
+    m['lengthscale'] = 1. # X.var(0).max() / X.var(0)
     m['noise'] = Y.var() / 100.
     m.ensure_default_constraints()
 

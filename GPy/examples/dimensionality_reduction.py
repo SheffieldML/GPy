@@ -68,8 +68,8 @@ def swiss_roll(optimize=True, N=1000, M=15, Q=4, sigma=.2, plot=False):
 
     data = swiss_roll_generated(N=N, sigma=sigma)
     Y = data['Y']
-    Y -= Y.mean(0)
-    Y /= Y.std(0)
+    Y -= Y.mean()
+    Y /= Y.std()
 
     t = data['t']
     c = data['colors']
@@ -102,7 +102,7 @@ def swiss_roll(optimize=True, N=1000, M=15, Q=4, sigma=.2, plot=False):
                                          (1 - var))) + .001
     Z = np.random.permutation(X)[:M]
 
-    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, 2)
+    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
 
     m = Bayesian_GPLVM(Y, Q, X=X, X_variance=S, M=M, Z=Z, kernel=kernel)
     m.data_colors = c

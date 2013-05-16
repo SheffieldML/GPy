@@ -95,23 +95,7 @@ class Laplace(likelihood):
         #dytil_dfhat = dytil_dfhat_explicit + dytil_dfhat_implicit
         #dytil_dfhat1 = np.dot(self.Sigma_tilde, Ki) + np.eye(self.N) # or self.Wi__Ki_W? Theyre the same basically
 
-        a = mdot(dWi_dfhat, Ki, self.f_hat)
-        b = np.dot(self.Sigma_tilde, Ki)
-        #dytil_dfhat = np.zeros(self.K.shape)
-        #for col in range(self.N):
-            #for row in range(self.N):
-                #t1 = 0
-                #for l in range(self.N):
-                    #t1 += dWi_dfhat[col, col]*Ki[col,l]*self.f_hat[l, 0]
-                ##t2 = np.zeros((1, self.N))
-                #t2 = np.dot(self.Sigma_tilde, Ki[:, col])
-                ###for k in range(self.N):
-                    ###t2[:] += self.Sigma_tilde[k, k]*Ki[k, col]
-                #dytil_dfhat[row, col] = (t1 + t2)[row]
-        #dytil_dfhat += np.eye(self.N)
-
         dytil_dfhat = - np.diagflat(np.dot(dWi_dfhat, np.dot(Ki, self.f_hat))) + np.dot(self.Sigma_tilde, Ki) + np.eye(self.N)
-        #dytil_dfhat = - (np.dot(dWi_dfhat, Ki)*self.f_hat[:, None] + np.dot(self.Sigma_tilde, Ki)).sum(-1) + np.eye(self.N)
         self.dytil_dfhat = dytil_dfhat
         return dL_dytil, dytil_dfhat
 
@@ -219,10 +203,10 @@ class Laplace(likelihood):
 
         dlikelihoodgrad_dthetaL, d2likelihood_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat, self.extra_data) #FIXME: Shouldn't this have a implicit component aswell?
         dlikelihood_dfhat = self.likelihood_function.link_grad(self.data, self.f_hat, self.extra_data)
-        #KW_I_i, _, _, _ = pdinv(np.dot(self.K, self.W) + np.eye(self.N))
-        KW_I_i = self.Bi # could use self.B_chol??
+        KW_I_i, _, _, _ = pdinv(np.dot(self.K, self.W) + np.eye(self.N))
+        #KW_I_i = self.Bi # could use self.B_chol??
         dfhat_dthetaL = mdot(KW_I_i, (self.K, dlikelihoodgrad_dthetaL))
-        #dfhat_dthetaL = np.zeros(dfhat_dthetaL.shape)[:, None]
+        dfhat_dthetaL = np.zeros(dfhat_dthetaL.shape)[:, None]
 
         dytil_dthetaL = np.dot(dytil_dfhat, dfhat_dthetaL)
 
@@ -383,7 +367,8 @@ class Laplace(likelihood):
         b = np.dot(self.W, self.f_hat) + self.likelihood_function.link_grad(self.data, self.f_hat, extra_data=self.extra_data)[:, None]
         solve_chol = cho_solve((self.B_chol, True), mdot(self.W_12, (self.K, b)))
         a = b - mdot(self.W_12, solve_chol)
-        self.f_Ki_f = np.dot(self.f_hat.T, a)
+        self.Ki_f = a
+        self.f_Ki_f = np.dot(self.f_hat.T, self.Ki_f)
         self.ln_K_det = pddet(self.K)
 
         self.ln_z_hat = (- 0.5*self.f_Ki_f

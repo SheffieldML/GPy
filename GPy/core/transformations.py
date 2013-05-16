@@ -39,13 +39,14 @@ class logexp(transformation):
         return '(+ve)'
 
 class logexp_clipped(transformation):
-    def __init__(self, lower=1e-8, upper=1e200):
+    max_bound = 1e300
+    log_max_bound = np.log(max_bound)
+    def __init__(self, lower=1e-15):
         self.domain = 'positive'
         self.lower = lower
-        self.upper = upper
     def f(self, x):
-        exp = np.exp(x)
-        f = np.log(1. + np.where(exp > self.upper, self.upper, exp))
+        exp = np.exp(np.where(x > self.log_max_bound, self.log_max_bound, x))
+        f = np.log(1. + exp)
         return f
     def finv(self, f):
         return np.log(np.exp(f) - 1.)

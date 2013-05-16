@@ -365,13 +365,23 @@ def mrd_silhouette():
     pass
 
 def brendan_faces():
+    from GPy import kern
     data = GPy.util.datasets.brendan_faces()
-    Y = data['Y'][0:-1:10, :]
-    m = GPy.models.GPLVM(data['Y'], 2)
+    Q = 2
+    # Y = data['Y'][0:-1:2, :]
+    Y = data['Y']
+    Yn = Y - Y.mean()
+    Yn /= Yn.std()
+
+    m = GPy.models.GPLVM(Yn, Q)#, M=Y.shape[0]/4)
 
     # optimize
+    # m.constrain_fixed('white', 1e-2)
+    # m.constrain_bounded('noise', 1e-6, 10)
+    m.constrain('rbf', GPy.core.transformations.logexp_clipped())
+
     m.ensure_default_constraints()
-    m.optimize(messages=1, max_f_eval=10000)
+    m.optimize('scg', messages=1, max_f_eval=10000)
 
     ax = m.plot_latent()
     y = m.likelihood.Y[0, :]

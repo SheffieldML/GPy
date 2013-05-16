@@ -111,7 +111,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         iteration += 1
         if display:
             print '\r',
-            print 'i: {0:>5g}  f:{1:> 12e}  b:{2:> 12e} |g|:{3:> 12e}'.format(iteration, fnow, beta, current_grad),
+            print 'Iter: {0:>0{mi}g}  Obj:{1:> 12e}  Scale:{2:> 12e}  |g|:{3:> 12e}'.format(iteration, float(fnow), float(beta), float(current_grad), mi=len(str(maxiters))),
             # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
             sys.stdout.flush()
 

@@ -61,7 +61,7 @@ class kern(parameterised):
 
                 ax.bar(np.arange(len(ard_params)) - 0.4, ard_params)
                 ax.set_xticks(np.arange(len(ard_params)))
-                ax.set_xticklabels([r"${}$".format(i + 1) for i in range(len(ard_params))])
+                ax.set_xticklabels([r"${}$".format(i) for i in range(len(ard_params))])
         return ax
 
     def _transform_gradients(self, g):
@@ -176,8 +176,8 @@ class kern(parameterised):
         prev_constr_ind = [K1.constrained_indices] + [K1.Nparam + i for i in K2.constrained_indices]
         prev_constr = K1.constraints + K2.constraints
 
-        prev_constr_fix = K1.fixed_indices + [arr + K1.Nparam for arr in K2.fixed_indices]
-        prev_constr_fix_values = K1.fixed_values + K2.fixed_values
+        # prev_constr_fix = K1.fixed_indices + [arr + K1.Nparam for arr in K2.fixed_indices]
+        # prev_constr_fix_values = K1.fixed_values + K2.fixed_values
 
         # follow the previous ties
         for arr in prev_ties:
@@ -196,6 +196,7 @@ class kern(parameterised):
         return np.hstack([p._get_params() for p in self.parts])
 
     def _set_params(self, x):
+        x = np.clip(x, -1e300, 1e300)
         [p._set_params(x[s]) for p, s in zip(self.parts, self.param_slices)]
 
     def _get_param_names(self):

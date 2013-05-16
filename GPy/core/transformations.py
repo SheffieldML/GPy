@@ -39,11 +39,13 @@ class logexp(transformation):
         return '(+ve)'
 
 class logexp_clipped(transformation):
-    def __init__(self, lower=1e-12):
+    def __init__(self, lower=1e-8, upper=1e200):
         self.domain = 'positive'
         self.lower = lower
+        self.upper = upper
     def f(self, x):
-        f = np.log(1. + np.exp(x))
+        exp = np.exp(x)
+        f = np.log(1. + np.where(exp > self.upper, self.upper, exp))
         return f
     def finv(self, f):
         return np.log(np.exp(f) - 1.)

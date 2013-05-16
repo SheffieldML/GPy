@@ -39,7 +39,7 @@ class logexp(transformation):
         return '(+ve)'
 
 class logexp_clipped(transformation):
-    max_bound = 1e10
+    max_bound = 1e300
     min_bound = 1e-10
     log_max_bound = np.log(max_bound)
     log_min_bound = np.log(min_bound)

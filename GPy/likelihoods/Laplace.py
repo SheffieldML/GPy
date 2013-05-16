@@ -105,12 +105,12 @@ class Laplace(likelihood):
                     #t1 += dWi_dfhat[col, col]*Ki[col,l]*self.f_hat[l, 0]
                 ##t2 = np.zeros((1, self.N))
                 #t2 = np.dot(self.Sigma_tilde, Ki[:, col])
-                ##for k in range(self.N):
-                    ##t2[:] += self.Sigma_tilde[k, k]*Ki[k, col]
+                ###for k in range(self.N):
+                    ###t2[:] += self.Sigma_tilde[k, k]*Ki[k, col]
                 #dytil_dfhat[row, col] = (t1 + t2)[row]
         #dytil_dfhat += np.eye(self.N)
 
-        dytil_dfhat = - np.dot(dWi_dfhat, np.dot(Ki, self.f_hat)) + np.dot(self.Sigma_tilde, Ki) + np.eye(self.N)
+        dytil_dfhat = - np.diagflat(np.dot(dWi_dfhat, np.dot(Ki, self.f_hat))) + np.dot(self.Sigma_tilde, Ki) + np.eye(self.N)
         #dytil_dfhat = - (np.dot(dWi_dfhat, Ki)*self.f_hat[:, None] + np.dot(self.Sigma_tilde, Ki)).sum(-1) + np.eye(self.N)
         self.dytil_dfhat = dytil_dfhat
         return dL_dytil, dytil_dfhat

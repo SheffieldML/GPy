@@ -61,7 +61,7 @@ class LaplaceTests(unittest.TestCase):
         real_var = 0.1
         #Start a function, any function
         #self.X = np.linspace(0.0, 10.0, 30)[:, None]
-        self.X = np.random.randn(2,1)
+        self.X = np.random.randn(9,1)
         #self.X = np.ones((10,1))
         Y = np.sin(self.X) + np.random.randn(*self.X.shape)*real_var
         self.Y = Y/Y.max()

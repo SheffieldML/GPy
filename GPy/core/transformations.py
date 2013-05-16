@@ -39,22 +39,25 @@ class logexp(transformation):
         return '(+ve)'
 
 class logexp_clipped(transformation):
-    def __init__(self, lower=1e-8, upper=1e200):
+    max_bound = 1e300
+    min_bound = 1e-10
+    log_max_bound = np.log(max_bound)
+    log_min_bound = np.log(min_bound)
+    def __init__(self, lower=1e-6):
         self.domain = 'positive'
         self.lower = lower
-        self.upper = upper
     def f(self, x):
-        exp = np.exp(x)
-        f = np.log(1. + np.where(exp > self.upper, self.upper, exp))
+        exp = np.exp(np.clip(x, self.log_min_bound, self.log_max_bound))
+        f = np.log(1. + exp)
         return f
     def finv(self, f):
-        return np.log(np.exp(f) - 1.)
+        return np.log(np.exp(np.clip(f, self.min_bound, self.max_bound)) - 1.)
     def gradfactor(self, f):
         ef = np.exp(f)
         gf = (ef - 1.) / ef
         return np.where(f < self.lower, 0, gf)
-    def initialize(self,f):
-        if np.any(f<0.):
+    def initialize(self, f):
+        if np.any(f < 0.):
             print "Warning: changing parameters to satisfy constraints"
         return np.abs(f)
     def __str__(self):
@@ -70,7 +73,7 @@ class exponent(transformation):
     def gradfactor(self, f):
         return f
     def initialize(self, f):
-        if np.any(f<0.):
+        if np.any(f < 0.):
             print "Warning: changing parameters to satisfy constraints"
         return np.abs(f)
     def __str__(self):
@@ -86,7 +89,7 @@ class negative_exponent(transformation):
     def gradfactor(self, f):
         return f
     def initialize(self, f):
-        if np.any(f>0.):
+        if np.any(f > 0.):
             print "Warning: changing parameters to satisfy constraints"
         return -np.abs(f)
     def __str__(self):
@@ -117,11 +120,11 @@ class logistic(transformation):
     def finv(self, f):
         return np.log(np.clip(f - self.lower, 1e-10, np.inf) / np.clip(self.upper - f, 1e-10, np.inf))
     def gradfactor(self, f):
-        return (f-self.lower)*(self.upper-f)/self.difference
-    def initialize(self,f):
-        if np.any(np.logical_or(f<self.lower,f>self.upper)):
+        return (f - self.lower) * (self.upper - f) / self.difference
+    def initialize(self, f):
+        if np.any(np.logical_or(f < self.lower, f > self.upper)):
             print "Warning: changing parameters to satisfy constraints"
-        return np.where(np.logical_or(f<self.lower,f>self.upper),self.f(f*0.),f)
+        return np.where(np.logical_or(f < self.lower, f > self.upper), self.f(f * 0.), f)
     def __str__(self):
         return '({},{})'.format(self.lower, self.upper)
 

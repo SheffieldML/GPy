@@ -51,12 +51,11 @@ class Gaussian(likelihood):
         return ["noise_variance"]
 
     def _set_params(self, x):
-        x = float(x)
         if self._variance != x:
-            self._variance = x
-            self.precision = 1. / self._variance
-            self.covariance_matrix = np.eye(self.N) * self._variance
+            self.precision = 1. / x
+            self.covariance_matrix = np.eye(self.N) * x
             self.V = (self.precision) * self.Y
+            self._variance = x
 
     def predictive_values(self, mu, var, full_cov):
         """

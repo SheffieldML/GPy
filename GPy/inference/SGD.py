@@ -233,19 +233,40 @@ class opt_SGD(Optimizer):
             else:
                 self.learning_rate = np.zeros_like(self.learning_rate)
         elif self.learning_rate_adaptation == 'annealing':
-            self.learning_rate = self.learning_rate_0/(1+float(t+1)/2)
+            self.learning_rate = self.learning_rate_0/(1+float(t+1)/10)
         elif self.learning_rate_adaptation == 'semi_pesky':
-            if t == 0:
-                self.hbar_t = 0.0
-                self.tau_t = 1000.0
-                self.gbar_t = 0.0
+            if self.model.__class__.__name__ == 'Bayesian_GPLVM':
+                if t == 0:
+                    N = self.model.N
+                    Q = self.model.Q
+                    M = self.model.M
+
+                    iip_pos = np.arange(2*N*Q,2*N*Q+M*Q)
+                    mu_pos = np.arange(0,N*Q)
+                    S_pos = np.arange(N*Q,2*N*Q)
+                    self.vbparam_dict = {'iip': [iip_pos],
+                                         'mu': [mu_pos],
+                                         'S': [S_pos]}
+
+                    for k in self.vbparam_dict.keys():
+                        hbar_t = 0.0
+                        tau_t = 1000.0
+                        gbar_t = 0.0
+                        self.vbparam_dict[k].append(hbar_t)
+                        self.vbparam_dict[k].append(tau_t)
+                        self.vbparam_dict[k].append(gbar_t)
+                        
             g_t = self.model.grads
-            self.gbar_t = (1-1/self.tau_t)*self.gbar_t + 1/self.tau_t * g_t
-            self.hbar_t = (1-1/self.tau_t)*self.hbar_t + 1/self.tau_t * np.dot(g_t.T, g_t)
-            self.learning_rate = np.dot(self.gbar_t.T, self.gbar_t) / self.hbar_t
-            self.tau_t = self.tau_t*(1-self.learning_rate) + 1
-            print self.learning_rate
-            self.learning_rate *= np.ones_like(self.x_opt)
+
+            for k in self.vbparam_dict.keys():
+                pos, hbar_t, tau_t, gbar_t = self.vbparam_dict[k]
+
+                gbar_t = (1-1/tau_t)*gbar_t + 1/tau_t * g_t[pos]
+                hbar_t = (1-1/tau_t)*hbar_t + 1/tau_t * np.dot(g_t[pos].T, g_t[pos])
+                self.learning_rate[pos] = np.dot(gbar_t.T, gbar_t) / hbar_t
+                tau_t = tau_t*(1-self.learning_rate[pos]) + 1
+                self.vbparam_dict[k] = [pos, hbar_t, tau_t, gbar_t]
+
 
     def opt(self, f_fp=None, f=None, fp=None):
         self.x_opt = self.model._get_params_transformed()

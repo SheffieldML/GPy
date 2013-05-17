@@ -39,3 +39,11 @@ nosetests.xml
 
 #bfgs optimiser leaves this lying around
 iterate.dat
+
+# Nosetests #
+#############
+*.noseids
+
+# git merge files #
+###################
+*.orig

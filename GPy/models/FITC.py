@@ -3,8 +3,7 @@
 
 import numpy as np
 import pylab as pb
-from ..util.linalg import mdot, jitchol, tdot, symmetrify,pdinv
-#from ..util.linalg import mdot, jitchol, chol_inv, pdinv, trace_dot
+from ..util.linalg import mdot, jitchol, chol_inv, tdot, symmetrify,pdinv
 from ..util.plot import gpplot
 from .. import kern
 from scipy import stats, linalg
@@ -33,7 +32,6 @@ class FITC(sparse_GP):
             self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
             self._set_params(self._get_params()) # update the GP
 
-    @profile
     def _computations(self):
 
         #factor Kmm
@@ -58,17 +56,15 @@ class FITC(sparse_GP):
         # factor B
         self.B = np.eye(self.M) + self.A
         self.LB = jitchol(self.B)
-        self.LBi,info = linalg.lapack.flapack.dtrtrs(self.LB,np.eye(self.M),lower=1)
+        self.LBi = chol_inv(self.LB)
         self.psi1V = np.dot(self.psi1, self.V_star)
 
-        # back substutue C into psi1V
-        tmp, info1 = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(self.psi1V), lower=1, trans=0)
-        self._LBi_Lmi_psi1V, _ = linalg.lapack.flapack.dtrtrs(self.LB, np.asfortranarray(tmp), lower=1, trans=0)
+        Lmi_psi1V, info = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(self.psi1V), lower=1, trans=0)
+        self._LBi_Lmi_psi1V, _ = linalg.lapack.flapack.dtrtrs(self.LB, np.asfortranarray(Lmi_psi1V), lower=1, trans=0)
 
         Kmmipsi1 = np.dot(self.Lmi.T,Lmipsi1)
         b_psi1_Ki = self.beta_star * Kmmipsi1.T
         Ki_pbp_Ki = np.dot(Kmmipsi1,b_psi1_Ki)
-
         Kmmi = np.dot(self.Lmi.T,self.Lmi)
         LBiLmi = np.dot(self.LBi,self.Lmi)
         LBL_inv = np.dot(LBiLmi.T,LBiLmi)
@@ -76,112 +72,53 @@ class FITC(sparse_GP):
         VV_p_Ki = np.dot(VVT,Kmmipsi1.T)
         Ki_pVVp_Ki = np.dot(Kmmipsi1,VV_p_Ki)
         psi1beta = self.psi1*self.beta_star.T
-        H = self.Kmm + mdot(self.psi1,self.beta_star*self.psi1.T)
-        Hi, LH, LHi, logdetH = pdinv(H)
+        H = self.Kmm + mdot(self.psi1,psi1beta.T)
+        LH = jitchol(H)
+        LHi = chol_inv(LH)
+        Hi = np.dot(LHi.T,LHi)
+
         betapsi1TLmiLBi = np.dot(psi1beta.T,LBiLmi.T)
         alpha = np.array([np.dot(a.T,a) for a in betapsi1TLmiLBi])[:,None]
         gamma_1 = mdot(VVT,self.psi1.T,Hi)
         pHip = mdot(self.psi1.T,Hi,self.psi1)
         gamma_2 = mdot(self.beta_star*pHip,self.V_star)
-        gamma_3 = self.V_star * mdot(self.V_star.T,pHip*self.beta_star).T
+        gamma_3 = self.V_star * gamma_2
 
-        dA_dpsi0_1 = -0.5 * self.beta_star
-        dA_dpsi0 = .5 * self.V_star**2
+        self._dL_dpsi0 = -0.5 * self.beta_star#dA_dpsi0: logdet(self.beta_star)
+        self._dL_dpsi0 += .5 * self.V_star**2 #dA_psi0: yT*beta_star*y
+        self._dL_dpsi0 += .5 *alpha #dC_dpsi0
+        self._dL_dpsi0 += 0.5*mdot(self.beta_star*pHip,self.V_star)**2 - self.V_star * mdot(self.V_star.T,pHip*self.beta_star).T #dD_dpsi0
 
-        dC_dpsi0 = .5 *alpha
-        dD_dpsi0 = 0.5*mdot(self.beta_star*pHip,self.V_star)**2
-        dD_dpsi1 = gamma_1
-        dD_dpsi1 += -mdot(psi1beta.T,Hi,self.psi1,gamma_1)
-        dD_dpsi0 += -self.V_star * mdot(self.V_star.T,pHip*self.beta_star).T
+        self._dL_dpsi1 = b_psi1_Ki.copy() #dA_dpsi1: logdet(self.beta_star)
+        self._dL_dpsi1 += -np.dot(psi1beta.T,LBL_inv) #dC_dpsi1
+        self._dL_dpsi1 += gamma_1 - mdot(psi1beta.T,Hi,self.psi1,gamma_1) #dD_dpsi1
 
+        self._dL_dKmm = -0.5 * np.dot(Kmmipsi1,b_psi1_Ki) #dA_dKmm: logdet(self.beta_star)
+        self._dL_dKmm += .5*(LBL_inv - Kmmi) + mdot(LBL_inv,psi1beta,Kmmipsi1.T) #dC_dKmm
+        self._dL_dKmm += -.5 * mdot(Hi,self.psi1,gamma_1) #dD_dKmm
 
-        dA_dpsi1 = b_psi1_Ki
-        dC_dpsi1 = -np.dot(psi1beta.T,LBL_inv)
+        self._dpsi1_dtheta = 0
+        self._dpsi1_dX = 0
+        self._dKmm_dtheta = 0
+        self._dKmm_dX = 0
 
+        self._dpsi1_dX_jkj = 0
+        self._dpsi1_dtheta_jkj = 0
 
-        dA_dKmm = -0.5 * np.dot(Kmmipsi1,b_psi1_Ki)
-        dC_dKmm = -.5*Kmmi
-        dC_dKmm += .5*LBL_inv
-        dC_dKmm += mdot(LBL_inv,psi1beta,Kmmipsi1.T)
-        dD_dKmm = -.5 * mdot(Hi,self.psi1,gamma_1)
+        for i,V_n,alpha_n,gamma_n,gamma_k in zip(range(self.N),self.V_star,alpha,gamma_2,gamma_3):
+            K_pp_K = np.dot(Kmmipsi1[:,i:(i+1)],Kmmipsi1[:,i:(i+1)].T)
 
-        dA_dpsi0_theta = self.kern.dKdiag_dtheta(dA_dpsi0,X=self.X)
+            #Diag_dpsi1 = Diag_dA_dpsi1: yT*beta_star*y + Diag_dC_dpsi1 +Diag_dD_dpsi1
+            _dpsi1 = (-V_n**2 - alpha_n + 2.*gamma_k - gamma_n**2) * Kmmipsi1.T[i:(i+1),:]
 
+            #Diag_dKmm = Diag_dA_dKmm: yT*beta_star*y +Diag_dC_dKmm +Diag_dD_dKmm
+            _dKmm = .5*(V_n**2 + alpha_n + gamma_n**2 - 2.*gamma_k) * K_pp_K #Diag_dD_dKmm
 
-        dA_dpsi1_theta = 0
-        dA_dpsi1_X = 0
-        dA_dKmm_theta = 0
-        dA_dKmm_X = 0
-        _dC_dpsi1_dtheta = 0
-        _dC_dpsi1_dX = 0
-        _dC_dKmm_dtheta = 0
-        _dC_dKmm_dX = 0
-        _dD_dpsi1_dtheta_1 = 0
-        _dD_dpsi1_dX_1 = 0
-        _dD_dKmm_dtheta_1 = 0
-        _dD_dKmm_dX_1 = 0
-        _dD_dpsi1_dtheta_2 = 0
-        _dD_dpsi1_dX_2 = 0
-        _dD_dKmm_dtheta_2 = 0
-        _dD_dKmm_dX_2 = 0
+            self._dpsi1_dtheta += self.kern.dK_dtheta(_dpsi1,self.X[i:i+1,:],self.Z)
+            self._dKmm_dtheta += self.kern.dK_dtheta(_dKmm,self.Z)
 
-
-        for psi1_n,V_n,X_n,alpha_n,gamma_n,gamma_k in zip(self.psi1.T,self.V_star,self.X,alpha,gamma_2,gamma_3):
-
-            psin_K = np.dot(psi1_n[None,:],Kmmi)
-
-            _dA_dpsi1 = -V_n**2 * np.dot(psi1_n[None,:],Kmmi)
-            _dC_dpsi1 = - alpha_n * np.dot(psi1_n[None,:],Kmmi)
-            _dD_dpsi1_1 = - gamma_n**2 * np.dot(psi1_n[None,:],Kmmi)
-            _dD_dpsi1_2 = 2. * gamma_k * np.dot(psi1_n[None,:],Kmmi)
-
-            _dA_dKmm = .5*V_n**2 * np.dot(psin_K.T,psin_K)
-            _dC_dKmm = .5 * alpha_n * np.dot(psin_K.T,psin_K)
-            _dD_dKmm_1 = .5*gamma_n**2 * np.dot(psin_K.T,psin_K)
-            _dD_dKmm_2 = - gamma_n * np.dot(psin_K.T,psin_K)
-
-            dA_dpsi1_theta += self.kern.dK_dtheta(_dA_dpsi1,X_n[None,:],self.Z)
-            _dC_dpsi1_dtheta += self.kern.dK_dtheta(_dC_dpsi1,X_n[None,:],self.Z)
-            _dD_dpsi1_dtheta_1 += self.kern.dK_dtheta(_dD_dpsi1_1,X_n[None,:],self.Z)
-            _dD_dpsi1_dtheta_2 += self.kern.dK_dtheta(_dD_dpsi1_2,X_n[None,:],self.Z)
-
-            dA_dKmm_theta += self.kern.dK_dtheta(_dA_dKmm,self.Z)
-            _dC_dKmm_dtheta += self.kern.dK_dtheta(_dC_dKmm,self.Z)
-            _dD_dKmm_dtheta_1 += self.kern.dK_dtheta(_dD_dKmm_1,self.Z)
-            _dD_dKmm_dtheta_2 += self.kern.dK_dtheta(_dD_dKmm_2,self.Z)
-
-            dA_dpsi1_X += self.kern.dK_dX(_dA_dpsi1.T,self.Z,X_n[None,:])
-            _dC_dpsi1_dX += self.kern.dK_dX(_dC_dpsi1.T,self.Z,X_n[None,:])
-            _dD_dpsi1_dX_1 += self.kern.dK_dX(_dD_dpsi1_1.T,self.Z,X_n[None,:])
-            _dD_dpsi1_dX_2 += self.kern.dK_dX(_dD_dpsi1_2.T,self.Z,X_n[None,:])
-
-            dA_dKmm_X += 2.*self.kern.dK_dX(_dA_dKmm,self.Z)
-            _dC_dKmm_dX += 2.*self.kern.dK_dX(_dC_dKmm,self.Z)
-            _dD_dKmm_dX_1 += 2.*self.kern.dK_dX(_dD_dKmm_1,self.Z)
-            _dD_dKmm_dX_2 += 2.*self.kern.dK_dX(_dD_dKmm_2,self.Z)
-
-
-
-        dA_dX_1 =  self.kern.dK_dX(dA_dpsi1.T,self.Z,self.X) + 2. * self.kern.dK_dX(dA_dKmm,X=self.Z)
-        dA_dtheta_1 =  self.kern.dKdiag_dtheta(dA_dpsi0_1,X=self.X) + self.kern.dK_dtheta(dA_dpsi1,self.X,self.Z) + self.kern.dK_dtheta(dA_dKmm,X=self.Z)
-
-        dA_dtheta_2 =  dA_dpsi0_theta + dA_dpsi1_theta + dA_dKmm_theta
-        dA_dX_2 =  dA_dpsi1_X + dA_dKmm_X
-
-        self.dA_dtheta = dA_dtheta_1 + dA_dtheta_2
-        self.dA_dX = dA_dX_1 + dA_dX_2
-
-
-        self.dlogB_dtheta = self.kern.dK_dtheta(dC_dKmm,self.Z) + self.kern.dK_dtheta(dC_dpsi1,self.X,self.Z) + self.kern.dKdiag_dtheta(dC_dpsi0,self.X) + _dC_dpsi1_dtheta + _dC_dKmm_dtheta
-        self.dlogB_dX = 2.*self.kern.dK_dX(dC_dKmm,self.Z) + self.kern.dK_dX(dC_dpsi1.T,self.Z,self.X) + _dC_dpsi1_dX + _dC_dKmm_dX
-
-
-        self.dD_dtheta =  self.kern.dKdiag_dtheta(dD_dpsi0,self.X) + self.kern.dK_dtheta(dD_dKmm,self.Z) + self.kern.dK_dtheta(dD_dpsi1,self.X,self.Z) + _dD_dpsi1_dtheta_2 + _dD_dKmm_dtheta_2 +  _dD_dpsi1_dtheta_1 + _dD_dKmm_dtheta_1
-
-        self.dD_dX =  2.*self.kern.dK_dX(dD_dKmm,self.Z) + self.kern.dK_dX(dD_dpsi1.T,self.Z,self.X) + _dD_dpsi1_dX_2 + _dD_dKmm_dX_2 + _dD_dpsi1_dX_1 + _dD_dKmm_dX_1
-
-
-
+            self._dKmm_dX += 2.*self.kern.dK_dX(_dKmm ,self.Z)
+            self._dpsi1_dX += self.kern.dK_dX(_dpsi1.T,self.Z,self.X[i:i+1,:])
 
         # the partial derivative vector for the likelihood
         if self.likelihood.Nparams == 0:
@@ -228,14 +165,21 @@ class FITC(sparse_GP):
         if self.has_uncertain_inputs:
             raise NotImplementedError, "FITC approximation not implemented for uncertain inputs"
         else:
-            dL_dtheta = self.dA_dtheta + self.dlogB_dtheta + self.dD_dtheta
+            dL_dtheta = self.kern.dKdiag_dtheta(self._dL_dpsi0,self.X)
+            dL_dtheta += self.kern.dK_dtheta(self._dL_dpsi1,self.X,self.Z)
+            dL_dtheta += self.kern.dK_dtheta(self._dL_dKmm,X=self.Z)
+            dL_dtheta += self._dKmm_dtheta
+            dL_dtheta += self._dpsi1_dtheta
         return dL_dtheta
 
     def dL_dZ(self):
         if self.has_uncertain_inputs:
             raise NotImplementedError, "FITC approximation not implemented for uncertain inputs"
         else:
-            dL_dZ = self.dA_dX + self.dlogB_dX + self.dD_dX
+            dL_dZ = self.kern.dK_dX(self._dL_dpsi1.T,self.Z,self.X)
+            dL_dZ += 2. * self.kern.dK_dX(self._dL_dKmm,X=self.Z)
+            dL_dZ += self._dpsi1_dX
+            dL_dZ += self._dKmm_dX
         return dL_dZ
 
     def _raw_predict(self, Xnew, which_parts, full_cov=False):
@@ -288,8 +232,6 @@ class FITC(sparse_GP):
                 var = Kxx + np.dot(KR0T,np.dot(Sigma_H - np.eye(self.M),KR0T.T))
             else:
                 Kxx = self.kern.Kdiag(Xnew,which_parts=which_parts)
-                Kxx_ = self.kern.K(Xnew,which_parts=which_parts) # TODO: RA, is this line needed?
-                var_ = Kxx_ + np.dot(KR0T,np.dot(Sigma_H - np.eye(self.M),KR0T.T)) # TODO: RA, is this line needed?
                 var = (Kxx + np.sum(KR0T.T*np.dot(Sigma_H - np.eye(self.M),KR0T.T),0))[:,None]
             return mu_star[:,None],var
         else:

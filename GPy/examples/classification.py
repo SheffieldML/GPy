@@ -79,7 +79,6 @@ def toy_linear_1d_classification(seed=default_seed):
 
     data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
-    Y[Y == -1] = 0
 
     # Kernel object
     kernel = GPy.kern.rbf(1)
@@ -96,7 +95,7 @@ def toy_linear_1d_classification(seed=default_seed):
     m.update_likelihood_approximation()
     # Parameters optimization:
     m.optimize()
-    #m.EPEM() #FIXME
+    #m.pseudo_EM() #FIXME
 
     # Plot
     pb.subplot(211)
@@ -109,14 +108,13 @@ def toy_linear_1d_classification(seed=default_seed):
 
 def sparse_toy_linear_1d_classification(seed=default_seed):
     """
-    Simple 1D classification example
+    Sparse 1D classification example
     :param seed : seed value for data generation (default is 4).
     :type seed: int
     """
 
     data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
-    Y[Y == -1] = 0
 
     # Kernel object
     kernel = GPy.kern.rbf(1) + GPy.kern.white(1)
@@ -168,7 +166,6 @@ def sparse_crescent_data(inducing=10, seed=default_seed):
 
     sample = np.random.randint(0,data['X'].shape[0],inducing)
     Z = data['X'][sample,:]
-    #Z = (np.random.random_sample(2*inducing)*(data['X'].max()-data['X'].min())+data['X'].min()).reshape(inducing,-1)
 
     # create sparse GP EP model
     m = GPy.models.sparse_GP(data['X'],likelihood=likelihood,kernel=kernel,Z=Z)

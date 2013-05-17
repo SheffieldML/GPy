@@ -58,7 +58,7 @@ class probit(likelihood_function):
         norm_975 = [stats.norm.ppf(.975,m,v) for m,v in zip(mu,var)]
         p_025 = stats.norm.cdf(norm_025/np.sqrt(1+var))
         p_975 = stats.norm.cdf(norm_975/np.sqrt(1+var))
-        return mean, np.nan*var, p_025, p_975 # TODO: var
+        return mean[:,None], np.nan*var, p_025[:,None], p_975[:,None] # TODO: var
 
 class Poisson(likelihood_function):
     """

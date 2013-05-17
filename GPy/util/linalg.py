@@ -237,6 +237,16 @@ def tdot(*args, **kwargs):
         return tdot_numpy(*args,**kwargs)
 
 def DSYR(A,x,alpha=1.):
+    """
+    Performs a symmetric rank-1 update operation:
+    A <- A + alpha * np.dot(x,x.T)
+
+    Arguments
+    ---------
+    :param A: Symmetric NxN np.array
+    :param x: Nx1 np.array
+    :param alpha: scalar
+    """
     N = c_int(A.shape[0])
     LDA = c_int(A.shape[0])
     UPLO = c_char('l')
@@ -322,7 +332,12 @@ def cholupdate(L,x):
     N = x.size
     weave.inline(code, support_code=support_code, arg_names=['N','L','x'], type_converters=weave.converters.blitz)
 
-def backsub_both_sides(L, X):
+def backsub_both_sides(L, X,transpose='left'):
     """ Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky"""
-    tmp, _ = linalg.lapack.flapack.dtrtrs(L, np.asfortranarray(X), lower=1, trans=1)
-    return linalg.lapack.flapack.dtrtrs(L, np.asfortranarray(tmp.T), lower=1, trans=1)[0].T
+    if transpose=='left':
+        tmp, _ = linalg.lapack.flapack.dtrtrs(L, np.asfortranarray(X), lower=1, trans=1)
+        return linalg.lapack.flapack.dtrtrs(L, np.asfortranarray(tmp.T), lower=1, trans=1)[0].T
+    else:
+        tmp, _ = linalg.lapack.flapack.dtrtrs(L, np.asfortranarray(X), lower=1, trans=0)
+        return linalg.lapack.flapack.dtrtrs(L, np.asfortranarray(tmp.T), lower=1, trans=0)[0].T
+

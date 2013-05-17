@@ -237,6 +237,16 @@ def tdot(*args, **kwargs):
         return tdot_numpy(*args,**kwargs)
 
 def DSYR(A,x,alpha=1.):
+    """
+    Performs a symmetric rank-1 update operation:
+    A <- A + alpha * np.dot(x,x.T)
+
+    Arguments
+    ---------
+    :param A: Symmetric NxN np.array
+    :param x: Nx1 np.array
+    :param alpha: scalar
+    """
     N = c_int(A.shape[0])
     LDA = c_int(A.shape[0])
     UPLO = c_char('l')

@@ -28,7 +28,7 @@ class GPLVM(GP):
         if X is None:
             X = self.initialise_latent(init, Q, Y)
         if kernel is None:
-            kernel = kern.rbf(Q) + kern.bias(Q)
+            kernel = kern.rbf(Q, ARD=Q>1) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
         likelihood = Gaussian(Y, normalize=normalize_Y)
         GP.__init__(self, X, likelihood, kernel, **kwargs)
 

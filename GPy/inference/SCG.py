@@ -112,7 +112,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         iteration += 1
         if display:
             print '\r',
-            print 'i: {0:>5g}  f:{1:> 12e}  b:{2:> 12e} |g|:{3:> 12e}'.format(iteration, fnow, beta, current_grad),
+            print 'Iter: {0:>0{mi}g}  Obj:{1:> 12e}  Scale:{2:> 12e}  |g|:{3:> 12e}'.format(iteration, float(fnow), float(beta), float(current_grad), mi=len(str(maxiters))),
             # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
             sys.stdout.flush()
 
@@ -131,7 +131,8 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
                 # If the gradient is zero then we are done.
                 if current_grad <= gtol:
                     status = 'converged'
-                    return x, flog, function_eval, status
+                    break
+                    # return x, flog, function_eval, status
 
         # Adjust beta according to comparison ratio.
         if Delta < 0.25:
@@ -148,9 +149,10 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         elif success:
             gamma = np.dot(gradold - gradnew, gradnew) / (mu)
             d = gamma * d - gradnew
+    else:
+        # If we get here, then we haven't terminated in the given number of
+        # iterations.
+        status = "maxiter exceeded"
 
-    # If we get here, then we haven't terminated in the given number of
-    # iterations.
-    status = "maxiter exceeded"
-
+    print ""
     return x, flog, function_eval, status

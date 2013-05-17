@@ -153,5 +153,6 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         # iterations.
         status = "maxiter exceeded"
 
-    print ""
+    if display:
+        print ""
     return x, flog, function_eval, status

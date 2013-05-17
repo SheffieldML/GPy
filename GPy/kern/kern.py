@@ -315,31 +315,33 @@ class kern(parameterised):
 
         # compute the "cross" terms
         # TODO: input_slices needed
+        crossterms = 0
         for p1, p2 in itertools.combinations(self.parts, 2):
-            # white doesn;t combine with anything
-            if p1.name == 'white' or p2.name == 'white':
-                pass
-            # rbf X bias
-            elif p1.name == 'bias' and p2.name == 'rbf':
-                target += p1.variance * (p2._psi1[:, :, None] + p2._psi1[:, None, :])
-            elif p2.name == 'bias' and p1.name == 'rbf':
-                target += p2.variance * (p1._psi1[:, :, None] + p1._psi1[:, None, :])
-            # linear X bias
-            elif p1.name == 'bias' and p2.name == 'linear':
-                tmp = np.zeros((mu.shape[0], Z.shape[0]))
-                p2.psi1(Z, mu, S, tmp)
-                target += p1.variance * (tmp[:, :, None] + tmp[:, None, :])
-            elif p2.name == 'bias' and p1.name == 'linear':
-                tmp = np.zeros((mu.shape[0], Z.shape[0]))
-                p1.psi1(Z, mu, S, tmp)
-                target += p2.variance * (tmp[:, :, None] + tmp[:, None, :])
-            # rbf X linear
-            elif p1.name == 'linear' and p2.name == 'rbf':
-                raise NotImplementedError # TODO
-            elif p2.name == 'linear' and p1.name == 'rbf':
-                raise NotImplementedError # TODO
-            else:
-                raise NotImplementedError, "psi2 cannot be computed for this kernel"
+            prod = np.multiply
+            # # white doesn;t combine with anything
+            # if p1.name == 'white' or p2.name == 'white':
+            #     pass
+            # # rbf X bias
+            # elif p1.name == 'bias' and p2.name == 'rbf':
+            #     target += p1.variance * (p2._psi1[:, :, None] + p2._psi1[:, None, :])
+            # elif p2.name == 'bias' and p1.name == 'rbf':
+            #     target += p2.variance * (p1._psi1[:, :, None] + p1._psi1[:, None, :])
+            # # linear X bias
+            # elif p1.name == 'bias' and p2.name == 'linear':
+            #     tmp = np.zeros((mu.shape[0], Z.shape[0]))
+            #     p2.psi1(Z, mu, S, tmp)
+            #     target += p1.variance * (tmp[:, :, None] + tmp[:, None, :])
+            # elif p2.name == 'bias' and p1.name == 'linear':
+            #     tmp = np.zeros((mu.shape[0], Z.shape[0]))
+            #     p1.psi1(Z, mu, S, tmp)
+            #     target += p2.variance * (tmp[:, :, None] + tmp[:, None, :])
+            # # rbf X linear
+            # elif p1.name == 'linear' and p2.name == 'rbf':
+            #     raise NotImplementedError # TODO
+            # elif p2.name == 'linear' and p1.name == 'rbf':
+            #     raise NotImplementedError # TODO
+            # else:
+            #     raise NotImplementedError, "psi2 cannot be computed for this kernel"
         return target
 
     def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S):

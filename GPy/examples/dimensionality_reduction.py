@@ -17,11 +17,11 @@ def BGPLVM(seed=default_seed):
     D = 4
     # generate GPLVM-like data
     X = np.random.rand(N, Q)
-    k = GPy.kern.rbf(Q) + GPy.kern.white(Q, 0.00001)
+    k = GPy.kern.rbf(Q)  + GPy.kern.white(Q, 0.00001)
     K = k.K(X)
     Y = np.random.multivariate_normal(np.zeros(N), K, D).T
 
-    k = GPy.kern.linear(Q, ARD=True) + GPy.kern.white(Q)
+    k = GPy.kern.rbf(Q, ARD=True) + GPy.kern.linear(Q, ARD=True) + GPy.kern.rbf(Q, ARD=True)  + GPy.kern.white(Q)
     # k = GPy.kern.rbf(Q) + GPy.kern.rbf(Q) + GPy.kern.white(Q)
     # k = GPy.kern.rbf(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
     # k = GPy.kern.rbf(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)

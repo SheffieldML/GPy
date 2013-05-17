@@ -27,7 +27,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 
     """
     def __init__(self, Y, Q, X=None, X_variance=None, init='PCA', M=10,
-                 Z=None, kernel=None, oldpsave=5, _debug=False,
+                 Z=None, kernel=None, oldpsave=10, _debug=False,
                  **kwargs):
         if X == None:
             X = self.initialise_latent(init, Q, Y)
@@ -87,19 +87,19 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         return x
 
     def _set_params(self, x, save_old=True, save_count=0):
-        try:
+#         try:
             N, Q = self.N, self.Q
             self.X = x[:self.X.size].reshape(N, Q).copy()
             self.X_variance = x[(N * Q):(2 * N * Q)].reshape(N, Q).copy()
             sparse_GP._set_params(self, x[(2 * N * Q):])
-            self.oldps = x
-        except (LinAlgError, FloatingPointError, ZeroDivisionError):
-            print "\rWARNING: Caught LinAlgError, continueing without setting            "
-            if self._debug:
-                self._savederrors.append(self.f_call)
-            if save_count > 10:
-                raise
-            self._set_params(self.oldps[-1], save_old=False, save_count=save_count + 1)
+#             self.oldps = x
+#         except (LinAlgError, FloatingPointError, ZeroDivisionError):
+#             print "\rWARNING: Caught LinAlgError, continueing without setting            "
+#             if self._debug:
+#                 self._savederrors.append(self.f_call)
+#             if save_count > 10:
+#                 raise
+#             self._set_params(self.oldps[-1], save_old=False, save_count=save_count + 1)
 
     def dKL_dmuS(self):
         dKL_dS = (1. - (1. / (self.X_variance))) * 0.5
@@ -167,8 +167,12 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 #         d_dmu = (dL_dmu).flatten()
 #         d_dS = (dL_dS).flatten()
         # ========================
-        dbound_dmuS = np.hstack((d_dmu, d_dS))
-        return np.hstack((dbound_dmuS.flatten(), sparse_GP._log_likelihood_gradients(self)))
+        self.dbound_dmuS = np.hstack((d_dmu, d_dS))
+        self.dbound_dZtheta = sparse_GP._log_likelihood_gradients(self)
+        return np.hstack((self.dbound_dmuS.flatten(), self.dbound_dZtheta))
+
+    def _log_likelihood_normal_gradients(self):
+        Si, _, _, _ = pdinv(self.X_variance)
 
     def plot_latent(self, which_indices=None, *args, **kwargs):
 
@@ -204,23 +208,25 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         else:
             colors = iter(colors)
         plots = []
+        x = np.arange(self.X.shape[0])
         for i in range(self.X.shape[1]):
             if axes is None:
                 ax = fig.add_subplot(self.X.shape[1], 1, i + 1)
             else:
                 ax = axes[i]
             ax.plot(self.X, c='k', alpha=.3)
-            plots.extend(ax.plot(self.X.T[i], c=colors.next(), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
-            ax.fill_between(np.arange(self.X.shape[0]),
+            plots.extend(ax.plot(x, self.X.T[i], c=colors.next(), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
+            ax.fill_between(x,
                             self.X.T[i] - 2 * np.sqrt(self.X_variance.T[i]),
                             self.X.T[i] + 2 * np.sqrt(self.X_variance.T[i]),
                             facecolor=plots[-1].get_color(),
                             alpha=.3)
             ax.legend(borderaxespad=0.)
+            ax.set_xlim(x.min(), x.max())
             if i < self.X.shape[1] - 1:
                 ax.set_xticklabels('')
         pylab.draw()
-        fig.tight_layout(h_pad=.01)  # , rect=(0, 0, 1, .95))
+        fig.tight_layout(h_pad=.01) # , rect=(0, 0, 1, .95))
         return fig
 
     def _debug_filter_params(self, x):
@@ -259,11 +265,11 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         kllls = np.array(self._savedklll)
         LL, = ax1.plot(kllls[:, 0], kllls[:, 1] - kllls[:, 2], '-', label=r'$\log p(\mathbf{Y})$', mew=1.5)
         KL, = ax1.plot(kllls[:, 0], kllls[:, 2], '-', label=r'$\mathcal{KL}(p||q)$', mew=1.5)
-        L, = ax1.plot(kllls[:, 0], kllls[:, 1], '-', label=r'$L$', mew=1.5)  # \mathds{E}_{q(\mathbf{X})}[p(\mathbf{Y|X})\frac{p(\mathbf{X})}{q(\mathbf{X})}]
+        L, = ax1.plot(kllls[:, 0], kllls[:, 1], '-', label=r'$L$', mew=1.5) # \mathds{E}_{q(\mathbf{X})}[p(\mathbf{Y|X})\frac{p(\mathbf{X})}{q(\mathbf{X})}]
 
         param_dict = dict(self._savedparams)
         gradient_dict = dict(self._savedgradients)
-        kmm_dict = dict(self._savedpsiKmm)
+#         kmm_dict = dict(self._savedpsiKmm)
         iters = np.array(param_dict.keys())
         ABCD_dict = np.array(self._savedABCD)
         self.showing = 0
@@ -407,7 +413,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 
         # parameter changes
         # ax2 = pylab.subplot2grid((4, 1), (1, 0), 3, 1, projection='3d')
-        button_options = [0, 0]  # [0]: clicked -- [1]: dragged
+        button_options = [0, 0] # [0]: clicked -- [1]: dragged
 
         def update_plots(event):
             if button_options[0] and not button_options[1]:
@@ -479,4 +485,4 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         cidp = figs[0].canvas.mpl_connect('button_press_event', onclick)
         cidd = figs[0].canvas.mpl_connect('motion_notify_event', motion)
 
-        return ax1, ax2, ax3, ax4, ax5  # , ax6, ax7
+        return ax1, ax2, ax3, ax4, ax5 # , ax6, ax7

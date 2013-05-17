@@ -251,7 +251,18 @@ class parameterised(object):
 
     def _set_params_transformed(self, x):
         """ takes the vector x, which is then modified (by untying, reparameterising or inserting fixed values), and then call self._set_params"""
+        self._set_params(self._untransform_params(x))
 
+    def _untransform_params(self,x):
+        """
+        The transformation required for _set_params_transformed.
+
+        This moves the vector x seen by the optimiser (unconstrained) to the
+        valid parameter vector seen by the model
+
+        Note:
+          - This function is separate from _set_params_transformed for downstream flexibility
+        """
         # work out how many places are fixed, and where they are. tricky logic!
         fix_places = self.fixed_indices + [t[1:] for t in self.tied_indices]
         if len(fix_places):
@@ -272,7 +283,8 @@ class parameterised(object):
         [np.put(xx,i,t.f(xx[i])) for i,t in zip(self.constrained_indices, self.constraints)]
         if hasattr(self,'debug'):
             stop
-        self._set_params(xx)
+
+        return xx
 
     def _get_param_names_transformed(self):
         """

@@ -4,6 +4,7 @@ import numpy as np
 import GPy
 import scipy.sparse
 import scipy.io
+import cPickle as pickle
 data_path = os.path.join(os.path.dirname(__file__), 'datasets')
 default_seed = 10000
 
@@ -96,16 +97,29 @@ def stick():
     lbls = 'connect'
     return {'Y': Y, 'connect' : connect, 'info': "Stick man data from Ohio."}
 
+def swiss_roll_generated(N=1000, sigma=0.0):
+    with open(os.path.join(data_path, 'swiss_roll.pickle')) as f:
+        data = pickle.load(f)
+    Na = data['Y'].shape[0]
+    perm = np.random.permutation(np.r_[:Na])[:N]
+    Y = data['Y'][perm, :]
+    t = data['t'][perm]
+    c = data['colors'][perm, :]
+    so = np.argsort(t)
+    Y = Y[so, :]
+    t = t[so]
+    c = c[so, :]
+    return {'Y':Y, 't':t, 'colors':c}
 
 def swiss_roll_1000():
     mat_data = scipy.io.loadmat(os.path.join(data_path, 'swiss_roll_data'))
     Y = mat_data['X_data'][:, 0:1000].transpose()
     return {'Y': Y, 'info': "Subsample of the swiss roll data extracting only the first 1000 values."}
 
-def swiss_roll():
+def swiss_roll(N=3000):
     mat_data = scipy.io.loadmat(os.path.join(data_path, 'swiss_roll_data.mat'))
-    Y = mat_data['X_data'][:, 0:3000].transpose()
-    return {'Y': Y, 'info': "The first 3,000 points from the swiss roll data of Tennenbaum, de Silva and Langford (2001)."}
+    Y = mat_data['X_data'][:, 0:N].transpose()
+    return {'Y': Y, 'X': mat_data['X_data'], 'info': "The first 3,000 points from the swiss roll data of Tennenbaum, de Silva and Langford (2001)."}
 
 def toy_rbf_1d(seed=default_seed):
     np.random.seed(seed=seed)
@@ -270,13 +284,13 @@ def cmu_mocap(subject, train_motions, test_motions=[], sample_every=4):
 
     end_ind = 0
     for i in range(len(temp_Y)):
-        start_ind = end_ind 
+        start_ind = end_ind
         end_ind += temp_Y[i].shape[0]
         Y[start_ind:end_ind, :] = temp_Y[i]
         lbls[start_ind:end_ind, :] = temp_lbls[i]
-    if len(test_motions)>0:
+    if len(test_motions) > 0:
         temp_Ytest = []
-        temp_lblstest = [] 
+        temp_lblstest = []
 
         testexlbls = np.eye(len(test_motions))
         tot_test_length = 0
@@ -292,7 +306,7 @@ def cmu_mocap(subject, train_motions, test_motions=[], sample_every=4):
 
         end_ind = 0
         for i in range(len(temp_Ytest)):
-            start_ind = end_ind 
+            start_ind = end_ind
             end_ind += temp_Ytest[i].shape[0]
             Ytest[start_ind:end_ind, :] = temp_Ytest[i]
             lblstest[start_ind:end_ind, :] = temp_lblstest[i]
@@ -304,7 +318,7 @@ def cmu_mocap(subject, train_motions, test_motions=[], sample_every=4):
     for motion in train_motions:
         info += motion + ', '
     info = info[:-2]
-    if len(test_motions)>0:
+    if len(test_motions) > 0:
         info += '. Test motions: '
         for motion in test_motions:
             info += motion + ', '

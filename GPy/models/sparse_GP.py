@@ -76,7 +76,7 @@ class sparse_GP(GP):
 #                 psi2_beta_scaled = (self.psi2 * (self.likelihood.precision.flatten().reshape(self.N, 1, 1) / sf2)).sum(0)
                 psi2_beta_scaled = (self.psi2 * (self.likelihood.precision.flatten().reshape(self.N, 1, 1))).sum(0)
                 evals, evecs = linalg.eigh(psi2_beta_scaled)
-                clipped_evals = np.clip(evals, 0., 1e15)  # TODO: make clipping configurable
+                clipped_evals = np.clip(evals, 0., 1e6) # TODO: make clipping configurable
                 if not np.allclose(evals, clipped_evals):
                     print "Warning: clipping posterior eigenvalues"
                 tmp = evecs * np.sqrt(clipped_evals)

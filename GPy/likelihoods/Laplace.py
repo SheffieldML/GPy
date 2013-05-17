@@ -79,16 +79,29 @@ class Laplace(likelihood):
         return (self._Kgradients(dL_d_K_Sigma, dK_dthetaK), self._gradients(dL_d_K_Sigma))
 
     def _shared_gradients_components(self):
-        dL_dytil = -np.dot(self.Y.T, inv(self.K+self.Sigma_tilde)) #or *0.5? Shouldn't this be -y*R
+        Ki, _, _, _ = pdinv(self.K)
+
+        #Y__KS_i = np.dot(self.Y.T, inv(self.K+self.Sigma_tilde))
+        #dL_dytil = -0.5*Y__KS_i #or *0.5? Shouldn't this be -y*R
+        #dL_dytil = -0.5*np.trace(np.dot(inv(self.K+self.Sigma_tilde), (np.dot(self.Y, self.Y.T) + self.Y.T)))
+        #dL_dytil_simple_term = -0.5*np.dot(inv(self.K+self.Sigma_tilde),
+        #dL_dytil_simple_term = -np.dot(self.Y.T, inv(self.K+self.Sigma_tilde), self.Y)
+        c = inv(self.K+self.Sigma_tilde)
+        dL_dytil_simple_term =  -0.5*np.diag(np.dot(c, self.Y) + np.dot(self.Y.T, c))
+
+        P = np.diagflat(1/np.dot(Ki, self.f_hat))
+        K_Wi_i = inv(self.K+self.Sigma_tilde)
+
+        dL_dytil_difficult_term = np.diag(( -0.5*(np.dot(self.K + self.Sigma_tilde, P))
+                                            +0.5*mdot(K_Wi_i, self.Y, self.Y.T, K_Wi_i, P)
+                                           ) * np.eye(self.N))
+        dL_dytil = dL_dytil_simple_term + dL_dytil_difficult_term
 
         d3likelihood_d3fhat = self.likelihood_function.d3link(self.data, self.f_hat, self.extra_data)
         Wi = np.diagonal(self.Sigma_tilde) #Convenience
         #Can just hadamard product as diagonal matricies multiplied are just multiplying elements
         dWi_dfhat = np.diagflat(-1*Wi*(-1*d3likelihood_d3fhat)*Wi)
 
-        Ki, _, _, _ = pdinv(self.K)
-        #dytil_dfhat_implicit = np.dot(dWi_dfhat, Ki) + np.eye(self.N)
-        #dytil_dfhat = np.dot(dWi_dfhat, Ki) + np.eye(self.N)
 
         #Wi(Ki + W) = Wi__Ki_W using the last K prior given to fit_full
         #dytil_dfhat_explicit = self.Wi__Ki_W
@@ -97,6 +110,8 @@ class Laplace(likelihood):
 
         dytil_dfhat = - np.diagflat(np.dot(dWi_dfhat, np.dot(Ki, self.f_hat))) + np.dot(self.Sigma_tilde, Ki) + np.eye(self.N)
         self.dytil_dfhat = dytil_dfhat
+        #dytil_dfhat = np.eye(dytil_dfhat.shape[0])
+        self.dL_dfhat = np.dot(dL_dytil, dytil_dfhat) #FIXME: Purely for checkgradding....
         return dL_dytil, dytil_dfhat
 
     def _Kgradients(self, dL_d_K_Sigma, dK_dthetaK):

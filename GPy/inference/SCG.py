@@ -36,7 +36,8 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
     Returns
     x the optimal value for x
     flog : a list of all the objective values
-
+    function_eval number of fn evaluations
+    status: string describing convergence status
     """
     if xtol is None:
         xtol = 1e-6
@@ -153,5 +154,6 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         # iterations.
         status = "maxiter exceeded"
 
-    print ""
+    if display:
+        print ""
     return x, flog, function_eval, status

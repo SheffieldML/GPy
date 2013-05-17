@@ -208,23 +208,25 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         else:
             colors = iter(colors)
         plots = []
+        x = np.arange(self.X.shape[0])
         for i in range(self.X.shape[1]):
             if axes is None:
                 ax = fig.add_subplot(self.X.shape[1], 1, i + 1)
             else:
                 ax = axes[i]
             ax.plot(self.X, c='k', alpha=.3)
-            plots.extend(ax.plot(self.X.T[i], c=colors.next(), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
-            ax.fill_between(np.arange(self.X.shape[0]),
+            plots.extend(ax.plot(x, self.X.T[i], c=colors.next(), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
+            ax.fill_between(x,
                             self.X.T[i] - 2 * np.sqrt(self.X_variance.T[i]),
                             self.X.T[i] + 2 * np.sqrt(self.X_variance.T[i]),
                             facecolor=plots[-1].get_color(),
                             alpha=.3)
             ax.legend(borderaxespad=0.)
+            ax.set_xlim(x.min(), x.max())
             if i < self.X.shape[1] - 1:
                 ax.set_xticklabels('')
         pylab.draw()
-        fig.tight_layout(h_pad=.01)  # , rect=(0, 0, 1, .95))
+        fig.tight_layout(h_pad=.01) # , rect=(0, 0, 1, .95))
         return fig
 
     def _debug_filter_params(self, x):
@@ -263,7 +265,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         kllls = np.array(self._savedklll)
         LL, = ax1.plot(kllls[:, 0], kllls[:, 1] - kllls[:, 2], '-', label=r'$\log p(\mathbf{Y})$', mew=1.5)
         KL, = ax1.plot(kllls[:, 0], kllls[:, 2], '-', label=r'$\mathcal{KL}(p||q)$', mew=1.5)
-        L, = ax1.plot(kllls[:, 0], kllls[:, 1], '-', label=r'$L$', mew=1.5)  # \mathds{E}_{q(\mathbf{X})}[p(\mathbf{Y|X})\frac{p(\mathbf{X})}{q(\mathbf{X})}]
+        L, = ax1.plot(kllls[:, 0], kllls[:, 1], '-', label=r'$L$', mew=1.5) # \mathds{E}_{q(\mathbf{X})}[p(\mathbf{Y|X})\frac{p(\mathbf{X})}{q(\mathbf{X})}]
 
         param_dict = dict(self._savedparams)
         gradient_dict = dict(self._savedgradients)
@@ -411,7 +413,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 
         # parameter changes
         # ax2 = pylab.subplot2grid((4, 1), (1, 0), 3, 1, projection='3d')
-        button_options = [0, 0]  # [0]: clicked -- [1]: dragged
+        button_options = [0, 0] # [0]: clicked -- [1]: dragged
 
         def update_plots(event):
             if button_options[0] and not button_options[1]:
@@ -483,4 +485,4 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         cidp = figs[0].canvas.mpl_connect('button_press_event', onclick)
         cidd = figs[0].canvas.mpl_connect('motion_notify_event', motion)
 
-        return ax1, ax2, ax3, ax4, ax5  # , ax6, ax7
+        return ax1, ax2, ax3, ax4, ax5 # , ax6, ax7

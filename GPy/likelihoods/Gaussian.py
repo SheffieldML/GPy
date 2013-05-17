@@ -69,6 +69,7 @@ class Gaussian(likelihood):
                 # Note. for D>1, we need to re-normalise all the outputs independently.
                 # This will mess up computations of diag(true_var), below.
                 # note that the upper, lower quantiles should be the same shape as mean
+            # Augment the output variance with the likelihood variance and rescale.
             true_var = (var + np.eye(var.shape[0]) * self._variance) * self._scale ** 2
             _5pc = mean - 2.*np.sqrt(np.diag(true_var))
             _95pc = mean + 2.*np.sqrt(np.diag(true_var))

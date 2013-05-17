@@ -55,8 +55,9 @@ class bias(kernpart):
         target += self.variance
 
     def psi1(self, Z, mu, S, target):
-        target += self.variance
-
+        self._psi1 = self.variance
+        target += self._psi1
+        
     def psi2(self, Z, mu, S, target):
         target += self.variance**2
 

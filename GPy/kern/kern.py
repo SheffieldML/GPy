@@ -316,32 +316,19 @@ class kern(parameterised):
         # compute the "cross" terms
         # TODO: input_slices needed
         crossterms = 0
+
         for p1, p2 in itertools.combinations(self.parts, 2):
-            prod = np.multiply
-            # # white doesn;t combine with anything
-            # if p1.name == 'white' or p2.name == 'white':
-            #     pass
-            # # rbf X bias
-            # elif p1.name == 'bias' and p2.name == 'rbf':
-            #     target += p1.variance * (p2._psi1[:, :, None] + p2._psi1[:, None, :])
-            # elif p2.name == 'bias' and p1.name == 'rbf':
-            #     target += p2.variance * (p1._psi1[:, :, None] + p1._psi1[:, None, :])
-            # # linear X bias
-            # elif p1.name == 'bias' and p2.name == 'linear':
-            #     tmp = np.zeros((mu.shape[0], Z.shape[0]))
-            #     p2.psi1(Z, mu, S, tmp)
-            #     target += p1.variance * (tmp[:, :, None] + tmp[:, None, :])
-            # elif p2.name == 'bias' and p1.name == 'linear':
-            #     tmp = np.zeros((mu.shape[0], Z.shape[0]))
-            #     p1.psi1(Z, mu, S, tmp)
-            #     target += p2.variance * (tmp[:, :, None] + tmp[:, None, :])
-            # # rbf X linear
-            # elif p1.name == 'linear' and p2.name == 'rbf':
-            #     raise NotImplementedError # TODO
-            # elif p2.name == 'linear' and p1.name == 'rbf':
-            #     raise NotImplementedError # TODO
-            # else:
-            #     raise NotImplementedError, "psi2 cannot be computed for this kernel"
+
+            # TODO psi1 this must be faster/better/precached/more nice
+            tmp1 = np.zeros((mu.shape[0], Z.shape[0]))
+            p1.psi1(Z, mu, S, tmp1)
+            tmp2 = np.zeros((mu.shape[0], Z.shape[0]))
+            p2.psi1(Z, mu, S, tmp2)
+
+            prod = np.multiply(tmp1, tmp2)
+            crossterms += prod[:,:,None] + prod[:, None, :]
+            
+        target += crossterms
         return target
 
     def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S):
@@ -350,71 +337,34 @@ class kern(parameterised):
 
         # compute the "cross" terms
         # TODO: better looping, input_slices
-        for i1, i2 in itertools.combinations(range(len(self.parts)), 2):
+        for i1, i2 in itertools.permutations(range(len(self.parts)), 2):
             p1, p2 = self.parts[i1], self.parts[i2]
 #             ipsl1, ipsl2 = self.input_slices[i1], self.input_slices[i2]
             ps1, ps2 = self.param_slices[i1], self.param_slices[i2]
 
-            # white doesn;t combine with anything
-            if p1.name == 'white' or p2.name == 'white':
-                pass
-            # rbf X bias
-            elif p1.name == 'bias' and p2.name == 'rbf':
-                p2.dpsi1_dtheta(dL_dpsi2.sum(1) * p1.variance * 2., Z, mu, S, target[ps2])
-                p1.dpsi1_dtheta(dL_dpsi2.sum(1) * p2._psi1 * 2., Z, mu, S, target[ps1])
-            elif p2.name == 'bias' and p1.name == 'rbf':
-                p1.dpsi1_dtheta(dL_dpsi2.sum(1) * p2.variance * 2., Z, mu, S, target[ps1])
-                p2.dpsi1_dtheta(dL_dpsi2.sum(1) * p1._psi1 * 2., Z, mu, S, target[ps2])
-            # linear X bias
-            elif p1.name == 'bias' and p2.name == 'linear':
-                p2.dpsi1_dtheta(dL_dpsi2.sum(1) * p1.variance * 2., Z, mu, S, target[ps2]) # [ps1])
-                psi1 = np.zeros((mu.shape[0], Z.shape[0]))
-                p2.psi1(Z, mu, S, psi1)
-                p1.dpsi1_dtheta(dL_dpsi2.sum(1) * psi1 * 2., Z, mu, S, target[ps1])
-            elif p2.name == 'bias' and p1.name == 'linear':
-                p1.dpsi1_dtheta(dL_dpsi2.sum(1) * p2.variance * 2., Z, mu, S, target[ps1])
-                psi1 = np.zeros((mu.shape[0], Z.shape[0]))
-                p1.psi1(Z, mu, S, psi1)
-                p2.dpsi1_dtheta(dL_dpsi2.sum(1) * psi1 * 2., Z, mu, S, target[ps2])
-            # rbf X linear
-            elif p1.name == 'linear' and p2.name == 'rbf':
-                raise NotImplementedError # TODO
-            elif p2.name == 'linear' and p1.name == 'rbf':
-                raise NotImplementedError # TODO
-            else:
-                raise NotImplementedError, "psi2 cannot be computed for this kernel"
+            tmp = np.zeros((mu.shape[0], Z.shape[0]))
+            p1.psi1(Z, mu, S, tmp)
+            p2.dpsi1_dtheta((tmp[:,None,:]*dL_dpsi2).sum(1)*2., Z, mu, S, target[ps2])
 
         return self._transform_gradients(target)
 
     def dpsi2_dZ(self, dL_dpsi2, Z, mu, S):
         target = np.zeros_like(Z)
         [p.dpsi2_dZ(dL_dpsi2, Z[:, i_s], mu[:, i_s], S[:, i_s], target[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
+        #target *= 2
 
         # compute the "cross" terms
         # TODO: we need input_slices here.
-        for p1, p2 in itertools.combinations(self.parts, 2):
-            # white doesn;t combine with anything
-            if p1.name == 'white' or p2.name == 'white':
-                pass
-            # rbf X bias
-            elif p1.name == 'bias' and p2.name == 'rbf':
-                p2.dpsi1_dX(dL_dpsi2.sum(1).T * p1.variance, Z, mu, S, target)
-            elif p2.name == 'bias' and p1.name == 'rbf':
-                p1.dpsi1_dZ(dL_dpsi2.sum(1).T * p2.variance, Z, mu, S, target)
-            # linear X bias
-            elif p1.name == 'bias' and p2.name == 'linear':
-                p2.dpsi1_dZ(dL_dpsi2.sum(1).T * p1.variance, Z, mu, S, target)
-            elif p2.name == 'bias' and p1.name == 'linear':
-                p1.dpsi1_dZ(dL_dpsi2.sum(1).T * p2.variance, Z, mu, S, target)
-            # rbf X linear
-            elif p1.name == 'linear' and p2.name == 'rbf':
-                raise NotImplementedError # TODO
-            elif p2.name == 'linear' and p1.name == 'rbf':
-                raise NotImplementedError # TODO
-            else:
-                raise NotImplementedError, "psi2 cannot be computed for this kernel"
+        for p1, p2 in itertools.permutations(self.parts, 2):
+            if p1.name == 'linear' and p2.name == 'linear':
+                raise NotImplementedError("We don't handle linear/linear cross-terms")
+            tmp = np.zeros((mu.shape[0], Z.shape[0]))
+            p1.psi1(Z, mu, S, tmp)
+            tmp2 = np.zeros_like(target)
+            p2.dpsi1_dZ((tmp[:,None,:]*dL_dpsi2).sum(1).T, Z, mu, S, tmp2)
+            target += tmp2
 
-        return target * 2.
+        return target * 2
 
     def dpsi2_dmuS(self, dL_dpsi2, Z, mu, S):
         target_mu, target_S = np.zeros((2, mu.shape[0], mu.shape[1]))
@@ -422,27 +372,13 @@ class kern(parameterised):
 
         # compute the "cross" terms
         # TODO: we need input_slices here.
-        for p1, p2 in itertools.combinations(self.parts, 2):
-            # white doesn;t combine with anything
-            if p1.name == 'white' or p2.name == 'white':
-                pass
-            # rbf X bias
-            elif p1.name == 'bias' and p2.name == 'rbf':
-                p2.dpsi1_dmuS(dL_dpsi2.sum(1).T * p1.variance * 2., Z, mu, S, target_mu, target_S)
-            elif p2.name == 'bias' and p1.name == 'rbf':
-                p1.dpsi1_dmuS(dL_dpsi2.sum(1).T * p2.variance * 2., Z, mu, S, target_mu, target_S)
-            # linear X bias
-            elif p1.name == 'bias' and p2.name == 'linear':
-                p2.dpsi1_dmuS(dL_dpsi2.sum(1).T * p1.variance * 2., Z, mu, S, target_mu, target_S)
-            elif p2.name == 'bias' and p1.name == 'linear':
-                p1.dpsi1_dmuS(dL_dpsi2.sum(1).T * p2.variance * 2., Z, mu, S, target_mu, target_S)
-            # rbf X linear
-            elif p1.name == 'linear' and p2.name == 'rbf':
-                raise NotImplementedError # TODO
-            elif p2.name == 'linear' and p1.name == 'rbf':
-                raise NotImplementedError # TODO
-            else:
-                raise NotImplementedError, "psi2 cannot be computed for this kernel"
+        for p1, p2 in itertools.permutations(self.parts, 2):
+            if p1.name == 'linear' and p2.name == 'linear':
+                raise NotImplementedError("We don't handle linear/linear cross-terms")
+
+            tmp = np.zeros((mu.shape[0], Z.shape[0]))
+            p1.psi1(Z, mu, S, tmp)
+            p2.dpsi1_dmuS((tmp[:,None,:]*dL_dpsi2).sum(1).T*2., Z, mu, S, target_mu, target_S)
 
         return target_mu, target_S
 

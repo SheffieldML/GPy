@@ -27,10 +27,10 @@ class GP_regression(GP):
 
     """
 
-    def __init__(self,X,Y,kernel=None,normalize_X=False,normalize_Y=False, Xslices=None):
+    def __init__(self,X,Y,kernel=None,normalize_X=False,normalize_Y=False):
         if kernel is None:
             kernel = kern.rbf(X.shape[1])
 
         likelihood = likelihoods.Gaussian(Y,normalize=normalize_Y)
 
-        GP.__init__(self, X, likelihood, kernel, normalize_X=normalize_X, Xslices=Xslices)
+        GP.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)

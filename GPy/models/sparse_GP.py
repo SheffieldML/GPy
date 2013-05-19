@@ -70,39 +70,22 @@ class sparse_GP(GP):
         self.Lm = jitchol(self.Kmm)
 
         # The rather complex computations of self.A
-        if self.likelihood.is_heteroscedastic:
-            assert self.likelihood.D == 1  # TODO: what if the likelihood is heterscedatic and there are multiple independent outputs?
-            if self.has_uncertain_inputs:
-#                 psi2_beta_scaled = (self.psi2 * (self.likelihood.precision.flatten().reshape(self.N, 1, 1) / sf2)).sum(0)
-                psi2_beta_scaled = (self.psi2 * (self.likelihood.precision.flatten().reshape(self.N, 1, 1))).sum(0)
-                evals, evecs = linalg.eigh(psi2_beta_scaled)
-                clipped_evals = np.clip(evals, 0., 1e6) # TODO: make clipping configurable
-                if not np.allclose(evals, clipped_evals):
-                    print "Warning: clipping posterior eigenvalues"
-                tmp = evecs * np.sqrt(clipped_evals)
-                tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
-                self.A = tdot(tmp)
+        if self.has_uncertain_inputs:
+            if self.likelihood.is_heteroscedastic:
+                psi2_beta = (self.psi2 * (self.likelihood.precision.flatten().reshape(self.N, 1, 1))).sum(0)
             else:
-#                 tmp = self.psi1 * (np.sqrt(self.likelihood.precision.flatten().reshape(1, self.N)) / sf)
-                tmp = self.psi1 * (np.sqrt(self.likelihood.precision.flatten().reshape(1, self.N)))
-                tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
-                self.A = tdot(tmp)
+                psi2_beta = self.psi2.sum(0) * self.likelihood.precision
+            evals, evecs = linalg.eigh(psi2_beta)
+            clipped_evals = np.clip(evals, 0., 1e6) # TODO: make clipping configurable
+            tmp = evecs * np.sqrt(clipped_evals)
         else:
-            if self.has_uncertain_inputs:
-#                 psi2_beta_scaled = (self.psi2 * (self.likelihood.precision / sf2)).sum(0)
-                psi2_beta_scaled = (self.psi2 * (self.likelihood.precision)).sum(0)
-                evals, evecs = linalg.eigh(psi2_beta_scaled)
-                clipped_evals = np.clip(evals, 0., 1e15)  # TODO: make clipping configurable
-                if not np.allclose(evals, clipped_evals):
-                    print "Warning: clipping posterior eigenvalues"
-                tmp = evecs * np.sqrt(clipped_evals)
-                tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
-                self.A = tdot(tmp)
+            if self.likelihood.is_heteroscedastic:
+                tmp = self.psi1 * (np.sqrt(self.likelihood.precision.flatten().reshape(1, self.N)))
             else:
-                # tmp = self.psi1 * (np.sqrt(self.likelihood.precision) / sf)
                 tmp = self.psi1 * (np.sqrt(self.likelihood.precision))
-                tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
-                self.A = tdot(tmp)
+        tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
+        self.A = tdot(tmp)
+
 
         # factor B
 #         self.B = np.eye(self.M) / sf2 + self.A

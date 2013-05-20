@@ -3,7 +3,7 @@
 
 import numpy as np
 import pylab as pb
-from ..util.linalg import mdot, jitchol, tdot, symmetrify, backsub_both_sides
+from ..util.linalg import mdot, jitchol, tdot, symmetrify, backsub_both_sides,chol_inv
 from ..util.plot import gpplot
 from .. import kern
 from GP import GP
@@ -111,7 +111,7 @@ class sparse_GP(GP):
 
         if self.likelihood.is_heteroscedastic:
             if self.has_uncertain_inputs:
-                self.dL_dpsi2 = self.likelihood.precision[:, None, None] * dL_dpsi2_beta[None, :, :]
+                self.dL_dpsi2 = self.likelihood.precision.flatten()[:, None, None] * dL_dpsi2_beta[None, :, :]
             else:
                 self.dL_dpsi1 += 2.*np.dot(dL_dpsi2_beta, self.psi1 * self.likelihood.precision.reshape(1, self.N))
                 self.dL_dpsi2 = None
@@ -173,7 +173,13 @@ class sparse_GP(GP):
         this function does nothing
         """
         if self.has_uncertain_inputs:
-            raise NotImplementedError, "EP approximation not implemented for uncertain inputs"
+
+            Lmi = chol_inv(self.Lm)
+            Kmmi = tdot(Lmi.T)
+            diag_tr_psi2Kmmi = np.array([np.trace(psi2_Kmmi) for psi2_Kmmi in np.dot(self.psi2,Kmmi)])
+
+            self.likelihood.fit_FITC(self.Kmm,self.psi1,diag_tr_psi2Kmmi) #This uses the fit_FITC code, but does not perfomr a FITC-EP.#TODO solve potential confusion
+            #raise NotImplementedError, "EP approximation not implemented for uncertain inputs"
         else:
             self.likelihood.fit_DTC(self.Kmm, self.psi1)
             # self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)

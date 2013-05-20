@@ -273,8 +273,8 @@ def bgplvm_simulation(optimize='scg',
         pylab.figure(); pylab.axis(); m.kern.plot_ARD()
     return m
 
-def mrd_simulation(plot_sim=False):
-    D1, D2, D3, N, M, Q = 150, 250, 300, 700, 3, 7
+def mrd_simulation(optimize=True, plot_sim=False):
+    D1, D2, D3, N, M, Q = 150, 250, 30, 300, 3, 7
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim)
 
     from GPy.models import mrd
@@ -291,6 +291,13 @@ def mrd_simulation(plot_sim=False):
 
     m.constrain('variance|noise', logexp_clipped())
     m.ensure_default_constraints()
+
+    # DEBUG
+    np.seterr("raise")
+
+    if optimize:
+        print "Optimizing Model:"
+        m.optimize('scg', messages=1, max_iters=3e3)
 
     return m
 

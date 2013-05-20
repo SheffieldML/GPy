@@ -233,3 +233,5 @@ class sparse_GP(GP):
             var = Kxx - np.sum(Kx * np.dot(Kmmi_LmiBLmi, Kx), 0)
 
         return mu, var[:, None]
+
+

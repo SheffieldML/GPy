@@ -9,8 +9,8 @@ import pylab as pb
 import numpy as np
 import GPy
 
-default_seed=10000
-def crescent_data(seed=default_seed): #FIXME
+default_seed = 10000
+def crescent_data(seed=default_seed): # FIXME
     """Run a Gaussian process classification on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
 
     :param model_type: type of model to fit ['Full', 'FITC', 'DTC'].
@@ -27,10 +27,10 @@ def crescent_data(seed=default_seed): #FIXME
 
     # Likelihood object
     distribution = GPy.likelihoods.likelihood_functions.probit()
-    likelihood = GPy.likelihoods.EP(data['Y'],distribution)
+    likelihood = GPy.likelihoods.EP(data['Y'], distribution)
 
 
-    m = GPy.models.GP(data['X'],likelihood,kernel)
+    m = GPy.models.GP(data['X'], likelihood, kernel)
     m.ensure_default_constraints()
 
     m.update_likelihood_approximation()
@@ -54,10 +54,10 @@ def oil():
 
     # Likelihood object
     distribution = GPy.likelihoods.likelihood_functions.probit()
-    likelihood = GPy.likelihoods.EP(data['Y'][:, 0:1],distribution)
+    likelihood = GPy.likelihoods.EP(data['Y'][:, 0:1], distribution)
 
     # Create GP model
-    m = GPy.models.GP(data['X'],likelihood=likelihood,kernel=kernel)
+    m = GPy.models.GP(data['X'], likelihood=likelihood, kernel=kernel)
 
     # Contrain all parameters to be positive
     m.constrain_positive('')
@@ -85,17 +85,17 @@ def toy_linear_1d_classification(seed=default_seed):
 
     # Likelihood object
     distribution = GPy.likelihoods.likelihood_functions.probit()
-    likelihood = GPy.likelihoods.EP(Y,distribution)
+    likelihood = GPy.likelihoods.EP(Y, distribution)
 
     # Model definition
-    m = GPy.models.GP(data['X'],likelihood=likelihood,kernel=kernel)
+    m = GPy.models.GP(data['X'], likelihood=likelihood, kernel=kernel)
     m.ensure_default_constraints()
 
     # Optimize
     m.update_likelihood_approximation()
     # Parameters optimization:
     m.optimize()
-    #m.pseudo_EM() #FIXME
+    # m.pseudo_EM() #FIXME
 
     # Plot
     pb.subplot(211)
@@ -121,20 +121,20 @@ def sparse_toy_linear_1d_classification(seed=default_seed):
 
     # Likelihood object
     distribution = GPy.likelihoods.likelihood_functions.probit()
-    likelihood = GPy.likelihoods.EP(Y,distribution)
+    likelihood = GPy.likelihoods.EP(Y, distribution)
 
-    Z = np.random.uniform(data['X'].min(),data['X'].max(),(10,1))
+    Z = np.random.uniform(data['X'].min(), data['X'].max(), (10, 1))
 
     # Model definition
-    m = GPy.models.sparse_GP(data['X'],likelihood=likelihood,kernel=kernel,Z=Z,normalize_X=False)
-    m.set('len',2.)
+    m = GPy.models.sparse_GP(data['X'], likelihood=likelihood, kernel=kernel, Z=Z, normalize_X=False)
+    m.set('len', 2.)
 
     m.ensure_default_constraints()
     # Optimize
     m.update_likelihood_approximation()
     # Parameters optimization:
     m.optimize()
-    #m.EPEM() #FIXME
+    # m.EPEM() #FIXME
 
     # Plot
     pb.subplot(211)
@@ -162,15 +162,15 @@ def sparse_crescent_data(inducing=10, seed=default_seed):
 
     # Likelihood object
     distribution = GPy.likelihoods.likelihood_functions.probit()
-    likelihood = GPy.likelihoods.EP(data['Y'],distribution)
+    likelihood = GPy.likelihoods.EP(data['Y'], distribution)
 
-    sample = np.random.randint(0,data['X'].shape[0],inducing)
-    Z = data['X'][sample,:]
+    sample = np.random.randint(0, data['X'].shape[0], inducing)
+    Z = data['X'][sample, :]
 
     # create sparse GP EP model
-    m = GPy.models.sparse_GP(data['X'],likelihood=likelihood,kernel=kernel,Z=Z)
+    m = GPy.models.sparse_GP(data['X'], likelihood=likelihood, kernel=kernel, Z=Z)
     m.ensure_default_constraints()
-    m.set('len',10.)
+    m.set('len', 10.)
 
     m.update_likelihood_approximation()
 

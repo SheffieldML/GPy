@@ -171,9 +171,6 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         self.dbound_dZtheta = sparse_GP._log_likelihood_gradients(self)
         return np.hstack((self.dbound_dmuS.flatten(), self.dbound_dZtheta))
 
-    def _log_likelihood_normal_gradients(self):
-        Si, _, _, _ = pdinv(self.X_variance)
-
     def plot_latent(self, which_indices=None, *args, **kwargs):
 
         if which_indices is None:

@@ -66,7 +66,7 @@ class model(parameterised):
 
 
         # check constraints are okay
-        if isinstance(what, (priors.gamma, priors.log_Gaussian)):
+        if isinstance(what, (priors.gamma, priors.inverse_gamma, priors.log_Gaussian)):
             constrained_positive_indices = [i for i, t in zip(self.constrained_indices, self.constraints) if t.domain == 'positive']
             if len(constrained_positive_indices):
                 constrained_positive_indices = np.hstack(constrained_positive_indices)

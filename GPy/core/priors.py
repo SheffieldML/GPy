@@ -26,7 +26,6 @@ class Gaussian(prior):
     :param mu: mean
     :param sigma: standard deviation
 
-
     .. Note:: Bishop 2006 notation is used throughout the code
 
     """
@@ -144,7 +143,6 @@ def gamma_from_EV(E,V):
     b = E/V
     return gamma(a,b)
 
-
 class gamma(prior):
     """
     Implementation of the Gamma probability function, coupled with random variables.
@@ -155,7 +153,6 @@ class gamma(prior):
     .. Note:: Bishop 2006 notation is used throughout the code
 
     """
-    
     def __init__(self,a,b):
         self.a = float(a)
         self.b = float(b)
@@ -183,3 +180,30 @@ class gamma(prior):
 
     def rvs(self,n):
         return np.random.gamma(scale=1./self.b,shape=self.a,size=n)
+
+class inverse_gamma(prior):
+    """
+    Implementation of the inverse-Gamma probability function, coupled with random variables.
+
+    :param a: shape parameter
+    :param b: rate parameter (warning: it's the *inverse* of the scale)
+
+    .. Note:: Bishop 2006 notation is used throughout the code
+
+    """
+    def __init__(self,a,b):
+        self.a = float(a)
+        self.b = float(b)
+        self.constant = -gammaln(self.a) + a*np.log(b)
+
+    def __str__(self):
+        return "iGa("+str(np.round(self.a))+', '+str(np.round(self.b))+')'
+
+    def lnpdf(self,x):
+        return self.constant - (self.a+1)*np.log(x) - self.b/x
+
+    def lnpdf_grad(self,x):
+        return -(self.a+1.)/x + self.b/x**2
+
+    def rvs(self,n):
+        return 1./np.random.gamma(scale=1./self.b,shape=self.a,size=n)

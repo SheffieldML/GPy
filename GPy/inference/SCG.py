@@ -85,8 +85,6 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         # Increase effective curvature and evaluate step size alpha.
         delta = theta + beta * kappa
         if delta <= 0:
-            if display:
-                print ""
             delta = beta * kappa
             beta = beta - theta / kappa
 

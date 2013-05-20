@@ -236,7 +236,7 @@ def tdot(*args, **kwargs):
     else:
         return tdot_numpy(*args,**kwargs)
 
-def DSYR(A,x,alpha=1.):
+def DSYR_blas(A,x,alpha=1.):
     """
     Performs a symmetric rank-1 update operation:
     A <- A + alpha * np.dot(x,x.T)
@@ -257,6 +257,26 @@ def DSYR(A,x,alpha=1.):
     _blaslib.dsyr_(byref(UPLO), byref(N), byref(ALPHA),
             x_, byref(INCX), A_, byref(LDA))
     symmetrify(A,upper=True)
+
+def DSYR_numpy(A,x,alpha=1.):
+    """
+    Performs a symmetric rank-1 update operation:
+    A <- A + alpha * np.dot(x,x.T)
+
+    Arguments
+    ---------
+    :param A: Symmetric NxN np.array
+    :param x: Nx1 np.array
+    :param alpha: scalar
+    """
+    A += alpha*np.dot(x[:,None],x[None,:])
+
+
+def DSYR(*args, **kwargs):
+    if _blas_available:
+        return DSYR_blas(*args,**kwargs)
+    else:
+        return DSYR_numpy(*args,**kwargs)
 
 def symmetrify(A,upper=False):
     """

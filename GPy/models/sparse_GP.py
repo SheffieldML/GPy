@@ -217,21 +217,32 @@ class sparse_GP(GP):
             dL_dZ += self.kern.dK_dX(self.dL_dpsi1, self.Z, self.X)
         return dL_dZ
 
-    def _raw_predict(self, Xnew, which_parts='all', full_cov=False):
+    def _raw_predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
         """Internal helper function for making predictions, does not account for normalization"""
 
         Bi, _ = linalg.lapack.flapack.dpotri(self.LB, lower=0)  # WTH? this lower switch should be 1, but that doesn't work!
         symmetrify(Bi)
         Kmmi_LmiBLmi = backsub_both_sides(self.Lm, np.eye(self.M) - Bi)
 
-        Kx = self.kern.K(self.Z, Xnew, which_parts=which_parts)
-        mu = np.dot(Kx.T, self.Cpsi1V)  # / self.scale_factor)
-        if full_cov:
-            Kxx = self.kern.K(Xnew, which_parts=which_parts)
-            var = Kxx - mdot(Kx.T, Kmmi_LmiBLmi, Kx)  # NOTE this won't work for plotting
+        if X_variance_new is None:
+            Kx = self.kern.K(self.Z, Xnew, which_parts=which_parts)
+            mu = np.dot(Kx.T, self.Cpsi1V)
+            if full_cov:
+                Kxx = self.kern.K(Xnew, which_parts=which_parts)
+                var = Kxx - mdot(Kx.T, Kmmi_LmiBLmi, Kx)  # NOTE this won't work for plotting
+            else:
+                Kxx = self.kern.Kdiag(Xnew, which_parts=which_parts)
+                var = Kxx - np.sum(Kx * np.dot(Kmmi_LmiBLmi, Kx), 0)
         else:
-            Kxx = self.kern.Kdiag(Xnew, which_parts=which_parts)
-            var = Kxx - np.sum(Kx * np.dot(Kmmi_LmiBLmi, Kx), 0)
+            assert which_parts=='all', "swithching out parts of variational kernels is not implemented"
+            Kx = self.kern.psi1(self.Z, Xnew, X_variance_new)#, which_parts=which_parts) TODO: which_parts
+            mu = np.dot(Kx, self.Cpsi1V)
+            if full_cov:
+                raise NotImplementedError, "TODO"
+            else:
+                Kxx = self.kern.psi0(self.Z,Xnew,X_variance_new)
+                psi2 = self.kern.psi2(self.Z,Xnew,X_variance_new)
+                var = Kxx - np.sum(np.sum(psi2*Kmmi_LmiBLmi[None,:,:],1),1)
 
         return mu, var[:, None]
 

@@ -54,5 +54,3 @@ class kernpart(object):
         raise NotImplementedError
     def dK_dX(self,X,X2,target):
         raise NotImplementedError
-
-

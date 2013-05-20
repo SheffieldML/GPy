@@ -36,8 +36,14 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
     Returns
     x the optimal value for x
     flog : a list of all the objective values
-
+    function_eval number of fn evaluations
+    status: string describing convergence status
     """
+    
+    if display:
+        print "  SCG"
+        print ' {0:{mi}s}   {1:11s}    {2:11s}    {3:11s}'.format("I", "F", "Scale", "|g|", mi=len(str(maxiters)))
+
     if xtol is None:
         xtol = 1e-6
     if ftol is None:
@@ -45,18 +51,18 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
     if gtol is None:
         gtol = 1e-5
     sigma0 = 1.0e-4
-    fold = f(x, *optargs)  # Initial function value.
+    fold = f(x, *optargs) # Initial function value.
     function_eval = 1
     fnow = fold
-    gradnew = gradf(x, *optargs)  # Initial gradient.
+    gradnew = gradf(x, *optargs) # Initial gradient.
     current_grad = np.dot(gradnew, gradnew)
     gradold = gradnew.copy()
-    d = -gradnew  # Initial search direction.
-    success = True  # Force calculation of directional derivs.
-    nsuccess = 0  # nsuccess counts number of successes.
-    beta = 1.0  # Initial scale parameter.
-    betamin = 1.0e-15  # Lower bound on scale.
-    betamax = 1.0e100  # Upper bound on scale.
+    d = -gradnew # Initial search direction.
+    success = True # Force calculation of directional derivs.
+    nsuccess = 0 # nsuccess counts number of successes.
+    beta = 1.0 # Initial scale parameter.
+    betamin = 1.0e-15 # Lower bound on scale.
+    betamax = 1.0e100 # Upper bound on scale.
     status = "Not converged"
 
     flog = [fold]
@@ -106,12 +112,12 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
             fnow = fold
 
         # Store relevant variables
-        flog.append(fnow)  # Current function value
+        flog.append(fnow) # Current function value
 
         iteration += 1
         if display:
             print '\r',
-            print 'Iter: {0:>0{mi}g}  Obj:{1:> 12e}  Scale:{2:> 12e}  |g|:{3:> 12e}'.format(iteration, float(fnow), float(beta), float(current_grad), mi=len(str(maxiters))),
+            print '{0:>0{mi}g}  {1:> 12e}  {2:> 12e}  {3:> 12e}'.format(iteration, float(fnow), float(beta), float(current_grad), mi=len(str(maxiters))),
             # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
             sys.stdout.flush()
 
@@ -153,5 +159,6 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         # iterations.
         status = "maxiter exceeded"
 
-    print ""
+    if display:
+        print ""
     return x, flog, function_eval, status

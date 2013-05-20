@@ -18,7 +18,8 @@ class white(kernpart):
         self.Nparam = 1
         self.name = 'white'
         self._set_params(np.array([variance]).flatten())
-
+        self._psi1 = 0 # TODO: more elegance here
+        
     def _get_params(self):
         return self.variance
 
@@ -81,4 +82,3 @@ class white(kernpart):
 
     def dpsi2_dmuS(self,dL_dpsi2,Z,mu,S,target_mu,target_S):
         pass
-

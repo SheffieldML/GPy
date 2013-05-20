@@ -32,6 +32,8 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
                  **kwargs):
         if type(likelihood_or_Y) is np.ndarray:
             likelihood = Gaussian(likelihood_or_Y)
+        else:
+            likelihood = likelihood_or_Y
 
         if X == None:
             X = self.initialise_latent(init, Q, likelihood.Y)

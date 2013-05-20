@@ -26,11 +26,11 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, Y, Q, X=None, X_variance=None, init='PCA', M=10,
+    def __init__(self, likelihood, Q, X=None, X_variance=None, init='PCA', M=10,
                  Z=None, kernel=None, oldpsave=10, _debug=False,
                  **kwargs):
         if X == None:
-            X = self.initialise_latent(init, Q, Y)
+            X = self.initialise_latent(init, Q, likelihood.Y)
 
         if X_variance is None:
             X_variance = np.clip((np.ones_like(X) * 0.5) + .01 * np.random.randn(*X.shape), 0.001, 1)
@@ -56,7 +56,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             self._savedpsiKmm = []
             self._savedABCD = []
 
-        sparse_GP.__init__(self, X, Gaussian(Y), kernel, Z=Z, X_variance=X_variance, **kwargs)
+        sparse_GP.__init__(self, X, likelihood, kernel, Z=Z, X_variance=X_variance, **kwargs)
 
     @property
     def oldps(self):

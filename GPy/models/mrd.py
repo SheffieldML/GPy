@@ -15,11 +15,11 @@ import pylab
 class MRD(model):
     """
     Do MRD on given Datasets in Ylist.
-    All Ys in Ylist are in [N x Dn], where Dn can be different per Yn,
+    All Ys in likelihood_list are in [N x Dn], where Dn can be different per Yn,
     N must be shared across datasets though.
 
-    :param Ylist...: observed datasets
-    :type Ylist: [np.ndarray]
+    :param likelihood_list...: likelihoods of observed datasets
+    :type likelihood_list: [GPy.likelihood]
     :param names: names for different gplvm models
     :type names: [str]
     :param Q: latent dimensionality (will raise 
@@ -41,8 +41,9 @@ class MRD(model):
     :param kernel:
         kernel to use
     """
-
-    def __init__(self, *Ylist, **kwargs):
+    #TODO allow different kernels for different outputs
+    #def __init__(self, *Ylist, **kwargs):
+    def __init__(self, *likelihood_list, **kwargs):
         if kwargs.has_key("_debug"):
             self._debug = kwargs['_debug']
             del kwargs['_debug']
@@ -52,7 +53,7 @@ class MRD(model):
             self.names = kwargs['names']
             del kwargs['names']
         else:
-            self.names = ["{}".format(i + 1) for i in range(len(Ylist))]
+            self.names = ["{}".format(i + 1) for i in range(len(likelihood_list))]
         if kwargs.has_key('kernel'):
             kernel = kwargs['kernel']
             k = lambda: kernel.copy()
@@ -80,9 +81,10 @@ class MRD(model):
             self.M = 10
 
         self._init = True
-        X = self._init_X(initx, Ylist)
+        X = self._init_X(initx, likelihood_list)
         Z = self._init_Z(initz, X)
-        self.bgplvms = [Bayesian_GPLVM(Y, kernel=k(), X=X, Z=Z, M=self.M, **kwargs) for Y in Ylist]
+        self.bgplvms = [Bayesian_GPLVM(Y, kernel=k(), X=X, Z=Z, M=self.M, **kwargs) for Y in likelihood_list]
+        
         del self._init
 
         self.gref = self.bgplvms[0]
@@ -126,11 +128,11 @@ class MRD(model):
             if not self._init:
                 raise AttributeError("bgplvm list not initialized")
     @property
-    def Ylist(self):
+    def likelihood_list(self):
         return [g.likelihood.Y for g in self.bgplvms]
-    @Ylist.setter
-    def Ylist(self, Ylist):
-        for g, Y in itertools.izip(self.bgplvms, Ylist):
+    @likelihood_list.setter
+    def likelihood_list(self, likelihood_list):
+        for g, Y in itertools.izip(self.bgplvms, likelihood_list):
             g.likelihood.Y = Y
 
     @property
@@ -152,7 +154,7 @@ class MRD(model):
 
     def randomize(self, initx='concat', initz='permute', *args, **kw):
         super(MRD, self).randomize(*args, **kw)
-        self._init_X(initx, self.Ylist)
+        self._init_X(initx, self.likelihood_list)
         self._init_Z(initz, self.X)
 
     def _get_param_names(self):
@@ -225,6 +227,10 @@ class MRD(model):
 #             g._computations()
 
 
+    def update_likelihood_approximation(self):#TODO: object oriented vs script base
+        for bgplvm in self.bgplvms:
+            bgplvm.update_likelihood_approximation()
+
     def log_likelihood(self):
         ll = -self.gref.KL_divergence()
         for g in self.bgplvms:
@@ -246,17 +252,18 @@ class MRD(model):
                                                 partial=g.partial_for_likelihood)]) \
                               for g in self.bgplvms])))
 
-    def _init_X(self, init='PCA', Ylist=None):
-        if Ylist is None:
-            Ylist = self.Ylist
+    def _init_X(self, init='PCA', likelihood_list=None):
+        if likelihood_list is None:
+            likelihood_list = self.likelihood_list
         if init in "PCA_single":
-            X = numpy.zeros((Ylist[0].shape[0], self.Q))
-            for qs, Y in itertools.izip(numpy.array_split(numpy.arange(self.Q), len(Ylist)), Ylist):
-                X[:, qs] = PCA(Y, len(qs))[0]
+            X = numpy.zeros((likelihood_list[0].Y.shape[0], self.Q))
+            for qs, Y in itertools.izip(numpy.array_split(numpy.arange(self.Q), len(likelihood_list)), likelihood_list):
+                X[:, qs] = PCA(Y.Y, len(qs))[0]
         elif init in "PCA_concat":
-            X = PCA(numpy.hstack(Ylist), self.Q)[0]
+            X = PCA(numpy.hstack([l.Y for l in likelihood_list]), self.Q)[0]
+            #X = PCA(numpy.hstack(likelihood_list), self.Q)[0]
         else: # init == 'random':
-            X = numpy.random.randn(Ylist[0].shape[0], self.Q)
+            X = numpy.random.randn(likelihood_list[0].Y.shape[0], self.Q)
         self.X = X
         return X
 
@@ -294,8 +301,8 @@ class MRD(model):
         fig = self._handle_plotting(fig_num, axes, lambda i, g, ax: ax.imshow(g.X))
         return fig
 
-    def plot_predict(self, fig_num="MRD Predictions", axes=None):
-        fig = self._handle_plotting(fig_num, axes, lambda i, g, ax: ax.imshow(g.predict(g.X)[0]))
+    def plot_predict(self, fig_num="MRD Predictions", axes=None, **kwargs):
+        fig = self._handle_plotting(fig_num, axes, lambda i, g, ax: ax.imshow(g.predict(g.X)[0],**kwargs))
         return fig
 
     def plot_scales(self, fig_num="MRD Scales", axes=None, *args, **kwargs):

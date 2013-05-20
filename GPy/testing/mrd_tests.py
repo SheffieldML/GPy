@@ -21,8 +21,9 @@ class MRDTests(unittest.TestCase):
         K = k.K(X)
 
         Ylist = [np.random.multivariate_normal(np.zeros(N), K, D).T for _ in range(num_m)]
+        likelihood_list = [GPy.likelihoods.Gaussian(Y) for Y in Ylist]
 
-        m = GPy.models.MRD(*Ylist, Q=Q, kernel=k, M=M)
+        m = GPy.models.MRD(*likelihood_list, Q=Q, kernel=k, M=M)
         m.ensure_default_constraints()
 
         self.assertTrue(m.checkgrad())

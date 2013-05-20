@@ -5,6 +5,8 @@ import GPy
 import scipy.sparse
 import scipy.io
 import cPickle as pickle
+import urllib2 as url
+
 data_path = os.path.join(os.path.dirname(__file__), 'datasets')
 default_seed = 10000
 
@@ -14,6 +16,25 @@ def sample_class(f):
     c = np.random.binomial(1, p)
     c = np.where(c, 1, -1)
     return c
+
+def fetch_dataset(resource, save_name = None, save_file = True, messages = True):
+    if messages:
+        print "Downloading resource: " , resource, " ... "
+    response = url.urlopen(resource)
+    # TODO: Some error checking...
+    # ... 
+    html = response.read()
+    response.close()
+    if save_file:
+        # TODO: Check if already exists...
+        # ...
+        with open(save_name, "w") as text_file:
+            text_file.write("%s"%html)
+            if messages:
+                print "Done!"
+    return html
+        
+    
 
 def della_gatta_TRP63_gene_expression(gene_number=None):
     mat_data = scipy.io.loadmat(os.path.join(data_path, 'DellaGattadata.mat'))

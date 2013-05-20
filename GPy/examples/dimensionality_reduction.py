@@ -313,9 +313,7 @@ def brendan_faces():
     m = GPy.models.GPLVM(Yn, Q)#, M=Y.shape[0]/4)
 
     # optimize
-    # m.constrain_fixed('white', 1e-2)
-    # m.constrain_bounded('noise', 1e-6, 10)
-    m.constrain('rbf', GPy.core.transformations.logexp_clipped())
+    m.constrain('rbf|noise|white', GPy.core.transformations.logexp_clipped())
 
     m.ensure_default_constraints()
     m.optimize('scg', messages=1, max_f_eval=10000)

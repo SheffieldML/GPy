@@ -39,8 +39,10 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
     function_eval number of fn evaluations
     status: string describing convergence status
     """
-    print "  SCG"
-    print ' {0:{mi}s}   {1:11s}    {2:11s}    {3:11s}'.format("I", "F", "Scale", "|g|", mi=len(str(maxiters)))
+    
+    if display:
+        print "  SCG"
+        print ' {0:{mi}s}   {1:11s}    {2:11s}    {3:11s}'.format("I", "F", "Scale", "|g|", mi=len(str(maxiters)))
 
     if xtol is None:
         xtol = 1e-6

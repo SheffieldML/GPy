@@ -18,7 +18,7 @@ class opt_SGD(Optimizer):
 
     """
 
-    def __init__(self, start, iterations = 10, learning_rate = 1e-4, momentum = 0.9, model = None, messages = False, batch_size = 1, self_paced = False, center = True, iteration_file = None, learning_rate_adaptation=None, **kwargs):
+    def __init__(self, start, iterations = 10, learning_rate = 1e-4, momentum = 0.9, model = None, messages = False, batch_size = 1, self_paced = False, center = True, iteration_file = None, learning_rate_adaptation=None, actual_iter=None, schedule=None, **kwargs):
         self.opt_name = "Stochastic Gradient Descent"
 
         self.model = model
@@ -34,12 +34,14 @@ class opt_SGD(Optimizer):
         self.param_traces = [('noise',[])]
         self.iteration_file = iteration_file
         self.learning_rate_adaptation = learning_rate_adaptation
+        self.actual_iter = actual_iter
         if self.learning_rate_adaptation != None:
             if self.learning_rate_adaptation == 'annealing':
                 self.learning_rate_0 = self.learning_rate
             else:
                 self.learning_rate_0 = self.learning_rate.mean()
 
+        self.schedule = schedule
         # if len([p for p in self.model.kern.parts if p.name == 'bias']) == 1:
         #     self.param_traces.append(('bias',[]))
         # if len([p for p in self.model.kern.parts if p.name == 'linear']) == 1:
@@ -224,48 +226,67 @@ class opt_SGD(Optimizer):
 
         return f, step, self.model.N
 
-    def adapt_learning_rate(self, t):
+    def adapt_learning_rate(self, t, D):
         if self.learning_rate_adaptation == 'adagrad':
-            if t > 5:
-                g = np.array(self.grads)
-                l2_g = np.sqrt(np.square(g).sum(0))
-                self.learning_rate = 0.001/l2_g
+            if t > 0:
+                g_k = self.model.grads
+                self.s_k += np.square(g_k)
+                t0 = 100.0
+                self.learning_rate = 0.1/(t0 + np.sqrt(self.s_k))
+
+                import pdb; pdb.set_trace()
             else:
                 self.learning_rate = np.zeros_like(self.learning_rate)
+                self.s_k = np.zeros_like(self.x_opt)
+
         elif self.learning_rate_adaptation == 'annealing':
-            self.learning_rate = self.learning_rate_0/(1+float(t+1)/10)
+            #self.learning_rate = self.learning_rate_0/(1+float(t+1)/10)
+            self.learning_rate = np.ones_like(self.learning_rate) * self.schedule[t]
+
+
         elif self.learning_rate_adaptation == 'semi_pesky':
             if self.model.__class__.__name__ == 'Bayesian_GPLVM':
+                g_t = self.model.grads
                 if t == 0:
-                    N = self.model.N
-                    Q = self.model.Q
-                    M = self.model.M
+                    self.hbar_t = 0.0
+                    self.tau_t = 100.0
+                    self.gbar_t = 0.0
 
-                    iip_pos = np.arange(2*N*Q,2*N*Q+M*Q)
-                    mu_pos = np.arange(0,N*Q)
-                    S_pos = np.arange(N*Q,2*N*Q)
-                    self.vbparam_dict = {'iip': [iip_pos],
-                                         'mu': [mu_pos],
-                                         'S': [S_pos]}
+                self.gbar_t = (1-1/self.tau_t)*self.gbar_t + 1/self.tau_t * g_t
+                self.hbar_t = (1-1/self.tau_t)*self.hbar_t + 1/self.tau_t * np.dot(g_t.T, g_t)
+                self.learning_rate = np.ones_like(self.learning_rate)*(np.dot(self.gbar_t.T, self.gbar_t) / self.hbar_t)
+                tau_t = self.tau_t*(1-self.learning_rate) + 1
 
-                    for k in self.vbparam_dict.keys():
-                        hbar_t = 0.0
-                        tau_t = 1000.0
-                        gbar_t = 0.0
-                        self.vbparam_dict[k].append(hbar_t)
-                        self.vbparam_dict[k].append(tau_t)
-                        self.vbparam_dict[k].append(gbar_t)
-                        
-            g_t = self.model.grads
+                # if t == 0:
+                #     N = self.model.N
+                #     Q = self.model.Q
+                #     M = self.model.M
 
-            for k in self.vbparam_dict.keys():
-                pos, hbar_t, tau_t, gbar_t = self.vbparam_dict[k]
+                #     iip_pos = np.arange(2*N*Q,2*N*Q+M*Q)
+                #     mu_pos = np.arange(0,N*Q)
+                #     S_pos = np.arange(N*Q,2*N*Q)
+                #     self.vbparam_dict = {'iip': [iip_pos],
+                #                          'mu': [mu_pos],
+                #                          'S': [S_pos]}
 
-                gbar_t = (1-1/tau_t)*gbar_t + 1/tau_t * g_t[pos]
-                hbar_t = (1-1/tau_t)*hbar_t + 1/tau_t * np.dot(g_t[pos].T, g_t[pos])
-                self.learning_rate[pos] = np.dot(gbar_t.T, gbar_t) / hbar_t
-                tau_t = tau_t*(1-self.learning_rate[pos]) + 1
-                self.vbparam_dict[k] = [pos, hbar_t, tau_t, gbar_t]
+                #     for k in self.vbparam_dict.keys():
+                #         hbar_t = 0.0
+                #         tau_t = 1.0
+                #         gbar_t = 0.0
+                #         self.vbparam_dict[k].append(hbar_t)
+                #         self.vbparam_dict[k].append(tau_t)
+                #         self.vbparam_dict[k].append(gbar_t)
+                # if True:
+                #     g_t = self.model.grads
+
+                #     for k in self.vbparam_dict.keys():
+                #         pos, hbar_t, tau_t, gbar_t = self.vbparam_dict[k]
+                #         gbar_t = (1-1/tau_t)*gbar_t + 1/tau_t * g_t[pos]
+                #         hbar_t = (1-1/tau_t)*hbar_t + 1/tau_t * np.dot(g_t[pos].T, g_t[pos])
+                #         self.learning_rate[pos] = (np.dot(gbar_t.T, gbar_t) / hbar_t)*1.0
+                #         tau_t = tau_t*(1-self.learning_rate[pos]) + 1
+                #         self.vbparam_dict[k] = [pos, hbar_t, tau_t, gbar_t]
+                #         print k, self.learning_rate[pos].max()
 
 
     def opt(self, f_fp=None, f=None, fp=None):
@@ -274,8 +295,8 @@ class opt_SGD(Optimizer):
 
         X, Y = self.model.X.copy(), self.model.likelihood.Y.copy()
 
-        self.model.likelihood.YYT = None
-        self.model.likelihood.trYYT = None
+        self.model.likelihood.YYT = 0
+        self.model.likelihood.trYYT = 0
         self.model.likelihood._bias = 0.0
         self.model.likelihood._scale = 1.0
 
@@ -287,6 +308,9 @@ class opt_SGD(Optimizer):
 
         step = np.zeros_like(num_params)
         for it in range(self.iterations):
+            if self.actual_iter != None:
+                it = self.actual_iter
+
             self.model.grads = np.zeros_like(self.x_opt) # TODO this is ugly
 
             if it == 0 or self.self_paced is False:
@@ -316,6 +340,7 @@ class opt_SGD(Optimizer):
                     self.model.likelihood.trYYT = np.trace(self.model.likelihood.YYT)
                     Nj = N
                     f, fp = f_fp(self.x_opt)
+                    self.model.grads = fp.copy()
                     step = self.momentum * step + self.learning_rate * fp
                     self.x_opt -= step
 
@@ -326,6 +351,7 @@ class opt_SGD(Optimizer):
                     sys.stdout.flush()
                     self.param_traces['noise'].append(noise)
 
+                self.adapt_learning_rate(it+count, D)
                 NLL.append(f)
                 self.fopt_trace.append(NLL[-1])
                 # fig = plt.figure('traces')
@@ -335,7 +361,6 @@ class opt_SGD(Optimizer):
                 # for k in self.param_traces.keys():
                 #     self.param_traces[k].append(self.model.get(k)[0])
             self.grads.append(self.model.grads.tolist())
-            self.adapt_learning_rate(it)
             # should really be a sum(), but earlier samples in the iteration will have a very crappy ll
             self.f_opt = np.mean(NLL)
             self.model.N = N

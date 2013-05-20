@@ -19,17 +19,20 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
     """
     Bayesian Gaussian Process Latent Variable Model
 
-    :param Y: observed data
-    :type Y: np.ndarray
+    :param Y: observed data (np.ndarray) or GPy.likelihood
+    :type Y: np.ndarray| GPy.likelihood instance
     :param Q: latent dimensionality
     :type Q: int
     :param init: initialisation method for the latent space
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, likelihood, Q, X=None, X_variance=None, init='PCA', M=10,
+    def __init__(self, likelihood_or_Y, Q, X=None, X_variance=None, init='PCA', M=10,
                  Z=None, kernel=None, oldpsave=10, _debug=False,
                  **kwargs):
+        if type(likelihood_or_Y) is np.ndarray:
+            likelihood = Gaussian(likelihood_or_Y)
+
         if X == None:
             X = self.initialise_latent(init, Q, likelihood.Y)
 

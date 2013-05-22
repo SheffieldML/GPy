@@ -119,7 +119,7 @@ class GPLVM(GP):
             else:
                 x = self.X[index,input_1]
                 y = self.X[index,input_2]
-            ax.scatter(x, y, marker=m, s=s, color=util.plot.Tango.nextMedium(), mew=1.3, label=this_label)
+            ax.scatter(x, y, marker=m, s=s, color=util.plot.Tango.nextMedium(), label=this_label)
 
         ax.set_xlabel('latent dimension %i'%input_1)
         ax.set_ylabel('latent dimension %i'%input_2)

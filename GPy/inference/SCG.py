@@ -25,6 +25,13 @@
 import numpy as np
 import sys
 
+
+def print_out(len_maxiters, display, fnow, current_grad, beta, iteration):
+    if display:
+        print '\r',
+        print '{0:>0{mi}g}  {1:> 12e}  {2:> 12e}  {3:> 12e}'.format(iteration, float(fnow), float(beta), float(current_grad), mi=len_maxiters), # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
+        sys.stdout.flush()
+
 def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xtol=None, ftol=None, gtol=None):
     """
     Optimisation through Scaled Conjugate Gradients (SCG)
@@ -65,7 +72,8 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
     iteration = 0
 
     if display:
-        print ' {0:{mi}s}   {1:11s}    {2:11s}    {3:11s}'.format("I", "F", "Scale", "|g|", mi=len(str(maxiters)))
+        len_maxiters = len(str(maxiters))
+        print ' {0:{mi}s}   {1:11s}    {2:11s}    {3:11s}'.format("I", "F", "Scale", "|g|", mi=len_maxiters)
 
     # Main optimization loop.
     while iteration < maxiters:
@@ -113,11 +121,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         flog.append(fnow) # Current function value
 
         iteration += 1
-        if display:
-            print '\r',
-            print '{0:>0{mi}g}  {1:> 12e}  {2:> 12e}  {3:> 12e}'.format(iteration, float(fnow), float(beta), float(current_grad), mi=len(str(maxiters))),
-            # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
-            sys.stdout.flush()
+        print_out(len_maxiters, display, fnow, current_grad, beta, iteration)
 
         if success:
             # Test for termination
@@ -158,5 +162,6 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         status = "maxiter exceeded"
 
     if display:
+        print_out(len_maxiters, display, fnow, current_grad, beta, iteration)
         print ""
     return x, flog, function_eval, status

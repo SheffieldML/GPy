@@ -14,6 +14,7 @@ import itertools
 from matplotlib.colors import colorConverter
 from matplotlib.figure import SubplotParams
 from GPy.inference.optimization import SCG
+from GPy.util import plot_latent
 
 class Bayesian_GPLVM(sparse_GP, GPLVM):
     """
@@ -178,18 +179,8 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         self.dbound_dZtheta = sparse_GP._log_likelihood_gradients(self)
         return np.hstack((self.dbound_dmuS.flatten(), self.dbound_dZtheta))
 
-    def plot_latent(self, which_indices=None, *args, **kwargs):
-
-        if which_indices is None:
-            try:
-                input_1, input_2 = np.argsort(self.input_sensitivity())[:2]
-            except:
-                raise ValueError, "cannot Atomatically determine which dimensions to plot, please pass 'which_indices'"
-        else:
-            input_1, input_2 = which_indices
-        ax = GPLVM.plot_latent(self, which_indices=[input_1, input_2], *args, **kwargs)
-        ax.plot(self.Z[:, input_1], self.Z[:, input_2], '^w')
-        return ax
+    def plot_latent(self, *args, **kwargs):
+        util.plot_latent_indices(self, *args, **kwargs)
 
     def do_test_latents(self, Y):
         """

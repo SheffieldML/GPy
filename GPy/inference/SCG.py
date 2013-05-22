@@ -39,11 +39,6 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
     function_eval number of fn evaluations
     status: string describing convergence status
     """
-    
-    if display:
-        print "  SCG"
-        print ' {0:{mi}s}   {1:11s}    {2:11s}    {3:11s}'.format("I", "F", "Scale", "|g|", mi=len(str(maxiters)))
-
     if xtol is None:
         xtol = 1e-6
     if ftol is None:
@@ -68,6 +63,9 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
     flog = [fold]
 
     iteration = 0
+
+    if display:
+        print ' {0:{mi}s}   {1:11s}    {2:11s}    {3:11s}'.format("I", "F", "Scale", "|g|", mi=len(str(maxiters)))
 
     # Main optimization loop.
     while iteration < maxiters:
@@ -129,10 +127,10 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
 
             else:
                 # Update variables for new position
-                fold = fnew
-                gradold = gradnew
                 gradnew = gradf(x, *optargs)
                 current_grad = np.dot(gradnew, gradnew)
+                gradold = gradnew
+                fold = fnew
                 # If the gradient is zero then we are done.
                 if current_grad <= gtol:
                     status = 'converged'

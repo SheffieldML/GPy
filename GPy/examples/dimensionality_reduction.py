@@ -305,12 +305,13 @@ def brendan_faces():
     from GPy import kern
     data = GPy.util.datasets.brendan_faces()
     Q = 2
-    # Y = data['Y'][0:-1:2, :]
-    Y = data['Y']
+    Y = data['Y'][0:-1:10, :]
+    # Y = data['Y']
     Yn = Y - Y.mean()
     Yn /= Yn.std()
 
-    m = GPy.models.GPLVM(Yn, Q)#, M=Y.shape[0]/4)
+    m = GPy.models.GPLVM(Yn, Q)
+    # m = GPy.models.Bayesian_GPLVM(Yn, Q, M=100)
 
     # optimize
     m.constrain('rbf|noise|white', GPy.core.transformations.logexp_clipped())
@@ -318,7 +319,7 @@ def brendan_faces():
     m.ensure_default_constraints()
     m.optimize('scg', messages=1, max_f_eval=10000)
 
-    ax = m.plot_latent()
+    ax = m.plot_latent(which_indices=(0,1))
     y = m.likelihood.Y[0, :]
     data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, invert=False, scale=False)
     lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)

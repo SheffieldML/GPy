@@ -39,7 +39,7 @@ class logexp(transformation):
         return '(+ve)'
 
 class logexp_clipped(transformation):
-    max_bound = 1e300
+    max_bound = 1e100
     min_bound = 1e-10
     log_max_bound = np.log(max_bound)
     log_min_bound = np.log(min_bound)
@@ -53,11 +53,11 @@ class logexp_clipped(transformation):
 #             import ipdb;ipdb.set_trace()
         return np.clip(f, self.min_bound, self.max_bound)
     def finv(self, f):
-        return np.log(np.exp(np.clip(f, self.min_bound, self.max_bound)) - 1.)
+        return np.log(np.exp(f - 1.))
     def gradfactor(self, f):
         ef = np.exp(f) # np.clip(f, self.min_bound, self.max_bound))
         gf = (ef - 1.) / ef
-        return np.where(f < self.lower, 0, gf)
+        return gf # np.where(f < self.lower, 0, gf)
     def initialize(self, f):
         if np.any(f < 0.):
             print "Warning: changing parameters to satisfy constraints"

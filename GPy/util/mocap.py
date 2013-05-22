@@ -1,6 +1,8 @@
 import os
 import numpy as np
 import math
+from GPy.util import datasets as dat
+import urllib2
 
 class vertex:
     def __init__(self, name, id, parents=[], children=[], meta = {}):
@@ -687,3 +689,71 @@ def read_connections(file_name, point_names):
     
   
 skel = acclaim_skeleton()
+
+
+
+    
+def fetch_data(base_url = 'http://mocap.cs.cmu.edu:8080/subjects', skel_store_dir = '.', motion_store_dir = '.', subj_motions = None, store_motions = True, return_motions = True, messages = True):
+    ''' 
+    Download and store the skel. and motions indicated in a tuple (A,B) where A is a list of skeletons and B
+    the corresponding 2-D list of motions, ie B_ij is the j-th motion to download for skeleton A_i
+    The method can optionally store the fetched data and / or return them as arrays.
+    If the data are already stored, they are not fetched but just retrieved.
+
+    e.g.
+    # Download the data, do not return anything
+    GPy.util.mocap.fetch_data(subj_motions = (['35'],[['01','02','03']]), return_motions = False)
+    # Fetch and return the data in a list. Do not store them anywhere
+    GPy.util.mocap.fetch_data(subj_motions = (['35'],[['01','02','03']]), return_motions = True, store_motions = False)
+
+    In both cases above, if the data do exist in the given skel_store_dir and motion_store_dir, they are just loaded from there.
+    '''
+    
+    subjects = subj_motions[0]
+    motions = subj_motions[1]
+    all_skels = []
+    
+    assert len(subjects) == len(motions)
+    
+    if return_motions:
+        all_motions = [list() for _ in range(len(subjects))]
+    else:
+        all_motions = []
+            
+    for i in range(len(subjects)):
+        cur_skel_suffix = '/' + subjects[i] + '/' 
+        cur_skel_dir = skel_store_dir + cur_skel_suffix
+        cur_skel_file = cur_skel_dir + subjects[i] + '.asf'
+        cur_skel_url = base_url + cur_skel_suffix + subjects[i] + '.asf'
+        
+        if os.path.isfile(cur_skel_file):
+            if return_motions:
+                with open(cur_skel_file, 'r') as f:
+                    cur_skel_data = f.read()
+        else:
+            if store_motions:
+                if not os.path.isdir(cur_skel_dir):
+                    os.mkdir(cur_skel_dir)
+                if not os.path.isdir(motion_store_dir + cur_skel_suffix):
+                    os.mkdir(motion_store_dir + cur_skel_suffix)
+            cur_skel_data = dat.fetch_dataset(cur_skel_url, cur_skel_file, store_motions, messages)
+        
+        if return_motions:
+            all_skels.append(cur_skel_data)
+        
+        for j in range(len(motions[i])):
+            cur_motion_url = base_url + cur_skel_suffix + subjects[i] + '_' + motions[i][j] + '.amc'
+            cur_motion_file = motion_store_dir + cur_skel_suffix  + subjects[i] + '_' + motions[i][j] + '.amc'
+            if os.path.isfile(cur_motion_file):
+                with open(cur_motion_file, 'r') as f:
+                    if return_motions:
+                        cur_motion_data = f.read()
+            else:
+                cur_motion_data = dat.fetch_dataset(cur_motion_url, cur_motion_file, store_motions, messages)
+
+            if return_motions:
+                all_motions[i].append(cur_motion_data)
+
+    return all_skels, all_motions
+
+

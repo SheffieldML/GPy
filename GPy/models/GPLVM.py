@@ -11,6 +11,8 @@ from ..util.linalg import pdinv, PCA
 from GP import GP
 from ..likelihoods import Gaussian
 from .. import util
+from GPy.util import plot_latent
+
 
 class GPLVM(GP):
     """
@@ -60,65 +62,5 @@ class GPLVM(GP):
         mu, var, upper, lower = self.predict(Xnew)
         pb.plot(mu[:,0], mu[:,1],'k',linewidth=1.5)
 
-    def plot_latent(self, labels=None, which_indices=None, resolution=50, ax=None):
-        """
-        :param labels: a np.array of size self.N containing labels for the points (can be number, strings, etc)
-        :param resolution: the resolution of the grid on which to evaluate the predictive variance
-        """
-        if ax is None:
-            ax = pb.gca()
-        util.plot.Tango.reset()
-
-        if labels is None:
-            labels = np.ones(self.N)
-        if which_indices is None:
-            if self.Q==1:
-                input_1 = 0
-                input_2 = None
-            if self.Q==2:
-                input_1, input_2 = 0,1
-            else:
-                try:
-                    input_1, input_2 = np.argsort(self.input_sensitivity())[:2]
-                except:
-                    raise ValueError, "cannot Atomatically determine which dimensions to plot, please pass 'which_indices'"
-        else:
-            input_1, input_2 = which_indices
-
-        #first, plot the output variance as a function of the latent space
-        Xtest, xx,yy,xmin,xmax = util.plot.x_frame2D(self.X[:,[input_1, input_2]],resolution=resolution)
-        Xtest_full = np.zeros((Xtest.shape[0], self.X.shape[1]))
-        Xtest_full[:, :2] = Xtest
-        mu, var, low, up = self.predict(Xtest_full)
-        var = var[:, :1]
-        ax.imshow(var.reshape(resolution, resolution).T,
-                  extent=[xmin[0], xmax[0], xmin[1], xmax[1]], cmap=pb.cm.binary,interpolation='bilinear',origin='lower')
-
-        for i,ul in enumerate(np.unique(labels)):
-            if type(ul) is np.string_:
-                this_label = ul
-            elif type(ul) is np.int64:
-                this_label = 'class %i'%ul
-            else:
-                this_label = 'class %i'%i
-
-            index = np.nonzero(labels==ul)[0]
-            if self.Q==1:
-                x = self.X[index,input_1]
-                y = np.zeros(index.size)
-            else:
-                x = self.X[index,input_1]
-                y = self.X[index,input_2]
-            ax.plot(x,y,marker='o',color=util.plot.Tango.nextMedium(),mew=0,label=this_label,linewidth=0)
-
-        ax.set_xlabel('latent dimension %i'%input_1)
-        ax.set_ylabel('latent dimension %i'%input_2)
-
-        if not np.all(labels==1.):
-            ax.legend(loc=0,numpoints=1)
-
-        ax.set_xlim(xmin[0],xmax[0])
-        ax.set_ylim(xmin[1],xmax[1])
-        ax.grid(b=False) # remove the grid if present, it doesn't look good
-        ax.set_aspect('auto') # set a nice aspect ratio
-        return ax
+    def plot_latent(self, *args, **kwargs):
+        util.plot_latent.plot_latent(self, *args, **kwargs)

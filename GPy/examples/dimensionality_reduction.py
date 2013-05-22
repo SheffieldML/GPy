@@ -131,7 +131,7 @@ def BGPLVM_oil(optimize=True, N=100, Q=5, M=25, max_f_eval=4e3, plot=False, **k)
     m = GPy.models.Bayesian_GPLVM(Yn, Q, kernel=kernel, M=M, **k)
     m.data_labels = data['Y'][:N].argmax(axis=1)
 
-    m.constrain('variance|leng', logexp_clipped())
+    # m.constrain('variance|leng', logexp_clipped())
     m['lengt'] = m.X.var(0).max() / m.X.var(0)
     m['noise'] = Yn.var() / 100.
 
@@ -246,7 +246,7 @@ def bgplvm_simulation_matlab_compare():
 def bgplvm_simulation(optimize='scg',
                       plot=True,
                       max_f_eval=2e4):
-    from GPy.core.transformations import logexp_clipped
+#     from GPy.core.transformations import logexp_clipped
     D1, D2, D3, N, M, Q = 15, 8, 8, 100, 3, 5
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, M, Q, plot)
 
@@ -259,8 +259,8 @@ def bgplvm_simulation(optimize='scg',
 
     k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2)) # + kern.bias(Q)
     m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k, _debug=True)
-    m.constrain('variance|noise', logexp_clipped())
-#     m.ensure_default_constraints()
+    # m.constrain('variance|noise', logexp_clipped())
+    m.ensure_default_constraints()
     m['noise'] = Y.var() / 100.
     m['linear_variance'] = .01
 
@@ -273,8 +273,8 @@ def bgplvm_simulation(optimize='scg',
         pylab.figure(); pylab.axis(); m.kern.plot_ARD()
     return m
 
-def mrd_simulation(optimize=True, plot_sim=False):
-    D1, D2, D3, N, M, Q = 150, 250, 30, 300, 3, 7
+def mrd_simulation(optimize=True, plot_sim=False, **kw):
+    D1, D2, D3, N, M, Q = 150, 250, 30, 200, 3, 7
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim)
 
     from GPy.models import mrd
@@ -284,12 +284,12 @@ def mrd_simulation(optimize=True, plot_sim=False):
     reload(mrd); reload(kern)
 
     k = kern.linear(Q, [0.01] * Q, True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
-    m = mrd.MRD(*Ylist, Q=Q, M=M, kernel=k, initx="concat", initz='permute')
+    m = mrd.MRD(*Ylist, Q=Q, M=M, kernel=k, initx="concat", initz='permute', **kw)
 
     for i, Y in enumerate(Ylist):
         m['{}_noise'.format(i + 1)] = Y.var() / 100.
 
-    m.constrain('variance|noise', logexp_clipped())
+    # m.constrain('variance|noise', logexp_clipped())
     m.ensure_default_constraints()
 
     # DEBUG
@@ -305,12 +305,13 @@ def brendan_faces():
     from GPy import kern
     data = GPy.util.datasets.brendan_faces()
     Q = 2
-    # Y = data['Y'][0:-1:2, :]
-    Y = data['Y']
+    Y = data['Y'][0:-1:10, :]
+    # Y = data['Y']
     Yn = Y - Y.mean()
     Yn /= Yn.std()
 
-    m = GPy.models.GPLVM(Yn, Q)#, M=Y.shape[0]/4)
+    m = GPy.models.GPLVM(Yn, Q)
+    # m = GPy.models.Bayesian_GPLVM(Yn, Q, M=100)
 
     # optimize
     m.constrain('rbf|noise|white', GPy.core.transformations.logexp_clipped())
@@ -318,7 +319,7 @@ def brendan_faces():
     m.ensure_default_constraints()
     m.optimize('scg', messages=1, max_f_eval=10000)
 
-    ax = m.plot_latent()
+    ax = m.plot_latent(which_indices=(0,1))
     y = m.likelihood.Y[0, :]
     data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, invert=False, scale=False)
     lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)

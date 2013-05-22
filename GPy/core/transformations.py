@@ -49,8 +49,8 @@ class logexp_clipped(transformation):
     def f(self, x):
         exp = np.exp(np.clip(x, self.log_min_bound, self.log_max_bound))
         f = np.log(1. + exp)
-        if np.isnan(f).any():
-            import ipdb;ipdb.set_trace()
+#         if np.isnan(f).any():
+#             import ipdb;ipdb.set_trace()
         return f
     def finv(self, f):
         return np.log(np.exp(np.clip(f, self.min_bound, self.max_bound)) - 1.)

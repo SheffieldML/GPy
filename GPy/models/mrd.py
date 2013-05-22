@@ -56,6 +56,7 @@ class MRD(model):
         else:
             assert len(kernels) == len(likelihood_or_Y_list), "need one kernel per output"
             assert all([isinstance(k, kern) for k in kernels]), "invalid kernel object detected!"
+        assert not ('kernel' in kw), "pass kernels through `kernels` argument"
 
         self.Q = Q
         self.M = M

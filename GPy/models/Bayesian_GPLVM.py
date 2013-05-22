@@ -180,7 +180,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         return np.hstack((self.dbound_dmuS.flatten(), self.dbound_dZtheta))
 
     def plot_latent(self, *args, **kwargs):
-        util.plot_latent_indices(self, *args, **kwargs)
+        plot_latent.plot_latent_indices(self, *args, **kwargs)
 
     def do_test_latents(self, Y):
         """

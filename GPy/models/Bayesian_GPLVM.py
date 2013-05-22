@@ -13,24 +13,30 @@ from numpy.linalg.linalg import LinAlgError
 import itertools
 from matplotlib.colors import colorConverter
 from matplotlib.figure import SubplotParams
+from GPy.inference.optimization import SCG
 
 class Bayesian_GPLVM(sparse_GP, GPLVM):
     """
     Bayesian Gaussian Process Latent Variable Model
 
-    :param Y: observed data
-    :type Y: np.ndarray
+    :param Y: observed data (np.ndarray) or GPy.likelihood
+    :type Y: np.ndarray| GPy.likelihood instance
     :param Q: latent dimensionality
     :type Q: int
     :param init: initialisation method for the latent space
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, Y, Q, X=None, X_variance=None, init='PCA', M=10,
+    def __init__(self, likelihood_or_Y, Q, X=None, X_variance=None, init='PCA', M=10,
                  Z=None, kernel=None, oldpsave=10, _debug=False,
                  **kwargs):
+        if type(likelihood_or_Y) is np.ndarray:
+            likelihood = Gaussian(likelihood_or_Y)
+        else:
+            likelihood = likelihood_or_Y
+
         if X == None:
-            X = self.initialise_latent(init, Q, Y)
+            X = self.initialise_latent(init, Q, likelihood.Y)
 
         if X_variance is None:
             X_variance = np.clip((np.ones_like(X) * 0.5) + .01 * np.random.randn(*X.shape), 0.001, 1)
@@ -56,7 +62,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             self._savedpsiKmm = []
             self._savedABCD = []
 
-        sparse_GP.__init__(self, X, Gaussian(Y), kernel, Z=Z, X_variance=X_variance, **kwargs)
+        sparse_GP.__init__(self, X, likelihood, kernel, Z=Z, X_variance=X_variance, **kwargs)
 
     @property
     def oldps(self):
@@ -184,16 +190,46 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         ax.plot(self.Z[:, input_1], self.Z[:, input_2], '^w')
         return ax
 
+    def do_test_latents(self, Y):
+        """
+        Compute the latent representation for a set of new points Y
+
+        Notes:
+        This will only work with a univariate Gaussian likelihood (for now)
+        """
+        assert not self.likelihood.is_heteroscedastic
+        N_test = Y.shape[0]
+        Q = self.Z.shape[1]
+        means = np.zeros((N_test,Q))
+        covars = np.zeros((N_test,Q))
+
+        dpsi0 = - 0.5 * self.D * self.likelihood.precision
+        dpsi2 = self.dL_dpsi2[0][None,:,:] # TODO: this may change if we ignore het. likelihoods
+        V = self.likelihood.precision*Y
+        dpsi1 = np.dot(self.Cpsi1V,V.T)
+
+        start = np.zeros(self.Q*2)
+
+        for n,dpsi1_n in enumerate(dpsi1.T[:,:,None]):
+            args = (self.kern,self.Z,dpsi0,dpsi1_n,dpsi2)
+            xopt,fopt,neval,status = SCG(f=latent_cost, gradf=latent_grad, x=start, optargs=args, display = False)
+
+            mu,log_S = xopt.reshape(2,1,-1)
+            means[n] = mu[0].copy()
+            covars[n] = np.exp(log_S[0]).copy()
+
+        return means, covars
+
+
     def plot_X_1d(self, fig=None, axes=None, fig_num="LVM mu S 1d", colors=None):
         """
         Plot latent space X in 1D:
-        
+
             -if fig is given, create Q subplots in fig and plot in these
             -if axes is given plot Q 1D latent space plots of X into each `axis`
             -if neither fig nor axes is given create a figure with fig_num and plot in there
-            
+
         colors:
-            
             colors of different latent space dimensions Q
         """
         import pylab
@@ -483,3 +519,63 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         cidd = figs[0].canvas.mpl_connect('motion_notify_event', motion)
 
         return ax1, ax2, ax3, ax4, ax5 # , ax6, ax7
+
+
+
+
+def latent_cost_and_grad(mu_S, kern,Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
+    """
+    objective function for fitting the latent variables for test points
+    (negative log-likelihood: should be minimised!)
+    """
+    mu,log_S = mu_S.reshape(2,1,-1)
+    S = np.exp(log_S)
+
+    psi0 = kern.psi0(Z,mu,S)
+    psi1 = kern.psi1(Z,mu,S)
+    psi2 = kern.psi2(Z,mu,S)
+
+    lik = dL_dpsi0*psi0 + np.dot(dL_dpsi1.flatten(),psi1.flatten()) + np.dot(dL_dpsi2.flatten(),psi2.flatten()) - 0.5*np.sum(np.square(mu) + S) + 0.5*np.sum(log_S)
+
+    mu0, S0 = kern.dpsi0_dmuS(dL_dpsi0,Z,mu,S)
+    mu1, S1 = kern.dpsi1_dmuS(dL_dpsi1,Z,mu,S)
+    mu2, S2 = kern.dpsi2_dmuS(dL_dpsi2,Z,mu,S)
+
+    dmu = mu0 + mu1 + mu2 - mu
+    #dS = S0 + S1 + S2 -0.5 + .5/S
+    dlnS = S*(S0 + S1 + S2 -0.5) + .5
+    return -lik,-np.hstack((dmu.flatten(),dlnS.flatten()))
+
+def latent_cost(mu_S, kern,Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
+    """
+    objective function for fitting the latent variables (negative log-likelihood: should be minimised!)
+    This is the same as latent_cost_and_grad but only for the objective
+    """
+    mu,log_S = mu_S.reshape(2,1,-1)
+    S = np.exp(log_S)
+
+    psi0 = kern.psi0(Z,mu,S)
+    psi1 = kern.psi1(Z,mu,S)
+    psi2 = kern.psi2(Z,mu,S)
+
+    lik = dL_dpsi0*psi0 + np.dot(dL_dpsi1.flatten(),psi1.flatten()) + np.dot(dL_dpsi2.flatten(),psi2.flatten()) - 0.5*np.sum(np.square(mu) + S) + 0.5*np.sum(log_S)
+    return -float(lik)
+
+def latent_grad(mu_S, kern,Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
+    """
+    This is the same as latent_cost_and_grad but only for the grad
+    """
+    mu,log_S = mu_S.reshape(2,1,-1)
+    S = np.exp(log_S)
+
+    mu0, S0 = kern.dpsi0_dmuS(dL_dpsi0,Z,mu,S)
+    mu1, S1 = kern.dpsi1_dmuS(dL_dpsi1,Z,mu,S)
+    mu2, S2 = kern.dpsi2_dmuS(dL_dpsi2,Z,mu,S)
+
+    dmu = mu0 + mu1 + mu2 - mu
+    #dS = S0 + S1 + S2 -0.5 + .5/S
+    dlnS = S*(S0 + S1 + S2 -0.5) + .5
+
+    return -np.hstack((dmu.flatten(),dlnS.flatten()))
+
+

@@ -8,6 +8,7 @@ from ..util.plot import gpplot
 from .. import kern
 from GP import GP
 from scipy import linalg
+from ..likelihoods import Gaussian
 
 class sparse_GP(GP):
     """
@@ -172,19 +173,19 @@ class sparse_GP(GP):
         For a Gaussian likelihood, no iteration is required:
         this function does nothing
         """
-        if self.has_uncertain_inputs:
+        if not isinstance(self.likelihood,Gaussian): #Updates not needed for Gaussian likelihood
+            self.likelihood.restart() #TODO check consistency with pseudo_EP
+            if self.has_uncertain_inputs:
+                Lmi = chol_inv(self.Lm)
+                Kmmi = tdot(Lmi.T)
+                diag_tr_psi2Kmmi = np.array([np.trace(psi2_Kmmi) for psi2_Kmmi in np.dot(self.psi2,Kmmi)])
 
-            Lmi = chol_inv(self.Lm)
-            Kmmi = tdot(Lmi.T)
-            diag_tr_psi2Kmmi = np.array([np.trace(psi2_Kmmi) for psi2_Kmmi in np.dot(self.psi2,Kmmi)])
-
-            self.likelihood.fit_FITC(self.Kmm,self.psi1,diag_tr_psi2Kmmi) #This uses the fit_FITC code, but does not perfomr a FITC-EP.#TODO solve potential confusion
-            #raise NotImplementedError, "EP approximation not implemented for uncertain inputs"
-        else:
-            self.likelihood.fit_DTC(self.Kmm, self.psi1)
-            # self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
-            self._set_params(self._get_params())  # update the GP
-
+                self.likelihood.fit_FITC(self.Kmm,self.psi1,diag_tr_psi2Kmmi) #This uses the fit_FITC code, but does not perfomr a FITC-EP.#TODO solve potential confusion
+                #raise NotImplementedError, "EP approximation not implemented for uncertain inputs"
+            else:
+                self.likelihood.fit_DTC(self.Kmm, self.psi1)
+                # self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
+                self._set_params(self._get_params())  # update the GP
 
     def _log_likelihood_gradients(self):
         return np.hstack((self.dL_dZ().flatten(), self.dL_dtheta(), self.likelihood._gradients(partial=self.partial_for_likelihood)))
@@ -216,20 +217,33 @@ class sparse_GP(GP):
             dL_dZ += self.kern.dK_dX(self.dL_dpsi1, self.Z, self.X)
         return dL_dZ
 
-    def _raw_predict(self, Xnew, which_parts='all', full_cov=False):
+    def _raw_predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
         """Internal helper function for making predictions, does not account for normalization"""
 
         Bi, _ = linalg.lapack.flapack.dpotri(self.LB, lower=0)  # WTH? this lower switch should be 1, but that doesn't work!
         symmetrify(Bi)
         Kmmi_LmiBLmi = backsub_both_sides(self.Lm, np.eye(self.M) - Bi)
 
-        Kx = self.kern.K(self.Z, Xnew, which_parts=which_parts)
-        mu = np.dot(Kx.T, self.Cpsi1V)  # / self.scale_factor)
-        if full_cov:
-            Kxx = self.kern.K(Xnew, which_parts=which_parts)
-            var = Kxx - mdot(Kx.T, Kmmi_LmiBLmi, Kx)  # NOTE this won't work for plotting
+        if X_variance_new is None:
+            Kx = self.kern.K(self.Z, Xnew, which_parts=which_parts)
+            mu = np.dot(Kx.T, self.Cpsi1V)
+            if full_cov:
+                Kxx = self.kern.K(Xnew, which_parts=which_parts)
+                var = Kxx - mdot(Kx.T, Kmmi_LmiBLmi, Kx)  # NOTE this won't work for plotting
+            else:
+                Kxx = self.kern.Kdiag(Xnew, which_parts=which_parts)
+                var = Kxx - np.sum(Kx * np.dot(Kmmi_LmiBLmi, Kx), 0)
         else:
-            Kxx = self.kern.Kdiag(Xnew, which_parts=which_parts)
-            var = Kxx - np.sum(Kx * np.dot(Kmmi_LmiBLmi, Kx), 0)
+            # assert which_parts=='all', "swithching out parts of variational kernels is not implemented"
+            Kx = self.kern.psi1(self.Z, Xnew, X_variance_new)#, which_parts=which_parts) TODO: which_parts
+            mu = np.dot(Kx, self.Cpsi1V)
+            if full_cov:
+                raise NotImplementedError, "TODO"
+            else:
+                Kxx = self.kern.psi0(self.Z,Xnew,X_variance_new)
+                psi2 = self.kern.psi2(self.Z,Xnew,X_variance_new)
+                var = Kxx - np.sum(np.sum(psi2*Kmmi_LmiBLmi[None,:,:],1),1)
 
         return mu, var[:, None]
+
+

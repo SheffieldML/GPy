@@ -173,7 +173,7 @@ class GP(model):
         """
         # normalize X values
         Xnew = (Xnew.copy() - self._Xmean) / self._Xstd
-        mu, var = self._raw_predict(Xnew, which_parts, full_cov)
+        mu, var = self._raw_predict(Xnew, which_parts=which_parts, full_cov=full_cov)
 
         # now push through likelihood
         mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov)

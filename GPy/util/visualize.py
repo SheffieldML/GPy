@@ -86,7 +86,6 @@ class lvm(data_show):
     def modify(self, vals):
         """When latent values are modified update the latent representation and ulso update the output visualization."""
         y = self.model.predict(vals)[0]
-        print y
         self.data_visualize.modify(y)
         self.latent_handle.set_data(vals[self.latent_index[0]], vals[self.latent_index[1]])
         self.axes.figure.canvas.draw()

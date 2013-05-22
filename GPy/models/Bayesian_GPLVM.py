@@ -94,8 +94,12 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         x = np.hstack((self.X.flatten(), self.X_variance.flatten(), sparse_GP._get_params(self)))
         return x
 
+    def _clipped(self, x):
+        return x # np.clip(x, -1e100, 1e100)
+    
     def _set_params(self, x, save_old=True, save_count=0):
 #         try:
+            x = self._clipped(x)
             N, Q = self.N, self.Q
             self.X = x[:self.X.size].reshape(N, Q).copy()
             self.X_variance = x[(N * Q):(2 * N * Q)].reshape(N, Q).copy()
@@ -177,7 +181,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         # ========================
         self.dbound_dmuS = np.hstack((d_dmu, d_dS))
         self.dbound_dZtheta = sparse_GP._log_likelihood_gradients(self)
-        return np.hstack((self.dbound_dmuS.flatten(), self.dbound_dZtheta))
+        return self._clipped(np.hstack((self.dbound_dmuS.flatten(), self.dbound_dZtheta)))
 
     def plot_latent(self, *args, **kwargs):
         plot_latent.plot_latent_indices(self, *args, **kwargs)

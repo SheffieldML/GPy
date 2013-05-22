@@ -53,7 +53,7 @@ class Gaussian(likelihood):
     def _set_params(self, x):
         x = float(x)
         if self._variance != x:
-            self.precision = 1. / max(x, 1e-6)
+            self.precision = 1. / x
             self.covariance_matrix = np.eye(self.N) * x
             self.V = (self.precision) * self.Y
             self._variance = x

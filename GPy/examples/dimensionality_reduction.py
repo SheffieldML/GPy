@@ -266,15 +266,19 @@ def bgplvm_simulation(optimize='scg',
 
     if optimize:
         print "Optimizing model:"
-        m.optimize('scg', max_iters=max_f_eval, max_f_eval=max_f_eval, messages=True)
+        m.optimize('bfgs', max_iters=max_f_eval,
+                   max_f_eval=max_f_eval,
+                   messages=True, gtol=1e-2)
     if plot:
         import pylab
         m.plot_X_1d()
-        pylab.figure(); pylab.axis(); m.kern.plot_ARD()
+        pylab.figure('BGPLVM Simulation ARD Parameters');
+        pylab.axis();
+        m.kern.plot_ARD()
     return m
 
 def mrd_simulation(optimize=True, plot_sim=False, **kw):
-    D1, D2, D3, N, M, Q = 150, 250, 30, 200, 3, 7
+    D1, D2, D3, N, M, Q = 15, 8, 8, 100, 3, 7
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim)
 
     from GPy.models import mrd
@@ -284,20 +288,20 @@ def mrd_simulation(optimize=True, plot_sim=False, **kw):
     reload(mrd); reload(kern)
 
     k = kern.linear(Q, [0.01] * Q, True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
-    m = mrd.MRD(*Ylist, Q=Q, M=M, kernel=k, initx="concat", initz='permute', **kw)
+    m = mrd.MRD(Ylist, Q=Q, M=M, kernel=k, initx="concat", initz='permute', **kw)
 
     for i, Y in enumerate(Ylist):
         m['{}_noise'.format(i + 1)] = Y.var() / 100.
 
-    # m.constrain('variance|noise', logexp_clipped())
+    m.constrain('variance|noise', logexp_clipped())
     m.ensure_default_constraints()
 
     # DEBUG
-    np.seterr("raise")
+    # np.seterr("raise")
 
     if optimize:
         print "Optimizing Model:"
-        m.optimize('scg', messages=1, max_iters=3e3)
+        m.optimize('bfgs', messages=1, max_iters=3e3)
 
     return m
 

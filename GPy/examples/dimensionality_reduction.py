@@ -278,7 +278,7 @@ def bgplvm_simulation(optimize='scg',
     return m
 
 def mrd_simulation(optimize=True, plot_sim=False, **kw):
-    D1, D2, D3, N, M, Q = 15, 8, 8, 100, 3, 7
+    D1, D2, D3, N, M, Q = 150, 200, 400, 700, 3, 7
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim)
 
     from GPy.models import mrd
@@ -288,12 +288,12 @@ def mrd_simulation(optimize=True, plot_sim=False, **kw):
     reload(mrd); reload(kern)
 
     k = kern.linear(Q, [0.01] * Q, True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
-    m = mrd.MRD(Ylist, Q=Q, M=M, kernel=k, initx="concat", initz='permute', **kw)
+    m = mrd.MRD(Ylist, Q=Q, M=M, kernels=k, initx="concat", initz='permute', **kw)
 
     for i, Y in enumerate(Ylist):
         m['{}_noise'.format(i + 1)] = Y.var() / 100.
 
-    m.constrain('variance|noise', logexp_clipped())
+    # m.constrain('variance|noise', logexp_clipped(1e-6))
     m.ensure_default_constraints()
 
     # DEBUG

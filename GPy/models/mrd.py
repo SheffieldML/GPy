@@ -44,7 +44,7 @@ class MRD(model):
     """
     def __init__(self, likelihood_or_Y_list, Q, M=10, names=None,
                  kernels=None, initx='PCA',
-                 initz='permute', _debug=False, **kwargs):
+                 initz='permute', _debug=False, **kw):
         if names is None:
             self.names = ["{}".format(i + 1) for i in range(len(likelihood_or_Y_list))]
 
@@ -64,7 +64,7 @@ class MRD(model):
         self._init = True
         X = self._init_X(initx, likelihood_or_Y_list)
         Z = self._init_Z(initz, X)
-        self.bgplvms = [Bayesian_GPLVM(l, k, X=X, Z=Z, M=self.M, **kwargs) for l, k in zip(likelihood_or_Y_list, kernels)]
+        self.bgplvms = [Bayesian_GPLVM(l, Q=Q, kernel=k, X=X, Z=Z, M=self.M, **kw) for l, k in zip(likelihood_or_Y_list, kernels)]
         del self._init
 
         self.gref = self.bgplvms[0]
@@ -229,12 +229,12 @@ class MRD(model):
             else:
                 Ylist.append(likelihood_or_Y.Y)
         del likelihood_list
-        if init in "PCA_single":
+        if init in "PCA_concat":
+            X = PCA(numpy.hstack(Ylist), self.Q)[0]
+        elif init in "PCA_single":
             X = numpy.zeros((Ylist[0].shape[0], self.Q))
             for qs, Y in itertools.izip(numpy.array_split(numpy.arange(self.Q), len(Ylist)), Ylist):
                 X[:, qs] = PCA(Y, len(qs))[0]
-        elif init in "PCA_concat":
-            X = PCA(numpy.hstack(Ylist), self.Q)[0]
         else: # init == 'random':
             X = numpy.random.randn(Ylist[0].shape[0], self.Q)
         self.X = X

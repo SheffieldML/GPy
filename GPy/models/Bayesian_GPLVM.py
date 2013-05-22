@@ -95,7 +95,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         return x
 
     def _clipped(self, x):
-        return x # np.clip(x, -1e100, 1e100)
+        return x # np.clip(x, -1e300, 1e300)
     
     def _set_params(self, x, save_old=True, save_count=0):
 #         try:

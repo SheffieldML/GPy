@@ -39,8 +39,8 @@ class logexp(transformation):
         return '(+ve)'
 
 class logexp_clipped(transformation):
-    max_bound = 1e250
-    min_bound = 1e-9
+    max_bound = 1e300
+    min_bound = 1e-10
     log_max_bound = np.log(max_bound)
     log_min_bound = np.log(min_bound)
     def __init__(self, lower=1e-6):
@@ -51,7 +51,7 @@ class logexp_clipped(transformation):
         f = np.log(1. + exp)
 #         if np.isnan(f).any():
 #             import ipdb;ipdb.set_trace()
-        return f
+        return np.clip(f, self.min_bound, self.max_bound)
     def finv(self, f):
         return np.log(np.exp(np.clip(f, self.min_bound, self.max_bound)) - 1.)
     def gradfactor(self, f):

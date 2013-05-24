@@ -71,8 +71,8 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
 
     iteration = 0
 
+    len_maxiters = len(str(maxiters))
     if display:
-        len_maxiters = len(str(maxiters))
         print ' {0:{mi}s}   {1:11s}    {2:11s}    {3:11s}'.format("I", "F", "Scale", "|g|", mi=len_maxiters)
 
     # Main optimization loop.

@@ -19,7 +19,7 @@ def sample_class(f):
 
 def fetch_dataset(resource, save_name = None, save_file = True, messages = True):
     if messages:
-        print "Downloading resource: " , resource, " ... "
+        print "Downloading resource: " , resource, " ... ",
     response = url.urlopen(resource)
     # TODO: Some error checking...
     # ... 

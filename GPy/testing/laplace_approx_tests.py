@@ -62,8 +62,6 @@ class Likelihood_F_Grad(LikelihoodParamGrad):
 
     def log_likelihood(self):
         ll = self.func(self)
-        if self.param_name == "dL_dfhat_":
-            import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
         if len(ll.shape) == 0 or len(ll.shape) == 1:
             return ll.sum()
         elif len(ll.shape) == 2:
@@ -128,6 +126,7 @@ class LaplaceTests(unittest.TestCase):
 
     def test_dL_dfhat(self):
         def L(self):
+            #return np.array(-0.5 * self.D * self.K_logdet + self._model_fit_term()) #Ignore Z for now
             return np.array(-0.5 * self.D * self.K_logdet + self._model_fit_term() + self.likelihood.Z)
 
         self.m = Likelihood_F_Grad(X=self.X, likelihood_function=self.stu_t_likelihood,

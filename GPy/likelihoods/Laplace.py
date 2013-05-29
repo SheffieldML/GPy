@@ -87,7 +87,7 @@ class Laplace(likelihood):
         #dL_dytil_simple_term = -0.5*np.dot(inv(self.K+self.Sigma_tilde),
         #dL_dytil_simple_term = -np.dot(self.Y.T, inv(self.K+self.Sigma_tilde), self.Y)
         c = inv(self.K+self.Sigma_tilde)
-        dL_dytil_simple_term =  -0.5*np.diag(np.dot(c, self.Y) + np.dot(self.Y.T, c))
+        dL_dytil_simple_term = -0.5*np.diag(2*np.dot(c, self.Y))
 
         P = np.diagflat(1/np.dot(Ki, self.f_hat))
         K_Wi_i = inv(self.K+self.Sigma_tilde)
@@ -96,6 +96,7 @@ class Laplace(likelihood):
                                             +0.5*mdot(K_Wi_i, self.Y, self.Y.T, K_Wi_i, P)
                                            ) * np.eye(self.N))
         dL_dytil = dL_dytil_simple_term + dL_dytil_difficult_term
+        dL_dytil = dL_dytil.reshape(1, self.N)
 
         d3likelihood_d3fhat = self.likelihood_function.d3link(self.data, self.f_hat, self.extra_data)
         Wi = np.diagonal(self.Sigma_tilde) #Convenience
@@ -329,6 +330,7 @@ class Laplace(likelihood):
                    #+ y_W_f
                    #+ self.ln_z_hat
                    #)
+        self.Z_tilde = 0
 
         ##Check it isn't singular!
         if cond(self.W) > epsilon:

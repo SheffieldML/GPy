@@ -147,7 +147,7 @@ class GP(model):
         if isinstance(self.likelihood, Laplace):
             dL_dthetaK_explicit = dL_dthetaK
             #Need to pass in a matrix of ones to get access to raw dK_dthetaK values without being chained
-            fake_dL_dKs = np.eye(self.dL_dK.shape[0]) #FIXME: Check this is right...
+            fake_dL_dKs = np.ones(self.dL_dK.shape) #FIXME: Check this is right...
             dK_dthetaK = self.kern.dK_dtheta(dL_dK=fake_dL_dKs, X=self.X)
 
             dL_dthetaK = self.likelihood._Kgradients(dL_d_K_Sigma=self.dL_dK, dK_dthetaK=dK_dthetaK)

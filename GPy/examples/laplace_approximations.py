@@ -69,22 +69,21 @@ def debug_student_t_noise_approx():
     print "Clean Gaussian"
     #A GP should completely break down due to the points as they get a lot of weight
     # create simple GP model
-    m = GPy.models.GP_regression(X, Y, kernel=kernel1)
-    # optimize
-    m.ensure_default_constraints()
-    m.optimize()
-    # plot
-    if plot:
-        plt.figure(1)
-        plt.suptitle('Gaussian likelihood')
-        plt.subplot(131)
-        m.plot()
-        plt.plot(X_full, Y_full)
-    print m
+    #m = GPy.models.GP_regression(X, Y, kernel=kernel1)
+    ## optimize
+    #m.ensure_default_constraints()
+    #m.optimize()
+    ## plot
+    #if plot:
+        #plt.figure(1)
+        #plt.suptitle('Gaussian likelihood')
+        #plt.subplot(131)
+        #m.plot()
+        #plt.plot(X_full, Y_full)
+    #print m
 
     edited_real_sd = initial_var_guess #real_sd
 
-    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
     print "Clean student t, rasm"
     t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, rasm=True)
@@ -95,10 +94,10 @@ def debug_student_t_noise_approx():
     m.constrain_positive('t_noi')
     #m.constrain_fixed('t_noise_variance', real_sd)
     m.update_likelihood_approximation()
+    m.optimize('scg', messages=True)
     print(m)
     return m
     #m.optimize('lbfgsb', messages=True, callback=m._update_params_callback)
-    m.optimize('scg', messages=True)
     if plot:
         plt.suptitle('Student-t likelihood')
         plt.subplot(132)

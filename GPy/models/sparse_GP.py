@@ -245,3 +245,40 @@ class sparse_GP(GP):
                 var = Kxx - np.sum(np.sum(psi2*Kmmi_LmiBLmi[None,:,:],1),1)
 
         return mu, var[:, None]
+
+    def predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
+        """
+        Predict the function(s) at the new point(s) Xnew.
+
+        Arguments
+        ---------
+        :param Xnew: The points at which to make a prediction
+        :type Xnew: np.ndarray, Nnew x self.Q
+        :param X_variance_new: The uncertainty in the prediction points
+        :type X_variance_new: np.ndarray, Nnew x self.Q
+        :param which_parts:  specifies which outputs kernel(s) to use in prediction
+        :type which_parts: ('all', list of bools)
+        :param full_cov: whether to return the folll covariance matrix, or just the diagonal
+        :type full_cov: bool
+        :rtype: posterior mean,  a Numpy array, Nnew x self.D
+        :rtype: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
+        :rtype: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.D
+
+
+           If full_cov and self.D > 1, the return shape of var is Nnew x Nnew x self.D. If self.D == 1, the return shape is Nnew x Nnew.
+           This is to allow for different normalizations of the output dimensions.
+
+        """
+        # normalize X values
+        Xnew = (Xnew.copy() - self._Xmean) / self._Xstd
+        if X_variance_new is not None:
+            X_variance_new = X_variance_new / self._Xstd**2
+
+        #here's the actual prediction by the GP model
+        mu, var = self._raw_predict(Xnew, X_variance_new, full_cov=full_cov, which_parts=which_parts)
+
+        # now push through likelihood
+        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov)
+
+        return mean, var, _025pm, _975pm
+

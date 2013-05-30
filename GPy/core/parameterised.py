@@ -64,36 +64,36 @@ class parameterised(object):
         m['var'] = 2.           # > sets all parameters matching 'var' to 2.
         m['var'] = <array-like> # > sets parameters matching 'var' to <array-like>
         """
-    def get(self, name):
+    def get(self, cd48_name):
         warnings.warn(self._get_set_deprecation, FutureWarning, stacklevel=2)
-        return self[name]
+        return self[cd48_name]
 
-    def set(self, name, val):
+    def set(self, cd48_name, val):
         warnings.warn(self._get_set_deprecation, FutureWarning, stacklevel=2)
-        self[name] = val
+        self[cd48_name] = val
 
-    def __getitem__(self, name, return_names=False):
+    def __getitem__(self, cd48_name, return_names=False):
         """
-        Get a model parameter by name.  The name is applied as a regular
+        Get a model parameter by cd48_name.  The cd48_name is applied as a regular
         expression and all parameters that match that regular expression are
         returned.
         """
-        matches = self.grep_param_names(name)
+        matches = self.grep_param_names(cd48_name)
         if len(matches):
             if return_names:
                 return self._get_params()[matches], np.asarray(self._get_param_names())[matches].tolist()
             else:
                 return self._get_params()[matches]
         else:
-            raise AttributeError, "no parameter matches %s" % name
+            raise AttributeError, "no parameter matches %s" % cd48_name
 
-    def __setitem__(self, name, val):
+    def __setitem__(self, cd48_name, val):
         """
-        Set model parameter(s) by name. The name is provided as a regular
+        Set model parameter(s) by cd48_name. The cd48_name is provided as a regular
         expression. All parameters matching that regular expression are set to
         the given value.
         """
-        matches = self.grep_param_names(name)
+        matches = self.grep_param_names(cd48_name)
         if len(matches):
             val = np.array(val)
             assert (val.size == 1) or val.size == len(matches), "Shape mismatch: {}:({},)".format(val.size, len(matches))
@@ -101,7 +101,7 @@ class parameterised(object):
             x[matches] = val
             self.params = x
         else:
-            raise AttributeError, "no parameter matches %s" % name
+            raise AttributeError, "no parameter matches %s" % cd48_name
 
     def tie_params(self, which):
         matches = self.grep_param_names(which)
@@ -136,9 +136,9 @@ class parameterised(object):
 
         if type(expr) in [str, np.string_, np.str]:
             expr = re.compile(expr)
-            return np.nonzero([expr.search(name) for name in self._get_param_names()])[0]
+            return np.nonzero([expr.search(cd48_name) for cd48_name in self._get_param_names()])[0]
         elif type(expr) is re._pattern_type:
-            return np.nonzero([expr.search(name) for name in self._get_param_names()])[0]
+            return np.nonzero([expr.search(cd48_name) for cd48_name in self._get_param_names()])[0]
         else:
             return expr
 

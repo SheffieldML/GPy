@@ -17,11 +17,11 @@ def BGPLVM(seed=default_seed):
     D = 4
     # generate GPLVM-like data
     X = np.random.rand(N, Q)
-    k = GPy.kern.rbf(Q)  + GPy.kern.white(Q, 0.00001)
+    k = GPy.kern.rbf(Q) + GPy.kern.white(Q, 0.00001)
     K = k.K(X)
     Y = np.random.multivariate_normal(np.zeros(N), K, D).T
 
-    k = GPy.kern.rbf(Q, ARD=True) + GPy.kern.linear(Q, ARD=True) + GPy.kern.rbf(Q, ARD=True)  + GPy.kern.white(Q)
+    k = GPy.kern.rbf(Q, ARD=True) + GPy.kern.linear(Q, ARD=True) + GPy.kern.rbf(Q, ARD=True) + GPy.kern.white(Q)
     # k = GPy.kern.rbf(Q) + GPy.kern.rbf(Q) + GPy.kern.white(Q)
     # k = GPy.kern.rbf(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
     # k = GPy.kern.rbf(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)
@@ -48,9 +48,10 @@ def GPLVM_oil_100(optimize=True):
     Y = data['X']
 
     # create simple GP model
-    kernel = GPy.kern.rbf(6, ARD=True) + GPy.kern.bias(6)
+    kernel = GPy.kern.rbf(6, ARD=True) + GPy.kern.bias(6) + GPy.kern.white(6)
     m = GPy.models.GPLVM(Y, 6, kernel=kernel)
     m.data_labels = data['Y'].argmax(axis=1)
+    m['noise'] = .01
 
     # optimize
     m.ensure_default_constraints()
@@ -293,7 +294,7 @@ def mrd_simulation(optimize=True, plot_sim=False, **kw):
     for i, Y in enumerate(Ylist):
         m['{}_noise'.format(i + 1)] = Y.var() / 100.
 
-    # m.constrain('variance|noise', logexp_clipped(1e-6))
+    m.constrain('variance|noise', logexp_clipped(1e-6))
     m.ensure_default_constraints()
 
     # DEBUG
@@ -323,7 +324,7 @@ def brendan_faces():
     m.ensure_default_constraints()
     m.optimize('scg', messages=1, max_f_eval=10000)
 
-    ax = m.plot_latent(which_indices=(0,1))
+    ax = m.plot_latent(which_indices=(0, 1))
     y = m.likelihood.Y[0, :]
     data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, invert=False, scale=False)
     lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)

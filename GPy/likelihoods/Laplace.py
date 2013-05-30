@@ -79,41 +79,54 @@ class Laplace(likelihood):
         return (self._Kgradients(dL_d_K_Sigma, dK_dthetaK), self._gradients(dL_d_K_Sigma))
 
     def _shared_gradients_components(self):
+        #FIXME: Careful of side effects! And make sure W and K are up to date!
         Ki, _, _, _ = pdinv(self.K)
-        Ki_W_i = inv(Ki + self.W) #Do it non numerically stable for now
         d3lik_d3fhat = self.likelihood_function.d3lik_d3f(self.data, self.f_hat)
-        dL_dfhat = -0.5*np.dot(np.diag(Ki_W_i), d3lik_d3fhat)
-        KW = np.dot(self.K, self.W)
-        I_KW_i = inv(np.eye(KW.shape[0]) + KW)
-        return dL_dfhat, Ki, I_KW_i
+        #dL_dfhat = -0.5*np.diag(self.Ki_W_i)*d3lik_d3fhat
+        dL_dfhat = -0.5*(np.diag(self.Ki_W_i)*d3lik_d3fhat)[:, None]
+        Wi_K_i = mdot(self.W_12, self.Bi, self.W_12) #same as rasms R
+        I_KW_i = np.eye(self.N) - np.dot(self.K, Wi_K_i)
+        return dL_dfhat, Ki, I_KW_i, Wi_K_i
 
     def _Kgradients(self, dL_d_K_Sigma, dK_dthetaK):
         """
         Gradients with respect to prior kernel parameters
         """
-        dL_dfhat, Ki, I_KW_i = self._shared_gradients_components()
-        K_Wi_i = inv(self.K + inv(self.W))
-        dlp = self.likelihood_function.dlik_df(self.data, self.f_hat)
+        dL_dfhat, Ki, I_KW_i, Wi_K_i = self._shared_gradients_components()
+        dlp = self.likelihood_function.dlik_df(self.data, self.f_hat)[:, None]
 
         dL_dthetaK = np.zeros(dK_dthetaK.shape)
         for thetaK_i, dK_dthetaK_i in enumerate(dK_dthetaK):
             #Explicit
-            dL_dthetaK[thetaK_i] = 0.5*mdot(self.f_hat.T, Ki, dK_dthetaK_i, Ki, self.f_hat) - 0.5*np.trace(np.dot(K_Wi_i, dK_dthetaK_i))
+            dL_dthetaK[thetaK_i] = 0.5*mdot(self.f_hat.T, Ki, dK_dthetaK_i, Ki, self.f_hat) - 0.5*np.trace(Wi_K_i*dK_dthetaK_i)
             #Implicit
-            df_hat_dthetaK = mdot(I_KW_i, dK_dthetaK, dlp)
+            df_hat_dthetaK = mdot(I_KW_i, dK_dthetaK_i, dlp)
             dL_dthetaK[thetaK_i] += np.dot(dL_dfhat.T, df_hat_dthetaK)
 
-        return dL_dthetaK
+        return np.squeeze(dL_dthetaK)
 
     def _gradients(self, partial):
         """
         Gradients with respect to likelihood parameters
         """
-        dL_dfhat, Ki, I_KW_i = self._shared_gradients_components()
+        dL_dfhat, Ki, I_KW_i, Wi_K_i = self._shared_gradients_components()
         dlik_dthetaL, dlik_grad_dthetaL, dlik_hess_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat)
-        dL_dthetaL = np.zeros(dlik_dthetaL.shape)
 
-        return dL_dthetaL #should be array of length *params-being optimized*, for student t just optimising 1 parameter, this is (1,)
+        num_params = len(dlik_dthetaL)
+        #Ki_W_i = np.diag(inv(Ki + self.W))[:, None]
+        dL_dthetaL = np.zeros((1, num_params)) # make space for one derivative for each likelihood parameter
+        for thetaL_i in range(num_params):
+            #Explicit
+            #dL_dthetaL[thetaL_i] = np.sum(dlik_dthetaL[thetaL_i]) - 0.5*np.trace(np.dot(Ki_W_i.T, np.diagflat(dlik_hess_dthetaL[thetaL_i])))
+            #dL_dthetaL[thetaL_i] = np.sum(dlik_dthetaL[thetaL_i]) + 0.5*np.dot(Ki_W_i.T, dlik_hess_dthetaL[thetaL_i][:, None])
+            #                                               might be +
+            dL_dthetaL[thetaL_i] = np.sum(dlik_dthetaL[thetaL_i]) - 0.5*np.dot(np.diag(self.Ki_W_i), dlik_hess_dthetaL[thetaL_i])
+            #Implicit
+            df_hat_dthetaL = mdot(I_KW_i, self.K, dlik_grad_dthetaL[thetaL_i])
+            import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+            dL_dthetaL[thetaL_i] += np.dot(dL_dfhat.T, df_hat_dthetaL)
+
+        return np.squeeze(dL_dthetaL) #should be array of length *params-being optimized*, for student t just optimising 1 parameter, this is (1,)
 
     def _compute_GP_variables(self):
         """
@@ -232,8 +245,8 @@ class Laplace(likelihood):
         self.B, self.B_chol, self.W_12 = self._compute_B_statistics(self.K, self.W)
         self.Bi, _, _, B_det = pdinv(self.B)
 
-        Ki_W_i = self.K - mdot(self.K, self.W_12, self.Bi, self.W_12, self.K)
-        self.ln_Ki_W_i_det = np.linalg.det(Ki_W_i)
+        self.Ki_W_i = self.K - mdot(self.K, self.W_12, self.Bi, self.W_12, self.K)
+        self.ln_Ki_W_i_det = np.linalg.det(self.Ki_W_i)
 
         b = np.dot(self.W, self.f_hat) + self.likelihood_function.dlik_df(self.data, self.f_hat, extra_data=self.extra_data)[:, None]
         solve_chol = cho_solve((self.B_chol, True), mdot(self.W_12, (self.K, b)))

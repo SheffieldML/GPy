@@ -69,7 +69,6 @@ class GP(model):
         self.likelihood._set_params(p[self.kern.Nparam_transformed():])  # test by Nicolas
 
         if isinstance(self.likelihood, Laplace):
-            print "Updating approx: ", p
             self.likelihood.fit_full(self.kern.K(self.X))
             self.likelihood._set_params(self.likelihood._get_params())
 
@@ -134,7 +133,6 @@ class GP(model):
         matrix K* = K + diag(1./tau_tilde) plus a normalization term.
         """
         l = -0.5 * self.D * self.K_logdet + self._model_fit_term() + self.likelihood.Z
-        print "Log likelihood: ", l
         return l
 
     def _log_likelihood_gradients(self):
@@ -145,17 +143,16 @@ class GP(model):
         """
         dL_dthetaK = self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X)
         if isinstance(self.likelihood, Laplace):
-            dL_dthetaK_explicit = dL_dthetaK
             #Need to pass in a matrix of ones to get access to raw dK_dthetaK values without being chained
             fake_dL_dKs = np.ones(self.dL_dK.shape) #FIXME: Check this is right...
             dK_dthetaK = self.kern.dK_dtheta(dL_dK=fake_dL_dKs, X=self.X)
 
             dL_dthetaK = self.likelihood._Kgradients(dL_d_K_Sigma=self.dL_dK, dK_dthetaK=dK_dthetaK)
             dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))
-            print "Stacked dL_dthetaK, dL_dthetaL: ", np.hstack((dL_dthetaK, dL_dthetaL))
+            #print "Stacked dL_dthetaK, dL_dthetaL: ", np.hstack((dL_dthetaK, dL_dthetaL))
         else:
             dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))
-            print "Stacked dL_dthetaK, dL_dthetaL: ", np.hstack((dL_dthetaK, dL_dthetaL))
+            #print "Stacked dL_dthetaK, dL_dthetaL: ", np.hstack((dL_dthetaK, dL_dthetaL))
         return np.hstack((dL_dthetaK, dL_dthetaL))
         #return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
 

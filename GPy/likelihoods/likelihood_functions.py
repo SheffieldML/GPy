@@ -302,12 +302,13 @@ class student_t(likelihood_function):
         f = np.squeeze(f)
         assert y.shape == f.shape
         e = y - f
-        dlik_hess_dsigma = ( ((v + 1)*(e**2 - (self.sigma**2)*self.v)) /
+        dlik_hess_dsigma = ( ((self.v + 1)*(e**2 - (self.sigma**2)*self.v)) /
                              ((e**2 + (self.sigma**2)*self.v)**2)
                            )
-        return np.squeeze(dlik_hess_dsigma)
+        return dlik_hess_dsigma
 
     def _gradients(self, y, f, extra_data=None):
+        #must be listed in same order as 'get_param_names'
         derivs = ([self.link_dstd(y, f, extra_data=extra_data)],
                   [self.dlik_df_dstd(y, f, extra_data=extra_data)],
                   [self.d2lik_d2f_dstd(y, f, extra_data=extra_data)]

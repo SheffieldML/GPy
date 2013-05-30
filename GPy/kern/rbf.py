@@ -56,6 +56,13 @@ class rbf(kernpart):
         self._Z, self._mu, self._S = np.empty(shape=(3,1))
         self._X, self._X2, self._params = np.empty(shape=(3,1))
 
+        #a set of optional args to pass to weave
+        self.weave_options = {'headers'           : ['<omp.h>'],
+                         'extra_compile_args': ['-fopenmp -O3'],  #-march=native'],
+                         'extra_link_args'   : ['-lgomp']}
+
+
+
     def _get_params(self):
         return np.hstack((self.variance,self.lengthscale))
 
@@ -85,8 +92,43 @@ class rbf(kernpart):
         self._K_computations(X,X2)
         target[0] += np.sum(self._K_dvar*dL_dK)
         if self.ARD:
-            if X2 is None: X2 = X
-            [np.add(target[1+q:2+q],(self.variance/self.lengthscale[q]**3)*np.sum(self._K_dvar*dL_dK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.D)]
+            dvardLdK = self._K_dvar*dL_dK
+            var_len3 = self.variance/np.power(self.lengthscale,3)
+            if X2 is None:
+                #save computation for the symmetrical case
+                dvardLdK += dvardLdK.T
+                code = """
+                int q,i,j;
+                double tmp;
+                for(q=0; q<D; q++){
+                  tmp = 0;
+                  for(i=0; i<N; i++){
+                    for(j=0; j<i; j++){
+                      tmp += (X(i,q)-X(j,q))*(X(i,q)-X(j,q))*dvardLdK(i,j);
+                    }
+                  }
+                  target(q+1) += var_len3(q)*tmp;
+                }
+                """
+                N,M,D = X.shape[0], X.shape[0], self.D
+            else:
+                code = """
+                int q,i,j;
+                double tmp;
+                for(q=0; q<D; q++){
+                  tmp = 0;
+                  for(i=0; i<N; i++){
+                    for(j=0; j<M; j++){
+                      tmp += (X(i,q)-X2(j,q))*(X(i,q)-X2(j,q))*dvardLdK(i,j);
+                    }
+                  }
+                  target(q+1) += var_len3(q)*tmp;
+                }
+                """
+                N,M,D = X.shape[0], X2.shape[0], self.D
+            #[np.add(target[1+q:2+q],var_len3[q]*np.sum(dvardLdK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.D)]
+            weave.inline(code, arg_names=['N','M','D','X','X2','target','dvardLdK','var_len3'],
+                 type_converters=weave.converters.blitz,**self.weave_options)
         else:
             target[1] += (self.variance/self.lengthscale)*np.sum(self._K_dvar*self._K_dist2*dL_dK)
 
@@ -227,10 +269,6 @@ class rbf(kernpart):
             self._Z, self._mu, self._S = Z, mu,S
 
     def weave_psi2(self,mu,Zhat):
-        weave_options = {'headers'           : ['<omp.h>'],
-                         'extra_compile_args': ['-fopenmp -O3'],  #-march=native'],
-                         'extra_link_args'   : ['-lgomp']}
-
         N,Q = mu.shape
         M = Zhat.shape[0]
 
@@ -288,6 +326,6 @@ class rbf(kernpart):
         """
         weave.inline(code, support_code=support_code, libraries=['gomp'],
                      arg_names=['N','M','Q','mu','Zhat','mudist_sq','mudist','lengthscale2','_psi2_denom','psi2_Zdist_sq','psi2_exponent','half_log_psi2_denom','psi2','variance_sq'],
-                     type_converters=weave.converters.blitz,**weave_options)
+                     type_converters=weave.converters.blitz,**self.weave_options)
 
         return mudist,mudist_sq, psi2_exponent, psi2

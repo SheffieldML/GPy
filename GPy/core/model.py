@@ -447,7 +447,7 @@ class model(parameterised):
         assert isinstance(self.likelihood, likelihoods.EP), "EPEM is only available for EP likelihoods"
         ll_change = epsilon + 1.
         iteration = 0
-        last_ll = -np.exp(1000)
+        last_ll = -np.inf
 
         convergence = False
         alpha = 0

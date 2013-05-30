@@ -313,7 +313,10 @@ def symmetrify(A,upper=False):
     elif A.flags['F_CONTIGUOUS'] and not upper:
         weave.inline(f_contig_code,['A','N'], extra_compile_args=['-O3'])
     else:
-        tmp = np.tril(A)
+        if upper:
+            tmp = np.tril(A.T)
+        else:
+            tmp = np.tril(A)
         A[:] = 0.0
         A += tmp
         A += np.tril(tmp,-1).T

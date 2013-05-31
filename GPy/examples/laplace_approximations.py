@@ -39,8 +39,8 @@ def debug_student_t_noise_approx():
     plot = False
     real_var = 0.1
     #Start a function, any function
-    X = np.linspace(0.0, 10.0, 100)[:, None]
-    #X = np.array([0.5])[:, None]
+    #X = np.linspace(0.0, 10.0, 100)[:, None]
+    X = np.array([0.5])[:, None]
     Y = np.sin(X) + np.random.randn(*X.shape)*real_var
 
     X_full = np.linspace(0.0, 10.0, 500)[:, None]

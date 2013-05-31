@@ -11,8 +11,8 @@ from sparse_GP import sparse_GP
 
 def backsub_both_sides(L,X):
     """ Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky"""
-    tmp, _ = linalg.lapack.dtrtrs(L, np.asfortranarray(X), lower=1, trans=1)
-    return linalg.lapack.dtrtrs(L, np.asfortranarray(tmp.T), lower=1, trans=1)[0].T
+    tmp,_ = linalg.lapack.flapack.dtrtrs(L,np.asfortranarray(X),lower=1,trans=1)
+    return linalg.lapack.flapack.dtrtrs(L,np.asfortranarray(tmp.T),lower=1,trans=1)[0].T
 
 
 class generalized_FITC(sparse_GP):
@@ -82,7 +82,7 @@ class generalized_FITC(sparse_GP):
         if self.likelihood.is_heteroscedastic:
 
             # Compute generalized FITC's diagonal term of the covariance
-            self.Lmi, info = linalg.lapack.dtrtrs(self.Lm, np.eye(self.M), lower=1)
+            self.Lmi,info = linalg.lapack.flapack.dtrtrs(self.Lm,np.eye(self.M),lower=1)
             Lmipsi1 = np.dot(self.Lmi,self.psi1)
             self.Qnn = np.dot(Lmipsi1.T,Lmipsi1)
             #self.Kmmi, Lm, Lmi, Kmm_logdet = pdinv(self.Kmm)
@@ -95,7 +95,7 @@ class generalized_FITC(sparse_GP):
             self.P = Iplus_Dprod_i[:,None] * self.psi1.T
             self.RPT0 = np.dot(self.Lmi,self.psi1)
             self.L = np.linalg.cholesky(np.eye(self.M) + np.dot(self.RPT0,((1. - Iplus_Dprod_i)/self.Diag0)[:,None]*self.RPT0.T))
-            self.R, info = linalg.dtrtrs(self.L, self.Lmi, lower=1)
+            self.R,info = linalg.flapack.dtrtrs(self.L,self.Lmi,lower=1)
             self.RPT = np.dot(self.R,self.P.T)
             self.Sigma = np.diag(self.Diag) + np.dot(self.RPT.T,self.RPT)
             self.w = self.Diag * self.likelihood.v_tilde
@@ -182,7 +182,7 @@ class generalized_FITC(sparse_GP):
             #   = I - [RPT0] * (U*U.T)^-1 * [RPT0].T
             #   = I - V.T * V
             U = np.linalg.cholesky(np.diag(self.Diag0) + self.Qnn)
-            V, info = linalg.dtrtrs(U, self.RPT0.T, lower=1)
+            V,info = linalg.flapack.dtrtrs(U,self.RPT0.T,lower=1)
             C = np.eye(self.M) - np.dot(V.T,V)
             mu_u = np.dot(C,self.RPT0)*(1./self.Diag0[None,:])
             #self.C = C

@@ -80,7 +80,7 @@ class sparse_GP(GP):
                 tmp = self.psi1 * (np.sqrt(self.likelihood.precision.flatten().reshape(1, self.N)))
             else:
                 tmp = self.psi1 * (np.sqrt(self.likelihood.precision))
-        tmp, _ = linalg.lapack.dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
+        tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
         self.A = tdot(tmp)
 
 
@@ -92,10 +92,10 @@ class sparse_GP(GP):
         self.psi1V = np.dot(self.psi1, self.likelihood.V)
 
         # back substutue C into psi1V
-        tmp, info1 = linalg.lapack.dtrtrs(self.Lm, np.asfortranarray(self.psi1V), lower=1, trans=0)
-        self._LBi_Lmi_psi1V, _ = linalg.lapack.dtrtrs(self.LB, np.asfortranarray(tmp), lower=1, trans=0)
-        tmp, info2 = linalg.lapack.dpotrs(self.LB, tmp, lower=1)
-        self.Cpsi1V, info3 = linalg.lapack.dtrtrs(self.Lm, tmp, lower=1, trans=1)
+        tmp, info1 = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(self.psi1V), lower=1, trans=0)
+        self._LBi_Lmi_psi1V, _ = linalg.lapack.flapack.dtrtrs(self.LB, np.asfortranarray(tmp), lower=1, trans=0)
+        tmp, info2 = linalg.lapack.flapack.dpotrs(self.LB, tmp, lower=1)
+        self.Cpsi1V, info3 = linalg.lapack.flapack.dtrtrs(self.Lm, tmp, lower=1, trans=1)
 
         # Compute dL_dKmm
         tmp = tdot(self._LBi_Lmi_psi1V)
@@ -220,7 +220,7 @@ class sparse_GP(GP):
     def _raw_predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
         """Internal helper function for making predictions, does not account for normalization"""
 
-        Bi, _ = linalg.lapack.dpotri(self.LB, lower=0) # WTH? this lower switch should be 1, but that doesn't work!
+        Bi, _ = linalg.lapack.flapack.dpotri(self.LB, lower=0)  # WTH? this lower switch should be 1, but that doesn't work!
         symmetrify(Bi)
         Kmmi_LmiBLmi = backsub_both_sides(self.Lm, np.eye(self.M) - Bi)
 

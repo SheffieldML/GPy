@@ -63,7 +63,7 @@ def _mdot_r(a,b):
 
 def jitchol(A,maxtries=5):
     A = np.asfortranarray(A)
-    L,info = linalg.lapack.flapack.dpotrf(A,lower=1)
+    L, info = linalg.lapack.dpotrf(A, lower=1)
     if info ==0:
         return L
     else:
@@ -124,7 +124,7 @@ def pdinv(A, *args):
     L = jitchol(A, *args)
     logdet = 2.*np.sum(np.log(np.diag(L)))
     Li = chol_inv(L)
-    Ai, _ = linalg.lapack.flapack.dpotri(L)
+    Ai, _ = linalg.lapack.dpotri(L)
     #Ai = np.tril(Ai) + np.tril(Ai,-1).T
     symmetrify(Ai)
 
@@ -140,7 +140,7 @@ def chol_inv(L):
 
     """
 
-    return linalg.lapack.flapack.dtrtri(L, lower = True)[0]
+    return linalg.lapack.dtrtri(L, lower=True)[0]
 
 
 def multiple_pdinv(A):
@@ -157,7 +157,7 @@ def multiple_pdinv(A):
     N = A.shape[-1]
     chols = [jitchol(A[:,:,i]) for i in range(N)]
     halflogdets = [np.sum(np.log(np.diag(L[0]))) for L in chols]
-    invs = [linalg.lapack.flapack.dpotri(L[0],True)[0] for L in chols]
+    invs = [linalg.lapack.dpotri(L[0], True)[0] for L in chols]
     invs = [np.triu(I)+np.triu(I,1).T for I in invs]
     return np.dstack(invs),np.array(halflogdets)
 
@@ -358,9 +358,9 @@ def cholupdate(L,x):
 def backsub_both_sides(L, X,transpose='left'):
     """ Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky"""
     if transpose=='left':
-        tmp, _ = linalg.lapack.flapack.dtrtrs(L, np.asfortranarray(X), lower=1, trans=1)
-        return linalg.lapack.flapack.dtrtrs(L, np.asfortranarray(tmp.T), lower=1, trans=1)[0].T
+        tmp, _ = linalg.lapack.dtrtrs(L, np.asfortranarray(X), lower=1, trans=1)
+        return linalg.lapack.dtrtrs(L, np.asfortranarray(tmp.T), lower=1, trans=1)[0].T
     else:
-        tmp, _ = linalg.lapack.flapack.dtrtrs(L, np.asfortranarray(X), lower=1, trans=0)
-        return linalg.lapack.flapack.dtrtrs(L, np.asfortranarray(tmp.T), lower=1, trans=0)[0].T
+        tmp, _ = linalg.lapack.dtrtrs(L, np.asfortranarray(X), lower=1, trans=0)
+        return linalg.lapack.dtrtrs(L, np.asfortranarray(tmp.T), lower=1, trans=0)[0].T
 

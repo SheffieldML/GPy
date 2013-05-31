@@ -65,7 +65,7 @@ class MRD(model):
         self._init = True
         X = self._init_X(initx, likelihood_or_Y_list)
         Z = self._init_Z(initz, X)
-        self.bgplvms = [Bayesian_GPLVM(l, Q=Q, kernel=k, X=X, Z=Z, M=self.M, **kw) for l, k in zip(likelihood_or_Y_list, kernels)]
+        self.bgplvms = [Bayesian_GPLVM(l, Q=Q, kernel=k, X=X, Z=Z, M=self.M, _debug=_debug, ** kw) for l, k in zip(likelihood_or_Y_list, kernels)]
         del self._init
 
         self.gref = self.bgplvms[0]
@@ -143,9 +143,9 @@ class MRD(model):
         # S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.Q)] for n in range(self.N)], [])
         n1 = self.gref._get_param_names()
         n1var = n1[:self.NQ * 2 + self.MQ]
-        map_names = lambda ns, name: map(lambda x: "{1}_{0}".format(*x),
+        map_names = lambda ns, cd48_name: map(lambda x: "{1}_{0}".format(*x),
                                          itertools.izip(ns,
-                                                        itertools.repeat(name)))
+                                                        itertools.repeat(cd48_name)))
         return list(itertools.chain(n1var, *(map_names(\
                 sparse_GP._get_param_names(g)[self.MQ:], n) \
                 for g, n in zip(self.bgplvms, self.names))))
@@ -213,12 +213,12 @@ class MRD(model):
         dLdmuS = numpy.hstack((dLdmu.flatten(), dLdS.flatten())).flatten()
         dldzt1 = reduce(lambda a, b: a + b, (sparse_GP._log_likelihood_gradients(g)[:self.MQ] for g in self.bgplvms))
 
-        return numpy.hstack((dLdmuS,
+        return self.gref._clipped(numpy.hstack((dLdmuS,
                              dldzt1,
                 numpy.hstack([numpy.hstack([g.dL_dtheta(),
                                             g.likelihood._gradients(\
                                                 partial=g.partial_for_likelihood)]) \
-                              for g in self.bgplvms])))
+                              for g in self.bgplvms]))))
 
     def _init_X(self, init='PCA', likelihood_list=None):
         if likelihood_list is None:

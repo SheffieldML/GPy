@@ -98,7 +98,11 @@ class linear(kernpart):
             target += tmp.sum()
 
     def dK_dX(self, dL_dK, X, X2, target):
-        target += (((X2[:, None, :] * self.variances)) * dL_dK[:, :, None]).sum(0)
+#         dim = np.where(np.array(X2.shape)[:, None] == dL_dK.shape)[0].flat[0]
+#         X2_ = np.expand_dims(X2, dim)
+#         target += ((X2_ * self.variances) * dL_dK[:, :, None]).sum(int(not dim))
+        target += (((X2[None, :, :] * self.variances)) * dL_dK[:, :, None]).sum(1)
+#         target += (((X2[None, :, :] * self.variances)) * dL_dK[:, :, None]).sum(0)
 
     #---------------------------------------#
     #             PSI statistics            #
@@ -134,7 +138,7 @@ class linear(kernpart):
         target_mu += (dL_dpsi1.T[:, :, None] * (Z * self.variances)).sum(1)
 
     def dpsi1_dZ(self, dL_dpsi1, Z, mu, S, target):
-        self.dK_dX(dL_dpsi1.T, Z, mu, target)
+        self.dK_dX(dL_dpsi1, Z, mu, target)
 
     def psi2(self, Z, mu, S, target):
         """

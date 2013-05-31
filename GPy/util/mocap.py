@@ -5,8 +5,8 @@ from GPy.util import datasets as dat
 import urllib2
 
 class vertex:
-    def __init__(self, cd48_name, id, parents=[], children=[], meta = {}):
-        self.name = cd48_name
+    def __init__(self, name, id, parents=[], children=[], meta = {}):
+        self.name = name
         self.id = id
         self.parents = parents
         self.children = children
@@ -18,7 +18,7 @@ class vertex:
 class tree:
     def __init__(self):
         self.vertices = []
-        self.vertices.append(vertex(cd48_name='root', id=0))
+        self.vertices.append(vertex(name='root', id=0))
 
     def __str__(self):
         index = self.find_root()
@@ -69,12 +69,12 @@ class tree:
                 return i
         raise Error, 'Reverse look up of id failed.'
 
-    def get_index_by_name(self, cd48_name):
-        """Give the index associated with a given vertex cd48_name."""
+    def get_index_by_name(self, name):
+        """Give the index associated with a given vertex name."""
         for i in range(len(self.vertices)):
-            if self.vertices[i].name == cd48_name:
+            if self.vertices[i].name == name:
                 return i
-        raise Error, 'Reverse look up of cd48_name failed.'
+        raise Error, 'Reverse look up of name failed.'
 
     def order_vertices(self):
         """Order vertices in the graph such that parents always have a lower index than children."""
@@ -203,7 +203,7 @@ class acclaim_skeleton(skeleton):
         self.length = 1.0
         self.mass = 1.0
         self.type = 'acclaim'
-        self.vertices[0] = vertex(cd48_name='root', id=0,
+        self.vertices[0] = vertex(name='root', id=0,
                              parents = [0], children=[],
                              meta = {'orientation': [], 
                                      'axis': [0., 0., 0.], 
@@ -303,7 +303,7 @@ class acclaim_skeleton(skeleton):
 
         """Loads an ASF file into a skeleton structure.
         loads skeleton structure from an acclaim skeleton file.
-         ARG file_name : the file cd48_name to load in.
+         ARG file_name : the file name to load in.
          RETURN skel : the skeleton for the file."""         
 
         fid = open(file_name, 'r')
@@ -321,8 +321,8 @@ class acclaim_skeleton(skeleton):
             parts = lin.split()
             if parts[0] == 'begin':
                 bone_count += 1
-                self.vertices.append(vertex(cd48_name = '', id=np.NaN,
-                                       meta={'cd48_name': [],
+                self.vertices.append(vertex(name = '', id=np.NaN,
+                                       meta={'name': [],
                                              'id': [], 
                                              'offset': [], 
                                              'orientation': [], 
@@ -348,7 +348,7 @@ class acclaim_skeleton(skeleton):
 
                 self.vertices[bone_count].children = []
 
-            elif parts[0]=='cd48_name':
+            elif parts[0]=='name':
                 self.vertices[bone_count].name = parts[1]
                 lin = self.read_line(fid)
 
@@ -436,7 +436,7 @@ class acclaim_skeleton(skeleton):
                     if counter != frame_no:
                         raise Error, 'Unexpected frame number.'
                 else:
-                    raise Error, 'Single bone cd48_name  ...'
+                    raise Error, 'Single bone name  ...'
             else:
                 ind = self.get_index_by_name(parts[0])
                 bones[ind].append(np.array([float(channel) for channel in parts[1:]]))
@@ -542,7 +542,7 @@ class acclaim_skeleton(skeleton):
         lin = self.read_line(fid)
         while lin:
             if lin[0]==':':
-                if lin[1:]== 'cd48_name':
+                if lin[1:]== 'name':
                     lin = self.read_line(fid)
                     self.name = lin
                 elif lin[1:]=='units':

@@ -62,7 +62,7 @@ class model(parameterised):
         if len(tie_matches) > 1:
             raise ValueError, "cannot place prior across multiple ties"
         elif len(tie_matches) == 1:
-            which = which[:1] # just place a prior object on the first parameter
+            which = which[:1]  # just place a prior object on the first parameter
 
 
         # check constraints are okay
@@ -89,18 +89,18 @@ class model(parameterised):
         for w in which:
             self.priors[w] = what
 
-    def get_gradient(self, cd48_name, return_names=False):
+    def get_gradient(self, name, return_names=False):
         """
-        Get model gradient(s) by cd48_name. The cd48_name is applied as a regular expression and all parameters that match that regular expression are returned.
+        Get model gradient(s) by name. The name is applied as a regular expression and all parameters that match that regular expression are returned.
         """
-        matches = self.grep_param_names(cd48_name)
+        matches = self.grep_param_names(name)
         if len(matches):
             if return_names:
                 return self._log_likelihood_gradients()[matches], np.asarray(self._get_param_names())[matches].tolist()
             else:
                 return self._log_likelihood_gradients()[matches]
         else:
-            raise AttributeError, "no parameter matches %s" % cd48_name
+            raise AttributeError, "no parameter matches %s" % name
 
     def log_prior(self):
         """evaluate the prior"""
@@ -137,7 +137,7 @@ class model(parameterised):
         x = self._get_params()
         [np.put(x, i, p.rvs(1)) for i, p in enumerate(self.priors) if not p is None]
         self._set_params(x)
-        self._set_params_transformed(self._get_params_transformed()) # makes sure all of the tied parameters get the same init (since there's only one prior object...)
+        self._set_params_transformed(self._get_params_transformed())  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
 
 
     def optimize_restarts(self, Nrestarts=10, robust=False, verbose=True, parallel=False, num_processes=None, **kwargs):
@@ -174,8 +174,8 @@ class model(parameterised):
                     job = pool.apply_async(opt_wrapper, args=(self,), kwds=kwargs)
                     jobs.append(job)
 
-                pool.close() # signal that no more data coming in
-                pool.join() # wait for all the tasks to complete
+                pool.close()  # signal that no more data coming in
+                pool.join()  # wait for all the tasks to complete
             except KeyboardInterrupt:
                 print "Ctrl+c received, terminating and joining pool."
                 pool.terminate()
@@ -214,10 +214,10 @@ class model(parameterised):
         for s in positive_strings:
             for i in self.grep_param_names(s):
                 if not (i in currently_constrained):
-                    # to_make_positive.append(re.escape(param_names[i]))
+                    #to_make_positive.append(re.escape(param_names[i]))
                     to_make_positive.append(i)
         if len(to_make_positive):
-            # self.constrain_positive('(' + '|'.join(to_make_positive) + ')')
+            #self.constrain_positive('(' + '|'.join(to_make_positive) + ')')
             self.constrain_positive(np.asarray(to_make_positive))
 
 
@@ -430,7 +430,7 @@ class model(parameterised):
             return 1. / k.variances
 
 
-    def pseudo_EM(self, epsilon=.1, max_EM_iterations=np.inf, **kwargs):
+    def pseudo_EM(self, epsilon=.1, **kwargs):
         """
         TODO: Should this not bein the GP class?
         EM - like algorithm  for Expectation Propagation and Laplace approximation
@@ -453,7 +453,7 @@ class model(parameterised):
         alpha = 0
         stop = False
 
-        while not stop and iteration < max_EM_iterations:
+        while not stop:
             last_approximation = self.likelihood.copy()
             last_params = self._get_params()
 
@@ -464,8 +464,8 @@ class model(parameterised):
             ll_change = new_ll - last_ll
 
             if ll_change < 0:
-                self.likelihood = last_approximation # restore previous likelihood approximation
-                self._set_params(last_params) # restore model parameters
+                self.likelihood = last_approximation  # restore previous likelihood approximation
+                self._set_params(last_params)  # restore model parameters
                 print "Log-likelihood decrement: %s \nLast likelihood update discarded." % ll_change
                 stop = True
             else:

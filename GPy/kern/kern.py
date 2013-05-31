@@ -199,13 +199,13 @@ class kern(parameterised):
         [p._set_params(x[s]) for p, s in zip(self.parts, self.param_slices)]
 
     def _get_param_names(self):
-        # this is a bit nasty: we wat to distinguish between parts with the same cd48_name by appending a count
+        # this is a bit nasty: we wat to distinguish between parts with the same name by appending a count
         part_names = np.array([k.name for k in self.parts], dtype=np.str)
         counts = [np.sum(part_names == ni) for i, ni in enumerate(part_names)]
         cum_counts = [np.sum(part_names[i:] == ni) for i, ni in enumerate(part_names)]
-        names = [cd48_name + '_' + str(cum_count) if count > 1 else cd48_name for cd48_name, count, cum_count in zip(part_names, counts, cum_counts)]
+        names = [name + '_' + str(cum_count) if count > 1 else name for name, count, cum_count in zip(part_names, counts, cum_counts)]
 
-        return sum([[cd48_name + '_' + n for n in k._get_param_names()] for cd48_name, k in zip(names, self.parts)], [])
+        return sum([[name + '_' + n for n in k._get_param_names()] for name, k in zip(names, self.parts)], [])
 
     def K(self, X, X2=None, which_parts='all'):
         if which_parts == 'all':

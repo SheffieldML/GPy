@@ -123,7 +123,7 @@ class EP(likelihood):
             Sroot_tilde_K = np.sqrt(self.tau_tilde)[:,None]*K
             B = np.eye(self.N) + np.sqrt(self.tau_tilde)[None,:]*Sroot_tilde_K
             L = jitchol(B)
-            V, info = linalg.lapack.dtrtrs(L, Sroot_tilde_K, lower=1)
+            V,info = linalg.lapack.flapack.dtrtrs(L,Sroot_tilde_K,lower=1)
             Sigma = K - np.dot(V.T,V)
             mu = np.dot(Sigma,self.v_tilde)
             epsilon_np1 = sum((self.tau_tilde-self.np1[-1])**2)/self.N
@@ -209,7 +209,7 @@ class EP(likelihood):
                 DSYR(LLT,Kmn[:,i].copy(),Delta_tau) #LLT = LLT + np.outer(Kmn[:,i],Kmn[:,i])*Delta_tau
                 L = jitchol(LLT)
                 #cholUpdate(L,Kmn[:,i]*np.sqrt(Delta_tau))
-                V, info = linalg.lapack.dtrtrs(L, Kmn, lower=1)
+                V,info = linalg.lapack.flapack.dtrtrs(L,Kmn,lower=1)
                 Sigma_diag = np.sum(V*V,-2)
                 si = np.sum(V.T*V[:,i],-1)
                 mu += (Delta_v-Delta_tau*mu[i])*si
@@ -217,8 +217,8 @@ class EP(likelihood):
             #Sigma recomputation with Cholesky decompositon
             LLT = LLT0 + np.dot(Kmn*self.tau_tilde[None,:],Kmn.T)
             L = jitchol(LLT)
-            V, info = linalg.lapack.dtrtrs(L, Kmn, lower=1)
-            V2, info = linalg.lapack.dtrtrs(L.T, V, lower=0)
+            V,info = linalg.lapack.flapack.dtrtrs(L,Kmn,lower=1)
+            V2,info = linalg.lapack.flapack.dtrtrs(L.T,V,lower=0)
             Sigma_diag = np.sum(V*V,-2)
             Knmv_tilde = np.dot(Kmn,self.v_tilde)
             mu = np.dot(V2.T,Knmv_tilde)

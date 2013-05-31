@@ -68,8 +68,11 @@ class Laplace(likelihood):
     def _shared_gradients_components(self):
         #FIXME: Careful of side effects! And make sure W and K are up to date!
         d3lik_d3fhat = self.likelihood_function.d3lik_d3f(self.data, self.f_hat)
-        dL_dfhat = -0.5*(np.diag(self.Ki_W_i)*d3lik_d3fhat)[:, None]
-        Wi_K_i = mdot(self.W_12, self.Bi, self.W_12) #same as rasms R
+        dL_dfhat = -0.5*(np.diag(self.Ki_W_i)[:, None]*d3lik_d3fhat)
+        Wi_K_i = mdot(np.diagflat(self.W_12), self.Bi, np.diagflat(self.W_12)) #same as rasms R
+        Wi_K_inew = self.W_12*self.Bi*self.W_12.T #same as rasms R
+        assert np.all(Wi_K_i == Wi_K_inew)
+
         I_KW_i = np.eye(self.N) - np.dot(self.K, Wi_K_i)
         return dL_dfhat, I_KW_i, Wi_K_i
 
@@ -78,7 +81,7 @@ class Laplace(likelihood):
         Gradients with respect to prior kernel parameters
         """
         dL_dfhat, I_KW_i, Wi_K_i = self._shared_gradients_components()
-        dlp = self.likelihood_function.dlik_df(self.data, self.f_hat)[:, None]
+        dlp = self.likelihood_function.dlik_df(self.data, self.f_hat)
 
         dL_dthetaK = np.zeros(dK_dthetaK.shape)
         for thetaK_i, dK_dthetaK_i in enumerate(dK_dthetaK):
@@ -89,7 +92,7 @@ class Laplace(likelihood):
             df_hat_dthetaK = mdot(I_KW_i, dK_dthetaK_i, dlp)
             dL_dthetaK[thetaK_i] += np.dot(dL_dfhat.T, df_hat_dthetaK)
 
-        return np.squeeze(dL_dthetaK)
+        return dL_dthetaK
 
     def _gradients(self, partial):
         """
@@ -112,7 +115,7 @@ class Laplace(likelihood):
             df_hat_dthetaL = mdot(I_KW_i, self.K, dlik_grad_dthetaL[thetaL_i])
             dL_dthetaL[thetaL_i] += np.dot(dL_dfhat.T, df_hat_dthetaL)
 
-        return np.squeeze(dL_dthetaL) #should be array of length *params-being optimized*, for student t just optimising 1 parameter, this is (1,)
+        return dL_dthetaL #should be array of length *params-being optimized*, for student t just optimising 1 parameter, this is (1,)
 
     def _compute_GP_variables(self):
         """
@@ -147,7 +150,9 @@ class Laplace(likelihood):
         #((L.T*w)_i + I)f_hat = y_tilde
         L = jitchol(self.K)
         Li = chol_inv(L)
-        Lt_W = np.dot(L.T, self.W) #FIXME: Can make Faster
+        Lt_W = np.dot(L.T, np.diagflat(self.W)) #FIXME: Can make Faster
+        Lt_Wnew = L.T*self.W.T
+        assert np.all(Lt_Wnew == Lt_W)
 
         ##Check it isn't singular!
         if cond(Lt_W) > epsilon:
@@ -159,12 +164,27 @@ class Laplace(likelihood):
 
         #f.T(Ki + W)f
         f_Ki_W_f = (np.dot(self.f_hat.T, cho_solve((L, True), self.f_hat))
-                    + mdot(self.f_hat.T, self.W, self.f_hat)
+                    + mdot(self.f_hat.T, np.diagflat(self.W), self.f_hat)
                     )
+        f_Ki_W_fnew = (np.dot(self.f_hat.T, cho_solve((L, True), self.f_hat))
+                    + mdot(self.f_hat.T, self.W*self.f_hat)
+                    )
+        assert np.all(f_Ki_W_f == f_Ki_W_fnew)
 
-        y_W_f = mdot(Y_tilde.T, self.W, self.f_hat)
-        y_W_y = mdot(Y_tilde.T, self.W, Y_tilde)
-        ln_W_det = det_ln_diag(self.W)
+        y_W_f = mdot((Y_tilde.T, np.diagflat(self.W)), self.f_hat)
+        y_W_fnew = mdot(Y_tilde.T*self.W.T, self.f_hat)
+        assert np.all(y_W_f == y_W_fnew)
+
+
+        y_W_y = mdot((Y_tilde.T, np.diagflat(self.W)), Y_tilde)
+        y_W_ynew = mdot(Y_tilde.T, self.W*Y_tilde)
+        assert np.all(y_W_y == y_W_ynew)
+
+        ln_W_det = det_ln_diag(np.diagflat(self.W))
+        ln_W_detnew = np.log(self.W).sum()
+        assert np.all(ln_W_det == ln_W_detnew)
+
+        #FIXME: Revisit this
         Z_tilde = (- self.NORMAL_CONST
                    + 0.5*self.ln_K_det
                    + 0.5*ln_W_det
@@ -189,14 +209,16 @@ class Laplace(likelihood):
         if cond(self.W) > epsilon:
             print "WARNING: Transformed covariance matrix is singular,\nnumerical stability may be a problem"
 
-        self.Sigma_tilde = inv(self.W)  # Damn
+        self.Sigma_tilde = inv(np.diagflat(self.W))  # Damn
+        Sigma_tildenew = np.diagflat(1.0/self.W)
+        assert np.all(self.Sigma_tilde == Sigma_tildenew)
 
         #Convert to float as its (1, 1) and Z must be a scalar
         self.Z = np.float64(Z_tilde)
         self.Y = Y_tilde
         self.YYT = np.dot(self.Y, self.Y.T)
         self.covariance_matrix = self.Sigma_tilde
-        self.precision = 1 / np.diag(self.covariance_matrix)[:, None]
+        self.precision = 1.0 / np.diag(self.covariance_matrix)[:, None]
 
     def fit_full(self, K):
         """
@@ -229,12 +251,24 @@ class Laplace(likelihood):
         self.B, self.B_chol, self.W_12 = self._compute_B_statistics(self.K, self.W)
         self.Bi, _, _, B_det = pdinv(self.B)
 
-        self.Ki_W_i = self.K - mdot(self.K, self.W_12, self.Bi, self.W_12, self.K)
+        self.Ki_W_i = self.K - mdot(self.K, (np.diagflat(self.W_12), self.Bi, np.diagflat(self.W_12)), self.K) # Funky, order matters on stability!
+        Ki_W_inew = self.K - mdot(self.K, self.W_12*self.Bi*self.W_12.T, self.K)
+        assert np.all(self.Ki_W_i == Ki_W_inew)
+
         self.ln_Ki_W_i_det = np.linalg.det(self.Ki_W_i)
 
-        b = np.dot(self.W, self.f_hat) + self.likelihood_function.dlik_df(self.data, self.f_hat, extra_data=self.extra_data)[:, None]
-        solve_chol = cho_solve((self.B_chol, True), mdot(self.W_12, (self.K, b)))
-        a = b - mdot(self.W_12, solve_chol)
+        b = np.dot(np.diagflat(self.W), self.f_hat) + self.likelihood_function.dlik_df(self.data, self.f_hat, extra_data=self.extra_data)
+        bnew = self.W*self.f_hat + self.likelihood_function.dlik_df(self.data, self.f_hat, extra_data=self.extra_data)
+        assert np.all(b == bnew)
+
+        solve_chol = cho_solve((self.B_chol, True), mdot((np.diagflat(self.W_12), self.K), b))
+        solve_cholnew = cho_solve((self.B_chol, True), np.dot(self.W_12*self.K, b))
+        assert np.all(solve_chol == solve_cholnew)
+
+        a = b - mdot(np.diagflat(self.W_12), solve_chol)
+        anew = b - self.W_12*solve_chol
+        assert np.all(a == anew)
+
         self.Ki_f = a
         self.f_Ki_f = np.dot(self.f_hat.T, self.Ki_f)
         self.ln_K_det = pddet(self.K)
@@ -255,10 +289,13 @@ class Laplace(likelihood):
         :W: Negative hessian at a point (diagonal matrix)
         :returns: (B, L)
         """
-        #W is diagnoal so its sqrt is just the sqrt of the diagonal elements
+        #W is diagonal so its sqrt is just the sqrt of the diagonal elements
         W_12 = np.sqrt(W)
-        assert np.all(W_12.T*K*W_12 == np.dot(np.diagflat(W_12), np.dot(K, np.diagflat(W_12)))) # FIXME Take this out when you've done multiinput
-        B = np.eye(K.shape[0]) + W_12.T*K*W_12
+        # FIXME Take this out when you've done multiinput, Weirdly this is
+        # better when its W_12.T*K*W_12 which shouldnt make a difference
+        # because K is symmetrical
+        assert np.allclose(W_12*K*W_12.T, np.dot(np.diagflat(W_12), np.dot(K, np.diagflat(W_12))))
+        B = np.eye(self.N) + W_12*K*W_12.T
         L = jitchol(B)
         return (B, L, W_12)
 
@@ -323,19 +360,31 @@ class Laplace(likelihood):
                                     # This is a property only held by non-log-concave likelihoods
             B, L, W_12 = self._compute_B_statistics(K, W)
 
-            W_f = np.dot(W, f)
+            W_f = np.dot(np.diagflat(W), f)
+            W_fnew = W*f
+            assert np.all(W_f == W_fnew)
             grad = self.likelihood_function.dlik_df(self.data, f, extra_data=self.extra_data)
             #Find K_i_f
             b = W_f + grad
 
             #a should be equal to Ki*f now so should be able to use it
             c = np.dot(K, W_f) + f*(1-step_size) + step_size*np.dot(K, grad)
-            solve_L = cho_solve((L, True), np.dot(W_12, c))
-            f = c - np.dot(K, np.dot(W_12, solve_L))
 
-            solve_L = cho_solve((L, True), np.dot(W_12, np.dot(K, b)))
-            a = b - np.dot(W_12, solve_L)
-            #f = np.dot(K, a)
+            solve_L = cho_solve((L, True), np.dot(np.diagflat(W_12), c))
+            solve_Lnew = cho_solve((L, True), W_12*c)
+            assert np.all(solve_L == solve_Lnew)
+
+            f = c - np.dot(K, np.dot(np.diagflat(W_12), solve_L))
+            fnew = c - np.dot(K, W_12*solve_L)
+            assert np.all(f == fnew)
+
+            solve_L = cho_solve((L, True), np.dot(np.diagflat(W_12), np.dot(K, b)))
+            solve_Lnew = cho_solve((L, True), W_12*np.dot(K, b))
+            assert np.all(solve_L == solve_Lnew)
+
+            a = b - np.dot(np.diagflat(W_12), solve_L)
+            anew = b - W_12*solve_L
+            assert np.all(a == anew)
 
             tmp_old_obj = old_obj
             old_obj = new_obj

@@ -156,7 +156,7 @@ class GP(model):
             #THIS SHOULD NOT BE (1,num_k_params) matrix it should be (N,N,num_k_params)
 
             dL_dthetaK = self.likelihood._Kgradients(dK_dthetaK=dK_dthetaK)
-            dL_dthetaL = 0 # self.likelihood._gradients(partial=np.diag(self.dL_dK))
+            dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))
             print "dL_dthetaK after: ",dL_dthetaK
             #print "Stacked dL_dthetaK, dL_dthetaL: ", np.hstack((dL_dthetaK, dL_dthetaL))
         else:

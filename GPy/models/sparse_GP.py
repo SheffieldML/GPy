@@ -3,7 +3,7 @@
 
 import numpy as np
 import pylab as pb
-from ..util.linalg import mdot, jitchol, tdot, symmetrify, backsub_both_sides,chol_inv
+from ..util.linalg import mdot, jitchol, tdot, symmetrify, backsub_both_sides, chol_inv
 from ..util.plot import gpplot
 from .. import kern
 from GP import GP
@@ -149,9 +149,9 @@ class sparse_GP(GP):
         else:
             A = -0.5 * self.N * self.D * (np.log(2.*np.pi) - np.log(self.likelihood.precision)) - 0.5 * self.likelihood.precision * self.likelihood.trYYT
             B = -0.5 * self.D * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self.A))
-        C = -self.D * (np.sum(np.log(np.diag(self.LB))))  # + 0.5 * self.M * np.log(sf2))
+        C = -self.D * (np.sum(np.log(np.diag(self.LB)))) # + 0.5 * self.M * np.log(sf2))
         D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
-        return A + B + C + D
+        return A + B + C + D + self.likelihood.Z
 
     def _set_params(self, p):
         self.Z = p[:self.M * self.Q].reshape(self.M, self.Q)
@@ -173,19 +173,19 @@ class sparse_GP(GP):
         For a Gaussian likelihood, no iteration is required:
         this function does nothing
         """
-        if not isinstance(self.likelihood,Gaussian): #Updates not needed for Gaussian likelihood
-            self.likelihood.restart() #TODO check consistency with pseudo_EP
+        if not isinstance(self.likelihood, Gaussian): # Updates not needed for Gaussian likelihood
+            self.likelihood.restart() # TODO check consistency with pseudo_EP
             if self.has_uncertain_inputs:
                 Lmi = chol_inv(self.Lm)
                 Kmmi = tdot(Lmi.T)
-                diag_tr_psi2Kmmi = np.array([np.trace(psi2_Kmmi) for psi2_Kmmi in np.dot(self.psi2,Kmmi)])
+                diag_tr_psi2Kmmi = np.array([np.trace(psi2_Kmmi) for psi2_Kmmi in np.dot(self.psi2, Kmmi)])
 
-                self.likelihood.fit_FITC(self.Kmm,self.psi1,diag_tr_psi2Kmmi) #This uses the fit_FITC code, but does not perfomr a FITC-EP.#TODO solve potential confusion
-                #raise NotImplementedError, "EP approximation not implemented for uncertain inputs"
+                self.likelihood.fit_FITC(self.Kmm, self.psi1, diag_tr_psi2Kmmi) # This uses the fit_FITC code, but does not perfomr a FITC-EP.#TODO solve potential confusion
+                # raise NotImplementedError, "EP approximation not implemented for uncertain inputs"
             else:
                 self.likelihood.fit_DTC(self.Kmm, self.psi1)
                 # self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
-                self._set_params(self._get_params())  # update the GP
+                self._set_params(self._get_params()) # update the GP
 
     def _log_likelihood_gradients(self):
         return np.hstack((self.dL_dZ().flatten(), self.dL_dtheta(), self.likelihood._gradients(partial=self.partial_for_likelihood)))
@@ -209,7 +209,7 @@ class sparse_GP(GP):
         """
         The derivative of the bound wrt the inducing inputs Z
         """
-        dL_dZ = 2.*self.kern.dK_dX(self.dL_dKmm, self.Z)  # factor of two becase of vertical and horizontal 'stripes' in dKmm_dZ
+        dL_dZ = 2.*self.kern.dK_dX(self.dL_dKmm, self.Z) # factor of two becase of vertical and horizontal 'stripes' in dKmm_dZ
         if self.has_uncertain_inputs:
             dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1, self.Z, self.X, self.X_variance)
             dL_dZ += self.kern.dpsi2_dZ(self.dL_dpsi2, self.Z, self.X, self.X_variance)
@@ -229,20 +229,20 @@ class sparse_GP(GP):
             mu = np.dot(Kx.T, self.Cpsi1V)
             if full_cov:
                 Kxx = self.kern.K(Xnew, which_parts=which_parts)
-                var = Kxx - mdot(Kx.T, Kmmi_LmiBLmi, Kx)  # NOTE this won't work for plotting
+                var = Kxx - mdot(Kx.T, Kmmi_LmiBLmi, Kx) # NOTE this won't work for plotting
             else:
                 Kxx = self.kern.Kdiag(Xnew, which_parts=which_parts)
                 var = Kxx - np.sum(Kx * np.dot(Kmmi_LmiBLmi, Kx), 0)
         else:
             # assert which_parts=='all', "swithching out parts of variational kernels is not implemented"
-            Kx = self.kern.psi1(self.Z, Xnew, X_variance_new)#, which_parts=which_parts) TODO: which_parts
+            Kx = self.kern.psi1(self.Z, Xnew, X_variance_new) # , which_parts=which_parts) TODO: which_parts
             mu = np.dot(Kx, self.Cpsi1V)
             if full_cov:
                 raise NotImplementedError, "TODO"
             else:
-                Kxx = self.kern.psi0(self.Z,Xnew,X_variance_new)
-                psi2 = self.kern.psi2(self.Z,Xnew,X_variance_new)
-                var = Kxx - np.sum(np.sum(psi2*Kmmi_LmiBLmi[None,:,:],1),1)
+                Kxx = self.kern.psi0(self.Z, Xnew, X_variance_new)
+                psi2 = self.kern.psi2(self.Z, Xnew, X_variance_new)
+                var = Kxx - np.sum(np.sum(psi2 * Kmmi_LmiBLmi[None, :, :], 1), 1)
 
         return mu, var[:, None]
 
@@ -272,9 +272,9 @@ class sparse_GP(GP):
         # normalize X values
         Xnew = (Xnew.copy() - self._Xmean) / self._Xstd
         if X_variance_new is not None:
-            X_variance_new = X_variance_new / self._Xstd**2
+            X_variance_new = X_variance_new / self._Xstd ** 2
 
-        #here's the actual prediction by the GP model
+        # here's the actual prediction by the GP model
         mu, var = self._raw_predict(Xnew, X_variance_new, full_cov=full_cov, which_parts=which_parts)
 
         # now push through likelihood

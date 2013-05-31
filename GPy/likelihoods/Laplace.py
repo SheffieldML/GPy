@@ -53,7 +53,7 @@ class Laplace(likelihood):
 
     def predictive_values(self, mu, var, full_cov):
         if full_cov:
-            raise NotImplementedError("Cannot make correlated predictions with an EP likelihood")
+            raise NotImplementedError("Cannot make correlated predictions with an Laplace likelihood")
         return self.likelihood_function.predictive_values(mu, var)
 
     def _get_params(self):
@@ -63,42 +63,28 @@ class Laplace(likelihood):
         return self.likelihood_function._get_param_names()
 
     def _set_params(self, p):
-        #print "Setting laplace param with: ", p
         return self.likelihood_function._set_params(p)
-
-    def both_gradients(self, dL_d_K_Sigma, dK_dthetaK):
-        """
-        Find the gradients of the marginal likelihood w.r.t both thetaK and thetaL
-
-        dL_dthetaK differs from that of normal likelihoods as it has additional terms coming from
-        changes to y_tilde and changes to Sigma_tilde when the kernel parameters are adjusted
-
-        Similar terms arise when finding the gradients with respect to changes in the liklihood
-        parameters
-        """
-        return (self._Kgradients(dL_d_K_Sigma, dK_dthetaK), self._gradients(dL_d_K_Sigma))
 
     def _shared_gradients_components(self):
         #FIXME: Careful of side effects! And make sure W and K are up to date!
-        Ki, _, _, _ = pdinv(self.K)
         d3lik_d3fhat = self.likelihood_function.d3lik_d3f(self.data, self.f_hat)
-        #dL_dfhat = -0.5*np.diag(self.Ki_W_i)*d3lik_d3fhat
         dL_dfhat = -0.5*(np.diag(self.Ki_W_i)*d3lik_d3fhat)[:, None]
         Wi_K_i = mdot(self.W_12, self.Bi, self.W_12) #same as rasms R
         I_KW_i = np.eye(self.N) - np.dot(self.K, Wi_K_i)
-        return dL_dfhat, Ki, I_KW_i, Wi_K_i
+        return dL_dfhat, I_KW_i, Wi_K_i
 
-    def _Kgradients(self, dL_d_K_Sigma, dK_dthetaK):
+    def _Kgradients(self, dK_dthetaK):
         """
         Gradients with respect to prior kernel parameters
         """
-        dL_dfhat, Ki, I_KW_i, Wi_K_i = self._shared_gradients_components()
+        dL_dfhat, I_KW_i, Wi_K_i = self._shared_gradients_components()
         dlp = self.likelihood_function.dlik_df(self.data, self.f_hat)[:, None]
 
         dL_dthetaK = np.zeros(dK_dthetaK.shape)
         for thetaK_i, dK_dthetaK_i in enumerate(dK_dthetaK):
             #Explicit
-            dL_dthetaK[thetaK_i] = 0.5*mdot(self.f_hat.T, Ki, dK_dthetaK_i, Ki, self.f_hat) - 0.5*np.trace(Wi_K_i*dK_dthetaK_i)
+            f_Ki_dK_dtheta_Ki_f = mdot(self.Ki_f.T, dK_dthetaK_i, self.Ki_f)
+            dL_dthetaK[thetaK_i] = 0.5*f_Ki_dK_dtheta_Ki_f - 0.5*np.trace(Wi_K_i*dK_dthetaK_i)
             #Implicit
             df_hat_dthetaK = mdot(I_KW_i, dK_dthetaK_i, dlp)
             dL_dthetaK[thetaK_i] += np.dot(dL_dfhat.T, df_hat_dthetaK)
@@ -109,11 +95,12 @@ class Laplace(likelihood):
         """
         Gradients with respect to likelihood parameters
         """
-        dL_dfhat, Ki, I_KW_i, Wi_K_i = self._shared_gradients_components()
+        return np.zeros(1)
+        #return np.zeros(0)
+        dL_dfhat, I_KW_i, Wi_K_i = self._shared_gradients_components()
         dlik_dthetaL, dlik_grad_dthetaL, dlik_hess_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat)
 
         num_params = len(dlik_dthetaL)
-        #Ki_W_i = np.diag(inv(Ki + self.W))[:, None]
         dL_dthetaL = np.zeros((1, num_params)) # make space for one derivative for each likelihood parameter
         for thetaL_i in range(num_params):
             #Explicit
@@ -123,7 +110,6 @@ class Laplace(likelihood):
             dL_dthetaL[thetaL_i] = np.sum(dlik_dthetaL[thetaL_i]) - 0.5*np.dot(np.diag(self.Ki_W_i), dlik_hess_dthetaL[thetaL_i])
             #Implicit
             df_hat_dthetaL = mdot(I_KW_i, self.K, dlik_grad_dthetaL[thetaL_i])
-            import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
             dL_dthetaL[thetaL_i] += np.dot(dL_dfhat.T, df_hat_dthetaL)
 
         return np.squeeze(dL_dthetaL) #should be array of length *params-being optimized*, for student t just optimising 1 parameter, this is (1,)
@@ -230,10 +216,8 @@ class Laplace(likelihood):
         self._compute_likelihood_variables()
 
     def _compute_likelihood_variables(self):
-        #At this point get the hessian matrix
-        #print "Data: ", self.data
-        #print "fhat: ", self.f_hat
-        self.W = -np.diag(self.likelihood_function.d2lik_d2f(self.data, self.f_hat, extra_data=self.extra_data))
+        #At this point get the hessian matrix (or vector as W is diagonal)
+        self.W = -self.likelihood_function.d2lik_d2f(self.data, self.f_hat, extra_data=self.extra_data)
 
         if not self.likelihood_function.log_concave:
             self.W[self.W < 0] = 1e-6  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
@@ -273,7 +257,8 @@ class Laplace(likelihood):
         """
         #W is diagnoal so its sqrt is just the sqrt of the diagonal elements
         W_12 = np.sqrt(W)
-        B = np.eye(K.shape[0]) + np.dot(W_12, np.dot(K, W_12))
+        assert np.all(W_12.T*K*W_12 == np.dot(np.diagflat(W_12), np.dot(K, np.diagflat(W_12)))) # FIXME Take this out when you've done multiinput
+        B = np.eye(K.shape[0]) + W_12.T*K*W_12
         L = jitchol(B)
         return (B, L, W_12)
 
@@ -330,7 +315,7 @@ class Laplace(likelihood):
         i = 0
         while difference > epsilon and i < MAX_ITER and rs < MAX_RESTART:
             #f_old = f.copy()
-            W = -np.diag(self.likelihood_function.d2lik_d2f(self.data, f, extra_data=self.extra_data))
+            W = -self.likelihood_function.d2lik_d2f(self.data, f, extra_data=self.extra_data)
             if not self.likelihood_function.log_concave:
                 W[W < 0] = 1e-6     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                     # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
@@ -339,7 +324,7 @@ class Laplace(likelihood):
             B, L, W_12 = self._compute_B_statistics(K, W)
 
             W_f = np.dot(W, f)
-            grad = self.likelihood_function.dlik_df(self.data, f, extra_data=self.extra_data)[:, None]
+            grad = self.likelihood_function.dlik_df(self.data, f, extra_data=self.extra_data)
             #Find K_i_f
             b = W_f + grad
 

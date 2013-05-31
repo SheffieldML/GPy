@@ -191,8 +191,8 @@ class student_t(likelihood_function):
         :returns: float(likelihood evaluated for this point)
 
         """
-        y = np.squeeze(y)
-        f = np.squeeze(f)
+        #y = np.squeeze(y)
+        #f = np.squeeze(f)
         assert y.shape == f.shape
 
         e = y - f
@@ -207,7 +207,7 @@ class student_t(likelihood_function):
         """
         Gradient of the link function at y, given f w.r.t f
 
-        $$\frac{dp(y_{i}|f_{i})}{df} = \frac{-(v+1)(f_{i}-y_{i})}{(f_{i}-y_{i})^{2} + \sigma^{2}v}$$
+        $$\frac{dp(y_{i}|f_{i})}{df} = \frac{(v+1)(y_{i}-f_{i})}{(y_{i}-f_{i})^{2} + \sigma^{2}v}$$
 
         :y: data
         :f: latent variables f
@@ -215,51 +215,52 @@ class student_t(likelihood_function):
         :returns: gradient of likelihood evaluated at points
 
         """
-        y = np.squeeze(y)
-        f = np.squeeze(f)
+        #y = np.squeeze(y)
+        #f = np.squeeze(f)
         assert y.shape == f.shape
         e = y - f
-        grad = -((self.v + 1) * e) / (self.v * (self.sigma**2) + (e**2))
-        return np.squeeze(grad)
+        grad = ((self.v + 1) * e) / (self.v * (self.sigma**2) + (e**2))
+        return grad
 
     def d2lik_d2f(self, y, f, extra_data=None):
         """
         Hessian at this point (if we are only looking at the link function not the prior) the hessian will be 0 unless i == j
         i.e. second derivative link_function at y given f f_j  w.r.t f and f_j
 
-        Will return diagonal of hessian, since every where else it is 0
+        Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
+        (the distribution for y_{i} depends only on f_{i} not on f_{j!=i}
 
-        $$\frac{d^{2}p(y_{i}|f_{i})}{d^{3}f} = \frac{(v+1)((f_{i}-y_{i})^{2} - \sigma^{2}v)}{((f_{i}-y_{i})^{2} + \sigma^{2}v)^{2}}$$
+        $$\frac{d^{2}p(y_{i}|f_{i})}{d^{3}f} = \frac{(v+1)((y_{i}-f_{i})^{2} - \sigma^{2}v)}{((y_{i}-f_{i})^{2} + \sigma^{2}v)^{2}}$$
 
         :y: data
         :f: latent variables f
         :extra_data: extra_data which is not used in student t distribution
         :returns: array which is diagonal of covariance matrix (second derivative of likelihood evaluated at points)
         """
-        y = np.squeeze(y)
-        f = np.squeeze(f)
+        #y = np.squeeze(y)
+        #f = np.squeeze(f)
         assert y.shape == f.shape
 
         e = y - f
         hess = ((self.v + 1)*(e**2 - self.v*(self.sigma**2))) / ((((self.sigma**2)*self.v) + e**2)**2)
-        return np.squeeze(hess)
+        return hess
 
     def d3lik_d3f(self, y, f, extra_data=None):
         """
         Third order derivative link_function (log-likelihood ) at y given f f_j w.r.t f and f_j
 
-        $$\frac{d^{3}p(y_{i}|f_{i})}{d^{3}f} = \frac{-2(v+1)((f_{i} - y_{i})^3 - 3(f_{i} - y_{i}) \sigma^{2} v))}{((f_{i} - y_{i}) + \sigma^{2} v)^3}$$
+        $$\frac{d^{3}p(y_{i}|f_{i})}{d^{3}f} = \frac{-2(v+1)((y_{i} - f_{i})^3 - 3(y_{i} - f_{i}) \sigma^{2} v))}{((y_{i} - f_{i}) + \sigma^{2} v)^3}$$
         """
-        y = np.squeeze(y)
-        f = np.squeeze(f)
+        #y = np.squeeze(y)
+        #f = np.squeeze(f)
         assert y.shape == f.shape
         e = y - f
-        d3lik_d3f = ( -(2*(self.v + 1)*(e**3 - e*3*self.v*(self.sigma**2))) /
+        d3lik_d3f = ( (2*(self.v + 1)*(-e)*(e**2 - 3*self.v*(self.sigma**2))) /
                        ((e**2 + (self.sigma**2)*self.v)**3)
                     )
-        return np.squeeze(d3lik_d3f)
+        return d3lik_d3f
 
-    def link_dstd(self, y, f, extra_data=None):
+    def lik_dstd(self, y, f, extra_data=None):
         """
         Gradient of the likelihood (lik) w.r.t sigma parameter (standard deviation)
 
@@ -268,48 +269,48 @@ class student_t(likelihood_function):
 
         $$\frac{dp(y_{i}|f_{i})}{d\sigma} = -\frac{1}{\sigma} + \frac{(1+v)(y_{i}-f_{i})^2}{\sigma^3 v(1 + \frac{1}{v}(\frac{(y_{i} - f_{i})}{\sigma^2})^2)}$$
         """
-        y = np.squeeze(y)
-        f = np.squeeze(f)
+        #y = np.squeeze(y)
+        #f = np.squeeze(f)
         assert y.shape == f.shape
         e = y - f
-        dlik_dsigma = ( (1/self.sigma) -
-                        ((1+self.v)*(e**2))/((self.sigma**3)*self.v*(1 + (e**2) / ((self.sigma**2)*self.v) ) )
+        dlik_dsigma = ( - (1/self.sigma) +
+                        ((1+self.v)*(e**2))/((self.sigma**3)*self.v*(1 + ((e**2) / ((self.sigma**2)*self.v)) ) )
                       )
-        return np.squeeze(dlik_dsigma)
+        return dlik_dsigma
 
     def dlik_df_dstd(self, y, f, extra_data=None):
         """
         Gradient of the dlik_df w.r.t sigma parameter (standard deviation)
 
-        $$\frac{d}{d\sigma}(\frac{dp(y_{i}|f_{i})}{df}) = \frac{2\sigma v(v + 1)(f-y)}{(f-y)^2 + \sigma^2 v)^2}$$
+        $$\frac{d}{d\sigma}(\frac{dp(y_{i}|f_{i})}{df}) = \frac{-2\sigma v(v + 1)(y_{i}-f_{i})}{(y_{i}-f_{i})^2 + \sigma^2 v)^2}$$
         """
-        y = np.squeeze(y)
-        f = np.squeeze(f)
+        #y = np.squeeze(y)
+        #f = np.squeeze(f)
         assert y.shape == f.shape
         e = y - f
-        dlik_grad_dsigma = ((2*self.sigma*self.v*(self.v + 1)*e)
+        dlik_grad_dsigma = ((-2*self.sigma*self.v*(self.v + 1)*e)
                             / ((self.v*(self.sigma**2) + e**2)**2)
                            )
-        return np.squeeze(dlik_grad_dsigma)
+        return dlik_grad_dsigma
 
     def d2lik_d2f_dstd(self, y, f, extra_data=None):
         """
         Gradient of the hessian (d2lik_d2f) w.r.t sigma parameter (standard deviation)
 
-        $$\frac{d}{d\sigma}(\frac{d^{2}p(y_{i}|f_{i})}{d^{2}f}) = \frac{(v + 1)((f-y)^2 - \sigma^2 v)}{((f-y)^2 + \sigma^2 v)}$$
+        $$\frac{d}{d\sigma}(\frac{d^{2}p(y_{i}|f_{i})}{d^{2}f}) = \frac{2\sigma v(v + 1)(\sigma^2 v - 3(y-f)^2)}{((y-f)^2 + \sigma^2 v)^3}$$
         """
-        y = np.squeeze(y)
-        f = np.squeeze(f)
+        #y = np.squeeze(y)
+        #f = np.squeeze(f)
         assert y.shape == f.shape
         e = y - f
-        dlik_hess_dsigma = ( ((self.v + 1)*(e**2 - (self.sigma**2)*self.v)) /
-                             ((e**2 + (self.sigma**2)*self.v)**2)
+        dlik_hess_dsigma = (  (2*self.sigma*self.v*(self.v + 1)*((self.sigma**2)*self.v - 3*(e**2))) /
+                              ((e**2 + (self.sigma**2)*self.v)**3)
                            )
         return dlik_hess_dsigma
 
     def _gradients(self, y, f, extra_data=None):
         #must be listed in same order as 'get_param_names'
-        derivs = ([self.link_dstd(y, f, extra_data=extra_data)],
+        derivs = ([self.lik_dstd(y, f, extra_data=extra_data)],
                   [self.dlik_df_dstd(y, f, extra_data=extra_data)],
                   [self.d2lik_d2f_dstd(y, f, extra_data=extra_data)]
                  ) # lists as we might learn many parameters

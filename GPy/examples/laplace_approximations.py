@@ -37,9 +37,10 @@ def timing():
 
 def debug_student_t_noise_approx():
     plot = False
-    real_var = 0.4
+    real_var = 0.1
     #Start a function, any function
     X = np.linspace(0.0, 10.0, 100)[:, None]
+    #X = np.array([0.5])[:, None]
     Y = np.sin(X) + np.random.randn(*X.shape)*real_var
 
     X_full = np.linspace(0.0, 10.0, 500)[:, None]
@@ -52,7 +53,7 @@ def debug_student_t_noise_approx():
     real_sd = np.sqrt(real_var)
     print "Real noise: ", real_sd
 
-    initial_var_guess = 1
+    initial_var_guess = 0.02
     #t_rv = t(deg_free, loc=0, scale=real_var)
     #noise = t_rvrvs(size=Y.shape)
     #Y += noise
@@ -91,12 +92,14 @@ def debug_student_t_noise_approx():
     #m.constrain_positive('rbf')
     #m.constrain_fixed('rbf_v', 1.0898)
     #m.constrain_fixed('rbf_l', 1.8651)
-    m.constrain_positive('t_noi')
     #m.constrain_fixed('t_noise_variance', real_sd)
+    m.constrain_positive('rbf')
+    m.constrain_fixed('t_noi', real_sd)
+    m.ensure_default_constraints()
     m.update_likelihood_approximation()
     m.optimize(messages=True)
     print(m)
-    return m
+    #return m
     #m.optimize('lbfgsb', messages=True, callback=m._update_params_callback)
     if plot:
         plt.suptitle('Student-t likelihood')
@@ -104,6 +107,7 @@ def debug_student_t_noise_approx():
         m.plot()
         plt.plot(X_full, Y_full)
         plt.ylim(-2.5, 2.5)
+    return m
 
     #print "Clean student t, ncg"
     #t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)

@@ -105,7 +105,8 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
 
         if function_eval >= max_f_eval:
             status = "Maximum number of function evaluations exceeded"
-            return x, flog, function_eval, status
+            break
+#             return x, flog, function_eval, status
 
         Delta = 2.*(fnew - fold) / (alpha * mu)
         if Delta >= 0.:
@@ -127,7 +128,8 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
             # Test for termination
             if (np.max(np.abs(alpha * d)) < xtol) or (np.abs(fnew - fold) < ftol):
                 status = 'converged'
-                return x, flog, function_eval, status
+                break
+#                 return x, flog, function_eval, status
 
             else:
                 # Update variables for new position

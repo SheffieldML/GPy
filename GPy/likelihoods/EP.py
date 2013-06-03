@@ -319,7 +319,8 @@ class EP(likelihood):
             Iplus_Dprod_i = 1./(1.+ Diag0 * self.tau_tilde)
             Diag = Diag0 * Iplus_Dprod_i
             P = Iplus_Dprod_i[:,None] * P0
-            L = jitchol(np.eye(M) + np.dot(RPT0,((1. - Iplus_Dprod_i)/Diag0)[:,None]*RPT0.T))
+            safe_diag = np.where(Diag0 < self.tau_tilde, self.tau_tilde/(1.+Diag0*self.tau_tilde), (1. - Iplus_Dprod_i)/Diag0)
+            L = jitchol(np.eye(M) + np.dot(RPT0,safe_diag[:,None]*RPT0.T))
             R,info = linalg.lapack.flapack.dtrtrs(L,R0,lower=1)
             RPT = np.dot(R,P.T)
             Sigma_diag = Diag + np.sum(RPT.T*RPT.T,-1)

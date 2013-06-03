@@ -13,3 +13,4 @@ import datasets
 import mocap
 import visualize
 import decorators
+import classification

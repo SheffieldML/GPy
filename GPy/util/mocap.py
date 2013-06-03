@@ -702,15 +702,31 @@ def fetch_data(base_url = 'http://mocap.cs.cmu.edu:8080/subjects', skel_store_di
 
     e.g.
     # Download the data, do not return anything
-    GPy.util.mocap.fetch_data(subj_motions = (['35'],[['01','02','03']]), return_motions = False)
+    GPy.util.mocap.fetch_data(subj_motions = ([35],[[1,2,3]]), return_motions = False)
     # Fetch and return the data in a list. Do not store them anywhere
-    GPy.util.mocap.fetch_data(subj_motions = (['35'],[['01','02','03']]), return_motions = True, store_motions = False)
+    GPy.util.mocap.fetch_data(subj_motions = ([35],[[1,2,3]]), return_motions = True, store_motions = False)
 
     In both cases above, if the data do exist in the given skel_store_dir and motion_store_dir, they are just loaded from there.
     '''
     
-    subjects = subj_motions[0]
-    motions = subj_motions[1]
+    subjectsNum = subj_motions[0]
+    motionsNum = subj_motions[1]
+
+    # Convert numbers to strings
+    subjects = []
+    motions = [list() for _ in range(len(subjectsNum))]
+    for i in range(len(subjectsNum)):
+        curSubj = str(int(subjectsNum[i]))
+        if subjectsNum[i] < 10:
+            curSubj = '0' + curSubj
+        subjects.append(curSubj)
+        for j in range(len(motionsNum[i])):
+            curMot = str(int(motionsNum[i][j]))
+            if motionsNum[i][j] < 10:
+                curMot = '0' + curMot
+            motions[i].append(curMot)
+
+
     all_skels = []
     
     assert len(subjects) == len(motions)

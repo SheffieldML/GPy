@@ -11,6 +11,7 @@ from scipy import linalg
 import numpy
 import itertools
 import pylab
+from GPy.kern.kern import kern
 
 class MRD(model):
     """
@@ -19,7 +20,7 @@ class MRD(model):
     N must be shared across datasets though.
 
     :param likelihood_list...: likelihoods of observed datasets
-    :type likelihood_list: [GPy.likelihood]
+    :type likelihood_list: [GPy.likelihood] | [Y1..Yy]
     :param names: names for different gplvm models
     :type names: [str]
     :param Q: latent dimensionality (will raise 
@@ -38,85 +39,33 @@ class MRD(model):
         number of inducing inputs to use
     :param Z:
         initial inducing inputs
-    :param kernel:
-        kernel to use
+    :param kernels: list of kernels or kernel shared for all BGPLVMS
+    :type kernels: [GPy.kern.kern] | GPy.kern.kern | None (default)
     """
-    def __init__(self,likelihood_list,Q,M=10,names=None,kernels=None,initX='PCA',initz='permute',_debug=False, **kwargs):
+    def __init__(self, likelihood_or_Y_list, Q, M=10, names=None,
+                 kernels=None, initx='PCA',
+                 initz='permute', _debug=False, **kw):
         if names is None:
-            self.names = ["{}".format(i + 1) for i in range(len(likelihood_list))]
+            self.names = ["{}".format(i + 1) for i in range(len(likelihood_or_Y_list))]
 
-        #sort out the kernels
+        # sort out the kernels
         if kernels is None:
-            kernels = [None]*len(likelihood_list)
-        elif isinstance(kernels,kern.kern):
-            kernels = [kernels.copy() for i in range(len(likelihood_list))]
+            kernels = [None] * len(likelihood_or_Y_list)
+        elif isinstance(kernels, kern):
+            kernels = [kernels.copy() for i in range(len(likelihood_or_Y_list))]
         else:
-            assert len(kernels)==len(likelihood_list), "need one kernel per output"
-            assert all([isinstance(k, kern.kern) for k in kernels]), "invalid kernel object detected!"
+            assert len(kernels) == len(likelihood_or_Y_list), "need one kernel per output"
+            assert all([isinstance(k, kern) for k in kernels]), "invalid kernel object detected!"
+        assert not ('kernel' in kw), "pass kernels through `kernels` argument"
 
         self.Q = Q
         self.M = M
-        self.N = self.gref.N
-        self.NQ = self.N * self.Q
-        self.MQ = self.M * self.Q
+        self._debug = _debug
 
         self._init = True
-        X = self._init_X(initx, likelihood_list)
+        X = self._init_X(initx, likelihood_or_Y_list)
         Z = self._init_Z(initz, X)
-        self.bgplvms = [Bayesian_GPLVM(l, k, X=X, Z=Z, M=self.M, **kwargs) for l,k in zip(likelihood_list,kernels)]
-
-        del self._init
-
-        self.gref = self.bgplvms[0]
-        nparams = numpy.array([0] + [sparse_GP._get_params(g).size - g.Z.size for g in self.bgplvms])
-        self.nparams = nparams.cumsum()
-
-        model.__init__(self) # @UndefinedVariable
-
-
-
-    def __init__(self, *likelihood_list, **kwargs):
-        if kwargs.has_key("_debug"):
-            self._debug = kwargs['_debug']
-            del kwargs['_debug']
-        else:
-            self._debug = False
-        if kwargs.has_key("names"):
-            self.names = kwargs['names']
-            del kwargs['names']
-        else:
-            self.names = ["{}".format(i + 1) for i in range(len(likelihood_list))]
-        if kwargs.has_key('kernel'):
-            kernel = kwargs['kernel']
-            k = lambda: kernel.copy()
-            del kwargs['kernel']
-        else:
-            k = lambda: None
-        if kwargs.has_key('initx'):
-            initx = kwargs['initx']
-            del kwargs['initx']
-        else:
-            initx = "PCA"
-        if kwargs.has_key('initz'):
-            initz = kwargs['initz']
-            del kwargs['initz']
-        else:
-            initz = "permute"
-        try:
-            self.Q = kwargs["Q"]
-        except KeyError:
-            raise ValueError("Need Q for MRD")
-        try:
-            self.M = kwargs["M"]
-            del kwargs["M"]
-        except KeyError:
-            self.M = 10
-
-        self._init = True
-        X = self._init_X(initx, likelihood_list)
-        Z = self._init_Z(initz, X)
-        self.bgplvms = [Bayesian_GPLVM(Y, kernel=k(), X=X, Z=Z, M=self.M, **kwargs) for Y in likelihood_list]
-        
+        self.bgplvms = [Bayesian_GPLVM(l, Q=Q, kernel=k, X=X, Z=Z, M=self.M, **kw) for l, k in zip(likelihood_or_Y_list, kernels)]
         del self._init
 
         self.gref = self.bgplvms[0]
@@ -212,13 +161,6 @@ class MRD(model):
         X = self.gref.X.ravel()
         X_var = self.gref.X_variance.ravel()
         Z = self.gref.Z.ravel()
-
-        if self._debug:
-            for g in self.bgplvms:
-                assert numpy.allclose(g.X.ravel(), X)
-                assert numpy.allclose(g.X_variance.ravel(), X_var)
-                assert numpy.allclose(g.Z.ravel(), Z)
-
         thetas = [sparse_GP._get_params(g)[g.Z.size:] for g in self.bgplvms]
         params = numpy.hstack([X, X_var, Z, numpy.hstack(thetas)])
         return params
@@ -241,12 +183,6 @@ class MRD(model):
         Z = x[start:end]
         thetas = x[end:]
 
-        if self._debug:
-            for g in self.bgplvms:
-                assert numpy.allclose(g.X, self.gref.X)
-                assert numpy.allclose(g.X_variance, self.gref.X_variance)
-                assert numpy.allclose(g.Z, self.gref.Z)
-
         # set params for all:
         for g, s, e in itertools.izip(self.bgplvms, self.nparams, self.nparams[1:]):
             g._set_params(numpy.hstack([X, X_var, Z, thetas[s:e]]))
@@ -259,7 +195,7 @@ class MRD(model):
 #             g._computations()
 
 
-    def update_likelihood_approximation(self):#TODO: object oriented vs script base
+    def update_likelihood_approximation(self): # TODO: object oriented vs script base
         for bgplvm in self.bgplvms:
             bgplvm.update_likelihood_approximation()
 
@@ -287,15 +223,21 @@ class MRD(model):
     def _init_X(self, init='PCA', likelihood_list=None):
         if likelihood_list is None:
             likelihood_list = self.likelihood_list
-        if init in "PCA_single":
-            X = numpy.zeros((likelihood_list[0].Y.shape[0], self.Q))
-            for qs, Y in itertools.izip(numpy.array_split(numpy.arange(self.Q), len(likelihood_list)), likelihood_list):
-                X[:, qs] = PCA(Y.Y, len(qs))[0]
-        elif init in "PCA_concat":
-            X = PCA(numpy.hstack([l.Y for l in likelihood_list]), self.Q)[0]
-            #X = PCA(numpy.hstack(likelihood_list), self.Q)[0]
+        Ylist = []
+        for likelihood_or_Y in likelihood_list:
+            if type(likelihood_or_Y) is numpy.ndarray:
+                Ylist.append(likelihood_or_Y)
+            else:
+                Ylist.append(likelihood_or_Y.Y)
+        del likelihood_list
+        if init in "PCA_concat":
+            X = PCA(numpy.hstack(Ylist), self.Q)[0]
+        elif init in "PCA_single":
+            X = numpy.zeros((Ylist[0].shape[0], self.Q))
+            for qs, Y in itertools.izip(numpy.array_split(numpy.arange(self.Q), len(Ylist)), Ylist):
+                X[:, qs] = PCA(Y, len(qs))[0]
         else: # init == 'random':
-            X = numpy.random.randn(likelihood_list[0].Y.shape[0], self.Q)
+            X = numpy.random.randn(Ylist[0].shape[0], self.Q)
         self.X = X
         return X
 
@@ -334,7 +276,7 @@ class MRD(model):
         return fig
 
     def plot_predict(self, fig_num="MRD Predictions", axes=None, **kwargs):
-        fig = self._handle_plotting(fig_num, axes, lambda i, g, ax: ax.imshow(g.predict(g.X)[0],**kwargs))
+        fig = self._handle_plotting(fig_num, axes, lambda i, g, ax: ax.imshow(g.predict(g.X)[0], **kwargs))
         return fig
 
     def plot_scales(self, fig_num="MRD Scales", axes=None, *args, **kwargs):

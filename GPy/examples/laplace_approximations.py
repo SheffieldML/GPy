@@ -143,11 +143,12 @@ def student_t_approx():
     Yc[10] += 100
     Yc[25] += 10
     Yc[23] += 10
+    Yc[26] += 1000
     Yc[24] += 10
     #Yc = Yc/Yc.max()
 
     #Add student t random noise to datapoints
-    deg_free = 1000000000000
+    deg_free = 10
     real_sd = np.sqrt(real_var)
     print "Real noise: ", real_sd
 
@@ -187,21 +188,25 @@ def student_t_approx():
     plt.subplot(211)
     m.plot()
     plt.plot(X_full, Y_full)
+    plt.title('Gaussian clean')
     print m
 
     #Corrupt
     print "Corrupt Gaussian"
     m = GPy.models.GP_regression(X, Yc, kernel=kernel2)
     m.ensure_default_constraints()
-    m.optimize()
+    #m.optimize()
     plt.subplot(212)
     m.plot()
     plt.plot(X_full, Y_full)
+    plt.title('Gaussian corrupt')
     print m
+
+    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
     plt.figure(2)
     plt.suptitle('Student-t likelihood')
-    edited_real_sd = initial_var_guess #real_sd
+    edited_real_sd = real_sd #initial_var_guess
 
     print "Clean student t, rasm"
     t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
@@ -215,6 +220,7 @@ def student_t_approx():
     m.plot()
     plt.plot(X_full, Y_full)
     plt.ylim(-2.5, 2.5)
+    plt.title('Student-t rasm clean')
 
     print "Corrupt student t, rasm"
     t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
@@ -228,6 +234,7 @@ def student_t_approx():
     m.plot()
     plt.plot(X_full, Y_full)
     plt.ylim(-2.5, 2.5)
+    plt.title('Student-t rasm corrupt')
 
     print "Clean student t, ncg"
     t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
@@ -241,6 +248,7 @@ def student_t_approx():
     m.plot()
     plt.plot(X_full, Y_full)
     plt.ylim(-2.5, 2.5)
+    plt.title('Student-t ncg clean')
 
     print "Corrupt student t, ncg"
     t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
@@ -254,6 +262,7 @@ def student_t_approx():
     m.plot()
     plt.plot(X_full, Y_full)
     plt.ylim(-2.5, 2.5)
+    plt.title('Student-t ncg corrupt')
 
 
     ###with a student t distribution, since it has heavy tails it should work well

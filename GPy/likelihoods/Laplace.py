@@ -6,7 +6,10 @@ from numpy.linalg import cond
 from likelihood import likelihood
 from ..util.linalg import pdinv, mdot, jitchol, chol_inv, det_ln_diag, pddet
 from scipy.linalg.lapack import dtrtrs
+import random
 #import pylab as plt
+np.random.seed(50)
+random.seed(50)
 
 
 class Laplace(likelihood):
@@ -156,6 +159,7 @@ class Laplace(likelihood):
 
         Lt_W_i_Li = dtrtrs(Lt_W, Li, lower=False)[0]
         self.Wi__Ki_W = Lt_W_i_Li + np.eye(self.N)
+
         Y_tilde = np.dot(self.Wi__Ki_W, self.f_hat)
 
         #f.T(Ki + W)f
@@ -239,15 +243,15 @@ class Laplace(likelihood):
 
         self.ln_Ki_W_i_det = np.linalg.det(self.Ki_W_i)
 
+        #Do the computation again at f to get Ki_f which is useful
         b = self.W*self.f_hat + self.likelihood_function.dlik_df(self.data, self.f_hat, extra_data=self.extra_data)
-
         solve_chol = cho_solve((self.B_chol, True), np.dot(self.W_12*self.K, b))
-
         a = b - self.W_12*solve_chol
-
         self.Ki_f = a
+
         self.f_Ki_f = np.dot(self.f_hat.T, self.Ki_f)
         self.ln_K_det = pddet(self.K)
+        #_, _, _, self.ln_K_det = pdinv(self.K)
 
         self.ln_z_hat = (- 0.5*self.f_Ki_f
                          - 0.5*self.ln_K_det
@@ -296,7 +300,7 @@ class Laplace(likelihood):
             res = -1 * (--np.diag(self.likelihood_function.d2lik_d2f(self.data[:, 0], f, extra_data=self.extra_data)) - self.Ki)
             return np.squeeze(res)
 
-        f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess)
+        f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess, disp=False)
         return f_hat[:, None]
 
     def rasm_mode(self, K, MAX_ITER=500000, MAX_RESTART=50):
@@ -336,17 +340,19 @@ class Laplace(likelihood):
             grad = self.likelihood_function.dlik_df(self.data, f, extra_data=self.extra_data)
             #Find K_i_f
             b = W_f + grad
+            b = step_size*b
 
-            #a should be equal to Ki*f now so should be able to use it
-            c = np.dot(K, W_f) + f*(1-step_size) + step_size*np.dot(K, grad)
+            #Need this to find the f we have a stepsize which we need to move in, rather than a full unit movement
+            #c = np.dot(K, W_f) + f*(1-step_size) + step_size*np.dot(K, grad)
+            #solve_L = cho_solve((L, True), W_12*c)
+            #f = c - np.dot(K, W_12*solve_L)
 
-            solve_L = cho_solve((L, True), W_12*c)
-
-            f = c - np.dot(K, W_12*solve_L)
-
+            #FIXME: Can't we get rid of this? Don't we want to evaluate obj(c,f) and this is our new_obj?
+            #Why did I choose to evaluate the objective function at the new f with the old hessian? I'm sure there was a good reason,
+            #Document it!
             solve_L = cho_solve((L, True), W_12*np.dot(K, b))
-
             a = b - W_12*solve_L
+            f = np.dot(K, a)
 
             tmp_old_obj = old_obj
             old_obj = new_obj

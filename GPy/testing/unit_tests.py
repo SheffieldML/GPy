@@ -22,7 +22,7 @@ class GradientTests(unittest.TestCase):
         self.X2D = np.random.uniform(-3.,3.,(40,2))
         self.Y2D = np.sin(self.X2D[:,0:1]) * np.sin(self.X2D[:,1:2])+np.random.randn(40,1)*0.05
 
-    def check_model_with_white(self, kern, model_type='GP_regression', dimension=1, constraint=''):
+    def check_model_with_white(self, kern, model_type='GP_regression', dimension=1):
         #Get the correct gradients
         if dimension == 1:
             X = self.X1D
@@ -37,7 +37,7 @@ class GradientTests(unittest.TestCase):
         noise = GPy.kern.white(dimension)
         kern = kern + noise
         m = model_fit(X, Y, kernel=kern)
-        m.constrain_positive(constraint)
+        m.ensure_default_constraints()
         m.randomize()
         # contrain all parameters to be positive
         self.assertTrue(m.checkgrad())
@@ -135,12 +135,12 @@ class GradientTests(unittest.TestCase):
     def test_sparse_GP_regression_rbf_white_kern_1d(self):
         ''' Testing the sparse GP regression with rbf kernel with white kernel on 1d data '''
         rbf = GPy.kern.rbf(1)
-        self.check_model_with_white(rbf, model_type='sparse_GP_regression', dimension=1, constraint='(variance|lengthscale|precision)')
+        self.check_model_with_white(rbf, model_type='sparse_GP_regression', dimension=1)
 
     def test_sparse_GP_regression_rbf_white_kern_2D(self):
         ''' Testing the sparse GP regression with rbf and white kernel on 2d data '''
         rbf = GPy.kern.rbf(2)
-        self.check_model_with_white(rbf, model_type='sparse_GP_regression', dimension=2, constraint='(variance|lengthscale|precision)')
+        self.check_model_with_white(rbf, model_type='sparse_GP_regression', dimension=2)
 
     def test_GPLVM_rbf_bias_white_kern_2D(self):
         """ Testing GPLVM with rbf + bias and white kernel """
@@ -150,7 +150,7 @@ class GradientTests(unittest.TestCase):
         K = k.K(X)
         Y = np.random.multivariate_normal(np.zeros(N),K,D).T
         m = GPy.models.GPLVM(Y, Q, kernel = k)
-        m.constrain_positive('(rbf|bias|white)')
+        m.ensure_default_constraints()
         self.assertTrue(m.checkgrad())
 
     def test_GPLVM_rbf_linear_white_kern_2D(self):
@@ -161,7 +161,7 @@ class GradientTests(unittest.TestCase):
         K = k.K(X)
         Y = np.random.multivariate_normal(np.zeros(N),K,D).T
         m = GPy.models.GPLVM(Y, Q, init = 'PCA', kernel = k)
-        m.constrain_positive('(linear|bias|white)')
+        m.ensure_default_constraints()
         self.assertTrue(m.checkgrad())
 
     def test_GP_EP_probit(self):

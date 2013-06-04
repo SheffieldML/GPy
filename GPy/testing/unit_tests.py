@@ -190,7 +190,6 @@ class GradientTests(unittest.TestCase):
         m.update_likelihood_approximation()
         self.assertTrue(m.checkgrad())
 
-    @unittest.skip("FITC will be broken for a while")
     def test_generalized_FITC(self):
         N = 20
         X = np.hstack([np.random.rand(N/2)+1,np.random.rand(N/2)-1])[:,None]

@@ -136,6 +136,7 @@ def gamma_from_EV(E, V):
     warnings.warn("use Gamma.from_EV to create Gamma Prior", FutureWarning)
     return Gamma.from_EV(E, V)
 
+
 class Gamma(Prior):
     """
     Implementation of the Gamma probability function, coupled with random variables.

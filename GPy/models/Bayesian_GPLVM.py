@@ -218,20 +218,20 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         return means, covars
 
 
-    def plot_X_1d(self, fig=None, axes=None, fig_num="LVM mu S 1d", colors=None):
+    def plot_X_1d(self, fignum=None, ax=None, colors=None):
         """
         Plot latent space X in 1D:
 
             -if fig is given, create Q subplots in fig and plot in these
-            -if axes is given plot Q 1D latent space plots of X into each `axis`
-            -if neither fig nor axes is given create a figure with fig_num and plot in there
+            -if ax is given plot Q 1D latent space plots of X into each `axis`
+            -if neither fig nor ax is given create a figure with fignum and plot in there
 
         colors:
             colors of different latent space dimensions Q
         """
         import pylab
-        if fig is None and axes is None:
-            fig = pylab.figure(num=fig_num, figsize=(8, min(12, (2 * self.X.shape[1]))))
+        if ax is None:
+            fig = pylab.figure(num=fignum, figsize=(8, min(12, (2 * self.X.shape[1]))))
         if colors is None:
             colors = pylab.gca()._get_lines.color_cycle
             pylab.clf()
@@ -240,10 +240,12 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         plots = []
         x = np.arange(self.X.shape[0])
         for i in range(self.X.shape[1]):
-            if axes is None:
+            if ax is None:
                 ax = fig.add_subplot(self.X.shape[1], 1, i + 1)
+            elif isinstance(ax, (tuple, list)):
+                ax = ax[i]
             else:
-                ax = axes[i]
+                raise ValueError("Need one ax per latent dimnesion Q")
             ax.plot(self.X, c='k', alpha=.3)
             plots.extend(ax.plot(x, self.X.T[i], c=colors.next(), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
             ax.fill_between(x,

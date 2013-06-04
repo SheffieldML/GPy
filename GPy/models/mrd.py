@@ -33,8 +33,11 @@ class MRD(model):
         Initial latent space
     :param X_variance:
         Initial latent space variance
-    :param init: [PCA|random]
-        initialization method to use
+    :param init: [cooncat|single|random]
+        initialization method to use: 
+            *concat: PCA on concatenated outputs
+            *single: PCA on each output
+            *random: random
     :param M:
         number of inducing inputs to use
     :param Z:

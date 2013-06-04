@@ -52,7 +52,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         ftol = 1e-6
     if gtol is None:
         gtol = 1e-5
-    sigma0 = 1.0e-4
+    sigma0 = 1.0e-8
     fold = f(x, *optargs) # Initial function value.
     function_eval = 1
     fnow = fold

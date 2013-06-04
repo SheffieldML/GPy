@@ -169,7 +169,7 @@ class GradientTests(unittest.TestCase):
         X = np.hstack([np.random.normal(5,2,N/2),np.random.normal(10,2,N/2)])[:,None]
         Y = np.hstack([np.ones(N/2),np.zeros(N/2)])[:,None]
         kernel = GPy.kern.rbf(1)
-        distribution = GPy.likelihoods.likelihood_functions.probit()
+        distribution = GPy.likelihoods.likelihood_functions.binomial()
         likelihood = GPy.likelihoods.EP(Y, distribution)
         m = GPy.core.GP(X, likelihood, kernel)
         m.ensure_default_constraints()
@@ -183,7 +183,7 @@ class GradientTests(unittest.TestCase):
         Y = np.hstack([np.ones(N/2),np.zeros(N/2)])[:,None]
         Z = np.linspace(0,15,4)[:,None]
         kernel = GPy.kern.rbf(1)
-        distribution = GPy.likelihoods.likelihood_functions.probit()
+        distribution = GPy.likelihoods.likelihood_functions.binomial()
         likelihood = GPy.likelihoods.EP(Y, distribution)
         m = GPy.core.sparse_GP(X, likelihood, kernel,Z)
         m.ensure_default_constraints()
@@ -196,7 +196,7 @@ class GradientTests(unittest.TestCase):
         X = np.hstack([np.random.rand(N/2)+1,np.random.rand(N/2)-1])[:,None]
         k = GPy.kern.rbf(1) + GPy.kern.white(1)
         Y = np.hstack([np.ones(N/2),-np.ones(N/2)])[:,None]
-        likelihood = GPy.inference.likelihoods.probit(Y)
+        likelihood = GPy.inference.likelihoods.binomial(Y)
         m = GPy.models.generalized_FITC(X,likelihood,k,inducing=4)
         m.constrain_positive('(var|len)')
         m.approximate_likelihood()

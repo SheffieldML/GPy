@@ -62,7 +62,7 @@ def oil():
     likelihood = GPy.likelihoods.EP(Y, distribution)
 
     # Create GP model
-    m = GPy.models.GP(data['X'], likelihood=likelihood, kernel=kernel)
+    m = GPy.models.GP_classification(data['X'], Y, kernel=kernel)
 
     # Contrain all parameters to be positive
     m.constrain_positive('')
@@ -93,9 +93,11 @@ def toy_linear_1d_classification(seed=default_seed):
     link = GPy.likelihoods.link_functions.probit
     distribution = GPy.likelihoods.likelihood_functions.binomial(link)
     likelihood = GPy.likelihoods.EP(Y, distribution)
+    Y[1] = 1
 
     # Model definition
-    m = GPy.models.GP(data['X'], likelihood=likelihood, kernel=kernel)
+    #m = GPy.models.GP(data['X'], likelihood=likelihood, kernel=kernel)
+    m = GPy.models.GP_classification(data['X'], Y, likelihood=likelihood, kernel=kernel)
     m.ensure_default_constraints()
 
     # Optimize

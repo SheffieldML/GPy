@@ -5,6 +5,7 @@
 #from GP import GP
 #from sparse_GP import sparse_GP
 from GP_regression import GP_regression
+from GP_classification import GP_classification
 from sparse_GP_regression import sparse_GP_regression
 from GPLVM import GPLVM
 from warped_GP import warpedGP

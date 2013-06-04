@@ -2,16 +2,17 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-import kern
+import core
 import models
 import inference
 import util
 import examples
-from core import priors
 import likelihoods
 import testing
 from numpy.testing import Tester
 from nose.tools import nottest
+import kern
+from core import priors
 
 @nottest
 def tests():

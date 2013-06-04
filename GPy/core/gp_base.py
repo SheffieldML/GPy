@@ -4,7 +4,7 @@ from .. import kern
 from ..util.plot import gpplot, Tango, x_frame1D, x_frame2D
 import pylab as pb
 
-class GPBase(model):
+class GPBase(model.model):
     """
     Gaussian Process model for holding shared behaviour between
     sprase_GP and GP models
@@ -24,6 +24,9 @@ class GPBase(model):
             self._Xmean = X.mean(0)[None, :]
             self._Xstd = X.std(0)[None, :]
             self.X = (X.copy() - self._Xmean) / self._Xstd
+        else:
+            self._Xmean = np.zeros((1,self.Q))
+            self._Xstd = np.ones((1,self.Q))
 
         super(GPBase, self).__init__()
 

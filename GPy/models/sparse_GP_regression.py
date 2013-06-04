@@ -28,7 +28,7 @@ class sparse_GP_regression(sparse_GP):
 
     """
 
-    def __init__(self, X, Y, kernel=None, normalize_X=False, normalize_Y=False, Z=None, M=10):
+    def __init__(self, X, Y, kernel=None, normalize_X=False, normalize_Y=False, Z=None, M=10, X_variance=None):
         #kern defaults to rbf (plus white for stability)
         if kernel is None:
             kernel = kern.rbf(X.shape[1]) + kern.white(X.shape[1],1e-3)
@@ -43,5 +43,5 @@ class sparse_GP_regression(sparse_GP):
         #likelihood defaults to Gaussian
         likelihood = likelihoods.Gaussian(Y,normalize=normalize_Y)
 
-        sparse_GP.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X)
+        sparse_GP.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X, X_variance=X_variance)
         self._set_params(self._get_params())

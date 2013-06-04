@@ -24,25 +24,11 @@ def crescent_data(seed=default_seed): # FIXME
     Y = data['Y']
     Y[Y.flatten()==-1] = 0
 
-    # Kernel object
-    kernel = GPy.kern.rbf(data['X'].shape[1])
-
-    # Likelihood object
-    distribution = GPy.likelihoods.likelihood_functions.binomial()
-    likelihood = GPy.likelihoods.EP(Y, distribution)
-
-
-    m = GPy.models.GP(data['X'], likelihood, kernel)
+    m = GPy.models.GP_classification(data['X'], Y)
     m.ensure_default_constraints()
-
     m.update_likelihood_approximation()
-    print(m)
-
-    # optimize
     m.optimize()
     print(m)
-
-    # plot
     m.plot()
     return m
 
@@ -54,19 +40,12 @@ def oil():
     Y = data['Y'][:, 0:1]
     Y[Y.flatten()==-1] = 0
 
-    # Kernel object
-    kernel = GPy.kern.rbf(12)
-
-    # Likelihood object
-    distribution = GPy.likelihoods.likelihood_functions.binomial()
-    likelihood = GPy.likelihoods.EP(Y, distribution)
-
     # Create GP model
-    m = GPy.models.GP_classification(data['X'], Y, kernel=kernel)
+    m = GPy.models.GP_classification(data['X'], Y)
 
     # Contrain all parameters to be positive
     m.constrain_positive('')
-    m.tie_params('lengthscale')
+    m.tie_params('.*len')
     m.update_likelihood_approximation()
 
     # Optimize
@@ -86,25 +65,14 @@ def toy_linear_1d_classification(seed=default_seed):
     Y = data['Y'][:, 0:1]
     Y[Y.flatten() == -1] = 0
 
-    # Kernel object
-    kernel = GPy.kern.rbf(1)
-
-    # Likelihood object
-    link = GPy.likelihoods.link_functions.probit
-    distribution = GPy.likelihoods.likelihood_functions.binomial(link)
-    likelihood = GPy.likelihoods.EP(Y, distribution)
-    Y[1] = 1
-
     # Model definition
-    #m = GPy.models.GP(data['X'], likelihood=likelihood, kernel=kernel)
-    m = GPy.models.GP_classification(data['X'], Y, likelihood=likelihood, kernel=kernel)
+    m = GPy.models.GP_classification(data['X'], Y)
     m.ensure_default_constraints()
 
     # Optimize
     m.update_likelihood_approximation()
     # Parameters optimization:
     m.optimize()
-    # m.pseudo_EM() #FIXME
 
     # Plot
     pb.subplot(211)
@@ -126,25 +94,15 @@ def sparse_toy_linear_1d_classification(seed=default_seed):
     Y = data['Y'][:, 0:1]
     Y[Y.flatten() == -1] = 0
 
-    # Kernel object
-    kernel = GPy.kern.rbf(1) + GPy.kern.white(1)
-
-    # Likelihood object
-    distribution = GPy.likelihoods.likelihood_functions.binomial()
-    likelihood = GPy.likelihoods.EP(Y, distribution)
-
-    Z = np.random.uniform(data['X'].min(), data['X'].max(), (10, 1))
-
     # Model definition
-    m = GPy.models.sparse_GP(data['X'], likelihood=likelihood, kernel=kernel, Z=Z, normalize_X=False)
-    m.set('len', 2.)
+    m = GPy.models.sparse_GP_classification(data['X'], Y)
+    m['.*len']= 2.
 
     m.ensure_default_constraints()
     # Optimize
     m.update_likelihood_approximation()
     # Parameters optimization:
     m.optimize()
-    # m.EPEM() #FIXME
 
     # Plot
     pb.subplot(211)
@@ -169,27 +127,11 @@ def sparse_crescent_data(inducing=10, seed=default_seed):
     Y = data['Y']
     Y[Y.flatten()==-1]=0
 
-    # Kernel object
-    kernel = GPy.kern.rbf(data['X'].shape[1]) + GPy.kern.white(data['X'].shape[1])
-
-    # Likelihood object
-    distribution = GPy.likelihoods.likelihood_functions.binomial()
-    likelihood = GPy.likelihoods.EP(Y, distribution)
-
-    sample = np.random.randint(0, data['X'].shape[0], inducing)
-    Z = data['X'][sample, :]
-
-    # create sparse GP EP model
-    m = GPy.models.sparse_GP(data['X'], likelihood=likelihood, kernel=kernel, Z=Z)
+    m = GPy.models.sparse_GP_classification(data['X'], Y)
     m.ensure_default_constraints()
-    m.set('len', 10.)
-
+    m['.*len'] = 10.
     m.update_likelihood_approximation()
-
-    # optimize
     m.optimize()
     print(m)
-
-    # plot
     m.plot()
     return m

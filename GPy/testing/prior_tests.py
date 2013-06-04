@@ -15,12 +15,12 @@ class PriorTests(unittest.TestCase):
         X, y = X[:, None], y[:, None]
         m = GPy.models.GP_regression(X, y)
         m.ensure_default_constraints()
-        lognormal = GPy.priors.log_Gaussian(1, 2)
+        lognormal = GPy.priors.LogGaussian(1, 2)
         m.set_prior('rbf', lognormal)
         m.randomize()
         self.assertTrue(m.checkgrad())
 
-    def test_gamma(self):
+    def test_Gamma(self):
         xmin, xmax = 1, 2.5*np.pi
         b, C, SNR = 1, 0, 0.1
         X = np.linspace(xmin, xmax, 500)
@@ -29,8 +29,8 @@ class PriorTests(unittest.TestCase):
         X, y = X[:, None], y[:, None]
         m = GPy.models.GP_regression(X, y)
         m.ensure_default_constraints()
-        gamma = GPy.priors.gamma(1, 1)
-        m.set_prior('rbf', gamma)
+        Gamma = GPy.priors.Gamma(1, 1)
+        m.set_prior('rbf', Gamma)
         m.randomize()
         self.assertTrue(m.checkgrad())
 

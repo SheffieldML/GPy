@@ -212,7 +212,7 @@ class model(parameterised):
         currently_constrained = self.all_constrained_indices()
         to_make_positive = []
         for s in positive_strings:
-            for i in self.grep_param_names(s):
+            for i in self.grep_param_names(".*"+s):
                 if not (i in currently_constrained):
                     #to_make_positive.append(re.escape(param_names[i]))
                     to_make_positive.append(i)

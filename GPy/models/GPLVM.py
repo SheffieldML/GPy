@@ -8,7 +8,7 @@ import sys, pdb
 from .. import kern
 from ..core import model
 from ..util.linalg import pdinv, PCA
-from GP import GP
+from ..core import GP
 from ..likelihoods import Gaussian
 from .. import util
 from GPy.util import plot_latent
@@ -32,7 +32,8 @@ class GPLVM(GP):
         if kernel is None:
             kernel = kern.rbf(Q, ARD=Q>1) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
         likelihood = Gaussian(Y, normalize=normalize_Y)
-        GP.__init__(self, X, likelihood, kernel, **kwargs)
+        super(GPLVM, self).__init__(self, X, likelihood, kernel, **kwargs)
+        self._set_params(self._get_params())
 
     def initialise_latent(self, init, Q, Y):
         if init == 'PCA':

@@ -22,8 +22,8 @@ class model(parameterised):
         self.priors = [None for i in range(self._get_params().size)]
         self.optimization_runs = []
         self.sampling_runs = []
-        self._set_params(self._get_params())
         self.preferred_optimizer = 'tnc'
+        #self._set_params(self._get_params()) has been taken out as it should only be called on leaf nodes
     def _get_params(self):
         raise NotImplementedError, "this needs to be implemented to use the model class"
     def _set_params(self, x):
@@ -212,7 +212,7 @@ class model(parameterised):
         currently_constrained = self.all_constrained_indices()
         to_make_positive = []
         for s in positive_strings:
-            for i in self.grep_param_names(s):
+            for i in self.grep_param_names(".*"+s):
                 if not (i in currently_constrained):
                     #to_make_positive.append(re.escape(param_names[i]))
                     to_make_positive.append(i)

@@ -9,7 +9,7 @@ from ..util.linalg import pdinv
 from ..util.plot import gpplot
 from ..util.warping_functions import *
 from GP_regression import GP_regression
-from GP import GP
+from ..core import GP
 from .. import likelihoods
 from .. import kern
 
@@ -29,7 +29,8 @@ class warpedGP(GP):
         self.predict_in_warped_space = False
         likelihood = likelihoods.Gaussian(self.transform_data(), normalize=normalize_Y)
 
-        GP.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
+        super(warpedGP, self).__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
+        self._set_params(self._get_params())
 
     def _scale_data(self, Y):
         self._Ymax = Y.max()

@@ -64,21 +64,21 @@ class parameterised(object):
         m['var'] = 2.           # > sets all parameters matching 'var' to 2.
         m['var'] = <array-like> # > sets parameters matching 'var' to <array-like>
         """
-    def get(self, name):
+    def get(self, regexp):
         warnings.warn(self._get_set_deprecation, FutureWarning, stacklevel=2)
-        return self[name]
+        return self[regexp]
 
-    def set(self, name, val):
+    def set(self, regexp, val):
         warnings.warn(self._get_set_deprecation, FutureWarning, stacklevel=2)
-        self[name] = val
+        self[regexp] = val
 
-    def __getitem__(self, name, return_names=False):
+    def __getitem__(self, regexp, return_names=False):
         """
         Get a model parameter by name.  The name is applied as a regular
         expression and all parameters that match that regular expression are
         returned.
         """
-        matches = self.grep_param_names(name)
+        matches = self.grep_param_names(regexp)
         if len(matches):
             if return_names:
                 return self._get_params()[matches], np.asarray(self._get_param_names())[matches].tolist()
@@ -103,8 +103,8 @@ class parameterised(object):
         else:
             raise AttributeError, "no parameter matches %s" % name
 
-    def tie_params(self, which):
-        matches = self.grep_param_names(which)
+    def tie_params(self, regexp):
+        matches = self.grep_param_names(regexp)
         assert matches.size > 0, "need at least something to tie together"
         if len(self.tied_indices):
             assert not np.any(matches[:, None] == np.hstack(self.tied_indices)), "Some indices are already tied!"
@@ -119,28 +119,23 @@ class parameterised(object):
         """Unties all parameters by setting tied_indices to an empty list."""
         self.tied_indices = []
 
-    def grep_param_names(self, expr):
+    def grep_param_names(self, regexp):
         """
-        Arguments
-        ---------
-        expr -- can be a regular expression object or a string to be turned into regular expression object.
+        :param regexp: regular expression to select parameter names
+        :type regexp: re | str | int
+        :rtype: the indices of self._get_param_names which match the regular expression.
 
-        Returns
-        -------
-        the indices of self._get_param_names which match the regular expression.
-
-        Notes
-        -----
-        Other objects are passed through - i.e. integers which weren't meant for grepping
+        Note:-
+          Other objects are passed through - i.e. integers which weren't meant for grepping
         """
 
-        if type(expr) in [str, np.string_, np.str]:
-            expr = re.compile(expr)
-            return np.nonzero([expr.search(name) for name in self._get_param_names()])[0]
-        elif type(expr) is re._pattern_type:
-            return np.nonzero([expr.search(name) for name in self._get_param_names()])[0]
+        if type(regexp) in [str, np.string_, np.str]:
+            regexp = re.compile(regexp)
+            return np.nonzero([regexp.match(name) for name in self._get_param_names()])[0]
+        elif type(regexp) is re._pattern_type:
+            return np.nonzero([regexp.match(name) for name in self._get_param_names()])[0]
         else:
-            return expr
+            return regexp
 
     def Nparam_transformed(self):
         removed = 0
@@ -152,9 +147,9 @@ class parameterised(object):
 
         return len(self._get_params()) - removed
 
-    def unconstrain(self, which):
+    def unconstrain(self, regexp):
         """Unconstrain matching parameters.  does not untie parameters"""
-        matches = self.grep_param_names(which)
+        matches = self.grep_param_names(regexp)
 
         #tranformed contraints:
         for match in matches:
@@ -178,17 +173,17 @@ class parameterised(object):
         else:
             self.fixed_indices, self.fixed_values = [], []
 
-    def constrain_negative(self, which):
+    def constrain_negative(self, regexp):
         """ Set negative constraints. """
-        self.constrain(which, transformations.negative_exponent())
+        self.constrain(regexp, transformations.negative_exponent())
 
-    def constrain_positive(self, which):
+    def constrain_positive(self, regexp):
         """ Set positive constraints. """
-        self.constrain(which, transformations.logexp())
+        self.constrain(regexp, transformations.logexp())
 
-    def constrain_bounded(self, which,lower, upper):
+    def constrain_bounded(self, regexp,lower, upper):
         """ Set bounded constraints. """
-        self.constrain(which, transformations.logistic(lower, upper))
+        self.constrain(regexp, transformations.logistic(lower, upper))
 
     def all_constrained_indices(self):
         if len(self.constrained_indices) or len(self.fixed_indices):
@@ -196,10 +191,10 @@ class parameterised(object):
         else:
             return np.empty(shape=(0,))
 
-    def constrain(self,which,transform):
+    def constrain(self,regexp,transform):
         assert isinstance(transform,transformations.transformation)
 
-        matches = self.grep_param_names(which)
+        matches = self.grep_param_names(regexp)
         overlap = set(matches).intersection(set(self.all_constrained_indices()))
         if overlap:
             self.unconstrain(np.asarray(list(overlap)))
@@ -214,11 +209,11 @@ class parameterised(object):
         x[matches] = transform.initialize(x[matches])
         self._set_params(x)
 
-    def constrain_fixed(self, which, value=None):
+    def constrain_fixed(self, regexp, value=None):
         """
         Arguments
         ---------
-        :param which: np.array(dtype=int), or regular expression object or string
+        :param regexp: np.array(dtype=int), or regular expression object or string
         :param value: a float to fix the matched values to. If the value is not specified,
                  the parameter is fixed to the current value
 
@@ -227,7 +222,7 @@ class parameterised(object):
         Fixing a parameter which is tied to another, or constrained in some way will result in an error.
         To fix multiple parameters to the same value, simply pass a regular expression which matches both parameter names, or pass both of the indexes
         """
-        matches = self.grep_param_names(which)
+        matches = self.grep_param_names(regexp)
         assert not np.any(matches[:, None] == self.all_constrained_indices()), "Some indices are already constrained"
         self.fixed_indices.append(matches)
         if value != None:

@@ -275,7 +275,7 @@ def sparse_GP_regression_1D(N = 400, M = 5, max_nb_eval_optim=100):
     # create simple GP model
     m = GPy.models.sparse_GP_regression(X, Y, kernel, M=M)
 
-    m.constrain_positive('(variance|lengthscale|precision)')
+    m.ensure_default_constraints()
 
     m.checkgrad(verbose=1)
     m.optimize('tnc', messages = 1, max_f_eval=max_nb_eval_optim)

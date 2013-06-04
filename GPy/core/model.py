@@ -316,7 +316,10 @@ class model(parameterised):
     def __str__(self):
         s = parameterised.__str__(self).split('\n')
         # add priors to the string
-        strs = [str(p) if p is not None else '' for p in self.priors]
+        if self.priors is not None:
+            strs = [str(p) if p is not None else '' for p in self.priors]
+        else:
+            strs = ['']*len(self._get_params())
         width = np.array(max([len(p) for p in strs] + [5])) + 4
 
         log_like = self.log_likelihood()

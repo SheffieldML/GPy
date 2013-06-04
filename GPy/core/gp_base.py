@@ -33,7 +33,7 @@ class GPBase(model.model):
         # All leaf nodes should call self._set_params(self._get_params()) at
         # the end
 
-    def plot_f(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, full_cov=False):
+    def plot_f(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, full_cov=False, fignum=None, ax=None):
         """
         Plot the GP's view of the world, where the data is normalized and the
         likelihood is Gaussian.
@@ -57,45 +57,54 @@ class GPBase(model.model):
         if which_data == 'all':
             which_data = slice(None)
 
+        if ax is None:
+            fig = pb.figure(num=fignum)
+            ax = fig.add_subplot(111)
+
         if self.X.shape[1] == 1:
             Xnew, xmin, xmax = x_frame1D(self.X, plot_limits=plot_limits)
             if samples == 0:
                 m, v = self._raw_predict(Xnew, which_parts=which_parts)
-                gpplot(Xnew, m, m - 2 * np.sqrt(v), m + 2 * np.sqrt(v))
-                pb.plot(self.X[which_data], self.likelihood.Y[which_data], 'kx', mew=1.5)
+                gpplot(Xnew, m, m - 2 * np.sqrt(v), m + 2 * np.sqrt(v), axes=ax)
+                ax.plot(self.X[which_data], self.likelihood.Y[which_data], 'kx', mew=1.5)
             else:
                 m, v = self._raw_predict(Xnew, which_parts=which_parts, full_cov=True)
                 Ysim = np.random.multivariate_normal(m.flatten(), v, samples)
-                gpplot(Xnew, m, m - 2 * np.sqrt(np.diag(v)[:, None]), m + 2 * np.sqrt(np.diag(v))[:, None])
+                gpplot(Xnew, m, m - 2 * np.sqrt(np.diag(v)[:, None]), m + 2 * np.sqrt(np.diag(v))[:, None,], axes=ax)
                 for i in range(samples):
-                    pb.plot(Xnew, Ysim[i, :], Tango.colorsHex['darkBlue'], linewidth=0.25)
-            pb.plot(self.X[which_data], self.likelihood.Y[which_data], 'kx', mew=1.5)
-            pb.xlim(xmin, xmax)
+                    ax.plot(Xnew, Ysim[i, :], Tango.colorsHex['darkBlue'], linewidth=0.25)
+            ax.plot(self.X[which_data], self.likelihood.Y[which_data], 'kx', mew=1.5)
+            ax.set_xlim(xmin, xmax)
             ymin, ymax = min(np.append(self.likelihood.Y, m - 2 * np.sqrt(np.diag(v)[:, None]))), max(np.append(self.likelihood.Y, m + 2 * np.sqrt(np.diag(v)[:, None])))
             ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
-            pb.ylim(ymin, ymax)
+            ax.set_ylim(ymin, ymax)
 
         elif self.X.shape[1] == 2:
             resolution = resolution or 50
             Xnew, xmin, xmax, xx, yy = x_frame2D(self.X, plot_limits, resolution)
             m, v = self._raw_predict(Xnew, which_parts=which_parts)
             m = m.reshape(resolution, resolution).T
-            pb.contour(xx, yy, m, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
-            pb.scatter(self.X[:, 0], self.X[:, 1], 40, self.likelihood.Y, linewidth=0, cmap=pb.cm.jet, vmin=m.min(), vmax=m.max())
-            pb.xlim(xmin[0], xmax[0])
-            pb.ylim(xmin[1], xmax[1])
+            ax.contour(xx, yy, m, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
+            ax.scatter(self.X[:, 0], self.X[:, 1], 40, self.likelihood.Y, linewidth=0, cmap=pb.cm.jet, vmin=m.min(), vmax=m.max())
+            ax.set_xlim(xmin[0], xmax[0])
+            ax.set_ylim(xmin[1], xmax[1])
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
-    def plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20):
+    def plot(self, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, samples=0, fignum=None, ax=None):
         """
         TODO: Docstrings!
         :param levels: for 2D plotting, the number of contour levels to use
+        is ax is None, create a new figure
 
         """
         # TODO include samples
         if which_data == 'all':
             which_data = slice(None)
+
+        if ax is None:
+            fig = pb.figure(num=fignum)
+            ax = fig.add_subplot(111)
 
         if self.X.shape[1] == 1:
 
@@ -104,12 +113,12 @@ class GPBase(model.model):
             Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
             m, var, lower, upper = self.predict(Xnew, which_parts=which_parts)
             for d in range(m.shape[1]):
-                gpplot(Xnew, m[:,d], lower[:,d], upper[:,d])
-                pb.plot(Xu[which_data], self.likelihood.data[which_data,d], 'kx', mew=1.5)
+                gpplot(Xnew, m[:,d], lower[:,d], upper[:,d],axes=ax)
+                ax.plot(Xu[which_data], self.likelihood.data[which_data,d], 'kx', mew=1.5)
             ymin, ymax = min(np.append(self.likelihood.data, lower)), max(np.append(self.likelihood.data, upper))
             ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
-            pb.xlim(xmin, xmax)
-            pb.ylim(ymin, ymax)
+            ax.set_xlim(xmin, xmax)
+            ax.set_ylim(ymin, ymax)
 
         elif self.X.shape[1] == 2:  # FIXME
             resolution = resolution or 50
@@ -117,11 +126,11 @@ class GPBase(model.model):
             x, y = np.linspace(xmin[0], xmax[0], resolution), np.linspace(xmin[1], xmax[1], resolution)
             m, var, lower, upper = self.predict(Xnew, which_parts=which_parts)
             m = m.reshape(resolution, resolution).T
-            pb.contour(x, y, m, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
+            ax.contour(x, y, m, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
             Yf = self.likelihood.Y.flatten()
-            pb.scatter(self.X[:, 0], self.X[:, 1], 40, Yf, cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.)
-            pb.xlim(xmin[0], xmax[0])
-            pb.ylim(xmin[1], xmax[1])
+            ax.scatter(self.X[:, 0], self.X[:, 1], 40, Yf, cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.)
+            ax.set_xlim(xmin[0], xmax[0])
+            ax.set_ylim(xmin[1], xmax[1])
 
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"

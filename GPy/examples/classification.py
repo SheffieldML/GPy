@@ -79,12 +79,16 @@ def toy_linear_1d_classification(seed=default_seed):
 
     data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
+    Y[Y.flatten() == -1] = 0
 
     # Kernel object
     kernel = GPy.kern.rbf(1)
 
     # Likelihood object
-    distribution = GPy.likelihoods.likelihood_functions.probit()
+    link = GPy.likelihoods.link_functions.probit
+    distribution = GPy.likelihoods.likelihood_functions.binomial(link)
+    #distribution = GPy.likelihoods.likelihood_functions.binomial()
+    #distribution = GPy.likelihoods.likelihood_functions.probit()
     likelihood = GPy.likelihoods.EP(Y, distribution)
 
     # Model definition

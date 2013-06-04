@@ -3,10 +3,10 @@
 
 
 import numpy as np
-from GPy.core.domains import UNDEFINED, POSITIVE, NEGATIVE, BOUNDED
+from GPy.core.domains import POSITIVE, NEGATIVE, BOUNDED
 
 class transformation(object):
-    domain = UNDEFINED
+    domain = None
     def f(self, x):
         raise NotImplementedError
 

@@ -40,7 +40,7 @@ class generalized_FITC(sparse_GP):
         self.M = self.Z.shape[0]
         self.true_precision = likelihood.precision
 
-        super(generalized_FITC, self).__init__(self, X, likelihood, kernel=kernel, Z=self.Z, X_variance=None, normalize_X=False)
+        super(generalized_FITC, self).__init__(X, likelihood, kernel=kernel, Z=self.Z, X_variance=X_variance, normalize_X=normalize_X)
         self._set_params(self._get_params())
 
     def _set_params(self, p):

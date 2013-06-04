@@ -23,9 +23,9 @@ class sparse_GPLVM(sparse_GP_regression, GPLVM):
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, Y, Q, init='PCA', **kwargs):
+    def __init__(self, Y, Q, kernel=None, init='PCA', M=10):
         X = self.initialise_latent(init, Q, Y)
-        sparse_GP_regression.__init__(self, X, Y, **kwargs)
+        sparse_GP_regression.__init__(self, X, Y, kernel=kernel,M=M)
 
     def _get_param_names(self):
         return (sum([['X_%i_%i'%(n,q) for q in range(self.Q)] for n in range(self.N)],[])

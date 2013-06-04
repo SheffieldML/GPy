@@ -26,13 +26,13 @@ class GPLVM(GP):
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, Y, Q, init='PCA', X = None, kernel=None, normalize_Y=False, **kwargs):
+    def __init__(self, Y, Q, init='PCA', X = None, kernel=None, normalize_Y=False):
         if X is None:
             X = self.initialise_latent(init, Q, Y)
         if kernel is None:
             kernel = kern.rbf(Q, ARD=Q>1) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
         likelihood = Gaussian(Y, normalize=normalize_Y)
-        super(GPLVM, self).__init__(self, X, likelihood, kernel, **kwargs)
+        GP.__init__(self, X, likelihood, kernel, normalize_X=False)
         self._set_params(self._get_params())
 
     def initialise_latent(self, init, Q, Y):

@@ -29,7 +29,7 @@ class warpedGP(GP):
         self.predict_in_warped_space = False
         likelihood = likelihoods.Gaussian(self.transform_data(), normalize=normalize_Y)
 
-        super(warpedGP, self).__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
+        GP.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
         self._set_params(self._get_params())
 
     def _scale_data(self, Y):

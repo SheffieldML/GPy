@@ -5,7 +5,7 @@ Created on 10 Apr 2013
 '''
 from GPy.core import model
 from GPy.models.Bayesian_GPLVM import Bayesian_GPLVM
-from GPy.models.sparse_GP import sparse_GP
+from GPy.core import sparse_GP
 from GPy.util.linalg import PCA
 from scipy import linalg
 import numpy
@@ -23,7 +23,7 @@ class MRD(model):
     :type likelihood_list: [GPy.likelihood] | [Y1..Yy]
     :param names: names for different gplvm models
     :type names: [str]
-    :param Q: latent dimensionality (will raise 
+    :param Q: latent dimensionality (will raise
     :type Q: int
     :param initx: initialisation method for the latent space
     :type initx: 'PCA'|'random'
@@ -33,8 +33,11 @@ class MRD(model):
         Initial latent space
     :param X_variance:
         Initial latent space variance
-    :param init: [PCA|random]
-        initialization method to use
+    :param init: [cooncat|single|random]
+        initialization method to use: 
+            *concat: PCA on concatenated outputs
+            *single: PCA on each output
+            *random: random
     :param M:
         number of inducing inputs to use
     :param Z:
@@ -77,6 +80,7 @@ class MRD(model):
         self.MQ = self.M * self.Q
 
         model.__init__(self) # @UndefinedVariable
+        self._set_params(self._get_params())
 
     @property
     def X(self):
@@ -153,7 +157,7 @@ class MRD(model):
     def _get_params(self):
         """
         return parameter list containing private and shared parameters as follows:
-        
+
         =================================================================
         | mu | S | Z || theta1 | theta2 | .. | thetaN |
         =================================================================

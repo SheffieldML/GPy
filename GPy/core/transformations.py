@@ -3,11 +3,10 @@
 
 
 import numpy as np
+from GPy.core.domains import POSITIVE, NEGATIVE, BOUNDED
 
 class transformation(object):
-    def __init__(self):
-        # set the domain. Suggest we use 'positive', 'bounded', etc
-        self.domain = 'undefined'
+    domain = None
     def f(self, x):
         raise NotImplementedError
 
@@ -24,8 +23,7 @@ class transformation(object):
         raise NotImplementedError
 
 class logexp(transformation):
-    def __init__(self):
-        self.domain = 'positive'
+    domain = POSITIVE
     def f(self, x):
         return np.log(1. + np.exp(x))
     def finv(self, f):
@@ -43,8 +41,8 @@ class logexp_clipped(transformation):
     min_bound = 1e-10
     log_max_bound = np.log(max_bound)
     log_min_bound = np.log(min_bound)
+    domain = POSITIVE
     def __init__(self, lower=1e-6):
-        self.domain = 'positive'
         self.lower = lower
     def f(self, x):
         exp = np.exp(np.clip(x, self.log_min_bound, self.log_max_bound))
@@ -66,8 +64,7 @@ class logexp_clipped(transformation):
         return '(+ve_c)'
 
 class exponent(transformation):
-    def __init__(self):
-        self.domain = 'positive'
+    domain = POSITIVE
     def f(self, x):
         return np.exp(x)
     def finv(self, x):
@@ -82,8 +79,7 @@ class exponent(transformation):
         return '(+ve)'
 
 class negative_exponent(transformation):
-    def __init__(self):
-        self.domain = 'negative'
+    domain = NEGATIVE
     def f(self, x):
         return -np.exp(x)
     def finv(self, x):
@@ -98,8 +94,7 @@ class negative_exponent(transformation):
         return '(-ve)'
 
 class square(transformation):
-    def __init__(self):
-        self.domain = 'positive'
+    domain = POSITIVE
     def f(self, x):
         return x ** 2
     def finv(self, x):
@@ -112,8 +107,8 @@ class square(transformation):
         return '(+sq)'
 
 class logistic(transformation):
+    domain = BOUNDED
     def __init__(self, lower, upper):
-        self.domain = 'bounded'
         assert lower < upper
         self.lower, self.upper = float(lower), float(upper)
         self.difference = self.upper - self.lower

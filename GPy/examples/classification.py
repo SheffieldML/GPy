@@ -21,13 +21,15 @@ def crescent_data(seed=default_seed): # FIXME
     """
 
     data = GPy.util.datasets.crescent_data(seed=seed)
+    Y = data['Y']
+    Y[Y.flatten()==-1] = 0
 
     # Kernel object
     kernel = GPy.kern.rbf(data['X'].shape[1])
 
     # Likelihood object
-    distribution = GPy.likelihoods.likelihood_functions.probit()
-    likelihood = GPy.likelihoods.EP(data['Y'], distribution)
+    distribution = GPy.likelihoods.likelihood_functions.binomial()
+    likelihood = GPy.likelihoods.EP(Y, distribution)
 
 
     m = GPy.models.GP(data['X'], likelihood, kernel)
@@ -49,12 +51,15 @@ def oil():
     Run a Gaussian process classification on the oil data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
     """
     data = GPy.util.datasets.oil()
+    Y = data['Y'][:, 0:1]
+    Y[Y.flatten()==-1] = 0
+
     # Kernel object
     kernel = GPy.kern.rbf(12)
 
     # Likelihood object
-    distribution = GPy.likelihoods.likelihood_functions.probit()
-    likelihood = GPy.likelihoods.EP(data['Y'][:, 0:1], distribution)
+    distribution = GPy.likelihoods.likelihood_functions.binomial()
+    likelihood = GPy.likelihoods.EP(Y, distribution)
 
     # Create GP model
     m = GPy.models.GP(data['X'], likelihood=likelihood, kernel=kernel)
@@ -79,12 +84,14 @@ def toy_linear_1d_classification(seed=default_seed):
 
     data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
+    Y[Y.flatten() == -1] = 0
 
     # Kernel object
     kernel = GPy.kern.rbf(1)
 
     # Likelihood object
-    distribution = GPy.likelihoods.likelihood_functions.probit()
+    link = GPy.likelihoods.link_functions.probit
+    distribution = GPy.likelihoods.likelihood_functions.binomial(link)
     likelihood = GPy.likelihoods.EP(Y, distribution)
 
     # Model definition
@@ -115,12 +122,13 @@ def sparse_toy_linear_1d_classification(seed=default_seed):
 
     data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
+    Y[Y.flatten() == -1] = 0
 
     # Kernel object
     kernel = GPy.kern.rbf(1) + GPy.kern.white(1)
 
     # Likelihood object
-    distribution = GPy.likelihoods.likelihood_functions.probit()
+    distribution = GPy.likelihoods.likelihood_functions.binomial()
     likelihood = GPy.likelihoods.EP(Y, distribution)
 
     Z = np.random.uniform(data['X'].min(), data['X'].max(), (10, 1))
@@ -156,13 +164,15 @@ def sparse_crescent_data(inducing=10, seed=default_seed):
     """
 
     data = GPy.util.datasets.crescent_data(seed=seed)
+    Y = data['Y']
+    Y[Y.flatten()==-1]=0
 
     # Kernel object
     kernel = GPy.kern.rbf(data['X'].shape[1]) + GPy.kern.white(data['X'].shape[1])
 
     # Likelihood object
-    distribution = GPy.likelihoods.likelihood_functions.probit()
-    likelihood = GPy.likelihoods.EP(data['Y'], distribution)
+    distribution = GPy.likelihoods.likelihood_functions.binomial()
+    likelihood = GPy.likelihoods.EP(Y, distribution)
 
     sample = np.random.randint(0, data['X'].shape[0], inducing)
     Z = data['X'][sample, :]

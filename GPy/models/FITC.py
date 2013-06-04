@@ -7,7 +7,7 @@ from ..util.linalg import mdot, jitchol, chol_inv, tdot, symmetrify,pdinv
 from ..util.plot import gpplot
 from .. import kern
 from scipy import stats, linalg
-from sparse_GP import sparse_GP
+from ..core import sparse_GP
 
 def backsub_both_sides(L,X):
     """ Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky"""
@@ -15,6 +15,9 @@ def backsub_both_sides(L,X):
     return linalg.lapack.flapack.dtrtrs(L,np.asfortranarray(tmp.T),lower=1,trans=1)[0].T
 
 class FITC(sparse_GP):
+
+    def __init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False):
+        super(FITC, self).__init__(X, likelihood, kernel, normalize_X=normalize_X)
 
     def update_likelihood_approximation(self):
         """

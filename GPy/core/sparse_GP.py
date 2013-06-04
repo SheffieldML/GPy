@@ -4,13 +4,11 @@
 import numpy as np
 import pylab as pb
 from ..util.linalg import mdot, jitchol, tdot, symmetrify, backsub_both_sides, chol_inv
-from ..util.plot import gpplot
-from .. import kern
-from GP import GP
 from scipy import linalg
 from ..likelihoods import Gaussian
+from gp_base import GPBase
 
-class sparse_GP(GP):
+class sparse_GP(GPBase):
     """
     Variational sparse GP model
 
@@ -31,6 +29,8 @@ class sparse_GP(GP):
     """
 
     def __init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False):
+        GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
+
         self.Z = Z
         self.M = Z.shape[0]
         self.likelihood = likelihood
@@ -42,12 +42,12 @@ class sparse_GP(GP):
             self.has_uncertain_inputs = True
             self.X_variance = X_variance
 
-        GP.__init__(self, X, likelihood, kernel=kernel, normalize_X=normalize_X)
+        if normalize_X:
+            self.Z = (self.Z.copy() - self._Xmean) / self._Xstd
 
         # normalize X uncertainty also
         if self.has_uncertain_inputs:
             self.X_variance /= np.square(self._Xstd)
-
 
     def _compute_kernel_matrices(self):
         # kernel computations, using BGPLVM notation
@@ -139,8 +139,6 @@ class sparse_GP(GP):
             self.partial_for_likelihood += 0.5 * self.D * (self.psi0.sum() * self.likelihood.precision ** 2 - np.trace(self.A) * self.likelihood.precision)
             self.partial_for_likelihood += self.likelihood.precision * (0.5 * np.sum(self.A * self.DBi_plus_BiPBi) - np.sum(np.square(self._LBi_Lmi_psi1V)))
 
-
-
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
         if self.likelihood.is_heteroscedastic:
@@ -161,10 +159,11 @@ class sparse_GP(GP):
         self._computations()
 
     def _get_params(self):
-        return np.hstack([self.Z.flatten(), GP._get_params(self)])
+        return np.hstack([self.Z.flatten(), self.kern._get_params_transformed(), self.likelihood._get_params()])
 
     def _get_param_names(self):
-        return sum([['iip_%i_%i' % (i, j) for j in range(self.Z.shape[1])] for i in range(self.Z.shape[0])], []) + GP._get_param_names(self)
+        return sum([['iip_%i_%i' % (i, j) for j in range(self.Z.shape[1])] for i in range(self.Z.shape[0])],[])\
+            + self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
     def update_likelihood_approximation(self):
         """
@@ -282,3 +281,17 @@ class sparse_GP(GP):
 
         return mean, var, _025pm, _975pm
 
+    def plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20):
+        GPBase.plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20)
+        if self.X.shape[1] == 1:
+            Xu = self.X * self._Xstd + self._Xmean  # NOTE self.X are the normalized values now
+            if self.has_uncertain_inputs:
+                pb.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
+                            xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
+                            ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
+            Zu = self.Z * self._Xstd + self._Xmean
+            pb.plot(Zu, Zu * 0 + pb.ylim()[0], 'r|', mew=1.5, markersize=12)
+                # pb.errorbar(self.X[:,0], pb.ylim()[0]+np.zeros(self.N), xerr=2*np.sqrt(self.X_variance.flatten()))
+
+        elif self.X.shape[1] == 2:  # FIXME
+            pb.plot(self.Z[:, 0], self.Z[:, 1], 'wo')

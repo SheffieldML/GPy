@@ -192,7 +192,7 @@ class opt_SGD(Optimizer):
         if self.model.N == 0 or Y.std() == 0.0:
             return 0, step, self.model.N
 
-        self.model.likelihood._bias = Y.mean()
+        self.model.likelihood._offset = Y.mean()
         self.model.likelihood._scale = Y.std()
         self.model.likelihood.set_data(Y)
         # self.model.likelihood.V = self.model.likelihood.Y*self.model.likelihood.precision
@@ -219,9 +219,9 @@ class opt_SGD(Optimizer):
         self.restore_constraints(ci)
 
         self.model.grads[j] = fp
-        # restore likelihood _bias and _scale, otherwise when we call set_data(y) on
+        # restore likelihood _offset and _scale, otherwise when we call set_data(y) on
         # the next feature, it will get normalized with the mean and std of this one.
-        self.model.likelihood._bias = 0
+        self.model.likelihood._offset = 0
         self.model.likelihood._scale = 1
 
         return f, step, self.model.N
@@ -266,7 +266,7 @@ class opt_SGD(Optimizer):
 
         self.model.likelihood.YYT = 0
         self.model.likelihood.trYYT = 0
-        self.model.likelihood._bias = 0.0
+        self.model.likelihood._offset = 0.0
         self.model.likelihood._scale = 1.0
 
         N, Q = self.model.X.shape

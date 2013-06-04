@@ -19,12 +19,12 @@ class Gaussian(likelihood):
 
         # normalization
         if normalize:
-            self._bias = data.mean(0)[None, :]
+            self._offset = data.mean(0)[None, :]
             self._scale = data.std(0)[None, :]
             # Don't scale outputs which have zero variance to zero.
             self._scale[np.nonzero(self._scale == 0.)] = 1.0e-3
         else:
-            self._bias = np.zeros((1, self.D))
+            self._offset = np.zeros((1, self.D))
             self._scale = np.ones((1, self.D))
 
         self.set_data(data)
@@ -36,7 +36,7 @@ class Gaussian(likelihood):
         self.data = data
         self.N, D = data.shape
         assert D == self.D
-        self.Y = (self.data - self._bias) / self._scale
+        self.Y = (self.data - self._offset) / self._scale
         if D > self.N:
             self.YYT = np.dot(self.Y, self.Y.T)
             self.trYYT = np.trace(self.YYT)
@@ -66,7 +66,7 @@ class Gaussian(likelihood):
         """
         Un-normalize the prediction and add the likelihood variance, then return the 5%, 95% interval
         """
-        mean = mu * self._scale + self._bias
+        mean = mu * self._scale + self._offset
         if full_cov:
             if self.D > 1:
                 raise NotImplementedError, "TODO"

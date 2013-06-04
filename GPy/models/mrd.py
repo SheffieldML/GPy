@@ -256,17 +256,20 @@ class MRD(model):
         self.Z = Z
         return Z
 
-    def _handle_plotting(self, fig_num, axes, plotf):
-        if axes is None:
-            fig = pylab.figure(num=fig_num, figsize=(4 * len(self.bgplvms), 3))
+    def _handle_plotting(self, fignum, ax, plotf):
+        if ax is None:
+            fig = pylab.figure(num=fignum)
+            ax = fig.add_subplot(111)
+        if ax is None:
+            fig = pylab.figure(num=fignum, figsize=(4 * len(self.bgplvms), 3))
         for i, g in enumerate(self.bgplvms):
-            if axes is None:
+            if ax is None:
                 ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
             else:
-                ax = axes[i]
+                ax = ax[i]
             plotf(i, g, ax)
         pylab.draw()
-        if axes is None:
+        if ax is None:
             fig.tight_layout()
             return fig
         else:
@@ -275,20 +278,20 @@ class MRD(model):
     def plot_X_1d(self):
         return self.gref.plot_X_1d()
 
-    def plot_X(self, fig_num="MRD Predictions", axes=None):
-        fig = self._handle_plotting(fig_num, axes, lambda i, g, ax: ax.imshow(g.X))
+    def plot_X(self, fignum="MRD Predictions", ax=None):
+        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: ax.imshow(g.X))
         return fig
 
-    def plot_predict(self, fig_num="MRD Predictions", axes=None, **kwargs):
-        fig = self._handle_plotting(fig_num, axes, lambda i, g, ax: ax.imshow(g.predict(g.X)[0], **kwargs))
+    def plot_predict(self, fignum="MRD Predictions", ax=None, **kwargs):
+        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: ax.imshow(g.predict(g.X)[0], **kwargs))
         return fig
 
-    def plot_scales(self, fig_num="MRD Scales", axes=None, *args, **kwargs):
-        fig = self._handle_plotting(fig_num, axes, lambda i, g, ax: g.kern.plot_ARD(ax=ax, *args, **kwargs))
+    def plot_scales(self, fignum="MRD Scales", ax=None, *args, **kwargs):
+        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.kern.plot_ARD(ax=ax, *args, **kwargs))
         return fig
 
-    def plot_latent(self, fig_num="MRD Latent Spaces", axes=None, *args, **kwargs):
-        fig = self._handle_plotting(fig_num, axes, lambda i, g, ax: g.plot_latent(ax=ax, *args, **kwargs))
+    def plot_latent(self, fignum="MRD Latent Spaces", ax=None, *args, **kwargs):
+        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.plot_latent(ax=ax, *args, **kwargs))
         return fig
 
     def _debug_plot(self):
@@ -296,11 +299,11 @@ class MRD(model):
         fig = pylab.figure("MRD DEBUG PLOT", figsize=(4 * len(self.bgplvms), 9))
         fig.clf()
         axes = [fig.add_subplot(3, len(self.bgplvms), i + 1) for i in range(len(self.bgplvms))]
-        self.plot_X(axes=axes)
+        self.plot_X(ax=axes)
         axes = [fig.add_subplot(3, len(self.bgplvms), i + len(self.bgplvms) + 1) for i in range(len(self.bgplvms))]
-        self.plot_latent(axes=axes)
+        self.plot_latent(ax=axes)
         axes = [fig.add_subplot(3, len(self.bgplvms), i + 2 * len(self.bgplvms) + 1) for i in range(len(self.bgplvms))]
-        self.plot_scales(axes=axes)
+        self.plot_scales(ax=axes)
         pylab.draw()
         fig.tight_layout()
 

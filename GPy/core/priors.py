@@ -6,8 +6,10 @@ import numpy as np
 import pylab as pb
 from scipy.special import gammaln, digamma
 from ..util.linalg import pdinv
+from GPy.core.domains import UNDEFINED
 
 class prior:
+    domain = UNDEFINED
     def pdf(self,x):
         return np.exp(self.lnpdf(x))
 

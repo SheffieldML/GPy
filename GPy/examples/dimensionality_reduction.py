@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 import GPy
 from GPy.models.Bayesian_GPLVM import Bayesian_GPLVM
 from GPy.util.datasets import swiss_roll_generated
+from GPy.core.transformations import logexp
 
 default_seed = np.random.seed(123344)
 
@@ -17,11 +18,11 @@ def BGPLVM(seed=default_seed):
     D = 4
     # generate GPLVM-like data
     X = np.random.rand(N, Q)
-    k = GPy.kern.rbf(Q)  + GPy.kern.white(Q, 0.00001)
+    k = GPy.kern.rbf(Q) + GPy.kern.white(Q, 0.00001)
     K = k.K(X)
     Y = np.random.multivariate_normal(np.zeros(N), K, D).T
 
-    k = GPy.kern.rbf(Q, ARD=True) + GPy.kern.linear(Q, ARD=True) + GPy.kern.rbf(Q, ARD=True)  + GPy.kern.white(Q)
+    k = GPy.kern.rbf(Q, ARD=True) + GPy.kern.linear(Q, ARD=True) + GPy.kern.rbf(Q, ARD=True) + GPy.kern.white(Q)
     # k = GPy.kern.rbf(Q) + GPy.kern.rbf(Q) + GPy.kern.white(Q)
     # k = GPy.kern.rbf(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
     # k = GPy.kern.rbf(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)
@@ -187,8 +188,8 @@ def _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim=False):
     Y2 = S2.dot(np.random.randn(S2.shape[1], D2))
     Y3 = S3.dot(np.random.randn(S3.shape[1], D3))
 
-    Y1 += .1 * np.random.randn(*Y1.shape)
-    Y2 += .1 * np.random.randn(*Y2.shape)
+    Y1 += .3 * np.random.randn(*Y1.shape)
+    Y2 += .2 * np.random.randn(*Y2.shape)
     Y3 += .1 * np.random.randn(*Y3.shape)
 
     Y1 -= Y1.mean(0)
@@ -262,13 +263,13 @@ def bgplvm_simulation(optimize='scg',
     # m.constrain('variance|noise', logexp_clipped())
     m.ensure_default_constraints()
     m['noise'] = Y.var() / 100.
-    m['linear_variance'] = .01
+    m['linear_variance'] = .001
 
     if optimize:
         print "Optimizing model:"
-        m.optimize('bfgs', max_iters=max_f_eval,
+        m.optimize('scg', max_iters=max_f_eval,
                    max_f_eval=max_f_eval,
-                   messages=True, gtol=1e-2)
+                   messages=True, gtol=1e-6)
     if plot:
         import pylab
         m.plot_X_1d()
@@ -277,8 +278,8 @@ def bgplvm_simulation(optimize='scg',
         m.kern.plot_ARD()
     return m
 
-def mrd_simulation(optimize=True, plot_sim=False, **kw):
-    D1, D2, D3, N, M, Q = 150, 200, 400, 300, 3, 7
+def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
+    D1, D2, D3, N, M, Q = 150, 200, 400, 500, 3, 7
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, M, Q, plot_sim)
 
     from GPy.models import mrd
@@ -287,13 +288,12 @@ def mrd_simulation(optimize=True, plot_sim=False, **kw):
 
     reload(mrd); reload(kern)
 
-    k = kern.linear(Q, [0.05] * Q, True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
-    m = mrd.MRD(Ylist, Q=Q, M=M, kernels=k, initx="concat", initz='permute', **kw)
+    k = kern.linear(Q, [.05] * Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
+    m = mrd.MRD(Ylist, Q=Q, M=M, kernels=k, initx="", initz='permute', **kw)
 
     for i, Y in enumerate(Ylist):
         m['{}_noise'.format(i + 1)] = Y.var() / 100.
 
-    # m.constrain('variance|noise', logexp_clipped(1e-6))
     m.ensure_default_constraints()
 
     # DEBUG
@@ -301,8 +301,10 @@ def mrd_simulation(optimize=True, plot_sim=False, **kw):
 
     if optimize:
         print "Optimizing Model:"
-        m.optimize('bfgs', messages=1, max_iters=3e3)
-
+        m.optimize('scg', messages=1, max_iters=5e4, max_f_eval=5e4)
+    if plot:
+        m.plot_X_1d()
+        m.plot_scales()
     return m
 
 def brendan_faces():
@@ -323,7 +325,7 @@ def brendan_faces():
     m.ensure_default_constraints()
     m.optimize('scg', messages=1, max_f_eval=10000)
 
-    ax = m.plot_latent(which_indices=(0,1))
+    ax = m.plot_latent(which_indices=(0, 1))
     y = m.likelihood.Y[0, :]
     data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, invert=False, scale=False)
     lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)

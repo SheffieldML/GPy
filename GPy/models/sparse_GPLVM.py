@@ -8,7 +8,7 @@ import sys, pdb
 # from .. import kern
 # from ..core import model
 # from ..util.linalg import pdinv, PCA
-from GPLVM import GPLVM
+from ..core import GPLVM
 from sparse_GP_regression import sparse_GP_regression
 
 class sparse_GPLVM(sparse_GP_regression, GPLVM):

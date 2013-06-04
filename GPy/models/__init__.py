@@ -2,9 +2,9 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from GP import GP
+#from GP import GP
+#from sparse_GP import sparse_GP
 from GP_regression import GP_regression
-from sparse_GP import sparse_GP
 from sparse_GP_regression import sparse_GP_regression
 from GPLVM import GPLVM
 from warped_GP import warpedGP

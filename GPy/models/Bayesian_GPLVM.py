@@ -5,7 +5,7 @@ import numpy as np
 import pylab as pb
 import sys, pdb
 from GPLVM import GPLVM
-from sparse_GP import sparse_GP
+from ..core import sparse_GP
 from GPy.util.linalg import pdinv
 from ..likelihoods import Gaussian
 from .. import kern
@@ -65,6 +65,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             self._savedABCD = []
 
         sparse_GP.__init__(self, X, likelihood, kernel, Z=Z, X_variance=X_variance, **kwargs)
+        self._set_params(self._get_params())
 
     @property
     def oldps(self):
@@ -96,7 +97,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 
     def _clipped(self, x):
         return x # np.clip(x, -1e300, 1e300)
-    
+
     def _set_params(self, x, save_old=True, save_count=0):
 #         try:
             x = self._clipped(x)

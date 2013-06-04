@@ -14,6 +14,7 @@ import priors
 import re
 import sys
 import pdb
+from GPy.core.domains import POSITIVE, REAL
 # import numdifftools as ndt
 
 class model(parameterised):
@@ -68,8 +69,9 @@ class model(parameterised):
 
 
         # check constraints are okay
-        if isinstance(what, (priors.gamma, priors.inverse_gamma, priors.log_Gaussian)):
-            constrained_positive_indices = [i for i, t in zip(self.constrained_indices, self.constraints) if t.domain == 'positive']
+
+        if what.domain is POSITIVE:
+            constrained_positive_indices = [i for i, t in zip(self.constrained_indices, self.constraints) if t.domain == POSITIVE]
             if len(constrained_positive_indices):
                 constrained_positive_indices = np.hstack(constrained_positive_indices)
             else:
@@ -82,7 +84,7 @@ class model(parameterised):
                 print '\n'.join([n for i, n in enumerate(self._get_param_names()) if i in unconst])
                 print '\n'
                 self.constrain_positive(unconst)
-        elif isinstance(what, priors.Gaussian):
+        elif what.domain is REAL:
             assert not np.any(which[:, None] == self.all_constrained_indices()), "constraint and prior incompatible"
         else:
             raise ValueError, "prior not recognised"

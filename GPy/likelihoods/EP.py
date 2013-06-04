@@ -20,6 +20,7 @@ class EP(likelihood):
         self.N, self.D = self.data.shape
         self.is_heteroscedastic = True
         self.Nparams = 0
+        self._transf_data = self.likelihood_function._preprocess_values(data)
 
         #Initial values - Likelihood approximation parameters:
         #p(y|f) = t(f|tau_tilde,v_tilde)

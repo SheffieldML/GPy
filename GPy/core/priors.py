@@ -9,7 +9,7 @@ from ..util.linalg import pdinv
 from GPy.core.domains import REAL, POSITIVE
 import warnings
 
-class prior:
+class Prior:
     domain = None
     def pdf(self, x):
         return np.exp(self.lnpdf(x))
@@ -22,7 +22,7 @@ class prior:
         pb.plot(xx, self.pdf(xx), 'r', linewidth=2)
 
 
-class Gaussian(prior):
+class Gaussian(Prior):
     """
     Implementation of the univariate Gaussian probability function, coupled with random variables.
 
@@ -52,7 +52,7 @@ class Gaussian(prior):
         return np.random.randn(n) * self.sigma + self.mu
 
 
-class log_Gaussian(prior):
+class LogGaussian(Prior):
     """
     Implementation of the univariate *log*-Gaussian probability function, coupled with random variables.
 
@@ -82,7 +82,7 @@ class log_Gaussian(prior):
         return np.exp(np.random.randn(n) * self.sigma + self.mu)
 
 
-class multivariate_Gaussian:
+class MultivariateGaussian:
     """
     Implementation of the multivariate Gaussian probability function, coupled with random variables.
 
@@ -133,20 +133,10 @@ class multivariate_Gaussian:
 
 
 def gamma_from_EV(E, V):
-    """
-    Creates an instance of a gamma prior  by specifying the Expected value(s)
-    and Variance(s) of the distribution.
-
-    :param E: expected value
-    :param V: variance
-
-    """
     warnings.warn("use Gamma.from_EV to create Gamma Prior", FutureWarning)
-    a = np.square(E) / V
-    b = E / V
-    return gamma(a, b)
+    return Gamma.from_EV(E, V)
 
-class gamma(prior):
+class Gamma(Prior):
     """
     Implementation of the Gamma probability function, coupled with random variables.
 
@@ -184,8 +174,20 @@ class gamma(prior):
 
     def rvs(self, n):
         return np.random.gamma(scale=1. / self.b, shape=self.a, size=n)
+    @staticmethod
+    def from_EV(E, V):
+        """
+        Creates an instance of a Gamma Prior  by specifying the Expected value(s)
+        and Variance(s) of the distribution.
+    
+        :param E: expected value
+        :param V: variance
+        """
+        a = np.square(E) / V
+        b = E / V
+        return Gamma(a, b)
 
-class inverse_gamma(prior):
+class inverse_gamma(Prior):
     """
     Implementation of the inverse-Gamma probability function, coupled with random variables.
 

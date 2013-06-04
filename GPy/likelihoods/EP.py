@@ -165,7 +165,7 @@ class EP(likelihood):
         """
         Posterior approximation: q(f|y) = N(f| mu, Sigma)
         Sigma = Diag + P*R.T*R*P.T + K
-        mu = w + P*gamma
+        mu = w + P*Gamma
         """
         mu = np.zeros(self.N)
         LLT = Kmm.copy()
@@ -255,10 +255,10 @@ class EP(likelihood):
         """
         Posterior approximation: q(f|y) = N(f| mu, Sigma)
         Sigma = Diag + P*R.T*R*P.T + K
-        mu = w + P*gamma
+        mu = w + P*Gamma
         """
         self.w = np.zeros(self.N)
-        self.gamma = np.zeros(M)
+        self.Gamma = np.zeros(M)
         mu = np.zeros(self.N)
         P = P0.copy()
         R = R0.copy()
@@ -311,10 +311,10 @@ class EP(likelihood):
                 RTR = np.dot(R.T,np.dot(np.eye(M) - Delta_tau/(1.+Delta_tau*Sigma_diag[i]) * np.dot(Rp_i,Rp_i.T),R))
                 R = jitchol(RTR).T
                 self.w[i] += (Delta_v - Delta_tau*self.w[i])*dii/dtd1
-                self.gamma += (Delta_v - Delta_tau*mu[i])*np.dot(RTR,P[i,:].T)
+                self.Gamma += (Delta_v - Delta_tau*mu[i])*np.dot(RTR,P[i,:].T)
                 RPT = np.dot(R,P.T)
                 Sigma_diag = Diag + np.sum(RPT.T*RPT.T,-1)
-                mu = self.w + np.dot(P,self.gamma)
+                mu = self.w + np.dot(P,self.Gamma)
                 self.iterations += 1
             #Sigma recomptutation with Cholesky decompositon
             Iplus_Dprod_i = 1./(1.+ Diag0 * self.tau_tilde)
@@ -326,8 +326,8 @@ class EP(likelihood):
             RPT = np.dot(R,P.T)
             Sigma_diag = Diag + np.sum(RPT.T*RPT.T,-1)
             self.w = Diag * self.v_tilde
-            self.gamma = np.dot(R.T, np.dot(RPT,self.v_tilde))
-            mu = self.w + np.dot(P,self.gamma)
+            self.Gamma = np.dot(R.T, np.dot(RPT,self.v_tilde))
+            mu = self.w + np.dot(P,self.Gamma)
             epsilon_np1 = sum((self.tau_tilde-self.np1[-1])**2)/self.N
             epsilon_np2 = sum((self.v_tilde-self.np2[-1])**2)/self.N
             self.np1.append(self.tau_tilde.copy())

@@ -156,8 +156,8 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
 #             beta = 1.  # TODO: betareset!!
             nsuccess = 0
         elif success:
-            gamma = np.dot(gradold - gradnew, gradnew) / (mu)
-            d = gamma * d - gradnew
+            Gamma = np.dot(gradold - gradnew, gradnew) / (mu)
+            d = Gamma * d - gradnew
     else:
         # If we get here, then we haven't terminated in the given number of
         # iterations.

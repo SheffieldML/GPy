@@ -41,16 +41,16 @@ class model(parameterised):
         Arguments
         ---------
         regexp -- string, regexp, or integer array
-        what -- instance of a prior class
+        what -- instance of a Prior class
 
         Notes
         -----
-        Asserts that the prior is suitable for the constraint. If the
+        Asserts that the Prior is suitable for the constraint. If the
         wrong constraint is in place, an error is raised.  If no
         constraint is in place, one is added (warning printed).
 
-        For tied parameters, the prior will only be "counted" once, thus
-        a prior object is only inserted on the first tied index
+        For tied parameters, the Prior will only be "counted" once, thus
+        a Prior object is only inserted on the first tied index
         """
         if self.priors is None:
             self.priors = [None for i in range(self._get_params().size)]
@@ -60,24 +60,24 @@ class model(parameterised):
         # check tied situation
         tie_partial_matches = [tie for tie in self.tied_indices if (not set(tie).isdisjoint(set(which))) & (not set(tie) == set(which))]
         if len(tie_partial_matches):
-            raise ValueError, "cannot place prior across partial ties"
+            raise ValueError, "cannot place Prior across partial ties"
         tie_matches = [tie for tie in self.tied_indices if set(which) == set(tie) ]
         if len(tie_matches) > 1:
-            raise ValueError, "cannot place prior across multiple ties"
+            raise ValueError, "cannot place Prior across multiple ties"
         elif len(tie_matches) == 1:
-            which = which[:1]  # just place a prior object on the first parameter
+            which = which[:1]  # just place a Prior object on the first parameter
 
 
         # check constraints are okay
 
         if what.domain is POSITIVE:
-            constrained_positive_indices = [i for i, t in zip(self.constrained_indices, self.constraints) if t.domain == POSITIVE]
+            constrained_positive_indices = [i for i, t in zip(self.constrained_indices, self.constraints) if t.domain is POSITIVE]
             if len(constrained_positive_indices):
                 constrained_positive_indices = np.hstack(constrained_positive_indices)
             else:
                 constrained_positive_indices = np.zeros(shape=(0,))
             bad_constraints = np.setdiff1d(self.all_constrained_indices(), constrained_positive_indices)
-            assert not np.any(which[:, None] == bad_constraints), "constraint and prior incompatible"
+            assert not np.any(which[:, None] == bad_constraints), "constraint and Prior incompatible"
             unconst = np.setdiff1d(which, constrained_positive_indices)
             if len(unconst):
                 print "Warning: constraining parameters to be positive:"
@@ -85,11 +85,11 @@ class model(parameterised):
                 print '\n'
                 self.constrain_positive(unconst)
         elif what.domain is REAL:
-            assert not np.any(which[:, None] == self.all_constrained_indices()), "constraint and prior incompatible"
+            assert not np.any(which[:, None] == self.all_constrained_indices()), "constraint and Prior incompatible"
         else:
-            raise ValueError, "prior not recognised"
+            raise ValueError, "Prior not recognised"
 
-        # store the prior in a local list
+        # store the Prior in a local list
         for w in which:
             self.priors[w] = what
 
@@ -136,13 +136,13 @@ class model(parameterised):
     def randomize(self):
         """
         Randomize the model.
-        Make this draw from the prior if one exists, else draw from N(0,1)
+        Make this draw from the Prior if one exists, else draw from N(0,1)
         """
         # first take care of all parameters (from N(0,1))
         x = self._get_params_transformed()
         x = np.random.randn(x.size)
         self._set_params_transformed(x)
-        # now draw from prior where possible
+        # now draw from Prior where possible
         x = self._get_params()
         if self.priors is not None:
             [np.put(x, i, p.rvs(1)) for i, p in enumerate(self.priors) if not p is None]
@@ -284,7 +284,7 @@ class model(parameterised):
 
     def Laplace_covariance(self):
         """return the covariance matric of a Laplace approximatino at the current (stationary) point"""
-        # TODO add in the prior contributions for MAP estimation
+        # TODO add in the Prior contributions for MAP estimation
         # TODO fix the hessian for tied, constrained and fixed components
         if hasattr(self, 'log_likelihood_hessian'):
             A = -self.log_likelihood_hessian()
@@ -323,14 +323,14 @@ class model(parameterised):
         log_prior = self.log_prior()
         obj_funct = '\nLog-likelihood: {0:.3e}'.format(log_like)
         if len(''.join(strs)) != 0:
-            obj_funct += ', Log prior: {0:.3e}, LL+prior = {0:.3e}'.format(log_prior, log_like + log_prior)
+            obj_funct += ', Log Prior: {0:.3e}, LL+Prior = {0:.3e}'.format(log_prior, log_like + log_prior)
         obj_funct += '\n\n'
         s[0] = obj_funct + s[0]
         s[0] += "|{h:^{col}}".format(h='Prior', col=width)
         s[1] += '-' * (width + 1)
 
         for p in range(2, len(strs) + 2):
-            s[p] += '|{prior:^{width}}'.format(prior=strs[p - 2], width=width)
+            s[p] += '|{Prior:^{width}}'.format(Prior=strs[p - 2], width=width)
 
         return '\n'.join(s)
 

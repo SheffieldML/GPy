@@ -197,8 +197,8 @@ class FITC(sparse_GP):
             self.RPT = np.dot(self.R,self.P.T)
             self.Sigma = np.diag(self.Diag) + np.dot(self.RPT.T,self.RPT)
             self.w = self.Diag * self.likelihood.v_tilde
-            self.gamma = np.dot(self.R.T, np.dot(self.RPT,self.likelihood.v_tilde))
-            self.mu = self.w + np.dot(self.P,self.gamma)
+            self.Gamma = np.dot(self.R.T, np.dot(self.RPT,self.likelihood.v_tilde))
+            self.mu = self.w + np.dot(self.P,self.Gamma)
 
             """
             Make a prediction for the generalized FITC model

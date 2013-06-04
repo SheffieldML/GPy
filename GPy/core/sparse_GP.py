@@ -281,17 +281,21 @@ class sparse_GP(GPBase):
 
         return mean, var, _025pm, _975pm
 
-    def plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20):
-        GPBase.plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20)
+    def plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, fignum=None, ax=None):
+        if ax is None:
+            fig = pb.figure(num=fignum)
+            ax = fig.add_subplot(111)
+
+        GPBase.plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, ax=ax)
         if self.X.shape[1] == 1:
-            Xu = self.X * self._Xstd + self._Xmean  # NOTE self.X are the normalized values now
             if self.has_uncertain_inputs:
-                pb.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
+                Xu = self.X * self._Xstd + self._Xmean  # NOTE self.X are the normalized values now
+                ax.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
                             xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
                             ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
             Zu = self.Z * self._Xstd + self._Xmean
-            pb.plot(Zu, Zu * 0 + pb.ylim()[0], 'r|', mew=1.5, markersize=12)
-                # pb.errorbar(self.X[:,0], pb.ylim()[0]+np.zeros(self.N), xerr=2*np.sqrt(self.X_variance.flatten()))
+            ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
 
-        elif self.X.shape[1] == 2:  # FIXME
-            pb.plot(self.Z[:, 0], self.Z[:, 1], 'wo')
+        elif self.X.shape[1] == 2:
+            Zu = self.Z * self._Xstd + self._Xmean
+            ax.plot(Zu[:, 0], Zu[:, 1], 'wo')

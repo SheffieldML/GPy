@@ -85,10 +85,10 @@ def coregionalisation_toy2(max_nb_eval_optim=100):
 
     k1 = GPy.kern.rbf(1) + GPy.kern.bias(1)
     k2 = GPy.kern.coregionalise(2,1)
-    k = k1.prod_orthogonal(k2)
+    k = k1.prod(k2,tensor=True)
     m = GPy.models.GP_regression(X,Y,kernel=k)
-    m.constrain_fixed('rbf_var',1.)
-    m.constrain_positive('kappa')
+    m.constrain_fixed('.*rbf_var',1.)
+    #m.constrain_positive('.*kappa')
     m.ensure_default_constraints()
     m.optimize('sim',messages=1,max_f_eval=max_nb_eval_optim)
 
@@ -117,10 +117,10 @@ def coregionalisation_toy(max_nb_eval_optim=100):
 
     k1 = GPy.kern.rbf(1)
     k2 = GPy.kern.coregionalise(2,2)
-    k = k1.prod_orthogonal(k2)
+    k = k1.prod(k2,tensor=True)
     m = GPy.models.GP_regression(X,Y,kernel=k)
-    m.constrain_fixed('rbf_var',1.)
-    m.constrain_positive('kappa')
+    m.constrain_fixed('.*rbf_var',1.)
+    #m.constrain_positive('kappa')
     m.ensure_default_constraints()
     m.optimize(max_f_eval=max_nb_eval_optim)
 
@@ -153,12 +153,12 @@ def coregionalisation_sparse(max_nb_eval_optim=100):
 
     k1 = GPy.kern.rbf(1)
     k2 = GPy.kern.coregionalise(2,2)
-    k = k1.prod_orthogonal(k2) + GPy.kern.white(2,0.001)
+    k = k1.prod(k2,tensor=True) + GPy.kern.white(2,0.001)
 
     m = GPy.models.sparse_GP_regression(X,Y,kernel=k,Z=Z)
     m.scale_factor = 10000.
-    m.constrain_fixed('rbf_var',1.)
-    m.constrain_positive('kappa')
+    m.constrain_fixed('.*rbf_var',1.)
+    #m.constrain_positive('kappa')
     m.constrain_fixed('iip')
     m.ensure_default_constraints()
     m.optimize_restarts(5, robust=True, messages=1, max_f_eval=max_nb_eval_optim)
@@ -293,11 +293,11 @@ def sparse_GP_regression_2D(N = 400, M = 50, max_nb_eval_optim=100):
     kernel = rbf + noise
 
     # create simple GP model
-    m = GPy.models.sparse_GP_regression(X,Y,kernel, M = M, max_nb_eval_optim=100)
+    m = GPy.models.sparse_GP_regression(X,Y,kernel, M = M)
 
     # contrain all parameters to be positive (but not inducing inputs)
-    m.constrain_positive('(variance|lengthscale|precision)')
-    m.set('len',2.)
+    m.ensure_default_constraints()
+    m.set('.*len',2.)
 
     m.checkgrad()
 
@@ -314,16 +314,16 @@ def uncertain_inputs_sparse_regression(max_nb_eval_optim=100):
     S = np.ones((20,1))
     X = np.random.uniform(-3.,3.,(20,1))
     Y = np.sin(X)+np.random.randn(20,1)*0.05
-    likelihood = GPy.likelihoods.Gaussian(Y)
+    #likelihood = GPy.likelihoods.Gaussian(Y)
     Z = np.random.uniform(-3.,3.,(7,1))
 
     k = GPy.kern.rbf(1) + GPy.kern.white(1)
 
     # create simple GP model
-    m = GPy.models.sparse_GP(X, likelihood, kernel=k, Z=Z, X_uncertainty=S)
+    m = GPy.models.sparse_GP_regression(X, Y, kernel=k, Z=Z, X_variance=S)
 
     # contrain all parameters to be positive
-    m.constrain_positive('(variance|prec)')
+    m.ensure_default_constraints()
 
     # optimize and plot
     m.optimize('tnc', messages=1, max_f_eval=max_nb_eval_optim)

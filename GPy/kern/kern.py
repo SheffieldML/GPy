@@ -46,10 +46,11 @@ class kern(parameterised):
         parameterised.__init__(self)
 
 
-    def plot_ARD(self, ax=None):
+    def plot_ARD(self, fignum=None, ax=None):
         """If an ARD kernel is present, it bar-plots the ARD parameters"""
         if ax is None:
-            ax = pb.gca()
+            fig = pb.figure(fignum)
+            ax = fig.add_subplot(111)
         for p in self.parts:
             if hasattr(p, 'ARD') and p.ARD:
                 ax.set_title('ARD parameters, %s kernel' % p.name)

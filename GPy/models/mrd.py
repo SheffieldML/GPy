@@ -256,19 +256,19 @@ class MRD(model):
         self.Z = Z
         return Z
 
-    def _handle_plotting(self, fignum, ax, plotf):
-        if ax is None:
+    def _handle_plotting(self, fignum, axes, plotf):
+        if axes is None:
             fig = pylab.figure(num=fignum, figsize=(4 * len(self.bgplvms), 3))
         for i, g in enumerate(self.bgplvms):
-            if ax is None:
-                ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
-            elif isinstance(ax, (tuple, list)):
-                ax = ax[i]
+            if axes is None:
+                axes = fig.add_subplot(1, len(self.bgplvms), i + 1)
+            elif isinstance(axes, (tuple, list)):
+                axes = axes[i]
             else:
-                raise ValueError("Need one ax per latent dimension Q")
-            plotf(i, g, ax)
+                raise ValueError("Need one axes per latent dimension Q")
+            plotf(i, g, axes)
         pylab.draw()
-        if ax is None:
+        if axes is None:
             fig.tight_layout()
             return fig
         else:
@@ -286,11 +286,11 @@ class MRD(model):
         return fig
 
     def plot_scales(self, fignum="MRD Scales", ax=None, *args, **kwargs):
-        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.kern.plot_ARD(ax=ax, *args, **kwargs))
+        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.kern.plot_ARD(axes=ax, *args, **kwargs))
         return fig
 
     def plot_latent(self, fignum="MRD Latent Spaces", ax=None, *args, **kwargs):
-        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.plot_latent(ax=ax, *args, **kwargs))
+        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.plot_latent(axes=ax, *args, **kwargs))
         return fig
 
     def _debug_plot(self):

@@ -31,5 +31,5 @@ class GP_regression(GP):
 
         likelihood = likelihoods.Gaussian(Y,normalize=normalize_Y)
 
-        super(GP_regression, self).__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
+        super(GP_regression, self).__init__(X, likelihood, kernel, normalize_X=normalize_X)
         self._set_params(self._get_params())

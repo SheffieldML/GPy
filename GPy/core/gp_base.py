@@ -24,6 +24,9 @@ class GPBase(model.model):
             self._Xmean = X.mean(0)[None, :]
             self._Xstd = X.std(0)[None, :]
             self.X = (X.copy() - self._Xmean) / self._Xstd
+        else:
+            self._Xmean = np.zeros((1,self.Q))
+            self._Xstd = np.ones((1,self.Q))
 
         super(GPBase, self).__init__()
 

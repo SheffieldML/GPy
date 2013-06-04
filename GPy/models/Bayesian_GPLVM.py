@@ -218,7 +218,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         return means, covars
 
 
-    def plot_X_1d(self, ax=None, fignum=None, colors=None):
+    def plot_X_1d(self, fignum=None, ax=None, colors=None):
         """
         Plot latent space X in 1D:
 
@@ -230,7 +230,8 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             colors of different latent space dimensions Q
         """
         import pylab
-        fig = pylab.figure(num=fignum, figsize=(8, min(12, (2 * self.X.shape[1]))))
+        if ax is None:
+            fig = pylab.figure(num=fignum, figsize=(8, min(12, (2 * self.X.shape[1]))))
         if colors is None:
             colors = pylab.gca()._get_lines.color_cycle
             pylab.clf()
@@ -241,8 +242,10 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         for i in range(self.X.shape[1]):
             if ax is None:
                 ax = fig.add_subplot(self.X.shape[1], 1, i + 1)
-            else:
+            elif isinstance(ax, (tuple, list)):
                 ax = ax[i]
+            else:
+                raise ValueError("Need one ax per latent dimnesion Q")
             ax.plot(self.X, c='k', alpha=.3)
             plots.extend(ax.plot(x, self.X.T[i], c=colors.next(), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
             ax.fill_between(x,

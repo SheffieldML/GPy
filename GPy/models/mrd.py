@@ -258,15 +258,14 @@ class MRD(model):
 
     def _handle_plotting(self, fignum, ax, plotf):
         if ax is None:
-            fig = pylab.figure(num=fignum)
-            ax = fig.add_subplot(111)
-        if ax is None:
             fig = pylab.figure(num=fignum, figsize=(4 * len(self.bgplvms), 3))
         for i, g in enumerate(self.bgplvms):
             if ax is None:
                 ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
-            else:
+            elif isinstance(ax, (tuple, list)):
                 ax = ax[i]
+            else:
+                raise ValueError("Need one ax per latent dimension Q")
             plotf(i, g, ax)
         pylab.draw()
         if ax is None:

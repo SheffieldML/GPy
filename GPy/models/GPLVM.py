@@ -63,4 +63,4 @@ class GPLVM(GP):
         pb.plot(mu[:,0], mu[:,1],'k',linewidth=1.5)
 
     def plot_latent(self, *args, **kwargs):
-        util.plot_latent.plot_latent(self, *args, **kwargs)
+        return util.plot_latent.plot_latent(self, *args, **kwargs)

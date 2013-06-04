@@ -148,7 +148,7 @@ def BGPLVM_oil(optimize=True, N=100, Q=5, M=25, max_f_eval=4e3, plot=False, **k)
         plt.sca(latent_axes)
         m.plot_latent()
         data_show = GPy.util.visualize.vector_show(y)
-        lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :].copy(), m, data_show, latent_axes=latent_axes) # , sense_axes=sense_axes)
+        lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :], m, data_show, latent_axes=latent_axes) # , sense_axes=sense_axes)
         raw_input('Press enter to finish')
         plt.close('all')
     return m

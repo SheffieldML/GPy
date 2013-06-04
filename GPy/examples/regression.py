@@ -10,7 +10,7 @@ import numpy as np
 import GPy
 
 
-def toy_rbf_1d():
+def toy_rbf_1d(max_nb_eval_optim=100):
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
     data = GPy.util.datasets.toy_rbf_1d()
 
@@ -19,13 +19,13 @@ def toy_rbf_1d():
 
     # optimize
     m.ensure_default_constraints()
-    m.optimize()
+    m.optimize(max_f_eval=max_nb_eval_optim)
     # plot
     m.plot()
     print(m)
     return m
 
-def rogers_girolami_olympics():
+def rogers_girolami_olympics(max_nb_eval_optim=100):
     """Run a standard Gaussian process regression on the Rogers and Girolami olympics data."""
     data = GPy.util.datasets.rogers_girolami_olympics()
 
@@ -34,14 +34,14 @@ def rogers_girolami_olympics():
 
     # optimize
     m.ensure_default_constraints()
-    m.optimize()
+    m.optimize(max_f_eval=max_nb_eval_optim)
 
     # plot
     m.plot(plot_limits = (1850, 2050))
     print(m)
     return m
 
-def toy_rbf_1d_50():
+def toy_rbf_1d_50(max_nb_eval_optim=100):
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
     data = GPy.util.datasets.toy_rbf_1d_50()
 
@@ -50,14 +50,14 @@ def toy_rbf_1d_50():
 
     # optimize
     m.ensure_default_constraints()
-    m.optimize()
+    m.optimize(max_f_eval=max_nb_eval_optim)
 
     # plot
     m.plot()
     print(m)
     return m
 
-def silhouette():
+def silhouette(max_nb_eval_optim=100):
     """Predict the pose of a figure given a silhouette. This is a task from Agarwal and Triggs 2004 ICML paper."""
     data = GPy.util.datasets.silhouette()
 
@@ -66,12 +66,12 @@ def silhouette():
 
     # optimize
     m.ensure_default_constraints()
-    m.optimize(messages=True)
+    m.optimize(messages=True,max_f_eval=max_nb_eval_optim)
 
     print(m)
     return m
 
-def coregionalisation_toy2():
+def coregionalisation_toy2(max_nb_eval_optim=100):
     """
     A simple demonstration of coregionalisation on two sinusoidal functions.
     """
@@ -90,8 +90,7 @@ def coregionalisation_toy2():
     m.constrain_fixed('rbf_var',1.)
     m.constrain_positive('kappa')
     m.ensure_default_constraints()
-    m.optimize('sim',max_f_eval=5000,messages=1)
-    #m.optimize()
+    m.optimize('sim',messages=1,max_f_eval=max_nb_eval_optim)
 
     pb.figure()
     Xtest1 = np.hstack((np.linspace(0,9,100)[:,None],np.zeros((100,1))))
@@ -104,7 +103,7 @@ def coregionalisation_toy2():
     pb.plot(X2[:,0],Y2[:,0],'gx',mew=2)
     return m
 
-def coregionalisation_toy():
+def coregionalisation_toy(max_nb_eval_optim=100):
     """
     A simple demonstration of coregionalisation on two sinusoidal functions.
     """
@@ -123,7 +122,7 @@ def coregionalisation_toy():
     m.constrain_fixed('rbf_var',1.)
     m.constrain_positive('kappa')
     m.ensure_default_constraints()
-    m.optimize()
+    m.optimize(max_f_eval=max_nb_eval_optim)
 
     pb.figure()
     Xtest1 = np.hstack((np.linspace(0,9,100)[:,None],np.zeros((100,1))))
@@ -137,7 +136,7 @@ def coregionalisation_toy():
     return m
 
 
-def coregionalisation_sparse():
+def coregionalisation_sparse(max_nb_eval_optim=100):
     """
     A simple demonstration of coregionalisation on two sinusoidal functions using sparse approximations.
     """
@@ -162,7 +161,7 @@ def coregionalisation_sparse():
     m.constrain_positive('kappa')
     m.constrain_fixed('iip')
     m.ensure_default_constraints()
-    m.optimize_restarts(5,robust=True,messages=1)
+    m.optimize_restarts(5, robust=True, messages=1, max_f_eval=max_nb_eval_optim)
 
     pb.figure()
     Xtest1 = np.hstack((np.linspace(0,9,100)[:,None],np.zeros((100,1))))
@@ -179,7 +178,7 @@ def coregionalisation_sparse():
     return m
 
 
-def multiple_optima(gene_number=937,resolution=80, model_restarts=10, seed=10000):
+def multiple_optima(gene_number=937,resolution=80, model_restarts=10, seed=10000, max_nb_eval_optim=100):
     """Show an example of a multimodal error surface for Gaussian process regression. Gene 939 has bimodal behaviour where the noisey mode is higher."""
 
     # Contour over a range of length scales and signal/noise ratios.
@@ -217,7 +216,7 @@ def multiple_optima(gene_number=937,resolution=80, model_restarts=10, seed=10000
 
         # optimize
         m.ensure_default_constraints()
-        m.optimize(xtol=1e-6,ftol=1e-6)
+        m.optimize(xtol=1e-6, ftol=1e-6, max_f_eval=max_nb_eval_optim)
 
         optim_point_x[1] = m.get('rbf_lengthscale')
         optim_point_y[1] = np.log10(m.get('rbf_variance')) - np.log10(m.get('white_variance'));
@@ -264,7 +263,7 @@ def _contour_data(data, length_scales, log_SNRs, signal_kernel_call=GPy.kern.rbf
         lls.append(length_scale_lls)
     return np.array(lls)
 
-def sparse_GP_regression_1D(N = 400, M = 5):
+def sparse_GP_regression_1D(N = 400, M = 5, max_nb_eval_optim=100):
     """Run a 1D example of a sparse GP regression."""
     # sample inputs and outputs
     X = np.random.uniform(-3.,3.,(N,1))
@@ -279,11 +278,11 @@ def sparse_GP_regression_1D(N = 400, M = 5):
     m.constrain_positive('(variance|lengthscale|precision)')
 
     m.checkgrad(verbose=1)
-    m.optimize('tnc', messages = 1)
+    m.optimize('tnc', messages = 1, max_f_eval=max_nb_eval_optim)
     m.plot()
     return m
 
-def sparse_GP_regression_2D(N = 400, M = 50):
+def sparse_GP_regression_2D(N = 400, M = 50, max_nb_eval_optim=100):
     """Run a 2D example of a sparse GP regression."""
     X = np.random.uniform(-3.,3.,(N,2))
     Y = np.sin(X[:,0:1]) * np.sin(X[:,1:2])+np.random.randn(N,1)*0.05
@@ -294,7 +293,7 @@ def sparse_GP_regression_2D(N = 400, M = 50):
     kernel = rbf + noise
 
     # create simple GP model
-    m = GPy.models.sparse_GP_regression(X,Y,kernel, M = M)
+    m = GPy.models.sparse_GP_regression(X,Y,kernel, M = M, max_nb_eval_optim=100)
 
     # contrain all parameters to be positive (but not inducing inputs)
     m.constrain_positive('(variance|lengthscale|precision)')
@@ -304,12 +303,12 @@ def sparse_GP_regression_2D(N = 400, M = 50):
 
     # optimize and plot
     pb.figure()
-    m.optimize('tnc', messages = 1)
+    m.optimize('tnc', messages = 1, max_f_eval=max_nb_eval_optim)
     m.plot()
     print(m)
     return m
 
-def uncertain_inputs_sparse_regression():
+def uncertain_inputs_sparse_regression(max_nb_eval_optim=100):
     """Run a 1D example of a sparse GP regression with uncertain inputs."""
     # sample inputs and outputs
     S = np.ones((20,1))
@@ -327,7 +326,7 @@ def uncertain_inputs_sparse_regression():
     m.constrain_positive('(variance|prec)')
 
     # optimize and plot
-    m.optimize('tnc', max_f_eval = 1000, messages=1)
+    m.optimize('tnc', messages=1, max_f_eval=max_nb_eval_optim)
     m.plot()
     print(m)
     return m

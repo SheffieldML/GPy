@@ -4,7 +4,6 @@
 import numpy as np
 import pylab as pb
 from ..util.linalg import mdot, jitchol, tdot, symmetrify, backsub_both_sides, chol_inv
-from GP import GP
 from scipy import linalg
 from ..likelihoods import Gaussian
 from gp_base import GPBase
@@ -30,7 +29,7 @@ class sparse_GP(GPBase):
     """
 
     def __init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False):
-        super(sparse_GP, self).__init__(X, likelihood, kernel, normalize_X=normalize_X)
+        GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
 
         self.Z = Z
         self.M = Z.shape[0]
@@ -160,10 +159,11 @@ class sparse_GP(GPBase):
         self._computations()
 
     def _get_params(self):
-        return np.hstack([self.Z.flatten(), GP._get_params(self)])
+        return np.hstack([self.Z.flatten(), self.kern._get_params_transformed(), self.likelihood._get_params()])
 
     def _get_param_names(self):
-        return sum([['iip_%i_%i' % (i, j) for j in range(self.Z.shape[1])] for i in range(self.Z.shape[0])], []) + GP._get_param_names(self)
+        return sum([['iip_%i_%i' % (i, j) for j in range(self.Z.shape[1])] for i in range(self.Z.shape[0])],[])\
+            + self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
     def update_likelihood_approximation(self):
         """
@@ -282,7 +282,7 @@ class sparse_GP(GPBase):
         return mean, var, _025pm, _975pm
 
     def plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20):
-        super(sparse_GP, self).plot(samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20)
+        GPBase.plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20)
         if self.X.shape[1] == 1:
             Xu = self.X * self._Xstd + self._Xmean  # NOTE self.X are the normalized values now
             if self.has_uncertain_inputs:

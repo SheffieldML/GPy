@@ -34,13 +34,13 @@ class model(parameterised):
     def _log_likelihood_gradients(self):
         raise NotImplementedError, "this needs to be implemented to use the model class"
 
-    def set_prior(self, which, what):
+    def set_prior(self, regexp, what):
         """
         Sets priors on the model parameters.
 
         Arguments
         ---------
-        which -- string, regexp, or integer array
+        regexp -- string, regexp, or integer array
         what -- instance of a Prior class
 
         Notes
@@ -52,6 +52,8 @@ class model(parameterised):
         For tied parameters, the Prior will only be "counted" once, thus
         a Prior object is only inserted on the first tied index
         """
+        if self.priors is None:
+            self.priors = [None for i in range(self._get_params().size)]
 
         which = self.grep_param_names(which)
 
@@ -105,11 +107,16 @@ class model(parameterised):
             raise AttributeError, "no parameter matches %s" % name
 
     def log_prior(self):
-        """evaluate the Prior"""
-        return np.sum([p.lnpdf(x) for p, x in zip(self.priors, self._get_params()) if p is not None])
+        """evaluate the prior"""
+        if self.priors is not None:
+            return np.sum([p.lnpdf(x) for p, x in zip(self.priors, self._get_params()) if p is not None])
+        else:
+            return 0.
 
     def _log_prior_gradients(self):
         """evaluate the gradients of the priors"""
+        if self.priors is None:
+            return 0.
         x = self._get_params()
         ret = np.zeros(x.size)
         [np.put(ret, i, p.lnpdf_grad(xx)) for i, (p, xx) in enumerate(zip(self.priors, x)) if not p is None]
@@ -137,9 +144,10 @@ class model(parameterised):
         self._set_params_transformed(x)
         # now draw from Prior where possible
         x = self._get_params()
-        [np.put(x, i, p.rvs(1)) for i, p in enumerate(self.priors) if not p is None]
+        if self.priors is not None:
+            [np.put(x, i, p.rvs(1)) for i, p in enumerate(self.priors) if not p is None]
         self._set_params(x)
-        self._set_params_transformed(self._get_params_transformed())  # makes sure all of the tied parameters get the same init (since there's only one Prior object...)
+        self._set_params_transformed(self._get_params_transformed())  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
 
 
     def optimize_restarts(self, Nrestarts=10, robust=False, verbose=True, parallel=False, num_processes=None, **kwargs):
@@ -236,16 +244,13 @@ class model(parameterised):
         Gets the gradients from the likelihood and the priors.
         """
         self._set_params_transformed(x)
-        LL_gradients = self._transform_gradients(self._log_likelihood_gradients())
-        prior_gradients = self._transform_gradients(self._log_prior_gradients())
-        return -LL_gradients - prior_gradients
+        obj_grads = - self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
+        return obj_grads
 
     def objective_and_gradients(self, x):
         self._set_params_transformed(x)
         obj_f = -self.log_likelihood() - self.log_prior()
-        LL_gradients = self._transform_gradients(self._log_likelihood_gradients())
-        prior_gradients = self._transform_gradients(self._log_prior_gradients())
-        obj_grads = -LL_gradients - prior_gradients
+        obj_grads = - self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
         return obj_f, obj_grads
 
     def optimize(self, optimizer=None, start=None, **kwargs):

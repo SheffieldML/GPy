@@ -29,7 +29,7 @@ class GP(GPBase):
 
     """
     def __init__(self, X, likelihood, kernel, normalize_X=False):
-        super(GP, self).__init__(X, likelihood, kernel, normalize_X=normalize_X)
+        GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
         self._set_params(self._get_params())
 
     def _set_params(self, p):
@@ -52,6 +52,10 @@ class GP(GPBase):
             tmp, _ = linalg.lapack.flapack.dpotrs(self.L, np.asfortranarray(self.likelihood.YYT), lower=1)
             tmp, _ = linalg.lapack.flapack.dpotrs(self.L, np.asfortranarray(tmp.T), lower=1)
             self.dL_dK = 0.5 * (tmp - self.D * self.Ki)
+
+    def _get_params(self):
+        return np.hstack((self.kern._get_params_transformed(), self.likelihood._get_params()))
+
 
     def _get_param_names(self):
         return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()

@@ -28,13 +28,10 @@ class GPBase(model.model):
             self._Xmean = np.zeros((1,self.Q))
             self._Xstd = np.ones((1,self.Q))
 
-        super(GPBase, self).__init__()
+        model.model.__init__(self)
 
         # All leaf nodes should call self._set_params(self._get_params()) at
         # the end
-
-    def _get_params(self):
-        return np.hstack((self.kern._get_params_transformed(), self.likelihood._get_params()))
 
     def plot_f(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, full_cov=False):
         """
@@ -77,8 +74,6 @@ class GPBase(model.model):
             ymin, ymax = min(np.append(self.likelihood.Y, m - 2 * np.sqrt(np.diag(v)[:, None]))), max(np.append(self.likelihood.Y, m + 2 * np.sqrt(np.diag(v)[:, None])))
             ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
             pb.ylim(ymin, ymax)
-            if hasattr(self, 'Z'):
-                pb.plot(self.Z, self.Z * 0 + pb.ylim()[0], 'r|', mew=1.5, markersize=12)
 
         elif self.X.shape[1] == 2:
             resolution = resolution or 50

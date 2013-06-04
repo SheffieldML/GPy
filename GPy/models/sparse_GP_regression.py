@@ -43,5 +43,5 @@ class sparse_GP_regression(sparse_GP):
         #likelihood defaults to Gaussian
         likelihood = likelihoods.Gaussian(Y,normalize=normalize_Y)
 
-        super(sparse_GP_regression, self).__init__(self, X, likelihood, kernel, Z, normalize_X=normalize_X)
+        sparse_GP.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X)
         self._set_params(self._get_params())

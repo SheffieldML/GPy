@@ -19,8 +19,6 @@ class link_function(object):
     def __init__(self):
         pass
 
-
-
 class identity(link_function):
     def transf(self,mu):
         return mu
@@ -53,6 +51,10 @@ class log_ex_1(link_function):
         return np.log(np.log(np.exp(f)+1))
 
 class probit(link_function):
-    pass
 
+    def inv_transf(self,f):
+        return std_norm_cdf(f)
+
+    def log_inv_transf(self,f):
+        return np.log(std_norm_cdf(f))
 

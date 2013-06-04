@@ -20,7 +20,7 @@ from GPy.core.domains import POSITIVE, REAL
 class model(parameterised):
     def __init__(self):
         parameterised.__init__(self)
-        self.priors = [None for i in range(self._get_params().size)]
+        self.priors = None
         self.optimization_runs = []
         self.sampling_runs = []
         self.preferred_optimizer = 'tnc'
@@ -55,7 +55,7 @@ class model(parameterised):
         if self.priors is None:
             self.priors = [None for i in range(self._get_params().size)]
 
-        which = self.grep_param_names(which)
+        which = self.grep_param_names(regexp)
 
         # check tied situation
         tie_partial_matches = [tie for tie in self.tied_indices if (not set(tie).isdisjoint(set(which))) & (not set(tie) == set(which))]
@@ -316,7 +316,10 @@ class model(parameterised):
     def __str__(self):
         s = parameterised.__str__(self).split('\n')
         # add priors to the string
-        strs = [str(p) if p is not None else '' for p in self.priors]
+        if self.priors is not None:
+            strs = [str(p) if p is not None else '' for p in self.priors]
+        else:
+            strs = ['']*len(self._get_params())
         width = np.array(max([len(p) for p in strs] + [5])) + 4
 
         log_like = self.log_likelihood()

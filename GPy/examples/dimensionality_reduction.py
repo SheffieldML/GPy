@@ -284,7 +284,6 @@ def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
 
     from GPy.models import mrd
     from GPy import kern
-    from GPy.core.transformations import logexp_clipped
 
     reload(mrd); reload(kern)
 

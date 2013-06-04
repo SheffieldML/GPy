@@ -52,7 +52,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         ftol = 1e-6
     if gtol is None:
         gtol = 1e-5
-    sigma0 = 1.0e-4
+    sigma0 = 1.0e-8
     fold = f(x, *optargs) # Initial function value.
     function_eval = 1
     fnow = fold
@@ -63,7 +63,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
     success = True # Force calculation of directional derivs.
     nsuccess = 0 # nsuccess counts number of successes.
     beta = 1.0 # Initial scale parameter.
-    betamin = 1.0e-30 # Lower bound on scale.
+    betamin = 1.0e-15 # Lower bound on scale.
     betamax = 1.0e100 # Upper bound on scale.
     status = "Not converged"
 

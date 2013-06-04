@@ -4,7 +4,7 @@ from .. import kern
 from ..util.plot import gpplot, Tango, x_frame1D, x_frame2D
 import pylab as pb
 
-class GPBase(model):
+class GPBase(model.model):
     """
     Gaussian Process model for holding shared behaviour between
     sprase_GP and GP models

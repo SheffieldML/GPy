@@ -64,12 +64,9 @@ class DPsiStatTest(unittest.TestCase):
 
     def testPsi0(self):
         for k in self.kernels:
-            m = PsiStatModel('psi1', X=self.X, X_variance=self.X_var, Z=self.Z,
-                         num_inducing=self.num_inducing, kernel=k)
-            try:
-                assert m.checkgrad(), "{} x psi0".format("+".join(map(lambda x: x.name, k.parts)))
-            except:
-                import ipdb;ipdb.set_trace()
+            m = PsiStatModel('psi0', X=self.X, X_variance=self.X_var, Z=self.Z,
+                             num_inducing=self.num_inducing, kernel=k)
+            assert m.checkgrad(), "{} x psi0".format("+".join(map(lambda x: x.name, k.parts)))
 
 #     def testPsi1(self):
 #         for k in self.kernels:

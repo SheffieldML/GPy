@@ -7,7 +7,11 @@ from ..util.linalg import mdot, jitchol, chol_inv, pdinv, trace_dot
 from ..util.plot import gpplot
 from .. import kern
 from scipy import stats, linalg
+<<<<<<< HEAD:GPy/models/generalized_FITC.py
+from sparse_GP import sparse_GP
+=======
 from ..core import SparseGP
+>>>>>>> 7040b26f41f382edfdca3d3f7b689b9bbfc1a54f:GPy/models/generalized_fitc.py
 
 def backsub_both_sides(L,X):
     """ Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky"""
@@ -36,12 +40,17 @@ class GeneralizedFITC(SparseGP):
     """
 
     def __init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False):
+
         self.Z = Z
         self.num_inducing = self.Z.shape[0]
         self.true_precision = likelihood.precision
 
+<<<<<<< HEAD:GPy/models/generalized_FITC.py
+        sparse_GP.__init__(self, X, likelihood, kernel=kernel, Z=self.Z, X_variance=None, normalize_X=False)
+=======
         super(GeneralizedFITC, self).__init__(X, likelihood, kernel=kernel, Z=self.Z, X_variance=X_variance, normalize_X=normalize_X)
         self._set_params(self._get_params())
+>>>>>>> 7040b26f41f382edfdca3d3f7b689b9bbfc1a54f:GPy/models/generalized_fitc.py
 
     def _set_params(self, p):
         self.Z = p[:self.num_inducing*self.input_dim].reshape(self.num_inducing, self.input_dim)

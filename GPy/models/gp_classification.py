@@ -7,11 +7,11 @@ from ..core import GP
 from .. import likelihoods
 from .. import kern
 
-class GP_classification(GP):
+class GPClassification(GP):
     """
     Gaussian Process classification
 
-    This is a thin wrapper around the models.GP class, with a set of sensible defalts
+    This is a thin wrapper around the models.GP class, with a set of sensible defaults
 
     :param X: input observations
     :param Y: observed values

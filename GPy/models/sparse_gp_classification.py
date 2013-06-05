@@ -3,17 +3,16 @@
 
 
 import numpy as np
-from ..core import sparse_GP
+from ..core import SparseGP
 from .. import likelihoods
 from .. import kern
 from ..likelihoods import likelihood
-from GPRegression import GPRegression
 
-class sparse_GP_classification(sparse_GP):
+class SparseGPClassification(SparseGP):
     """
     sparse Gaussian Process model for classification
 
-    This is a thin wrapper around the sparse_GP class, with a set of sensible defalts
+    This is a thin wrapper around the sparse_GP class, with a set of sensible defaults
 
     :param X: input observations
     :param Y: observed values
@@ -24,8 +23,6 @@ class sparse_GP_classification(sparse_GP):
     :param normalize_Y:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_Y: False|True
     :rtype: model object
-
-    .. Note:: Multiple independent outputs are allowed using columns of Y
 
     """
 
@@ -46,5 +43,5 @@ class sparse_GP_classification(sparse_GP):
         else:
             assert Z.shape[1]==X.shape[1]
 
-        sparse_GP.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X)
+        SparseGP.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X)
         self._set_params(self._get_params())

@@ -332,23 +332,24 @@ def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
 
 #     return m
 
-def stick():
-    data = GPy.util.datasets.stick()
-    m = GPy.models.GPLVM(data['Y'], 2)
+# # Commented out because dataset is missing
+# def stick():
+#     data = GPy.util.datasets.stick()
+#     m = GPy.models.GPLVM(data['Y'], 2)
 
-    # optimize
-    m.ensure_default_constraints()
-    m.optimize(messages=1, max_f_eval=10000)
-    m._set_params(m._get_params())
+#     # optimize
+#     m.ensure_default_constraints()
+#     m.optimize(messages=1, max_f_eval=10000)
+#     m._set_params(m._get_params())
 
-    ax = m.plot_latent()
-    y = m.likelihood.Y[0, :]
-    data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
-    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
-    raw_input('Press enter to finish')
-    plt.close('all')
+#     ax = m.plot_latent()
+#     y = m.likelihood.Y[0, :]
+#     data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
+#     lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+#     raw_input('Press enter to finish')
+#     plt.close('all')
 
-    return m
+#     return m
 
 # # Commented out because dataset is missing
 # def cmu_mocap(subject='35', motion=['01'], in_place=True):

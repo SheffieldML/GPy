@@ -19,7 +19,7 @@ def tuto_GP_regression():
 
     kernel = GPy.kern.rbf(D=1, variance=1., lengthscale=1.)
 
-    m = GPy.models.GP_regression(X,Y,kernel)
+    m = GPy.models.GPRegression(X, Y, kernel)
 
     print m
     m.plot()
@@ -47,7 +47,7 @@ def tuto_GP_regression():
     ker = GPy.kern.Matern52(2,ARD=True) + GPy.kern.white(2)
 
     # create simple GP model
-    m = GPy.models.GP_regression(X,Y,ker)
+    m = GPy.models.GPRegression(X, Y, ker)
 
     # contrain all parameters to be positive
     m.constrain_positive('')
@@ -145,7 +145,7 @@ def tuto_kernel_overview():
     Y = 0.5*X[:,:1] + 0.5*X[:,1:] + 2*np.sin(X[:,:1]) * np.sin(X[:,1:])
 
     # Create GP regression model
-    m = GPy.models.GP_regression(X,Y,Kanova)
+    m = GPy.models.GPRegression(X, Y, Kanova)
     pb.figure(figsize=(5,5))
     m.plot()
 
@@ -196,5 +196,5 @@ def model_interaction():
     X = np.random.randn(20,1)
     Y = np.sin(X) + np.random.randn(*X.shape)*0.01 + 5.
     k = GPy.kern.rbf(1) + GPy.kern.bias(1)
-    return GPy.models.GP_regression(X,Y,kernel=k)
+    return GPy.models.GPRegression(X, Y, kernel=k)
 

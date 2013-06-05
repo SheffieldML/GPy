@@ -10,12 +10,12 @@ from ..util.plot import gpplot
 from ..util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
 import link_functions
 
-class likelihood_function(object):
+class LikelihoodFunction(object):
     """
     Likelihood class for doing Expectation propagation
 
     :param Y: observed output (Nx1 numpy.darray)
-    ..Note:: Y values allowed depend on the likelihood_function used
+    ..Note:: Y values allowed depend on the LikelihoodFunction used
     """
     def __init__(self,link):
         if link == self._analytical:
@@ -69,7 +69,7 @@ class likelihood_function(object):
         sigma2_hat = m2 - mu_hat**2 # Second central moment
         return float(Z_hat), float(mu_hat), float(sigma2_hat)
 
-class binomial(likelihood_function):
+class Binomial(LikelihoodFunction):
     """
     Probit likelihood
     Y is expected to take values in {-1,1}
@@ -82,7 +82,7 @@ class binomial(likelihood_function):
         self._analytical = link_functions.probit
         if not link:
             link = self._analytical
-        super(binomial, self).__init__(link)
+        super(Binomial, self).__init__(link)
 
     def _distribution(self,gp,obs):
         pass
@@ -134,7 +134,7 @@ class binomial(likelihood_function):
         p_975 = stats.norm.cdf(norm_975/np.sqrt(1+var))
         return mean[:,None], np.nan*var, p_025[:,None], p_975[:,None] # TODO: var
 
-class Poisson(likelihood_function):
+class Poisson(LikelihoodFunction):
     """
     Poisson likelihood
     Y is expected to take values in {0,1,2,...}

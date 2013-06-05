@@ -13,7 +13,7 @@ class PriorTests(unittest.TestCase):
         y  = b*X + C + 1*np.sin(X)
         y += 0.05*np.random.randn(len(X))
         X, y = X[:, None], y[:, None]
-        m = GPy.models.GP_regression(X, y)
+        m = GPy.models.GPRegression(X, y)
         m.ensure_default_constraints()
         lognormal = GPy.priors.LogGaussian(1, 2)
         m.set_prior('rbf', lognormal)
@@ -27,7 +27,7 @@ class PriorTests(unittest.TestCase):
         y  = b*X + C + 1*np.sin(X)
         y += 0.05*np.random.randn(len(X))
         X, y = X[:, None], y[:, None]
-        m = GPy.models.GP_regression(X, y)
+        m = GPy.models.GPRegression(X, y)
         m.ensure_default_constraints()
         Gamma = GPy.priors.Gamma(1, 1)
         m.set_prior('rbf', Gamma)
@@ -41,7 +41,7 @@ class PriorTests(unittest.TestCase):
         y  = b*X + C + 1*np.sin(X)
         y += 0.05*np.random.randn(len(X))
         X, y = X[:, None], y[:, None]
-        m = GPy.models.GP_regression(X, y)
+        m = GPy.models.GPRegression(X, y)
         m.ensure_default_constraints()
         gaussian = GPy.priors.Gaussian(1, 1)
         success = False

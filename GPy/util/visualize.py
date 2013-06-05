@@ -221,7 +221,7 @@ class image_show(data_show):
         if not self.palette == []: # Can just show the image (self.set_image() took care of setting the palette)
             self.handle = self.axes.imshow(self.vals, interpolation='nearest')
         else: # Use a boring gray map.
-            self.handle = self.axes.imshow(self.vals, cmap=plt.cm.gray, interpolation='nearest')
+            self.handle = self.axes.imshow(self.vals, cmap=plt.cm.gray, interpolation='nearest') # @UndefinedVariable
         plt.show()
 
     def modify(self, vals):

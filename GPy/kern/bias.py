@@ -7,14 +7,14 @@ import numpy as np
 import hashlib
 
 class bias(kernpart):
-    def __init__(self,D,variance=1.):
+    def __init__(self,input_dim,variance=1.):
         """
-        :param D: the number of input dimensions
-        :type D: int
+        :param input_dim: the number of input dimensions
+        :type input_dim: int
         :param variance: the variance of the kernel
         :type variance: float
         """
-        self.D = D
+        self.input_dim = input_dim
         self.Nparam = 1
         self.name = 'bias'
         self._set_params(np.array([variance]).flatten())

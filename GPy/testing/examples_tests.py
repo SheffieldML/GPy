@@ -9,6 +9,7 @@ import pkgutil
 import os
 import random
 from nose.tools import nottest
+import sys
 
 class ExamplesTests(unittest.TestCase):
     def _checkgrad(self, model):
@@ -40,9 +41,9 @@ def model_instance(model):
 @nottest
 def test_models():
     examples_path = os.path.dirname(GPy.examples.__file__)
-    #Load modules
+    # Load modules
     for loader, module_name, is_pkg in pkgutil.iter_modules([examples_path]):
-        #Load examples
+        # Load examples
         module_examples = loader.find_module(module_name).load_module(module_name)
         print "MODULE", module_examples
         print "Before"
@@ -56,11 +57,11 @@ def test_models():
                 continue
 
             print "Testing example: ", example[0]
-            #Generate model
+            # Generate model
             model = example[1]()
             print model
 
-            #Create tests for instance check
+            # Create tests for instance check
             """
             test = model_instance_generator(model)
             test.__name__ = 'test_instance_%s' % example[0]
@@ -78,4 +79,5 @@ def test_models():
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."
-    unittest.main()
+    # unittest.main()
+    test_models()

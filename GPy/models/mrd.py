@@ -4,14 +4,13 @@ Created on 10 Apr 2013
 @author: Max Zwiessele
 '''
 from GPy.core import model
-from GPy.models.Bayesian_GPLVM import Bayesian_GPLVM
-from GPy.core import sparse_GP
+from GPy.core import SparseGP
 from GPy.util.linalg import PCA
-from scipy import linalg
 import numpy
 import itertools
 import pylab
 from GPy.kern.kern import kern
+from GPy.models.bayesian_gplvm import BayesianGPLVM
 
 class MRD(model):
     """
@@ -38,7 +37,7 @@ class MRD(model):
             *concat: PCA on concatenated outputs
             *single: PCA on each output
             *random: random
-    :param M:
+    :param num_inducing:
         number of inducing inputs to use
     :param Z:
         initial inducing inputs
@@ -62,22 +61,22 @@ class MRD(model):
         assert not ('kernel' in kw), "pass kernels through `kernels` argument"
 
         self.input_dim = input_dim
-        self.M = M
+        self.num_inducing = M
         self._debug = _debug
 
         self._init = True
         X = self._init_X(initx, likelihood_or_Y_list)
         Z = self._init_Z(initz, X)
-        self.bgplvms = [Bayesian_GPLVM(l, input_dim=input_dim, kernel=k, X=X, Z=Z, M=self.M, **kw) for l, k in zip(likelihood_or_Y_list, kernels)]
+        self.bgplvms = [BayesianGPLVM(l, input_dim=input_dim, kernel=k, X=X, Z=Z, M=self.num_inducing, **kw) for l, k in zip(likelihood_or_Y_list, kernels)]
         del self._init
 
         self.gref = self.bgplvms[0]
-        nparams = numpy.array([0] + [sparse_GP._get_params(g).size - g.Z.size for g in self.bgplvms])
+        nparams = numpy.array([0] + [SparseGP._get_params(g).size - g.Z.size for g in self.bgplvms])
         self.nparams = nparams.cumsum()
 
         self.N = self.gref.N
         self.NQ = self.N * self.input_dim
-        self.MQ = self.M * self.input_dim
+        self.MQ = self.num_inducing * self.input_dim
 
         model.__init__(self) # @UndefinedVariable
         self._set_params(self._get_params())
@@ -151,7 +150,7 @@ class MRD(model):
                                          itertools.izip(ns,
                                                         itertools.repeat(name)))
         return list(itertools.chain(n1var, *(map_names(\
-                sparse_GP._get_param_names(g)[self.MQ:], n) \
+                SparseGP._get_param_names(g)[self.MQ:], n) \
                 for g, n in zip(self.bgplvms, self.names))))
 
     def _get_params(self):
@@ -165,14 +164,14 @@ class MRD(model):
         X = self.gref.X.ravel()
         X_var = self.gref.X_variance.ravel()
         Z = self.gref.Z.ravel()
-        thetas = [sparse_GP._get_params(g)[g.Z.size:] for g in self.bgplvms]
+        thetas = [SparseGP._get_params(g)[g.Z.size:] for g in self.bgplvms]
         params = numpy.hstack([X, X_var, Z, numpy.hstack(thetas)])
         return params
 
 #     def _set_var_params(self, g, X, X_var, Z):
 #         g.X = X.reshape(self.N, self.input_dim)
 #         g.X_variance = X_var.reshape(self.N, self.input_dim)
-#         g.Z = Z.reshape(self.M, self.input_dim)
+#         g.Z = Z.reshape(self.num_inducing, self.input_dim)
 #
 #     def _set_kern_params(self, g, p):
 #         g.kern._set_params(p[:g.kern.Nparam])
@@ -206,7 +205,7 @@ class MRD(model):
     def log_likelihood(self):
         ll = -self.gref.KL_divergence()
         for g in self.bgplvms:
-            ll += sparse_GP.log_likelihood(g)
+            ll += SparseGP.log_likelihood(g)
         return ll
 
     def _log_likelihood_gradients(self):
@@ -215,7 +214,7 @@ class MRD(model):
         dLdmu -= dKLmu
         dLdS -= dKLdS
         dLdmuS = numpy.hstack((dLdmu.flatten(), dLdS.flatten())).flatten()
-        dldzt1 = reduce(lambda a, b: a + b, (sparse_GP._log_likelihood_gradients(g)[:self.MQ] for g in self.bgplvms))
+        dldzt1 = reduce(lambda a, b: a + b, (SparseGP._log_likelihood_gradients(g)[:self.MQ] for g in self.bgplvms))
 
         return numpy.hstack((dLdmuS,
                              dldzt1,
@@ -250,9 +249,9 @@ class MRD(model):
         if X is None:
             X = self.X
         if init in "permute":
-            Z = numpy.random.permutation(X.copy())[:self.M]
+            Z = numpy.random.permutation(X.copy())[:self.num_inducing]
         elif init in "random":
-            Z = numpy.random.randn(self.M, self.input_dim) * X.var()
+            Z = numpy.random.randn(self.num_inducing, self.input_dim) * X.var()
         self.Z = Z
         return Z
 

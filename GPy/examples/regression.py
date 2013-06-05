@@ -15,7 +15,7 @@ def toy_rbf_1d(max_nb_eval_optim=100):
     data = GPy.util.datasets.toy_rbf_1d()
 
     # create simple GP model
-    m = GPy.models.GP_regression(data['X'],data['Y'])
+    m = GPy.models.GPRegression(data['X'],data['Y'])
 
     # optimize
     m.ensure_default_constraints()
@@ -30,7 +30,7 @@ def rogers_girolami_olympics(max_nb_eval_optim=100):
     data = GPy.util.datasets.rogers_girolami_olympics()
 
     # create simple GP model
-    m = GPy.models.GP_regression(data['X'],data['Y'])
+    m = GPy.models.GPRegression(data['X'],data['Y'])
 
     #set the lengthscale to be something sensible (defaults to 1)
     m['rbf_lengthscale'] = 10
@@ -49,7 +49,7 @@ def toy_rbf_1d_50(max_nb_eval_optim=100):
     data = GPy.util.datasets.toy_rbf_1d_50()
 
     # create simple GP model
-    m = GPy.models.GP_regression(data['X'],data['Y'])
+    m = GPy.models.GPRegression(data['X'],data['Y'])
 
     # optimize
     m.ensure_default_constraints()
@@ -65,7 +65,7 @@ def silhouette(max_nb_eval_optim=100):
     data = GPy.util.datasets.silhouette()
 
     # create simple GP model
-    m = GPy.models.GP_regression(data['X'],data['Y'])
+    m = GPy.models.GPRegression(data['X'],data['Y'])
 
     # optimize
     m.ensure_default_constraints()
@@ -87,9 +87,9 @@ def coregionalisation_toy2(max_nb_eval_optim=100):
     Y = np.vstack((Y1,Y2))
 
     k1 = GPy.kern.rbf(1) + GPy.kern.bias(1)
-    k2 = GPy.kern.coregionalise(2,1)
+    k2 = GPy.kern.Coregionalise(2,1)
     k = k1.prod(k2,tensor=True)
-    m = GPy.models.GP_regression(X,Y,kernel=k)
+    m = GPy.models.GPRegression(X,Y,kernel=k)
     m.constrain_fixed('.*rbf_var',1.)
     #m.constrain_positive('.*kappa')
     m.ensure_default_constraints()
@@ -119,9 +119,9 @@ def coregionalisation_toy(max_nb_eval_optim=100):
     Y = np.vstack((Y1,Y2))
 
     k1 = GPy.kern.rbf(1)
-    k2 = GPy.kern.coregionalise(2,2)
+    k2 = GPy.kern.Coregionalise(2,2)
     k = k1.prod(k2,tensor=True)
-    m = GPy.models.GP_regression(X,Y,kernel=k)
+    m = GPy.models.GPRegression(X,Y,kernel=k)
     m.constrain_fixed('.*rbf_var',1.)
     #m.constrain_positive('kappa')
     m.ensure_default_constraints()
@@ -155,10 +155,10 @@ def coregionalisation_sparse(max_nb_eval_optim=100):
     Z = np.hstack((np.random.rand(M,1)*8,np.random.randint(0,2,M)[:,None]))
 
     k1 = GPy.kern.rbf(1)
-    k2 = GPy.kern.coregionalise(2,2)
+    k2 = GPy.kern.Coregionalise(2,2)
     k = k1.prod(k2,tensor=True) + GPy.kern.white(2,0.001)
 
-    m = GPy.models.sparse_GP_regression(X,Y,kernel=k,Z=Z)
+    m = GPy.models.SparseGPRegression(X,Y,kernel=k,Z=Z)
     m.scale_factor = 10000.
     m.constrain_fixed('.*rbf_var',1.)
     #m.constrain_positive('kappa')
@@ -213,7 +213,7 @@ def multiple_optima(gene_number=937,resolution=80, model_restarts=10, seed=10000
     for i in range(0, model_restarts):
         kern = GPy.kern.rbf(1, variance=np.random.exponential(1.), lengthscale=np.random.exponential(50.)) + GPy.kern.white(1,variance=np.random.exponential(1.))
 
-        m = GPy.models.GP_regression(data['X'],data['Y'], kernel=kern)
+        m = GPy.models.GPRegression(data['X'],data['Y'], kernel=kern)
         optim_point_x[0] = m.get('rbf_lengthscale')
         optim_point_y[0] = np.log10(m.get('rbf_variance')) - np.log10(m.get('white_variance'));
 
@@ -260,7 +260,7 @@ def _contour_data(data, length_scales, log_SNRs, signal_kernel_call=GPy.kern.rbf
 
             kernel = signal_kernel_call(1, variance=signal_var, lengthscale=length_scale) + GPy.kern.white(1, variance=noise_var)
 
-            model = GPy.models.GP_regression(data['X'], data['Y'], kernel=kernel)
+            model = GPy.models.GPRegression(data['X'], data['Y'], kernel=kernel)
             model.constrain_positive('')
             length_scale_lls.append(model.log_likelihood())
         lls.append(length_scale_lls)
@@ -276,7 +276,7 @@ def sparse_GP_regression_1D(N = 400, M = 5, max_nb_eval_optim=100):
     noise = GPy.kern.white(1)
     kernel = rbf + noise
     # create simple GP model
-    m = GPy.models.sparse_GP_regression(X, Y, kernel, M=M)
+    m = GPy.models.SparseGPRegression(X, Y, kernel, M=M)
 
     m.ensure_default_constraints()
 
@@ -296,7 +296,7 @@ def sparse_GP_regression_2D(N = 400, M = 50, max_nb_eval_optim=100):
     kernel = rbf + noise
 
     # create simple GP model
-    m = GPy.models.sparse_GP_regression(X,Y,kernel, M = M)
+    m = GPy.models.SparseGPRegression(X,Y,kernel, M = M)
 
     # contrain all parameters to be positive (but not inducing inputs)
     m.ensure_default_constraints()
@@ -325,7 +325,7 @@ def uncertain_inputs_sparse_regression(max_nb_eval_optim=100):
     k = GPy.kern.rbf(1) + GPy.kern.white(1)
 
     # create simple GP model - no input uncertainty on this one
-    m = GPy.models.sparse_GP_regression(X, Y, kernel=k, Z=Z)
+    m = GPy.models.SparseGPRegression(X, Y, kernel=k, Z=Z)
     m.ensure_default_constraints()
     m.optimize('scg', messages=1, max_f_eval=max_nb_eval_optim)
     m.plot(ax=axes[0])
@@ -333,7 +333,7 @@ def uncertain_inputs_sparse_regression(max_nb_eval_optim=100):
 
 
     #the same model with uncertainty
-    m = GPy.models.sparse_GP_regression(X, Y, kernel=k, Z=Z, X_variance=S)
+    m = GPy.models.SparseGPRegression(X, Y, kernel=k, Z=Z, X_variance=S)
     m.ensure_default_constraints()
     m.optimize('scg', messages=1, max_f_eval=max_nb_eval_optim)
     m.plot(ax=axes[1])

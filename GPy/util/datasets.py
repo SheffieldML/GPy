@@ -13,7 +13,7 @@ default_seed = 10000
 # Some general utilities.
 def sample_class(f):
     p = 1. / (1. + np.exp(-f))
-    c = np.random.binomial(1, p)
+    c = np.random.Binomial(1, p)
     c = np.where(c, 1, -1)
     return c
 

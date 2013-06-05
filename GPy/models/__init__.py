@@ -2,14 +2,12 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from GP_regression import GP_regression
-from GP_classification import GP_classification
-from sparse_GP_regression import sparse_GP_regression
-from sparse_GP_classification import sparse_GP_classification
-from GPLVM import GPLVM
-from warped_GP import warpedGP
-from sparse_GPLVM import sparse_GPLVM
-from Bayesian_GPLVM import Bayesian_GPLVM
+from gp_regression import GPRegression
+from sparse_gp_regression import SparseGPRegression
+from gplvm import GPLVM
+from warped_gp import WarpedGP
+from bayesian_gplvm import BayesianGPLVM
 from mrd import MRD
-from generalized_FITC import generalized_FITC
-from FITC import FITC
+from generalized_fitc import GeneralizedFITC
+from fitc import FITC
+

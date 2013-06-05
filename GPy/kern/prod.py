@@ -22,14 +22,14 @@ class prod(kernpart):
         self.k1 = k1
         self.k2 = k2
         if tensor:
-            self.D = k1.D + k2.D
-            self.slice1 = slice(0,self.k1.D)
-            self.slice2 = slice(self.k1.D,self.k1.D+self.k2.D)
+            self.input_dim = k1.input_dim + k2.input_dim
+            self.slice1 = slice(0,self.k1.input_dim)
+            self.slice2 = slice(self.k1.input_dim,self.k1.input_dim+self.k2.input_dim)
         else:
-            assert k1.D == k2.D, "Error: The input spaces of the kernels to sum don't have the same dimension."
-            self.D = k1.D
-            self.slice1 = slice(0,self.D)
-            self.slice2 = slice(0,self.D)
+            assert k1.input_dim == k2.input_dim, "Error: The input spaces of the kernels to sum don't have the same dimension."
+            self.input_dim = k1.input_dim
+            self.slice1 = slice(0,self.input_dim)
+            self.slice2 = slice(0,self.input_dim)
 
         self._X, self._X2, self._params = np.empty(shape=(3,1))
         self._set_params(np.hstack((k1._get_params(),k2._get_params())))

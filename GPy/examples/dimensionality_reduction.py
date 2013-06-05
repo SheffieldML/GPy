@@ -5,9 +5,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import GPy
-from GPy.models.Bayesian_GPLVM import Bayesian_GPLVM
 from GPy.util.datasets import swiss_roll_generated
 from GPy.core.transformations import logexp
+from GPy.models.bayesian_gplvm import BayesianGPLVM
 
 default_seed = np.random.seed(123344)
 
@@ -20,14 +20,14 @@ def BGPLVM(seed=default_seed):
     X = np.random.rand(N, Q)
     k = GPy.kern.rbf(Q) + GPy.kern.white(Q, 0.00001)
     K = k.K(X)
-    Y = np.random.multivariate_normal(np.zeros(N), K, D).T
+    Y = np.random.multivariate_normal(np.zeros(N), K, Q).T
 
     k = GPy.kern.rbf(Q, ARD=True) + GPy.kern.linear(Q, ARD=True) + GPy.kern.rbf(Q, ARD=True) + GPy.kern.white(Q)
     # k = GPy.kern.rbf(Q) + GPy.kern.rbf(Q) + GPy.kern.white(Q)
     # k = GPy.kern.rbf(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
     # k = GPy.kern.rbf(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)
 
-    m = GPy.models.Bayesian_GPLVM(Y, Q, kernel=k, M=M)
+    m = GPy.models.BayesianGPLVM(Y, Q, kernel=k, M=M)
     m.constrain_positive('(rbf|bias|noise|white|S)')
     # m.constrain_fixed('S', 1)
 
@@ -105,7 +105,7 @@ def swiss_roll(optimize=True, N=1000, M=15, Q=4, sigma=.2, plot=False):
 
     kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
 
-    m = Bayesian_GPLVM(Y, Q, X=X, X_variance=S, M=M, Z=Z, kernel=kernel)
+    m = BayesianGPLVM(Y, Q, X=X, X_variance=S, M=M, Z=Z, kernel=kernel)
     m.data_colors = c
     m.data_t = t
 
@@ -129,7 +129,7 @@ def BGPLVM_oil(optimize=True, N=100, Q=5, M=25, max_f_eval=4e3, plot=False, **k)
     Yn = Y - Y.mean(0)
     Yn /= Yn.std(0)
 
-    m = GPy.models.Bayesian_GPLVM(Yn, Q, kernel=kernel, M=M, **k)
+    m = GPy.models.BayesianGPLVM(Yn, Q, kernel=kernel, M=M, **k)
     m.data_labels = data['Y'][:N].argmax(axis=1)
 
     # m.constrain('variance|leng', logexp_clipped())
@@ -234,7 +234,7 @@ def bgplvm_simulation_matlab_compare():
     from GPy import kern
     reload(mrd); reload(kern)
     k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
-    m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k,
+    m = BayesianGPLVM(Y, Q, init="PCA", M=M, kernel=k,
 #                        X=mu,
 #                        X_variance=S,
                        _debug=False)
@@ -259,7 +259,7 @@ def bgplvm_simulation(optimize='scg',
     Y = Ylist[0]
 
     k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2)) # + kern.bias(Q)
-    m = Bayesian_GPLVM(Y, Q, init="PCA", M=M, kernel=k, _debug=True)
+    m = BayesianGPLVM(Y, Q, init="PCA", M=M, kernel=k, _debug=True)
     # m.constrain('variance|noise', logexp_clipped())
     m.ensure_default_constraints()
     m['noise'] = Y.var() / 100.
@@ -285,7 +285,7 @@ def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
     reload(mrd); reload(kern)
 
     k = kern.linear(Q, [.05] * Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
-    m = mrd.MRD(Ylist, Q=Q, M=M, kernels=k, initx="", initz='permute', **kw)
+    m = mrd.MRD(Ylist, input_dim=Q, M=M, kernels=k, initx="", initz='permute', **kw)
 
     for i, Y in enumerate(Ylist):
         m['{}_noise'.format(i + 1)] = Y.var() / 100.
@@ -313,7 +313,7 @@ def brendan_faces():
     Yn /= Yn.std()
 
     m = GPy.models.GPLVM(Yn, Q)
-    # m = GPy.models.Bayesian_GPLVM(Yn, Q, M=100)
+    # m = GPy.models.BayesianGPLVM(Yn, Q, M=100)
 
     # optimize
     m.constrain('rbf|noise|white', GPy.core.transformations.logexp_clipped())
@@ -380,7 +380,7 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True):
 #     M = 30
 #
 #     kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
-#     m = GPy.models.Bayesian_GPLVM(X, Q, kernel=kernel, M=M)
+#     m = GPy.models.BayesianGPLVM(X, Q, kernel=kernel, M=M)
 #     # m.scale_factor = 100.0
 #     m.constrain_positive('(white|noise|bias|X_variance|rbf_variance|rbf_length)')
 #     from sklearn import cluster

@@ -18,8 +18,8 @@ class rbf(kernpart):
 
     where \ell_i is the lengthscale, \sigma^2 the variance and d the dimensionality of the input.
 
-    :param D: the number of input dimensions
-    :type D: int
+    :param input_dim: the number of input dimensions
+    :type input_dim: int
     :param variance: the variance of the kernel
     :type variance: float
     :param lengthscale: the vector of lengthscale of the kernel
@@ -31,8 +31,8 @@ class rbf(kernpart):
     .. Note: this object implements both the ARD and 'spherical' version of the function
     """
 
-    def __init__(self,D,variance=1.,lengthscale=None,ARD=False):
-        self.D = D
+    def __init__(self,input_dim,variance=1.,lengthscale=None,ARD=False):
+        self.input_dim = input_dim
         self.name = 'rbf'
         self.ARD = ARD
         if not ARD:
@@ -43,12 +43,12 @@ class rbf(kernpart):
             else:
                 lengthscale = np.ones(1)
         else:
-            self.Nparam = self.D + 1
+            self.Nparam = self.input_dim + 1
             if lengthscale is not None:
                 lengthscale = np.asarray(lengthscale)
-                assert lengthscale.size == self.D, "bad number of lengthscales"
+                assert lengthscale.size == self.input_dim, "bad number of lengthscales"
             else:
-                lengthscale = np.ones(self.D)
+                lengthscale = np.ones(self.input_dim)
 
         self._set_params(np.hstack((variance,lengthscale.flatten())))
 
@@ -100,7 +100,7 @@ class rbf(kernpart):
                 code = """
                 int q,i,j;
                 double tmp;
-                for(q=0; q<D; q++){
+                for(q=0; q<input_dim; q++){
                   tmp = 0;
                   for(i=0; i<N; i++){
                     for(j=0; j<i; j++){
@@ -110,12 +110,12 @@ class rbf(kernpart):
                   target(q+1) += var_len3(q)*tmp;
                 }
                 """
-                N,M,D = X.shape[0], X.shape[0], self.D
+                N, M, input_dim = X.shape[0], X.shape[0], self.input_dim
             else:
                 code = """
                 int q,i,j;
                 double tmp;
-                for(q=0; q<D; q++){
+                for(q=0; q<input_dim; q++){
                   tmp = 0;
                   for(i=0; i<N; i++){
                     for(j=0; j<M; j++){
@@ -125,9 +125,9 @@ class rbf(kernpart):
                   target(q+1) += var_len3(q)*tmp;
                 }
                 """
-                N,M,D = X.shape[0], X2.shape[0], self.D
-            #[np.add(target[1+q:2+q],var_len3[q]*np.sum(dvardLdK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.D)]
-            weave.inline(code, arg_names=['N','M','D','X','X2','target','dvardLdK','var_len3'],
+                N, M, input_dim = X.shape[0], X2.shape[0], self.input_dim
+            #[np.add(target[1+q:2+q],var_len3[q]*np.sum(dvardLdK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.input_dim)]
+            weave.inline(code, arg_names=['N','M','input_dim','X','X2','target','dvardLdK','var_len3'],
                  type_converters=weave.converters.blitz,**self.weave_options)
         else:
             target[1] += (self.variance/self.lengthscale)*np.sum(self._K_dvar*self._K_dist2*dL_dK)
@@ -278,8 +278,8 @@ class rbf(kernpart):
         psi2 = np.empty((N,M,M))
 
         psi2_Zdist_sq = self._psi2_Zdist_sq
-        _psi2_denom = self._psi2_denom.squeeze().reshape(N,self.D)
-        half_log_psi2_denom = 0.5*np.log(self._psi2_denom).squeeze().reshape(N,self.D)
+        _psi2_denom = self._psi2_denom.squeeze().reshape(N,self.input_dim)
+        half_log_psi2_denom = 0.5*np.log(self._psi2_denom).squeeze().reshape(N,self.input_dim)
         variance_sq = float(np.square(self.variance))
         if self.ARD:
             lengthscale2 = self.lengthscale2

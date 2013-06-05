@@ -2,12 +2,12 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
-from GPy.util.linalg import mdot, pdinv
+from GPy.util.linalg import mdot
 from GPy.util.decorators import silence_errors
 
-class periodic_exponential(kernpart):
+class periodic_exponential(Kernpart):
     """
     Kernel of the periodic subspace (up to a given frequency) of a exponential (Matern 1/2) RKHS. Only defined for input_dim=1.
 
@@ -25,7 +25,7 @@ class periodic_exponential(kernpart):
 
     """
 
-    def __init__(self,input_dim=1,variance=1.,lengthscale=None,period=2*np.pi,n_freq=10,lower=0.,upper=4*np.pi):
+    def __init__(self, input_dim=1, variance=1., lengthscale=None, period=2 * np.pi, n_freq=10, lower=0., upper=4 * np.pi):
         assert input_dim==1, "Periodic kernels are only defined for input_dim=1"
         self.name = 'periodic_exp'
         self.input_dim = input_dim
@@ -35,7 +35,7 @@ class periodic_exponential(kernpart):
         else:
             lengthscale = np.ones(1)
         self.lower,self.upper = lower, upper
-        self.Nparam = 3
+        self.num_params = 3
         self.n_freq = n_freq
         self.n_basis = 2*n_freq
         self._set_params(np.hstack((variance,lengthscale,period)))
@@ -64,7 +64,7 @@ class periodic_exponential(kernpart):
     def _get_params(self):
         """return the value of the parameters."""
         return np.hstack((self.variance,self.lengthscale,self.period))
-    
+
     def _set_params(self,x):
         """set the value of the parameters."""
         assert x.size==3
@@ -111,7 +111,7 @@ class periodic_exponential(kernpart):
 
     @silence_errors
     def dK_dtheta(self,dL_dK,X,X2,target):
-        """derivative of the covariance matrix with respect to the parameters (shape is NxMxNparam)"""
+        """derivative of the covariance matrix with respect to the parameters (shape is Nxnum_inducingxNparam)"""
         if X2 is None: X2 = X
         FX  = self._cos(self.basis_alpha[None,:],self.basis_omega[None,:],self.basis_phi[None,:])(X)
         FX2 = self._cos(self.basis_alpha[None,:],self.basis_omega[None,:],self.basis_phi[None,:])(X2)

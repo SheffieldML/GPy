@@ -23,19 +23,19 @@ class SparseGPLVM(SparseGPRegression, GPLVM):
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, Y, input_dim, kernel=None, init='PCA', M=10):
+    def __init__(self, Y, input_dim, kernel=None, init='PCA', num_inducing=10):
         X = self.initialise_latent(init, input_dim, Y)
-        SparseGPRegression.__init__(self, X, Y, kernel=kernel, M=M)
+        SparseGPRegression.__init__(self, X, Y, kernel=kernel, num_inducing=num_inducing)
 
     def _get_param_names(self):
-        return (sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.N)], [])
+        return (sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
                 + SparseGPRegression._get_param_names(self))
 
     def _get_params(self):
         return np.hstack((self.X.flatten(), SparseGPRegression._get_params(self)))
 
     def _set_params(self, x):
-        self.X = x[:self.X.size].reshape(self.N, self.input_dim).copy()
+        self.X = x[:self.X.size].reshape(self.num_data, self.input_dim).copy()
         SparseGPRegression._set_params(self, x[self.X.size:])
 
     def log_likelihood(self):

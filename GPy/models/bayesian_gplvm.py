@@ -23,7 +23,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, likelihood_or_Y, input_dim, X=None, X_variance=None, init='PCA', M=10,
+    def __init__(self, likelihood_or_Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
                  Z=None, kernel=None, oldpsave=10, _debug=False,
                  **kwargs):
         if type(likelihood_or_Y) is np.ndarray:
@@ -39,7 +39,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
             X_variance = np.clip((np.ones_like(X) * 0.5) + .01 * np.random.randn(*X.shape), 0.001, 1)
 
         if Z is None:
-            Z = np.random.permutation(X.copy())[:M]
+            Z = np.random.permutation(X.copy())[:num_inducing]
         assert Z.shape[1] == X.shape[1]
 
         if kernel is None:
@@ -73,8 +73,8 @@ class BayesianGPLVM(SparseGP, GPLVM):
         self._oldps.insert(0, p.copy())
 
     def _get_param_names(self):
-        X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.N)], [])
-        S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.N)], [])
+        X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
+        S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
         return (X_names + S_names + SparseGP._get_param_names(self))
 
     def _get_params(self):
@@ -96,7 +96,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
     def _set_params(self, x, save_old=True, save_count=0):
 #         try:
             x = self._clipped(x)
-            N, input_dim = self.N, self.input_dim
+            N, input_dim = self.num_data, self.input_dim
             self.X = x[:self.X.size].reshape(N, input_dim).copy()
             self.X_variance = x[(N * input_dim):(2 * N * input_dim)].reshape(N, input_dim).copy()
             SparseGP._set_params(self, x[(2 * N * input_dim):])
@@ -126,7 +126,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
     def KL_divergence(self):
         var_mean = np.square(self.X).sum()
         var_S = np.sum(self.X_variance - np.log(self.X_variance))
-        return 0.5 * (var_mean + var_S) - 0.5 * self.input_dim * self.N
+        return 0.5 * (var_mean + var_S) - 0.5 * self.input_dim * self.num_data
 
     def log_likelihood(self):
         ll = SparseGP.log_likelihood(self)
@@ -146,11 +146,11 @@ class BayesianGPLVM(SparseGP, GPLVM):
                 self._savedpsiKmm.append([self.f_call, [self.Kmm, self.dL_dKmm]])
 #                 sf2 = self.scale_factor ** 2
                 if self.likelihood.is_heteroscedastic:
-                    A = -0.5 * self.N * self.input_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.likelihood.precision)) - 0.5 * np.sum(self.V * self.likelihood.Y)
+                    A = -0.5 * self.num_data * self.input_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.likelihood.precision)) - 0.5 * np.sum(self.V * self.likelihood.Y)
 #                     B = -0.5 * self.input_dim * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A) * sf2)
                     B = -0.5 * self.input_dim * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A))
                 else:
-                    A = -0.5 * self.N * self.input_dim * (np.log(2.*np.pi) + np.log(self.likelihood._variance)) - 0.5 * self.likelihood.precision * self.likelihood.trYYT
+                    A = -0.5 * self.num_data * self.input_dim * (np.log(2.*np.pi) + np.log(self.likelihood._variance)) - 0.5 * self.likelihood.precision * self.likelihood.trYYT
 #                     B = -0.5 * self.input_dim * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self.A) * sf2)
                     B = -0.5 * self.input_dim * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self.A))
                 C = -self.input_dim * (np.sum(np.log(np.diag(self.LB)))) # + 0.5 * self.num_inducing * np.log(sf2))
@@ -266,9 +266,9 @@ class BayesianGPLVM(SparseGP, GPLVM):
 
     def _debug_filter_params(self, x):
         start, end = 0, self.X.size,
-        X = x[start:end].reshape(self.N, self.input_dim)
+        X = x[start:end].reshape(self.num_data, self.input_dim)
         start, end = end, end + self.X_variance.size
-        X_v = x[start:end].reshape(self.N, self.input_dim)
+        X_v = x[start:end].reshape(self.num_data, self.input_dim)
         start, end = end, end + (self.num_inducing * self.input_dim)
         Z = x[start:end].reshape(self.num_inducing, self.input_dim)
         start, end = end, end + self.input_dim

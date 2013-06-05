@@ -1,24 +1,24 @@
 import numpy as np
-import model
 from .. import kern
 from ..util.plot import gpplot, Tango, x_frame1D, x_frame2D
 import pylab as pb
+from GPy.core.model import Model
 
-class GPBase(model.model):
+class GPBase(Model):
     """
-    Gaussian Process model for holding shared behaviour between
+    Gaussian Process Model for holding shared behaviour between
     sprase_GP and GP models
     """
 
     def __init__(self, X, likelihood, kernel, normalize_X=False):
         self.X = X
         assert len(self.X.shape) == 2
-        self.N, self.input_dim = self.X.shape
+        self.num_data, self.input_dim = self.X.shape
         assert isinstance(kernel, kern.kern)
         self.kern = kernel
         self.likelihood = likelihood
         assert self.X.shape[0] == self.likelihood.data.shape[0]
-        self.N, self.output_dim = self.likelihood.data.shape
+        self.num_data, self.output_dim = self.likelihood.data.shape
 
         if normalize_X:
             self._Xmean = X.mean(0)[None, :]
@@ -28,7 +28,7 @@ class GPBase(model.model):
             self._Xmean = np.zeros((1, self.input_dim))
             self._Xstd = np.ones((1, self.input_dim))
 
-        model.model.__init__(self)
+        Model.__init__(self)
 
         # All leaf nodes should call self._set_params(self._get_params()) at
         # the end
@@ -84,8 +84,8 @@ class GPBase(model.model):
             Xnew, xmin, xmax, xx, yy = x_frame2D(self.X, plot_limits, resolution)
             m, v = self._raw_predict(Xnew, which_parts=which_parts)
             m = m.reshape(resolution, resolution).T
-            ax.contour(xx, yy, m, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
-            ax.scatter(self.X[:, 0], self.X[:, 1], 40, self.likelihood.Y, linewidth=0, cmap=pb.cm.jet, vmin=m.min(), vmax=m.max())
+            ax.contour(xx, yy, m, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet) # @UndefinedVariable
+            ax.scatter(self.X[:, 0], self.X[:, 1], 40, self.likelihood.Y, linewidth=0, cmap=pb.cm.jet, vmin=m.min(), vmax=m.max()) # @UndefinedVariable
             ax.set_xlim(xmin[0], xmax[0])
             ax.set_ylim(xmin[1], xmax[1])
         else:
@@ -94,9 +94,9 @@ class GPBase(model.model):
     def plot(self, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, samples=0, fignum=None, ax=None):
         """
         TODO: Docstrings!
+        
         :param levels: for 2D plotting, the number of contour levels to use
         is ax is None, create a new figure
-
         """
         # TODO include samples
         if which_data == 'all':
@@ -111,7 +111,7 @@ class GPBase(model.model):
             Xu = self.X * self._Xstd + self._Xmean # NOTE self.X are the normalized values now
 
             Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
-            m, var, lower, upper = self.predict(Xnew, which_parts=which_parts)
+            m, _, lower, upper = self.predict(Xnew, which_parts=which_parts)
             for d in range(m.shape[1]):
                 gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax)
                 ax.plot(Xu[which_data], self.likelihood.data[which_data, d], 'kx', mew=1.5)
@@ -122,13 +122,13 @@ class GPBase(model.model):
 
         elif self.X.shape[1] == 2: # FIXME
             resolution = resolution or 50
-            Xnew, xx, yy, xmin, xmax = x_frame2D(self.X, plot_limits, resolution)
+            Xnew, _, _, xmin, xmax = x_frame2D(self.X, plot_limits, resolution)
             x, y = np.linspace(xmin[0], xmax[0], resolution), np.linspace(xmin[1], xmax[1], resolution)
-            m, var, lower, upper = self.predict(Xnew, which_parts=which_parts)
+            m, _, lower, upper = self.predict(Xnew, which_parts=which_parts)
             m = m.reshape(resolution, resolution).T
-            ax.contour(x, y, m, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
+            ax.contour(x, y, m, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet) # @UndefinedVariable
             Yf = self.likelihood.Y.flatten()
-            ax.scatter(self.X[:, 0], self.X[:, 1], 40, Yf, cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.)
+            ax.scatter(self.X[:, 0], self.X[:, 1], 40, Yf, cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.) # @UndefinedVariable
             ax.set_xlim(xmin[0], xmax[0])
             ax.set_ylim(xmin[1], xmax[1])
 

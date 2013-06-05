@@ -2,12 +2,12 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 from ..util.linalg import tdot
 from scipy import weave
 
-class linear(kernpart):
+class linear(Kernpart):
     """
     Linear kernel
 
@@ -28,7 +28,7 @@ class linear(kernpart):
         self.input_dim = input_dim
         self.ARD = ARD
         if ARD == False:
-            self.Nparam = 1
+            self.num_params = 1
             self.name = 'linear'
             if variances is not None:
                 variances = np.asarray(variances)
@@ -37,7 +37,7 @@ class linear(kernpart):
                 variances = np.ones(1)
             self._Xcache, self._X2cache = np.empty(shape=(2,))
         else:
-            self.Nparam = self.input_dim
+            self.num_params = self.input_dim
             self.name = 'linear'
             if variances is not None:
                 variances = np.asarray(variances)
@@ -54,12 +54,12 @@ class linear(kernpart):
         return self.variances
 
     def _set_params(self, x):
-        assert x.size == (self.Nparam)
+        assert x.size == (self.num_params)
         self.variances = x
         self.variances2 = np.square(self.variances)
 
     def _get_param_names(self):
-        if self.Nparam == 1:
+        if self.num_params == 1:
             return ['variance']
         else:
             return ['variance_%i' % i for i in range(self.variances.size)]
@@ -138,7 +138,7 @@ class linear(kernpart):
 
     def psi2(self, Z, mu, S, target):
         """
-        returns N,M,M matrix
+        returns N,num_inducing,num_inducing matrix
         """
         self._psi_computations(Z, mu, S)
 #         psi2_old = self.ZZ * np.square(self.variances) * self.mu2_S[:, None, None, :]
@@ -168,7 +168,7 @@ class linear(kernpart):
             target += tmp.sum()
 
     def dpsi2_dmuS(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
-        """Think N,M,M,input_dim """
+        """Think N,num_inducing,num_inducing,input_dim """
         self._psi_computations(Z, mu, S)
         AZZA = self.ZA.T[:, None, :, None] * self.ZA[None, :, None, :]
         AZZA = AZZA + AZZA.swapaxes(1, 2)
@@ -184,7 +184,7 @@ class linear(kernpart):
         double factor,tmp;
         #pragma omp parallel for private(m,mm,q,qq,factor,tmp)
         for(n=0;n<N;n++){
-          for(m=0;m<M;m++){
+          for(m=0;m<num_inducing;m++){
             for(mm=0;mm<=m;mm++){
               //add in a factor of 2 for the off-diagonal terms (and then count them only once)
               if(m==mm)
@@ -215,9 +215,9 @@ class linear(kernpart):
                          'extra_compile_args': ['-fopenmp -O3'],  #-march=native'],
                          'extra_link_args'   : ['-lgomp']}
 
-        N,M,input_dim = mu.shape[0],Z.shape[0],mu.shape[1]
+        N,num_inducing,input_dim = mu.shape[0],Z.shape[0],mu.shape[1]
         weave.inline(code, support_code=support_code, libraries=['gomp'],
-                     arg_names=['N','M','input_dim','mu','AZZA','AZZA_2','target_mu','target_S','dL_dpsi2'],
+                     arg_names=['N','num_inducing','input_dim','mu','AZZA','AZZA_2','target_mu','target_S','dL_dpsi2'],
                      type_converters=weave.converters.blitz,**weave_options)
 
 
@@ -231,9 +231,9 @@ class linear(kernpart):
         code="""
         int n,m,mm,q;
         #pragma omp parallel for private(n,mm,q)
-        for(m=0;m<M;m++){
+        for(m=0;m<num_inducing;m++){
           for(q=0;q<input_dim;q++){
-            for(mm=0;mm<M;mm++){
+            for(mm=0;mm<num_inducing;mm++){
               for(n=0;n<N;n++){
                 target(m,q) += dL_dpsi2(n,m,mm)*AZA(n,mm,q);
               }
@@ -249,9 +249,9 @@ class linear(kernpart):
                          'extra_compile_args': ['-fopenmp -O3'],  #-march=native'],
                          'extra_link_args'   : ['-lgomp']}
 
-        N,M,input_dim = mu.shape[0],Z.shape[0],mu.shape[1]
+        N,num_inducing,input_dim = mu.shape[0],Z.shape[0],mu.shape[1]
         weave.inline(code, support_code=support_code, libraries=['gomp'],
-                     arg_names=['N','M','input_dim','AZA','target','dL_dpsi2'],
+                     arg_names=['N','num_inducing','input_dim','AZA','target','dL_dpsi2'],
                      type_converters=weave.converters.blitz,**weave_options)
 
 
@@ -278,7 +278,7 @@ class linear(kernpart):
         muS_changed = not (np.array_equal(mu, self._mu) and np.array_equal(S, self._S))
         if Zv_changed:
             # Z has changed, compute Z specific stuff
-            # self.ZZ = Z[:,None,:]*Z[None,:,:] # M,M,input_dim
+            # self.ZZ = Z[:,None,:]*Z[None,:,:] # num_inducing,num_inducing,input_dim
 #             self.ZZ = np.empty((Z.shape[0], Z.shape[0], Z.shape[1]), order='F')
 #             [tdot(Z[:, i:i + 1], self.ZZ[:, :, i].T) for i in xrange(Z.shape[1])]
             self.ZA = Z * self.variances
@@ -291,5 +291,5 @@ class linear(kernpart):
             self.inner[:, diag_indices[0], diag_indices[1]] += S
             self._mu, self._S = mu.copy(), S.copy()
         if Zv_changed or muS_changed:
-            self.ZAinner = np.dot(self.ZA, self.inner).swapaxes(0, 1)  # NOTE: self.ZAinner \in [M x N x input_dim]!
+            self.ZAinner = np.dot(self.ZA, self.inner).swapaxes(0, 1)  # NOTE: self.ZAinner \in [num_inducing x N x input_dim]!
             self._psi2 = np.dot(self.ZAinner, self.ZA.T)

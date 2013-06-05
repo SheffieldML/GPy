@@ -1,13 +1,13 @@
 # Copyright (c) 2012, James Hensman and Ricardo Andrade
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 from GPy.util.linalg import mdot, pdinv
 import pdb
 from scipy import weave
 
-class Coregionalise(kernpart):
+class Coregionalise(Kernpart):
     """
     Kernel for Intrinsic Corregionalization Models
     """
@@ -26,14 +26,14 @@ class Coregionalise(kernpart):
         else:
             assert kappa.shape==(self.Nout,)
         self.kappa = kappa
-        self.Nparam = self.Nout*(self.R + 1)
+        self.num_params = self.Nout*(self.R + 1)
         self._set_params(np.hstack([self.W.flatten(),self.kappa]))
 
     def _get_params(self):
         return np.hstack([self.W.flatten(),self.kappa])
 
     def _set_params(self,x):
-        assert x.size == self.Nparam
+        assert x.size == self.num_params
         self.kappa = x[-self.Nout:]
         self.W = x[:-self.Nout].reshape(self.Nout,self.R)
         self.B = np.dot(self.W,self.W.T) + np.diag(self.kappa)
@@ -69,14 +69,14 @@ class Coregionalise(kernpart):
         else:
             index2 = np.asarray(index2,dtype=np.int)
             code="""
-            for(int i=0;i<M; i++){
+            for(int i=0;i<num_inducing; i++){
               for(int j=0; j<N; j++){
-                  target[i+j*M] += B[Nout*index[j]+index2[i]];
+                  target[i+j*num_inducing] += B[Nout*index[j]+index2[i]];
                 }
               }
             """
-            N,M,B,Nout = index.size,index2.size, self.B, self.Nout
-            weave.inline(code,['target','index','index2','N','M','B','Nout'])
+            N,num_inducing,B,Nout = index.size,index2.size, self.B, self.Nout
+            weave.inline(code,['target','index','index2','N','num_inducing','B','Nout'])
 
 
     def Kdiag(self,index,target):
@@ -91,14 +91,14 @@ class Coregionalise(kernpart):
             index2 = np.asarray(index2,dtype=np.int)
 
         code="""
-        for(int i=0; i<M; i++){
+        for(int i=0; i<num_inducing; i++){
           for(int j=0; j<N; j++){
-            dL_dK_small[index[j] + Nout*index2[i]] += dL_dK[i+j*M];
+            dL_dK_small[index[j] + Nout*index2[i]] += dL_dK[i+j*num_inducing];
           }
         }
         """
-        N, M, Nout = index.size, index2.size, self.Nout
-        weave.inline(code, ['N','M','Nout','dL_dK','dL_dK_small','index','index2'])
+        N, num_inducing, Nout = index.size, index2.size, self.Nout
+        weave.inline(code, ['N','num_inducing','Nout','dL_dK','dL_dK_small','index','index2'])
 
         dkappa = np.diag(dL_dK_small)
         dL_dK_small += dL_dK_small.T

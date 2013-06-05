@@ -3,7 +3,7 @@ Created on 10 Apr 2013
 
 @author: Max Zwiessele
 '''
-from GPy.core import model
+from GPy.core import Model
 from GPy.core import SparseGP
 from GPy.util.linalg import PCA
 import numpy
@@ -12,7 +12,7 @@ import pylab
 from GPy.kern.kern import kern
 from GPy.models.bayesian_gplvm import BayesianGPLVM
 
-class MRD(model):
+class MRD(Model):
     """
     Do MRD on given Datasets in Ylist.
     All Ys in likelihood_list are in [N x Dn], where Dn can be different per Yn,
@@ -33,7 +33,7 @@ class MRD(model):
     :param X_variance:
         Initial latent space variance
     :param init: [cooncat|single|random]
-        initialization method to use: 
+        initialization method to use:
             *concat: PCA on concatenated outputs
             *single: PCA on each output
             *random: random
@@ -44,7 +44,7 @@ class MRD(model):
     :param kernels: list of kernels or kernel shared for all BGPLVMS
     :type kernels: [GPy.kern.kern] | GPy.kern.kern | None (default)
     """
-    def __init__(self, likelihood_or_Y_list, input_dim, M=10, names=None,
+    def __init__(self, likelihood_or_Y_list, input_dim, num_inducing=10, names=None,
                  kernels=None, initx='PCA',
                  initz='permute', _debug=False, **kw):
         if names is None:
@@ -61,24 +61,24 @@ class MRD(model):
         assert not ('kernel' in kw), "pass kernels through `kernels` argument"
 
         self.input_dim = input_dim
-        self.num_inducing = M
+        self.num_inducing = num_inducing
         self._debug = _debug
 
         self._init = True
         X = self._init_X(initx, likelihood_or_Y_list)
         Z = self._init_Z(initz, X)
-        self.bgplvms = [BayesianGPLVM(l, input_dim=input_dim, kernel=k, X=X, Z=Z, M=self.num_inducing, **kw) for l, k in zip(likelihood_or_Y_list, kernels)]
+        self.bgplvms = [BayesianGPLVM(l, input_dim=input_dim, kernel=k, X=X, Z=Z, num_inducing=self.num_inducing, **kw) for l, k in zip(likelihood_or_Y_list, kernels)]
         del self._init
 
         self.gref = self.bgplvms[0]
         nparams = numpy.array([0] + [SparseGP._get_params(g).size - g.Z.size for g in self.bgplvms])
         self.nparams = nparams.cumsum()
 
-        self.N = self.gref.N
-        self.NQ = self.N * self.input_dim
+        self.num_data = self.gref.num_data
+        self.NQ = self.num_data * self.input_dim
         self.MQ = self.num_inducing * self.input_dim
 
-        model.__init__(self) # @UndefinedVariable
+        Model.__init__(self) # @UndefinedVariable
         self._set_params(self._get_params())
 
     @property
@@ -142,8 +142,8 @@ class MRD(model):
         self._init_Z(initz, self.X)
 
     def _get_param_names(self):
-        # X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.N)], [])
-        # S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.N)], [])
+        # X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
+        # S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
         n1 = self.gref._get_param_names()
         n1var = n1[:self.NQ * 2 + self.MQ]
         map_names = lambda ns, name: map(lambda x: "{1}_{0}".format(*x),
@@ -169,8 +169,8 @@ class MRD(model):
         return params
 
 #     def _set_var_params(self, g, X, X_var, Z):
-#         g.X = X.reshape(self.N, self.input_dim)
-#         g.X_variance = X_var.reshape(self.N, self.input_dim)
+#         g.X = X.reshape(self.num_data, self.input_dim)
+#         g.X_variance = X_var.reshape(self.num_data, self.input_dim)
 #         g.Z = Z.reshape(self.num_inducing, self.input_dim)
 #
 #     def _set_kern_params(self, g, p):

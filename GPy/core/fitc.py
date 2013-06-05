@@ -14,7 +14,7 @@ class FITC(SparseGP):
     sparse FITC approximation
 
     :param X: inputs
-    :type X: np.ndarray (N x Q)
+    :type X: np.ndarray (num_data x Q)
     :param likelihood: a likelihood instance, containing the observed data
     :type likelihood: GPy.likelihood.(Gaussian | EP)
     :param kernel : the kernel (covariance function). See link kernels
@@ -57,7 +57,7 @@ class FITC(SparseGP):
         self.V_star = self.beta_star * self.likelihood.Y
 
         # The rather complex computations of self.A
-        tmp = self.psi1 * (np.sqrt(self.beta_star.flatten().reshape(1, self.N)))
+        tmp = self.psi1 * (np.sqrt(self.beta_star.flatten().reshape(1, self.num_data)))
         tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
         self.A = tdot(tmp)
 
@@ -113,7 +113,7 @@ class FITC(SparseGP):
         self._dpsi1_dX_jkj = 0
         self._dpsi1_dtheta_jkj = 0
 
-        for i,V_n,alpha_n,gamma_n,gamma_k in zip(range(self.N),self.V_star,alpha,gamma_2,gamma_3):
+        for i,V_n,alpha_n,gamma_n,gamma_k in zip(range(self.num_data),self.V_star,alpha,gamma_2,gamma_3):
             K_pp_K = np.dot(Kmmipsi1[:,i:(i+1)],Kmmipsi1[:,i:(i+1)].T)
             _dpsi1 = (-V_n**2 - alpha_n + 2.*gamma_k - gamma_n**2) * Kmmipsi1.T[i:(i+1),:]
             _dKmm = .5*(V_n**2 + alpha_n + gamma_n**2 - 2.*gamma_k) * K_pp_K #Diag_dD_dKmm
@@ -137,14 +137,14 @@ class FITC(SparseGP):
             aux_1 = self.likelihood.Y.T * np.dot(self._LBi_Lmi_psi1V.T,LBiLmipsi1)
             aux_2 = np.dot(LBiLmipsi1.T,self._LBi_Lmi_psi1V)
 
-            dA_dnoise = 0.5 * self.D * (dbstar_dnoise/self.beta_star).sum() - 0.5 * self.D * np.sum(self.likelihood.Y**2 * dbstar_dnoise)
+            dA_dnoise = 0.5 * self.input_dim * (dbstar_dnoise/self.beta_star).sum() - 0.5 * self.input_dim * np.sum(self.likelihood.Y**2 * dbstar_dnoise)
             dC_dnoise = -0.5 * np.sum(mdot(self.LBi.T,self.LBi,Lmi_psi1) *  Lmi_psi1 * dbstar_dnoise.T)
             dC_dnoise = -0.5 * np.sum(mdot(self.LBi.T,self.LBi,Lmi_psi1) *  Lmi_psi1 * dbstar_dnoise.T)
 
             dD_dnoise_1 =  mdot(self.V_star*LBiLmipsi1.T,LBiLmipsi1*dbstar_dnoise.T*self.likelihood.Y.T)
             alpha = mdot(LBiLmipsi1,self.V_star)
             alpha_ = mdot(LBiLmipsi1.T,alpha)
-            dD_dnoise_2 = -0.5 * self.D * np.sum(alpha_**2 * dbstar_dnoise )
+            dD_dnoise_2 = -0.5 * self.input_dim * np.sum(alpha_**2 * dbstar_dnoise )
 
             dD_dnoise_1 = mdot(self.V_star.T,self.psi1.T,self.Lmi.T,self.LBi.T,self.LBi,self.Lmi,self.psi1,dbstar_dnoise*self.likelihood.Y)
             dD_dnoise_2 = 0.5*mdot(self.V_star.T,self.psi1.T,Hi,self.psi1,dbstar_dnoise*self.psi1.T,Hi,self.psi1,self.V_star)
@@ -154,7 +154,7 @@ class FITC(SparseGP):
 
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
-        A = -0.5 * self.N * self.output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
+        A = -0.5 * self.num_data * self.output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
         C = -self.output_dim * (np.sum(np.log(np.diag(self.LB))))
         D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
         return A + C + D
@@ -204,8 +204,8 @@ class FITC(SparseGP):
             # q(u|f) = N(u| R0i*mu_u*f, R0i*C*R0i.T)
 
             # Ci = I + (RPT0)Di(RPT0).T
-            # C = I - [RPT0] * (D+[RPT0].T*[RPT0])^-1*[RPT0].T
-            #   = I - [RPT0] * (D + self.Qnn)^-1 * [RPT0].T
+            # C = I - [RPT0] * (input_dim+[RPT0].T*[RPT0])^-1*[RPT0].T
+            #   = I - [RPT0] * (input_dim + self.Qnn)^-1 * [RPT0].T
             #   = I - [RPT0] * (U*U.T)^-1 * [RPT0].T
             #   = I - V.T * V
             U = np.linalg.cholesky(np.diag(self.Diag0) + self.Qnn)

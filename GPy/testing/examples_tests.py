@@ -12,31 +12,31 @@ from nose.tools import nottest
 import sys
 
 class ExamplesTests(unittest.TestCase):
-    def _checkgrad(self, model):
-        self.assertTrue(model.checkgrad())
+    def _checkgrad(self, Model):
+        self.assertTrue(Model.checkgrad())
 
-    def _model_instance(self, model):
-        self.assertTrue(isinstance(model, GPy.models))
+    def _model_instance(self, Model):
+        self.assertTrue(isinstance(Model, GPy.models))
 
 """
-def model_instance_generator(model):
+def model_instance_generator(Model):
     def check_model_returned(self):
-        self._model_instance(model)
+        self._model_instance(Model)
     return check_model_returned
 
-def checkgrads_generator(model):
+def checkgrads_generator(Model):
     def model_checkgrads(self):
-        self._checkgrad(model)
+        self._checkgrad(Model)
     return model_checkgrads
 """
 
-def model_checkgrads(model):
-    model.randomize()
-    assert model.checkgrad()
+def model_checkgrads(Model):
+    Model.randomize()
+    assert Model.checkgrad()
 
 
-def model_instance(model):
-    assert isinstance(model, GPy.core.model)
+def model_instance(Model):
+    assert isinstance(Model, GPy.core.Model)
 
 @nottest
 def test_models():
@@ -57,25 +57,25 @@ def test_models():
                 continue
 
             print "Testing example: ", example[0]
-            # Generate model
-            model = example[1]()
-            print model
+            # Generate Model
+            Model = example[1]()
+            print Model
 
             # Create tests for instance check
             """
-            test = model_instance_generator(model)
+            test = model_instance_generator(Model)
             test.__name__ = 'test_instance_%s' % example[0]
             setattr(ExamplesTests, test.__name__, test)
 
             #Create tests for checkgrads check
-            test = checkgrads_generator(model)
+            test = checkgrads_generator(Model)
             test.__name__ = 'test_checkgrads_%s' % example[0]
             setattr(ExamplesTests, test.__name__, test)
             """
             model_checkgrads.description = 'test_checkgrads_%s' % example[0]
-            yield model_checkgrads, model
+            yield model_checkgrads, Model
             model_instance.description = 'test_instance_%s' % example[0]
-            yield model_instance, model
+            yield model_instance, Model
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."

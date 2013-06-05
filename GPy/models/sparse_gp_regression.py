@@ -26,14 +26,14 @@ class SparseGPRegression(SparseGP):
 
     """
 
-    def __init__(self, X, Y, kernel=None, normalize_X=False, normalize_Y=False, Z=None, M=10, X_variance=None):
+    def __init__(self, X, Y, kernel=None, normalize_X=False, normalize_Y=False, Z=None, num_inducing=10, X_variance=None):
         # kern defaults to rbf (plus white for stability)
         if kernel is None:
             kernel = kern.rbf(X.shape[1]) + kern.white(X.shape[1], 1e-3)
 
         # Z defaults to a subset of the data
         if Z is None:
-            i = np.random.permutation(X.shape[0])[:M]
+            i = np.random.permutation(X.shape[0])[:num_inducing]
             Z = X[i].copy()
         else:
             assert Z.shape[1] == X.shape[1]

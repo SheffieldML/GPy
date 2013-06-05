@@ -277,19 +277,19 @@ class MRD(model):
     def plot_X_1d(self):
         return self.gref.plot_X_1d()
 
-    def plot_X(self, fignum="MRD Predictions", ax=None):
+    def plot_X(self, fignum=None, ax=None):
         fig = self._handle_plotting(fignum, ax, lambda i, g, ax: ax.imshow(g.X))
         return fig
 
-    def plot_predict(self, fignum="MRD Predictions", ax=None, **kwargs):
+    def plot_predict(self, fignum=None, ax=None, **kwargs):
         fig = self._handle_plotting(fignum, ax, lambda i, g, ax: ax.imshow(g. predict(g.X)[0], **kwargs))
         return fig
 
-    def plot_scales(self, fignum="MRD Scales", ax=None, *args, **kwargs):
+    def plot_scales(self, fignum=None, ax=None, *args, **kwargs):
         fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.kern.plot_ARD(ax=ax, *args, **kwargs))
         return fig
 
-    def plot_latent(self, fignum="MRD Latent Spaces", ax=None, *args, **kwargs):
+    def plot_latent(self, fignum=None, ax=None, *args, **kwargs):
         fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.plot_latent(ax=ax, *args, **kwargs))
         return fig
 

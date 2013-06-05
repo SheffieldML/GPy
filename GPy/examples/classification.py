@@ -26,32 +26,40 @@ def crescent_data(seed=default_seed): # FIXME
 
     m = GPy.models.GPClassification(data['X'], Y)
     m.ensure_default_constraints()
-    m.update_likelihood_approximation()
-    m.optimize()
+    #m.update_likelihood_approximation()
+    #m.optimize()
+    m.pseudo_EM()
     print(m)
     m.plot()
     return m
 
-def oil():
+def oil(num_inducing=50):
     """
     Run a Gaussian process classification on the oil data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
     """
     data = GPy.util.datasets.oil()
-    Y = data['Y'][:, 0:1]
+    X = data['X'][:600,:]
+    X_test = data['X'][600:,:]
+    Y = data['Y'][:600, 0:1]
     Y[Y.flatten()==-1] = 0
+    Y_test = data['Y'][600:, 0:1]
 
     # Create GP model
-    m = GPy.models.GPClassification(data['X'], Y)
+    m = GPy.models.SparseGPClassification(X, Y,num_inducing=num_inducing)
 
     # Contrain all parameters to be positive
     m.constrain_positive('')
     m.tie_params('.*len')
+    m['.*len'] = 10.
     m.update_likelihood_approximation()
 
     # Optimize
     m.optimize()
-
     print(m)
+
+    #Test
+    probs = m.predict(X_test)[0]
+    GPy.util.classification.conf_matrix(probs,Y_test)
     return m
 
 def toy_linear_1d_classification(seed=default_seed):
@@ -70,20 +78,20 @@ def toy_linear_1d_classification(seed=default_seed):
     m.ensure_default_constraints()
 
     # Optimize
-    m.update_likelihood_approximation()
+    #m.update_likelihood_approximation()
     # Parameters optimization:
-    m.optimize()
+    #m.optimize()
+    m.pseudo_EM()
 
     # Plot
-    pb.subplot(211)
-    m.plot_f()
-    pb.subplot(212)
-    m.plot()
+    fig, axes = pb.subplots(2,1)
+    m.plot_f(ax=axes[0])
+    m.plot(ax=axes[1])
     print(m)
 
     return m
 
-def sparse_toy_linear_1d_classification(seed=default_seed):
+def sparse_toy_linear_1d_classification(num_inducing=10,seed=default_seed):
     """
     Sparse 1D classification example
     :param seed : seed value for data generation (default is 4).
@@ -95,25 +103,25 @@ def sparse_toy_linear_1d_classification(seed=default_seed):
     Y[Y.flatten() == -1] = 0
 
     # Model definition
-    m = GPy.models.SparseGPClassification(data['X'], Y)
-    m['.*len']= 2.
+    m = GPy.models.SparseGPClassification(data['X'], Y,num_inducing=num_inducing)
+    m['.*len']= 4.
 
     m.ensure_default_constraints()
     # Optimize
-    m.update_likelihood_approximation()
+    #m.update_likelihood_approximation()
     # Parameters optimization:
-    m.optimize()
+    #m.optimize()
+    m.pseudo_EM()
 
     # Plot
-    pb.subplot(211)
-    m.plot_f()
-    pb.subplot(212)
-    m.plot()
+    fig, axes = pb.subplots(2,1)
+    m.plot_f(ax=axes[0])
+    m.plot(ax=axes[1])
     print(m)
 
     return m
 
-def sparse_crescent_data(inducing=10, seed=default_seed):
+def sparse_crescent_data(num_inducing=10, seed=default_seed):
     """
     Run a Gaussian process classification with DTC approxiamtion on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
 
@@ -128,16 +136,17 @@ def sparse_crescent_data(inducing=10, seed=default_seed):
     Y = data['Y']
     Y[Y.flatten()==-1]=0
 
-    m = GPy.models.SparseGPClassification(data['X'], Y)
+    m = GPy.models.SparseGPClassification(data['X'], Y,num_inducing=num_inducing)
     m.ensure_default_constraints()
     m['.*len'] = 10.
-    m.update_likelihood_approximation()
-    m.optimize()
+    #m.update_likelihood_approximation()
+    #m.optimize()
+    m.pseudo_EM()
     print(m)
     m.plot()
     return m
 
-def FITC_crescent_data(inducing=10, seed=default_seed):
+def FITC_crescent_data(num_inducing=10, seed=default_seed):
     """
     Run a Gaussian process classification with FITC approximation on the crescent data. The demonstration uses EP to approximate the likelihood.
 
@@ -145,7 +154,7 @@ def FITC_crescent_data(inducing=10, seed=default_seed):
     :param seed : seed value for data generation.
     :type seed: int
     :param inducing : number of inducing variables (only used for 'FITC' or 'DTC').
-    :type inducing: int
+    :type num_inducing: int
     """
 
     data = GPy.util.datasets.crescent_data(seed=seed)
@@ -157,12 +166,12 @@ def FITC_crescent_data(inducing=10, seed=default_seed):
     Y = data['Y']
     Y[Y.flatten()==-1]=0
 
-    m = GPy.models.FITCClassification(data['X'], Y)
+    m = GPy.models.FITCClassification(data['X'], Y,num_inducing=num_inducing)
     m.ensure_default_constraints()
     m['.*len'] = 3.
-    m.update_likelihood_approximation()
-    m.optimize()
+    #m.update_likelihood_approximation()
+    #m.optimize()
+    m.pseudo_EM()
     print(m)
     m.plot()
     return m
-

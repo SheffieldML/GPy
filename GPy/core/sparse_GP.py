@@ -13,15 +13,15 @@ class sparse_GP(GPBase):
     Variational sparse GP model
 
     :param X: inputs
-    :type X: np.ndarray (N x Q)
+    :type X: np.ndarray (N x input_dim)
     :param likelihood: a likelihood instance, containing the observed data
     :type likelihood: GPy.likelihood.(Gaussian | EP | Laplace)
     :param kernel : the kernel (covariance function). See link kernels
     :type kernel: a GPy.kern.kern instance
     :param X_variance: The uncertainty in the measurements of X (Gaussian variance)
-    :type X_variance: np.ndarray (N x Q) | None
+    :type X_variance: np.ndarray (N x input_dim) | None
     :param Z: inducing inputs (optional, see note)
-    :type Z: np.ndarray (M x Q) | None
+    :type Z: np.ndarray (M x input_dim) | None
     :param M : Number of inducing points (optional, default 10. Ignored if Z is not None)
     :type M: int
     :param normalize_(X|Y) : whether to normalize the data before computing (predictions will be in original scales)
@@ -152,7 +152,7 @@ class sparse_GP(GPBase):
         return A + B + C + D + self.likelihood.Z
 
     def _set_params(self, p):
-        self.Z = p[:self.M * self.Q].reshape(self.M, self.Q)
+        self.Z = p[:self.M * self.input_dim].reshape(self.M, self.input_dim)
         self.kern._set_params(p[self.Z.size:self.Z.size + self.kern.Nparam])
         self.likelihood._set_params(p[self.Z.size + self.kern.Nparam:])
         self._compute_kernel_matrices()
@@ -252,9 +252,9 @@ class sparse_GP(GPBase):
         Arguments
         ---------
         :param Xnew: The points at which to make a prediction
-        :type Xnew: np.ndarray, Nnew x self.Q
+        :type Xnew: np.ndarray, Nnew x self.input_dim
         :param X_variance_new: The uncertainty in the prediction points
-        :type X_variance_new: np.ndarray, Nnew x self.Q
+        :type X_variance_new: np.ndarray, Nnew x self.input_dim
         :param which_parts:  specifies which outputs kernel(s) to use in prediction
         :type which_parts: ('all', list of bools)
         :param full_cov: whether to return the folll covariance matrix, or just the diagonal

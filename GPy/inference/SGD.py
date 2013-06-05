@@ -95,11 +95,11 @@ class opt_SGD(Optimizer):
         i = 0
 
         for s in param_shapes:
-            N, Q = s
-            X = x[i:i+N*Q].reshape(N, Q)
+            N, input_dim = s
+            X = x[i:i+N*input_dim].reshape(N, input_dim)
             X = X[samples]
             subset = np.append(subset, X.flatten())
-            i += N*Q
+            i += N*input_dim
 
         subset = np.append(subset, x[i:])
 
@@ -167,17 +167,17 @@ class opt_SGD(Optimizer):
         # self.model.constrained_positive_indices = p
         self.model.constrained_indices = c
 
-    def get_param_shapes(self, N = None, Q = None):
+    def get_param_shapes(self, N = None, input_dim = None):
         model_name = self.model.__class__.__name__
         if model_name == 'GPLVM':
-            return [(N, Q)]
+            return [(N, input_dim)]
         if model_name == 'Bayesian_GPLVM':
-            return [(N, Q), (N, Q)]
+            return [(N, input_dim), (N, input_dim)]
         else:
             raise NotImplementedError
 
     def step_with_missing_data(self, f_fp, X, step, shapes):
-        N, Q = X.shape
+        N, input_dim = X.shape
 
         if not sp.sparse.issparse(self.model.likelihood.Y):
             Y = self.model.likelihood.Y
@@ -269,7 +269,7 @@ class opt_SGD(Optimizer):
         self.model.likelihood._offset = 0.0
         self.model.likelihood._scale = 1.0
 
-        N, Q = self.model.X.shape
+        N, input_dim = self.model.X.shape
         D = self.model.likelihood.Y.shape[1]
         num_params = self.model._get_params()
         self.trace = []
@@ -302,7 +302,7 @@ class opt_SGD(Optimizer):
                 self.model.likelihood._set_params(sigma)
 
                 if missing_data:
-                    shapes = self.get_param_shapes(N, Q)
+                    shapes = self.get_param_shapes(N, input_dim)
                     f, step, Nj = self.step_with_missing_data(f_fp, X, step, shapes)
                 else:
                     self.model.likelihood.YYT = np.dot(self.model.likelihood.Y, self.model.likelihood.Y.T)

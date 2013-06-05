@@ -162,19 +162,19 @@ def multiple_pdinv(A):
     return np.dstack(invs),np.array(halflogdets)
 
 
-def PCA(Y, Q):
+def PCA(Y, input_dim):
     """
     Principal component analysis: maximum likelihood solution by SVD
 
     Arguments
     ---------
     :param Y: NxD np.array of data
-    :param Q: int, dimension of projection
+    :param input_dim: int, dimension of projection
 
     Returns
     -------
-    :rval X: - NxQ np.array of dimensionality reduced data
-    W - QxD mapping from X to Y
+    :rval X: - Nxinput_dim np.array of dimensionality reduced data
+    W - input_dimxD mapping from X to Y
     """
     if not np.allclose(Y.mean(axis=0), 0.0):
         print "Y is not zero mean, centering it locally (GPy.util.linalg.PCA)"
@@ -182,7 +182,7 @@ def PCA(Y, Q):
         #Y -= Y.mean(axis=0)
 
     Z = linalg.svd(Y-Y.mean(axis=0), full_matrices = False)
-    [X, W] = [Z[0][:,0:Q], np.dot(np.diag(Z[1]), Z[2]).T[:,0:Q]]
+    [X, W] = [Z[0][:,0:input_dim], np.dot(np.diag(Z[1]), Z[2]).T[:,0:input_dim]]
     v = X.std(axis=0)
     X /= v;
     W *= v;

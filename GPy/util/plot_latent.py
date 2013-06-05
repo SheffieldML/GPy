@@ -14,10 +14,10 @@ def plot_latent(model, labels=None, which_indices=None, resolution=50, ax=None, 
     if labels is None:
         labels = np.ones(model.N)
     if which_indices is None:
-        if model.Q==1:
+        if model.input_dim==1:
             input_1 = 0
             input_2 = None
-        if model.Q==2:
+        if model.input_dim==2:
             input_1, input_2 = 0,1
         else:
             try:
@@ -55,7 +55,7 @@ def plot_latent(model, labels=None, which_indices=None, resolution=50, ax=None, 
             m = marker
 
         index = np.nonzero(labels==ul)[0]
-        if model.Q==1:
+        if model.input_dim==1:
             x = model.X[index,input_1]
             y = np.zeros(index.size)
         else:

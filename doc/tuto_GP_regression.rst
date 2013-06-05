@@ -23,9 +23,9 @@ Note that the observations Y include some noise.
 
 The first step is to define the covariance kernel we want to use for the model. We choose here a kernel based on Gaussian kernel (i.e. rbf or square exponential)::
 
-    kernel = GPy.kern.rbf(D=1, variance=1., lengthscale=1.)
+    kernel = GPy.kern.rbf(input_dim=1, variance=1., lengthscale=1.)
 
-The parameter ``D`` stands for the dimension of the input space. The parameters ``variance`` and ``lengthscale`` are optional. Note that many other kernels are implemented such as:
+The parameter ``D`` stands for the dimension of the input space. The parameters ``variance`` and ``lengthscale`` are optional. Many other kernels are implemented such as:
 
 * linear (``GPy.kern.linear``)
 * exponential kernel (``GPy.kern.exponential``)
@@ -50,7 +50,7 @@ gives the following output: ::
     -----------------------------------------------------------------
        rbf_variance    |  1.0000  |               |        |         
       rbf_lengthscale  |  1.0000  |               |        |         
-      noise variance   |  1.0000  |               |        |         
+      noise_variance   |  1.0000  |               |        |         
 
 .. figure::  Figures/tuto_GP_regression_m1.png
     :align:   center
@@ -65,14 +65,14 @@ The default values of the kernel parameters may not be relevant for the current 
 
 There are various ways to constrain the parameters of the kernel. The most basic is to constrain all the parameters to be positive::
 
-    m.constrain_positive('')
+    m.ensure_default_constraints() # or similarly m.constrain_positive('')
 
 but it is also possible to set a range on to constrain one parameter to be fixed. The parameter of ``m.constrain_positive`` is a regular expression that matches the name of the parameters to be constrained (as seen in ``print m``). For example, if we want the variance to be positive, the lengthscale to be in [1,10] and the noise variance to be fixed we can write::
 
     m.unconstrain('')                            # Required to remove the previous constrains
-    m.constrain_positive('rbf_variance')
-    m.constrain_bounded('lengthscale',1.,10. )
-    m.constrain_fixed('noise',0.0025)
+    m.constrain_positive('.*rbf_variance')
+    m.constrain_bounded('.*lengthscale',1.,10. )
+    m.constrain_fixed('.*noise',0.0025)
 
 Once the constrains have been imposed, the model can be optimized::
 
@@ -80,7 +80,7 @@ Once the constrains have been imposed, the model can be optimized::
 
 If we want to perform some restarts to try to improve the result of the optimization, we can use the ``optimize_restart`` function::
 
-    m.optimize_restarts(Nrestarts = 10)
+    m.optimize_restarts(num_restarts = 10)
 
 Once again, we can use ``print(m)`` and ``m.plot()`` to look at the resulting model  resulting model::
 
@@ -89,7 +89,7 @@ Once again, we can use ``print(m)`` and ``m.plot()`` to look at the resulting mo
     -----------------------------------------------------------------
        rbf_variance    |  0.8151  |     (+ve)     |        |         
       rbf_lengthscale  |  1.8037  |  (1.0, 10.0)  |        |         
-      noise variance   |  0.0025  |     Fixed     |        |         
+      noise_variance   |  0.0025  |     Fixed     |        |         
 
 .. figure::  Figures/tuto_GP_regression_m2.png
     :align:   center
@@ -122,9 +122,7 @@ Here is a 2 dimensional example::
     m.constrain_positive('')
 
     # optimize and plot
-    pb.figure()
     m.optimize('tnc', max_f_eval = 1000)
-
     m.plot()
     print(m)
 

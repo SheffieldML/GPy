@@ -126,7 +126,7 @@ class GP(GPBase):
         Arguments
         ---------
         :param Xnew: The points at which to make a prediction
-        :type Xnew: np.ndarray, Nnew x self.Q
+        :type Xnew: np.ndarray, Nnew x self.input_dim
         :param which_parts:  specifies which outputs kernel(s) to use in prediction
         :type which_parts: ('all', list of bools)
         :param full_cov: whether to return the folll covariance matrix, or just the diagonal

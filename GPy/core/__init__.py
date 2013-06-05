@@ -3,6 +3,7 @@
 
 from GP import GP
 from sparse_GP import sparse_GP
+from FITC import FITC
 from model import *
 from parameterised import *
 import priors

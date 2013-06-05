@@ -135,3 +135,27 @@ def sparse_crescent_data(inducing=10, seed=default_seed):
     print(m)
     m.plot()
     return m
+
+def FITC_crescent_data(inducing=10, seed=default_seed):
+    """Run a Gaussian process classification on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
+
+    :param model_type: type of model to fit ['Full', 'FITC', 'DTC'].
+    :param seed : seed value for data generation.
+    :type seed: int
+    :param inducing : number of inducing variables (only used for 'FITC' or 'DTC').
+    :type inducing: int
+    """
+
+    data = GPy.util.datasets.crescent_data(seed=seed)
+    Y = data['Y']
+    Y[Y.flatten()==-1]=0
+
+    m = GPy.models.FITC_classification(data['X'], Y)
+    m.ensure_default_constraints()
+    m['.*len'] = 10.
+    m.update_likelihood_approximation()
+    m.optimize()
+    print(m)
+    m.plot()
+    return m
+

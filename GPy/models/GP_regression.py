@@ -11,7 +11,7 @@ class GP_regression(GP):
     """
     Gaussian Process model for regression
 
-    This is a thin wrapper around the models.GP class, with a set of sensible defalts
+    This is a thin wrapper around the models.GP class, with a set of sensible defaults
 
     :param X: input observations
     :param Y: observed values

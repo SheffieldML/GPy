@@ -7,13 +7,12 @@ from ..core import sparse_GP
 from .. import likelihoods
 from .. import kern
 from ..likelihoods import likelihood
-from GP_regression import GP_regression
 
 class sparse_GP_classification(sparse_GP):
     """
     sparse Gaussian Process model for classification
 
-    This is a thin wrapper around the sparse_GP class, with a set of sensible defalts
+    This is a thin wrapper around the sparse_GP class, with a set of sensible defaults
 
     :param X: input observations
     :param Y: observed values
@@ -24,8 +23,6 @@ class sparse_GP_classification(sparse_GP):
     :param normalize_Y:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_Y: False|True
     :rtype: model object
-
-    .. Note:: Multiple independent outputs are allowed using columns of Y
 
     """
 

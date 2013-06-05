@@ -64,38 +64,25 @@ def test_models():
                 model = example[1]()
             except Exception as e:
                 failing_models[example[0]] = "Cannot make model: \n{e}".format(e=e)
-            print model
+            else:
+                print model
+                model_checkgrads.description = 'test_checkgrads_%s' % example[0]
+                try:
+                    if not model_checkgrads(model):
+                        failing_models[model_checkgrads.description] = False
+                except Exception as e:
+                    failing_models[model_checkgrads.description] = e
 
-            # Create tests for instance check
-            """
-            test = model_instance_generator(Model)
-            test.__name__ = 'test_instance_%s' % example[0]
-            setattr(ExamplesTests, test.__name__, test)
+                model_instance.description = 'test_instance_%s' % example[0]
+                try:
+                    if not model_instance(model):
+                        failing_models[model_instance.description] = False
+                except Exception as e:
+                    failing_models[model_instance.description] = e
 
-            #Create tests for checkgrads check
-            test = checkgrads_generator(Model)
-            test.__name__ = 'test_checkgrads_%s' % example[0]
-            setattr(ExamplesTests, test.__name__, test)
-            """
-
-            model_checkgrads.description = 'test_checkgrads_%s' % example[0]
-            try:
-                if not model_checkgrads(model):
-                    failing_models[model_checkgrads.description] = False
-            except Exception as e:
-                failing_models[model_checkgrads.description] = e
-
-            model_instance.description = 'test_instance_%s' % example[0]
-            try:
-                if not model_instance(model):
-                    failing_models[model_instance.description] = False
-            except Exception as e:
-                failing_models[model_instance.description] = e
-
-            #model_checkgrads.description = 'test_checkgrads_%s' % example[0]
             #yield model_checkgrads, model
-            #model_instance.description = 'test_instance_%s' % example[0]
             #yield model_instance, model
+
         print "Finished checking module {m}".format(m=module_name)
         if len(failing_models.keys()) > 0:
             print "Failing models: "

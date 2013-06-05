@@ -32,16 +32,19 @@ def checkgrads_generator(model):
 
 def model_checkgrads(model):
     model.randomize()
-    assert model.checkgrad()
+    #assert model.checkgrad()
+    return model.checkgrad()
 
 
 def model_instance(model):
-    assert isinstance(model, GPy.core.model)
+    #assert isinstance(model, GPy.core.model)
+    return isinstance(model, GPy.core.model)
 
 @nottest
 def test_models():
     examples_path = os.path.dirname(GPy.examples.__file__)
     # Load modules
+    failing_models = {}
     for loader, module_name, is_pkg in pkgutil.iter_modules([examples_path]):
         # Load examples
         module_examples = loader.find_module(module_name).load_module(module_name)
@@ -58,7 +61,10 @@ def test_models():
 
             print "Testing example: ", example[0]
             # Generate model
-            model = example[1]()
+            try:
+                model = example[1]()
+            except Exception as e:
+                failing_models[example[0]] = "Cannot make model: \n{e}".format(e=e)
             print model
 
             # Create tests for instance check
@@ -72,10 +78,34 @@ def test_models():
             test.__name__ = 'test_checkgrads_%s' % example[0]
             setattr(ExamplesTests, test.__name__, test)
             """
+
             model_checkgrads.description = 'test_checkgrads_%s' % example[0]
-            yield model_checkgrads, model
+            try:
+                if not model_checkgrads(model):
+                    failing_models[model_checkgrads.description] = False
+            except Exception as e:
+                failing_models[model_checkgrads.description] = e
+
             model_instance.description = 'test_instance_%s' % example[0]
-            yield model_instance, model
+            try:
+                if not model_instance(model):
+                    failing_models[model_instance.description] = False
+            except Exception as e:
+                failing_models[model_instance.description] = e
+
+            #model_checkgrads.description = 'test_checkgrads_%s' % example[0]
+            #yield model_checkgrads, model
+            #model_instance.description = 'test_instance_%s' % example[0]
+            #yield model_instance, model
+        print "Finished checking module {m}".format(m=module_name)
+        if len(failing_models.keys()) > 0:
+            print "Failing models: "
+            print failing_models
+
+    if len(failing_models.keys()) > 0:
+        print failing_models
+        raise Exception(failing_models)
+
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."

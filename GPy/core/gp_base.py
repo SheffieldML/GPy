@@ -21,12 +21,12 @@ class GPBase(Model):
         self.num_data, self.output_dim = self.likelihood.data.shape
 
         if normalize_X:
-            self._Xmean = X.mean(0)[None, :]
-            self._Xstd = X.std(0)[None, :]
-            self.X = (X.copy() - self._Xmean) / self._Xstd
+            self._Xoffset = X.mean(0)[None, :]
+            self._Xscale = X.std(0)[None, :]
+            self.X = (X.copy() - self._Xoffset) / self._Xscale
         else:
-            self._Xmean = np.zeros((1, self.input_dim))
-            self._Xstd = np.ones((1, self.input_dim))
+            self._Xoffset = np.zeros((1, self.input_dim))
+            self._Xscale = np.ones((1, self.input_dim))
 
         super(GPBase, self).__init__()
         # All leaf nodes should call self._set_params(self._get_params()) at
@@ -107,7 +107,7 @@ class GPBase(Model):
 
         if self.X.shape[1] == 1:
 
-            Xu = self.X * self._Xstd + self._Xmean # NOTE self.X are the normalized values now
+            Xu = self.X * self._Xscale + self._Xoffset # NOTE self.X are the normalized values now
 
             Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
             m, _, lower, upper = self.predict(Xnew, which_parts=which_parts)

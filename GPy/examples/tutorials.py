@@ -143,5 +143,7 @@ def model_interaction():
     X = np.random.randn(20,1)
     Y = np.sin(X) + np.random.randn(*X.shape)*0.01 + 5.
     k = GPy.kern.rbf(1) + GPy.kern.bias(1)
-    return GPy.models.GPRegression(X, Y, kernel=k)
+    m = GPy.models.GPRegression(X, Y, kernel=k)
+    m.ensure_default_constraints()
+    return m
 

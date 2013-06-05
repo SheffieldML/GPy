@@ -36,8 +36,9 @@ class FITC(SparseGP):
         For a Gaussian likelihood, no iteration is required:
         this function does nothing
         """
+        self.likelihood.restart()
         self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
-        self._set_params(self._get_params()) # update the GP
+        self._set_params(self._get_params())
 
     def _compute_kernel_matrices(self):
         # kernel computations, using BGPLVM notation

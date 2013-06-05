@@ -22,13 +22,13 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 
     :param Y: observed data (np.ndarray) or GPy.likelihood
     :type Y: np.ndarray| GPy.likelihood instance
-    :param Q: latent dimensionality
-    :type Q: int
+    :param input_dim: latent dimensionality
+    :type input_dim: int
     :param init: initialisation method for the latent space
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, likelihood_or_Y, Q, X=None, X_variance=None, init='PCA', M=10,
+    def __init__(self, likelihood_or_Y, input_dim, X=None, X_variance=None, init='PCA', M=10,
                  Z=None, kernel=None, oldpsave=10, _debug=False,
                  **kwargs):
         if type(likelihood_or_Y) is np.ndarray:
@@ -37,7 +37,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             likelihood = likelihood_or_Y
 
         if X == None:
-            X = self.initialise_latent(init, Q, likelihood.Y)
+            X = self.initialise_latent(init, input_dim, likelihood.Y)
         self.init = init
 
         if X_variance is None:
@@ -48,7 +48,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         assert Z.shape[1] == X.shape[1]
 
         if kernel is None:
-            kernel = kern.rbf(Q) + kern.white(Q)
+            kernel = kern.rbf(input_dim) + kern.white(input_dim)
 
         self.oldpsave = oldpsave
         self._oldps = []
@@ -78,8 +78,8 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         self._oldps.insert(0, p.copy())
 
     def _get_param_names(self):
-        X_names = sum([['X_%i_%i' % (n, q) for q in range(self.Q)] for n in range(self.N)], [])
-        S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.Q)] for n in range(self.N)], [])
+        X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.N)], [])
+        S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.N)], [])
         return (X_names + S_names + sparse_GP._get_param_names(self))
 
     def _get_params(self):
@@ -101,10 +101,10 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
     def _set_params(self, x, save_old=True, save_count=0):
 #         try:
             x = self._clipped(x)
-            N, Q = self.N, self.Q
-            self.X = x[:self.X.size].reshape(N, Q).copy()
-            self.X_variance = x[(N * Q):(2 * N * Q)].reshape(N, Q).copy()
-            sparse_GP._set_params(self, x[(2 * N * Q):])
+            N, input_dim = self.N, self.input_dim
+            self.X = x[:self.X.size].reshape(N, input_dim).copy()
+            self.X_variance = x[(N * input_dim):(2 * N * input_dim)].reshape(N, input_dim).copy()
+            sparse_GP._set_params(self, x[(2 * N * input_dim):])
 #             self.oldps = x
 #         except (LinAlgError, FloatingPointError, ZeroDivisionError):
 #             print "\rWARNING: Caught LinAlgError, continueing without setting            "
@@ -131,7 +131,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
     def KL_divergence(self):
         var_mean = np.square(self.X).sum()
         var_S = np.sum(self.X_variance - np.log(self.X_variance))
-        return 0.5 * (var_mean + var_S) - 0.5 * self.Q * self.N
+        return 0.5 * (var_mean + var_S) - 0.5 * self.input_dim * self.N
 
     def log_likelihood(self):
         ll = sparse_GP.log_likelihood(self)
@@ -196,16 +196,16 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         """
         assert not self.likelihood.is_heteroscedastic
         N_test = Y.shape[0]
-        Q = self.Z.shape[1]
-        means = np.zeros((N_test, Q))
-        covars = np.zeros((N_test, Q))
+        input_dim = self.Z.shape[1]
+        means = np.zeros((N_test, input_dim))
+        covars = np.zeros((N_test, input_dim))
 
         dpsi0 = -0.5 * self.D * self.likelihood.precision
         dpsi2 = self.dL_dpsi2[0][None, :, :] # TODO: this may change if we ignore het. likelihoods
         V = self.likelihood.precision * Y
         dpsi1 = np.dot(self.Cpsi1V, V.T)
 
-        start = np.zeros(self.Q * 2)
+        start = np.zeros(self.input_dim * 2)
 
         for n, dpsi1_n in enumerate(dpsi1.T[:, :, None]):
             args = (self.kern, self.Z, dpsi0, dpsi1_n, dpsi2)
@@ -222,12 +222,12 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         """
         Plot latent space X in 1D:
 
-            -if fig is given, create Q subplots in fig and plot in these
-            -if ax is given plot Q 1D latent space plots of X into each `axis`
+            -if fig is given, create input_dim subplots in fig and plot in these
+            -if ax is given plot input_dim 1D latent space plots of X into each `axis`
             -if neither fig nor ax is given create a figure with fignum and plot in there
 
         colors:
-            colors of different latent space dimensions Q
+            colors of different latent space dimensions input_dim
         """
         import pylab
         if ax is None:
@@ -245,7 +245,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             elif isinstance(ax, (tuple, list)):
                 ax = ax[i]
             else:
-                raise ValueError("Need one ax per latent dimnesion Q")
+                raise ValueError("Need one ax per latent dimnesion input_dim")
             ax.plot(self.X, c='k', alpha=.3)
             plots.extend(ax.plot(x, self.X.T[i], c=colors.next(), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
             ax.fill_between(x,
@@ -262,7 +262,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         return fig
 
     def __getstate__(self):
-        return (self.likelihood, self.Q, self.X, self.X_variance,
+        return (self.likelihood, self.input_dim, self.X, self.X_variance,
                 self.init, self.M, self.Z, self.kern,
                 self.oldpsave, self._debug)
 
@@ -271,12 +271,12 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 
     def _debug_filter_params(self, x):
         start, end = 0, self.X.size,
-        X = x[start:end].reshape(self.N, self.Q)
+        X = x[start:end].reshape(self.N, self.input_dim)
         start, end = end, end + self.X_variance.size
-        X_v = x[start:end].reshape(self.N, self.Q)
-        start, end = end, end + (self.M * self.Q)
-        Z = x[start:end].reshape(self.M, self.Q)
-        start, end = end, end + self.Q
+        X_v = x[start:end].reshape(self.N, self.input_dim)
+        start, end = end, end + (self.M * self.input_dim)
+        Z = x[start:end].reshape(self.M, self.input_dim)
+        start, end = end, end + self.input_dim
         theta = x[start:]
         return X, X_v, Z, theta
 
@@ -414,24 +414,24 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 #         caxkmmdl = divider.append_axes("right", "5%", pad="1%")
 #         cbarkmmdl = pylab.colorbar(imkmmdl, cax=caxkmmdl)
 
-#         Qleg = ax1.legend(Xlatentplts, [r"$Q_{}$".format(i + 1) for i in range(self.Q)],
-#                    loc=3, ncol=self.Q, bbox_to_anchor=(0, 1.15, 1, 1.15),
+#         input_dimleg = ax1.legend(Xlatentplts, [r"$input_dim_{}$".format(i + 1) for i in range(self.input_dim)],
+#                    loc=3, ncol=self.input_dim, bbox_to_anchor=(0, 1.15, 1, 1.15),
 #                    borderaxespad=0, mode="expand")
-        ax2.legend(Xlatentplts, [r"$Q_{}$".format(i + 1) for i in range(self.Q)],
-                   loc=3, ncol=self.Q, bbox_to_anchor=(0, 1.1, 1, 1.1),
+        ax2.legend(Xlatentplts, [r"$input_dim_{}$".format(i + 1) for i in range(self.input_dim)],
+                   loc=3, ncol=self.input_dim, bbox_to_anchor=(0, 1.1, 1, 1.1),
                    borderaxespad=0, mode="expand")
-        ax3.legend(Xlatentplts, [r"$Q_{}$".format(i + 1) for i in range(self.Q)],
-                   loc=3, ncol=self.Q, bbox_to_anchor=(0, 1.1, 1, 1.1),
+        ax3.legend(Xlatentplts, [r"$input_dim_{}$".format(i + 1) for i in range(self.input_dim)],
+                   loc=3, ncol=self.input_dim, bbox_to_anchor=(0, 1.1, 1, 1.1),
                    borderaxespad=0, mode="expand")
-        ax4.legend(Xlatentplts, [r"$Q_{}$".format(i + 1) for i in range(self.Q)],
-                   loc=3, ncol=self.Q, bbox_to_anchor=(0, 1.1, 1, 1.1),
+        ax4.legend(Xlatentplts, [r"$input_dim_{}$".format(i + 1) for i in range(self.input_dim)],
+                   loc=3, ncol=self.input_dim, bbox_to_anchor=(0, 1.1, 1, 1.1),
                    borderaxespad=0, mode="expand")
-        ax5.legend(Xlatentplts, [r"$Q_{}$".format(i + 1) for i in range(self.Q)],
-                   loc=3, ncol=self.Q, bbox_to_anchor=(0, 1.1, 1, 1.1),
+        ax5.legend(Xlatentplts, [r"$input_dim_{}$".format(i + 1) for i in range(self.input_dim)],
+                   loc=3, ncol=self.input_dim, bbox_to_anchor=(0, 1.1, 1, 1.1),
                    borderaxespad=0, mode="expand")
         Lleg = ax1.legend()
         Lleg.draggable()
-#         ax1.add_artist(Qleg)
+#         ax1.add_artist(input_dimleg)
 
         indicatorKL, = ax1.plot(kllls[self.showing, 0], kllls[self.showing, 2], 'o', c=KL.get_color())
         indicatorLL, = ax1.plot(kllls[self.showing, 0], kllls[self.showing, 1] - kllls[self.showing, 2], 'o', c=LL.get_color())

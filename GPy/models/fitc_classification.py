@@ -16,7 +16,7 @@ class FITCClassification(FITC):
 
     :param X: input observations
     :param Y: observed values
-    :param likelihood: a GPy likelihood, defaults to Binomial with probit link_function
+    :param likelihood: a GPy likelihood, defaults to Binomial with probit link function
     :param kernel: a GPy kernel, defaults to rbf+white
     :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_X: False|True

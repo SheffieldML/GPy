@@ -27,7 +27,7 @@ class rational_quadratic(kernpart):
     def __init__(self,input_dim,variance=1.,lengthscale=1.,power=1.):
         assert input_dim == 1, "For this kernel we assume input_dim=1"
         self.input_dim = input_dim
-        self.Nparam = 3
+        self.num_params = 3
         self.name = 'rat_quad'
         self.variance = variance
         self.lengthscale = lengthscale

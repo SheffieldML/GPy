@@ -33,7 +33,7 @@ def tuto_GP_regression():
 
     m.optimize()
 
-    m.optimize_restarts(Nrestarts = 10)
+    m.optimize_restarts(num_restarts = 10)
 
     ###########################
     #  2-dimensional example  #

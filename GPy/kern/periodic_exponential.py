@@ -35,7 +35,7 @@ class periodic_exponential(kernpart):
         else:
             lengthscale = np.ones(1)
         self.lower,self.upper = lower, upper
-        self.Nparam = 3
+        self.num_params = 3
         self.n_freq = n_freq
         self.n_basis = 2*n_freq
         self._set_params(np.hstack((variance,lengthscale,period)))

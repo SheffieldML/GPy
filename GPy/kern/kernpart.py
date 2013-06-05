@@ -13,7 +13,7 @@ class kernpart(object):
         Do not instantiate.
         """
         self.input_dim = input_dim
-        self.Nparam = 1
+        self.num_params = 1
         self.name = 'unnamed'
 
     def _get_params(self):

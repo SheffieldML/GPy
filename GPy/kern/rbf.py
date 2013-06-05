@@ -36,14 +36,14 @@ class rbf(kernpart):
         self.name = 'rbf'
         self.ARD = ARD
         if not ARD:
-            self.Nparam = 2
+            self.num_params = 2
             if lengthscale is not None:
                 lengthscale = np.asarray(lengthscale)
                 assert lengthscale.size == 1, "Only one lengthscale needed for non-ARD kernel"
             else:
                 lengthscale = np.ones(1)
         else:
-            self.Nparam = self.input_dim + 1
+            self.num_params = self.input_dim + 1
             if lengthscale is not None:
                 lengthscale = np.asarray(lengthscale)
                 assert lengthscale.size == self.input_dim, "bad number of lengthscales"
@@ -67,7 +67,7 @@ class rbf(kernpart):
         return np.hstack((self.variance, self.lengthscale))
 
     def _set_params(self, x):
-        assert x.size == (self.Nparam)
+        assert x.size == (self.num_params)
         self.variance = x[0]
         self.lengthscale = x[1:]
         self.lengthscale2 = np.square(self.lengthscale)
@@ -76,7 +76,7 @@ class rbf(kernpart):
         self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
 
     def _get_param_names(self):
-        if self.Nparam == 2:
+        if self.num_params == 2:
             return ['variance', 'lengthscale']
         else:
             return ['variance'] + ['lengthscale_%i' % i for i in range(self.lengthscale.size)]

@@ -21,7 +21,7 @@ class symmetric(kernpart):
         assert transform.shape == (k.input_dim, k.input_dim)
         self.transform = transform
         self.input_dim = k.input_dim
-        self.Nparam = k.Nparam
+        self.num_params = k.num_params
         self.name = k.name + '_symm'
         self.k = k
         self._set_params(k._get_params())

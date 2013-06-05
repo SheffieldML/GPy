@@ -32,7 +32,7 @@ class Matern32(kernpart):
         self.input_dim = input_dim
         self.ARD = ARD
         if ARD == False:
-            self.Nparam = 2
+            self.num_params = 2
             self.name = 'Mat32'
             if lengthscale is not None:
                 lengthscale = np.asarray(lengthscale)
@@ -40,7 +40,7 @@ class Matern32(kernpart):
             else:
                 lengthscale = np.ones(1)
         else:
-            self.Nparam = self.input_dim + 1
+            self.num_params = self.input_dim + 1
             self.name = 'Mat32'
             if lengthscale is not None:
                 lengthscale = np.asarray(lengthscale)
@@ -55,13 +55,13 @@ class Matern32(kernpart):
 
     def _set_params(self,x):
         """set the value of the parameters."""
-        assert x.size == self.Nparam
+        assert x.size == self.num_params
         self.variance = x[0]
         self.lengthscale = x[1:]
 
     def _get_param_names(self):
         """return parameter names."""
-        if self.Nparam == 2:
+        if self.num_params == 2:
             return ['variance','lengthscale']
         else:
             return ['variance']+['lengthscale_%i'%i for i in range(self.lengthscale.size)]

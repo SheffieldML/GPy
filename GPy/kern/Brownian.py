@@ -21,7 +21,7 @@ class Brownian(kernpart):
     def __init__(self,input_dim,variance=1.):
         self.input_dim = input_dim
         assert self.input_dim==1, "Brownian motion in 1D only"
-        self.Nparam = 1.
+        self.num_params = 1.
         self.name = 'Brownian'
         self._set_params(np.array([variance]).flatten())
 

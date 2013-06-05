@@ -38,12 +38,12 @@ class spkern(kernpart):
         self.input_dim = len(self._sp_x)
         assert self.input_dim == input_dim
         self._sp_theta = sorted([e for e in sp_vars if not (e.name[0]=='x' or e.name[0]=='z')],key=lambda e:e.name)
-        self.Nparam = len(self._sp_theta)
+        self.num_params = len(self._sp_theta)
 
         #deal with param
         if param is None:
-            param = np.ones(self.Nparam)
-        assert param.size==self.Nparam
+            param = np.ones(self.num_params)
+        assert param.size==self.num_params
         self._set_params(param)
 
         #Differentiate!
@@ -115,7 +115,7 @@ class spkern(kernpart):
         #Here's some code to do the looping for K
         arglist = ", ".join(["X[i*input_dim+%s]"%x.name[1:] for x in self._sp_x]\
                 + ["Z[j*input_dim+%s]"%z.name[1:] for z in self._sp_z]\
-                + ["param[%i]"%i for i in range(self.Nparam)])
+                + ["param[%i]"%i for i in range(self.num_params)])
 
         self._K_code =\
         """

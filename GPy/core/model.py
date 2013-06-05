@@ -24,7 +24,7 @@ class model(parameterised):
         self.optimization_runs = []
         self.sampling_runs = []
         self.preferred_optimizer = 'scg'
-        #self._set_params(self._get_params()) has been taken out as it should only be called on leaf nodes
+        # self._set_params(self._get_params()) has been taken out as it should only be called on leaf nodes
     def _get_params(self):
         raise NotImplementedError, "this needs to be implemented to use the model class"
     def _set_params(self, x):
@@ -65,7 +65,7 @@ class model(parameterised):
         if len(tie_matches) > 1:
             raise ValueError, "cannot place Prior across multiple ties"
         elif len(tie_matches) == 1:
-            which = which[:1]  # just place a Prior object on the first parameter
+            which = which[:1] # just place a Prior object on the first parameter
 
 
         # check constraints are okay
@@ -147,10 +147,10 @@ class model(parameterised):
         if self.priors is not None:
             [np.put(x, i, p.rvs(1)) for i, p in enumerate(self.priors) if not p is None]
         self._set_params(x)
-        self._set_params_transformed(self._get_params_transformed())  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
+        self._set_params_transformed(self._get_params_transformed()) # makes sure all of the tied parameters get the same init (since there's only one prior object...)
 
 
-    def optimize_restarts(self, Nrestarts=10, robust=False, verbose=True, parallel=False, num_processes=None, **kwargs):
+    def optimize_restarts(self, num_restarts=10, robust=False, verbose=True, parallel=False, num_processes=None, **kwargs):
         """
         Perform random restarts of the model, and set the model to the best
         seen solution.
@@ -179,19 +179,19 @@ class model(parameterised):
             try:
                 jobs = []
                 pool = mp.Pool(processes=num_processes)
-                for i in range(Nrestarts):
+                for i in range(num_restarts):
                     self.randomize()
                     job = pool.apply_async(opt_wrapper, args=(self,), kwds=kwargs)
                     jobs.append(job)
 
-                pool.close()  # signal that no more data coming in
-                pool.join()  # wait for all the tasks to complete
+                pool.close() # signal that no more data coming in
+                pool.join() # wait for all the tasks to complete
             except KeyboardInterrupt:
                 print "Ctrl+c received, terminating and joining pool."
                 pool.terminate()
                 pool.join()
 
-        for i in range(Nrestarts):
+        for i in range(num_restarts):
             try:
                 if not parallel:
                     self.randomize()
@@ -200,10 +200,10 @@ class model(parameterised):
                     self.optimization_runs.append(jobs[i].get())
 
                 if verbose:
-                    print("Optimization restart {0}/{1}, f = {2}".format(i + 1, Nrestarts, self.optimization_runs[-1].f_opt))
+                    print("Optimization restart {0}/{1}, f = {2}".format(i + 1, num_restarts, self.optimization_runs[-1].f_opt))
             except Exception as e:
                 if robust:
-                    print("Warning - optimization restart {0}/{1} failed".format(i + 1, Nrestarts))
+                    print("Warning - optimization restart {0}/{1} failed".format(i + 1, num_restarts))
                 else:
                     raise e
 
@@ -222,7 +222,7 @@ class model(parameterised):
         currently_constrained = self.all_constrained_indices()
         to_make_positive = []
         for s in positive_strings:
-            for i in self.grep_param_names(".*"+s):
+            for i in self.grep_param_names(".*" + s):
                 if not (i in currently_constrained):
                     to_make_positive.append(i)
         if len(to_make_positive):
@@ -240,13 +240,13 @@ class model(parameterised):
         Gets the gradients from the likelihood and the priors.
         """
         self._set_params_transformed(x)
-        obj_grads = - self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
+        obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
         return obj_grads
 
     def objective_and_gradients(self, x):
         self._set_params_transformed(x)
         obj_f = -self.log_likelihood() - self.log_prior()
-        obj_grads = - self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
+        obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
         return obj_f, obj_grads
 
     def optimize(self, optimizer=None, start=None, **kwargs):
@@ -315,7 +315,7 @@ class model(parameterised):
         if self.priors is not None:
             strs = [str(p) if p is not None else '' for p in self.priors]
         else:
-            strs = ['']*len(self._get_params())
+            strs = [''] * len(self._get_params())
         width = np.array(max([len(p) for p in strs] + [5])) + 4
 
         log_like = self.log_likelihood()
@@ -474,8 +474,8 @@ class model(parameterised):
             ll_change = new_ll - last_ll
 
             if ll_change < 0:
-                self.likelihood = last_approximation  # restore previous likelihood approximation
-                self._set_params(last_params)  # restore model parameters
+                self.likelihood = last_approximation # restore previous likelihood approximation
+                self._set_params(last_params) # restore model parameters
                 print "Log-likelihood decrement: %s \nLast likelihood update discarded." % ll_change
                 stop = True
             else:

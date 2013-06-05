@@ -114,12 +114,8 @@ def tuto_kernel_overview():
     Y = 0.5*X[:,:1] + 0.5*X[:,1:] + 2*np.sin(X[:,:1]) * np.sin(X[:,1:])
 
     # Create GP regression model
-<<<<<<< HEAD
-    m = GPy.models.GP_regression(X,Y,Kanova)
-=======
     m = GPy.models.GPRegression(X, Y, Kanova)
     pb.figure(figsize=(5,5))
->>>>>>> efbf169a6a17d824234d538553ffcbe0c4bddc40
     m.plot()
    
     pb.figure(figsize=(20,3))

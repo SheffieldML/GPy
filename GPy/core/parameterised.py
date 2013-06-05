@@ -223,7 +223,15 @@ class parameterised(object):
         To fix multiple parameters to the same value, simply pass a regular expression which matches both parameter names, or pass both of the indexes
         """
         matches = self.grep_param_names(regexp)
-        assert not np.any(matches[:, None] == self.all_constrained_indices()), "Some indices are already constrained"
+
+        overlap = set(matches).intersection(set(self.all_constrained_indices()))
+        if overlap:
+            self.unconstrain(np.asarray(list(overlap)))
+            print 'Warning: re-constraining these parameters'
+            pn = self._get_param_names()
+            for i in overlap:
+                print pn[i]
+
         self.fixed_indices.append(matches)
         if value != None:
             self.fixed_values.append(value)

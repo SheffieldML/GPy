@@ -117,7 +117,7 @@ def swiss_roll(optimize=True, N=1000, num_inducing=15, Q=4, sigma=.2, plot=False
         m.optimize('scg', messages=1)
     return m
 
-def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_f_eval=4e3, plot=False, **k):
+def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_f_eval=50, plot=False, **k):
     np.random.seed(0)
     data = GPy.util.datasets.oil()
 
@@ -298,7 +298,7 @@ def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
 
     if optimize:
         print "Optimizing Model:"
-        m.optimize('scg', messages=1, max_iters=1e3, max_f_eval=1e3, gtol=.1)
+        m.optimize('scg', messages=1, max_iters=5, max_f_eval=5, gtol=.1)
     if plot:
         m.plot_X_1d("MRD Latent Space 1D")
         m.plot_scales("MRD Scales")

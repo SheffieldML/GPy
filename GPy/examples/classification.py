@@ -161,11 +161,6 @@ def FITC_crescent_data(num_inducing=10, seed=default_seed):
     Y = data['Y']
     Y[Y.flatten()==-1]=0
 
-
-    data = GPy.util.datasets.crescent_data(seed=seed)
-    Y = data['Y']
-    Y[Y.flatten()==-1]=0
-
     m = GPy.models.FITCClassification(data['X'], Y,num_inducing=num_inducing)
     m.ensure_default_constraints()
     m['.*len'] = 3.

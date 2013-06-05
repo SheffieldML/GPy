@@ -18,15 +18,15 @@ class GPBase(model.model):
         self.kern = kernel
         self.likelihood = likelihood
         assert self.X.shape[0] == self.likelihood.data.shape[0]
-        self.N, self.D = self.likelihood.data.shape
+        self.N, self.output_dim = self.likelihood.data.shape
 
         if normalize_X:
             self._Xmean = X.mean(0)[None, :]
             self._Xstd = X.std(0)[None, :]
             self.X = (X.copy() - self._Xmean) / self._Xstd
         else:
-            self._Xmean = np.zeros((1,self.input_dim))
-            self._Xstd = np.ones((1,self.input_dim))
+            self._Xmean = np.zeros((1, self.input_dim))
+            self._Xstd = np.ones((1, self.input_dim))
 
         model.model.__init__(self)
 
@@ -70,7 +70,7 @@ class GPBase(model.model):
             else:
                 m, v = self._raw_predict(Xnew, which_parts=which_parts, full_cov=True)
                 Ysim = np.random.multivariate_normal(m.flatten(), v, samples)
-                gpplot(Xnew, m, m - 2 * np.sqrt(np.diag(v)[:, None]), m + 2 * np.sqrt(np.diag(v))[:, None,], axes=ax)
+                gpplot(Xnew, m, m - 2 * np.sqrt(np.diag(v)[:, None]), m + 2 * np.sqrt(np.diag(v))[:, None, ], axes=ax)
                 for i in range(samples):
                     ax.plot(Xnew, Ysim[i, :], Tango.colorsHex['darkBlue'], linewidth=0.25)
             ax.plot(self.X[which_data], self.likelihood.Y[which_data], 'kx', mew=1.5)
@@ -108,19 +108,19 @@ class GPBase(model.model):
 
         if self.X.shape[1] == 1:
 
-            Xu = self.X * self._Xstd + self._Xmean  # NOTE self.X are the normalized values now
+            Xu = self.X * self._Xstd + self._Xmean # NOTE self.X are the normalized values now
 
             Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
             m, var, lower, upper = self.predict(Xnew, which_parts=which_parts)
             for d in range(m.shape[1]):
-                gpplot(Xnew, m[:,d], lower[:,d], upper[:,d],axes=ax)
-                ax.plot(Xu[which_data], self.likelihood.data[which_data,d], 'kx', mew=1.5)
+                gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax)
+                ax.plot(Xu[which_data], self.likelihood.data[which_data, d], 'kx', mew=1.5)
             ymin, ymax = min(np.append(self.likelihood.data, lower)), max(np.append(self.likelihood.data, upper))
             ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
             ax.set_xlim(xmin, xmax)
             ax.set_ylim(ymin, ymax)
 
-        elif self.X.shape[1] == 2:  # FIXME
+        elif self.X.shape[1] == 2: # FIXME
             resolution = resolution or 50
             Xnew, xx, yy, xmin, xmax = x_frame2D(self.X, plot_limits, resolution)
             x, y = np.linspace(xmin[0], xmax[0], resolution), np.linspace(xmin[1], xmax[1], resolution)

@@ -23,7 +23,7 @@ class model(parameterised):
         self.priors = None
         self.optimization_runs = []
         self.sampling_runs = []
-        self.preferred_optimizer = 'tnc'
+        self.preferred_optimizer = 'scg'
         #self._set_params(self._get_params()) has been taken out as it should only be called on leaf nodes
     def _get_params(self):
         raise NotImplementedError, "this needs to be implemented to use the model class"

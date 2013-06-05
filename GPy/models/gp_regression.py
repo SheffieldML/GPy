@@ -7,7 +7,7 @@ from ..core import GP
 from .. import likelihoods
 from .. import kern
 
-class GP_regression(GP):
+class GPRegression(GP):
     """
     Gaussian Process model for regression
 

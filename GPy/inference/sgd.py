@@ -292,8 +292,8 @@ class opt_SGD(Optimizer):
             NLL = []
             import pylab as plt
             for count, j in enumerate(features):
-                self.model.D = len(j)
-                self.model.likelihood.D = len(j)
+                self.model.input_dim = len(j)
+                self.model.likelihood.input_dim = len(j)
                 self.model.likelihood.set_data(Y[:, j])
                 # self.model.likelihood.V = self.model.likelihood.Y*self.model.likelihood.precision
 
@@ -334,9 +334,9 @@ class opt_SGD(Optimizer):
             self.f_opt = np.mean(NLL)
             self.model.N = N
             self.model.X = X
-            self.model.D = D
+            self.model.input_dim = D
             self.model.likelihood.N = N
-            self.model.likelihood.D = D
+            self.model.likelihood.input_dim = D
             self.model.likelihood.Y = Y
             sigma = self.model.likelihood._variance
             self.model.likelihood._variance = None # invalidate cache

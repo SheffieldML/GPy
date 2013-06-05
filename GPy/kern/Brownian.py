@@ -13,14 +13,14 @@ class Brownian(kernpart):
     """
     Brownian Motion kernel.
 
-    :param D: the number of input dimensions
-    :type D: int
+    :param input_dim: the number of input dimensions
+    :type input_dim: int
     :param variance:
     :type variance: float
     """
-    def __init__(self,D,variance=1.):
-        self.D = D
-        assert self.D==1, "Brownian motion in 1D only"
+    def __init__(self,input_dim,variance=1.):
+        self.input_dim = input_dim
+        assert self.input_dim==1, "Brownian motion in 1D only"
         self.Nparam = 1.
         self.name = 'Brownian'
         self._set_params(np.array([variance]).flatten())

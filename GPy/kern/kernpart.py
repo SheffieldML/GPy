@@ -3,16 +3,16 @@
 
 
 class kernpart(object):
-    def __init__(self,D):
+    def __init__(self,input_dim):
         """
         The base class for a kernpart: a positive definite function which forms part of a kernel
 
-        :param D: the number of input dimensions to the function
-        :type D: int
+        :param input_dim: the number of input dimensions to the function
+        :type input_dim: int
 
         Do not instantiate.
         """
-        self.D = D
+        self.input_dim = input_dim
         self.Nparam = 1
         self.name = 'unnamed'
 

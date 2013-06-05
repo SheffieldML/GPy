@@ -99,9 +99,9 @@ class MultivariateGaussian:
         assert len(self.var.shape) == 2
         assert self.var.shape[0] == self.var.shape[1]
         assert self.var.shape[0] == self.mu.size
-        self.D = self.mu.size
+        self.input_dim = self.mu.size
         self.inv, self.hld = pdinv(self.var)
-        self.constant = -0.5 * self.D * np.log(2 * np.pi) - self.hld
+        self.constant = -0.5 * self.input_dim * np.log(2 * np.pi) - self.hld
 
     def summary(self):
         raise NotImplementedError
@@ -121,7 +121,7 @@ class MultivariateGaussian:
         return np.random.multivariate_normal(self.mu, self.var, n)
 
     def plot(self):
-        if self.D == 2:
+        if self.input_dim == 2:
             rvs = self.rvs(200)
             pb.plot(rvs[:, 0], rvs[:, 1], 'kx', mew=1.5)
             xmin, xmax = pb.xlim()

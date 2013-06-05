@@ -7,12 +7,12 @@ from GPy.util.linalg import mdot, pdinv
 import pdb
 from scipy import weave
 
-class coregionalise(kernpart):
+class Coregionalise(kernpart):
     """
     Kernel for Intrinsic Corregionalization Models
     """
     def __init__(self,Nout,R=1, W=None, kappa=None):
-        self.D = 1
+        self.input_dim = 1
         self.name = 'coregion'
         self.Nout = Nout
         self.R = R

@@ -13,10 +13,10 @@ class linear(kernpart):
 
     .. math::
 
-       k(x,y) = \sum_{i=1}^D \sigma^2_i x_iy_i
+       k(x,y) = \sum_{i=1}^input_dim \sigma^2_i x_iy_i
 
-    :param D: the number of input dimensions
-    :type D: int
+    :param input_dim: the number of input dimensions
+    :type input_dim: int
     :param variances: the vector of variances :math:`\sigma^2_i`
     :type variances: array or list of the appropriate size (or float if there is only one variance parameter)
     :param ARD: Auto Relevance Determination. If equal to "False", the kernel has only one variance parameter \sigma^2, otherwise there is one variance parameter per dimension.
@@ -24,8 +24,8 @@ class linear(kernpart):
     :rtype: kernel object
     """
 
-    def __init__(self, D, variances=None, ARD=False):
-        self.D = D
+    def __init__(self, input_dim, variances=None, ARD=False):
+        self.input_dim = input_dim
         self.ARD = ARD
         if ARD == False:
             self.Nparam = 1
@@ -37,13 +37,13 @@ class linear(kernpart):
                 variances = np.ones(1)
             self._Xcache, self._X2cache = np.empty(shape=(2,))
         else:
-            self.Nparam = self.D
+            self.Nparam = self.input_dim
             self.name = 'linear'
             if variances is not None:
                 variances = np.asarray(variances)
-                assert variances.size == self.D, "bad number of lengthscales"
+                assert variances.size == self.input_dim, "bad number of lengthscales"
             else:
-                variances = np.ones(self.D)
+                variances = np.ones(self.input_dim)
         self._set_params(variances.flatten())
 
         # initialize cache
@@ -82,7 +82,7 @@ class linear(kernpart):
     def dK_dtheta(self, dL_dK, X, X2, target):
         if self.ARD:
             if X2 is None:
-                [np.add(target[i:i + 1], np.sum(dL_dK * tdot(X[:, i:i + 1])), target[i:i + 1]) for i in range(self.D)]
+                [np.add(target[i:i + 1], np.sum(dL_dK * tdot(X[:, i:i + 1])), target[i:i + 1]) for i in range(self.input_dim)]
             else:
                 product = X[:, None, :] * X2[None, :, :]
                 target += (dL_dK[:, :, None] * product).sum(0).sum(0)
@@ -153,7 +153,7 @@ class linear(kernpart):
 #                     psi2_real[n, m, m_prime] = np.dot(tmp, (
 #                             self._Z[m_prime:m_prime + 1] * self.variances).T)
 #         mu2_S = (self._mu[:, None, :] * self._mu[:, :, None])
-#         mu2_S[:, np.arange(self.D), np.arange(self.D)] += self._S
+#         mu2_S[:, np.arange(self.input_dim), np.arange(self.input_dim)] += self._S
 #         psi2 = (self.ZA[None, :, None, :] * mu2_S[:, None]).sum(-1)
 #         psi2 = (psi2[:, :, None] * self.ZA[None, None]).sum(-1)
 #         psi2_tensor = np.tensordot(self.ZZ[None, :, :, :] * np.square(self.variances), self.mu2_S[:, None, None, :], ((3), (3))).squeeze().T

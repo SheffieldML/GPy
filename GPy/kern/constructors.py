@@ -21,7 +21,7 @@ from periodic_Matern32 import periodic_Matern32 as periodic_Matern32part
 from periodic_Matern52 import periodic_Matern52 as periodic_Matern52part
 from prod import prod as prodpart
 from symmetric import symmetric as symmetric_part
-from coregionalise import coregionalise as coregionalise_part
+from coregionalise import Coregionalise as coregionalise_part
 from rational_quadratic import rational_quadratic as rational_quadraticpart
 from rbfcos import rbfcos as rbfcospart
 from independent_outputs import independent_outputs as independent_output_part
@@ -33,8 +33,8 @@ def rbf(D,variance=1., lengthscale=None,ARD=False):
     """
     Construct an RBF kernel
 
-    :param D: dimensionality of the kernel, obligatory
-    :type D: int
+    :param input_dim: dimensionality of the kernel, obligatory
+    :type input_dim: int
     :param variance: the variance of the kernel
     :type variance: float
     :param lengthscale: the lengthscale of the kernel
@@ -51,7 +51,7 @@ def linear(D,variances=None,ARD=False):
 
      Arguments
      ---------
-     D (int), obligatory
+    input_dimD (int), obligatory
      variances (np.ndarray)
      ARD (boolean)
     """
@@ -64,7 +64,7 @@ def white(D,variance=1.):
 
      Arguments
      ---------
-     D (int), obligatory
+    input_dimD (int), obligatory
      variance (float)
     """
     part = whitepart(D,variance)
@@ -74,8 +74,8 @@ def exponential(D,variance=1., lengthscale=None, ARD=False):
     """
     Construct an exponential kernel
 
-    :param D: dimensionality of the kernel, obligatory
-    :type D: int
+    :param input_dim: dimensionality of the kernel, obligatory
+    :type input_dim: int
     :param variance: the variance of the kernel
     :type variance: float
     :param lengthscale: the lengthscale of the kernel
@@ -90,8 +90,8 @@ def Matern32(D,variance=1., lengthscale=None, ARD=False):
     """
      Construct a Matern 3/2 kernel.
 
-    :param D: dimensionality of the kernel, obligatory
-    :type D: int
+    :param input_dim: dimensionality of the kernel, obligatory
+    :type input_dim: int
     :param variance: the variance of the kernel
     :type variance: float
     :param lengthscale: the lengthscale of the kernel
@@ -106,8 +106,8 @@ def Matern52(D,variance=1., lengthscale=None, ARD=False):
     """
      Construct a Matern 5/2 kernel.
 
-    :param D: dimensionality of the kernel, obligatory
-    :type D: int
+    :param input_dim: dimensionality of the kernel, obligatory
+    :type input_dim: int
     :param variance: the variance of the kernel
     :type variance: float
     :param lengthscale: the lengthscale of the kernel
@@ -124,7 +124,7 @@ def bias(D,variance=1.):
 
      Arguments
      ---------
-     D (int), obligatory
+     input_dim (int), obligatory
      variance (float)
     """
     part = biaspart(D,variance)
@@ -133,7 +133,7 @@ def bias(D,variance=1.):
 def finite_dimensional(D,F,G,variances=1.,weights=None):
     """
     Construct a finite dimensional kernel.
-    D: int - the number of input dimensions
+    input_dim: int - the number of input dimensions
     F: np.array of functions with shape (n,) - the n basis functions
     G: np.array with shape (n,n) - the Gram matrix associated to F
     variances : np.ndarray with shape (n,)
@@ -145,8 +145,8 @@ def spline(D,variance=1.):
     """
     Construct a spline kernel.
 
-    :param D: Dimensionality of the kernel
-    :type D: int
+    :param input_dim: Dimensionality of the kernel
+    :type input_dim: int
     :param variance: the variance of the kernel
     :type variance: float
     """
@@ -157,8 +157,8 @@ def Brownian(D,variance=1.):
     """
     Construct a Brownian motion kernel.
 
-    :param D: Dimensionality of the kernel
-    :type D: int
+    :param input_dim: Dimensionality of the kernel
+    :type input_dim: int
     :param variance: the variance of the kernel
     :type variance: float
     """
@@ -204,8 +204,8 @@ def periodic_exponential(D=1,variance=1., lengthscale=None, period=2*np.pi,n_fre
     """
     Construct an periodic exponential kernel
 
-    :param D: dimensionality, only defined for D=1
-    :type D: int
+    :param input_dim: dimensionality, only defined for input_dim=1
+    :type input_dim: int
     :param variance: the variance of the kernel
     :type variance: float
     :param lengthscale: the lengthscale of the kernel
@@ -222,8 +222,8 @@ def periodic_Matern32(D,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,
     """
      Construct a periodic Matern 3/2 kernel.
 
-     :param D: dimensionality, only defined for D=1
-     :type D: int
+     :param input_dim: dimensionality, only defined for input_dim=1
+     :type input_dim: int
      :param variance: the variance of the kernel
      :type variance: float
      :param lengthscale: the lengthscale of the kernel
@@ -240,8 +240,8 @@ def periodic_Matern52(D,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,
     """
      Construct a periodic Matern 5/2 kernel.
 
-     :param D: dimensionality, only defined for D=1
-     :type D: int
+     :param input_dim: dimensionality, only defined for input_dim=1
+     :type input_dim: int
      :param variance: the variance of the kernel
      :type variance: float
      :param lengthscale: the lengthscale of the kernel
@@ -256,14 +256,14 @@ def periodic_Matern52(D,variance=1., lengthscale=None, period=2*np.pi,n_freq=10,
 
 def prod(k1,k2,tensor=False):
     """
-     Construct a product kernel over D from two kernels over D
+     Construct a product kernel over input_dim from two kernels over input_dim
 
     :param k1, k2: the kernels to multiply
     :type k1, k2: kernpart
     :rtype: kernel object
     """
     part = prodpart(k1,k2,tensor)
-    return kern(part.D, [part])
+    return kern(part.input_dim, [part])
 
 def symmetric(k):
     """
@@ -273,7 +273,7 @@ def symmetric(k):
     k_.parts = [symmetric_part(p) for p in k.parts]
     return k_
 
-def coregionalise(Nout,R=1, W=None, kappa=None):
+def Coregionalise(Nout,R=1, W=None, kappa=None):
     p = coregionalise_part(Nout,R,W,kappa)
     return kern(1,[p])
 
@@ -282,8 +282,8 @@ def rational_quadratic(D,variance=1., lengthscale=1., power=1.):
     """
      Construct rational quadratic kernel.
 
-    :param D: the number of input dimensions
-    :type D: int (D=1 is the only value currently supported)
+    :param input_dim: the number of input dimensions
+    :type input_dim: int (input_dim=1 is the only value currently supported)
     :param variance: the variance :math:`\sigma^2`
     :type variance: float
     :param lengthscale: the lengthscale :math:`\ell`
@@ -300,7 +300,7 @@ def fixed(D, K, variance=1.):
 
      Arguments
      ---------
-     D (int), obligatory
+     input_dim (int), obligatory
      K (np.array), obligatory
      variance (float)
     """
@@ -321,6 +321,6 @@ def independent_outputs(k):
     for sl in k.input_slices:
         assert (sl.start is None) and (sl.stop is None), "cannot adjust input slices! (TODO)"
     parts = [independent_output_part(p) for p in k.parts]
-    return kern(k.D+1,parts)
+    return kern(k.input_dim+1,parts)
 
 

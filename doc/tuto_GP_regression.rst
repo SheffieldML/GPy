@@ -25,7 +25,7 @@ The first step is to define the covariance kernel we want to use for the model. 
 
     kernel = GPy.kern.rbf(input_dim=1, variance=1., lengthscale=1.)
 
-The parameter ``D`` stands for the dimension of the input space. The parameters ``variance`` and ``lengthscale`` are optional. Many other kernels are implemented such as:
+The parameter ``input_dim`` stands for the dimension of the input space. The parameters ``variance`` and ``lengthscale`` are optional. Many other kernels are implemented such as:
 
 * linear (``GPy.kern.linear``)
 * exponential kernel (``GPy.kern.exponential``)
@@ -69,7 +69,7 @@ There are various ways to constrain the parameters of the kernel. The most basic
 
 but it is also possible to set a range on to constrain one parameter to be fixed. The parameter of ``m.constrain_positive`` is a regular expression that matches the name of the parameters to be constrained (as seen in ``print m``). For example, if we want the variance to be positive, the lengthscale to be in [1,10] and the noise variance to be fixed we can write::
 
-    m.unconstrain('')                            # Required to remove the previous constrains
+    m.unconstrain('')               # may be used to remove the previous constrains
     m.constrain_positive('.*rbf_variance')
     m.constrain_bounded('.*lengthscale',1.,10. )
     m.constrain_fixed('.*noise',0.0025)

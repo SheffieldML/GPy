@@ -114,7 +114,8 @@ def sparse_toy_linear_1d_classification(seed=default_seed):
     return m
 
 def sparse_crescent_data(inducing=10, seed=default_seed):
-    """Run a Gaussian process classification on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
+    """
+    Run a Gaussian process classification with DTC approxiamtion on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
 
     :param model_type: type of model to fit ['Full', 'FITC', 'DTC'].
     :param seed : seed value for data generation.
@@ -137,7 +138,8 @@ def sparse_crescent_data(inducing=10, seed=default_seed):
     return m
 
 def FITC_crescent_data(inducing=10, seed=default_seed):
-    """Run a Gaussian process classification on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
+    """
+    Run a Gaussian process classification with FITC approximation on the crescent data. The demonstration uses EP to approximate the likelihood.
 
     :param model_type: type of model to fit ['Full', 'FITC', 'DTC'].
     :param seed : seed value for data generation.
@@ -150,9 +152,14 @@ def FITC_crescent_data(inducing=10, seed=default_seed):
     Y = data['Y']
     Y[Y.flatten()==-1]=0
 
+
+    data = GPy.util.datasets.crescent_data(seed=seed)
+    Y = data['Y']
+    Y[Y.flatten()==-1]=0
+
     m = GPy.models.FITCClassification(data['X'], Y)
     m.ensure_default_constraints()
-    m['.*len'] = 10.
+    m['.*len'] = 3.
     m.update_likelihood_approximation()
     m.optimize()
     print(m)

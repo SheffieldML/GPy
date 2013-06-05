@@ -85,7 +85,7 @@ class parameterised(object):
             else:
                 return self._get_params()[matches]
         else:
-            raise AttributeError, "no parameter matches %s" % name
+            raise AttributeError, "no parameter matches %s" % regexp
 
     def __setitem__(self, name, val):
         """

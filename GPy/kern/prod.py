@@ -1,16 +1,16 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 import hashlib
 
-class prod(kernpart):
+class prod(Kernpart):
     """
     Computes the product of 2 kernels
 
     :param k1, k2: the kernels to multiply
-    :type k1, k2: kernpart
+    :type k1, k2: Kernpart
     :param tensor: The kernels are either multiply as functions defined on the same input space (default) or on the product of the input spaces
     :type tensor: Boolean
     :rtype: kernel object

@@ -12,7 +12,7 @@ from exponential import exponential as exponentialpart
 from Matern32 import Matern32 as Matern32part
 from Matern52 import Matern52 as Matern52part
 from bias import bias as biaspart
-from fixed import fixed as fixedpart
+from fixed import Fixed as fixedpart
 from finite_dimensional import finite_dimensional as finite_dimensionalpart
 from spline import spline as splinepart
 from Brownian import Brownian as Brownianpart
@@ -24,7 +24,7 @@ from symmetric import symmetric as symmetric_part
 from coregionalise import Coregionalise as coregionalise_part
 from rational_quadratic import rational_quadratic as rational_quadraticpart
 from rbfcos import rbfcos as rbfcospart
-from independent_outputs import independent_outputs as independent_output_part
+from independent_outputs import IndependentOutputs as independent_output_part
 #TODO these s=constructors are not as clean as we'd like. Tidy the code up
 #using meta-classes to make the objects construct properly wthout them.
 
@@ -294,9 +294,9 @@ def rational_quadratic(D,variance=1., lengthscale=1., power=1.):
     part = rational_quadraticpart(D,variance, lengthscale, power)
     return kern(D, [part])
 
-def fixed(D, K, variance=1.):
+def Fixed(D, K, variance=1.):
     """
-     Construct a fixed effect kernel.
+     Construct a Fixed effect kernel.
 
      Arguments
      ---------
@@ -314,7 +314,7 @@ def rbfcos(D,variance=1.,frequencies=None,bandwidths=None,ARD=False):
     part = rbfcospart(D,variance,frequencies,bandwidths,ARD)
     return kern(D,[part])
 
-def independent_outputs(k):
+def IndependentOutputs(k):
     """
     Construct a kernel with independent outputs from an existing kernel
     """

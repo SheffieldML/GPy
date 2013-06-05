@@ -1,17 +1,17 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 import hashlib
 #from scipy import integrate # This may not be necessary (Nicolas, 20th Feb)
 
-class prod_orthogonal(kernpart):
+class prod_orthogonal(Kernpart):
     """
     Computes the product of 2 kernels
 
     :param k1, k2: the kernels to multiply
-    :type k1, k2: kernpart
+    :type k1, k2: Kernpart
     :rtype: kernel object
 
     """

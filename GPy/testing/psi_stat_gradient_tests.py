@@ -8,9 +8,9 @@ import numpy
 
 import GPy
 import itertools
-from GPy.core import model
+from GPy.core import Model
 
-class PsiStatModel(model):
+class PsiStatModel(Model):
     def __init__(self, which, X, X_variance, Z, M, kernel):
         self.which = which
         self.X = X

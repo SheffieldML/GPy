@@ -4,23 +4,22 @@
 
 import numpy as np
 import pylab as pb
-from ..core.parameterised import parameterised
-from kernpart import kernpart
+from ..core.parameterised import Parameterised
+from kernpart import Kernpart
 import itertools
 from prod import prod
-from ..util.linalg import symmetrify
 
-class kern(parameterised):
+class kern(Parameterised):
     def __init__(self, input_dim, parts=[], input_slices=None):
         """
         This is the main kernel class for GPy. It handles multiple (additive) kernel functions, and keeps track of variaous things like which parameters live where.
 
         The technical code for kernels is divided into _parts_ (see e.g. rbf.py). This obnject contains a list of parts, which are computed additively. For multiplication, special _prod_ parts are used.
 
-        :param input_dim: The dimensioality of the kernel's input space
+        :param input_dim: The dimensionality of the kernel's input space
         :type input_dim: int
         :param parts: the 'parts' (PD functions) of the kernel
-        :type parts: list of kernpart objects
+        :type parts: list of Kernpart objects
         :param input_slices: the slices on the inputs which apply to each kernel
         :type input_slices: list of slice objects, or list of bools
 
@@ -39,11 +38,11 @@ class kern(parameterised):
             self.input_slices = [sl if type(sl) is slice else slice(None) for sl in input_slices]
 
         for p in self.parts:
-            assert isinstance(p, kernpart), "bad kernel part"
+            assert isinstance(p, Kernpart), "bad kernel part"
 
         self.compute_param_slices()
 
-        parameterised.__init__(self)
+        Parameterised.__init__(self)
 
 
     def plot_ARD(self, fignum=None, ax=None):
@@ -327,8 +326,8 @@ class kern(parameterised):
             p2.psi1(Z, mu, S, tmp2)
 
             prod = np.multiply(tmp1, tmp2)
-            crossterms += prod[:,:,None] + prod[:, None, :]
-            
+            crossterms += prod[:, :, None] + prod[:, None, :]
+
         target += crossterms
         return target
 
@@ -345,14 +344,14 @@ class kern(parameterised):
 
             tmp = np.zeros((mu.shape[0], Z.shape[0]))
             p1.psi1(Z, mu, S, tmp)
-            p2.dpsi1_dtheta((tmp[:,None,:]*dL_dpsi2).sum(1)*2., Z, mu, S, target[ps2])
+            p2.dpsi1_dtheta((tmp[:, None, :] * dL_dpsi2).sum(1) * 2., Z, mu, S, target[ps2])
 
         return self._transform_gradients(target)
 
     def dpsi2_dZ(self, dL_dpsi2, Z, mu, S):
         target = np.zeros_like(Z)
         [p.dpsi2_dZ(dL_dpsi2, Z[:, i_s], mu[:, i_s], S[:, i_s], target[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
-        #target *= 2
+        # target *= 2
 
         # compute the "cross" terms
         # TODO: we need input_slices here.
@@ -362,7 +361,7 @@ class kern(parameterised):
             tmp = np.zeros((mu.shape[0], Z.shape[0]))
             p1.psi1(Z, mu, S, tmp)
             tmp2 = np.zeros_like(target)
-            p2.dpsi1_dZ((tmp[:,None,:]*dL_dpsi2).sum(1).T, Z, mu, S, tmp2)
+            p2.dpsi1_dZ((tmp[:, None, :] * dL_dpsi2).sum(1).T, Z, mu, S, tmp2)
             target += tmp2
 
         return target * 2
@@ -379,7 +378,7 @@ class kern(parameterised):
 
             tmp = np.zeros((mu.shape[0], Z.shape[0]))
             p1.psi1(Z, mu, S, tmp)
-            p2.dpsi1_dmuS((tmp[:,None,:]*dL_dpsi2).sum(1).T*2., Z, mu, S, target_mu, target_S)
+            p2.dpsi1_dmuS((tmp[:, None, :] * dL_dpsi2).sum(1).T * 2., Z, mu, S, target_mu, target_S)
 
         return target_mu, target_S
 
@@ -430,7 +429,7 @@ class kern(parameterised):
             Xnew = np.vstack((xx.flatten(), yy.flatten())).T
             Kx = self.K(Xnew, x, which_parts)
             Kx = Kx.reshape(resolution, resolution).T
-            pb.contour(xg, yg, Kx, vmin=Kx.min(), vmax=Kx.max(), cmap=pb.cm.jet, *args, **kwargs)
+            pb.contour(xg, yg, Kx, vmin=Kx.min(), vmax=Kx.max(), cmap=pb.cm.jet, *args, **kwargs) # @UndefinedVariable
             pb.xlim(xmin[0], xmax[0])
             pb.ylim(xmin[1], xmax[1])
             pb.xlabel("x1")

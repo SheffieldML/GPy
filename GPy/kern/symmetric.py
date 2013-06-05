@@ -1,18 +1,18 @@
 # Copyright (c) 2012 James Hensman
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 
-class symmetric(kernpart):
+class symmetric(Kernpart):
     """
     Symmetrical kernels
 
     :param k: the kernel to symmetrify
-    :type k: kernpart
+    :type k: Kernpart
     :param transform: the transform to use in symmetrification (allows symmetry on specified axes)
     :type transform: A numpy array (input_dim x input_dim) specifiying the transform
-    :rtype: kernpart
+    :rtype: Kernpart
 
     """
     def __init__(self,k,transform=None):

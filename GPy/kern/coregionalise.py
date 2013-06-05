@@ -1,13 +1,13 @@
 # Copyright (c) 2012, James Hensman and Ricardo Andrade
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 from GPy.util.linalg import mdot, pdinv
 import pdb
 from scipy import weave
 
-class Coregionalise(kernpart):
+class Coregionalise(Kernpart):
     """
     Kernel for Intrinsic Corregionalization Models
     """

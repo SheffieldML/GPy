@@ -2,11 +2,11 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 import hashlib
 
-class bias(kernpart):
+class bias(Kernpart):
     def __init__(self,input_dim,variance=1.):
         """
         :param input_dim: the number of input dimensions

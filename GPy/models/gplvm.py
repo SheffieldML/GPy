@@ -6,7 +6,7 @@ import numpy as np
 import pylab as pb
 import sys, pdb
 from .. import kern
-from ..core import model
+from ..core import Model
 from ..util.linalg import pdinv, PCA
 from ..core import GP
 from ..likelihoods import Gaussian

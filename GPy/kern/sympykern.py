@@ -9,9 +9,9 @@ import sys
 current_dir = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 import tempfile
 import pdb
-from kernpart import kernpart
+from kernpart import Kernpart
 
-class spkern(kernpart):
+class spkern(Kernpart):
     """
     A kernel object, where all the hard work in done by sympy.
 

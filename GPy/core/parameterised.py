@@ -9,7 +9,7 @@ import cPickle
 import warnings
 import transformations
 
-class parameterised(object):
+class Parameterised(object):
     def __init__(self):
         """
         This is the base class for model and kernel. Mostly just handles tieing and constraining of parameters
@@ -34,7 +34,7 @@ class parameterised(object):
         """
         Returns a **copy** of parameters in non transformed space
 
-        :see_also: :py:func:`GPy.core.parameterised.params_transformed`
+        :see_also: :py:func:`GPy.core.Parameterised.params_transformed`
         """
         return self._get_params()
 
@@ -47,7 +47,7 @@ class parameterised(object):
         """
         Returns a **copy** of parameters in transformed space
 
-        :see_also: :py:func:`GPy.core.parameterised.params`
+        :see_also: :py:func:`GPy.core.Parameterised.params`
         """
         return self._get_params_transformed()
 

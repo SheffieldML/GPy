@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 
 def index_to_slices(index):
@@ -31,7 +31,7 @@ def index_to_slices(index):
     [ret[ind_i].append(slice(*indexes_i)) for ind_i,indexes_i in zip(ind[switchpoints[:-1]],zip(switchpoints,switchpoints[1:]))]
     return ret
 
-class independent_outputs(kernpart):
+class IndependentOutputs(Kernpart):
     """
     A kernel part shich can reopresent several independent functions.
     this kernel 'switches off' parts of the matrix where the output indexes are different.
@@ -41,8 +41,8 @@ class independent_outputs(kernpart):
 
     """
     def __init__(self,k):
-        self.D = k.D + 1
-        self.Nparam = k.Nparam
+        self.input_dim = k.input_dim + 1
+        self.num_params = k.num_params
         self.name = 'iops('+ k.name + ')'
         self.k = k
 

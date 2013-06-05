@@ -2,12 +2,12 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 from ..util.linalg import tdot
 from scipy import weave
 
-class linear(kernpart):
+class linear(Kernpart):
     """
     Linear kernel
 

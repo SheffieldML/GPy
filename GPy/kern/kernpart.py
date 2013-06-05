@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-class kernpart(object):
+class Kernpart(object):
     def __init__(self,input_dim):
         """
         The base class for a kernpart: a positive definite function which forms part of a kernel

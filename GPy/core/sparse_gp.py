@@ -152,7 +152,7 @@ class SparseGP(GPBase):
         return A + B + C + D + self.likelihood.Z
 
     def _set_params(self, p):
-        self.Z = p[:self.num_inducing * self.output_dim].reshape(self.num_inducing, self.input_dim)
+        self.Z = p[:self.num_inducing * self.input_dim].reshape(self.num_inducing, self.input_dim)
         self.kern._set_params(p[self.Z.size:self.Z.size + self.kern.num_params])
         self.likelihood._set_params(p[self.Z.size + self.kern.num_params:])
         self._compute_kernel_matrices()

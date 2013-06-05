@@ -3,10 +3,10 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 
-class rbfcos(kernpart):
+class rbfcos(Kernpart):
     def __init__(self,input_dim,variance=1.,frequencies=None,bandwidths=None,ARD=False):
         self.input_dim = input_dim
         self.name = 'rbfcos'

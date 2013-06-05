@@ -2,14 +2,14 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 
 def theta(x):
     """Heavisdie step function"""
     return np.where(x>=0.,1.,0.)
 
-class Brownian(kernpart):
+class Brownian(Kernpart):
     """
     Brownian Motion kernel.
 

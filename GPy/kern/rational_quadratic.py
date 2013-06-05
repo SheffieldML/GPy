@@ -2,10 +2,10 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 
-class rational_quadratic(kernpart):
+class rational_quadratic(Kernpart):
     """
     rational quadratic kernel
 
@@ -21,7 +21,7 @@ class rational_quadratic(kernpart):
     :type lengthscale: float
     :param power: the power :math:`\\alpha`
     :type power: float
-    :rtype: kernpart object
+    :rtype: Kernpart object
 
     """
     def __init__(self,input_dim,variance=1.,lengthscale=1.,power=1.):

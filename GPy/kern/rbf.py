@@ -2,13 +2,13 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 import hashlib
 from scipy import weave
 from ..util.linalg import tdot
 
-class rbf(kernpart):
+class rbf(Kernpart):
     """
     Radial Basis Function kernel, aka squared-exponential, exponentiated quadratic or Gaussian kernel:
 

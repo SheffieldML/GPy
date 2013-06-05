@@ -57,8 +57,8 @@ class FITC(SparseGP):
 
     def _set_params(self, p):
         self.Z = p[:self.M * self.input_dim].reshape(self.M, self.input_dim)
-        self.kern._set_params(p[self.Z.size:self.Z.size + self.kern.Nparam])
-        self.likelihood._set_params(p[self.Z.size + self.kern.Nparam:])
+        self.kern._set_params(p[self.Z.size:self.Z.size + self.kern.num_params])
+        self.likelihood._set_params(p[self.Z.size + self.kern.num_params:])
         self._compute_kernel_matrices()
         self._computations()
 
@@ -198,14 +198,14 @@ class FITC(SparseGP):
             aux_1 = self.likelihood.Y.T * np.dot(self._LBi_Lmi_psi1V.T,LBiLmipsi1)
             aux_2 = np.dot(LBiLmipsi1.T,self._LBi_Lmi_psi1V)
 
-            dA_dnoise = 0.5 * self.D * (dbstar_dnoise/self.beta_star).sum() - 0.5 * self.D * np.sum(self.likelihood.Y**2 * dbstar_dnoise)
+            dA_dnoise = 0.5 * self.input_dim * (dbstar_dnoise/self.beta_star).sum() - 0.5 * self.input_dim * np.sum(self.likelihood.Y**2 * dbstar_dnoise)
             dC_dnoise = -0.5 * np.sum(mdot(self.LBi.T,self.LBi,Lmi_psi1) *  Lmi_psi1 * dbstar_dnoise.T)
             dC_dnoise = -0.5 * np.sum(mdot(self.LBi.T,self.LBi,Lmi_psi1) *  Lmi_psi1 * dbstar_dnoise.T)
 
             dD_dnoise_1 =  mdot(self.V_star*LBiLmipsi1.T,LBiLmipsi1*dbstar_dnoise.T*self.likelihood.Y.T)
             alpha = mdot(LBiLmipsi1,self.V_star)
             alpha_ = mdot(LBiLmipsi1.T,alpha)
-            dD_dnoise_2 = -0.5 * self.D * np.sum(alpha_**2 * dbstar_dnoise )
+            dD_dnoise_2 = -0.5 * self.input_dim * np.sum(alpha_**2 * dbstar_dnoise )
 
             dD_dnoise_1 = mdot(self.V_star.T,self.psi1.T,self.Lmi.T,self.LBi.T,self.LBi,self.Lmi,self.psi1,dbstar_dnoise*self.likelihood.Y)
             dD_dnoise_2 = 0.5*mdot(self.V_star.T,self.psi1.T,Hi,self.psi1,dbstar_dnoise*self.psi1.T,Hi,self.psi1,self.V_star)
@@ -270,8 +270,8 @@ class FITC(SparseGP):
             # q(u|f) = N(u| R0i*mu_u*f, R0i*C*R0i.T)
 
             # Ci = I + (RPT0)Di(RPT0).T
-            # C = I - [RPT0] * (D+[RPT0].T*[RPT0])^-1*[RPT0].T
-            #   = I - [RPT0] * (D + self.Qnn)^-1 * [RPT0].T
+            # C = I - [RPT0] * (input_dim+[RPT0].T*[RPT0])^-1*[RPT0].T
+            #   = I - [RPT0] * (input_dim + self.Qnn)^-1 * [RPT0].T
             #   = I - [RPT0] * (U*U.T)^-1 * [RPT0].T
             #   = I - V.T * V
             U = np.linalg.cholesky(np.diag(self.Diag0) + self.Qnn)

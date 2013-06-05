@@ -21,7 +21,7 @@ class KernelTests(unittest.TestCase):
         """
         X = np.random.rand(30, 4)
         K = np.dot(X, X.T)
-        kernel = GPy.kern.fixed(4, K)
+        kernel = GPy.kern.Fixed(4, K)
         Y = np.ones((30,1))
         m = GPy.models.GPRegression(X,Y,kernel=kernel)
         self.assertTrue(m.checkgrad())

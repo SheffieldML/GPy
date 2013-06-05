@@ -11,7 +11,7 @@ import itertools
 from GPy.core import model
 
 class PsiStatModel(model):
-    def __init__(self, which, X, X_variance, Z, M, kernel):
+    def __init__(self, which, X, X_variance, Z, num_inducing, kernel):
         self.which = which
         self.X = X
         self.X_variance = X_variance
@@ -64,8 +64,8 @@ class DPsiStatTest(unittest.TestCase):
 
     def testPsi0(self):
         for k in self.kernels:
-            m = PsiStatModel('psi0', X=self.X, X_variance=self.X_var, Z=self.Z,
-                         M=self.num_inducing, kernel=k)
+            m = PsiStatModel('psi1', X=self.X, X_variance=self.X_var, Z=self.Z,
+                         num_inducing=self.num_inducing, kernel=k)
             try:
                 assert m.checkgrad(), "{} x psi0".format("+".join(map(lambda x: x.name, k.parts)))
             except:
@@ -74,33 +74,33 @@ class DPsiStatTest(unittest.TestCase):
 #     def testPsi1(self):
 #         for k in self.kernels:
 #             m = PsiStatModel('psi1', X=self.X, X_variance=self.X_var, Z=self.Z,
-#                      M=self.M, kernel=k)
+#                      num_inducing=self.num_inducing, kernel=k)
 #             assert m.checkgrad(), "{} x psi1".format("+".join(map(lambda x: x.name, k.parts)))
 
     def testPsi2_lin(self):
         k = self.kernels[0]
         m = PsiStatModel('psi2', X=self.X, X_variance=self.X_var, Z=self.Z,
-                     M=self.num_inducing, kernel=k)
+                     num_inducing=self.num_inducing, kernel=k)
         assert m.checkgrad(), "{} x psi2".format("+".join(map(lambda x: x.name, k.parts)))
     def testPsi2_lin_bia(self):
         k = self.kernels[3]
         m = PsiStatModel('psi2', X=self.X, X_variance=self.X_var, Z=self.Z,
-                     M=self.num_inducing, kernel=k)
+                     num_inducing=self.num_inducing, kernel=k)
         assert m.checkgrad(), "{} x psi2".format("+".join(map(lambda x: x.name, k.parts)))
     def testPsi2_rbf(self):
         k = self.kernels[1]
         m = PsiStatModel('psi2', X=self.X, X_variance=self.X_var, Z=self.Z,
-                     M=self.num_inducing, kernel=k)
+                     num_inducing=self.num_inducing, kernel=k)
         assert m.checkgrad(), "{} x psi2".format("+".join(map(lambda x: x.name, k.parts)))
     def testPsi2_rbf_bia(self):
         k = self.kernels[-1]
         m = PsiStatModel('psi2', X=self.X, X_variance=self.X_var, Z=self.Z,
-                     M=self.num_inducing, kernel=k)
+                     num_inducing=self.num_inducing, kernel=k)
         assert m.checkgrad(), "{} x psi2".format("+".join(map(lambda x: x.name, k.parts)))
     def testPsi2_bia(self):
         k = self.kernels[2]
         m = PsiStatModel('psi2', X=self.X, X_variance=self.X_var, Z=self.Z,
-                     M=self.num_inducing, kernel=k)
+                     num_inducing=self.num_inducing, kernel=k)
         assert m.checkgrad(), "{} x psi2".format("+".join(map(lambda x: x.name, k.parts)))
 
 
@@ -122,11 +122,11 @@ if __name__ == "__main__":
         numpy.random.seed(0)
         input_dim = 5
         N = 50
-        M = 10
+        num_inducing = 10
         D = 15
         X = numpy.random.randn(N, input_dim)
         X_var = .5 * numpy.ones_like(X) + .1 * numpy.clip(numpy.random.randn(*X.shape), 0, 1)
-        Z = numpy.random.permutation(X)[:M]
+        Z = numpy.random.permutation(X)[:num_inducing]
         Y = X.dot(numpy.random.randn(input_dim, D))
 #         kernel = GPy.kern.bias(input_dim)
 #
@@ -148,7 +148,7 @@ if __name__ == "__main__":
 #         m2 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
 #                          num_inducing=num_inducing, kernel=GPy.kern.rbf(input_dim))
         m3 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
-                         M=M, kernel=GPy.kern.linear(input_dim, ARD=True, variances=numpy.random.rand(input_dim)))
+                         num_inducing=num_inducing, kernel=GPy.kern.linear(input_dim, ARD=True, variances=numpy.random.rand(input_dim)))
         m3.ensure_default_constraints()
         # + GPy.kern.bias(input_dim))
 #         m4 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,

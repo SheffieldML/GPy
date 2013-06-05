@@ -64,7 +64,7 @@ class periodic_exponential(kernpart):
     def _get_params(self):
         """return the value of the parameters."""
         return np.hstack((self.variance,self.lengthscale,self.period))
-    
+
     def _set_params(self,x):
         """set the value of the parameters."""
         assert x.size==3
@@ -111,7 +111,7 @@ class periodic_exponential(kernpart):
 
     @silence_errors
     def dK_dtheta(self,dL_dK,X,X2,target):
-        """derivative of the covariance matrix with respect to the parameters (shape is NxMxNparam)"""
+        """derivative of the covariance matrix with respect to the parameters (shape is Nxnum_inducingxNparam)"""
         if X2 is None: X2 = X
         FX  = self._cos(self.basis_alpha[None,:],self.basis_omega[None,:],self.basis_phi[None,:])(X)
         FX2 = self._cos(self.basis_alpha[None,:],self.basis_omega[None,:],self.basis_phi[None,:])(X2)

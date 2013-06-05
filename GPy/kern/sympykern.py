@@ -122,12 +122,12 @@ class spkern(kernpart):
         int i;
         int j;
         int N = target_array->dimensions[0];
-        int M = target_array->dimensions[1];
+        int num_inducing = target_array->dimensions[1];
         int D = X_array->dimensions[1];
         //#pragma omp parallel for private(j)
         for (i=0;i<N;i++){
-            for (j=0;j<M;j++){
-                target[i*M+j] = k(%s);
+            for (j=0;j<num_inducing;j++){
+                target[i*num_inducing+j] = k(%s);
             }
         }
         %s
@@ -149,17 +149,17 @@ class spkern(kernpart):
         """%(diag_arglist,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
         #here's some code to compute gradients
-        funclist = '\n'.join([' '*16 + 'target[%i] += partial[i*M+j]*dk_d%s(%s);'%(i,theta.name,arglist) for i,theta in  enumerate(self._sp_theta)])
+        funclist = '\n'.join([' '*16 + 'target[%i] += partial[i*num_inducing+j]*dk_d%s(%s);'%(i,theta.name,arglist) for i,theta in  enumerate(self._sp_theta)])
         self._dK_dtheta_code =\
         """
         int i;
         int j;
         int N = partial_array->dimensions[0];
-        int M = partial_array->dimensions[1];
+        int num_inducing = partial_array->dimensions[1];
         int D = X_array->dimensions[1];
         //#pragma omp parallel for private(j)
         for (i=0;i<N;i++){
-            for (j=0;j<M;j++){
+            for (j=0;j<num_inducing;j++){
 %s
             }
         }
@@ -169,7 +169,7 @@ class spkern(kernpart):
         #here's some code to compute gradients for Kdiag TODO: thius is yucky.
         diag_funclist = re.sub('Z','X',funclist,count=0)
         diag_funclist = re.sub('j','i',diag_funclist)
-        diag_funclist = re.sub('partial\[i\*M\+i\]','partial[i]',diag_funclist)
+        diag_funclist = re.sub('partial\[i\*num_inducing\+i\]','partial[i]',diag_funclist)
         self._dKdiag_dtheta_code =\
         """
         int i;
@@ -182,17 +182,17 @@ class spkern(kernpart):
         """%(diag_funclist,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
         #Here's some code to do gradients wrt x
-        gradient_funcs = "\n".join(["target[i*D+%i] += partial[i*M+j]*dk_dx%i(%s);"%(q,q,arglist) for q in range(self.D)])
+        gradient_funcs = "\n".join(["target[i*D+%i] += partial[i*num_inducing+j]*dk_dx%i(%s);"%(q,q,arglist) for q in range(self.D)])
         self._dK_dX_code = \
         """
         int i;
         int j;
         int N = partial_array->dimensions[0];
-        int M = partial_array->dimensions[1];
+        int num_inducing = partial_array->dimensions[1];
         int D = X_array->dimensions[1];
         //#pragma omp parallel for private(j)
         for (i=0;i<N; i++){
-            for (j=0; j<M; j++){
+            for (j=0; j<num_inducing; j++){
                 %s
                 //if(isnan(target[i*D+2])){printf("%%f\\n",dk_dx2(X[i*D+0], X[i*D+1], X[i*D+2], Z[j*D+0], Z[j*D+1], Z[j*D+2], param[0], param[1], param[2], param[3], param[4], param[5]));}
                 //if(isnan(target[i*D+2])){printf("%%f,%%f,%%i,%%i\\n", X[i*D+2], Z[j*D+2],i,j);}
@@ -208,7 +208,7 @@ class spkern(kernpart):
         int i;
         int j;
         int N = partial_array->dimensions[0];
-        int M = 0;
+        int num_inducing = 0;
         int D = X_array->dimensions[1];
         for (i=0;i<N; i++){
             j = i;

@@ -151,8 +151,8 @@ def coregionalisation_sparse(optim_iters=100):
     Y2 = -np.sin(X2) + np.random.randn(*X2.shape)*0.05
     Y = np.vstack((Y1,Y2))
 
-    M = 40
-    Z = np.hstack((np.random.rand(M,1)*8,np.random.randint(0,2,M)[:,None]))
+    num_inducing = 40
+    Z = np.hstack((np.random.rand(num_inducing,1)*8,np.random.randint(0,2,num_inducing)[:,None]))
 
     k1 = GPy.kern.rbf(1)
     k2 = GPy.kern.Coregionalise(2,2)
@@ -261,7 +261,7 @@ def _contour_data(data, length_scales, log_SNRs, kernel_call=GPy.kern.rbf):
 
     return np.array(lls)
 
-def sparse_GP_regression_1D(N = 400, M = 5, optim_iters=100):
+def sparse_GP_regression_1D(N = 400, num_inducing = 5, optim_iters=100):
     """Run a 1D example of a sparse GP regression."""
     # sample inputs and outputs
     X = np.random.uniform(-3.,3.,(N,1))
@@ -271,7 +271,7 @@ def sparse_GP_regression_1D(N = 400, M = 5, optim_iters=100):
     noise = GPy.kern.white(1)
     kernel = rbf + noise
     # create simple GP model
-    m = GPy.models.SparseGPRegression(X, Y, kernel, M=M)
+    m = GPy.models.SparseGPRegression(X, Y, kernel, num_inducing=num_inducing)
 
     m.ensure_default_constraints()
 
@@ -280,7 +280,7 @@ def sparse_GP_regression_1D(N = 400, M = 5, optim_iters=100):
     m.plot()
     return m
 
-def sparse_GP_regression_2D(N = 400, M = 50, optim_iters=100):
+def sparse_GP_regression_2D(N = 400, num_inducing = 50, optim_iters=100):
     """Run a 2D example of a sparse GP regression."""
     X = np.random.uniform(-3.,3.,(N,2))
     Y = np.sin(X[:,0:1]) * np.sin(X[:,1:2])+np.random.randn(N,1)*0.05
@@ -291,7 +291,7 @@ def sparse_GP_regression_2D(N = 400, M = 50, optim_iters=100):
     kernel = rbf + noise
 
     # create simple GP model
-    m = GPy.models.SparseGPRegression(X,Y,kernel, M = M)
+    m = GPy.models.SparseGPRegression(X,Y,kernel, num_inducing = num_inducing)
 
     # contrain all parameters to be positive (but not inducing inputs)
     m.ensure_default_constraints()

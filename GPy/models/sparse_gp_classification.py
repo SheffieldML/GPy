@@ -26,7 +26,7 @@ class SparseGPClassification(SparseGP):
 
     """
 
-    def __init__(self, X, Y=None, likelihood=None, kernel=None, normalize_X=False, normalize_Y=False, Z=None, M=10):
+    def __init__(self, X, Y=None, likelihood=None, kernel=None, normalize_X=False, normalize_Y=False, Z=None, num_inducing=10):
         if kernel is None:
             kernel = kern.rbf(X.shape[1]) + kern.white(X.shape[1],1e-3)
 
@@ -38,7 +38,7 @@ class SparseGPClassification(SparseGP):
                 raise Warning, 'likelihood.data and Y are different.'
 
         if Z is None:
-            i = np.random.permutation(X.shape[0])[:M]
+            i = np.random.permutation(X.shape[0])[:num_inducing]
             Z = X[i].copy()
         else:
             assert Z.shape[1]==X.shape[1]

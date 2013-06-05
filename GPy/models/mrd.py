@@ -33,7 +33,7 @@ class MRD(model):
     :param X_variance:
         Initial latent space variance
     :param init: [cooncat|single|random]
-        initialization method to use: 
+        initialization method to use:
             *concat: PCA on concatenated outputs
             *single: PCA on each output
             *random: random
@@ -44,7 +44,7 @@ class MRD(model):
     :param kernels: list of kernels or kernel shared for all BGPLVMS
     :type kernels: [GPy.kern.kern] | GPy.kern.kern | None (default)
     """
-    def __init__(self, likelihood_or_Y_list, input_dim, M=10, names=None,
+    def __init__(self, likelihood_or_Y_list, input_dim, num_inducing=10, names=None,
                  kernels=None, initx='PCA',
                  initz='permute', _debug=False, **kw):
         if names is None:
@@ -61,13 +61,13 @@ class MRD(model):
         assert not ('kernel' in kw), "pass kernels through `kernels` argument"
 
         self.input_dim = input_dim
-        self.num_inducing = M
+        self.num_inducing = num_inducing
         self._debug = _debug
 
         self._init = True
         X = self._init_X(initx, likelihood_or_Y_list)
         Z = self._init_Z(initz, X)
-        self.bgplvms = [BayesianGPLVM(l, input_dim=input_dim, kernel=k, X=X, Z=Z, M=self.num_inducing, **kw) for l, k in zip(likelihood_or_Y_list, kernels)]
+        self.bgplvms = [BayesianGPLVM(l, input_dim=input_dim, kernel=k, X=X, Z=Z, num_inducing=self.num_inducing, **kw) for l, k in zip(likelihood_or_Y_list, kernels)]
         del self._init
 
         self.gref = self.bgplvms[0]

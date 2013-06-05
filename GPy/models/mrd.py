@@ -74,8 +74,8 @@ class MRD(Model):
         nparams = numpy.array([0] + [SparseGP._get_params(g).size - g.Z.size for g in self.bgplvms])
         self.nparams = nparams.cumsum()
 
-        self.N = self.gref.N
-        self.NQ = self.N * self.input_dim
+        self.num_data = self.gref.num_data
+        self.NQ = self.num_data * self.input_dim
         self.MQ = self.num_inducing * self.input_dim
 
         Model.__init__(self) # @UndefinedVariable
@@ -142,8 +142,8 @@ class MRD(Model):
         self._init_Z(initz, self.X)
 
     def _get_param_names(self):
-        # X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.N)], [])
-        # S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.N)], [])
+        # X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
+        # S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
         n1 = self.gref._get_param_names()
         n1var = n1[:self.NQ * 2 + self.MQ]
         map_names = lambda ns, name: map(lambda x: "{1}_{0}".format(*x),
@@ -169,8 +169,8 @@ class MRD(Model):
         return params
 
 #     def _set_var_params(self, g, X, X_var, Z):
-#         g.X = X.reshape(self.N, self.input_dim)
-#         g.X_variance = X_var.reshape(self.N, self.input_dim)
+#         g.X = X.reshape(self.num_data, self.input_dim)
+#         g.X_variance = X_var.reshape(self.num_data, self.input_dim)
 #         g.Z = Z.reshape(self.num_inducing, self.input_dim)
 #
 #     def _set_kern_params(self, g, p):

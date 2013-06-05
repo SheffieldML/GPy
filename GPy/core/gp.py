@@ -46,12 +46,12 @@ class GP(GPBase):
             #alpha = np.dot(self.Ki, self.likelihood.Y)
             alpha,_ = linalg.lapack.flapack.dpotrs(self.L, self.likelihood.Y,lower=1)
 
-            self.dL_dK = 0.5 * (tdot(alpha) - self.input_dim * self.Ki)
+            self.dL_dK = 0.5 * (tdot(alpha) - self.output_dim * self.Ki)
         else:
             #tmp = mdot(self.Ki, self.likelihood.YYT, self.Ki)
             tmp, _ = linalg.lapack.flapack.dpotrs(self.L, np.asfortranarray(self.likelihood.YYT), lower=1)
             tmp, _ = linalg.lapack.flapack.dpotrs(self.L, np.asfortranarray(tmp.T), lower=1)
-            self.dL_dK = 0.5 * (tmp - self.input_dim * self.Ki)
+            self.dL_dK = 0.5 * (tmp - self.output_dim * self.Ki)
 
     def _get_params(self):
         return np.hstack((self.kern._get_params_transformed(), self.likelihood._get_params()))

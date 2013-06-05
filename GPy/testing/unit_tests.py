@@ -5,6 +5,7 @@
 import unittest
 import numpy as np
 import GPy
+from GPy.likelihoods.likelihood_functions import Binomial
 
 class GradientTests(unittest.TestCase):
     def setUp(self):
@@ -143,7 +144,7 @@ class GradientTests(unittest.TestCase):
 
     def test_GPLVM_rbf_bias_white_kern_2D(self):
         """ Testing GPLVM with rbf + bias and white kernel """
-        N, input_dim = 50, 1
+        N, input_dim, D = 50, 1, 2
         X = np.random.rand(N, input_dim)
         k = GPy.kern.rbf(input_dim, 0.5, 0.9 * np.ones((1,))) + GPy.kern.bias(input_dim, 0.1) + GPy.kern.white(input_dim, 0.05)
         K = k.K(X)
@@ -154,7 +155,7 @@ class GradientTests(unittest.TestCase):
 
     def test_GPLVM_rbf_linear_white_kern_2D(self):
         """ Testing GPLVM with rbf + bias and white kernel """
-        N, input_dim = 50, 1
+        N, input_dim, D = 50, 1, 2
         X = np.random.rand(N, input_dim)
         k = GPy.kern.linear(input_dim) + GPy.kern.bias(input_dim, 0.1) + GPy.kern.white(input_dim, 0.05)
         K = k.K(X)
@@ -193,12 +194,12 @@ class GradientTests(unittest.TestCase):
         N = 20
         X = np.hstack([np.random.rand(N / 2) + 1, np.random.rand(N / 2) - 1])[:, None]
         k = GPy.kern.rbf(1) + GPy.kern.white(1)
-        Y = np.hstack([np.ones(N / 2), -np.ones(N / 2)])[:, None]
+        Y = np.hstack([np.ones(N/2),-np.ones(N/2)])[:,None]
 
         distribution = GPy.likelihoods.likelihood_functions.Binomial()
         likelihood = GPy.likelihoods.EP(Y, distribution)
-        # likelihood = GPy.inference.likelihoods.binomial(Y)
-        m = GPy.models.generalized_fitc(X, likelihood, k, inducing=4)
+        #likelihood = GPy.inference.likelihoods.Binomial(Y)
+        m = GPy.models.generalized_FITC(X,likelihood,k,inducing=4)
         m.constrain_positive('(var|len)')
         m.approximate_likelihood()
         self.assertTrue(m.checkgrad())

@@ -101,9 +101,9 @@ class GeneralizedFITC(SparseGP):
             self.mu = self.w + np.dot(self.P, self.Gamma)
 
             # Remove extra term from dL_dpsi1
-            self.dL_dpsi1 -= mdot(self.Lmi.T, Lmipsi1 * self.likelihood.precision.flatten().reshape(1, self.N))
-            # self.Kmmi, Lm, Lmi, Kmm_logdet = pdinv(self.Kmm)
-            # self.dL_dpsi1 -= mdot(self.Kmmi,self.psi1*self.likelihood.precision.flatten().reshape(1,self.N)) #dB
+            self.dL_dpsi1 -= mdot(self.Lmi.T,Lmipsi1 * self.likelihood.precision.flatten().reshape(1,self.num_data))
+            #self.Kmmi, Lm, Lmi, Kmm_logdet = pdinv(self.Kmm)
+            #self.dL_dpsi1 -= mdot(self.Kmmi,self.psi1*self.likelihood.precision.flatten().reshape(1,self.num_data)) #dB
 
             #########333333
             # self.Bi, self.LB, self.LBi, self.B_logdet = pdinv(self.B)
@@ -130,11 +130,11 @@ class GeneralizedFITC(SparseGP):
             raise NotImplementedError, "heteroscedastic derivates not implemented"
         else:
             raise NotImplementedError, "homoscedastic derivatives not implemented"
-            # likelihood is not heterscedatic
-            # self.partial_for_likelihood =   - 0.5 * self.N*self.input_dim*self.likelihood.precision + 0.5 * np.sum(np.square(self.likelihood.Y))*self.likelihood.precision**2
-            # self.partial_for_likelihood += 0.5 * self.input_dim * trace_dot(self.Bi,self.A)*self.likelihood.precision
-            # self.partial_for_likelihood += self.likelihood.precision*(0.5*trace_dot(self.psi2_beta_scaled,self.E*sf2) - np.trace(self.Cpsi1VVpsi1))
-        # TODO partial derivative vector for the likelihood not implemented
+            #likelihood is not heterscedatic
+            #self.partial_for_likelihood =   - 0.5 * self.num_data*self.input_dim*self.likelihood.precision + 0.5 * np.sum(np.square(self.likelihood.Y))*self.likelihood.precision**2
+            #self.partial_for_likelihood += 0.5 * self.input_dim * trace_dot(self.Bi,self.A)*self.likelihood.precision
+            #self.partial_for_likelihood += self.likelihood.precision*(0.5*trace_dot(self.psi2_beta_scaled,self.E*sf2) - np.trace(self.Cpsi1VVpsi1))
+        #TODO partial derivative vector for the likelihood not implemented
 
     def dL_dtheta(self):
         """
@@ -153,14 +153,14 @@ class GeneralizedFITC(SparseGP):
         """ Compute the (lower bound on the) log marginal likelihood """
         sf2 = self.scale_factor ** 2
         if self.likelihood.is_heteroscedastic:
-            A = -0.5 * self.N * self.input_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.likelihood.precision)) - 0.5 * np.sum(self.V * self.likelihood.Y)
+            A = -0.5*self.num_data*self.input_dim*np.log(2.*np.pi) +0.5*np.sum(np.log(self.likelihood.precision)) -0.5*np.sum(self.V*self.likelihood.Y)
         else:
-            A = -0.5 * self.N * self.input_dim * (np.log(2.*np.pi) + np.log(self.likelihood._variance)) - 0.5 * self.likelihood.precision * self.likelihood.trYYT
-        C = -self.input_dim * (np.sum(np.log(np.diag(self.LB))) + 0.5 * self.num_inducing * np.log(sf2))
-        # C = -0.5*self.input_dim * (self.B_logdet + self.num_inducing*np.log(sf2))
-        D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
-        # self.Cpsi1VVpsi1 = np.dot(self.Cpsi1V,self.psi1V.T)
-        # D_ = 0.5*np.trace(self.Cpsi1VVpsi1)
+            A = -0.5*self.num_data*self.input_dim*(np.log(2.*np.pi) + np.log(self.likelihood._variance)) -0.5*self.likelihood.precision*self.likelihood.trYYT
+        C = -self.input_dim * (np.sum(np.log(np.diag(self.LB))) + 0.5*self.num_inducing*np.log(sf2))
+        #C = -0.5*self.input_dim * (self.B_logdet + self.num_inducing*np.log(sf2))
+        D = 0.5*np.sum(np.square(self._LBi_Lmi_psi1V))
+        #self.Cpsi1VVpsi1 = np.dot(self.Cpsi1V,self.psi1V.T)
+        #D_ = 0.5*np.trace(self.Cpsi1VVpsi1)
         return A + C + D
 
     def _raw_predict(self, Xnew, which_parts, full_cov=False):
@@ -180,7 +180,7 @@ class GeneralizedFITC(SparseGP):
             #   = I - [RPT0] * (U*U.T)^-1 * [RPT0].T
             #   = I - V.T * V
             U = np.linalg.cholesky(np.diag(self.Diag0) + self.Qnn)
-            V, info = linalg.lapack.dtrtrs(U, self.RPT0.T, lower=1)
+            V, info = linalg.flapack.dtrtrs(U, self.RPT0.T, lower=1)
             C = np.eye(self.num_inducing) - np.dot(V.T, V)
             mu_u = np.dot(C, self.RPT0) * (1. / self.Diag0[None, :])
             # self.C = C

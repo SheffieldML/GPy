@@ -135,6 +135,7 @@ def tuto_kernel_overview():
     pb.ylabel("+   ",rotation='horizontal',fontsize='30')
     m.plot(ax=axs, which_parts=[False,False,False,True])
 
+    m.ensure_default_constraints()
     return(m)
 
 

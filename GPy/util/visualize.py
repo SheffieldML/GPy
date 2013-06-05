@@ -74,7 +74,7 @@ class lvm(data_show):
         self.called = False
         self.move_on = False
         self.latent_index = latent_index
-        self.latent_dim = model.Q
+        self.latent_dim = model.input_dim
 
         # The red cross which shows current latent point.
         self.latent_values = vals
@@ -113,7 +113,7 @@ class lvm(data_show):
         # A click in the bar chart axis for selection a dimension.
         if self.sense_axes != None:
             self.sense_axes.cla()
-            self.sense_axes.bar(np.arange(self.model.Q),1./self.model.input_sensitivity(),color='b')
+            self.sense_axes.bar(np.arange(self.model.input_dim),1./self.model.input_sensitivity(),color='b')
 
             if self.latent_index[1] == self.latent_index[0]:
                 self.sense_axes.bar(np.array(self.latent_index[0]),1./self.model.input_sensitivity()[self.latent_index[0]],color='y')
@@ -128,11 +128,11 @@ class lvm(data_show):
 
 class lvm_subplots(lvm):
     """
-    latent_axes is a np array of dimension np.ceil(Q/2),
+    latent_axes is a np array of dimension np.ceil(input_dim/2),
     one for each pair of the latent dimensions.
     """
     def __init__(self, vals, model, data_visualize, latent_axes=None, sense_axes=None):
-        self.nplots = int(np.ceil(model.Q/2.))+1
+        self.nplots = int(np.ceil(model.input_dim/2.))+1
         assert len(latent_axes)==self.nplots
         if vals==None:
             vals = model.X[0, :]
@@ -140,7 +140,7 @@ class lvm_subplots(lvm):
 
         for i, axis in enumerate(latent_axes):
             if i == self.nplots-1:
-                if self.nplots*2!=model.Q:
+                if self.nplots*2!=model.input_dim:
                     latent_index = [i*2, i*2]
                 lvm.__init__(self, self.latent_vals, model, data_visualize, axis, sense_axes, latent_index=latent_index)
             else:
@@ -174,7 +174,7 @@ class lvm_dimselect(lvm):
     def on_click(self, event):
 
         if event.inaxes==self.sense_axes:
-            new_index = max(0,min(int(np.round(event.xdata-0.5)),self.model.Q-1))
+            new_index = max(0,min(int(np.round(event.xdata-0.5)),self.model.input_dim-1))
             if event.button == 1:
                 # Make it red if and y-axis (red=port=left) if it is a left button click
                 self.latent_index[1] = new_index                

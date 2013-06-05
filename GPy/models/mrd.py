@@ -23,8 +23,8 @@ class MRD(model):
     :type likelihood_list: [GPy.likelihood] | [Y1..Yy]
     :param names: names for different gplvm models
     :type names: [str]
-    :param Q: latent dimensionality (will raise
-    :type Q: int
+    :param input_dim: latent dimensionality (will raise
+    :type input_dim: int
     :param initx: initialisation method for the latent space
     :type initx: 'PCA'|'random'
     :param initz: initialisation method for inducing inputs
@@ -45,7 +45,7 @@ class MRD(model):
     :param kernels: list of kernels or kernel shared for all BGPLVMS
     :type kernels: [GPy.kern.kern] | GPy.kern.kern | None (default)
     """
-    def __init__(self, likelihood_or_Y_list, Q, M=10, names=None,
+    def __init__(self, likelihood_or_Y_list, input_dim, M=10, names=None,
                  kernels=None, initx='PCA',
                  initz='permute', _debug=False, **kw):
         if names is None:
@@ -61,14 +61,14 @@ class MRD(model):
             assert all([isinstance(k, kern) for k in kernels]), "invalid kernel object detected!"
         assert not ('kernel' in kw), "pass kernels through `kernels` argument"
 
-        self.Q = Q
+        self.input_dim = input_dim
         self.M = M
         self._debug = _debug
 
         self._init = True
         X = self._init_X(initx, likelihood_or_Y_list)
         Z = self._init_Z(initz, X)
-        self.bgplvms = [Bayesian_GPLVM(l, Q=Q, kernel=k, X=X, Z=Z, M=self.M, **kw) for l, k in zip(likelihood_or_Y_list, kernels)]
+        self.bgplvms = [Bayesian_GPLVM(l, input_dim=input_dim, kernel=k, X=X, Z=Z, M=self.M, **kw) for l, k in zip(likelihood_or_Y_list, kernels)]
         del self._init
 
         self.gref = self.bgplvms[0]
@@ -76,8 +76,8 @@ class MRD(model):
         self.nparams = nparams.cumsum()
 
         self.N = self.gref.N
-        self.NQ = self.N * self.Q
-        self.MQ = self.M * self.Q
+        self.NQ = self.N * self.input_dim
+        self.MQ = self.M * self.input_dim
 
         model.__init__(self) # @UndefinedVariable
         self._set_params(self._get_params())
@@ -143,8 +143,8 @@ class MRD(model):
         self._init_Z(initz, self.X)
 
     def _get_param_names(self):
-        # X_names = sum([['X_%i_%i' % (n, q) for q in range(self.Q)] for n in range(self.N)], [])
-        # S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.Q)] for n in range(self.N)], [])
+        # X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.N)], [])
+        # S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.N)], [])
         n1 = self.gref._get_param_names()
         n1var = n1[:self.NQ * 2 + self.MQ]
         map_names = lambda ns, name: map(lambda x: "{1}_{0}".format(*x),
@@ -170,9 +170,9 @@ class MRD(model):
         return params
 
 #     def _set_var_params(self, g, X, X_var, Z):
-#         g.X = X.reshape(self.N, self.Q)
-#         g.X_variance = X_var.reshape(self.N, self.Q)
-#         g.Z = Z.reshape(self.M, self.Q)
+#         g.X = X.reshape(self.N, self.input_dim)
+#         g.X_variance = X_var.reshape(self.N, self.input_dim)
+#         g.Z = Z.reshape(self.M, self.input_dim)
 #
 #     def _set_kern_params(self, g, p):
 #         g.kern._set_params(p[:g.kern.Nparam])
@@ -235,13 +235,13 @@ class MRD(model):
                 Ylist.append(likelihood_or_Y.Y)
         del likelihood_list
         if init in "PCA_concat":
-            X = PCA(numpy.hstack(Ylist), self.Q)[0]
+            X = PCA(numpy.hstack(Ylist), self.input_dim)[0]
         elif init in "PCA_single":
-            X = numpy.zeros((Ylist[0].shape[0], self.Q))
-            for qs, Y in itertools.izip(numpy.array_split(numpy.arange(self.Q), len(Ylist)), Ylist):
+            X = numpy.zeros((Ylist[0].shape[0], self.input_dim))
+            for qs, Y in itertools.izip(numpy.array_split(numpy.arange(self.input_dim), len(Ylist)), Ylist):
                 X[:, qs] = PCA(Y, len(qs))[0]
         else: # init == 'random':
-            X = numpy.random.randn(Ylist[0].shape[0], self.Q)
+            X = numpy.random.randn(Ylist[0].shape[0], self.input_dim)
         self.X = X
         return X
 
@@ -252,7 +252,7 @@ class MRD(model):
         if init in "permute":
             Z = numpy.random.permutation(X.copy())[:self.M]
         elif init in "random":
-            Z = numpy.random.randn(self.M, self.Q) * X.var()
+            Z = numpy.random.randn(self.M, self.input_dim) * X.var()
         self.Z = Z
         return Z
 
@@ -261,12 +261,12 @@ class MRD(model):
             fig = pylab.figure(num=fignum, figsize=(4 * len(self.bgplvms), 3))
         for i, g in enumerate(self.bgplvms):
             if axes is None:
-                axes = fig.add_subplot(1, len(self.bgplvms), i + 1)
+                ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
             elif isinstance(axes, (tuple, list)):
-                axes = axes[i]
+                ax = axes[i]
             else:
-                raise ValueError("Need one axes per latent dimension Q")
-            plotf(i, g, axes)
+                raise ValueError("Need one axes per latent dimension input_dim")
+            plotf(i, g, ax)
         pylab.draw()
         if axes is None:
             fig.tight_layout()
@@ -277,20 +277,20 @@ class MRD(model):
     def plot_X_1d(self):
         return self.gref.plot_X_1d()
 
-    def plot_X(self, fignum="MRD Predictions", ax=None):
+    def plot_X(self, fignum=None, ax=None):
         fig = self._handle_plotting(fignum, ax, lambda i, g, ax: ax.imshow(g.X))
         return fig
 
-    def plot_predict(self, fignum="MRD Predictions", ax=None, **kwargs):
-        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: ax.imshow(g.predict(g.X)[0], **kwargs))
+    def plot_predict(self, fignum=None, ax=None, **kwargs):
+        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: ax.imshow(g. predict(g.X)[0], **kwargs))
         return fig
 
-    def plot_scales(self, fignum="MRD Scales", ax=None, *args, **kwargs):
-        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.kern.plot_ARD(axes=ax, *args, **kwargs))
+    def plot_scales(self, fignum=None, ax=None, *args, **kwargs):
+        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.kern.plot_ARD(ax=ax, *args, **kwargs))
         return fig
 
-    def plot_latent(self, fignum="MRD Latent Spaces", ax=None, *args, **kwargs):
-        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.plot_latent(axes=ax, *args, **kwargs))
+    def plot_latent(self, fignum=None, ax=None, *args, **kwargs):
+        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.plot_latent(ax=ax, *args, **kwargs))
         return fig
 
     def _debug_plot(self):

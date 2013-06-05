@@ -18,6 +18,7 @@ All of the examples included in GPy return an instance
 of a model class, and therefore they can be called in 
 the following way: ::
 
+	import numpy as np
     import pylab as pb
     pb.ion()
     import GPy
@@ -91,19 +92,17 @@ we can define a new array of values and change the parameters as follows: ::
 If we call the function ``_get_params()`` again, we will obtain the new
 parameters we have just set.
 
-Parameters can be also set by name using the function ``_set()``. For example,
-lets change the lengthscale to .5: ::
+Parameters can be also set by name using dictionary notations. For example,
+let's change the lengthscale to .5: ::
 
-	m.set('rbf_lengthscale',.5)
+	m['rbf_lengthscale'] = .5
 
-``_set()`` function accepts regular expression as it first
-input, and therefore all parameters matching that regular 
-expression are set to the given value. In this case rather 
+Here, the matching accepts a regular expression and therefore all parameters matching that regular expression are set to the given value. In this case rather 
 than passing as second output a single value, we can also 
 use a list of arrays. For example, lets change the inducing 
 inputs: ::
 
-	m.set('iip',np.arange(-4,0))
+	m['iip'] = np.arange(-5,0)
 
 Getting the model's likelihood and gradients
 ===========================================
@@ -129,10 +128,9 @@ we have been changing the parameters, the gradients are far from zero now.
 Next we are going to show how to optimize the model setting different 
 restrictions on the parameters. 
 
-Once a constrain has been set on a parameter, it is not possible to
-define a new constraint for it unless we explicitly remove the previous
-one. The command to remove the constraints is ``unconstrain()``, and
-just as the ``set()`` command, it also accepts regular expression.
+Once a constrain has been set on a parameter, it is possible to remove it
+with the command ``unconstrain()``, and
+just as the previous matching commands, it also accepts regular expression.
 In this case we will remove all the constraints: ::
 
 	m.unconstrain('')
@@ -144,7 +142,7 @@ is to be positive. This is constraint is easily set
 with the function ``constrain_positive()``. Regular expressions
 are also accepted. ::
 
-    m.constrain_positive('var')
+    m.constrain_positive('.*var')
 
 For convenience, GPy also provides a catch all function 
 which ensures that anything which appears to require 
@@ -179,7 +177,7 @@ however for the sake of the example we will tie the white noise
 and the variance together. See `A kernel overview <tuto_kernel_overview.html>`_.
 for a proper use of the tying capabilities.::
 
-    m.tie_params('e_var')
+    m.tie_params('.*e_var')
 
 Optimizing the model
 ====================

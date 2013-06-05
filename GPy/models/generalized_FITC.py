@@ -20,15 +20,15 @@ class generalized_FITC(sparse_GP):
     Naish-Guzman, A. and Holden, S. (2008) implemantation of EP with FITC.
 
     :param X: inputs
-    :type X: np.ndarray (N x Q)
+    :type X: np.ndarray (N x input_dim)
     :param likelihood: a likelihood instance, containing the observed data
     :type likelihood: GPy.likelihood.(Gaussian | EP)
     :param kernel : the kernel/covariance function. See link kernels
     :type kernel: a GPy kernel
     :param X_variance: The variance in the measurements of X (Gaussian variance)
-    :type X_variance: np.ndarray (N x Q) | None
+    :type X_variance: np.ndarray (N x input_dim) | None
     :param Z: inducing inputs (optional, see note)
-    :type Z: np.ndarray (M x Q) | None
+    :type Z: np.ndarray (M x input_dim) | None
     :param M : Number of inducing points (optional, default 10. Ignored if Z is not None)
     :type M: int
     :param normalize_(X|Y) : whether to normalize the data before computing (predictions will be in original scales)
@@ -44,7 +44,7 @@ class generalized_FITC(sparse_GP):
         sparse_GP.__init__(self, X, likelihood, kernel=kernel, Z=self.Z, X_variance=None, normalize_X=False)
 
     def _set_params(self, p):
-        self.Z = p[:self.M*self.Q].reshape(self.M, self.Q)
+        self.Z = p[:self.M*self.input_dim].reshape(self.M, self.input_dim)
         self.kern._set_params(p[self.Z.size:self.Z.size+self.kern.Nparam])
         self.likelihood._set_params(p[self.Z.size+self.kern.Nparam:])
         self._compute_kernel_matrices()

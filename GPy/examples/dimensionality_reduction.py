@@ -263,7 +263,7 @@ def bgplvm_simulation(optimize='scg',
     # m.constrain('variance|noise', logexp_clipped())
     m.ensure_default_constraints()
     m['noise'] = Y.var() / 100.
-    m['linear_variance'] = .001
+    m['linear_variance'] = .01
 
     if optimize:
         print "Optimizing model:"
@@ -271,11 +271,8 @@ def bgplvm_simulation(optimize='scg',
                    max_f_eval=max_f_eval,
                    messages=True, gtol=1e-6)
     if plot:
-        import pylab
-        m.plot_X_1d()
-        pylab.figure('BGPLVM Simulation ARD Parameters');
-        pylab.axis();
-        m.kern.plot_ARD()
+        m.plot_X_1d("BGPLVM Latent Space 1D")
+        m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
     return m
 
 def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
@@ -302,8 +299,8 @@ def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
         print "Optimizing Model:"
         m.optimize('scg', messages=1, max_iters=5e4, max_f_eval=5e4)
     if plot:
-        m.plot_X_1d()
-        m.plot_scales()
+        m.plot_X_1d("MRD Latent Space 1D")
+        m.plot_scales("MRD Scales")
     return m
 
 def brendan_faces():

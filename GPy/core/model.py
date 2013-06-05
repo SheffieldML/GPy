@@ -392,7 +392,11 @@ class model(parameterised):
             if target_param is None:
                 param_list = range(len(x))
             else:
-                param_list = self.grep_param_names(target_param)
+                param_list = self.grep_param_names(target_param, transformed=True, search=True)
+                if not param_list:
+                    print "No free parameters to check"
+                    return
+
 
             for i in param_list:
                 xx = x.copy()

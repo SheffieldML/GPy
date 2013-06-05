@@ -144,23 +144,23 @@ class GradientTests(unittest.TestCase):
 
     def test_GPLVM_rbf_bias_white_kern_2D(self):
         """ Testing GPLVM with rbf + bias and white kernel """
-        N, Q, D = 50, 1, 2
-        X = np.random.rand(N, Q)
-        k = GPy.kern.rbf(Q, 0.5, 0.9*np.ones((1,))) + GPy.kern.bias(Q, 0.1) + GPy.kern.white(Q, 0.05)
+        N, input_dim, D = 50, 1, 2
+        X = np.random.rand(N, input_dim)
+        k = GPy.kern.rbf(input_dim, 0.5, 0.9*np.ones((1,))) + GPy.kern.bias(input_dim, 0.1) + GPy.kern.white(input_dim, 0.05)
         K = k.K(X)
         Y = np.random.multivariate_normal(np.zeros(N),K,D).T
-        m = GPy.models.GPLVM(Y, Q, kernel = k)
+        m = GPy.models.GPLVM(Y, input_dim, kernel = k)
         m.ensure_default_constraints()
         self.assertTrue(m.checkgrad())
 
     def test_GPLVM_rbf_linear_white_kern_2D(self):
         """ Testing GPLVM with rbf + bias and white kernel """
-        N, Q, D = 50, 1, 2
-        X = np.random.rand(N, Q)
-        k = GPy.kern.linear(Q) + GPy.kern.bias(Q, 0.1) + GPy.kern.white(Q, 0.05)
+        N, input_dim, D = 50, 1, 2
+        X = np.random.rand(N, input_dim)
+        k = GPy.kern.linear(input_dim) + GPy.kern.bias(input_dim, 0.1) + GPy.kern.white(input_dim, 0.05)
         K = k.K(X)
         Y = np.random.multivariate_normal(np.zeros(N),K,D).T
-        m = GPy.models.GPLVM(Y, Q, init = 'PCA', kernel = k)
+        m = GPy.models.GPLVM(Y, input_dim, init = 'PCA', kernel = k)
         m.ensure_default_constraints()
         self.assertTrue(m.checkgrad())
 

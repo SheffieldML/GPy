@@ -162,6 +162,7 @@ def FITC_crescent_data(num_inducing=10, seed=default_seed):
     Y[Y.flatten()==-1]=0
 
     m = GPy.models.FITCClassification(data['X'], Y,num_inducing=num_inducing)
+    m.constrain_bounded('.*len',1.,1e3)
     m.ensure_default_constraints()
     m['.*len'] = 3.
     #m.update_likelihood_approximation()

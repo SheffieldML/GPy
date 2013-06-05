@@ -43,11 +43,11 @@ class SparseGP(GPBase):
             self.X_variance = X_variance
 
         if normalize_X:
-            self.Z = (self.Z.copy() - self._Xmean) / self._Xstd
+            self.Z = (self.Z.copy() - self._Xoffset) / self._Xscale
 
         # normalize X uncertainty also
         if self.has_uncertain_inputs:
-            self.X_variance /= np.square(self._Xstd)
+            self.X_variance /= np.square(self._Xscale)
 
     def _compute_kernel_matrices(self):
         # kernel computations, using BGPLVM notation
@@ -269,9 +269,9 @@ class SparseGP(GPBase):
 
         """
         # normalize X values
-        Xnew = (Xnew.copy() - self._Xmean) / self._Xstd
+        Xnew = (Xnew.copy() - self._Xoffset) / self._Xscale
         if X_variance_new is not None:
-            X_variance_new = X_variance_new / self._Xstd ** 2
+            X_variance_new = X_variance_new / self._Xscale ** 2
 
         # here's the actual prediction by the GP model
         mu, var = self._raw_predict(Xnew, X_variance_new, full_cov=full_cov, which_parts=which_parts)
@@ -292,13 +292,13 @@ class SparseGP(GPBase):
         GPBase.plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, ax=ax)
         if self.X.shape[1] == 1:
             if self.has_uncertain_inputs:
-                Xu = self.X * self._Xstd + self._Xmean  # NOTE self.X are the normalized values now
+                Xu = self.X * self._Xscale + self._Xoffset  # NOTE self.X are the normalized values now
                 ax.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
                             xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
                             ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
-            Zu = self.Z * self._Xstd + self._Xmean
+            Zu = self.Z * self._Xscale + self._Xoffset
             ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
 
         elif self.X.shape[1] == 2:
-            Zu = self.Z * self._Xstd + self._Xmean
+            Zu = self.Z * self._Xscale + self._Xoffset
             ax.plot(Zu[:, 0], Zu[:, 1], 'wo')

@@ -10,16 +10,16 @@ import numpy as np
 import GPy
 
 
-def toy_rbf_1d(max_nb_eval_optim=100):
+def toy_rbf_1d(optimizer='tnc', max_nb_eval_optim=100):
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
     data = GPy.util.datasets.toy_rbf_1d()
 
-    # create simple GP model
+    # create simple GP Model
     m = GPy.models.GPRegression(data['X'],data['Y'])
 
     # optimize
     m.ensure_default_constraints()
-    m.optimize(max_f_eval=max_nb_eval_optim)
+    m.optimize(optimizer, max_f_eval=max_nb_eval_optim)
     # plot
     m.plot()
     print(m)
@@ -29,7 +29,7 @@ def rogers_girolami_olympics(optim_iters=100):
     """Run a standard Gaussian process regression on the Rogers and Girolami olympics data."""
     data = GPy.util.datasets.rogers_girolami_olympics()
 
-    # create simple GP model
+    # create simple GP Model
     m = GPy.models.GPRegression(data['X'],data['Y'])
 
     #set the lengthscale to be something sensible (defaults to 1)
@@ -48,7 +48,7 @@ def toy_rbf_1d_50(optim_iters=100):
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
     data = GPy.util.datasets.toy_rbf_1d_50()
 
-    # create simple GP model
+    # create simple GP Model
     m = GPy.models.GPRegression(data['X'],data['Y'])
 
     # optimize
@@ -64,7 +64,7 @@ def silhouette(optim_iters=100):
     """Predict the pose of a figure given a silhouette. This is a task from Agarwal and Triggs 2004 ICML paper."""
     data = GPy.util.datasets.silhouette()
 
-    # create simple GP model
+    # create simple GP Model
     m = GPy.models.GPRegression(data['X'],data['Y'])
 
     # optimize
@@ -244,18 +244,18 @@ def _contour_data(data, length_scales, log_SNRs, kernel_call=GPy.kern.rbf):
     lls = []
     total_var = np.var(data['Y'])
     kernel = kernel_call(1, variance=1., lengthscale=1.)
-    model = GPy.models.GPRegression(data['X'], data['Y'], kernel=kernel)
+    Model = GPy.models.GPRegression(data['X'], data['Y'], kernel=kernel)
     for log_SNR in log_SNRs:
         SNR = 10.**log_SNR
         noise_var = total_var/(1.+SNR)
         signal_var = total_var - noise_var
-        model.kern['.*variance'] = signal_var
-        model['noise_variance'] = noise_var
+        Model.kern['.*variance'] = signal_var
+        Model['noise_variance'] = noise_var
         length_scale_lls = []
 
         for length_scale in length_scales:
-            model['.*lengthscale'] = length_scale
-            length_scale_lls.append(model.log_likelihood())
+            Model['.*lengthscale'] = length_scale
+            length_scale_lls.append(Model.log_likelihood())
 
         lls.append(length_scale_lls)
 
@@ -270,7 +270,7 @@ def sparse_GP_regression_1D(N = 400, num_inducing = 5, optim_iters=100):
     rbf =  GPy.kern.rbf(1)
     noise = GPy.kern.white(1)
     kernel = rbf + noise
-    # create simple GP model
+    # create simple GP Model
     m = GPy.models.SparseGPRegression(X, Y, kernel, num_inducing=num_inducing)
 
     m.ensure_default_constraints()
@@ -290,7 +290,7 @@ def sparse_GP_regression_2D(N = 400, num_inducing = 50, optim_iters=100):
     noise = GPy.kern.white(2)
     kernel = rbf + noise
 
-    # create simple GP model
+    # create simple GP Model
     m = GPy.models.SparseGPRegression(X,Y,kernel, num_inducing = num_inducing)
 
     # contrain all parameters to be positive (but not inducing inputs)
@@ -318,7 +318,7 @@ def uncertain_inputs_sparse_regression(optim_iters=100):
 
     k = GPy.kern.rbf(1) + GPy.kern.white(1)
 
-    # create simple GP model - no input uncertainty on this one
+    # create simple GP Model - no input uncertainty on this one
     m = GPy.models.SparseGPRegression(X, Y, kernel=k, Z=Z)
     m.ensure_default_constraints()
     m.optimize('scg', messages=1, max_f_eval=optim_iters)
@@ -326,7 +326,7 @@ def uncertain_inputs_sparse_regression(optim_iters=100):
     axes[0].set_title('no input uncertainty')
 
 
-    #the same model with uncertainty
+    #the same Model with uncertainty
     m = GPy.models.SparseGPRegression(X, Y, kernel=k, Z=Z, X_variance=S)
     m.ensure_default_constraints()
     m.optimize('scg', messages=1, max_f_eval=optim_iters)

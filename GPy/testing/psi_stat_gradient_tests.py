@@ -8,9 +8,9 @@ import numpy
 
 import GPy
 import itertools
-from GPy.core import model
+from GPy.core import Model
 
-class PsiStatModel(model):
+class PsiStatModel(Model):
     def __init__(self, which, X, X_variance, Z, num_inducing, kernel):
         self.which = which
         self.X = X
@@ -64,12 +64,9 @@ class DPsiStatTest(unittest.TestCase):
 
     def testPsi0(self):
         for k in self.kernels:
-            m = PsiStatModel('psi1', X=self.X, X_variance=self.X_var, Z=self.Z,
-                         num_inducing=self.num_inducing, kernel=k)
-            try:
-                assert m.checkgrad(), "{} x psi0".format("+".join(map(lambda x: x.name, k.parts)))
-            except:
-                import ipdb;ipdb.set_trace()
+            m = PsiStatModel('psi0', X=self.X, X_variance=self.X_var, Z=self.Z,
+                             num_inducing=self.num_inducing, kernel=k)
+            assert m.checkgrad(), "{} x psi0".format("+".join(map(lambda x: x.name, k.parts)))
 
 #     def testPsi1(self):
 #         for k in self.kernels:

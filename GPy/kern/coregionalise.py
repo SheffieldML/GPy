@@ -1,13 +1,13 @@
 # Copyright (c) 2012, James Hensman and Ricardo Andrade
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 from GPy.util.linalg import mdot, pdinv
 import pdb
 from scipy import weave
 
-class Coregionalise(kernpart):
+class Coregionalise(Kernpart):
     """
     Kernel for Intrinsic Corregionalization Models
     """
@@ -26,14 +26,14 @@ class Coregionalise(kernpart):
         else:
             assert kappa.shape==(self.Nout,)
         self.kappa = kappa
-        self.Nparam = self.Nout*(self.R + 1)
+        self.num_params = self.Nout*(self.R + 1)
         self._set_params(np.hstack([self.W.flatten(),self.kappa]))
 
     def _get_params(self):
         return np.hstack([self.W.flatten(),self.kappa])
 
     def _set_params(self,x):
-        assert x.size == self.Nparam
+        assert x.size == self.num_params
         self.kappa = x[-self.Nout:]
         self.W = x[:-self.Nout].reshape(self.Nout,self.R)
         self.B = np.dot(self.W,self.W.T) + np.diag(self.kappa)

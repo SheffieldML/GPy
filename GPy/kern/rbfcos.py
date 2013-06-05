@@ -3,10 +3,10 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 
-class rbfcos(kernpart):
+class rbfcos(Kernpart):
     def __init__(self,input_dim,variance=1.,frequencies=None,bandwidths=None,ARD=False):
         self.input_dim = input_dim
         self.name = 'rbfcos'
@@ -14,9 +14,9 @@ class rbfcos(kernpart):
             print "Warning: the rbfcos kernel requires a lot of memory for high dimensional inputs"
         self.ARD = ARD
 
-        #set the default frequencies and bandwidths, appropriate Nparam
+        #set the default frequencies and bandwidths, appropriate num_params
         if ARD:
-            self.Nparam = 2*self.input_dim + 1
+            self.num_params = 2*self.input_dim + 1
             if frequencies is not None:
                 frequencies = np.asarray(frequencies)
                 assert frequencies.size == self.input_dim, "bad number of frequencies"
@@ -28,7 +28,7 @@ class rbfcos(kernpart):
             else:
                 bandwidths = np.ones(self.input_dim)
         else:
-            self.Nparam = 3
+            self.num_params = 3
             if frequencies is not None:
                 frequencies = np.asarray(frequencies)
                 assert frequencies.size == 1, "Exactly one frequency needed for non-ARD kernel"
@@ -51,7 +51,7 @@ class rbfcos(kernpart):
         return np.hstack((self.variance,self.frequencies, self.bandwidths))
 
     def _set_params(self,x):
-        assert x.size==(self.Nparam)
+        assert x.size==(self.num_params)
         if self.ARD:
             self.variance = x[0]
             self.frequencies = x[1:1+self.input_dim]
@@ -60,7 +60,7 @@ class rbfcos(kernpart):
             self.variance, self.frequencies, self.bandwidths = x
 
     def _get_param_names(self):
-        if self.Nparam == 3:
+        if self.num_params == 3:
             return ['variance','frequency','bandwidth']
         else:
             return ['variance']+['frequency_%i'%i for i in range(self.input_dim)]+['bandwidth_%i'%i for i in range(self.input_dim)]
@@ -106,7 +106,7 @@ class rbfcos(kernpart):
             self._dist2 = np.square(self._dist)
 
             #ensure the next section is computed:
-            self._params = np.empty(self.Nparam)
+            self._params = np.empty(self.num_params)
 
         if not np.all(self._params == self._get_params()):
             self._params == self._get_params().copy()

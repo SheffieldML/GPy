@@ -33,8 +33,8 @@ class GP(GPBase):
         self._set_params(self._get_params())
 
     def _set_params(self, p):
-        self.kern._set_params_transformed(p[:self.kern.Nparam_transformed()])
-        self.likelihood._set_params(p[self.kern.Nparam_transformed():])
+        self.kern._set_params_transformed(p[:self.kern.num_params_transformed()])
+        self.likelihood._set_params(p[self.kern.num_params_transformed():])
 
         self.K = self.kern.K(self.X)
         self.K += self.likelihood.covariance_matrix

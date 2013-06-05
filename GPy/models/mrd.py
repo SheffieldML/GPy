@@ -3,7 +3,7 @@ Created on 10 Apr 2013
 
 @author: Max Zwiessele
 '''
-from GPy.core import model
+from GPy.core import Model
 from GPy.core import SparseGP
 from GPy.util.linalg import PCA
 import numpy
@@ -12,7 +12,7 @@ import pylab
 from GPy.kern.kern import kern
 from GPy.models.bayesian_gplvm import BayesianGPLVM
 
-class MRD(model):
+class MRD(Model):
     """
     Do MRD on given Datasets in Ylist.
     All Ys in likelihood_list are in [N x Dn], where Dn can be different per Yn,
@@ -78,7 +78,7 @@ class MRD(model):
         self.NQ = self.num_data * self.input_dim
         self.MQ = self.num_inducing * self.input_dim
 
-        model.__init__(self) # @UndefinedVariable
+        Model.__init__(self) # @UndefinedVariable
         self._set_params(self._get_params())
 
     @property

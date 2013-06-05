@@ -2,9 +2,9 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
-class white(kernpart):
+class white(Kernpart):
     """
     White noise kernel.
 
@@ -15,7 +15,7 @@ class white(kernpart):
     """
     def __init__(self,input_dim,variance=1.):
         self.input_dim = input_dim
-        self.Nparam = 1
+        self.num_params = 1
         self.name = 'white'
         self._set_params(np.array([variance]).flatten())
         self._psi1 = 0 # TODO: more elegance here

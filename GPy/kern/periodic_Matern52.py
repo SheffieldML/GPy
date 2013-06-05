@@ -2,12 +2,12 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
-from GPy.util.linalg import mdot, pdinv
+from GPy.util.linalg import mdot
 from GPy.util.decorators import silence_errors
 
-class periodic_Matern52(kernpart):
+class periodic_Matern52(Kernpart):
     """
     Kernel of the periodic subspace (up to a given frequency) of a Matern 5/2 RKHS. Only defined for input_dim=1.
 
@@ -35,7 +35,7 @@ class periodic_Matern52(kernpart):
         else:
             lengthscale = np.ones(1)
         self.lower,self.upper = lower, upper
-        self.Nparam = 3
+        self.num_params = 3
         self.n_freq = n_freq
         self.n_basis = 2*n_freq
         self._set_params(np.hstack((variance,lengthscale,period)))
@@ -209,7 +209,7 @@ class periodic_Matern52(kernpart):
         F2lower = np.array(self._cos(self.basis_alpha*self.basis_omega**2,self.basis_omega,self.basis_phi+np.pi)(self.lower))[:,None]
 
         #dK_dvar
-        dK_dvar = 1./self.variance*mdot(FX,self.Gi,FX2.T)
+        dK_dvar = 1. / self.variance * mdot(FX, self.Gi, FX.T)
 
         #dK_dlen
         da_dlen = [-3*self.a[0]/self.lengthscale, -2*self.a[1]/self.lengthscale, -self.a[2]/self.lengthscale, 0.]

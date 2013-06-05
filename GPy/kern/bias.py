@@ -2,11 +2,11 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 import hashlib
 
-class bias(kernpart):
+class bias(Kernpart):
     def __init__(self,input_dim,variance=1.):
         """
         :param input_dim: the number of input dimensions
@@ -15,7 +15,7 @@ class bias(kernpart):
         :type variance: float
         """
         self.input_dim = input_dim
-        self.Nparam = 1
+        self.num_params = 1
         self.name = 'bias'
         self._set_params(np.array([variance]).flatten())
 

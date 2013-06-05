@@ -1,42 +1,41 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
-import hashlib
 
-class fixed(kernpart):
-    def __init__(self,D,K,variance=1.):
+class Fixed(Kernpart):
+    def __init__(self, input_dim, K, variance=1.):
         """
-        :param D: the number of input dimensions
-        :type D: int
+        :param input_dim: the number of input dimensions
+        :type input_dim: int
         :param variance: the variance of the kernel
         :type variance: float
         """
-        self.D = D
+        self.input_dim = input_dim
         self.fixed_K = K
-        self.Nparam = 1
-        self.name = 'fixed'
+        self.num_params = 1
+        self.name = 'Fixed'
         self._set_params(np.array([variance]).flatten())
 
     def _get_params(self):
         return self.variance
 
-    def _set_params(self,x):
-        assert x.shape==(1,)
+    def _set_params(self, x):
+        assert x.shape == (1,)
         self.variance = x
 
     def _get_param_names(self):
         return ['variance']
 
-    def K(self,X,X2,target):
+    def K(self, X, X2, target):
         target += self.variance * self.fixed_K
 
-    def dK_dtheta(self,partial,X,X2,target):
+    def dK_dtheta(self, partial, X, X2, target):
         target += (partial * self.fixed_K).sum()
 
-    def dK_dX(self, partial,X, X2, target):
+    def dK_dX(self, partial, X, X2, target):
         pass
 
-    def dKdiag_dX(self,partial,X,target):
+    def dKdiag_dX(self, partial, X, target):
         pass

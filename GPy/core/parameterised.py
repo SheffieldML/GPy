@@ -6,12 +6,10 @@ import numpy as np
 import re
 import copy
 import cPickle
-import os
-from ..util.squashers import sigmoid
 import warnings
 import transformations
 
-class parameterised(object):
+class Parameterised(object):
     def __init__(self):
         """
         This is the base class for model and kernel. Mostly just handles tieing and constraining of parameters
@@ -36,7 +34,7 @@ class parameterised(object):
         """
         Returns a **copy** of parameters in non transformed space
 
-        :see_also: :py:func:`GPy.core.parameterised.params_transformed`
+        :see_also: :py:func:`GPy.core.Parameterised.params_transformed`
         """
         return self._get_params()
 
@@ -49,7 +47,7 @@ class parameterised(object):
         """
         Returns a **copy** of parameters in transformed space
 
-        :see_also: :py:func:`GPy.core.parameterised.params`
+        :see_also: :py:func:`GPy.core.Parameterised.params`
         """
         return self._get_params_transformed()
 
@@ -113,7 +111,7 @@ class parameterised(object):
         if hasattr(self, 'prior'):
             pass
 
-        self._set_params_transformed(self._get_params_transformed())  # sets tied parameters to single value
+        self._set_params_transformed(self._get_params_transformed()) # sets tied parameters to single value
 
     def untie_everything(self):
         """Unties all parameters by setting tied_indices to an empty list."""
@@ -145,7 +143,7 @@ class parameterised(object):
         else:
             return np.nonzero([regexp.match(name) for name in names])[0]
 
-    def Nparam_transformed(self):
+    def num_params_transformed(self):
         removed = 0
         for tie in self.tied_indices:
             removed += tie.size - 1
@@ -159,18 +157,18 @@ class parameterised(object):
         """Unconstrain matching parameters.  does not untie parameters"""
         matches = self.grep_param_names(regexp)
 
-        #tranformed contraints:
+        # tranformed contraints:
         for match in matches:
-            self.constrained_indices = [i[i<>match] for i in self.constrained_indices]
+            self.constrained_indices = [i[i <> match] for i in self.constrained_indices]
 
-        #remove empty constraints
-        tmp = zip(*[(i,t) for i,t in zip(self.constrained_indices,self.constraints) if len(i)])
+        # remove empty constraints
+        tmp = zip(*[(i, t) for i, t in zip(self.constrained_indices, self.constraints) if len(i)])
         if tmp:
-            self.constrained_indices, self.constraints = zip(*[(i,t) for i,t in zip(self.constrained_indices,self.constraints) if len(i)])
+            self.constrained_indices, self.constraints = zip(*[(i, t) for i, t in zip(self.constrained_indices, self.constraints) if len(i)])
             self.constrained_indices, self.constraints = list(self.constrained_indices), list(self.constraints)
 
         # fixed:
-        self.fixed_values = [np.delete(values, np.nonzero(np.sum(indices[:, None] == matches[None, :], 1))[0]) for indices,values in zip(self.fixed_indices,self.fixed_values)]
+        self.fixed_values = [np.delete(values, np.nonzero(np.sum(indices[:, None] == matches[None, :], 1))[0]) for indices, values in zip(self.fixed_indices, self.fixed_values)]
         self.fixed_indices = [np.delete(indices, np.nonzero(np.sum(indices[:, None] == matches[None, :], 1))[0]) for indices in self.fixed_indices]
 
         # remove empty elements
@@ -189,7 +187,7 @@ class parameterised(object):
         """ Set positive constraints. """
         self.constrain(regexp, transformations.logexp())
 
-    def constrain_bounded(self, regexp,lower, upper):
+    def constrain_bounded(self, regexp, lower, upper):
         """ Set bounded constraints. """
         self.constrain(regexp, transformations.logistic(lower, upper))
 
@@ -199,8 +197,8 @@ class parameterised(object):
         else:
             return np.empty(shape=(0,))
 
-    def constrain(self,regexp,transform):
-        assert isinstance(transform,transformations.transformation)
+    def constrain(self, regexp, transform):
+        assert isinstance(transform, transformations.transformation)
 
         matches = self.grep_param_names(regexp)
         overlap = set(matches).intersection(set(self.all_constrained_indices()))
@@ -251,7 +249,7 @@ class parameterised(object):
     def _get_params_transformed(self):
         """use self._get_params to get the 'true' parameters of the model, which are then tied, constrained and fixed"""
         x = self._get_params()
-        [np.put(x,i,t.finv(x[i])) for i,t in zip(self.constrained_indices,self.constraints)]
+        [np.put(x, i, t.finv(x[i])) for i, t in zip(self.constrained_indices, self.constraints)]
 
         to_remove = self.fixed_indices + [t[1:] for t in self.tied_indices]
         if len(to_remove):
@@ -263,7 +261,7 @@ class parameterised(object):
         """ takes the vector x, which is then modified (by untying, reparameterising or inserting fixed values), and then call self._set_params"""
         self._set_params(self._untransform_params(x))
 
-    def _untransform_params(self,x):
+    def _untransform_params(self, x):
         """
         The transformation required for _set_params_transformed.
 
@@ -290,9 +288,9 @@ class parameterised(object):
         [np.put(xx, i, v) for i, v in zip(self.fixed_indices, self.fixed_values)]
         [np.put(xx, i, v) for i, v in [(t[1:], xx[t[0]]) for t in self.tied_indices] ]
 
-        [np.put(xx,i,t.f(xx[i])) for i,t in zip(self.constrained_indices, self.constraints)]
-        if hasattr(self,'debug'):
-            stop
+        [np.put(xx, i, t.f(xx[i])) for i, t in zip(self.constrained_indices, self.constraints)]
+        if hasattr(self, 'debug'):
+            stop # @UndefinedVariable
 
         return xx
 
@@ -316,7 +314,7 @@ class parameterised(object):
             remove = np.hstack((remove, np.hstack(self.fixed_indices)))
 
         # add markers to show that some variables are constrained
-        for i,t in zip(self.constrained_indices,self.constraints):
+        for i, t in zip(self.constrained_indices, self.constraints):
             for ii in i:
                 n[ii] = n[ii] + t.__str__()
 
@@ -333,10 +331,10 @@ class parameterised(object):
         if not N:
             return "This object has no free parameters."
         header = ['Name', 'Value', 'Constraints', 'Ties']
-        values = self._get_params()  # map(str,self._get_params())
+        values = self._get_params() # map(str,self._get_params())
         # sort out the constraints
         constraints = [''] * len(names)
-        for i,t in zip(self.constrained_indices,self.constraints):
+        for i, t in zip(self.constrained_indices, self.constraints):
             for ii in i:
                 constraints[ii] = t.__str__()
         for i in self.fixed_indices:
@@ -354,7 +352,7 @@ class parameterised(object):
         max_constraint = max([len(constraints[i]) for i in range(len(constraints))] + [len(header[2])])
         max_ties = max([len(ties[i]) for i in range(len(ties))] + [len(header[3])])
         cols = np.array([max_names, max_values, max_constraint, max_ties]) + 4
-        columns = cols.sum()
+        # columns = cols.sum()
 
         header_string = ["{h:^{col}}".format(h=header[i], col=cols[i]) for i in range(len(cols))]
         header_string = map(lambda x: '|'.join(x), [header_string])

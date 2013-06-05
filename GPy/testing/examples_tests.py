@@ -12,21 +12,21 @@ from nose.tools import nottest
 import sys
 
 class ExamplesTests(unittest.TestCase):
-    def _checkgrad(self, model):
-        self.assertTrue(model.checkgrad())
+    def _checkgrad(self, Model):
+        self.assertTrue(Model.checkgrad())
 
-    def _model_instance(self, model):
-        self.assertTrue(isinstance(model, GPy.models))
+    def _model_instance(self, Model):
+        self.assertTrue(isinstance(Model, GPy.models))
 
 """
-def model_instance_generator(model):
+def model_instance_generator(Model):
     def check_model_returned(self):
-        self._model_instance(model)
+        self._model_instance(Model)
     return check_model_returned
 
-def checkgrads_generator(model):
+def checkgrads_generator(Model):
     def model_checkgrads(self):
-        self._checkgrad(model)
+        self._checkgrad(Model)
     return model_checkgrads
 """
 
@@ -35,10 +35,9 @@ def model_checkgrads(model):
     #assert model.checkgrad()
     return model.checkgrad()
 
-
 def model_instance(model):
     #assert isinstance(model, GPy.core.model)
-    return isinstance(model, GPy.core.model)
+    return isinstance(model, GPy.core.Model)
 
 @nottest
 def test_models():
@@ -69,12 +68,12 @@ def test_models():
 
             # Create tests for instance check
             """
-            test = model_instance_generator(model)
+            test = model_instance_generator(Model)
             test.__name__ = 'test_instance_%s' % example[0]
             setattr(ExamplesTests, test.__name__, test)
 
             #Create tests for checkgrads check
-            test = checkgrads_generator(model)
+            test = checkgrads_generator(Model)
             test.__name__ = 'test_checkgrads_%s' % example[0]
             setattr(ExamplesTests, test.__name__, test)
             """

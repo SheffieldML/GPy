@@ -1,23 +1,23 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 import hashlib
 #from scipy import integrate # This may not be necessary (Nicolas, 20th Feb)
 
-class prod_orthogonal(kernpart):
+class prod_orthogonal(Kernpart):
     """
     Computes the product of 2 kernels
 
     :param k1, k2: the kernels to multiply
-    :type k1, k2: kernpart
+    :type k1, k2: Kernpart
     :rtype: kernel object
 
     """
     def __init__(self,k1,k2):
         self.input_dim = k1.input_dim + k2.input_dim
-        self.Nparam = k1.Nparam + k2.Nparam
+        self.num_params = k1.num_params + k2.num_params
         self.name = k1.name + '<times>' + k2.name
         self.k1 = k1
         self.k2 = k2
@@ -30,8 +30,8 @@ class prod_orthogonal(kernpart):
 
     def _set_params(self,x):
         """set the value of the parameters."""
-        self.k1._set_params(x[:self.k1.Nparam])
-        self.k2._set_params(x[self.k1.Nparam:])
+        self.k1._set_params(x[:self.k1.num_params])
+        self.k2._set_params(x[self.k1.num_params:])
 
     def _get_param_names(self):
         """return parameter names."""
@@ -45,11 +45,11 @@ class prod_orthogonal(kernpart):
         """derivative of the covariance matrix with respect to the parameters."""
         self._K_computations(X,X2)
         if X2 is None:
-            self.k1.dK_dtheta(dL_dK*self._K2, X[:,:self.k1.input_dim], None, target[:self.k1.Nparam])
-            self.k2.dK_dtheta(dL_dK*self._K1, X[:,self.k1.input_dim:], None, target[self.k1.Nparam:])
+            self.k1.dK_dtheta(dL_dK*self._K2, X[:,:self.k1.input_dim], None, target[:self.k1.num_params])
+            self.k2.dK_dtheta(dL_dK*self._K1, X[:,self.k1.input_dim:], None, target[self.k1.num_params:])
         else:
-            self.k1.dK_dtheta(dL_dK*self._K2, X[:,:self.k1.input_dim], X2[:,:self.k1.input_dim], target[:self.k1.Nparam])
-            self.k2.dK_dtheta(dL_dK*self._K1, X[:,self.k1.input_dim:], X2[:,self.k1.input_dim:], target[self.k1.Nparam:])
+            self.k1.dK_dtheta(dL_dK*self._K2, X[:,:self.k1.input_dim], X2[:,:self.k1.input_dim], target[:self.k1.num_params])
+            self.k2.dK_dtheta(dL_dK*self._K1, X[:,self.k1.input_dim:], X2[:,self.k1.input_dim:], target[self.k1.num_params:])
 
     def Kdiag(self,X,target):
         """Compute the diagonal of the covariance matrix associated to X."""
@@ -64,8 +64,8 @@ class prod_orthogonal(kernpart):
         K2 = np.zeros(X.shape[0])
         self.k1.Kdiag(X[:,:self.k1.input_dim],K1)
         self.k2.Kdiag(X[:,self.k1.input_dim:],K2)
-        self.k1.dKdiag_dtheta(dL_dKdiag*K2,X[:,:self.k1.input_dim],target[:self.k1.Nparam])
-        self.k2.dKdiag_dtheta(dL_dKdiag*K1,X[:,self.k1.input_dim:],target[self.k1.Nparam:])
+        self.k1.dKdiag_dtheta(dL_dKdiag*K2,X[:,:self.k1.input_dim],target[:self.k1.num_params])
+        self.k2.dKdiag_dtheta(dL_dKdiag*K1,X[:,self.k1.input_dim:],target[self.k1.num_params:])
 
     def dK_dX(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to X."""

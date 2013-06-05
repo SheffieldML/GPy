@@ -2,14 +2,14 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 import hashlib
 def theta(x):
     """Heaviside step function"""
     return np.where(x>=0.,1.,0.)
 
-class spline(kernpart):
+class spline(Kernpart):
     """
     Spline kernel
 
@@ -23,7 +23,7 @@ class spline(kernpart):
     def __init__(self,input_dim,variance=1.,lengthscale=1.):
         self.input_dim = input_dim
         assert self.input_dim==1
-        self.Nparam = 1
+        self.num_params = 1
         self.name = 'spline'
         self._set_params(np.squeeze(variance))
 

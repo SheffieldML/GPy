@@ -2,12 +2,12 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 from ..util.linalg import tdot
 from scipy import weave
 
-class linear(kernpart):
+class linear(Kernpart):
     """
     Linear kernel
 
@@ -28,7 +28,7 @@ class linear(kernpart):
         self.input_dim = input_dim
         self.ARD = ARD
         if ARD == False:
-            self.Nparam = 1
+            self.num_params = 1
             self.name = 'linear'
             if variances is not None:
                 variances = np.asarray(variances)
@@ -37,7 +37,7 @@ class linear(kernpart):
                 variances = np.ones(1)
             self._Xcache, self._X2cache = np.empty(shape=(2,))
         else:
-            self.Nparam = self.input_dim
+            self.num_params = self.input_dim
             self.name = 'linear'
             if variances is not None:
                 variances = np.asarray(variances)
@@ -54,12 +54,12 @@ class linear(kernpart):
         return self.variances
 
     def _set_params(self, x):
-        assert x.size == (self.Nparam)
+        assert x.size == (self.num_params)
         self.variances = x
         self.variances2 = np.square(self.variances)
 
     def _get_param_names(self):
-        if self.Nparam == 1:
+        if self.num_params == 1:
             return ['variance']
         else:
             return ['variance_%i' % i for i in range(self.variances.size)]

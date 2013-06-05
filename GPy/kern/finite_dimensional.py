@@ -2,21 +2,21 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 from ..util.linalg import pdinv,mdot
 
-class finite_dimensional(kernpart):
-    def __init__(self, D, F, G, variance=1., weights=None):
+class finite_dimensional(Kernpart):
+    def __init__(self, input_dim, F, G, variance=1., weights=None):
         """
         Argumnents
         ----------
-        D: int - the number of input dimensions
+        input_dim: int - the number of input dimensions
         F: np.array of functions with shape (n,) - the n basis functions
         G: np.array with shape (n,n) - the Gram matrix associated to F
         weights : np.ndarray with shape (n,)
         """
-        self.D = D
+        self.input_dim = input_dim
         self.F = F
         self.G = G
         self.G_1 ,L,Li,logdet = pdinv(G)
@@ -25,14 +25,14 @@ class finite_dimensional(kernpart):
             assert weights.shape==(self.n,)
         else:
             weights = np.ones(self.n)
-        self.Nparam = self.n + 1
+        self.num_params = self.n + 1
         self.name = 'finite_dim'
         self._set_params(np.hstack((variance,weights)))
 
     def _get_params(self):
         return np.hstack((self.variance,self.weights))
     def _set_params(self,x):
-        assert x.size == (self.Nparam)
+        assert x.size == (self.num_params)
         self.variance = x[0]
         self.weights = x[1:]
     def _get_param_names(self):
@@ -48,7 +48,7 @@ class finite_dimensional(kernpart):
         product = self.variance * mdot(FX,np.diag(np.sqrt(self.weights)),self.G_1,np.diag(np.sqrt(self.weights)),FX2.T)
         np.add(product,target,target)
     def Kdiag(self,X,target):
-        product = np.diag(self.K(X,X2))
+        product = np.diag(self.K(X, X))
         np.add(target,product,target)
     def dK_dtheta(self,X,X2,target):
         """Return shape is NxMx(Ntheta)"""

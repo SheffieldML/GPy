@@ -2,9 +2,9 @@ import pylab as pb
 import numpy as np
 from .. import util
 
-def plot_latent(model, labels=None, which_indices=None, resolution=50, ax=None, marker='o', s=40):
+def plot_latent(Model, labels=None, which_indices=None, resolution=50, ax=None, marker='o', s=40):
     """
-    :param labels: a np.array of size model.N containing labels for the points (can be number, strings, etc)
+    :param labels: a np.array of size Model.N containing labels for the points (can be number, strings, etc)
     :param resolution: the resolution of the grid on which to evaluate the predictive variance
     """
     if ax is None:
@@ -12,26 +12,26 @@ def plot_latent(model, labels=None, which_indices=None, resolution=50, ax=None, 
     util.plot.Tango.reset()
 
     if labels is None:
-        labels = np.ones(model.N)
+        labels = np.ones(Model.N)
     if which_indices is None:
-        if model.input_dim==1:
+        if Model.input_dim==1:
             input_1 = 0
             input_2 = None
-        if model.input_dim==2:
+        if Model.input_dim==2:
             input_1, input_2 = 0,1
         else:
             try:
-                input_1, input_2 = np.argsort(model.input_sensitivity())[:2]
+                input_1, input_2 = np.argsort(Model.input_sensitivity())[:2]
             except:
                 raise ValueError, "cannot Atomatically determine which dimensions to plot, please pass 'which_indices'"
     else:
         input_1, input_2 = which_indices
 
     #first, plot the output variance as a function of the latent space
-    Xtest, xx,yy,xmin,xmax = util.plot.x_frame2D(model.X[:,[input_1, input_2]],resolution=resolution)
-    Xtest_full = np.zeros((Xtest.shape[0], model.X.shape[1]))
+    Xtest, xx,yy,xmin,xmax = util.plot.x_frame2D(Model.X[:,[input_1, input_2]],resolution=resolution)
+    Xtest_full = np.zeros((Xtest.shape[0], Model.X.shape[1]))
     Xtest_full[:, :2] = Xtest
-    mu, var, low, up = model.predict(Xtest_full)
+    mu, var, low, up = Model.predict(Xtest_full)
     var = var[:, :1]
     ax.imshow(var.reshape(resolution, resolution).T,
               extent=[xmin[0], xmax[0], xmin[1], xmax[1]], cmap=pb.cm.binary,interpolation='bilinear',origin='lower')
@@ -55,12 +55,12 @@ def plot_latent(model, labels=None, which_indices=None, resolution=50, ax=None, 
             m = marker
 
         index = np.nonzero(labels==ul)[0]
-        if model.input_dim==1:
-            x = model.X[index,input_1]
+        if Model.input_dim==1:
+            x = Model.X[index,input_1]
             y = np.zeros(index.size)
         else:
-            x = model.X[index,input_1]
-            y = model.X[index,input_2]
+            x = Model.X[index,input_1]
+            y = Model.X[index,input_2]
         ax.scatter(x, y, marker=m, s=s, color=util.plot.Tango.nextMedium(), label=this_label)
 
     ax.set_xlabel('latent dimension %i'%input_1)
@@ -76,16 +76,16 @@ def plot_latent(model, labels=None, which_indices=None, resolution=50, ax=None, 
     return ax
 
 
-def plot_latent_indices(model, which_indices=None, *args, **kwargs):
+def plot_latent_indices(Model, which_indices=None, *args, **kwargs):
 
     if which_indices is None:
         try:
-            input_1, input_2 = np.argsort(model.input_sensitivity())[:2]
+            input_1, input_2 = np.argsort(Model.input_sensitivity())[:2]
         except:
             raise ValueError, "cannot Automatically determine which dimensions to plot, please pass 'which_indices'"
     else:
         input_1, input_2 = which_indices
-    ax = plot_latent(model, which_indices=[input_1, input_2], *args, **kwargs)
+    ax = plot_latent(Model, which_indices=[input_1, input_2], *args, **kwargs)
     # TODO: Here test if there are inducing points...
-    ax.plot(model.Z[:, input_1], model.Z[:, input_2], '^w')
+    ax.plot(Model.Z[:, input_1], Model.Z[:, input_2], '^w')
     return ax

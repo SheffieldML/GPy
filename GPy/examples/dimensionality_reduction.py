@@ -304,72 +304,75 @@ def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
         m.plot_scales("MRD Scales")
     return m
 
-def brendan_faces():
-    from GPy import kern
-    data = GPy.util.datasets.brendan_faces()
-    Q = 2
-    Y = data['Y'][0:-1:10, :]
-    # Y = data['Y']
-    Yn = Y - Y.mean()
-    Yn /= Yn.std()
+# # Commented out because dataset is missing
+# def brendan_faces():
+#     from GPy import kern
+#     data = GPy.util.datasets.brendan_faces()
+#     Q = 2
+#     Y = data['Y'][0:-1:10, :]
+#     # Y = data['Y']
+#     Yn = Y - Y.mean()
+#     Yn /= Yn.std()
 
-    m = GPy.models.GPLVM(Yn, Q)
-    # m = GPy.models.BayesianGPLVM(Yn, Q, num_inducing=100)
+#     m = GPy.models.GPLVM(Yn, Q)
+#     # m = GPy.models.BayesianGPLVM(Yn, Q, num_inducing=100)
 
-    # optimize
-    m.constrain('rbf|noise|white', GPy.core.transformations.logexp_clipped())
+#     # optimize
+#     m.constrain('rbf|noise|white', GPy.core.transformations.logexp_clipped())
 
-    m.ensure_default_constraints()
-    m.optimize('scg', messages=1, max_f_eval=10000)
+#     m.ensure_default_constraints()
+#     m.optimize('scg', messages=1, max_f_eval=10000)
 
-    ax = m.plot_latent(which_indices=(0, 1))
-    y = m.likelihood.Y[0, :]
-    data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, invert=False, scale=False)
-    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
-    raw_input('Press enter to finish')
-    plt.close('all')
+#     ax = m.plot_latent(which_indices=(0, 1))
+#     y = m.likelihood.Y[0, :]
+#     data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, invert=False, scale=False)
+#     lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+#     raw_input('Press enter to finish')
+#     plt.close('all')
 
-    return m
+#     return m
 
-def stick():
-    data = GPy.util.datasets.stick()
-    m = GPy.models.GPLVM(data['Y'], 2)
+# # Commented out because dataset is missing
+# def stick():
+#     data = GPy.util.datasets.stick()
+#     m = GPy.models.GPLVM(data['Y'], 2)
 
-    # optimize
-    m.ensure_default_constraints()
-    m.optimize(messages=1, max_f_eval=10000)
-    m._set_params(m._get_params())
+#     # optimize
+#     m.ensure_default_constraints()
+#     m.optimize(messages=1, max_f_eval=10000)
+#     m._set_params(m._get_params())
 
-    ax = m.plot_latent()
-    y = m.likelihood.Y[0, :]
-    data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
-    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
-    raw_input('Press enter to finish')
-    plt.close('all')
+#     ax = m.plot_latent()
+#     y = m.likelihood.Y[0, :]
+#     data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
+#     lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+#     raw_input('Press enter to finish')
+#     plt.close('all')
 
-    return m
+#     return m
 
-def cmu_mocap(subject='35', motion=['01'], in_place=True):
+# # Commented out because dataset is missing
+# def cmu_mocap(subject='35', motion=['01'], in_place=True):
 
-    data = GPy.util.datasets.cmu_mocap(subject, motion)
-    Y = data['Y']
-    if in_place:
-        # Make figure move in place.
-        data['Y'][:, 0:3] = 0.0
-    m = GPy.models.GPLVM(data['Y'], 2, normalize_Y=True)
+#     data = GPy.util.datasets.cmu_mocap(subject, motion)
+#     Y = data['Y']
+#     if in_place:
+#         # Make figure move in place.
+#         data['Y'][:, 0:3] = 0.0
+#     m = GPy.models.GPLVM(data['Y'], 2, normalize_Y=True)
 
-    # optimize
-    m.ensure_default_constraints()
-    m.optimize(messages=1, max_f_eval=10000)
+#     # optimize
+#     m.ensure_default_constraints()
+#     m.optimize(messages=1, max_f_eval=10000)
 
-    ax = m.plot_latent()
-    y = m.likelihood.Y[0, :]
-    data_show = GPy.util.visualize.skeleton_show(y[None, :], data['skel'])
-    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
-    raw_input('Press enter to finish')
-    plt.close('all')
+#     ax = m.plot_latent()
+#     y = m.likelihood.Y[0, :]
+#     data_show = GPy.util.visualize.skeleton_show(y[None, :], data['skel'])
+#     lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+#     raw_input('Press enter to finish')
+#     plt.close('all')
 
-    return m
+#     return m
 
 # def BGPLVM_oil():
 #     data = GPy.util.datasets.oil()

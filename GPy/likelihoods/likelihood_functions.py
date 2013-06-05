@@ -21,7 +21,7 @@ class LikelihoodFunction(object):
         if link == self._analytical:
             self.moments_match = self._moments_match_analytical
         else:
-            assert isinstance(link,link_functions.link_function)
+            assert isinstance(link,link_functions.LinkFunction)
             self.link = link
             self.moments_match = self._moments_match_numerical
 
@@ -79,7 +79,7 @@ class Binomial(LikelihoodFunction):
     $$
     """
     def __init__(self,link=None):
-        self._analytical = link_functions.probit
+        self._analytical = link_functions.Probit
         if not link:
             link = self._analytical
         super(Binomial, self).__init__(link)
@@ -146,7 +146,7 @@ class Poisson(LikelihoodFunction):
     def __init__(self,link=None):
         self._analytical = None
         if not link:
-            link = link_functions.log()
+            link = link_functions.Log()
         super(Poisson, self).__init__(link)
 
     def _distribution(self,gp,obs):

@@ -28,8 +28,7 @@ class GPBase(Model):
             self._Xmean = np.zeros((1, self.input_dim))
             self._Xstd = np.ones((1, self.input_dim))
 
-        Model.__init__(self)
-
+        super(GPBase, self).__init__()
         # All leaf nodes should call self._set_params(self._get_params()) at
         # the end
 

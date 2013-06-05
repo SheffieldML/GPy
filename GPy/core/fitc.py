@@ -7,15 +7,15 @@ from ..util.linalg import mdot, jitchol, chol_inv, tdot, symmetrify,pdinv
 from ..util.plot import gpplot
 from .. import kern
 from scipy import stats, linalg
-#from ..core import sparse_GP
 from gp_base import GPBase
+from sparse_gp import SparseGP
 
 def backsub_both_sides(L,X):
     """ Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky"""
     tmp,_ = linalg.lapack.flapack.dtrtrs(L,np.asfortranarray(X),lower=1,trans=1)
     return linalg.lapack.flapack.dtrtrs(L,np.asfortranarray(tmp.T),lower=1,trans=1)[0].T
 
-class FITC(GPBase):
+class FITC(SparseGP):
     """
     sparse FITC approximation
 
@@ -111,7 +111,7 @@ class FITC(GPBase):
                 raise NotImplementedError
         else:
             if self.likelihood.is_heteroscedastic:
-                assert self.likelihood.D == 1
+                assert self.likelihood.output_dim == 1
             tmp = self.psi1 * (np.sqrt(self.beta_star.flatten().reshape(1, self.N)))
             tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
             self.A = tdot(tmp)
@@ -215,8 +215,8 @@ class FITC(GPBase):
 
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
-        A = -0.5 * self.N * self.D * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
-        C = -self.D * (np.sum(np.log(np.diag(self.LB))))
+        A = -0.5 * self.N * self.output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
+        C = -self.output_dim * (np.sum(np.log(np.diag(self.LB))))
         D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
         return A + C + D
 

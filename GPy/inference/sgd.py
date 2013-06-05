@@ -18,10 +18,10 @@ class opt_SGD(Optimizer):
 
     """
 
-    def __init__(self, start, iterations = 10, learning_rate = 1e-4, momentum = 0.9, Model = None, messages = False, batch_size = 1, self_paced = False, center = True, iteration_file = None, learning_rate_adaptation=None, actual_iter=None, schedule=None, **kwargs):
+    def __init__(self, start, iterations = 10, learning_rate = 1e-4, momentum = 0.9, model = None, messages = False, batch_size = 1, self_paced = False, center = True, iteration_file = None, learning_rate_adaptation=None, actual_iter=None, schedule=None, **kwargs):
         self.opt_name = "Stochastic Gradient Descent"
 
-        self.Model = Model
+        self.Model = model
         self.iterations = iterations
         self.momentum = momentum
         self.learning_rate = learning_rate
@@ -42,11 +42,11 @@ class opt_SGD(Optimizer):
                 self.learning_rate_0 = self.learning_rate.mean()
 
         self.schedule = schedule
-        # if len([p for p in self.Model.kern.parts if p.name == 'bias']) == 1:
+        # if len([p for p in self.model.kern.parts if p.name == 'bias']) == 1:
         #     self.param_traces.append(('bias',[]))
-        # if len([p for p in self.Model.kern.parts if p.name == 'linear']) == 1:
+        # if len([p for p in self.model.kern.parts if p.name == 'linear']) == 1:
         #     self.param_traces.append(('linear',[]))
-        # if len([p for p in self.Model.kern.parts if p.name == 'rbf']) == 1:
+        # if len([p for p in self.model.kern.parts if p.name == 'rbf']) == 1:
         #     self.param_traces.append(('rbf_var',[]))
 
         self.param_traces = dict(self.param_traces)

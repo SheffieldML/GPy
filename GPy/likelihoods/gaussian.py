@@ -54,7 +54,7 @@ class Gaussian(likelihood):
         x = np.float64(x)
         if np.all(self._variance != x):
             if x == 0.:
-                self.precision = None
+                self.precision = np.inf
                 self.V = None
             else:
                 self.precision = 1. / x

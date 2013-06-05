@@ -11,16 +11,16 @@ class symmetric(kernpart):
     :param k: the kernel to symmetrify
     :type k: kernpart
     :param transform: the transform to use in symmetrification (allows symmetry on specified axes)
-    :type transform: A numpy array (D x D) specifiying the transform
+    :type transform: A numpy array (input_dim x input_dim) specifiying the transform
     :rtype: kernpart
 
     """
     def __init__(self,k,transform=None):
         if transform is None:
-            transform = np.eye(k.D)*-1.
-        assert transform.shape == (k.D, k.D)
+            transform = np.eye(k.input_dim)*-1.
+        assert transform.shape == (k.input_dim, k.input_dim)
         self.transform = transform
-        self.D = k.D
+        self.input_dim = k.input_dim
         self.Nparam = k.Nparam
         self.name = k.name + '_symm'
         self.k = k

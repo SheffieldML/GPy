@@ -9,14 +9,14 @@ from GPy.util.decorators import silence_errors
 
 class periodic_Matern52(kernpart):
     """
-    Kernel of the periodic subspace (up to a given frequency) of a Matern 5/2 RKHS. Only defined for D=1.
+    Kernel of the periodic subspace (up to a given frequency) of a Matern 5/2 RKHS. Only defined for input_dim=1.
 
-    :param D: the number of input dimensions
-    :type D: int
+    :param input_dim: the number of input dimensions
+    :type input_dim: int
     :param variance: the variance of the Matern kernel
     :type variance: float
     :param lengthscale: the lengthscale of the Matern kernel
-    :type lengthscale: np.ndarray of size (D,)
+    :type lengthscale: np.ndarray of size (input_dim,)
     :param period: the period
     :type period: float
     :param n_freq: the number of frequencies considered for the periodic subspace
@@ -25,10 +25,10 @@ class periodic_Matern52(kernpart):
 
     """
 
-    def __init__(self,D=1,variance=1.,lengthscale=None,period=2*np.pi,n_freq=10,lower=0.,upper=4*np.pi):
-        assert D==1, "Periodic kernels are only defined for D=1"
+    def __init__(self,input_dim=1,variance=1.,lengthscale=None,period=2*np.pi,n_freq=10,lower=0.,upper=4*np.pi):
+        assert input_dim==1, "Periodic kernels are only defined for input_dim=1"
         self.name = 'periodic_Mat52'
-        self.D = D
+        self.input_dim = input_dim
         if lengthscale is not None:
             lengthscale = np.asarray(lengthscale)
             assert lengthscale.size == 1, "Wrong size: only one lengthscale needed"

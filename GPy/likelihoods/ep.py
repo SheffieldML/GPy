@@ -17,7 +17,7 @@ class EP(likelihood):
         self.epsilon = epsilon
         self.eta, self.delta = power_ep
         self.data = data
-        self.N, self.input_dim = self.data.shape
+        self.N, self.output_dim = self.data.shape
         self.is_heteroscedastic = True
         self.Nparams = 0
         self._transf_data = self.LikelihoodFunction._preprocess_values(data)

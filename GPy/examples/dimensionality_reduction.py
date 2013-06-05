@@ -5,7 +5,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import GPy
-from GPy.util.datasets import swiss_roll_generated
 from GPy.core.transformations import logexp
 from GPy.models.bayesian_gplvm import BayesianGPLVM
 
@@ -64,7 +63,7 @@ def GPLVM_oil_100(optimize=True):
     return m
 
 def swiss_roll(optimize=True, N=1000, num_inducing=15, Q=4, sigma=.2, plot=False):
-    from GPy.util.datasets import swiss_roll
+    from GPy.util.datasets import swiss_roll_generated
     from GPy.core.transformations import logexp_clipped
 
     data = swiss_roll_generated(N=N, sigma=sigma)
@@ -109,10 +108,10 @@ def swiss_roll(optimize=True, N=1000, num_inducing=15, Q=4, sigma=.2, plot=False
     m.data_colors = c
     m.data_t = t
 
-    m.constrain('variance|length', logexp_clipped())
-    m['lengthscale'] = 1. # X.var(0).max() / X.var(0)
-    m['noise'] = Y.var() / 100.
     m.ensure_default_constraints()
+    m['rbf_lengthscale'] = 1. # X.var(0).max() / X.var(0)
+    m['noise_variance'] = Y.var() / 100.
+    m['bias_variance'] = 0.05
 
     if optimize:
         m.optimize('scg', messages=1)

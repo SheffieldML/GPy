@@ -13,16 +13,16 @@ class spline(kernpart):
     """
     Spline kernel
 
-    :param D: the number of input dimensions (fixed to 1 right now TODO)
-    :type D: int
+    :param input_dim: the number of input dimensions (fixed to 1 right now TODO)
+    :type input_dim: int
     :param variance: the variance of the kernel
     :type variance: float
 
     """
 
-    def __init__(self,D,variance=1.,lengthscale=1.):
-        self.D = D
-        assert self.D==1
+    def __init__(self,input_dim,variance=1.,lengthscale=1.):
+        self.input_dim = input_dim
+        assert self.input_dim==1
         self.Nparam = 1
         self.name = 'spline'
         self._set_params(np.squeeze(variance))

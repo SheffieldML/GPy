@@ -89,7 +89,7 @@ class GP(GPBase):
         model for a new variable Y* = v_tilde/tau_tilde, with a covariance
         matrix K* = K + diag(1./tau_tilde) plus a normalization term.
         """
-        return -0.5 * self.input_dim * self.K_logdet + self._model_fit_term() + self.likelihood.Z
+        return -0.5 * self.output_dim * self.K_logdet + self._model_fit_term() + self.likelihood.Z
 
 
     def _log_likelihood_gradients(self):

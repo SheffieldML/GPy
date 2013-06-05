@@ -159,13 +159,13 @@ def coregionalisation_sparse(optim_iters=100):
     k = k1.prod(k2,tensor=True) + GPy.kern.white(2,0.001)
 
     m = GPy.models.SparseGPRegression(X,Y,kernel=k,Z=Z)
-    m.scale_factor = 10000.
     m.constrain_fixed('.*rbf_var',1.)
-    #m.constrain_positive('kappa')
     m.constrain_fixed('iip')
+    m.constrain_bounded('noise_variance',1e-3,1e-1)
     m.ensure_default_constraints()
     m.optimize_restarts(5, robust=True, messages=1, max_f_eval=optim_iters)
 
+    #plotting:
     pb.figure()
     Xtest1 = np.hstack((np.linspace(0,9,100)[:,None],np.zeros((100,1))))
     Xtest2 = np.hstack((np.linspace(0,9,100)[:,None],np.ones((100,1))))
@@ -300,7 +300,6 @@ def sparse_GP_regression_2D(N = 400, num_inducing = 50, optim_iters=100):
     m.checkgrad()
 
     # optimize and plot
-    pb.figure()
     m.optimize('tnc', messages = 1, max_f_eval=optim_iters)
     m.plot()
     print(m)

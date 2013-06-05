@@ -2,10 +2,10 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 
-class rational_quadratic(kernpart):
+class rational_quadratic(Kernpart):
     """
     rational quadratic kernel
 
@@ -13,21 +13,21 @@ class rational_quadratic(kernpart):
 
        k(r) = \sigma^2 \\bigg( 1 + \\frac{r^2}{2 \ell^2} \\bigg)^{- \\alpha} \ \ \ \ \  \\text{ where  } r^2 = (x-y)^2
 
-    :param D: the number of input dimensions
-    :type D: int (D=1 is the only value currently supported)
+    :param input_dim: the number of input dimensions
+    :type input_dim: int (input_dim=1 is the only value currently supported)
     :param variance: the variance :math:`\sigma^2`
     :type variance: float
     :param lengthscale: the lengthscale :math:`\ell`
     :type lengthscale: float
     :param power: the power :math:`\\alpha`
     :type power: float
-    :rtype: kernpart object
+    :rtype: Kernpart object
 
     """
-    def __init__(self,D,variance=1.,lengthscale=1.,power=1.):
-        assert D == 1, "For this kernel we assume D=1"
-        self.D = D
-        self.Nparam = 3
+    def __init__(self,input_dim,variance=1.,lengthscale=1.,power=1.):
+        assert input_dim == 1, "For this kernel we assume input_dim=1"
+        self.input_dim = input_dim
+        self.num_params = 3
         self.name = 'rat_quad'
         self.variance = variance
         self.lengthscale = lengthscale

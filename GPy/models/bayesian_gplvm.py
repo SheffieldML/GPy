@@ -2,21 +2,16 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-import pylab as pb
-import sys, pdb
-from GPLVM import GPLVM
-from ..core import sparse_GP
-from GPy.util.linalg import pdinv
+from ..core import SparseGP
 from ..likelihoods import Gaussian
 from .. import kern
-from numpy.linalg.linalg import LinAlgError
 import itertools
 from matplotlib.colors import colorConverter
-from matplotlib.figure import SubplotParams
 from GPy.inference.optimization import SCG
 from GPy.util import plot_latent
+from GPy.models.gplvm import GPLVM
 
-class Bayesian_GPLVM(sparse_GP, GPLVM):
+class BayesianGPLVM(SparseGP, GPLVM):
     """
     Bayesian Gaussian Process Latent Variable Model
 
@@ -28,7 +23,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, likelihood_or_Y, input_dim, X=None, X_variance=None, init='PCA', M=10,
+    def __init__(self, likelihood_or_Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
                  Z=None, kernel=None, oldpsave=10, _debug=False,
                  **kwargs):
         if type(likelihood_or_Y) is np.ndarray:
@@ -44,7 +39,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             X_variance = np.clip((np.ones_like(X) * 0.5) + .01 * np.random.randn(*X.shape), 0.001, 1)
 
         if Z is None:
-            Z = np.random.permutation(X.copy())[:M]
+            Z = np.random.permutation(X.copy())[:num_inducing]
         assert Z.shape[1] == X.shape[1]
 
         if kernel is None:
@@ -64,7 +59,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
             self._savedpsiKmm = []
             self._savedABCD = []
 
-        sparse_GP.__init__(self, X, likelihood, kernel, Z=Z, X_variance=X_variance, **kwargs)
+        SparseGP.__init__(self, X, likelihood, kernel, Z=Z, X_variance=X_variance, **kwargs)
         self._set_params(self._get_params())
 
     @property
@@ -78,21 +73,21 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         self._oldps.insert(0, p.copy())
 
     def _get_param_names(self):
-        X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.N)], [])
-        S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.N)], [])
-        return (X_names + S_names + sparse_GP._get_param_names(self))
+        X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
+        S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
+        return (X_names + S_names + SparseGP._get_param_names(self))
 
     def _get_params(self):
         """
         Horizontally stacks the parameters in order to present them to the optimizer.
-        The resulting 1-D array has this structure:
+        The resulting 1-input_dim array has this structure:
 
         ===============================================================
         |       mu       |        S        |    Z    | theta |  beta  |
         ===============================================================
 
         """
-        x = np.hstack((self.X.flatten(), self.X_variance.flatten(), sparse_GP._get_params(self)))
+        x = np.hstack((self.X.flatten(), self.X_variance.flatten(), SparseGP._get_params(self)))
         return x
 
     def _clipped(self, x):
@@ -101,10 +96,10 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
     def _set_params(self, x, save_old=True, save_count=0):
 #         try:
             x = self._clipped(x)
-            N, input_dim = self.N, self.input_dim
+            N, input_dim = self.num_data, self.input_dim
             self.X = x[:self.X.size].reshape(N, input_dim).copy()
             self.X_variance = x[(N * input_dim):(2 * N * input_dim)].reshape(N, input_dim).copy()
-            sparse_GP._set_params(self, x[(2 * N * input_dim):])
+            SparseGP._set_params(self, x[(2 * N * input_dim):])
 #             self.oldps = x
 #         except (LinAlgError, FloatingPointError, ZeroDivisionError):
 #             print "\rWARNING: Caught LinAlgError, continueing without setting            "
@@ -131,10 +126,10 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
     def KL_divergence(self):
         var_mean = np.square(self.X).sum()
         var_S = np.sum(self.X_variance - np.log(self.X_variance))
-        return 0.5 * (var_mean + var_S) - 0.5 * self.input_dim * self.N
+        return 0.5 * (var_mean + var_S) - 0.5 * self.input_dim * self.num_data
 
     def log_likelihood(self):
-        ll = sparse_GP.log_likelihood(self)
+        ll = SparseGP.log_likelihood(self)
         kl = self.KL_divergence()
 
 #         if ll < -2E4:
@@ -151,14 +146,14 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
                 self._savedpsiKmm.append([self.f_call, [self.Kmm, self.dL_dKmm]])
 #                 sf2 = self.scale_factor ** 2
                 if self.likelihood.is_heteroscedastic:
-                    A = -0.5 * self.N * self.D * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.likelihood.precision)) - 0.5 * np.sum(self.V * self.likelihood.Y)
-#                     B = -0.5 * self.D * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A) * sf2)
-                    B = -0.5 * self.D * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A))
+                    A = -0.5 * self.num_data * self.input_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.likelihood.precision)) - 0.5 * np.sum(self.V * self.likelihood.Y)
+#                     B = -0.5 * self.input_dim * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A) * sf2)
+                    B = -0.5 * self.input_dim * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A))
                 else:
-                    A = -0.5 * self.N * self.D * (np.log(2.*np.pi) + np.log(self.likelihood._variance)) - 0.5 * self.likelihood.precision * self.likelihood.trYYT
-#                     B = -0.5 * self.D * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self.A) * sf2)
-                    B = -0.5 * self.D * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self.A))
-                C = -self.D * (np.sum(np.log(np.diag(self.LB)))) # + 0.5 * self.M * np.log(sf2))
+                    A = -0.5 * self.num_data * self.input_dim * (np.log(2.*np.pi) + np.log(self.likelihood._variance)) - 0.5 * self.likelihood.precision * self.likelihood.trYYT
+#                     B = -0.5 * self.input_dim * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self.A) * sf2)
+                    B = -0.5 * self.input_dim * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self.A))
+                C = -self.input_dim * (np.sum(np.log(np.diag(self.LB)))) # + 0.5 * self.num_inducing * np.log(sf2))
                 D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
                 self._savedABCD.append([self.f_call, A, B, C, D])
 
@@ -181,7 +176,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 #         d_dS = (dL_dS).flatten()
         # ========================
         self.dbound_dmuS = np.hstack((d_dmu, d_dS))
-        self.dbound_dZtheta = sparse_GP._log_likelihood_gradients(self)
+        self.dbound_dZtheta = SparseGP._log_likelihood_gradients(self)
         return self._clipped(np.hstack((self.dbound_dmuS.flatten(), self.dbound_dZtheta)))
 
     def plot_latent(self, *args, **kwargs):
@@ -200,7 +195,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         means = np.zeros((N_test, input_dim))
         covars = np.zeros((N_test, input_dim))
 
-        dpsi0 = -0.5 * self.D * self.likelihood.precision
+        dpsi0 = -0.5 * self.input_dim * self.likelihood.precision
         dpsi2 = self.dL_dpsi2[0][None, :, :] # TODO: this may change if we ignore het. likelihoods
         V = self.likelihood.precision * Y
         dpsi1 = np.dot(self.Cpsi1V, V.T)
@@ -263,7 +258,7 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 
     def __getstate__(self):
         return (self.likelihood, self.input_dim, self.X, self.X_variance,
-                self.init, self.M, self.Z, self.kern,
+                self.init, self.num_inducing, self.Z, self.kern,
                 self.oldpsave, self._debug)
 
     def __setstate__(self, state):
@@ -271,11 +266,11 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
 
     def _debug_filter_params(self, x):
         start, end = 0, self.X.size,
-        X = x[start:end].reshape(self.N, self.input_dim)
+        X = x[start:end].reshape(self.num_data, self.input_dim)
         start, end = end, end + self.X_variance.size
-        X_v = x[start:end].reshape(self.N, self.input_dim)
-        start, end = end, end + (self.M * self.input_dim)
-        Z = x[start:end].reshape(self.M, self.input_dim)
+        X_v = x[start:end].reshape(self.num_data, self.input_dim)
+        start, end = end, end + (self.num_inducing * self.input_dim)
+        Z = x[start:end].reshape(self.num_inducing, self.input_dim)
         start, end = end, end + self.input_dim
         theta = x[start:]
         return X, X_v, Z, theta
@@ -353,12 +348,12 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         figs.append(pylab.figure("BGPLVM DEBUG Kmm", figsize=(12, 6)))
         fig = figs[-1]
         ax8 = fig.add_subplot(121)
-        ax8.text(.5, .5, r"${\mathbf{A,B,C,D}}$", color='k', alpha=.5, transform=ax8.transAxes,
+        ax8.text(.5, .5, r"${\mathbf{A,B,C,input_dim}}$", color='k', alpha=.5, transform=ax8.transAxes,
                  ha='center', va='center')
         ax8.plot(ABCD_dict[:, 0], ABCD_dict[:, 1], label='A')
         ax8.plot(ABCD_dict[:, 0], ABCD_dict[:, 2], label='B')
         ax8.plot(ABCD_dict[:, 0], ABCD_dict[:, 3], label='C')
-        ax8.plot(ABCD_dict[:, 0], ABCD_dict[:, 4], label='D')
+        ax8.plot(ABCD_dict[:, 0], ABCD_dict[:, 4], label='input_dim')
         ax8.legend()
         figs[-1].canvas.draw()
         figs[-1].tight_layout(rect=(.15, 0, 1, .86))

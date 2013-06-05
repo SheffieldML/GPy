@@ -8,22 +8,22 @@ from scipy import linalg
 from ..likelihoods import Gaussian
 from gp_base import GPBase
 
-class sparse_GP(GPBase):
+class SparseGP(GPBase):
     """
     Variational sparse GP model
 
     :param X: inputs
-    :type X: np.ndarray (N x input_dim)
+    :type X: np.ndarray (num_data x input_dim)
     :param likelihood: a likelihood instance, containing the observed data
     :type likelihood: GPy.likelihood.(Gaussian | EP | Laplace)
     :param kernel : the kernel (covariance function). See link kernels
     :type kernel: a GPy.kern.kern instance
     :param X_variance: The uncertainty in the measurements of X (Gaussian variance)
-    :type X_variance: np.ndarray (N x input_dim) | None
+    :type X_variance: np.ndarray (num_data x input_dim) | None
     :param Z: inducing inputs (optional, see note)
-    :type Z: np.ndarray (M x input_dim) | None
-    :param M : Number of inducing points (optional, default 10. Ignored if Z is not None)
-    :type M: int
+    :type Z: np.ndarray (num_inducing x input_dim) | None
+    :param num_inducing : Number of inducing points (optional, default 10. Ignored if Z is not None)
+    :type num_inducing: int
     :param normalize_(X|Y) : whether to normalize the data before computing (predictions will be in original scales)
     :type normalize_(X|Y): bool
     """
@@ -32,7 +32,7 @@ class sparse_GP(GPBase):
         GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
 
         self.Z = Z
-        self.M = Z.shape[0]
+        self.num_inducing = Z.shape[0]
         self.likelihood = likelihood
 
         if X_variance is None:
@@ -69,7 +69,7 @@ class sparse_GP(GPBase):
         # The rather complex computations of self.A
         if self.has_uncertain_inputs:
             if self.likelihood.is_heteroscedastic:
-                psi2_beta = (self.psi2 * (self.likelihood.precision.flatten().reshape(self.N, 1, 1))).sum(0)
+                psi2_beta = (self.psi2 * (self.likelihood.precision.flatten().reshape(self.num_data, 1, 1))).sum(0)
             else:
                 psi2_beta = self.psi2.sum(0) * self.likelihood.precision
             evals, evecs = linalg.eigh(psi2_beta)
@@ -77,7 +77,7 @@ class sparse_GP(GPBase):
             tmp = evecs * np.sqrt(clipped_evals)
         else:
             if self.likelihood.is_heteroscedastic:
-                tmp = self.psi1 * (np.sqrt(self.likelihood.precision.flatten().reshape(1, self.N)))
+                tmp = self.psi1 * (np.sqrt(self.likelihood.precision.flatten().reshape(1, self.num_data)))
             else:
                 tmp = self.psi1 * (np.sqrt(self.likelihood.precision))
         tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
@@ -85,7 +85,7 @@ class sparse_GP(GPBase):
 
 
         # factor B
-        self.B = np.eye(self.M) + self.A
+        self.B = np.eye(self.num_inducing) + self.A
         self.LB = jitchol(self.B)
 
         # TODO: make a switch for either first compute psi1V, or VV.T
@@ -99,28 +99,28 @@ class sparse_GP(GPBase):
 
         # Compute dL_dKmm
         tmp = tdot(self._LBi_Lmi_psi1V)
-        self.DBi_plus_BiPBi = backsub_both_sides(self.LB, self.D * np.eye(self.M) + tmp)
+        self.DBi_plus_BiPBi = backsub_both_sides(self.LB, self.output_dim * np.eye(self.num_inducing) + tmp)
         tmp = -0.5 * self.DBi_plus_BiPBi
-        tmp += -0.5 * self.B * self.D
-        tmp += self.D * np.eye(self.M)
+        tmp += -0.5 * self.B * self.output_dim
+        tmp += self.output_dim * np.eye(self.num_inducing)
         self.dL_dKmm = backsub_both_sides(self.Lm, tmp)
 
         # Compute dL_dpsi # FIXME: this is untested for the heterscedastic + uncertain inputs case
-        self.dL_dpsi0 = -0.5 * self.D * (self.likelihood.precision * np.ones([self.N, 1])).flatten()
+        self.dL_dpsi0 = -0.5 * self.output_dim * (self.likelihood.precision * np.ones([self.num_data, 1])).flatten()
         self.dL_dpsi1 = np.dot(self.Cpsi1V, self.likelihood.V.T)
-        dL_dpsi2_beta = 0.5 * backsub_both_sides(self.Lm, self.D * np.eye(self.M) - self.DBi_plus_BiPBi)
+        dL_dpsi2_beta = 0.5 * backsub_both_sides(self.Lm, self.output_dim * np.eye(self.num_inducing) - self.DBi_plus_BiPBi)
 
         if self.likelihood.is_heteroscedastic:
             if self.has_uncertain_inputs:
                 self.dL_dpsi2 = self.likelihood.precision.flatten()[:, None, None] * dL_dpsi2_beta[None, :, :]
             else:
-                self.dL_dpsi1 += 2.*np.dot(dL_dpsi2_beta, self.psi1 * self.likelihood.precision.reshape(1, self.N))
+                self.dL_dpsi1 += 2.*np.dot(dL_dpsi2_beta, self.psi1 * self.likelihood.precision.reshape(1, self.num_data))
                 self.dL_dpsi2 = None
         else:
             dL_dpsi2 = self.likelihood.precision * dL_dpsi2_beta
             if self.has_uncertain_inputs:
                 # repeat for each of the N psi_2 matrices
-                self.dL_dpsi2 = np.repeat(dL_dpsi2[None, :, :], self.N, axis=0)
+                self.dL_dpsi2 = np.repeat(dL_dpsi2[None, :, :], self.num_data, axis=0)
             else:
                 # subsume back into psi1 (==Kmn)
                 self.dL_dpsi1 += 2.*np.dot(dL_dpsi2, self.psi1)
@@ -135,26 +135,26 @@ class sparse_GP(GPBase):
             raise NotImplementedError, "heteroscedatic derivates not implemented"
         else:
             # likelihood is not heterscedatic
-            self.partial_for_likelihood = -0.5 * self.N * self.D * self.likelihood.precision + 0.5 * self.likelihood.trYYT * self.likelihood.precision ** 2
-            self.partial_for_likelihood += 0.5 * self.D * (self.psi0.sum() * self.likelihood.precision ** 2 - np.trace(self.A) * self.likelihood.precision)
+            self.partial_for_likelihood = -0.5 * self.num_data * self.output_dim * self.likelihood.precision + 0.5 * self.likelihood.trYYT * self.likelihood.precision ** 2
+            self.partial_for_likelihood += 0.5 * self.output_dim * (self.psi0.sum() * self.likelihood.precision ** 2 - np.trace(self.A) * self.likelihood.precision)
             self.partial_for_likelihood += self.likelihood.precision * (0.5 * np.sum(self.A * self.DBi_plus_BiPBi) - np.sum(np.square(self._LBi_Lmi_psi1V)))
 
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
         if self.likelihood.is_heteroscedastic:
-            A = -0.5 * self.N * self.D * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.likelihood.precision)) - 0.5 * np.sum(self.likelihood.V * self.likelihood.Y)
-            B = -0.5 * self.D * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A))
+            A = -0.5 * self.num_data * self.output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.likelihood.precision)) - 0.5 * np.sum(self.likelihood.V * self.likelihood.Y)
+            B = -0.5 * self.output_dim * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A))
         else:
-            A = -0.5 * self.N * self.D * (np.log(2.*np.pi) - np.log(self.likelihood.precision)) - 0.5 * self.likelihood.precision * self.likelihood.trYYT
-            B = -0.5 * self.D * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self.A))
-        C = -self.D * (np.sum(np.log(np.diag(self.LB)))) # + 0.5 * self.M * np.log(sf2))
+            A = -0.5 * self.num_data * self.output_dim * (np.log(2.*np.pi) - np.log(self.likelihood.precision)) - 0.5 * self.likelihood.precision * self.likelihood.trYYT
+            B = -0.5 * self.output_dim * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self.A))
+        C = -self.output_dim * (np.sum(np.log(np.diag(self.LB)))) # + 0.5 * self.num_inducing * np.log(sf2))
         D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
         return A + B + C + D + self.likelihood.Z
 
     def _set_params(self, p):
-        self.Z = p[:self.M * self.input_dim].reshape(self.M, self.input_dim)
-        self.kern._set_params(p[self.Z.size:self.Z.size + self.kern.Nparam])
-        self.likelihood._set_params(p[self.Z.size + self.kern.Nparam:])
+        self.Z = p[:self.num_inducing * self.input_dim].reshape(self.num_inducing, self.input_dim)
+        self.kern._set_params(p[self.Z.size:self.Z.size + self.kern.num_params])
+        self.likelihood._set_params(p[self.Z.size + self.kern.num_params:])
         self._compute_kernel_matrices()
         self._computations()
 
@@ -221,7 +221,7 @@ class sparse_GP(GPBase):
 
         Bi, _ = linalg.lapack.flapack.dpotri(self.LB, lower=0)  # WTH? this lower switch should be 1, but that doesn't work!
         symmetrify(Bi)
-        Kmmi_LmiBLmi = backsub_both_sides(self.Lm, np.eye(self.M) - Bi)
+        Kmmi_LmiBLmi = backsub_both_sides(self.Lm, np.eye(self.num_inducing) - Bi)
 
         if X_variance_new is None:
             Kx = self.kern.K(self.Z, Xnew, which_parts=which_parts)
@@ -259,12 +259,12 @@ class sparse_GP(GPBase):
         :type which_parts: ('all', list of bools)
         :param full_cov: whether to return the folll covariance matrix, or just the diagonal
         :type full_cov: bool
-        :rtype: posterior mean,  a Numpy array, Nnew x self.D
+        :rtype: posterior mean,  a Numpy array, Nnew x self.input_dim
         :rtype: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
-        :rtype: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.D
+        :rtype: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
 
 
-           If full_cov and self.D > 1, the return shape of var is Nnew x Nnew x self.D. If self.D == 1, the return shape is Nnew x Nnew.
+           If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
            This is to allow for different normalizations of the output dimensions.
 
         """

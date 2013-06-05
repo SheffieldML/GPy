@@ -43,16 +43,16 @@ class vector_show(data_show):
 
 
 class lvm(data_show):
-    def __init__(self, vals, model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0,1]):
-        """Visualize a latent variable model
+    def __init__(self, vals, Model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0,1]):
+        """Visualize a latent variable Model
 
-        :param model: the latent variable model to visualize.
+        :param Model: the latent variable Model to visualize.
         :param data_visualize: the object used to visualize the data which has been modelled.
         :type data_visualize: visualize.data_show  type.
         :param latent_axes: the axes where the latent visualization should be plotted.
         """
         if vals == None:
-            vals = model.X[0]
+            vals = Model.X[0]
 
         data_show.__init__(self, vals, axes=latent_axes)
 
@@ -68,13 +68,13 @@ class lvm(data_show):
             self.cid = latent_axes[0].figure.canvas.mpl_connect('axes_enter_event', self.on_enter)
 
         self.data_visualize = data_visualize
-        self.model = model
+        self.Model = Model
         self.latent_axes = latent_axes
         self.sense_axes = sense_axes
         self.called = False
         self.move_on = False
         self.latent_index = latent_index
-        self.latent_dim = model.input_dim
+        self.latent_dim = Model.input_dim
 
         # The red cross which shows current latent point.
         self.latent_values = vals
@@ -85,7 +85,7 @@ class lvm(data_show):
     def modify(self, vals):
         """When latent values are modified update the latent representation and ulso update the output visualization."""
         self.vals = vals.copy()
-        y = self.model.predict(self.vals)[0]
+        y = self.Model.predict(self.vals)[0]
         self.data_visualize.modify(y)
         self.latent_handle.set_data(self.vals[self.latent_index[0]], self.vals[self.latent_index[1]])
         self.axes.figure.canvas.draw()
@@ -113,15 +113,15 @@ class lvm(data_show):
         # A click in the bar chart axis for selection a dimension.
         if self.sense_axes != None:
             self.sense_axes.cla()
-            self.sense_axes.bar(np.arange(self.model.input_dim),1./self.model.input_sensitivity(),color='b')
+            self.sense_axes.bar(np.arange(self.Model.input_dim),1./self.Model.input_sensitivity(),color='b')
 
             if self.latent_index[1] == self.latent_index[0]:
-                self.sense_axes.bar(np.array(self.latent_index[0]),1./self.model.input_sensitivity()[self.latent_index[0]],color='y')
-                self.sense_axes.bar(np.array(self.latent_index[1]),1./self.model.input_sensitivity()[self.latent_index[1]],color='y')
+                self.sense_axes.bar(np.array(self.latent_index[0]),1./self.Model.input_sensitivity()[self.latent_index[0]],color='y')
+                self.sense_axes.bar(np.array(self.latent_index[1]),1./self.Model.input_sensitivity()[self.latent_index[1]],color='y')
 
             else:
-                self.sense_axes.bar(np.array(self.latent_index[0]),1./self.model.input_sensitivity()[self.latent_index[0]],color='g')
-                self.sense_axes.bar(np.array(self.latent_index[1]),1./self.model.input_sensitivity()[self.latent_index[1]],color='r')
+                self.sense_axes.bar(np.array(self.latent_index[0]),1./self.Model.input_sensitivity()[self.latent_index[0]],color='g')
+                self.sense_axes.bar(np.array(self.latent_index[1]),1./self.Model.input_sensitivity()[self.latent_index[1]],color='r')
 
             self.sense_axes.figure.canvas.draw()
 
@@ -131,21 +131,21 @@ class lvm_subplots(lvm):
     latent_axes is a np array of dimension np.ceil(input_dim/2),
     one for each pair of the latent dimensions.
     """
-    def __init__(self, vals, model, data_visualize, latent_axes=None, sense_axes=None):
-        self.nplots = int(np.ceil(model.input_dim/2.))+1
+    def __init__(self, vals, Model, data_visualize, latent_axes=None, sense_axes=None):
+        self.nplots = int(np.ceil(Model.input_dim/2.))+1
         assert len(latent_axes)==self.nplots
         if vals==None:
-            vals = model.X[0, :]
+            vals = Model.X[0, :]
         self.latent_values = vals 
 
         for i, axis in enumerate(latent_axes):
             if i == self.nplots-1:
-                if self.nplots*2!=model.input_dim:
+                if self.nplots*2!=Model.input_dim:
                     latent_index = [i*2, i*2]
-                lvm.__init__(self, self.latent_vals, model, data_visualize, axis, sense_axes, latent_index=latent_index)
+                lvm.__init__(self, self.latent_vals, Model, data_visualize, axis, sense_axes, latent_index=latent_index)
             else:
                 latent_index = [i*2, i*2+1]
-                lvm.__init__(self, self.latent_vals, model, data_visualize, axis, latent_index=latent_index)
+                lvm.__init__(self, self.latent_vals, Model, data_visualize, axis, latent_index=latent_index)
 
 
 
@@ -158,7 +158,7 @@ class lvm_dimselect(lvm):
     GPy.examples.dimensionality_reduction.BGPVLM_oil()
 
     """
-    def __init__(self, vals, model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0, 1]):
+    def __init__(self, vals, Model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0, 1]):
         if latent_axes==None and sense_axes==None:
             self.fig,(latent_axes,self.sense_axes) = plt.subplots(1,2)
         elif sense_axes==None:
@@ -167,14 +167,14 @@ class lvm_dimselect(lvm):
         else:
             self.sense_axes = sense_axes
         
-        lvm.__init__(self,vals,model,data_visualize,latent_axes,sense_axes,latent_index)
+        lvm.__init__(self,vals,Model,data_visualize,latent_axes,sense_axes,latent_index)
         print "use left and right mouse butons to select dimensions"
 
 
     def on_click(self, event):
 
         if event.inaxes==self.sense_axes:
-            new_index = max(0,min(int(np.round(event.xdata-0.5)),self.model.input_dim-1))
+            new_index = max(0,min(int(np.round(event.xdata-0.5)),self.Model.input_dim-1))
             if event.button == 1:
                 # Make it red if and y-axis (red=port=left) if it is a left button click
                 self.latent_index[1] = new_index                
@@ -185,7 +185,7 @@ class lvm_dimselect(lvm):
             self.show_sensitivities()
 
             self.latent_axes.cla()
-            self.model.plot_latent(which_indices=self.latent_index,
+            self.Model.plot_latent(which_indices=self.latent_index,
                                    ax=self.latent_axes)
             self.latent_handle = self.latent_axes.plot([0],[0],'rx',mew=2)[0]
             self.modify(self.latent_values)
@@ -199,7 +199,7 @@ class lvm_dimselect(lvm):
 
     def on_leave(self,event):
         latent_values = self.latent_values.copy()
-        y = self.model.predict(latent_values[None,:])[0]
+        y = self.Model.predict(latent_values[None,:])[0]
         self.data_visualize.modify(y)
 
 
@@ -221,7 +221,7 @@ class image_show(data_show):
         if not self.palette == []: # Can just show the image (self.set_image() took care of setting the palette)
             self.handle = self.axes.imshow(self.vals, interpolation='nearest')
         else: # Use a boring gray map.
-            self.handle = self.axes.imshow(self.vals, cmap=plt.cm.gray, interpolation='nearest')
+            self.handle = self.axes.imshow(self.vals, cmap=plt.cm.gray, interpolation='nearest') # @UndefinedVariable
         plt.show()
 
     def modify(self, vals):

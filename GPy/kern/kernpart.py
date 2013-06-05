@@ -2,18 +2,18 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-class kernpart(object):
-    def __init__(self,D):
+class Kernpart(object):
+    def __init__(self,input_dim):
         """
         The base class for a kernpart: a positive definite function which forms part of a kernel
 
-        :param D: the number of input dimensions to the function
-        :type D: int
+        :param input_dim: the number of input dimensions to the function
+        :type input_dim: int
 
         Do not instantiate.
         """
-        self.D = D
-        self.Nparam = 1
+        self.input_dim = input_dim
+        self.num_params = 1
         self.name = 'unnamed'
 
     def _get_params(self):

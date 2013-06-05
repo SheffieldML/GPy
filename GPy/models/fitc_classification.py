@@ -3,29 +3,26 @@
 
 
 import numpy as np
-from ..core import sparse_GP
+from ..core import FITC
 from .. import likelihoods
 from .. import kern
 from ..likelihoods import likelihood
-from GP_regression import GP_regression
 
-class sparse_GP_classification(sparse_GP):
+class FITCClassification(FITC):
     """
-    sparse Gaussian Process model for classification
+    FITC approximation for classification
 
-    This is a thin wrapper around the sparse_GP class, with a set of sensible defalts
+    This is a thin wrapper around the FITC class, with a set of sensible defaults
 
     :param X: input observations
     :param Y: observed values
-    :param likelihood: a GPy likelihood, defaults to binomial with probit link_function
+    :param likelihood: a GPy likelihood, defaults to Binomial with probit link_function
     :param kernel: a GPy kernel, defaults to rbf+white
     :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_X: False|True
     :param normalize_Y:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_Y: False|True
     :rtype: model object
-
-    .. Note:: Multiple independent outputs are allowed using columns of Y
 
     """
 
@@ -34,7 +31,7 @@ class sparse_GP_classification(sparse_GP):
             kernel = kern.rbf(X.shape[1]) + kern.white(X.shape[1],1e-3)
 
         if likelihood is None:
-            distribution = likelihoods.likelihood_functions.binomial()
+            distribution = likelihoods.likelihood_functions.Binomial()
             likelihood = likelihoods.EP(Y, distribution)
         elif Y is not None:
             if not all(Y.flatten() == likelihood.data.flatten()):
@@ -46,5 +43,5 @@ class sparse_GP_classification(sparse_GP):
         else:
             assert Z.shape[1]==X.shape[1]
 
-        sparse_GP.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X)
+        FITC.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X)
         self._set_params(self._get_params())

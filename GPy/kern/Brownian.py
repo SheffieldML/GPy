@@ -2,26 +2,26 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
 
 def theta(x):
     """Heavisdie step function"""
     return np.where(x>=0.,1.,0.)
 
-class Brownian(kernpart):
+class Brownian(Kernpart):
     """
     Brownian Motion kernel.
 
-    :param D: the number of input dimensions
-    :type D: int
+    :param input_dim: the number of input dimensions
+    :type input_dim: int
     :param variance:
     :type variance: float
     """
-    def __init__(self,D,variance=1.):
-        self.D = D
-        assert self.D==1, "Brownian motion in 1D only"
-        self.Nparam = 1.
+    def __init__(self,input_dim,variance=1.):
+        self.input_dim = input_dim
+        assert self.input_dim==1, "Brownian motion in 1D only"
+        self.num_params = 1.
         self.name = 'Brownian'
         self._set_params(np.array([variance]).flatten())
 

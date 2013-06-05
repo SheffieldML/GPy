@@ -21,36 +21,36 @@ def ard(p):
 
 @testing.deepTest(__test__)
 class Test(unittest.TestCase):
-    D = 9
-    M = 4
+    input_dim = 9
+    num_inducing = 4
     N = 3
     Nsamples = 6e6
 
     def setUp(self):
         self.kerns = (
-#                       (GPy.kern.rbf(self.D, ARD=True) +
-#                        GPy.kern.linear(self.D, ARD=True) +
-#                        GPy.kern.bias(self.D) +
-#                        GPy.kern.white(self.D)),
-                      (GPy.kern.rbf(self.D, np.random.rand(), np.random.rand(self.D), ARD=True) +
-                       GPy.kern.rbf(self.D, np.random.rand(), np.random.rand(self.D), ARD=True) +
-                       GPy.kern.linear(self.D, np.random.rand(self.D), ARD=True) +
-                       GPy.kern.bias(self.D) +
-                       GPy.kern.white(self.D)),
-#                       GPy.kern.rbf(self.D), GPy.kern.rbf(self.D, ARD=True),
-#                       GPy.kern.linear(self.D, ARD=False), GPy.kern.linear(self.D, ARD=True),
-#                       GPy.kern.linear(self.D) + GPy.kern.bias(self.D),
-#                       GPy.kern.rbf(self.D) + GPy.kern.bias(self.D),
-#                       GPy.kern.linear(self.D) + GPy.kern.bias(self.D) + GPy.kern.white(self.D),
-#                       GPy.kern.rbf(self.D) + GPy.kern.bias(self.D) + GPy.kern.white(self.D),
-#                       GPy.kern.bias(self.D), GPy.kern.white(self.D),
+#                       (GPy.kern.rbf(self.input_dim, ARD=True) +
+#                        GPy.kern.linear(self.input_dim, ARD=True) +
+#                        GPy.kern.bias(self.input_dim) +
+#                        GPy.kern.white(self.input_dim)),
+                      (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
+                       GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
+                       GPy.kern.linear(self.input_dim, np.random.rand(self.input_dim), ARD=True) +
+                       GPy.kern.bias(self.input_dim) +
+                       GPy.kern.white(self.input_dim)),
+#                       GPy.kern.rbf(self.input_dim), GPy.kern.rbf(self.input_dim, ARD=True),
+#                       GPy.kern.linear(self.input_dim, ARD=False), GPy.kern.linear(self.input_dim, ARD=True),
+#                       GPy.kern.linear(self.input_dim) + GPy.kern.bias(self.input_dim),
+#                       GPy.kern.rbf(self.input_dim) + GPy.kern.bias(self.input_dim),
+#                       GPy.kern.linear(self.input_dim) + GPy.kern.bias(self.input_dim) + GPy.kern.white(self.input_dim),
+#                       GPy.kern.rbf(self.input_dim) + GPy.kern.bias(self.input_dim) + GPy.kern.white(self.input_dim),
+#                       GPy.kern.bias(self.input_dim), GPy.kern.white(self.input_dim),
                       )
-        self.q_x_mean = np.random.randn(self.D)
-        self.q_x_variance = np.exp(np.random.randn(self.D))
-        self.q_x_samples = np.random.randn(self.Nsamples, self.D) * np.sqrt(self.q_x_variance) + self.q_x_mean
-        self.Z = np.random.randn(self.M, self.D)
-        self.q_x_mean.shape = (1, self.D)
-        self.q_x_variance.shape = (1, self.D)
+        self.q_x_mean = np.random.randn(self.input_dim)
+        self.q_x_variance = np.exp(np.random.randn(self.input_dim))
+        self.q_x_samples = np.random.randn(self.Nsamples, self.input_dim) * np.sqrt(self.q_x_variance) + self.q_x_mean
+        self.Z = np.random.randn(self.num_inducing, self.input_dim)
+        self.q_x_mean.shape = (1, self.input_dim)
+        self.q_x_variance.shape = (1, self.input_dim)
 
     def test_psi0(self):
         for kern in self.kerns:
@@ -63,7 +63,7 @@ class Test(unittest.TestCase):
         for kern in self.kerns:
             Nsamples = 100
             psi1 = kern.psi1(self.Z, self.q_x_mean, self.q_x_variance)
-            K_ = np.zeros((Nsamples, self.M))
+            K_ = np.zeros((Nsamples, self.num_inducing))
             diffs = []
             for i, q_x_sample_stripe in enumerate(np.array_split(self.q_x_samples, self.Nsamples / Nsamples)):
                 K = kern.K(q_x_sample_stripe, self.Z)
@@ -89,7 +89,7 @@ class Test(unittest.TestCase):
         for kern in self.kerns:
             Nsamples = 100
             psi2 = kern.psi2(self.Z, self.q_x_mean, self.q_x_variance)
-            K_ = np.zeros((self.M, self.M))
+            K_ = np.zeros((self.num_inducing, self.num_inducing))
             diffs = []
             for i, q_x_sample_stripe in enumerate(np.array_split(self.q_x_samples, self.Nsamples / Nsamples)):
                 K = kern.K(q_x_sample_stripe, self.Z)

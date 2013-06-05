@@ -6,37 +6,32 @@ from .. import likelihoods
 from ..inference import optimization
 from ..util.linalg import jitchol
 from GPy.util.misc import opt_wrapper
-from parameterised import parameterised
-from scipy import optimize
+from parameterised import Parameterised
 import multiprocessing as mp
 import numpy as np
-import priors
-import re
-import sys
-import pdb
 from GPy.core.domains import POSITIVE, REAL
 # import numdifftools as ndt
 
-class model(parameterised):
+class Model(Parameterised):
     def __init__(self):
-        parameterised.__init__(self)
+        Parameterised.__init__(self)
         self.priors = None
         self.optimization_runs = []
         self.sampling_runs = []
-        self.preferred_optimizer = 'tnc'
-        #self._set_params(self._get_params()) has been taken out as it should only be called on leaf nodes
+        self.preferred_optimizer = 'scg'
+        # self._set_params(self._get_params()) has been taken out as it should only be called on leaf nodes
     def _get_params(self):
-        raise NotImplementedError, "this needs to be implemented to use the model class"
+        raise NotImplementedError, "this needs to be implemented to use the Model class"
     def _set_params(self, x):
-        raise NotImplementedError, "this needs to be implemented to use the model class"
+        raise NotImplementedError, "this needs to be implemented to use the Model class"
     def log_likelihood(self):
-        raise NotImplementedError, "this needs to be implemented to use the model class"
+        raise NotImplementedError, "this needs to be implemented to use the Model class"
     def _log_likelihood_gradients(self):
-        raise NotImplementedError, "this needs to be implemented to use the model class"
+        raise NotImplementedError, "this needs to be implemented to use the Model class"
 
     def set_prior(self, regexp, what):
         """
-        Sets priors on the model parameters.
+        Sets priors on the Model parameters.
 
         Arguments
         ---------
@@ -65,7 +60,7 @@ class model(parameterised):
         if len(tie_matches) > 1:
             raise ValueError, "cannot place Prior across multiple ties"
         elif len(tie_matches) == 1:
-            which = which[:1]  # just place a Prior object on the first parameter
+            which = which[:1] # just place a Prior object on the first parameter
 
 
         # check constraints are okay
@@ -95,7 +90,7 @@ class model(parameterised):
 
     def get_gradient(self, name, return_names=False):
         """
-        Get model gradient(s) by name. The name is applied as a regular expression and all parameters that match that regular expression are returned.
+        Get Model gradient(s) by name. The name is applied as a regular expression and all parameters that match that regular expression are returned.
         """
         matches = self.grep_param_names(name)
         if len(matches):
@@ -135,7 +130,7 @@ class model(parameterised):
 
     def randomize(self):
         """
-        Randomize the model.
+        Randomize the Model.
         Make this draw from the Prior if one exists, else draw from N(0,1)
         """
         # first take care of all parameters (from N(0,1))
@@ -147,16 +142,16 @@ class model(parameterised):
         if self.priors is not None:
             [np.put(x, i, p.rvs(1)) for i, p in enumerate(self.priors) if not p is None]
         self._set_params(x)
-        self._set_params_transformed(self._get_params_transformed())  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
+        self._set_params_transformed(self._get_params_transformed()) # makes sure all of the tied parameters get the same init (since there's only one prior object...)
 
 
-    def optimize_restarts(self, Nrestarts=10, robust=False, verbose=True, parallel=False, num_processes=None, **kwargs):
+    def optimize_restarts(self, num_restarts=10, robust=False, verbose=True, parallel=False, num_processes=None, **kwargs):
         """
-        Perform random restarts of the model, and set the model to the best
+        Perform random restarts of the Model, and set the Model to the best
         seen solution.
 
         If the robust flag is set, exceptions raised during optimizations will
-        be handled silently.  If _all_ runs fail, the model is reset to the
+        be handled silently.  If _all_ runs fail, the Model is reset to the
         existing parameter values.
 
         Notes
@@ -179,19 +174,19 @@ class model(parameterised):
             try:
                 jobs = []
                 pool = mp.Pool(processes=num_processes)
-                for i in range(Nrestarts):
+                for i in range(num_restarts):
                     self.randomize()
                     job = pool.apply_async(opt_wrapper, args=(self,), kwds=kwargs)
                     jobs.append(job)
 
-                pool.close()  # signal that no more data coming in
-                pool.join()  # wait for all the tasks to complete
+                pool.close() # signal that no more data coming in
+                pool.join() # wait for all the tasks to complete
             except KeyboardInterrupt:
                 print "Ctrl+c received, terminating and joining pool."
                 pool.terminate()
                 pool.join()
 
-        for i in range(Nrestarts):
+        for i in range(num_restarts):
             try:
                 if not parallel:
                     self.randomize()
@@ -200,10 +195,10 @@ class model(parameterised):
                     self.optimization_runs.append(jobs[i].get())
 
                 if verbose:
-                    print("Optimization restart {0}/{1}, f = {2}".format(i + 1, Nrestarts, self.optimization_runs[-1].f_opt))
+                    print("Optimization restart {0}/{1}, f = {2}".format(i + 1, num_restarts, self.optimization_runs[-1].f_opt))
             except Exception as e:
                 if robust:
-                    print("Warning - optimization restart {0}/{1} failed".format(i + 1, Nrestarts))
+                    print("Warning - optimization restart {0}/{1} failed".format(i + 1, num_restarts))
                 else:
                     raise e
 
@@ -218,19 +213,15 @@ class model(parameterised):
         Ensure that any variables which should clearly be positive have been constrained somehow.
         """
         positive_strings = ['variance', 'lengthscale', 'precision', 'kappa']
-        param_names = self._get_param_names()
+        # param_names = self._get_param_names()
         currently_constrained = self.all_constrained_indices()
         to_make_positive = []
         for s in positive_strings:
-            for i in self.grep_param_names(".*"+s):
+            for i in self.grep_param_names(".*" + s):
                 if not (i in currently_constrained):
-                    #to_make_positive.append(re.escape(param_names[i]))
                     to_make_positive.append(i)
         if len(to_make_positive):
-            #self.constrain_positive('(' + '|'.join(to_make_positive) + ')')
             self.constrain_positive(np.asarray(to_make_positive))
-
-
 
     def objective_function(self, x):
         """
@@ -244,18 +235,18 @@ class model(parameterised):
         Gets the gradients from the likelihood and the priors.
         """
         self._set_params_transformed(x)
-        obj_grads = - self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
+        obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
         return obj_grads
 
     def objective_and_gradients(self, x):
         self._set_params_transformed(x)
         obj_f = -self.log_likelihood() - self.log_prior()
-        obj_grads = - self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
+        obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
         return obj_f, obj_grads
 
     def optimize(self, optimizer=None, start=None, **kwargs):
         """
-        Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
+        Optimize the Model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
         kwargs are passed to the optimizer. They can be:
 
         :max_f_eval: maximum number of function evaluations
@@ -278,7 +269,7 @@ class model(parameterised):
 
     def optimize_SGD(self, momentum=0.1, learning_rate=0.01, iterations=20, **kwargs):
         # assert self.Y.shape[1] > 1, "SGD only works with D > 1"
-        sgd = SGD.StochasticGD(self, iterations, learning_rate, momentum, **kwargs)
+        sgd = SGD.StochasticGD(self, iterations, learning_rate, momentum, **kwargs) # @UndefinedVariable
         sgd.run()
         self.optimization_runs.append(sgd)
 
@@ -295,7 +286,7 @@ class model(parameterised):
             def f(x):
                 self._set_params(x)
                 return self.log_likelihood()
-            h = ndt.Hessian(f)
+            h = ndt.Hessian(f) # @UndefinedVariable
             A = -h(x)
             self._set_params(x)
         # check for almost zero components on the diagonal which screw up the cholesky
@@ -304,7 +295,7 @@ class model(parameterised):
         return A
 
     def Laplace_evidence(self):
-        """Returns an estiamte of the model evidence based on the Laplace approximation.
+        """Returns an estiamte of the Model evidence based on the Laplace approximation.
         Uses a numerical estimate of the hessian if none is available analytically"""
         A = self.Laplace_covariance()
         try:
@@ -314,12 +305,12 @@ class model(parameterised):
         return 0.5 * self._get_params().size * np.log(2 * np.pi) + self.log_likelihood() - hld
 
     def __str__(self):
-        s = parameterised.__str__(self).split('\n')
+        s = Parameterised.__str__(self).split('\n')
         # add priors to the string
         if self.priors is not None:
             strs = [str(p) if p is not None else '' for p in self.priors]
         else:
-            strs = ['']*len(self._get_params())
+            strs = [''] * len(self._get_params())
         width = np.array(max([len(p) for p in strs] + [5])) + 4
 
         log_like = self.log_likelihood()
@@ -340,7 +331,7 @@ class model(parameterised):
 
     def checkgrad(self, target_param=None, verbose=False, step=1e-6, tolerance=1e-3):
         """
-        Check the gradient of the model by comparing to a numerical estimate.
+        Check the gradient of the Model by comparing to a numerical estimate.
         If the verbose flag is passed, invividual components are tested (and printed)
 
         :param verbose: If True, print a "full" checking of each parameter
@@ -392,7 +383,11 @@ class model(parameterised):
             if target_param is None:
                 param_list = range(len(x))
             else:
-                param_list = self.grep_param_names(target_param)
+                param_list = self.grep_param_names(target_param, transformed=True, search=True)
+                if not np.any(param_list):
+                    print "No free parameters to check"
+                    return
+
 
             for i in param_list:
                 xx = x.copy()
@@ -419,15 +414,15 @@ class model(parameterised):
 
     def input_sensitivity(self):
         """
-        return an array describing the sesitivity of the model to each input
+        return an array describing the sesitivity of the Model to each input
 
         NB. Right now, we're basing this on the lengthscales (or
         variances) of the kernel.  TODO: proper sensitivity analysis
-        where we integrate across the model inputs and evaluate the
-        effect on the variance of the model output.  """
+        where we integrate across the Model inputs and evaluate the
+        effect on the variance of the Model output.  """
 
         if not hasattr(self, 'kern'):
-            raise ValueError, "this model has no kernel"
+            raise ValueError, "this Model has no kernel"
 
         k = [p for p in self.kern.parts if p.name in ['rbf', 'linear']]
         if (not len(k) == 1) or (not k[0].ARD):
@@ -474,8 +469,8 @@ class model(parameterised):
             ll_change = new_ll - last_ll
 
             if ll_change < 0:
-                self.likelihood = last_approximation  # restore previous likelihood approximation
-                self._set_params(last_params)  # restore model parameters
+                self.likelihood = last_approximation # restore previous likelihood approximation
+                self._set_params(last_params) # restore Model parameters
                 print "Log-likelihood decrement: %s \nLast likelihood update discarded." % ll_change
                 stop = True
             else:

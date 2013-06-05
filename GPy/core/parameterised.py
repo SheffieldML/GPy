@@ -85,7 +85,7 @@ class parameterised(object):
             else:
                 return self._get_params()[matches]
         else:
-            raise AttributeError, "no parameter matches %s" % name
+            raise AttributeError, "no parameter matches %s" % regexp
 
     def __setitem__(self, name, val):
         """
@@ -119,7 +119,7 @@ class parameterised(object):
         """Unties all parameters by setting tied_indices to an empty list."""
         self.tied_indices = []
 
-    def grep_param_names(self, regexp):
+    def grep_param_names(self, regexp, transformed=False, search=False):
         """
         :param regexp: regular expression to select parameter names
         :type regexp: re | str | int
@@ -129,13 +129,21 @@ class parameterised(object):
           Other objects are passed through - i.e. integers which weren't meant for grepping
         """
 
+        if transformed:
+            names = self._get_param_names_transformed()
+        else:
+            names = self._get_param_names()
+
         if type(regexp) in [str, np.string_, np.str]:
             regexp = re.compile(regexp)
-            return np.nonzero([regexp.match(name) for name in self._get_param_names()])[0]
         elif type(regexp) is re._pattern_type:
-            return np.nonzero([regexp.match(name) for name in self._get_param_names()])[0]
+            pass
         else:
             return regexp
+        if search:
+            return np.nonzero([regexp.search(name) for name in names])[0]
+        else:
+            return np.nonzero([regexp.match(name) for name in names])[0]
 
     def Nparam_transformed(self):
         removed = 0
@@ -223,7 +231,14 @@ class parameterised(object):
         To fix multiple parameters to the same value, simply pass a regular expression which matches both parameter names, or pass both of the indexes
         """
         matches = self.grep_param_names(regexp)
-        assert not np.any(matches[:, None] == self.all_constrained_indices()), "Some indices are already constrained"
+        overlap = set(matches).intersection(set(self.all_constrained_indices()))
+        if overlap:
+            self.unconstrain(np.asarray(list(overlap)))
+            print 'Warning: re-constraining these parameters'
+            pn = self._get_param_names()
+            for i in overlap:
+                print pn[i]
+
         self.fixed_indices.append(matches)
         if value != None:
             self.fixed_values.append(value)

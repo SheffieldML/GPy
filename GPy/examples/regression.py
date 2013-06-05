@@ -32,6 +32,9 @@ def rogers_girolami_olympics(max_nb_eval_optim=100):
     # create simple GP model
     m = GPy.models.GP_regression(data['X'],data['Y'])
 
+    #set the lengthscale to be something sensible (defaults to 1)
+    m['rbf_lengthscale'] = 10
+
     # optimize
     m.ensure_default_constraints()
     m.optimize(max_f_eval=max_nb_eval_optim)

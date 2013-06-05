@@ -310,6 +310,8 @@ def sparse_GP_regression_2D(N = 400, M = 50, max_nb_eval_optim=100):
 
 def uncertain_inputs_sparse_regression(max_nb_eval_optim=100):
     """Run a 1D example of a sparse GP regression with uncertain inputs."""
+    fig, axes = pb.subplots(1,2,figsize=(12,5))
+
     # sample inputs and outputs
     S = np.ones((20,1))
     X = np.random.uniform(-3.,3.,(20,1))
@@ -319,14 +321,22 @@ def uncertain_inputs_sparse_regression(max_nb_eval_optim=100):
 
     k = GPy.kern.rbf(1) + GPy.kern.white(1)
 
-    # create simple GP model
-    m = GPy.models.sparse_GP_regression(X, Y, kernel=k, Z=Z, X_variance=S)
-
-    # contrain all parameters to be positive
+    # create simple GP model - no input uncertainty on this one
+    m = GPy.models.sparse_GP_regression(X, Y, kernel=k, Z=Z)
     m.ensure_default_constraints()
+    m.optimize('scg', messages=1, max_f_eval=max_nb_eval_optim)
+    m.plot(ax=axes[0])
+    axes[0].set_title('no input uncertainty')
 
-    # optimize and plot
-    m.optimize('tnc', messages=1, max_f_eval=max_nb_eval_optim)
-    m.plot()
+
+    #the same model with uncertainty
+    m = GPy.models.sparse_GP_regression(X, Y, kernel=k, Z=Z, X_variance=S)
+    m.ensure_default_constraints()
+    m.optimize('scg', messages=1, max_f_eval=max_nb_eval_optim)
+    m.plot(ax=axes[1])
+    axes[1].set_title('with input uncertainty')
     print(m)
+
+    fig.canvas.draw()
+
     return m

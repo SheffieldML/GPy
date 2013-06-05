@@ -286,6 +286,9 @@ class sparse_GP(GPBase):
             fig = pb.figure(num=fignum)
             ax = fig.add_subplot(111)
 
+        if which_data is 'all':
+            which_data = slice(None)
+
         GPBase.plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, ax=ax)
         if self.X.shape[1] == 1:
             if self.has_uncertain_inputs:

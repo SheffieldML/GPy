@@ -6,4 +6,4 @@ from parameterised import *
 import priors
 from GPy.core.gp import GP
 from GPy.core.sparse_gp import SparseGP
-from FITC import FITC
+from fitc import FITC

@@ -24,7 +24,7 @@ def crescent_data(seed=default_seed): # FIXME
     Y = data['Y']
     Y[Y.flatten()==-1] = 0
 
-    m = GPy.models.GP_classification(data['X'], Y)
+    m = GPy.models.GPClassification(data['X'], Y)
     m.ensure_default_constraints()
     m.update_likelihood_approximation()
     m.optimize()
@@ -41,7 +41,7 @@ def oil():
     Y[Y.flatten()==-1] = 0
 
     # Create GP model
-    m = GPy.models.GP_classification(data['X'], Y)
+    m = GPy.models.GPClassification(data['X'], Y)
 
     # Contrain all parameters to be positive
     m.constrain_positive('')
@@ -66,7 +66,7 @@ def toy_linear_1d_classification(seed=default_seed):
     Y[Y.flatten() == -1] = 0
 
     # Model definition
-    m = GPy.models.GP_classification(data['X'], Y)
+    m = GPy.models.GPClassification(data['X'], Y)
     m.ensure_default_constraints()
 
     # Optimize
@@ -95,7 +95,7 @@ def sparse_toy_linear_1d_classification(seed=default_seed):
     Y[Y.flatten() == -1] = 0
 
     # Model definition
-    m = GPy.models.sparse_GP_classification(data['X'], Y)
+    m = GPy.models.SparseGPClassification(data['X'], Y)
     m['.*len']= 2.
 
     m.ensure_default_constraints()
@@ -127,7 +127,7 @@ def sparse_crescent_data(inducing=10, seed=default_seed):
     Y = data['Y']
     Y[Y.flatten()==-1]=0
 
-    m = GPy.models.sparse_GP_classification(data['X'], Y)
+    m = GPy.models.SparseGPClassification(data['X'], Y)
     m.ensure_default_constraints()
     m['.*len'] = 10.
     m.update_likelihood_approximation()
@@ -150,7 +150,7 @@ def FITC_crescent_data(inducing=10, seed=default_seed):
     Y = data['Y']
     Y[Y.flatten()==-1]=0
 
-    m = GPy.models.FITC_classification(data['X'], Y)
+    m = GPy.models.FITCClassification(data['X'], Y)
     m.ensure_default_constraints()
     m['.*len'] = 10.
     m.update_likelihood_approximation()

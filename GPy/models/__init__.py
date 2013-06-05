@@ -2,6 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from gp_regression import GPRegression
+from gp_classification import GPClassification
 from sparse_gp_regression import SparseGPRegression
 from sparse_gp_classification import SparseGPClassification
 from fitc_classification import FITCClassification

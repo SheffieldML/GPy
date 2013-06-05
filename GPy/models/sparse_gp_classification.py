@@ -3,12 +3,12 @@
 
 
 import numpy as np
-from ..core import sparse_GP
+from ..core import SparseGP
 from .. import likelihoods
 from .. import kern
 from ..likelihoods import likelihood
 
-class sparse_GP_classification(sparse_GP):
+class SparseGPClassification(SparseGP):
     """
     sparse Gaussian Process model for classification
 
@@ -43,5 +43,5 @@ class sparse_GP_classification(sparse_GP):
         else:
             assert Z.shape[1]==X.shape[1]
 
-        sparse_GP.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X)
+        SparseGP.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X)
         self._set_params(self._get_params())

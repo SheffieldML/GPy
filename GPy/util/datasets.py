@@ -13,7 +13,7 @@ default_seed = 10000
 # Some general utilities.
 def sample_class(f):
     p = 1. / (1. + np.exp(-f))
-    c = np.random.Binomial(1, p)
+    c = np.random.binomial(1, p)
     c = np.where(c, 1, -1)
     return c
 
@@ -22,7 +22,7 @@ def fetch_dataset(resource, save_name = None, save_file = True, messages = True)
         print "Downloading resource: " , resource, " ... ",
     response = url.urlopen(resource)
     # TODO: Some error checking...
-    # ... 
+    # ...
     html = response.read()
     response.close()
     if save_file:
@@ -33,8 +33,6 @@ def fetch_dataset(resource, save_name = None, save_file = True, messages = True)
             if messages:
                 print "Done!"
     return html
-        
-    
 
 def della_gatta_TRP63_gene_expression(gene_number=None):
     mat_data = scipy.io.loadmat(os.path.join(data_path, 'DellaGattadata.mat'))

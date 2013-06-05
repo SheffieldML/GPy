@@ -162,7 +162,7 @@ def coregionalisation_sparse(optim_iters=100):
     m.scale_factor = 10000.
     m.constrain_fixed('.*rbf_var',1.)
     #m.constrain_positive('kappa')
-    m.constrain_fixed('Iip')
+    m.constrain_fixed('iip')
     m.ensure_default_constraints()
     m.optimize_restarts(5, robust=True, messages=1, max_f_eval=optim_iters)
 

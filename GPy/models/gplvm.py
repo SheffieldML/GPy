@@ -42,13 +42,13 @@ class GPLVM(GP):
             return np.random.randn(Y.shape[0], input_dim)
 
     def _get_param_names(self):
-        return sum([['X_%i_%i'%(n,q) for q in range(self.input_dim)] for n in range(self.N)],[]) + GP._get_param_names(self)
+        return sum([['X_%i_%i'%(n,q) for q in range(self.input_dim)] for n in range(self.num_data)],[]) + GP._get_param_names(self)
 
     def _get_params(self):
         return np.hstack((self.X.flatten(), GP._get_params(self)))
 
     def _set_params(self,x):
-        self.X = x[:self.N*self.input_dim].reshape(self.N,self.input_dim).copy()
+        self.X = x[:self.num_data*self.input_dim].reshape(self.num_data,self.input_dim).copy()
         GP._set_params(self, x[self.X.size:])
 
     def _log_likelihood_gradients(self):

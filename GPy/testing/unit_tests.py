@@ -196,9 +196,9 @@ class GradientTests(unittest.TestCase):
         k = GPy.kern.rbf(1) + GPy.kern.white(1)
         Y = np.hstack([np.ones(N/2),-np.ones(N/2)])[:,None]
 
-        distribution = GPy.likelihoods.likelihood_functions.binomial()
+        distribution = GPy.likelihoods.likelihood_functions.Binomial()
         likelihood = GPy.likelihoods.EP(Y, distribution)
-        #likelihood = GPy.inference.likelihoods.binomial(Y)
+        #likelihood = GPy.inference.likelihoods.Binomial(Y)
         m = GPy.models.generalized_FITC(X,likelihood,k,inducing=4)
         m.constrain_positive('(var|len)')
         m.approximate_likelihood()

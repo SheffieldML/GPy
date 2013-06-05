@@ -20,7 +20,7 @@ class FITC(SparseGP):
     sparse FITC approximation
 
     :param X: inputs
-    :type X: np.ndarray (N x Q)
+    :type X: np.ndarray (num_data x Q)
     :param likelihood: a likelihood instance, containing the observed data
     :type likelihood: GPy.likelihood.(Gaussian | EP)
     :param kernel : the kernel (covariance function). See link kernels
@@ -112,7 +112,7 @@ class FITC(SparseGP):
         else:
             if self.likelihood.is_heteroscedastic:
                 assert self.likelihood.output_dim == 1
-            tmp = self.psi1 * (np.sqrt(self.beta_star.flatten().reshape(1, self.N)))
+            tmp = self.psi1 * (np.sqrt(self.beta_star.flatten().reshape(1, self.num_data)))
             tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
             self.A = tdot(tmp)
 
@@ -168,7 +168,7 @@ class FITC(SparseGP):
         self._dpsi1_dX_jkj = 0
         self._dpsi1_dtheta_jkj = 0
 
-        for i,V_n,alpha_n,gamma_n,gamma_k in zip(range(self.N),self.V_star,alpha,gamma_2,gamma_3):
+        for i,V_n,alpha_n,gamma_n,gamma_k in zip(range(self.num_data),self.V_star,alpha,gamma_2,gamma_3):
             K_pp_K = np.dot(Kmmipsi1[:,i:(i+1)],Kmmipsi1[:,i:(i+1)].T)
 
             #Diag_dpsi1 = Diag_dA_dpsi1: yT*beta_star*y + Diag_dC_dpsi1 +Diag_dD_dpsi1
@@ -215,7 +215,7 @@ class FITC(SparseGP):
 
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
-        A = -0.5 * self.N * self.output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
+        A = -0.5 * self.num_data * self.output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
         C = -self.output_dim * (np.sum(np.log(np.diag(self.LB))))
         D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
         return A + C + D

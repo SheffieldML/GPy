@@ -43,16 +43,16 @@ class vector_show(data_show):
 
 
 class lvm(data_show):
-    def __init__(self, vals, Model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0,1]):
-        """Visualize a latent variable Model
+    def __init__(self, vals, model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0,1]):
+        """Visualize a latent variable model
 
-        :param Model: the latent variable Model to visualize.
+        :param model: the latent variable model to visualize.
         :param data_visualize: the object used to visualize the data which has been modelled.
         :type data_visualize: visualize.data_show  type.
         :param latent_axes: the axes where the latent visualization should be plotted.
         """
         if vals == None:
-            vals = Model.X[0]
+            vals = model.X[0]
 
         data_show.__init__(self, vals, axes=latent_axes)
 
@@ -68,13 +68,13 @@ class lvm(data_show):
             self.cid = latent_axes[0].figure.canvas.mpl_connect('axes_enter_event', self.on_enter)
 
         self.data_visualize = data_visualize
-        self.Model = Model
+        self.Model = model
         self.latent_axes = latent_axes
         self.sense_axes = sense_axes
         self.called = False
         self.move_on = False
         self.latent_index = latent_index
-        self.latent_dim = Model.input_dim
+        self.latent_dim = model.input_dim
 
         # The red cross which shows current latent point.
         self.latent_values = vals

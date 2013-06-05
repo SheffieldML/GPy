@@ -27,7 +27,7 @@ def BGPLVM(seed=default_seed):
     # k = GPy.kern.rbf(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)
 
     m = GPy.models.BayesianGPLVM(Y, Q, kernel=k, num_inducing=num_inducing)
-    m.constrain_positive('(rbf|bias|noise|white|S)')
+    # m.constrain_positive('(rbf|bias|noise|white|S)')
     # m.constrain_fixed('S', 1)
 
     # pb.figure()
@@ -117,10 +117,9 @@ def swiss_roll(optimize=True, N=1000, num_inducing=15, Q=4, sigma=.2, plot=False
         m.optimize('scg', messages=1)
     return m
 
-def BGPLVM_oil(optimize=True, N=100, Q=5, num_inducing=25, max_f_eval=4e3, plot=False, **k):
+def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_f_eval=4e3, plot=False, **k):
     np.random.seed(0)
     data = GPy.util.datasets.oil()
-    from GPy.core.transformations import logexp_clipped
 
     # create simple GP model
     kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
@@ -132,14 +131,14 @@ def BGPLVM_oil(optimize=True, N=100, Q=5, num_inducing=25, max_f_eval=4e3, plot=
     m.data_labels = data['Y'][:N].argmax(axis=1)
 
     # m.constrain('variance|leng', logexp_clipped())
-    m['lengt'] = m.X.var(0).max() / m.X.var(0)
+    m['.*lengt'] = 1. # m.X.var(0).max() / m.X.var(0)
     m['noise'] = Yn.var() / 100.
 
     m.ensure_default_constraints()
 
     # optimize
     if optimize:
-        m.optimize('scg', messages=1, max_f_eval=max_f_eval)
+        m.optimize('scg', messages=1, max_f_eval=max_f_eval, gtol=.05)
 
     if plot:
         y = m.likelihood.Y[0, :]
@@ -266,9 +265,9 @@ def bgplvm_simulation(optimize='scg',
 
     if optimize:
         print "Optimizing model:"
-        m.optimize('scg', max_iters=max_f_eval,
+        m.optimize(optimize, max_iters=max_f_eval,
                    max_f_eval=max_f_eval,
-                   messages=True, gtol=1e-6)
+                   messages=True, gtol=.05)
     if plot:
         m.plot_X_1d("BGPLVM Latent Space 1D")
         m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')

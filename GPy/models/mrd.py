@@ -78,7 +78,7 @@ class MRD(Model):
         self.NQ = self.num_data * self.input_dim
         self.MQ = self.num_inducing * self.input_dim
 
-        Model.__init__(self) # @UndefinedVariable
+        model.__init__(self) # @UndefinedVariable
         self._set_params(self._get_params())
 
     @property

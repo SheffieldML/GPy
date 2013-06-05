@@ -175,7 +175,6 @@ class GradientTests(unittest.TestCase):
         m.ensure_default_constraints()
         m.update_likelihood_approximation()
         self.assertTrue(m.checkgrad())
-        # self.assertTrue(m.EPEM)
 
     def test_sparse_EP_DTC_probit(self):
         N = 20
@@ -194,16 +193,11 @@ class GradientTests(unittest.TestCase):
         N = 20
         X = np.hstack([np.random.rand(N / 2) + 1, np.random.rand(N / 2) - 1])[:, None]
         k = GPy.kern.rbf(1) + GPy.kern.white(1)
-        Y = np.hstack([np.ones(N/2),-np.ones(N/2)])[:,None]
-
-        distribution = GPy.likelihoods.likelihood_functions.Binomial()
-        likelihood = GPy.likelihoods.EP(Y, distribution)
-        #likelihood = GPy.inference.likelihoods.Binomial(Y)
-        m = GPy.models.generalized_FITC(X,likelihood,k,inducing=4)
-        m.constrain_positive('(var|len)')
-        m.approximate_likelihood()
+        Y = np.hstack([np.ones(N/2),np.zeros(N/2)])[:,None]
+        m = GPy.models.FITCClassification(X, Y=Y)
+        m.ensure_default_constraints()
+        m.update_likelihood_approximation()
         self.assertTrue(m.checkgrad())
-
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."

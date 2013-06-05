@@ -173,7 +173,7 @@ class SparseGP(GPBase):
         this function does nothing
         """
         if not isinstance(self.likelihood, Gaussian): # Updates not needed for Gaussian likelihood
-            self.likelihood.restart() # TODO check consistency with pseudo_EP
+            self.likelihood.restart()
             if self.has_uncertain_inputs:
                 Lmi = chol_inv(self.Lm)
                 Kmmi = tdot(Lmi.T)

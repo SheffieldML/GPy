@@ -231,7 +231,7 @@ def multiple_optima(gene_number=937,resolution=80, model_restarts=10, seed=10000
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
-    return (models, lls)
+    return m #(models, lls)
 
 def _contour_data(data, length_scales, log_SNRs, kernel_call=GPy.kern.rbf):
     """Evaluate the GP objective function for a given data set for a range of signal to noise ratios and a range of lengthscales.

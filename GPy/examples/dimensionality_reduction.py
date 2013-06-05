@@ -138,6 +138,9 @@ def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_f_eval=4e3, plot
 
     # optimize
     if optimize:
+        m.constrain_fixed('noise')
+        m.optimize('scg', messages=1, max_f_eval=100, gtol=.05)
+        m.constrain_positive('noise')
         m.optimize('scg', messages=1, max_f_eval=max_f_eval, gtol=.05)
 
     if plot:

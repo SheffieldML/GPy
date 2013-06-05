@@ -67,6 +67,7 @@ class GP(GPBase):
         For a Gaussian likelihood, no iteration is required:
         this function does nothing
         """
+        self.likelihood.restart()
         self.likelihood.fit_full(self.kern.K(self.X))
         self._set_params(self._get_params())  # update the GP
 

@@ -261,12 +261,12 @@ class MRD(model):
             fig = pylab.figure(num=fignum, figsize=(4 * len(self.bgplvms), 3))
         for i, g in enumerate(self.bgplvms):
             if axes is None:
-                axes = fig.add_subplot(1, len(self.bgplvms), i + 1)
+                ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
             elif isinstance(axes, (tuple, list)):
-                axes = axes[i]
+                ax = axes[i]
             else:
                 raise ValueError("Need one axes per latent dimension Q")
-            plotf(i, g, axes)
+            plotf(i, g, ax)
         pylab.draw()
         if axes is None:
             fig.tight_layout()
@@ -282,15 +282,15 @@ class MRD(model):
         return fig
 
     def plot_predict(self, fignum="MRD Predictions", ax=None, **kwargs):
-        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: ax.imshow(g.predict(g.X)[0], **kwargs))
+        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: ax.imshow(g. predict(g.X)[0], **kwargs))
         return fig
 
     def plot_scales(self, fignum="MRD Scales", ax=None, *args, **kwargs):
-        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.kern.plot_ARD(axes=ax, *args, **kwargs))
+        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.kern.plot_ARD(ax=ax, *args, **kwargs))
         return fig
 
     def plot_latent(self, fignum="MRD Latent Spaces", ax=None, *args, **kwargs):
-        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.plot_latent(axes=ax, *args, **kwargs))
+        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.plot_latent(ax=ax, *args, **kwargs))
         return fig
 
     def _debug_plot(self):

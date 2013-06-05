@@ -241,22 +241,22 @@ class Bayesian_GPLVM(sparse_GP, GPLVM):
         x = np.arange(self.X.shape[0])
         for i in range(self.X.shape[1]):
             if ax is None:
-                ax = fig.add_subplot(self.X.shape[1], 1, i + 1)
+                a = fig.add_subplot(self.X.shape[1], 1, i + 1)
             elif isinstance(ax, (tuple, list)):
-                ax = ax[i]
+                a = ax[i]
             else:
                 raise ValueError("Need one ax per latent dimnesion Q")
-            ax.plot(self.X, c='k', alpha=.3)
-            plots.extend(ax.plot(x, self.X.T[i], c=colors.next(), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
-            ax.fill_between(x,
+            a.plot(self.X, c='k', alpha=.3)
+            plots.extend(a.plot(x, self.X.T[i], c=colors.next(), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
+            a.fill_between(x,
                             self.X.T[i] - 2 * np.sqrt(self.X_variance.T[i]),
                             self.X.T[i] + 2 * np.sqrt(self.X_variance.T[i]),
                             facecolor=plots[-1].get_color(),
                             alpha=.3)
-            ax.legend(borderaxespad=0.)
-            ax.set_xlim(x.min(), x.max())
+            a.legend(borderaxespad=0.)
+            a.set_xlim(x.min(), x.max())
             if i < self.X.shape[1] - 1:
-                ax.set_xticklabels('')
+                a.set_xticklabels('')
         pylab.draw()
         fig.tight_layout(h_pad=.01) # , rect=(0, 0, 1, .95))
         return fig

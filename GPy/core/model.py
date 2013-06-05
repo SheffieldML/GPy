@@ -449,7 +449,7 @@ class Model(Parameterised):
         :type optimzer: string TODO: valid strings?
 
         """
-        assert isinstance(self.likelihood, likelihoods.EP), "EPEM is only available for EP likelihoods"
+        assert isinstance(self.likelihood, likelihoods.EP), "pseudo_EM is only available for EP likelihoods"
         ll_change = epsilon + 1.
         iteration = 0
         last_ll = -np.inf
@@ -461,16 +461,13 @@ class Model(Parameterised):
         while not stop:
             last_approximation = self.likelihood.copy()
             last_params = self._get_params()
-
-            self.likelihood.restart()
             self.update_likelihood_approximation()
-
             new_ll = self.log_likelihood()
             ll_change = new_ll - last_ll
 
             if ll_change < 0:
                 self.likelihood = last_approximation # restore previous likelihood approximation
-                self._set_params(last_params) # restore Model parameters
+                self._set_params(last_params) # restore model parameters
                 print "Log-likelihood decrement: %s \nLast likelihood update discarded." % ll_change
                 stop = True
             else:
@@ -481,4 +478,4 @@ class Model(Parameterised):
             iteration += 1
             if stop:
                 print "%s iterations." % iteration
-
+        self.update_likelihood_approximation()

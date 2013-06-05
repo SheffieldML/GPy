@@ -69,14 +69,14 @@ class Coregionalise(Kernpart):
         else:
             index2 = np.asarray(index2,dtype=np.int)
             code="""
-            for(int i=0;i<M; i++){
+            for(int i=0;i<num_inducing; i++){
               for(int j=0; j<N; j++){
-                  target[i+j*M] += B[Nout*index[j]+index2[i]];
+                  target[i+j*num_inducing] += B[Nout*index[j]+index2[i]];
                 }
               }
             """
-            N,M,B,Nout = index.size,index2.size, self.B, self.Nout
-            weave.inline(code,['target','index','index2','N','M','B','Nout'])
+            N,num_inducing,B,Nout = index.size,index2.size, self.B, self.Nout
+            weave.inline(code,['target','index','index2','N','num_inducing','B','Nout'])
 
 
     def Kdiag(self,index,target):
@@ -91,14 +91,14 @@ class Coregionalise(Kernpart):
             index2 = np.asarray(index2,dtype=np.int)
 
         code="""
-        for(int i=0; i<M; i++){
+        for(int i=0; i<num_inducing; i++){
           for(int j=0; j<N; j++){
-            dL_dK_small[index[j] + Nout*index2[i]] += dL_dK[i+j*M];
+            dL_dK_small[index[j] + Nout*index2[i]] += dL_dK[i+j*num_inducing];
           }
         }
         """
-        N, M, Nout = index.size, index2.size, self.Nout
-        weave.inline(code, ['N','M','Nout','dL_dK','dL_dK_small','index','index2'])
+        N, num_inducing, Nout = index.size, index2.size, self.Nout
+        weave.inline(code, ['N','num_inducing','Nout','dL_dK','dL_dK_small','index','index2'])
 
         dkappa = np.diag(dL_dK_small)
         dL_dK_small += dL_dK_small.T

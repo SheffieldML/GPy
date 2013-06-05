@@ -139,7 +139,7 @@ class EP(likelihood):
         The expectation-propagation algorithm with sparse pseudo-input.
         For nomenclature see ... 2013.
         """
-        M = Kmm.shape[0]
+        num_inducing = Kmm.shape[0]
 
         #TODO: this doesn't work with uncertain inputs!
 
@@ -235,7 +235,7 @@ class EP(likelihood):
         The expectation-propagation algorithm with sparse pseudo-input.
         For nomenclature see Naish-Guzman and Holden, 2008.
         """
-        M = Kmm.shape[0]
+        num_inducing = Kmm.shape[0]
 
         """
         Prior approximation parameters:
@@ -258,7 +258,7 @@ class EP(likelihood):
         mu = w + P*Gamma
         """
         self.w = np.zeros(self.N)
-        self.Gamma = np.zeros(M)
+        self.Gamma = np.zeros(num_inducing)
         mu = np.zeros(self.N)
         P = P0.copy()
         R = R0.copy()
@@ -305,10 +305,10 @@ class EP(likelihood):
                 dtd1 = Delta_tau*Diag[i] + 1.
                 dii = Diag[i]
                 Diag[i] = dii - (Delta_tau * dii**2.)/dtd1
-                pi_ = P[i,:].reshape(1,M)
+                pi_ = P[i,:].reshape(1,num_inducing)
                 P[i,:] = pi_ - (Delta_tau*dii)/dtd1 * pi_
                 Rp_i = np.dot(R,pi_.T)
-                RTR = np.dot(R.T,np.dot(np.eye(M) - Delta_tau/(1.+Delta_tau*Sigma_diag[i]) * np.dot(Rp_i,Rp_i.T),R))
+                RTR = np.dot(R.T,np.dot(np.eye(num_inducing) - Delta_tau/(1.+Delta_tau*Sigma_diag[i]) * np.dot(Rp_i,Rp_i.T),R))
                 R = jitchol(RTR).T
                 self.w[i] += (Delta_v - Delta_tau*self.w[i])*dii/dtd1
                 self.Gamma += (Delta_v - Delta_tau*mu[i])*np.dot(RTR,P[i,:].T)
@@ -321,7 +321,7 @@ class EP(likelihood):
             Diag = Diag0 * Iplus_Dprod_i
             P = Iplus_Dprod_i[:,None] * P0
             safe_diag = np.where(Diag0 < self.tau_tilde, self.tau_tilde/(1.+Diag0*self.tau_tilde), (1. - Iplus_Dprod_i)/Diag0)
-            L = jitchol(np.eye(M) + np.dot(RPT0,safe_diag[:,None]*RPT0.T))
+            L = jitchol(np.eye(num_inducing) + np.dot(RPT0,safe_diag[:,None]*RPT0.T))
             R,info = linalg.lapack.flapack.dtrtrs(L,R0,lower=1)
             RPT = np.dot(R,P.T)
             Sigma_diag = Diag + np.sum(RPT.T*RPT.T,-1)

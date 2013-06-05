@@ -23,7 +23,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, likelihood_or_Y, input_dim, X=None, X_variance=None, init='PCA', M=10,
+    def __init__(self, likelihood_or_Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
                  Z=None, kernel=None, oldpsave=10, _debug=False,
                  **kwargs):
         if type(likelihood_or_Y) is np.ndarray:
@@ -39,7 +39,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
             X_variance = np.clip((np.ones_like(X) * 0.5) + .01 * np.random.randn(*X.shape), 0.001, 1)
 
         if Z is None:
-            Z = np.random.permutation(X.copy())[:M]
+            Z = np.random.permutation(X.copy())[:num_inducing]
         assert Z.shape[1] == X.shape[1]
 
         if kernel is None:

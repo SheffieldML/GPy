@@ -15,7 +15,7 @@ class Gaussian(likelihood):
         self.is_heteroscedastic = False
         self.Nparams = 1
         self.Z = 0. # a correction factor which accounts for the approximation made
-        N, self.input_dim = data.shape
+        N, self.output_dim = data.shape
 
         # normalization
         if normalize:

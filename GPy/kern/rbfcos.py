@@ -7,26 +7,26 @@ from kernpart import kernpart
 import numpy as np
 
 class rbfcos(kernpart):
-    def __init__(self,D,variance=1.,frequencies=None,bandwidths=None,ARD=False):
-        self.D = D
+    def __init__(self,input_dim,variance=1.,frequencies=None,bandwidths=None,ARD=False):
+        self.input_dim = input_dim
         self.name = 'rbfcos'
-        if self.D>10:
+        if self.input_dim>10:
             print "Warning: the rbfcos kernel requires a lot of memory for high dimensional inputs"
         self.ARD = ARD
 
         #set the default frequencies and bandwidths, appropriate Nparam
         if ARD:
-            self.Nparam = 2*self.D + 1
+            self.Nparam = 2*self.input_dim + 1
             if frequencies is not None:
                 frequencies = np.asarray(frequencies)
-                assert frequencies.size == self.D, "bad number of frequencies"
+                assert frequencies.size == self.input_dim, "bad number of frequencies"
             else:
-                frequencies = np.ones(self.D)
+                frequencies = np.ones(self.input_dim)
             if bandwidths is not None:
                 bandwidths = np.asarray(bandwidths)
-                assert bandwidths.size == self.D, "bad number of bandwidths"
+                assert bandwidths.size == self.input_dim, "bad number of bandwidths"
             else:
-                bandwidths = np.ones(self.D)
+                bandwidths = np.ones(self.input_dim)
         else:
             self.Nparam = 3
             if frequencies is not None:
@@ -54,8 +54,8 @@ class rbfcos(kernpart):
         assert x.size==(self.Nparam)
         if self.ARD:
             self.variance = x[0]
-            self.frequencies = x[1:1+self.D]
-            self.bandwidths = x[1+self.D:]
+            self.frequencies = x[1:1+self.input_dim]
+            self.bandwidths = x[1+self.input_dim:]
         else:
             self.variance, self.frequencies, self.bandwidths = x
 
@@ -63,7 +63,7 @@ class rbfcos(kernpart):
         if self.Nparam == 3:
             return ['variance','frequency','bandwidth']
         else:
-            return ['variance']+['frequency_%i'%i for i in range(self.D)]+['bandwidth_%i'%i for i in range(self.D)]
+            return ['variance']+['frequency_%i'%i for i in range(self.input_dim)]+['bandwidth_%i'%i for i in range(self.input_dim)]
 
     def K(self,X,X2,target):
         self._K_computations(X,X2)
@@ -76,9 +76,9 @@ class rbfcos(kernpart):
         self._K_computations(X,X2)
         target[0] += np.sum(dL_dK*self._dvar)
         if self.ARD:
-            for q in xrange(self.D):
+            for q in xrange(self.input_dim):
                 target[q+1] += -2.*np.pi*self.variance*np.sum(dL_dK*self._dvar*np.tan(2.*np.pi*self._dist[:,:,q]*self.frequencies[q])*self._dist[:,:,q])
-                target[q+1+self.D] += -2.*np.pi**2*self.variance*np.sum(dL_dK*self._dvar*self._dist2[:,:,q])
+                target[q+1+self.input_dim] += -2.*np.pi**2*self.variance*np.sum(dL_dK*self._dvar*self._dist2[:,:,q])
         else:
             target[1] += -2.*np.pi*self.variance*np.sum(dL_dK*self._dvar*np.sum(np.tan(2.*np.pi*self._dist*self.frequencies)*self._dist,-1))
             target[2] += -2.*np.pi**2*self.variance*np.sum(dL_dK*self._dvar*self._dist2.sum(-1))
@@ -100,7 +100,7 @@ class rbfcos(kernpart):
             self._X = X.copy()
             self._X2 = X2.copy()
 
-            #do the distances: this will be high memory for large D
+            #do the distances: this will be high memory for large input_dim
             #NB: we don't take the abs of the dist because cos is symmetric
             self._dist = X[:,None,:] - X2[None,:,:]
             self._dist2 = np.square(self._dist)

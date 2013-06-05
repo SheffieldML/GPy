@@ -14,10 +14,10 @@ class Matern32(kernpart):
 
     .. math::
 
-       k(r) = \\sigma^2 (1 + \\sqrt{3} r) \exp(- \sqrt{3} r) \\ \\ \\ \\  \\text{ where  } r = \sqrt{\sum_{i=1}^D \\frac{(x_i-y_i)^2}{\ell_i^2} }
+       k(r) = \\sigma^2 (1 + \\sqrt{3} r) \exp(- \sqrt{3} r) \\ \\ \\ \\  \\text{ where  } r = \sqrt{\sum_{i=1}^input_dim \\frac{(x_i-y_i)^2}{\ell_i^2} }
 
-    :param D: the number of input dimensions
-    :type D: int
+    :param input_dim: the number of input dimensions
+    :type input_dim: int
     :param variance: the variance :math:`\sigma^2`
     :type variance: float
     :param lengthscale: the vector of lengthscale :math:`\ell_i`
@@ -28,8 +28,8 @@ class Matern32(kernpart):
 
     """
 
-    def __init__(self,D,variance=1.,lengthscale=None,ARD=False):
-        self.D = D
+    def __init__(self,input_dim,variance=1.,lengthscale=None,ARD=False):
+        self.input_dim = input_dim
         self.ARD = ARD
         if ARD == False:
             self.Nparam = 2
@@ -40,13 +40,13 @@ class Matern32(kernpart):
             else:
                 lengthscale = np.ones(1)
         else:
-            self.Nparam = self.D + 1
+            self.Nparam = self.input_dim + 1
             self.name = 'Mat32'
             if lengthscale is not None:
                 lengthscale = np.asarray(lengthscale)
-                assert lengthscale.size == self.D, "bad number of lengthscales"
+                assert lengthscale.size == self.input_dim, "bad number of lengthscales"
             else:
-                lengthscale = np.ones(self.D)
+                lengthscale = np.ones(self.input_dim)
         self._set_params(np.hstack((variance,lengthscale.flatten())))
 
     def _get_params(self):
@@ -111,7 +111,7 @@ class Matern32(kernpart):
 
     def Gram_matrix(self,F,F1,F2,lower,upper):
         """
-        Return the Gram matrix of the vector of functions F with respect to the RKHS norm. The use of this function is limited to D=1.
+        Return the Gram matrix of the vector of functions F with respect to the RKHS norm. The use of this function is limited to input_dim=1.
 
         :param F: vector of functions
         :type F: np.array
@@ -122,7 +122,7 @@ class Matern32(kernpart):
         :param lower,upper: boundaries of the input domain
         :type lower,upper: floats
         """
-        assert self.D == 1
+        assert self.input_dim == 1
         def L(x,i):
             return(3./self.lengthscale**2*F[i](x) + 2*np.sqrt(3)/self.lengthscale*F1[i](x) + F2[i](x))
         n = F.shape[0]

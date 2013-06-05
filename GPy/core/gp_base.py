@@ -13,7 +13,7 @@ class GPBase(model.model):
     def __init__(self, X, likelihood, kernel, normalize_X=False):
         self.X = X
         assert len(self.X.shape) == 2
-        self.N, self.Q = self.X.shape
+        self.N, self.input_dim = self.X.shape
         assert isinstance(kernel, kern.kern)
         self.kern = kernel
         self.likelihood = likelihood
@@ -25,8 +25,8 @@ class GPBase(model.model):
             self._Xstd = X.std(0)[None, :]
             self.X = (X.copy() - self._Xmean) / self._Xstd
         else:
-            self._Xmean = np.zeros((1,self.Q))
-            self._Xstd = np.ones((1,self.Q))
+            self._Xmean = np.zeros((1,self.input_dim))
+            self._Xstd = np.ones((1,self.input_dim))
 
         model.model.__init__(self)
 

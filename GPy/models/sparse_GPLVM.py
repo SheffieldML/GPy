@@ -17,25 +17,25 @@ class sparse_GPLVM(sparse_GP_regression, GPLVM):
 
     :param Y: observed data
     :type Y: np.ndarray
-    :param Q: latent dimensionality
-    :type Q: int
+    :param input_dim: latent dimensionality
+    :type input_dim: int
     :param init: initialisation method for the latent space
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, Y, Q, kernel=None, init='PCA', M=10):
-        X = self.initialise_latent(init, Q, Y)
+    def __init__(self, Y, input_dim, kernel=None, init='PCA', M=10):
+        X = self.initialise_latent(init, input_dim, Y)
         sparse_GP_regression.__init__(self, X, Y, kernel=kernel,M=M)
 
     def _get_param_names(self):
-        return (sum([['X_%i_%i'%(n,q) for q in range(self.Q)] for n in range(self.N)],[])
+        return (sum([['X_%i_%i'%(n,q) for q in range(self.input_dim)] for n in range(self.N)],[])
                 + sparse_GP_regression._get_param_names(self))
 
     def _get_params(self):
         return np.hstack((self.X.flatten(), sparse_GP_regression._get_params(self)))
 
     def _set_params(self,x):
-        self.X = x[:self.X.size].reshape(self.N,self.Q).copy()
+        self.X = x[:self.X.size].reshape(self.N,self.input_dim).copy()
         sparse_GP_regression._set_params(self, x[self.X.size:])
 
     def log_likelihood(self):

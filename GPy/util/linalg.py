@@ -24,7 +24,7 @@ try:
 except:
     _blas_available = False
 
-def dtrtrs(A, B, lower=0, trans=0, unitdiag=0, overwrite_b=0):
+def dtrtrs(A, B, lower=0, trans=0, unitdiag=0):
     """Wrapper for lapack dtrtrs function
 
     :param A: Matrix A
@@ -32,9 +32,9 @@ def dtrtrs(A, B, lower=0, trans=0, unitdiag=0, overwrite_b=0):
     :param lower: is matrix lower (true) or upper (false)
     :returns:
     """
-    return lapack.dtrtrs(A, B, lower=lower, trans=trans, unitdiag=unitdiag, overwrite_b=overwrite_b)
+    return lapack.dtrtrs(A, B, lower=lower, trans=trans, unitdiag=unitdiag)
 
-def dpotrs(A, B, lower=0, overwrite_b=0):
+def dpotrs(A, B, lower=0):
     """Wrapper for lapack dpotrs function
 
     :param A: Matrix A
@@ -42,16 +42,16 @@ def dpotrs(A, B, lower=0, overwrite_b=0):
     :param lower: is matrix lower (true) or upper (false)
     :returns:
     """
-    return lapack.dpotrs(A, B, lower=lower, overwrite_b=overwrite_b)
+    return lapack.dpotrs(A, B, lower=lower)
 
-def dpotri(A, lower=0, overwrite_b=0):
+def dpotri(A, lower=0):
     """Wrapper for lapack dpotri function
 
     :param A: Matrix A
     :param lower: is matrix lower (true) or upper (false)
     :returns:
     """
-    return lapack.dpotri(A, lower=lower, overwrite_b=overwrite_b)
+    return lapack.dpotri(A, lower=lower)
 
 def trace_dot(a, b):
     """

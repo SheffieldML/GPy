@@ -13,7 +13,7 @@ from ctypes import byref, c_char, c_int, c_double # TODO
 # import scipy.lib.lapack
 import scipy
 
-if np.all(np.float64((scipy.__version__).split('.')[:2]) >= np.array([0, 10])):
+if np.all(np.float64((scipy.__version__).split('.')[:2]) >= np.array([0, 12])):
     import scipy.linalg.lapack as lapack
 else:
     import scipy.linalg.lapack.flapack as lapack

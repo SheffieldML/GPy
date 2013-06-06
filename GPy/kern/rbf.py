@@ -96,13 +96,13 @@ class rbf(Kernpart):
             var_len3 = self.variance / np.power(self.lengthscale, 3)
             if X2 is None:
                 # save computation for the symmetrical case
-                dvardLdK += dvardLdK.T
+                dvardLdK = dvardLdK + dvardLdK.T
                 code = """
                 int q,i,j;
                 double tmp;
                 for(q=0; q<input_dim; q++){
                   tmp = 0;
-                  for(i=0; i<N; i++){
+                  for(i=0; i<num_data; i++){
                     for(j=0; j<i; j++){
                       tmp += (X(i,q)-X(j,q))*(X(i,q)-X(j,q))*dvardLdK(i,j);
                     }
@@ -110,14 +110,15 @@ class rbf(Kernpart):
                   target(q+1) += var_len3(q)*tmp;
                 }
                 """
-                N, num_inducing, input_dim = X.shape[0], X.shape[0], self.input_dim
+                num_data, num_inducing, input_dim = X.shape[0], X.shape[0], self.input_dim
+                weave.inline(code, arg_names=['num_data','num_inducing','input_dim','X','X2','target','dvardLdK','var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
             else:
                 code = """
                 int q,i,j;
                 double tmp;
                 for(q=0; q<input_dim; q++){
                   tmp = 0;
-                  for(i=0; i<N; i++){
+                  for(i=0; i<num_data; i++){
                     for(j=0; j<num_inducing; j++){
                       tmp += (X(i,q)-X2(j,q))*(X(i,q)-X2(j,q))*dvardLdK(i,j);
                     }
@@ -125,10 +126,9 @@ class rbf(Kernpart):
                   target(q+1) += var_len3(q)*tmp;
                 }
                 """
-                N, num_inducing, input_dim = X.shape[0], X2.shape[0], self.input_dim
-            # [np.add(target[1+q:2+q],var_len3[q]*np.sum(dvardLdK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.input_dim)]
-            weave.inline(code, arg_names=['N','num_inducing','input_dim','X','X2','target','dvardLdK','var_len3'],
-                 type_converters=weave.converters.blitz, **self.weave_options)
+                num_data, num_inducing, input_dim = X.shape[0], X2.shape[0], self.input_dim
+                #[np.add(target[1+q:2+q],var_len3[q]*np.sum(dvardLdK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.input_dim)]
+                weave.inline(code, arg_names=['num_data','num_inducing','input_dim','X','X2','target','dvardLdK','var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
         else:
             target[1] += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)
 

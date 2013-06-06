@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib as mpl
 import time
 import Image
-import visual
+#import visual
 
 class data_show:
     """

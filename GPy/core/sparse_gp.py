@@ -236,7 +236,7 @@ class SparseGP(GPBase):
         else:
             # assert which_p.Tarts=='all', "swithching out parts of variational kernels is not implemented"
             Kx = self.kern.psi1(self.Z, Xnew, X_variance_new) # , which_parts=which_parts) TODO: which_parts
-            mu = np.dot(Kx.T, self.Cpsi1V)
+            mu = np.dot(Kx, self.Cpsi1V)
             if full_cov:
                 raise NotImplementedError, "TODO"
             else:

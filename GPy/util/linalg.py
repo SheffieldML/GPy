@@ -21,6 +21,8 @@ else:
 try:
     _blaslib = ctypes.cdll.LoadLibrary(np.core._dotblas.__file__) # @UndefinedVariable
     _blas_available = True
+    assert hasattr('dsyrk_',_blaslib)
+    assert hasattr('dsyr_',_blaslib)
 except:
     _blas_available = False
 

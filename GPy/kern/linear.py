@@ -98,7 +98,7 @@ class linear(Kernpart):
             target += tmp.sum()
 
     def dK_dX(self, dL_dK, X, X2, target):
-        target += (((X2[:, None, :] * self.variances)) * dL_dK[:, :, None]).sum(0)
+        target += (((X2[None,:, :] * self.variances)) * dL_dK[:, :, None]).sum(1)
 
     def dKdiag_dX(self,dL_dKdiag,X,target):
         target += 2.*self.variances*dL_dKdiag[:,None]*X
@@ -134,7 +134,7 @@ class linear(Kernpart):
     def dpsi1_dmuS(self, dL_dpsi1, Z, mu, S, target_mu, target_S):
         """Do nothing for S, it does not affect psi1"""
         self._psi_computations(Z, mu, S)
-        target_mu += (dL_dpsi1.T[:, :, None] * (Z * self.variances)).sum(1)
+        target_mu += (dL_dpsi1[:, :, None] * (Z * self.variances)).sum(1)
 
     def dpsi1_dZ(self, dL_dpsi1, Z, mu, S, target):
         self.dK_dX(dL_dpsi1.T, Z, mu, target)

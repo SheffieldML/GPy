@@ -54,11 +54,11 @@ class SparseGP(GPBase):
         self.Kmm = self.kern.K(self.Z)
         if self.has_uncertain_inputs:
             self.psi0 = self.kern.psi0(self.Z, self.X, self.X_variance)
-            self.psi1 = self.kern.psi1(self.Z, self.X, self.X_variance).T
+            self.psi1 = self.kern.psi1(self.Z, self.X, self.X_variance)
             self.psi2 = self.kern.psi2(self.Z, self.X, self.X_variance)
         else:
             self.psi0 = self.kern.Kdiag(self.X)
-            self.psi1 = self.kern.K(self.Z, self.X)
+            self.psi1 = self.kern.K(self.X, self.Z)
             self.psi2 = None
 
     def _computations(self):
@@ -75,12 +75,13 @@ class SparseGP(GPBase):
             evals, evecs = linalg.eigh(psi2_beta)
             clipped_evals = np.clip(evals, 0., 1e6) # TODO: make clipping configurable
             tmp = evecs * np.sqrt(clipped_evals)
+            tmp = tmp.T
         else:
             if self.likelihood.is_heteroscedastic:
-                tmp = self.psi1 * (np.sqrt(self.likelihood.precision.flatten().reshape(1, self.num_data)))
+                tmp = self.psi1 * (np.sqrt(self.likelihood.precision.flatten().reshape(self.num_data,1)))
             else:
                 tmp = self.psi1 * (np.sqrt(self.likelihood.precision))
-        tmp, _ = dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
+        tmp, _ = dtrtrs(self.Lm, np.asfortranarray(tmp.T), lower=1)
         self.A = tdot(tmp)
 
 
@@ -89,7 +90,7 @@ class SparseGP(GPBase):
         self.LB = jitchol(self.B)
 
         # TODO: make a switch for either first compute psi1V, or VV.T
-        self.psi1V = np.dot(self.psi1, self.likelihood.V)
+        self.psi1V = np.dot(self.psi1.T, self.likelihood.V)
 
         # back substutue C into psi1V
         tmp, info1 = dtrtrs(self.Lm, np.asfortranarray(self.psi1V), lower=1, trans=0)
@@ -107,14 +108,14 @@ class SparseGP(GPBase):
 
         # Compute dL_dpsi # FIXME: this is untested for the heterscedastic + uncertain inputs case
         self.dL_dpsi0 = -0.5 * self.output_dim * (self.likelihood.precision * np.ones([self.num_data, 1])).flatten()
-        self.dL_dpsi1 = np.dot(self.Cpsi1V, self.likelihood.V.T)
+        self.dL_dpsi1 = np.dot(self.Cpsi1V, self.likelihood.V.T).T
         dL_dpsi2_beta = 0.5 * backsub_both_sides(self.Lm, self.output_dim * np.eye(self.num_inducing) - self.DBi_plus_BiPBi)
 
         if self.likelihood.is_heteroscedastic:
             if self.has_uncertain_inputs:
                 self.dL_dpsi2 = self.likelihood.precision.flatten()[:, None, None] * dL_dpsi2_beta[None, :, :]
             else:
-                self.dL_dpsi1 += 2.*np.dot(dL_dpsi2_beta, self.psi1 * self.likelihood.precision.reshape(1, self.num_data))
+                self.dL_dpsi1 += 2.*np.dot(dL_dpsi2_beta, (self.psi1 * self.likelihood.precision.reshape(self.num_data, 1)).T).T
                 self.dL_dpsi2 = None
         else:
             dL_dpsi2 = self.likelihood.precision * dL_dpsi2_beta
@@ -123,7 +124,7 @@ class SparseGP(GPBase):
                 self.dL_dpsi2 = np.repeat(dL_dpsi2[None, :, :], self.num_data, axis=0)
             else:
                 # subsume back into psi1 (==Kmn)
-                self.dL_dpsi1 += 2.*np.dot(dL_dpsi2, self.psi1)
+                self.dL_dpsi1 += 2.*np.dot(self.psi1, dL_dpsi2)
                 self.dL_dpsi2 = None
 
 
@@ -179,10 +180,10 @@ class SparseGP(GPBase):
                 Kmmi = tdot(Lmi.T)
                 diag_tr_psi2Kmmi = np.array([np.trace(psi2_Kmmi) for psi2_Kmmi in np.dot(self.psi2, Kmmi)])
 
-                self.likelihood.fit_FITC(self.Kmm, self.psi1, diag_tr_psi2Kmmi) # This uses the fit_FITC code, but does not perfomr a FITC-EP.#TODO solve potential confusion
+                self.likelihood.fit_FITC(self.Kmm, self.psi1.T, diag_tr_psi2Kmmi) # This uses the fit_FITC code, but does not perfomr a FITC-EP.#TODO solve potential confusion
                 # raise NotImplementedError, "EP approximation not implemented for uncertain inputs"
             else:
-                self.likelihood.fit_DTC(self.Kmm, self.psi1)
+                self.likelihood.fit_DTC(self.Kmm, self.psi1.T)
                 # self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
                 self._set_params(self._get_params()) # update the GP
 
@@ -196,10 +197,10 @@ class SparseGP(GPBase):
         dL_dtheta = self.kern.dK_dtheta(self.dL_dKmm, self.Z)
         if self.has_uncertain_inputs:
             dL_dtheta += self.kern.dpsi0_dtheta(self.dL_dpsi0, self.Z, self.X, self.X_variance)
-            dL_dtheta += self.kern.dpsi1_dtheta(self.dL_dpsi1.T, self.Z, self.X, self.X_variance)
+            dL_dtheta += self.kern.dpsi1_dtheta(self.dL_dpsi1, self.Z, self.X, self.X_variance)
             dL_dtheta += self.kern.dpsi2_dtheta(self.dL_dpsi2, self.Z, self.X, self.X_variance)
         else:
-            dL_dtheta += self.kern.dK_dtheta(self.dL_dpsi1, self.Z, self.X)
+            dL_dtheta += self.kern.dK_dtheta(self.dL_dpsi1, self.X, self.Z)
             dL_dtheta += self.kern.dKdiag_dtheta(self.dL_dpsi0, self.X)
 
         return dL_dtheta
@@ -213,7 +214,7 @@ class SparseGP(GPBase):
             dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1, self.Z, self.X, self.X_variance)
             dL_dZ += self.kern.dpsi2_dZ(self.dL_dpsi2, self.Z, self.X, self.X_variance)
         else:
-            dL_dZ += self.kern.dK_dX(self.dL_dpsi1, self.Z, self.X)
+            dL_dZ += self.kern.dK_dX(self.dL_dpsi1.T, self.Z, self.X)
         return dL_dZ
 
     def _raw_predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
@@ -233,9 +234,9 @@ class SparseGP(GPBase):
                 Kxx = self.kern.Kdiag(Xnew, which_parts=which_parts)
                 var = Kxx - np.sum(Kx * np.dot(Kmmi_LmiBLmi, Kx), 0)
         else:
-            # assert which_parts=='all', "swithching out parts of variational kernels is not implemented"
+            # assert which_p.Tarts=='all', "swithching out parts of variational kernels is not implemented"
             Kx = self.kern.psi1(self.Z, Xnew, X_variance_new) # , which_parts=which_parts) TODO: which_parts
-            mu = np.dot(Kx, self.Cpsi1V)
+            mu = np.dot(Kx.T, self.Cpsi1V)
             if full_cov:
                 raise NotImplementedError, "TODO"
             else:

@@ -360,9 +360,7 @@ class kern(Parameterised):
                 raise NotImplementedError("We don't handle linear/linear cross-terms")
             tmp = np.zeros((mu.shape[0], Z.shape[0]))
             p1.psi1(Z, mu, S, tmp)
-            tmp2 = np.zeros_like(target)
-            p2.dpsi1_dZ((tmp[:, None, :] * dL_dpsi2).sum(1).T, Z, mu, S, tmp2)
-            target += tmp2
+            p2.dpsi1_dZ((tmp[:, None, :] * dL_dpsi2).sum(1), Z, mu, S, target)
 
         return target * 2
 
@@ -378,7 +376,7 @@ class kern(Parameterised):
 
             tmp = np.zeros((mu.shape[0], Z.shape[0]))
             p1.psi1(Z, mu, S, tmp)
-            p2.dpsi1_dmuS((tmp[:, None, :] * dL_dpsi2).sum(1).T * 2., Z, mu, S, target_mu, target_S)
+            p2.dpsi1_dmuS((tmp[:, None, :] * dL_dpsi2).sum(1) * 2., Z, mu, S, target_mu, target_S)
 
         return target_mu, target_S
 

@@ -35,32 +35,32 @@ def download_data(dataset_name=None):
                               'details' : """The three phase oil data used initially for demonstrating the Generative Topographic mapping.""",
                               'agreement' : None},
                       'brendan_faces' : {'url' : ['http://www.cs.nyu.edu/~roweis/data/'],
-                                         'files' [['frey_rawface.mat']],
+                                         'files': [['frey_rawface.mat']],
                                          'citation' : 'Frey, B. J., Colmenarez, A and Huang, T. S. Mixtures of Local Linear Subspaces for Face Recognition. Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition 1998, 32-37, June 1998. Computer Society Press, Los Alamitos, CA.',
                                          'details' : """A video of Brendan Frey's face popularized as a benchmark for visualization by the Locally Linear Embedding.""",
                                          'agreement': None}
                       }
 
 
-        print('Acquiring resource: ' + dataset_name)
-        # TODO, check resource is in dictionary!
-        dr = data_resources[dataset_name]
-        print('Details of data: ')
-        print(dr['details'])
-        if dr['citation']:
-            print('Please cite:')
-            print(dr['citation'])
-        if dr['agreement']:
-            print('You must also agree to the following:')
-            print(dr['agreement'])
-        print('Do you wish to proceed with the download? [yes/no]')
-        if prompt_user()==False:
-            return False
+    print('Acquiring resource: ' + dataset_name)
+    # TODO, check resource is in dictionary!
+    dr = data_resources[dataset_name]
+    print('Details of data: ')
+    print(dr['details'])
+    if dr['citation']:
+        print('Please cite:')
+        print(dr['citation'])
+    if dr['agreement']:
+        print('You must also agree to the following:')
+        print(dr['agreement'])
+    print('Do you wish to proceed with the download? [yes/no]')
+    if prompt_user()==False:
+        return False
 
-        for url, files in zip(dr['urls'], dr['files']):
-            for file in files:
-                download_resource(url + file)
-        return True
+    for url, files in zip(dr['urls'], dr['files']):
+        for file in files:
+            download_resource(url + file)
+    return True
                   
 
         
@@ -112,7 +112,9 @@ def simulation_BGPLVM():
 
 # The data sets
 def oil():
-    download_data('oil')
+    #if download_data('oil'):
+    oil_train_file = os.path.join(data_path, 'oil', 'DataTrn.txt')
+    oil_trainlbls_file = os.path.join(data_path, 'oil', 'DataTrnLbls.txt')
     fid = open(oil_train_file)
     X = np.fromfile(fid, sep='\t').reshape((-1, 12))
     fid.close()
@@ -120,7 +122,9 @@ def oil():
     Y = np.fromfile(fid, sep='\t').reshape((-1, 3)) * 2. - 1.
     fid.close()
     return {'X': X, 'Y': Y, 'info': "The oil data from Bishop and James (1993)."}
-
+    #else:
+    # throw an error
+    
 def oil_100(seed=default_seed):
     np.random.seed(seed=seed)
     data = oil()
@@ -167,10 +171,13 @@ def silhouette():
     return {'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'info': "Artificial silhouette simulation data developed from Agarwal and Triggs (2004)."}
 
 def stick():
+    #if download_data('stick'):
     Y, connect = GPy.util.mocap.load_text_data('run1', data_path)
     Y = Y[0:-1:4, :]
     lbls = 'connect'
     return {'Y': Y, 'connect' : connect, 'info': "Stick man data from Ohio."}
+    # else:
+    # throw an error.
 
 def swiss_roll_generated(N=1000, sigma=0.0):
     with open(os.path.join(data_path, 'swiss_roll.pickle')) as f:

@@ -33,8 +33,8 @@ class GP(GPBase):
         self._set_params(self._get_params())
 
     def _set_params(self, p):
-        self.kern._set_params_transformed(p[:self.kern.Nparam_transformed()])
-        self.likelihood._set_params(p[self.kern.Nparam_transformed():])
+        self.kern._set_params_transformed(p[:self.kern.num_params_transformed()])
+        self.likelihood._set_params(p[self.kern.num_params_transformed():])
 
         self.K = self.kern.K(self.X)
         self.K += self.likelihood.covariance_matrix
@@ -46,12 +46,12 @@ class GP(GPBase):
             #alpha = np.dot(self.Ki, self.likelihood.Y)
             alpha,_ = linalg.lapack.flapack.dpotrs(self.L, self.likelihood.Y,lower=1)
 
-            self.dL_dK = 0.5 * (tdot(alpha) - self.D * self.Ki)
+            self.dL_dK = 0.5 * (tdot(alpha) - self.output_dim * self.Ki)
         else:
             #tmp = mdot(self.Ki, self.likelihood.YYT, self.Ki)
             tmp, _ = linalg.lapack.flapack.dpotrs(self.L, np.asfortranarray(self.likelihood.YYT), lower=1)
             tmp, _ = linalg.lapack.flapack.dpotrs(self.L, np.asfortranarray(tmp.T), lower=1)
-            self.dL_dK = 0.5 * (tmp - self.D * self.Ki)
+            self.dL_dK = 0.5 * (tmp - self.output_dim * self.Ki)
 
     def _get_params(self):
         return np.hstack((self.kern._get_params_transformed(), self.likelihood._get_params()))
@@ -67,6 +67,7 @@ class GP(GPBase):
         For a Gaussian likelihood, no iteration is required:
         this function does nothing
         """
+        self.likelihood.restart()
         self.likelihood.fit_full(self.kern.K(self.X))
         self._set_params(self._get_params())  # update the GP
 
@@ -89,7 +90,7 @@ class GP(GPBase):
         model for a new variable Y* = v_tilde/tau_tilde, with a covariance
         matrix K* = K + diag(1./tau_tilde) plus a normalization term.
         """
-        return -0.5 * self.D * self.K_logdet + self._model_fit_term() + self.likelihood.Z
+        return -0.5 * self.output_dim * self.K_logdet + self._model_fit_term() + self.likelihood.Z
 
 
     def _log_likelihood_gradients(self):
@@ -117,7 +118,7 @@ class GP(GPBase):
             var = Kxx - np.sum(np.multiply(KiKx, Kx), 0)
             var = var[:, None]
         if stop:
-            debug_this
+            debug_this # @UndefinedVariable
         return mu, var
 
     def predict(self, Xnew, which_parts='all', full_cov=False):
@@ -126,22 +127,22 @@ class GP(GPBase):
         Arguments
         ---------
         :param Xnew: The points at which to make a prediction
-        :type Xnew: np.ndarray, Nnew x self.Q
+        :type Xnew: np.ndarray, Nnew x self.input_dim
         :param which_parts:  specifies which outputs kernel(s) to use in prediction
         :type which_parts: ('all', list of bools)
         :param full_cov: whether to return the folll covariance matrix, or just the diagonal
         :type full_cov: bool
-        :rtype: posterior mean,  a Numpy array, Nnew x self.D
+        :rtype: posterior mean,  a Numpy array, Nnew x self.input_dim
         :rtype: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
-        :rtype: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.D
+        :rtype: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
 
 
-           If full_cov and self.D > 1, the return shape of var is Nnew x Nnew x self.D. If self.D == 1, the return shape is Nnew x Nnew.
+           If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
            This is to allow for different normalizations of the output dimensions.
 
         """
         # normalize X values
-        Xnew = (Xnew.copy() - self._Xmean) / self._Xstd
+        Xnew = (Xnew.copy() - self._Xoffset) / self._Xscale
         mu, var = self._raw_predict(Xnew, full_cov=full_cov, which_parts=which_parts)
 
         # now push through likelihood

@@ -4,23 +4,23 @@ from ..util.linalg import pdinv,mdot,jitchol,chol_inv,DSYR,tdot
 from likelihood import likelihood
 
 class EP(likelihood):
-    def __init__(self,data,likelihood_function,epsilon=1e-3,power_ep=[1.,1.]):
+    def __init__(self,data,LikelihoodFunction,epsilon=1e-3,power_ep=[1.,1.]):
         """
         Expectation Propagation
 
         Arguments
         ---------
         epsilon : Convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
-        likelihood_function : a likelihood function (see likelihood_functions.py)
+        LikelihoodFunction : a likelihood function (see likelihood_functions.py)
         """
-        self.likelihood_function = likelihood_function
+        self.LikelihoodFunction = LikelihoodFunction
         self.epsilon = epsilon
         self.eta, self.delta = power_ep
         self.data = data
-        self.N, self.D = self.data.shape
+        self.N, self.output_dim = self.data.shape
         self.is_heteroscedastic = True
         self.Nparams = 0
-        self._transf_data = self.likelihood_function._preprocess_values(data)
+        self._transf_data = self.LikelihoodFunction._preprocess_values(data)
 
         #Initial values - Likelihood approximation parameters:
         #p(y|f) = t(f|tau_tilde,v_tilde)
@@ -48,7 +48,7 @@ class EP(likelihood):
     def predictive_values(self,mu,var,full_cov):
         if full_cov:
             raise NotImplementedError, "Cannot make correlated predictions with an EP likelihood"
-        return self.likelihood_function.predictive_values(mu,var)
+        return self.LikelihoodFunction.predictive_values(mu,var)
 
     def _get_params(self):
         return np.zeros(0)
@@ -110,7 +110,7 @@ class EP(likelihood):
                 self.tau_[i] = 1./Sigma[i,i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = mu[i]/Sigma[i,i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood_function.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.LikelihoodFunction.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma[i,i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma[i,i])
@@ -139,7 +139,7 @@ class EP(likelihood):
         The expectation-propagation algorithm with sparse pseudo-input.
         For nomenclature see ... 2013.
         """
-        M = Kmm.shape[0]
+        num_inducing = Kmm.shape[0]
 
         #TODO: this doesn't work with uncertain inputs!
 
@@ -200,7 +200,7 @@ class EP(likelihood):
                 self.tau_[i] = 1./Sigma_diag[i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = mu[i]/Sigma_diag[i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood_function.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.LikelihoodFunction.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma_diag[i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma_diag[i])
@@ -235,7 +235,7 @@ class EP(likelihood):
         The expectation-propagation algorithm with sparse pseudo-input.
         For nomenclature see Naish-Guzman and Holden, 2008.
         """
-        M = Kmm.shape[0]
+        num_inducing = Kmm.shape[0]
 
         """
         Prior approximation parameters:
@@ -258,7 +258,7 @@ class EP(likelihood):
         mu = w + P*Gamma
         """
         self.w = np.zeros(self.N)
-        self.Gamma = np.zeros(M)
+        self.Gamma = np.zeros(num_inducing)
         mu = np.zeros(self.N)
         P = P0.copy()
         R = R0.copy()
@@ -295,7 +295,7 @@ class EP(likelihood):
                 self.tau_[i] = 1./Sigma_diag[i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = mu[i]/Sigma_diag[i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood_function.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.LikelihoodFunction.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma_diag[i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma_diag[i])
@@ -305,10 +305,10 @@ class EP(likelihood):
                 dtd1 = Delta_tau*Diag[i] + 1.
                 dii = Diag[i]
                 Diag[i] = dii - (Delta_tau * dii**2.)/dtd1
-                pi_ = P[i,:].reshape(1,M)
+                pi_ = P[i,:].reshape(1,num_inducing)
                 P[i,:] = pi_ - (Delta_tau*dii)/dtd1 * pi_
                 Rp_i = np.dot(R,pi_.T)
-                RTR = np.dot(R.T,np.dot(np.eye(M) - Delta_tau/(1.+Delta_tau*Sigma_diag[i]) * np.dot(Rp_i,Rp_i.T),R))
+                RTR = np.dot(R.T,np.dot(np.eye(num_inducing) - Delta_tau/(1.+Delta_tau*Sigma_diag[i]) * np.dot(Rp_i,Rp_i.T),R))
                 R = jitchol(RTR).T
                 self.w[i] += (Delta_v - Delta_tau*self.w[i])*dii/dtd1
                 self.Gamma += (Delta_v - Delta_tau*mu[i])*np.dot(RTR,P[i,:].T)
@@ -321,7 +321,7 @@ class EP(likelihood):
             Diag = Diag0 * Iplus_Dprod_i
             P = Iplus_Dprod_i[:,None] * P0
             safe_diag = np.where(Diag0 < self.tau_tilde, self.tau_tilde/(1.+Diag0*self.tau_tilde), (1. - Iplus_Dprod_i)/Diag0)
-            L = jitchol(np.eye(M) + np.dot(RPT0,safe_diag[:,None]*RPT0.T))
+            L = jitchol(np.eye(num_inducing) + np.dot(RPT0,safe_diag[:,None]*RPT0.T))
             R,info = linalg.lapack.flapack.dtrtrs(L,R0,lower=1)
             RPT = np.dot(R,P.T)
             Sigma_diag = Diag + np.sum(RPT.T*RPT.T,-1)

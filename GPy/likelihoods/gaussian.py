@@ -15,7 +15,7 @@ class Gaussian(likelihood):
         self.is_heteroscedastic = False
         self.Nparams = 1
         self.Z = 0. # a correction factor which accounts for the approximation made
-        N, self.D = data.shape
+        N, self.output_dim = data.shape
 
         # normalization
         if normalize:
@@ -24,8 +24,8 @@ class Gaussian(likelihood):
             # Don't scale outputs which have zero variance to zero.
             self._scale[np.nonzero(self._scale == 0.)] = 1.0e-3
         else:
-            self._offset = np.zeros((1, self.D))
-            self._scale = np.ones((1, self.D))
+            self._offset = np.zeros((1, self.output_dim))
+            self._scale = np.ones((1, self.output_dim))
 
         self.set_data(data)
 
@@ -35,7 +35,7 @@ class Gaussian(likelihood):
     def set_data(self, data):
         self.data = data
         self.N, D = data.shape
-        assert D == self.D
+        assert D == self.output_dim
         self.Y = (self.data - self._offset) / self._scale
         if D > self.N:
             self.YYT = np.dot(self.Y, self.Y.T)
@@ -52,9 +52,9 @@ class Gaussian(likelihood):
 
     def _set_params(self, x):
         x = np.float64(x)
-        if self._variance != x:
+        if np.all(self._variance != x):
             if x == 0.:
-                self.precision = None
+                self.precision = np.inf
                 self.V = None
             else:
                 self.precision = 1. / x
@@ -68,9 +68,9 @@ class Gaussian(likelihood):
         """
         mean = mu * self._scale + self._offset
         if full_cov:
-            if self.D > 1:
+            if self.output_dim > 1:
                 raise NotImplementedError, "TODO"
-                # Note. for D>1, we need to re-normalise all the outputs independently.
+                # Note. for output_dim>1, we need to re-normalise all the outputs independently.
                 # This will mess up computations of diag(true_var), below.
                 # note that the upper, lower quantiles should be the same shape as mean
             # Augment the output variance with the likelihood variance and rescale.

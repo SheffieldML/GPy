@@ -2,21 +2,21 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import kernpart
+from kernpart import Kernpart
 import numpy as np
-from GPy.util.linalg import mdot, pdinv
+from GPy.util.linalg import mdot
 from GPy.util.decorators import silence_errors
 
-class periodic_Matern32(kernpart):
+class periodic_Matern32(Kernpart):
     """
-    Kernel of the periodic subspace (up to a given frequency) of a Matern 3/2 RKHS. Only defined for D=1.
+    Kernel of the periodic subspace (up to a given frequency) of a Matern 3/2 RKHS. Only defined for input_dim=1.
 
-    :param D: the number of input dimensions
-    :type D: int
+    :param input_dim: the number of input dimensions
+    :type input_dim: int
     :param variance: the variance of the Matern kernel
     :type variance: float
     :param lengthscale: the lengthscale of the Matern kernel
-    :type lengthscale: np.ndarray of size (D,)
+    :type lengthscale: np.ndarray of size (input_dim,)
     :param period: the period
     :type period: float
     :param n_freq: the number of frequencies considered for the periodic subspace
@@ -25,17 +25,17 @@ class periodic_Matern32(kernpart):
 
     """
 
-    def __init__(self,D=1,variance=1.,lengthscale=None,period=2*np.pi,n_freq=10,lower=0.,upper=4*np.pi):
-        assert D==1, "Periodic kernels are only defined for D=1"
+    def __init__(self, input_dim=1, variance=1., lengthscale=None, period=2 * np.pi, n_freq=10, lower=0., upper=4 * np.pi):
+        assert input_dim==1, "Periodic kernels are only defined for input_dim=1"
         self.name = 'periodic_Mat32'
-        self.D = D
+        self.input_dim = input_dim
         if lengthscale is not None:
             lengthscale = np.asarray(lengthscale)
             assert lengthscale.size == 1, "Wrong size: only one lengthscale needed"
         else:
             lengthscale = np.ones(1)
         self.lower,self.upper = lower, upper
-        self.Nparam = 3
+        self.num_params = 3
         self.n_freq = n_freq
         self.n_basis = 2*n_freq
         self._set_params(np.hstack((variance,lengthscale,period)))
@@ -64,7 +64,7 @@ class periodic_Matern32(kernpart):
     def _get_params(self):
         """return the value of the parameters."""
         return np.hstack((self.variance,self.lengthscale,self.period))
-    
+
     def _set_params(self,x):
         """set the value of the parameters."""
         assert x.size==3
@@ -113,7 +113,7 @@ class periodic_Matern32(kernpart):
 
     @silence_errors
     def dK_dtheta(self,dL_dK,X,X2,target):
-        """derivative of the covariance matrix with respect to the parameters (shape is NxMxNparam)"""
+        """derivative of the covariance matrix with respect to the parameters (shape is Nxnum_inducingxNparam)"""
         if X2 is None: X2 = X
         FX  = self._cos(self.basis_alpha[None,:],self.basis_omega[None,:],self.basis_phi[None,:])(X)
         FX2 = self._cos(self.basis_alpha[None,:],self.basis_omega[None,:],self.basis_phi[None,:])(X2)

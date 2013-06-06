@@ -11,7 +11,7 @@ class opt_SGD(Optimizer):
     Optimize using stochastic gradient descent.
 
     *** Parameters ***
-    model: reference to the model object
+    Model: reference to the Model object
     iterations: number of iterations
     learning_rate: learning rate
     momentum: momentum
@@ -21,7 +21,7 @@ class opt_SGD(Optimizer):
     def __init__(self, start, iterations = 10, learning_rate = 1e-4, momentum = 0.9, model = None, messages = False, batch_size = 1, self_paced = False, center = True, iteration_file = None, learning_rate_adaptation=None, actual_iter=None, schedule=None, **kwargs):
         self.opt_name = "Stochastic Gradient Descent"
 
-        self.model = model
+        self.Model = model
         self.iterations = iterations
         self.momentum = momentum
         self.learning_rate = learning_rate
@@ -52,7 +52,7 @@ class opt_SGD(Optimizer):
         self.param_traces = dict(self.param_traces)
         self.fopt_trace = []
 
-        num_params = len(self.model._get_params())
+        num_params = len(self.Model._get_params())
         if isinstance(self.learning_rate, float):
             self.learning_rate = np.ones((num_params,)) * self.learning_rate
 
@@ -84,7 +84,7 @@ class opt_SGD(Optimizer):
         return (np.isnan(data).sum(axis=1) == 0)
 
     def check_for_missing(self, data):
-        if sp.sparse.issparse(self.model.likelihood.Y):
+        if sp.sparse.issparse(self.Model.likelihood.Y):
             return True
         else:
             return np.isnan(data).sum() > 0
@@ -95,11 +95,11 @@ class opt_SGD(Optimizer):
         i = 0
 
         for s in param_shapes:
-            N, Q = s
-            X = x[i:i+N*Q].reshape(N, Q)
+            N, input_dim = s
+            X = x[i:i+N*input_dim].reshape(N, input_dim)
             X = X[samples]
             subset = np.append(subset, X.flatten())
-            i += N*Q
+            i += N*input_dim
 
         subset = np.append(subset, x[i:])
 
@@ -107,32 +107,32 @@ class opt_SGD(Optimizer):
 
     def shift_constraints(self, j):
 
-        constrained_indices = copy.deepcopy(self.model.constrained_indices)
+        constrained_indices = copy.deepcopy(self.Model.constrained_indices)
 
         for c, constraint in enumerate(constrained_indices):
             mask = (np.ones_like(constrained_indices[c]) == 1)
             for i in range(len(constrained_indices[c])):
                 pos = np.where(j == constrained_indices[c][i])[0]
                 if len(pos) == 1:
-                    self.model.constrained_indices[c][i] = pos
+                    self.Model.constrained_indices[c][i] = pos
                 else:
                     mask[i] = False
 
-            self.model.constrained_indices[c] = self.model.constrained_indices[c][mask]
+            self.Model.constrained_indices[c] = self.Model.constrained_indices[c][mask]
         return constrained_indices
         # back them up
-        # bounded_i = copy.deepcopy(self.model.constrained_bounded_indices)
-        # bounded_l = copy.deepcopy(self.model.constrained_bounded_lowers)
-        # bounded_u = copy.deepcopy(self.model.constrained_bounded_uppers)
+        # bounded_i = copy.deepcopy(self.Model.constrained_bounded_indices)
+        # bounded_l = copy.deepcopy(self.Model.constrained_bounded_lowers)
+        # bounded_u = copy.deepcopy(self.Model.constrained_bounded_uppers)
 
         # for b in range(len(bounded_i)): # for each group of constraints
         #     for bc in range(len(bounded_i[b])):
         #         pos = np.where(j == bounded_i[b][bc])[0]
         #         if len(pos) == 1:
-        #             pos2 = np.where(self.model.constrained_bounded_indices[b] == bounded_i[b][bc])[0][0]
-        #             self.model.constrained_bounded_indices[b][pos2] = pos[0]
+        #             pos2 = np.where(self.Model.constrained_bounded_indices[b] == bounded_i[b][bc])[0][0]
+        #             self.Model.constrained_bounded_indices[b][pos2] = pos[0]
         #         else:
-        #             if len(self.model.constrained_bounded_indices[b]) == 1:
+        #             if len(self.Model.constrained_bounded_indices[b]) == 1:
         #                 # if it's the last index to be removed
         #                 # the logic here is just a mess. If we remove the last one, then all the
         #                 # b-indices change and we have to iterate through everything to find our
@@ -140,76 +140,76 @@ class opt_SGD(Optimizer):
         #                 raise NotImplementedError
 
         #             else: # just remove it from the indices
-        #                 mask = self.model.constrained_bounded_indices[b] != bc
-        #                 self.model.constrained_bounded_indices[b] = self.model.constrained_bounded_indices[b][mask]
+        #                 mask = self.Model.constrained_bounded_indices[b] != bc
+        #                 self.Model.constrained_bounded_indices[b] = self.Model.constrained_bounded_indices[b][mask]
 
 
         # # here we shif the positive constraints. We cycle through each positive
         # # constraint
-        # positive = self.model.constrained_positive_indices.copy()
+        # positive = self.Model.constrained_positive_indices.copy()
         # mask = (np.ones_like(positive) == 1)
         # for p in range(len(positive)):
         #     # we now check whether the constrained index appears in the j vector
         #     # (the vector of the "active" indices)
-        #     pos = np.where(j == self.model.constrained_positive_indices[p])[0]
+        #     pos = np.where(j == self.Model.constrained_positive_indices[p])[0]
         #     if len(pos) == 1:
-        #         self.model.constrained_positive_indices[p] = pos
+        #         self.Model.constrained_positive_indices[p] = pos
         #     else:
         #         mask[p] = False
-        # self.model.constrained_positive_indices = self.model.constrained_positive_indices[mask]
+        # self.Model.constrained_positive_indices = self.Model.constrained_positive_indices[mask]
 
         # return (bounded_i, bounded_l, bounded_u), positive
 
     def restore_constraints(self, c):#b, p):
-        # self.model.constrained_bounded_indices = b[0]
-        # self.model.constrained_bounded_lowers = b[1]
-        # self.model.constrained_bounded_uppers = b[2]
-        # self.model.constrained_positive_indices = p
-        self.model.constrained_indices = c
+        # self.Model.constrained_bounded_indices = b[0]
+        # self.Model.constrained_bounded_lowers = b[1]
+        # self.Model.constrained_bounded_uppers = b[2]
+        # self.Model.constrained_positive_indices = p
+        self.Model.constrained_indices = c
 
-    def get_param_shapes(self, N = None, Q = None):
-        model_name = self.model.__class__.__name__
+    def get_param_shapes(self, N = None, input_dim = None):
+        model_name = self.Model.__class__.__name__
         if model_name == 'GPLVM':
-            return [(N, Q)]
+            return [(N, input_dim)]
         if model_name == 'Bayesian_GPLVM':
-            return [(N, Q), (N, Q)]
+            return [(N, input_dim), (N, input_dim)]
         else:
             raise NotImplementedError
 
     def step_with_missing_data(self, f_fp, X, step, shapes):
-        N, Q = X.shape
+        N, input_dim = X.shape
 
-        if not sp.sparse.issparse(self.model.likelihood.Y):
-            Y = self.model.likelihood.Y
-            samples = self.non_null_samples(self.model.likelihood.Y)
-            self.model.N = samples.sum()
+        if not sp.sparse.issparse(self.Model.likelihood.Y):
+            Y = self.Model.likelihood.Y
+            samples = self.non_null_samples(self.Model.likelihood.Y)
+            self.Model.N = samples.sum()
             Y = Y[samples]
         else:
-            samples = self.model.likelihood.Y.nonzero()[0]
-            self.model.N = len(samples)
-            Y = np.asarray(self.model.likelihood.Y[samples].todense(), dtype = np.float64)
+            samples = self.Model.likelihood.Y.nonzero()[0]
+            self.Model.N = len(samples)
+            Y = np.asarray(self.Model.likelihood.Y[samples].todense(), dtype = np.float64)
 
-        if self.model.N == 0 or Y.std() == 0.0:
-            return 0, step, self.model.N
+        if self.Model.N == 0 or Y.std() == 0.0:
+            return 0, step, self.Model.N
 
-        self.model.likelihood._offset = Y.mean()
-        self.model.likelihood._scale = Y.std()
-        self.model.likelihood.set_data(Y)
-        # self.model.likelihood.V = self.model.likelihood.Y*self.model.likelihood.precision
+        self.Model.likelihood._offset = Y.mean()
+        self.Model.likelihood._scale = Y.std()
+        self.Model.likelihood.set_data(Y)
+        # self.Model.likelihood.V = self.Model.likelihood.Y*self.Model.likelihood.precision
 
-        sigma = self.model.likelihood._variance
-        self.model.likelihood._variance = None # invalidate cache
-        self.model.likelihood._set_params(sigma)
+        sigma = self.Model.likelihood._variance
+        self.Model.likelihood._variance = None # invalidate cache
+        self.Model.likelihood._set_params(sigma)
 
 
         j = self.subset_parameter_vector(self.x_opt, samples, shapes)
-        self.model.X = X[samples]
+        self.Model.X = X[samples]
 
-        model_name = self.model.__class__.__name__
+        model_name = self.Model.__class__.__name__
 
         if model_name == 'Bayesian_GPLVM':
-            self.model.likelihood.YYT = np.dot(self.model.likelihood.Y, self.model.likelihood.Y.T)
-            self.model.likelihood.trYYT = np.trace(self.model.likelihood.YYT)
+            self.Model.likelihood.YYT = np.dot(self.Model.likelihood.Y, self.Model.likelihood.Y.T)
+            self.Model.likelihood.trYYT = np.trace(self.Model.likelihood.YYT)
 
         ci = self.shift_constraints(j)
         f, fp = f_fp(self.x_opt[j])
@@ -218,18 +218,18 @@ class opt_SGD(Optimizer):
         self.x_opt[j] -= step[j]
         self.restore_constraints(ci)
 
-        self.model.grads[j] = fp
+        self.Model.grads[j] = fp
         # restore likelihood _offset and _scale, otherwise when we call set_data(y) on
         # the next feature, it will get normalized with the mean and std of this one.
-        self.model.likelihood._offset = 0
-        self.model.likelihood._scale = 1
+        self.Model.likelihood._offset = 0
+        self.Model.likelihood._scale = 1
 
-        return f, step, self.model.N
+        return f, step, self.Model.N
 
     def adapt_learning_rate(self, t, D):
         if self.learning_rate_adaptation == 'adagrad':
             if t > 0:
-                g_k = self.model.grads
+                g_k = self.Model.grads
                 self.s_k += np.square(g_k)
                 t0 = 100.0
                 self.learning_rate = 0.1/(t0 + np.sqrt(self.s_k))
@@ -245,8 +245,8 @@ class opt_SGD(Optimizer):
 
 
         elif self.learning_rate_adaptation == 'semi_pesky':
-            if self.model.__class__.__name__ == 'Bayesian_GPLVM':
-                g_t = self.model.grads
+            if self.Model.__class__.__name__ == 'Bayesian_GPLVM':
+                g_t = self.Model.grads
                 if t == 0:
                     self.hbar_t = 0.0
                     self.tau_t = 100.0
@@ -259,28 +259,28 @@ class opt_SGD(Optimizer):
 
 
     def opt(self, f_fp=None, f=None, fp=None):
-        self.x_opt = self.model._get_params_transformed()
+        self.x_opt = self.Model._get_params_transformed()
         self.grads = []
 
-        X, Y = self.model.X.copy(), self.model.likelihood.Y.copy()
+        X, Y = self.Model.X.copy(), self.Model.likelihood.Y.copy()
 
-        self.model.likelihood.YYT = 0
-        self.model.likelihood.trYYT = 0
-        self.model.likelihood._offset = 0.0
-        self.model.likelihood._scale = 1.0
+        self.Model.likelihood.YYT = 0
+        self.Model.likelihood.trYYT = 0
+        self.Model.likelihood._offset = 0.0
+        self.Model.likelihood._scale = 1.0
 
-        N, Q = self.model.X.shape
-        D = self.model.likelihood.Y.shape[1]
-        num_params = self.model._get_params()
+        N, input_dim = self.Model.X.shape
+        D = self.Model.likelihood.Y.shape[1]
+        num_params = self.Model._get_params()
         self.trace = []
-        missing_data = self.check_for_missing(self.model.likelihood.Y)
+        missing_data = self.check_for_missing(self.Model.likelihood.Y)
 
         step = np.zeros_like(num_params)
         for it in range(self.iterations):
             if self.actual_iter != None:
                 it = self.actual_iter
 
-            self.model.grads = np.zeros_like(self.x_opt) # TODO this is ugly
+            self.Model.grads = np.zeros_like(self.x_opt) # TODO this is ugly
 
             if it == 0 or self.self_paced is False:
                 features = np.random.permutation(Y.shape[1])
@@ -292,29 +292,29 @@ class opt_SGD(Optimizer):
             NLL = []
             import pylab as plt
             for count, j in enumerate(features):
-                self.model.D = len(j)
-                self.model.likelihood.D = len(j)
-                self.model.likelihood.set_data(Y[:, j])
-                # self.model.likelihood.V = self.model.likelihood.Y*self.model.likelihood.precision
+                self.Model.input_dim = len(j)
+                self.Model.likelihood.input_dim = len(j)
+                self.Model.likelihood.set_data(Y[:, j])
+                # self.Model.likelihood.V = self.Model.likelihood.Y*self.Model.likelihood.precision
 
-                sigma = self.model.likelihood._variance
-                self.model.likelihood._variance = None # invalidate cache
-                self.model.likelihood._set_params(sigma)
+                sigma = self.Model.likelihood._variance
+                self.Model.likelihood._variance = None # invalidate cache
+                self.Model.likelihood._set_params(sigma)
 
                 if missing_data:
-                    shapes = self.get_param_shapes(N, Q)
+                    shapes = self.get_param_shapes(N, input_dim)
                     f, step, Nj = self.step_with_missing_data(f_fp, X, step, shapes)
                 else:
-                    self.model.likelihood.YYT = np.dot(self.model.likelihood.Y, self.model.likelihood.Y.T)
-                    self.model.likelihood.trYYT = np.trace(self.model.likelihood.YYT)
+                    self.Model.likelihood.YYT = np.dot(self.Model.likelihood.Y, self.Model.likelihood.Y.T)
+                    self.Model.likelihood.trYYT = np.trace(self.Model.likelihood.YYT)
                     Nj = N
                     f, fp = f_fp(self.x_opt)
-                    self.model.grads = fp.copy()
+                    self.Model.grads = fp.copy()
                     step = self.momentum * step + self.learning_rate * fp
                     self.x_opt -= step
 
                 if self.messages == 2:
-                    noise = self.model.likelihood._variance
+                    noise = self.Model.likelihood._variance
                     status = "evaluating {feature: 5d}/{tot: 5d} \t f: {f: 2.3f} \t non-missing: {nm: 4d}\t noise: {noise: 2.4f}\r".format(feature = count, tot = len(features), f = f, nm = Nj, noise = noise)
                     sys.stdout.write(status)
                     sys.stdout.flush()
@@ -328,19 +328,19 @@ class opt_SGD(Optimizer):
                 # plt.plot(self.param_traces['noise'])
 
                 # for k in self.param_traces.keys():
-                #     self.param_traces[k].append(self.model.get(k)[0])
-            self.grads.append(self.model.grads.tolist())
+                #     self.param_traces[k].append(self.Model.get(k)[0])
+            self.grads.append(self.Model.grads.tolist())
             # should really be a sum(), but earlier samples in the iteration will have a very crappy ll
             self.f_opt = np.mean(NLL)
-            self.model.N = N
-            self.model.X = X
-            self.model.D = D
-            self.model.likelihood.N = N
-            self.model.likelihood.D = D
-            self.model.likelihood.Y = Y
-            sigma = self.model.likelihood._variance
-            self.model.likelihood._variance = None # invalidate cache
-            self.model.likelihood._set_params(sigma)
+            self.Model.N = N
+            self.Model.X = X
+            self.Model.input_dim = D
+            self.Model.likelihood.N = N
+            self.Model.likelihood.input_dim = D
+            self.Model.likelihood.Y = Y
+            sigma = self.Model.likelihood._variance
+            self.Model.likelihood._variance = None # invalidate cache
+            self.Model.likelihood._set_params(sigma)
 
             self.trace.append(self.f_opt)
             if self.iteration_file is not None:

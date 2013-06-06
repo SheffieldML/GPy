@@ -13,8 +13,8 @@ First we import the libraries we will need ::
 
 For most kernels, the dimension is the only mandatory parameter to define a kernel object. However, it is also possible to specify the values of the parameters. For example, the three following commands are valid for defining a squared exponential kernel (ie rbf or Gaussian) ::
 
-    ker1 = GPy.kern.rbf(1)  # Equivalent to ker1 = GPy.kern.rbf(D=1, variance=1., lengthscale=1.)
-    ker2 = GPy.kern.rbf(D=1, variance = .75, lengthscale=2.)
+    ker1 = GPy.kern.rbf(1)  # Equivalent to ker1 = GPy.kern.rbf(input_dim=1, variance=1., lengthscale=1.)
+    ker2 = GPy.kern.rbf(input_dim=1, variance = .75, lengthscale=2.)
     ker3 = GPy.kern.rbf(1, .5, .5)
 
 A ``print`` and a ``plot`` functions are implemented to represent kernel objects. The commands ::
@@ -144,9 +144,9 @@ When calling one of these functions, the parameters to constrain can either by s
     k = k1 + k2 + k3
     print k
 
-    k.constrain_positive('var')
+    k.constrain_positive('.*var')
     k.constrain_fixed(np.array([1]),1.75)
-    k.tie_params('len')
+    k.tie_params('.*len')
     k.unconstrain('white')
     k.constrain_bounded('white',lower=1e-5,upper=.5)
     print k
@@ -212,7 +212,6 @@ Note the ties between the parameters of ``Kanova`` that reflect the links betwee
 
     # Create GP regression model
     m = GPy.models.GP_regression(X,Y,Kanova)
-    pb.figure(figsize=(5,5))
     m.plot()
 
 .. figure::  Figures/tuto_kern_overview_mANOVA.png
@@ -231,19 +230,19 @@ The submodels can be represented with the option ``which_function`` of ``plot``:
     
     pb.figure(figsize=(20,3))
     pb.subplots_adjust(wspace=0.5)
-    pb.subplot(1,5,1)
-    m.plot()
+    axs = pb.subplot(1,5,1)
+    m.plot(ax=axs)
     pb.subplot(1,5,2)
     pb.ylabel("=   ",rotation='horizontal',fontsize='30')
-    pb.subplot(1,5,3)
-    m.plot(which_parts=[False,True,False,False])
+    axs = pb.subplot(1,5,3)
+    m.plot(ax=axs, which_parts=[False,True,False,False])
     pb.ylabel("cst          +",rotation='horizontal',fontsize='30')
-    pb.subplot(1,5,4)
-    m.plot(which_parts=[False,False,True,False])
+    axs = pb.subplot(1,5,4)
+    m.plot(ax=axs, which_parts=[False,False,True,False])
     pb.ylabel("+   ",rotation='horizontal',fontsize='30')
-    pb.subplot(1,5,5)
+    axs = pb.subplot(1,5,5)
     pb.ylabel("+   ",rotation='horizontal',fontsize='30')
-    m.plot(which_parts=[False,False,False,True])
+    m.plot(ax=axs, which_parts=[False,False,False,True])
 
 ..  pb.savefig('tuto_kern_overview_mANOVAdec.png',bbox_inches='tight')
 

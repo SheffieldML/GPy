@@ -4,32 +4,31 @@
 
 import numpy as np
 import pylab as pb
-from ..core.parameterised import parameterised
-from kernpart import kernpart
+from ..core.parameterised import Parameterised
+from kernpart import Kernpart
 import itertools
 from prod import prod
-from ..util.linalg import symmetrify
 
-class kern(parameterised):
-    def __init__(self, D, parts=[], input_slices=None):
+class kern(Parameterised):
+    def __init__(self, input_dim, parts=[], input_slices=None):
         """
         This is the main kernel class for GPy. It handles multiple (additive) kernel functions, and keeps track of variaous things like which parameters live where.
 
         The technical code for kernels is divided into _parts_ (see e.g. rbf.py). This obnject contains a list of parts, which are computed additively. For multiplication, special _prod_ parts are used.
 
-        :param D: The dimensioality of the kernel's input space
-        :type D: int
+        :param input_dim: The dimensionality of the kernel's input space
+        :type input_dim: int
         :param parts: the 'parts' (PD functions) of the kernel
-        :type parts: list of kernpart objects
+        :type parts: list of Kernpart objects
         :param input_slices: the slices on the inputs which apply to each kernel
         :type input_slices: list of slice objects, or list of bools
 
         """
         self.parts = parts
         self.Nparts = len(parts)
-        self.Nparam = sum([p.Nparam for p in self.parts])
+        self.num_params = sum([p.num_params for p in self.parts])
 
-        self.D = D
+        self.input_dim = input_dim
 
         # deal with input_slices
         if input_slices is None:
@@ -39,11 +38,11 @@ class kern(parameterised):
             self.input_slices = [sl if type(sl) is slice else slice(None) for sl in input_slices]
 
         for p in self.parts:
-            assert isinstance(p, kernpart), "bad kernel part"
+            assert isinstance(p, Kernpart), "bad kernel part"
 
         self.compute_param_slices()
 
-        parameterised.__init__(self)
+        Parameterised.__init__(self)
 
 
     def plot_ARD(self, fignum=None, ax=None):
@@ -80,8 +79,8 @@ class kern(parameterised):
         self.param_slices = []
         count = 0
         for p in self.parts:
-            self.param_slices.append(slice(count, count + p.Nparam))
-            count += p.Nparam
+            self.param_slices.append(slice(count, count + p.num_params))
+            count += p.num_params
 
     def __add__(self, other):
         """
@@ -96,29 +95,29 @@ class kern(parameterised):
         :type other: GPy.kern
         """
         if tensor:
-            D = self.D + other.D
-            self_input_slices = [slice(*sl.indices(self.D)) for sl in self.input_slices]
-            other_input_indices = [sl.indices(other.D) for sl in other.input_slices]
-            other_input_slices = [slice(i[0] + self.D, i[1] + self.D, i[2]) for i in other_input_indices]
+            D = self.input_dim + other.input_dim
+            self_input_slices = [slice(*sl.indices(self.input_dim)) for sl in self.input_slices]
+            other_input_indices = [sl.indices(other.input_dim) for sl in other.input_slices]
+            other_input_slices = [slice(i[0] + self.input_dim, i[1] + self.input_dim, i[2]) for i in other_input_indices]
 
             newkern = kern(D, self.parts + other.parts, self_input_slices + other_input_slices)
 
             # transfer constraints:
-            newkern.constrained_indices = self.constrained_indices + [x + self.Nparam for x in other.constrained_indices]
+            newkern.constrained_indices = self.constrained_indices + [x + self.num_params for x in other.constrained_indices]
             newkern.constraints = self.constraints + other.constraints
-            newkern.fixed_indices = self.fixed_indices + [self.Nparam + x for x in other.fixed_indices]
+            newkern.fixed_indices = self.fixed_indices + [self.num_params + x for x in other.fixed_indices]
             newkern.fixed_values = self.fixed_values + other.fixed_values
             newkern.constraints = self.constraints + other.constraints
-            newkern.tied_indices = self.tied_indices + [self.Nparam + x for x in other.tied_indices]
+            newkern.tied_indices = self.tied_indices + [self.num_params + x for x in other.tied_indices]
         else:
-            assert self.D == other.D
-            newkern = kern(self.D, self.parts + other.parts, self.input_slices + other.input_slices)
+            assert self.input_dim == other.input_dim
+            newkern = kern(self.input_dim, self.parts + other.parts, self.input_slices + other.input_slices)
             # transfer constraints:
-            newkern.constrained_indices = self.constrained_indices + [i + self.Nparam  for i in other.constrained_indices]
+            newkern.constrained_indices = self.constrained_indices + [i + self.num_params  for i in other.constrained_indices]
             newkern.constraints = self.constraints + other.constraints
-            newkern.fixed_indices = self.fixed_indices + [self.Nparam + x for x in other.fixed_indices]
+            newkern.fixed_indices = self.fixed_indices + [self.num_params + x for x in other.fixed_indices]
             newkern.fixed_values = self.fixed_values + other.fixed_values
-            newkern.tied_indices = self.tied_indices + [self.Nparam + x for x in other.tied_indices]
+            newkern.tied_indices = self.tied_indices + [self.num_params + x for x in other.tied_indices]
         return newkern
 
     def __mul__(self, other):
@@ -138,16 +137,16 @@ class kern(parameterised):
 
         slices = []
         for sl1, sl2 in itertools.product(K1.input_slices, K2.input_slices):
-            s1, s2 = [False] * K1.D, [False] * K2.D
+            s1, s2 = [False] * K1.input_dim, [False] * K2.input_dim
             s1[sl1], s2[sl2] = [True], [True]
             slices += [s1 + s2]
 
         newkernparts = [prod(k1, k2, tensor) for k1, k2 in itertools.product(K1.parts, K2.parts)]
 
         if tensor:
-            newkern = kern(K1.D + K2.D, newkernparts, slices)
+            newkern = kern(K1.input_dim + K2.input_dim, newkernparts, slices)
         else:
-            newkern = kern(K1.D, newkernparts, slices)
+            newkern = kern(K1.input_dim, newkernparts, slices)
 
         newkern._follow_constrains(K1, K2)
         return newkern
@@ -158,13 +157,13 @@ class kern(parameterised):
         K1_param = []
         n = 0
         for k1 in K1.parts:
-            K1_param += [range(n, n + k1.Nparam)]
-            n += k1.Nparam
+            K1_param += [range(n, n + k1.num_params)]
+            n += k1.num_params
         n = 0
         K2_param = []
         for k2 in K2.parts:
-            K2_param += [range(K1.Nparam + n, K1.Nparam + n + k2.Nparam)]
-            n += k2.Nparam
+            K2_param += [range(K1.num_params + n, K1.num_params + n + k2.num_params)]
+            n += k2.num_params
         index_param = []
         for p1 in K1_param:
             for p2 in K2_param:
@@ -172,12 +171,12 @@ class kern(parameterised):
         index_param = np.array(index_param)
 
         # Get the ties and constrains of the kernels before the multiplication
-        prev_ties = K1.tied_indices + [arr + K1.Nparam for arr in K2.tied_indices]
+        prev_ties = K1.tied_indices + [arr + K1.num_params for arr in K2.tied_indices]
 
-        prev_constr_ind = [K1.constrained_indices] + [K1.Nparam + i for i in K2.constrained_indices]
+        prev_constr_ind = [K1.constrained_indices] + [K1.num_params + i for i in K2.constrained_indices]
         prev_constr = K1.constraints + K2.constraints
 
-        # prev_constr_fix = K1.fixed_indices + [arr + K1.Nparam for arr in K2.fixed_indices]
+        # prev_constr_fix = K1.fixed_indices + [arr + K1.num_params for arr in K2.fixed_indices]
         # prev_constr_fix_values = K1.fixed_values + K2.fixed_values
 
         # follow the previous ties
@@ -186,7 +185,7 @@ class kern(parameterised):
                 index_param[np.where(index_param == j)[0]] = arr[0]
 
         # ties and constrains
-        for i in range(K1.Nparam + K2.Nparam):
+        for i in range(K1.num_params + K2.num_params):
             index = np.where(index_param == i)[0]
             if index.size > 1:
                 self.tie_params(index)
@@ -211,7 +210,7 @@ class kern(parameterised):
     def K(self, X, X2=None, which_parts='all'):
         if which_parts == 'all':
             which_parts = [True] * self.Nparts
-        assert X.shape[1] == self.D
+        assert X.shape[1] == self.input_dim
         if X2 is None:
             target = np.zeros((X.shape[0], X.shape[0]))
             [p.K(X[:, i_s], None, target=target) for p, i_s, part_i_used in zip(self.parts, self.input_slices, which_parts) if part_i_used]
@@ -223,14 +222,14 @@ class kern(parameterised):
     def dK_dtheta(self, dL_dK, X, X2=None):
         """
         :param dL_dK: An array of dL_dK derivaties, dL_dK
-        :type dL_dK: Np.ndarray (N x M)
+        :type dL_dK: Np.ndarray (N x num_inducing)
         :param X: Observed data inputs
-        :type X: np.ndarray (N x D)
+        :type X: np.ndarray (N x input_dim)
         :param X2: Observed dara inputs (optional, defaults to X)
-        :type X2: np.ndarray (M x D)
+        :type X2: np.ndarray (num_inducing x input_dim)
         """
-        assert X.shape[1] == self.D
-        target = np.zeros(self.Nparam)
+        assert X.shape[1] == self.input_dim
+        target = np.zeros(self.num_params)
         if X2 is None:
             [p.dK_dtheta(dL_dK, X[:, i_s], None, target[ps]) for p, i_s, ps, in zip(self.parts, self.input_slices, self.param_slices)]
         else:
@@ -251,20 +250,20 @@ class kern(parameterised):
     def Kdiag(self, X, which_parts='all'):
         if which_parts == 'all':
             which_parts = [True] * self.Nparts
-        assert X.shape[1] == self.D
+        assert X.shape[1] == self.input_dim
         target = np.zeros(X.shape[0])
         [p.Kdiag(X[:, i_s], target=target) for p, i_s, part_on in zip(self.parts, self.input_slices, which_parts) if part_on]
         return target
 
     def dKdiag_dtheta(self, dL_dKdiag, X):
-        assert X.shape[1] == self.D
+        assert X.shape[1] == self.input_dim
         assert dL_dKdiag.size == X.shape[0]
-        target = np.zeros(self.Nparam)
+        target = np.zeros(self.num_params)
         [p.dKdiag_dtheta(dL_dKdiag, X[:, i_s], target[ps]) for p, i_s, ps in zip(self.parts, self.input_slices, self.param_slices)]
         return self._transform_gradients(target)
 
     def dKdiag_dX(self, dL_dKdiag, X):
-        assert X.shape[1] == self.D
+        assert X.shape[1] == self.input_dim
         target = np.zeros_like(X)
         [p.dKdiag_dX(dL_dKdiag, X[:, i_s], target[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
         return target
@@ -275,7 +274,7 @@ class kern(parameterised):
         return target
 
     def dpsi0_dtheta(self, dL_dpsi0, Z, mu, S):
-        target = np.zeros(self.Nparam)
+        target = np.zeros(self.num_params)
         [p.dpsi0_dtheta(dL_dpsi0, Z[:, i_s], mu[:, i_s], S[:, i_s], target[ps]) for p, ps, i_s in zip(self.parts, self.param_slices, self.input_slices)]
         return self._transform_gradients(target)
 
@@ -290,7 +289,7 @@ class kern(parameterised):
         return target
 
     def dpsi1_dtheta(self, dL_dpsi1, Z, mu, S):
-        target = np.zeros((self.Nparam))
+        target = np.zeros((self.num_params))
         [p.dpsi1_dtheta(dL_dpsi1, Z[:, i_s], mu[:, i_s], S[:, i_s], target[ps]) for p, ps, i_s in zip(self.parts, self.param_slices, self.input_slices)]
         return self._transform_gradients(target)
 
@@ -300,16 +299,16 @@ class kern(parameterised):
         return target
 
     def dpsi1_dmuS(self, dL_dpsi1, Z, mu, S):
-        """return shapes are N,M,Q"""
+        """return shapes are N,num_inducing,input_dim"""
         target_mu, target_S = np.zeros((2, mu.shape[0], mu.shape[1]))
         [p.dpsi1_dmuS(dL_dpsi1, Z[:, i_s], mu[:, i_s], S[:, i_s], target_mu[:, i_s], target_S[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
         return target_mu, target_S
 
     def psi2(self, Z, mu, S):
         """
-        :param Z: np.ndarray of inducing inputs (M x Q)
-        :param mu, S: np.ndarrays of means and variances (each N x Q)
-        :returns psi2: np.ndarray (N,M,M)
+        :param Z: np.ndarray of inducing inputs (num_inducing x input_dim)
+        :param mu, S: np.ndarrays of means and variances (each N x input_dim)
+        :returns psi2: np.ndarray (N,num_inducing,num_inducing)
         """
         target = np.zeros((mu.shape[0], Z.shape[0], Z.shape[0]))
         [p.psi2(Z[:, i_s], mu[:, i_s], S[:, i_s], target) for p, i_s in zip(self.parts, self.input_slices)]
@@ -327,13 +326,13 @@ class kern(parameterised):
             p2.psi1(Z, mu, S, tmp2)
 
             prod = np.multiply(tmp1, tmp2)
-            crossterms += prod[:,:,None] + prod[:, None, :]
-            
+            crossterms += prod[:, :, None] + prod[:, None, :]
+
         target += crossterms
         return target
 
     def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S):
-        target = np.zeros(self.Nparam)
+        target = np.zeros(self.num_params)
         [p.dpsi2_dtheta(dL_dpsi2, Z[:, i_s], mu[:, i_s], S[:, i_s], target[ps]) for p, i_s, ps in zip(self.parts, self.input_slices, self.param_slices)]
 
         # compute the "cross" terms
@@ -345,14 +344,14 @@ class kern(parameterised):
 
             tmp = np.zeros((mu.shape[0], Z.shape[0]))
             p1.psi1(Z, mu, S, tmp)
-            p2.dpsi1_dtheta((tmp[:,None,:]*dL_dpsi2).sum(1)*2., Z, mu, S, target[ps2])
+            p2.dpsi1_dtheta((tmp[:, None, :] * dL_dpsi2).sum(1) * 2., Z, mu, S, target[ps2])
 
         return self._transform_gradients(target)
 
     def dpsi2_dZ(self, dL_dpsi2, Z, mu, S):
         target = np.zeros_like(Z)
         [p.dpsi2_dZ(dL_dpsi2, Z[:, i_s], mu[:, i_s], S[:, i_s], target[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
-        #target *= 2
+        # target *= 2
 
         # compute the "cross" terms
         # TODO: we need input_slices here.
@@ -362,7 +361,7 @@ class kern(parameterised):
             tmp = np.zeros((mu.shape[0], Z.shape[0]))
             p1.psi1(Z, mu, S, tmp)
             tmp2 = np.zeros_like(target)
-            p2.dpsi1_dZ((tmp[:,None,:]*dL_dpsi2).sum(1).T, Z, mu, S, tmp2)
+            p2.dpsi1_dZ((tmp[:, None, :] * dL_dpsi2).sum(1).T, Z, mu, S, tmp2)
             target += tmp2
 
         return target * 2
@@ -379,14 +378,14 @@ class kern(parameterised):
 
             tmp = np.zeros((mu.shape[0], Z.shape[0]))
             p1.psi1(Z, mu, S, tmp)
-            p2.dpsi1_dmuS((tmp[:,None,:]*dL_dpsi2).sum(1).T*2., Z, mu, S, target_mu, target_S)
+            p2.dpsi1_dmuS((tmp[:, None, :] * dL_dpsi2).sum(1).T * 2., Z, mu, S, target_mu, target_S)
 
         return target_mu, target_S
 
     def plot(self, x=None, plot_limits=None, which_parts='all', resolution=None, *args, **kwargs):
         if which_parts == 'all':
             which_parts = [True] * self.Nparts
-        if self.D == 1:
+        if self.input_dim == 1:
             if x is None:
                 x = np.zeros((1, 1))
             else:
@@ -408,7 +407,7 @@ class kern(parameterised):
             pb.xlabel("x")
             pb.ylabel("k(x,%0.1f)" % x)
 
-        elif self.D == 2:
+        elif self.input_dim == 2:
             if x is None:
                 x = np.zeros((1, 2))
             else:
@@ -430,7 +429,7 @@ class kern(parameterised):
             Xnew = np.vstack((xx.flatten(), yy.flatten())).T
             Kx = self.K(Xnew, x, which_parts)
             Kx = Kx.reshape(resolution, resolution).T
-            pb.contour(xg, yg, Kx, vmin=Kx.min(), vmax=Kx.max(), cmap=pb.cm.jet, *args, **kwargs)
+            pb.contour(xg, yg, Kx, vmin=Kx.min(), vmax=Kx.max(), cmap=pb.cm.jet, *args, **kwargs) # @UndefinedVariable
             pb.xlim(xmin[0], xmax[0])
             pb.ylim(xmin[1], xmax[1])
             pb.xlabel("x1")

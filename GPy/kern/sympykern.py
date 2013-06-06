@@ -9,9 +9,9 @@ import sys
 current_dir = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 import tempfile
 import pdb
-from kernpart import kernpart
+from kernpart import Kernpart
 
-class spkern(kernpart):
+class spkern(Kernpart):
     """
     A kernel object, where all the hard work in done by sympy.
 
@@ -26,7 +26,7 @@ class spkern(kernpart):
      - to handle multiple inputs, call them x1, z1, etc
      - to handle multpile correlated outputs, you'll need to define each covariance function and 'cross' variance function. TODO
     """
-    def __init__(self,D,k,param=None):
+    def __init__(self,input_dim,k,param=None):
         self.name='sympykern'
         self._sp_k = k
         sp_vars = [e for e in k.atoms() if e.is_Symbol]
@@ -35,15 +35,15 @@ class spkern(kernpart):
         assert all([x.name=='x%i'%i for i,x in enumerate(self._sp_x)])
         assert all([z.name=='z%i'%i for i,z in enumerate(self._sp_z)])
         assert len(self._sp_x)==len(self._sp_z)
-        self.D = len(self._sp_x)
-        assert self.D == D
+        self.input_dim = len(self._sp_x)
+        assert self.input_dim == input_dim
         self._sp_theta = sorted([e for e in sp_vars if not (e.name[0]=='x' or e.name[0]=='z')],key=lambda e:e.name)
-        self.Nparam = len(self._sp_theta)
+        self.num_params = len(self._sp_theta)
 
         #deal with param
         if param is None:
-            param = np.ones(self.Nparam)
-        assert param.size==self.Nparam
+            param = np.ones(self.num_params)
+        assert param.size==self.num_params
         self._set_params(param)
 
         #Differentiate!
@@ -69,15 +69,15 @@ class spkern(kernpart):
 
     def compute_psi_stats(self):
         #define some normal distributions
-        mus = [sp.var('mu%i'%i,real=True) for i in range(self.D)]
-        Ss = [sp.var('S%i'%i,positive=True) for i in range(self.D)]
+        mus = [sp.var('mu%i'%i,real=True) for i in range(self.input_dim)]
+        Ss = [sp.var('S%i'%i,positive=True) for i in range(self.input_dim)]
         normals = [(2*sp.pi*Si)**(-0.5)*sp.exp(-0.5*(xi-mui)**2/Si) for xi, mui, Si in zip(self._sp_x, mus, Ss)]
 
         #do some integration!
         #self._sp_psi0 = ??
         self._sp_psi1 = self._sp_k
-        for i in range(self.D):
-            print 'perfoming integrals %i of %i'%(i+1,2*self.D)
+        for i in range(self.input_dim):
+            print 'perfoming integrals %i of %i'%(i+1,2*self.input_dim)
             sys.stdout.flush()
             self._sp_psi1 *= normals[i]
             self._sp_psi1 = sp.integrate(self._sp_psi1,(self._sp_x[i],-sp.oo,sp.oo))
@@ -85,10 +85,10 @@ class spkern(kernpart):
         self._sp_psi1 = self._sp_psi1.simplify()
 
         #and here's psi2 (eek!)
-        zprime = [sp.Symbol('zp%i'%i) for i in range(self.D)]
+        zprime = [sp.Symbol('zp%i'%i) for i in range(self.input_dim)]
         self._sp_psi2 = self._sp_k.copy()*self._sp_k.copy().subs(zip(self._sp_z,zprime))
-        for i in range(self.D):
-            print 'perfoming integrals %i of %i'%(self.D+i+1,2*self.D)
+        for i in range(self.input_dim):
+            print 'perfoming integrals %i of %i'%(self.input_dim+i+1,2*self.input_dim)
             sys.stdout.flush()
             self._sp_psi2 *= normals[i]
             self._sp_psi2 = sp.integrate(self._sp_psi2,(self._sp_x[i],-sp.oo,sp.oo))
@@ -113,21 +113,21 @@ class spkern(kernpart):
         self._function_code = re.sub('DiracDelta\(.+?,.+?\)','0.0',self._function_code)
 
         #Here's some code to do the looping for K
-        arglist = ", ".join(["X[i*D+%s]"%x.name[1:] for x in self._sp_x]\
-                + ["Z[j*D+%s]"%z.name[1:] for z in self._sp_z]\
-                + ["param[%i]"%i for i in range(self.Nparam)])
+        arglist = ", ".join(["X[i*input_dim+%s]"%x.name[1:] for x in self._sp_x]\
+                + ["Z[j*input_dim+%s]"%z.name[1:] for z in self._sp_z]\
+                + ["param[%i]"%i for i in range(self.num_params)])
 
         self._K_code =\
         """
         int i;
         int j;
         int N = target_array->dimensions[0];
-        int M = target_array->dimensions[1];
-        int D = X_array->dimensions[1];
+        int num_inducing = target_array->dimensions[1];
+        int input_dim = X_array->dimensions[1];
         //#pragma omp parallel for private(j)
         for (i=0;i<N;i++){
-            for (j=0;j<M;j++){
-                target[i*M+j] = k(%s);
+            for (j=0;j<num_inducing;j++){
+                target[i*num_inducing+j] = k(%s);
             }
         }
         %s
@@ -140,7 +140,7 @@ class spkern(kernpart):
         """
         int i;
         int N = target_array->dimensions[0];
-        int D = X_array->dimensions[1];
+        int input_dim = X_array->dimensions[1];
         //#pragma omp parallel for
         for (i=0;i<N;i++){
                 target[i] = k(%s);
@@ -149,17 +149,17 @@ class spkern(kernpart):
         """%(diag_arglist,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
         #here's some code to compute gradients
-        funclist = '\n'.join([' '*16 + 'target[%i] += partial[i*M+j]*dk_d%s(%s);'%(i,theta.name,arglist) for i,theta in  enumerate(self._sp_theta)])
+        funclist = '\n'.join([' '*16 + 'target[%i] += partial[i*num_inducing+j]*dk_d%s(%s);'%(i,theta.name,arglist) for i,theta in  enumerate(self._sp_theta)])
         self._dK_dtheta_code =\
         """
         int i;
         int j;
         int N = partial_array->dimensions[0];
-        int M = partial_array->dimensions[1];
-        int D = X_array->dimensions[1];
+        int num_inducing = partial_array->dimensions[1];
+        int input_dim = X_array->dimensions[1];
         //#pragma omp parallel for private(j)
         for (i=0;i<N;i++){
-            for (j=0;j<M;j++){
+            for (j=0;j<num_inducing;j++){
 %s
             }
         }
@@ -169,12 +169,12 @@ class spkern(kernpart):
         #here's some code to compute gradients for Kdiag TODO: thius is yucky.
         diag_funclist = re.sub('Z','X',funclist,count=0)
         diag_funclist = re.sub('j','i',diag_funclist)
-        diag_funclist = re.sub('partial\[i\*M\+i\]','partial[i]',diag_funclist)
+        diag_funclist = re.sub('partial\[i\*num_inducing\+i\]','partial[i]',diag_funclist)
         self._dKdiag_dtheta_code =\
         """
         int i;
         int N = partial_array->dimensions[0];
-        int D = X_array->dimensions[1];
+        int input_dim = X_array->dimensions[1];
         for (i=0;i<N;i++){
                 %s
         }
@@ -182,20 +182,20 @@ class spkern(kernpart):
         """%(diag_funclist,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
         #Here's some code to do gradients wrt x
-        gradient_funcs = "\n".join(["target[i*D+%i] += partial[i*M+j]*dk_dx%i(%s);"%(q,q,arglist) for q in range(self.D)])
+        gradient_funcs = "\n".join(["target[i*input_dim+%i] += partial[i*num_inducing+j]*dk_dx%i(%s);"%(q,q,arglist) for q in range(self.input_dim)])
         self._dK_dX_code = \
         """
         int i;
         int j;
         int N = partial_array->dimensions[0];
-        int M = partial_array->dimensions[1];
-        int D = X_array->dimensions[1];
+        int num_inducing = partial_array->dimensions[1];
+        int input_dim = X_array->dimensions[1];
         //#pragma omp parallel for private(j)
         for (i=0;i<N; i++){
-            for (j=0; j<M; j++){
+            for (j=0; j<num_inducing; j++){
                 %s
-                //if(isnan(target[i*D+2])){printf("%%f\\n",dk_dx2(X[i*D+0], X[i*D+1], X[i*D+2], Z[j*D+0], Z[j*D+1], Z[j*D+2], param[0], param[1], param[2], param[3], param[4], param[5]));}
-                //if(isnan(target[i*D+2])){printf("%%f,%%f,%%i,%%i\\n", X[i*D+2], Z[j*D+2],i,j);}
+                //if(isnan(target[i*input_dim+2])){printf("%%f\\n",dk_dx2(X[i*input_dim+0], X[i*input_dim+1], X[i*input_dim+2], Z[j*input_dim+0], Z[j*input_dim+1], Z[j*input_dim+2], param[0], param[1], param[2], param[3], param[4], param[5]));}
+                //if(isnan(target[i*input_dim+2])){printf("%%f,%%f,%%i,%%i\\n", X[i*input_dim+2], Z[j*input_dim+2],i,j);}
 
             }
         }
@@ -208,8 +208,8 @@ class spkern(kernpart):
         int i;
         int j;
         int N = partial_array->dimensions[0];
-        int M = 0;
-        int D = X_array->dimensions[1];
+        int num_inducing = 0;
+        int input_dim = X_array->dimensions[1];
         for (i=0;i<N; i++){
             j = i;
             %s

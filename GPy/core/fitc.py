@@ -3,10 +3,10 @@
 
 import numpy as np
 import pylab as pb
-from ..util.linalg import mdot, jitchol, chol_inv, tdot, symmetrify,pdinv
+from ..util.linalg import mdot, jitchol, chol_inv, tdot, symmetrify, pdinv, dtrtrs
 from ..util.plot import gpplot
 from .. import kern
-from scipy import stats, linalg
+from scipy import stats
 from sparse_gp import SparseGP
 
 class FITC(SparseGP):
@@ -50,7 +50,7 @@ class FITC(SparseGP):
     def _computations(self):
         #factor Kmm
         self.Lm = jitchol(self.Kmm)
-        self.Lmi,info = linalg.lapack.flapack.dtrtrs(self.Lm,np.eye(self.num_inducing),lower=1)
+        self.Lmi,info = dtrtrs(self.Lm,np.eye(self.num_inducing),lower=1)
         Lmipsi1 = np.dot(self.Lmi,self.psi1)
         self.Qnn = np.dot(Lmipsi1.T,Lmipsi1).copy()
         self.Diag0 = self.psi0 - np.diag(self.Qnn)
@@ -59,7 +59,7 @@ class FITC(SparseGP):
 
         # The rather complex computations of self.A
         tmp = self.psi1 * (np.sqrt(self.beta_star.flatten().reshape(1, self.num_data)))
-        tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
+        tmp, _ = dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
         self.A = tdot(tmp)
 
         # factor B
@@ -68,8 +68,8 @@ class FITC(SparseGP):
         self.LBi = chol_inv(self.LB)
         self.psi1V = np.dot(self.psi1, self.V_star)
 
-        Lmi_psi1V, info = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(self.psi1V), lower=1, trans=0)
-        self._LBi_Lmi_psi1V, _ = linalg.lapack.flapack.dtrtrs(self.LB, np.asfortranarray(Lmi_psi1V), lower=1, trans=0)
+        Lmi_psi1V, info = dtrtrs(self.Lm, np.asfortranarray(self.psi1V), lower=1, trans=0)
+        self._LBi_Lmi_psi1V, _ = dtrtrs(self.LB, np.asfortranarray(Lmi_psi1V), lower=1, trans=0)
 
         Kmmipsi1 = np.dot(self.Lmi.T,Lmipsi1)
         b_psi1_Ki = self.beta_star * Kmmipsi1.T
@@ -188,7 +188,7 @@ class FITC(SparseGP):
             self.P = Iplus_Dprod_i[:,None] * self.psi1.T
             self.RPT0 = np.dot(self.Lmi,self.psi1)
             self.L = np.linalg.cholesky(np.eye(self.num_inducing) + np.dot(self.RPT0,((1. - Iplus_Dprod_i)/self.Diag0)[:,None]*self.RPT0.T))
-            self.R,info = linalg.lapack.flapack.dtrtrs(self.L,self.Lmi,lower=1)
+            self.R,info = dtrtrs(self.L,self.Lmi,lower=1)
             self.RPT = np.dot(self.R,self.P.T)
             self.Sigma = np.diag(self.Diag) + np.dot(self.RPT.T,self.RPT)
             self.w = self.Diag * self.likelihood.v_tilde
@@ -210,7 +210,7 @@ class FITC(SparseGP):
             #   = I - [RPT0] * (U*U.T)^-1 * [RPT0].T
             #   = I - V.T * V
             U = np.linalg.cholesky(np.diag(self.Diag0) + self.Qnn)
-            V,info = linalg.lapack.flapack.dtrtrs(U,self.RPT0.T,lower=1)
+            V,info = dtrtrs(U,self.RPT0.T,lower=1)
             C = np.eye(self.num_inducing) - np.dot(V.T,V)
             mu_u = np.dot(C,self.RPT0)*(1./self.Diag0[None,:])
             #self.C = C

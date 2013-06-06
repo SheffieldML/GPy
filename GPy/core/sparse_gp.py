@@ -3,7 +3,7 @@
 
 import numpy as np
 import pylab as pb
-from ..util.linalg import mdot, jitchol, tdot, symmetrify, backsub_both_sides, chol_inv
+from ..util.linalg import mdot, jitchol, tdot, symmetrify, backsub_both_sides, chol_inv, dtrtrs, dpotrs, dpotri
 from scipy import linalg
 from ..likelihoods import Gaussian
 from gp_base import GPBase
@@ -80,7 +80,7 @@ class SparseGP(GPBase):
                 tmp = self.psi1 * (np.sqrt(self.likelihood.precision.flatten().reshape(1, self.num_data)))
             else:
                 tmp = self.psi1 * (np.sqrt(self.likelihood.precision))
-        tmp, _ = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
+        tmp, _ = dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
         self.A = tdot(tmp)
 
 
@@ -92,10 +92,10 @@ class SparseGP(GPBase):
         self.psi1V = np.dot(self.psi1, self.likelihood.V)
 
         # back substutue C into psi1V
-        tmp, info1 = linalg.lapack.flapack.dtrtrs(self.Lm, np.asfortranarray(self.psi1V), lower=1, trans=0)
-        self._LBi_Lmi_psi1V, _ = linalg.lapack.flapack.dtrtrs(self.LB, np.asfortranarray(tmp), lower=1, trans=0)
-        tmp, info2 = linalg.lapack.flapack.dpotrs(self.LB, tmp, lower=1)
-        self.Cpsi1V, info3 = linalg.lapack.flapack.dtrtrs(self.Lm, tmp, lower=1, trans=1)
+        tmp, info1 = dtrtrs(self.Lm, np.asfortranarray(self.psi1V), lower=1, trans=0)
+        self._LBi_Lmi_psi1V, _ = dtrtrs(self.LB, np.asfortranarray(tmp), lower=1, trans=0)
+        tmp, info2 = dpotrs(self.LB, tmp, lower=1)
+        self.Cpsi1V, info3 = dtrtrs(self.Lm, tmp, lower=1, trans=1)
 
         # Compute dL_dKmm
         tmp = tdot(self._LBi_Lmi_psi1V)
@@ -219,7 +219,7 @@ class SparseGP(GPBase):
     def _raw_predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
         """Internal helper function for making predictions, does not account for normalization"""
 
-        Bi, _ = linalg.lapack.flapack.dpotri(self.LB, lower=0)  # WTH? this lower switch should be 1, but that doesn't work!
+        Bi, _ = dpotri(self.LB, lower=0)  # WTH? this lower switch should be 1, but that doesn't work!
         symmetrify(Bi)
         Kmmi_LmiBLmi = backsub_both_sides(self.Lm, np.eye(self.num_inducing) - Bi)
 

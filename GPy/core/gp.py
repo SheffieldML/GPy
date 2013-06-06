@@ -3,10 +3,9 @@
 
 
 import numpy as np
-from scipy import linalg
 import pylab as pb
 from .. import kern
-from ..util.linalg import pdinv, mdot, tdot
+from ..util.linalg import pdinv, mdot, tdot, dpotrs, dtrtrs
 #from ..util.plot import gpplot,  Tango
 from ..likelihoods import EP
 from gp_base import GPBase
@@ -44,13 +43,13 @@ class GP(GPBase):
         # the gradient of the likelihood wrt the covariance matrix
         if self.likelihood.YYT is None:
             #alpha = np.dot(self.Ki, self.likelihood.Y)
-            alpha,_ = linalg.lapack.flapack.dpotrs(self.L, self.likelihood.Y,lower=1)
+            alpha,_ = dpotrs(self.L, self.likelihood.Y,lower=1)
 
             self.dL_dK = 0.5 * (tdot(alpha) - self.output_dim * self.Ki)
         else:
             #tmp = mdot(self.Ki, self.likelihood.YYT, self.Ki)
-            tmp, _ = linalg.lapack.flapack.dpotrs(self.L, np.asfortranarray(self.likelihood.YYT), lower=1)
-            tmp, _ = linalg.lapack.flapack.dpotrs(self.L, np.asfortranarray(tmp.T), lower=1)
+            tmp, _ = dpotrs(self.L, np.asfortranarray(self.likelihood.YYT), lower=1)
+            tmp, _ = dpotrs(self.L, np.asfortranarray(tmp.T), lower=1)
             self.dL_dK = 0.5 * (tmp - self.output_dim * self.Ki)
 
     def _get_params(self):
@@ -76,7 +75,7 @@ class GP(GPBase):
         Computes the model fit using YYT if it's available
         """
         if self.likelihood.YYT is None:
-            tmp, _ = linalg.lapack.flapack.dtrtrs(self.L, np.asfortranarray(self.likelihood.Y), lower=1)
+            tmp, _ = dtrtrs(self.L, np.asfortranarray(self.likelihood.Y), lower=1)
             return -0.5 * np.sum(np.square(tmp))
             #return -0.5 * np.sum(np.square(np.dot(self.Li, self.likelihood.Y)))
         else:
@@ -108,7 +107,7 @@ class GP(GPBase):
         """
         Kx = self.kern.K(_Xnew,self.X,which_parts=which_parts).T
         #KiKx = np.dot(self.Ki, Kx)
-        KiKx, _ = linalg.lapack.flapack.dpotrs(self.L, np.asfortranarray(Kx), lower=1)
+        KiKx, _ = dpotrs(self.L, np.asfortranarray(Kx), lower=1)
         mu = np.dot(KiKx.T, self.likelihood.Y)
         if full_cov:
             Kxx = self.kern.K(_Xnew, which_parts=which_parts)

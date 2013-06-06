@@ -100,6 +100,9 @@ class linear(Kernpart):
     def dK_dX(self, dL_dK, X, X2, target):
         target += (((X2[:, None, :] * self.variances)) * dL_dK[:, :, None]).sum(0)
 
+    def dKdiag_dX(self,dL_dKdiag,X,target):
+        target += 2.*self.variances*dL_dKdiag[:,None]*X
+
     #---------------------------------------#
     #             PSI statistics            #
     #---------------------------------------#

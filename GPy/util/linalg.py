@@ -34,7 +34,7 @@ def dtrtrs(A, B, lower=0, trans=0, unitdiag=0, overwrite_b=0):
     """
     return lapack.dtrtrs(A, B, lower=lower, trans=trans, unitdiag=unitdiag, overwrite_b=overwrite_b)
 
-def dpotrs(A, B, overwrite_b=0, lower=0):
+def dpotrs(A, B, lower=0, overwrite_b=0):
     """Wrapper for lapack dpotrs function
 
     :param A: Matrix A
@@ -42,17 +42,16 @@ def dpotrs(A, B, overwrite_b=0, lower=0):
     :param lower: is matrix lower (true) or upper (false)
     :returns:
     """
-    return lapack.dpotrs(A, B, overwrite_b=overwrite_b, lower=lower)
+    return lapack.dpotrs(A, B, lower=lower, overwrite_b=overwrite_b)
 
-def dpotri(A, B, overwrite_b=0, lower=0):
+def dpotri(A, lower=0, overwrite_b=0):
     """Wrapper for lapack dpotri function
 
     :param A: Matrix A
-    :param B: Matrix B
     :param lower: is matrix lower (true) or upper (false)
     :returns:
     """
-    return lapack.dpotri(A, B, overwrite_b=overwrite_b, lower=lower)
+    return lapack.dpotri(A, lower=lower, overwrite_b=overwrite_b)
 
 def trace_dot(a, b):
     """

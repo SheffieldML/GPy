@@ -39,7 +39,7 @@ def model_instance(model):
     #assert isinstance(model, GPy.core.model)
     return isinstance(model, GPy.core.Model)
 
-@nottest
+#@nottest
 def test_models():
     examples_path = os.path.dirname(GPy.examples.__file__)
     # Load modules

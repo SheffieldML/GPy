@@ -151,7 +151,7 @@ def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_f_eval=4e3, plot
         data_show = GPy.util.visualize.vector_show(y)
         lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :], m, data_show, latent_axes=latent_axes) # , sense_axes=sense_axes)
         raw_input('Press enter to finish')
-        plt.close('all')
+        plt.close(fig)
     return m
 
 def oil_100():
@@ -327,7 +327,7 @@ def brendan_faces():
     data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, invert=False, scale=False)
     lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
     raw_input('Press enter to finish')
-    plt.close('all')
+    lvm_visualizer.close()
 
     return m
 
@@ -345,7 +345,7 @@ def stick():
     data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
     lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
     raw_input('Press enter to finish')
-    plt.close('all')
+    lvm_visualizer.close()
 
     return m
 
@@ -367,7 +367,7 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True):
     data_show = GPy.util.visualize.skeleton_show(y[None, :], data['skel'])
     lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
     raw_input('Press enter to finish')
-    plt.close('all')
+    lvm_visualizer.close()
 
     return m
 

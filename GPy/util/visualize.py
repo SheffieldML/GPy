@@ -9,7 +9,7 @@ import visual
 
 class data_show:
     """
-    The data show class is a base class which describes how to visualize a
+    The data_show class is a base class which describes how to visualize a
     particular data set. For example, motion capture data can be plotted as a
     stick figure, or images are shown using imshow. This class enables latent
     to data visualizations for the GP-LVM.
@@ -20,6 +20,28 @@ class data_show:
 
     def modify(self, vals):
         raise NotImplementedError, "this needs to be implemented to use the data_show class"
+
+    def close(self):
+        raise NotImplementedError, "this needs to be implemented to use the data_show class"
+
+
+class vpython_show(data_show):
+    """
+    the vpython_show class is a base class for all visualization methods that use vpython to display. It is initialized with a scene. If the scene is set to None it creates a scene window.
+    """
+
+    def __init__(self, vals, scene=None):
+        data_show.__init__(self, vals)
+        # If no axes are defined, create some.
+
+        if scene==None:
+            self.scene = visual.display(title='Data Visualization')
+        else:
+            self.scene = scene
+
+    def close(self):
+        self.scene.exit()
+
 
 
 class matplotlib_show(data_show):
@@ -35,6 +57,9 @@ class matplotlib_show(data_show):
             self.axes = fig.add_subplot(111)
         else:
             self.axes = axes
+
+    def close(self):
+        plt.close(self.axes.get_figure())
 
 class vector_show(matplotlib_show):
     """
@@ -276,11 +301,11 @@ class image_show(matplotlib_show):
             self.vals = Image.fromarray(self.vals.astype('uint8'))
             self.vals.putpalette(self.palette) # palette is a list, must be loaded before calling this function
 
-class mocap_data_show_visual(data_show):
+class mocap_data_show_vpython(vpython_show):
     """Base class for visualizing motion capture data using visual module."""
 
-    def __init__(self, vals, connect=None, radius=0.1):
-        data_show.__init__(self, vals)
+    def __init__(self, vals, scene=None, connect=None, radius=0.1):
+        vpython_show.__init__(self, vals, scene)
         self.radius = radius
         self.connect = connect
         self.process_values()
@@ -291,7 +316,7 @@ class mocap_data_show_visual(data_show):
         self.spheres = []
         for i in range(self.vals.shape[0]):
             self.spheres.append(visual.sphere(pos=(self.vals[i, 0], self.vals[i, 2], self.vals[i, 1]), radius=self.radius))
-
+        self.scene.visible=True
         
     def draw_edges(self):
         self.rods = []
@@ -410,17 +435,17 @@ class mocap_data_show(matplotlib_show):
         self.axes.set_zlim(self.z_lim)
 
 
-class stick_show(mocap_data_show_visual):
+class stick_show(mocap_data_show_vpython):
     """Show a three dimensional point cloud as a figure. Connect elements of the figure together using the matrix connect."""
-    def __init__(self, vals, connect=None):
-        mocap_data_show_visual.__init__(self, vals, connect, radius=0.04)
+    def __init__(self, vals, connect=None, scene=None):
+        mocap_data_show_vpython.__init__(self, vals, scene=scene, connect=connect, radius=0.04)
 
     def process_values(self):
         self.vals = self.vals.reshape((3, self.vals.shape[1]/3)).T
 
-class skeleton_show(mocap_data_show_visual):
+class skeleton_show(mocap_data_show_vpython):
     """data_show class for visualizing motion capture data encoded as a skeleton with angles."""
-    def __init__(self, vals, skel, padding=0):
+    def __init__(self, vals, skel, scene=None, padding=0):
         """data_show class for visualizing motion capture data encoded as a skeleton with angles.
         :param vals: set of modeled angles to use for printing in the axis when it's first created.
         :type vals: np.array
@@ -432,7 +457,7 @@ class skeleton_show(mocap_data_show_visual):
         self.skel = skel
         self.padding = padding
         connect = skel.connection_matrix()
-        mocap_data_show_visual.__init__(self, vals, connect, radius=0.4)
+        mocap_data_show_vpython.__init__(self, vals, scene=scene, connect=connect, radius=0.4)
     def process_values(self):
         """Takes a set of angles and converts them to the x,y,z coordinates in the internal prepresentation of the class, ready for plotting.
 

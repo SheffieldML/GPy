@@ -693,7 +693,7 @@ skel = acclaim_skeleton()
 
 
     
-def fetch_data(base_url = 'http://mocap.cs.cmu.edu:8080/subjects', skel_store_dir = '.', motion_store_dir = '.', subj_motions = None, store_motions = True, return_motions = True, messages = True):
+def fetch_cmu(subj_motions, base_url = 'http://mocap.cs.cmu.edu:8080/subjects', skel_store_dir = '.', motion_store_dir = '.', store_motions = True, return_motions = True, messages = True):
     ''' 
     Download and store the skel. and motions indicated in a tuple (A,B) where A is a list of skeletons and B
     the corresponding 2-D list of motions, ie B_ij is the j-th motion to download for skeleton A_i
@@ -702,9 +702,9 @@ def fetch_data(base_url = 'http://mocap.cs.cmu.edu:8080/subjects', skel_store_di
 
     e.g.
     # Download the data, do not return anything
-    GPy.util.mocap.fetch_data(subj_motions = ([35],[[1,2,3]]), return_motions = False)
+    GPy.util.mocap.fetch_cmu(subj_motions = ([35],[[1,2,3]]), return_motions = False)
     # Fetch and return the data in a list. Do not store them anywhere
-    GPy.util.mocap.fetch_data(subj_motions = ([35],[[1,2,3]]), return_motions = True, store_motions = False)
+    GPy.util.mocap.fetch_cmu(subj_motions = ([35],[[1,2,3]]), return_motions = True, store_motions = False)
 
     In both cases above, if the data do exist in the given skel_store_dir and motion_store_dir, they are just loaded from there.
     '''
@@ -752,7 +752,7 @@ def fetch_data(base_url = 'http://mocap.cs.cmu.edu:8080/subjects', skel_store_di
                     os.mkdir(cur_skel_dir)
                 if not os.path.isdir(motion_store_dir + cur_skel_suffix):
                     os.mkdir(motion_store_dir + cur_skel_suffix)
-            cur_skel_data = dat.fetch_dataset(cur_skel_url, cur_skel_file, store_motions, messages)
+            cur_skel_data = dat.download_resource(cur_skel_url, cur_skel_file, store_motions, messages)
         
         if return_motions:
             all_skels.append(cur_skel_data)
@@ -765,7 +765,7 @@ def fetch_data(base_url = 'http://mocap.cs.cmu.edu:8080/subjects', skel_store_di
                     if return_motions:
                         cur_motion_data = f.read()
             else:
-                cur_motion_data = dat.fetch_dataset(cur_motion_url, cur_motion_file, store_motions, messages)
+                cur_motion_data = dat.download_resource(cur_motion_url, cur_motion_file, store_motions, messages)
 
             if return_motions:
                 all_motions[i].append(cur_motion_data)

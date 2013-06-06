@@ -9,6 +9,61 @@ import urllib2 as url
 
 data_path = os.path.join(os.path.dirname(__file__), 'datasets')
 default_seed = 10000
+neil_url = 'http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/'
+
+def prompt_user():
+    # raw_input returns the empty string for "enter"
+    yes = set(['yes', 'y'])
+    no = set(['no','n'])
+
+    choice = raw_input().lower()
+    if choice in yes:
+        return True
+    elif choice in no:
+        return False
+    else:
+        sys.stdout.write("Please respond with 'yes', 'y' or 'no', 'n'")
+        return prompt_user()
+
+def download_data(dataset_name=None):
+    """Helper function which contains the resource locations for each data set in one place"""
+
+    # Note: there may be a better way of doing this. One of the pythonistas will need to take a look. Neil
+    data_resources = {'oil': {'urls' : [neil_url + 'oil_data/'],
+                              'files' : [['DataTrnLbls.txt', 'DataTrn.txt']],
+                              'citation' : 'Bishop, C. M. and G. D. James (1993). Analysis of multiphase flows using dual-energy gamma densitometry and neural networks. Nuclear Instruments and Methods in Physics Research A327, 580-593',
+                              'details' : """The three phase oil data used initially for demonstrating the Generative Topographic mapping.""",
+                              'agreement' : None},
+                      'brendan_faces' : {'url' : ['http://www.cs.nyu.edu/~roweis/data/'],
+                                         'files' [['frey_rawface.mat']],
+                                         'citation' : 'Frey, B. J., Colmenarez, A and Huang, T. S. Mixtures of Local Linear Subspaces for Face Recognition. Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition 1998, 32-37, June 1998. Computer Society Press, Los Alamitos, CA.',
+                                         'details' : """A video of Brendan Frey's face popularized as a benchmark for visualization by the Locally Linear Embedding.""",
+                                         'agreement': None}
+                      }
+
+
+        print('Acquiring resource: ' + dataset_name)
+        # TODO, check resource is in dictionary!
+        dr = data_resources[dataset_name]
+        print('Details of data: ')
+        print(dr['details'])
+        if dr['citation']:
+            print('Please cite:')
+            print(dr['citation'])
+        if dr['agreement']:
+            print('You must also agree to the following:')
+            print(dr['agreement'])
+        print('Do you wish to proceed with the download? [yes/no]')
+        if prompt_user()==False:
+            return False
+
+        for url, files in zip(dr['urls'], dr['files']):
+            for file in files:
+                download_resource(url + file)
+        return True
+                  
+
+        
 
 # Some general utilities.
 def sample_class(f):
@@ -17,7 +72,7 @@ def sample_class(f):
     c = np.where(c, 1, -1)
     return c
 
-def fetch_dataset(resource, save_name = None, save_file = True, messages = True):
+def download_resource(resource, save_name = None, save_file = True, messages = True):
     if messages:
         print "Downloading resource: " , resource, " ... ",
     response = url.urlopen(resource)
@@ -57,10 +112,11 @@ def simulation_BGPLVM():
 
 # The data sets
 def oil():
-    fid = open(os.path.join(data_path, 'oil', 'DataTrn.txt'))
+    download_data('oil')
+    fid = open(oil_train_file)
     X = np.fromfile(fid, sep='\t').reshape((-1, 12))
     fid.close()
-    fid = open(os.path.join(data_path, 'oil', 'DataTrnLbls.txt'))
+    fid = open(oil_trainlbls_file)
     Y = np.fromfile(fid, sep='\t').reshape((-1, 3)) * 2. - 1.
     fid.close()
     return {'X': X, 'Y': Y, 'info': "The oil data from Bishop and James (1993)."}
@@ -283,6 +339,10 @@ def cmu_mocap(subject, train_motions, test_motions=[], sample_every=4):
 
     # Load in subject skeleton.
     subject_dir = os.path.join(data_path, 'mocap', 'cmu', subject)
+
+    # Make sure the data is downloaded.
+    mocap.fetch_cmu(([subject], [train_motions]), skel_store_dir=subject_dir,motion_store_dir=subject_dir)
+
     skel = GPy.util.mocap.acclaim_skeleton(os.path.join(subject_dir, subject + '.asf'))
 
     # Set up labels for each sequence

@@ -19,41 +19,15 @@ class LinkFunction(object):
     def __init__(self):
         pass
 
-class Identity(LinkFunction):
-    def transf(self,mu):
-        return mu
-
-    def inv_transf(self,f):
-        return f
-
-    def log_inv_transf(self,f):
-        return np.log(f)
-
-class Log(LinkFunction):
-
-    def transf(self,mu):
-        return np.log(mu)
-
-    def inv_transf(self,f):
-        return np.exp(f)
-
-    def log_inv_transf(self,f):
-        return f
-
-class Log_ex_1(LinkFunction):
-    def transf(self,mu):
-        return np.log(np.exp(mu) - 1)
-
-    def inv_transf(self,f):
-        return np.log(np.exp(f)+1)
-
-    def log_inv_tranf(self,f):
-        return np.log(np.log(np.exp(f)+1))
-
 class Probit(LinkFunction):
+    """
+    Probit link function: Squashes a likelihood between 0 and 1
+    """
+    def transf(self,mu):
+        pass
 
     def inv_transf(self,f):
-        return std_norm_cdf(f)
+        pass
 
     def log_inv_transf(self,f):
-        return np.log(std_norm_cdf(f))
+        pass

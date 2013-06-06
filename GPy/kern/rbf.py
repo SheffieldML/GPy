@@ -178,13 +178,13 @@ class rbf(Kernpart):
         self._psi_computations(Z, mu, S)
         denominator = (self.lengthscale2 * (self._psi1_denom))
         dpsi1_dZ = -self._psi1[:, :, None] * ((self._psi1_dist / denominator))
-        target += np.sum(dL_dpsi1.T[:, :, None] * dpsi1_dZ, 0)
+        target += np.sum(dL_dpsi1[:, :, None] * dpsi1_dZ, 0)
 
     def dpsi1_dmuS(self, dL_dpsi1, Z, mu, S, target_mu, target_S):
         self._psi_computations(Z, mu, S)
         tmp = self._psi1[:, :, None] / self.lengthscale2 / self._psi1_denom
-        target_mu += np.sum(dL_dpsi1.T[:, :, None] * tmp * self._psi1_dist, 1)
-        target_S += np.sum(dL_dpsi1.T[:, :, None] * 0.5 * tmp * (self._psi1_dist_sq - 1), 1)
+        target_mu += np.sum(dL_dpsi1[:, :, None] * tmp * self._psi1_dist, 1)
+        target_S += np.sum(dL_dpsi1[:, :, None] * 0.5 * tmp * (self._psi1_dist_sq - 1), 1)
 
     def psi2(self, Z, mu, S, target):
         self._psi_computations(Z, mu, S)

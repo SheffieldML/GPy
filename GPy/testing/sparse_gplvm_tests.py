@@ -19,7 +19,6 @@ class sparse_GPLVMTests(unittest.TestCase):
         m.randomize()
         self.assertTrue(m.checkgrad())
 
-    @unittest.skip('linear kernels do not have dKdiag_dX')
     def test_linear_kern(self):
         N, num_inducing, input_dim, D = 10, 3, 2, 4
         X = np.random.rand(N, input_dim)

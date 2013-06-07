@@ -10,6 +10,7 @@ from parameterised import Parameterised
 import multiprocessing as mp
 import numpy as np
 from GPy.core.domains import POSITIVE, REAL
+from numpy.linalg.linalg import LinAlgError
 # import numdifftools as ndt
 
 class Model(Parameterised):
@@ -227,20 +228,32 @@ class Model(Parameterised):
         """
         The objective function passed to the optimizer. It combines the likelihood and the priors.
         """
-        self._set_params_transformed(x)
+        try:
+            self._set_params_transformed(x)
+        except (LinAlgError, ZeroDivisionError) as e:
+            print "DEBUG: catching linalg, rejecting step" # TODO: delete
+            return np.inf
         return -self.log_likelihood() - self.log_prior()
 
     def objective_function_gradients(self, x):
         """
         Gets the gradients from the likelihood and the priors.
         """
-        self._set_params_transformed(x)
+        try:
+            self._set_params_transformed(x)
+        except (LinAlgError, ZeroDivisionError) as e:
+            print "DEBUG: catching linalg, rejecting step" # TODO: delete
+            # return np.ones_like(x)
         obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
         return obj_grads
 
     def objective_and_gradients(self, x):
-        self._set_params_transformed(x)
-        obj_f = -self.log_likelihood() - self.log_prior()
+        try:
+            self._set_params_transformed(x)
+            obj_f = -self.log_likelihood() - self.log_prior()
+        except (LinAlgError, ZeroDivisionError) as e:
+            print "DEBUG: catching linalg, rejecting step" # TODO: delete
+            obj_f = np.inf
         obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
         return obj_f, obj_grads
 

@@ -14,6 +14,8 @@ from numpy.linalg.linalg import LinAlgError
 # import numdifftools as ndt
 
 class Model(Parameterised):
+    _fail_count = 0 # Count of failed optimization steps (see objective)
+    _allowed_failures = 10 # number of allowed failures
     def __init__(self):
         Parameterised.__init__(self)
         self.priors = None
@@ -227,23 +229,36 @@ class Model(Parameterised):
     def objective_function(self, x):
         """
         The objective function passed to the optimizer. It combines the likelihood and the priors.
+        
+        Failures are handled robustly. The algorithm will try several times to
+        return the objective, and will raise the original exception if it
+        the objective cannot be computed.
         """
         try:
             self._set_params_transformed(x)
+            self._fail_count = 0
         except (LinAlgError, ZeroDivisionError) as e:
-            print "DEBUG: catching linalg, rejecting step" # TODO: delete
+            if self._fail_count >= self._allowed_failures:
+                raise e
+            self._fail_count += 1
             return np.inf
         return -self.log_likelihood() - self.log_prior()
 
     def objective_function_gradients(self, x):
         """
         Gets the gradients from the likelihood and the priors.
+
+        Failures are handled robustly. The algorithm will try several times to
+        return the objective, and will raise the original exception if it
+        the objective cannot be computed.
         """
         try:
             self._set_params_transformed(x)
+            self._fail_count = 0
         except (LinAlgError, ZeroDivisionError) as e:
-            print "DEBUG: catching linalg, rejecting step" # TODO: delete
-            # return np.ones_like(x)
+            if self._fail_count >= self._allowed_failures:
+                raise e
+            self._fail_count += 1
         obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
         return obj_grads
 
@@ -251,8 +266,11 @@ class Model(Parameterised):
         try:
             self._set_params_transformed(x)
             obj_f = -self.log_likelihood() - self.log_prior()
+            self._fail_count = 0
         except (LinAlgError, ZeroDivisionError) as e:
-            print "DEBUG: catching linalg, rejecting step" # TODO: delete
+            if self._fail_count >= self._allowed_failures:
+                raise e
+            self._fail_count += 1
             obj_f = np.inf
         obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
         return obj_f, obj_grads

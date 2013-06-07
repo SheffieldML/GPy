@@ -298,7 +298,7 @@ def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
 
     if optimize:
         print "Optimizing Model:"
-        m.optimize('scg', messages=1, max_iters=5, max_f_eval=5, gtol=.1)
+        m.optimize('scg', messages=1, max_iters=8e3, max_f_eval=8e3, gtol=.1)
     if plot:
         m.plot_X_1d("MRD Latent Space 1D")
         m.plot_scales("MRD Scales")

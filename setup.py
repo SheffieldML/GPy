@@ -5,7 +5,7 @@ import os
 from setuptools import setup
 
 # Version number
-version = '0.3.2'
+version = '0.4.3'
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
@@ -23,7 +23,7 @@ setup(name = 'GPy',
       package_data = {'GPy': ['GPy/examples']},
       py_modules = ['GPy.__init__'],
       long_description=read('README.md'),
-      install_requires=['sympy', 'numpy>=1.6', 'scipy>=0.9','matplotlib>=1.1', 'nose'],
+      install_requires=['numpy>=1.6', 'scipy>=0.9','matplotlib>=1.1', 'nose'],
       extras_require = {
         'docs':['Sphinx', 'ipython'],
       },

@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, cm
 
 import GPy
 from GPy.core.transformations import logexp
@@ -182,7 +182,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
     sS = sS(x)
 
     S1 = np.hstack([s1, sS])
-    S2 = np.hstack([s2, sS])
+    S2 = np.hstack([s2, s3, sS])
     S3 = np.hstack([s3, sS])
 
     Y1 = S1.dot(np.random.randn(S1.shape[1], D1))
@@ -216,7 +216,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
         ax.legend()
         for i, Y in enumerate(Ylist):
             ax = fig.add_subplot(2, len(Ylist), len(Ylist) + 1 + i)
-            ax.imshow(Y)
+            ax.imshow(Y, aspect='auto', cmap=cm.gray) # @UndefinedVariable
             ax.set_title("Y{}".format(i + 1))
         pylab.draw()
         pylab.tight_layout()
@@ -298,7 +298,7 @@ def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
 
     if optimize:
         print "Optimizing Model:"
-        m.optimize('scg', messages=1, max_iters=8e3, max_f_eval=8e3, gtol=.1)
+        m.optimize(messages=1, max_iters=8e3, max_f_eval=8e3, gtol=.1)
     if plot:
         m.plot_X_1d("MRD Latent Space 1D")
         m.plot_scales("MRD Scales")

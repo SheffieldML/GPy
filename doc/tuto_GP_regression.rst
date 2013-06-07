@@ -36,7 +36,7 @@ The parameter ``input_dim`` stands for the dimension of the input space. The par
 
 The inputs required for building the model are the observations and the kernel::
 
-    m = GPy.models.GP_regression(X,Y,kernel)
+    m = GPy.models.GPRegression(X,Y,kernel)
 
 By default, some observation noise is added to the modle. The functions ``print`` and ``plot`` give an insight of the model we have just build. The code::
 
@@ -116,7 +116,7 @@ Here is a 2 dimensional example::
     ker = GPy.kern.Matern52(2,ARD=True) + GPy.kern.white(2)
 
     # create simple GP model
-    m = GPy.models.GP_regression(X,Y,ker)
+    m = GPy.models.GPRegression(X,Y,ker)
 
     # contrain all parameters to be positive
     m.constrain_positive('')

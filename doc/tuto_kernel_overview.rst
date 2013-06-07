@@ -211,7 +211,7 @@ Note the ties between the parameters of ``Kanova`` that reflect the links betwee
     Y = 0.5*X[:,:1] + 0.5*X[:,1:] + 2*np.sin(X[:,:1]) * np.sin(X[:,1:])
 
     # Create GP regression model
-    m = GPy.models.GP_regression(X,Y,Kanova)
+    m = GPy.models.GPRegression(X,Y,Kanova)
     m.plot()
 
 .. figure::  Figures/tuto_kern_overview_mANOVA.png

@@ -12,71 +12,71 @@ models Package
 :mod:`Bayesian_GPLVM` Module
 ----------------------------
 
-.. automodule:: GPy.models.Bayesian_GPLVM
+.. automodule:: GPy.models.bayesian_gplvm
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`GP` Module
+:mod:`gp` Module
 ----------------
 
-.. automodule:: GPy.models.GP
+.. automodule:: GPy.models.gp
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`GPLVM` Module
+:mod:`gplvm` Module
 -------------------
 
-.. automodule:: GPy.models.GPLVM
+.. automodule:: GPy.models.gplvm
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`GP_regression` Module
+:mod:`gp_regression` Module
 ---------------------------
 
-.. automodule:: GPy.models.GP_regression
+.. automodule:: GPy.models.gp_regression
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`sparse_GP` Module
+:mod:`sparse_gp` Module
 -----------------------
 
-.. automodule:: GPy.models.sparse_GP
+.. automodule:: GPy.models.sparse_gp
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`sparse_GPLVM` Module
+:mod:`SparseGPLVM` Module
 --------------------------
 
-.. automodule:: GPy.models.sparse_GPLVM
+.. automodule:: GPy.models.sparse_gplvm
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`sparse_GP_regression` Module
+:mod:`sparse_gp_regression` Module
 ----------------------------------
 
-.. automodule:: GPy.models.sparse_GP_regression
+.. automodule:: GPy.models.sparse_gp_regression
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`uncollapsed_sparse_GP` Module
------------------------------------
+.. :mod:`uncollapsed_sparse_GP` Module
+.. -----------------------------------
 
-.. automodule:: GPy.models.uncollapsed_sparse_GP
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. .. automodule:: GPy.models.uncollapsed_sparse_GP
+..     :members:
+..     :undoc-members:
+..     :show-inheritance:
 
-:mod:`warped_GP` Module
+:mod:`warped_gp` Module
 -----------------------
 
-.. automodule:: GPy.models.warped_GP
+.. automodule:: GPy.models.warped_gp
     :members:
     :undoc-members:
     :show-inheritance:

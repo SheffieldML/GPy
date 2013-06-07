@@ -12,7 +12,7 @@ likelihoods Package
 :mod:`EP` Module
 ----------------
 
-.. automodule:: GPy.likelihoods.EP
+.. automodule:: GPy.likelihoods.ep
     :members:
     :undoc-members:
     :show-inheritance:
@@ -20,7 +20,7 @@ likelihoods Package
 :mod:`Gaussian` Module
 ----------------------
 
-.. automodule:: GPy.likelihoods.Gaussian
+.. automodule:: GPy.likelihoods.gaussian
     :members:
     :undoc-members:
     :show-inheritance:

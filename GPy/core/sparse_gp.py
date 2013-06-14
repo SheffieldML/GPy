@@ -63,6 +63,7 @@ class SparseGP(GPBase):
 
     def _computations(self):
 
+
         # factor Kmm
         self.Lm = jitchol(self.Kmm)
 
@@ -89,17 +90,18 @@ class SparseGP(GPBase):
         self.B = np.eye(self.num_inducing) + self.A
         self.LB = jitchol(self.B)
 
-        # TODO: make a switch for either first compute psi1V, or VV.T
-        self.psi1V = np.dot(self.psi1.T, self.likelihood.V)
+        #VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
+        self.psi1Vf = np.dot(self.psi1.T, self.likelihood.VVT_factor)
 
-        # back substutue C into psi1V
-        tmp, info1 = dtrtrs(self.Lm, np.asfortranarray(self.psi1V), lower=1, trans=0)
-        self._LBi_Lmi_psi1V, _ = dtrtrs(self.LB, np.asfortranarray(tmp), lower=1, trans=0)
+        # back substutue C into psi1Vf
+        tmp, info1 = dtrtrs(self.Lm, np.asfortranarray(self.psi1Vf), lower=1, trans=0)
+        self._LBi_Lmi_psi1Vf, _ = dtrtrs(self.LB, np.asfortranarray(tmp), lower=1, trans=0)
         tmp, info2 = dpotrs(self.LB, tmp, lower=1)
-        self.Cpsi1V, info3 = dtrtrs(self.Lm, tmp, lower=1, trans=1)
+        self.Cpsi1Vf, info3 = dtrtrs(self.Lm, tmp, lower=1, trans=1)
 
         # Compute dL_dKmm
-        tmp = tdot(self._LBi_Lmi_psi1V)
+        tmp = tdot(self._LBi_Lmi_psi1Vf)
+        self.data_fit = np.trace(tmp)
         self.DBi_plus_BiPBi = backsub_both_sides(self.LB, self.output_dim * np.eye(self.num_inducing) + tmp)
         tmp = -0.5 * self.DBi_plus_BiPBi
         tmp += -0.5 * self.B * self.output_dim
@@ -108,7 +110,7 @@ class SparseGP(GPBase):
 
         # Compute dL_dpsi # FIXME: this is untested for the heterscedastic + uncertain inputs case
         self.dL_dpsi0 = -0.5 * self.output_dim * (self.likelihood.precision * np.ones([self.num_data, 1])).flatten()
-        self.dL_dpsi1 = np.dot(self.Cpsi1V, self.likelihood.V.T).T
+        self.dL_dpsi1 = np.dot(self.likelihood.VVT_factor, self.Cpsi1Vf.T)
         dL_dpsi2_beta = 0.5 * backsub_both_sides(self.Lm, self.output_dim * np.eye(self.num_inducing) - self.DBi_plus_BiPBi)
 
         if self.likelihood.is_heteroscedastic:
@@ -138,18 +140,18 @@ class SparseGP(GPBase):
             # likelihood is not heterscedatic
             self.partial_for_likelihood = -0.5 * self.num_data * self.output_dim * self.likelihood.precision + 0.5 * self.likelihood.trYYT * self.likelihood.precision ** 2
             self.partial_for_likelihood += 0.5 * self.output_dim * (self.psi0.sum() * self.likelihood.precision ** 2 - np.trace(self.A) * self.likelihood.precision)
-            self.partial_for_likelihood += self.likelihood.precision * (0.5 * np.sum(self.A * self.DBi_plus_BiPBi) - np.sum(np.square(self._LBi_Lmi_psi1V)))
+            self.partial_for_likelihood += self.likelihood.precision * (0.5 * np.sum(self.A * self.DBi_plus_BiPBi) - self.data_fit)
 
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
         if self.likelihood.is_heteroscedastic:
-            A = -0.5 * self.num_data * self.output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.likelihood.precision)) - 0.5 * np.sum(self.likelihood.V * self.likelihood.Y)
+            A = -0.5 * self.num_data * self.output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.likelihood.precision)) - 0.5 * np.sum(self.likelihood.V*self.likelihood.Y)
             B = -0.5 * self.output_dim * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A))
         else:
             A = -0.5 * self.num_data * self.output_dim * (np.log(2.*np.pi) - np.log(self.likelihood.precision)) - 0.5 * self.likelihood.precision * self.likelihood.trYYT
             B = -0.5 * self.output_dim * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self.A))
         C = -self.output_dim * (np.sum(np.log(np.diag(self.LB)))) # + 0.5 * self.num_inducing * np.log(sf2))
-        D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
+        D = 0.5 * self.data_fit
         return A + B + C + D + self.likelihood.Z
 
     def _set_params(self, p):
@@ -158,6 +160,7 @@ class SparseGP(GPBase):
         self.likelihood._set_params(p[self.Z.size + self.kern.num_params:])
         self._compute_kernel_matrices()
         self._computations()
+        self.Cpsi1V = None
 
     def _get_params(self):
         return np.hstack([self.Z.flatten(), self.kern._get_params_transformed(), self.likelihood._get_params()])
@@ -223,6 +226,14 @@ class SparseGP(GPBase):
         Bi, _ = dpotri(self.LB, lower=0)  # WTH? this lower switch should be 1, but that doesn't work!
         symmetrify(Bi)
         Kmmi_LmiBLmi = backsub_both_sides(self.Lm, np.eye(self.num_inducing) - Bi)
+
+        if self.Cpsi1V is None:
+            psi1V = np.dot(self.psi1.T,self.likelihood.V)
+            tmp, _ = dtrtrs(self.Lm, np.asfortranarray(psi1V), lower=1, trans=0)
+            tmp, _ = dpotrs(self.LB, tmp, lower=1)
+            self.Cpsi1V, _ = dtrtrs(self.Lm, tmp, lower=1, trans=1)
+
+
 
         if X_variance_new is None:
             Kx = self.kern.K(self.Z, Xnew, which_parts=which_parts)

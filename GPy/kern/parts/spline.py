@@ -9,7 +9,7 @@ def theta(x):
     """Heaviside step function"""
     return np.where(x>=0.,1.,0.)
 
-class spline(Kernpart):
+class Spline(Kernpart):
     """
     Spline kernel
 

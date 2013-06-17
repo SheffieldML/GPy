@@ -6,9 +6,9 @@ from kernpart import Kernpart
 import numpy as np
 import hashlib
 from scipy import weave
-from ..util.linalg import tdot
+from ...util.linalg import tdot
 
-class rbf(Kernpart):
+class RBF(Kernpart):
     """
     Radial Basis Function kernel, aka squared-exponential, exponentiated quadratic or Gaussian kernel:
 

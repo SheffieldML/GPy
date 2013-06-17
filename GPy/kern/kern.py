@@ -1,13 +1,12 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-
 import numpy as np
 import pylab as pb
 from ..core.parameterised import Parameterised
-from kernpart import Kernpart
+from parts.kernpart import Kernpart
 import itertools
-from prod import prod
+from parts.prod import Prod as prod
 
 class kern(Parameterised):
     def __init__(self, input_dim, parts=[], input_slices=None):

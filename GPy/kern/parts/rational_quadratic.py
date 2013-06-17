@@ -5,7 +5,7 @@
 from kernpart import Kernpart
 import numpy as np
 
-class rational_quadratic(Kernpart):
+class RationalQuadratic(Kernpart):
     """
     rational quadratic kernel
 

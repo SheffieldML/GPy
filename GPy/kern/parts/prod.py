@@ -5,7 +5,7 @@ from kernpart import Kernpart
 import numpy as np
 import hashlib
 
-class prod(Kernpart):
+class Prod(Kernpart):
     """
     Computes the product of 2 kernels
 

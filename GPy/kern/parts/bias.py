@@ -6,7 +6,7 @@ from kernpart import Kernpart
 import numpy as np
 import hashlib
 
-class bias(Kernpart):
+class Bias(Kernpart):
     def __init__(self,input_dim,variance=1.):
         """
         :param input_dim: the number of input dimensions

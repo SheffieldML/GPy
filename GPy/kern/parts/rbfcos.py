@@ -6,7 +6,7 @@
 from kernpart import Kernpart
 import numpy as np
 
-class rbfcos(Kernpart):
+class RBFCos(Kernpart):
     def __init__(self,input_dim,variance=1.,frequencies=None,bandwidths=None,ARD=False):
         self.input_dim = input_dim
         self.name = 'rbfcos'

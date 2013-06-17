@@ -4,6 +4,7 @@
 from model import *
 from parameterised import *
 import priors
-from GPy.core.gp import GP
-from GPy.core.sparse_gp import SparseGP
+from gp import GP
+from sparse_gp import SparseGP
 from fitc import FITC
+from svigp import SVIGP

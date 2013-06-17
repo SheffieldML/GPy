@@ -1,17 +1,16 @@
 # Copyright (c) 2012, James Hensman
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-
 import numpy as np
-from ..core import SparseGP
+from ..core import SVIGP
 from .. import likelihoods
 from .. import kern
 
-class SparseGPRegression(SparseGP):
+class SVIGPRegression(SVIGP):
     """
     Gaussian Process model for regression
 
-    This is a thin wrapper around the SparseGP class, with a set of sensible defalts
+    This is a thin wrapper around the SVIGP class, with a set of sensible defalts
 
     :param X: input observations
     :param Y: observed values
@@ -26,10 +25,10 @@ class SparseGPRegression(SparseGP):
 
     """
 
-    def __init__(self, X, Y, kernel=None, normalize_X=False, normalize_Y=False, Z=None, num_inducing=10, X_variance=None):
+    def __init__(self, X, Y, kernel=None, Z=None, num_inducing=10, q_u=None, batchsize=10):
         # kern defaults to rbf (plus white for stability)
         if kernel is None:
-            kernel = kern.rbf(X.shape[1]) + kern.white(X.shape[1], 1e-3)
+            kernel = kern.rbf(X.shape[1], variance=1., lengthscale=4.) + kern.white(X.shape[1], 1e-3)
 
         # Z defaults to a subset of the data
         if Z is None:
@@ -39,7 +38,7 @@ class SparseGPRegression(SparseGP):
             assert Z.shape[1] == X.shape[1]
 
         # likelihood defaults to Gaussian
-        likelihood = likelihoods.Gaussian(Y, normalize=normalize_Y)
+        likelihood = likelihoods.Gaussian(Y, normalize=False)
 
-        SparseGP.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X, X_variance=X_variance)
-        self.ensure_default_constraints()
+        SVIGP.__init__(self, X, likelihood, kernel, Z, q_u=q_u, batchsize=batchsize)
+        self.load_batch()

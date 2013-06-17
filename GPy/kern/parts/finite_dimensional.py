@@ -4,9 +4,9 @@
 
 from kernpart import Kernpart
 import numpy as np
-from ..util.linalg import pdinv,mdot
+from ...util.linalg import pdinv,mdot
 
-class finite_dimensional(Kernpart):
+class FiniteDimensional(Kernpart):
     def __init__(self, input_dim, F, G, variance=1., weights=None):
         """
         Argumnents

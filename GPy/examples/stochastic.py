@@ -15,7 +15,6 @@ def toy_1d():
     Y = np.sin(X) + np.cos(0.3*X) + np.random.randn(*X.shape)/np.sqrt(50.)
 
     m = GPy.models.SVIGPRegression(X,Y, batchsize=10, Z=Z)
-    m.ensure_default_constraints()
     m.constrain_bounded('noise_variance',1e-3,1e-1)
 
     m.param_steplength = 1e-4

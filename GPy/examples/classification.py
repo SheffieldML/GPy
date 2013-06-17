@@ -25,7 +25,6 @@ def crescent_data(seed=default_seed): # FIXME
     Y[Y.flatten()==-1] = 0
 
     m = GPy.models.GPClassification(data['X'], Y)
-    m.ensure_default_constraints()
     #m.update_likelihood_approximation()
     #m.optimize()
     m.pseudo_EM()
@@ -75,7 +74,6 @@ def toy_linear_1d_classification(seed=default_seed):
 
     # Model definition
     m = GPy.models.GPClassification(data['X'], Y)
-    m.ensure_default_constraints()
 
     # Optimize
     #m.update_likelihood_approximation()
@@ -106,7 +104,6 @@ def sparse_toy_linear_1d_classification(num_inducing=10,seed=default_seed):
     m = GPy.models.SparseGPClassification(data['X'], Y,num_inducing=num_inducing)
     m['.*len']= 4.
 
-    m.ensure_default_constraints()
     # Optimize
     #m.update_likelihood_approximation()
     # Parameters optimization:
@@ -137,7 +134,6 @@ def sparse_crescent_data(num_inducing=10, seed=default_seed):
     Y[Y.flatten()==-1]=0
 
     m = GPy.models.SparseGPClassification(data['X'], Y,num_inducing=num_inducing)
-    m.ensure_default_constraints()
     m['.*len'] = 10.
     #m.update_likelihood_approximation()
     #m.optimize()
@@ -163,7 +159,6 @@ def FITC_crescent_data(num_inducing=10, seed=default_seed):
 
     m = GPy.models.FITCClassification(data['X'], Y,num_inducing=num_inducing)
     m.constrain_bounded('.*len',1.,1e3)
-    m.ensure_default_constraints()
     m['.*len'] = 3.
     #m.update_likelihood_approximation()
     #m.optimize()

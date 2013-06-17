@@ -14,7 +14,6 @@ class GPLVMTests(unittest.TestCase):
         Y = np.random.multivariate_normal(np.zeros(N),K,input_dim).T
         k = GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
         m = GPy.models.GPLVM(Y, input_dim, kernel = k)
-        m.ensure_default_constraints()
         m.randomize()
         self.assertTrue(m.checkgrad())
 
@@ -26,7 +25,6 @@ class GPLVMTests(unittest.TestCase):
         Y = np.random.multivariate_normal(np.zeros(N),K,input_dim).T
         k = GPy.kern.linear(input_dim) + GPy.kern.white(input_dim, 0.00001)
         m = GPy.models.GPLVM(Y, input_dim, kernel = k)
-        m.ensure_default_constraints()
         m.randomize()
         self.assertTrue(m.checkgrad())
 
@@ -38,7 +36,6 @@ class GPLVMTests(unittest.TestCase):
         Y = np.random.multivariate_normal(np.zeros(N),K,input_dim).T
         k = GPy.kern.rbf(input_dim) + GPy.kern.white(input_dim, 0.00001)
         m = GPy.models.GPLVM(Y, input_dim, kernel = k)
-        m.ensure_default_constraints()
         m.randomize()
         self.assertTrue(m.checkgrad())
 

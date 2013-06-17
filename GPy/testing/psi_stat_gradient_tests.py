@@ -113,7 +113,6 @@ if __name__ == "__main__":
 #         Y -= Y.mean(axis=0)
 #         k = GPy.kern.linear(input_dim) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
 #         m = GPy.models.Bayesian_GPLVM(Y, input_dim, kernel=k, num_inducing=num_inducing)
-#         m.ensure_default_constraints()
 #         m.randomize()
 # #         self.assertTrue(m.checkgrad())
         numpy.random.seed(0)
@@ -146,7 +145,6 @@ if __name__ == "__main__":
 #                          num_inducing=num_inducing, kernel=GPy.kern.rbf(input_dim))
         m3 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
                          num_inducing=num_inducing, kernel=GPy.kern.linear(input_dim, ARD=True, variances=numpy.random.rand(input_dim)))
-        m3.ensure_default_constraints()
         # + GPy.kern.bias(input_dim))
 #         m4 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
 #                          num_inducing=num_inducing, kernel=GPy.kern.rbf(input_dim) + GPy.kern.bias(input_dim))

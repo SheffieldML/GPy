@@ -1,5 +1,6 @@
 import numpy as np
 from likelihood import likelihood
+from GPy.util.linalg import jitchol
 
 class Gaussian(likelihood):
     """
@@ -7,7 +8,7 @@ class Gaussian(likelihood):
 
     :param Y: observed output (Nx1 numpy.darray)
     ..Note:: Y values allowed depend on the likelihood_function used
-    :param variance : 
+    :param variance :
     :param normalize:  whether to normalize the data before computing (predictions will be in original scales)
     :type normalize: False|True
     """

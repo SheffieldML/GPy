@@ -2,29 +2,30 @@ import numpy as np
 
 def conf_matrix(p,labels,names=['1','0'],threshold=.5,show=True):
     """
-    Returns true and false positives in a binary classification problem
-    - Column names: true class of the examples
-    - Row names: classification assigned by the model
+    Returns error rate and true/false positives in a binary classification problem
+    - Actual classes are displayed by column.
+    - Predicted classes are displayed by row.
 
-    p: probabilities estimated for observation of belonging to class '1'
-    labels: observations' class
-    names: classes' names
-    threshold: probability value at which the model allocate an element to each class
-    show: whether the matrix should be shown or not
+    :param p: array of class '1' probabilities.
+    :param labels: array of actual classes.
+    :param names: list of class names, defaults to ['1','0'].
+    :param threshold: probability value used to decide the class.
+    :param show: whether the matrix should be shown or not
+    :type show: False|True
     """
-    p = p.flatten()
-    labels = labels.flatten()
-    N = p.size
-    C = np.ones(N)
-    C[p<threshold] = 0
-    True_1 = float((labels - C)[labels-C==0].shape[0] )
-    False_1 = float((labels - C)[labels-C==-2].shape[0] )
-    True_0 = float((labels - C)[labels-C==-1].shape[0] )
-    False_0 = float((labels - C)[labels-C==1].shape[0] )
+    assert p.size == labels.size, "Arrays p and labels have different dimensions."
+    decision = np.ones((labels.size,1))
+    decision[p<threshold] = 0
+    diff = decision - labels
+    false_0 = diff[diff == -1].size
+    false_1 = diff[diff == 1].size
+    true_1 = np.sum(decision[diff ==0])
+    true_0 = labels.size - true_1 - false_0 - false_1
+    error = (false_1 + false_0)/np.float(labels.size)
     if show:
-        print (True_1 + True_0 + 0.)/N * 100,'% instances correctly classified'
+        print 100. - error * 100,'% instances correctly classified'
         print '%-10s|  %-10s|  %-10s| ' % ('',names[0],names[1])
         print '----------|------------|------------|'
-        print '%-10s|  %-10s|  %-10s| ' % (names[0],True_1,False_0)
-        print '%-10s|  %-10s|  %-10s| ' % (names[1],False_1,True_0)
-    return True_1, False_1, True_0, False_0
+        print '%-10s|  %-10s|  %-10s| ' % (names[0],true_1,false_0)
+        print '%-10s|  %-10s|  %-10s| ' % (names[1],false_1,true_0)
+    return error,true_1, false_1, true_0, false_0

@@ -18,7 +18,5 @@ import rbfcos
 import rbf
 import spline
 import symmetric
-import sympy_helpers.cpp
-import sympy_helpers.h
 import sympykern
 import white

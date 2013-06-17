@@ -29,6 +29,7 @@ class GPBase(Model):
             self._Xscale = np.ones((1, self.input_dim))
 
         super(GPBase, self).__init__()
+        #Model.__init__(self)
         # All leaf nodes should call self._set_params(self._get_params()) at
         # the end
 

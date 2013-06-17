@@ -241,9 +241,9 @@ class RBF(Kernpart):
         # here are the "statistics" for psi1 and psi2
         if not np.array_equal(Z, self._Z):
             #Z has changed, compute Z specific stuff
-            self._psi2_Zhat = 0.5*(Z[:,None,:] +Z[None,:,:]) # num_inducing,num_inducing,input_dim
-            self._psi2_Zdist = 0.5*(Z[:,None,:]-Z[None,:,:]) # num_inducing,num_inducing,input_dim
-            self._psi2_Zdist_sq = np.square(self._psi2_Zdist/self.lengthscale) # num_inducing,num_inducing,input_dim
+            self._psi2_Zhat = 0.5*(Z[:,None,:] +Z[None,:,:]) # M,M,Q
+            self._psi2_Zdist = 0.5*(Z[:,None,:]-Z[None,:,:]) # M,M,Q
+            self._psi2_Zdist_sq = np.square(self._psi2_Zdist/self.lengthscale) # M,M,Q
             self._Z = Z
 
         if not (np.array_equal(Z, self._Z) and np.array_equal(mu, self._mu) and np.array_equal(S, self._S)):
@@ -257,12 +257,12 @@ class RBF(Kernpart):
             self._psi1 = self.variance*np.exp(self._psi1_exponent)
 
             #psi2
-            self._psi2_denom = 2.*S[:,None,None,:]/self.lengthscale2+1. # N,num_inducing,num_inducing,input_dim
+            self._psi2_denom = 2.*S[:,None,None,:]/self.lengthscale2+1. # N,M,M,Q
             self._psi2_mudist, self._psi2_mudist_sq, self._psi2_exponent, _ = self.weave_psi2(mu,self._psi2_Zhat)
-            #self._psi2_mudist = mu[:,None,None,:]-self._psi2_Zhat #N,num_inducing,num_inducing,input_dim
+            #self._psi2_mudist = mu[:,None,None,:]-self._psi2_Zhat #N,M,M,Q
             #self._psi2_mudist_sq = np.square(self._psi2_mudist)/(self.lengthscale2*self._psi2_denom)
-            #self._psi2_exponent = np.sum(-self._psi2_Zdist_sq -self._psi2_mudist_sq -0.5*np.log(self._psi2_denom),-1) #N,num_inducing,num_inducing
-            self._psi2 = np.square(self.variance)*np.exp(self._psi2_exponent) # N,num_inducing,num_inducing
+            #self._psi2_exponent = np.sum(-self._psi2_Zdist_sq -self._psi2_mudist_sq -0.5*np.log(self._psi2_denom),-1) #N,M,M,Q
+            self._psi2 = np.square(self.variance)*np.exp(self._psi2_exponent) # N,M,M,Q
 
             #store matrices for caching
             self._Z, self._mu, self._S = Z, mu,S

@@ -37,7 +37,6 @@ class GradientTests(unittest.TestCase):
         noise = GPy.kern.white(dimension)
         kern = kern + noise
         m = model_fit(X, Y, kernel=kern)
-        m.ensure_default_constraints()
         m.randomize()
         # contrain all parameters to be positive
         self.assertTrue(m.checkgrad())
@@ -150,7 +149,6 @@ class GradientTests(unittest.TestCase):
         K = k.K(X)
         Y = np.random.multivariate_normal(np.zeros(N), K, input_dim).T
         m = GPy.models.GPLVM(Y, input_dim, kernel=k)
-        m.ensure_default_constraints()
         self.assertTrue(m.checkgrad())
 
     def test_GPLVM_rbf_linear_white_kern_2D(self):
@@ -161,7 +159,6 @@ class GradientTests(unittest.TestCase):
         K = k.K(X)
         Y = np.random.multivariate_normal(np.zeros(N), K, input_dim).T
         m = GPy.models.GPLVM(Y, input_dim, init='PCA', kernel=k)
-        m.ensure_default_constraints()
         self.assertTrue(m.checkgrad())
 
     def test_GP_EP_probit(self):
@@ -195,7 +192,6 @@ class GradientTests(unittest.TestCase):
         k = GPy.kern.rbf(1) + GPy.kern.white(1)
         Y = np.hstack([np.ones(N/2),np.zeros(N/2)])[:,None]
         m = GPy.models.FITCClassification(X, Y=Y)
-        m.ensure_default_constraints()
         m.update_likelihood_approximation()
         self.assertTrue(m.checkgrad())
 

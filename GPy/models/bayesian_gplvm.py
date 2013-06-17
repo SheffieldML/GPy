@@ -60,7 +60,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
             self._savedABCD = []
 
         SparseGP.__init__(self, X, likelihood, kernel, Z=Z, X_variance=X_variance, **kwargs)
-        self._set_params(self._get_params())
+        self.ensure_default_constraints()
 
     @property
     def oldps(self):

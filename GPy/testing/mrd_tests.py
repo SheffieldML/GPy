@@ -24,7 +24,6 @@ class MRDTests(unittest.TestCase):
         likelihood_list = [GPy.likelihoods.Gaussian(Y) for Y in Ylist]
 
         m = GPy.models.MRD(likelihood_list, input_dim=input_dim, kernels=k, num_inducing=num_inducing)
-        m.ensure_default_constraints()
 
         self.assertTrue(m.checkgrad())
 

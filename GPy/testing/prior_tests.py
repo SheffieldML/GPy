@@ -14,7 +14,6 @@ class PriorTests(unittest.TestCase):
         y += 0.05*np.random.randn(len(X))
         X, y = X[:, None], y[:, None]
         m = GPy.models.GPRegression(X, y)
-        m.ensure_default_constraints()
         lognormal = GPy.priors.LogGaussian(1, 2)
         m.set_prior('rbf', lognormal)
         m.randomize()
@@ -28,7 +27,6 @@ class PriorTests(unittest.TestCase):
         y += 0.05*np.random.randn(len(X))
         X, y = X[:, None], y[:, None]
         m = GPy.models.GPRegression(X, y)
-        m.ensure_default_constraints()
         Gamma = GPy.priors.Gamma(1, 1)
         m.set_prior('rbf', Gamma)
         m.randomize()
@@ -42,7 +40,6 @@ class PriorTests(unittest.TestCase):
         y += 0.05*np.random.randn(len(X))
         X, y = X[:, None], y[:, None]
         m = GPy.models.GPRegression(X, y)
-        m.ensure_default_constraints()
         gaussian = GPy.priors.Gaussian(1, 1)
         success = False
 

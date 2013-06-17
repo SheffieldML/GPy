@@ -18,7 +18,6 @@ def toy_rbf_1d(optimizer='tnc', max_nb_eval_optim=100):
     m = GPy.models.GPRegression(data['X'],data['Y'])
 
     # optimize
-    m.ensure_default_constraints()
     m.optimize(optimizer, max_f_eval=max_nb_eval_optim)
     # plot
     m.plot()
@@ -36,7 +35,6 @@ def rogers_girolami_olympics(optim_iters=100):
     m['rbf_lengthscale'] = 10
 
     # optimize
-    m.ensure_default_constraints()
     m.optimize(max_f_eval=optim_iters)
 
     # plot
@@ -52,7 +50,6 @@ def toy_rbf_1d_50(optim_iters=100):
     m = GPy.models.GPRegression(data['X'],data['Y'])
 
     # optimize
-    m.ensure_default_constraints()
     m.optimize(max_f_eval=optim_iters)
 
     # plot
@@ -68,7 +65,6 @@ def silhouette(optim_iters=100):
     m = GPy.models.GPRegression(data['X'],data['Y'])
 
     # optimize
-    m.ensure_default_constraints()
     m.optimize(messages=True,max_f_eval=optim_iters)
 
     print(m)
@@ -92,7 +88,6 @@ def coregionalisation_toy2(optim_iters=100):
     m = GPy.models.GPRegression(X,Y,kernel=k)
     m.constrain_fixed('.*rbf_var',1.)
     #m.constrain_positive('.*kappa')
-    m.ensure_default_constraints()
     m.optimize('sim',messages=1,max_f_eval=optim_iters)
 
     pb.figure()
@@ -124,7 +119,6 @@ def coregionalisation_toy(optim_iters=100):
     m = GPy.models.GPRegression(X,Y,kernel=k)
     m.constrain_fixed('.*rbf_var',1.)
     #m.constrain_positive('kappa')
-    m.ensure_default_constraints()
     m.optimize(max_f_eval=optim_iters)
 
     pb.figure()
@@ -162,7 +156,6 @@ def coregionalisation_sparse(optim_iters=100):
     m.constrain_fixed('.*rbf_var',1.)
     m.constrain_fixed('iip')
     m.constrain_bounded('noise_variance',1e-3,1e-1)
-    m.ensure_default_constraints()
     m.optimize_restarts(5, robust=True, messages=1, max_f_eval=optim_iters)
 
     #plotting:
@@ -189,11 +182,9 @@ def multiple_optima(gene_number=937,resolution=80, model_restarts=10, seed=10000
     log_SNRs = np.linspace(-3., 4., resolution)
 
     data = GPy.util.datasets.della_gatta_TRP63_gene_expression(gene_number)
-    # Sub sample the data to ensure multiple optima
     #data['Y'] = data['Y'][0::2, :]
     #data['X'] = data['X'][0::2, :]
 
-    # Remove the mean (no bias kernel to ensure signal/noise is in RBF/white)
     data['Y'] = data['Y'] - np.mean(data['Y'])
 
     lls = GPy.examples.regression._contour_data(data, length_scales, log_SNRs, GPy.kern.rbf)
@@ -220,7 +211,6 @@ def multiple_optima(gene_number=937,resolution=80, model_restarts=10, seed=10000
         optim_point_y[0] = np.log10(m['rbf_variance']) - np.log10(m['noise_variance']);
 
         # optimize
-        m.ensure_default_constraints()
         m.optimize('scg', xtol=1e-6, ftol=1e-6, max_f_eval=optim_iters)
 
         optim_point_x[1] = m['rbf_lengthscale']
@@ -273,7 +263,6 @@ def sparse_GP_regression_1D(N = 400, num_inducing = 5, optim_iters=100):
     # create simple GP Model
     m = GPy.models.SparseGPRegression(X, Y, kernel, num_inducing=num_inducing)
 
-    m.ensure_default_constraints()
 
     m.checkgrad(verbose=1)
     m.optimize('tnc', messages = 1, max_f_eval=optim_iters)
@@ -294,7 +283,6 @@ def sparse_GP_regression_2D(N = 400, num_inducing = 50, optim_iters=100):
     m = GPy.models.SparseGPRegression(X,Y,kernel, num_inducing = num_inducing)
 
     # contrain all parameters to be positive (but not inducing inputs)
-    m.ensure_default_constraints()
     m.set('.*len',2.)
 
     m.checkgrad()
@@ -320,7 +308,6 @@ def uncertain_inputs_sparse_regression(optim_iters=100):
 
     # create simple GP Model - no input uncertainty on this one
     m = GPy.models.SparseGPRegression(X, Y, kernel=k, Z=Z)
-    m.ensure_default_constraints()
     m.optimize('scg', messages=1, max_f_eval=optim_iters)
     m.plot(ax=axes[0])
     axes[0].set_title('no input uncertainty')
@@ -328,7 +315,6 @@ def uncertain_inputs_sparse_regression(optim_iters=100):
 
     #the same Model with uncertainty
     m = GPy.models.SparseGPRegression(X, Y, kernel=k, Z=Z, X_variance=S)
-    m.ensure_default_constraints()
     m.optimize('scg', messages=1, max_f_eval=optim_iters)
     m.plot(ax=axes[1])
     axes[1].set_title('with input uncertainty')

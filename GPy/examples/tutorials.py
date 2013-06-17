@@ -24,7 +24,6 @@ def tuto_GP_regression():
     print m
     m.plot()
 
-    m.ensure_default_constraints() 
     m.constrain_positive('')
 
     m.unconstrain('')               # may be used to remove the previous constrains
@@ -135,7 +134,6 @@ def tuto_kernel_overview():
     pb.ylabel("+   ",rotation='horizontal',fontsize='30')
     m.plot(ax=axs, which_parts=[False,False,False,True])
 
-    m.ensure_default_constraints()
     return(m)
 
 
@@ -144,6 +142,5 @@ def model_interaction():
     Y = np.sin(X) + np.random.randn(*X.shape)*0.01 + 5.
     k = GPy.kern.rbf(1) + GPy.kern.bias(1)
     m = GPy.models.GPRegression(X, Y, kernel=k)
-    m.ensure_default_constraints()
     return m
 

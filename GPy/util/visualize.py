@@ -203,6 +203,7 @@ class lvm_dimselect(lvm):
             self.sense_axes = sense_axes
         self.labels = labels
         lvm.__init__(self,vals,Model,data_visualize,latent_axes,sense_axes,latent_index)
+        self.show_sensitivities()
         print "use left and right mouse butons to select dimensions"
 
 
@@ -506,5 +507,5 @@ def data_play(Y, visualizer, frame_rate=30):
     
 
     for y in Y:
-        visualizer.modify(y)
+        visualizer.modify(y[None, :])
         time.sleep(1./float(frame_rate))

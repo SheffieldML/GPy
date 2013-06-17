@@ -40,9 +40,11 @@ class Gaussian(likelihood):
         if D > self.N:
             self.YYT = np.dot(self.Y, self.Y.T)
             self.trYYT = np.trace(self.YYT)
+            self.YYT_factor = jitchol(self.YYT)
         else:
             self.YYT = None
             self.trYYT = np.sum(np.square(self.Y))
+            self.YYT_factor = self.Y
 
     def _get_params(self):
         return np.asarray(self._variance)
@@ -53,12 +55,13 @@ class Gaussian(likelihood):
     def _set_params(self, x):
         x = np.float64(x)
         if np.all(self._variance != x):
-            if x == 0.:
+            if x == 0.:#special case of zero noise
                 self.precision = np.inf
                 self.V = None
             else:
                 self.precision = 1. / x
                 self.V = (self.precision) * self.Y
+                self.VVT_factor = self.precision * self.YYT_factor
             self.covariance_matrix = np.eye(self.N) * x
             self._variance = x
 

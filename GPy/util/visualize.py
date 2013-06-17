@@ -193,7 +193,7 @@ class lvm_dimselect(lvm):
     GPy.examples.dimensionality_reduction.BGPVLM_oil()
 
     """
-    def __init__(self, vals, Model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0, 1]):
+    def __init__(self, vals, Model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0, 1], labels=None):
         if latent_axes==None and sense_axes==None:
             self.fig,(latent_axes,self.sense_axes) = plt.subplots(1,2)
         elif sense_axes==None:
@@ -201,8 +201,9 @@ class lvm_dimselect(lvm):
             self.sense_axes = fig.add_subplot(111)
         else:
             self.sense_axes = sense_axes
-        
+        self.labels = labels
         lvm.__init__(self,vals,Model,data_visualize,latent_axes,sense_axes,latent_index)
+        self.show_sensitivities()
         print "use left and right mouse butons to select dimensions"
 
 
@@ -221,7 +222,7 @@ class lvm_dimselect(lvm):
 
             self.latent_axes.cla()
             self.Model.plot_latent(which_indices=self.latent_index,
-                                   ax=self.latent_axes)
+                                   ax=self.latent_axes, labels=self.labels)
             self.latent_handle = self.latent_axes.plot([0],[0],'rx',mew=2)[0]
             self.modify(self.latent_values)
 
@@ -506,5 +507,5 @@ def data_play(Y, visualizer, frame_rate=30):
     
 
     for y in Y:
-        visualizer.modify(y)
+        visualizer.modify(y[None, :])
         time.sleep(1./float(frame_rate))

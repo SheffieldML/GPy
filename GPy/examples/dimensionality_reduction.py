@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, cm
 
 import GPy
 from GPy.core.transformations import logexp
@@ -182,7 +182,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
     sS = sS(x)
 
     S1 = np.hstack([s1, sS])
-    S2 = np.hstack([s2, sS])
+    S2 = np.hstack([s2, s3, sS])
     S3 = np.hstack([s3, sS])
 
     Y1 = S1.dot(np.random.randn(S1.shape[1], D1))
@@ -216,7 +216,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
         ax.legend()
         for i, Y in enumerate(Ylist):
             ax = fig.add_subplot(2, len(Ylist), len(Ylist) + 1 + i)
-            ax.imshow(Y)
+            ax.imshow(Y, aspect='auto', cmap=cm.gray) # @UndefinedVariable
             ax.set_title("Y{}".format(i + 1))
         pylab.draw()
         pylab.tight_layout()
@@ -261,6 +261,7 @@ def bgplvm_simulation(optimize='scg',
 
     k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2)) # + kern.bias(Q)
     m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k, _debug=True)
+
     # m.constrain('variance|noise', logexp_clipped())
     m.ensure_default_constraints()
     m['noise'] = Y.var() / 100.
@@ -298,7 +299,7 @@ def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
 
     if optimize:
         print "Optimizing Model:"
-        m.optimize('scg', messages=1, max_iters=8e3, max_f_eval=8e3, gtol=.1)
+        m.optimize(messages=1, max_iters=8e3, max_f_eval=8e3, gtol=.1)
     if plot:
         m.plot_X_1d("MRD Latent Space 1D")
         m.plot_scales("MRD Scales")
@@ -327,27 +328,55 @@ def brendan_faces():
     data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, invert=False, scale=False)
     lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
     raw_input('Press enter to finish')
-    lvm_visualizer.close()
 
     return m
+def stick_play(range=None, frame_rate=15):
+    data = GPy.util.datasets.stick()
+    # optimize
+    if range==None:
+        Y = data['Y'].copy()
+    else:
+        Y = data['Y'][range[0]:range[1], :].copy()
+    y = Y[0, :]
+    data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
+    GPy.util.visualize.data_play(Y, data_show, frame_rate)
+    return Y
 
 def stick():
     data = GPy.util.datasets.stick()
-    m = GPy.models.GPLVM(data['Y'], 2)
-
     # optimize
+    m = GPy.models.GPLVM(data['Y'], 2)
     m.ensure_default_constraints()
     m.optimize(messages=1, max_f_eval=10000)
     m._set_params(m._get_params())
-
+    plt.clf
     ax = m.plot_latent()
     y = m.likelihood.Y[0, :]
     data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
     lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
     raw_input('Press enter to finish')
-    lvm_visualizer.close()
 
     return m
+
+def stick_bgplvm(model=None):
+    data = GPy.util.datasets.stick()
+    Q = 6
+    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
+    m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20,kernel=kernel)
+    # optimize
+    m.ensure_default_constraints()
+    m.optimize(messages=1, max_f_eval=3000,xtol=1e-300,ftol=1e-300)
+    m._set_params(m._get_params())
+    plt.clf, (latent_axes, sense_axes) = plt.subplots(1, 2)
+    plt.sca(latent_axes)
+    m.plot_latent()
+    y = m.likelihood.Y[0, :].copy()
+    data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
+    lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :].copy(), m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
+    raw_input('Press enter to finish')
+
+    return m
+
 
 def cmu_mocap(subject='35', motion=['01'], in_place=True):
 

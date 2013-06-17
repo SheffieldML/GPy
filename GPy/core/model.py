@@ -237,7 +237,7 @@ class Model(Parameterised):
         try:
             self._set_params_transformed(x)
             self._fail_count = 0
-        except (LinAlgError, ZeroDivisionError) as e:
+        except (LinAlgError, ZeroDivisionError, ValueError) as e:
             if self._fail_count >= self._allowed_failures:
                 raise e
             self._fail_count += 1
@@ -255,7 +255,7 @@ class Model(Parameterised):
         try:
             self._set_params_transformed(x)
             self._fail_count = 0
-        except (LinAlgError, ZeroDivisionError) as e:
+        except (LinAlgError, ZeroDivisionError, ValueError) as e:
             if self._fail_count >= self._allowed_failures:
                 raise e
             self._fail_count += 1
@@ -267,7 +267,7 @@ class Model(Parameterised):
             self._set_params_transformed(x)
             obj_f = -self.log_likelihood() - self.log_prior()
             self._fail_count = 0
-        except (LinAlgError, ZeroDivisionError) as e:
+        except (LinAlgError, ZeroDivisionError, ValueError) as e:
             if self._fail_count >= self._allowed_failures:
                 raise e
             self._fail_count += 1

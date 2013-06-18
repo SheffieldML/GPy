@@ -21,7 +21,7 @@ class LinkFunction(object):
 
 class Probit(LinkFunction):
     """
-    Probit link function: Squashes a likelihood between 0 and 1
+    Probit link function
     """
     def transf(self,mu):
         pass
@@ -31,3 +31,32 @@ class Probit(LinkFunction):
 
     def log_inv_transf(self,f):
         pass
+
+class Log(LinkFunction):
+    """
+    Logarithm link function
+    """
+
+    def transf(self,mu):
+        return np.log(mu)
+
+    def inv_transf(self,f):
+        return np.exp(f)
+
+    def log_inv_transf(self,f):
+        return f
+
+    def inv_transf_df(sefl,f):
+        return np.exp(f)
+
+    def log_inv_transf_df(self,f):
+        return 1
+
+    def inv_transf_df(sefl,f):
+        return np.exp(f)
+
+    def log_inv_transf_df(self,f):
+        return 1
+
+
+

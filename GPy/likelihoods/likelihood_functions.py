@@ -31,16 +31,20 @@ class LikelihoodFunction(object):
     def _product(self,gp,obs,mu,sigma):
         return stats.norm.pdf(gp,loc=mu,scale=sigma) * self._distribution(gp,obs)
 
-    def _nlog_product(self,gp,obs,mu,sigma):
-        return -(-.5*(gp-mu)**2/sigma**2 + self._log_distribution(gp,obs))
+    def _log_product_scaled(self,gp,obs,mu,sigma):
+        return -.5*(gp-mu)**2/sigma**2 + self._log_distribution_scaled(gp,obs)
+
+    def _log_product_scaled_dgp(self,gp,obs,mu,sigma):
+        return -(gp -mu)/sigma**2 + self._log_distribution_scaled_dgp(gp,obs)
 
     def _locate(self,obs,mu,sigma):
         """
         Golden Search to find the mode in the _product function (cavity x exact likelihood) and define a grid around it for numerical integration
         """
-        golden_A = -1 if obs == 0 else np.array([np.log(obs),mu]).min() #Lower limit
-        golden_B = np.array([np.log(obs),mu]).max() #Upper limit
-        return sp.optimize.golden(self._nlog_product, args=(obs,mu,sigma), brack=(golden_A,golden_B)) #Better to work with _nlog_product than with _product
+        lower = -1 if obs == 0 else np.array([np.log(obs),mu]).min() #Lower limit #FIXME
+        upper = np.array([np.log(obs),mu]).max() #Upper limit #FIXME
+        #return sp.optimize.golden(self._nlog_product, args=(obs,mu,sigma), brack=(golden_A,golden_B)) #Better to work with _nlog_product than with _product
+        return sp.optimize.brent(self._nlog_product, args=(obs,mu,sigma), brack=(lower,upper)) #Better to work with _nlog_product than with _product
 
     def _moments_match_numerical(self,obs,tau,v):
         """
@@ -87,7 +91,7 @@ class Binomial(LikelihoodFunction):
     def _distribution(self,gp,obs):
         pass
 
-    def _log_distribution(self,gp,obs):
+    def _log_distribution_scaled(self,gp,obs):
         pass
 
     def _preprocess_values(self,Y):
@@ -152,8 +156,18 @@ class Poisson(LikelihoodFunction):
     def _distribution(self,gp,obs):
         return stats.poisson.pmf(obs,self.link.inv_transf(gp))
 
-    def _log_distribution(self,gp,obs):
-        return - self.link.inv_transf(gp) + obs * self.link.log_inv_transf(gp)
+    def _log_distribution_scaled(self,gp,obs):
+        """
+        Logarithm of the un-normalized distribution: factors that are not a function of gp are omitted
+        """
+        return -self.link.inv_transf(gp) + obs * self.link.log_inv_transf(gp)
+
+    def _log_distribution_scaled_dgp(self,gp,obs):
+        return -self.link.inv_transf_df(gp) + obs * self.link.log_inv_transf_df(gp)
+
+    def _log_distribution_scaled_d2gp2(self,gp,obs):
+        return -self.link.inv_transf_df(gp) + obs * self.link.log_inv_transf_df(gp)
+
 
     def predictive_values(self,mu,var):
         """

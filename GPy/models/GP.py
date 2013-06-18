@@ -141,6 +141,8 @@ class GP(model):
 
         Note, we use the chain rule: dL_dtheta = dL_dK * d_K_dtheta
         """
+        self.likelihood.fit_full(self.kern.K(self.X))
+        self.likelihood._set_params(self.likelihood._get_params())
         dL_dthetaK = self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X)
         if isinstance(self.likelihood, Laplace):
             #Reapproximate incase it hasnt been done...
@@ -155,8 +157,9 @@ class GP(model):
             #BUG: THIS SHOULD NOT BE (1,num_k_params) matrix it should be (N,N,num_k_params)
             #dK_dthetaK = self.kern.dK_dtheta(dL_dK=fake_dL_dKs, X=self.X)
 
-            #dL_dthetaK = self.likelihood._Kgradients(dK_dthetaK=dK_dthetaK)
-            dL_dthetaL = 0 #self.likelihood._gradients(partial=np.diag(self.dL_dK))
+            dK_dthetaK = self.kern.dK_dtheta
+            dL_dthetaK = self.likelihood._Kgradients(dK_dthetaK, self.X)
+            dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))
             #print "dL_dthetaK after: ",dL_dthetaK
             #print "Stacked dL_dthetaK, dL_dthetaL: ", np.hstack((dL_dthetaK, dL_dthetaL))
         else:

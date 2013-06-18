@@ -34,7 +34,7 @@ def det_ln_diag(A):
 
 def pddet(A):
     """
-    Determinant of a positive definite matrix
+    Determinant of a positive definite matrix, only symmetric matricies though
     """
     L = jitchol(A)
     logdetA = 2*sum(np.log(np.diag(L)))

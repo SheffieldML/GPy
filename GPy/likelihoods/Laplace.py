@@ -8,9 +8,6 @@ from ..util.linalg import pdinv, mdot, jitchol, chol_inv, det_ln_diag, pddet
 from scipy.linalg.lapack import dtrtrs
 import random
 #import pylab as plt
-np.random.seed(50)
-random.seed(50)
-
 
 class Laplace(likelihood):
     """Laplace approximation to a posterior"""
@@ -45,7 +42,7 @@ class Laplace(likelihood):
         self.is_heteroscedastic = True
         self.Nparams = 0
 
-        self.NORMAL_CONST = -((0.5 * self.N) * np.log(2 * np.pi))
+        self.NORMAL_CONST = ((0.5 * self.N) * np.log(2 * np.pi))
 
         #Initial values for the GP variables
         self.Y = np.zeros((self.N, 1))
@@ -72,26 +69,36 @@ class Laplace(likelihood):
         #FIXME: Careful of side effects! And make sure W and K are up to date!
         d3lik_d3fhat = self.likelihood_function.d3lik_d3f(self.data, self.f_hat)
         dL_dfhat = -0.5*(np.diag(self.Ki_W_i)[:, None]*d3lik_d3fhat)
+
         Wi_K_i = self.W_12*self.Bi*self.W_12.T #same as rasms R
 
         I_KW_i = np.eye(self.N) - np.dot(self.K, Wi_K_i)
         return dL_dfhat, I_KW_i, Wi_K_i
 
-    def _Kgradients(self, dK_dthetaK):
+    def _Kgradients(self, dK_dthetaK, X):
         """
         Gradients with respect to prior kernel parameters
         """
         dL_dfhat, I_KW_i, Wi_K_i = self._shared_gradients_components()
         dlp = self.likelihood_function.dlik_df(self.data, self.f_hat)
 
-        dL_dthetaK = np.zeros(dK_dthetaK.shape)
-        for thetaK_i, dK_dthetaK_i in enumerate(dK_dthetaK):
-            #Explicit
-            f_Ki_dK_dtheta_Ki_f = mdot(self.Ki_f.T, dK_dthetaK_i, self.Ki_f)
-            dL_dthetaK[thetaK_i] = 0.5*f_Ki_dK_dtheta_Ki_f - 0.5*np.trace(Wi_K_i*dK_dthetaK_i)
-            #Implicit
-            df_hat_dthetaK = mdot(I_KW_i, dK_dthetaK_i, dlp)
-            dL_dthetaK[thetaK_i] += np.dot(dL_dfhat.T, df_hat_dthetaK)
+        #Implicit
+        impl = mdot(dlp, dL_dfhat.T, I_KW_i)
+        expl_a = - mdot(self.Ki_f, self.Ki_f.T)
+        expl_b = Wi_K_i
+        expl = 0.5*expl_a - 0.5*expl_b
+        dL_dthetaK_exp = dK_dthetaK(expl, X)
+        dL_dthetaK_imp = dK_dthetaK(impl, X)
+        dL_dthetaK = -(dL_dthetaK_imp + dL_dthetaK_exp)
+
+        #dL_dthetaK = np.zeros(dK_dthetaK.shape)
+        #for thetaK_i, dK_dthetaK_i in enumerate(dK_dthetaK):
+            ##Explicit
+            #f_Ki_dK_dtheta_Ki_f = mdot(self.Ki_f.T, dK_dthetaK_i, self.Ki_f)
+            #dL_dthetaK[thetaK_i] = 0.5*f_Ki_dK_dtheta_Ki_f - 0.5*np.trace(Wi_K_i*dK_dthetaK_i)
+            ##Implicit
+            #df_hat_dthetaK = mdot(I_KW_i, dK_dthetaK_i, dlp)
+            #dL_dthetaK[thetaK_i] += np.dot(dL_dfhat.T, df_hat_dthetaK)
 
         return dL_dthetaK
 
@@ -99,13 +106,12 @@ class Laplace(likelihood):
         """
         Gradients with respect to likelihood parameters
         """
-        return np.zeros(1)
-        #return np.zeros(0)
+        #return np.zeros(1)
         dL_dfhat, I_KW_i, Wi_K_i = self._shared_gradients_components()
         dlik_dthetaL, dlik_grad_dthetaL, dlik_hess_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat)
 
         num_params = len(dlik_dthetaL)
-        dL_dthetaL = np.zeros((1, num_params)) # make space for one derivative for each likelihood parameter
+        dL_dthetaL = np.zeros(num_params) # make space for one derivative for each likelihood parameter
         for thetaL_i in range(num_params):
             #Explicit
             #dL_dthetaL[thetaL_i] = np.sum(dlik_dthetaL[thetaL_i]) - 0.5*np.trace(np.dot(Ki_W_i.T, np.diagflat(dlik_hess_dthetaL[thetaL_i])))
@@ -143,8 +149,6 @@ class Laplace(likelihood):
         $$\tilde{\Sigma} = W^{-1}$$
 
         """
-        epsilon = 1e14
-
         #Wi(Ki + W) = WiKi + I = KW_i + I = L_Lt_W_i + I = Wi_Lit_Li + I = Lt_W_i_Li + I
         #dtritri -> L -> L_i
         #dtrtrs -> L.T*W, L_i -> (L.T*W)_i*L_i
@@ -153,53 +157,37 @@ class Laplace(likelihood):
         Li = chol_inv(L)
         Lt_W = L.T*self.W.T
 
-        ##Check it isn't singular!
-        if cond(Lt_W) > epsilon:
-            print "WARNING: L_inv.T * W matrix is singular,\nnumerical stability may be a problem"
-
         Lt_W_i_Li = dtrtrs(Lt_W, Li, lower=False)[0]
         self.Wi__Ki_W = Lt_W_i_Li + np.eye(self.N)
 
         Y_tilde = np.dot(self.Wi__Ki_W, self.f_hat)
 
-        #f.T(Ki + W)f
-        f_Ki_W_f = (np.dot(self.f_hat.T, cho_solve((L, True), self.f_hat))
-                    + mdot(self.f_hat.T, self.W*self.f_hat)
-                    )
+        ln_W_det = det_ln_diag(self.W)
+        yf_W_yf = mdot((Y_tilde - self.f_hat).T, np.diagflat(self.W), (Y_tilde - self.f_hat))
 
-        y_W_f = mdot(Y_tilde.T*self.W.T, self.f_hat)
-
-
-        y_W_y = mdot(Y_tilde.T, self.W*Y_tilde)
-
-        ln_W_det = np.log(self.W).sum()
-
-        #FIXME: Revisit this
-        Z_tilde = (- self.NORMAL_CONST
-                   + 0.5*self.ln_K_det
-                   + 0.5*ln_W_det
-                   + 0.5*self.ln_Ki_W_i_det
-                   + 0.5*f_Ki_W_f
-                   + 0.5*y_W_y
-                   - y_W_f
-                   + self.ln_z_hat
-                   )
-        #Z_tilde = (self.NORMAL_CONST
-                   #- 0.5*self.ln_K_det
-                   #- 0.5*ln_W_det
-                   #- 0.5*self.ln_Ki_W_i_det
-                   #- 0.5*f_Ki_W_f
-                   #- 0.5*y_W_y
-                   #+ y_W_f
+        #Z_tilde = (+ self.NORMAL_CONST
                    #+ self.ln_z_hat
+                   #+ 0.5*self.ln_I_KW_det
+                   #- 0.5*ln_W_det
+                   #+ 0.5*self.f_Ki_f
+                   #+ 0.5*yf_W_yf
                    #)
-        #self.Z_tilde = 0
-
-        ##Check it isn't singular!
-        if cond(self.W) > epsilon:
-            print "WARNING: Transformed covariance matrix is singular,\nnumerical stability may be a problem"
 
         self.Sigma_tilde = np.diagflat(1.0/self.W)
+
+        Ki, _, _, K_det = pdinv(self.K)
+        ln_det_K_Wi__Bi = self.ln_I_KW_det + pddet(self.Sigma_tilde + self.K)
+        W = np.diagflat(self.W)
+        Wi = self.Sigma_tilde
+        W12i = np.sqrt(Wi)
+        D = Ki - mdot((Ki + W), W12i, self.Bi, W12i, (Ki + W))
+        fDf = mdot(self.f_hat.T, D, self.f_hat)
+        l = self.likelihood_function.link_function(self.data, self.f_hat, extra_data=self.extra_data)
+        Z_tilde = (+ self.NORMAL_CONST
+                   + l
+                   + 0.5*ln_det_K_Wi__Bi
+                   - 0.5*fDf
+                  )
 
         #Convert to float as its (1, 1) and Z must be a scalar
         self.Z = np.float64(Z_tilde)
@@ -239,10 +227,6 @@ class Laplace(likelihood):
         self.B, self.B_chol, self.W_12 = self._compute_B_statistics(self.K, self.W)
         self.Bi, _, _, B_det = pdinv(self.B)
 
-        self.Ki_W_i = self.K - mdot(self.K, self.W_12*self.Bi*self.W_12.T, self.K)
-
-        self.ln_Ki_W_i_det = np.linalg.det(self.Ki_W_i)
-
         #Do the computation again at f to get Ki_f which is useful
         b = self.W*self.f_hat + self.likelihood_function.dlik_df(self.data, self.f_hat, extra_data=self.extra_data)
         solve_chol = cho_solve((self.B_chol, True), np.dot(self.W_12*self.K, b))
@@ -250,12 +234,14 @@ class Laplace(likelihood):
         self.Ki_f = a
 
         self.f_Ki_f = np.dot(self.f_hat.T, self.Ki_f)
-        self.ln_K_det = pddet(self.K)
-        #_, _, _, self.ln_K_det = pdinv(self.K)
+        self.Ki_W_i = self.K - mdot(self.K, self.W_12*self.Bi*self.W_12.T, self.K)
 
+        #For det, |I + KW| == |I + W_12*K*W_12|
+        self.ln_I_KW_det = pddet(np.eye(self.N) + self.W_12*self.K*self.W_12.T)
+
+        #self.ln_I_KW_det = pddet(np.eye(self.N) + np.dot(self.K, self.W))
         self.ln_z_hat = (- 0.5*self.f_Ki_f
-                         - 0.5*self.ln_K_det
-                         + 0.5*self.ln_Ki_W_i_det
+                         - self.ln_I_KW_det
                          + self.likelihood_function.link_function(self.data, self.f_hat, extra_data=self.extra_data)
                          )
 
@@ -289,7 +275,7 @@ class Laplace(likelihood):
         #ONLY WORKS FOR 1D DATA
         def obj(f):
             res = -1 * (self.likelihood_function.link_function(self.data[:, 0], f, extra_data=self.extra_data) - 0.5 * np.dot(f.T, np.dot(self.Ki, f))
-                        + self.NORMAL_CONST)
+                        - self.NORMAL_CONST)
             return float(res)
 
         def obj_grad(f):

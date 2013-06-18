@@ -39,11 +39,11 @@ def debug_student_t_noise_approx():
     plot = False
     real_var = 0.1
     #Start a function, any function
-    #X = np.linspace(0.0, 10.0, 100)[:, None]
-    X = np.array([0.5])[:, None]
+    X = np.linspace(0.0, 10.0, 15)[:, None]
+    #X = np.array([0.5])[:, None]
     Y = np.sin(X) + np.random.randn(*X.shape)*real_var
 
-    X_full = np.linspace(0.0, 10.0, 500)[:, None]
+    X_full = np.linspace(0.0, 10.0, 15)[:, None]
     Y_full = np.sin(X_full)
 
     Y = Y/Y.max()
@@ -83,7 +83,8 @@ def debug_student_t_noise_approx():
         #plt.plot(X_full, Y_full)
     #print m
 
-    edited_real_sd = initial_var_guess #real_sd
+    #edited_real_sd = initial_var_guess #real_sd
+    edited_real_sd = real_sd
 
     print "Clean student t, rasm"
     t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
@@ -94,7 +95,7 @@ def debug_student_t_noise_approx():
     #m.constrain_fixed('rbf_l', 1.8651)
     #m.constrain_fixed('t_noise_variance', real_sd)
     m.constrain_positive('rbf')
-    m.constrain_fixed('t_noi', real_sd)
+    #m.constrain_fixed('t_noi', real_sd)
     m.ensure_default_constraints()
     m.update_likelihood_approximation()
     m.optimize(messages=True)
@@ -148,7 +149,7 @@ def student_t_approx():
     #Yc = Yc/Yc.max()
 
     #Add student t random noise to datapoints
-    deg_free = 10
+    deg_free = 8
     real_sd = np.sqrt(real_var)
     print "Real noise: ", real_sd
 
@@ -202,8 +203,6 @@ def student_t_approx():
     plt.title('Gaussian corrupt')
     print m
 
-    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
-
     plt.figure(2)
     plt.suptitle('Student-t likelihood')
     edited_real_sd = real_sd #initial_var_guess
@@ -236,33 +235,35 @@ def student_t_approx():
     plt.ylim(-2.5, 2.5)
     plt.title('Student-t rasm corrupt')
 
-    print "Clean student t, ncg"
-    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
-    stu_t_likelihood = GPy.likelihoods.Laplace(Y, t_distribution, rasm=False)
-    m = GPy.models.GP(X, stu_t_likelihood, kernel3)
-    m.ensure_default_constraints()
-    m.update_likelihood_approximation()
-    m.optimize()
-    print(m)
-    plt.subplot(221)
-    m.plot()
-    plt.plot(X_full, Y_full)
-    plt.ylim(-2.5, 2.5)
-    plt.title('Student-t ncg clean')
+    return m
 
-    print "Corrupt student t, ncg"
-    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
-    corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, rasm=False)
-    m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel5)
-    m.ensure_default_constraints()
-    m.update_likelihood_approximation()
-    m.optimize()
-    print(m)
-    plt.subplot(223)
-    m.plot()
-    plt.plot(X_full, Y_full)
-    plt.ylim(-2.5, 2.5)
-    plt.title('Student-t ncg corrupt')
+    #print "Clean student t, ncg"
+    #t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
+    #stu_t_likelihood = GPy.likelihoods.Laplace(Y, t_distribution, rasm=False)
+    #m = GPy.models.GP(X, stu_t_likelihood, kernel3)
+    #m.ensure_default_constraints()
+    #m.update_likelihood_approximation()
+    #m.optimize()
+    #print(m)
+    #plt.subplot(221)
+    #m.plot()
+    #plt.plot(X_full, Y_full)
+    #plt.ylim(-2.5, 2.5)
+    #plt.title('Student-t ncg clean')
+
+    #print "Corrupt student t, ncg"
+    #t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
+    #corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, rasm=False)
+    #m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel5)
+    #m.ensure_default_constraints()
+    #m.update_likelihood_approximation()
+    #m.optimize()
+    #print(m)
+    #plt.subplot(223)
+    #m.plot()
+    #plt.plot(X_full, Y_full)
+    #plt.ylim(-2.5, 2.5)
+    #plt.title('Student-t ncg corrupt')
 
 
     ###with a student t distribution, since it has heavy tails it should work well

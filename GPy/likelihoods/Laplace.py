@@ -84,12 +84,13 @@ class Laplace(likelihood):
 
         #Implicit
         impl = mdot(dlp, dL_dfhat.T, I_KW_i)
-        expl_a = - mdot(self.Ki_f, self.Ki_f.T)
+        expl_a = mdot(self.Ki_f, self.Ki_f.T)
         expl_b = Wi_K_i
-        expl = 0.5*expl_a - 0.5*expl_b
+        expl = 0.5*expl_a + 0.5*expl_b
         dL_dthetaK_exp = dK_dthetaK(expl, X)
         dL_dthetaK_imp = dK_dthetaK(impl, X)
-        dL_dthetaK = -(dL_dthetaK_imp + dL_dthetaK_exp)
+        #print "dL_dthetaK_exp: {}     dL_dthetaK_implicit: {}".format(dL_dthetaK_exp, dL_dthetaK_imp)
+        dL_dthetaK = dL_dthetaK_imp + dL_dthetaK_exp
 
         #dL_dthetaK = np.zeros(dK_dthetaK.shape)
         #for thetaK_i, dK_dthetaK_i in enumerate(dK_dthetaK):
@@ -117,10 +118,12 @@ class Laplace(likelihood):
             #dL_dthetaL[thetaL_i] = np.sum(dlik_dthetaL[thetaL_i]) - 0.5*np.trace(np.dot(Ki_W_i.T, np.diagflat(dlik_hess_dthetaL[thetaL_i])))
             #dL_dthetaL[thetaL_i] = np.sum(dlik_dthetaL[thetaL_i]) + 0.5*np.dot(Ki_W_i.T, dlik_hess_dthetaL[thetaL_i][:, None])
             #                                               might be +
-            dL_dthetaL[thetaL_i] = np.sum(dlik_dthetaL[thetaL_i]) - 0.5*np.dot(np.diag(self.Ki_W_i), dlik_hess_dthetaL[thetaL_i])
+            dL_dthetaL_exp = np.sum(dlik_dthetaL[thetaL_i]) - 0.5*np.dot(np.diag(self.Ki_W_i), dlik_hess_dthetaL[thetaL_i])
             #Implicit
             df_hat_dthetaL = mdot(I_KW_i, self.K, dlik_grad_dthetaL[thetaL_i])
-            dL_dthetaL[thetaL_i] += np.dot(dL_dfhat.T, df_hat_dthetaL)
+            dL_dthetaL_imp = np.dot(dL_dfhat.T, df_hat_dthetaL)
+            #print "dL_dthetaL_exp: {}     dL_dthetaL_implicit: {}".format(dL_dthetaL_exp, dL_dthetaL_imp)
+            dL_dthetaL[thetaL_i] = dL_dthetaL_imp + dL_dthetaL_exp
 
         return dL_dthetaL #should be array of length *params-being optimized*, for student t just optimising 1 parameter, this is (1,)
 
@@ -180,14 +183,20 @@ class Laplace(likelihood):
         W = np.diagflat(self.W)
         Wi = self.Sigma_tilde
         W12i = np.sqrt(Wi)
-        D = Ki - mdot((Ki + W), W12i, self.Bi, W12i, (Ki + W))
-        fDf = mdot(self.f_hat.T, D, self.f_hat)
+        #D = Ki - mdot((Ki + W), W12i, self.Bi, W12i, (Ki + W))
+        #fDf = mdot(self.f_hat.T, D, self.f_hat)
         l = self.likelihood_function.link_function(self.data, self.f_hat, extra_data=self.extra_data)
+        #print "fDf:{}   l:{}   detKWiBi:{}   W:{}   Wi:{}   Bi:{}   Ki:{}".format(fDf, l, ln_det_K_Wi__Bi, W.sum(), Wi.sum(), self.Bi.sum(), Ki.sum())
+
+        y_Wi_Ki_i_y = mdot(Y_tilde.T, pdinv(self.K + Wi)[0], Y_tilde)
         Z_tilde = (+ self.NORMAL_CONST
                    + l
                    + 0.5*ln_det_K_Wi__Bi
-                   - 0.5*fDf
+                   #- 0.5*fDf
+                   - 0.5*self.f_Ki_f
+                   + 0.5*y_Wi_Ki_i_y
                   )
+        #print "Ztilde: {}".format(Z_tilde)
 
         #Convert to float as its (1, 1) and Z must be a scalar
         self.Z = np.float64(Z_tilde)
@@ -316,7 +325,7 @@ class Laplace(likelihood):
             #f_old = f.copy()
             W = -self.likelihood_function.d2lik_d2f(self.data, f, extra_data=self.extra_data)
             if not self.likelihood_function.log_concave:
-                W[W < 0] = 1e-6     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+                W[W < 0] = 1e-5     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                     # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                     # To cause the posterior to become less certain than the prior and likelihood,
                                     # This is a property only held by non-log-concave likelihoods

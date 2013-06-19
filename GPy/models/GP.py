@@ -145,18 +145,6 @@ class GP(model):
         self.likelihood._set_params(self.likelihood._get_params())
         dL_dthetaK = self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X)
         if isinstance(self.likelihood, Laplace):
-            #Reapproximate incase it hasnt been done...
-            self.likelihood.fit_full(self.kern.K(self.X))
-            self.likelihood._set_params(self.likelihood._get_params())
-            print self.kern._get_params()
-
-            #Need to pass in a matrix of ones to get access to raw dK_dthetaK values without being chained
-            #fake_dL_dKs = np.ones(self.dL_dK.shape) #FIXME: Check this is right...
-            #fake_dL_dKs = np.eye(self.dL_dK.shape[0]) #FIXME: Check this is right...
-
-            #BUG: THIS SHOULD NOT BE (1,num_k_params) matrix it should be (N,N,num_k_params)
-            #dK_dthetaK = self.kern.dK_dtheta(dL_dK=fake_dL_dKs, X=self.X)
-
             dK_dthetaK = self.kern.dK_dtheta
             dL_dthetaK = self.likelihood._Kgradients(dK_dthetaK, self.X)
             dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))

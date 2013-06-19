@@ -170,7 +170,7 @@ class student_t(likelihood_function):
         return np.asarray(self.sigma)
 
     def _get_param_names(self):
-        return ["t_noise_variance"]
+        return ["t_noise_std"]
 
     def _set_params(self, x):
         self.sigma = float(x)
@@ -191,8 +191,6 @@ class student_t(likelihood_function):
         :returns: float(likelihood evaluated for this point)
 
         """
-        #y = np.squeeze(y)
-        #f = np.squeeze(f)
         assert y.shape == f.shape
 
         e = y - f
@@ -215,8 +213,6 @@ class student_t(likelihood_function):
         :returns: gradient of likelihood evaluated at points
 
         """
-        #y = np.squeeze(y)
-        #f = np.squeeze(f)
         assert y.shape == f.shape
         e = y - f
         grad = ((self.v + 1) * e) / (self.v * (self.sigma**2) + (e**2))
@@ -237,8 +233,6 @@ class student_t(likelihood_function):
         :extra_data: extra_data which is not used in student t distribution
         :returns: array which is diagonal of covariance matrix (second derivative of likelihood evaluated at points)
         """
-        #y = np.squeeze(y)
-        #f = np.squeeze(f)
         assert y.shape == f.shape
 
         e = y - f
@@ -251,8 +245,6 @@ class student_t(likelihood_function):
 
         $$\frac{d^{3}p(y_{i}|f_{i})}{d^{3}f} = \frac{-2(v+1)((y_{i} - f_{i})^3 - 3(y_{i} - f_{i}) \sigma^{2} v))}{((y_{i} - f_{i}) + \sigma^{2} v)^3}$$
         """
-        #y = np.squeeze(y)
-        #f = np.squeeze(f)
         assert y.shape == f.shape
         e = y - f
         d3lik_d3f = ( (2*(self.v + 1)*(-e)*(e**2 - 3*self.v*(self.sigma**2))) /
@@ -269,8 +261,6 @@ class student_t(likelihood_function):
 
         $$\frac{dp(y_{i}|f_{i})}{d\sigma} = -\frac{1}{\sigma} + \frac{(1+v)(y_{i}-f_{i})^2}{\sigma^3 v(1 + \frac{1}{v}(\frac{(y_{i} - f_{i})}{\sigma^2})^2)}$$
         """
-        #y = np.squeeze(y)
-        #f = np.squeeze(f)
         assert y.shape == f.shape
         e = y - f
         dlik_dsigma = ( - (1/self.sigma) +
@@ -284,8 +274,6 @@ class student_t(likelihood_function):
 
         $$\frac{d}{d\sigma}(\frac{dp(y_{i}|f_{i})}{df}) = \frac{-2\sigma v(v + 1)(y_{i}-f_{i})}{(y_{i}-f_{i})^2 + \sigma^2 v)^2}$$
         """
-        #y = np.squeeze(y)
-        #f = np.squeeze(f)
         assert y.shape == f.shape
         e = y - f
         dlik_grad_dsigma = ((-2*self.sigma*self.v*(self.v + 1)*e)
@@ -299,8 +287,6 @@ class student_t(likelihood_function):
 
         $$\frac{d}{d\sigma}(\frac{d^{2}p(y_{i}|f_{i})}{d^{2}f}) = \frac{2\sigma v(v + 1)(\sigma^2 v - 3(y-f)^2)}{((y-f)^2 + \sigma^2 v)^3}$$
         """
-        #y = np.squeeze(y)
-        #f = np.squeeze(f)
         assert y.shape == f.shape
         e = y - f
         dlik_hess_dsigma = (  (2*self.sigma*self.v*(self.v + 1)*((self.sigma**2)*self.v - 3*(e**2))) /

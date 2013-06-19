@@ -39,28 +39,28 @@ def debug_student_t_noise_approx():
     plot = False
     real_var = 0.1
     #Start a function, any function
-    X = np.linspace(0.0, 10.0, 15)[:, None]
+    X = np.linspace(0.0, 10.0, 50)[:, None]
     #X = np.array([0.5])[:, None]
     Y = np.sin(X) + np.random.randn(*X.shape)*real_var
 
-    X_full = np.linspace(0.0, 10.0, 15)[:, None]
+    X_full = np.linspace(0.0, 10.0, 50)[:, None]
     Y_full = np.sin(X_full)
 
     Y = Y/Y.max()
 
     #Add student t random noise to datapoints
-    deg_free = 10000
+    deg_free = 1000
     real_sd = np.sqrt(real_var)
-    print "Real noise: ", real_sd
+    print "Real noise std: ", real_sd
 
-    initial_var_guess = 0.02
+    initial_var_guess = 0.3
     #t_rv = t(deg_free, loc=0, scale=real_var)
     #noise = t_rvrvs(size=Y.shape)
     #Y += noise
 
     plt.close('all')
     # Kernel object
-    kernel1 = GPy.kern.rbf(X.shape[1])
+    kernel1 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
     kernel2 = kernel1.copy()
     kernel3 = kernel1.copy()
     kernel4 = kernel1.copy()
@@ -83,22 +83,24 @@ def debug_student_t_noise_approx():
         #plt.plot(X_full, Y_full)
     #print m
 
-    #edited_real_sd = initial_var_guess #real_sd
+    edited_real_sd = initial_var_guess #real_sd
     edited_real_sd = real_sd
 
     print "Clean student t, rasm"
     t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, rasm=True)
     m = GPy.models.GP(X, stu_t_likelihood, kernel6)
+    m['white'] = 1e-3
     #m.constrain_positive('rbf')
     #m.constrain_fixed('rbf_v', 1.0898)
     #m.constrain_fixed('rbf_l', 1.8651)
     #m.constrain_fixed('t_noise_variance', real_sd)
     m.constrain_positive('rbf')
+    m.constrain_positive('t_noise')
     #m.constrain_fixed('t_noi', real_sd)
     m.ensure_default_constraints()
     m.update_likelihood_approximation()
-    m.optimize(messages=True)
+    #m.optimize(messages=True)
     print(m)
     #return m
     #m.optimize('lbfgsb', messages=True, callback=m._update_params_callback)

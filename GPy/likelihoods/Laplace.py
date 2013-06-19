@@ -70,54 +70,38 @@ class Laplace(likelihood):
         d3lik_d3fhat = self.likelihood_function.d3lik_d3f(self.data, self.f_hat)
         dL_dfhat = -0.5*(np.diag(self.Ki_W_i)[:, None]*d3lik_d3fhat)
 
-        Wi_K_i = self.W_12*self.Bi*self.W_12.T #same as rasms R
-
-        I_KW_i = np.eye(self.N) - np.dot(self.K, Wi_K_i)
-        return dL_dfhat, I_KW_i, Wi_K_i
+        I_KW_i = np.eye(self.N) - np.dot(self.K, self.Wi_K_i)
+        return dL_dfhat, I_KW_i
 
     def _Kgradients(self, dK_dthetaK, X):
         """
         Gradients with respect to prior kernel parameters
         """
-        dL_dfhat, I_KW_i, Wi_K_i = self._shared_gradients_components()
+        dL_dfhat, I_KW_i = self._shared_gradients_components()
         dlp = self.likelihood_function.dlik_df(self.data, self.f_hat)
 
         #Implicit
         impl = mdot(dlp, dL_dfhat.T, I_KW_i)
         expl_a = mdot(self.Ki_f, self.Ki_f.T)
-        expl_b = Wi_K_i
+        expl_b = self.Wi_K_i
         expl = 0.5*expl_a + 0.5*expl_b
         dL_dthetaK_exp = dK_dthetaK(expl, X)
         dL_dthetaK_imp = dK_dthetaK(impl, X)
         #print "dL_dthetaK_exp: {}     dL_dthetaK_implicit: {}".format(dL_dthetaK_exp, dL_dthetaK_imp)
         dL_dthetaK = dL_dthetaK_imp + dL_dthetaK_exp
-
-        #dL_dthetaK = np.zeros(dK_dthetaK.shape)
-        #for thetaK_i, dK_dthetaK_i in enumerate(dK_dthetaK):
-            ##Explicit
-            #f_Ki_dK_dtheta_Ki_f = mdot(self.Ki_f.T, dK_dthetaK_i, self.Ki_f)
-            #dL_dthetaK[thetaK_i] = 0.5*f_Ki_dK_dtheta_Ki_f - 0.5*np.trace(Wi_K_i*dK_dthetaK_i)
-            ##Implicit
-            #df_hat_dthetaK = mdot(I_KW_i, dK_dthetaK_i, dlp)
-            #dL_dthetaK[thetaK_i] += np.dot(dL_dfhat.T, df_hat_dthetaK)
-
         return dL_dthetaK
 
     def _gradients(self, partial):
         """
         Gradients with respect to likelihood parameters
         """
-        #return np.zeros(1)
-        dL_dfhat, I_KW_i, Wi_K_i = self._shared_gradients_components()
+        dL_dfhat, I_KW_i = self._shared_gradients_components()
         dlik_dthetaL, dlik_grad_dthetaL, dlik_hess_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat)
 
         num_params = len(dlik_dthetaL)
         dL_dthetaL = np.zeros(num_params) # make space for one derivative for each likelihood parameter
         for thetaL_i in range(num_params):
             #Explicit
-            #dL_dthetaL[thetaL_i] = np.sum(dlik_dthetaL[thetaL_i]) - 0.5*np.trace(np.dot(Ki_W_i.T, np.diagflat(dlik_hess_dthetaL[thetaL_i])))
-            #dL_dthetaL[thetaL_i] = np.sum(dlik_dthetaL[thetaL_i]) + 0.5*np.dot(Ki_W_i.T, dlik_hess_dthetaL[thetaL_i][:, None])
-            #                                               might be +
             dL_dthetaL_exp = np.sum(dlik_dthetaL[thetaL_i]) - 0.5*np.dot(np.diag(self.Ki_W_i), dlik_hess_dthetaL[thetaL_i])
             #Implicit
             df_hat_dthetaL = mdot(I_KW_i, self.K, dlik_grad_dthetaL[thetaL_i])
@@ -165,34 +149,17 @@ class Laplace(likelihood):
 
         Y_tilde = np.dot(self.Wi__Ki_W, self.f_hat)
 
-        ln_W_det = det_ln_diag(self.W)
-        yf_W_yf = mdot((Y_tilde - self.f_hat).T, np.diagflat(self.W), (Y_tilde - self.f_hat))
-
-        #Z_tilde = (+ self.NORMAL_CONST
-                   #+ self.ln_z_hat
-                   #+ 0.5*self.ln_I_KW_det
-                   #- 0.5*ln_W_det
-                   #+ 0.5*self.f_Ki_f
-                   #+ 0.5*yf_W_yf
-                   #)
-
         self.Sigma_tilde = np.diagflat(1.0/self.W)
 
-        Ki, _, _, K_det = pdinv(self.K)
+        self.Wi_K_i = self.W_12*self.Bi*self.W_12.T #same as rasms R
         ln_det_K_Wi__Bi = self.ln_I_KW_det + pddet(self.Sigma_tilde + self.K)
-        W = np.diagflat(self.W)
-        Wi = self.Sigma_tilde
-        W12i = np.sqrt(Wi)
-        #D = Ki - mdot((Ki + W), W12i, self.Bi, W12i, (Ki + W))
-        #fDf = mdot(self.f_hat.T, D, self.f_hat)
         l = self.likelihood_function.link_function(self.data, self.f_hat, extra_data=self.extra_data)
         #print "fDf:{}   l:{}   detKWiBi:{}   W:{}   Wi:{}   Bi:{}   Ki:{}".format(fDf, l, ln_det_K_Wi__Bi, W.sum(), Wi.sum(), self.Bi.sum(), Ki.sum())
 
-        y_Wi_Ki_i_y = mdot(Y_tilde.T, pdinv(self.K + Wi)[0], Y_tilde)
+        y_Wi_Ki_i_y = mdot(Y_tilde.T, self.Wi_K_i, Y_tilde)
         Z_tilde = (+ self.NORMAL_CONST
                    + l
                    + 0.5*ln_det_K_Wi__Bi
-                   #- 0.5*fDf
                    - 0.5*self.f_Ki_f
                    + 0.5*y_Wi_Ki_i_y
                   )

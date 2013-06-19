@@ -35,6 +35,54 @@ def timing():
     print the_is
     print np.mean(the_is)
 
+def v_fail_test():
+    plt.close('all')
+    real_var = 0.1
+    X = np.linspace(0.0, 10.0, 50)[:, None]
+    Y = np.sin(X) + np.random.randn(*X.shape)*real_var
+    Y = Y/Y.max()
+
+    #Add student t random noise to datapoints
+    deg_free = 10
+    real_sd = np.sqrt(real_var)
+    print "Real noise std: ", real_sd
+
+    kernel1 = GPy.kern.white(X.shape[1]) #+ GPy.kern.white(X.shape[1])
+
+    edited_real_sd = 0.3#real_sd
+    edited_real_sd = real_sd
+
+    print "Clean student t, rasm"
+    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
+    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, rasm=True)
+    m = GPy.models.GP(X, stu_t_likelihood, kernel1)
+    m.constrain_fixed('white', 1)
+    vs = 15
+    noises = 40
+    checkgrads = np.zeros((vs, noises))
+    vs_noises = np.zeros((vs, noises))
+    for v_ind, v in enumerate(np.linspace(1, 20, vs)):
+        m.likelihood.likelihood_function.v = v
+        print v
+        for noise_ind, noise in enumerate(np.linspace(0.0000001, 1, noises)):
+            m['t_noise'] = noise
+            m.update_likelihood_approximation()
+            checkgrads[v_ind, noise_ind] = m.checkgrad()
+            vs_noises[v_ind, noise_ind] = (float(v)/(float(v) - 2))*(noise**2)
+
+    plt.figure(1)
+    plt.title('Checkgrads')
+    plt.imshow(checkgrads, interpolation='nearest')
+    plt.xlabel('noise')
+    plt.ylabel('v')
+
+    plt.figure(2)
+    plt.title('variance change')
+    plt.imshow(vs_noises, interpolation='nearest')
+    plt.xlabel('noise')
+    plt.ylabel('v')
+    print(m)
+
 def debug_student_t_noise_approx():
     plot = False
     real_var = 0.1
@@ -49,7 +97,7 @@ def debug_student_t_noise_approx():
     Y = Y/Y.max()
 
     #Add student t random noise to datapoints
-    deg_free = 1000
+    deg_free = 10
     real_sd = np.sqrt(real_var)
     print "Real noise std: ", real_sd
 
@@ -60,7 +108,7 @@ def debug_student_t_noise_approx():
 
     plt.close('all')
     # Kernel object
-    kernel1 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
+    kernel1 = GPy.kern.rbf(X.shape[1]) #+ GPy.kern.white(X.shape[1])
     kernel2 = kernel1.copy()
     kernel3 = kernel1.copy()
     kernel4 = kernel1.copy()
@@ -90,12 +138,11 @@ def debug_student_t_noise_approx():
     t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, rasm=True)
     m = GPy.models.GP(X, stu_t_likelihood, kernel6)
-    m['white'] = 1e-3
-    #m.constrain_positive('rbf')
-    #m.constrain_fixed('rbf_v', 1.0898)
-    #m.constrain_fixed('rbf_l', 1.8651)
+    #m['white'] = 1e-3
+    m.constrain_fixed('rbf_v', 1.0898)
+    m.constrain_fixed('rbf_l', 1.8651)
     #m.constrain_fixed('t_noise_variance', real_sd)
-    m.constrain_positive('rbf')
+    #m.constrain_positive('rbf')
     m.constrain_positive('t_noise')
     #m.constrain_fixed('t_noi', real_sd)
     m.ensure_default_constraints()

@@ -194,10 +194,10 @@ class student_t(likelihood_function):
         assert y.shape == f.shape
 
         e = y - f
-        objective = (gammaln((self.v + 1) * 0.5)
+        objective = (+ gammaln((self.v + 1) * 0.5)
                      - gammaln(self.v * 0.5)
                      - np.log(self.sigma * np.sqrt(self.v * np.pi))
-                     - (self.v + 1) * 0.5 * np.log(1 + ((e**2 / self.sigma**2) / self.v))
+                     - (self.v + 1) * 0.5 * np.log(1 + (((e / self.sigma)**2) / self.v))
                     )
         return np.sum(objective)
 
@@ -234,7 +234,6 @@ class student_t(likelihood_function):
         :returns: array which is diagonal of covariance matrix (second derivative of likelihood evaluated at points)
         """
         assert y.shape == f.shape
-
         e = y - f
         hess = ((self.v + 1)*(e**2 - self.v*(self.sigma**2))) / ((((self.sigma**2)*self.v) + e**2)**2)
         return hess
@@ -247,7 +246,7 @@ class student_t(likelihood_function):
         """
         assert y.shape == f.shape
         e = y - f
-        d3lik_d3f = ( (2*(self.v + 1)*(-e)*(e**2 - 3*self.v*(self.sigma**2))) /
+        d3lik_d3f = ( -(2*(self.v + 1)*(-e)*(e**2 - 3*self.v*(self.sigma**2))) /
                        ((e**2 + (self.sigma**2)*self.v)**3)
                     )
         return d3lik_d3f

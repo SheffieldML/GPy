@@ -1,33 +1,9 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-
 import numpy as np
 from kern import kern
-
-from rbf import rbf as rbfpart
-from white import white as whitepart
-from linear import linear as linearpart
-from exponential import exponential as exponentialpart
-from Matern32 import Matern32 as Matern32part
-from Matern52 import Matern52 as Matern52part
-from bias import bias as biaspart
-from fixed import Fixed as fixedpart
-from finite_dimensional import finite_dimensional as finite_dimensionalpart
-from spline import spline as splinepart
-from Brownian import Brownian as Brownianpart
-from periodic_exponential import periodic_exponential as periodic_exponentialpart
-from periodic_Matern32 import periodic_Matern32 as periodic_Matern32part
-from periodic_Matern52 import periodic_Matern52 as periodic_Matern52part
-from prod import prod as prodpart
-from symmetric import symmetric as symmetric_part
-from coregionalise import Coregionalise as coregionalise_part
-from rational_quadratic import rational_quadratic as rational_quadraticpart
-from rbfcos import rbfcos as rbfcospart
-from independent_outputs import IndependentOutputs as independent_output_part
-#TODO these s=constructors are not as clean as we'd like. Tidy the code up
-#using meta-classes to make the objects construct properly wthout them.
-
+import parts
 
 def rbf(input_dim,variance=1., lengthscale=None,ARD=False):
     """
@@ -42,7 +18,7 @@ def rbf(input_dim,variance=1., lengthscale=None,ARD=False):
     :param ARD: Auto Relevance Determination (one lengthscale per dimension)
     :type ARD: Boolean
     """
-    part = rbfpart(input_dim,variance,lengthscale,ARD)
+    part = parts.rbf.RBF(input_dim,variance,lengthscale,ARD)
     return kern(input_dim, [part])
 
 def linear(input_dim,variances=None,ARD=False):
@@ -55,7 +31,7 @@ def linear(input_dim,variances=None,ARD=False):
      variances (np.ndarray)
      ARD (boolean)
     """
-    part = linearpart(input_dim,variances,ARD)
+    part = parts.linear.Linear(input_dim,variances,ARD)
     return kern(input_dim, [part])
 
 def white(input_dim,variance=1.):
@@ -67,7 +43,7 @@ def white(input_dim,variance=1.):
     input_dimD (int), obligatory
      variance (float)
     """
-    part = whitepart(input_dim,variance)
+    part = parts.white.White(input_dim,variance)
     return kern(input_dim, [part])
 
 def exponential(input_dim,variance=1., lengthscale=None, ARD=False):
@@ -83,7 +59,7 @@ def exponential(input_dim,variance=1., lengthscale=None, ARD=False):
     :param ARD: Auto Relevance Determination (one lengthscale per dimension)
     :type ARD: Boolean
     """
-    part = exponentialpart(input_dim,variance, lengthscale, ARD)
+    part = parts.exponential.Exponential(input_dim,variance, lengthscale, ARD)
     return kern(input_dim, [part])
 
 def Matern32(input_dim,variance=1., lengthscale=None, ARD=False):
@@ -99,7 +75,7 @@ def Matern32(input_dim,variance=1., lengthscale=None, ARD=False):
     :param ARD: Auto Relevance Determination (one lengthscale per dimension)
     :type ARD: Boolean
     """
-    part = Matern32part(input_dim,variance, lengthscale, ARD)
+    part = parts.Matern32.Matern32(input_dim,variance, lengthscale, ARD)
     return kern(input_dim, [part])
 
 def Matern52(input_dim, variance=1., lengthscale=None, ARD=False):
@@ -115,7 +91,7 @@ def Matern52(input_dim, variance=1., lengthscale=None, ARD=False):
     :param ARD: Auto Relevance Determination (one lengthscale per dimension)
     :type ARD: Boolean
     """
-    part = Matern52part(input_dim, variance, lengthscale, ARD)
+    part = parts.Matern52.Matern52(input_dim, variance, lengthscale, ARD)
     return kern(input_dim, [part])
 
 def bias(input_dim, variance=1.):
@@ -127,7 +103,7 @@ def bias(input_dim, variance=1.):
      input_dim (int), obligatory
      variance (float)
     """
-    part = biaspart(input_dim, variance)
+    part = parts.bias.Bias(input_dim, variance)
     return kern(input_dim, [part])
 
 def finite_dimensional(input_dim, F, G, variances=1., weights=None):
@@ -138,7 +114,7 @@ def finite_dimensional(input_dim, F, G, variances=1., weights=None):
     G: np.array with shape (n,n) - the Gram matrix associated to F
     variances : np.ndarray with shape (n,)
     """
-    part = finite_dimensionalpart(input_dim, F, G, variances, weights)
+    part = parts.finite_dimensional.FiniteDimensional(input_dim, F, G, variances, weights)
     return kern(input_dim, [part])
 
 def spline(input_dim, variance=1.):
@@ -150,7 +126,7 @@ def spline(input_dim, variance=1.):
     :param variance: the variance of the kernel
     :type variance: float
     """
-    part = splinepart(input_dim, variance)
+    part = parts.spline.Spline(input_dim, variance)
     return kern(input_dim, [part])
 
 def Brownian(input_dim, variance=1.):
@@ -162,7 +138,7 @@ def Brownian(input_dim, variance=1.):
     :param variance: the variance of the kernel
     :type variance: float
     """
-    part = Brownianpart(input_dim, variance)
+    part = parts.Brownian.Brownian(input_dim, variance)
     return kern(input_dim, [part])
 
 try:
@@ -215,7 +191,7 @@ def periodic_exponential(input_dim=1, variance=1., lengthscale=None, period=2 * 
     :param n_freq: the number of frequencies considered for the periodic subspace
     :type n_freq: int
     """
-    part = periodic_exponentialpart(input_dim, variance, lengthscale, period, n_freq, lower, upper)
+    part = parts.periodic_exponential.PeriodicExponential(input_dim, variance, lengthscale, period, n_freq, lower, upper)
     return kern(input_dim, [part])
 
 def periodic_Matern32(input_dim, variance=1., lengthscale=None, period=2 * np.pi, n_freq=10, lower=0., upper=4 * np.pi):
@@ -233,7 +209,7 @@ def periodic_Matern32(input_dim, variance=1., lengthscale=None, period=2 * np.pi
      :param n_freq: the number of frequencies considered for the periodic subspace
      :type n_freq: int
     """
-    part = periodic_Matern32part(input_dim, variance, lengthscale, period, n_freq, lower, upper)
+    part = parts.periodic_Matern32.PeriodicMatern32(input_dim, variance, lengthscale, period, n_freq, lower, upper)
     return kern(input_dim, [part])
 
 def periodic_Matern52(input_dim, variance=1., lengthscale=None, period=2 * np.pi, n_freq=10, lower=0., upper=4 * np.pi):
@@ -251,7 +227,7 @@ def periodic_Matern52(input_dim, variance=1., lengthscale=None, period=2 * np.pi
      :param n_freq: the number of frequencies considered for the periodic subspace
      :type n_freq: int
     """
-    part = periodic_Matern52part(input_dim, variance, lengthscale, period, n_freq, lower, upper)
+    part = parts.periodic_Matern52part(input_dim, variance, lengthscale, period, n_freq, lower, upper)
     return kern(input_dim, [part])
 
 def prod(k1,k2,tensor=False):
@@ -262,7 +238,7 @@ def prod(k1,k2,tensor=False):
     :type k1, k2: kernpart
     :rtype: kernel object
     """
-    part = prodpart(k1,k2,tensor)
+    part = parts.prodpart(k1,k2,tensor)
     return kern(part.input_dim, [part])
 
 def symmetric(k):
@@ -270,11 +246,11 @@ def symmetric(k):
     Construct a symmetrical kernel from an existing kernel
     """
     k_ = k.copy()
-    k_.parts = [symmetric_part(p) for p in k.parts]
+    k_.parts = [symmetric.Symmetric(p) for p in k.parts]
     return k_
 
-def Coregionalise(Nout,R=1, W=None, kappa=None):
-    p = coregionalise_part(Nout,R,W,kappa)
+def coregionalise(Nout,R=1, W=None, kappa=None):
+    p = parts.coregionalise.Coregionalise(Nout,R,W,kappa)
     return kern(1,[p])
 
 
@@ -291,10 +267,10 @@ def rational_quadratic(input_dim, variance=1., lengthscale=1., power=1.):
     :rtype: kern object
 
     """
-    part = rational_quadraticpart(input_dim, variance, lengthscale, power)
+    part = parts.rational_quadratic.RationalQuadratic(input_dim, variance, lengthscale, power)
     return kern(input_dim, [part])
 
-def Fixed(input_dim, K, variance=1.):
+def fixed(input_dim, K, variance=1.):
     """
      Construct a Fixed effect kernel.
 
@@ -304,23 +280,21 @@ def Fixed(input_dim, K, variance=1.):
      K (np.array), obligatory
      variance (float)
     """
-    part = fixedpart(input_dim, K, variance)
+    part = parts.fixed.Fixed(input_dim, K, variance)
     return kern(input_dim, [part])
 
 def rbfcos(input_dim, variance=1., frequencies=None, bandwidths=None, ARD=False):
     """
     construct a rbfcos kernel
     """
-    part = rbfcospart(input_dim, variance, frequencies, bandwidths, ARD)
+    part = parts.rbfcos.RBFCos(input_dim, variance, frequencies, bandwidths, ARD)
     return kern(input_dim, [part])
 
-def IndependentOutputs(k):
+def independent_outputs(k):
     """
     Construct a kernel with independent outputs from an existing kernel
     """
     for sl in k.input_slices:
         assert (sl.start is None) and (sl.stop is None), "cannot adjust input slices! (TODO)"
-    parts = [independent_output_part(p) for p in k.parts]
+    parts = [independent_outputs.IndependentOutputs(p) for p in k.parts]
     return kern(k.input_dim+1,parts)
-
-

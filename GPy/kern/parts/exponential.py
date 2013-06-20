@@ -6,7 +6,7 @@ from kernpart import Kernpart
 import numpy as np
 from scipy import integrate
 
-class exponential(Kernpart):
+class Exponential(Kernpart):
     """
     Exponential kernel (aka Ornstein-Uhlenbeck or Matern 1/2)
 

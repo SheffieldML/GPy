@@ -68,8 +68,7 @@ class Laplace(likelihood):
     def _shared_gradients_components(self):
         #FIXME: Careful of side effects! And make sure W and K are up to date!
         d3lik_d3fhat = self.likelihood_function.d3lik_d3f(self.data, self.f_hat)
-        dL_dfhat = -0.5*(np.diag(self.Ki_W_i)[:, None]*d3lik_d3fhat)
-
+        dL_dfhat = -0.5*(np.diag(self.Ki_W_i)[:, None]*d3lik_d3fhat).T
         I_KW_i = np.eye(self.N) - np.dot(self.K, self.Wi_K_i)
         return dL_dfhat, I_KW_i
 
@@ -81,10 +80,10 @@ class Laplace(likelihood):
         dlp = self.likelihood_function.dlik_df(self.data, self.f_hat)
 
         #Implicit
-        impl = mdot(dlp, dL_dfhat.T, I_KW_i)
+        impl = mdot(dlp, dL_dfhat, I_KW_i)
         expl_a = mdot(self.Ki_f, self.Ki_f.T)
         expl_b = self.Wi_K_i
-        expl = 0.5*expl_a + 0.5*expl_b
+        expl = 0.5*expl_a - 0.5*expl_b # Might need to be -?
         dL_dthetaK_exp = dK_dthetaK(expl, X)
         dL_dthetaK_imp = dK_dthetaK(impl, X)
         #print "dL_dthetaK_exp: {}     dL_dthetaK_implicit: {}".format(dL_dthetaK_exp, dL_dthetaK_imp)
@@ -103,10 +102,11 @@ class Laplace(likelihood):
         for thetaL_i in range(num_params):
             #Explicit
             dL_dthetaL_exp = np.sum(dlik_dthetaL[thetaL_i]) - 0.5*np.dot(np.diag(self.Ki_W_i), dlik_hess_dthetaL[thetaL_i])
+            #dL_dthetaL_exp = np.sum(dlik_dthetaL[thetaL_i]) - 0.5*np.trace(mdot(self.Bi, self.K, dlik_hess_dthetaL[thetaL_i]))
             #Implicit
             df_hat_dthetaL = mdot(I_KW_i, self.K, dlik_grad_dthetaL[thetaL_i])
-            dL_dthetaL_imp = np.dot(dL_dfhat.T, df_hat_dthetaL)
-            #print "dL_dthetaL_exp: {}     dL_dthetaL_implicit: {}".format(dL_dthetaL_exp, dL_dthetaL_imp)
+            dL_dthetaL_imp = np.dot(dL_dfhat, df_hat_dthetaL)
+            print "dL_dthetaL_exp: {}     dL_dthetaL_implicit: {}".format(dL_dthetaL_exp, dL_dthetaL_imp)
             dL_dthetaL[thetaL_i] = dL_dthetaL_imp + dL_dthetaL_exp
 
         return dL_dthetaL #should be array of length *params-being optimized*, for student t just optimising 1 parameter, this is (1,)

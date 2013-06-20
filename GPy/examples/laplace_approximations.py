@@ -36,7 +36,7 @@ def timing():
     print np.mean(the_is)
 
 def v_fail_test():
-    plt.close('all')
+    #plt.close('all')
     real_var = 0.1
     X = np.linspace(0.0, 10.0, 50)[:, None]
     Y = np.sin(X) + np.random.randn(*X.shape)*real_var
@@ -57,6 +57,7 @@ def v_fail_test():
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, rasm=True)
     m = GPy.models.GP(X, stu_t_likelihood, kernel1)
     m.constrain_fixed('white', 1)
+    m.constrain_positive('t_noise')
     vs = 15
     noises = 40
     checkgrads = np.zeros((vs, noises))
@@ -64,23 +65,24 @@ def v_fail_test():
     for v_ind, v in enumerate(np.linspace(1, 20, vs)):
         m.likelihood.likelihood_function.v = v
         print v
-        for noise_ind, noise in enumerate(np.linspace(0.0000001, 1, noises)):
+        for noise_ind, noise in enumerate(np.linspace(0.0001, 1, noises)):
             m['t_noise'] = noise
             m.update_likelihood_approximation()
             checkgrads[v_ind, noise_ind] = m.checkgrad()
             vs_noises[v_ind, noise_ind] = (float(v)/(float(v) - 2))*(noise**2)
 
-    plt.figure(1)
+    plt.figure()
     plt.title('Checkgrads')
     plt.imshow(checkgrads, interpolation='nearest')
     plt.xlabel('noise')
     plt.ylabel('v')
 
-    plt.figure(2)
+    plt.figure()
     plt.title('variance change')
     plt.imshow(vs_noises, interpolation='nearest')
     plt.xlabel('noise')
     plt.ylabel('v')
+    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
     print(m)
 
 def debug_student_t_noise_approx():
@@ -139,13 +141,13 @@ def debug_student_t_noise_approx():
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, rasm=True)
     m = GPy.models.GP(X, stu_t_likelihood, kernel6)
     #m['white'] = 1e-3
-    m.constrain_fixed('rbf_v', 1.0898)
-    m.constrain_fixed('rbf_l', 1.8651)
+    #m.constrain_fixed('rbf_v', 1.0898)
+    #m.constrain_fixed('rbf_l', 1.8651)
     #m.constrain_fixed('t_noise_variance', real_sd)
     #m.constrain_positive('rbf')
-    m.constrain_positive('t_noise')
+    #m.constrain_positive('t_noise')
+    m.constrain_positive('')
     #m.constrain_fixed('t_noi', real_sd)
-    m.ensure_default_constraints()
     m.update_likelihood_approximation()
     #m.optimize(messages=True)
     print(m)

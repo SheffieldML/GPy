@@ -192,7 +192,6 @@ class student_t(likelihood_function):
 
         """
         assert y.shape == f.shape
-
         e = y - f
         objective = (+ gammaln((self.v + 1) * 0.5)
                      - gammaln(self.v * 0.5)

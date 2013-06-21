@@ -1,6 +1,7 @@
 import numpy as np
 from likelihood import likelihood
-from GPy.util.linalg import jitchol
+from ..util.linalg import jitchol
+
 
 class Gaussian(likelihood):
     """

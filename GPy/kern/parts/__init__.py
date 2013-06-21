@@ -18,5 +18,4 @@ import rbfcos
 import rbf
 import spline
 import symmetric
-import sympykern
 import white

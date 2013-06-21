@@ -32,4 +32,15 @@ def std_norm_cdf(x):
     x = float(x)
     return weave.inline(code,arg_names=['x'],support_code=support_code)
 
+def inv_std_norm_cdf(x):
+    """
+    Inverse cumulative standard Gaussian distribution
+    Based on Winitzki, S. (2008)
+    """
+    z = 2*x -1
+    ln1z2 = np.log(1-z**2)
+    a = 8*(np.pi -3)/(3*np.pi*(4-np.pi))
+    b = 2/(np.pi * a) + ln1z2/2
+    inv_erf = np.sign(z) * np.sqrt( np.sqrt(b**2 - ln1z2/a) - b )
+    return np.sqrt(2) * inv_erf
 

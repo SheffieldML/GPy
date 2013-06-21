@@ -7,7 +7,7 @@ from scipy import stats
 import scipy as sp
 import pylab as pb
 from ..util.plot import gpplot
-from ..util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
+from ..util.univariate_Gaussian import std_norm_pdf,std_norm_cdf,inv_std_norm_cdf
 
 class LinkFunction(object):
     """
@@ -19,44 +19,76 @@ class LinkFunction(object):
     def __init__(self):
         pass
 
-class Probit(LinkFunction):
+class Identity(LinkFunction):
     """
-    Probit link function
+    $$
+    g(f) = f
+    $$
     """
     def transf(self,mu):
-        pass
+        return mu
 
     def inv_transf(self,f):
-        pass
+        return f
 
-    def log_inv_transf(self,f):
-        pass
+    def dinv_transf_df(self,f):
+        return 1.
+
+    def d2inv_transf_df2(self,f):
+        return 0
+
+
+class Probit(LinkFunction):
+    """
+    $$
+    g(f) = \\Phi^{-1} (mu)
+    $$
+    """
+    def transf(self,mu):
+        return inv_std_norm_cdf(mu)
+
+    def inv_transf(self,f):
+        return std_norm_cdf(f)
+
+    def dinv_transf_df(self,f):
+        return std_norm_pdf(f)
+
+    def d2inv_transf_df2(self,f):
+        return -f * std_norm_pdf(f)
 
 class Log(LinkFunction):
     """
-    Logarithm link function
+    $$
+    g(f) = \log(\mu)
+    $$
     """
-
     def transf(self,mu):
         return np.log(mu)
 
     def inv_transf(self,f):
         return np.exp(f)
 
-    def log_inv_transf(self,f):
-        return f
-
-    def inv_transf_df(sefl,f):
+    def dinv_transf_df(self,f):
         return np.exp(f)
 
-    def log_inv_transf_df(self,f):
-        return 1
-
-    def inv_transf_df(sefl,f):
+    def d2inv_transf_df2(self,f):
         return np.exp(f)
 
-    def log_inv_transf_df(self,f):
-        return 1
+class Log_ex_1(LinkFunction):
+    """
+    $$
+    g(f) = \log(\exp(\mu) - 1)
+    $$
+    """
+    def transf(self,mu):
+        return np.log(np.exp(mu) - 1)
 
+    def inv_transf(self,f):
+        return np.log(np.exp(f)+1)
 
+    def dinv_transf_df(self,f):
+        return np.exp(f)/(1.+np.exp(f))
 
+    def d2inv_transf_df2(self,f):
+        aux = np.exp(f)/(1.+np.exp(f))
+        return aux*(1.-aux)

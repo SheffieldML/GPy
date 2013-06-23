@@ -38,35 +38,21 @@ class LikelihoodFunction(object):
         """
         Negative log-product between the cavity distribution and a likelihood factor
         """
-        return .5*(gp-mu)**2/sigma**2 + self._nlog_mass_scaled(gp,obs)
+        return .5*((gp-mu)/sigma)**2 + self._nlog_mass(gp,obs)
 
-    def _dlog_product_dgp(self,gp,obs,mu,sigma):
+    def _dnlog_product_dgp(self,gp,obs,mu,sigma):
         """
         Derivative wrt gp of the log-product between the cavity distribution and a likelihood factor
         """
-        return -(gp - mu)/sigma**2 + self._dlog_mass_dgp(gp,obs)
+        #return -(gp - mu)/sigma**2 + self._dlog_mass_dgp(gp,obs)
+        return (gp - mu)/sigma**2 + self._dnlog_mass_dgp(gp,obs)
 
-    def _d2log_product_dgp2(self,gp,obs,mu,sigma):
+    def _d2nlog_product_dgp2(self,gp,obs,mu,sigma):
         """
         Second derivative wrt gp of the log-product between the cavity distribution and a likelihood factor
         """
-        return -1./sigma**2 + self._d2log_mass_dgp2(gp,obs)
-
-    #def _dlog_product_dobs(self,obs,gp):
-    #    return self._dlog_mass_dobs(obs,gp)
-
-    #def _d2log_product_dobs2(self,obs,gp):
-    #    return self._d2log_mass_dobs2(obs,gp)
-
-    #def _d2log_product_dcross(self,gp,obs):
-
-    def _gradient_log_product(self,x,mu,sigma):
-        return np.array((self._dlog_product_dgp(gp=x[0],obs=x[1],mu=mu,sigma=sigma),self._dlog_mass_dobs(obs=x[1],gp=x[0])))
-
-    def _hessian_log_product(self,x,mu,sigma):
-        cross_derivative = self._d2log_mass_dcross(gp=x[0],obs=x[1])
-        return np.array((self._d2log_product_dgp2(gp=x[0],obs=x[1],mu=mu,sigma=sigma),cross_derivative,cross_derivative,self._d2log_mass_dobs2(obs=x[1],gp=x[0]))).reshape(2,2)
-
+        #return -1./sigma**2 + self._d2log_mass_dgp2(gp,obs)
+        return 1./sigma**2 + self._d2nlog_mass_dgp2(gp,obs)
 
     def _product_mode(self,obs,mu,sigma):
         """
@@ -74,7 +60,6 @@ class LikelihoodFunction(object):
         """
         lower = -1 if obs == 0 else np.array([np.log(obs),mu]).min() #Lower limit #FIXME
         upper = 2*np.array([np.log(obs),mu]).max() #Upper limit #FIXME
-        print lower,upper
         return sp.optimize.brent(self._nlog_product_scaled, args=(obs,mu,sigma), brack=(lower,upper)) #Better to work with _nlog_product than with _product
 
     def _moments_match_numerical(self,obs,tau,v):
@@ -83,29 +68,58 @@ class LikelihoodFunction(object):
         """
         mu = v/tau
         mu_hat = self._product_mode(obs,mu,np.sqrt(1./tau))
-        sigma2_hat = 1./(tau - self._d2log_mass_dgp2(mu_hat,obs))
+        #sigma2_hat = 1./(tau - self._d2log_mass_dgp2(mu_hat,obs))
+        sigma2_hat = 1./(tau + self._d2nlog_mass_dgp2(mu_hat,obs))
         Z_hat = np.exp(-.5*tau*(mu_hat-mu)**2) * self._mass(mu_hat,obs)*np.sqrt(tau*sigma2_hat)
         return Z_hat,mu_hat,sigma2_hat
 
-    def _nlog_joint_posterior_scaled(x,mu,sigma):
+    def _nlog_joint_predictive_scaled(self,x,mu,sigma): #TODO not needed
         """
         x = np.array([gp,obs])
         """
-        return self._product(x[0],x[1],mu,sigma)
+        return self._nlog_product_scaled(x[0],x[1],mu,sigma)
 
-    def _gradient_log_joint_posterior(x,mu,sigma):
-        return self._dlog_product_dgp(x[0],x[1],mu,sigma) + self._dlog_mass_dgp(gp,obs), 
+    def _gradient_nlog_joint_predictive(self,x,mu,sigma): #TODO not needed
+        return np.array((self._dnlog_product_dgp(gp=x[0],obs=x[1],mu=mu,sigma=sigma),self._dnlog_mass_dobs(obs=x[1],gp=x[0])))
 
-    def _predictive_values_numerical(self,mu,var):
+    def _hessian_nlog_joint_predictive(self,x,mu,sigma): #TODO not needed
+        cross_derivative = self._d2nlog_mass_dcross(gp=x[0],obs=x[1])
+        return np.array((self._d2nlog_product_dgp2(gp=x[0],obs=x[1],mu=mu,sigma=sigma),cross_derivative,cross_derivative,self._d2nlog_mass_dobs2(obs=x[1],gp=x[0]))).reshape(2,2)
+
+    def _joint_predictive_mode(self,mu,sigma):
+        return sp.optimize.fmin_ncg(self._nlog_joint_predictive_scaled,x0=(mu,self.link.transf(mu)),fprime=self._gradient_nlog_joint_predictive,fhess=self._hessian_nlog_joint_predictive,args=(mu,sigma))
+
+    def predictive_values(self,mu,var):
         """
-        Lapace approximation to calculate the predictive values.
+        Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction
         """
-        mu = mu.flatten()
-        var = var.flatten()
-        tranf_mu = self.link.transf(mu)
-        mu_hat = [self._product_mode(t_i,m_i,np.sqrt(v_i)) for t_i,mu_i,v_i in zip(transf_mu,mu,var)]
-        sigma2_hat = [1./(1./var - self._d2log_mass_dgp2(m_i,t_i)) for m_i,t_i in zip(mu_hat,transf_mu)]
-
+        if isinstance(mu,float):
+            mu = [mu]
+            var = [var]
+        pred_mean = []
+        pred_var = []
+        pred_025 = []
+        pred_975 = []
+        for m,s in zip(mu,np.sqrt(var)):
+            sample_points = [m - i*s for i in range(-3,4)]
+            _mean = 0
+            _var = 0
+            _025 = 0
+            _975 = 0
+            for q_i in sample_points:
+                _mean += self.link.inv_transf(q_i)
+                _var += self._variance(q_i)
+                _025 += self._percentile(.025,q_i)
+                _975 += self._percentile(.975,q_i)
+            pred_mean.append(_mean/len(sample_points))
+            pred_var.append(_var/len(sample_points))
+            pred_025.append(_025/len(sample_points))
+            pred_975.append(_975/len(sample_points))
+        pred_mean = np.array(pred_mean)[:,None]
+        pred_var = np.array(pred_var)[:,None]
+        pred_025 = np.array(pred_025)[:,None]
+        pred_975 = np.array(pred_975)[:,None]
+        return pred_mean, pred_var, pred_025, pred_975
 
 class Binomial(LikelihoodFunction):
     """
@@ -125,7 +139,7 @@ class Binomial(LikelihoodFunction):
     def _mass(self,gp,obs):
         pass
 
-    def _nlog_mass_scaled(self,gp,obs):
+    def _nlog_mass(self,gp,obs):
         pass
 
     def _preprocess_values(self,Y):
@@ -157,7 +171,7 @@ class Binomial(LikelihoodFunction):
         sigma2_hat = 1./tau_i - (phi/((tau_i**2+tau_i)*Z_hat))*(z+phi/Z_hat)
         return Z_hat, mu_hat, sigma2_hat
 
-    def _predictive_values_analytical(self,mu,var):
+    def predictive_values(self,mu,var):
         """
         Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction
         :param mu: mean of the latent variable
@@ -193,59 +207,36 @@ class Poisson(LikelihoodFunction):
         """
         return stats.poisson.pmf(obs,self.link.inv_transf(gp))
 
-    def _nlog_mass_scaled(self,gp,obs):
+    def _variance(self,gp):
+        return self.link.inv_transf(gp)
+
+    def _percentile(self,x,gp,*args): #TODO *args
+        return stats.poisson.ppf(x,self.link.inv_transf(gp))
+
+    def _nlog_mass(self,gp,obs):
         """
         Negative logarithm of the un-normalized distribution: factors that are not a function of gp are omitted
         """
-        return self.link.inv_transf(gp) - obs * np.log(self.link.inv_transf(gp))
+        return self.link.inv_transf(gp) - obs * np.log(self.link.inv_transf(gp)) + np.log(special.gamma(obs+1))
 
-    def _dlog_mass_dgp(self,gp,obs):
-        return self.link.dinv_transf_df(gp) * (obs/self.link.inv_transf(gp) - 1)
+    def _dnlog_mass_dgp(self,gp,obs):
+        #return self.link.dinv_transf_df(gp) * (obs/self.link.inv_transf(gp) - 1)
+        return self.link.dinv_transf_df(gp) * (1. - obs/self.link.inv_transf(gp))
 
-    def _d2log_mass_dgp2(self,gp,obs):
+    def _d2nlog_mass_dgp2(self,gp,obs):
         d2_df = self.link.d2inv_transf_df2(gp)
         inv_transf = self.link.inv_transf(gp)
-        return obs * ( d2_df/inv_transf - (self.link.dinv_transf_df(gp)/inv_transf)**2 ) - d2_df
+        #return obs * ( d2_df/inv_transf - (self.link.dinv_transf_df(gp)/inv_transf)**2 ) - d2_df
+        return obs * ((self.link.dinv_transf_df(gp)/inv_transf)**2 - d2_df/inv_transf) + d2_df
 
-    def _dlog_mass_dobs(self,obs,gp):
-        return np.log(self.link.inv_transf(gp)) - special.psi(obs+1)
+    def _dnlog_mass_dobs(self,obs,gp): #TODO not needed
+        #return np.log(self.link.inv_transf(gp)) - special.psi(obs+1)
+        return special.psi(obs+1) -  np.log(self.link.inv_transf(gp))
 
-    def _d2log_mass_dobs2(self,obs,gp=None):
-        return -special.polygamma(1,obs)
+    def _d2nlog_mass_dobs2(self,obs,gp=None): #TODO not needed
+        #return -special.polygamma(1,obs)
+        return special.polygamma(1,obs)
 
-    def _d2log_mass_dcross(self,obs,gp):
-        return self.link.dinv_transf_df(gp)/self.link.inv_transf(gp)
-
-    def predictive_values(self,mu,var):
-        """
-        Compute  mean, and conficence interval (percentiles 5 and 95) of the  prediction
-        """
-        mean = self.link.transf(mu)
-        tmp = stats.poisson.ppf(np.array([.025,.975]),mean)
-        p_025 = tmp[:,0]
-        p_975 = tmp[:,1]
-        return mean,np.nan*mean,p_025,p_975 # better variance here TODO
-
-        """
-        simpson approximation
-        width = 3./np.log(max(obs,2))
-        A = opt - width #Grid's lower limit
-        B = opt + width #Grid's Upper limit
-        K =  10*int(np.log(max(obs,150))) #Number of points in the grid
-        h = (B-A)/K # length of the intervals
-        grid_x = np.hstack([np.linspace(opt-width,opt,K/2+1)[1:-1], np.linspace(opt,opt+width,K/2+1)]) # grid of points (X axis)
-        x = np.hstack([A,B,grid_x[range(1,K,2)],grid_x[range(2,K-1,2)]]) # grid_x rearranged, just to make Simpson's algorithm easier
-        _aux1 = self._product(A,obs,mu,sigma)
-        _aux2 = self._product(B,obs,mu,sigma)
-        _aux3 = 4*self._product(grid_x[range(1,K,2)],obs,mu,sigma)
-        _aux4 = 2*self._product(grid_x[range(2,K-1,2)],obs,mu,sigma)
-        zeroth = np.hstack((_aux1,_aux2,_aux3,_aux4)) # grid of points (Y axis) rearranged
-        first = zeroth*x
-        second = first*x
-        Z_hat = sum(zeroth)*h/3 # Zero-th moment
-        mu_hat = sum(first)*h/(3*Z_hat) # First moment
-        m2 = sum(second)*h/(3*Z_hat) # Second moment
-        sigma2_hat = m2 - mu_hat**2 # Second central moment
-        return float(Z_hat), float(mu_hat), float(sigma2_hat)
-        """
-
+    def _d2nlog_mass_dcross(self,obs,gp): #TODO not needed
+        #return self.link.dinv_transf_df(gp)/self.link.inv_transf(gp)
+        return -self.link.dinv_transf_df(gp)/self.link.inv_transf(gp)

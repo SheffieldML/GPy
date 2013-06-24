@@ -81,9 +81,15 @@ class Log_ex_1(LinkFunction):
     $$
     """
     def transf(self,mu):
+        """
+        function: output space -> latent space
+        """
         return np.log(np.exp(mu) - 1)
 
     def inv_transf(self,f):
+        """
+        function: latent space -> output space
+        """
         return np.log(np.exp(f)+1)
 
     def dinv_transf_df(self,f):

@@ -56,11 +56,13 @@ class LikelihoodFunction(object):
 
     def _product_mode(self,obs,mu,sigma):
         """
-        Brent's method to find the mode in the _product function (cavity x likelihood factor)
+        Newton's CG method to find the mode in the _product function (cavity x likelihood factor)
         """
-        lower = -1 if obs == 0 else np.array([np.log(obs),mu]).min() #Lower limit #FIXME
-        upper = 2*np.array([np.log(obs),mu]).max() #Upper limit #FIXME
-        return sp.optimize.brent(self._nlog_product_scaled, args=(obs,mu,sigma), brack=(lower,upper)) #Better to work with _nlog_product than with _product
+        #lower = -1 if obs == 0 else np.array([np.log(obs),mu]).min() #Lower limit #FIXME
+        #upper = 2*np.array([np.log(obs),mu]).max() #Upper limit #FIXME
+        #return sp.optimize.brent(self._nlog_product_scaled, args=(obs,mu,sigma), brack=(lower,upper)) #Better to work with _nlog_product than with _product
+        return sp.optimize.fmin_ncg(self._nlog_product_scaled,x0=mu,fprime=self._dnlog_product_dgp,fhess=self._d2nlog_product_dgp2,args=(obs,mu,sigma))
+
 
     def _moments_match_numerical(self,obs,tau,v):
         """
@@ -72,6 +74,18 @@ class LikelihoodFunction(object):
         sigma2_hat = 1./(tau + self._d2nlog_mass_dgp2(mu_hat,obs))
         Z_hat = np.exp(-.5*tau*(mu_hat-mu)**2) * self._mass(mu_hat,obs)*np.sqrt(tau*sigma2_hat)
         return Z_hat,mu_hat,sigma2_hat
+
+    def _nlog_predictive_mean_scaled(self,gp,mu,sigma):
+        return  .5*((gp-mu)/sigma)**2 - np.log(self.link.inv_transf(gp))
+
+    def _dnlog_predictive_mean_dgp(self,gp,mu,sigma):
+        return (gp - mu)/sigma**2 - self.link.dinv_transf_df(gp)/self.link.inv_transf(gp)
+
+    def _d2nlog_predictive_mean_dgp2(self,gp,mu,sigma): #TODO mu is not necessary
+        return 1/sigma**2 - (self.link.d2inv_transf_df2(gp) - self.link.dinv_transf_df(gp))/self.link.inv_transf(gp)
+
+    def _predictive_mean(self,mu,sigma):
+        return sp.optimize.fmin_ncg(self._nlog_predictive_mean_scaled,x0=mu,fprime=self._dnlog_predictive_mean_dgp,fhess=self._d2nlog_predictive_mean_dgp2,args=(mu,sigma))
 
     def _nlog_joint_predictive_scaled(self,x,mu,sigma): #TODO not needed
         """
@@ -87,7 +101,7 @@ class LikelihoodFunction(object):
         return np.array((self._d2nlog_product_dgp2(gp=x[0],obs=x[1],mu=mu,sigma=sigma),cross_derivative,cross_derivative,self._d2nlog_mass_dobs2(obs=x[1],gp=x[0]))).reshape(2,2)
 
     def _joint_predictive_mode(self,mu,sigma):
-        return sp.optimize.fmin_ncg(self._nlog_joint_predictive_scaled,x0=(mu,self.link.transf(mu)),fprime=self._gradient_nlog_joint_predictive,fhess=self._hessian_nlog_joint_predictive,args=(mu,sigma))
+        return sp.optimize.fmin_ncg(self._nlog_joint_predictive_scaled,x0=(mu,self.link.inv_transf(mu)),fprime=self._gradient_nlog_joint_predictive,fhess=self._hessian_nlog_joint_predictive,args=(mu,sigma))
 
     def predictive_values(self,mu,var):
         """
@@ -100,26 +114,28 @@ class LikelihoodFunction(object):
         pred_var = []
         pred_025 = []
         pred_975 = []
+        weights = np.diff([0]+[stats.norm.cdf(-2.5+i,0,1) for i in range(6)] + [1])
         for m,s in zip(mu,np.sqrt(var)):
             sample_points = [m - i*s for i in range(-3,4)]
             _mean = 0
             _var = 0
             _025 = 0
             _975 = 0
-            for q_i in sample_points:
-                _mean += self.link.inv_transf(q_i)
-                _var += self._variance(q_i)
-                _025 += self._percentile(.025,q_i)
-                _975 += self._percentile(.975,q_i)
-            pred_mean.append(_mean/len(sample_points))
-            pred_var.append(_var/len(sample_points))
-            pred_025.append(_025/len(sample_points))
-            pred_975.append(_975/len(sample_points))
+            for q_i,w_i in zip(sample_points,weights):
+                _mean += w_i*self.link.inv_transf(q_i)
+                _var += w_i*self._variance(q_i)
+                _025 += w_i*self._percentile(.025,q_i)
+                _975 += w_i*self._percentile(.975,q_i)
+            pred_mean.append(_mean)
+            pred_var.append(_var)
+            pred_025.append(_025)
+            pred_975.append(_975)
         pred_mean = np.array(pred_mean)[:,None]
         pred_var = np.array(pred_var)[:,None]
         pred_025 = np.array(pred_025)[:,None]
         pred_975 = np.array(pred_975)[:,None]
         return pred_mean, pred_var, pred_025, pred_975
+
 
 class Binomial(LikelihoodFunction):
     """

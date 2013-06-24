@@ -51,6 +51,8 @@ class Laplace(likelihood):
         self.Z = 0
         self.YYT = None
 
+        self.old_a = None
+
     def predictive_values(self, mu, var, full_cov):
         if full_cov:
             raise NotImplementedError("Cannot make correlated predictions with an Laplace likelihood")
@@ -83,7 +85,7 @@ class Laplace(likelihood):
         impl = mdot(dlp, dL_dfhat, I_KW_i)
         expl_a = mdot(self.Ki_f, self.Ki_f.T)
         expl_b = self.Wi_K_i
-        expl = 0.5*expl_a - 0.5*expl_b # Might need to be -?
+        expl = 0.5*expl_a + 0.5*expl_b # Might need to be -?
         dL_dthetaK_exp = dK_dthetaK(expl, X)
         dL_dthetaK_imp = dK_dthetaK(impl, X)
         #print "dL_dthetaK_exp: {}     dL_dthetaK_implicit: {}".format(dL_dthetaK_exp, dL_dthetaK_imp)
@@ -265,7 +267,7 @@ class Laplace(likelihood):
         f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess, disp=False)
         return f_hat[:, None]
 
-    def rasm_mode(self, K, MAX_ITER=500000, MAX_RESTART=50):
+    def rasm_mode(self, K, MAX_ITER=500, MAX_RESTART=40):
         """
         Rasmussens numerically stable mode finding
         For nomenclature see Rasmussen & Williams 2006
@@ -275,7 +277,12 @@ class Laplace(likelihood):
         :MAX_RESTART: Maximum number of restarts (reducing step_size) before forcing finish of optimisation
         :returns: f_mode
         """
-        f = np.zeros((self.N, 1))
+        if self.old_a is None:
+            old_a = np.zeros((self.N, 1))
+        else:
+            old_a = self.old_a
+
+        f = np.dot(self.K, old_a)
         new_obj = -np.inf
         old_obj = np.inf
 
@@ -292,7 +299,7 @@ class Laplace(likelihood):
             #f_old = f.copy()
             W = -self.likelihood_function.d2lik_d2f(self.data, f, extra_data=self.extra_data)
             if not self.likelihood_function.log_concave:
-                W[W < 0] = 1e-5     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+                W[W < 0] = 1e-8     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                     # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                     # To cause the posterior to become less certain than the prior and likelihood,
                                     # This is a property only held by non-log-concave likelihoods
@@ -300,38 +307,46 @@ class Laplace(likelihood):
 
             W_f = W*f
             grad = self.likelihood_function.dlik_df(self.data, f, extra_data=self.extra_data)
-            #Find K_i_f
+
             b = W_f + grad
-            b = step_size*b
-
-            #Need this to find the f we have a stepsize which we need to move in, rather than a full unit movement
-            #c = np.dot(K, W_f) + f*(1-step_size) + step_size*np.dot(K, grad)
-            #solve_L = cho_solve((L, True), W_12*c)
-            #f = c - np.dot(K, W_12*solve_L)
-
-            #FIXME: Can't we get rid of this? Don't we want to evaluate obj(c,f) and this is our new_obj?
-            #Why did I choose to evaluate the objective function at the new f with the old hessian? I'm sure there was a good reason,
-            #Document it!
             solve_L = cho_solve((L, True), W_12*np.dot(K, b))
-            a = b - W_12*solve_L
-            f = np.dot(K, a)
+            #Work out the DIRECTION that we want to move in, but don't choose the stepsize yet
+            full_step_a = b - W_12*solve_L
+            da = full_step_a - old_a
 
-            tmp_old_obj = old_obj
-            old_obj = new_obj
-            new_obj = obj(a, f)
-            difference = new_obj - old_obj
-            if difference < 0:
-                #print "Objective function rose", difference
-                #If the objective function isn't rising, restart optimization
-                step_size *= 0.9
-                #print "Reducing step-size to {ss:.3} and restarting optimization".format(ss=step_size)
-                #objective function isn't increasing, try reducing step size
-                #f = f_old #it's actually faster not to go back to old location and just zigzag across the mode
-                old_obj = tmp_old_obj
-                rs += 1
+            update_passed = False
+            while not update_passed:
+                a = old_a + step_size*da
+                f = np.dot(K, a)
 
-            difference = abs(difference)
+                old_obj = new_obj
+                new_obj = np.float(obj(a, f))
+                difference = new_obj - old_obj
+                #print "difference: ",difference
+                if difference < 0:
+                    #print grad
+                    print "Objective function rose", np.float(difference)
+                    #If the objective function isn't rising, restart optimization
+                    step_size *= 0.8
+                    print "Reducing step-size to {ss:.3} and restarting optimization".format(ss=step_size)
+                    #objective function isn't increasing, try reducing step size
+                    #f = f_old #it's actually faster not to go back to old location and just zigzag across the mode
+                    #old_obj = tmp_old_obj
+                    old_obj = new_obj
+                    rs += 1
+                else:
+                    update_passed = True
+
+            #print "Iter difference: ", difference
+            #print "F: ", f
+            #print "A: ", a
+            old_a = a
+            #print "Positive difference obj: ", np.float(difference)
+            difference = np.float(abs(difference))
             i += 1
 
-        self.i = i
+        #print "Positive difference obj: ", np.float(difference)
+        print "Iterations: ",i
+        print "Step size reductions", rs
+        print "Final difference: ", difference
         return f

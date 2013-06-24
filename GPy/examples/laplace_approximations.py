@@ -90,7 +90,7 @@ def debug_student_t_noise_approx():
     real_var = 0.1
     #Start a function, any function
     X = np.linspace(0.0, 10.0, 50)[:, None]
-    #X = np.array([0.5])[:, None]
+    #X = np.array([0.5, 1])[:, None]
     Y = np.sin(X) + np.random.randn(*X.shape)*real_var
 
     X_full = np.linspace(0.0, 10.0, 50)[:, None]
@@ -99,7 +99,7 @@ def debug_student_t_noise_approx():
     Y = Y/Y.max()
 
     #Add student t random noise to datapoints
-    deg_free = 10
+    deg_free = 100000
     real_sd = np.sqrt(real_var)
     print "Real noise std: ", real_sd
 

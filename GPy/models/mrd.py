@@ -85,7 +85,7 @@ class MRD(Model):
         self.ensure_default_constraints()
 
     def __getstate__(self):
-        return [self.names,
+        return Model.__getstate__(self) + [self.names,
                 self.bgplvms,
                 self.gref,
                 self.nparams,
@@ -105,6 +105,7 @@ class MRD(Model):
         self.gref = state.pop()
         self.bgplvms = state.pop()
         self.names = state.pop()
+        Model.__setstate__(self, state)
 
     @property
     def X(self):

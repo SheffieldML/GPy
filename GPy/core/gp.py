@@ -6,7 +6,7 @@ import numpy as np
 import pylab as pb
 from .. import kern
 from ..util.linalg import pdinv, mdot, tdot, dpotrs, dtrtrs
-#from ..util.plot import gpplot,  Tango
+# from ..util.plot import gpplot,  Tango
 from ..likelihoods import EP
 from gp_base import GPBase
 
@@ -46,12 +46,12 @@ class GP(GPBase):
 
         # the gradient of the likelihood wrt the covariance matrix
         if self.likelihood.YYT is None:
-            #alpha = np.dot(self.Ki, self.likelihood.Y)
-            alpha,_ = dpotrs(self.L, self.likelihood.Y,lower=1)
+            # alpha = np.dot(self.Ki, self.likelihood.Y)
+            alpha, _ = dpotrs(self.L, self.likelihood.Y, lower=1)
 
             self.dL_dK = 0.5 * (tdot(alpha) - self.output_dim * self.Ki)
         else:
-            #tmp = mdot(self.Ki, self.likelihood.YYT, self.Ki)
+            # tmp = mdot(self.Ki, self.likelihood.YYT, self.Ki)
             tmp, _ = dpotrs(self.L, np.asfortranarray(self.likelihood.YYT), lower=1)
             tmp, _ = dpotrs(self.L, np.asfortranarray(tmp.T), lower=1)
             self.dL_dK = 0.5 * (tmp - self.output_dim * self.Ki)
@@ -72,7 +72,7 @@ class GP(GPBase):
         """
         self.likelihood.restart()
         self.likelihood.fit_full(self.kern.K(self.X))
-        self._set_params(self._get_params())  # update the GP
+        self._set_params(self._get_params()) # update the GP
 
     def _model_fit_term(self):
         """
@@ -81,7 +81,7 @@ class GP(GPBase):
         if self.likelihood.YYT is None:
             tmp, _ = dtrtrs(self.L, np.asfortranarray(self.likelihood.Y), lower=1)
             return -0.5 * np.sum(np.square(tmp))
-            #return -0.5 * np.sum(np.square(np.dot(self.Li, self.likelihood.Y)))
+            # return -0.5 * np.sum(np.square(np.dot(self.Li, self.likelihood.Y)))
         else:
             return -0.5 * np.sum(np.multiply(self.Ki, self.likelihood.YYT))
 
@@ -104,13 +104,13 @@ class GP(GPBase):
         """
         return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
 
-    def _raw_predict(self, _Xnew, which_parts='all', full_cov=False,stop=False):
+    def _raw_predict(self, _Xnew, which_parts='all', full_cov=False, stop=False):
         """
         Internal helper function for making predictions, does not account
         for normalization or likelihood
         """
-        Kx = self.kern.K(_Xnew,self.X,which_parts=which_parts).T
-        #KiKx = np.dot(self.Ki, Kx)
+        Kx = self.kern.K(_Xnew, self.X, which_parts=which_parts).T
+        # KiKx = np.dot(self.Ki, Kx)
         KiKx, _ = dpotrs(self.L, np.asfortranarray(Kx), lower=1)
         mu = np.dot(KiKx.T, self.likelihood.Y)
         if full_cov:

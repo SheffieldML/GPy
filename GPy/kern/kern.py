@@ -43,6 +43,28 @@ class kern(Parameterised):
 
         Parameterised.__init__(self)
 
+    def __getstate__(self):
+        """
+        Get the current state of the class,
+        here just all the indices, rest can get recomputed
+        """
+        return Parameterised.__getstate__(self) + [self.parts,
+                self.Nparts,
+                self.num_params,
+                self.input_dim,
+                self.input_slices,
+                self.param_slices
+                ]
+
+    def __setstate__(self, state):
+        self.param_slices = state.pop()
+        self.input_slices = state.pop()
+        self.input_dim = state.pop()
+        self.num_params = state.pop()
+        self.Nparts = state.pop()
+        self.parts = state.pop()
+        Parameterised.__setstate__(self, state)
+
 
     def plot_ARD(self, fignum=None, ax=None, title=None):
         """If an ARD kernel is present, it bar-plots the ARD parameters"""

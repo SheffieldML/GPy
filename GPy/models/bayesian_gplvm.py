@@ -53,7 +53,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
         Get the current state of the class,
         here just all the indices, rest can get recomputed
         """
-        return [self.init] + SparseGP.__getstate__(self)
+        return SparseGP.__getstate__(self) + [self.init]
 
     def __setstate__(self, state):
         self.init = state.pop()

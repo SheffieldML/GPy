@@ -29,7 +29,7 @@ class GPBase(Model):
             self._Xscale = np.ones((1, self.input_dim))
 
         super(GPBase, self).__init__()
-        #Model.__init__(self)
+        # Model.__init__(self)
         # All leaf nodes should call self._set_params(self._get_params()) at
         # the end
 
@@ -57,7 +57,6 @@ class GPBase(Model):
         self.num_data = state.pop()
         self.X = state.pop()
         Model.__setstate__(self, state)
-        self._set_params(self._get_params())
 
     def plot_f(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, full_cov=False, fignum=None, ax=None):
         """

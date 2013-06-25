@@ -58,9 +58,6 @@ class LikelihoodFunction(object):
         """
         Newton's CG method to find the mode in the _product function (cavity x likelihood factor)
         """
-        #lower = -1 if obs == 0 else np.array([np.log(obs),mu]).min() #Lower limit #FIXME
-        #upper = 2*np.array([np.log(obs),mu]).max() #Upper limit #FIXME
-        #return sp.optimize.brent(self._nlog_product_scaled, args=(obs,mu,sigma), brack=(lower,upper)) #Better to work with _nlog_product than with _product
         return sp.optimize.fmin_ncg(self._nlog_product_scaled,x0=mu,fprime=self._dnlog_product_dgp,fhess=self._d2nlog_product_dgp2,args=(obs,mu,sigma))
 
 
@@ -70,11 +67,11 @@ class LikelihoodFunction(object):
         """
         mu = v/tau
         mu_hat = self._product_mode(obs,mu,np.sqrt(1./tau))
-        #sigma2_hat = 1./(tau - self._d2log_mass_dgp2(mu_hat,obs))
         sigma2_hat = 1./(tau + self._d2nlog_mass_dgp2(mu_hat,obs))
         Z_hat = np.exp(-.5*tau*(mu_hat-mu)**2) * self._mass(mu_hat,obs)*np.sqrt(tau*sigma2_hat)
         return Z_hat,mu_hat,sigma2_hat
 
+    """
     def _nlog_predictive_mean_scaled(self,gp,mu,sigma):
         return  .5*((gp-mu)/sigma)**2 - np.log(self.link.inv_transf(gp))
 
@@ -86,6 +83,7 @@ class LikelihoodFunction(object):
 
     def _predictive_mean(self,mu,sigma):
         return sp.optimize.fmin_ncg(self._nlog_predictive_mean_scaled,x0=mu,fprime=self._dnlog_predictive_mean_dgp,fhess=self._d2nlog_predictive_mean_dgp2,args=(mu,sigma))
+    """
 
     def _nlog_joint_predictive_scaled(self,x,mu,sigma): #TODO not needed
         """
@@ -107,34 +105,91 @@ class LikelihoodFunction(object):
         """
         Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction
         """
-        if isinstance(mu,float):
+        if isinstance(mu,float) or isinstance(mu,int):
             mu = [mu]
             var = [var]
         pred_mean = []
         pred_var = []
-        pred_025 = []
-        pred_975 = []
-        weights = np.diff([0]+[stats.norm.cdf(-2.5+i,0,1) for i in range(6)] + [1])
+        q1 = []
+        q3 = []
+        y_range = range(0,250) #TODO fix this range
+        marginal_proxy = np.zeros(len(y_range)) #TODO fixed 7?
         for m,s in zip(mu,np.sqrt(var)):
-            sample_points = [m - i*s for i in range(-3,4)]
-            _mean = 0
-            _var = 0
-            _025 = 0
-            _975 = 0
-            for q_i,w_i in zip(sample_points,weights):
-                _mean += w_i*self.link.inv_transf(q_i)
-                _var += w_i*self._variance(q_i)
-                _025 += w_i*self._percentile(.025,q_i)
-                _975 += w_i*self._percentile(.975,q_i)
-            pred_mean.append(_mean)
-            pred_var.append(_var)
-            pred_025.append(_025)
-            pred_975.append(_975)
+            for g in [m + step*s for step in range(-3,4)]:
+                mp = []
+                for y in y_range:#*np.int(self.link.inv_transf(mu))): #TODO fix this range
+                    mp.append(self._product(g,y,m,s))
+                marginal_proxy += mp
+            cumulative = np.cumsum(marginal_proxy)/np.sum(marginal_proxy)
+            q1.append(cumulative[cumulative<=.025].size) #What if not start in y=0
+            q3.append(cumulative[cumulative<=.975].size)
+
         pred_mean = np.array(pred_mean)[:,None]
         pred_var = np.array(pred_var)[:,None]
-        pred_025 = np.array(pred_025)[:,None]
-        pred_975 = np.array(pred_975)[:,None]
-        return pred_mean, pred_var, pred_025, pred_975
+        q1 = np.array(q1)[:,None]
+        q3 = np.array(q3)[:,None]
+        pred_mean = np.zeros(q1.shape) #TODO erase me
+        pred_var = np.zeros(q1.shape) #TODO erase me
+        return pred_mean, pred_var, q1, q3
+
+    def _nlog_conditional_mean_scaled(self,gp,mu,sigma):
+        """
+        E(Y_star) = E( E(Y_star|f_star) )
+        """
+        return ((gp - mu)/sigma)**2 - np.log(self._mean(gp))
+
+    def _dnlog_conditional_mean_dgp(self,gp,mu,sigma):
+        return (gp - mu)/sigma**2 - self._dmean_dgp(gp)/self._mean(gp)
+
+    def _d2nlog_conditional_mean_dgp2(self,gp,mu,sigma):
+        return 1./sigma**2 - (self._dmean_dgp(gp)/self._mean(gp))**2 + self._d2mean_dgp2(gp)/self._mean(gp)
+
+    def _nlog_exp_conditional_variance_scaled(self,gp,mu,sigma):
+        """
+        E( V(Y_star|f_star) )
+        """
+        return ((gp - mu)/sigma)**2 - np.log(self._variance(gp))
+
+    def _dnlog_exp_conditional_variance_dgp(self,gp,mu,sigma):
+        return (gp - mu)/sigma**2 - self._dvariance_dgp(gp)/self._variance(gp)
+
+    def _d2nlog_exp_conditional_variance_dgp2(self,gp,mu,sigma):
+        return 1./sigma**2 - (self._dvariance_dgp(gp)/self._variance(gp))**2 + self._d2variance_dgp2(gp)/self._variance(gp)
+
+    def _nlog_var_conditional_mean_scaled(self,gp,mu,sigma,predictive_mean):
+        """
+        V( E(Y_star|f_star) )
+        """
+        return ((gp - mu)/sigma)**2 - 2*np.log(self._mean(gp)-predictive_mean)
+
+    def _dnlog_var_conditional_mean_dgp(self,gp,mu,sigma,predictive_mean):
+        return (gp - mu)/sigma**2 - 2*self._dmean_dgp(gp)/(self._mean(gp)-predictive_mean)
+
+    def _d2nlog_var_conditional_mean_dgp2(self,gp,mu,sigma,predictive_mean):
+        return 1./sigma**2 - 2*( (self._dmean_dgp(gp)/(self._mean(gp)-predictive_mean))**2 + self._d2mean_dgp2(gp)/(self._variance(gp)-predictive_mean) )
+
+    def _predictive_mean(self,gp,mu,sigma):
+        """
+        Laplace approximation to the predictive mean
+        """
+        maximum = sp.optimize.fmin_ncg(self._nlog_conditional_mean_scaled,x0=self._mean(mu),fprime=self._dnlog_conditional_mean_dgp,fhess=self._d2nlog_conditional_mean_dgp2,args=(mu,sigma))
+        mean = np.exp(-self._nlog_conditional_mean_scaled(maximum,mu,sigma))/(np.sqrt(self._d2nlog_conditional_mean_dgp2(gp,mu,sigma))*sigma)
+        return mean
+
+    def _predictive_variance(self,gp,mu,sigma,predictive_mean):
+        """
+        Laplace approximation to the predictive variance
+        ------------------------------------------------
+        E(Y_star) = E( V(Y_star|f_star) ) + V( E(Y_star|f_star) )
+        """
+        maximum_1 = sp.optimize.fmin_ncg(self._nlog_exp_conditional_variance_scaled,x0=self._variance(mu),fprime=self._dnlog_exp_conditional_variance_dgp,fhess=self._d2nlog_exp_conditional_variance_dgp2,args=(mu,sigma))
+        exp_var = np.exp(-self._nlog_exp_conditional_variance_scaled(maximum_1,mu,sigma))/(np.sqrt(self._d2nlog_exp_conditional_variance_dgp2(gp,mu,sigma))*sigma)
+
+        #(self._mean(mu)-predictive_mean)**2
+        maximum_2 = sp.optimize.fmin_ncg(self._nlog_var_conditional_mean_scaled,x0=self._variance(mu),fprime=self._dnlog_var_conditional_mean_dgp,fhess=self._d2nlog_var_conditional_mean_dgp2,args=(mu,sigma,predictive_mean))
+        var_exp = np.exp(-self._nlog_var_conditional_mean_scaled(maximum_2,mu,sigma))/(np.sqrt(self._d2nlog_var_conditional_mean_dgp2(gp,mu,sigma))*sigma)
+
+        return exp_var + var_exp
 
 
 class Binomial(LikelihoodFunction):
@@ -223,9 +278,6 @@ class Poisson(LikelihoodFunction):
         """
         return stats.poisson.pmf(obs,self.link.inv_transf(gp))
 
-    def _variance(self,gp):
-        return self.link.inv_transf(gp)
-
     def _percentile(self,x,gp,*args): #TODO *args
         return stats.poisson.ppf(x,self.link.inv_transf(gp))
 
@@ -256,3 +308,37 @@ class Poisson(LikelihoodFunction):
     def _d2nlog_mass_dcross(self,obs,gp): #TODO not needed
         #return self.link.dinv_transf_df(gp)/self.link.inv_transf(gp)
         return -self.link.dinv_transf_df(gp)/self.link.inv_transf(gp)
+
+    def _mean(self,gp):
+        """
+        Mass (or density) function
+        """
+        return self.link.inv_transf(gp)
+
+    def _variance(self,gp):
+        return self.link.inv_transf(gp)
+
+    def _dmean_dgp(self,gp):
+        return self.link.dinv_transf_df(gp)
+
+    def _d2mean_dgp2(self,gp):
+        return self.link.dinv_transf_df(gp)
+
+    def _variance(self,gp):
+        """
+        Mass (or density) function
+        """
+        return self.link.inv_transf(gp)
+
+    def _variance(self,gp):
+        return self.link.inv_transf(gp)
+
+    def _dvariance_dgp(self,gp):
+        return self.link.dinv_transf_df(gp)
+
+    def _d2variance_dgp2(self,gp):
+        return self.link.dinv_transf_df(gp)
+
+
+
+

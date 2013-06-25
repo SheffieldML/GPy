@@ -15,7 +15,7 @@ class Fixed(Kernpart):
         self.input_dim = input_dim
         self.fixed_K = K
         self.num_params = 1
-        self.name = 'Fixed'
+        self.name = 'fixed'
         self._set_params(np.array([variance]).flatten())
 
     def _get_params(self):

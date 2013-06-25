@@ -21,7 +21,7 @@ class KernelTests(unittest.TestCase):
         """
         X = np.random.rand(30, 4)
         K = np.dot(X, X.T)
-        kernel = GPy.kern.Fixed(4, K)
+        kernel = GPy.kern.fixed(4, K)
         Y = np.ones((30,1))
         m = GPy.models.GPRegression(X,Y,kernel=kernel)
         self.assertTrue(m.checkgrad())
@@ -36,7 +36,7 @@ class KernelTests(unittest.TestCase):
         Y = np.vstack((Y1,Y2))
 
         k1 = GPy.kern.rbf(1) + GPy.kern.bias(1)
-        k2 = GPy.kern.Coregionalise(2,1)
+        k2 = GPy.kern.coregionalise(2,1)
         k = k1.prod(k2,tensor=True)
         m = GPy.models.GPRegression(X,Y,kernel=k)
         self.assertTrue(m.checkgrad())

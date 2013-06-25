@@ -33,7 +33,7 @@ class GPLVM(GP):
             kernel = kern.rbf(input_dim, ARD=input_dim > 1) + kern.bias(input_dim, np.exp(-2)) + kern.white(input_dim, np.exp(-2))
         likelihood = Gaussian(Y, normalize=normalize_Y)
         GP.__init__(self, X, likelihood, kernel, normalize_X=False)
-        self._set_params(self._get_params())
+        self.ensure_default_constraints()
 
     def initialise_latent(self, init, input_dim, Y):
         if init == 'PCA':

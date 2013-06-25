@@ -34,6 +34,8 @@ class EP(likelihood):
         self.Z = 0
         self.YYT = None
         self.V = self.precision * self.Y
+        self.VVT_factor = self.V
+        self.trYYT = 0.
 
     def restart(self):
         self.tau_tilde = np.zeros(self.N)
@@ -44,6 +46,8 @@ class EP(likelihood):
         self.Z = 0
         self.YYT = None
         self.V = self.precision * self.Y
+        self.VVT_factor = self.V
+        self.trYYT = 0.
 
     def predictive_values(self,mu,var,full_cov):
         if full_cov:
@@ -71,6 +75,8 @@ class EP(likelihood):
         self.covariance_matrix = np.diag(1./self.tau_tilde)
         self.precision = self.tau_tilde[:,None]
         self.V = self.precision * self.Y
+        self.VVT_factor = self.V
+        self.trYYT = np.trace(self.YYT)
 
     def fit_full(self,K):
         """

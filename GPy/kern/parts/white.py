@@ -1,10 +1,10 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-
 from kernpart import Kernpart
 import numpy as np
-class white(Kernpart):
+
+class White(Kernpart):
     """
     White noise kernel.
 

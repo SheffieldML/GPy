@@ -4,7 +4,7 @@
 from kernpart import Kernpart
 import numpy as np
 
-class symmetric(Kernpart):
+class Symmetric(Kernpart):
     """
     Symmetrical kernels
 

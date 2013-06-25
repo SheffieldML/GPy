@@ -82,7 +82,7 @@ class MRD(Model):
         self.MQ = self.num_inducing * self.input_dim
 
         Model.__init__(self)
-        self._set_params(self._get_params())
+        self.ensure_default_constraints()
 
     def __getstate__(self):
         return [self.names,

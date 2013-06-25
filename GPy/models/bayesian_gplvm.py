@@ -46,7 +46,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
             kernel = kern.rbf(input_dim) + kern.white(input_dim)
 
         SparseGP.__init__(self, X, likelihood, kernel, Z=Z, X_variance=X_variance, **kwargs)
-        self._set_params(self._get_params())
+        self.ensure_default_constraints()
 
     def __getstate__(self):
         """

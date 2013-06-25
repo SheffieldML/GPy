@@ -4,10 +4,10 @@
 
 from kernpart import Kernpart
 import numpy as np
-from ..util.linalg import tdot
+from ...util.linalg import tdot
 from scipy import weave
 
-class linear(Kernpart):
+class Linear(Kernpart):
     """
     Linear kernel
 

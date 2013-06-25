@@ -44,4 +44,4 @@ class FITCClassification(FITC):
             assert Z.shape[1]==X.shape[1]
 
         FITC.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X)
-        self._set_params(self._get_params())
+        self.ensure_default_constraints()

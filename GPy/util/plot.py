@@ -70,6 +70,36 @@ def align_subplots(N,M,xlim=None, ylim=None):
         else:
             removeUpperTicks()
 
+def align_subplot_array(axes,xlim=None, ylim=None):
+    """make all of the axes in the array hae the same limits, turn off unnecessary ticks
+    
+    use pb.subplots() to get an array of axes
+    """
+    #find sensible xlim,ylim
+    if xlim is None:
+        xlim = [np.inf,-np.inf]
+        for ax in axes.flatten():
+            xlim[0] = min(xlim[0],ax.get_xlim()[0])
+            xlim[1] = max(xlim[1],ax.get_xlim()[1])
+    if ylim is None:
+        ylim = [np.inf,-np.inf]
+        for ax in axes.flatten():
+            ylim[0] = min(ylim[0],ax.get_ylim()[0])
+            ylim[1] = max(ylim[1],ax.get_ylim()[1])
+
+    N,M = axes.shape
+    for i,ax in enumerate(axes.flatten()):
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        if (i)%M:
+            ax.set_yticks([])
+        else:
+            removeRightTicks(ax)
+        if i<(M*(N-1)):
+            ax.set_xticks([])
+        else:
+            removeUpperTicks(ax)
+
 def x_frame1D(X,plot_limits=None,resolution=None):
     """
     Internal helper function for making plots, returns a set of input values to plot as well as lower and upper limits

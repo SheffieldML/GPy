@@ -29,6 +29,24 @@ class Parameterised(object):
         """Returns a (deep) copy of the current model """
         return copy.deepcopy(self)
 
+    def __getstate__(self):
+        """
+        Get the current state of the class,
+        here just all the indices, rest can get recomputed
+        """
+        return [self.tied_indices,
+                self.fixed_indices,
+                self.fixed_values,
+                self.constrained_indices,
+                self.constraints]
+
+    def __setstate__(self, state):
+        self.constraints = state.pop()
+        self.constrained_indices = state.pop()
+        self.fixed_values = state.pop()
+        self.fixed_indices = state.pop()
+        self.tied_indices = state.pop()
+
     @property
     def params(self):
         """

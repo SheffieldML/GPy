@@ -61,12 +61,14 @@ class MRD(Model):
         assert not ('kernel' in kw), "pass kernels through `kernels` argument"
 
         self.input_dim = input_dim
-        self.num_inducing = num_inducing
         self._debug = _debug
+        self.num_inducing = num_inducing
 
         self._init = True
         X = self._init_X(initx, likelihood_or_Y_list)
         Z = self._init_Z(initz, X)
+        self.num_inducing = Z.shape[0] # ensure M==N if M>N
+
         self.bgplvms = [BayesianGPLVM(l, input_dim=input_dim, kernel=k, X=X, Z=Z, num_inducing=self.num_inducing, **kw) for l, k in zip(likelihood_or_Y_list, kernels)]
         del self._init
 
@@ -75,11 +77,34 @@ class MRD(Model):
         self.nparams = nparams.cumsum()
 
         self.num_data = self.gref.num_data
+
         self.NQ = self.num_data * self.input_dim
         self.MQ = self.num_inducing * self.input_dim
 
         Model.__init__(self)
         self._set_params(self._get_params())
+
+    def __getstate__(self):
+        return [self.names,
+                self.bgplvms,
+                self.gref,
+                self.nparams,
+                self.input_dim,
+                self.num_inducing,
+                self.num_data,
+                self.NQ,
+                self.MQ]
+
+    def __setstate__(self, state):
+        self.MQ = state.pop()
+        self.NQ = state.pop()
+        self.num_data = state.pop()
+        self.num_inducing = state.pop()
+        self.input_dim = state.pop()
+        self.nparams = state.pop()
+        self.gref = state.pop()
+        self.bgplvms = state.pop()
+        self.names = state.pop()
 
     @property
     def X(self):
@@ -257,7 +282,7 @@ class MRD(Model):
 
     def _handle_plotting(self, fignum, axes, plotf):
         if axes is None:
-            fig = pylab.figure(num=fignum, figsize=(4 * len(self.bgplvms), 3))
+            fig = pylab.figure(num=fignum)
         for i, g in enumerate(self.bgplvms):
             if axes is None:
                 ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
@@ -285,11 +310,11 @@ class MRD(Model):
         return fig
 
     def plot_scales(self, fignum=None, ax=None, *args, **kwargs):
-        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.kern.plot_ARD(ax=ax, *args, **kwargs))
+        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.kern.plot_ARD(ax=ax, title=r'$Y_{}$'.format(i), *args, **kwargs))
         return fig
 
     def plot_latent(self, fignum=None, ax=None, *args, **kwargs):
-        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.plot_latent(ax=ax, *args, **kwargs))
+        fig = self.gref.plot_X_1d(*args, **kwargs) # self._handle_plotting(fignum, ax, lambda i, g, ax: g.plot_latent(ax=ax, *args, **kwargs))
         return fig
 
     def _debug_plot(self):

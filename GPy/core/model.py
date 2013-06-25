@@ -32,6 +32,25 @@ class Model(Parameterised):
     def _log_likelihood_gradients(self):
         raise NotImplementedError, "this needs to be implemented to use the Model class"
 
+    def __getstate__(self):
+        """
+        Get the current state of the class,
+        here just all the indices, rest can get recomputed
+        """
+        return Parameterised.__getstate__(self) + \
+            [self.priors, self.optimization_runs,
+             self.sampling_runs, self.preferred_optimizer]
+
+    def __setstate__(self, state):
+        """
+        set state from previous call to getstate
+        """
+        self.preferred_optimizer = state.pop()
+        self.sampling_runs = state.pop()
+        self.optimization_runs = state.pop()
+        self.priors = state.pop()
+        Parameterised.__setstate__(self, state)
+
     def set_prior(self, regexp, what):
         """
         Sets priors on the Model parameters.

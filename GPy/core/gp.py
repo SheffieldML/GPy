@@ -31,6 +31,10 @@ class GP(GPBase):
         GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
         self._set_params(self._get_params())
 
+    def __setstate__(self, state):
+        GPBase.__setstate__(self, state)
+        self._set_params(self._get_params())
+
     def _set_params(self, p):
         self.kern._set_params_transformed(p[:self.kern.num_params_transformed()])
         self.likelihood._set_params(p[self.kern.num_params_transformed():])

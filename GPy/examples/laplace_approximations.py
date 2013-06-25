@@ -25,7 +25,7 @@ def timing():
         kernel1 = GPy.kern.rbf(X.shape[1])
 
         t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
-        corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, rasm=True)
+        corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, opt='rasm')
         m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel1)
         m.ensure_default_constraints()
         m.update_likelihood_approximation()
@@ -54,18 +54,17 @@ def v_fail_test():
 
     print "Clean student t, rasm"
     t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
-    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, rasm=True)
+    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
     m = GPy.models.GP(X, stu_t_likelihood, kernel1)
-    m.constrain_fixed('white', 1)
-    m.constrain_positive('t_noise')
-    vs = 15
+    m.constrain_positive('')
+    vs = 25
     noises = 40
     checkgrads = np.zeros((vs, noises))
     vs_noises = np.zeros((vs, noises))
-    for v_ind, v in enumerate(np.linspace(1, 20, vs)):
+    for v_ind, v in enumerate(np.linspace(1, 100, vs)):
         m.likelihood.likelihood_function.v = v
         print v
-        for noise_ind, noise in enumerate(np.linspace(0.0001, 1, noises)):
+        for noise_ind, noise in enumerate(np.linspace(0.0001, 10, noises)):
             m['t_noise'] = noise
             m.update_likelihood_approximation()
             checkgrads[v_ind, noise_ind] = m.checkgrad()
@@ -77,11 +76,11 @@ def v_fail_test():
     plt.xlabel('noise')
     plt.ylabel('v')
 
-    plt.figure()
-    plt.title('variance change')
-    plt.imshow(vs_noises, interpolation='nearest')
-    plt.xlabel('noise')
-    plt.ylabel('v')
+    #plt.figure()
+    #plt.title('variance change')
+    #plt.imshow(vs_noises, interpolation='nearest')
+    #plt.xlabel('noise')
+    #plt.ylabel('v')
     import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
     print(m)
 
@@ -93,13 +92,14 @@ def debug_student_t_noise_approx():
     #X = np.array([0.5, 1])[:, None]
     Y = np.sin(X) + np.random.randn(*X.shape)*real_var
 
-    X_full = np.linspace(0.0, 10.0, 50)[:, None]
+    X_full = X
     Y_full = np.sin(X_full)
 
     Y = Y/Y.max()
 
     #Add student t random noise to datapoints
-    deg_free = 100000
+    deg_free = 10
+
     real_sd = np.sqrt(real_var)
     print "Real noise std: ", real_sd
 
@@ -110,7 +110,7 @@ def debug_student_t_noise_approx():
 
     plt.close('all')
     # Kernel object
-    kernel1 = GPy.kern.rbf(X.shape[1]) #+ GPy.kern.white(X.shape[1])
+    kernel1 = GPy.kern.rbf(X.shape[1])# + GPy.kern.white(X.shape[1])
     kernel2 = kernel1.copy()
     kernel3 = kernel1.copy()
     kernel4 = kernel1.copy()
@@ -134,13 +134,13 @@ def debug_student_t_noise_approx():
     #print m
 
     edited_real_sd = initial_var_guess #real_sd
-    edited_real_sd = real_sd
+    #edited_real_sd = real_sd
 
     print "Clean student t, rasm"
     t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
-    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, rasm=True)
+    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
     m = GPy.models.GP(X, stu_t_likelihood, kernel6)
-    #m['white'] = 1e-3
+    m['rbf_len'] = 1.5
     #m.constrain_fixed('rbf_v', 1.0898)
     #m.constrain_fixed('rbf_l', 1.8651)
     #m.constrain_fixed('t_noise_variance', real_sd)
@@ -159,11 +159,12 @@ def debug_student_t_noise_approx():
         m.plot()
         plt.plot(X_full, Y_full)
         plt.ylim(-2.5, 2.5)
+    print "Real noise std: ", real_sd
     return m
 
     #print "Clean student t, ncg"
     #t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
-    #stu_t_likelihood = GPy.likelihoods.Laplace(Y, t_distribution, rasm=False)
+    #stu_t_likelihood = GPy.likelihoods.Laplace(Y, t_distribution, opt='ncg')
     #m = GPy.models.GP(X, stu_t_likelihood, kernel3)
     #m.ensure_default_constraints()
     #m.update_likelihood_approximation()
@@ -260,7 +261,7 @@ def student_t_approx():
 
     print "Clean student t, rasm"
     t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
-    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, rasm=True)
+    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
     m = GPy.models.GP(X, stu_t_likelihood, kernel6)
     m.ensure_default_constraints()
     m.update_likelihood_approximation()
@@ -274,7 +275,7 @@ def student_t_approx():
 
     print "Corrupt student t, rasm"
     t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
-    corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, rasm=True)
+    corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, opt='rasm')
     m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel4)
     m.ensure_default_constraints()
     m.update_likelihood_approximation()
@@ -290,7 +291,7 @@ def student_t_approx():
 
     #print "Clean student t, ncg"
     #t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
-    #stu_t_likelihood = GPy.likelihoods.Laplace(Y, t_distribution, rasm=False)
+    #stu_t_likelihood = GPy.likelihoods.Laplace(Y, t_distribution, opt='ncg')
     #m = GPy.models.GP(X, stu_t_likelihood, kernel3)
     #m.ensure_default_constraints()
     #m.update_likelihood_approximation()
@@ -304,7 +305,7 @@ def student_t_approx():
 
     #print "Corrupt student t, ncg"
     #t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
-    #corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, rasm=False)
+    #corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, opt='ncg')
     #m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel5)
     #m.ensure_default_constraints()
     #m.update_likelihood_approximation()

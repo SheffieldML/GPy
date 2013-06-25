@@ -12,7 +12,7 @@ import random
 class Laplace(likelihood):
     """Laplace approximation to a posterior"""
 
-    def __init__(self, data, likelihood_function, extra_data=None, rasm=True):
+    def __init__(self, data, likelihood_function, extra_data=None, opt='rasm'):
         """
         Laplace Approximation
 
@@ -29,13 +29,13 @@ class Laplace(likelihood):
         :data: array of data the likelihood function is approximating
         :likelihood_function: likelihood function - subclass of likelihood_function
         :extra_data: additional data used by some likelihood functions, for example survival likelihoods need censoring data
-        :rasm: Flag of whether to use rasmussens numerically stable mode finding or simple ncg optimisation
+        :opt: Optimiser to use, rasm numerically stable, ncg or nelder-mead (latter only work with 1d data)
 
         """
         self.data = data
         self.likelihood_function = likelihood_function
         self.extra_data = extra_data
-        self.rasm = rasm
+        self.opt = opt
 
         #Inital values
         self.N, self.D = self.data.shape
@@ -85,11 +85,12 @@ class Laplace(likelihood):
         impl = mdot(dlp, dL_dfhat, I_KW_i)
         expl_a = mdot(self.Ki_f, self.Ki_f.T)
         expl_b = self.Wi_K_i
+        #print "expl_a: {}, expl_b: {}".format(expl_a, expl_b)
         expl = 0.5*expl_a + 0.5*expl_b # Might need to be -?
         dL_dthetaK_exp = dK_dthetaK(expl, X)
         dL_dthetaK_imp = dK_dthetaK(impl, X)
-        #print "dL_dthetaK_exp: {}     dL_dthetaK_implicit: {}".format(dL_dthetaK_exp, dL_dthetaK_imp)
-        dL_dthetaK = dL_dthetaK_imp + dL_dthetaK_exp
+        print "dL_dthetaK_exp: {}     dL_dthetaK_implicit: {}".format(dL_dthetaK_exp, dL_dthetaK_imp)
+        dL_dthetaK = dL_dthetaK_exp +dL_dthetaK_imp
         return dL_dthetaK
 
     def _gradients(self, partial):
@@ -109,7 +110,7 @@ class Laplace(likelihood):
             df_hat_dthetaL = mdot(I_KW_i, self.K, dlik_grad_dthetaL[thetaL_i])
             dL_dthetaL_imp = np.dot(dL_dfhat, df_hat_dthetaL)
             print "dL_dthetaL_exp: {}     dL_dthetaL_implicit: {}".format(dL_dthetaL_exp, dL_dthetaL_imp)
-            dL_dthetaL[thetaL_i] = dL_dthetaL_imp + dL_dthetaL_exp
+            dL_dthetaL[thetaL_i] = dL_dthetaL_exp + dL_dthetaL_imp
 
         return dL_dthetaL #should be array of length *params-being optimized*, for student t just optimising 1 parameter, this is (1,)
 
@@ -165,7 +166,7 @@ class Laplace(likelihood):
                    - 0.5*self.f_Ki_f
                    + 0.5*y_Wi_Ki_i_y
                   )
-        #print "Ztilde: {}".format(Z_tilde)
+        print "Ztilde: {}".format(Z_tilde)
 
         #Convert to float as its (1, 1) and Z must be a scalar
         self.Z = np.float64(Z_tilde)
@@ -183,10 +184,11 @@ class Laplace(likelihood):
         self.K = K.copy()
 
         #Find mode
-        if self.rasm:
-            self.f_hat = self.rasm_mode(K)
-        else:
-            self.f_hat = self.ncg_mode(K)
+        self.f_hat = {
+            'rasm': self.rasm_mode,
+            'ncg': self.ncg_mode,
+            'nelder': self.nelder_mode
+        }[self.opt](self.K)
 
         #Compute hessian and other variables at mode
         self._compute_likelihood_variables()
@@ -196,20 +198,20 @@ class Laplace(likelihood):
         self.W = -self.likelihood_function.d2lik_d2f(self.data, self.f_hat, extra_data=self.extra_data)
 
         if not self.likelihood_function.log_concave:
-            self.W[self.W < 0] = 1e-6  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+            self.W[self.W < 0] = 1e-5  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                        #If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                        #To cause the posterior to become less certain than the prior and likelihood,
                                        #This is a property only held by non-log-concave likelihoods
 
         #TODO: Could save on computation when using rasm by returning these, means it isn't just a "mode finder" though
-        self.B, self.B_chol, self.W_12 = self._compute_B_statistics(self.K, self.W)
-        self.Bi, _, _, B_det = pdinv(self.B)
+        #self.B, self.B_chol, self.W_12 = self._compute_B_statistics(self.K, self.W)
+        #self.Bi, _, _, B_det = pdinv(self.B)
 
         #Do the computation again at f to get Ki_f which is useful
-        b = self.W*self.f_hat + self.likelihood_function.dlik_df(self.data, self.f_hat, extra_data=self.extra_data)
-        solve_chol = cho_solve((self.B_chol, True), np.dot(self.W_12*self.K, b))
-        a = b - self.W_12*solve_chol
-        self.Ki_f = a
+        #b = self.W*self.f_hat + self.likelihood_function.dlik_df(self.data, self.f_hat, extra_data=self.extra_data)
+        #solve_chol = cho_solve((self.B_chol, True), np.dot(self.W_12*self.K, b))
+        #a = b - self.W_12*solve_chol
+        self.Ki_f = self.a
 
         self.f_Ki_f = np.dot(self.f_hat.T, self.Ki_f)
         self.Ki_W_i = self.K - mdot(self.K, self.W_12*self.Bi*self.W_12.T, self.K)
@@ -239,6 +241,17 @@ class Laplace(likelihood):
         L = jitchol(B)
         return (B, L, W_12)
 
+    def nelder_mode(self, K):
+        f = np.zeros((self.N, 1))
+        self.Ki, _, _, self.ln_K_det = pdinv(K)
+        def obj(f):
+            res = -1 * (self.likelihood_function.link_function(self.data[:, 0], f, extra_data=self.extra_data) - 0.5*np.dot(f.T, np.dot(self.Ki, f)))
+            return float(res)
+
+        res = sp.optimize.minimize(obj, f, method='nelder-mead', options={'xtol': 1e-7, 'maxiter': 25000, 'disp': True})
+        f_new = res.x
+        return f_new[:, None]
+
     def ncg_mode(self, K):
         """
         Find the mode using a normal ncg optimizer and inversion of K (numerically unstable but intuative)
@@ -261,13 +274,13 @@ class Laplace(likelihood):
             return np.squeeze(res)
 
         def obj_hess(f):
-            res = -1 * (--np.diag(self.likelihood_function.d2lik_d2f(self.data[:, 0], f, extra_data=self.extra_data)) - self.Ki)
+            res = -1 * (np.diag(self.likelihood_function.d2lik_d2f(self.data[:, 0], f, extra_data=self.extra_data)) - self.Ki)
             return np.squeeze(res)
 
         f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess, disp=False)
         return f_hat[:, None]
 
-    def rasm_mode(self, K, MAX_ITER=500, MAX_RESTART=40):
+    def rasm_mode(self, K, MAX_ITER=500, MAX_RESTART=10):
         """
         Rasmussens numerically stable mode finding
         For nomenclature see Rasmussen & Williams 2006
@@ -287,11 +300,10 @@ class Laplace(likelihood):
         old_obj = np.inf
 
         def obj(a, f):
-            #Careful of shape of data!
             return -0.5*np.dot(a.T, f) + self.likelihood_function.link_function(self.data, f, extra_data=self.extra_data)
 
         difference = np.inf
-        epsilon = 1e-6
+        epsilon = 1e-9
         step_size = 1
         rs = 0
         i = 0
@@ -299,7 +311,7 @@ class Laplace(likelihood):
             #f_old = f.copy()
             W = -self.likelihood_function.d2lik_d2f(self.data, f, extra_data=self.extra_data)
             if not self.likelihood_function.log_concave:
-                W[W < 0] = 1e-8     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+                W[W < 0] = 1e-6     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                     # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                     # To cause the posterior to become less certain than the prior and likelihood,
                                     # This is a property only held by non-log-concave likelihoods
@@ -314,6 +326,7 @@ class Laplace(likelihood):
             full_step_a = b - W_12*solve_L
             da = full_step_a - old_a
 
+            f_old = f
             update_passed = False
             while not update_passed:
                 a = old_a + step_size*da
@@ -323,11 +336,11 @@ class Laplace(likelihood):
                 new_obj = np.float(obj(a, f))
                 difference = new_obj - old_obj
                 #print "difference: ",difference
-                if difference < 0:
+                if difference < -epsilon:
                     #print grad
                     print "Objective function rose", np.float(difference)
                     #If the objective function isn't rising, restart optimization
-                    step_size *= 0.8
+                    step_size *= 0.4
                     print "Reducing step-size to {ss:.3} and restarting optimization".format(ss=step_size)
                     #objective function isn't increasing, try reducing step size
                     #f = f_old #it's actually faster not to go back to old location and just zigzag across the mode
@@ -337,16 +350,20 @@ class Laplace(likelihood):
                 else:
                     update_passed = True
 
+            difference = np.abs(np.sum(f - f_old)) + abs(difference)
             #print "Iter difference: ", difference
             #print "F: ", f
             #print "A: ", a
             old_a = a
             #print "Positive difference obj: ", np.float(difference)
-            difference = np.float(abs(difference))
+            #difference = np.float(abs(difference))
             i += 1
 
         #print "Positive difference obj: ", np.float(difference)
         print "Iterations: ",i
         print "Step size reductions", rs
         print "Final difference: ", difference
+        self.a = a
+        self.B, self.B_chol, self.W_12 = B, L, W_12
+        self.Bi, _, _, B_det = pdinv(self.B)
         return f

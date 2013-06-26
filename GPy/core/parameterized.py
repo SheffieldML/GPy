@@ -93,9 +93,9 @@ class Parameterized(object):
         if len(matches):
             val = np.array(val)
             assert (val.size == 1) or val.size == len(matches), "Shape mismatch: {}:({},)".format(val.size, len(matches))
-            x = self.params
+            x = self._get_params
             x[matches] = val
-            self.params = x
+            self._set_params(x)
         else:
             raise AttributeError, "no parameter matches %s" % name
 

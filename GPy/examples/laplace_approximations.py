@@ -98,7 +98,7 @@ def debug_student_t_noise_approx():
     Y = Y/Y.max()
 
     #Add student t random noise to datapoints
-    deg_free = 10
+    deg_free = 100
 
     real_sd = np.sqrt(real_var)
     print "Real noise std: ", real_sd
@@ -133,20 +133,23 @@ def debug_student_t_noise_approx():
         #plt.plot(X_full, Y_full)
     #print m
 
-    edited_real_sd = initial_var_guess #real_sd
+    real_stu_t_std = np.sqrt(real_var*((deg_free - 2)/float(deg_free)))
+    edited_real_sd = real_stu_t_std#initial_var_guess #real_sd
     #edited_real_sd = real_sd
 
     print "Clean student t, rasm"
     t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma=edited_real_sd)
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
+
     m = GPy.models.GP(X, stu_t_likelihood, kernel6)
-    m['rbf_len'] = 1.5
+    #m['rbf_len'] = 1.5
     #m.constrain_fixed('rbf_v', 1.0898)
     #m.constrain_fixed('rbf_l', 1.8651)
-    #m.constrain_fixed('t_noise_variance', real_sd)
+    m.constrain_fixed('t_noise_std', edited_real_sd)
     #m.constrain_positive('rbf')
-    #m.constrain_positive('t_noise')
-    m.constrain_positive('')
+    #m.constrain_positive('t_noise_std')
+    #m.constrain_positive('')
+    m.ensure_default_constraints()
     #m.constrain_fixed('t_noi', real_sd)
     m.update_likelihood_approximation()
     #m.optimize(messages=True)
@@ -264,6 +267,7 @@ def student_t_approx():
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
     m = GPy.models.GP(X, stu_t_likelihood, kernel6)
     m.ensure_default_constraints()
+    m.constrain_positive('t_noise')
     m.update_likelihood_approximation()
     m.optimize()
     print(m)
@@ -278,6 +282,7 @@ def student_t_approx():
     corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, opt='rasm')
     m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel4)
     m.ensure_default_constraints()
+    m.constrain_positive('t_noise')
     m.update_likelihood_approximation()
     m.optimize()
     print(m)

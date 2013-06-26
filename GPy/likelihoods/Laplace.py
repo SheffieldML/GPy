@@ -109,7 +109,7 @@ class Laplace(likelihood):
             #Implicit
             df_hat_dthetaL = mdot(I_KW_i, self.K, dlik_grad_dthetaL[thetaL_i])
             dL_dthetaL_imp = np.dot(dL_dfhat, df_hat_dthetaL)
-            print "dL_dthetaL_exp: {}     dL_dthetaL_implicit: {}".format(dL_dthetaL_exp, dL_dthetaL_imp)
+            #print "dL_dthetaL_exp: {}     dL_dthetaL_implicit: {}".format(dL_dthetaL_exp, dL_dthetaL_imp)
             dL_dthetaL[thetaL_i] = dL_dthetaL_exp + dL_dthetaL_imp
 
         return dL_dthetaL #should be array of length *params-being optimized*, for student t just optimising 1 parameter, this is (1,)
@@ -147,10 +147,11 @@ class Laplace(likelihood):
         Li = chol_inv(L)
         Lt_W = L.T*self.W.T
 
-        Lt_W_i_Li = dtrtrs(Lt_W, Li, lower=False)[0]
+        Lt_W_i_Li = dtrtrs(Lt_W, Li, lower=True)[0]
         self.Wi__Ki_W = Lt_W_i_Li + np.eye(self.N)
 
         Y_tilde = np.dot(self.Wi__Ki_W, self.f_hat)
+        #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
         self.Sigma_tilde = np.diagflat(1.0/self.W)
 
@@ -166,7 +167,7 @@ class Laplace(likelihood):
                    - 0.5*self.f_Ki_f
                    + 0.5*y_Wi_Ki_i_y
                   )
-        print "Ztilde: {}".format(Z_tilde)
+        #print "Ztilde: {}".format(Z_tilde)
 
         #Convert to float as its (1, 1) and Z must be a scalar
         self.Z = np.float64(Z_tilde)
@@ -280,7 +281,7 @@ class Laplace(likelihood):
         f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess, disp=False)
         return f_hat[:, None]
 
-    def rasm_mode(self, K, MAX_ITER=500, MAX_RESTART=10):
+    def rasm_mode(self, K, MAX_ITER=250, MAX_RESTART=10):
         """
         Rasmussens numerically stable mode finding
         For nomenclature see Rasmussen & Williams 2006
@@ -308,7 +309,6 @@ class Laplace(likelihood):
         rs = 0
         i = 0
         while difference > epsilon and i < MAX_ITER and rs < MAX_RESTART:
-            #f_old = f.copy()
             W = -self.likelihood_function.d2lik_d2f(self.data, f, extra_data=self.extra_data)
             if not self.likelihood_function.log_concave:
                 W[W < 0] = 1e-6     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
@@ -338,10 +338,10 @@ class Laplace(likelihood):
                 #print "difference: ",difference
                 if difference < -epsilon:
                     #print grad
-                    print "Objective function rose", np.float(difference)
+                    #print "Objective function rose", np.float(difference)
                     #If the objective function isn't rising, restart optimization
                     step_size *= 0.4
-                    print "Reducing step-size to {ss:.3} and restarting optimization".format(ss=step_size)
+                    #print "Reducing step-size to {ss:.3} and restarting optimization".format(ss=step_size)
                     #objective function isn't increasing, try reducing step size
                     #f = f_old #it's actually faster not to go back to old location and just zigzag across the mode
                     #old_obj = tmp_old_obj
@@ -351,18 +351,11 @@ class Laplace(likelihood):
                     update_passed = True
 
             difference = np.abs(np.sum(f - f_old)) + abs(difference)
-            #print "Iter difference: ", difference
-            #print "F: ", f
-            #print "A: ", a
             old_a = a
-            #print "Positive difference obj: ", np.float(difference)
-            #difference = np.float(abs(difference))
             i += 1
 
         #print "Positive difference obj: ", np.float(difference)
-        print "Iterations: ",i
-        print "Step size reductions", rs
-        print "Final difference: ", difference
+        print "Iterations: {}, Step size reductions: {}, Final_difference: {}, step_size: {}".format(i, rs, difference, step_size)
         self.a = a
         self.B, self.B_chol, self.W_12 = B, L, W_12
         self.Bi, _, _, B_det = pdinv(self.B)

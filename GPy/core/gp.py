@@ -31,8 +31,11 @@ class GP(GPBase):
         GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
         self._set_params(self._get_params())
 
-    def __setstate__(self, state):
-        GPBase.__setstate__(self, state)
+    def getstate(self):
+        return GPBase.getstate(self)
+
+    def setstate(self, state):
+        GPBase.setstate(self, state)
         self._set_params(self._get_params())
 
     def _set_params(self, p):

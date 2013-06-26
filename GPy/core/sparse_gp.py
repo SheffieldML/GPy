@@ -50,22 +50,22 @@ class SparseGP(GPBase):
         if self.has_uncertain_inputs:
             self.X_variance /= np.square(self._Xscale)
 
-    def __getstate__(self):
+    def getstate(self):
         """
         Get the current state of the class,
         here just all the indices, rest can get recomputed
         """
-        return GPBase.__getstate__(self) + [self.Z,
+        return GPBase.getstate(self) + [self.Z,
                 self.num_inducing,
                 self.has_uncertain_inputs,
                 self.X_variance]
 
-    def __setstate__(self, state):
+    def setstate(self, state):
         self.X_variance = state.pop()
         self.has_uncertain_inputs = state.pop()
         self.num_inducing = state.pop()
         self.Z = state.pop()
-        GPBase.__setstate__(self, state)
+        GPBase.setstate(self, state)
 
     def _compute_kernel_matrices(self):
         # kernel computations, using BGPLVM notation

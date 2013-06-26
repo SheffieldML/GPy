@@ -48,16 +48,16 @@ class BayesianGPLVM(SparseGP, GPLVM):
         SparseGP.__init__(self, X, likelihood, kernel, Z=Z, X_variance=X_variance, **kwargs)
         self.ensure_default_constraints()
 
-    def __getstate__(self):
+    def getstate(self):
         """
         Get the current state of the class,
         here just all the indices, rest can get recomputed
         """
-        return SparseGP.__getstate__(self) + [self.init]
+        return SparseGP.getstate(self) + [self.init]
 
-    def __setstate__(self, state):
+    def setstate(self, state):
         self.init = state.pop()
-        SparseGP.__setstate__(self, state)
+        SparseGP.setstate(self, state)
 
     def _get_param_names(self):
         X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])

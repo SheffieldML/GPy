@@ -9,7 +9,7 @@ likelihoods Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`EP` Module
+:mod:`ep` Module
 ----------------
 
 .. automodule:: GPy.likelihoods.ep
@@ -17,7 +17,7 @@ likelihoods Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`Gaussian` Module
+:mod:`gaussian` Module
 ----------------------
 
 .. automodule:: GPy.likelihoods.gaussian
@@ -37,6 +37,14 @@ likelihoods Package
 ----------------------------------
 
 .. automodule:: GPy.likelihoods.likelihood_functions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`link_functions` Module
+----------------------------
+
+.. automodule:: GPy.likelihoods.link_functions
     :members:
     :undoc-members:
     :show-inheritance:

@@ -9,7 +9,7 @@ import cPickle
 import warnings
 import transformations
 
-class Parameterised(object):
+class Parameterized(object):
     def __init__(self):
         """
         This is the base class for model and kernel. Mostly just handles tieing and constraining of parameters
@@ -20,19 +20,40 @@ class Parameterised(object):
         self.constrained_indices = []
         self.constraints = []
 
-    def pickle(self, filename, protocol= -1):
-        f = file(filename, 'w')
-        cPickle.dump(self, f, protocol)
-        f.close()
+    def pickle(self, filename, protocol=None):
+        if protocol is None:
+            if self._has_get_set_state():
+                protocol = 0
+            else:
+                protocol = -1
+        with open(filename, 'w') as f:
+            cPickle.dump(self, f, protocol)
 
     def copy(self):
         """Returns a (deep) copy of the current model """
         return copy.deepcopy(self)
 
     def __getstate__(self):
+        if self._has_get_set_state():
+            return self.getstate()
+        return self.__dict__
+
+    def __setstate__(self, state):
+        if self._has_get_set_state():
+            return self.setstate(state)
+        self.__dict__ = state
+
+    def _has_get_set_state(self):
+        return 'getstate' in vars(self.__class__) and 'setstate' in vars(self.__class__)
+
+    def getstate(self):
         """
         Get the current state of the class,
         here just all the indices, rest can get recomputed
+        
+        For inheriting from Parameterized:
+        Allways append the state of the inherited object 
+        and call down to the inherited object in setstate!! 
         """
         return [self.tied_indices,
                 self.fixed_indices,
@@ -40,53 +61,12 @@ class Parameterised(object):
                 self.constrained_indices,
                 self.constraints]
 
-    def __setstate__(self, state):
+    def setstate(self, state):
         self.constraints = state.pop()
         self.constrained_indices = state.pop()
         self.fixed_values = state.pop()
         self.fixed_indices = state.pop()
         self.tied_indices = state.pop()
-
-    @property
-    def params(self):
-        """
-        Returns a **copy** of parameters in non transformed space
-
-        :see_also: :py:func:`GPy.core.Parameterised.params_transformed`
-        """
-        return self._get_params()
-
-    @params.setter
-    def params(self, params):
-        self._set_params(params)
-
-    @property
-    def params_transformed(self):
-        """
-        Returns a **copy** of parameters in transformed space
-
-        :see_also: :py:func:`GPy.core.Parameterised.params`
-        """
-        return self._get_params_transformed()
-
-    @params_transformed.setter
-    def params_transformed(self, params):
-        self._set_params_transformed(params)
-
-    _get_set_deprecation = """get and set methods wont be available at next minor release
-        in the next releases you will get and set with following syntax:
-        Assume m is a model class:
-        print m['var']          # > prints all parameters matching 'var'
-        m['var'] = 2.           # > sets all parameters matching 'var' to 2.
-        m['var'] = <array-like> # > sets parameters matching 'var' to <array-like>
-        """
-    def get(self, regexp):
-        warnings.warn(self._get_set_deprecation, FutureWarning, stacklevel=2)
-        return self[regexp]
-
-    def set(self, regexp, val):
-        warnings.warn(self._get_set_deprecation, FutureWarning, stacklevel=2)
-        self[regexp] = val
 
     def __getitem__(self, regexp, return_names=False):
         """
@@ -120,6 +100,9 @@ class Parameterised(object):
             raise AttributeError, "no parameter matches %s" % name
 
     def tie_params(self, regexp):
+        """
+        Tie (all!) parameters matching the regular expression `regexp`. 
+        """
         matches = self.grep_param_names(regexp)
         assert matches.size > 0, "need at least something to tie together"
         if len(self.tied_indices):

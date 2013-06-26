@@ -3,12 +3,12 @@
 
 import numpy as np
 import pylab as pb
-from ..core.parameterised import Parameterised
+from ..core.parameterized import Parameterized
 from parts.kernpart import Kernpart
 import itertools
 from parts.prod import Prod as prod
 
-class kern(Parameterised):
+class kern(Parameterized):
     def __init__(self, input_dim, parts=[], input_slices=None):
         """
         This is the main kernel class for GPy. It handles multiple (additive) kernel functions, and keeps track of variaous things like which parameters live where.
@@ -41,14 +41,14 @@ class kern(Parameterised):
 
         self.compute_param_slices()
 
-        Parameterised.__init__(self)
+        Parameterized.__init__(self)
 
-    def __getstate__(self):
+    def getstate(self):
         """
         Get the current state of the class,
         here just all the indices, rest can get recomputed
         """
-        return Parameterised.__getstate__(self) + [self.parts,
+        return Parameterized.getstate(self) + [self.parts,
                 self.Nparts,
                 self.num_params,
                 self.input_dim,
@@ -56,14 +56,14 @@ class kern(Parameterised):
                 self.param_slices
                 ]
 
-    def __setstate__(self, state):
+    def setstate(self, state):
         self.param_slices = state.pop()
         self.input_slices = state.pop()
         self.input_dim = state.pop()
         self.num_params = state.pop()
         self.Nparts = state.pop()
         self.parts = state.pop()
-        Parameterised.__setstate__(self, state)
+        Parameterized.setstate(self, state)
 
 
     def plot_ARD(self, fignum=None, ax=None, title=None):

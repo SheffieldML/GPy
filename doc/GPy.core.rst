@@ -9,6 +9,38 @@ core Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`domains` Module
+---------------------
+
+.. automodule:: GPy.core.domains
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`fitc` Module
+------------------
+
+.. automodule:: GPy.core.fitc
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`gp` Module
+----------------
+
+.. automodule:: GPy.core.gp
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`gp_base` Module
+---------------------
+
+.. automodule:: GPy.core.gp_base
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`model` Module
 -------------------
 
@@ -17,10 +49,10 @@ core Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`parameterised` Module
+:mod:`parameterized` Module
 ---------------------------
 
-.. automodule:: GPy.core.parameterised
+.. automodule:: GPy.core.parameterized
     :members:
     :undoc-members:
     :show-inheritance:
@@ -29,6 +61,30 @@ core Package
 --------------------
 
 .. automodule:: GPy.core.priors
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`sparse_gp` Module
+-----------------------
+
+.. automodule:: GPy.core.sparse_gp
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`svigp` Module
+-------------------
+
+.. automodule:: GPy.core.svigp
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`transformations` Module
+-----------------------------
+
+.. automodule:: GPy.core.transformations
     :members:
     :undoc-members:
     :show-inheritance:

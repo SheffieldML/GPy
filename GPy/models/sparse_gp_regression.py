@@ -43,3 +43,13 @@ class SparseGPRegression(SparseGP):
 
         SparseGP.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X, X_variance=X_variance)
         self.ensure_default_constraints()
+        pass
+
+    def getstate(self):
+        return SparseGP.getstate(self)
+
+
+    def setstate(self, state):
+        return SparseGP.setstate(self, state)
+
+    pass

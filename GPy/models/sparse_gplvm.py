@@ -28,6 +28,14 @@ class SparseGPLVM(SparseGPRegression, GPLVM):
         SparseGPRegression.__init__(self, X, Y, kernel=kernel, num_inducing=num_inducing)
         self.ensure_default_constraints()
 
+    def getstate(self):
+        return SparseGPRegression.getstate(self)
+
+
+    def setstate(self, state):
+        return SparseGPRegression.setstate(self, state)
+
+
     def _get_param_names(self):
         return (sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
                 + SparseGPRegression._get_param_names(self))

@@ -84,8 +84,8 @@ class MRD(Model):
         Model.__init__(self)
         self.ensure_default_constraints()
 
-    def __getstate__(self):
-        return Model.__getstate__(self) + [self.names,
+    def getstate(self):
+        return Model.getstate(self) + [self.names,
                 self.bgplvms,
                 self.gref,
                 self.nparams,
@@ -95,7 +95,7 @@ class MRD(Model):
                 self.NQ,
                 self.MQ]
 
-    def __setstate__(self, state):
+    def setstate(self, state):
         self.MQ = state.pop()
         self.NQ = state.pop()
         self.num_data = state.pop()
@@ -105,7 +105,7 @@ class MRD(Model):
         self.gref = state.pop()
         self.bgplvms = state.pop()
         self.names = state.pop()
-        Model.__setstate__(self, state)
+        Model.setstate(self, state)
 
     @property
     def X(self):

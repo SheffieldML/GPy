@@ -25,11 +25,20 @@ class GPRegression(GP):
 
     """
 
-    def __init__(self,X,Y,kernel=None,normalize_X=False,normalize_Y=False):
+    def __init__(self, X, Y, kernel=None, normalize_X=False, normalize_Y=False):
         if kernel is None:
             kernel = kern.rbf(X.shape[1])
 
-        likelihood = likelihoods.Gaussian(Y,normalize=normalize_Y)
+        likelihood = likelihoods.Gaussian(Y, normalize=normalize_Y)
 
         GP.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
         self.ensure_default_constraints()
+
+    def getstate(self):
+        return GP.getstate(self)
+
+
+    def setstate(self, state):
+        return GP.setstate(self, state)
+
+    pass

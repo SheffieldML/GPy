@@ -91,6 +91,14 @@ class SVIGP(GPBase):
         self._param_steplength_trace = []
         self._vb_steplength_trace = []
 
+    def getstate(self):
+        return GPBase.getstate(self)
+
+
+    def setstate(self, state):
+        return GPBase.setstate(self, state)
+
+
     def _compute_kernel_matrices(self):
         # kernel computations, using BGPLVM notation
         self.Kmm = self.kern.K(self.Z)

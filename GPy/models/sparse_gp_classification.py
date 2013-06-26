@@ -28,7 +28,7 @@ class SparseGPClassification(SparseGP):
 
     def __init__(self, X, Y=None, likelihood=None, kernel=None, normalize_X=False, normalize_Y=False, Z=None, num_inducing=10):
         if kernel is None:
-            kernel = kern.rbf(X.shape[1]) + kern.white(X.shape[1],1e-3)
+            kernel = kern.rbf(X.shape[1]) + kern.white(X.shape[1], 1e-3)
 
         if likelihood is None:
             distribution = likelihoods.likelihood_functions.Binomial()
@@ -41,7 +41,16 @@ class SparseGPClassification(SparseGP):
             i = np.random.permutation(X.shape[0])[:num_inducing]
             Z = X[i].copy()
         else:
-            assert Z.shape[1]==X.shape[1]
+            assert Z.shape[1] == X.shape[1]
 
         SparseGP.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X)
         self.ensure_default_constraints()
+
+    def getstate(self):
+        return SparseGP.getstate(self)
+
+
+    def setstate(self, state):
+        return SparseGP.setstate(self, state)
+
+    pass

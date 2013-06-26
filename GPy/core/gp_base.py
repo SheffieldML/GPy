@@ -33,12 +33,12 @@ class GPBase(Model):
         # All leaf nodes should call self._set_params(self._get_params()) at
         # the end
 
-    def __getstate__(self):
+    def getstate(self):
         """
         Get the current state of the class,
         here just all the indices, rest can get recomputed
         """
-        return Model.__getstate__(self) + [self.X,
+        return Model.getstate(self) + [self.X,
                 self.num_data,
                 self.input_dim,
                 self.kern,
@@ -47,7 +47,7 @@ class GPBase(Model):
                 self._Xoffset,
                 self._Xscale]
 
-    def __setstate__(self, state):
+    def setstate(self, state):
         self._Xscale = state.pop()
         self._Xoffset = state.pop()
         self.output_dim = state.pop()
@@ -56,7 +56,7 @@ class GPBase(Model):
         self.input_dim = state.pop()
         self.num_data = state.pop()
         self.X = state.pop()
-        Model.__setstate__(self, state)
+        Model.setstate(self, state)
 
     def plot_f(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, full_cov=False, fignum=None, ax=None):
         """

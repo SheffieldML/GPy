@@ -199,7 +199,7 @@ class Parameterised(object):
 
     def constrain_negative(self, regexp):
         """ Set negative constraints. """
-        self.constrain(regexp, transformations.negative_exponent())
+        self.constrain(regexp, transformations.negative_logexp())
 
     def constrain_positive(self, regexp):
         """ Set positive constraints. """

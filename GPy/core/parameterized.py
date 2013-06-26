@@ -20,6 +20,11 @@ class Parameterized(object):
         self.constrained_indices = []
         self.constraints = []
 
+    def _get_params(self):
+        raise NotImplementedError, "this needs to be implemented to use the Model class"
+    def _set_params(self, x):
+        raise NotImplementedError, "this needs to be implemented to use the Model class"
+
     def pickle(self, filename, protocol=None):
         if protocol is None:
             if self._has_get_set_state():

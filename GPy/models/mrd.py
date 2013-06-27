@@ -315,7 +315,7 @@ class MRD(Model):
         return fig
 
     def plot_latent(self, fignum=None, ax=None, *args, **kwargs):
-        fig = self.gref.plot_X_1d(*args, **kwargs) # self._handle_plotting(fignum, ax, lambda i, g, ax: g.plot_latent(ax=ax, *args, **kwargs))
+        fig = self.gref.plot_latent(*args, **kwargs) # self._handle_plotting(fignum, ax, lambda i, g, ax: g.plot_latent(ax=ax, *args, **kwargs))
         return fig
 
     def _debug_plot(self):

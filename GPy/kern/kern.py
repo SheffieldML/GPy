@@ -75,7 +75,8 @@ class kern(Parameterized):
             if hasattr(p, 'ARD') and p.ARD:
                 if title is None:
                     ax.set_title('ARD parameters, %s kernel' % p.name)
-
+                else:
+                    ax.set_title(title)
                 if p.name == 'linear':
                     ard_params = p.variances
                 else:

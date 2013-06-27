@@ -36,6 +36,20 @@ class logexp(transformation):
     def __str__(self):
         return '(+ve)'
 
+class negative_logexp(transformation):
+    domain = NEGATIVE
+    def f(self, x):
+        return -np.log(1. + np.exp(x))
+    def finv(self, f):
+        return np.log(np.exp(-f) - 1.)
+    def gradfactor(self, f):
+        ef = np.exp(-f)
+        return -(ef - 1.) / ef
+    def initialize(self, f):
+        return -np.abs(f)
+    def __str__(self):
+        return '(-ve)'
+
 class logexp_clipped(transformation):
     max_bound = 1e100
     min_bound = 1e-10

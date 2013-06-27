@@ -227,7 +227,7 @@ def periodic_Matern52(input_dim, variance=1., lengthscale=None, period=2 * np.pi
      :param n_freq: the number of frequencies considered for the periodic subspace
      :type n_freq: int
     """
-    part = parts.periodic_Matern52part(input_dim, variance, lengthscale, period, n_freq, lower, upper)
+    part = parts.periodic_Matern52.PeriodicMatern52(input_dim, variance, lengthscale, period, n_freq, lower, upper)
     return kern(input_dim, [part])
 
 def prod(k1,k2,tensor=False):

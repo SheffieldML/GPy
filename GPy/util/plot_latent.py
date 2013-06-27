@@ -2,13 +2,14 @@ import pylab as pb
 import numpy as np
 from .. import util
 
-def plot_latent(model, labels=None, which_indices=None, resolution=50, ax=None, marker='o', s=40):
+def plot_latent(model, labels=None, which_indices=None, resolution=50, ax=None, marker='o', s=40, fignum=None):
     """
     :param labels: a np.array of size model.num_data containing labels for the points (can be number, strings, etc)
     :param resolution: the resolution of the grid on which to evaluate the predictive variance
     """
     if ax is None:
-        ax = pb.gca()
+        fig = pb.figure(num=fignum)
+        ax = fig.add_subplot(111)
     util.plot.Tango.reset()
 
     if labels is None:

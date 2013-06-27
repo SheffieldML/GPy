@@ -142,19 +142,18 @@ class GP(model):
         Note, we use the chain rule: dL_dtheta = dL_dK * d_K_dtheta
         """
         dL_dthetaK = self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X)
-        print "dL_dthetaK should be: ", dL_dthetaK
+        #print "dL_dthetaK should be: ", dL_dthetaK
         if isinstance(self.likelihood, Laplace):
-            self.likelihood.fit_full(self.kern.K(self.X))
-            self.likelihood._set_params(self.likelihood._get_params())
+            #self.likelihood.fit_full(self.kern.K(self.X))
+            #self.likelihood._set_params(self.likelihood._get_params())
             dK_dthetaK = self.kern.dK_dtheta
             dL_dthetaK = self.likelihood._Kgradients(dK_dthetaK, self.X)
             dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))
-            #print "dL_dthetaK after: ",dL_dthetaK
-            #print "Stacked dL_dthetaK, dL_dthetaL: ", np.hstack((dL_dthetaK, dL_dthetaL))
         else:
             dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))
-            #print "Stacked dL_dthetaK, dL_dthetaL: ", np.hstack((dL_dthetaK, dL_dthetaL))
+        #print "Stacked dL_dthetaK, dL_dthetaL: ", np.hstack((dL_dthetaK, dL_dthetaL))
         print "dL_dthetaK is: ", dL_dthetaK
+        print "dL_dthetaL is: ", dL_dthetaL
 
         return np.hstack((dL_dthetaK, dL_dthetaL))
         #return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))

@@ -90,7 +90,7 @@ class Laplace(likelihood):
         dL_dthetaK_exp = dK_dthetaK(expl, X)
         dL_dthetaK_imp = dK_dthetaK(impl, X)
         print "dL_dthetaK_exp: {}     dL_dthetaK_implicit: {}".format(dL_dthetaK_exp, dL_dthetaK_imp)
-        dL_dthetaK = dL_dthetaK_exp +dL_dthetaK_imp
+        dL_dthetaK = dL_dthetaK_exp + dL_dthetaK_imp
         return dL_dthetaK
 
     def _gradients(self, partial):
@@ -126,7 +126,6 @@ class Laplace(likelihood):
         due to the z rescaling.
 
         at the moment the data Y correspond to the normal approximation z*N(f|f_hat,hess_hat^1)
-
         This function finds the data D=(Y_tilde,X) that would produce z*N(f|f_hat,hess_hat^1)
         giving a normal approximation of z_tilde*p(Y_tilde|f,X)p(f)
 
@@ -143,17 +142,18 @@ class Laplace(likelihood):
         #dtritri -> L -> L_i
         #dtrtrs -> L.T*W, L_i -> (L.T*W)_i*L_i
         #((L.T*w)_i + I)f_hat = y_tilde
-        L = jitchol(self.K)
-        Li = chol_inv(L)
-        Lt_W = L.T*self.W.T
+        #L = jitchol(self.K)
+        #Li = chol_inv(L)
+        #Lt_W = L.T*self.W.T
 
-        Lt_W_i_Li = dtrtrs(Lt_W, Li, lower=True)[0]
-        self.Wi__Ki_W = Lt_W_i_Li + np.eye(self.N)
+        #Lt_W_i_Li = dtrtrs(Lt_W, Li, lower=True)[0]
+        #self.Wi__Ki_W = Lt_W_i_Li + np.eye(self.N)
+        #Y_tilde = np.dot(self.Wi__Ki_W, self.f_hat)
 
-        Y_tilde = np.dot(self.Wi__Ki_W, self.f_hat)
-        #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+        Wi = 1.0/self.W
+        self.Sigma_tilde = np.diagflat(Wi)
 
-        self.Sigma_tilde = np.diagflat(1.0/self.W)
+        Y_tilde = Wi*(self.Ki_f + self.W*self.f_hat)
 
         self.Wi_K_i = self.W_12*self.Bi*self.W_12.T #same as rasms R
         ln_det_K_Wi__Bi = self.ln_I_KW_det + pddet(self.Sigma_tilde + self.K)
@@ -281,7 +281,7 @@ class Laplace(likelihood):
         f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess, disp=False)
         return f_hat[:, None]
 
-    def rasm_mode(self, K, MAX_ITER=250, MAX_RESTART=10):
+    def rasm_mode(self, K, MAX_ITER=40, MAX_RESTART=10):
         """
         Rasmussens numerically stable mode finding
         For nomenclature see Rasmussen & Williams 2006
@@ -297,6 +297,7 @@ class Laplace(likelihood):
             old_a = self.old_a
 
         f = np.dot(self.K, old_a)
+        self.f = f
         new_obj = -np.inf
         old_obj = np.inf
 
@@ -304,7 +305,7 @@ class Laplace(likelihood):
             return -0.5*np.dot(a.T, f) + self.likelihood_function.link_function(self.data, f, extra_data=self.extra_data)
 
         difference = np.inf
-        epsilon = 1e-9
+        epsilon = 1e-6
         step_size = 1
         rs = 0
         i = 0
@@ -316,6 +317,8 @@ class Laplace(likelihood):
                                     # To cause the posterior to become less certain than the prior and likelihood,
                                     # This is a property only held by non-log-concave likelihoods
             B, L, W_12 = self._compute_B_statistics(K, W)
+            #if i > 30:
+                #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
             W_f = W*f
             grad = self.likelihood_function.dlik_df(self.data, f, extra_data=self.extra_data)
@@ -326,37 +329,52 @@ class Laplace(likelihood):
             full_step_a = b - W_12*solve_L
             da = full_step_a - old_a
 
-            f_old = f
-            update_passed = False
-            while not update_passed:
+            f_old = self.f.copy()
+
+            def inner_obj(step_size, old_a, da, K):
                 a = old_a + step_size*da
                 f = np.dot(K, a)
+                self.a = a
+                self.f = f
+                return -obj(a, f)
 
-                old_obj = new_obj
-                new_obj = np.float(obj(a, f))
-                difference = new_obj - old_obj
+            from functools import partial
+            i_o = partial(inner_obj, old_a=old_a, da=da, K=self.K)
+            old_obj = new_obj
+            new_obj = sp.optimize.brent(i_o, tol=1e-4, maxiter=10)
+
+            #update_passed = False
+            #while not update_passed:
+                #a = old_a + step_size*da
+                #f = np.dot(K, a)
+
+                #old_obj = new_obj
+                #new_obj = obj(a, f)
+                #difference = new_obj - old_obj
                 #print "difference: ",difference
-                if difference < -epsilon:
-                    #print grad
+                #if difference < 0:
+                    ##print grad
                     #print "Objective function rose", np.float(difference)
-                    #If the objective function isn't rising, restart optimization
-                    step_size *= 0.4
+                    ##If the objective function isn't rising, restart optimization
+                    #step_size *= 0.8
                     #print "Reducing step-size to {ss:.3} and restarting optimization".format(ss=step_size)
-                    #objective function isn't increasing, try reducing step size
-                    #f = f_old #it's actually faster not to go back to old location and just zigzag across the mode
-                    #old_obj = tmp_old_obj
-                    old_obj = new_obj
-                    rs += 1
-                else:
-                    update_passed = True
+                    ##objective function isn't increasing, try reducing step size
+                    ##f = f_old #it's actually faster not to go back to old location and just zigzag across the mode
+                    ##old_obj = tmp_old_obj
+                    #old_obj = new_obj
+                    #rs += 1
+                #else:
+                    #update_passed = True
 
+            f = self.f
+            difference = new_obj - old_obj
             difference = np.abs(np.sum(f - f_old)) + abs(difference)
-            old_a = a
+            old_a = self.a #a
             i += 1
 
         #print "Positive difference obj: ", np.float(difference)
         print "Iterations: {}, Step size reductions: {}, Final_difference: {}, step_size: {}".format(i, rs, difference, step_size)
-        self.a = a
+        #self.a = a
         self.B, self.B_chol, self.W_12 = B, L, W_12
         self.Bi, _, _, B_det = pdinv(self.B)
         return f

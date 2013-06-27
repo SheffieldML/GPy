@@ -58,13 +58,13 @@ def v_fail_test():
     m = GPy.models.GP(X, stu_t_likelihood, kernel1)
     m.constrain_positive('')
     vs = 25
-    noises = 40
+    noises = 30
     checkgrads = np.zeros((vs, noises))
     vs_noises = np.zeros((vs, noises))
     for v_ind, v in enumerate(np.linspace(1, 100, vs)):
         m.likelihood.likelihood_function.v = v
         print v
-        for noise_ind, noise in enumerate(np.linspace(0.0001, 10, noises)):
+        for noise_ind, noise in enumerate(np.linspace(0.0001, 100, noises)):
             m['t_noise'] = noise
             m.update_likelihood_approximation()
             checkgrads[v_ind, noise_ind] = m.checkgrad()
@@ -145,9 +145,9 @@ def debug_student_t_noise_approx():
     #m['rbf_len'] = 1.5
     #m.constrain_fixed('rbf_v', 1.0898)
     #m.constrain_fixed('rbf_l', 1.8651)
-    m.constrain_fixed('t_noise_std', edited_real_sd)
+    #m.constrain_fixed('t_noise_std', edited_real_sd)
     #m.constrain_positive('rbf')
-    #m.constrain_positive('t_noise_std')
+    m.constrain_positive('t_noise_std')
     #m.constrain_positive('')
     m.ensure_default_constraints()
     #m.constrain_fixed('t_noi', real_sd)

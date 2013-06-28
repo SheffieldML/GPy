@@ -45,7 +45,9 @@ class Parameterized(object):
 
     def __setstate__(self, state):
         if self._has_get_set_state():
-            return self.setstate(state)
+            self.setstate(state) # set state
+            self._set_params(self._get_params()) # restore all values
+            return
         self.__dict__ = state
 
     def _has_get_set_state(self):

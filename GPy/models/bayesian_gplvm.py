@@ -24,8 +24,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
 
     """
     def __init__(self, likelihood_or_Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
-                 Z=None, kernel=None, oldpsave=10, _debug=False,
-                 **kwargs):
+                 Z=None, kernel=None, **kwargs):
         if type(likelihood_or_Y) is np.ndarray:
             likelihood = Gaussian(likelihood_or_Y)
         else:
@@ -117,7 +116,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
         return np.hstack((self.dbound_dmuS.flatten(), self.dbound_dZtheta))
 
     def plot_latent(self, *args, **kwargs):
-        return plot_latent.plot_latent_indices(self, *args, **kwargs)
+        return plot_latent.plot_latent(self, *args, **kwargs)
 
     def do_test_latents(self, Y):
         """

@@ -129,12 +129,17 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
 
         iteration += 1
         if display:
-            n_exps = exponents(fnow, current_grad)
-            if iteration - p_iter >= 6 and ((iteration >= p_iter * 2.78) or np.any(n_exps < exps)):
-                exps = n_exps
-                p_iter = iteration
-                print ''
             print_out(len_maxiters, fnow, current_grad, beta, iteration)
+            n_exps = exponents(fnow, current_grad)
+            if iteration - p_iter >= 6:
+                a = iteration >= p_iter * 2.78
+                b = np.any(n_exps < exps)
+                if a or b:
+                    print ''
+                if a:
+                    p_iter = iteration
+                if b:
+                    exps = n_exps
 
         if success:
             # Test for termination

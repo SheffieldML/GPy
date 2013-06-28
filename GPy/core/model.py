@@ -272,12 +272,13 @@ class Model(Parameterized):
         """
         try:
             self._set_params_transformed(x)
+            obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
             self._fail_count = 0
         except (LinAlgError, ZeroDivisionError, ValueError) as e:
             if self._fail_count >= self._allowed_failures:
                 raise e
             self._fail_count += 1
-        obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
+            obj_grads = np.clip(-self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients()), -1e100, 1e100)
         return obj_grads
 
     def objective_and_gradients(self, x):
@@ -285,12 +286,13 @@ class Model(Parameterized):
             self._set_params_transformed(x)
             obj_f = -self.log_likelihood() - self.log_prior()
             self._fail_count = 0
+            obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
         except (LinAlgError, ZeroDivisionError, ValueError) as e:
             if self._fail_count >= self._allowed_failures:
                 raise e
             self._fail_count += 1
             obj_f = np.inf
-        obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
+            obj_grads = np.clip(-self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients()), -1e100, 1e100)
         return obj_f, obj_grads
 
     def optimize(self, optimizer=None, start=None, **kwargs):
@@ -311,7 +313,9 @@ class Model(Parameterized):
 
         optimizer = optimization.get_optimizer(optimizer)
         opt = optimizer(start, model=self, **kwargs)
+
         opt.run(f_fp=self.objective_and_gradients, f=self.objective_function, fp=self.objective_function_gradients)
+
         self.optimization_runs.append(opt)
 
         self._set_params_transformed(opt.x_opt)

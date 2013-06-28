@@ -82,9 +82,10 @@ class kern(Parameterized):
                 else:
                     ard_params = 1. / p.lengthscale
 
-                ax.bar(np.arange(len(ard_params)) - 0.4, ard_params)
-                ax.set_xticks(np.arange(len(ard_params)))
-                ax.set_xticklabels([r"${}$".format(i) for i in range(len(ard_params))])
+                x = np.arange(len(ard_params))
+                ax.bar(x - 0.4, ard_params)
+                ax.set_xticks(x)
+                ax.set_xticklabels([r"${}$".format(i) for i in x])
         return ax
 
     def _transform_gradients(self, g):

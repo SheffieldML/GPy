@@ -26,11 +26,14 @@ import numpy as np
 import sys
 
 
-def print_out(len_maxiters, display, fnow, current_grad, beta, iteration):
-    if display:
-        print '\r',
-        print '{0:>0{mi}g}  {1:> 12e}  {2:> 12e}  {3:> 12e}'.format(iteration, float(fnow), float(beta), float(current_grad), mi=len_maxiters), # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
-        sys.stdout.flush()
+def print_out(len_maxiters, fnow, current_grad, beta, iteration):
+    print '\r',
+    print '{0:>0{mi}g}  {1:> 12e}  {2:> 12e}  {3:> 12e}'.format(iteration, float(fnow), float(beta), float(current_grad), mi=len_maxiters), # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
+    sys.stdout.flush()
+
+def exponents(fnow, current_grad):
+    exps = [np.abs(fnow), current_grad]
+    return np.sign(exps) * np.log10(exps).astype(int)
 
 def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xtol=None, ftol=None, gtol=None):
     """
@@ -52,6 +55,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         ftol = 1e-6
     if gtol is None:
         gtol = 1e-5
+
     sigma0 = 1.0e-8
     fold = f(x, *optargs) # Initial function value.
     function_eval = 1
@@ -74,6 +78,8 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
     len_maxiters = len(str(maxiters))
     if display:
         print ' {0:{mi}s}   {1:11s}    {2:11s}    {3:11s}'.format("I", "F", "Scale", "|g|", mi=len_maxiters)
+        exps = exponents(fnow, current_grad)
+        p_iter = iteration
 
     # Main optimization loop.
     while iteration < maxiters:
@@ -104,7 +110,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         function_eval += 1
 
         if function_eval >= max_f_eval:
-            status = "Maximum number of function evaluations exceeded"
+            status = "maximum number of function evaluations exceeded"
             break
 #             return x, flog, function_eval, status
 
@@ -122,15 +128,24 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         flog.append(fnow) # Current function value
 
         iteration += 1
-        print_out(len_maxiters, display, fnow, current_grad, beta, iteration)
+        if display:
+            n_exps = exponents(fnow, current_grad)
+            if iteration - p_iter >= 6 and ((iteration >= p_iter * 2.78) or np.any(n_exps < exps)):
+                exps = n_exps
+                p_iter = iteration
+                print ''
+            print_out(len_maxiters, fnow, current_grad, beta, iteration)
 
         if success:
             # Test for termination
-            if (np.max(np.abs(alpha * d)) < xtol) or (np.abs(fnew - fold) < ftol):
-                status = 'converged'
+
+            if (np.abs(fnew - fold) < ftol):
+                status = 'converged - relative reduction in objective'
                 break
 #                 return x, flog, function_eval, status
-
+            elif (np.max(np.abs(alpha * d)) < xtol):
+                status = 'converged - relative stepsize'
+                break
             else:
                 # Update variables for new position
                 gradnew = gradf(x, *optargs)
@@ -139,7 +154,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
                 fold = fnew
                 # If the gradient is zero then we are done.
                 if current_grad <= gtol:
-                    status = 'converged'
+                    status = 'converged - relative reduction in gradient'
                     break
                     # return x, flog, function_eval, status
 
@@ -164,6 +179,8 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=500, display=True, xto
         status = "maxiter exceeded"
 
     if display:
-        print_out(len_maxiters, display, fnow, current_grad, beta, iteration)
         print ""
+        print_out(len_maxiters, fnow, current_grad, beta, iteration)
+        print ""
+        print status
     return x, flog, function_eval, status

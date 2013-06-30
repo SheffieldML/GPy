@@ -23,16 +23,14 @@ class Binomial(LikelihoodFunction):
     def __init__(self,link=None):
         self.discrete = True
         self.support_limits = (0,1)
-        self._analytical = link_functions.Probit
+
         if not link:
-            link = self._analytical
+            link = link_functions.Probit
+        if isinstance(link,link_functions.Probit):
+            self.analytical_moments = True
+        else:
+            self.analytical_moments = False
         super(Binomial, self).__init__(link)
-
-    def _mass(self,gp,obs):
-        pass
-
-    def _nlog_mass(self,gp,obs):
-        pass
 
     def _preprocess_values(self,Y):
         """
@@ -66,12 +64,51 @@ class Binomial(LikelihoodFunction):
     def _predictive_mean_analytical(self,mu,sigma):
         return stats.norm.cdf(mu/np.sqrt(1+sigma**2))
 
-    def predictive_values(self,mu,var):
+    def _mass(self,gp,obs):
+        #NOTE obs must be in {0,1}
+        p = self.link.inv_transf(gp)
+        return p**obs * (1.-p)**(1.-obs)
+
+    def _nlog_mass(self,gp,obs):
+        p = self.link.inv_transf(gp)
+        return obs*np.log(p) + (1.-obs)*np.log(1-p)
+
+    def _dnlog_mass_dgp(self,gp,obs):
+        p = self.link.inv_transf(gp)
+        dp = self.link.dinv_transf_df(gp)
+        return obs/p * dp - (1.-obs)/(1.-p) * dp
+
+    def _d2nlog_mass_dgp2(self,gp,obs):
+        p = self.link.inv_transf(gp)
+        return (obs/p + (1.-obs)/(1.-p))*self.lind.d2inv_transf_df(gp) + ((1.-obs)/(1.-p)**2-obs/p**2)*self.link.dinv_transf_df(gp)
+
+    def _mean(self,gp):
         """
-        Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction
-        :param mu: mean of the latent variable
-        :param var: variance of the latent variable
+        Mass (or density) function
         """
+        return self.link.inv_transf(gp)
+
+    def _dmean_dgp(self,gp):
+        return self.link.dinv_transf_df(gp)
+
+    def _d2mean_dgp2(self,gp):
+        return self.link.d2inv_transf_df2(gp)
+
+    def _variance(self,gp):
+        """
+        Mass (or density) function
+        """
+        p = self.link.inv_transf(gp)
+        return p*(1-p)
+
+    def _dvariance_dgp(self,gp):
+        return self.link.dinv_transf_df(gp)*(1. - 2.*self.link.inv_transf(gp))
+
+    def _d2variance_dgp2(self,gp):
+        return self.link.d2inv_transf_df2(gp)*(1. - 2.*self.link.inv_transf(gp)) - 2*self.link.dinv_transf_df(gp)**2
+
+    """
+    def predictive_values(self,mu,var): #TODO remove
         mu = mu.flatten()
         var = var.flatten()
         #mean = stats.norm.cdf(mu/np.sqrt(1+var))
@@ -83,3 +120,4 @@ class Binomial(LikelihoodFunction):
         p_025 = self._predictive_mean_analytical(norm_025,np.sqrt(var))
         p_975 = self._predictive_mean_analytical(norm_975,np.sqrt(var))
         return mean[:,None], np.nan*var, p_025[:,None], p_975[:,None] # TODO: var
+    """

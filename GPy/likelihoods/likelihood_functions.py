@@ -19,12 +19,13 @@ class LikelihoodFunction(object):
     ..Note:: Y values allowed depend on the LikelihoodFunction used
     """
     def __init__(self,link):
-        if link == self._analytical:
+        #assert isinstance(link,link_functions.LinkFunction), "link is not a valid LinkFunction."#FIXME
+        self.link = link
+
+        if self.analytical_moments:
             self.moments_match = self._moments_match_analytical
             self.predictive_mean = self._predictive_mean_analytical
         else:
-            assert isinstance(link,link_functions.LinkFunction)
-            self.link = link
             self.moments_match = self._moments_match_numerical
             self.predictive_mean = self._predictive_mean_numerical
 
@@ -258,6 +259,7 @@ class LikelihoodFunction(object):
         maximum = sp.optimize.fmin_ncg(self._nlog_exp_conditional_variance_scaled,x0=self._variance(mu),fprime=self._dnlog_exp_conditional_variance_dgp,fhess=self._d2nlog_exp_conditional_variance_dgp2,args=(mu,sigma))
         exp_var = np.exp(-self._nlog_exp_conditional_variance_scaled(maximum,mu,sigma))/(np.sqrt(self._d2nlog_exp_conditional_variance_dgp2(maximum,mu,sigma))*sigma)
 
+        """
         pb.figure()
         x = np.array([mu + step*sigma for step in np.linspace(-7,7,100)])
         f = np.array([np.exp(-self._nlog_exp_conditional_variance_scaled(xi,mu,sigma))/np.sqrt(2*np.pi*sigma**2) for xi in x])
@@ -267,6 +269,7 @@ class LikelihoodFunction(object):
         k = np.exp(-self._nlog_exp_conditional_variance_scaled(maximum,mu,sigma))*np.sqrt(sigma2)/np.sqrt(sigma**2)
         pb.plot(x,f2*exp_var,'r--')
         pb.vlines(maximum,0,f.max())
+        """
 
         #V( E(Y_star|f_star) ) =  E( E(Y_star|f_star)**2 ) - E( E(Y_star|f_star)**2 )
         exp_exp2 = self._predictive_mean_sq(mu,sigma)
@@ -323,6 +326,8 @@ class LikelihoodFunction(object):
     def predictive_values(self,mu,var,sample=True,sample_size=5000):
         """
         Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction
+        :param mu: mean of the latent variable
+        :param var: variance of the latent variable
         """
         if isinstance(mu,float) or isinstance(mu,int):
             mu = [mu]

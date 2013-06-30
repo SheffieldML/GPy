@@ -31,7 +31,8 @@ class GPClassification(GP):
             kernel = kern.rbf(X.shape[1])
 
         if likelihood is None:
-            distribution = likelihoods.likelihood_functions.Binomial()
+            #distribution = GPy.likelihoods.binomial_likelihood.Binomial(link=link)
+            distribution = likelihoods.binomial_likelihood.Binomial()
             likelihood = likelihoods.EP(Y, distribution)
         elif Y is not None:
             if not all(Y.flatten() == likelihood.data.flatten()):

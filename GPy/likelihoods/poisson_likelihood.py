@@ -23,9 +23,8 @@ class Poisson(LikelihoodFunction):
     def __init__(self,link=None):
         self.discrete = True
         self.support_limits = (0,np.inf)
-        self._analytical = None
-        if not link:
-            link = link_functions.Log()
+
+        self.analytical_moments = False
         super(Poisson, self).__init__(link)
 
     def _mass(self,gp,obs):
@@ -34,14 +33,13 @@ class Poisson(LikelihoodFunction):
         """
         return stats.poisson.pmf(obs,self.link.inv_transf(gp))
 
-    def _percentile(self,x,gp,*args): #TODO *args
-        return stats.poisson.ppf(x,self.link.inv_transf(gp))
-
     def _nlog_mass(self,gp,obs):
         """
         Negative logarithm of the un-normalized distribution: factors that are not a function of gp are omitted
         """
         return self.link.inv_transf(gp) - obs * np.log(self.link.inv_transf(gp)) + np.log(special.gamma(obs+1))
+
+    #def _preprocess_values(self,Y): #TODO
 
     def _dnlog_mass_dgp(self,gp,obs):
         return self.link.dinv_transf_df(gp) * (1. - obs/self.link.inv_transf(gp))
@@ -66,8 +64,8 @@ class Poisson(LikelihoodFunction):
         """
         return self.link.inv_transf(gp)
 
-    def _variance(self,gp):
-        return self.link.inv_transf(gp)
+    #def _variance(self,gp):
+    #    return self.link.inv_transf(gp)
 
     def _dmean_dgp(self,gp):
         return self.link.dinv_transf_df(gp)
@@ -81,8 +79,8 @@ class Poisson(LikelihoodFunction):
         """
         return self.link.inv_transf(gp)
 
-    def _variance(self,gp):
-        return self.link.inv_transf(gp)
+    #def _variance(self,gp):
+    #    return self.link.inv_transf(gp)
 
     def _dvariance_dgp(self,gp):
         return self.link.dinv_transf_df(gp)

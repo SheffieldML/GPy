@@ -274,7 +274,7 @@ class student_t(likelihood_function):
         """
         assert y.shape == f.shape
         e = y - f
-        dlik_grad_dsigma = ((-2*self.sigma*self.v*(self.v + 1)*e)
+        dlik_grad_dsigma = ((-2*self.sigma*self.v*(self.v + 1)*e) #2 might not want to be here?
                             / ((self.v*(self.sigma**2) + e**2)**2)
                            )
         return dlik_grad_dsigma

@@ -91,6 +91,8 @@ def debug_student_t_noise_approx():
     X = np.linspace(0.0, 10.0, 50)[:, None]
     #X = np.array([0.5, 1])[:, None]
     Y = np.sin(X) + np.random.randn(*X.shape)*real_var
+    #ty = np.array([1., 9.97733584, 4.17841363])[:, None]
+    #Y = ty
 
     X_full = X
     Y_full = np.sin(X_full)
@@ -98,7 +100,7 @@ def debug_student_t_noise_approx():
     Y = Y/Y.max()
 
     #Add student t random noise to datapoints
-    deg_free = 100
+    deg_free = 10000
 
     real_sd = np.sqrt(real_var)
     print "Real noise std: ", real_sd
@@ -151,6 +153,9 @@ def debug_student_t_noise_approx():
     #m.constrain_positive('')
     m.ensure_default_constraints()
     #m.constrain_fixed('t_noi', real_sd)
+    #m['rbf_var'] = 0.20446332
+    #m['rbf_leng'] = 0.85776241
+    #m['t_noise'] = 0.667083294421005
     m.update_likelihood_approximation()
     #m.optimize(messages=True)
     print(m)

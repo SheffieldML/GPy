@@ -152,8 +152,7 @@ class GP(model):
         else:
             dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))
         #print "Stacked dL_dthetaK, dL_dthetaL: ", np.hstack((dL_dthetaK, dL_dthetaL))
-        print "dL_dthetaK is: ", dL_dthetaK
-        print "dL_dthetaL is: ", dL_dthetaL
+        print "dL_dthetaK: {}   dL_dthetaL: {}".format(dL_dthetaK, dL_dthetaL)
 
         return np.hstack((dL_dthetaK, dL_dthetaL))
         #return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))

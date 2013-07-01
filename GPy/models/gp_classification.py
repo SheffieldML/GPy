@@ -32,7 +32,7 @@ class GPClassification(GP):
 
         if likelihood is None:
             #distribution = GPy.likelihoods.binomial_likelihood.Binomial(link=link)
-            distribution = likelihoods.binomial_likelihood.Binomial()
+            distribution = likelihoods.binomial()
             likelihood = likelihoods.EP(Y, distribution)
         elif Y is not None:
             if not all(Y.flatten() == likelihood.data.flatten()):

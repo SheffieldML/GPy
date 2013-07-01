@@ -83,7 +83,7 @@ def coregionalisation_toy2(optim_iters=100):
     Y = np.vstack((Y1,Y2))
 
     k1 = GPy.kern.rbf(1) + GPy.kern.bias(1)
-    k2 = GPy.kern.Coregionalise(2,1)
+    k2 = GPy.kern.coregionalise(2,1)
     k = k1.prod(k2,tensor=True)
     m = GPy.models.GPRegression(X,Y,kernel=k)
     m.constrain_fixed('.*rbf_var',1.)
@@ -114,7 +114,7 @@ def coregionalisation_toy(optim_iters=100):
     Y = np.vstack((Y1,Y2))
 
     k1 = GPy.kern.rbf(1)
-    k2 = GPy.kern.Coregionalise(2,2)
+    k2 = GPy.kern.coregionalise(2,2)
     k = k1.prod(k2,tensor=True)
     m = GPy.models.GPRegression(X,Y,kernel=k)
     m.constrain_fixed('.*rbf_var',1.)
@@ -149,7 +149,7 @@ def coregionalisation_sparse(optim_iters=100):
     Z = np.hstack((np.random.rand(num_inducing,1)*8,np.random.randint(0,2,num_inducing)[:,None]))
 
     k1 = GPy.kern.rbf(1)
-    k2 = GPy.kern.Coregionalise(2,2)
+    k2 = GPy.kern.coregionalise(2,2)
     k = k1.prod(k2,tensor=True) + GPy.kern.white(2,0.001)
 
     m = GPy.models.SparseGPRegression(X,Y,kernel=k,Z=Z)

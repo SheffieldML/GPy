@@ -195,8 +195,9 @@ class student_t(likelihood_function):
         e = y - f
         objective = (+ gammaln((self.v + 1) * 0.5)
                      - gammaln(self.v * 0.5)
-                     - np.log(self.sigma * np.sqrt(self.v * np.pi))
+                     - 0.5*np.log((self.sigma**2) * self.v * np.pi)
                      - (self.v + 1) * 0.5 * np.log(1 + (((e / self.sigma)**2) / self.v))
+                     #- (self.v + 1) * 0.5 * np.log(1 + (e**2)/(self.v*(self.sigma**2)))
                     )
         return np.sum(objective)
 
@@ -264,6 +265,7 @@ class student_t(likelihood_function):
         dlik_dsigma = ( - (1/self.sigma) +
                         ((1+self.v)*(e**2))/((self.sigma**3)*self.v*(1 + ((e**2) / ((self.sigma**2)*self.v)) ) )
                       )
+        #dlik_dsigma = (((self.v + 1)*(e**2))/((e**2) + self.v*(self.sigma**2))) - 1
         return dlik_dsigma
 
     def dlik_df_dstd(self, y, f, extra_data=None):
@@ -290,6 +292,8 @@ class student_t(likelihood_function):
         dlik_hess_dsigma = (  (2*self.sigma*self.v*(self.v + 1)*((self.sigma**2)*self.v - 3*(e**2))) /
                               ((e**2 + (self.sigma**2)*self.v)**3)
                            )
+        #dlik_hess_dsigma = ( 2*(self.v + 1)*self.v*(self.sigma**2)*((e**2) + (self.v*(self.sigma**2)) - 4*(e**2))
+                             #/ ((e**2 + (self.sigma**2)*self.v)**3) )
         return dlik_hess_dsigma
 
     def _gradients(self, y, f, extra_data=None):

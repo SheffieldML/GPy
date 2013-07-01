@@ -158,7 +158,6 @@ class Laplace(likelihood):
         self.Wi_K_i = self.W_12*self.Bi*self.W_12.T #same as rasms R
         ln_det_K_Wi__Bi = self.ln_I_KW_det + pddet(self.Sigma_tilde + self.K)
         l = self.likelihood_function.link_function(self.data, self.f_hat, extra_data=self.extra_data)
-        #print "fDf:{}   l:{}   detKWiBi:{}   W:{}   Wi:{}   Bi:{}   Ki:{}".format(fDf, l, ln_det_K_Wi__Bi, W.sum(), Wi.sum(), self.Bi.sum(), Ki.sum())
 
         y_Wi_Ki_i_y = mdot(Y_tilde.T, self.Wi_K_i, Y_tilde)
         Z_tilde = (+ self.NORMAL_CONST
@@ -199,14 +198,14 @@ class Laplace(likelihood):
         self.W = -self.likelihood_function.d2lik_d2f(self.data, self.f_hat, extra_data=self.extra_data)
 
         if not self.likelihood_function.log_concave:
-            self.W[self.W < 0] = 1e-8  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+            self.W[self.W < 0] = 1e-6  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                        #If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                        #To cause the posterior to become less certain than the prior and likelihood,
                                        #This is a property only held by non-log-concave likelihoods
 
         #TODO: Could save on computation when using rasm by returning these, means it isn't just a "mode finder" though
-        #self.B, self.B_chol, self.W_12 = self._compute_B_statistics(self.K, self.W)
-        #self.Bi, _, _, B_det = pdinv(self.B)
+        self.B, self.B_chol, self.W_12 = self._compute_B_statistics(self.K, self.W)
+        self.Bi, _, _, B_det = pdinv(self.B)
 
         #Do the computation again at f to get Ki_f which is useful
         #b = self.W*self.f_hat + self.likelihood_function.dlik_df(self.data, self.f_hat, extra_data=self.extra_data)
@@ -305,14 +304,14 @@ class Laplace(likelihood):
             return -0.5*np.dot(a.T, f) + self.likelihood_function.link_function(self.data, f, extra_data=self.extra_data)
 
         difference = np.inf
-        epsilon = 1e-6
+        epsilon = 1e-10
         step_size = 1
         rs = 0
         i = 0
         while difference > epsilon and i < MAX_ITER and rs < MAX_RESTART:
             W = -self.likelihood_function.d2lik_d2f(self.data, f, extra_data=self.extra_data)
             if not self.likelihood_function.log_concave:
-                W[W < 0] = 0#1e-6     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+                W[W < 0] = 1e-6     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                     # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                     # To cause the posterior to become less certain than the prior and likelihood,
                                     # This is a property only held by non-log-concave likelihoods
@@ -335,13 +334,13 @@ class Laplace(likelihood):
             def inner_obj(step_size, old_a, da, K):
                 a = old_a + step_size*da
                 f = np.dot(K, a)
-                self.a = a
+                self.a = a # This is nasty, need to set something within an optimization though
                 self.f = f
                 return -obj(a, f)
 
             from functools import partial
             i_o = partial(inner_obj, old_a=old_a, da=da, K=self.K)
-            new_obj = sp.optimize.brent(i_o, tol=1e-4, maxiter=10)
+            new_obj = sp.optimize.brent(i_o, tol=1e-6, maxiter=10)
 
             #update_passed = False
             #while not update_passed:
@@ -373,8 +372,8 @@ class Laplace(likelihood):
             i += 1
 
         #print "Positive difference obj: ", np.float(difference)
-        #print "Iterations: {}, Step size reductions: {}, Final_difference: {}, step_size: {}".format(i, rs, difference, step_size)
+        print "Iterations: {}, Step size reductions: {}, Final_difference: {}, step_size: {}".format(i, rs, difference, step_size)
         #self.a = a
-        self.B, self.B_chol, self.W_12 = B, L, W_12
-        self.Bi, _, _, B_det = pdinv(self.B)
+        #self.B, self.B_chol, self.W_12 = B, L, W_12
+        #self.Bi, _, _, B_det = pdinv(self.B)
         return f

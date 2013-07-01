@@ -100,7 +100,7 @@ def debug_student_t_noise_approx():
     Y = Y/Y.max()
 
     #Add student t random noise to datapoints
-    deg_free = 10000
+    deg_free = 1000
 
     real_sd = np.sqrt(real_var)
     print "Real noise std: ", real_sd
@@ -152,7 +152,7 @@ def debug_student_t_noise_approx():
     m.constrain_positive('t_noise_std')
     #m.constrain_positive('')
     m.ensure_default_constraints()
-    #m.constrain_fixed('t_noi', real_sd)
+    m.constrain_bounded('t_noi', 0.001, 10)
     #m['rbf_var'] = 0.20446332
     #m['rbf_leng'] = 0.85776241
     #m['t_noise'] = 0.667083294421005
@@ -168,6 +168,7 @@ def debug_student_t_noise_approx():
         plt.plot(X_full, Y_full)
         plt.ylim(-2.5, 2.5)
     print "Real noise std: ", real_sd
+    print "or Real noise std: ", real_stu_t_std
     return m
 
     #print "Clean student t, ncg"

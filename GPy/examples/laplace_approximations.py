@@ -88,9 +88,12 @@ def debug_student_t_noise_approx():
     plot = False
     real_var = 0.1
     #Start a function, any function
-    X = np.linspace(0.0, 10.0, 50)[:, None]
+    #X = np.linspace(0.0, 10.0, 50)[:, None]
+    X = np.random.rand(100)[:, None]
+    #X = np.random.rand(100)[:, None]
     #X = np.array([0.5, 1])[:, None]
-    Y = np.sin(X) + np.random.randn(*X.shape)*real_var
+    Y = np.sin(X*2*np.pi) + np.random.randn(*X.shape)*real_var
+    #Y = X + np.random.randn(*X.shape)*real_var
     #ty = np.array([1., 9.97733584, 4.17841363])[:, None]
     #Y = ty
 
@@ -112,7 +115,8 @@ def debug_student_t_noise_approx():
 
     plt.close('all')
     # Kernel object
-    kernel1 = GPy.kern.rbf(X.shape[1])# + GPy.kern.white(X.shape[1])
+    kernel1 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
+    #kernel1 = GPy.kern.linear(X.shape[1]) + GPy.kern.white(X.shape[1])
     kernel2 = kernel1.copy()
     kernel3 = kernel1.copy()
     kernel4 = kernel1.copy()
@@ -136,7 +140,7 @@ def debug_student_t_noise_approx():
     #print m
 
     real_stu_t_std = np.sqrt(real_var*((deg_free - 2)/float(deg_free)))
-    edited_real_sd = real_stu_t_std#initial_var_guess #real_sd
+    edited_real_sd = real_stu_t_std + 1#initial_var_guess #real_sd
     #edited_real_sd = real_sd
 
     print "Clean student t, rasm"
@@ -149,13 +153,16 @@ def debug_student_t_noise_approx():
     #m.constrain_fixed('rbf_l', 1.8651)
     #m.constrain_fixed('t_noise_std', edited_real_sd)
     #m.constrain_positive('rbf')
-    m.constrain_positive('t_noise_std')
+    #m.constrain_positive('t_noise_std')
     #m.constrain_positive('')
-    m.ensure_default_constraints()
-    m.constrain_bounded('t_noi', 0.001, 10)
+    #m.constrain_bounded('t_noi', 0.001, 10)
+    #m.constrain_fixed('t_noi', real_stu_t_std)
+    m.constrain_fixed('white', 0.01)
+    #m.constrain_fixed('t_no', 0.01)
     #m['rbf_var'] = 0.20446332
     #m['rbf_leng'] = 0.85776241
     #m['t_noise'] = 0.667083294421005
+    m.ensure_default_constraints()
     m.update_likelihood_approximation()
     #m.optimize(messages=True)
     print(m)

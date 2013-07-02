@@ -156,15 +156,15 @@ class Laplace(likelihood):
         Y_tilde = Wi*self.Ki_f + self.f_hat
 
         self.Wi_K_i = self.W_12*self.Bi*self.W_12.T #same as rasms R
-        ln_det_K_Wi__Bi = self.ln_I_KW_det + pddet(self.Sigma_tilde + self.K)
-        l = self.likelihood_function.link_function(self.data, self.f_hat, extra_data=self.extra_data)
+        self.ln_det_K_Wi__Bi = self.ln_I_KW_det + pddet(self.Sigma_tilde + self.K)
+        self.lik = self.likelihood_function.link_function(self.data, self.f_hat, extra_data=self.extra_data)
 
-        y_Wi_Ki_i_y = mdot(Y_tilde.T, self.Wi_K_i, Y_tilde)
-        Z_tilde = (+ self.NORMAL_CONST
-                   + l
-                   + 0.5*ln_det_K_Wi__Bi
+        self.y_Wi_Ki_i_y = mdot(Y_tilde.T, self.Wi_K_i, Y_tilde)
+        Z_tilde = (#+ self.NORMAL_CONST
+                   + self.lik
+                   + 0.5*self.ln_det_K_Wi__Bi
                    - 0.5*self.f_Ki_f
-                   + 0.5*y_Wi_Ki_i_y
+                   + 0.5*self.y_Wi_Ki_i_y
                   )
         #print "Ztilde: {}".format(Z_tilde)
 
@@ -198,7 +198,7 @@ class Laplace(likelihood):
         self.W = -self.likelihood_function.d2lik_d2f(self.data, self.f_hat, extra_data=self.extra_data)
 
         if not self.likelihood_function.log_concave:
-            self.W[self.W < 0] = 1e-6  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+            self.W[self.W < 0] = 1e-10  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                        #If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                        #To cause the posterior to become less certain than the prior and likelihood,
                                        #This is a property only held by non-log-concave likelihoods
@@ -311,7 +311,7 @@ class Laplace(likelihood):
         while difference > epsilon and i < MAX_ITER and rs < MAX_RESTART:
             W = -self.likelihood_function.d2lik_d2f(self.data, f, extra_data=self.extra_data)
             if not self.likelihood_function.log_concave:
-                W[W < 0] = 1e-6     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+                W[W < 0] = 1e-10     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                     # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                     # To cause the posterior to become less certain than the prior and likelihood,
                                     # This is a property only held by non-log-concave likelihoods

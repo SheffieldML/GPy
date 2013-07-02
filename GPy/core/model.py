@@ -246,7 +246,7 @@ class model(parameterised):
         obj_grads = -LL_gradients - prior_gradients
         print self
         #self.checkgrad(verbose=1)
-        import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+        #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
         return obj_f, obj_grads
 
     def optimize(self, optimizer=None, start=None, **kwargs):

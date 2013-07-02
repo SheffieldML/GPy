@@ -196,8 +196,8 @@ class student_t(likelihood_function):
         objective = (+ gammaln((self.v + 1) * 0.5)
                      - gammaln(self.v * 0.5)
                      - 0.5*np.log((self.sigma**2) * self.v * np.pi)
-                     - (self.v + 1) * 0.5 * np.log(1 + (((e / self.sigma)**2) / self.v))
-                     #- (self.v + 1) * 0.5 * np.log(1 + (e**2)/(self.v*(self.sigma**2)))
+                     #- (self.v + 1) * 0.5 * np.log(1 + (((e / self.sigma)**2) / self.v))
+                     - (self.v + 1) * 0.5 * np.log(1 + (e**2)/(self.v*(self.sigma**2)))
                     )
         return np.sum(objective)
 

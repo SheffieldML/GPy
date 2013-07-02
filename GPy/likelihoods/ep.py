@@ -24,8 +24,17 @@ class EP(likelihood):
 
         #Initial values - Likelihood approximation parameters:
         #p(y|f) = t(f|tau_tilde,v_tilde)
+        #TODO restore
         self.tau_tilde = np.zeros(self.N)
         self.v_tilde = np.zeros(self.N)
+
+        #_gp = self.LikelihoodFunction.link.transf(self.data)
+        #_mean = self.LikelihoodFunction._mean(_gp)
+        #_variance = self.LikelihoodFunction._variance(_gp)
+        #self.tau_tilde = 1./_variance
+        #self.tau_tilde[_variance== 0] = 1.
+        #self.v_tilde = _mean*self.tau_tilde
+
 
         #initial values for the GP variables
         self.Y = np.zeros((self.N,1))
@@ -38,16 +47,17 @@ class EP(likelihood):
         self.trYYT = 0.
 
     def restart(self):
+        #FIXME
         self.tau_tilde = np.zeros(self.N)
         self.v_tilde = np.zeros(self.N)
-        self.Y = np.zeros((self.N,1))
-        self.covariance_matrix = np.eye(self.N)
-        self.precision = np.ones(self.N)[:,None]
-        self.Z = 0
-        self.YYT = None
-        self.V = self.precision * self.Y
-        self.VVT_factor = self.V
-        self.trYYT = 0.
+        #self.Y = np.zeros((self.N,1))
+        #self.covariance_matrix = np.eye(self.N)
+        #self.precision = np.ones(self.N)[:,None]
+        #self.Z = 0
+        #self.YYT = None
+        #self.V = self.precision * self.Y
+        #self.VVT_factor = self.V
+        #self.trYYT = 0.
 
     def predictive_values(self,mu,var,full_cov):
         if full_cov:
@@ -77,6 +87,8 @@ class EP(likelihood):
         self.V = self.precision * self.Y
         self.VVT_factor = self.V
         self.trYYT = np.trace(self.YYT)
+
+        #a = kjkjkjkj
 
     def fit_full(self,K):
         """
@@ -117,15 +129,103 @@ class EP(likelihood):
                 self.v_[i] = mu[i]/Sigma[i,i] - self.eta*self.v_tilde[i]
                 #Marginal moments
                 self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.LikelihoodFunction.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
+
+
+                #DELETE
+                """
+                import pylab as pb
+                from scipy import stats
+                import scipy as sp
+                import link_functions
+                from constructors import *
+
+                link = link_functions.Log_ex_1()
+                distribution = poisson(link=link)
+                gp = np.linspace(-3,50,100)
+                #distribution = binomial()
+                #gp = np.linspace(-3,3,100)
+
+                y = self._transf_data[i]
+                tau_ = self.tau_[i]
+                v_ = self.v_[i]
+                sigma2_ = np.sqrt(1./tau_)
+                mu_ = v_/tau_
+
+                gaussian = stats.norm.pdf(gp,loc=mu_,scale=np.sqrt(sigma2_))
+                non_gaussian = np.array([distribution._mass(gp_i,y) for gp_i in gp])
+                prod = np.array([distribution._product(gp_i,y,mu_,np.sqrt(sigma2_)) for gp_i in gp])
+                my_Z_hat,my_mu_hat,my_sigma2_hat = distribution.moments_match(y,tau_,v_)
+                proxy = stats.norm.pdf(gp,loc=my_mu_hat,scale=np.sqrt(my_sigma2_hat))
+
+
+                new_sigma2_tilde = 1./self.tau_tilde[i]
+                new_mu_tilde = self.v_tilde[i]/self.tau_tilde[i]
+                new_Z_tilde = self.Z_hat[i]*np.sqrt(2*np.pi)*np.sqrt(sigma2_+new_sigma2_tilde)*np.exp(.5*(mu_-new_mu_tilde)**2/(sigma2_+new_sigma2_tilde))
+                bad_gaussian = stats.norm.pdf(gp,self.v_tilde[i]/self.tau_tilde[i],np.sqrt(1./self.tau_tilde[i]))
+                new_gaussian = stats.norm.pdf(gp,new_mu_tilde,np.sqrt(new_sigma2_tilde))*new_Z_tilde
+                #new_gaussian = stats.norm.pdf(gp,_mu_tilde,np.sqrt(_sigma2_tilde))*_Z_tilde
+
+                _sigma2_tilde = 1./(1./(my_sigma2_hat) - 1./sigma2_)
+                _mu_tilde = (my_mu_hat/my_sigma2_hat - mu_/sigma2_)*_sigma2_tilde
+                _Z_tilde = my_Z_hat*np.sqrt(2*np.pi)*np.sqrt(sigma2_+_sigma2_tilde)*np.exp(.5*(mu_ - _mu_tilde)**2/(sigma2_ + _sigma2_tilde))
+
+                fig1 = pb.figure(figsize=(15,5))
+                ax1 = fig1.add_subplot(131)
+                ax1.grid(True)
+                #pb.plot(gp,bad_gaussian,'b--',linewidth=1.5)
+                #pb.plot(gp,non_gaussian,'b-',linewidth=1.5)
+                pb.plot(gp,new_gaussian,'r--',linewidth=1.5)
+                pb.title('Likelihood: $p(y_i|f_i)$',fontsize=22)
+
+                ax2 = fig1.add_subplot(132)
+                ax2.grid(True)
+                pb.plot(gp,gaussian,'b-',linewidth=1.5)
+                pb.title('Cavity distribution: $q_{-i}(f_i)$',fontsize=22)
+
+                ax3 = fig1.add_subplot(133)
+                ax3.grid(True)
+                pb.plot(gp,prod,'b--',linewidth=1.5)
+
+                pb.plot(gp,proxy*my_Z_hat,'r-',linewidth=1.5)
+
+                pb.title('Approximation: $\mathcal{N}(f_i|\hat{\mu}_i,\hat{\sigma}_i^2) \hat{Z}_i$',fontsize=22)
+                pb.legend(('Exact','Approximation'),frameon=False)
+
+                print 'i',i
+                print 'v/tau _tilde', self.v_tilde[i], self.tau_tilde[i]
+                print 'v/tau _', self.v_[i], self.tau_[i]
+                print 'Z/mu/sigma2 _hat', self.Z_hat[i], mu_hat[i], sigma2_hat[i]
+                pb.plot(gp,new_gaussian*gaussian,'k-')
+
+                a = kj
+                break
+                """
+                #DELETE
+
+
+
+
                 #Site parameters update
-                Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma[i,i])
-                Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma[i,i])
+                Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma[i,i]) #FIXME
+                Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma[i,i]) #FIXME
                 self.tau_tilde[i] += Delta_tau
                 self.v_tilde[i] += Delta_v
+
+                #new_tau = self.delta/self.eta*(1./sigma2_hat[i] - self.tau_[i])
+                #new_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - self.v_[i])
+                #Delta_tau = new_tau - self.tau_tilde[i]
+                #Delta_v = new_v - self.v_tilde[i]
+                #self.tau_tilde[i] += Delta_tau
+                #self.v_tilde[i] += Delta_v
+
                 #Posterior distribution parameters update
                 DSYR(Sigma,Sigma[:,i].copy(), -float(Delta_tau/(1.+ Delta_tau*Sigma[i,i])))
                 mu = np.dot(Sigma,self.v_tilde)
                 self.iterations += 1
+
+
+
+
             #Sigma recomptutation with Cholesky decompositon
             Sroot_tilde_K = np.sqrt(self.tau_tilde)[:,None]*K
             B = np.eye(self.N) + np.sqrt(self.tau_tilde)[None,:]*Sroot_tilde_K
@@ -137,6 +237,11 @@ class EP(likelihood):
             epsilon_np2 = sum((self.v_tilde-self.np2[-1])**2)/self.N
             self.np1.append(self.tau_tilde.copy())
             self.np2.append(self.v_tilde.copy())
+
+            ##DELETE
+            #pb.vlines(mu[i],0,max(prod))
+            #break
+            #DELETE
 
         return self._compute_GP_variables()
 

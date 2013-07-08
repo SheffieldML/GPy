@@ -220,10 +220,10 @@ class Laplace(likelihood):
         self.ln_I_KW_det = pddet(np.eye(self.N) + self.W_12*self.K*self.W_12.T)
 
         #self.ln_I_KW_det = pddet(np.eye(self.N) + np.dot(self.K, self.W))
-        self.ln_z_hat = (- 0.5*self.f_Ki_f
-                         - self.ln_I_KW_det
-                         + self.likelihood_function.link_function(self.data, self.f_hat, extra_data=self.extra_data)
-                         )
+        #self.ln_z_hat = (- 0.5*self.f_Ki_f
+                         #- self.ln_I_KW_det
+                         #+ self.likelihood_function.link_function(self.data, self.f_hat, extra_data=self.extra_data)
+                         #)
 
         return self._compute_GP_variables()
 
@@ -308,6 +308,8 @@ class Laplace(likelihood):
         step_size = 1
         rs = 0
         i = 0
+        #if self.likelihood_function.sigma < 0.001:
+            #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
         while difference > epsilon and i < MAX_ITER and rs < MAX_RESTART:
             W = -self.likelihood_function.d2lik_d2f(self.data, f, extra_data=self.extra_data)
             if not self.likelihood_function.log_concave:
@@ -316,8 +318,6 @@ class Laplace(likelihood):
                                     # To cause the posterior to become less certain than the prior and likelihood,
                                     # This is a property only held by non-log-concave likelihoods
             B, L, W_12 = self._compute_B_statistics(K, W)
-            #if i > 30:
-                #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
             W_f = W*f
             grad = self.likelihood_function.dlik_df(self.data, f, extra_data=self.extra_data)

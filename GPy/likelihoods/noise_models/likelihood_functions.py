@@ -279,6 +279,18 @@ class NoiseModel(object):
         var_exp = exp_exp2 - predictive_mean**2
         return exp_var + var_exp
 
+    def _predictive_percentiles(self,p,mu,sigma):
+        """
+        Percentiles of the predictive distribution
+
+        :parm p: lower tail probability
+        :param mu: cavity distribution mean
+        :param sigma: cavity distribution standard deviation
+        :predictive_mean: output's predictive mean, if None _predictive_mean function will be called.
+        """
+        qf = stats.norm.ppf(p,mu,sigma)
+        return self.link.inv_transf(qf)
+
     def _nlog_joint_predictive_scaled(self,x,mu,sigma):
         """
         Negative logarithm of the joint predictive distribution (latent variable and output).
@@ -340,8 +352,8 @@ class NoiseModel(object):
         for m,s in zip(mu,np.sqrt(var)):
             pred_mean.append(self.predictive_mean(m,s))
             pred_var.append(self.predictive_variance(m,s,pred_mean[-1]))
-            q1.append(self.predictive_mean(stats.norm.ppf(.025,m,s**2),s))
-            q3.append(self.predictive_mean(stats.norm.ppf(.975,m,s**2),s))
+            q1.append(self._predictive_percentiles(.025,m,s))
+            q3.append(self._predictive_percentiles(.975,m,s))
         pred_mean = np.vstack(pred_mean)
         pred_var = np.vstack(pred_var)
         q1 = np.vstack(q1)

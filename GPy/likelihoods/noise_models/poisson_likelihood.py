@@ -27,15 +27,15 @@ class Poisson(NoiseModel):
         super(Poisson, self).__init__(link,analytical_moments)
 
     def _preprocess_values(self,Y): #TODO
-        self.scale = .5*Y.max()
-        self.shift = Y.mean()
-        return (Y - self.shift)/self.scale
+        #self.scale = .5*Y.max()
+        #self.shift = Y.mean()
+        return Y #(Y - self.shift)/self.scale
 
     def _mass(self,gp,obs):
         """
         Mass (or density) function
         """
-        obs = obs*self.scale + self.shift
+        #obs = obs*self.scale + self.shift
         return stats.poisson.pmf(obs,self.link.inv_transf(gp))
 
     def _nlog_mass(self,gp,obs):

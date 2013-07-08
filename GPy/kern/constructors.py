@@ -227,7 +227,7 @@ def periodic_Matern52(input_dim, variance=1., lengthscale=None, period=2 * np.pi
      :param n_freq: the number of frequencies considered for the periodic subspace
      :type n_freq: int
     """
-    part = parts.periodic_Matern52part(input_dim, variance, lengthscale, period, n_freq, lower, upper)
+    part = parts.periodic_Matern52.PeriodicMatern52(input_dim, variance, lengthscale, period, n_freq, lower, upper)
     return kern(input_dim, [part])
 
 def prod(k1,k2,tensor=False):
@@ -296,5 +296,5 @@ def independent_outputs(k):
     """
     for sl in k.input_slices:
         assert (sl.start is None) and (sl.stop is None), "cannot adjust input slices! (TODO)"
-    parts = [independent_outputs.IndependentOutputs(p) for p in k.parts]
-    return kern(k.input_dim+1,parts)
+    _parts = [parts.independent_outputs.IndependentOutputs(p) for p in k.parts]
+    return kern(k.input_dim+1,_parts)

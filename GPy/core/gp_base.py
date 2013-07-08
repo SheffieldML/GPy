@@ -91,12 +91,14 @@ class GPBase(Model):
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
-    def plot(self, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, samples=0, fignum=None, ax=None):
+    def plot(self, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, samples=0, fignum=None, ax=None, fixed_inputs=[], linecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue']):
         """
         TODO: Docstrings!
         
         :param levels: for 2D plotting, the number of contour levels to use
         is ax is None, create a new figure
+
+        fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
         """
         # TODO include samples
         if which_data == 'all':
@@ -106,15 +108,25 @@ class GPBase(Model):
             fig = pb.figure(num=fignum)
             ax = fig.add_subplot(111)
 
-        if self.X.shape[1] == 1:
+        plotdims = self.input_dim - len(fixed_inputs)
+
+        if plotdims == 1:
 
             Xu = self.X * self._Xscale + self._Xoffset # NOTE self.X are the normalized values now
 
-            Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
-            m, _, lower, upper = self.predict(Xnew, which_parts=which_parts)
+            fixed_dims = np.array([i for i,v in fixed_inputs])
+            freedim = np.setdiff1d(np.arange(self.input_dim),fixed_dims)
+
+            Xnew, xmin, xmax = x_frame1D(Xu[:,freedim], plot_limits=plot_limits)
+            Xgrid = np.empty((Xnew.shape[0],self.input_dim))
+            Xgrid[:,freedim] = Xnew
+            for i,v in fixed_inputs:
+                Xgrid[:,i] = v
+
+            m, _, lower, upper = self.predict(Xgrid, which_parts=which_parts)
             for d in range(m.shape[1]):
-                gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax)
-                ax.plot(Xu[which_data], self.likelihood.data[which_data, d], 'kx', mew=1.5)
+                gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax, edgecol=linecol, fillcol=fillcol)
+                ax.plot(Xu[which_data,freedim], self.likelihood.data[which_data, d], 'kx', mew=1.5)
             ymin, ymax = min(np.append(self.likelihood.data, lower)), max(np.append(self.likelihood.data, upper))
             ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
             ax.set_xlim(xmin, xmax)

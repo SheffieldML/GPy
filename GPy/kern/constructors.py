@@ -298,3 +298,12 @@ def independent_outputs(k):
         assert (sl.start is None) and (sl.stop is None), "cannot adjust input slices! (TODO)"
     _parts = [parts.independent_outputs.IndependentOutputs(p) for p in k.parts]
     return kern(k.input_dim+1,_parts)
+
+def hierarchical(k):
+    """
+    Construct a kernel with independent outputs from an existing kernel
+    """
+    # for sl in k.input_slices:
+    #     assert (sl.start is None) and (sl.stop is None), "cannot adjust input slices! (TODO)"
+    _parts = [parts.hierarchical.Hierarchical(k.parts)]
+    return kern(k.input_dim+1,_parts)

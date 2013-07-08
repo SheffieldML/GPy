@@ -5,7 +5,7 @@ from kernpart import Kernpart
 import numpy as np
 from independent_outputs import index_to_slices
 
-class hierarchical(Kernpart):
+class Hierarchical(Kernpart):
     """
     A kernel part which can reopresent a hierarchy of indepencnce: a gerenalisation of independent_outputs
 

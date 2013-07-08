@@ -296,5 +296,5 @@ def independent_outputs(k):
     """
     for sl in k.input_slices:
         assert (sl.start is None) and (sl.stop is None), "cannot adjust input slices! (TODO)"
-    parts = [independent_outputs.IndependentOutputs(p) for p in k.parts]
-    return kern(k.input_dim+1,parts)
+    new_parts = [parts.independent_outputs.IndependentOutputs(p) for p in k.parts]
+    return kern(k.input_dim+1,new_parts)

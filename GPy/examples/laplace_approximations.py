@@ -84,6 +84,26 @@ def v_fail_test():
     import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
     print(m)
 
+def student_t_f_check():
+    real_var = 0.1
+    X = np.random.rand(100)[:, None]
+    Y = np.sin(X*2*np.pi) + np.random.randn(*X.shape)*real_var
+    X_full = X
+    Y_full = np.sin(X_full)
+    Y = Y/Y.max()
+    deg_free = 1000
+    real_sd = np.sqrt(real_var)
+
+    kernel = GPy.kern.rbf(X.shape[1]) #+ GPy.kern.white(X.shape[1])
+    real_stu_t_std = np.sqrt(real_var*((deg_free - 2)/float(deg_free)))
+
+    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=real_stu_t_std**2)
+    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
+    m = GPy.models.GP(X, stu_t_likelihood, kernel)
+    m.constrain_positive('t_noise_std2')
+    m.ensure_default_constraints()
+    m.update_likelihood_approximation()
+
 def debug_student_t_noise_approx():
     plot = False
     real_var = 0.1
@@ -151,9 +171,9 @@ def debug_student_t_noise_approx():
     #m['rbf_len'] = 1.5
     #m.constrain_fixed('rbf_v', 1.0898)
     #m.constrain_fixed('rbf_l', 0.2651)
-    #m.constrain_fixed('t_noise_std', edited_real_sd)
+    #m.constrain_fixed('t_noise_std2', edited_real_sd)
     #m.constrain_positive('rbf')
-    m.constrain_positive('t_noise_std')
+    m.constrain_positive('t_noise_std2')
     #m.constrain_positive('')
     #m.constrain_bounded('t_noi', 0.001, 10)
     #m.constrain_fixed('t_noi', real_stu_t_std)

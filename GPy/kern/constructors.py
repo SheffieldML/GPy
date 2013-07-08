@@ -306,4 +306,4 @@ def hierarchical(k):
     # for sl in k.input_slices:
     #     assert (sl.start is None) and (sl.stop is None), "cannot adjust input slices! (TODO)"
     _parts = [parts.hierarchical.Hierarchical(k.parts)]
-    return kern(k.input_dim+1,_parts)
+    return kern(k.input_dim+len(k.parts),_parts)

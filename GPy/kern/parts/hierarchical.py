@@ -24,26 +24,26 @@ class Hierarchical(Kernpart):
         return np.hstack([k._get_params() for k in self.parts])
 
     def _set_params(self,x):
-        [k._set_params(x[start:stop]) for start, stop in zip(self.param_starts, self.param_stops)]
+        [k._set_params(x[start:stop]) for k, start, stop in zip(self.parts, self.param_starts, self.param_stops)]
 
     def _get_param_names(self):
-        return self.k._get_param_names()
+        return sum([[str(i)+'_'+k.name+'_'+n for n in k._get_param_names()] for i,k in enumerate(self.parts)],[])
 
     def _sort_slices(self,X,X2):
-        slices = [index_to_slices(x) for x in X[-self.levels:].T]
-        X = X[:-self.levels]
+        slices = [index_to_slices(x) for x in X[:,-self.levels:].T]
+        X = X[:,:-self.levels]
         if X2 is None:
             slices2 = slices
             X2 = X
         else:
-            slices2 = [index_to_slices(x) for x in X2[-self.levels:].T]
-            X2 = X2[:-self.levels]
+            slices2 = [index_to_slices(x) for x in X2[:,-self.levels:].T]
+            X2 = X2[:,:-self.levels]
         return X, X2, slices, slices2
 
     def K(self,X,X2,target):
         X, X2, slices, slices2 = self._sort_slices(X,X2)
 
-        [[[k.K(X[s],X2[s2],target[s,s2]) for s in slices_i] for s2 in slices_j] for k,slices_i,slices_j in zip(self.parts,slices,slices2)]
+        [[[[k.K(X[s],X2[s2],target[s,s2]) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices_,slices2_)] for k, slices_, slices2_ in zip(self.parts,slices,slices2)]
 
     def Kdiag(self,X,target):
         raise NotImplementedError
@@ -51,7 +51,8 @@ class Hierarchical(Kernpart):
         #[[self.k.Kdiag(X[s],target[s]) for s in slices_i] for slices_i in slices]
 
     def dK_dtheta(self,dL_dK,X,X2,target):
-        [[[k.dK_dtheta(dL_dK[s,s2],X[s],X2[s2],target[p_start:p_stop]) for s in slices_i] for s2 in slices_j] for k,slices_i,slices_j, p_start, p_stop in zip(self.parts, slices, slices2, self.param_starts, self.param_stops)]
+        X, X2, slices, slices2 = self._sort_slices(X,X2)
+        [[[[k.dK_dtheta(dL_dK[s,s2],X[s],X2[s2],target[p_start:p_stop]) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices_, slices2_)] for k, p_start, p_stop, slices_, slices2_ in zip(self.parts, self.param_starts, self.param_stops, slices, slices2)]
 
 
     def dK_dX(self,dL_dK,X,X2,target):

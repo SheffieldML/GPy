@@ -25,18 +25,18 @@ examples Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`non_gaussian` Module
---------------------------
-
-.. automodule:: GPy.examples.non_gaussian
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 :mod:`regression` Module
 ------------------------
 
 .. automodule:: GPy.examples.regression
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`stochastic` Module
+------------------------
+
+.. automodule:: GPy.examples.stochastic
     :members:
     :undoc-members:
     :show-inheritance:

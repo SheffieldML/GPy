@@ -254,7 +254,7 @@ def bgplvm_simulation(optimize='scg',
     Y = Ylist[0]
 
     k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2)) # + kern.bias(Q)
-    m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k, _debug=True)
+    m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k)
 
     # m.constrain('variance|noise', logexp_clipped())
     m['noise'] = Y.var() / 100.
@@ -279,11 +279,12 @@ def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
 
     reload(mrd); reload(kern)
 
-    k = kern.linear(Q, [.05] * Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
+    k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
     m = mrd.MRD(Ylist, input_dim=Q, num_inducing=num_inducing, kernels=k, initx="", initz='permute', **kw)
+    m.ensure_default_constraints()
 
     for i, Y in enumerate(Ylist):
-        m['{}_noise'.format(i + 1)] = Y.var() / 100.
+        m['{}_noise'.format(i)] = Y.var() / 100.
 
 
     # DEBUG

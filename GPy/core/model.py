@@ -6,31 +6,49 @@ from .. import likelihoods
 from ..inference import optimization
 from ..util.linalg import jitchol
 from GPy.util.misc import opt_wrapper
-from parameterised import Parameterised
+from parameterized import Parameterized
 import multiprocessing as mp
 import numpy as np
 from GPy.core.domains import POSITIVE, REAL
 from numpy.linalg.linalg import LinAlgError
 # import numdifftools as ndt
 
-class Model(Parameterised):
+class Model(Parameterized):
     _fail_count = 0 # Count of failed optimization steps (see objective)
     _allowed_failures = 10 # number of allowed failures
     def __init__(self):
-        Parameterised.__init__(self)
+        Parameterized.__init__(self)
         self.priors = None
         self.optimization_runs = []
         self.sampling_runs = []
         self.preferred_optimizer = 'scg'
         # self._set_params(self._get_params()) has been taken out as it should only be called on leaf nodes
-    def _get_params(self):
-        raise NotImplementedError, "this needs to be implemented to use the Model class"
-    def _set_params(self, x):
-        raise NotImplementedError, "this needs to be implemented to use the Model class"
     def log_likelihood(self):
         raise NotImplementedError, "this needs to be implemented to use the Model class"
     def _log_likelihood_gradients(self):
         raise NotImplementedError, "this needs to be implemented to use the Model class"
+
+    def getstate(self):
+        """
+        Get the current state of the class.
+        
+        Inherited from Parameterized, so add those parameters to the state
+        """
+        return Parameterized.getstate(self) + \
+            [self.priors, self.optimization_runs,
+             self.sampling_runs, self.preferred_optimizer]
+
+    def setstate(self, state):
+        """
+        set state from previous call to getstate
+        
+        call Parameterized with the rest of the state
+        """
+        self.preferred_optimizer = state.pop()
+        self.sampling_runs = state.pop()
+        self.optimization_runs = state.pop()
+        self.priors = state.pop()
+        Parameterized.setstate(self, state)
 
     def set_prior(self, regexp, what):
         """
@@ -254,12 +272,13 @@ class Model(Parameterised):
         """
         try:
             self._set_params_transformed(x)
+            obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
             self._fail_count = 0
         except (LinAlgError, ZeroDivisionError, ValueError) as e:
             if self._fail_count >= self._allowed_failures:
                 raise e
             self._fail_count += 1
-        obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
+            obj_grads = np.clip(-self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients()), -1e100, 1e100)
         return obj_grads
 
     def objective_and_gradients(self, x):
@@ -267,12 +286,13 @@ class Model(Parameterised):
             self._set_params_transformed(x)
             obj_f = -self.log_likelihood() - self.log_prior()
             self._fail_count = 0
+            obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
         except (LinAlgError, ZeroDivisionError, ValueError) as e:
             if self._fail_count >= self._allowed_failures:
                 raise e
             self._fail_count += 1
             obj_f = np.inf
-        obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
+            obj_grads = np.clip(-self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients()), -1e100, 1e100)
         return obj_f, obj_grads
 
     def optimize(self, optimizer=None, start=None, **kwargs):
@@ -293,7 +313,9 @@ class Model(Parameterised):
 
         optimizer = optimization.get_optimizer(optimizer)
         opt = optimizer(start, model=self, **kwargs)
+
         opt.run(f_fp=self.objective_and_gradients, f=self.objective_function, fp=self.objective_function_gradients)
+
         self.optimization_runs.append(opt)
 
         self._set_params_transformed(opt.x_opt)
@@ -336,7 +358,7 @@ class Model(Parameterised):
         return 0.5 * self._get_params().size * np.log(2 * np.pi) + self.log_likelihood() - hld
 
     def __str__(self):
-        s = Parameterised.__str__(self).split('\n')
+        s = Parameterized.__str__(self).split('\n')
         # add priors to the string
         if self.priors is not None:
             strs = [str(p) if p is not None else '' for p in self.priors]

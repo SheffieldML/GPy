@@ -17,10 +17,26 @@ util Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`classification` Module
+----------------------------
+
+.. automodule:: GPy.util.classification
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`datasets` Module
 ----------------------
 
 .. automodule:: GPy.util.datasets
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`decorators` Module
+------------------------
+
+.. automodule:: GPy.util.decorators
     :members:
     :undoc-members:
     :show-inheritance:
@@ -41,6 +57,22 @@ util Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`mocap` Module
+-------------------
+
+.. automodule:: GPy.util.mocap
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`pca` Module
+-----------------
+
+.. automodule:: GPy.util.pca
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`plot` Module
 ------------------
 
@@ -49,10 +81,34 @@ util Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`plot_latent` Module
+-------------------------
+
+.. automodule:: GPy.util.plot_latent
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`squashers` Module
 -----------------------
 
 .. automodule:: GPy.util.squashers
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`univariate_Gaussian` Module
+---------------------------------
+
+.. automodule:: GPy.util.univariate_Gaussian
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`visualize` Module
+-----------------------
+
+.. automodule:: GPy.util.visualize
     :members:
     :undoc-members:
     :show-inheritance:

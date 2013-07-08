@@ -48,7 +48,7 @@ class MRD(Model):
                  kernels=None, initx='PCA',
                  initz='permute', _debug=False, **kw):
         if names is None:
-            self.names = ["{}".format(i + 1) for i in range(len(likelihood_or_Y_list))]
+            self.names = ["{}".format(i) for i in range(len(likelihood_or_Y_list))]
 
         # sort out the kernels
         if kernels is None:
@@ -61,12 +61,14 @@ class MRD(Model):
         assert not ('kernel' in kw), "pass kernels through `kernels` argument"
 
         self.input_dim = input_dim
-        self.num_inducing = num_inducing
         self._debug = _debug
+        self.num_inducing = num_inducing
 
         self._init = True
         X = self._init_X(initx, likelihood_or_Y_list)
         Z = self._init_Z(initz, X)
+        self.num_inducing = Z.shape[0] # ensure M==N if M>N
+
         self.bgplvms = [BayesianGPLVM(l, input_dim=input_dim, kernel=k, X=X, Z=Z, num_inducing=self.num_inducing, **kw) for l, k in zip(likelihood_or_Y_list, kernels)]
         del self._init
 
@@ -75,11 +77,35 @@ class MRD(Model):
         self.nparams = nparams.cumsum()
 
         self.num_data = self.gref.num_data
+
         self.NQ = self.num_data * self.input_dim
         self.MQ = self.num_inducing * self.input_dim
 
         Model.__init__(self)
         self.ensure_default_constraints()
+
+    def getstate(self):
+        return Model.getstate(self) + [self.names,
+                self.bgplvms,
+                self.gref,
+                self.nparams,
+                self.input_dim,
+                self.num_inducing,
+                self.num_data,
+                self.NQ,
+                self.MQ]
+
+    def setstate(self, state):
+        self.MQ = state.pop()
+        self.NQ = state.pop()
+        self.num_data = state.pop()
+        self.num_inducing = state.pop()
+        self.input_dim = state.pop()
+        self.nparams = state.pop()
+        self.gref = state.pop()
+        self.bgplvms = state.pop()
+        self.names = state.pop()
+        Model.setstate(self, state)
 
     @property
     def X(self):
@@ -255,12 +281,23 @@ class MRD(Model):
         self.Z = Z
         return Z
 
-    def _handle_plotting(self, fignum, axes, plotf):
+    def _handle_plotting(self, fignum, axes, plotf, sharex=False, sharey=False):
         if axes is None:
-            fig = pylab.figure(num=fignum, figsize=(4 * len(self.bgplvms), 3))
+            fig = pylab.figure(num=fignum)
+        sharex_ax = None
+        sharey_ax = None
         for i, g in enumerate(self.bgplvms):
+            try:
+                if sharex:
+                    sharex_ax = ax # @UndefinedVariable
+                    sharex = False # dont set twice
+                if sharey:
+                    sharey_ax = ax # @UndefinedVariable
+                    sharey = False # dont set twice
+            except:
+                pass
             if axes is None:
-                ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
+                ax = fig.add_subplot(1, len(self.bgplvms), i + 1, sharex=sharex_ax, sharey=sharey_ax)
             elif isinstance(axes, (tuple, list)):
                 ax = axes[i]
             else:
@@ -280,16 +317,27 @@ class MRD(Model):
         fig = self._handle_plotting(fignum, ax, lambda i, g, ax: ax.imshow(g.X))
         return fig
 
-    def plot_predict(self, fignum=None, ax=None, **kwargs):
-        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: ax.imshow(g. predict(g.X)[0], **kwargs))
+    def plot_predict(self, fignum=None, ax=None, sharex=False, sharey=False, **kwargs):
+        fig = self._handle_plotting(fignum,
+                                    ax,
+                                    lambda i, g, ax: ax.imshow(g. predict(g.X)[0], **kwargs),
+                                    sharex=sharex, sharey=sharey)
         return fig
 
-    def plot_scales(self, fignum=None, ax=None, *args, **kwargs):
-        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.kern.plot_ARD(ax=ax, *args, **kwargs))
+    def plot_scales(self, fignum=None, ax=None, titles=None, sharex=False, sharey=True, *args, **kwargs):
+        """
+        :param:`titles` :
+            titles for axes of datasets
+        """
+        if titles is None:
+            titles = [r'${}$'.format(name) for name in self.names]
+        def plotf(i, g, ax):
+            g.kern.plot_ARD(ax=ax, title=titles[i], *args, **kwargs)
+        fig = self._handle_plotting(fignum, ax, plotf, sharex=sharex, sharey=sharey)
         return fig
 
     def plot_latent(self, fignum=None, ax=None, *args, **kwargs):
-        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.plot_latent(ax=ax, *args, **kwargs))
+        fig = self.gref.plot_latent(fignum=fignum, ax=ax, *args, **kwargs) # self._handle_plotting(fignum, ax, lambda i, g, ax: g.plot_latent(ax=ax, *args, **kwargs))
         return fig
 
     def _debug_plot(self):
@@ -305,13 +353,4 @@ class MRD(Model):
         pylab.draw()
         fig.tight_layout()
 
-    def _debug_optimize(self, opt='scg', maxiters=5000, itersteps=10):
-        iters = 0
-        optstep = lambda: self.optimize(opt, messages=1, max_f_eval=itersteps)
-        self._debug_plot()
-        raw_input("enter to start debug")
-        while iters < maxiters:
-            optstep()
-            self._debug_plot()
-            iters += itersteps
 

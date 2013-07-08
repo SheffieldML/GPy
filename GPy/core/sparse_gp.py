@@ -33,10 +33,11 @@ class SparseGP(GPBase):
 
         self.Z = Z
         self.num_inducing = Z.shape[0]
-        self.likelihood = likelihood
+#         self.likelihood = likelihood
 
         if X_variance is None:
             self.has_uncertain_inputs = False
+            self.X_variance = None
         else:
             assert X_variance.shape == X.shape
             self.has_uncertain_inputs = True
@@ -48,6 +49,23 @@ class SparseGP(GPBase):
         # normalize X uncertainty also
         if self.has_uncertain_inputs:
             self.X_variance /= np.square(self._Xscale)
+
+    def getstate(self):
+        """
+        Get the current state of the class,
+        here just all the indices, rest can get recomputed
+        """
+        return GPBase.getstate(self) + [self.Z,
+                self.num_inducing,
+                self.has_uncertain_inputs,
+                self.X_variance]
+
+    def setstate(self, state):
+        self.X_variance = state.pop()
+        self.has_uncertain_inputs = state.pop()
+        self.num_inducing = state.pop()
+        self.Z = state.pop()
+        GPBase.setstate(self, state)
 
     def _compute_kernel_matrices(self):
         # kernel computations, using BGPLVM notation
@@ -79,7 +97,7 @@ class SparseGP(GPBase):
             tmp = tmp.T
         else:
             if self.likelihood.is_heteroscedastic:
-                tmp = self.psi1 * (np.sqrt(self.likelihood.precision.flatten().reshape(self.num_data,1)))
+                tmp = self.psi1 * (np.sqrt(self.likelihood.precision.flatten().reshape(self.num_data, 1)))
             else:
                 tmp = self.psi1 * (np.sqrt(self.likelihood.precision))
         tmp, _ = dtrtrs(self.Lm, np.asfortranarray(tmp.T), lower=1)
@@ -166,7 +184,7 @@ class SparseGP(GPBase):
         return np.hstack([self.Z.flatten(), self.kern._get_params_transformed(), self.likelihood._get_params()])
 
     def _get_param_names(self):
-        return sum([['iip_%i_%i' % (i, j) for j in range(self.Z.shape[1])] for i in range(self.Z.shape[0])],[])\
+        return sum([['iip_%i_%i' % (i, j) for j in range(self.Z.shape[1])] for i in range(self.Z.shape[0])], [])\
             + self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
     def update_likelihood_approximation(self):
@@ -223,7 +241,7 @@ class SparseGP(GPBase):
     def _raw_predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
         """Internal helper function for making predictions, does not account for normalization"""
 
-        Bi, _ = dpotri(self.LB, lower=0)  # WTH? this lower switch should be 1, but that doesn't work!
+        Bi, _ = dpotri(self.LB, lower=0) # WTH? this lower switch should be 1, but that doesn't work!
         symmetrify(Bi)
         Kmmi_LmiBLmi = backsub_both_sides(self.Lm, np.eye(self.num_inducing) - Bi)
 
@@ -304,7 +322,7 @@ class SparseGP(GPBase):
         GPBase.plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, ax=ax)
         if self.X.shape[1] == 1:
             if self.has_uncertain_inputs:
-                Xu = self.X * self._Xscale + self._Xoffset  # NOTE self.X are the normalized values now
+                Xu = self.X * self._Xscale + self._Xoffset # NOTE self.X are the normalized values now
                 ax.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
                             xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
                             ecolor='k', fmt=None, elinewidth=.5, alpha=.5)

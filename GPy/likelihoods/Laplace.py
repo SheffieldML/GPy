@@ -89,7 +89,7 @@ class Laplace(likelihood):
         expl = 0.5*expl_a + 0.5*expl_b # Might need to be -?
         dL_dthetaK_exp = dK_dthetaK(expl, X)
         dL_dthetaK_imp = dK_dthetaK(impl, X)
-        #print "dL_dthetaK_exp: {}     dL_dthetaK_implicit: {}".format(dL_dthetaK_exp, dL_dthetaK_imp)
+        print "dL_dthetaK_exp: {}     dL_dthetaK_implicit: {}".format(dL_dthetaK_exp, dL_dthetaK_imp)
         dL_dthetaK = dL_dthetaK_exp + dL_dthetaK_imp
         return dL_dthetaK
 
@@ -290,10 +290,12 @@ class Laplace(likelihood):
         :MAX_RESTART: Maximum number of restarts (reducing step_size) before forcing finish of optimisation
         :returns: f_mode
         """
-        if self.old_a is None:
-            old_a = np.zeros((self.N, 1))
-        else:
-            old_a = self.old_a
+        old_a = np.zeros((self.N, 1))
+        #old_a = None
+        #if self.old_a is None:
+            #old_a = np.zeros((self.N, 1))
+        #else:
+            #old_a = self.old_a
 
         f = np.dot(self.K, old_a)
         self.f = f
@@ -308,8 +310,6 @@ class Laplace(likelihood):
         step_size = 1
         rs = 0
         i = 0
-        #if self.likelihood_function.sigma < 0.001:
-            #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
         while difference > epsilon and i < MAX_ITER and rs < MAX_RESTART:
             W = -self.likelihood_function.d2lik_d2f(self.data, f, extra_data=self.extra_data)
             if not self.likelihood_function.log_concave:
@@ -371,8 +371,10 @@ class Laplace(likelihood):
             old_a = self.a #a
             i += 1
 
+        self.old_a = old_a
         #print "Positive difference obj: ", np.float(difference)
-        print "Iterations: {}, Step size reductions: {}, Final_difference: {}, step_size: {}".format(i, rs, difference, step_size)
+        #print "Iterations: {}, Step size reductions: {}, Final_difference: {}, step_size: {}".format(i, rs, difference, step_size)
+        print "Iterations: {}, Final_difference: {}".format(i, difference)
         #self.a = a
         #self.B, self.B_chol, self.W_12 = B, L, W_12
         #self.Bi, _, _, B_det = pdinv(self.B)

@@ -1,6 +1,7 @@
 import GPy
 import numpy as np
 import matplotlib.pyplot as plt
+np.random.seed(1)
 
 def timing():
     real_var = 0.1
@@ -86,17 +87,67 @@ def v_fail_test():
 
 def student_t_f_check():
     plt.close('all')
-    real_std = 0.1
-    X = np.random.rand(100)[:, None]
+    X = np.linspace(0, 1, 50)[:, None]
+    real_std = 0.001
+    noise = np.random.randn(*X.shape)*real_std
+    Y = np.sin(X*2*np.pi) + noise
+    deg_free = 1000
+
+    kernelgp = GPy.kern.rbf(X.shape[1]) # + GPy.kern.white(X.shape[1])
+    mgp = GPy.models.GP_regression(X, Y, kernel=kernelgp)
+    mgp.ensure_default_constraints()
+    mgp.randomize()
+    mgp.optimize()
+    print mgp
+    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+
+    kernelst = kernelgp.copy()
+    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=1e-5)
+    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
+    m = GPy.models.GP(X, stu_t_likelihood, kernelst)
+    m['rbf_v'] = mgp._get_params()[0]
+    m['rbf_l'] = mgp._get_params()[1] + 1
+    m.ensure_default_constraints()
+    m.constrain_positive('t_no')
+    print m
+    plt.figure()
+    plt.subplot(511)
+    m.plot()
+    print m
+    plt.subplot(512)
+    m.optimize(max_f_eval=15)
+    m.plot()
+    print m
+    plt.subplot(513)
+    m.optimize(max_f_eval=15)
+    m.plot()
+    print m
+    plt.subplot(514)
+    m.optimize(max_f_eval=15)
+    m.plot()
+    print m
+    plt.subplot(515)
+    m.optimize()
+    m.plot()
+    print "final optimised student t"
+    print m
+    print "real GP"
+    print mgp
+
+def student_t_fix_optimise_check():
+    plt.close('all')
+    real_var = 0.1
+    real_std = np.sqrt(real_var)
+    X = np.random.rand(200)[:, None]
     noise = np.random.randn(*X.shape)*real_std
     Y = np.sin(X*2*np.pi) + noise
     X_full = X
     Y_full = np.sin(X_full)
     #Y = Y/Y.max()
-    deg_free = 10000
+    deg_free = 1000
 
     #GP
-    kernelgp = GPy.kern.rbf(X.shape[1]) #+ GPy.kern.white(X.shape[1])
+    kernelgp = GPy.kern.rbf(X.shape[1]) # + GPy.kern.white(X.shape[1])
     mgp = GPy.models.GP_regression(X, Y, kernel=kernelgp)
     mgp.ensure_default_constraints()
     mgp.randomize()
@@ -113,10 +164,12 @@ def student_t_f_check():
     m = GPy.models.GP(X, stu_t_likelihood, kernelst)
     m.constrain_fixed('rbf_var', mgp._get_params()[0])
     m.constrain_fixed('rbf_len', mgp._get_params()[1])
+    m.constrain_positive('t_noise')
+    #m.ensure_default_constraints()
 
     m.update_likelihood_approximation()
     print "T std2 {} converted from original data, LL: {}".format(real_stu_t_std2, m.log_likelihood())
-    plt.subplot(221)
+    plt.subplot(231)
     m.plot()
     plt.title('Student t original data noise')
 
@@ -125,7 +178,7 @@ def student_t_f_check():
     m['t_noise_std2'] = gp_noise
     m.update_likelihood_approximation()
     print "T std2 {} same as GP noise, LL: {}".format(gp_noise, m.log_likelihood())
-    plt.subplot(222)
+    plt.subplot(232)
     m.plot()
     plt.title('Student t GP noise')
 
@@ -134,29 +187,57 @@ def student_t_f_check():
     m['t_noise_std2'] = real_stu_t_std2gp
     m.update_likelihood_approximation()
     print "T std2 {} converted to student t noise from GP noise, LL: {}".format(m.likelihood.likelihood_function.sigma2, m.log_likelihood())
-    plt.subplot(223)
+    plt.subplot(233)
     m.plot()
     plt.title('Student t GP noise converted')
 
     m.constrain_positive('t_noise_std2')
     m.randomize()
     m.update_likelihood_approximation()
+    plt.subplot(234)
+    m.plot()
+    plt.title('Student t fixed rbf')
     m.optimize()
     print "T std2 {} var {} after optimising, LL: {}".format(m.likelihood.likelihood_function.sigma2, m.likelihood.likelihood_function.variance, m.log_likelihood())
-    plt.subplot(224)
+    plt.subplot(235)
     m.plot()
-    plt.title('Student t optimised')
+    plt.title('Student t fixed rbf optimised')
 
     plt.figure(2)
+    mrbf = m.copy()
+    mrbf.unconstrain('')
+    mrbf.constrain_fixed('t_noise', m.likelihood.likelihood_function.sigma2)
+    gp_var = mgp._get_params()[0]
+    gp_len = mgp._get_params()[1]
+    mrbf.constrain_fixed('rbf_var', gp_var)
+    mrbf.constrain_positive('rbf_len')
+    mrbf.randomize()
+    print "Before optimize"
+    print mrbf
+    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+    mrbf.checkgrad(verbose=1)
+    plt.subplot(121)
+    mrbf.plot()
+    plt.title('Student t fixed noise')
+    #mrbf.optimize()
+    print "After optimize"
+    print mrbf
+    plt.subplot(122)
+    mrbf.plot()
+    plt.title('Student t fixed noise optimized')
+    print mrbf
+
+    plt.figure(3)
     print "GP noise {} after optimising, LL: {}".format(gp_noise, mgp.log_likelihood())
     plt.suptitle('Gaussian likelihood optimised')
     mgp.plot()
     print "Real std: {}".format(real_std)
     print "Real variance {}".format(real_std**2)
 
-    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+    #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
-    return m
+    print "Len should be: {}".format(gp_len)
+    return mrbf
 
 def debug_student_t_noise_approx():
     plot = False

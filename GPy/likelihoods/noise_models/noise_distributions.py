@@ -8,19 +8,19 @@ import scipy as sp
 import pylab as pb
 from GPy.util.plot import gpplot
 from GPy.util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
-import link_functions
+import gp_transformations
 
 
-class NoiseModel(object):
+class NoiseDistribution(object):
     """
     Likelihood class for doing Expectation propagation
 
     :param Y: observed output (Nx1 numpy.darray)
     ..Note:: Y values allowed depend on the LikelihoodFunction used
     """
-    def __init__(self,link,analytical_moments=False):
-        #assert isinstance(link,link_functions.LinkFunction), "link is not a valid LinkFunction."#FIXME
-        self.link = link
+    def __init__(self,gp_link,analytical_moments=False):
+        #assert isinstance(gp_link,gp_transformations.GPTransformation), "gp_link is not a valid GPTransformation."#FIXME
+        self.gp_link = gp_link
         self.analytical_moments = analytical_moments
         if self.analytical_moments:
             self.moments_match = self._moments_match_analytical
@@ -289,7 +289,7 @@ class NoiseModel(object):
         :predictive_mean: output's predictive mean, if None _predictive_mean function will be called.
         """
         qf = stats.norm.ppf(p,mu,sigma)
-        return self.link.inv_transf(qf)
+        return self.gp_link.transf(qf)
 
     def _nlog_joint_predictive_scaled(self,x,mu,sigma):
         """
@@ -334,7 +334,7 @@ class NoiseModel(object):
         :param mu: latent variable's predictive mean
         :param sigma: latent variable's predictive standard deviation
         """
-        return sp.optimize.fmin_ncg(self._nlog_joint_predictive_scaled,x0=(mu,self.link.inv_transf(mu)),fprime=self._gradient_nlog_joint_predictive,fhess=self._hessian_nlog_joint_predictive,args=(mu,sigma))
+        return sp.optimize.fmin_ncg(self._nlog_joint_predictive_scaled,x0=(mu,self.gp_link.transf(mu)),fprime=self._gradient_nlog_joint_predictive,fhess=self._hessian_nlog_joint_predictive,args=(mu,sigma))
 
     def predictive_values(self,mu,var,sample=True,sample_size=5000):
         """

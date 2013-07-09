@@ -4,23 +4,23 @@ from ..util.linalg import pdinv,mdot,jitchol,chol_inv,DSYR,tdot,dtrtrs
 from likelihood import likelihood
 
 class EP(likelihood):
-    def __init__(self,data,LikelihoodFunction,epsilon=1e-3,power_ep=[1.,1.]):
+    def __init__(self,data,noise_model,epsilon=1e-3,power_ep=[1.,1.]):
         """
         Expectation Propagation
 
         Arguments
         ---------
         epsilon : Convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
-        LikelihoodFunction : a likelihood function (see likelihood_functions.py)
+        noise_model : a likelihood function (see likelihood_functions.py)
         """
-        self.LikelihoodFunction = LikelihoodFunction
+        self.noise_model = noise_model
         self.epsilon = epsilon
         self.eta, self.delta = power_ep
         self.data = data
         self.N, self.output_dim = self.data.shape
         self.is_heteroscedastic = True
         self.Nparams = 0
-        self._transf_data = self.LikelihoodFunction._preprocess_values(data)
+        self._transf_data = self.noise_model._preprocess_values(data)
 
         #Initial values - Likelihood approximation parameters:
         #p(y|f) = t(f|tau_tilde,v_tilde)
@@ -28,9 +28,9 @@ class EP(likelihood):
         self.tau_tilde = np.zeros(self.N)
         self.v_tilde = np.zeros(self.N)
 
-        #_gp = self.LikelihoodFunction.link.transf(self.data)
-        #_mean = self.LikelihoodFunction._mean(_gp)
-        #_variance = self.LikelihoodFunction._variance(_gp)
+        #_gp = self.noise_model.gp_link.transf(self.data)
+        #_mean = self.noise_model._mean(_gp)
+        #_variance = self.noise_model._variance(_gp)
         #self.tau_tilde = 1./_variance
         #self.tau_tilde[_variance== 0] = 1.
         #self.v_tilde = _mean*self.tau_tilde
@@ -62,7 +62,7 @@ class EP(likelihood):
     def predictive_values(self,mu,var,full_cov):
         if full_cov:
             raise NotImplementedError, "Cannot make correlated predictions with an EP likelihood"
-        return self.LikelihoodFunction.predictive_values(mu,var)
+        return self.noise_model.predictive_values(mu,var)
 
     def _get_params(self):
         return np.zeros(0)
@@ -128,7 +128,7 @@ class EP(likelihood):
                 self.tau_[i] = 1./Sigma[i,i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = mu[i]/Sigma[i,i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.LikelihoodFunction.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
 
 
                 #DELETE
@@ -136,11 +136,11 @@ class EP(likelihood):
                 import pylab as pb
                 from scipy import stats
                 import scipy as sp
-                import link_functions
+                import gp_transformations
                 from constructors import *
 
-                link = link_functions.Log_ex_1()
-                distribution = poisson(link=link)
+                gp_link = gp_transformations.Log_ex_1()
+                distribution = poisson(gp_link=gp_link)
                 gp = np.linspace(-3,50,100)
                 #distribution = binomial()
                 #gp = np.linspace(-3,3,100)
@@ -311,7 +311,7 @@ class EP(likelihood):
                 self.tau_[i] = 1./Sigma_diag[i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = mu[i]/Sigma_diag[i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.LikelihoodFunction.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma_diag[i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma_diag[i])
@@ -406,7 +406,7 @@ class EP(likelihood):
                 self.tau_[i] = 1./Sigma_diag[i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = mu[i]/Sigma_diag[i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.LikelihoodFunction.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma_diag[i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma_diag[i])

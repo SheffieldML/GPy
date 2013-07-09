@@ -5,10 +5,10 @@ import numpy as np
 from scipy import stats,special
 import scipy as sp
 from GPy.util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
-import link_functions
-from likelihood_functions import NoiseModel
+import gp_transformations
+from noise_distributions import NoiseDistribution
 
-class Binomial(NoiseModel):
+class Binomial(NoiseDistribution):
     """
     Probit likelihood
     Y is expected to take values in {-1,1}
@@ -17,8 +17,8 @@ class Binomial(NoiseModel):
     L(x) = \\Phi (Y_i*f_i)
     $$
     """
-    def __init__(self,link=None,analytical_moments=False):
-        super(Binomial, self).__init__(link,analytical_moments)
+    def __init__(self,gp_link=None,analytical_moments=False):
+        super(Binomial, self).__init__(gp_link,analytical_moments)
 
     def _preprocess_values(self,Y):
         """
@@ -54,46 +54,46 @@ class Binomial(NoiseModel):
 
     def _mass(self,gp,obs):
         #NOTE obs must be in {0,1}
-        p = self.link.inv_transf(gp)
+        p = self.gp_link.transf(gp)
         return p**obs * (1.-p)**(1.-obs)
 
     def _nlog_mass(self,gp,obs):
-        p = self.link.inv_transf(gp)
+        p = self.gp_link.transf(gp)
         return obs*np.log(p) + (1.-obs)*np.log(1-p)
 
     def _dnlog_mass_dgp(self,gp,obs):
-        p = self.link.inv_transf(gp)
-        dp = self.link.dinv_transf_df(gp)
+        p = self.gp_link.transf(gp)
+        dp = self.gp_link.dtransf_df(gp)
         return obs/p * dp - (1.-obs)/(1.-p) * dp
 
     def _d2nlog_mass_dgp2(self,gp,obs):
-        p = self.link.inv_transf(gp)
-        return (obs/p + (1.-obs)/(1.-p))*self.link.d2inv_transf_df2(gp) + ((1.-obs)/(1.-p)**2-obs/p**2)*self.link.dinv_transf_df(gp)
+        p = self.gp_link.transf(gp)
+        return (obs/p + (1.-obs)/(1.-p))*self.gp_link.d2transf_df2(gp) + ((1.-obs)/(1.-p)**2-obs/p**2)*self.gp_link.dtransf_df(gp)
 
     def _mean(self,gp):
         """
         Mass (or density) function
         """
-        return self.link.inv_transf(gp)
+        return self.gp_link.transf(gp)
 
     def _dmean_dgp(self,gp):
-        return self.link.dinv_transf_df(gp)
+        return self.gp_link.dtransf_df(gp)
 
     def _d2mean_dgp2(self,gp):
-        return self.link.d2inv_transf_df2(gp)
+        return self.gp_link.d2transf_df2(gp)
 
     def _variance(self,gp):
         """
         Mass (or density) function
         """
-        p = self.link.inv_transf(gp)
+        p = self.gp_link.transf(gp)
         return p*(1-p)
 
     def _dvariance_dgp(self,gp):
-        return self.link.dinv_transf_df(gp)*(1. - 2.*self.link.inv_transf(gp))
+        return self.gp_link.dtransf_df(gp)*(1. - 2.*self.gp_link.transf(gp))
 
     def _d2variance_dgp2(self,gp):
-        return self.link.d2inv_transf_df2(gp)*(1. - 2.*self.link.inv_transf(gp)) - 2*self.link.dinv_transf_df(gp)**2
+        return self.gp_link.d2transf_df2(gp)*(1. - 2.*self.gp_link.transf(gp)) - 2*self.gp_link.dtransf_df(gp)**2
 
     """
     def predictive_values(self,mu,var): #TODO remove

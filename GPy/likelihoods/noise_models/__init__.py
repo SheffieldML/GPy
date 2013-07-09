@@ -1,4 +1,4 @@
-import likelihood_functions
-import binomial_likelihood
-import poisson_likelihood
-import link_functions
+import noise_distributions
+import binomial_noise
+import poisson_noise
+import gp_transformations

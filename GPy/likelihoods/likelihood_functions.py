@@ -193,16 +193,11 @@ class student_t(likelihood_function):
         """
         assert y.shape == f.shape
         e = y - f
-        A = gammaln((self.v + 1) * 0.5)
-        B = -gammaln(self.v * 0.5)
-        C = - 0.5*np.log(self.sigma2 * self.v * np.pi)
-        D = (-(self.v + 1)*0.5)*np.log(1 + (e**2)/(self.v*self.sigma2))
         objective = (+ gammaln((self.v + 1) * 0.5)
                      - gammaln(self.v * 0.5)
                      - 0.5*np.log(self.sigma2 * self.v * np.pi)
                      + (-(self.v + 1)*0.5)*np.log(1 + ((e**2)/self.sigma2)/np.float(self.v))
                     )
-        #print "A: {} B: {} C: {} D: {} obj: {}".format(A,B,C,D.sum(),objective.sum())
         return np.sum(objective)
 
     def dlik_df(self, y, f, extra_data=None):
@@ -266,15 +261,6 @@ class student_t(likelihood_function):
         """
         assert y.shape == f.shape
         e = y - f
-        #sigma = np.sqrt(self.sigma2)
-        #dlik_dsigma = ( - (1/sigma) +
-                        #((1+self.v)*(e**2))/((sigma*self.sigma2)*self.v*(1 + ((e**2) / (self.sigma2*self.v)) ) )
-                      #)
-        #dlik_dsigma = ( - 1 +
-                        #((1+self.v)*(e**2))/((self.sigma2*self.sigma2)*self.v*(1 + ((e**2) / (self.sigma2*self.v)) ) )
-                      #)
-        #dlik_dsigma = (((self.v + 1)*(e**2))/((e**2) + self.v*(self.sigma**2))) - 1
-        #dlik_dsigma = (self.v*((e**2)-self.sigma2))/(sigma*((e**2)+self.sigma2*self.v))
         dlik_dsigma = self.v*(e**2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e**2))
         return dlik_dsigma
 
@@ -286,10 +272,6 @@ class student_t(likelihood_function):
         """
         assert y.shape == f.shape
         e = y - f
-        #sigma = np.sqrt(self.sigma2)
-        #dlik_grad_dsigma = ((-2*sigma*self.v*(self.v + 1)*e) #2 might not want to be here?
-                            #/ ((self.v*self.sigma2 + e**2)**2)
-                           #)
         dlik_grad_dsigma = (-self.v*(self.v+1)*e)/((self.sigma2*self.v + e**2)**2)
         return dlik_grad_dsigma
 
@@ -301,12 +283,6 @@ class student_t(likelihood_function):
         """
         assert y.shape == f.shape
         e = y - f
-        #sigma = np.sqrt(self.sigma2)
-        #dlik_hess_dsigma = (  (2*sigma*self.v*(self.v + 1)*(self.sigma2*self.v - 3*(e**2))) /
-                              #((e**2 + self.sigma2*self.v)**3)
-                           #)
-        #dlik_hess_dsigma = ( 2*(self.v + 1)*self.v*(self.sigma**2)*((e**2) + (self.v*(self.sigma**2)) - 4*(e**2))
-                             #/ ((e**2 + (self.sigma**2)*self.v)**3) )
         dlik_hess_dsigma = ( (self.v*(self.v+1)*(self.sigma2*self.v - 3*(e**2)))
                               / (self.sigma2*self.v + (e**2))**3
                            )
@@ -344,8 +320,8 @@ class student_t(likelihood_function):
         #Now we have an analytical solution for the variances of the distribution p(y*|f*)p(f*) around our test points but we now
         #need the 95 and 5 percentiles.
         #FIXME: Hack, just pretend p(y*|f*)p(f*) is a gaussian and use the gaussian's percentiles
-        p_025 = mu - 2.*true_var
-        p_975 = mu + 2.*true_var
+        p_025 = mu - 2.*np.sqrt(true_var)
+        p_975 = mu + 2.*np.sqrt(true_var)
 
         return mu, np.nan*mu, p_025, p_975
 

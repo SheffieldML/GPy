@@ -85,24 +85,78 @@ def v_fail_test():
     print(m)
 
 def student_t_f_check():
-    real_var = 0.1
+    plt.close('all')
+    real_std = 0.1
     X = np.random.rand(100)[:, None]
-    Y = np.sin(X*2*np.pi) + np.random.randn(*X.shape)*real_var
+    noise = np.random.randn(*X.shape)*real_std
+    Y = np.sin(X*2*np.pi) + noise
     X_full = X
     Y_full = np.sin(X_full)
-    Y = Y/Y.max()
-    deg_free = 1000
-    real_sd = np.sqrt(real_var)
+    #Y = Y/Y.max()
+    deg_free = 10000
 
-    kernel = GPy.kern.rbf(X.shape[1]) #+ GPy.kern.white(X.shape[1])
-    real_stu_t_std = np.sqrt(real_var*((deg_free - 2)/float(deg_free)))
+    #GP
+    kernelgp = GPy.kern.rbf(X.shape[1]) #+ GPy.kern.white(X.shape[1])
+    mgp = GPy.models.GP_regression(X, Y, kernel=kernelgp)
+    mgp.ensure_default_constraints()
+    mgp.randomize()
+    mgp.optimize()
 
-    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=real_stu_t_std**2)
+    kernelst = kernelgp.copy()
+    real_stu_t_std2 = (real_std**2)*((deg_free - 2)/float(deg_free))
+
+    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=real_stu_t_std2)
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
-    m = GPy.models.GP(X, stu_t_likelihood, kernel)
-    m.constrain_positive('t_noise_std2')
-    m.ensure_default_constraints()
+
+    plt.figure(1)
+    plt.suptitle('Student likelihood')
+    m = GPy.models.GP(X, stu_t_likelihood, kernelst)
+    m.constrain_fixed('rbf_var', mgp._get_params()[0])
+    m.constrain_fixed('rbf_len', mgp._get_params()[1])
+
     m.update_likelihood_approximation()
+    print "T std2 {} converted from original data, LL: {}".format(real_stu_t_std2, m.log_likelihood())
+    plt.subplot(221)
+    m.plot()
+    plt.title('Student t original data noise')
+
+    #Fix student t noise variance to same a GP
+    gp_noise = mgp._get_params()[2]
+    m['t_noise_std2'] = gp_noise
+    m.update_likelihood_approximation()
+    print "T std2 {} same as GP noise, LL: {}".format(gp_noise, m.log_likelihood())
+    plt.subplot(222)
+    m.plot()
+    plt.title('Student t GP noise')
+
+    #Fix student t noise to variance converted from the GP
+    real_stu_t_std2gp = (gp_noise)*((deg_free - 2)/float(deg_free))
+    m['t_noise_std2'] = real_stu_t_std2gp
+    m.update_likelihood_approximation()
+    print "T std2 {} converted to student t noise from GP noise, LL: {}".format(m.likelihood.likelihood_function.sigma2, m.log_likelihood())
+    plt.subplot(223)
+    m.plot()
+    plt.title('Student t GP noise converted')
+
+    m.constrain_positive('t_noise_std2')
+    m.randomize()
+    m.update_likelihood_approximation()
+    m.optimize()
+    print "T std2 {} var {} after optimising, LL: {}".format(m.likelihood.likelihood_function.sigma2, m.likelihood.likelihood_function.variance, m.log_likelihood())
+    plt.subplot(224)
+    m.plot()
+    plt.title('Student t optimised')
+
+    plt.figure(2)
+    print "GP noise {} after optimising, LL: {}".format(gp_noise, mgp.log_likelihood())
+    plt.suptitle('Gaussian likelihood optimised')
+    mgp.plot()
+    print "Real std: {}".format(real_std)
+    print "Real variance {}".format(real_std**2)
+
+    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+
+    return m
 
 def debug_student_t_noise_approx():
     plot = False
@@ -218,16 +272,16 @@ def student_t_approx():
     """
     Example of regressing with a student t likelihood
     """
-    real_var = 0.2
+    real_std = 0.1
     #Start a function, any function
-    X = np.linspace(0.0, 10.0, 30)[:, None]
-    Y = np.sin(X) + np.random.randn(*X.shape)*real_var
+    X = np.linspace(0.0, 10.0, 50)[:, None]
+    Y = np.sin(X) + np.random.randn(*X.shape)*real_std
     Yc = Y.copy()
 
     X_full = np.linspace(0.0, 10.0, 500)[:, None]
     Y_full = np.sin(X_full)
 
-    #Y = Y/Y.max()
+    Y = Y/Y.max()
 
     Yc[10] += 100
     Yc[25] += 10
@@ -238,10 +292,9 @@ def student_t_approx():
 
     #Add student t random noise to datapoints
     deg_free = 8
-    real_sd = np.sqrt(real_var)
-    print "Real noise: ", real_sd
+    print "Real noise: ", real_std
 
-    initial_var_guess = 0.01
+    initial_var_guess = 0.1
     #t_rv = t(deg_free, loc=0, scale=real_var)
     #noise = t_rvrvs(size=Y.shape)
     #Y += noise
@@ -293,7 +346,7 @@ def student_t_approx():
 
     plt.figure(2)
     plt.suptitle('Student-t likelihood')
-    edited_real_sd = real_sd #initial_var_guess
+    edited_real_sd = real_std #initial_var_guess
 
     print "Clean student t, rasm"
     t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=edited_real_sd)
@@ -301,6 +354,7 @@ def student_t_approx():
     m = GPy.models.GP(X, stu_t_likelihood, kernel6)
     m.ensure_default_constraints()
     m.constrain_positive('t_noise')
+    m.randomize()
     m.update_likelihood_approximation()
     m.optimize()
     print(m)
@@ -316,6 +370,7 @@ def student_t_approx():
     m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel4)
     m.ensure_default_constraints()
     m.constrain_positive('t_noise')
+    m.randomize()
     m.update_likelihood_approximation()
     m.optimize()
     print(m)

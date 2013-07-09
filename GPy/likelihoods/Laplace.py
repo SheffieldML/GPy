@@ -89,7 +89,7 @@ class Laplace(likelihood):
         expl = 0.5*expl_a + 0.5*expl_b # Might need to be -?
         dL_dthetaK_exp = dK_dthetaK(expl, X)
         dL_dthetaK_imp = dK_dthetaK(impl, X)
-        print "dL_dthetaK_exp: {}     dL_dthetaK_implicit: {}".format(dL_dthetaK_exp, dL_dthetaK_imp)
+        #print "dL_dthetaK_exp: {}     dL_dthetaK_implicit: {}".format(dL_dthetaK_exp, dL_dthetaK_imp)
         dL_dthetaK = dL_dthetaK_exp + dL_dthetaK_imp
         return dL_dthetaK
 

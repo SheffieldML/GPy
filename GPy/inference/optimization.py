@@ -4,6 +4,7 @@
 import pylab as pb
 import datetime as dt
 from scipy import optimize
+from warnings import warn
 
 try:
     import rasmussens_minimize as rasm
@@ -198,17 +199,22 @@ class opt_rasm(Optimizer):
 
 class opt_SCG(Optimizer):
     def __init__(self, *args, **kwargs):
+        if 'max_f_eval' in kwargs:
+            warn("max_f_eval deprecated for SCG optimizer: use max_iters instead!\nIgnoring max_f_eval!", FutureWarning)
         Optimizer.__init__(self, *args, **kwargs)
+
         self.opt_name = "Scaled Conjugate Gradients"
 
     def opt(self, f_fp=None, f=None, fp=None):
         assert not f is None
         assert not fp is None
+
         opt_result = SCG(f, fp, self.x_init, display=self.messages,
                          maxiters=self.max_iters,
                          max_f_eval=self.max_f_eval,
                          xtol=self.xtol, ftol=self.ftol,
                          gtol=self.gtol)
+
         self.x_opt = opt_result[0]
         self.trace = opt_result[1]
         self.f_opt = self.trace[-1]

@@ -15,10 +15,18 @@ class Gaussian(NoiseDistribution):
     :param mean: mean value of the Gaussian distribution
     :param variance: mean value of the Gaussian distribution
     """
-    def __init__(self,gp_link=None,analytical_moments=False,mean=0,variance=1.):
-        self.mean = mean
+    def __init__(self,gp_link=None,analytical_mean=False,analytical_variance=False,variance=1.):
         self.variance = variance
-        super(Gaussian, self).__init__(gp_link,analytical_moments)
+        super(Gaussian, self).__init__(gp_link,analytical_mean,analytical_variance)
+
+    def _get_params(self):
+        return self.variance
+
+    def _get_param_names(self):
+        return ['noise_model_variance']
+
+    def _set_params(self,p):
+        self.variance = p
 
     def _preprocess_values(self,Y):
         """
@@ -36,32 +44,29 @@ class Gaussian(NoiseDistribution):
         :param v_i: mean/variance of the cavity distribution (float)
         """
         sigma2_hat = 1./(1./self.variance + tau_i)
-        mu_hat = sigma2_hat*(self.mean/self.variance + v_i)
-        Z_hat = np.sqrt(2*np.pi*sigma2_hat)*np.exp(-.5*(self.mean - v_i/tau_i)**2/(self.variance + 1./tau_i)) #TODO check
+        mu_hat = sigma2_hat*(data_i/self.variance + v_i)
+        sum_var = self.variance + 1./tau_i
+        Z_hat = 1./np.sqrt(2.*np.pi*sum_var)*np.exp(-.5*(data_i - v_i/tau_i)**2./sum_var)
         return Z_hat, mu_hat, sigma2_hat
 
     def _predictive_mean_analytical(self,mu,sigma):
-        new_sigma2 = 1./(1./self.variance + 1./sigma**2)
-        return new_sigma2*(mu/sigma + self.mean/self.variance)
+        new_sigma2 = self.predictive_variance(mu,sigma)
+        return new_sigma2*(mu/sigma**2 + self.gp_link.transf(mu)/self.variance)
+
+    def _predictive_variance_analytical(self,mu,sigma,*args): #TODO *args?
+        return 1./(1./self.variance + 1./sigma**2)
 
     def _mass(self,gp,obs):
-        p = (self.gp_link.transf(gp)-self.mean)/np.sqrt(self.variance)
-        return std_norm_pdf(p)
+        return std_norm_pdf( (self.gp_link.transf(gp)-obs)/np.sqrt(self.variance) )
 
     def _nlog_mass(self,gp,obs):
-        p = (self.gp_link.transf(gp)-self.mean)/np.sqrt(self.variance)
-        return .5*np.log(2*np.pi*self.variance) + .5*(p-self.mean)**2/self.variance
+        return .5*((self.gp_link.transf(gp)-obs)**2/np.sqrt(self.variance) + np.log(2*np.pi*self.variance))
 
     def _dnlog_mass_dgp(self,gp,obs):
-        p = (self.gp_link.transf(gp)-self.mean)/np.sqrt(self.variance)
-        dp = self.gp_link.dtransf_df(gp)
-        return (p - self.mean)/self.variance * dp
+        return (self.gp_link.transf(gp)-obs)/np.sqrt(self.variance) * self.gp_link.dtransf_df(gp)
 
     def _d2nlog_mass_dgp2(self,gp,obs):
-        p = (self.gp_link.transf(gp)-self.mean)/np.sqrt(self.variance)
-        dp = self.gp_link.dtransf_df(gp)
-        d2p = self.gp_link.d2transf_df2(gp)
-        return dp**2/self.variance + (p - self.mean)/self.variance * d2p
+        return ((self.gp_link.transf(gp)-obs)*self.gp_link.d2transf_df2(gp) + self.gp_link.dtransf_df(gp)**2)/self.variance
 
     def _mean(self,gp):
         """
@@ -79,11 +84,10 @@ class Gaussian(NoiseDistribution):
         """
         Mass (or density) function
         """
-        p = self.gp_link.transf(gp)
-        return p*(1-p)
+        return self.variance
 
     def _dvariance_dgp(self,gp):
-        return self.gp_link.dtransf_df(gp)*(1. - 2.*self.gp_link.transf(gp))
+        return 0
 
     def _d2variance_dgp2(self,gp):
-        return self.gp_link.d2transf_df2(gp)*(1. - 2.*self.gp_link.transf(gp)) - 2*self.gp_link.dtransf_df(gp)**2
+        return 0

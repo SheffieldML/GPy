@@ -3,8 +3,6 @@
 
 import numpy as np
 import noise_models
-#from likelihood_functions import LikelihoodFunction
-#import gp_transformations
 
 def binomial(gp_link=None):
     """
@@ -12,20 +10,32 @@ def binomial(gp_link=None):
 
     :param gp_link: a GPy gp_link function
     """
-    #self.discrete = True
-    #self.support_limits = (0,1)
-
     if gp_link is None:
         gp_link = noise_models.gp_transformations.Probit()
-    else:
-        assert isinstance(gp_link,noise_models.gp_transformations.GPTransformation), 'gp_link function is not valid.'
+    #else:
+    #    assert isinstance(gp_link,noise_models.gp_transformations.GPTransformation), 'gp_link function is not valid.'
 
     if isinstance(gp_link,noise_models.gp_transformations.Probit):
-        analytical_moments = True
+        analytical_mean = True
     else:
-        analytical_moments = False
-    return noise_models.binomial_noise.Binomial(gp_link,analytical_moments)
+        analytical_mean = False
+    analytical_variance = False
+    return noise_models.binomial_noise.Binomial(gp_link,analytical_mean,analytical_variance)
 
+def gaussian(gp_link=None,variance=1.):
+    """
+    Construct a gaussian likelihood
+
+    :param gp_link: a GPy gp_link function
+    """
+    if gp_link is None:
+        gp_link = noise_models.gp_transformations.Identity()
+    #else:
+    #    assert isinstance(gp_link,noise_models.gp_transformations.GPTransformation), 'gp_link function is not valid.'
+
+    analytical_mean = True
+    analytical_variance = True
+    return noise_models.gaussian_noise.Gaussian(gp_link,analytical_mean,analytical_variance,variance)
 
 def poisson(gp_link=None):
     """
@@ -35,8 +45,8 @@ def poisson(gp_link=None):
     """
     if gp_link is None:
         gp_link = noise_models.gp_transformations.Log_ex_1()
-    else:
-        assert isinstance(gp_link,noise_models.gp_transformations.GPTransformation), 'gp_link function is not valid.'
-    #assert isinstance(gp_link,gp_transformations.GPTransformation), 'gp_link function is not valid.'
-    analytical_moments = False
-    return noise_models.poisson_noise.Poisson(gp_link,analytical_moments)
+    #else:
+    #    assert isinstance(gp_link,noise_models.gp_transformations.GPTransformation), 'gp_link function is not valid.'
+    analytical_mean = False
+    analytical_variance = False
+    return noise_models.poisson_noise.Poisson(gp_link,analytical_mean,analytical_variance)

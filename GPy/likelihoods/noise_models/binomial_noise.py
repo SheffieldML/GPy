@@ -17,8 +17,8 @@ class Binomial(NoiseDistribution):
     L(x) = \\Phi (Y_i*f_i)
     $$
     """
-    def __init__(self,gp_link=None,analytical_moments=False):
-        super(Binomial, self).__init__(gp_link,analytical_moments)
+    def __init__(self,gp_link=None,analytical_mean=False,analytical_variance=False):
+        super(Binomial, self).__init__(gp_link,analytical_mean,analytical_variance)
 
     def _preprocess_values(self,Y):
         """

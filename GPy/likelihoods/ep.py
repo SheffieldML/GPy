@@ -65,11 +65,17 @@ class EP(likelihood):
         return self.noise_model.predictive_values(mu,var)
 
     def _get_params(self):
-        return np.zeros(0)
+        #return np.zeros(0)
+        return self.noise_model._get_params()
+
     def _get_param_names(self):
-        return []
+        #return []
+        return self.noise_model._get_param_names()
+
     def _set_params(self,p):
-        pass # TODO: the EP likelihood might want to take some parameters...
+        #pass # TODO: the EP likelihood might want to take some parameters...
+        self.noise_model._set_params(p)
+
     def _gradients(self,partial):
         return np.zeros(0) # TODO: the EP likelihood might want to take some parameters...
 

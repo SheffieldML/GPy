@@ -18,12 +18,12 @@ class Poisson(NoiseDistribution):
     L(x) = \exp(\lambda) * \lambda**Y_i / Y_i!
     $$
     """
-    def __init__(self,gp_link=None,analytical_moments=False):
+    def __init__(self,gp_link=None,analytical_mean=False,analytical_variance=False):
         #self.discrete = True
         #self.support_limits = (0,np.inf)
 
-        #self.analytical_moments = False
-        super(Poisson, self).__init__(gp_link,analytical_moments)
+        #self.analytical_mean = False
+        super(Poisson, self).__init__(gp_link,analytical_mean,analytical_variance)
 
     def _preprocess_values(self,Y): #TODO
         #self.scale = .5*Y.max()

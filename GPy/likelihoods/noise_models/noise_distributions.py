@@ -18,16 +18,30 @@ class NoiseDistribution(object):
     :param Y: observed output (Nx1 numpy.darray)
     ..Note:: Y values allowed depend on the LikelihoodFunction used
     """
-    def __init__(self,gp_link,analytical_moments=False):
+    def __init__(self,gp_link,analytical_mean=False,analytical_variance=False):
         #assert isinstance(gp_link,gp_transformations.GPTransformation), "gp_link is not a valid GPTransformation."#FIXME
         self.gp_link = gp_link
-        self.analytical_moments = analytical_moments
-        if self.analytical_moments:
+        self.analytical_mean = analytical_mean
+        self.analytical_variance = analytical_variance
+        if self.analytical_mean:
             self.moments_match = self._moments_match_analytical
             self.predictive_mean = self._predictive_mean_analytical
         else:
             self.moments_match = self._moments_match_numerical
             self.predictive_mean = self._predictive_mean_numerical
+        if self.analytical_variance:
+            self.predictive_variance = self._predictive_variance_analytical
+        else:
+            self.predictive_variance = self._predictive_variance_numerical
+
+    def _get_params(self):
+        return np.zeros(0)
+
+    def _get_param_names(self):
+        return []
+
+    def _set_params(self,p):
+        pass
 
     def _preprocess_values(self,Y):
         """
@@ -214,6 +228,12 @@ class NoiseDistribution(object):
         """
         pass
 
+    def _predictive_variance_analytical(self,mu,sigma):
+        """
+        If available, this function computes the predictive variance analytically.
+        """
+        pass
+
     def _predictive_mean_numerical(self,mu,sigma):
         """
         Laplace approximation to the predictive mean: E(Y_star) = E( E(Y_star|f_star) )
@@ -248,7 +268,7 @@ class NoiseDistribution(object):
         mean_squared = np.exp(-self._nlog_exp_conditional_mean_sq_scaled(maximum,mu,sigma))/(np.sqrt(self._d2nlog_exp_conditional_mean_sq_dgp2(maximum,mu,sigma))*sigma)
         return mean_squared
 
-    def predictive_variance(self,mu,sigma,predictive_mean=None):
+    def _predictive_variance_numerical(self,mu,sigma,predictive_mean=None):
         """
         Laplace approximation to the predictive variance: V(Y_star) = E( V(Y_star|f_star) ) + V( E(Y_star|f_star) )
 

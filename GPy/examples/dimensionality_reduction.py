@@ -114,7 +114,7 @@ def swiss_roll(optimize=True, N=1000, num_inducing=15, Q=4, sigma=.2, plot=False
         m.optimize('scg', messages=1)
     return m
 
-def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_f_eval=50, plot=False, **k):
+def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_iters=50, plot=False, **k):
     np.random.seed(0)
     data = GPy.util.datasets.oil()
 
@@ -135,9 +135,9 @@ def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_f_eval=50, plot=
     # optimize
     if optimize:
         m.constrain_fixed('noise')
-        m.optimize('scg', messages=1, max_f_eval=100, gtol=.05)
+        m.optimize('scg', messages=1, max_iters=100, gtol=.05)
         m.constrain_positive('noise')
-        m.optimize('scg', messages=1, max_f_eval=max_f_eval, gtol=.05)
+        m.optimize('scg', messages=1, max_iters=max_iters, gtol=.05)
 
     if plot:
         y = m.likelihood.Y[0, :]

@@ -20,3 +20,4 @@ import spline
 import symmetric
 import white
 import hierarchical
+import rbf_inv

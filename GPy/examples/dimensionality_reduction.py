@@ -60,6 +60,28 @@ def GPLVM_oil_100(optimize=True):
     m.plot_latent(labels=m.data_labels)
     return m
 
+def sparseGPLVM_oil(optimize=True, N=100, Q=6, num_inducing=15, max_iters=50):
+    np.random.seed(0)
+    data = GPy.util.datasets.oil()
+
+    Y = data['X'][:N]
+    Y = Y - Y.mean(0)
+    Y /= Y.std(0)
+
+    # create simple GP model
+    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q)
+    m = GPy.models.SparseGPLVM(Y, Q, kernel=kernel, num_inducing = num_inducing)
+    m.data_labels = data['Y'].argmax(axis=1)
+
+    # optimize
+    if optimize:
+        m.optimize('scg', messages=1, max_iters = max_iters)
+
+    # plot
+    print(m)
+    #m.plot_latent(labels=m.data_labels)
+    return m
+
 def swiss_roll(optimize=True, N=1000, num_inducing=15, Q=4, sigma=.2, plot=False):
     from GPy.util.datasets import swiss_roll_generated
     from GPy.core.transformations import logexp_clipped

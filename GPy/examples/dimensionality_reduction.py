@@ -241,7 +241,7 @@ def bgplvm_simulation_matlab_compare():
 
 def bgplvm_simulation(optimize='scg',
                       plot=True,
-                      max_f_eval=2e4):
+                      max_iters=2e4):
 #     from GPy.core.transformations import logexp_clipped
     D1, D2, D3, N, num_inducing, Q = 15, 8, 8, 100, 3, 5
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot)
@@ -262,8 +262,7 @@ def bgplvm_simulation(optimize='scg',
 
     if optimize:
         print "Optimizing model:"
-        m.optimize(optimize, max_iters=max_f_eval,
-                   max_f_eval=max_f_eval,
+        m.optimize(optimize, max_iters=max_iters,
                    messages=True, gtol=.05)
     if plot:
         m.plot_X_1d("BGPLVM Latent Space 1D")

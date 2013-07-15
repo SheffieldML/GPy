@@ -67,8 +67,8 @@ def toy_ARD(optim_iters=1000, kernel_type='linear', N=300, D=4):
     X4 = np.log(np.sort(np.random.rand(N,1),0))
     X = np.hstack((X1, X2, X3, X4))
 
-    Y1 = np.asmatrix(2*X[:,0]+3).T
-    Y2 = np.asmatrix(4*(X[:,2]-1.5*X[:,0])).T
+    Y1 = np.asarray(2*X[:,0]+3).T
+    Y2 = np.asarray(4*(X[:,2]-1.5*X[:,0])).T
     Y = np.hstack((Y1, Y2))
 
     Y = np.dot(Y, np.random.rand(2,D));
@@ -103,8 +103,8 @@ def toy_ARD_sparse(optim_iters=1000, kernel_type='linear', N=300, D=4):
     X4 = np.log(np.sort(np.random.rand(N,1),0))
     X = np.hstack((X1, X2, X3, X4))
 
-    Y1 = np.asmatrix(2*X[:,0]+3).T
-    Y2 = np.asmatrix(4*(X[:,2]-1.5*X[:,0])).T
+    Y1 = np.asarray(2*X[:,0]+3)[:,None]
+    Y2 = np.asarray(4*(X[:,2]-1.5*X[:,0]))[:,None]
     Y = np.hstack((Y1, Y2))
 
     Y = np.dot(Y, np.random.rand(2,D));

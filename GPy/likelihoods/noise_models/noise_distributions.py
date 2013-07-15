@@ -43,6 +43,9 @@ class NoiseDistribution(object):
     def _set_params(self,p):
         pass
 
+    def _gradients(self,partial):
+        return np.zeros(0)
+
     def _preprocess_values(self,Y):
         """
         In case it is needed, this function assess the output values or makes any pertinent transformation on them.

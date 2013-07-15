@@ -98,7 +98,12 @@ class GP(GPBase):
 
         Note, we use the chain rule: dL_dtheta = dL_dK * d_K_dtheta
         """
-        return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        #return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        if not isinstance(self.likelihood,EP):
+            tmp = np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        else:
+            tmp = np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        return tmp
 
     def _raw_predict(self, _Xnew, which_parts='all', full_cov=False,stop=False):
         """

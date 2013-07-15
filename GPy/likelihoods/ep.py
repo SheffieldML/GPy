@@ -77,7 +77,8 @@ class EP(likelihood):
         self.noise_model._set_params(p)
 
     def _gradients(self,partial):
-        return np.zeros(0) # TODO: the EP likelihood might want to take some parameters...
+        #return np.zeros(0) # TODO: the EP likelihood might want to take some parameters...
+        return self.noise_model._gradients(partial)
 
     def _compute_GP_variables(self):
         #Variables to be called from GP

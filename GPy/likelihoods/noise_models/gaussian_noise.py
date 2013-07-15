@@ -28,6 +28,10 @@ class Gaussian(NoiseDistribution):
     def _set_params(self,p):
         self.variance = p
 
+    def _gradients(self,partial):
+        return np.zeros(1)
+        #return np.sum(partial)
+
     def _preprocess_values(self,Y):
         """
         Check if the values of the observations correspond to the values
@@ -57,13 +61,14 @@ class Gaussian(NoiseDistribution):
         return 1./(1./self.variance + 1./sigma**2)
 
     def _mass(self,gp,obs):
-        return std_norm_pdf( (self.gp_link.transf(gp)-obs)/np.sqrt(self.variance) )
+        #return std_norm_pdf( (self.gp_link.transf(gp)-obs)/np.sqrt(self.variance) )
+        return stats.norm.pdf(obs,self.gp_link.transf(gp),np.sqrt(self.variance)) #FIXME
 
     def _nlog_mass(self,gp,obs):
-        return .5*((self.gp_link.transf(gp)-obs)**2/np.sqrt(self.variance) + np.log(2*np.pi*self.variance))
+        return .5*((self.gp_link.transf(gp)-obs)**2/self.variance + np.log(2.*np.pi*self.variance))
 
     def _dnlog_mass_dgp(self,gp,obs):
-        return (self.gp_link.transf(gp)-obs)/np.sqrt(self.variance) * self.gp_link.dtransf_df(gp)
+        return (self.gp_link.transf(gp)-obs)/self.variance * self.gp_link.dtransf_df(gp)
 
     def _d2nlog_mass_dgp2(self,gp,obs):
         return ((self.gp_link.transf(gp)-obs)*self.gp_link.d2transf_df2(gp) + self.gp_link.dtransf_df(gp)**2)/self.variance

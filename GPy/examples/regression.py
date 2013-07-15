@@ -78,6 +78,8 @@ def toy_ARD(optim_iters=1000, kernel_type='linear', N=300, D=4):
 
     if kernel_type == 'linear':
         kernel = GPy.kern.linear(X.shape[1], ARD = 1)
+    elif kernel_type == 'rbf_inv':
+        kernel = GPy.kern.rbf_inv(X.shape[1], ARD = 1)
     else:
         kernel = GPy.kern.rbf(X.shape[1], ARD = 1)
     kernel += GPy.kern.white(X.shape[1]) + GPy.kern.bias(X.shape[1])

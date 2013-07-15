@@ -85,7 +85,7 @@ def toy_ARD(optim_iters=1000, kernel_type='linear', N=300, D=4):
     #len_prior = GPy.priors.inverse_gamma(1,18) # 1, 25
     #m.set_prior('.*lengthscale',len_prior)
 
-    m.optimize(optimizer = 'scg', max_iters = optim_iters, max_f_eval=optim_iters, messages = 1)
+    m.optimize(optimizer = 'scg', max_iters = optim_iters, messages = 1)
 
     m.kern.plot_ARD()
     print(m)

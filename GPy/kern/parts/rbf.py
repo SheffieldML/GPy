@@ -7,6 +7,7 @@ import numpy as np
 import hashlib
 from scipy import weave
 from ...util.linalg import tdot
+from ...util.misc import fast_array_equal
 
 class RBF(Kernpart):
     """
@@ -222,7 +223,7 @@ class RBF(Kernpart):
     #---------------------------------------#
 
     def _K_computations(self, X, X2):
-        if not (np.array_equal(X, self._X) and np.array_equal(X2, self._X2) and np.array_equal(self._params , self._get_params())):
+        if not (fast_array_equal(X, self._X) and fast_array_equal(X2, self._X2) and fast_array_equal(self._params , self._get_params())):
             self._X = X.copy()
             self._params == self._get_params().copy()
             if X2 is None:
@@ -239,14 +240,14 @@ class RBF(Kernpart):
 
     def _psi_computations(self, Z, mu, S):
         # here are the "statistics" for psi1 and psi2
-        if not np.array_equal(Z, self._Z):
+        if not fast_array_equal(Z, self._Z):
             #Z has changed, compute Z specific stuff
             self._psi2_Zhat = 0.5*(Z[:,None,:] +Z[None,:,:]) # M,M,Q
             self._psi2_Zdist = 0.5*(Z[:,None,:]-Z[None,:,:]) # M,M,Q
             self._psi2_Zdist_sq = np.square(self._psi2_Zdist/self.lengthscale) # M,M,Q
             self._Z = Z
 
-        if not (np.array_equal(Z, self._Z) and np.array_equal(mu, self._mu) and np.array_equal(S, self._S)):
+        if not (fast_array_equal(Z, self._Z) and fast_array_equal(mu, self._mu) and fast_array_equal(S, self._S)):
             #something's changed. recompute EVERYTHING
 
             #psi1

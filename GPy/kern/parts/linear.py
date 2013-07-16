@@ -5,6 +5,7 @@
 from kernpart import Kernpart
 import numpy as np
 from ...util.linalg import tdot
+from ...util.misc import fast_array_equal
 from scipy import weave
 
 class Linear(Kernpart):
@@ -266,7 +267,7 @@ class Linear(Kernpart):
     #---------------------------------------#
 
     def _K_computations(self, X, X2):
-        if not (np.array_equal(X, self._Xcache) and np.array_equal(X2, self._X2cache)):
+        if not (fast_array_equal(X, self._Xcache) and fast_array_equal(X2, self._X2cache)):
             self._Xcache = X.copy()
             if X2 is None:
                 self._dot_product = tdot(X)
@@ -277,8 +278,8 @@ class Linear(Kernpart):
 
     def _psi_computations(self, Z, mu, S):
         # here are the "statistics" for psi1 and psi2
-        Zv_changed = not (np.array_equal(Z, self._Z) and np.array_equal(self.variances, self._variances))
-        muS_changed = not (np.array_equal(mu, self._mu) and np.array_equal(S, self._S))
+        Zv_changed = not (fast_array_equal(Z, self._Z) and fast_array_equal(self.variances, self._variances))
+        muS_changed = not (fast_array_equal(mu, self._mu) and fast_array_equal(S, self._S))
         if Zv_changed:
             # Z has changed, compute Z specific stuff
             # self.ZZ = Z[:,None,:]*Z[None,:,:] # num_inducing,num_inducing,input_dim

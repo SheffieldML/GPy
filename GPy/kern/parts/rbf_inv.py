@@ -95,6 +95,7 @@ class RBFInv(Kernpart):
         if self.ARD:
             dvardLdK = self._K_dvar * dL_dK
             var_len3 = self.variance / np.power(self.lengthscale, 3)
+            len2 = self.lengthscale2
             if X2 is None:
                 # save computation for the symmetrical case
                 dvardLdK = dvardLdK + dvardLdK.T
@@ -108,11 +109,11 @@ class RBFInv(Kernpart):
                       tmp += (X(i,q)-X(j,q))*(X(i,q)-X(j,q))*dvardLdK(i,j);
                     }
                   }
-                  target(q+1) += var_len3(q)*tmp;
+                  target(q+1) += var_len3(q)*tmp*(-len2(q));
                 }
                 """
                 num_data, num_inducing, input_dim = X.shape[0], X.shape[0], self.input_dim
-                weave.inline(code, arg_names=['num_data','num_inducing','input_dim','X','X2','target','dvardLdK','var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
+                weave.inline(code, arg_names=['num_data','num_inducing','input_dim','X','X2','target','dvardLdK','var_len3', 'len2'], type_converters=weave.converters.blitz, **self.weave_options)
             else:
                 code = """
                 int q,i,j;
@@ -124,15 +125,15 @@ class RBFInv(Kernpart):
                       tmp += (X(i,q)-X2(j,q))*(X(i,q)-X2(j,q))*dvardLdK(i,j);
                     }
                   }
-                  target(q+1) += var_len3(q)*tmp;
+                  target(q+1) += var_len3(q)*tmp*(-len2(q));
                 }
                 """
                 num_data, num_inducing, input_dim = X.shape[0], X2.shape[0], self.input_dim
                 #[np.add(target[1+q:2+q],var_len3[q]*np.sum(dvardLdK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.input_dim)]
-                weave.inline(code, arg_names=['num_data','num_inducing','input_dim','X','X2','target','dvardLdK','var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
+                weave.inline(code, arg_names=['num_data','num_inducing','input_dim','X','X2','target','dvardLdK','var_len3', 'len2'], type_converters=weave.converters.blitz, **self.weave_options)
         else:
-            target[1] += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)
-        target[1:self.input_dim+1]*=(-self.lengthscale2)
+            target[1] += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)*(-self.lengthscale2)
+
 
     def dKdiag_dtheta(self, dL_dKdiag, X, target):
         # NB: derivative of diagonal elements wrt lengthscale is 0
@@ -172,10 +173,10 @@ class RBFInv(Kernpart):
         target[0] += np.sum(dL_dpsi1 * self._psi1 / self.variance)
         dpsi1_dlength = d_length * dL_dpsi1[:, :, None]
         if not self.ARD:
-            target[1] += dpsi1_dlength.sum()
+            target[1] += dpsi1_dlength.sum()*(-self.lengthscale2)
         else:
-            target[1:] += dpsi1_dlength.sum(0).sum(0)
-        target[1:self.input_dim+1] *=(-self.lengthscale2)
+            target[1:] += dpsi1_dlength.sum(0).sum(0)*(-self.lengthscale2)
+        #target[1:] = target[1:]*(-self.lengthscale2)
 
     def dpsi1_dZ(self, dL_dpsi1, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
@@ -202,10 +203,10 @@ class RBFInv(Kernpart):
         target[0] += np.sum(dL_dpsi2 * d_var)
         dpsi2_dlength = d_length * dL_dpsi2[:, :, :, None]
         if not self.ARD:
-            target[1] += dpsi2_dlength.sum()
+            target[1] += dpsi2_dlength.sum()*(-self.lengthscale2)
         else:
-            target[1:] += dpsi2_dlength.sum(0).sum(0).sum(0)
-        target[1:self.input_dim+1] *=(-self.lengthscale2)
+            target[1:] += dpsi2_dlength.sum(0).sum(0).sum(0)*(-self.lengthscale2)
+        #target[1:] = target[1:]*(-self.lengthscale2)
 
     def dpsi2_dZ(self, dL_dpsi2, Z, mu, S, target):
         self._psi_computations(Z, mu, S)

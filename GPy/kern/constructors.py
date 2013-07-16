@@ -5,6 +5,23 @@ import numpy as np
 from kern import kern
 import parts
 
+
+def rbf_inv(input_dim,variance=1., inv_lengthscale=None,ARD=False):
+    """
+    Construct an RBF kernel
+
+    :param input_dim: dimensionality of the kernel, obligatory
+    :type input_dim: int
+    :param variance: the variance of the kernel
+    :type variance: float
+    :param lengthscale: the lengthscale of the kernel
+    :type lengthscale: float
+    :param ARD: Auto Relevance Determination (one lengthscale per dimension)
+    :type ARD: Boolean
+    """
+    part = parts.rbf_inv.RBFInv(input_dim,variance,inv_lengthscale,ARD)
+    return kern(input_dim, [part])
+
 def rbf(input_dim,variance=1., lengthscale=None,ARD=False):
     """
     Construct an RBF kernel
@@ -306,4 +323,4 @@ def hierarchical(k):
     # for sl in k.input_slices:
     #     assert (sl.start is None) and (sl.stop is None), "cannot adjust input slices! (TODO)"
     _parts = [parts.hierarchical.Hierarchical(k.parts)]
-    return kern(k.input_dim+1,_parts)
+    return kern(k.input_dim+len(k.parts),_parts)

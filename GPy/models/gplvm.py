@@ -41,6 +41,12 @@ class GPLVM(GP):
         else:
             return np.random.randn(Y.shape[0], input_dim)
 
+    def getstate(self):
+        return GP.getstate(self)
+
+    def setstate(self, state):
+        GP.setstate(self, state)
+
     def _get_param_names(self):
         return sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], []) + GP._get_param_names(self)
 

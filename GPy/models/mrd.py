@@ -18,29 +18,25 @@ class MRD(Model):
     All Ys in likelihood_list are in [N x Dn], where Dn can be different per Yn,
     N must be shared across datasets though.
 
-    :param likelihood_list...: likelihoods of observed datasets
-    :type likelihood_list: [GPy.likelihood] | [Y1..Yy]
+    :param likelihood_list: list of observed datasets (:py:class:`~GPy.likelihoods.gaussian.Gaussian` if not supplied directly)
+    :type likelihood_list: [:py:class:`~GPy.likelihoods.likelihood.likelihood` | :py:class:`ndarray`]
     :param names: names for different gplvm models
     :type names: [str]
-    :param input_dim: latent dimensionality (will raise
+    :param input_dim: latent dimensionality
     :type input_dim: int
-    :param initx: initialisation method for the latent space
-    :type initx: 'PCA'|'random'
+    :param initx: initialisation method for the latent space :
+        
+        * 'concat' - PCA on concatenation of all datasets
+        * 'single' - Concatenation of PCA on datasets, respectively
+        * 'random' - Random draw from a normal
+            
+    :type initx: ['concat'|'single'|'random']
     :param initz: initialisation method for inducing inputs
     :type initz: 'permute'|'random'
-    :param X:
-        Initial latent space
-    :param X_variance:
-        Initial latent space variance
-    :param init: [cooncat|single|random]
-        initialization method to use:
-            *concat: PCA on concatenated outputs
-            *single: PCA on each output
-            *random: random
-    :param num_inducing:
-        number of inducing inputs to use
-    :param Z:
-        initial inducing inputs
+    :param X: Initial latent space
+    :param X_variance: Initial latent space variance
+    :param Z: initial inducing inputs
+    :param num_inducing: number of inducing inputs to use
     :param kernels: list of kernels or kernel shared for all BGPLVMS
     :type kernels: [GPy.kern.kern] | GPy.kern.kern | None (default)
     """

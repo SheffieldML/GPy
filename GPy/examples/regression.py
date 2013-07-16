@@ -57,6 +57,79 @@ def toy_rbf_1d_50(optim_iters=100):
     print(m)
     return m
 
+def toy_ARD(optim_iters=1000, kernel_type='linear', N=300, D=4):
+    # Create an artificial dataset where the values in the targets (Y)
+    # only depend in dimensions 1 and 3 of the inputs (X). Run ARD to
+    # see if this dependency can be recovered
+    X1 = np.sin(np.sort(np.random.rand(N,1)*10,0))
+    X2 = np.cos(np.sort(np.random.rand(N,1)*10,0))
+    X3 = np.exp(np.sort(np.random.rand(N,1),0))
+    X4 = np.log(np.sort(np.random.rand(N,1),0))
+    X = np.hstack((X1, X2, X3, X4))
+
+    Y1 = np.asarray(2*X[:,0]+3).T
+    Y2 = np.asarray(4*(X[:,2]-1.5*X[:,0])).T
+    Y = np.hstack((Y1, Y2))
+
+    Y = np.dot(Y, np.random.rand(2,D));
+    Y = Y + 0.2*np.random.randn(Y.shape[0], Y.shape[1])
+    Y -= Y.mean()
+    Y /= Y.std()
+
+    if kernel_type == 'linear':
+        kernel = GPy.kern.linear(X.shape[1], ARD = 1)
+    elif kernel_type == 'rbf_inv':
+        kernel = GPy.kern.rbf_inv(X.shape[1], ARD = 1)
+    else:
+        kernel = GPy.kern.rbf(X.shape[1], ARD = 1)
+    kernel += GPy.kern.white(X.shape[1]) + GPy.kern.bias(X.shape[1])
+    m = GPy.models.GPRegression(X, Y, kernel)
+    #len_prior = GPy.priors.inverse_gamma(1,18) # 1, 25
+    #m.set_prior('.*lengthscale',len_prior)
+
+    m.optimize(optimizer = 'scg', max_iters = optim_iters, messages = 1)
+
+    m.kern.plot_ARD()
+    print(m)
+    return m
+
+def toy_ARD_sparse(optim_iters=1000, kernel_type='linear', N=300, D=4):
+    # Create an artificial dataset where the values in the targets (Y)
+    # only depend in dimensions 1 and 3 of the inputs (X). Run ARD to
+    # see if this dependency can be recovered
+    X1 = np.sin(np.sort(np.random.rand(N,1)*10,0))
+    X2 = np.cos(np.sort(np.random.rand(N,1)*10,0))
+    X3 = np.exp(np.sort(np.random.rand(N,1),0))
+    X4 = np.log(np.sort(np.random.rand(N,1),0))
+    X = np.hstack((X1, X2, X3, X4))
+
+    Y1 = np.asarray(2*X[:,0]+3)[:,None]
+    Y2 = np.asarray(4*(X[:,2]-1.5*X[:,0]))[:,None]
+    Y = np.hstack((Y1, Y2))
+
+    Y = np.dot(Y, np.random.rand(2,D));
+    Y = Y + 0.2*np.random.randn(Y.shape[0], Y.shape[1])
+    Y -= Y.mean()
+    Y /= Y.std()
+
+    if kernel_type == 'linear':
+        kernel = GPy.kern.linear(X.shape[1], ARD = 1)
+    elif kernel_type == 'rbf_inv':
+        kernel = GPy.kern.rbf_inv(X.shape[1], ARD = 1)
+    else:
+        kernel = GPy.kern.rbf(X.shape[1], ARD = 1)
+    kernel += GPy.kern.white(X.shape[1]) + GPy.kern.bias(X.shape[1])
+    X_variance = np.ones(X.shape)*0.5
+    m = GPy.models.SparseGPRegression(X, Y, kernel, X_variance = X_variance)
+    #len_prior = GPy.priors.inverse_gamma(1,18) # 1, 25
+    #m.set_prior('.*lengthscale',len_prior)
+
+    m.optimize(optimizer = 'scg', max_iters = optim_iters, messages = 1)
+
+    m.kern.plot_ARD()
+    print(m)
+    return m
+
 def silhouette(optim_iters=100):
     """Predict the pose of a figure given a silhouette. This is a task from Agarwal and Triggs 2004 ICML paper."""
     data = GPy.util.datasets.silhouette()

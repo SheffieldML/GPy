@@ -60,6 +60,28 @@ def GPLVM_oil_100(optimize=True):
     m.plot_latent(labels=m.data_labels)
     return m
 
+def sparseGPLVM_oil(optimize=True, N=100, Q=6, num_inducing=15, max_iters=50):
+    np.random.seed(0)
+    data = GPy.util.datasets.oil()
+
+    Y = data['X'][:N]
+    Y = Y - Y.mean(0)
+    Y /= Y.std(0)
+
+    # create simple GP model
+    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q)
+    m = GPy.models.SparseGPLVM(Y, Q, kernel=kernel, num_inducing = num_inducing)
+    m.data_labels = data['Y'].argmax(axis=1)
+
+    # optimize
+    if optimize:
+        m.optimize('scg', messages=1, max_iters = max_iters)
+
+    # plot
+    print(m)
+    #m.plot_latent(labels=m.data_labels)
+    return m
+
 def swiss_roll(optimize=True, N=1000, num_inducing=15, Q=4, sigma=.2, plot=False):
     from GPy.util.datasets import swiss_roll_generated
     from GPy.core.transformations import logexp_clipped
@@ -114,7 +136,7 @@ def swiss_roll(optimize=True, N=1000, num_inducing=15, Q=4, sigma=.2, plot=False
         m.optimize('scg', messages=1)
     return m
 
-def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_f_eval=50, plot=False, **k):
+def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_iters=50, plot=False, **k):
     np.random.seed(0)
     data = GPy.util.datasets.oil()
 
@@ -135,9 +157,9 @@ def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_f_eval=50, plot=
     # optimize
     if optimize:
         m.constrain_fixed('noise')
-        m.optimize('scg', messages=1, max_f_eval=100, gtol=.05)
+        m.optimize('scg', messages=1, max_iters=100, gtol=.05)
         m.constrain_positive('noise')
-        m.optimize('scg', messages=1, max_f_eval=max_f_eval, gtol=.05)
+        m.optimize('scg', messages=1, max_iters=max_iters, gtol=.05)
 
     if plot:
         y = m.likelihood.Y[0, :]
@@ -241,7 +263,7 @@ def bgplvm_simulation_matlab_compare():
 
 def bgplvm_simulation(optimize='scg',
                       plot=True,
-                      max_f_eval=2e4):
+                      max_iters=2e4):
 #     from GPy.core.transformations import logexp_clipped
     D1, D2, D3, N, num_inducing, Q = 15, 8, 8, 100, 3, 5
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot)
@@ -262,8 +284,7 @@ def bgplvm_simulation(optimize='scg',
 
     if optimize:
         print "Optimizing model:"
-        m.optimize(optimize, max_iters=max_f_eval,
-                   max_f_eval=max_f_eval,
+        m.optimize(optimize, max_iters=max_iters,
                    messages=True, gtol=.05)
     if plot:
         m.plot_X_1d("BGPLVM Latent Space 1D")

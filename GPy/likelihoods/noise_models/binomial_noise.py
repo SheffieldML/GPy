@@ -87,7 +87,7 @@ class Binomial(NoiseDistribution):
         Mass (or density) function
         """
         p = self.gp_link.transf(gp)
-        return p*(1-p)
+        return p*(1.-p)
 
     def _dvariance_dgp(self,gp):
         return self.gp_link.dtransf_df(gp)*(1. - 2.*self.gp_link.transf(gp))

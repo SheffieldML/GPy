@@ -66,9 +66,6 @@ class Poisson(NoiseDistribution):
         """
         return self.gp_link.transf(gp)
 
-    #def _variance(self,gp):
-    #    return self.gp_link.transf(gp)
-
     def _dmean_dgp(self,gp):
         return self.gp_link.dtransf_df(gp)
 
@@ -80,9 +77,6 @@ class Poisson(NoiseDistribution):
         Mass (or density) function
         """
         return self.gp_link.transf(gp)
-
-    #def _variance(self,gp):
-    #    return self.gp_link.transf(gp)
 
     def _dvariance_dgp(self,gp):
         return self.gp_link.dtransf_df(gp)

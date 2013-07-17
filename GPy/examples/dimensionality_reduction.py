@@ -378,11 +378,10 @@ def stick():
 def stick_bgplvm(model=None):
     data = GPy.util.datasets.stick()
     Q = 6
-    kernel = GPy.kern.rbf_inv(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
-    m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=35,kernel=kernel)
+    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
+    m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20,kernel=kernel)
     # optimize
     m.ensure_default_constraints()
-    m.constrain_bounded('.*rbf_inv',1e-5, 100)
     m.optimize(messages=1, max_iters=3000,xtol=1e-300,ftol=1e-300)
     m._set_params(m._get_params())
     plt.clf, (latent_axes, sense_axes) = plt.subplots(1, 2)

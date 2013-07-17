@@ -119,7 +119,7 @@ class kern(Parameterized):
         ax.set_xlim(-.5, x0 - .5)
         if title is '':
             ax.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-                      ncol=len(bars), mode="expand", borderaxespad=0.)
+                      ncol=max(2, len(bars)), mode="expand", borderaxespad=0.)
         else:
             ax.legend()
         return ax

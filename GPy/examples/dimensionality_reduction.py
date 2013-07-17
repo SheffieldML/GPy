@@ -145,7 +145,7 @@ def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_iters=150, plot=
 
     # create simple GP model
     kernel = GPy.kern.rbf_inv(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
-    kernel += GPy.kern.rbf_inv(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
+
     Y = data['X'][:N]
     Yn = Y - Y.mean(0)
     Yn /= Yn.std(0)
@@ -161,7 +161,7 @@ def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_iters=150, plot=
     # optimize
     if optimize:
         m.constrain_fixed('noise')
-        m.optimize('scg', messages=1, max_iters=200, gtol=.05)
+        m.optimize('scg', messages=1, max_iters=100, gtol=.05)
         m.constrain_positive('noise')
         m.optimize('scg', messages=1, max_iters=max_iters, gtol=.05)
 
@@ -277,6 +277,7 @@ def bgplvm_simulation(optimize='scg',
     from GPy import kern
     reload(mrd); reload(kern)
 
+
     Y = Ylist[0]
 
     k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2)) # + kern.bias(Q)
@@ -284,6 +285,7 @@ def bgplvm_simulation(optimize='scg',
 
     # m.constrain('variance|noise', logexp_clipped())
     m['noise'] = Y.var() / 100.
+
 
     if optimize:
         print "Optimizing model:"
@@ -376,11 +378,12 @@ def stick():
 def stick_bgplvm(model=None):
     data = GPy.util.datasets.stick()
     Q = 6
-    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
-    m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20, kernel=kernel)
+    kernel = GPy.kern.rbf_inv(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
+    m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=35,kernel=kernel)
     # optimize
     m.ensure_default_constraints()
-    m.optimize(messages=1, max_f_eval=3000, xtol=1e-300, ftol=1e-300)
+    m.constrain_bounded('.*rbf_inv',1e-5, 100)
+    m.optimize(messages=1, max_iters=3000,xtol=1e-300,ftol=1e-300)
     m._set_params(m._get_params())
     plt.clf, (latent_axes, sense_axes) = plt.subplots(1, 2)
     plt.sca(latent_axes)

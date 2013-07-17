@@ -108,7 +108,7 @@ class SparseGP(GPBase):
         self.B = np.eye(self.num_inducing) + self.A
         self.LB = jitchol(self.B)
 
-        # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
+        #VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
         self.psi1Vf = np.dot(self.psi1.T, self.likelihood.VVT_factor)
 
         # back substutue C into psi1Vf
@@ -163,7 +163,7 @@ class SparseGP(GPBase):
     def log_likelihood(self):
         """ Compute the (lower bound on the) log marginal likelihood """
         if self.likelihood.is_heteroscedastic:
-            A = -0.5 * self.num_data * self.output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.likelihood.precision)) - 0.5 * np.sum(self.likelihood.V * self.likelihood.Y)
+            A = -0.5 * self.num_data * self.output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.likelihood.precision)) - 0.5 * np.sum(self.likelihood.V*self.likelihood.Y)
             B = -0.5 * self.output_dim * (np.sum(self.likelihood.precision.flatten() * self.psi0) - np.trace(self.A))
         else:
             A = -0.5 * self.num_data * self.output_dim * (np.log(2.*np.pi) - np.log(self.likelihood.precision)) - 0.5 * self.likelihood.precision * self.likelihood.trYYT
@@ -246,7 +246,7 @@ class SparseGP(GPBase):
         Kmmi_LmiBLmi = backsub_both_sides(self.Lm, np.eye(self.num_inducing) - Bi)
 
         if self.Cpsi1V is None:
-            psi1V = np.dot(self.psi1.T, self.likelihood.V)
+            psi1V = np.dot(self.psi1.T,self.likelihood.V)
             tmp, _ = dtrtrs(self.Lm, np.asfortranarray(psi1V), lower=1, trans=0)
             tmp, _ = dpotrs(self.LB, tmp, lower=1)
             self.Cpsi1V, _ = dtrtrs(self.Lm, tmp, lower=1, trans=1)

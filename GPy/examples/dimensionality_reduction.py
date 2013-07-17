@@ -7,26 +7,29 @@ from matplotlib import pyplot as plt, cm
 import GPy
 from GPy.core.transformations import logexp
 from GPy.models.bayesian_gplvm import BayesianGPLVM
+from GPy.likelihoods.gaussian import Gaussian
 
 default_seed = np.random.seed(123344)
 
 def BGPLVM(seed=default_seed):
     N = 10
     num_inducing = 3
-    Q = 2
-    D = 4
+    Q = 5
+    D = 10
     # generate GPLVM-like data
     X = np.random.rand(N, Q)
-    k = GPy.kern.rbf(Q) + GPy.kern.white(Q, 0.00001)
+    lengthscales = np.random.rand(Q)
+    k = GPy.kern.rbf(Q, .5, lengthscales, ARD=True) + GPy.kern.white(Q, 0.01)
     K = k.K(X)
     Y = np.random.multivariate_normal(np.zeros(N), K, Q).T
+    lik = Gaussian(Y, normalize=True)
 
-    k = GPy.kern.rbf(Q, ARD=True) + GPy.kern.linear(Q, ARD=True) + GPy.kern.rbf(Q, ARD=True) + GPy.kern.white(Q)
-    # k = GPy.kern.rbf(Q) + GPy.kern.rbf(Q) + GPy.kern.white(Q)
+    k = GPy.kern.rbf_inv(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
     # k = GPy.kern.rbf(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
     # k = GPy.kern.rbf(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)
 
-    m = GPy.models.BayesianGPLVM(Y, Q, kernel=k, num_inducing=num_inducing)
+    m = GPy.models.BayesianGPLVM(lik, Q, kernel=k, num_inducing=num_inducing)
+    m.lengthscales = lengthscales
     # m.constrain_positive('(rbf|bias|noise|white|S)')
     # m.constrain_fixed('S', 1)
 
@@ -37,8 +40,8 @@ def BGPLVM(seed=default_seed):
     # m.optimize(messages = 1)
     # m.plot()
     # pb.title('After optimisation')
-    m.randomize()
-    m.checkgrad(verbose=1)
+    # m.randomize()
+    # m.checkgrad(verbose=1)
 
     return m
 
@@ -70,16 +73,16 @@ def sparseGPLVM_oil(optimize=True, N=100, Q=6, num_inducing=15, max_iters=50):
 
     # create simple GP model
     kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q)
-    m = GPy.models.SparseGPLVM(Y, Q, kernel=kernel, num_inducing = num_inducing)
+    m = GPy.models.SparseGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing)
     m.data_labels = data['Y'].argmax(axis=1)
 
     # optimize
     if optimize:
-        m.optimize('scg', messages=1, max_iters = max_iters)
+        m.optimize('scg', messages=1, max_iters=max_iters)
 
     # plot
     print(m)
-    #m.plot_latent(labels=m.data_labels)
+    # m.plot_latent(labels=m.data_labels)
     return m
 
 def swiss_roll(optimize=True, N=1000, num_inducing=15, Q=4, sigma=.2, plot=False):
@@ -136,12 +139,13 @@ def swiss_roll(optimize=True, N=1000, num_inducing=15, Q=4, sigma=.2, plot=False
         m.optimize('scg', messages=1)
     return m
 
-def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_iters=50, plot=False, **k):
+def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_iters=150, plot=False, **k):
     np.random.seed(0)
     data = GPy.util.datasets.oil()
 
     # create simple GP model
-    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
+    kernel = GPy.kern.rbf_inv(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
+
     Y = data['X'][:N]
     Yn = Y - Y.mean(0)
     Yn /= Yn.std(0)
@@ -150,7 +154,7 @@ def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_iters=50, plot=F
     m.data_labels = data['Y'][:N].argmax(axis=1)
 
     # m.constrain('variance|leng', logexp_clipped())
-    m['.*lengt'] = 1. # 5./((np.max(m.X,0)-np.min(m.X,0))**2) # m.X.var(0).max() / m.X.var(0)
+    # m['.*lengt'] = m.X.var(0).max() / m.X.var(0)
     m['noise'] = Yn.var() / 100.
 
 
@@ -208,7 +212,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
 
     Y1 += .3 * np.random.randn(*Y1.shape)
     Y2 += .2 * np.random.randn(*Y2.shape)
-    Y3 += .1 * np.random.randn(*Y3.shape)
+    Y3 += .25 * np.random.randn(*Y3.shape)
 
     Y1 -= Y1.mean(0)
     Y2 -= Y2.mean(0)
@@ -263,10 +267,11 @@ def bgplvm_simulation_matlab_compare():
 
 def bgplvm_simulation(optimize='scg',
                       plot=True,
-                      max_iters=2e4):
+                      max_iters=2e4,
+                      plot_sim=False):
 #     from GPy.core.transformations import logexp_clipped
-    D1, D2, D3, N, num_inducing, Q = 15, 8, 8, 100, 3, 5
-    slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot)
+    D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 300, 30, 6
+    slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
 
     from GPy.models import mrd
     from GPy import kern
@@ -280,7 +285,7 @@ def bgplvm_simulation(optimize='scg',
 
     # m.constrain('variance|noise', logexp_clipped())
     m['noise'] = Y.var() / 100.
-    m['linear_variance'] = .01
+
 
     if optimize:
         print "Optimizing model:"
@@ -327,7 +332,6 @@ def brendan_faces():
     # Y = data['Y']
     Yn = Y - Y.mean()
     Yn /= Yn.std()
-    m.plot_latent()
 
     m = GPy.models.GPLVM(Yn, Q)
     # m = GPy.models.BayesianGPLVM(Yn, Q, num_inducing=100)
@@ -347,7 +351,7 @@ def brendan_faces():
 def stick_play(range=None, frame_rate=15):
     data = GPy.util.datasets.stick()
     # optimize
-    if range==None:
+    if range == None:
         Y = data['Y'].copy()
     else:
         Y = data['Y'][range[0]:range[1], :].copy()

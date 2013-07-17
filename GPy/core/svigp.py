@@ -4,7 +4,7 @@
 import numpy as np
 import pylab as pb
 from .. import kern
-from ..util.linalg import pdinv, mdot, tdot, dpotrs, dtrtrs, jitchol, backsub_both_sides
+from ..util.linalg import linalg, pdinv, mdot, tdot, dpotrs, dtrtrs, jitchol, backsub_both_sides
 from ..likelihoods import EP
 from gp_base import GPBase
 from model import Model
@@ -269,7 +269,6 @@ class SVIGP(GPBase):
     def optimize(self, iterations, print_interval=10, callback=lambda:None, callback_interval=5):
 
         param_step = 0.
-
         #Iterate!
         for i in range(iterations):
 
@@ -288,6 +287,7 @@ class SVIGP(GPBase):
             #compute the steps in all parameters
             vb_step = self.vb_steplength*natgrads[0]
             if (self.epochs>=1):#only move the parameters after the first epoch
+                # print "it {} ep {} par {}".format(self.iterations, self.epochs, param_step)
                 param_step = self.momentum*param_step + self.param_steplength*grads
             else:
                 param_step = 0.
@@ -295,8 +295,8 @@ class SVIGP(GPBase):
             self.set_vb_param(self.get_vb_param() + vb_step)
             #Note: don't recompute everything here, wait until the next iteration when we have a new batch
             self._set_params(self._untransform_params(self._get_params_transformed() + param_step), computations=False)
-
             #print messages if desired
+            
             if i and (not i%print_interval):
                 print i, np.mean(self._ll_trace[-print_interval:]) #, self.log_likelihood()
                 print np.round(np.mean(self._grad_trace[-print_interval:],0),3)

@@ -161,7 +161,7 @@ def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_iters=150, plot=
     # optimize
     if optimize:
         m.constrain_fixed('noise')
-        m.optimize('scg', messages=1, max_iters=100, gtol=.05)
+        m.optimize('scg', messages=1, max_iters=200, gtol=.05)
         m.constrain_positive('noise')
         m.optimize('scg', messages=1, max_iters=max_iters, gtol=.05)
 
@@ -277,7 +277,6 @@ def bgplvm_simulation(optimize='scg',
     from GPy import kern
     reload(mrd); reload(kern)
 
-
     Y = Ylist[0]
 
     k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2)) # + kern.bias(Q)
@@ -285,7 +284,6 @@ def bgplvm_simulation(optimize='scg',
 
     # m.constrain('variance|noise', logexp_clipped())
     m['noise'] = Y.var() / 100.
-
 
     if optimize:
         print "Optimizing model:"

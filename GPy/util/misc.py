@@ -86,7 +86,11 @@ def fast_array_equal(A, B):
 
     value = False
 
-    if A is not None and B is not None and A.shape == B.shape:
+    if (A == None) and (B == None):
+        return True
+    elif ((A == None) and (B != None)) or ((A != None) and (B == None)):
+        return False
+    elif A.shape == B.shape:
         if len(A.shape) == 2:
             N, D = A.shape
             value = weave.inline(code, support_code=support_code, libraries=['gomp'],
@@ -94,7 +98,6 @@ def fast_array_equal(A, B):
                                  type_converters=weave.converters.blitz,**weave_options)
         else:
             value = np.array_equal(A,B)
-
 
     return value
 

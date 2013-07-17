@@ -24,7 +24,7 @@ def BGPLVM(seed=default_seed):
     Y = np.random.multivariate_normal(np.zeros(N), K, Q).T
     lik = Gaussian(Y, normalize=True)
 
-    k = GPy.kern.rbf_inv(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
+    k = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
     # k = GPy.kern.rbf(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
     # k = GPy.kern.rbf(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)
 
@@ -145,7 +145,6 @@ def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_iters=150, plot=
 
     # create simple GP model
     kernel = GPy.kern.rbf_inv(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
-    kernel += GPy.kern.rbf_inv(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
     Y = data['X'][:N]
     Yn = Y - Y.mean(0)
     Yn /= Yn.std(0)

@@ -36,10 +36,10 @@ class GPLVM(GP):
         self.ensure_default_constraints()
 
     def initialise_latent(self, init, input_dim, Y):
-        Xr = np.random.randn(Y.shape[0], input_dim)
         if init == 'PCA':
-            Xr[:, :Y.shape[1]] = PCA(Y, input_dim)[0]
-        return Xr
+            return PCA(Y, input_dim)[0]
+        else:
+            return np.random.randn(Y.shape[0], input_dim)
 
     def getstate(self):
         return GP.getstate(self)

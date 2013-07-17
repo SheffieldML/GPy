@@ -84,7 +84,6 @@ class kern(Parameterized):
         xticklabels = []
         bars = []
         x0 = 0
-        xes = []
         for p in self.parts:
             c = Tango.nextMedium()
             if hasattr(p, 'ARD') and p.ARD:
@@ -102,7 +101,6 @@ class kern(Parameterized):
                 xticklabels.extend([r"$\mathrm{{{name}}}\ {x}$".format(name=p.name, x=i) for i in np.arange(len(ard_params))])
                 x0 += len(ard_params)
         x = np.arange(x0)
-        ax.set_xticks([])
         for bar in bars:
             for patch, num in zip(bar.patches, np.arange(len(bar.patches))):
                 height = patch.get_height()
@@ -117,6 +115,7 @@ class kern(Parameterized):
         # for xi, t in zip(x, xticklabels):
         #    ax.text(xi, maxi / 2, t, rotation=90, ha='center', va='center')
         # ax.set_xticklabels(xticklabels, rotation=17)
+        ax.set_xticks([])
         ax.set_xlim(-.5, x0 - .5)
         if title is '':
             ax.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,

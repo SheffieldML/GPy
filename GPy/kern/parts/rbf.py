@@ -165,9 +165,8 @@ class RBF(Kernpart):
 
     def dpsi1_dtheta(self, dL_dpsi1, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
-        denom_deriv = S[:, None, :] / (self.lengthscale ** 3 + self.lengthscale * S[:, None, :])
-        d_length = self._psi1[:, :, None] * (self.lengthscale * np.square(self._psi1_dist / (self.lengthscale2 + S[:, None, :])) + denom_deriv)
         target[0] += np.sum(dL_dpsi1 * self._psi1 / self.variance)
+        d_length = self._psi1[:,:,None] * ((self._psi1_dist_sq - 1.)/(self.lengthscale*self._psi1_denom) +1./self.lengthscale)
         dpsi1_dlength = d_length * dL_dpsi1[:, :, None]
         if not self.ARD:
             target[1] += dpsi1_dlength.sum()

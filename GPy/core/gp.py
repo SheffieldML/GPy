@@ -127,7 +127,7 @@ class GP(GPBase):
             debug_this # @UndefinedVariable
         return mu, var
 
-    def predict(self, Xnew, which_parts='all', full_cov=False):
+    def predict(self, Xnew, which_parts='all', full_cov=False, likelihood_args=dict()):
         """
         Predict the function(s) at the new point(s) Xnew.
         Arguments
@@ -152,6 +152,6 @@ class GP(GPBase):
         mu, var = self._raw_predict(Xnew, full_cov=full_cov, which_parts=which_parts)
 
         # now push through likelihood
-        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov)
+        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, **likelihood_args)
 
         return mean, var, _025pm, _975pm

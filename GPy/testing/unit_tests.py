@@ -23,7 +23,7 @@ class GradientTests(unittest.TestCase):
         self.X2D = np.random.uniform(-3., 3., (40, 2))
         self.Y2D = np.sin(self.X2D[:, 0:1]) * np.sin(self.X2D[:, 1:2]) + np.random.randn(40, 1) * 0.05
 
-    def check_model_with_white(self, kern, model_type='GPRegression', dimension=1):
+    def check_model_with_white(self, kern, model_type='GPRegression', dimension=1, uncertain_inputs=False):
         # Get the correct gradients
         if dimension == 1:
             X = self.X1D
@@ -36,7 +36,10 @@ class GradientTests(unittest.TestCase):
 
         noise = GPy.kern.white(dimension)
         kern = kern + noise
-        m = model_fit(X, Y, kernel=kern)
+        if uncertain_inputs:
+            m = model_fit(X, Y, kernel=kern, X_variance=np.random.rand(X.shape[0], X.shape[1]))
+        else:
+            m = model_fit(X, Y, kernel=kern)
         m.randomize()
         # contrain all parameters to be positive
         self.assertTrue(m.checkgrad())
@@ -140,6 +143,26 @@ class GradientTests(unittest.TestCase):
         ''' Testing the sparse GP regression with rbf and white kernel on 2d data '''
         rbf = GPy.kern.rbf(2)
         self.check_model_with_white(rbf, model_type='SparseGPRegression', dimension=2)
+
+    def test_SparseGPRegression_rbf_linear_white_kern_1D(self):
+        ''' Testing the sparse GP regression with rbf and white kernel on 2d data '''
+        rbflin = GPy.kern.rbf(1) + GPy.kern.linear(1)
+        self.check_model_with_white(rbflin, model_type='SparseGPRegression', dimension=1)
+
+    def test_SparseGPRegression_rbf_linear_white_kern_2D(self):
+        ''' Testing the sparse GP regression with rbf and white kernel on 2d data '''
+        rbflin = GPy.kern.rbf(2) + GPy.kern.linear(2)
+        self.check_model_with_white(rbflin, model_type='SparseGPRegression', dimension=2)
+
+    def test_SparseGPRegression_rbf_linear_white_kern_2D_uncertain_inputs(self):
+        ''' Testing the sparse GP regression with rbf, linear and white kernel on 2d data with uncertain inputs'''
+        rbflin = GPy.kern.rbf(2) + GPy.kern.linear(2)
+        self.check_model_with_white(rbflin, model_type='SparseGPRegression', dimension=2, uncertain_inputs=1)
+
+    def test_SparseGPRegression_rbf_linear_white_kern_1D_uncertain_inputs(self):
+        ''' Testing the sparse GP regression with rbf, linear and white kernel on 1d data with uncertain inputs'''
+        rbflin = GPy.kern.rbf(1) + GPy.kern.linear(1)
+        self.check_model_with_white(rbflin, model_type='SparseGPRegression', dimension=1, uncertain_inputs=1)
 
     def test_GPLVM_rbf_bias_white_kern_2D(self):
         """ Testing GPLVM with rbf + bias and white kernel """

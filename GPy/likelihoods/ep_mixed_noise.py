@@ -1,10 +1,14 @@
+# Copyright (c) 2013, Ricardo Andrade
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
+
 import numpy as np
 from scipy import stats
 from ..util.linalg import pdinv,mdot,jitchol,chol_inv,DSYR,tdot,dtrtrs
 from likelihood import likelihood
 
-class EP(likelihood):
-    def __init__(self,data,noise_model,epsilon=1e-3,power_ep=[1.,1.]):
+class EP_Mixed_Noise(likelihood):
+    def __init__(self,data_list,noise_model_list,epsilon=1e-3,power_ep=[1.,1.]):
         """
         Expectation Propagation
 
@@ -13,14 +17,20 @@ class EP(likelihood):
         epsilon : Convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
         noise_model : a likelihood function (see likelihood_functions.py)
         """
-        self.noise_model = noise_model
+        assert len(data_list) == len(noise_model_list)
+        self.noise_model_list = noise_model_list
+        n_list = [data.size for data in data_list]
+        n_models = len(data_list)
+        self.n_params = [noise_model._get_params().size for noise_model in noise_model_list]
+        self.index = np.vstack([np.repeat(i,n)[:,None] for i,n in zip(range(n_models),n_list)])
         self.epsilon = epsilon
         self.eta, self.delta = power_ep
-        self.data = data
+        self.data = np.vstack(data_list)
         self.N, self.output_dim = self.data.shape
         self.is_heteroscedastic = True
-        self.Nparams = 0
-        self._transf_data = self.noise_model._preprocess_values(data)
+        self.Nparams = 0#FIXME
+        self._transf_data = np.vstack([noise_model._preprocess_values(data) for noise_model,data in zip(noise_model_list,data_list)])
+        #TODO non-gaussian index
 
         #Initial values - Likelihood approximation parameters:
         #p(y|f) = t(f|tau_tilde,v_tilde)
@@ -49,26 +59,39 @@ class EP(likelihood):
         self.VVT_factor = self.V
         self.trYYT = 0.
 
-    def predictive_values(self,mu,var,full_cov):
+    def predictive_values(self,mu,var,full_cov,noise_model):
         if full_cov:
             raise NotImplementedError, "Cannot make correlated predictions with an EP likelihood"
-        return self.noise_model.predictive_values(mu,var)
+        #_mu = []
+        #_var = []
+        #_q1 = []
+        #_q2 = []
+        #for m,v,o in zip(mu,var,output.flatten()):
+        #    a,b,c,d = self.noise_model_list[int(o)].predictive_values(m,v)
+        #    _mu.append(a)
+        #    _var.append(b)
+        #    _q1.append(c)
+        #    _q2.append(d)
+        #return np.vstack(_mu),np.vstack(_var),np.vstack(_q1),np.vstack(_q2)
+        return self.noise_model_list[noise_model].predictive_values(mu,var)
 
     def _get_params(self):
-        #return np.zeros(0)
-        return self.noise_model._get_params()
+        return np.hstack([noise_model._get_params().flatten() for noise_model in self.noise_model_list])
 
     def _get_param_names(self):
-        #return []
-        return self.noise_model._get_param_names()
+        names = []
+        for noise_model in self.noise_model_list:
+           names += noise_model._get_param_names()
+        return names
 
     def _set_params(self,p):
-        #pass # TODO: the EP likelihood might want to take some parameters...
-        self.noise_model._set_params(p)
+        cs_params = np.cumsum([0]+self.n_params)
+        for i in range(len(self.n_params)):
+            self.noise_model_list[i]._set_params(p[cs_params[i]:cs_params[i+1]])
 
     def _gradients(self,partial):
-        #return np.zeros(0) # TODO: the EP likelihood might want to take some parameters...
-        return self.noise_model._gradients(partial)
+        #NOTE this is not tested
+        return np.hstack([noise_model._gradients(partial) for noise_model in self.noise_model_list])
 
     def _compute_GP_variables(self):
         #Variables to be called from GP
@@ -123,7 +146,7 @@ class EP(likelihood):
                 self.tau_[i] = 1./Sigma[i,i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = mu[i]/Sigma[i,i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model_list[self.index[i]].moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma[i,i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma[i,i])

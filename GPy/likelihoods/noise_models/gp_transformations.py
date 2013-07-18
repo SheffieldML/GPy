@@ -97,3 +97,15 @@ class Log_ex_1(GPTransformation):
     def d2transf_df2(self,f):
         aux = np.exp(f)/(1.+np.exp(f))
         return aux*(1.-aux)
+
+class Reciprocal(GPTransformation):
+    def transf(sefl,f):
+        return 1./f
+
+    def dtransf_df(self,f):
+        return -1./f**2
+
+    def d2transf_df2(self,f):
+        return 2./f**3
+
+

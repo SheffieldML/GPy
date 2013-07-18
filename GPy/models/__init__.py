@@ -11,3 +11,4 @@ from gplvm import GPLVM
 from warped_gp import WarpedGP
 from bayesian_gplvm import BayesianGPLVM
 from mrd import MRD
+from gp_multioutput import GPMultioutput

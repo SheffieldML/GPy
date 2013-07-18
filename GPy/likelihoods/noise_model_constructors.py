@@ -22,6 +22,19 @@ def binomial(gp_link=None):
     analytical_variance = False
     return noise_models.binomial_noise.Binomial(gp_link,analytical_mean,analytical_variance)
 
+def exponential(gp_link=None):
+    """
+    Construct a binomial likelihood
+
+    :param gp_link: a GPy gp_link function
+    """
+    if gp_link is None:
+        gp_link = noise_models.gp_transformations.Identity()
+
+    analytical_mean = False
+    analytical_variance = False
+    return noise_models.exponential_noise.Exponential(gp_link,analytical_mean,analytical_variance)
+
 def gaussian(gp_link=None,variance=1.):
     """
     Construct a gaussian likelihood

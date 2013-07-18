@@ -359,7 +359,7 @@ class NoiseDistribution(object):
         """
         return sp.optimize.fmin_ncg(self._nlog_joint_predictive_scaled,x0=(mu,self.gp_link.transf(mu)),fprime=self._gradient_nlog_joint_predictive,fhess=self._hessian_nlog_joint_predictive,args=(mu,sigma))
 
-    def predictive_values(self,mu,var,sample=True,sample_size=5000):
+    def predictive_values(self,mu,var):
         """
         Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction
         :param mu: mean of the latent variable

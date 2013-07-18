@@ -480,7 +480,7 @@ class Model(Parameterised):
         :type optimzer: string TODO: valid strings?
 
         """
-        assert isinstance(self.likelihood, likelihoods.EP), "pseudo_EM is only available for EP likelihoods"
+        assert isinstance(self.likelihood, likelihoods.EP) or isinstance(self.likelihood, likelihoods.EP_Mixed_Noise), "pseudo_EM is only available for EP likelihoods"
         ll_change = epsilon + 1.
         iteration = 0
         last_ll = -np.inf

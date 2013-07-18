@@ -20,7 +20,7 @@ class Gaussian(NoiseDistribution):
         super(Gaussian, self).__init__(gp_link,analytical_mean,analytical_variance)
 
     def _get_params(self):
-        return self.variance
+        return np.array([self.variance])
 
     def _get_param_names(self):
         return ['noise_model_variance']

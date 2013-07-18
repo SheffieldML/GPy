@@ -3,6 +3,7 @@ from .. import kern
 from ..util.plot import gpplot, Tango, x_frame1D, x_frame2D
 import pylab as pb
 from GPy.core.model import Model
+from GPy.likelihoods.ep_mixed_noise import EP_Mixed_Noise
 
 class GPBase(Model):
     """
@@ -91,7 +92,7 @@ class GPBase(Model):
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
-    def plot(self, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, samples=0, fignum=None, ax=None):
+    def plot(self, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, samples=0, fignum=None, ax=None, output=None):
         """
         TODO: Docstrings!
         
@@ -106,7 +107,7 @@ class GPBase(Model):
             fig = pb.figure(num=fignum)
             ax = fig.add_subplot(111)
 
-        if self.X.shape[1] == 1:
+        if self.X.shape[1] == 1 and not isinstance(self.likelihood,EP_Mixed_Noise):
 
             Xu = self.X * self._Xscale + self._Xoffset # NOTE self.X are the normalized values now
 
@@ -120,7 +121,7 @@ class GPBase(Model):
             ax.set_xlim(xmin, xmax)
             ax.set_ylim(ymin, ymax)
 
-        elif self.X.shape[1] == 2: # FIXME
+        elif self.X.shape[1] == 2 and not isinstance(self.likelihood,EP_Mixed_Noise): # FIXME
             resolution = resolution or 50
             Xnew, _, _, xmin, xmax = x_frame2D(self.X, plot_limits, resolution)
             x, y = np.linspace(xmin[0], xmax[0], resolution), np.linspace(xmin[1], xmax[1], resolution)
@@ -132,5 +133,27 @@ class GPBase(Model):
             ax.set_xlim(xmin[0], xmax[0])
             ax.set_ylim(xmin[1], xmax[1])
 
+        elif self.X.shape[1] == 2 and isinstance(self.likelihood,EP_Mixed_Noise):
+            Xu = self.X[self.X[:,-1]==output,:]
+            Xu = self.X * self._Xscale + self._Xoffset
+            Xu = self.X[self.X[:,-1]==output ,0:1]
+
+            Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
+            m, _, lower, upper = self.predict_single_output(Xnew, which_parts=which_parts,output=output)
+            for d in range(m.shape[1]):
+                gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax)
+                #ax.plot(Xu[which_data], self.likelihood.data[which_data, d], 'kx', mew=1.5)
+                ax.plot(Xu[which_data], self.likelihood.data[self.likelihood.index==output][:,None], 'kx', mew=1.5)
+            ymin, ymax = min(np.append(self.likelihood.data, lower)), max(np.append(self.likelihood.data, upper))
+            ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
+            ax.set_xlim(xmin, xmax)
+            ax.set_ylim(ymin, ymax)
+
+
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
+
+
+
+
+

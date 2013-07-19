@@ -24,7 +24,7 @@ def BGPLVM(seed=default_seed):
     Y = np.random.multivariate_normal(np.zeros(N), K, Q).T
     lik = Gaussian(Y, normalize=True)
 
-    k = GPy.kern.rbf_inv(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
+    k = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
     # k = GPy.kern.rbf(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
     # k = GPy.kern.rbf(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)
 
@@ -144,7 +144,7 @@ def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_iters=150, plot=
     data = GPy.util.datasets.oil()
 
     # create simple GP model
-    kernel = GPy.kern.rbf_inv(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
+    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
 
     Y = data['X'][:N]
     Yn = Y - Y.mean(0)
@@ -160,9 +160,9 @@ def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_iters=150, plot=
 
     # optimize
     if optimize:
-        m.constrain_fixed('noise')
-        m.optimize('scg', messages=1, max_iters=200, gtol=.05)
-        m.constrain_positive('noise')
+#         m.constrain_fixed('noise')
+#         m.optimize('scg', messages=1, max_iters=200, gtol=.05)
+#         m.constrain_positive('noise')
         m.optimize('scg', messages=1, max_iters=max_iters, gtol=.05)
 
     if plot:
@@ -377,10 +377,10 @@ def stick_bgplvm(model=None):
     data = GPy.util.datasets.stick()
     Q = 6
     kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
-    m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20,kernel=kernel)
+    m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20, kernel=kernel)
     # optimize
     m.ensure_default_constraints()
-    m.optimize(messages=1, max_iters=3000,xtol=1e-300,ftol=1e-300)
+    m.optimize(messages=1, max_iters=3000, xtol=1e-300, ftol=1e-300)
     m._set_params(m._get_params())
     plt.clf, (latent_axes, sense_axes) = plt.subplots(1, 2)
     plt.sca(latent_axes)

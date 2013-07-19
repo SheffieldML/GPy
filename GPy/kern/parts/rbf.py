@@ -221,9 +221,10 @@ class RBF(Kernpart):
     #---------------------------------------#
 
     def _K_computations(self, X, X2):
-        if not (fast_array_equal(X, self._X) and fast_array_equal(X2, self._X2) and fast_array_equal(self._params , self._get_params())):
+        params = self._get_params()
+        if not (fast_array_equal(X, self._X) and fast_array_equal(X2, self._X2) and fast_array_equal(self._params , params)):
             self._X = X.copy()
-            self._params = self._get_params().copy()
+            self._params = params.copy()
             if X2 is None:
                 self._X2 = None
                 X = X / self.lengthscale
@@ -244,7 +245,7 @@ class RBF(Kernpart):
             self._psi2_Zdist = 0.5 * (Z[:, None, :] - Z[None, :, :]) # M,M,Q
             self._psi2_Zdist_sq = np.square(self._psi2_Zdist / self.lengthscale) # M,M,Q
 
-        if not (fast_array_equal(Z, self._Z) and fast_array_equal(mu, self._mu) and fast_array_equal(S, self._S)):
+        if not fast_array_equal(Z, self._Z) or not fast_array_equal(mu, self._mu) or not fast_array_equal(S, self._S):
             # something's changed. recompute EVERYTHING
 
             # psi1

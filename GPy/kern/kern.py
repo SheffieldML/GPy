@@ -104,6 +104,8 @@ class kern(Parameterized):
         x = np.arange(x0)
         transOffset = offset_copy(ax.transData, fig=fig,
                                   x=0., y= -2., units='points')
+        transOffsetUp = offset_copy(ax.transData, fig=fig,
+                                  x=0., y=2., units='points')
         for bar in bars:
             for patch, num in zip(bar.patches, np.arange(len(bar.patches))):
                 height = patch.get_height()
@@ -111,10 +113,12 @@ class kern(Parameterized):
                 va = 'top'
                 c = 'w'
                 t = TextPath((0, 0), "${xi}$".format(xi=xi), rotation=0, usetex=True, ha='center')
+                transform = transOffset
                 if patch.get_extents().height <= t.get_extents().height + 2:
                     va = 'bottom'
                     c = 'k'
-                ax.text(xi, height, "${xi}$".format(xi=int(num)), color=c, rotation=0, ha='center', va=va, transform=transOffset)
+                    transform = transOffsetUp
+                ax.text(xi, height, "${xi}$".format(xi=int(num)), color=c, rotation=0, ha='center', va=va, transform=transform)
         # for xi, t in zip(x, xticklabels):
         #    ax.text(xi, maxi / 2, t, rotation=90, ha='center', va='center')
         # ax.set_xticklabels(xticklabels, rotation=17)

@@ -174,7 +174,7 @@ class SVIGP(GPBase):
                 psi2_beta = (self.psi2 * (self.likelihood.precision.flatten().reshape(self.batchsize, 1, 1))).sum(0)
             else:
                 psi2_beta = self.psi2.sum(0) * self.likelihood.precision
-            evals, evecs = linalg.eigh(psi2_beta)
+            evals, evecs = np.linalg.eigh(psi2_beta)
             clipped_evals = np.clip(evals, 0., 1e6) # TODO: make clipping configurable
             tmp = evecs * np.sqrt(clipped_evals)
         else:

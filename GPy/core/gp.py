@@ -184,3 +184,29 @@ class GP(GPBase):
         # now push through likelihood
         mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, noise_model = output)
         return mean, var, _025pm, _975pm
+
+    def _raw_predict_single_output(self, _Xnew, output=0, which_parts='all', full_cov=False,stop=False):
+        """
+        Internal helper function for making predictions, does not account
+        for normalization or likelihood
+        """
+        assert isinstance(self.likelihood,EP_Mixed_Noise)
+        index = np.ones_like(_Xnew)*output
+        _Xnew = np.hstack((_Xnew,index))
+
+        Kx = self.kern.K(_Xnew,self.X,which_parts=which_parts).T
+        #KiKx = np.dot(self.Ki, Kx)
+        KiKx, _ = dpotrs(self.L, np.asfortranarray(Kx), lower=1)
+        mu = np.dot(KiKx.T, self.likelihood.Y)
+        if full_cov:
+            Kxx = self.kern.K(_Xnew, which_parts=which_parts)
+            var = Kxx - np.dot(KiKx.T, Kx)
+        else:
+            Kxx = self.kern.Kdiag(_Xnew, which_parts=which_parts)
+            var = Kxx - np.sum(np.multiply(KiKx, Kx), 0)
+            var = var[:, None]
+        if stop:
+            debug_this # @UndefinedVariable
+        return mu, var
+
+

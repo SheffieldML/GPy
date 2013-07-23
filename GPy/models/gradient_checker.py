@@ -48,8 +48,6 @@ class GradientChecker(Model):
                 X = numpy.random.rand(N, Q)
                 grad = GradientChecker(numpy.sin,numpy.cos,X,'x')
                 grad.checkgrad(verbose=1)
-                grad.randomize()
-                grad.checkgrad(verbose=1)      
     
             Using GPy:
             

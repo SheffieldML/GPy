@@ -40,24 +40,28 @@ class GradientChecker(Model):
         
         Examples:
         ---------
+            from GPy.models import GradientChecker
+            N, M, Q = 10, 5, 3
         
             Sinusoid:
             
                 X = numpy.random.rand(N, Q)
-                f = lambda x: numpy.sin(x)
-                df = lambda x: numpy.cos(x)
-                grad = gc.GradientChecker(f,df,X,'x')
+                grad = GradientChecker(numpy.sin,numpy.cos,X,'x')
+                grad.checkgrad(verbose=1)
+                grad.randomize()
+                grad.checkgrad(verbose=1)      
     
             Using GPy:
             
-                N, M, Q = 10, 5, 3
                 X, Z = numpy.random.randn(N,Q), numpy.random.randn(M,Q)
                 kern = GPy.kern.linear(Q, ARD=True) + GPy.kern.rbf(Q, ARD=True)
-                import GPy.models.gradient_checker as gc
-                grad = gc.GradientChecker(kern.K, 
-                                          lambda x: 2*kern.dK_dX(numpy.ones((1,1)), x),
-                                          x0 = X.copy(),
-                                          names='X')        
+                grad = GradientChecker(kern.K, 
+                                       lambda x: 2*kern.dK_dX(numpy.ones((1,1)), x),
+                                       x0 = X.copy(),
+                                       names='X')  
+                grad.checkgrad(verbose=1)
+                grad.randomize()
+                grad.checkgrad(verbose=1)      
         """
         Model.__init__(self)
         if isinstance(x0, (list, tuple)) and names is None:

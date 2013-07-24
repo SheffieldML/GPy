@@ -159,20 +159,21 @@ class RBFInv(RBF):
 
     def dpsi1_dtheta(self, dL_dpsi1, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
-        tmp = 1 + S[:,None,:]*self.inv_lengthscale2
-        d_inv_length_old = -self._psi1[:,:,None] * ((self._psi1_dist_sq - 1.)/(self.lengthscale*self._psi1_denom) + self.inv_lengthscale)/self.inv_lengthscale2
-        d_inv_length = -self._psi1[:,:,None] * ((self._psi1_dist_sq - 1.)/self._psi1_denom + self.lengthscale)
+        tmp = 1 + S[:, None, :] * self.inv_lengthscale2
+        # d_inv_length_old = -self._psi1[:, :, None] * ((self._psi1_dist_sq - 1.) / (self.lengthscale * self._psi1_denom) + self.inv_lengthscale) / self.inv_lengthscale2
+        d_length = -(self._psi1[:, :, None] * ((np.square(self._psi1_dist) * self.inv_lengthscale) / (tmp ** 2) + (S[:, None, :] * self.inv_lengthscale) / (tmp)))
+        # d_inv_length = -self._psi1[:, :, None] * ((self._psi1_dist_sq - 1.) / self._psi1_denom + self.lengthscale)
         target[0] += np.sum(dL_dpsi1 * self._psi1 / self.variance)
-        dpsi1_dlength = d_inv_length * dL_dpsi1[:, :, None]
+        dpsi1_dlength = d_length * dL_dpsi1[:, :, None]
         if not self.ARD:
-            target[1] += dpsi1_dlength.sum()#*(-self.lengthscale2)
+            target[1] += dpsi1_dlength.sum() # *(-self.lengthscale2)
         else:
-            target[1:] += dpsi1_dlength.sum(0).sum(0)#*(-self.lengthscale2)
-        #target[1:] = target[1:]*(-self.lengthscale2)
+            target[1:] += dpsi1_dlength.sum(0).sum(0) # *(-self.lengthscale2)
+        # target[1:] = target[1:]*(-self.lengthscale2)
 
     def dpsi1_dZ(self, dL_dpsi1, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
-        dpsi1_dZ = -self._psi1[:, :, None] * ((self.inv_lengthscale2*self._psi1_dist)/self._psi1_denom)
+        dpsi1_dZ = -self._psi1[:, :, None] * ((self.inv_lengthscale2 * self._psi1_dist) / self._psi1_denom)
         target += np.sum(dL_dpsi1[:, :, None] * dpsi1_dZ, 0)
 
     def dpsi1_dmuS(self, dL_dpsi1, Z, mu, S, target_mu, target_S):
@@ -185,15 +186,15 @@ class RBFInv(RBF):
         """Shape N,num_inducing,num_inducing,Ntheta"""
         self._psi_computations(Z, mu, S)
         d_var = 2.*self._psi2 / self.variance
-        #d_length = 2.*self._psi2[:, :, :, None] * (self._psi2_Zdist_sq * self._psi2_denom + self._psi2_mudist_sq + S[:, None, None, :] / self.lengthscale2) / (self.lengthscale * self._psi2_denom)
+        # d_length = 2.*self._psi2[:, :, :, None] * (self._psi2_Zdist_sq * self._psi2_denom + self._psi2_mudist_sq + S[:, None, None, :] / self.lengthscale2) / (self.lengthscale * self._psi2_denom)
         d_length = -2.*self._psi2[:, :, :, None] * (self._psi2_Zdist_sq * self._psi2_denom + self._psi2_mudist_sq + S[:, None, None, :] * self.inv_lengthscale2) / (self.inv_lengthscale * self._psi2_denom)
         target[0] += np.sum(dL_dpsi2 * d_var)
         dpsi2_dlength = d_length * dL_dpsi2[:, :, :, None]
         if not self.ARD:
-            target[1] += dpsi2_dlength.sum()#*(-self.lengthscale2)
+            target[1] += dpsi2_dlength.sum() # *(-self.lengthscale2)
         else:
-            target[1:] += dpsi2_dlength.sum(0).sum(0).sum(0)#*(-self.lengthscale2)
-        #target[1:] = target[1:]*(-self.lengthscale2)
+            target[1:] += dpsi2_dlength.sum(0).sum(0).sum(0) # *(-self.lengthscale2)
+        # target[1:] = target[1:]*(-self.lengthscale2)
 
     def dpsi2_dZ(self, dL_dpsi2, Z, mu, S, target):
         self._psi_computations(Z, mu, S)

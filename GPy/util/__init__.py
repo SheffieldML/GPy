@@ -7,10 +7,10 @@ import misc
 import plot
 import squashers
 import Tango
-import misc
 import warping_functions
 import datasets
 import mocap
 import visualize
 import decorators
 import classification
+import latent_space_visualizations

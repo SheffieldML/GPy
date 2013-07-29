@@ -85,10 +85,60 @@ def v_fail_test():
     import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
     print(m)
 
+def student_t_obj_plane():
+    plt.close('all')
+    X = np.linspace(0, 1, 50)[:, None]
+    real_std = 0.002
+    noise = np.random.randn(*X.shape)*real_std
+    Y = np.sin(X*2*np.pi) + noise
+    deg_free = 1000
+
+    kernelgp = GPy.kern.rbf(X.shape[1]) # + GPy.kern.white(X.shape[1])
+    mgp = GPy.models.GP_regression(X, Y, kernel=kernelgp)
+    mgp.ensure_default_constraints()
+    mgp['noise'] = real_std**2
+    print "Gaussian"
+    print mgp
+
+    kernelst = kernelgp.copy()
+    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=(real_std**2))
+    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
+    m = GPy.models.GP(X, stu_t_likelihood, kernelst)
+    m.ensure_default_constraints()
+    m.constrain_fixed('t_no', real_std**2)
+    vs = 10
+    ls = 10
+    objs_t = np.zeros((vs, ls))
+    objs_g = np.zeros((vs, ls))
+    rbf_vs = np.linspace(1e-6, 8, vs)
+    rbf_ls = np.linspace(1e-2, 8, ls)
+    for v_id, rbf_v in enumerate(rbf_vs):
+        for l_id, rbf_l in enumerate(rbf_ls):
+            m['rbf_v'] = rbf_v
+            m['rbf_l'] = rbf_l
+            mgp['rbf_v'] = rbf_v
+            mgp['rbf_l'] = rbf_l
+            objs_t[v_id, l_id] = m.log_likelihood()
+            objs_g[v_id, l_id] = mgp.log_likelihood()
+    plt.figure()
+    plt.subplot(211)
+    plt.title('Student t')
+    plt.imshow(objs_t, interpolation='none')
+    plt.xlabel('variance')
+    plt.ylabel('lengthscale')
+    plt.subplot(212)
+    plt.title('Gaussian')
+    plt.imshow(objs_g, interpolation='none')
+    plt.xlabel('variance')
+    plt.ylabel('lengthscale')
+    plt.show()
+    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+    return objs_t
+
 def student_t_f_check():
     plt.close('all')
     X = np.linspace(0, 1, 50)[:, None]
-    real_std = 0.001
+    real_std = 0.2
     noise = np.random.randn(*X.shape)*real_std
     Y = np.sin(X*2*np.pi) + noise
     deg_free = 1000
@@ -98,17 +148,26 @@ def student_t_f_check():
     mgp.ensure_default_constraints()
     mgp.randomize()
     mgp.optimize()
+    print "Gaussian"
     print mgp
     import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
     kernelst = kernelgp.copy()
-    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=1e-5)
+    #kernelst += GPy.kern.bias(X.shape[1])
+    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=0.05)
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
     m = GPy.models.GP(X, stu_t_likelihood, kernelst)
-    m['rbf_v'] = mgp._get_params()[0]
-    m['rbf_l'] = mgp._get_params()[1] + 1
+    #m['rbf_v'] = mgp._get_params()[0]
+    #m['rbf_l'] = mgp._get_params()[1] + 1
     m.ensure_default_constraints()
+    #m.constrain_fixed('rbf_v', mgp._get_params()[0])
+    #m.constrain_fixed('rbf_l', mgp._get_params()[1])
+    #m.constrain_bounded('t_no', 2*real_std**2, 1e3)
+    #m.constrain_positive('bias')
     m.constrain_positive('t_no')
+    m.randomize()
+    m['t_no'] = 0.3
+    m.likelihood.X = X
     print m
     plt.figure()
     plt.subplot(511)
@@ -143,7 +202,8 @@ def student_t_fix_optimise_check():
     Y = np.sin(X*2*np.pi) + noise
     X_full = X
     Y_full = np.sin(X_full)
-    #Y = Y/Y.max()
+    Y = Y/Y.max()
+    Y_full = Y_full/Y_full.max()
     deg_free = 1000
 
     #GP
@@ -219,7 +279,7 @@ def student_t_fix_optimise_check():
     plt.subplot(121)
     mrbf.plot()
     plt.title('Student t fixed noise')
-    #mrbf.optimize()
+    mrbf.optimize()
     print "After optimize"
     print mrbf
     plt.subplot(122)

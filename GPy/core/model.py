@@ -244,6 +244,12 @@ class model(parameterised):
         LL_gradients = self._transform_gradients(self._log_likelihood_gradients())
         prior_gradients = self._transform_gradients(self._log_prior_gradients())
         obj_grads = -LL_gradients - prior_gradients
+        print self
+        print self._get_params()
+        print -obj_grads
+        self.plot()
+        if isinstance(self.likelihood, likelihoods.Laplace):
+            import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
         return obj_f, obj_grads
 
     def optimize(self, optimizer=None, start=None, **kwargs):

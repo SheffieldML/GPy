@@ -156,17 +156,23 @@ class Laplace(likelihood):
         Y_tilde = Wi*self.Ki_f + self.f_hat
 
         self.Wi_K_i = self.W_12*self.Bi*self.W_12.T #same as rasms R
+        #self.Wi_K_i[self.Wi_K_i< 1e-6] = 1e-6
+
         self.ln_det_K_Wi__Bi = self.ln_I_KW_det + pddet(self.Sigma_tilde + self.K)
         self.lik = self.likelihood_function.link_function(self.data, self.f_hat, extra_data=self.extra_data)
 
         self.y_Wi_Ki_i_y = mdot(Y_tilde.T, self.Wi_K_i, Y_tilde)
-        Z_tilde = (#+ self.NORMAL_CONST
+        self.aA = 0.5*self.ln_det_K_Wi__Bi
+        self.bB = - 0.5*self.f_Ki_f
+        self.cC = 0.5*self.y_Wi_Ki_i_y
+        Z_tilde = (+ 100*self.NORMAL_CONST
                    + self.lik
                    + 0.5*self.ln_det_K_Wi__Bi
                    - 0.5*self.f_Ki_f
                    + 0.5*self.y_Wi_Ki_i_y
                   )
-        #print "Ztilde: {}".format(Z_tilde)
+        print "Ztilde: {} lik: {} a: {} b: {} c: {}".format(Z_tilde, self.lik, self.aA, self.bB, self.cC)
+        print self.likelihood_function._get_params()
 
         #Convert to float as its (1, 1) and Z must be a scalar
         self.Z = np.float64(Z_tilde)
@@ -198,7 +204,7 @@ class Laplace(likelihood):
         self.W = -self.likelihood_function.d2lik_d2f(self.data, self.f_hat, extra_data=self.extra_data)
 
         if not self.likelihood_function.log_concave:
-            self.W[self.W < 0] = 1e-10  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+            self.W[self.W < 0] = 1e-6  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                        #If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                        #To cause the posterior to become less certain than the prior and likelihood,
                                        #This is a property only held by non-log-concave likelihoods
@@ -280,7 +286,7 @@ class Laplace(likelihood):
         f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess, disp=False)
         return f_hat[:, None]
 
-    def rasm_mode(self, K, MAX_ITER=40, MAX_RESTART=10):
+    def rasm_mode(self, K, MAX_ITER=100, MAX_RESTART=10):
         """
         Rasmussens numerically stable mode finding
         For nomenclature see Rasmussen & Williams 2006
@@ -290,15 +296,19 @@ class Laplace(likelihood):
         :MAX_RESTART: Maximum number of restarts (reducing step_size) before forcing finish of optimisation
         :returns: f_mode
         """
-        old_a = np.zeros((self.N, 1))
-        #old_a = None
-        #if self.old_a is None:
-            #old_a = np.zeros((self.N, 1))
-        #else:
-            #old_a = self.old_a
+        self.old_before_s = self.likelihood_function._get_params()
+        print "before: ", self.old_before_s
+        #if self.old_before_s < 1e-5:
+            #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
-        f = np.dot(self.K, old_a)
-        self.f = f
+        #old_a = np.zeros((self.N, 1))
+        if self.old_a is None:
+            old_a = np.zeros((self.N, 1))
+            f = np.dot(K, old_a)
+        else:
+            old_a = self.old_a.copy()
+            f = self.f_hat.copy()
+
         new_obj = -np.inf
         old_obj = np.inf
 
@@ -306,18 +316,20 @@ class Laplace(likelihood):
             return -0.5*np.dot(a.T, f) + self.likelihood_function.link_function(self.data, f, extra_data=self.extra_data)
 
         difference = np.inf
-        epsilon = 1e-10
+        epsilon = 1e-4
         step_size = 1
         rs = 0
         i = 0
-        while difference > epsilon and i < MAX_ITER and rs < MAX_RESTART:
+
+        while difference > epsilon and i < MAX_ITER:# and rs < MAX_RESTART:
             W = -self.likelihood_function.d2lik_d2f(self.data, f, extra_data=self.extra_data)
+            #W = np.maximum(W, 0)
             if not self.likelihood_function.log_concave:
-                W[W < 0] = 1e-10     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+                W[W < 0] = 1e-6     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                     # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                     # To cause the posterior to become less certain than the prior and likelihood,
                                     # This is a property only held by non-log-concave likelihoods
-            B, L, W_12 = self._compute_B_statistics(K, W)
+            B, L, W_12 = self._compute_B_statistics(K, W.copy())
 
             W_f = W*f
             grad = self.likelihood_function.dlik_df(self.data, f, extra_data=self.extra_data)
@@ -328,54 +340,105 @@ class Laplace(likelihood):
             full_step_a = b - W_12*solve_L
             da = full_step_a - old_a
 
-            f_old = f.copy()
-
-            f_old = self.f.copy()
-            def inner_obj(step_size, old_a, da, K):
-                a = old_a + step_size*da
-                f = np.dot(K, a)
-                self.a = a # This is nasty, need to set something within an optimization though
-                self.f = f
-                return -obj(a, f)
-
-            from functools import partial
-            i_o = partial(inner_obj, old_a=old_a, da=da, K=self.K)
-            new_obj = sp.optimize.brent(i_o, tol=1e-6, maxiter=10)
-
-            #update_passed = False
-            #while not update_passed:
+            #f_old = f.copy()
+            #def inner_obj(step_size, old_a, da, K):
                 #a = old_a + step_size*da
                 #f = np.dot(K, a)
+                #self.a = a.copy() # This is nasty, need to set something within an optimization though
+                #self.f = f.copy()
+                #return -obj(a, f)
 
-                #old_obj = new_obj
-                #new_obj = obj(a, f)
-                #difference = new_obj - old_obj
-                #print "difference: ",difference
-                #if difference < 0:
-                    ##print grad
-                    ##print "Objective function rose", np.float(difference)
-                    ##If the objective function isn't rising, restart optimization
-                    #step_size *= 0.8
-                    ##print "Reducing step-size to {ss:.3} and restarting optimization".format(ss=step_size)
-                    ##objective function isn't increasing, try reducing step size
-                    ##f = f_old #it's actually faster not to go back to old location and just zigzag across the mode
-                    ##old_obj = tmp_old_obj
-                    #old_obj = new_obj
-                    #rs += 1
-                #else:
-                    #update_passed = True
+            #from functools import partial
+            #i_o = partial(inner_obj, old_a=old_a, da=da, K=K)
+            ##new_obj = sp.optimize.brent(i_o, tol=1e-4, maxiter=20)
+            #new_obj = sp.optimize.minimize_scalar(i_o, method='brent', tol=1e-4, options={'maxiter':20, 'disp':True}).fun
+            #f = self.f.copy()
+            #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
-            f = self.f
-            difference = new_obj - old_obj
-            difference = np.abs(np.sum(f - f_old)) #+ abs(difference)
-            old_a = self.a #a
+            f_old = f.copy()
+            update_passed = False
+            while not update_passed:
+                a = old_a + step_size*da
+                f = np.dot(K, a)
+
+                old_obj = new_obj
+                new_obj = obj(a, f)
+                difference = new_obj - old_obj
+                print "difference: ",difference
+                if difference < 0:
+                    #print "Objective function rose", np.float(difference)
+                    #If the objective function isn't rising, restart optimization
+                    step_size *= 0.8
+                    #print "Reducing step-size to {ss:.3} and restarting optimization".format(ss=step_size)
+                    #objective function isn't increasing, try reducing step size
+                    f = f_old.copy() #it's actually faster not to go back to old location and just zigzag across the mode
+                    old_obj = new_obj
+                    rs += 1
+                else:
+                    update_passed = True
+
+            #difference = abs(new_obj - old_obj)
+            #old_obj = new_obj.copy()
+            difference = np.abs(np.sum(f - f_old))
+            #old_a = self.a.copy() #a
+            old_a = a.copy()
             i += 1
+            #print "a max: {} a min: {} a var: {}".format(np.max(self.a), np.min(self.a), np.var(self.a))
 
-        self.old_a = old_a
+        self.old_a = old_a.copy()
         #print "Positive difference obj: ", np.float(difference)
         #print "Iterations: {}, Step size reductions: {}, Final_difference: {}, step_size: {}".format(i, rs, difference, step_size)
         print "Iterations: {}, Final_difference: {}".format(i, difference)
-        #self.a = a
+        if difference > 1e-4:
+            print "FAIL FAIL FAIL FAIL FAIL FAIL"
+            import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+            if hasattr(self, 'X'):
+                import pylab as pb
+                pb.figure()
+                pb.subplot(311)
+                pb.title('old f_hat')
+                pb.plot(self.X, self.f_hat)
+                pb.subplot(312)
+                pb.title('old ff')
+                pb.plot(self.X, self.old_ff)
+                pb.subplot(313)
+                pb.title('new f_hat')
+                pb.plot(self.X, f)
+
+                pb.figure()
+                pb.subplot(121)
+                pb.title('old K')
+                pb.imshow(np.diagflat(self.old_K), interpolation='none')
+                pb.colorbar()
+                pb.subplot(122)
+                pb.title('new K')
+                pb.imshow(np.diagflat(K), interpolation='none')
+                pb.colorbar()
+
+                pb.figure()
+                pb.subplot(121)
+                pb.title('old W')
+                pb.imshow(np.diagflat(self.old_W), interpolation='none')
+                pb.colorbar()
+                pb.subplot(122)
+                pb.title('new W')
+                pb.imshow(np.diagflat(W), interpolation='none')
+                pb.colorbar()
+
+                import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+                pb.close('all')
+
+        #FIXME: DELETE THESE
+        self.old_W = W.copy()
+        self.old_grad = grad.copy()
+        self.old_B = B.copy()
+        self.old_W_12 = W_12.copy()
+        self.old_ff = f.copy()
+        self.old_K = self.K.copy()
+        self.old_s = self.likelihood_function._get_params()
+        print "after: ", self.old_s
+        #print "FINAL a max: {} a min: {} a var: {}".format(np.max(self.a), np.min(self.a), np.var(self.a))
+        self.a = a
         #self.B, self.B_chol, self.W_12 = B, L, W_12
         #self.Bi, _, _, B_det = pdinv(self.B)
         return f

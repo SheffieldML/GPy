@@ -299,6 +299,8 @@ class MRD(Model):
             else:
                 raise ValueError("Need one axes per latent dimension input_dim")
             plotf(i, g, ax)
+            if sharey_ax is not None:
+                pylab.setp(ax.get_yticklabels(), visible=False)
         pylab.draw()
         if axes is None:
             fig.tight_layout()

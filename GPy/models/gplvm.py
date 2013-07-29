@@ -38,7 +38,8 @@ class GPLVM(GP):
     def initialise_latent(self, init, input_dim, Y):
         Xr = np.random.randn(Y.shape[0], input_dim)
         if init == 'PCA':
-            Xr[:, :Y.shape[1]] = PCA(Y, input_dim)[0]
+            PC = PCA(Y, input_dim)[0]
+            Xr[:PC.shape[0], :PC.shape[1]] = PC
         return Xr
 
     def getstate(self):

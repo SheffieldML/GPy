@@ -108,12 +108,12 @@ def fast_array_equal(A, B):
     elif ((A == None) and (B != None)) or ((A != None) and (B == None)):
         return False
     elif A.shape == B.shape:
-        if len(A.shape) == 2:
+        if A.ndim == 2:
             N, D = A.shape
             value = weave.inline(code2, support_code=support_code, libraries=['gomp'],
                                  arg_names=['A', 'B', 'N', 'D'],
                                  type_converters=weave.converters.blitz,**weave_options)
-        elif len(A.shape) == 3:
+        elif A.ndim == 3:
             N, D, Q = A.shape
             value = weave.inline(code3, support_code=support_code, libraries=['gomp'],
                                  arg_names=['A', 'B', 'N', 'D', 'Q'],

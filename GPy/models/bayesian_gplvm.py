@@ -10,6 +10,8 @@ from matplotlib.colors import colorConverter
 from GPy.inference.optimization import SCG
 from GPy.util import plot_latent
 from GPy.models.gplvm import GPLVM
+from GPy.util.plot_latent import most_significant_input_dimensions
+from matplotlib import pyplot
 
 class BayesianGPLVM(SparseGP, GPLVM):
     """
@@ -148,6 +150,84 @@ class BayesianGPLVM(SparseGP, GPLVM):
 
         return means, covars
 
+    def dmu_dX(self, Xnew):
+        """
+        Calculate the gradient of the prediction at Xnew w.r.t Xnew.
+        """
+        dmu_dX = np.zeros_like(Xnew)
+        for i in range(self.Z.shape[0]):
+            dmu_dX += self.kern.dK_dX(self.Cpsi1Vf[i:i + 1, :], Xnew, self.Z[i:i + 1, :])
+        return dmu_dX
+
+    def dmu_dXnew(self, Xnew):
+        """
+        Individual gradient of prediction at Xnew w.r.t. each sample in Xnew
+        """
+        dK_dX = np.zeros((Xnew.shape[0], self.num_inducing))
+        ones = np.ones((1, 1))
+        for i in range(self.Z.shape[0]):
+            dK_dX[:, i] = self.kern.dK_dX(ones, Xnew, self.Z[i:i + 1, :]).sum(-1)
+        return np.dot(dK_dX, self.Cpsi1Vf)
+
+    def plot_steepest_gradient_map(self, fignum=None, ax=None, which_indices=None, labels=None, data_labels=None, data_marker='o', data_s=40, resolution=20, aspect='auto', updates=False, ** kwargs):
+        input_1, input_2 = significant_dims = most_significant_input_dimensions(self, which_indices)
+
+        X = np.zeros((resolution ** 2, self.input_dim))
+        indices = np.r_[:X.shape[0]]
+        if labels is None:
+            labels = range(self.input_dim)
+
+        def plot_function(x):
+            X[:, significant_dims] = x
+            dmu_dX = self.dmu_dXnew(X)
+            argmax = np.argmax(dmu_dX, 1)
+            return dmu_dX[indices, argmax], np.array(labels)[argmax]
+
+        if ax is None:
+            fig = pyplot.figure(num=fignum)
+            ax = fig.add_subplot(111)
+
+        if data_labels is None:
+            data_labels = np.ones(self.num_data)
+        ulabels = []
+        for lab in data_labels:
+            if not lab in ulabels:
+                ulabels.append(lab)
+        marker = itertools.cycle(list(data_marker))
+        from GPy.util import Tango
+        for i, ul in enumerate(ulabels):
+            if type(ul) is np.string_:
+                this_label = ul
+            elif type(ul) is np.int64:
+                this_label = 'class %i' % ul
+            else:
+                this_label = 'class %i' % i
+            m = marker.next()
+            index = np.nonzero(data_labels == ul)[0]
+            x = self.X[index, input_1]
+            y = self.X[index, input_2]
+            ax.scatter(x, y, marker=m, s=data_s, color=Tango.nextMedium(), label=this_label)
+
+        ax.set_xlabel('latent dimension %i' % input_1)
+        ax.set_ylabel('latent dimension %i' % input_2)
+
+        from matplotlib.cm import get_cmap
+        from GPy.util.latent_space_visualizations.controllers.imshow_controller import ImAnnotateController
+        controller = ImAnnotateController(ax,
+                                      plot_function,
+                                      tuple(self.X.min(0)[:, significant_dims]) + tuple(self.X.max(0)[:, significant_dims]),
+                                      resolution=resolution,
+                                      aspect=aspect,
+                                      cmap=get_cmap('jet'),
+                                      **kwargs)
+        ax.legend()
+        ax.figure.tight_layout()
+        if updates:
+            pyplot.show()
+            clear = raw_input('Enter to continue')
+            if clear.lower() in 'yes' or clear == '':
+                controller.deactivate()
+        return controller.view
 
     def plot_X_1d(self, fignum=None, ax=None, colors=None):
         """

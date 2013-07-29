@@ -12,19 +12,20 @@ from GPy.likelihoods.gaussian import Gaussian
 default_seed = np.random.seed(123344)
 
 def BGPLVM(seed=default_seed):
-    N = 10
-    num_inducing = 3
-    Q = 5
-    D = 10
+    N = 5
+    num_inducing = 4
+    Q = 3
+    D = 2
     # generate GPLVM-like data
     X = np.random.rand(N, Q)
     lengthscales = np.random.rand(Q)
-    k = GPy.kern.rbf(Q, .5, lengthscales, ARD=True) + GPy.kern.white(Q, 0.01)
+    k = (GPy.kern.rbf(Q, .5, lengthscales, ARD=True)
+         + GPy.kern.white(Q, 0.01))
     K = k.K(X)
-    Y = np.random.multivariate_normal(np.zeros(N), K, Q).T
+    Y = np.random.multivariate_normal(np.zeros(N), K, D).T
     lik = Gaussian(Y, normalize=True)
 
-    k = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
+    k = GPy.kern.rbf_inv(Q, .5, np.ones(Q) * 2., ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
     # k = GPy.kern.rbf(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
     # k = GPy.kern.rbf(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)
 
@@ -298,17 +299,19 @@ def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
     D1, D2, D3, N, num_inducing, Q = 150, 200, 400, 500, 3, 7
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
 
+    likelihood_list = [Gaussian(x, normalize=True) for x in Ylist]
+
     from GPy.models import mrd
     from GPy import kern
 
     reload(mrd); reload(kern)
 
     k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
-    m = mrd.MRD(Ylist, input_dim=Q, num_inducing=num_inducing, kernels=k, initx="", initz='permute', **kw)
+    m = mrd.MRD(likelihood_list, input_dim=Q, num_inducing=num_inducing, kernels=k, initx="", initz='permute', **kw)
     m.ensure_default_constraints()
 
-    for i, Y in enumerate(Ylist):
-        m['{}_noise'.format(i)] = Y.var() / 100.
+    for i, bgplvm in enumerate(m.bgplvms):
+        m['{}_noise'.format(i)] = bgplvm.likelihood.Y.var() / 500.
 
 
     # DEBUG

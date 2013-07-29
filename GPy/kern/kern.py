@@ -79,6 +79,8 @@ class kern(Parameterized):
         if ax is None:
             fig = pb.figure(fignum)
             ax = fig.add_subplot(111)
+        else:
+            fig = ax.figure
         from GPy.util import Tango
         from matplotlib.textpath import TextPath
         Tango.reset()
@@ -124,15 +126,16 @@ class kern(Parameterized):
         # ax.set_xticklabels(xticklabels, rotation=17)
         ax.set_xticks([])
         ax.set_xlim(-.5, x0 - .5)
-        if title is '':
-            mode = 'expand'
-            if len(bars) > 1:
+        if legend:
+            if title is '':
                 mode = 'expand'
-            ax.legend(bbox_to_anchor=(0., 1.02, 1., 1.02), loc=3,
-                      ncol=len(bars), mode=mode, borderaxespad=0.)
-            fig.tight_layout(rect=(0, 0, 1, .9))
-        else:
-            ax.legend()
+                if len(bars) > 1:
+                    mode = 'expand'
+                ax.legend(bbox_to_anchor=(0., 1.02, 1., 1.02), loc=3,
+                          ncol=len(bars), mode=mode, borderaxespad=0.)
+                fig.tight_layout(rect=(0, 0, 1, .9))
+            else:
+                ax.legend()
         return ax
 
     def _transform_gradients(self, g):

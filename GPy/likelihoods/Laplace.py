@@ -165,7 +165,7 @@ class Laplace(likelihood):
         self.aA = 0.5*self.ln_det_K_Wi__Bi
         self.bB = - 0.5*self.f_Ki_f
         self.cC = 0.5*self.y_Wi_Ki_i_y
-        Z_tilde = (+ 100*self.NORMAL_CONST
+        Z_tilde = (#+ 100*self.NORMAL_CONST
                    + self.lik
                    + 0.5*self.ln_det_K_Wi__Bi
                    - 0.5*self.f_Ki_f

@@ -132,9 +132,9 @@ class GP(model):
         model for a new variable Y* = v_tilde/tau_tilde, with a covariance
         matrix K* = K + diag(1./tau_tilde) plus a normalization term.
         """
-        if isinstance(self.likelihood, Laplace):
-            self.likelihood.fit_full(self.kern.K(self.X))
-            self.likelihood._set_params(self.likelihood._get_params())
+        #if isinstance(self.likelihood, Laplace):
+            #self.likelihood.fit_full(self.kern.K(self.X))
+            #self.likelihood._set_params(self.likelihood._get_params())
         l = -0.5 * self.D * self.K_logdet + self._model_fit_term() + self.likelihood.Z
         print "K_ldet: {} mft: {} Z: {}".format(self.K_logdet, self._model_fit_term(), self.likelihood.Z)
         return l
@@ -148,8 +148,8 @@ class GP(model):
         dL_dthetaK = self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X)
         print "dL_dthetaK should be: ", dL_dthetaK
         if isinstance(self.likelihood, Laplace):
-            self.likelihood.fit_full(self.kern.K(self.X))
-            self.likelihood._set_params(self.likelihood._get_params())
+            #self.likelihood.fit_full(self.kern.K(self.X))
+            #self.likelihood._set_params(self.likelihood._get_params())
             dK_dthetaK = self.kern.dK_dtheta
             dL_dthetaK = self.likelihood._Kgradients(dK_dthetaK, self.X.copy())
             dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))

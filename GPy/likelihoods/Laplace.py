@@ -89,7 +89,8 @@ class Laplace(likelihood):
         expl = 0.5*expl_a + 0.5*expl_b # Might need to be -?
         dL_dthetaK_exp = dK_dthetaK(expl, X)
         dL_dthetaK_imp = dK_dthetaK(impl, X)
-        print "dL_dthetaK_exp: {}     dL_dthetaK_implicit: {}".format(dL_dthetaK_exp, dL_dthetaK_imp)
+        #print "dL_dthetaK_exp: {}     dL_dthetaK_implicit: {}".format(dL_dthetaK_exp, dL_dthetaK_imp)
+        #print "expl_a: {}, {}     expl_b: {}, {}".format(np.mean(expl_a), np.std(expl_a), np.mean(expl_b), np.std(expl_b))
         dL_dthetaK = dL_dthetaK_exp + dL_dthetaK_imp
         return dL_dthetaK
 
@@ -165,8 +166,7 @@ class Laplace(likelihood):
         self.aA = 0.5*self.ln_det_K_Wi__Bi
         self.bB = - 0.5*self.f_Ki_f
         self.cC = 0.5*self.y_Wi_Ki_i_y
-        Z_tilde = (#+ 100*self.NORMAL_CONST
-                   + self.lik
+        Z_tilde = (+ self.lik
                    + 0.5*self.ln_det_K_Wi__Bi
                    - 0.5*self.f_Ki_f
                    + 0.5*self.y_Wi_Ki_i_y
@@ -379,7 +379,8 @@ class Laplace(likelihood):
 
             #difference = abs(new_obj - old_obj)
             #old_obj = new_obj.copy()
-            difference = np.abs(np.sum(f - f_old))
+            #difference = np.abs(np.sum(f - f_old))
+            difference = np.abs(np.sum(a - old_a))
             #old_a = self.a.copy() #a
             old_a = a.copy()
             i += 1
@@ -391,42 +392,43 @@ class Laplace(likelihood):
         print "Iterations: {}, Final_difference: {}".format(i, difference)
         if difference > 1e-4:
             print "FAIL FAIL FAIL FAIL FAIL FAIL"
-            import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
-            if hasattr(self, 'X'):
-                import pylab as pb
-                pb.figure()
-                pb.subplot(311)
-                pb.title('old f_hat')
-                pb.plot(self.X, self.f_hat)
-                pb.subplot(312)
-                pb.title('old ff')
-                pb.plot(self.X, self.old_ff)
-                pb.subplot(313)
-                pb.title('new f_hat')
-                pb.plot(self.X, f)
-
-                pb.figure()
-                pb.subplot(121)
-                pb.title('old K')
-                pb.imshow(np.diagflat(self.old_K), interpolation='none')
-                pb.colorbar()
-                pb.subplot(122)
-                pb.title('new K')
-                pb.imshow(np.diagflat(K), interpolation='none')
-                pb.colorbar()
-
-                pb.figure()
-                pb.subplot(121)
-                pb.title('old W')
-                pb.imshow(np.diagflat(self.old_W), interpolation='none')
-                pb.colorbar()
-                pb.subplot(122)
-                pb.title('new W')
-                pb.imshow(np.diagflat(W), interpolation='none')
-                pb.colorbar()
-
+            if False:
                 import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
-                pb.close('all')
+                if hasattr(self, 'X'):
+                    import pylab as pb
+                    pb.figure()
+                    pb.subplot(311)
+                    pb.title('old f_hat')
+                    pb.plot(self.X, self.f_hat)
+                    pb.subplot(312)
+                    pb.title('old ff')
+                    pb.plot(self.X, self.old_ff)
+                    pb.subplot(313)
+                    pb.title('new f_hat')
+                    pb.plot(self.X, f)
+
+                    pb.figure()
+                    pb.subplot(121)
+                    pb.title('old K')
+                    pb.imshow(np.diagflat(self.old_K), interpolation='none')
+                    pb.colorbar()
+                    pb.subplot(122)
+                    pb.title('new K')
+                    pb.imshow(np.diagflat(K), interpolation='none')
+                    pb.colorbar()
+
+                    pb.figure()
+                    pb.subplot(121)
+                    pb.title('old W')
+                    pb.imshow(np.diagflat(self.old_W), interpolation='none')
+                    pb.colorbar()
+                    pb.subplot(122)
+                    pb.title('new W')
+                    pb.imshow(np.diagflat(W), interpolation='none')
+                    pb.colorbar()
+
+                    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+                    pb.close('all')
 
         #FIXME: DELETE THESE
         self.old_W = W.copy()

@@ -168,23 +168,23 @@ def student_t_f_check():
     m.randomize()
     m['t_no'] = 0.3
     m.likelihood.X = X
-    print m
+    #print m
     plt.figure()
     plt.subplot(511)
     m.plot()
-    print m
+    #print m
     plt.subplot(512)
     m.optimize(max_f_eval=15)
     m.plot()
-    print m
+    #print m
     plt.subplot(513)
     m.optimize(max_f_eval=15)
     m.plot()
-    print m
+    #print m
     plt.subplot(514)
     m.optimize(max_f_eval=15)
     m.plot()
-    print m
+    #print m
     plt.subplot(515)
     m.optimize()
     m.plot()

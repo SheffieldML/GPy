@@ -63,6 +63,20 @@ class GPLVM(GP):
 
         return np.hstack((dL_dX.flatten(), GP._log_likelihood_gradients(self)))
 
+    def jacobian(self,X):
+        target = np.zeros((X.shape[0],X.shape[1],self.output_dim))
+        for i in range(self.output_dim):
+        	target[:,:,i]=self.kern.dK_dX(np.dot(self.Ki,self.likelihood.Y[:,i])[None, :],X,self.X)
+        return target
+   
+    def magnification(self,X):
+        target=np.zeros(X.shape[0])
+        J = np.zeros((X.shape[0],X.shape[1],self.output_dim))
+    	J=self.jacobian(X)
+        for i in range(X.shape[0]):
+		    target[i]=np.sqrt(pb.det(np.dot(J[i,:,:],np.transpose(J[i,:,:]))))
+        return target
+
     def plot(self):
         assert self.likelihood.Y.shape[1] == 2
         pb.scatter(self.likelihood.Y[:, 0], self.likelihood.Y[:, 1], 40, self.X[:, 0].copy(), linewidth=0, cmap=pb.cm.jet)
@@ -72,3 +86,6 @@ class GPLVM(GP):
 
     def plot_latent(self, *args, **kwargs):
         return util.plot_latent.plot_latent(self, *args, **kwargs)
+
+    def plot_magnification(self, *args, **kwargs):
+        return util.plot_latent.plot_magnification(self, *args, **kwargs)

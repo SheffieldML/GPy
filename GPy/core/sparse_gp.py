@@ -80,8 +80,6 @@ class SparseGP(GPBase):
             self.psi2 = None
 
     def _computations(self):
-
-
         # factor Kmm
         self.Lm = jitchol(self.Kmm)
 
@@ -90,10 +88,9 @@ class SparseGP(GPBase):
             if self.likelihood.is_heteroscedastic:
                 psi2_beta = (self.psi2 * (self.likelihood.precision.flatten().reshape(self.num_data, 1, 1))).sum(0)
             else:
-                #psi2_beta = self.psi2.sum(0) * self.likelihood.precision
-                psi2_beta = self.psi2[0] * (self.num_data * self.likelihood.precision)
+                psi2_beta = self.psi2.sum(0) * self.likelihood.precision
             evals, evecs = linalg.eigh(psi2_beta)
-            clipped_evals = np.clip(evals, 0., 1e16) # TODO: make clipping configurable
+            clipped_evals = np.clip(evals, 0., 1e6) # TODO: make clipping configurable
             if not np.array_equal(evals, clipped_evals):
                 pass#print evals
             tmp = evecs * np.sqrt(clipped_evals)

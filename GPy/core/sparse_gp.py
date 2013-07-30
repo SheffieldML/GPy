@@ -90,9 +90,12 @@ class SparseGP(GPBase):
             if self.likelihood.is_heteroscedastic:
                 psi2_beta = (self.psi2 * (self.likelihood.precision.flatten().reshape(self.num_data, 1, 1))).sum(0)
             else:
-                psi2_beta = self.psi2.sum(0) * self.likelihood.precision
+                #psi2_beta = self.psi2.sum(0) * self.likelihood.precision
+                psi2_beta = self.psi2[0] * (self.num_data * self.likelihood.precision)
             evals, evecs = linalg.eigh(psi2_beta)
-            clipped_evals = np.clip(evals, 0., 1e6) # TODO: make clipping configurable
+            clipped_evals = np.clip(evals, 0., 1e16) # TODO: make clipping configurable
+            if not np.array_equal(evals, clipped_evals):
+                pass#print evals
             tmp = evecs * np.sqrt(clipped_evals)
             tmp = tmp.T
         else:
@@ -114,7 +117,8 @@ class SparseGP(GPBase):
         # back substutue C into psi1Vf
         tmp, info1 = dtrtrs(self.Lm, np.asfortranarray(self.psi1Vf), lower=1, trans=0)
         self._LBi_Lmi_psi1Vf, _ = dtrtrs(self.LB, np.asfortranarray(tmp), lower=1, trans=0)
-        tmp, info2 = dpotrs(self.LB, tmp, lower=1)
+        #tmp, info2 = dpotrs(self.LB, tmp, lower=1)
+        tmp, info2 = dtrtrs(self.LB, self._LBi_Lmi_psi1Vf, lower=1, trans=1)
         self.Cpsi1Vf, info3 = dtrtrs(self.Lm, tmp, lower=1, trans=1)
 
         # Compute dL_dKmm

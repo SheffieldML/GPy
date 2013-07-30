@@ -97,3 +97,79 @@ def plot_latent(model, labels=None, which_indices=None,
         ax.figure.canvas.show()
         raw_input('Enter to continue')
     return ax
+
+def plot_magnification(model, labels=None, which_indices=None, 
+                resolution=60, ax=None, marker='o', s=40, 
+                fignum=None, plot_inducing=False, legend=True,
+                aspect='auto', updates=False):
+    """
+    :param labels: a np.array of size model.num_data containing labels for the points (can be number, strings, etc)
+    :param resolution: the resolution of the grid on which to evaluate the predictive variance
+    """
+    if ax is None:
+        fig = pb.figure(num=fignum)
+        ax = fig.add_subplot(111)
+    util.plot.Tango.reset()
+
+    if labels is None:
+        labels = np.ones(model.num_data)
+
+    input_1, input_2 = most_significant_input_dimensions(model, which_indices)
+
+    # first, plot the output variance as a function of the latent space
+    Xtest, xx, yy, xmin, xmax = util.plot.x_frame2D(model.X[:, [input_1, input_2]], resolution=resolution)
+    Xtest_full = np.zeros((Xtest.shape[0], model.X.shape[1]))
+    def plot_function(x):
+        Xtest_full[:, [input_1, input_2]] = x
+        mf=model.magnification(Xtest_full)
+        return mf
+    view = ImshowController(ax, plot_function, tuple(xmin) + tuple(xmax),
+                            resolution, aspect=aspect, interpolation='bilinear',
+                            cmap=pb.cm.gray)
+
+    # make sure labels are in order of input:
+    ulabels = []
+    for lab in labels:
+        if not lab in ulabels:
+            ulabels.append(lab)
+
+    marker = itertools.cycle(list(marker))
+
+    for i, ul in enumerate(ulabels):
+        if type(ul) is np.string_:
+            this_label = ul
+        elif type(ul) is np.int64:
+            this_label = 'class %i' % ul
+        else:
+            this_label = 'class %i' % i
+        m = marker.next()
+
+        index = np.nonzero(labels == ul)[0]
+        if model.input_dim == 1:
+            x = model.X[index, input_1]
+            y = np.zeros(index.size)
+        else:
+            x = model.X[index, input_1]
+            y = model.X[index, input_2]
+        ax.scatter(x, y, marker=m, s=s, color=util.plot.Tango.nextMedium(), label=this_label)
+
+    ax.set_xlabel('latent dimension %i' % input_1)
+    ax.set_ylabel('latent dimension %i' % input_2)
+
+    if not np.all(labels == 1.) and legend:
+        ax.legend(loc=0, numpoints=1)
+
+    ax.set_xlim(xmin[0], xmax[0])
+    ax.set_ylim(xmin[1], xmax[1])
+    ax.grid(b=False) # remove the grid if present, it doesn't look good
+    ax.set_aspect('auto') # set a nice aspect ratio
+
+    if plot_inducing:
+        ax.plot(model.Z[:, input_1], model.Z[:, input_2], '^w')
+
+    if updates:
+        ax.figure.canvas.show()
+        raw_input('Enter to continue')
+
+    pb.title('Magnification Factor')
+    return ax

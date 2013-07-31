@@ -14,8 +14,11 @@ class EP_Mixed_Noise(likelihood):
 
         Arguments
         ---------
-        epsilon : Convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
-        noise_model : a likelihood function (see likelihood_functions.py)
+        :param data_list: list of outputs
+        :param noise_model_list: a list of noise models
+        :param epsilon: Convergence criterion, maximum squared difference allowed between mean updates to stop iterations
+        :type epsilon: float
+        :param power_ep: list of power ep parameters
         """
         assert len(data_list) == len(noise_model_list)
         self.noise_model_list = noise_model_list
@@ -60,6 +63,16 @@ class EP_Mixed_Noise(likelihood):
         self.trYYT = 0.
 
     def predictive_values(self,mu,var,full_cov,noise_model):
+        """
+        Predicts the output given the GP
+
+        :param mu: GP's mean
+        :param var: GP's variance
+        :param full_cov: whether to return the full covariance matrix, or just the diagonal
+        :type full_cov: False|True
+        :param noise_model: noise model to use
+        :type noise_model: integer
+        """
         if full_cov:
             raise NotImplementedError, "Cannot make correlated predictions with an EP likelihood"
         #_mu = []

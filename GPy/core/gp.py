@@ -190,7 +190,7 @@ class GP(GPBase):
         Internal helper function for making predictions, does not account
         for normalization or likelihood
         """
-        assert isinstance(self.likelihood,EP_Mixed_Noise)
+        assert hasattr(self,'multioutput')
         index = np.ones_like(_Xnew)*output
         _Xnew = np.hstack((_Xnew,index))
 
@@ -208,5 +208,3 @@ class GP(GPBase):
         if stop:
             debug_this # @UndefinedVariable
         return mu, var
-
-

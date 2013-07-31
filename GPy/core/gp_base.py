@@ -62,7 +62,7 @@ class GPBase(Model):
             fig = pb.figure(num=fignum)
             ax = fig.add_subplot(111)
 
-        if self.X.shape[1] == 1 and not isinstance(self.likelihood,EP_Mixed_Noise):
+        if self.X.shape[1] == 1 and not hasattr(self,'multioutput'):
             Xnew, xmin, xmax = x_frame1D(self.X, plot_limits=plot_limits)
             if samples == 0:
                 m, v = self._raw_predict(Xnew, which_parts=which_parts)
@@ -80,7 +80,7 @@ class GPBase(Model):
             ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
             ax.set_ylim(ymin, ymax)
 
-        elif self.X.shape[1] == 2 and not isinstance(self.likelihood,EP_Mixed_Noise):
+        elif self.X.shape[1] == 2 and not hasattr(self,'multioutput'):
             resolution = resolution or 50
             Xnew, xmin, xmax, xx, yy = x_frame2D(self.X, plot_limits, resolution)
             m, v = self._raw_predict(Xnew, which_parts=which_parts)
@@ -91,7 +91,7 @@ class GPBase(Model):
             ax.set_ylim(xmin[1], xmax[1])
 
 
-        elif self.X.shape[1] == 2 and isinstance(self.likelihood,EP_Mixed_Noise):
+        elif self.X.shape[1] == 2 and hasattr(self,'multioutput'):
             Xu = self.X[self.X[:,-1]==output ,0:1]
             Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
 

@@ -293,7 +293,7 @@ class SparseGP(GPBase):
 
         return mean, var, _025pm, _975pm
 
-    def plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, fignum=None, ax=None):
+    def plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, fignum=None, ax=None, output=None):
         if ax is None:
             fig = pb.figure(num=fignum)
             ax = fig.add_subplot(111)
@@ -301,8 +301,8 @@ class SparseGP(GPBase):
         if which_data is 'all':
             which_data = slice(None)
 
-        GPBase.plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, ax=ax)
-        if self.X.shape[1] == 1:
+        GPBase.plot(self, samples=0, plot_limits=plot_limits, which_data='all', which_parts='all', resolution=None, levels=20, ax=ax, output=output)
+        if self.X.shape[1] == 1 and not hasattr(self,'multioutput'):
             if self.has_uncertain_inputs:
                 Xu = self.X * self._Xscale + self._Xoffset  # NOTE self.X are the normalized values now
                 ax.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
@@ -311,9 +311,30 @@ class SparseGP(GPBase):
             Zu = self.Z * self._Xscale + self._Xoffset
             ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
 
-        elif self.X.shape[1] == 2:
+        elif self.X.shape[1] == 2 and not hasattr(self,'multioutput'):
             Zu = self.Z * self._Xscale + self._Xoffset
             ax.plot(Zu[:, 0], Zu[:, 1], 'wo')
+
+        elif self.X.shape[1] == 2 and hasattr(self,'multioutput'):
+            Xu = self.X[self.X[:,-1]==output,:]
+            if self.has_uncertain_inputs:
+                Xu = self.X * self._Xscale + self._Xoffset  # NOTE self.X are the normalized values now
+
+                Xu = self.X[self.X[:,-1]==output ,0:1] #??
+
+                ax.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
+                            xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
+                            ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
+
+            Zu = self.Z[self.Z[:,-1]==output,:]
+            Zu = self.Z * self._Xscale + self._Xoffset
+            Zu = self.Z[self.Z[:,-1]==output ,0:1] #??
+            ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
+            #ax.set_ylim(ax.get_ylim()[0],)
+
+        else:
+            raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
+
 
 
     def predict_single_output(self, Xnew, output=0, which_parts='all', full_cov=False):
@@ -336,7 +357,7 @@ class SparseGP(GPBase):
            This is to allow for different normalizations of the output dimensions.
 
         """
-        assert isinstance(self.likelihood,EP_Mixed_Noise)
+        assert hasattr(self,'multioutput')
         index = np.ones_like(Xnew)*output
         Xnew = np.hstack((Xnew,index))
 
@@ -345,6 +366,51 @@ class SparseGP(GPBase):
         mu, var = self._raw_predict(Xnew, full_cov=full_cov, which_parts=which_parts)
 
         # now push through likelihood
-        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, noise_model = output)
+        if isinstance(self.likelihood,EP_Mixed_Noise):
+            mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, noise_model = output)
+        else:
+            mean, var, _025pm, _975pm = self.likelihood_list[output].predictive_values(mu, var, full_cov)
         return mean, var, _025pm, _975pm
 
+
+
+    def _raw_predict_single_output(self, _Xnew, output=0, X_variance_new=None, which_parts='all', full_cov=False,stop=False):
+        """
+        Internal helper function for making predictions, does not account
+        for normalization or likelihood
+        """
+        Bi, _ = dpotri(self.LB, lower=0)  # WTH? this lower switch should be 1, but that doesn't work!
+        symmetrify(Bi)
+        Kmmi_LmiBLmi = backsub_both_sides(self.Lm, np.eye(self.num_inducing) - Bi)
+
+        if self.Cpsi1V is None:
+            psi1V = np.dot(self.psi1.T,self.likelihood.V)
+            tmp, _ = dtrtrs(self.Lm, np.asfortranarray(psi1V), lower=1, trans=0)
+            tmp, _ = dpotrs(self.LB, tmp, lower=1)
+            self.Cpsi1V, _ = dtrtrs(self.Lm, tmp, lower=1, trans=1)
+
+        assert hasattr(self,'multioutput')
+        index = np.ones_like(_Xnew)*output
+        _Xnew = np.hstack((_Xnew,index))
+
+        if X_variance_new is None:
+            Kx = self.kern.K(self.Z, _Xnew, which_parts=which_parts)
+            mu = np.dot(Kx.T, self.Cpsi1V)
+            if full_cov:
+                Kxx = self.kern.K(_Xnew, which_parts=which_parts)
+                var = Kxx - mdot(Kx.T, Kmmi_LmiBLmi, Kx) # NOTE this won't work for plotting
+            else:
+                Kxx = self.kern.Kdiag(_Xnew, which_parts=which_parts)
+                var = Kxx - np.sum(Kx * np.dot(Kmmi_LmiBLmi, Kx), 0)
+        else:
+            # assert which_p.Tarts=='all', "swithching out parts of variational kernels is not implemented"
+            Kx = self.kern.psi1(self.Z, _Xnew, X_variance_new) # , which_parts=which_parts) TODO: which_parts
+            mu = np.dot(Kx, self.Cpsi1V)
+            if full_cov:
+                raise NotImplementedError, "TODO"
+            else:
+                Kxx = self.kern.psi0(self.Z, _Xnew, X_variance_new)
+                psi2 = self.kern.psi2(self.Z, _Xnew, X_variance_new)
+                var = Kxx - np.sum(np.sum(psi2 * Kmmi_LmiBLmi[None, :, :], 1), 1)
+
+        return mu, var[:, None]

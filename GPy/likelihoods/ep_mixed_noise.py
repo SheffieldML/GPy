@@ -249,7 +249,7 @@ class EP_Mixed_Noise(likelihood):
                 self.tau_[i] = 1./Sigma_diag[i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = mu[i]/Sigma_diag[i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model_list[self.index[i]].moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma_diag[i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma_diag[i])
@@ -344,7 +344,7 @@ class EP_Mixed_Noise(likelihood):
                 self.tau_[i] = 1./Sigma_diag[i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = mu[i]/Sigma_diag[i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model_list[self.index[i]].moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma_diag[i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma_diag[i])

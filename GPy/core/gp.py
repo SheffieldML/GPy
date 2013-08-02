@@ -173,7 +173,7 @@ class GP(GPBase):
            This is to allow for different normalizations of the output dimensions.
 
         """
-        assert isinstance(self.likelihood,EP_Mixed_Noise)
+        assert hasattr(self,'multioutput')
         index = np.ones_like(Xnew)*output
         Xnew = np.hstack((Xnew,index))
 
@@ -182,7 +182,10 @@ class GP(GPBase):
         mu, var = self._raw_predict(Xnew, full_cov=full_cov, which_parts=which_parts)
 
         # now push through likelihood
-        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, noise_model = output)
+        if isinstance(self.likelihood,EP_Mixed_Noise):
+            mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, noise_model = output)
+        else:
+            mean, var, _025pm, _975pm = self.likelihood_list[output].predictive_values(mu, var, full_cov)
         return mean, var, _025pm, _975pm
 
     def _raw_predict_single_output(self, _Xnew, output=0, which_parts='all', full_cov=False,stop=False):

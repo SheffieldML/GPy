@@ -106,13 +106,16 @@ class GPBase(Model):
                 gpplot(Xnew, m, m - 2 * np.sqrt(np.diag(v)[:, None]), m + 2 * np.sqrt(np.diag(v))[:, None, ], axes=ax)
                 for i in range(samples):
                     ax.plot(Xnew, Ysim[i, :], Tango.colorsHex['darkBlue'], linewidth=0.25)
-            #ax.plot(self.X[which_data], self.likelihood.Y[which_data], 'kx', mew=1.5)
-            #ax.plot(Xu[which_data], self.likelihood.Y[self.likelihood.index==output][:,None], 'kx', mew=1.5)
             ax.set_xlim(xmin, xmax)
             ymin, ymax = min(np.append(self.likelihood.Y, m - 2 * np.sqrt(np.diag(v)[:, None]))), max(np.append(self.likelihood.Y, m + 2 * np.sqrt(np.diag(v)[:, None])))
             ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
             ax.set_ylim(ymin, ymax)
 
+            if hasattr(self,'Z'):
+                Zu = self.Z[self.Z[:,-1]==output,:]
+                Zu = self.Z * self._Xscale + self._Xoffset
+                Zu = self.Z[self.Z[:,-1]==output ,0:1] #??
+                ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
 
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
@@ -120,7 +123,7 @@ class GPBase(Model):
     def plot(self, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, samples=0, fignum=None, ax=None, output=None):
         """
         TODO: Docstrings!
-        
+
         :param levels: for 2D plotting, the number of contour levels to use
         is ax is None, create a new figure
         """
@@ -132,7 +135,7 @@ class GPBase(Model):
             fig = pb.figure(num=fignum)
             ax = fig.add_subplot(111)
 
-        if self.X.shape[1] == 1 and not isinstance(self.likelihood,EP_Mixed_Noise):
+        if self.X.shape[1] == 1 and not hasattr(self,'multioutput'):
 
             Xu = self.X * self._Xscale + self._Xoffset # NOTE self.X are the normalized values now
 
@@ -146,7 +149,7 @@ class GPBase(Model):
             ax.set_xlim(xmin, xmax)
             ax.set_ylim(ymin, ymax)
 
-        elif self.X.shape[1] == 2 and not isinstance(self.likelihood,EP_Mixed_Noise): # FIXME
+        elif self.X.shape[1] == 2 and not hasattr(self,'multioutput'):
             resolution = resolution or 50
             Xnew, _, _, xmin, xmax = x_frame2D(self.X, plot_limits, resolution)
             x, y = np.linspace(xmin[0], xmax[0], resolution), np.linspace(xmin[1], xmax[1], resolution)
@@ -158,17 +161,23 @@ class GPBase(Model):
             ax.set_xlim(xmin[0], xmax[0])
             ax.set_ylim(xmin[1], xmax[1])
 
-        elif self.X.shape[1] == 2 and isinstance(self.likelihood,EP_Mixed_Noise):
-            Xu = self.X[self.X[:,-1]==output,:]
+        elif self.X.shape[1] == 2 and hasattr(self,'multioutput'):
+            Xu = self.X[self.X[:,-1]==output,:] #keep the output of interest
             Xu = self.X * self._Xscale + self._Xoffset
-            Xu = self.X[self.X[:,-1]==output ,0:1]
+            Xu = self.X[self.X[:,-1]==output ,0:1] #get rid of the index column
 
             Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
+
             m, _, lower, upper = self.predict_single_output(Xnew, which_parts=which_parts,output=output)
+            #if not isinstance(self.likelihood,EP_Mixed_Noise):
+            #    m, _, lower, upper = self.predict(np.hstack([Xnew,np.repeat(output,Xnew.size)[:,None]]), which_parts=which_parts)
+            #else:
+            #    m, _, lower, upper = self.predict_single_output(Xnew, which_parts=which_parts,output=output)
+
             for d in range(m.shape[1]):
                 gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax)
-                #ax.plot(Xu[which_data], self.likelihood.data[which_data, d], 'kx', mew=1.5)
-                ax.plot(Xu[which_data], self.likelihood.data[self.likelihood.index==output][:,None], 'kx', mew=1.5)
+                #ax.plot(Xu[which_data], self.likelihood.data[self.likelihood.index==output][:,None], 'kx', mew=1.5)
+                ax.plot(Xu[which_data], self.likelihood_list[output].data, 'kx', mew=1.5)
             ymin, ymax = min(np.append(self.likelihood.data, lower)), max(np.append(self.likelihood.data, upper))
             ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
             ax.set_xlim(xmin, xmax)

@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib as mpl
 import time
 import Image
-#import visual
+# import visual
 
 class data_show:
     """
@@ -148,15 +148,15 @@ class lvm(matplotlib_show):
         # A click in the bar chart axis for selection a dimension.
         if self.sense_axes != None:
             self.sense_axes.cla()
-            self.sense_axes.bar(np.arange(self.model.input_dim),1./self.model.input_sensitivity(),color='b')
+            self.sense_axes.bar(np.arange(self.model.input_dim), self.model.input_sensitivity(), color='b')
 
             if self.latent_index[1] == self.latent_index[0]:
-                self.sense_axes.bar(np.array(self.latent_index[0]),1./self.model.input_sensitivity()[self.latent_index[0]],color='y')
-                self.sense_axes.bar(np.array(self.latent_index[1]),1./self.model.input_sensitivity()[self.latent_index[1]],color='y')
+                self.sense_axes.bar(np.array(self.latent_index[0]), self.model.input_sensitivity()[self.latent_index[0]], color='y')
+                self.sense_axes.bar(np.array(self.latent_index[1]), self.model.input_sensitivity()[self.latent_index[1]], color='y')
 
             else:
-                self.sense_axes.bar(np.array(self.latent_index[0]),1./self.model.input_sensitivity()[self.latent_index[0]],color='g')
-                self.sense_axes.bar(np.array(self.latent_index[1]),1./self.model.input_sensitivity()[self.latent_index[1]],color='r')
+                self.sense_axes.bar(np.array(self.latent_index[0]), self.model.input_sensitivity()[self.latent_index[0]], color='g')
+                self.sense_axes.bar(np.array(self.latent_index[1]), self.model.input_sensitivity()[self.latent_index[1]], color='r')
 
             self.sense_axes.figure.canvas.draw()
 

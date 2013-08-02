@@ -49,6 +49,8 @@ class SparseGP(GPBase):
         # normalize X uncertainty also
         if self.has_uncertain_inputs:
             self.X_variance /= np.square(self._Xscale)
+            
+        self._const_jitter = None
 
     def getstate(self):
         """
@@ -81,7 +83,10 @@ class SparseGP(GPBase):
 
     def _computations(self):
         # factor Kmm
-        self.Lm = jitchol(self.Kmm)
+        if self._const_jitter is None or not(self._const_jitter.shape[0] == self.num_inducing):
+            self._const_jitter = np.eye(self.num_inducing) * 1e-7
+        self.Lm = jitchol(self.Kmm + self._const_jitter)
+        # TODO: no white kernel needed anymore, all noise in likelihood --------
 
         # The rather complex computations of self.A
         if self.has_uncertain_inputs:
@@ -92,7 +97,7 @@ class SparseGP(GPBase):
             evals, evecs = linalg.eigh(psi2_beta)
             clipped_evals = np.clip(evals, 0., 1e6) # TODO: make clipping configurable
             if not np.array_equal(evals, clipped_evals):
-                pass#print evals
+                pass # print evals
             tmp = evecs * np.sqrt(clipped_evals)
             tmp = tmp.T
         else:
@@ -114,7 +119,7 @@ class SparseGP(GPBase):
         # back substutue C into psi1Vf
         tmp, info1 = dtrtrs(self.Lm, np.asfortranarray(self.psi1Vf), lower=1, trans=0)
         self._LBi_Lmi_psi1Vf, _ = dtrtrs(self.LB, np.asfortranarray(tmp), lower=1, trans=0)
-        #tmp, info2 = dpotrs(self.LB, tmp, lower=1)
+        # tmp, info2 = dpotrs(self.LB, tmp, lower=1)
         tmp, info2 = dtrtrs(self.LB, self._LBi_Lmi_psi1Vf, lower=1, trans=1)
         self.Cpsi1Vf, info3 = dtrtrs(self.Lm, tmp, lower=1, trans=1)
 

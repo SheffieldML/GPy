@@ -44,7 +44,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
         assert Z.shape[1] == X.shape[1]
 
         if kernel is None:
-            kernel = kern.rbf(input_dim) + kern.white(input_dim)
+            kernel = kern.rbf(input_dim) # + kern.white(input_dim)
 
         SparseGP.__init__(self, X, likelihood, kernel, Z=Z, X_variance=X_variance, **kwargs)
         self.ensure_default_constraints()
@@ -175,7 +175,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
         X = np.zeros((resolution ** 2, self.input_dim))
         indices = np.r_[:X.shape[0]]
         if labels is None:
-            labels = range(self.input_dim)
+            labels = range(self.output_dim)
 
         def plot_function(x):
             X[:, significant_dims] = x

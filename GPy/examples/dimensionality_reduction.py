@@ -140,30 +140,32 @@ def swiss_roll(optimize=True, N=1000, num_inducing=15, Q=4, sigma=.2, plot=False
         m.optimize('scg', messages=1)
     return m
 
-def BGPLVM_oil(optimize=True, N=200, Q=10, num_inducing=15, max_iters=150, plot=False, **k):
+def BGPLVM_oil(optimize=True, N=200, Q=7, num_inducing=40, max_iters=1000, plot=False, **k):
     np.random.seed(0)
     data = GPy.util.datasets.oil()
 
     # create simple GP model
-    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
+    kernel = GPy.kern.rbf_inv(Q, 1., [.1] * Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2))
 
     Y = data['X'][:N]
-    Yn = Y - Y.mean(0)
-    Yn /= Yn.std(0)
+    Yn = Gaussian(Y, normalize=True)
+#     Yn = Y - Y.mean(0)
+#     Yn /= Yn.std(0)
 
     m = GPy.models.BayesianGPLVM(Yn, Q, kernel=kernel, num_inducing=num_inducing, **k)
     m.data_labels = data['Y'][:N].argmax(axis=1)
 
     # m.constrain('variance|leng', logexp_clipped())
     # m['.*lengt'] = m.X.var(0).max() / m.X.var(0)
-    m['noise'] = Yn.var() / 100.
+    m['noise'] = Yn.Y.var() / 100.
 
 
     # optimize
     if optimize:
-#         m.constrain_fixed('noise')
-#         m.optimize('scg', messages=1, max_iters=200, gtol=.05)
-#         m.constrain_positive('noise')
+        m.constrain_fixed('noise')
+        m.optimize('scg', messages=1, max_iters=200, gtol=.05)
+        m.constrain_positive('noise')
+        m.constrain_bounded('white', 1e-7, 1)
         m.optimize('scg', messages=1, max_iters=max_iters, gtol=.05)
 
     if plot:
@@ -271,7 +273,7 @@ def bgplvm_simulation(optimize='scg',
                       max_iters=2e4,
                       plot_sim=False):
 #     from GPy.core.transformations import logexp_clipped
-    D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 300, 30, 6
+    D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 30, 3, 10
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
 
     from GPy.models import mrd
@@ -296,7 +298,7 @@ def bgplvm_simulation(optimize='scg',
     return m
 
 def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
-    D1, D2, D3, N, num_inducing, Q = 150, 200, 400, 500, 3, 7
+    D1, D2, D3, N, num_inducing, Q = 30, 10, 15, 60, 3, 10
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
 
     likelihood_list = [Gaussian(x, normalize=True) for x in Ylist]
@@ -383,7 +385,7 @@ def stick_bgplvm(model=None):
     m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20, kernel=kernel)
     # optimize
     m.ensure_default_constraints()
-    m.optimize(messages=1, max_iters=3000, xtol=1e-300, ftol=1e-300)
+    m.optimize('scg', messages=1, max_iters=200, xtol=1e-300, ftol=1e-300)
     m._set_params(m._get_params())
     plt.clf, (latent_axes, sense_axes) = plt.subplots(1, 2)
     plt.sca(latent_axes)

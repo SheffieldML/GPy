@@ -51,10 +51,10 @@ class White(Kernpart):
         pass
 
     def psi0(self,Z,mu,S,target):
-        target += self.variance
+        pass # target += self.variance
 
     def dpsi0_dtheta(self,dL_dpsi0,Z,mu,S,target):
-        target += dL_dpsi0.sum()
+        pass # target += dL_dpsi0.sum()
 
     def dpsi0_dmuS(self,dL_dpsi0,Z,mu,S,target_mu,target_S):
         pass

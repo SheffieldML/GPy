@@ -255,7 +255,7 @@ def prod(k1,k2,tensor=False):
     :type k1, k2: kernpart
     :rtype: kernel object
     """
-    part = parts.prodpart(k1,k2,tensor)
+    part = parts.prod.Prod(k1, k2, tensor)
     return kern(part.input_dim, [part])
 
 def symmetric(k):

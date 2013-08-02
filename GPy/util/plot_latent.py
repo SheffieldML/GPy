@@ -13,7 +13,7 @@ def most_significant_input_dimensions(model, which_indices):
             input_1, input_2 = 0, 1
         else:
             try:
-                input_1, input_2 = np.argsort(model.input_sensitivity())[:2]
+                input_1, input_2 = np.argsort(model.input_sensitivity())[::-1][:2]
             except:
                 raise ValueError, "cannot Atomatically determine which dimensions to plot, please pass 'which_indices'"
     else:
@@ -41,6 +41,7 @@ def plot_latent(model, labels=None, which_indices=None,
     # first, plot the output variance as a function of the latent space
     Xtest, xx, yy, xmin, xmax = util.plot.x_frame2D(model.X[:, [input_1, input_2]], resolution=resolution)
     Xtest_full = np.zeros((Xtest.shape[0], model.X.shape[1]))
+
     def plot_function(x):
         Xtest_full[:, [input_1, input_2]] = x
         mu, var, low, up = model.predict(Xtest_full)

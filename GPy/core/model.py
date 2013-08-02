@@ -483,11 +483,11 @@ class Model(Parameterized):
         k = k[0]
 
         if k.name == 'rbf':
-            return k.lengthscale
+            return 1. / k.lengthscale
         elif k.name == 'rbf_inv':
-            return 1. / k.inv_lengthscale
+            return k.inv_lengthscale
         elif k.name == 'linear':
-            return 1. / k.variances
+            return k.variances
 
 
     def pseudo_EM(self, epsilon=.1, **kwargs):

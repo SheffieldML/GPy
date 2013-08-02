@@ -140,16 +140,16 @@ class Linear(Kernpart):
     def dpsi1_dZ(self, dL_dpsi1, Z, mu, S, target):
         self.dK_dX(dL_dpsi1.T, Z, mu, target)
 
-    def psi2_old(self, Z, mu, S, target):
+    def psi2(self, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
         target += self._psi2
 
-    def psi2(self,Z,mu,S,target):
+    def psi2_new(self,Z,mu,S,target):
         tmp = np.zeros((mu.shape[0], Z.shape[0]))
         self.K(mu,Z,tmp)
         target += tmp[:,:,None]*tmp[:,None,:] + np.sum(S[:,None,None,:]*self.variances**2*Z[None,:,None,:]*Z[None,None,:,:],-1)
 
-    def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S, target):
+    def dpsi2_dtheta_new(self, dL_dpsi2, Z, mu, S, target):
         tmp = np.zeros((mu.shape[0], Z.shape[0]))
         self.K(mu,Z,tmp)
         self.dK_dtheta(2.*np.sum(dL_dpsi2*tmp[:,None,:],2),mu,Z,target)
@@ -159,7 +159,7 @@ class Linear(Kernpart):
         else:
             target += result.sum()
 
-    def dpsi2_dtheta_old(self, dL_dpsi2, Z, mu, S, target):
+    def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
         tmp = dL_dpsi2[:, :, :, None] * (self.ZAinner[:, :, None, :] * (2 * Z)[None, None, :, :])
         if self.ARD:
@@ -167,7 +167,7 @@ class Linear(Kernpart):
         else:
             target += tmp.sum()
 
-    def dpsi2_dmuS(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
+    def dpsi2_dmuS_new(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
         tmp = np.zeros((mu.shape[0], Z.shape[0]))
         self.K(mu,Z,tmp)
         self.dK_dX(2.*np.sum(dL_dpsi2*tmp[:,None,:],2),mu,Z,target_mu)
@@ -176,7 +176,7 @@ class Linear(Kernpart):
         Zs_sq = Zs[:,None,:]*Zs[None,:,:]
         target_S += (dL_dpsi2[:,:,:,None]*Zs_sq[None,:,:,:]).sum(1).sum(1)
 
-    def dpsi2_dmuS_old(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
+    def dpsi2_dmuS(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
         """Think N,num_inducing,num_inducing,input_dim """
         self._psi_computations(Z, mu, S)
         AZZA = self.ZA.T[:, None, :, None] * self.ZA[None, :, None, :]

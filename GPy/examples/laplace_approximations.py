@@ -170,28 +170,18 @@ def student_t_f_check():
     m.likelihood.X = X
     #print m
     plt.figure()
-    plt.subplot(511)
+    plt.subplot(211)
     m.plot()
-    #print m
-    plt.subplot(512)
-    m.optimize(max_f_eval=15)
-    m.plot()
-    #print m
-    plt.subplot(513)
-    m.optimize(max_f_eval=15)
-    m.plot()
-    #print m
-    plt.subplot(514)
-    m.optimize(max_f_eval=15)
-    m.plot()
-    #print m
-    plt.subplot(515)
+    print "OPTIMIZED ONCE"
+    plt.subplot(212)
     m.optimize()
     m.plot()
     print "final optimised student t"
     print m
     print "real GP"
     print mgp
+    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+    return m
 
 def student_t_fix_optimise_check():
     plt.close('all')
@@ -602,3 +592,48 @@ def noisy_laplace_approx():
     print m
 
     #with a student t distribution, since it has heavy tails it should work well
+
+def gaussian_f_check():
+    plt.close('all')
+    X = np.linspace(0, 1, 50)[:, None]
+    real_std = 0.2
+    noise = np.random.randn(*X.shape)*real_std
+    Y = np.sin(X*2*np.pi) + noise
+
+    kernelgp = GPy.kern.rbf(X.shape[1]) # + GPy.kern.white(X.shape[1])
+    mgp = GPy.models.GP_regression(X, Y, kernel=kernelgp)
+    mgp.ensure_default_constraints()
+    mgp.randomize()
+    mgp.optimize()
+    print "Gaussian"
+    print mgp
+    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+
+    kernelg = kernelgp.copy()
+    #kernelst += GPy.kern.bias(X.shape[1])
+    N, D = X.shape
+    g_distribution = GPy.likelihoods.likelihood_functions.gaussian(variance=0.1, N=N, D=D)
+    g_likelihood = GPy.likelihoods.Laplace(Y.copy(), g_distribution, opt='rasm')
+    m = GPy.models.GP(X, g_likelihood, kernelg)
+    #m['rbf_v'] = mgp._get_params()[0]
+    #m['rbf_l'] = mgp._get_params()[1] + 1
+    m.ensure_default_constraints()
+    #m.constrain_fixed('rbf_v', mgp._get_params()[0])
+    #m.constrain_fixed('rbf_l', mgp._get_params()[1])
+    #m.constrain_bounded('t_no', 2*real_std**2, 1e3)
+    #m.constrain_positive('bias')
+    m.constrain_positive('noise_var')
+    m.randomize()
+    m['noise_variance'] = 0.1
+    m.likelihood.X = X
+    plt.figure()
+    plt.subplot(211)
+    m.plot()
+    plt.subplot(212)
+    m.optimize()
+    m.plot()
+    print "final optimised student t"
+    print m
+    print "real GP"
+    print mgp
+    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT

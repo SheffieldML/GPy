@@ -9,7 +9,7 @@ from ..util.plot import gpplot
 from scipy.special import gammaln, gamma
 from ..util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
 
-class likelihood_function:
+class likelihood_function(object):
     """ Likelihood class for doing Expectation propagation
 
     :param Y: observed output (Nx1 numpy.darray)
@@ -159,7 +159,7 @@ class student_t(likelihood_function):
     d2ln p(yi|fi)_d2fifj
     """
     def __init__(self, deg_free, sigma2=2):
-        #super(student_t, self).__init__()
+        super(student_t, self).__init__()
         self.v = deg_free
         self.sigma2 = sigma2
         self.log_concave = False
@@ -468,8 +468,15 @@ class gaussian(likelihood_function):
     """
     Gaussian likelihood - this is a test class for approximation schemes
     """
-    def __init__(self, variance):
+    def __init__(self, variance, D, N):
+        super(gaussian, self).__init__()
+        self.D = D
+        self.N = N
         self._set_params(np.asarray(variance))
+
+        #Don't support normalizing yet
+        self._bias = np.zeros((1, self.D))
+        self._scale = np.ones((1, self.D))
 
     def _get_params(self):
         return np.asarray(self._variance)
@@ -481,7 +488,8 @@ class gaussian(likelihood_function):
         self._variance = float(x)
         self.I = np.eye(self.N)
         self.covariance_matrix = self.I * self._variance
-        self.Ki, _, _, self.ln_K = pdinv(self.covariance_matrix) # THIS MAY BE WRONG
+        self.Ki = self.I*(1.0 / self._variance)
+        self.ln_K = np.trace(self.covariance_matrix)
 
     def link_function(self, y, f, extra_data=None):
         """link_function $\ln p(y|f)$
@@ -498,7 +506,8 @@ class gaussian(likelihood_function):
         eeT = np.dot(e, e.T)
         objective = (- 0.5*self.D*np.log(2*np.pi)
                      - 0.5*self.ln_K
-                     - 0.5*np.sum(np.multiply(self.Ki, eeT))
+                     #- 0.5*np.sum(np.multiply(self.Ki, eeT))
+                     - 0.5*np.dot(np.dot(e.T, self.Ki), e)
                      )
         return np.sum(objective)
 
@@ -514,7 +523,7 @@ class gaussian(likelihood_function):
         """
         assert y.shape == f.shape
         s2_i = (1.0/self._variance)*self.I
-        grad = np.dot(s2_i, y) - 0.5*np.dot(s2_i, f)
+        grad = np.dot(s2_i, y) - np.dot(s2_i, f)
         return grad
 
     def d2lik_d2f(self, y, f, extra_data=None):
@@ -532,7 +541,7 @@ class gaussian(likelihood_function):
         """
         assert y.shape == f.shape
         s2_i = (1.0/self._variance)*self.I
-        hess = np.diagonal(-0.5*s2_i)
+        hess = np.diag(-s2_i)[:, None] # FIXME: CAREFUL THIS MAY NOT WORK WITH MULTIDIMENSIONS?
         return hess
 
     def d3lik_d3f(self, y, f, extra_data=None):
@@ -542,7 +551,7 @@ class gaussian(likelihood_function):
         $$\frac{d^{3}p(y_{i}|f_{i})}{d^{3}f} = \frac{-2(v+1)((y_{i} - f_{i})^3 - 3(y_{i} - f_{i}) \sigma^{2} v))}{((y_{i} - f_{i}) + \sigma^{2} v)^3}$$
         """
         assert y.shape == f.shape
-        d3lik_d3f = np.diagonal(0*self.I)
+        d3lik_d3f = np.diagonal(0*self.I)[:, None] # FIXME: CAREFUL THIS MAY NOT WORK WITH MULTIDIMENSIONS?
         return d3lik_d3f
 
     def lik_dstd(self, y, f, extra_data=None):
@@ -551,7 +560,7 @@ class gaussian(likelihood_function):
         """
         assert y.shape == f.shape
         e = y - f
-        dlik_dsigma = -0.5*self.N*self._variance - 0.5*np.dot(e.T, e)
+        dlik_dsigma = -0.5*self.D/self._variance - 0.5*np.trace(np.dot(e.T, np.dot(self.I, e)))
         return dlik_dsigma
 
     def dlik_df_dstd(self, y, f, extra_data=None):
@@ -560,7 +569,7 @@ class gaussian(likelihood_function):
         """
         assert y.shape == f.shape
         s_4 = 1.0/(self._variance**2)
-        dlik_grad_dsigma = -np.dot(s_4, np.dot(self.I, y)) + 0.5*np.dot(s_4, np.dot(self.I, f))
+        dlik_grad_dsigma = -np.dot(s_4, np.dot(self.I, y)) + np.dot(s_4, np.dot(self.I, f))
         return dlik_grad_dsigma
 
     def d2lik_d2f_dstd(self, y, f, extra_data=None):
@@ -570,7 +579,7 @@ class gaussian(likelihood_function):
         $$\frac{d}{d\sigma}(\frac{d^{2}p(y_{i}|f_{i})}{d^{2}f}) = \frac{2\sigma v(v + 1)(\sigma^2 v - 3(y-f)^2)}{((y-f)^2 + \sigma^2 v)^3}$$
         """
         assert y.shape == f.shape
-        dlik_hess_dsigma = 1.0/(2*(self._variance**2))
+        dlik_hess_dsigma = np.diag(1.0/(self._variance**2)*self.I)[:, None]
         return dlik_hess_dsigma
 
     def _gradients(self, y, f, extra_data=None):
@@ -584,3 +593,10 @@ class gaussian(likelihood_function):
         assert len(derivs[1]) == len(self._get_param_names())
         assert len(derivs[2]) == len(self._get_param_names())
         return derivs
+
+    def predictive_values(self, mu, var):
+        mean = mu * self._scale + self._bias
+        true_var = (var + self._variance) * self._scale ** 2
+        _5pc = mean - 2.*np.sqrt(true_var)
+        _95pc = mean + 2.*np.sqrt(true_var)
+        return mean, true_var, _5pc, _95pc

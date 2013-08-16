@@ -8,6 +8,7 @@ import independent_outputs
 import linear
 import Matern32
 import Matern52
+import mlp
 import periodic_exponential
 import periodic_Matern32
 import periodic_Matern52

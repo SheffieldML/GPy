@@ -59,6 +59,11 @@ class GradientTests(unittest.TestCase):
         k = GPy.kern.rbf(2, ARD=True)
         self.check_model_with_white(k, model_type='GPRegression', dimension=2)
 
+    def test_GPRegression_mlp_1d(self):
+        ''' Testing the GP regression with mlp kernel with white kernel on 1d data '''
+        mlp = GPy.kern.mlp(1)
+        self.check_model_with_white(mlp, model_type='GPRegression', dimension=1)
+
     def test_GPRegression_matern52_1D(self):
         ''' Testing the GP regression with matern52 kernel on 1d data '''
         matern52 = GPy.kern.Matern52(1)

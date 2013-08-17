@@ -111,10 +111,10 @@ class MLP(Kernpart):
         gX = np.zeros((X2.shape[0], X.shape[1], X.shape[0]))
         
         for i in range(X.shape[0]):
-            gX[:, :, i] = self._dK_dX_point(X, X2, i)
+            gX[:, :, i] = self._dK_dX_point(dL_dK, X, X2, target, i)
             
             
-    def _dK_dX_point(self, X, X2, i):
+    def _dK_dX_point(self, dL_dK, X, X2, target, i):
         """Gradient with respect to one point of X"""
         
         inner_prod = self._K_inner_prod[i, :].T
@@ -127,10 +127,11 @@ class MLP(Kernpart):
         #arg = numer/denom
         gX = np.zeros(X2.shape)
         denom3 = denom*denom*denom
+        gX = np.zeros((X2.shape[0], X2.shape[1]))
         for j in range(X2.shape[1]):
-            gX[:, j]=X2[:, j]/denom - vec2*X[i, j]*numer/denom3
+            gX[:, j] =X2[:, j]/denom - vec2*X[i, j]*numer/denom3
             gX[:, j] = four_over_tau*self.weight_variance*self.variance*gX[:, j]/np.sqrt(1-arg*arg)
-
+            target[i, :]
     
     
     def _K_computations(self, X, X2):

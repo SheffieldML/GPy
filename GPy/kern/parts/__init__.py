@@ -12,6 +12,7 @@ import mlp
 import periodic_exponential
 import periodic_Matern32
 import periodic_Matern52
+import poly
 import prod_orthogonal
 import prod
 import rational_quadratic

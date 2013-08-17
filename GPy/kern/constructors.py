@@ -69,6 +69,26 @@ def mlp(input_dim,variance=1., weight_variance=None,bias_variance=100.,ARD=False
     part = parts.mlp.MLP(input_dim,variance,weight_variance,bias_variance,ARD)
     return kern(input_dim, [part])
 
+def poly(input_dim,variance=1., weight_variance=None,bias_variance=1.,degree=2, ARD=False):
+    """
+    Construct a polynomial kernel
+
+    :param input_dim: dimensionality of the kernel, obligatory
+    :type input_dim: int
+    :param variance: the variance of the kernel
+    :type variance: float
+    :param weight_scale: the lengthscale of the kernel
+    :type weight_scale: vector of weight variances for input weights.
+    :param bias_variance: the variance of the biases.
+    :type bias_variance: float
+    :param degree: the degree of the polynomial
+    :type degree: int
+    :param ARD: Auto Relevance Determination (allows for ARD version of covariance)
+    :type ARD: Boolean
+    """
+    part = parts.poly.POLY(input_dim,variance,weight_variance,bias_variance,degree,ARD)
+    return kern(input_dim, [part])
+
 def white(input_dim,variance=1.):
     """
      Construct a white kernel.

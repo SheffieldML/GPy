@@ -56,5 +56,5 @@ class Kernpart(object):
         raise NotImplementedError
     def dpsi2_dmuS(self,dL_dpsi2,Z,mu,S,target_mu,target_S):
         raise NotImplementedError
-    def dK_dX(self,X,X2,target):
+    def dK_dX(self, dL_dK, X, X2, target):
         raise NotImplementedError

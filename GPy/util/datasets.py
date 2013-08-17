@@ -203,17 +203,22 @@ def swiss_roll(N=3000):
     Y = mat_data['X_data'][:, 0:N].transpose()
     return {'Y': Y, 'X': mat_data['X_data'], 'info': "The first 3,000 points from the swiss roll data of Tennenbaum, de Silva and Langford (2001)."}
 
-def toy_rbf_1d(seed=default_seed):
+def toy_rbf_1d(seed=default_seed, num_samples=500):
+    """Samples 500 values of a function from an RBF covariance with very small noise for inputs uniformly distributed between -1 and 1.
+    :param seed: seed to use for random sampling.
+    :type seed: int
+    :param num_samples: number of samples to sample in the function (default 500).
+    :type num_samples: int
+    """
     np.random.seed(seed=seed)
-    numIn = 1
-    N = 500
-    X = np.random.uniform(low= -1.0, high=1.0, size=(N, numIn))
+    num_in = 1
+    X = np.random.uniform(low= -1.0, high=1.0, size=(num_samples, num_in))
     X.sort(axis=0)
-    rbf = GPy.kern.rbf(numIn, variance=1., lengthscale=np.array((0.25,)))
-    white = GPy.kern.white(numIn, variance=1e-2)
+    rbf = GPy.kern.rbf(num_in, variance=1., lengthscale=np.array((0.25,)))
+    white = GPy.kern.white(num_in, variance=1e-2)
     kernel = rbf + white
     K = kernel.K(X)
-    y = np.reshape(np.random.multivariate_normal(np.zeros(N), K), (N, 1))
+    y = np.reshape(np.random.multivariate_normal(np.zeros(num_samples), K), (num_samples, 1))
     return {'X':X, 'Y':y, 'info': "Samples 500 values of a function from an RBF covariance with very small noise for inputs uniformly distributed between -1 and 1."}
 
 def toy_rbf_1d_50(seed=default_seed):

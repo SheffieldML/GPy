@@ -96,13 +96,14 @@ class MLP(Kernpart):
             vec2 = (X2*X2).sum(1)
             target[1] += ((self._K_inner_prod/self._K_denom 
                            -.5*self._K_numer/denom3
-                           *(np.outer((self.weight_variance*vec1+self.bias_variance+1.), vec2) + np.outer(vec1, self.weight_variance*vec2 + self.bias_variance_1.)))*base_cov_grad).sum()
+                           *(np.outer((self.weight_variance*vec1+self.bias_variance+1.), vec2) + np.outer(vec1, self.weight_variance*vec2 + self.bias_variance+1.)))*base_cov_grad).sum()
             target[2] += ((1./self._K_denom 
                            -.5*self._K_numer/denom3 
-                           *((vec1[None, :]+vec2[:, None])*self.weight_variance
+                           *((vec1[:, None]+vec2[None, :])*self.weight_variance
                              + 2*self.bias_variance + 2.))*base_cov_grad).sum()
             
         target[0] += np.sum(self._K_dvar*dL_dK)
+
 
     def dK_dX(self, dL_dK, X, X2, target):
         """Derivative of the covariance matrix with respect to X"""
@@ -110,20 +111,24 @@ class MLP(Kernpart):
         gX = np.zeros((X2.shape[0], X.shape[1], X.shape[0]))
         
         for i in range(X.shape[0]):
-            gX[:, :, i] = self._dK_dX_point(X[i, :], X2)
-    
-    def _dK_dX_point(self, x, X2):
+            gX[:, :, i] = self._dK_dX_point(X, X2, i)
+            
+            
+    def _dK_dX_point(self, X, X2, i):
         """Gradient with respect to one point of X"""
-        inner_prod = np.dot(X2,x.T)
-        numer = inner_prod*self.weight_variance + self.bias_variance
-        vec1 = (x*x).sum(1)*self.weight_variance + self.bias_variance + 1.
+        
+        inner_prod = self._K_inner_prod[i, :].T
+        numer = self._K_numer[i, :].T
+        denom = self._K_denom[i, :].T
+        arg = self._K_asin_arg[i, :].T
+        vec1 = (X[i, :]*X[i, :]).sum()*self.weight_variance + self.bias_variance + 1.
         vec2 = (X2*X2).sum(1)*self.weight_variance + self.bias_variance + 1.
-        denom = np.sqrt(np.outer(vec2,vec1))
-        arg = numer/denom
+        #denom = np.sqrt(np.outer(vec2,vec1))
+        #arg = numer/denom
         gX = np.zeros(X2.shape)
         denom3 = denom*denom*denom
         for j in range(X2.shape[1]):
-            gX[:, j]=X2[:, j]/denom - vec2*x[:, j]*numer/denom3
+            gX[:, j]=X2[:, j]/denom - vec2*X[i, j]*numer/denom3
             gX[:, j] = four_over_tau*self.weight_variance*self.variance*gX[:, j]/np.sqrt(1-arg*arg)
 
     

@@ -29,7 +29,11 @@ class Kernpart(object):
     def dK_dtheta(self,dL_dK,X,X2,target):
         raise NotImplementedError
     def dKdiag_dtheta(self,dL_dKdiag,X,target):
-        raise NotImplementedError
+        # In the base case compute this by calling dK_dtheta. Need to
+        # override for stationary covariances (for example) to save
+        # time.
+        for i in range(X.shape[0]):
+            self.dK_dtheta(dL_dKdiag[i], X[i, :][None, :], X2=None, target=target)
     def psi0(self,Z,mu,S,target):
         raise NotImplementedError
     def dpsi0_dtheta(self,dL_dpsi0,Z,mu,S,target):

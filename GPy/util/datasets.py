@@ -404,7 +404,7 @@ def robot_wireless(data_set='robot_wireless'):
     Y = allY[0:215, :]
 
     Xtest = allX[215:, :]
-    Ytest = allX[215:, :]
+    Ytest = allY[215:, :]
     return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'addresses' : addresses, 'times' : times}, data_set)
 
 def silhouette(data_set='ankur_pose_data'):

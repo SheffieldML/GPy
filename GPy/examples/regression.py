@@ -334,16 +334,16 @@ def robot_wireless(optim_iters=100):
 
     # optimize
     m.optimize(messages=True, max_f_eval=optim_iters)
-    Ypredict = m.predict(data['Y'])[0]
+    Xpredict = m.predict(data['Ytest'])[0]
     pb.plot(data['Xtest'][:, 0], data['Xtest'][:, 1], 'r-')
-    pb.plot(Ypredict[:, 0], Ypredict[:, 1], 'b-')
+    pb.plot(Xpredict[:, 0], Xpredict[:, 1], 'b-')
     pb.axis('equal')
     pb.title('WiFi Localization with Gaussian Processes')
     pb.legend(('True Location', 'Predicted Location'))
 
-    sse = ((data['Ytest'] - Y.predict)**2).sum()
+    sse = ((data['Xtest'] - Xpredict)**2).sum()
     print(m)
-    print('Sum of squares error on test data: ', str(sse))
+    print('Sum of squares error on test data: ' + str(sse))
     return m
 
 def sparse_GP_regression_1D(N=400, num_inducing=5, optim_iters=100):

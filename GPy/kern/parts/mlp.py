@@ -85,8 +85,8 @@ class MLP(Kernpart):
             vec = np.diag(self._K_inner_prod)
             target[1] += ((self._K_inner_prod/self._K_denom 
                            -.5*self._K_numer/denom3
-                           *(np.outer((self.weight_std*vec+self.bias_variance+1.), self.weight_std*vec) 
-                             +np.outer(self.weight_std*vec,(self.weight_std*vec+self.bias_variance+1.))))*base_cov_grad).sum()
+                           *(np.outer((self.weight_variance*vec+self.bias_variance+1.), vec) 
+                             +np.outer(vec,(self.weight_variance*vec+self.bias_variance+1.))))*base_cov_grad).sum()
             target[2] += ((1./self._K_denom 
                            -.5*self._K_numer/denom3 
                            *((vec[None, :]+vec[:, None])*self.weight_variance

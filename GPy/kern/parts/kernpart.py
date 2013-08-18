@@ -58,3 +58,19 @@ class Kernpart(object):
         raise NotImplementedError
     def dK_dX(self, dL_dK, X, X2, target):
         raise NotImplementedError
+
+class Kernpart_inner(Kernpart):
+    def __init__(self,input_dim):
+        """
+        The base class for a kernpart_inner: a positive definite function which forms part of a kernel that is based on the inner product between inputs.
+
+        :param input_dim: the number of input dimensions to the function
+        :type input_dim: int
+
+        Do not instantiate.
+        """
+        Kernpart.__init__(self, input_dim)
+
+        # initialize cache
+        self._Z, self._mu, self._S = np.empty(shape=(3, 1))
+        self._X, self._X2, self._params = np.empty(shape=(3, 1))

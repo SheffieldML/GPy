@@ -325,6 +325,27 @@ def _contour_data(data, length_scales, log_SNRs, kernel_call=GPy.kern.rbf):
 
     return np.array(lls)
 
+def robot_wireless(optim_iters=100):
+    """Predict the location of a robot given wirelss signal strengthr readings."""
+    data = GPy.util.datasets.robot_wireless()
+
+    # create simple GP Model
+    m = GPy.models.GPRegression(data['Y'], data['X'])
+
+    # optimize
+    m.optimize(messages=True, max_f_eval=optim_iters)
+    Ypredict = m.predict(data['Y'])[0]
+    pb.plot(data['Xtest'][:, 0], data['Xtest'][:, 1], 'r-')
+    pb.plot(Ypredict[:, 0], Ypredict[:, 1], 'b-')
+    pb.axis('equal')
+    pb.title('WiFi Localization with Gaussian Processes')
+    pb.legend(('True Location', 'Predicted Location'))
+
+    sse = ((data['Ytest'] - Y.predict)**2).sum()
+    print(m)
+    print('Sum of squares error on test data: ', str(sse))
+    return m
+
 def sparse_GP_regression_1D(N=400, num_inducing=5, optim_iters=100):
     """Run a 1D example of a sparse GP regression."""
     # sample inputs and outputs

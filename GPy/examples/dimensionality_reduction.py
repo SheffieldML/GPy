@@ -378,6 +378,17 @@ def stick():
 
     return m
 
+def robot_wireless():
+    data = GPy.util.datasets.robot_wireless()
+    # optimize
+    m = GPy.models.GPLVM(data['Y'], 2)
+    m.optimize(messages=1, max_f_eval=10000)
+    m._set_params(m._get_params())
+    plt.clf
+    ax = m.plot_latent()
+
+    return m
+
 def stick_bgplvm(model=None):
     data = GPy.util.datasets.osu_run1()
     Q = 6

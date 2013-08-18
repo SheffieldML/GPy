@@ -23,7 +23,7 @@ def reporthook(a,b,c):
 # Global variables
 data_path = os.path.join(os.path.dirname(__file__), 'datasets')
 default_seed = 10000
-
+overide_manual_authorize=False
 neil_url = 'http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/'
 cmu_url = 'http://mocap.cs.cmu.edu/subjects/'
 # Note: there may be a better way of storing data resources. One of the pythonistas will need to take a look.
@@ -33,7 +33,13 @@ data_resources = {'ankur_pose_data' : {'urls' : [neil_url + 'ankur_pose_data/'],
                                        'citation' : """3D Human Pose from Silhouettes by Relevance Vector Regression (In CVPR'04). A. Agarwal and B. Triggs.""",
                                        'details' : """Artificially generated data of silhouettes given poses. Note that the data does not display a left/right ambiguity because across the entire data set one of the arms sticks out more the the other, disambiguating the pose as to which way the individual is facing."""},
                    
-                  
+                  'boston_housing' : {'urls' : ['http://archive.ics.uci.edu/ml/machine-learning-databases/housing/'],
+                                      'files' : [['Index', 'housing.data', 'housing.names']],
+                                      'citation' : """Harrison, D. and Rubinfeld, D.L. 'Hedonic prices and the demand for clean air', J. Environ. Economics & Management, vol.5, 81-102, 1978.""",
+                                      'details' : """The Boston Housing data relates house values in Boston to a range of input variables.""",
+                                      'license' : None,
+                                      'size' : 51276
+                                      },
                   'brendan_faces' : {'urls' : ['http://www.cs.nyu.edu/~roweis/data/'],
                                      'files': [['frey_rawface.mat']],
                                      'citation' : 'Frey, B. J., Colmenarez, A and Huang, T. S. Mixtures of Local Linear Subspaces for Face Recognition. Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition 1998, 32-37, June 1998. Computer Society Press, Los Alamitos, CA.',
@@ -90,6 +96,12 @@ The database was created with funding from NSF EIA-0196217.""",
                                     'citation' : """Created by Zoubin Ghahramani using the Matlab Robotics Toolbox of Peter Corke. Corke, P. I. (1996). A Robotics Toolbox for MATLAB. IEEE Robotics and Automation Magazine, 3 (1): 24-32.""",
                                     'license' : """Data is made available by the Delve system at the University of Toronto""",
                                     'size' : 5861646},
+                  'robot_wireless' : {'urls' : [neil_url + 'robot_wireless/'],
+                                      'files' : [['uw-floor.txt']],
+                                      'citation' : """WiFi-SLAM using Gaussian Process Latent Variable Models by Brian Ferris, Dieter Fox and Neil Lawrence in IJCAI'07 Proceedings pages 2480-2485. Data used in A Unifying Probabilistic Perspective for Spectral Dimensionality Reduction: Insights and New Models by Neil D. Lawrence, JMLR 13 pg 1609--1638, 2012.""",
+                                      'details' : """Data created by Brian Ferris and Dieter Fox. Consists of WiFi access point strengths taken during a circuit of the Paul Allen building at the University of Washington.""",
+                                      'license' : None,
+                                      'size' : 284390},
                   'swiss_roll' : {'urls' : ['http://isomap.stanford.edu/'],
                                   'files' : [['swiss_roll_data.mat']],
                                   'details' : """Swiss roll data made available by Tenenbaum, de Silva and Langford to demonstrate isomap, available from http://isomap.stanford.edu/datasets.html.""",
@@ -163,12 +175,19 @@ def authorize_download(dataset_name=None):
         print('')
     print('Data will be stored in ' + os.path.join(data_path, dataset_name) + '.')
     print('')
-    if dr['license']:
-        print('You must also agree to the following license:')
-        print(dr['license'])
-        print('')
-    print('Do you wish to proceed with the download? [yes/no]')
-    return prompt_user()
+    if overide_manual_authorize:
+        if dr['license']:
+            print('You have agreed to the following license:')
+            print(dr['license'])
+            print('')
+        return True
+    else:
+        if dr['license']:
+            print('You must also agree to the following license:')
+            print(dr['license'])
+            print('')
+        print('Do you wish to proceed with the download? [yes/no]')
+        return prompt_user()
 
 def download_data(dataset_name=None):
     """Check with the user that the are happy with terms and conditions for the data set, then download it."""
@@ -254,6 +273,14 @@ def sample_class(f):
     c = np.where(c, 1, -1)
     return c
 
+def boston_housing(data_set='boston_housing'):
+    if not data_available(data_set):
+        download_data(data_set)
+    all_data = np.genfromtxt(os.path.join(data_path, data_set, 'housing.data'))
+    X = all_data[:, 0:13]
+    Y = all_data[:, 13:14]
+    return data_details_return({'X' : X, 'Y': Y}, data_set)
+
 def brendan_faces(data_set='brendan_faces'):
     if not data_available(data_set):
         download_data(data_set)
@@ -338,6 +365,47 @@ def pumadyn(seed=default_seed, data_set='pumadyn-32nm'):
     Xtest = data[indicesTest, 0:-2]
     Ytest = data[indicesTest, -1][:, None]
     return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'seed': seed}, data_set)
+
+def robot_wireless(data_set='robot_wireless'):
+    # WiFi access point strengths on a tour around UW Paul Allen building.
+    if not data_available(data_set):
+        download_data(data_set)
+    file_name = os.path.join(data_path, data_set, 'uw-floor.txt')
+    all_time = np.genfromtxt(file_name, usecols=(0))
+    macaddress = np.genfromtxt(file_name, usecols=(1), dtype='string')
+    x = np.genfromtxt(file_name, usecols=(2))
+    y = np.genfromtxt(file_name, usecols=(3))
+    strength = np.genfromtxt(file_name, usecols=(4))
+    addresses = np.unique(macaddress)
+    times = np.unique(all_time)
+    addresses.sort()
+    times.sort()
+    allY = np.zeros((len(times), len(addresses)))
+    allX = np.zeros((len(times), 2))
+    allY[:]=-92.
+    strengths={}
+    for address, j in zip(addresses, range(len(addresses))):
+        ind = np.nonzero(address==macaddress)
+        temp_strengths=strength[ind]
+        temp_x=x[ind]
+        temp_y=y[ind]
+        temp_times = all_time[ind]
+        for time in temp_times:
+            vals = time==temp_times
+            if any(vals):
+                ind2 = np.nonzero(vals)
+                i = np.nonzero(time==times)
+                allY[i, j] = temp_strengths[ind2]
+                allX[i, 0] = temp_x[ind2]
+                allX[i, 1] = temp_y[ind2]
+    allY = (allY + 85.)/15.
+
+    X = allX[0:215, :]
+    Y = allY[0:215, :]
+
+    Xtest = allX[215:, :]
+    Ytest = allX[215:, :]
+    return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'addresses' : addresses, 'times' : times}, data_set)
 
 def silhouette(data_set='ankur_pose_data'):
     # Ankur Agarwal and Bill Trigg's silhoutte data.
@@ -468,6 +536,21 @@ def olympic_100m_men(data_set='rogers_girolami_data'):
     Y = olympic_data[:, 1][:, None]
     return data_details_return({'X': X, 'Y': Y, 'info': "Olympic sprint times for 100 m men from 1896 until 2008. Example is from Rogers and Girolami's First Course in Machine Learning."}, data_set)
 
+def olympic_100m_women(data_set='rogers_girolami_data'):
+    if not data_available(data_set):
+        download_data(data_set)
+        path = os.path.join(data_path, data_set)
+        tar_file = os.path.join(path, 'firstcoursemldata.tar.gz')
+        tar = tarfile.open(tar_file)
+        print('Extracting file.')
+        tar.extractall(path=path)
+        tar.close()
+    olympic_data = scipy.io.loadmat(os.path.join(data_path, data_set, 'data', 'olympics.mat'))['female100']
+
+    X = olympic_data[:, 0][:, None]
+    Y = olympic_data[:, 1][:, None]
+    return data_details_return({'X': X, 'Y': Y, 'info': "Olympic sprint times for 100 m women from 1896 until 2008. Example is from Rogers and Girolami's First Course in Machine Learning."}, data_set)
+
 def olympic_marathon_men(data_set='olympic_marathon_men'):
     if not data_available(data_set):
         download_data(data_set)
@@ -542,7 +625,6 @@ def crescent_data(num_data=200, seed=default_seed):
         Xparts.append(part)
         num_data_total += num_data_part[i]
     X = np.vstack((Xparts[0], Xparts[1], Xparts[2], Xparts[3]))
-
 
     Y = np.vstack((np.ones((num_data_part[0] + num_data_part[1], 1)), -np.ones((num_data_part[2] + num_data_part[3], 1))))
     return {'X':X, 'Y':Y, 'info': "Two separate classes of data formed approximately in the shape of two crescents."}

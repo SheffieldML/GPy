@@ -107,11 +107,12 @@ class MLP(Kernpart):
 
     def dK_dX(self, dL_dK, X, X2, target):
         """Derivative of the covariance matrix with respect to X"""
-        self._K_computations(X, X2)
-        gX = np.zeros((X2.shape[0], X.shape[1], X.shape[0]))
+        raise NotImplementedError
+        # self._K_computations(X, X2)
+        # gX = np.zeros((X2.shape[0], X.shape[1], X.shape[0]))
         
-        for i in range(X.shape[0]):
-            gX[:, :, i] = self._dK_dX_point(dL_dK, X, X2, target, i)
+        # for i in range(X.shape[0]):
+        #     gX[:, :, i] = self._dK_dX_point(dL_dK, X, X2, target, i)
             
             
     def _dK_dX_point(self, dL_dK, X, X2, target, i):
@@ -161,7 +162,3 @@ class MLP(Kernpart):
             self._K_diag_numer = (X*X).sum(1)*self.weight_variance + self.bias_variance
             self._K_diag_denom = self._K_diag_numer+1.
             self._K_diag_dvar = four_over_tau*np.arcsin(self._K_diag_numer/self._K_diag_denom)
-
-  
-
-

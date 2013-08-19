@@ -42,8 +42,7 @@ class KernelTests(unittest.TestCase):
         self.assertTrue(m.checkgrad())
 
 
-
-
+       
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."
     unittest.main()

@@ -23,3 +23,7 @@ Can we comment up some of the list incomprehensions in hierarchical.py??
 Need to tidy up classification.py, 
 many examples include help that doesn't apply 
 (it is suggested that you can try different approximation types)
+
+Shall we overload the ** operator to have tensor products?
+
+People aren't filling the doc strings in as they go *everyone* needs to get in the habit of this (and modifying them as they edit, or correcting them when there is a problem).

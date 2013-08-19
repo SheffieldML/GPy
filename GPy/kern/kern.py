@@ -14,7 +14,10 @@ class kern(Parameterized):
         """
         This is the main kernel class for GPy. It handles multiple (additive) kernel functions, and keeps track of variaous things like which parameters live where.
 
-        The technical code for kernels is divided into _parts_ (see e.g. rbf.py). This obnject contains a list of parts, which are computed additively. For multiplication, special _prod_ parts are used.
+        The technical code for kernels is divided into _parts_ (see
+        e.g. rbf.py). This object contains a list of parts, which are
+        computed additively. For multiplication, special _prod_ parts
+        are used.
 
         :param input_dim: The dimensionality of the kernel's input space
         :type input_dim: int
@@ -149,7 +152,7 @@ class kern(Parameterized):
             return g
 
     def compute_param_slices(self):
-        """create a set of slices that can index the parameters of each part"""
+        """create a set of slices that can index the parameters of each part."""
         self.param_slices = []
         count = 0
         for p in self.parts:
@@ -200,11 +203,19 @@ class kern(Parameterized):
         """
         return self.prod(other)
 
+    def __pow__(self, other, tensor=False):
+        """
+        Shortcut for tensor `prod`.
+        """
+        return self.prod(other, tensor=True)
+
     def prod(self, other, tensor=False):
         """
-        multiply two kernels (either on the same space, or on the tensor product of the input space)
+        multiply two kernels (either on the same space, or on the tensor product of the input space).
         :param other: the other kernel to be added
         :type other: GPy.kern
+        :param tensor: whether or not to use the tensor space (default is false).
+        :type tensor: bool 
         """
         K1 = self.copy()
         K2 = other.copy()
@@ -273,7 +284,7 @@ class kern(Parameterized):
         [p._set_params(x[s]) for p, s in zip(self.parts, self.param_slices)]
 
     def _get_param_names(self):
-        # this is a bit nasty: we wat to distinguish between parts with the same name by appending a count
+        # this is a bit nasty: we want to distinguish between parts with the same name by appending a count
         part_names = np.array([k.name for k in self.parts], dtype=np.str)
         counts = [np.sum(part_names == ni) for i, ni in enumerate(part_names)]
         cum_counts = [np.sum(part_names[i:] == ni) for i, ni in enumerate(part_names)]
@@ -295,11 +306,13 @@ class kern(Parameterized):
 
     def dK_dtheta(self, dL_dK, X, X2=None):
         """
-        :param dL_dK: An array of dL_dK derivaties, dL_dK
-        :type dL_dK: Np.ndarray (N x num_inducing)
+        Compute the gradient of the covariance function with respect to the parameters.
+        
+        :param dL_dK: An array of gradients of the objective function with respect to the covariance function.
+        :type dL_dK: Np.ndarray (num_samples x num_inducing)
         :param X: Observed data inputs
-        :type X: np.ndarray (N x input_dim)
-        :param X2: Observed dara inputs (optional, defaults to X)
+        :type X: np.ndarray (num_samples x input_dim)
+        :param X2: Observed data inputs (optional, defaults to X)
         :type X2: np.ndarray (num_inducing x input_dim)
         """
         assert X.shape[1] == self.input_dim
@@ -312,6 +325,14 @@ class kern(Parameterized):
         return self._transform_gradients(target)
 
     def dK_dX(self, dL_dK, X, X2=None):
+        """Compute the gradient of the covariance function with respect to X.
+
+        :param dL_dK: An array of gradients of the objective function with respect to the covariance function.
+        :type dL_dK: np.ndarray (num_samples x num_inducing)
+        :param X: Observed data inputs
+        :type X: np.ndarray (num_samples x input_dim)
+        :param X2: Observed data inputs (optional, defaults to X)
+        :type X2: np.ndarray (num_inducing x input_dim)"""
         if X2 is None:
             X2 = X
         target = np.zeros_like(X)
@@ -322,6 +343,7 @@ class kern(Parameterized):
         return target
 
     def Kdiag(self, X, which_parts='all'):
+        """Compute the diagonal of the covariance function for inputs X."""
         if which_parts == 'all':
             which_parts = [True] * self.Nparts
         assert X.shape[1] == self.input_dim
@@ -330,6 +352,7 @@ class kern(Parameterized):
         return target
 
     def dKdiag_dtheta(self, dL_dKdiag, X):
+        """Compute the gradient of the diagonal of the covariance function with respect to the parameters."""
         assert X.shape[1] == self.input_dim
         assert dL_dKdiag.size == X.shape[0]
         target = np.zeros(self.num_params)
@@ -373,16 +396,18 @@ class kern(Parameterized):
         return target
 
     def dpsi1_dmuS(self, dL_dpsi1, Z, mu, S):
-        """return shapes are N,num_inducing,input_dim"""
+        """return shapes are num_samples,num_inducing,input_dim"""
         target_mu, target_S = np.zeros((2, mu.shape[0], mu.shape[1]))
         [p.dpsi1_dmuS(dL_dpsi1, Z[:, i_s], mu[:, i_s], S[:, i_s], target_mu[:, i_s], target_S[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
         return target_mu, target_S
 
     def psi2(self, Z, mu, S):
         """
+        Computer the psi2 statistics for the covariance function.
+        
         :param Z: np.ndarray of inducing inputs (num_inducing x input_dim)
-        :param mu, S: np.ndarrays of means and variances (each N x input_dim)
-        :returns psi2: np.ndarray (N,num_inducing,num_inducing)
+        :param mu, S: np.ndarrays of means and variances (each num_samples x input_dim)
+        :returns psi2: np.ndarray (num_samples,num_inducing,num_inducing)
         """
         target = np.zeros((mu.shape[0], Z.shape[0], Z.shape[0]))
         [p.psi2(Z[:, i_s], mu[:, i_s], S[:, i_s], target) for p, i_s in zip(self.parts, self.input_slices)]
@@ -406,6 +431,7 @@ class kern(Parameterized):
         return target
 
     def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S):
+        """Gradient of the psi2 statistics with respect to the parameters."""
         target = np.zeros(self.num_params)
         [p.dpsi2_dtheta(dL_dpsi2, Z[:, i_s], mu[:, i_s], S[:, i_s], target[ps]) for p, i_s, ps in zip(self.parts, self.input_slices, self.param_slices)]
 
@@ -509,3 +535,36 @@ class kern(Parameterized):
             pb.title("k(x1,x2 ; %0.1f,%0.1f)" % (x[0, 0], x[0, 1]))
         else:
             raise NotImplementedError, "Cannot plot a kernel with more than two input dimensions"
+
+    def objective_and_gradients_dK_dtheta(self, param, X, X2=None):
+        self._set_param(param)
+        K = self.K(X, X2)
+        f = K.sum()
+        dL_dK = np.ones_like(K)
+        g = self.dK_dtheta(param, dL_dK, X, X2)
+        return f, g
+
+    def objective_and_gradients_dK_dX(self, param, X, X2=None):
+        self._set_param(param)
+        K = self.K(X, X2)
+        f = K.sum()
+        dL_dK = np.ones_like(K)
+        g = self.dK_dX(param, dL_dK, X, X2)
+        return f, g
+
+    def objective_and_gradients_dKdiag_dtheta(self, param, X, X2=None):
+        self._set_param(param)
+        Kdiag = self.Kdiag(X)
+        f = Kdiag.sum()
+        dL_dK = np.ones_like(Kdiag)
+        g = self.dKdiag_dtheta(param, dL_dK, X)
+        return f, g
+
+    def objective_and_gradients_dKdiag_dX(self, param, X, X2=None):
+        self._set_param(param)
+        Kdiag = self.Kdiag(X)
+        f = Kdiag.sum()
+        dL_dK = np.ones_like(Kdiag)
+        g = self.dK_dX(param, dL_dK, X)
+        return f, g
+

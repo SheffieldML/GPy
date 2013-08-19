@@ -118,7 +118,7 @@ def sparse_toy_linear_1d_classification(num_inducing=10,seed=default_seed):
 
     return m
 
-def sparse_crescent_data(num_inducing=10, seed=default_seed, kernel=kernel):
+def sparse_crescent_data(num_inducing=10, seed=default_seed, kernel=None):
     """
     Run a Gaussian process classification with DTC approxiamtion on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
 

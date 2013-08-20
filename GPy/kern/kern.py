@@ -536,35 +536,3 @@ class kern(Parameterized):
         else:
             raise NotImplementedError, "Cannot plot a kernel with more than two input dimensions"
 
-    def objective_and_gradients_dK_dtheta(self, param, X, X2=None):
-        self._set_param(param)
-        K = self.K(X, X2)
-        f = K.sum()
-        dL_dK = np.ones_like(K)
-        g = self.dK_dtheta(param, dL_dK, X, X2)
-        return f, g
-
-    def objective_and_gradients_dK_dX(self, param, X, X2=None):
-        self._set_param(param)
-        K = self.K(X, X2)
-        f = K.sum()
-        dL_dK = np.ones_like(K)
-        g = self.dK_dX(param, dL_dK, X, X2)
-        return f, g
-
-    def objective_and_gradients_dKdiag_dtheta(self, param, X, X2=None):
-        self._set_param(param)
-        Kdiag = self.Kdiag(X)
-        f = Kdiag.sum()
-        dL_dK = np.ones_like(Kdiag)
-        g = self.dKdiag_dtheta(param, dL_dK, X)
-        return f, g
-
-    def objective_and_gradients_dKdiag_dX(self, param, X, X2=None):
-        self._set_param(param)
-        Kdiag = self.Kdiag(X)
-        f = Kdiag.sum()
-        dL_dK = np.ones_like(Kdiag)
-        g = self.dK_dX(param, dL_dK, X)
-        return f, g
-

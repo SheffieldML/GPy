@@ -164,7 +164,7 @@ class GPBase(Model):
             m, _, lower, upper = self.predict(Xnew, which_parts=which_parts)
             m = m.reshape(resolution, resolution).T
             ax.contour(x, y, m, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet) # @UndefinedVariable
-            Yf = self.likelihood.Y.flatten()
+            Yf = self.likelihood.data.flatten()
             ax.scatter(self.X[:, 0], self.X[:, 1], 40, Yf, cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.) # @UndefinedVariable
             ax.set_xlim(xmin[0], xmax[0])
             ax.set_ylim(xmin[1], xmax[1])

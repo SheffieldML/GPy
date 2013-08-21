@@ -1,0 +1,31 @@
+Prod.py kernel should take a list of kernels rather than two arguments for kernels.
+transformations.py should have limits on what is fed into exp() particularly for the negative log logistic. 
+
+Load in a model with mlp kernel, plot it, change a parameter, plot it again. It doesn't update the plot.
+
+Tests for kernels which work directly on the kernel implementation (not through GP).
+
+Should stationary covariances have their own kernpart type?
+
+Where do we declare default kernel parameters. In constructors.py or in the definition file for the kernel?
+
+When printing to stdout, can we check that our approach is also working nicely for the ipython notebook? I like the way our optimization ticks over, but at the moment this doesn't seem to work in the ipython notebook, it would be nice if it did.
+
+When we print a model should we also include information such as number of inputs and number of outputs?
+
+Let's not use N for giving the number of data in the model. When it pops up as a help tip it's not as clear as num_samples or num_data. Prefer the second, but oddly I've been using first.
+
+Loving the fact that the * has been overloaded on the kernels (oddly never thought to check this before). Although naming can be a bit confusing. Can we think how to deal with the names in a clearer way when we use a kernel like this one:
+kern = GPy.kern.rbf(30)*(GPy.kern.mlp(30)+GPy.kern.poly(30, degree=5)) + GPy.kern.bias(30). There seems to be some tieing of parameters going on ... should there be? (you can try it as the kernel for the robot wireless model).
+
+Can we comment up some of the list incomprehensions in hierarchical.py??
+
+Need to tidy up classification.py, 
+many examples include help that doesn't apply 
+(it is suggested that you can try different approximation types)
+
+Shall we overload the ** operator to have tensor products? (I've done this now we can see if we like it)
+
+People aren't filling the doc strings in as they go *everyone* needs to get in the habit of this (and modifying them as they edit, or correcting them when there is a problem).
+
+Need some nice way of explaining how to compile documentation and run the unit tests, could this be in a readme or FAQ somewhere? Maybe it's there already somewhere and I've missed it.

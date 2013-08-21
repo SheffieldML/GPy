@@ -37,7 +37,6 @@ class GPRegression(GP):
     def getstate(self):
         return GP.getstate(self)
 
-
     def setstate(self, state):
         return GP.setstate(self, state)
 

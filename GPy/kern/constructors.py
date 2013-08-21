@@ -51,6 +51,44 @@ def linear(input_dim,variances=None,ARD=False):
     part = parts.linear.Linear(input_dim,variances,ARD)
     return kern(input_dim, [part])
 
+def mlp(input_dim,variance=1., weight_variance=None,bias_variance=100.,ARD=False):
+    """
+    Construct an MLP kernel
+
+    :param input_dim: dimensionality of the kernel, obligatory
+    :type input_dim: int
+    :param variance: the variance of the kernel
+    :type variance: float
+    :param weight_scale: the lengthscale of the kernel
+    :type weight_scale: vector of weight variances for input weights in neural network (length 1 if kernel is isotropic)
+    :param bias_variance: the variance of the biases in the neural network.
+    :type bias_variance: float
+    :param ARD: Auto Relevance Determination (allows for ARD version of covariance)
+    :type ARD: Boolean
+    """
+    part = parts.mlp.MLP(input_dim,variance,weight_variance,bias_variance,ARD)
+    return kern(input_dim, [part])
+
+def poly(input_dim,variance=1., weight_variance=None,bias_variance=1.,degree=2, ARD=False):
+    """
+    Construct a polynomial kernel
+
+    :param input_dim: dimensionality of the kernel, obligatory
+    :type input_dim: int
+    :param variance: the variance of the kernel
+    :type variance: float
+    :param weight_scale: the lengthscale of the kernel
+    :type weight_scale: vector of weight variances for input weights.
+    :param bias_variance: the variance of the biases.
+    :type bias_variance: float
+    :param degree: the degree of the polynomial
+    :type degree: int
+    :param ARD: Auto Relevance Determination (allows for ARD version of covariance)
+    :type ARD: Boolean
+    """
+    part = parts.poly.POLY(input_dim,variance,weight_variance,bias_variance,degree,ARD)
+    return kern(input_dim, [part])
+
 def white(input_dim,variance=1.):
     """
      Construct a white kernel.
@@ -253,6 +291,8 @@ def prod(k1,k2,tensor=False):
 
     :param k1, k2: the kernels to multiply
     :type k1, k2: kernpart
+    :param tensor: The kernels are either multiply as functions defined on the same input space (default) or on the product of the input spaces
+    :type tensor: Boolean
     :rtype: kernel object
     """
     part = parts.prod.Prod(k1, k2, tensor)
@@ -260,13 +300,13 @@ def prod(k1,k2,tensor=False):
 
 def symmetric(k):
     """
-    Construct a symmetrical kernel from an existing kernel
+    Construct a symmetric kernel from an existing kernel
     """
     k_ = k.copy()
     k_.parts = [symmetric.Symmetric(p) for p in k.parts]
     return k_
 
-def coregionalise(Nout,R=1, W=None, kappa=None):
+def coregionalise(Nout, R=1, W=None, kappa=None):
     p = parts.coregionalise.Coregionalise(Nout,R,W,kappa)
     return kern(1,[p])
 
@@ -291,11 +331,13 @@ def fixed(input_dim, K, variance=1.):
     """
      Construct a Fixed effect kernel.
 
-     Arguments
-     ---------
-     input_dim (int), obligatory
-     K (np.array), obligatory
-     variance (float)
+    :param input_dim: the number of input dimensions
+    :type input_dim: int (input_dim=1 is the only value currently supported)
+    :param K: the variance :math:`\sigma^2`
+    :type K: np.array
+    :param variance: kernel variance
+    :type variance: float
+    :rtype: kern object
     """
     part = parts.fixed.Fixed(input_dim, K, variance)
     return kern(input_dim, [part])
@@ -318,7 +360,7 @@ def independent_outputs(k):
 
 def hierarchical(k):
     """
-    Construct a kernel with independent outputs from an existing kernel
+    TODO THis can't be right! Construct a kernel with independent outputs from an existing kernel
     """
     # for sl in k.input_slices:
     #     assert (sl.start is None) and (sl.stop is None), "cannot adjust input slices! (TODO)"

@@ -24,25 +24,45 @@ def toy_rbf_1d(optimizer='tnc', max_nb_eval_optim=100):
     print(m)
     return m
 
-def rogers_girolami_olympics(optim_iters=100):
+def olympic_100m_men(max_iters=100, kernel=None):
     """Run a standard Gaussian process regression on the Rogers and Girolami olympics data."""
-    data = GPy.util.datasets.rogers_girolami_olympics()
+    data = GPy.util.datasets.olympic_100m_men()
 
     # create simple GP Model
-    m = GPy.models.GPRegression(data['X'], data['Y'])
+    m = GPy.models.GPRegression(data['X'], data['Y'], kernel)
 
     # set the lengthscale to be something sensible (defaults to 1)
-    m['rbf_lengthscale'] = 10
+    if kernel==None:
+        m['rbf_lengthscale'] = 10
 
     # optimize
-    m.optimize(max_f_eval=optim_iters)
+    m.optimize(max_iters=max_iters)
 
     # plot
     m.plot(plot_limits=(1850, 2050))
     print(m)
     return m
 
-def toy_rbf_1d_50(optim_iters=100):
+def olympic_marathon_men(max_iters=100, kernel=None):
+    """Run a standard Gaussian process regression on the Olympic marathon data."""
+    data = GPy.util.datasets.olympic_marathon_men()
+
+    # create simple GP Model
+    m = GPy.models.GPRegression(data['X'], data['Y'], kernel)
+
+    # set the lengthscale to be something sensible (defaults to 1)
+    if kernel==None:
+        m['rbf_lengthscale'] = 10
+
+    # optimize
+    m.optimize(max_iters=max_iters)
+
+    # plot
+    m.plot(plot_limits=(1850, 2050))
+    print(m)
+    return m
+
+def toy_rbf_1d_50(max_iters=100):
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
     data = GPy.util.datasets.toy_rbf_1d_50()
 
@@ -50,21 +70,21 @@ def toy_rbf_1d_50(optim_iters=100):
     m = GPy.models.GPRegression(data['X'], data['Y'])
 
     # optimize
-    m.optimize(max_f_eval=optim_iters)
+    m.optimize(max_iters=max_iters)
 
     # plot
     m.plot()
     print(m)
     return m
 
-def toy_ARD(optim_iters=1000, kernel_type='linear', N=300, D=4):
+def toy_ARD(max_iters=1000, kernel_type='linear', num_samples=300, D=4):
     # Create an artificial dataset where the values in the targets (Y)
     # only depend in dimensions 1 and 3 of the inputs (X). Run ARD to
     # see if this dependency can be recovered
-    X1 = np.sin(np.sort(np.random.rand(N, 1) * 10, 0))
-    X2 = np.cos(np.sort(np.random.rand(N, 1) * 10, 0))
-    X3 = np.exp(np.sort(np.random.rand(N, 1), 0))
-    X4 = np.log(np.sort(np.random.rand(N, 1), 0))
+    X1 = np.sin(np.sort(np.random.rand(num_samples, 1) * 10, 0))
+    X2 = np.cos(np.sort(np.random.rand(num_samples, 1) * 10, 0))
+    X3 = np.exp(np.sort(np.random.rand(num_samples, 1), 0))
+    X4 = np.log(np.sort(np.random.rand(num_samples, 1), 0))
     X = np.hstack((X1, X2, X3, X4))
 
     Y1 = np.asarray(2 * X[:, 0] + 3).reshape(-1, 1)
@@ -87,20 +107,20 @@ def toy_ARD(optim_iters=1000, kernel_type='linear', N=300, D=4):
     # len_prior = GPy.priors.inverse_gamma(1,18) # 1, 25
     # m.set_prior('.*lengthscale',len_prior)
 
-    m.optimize(optimizer='scg', max_iters=optim_iters, messages=1)
+    m.optimize(optimizer='scg', max_iters=max_iters, messages=1)
 
     m.kern.plot_ARD()
     print(m)
     return m
 
-def toy_ARD_sparse(optim_iters=1000, kernel_type='linear', N=300, D=4):
+def toy_ARD_sparse(max_iters=1000, kernel_type='linear', num_samples=300, D=4):
     # Create an artificial dataset where the values in the targets (Y)
     # only depend in dimensions 1 and 3 of the inputs (X). Run ARD to
     # see if this dependency can be recovered
-    X1 = np.sin(np.sort(np.random.rand(N, 1) * 10, 0))
-    X2 = np.cos(np.sort(np.random.rand(N, 1) * 10, 0))
-    X3 = np.exp(np.sort(np.random.rand(N, 1), 0))
-    X4 = np.log(np.sort(np.random.rand(N, 1), 0))
+    X1 = np.sin(np.sort(np.random.rand(num_samples, 1) * 10, 0))
+    X2 = np.cos(np.sort(np.random.rand(num_samples, 1) * 10, 0))
+    X3 = np.exp(np.sort(np.random.rand(num_samples, 1), 0))
+    X4 = np.log(np.sort(np.random.rand(num_samples, 1), 0))
     X = np.hstack((X1, X2, X3, X4))
 
     Y1 = np.asarray(2 * X[:, 0] + 3)[:, None]
@@ -124,13 +144,13 @@ def toy_ARD_sparse(optim_iters=1000, kernel_type='linear', N=300, D=4):
     # len_prior = GPy.priors.inverse_gamma(1,18) # 1, 25
     # m.set_prior('.*lengthscale',len_prior)
 
-    m.optimize(optimizer='scg', max_iters=optim_iters, messages=1)
+    m.optimize(optimizer='scg', max_iters=max_iters, messages=1)
 
     m.kern.plot_ARD()
     print(m)
     return m
 
-def silhouette(optim_iters=100):
+def silhouette(max_iters=100):
     """Predict the pose of a figure given a silhouette. This is a task from Agarwal and Triggs 2004 ICML paper."""
     data = GPy.util.datasets.silhouette()
 
@@ -138,12 +158,12 @@ def silhouette(optim_iters=100):
     m = GPy.models.GPRegression(data['X'], data['Y'])
 
     # optimize
-    m.optimize(messages=True, max_f_eval=optim_iters)
+    m.optimize(messages=True, max_iters=max_iters)
 
     print(m)
     return m
 
-def coregionalisation_toy2(optim_iters=100):
+def coregionalisation_toy2(max_iters=100):
     """
     A simple demonstration of coregionalisation on two sinusoidal functions.
     """
@@ -161,7 +181,7 @@ def coregionalisation_toy2(optim_iters=100):
     m = GPy.models.GPRegression(X, Y, kernel=k)
     m.constrain_fixed('.*rbf_var', 1.)
     # m.constrain_positive('.*kappa')
-    m.optimize('sim', messages=1, max_f_eval=optim_iters)
+    m.optimize('sim', messages=1, max_iters=max_iters)
 
     pb.figure()
     Xtest1 = np.hstack((np.linspace(0, 9, 100)[:, None], np.zeros((100, 1))))
@@ -174,7 +194,7 @@ def coregionalisation_toy2(optim_iters=100):
     pb.plot(X2[:, 0], Y2[:, 0], 'gx', mew=2)
     return m
 
-def coregionalisation_toy(optim_iters=100):
+def coregionalisation_toy(max_iters=100):
     """
     A simple demonstration of coregionalisation on two sinusoidal functions.
     """
@@ -192,7 +212,7 @@ def coregionalisation_toy(optim_iters=100):
     m = GPy.models.GPRegression(X, Y, kernel=k)
     m.constrain_fixed('.*rbf_var', 1.)
     # m.constrain_positive('kappa')
-    m.optimize(max_f_eval=optim_iters)
+    m.optimize(max_iters=max_iters)
 
     pb.figure()
     Xtest1 = np.hstack((np.linspace(0, 9, 100)[:, None], np.zeros((100, 1))))
@@ -206,7 +226,7 @@ def coregionalisation_toy(optim_iters=100):
     return m
 
 
-def coregionalisation_sparse(optim_iters=100):
+def coregionalisation_sparse(max_iters=100):
     """
     A simple demonstration of coregionalisation on two sinusoidal functions using sparse approximations.
     """
@@ -229,8 +249,8 @@ def coregionalisation_sparse(optim_iters=100):
     m.constrain_fixed('.*rbf_var', 1.)
     m.constrain_fixed('iip')
     m.constrain_bounded('noise_variance', 1e-3, 1e-1)
-#     m.optimize_restarts(5, robust=True, messages=1, max_iters=optim_iters, optimizer='bfgs')
-    m.optimize('bfgs', messages=1, max_iters=optim_iters)
+#     m.optimize_restarts(5, robust=True, messages=1, max_iters=max_iters, optimizer='bfgs')
+    m.optimize('bfgs', messages=1, max_iters=max_iters)
 
     # plotting:
     pb.figure()
@@ -248,7 +268,7 @@ def coregionalisation_sparse(optim_iters=100):
     return m
 
 
-def multiple_optima(gene_number=937, resolution=80, model_restarts=10, seed=10000, optim_iters=300):
+def multiple_optima(gene_number=937, resolution=80, model_restarts=10, seed=10000, max_iters=300):
     """Show an example of a multimodal error surface for Gaussian process regression. Gene 939 has bimodal behaviour where the noisey mode is higher."""
 
     # Contour over a range of length scales and signal/noise ratios.
@@ -285,7 +305,7 @@ def multiple_optima(gene_number=937, resolution=80, model_restarts=10, seed=1000
         optim_point_y[0] = np.log10(m['rbf_variance']) - np.log10(m['noise_variance']);
 
         # optimize
-        m.optimize('scg', xtol=1e-6, ftol=1e-6, max_f_eval=optim_iters)
+        m.optimize('scg', xtol=1e-6, ftol=1e-6, max_iters=max_iters)
 
         optim_point_x[1] = m['rbf_lengthscale']
         optim_point_y[1] = np.log10(m['rbf_variance']) - np.log10(m['noise_variance']);
@@ -325,11 +345,32 @@ def _contour_data(data, length_scales, log_SNRs, kernel_call=GPy.kern.rbf):
 
     return np.array(lls)
 
-def sparse_GP_regression_1D(N=400, num_inducing=5, optim_iters=100):
+def robot_wireless(max_iters=100, kernel=None):
+    """Predict the location of a robot given wirelss signal strengthr readings."""
+    data = GPy.util.datasets.robot_wireless()
+
+    # create simple GP Model
+    m = GPy.models.GPRegression(data['Y'], data['X'], kernel=kernel)
+
+    # optimize
+    m.optimize(messages=True, max_iters=max_iters)
+    Xpredict = m.predict(data['Ytest'])[0]
+    pb.plot(data['Xtest'][:, 0], data['Xtest'][:, 1], 'r-')
+    pb.plot(Xpredict[:, 0], Xpredict[:, 1], 'b-')
+    pb.axis('equal')
+    pb.title('WiFi Localization with Gaussian Processes')
+    pb.legend(('True Location', 'Predicted Location'))
+
+    sse = ((data['Xtest'] - Xpredict)**2).sum()
+    print(m)
+    print('Sum of squares error on test data: ' + str(sse))
+    return m
+
+def sparse_GP_regression_1D(num_samples=400, num_inducing=5, max_iters=100):
     """Run a 1D example of a sparse GP regression."""
     # sample inputs and outputs
-    X = np.random.uniform(-3., 3., (N, 1))
-    Y = np.sin(X) + np.random.randn(N, 1) * 0.05
+    X = np.random.uniform(-3., 3., (num_samples, 1))
+    Y = np.sin(X) + np.random.randn(num_samples, 1) * 0.05
     # construct kernel
     rbf = GPy.kern.rbf(1)
     # create simple GP Model
@@ -337,14 +378,14 @@ def sparse_GP_regression_1D(N=400, num_inducing=5, optim_iters=100):
 
 
     m.checkgrad(verbose=1)
-    m.optimize('tnc', messages=1, max_f_eval=optim_iters)
+    m.optimize('tnc', messages=1, max_iters=max_iters)
     m.plot()
     return m
 
-def sparse_GP_regression_2D(N=400, num_inducing=50, optim_iters=100):
+def sparse_GP_regression_2D(num_samples=400, num_inducing=50, max_iters=100):
     """Run a 2D example of a sparse GP regression."""
-    X = np.random.uniform(-3., 3., (N, 2))
-    Y = np.sin(X[:, 0:1]) * np.sin(X[:, 1:2]) + np.random.randn(N, 1) * 0.05
+    X = np.random.uniform(-3., 3., (num_samples, 2))
+    Y = np.sin(X[:, 0:1]) * np.sin(X[:, 1:2]) + np.random.randn(num_samples, 1) * 0.05
 
     # construct kernel
     rbf = GPy.kern.rbf(2)
@@ -358,12 +399,12 @@ def sparse_GP_regression_2D(N=400, num_inducing=50, optim_iters=100):
     m.checkgrad()
 
     # optimize and plot
-    m.optimize('tnc', messages=1, max_f_eval=optim_iters)
+    m.optimize('tnc', messages=1, max_iters=max_iters)
     m.plot()
     print(m)
     return m
 
-def uncertain_inputs_sparse_regression(optim_iters=100):
+def uncertain_inputs_sparse_regression(max_iters=100):
     """Run a 1D example of a sparse GP regression with uncertain inputs."""
     fig, axes = pb.subplots(1, 2, figsize=(12, 5))
 
@@ -378,14 +419,14 @@ def uncertain_inputs_sparse_regression(optim_iters=100):
 
     # create simple GP Model - no input uncertainty on this one
     m = GPy.models.SparseGPRegression(X, Y, kernel=k, Z=Z)
-    m.optimize('scg', messages=1, max_f_eval=optim_iters)
+    m.optimize('scg', messages=1, max_iters=max_iters)
     m.plot(ax=axes[0])
     axes[0].set_title('no input uncertainty')
 
 
     # the same Model with uncertainty
     m = GPy.models.SparseGPRegression(X, Y, kernel=k, Z=Z, X_variance=S)
-    m.optimize('scg', messages=1, max_f_eval=optim_iters)
+    m.optimize('scg', messages=1, max_iters=max_iters)
     m.plot(ax=axes[1])
     axes[1].set_title('with input uncertainty')
     print(m)

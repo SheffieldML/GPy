@@ -352,7 +352,7 @@ def brendan_faces():
 
     return m
 def stick_play(range=None, frame_rate=15):
-    data = GPy.util.datasets.stick()
+    data = GPy.util.datasets.osu_run1()
     # optimize
     if range == None:
         Y = data['Y'].copy()
@@ -364,7 +364,7 @@ def stick_play(range=None, frame_rate=15):
     return Y
 
 def stick():
-    data = GPy.util.datasets.stick()
+    data = GPy.util.datasets.osu_run1()
     # optimize
     m = GPy.models.GPLVM(data['Y'], 2)
     m.optimize(messages=1, max_f_eval=10000)
@@ -378,8 +378,19 @@ def stick():
 
     return m
 
+def robot_wireless():
+    data = GPy.util.datasets.robot_wireless()
+    # optimize
+    m = GPy.models.GPLVM(data['Y'], 2)
+    m.optimize(messages=1, max_f_eval=10000)
+    m._set_params(m._get_params())
+    plt.clf
+    ax = m.plot_latent()
+
+    return m
+
 def stick_bgplvm(model=None):
-    data = GPy.util.datasets.stick()
+    data = GPy.util.datasets.osu_run1()
     Q = 6
     kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
     m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20, kernel=kernel)

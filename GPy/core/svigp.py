@@ -141,7 +141,7 @@ class SVIGP(GPBase):
         self.Z = state.pop()
         vb_param = state.pop()
         GPBase.setstate(self, state)
-        self.set_vb_param(vb_param)        
+        self.set_vb_param(vb_param)
 
     def _compute_kernel_matrices(self):
         # kernel computations, using BGPLVM notation
@@ -501,7 +501,7 @@ class SVIGP(GPBase):
             ax.plot(Zu, np.zeros_like(Zu) + Z_height, 'r|', mew=1.5, markersize=12)
 
         if self.input_dim==2:
-            ax.scatter(self.X_all[:,0], self.X_all[:,1], 20., self.Y[:,0], linewidth=0, cmap=pb.cm.jet)
+            ax.scatter(self.X[:,0], self.X[:,1], 20., self.Y[:,0], linewidth=0, cmap=pb.cm.jet)
             ax.plot(Zu[:,0], Zu[:,1], 'w^')
 
     def plot_traces(self):

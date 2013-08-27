@@ -27,7 +27,6 @@ class MLP(Kernpart):
     """
 
     def __init__(self, input_dim, variance=1., weight_variance=None, bias_variance=100., ARD=False):
-        ARD = False
         self.input_dim = input_dim
         self.ARD = ARD
         if not ARD:
@@ -44,6 +43,7 @@ class MLP(Kernpart):
                 assert weight_variance.size == self.input_dim, "bad number of weight variances"
             else:
                 weight_variance = np.ones(self.input_dim)
+            raise NotImplementedError
 
         self.name='mlp'
         self._set_params(np.hstack((variance, weight_variance.flatten(), bias_variance)))
@@ -104,47 +104,27 @@ class MLP(Kernpart):
             
         target[0] += np.sum(self._K_dvar*dL_dK)
 
-
     def dK_dX(self, dL_dK, X, X2, target):
         """Derivative of the covariance matrix with respect to X"""
         self._K_computations(X, X2)
         arg = self._K_asin_arg
-        post_div = np.sqrt(1-arg*arg)
         numer = self._K_numer
         denom = self._K_denom
         vec2 = (X2*X2).sum(1)*self.weight_variance + self.bias_variance + 1.
         denom3 = denom*denom*denom
-        target += (((X2[None,:, :]/denom[None, :, None]+vec2[None, None, :]*X[:, :, None]*numer/denom)/post_div[:, :, None]) * dL_dK[:, :, None]).sum(1)
-        target *= four_over_tau*self.weight_variance*self.variance
-        raise NotImplementedError
-
-
-        gX = np.zeros((X2.shape[0], X.shape[1], X.shape[0]))
-        
-        for i in range(X.shape[0]):
-            gX[:, :, i] = self._dK_dX_point(dL_dK, X, X2, target, i)
+        target += four_over_tau*self.weight_variance*self.variance*((X2[None, :, :]/denom[:, :, None] - vec2[None, :, None]*X[:, None, :]*(numer/denom3)[:, :, None])*(dL_dK/np.sqrt(1-arg*arg))[:, :, None]).sum(1)
             
-            
-    def _dK_dX_point(self, dL_dK, X, X2, target, i):
-        """Gradient with respect to one point of X"""
-        
-        inner_prod = self._K_inner_prod[i, :].T
-        numer = self._K_numer[i, :].T
-        denom = self._K_denom[i, :].T
-        arg = self._K_asin_arg[i, :].T
-        vec1 = (X[i, :]*X[i, :]).sum()*self.weight_variance + self.bias_variance + 1.
-        vec2 = (X2*X2).sum(1)*self.weight_variance + self.bias_variance + 1.
-        #denom = np.sqrt(np.outer(vec2,vec1))
-        #arg = numer/denom
-        gX = np.zeros(X2.shape)
-        denom3 = denom*denom*denom
-        gX = np.zeros((X2.shape[0], X2.shape[1]))
-        for j in range(X2.shape[1]):
-            gX[:, j] = X2[:, j]/denom - vec2*X[i, j]*numer/denom3
-            gX[:, j] = four_over_tau*self.weight_variance*self.variance*gX[:, j]/np.sqrt(1-arg*arg)
-    
+    def dKdiag_dX(self, dL_dKdiag, X, target):
+        """Gradient of diagonal of covariance with respect to X"""
+        self._K_diag_computations(X)
+        arg = self._K_diag_asin_arg
+        denom = self._K_diag_denom
+        numer = self._K_diag_numer
+        target += four_over_tau*2.*self.weight_variance*self.variance*X*(1/denom*(1 - arg)*dL_dKdiag/(np.sqrt(1-arg*arg)))[:, None] 
+
     
     def _K_computations(self, X, X2):
+        """Pre-computations for the covariance matrix (used for computing the covariance and its gradients."""
         if self.ARD:
             pass
         else:
@@ -165,9 +145,11 @@ class MLP(Kernpart):
                 self._K_dvar = four_over_tau*np.arcsin(self._K_asin_arg)
 
     def _K_diag_computations(self, X):
+        """Pre-computations concerning the diagonal terms (used for computation of diagonal and its gradients)."""
         if self.ARD:
             pass
         else:
             self._K_diag_numer = (X*X).sum(1)*self.weight_variance + self.bias_variance
             self._K_diag_denom = self._K_diag_numer+1.
-            self._K_diag_dvar = four_over_tau*np.arcsin(self._K_diag_numer/self._K_diag_denom)
+            self._K_diag_asin_arg = self._K_diag_numer/self._K_diag_denom
+            self._K_diag_dvar = four_over_tau*np.arcsin(self._K_diag_asin_arg)

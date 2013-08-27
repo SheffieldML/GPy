@@ -363,18 +363,18 @@ def stick_play(range=None, frame_rate=15):
     GPy.util.visualize.data_play(Y, data_show, frame_rate)
     return Y
 
-def stick():
+def stick(kernel=None):
     data = GPy.util.datasets.osu_run1()
     # optimize
-    m = GPy.models.GPLVM(data['Y'], 2)
+    m = GPy.models.GPLVM(data['Y'], 2, kernel=kernel)
     m.optimize(messages=1, max_f_eval=10000)
-    m._set_params(m._get_params())
-    plt.clf
-    ax = m.plot_latent()
-    y = m.likelihood.Y[0, :]
-    data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
-    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
-    raw_input('Press enter to finish')
+    if GPy.util.visualize.visual_available:
+        plt.clf
+        ax = m.plot_latent()
+        y = m.likelihood.Y[0, :]
+        data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
+        lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        raw_input('Press enter to finish')
 
     return m
 

@@ -5,7 +5,13 @@ import numpy as np
 import matplotlib as mpl
 import time
 import Image
-# import visual
+try:
+    import visual
+    visual_available = True
+
+except ImportError:
+    visual_available = False
+
 
 class data_show:
     """
@@ -23,7 +29,6 @@ class data_show:
 
     def close(self):
         raise NotImplementedError, "this needs to be implemented to use the data_show class"
-
 
 class vpython_show(data_show):
     """
@@ -318,7 +323,7 @@ class mocap_data_show_vpython(vpython_show):
         for i in range(self.vals.shape[0]):
             self.spheres.append(visual.sphere(pos=(self.vals[i, 0], self.vals[i, 2], self.vals[i, 1]), radius=self.radius))
         self.scene.visible=True
-        
+
     def draw_edges(self):
         self.rods = []
         self.line_handle = []
@@ -434,7 +439,6 @@ class mocap_data_show(matplotlib_show):
         self.axes.set_xlim(self.x_lim)
         self.axes.set_ylim(self.y_lim)
         self.axes.set_zlim(self.z_lim)
-
 
 class stick_show(mocap_data_show_vpython):
     """Show a three dimensional point cloud as a figure. Connect elements of the figure together using the matrix connect."""

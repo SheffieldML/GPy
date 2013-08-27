@@ -39,7 +39,6 @@ class POLY(Kernpart):
     """
 
     def __init__(self, input_dim, variance=1., weight_variance=None, bias_variance=1., degree=2, ARD=False):
-        ARD = False
         self.input_dim = input_dim
         self.ARD = ARD
         if not ARD:
@@ -56,6 +55,7 @@ class POLY(Kernpart):
                 assert weight_variance.size == self.input_dim, "bad number of weight variances"
             else:
                 weight_variance = np.ones(self.input_dim)
+            raise NotImplementedError
         self.degree=degree
         self.name='poly_deg' + str(self.degree)
         self._set_params(np.hstack((variance, weight_variance.flatten(), bias_variance)))

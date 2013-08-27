@@ -16,10 +16,9 @@ import datetime
 import sys, urllib
 def reporthook(a,b,c): 
     # ',' at the end of the line is important!
-    print "% 3.1f%% of %d bytes\r" % (min(100, float(a * b) / c * 100), c),
+    #print "% 3.1f%% of %d bytes\r" % (min(100, float(a * b) / c * 100), c),
     #you can also use sys.stdout.write
-    #sys.stdout.write("\r% 3.1f%% of %d bytes" 
-    #                 % (min(100, float(a * b) / c * 100), c)
+    sys.stdout.write("\r% 3.1f%% of %d bytes" % (min(100, float(a * b) / c * 100), c))
     sys.stdout.flush()
      
 # Global variables
@@ -288,7 +287,7 @@ except ImportError:
     gpxpy_available = False
 
 if gpxpy_available:
-    def epomeo_gpx(data_set='epomeo_gpx'):
+    def epomeo_gpx(data_set='epomeo_gpx', sample_every=4):
         if not data_available(data_set):
             download_data(data_set)
         files = ['endomondo_1', 'endomondo_2', 'garmin_watch_via_endomondo','viewranger_phone', 'viewranger_tablet']
@@ -301,7 +300,7 @@ if gpxpy_available:
             segment = gpx.tracks[0].segments[0]
             points = [point for track in gpx.tracks for segment in track.segments for point in segment.points]
             data = [[(point.time-datetime.datetime(2013,8,21)).total_seconds(), point.latitude, point.longitude, point.elevation] for point in points]
-            X.append(np.asarray(data))
+            X.append(np.asarray(data)[::sample_every, :])
             gpx_file.close()        
         return data_details_return({'X' : X, 'info' : 'Data is an array containing time in seconds, latitude, longitude and elevation in that order.'}, data_set)
 

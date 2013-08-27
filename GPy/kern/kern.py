@@ -619,3 +619,25 @@ class Kern_check_dK_dX(Kern_check_model):
 
     def _set_params(self, x):
         self.X=x.reshape(self.X.shape)
+
+class Kern_check_dKdiag_dX(Kern_check_model):
+    """This class allows gradient checks for the gradient of a kernel diagonal with respect to X. """
+    def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
+        Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=None)
+        if dL_dK==None:
+            self.dL_dK = np.ones((self.X.shape[0]))
+
+    def log_likelihood(self):
+        return (self.dL_dK*self.kernel.Kdiag(self.X)).sum()
+
+    def _log_likelihood_gradients(self):
+        return self.kernel.dKdiag_dX(self.dL_dK, self.X).flatten()
+
+    def _get_param_names(self):
+        return ['X_'  +str(i) + ','+str(j) for j in range(self.X.shape[1]) for i in range(self.X.shape[0])]
+                
+    def _get_params(self):
+        return self.X.flatten()
+
+    def _set_params(self, x):
+        self.X=x.reshape(self.X.shape)

@@ -107,12 +107,22 @@ class MLP(Kernpart):
 
     def dK_dX(self, dL_dK, X, X2, target):
         """Derivative of the covariance matrix with respect to X"""
+        self._K_computations(X, X2)
+        arg = self._K_asin_arg
+        post_div = np.sqrt(1-arg*arg)
+        numer = self._K_numer
+        denom = self._K_denom
+        vec2 = (X2*X2).sum(1)*self.weight_variance + self.bias_variance + 1.
+        denom3 = denom*denom*denom
+        target += (((X2[None,:, :]/denom[None, :, None]+vec2[None, None, :]*X[:, :, None]*numer/denom)/post_div[:, :, None]) * dL_dK[:, :, None]).sum(1)
+        target *= four_over_tau*self.weight_variance*self.variance
         raise NotImplementedError
-        # self._K_computations(X, X2)
-        # gX = np.zeros((X2.shape[0], X.shape[1], X.shape[0]))
+
+
+        gX = np.zeros((X2.shape[0], X.shape[1], X.shape[0]))
         
-        # for i in range(X.shape[0]):
-        #     gX[:, :, i] = self._dK_dX_point(dL_dK, X, X2, target, i)
+        for i in range(X.shape[0]):
+            gX[:, :, i] = self._dK_dX_point(dL_dK, X, X2, target, i)
             
             
     def _dK_dX_point(self, dL_dK, X, X2, target, i):
@@ -130,9 +140,8 @@ class MLP(Kernpart):
         denom3 = denom*denom*denom
         gX = np.zeros((X2.shape[0], X2.shape[1]))
         for j in range(X2.shape[1]):
-            gX[:, j] =X2[:, j]/denom - vec2*X[i, j]*numer/denom3
+            gX[:, j] = X2[:, j]/denom - vec2*X[i, j]*numer/denom3
             gX[:, j] = four_over_tau*self.weight_variance*self.variance*gX[:, j]/np.sqrt(1-arg*arg)
-            target[i, :]
     
     
     def _K_computations(self, X, X2):

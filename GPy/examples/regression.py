@@ -114,7 +114,7 @@ def coregionalisation_sparse(max_iters=100):
     return m
 
 def epomeo_gpx(max_iters=100):
-    """Perform Gaussian process regression on the GPX data from the Mount Epomeo runs. Requires gpxpy to be installed on your system."""
+    """Perform Gaussian process regression on the latitude and longitude data from the Mount Epomeo runs. Requires gpxpy to be installed on your system to load in the data."""
     data = GPy.util.datasets.epomeo_gpx()
     num_data_list = []
     for Xpart in data['X']:
@@ -122,16 +122,16 @@ def epomeo_gpx(max_iters=100):
 
     num_data_array = np.array(num_data_list)
     num_data = num_data_array.sum()
-    Y = np.zeros((num_data, 3))
+    Y = np.zeros((num_data, 2))
     t = np.zeros((num_data, 2))
     start = 0
     for Xpart, index in zip(data['X'], range(len(data['X']))):
         end = start+Xpart.shape[0]
         t[start:end, :] = np.hstack((Xpart[:, 0:1],
                                     index*np.ones((Xpart.shape[0], 1))))
-        Y[start:end, :] = Xpart[:, 1:4]
+        Y[start:end, :] = Xpart[:, 1:3]
 
-    num_inducing = 40
+    num_inducing = 200
     Z = np.hstack((np.linspace(t[:,0].min(), t[:, 0].max(), num_inducing)[:, None],
                    np.random.randint(0, 4, num_inducing)[:, None]))
 
@@ -139,12 +139,12 @@ def epomeo_gpx(max_iters=100):
     k2 = GPy.kern.coregionalise(output_dim=5, rank=5)
     k = k1**k2 
 
-    m = GPy.models.SparseGPRegression(t, Y, kernel=k, Z=Z)
+    m = GPy.models.SparseGPRegression(t, Y, kernel=k, Z=Z, normalize_Y=True)
     m.constrain_fixed('.*rbf_var', 1.)
     m.constrain_fixed('iip')
     m.constrain_bounded('noise_variance', 1e-3, 1e-1)
 #     m.optimize_restarts(5, robust=True, messages=1, max_iters=max_iters, optimizer='bfgs')
-#    m.optimize(max_iters=max_iters)
+    m.optimize(max_iters=max_iters,messages=True)
 
     return m
 

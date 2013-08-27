@@ -62,7 +62,7 @@ class Prod(Kernpart):
         return self._K2
     
     def dK_dtheta(self,dL_dK,X,X2,target):
-        """derivative of the covariance matrix with respect to the parameters."""
+        """Derivative of the covariance matrix with respect to the parameters."""
         self._K_computations(X,X2)
         if X2 is None:
             self.k1.dK_dtheta(dL_dK*self._K2, X[:,self.slice1], None, target[:self.k1.num_params])

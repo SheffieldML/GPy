@@ -283,6 +283,7 @@ try:
     import gpxpy
     import gpxpy.gpx
     gpxpy_available = True
+
 except ImportError:
     gpxpy_available = False
 

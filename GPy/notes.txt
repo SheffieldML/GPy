@@ -29,3 +29,11 @@ Shall we overload the ** operator to have tensor products? (I've done this now w
 People aren't filling the doc strings in as they go *everyone* needs to get in the habit of this (and modifying them as they edit, or correcting them when there is a problem).
 
 Need some nice way of explaining how to compile documentation and run the unit tests, could this be in a readme or FAQ somewhere? Maybe it's there already somewhere and I've missed it.
+
+Shouldn't EP be in the inference package (not likelihoods)?
+
+When using bfgs in ipython notebook, text appears in the original console, not in the notebook.
+
+In sparse GPs wouldn't it be clearer to call Z inducing?
+
+In coregionalisation matrix, setting the W to all ones will (surely?) ensure that symmetry isn't broken. Also, but allowing it to scale like that, the output variance increases as rank is increased (and if user sets rank to more than output dim they could get very different results).

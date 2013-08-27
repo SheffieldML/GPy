@@ -51,6 +51,16 @@ class Prod(Kernpart):
         self._K_computations(X,X2)
         target += self._K1 * self._K2
 
+    def K1(self,X, X2):
+        """Compute the part of the kernel associated with k1."""
+        self._K_computations(X, X2)
+        return self._K1
+
+    def K2(self, X, X2):
+        """Compute the part of the kernel associated with k2."""
+        self._K_computations(X, X2)
+        return self._K2
+    
     def dK_dtheta(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to the parameters."""
         self._K_computations(X,X2)

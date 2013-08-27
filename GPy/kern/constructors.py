@@ -306,8 +306,29 @@ def symmetric(k):
     k_.parts = [symmetric.Symmetric(p) for p in k.parts]
     return k_
 
-def coregionalise(Nout, R=1, W=None, kappa=None):
-    p = parts.coregionalise.Coregionalise(Nout,R,W,kappa)
+def coregionalise(output_dim, rank=1, W=None, kappa=None):
+    """
+        Coregionalisation kernel. 
+
+    Used for computing covariance functions of the form
+    .. math::
+       k_2(x, y)=B k(x, y)
+    where
+    .. math::
+       B = WW^\top + kappa I..
+
+    :param output_dim: the number of output dimensions
+    :type output_dim: int
+    :param rank: the rank of the coregionalisation matrix.
+    :type rank: int
+    :param W: a low rank matrix that determines the correlations between the different outputs, together with kappa it forms the coregionalisation matrix B.
+    :type W: ndarray
+    :param kappa: a diagonal term which allows the outputs to behave independently.
+    :rtype: kernel object
+
+    .. Note: see coregionalisation examples in GPy.examples.regression for some usage.
+    """
+    p = parts.coregionalise.Coregionalise(output_dim,rank,W,kappa)
     return kern(1,[p])
 
 

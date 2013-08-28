@@ -5,6 +5,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 import core
 import models
+import mappings
 import inference
 import util
 import examples

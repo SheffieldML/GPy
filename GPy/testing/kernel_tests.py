@@ -21,10 +21,10 @@ class KernelTests(unittest.TestCase):
     def test_rbfkernel(self):
         verbose = False
         kern = GPy.kern.rbf(5)
-        self.assertTrue(Kern_check_model(kern).is_positive_definite())
-        self.assertTrue(Kern_check_dK_dtheta(kern).checkgrad(verbose=verbose))
-        self.assertTrue(Kern_check_dKdiag_dtheta(kern).checkgrad(verbose=verbose))
-        self.assertTrue(Kern_check_dK_dX(kern).checkgrad(verbose=verbose))
+        self.assertTrue(GPy.kern.Kern_check_model(kern).is_positive_definite())
+        self.assertTrue(GPy.kern.Kern_check_dK_dtheta(kern).checkgrad(verbose=verbose))
+        self.assertTrue(GPy.kern.Kern_check_dKdiag_dtheta(kern).checkgrad(verbose=verbose))
+        self.assertTrue(GPy.kern.Kern_check_dK_dX(kern).checkgrad(verbose=verbose))
 
     def test_fixedkernel(self):
         """

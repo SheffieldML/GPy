@@ -21,9 +21,12 @@ class Parameterized(object):
         self.constraints = []
 
     def _get_params(self):
-        raise NotImplementedError, "this needs to be implemented to use the Model class"
+        raise NotImplementedError, "this needs to be implemented to use the Parameterized class"
     def _set_params(self, x):
-        raise NotImplementedError, "this needs to be implemented to use the Model class"
+        raise NotImplementedError, "this needs to be implemented to use the Parameterized class"
+
+    def _get_param_names(self):
+        raise NotImplementedError, "this needs to be implemented to use the Parameterized class"
 
     def pickle(self, filename, protocol=None):
         if protocol is None:
@@ -162,7 +165,7 @@ class Parameterized(object):
         return len(self._get_params()) - removed
 
     def unconstrain(self, regexp):
-        """Unconstrain matching parameters.  does not untie parameters"""
+        """Unconstrain matching parameters.  Does not untie parameters"""
         matches = self.grep_param_names(regexp)
 
         # tranformed contraints:
@@ -227,10 +230,11 @@ class Parameterized(object):
         """
         Arguments
         ---------
-        :param regexp: np.array(dtype=int), or regular expression object or string
-        :param value: a float to fix the matched values to. If the value is not specified,
+        :param regexp: which parameters need to be fixed.
+        :type regexp: ndarray(dtype=int) or regular expression object or string
+        :param value: the vlaue to fix the parameters to. If the value is not specified,
                  the parameter is fixed to the current value
-
+        :type value: float
         Notes
         -----
         Fixing a parameter which is tied to another, or constrained in some way will result in an error.

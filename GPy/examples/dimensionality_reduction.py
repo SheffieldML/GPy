@@ -378,6 +378,21 @@ def stick(kernel=None):
 
     return m
 
+def bcgplvm_stick(kernel=None):
+    data = GPy.util.datasets.osu_run1()
+    # optimize
+    m = GPy.models.BCGPLVM(data['Y'], 2, kernel=kernel)
+    m.optimize(messages=1, max_f_eval=10000)
+    if GPy.util.visualize.visual_available:
+        plt.clf
+        ax = m.plot_latent()
+        y = m.likelihood.Y[0, :]
+        data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
+        lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        raw_input('Press enter to finish')
+
+    return m
+
 def robot_wireless():
     data = GPy.util.datasets.robot_wireless()
     # optimize

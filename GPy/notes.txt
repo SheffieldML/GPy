@@ -54,3 +54,11 @@ Need to check for nan values in likelihoods. These should be treated as missing 
 
 
 Sometimes you want to print kernpart objects, for diagnosis etc. This isn't possible currently. 
+
+Why do likelihoods still have YYT everywhere, didn't we agree to set observed data to Y and latent function to F?
+
+For some reason a stub of _get_param_names(self) wasn't available in the Parameterized base class. Have put it in (is this right?)
+
+Is there a quick FAQ or something on how to build the documentation? I did it once, but can't remember!
+
+Similar for the nosetests ... even ran them last week but can't remember the command!

@@ -352,7 +352,7 @@ def brendan_faces():
 
     return m
 def stick_play(range=None, frame_rate=15):
-    data = GPy.util.datasets.stick()
+    data = GPy.util.datasets.osu_run1()
     # optimize
     if range == None:
         Y = data['Y'].copy()
@@ -363,23 +363,67 @@ def stick_play(range=None, frame_rate=15):
     GPy.util.visualize.data_play(Y, data_show, frame_rate)
     return Y
 
-def stick():
-    data = GPy.util.datasets.stick()
+def stick(kernel=None):
+    data = GPy.util.datasets.osu_run1()
+    # optimize
+    m = GPy.models.GPLVM(data['Y'], 2, kernel=kernel)
+    m.optimize(messages=1, max_f_eval=10000)
+    if GPy.util.visualize.visual_available:
+        plt.clf
+        ax = m.plot_latent()
+        y = m.likelihood.Y[0, :]
+        data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
+        lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        raw_input('Press enter to finish')
+
+    return m
+
+def bcgplvm_linear_stick(kernel=None):
+    data = GPy.util.datasets.osu_run1()
+    # optimize
+    mapping = GPy.mappings.Linear(data['Y'].shape[1], 2)
+    m = GPy.models.BCGPLVM(data['Y'], 2, kernel=kernel, mapping=mapping)
+    m.optimize(messages=1, max_f_eval=10000)
+    if GPy.util.visualize.visual_available:
+        plt.clf
+        ax = m.plot_latent()
+        y = m.likelihood.Y[0, :]
+        data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
+        lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        raw_input('Press enter to finish')
+
+    return m
+
+def bcgplvm_stick(kernel=None):
+    data = GPy.util.datasets.osu_run1()
+    # optimize
+    back_kernel=GPy.kern.rbf(data['Y'].shape[1], lengthscale=10.)
+    mapping = GPy.mappings.Kernel(X=data['Y'], output_dim=2, kernel=back_kernel)
+    m = GPy.models.BCGPLVM(data['Y'], 2, kernel=kernel, mapping=mapping)
+    m.optimize(messages=1, max_f_eval=10000)
+    if GPy.util.visualize.visual_available:
+        plt.clf
+        ax = m.plot_latent()
+        y = m.likelihood.Y[0, :]
+        data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
+        lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        raw_input('Press enter to finish')
+
+    return m
+
+def robot_wireless():
+    data = GPy.util.datasets.robot_wireless()
     # optimize
     m = GPy.models.GPLVM(data['Y'], 2)
     m.optimize(messages=1, max_f_eval=10000)
     m._set_params(m._get_params())
     plt.clf
     ax = m.plot_latent()
-    y = m.likelihood.Y[0, :]
-    data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
-    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
-    raw_input('Press enter to finish')
 
     return m
 
 def stick_bgplvm(model=None):
-    data = GPy.util.datasets.stick()
+    data = GPy.util.datasets.osu_run1()
     Q = 6
     kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
     m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20, kernel=kernel)

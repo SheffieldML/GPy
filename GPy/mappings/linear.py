@@ -2,8 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ..core import Mapping
-from .. import kern
+from ..core.mapping import Mapping
 
 class Linear(Mapping):
     """
@@ -35,7 +34,7 @@ class Linear(Mapping):
 
     def _set_params(self, x):
         self.W = x[:self.input_dim * self.output_dim].reshape(self.input_dim, self.output_dim).copy()
-        self.bias = x[self.input_dim*self.output_dim:]
+        self.bias = x[self.input_dim*self.output_dim:].copy()
     def randomize(self):
         self.W = np.random.randn(self.input_dim, self.output_dim)/np.sqrt(self.input_dim + 1)
         self.bias = np.random.randn(self.output_dim)/np.sqrt(self.input_dim + 1)

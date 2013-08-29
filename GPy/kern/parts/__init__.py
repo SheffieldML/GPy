@@ -4,6 +4,7 @@ import coregionalise
 import exponential
 import finite_dimensional
 import fixed
+import gibbs
 import independent_outputs
 import linear
 import Matern32

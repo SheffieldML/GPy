@@ -397,7 +397,7 @@ def bcgplvm_linear_stick(kernel=None):
 def bcgplvm_stick(kernel=None):
     data = GPy.util.datasets.osu_run1()
     # optimize
-    back_kernel=GPy.kern.rbf(data['Y'].shape[1], lengthscale=10.)
+    back_kernel=GPy.kern.rbf(data['Y'].shape[1], lengthscale=5.)
     mapping = GPy.mappings.Kernel(X=data['Y'], output_dim=2, kernel=back_kernel)
     m = GPy.models.BCGPLVM(data['Y'], 2, kernel=kernel, mapping=mapping)
     m.optimize(messages=1, max_f_eval=10000)

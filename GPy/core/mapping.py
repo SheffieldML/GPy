@@ -1,11 +1,10 @@
 # Copyright (c) 2013, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import numpy as np
-from .. import kern
 from ..util.plot import Tango, x_frame1D, x_frame2D
+from parameterized import Parameterized
+import numpy as np
 import pylab as pb
-from GPy.core.parameterized import Parameterized
 
 class Mapping(Parameterized):
     """

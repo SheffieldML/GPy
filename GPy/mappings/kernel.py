@@ -2,8 +2,8 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ..core import Mapping
-from .. import kern
+from ..core.mapping import Mapping
+from ..kern.kern import kern
 
 class Kernel(Mapping):
     """
@@ -42,7 +42,7 @@ class Kernel(Mapping):
 
     def _set_params(self, x):
         self.A = x[:self.num_data * self.output_dim].reshape(self.num_data, self.output_dim).copy()
-        self.bias = x[self.num_data*self.output_dim:]
+        self.bias = x[self.num_data*self.output_dim:].copy()
         
     def randomize(self):
         self.A = np.random.randn(self.num_data, self.output_dim)/np.sqrt(self.num_data+1)

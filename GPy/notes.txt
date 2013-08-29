@@ -62,3 +62,7 @@ For some reason a stub of _get_param_names(self) wasn't available in the Paramet
 Is there a quick FAQ or something on how to build the documentation? I did it once, but can't remember!
 
 Similar for the nosetests ... even ran them last week but can't remember the command!
+
+Now added Gaussian priors to GPLVM latent variables by default. When running the GPy.examples.dimensionality_reduction.stick() example the print out from print model has the same value for the prior+likelihood as for the prior.
+
+For the back constrained GP-LVM need priors to be on the Xs not on the model parameters (because they aren't parameters, they are constraints). Need to work out how to do this.

@@ -6,7 +6,6 @@ import numpy as np
 import pylab as pb
 from .. import kern
 from ..util.linalg import pdinv, mdot, tdot, dpotrs, dtrtrs
-# from ..util.plot import gpplot,  Tango
 from ..likelihoods import EP
 from gp_base import GPBase
 

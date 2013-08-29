@@ -3,7 +3,7 @@
 
 import numpy as np
 from ..core.mapping import Mapping
-from ..kern.kern import kern
+import GPy
 
 class Kernel(Mapping):
     """
@@ -25,7 +25,7 @@ class Kernel(Mapping):
     def __init__(self, X, output_dim=1, kernel=None):
         Mapping.__init__(self, input_dim=X.shape[1], output_dim=output_dim)
         if kernel is None:
-            kernel = kern.rbf(self.input_dim)
+            kernel = GPy.kern.rbf(self.input_dim)
         self.kern = kernel
         self.X = X
         self.num_data = X.shape[0]

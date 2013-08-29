@@ -89,6 +89,7 @@ class MLP(Mapping):
 
     def df_dtheta(self, dL_df, X):
         self._df_computations(dL_df, X)
+        g = np.array([])
         for gW, gbias in zip(self._dL_dW, self._dL_dbias):
             g = np.hstack((g, gW.flatten(), gbias))
         return g
@@ -117,7 +118,6 @@ class MLP(Mapping):
         self._dL_dW[0] = (dL_da[:, :, None]*X[:, None, :]).sum(0).T
         self._dL_dbias[0] = (dL_da.sum(0))
         self._dL_dX = (dL_da[:, None, :]*W[None, :, :]).sum(2)
-        g = np.array([])
 
         
     def df_dX(self, dL_df, X):

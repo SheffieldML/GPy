@@ -632,7 +632,7 @@ def gaussian_f_check():
     plt.subplot(212)
     m.optimize()
     m.plot()
-    print "final optimised student t"
+    print "final optimised gaussian"
     print m
     print "real GP"
     print mgp

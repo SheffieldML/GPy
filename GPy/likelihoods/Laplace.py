@@ -105,8 +105,15 @@ class Laplace(likelihood):
         dL_dthetaL = np.zeros(num_params) # make space for one derivative for each likelihood parameter
         for thetaL_i in range(num_params):
             #Explicit
+            #dL_dthetaL_exp = np.sum(dlik_dthetaL[thetaL_i]) - 0.5*np.dot(np.diag(self.Ki_W_i), dlik_hess_dthetaL[thetaL_i])
+            #a = 0.5*np.dot(np.diag(self.Ki_W_i), dlik_hess_dthetaL[thetaL_i])
+            #d = dlik_hess_dthetaL[thetaL_i]
+            #e = pdinv(pdinv(self.K)[0] + np.diagflat(self.W))[0]
+            #b = 0.5*np.dot(np.diag(e).T, d)
+            #g = 0.5*(np.diag(self.K) - np.sum(cho_solve((self.B_chol, True), np.dot(np.diagflat(self.W_12),self.K))**2, 1))
+            #dL_dthetaL_exp = np.sum(dlik_dthetaL[thetaL_i]) - np.dot(g.T, dlik_hess_dthetaL[thetaL_i])
             dL_dthetaL_exp = np.sum(dlik_dthetaL[thetaL_i]) - 0.5*np.dot(np.diag(self.Ki_W_i), dlik_hess_dthetaL[thetaL_i])
-            #dL_dthetaL_exp = np.sum(dlik_dthetaL[thetaL_i]) - 0.5*np.trace(mdot(self.Bi, self.K, dlik_hess_dthetaL[thetaL_i]))
+
             #Implicit
             df_hat_dthetaL = mdot(I_KW_i, self.K, dlik_grad_dthetaL[thetaL_i])
             dL_dthetaL_imp = np.dot(dL_dfhat, df_hat_dthetaL)

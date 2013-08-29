@@ -30,8 +30,8 @@ class GPLVM(GP):
         if X is None:
             X = self.initialise_latent(init, input_dim, Y)
         if kernel is None:
-            kernel = kern.rbf(input_dim, ARD=input_dim > 1) + kern.bias(input_dim, np.exp(-2)) + kern.white(input_dim, np.exp(-2))
-        likelihood = Gaussian(Y, normalize=normalize_Y)
+            kernel = kern.rbf(input_dim, ARD=input_dim > 1) + kern.bias(input_dim, np.exp(-2))
+        likelihood = Gaussian(Y, normalize=normalize_Y, variance=np.exp(-2.))
         GP.__init__(self, X, likelihood, kernel, normalize_X=False)
         self.ensure_default_constraints()
 

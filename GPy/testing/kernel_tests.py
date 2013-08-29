@@ -1,19 +1,30 @@
-# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2012, 2013 GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import unittest
 import numpy as np
 import GPy
+    
+
 
 class KernelTests(unittest.TestCase):
     def test_kerneltie(self):
         K = GPy.kern.rbf(5, ARD=True)
         K.tie_params('.*[01]')
         K.constrain_fixed('2')
+        
         X = np.random.rand(5,5)
         Y = np.ones((5,1))
         m = GPy.models.GPRegression(X,Y,K)
         self.assertTrue(m.checkgrad())
+
+    def test_rbfkernel(self):
+        verbose = False
+        kern = GPy.kern.rbf(5)
+        self.assertTrue(GPy.kern.Kern_check_model(kern).is_positive_definite())
+        self.assertTrue(GPy.kern.Kern_check_dK_dtheta(kern).checkgrad(verbose=verbose))
+        self.assertTrue(GPy.kern.Kern_check_dKdiag_dtheta(kern).checkgrad(verbose=verbose))
+        self.assertTrue(GPy.kern.Kern_check_dK_dX(kern).checkgrad(verbose=verbose))
 
     def test_fixedkernel(self):
         """
@@ -42,8 +53,7 @@ class KernelTests(unittest.TestCase):
         self.assertTrue(m.checkgrad())
 
 
-
-
+       
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."
     unittest.main()

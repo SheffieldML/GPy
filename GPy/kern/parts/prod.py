@@ -51,8 +51,18 @@ class Prod(Kernpart):
         self._K_computations(X,X2)
         target += self._K1 * self._K2
 
+    def K1(self,X, X2):
+        """Compute the part of the kernel associated with k1."""
+        self._K_computations(X, X2)
+        return self._K1
+
+    def K2(self, X, X2):
+        """Compute the part of the kernel associated with k2."""
+        self._K_computations(X, X2)
+        return self._K2
+    
     def dK_dtheta(self,dL_dK,X,X2,target):
-        """derivative of the covariance matrix with respect to the parameters."""
+        """Derivative of the covariance matrix with respect to the parameters."""
         self._K_computations(X,X2)
         if X2 is None:
             self.k1.dK_dtheta(dL_dK*self._K2, X[:,self.slice1], None, target[:self.k1.num_params])
@@ -80,8 +90,8 @@ class Prod(Kernpart):
     def dK_dX(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
         self._K_computations(X,X2)
-        self.k1.dK_dX(dL_dK*self._K2, X[:,self.slice1], X2[:,self.slice1], target)
-        self.k2.dK_dX(dL_dK*self._K1, X[:,self.slice2], X2[:,self.slice2], target)
+        self.k1.dK_dX(dL_dK*self._K2, X[:,self.slice1], X2[:,self.slice1], target[:,self.slice1])
+        self.k2.dK_dX(dL_dK*self._K1, X[:,self.slice2], X2[:,self.slice2], target[:,self.slice2])
 
     def dKdiag_dX(self, dL_dKdiag, X, target):
         K1 = np.zeros(X.shape[0])
@@ -89,8 +99,8 @@ class Prod(Kernpart):
         self.k1.Kdiag(X[:,self.slice1],K1)
         self.k2.Kdiag(X[:,self.slice2],K2)
 
-        self.k1.dK_dX(dL_dKdiag*K2, X[:,self.slice1], target)
-        self.k2.dK_dX(dL_dKdiag*K1, X[:,self.slice2], target)
+        self.k1.dK_dX(dL_dKdiag*K2, X[:,self.slice1], target[:,self.slice1])
+        self.k2.dK_dX(dL_dKdiag*K1, X[:,self.slice2], target[:,self.slice2])
 
     def _K_computations(self,X,X2):
         if not (np.array_equal(X,self._X) and np.array_equal(X2,self._X2) and np.array_equal(self._params , self._get_params())):

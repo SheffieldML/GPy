@@ -10,7 +10,7 @@ import numpy as np
 import GPy
 
 default_seed = 10000
-def crescent_data(seed=default_seed): # FIXME
+def crescent_data(seed=default_seed, kernel=None): # FIXME
     """Run a Gaussian process classification on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
 
     :param model_type: type of model to fit ['Full', 'FITC', 'DTC'].
@@ -32,33 +32,33 @@ def crescent_data(seed=default_seed): # FIXME
     m.plot()
     return m
 
-def oil(num_inducing=50):
+def oil(num_inducing=50, max_iters=100, kernel=None):
     """
-    Run a Gaussian process classification on the oil data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
+    Run a Gaussian process classification on the three phase oil data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
     """
     data = GPy.util.datasets.oil()
-    X = data['X'][:600,:]
-    X_test = data['X'][600:,:]
-    Y = data['Y'][:600, 0:1]
+    X = data['X']
+    Xtest = data['Xtest']
+    Y = data['Y'][:, 0:1]
+    Ytest = data['Ytest'][:, 0:1]
     Y[Y.flatten()==-1] = 0
-    Y_test = data['Y'][600:, 0:1]
+    Ytest[Ytest.flatten()==-1] = 0
 
     # Create GP model
-    m = GPy.models.SparseGPClassification(X, Y,num_inducing=num_inducing)
+    m = GPy.models.SparseGPClassification(X, Y,kernel=kernel,num_inducing=num_inducing)
 
     # Contrain all parameters to be positive
-    m.constrain_positive('')
     m.tie_params('.*len')
     m['.*len'] = 10.
     m.update_likelihood_approximation()
 
     # Optimize
-    m.optimize()
+    m.optimize(max_iters=max_iters)
     print(m)
 
     #Test
-    probs = m.predict(X_test)[0]
-    GPy.util.classification.conf_matrix(probs,Y_test)
+    probs = m.predict(Xtest)[0]
+    GPy.util.classification.conf_matrix(probs,Ytest)
     return m
 
 def toy_linear_1d_classification(seed=default_seed):
@@ -118,7 +118,7 @@ def sparse_toy_linear_1d_classification(num_inducing=10,seed=default_seed):
 
     return m
 
-def sparse_crescent_data(num_inducing=10, seed=default_seed):
+def sparse_crescent_data(num_inducing=10, seed=default_seed, kernel=None):
     """
     Run a Gaussian process classification with DTC approxiamtion on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
 
@@ -133,7 +133,7 @@ def sparse_crescent_data(num_inducing=10, seed=default_seed):
     Y = data['Y']
     Y[Y.flatten()==-1]=0
 
-    m = GPy.models.SparseGPClassification(data['X'], Y,num_inducing=num_inducing)
+    m = GPy.models.SparseGPClassification(data['X'], Y, kernel=kernel, num_inducing=num_inducing)
     m['.*len'] = 10.
     #m.update_likelihood_approximation()
     #m.optimize()

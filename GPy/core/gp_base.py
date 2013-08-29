@@ -6,8 +6,8 @@ from GPy.core.model import Model
 
 class GPBase(Model):
     """
-    Gaussian Process Model for holding shared behaviour between
-    sprase_GP and GP models
+    Gaussian process base model for holding shared behaviour between
+    sparse_GP and GP models.
     """
 
     def __init__(self, X, likelihood, kernel, normalize_X=False):
@@ -35,8 +35,7 @@ class GPBase(Model):
 
     def getstate(self):
         """
-        Get the current state of the class,
-        here just all the indices, rest can get recomputed
+        Get the current state of the class, here we return everything that is needed to recompute the model.
         """
         return Model.getstate(self) + [self.X,
                 self.num_data,
@@ -63,14 +62,6 @@ class GPBase(Model):
         Plot the GP's view of the world, where the data is normalized and the
         likelihood is Gaussian.
 
-        :param samples: the number of a posteriori samples to plot
-        :param which_data: which if the training data to plot (default all)
-        :type which_data: 'all' or a slice object to slice self.X, self.Y
-        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
-        :param which_parts: which of the kernel functions to plot (additively)
-        :type which_parts: 'all', or list of bools
-        :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
-
         Plot the posterior of the GP.
           - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
           - In two dimsensions, a contour-plot shows the mean predicted function
@@ -78,6 +69,22 @@ class GPBase(Model):
 
         Can plot only part of the data and part of the posterior functions
         using which_data and which_functions
+
+        :param samples: the number of a posteriori samples to plot
+        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
+        :param which_data: which if the training data to plot (default all)
+        :type which_data: 'all' or a slice object to slice self.X, self.Y
+        :param which_parts: which of the kernel functions to plot (additively)
+        :type which_parts: 'all', or list of bools
+        :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
+        :type resolution: int
+        :param full_cov:
+        :type full_cov: bool
+                :param fignum: figure to plot on.
+        :type fignum: figure number
+        :param ax: axes to plot on.
+        :type ax: axes handle
+
         """
         if which_data == 'all':
             which_data = slice(None)
@@ -118,12 +125,41 @@ class GPBase(Model):
 
     def plot(self, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, samples=0, fignum=None, ax=None, fixed_inputs=[], linecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue']):
         """
-        TODO: Docstrings!
-        
+        Plot the GP with noise where the likelihood is Gaussian.
+
+        Plot the posterior of the GP.
+          - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
+          - In two dimsensions, a contour-plot shows the mean predicted function
+          - In higher dimensions, we've no implemented this yet !TODO!
+
+        Can plot only part of the data and part of the posterior functions
+        using which_data and which_functions
+
+        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
+        :type plot_limits: np.array
+        :param which_data: which if the training data to plot (default all)
+        :type which_data: 'all' or a slice object to slice self.X, self.Y
+        :param which_parts: which of the kernel functions to plot (additively)
+        :type which_parts: 'all', or list of bools
+        :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
+        :type resolution: int
+        :param levels: number of levels to plot in a contour plot.
+        :type levels: int
+        :param samples: the number of a posteriori samples to plot
+        :type samples: int
+        :param fignum: figure to plot on.
+        :type fignum: figure number
+        :param ax: axes to plot on.
+        :type ax: axes handle
+        :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
+        :type fixed_inputs: a list of tuples
+        :param linecol: color of line to plot.
+        :type linecol:
+        :param fillcol: color of fill
+        :type fillcol: 
         :param levels: for 2D plotting, the number of contour levels to use
         is ax is None, create a new figure
 
-        fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
         """
         # TODO include samples
         if which_data == 'all':
@@ -164,7 +200,7 @@ class GPBase(Model):
             m, _, lower, upper = self.predict(Xnew, which_parts=which_parts)
             m = m.reshape(resolution, resolution).T
             ax.contour(x, y, m, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet) # @UndefinedVariable
-            Yf = self.likelihood.Y.flatten()
+            Yf = self.likelihood.data.flatten()
             ax.scatter(self.X[:, 0], self.X[:, 1], 40, Yf, cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.) # @UndefinedVariable
             ax.set_xlim(xmin[0], xmax[0])
             ax.set_ylim(xmin[1], xmax[1])

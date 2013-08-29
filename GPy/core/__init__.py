@@ -8,3 +8,4 @@ from gp import GP
 from sparse_gp import SparseGP
 from fitc import FITC
 from svigp import SVIGP
+from mapping import *

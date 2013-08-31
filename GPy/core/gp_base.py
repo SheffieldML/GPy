@@ -136,10 +136,11 @@ class GPBase(Model):
             ax = fig.add_subplot(111)
 
         if self.X.shape[1] == 1 and not hasattr(self,'multioutput'):
+            resolution = resolution or 200
 
             Xu = self.X * self._Xscale + self._Xoffset # NOTE self.X are the normalized values now
 
-            Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
+            Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits,resolution=resolution)
             m, _, lower, upper = self.predict(Xnew, which_parts=which_parts)
             for d in range(m.shape[1]):
                 gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax)

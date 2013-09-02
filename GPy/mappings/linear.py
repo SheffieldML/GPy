@@ -20,6 +20,7 @@ class Linear(Mapping):
     """
 
     def __init__(self, input_dim=1, output_dim=1):
+        self.name = 'linear'
         Mapping.__init__(self, input_dim=input_dim, output_dim=output_dim)
         self.num_params = self.output_dim*(self.input_dim + 1)
         self.W = np.array((self.input_dim, self.output_dim))

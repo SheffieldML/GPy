@@ -26,6 +26,7 @@ class MLP(Mapping):
 
     def __init__(self, input_dim=1, output_dim=1, hidden_dim=3):
         Mapping.__init__(self, input_dim=input_dim, output_dim=output_dim)
+        self.name = 'mlp'
         if isinstance(hidden_dim, int):
             hidden_dim = [hidden_dim]
         self.hidden_dim = hidden_dim

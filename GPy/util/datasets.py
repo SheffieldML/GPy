@@ -1,15 +1,11 @@
 import os
-import pylab as pb
 import numpy as np
 import GPy
-import scipy.sparse
 import scipy.io
 import cPickle as pickle
 import urllib as url
 import zipfile
 import tarfile
-import gzip
-import zlib
 import datetime
     
 

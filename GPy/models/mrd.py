@@ -163,17 +163,28 @@ class MRD(Model):
         self._init_X(initx, self.likelihood_list)
         self._init_Z(initz, self.X)
 
-    def _get_param_names(self):
-        # X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
-        # S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
+    def _get_latent_param_names(self):
         n1 = self.gref._get_param_names()
         n1var = n1[:self.NQ * 2 + self.MQ]
+        return n1var
+
+
+    def _get_kernel_names(self):
         map_names = lambda ns, name: map(lambda x: "{1}_{0}".format(*x),
                                          itertools.izip(ns,
                                                         itertools.repeat(name)))
-        return list(itertools.chain(n1var, *(map_names(\
-                SparseGP._get_param_names(g)[self.MQ:], n) \
-                for g, n in zip(self.bgplvms, self.names))))
+        kernel_names = (map_names(SparseGP._get_param_names(g)[self.MQ:], n) for g, n in zip(self.bgplvms, self.names))
+        return kernel_names
+
+    def _get_param_names(self):
+        # X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
+        # S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
+        n1var = self._get_latent_param_names()
+        kernel_names = self._get_kernel_names()
+        return list(itertools.chain(n1var, *kernel_names))
+
+    def _get_print_names(self):
+        return list(itertools.chain(*self._get_kernel_names()))
 
     def _get_params(self):
         """
@@ -329,7 +340,9 @@ class MRD(Model):
         """
         if titles is None:
             titles = [r'${}$'.format(name) for name in self.names]
+        ymax = reduce(max, [numpy.ceil(max(g.input_sensitivity())) for g in self.bgplvms])
         def plotf(i, g, ax):
+            ax.set_ylim([0,ymax])
             g.kern.plot_ARD(ax=ax, title=titles[i], *args, **kwargs)
         fig = self._handle_plotting(fignum, ax, plotf, sharex=sharex, sharey=sharey)
         return fig

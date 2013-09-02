@@ -57,6 +57,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
         return SparseGP.getstate(self) + [self.init]
 
     def setstate(self, state):
+        self._const_jitter = None
         self.init = state.pop()
         SparseGP.setstate(self, state)
 
@@ -64,6 +65,9 @@ class BayesianGPLVM(SparseGP, GPLVM):
         X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
         S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
         return (X_names + S_names + SparseGP._get_param_names(self))
+
+    def _get_print_names(self):
+        return SparseGP._get_print_names(self)
 
     def _get_params(self):
         """

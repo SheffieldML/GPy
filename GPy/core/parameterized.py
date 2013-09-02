@@ -27,6 +27,9 @@ class Parameterized(object):
 
     def _get_param_names(self):
         raise NotImplementedError, "this needs to be implemented to use the Parameterized class"
+    def _get_print_names(self):
+        """ Override for which names to print out, when using print m """
+        return self._get_param_names()
 
     def pickle(self, filename, protocol=None):
         if protocol is None:
@@ -333,19 +336,26 @@ class Parameterized(object):
         n = [nn for i, nn in enumerate(n) if not i in remove]
         return n
 
-    def __str__(self, nw=30):
+    @property
+    def all(self):
+        return self.__str__(self._get_param_names())
+
+
+    def __str__(self, names=None, nw=30):
         """
         Return a string describing the parameter names and their ties and constraints
         """
-        names = self._get_param_names()
+        if names is None:
+            names = self._get_print_names()
+        name_indices = self.grep_param_names("|".join(names))
         N = len(names)
 
         if not N:
             return "This object has no free parameters."
         header = ['Name', 'Value', 'Constraints', 'Ties']
-        values = self._get_params() # map(str,self._get_params())
+        values = self._get_params()[name_indices] # map(str,self._get_params())
         # sort out the constraints
-        constraints = [''] * len(names)
+        constraints = [''] * len(self._get_param_names())
         for i, t in zip(self.constrained_indices, self.constraints):
             for ii in i:
                 constraints[ii] = t.__str__()

@@ -110,7 +110,7 @@ class kern(Parameterized):
         transOffset = offset_copy(ax.transData, fig=fig,
                                   x=0., y= -2., units='points')
         transOffsetUp = offset_copy(ax.transData, fig=fig,
-                                  x=0., y=2., units='points')
+                                  x=0., y=1., units='points')
         for bar in bars:
             for patch, num in zip(bar.patches, np.arange(len(bar.patches))):
                 height = patch.get_height()
@@ -119,7 +119,7 @@ class kern(Parameterized):
                 c = 'w'
                 t = TextPath((0, 0), "${xi}$".format(xi=xi), rotation=0, usetex=True, ha='center')
                 transform = transOffset
-                if patch.get_extents().height <= t.get_extents().height + 2:
+                if patch.get_extents().height <= t.get_extents().height + 3:
                     va = 'bottom'
                     c = 'k'
                     transform = transOffsetUp

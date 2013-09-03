@@ -239,13 +239,14 @@ class RBF(Kernpart):
 
     def _psi_computations(self, Z, mu, S):
         # here are the "statistics" for psi1 and psi2
-        if not fast_array_equal(Z, self._Z):
+        Z_changed = not fast_array_equal(Z, self._Z)
+        if Z_changed:
             # Z has changed, compute Z specific stuff
             self._psi2_Zhat = 0.5 * (Z[:, None, :] + Z[None, :, :]) # M,M,Q
             self._psi2_Zdist = 0.5 * (Z[:, None, :] - Z[None, :, :]) # M,M,Q
             self._psi2_Zdist_sq = np.square(self._psi2_Zdist / self.lengthscale) # M,M,Q
 
-        if not fast_array_equal(Z, self._Z) or not fast_array_equal(mu, self._mu) or not fast_array_equal(S, self._S):
+        if Z_changed or not fast_array_equal(mu, self._mu) or not fast_array_equal(S, self._S):
             # something's changed. recompute EVERYTHING
 
             # psi1

@@ -26,6 +26,21 @@ class KernelTests(unittest.TestCase):
         self.assertTrue(GPy.kern.Kern_check_dKdiag_dtheta(kern).checkgrad(verbose=verbose))
         self.assertTrue(GPy.kern.Kern_check_dK_dX(kern).checkgrad(verbose=verbose))
 
+    def test_gibbskernel(self):
+        verbose = False
+        kern = GPy.kern.gibbs(5, mapping=GPy.mappings.Linear(5, 1))
+        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+
+    def test_mlpkernel(self):
+        verbose = False
+        kern = GPy.kern.mlp(5)
+        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+
+    def test_polykernel(self):
+        verbose = False
+        kern = GPy.kern.poly(5, degree=4)
+        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+
     def test_fixedkernel(self):
         """
         Fixed effect kernel test

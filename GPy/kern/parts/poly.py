@@ -103,7 +103,7 @@ class POLY(Kernpart):
         """Derivative of the covariance matrix with respect to X"""
         self._K_computations(X, X2)
         arg = self._K_poly_arg
-        target += self.weight_variance*self.degree*self.variance*(((X2[None,:, :])) *(arg**(self.degree-1))[:, :, None]* dL_dK[:, :, None]).sum(1)
+        target += self.weight_variance*self.degree*self.variance*(((X2[None,:, :])) *(arg**(self.degree-1))[:, :, None]*dL_dK[:, :, None]).sum(1)
             
     def dKdiag_dX(self, dL_dKdiag, X, target):
         """Gradient of diagonal of covariance with respect to X"""

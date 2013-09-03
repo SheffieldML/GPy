@@ -59,10 +59,22 @@ Why do likelihoods still have YYT everywhere, didn't we agree to set observed da
 
 For some reason a stub of _get_param_names(self) wasn't available in the Parameterized base class. Have put it in (is this right?)
 
-Is there a quick FAQ or something on how to build the documentation? I did it once, but can't remember!
+Is there a quick FAQ or something on how to build the documentation? I did it once, but can't remember! Have started a FAQ.txt file where we can add this type of information. 
 
 Similar for the nosetests ... even ran them last week but can't remember the command!
 
 Now added Gaussian priors to GPLVM latent variables by default. When running the GPy.examples.dimensionality_reduction.stick() example the print out from print model has the same value for the prior+likelihood as for the prior.
 
-For the back constrained GP-LVM need priors to be on the Xs not on the model parameters (because they aren't parameters, they are constraints). Need to work out how to do this.
+For the back constrained GP-LVM need priors to be on the Xs not on the model parameters (because they aren't parameters, they are constraints). Need to work out how to do this, perhaps by creating the full GP-LVM model then constraining around it, rather than overriding inside the GP-LVM model.
+
+
+This code fails:
+
+kern = GPy.kern.rbf(2)
+GPy.kern.Kern_check_dK_dX(kern, X=np.random.randn(10, 2), X2=None).checkgrad(verbose=True)
+
+because X2 is now equal to X, so there is a factor of 2 missing. Does this every come up? Yes, in the GP-LVM, (gplvm.py, line 64) where it is called with a corrective factor of 2! And on line 241 of sparse_gp where it is also called with a corrective factor of 2! In original matlab GPLVM, didn't allow gradients with respect to X alone, and multiplied by 2 in base code, but then add diagonal across those elements. This is missing in the new code.
+
+
+In white.py, line 41, Need to check here if X and X2 refer to the same reference too ... becaue up the pipeline somewhere someone may have set X2=X when X2 arrived originally equal to None.
+

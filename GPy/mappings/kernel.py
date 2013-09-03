@@ -33,7 +33,7 @@ class Kernel(Mapping):
         self.A = np.array((self.num_data, self.output_dim))
         self.bias = np.array(self.output_dim)
         self.randomize()
-        
+        self.name = 'kernel'
     def _get_param_names(self):
         return sum([['A_%i_%i' % (n, d) for d in range(self.output_dim)] for n in range(self.num_data)], []) + ['bias_%i' % d for d in range(self.output_dim)]
 

@@ -547,10 +547,11 @@ class Kern_check_model(Model):
             kernel = GPy.kern.rbf(1)
         if X==None:
             X = np.random.randn(num_samples, kernel.input_dim)
-        if X2==None:
-            X2 = np.random.randn(num_samples2, kernel.input_dim)
         if dL_dK==None:
-            dL_dK = np.ones((X.shape[0], X2.shape[0]))
+            if X2==None:
+                dL_dK = np.ones((X.shape[0], X.shape[0]))
+            else:
+                dL_dK = np.ones((X.shape[0], X2.shape[0]))
         
         self.kernel=kernel
         self.X = X
@@ -641,3 +642,28 @@ class Kern_check_dKdiag_dX(Kern_check_model):
 
     def _set_params(self, x):
         self.X=x.reshape(self.X.shape)
+
+def kern_test(kern, X=None, X2=None, verbose=False):
+    """This function runs on kernels to check the correctness of their implementation. It checks that the covariance function is positive definite for a randomly generated data set.
+
+    :param kern: the kernel to be tested.
+    :type kern: GPy.kern.Kernpart
+    :param X: X input values to test the covariance function.
+    :type X: ndarray
+    :param X2: X2 input values to test the covariance function.
+    :type X2: ndarray
+    """
+    if X==None:
+        X = np.random.randn(10, kern.input_dim)
+    if X2==None:
+        X2 = np.random.randn(20, kern.input_dim)
+    result = [Kern_check_model(kern, X=X).is_positive_definite(),
+              Kern_check_dK_dtheta(kern, X=X, X2=X2).checkgrad(verbose=verbose),
+              Kern_check_dK_dtheta(kern, X=X, X2=None).checkgrad(verbose=verbose),
+             Kern_check_dKdiag_dtheta(kern, X=X).checkgrad(verbose=verbose),
+              Kern_check_dK_dX(kern, X=X, X2=X2).checkgrad(verbose=verbose),
+              Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=verbose)]
+    # Need to check 
+    #Kern_check_dK_dX(kern, X, X2=None).checkgrad(verbose=verbose)]
+    # but currently I think these aren't implemented.
+    return np.all(result)

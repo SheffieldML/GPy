@@ -298,7 +298,7 @@ def bgplvm_simulation(optimize='scg',
     return m
 
 def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
-    D1, D2, D3, N, num_inducing, Q = 30, 10, 15, 60, 3, 10
+    D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
 
     likelihood_list = [Gaussian(x, normalize=True) for x in Ylist]
@@ -321,7 +321,7 @@ def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
 
     if optimize:
         print "Optimizing Model:"
-        m.optimize(messages=1, max_iters=8e3, max_f_eval=8e3, gtol=.1)
+        m.optimize(messages=1, max_iters=8e3, gtol=.1)
     if plot:
         m.plot_X_1d("MRD Latent Space 1D")
         m.plot_scales("MRD Scales")

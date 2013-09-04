@@ -195,15 +195,15 @@ class Parameterized(object):
 
     def constrain_negative(self, regexp):
         """ Set negative constraints. """
-        self.constrain(regexp, transformations.negative_logexp())
+        self.constrain(regexp, transformations.Negative_logexp())
 
     def constrain_positive(self, regexp):
         """ Set positive constraints. """
-        self.constrain(regexp, transformations.logexp())
+        self.constrain(regexp, transformations.Logexp())
 
     def constrain_bounded(self, regexp, lower, upper):
         """ Set bounded constraints. """
-        self.constrain(regexp, transformations.logistic(lower, upper))
+        self.constrain(regexp, transformations.Logistic(lower, upper))
 
     def all_constrained_indices(self):
         if len(self.constrained_indices) or len(self.fixed_indices):
@@ -212,7 +212,7 @@ class Parameterized(object):
             return np.empty(shape=(0,))
 
     def constrain(self, regexp, transform):
-        assert isinstance(transform, transformations.transformation)
+        assert isinstance(transform, transformations.Transformation)
 
         matches = self.grep_param_names(regexp)
         overlap = set(matches).intersection(set(self.all_constrained_indices()))
@@ -278,7 +278,7 @@ class Parameterized(object):
 
     def _untransform_params(self, x):
         """
-        The transformation required for _set_params_transformed.
+        The Transformation required for _set_params_transformed.
 
         This moves the vector x seen by the optimiser (unconstrained) to the
         valid parameter vector seen by the model

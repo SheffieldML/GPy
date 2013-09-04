@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt, cm
 
 import GPy
-from GPy.core.transformations import logexp
+from GPy.core.transformations import Logexp
 from GPy.models.bayesian_gplvm import BayesianGPLVM
 from GPy.likelihoods.gaussian import Gaussian
 
@@ -88,7 +88,7 @@ def sparseGPLVM_oil(optimize=True, N=100, Q=6, num_inducing=15, max_iters=50):
 
 def swiss_roll(optimize=True, N=1000, num_inducing=15, Q=4, sigma=.2, plot=False):
     from GPy.util.datasets import swiss_roll_generated
-    from GPy.core.transformations import logexp_clipped
+    from GPy.core.transformations import LogexpClipped
 
     data = swiss_roll_generated(N=N, sigma=sigma)
     Y = data['Y']
@@ -155,7 +155,7 @@ def BGPLVM_oil(optimize=True, N=200, Q=7, num_inducing=40, max_iters=1000, plot=
     m = GPy.models.BayesianGPLVM(Yn, Q, kernel=kernel, num_inducing=num_inducing, **k)
     m.data_labels = data['Y'][:N].argmax(axis=1)
 
-    # m.constrain('variance|leng', logexp_clipped())
+    # m.constrain('variance|leng', LogexpClipped())
     # m['.*lengt'] = m.X.var(0).max() / m.X.var(0)
     m['noise'] = Yn.Y.var() / 100.
 
@@ -272,7 +272,7 @@ def bgplvm_simulation(optimize='scg',
                       plot=True,
                       max_iters=2e4,
                       plot_sim=False):
-#     from GPy.core.transformations import logexp_clipped
+#     from GPy.core.transformations import LogexpClipped
     D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 30, 3, 10
     slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
 
@@ -285,7 +285,7 @@ def bgplvm_simulation(optimize='scg',
     k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2)) # + kern.bias(Q)
     m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k)
 
-    # m.constrain('variance|noise', logexp_clipped())
+    # m.constrain('variance|noise', LogexpClipped())
     m['noise'] = Y.var() / 100.
 
     if optimize:
@@ -340,7 +340,7 @@ def brendan_faces():
     # m = GPy.models.BayesianGPLVM(Yn, Q, num_inducing=100)
 
     # optimize
-    m.constrain('rbf|noise|white', GPy.core.transformations.logexp_clipped())
+    m.constrain('rbf|noise|white', GPy.core.transformations.LogexpClipped())
 
     m.optimize('scg', messages=1, max_f_eval=10000)
 

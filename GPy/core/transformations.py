@@ -7,7 +7,7 @@ from GPy.core.domains import POSITIVE, NEGATIVE, BOUNDED
 import sys 
 lim_val = -np.log(sys.float_info.epsilon) 
 
-class transformation(object):
+class Transformation(object):
     domain = None
     def f(self, x):
         raise NotImplementedError
@@ -24,7 +24,7 @@ class transformation(object):
     def __str__(self):
         raise NotImplementedError
 
-class logexp(transformation):
+class Logexp(Transformation):
     domain = POSITIVE
     def f(self, x):
         return np.where(x>lim_val, x, np.log(1. + np.exp(x)))
@@ -39,22 +39,22 @@ class logexp(transformation):
     def __str__(self):
         return '(+ve)'
 
-class negative_logexp(transformation):
+class Negative_logexp(Transformation):
     domain = NEGATIVE
     def f(self, x):
-        return -logexp.f(x) #np.log(1. + np.exp(x))
+        return -Logexp.f(x)  # np.log(1. + np.exp(x))
     def finv(self, f):
-        return logexp.finv(-f) #np.log(np.exp(-f) - 1.)
+        return Logexp.finv(-f)  # np.log(np.exp(-f) - 1.)
     def gradfactor(self, f):
-        return -logexp.gradfactor(-f)
+        return -Logexp.gradfactor(-f)
         #ef = np.exp(-f)
         #return -(ef - 1.) / ef
     def initialize(self, f):
-        return -logexp.initialize(f) #np.abs(f)
+        return -Logexp.initialize(f)  # np.abs(f)
     def __str__(self):
         return '(-ve)'
 
-class logexp_clipped(logexp):
+class LogexpClipped(Logexp):
     max_bound = 1e100
     min_bound = 1e-10
     log_max_bound = np.log(max_bound)
@@ -81,8 +81,8 @@ class logexp_clipped(logexp):
     def __str__(self):
         return '(+ve_c)'
 
-class exponent(transformation):
-    # TODO: can't allow this to go to zero, need to set a lower bound. Similar with negative exponent below. See old MATLAB code.
+class Exponent(Transformation):
+    # TODO: can't allow this to go to zero, need to set a lower bound. Similar with negative Exponent below. See old MATLAB code.
     domain = POSITIVE
     def f(self, x):
         return np.where(x<lim_val, np.where(x>-lim_val, np.exp(x), np.exp(-lim_val)), np.exp(lim_val))
@@ -97,20 +97,20 @@ class exponent(transformation):
     def __str__(self):
         return '(+ve)'
 
-class negative_exponent(exponent):
+class NegativeExponent(Exponent):
     domain = NEGATIVE
     def f(self, x):
-        return -exponent.f(x)
+        return -Exponent.f(x)
     def finv(self, f):
-        return exponent.finv(-f)
+        return Exponent.finv(-f)
     def gradfactor(self, f):
         return f
     def initialize(self, f):
-        return -exponent.initialize(f) #np.abs(f)
+        return -Exponent.initialize(f) #np.abs(f)
     def __str__(self):
         return '(-ve)'
 
-class square(transformation):
+class Square(Transformation):
     domain = POSITIVE
     def f(self, x):
         return x ** 2
@@ -123,7 +123,7 @@ class square(transformation):
     def __str__(self):
         return '(+sq)'
 
-class logistic(transformation):
+class Logistic(Transformation):
     domain = BOUNDED
     def __init__(self, lower, upper):
         assert lower < upper

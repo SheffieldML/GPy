@@ -250,6 +250,19 @@ def symmetric(k):
     return k_
 
 def coregionalise(Nout,R=1, W=None, kappa=None):
+    """
+     Construct coregionalisation kernel, based on the coregionlisation matrix B = np.dot(W,W.T) + np.eye(Nout)*kappa
+
+    :param Nout: the number of outputs to corregionalise
+    :type Nout: int
+    :param R: the number of columns in the W matrix
+    :type R: int
+    :param W: W matrix
+    :type W: numpy array of dimensionality (Nout x R)
+    :param kappa: kappa vector
+    :type kappa: numpy array of dimensionality  (Nout,)
+
+    """
     p = parts.coregionalise.Coregionalise(Nout,R,W,kappa)
     return kern(1,[p])
 

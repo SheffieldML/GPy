@@ -185,7 +185,7 @@ class GP(GPBase):
         if isinstance(self.likelihood,EP_Mixed_Noise):
             mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, noise_model = output)
         else:
-            mean, var, _025pm, _975pm = self.likelihood_list[output].predictive_values(mu, var, full_cov)
+            mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, noise_model = output)
         return mean, var, _025pm, _975pm
 
     def _raw_predict_single_output(self, _Xnew, output=0, which_parts='all', full_cov=False,stop=False):

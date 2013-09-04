@@ -178,7 +178,7 @@ class GPBase(Model):
             for d in range(m.shape[1]):
                 gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax)
                 #ax.plot(Xu[which_data], self.likelihood.data[self.likelihood.index==output][:,None], 'kx', mew=1.5)
-                ax.plot(Xu[which_data], self.likelihood_list[output].data, 'kx', mew=1.5)
+                ax.plot(Xu[which_data], self.likelihood.noise_model_list[output].data, 'kx', mew=1.5)
             ymin, ymax = min(np.append(self.likelihood.data, lower)), max(np.append(self.likelihood.data, upper))
             ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
             ax.set_xlim(xmin, xmax)

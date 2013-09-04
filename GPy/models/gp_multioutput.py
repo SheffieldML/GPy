@@ -31,6 +31,7 @@ class GPMultioutput(GP):
     """
 
     def __init__(self,X_list,Y_list,kernel_list=None,normalize_X=False,normalize_Y=False,W=1,mixed_noise_list=[]): #TODO W
+        #TODO: split into 2 models gp_mixed_noise and ep_mixed_noise
 
         assert len(X_list) == len(Y_list)
         index = []
@@ -41,7 +42,8 @@ class GPMultioutput(GP):
             i += 1
         index = np.vstack(index)
 
-        self.likelihood_list = []
+        """
+
         if mixed_noise_list == []:
             for Y in Y_list:
                 self.likelihood_list.append(likelihoods.Gaussian(Y,normalize = normalize_Y))
@@ -49,13 +51,17 @@ class GPMultioutput(GP):
             Y = np.vstack([l_.Y for l_ in self.likelihood_list])
             likelihood = likelihoods.Gaussian(Y,normalize=False)
             likelihood.index = index
-
+        """
+        if mixed_noise_list == []:
+            likelihood = likelihoods.Gaussian_Mixed_Noise(Y_list,normalize=normalize_Y)
+             #TODO: allow passing the variance parameter into the model
         else:
+            self.likelihood_list = [] #TODO this is not needed
             assert len(Y_list) == len(mixed_noise_list)
             for noise,Y in zip(mixed_noise_list,Y_list):
                 self.likelihood_list.append(likelihoods.EP(Y,noise))
+             #TODO: allow normalization
             likelihood = likelihoods.EP_Mixed_Noise(Y_list, mixed_noise_list)
-
 
         X = np.hstack([np.vstack(X_list),index])
         original_dim = X.shape[1] - 1

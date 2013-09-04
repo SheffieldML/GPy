@@ -163,7 +163,7 @@ def multiple_optima(gene_number=937, resolution=80, model_restarts=10, seed=1000
     data['Y'] = data['Y'] - np.mean(data['Y'])
 
     lls = GPy.examples.regression._contour_data(data, length_scales, log_SNRs, GPy.kern.rbf)
-    pb.contour(length_scales, log_SNRs, np.exp(lls), 20, cmap=pb.cm.jet)
+    pb.contour(length_scales, log_SNRs, np.exp(lls), 20, cmap=pb.cm.jet)  # @UndefinedVariable
     ax = pb.gca()
     pb.xlabel('length scale')
     pb.ylabel('log_10 SNR')

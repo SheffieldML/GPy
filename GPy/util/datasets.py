@@ -518,7 +518,7 @@ def simulation_BGPLVM():
     Y = np.array(mat_data['Y'], dtype=float)
     S = np.array(mat_data['initS'], dtype=float)
     mu = np.array(mat_data['initMu'], dtype=float)
-    return data_details_return({'S': S, 'Y': Y, 'mu': mu}, data_set)
+    return data_details_return({'S': S, 'Y': Y, 'mu': mu}, mat_data)
     return {'Y': Y, 'S': S,
             'mu' : mu,
             'info': "Simulated test dataset generated in MATLAB to compare BGPLVM between python and MATLAB"}

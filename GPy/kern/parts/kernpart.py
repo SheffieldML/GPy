@@ -1,5 +1,6 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
+import numpy
 
 
 class Kernpart(object):
@@ -72,5 +73,5 @@ class Kernpart_inner(Kernpart):
         Kernpart.__init__(self, input_dim)
 
         # initialize cache
-        self._Z, self._mu, self._S = np.empty(shape=(3, 1))
-        self._X, self._X2, self._params = np.empty(shape=(3, 1))
+        self._Z, self._mu, self._S = numpy.empty(shape=(3, 1))
+        self._X, self._X2, self._params = numpy.empty(shape=(3, 1))

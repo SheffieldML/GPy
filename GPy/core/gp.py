@@ -6,7 +6,7 @@ import numpy as np
 import pylab as pb
 from .. import kern
 from ..util.linalg import pdinv, mdot, tdot, dpotrs, dtrtrs
-from ..likelihoods import EP
+from ..likelihoods import EP, Laplace
 from gp_base import GPBase
 
 class GP(GPBase):
@@ -40,6 +40,11 @@ class GP(GPBase):
     def _set_params(self, p):
         self.kern._set_params_transformed(p[:self.kern.num_params_transformed()])
         self.likelihood._set_params(p[self.kern.num_params_transformed():])
+
+        #TODO: Need to get rid of this check and think of a nicer OO way
+        if isinstance(self.likelihood, Laplace):
+            self.likelihood.fit_full(self.kern.K(self.X))
+            self.likelihood._set_params(self.likelihood._get_params())
 
         self.K = self.kern.K(self.X)
         self.K += self.likelihood.covariance_matrix
@@ -105,7 +110,18 @@ class GP(GPBase):
 
         Note, we use the chain rule: dL_dtheta = dL_dK * d_K_dtheta
         """
-        return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        dL_dthetaK = self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X)
+        #Think of OO way of doing this also
+        if isinstance(self.likelihood, Laplace):
+            #self.likelihood.fit_full(self.kern.K(self.X))
+            #self.likelihood._set_params(self.likelihood._get_params())
+            dK_dthetaK = self.kern.dK_dtheta
+            dL_dthetaK = self.likelihood._Kgradients(dK_dthetaK, self.X.copy())
+            dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))
+        else:
+            dL_dthetaL = self.likelihood._gradients(partial=np.diag(self.dL_dK))
+
+        return np.hstack((dL_dthetaK, dL_dthetaL))
 
     def _raw_predict(self, _Xnew, which_parts='all', full_cov=False, stop=False):
         """

@@ -4,7 +4,7 @@ import GPy
 from scipy.linalg import inv, cho_solve, det
 from numpy.linalg import cond
 from likelihood import likelihood
-from ..util.linalg import pdinv, mdot, jitchol, chol_inv, det_ln_diag, pddet
+from ..util.linalg import pdinv, mdot, jitchol, chol_inv, pddet
 from scipy.linalg.lapack import dtrtrs
 import random
 #import pylab as plt

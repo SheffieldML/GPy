@@ -25,7 +25,7 @@ def timing():
         edited_real_sd = real_sd
         kernel1 = GPy.kern.rbf(X.shape[1])
 
-        t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=edited_real_sd)
+        t_distribution = GPy.likelihoods.likelihood_functions.Student_t(deg_free, sigma2=edited_real_sd)
         corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, opt='rasm')
         m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel1)
         m.ensure_default_constraints()
@@ -54,7 +54,7 @@ def v_fail_test():
     edited_real_sd = real_sd
 
     print "Clean student t, rasm"
-    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=edited_real_sd)
+    t_distribution = GPy.likelihoods.likelihood_functions.Student_t(deg_free, sigma2=edited_real_sd)
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
     m = GPy.models.GP(X, stu_t_likelihood, kernel1)
     m.constrain_positive('')
@@ -101,7 +101,7 @@ def student_t_obj_plane():
     print mgp
 
     kernelst = kernelgp.copy()
-    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=(real_std**2))
+    t_distribution = GPy.likelihoods.likelihood_functions.Student_t(deg_free, sigma2=(real_std**2))
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
     m = GPy.models.GP(X, stu_t_likelihood, kernelst)
     m.ensure_default_constraints()
@@ -154,7 +154,7 @@ def student_t_f_check():
 
     kernelst = kernelgp.copy()
     #kernelst += GPy.kern.bias(X.shape[1])
-    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=0.05)
+    t_distribution = GPy.likelihoods.likelihood_functions.Student_t(deg_free, sigma2=0.05)
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
     m = GPy.models.GP(X, stu_t_likelihood, kernelst)
     #m['rbf_v'] = mgp._get_params()[0]
@@ -206,7 +206,7 @@ def student_t_fix_optimise_check():
     kernelst = kernelgp.copy()
     real_stu_t_std2 = (real_std**2)*((deg_free - 2)/float(deg_free))
 
-    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=real_stu_t_std2)
+    t_distribution = GPy.likelihoods.likelihood_functions.Student_t(deg_free, sigma2=real_stu_t_std2)
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
 
     plt.figure(1)
@@ -349,7 +349,7 @@ def debug_student_t_noise_approx():
     #edited_real_sd = real_sd
 
     print "Clean student t, rasm"
-    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=edited_real_sd)
+    t_distribution = GPy.likelihoods.likelihood_functions.Student_t(deg_free, sigma2=edited_real_sd)
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
 
     m = GPy.models.GP(X, stu_t_likelihood, kernel6)
@@ -384,7 +384,7 @@ def debug_student_t_noise_approx():
     return m
 
     #print "Clean student t, ncg"
-    #t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=edited_real_sd)
+    #t_distribution = GPy.likelihoods.likelihood_functions.Student_t(deg_free, sigma2=edited_real_sd)
     #stu_t_likelihood = GPy.likelihoods.Laplace(Y, t_distribution, opt='ncg')
     #m = GPy.models.GP(X, stu_t_likelihood, kernel3)
     #m.ensure_default_constraints()
@@ -480,7 +480,7 @@ def student_t_approx():
     edited_real_sd = real_std #initial_var_guess
 
     print "Clean student t, rasm"
-    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=edited_real_sd)
+    t_distribution = GPy.likelihoods.likelihood_functions.Student_t(deg_free, sigma2=edited_real_sd)
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
     m = GPy.models.GP(X, stu_t_likelihood, kernel6)
     m.ensure_default_constraints()
@@ -496,7 +496,7 @@ def student_t_approx():
     plt.title('Student-t rasm clean')
 
     print "Corrupt student t, rasm"
-    t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=edited_real_sd)
+    t_distribution = GPy.likelihoods.likelihood_functions.Student_t(deg_free, sigma2=edited_real_sd)
     corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, opt='rasm')
     m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel4)
     m.ensure_default_constraints()
@@ -514,7 +514,7 @@ def student_t_approx():
     return m
 
     #print "Clean student t, ncg"
-    #t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=edited_real_sd)
+    #t_distribution = GPy.likelihoods.likelihood_functions.Student_t(deg_free, sigma2=edited_real_sd)
     #stu_t_likelihood = GPy.likelihoods.Laplace(Y, t_distribution, opt='ncg')
     #m = GPy.models.GP(X, stu_t_likelihood, kernel3)
     #m.ensure_default_constraints()
@@ -528,7 +528,7 @@ def student_t_approx():
     #plt.title('Student-t ncg clean')
 
     #print "Corrupt student t, ncg"
-    #t_distribution = GPy.likelihoods.likelihood_functions.student_t(deg_free, sigma2=edited_real_sd)
+    #t_distribution = GPy.likelihoods.likelihood_functions.Student_t(deg_free, sigma2=edited_real_sd)
     #corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, opt='ncg')
     #m = GPy.models.GP(X, corrupt_stu_t_likelihood, kernel5)
     #m.ensure_default_constraints()
@@ -612,7 +612,7 @@ def gaussian_f_check():
     kernelg = kernelgp.copy()
     #kernelst += GPy.kern.bias(X.shape[1])
     N, D = X.shape
-    g_distribution = GPy.likelihoods.likelihood_functions.gaussian(variance=0.1, N=N, D=D)
+    g_distribution = GPy.likelihoods.likelihood_functions.Gaussian(variance=0.1, N=N, D=D)
     g_likelihood = GPy.likelihoods.Laplace(Y.copy(), g_distribution, opt='rasm')
     m = GPy.models.GP(X, g_likelihood, kernelg)
     #m['rbf_v'] = mgp._get_params()[0]

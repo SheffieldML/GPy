@@ -523,7 +523,7 @@ class gaussian(likelihood_function):
         """
         assert y.shape == f.shape
         s2_i = (1.0/self._variance)*self.I
-        grad = np.dot(s2_i, y) - np.dot(s2_i, f)
+        grad = np.dot(s2_i, y) - 0.5*np.dot(s2_i, f)
         return grad
 
     def d2lik_d2f(self, y, f, extra_data=None):
@@ -541,7 +541,7 @@ class gaussian(likelihood_function):
         """
         assert y.shape == f.shape
         s2_i = (1.0/self._variance)*self.I
-        hess = np.diag(-s2_i)[:, None] # FIXME: CAREFUL THIS MAY NOT WORK WITH MULTIDIMENSIONS?
+        hess = 0.5*np.diag(-s2_i)[:, None] # FIXME: CAREFUL THIS MAY NOT WORK WITH MULTIDIMENSIONS?
         return hess
 
     def d3lik_d3f(self, y, f, extra_data=None):
@@ -560,7 +560,8 @@ class gaussian(likelihood_function):
         """
         assert y.shape == f.shape
         e = y - f
-        dlik_dsigma = -0.5*self.N/self._variance - 0.5*np.trace(np.dot(e.T, np.dot(self.I, e)))
+        s_4 = 1.0/(self._variance**2)
+        dlik_dsigma = -0.5*self.N*1/self._variance + 0.5*s_4*np.trace(np.dot(e.T, np.dot(self.I, e)))
         return dlik_dsigma
 
     def dlik_df_dstd(self, y, f, extra_data=None):
@@ -569,7 +570,7 @@ class gaussian(likelihood_function):
         """
         assert y.shape == f.shape
         s_4 = 1.0/(self._variance**2)
-        dlik_grad_dsigma = -np.dot(s_4, np.dot(self.I, y)) + np.dot(s_4, np.dot(self.I, f))
+        dlik_grad_dsigma = -np.dot(s_4, np.dot(self.I, y)) + 0.5*np.dot(s_4, np.dot(self.I, f))
         return dlik_grad_dsigma
 
     def d2lik_d2f_dstd(self, y, f, extra_data=None):
@@ -579,7 +580,7 @@ class gaussian(likelihood_function):
         $$\frac{d}{d\sigma}(\frac{d^{2}p(y_{i}|f_{i})}{d^{2}f}) = \frac{2\sigma v(v + 1)(\sigma^2 v - 3(y-f)^2)}{((y-f)^2 + \sigma^2 v)^3}$$
         """
         assert y.shape == f.shape
-        dlik_hess_dsigma = np.diag((1.0/(self._variance**2))*self.I)[:, None]
+        dlik_hess_dsigma = 0.5*np.diag((1.0/(self._variance**2))*self.I)[:, None]
         return dlik_hess_dsigma
 
     def _gradients(self, y, f, extra_data=None):

@@ -118,7 +118,7 @@ class Step(GPTransformation):
     """
     def transf(self,f):
         #transformation goes here
-        return np.where(f>0, 1, 0)
+        return np.where(f>0, 1, -1)
 
     def dtransf_df(self,f):
         pass

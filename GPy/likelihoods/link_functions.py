@@ -31,3 +31,16 @@ class Probit(LinkFunction):
 
     def log_inv_transf(self,f):
         pass
+
+class Nothing(LinkFunction):
+    """
+    Probit link function: Squashes a likelihood between 0 and 1
+    """
+    def transf(self,mu):
+        return mu
+
+    def inv_transf(self,f):
+        return f
+
+    def log_inv_transf(self,f):
+        return np.log(f)

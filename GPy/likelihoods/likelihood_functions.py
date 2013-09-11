@@ -167,7 +167,7 @@ class Poisson(LikelihoodFunction):
         p_975 = tmp[:,1]
         return mean,np.nan*mean,p_025,p_975 # better variance here TODO
 
-class Student_t(LikelihoodFunction):
+class StudentT(LikelihoodFunction):
     """Student t likelihood distribution
     For nomanclature see Bayesian Data Analysis 2003 p576
 
@@ -180,7 +180,11 @@ class Student_t(LikelihoodFunction):
     d2ln p(yi|fi)_d2fifj
     """
     def __init__(self, deg_free=5, sigma2=2, link=None):
-        super(Student_t, self).__init__(link)
+        self._analytical = None
+        if not link:
+            link = link_functions.Nothing()
+
+        super(StudentT, self).__init__(link)
         self.v = deg_free
         self.sigma2 = sigma2
 
@@ -413,6 +417,10 @@ class Gaussian(LikelihoodFunction):
     Gaussian likelihood - this is a test class for approximation schemes
     """
     def __init__(self, variance, D, N, link=None):
+        self._analytical = None
+        if not link:
+            link = link_functions.Nothing()
+
         super(Gaussian, self).__init__(link)
         self.D = D
         self.N = N
@@ -454,7 +462,7 @@ class Gaussian(LikelihoodFunction):
                      #- 0.5*np.sum(np.multiply(self.Ki, eeT))
                      - 0.5*np.dot(np.dot(e.T, self.Ki), e)
                      )
-        return np.sum(objective)
+        return np.sum(objective) # FIXME: put this back!
 
     def dlik_df(self, y, f, extra_data=None):
         """
@@ -468,7 +476,7 @@ class Gaussian(LikelihoodFunction):
         """
         assert y.shape == f.shape
         s2_i = (1.0/self._variance)*self.I
-        grad = np.dot(s2_i, y) - 0.5*np.dot(s2_i, f)
+        grad = np.dot(s2_i, y) - np.dot(s2_i, f)
         return grad
 
     def d2lik_d2f(self, y, f, extra_data=None):
@@ -486,7 +494,7 @@ class Gaussian(LikelihoodFunction):
         """
         assert y.shape == f.shape
         s2_i = (1.0/self._variance)*self.I
-        hess = 0.5*np.diag(-s2_i)[:, None] # FIXME: CAREFUL THIS MAY NOT WORK WITH MULTIDIMENSIONS?
+        hess = np.diag(-s2_i)[:, None] # FIXME: CAREFUL THIS MAY NOT WORK WITH MULTIDIMENSIONS?
         return hess
 
     def d3lik_d3f(self, y, f, extra_data=None):
@@ -499,17 +507,17 @@ class Gaussian(LikelihoodFunction):
         d3lik_d3f = np.diagonal(0*self.I)[:, None] # FIXME: CAREFUL THIS MAY NOT WORK WITH MULTIDIMENSIONS?
         return d3lik_d3f
 
-    def lik_dstd(self, y, f, extra_data=None):
+    def lik_dvar(self, y, f, extra_data=None):
         """
         Gradient of the likelihood (lik) w.r.t sigma parameter (standard deviation)
         """
         assert y.shape == f.shape
         e = y - f
         s_4 = 1.0/(self._variance**2)
-        dlik_dsigma = -0.5*self.N*1/self._variance + 0.5*s_4*np.trace(np.dot(e.T, np.dot(self.I, e)))
+        dlik_dsigma = -0.5*self.N/self._variance + 0.5*s_4*np.trace(np.dot(e.T, np.dot(self.I, e)))
         return dlik_dsigma
 
-    def dlik_df_dstd(self, y, f, extra_data=None):
+    def dlik_df_dvar(self, y, f, extra_data=None):
         """
         Gradient of the dlik_df w.r.t sigma parameter (standard deviation)
         """
@@ -518,7 +526,7 @@ class Gaussian(LikelihoodFunction):
         dlik_grad_dsigma = -np.dot(s_4, np.dot(self.I, y)) + 0.5*np.dot(s_4, np.dot(self.I, f))
         return dlik_grad_dsigma
 
-    def d2lik_d2f_dstd(self, y, f, extra_data=None):
+    def d2lik_d2f_dvar(self, y, f, extra_data=None):
         """
         Gradient of the hessian (d2lik_d2f) w.r.t sigma parameter (standard deviation)
 
@@ -530,9 +538,9 @@ class Gaussian(LikelihoodFunction):
 
     def _gradients(self, y, f, extra_data=None):
         #must be listed in same order as 'get_param_names'
-        derivs = ([self.lik_dstd(y, f, extra_data=extra_data)],
-                  [self.dlik_df_dstd(y, f, extra_data=extra_data)],
-                  [self.d2lik_d2f_dstd(y, f, extra_data=extra_data)]
+        derivs = ([self.lik_dvar(y, f, extra_data=extra_data)],
+                  [self.dlik_df_dvar(y, f, extra_data=extra_data)],
+                  [self.d2lik_d2f_dvar(y, f, extra_data=extra_data)]
                  ) # lists as we might learn many parameters
         # ensure we have gradients for every parameter we want to optimize
         assert len(derivs[0]) == len(self._get_param_names())

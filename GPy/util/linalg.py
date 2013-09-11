@@ -55,6 +55,14 @@ def dpotri(A, lower=0):
     """
     return lapack.dpotri(A, lower=lower)
 
+def pddet(A):
+    """
+    Determinant of a positive definite matrix, only symmetric matricies though
+    """
+    L = jitchol(A)
+    logdetA = 2*sum(np.log(np.diag(L)))
+    return logdetA
+
 def trace_dot(a, b):
     """
     efficiently compute the trace of the matrix product of a and b

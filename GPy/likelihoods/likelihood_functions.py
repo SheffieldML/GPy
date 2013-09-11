@@ -507,7 +507,7 @@ class Gaussian(LikelihoodFunction):
         d3lik_d3f = np.diagonal(0*self.I)[:, None] # FIXME: CAREFUL THIS MAY NOT WORK WITH MULTIDIMENSIONS?
         return d3lik_d3f
 
-    def lik_dvar(self, y, f, extra_data=None):
+    def dlik_dvar(self, y, f, extra_data=None):
         """
         Gradient of the likelihood (lik) w.r.t sigma parameter (standard deviation)
         """
@@ -538,7 +538,7 @@ class Gaussian(LikelihoodFunction):
 
     def _gradients(self, y, f, extra_data=None):
         #must be listed in same order as 'get_param_names'
-        derivs = ([self.lik_dvar(y, f, extra_data=extra_data)],
+        derivs = ([self.dlik_dvar(y, f, extra_data=extra_data)],
                   [self.dlik_df_dvar(y, f, extra_data=extra_data)],
                   [self.d2lik_d2f_dvar(y, f, extra_data=extra_data)]
                  ) # lists as we might learn many parameters

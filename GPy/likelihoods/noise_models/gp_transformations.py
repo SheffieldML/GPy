@@ -55,8 +55,6 @@ class Probit(GPTransformation):
     def d2transf_df2(self,f):
         return -f * std_norm_pdf(f)
 
-    def 
-
 class Log(GPTransformation):
     """
     $$

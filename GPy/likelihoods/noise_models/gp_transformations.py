@@ -55,6 +55,8 @@ class Probit(GPTransformation):
     def d2transf_df2(self,f):
         return -f * std_norm_pdf(f)
 
+    def 
+
 class Log(GPTransformation):
     """
     $$
@@ -108,4 +110,18 @@ class Reciprocal(GPTransformation):
     def d2transf_df2(self,f):
         return 2./f**3
 
+class Step(GPTransformation):
+    """
+    $$
+    g(f) = I_{x \in A}
+    $$
+    """
+    def transf(self,f):
+        #transformation goes here
+        return np.where(f>0, 1, 0)
 
+    def dtransf_df(self,f):
+        pass
+
+    def d2transf_df2(self,f):
+        pass

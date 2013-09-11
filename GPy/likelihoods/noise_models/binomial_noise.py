@@ -42,11 +42,18 @@ class Binomial(NoiseDistribution):
         :param tau_i: precision of the cavity distribution (float)
         :param v_i: mean/variance of the cavity distribution (float)
         """
-        z = data_i*v_i/np.sqrt(tau_i**2 + tau_i)
-        Z_hat = std_norm_cdf(z)
-        phi = std_norm_pdf(z)
-        mu_hat = v_i/tau_i + data_i*phi/(Z_hat*np.sqrt(tau_i**2 + tau_i))
-        sigma2_hat = 1./tau_i - (phi/((tau_i**2+tau_i)*Z_hat))*(z+phi/Z_hat)
+        if isinstance(self.gp_link,gp_transformations.Probit):
+            z = data_i*v_i/np.sqrt(tau_i**2 + tau_i)
+            Z_hat = std_norm_cdf(z)
+            phi = std_norm_pdf(z)
+            mu_hat = v_i/tau_i + data_i*phi/(Z_hat*np.sqrt(tau_i**2 + tau_i))
+            sigma2_hat = 1./tau_i - (phi/((tau_i**2+tau_i)*Z_hat))*(z+phi/Z_hat)
+
+        elif isinstance(self.gp_link,gp_transformations.Step):
+            Z_hat = None
+            mu_hat = None
+            sigma2_hat = None
+
         return Z_hat, mu_hat, sigma2_hat
 
     def _predictive_mean_analytical(self,mu,sigma):

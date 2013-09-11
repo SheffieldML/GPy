@@ -17,9 +17,16 @@ def binomial(gp_link=None):
 
     if isinstance(gp_link,noise_models.gp_transformations.Probit):
         analytical_mean = True
+        analytical_variance = False
+
+    elif isinstance(gp_link,noise_models.gp_transformations.Step):
+        analytical_mean = True
+        analytical_variance = True
+
     else:
         analytical_mean = False
-    analytical_variance = False
+        analytical_variance = False
+
     return noise_models.binomial_noise.Binomial(gp_link,analytical_mean,analytical_variance)
 
 def exponential(gp_link=None):

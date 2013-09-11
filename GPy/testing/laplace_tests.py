@@ -4,6 +4,24 @@ import GPy
 from GPy.models import GradientChecker
 import functools
 
+def dparam_partial(inst_func, *args):
+    """
+    If we have a instance method that needs to be called but that doesn't
+    take the parameter we wish to change to checkgrad, then this function
+    will change the variable using set params.
+
+    inst_func: should be a instance function of an object that we would like
+                to change
+    param: the param that will be given to set_params
+    args: anything else that needs to be given to the function (for example
+          the f or Y that are being used in the function whilst we tweak the
+          param
+    """
+    def param_func(param, inst_func, args):
+        inst_func.im_self._set_params(param)
+        return inst_func(*args)
+    return functools.partial(param_func, inst_func=inst_func, args=args)
+
 class LaplaceTests(unittest.TestCase):
     def setUp(self):
         self.N = 5
@@ -24,6 +42,7 @@ class LaplaceTests(unittest.TestCase):
         grad = GradientChecker(link, dlik_df, self.f.copy(), 'f')
         grad.randomize()
         grad.checkgrad(verbose=1)
+        self.assertTrue(grad.checkgrad())
 
     def test_gaussian_d2lik_d2f(self):
         var = 0.1
@@ -33,6 +52,7 @@ class LaplaceTests(unittest.TestCase):
         grad = GradientChecker(dlik_df, d2lik_d2f, self.f.copy(), 'f')
         grad.randomize()
         grad.checkgrad(verbose=1)
+        self.assertTrue(grad.checkgrad())
 
     def test_gaussian_d3lik_d3f(self):
         var = 0.1
@@ -42,42 +62,43 @@ class LaplaceTests(unittest.TestCase):
         grad = GradientChecker(d2lik_d2f, d3lik_d3f, self.f.copy(), 'f')
         grad.randomize()
         grad.checkgrad(verbose=1)
+        self.assertTrue(grad.checkgrad())
 
     def test_gaussian_dlik_dvar(self):
         var = 0.1
         gauss = GPy.likelihoods.functions.Gaussian(var, self.D, self.N)
-        #Since the function we are checking does not directly accept the variable we wish to tweak
-        #We make function which makes the change (set params) then calls the function
-        def p_link_var(var, likelihood, f, Y):
-            likelihood._set_params(var)
-            return likelihood.link_function(f, Y)
 
-        def p_dlik_dvar(var, likelihood, f, Y):
-            likelihood._set_params(var)
-            return likelihood.dlik_dvar(f, Y)
-
-        link = functools.partial(p_link_var, likelihood=gauss, f=self.f, Y=self.Y)
-        dlik_dvar = functools.partial(p_dlik_dvar, likelihood=gauss, f=self.f, Y=self.Y)
+        link = dparam_partial(gauss.link_function, self.Y, self.f)
+        dlik_dvar = dparam_partial(gauss.dlik_dvar, self.Y, self.f)
         grad = GradientChecker(link, dlik_dvar, var, 'v')
+        grad.constrain_positive('v')
         grad.randomize()
         grad.checkgrad(verbose=1)
+        #self.assertTrue(grad.checkgrad())
 
     def test_gaussian_dlik_df_dvar(self):
         var = 0.1
         gauss = GPy.likelihoods.functions.Gaussian(var, self.D, self.N)
-        def p_dlik_df(var, likelihood, f, Y):
-            likelihood._set_params(var)
-            return likelihood.dlik_df(f, Y)
 
-        def p_dlik_df_dstd(var, likelihood, f, Y):
-            likelihood._set_params(var)
-            return likelihood.dlik_df_dvar(f, Y)
-
-        dlik_df = functools.partial(p_dlik_df, likelihood=gauss, f=self.f, Y=self.Y)
-        dlik_df_dstd = functools.partial(p_dlik_df_dstd, likelihood=gauss, f=self.f, Y=self.Y)
-        grad = GradientChecker(dlik_df, dlik_df_dstd, var, 'v')
+        dlik_df = dparam_partial(gauss.dlik_df, self.Y, self.f)
+        dlik_df_dvar = dparam_partial(gauss.dlik_df_dvar, self.Y, self.f)
+        grad = GradientChecker(dlik_df, dlik_df_dvar, var, 'v')
+        grad.constrain_positive('v')
         grad.randomize()
         grad.checkgrad(verbose=1)
+        #self.assertTrue(grad.checkgrad())
+
+    def test_studentt_dlik_dvar(self):
+        var = 0.1
+        stu_t = GPy.likelihoods.functions.StudentT(deg_free=5, sigma2=var)
+
+        link = dparam_partial(stu_t.link_function, self.Y, self.f)
+        dlik_dvar = dparam_partial(stu_t.dlik_dvar, self.Y, self.f)
+        grad = GradientChecker(link, dlik_dvar, var, 'v')
+        grad.constrain_positive('v')
+        grad.randomize()
+        grad.checkgrad(verbose=1)
+        #self.assertTrue(grad.checkgrad())
 
 if __name__ == "__main__":
     print "Running unit tests"

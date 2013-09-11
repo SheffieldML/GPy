@@ -41,9 +41,12 @@ class Laplace(likelihood):
         self.N, self.D = self.data.shape
         self.is_heteroscedastic = True
         self.Nparams = 0
-
         self.NORMAL_CONST = ((0.5 * self.N) * np.log(2 * np.pi))
 
+        self.restart()
+
+
+    def restart(self):
         #Initial values for the GP variables
         self.Y = np.zeros((self.N, 1))
         self.covariance_matrix = np.eye(self.N)
@@ -52,6 +55,7 @@ class Laplace(likelihood):
         self.YYT = None
 
         self.old_a = None
+
 
     def predictive_values(self, mu, var, full_cov):
         if full_cov:

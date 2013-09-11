@@ -280,7 +280,7 @@ class StudentT(LikelihoodFunction):
                     )
         return d3lik_d3f
 
-    def lik_dstd(self, y, f, extra_data=None):
+    def dlik_dvar(self, y, f, extra_data=None):
         """
         Gradient of the likelihood (lik) w.r.t sigma parameter (standard deviation)
 
@@ -291,10 +291,10 @@ class StudentT(LikelihoodFunction):
         """
         assert y.shape == f.shape
         e = y - f
-        dlik_dsigma = self.v*(e**2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e**2))
-        return dlik_dsigma
+        dlik_dvar = self.v*(e**2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e**2))
+        return dlik_dvar
 
-    def dlik_df_dstd(self, y, f, extra_data=None):
+    def dlik_df_dvar(self, y, f, extra_data=None):
         """
         Gradient of the dlik_df w.r.t sigma parameter (standard deviation)
 
@@ -302,10 +302,10 @@ class StudentT(LikelihoodFunction):
         """
         assert y.shape == f.shape
         e = y - f
-        dlik_grad_dsigma = (self.v*(self.v+1)*(-e))/((self.sigma2*self.v + e**2)**2)
-        return dlik_grad_dsigma
+        dlik_grad_dvar = (self.v*(self.v+1)*(-e))/((self.sigma2*self.v + e**2)**2)
+        return dlik_grad_dvar
 
-    def d2lik_d2f_dstd(self, y, f, extra_data=None):
+    def d2lik_d2f_dvar(self, y, f, extra_data=None):
         """
         Gradient of the hessian (d2lik_d2f) w.r.t sigma parameter (standard deviation)
 
@@ -313,16 +313,16 @@ class StudentT(LikelihoodFunction):
         """
         assert y.shape == f.shape
         e = y - f
-        dlik_hess_dsigma = ( (self.v*(self.v+1)*(self.sigma2*self.v - 3*(e**2)))
+        dlik_hess_dvar = ( (self.v*(self.v+1)*(self.sigma2*self.v - 3*(e**2)))
                               / ((self.sigma2*self.v + (e**2))**3)
                            )
-        return dlik_hess_dsigma
+        return dlik_hess_dvar
 
     def _gradients(self, y, f, extra_data=None):
         #must be listed in same order as 'get_param_names'
-        derivs = ([self.lik_dstd(y, f, extra_data=extra_data)],
-                  [self.dlik_df_dstd(y, f, extra_data=extra_data)],
-                  [self.d2lik_d2f_dstd(y, f, extra_data=extra_data)]
+        derivs = ([self.dlik_dvar(y, f, extra_data=extra_data)],
+                  [self.dlik_df_dvar(y, f, extra_data=extra_data)],
+                  [self.d2lik_d2f_dvar(y, f, extra_data=extra_data)]
                  ) # lists as we might learn many parameters
         # ensure we have gradients for every parameter we want to optimize
         assert len(derivs[0]) == len(self._get_param_names())

@@ -291,6 +291,7 @@ class StudentT(LikelihoodFunction):
         """
         assert y.shape == f.shape
         e = y - f
+        #FIXME: OUT BY SOME FUNCTION OF N
         dlik_dvar = self.v*(e**2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e**2))
         return dlik_dvar
 
@@ -442,7 +443,7 @@ class Gaussian(LikelihoodFunction):
         self.I = np.eye(self.N)
         self.covariance_matrix = self.I * self._variance
         self.Ki = self.I*(1.0 / self._variance)
-        self.ln_K = np.trace(self.covariance_matrix)
+        self.ln_det_K = np.sum(np.log(np.diag(self.covariance_matrix)))
 
     def link_function(self, y, f, extra_data=None):
         """link_function $\ln p(y|f)$
@@ -458,11 +459,11 @@ class Gaussian(LikelihoodFunction):
         e = y - f
         eeT = np.dot(e, e.T)
         objective = (- 0.5*self.D*np.log(2*np.pi)
-                     - 0.5*self.ln_K
-                     #- 0.5*np.sum(np.multiply(self.Ki, eeT))
-                     - 0.5*np.dot(np.dot(e.T, self.Ki), e)
+                     - 0.5*self.ln_det_K
+                     #- 0.5*np.dot(np.dot(e.T, self.Ki), e)
+                     - (0.5/self._variance)*np.dot(e.T, e) # As long as K is diagonal
                      )
-        return np.sum(objective) # FIXME: put this back!
+        return np.sum(objective)
 
     def dlik_df(self, y, f, extra_data=None):
         """
@@ -514,7 +515,8 @@ class Gaussian(LikelihoodFunction):
         assert y.shape == f.shape
         e = y - f
         s_4 = 1.0/(self._variance**2)
-        dlik_dsigma = -0.5*self.N/self._variance + 0.5*s_4*np.trace(np.dot(e.T, np.dot(self.I, e)))
+        dlik_dsigma = -0.5*self.N/self._variance + 0.5*s_4*np.dot(e.T, e)
+        #dlik_dsigma = -0.5*self.N + 0.5*s_4*np.dot(e.T, e)
         return dlik_dsigma
 
     def dlik_df_dvar(self, y, f, extra_data=None):
@@ -523,7 +525,7 @@ class Gaussian(LikelihoodFunction):
         """
         assert y.shape == f.shape
         s_4 = 1.0/(self._variance**2)
-        dlik_grad_dsigma = -np.dot(s_4, np.dot(self.I, y)) + 0.5*np.dot(s_4, np.dot(self.I, f))
+        dlik_grad_dsigma = -np.dot(s_4*self.I, y) + np.dot(s_4*self.I, f)
         return dlik_grad_dsigma
 
     def d2lik_d2f_dvar(self, y, f, extra_data=None):
@@ -533,7 +535,7 @@ class Gaussian(LikelihoodFunction):
         $$\frac{d}{d\sigma}(\frac{d^{2}p(y_{i}|f_{i})}{d^{2}f}) = \frac{2\sigma v(v + 1)(\sigma^2 v - 3(y-f)^2)}{((y-f)^2 + \sigma^2 v)^3}$$
         """
         assert y.shape == f.shape
-        dlik_hess_dsigma = 0.5*np.diag((1.0/(self._variance**2))*self.I)[:, None]
+        dlik_hess_dsigma = np.diag((1.0/(self._variance**2))*self.I)[:, None]
         return dlik_hess_dsigma
 
     def _gradients(self, y, f, extra_data=None):

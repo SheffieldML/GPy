@@ -7,9 +7,9 @@ class Gaussian(likelihood):
     """
     Likelihood class for doing Expectation propagation
 
-    :param Y: observed output (Nx1 numpy.darray)
-    ..Note:: Y values allowed depend on the likelihood_function used
-    :param variance :
+    :param data: observed output (Nx1 numpy.darray)
+    ..Note:: data values allowed depend on the likelihood_function used
+    :param variance: noise parameter
     :param normalize:  whether to normalize the data before computing (predictions will be in original scales)
     :type normalize: False|True
     """

@@ -458,7 +458,7 @@ class Model(Parameterized):
             numerical_gradient = (f1 - f2) / (2 * dx)
             global_ratio = (f1 - f2) / (2 * np.dot(dx, gradient))
 
-            return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gradient - numerical_gradient).mean() - 1) < tolerance
+            return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gradient - numerical_gradient).mean() < tolerance)
         else:
             # check the gradient of each parameter individually, and do some pretty printing
             try:

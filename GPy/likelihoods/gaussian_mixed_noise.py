@@ -10,33 +10,39 @@ from . import Gaussian
 
 
 class Gaussian_Mixed_Noise(likelihood):
+    """
+    Gaussian Likelihood for multiple outputs
+
+    This is a wrapper around likelihood.Gaussian class
+
+    :param data_list: data observations
+    :type data_list: list of numpy arrays (num_data_output_i x 1), one array per output
+    :param noise_params: noise parameters of each output
+    :type noise_params: list of floats, one per output
+    :param normalize:  whether to normalize the data before computing (predictions will be in original scales)
+    :type normalize: False|True
+    """
     def __init__(self, data_list, noise_params=None, normalize=True):
+        self.Nparams = len(data_list)
+        self.n_list = [data.size for data in data_list]
+        self.index = np.vstack([np.repeat(i,n)[:,None] for i,n in zip(range(self.Nparams),self.n_list)])
 
         if noise_params is None:
-            noise_params = [1.] * len(data_list)
-
-        assert len(data_list) == len(noise_params)
+            noise_params = [1.] * self.Nparams
+        else:
+            assert self.Nparams == len(noise_params), 'Number of noise parameters does not match the number of noise models.'
 
         self.noise_model_list = [Gaussian(Y,variance=v,normalize = normalize) for Y,v in zip(data_list,noise_params)]
-
-
-        self.n_list = [data.size for data in data_list]
-        n_models = len(data_list)
         self.n_params = [noise_model._get_params().size for noise_model in self.noise_model_list]
-
-        self.index = np.vstack([np.repeat(i,n)[:,None] for i,n in zip(range(n_models),self.n_list)])
-
-
         self.data = np.vstack(data_list)
         self.N, self.output_dim = self.data.shape
         self._offset = np.zeros((1, self.output_dim))
         self._scale = np.ones((1, self.output_dim))
 
-        self.is_heteroscedastic = True #TODO check how to deal with this
+        self.is_heteroscedastic = True
         self.Z = 0. # a correction factor which accounts for the approximation made
 
         self.set_data(data_list)
-        #self._variance = np.asarray(variance) + 1.
         self._set_params(np.asarray(noise_params))
 
     def set_data(self, data_list):
@@ -45,9 +51,10 @@ class Gaussian_Mixed_Noise(likelihood):
         assert D == self.output_dim
         self.Y = (self.data - self._offset) / self._scale
         if D > self.N:
-            self.YYT = np.dot(self.Y, self.Y.T)
-            self.trYYT = np.trace(self.YYT)
-            self.YYT_factor = jitchol(self.YYT)
+            raise NotImplementedError
+            #self.YYT = np.dot(self.Y, self.Y.T)
+            #self.trYYT = np.trace(self.YYT)
+            #self.YYT_factor = jitchol(self.YYT)
         else:
             self.YYT = None
             self.trYYT = np.sum(np.square(self.Y))
@@ -82,18 +89,18 @@ class Gaussian_Mixed_Noise(likelihood):
 
     def _set_params(self,p):
         cs_params = np.cumsum([0]+self.n_params)
+
         for i in range(len(self.n_params)):
             self.noise_model_list[i]._set_params(p[cs_params[i]:cs_params[i+1]])
         self.precision = np.hstack([np.repeat(noise_model.precision,n) for noise_model,n in zip(self.noise_model_list,self.n_list)])[:,None]
-        self.V = (self.precision) * self.Y
+
+        self.V = self.precision * self.Y
         self.VVT_factor = self.precision * self.YYT_factor
         self.covariance_matrix = np.eye(self.N) * 1./self.precision
-        #self._variance = x
 
     def _gradients(self,partial):
-        #NOTE this is not tested
-        return np.hstack([noise_model._gradients(partial) for noise_model in self.noise_model_list])
-
-
-
-
+        gradients = []
+        aux = np.cumsum([0]+self.n_list)
+        for ai,af,noise_model in zip(aux[:-1],aux[1:],self.noise_model_list):
+            gradients += [noise_model._gradients(partial[ai:af])]
+        return np.hstack(gradients)

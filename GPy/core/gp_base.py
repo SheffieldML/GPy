@@ -58,30 +58,30 @@ class GPBase(Model):
         Model.setstate(self, state)
 
     def plot_f(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, full_cov=False, fignum=None, ax=None,output=None):
-    """
-        Plot the GP's view of the world, where the data is normalized and the
-          - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
-          - In two dimsensions, a contour-plot shows the mean predicted function
-          - Not implemented in higher dimensions
+        """
+            Plot the GP's view of the world, where the data is normalized and the
+              - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
+              - In two dimsensions, a contour-plot shows the mean predicted function
+              - Not implemented in higher dimensions
 
-        :param samples: the number of a posteriori samples to plot
-        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
-        :param which_data: which if the training data to plot (default all)
-        :type which_data: 'all' or a slice object to slice self.X, self.Y
-        :param which_parts: which of the kernel functions to plot (additively)
-        :type which_parts: 'all', or list of bools
-        :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
-        :type resolution: int
-        :param full_cov:
-        :type full_cov: bool
-                :param fignum: figure to plot on.
-        :type fignum: figure number
-        :param ax: axes to plot on.
-        :type ax: axes handle
+            :param samples: the number of a posteriori samples to plot
+            :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
+            :param which_data: which if the training data to plot (default all)
+            :type which_data: 'all' or a slice object to slice self.X, self.Y
+            :param which_parts: which of the kernel functions to plot (additively)
+            :type which_parts: 'all', or list of bools
+            :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
+            :type resolution: int
+            :param full_cov:
+            :type full_cov: bool
+                    :param fignum: figure to plot on.
+            :type fignum: figure number
+            :param ax: axes to plot on.
+            :type ax: axes handle
 
-        :param output: which output to plot (for multiple output models only)
-        :type output: integer (first output is 0)
-    """
+            :param output: which output to plot (for multiple output models only)
+            :type output: integer (first output is 0)
+        """
         if which_data == 'all':
             which_data = slice(None)
 

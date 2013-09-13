@@ -5,7 +5,6 @@
 import unittest
 import numpy as np
 import GPy
-from GPy.likelihoods.likelihood_functions import Binomial
 
 class GradientTests(unittest.TestCase):
     def setUp(self):
@@ -225,6 +224,20 @@ class GradientTests(unittest.TestCase):
         m = GPy.models.FITCClassification(X, Y, kernel = k)
         m.update_likelihood_approximation()
         self.assertTrue(m.checkgrad())
+
+    def multioutput_regression_1D(self):
+        X1 = np.random.rand(50, 1) * 8
+        X2 = np.random.rand(30, 1) * 5
+        X = np.vstack((X1, X2))
+        Y1 = np.sin(X1) + np.random.randn(*X1.shape) * 0.05
+        Y2 = -np.sin(X2) + np.random.randn(*X2.shape) * 0.05
+        Y = np.vstack((Y1, Y2))
+
+        k1 = GPy.kern.rbf(1)
+        m = GPy.models.GPMultioutputRegression(X_list=[X1,X2],Y_list=[Y1,Y2],kernel_list=[k1])
+        m.constrain_fixed('.*rbf_var', 1.)
+        self.assertTrue(m.checkgrad())
+
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."

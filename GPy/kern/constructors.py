@@ -340,7 +340,7 @@ def symmetric(k):
     k_.parts = [symmetric.Symmetric(p) for p in k.parts]
     return k_
 
-def coregionalise(num_outpus,W_columns=1, W=None, kappa=None):
+def coregionalise(num_outputs,W_columns=1, W=None, kappa=None):
     """
     Coregionlization matrix B, of the form:
     .. math::
@@ -422,3 +422,31 @@ def hierarchical(k):
     #     assert (sl.start is None) and (sl.stop is None), "cannot adjust input slices! (TODO)"
     _parts = [parts.hierarchical.Hierarchical(k.parts)]
     return kern(k.input_dim+len(k.parts),_parts)
+
+def build_lcm(input_dim, num_outputs, kernel_list = [], W_columns=1,W=None,kappa=None):
+    """
+    Builds a kernel of a linear coregionalization model
+
+    :input_dim: Input dimensionality
+    :num_outputs: Number of outputs
+    :kernel_list: List of coregionalized kernels, each element in the list will be multiplied by a different corregionalization matrix
+    :type kernel_list: list of GPy kernels
+    :param W_columns: number tuples of the corregionalization parameters 'coregion_W'
+    :type W_columns: integer
+
+    ..Note the kernels dimensionality is overwritten to fit input_dim
+    """
+
+    for k in kernel_list:
+        if k.input_dim <> input_dim:
+            k.input_dim = input_dim
+            warnings.warn("kernel's input dimension overwritten to fit input_dim parameter.")
+
+    k_coreg = coregionalise(num_outputs,W_columns,W,kappa)
+    kernel = kernel_list[0]**k_coreg.copy()
+
+    for k in kernel_list[1:]:
+        k_coreg = coregionalise(num_outputs,W_columns,W,kappa)
+        kernel += k**k_coreg.copy()
+
+    return kernel

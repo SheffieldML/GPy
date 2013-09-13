@@ -6,7 +6,7 @@ import numpy as np
 from ..core import GP
 from .. import likelihoods
 from .. import kern
-from ..util import multioutput
+#from ..util import multioutput
 
 class GPMultioutputRegression(GP):
     """
@@ -51,8 +51,8 @@ class GPMultioutputRegression(GP):
 
         #Coregionalization kernel definition
         if kernel_list is None:
-            kernel_list = [[kern.rbf(original_dim)],[]]
-        mkernel = multioutput.build_lcm(input_dim=original_dim, num_outputs=self.num_outputs, CK = kernel_list[0], NC = kernel_list[1], W_columns=W_columns)
+            kernel_list = [kern.rbf(original_dim)]
+        mkernel = kern.build_lcm(input_dim=original_dim, num_outputs=self.num_outputs, kernel_list = kernel_list, W_columns=W_columns)
 
         self.multioutput = True
         GP.__init__(self, X, likelihood, mkernel, normalize_X=normalize_X)

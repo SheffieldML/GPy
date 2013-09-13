@@ -38,16 +38,16 @@ class Coregionalise(Kernpart):
         self.num_outputs = num_outputs
         self.W_columns = W_columns
         if W is None:
-            self.W = 0.5*np.random.randn(self.output_dim,self.rank)/np.sqrt(self.rank)
+            self.W = 0.5*np.random.randn(self.num_outputs,self.W_columns)/np.sqrt(self.W_columns)
         else:
-            assert W.shape==(self.output_dim,self.rank)
+            assert W.shape==(self.num_outputs,self.W_columns)
             self.W = W
         if kappa is None:
-            kappa = 0.5*np.ones(self.output_dim)
+            kappa = 0.5*np.ones(self.num_outputs)
         else:
-            assert kappa.shape==(self.output_dim,)
+            assert kappa.shape==(self.num_outputs,)
         self.kappa = kappa
-        self.num_params = self.output_dim*(self.rank + 1)
+        self.num_params = self.num_outputs*(self.W_columns + 1)
         self._set_params(np.hstack([self.W.flatten(),self.kappa]))
 
     def _get_params(self):

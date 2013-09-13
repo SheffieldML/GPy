@@ -4,7 +4,6 @@
 import unittest
 import numpy as np
 import GPy
-    
 
 
 class KernelTests(unittest.TestCase):
@@ -12,7 +11,6 @@ class KernelTests(unittest.TestCase):
         K = GPy.kern.rbf(5, ARD=True)
         K.tie_params('.*[01]')
         K.constrain_fixed('2')
-        
         X = np.random.rand(5,5)
         Y = np.ones((5,1))
         m = GPy.models.GPRegression(X,Y,K)
@@ -68,7 +66,6 @@ class KernelTests(unittest.TestCase):
         self.assertTrue(m.checkgrad())
 
 
-       
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."
     unittest.main()

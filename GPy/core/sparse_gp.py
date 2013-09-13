@@ -165,7 +165,7 @@ class SparseGP(GPBase):
                 raise NotImplementedError, "heteroscedatic derivates with uncertain inputs not implemented"
 
             else:
-                Lmi_psi1, nil = dtrtrs(self.Lm, np.asfortranarray(self.psi1.T), lower=1, trans=0)
+                Lmi_psi1, nil = dtrtrs(self._Lm, np.asfortranarray(self.psi1.T), lower=1, trans=0)
                 _LBi_Lmi_psi1, _ = dtrtrs(self.LB, np.asfortranarray(Lmi_psi1), lower=1, trans=0)
                 _Bi_Lmi_psi1, _ = dtrtrs(self.LB.T, np.asfortranarray(_LBi_Lmi_psi1), lower=1, trans=0)
 
@@ -427,13 +427,13 @@ class SparseGP(GPBase):
         """
         Bi, _ = dpotri(self.LB, lower=0)  # WTH? this lower switch should be 1, but that doesn't work!
         symmetrify(Bi)
-        Kmmi_LmiBLmi = backsub_both_sides(self.Lm, np.eye(self.num_inducing) - Bi)
+        Kmmi_LmiBLmi = backsub_both_sides(self._Lm, np.eye(self.num_inducing) - Bi)
 
         if self.Cpsi1V is None:
             psi1V = np.dot(self.psi1.T,self.likelihood.V)
-            tmp, _ = dtrtrs(self.Lm, np.asfortranarray(psi1V), lower=1, trans=0)
+            tmp, _ = dtrtrs(self._Lm, np.asfortranarray(psi1V), lower=1, trans=0)
             tmp, _ = dpotrs(self.LB, tmp, lower=1)
-            self.Cpsi1V, _ = dtrtrs(self.Lm, tmp, lower=1, trans=1)
+            self.Cpsi1V, _ = dtrtrs(self._Lm, tmp, lower=1, trans=1)
 
         assert hasattr(self,'multioutput')
         index = np.ones_like(_Xnew)*output

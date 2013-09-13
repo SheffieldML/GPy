@@ -2,33 +2,33 @@ import numpy as np
 import warnings
 from .. import kern
 
-def build_cor_kernel(input_dim, Nout, CK = [], NC = [], W=1):
+def build_lcm(input_dim, num_outputs, CK = [], NC = [], W_columns=1,W=None,kappa=None):
+    #TODO build_icm or build_lcm
     """
-    Builds an appropiate coregionalized kernel
+    Builds a kernel for a linear coregionalization model
 
     :input_dim: Input dimensionality
-    :Nout: Number of outputs
+    :num_outputs: Number of outputs
     :param CK: List of coregionalized kernels (i.e., this will be multiplied by a coregionalise kernel).
-    :param K: List of kernels that won't be multiplied by a coregionalise kernel
-    :W:
+    :param K: List of kernels that will be added up together with CK, but won't be multiplied by a coregionalise kernel
+    :param W_columns: number tuples of the corregionalization parameters 'coregion_W'
+    :type W_columns: integer
     """
 
     for k in CK:
         if k.input_dim <> input_dim:
             k.input_dim = input_dim
-            #raise Warning("kernel's input dimension overwritten to fit input_dim parameter.")
             warnings.warn("kernel's input dimension overwritten to fit input_dim parameter.")
 
     for k in NC:
         if k.input_dim <> input_dim + 1:
             k.input_dim = input_dim + 1
-            #raise Warning("kernel's input dimension overwritten to fit input_dim parameter.")
             warnings.warn("kernel's input dimension overwritten to fit input_dim parameter.")
 
-    kernel = CK[0].prod(kern.coregionalise(Nout,W),tensor=True)
+    kernel = CK[0].prod(kern.coregionalise(num_outputs,W_columns,W,kappa),tensor=True)
     for k in CK[1:]:
-        kernel += k.prod(kern.coregionalise(Nout,W),tensor=True)
-
+        k_coreg = kern.coregionalise(num_outputs,W_columns,W,kappa)
+        kernel += k.prod(k_coreg,tensor=True)
     for k in NC:
         kernel += k
 

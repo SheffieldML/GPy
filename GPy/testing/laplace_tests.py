@@ -45,6 +45,7 @@ def dparam_checkgrad(func, dfunc, params, args, constrain_positive=True, randomi
         for fixed_val in range(dfnum):
             #dlik and dlik_dvar gives back 1 value for each
             f_ind = min(fnum, fixed_val+1) - 1
+            print "fnum: {} dfnum: {} f_ind: {} fixed_val: {}".format(fnum, dfnum, f_ind, fixed_val)
             grad = GradientChecker(lambda x: np.atleast_1d(partial_f(x))[f_ind],
                                    lambda x : np.atleast_1d(partial_df(x))[fixed_val],
                                    param, 'p')
@@ -63,9 +64,9 @@ def dparam_checkgrad(func, dfunc, params, args, constrain_positive=True, randomi
 
 class LaplaceTests(unittest.TestCase):
     def setUp(self):
-        self.N = 1
-        self.D = 5
-        self.X = np.linspace(0, 1, self.N)[:, None]
+        self.N = 5
+        self.D = 1
+        self.X = np.linspace(0, self.D, self.N)[:, None]
 
         self.real_std = 0.2
         noise = np.random.randn(*self.X.shape)*self.real_std
@@ -97,6 +98,27 @@ class LaplaceTests(unittest.TestCase):
 
     def test_gaussian_d2lik_d2f(self):
         print "\n{}".format(inspect.stack()[0][3])
+        dlik_df = functools.partial(self.gauss.dlik_df, self.Y)
+        d2lik_d2f = functools.partial(self.gauss.d2lik_d2f, self.Y)
+        grad = GradientChecker(dlik_df, d2lik_d2f, self.f.copy(), 'f')
+        grad.randomize()
+        grad.checkgrad(verbose=1)
+        self.assertTrue(grad.checkgrad())
+
+    def test_gaussian_d2lik_d2f_2(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        self.Y = None
+        self.gauss = None
+
+        self.N = 2
+        self.D = 1
+        self.X = np.linspace(0, self.D, self.N)[:, None]
+        self.real_std = 0.2
+        noise = np.random.randn(*self.X.shape)*self.real_std
+        self.Y = np.sin(self.X*2*np.pi) + noise
+        self.f = np.random.rand(self.N, 1)
+        self.gauss = GPy.likelihoods.functions.Gaussian(self.var, self.D, self.N)
+
         dlik_df = functools.partial(self.gauss.dlik_df, self.Y)
         d2lik_d2f = functools.partial(self.gauss.d2lik_d2f, self.Y)
         grad = GradientChecker(dlik_df, d2lik_d2f, self.f.copy(), 'f')

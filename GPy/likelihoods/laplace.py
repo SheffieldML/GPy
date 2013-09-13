@@ -127,7 +127,6 @@ class Laplace(likelihood):
                              #- 0.5*np.trace(mdot(self.Ki_W_i, (self.K, np.diagflat(dlik_hess_dthetaL[thetaL_i]))))
                              + np.dot(0.5*np.diag(self.Ki_W_i)[:,None].T, dlik_hess_dthetaL[thetaL_i])
                              )
-            import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
 
             #Implicit
             df_hat_dthetaL = mdot(I_KW_i, self.K, dlik_grad_dthetaL[thetaL_i])
@@ -203,7 +202,7 @@ class Laplace(likelihood):
         #self.cC = 0.5*self.y_Wi_Ki_i_y
         #self.dD = -0.5*self.ln_B_det
         #print "Ztilde: {} lik: {} a: {} b: {} c: {} d:".format(Z_tilde, self.lik, self.aA, self.bB, self.cC, self.dD)
-        print "param value: {}".format(self.likelihood_function._get_params())
+        #print "param value: {}".format(self.likelihood_function._get_params())
 
         #Convert to float as its (1, 1) and Z must be a scalar
         self.Z = np.float64(Z_tilde)
@@ -330,7 +329,6 @@ class Laplace(likelihood):
         self.old_before_s = self.likelihood_function._get_params()
         #print "before: ", self.old_before_s
         #if self.old_before_s < 1e-5:
-            #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
         #old_a = np.zeros((self.N, 1))
         if self.old_a is None:
@@ -384,7 +382,6 @@ class Laplace(likelihood):
             new_obj = sp.optimize.minimize_scalar(i_o, method='brent', tol=1e-4, options={'maxiter':20, 'disp':True}).fun
             f = self.f.copy()
             a = self.a.copy()
-            #import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
             #f_old = f.copy()
             #update_passed = False

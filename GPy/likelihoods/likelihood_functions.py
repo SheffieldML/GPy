@@ -218,16 +218,11 @@ class StudentT(LikelihoodFunction):
         """
         assert y.shape == f.shape
         e = y - f
-        #A = gammaln((self.v + 1) * 0.5)
-        #B = - gammaln(self.v * 0.5)
-        #C = - 0.5*np.log(self.sigma2 * self.v * np.pi)
-        #D = + (-(self.v + 1)*0.5)*np.log(1 + ((e**2)/self.sigma2)/np.float(self.v))
         objective = (+ gammaln((self.v + 1) * 0.5)
                      - gammaln(self.v * 0.5)
                      - 0.5*np.log(self.sigma2 * self.v * np.pi)
-                     + (-(self.v + 1)*0.5)*np.log(1 + ((e**2)/self.sigma2)/np.float(self.v))
+                     - 0.5*(self.v + 1)*np.log(1 + (1/np.float(self.v))*((e**2)/self.sigma2))
                     )
-        #print "C: {} D: {} obj: {}".format(C, np.sum(D), objective.sum())
         return np.sum(objective)
 
     def dlik_df(self, y, f, extra_data=None):
@@ -291,9 +286,13 @@ class StudentT(LikelihoodFunction):
         """
         assert y.shape == f.shape
         e = y - f
-        #FIXME: OUT BY SOME FUNCTION OF N
+        #FIXME: OUT BY SOME FUNCTION OF N, or the fact that we are summing over several things in the objective?
         dlik_dvar = self.v*(e**2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e**2))
-        return dlik_dvar
+        #dlik_dvar = ( 0.5*(1/float(self.sigma2))
+                     #-0.5*(self.v + 1)*(-(1/float(self.v))*(e**2)/(1/(float(self.sigma2**2))))
+                     #/ (1 + (1/float(self.v))*((e**2)/float(self.sigma2)))
+                     #)
+        return np.sum(dlik_dvar) #May not want to sum over all dimensions if using many D?
 
     def dlik_df_dvar(self, y, f, extra_data=None):
         """
@@ -516,8 +515,7 @@ class Gaussian(LikelihoodFunction):
         e = y - f
         s_4 = 1.0/(self._variance**2)
         dlik_dsigma = -0.5*self.N/self._variance + 0.5*s_4*np.dot(e.T, e)
-        #dlik_dsigma = -0.5*self.N + 0.5*s_4*np.dot(e.T, e)
-        return dlik_dsigma
+        return np.sum(dlik_dsigma) # Sure about this sum?
 
     def dlik_df_dvar(self, y, f, extra_data=None):
         """

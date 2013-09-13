@@ -20,9 +20,6 @@ class GP(GPBase):
     :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_X: False|True
     :rtype: model object
-    :param epsilon_ep: convergence criterion for the Expectation Propagation algorithm, defaults to 0.1
-    :param powerep: power-EP parameters [$\eta$,$\delta$], defaults to [1.,1.]
-    :type powerep: list
 
     .. Note:: Multiple independent outputs are allowed using columns of Y
 
@@ -134,7 +131,7 @@ class GP(GPBase):
         :type Xnew: np.ndarray, Nnew x self.input_dim
         :param which_parts:  specifies which outputs kernel(s) to use in prediction
         :type which_parts: ('all', list of bools)
-        :param full_cov: whether to return the folll covariance matrix, or just the diagonal
+        :param full_cov: whether to return the full covariance matrix, or just the diagonal
         :type full_cov: bool
         :rtype: posterior mean,  a Numpy array, Nnew x self.input_dim
         :rtype: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
@@ -155,23 +152,22 @@ class GP(GPBase):
 
     def predict_single_output(self, Xnew, output=0, which_parts='all', full_cov=False):
         """
-        Predict the function(s) at the new point(s) Xnew.
+        For a specific output, predict the function at the new point(s) Xnew.
         Arguments
         ---------
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray, Nnew x self.input_dim
+        :param output: output to predict
+        :type output: integer in {0,..., num_outputs-1}
         :param which_parts:  specifies which outputs kernel(s) to use in prediction
         :type which_parts: ('all', list of bools)
-        :param full_cov: whether to return the folll covariance matrix, or just the diagonal
+        :param full_cov: whether to return the full covariance matrix, or just the diagonal
         :type full_cov: bool
         :rtype: posterior mean,  a Numpy array, Nnew x self.input_dim
         :rtype: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
         :rtype: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
 
-
-           If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
-           This is to allow for different normalizations of the output dimensions.
-
+        .. Note:: For multiple output models only
         """
         assert hasattr(self,'multioutput')
         index = np.ones_like(Xnew)*output
@@ -182,23 +178,32 @@ class GP(GPBase):
         mu, var = self._raw_predict(Xnew, full_cov=full_cov, which_parts=which_parts)
 
         # now push through likelihood
-        if isinstance(self.likelihood,EP_Mixed_Noise):
-            mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, noise_model = output)
-        else:
-            mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, noise_model = output)
+        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, noise_model = output)
         return mean, var, _025pm, _975pm
 
     def _raw_predict_single_output(self, _Xnew, output=0, which_parts='all', full_cov=False,stop=False):
         """
-        Internal helper function for making predictions, does not account
-        for normalization or likelihood
+        Internal helper function for making predictions for a specific output,
+        does not account for normalization or likelihood
+        ---------
+
+        :param Xnew: The points at which to make a prediction
+        :type Xnew: np.ndarray, Nnew x self.input_dim
+        :param output: output to predict
+        :type output: integer in {0,..., num_outputs-1}
+        :param which_parts:  specifies which outputs kernel(s) to use in prediction
+        :type which_parts: ('all', list of bools)
+        :param full_cov: whether to return the full covariance matrix, or just the diagonal
+
+        .. Note:: For multiple output models only
         """
         assert hasattr(self,'multioutput')
+
+        # creates an index column and appends it to _Xnew
         index = np.ones_like(_Xnew)*output
         _Xnew = np.hstack((_Xnew,index))
 
         Kx = self.kern.K(_Xnew,self.X,which_parts=which_parts).T
-        #KiKx = np.dot(self.Ki, Kx)
         KiKx, _ = dpotrs(self.L, np.asfortranarray(Kx), lower=1)
         mu = np.dot(KiKx.T, self.likelihood.Y)
         if full_cov:

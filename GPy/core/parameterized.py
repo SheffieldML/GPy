@@ -9,7 +9,7 @@ import cPickle
 import warnings
 import transformations
 
-class Parameterised(object):
+class Parameterized(object):
     def __init__(self):
         """
         This is the base class for model and kernel. Mostly just handles tieing and constraining of parameters
@@ -20,55 +20,66 @@ class Parameterised(object):
         self.constrained_indices = []
         self.constraints = []
 
-    def pickle(self, filename, protocol= -1):
-        f = file(filename, 'w')
-        cPickle.dump(self, f, protocol)
-        f.close()
+    def _get_params(self):
+        raise NotImplementedError, "this needs to be implemented to use the Parameterized class"
+    def _set_params(self, x):
+        raise NotImplementedError, "this needs to be implemented to use the Parameterized class"
+
+    def _get_param_names(self):
+        raise NotImplementedError, "this needs to be implemented to use the Parameterized class"
+    def _get_print_names(self):
+        """ Override for which names to print out, when using print m """
+        return self._get_param_names()
+
+    def pickle(self, filename, protocol=None):
+        if protocol is None:
+            if self._has_get_set_state():
+                protocol = 0
+            else:
+                protocol = -1
+        with open(filename, 'w') as f:
+            cPickle.dump(self, f, protocol)
 
     def copy(self):
         """Returns a (deep) copy of the current model """
         return copy.deepcopy(self)
 
-    @property
-    def params(self):
+    def __getstate__(self):
+        if self._has_get_set_state():
+            return self.getstate()
+        return self.__dict__
+
+    def __setstate__(self, state):
+        if self._has_get_set_state():
+            self.setstate(state) # set state
+            self._set_params(self._get_params()) # restore all values
+            return
+        self.__dict__ = state
+
+    def _has_get_set_state(self):
+        return 'getstate' in vars(self.__class__) and 'setstate' in vars(self.__class__)
+
+    def getstate(self):
         """
-        Returns a **copy** of parameters in non transformed space
-
-        :see_also: :py:func:`GPy.core.Parameterised.params_transformed`
+        Get the current state of the class,
+        here just all the indices, rest can get recomputed
+        
+        For inheriting from Parameterized:
+        Allways append the state of the inherited object 
+        and call down to the inherited object in setstate!! 
         """
-        return self._get_params()
+        return [self.tied_indices,
+                self.fixed_indices,
+                self.fixed_values,
+                self.constrained_indices,
+                self.constraints]
 
-    @params.setter
-    def params(self, params):
-        self._set_params(params)
-
-    @property
-    def params_transformed(self):
-        """
-        Returns a **copy** of parameters in transformed space
-
-        :see_also: :py:func:`GPy.core.Parameterised.params`
-        """
-        return self._get_params_transformed()
-
-    @params_transformed.setter
-    def params_transformed(self, params):
-        self._set_params_transformed(params)
-
-    _get_set_deprecation = """get and set methods wont be available at next minor release
-        in the next releases you will get and set with following syntax:
-        Assume m is a model class:
-        print m['var']          # > prints all parameters matching 'var'
-        m['var'] = 2.           # > sets all parameters matching 'var' to 2.
-        m['var'] = <array-like> # > sets parameters matching 'var' to <array-like>
-        """
-    def get(self, regexp):
-        warnings.warn(self._get_set_deprecation, FutureWarning, stacklevel=2)
-        return self[regexp]
-
-    def set(self, regexp, val):
-        warnings.warn(self._get_set_deprecation, FutureWarning, stacklevel=2)
-        self[regexp] = val
+    def setstate(self, state):
+        self.constraints = state.pop()
+        self.constrained_indices = state.pop()
+        self.fixed_values = state.pop()
+        self.fixed_indices = state.pop()
+        self.tied_indices = state.pop()
 
     def __getitem__(self, regexp, return_names=False):
         """
@@ -95,13 +106,16 @@ class Parameterised(object):
         if len(matches):
             val = np.array(val)
             assert (val.size == 1) or val.size == len(matches), "Shape mismatch: {}:({},)".format(val.size, len(matches))
-            x = self.params
+            x = self._get_params()
             x[matches] = val
-            self.params = x
+            self._set_params(x)
         else:
             raise AttributeError, "no parameter matches %s" % name
 
     def tie_params(self, regexp):
+        """
+        Tie (all!) parameters matching the regular expression `regexp`. 
+        """
         matches = self.grep_param_names(regexp)
         assert matches.size > 0, "need at least something to tie together"
         if len(self.tied_indices):
@@ -154,7 +168,7 @@ class Parameterised(object):
         return len(self._get_params()) - removed
 
     def unconstrain(self, regexp):
-        """Unconstrain matching parameters.  does not untie parameters"""
+        """Unconstrain matching parameters.  Does not untie parameters"""
         matches = self.grep_param_names(regexp)
 
         # tranformed contraints:
@@ -181,7 +195,7 @@ class Parameterised(object):
 
     def constrain_negative(self, regexp):
         """ Set negative constraints. """
-        self.constrain(regexp, transformations.negative_exponent())
+        self.constrain(regexp, transformations.negative_logexp())
 
     def constrain_positive(self, regexp):
         """ Set positive constraints. """
@@ -219,10 +233,11 @@ class Parameterised(object):
         """
         Arguments
         ---------
-        :param regexp: np.array(dtype=int), or regular expression object or string
-        :param value: a float to fix the matched values to. If the value is not specified,
+        :param regexp: which parameters need to be fixed.
+        :type regexp: ndarray(dtype=int) or regular expression object or string
+        :param value: the vlaue to fix the parameters to. If the value is not specified,
                  the parameter is fixed to the current value
-
+        :type value: float
         Notes
         -----
         Fixing a parameter which is tied to another, or constrained in some way will result in an error.
@@ -321,19 +336,26 @@ class Parameterised(object):
         n = [nn for i, nn in enumerate(n) if not i in remove]
         return n
 
-    def __str__(self, nw=30):
+    @property
+    def all(self):
+        return self.__str__(self._get_param_names())
+
+
+    def __str__(self, names=None, nw=30):
         """
         Return a string describing the parameter names and their ties and constraints
         """
-        names = self._get_param_names()
+        if names is None:
+            names = self._get_print_names()
+        name_indices = self.grep_param_names("|".join(names))
         N = len(names)
 
         if not N:
             return "This object has no free parameters."
         header = ['Name', 'Value', 'Constraints', 'Ties']
-        values = self._get_params() # map(str,self._get_params())
+        values = self._get_params()[name_indices] # map(str,self._get_params())
         # sort out the constraints
-        constraints = [''] * len(names)
+        constraints = [''] * len(self._get_param_names())
         for i, t in zip(self.constrained_indices, self.constraints):
             for ii in i:
                 constraints[ii] = t.__str__()

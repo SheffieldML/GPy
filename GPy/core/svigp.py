@@ -91,6 +91,58 @@ class SVIGP(GPBase):
         self._param_steplength_trace = []
         self._vb_steplength_trace = []
 
+    def getstate(self):
+        steplength_params = [self.hbar_t, self.tau_t, self.gbar_t, self.gbar_t1, self.gbar_t2, self.hbar_tp, self.tau_tp, self.gbar_tp, self.adapt_param_steplength, self.adapt_vb_steplength, self.vb_steplength, self.param_steplength]
+        return GPBase.getstate(self) + \
+            [self.get_vb_param(),
+             self.Z,
+             self.num_inducing,
+             self.has_uncertain_inputs,
+             self.X_variance,
+             self.X_batch,
+             self.X_variance_batch,
+             steplength_params,
+             self.batchcounter,
+             self.batchsize,
+             self.epochs,
+             self.momentum,
+             self.data_prop,
+             self._param_trace,
+             self._param_steplength_trace,
+             self._vb_steplength_trace,
+             self._ll_trace,
+             self._grad_trace,
+             self.Y,
+             self._permutation,
+             self.iterations
+            ]
+
+    def setstate(self, state):
+        self.iterations = state.pop()
+        self._permutation = state.pop()
+        self.Y = state.pop()
+        self._grad_trace = state.pop()
+        self._ll_trace = state.pop()
+        self._vb_steplength_trace = state.pop()
+        self._param_steplength_trace = state.pop()
+        self._param_trace = state.pop()
+        self.data_prop = state.pop()
+        self.momentum = state.pop()
+        self.epochs = state.pop()
+        self.batchsize = state.pop()
+        self.batchcounter = state.pop()
+        steplength_params = state.pop()
+        (self.hbar_t, self.tau_t, self.gbar_t, self.gbar_t1, self.gbar_t2, self.hbar_tp, self.tau_tp, self.gbar_tp, self.adapt_param_steplength, self.adapt_vb_steplength, self.vb_steplength, self.param_steplength) = steplength_params
+        self.X_variance_batch = state.pop()
+        self.X_batch = state.pop()
+        self.X_variance = state.pop()
+        self.has_uncertain_inputs = state.pop()
+        self.num_inducing = state.pop()
+        self.Z = state.pop()
+        vb_param = state.pop()
+        GPBase.setstate(self, state)
+        self.set_vb_param(vb_param)
+
     def _compute_kernel_matrices(self):
         # kernel computations, using BGPLVM notation
         self.Kmm = self.kern.K(self.Z)
@@ -166,7 +218,7 @@ class SVIGP(GPBase):
                 psi2_beta = (self.psi2 * (self.likelihood.precision.flatten().reshape(self.batchsize, 1, 1))).sum(0)
             else:
                 psi2_beta = self.psi2.sum(0) * self.likelihood.precision
-            evals, evecs = linalg.eigh(psi2_beta)
+            evals, evecs = np.linalg.eigh(psi2_beta)
             clipped_evals = np.clip(evals, 0., 1e6) # TODO: make clipping configurable
             tmp = evecs * np.sqrt(clipped_evals)
         else:
@@ -449,7 +501,7 @@ class SVIGP(GPBase):
             ax.plot(Zu, np.zeros_like(Zu) + Z_height, 'r|', mew=1.5, markersize=12)
 
         if self.input_dim==2:
-            ax.scatter(self.X_all[:,0], self.X_all[:,1], 20., self.Y[:,0], linewidth=0, cmap=pb.cm.jet)
+            ax.scatter(self.X[:,0], self.X[:,1], 20., self.Y[:,0], linewidth=0, cmap=pb.cm.jet)
             ax.plot(Zu[:,0], Zu[:,1], 'w^')
 
     def plot_traces(self):

@@ -5,6 +5,23 @@ import numpy as np
 from kern import kern
 import parts
 
+
+def rbf_inv(input_dim,variance=1., inv_lengthscale=None,ARD=False):
+    """
+    Construct an RBF kernel
+
+    :param input_dim: dimensionality of the kernel, obligatory
+    :type input_dim: int
+    :param variance: the variance of the kernel
+    :type variance: float
+    :param lengthscale: the lengthscale of the kernel
+    :type lengthscale: float
+    :param ARD: Auto Relevance Determination (one lengthscale per dimension)
+    :type ARD: Boolean
+    """
+    part = parts.rbf_inv.RBFInv(input_dim,variance,inv_lengthscale,ARD)
+    return kern(input_dim, [part])
+
 def rbf(input_dim,variance=1., lengthscale=None,ARD=False):
     """
     Construct an RBF kernel
@@ -32,6 +49,78 @@ def linear(input_dim,variances=None,ARD=False):
      ARD (boolean)
     """
     part = parts.linear.Linear(input_dim,variances,ARD)
+    return kern(input_dim, [part])
+
+def mlp(input_dim,variance=1., weight_variance=None,bias_variance=100.,ARD=False):
+    """
+    Construct an MLP kernel
+
+    :param input_dim: dimensionality of the kernel, obligatory
+    :type input_dim: int
+    :param variance: the variance of the kernel
+    :type variance: float
+    :param weight_scale: the lengthscale of the kernel
+    :type weight_scale: vector of weight variances for input weights in neural network (length 1 if kernel is isotropic)
+    :param bias_variance: the variance of the biases in the neural network.
+    :type bias_variance: float
+    :param ARD: Auto Relevance Determination (allows for ARD version of covariance)
+    :type ARD: Boolean
+    """
+    part = parts.mlp.MLP(input_dim,variance,weight_variance,bias_variance,ARD)
+    return kern(input_dim, [part])
+
+def gibbs(input_dim,variance=1., mapping=None):
+    """
+    Gibbs and MacKay non-stationary covariance function.
+
+    .. math::
+       
+       r = sqrt((x_i - x_j)'*(x_i - x_j))
+       
+       k(x_i, x_j) = \sigma^2*Z*exp(-r^2/(l(x)*l(x) + l(x')*l(x')))
+
+       Z = \sqrt{2*l(x)*l(x')/(l(x)*l(x) + l(x')*l(x')}
+
+       where :math:`l(x)` is a function giving the length scale as a function of space.
+       This is the non stationary kernel proposed by Mark Gibbs in his 1997
+        thesis. It is similar to an RBF but has a length scale that varies
+        with input location. This leads to an additional term in front of
+        the kernel.
+
+        The parameters are :math:`\sigma^2`, the process variance, and the parameters of l(x) which is a function that can be specified by the user, by default an multi-layer peceptron is used is used.
+
+        :param input_dim: the number of input dimensions
+        :type input_dim: int 
+        :param variance: the variance :math:`\sigma^2`
+        :type variance: float
+        :param mapping: the mapping that gives the lengthscale across the input space.
+        :type mapping: GPy.core.Mapping
+        :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one weight variance parameter \sigma^2_w), otherwise there is one weight variance parameter per dimension.
+        :type ARD: Boolean
+        :rtype: Kernpart object
+
+    """
+    part = parts.gibbs.Gibbs(input_dim,variance,mapping)
+    return kern(input_dim, [part])
+
+def poly(input_dim,variance=1., weight_variance=None,bias_variance=1.,degree=2, ARD=False):
+    """
+    Construct a polynomial kernel
+
+    :param input_dim: dimensionality of the kernel, obligatory
+    :type input_dim: int
+    :param variance: the variance of the kernel
+    :type variance: float
+    :param weight_scale: the lengthscale of the kernel
+    :type weight_scale: vector of weight variances for input weights.
+    :param bias_variance: the variance of the biases.
+    :type bias_variance: float
+    :param degree: the degree of the polynomial
+    :type degree: int
+    :param ARD: Auto Relevance Determination (allows for ARD version of covariance)
+    :type ARD: Boolean
+    """
+    part = parts.poly.POLY(input_dim,variance,weight_variance,bias_variance,degree,ARD)
     return kern(input_dim, [part])
 
 def white(input_dim,variance=1.):
@@ -227,7 +316,7 @@ def periodic_Matern52(input_dim, variance=1., lengthscale=None, period=2 * np.pi
      :param n_freq: the number of frequencies considered for the periodic subspace
      :type n_freq: int
     """
-    part = parts.periodic_Matern52part(input_dim, variance, lengthscale, period, n_freq, lower, upper)
+    part = parts.periodic_Matern52.PeriodicMatern52(input_dim, variance, lengthscale, period, n_freq, lower, upper)
     return kern(input_dim, [part])
 
 def prod(k1,k2,tensor=False):
@@ -236,21 +325,44 @@ def prod(k1,k2,tensor=False):
 
     :param k1, k2: the kernels to multiply
     :type k1, k2: kernpart
+    :param tensor: The kernels are either multiply as functions defined on the same input space (default) or on the product of the input spaces
+    :type tensor: Boolean
     :rtype: kernel object
     """
-    part = parts.prodpart(k1,k2,tensor)
+    part = parts.prod.Prod(k1, k2, tensor)
     return kern(part.input_dim, [part])
 
 def symmetric(k):
     """
-    Construct a symmetrical kernel from an existing kernel
+    Construct a symmetric kernel from an existing kernel
     """
     k_ = k.copy()
     k_.parts = [symmetric.Symmetric(p) for p in k.parts]
     return k_
 
-def coregionalise(Nout,R=1, W=None, kappa=None):
-    p = parts.coregionalise.Coregionalise(Nout,R,W,kappa)
+def coregionalise(output_dim, rank=1, W=None, kappa=None):
+    """
+        Coregionalisation kernel. 
+
+    Used for computing covariance functions of the form
+    .. math::
+       k_2(x, y)=\mathbf{B} k(x, y)
+    where
+    .. math::
+       \mathbf{B} = \mathbf{W}\mathbf{W}^\top + kappa \mathbf{I}
+
+    :param output_dim: the number of output dimensions
+    :type output_dim: int
+    :param rank: the rank of the coregionalisation matrix.
+    :type rank: int
+    :param W: a low rank matrix that determines the correlations between the different outputs, together with kappa it forms the coregionalisation matrix B.
+    :type W: ndarray
+    :param kappa: a diagonal term which allows the outputs to behave independently.
+    :rtype: kernel object
+
+    .. Note: see coregionalisation examples in GPy.examples.regression for some usage.
+    """
+    p = parts.coregionalise.Coregionalise(output_dim,rank,W,kappa)
     return kern(1,[p])
 
 
@@ -274,11 +386,13 @@ def fixed(input_dim, K, variance=1.):
     """
      Construct a Fixed effect kernel.
 
-     Arguments
-     ---------
-     input_dim (int), obligatory
-     K (np.array), obligatory
-     variance (float)
+    :param input_dim: the number of input dimensions
+    :type input_dim: int (input_dim=1 is the only value currently supported)
+    :param K: the variance :math:`\sigma^2`
+    :type K: np.array
+    :param variance: kernel variance
+    :type variance: float
+    :rtype: kern object
     """
     part = parts.fixed.Fixed(input_dim, K, variance)
     return kern(input_dim, [part])
@@ -296,5 +410,14 @@ def independent_outputs(k):
     """
     for sl in k.input_slices:
         assert (sl.start is None) and (sl.stop is None), "cannot adjust input slices! (TODO)"
-    parts = [independent_outputs.IndependentOutputs(p) for p in k.parts]
-    return kern(k.input_dim+1,parts)
+    _parts = [parts.independent_outputs.IndependentOutputs(p) for p in k.parts]
+    return kern(k.input_dim+1,_parts)
+
+def hierarchical(k):
+    """
+    TODO THis can't be right! Construct a kernel with independent outputs from an existing kernel
+    """
+    # for sl in k.input_slices:
+    #     assert (sl.start is None) and (sl.stop is None), "cannot adjust input slices! (TODO)"
+    _parts = [parts.hierarchical.Hierarchical(k.parts)]
+    return kern(k.input_dim+len(k.parts),_parts)

@@ -1,8 +1,8 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-
 import numpy as np
+from scipy import weave
 
 def opt_wrapper(m, **kwargs):
     """
@@ -57,6 +57,72 @@ def kmm_init(X, m = 10):
 
     inducing = np.array(inducing)
     return X[inducing]
+
+def fast_array_equal(A, B):
+    code2="""
+    int i, j;
+    return_val = 1;
+
+    #pragma omp parallel for private(i, j)
+    for(i=0;i<N;i++){
+       for(j=0;j<D;j++){
+          if(A(i, j) != B(i, j)){
+              return_val = 0;
+              break;
+          }
+       }
+    }
+    """
+
+    code3="""
+    int i, j, z;
+    return_val = 1;
+
+    #pragma omp parallel for private(i, j, z)
+    for(i=0;i<N;i++){
+       for(j=0;j<D;j++){
+         for(z=0;z<Q;z++){
+            if(A(i, j, z) != B(i, j, z)){
+               return_val = 0;
+               break;
+            }
+          }
+       }
+    }
+    """
+
+    support_code = """
+    #include <omp.h>
+    #include <math.h>
+    """
+
+    weave_options = {'headers'           : ['<omp.h>'],
+                     'extra_compile_args': ['-fopenmp -O3'],
+                     'extra_link_args'   : ['-lgomp']}
+
+
+    value = False
+
+    if (A == None) and (B == None):
+        return True
+    elif ((A == None) and (B != None)) or ((A != None) and (B == None)):
+        return False
+    elif A.shape == B.shape:
+        if A.ndim == 2:
+            N, D = A.shape
+            value = weave.inline(code2, support_code=support_code, libraries=['gomp'],
+                                 arg_names=['A', 'B', 'N', 'D'],
+                                 type_converters=weave.converters.blitz,**weave_options)
+        elif A.ndim == 3:
+            N, D, Q = A.shape
+            value = weave.inline(code3, support_code=support_code, libraries=['gomp'],
+                                 arg_names=['A', 'B', 'N', 'D', 'Q'],
+                                 type_converters=weave.converters.blitz,**weave_options)
+        else:
+            value = np.array_equal(A,B)
+
+    return value
+
 
 if __name__ == '__main__':
     import pylab as plt

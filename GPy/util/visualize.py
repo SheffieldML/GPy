@@ -5,7 +5,13 @@ import numpy as np
 import matplotlib as mpl
 import time
 import Image
-#import visual
+try:
+    import visual
+    visual_available = True
+
+except ImportError:
+    visual_available = False
+
 
 class data_show:
     """
@@ -23,7 +29,6 @@ class data_show:
 
     def close(self):
         raise NotImplementedError, "this needs to be implemented to use the data_show class"
-
 
 class vpython_show(data_show):
     """
@@ -103,7 +108,7 @@ class lvm(matplotlib_show):
             self.cid = latent_axes[0].figure.canvas.mpl_connect('axes_enter_event', self.on_enter)
 
         self.data_visualize = data_visualize
-        self.Model = model
+        self.model = model
         self.latent_axes = latent_axes
         self.sense_axes = sense_axes
         self.called = False
@@ -120,7 +125,7 @@ class lvm(matplotlib_show):
     def modify(self, vals):
         """When latent values are modified update the latent representation and ulso update the output visualization."""
         self.vals = vals.copy()
-        y = self.Model.predict(self.vals)[0]
+        y = self.model.predict(self.vals)[0]
         self.data_visualize.modify(y)
         self.latent_handle.set_data(self.vals[self.latent_index[0]], self.vals[self.latent_index[1]])
         self.axes.figure.canvas.draw()
@@ -148,15 +153,15 @@ class lvm(matplotlib_show):
         # A click in the bar chart axis for selection a dimension.
         if self.sense_axes != None:
             self.sense_axes.cla()
-            self.sense_axes.bar(np.arange(self.Model.input_dim),1./self.Model.input_sensitivity(),color='b')
+            self.sense_axes.bar(np.arange(self.model.input_dim), self.model.input_sensitivity(), color='b')
 
             if self.latent_index[1] == self.latent_index[0]:
-                self.sense_axes.bar(np.array(self.latent_index[0]),1./self.Model.input_sensitivity()[self.latent_index[0]],color='y')
-                self.sense_axes.bar(np.array(self.latent_index[1]),1./self.Model.input_sensitivity()[self.latent_index[1]],color='y')
+                self.sense_axes.bar(np.array(self.latent_index[0]), self.model.input_sensitivity()[self.latent_index[0]], color='y')
+                self.sense_axes.bar(np.array(self.latent_index[1]), self.model.input_sensitivity()[self.latent_index[1]], color='y')
 
             else:
-                self.sense_axes.bar(np.array(self.latent_index[0]),1./self.Model.input_sensitivity()[self.latent_index[0]],color='g')
-                self.sense_axes.bar(np.array(self.latent_index[1]),1./self.Model.input_sensitivity()[self.latent_index[1]],color='r')
+                self.sense_axes.bar(np.array(self.latent_index[0]), self.model.input_sensitivity()[self.latent_index[0]], color='g')
+                self.sense_axes.bar(np.array(self.latent_index[1]), self.model.input_sensitivity()[self.latent_index[1]], color='r')
 
             self.sense_axes.figure.canvas.draw()
 
@@ -193,7 +198,7 @@ class lvm_dimselect(lvm):
     GPy.examples.dimensionality_reduction.BGPVLM_oil()
 
     """
-    def __init__(self, vals, Model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0, 1], labels=None):
+    def __init__(self, vals, model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0, 1], labels=None):
         if latent_axes==None and sense_axes==None:
             self.fig,(latent_axes,self.sense_axes) = plt.subplots(1,2)
         elif sense_axes==None:
@@ -202,7 +207,7 @@ class lvm_dimselect(lvm):
         else:
             self.sense_axes = sense_axes
         self.labels = labels
-        lvm.__init__(self,vals,Model,data_visualize,latent_axes,sense_axes,latent_index)
+        lvm.__init__(self,vals,model,data_visualize,latent_axes,sense_axes,latent_index)
         self.show_sensitivities()
         print "use left and right mouse butons to select dimensions"
 
@@ -210,7 +215,7 @@ class lvm_dimselect(lvm):
     def on_click(self, event):
 
         if event.inaxes==self.sense_axes:
-            new_index = max(0,min(int(np.round(event.xdata-0.5)),self.Model.input_dim-1))
+            new_index = max(0,min(int(np.round(event.xdata-0.5)),self.model.input_dim-1))
             if event.button == 1:
                 # Make it red if and y-axis (red=port=left) if it is a left button click
                 self.latent_index[1] = new_index                
@@ -221,7 +226,7 @@ class lvm_dimselect(lvm):
             self.show_sensitivities()
 
             self.latent_axes.cla()
-            self.Model.plot_latent(which_indices=self.latent_index,
+            self.model.plot_latent(which_indices=self.latent_index,
                                    ax=self.latent_axes, labels=self.labels)
             self.latent_handle = self.latent_axes.plot([0],[0],'rx',mew=2)[0]
             self.modify(self.latent_values)
@@ -235,7 +240,7 @@ class lvm_dimselect(lvm):
 
     def on_leave(self,event):
         latent_values = self.latent_values.copy()
-        y = self.Model.predict(latent_values[None,:])[0]
+        y = self.model.predict(latent_values[None,:])[0]
         self.data_visualize.modify(y)
 
 
@@ -318,7 +323,7 @@ class mocap_data_show_vpython(vpython_show):
         for i in range(self.vals.shape[0]):
             self.spheres.append(visual.sphere(pos=(self.vals[i, 0], self.vals[i, 2], self.vals[i, 1]), radius=self.radius))
         self.scene.visible=True
-        
+
     def draw_edges(self):
         self.rods = []
         self.line_handle = []
@@ -434,7 +439,6 @@ class mocap_data_show(matplotlib_show):
         self.axes.set_xlim(self.x_lim)
         self.axes.set_ylim(self.y_lim)
         self.axes.set_zlim(self.z_lim)
-
 
 class stick_show(mocap_data_show_vpython):
     """Show a three dimensional point cloud as a figure. Connect elements of the figure together using the matrix connect."""

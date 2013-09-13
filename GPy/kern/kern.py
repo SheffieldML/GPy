@@ -3,17 +3,21 @@
 
 import numpy as np
 import pylab as pb
-from ..core.parameterised import Parameterised
+from ..core.parameterized import Parameterized
 from parts.kernpart import Kernpart
 import itertools
 from parts.prod import Prod as prod
+from matplotlib.transforms import offset_copy
 
-class kern(Parameterised):
+class kern(Parameterized):
     def __init__(self, input_dim, parts=[], input_slices=None):
         """
         This is the main kernel class for GPy. It handles multiple (additive) kernel functions, and keeps track of variaous things like which parameters live where.
 
-        The technical code for kernels is divided into _parts_ (see e.g. rbf.py). This obnject contains a list of parts, which are computed additively. For multiplication, special _prod_ parts are used.
+        The technical code for kernels is divided into _parts_ (see
+        e.g. rbf.py). This object contains a list of parts, which are
+        computed additively. For multiplication, special _prod_ parts
+        are used.
 
         :param input_dim: The dimensionality of the kernel's input space
         :type input_dim: int
@@ -41,26 +45,100 @@ class kern(Parameterised):
 
         self.compute_param_slices()
 
-        Parameterised.__init__(self)
+        Parameterized.__init__(self)
+
+    def getstate(self):
+        """
+        Get the current state of the class,
+        here just all the indices, rest can get recomputed
+        """
+        return Parameterized.getstate(self) + [self.parts,
+                self.Nparts,
+                self.num_params,
+                self.input_dim,
+                self.input_slices,
+                self.param_slices
+                ]
+
+    def setstate(self, state):
+        self.param_slices = state.pop()
+        self.input_slices = state.pop()
+        self.input_dim = state.pop()
+        self.num_params = state.pop()
+        self.Nparts = state.pop()
+        self.parts = state.pop()
+        Parameterized.setstate(self, state)
 
 
-    def plot_ARD(self, fignum=None, ax=None):
-        """If an ARD kernel is present, it bar-plots the ARD parameters"""
+    def plot_ARD(self, fignum=None, ax=None, title='', legend=False):
+        """If an ARD kernel is present, it bar-plots the ARD parameters,
+        :param fignum: figure number of the plot
+        :param ax: matplotlib axis to plot on
+        :param title: 
+            title of the plot, 
+            pass '' to not print a title
+            pass None for a generic title
+        """
         if ax is None:
             fig = pb.figure(fignum)
             ax = fig.add_subplot(111)
+        else:
+            fig = ax.figure
+        from GPy.util import Tango
+        from matplotlib.textpath import TextPath
+        Tango.reset()
+        xticklabels = []
+        bars = []
+        x0 = 0
         for p in self.parts:
+            c = Tango.nextMedium()
             if hasattr(p, 'ARD') and p.ARD:
-                ax.set_title('ARD parameters, %s kernel' % p.name)
-
+                if title is None:
+                    ax.set_title('ARD parameters, %s kernel' % p.name)
+                else:
+                    ax.set_title(title)
                 if p.name == 'linear':
                     ard_params = p.variances
                 else:
                     ard_params = 1. / p.lengthscale
 
-                ax.bar(np.arange(len(ard_params)) - 0.4, ard_params)
-                ax.set_xticks(np.arange(len(ard_params)))
-                ax.set_xticklabels([r"${}$".format(i) for i in range(len(ard_params))])
+                x = np.arange(x0, x0 + len(ard_params))
+                bars.append(ax.bar(x, ard_params, align='center', color=c, edgecolor='k', linewidth=1.2, label=p.name))
+                xticklabels.extend([r"$\mathrm{{{name}}}\ {x}$".format(name=p.name, x=i) for i in np.arange(len(ard_params))])
+                x0 += len(ard_params)
+        x = np.arange(x0)
+        transOffset = offset_copy(ax.transData, fig=fig,
+                                  x=0., y= -2., units='points')
+        transOffsetUp = offset_copy(ax.transData, fig=fig,
+                                  x=0., y=1., units='points')
+        for bar in bars:
+            for patch, num in zip(bar.patches, np.arange(len(bar.patches))):
+                height = patch.get_height()
+                xi = patch.get_x() + patch.get_width() / 2.
+                va = 'top'
+                c = 'w'
+                t = TextPath((0, 0), "${xi}$".format(xi=xi), rotation=0, usetex=True, ha='center')
+                transform = transOffset
+                if patch.get_extents().height <= t.get_extents().height + 3:
+                    va = 'bottom'
+                    c = 'k'
+                    transform = transOffsetUp
+                ax.text(xi, height, "${xi}$".format(xi=int(num)), color=c, rotation=0, ha='center', va=va, transform=transform)
+        # for xi, t in zip(x, xticklabels):
+        #    ax.text(xi, maxi / 2, t, rotation=90, ha='center', va='center')
+        # ax.set_xticklabels(xticklabels, rotation=17)
+        ax.set_xticks([])
+        ax.set_xlim(-.5, x0 - .5)
+        if legend:
+            if title is '':
+                mode = 'expand'
+                if len(bars) > 1:
+                    mode = 'expand'
+                ax.legend(bbox_to_anchor=(0., 1.02, 1., 1.02), loc=3,
+                          ncol=len(bars), mode=mode, borderaxespad=0.)
+                fig.tight_layout(rect=(0, 0, 1, .9))
+            else:
+                ax.legend()
         return ax
 
     def _transform_gradients(self, g):
@@ -74,7 +152,7 @@ class kern(Parameterised):
             return g
 
     def compute_param_slices(self):
-        """create a set of slices that can index the parameters of each part"""
+        """create a set of slices that can index the parameters of each part."""
         self.param_slices = []
         count = 0
         for p in self.parts:
@@ -125,11 +203,19 @@ class kern(Parameterised):
         """
         return self.prod(other)
 
+    def __pow__(self, other, tensor=False):
+        """
+        Shortcut for tensor `prod`.
+        """
+        return self.prod(other, tensor=True)
+
     def prod(self, other, tensor=False):
         """
-        multiply two kernels (either on the same space, or on the tensor product of the input space)
+        multiply two kernels (either on the same space, or on the tensor product of the input space).
         :param other: the other kernel to be added
         :type other: GPy.kern
+        :param tensor: whether or not to use the tensor space (default is false).
+        :type tensor: bool 
         """
         K1 = self.copy()
         K2 = other.copy()
@@ -198,7 +284,7 @@ class kern(Parameterised):
         [p._set_params(x[s]) for p, s in zip(self.parts, self.param_slices)]
 
     def _get_param_names(self):
-        # this is a bit nasty: we wat to distinguish between parts with the same name by appending a count
+        # this is a bit nasty: we want to distinguish between parts with the same name by appending a count
         part_names = np.array([k.name for k in self.parts], dtype=np.str)
         counts = [np.sum(part_names == ni) for i, ni in enumerate(part_names)]
         cum_counts = [np.sum(part_names[i:] == ni) for i, ni in enumerate(part_names)]
@@ -220,11 +306,13 @@ class kern(Parameterised):
 
     def dK_dtheta(self, dL_dK, X, X2=None):
         """
-        :param dL_dK: An array of dL_dK derivaties, dL_dK
-        :type dL_dK: Np.ndarray (N x num_inducing)
+        Compute the gradient of the covariance function with respect to the parameters.
+        
+        :param dL_dK: An array of gradients of the objective function with respect to the covariance function.
+        :type dL_dK: Np.ndarray (num_samples x num_inducing)
         :param X: Observed data inputs
-        :type X: np.ndarray (N x input_dim)
-        :param X2: Observed dara inputs (optional, defaults to X)
+        :type X: np.ndarray (num_samples x input_dim)
+        :param X2: Observed data inputs (optional, defaults to X)
         :type X2: np.ndarray (num_inducing x input_dim)
         """
         assert X.shape[1] == self.input_dim
@@ -237,6 +325,14 @@ class kern(Parameterised):
         return self._transform_gradients(target)
 
     def dK_dX(self, dL_dK, X, X2=None):
+        """Compute the gradient of the covariance function with respect to X.
+
+        :param dL_dK: An array of gradients of the objective function with respect to the covariance function.
+        :type dL_dK: np.ndarray (num_samples x num_inducing)
+        :param X: Observed data inputs
+        :type X: np.ndarray (num_samples x input_dim)
+        :param X2: Observed data inputs (optional, defaults to X)
+        :type X2: np.ndarray (num_inducing x input_dim)"""
         if X2 is None:
             X2 = X
         target = np.zeros_like(X)
@@ -247,6 +343,7 @@ class kern(Parameterised):
         return target
 
     def Kdiag(self, X, which_parts='all'):
+        """Compute the diagonal of the covariance function for inputs X."""
         if which_parts == 'all':
             which_parts = [True] * self.Nparts
         assert X.shape[1] == self.input_dim
@@ -255,6 +352,7 @@ class kern(Parameterised):
         return target
 
     def dKdiag_dtheta(self, dL_dKdiag, X):
+        """Compute the gradient of the diagonal of the covariance function with respect to the parameters."""
         assert X.shape[1] == self.input_dim
         assert dL_dKdiag.size == X.shape[0]
         target = np.zeros(self.num_params)
@@ -298,16 +396,18 @@ class kern(Parameterised):
         return target
 
     def dpsi1_dmuS(self, dL_dpsi1, Z, mu, S):
-        """return shapes are N,num_inducing,input_dim"""
+        """return shapes are num_samples,num_inducing,input_dim"""
         target_mu, target_S = np.zeros((2, mu.shape[0], mu.shape[1]))
         [p.dpsi1_dmuS(dL_dpsi1, Z[:, i_s], mu[:, i_s], S[:, i_s], target_mu[:, i_s], target_S[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
         return target_mu, target_S
 
     def psi2(self, Z, mu, S):
         """
+        Computer the psi2 statistics for the covariance function.
+        
         :param Z: np.ndarray of inducing inputs (num_inducing x input_dim)
-        :param mu, S: np.ndarrays of means and variances (each N x input_dim)
-        :returns psi2: np.ndarray (N,num_inducing,num_inducing)
+        :param mu, S: np.ndarrays of means and variances (each num_samples x input_dim)
+        :returns psi2: np.ndarray (num_samples,num_inducing,num_inducing)
         """
         target = np.zeros((mu.shape[0], Z.shape[0], Z.shape[0]))
         [p.psi2(Z[:, i_s], mu[:, i_s], S[:, i_s], target) for p, i_s in zip(self.parts, self.input_slices)]
@@ -316,21 +416,22 @@ class kern(Parameterised):
         # TODO: input_slices needed
         crossterms = 0
 
-        for p1, p2 in itertools.combinations(self.parts, 2):
+        for [p1, i_s1], [p2, i_s2] in itertools.combinations(zip(self.parts, self.input_slices), 2):
+            if i_s1 == i_s2:
+                # TODO psi1 this must be faster/better/precached/more nice
+                tmp1 = np.zeros((mu.shape[0], Z.shape[0]))
+                p1.psi1(Z[:, i_s1], mu[:, i_s1], S[:, i_s1], tmp1)
+                tmp2 = np.zeros((mu.shape[0], Z.shape[0]))
+                p2.psi1(Z[:, i_s2], mu[:, i_s2], S[:, i_s2], tmp2)
+    
+                prod = np.multiply(tmp1, tmp2)
+                crossterms += prod[:, :, None] + prod[:, None, :]
 
-            # TODO psi1 this must be faster/better/precached/more nice
-            tmp1 = np.zeros((mu.shape[0], Z.shape[0]))
-            p1.psi1(Z, mu, S, tmp1)
-            tmp2 = np.zeros((mu.shape[0], Z.shape[0]))
-            p2.psi1(Z, mu, S, tmp2)
-
-            prod = np.multiply(tmp1, tmp2)
-            crossterms += prod[:, :, None] + prod[:, None, :]
-
-        target += crossterms
-        return target
+        # target += crossterms
+        return target + crossterms
 
     def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S):
+        """Gradient of the psi2 statistics with respect to the parameters."""
         target = np.zeros(self.num_params)
         [p.dpsi2_dtheta(dL_dpsi2, Z[:, i_s], mu[:, i_s], S[:, i_s], target[ps]) for p, i_s, ps in zip(self.parts, self.input_slices, self.param_slices)]
 
@@ -434,3 +535,135 @@ class kern(Parameterised):
             pb.title("k(x1,x2 ; %0.1f,%0.1f)" % (x[0, 0], x[0, 1]))
         else:
             raise NotImplementedError, "Cannot plot a kernel with more than two input dimensions"
+
+from GPy.core.model import Model
+
+class Kern_check_model(Model):
+    """This is a dummy model class used as a base class for checking that the gradients of a given kernel are implemented correctly. It enables checkgradient() to be called independently on a kernel."""
+    def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
+        num_samples = 20
+        num_samples2 = 10
+        if kernel==None:
+            kernel = GPy.kern.rbf(1)
+        if X==None:
+            X = np.random.randn(num_samples, kernel.input_dim)
+        if dL_dK==None:
+            if X2==None:
+                dL_dK = np.ones((X.shape[0], X.shape[0]))
+            else:
+                dL_dK = np.ones((X.shape[0], X2.shape[0]))
+        
+        self.kernel=kernel
+        self.X = X
+        self.X2 = X2
+        self.dL_dK = dL_dK
+        #self.constrained_indices=[]
+        #self.constraints=[]
+        Model.__init__(self)
+
+    def is_positive_definite(self):
+        v = np.linalg.eig(self.kernel.K(self.X))[0]
+        if any(v<0):
+            return False
+        else:
+            return True
+        
+    def _get_params(self):
+        return self.kernel._get_params()
+
+    def _get_param_names(self):
+        return self.kernel._get_param_names()
+
+    def _set_params(self, x):
+        self.kernel._set_params(x)
+
+    def log_likelihood(self):
+        return (self.dL_dK*self.kernel.K(self.X, self.X2)).sum()
+
+    def _log_likelihood_gradients(self):
+        raise NotImplementedError, "This needs to be implemented to use the kern_check_model class."
+    
+class Kern_check_dK_dtheta(Kern_check_model):
+    """This class allows gradient checks for the gradient of a kernel with respect to parameters. """
+    def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
+        Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
+
+    def _log_likelihood_gradients(self):
+        return self.kernel.dK_dtheta(self.dL_dK, self.X, self.X2)
+
+class Kern_check_dKdiag_dtheta(Kern_check_model):
+    """This class allows gradient checks of the gradient of the diagonal of a kernel with respect to the parameters."""
+    def __init__(self, kernel=None, dL_dK=None, X=None):
+        Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=None)
+        if dL_dK==None:
+            self.dL_dK = np.ones((self.X.shape[0]))
+        
+    def log_likelihood(self):
+        return (self.dL_dK*self.kernel.Kdiag(self.X)).sum()
+
+    def _log_likelihood_gradients(self):
+        return self.kernel.dKdiag_dtheta(self.dL_dK, self.X)
+
+class Kern_check_dK_dX(Kern_check_model):
+    """This class allows gradient checks for the gradient of a kernel with respect to X. """
+    def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
+        Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
+
+    def _log_likelihood_gradients(self):
+        return self.kernel.dK_dX(self.dL_dK, self.X, self.X2).flatten()
+
+    def _get_param_names(self):
+        return ['X_'  +str(i) + ','+str(j) for j in range(self.X.shape[1]) for i in range(self.X.shape[0])]
+                
+    def _get_params(self):
+        return self.X.flatten()
+
+    def _set_params(self, x):
+        self.X=x.reshape(self.X.shape)
+
+class Kern_check_dKdiag_dX(Kern_check_model):
+    """This class allows gradient checks for the gradient of a kernel diagonal with respect to X. """
+    def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
+        Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=None)
+        if dL_dK==None:
+            self.dL_dK = np.ones((self.X.shape[0]))
+
+    def log_likelihood(self):
+        return (self.dL_dK*self.kernel.Kdiag(self.X)).sum()
+
+    def _log_likelihood_gradients(self):
+        return self.kernel.dKdiag_dX(self.dL_dK, self.X).flatten()
+
+    def _get_param_names(self):
+        return ['X_'  +str(i) + ','+str(j) for j in range(self.X.shape[1]) for i in range(self.X.shape[0])]
+                
+    def _get_params(self):
+        return self.X.flatten()
+
+    def _set_params(self, x):
+        self.X=x.reshape(self.X.shape)
+
+def kern_test(kern, X=None, X2=None, verbose=False):
+    """This function runs on kernels to check the correctness of their implementation. It checks that the covariance function is positive definite for a randomly generated data set.
+
+    :param kern: the kernel to be tested.
+    :type kern: GPy.kern.Kernpart
+    :param X: X input values to test the covariance function.
+    :type X: ndarray
+    :param X2: X2 input values to test the covariance function.
+    :type X2: ndarray
+    """
+    if X==None:
+        X = np.random.randn(10, kern.input_dim)
+    if X2==None:
+        X2 = np.random.randn(20, kern.input_dim)
+    result = [Kern_check_model(kern, X=X).is_positive_definite(),
+              Kern_check_dK_dtheta(kern, X=X, X2=X2).checkgrad(verbose=verbose),
+              Kern_check_dK_dtheta(kern, X=X, X2=None).checkgrad(verbose=verbose),
+             Kern_check_dKdiag_dtheta(kern, X=X).checkgrad(verbose=verbose),
+              Kern_check_dK_dX(kern, X=X, X2=X2).checkgrad(verbose=verbose),
+              Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=verbose)]
+    # Need to check 
+    #Kern_check_dK_dX(kern, X, X2=None).checkgrad(verbose=verbose)]
+    # but currently I think these aren't implemented.
+    return np.all(result)

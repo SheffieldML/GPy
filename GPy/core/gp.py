@@ -6,7 +6,6 @@ import numpy as np
 import pylab as pb
 from .. import kern
 from ..util.linalg import pdinv, mdot, tdot, dpotrs, dtrtrs
-#from ..util.plot import gpplot,  Tango
 from ..likelihoods import EP
 from gp_base import GPBase
 
@@ -31,6 +30,13 @@ class GP(GPBase):
         GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
         self._set_params(self._get_params())
 
+    def getstate(self):
+        return GPBase.getstate(self)
+
+    def setstate(self, state):
+        GPBase.setstate(self, state)
+        self._set_params(self._get_params())
+
     def _set_params(self, p):
         self.kern._set_params_transformed(p[:self.kern.num_params_transformed()])
         self.likelihood._set_params(p[self.kern.num_params_transformed():])
@@ -42,12 +48,12 @@ class GP(GPBase):
 
         # the gradient of the likelihood wrt the covariance matrix
         if self.likelihood.YYT is None:
-            #alpha = np.dot(self.Ki, self.likelihood.Y)
-            alpha,_ = dpotrs(self.L, self.likelihood.Y,lower=1)
+            # alpha = np.dot(self.Ki, self.likelihood.Y)
+            alpha, _ = dpotrs(self.L, self.likelihood.Y, lower=1)
 
             self.dL_dK = 0.5 * (tdot(alpha) - self.output_dim * self.Ki)
         else:
-            #tmp = mdot(self.Ki, self.likelihood.YYT, self.Ki)
+            # tmp = mdot(self.Ki, self.likelihood.YYT, self.Ki)
             tmp, _ = dpotrs(self.L, np.asfortranarray(self.likelihood.YYT), lower=1)
             tmp, _ = dpotrs(self.L, np.asfortranarray(tmp.T), lower=1)
             self.dL_dK = 0.5 * (tmp - self.output_dim * self.Ki)
@@ -68,7 +74,7 @@ class GP(GPBase):
         """
         self.likelihood.restart()
         self.likelihood.fit_full(self.kern.K(self.X))
-        self._set_params(self._get_params())  # update the GP
+        self._set_params(self._get_params()) # update the GP
 
     def _model_fit_term(self):
         """
@@ -77,7 +83,7 @@ class GP(GPBase):
         if self.likelihood.YYT is None:
             tmp, _ = dtrtrs(self.L, np.asfortranarray(self.likelihood.Y), lower=1)
             return -0.5 * np.sum(np.square(tmp))
-            #return -0.5 * np.sum(np.square(np.dot(self.Li, self.likelihood.Y)))
+            # return -0.5 * np.sum(np.square(np.dot(self.Li, self.likelihood.Y)))
         else:
             return -0.5 * np.sum(np.multiply(self.Ki, self.likelihood.YYT))
 
@@ -89,7 +95,8 @@ class GP(GPBase):
         model for a new variable Y* = v_tilde/tau_tilde, with a covariance
         matrix K* = K + diag(1./tau_tilde) plus a normalization term.
         """
-        return -0.5 * self.output_dim * self.K_logdet + self._model_fit_term() + self.likelihood.Z
+        return (-0.5 * self.num_data * self.output_dim * np.log(2.*np.pi) -
+            0.5 * self.output_dim * self.K_logdet + self._model_fit_term() + self.likelihood.Z)
 
 
     def _log_likelihood_gradients(self):
@@ -100,13 +107,13 @@ class GP(GPBase):
         """
         return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
 
-    def _raw_predict(self, _Xnew, which_parts='all', full_cov=False,stop=False):
+    def _raw_predict(self, _Xnew, which_parts='all', full_cov=False, stop=False):
         """
         Internal helper function for making predictions, does not account
         for normalization or likelihood
         """
-        Kx = self.kern.K(_Xnew,self.X,which_parts=which_parts).T
-        #KiKx = np.dot(self.Ki, Kx)
+        Kx = self.kern.K(_Xnew, self.X, which_parts=which_parts).T
+        # KiKx = np.dot(self.Ki, Kx)
         KiKx, _ = dpotrs(self.L, np.asfortranarray(Kx), lower=1)
         mu = np.dot(KiKx.T, self.likelihood.Y)
         if full_cov:
@@ -120,7 +127,7 @@ class GP(GPBase):
             debug_this # @UndefinedVariable
         return mu, var
 
-    def predict(self, Xnew, which_parts='all', full_cov=False):
+    def predict(self, Xnew, which_parts='all', full_cov=False, likelihood_args=dict()):
         """
         Predict the function(s) at the new point(s) Xnew.
         Arguments
@@ -145,6 +152,6 @@ class GP(GPBase):
         mu, var = self._raw_predict(Xnew, full_cov=full_cov, which_parts=which_parts)
 
         # now push through likelihood
-        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov)
+        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, **likelihood_args)
 
         return mean, var, _025pm, _975pm

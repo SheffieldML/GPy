@@ -4,9 +4,9 @@
 
 from kernpart import Kernpart
 import numpy as np
-import hashlib
 from scipy import weave
 from ...util.linalg import tdot
+from ...util.misc import fast_array_equal
 
 class RBF(Kernpart):
     """
@@ -111,7 +111,7 @@ class RBF(Kernpart):
                 }
                 """
                 num_data, num_inducing, input_dim = X.shape[0], X.shape[0], self.input_dim
-                weave.inline(code, arg_names=['num_data','num_inducing','input_dim','X','X2','target','dvardLdK','var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
+                weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'X2', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
             else:
                 code = """
                 int q,i,j;
@@ -127,8 +127,8 @@ class RBF(Kernpart):
                 }
                 """
                 num_data, num_inducing, input_dim = X.shape[0], X2.shape[0], self.input_dim
-                #[np.add(target[1+q:2+q],var_len3[q]*np.sum(dvardLdK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.input_dim)]
-                weave.inline(code, arg_names=['num_data','num_inducing','input_dim','X','X2','target','dvardLdK','var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
+                # [np.add(target[1+q:2+q],var_len3[q]*np.sum(dvardLdK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.input_dim)]
+                weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'X2', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
         else:
             target[1] += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)
 
@@ -165,9 +165,8 @@ class RBF(Kernpart):
 
     def dpsi1_dtheta(self, dL_dpsi1, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
-        denom_deriv = S[:, None, :] / (self.lengthscale ** 3 + self.lengthscale * S[:, None, :])
-        d_length = self._psi1[:, :, None] * (self.lengthscale * np.square(self._psi1_dist / (self.lengthscale2 + S[:, None, :])) + denom_deriv)
         target[0] += np.sum(dL_dpsi1 * self._psi1 / self.variance)
+        d_length = self._psi1[:,:,None] * ((self._psi1_dist_sq - 1.)/(self.lengthscale*self._psi1_denom) +1./self.lengthscale)
         dpsi1_dlength = d_length * dL_dpsi1[:, :, None]
         if not self.ARD:
             target[1] += dpsi1_dlength.sum()
@@ -222,9 +221,10 @@ class RBF(Kernpart):
     #---------------------------------------#
 
     def _K_computations(self, X, X2):
-        if not (np.array_equal(X, self._X) and np.array_equal(X2, self._X2) and np.array_equal(self._params , self._get_params())):
+        params = self._get_params()
+        if not (fast_array_equal(X, self._X) and fast_array_equal(X2, self._X2) and fast_array_equal(self._params , params)):
             self._X = X.copy()
-            self._params == self._get_params().copy()
+            self._params = params.copy()
             if X2 is None:
                 self._X2 = None
                 X = X / self.lengthscale
@@ -239,42 +239,42 @@ class RBF(Kernpart):
 
     def _psi_computations(self, Z, mu, S):
         # here are the "statistics" for psi1 and psi2
-        if not np.array_equal(Z, self._Z):
-            #Z has changed, compute Z specific stuff
-            self._psi2_Zhat = 0.5*(Z[:,None,:] +Z[None,:,:]) # M,M,Q
-            self._psi2_Zdist = 0.5*(Z[:,None,:]-Z[None,:,:]) # M,M,Q
-            self._psi2_Zdist_sq = np.square(self._psi2_Zdist/self.lengthscale) # M,M,Q
-            self._Z = Z
+        Z_changed = not fast_array_equal(Z, self._Z)
+        if Z_changed:
+            # Z has changed, compute Z specific stuff
+            self._psi2_Zhat = 0.5 * (Z[:, None, :] + Z[None, :, :]) # M,M,Q
+            self._psi2_Zdist = 0.5 * (Z[:, None, :] - Z[None, :, :]) # M,M,Q
+            self._psi2_Zdist_sq = np.square(self._psi2_Zdist / self.lengthscale) # M,M,Q
 
-        if not (np.array_equal(Z, self._Z) and np.array_equal(mu, self._mu) and np.array_equal(S, self._S)):
-            #something's changed. recompute EVERYTHING
+        if Z_changed or not fast_array_equal(mu, self._mu) or not fast_array_equal(S, self._S):
+            # something's changed. recompute EVERYTHING
 
-            #psi1
-            self._psi1_denom = S[:,None,:]/self.lengthscale2 + 1.
-            self._psi1_dist = Z[None,:,:]-mu[:,None,:]
-            self._psi1_dist_sq = np.square(self._psi1_dist)/self.lengthscale2/self._psi1_denom
-            self._psi1_exponent = -0.5*np.sum(self._psi1_dist_sq+np.log(self._psi1_denom),-1)
-            self._psi1 = self.variance*np.exp(self._psi1_exponent)
+            # psi1
+            self._psi1_denom = S[:, None, :] / self.lengthscale2 + 1.
+            self._psi1_dist = Z[None, :, :] - mu[:, None, :]
+            self._psi1_dist_sq = np.square(self._psi1_dist) / self.lengthscale2 / self._psi1_denom
+            self._psi1_exponent = -0.5 * np.sum(self._psi1_dist_sq + np.log(self._psi1_denom), -1)
+            self._psi1 = self.variance * np.exp(self._psi1_exponent)
 
-            #psi2
-            self._psi2_denom = 2.*S[:,None,None,:]/self.lengthscale2+1. # N,M,M,Q
-            self._psi2_mudist, self._psi2_mudist_sq, self._psi2_exponent, _ = self.weave_psi2(mu,self._psi2_Zhat)
-            #self._psi2_mudist = mu[:,None,None,:]-self._psi2_Zhat #N,M,M,Q
-            #self._psi2_mudist_sq = np.square(self._psi2_mudist)/(self.lengthscale2*self._psi2_denom)
-            #self._psi2_exponent = np.sum(-self._psi2_Zdist_sq -self._psi2_mudist_sq -0.5*np.log(self._psi2_denom),-1) #N,M,M,Q
-            self._psi2 = np.square(self.variance)*np.exp(self._psi2_exponent) # N,M,M,Q
+            # psi2
+            self._psi2_denom = 2.*S[:, None, None, :] / self.lengthscale2 + 1. # N,M,M,Q
+            self._psi2_mudist, self._psi2_mudist_sq, self._psi2_exponent, _ = self.weave_psi2(mu, self._psi2_Zhat)
+            # self._psi2_mudist = mu[:,None,None,:]-self._psi2_Zhat #N,M,M,Q
+            # self._psi2_mudist_sq = np.square(self._psi2_mudist)/(self.lengthscale2*self._psi2_denom)
+            # self._psi2_exponent = np.sum(-self._psi2_Zdist_sq -self._psi2_mudist_sq -0.5*np.log(self._psi2_denom),-1) #N,M,M,Q
+            self._psi2 = np.square(self.variance) * np.exp(self._psi2_exponent) # N,M,M,Q
 
-            #store matrices for caching
-            self._Z, self._mu, self._S = Z, mu,S
+            # store matrices for caching
+            self._Z, self._mu, self._S = Z, mu, S
 
-    def weave_psi2(self,mu,Zhat):
-        N,input_dim = mu.shape
+    def weave_psi2(self, mu, Zhat):
+        N, input_dim = mu.shape
         num_inducing = Zhat.shape[0]
 
-        mudist = np.empty((N,num_inducing,num_inducing,input_dim))
-        mudist_sq = np.empty((N,num_inducing,num_inducing,input_dim))
-        psi2_exponent = np.zeros((N,num_inducing,num_inducing))
-        psi2 = np.empty((N,num_inducing,num_inducing))
+        mudist = np.empty((N, num_inducing, num_inducing, input_dim))
+        mudist_sq = np.empty((N, num_inducing, num_inducing, input_dim))
+        psi2_exponent = np.zeros((N, num_inducing, num_inducing))
+        psi2 = np.empty((N, num_inducing, num_inducing))
 
         psi2_Zdist_sq = self._psi2_Zdist_sq
         _psi2_denom = self._psi2_denom.squeeze().reshape(N, self.input_dim)
@@ -324,7 +324,7 @@ class RBF(Kernpart):
         #include <math.h>
         """
         weave.inline(code, support_code=support_code, libraries=['gomp'],
-                     arg_names=['N','num_inducing','input_dim','mu','Zhat','mudist_sq','mudist','lengthscale2','_psi2_denom','psi2_Zdist_sq','psi2_exponent','half_log_psi2_denom','psi2','variance_sq'],
+                     arg_names=['N', 'num_inducing', 'input_dim', 'mu', 'Zhat', 'mudist_sq', 'mudist', 'lengthscale2', '_psi2_denom', 'psi2_Zdist_sq', 'psi2_exponent', 'half_log_psi2_denom', 'psi2', 'variance_sq'],
                      type_converters=weave.converters.blitz, **self.weave_options)
 
         return mudist, mudist_sq, psi2_exponent, psi2

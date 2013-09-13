@@ -9,7 +9,7 @@ models Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`Bayesian_GPLVM` Module
+:mod:`bayesian_gplvm` Module
 ----------------------------
 
 .. automodule:: GPy.models.bayesian_gplvm
@@ -17,18 +17,18 @@ models Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`gp` Module
-----------------
+:mod:`fitc_classification` Module
+---------------------------------
 
-.. automodule:: GPy.models.gp
+.. automodule:: GPy.models.fitc_classification
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`gplvm` Module
--------------------
+:mod:`gp_classification` Module
+-------------------------------
 
-.. automodule:: GPy.models.gplvm
+.. automodule:: GPy.models.gp_classification
     :members:
     :undoc-members:
     :show-inheritance:
@@ -41,18 +41,26 @@ models Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`sparse_gp` Module
------------------------
+:mod:`gplvm` Module
+-------------------
 
-.. automodule:: GPy.models.sparse_gp
+.. automodule:: GPy.models.gplvm
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`SparseGPLVM` Module
---------------------------
+:mod:`mrd` Module
+-----------------
 
-.. automodule:: GPy.models.sparse_gplvm
+.. automodule:: GPy.models.mrd
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`sparse_gp_classification` Module
+--------------------------------------
+
+.. automodule:: GPy.models.sparse_gp_classification
     :members:
     :undoc-members:
     :show-inheritance:
@@ -65,13 +73,21 @@ models Package
     :undoc-members:
     :show-inheritance:
 
-.. :mod:`uncollapsed_sparse_GP` Module
-.. -----------------------------------
+:mod:`sparse_gplvm` Module
+--------------------------
 
-.. .. automodule:: GPy.models.uncollapsed_sparse_GP
-..     :members:
-..     :undoc-members:
-..     :show-inheritance:
+.. automodule:: GPy.models.sparse_gplvm
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`svigp_regression` Module
+------------------------------
+
+.. automodule:: GPy.models.svigp_regression
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 :mod:`warped_gp` Module
 -----------------------

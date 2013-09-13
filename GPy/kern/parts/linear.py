@@ -5,6 +5,7 @@
 from kernpart import Kernpart
 import numpy as np
 from ...util.linalg import tdot
+from ...util.misc import fast_array_equal
 from scipy import weave
 
 class Linear(Kernpart):
@@ -140,27 +141,23 @@ class Linear(Kernpart):
         self.dK_dX(dL_dpsi1.T, Z, mu, target)
 
     def psi2(self, Z, mu, S, target):
-        """
-        returns N,num_inducing,num_inducing matrix
-        """
         self._psi_computations(Z, mu, S)
-#         psi2_old = self.ZZ * np.square(self.variances) * self.mu2_S[:, None, None, :]
-#         target += psi2.sum(-1)
-        # slow way of doing it, but right
-#         psi2_real = rm np.zeros((mu.shape[0], Z.shape[0], Z.shape[0]))
-#         for n in range(mu.shape[0]):
-#             for m_prime in range(Z.shape[0]):
-#                 for m in range(Z.shape[0]):
-#                     tmp = self._Z[m:m + 1] * self.variances
-#                     tmp = np.dot(tmp, (tdot(self._mu[n:n + 1].T) + np.diag(S[n])))
-#                     psi2_real[n, m, m_prime] = np.dot(tmp, (
-#                             self._Z[m_prime:m_prime + 1] * self.variances).T)
-#         mu2_S = (self._mu[:, None, :] * self._mu[:, :, None])
-#         mu2_S[:, np.arange(self.input_dim), np.arange(self.input_dim)] += self._S
-#         psi2 = (self.ZA[None, :, None, :] * mu2_S[:, None]).sum(-1)
-#         psi2 = (psi2[:, :, None] * self.ZA[None, None]).sum(-1)
-#         psi2_tensor = np.tensordot(self.ZZ[None, :, :, :] * np.square(self.variances), self.mu2_S[:, None, None, :], ((3), (3))).squeeze().T
         target += self._psi2
+
+    def psi2_new(self,Z,mu,S,target):
+        tmp = np.zeros((mu.shape[0], Z.shape[0]))
+        self.K(mu,Z,tmp)
+        target += tmp[:,:,None]*tmp[:,None,:] + np.sum(S[:,None,None,:]*self.variances**2*Z[None,:,None,:]*Z[None,None,:,:],-1)
+
+    def dpsi2_dtheta_new(self, dL_dpsi2, Z, mu, S, target):
+        tmp = np.zeros((mu.shape[0], Z.shape[0]))
+        self.K(mu,Z,tmp)
+        self.dK_dtheta(2.*np.sum(dL_dpsi2*tmp[:,None,:],2),mu,Z,target)
+        result= 2.*(dL_dpsi2[:,:,:,None]*S[:,None,None,:]*self.variances*Z[None,:,None,:]*Z[None,None,:,:]).sum(0).sum(0).sum(0)
+        if self.ARD:
+            target += result.sum(0).sum(0).sum(0)
+        else:
+            target += result.sum()
 
     def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
@@ -169,6 +166,15 @@ class Linear(Kernpart):
             target += tmp.sum(0).sum(0).sum(0)
         else:
             target += tmp.sum()
+
+    def dpsi2_dmuS_new(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
+        tmp = np.zeros((mu.shape[0], Z.shape[0]))
+        self.K(mu,Z,tmp)
+        self.dK_dX(2.*np.sum(dL_dpsi2*tmp[:,None,:],2),mu,Z,target_mu)
+
+        Zs = Z*self.variances
+        Zs_sq = Zs[:,None,:]*Zs[None,:,:]
+        target_S += (dL_dpsi2[:,:,:,None]*Zs_sq[None,:,:,:]).sum(1).sum(1)
 
     def dpsi2_dmuS(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
         """Think N,num_inducing,num_inducing,input_dim """
@@ -266,7 +272,7 @@ class Linear(Kernpart):
     #---------------------------------------#
 
     def _K_computations(self, X, X2):
-        if not (np.array_equal(X, self._Xcache) and np.array_equal(X2, self._X2cache)):
+        if not (fast_array_equal(X, self._Xcache) and fast_array_equal(X2, self._X2cache)):
             self._Xcache = X.copy()
             if X2 is None:
                 self._dot_product = tdot(X)
@@ -277,8 +283,8 @@ class Linear(Kernpart):
 
     def _psi_computations(self, Z, mu, S):
         # here are the "statistics" for psi1 and psi2
-        Zv_changed = not (np.array_equal(Z, self._Z) and np.array_equal(self.variances, self._variances))
-        muS_changed = not (np.array_equal(mu, self._mu) and np.array_equal(S, self._S))
+        Zv_changed = not (fast_array_equal(Z, self._Z) and fast_array_equal(self.variances, self._variances))
+        muS_changed = not (fast_array_equal(mu, self._mu) and fast_array_equal(S, self._S))
         if Zv_changed:
             # Z has changed, compute Z specific stuff
             # self.ZZ = Z[:,None,:]*Z[None,:,:] # num_inducing,num_inducing,input_dim

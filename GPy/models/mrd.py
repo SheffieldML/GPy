@@ -18,29 +18,25 @@ class MRD(Model):
     All Ys in likelihood_list are in [N x Dn], where Dn can be different per Yn,
     N must be shared across datasets though.
 
-    :param likelihood_list...: likelihoods of observed datasets
-    :type likelihood_list: [GPy.likelihood] | [Y1..Yy]
+    :param likelihood_list: list of observed datasets (:py:class:`~GPy.likelihoods.gaussian.Gaussian` if not supplied directly)
+    :type likelihood_list: [:py:class:`~GPy.likelihoods.likelihood.likelihood` | :py:class:`ndarray`]
     :param names: names for different gplvm models
     :type names: [str]
-    :param input_dim: latent dimensionality (will raise
+    :param input_dim: latent dimensionality
     :type input_dim: int
-    :param initx: initialisation method for the latent space
-    :type initx: 'PCA'|'random'
+    :param initx: initialisation method for the latent space :
+        
+        * 'concat' - PCA on concatenation of all datasets
+        * 'single' - Concatenation of PCA on datasets, respectively
+        * 'random' - Random draw from a normal
+            
+    :type initx: ['concat'|'single'|'random']
     :param initz: initialisation method for inducing inputs
     :type initz: 'permute'|'random'
-    :param X:
-        Initial latent space
-    :param X_variance:
-        Initial latent space variance
-    :param init: [cooncat|single|random]
-        initialization method to use:
-            *concat: PCA on concatenated outputs
-            *single: PCA on each output
-            *random: random
-    :param num_inducing:
-        number of inducing inputs to use
-    :param Z:
-        initial inducing inputs
+    :param X: Initial latent space
+    :param X_variance: Initial latent space variance
+    :param Z: initial inducing inputs
+    :param num_inducing: number of inducing inputs to use
     :param kernels: list of kernels or kernel shared for all BGPLVMS
     :type kernels: [GPy.kern.kern] | GPy.kern.kern | None (default)
     """
@@ -48,7 +44,7 @@ class MRD(Model):
                  kernels=None, initx='PCA',
                  initz='permute', _debug=False, **kw):
         if names is None:
-            self.names = ["{}".format(i + 1) for i in range(len(likelihood_or_Y_list))]
+            self.names = ["{}".format(i) for i in range(len(likelihood_or_Y_list))]
 
         # sort out the kernels
         if kernels is None:
@@ -61,12 +57,14 @@ class MRD(Model):
         assert not ('kernel' in kw), "pass kernels through `kernels` argument"
 
         self.input_dim = input_dim
-        self.num_inducing = num_inducing
         self._debug = _debug
+        self.num_inducing = num_inducing
 
         self._init = True
         X = self._init_X(initx, likelihood_or_Y_list)
         Z = self._init_Z(initz, X)
+        self.num_inducing = Z.shape[0] # ensure M==N if M>N
+
         self.bgplvms = [BayesianGPLVM(l, input_dim=input_dim, kernel=k, X=X, Z=Z, num_inducing=self.num_inducing, **kw) for l, k in zip(likelihood_or_Y_list, kernels)]
         del self._init
 
@@ -75,11 +73,35 @@ class MRD(Model):
         self.nparams = nparams.cumsum()
 
         self.num_data = self.gref.num_data
+
         self.NQ = self.num_data * self.input_dim
         self.MQ = self.num_inducing * self.input_dim
 
         Model.__init__(self)
         self.ensure_default_constraints()
+
+    def getstate(self):
+        return Model.getstate(self) + [self.names,
+                self.bgplvms,
+                self.gref,
+                self.nparams,
+                self.input_dim,
+                self.num_inducing,
+                self.num_data,
+                self.NQ,
+                self.MQ]
+
+    def setstate(self, state):
+        self.MQ = state.pop()
+        self.NQ = state.pop()
+        self.num_data = state.pop()
+        self.num_inducing = state.pop()
+        self.input_dim = state.pop()
+        self.nparams = state.pop()
+        self.gref = state.pop()
+        self.bgplvms = state.pop()
+        self.names = state.pop()
+        Model.setstate(self, state)
 
     @property
     def X(self):
@@ -141,17 +163,28 @@ class MRD(Model):
         self._init_X(initx, self.likelihood_list)
         self._init_Z(initz, self.X)
 
-    def _get_param_names(self):
-        # X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
-        # S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
+    def _get_latent_param_names(self):
         n1 = self.gref._get_param_names()
         n1var = n1[:self.NQ * 2 + self.MQ]
+        return n1var
+
+
+    def _get_kernel_names(self):
         map_names = lambda ns, name: map(lambda x: "{1}_{0}".format(*x),
                                          itertools.izip(ns,
                                                         itertools.repeat(name)))
-        return list(itertools.chain(n1var, *(map_names(\
-                SparseGP._get_param_names(g)[self.MQ:], n) \
-                for g, n in zip(self.bgplvms, self.names))))
+        kernel_names = (map_names(SparseGP._get_param_names(g)[self.MQ:], n) for g, n in zip(self.bgplvms, self.names))
+        return kernel_names
+
+    def _get_param_names(self):
+        # X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
+        # S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
+        n1var = self._get_latent_param_names()
+        kernel_names = self._get_kernel_names()
+        return list(itertools.chain(n1var, *kernel_names))
+
+    def _get_print_names(self):
+        return list(itertools.chain(*self._get_kernel_names()))
 
     def _get_params(self):
         """
@@ -255,17 +288,30 @@ class MRD(Model):
         self.Z = Z
         return Z
 
-    def _handle_plotting(self, fignum, axes, plotf):
+    def _handle_plotting(self, fignum, axes, plotf, sharex=False, sharey=False):
         if axes is None:
-            fig = pylab.figure(num=fignum, figsize=(4 * len(self.bgplvms), 3))
+            fig = pylab.figure(num=fignum)
+        sharex_ax = None
+        sharey_ax = None
         for i, g in enumerate(self.bgplvms):
+            try:
+                if sharex:
+                    sharex_ax = ax # @UndefinedVariable
+                    sharex = False # dont set twice
+                if sharey:
+                    sharey_ax = ax # @UndefinedVariable
+                    sharey = False # dont set twice
+            except:
+                pass
             if axes is None:
-                ax = fig.add_subplot(1, len(self.bgplvms), i + 1)
+                ax = fig.add_subplot(1, len(self.bgplvms), i + 1, sharex=sharex_ax, sharey=sharey_ax)
             elif isinstance(axes, (tuple, list)):
                 ax = axes[i]
             else:
                 raise ValueError("Need one axes per latent dimension input_dim")
             plotf(i, g, ax)
+            if sharey_ax is not None:
+                pylab.setp(ax.get_yticklabels(), visible=False)
         pylab.draw()
         if axes is None:
             fig.tight_layout()
@@ -280,16 +326,29 @@ class MRD(Model):
         fig = self._handle_plotting(fignum, ax, lambda i, g, ax: ax.imshow(g.X))
         return fig
 
-    def plot_predict(self, fignum=None, ax=None, **kwargs):
-        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: ax.imshow(g. predict(g.X)[0], **kwargs))
+    def plot_predict(self, fignum=None, ax=None, sharex=False, sharey=False, **kwargs):
+        fig = self._handle_plotting(fignum,
+                                    ax,
+                                    lambda i, g, ax: ax.imshow(g. predict(g.X)[0], **kwargs),
+                                    sharex=sharex, sharey=sharey)
         return fig
 
-    def plot_scales(self, fignum=None, ax=None, *args, **kwargs):
-        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.kern.plot_ARD(ax=ax, *args, **kwargs))
+    def plot_scales(self, fignum=None, ax=None, titles=None, sharex=False, sharey=True, *args, **kwargs):
+        """
+        :param:`titles` :
+            titles for axes of datasets
+        """
+        if titles is None:
+            titles = [r'${}$'.format(name) for name in self.names]
+        ymax = reduce(max, [numpy.ceil(max(g.input_sensitivity())) for g in self.bgplvms])
+        def plotf(i, g, ax):
+            ax.set_ylim([0,ymax])
+            g.kern.plot_ARD(ax=ax, title=titles[i], *args, **kwargs)
+        fig = self._handle_plotting(fignum, ax, plotf, sharex=sharex, sharey=sharey)
         return fig
 
     def plot_latent(self, fignum=None, ax=None, *args, **kwargs):
-        fig = self._handle_plotting(fignum, ax, lambda i, g, ax: g.plot_latent(ax=ax, *args, **kwargs))
+        fig = self.gref.plot_latent(fignum=fignum, ax=ax, *args, **kwargs) # self._handle_plotting(fignum, ax, lambda i, g, ax: g.plot_latent(ax=ax, *args, **kwargs))
         return fig
 
     def _debug_plot(self):
@@ -305,13 +364,4 @@ class MRD(Model):
         pylab.draw()
         fig.tight_layout()
 
-    def _debug_optimize(self, opt='scg', maxiters=5000, itersteps=10):
-        iters = 0
-        optstep = lambda: self.optimize(opt, messages=1, max_f_eval=itersteps)
-        self._debug_plot()
-        raw_input("enter to start debug")
-        while iters < maxiters:
-            optstep()
-            self._debug_plot()
-            iters += itersteps
 

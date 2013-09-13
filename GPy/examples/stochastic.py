@@ -16,6 +16,7 @@ def toy_1d():
 
     m = GPy.models.SVIGPRegression(X,Y, batchsize=10, Z=Z)
     m.constrain_bounded('noise_variance',1e-3,1e-1)
+    m.constrain_bounded('white_variance',1e-3,1e-1)
 
     m.param_steplength = 1e-4
 

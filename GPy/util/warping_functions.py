@@ -185,7 +185,7 @@ class TanhWarpingFunction_d(WarpingFunction):
         return z
 
 
-    def f_inv(self, z, psi, max_iterations = 1000):
+    def f_inv(self, z, psi, max_iterations=1000, y=None):
         """
         calculate the numerical inverse of f
 
@@ -195,7 +195,9 @@ class TanhWarpingFunction_d(WarpingFunction):
         """
 
         z = z.copy()
-        y = np.ones_like(z)
+        if y is None:
+            y = np.ones_like(z)
+            
         it = 0
         update = np.inf
 
@@ -205,7 +207,7 @@ class TanhWarpingFunction_d(WarpingFunction):
             it += 1
         if it == max_iterations:
             print "WARNING!!! Maximum number of iterations reached in f_inv "
-            
+
         return y
 
 

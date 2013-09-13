@@ -19,14 +19,14 @@ class ExamplesTests(unittest.TestCase):
         self.assertTrue(isinstance(Model, GPy.models))
 
 """
-def model_instance_generator(Model):
+def model_instance_generator(model):
     def check_model_returned(self):
-        self._model_instance(Model)
+        self._model_instance(model)
     return check_model_returned
 
-def checkgrads_generator(Model):
+def checkgrads_generator(model):
     def model_checkgrads(self):
-        self._checkgrad(Model)
+        self._checkgrad(model)
     return model_checkgrads
 """
 
@@ -37,7 +37,7 @@ def model_checkgrads(model):
 
 def model_instance(model):
     #assert isinstance(model, GPy.core.model)
-    return isinstance(model, GPy.core.Model)
+    return isinstance(model, GPy.core.model)
 
 @nottest
 def test_models():

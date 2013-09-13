@@ -23,9 +23,9 @@ class EP_Mixed_Noise(likelihood):
         assert len(data_list) == len(noise_model_list)
         self.noise_model_list = noise_model_list
         n_list = [data.size for data in data_list]
-        n_models = len(data_list)
+        self.n_models = len(data_list)
         self.n_params = [noise_model._get_params().size for noise_model in noise_model_list]
-        self.index = np.vstack([np.repeat(i,n)[:,None] for i,n in zip(range(n_models),n_list)])
+        self.index = np.vstack([np.repeat(i,n)[:,None] for i,n in zip(range(self.n_models),n_list)])
         self.epsilon = epsilon
         self.eta, self.delta = power_ep
         self.data = np.vstack(data_list)

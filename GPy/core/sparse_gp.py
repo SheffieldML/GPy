@@ -85,7 +85,6 @@ class SparseGP(GPBase):
         tmp, _ = dtrtrs(self.Lm, np.asfortranarray(tmp.T), lower=1)
         self.A = tdot(tmp)
 
-
         # factor B
         self.B = np.eye(self.num_inducing) + self.A
         self.LB = jitchol(self.B)
@@ -114,6 +113,7 @@ class SparseGP(GPBase):
         dL_dpsi2_beta = 0.5 * backsub_both_sides(self.Lm, self.output_dim * np.eye(self.num_inducing) - self.DBi_plus_BiPBi)
 
         if self.likelihood.is_heteroscedastic:
+
             if self.has_uncertain_inputs:
                 self.dL_dpsi2 = self.likelihood.precision.flatten()[:, None, None] * dL_dpsi2_beta[None, :, :]
             else:
@@ -135,9 +135,23 @@ class SparseGP(GPBase):
             # save computation here.
             self.partial_for_likelihood = None
         elif self.likelihood.is_heteroscedastic:
-            raise NotImplementedError, "heteroscedatic derivates not implemented"
+
+            if self.has_uncertain_inputs:
+                raise NotImplementedError, "heteroscedatic derivates with uncertain inputs not implemented"
+
+            else:
+                Lmi_psi1, nil = dtrtrs(self.Lm, np.asfortranarray(self.psi1.T), lower=1, trans=0)
+                _LBi_Lmi_psi1, _ = dtrtrs(self.LB, np.asfortranarray(Lmi_psi1), lower=1, trans=0)
+                _Bi_Lmi_psi1, _ = dtrtrs(self.LB.T, np.asfortranarray(_LBi_Lmi_psi1), lower=1, trans=0)
+
+                self.partial_for_likelihood = -0.5 * self.likelihood.precision + 0.5 * self.likelihood.V**2
+                self.partial_for_likelihood += 0.5 * self.output_dim * (self.psi0 - np.sum(Lmi_psi1**2,0))[:,None] * self.likelihood.precision**2
+                self.partial_for_likelihood += 0.5*np.sum(_Bi_Lmi_psi1*Lmi_psi1,0)[:,None]*self.likelihood.precision**2 #NOTE this term has numerical issues
+                self.partial_for_likelihood += -np.dot(self._LBi_Lmi_psi1Vf.T,_LBi_Lmi_psi1).T * self.likelihood.Y * self.likelihood.precision**2
+                self.partial_for_likelihood += 0.5*np.dot(self._LBi_Lmi_psi1Vf.T,_LBi_Lmi_psi1).T**2 * self.likelihood.precision**2
+
         else:
-            # likelihood is not heterscedatic
+            # likelihood is not heteroscedatic
             self.partial_for_likelihood = -0.5 * self.num_data * self.output_dim * self.likelihood.precision + 0.5 * self.likelihood.trYYT * self.likelihood.precision ** 2
             self.partial_for_likelihood += 0.5 * self.output_dim * (self.psi0.sum() * self.likelihood.precision ** 2 - np.trace(self.A) * self.likelihood.precision)
             self.partial_for_likelihood += self.likelihood.precision * (0.5 * np.sum(self.A * self.DBi_plus_BiPBi) - self.data_fit)
@@ -269,7 +283,7 @@ class SparseGP(GPBase):
         :type X_variance_new: np.ndarray, Nnew x self.input_dim
         :param which_parts:  specifies which outputs kernel(s) to use in prediction
         :type which_parts: ('all', list of bools)
-        :param full_cov: whether to return the folll covariance matrix, or just the diagonal
+        :param full_cov: whether to return the full covariance matrix, or just the diagonal
         :type full_cov: bool
         :rtype: posterior mean,  a Numpy array, Nnew x self.input_dim
         :rtype: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
@@ -335,28 +349,26 @@ class SparseGP(GPBase):
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
-
-
     def predict_single_output(self, Xnew, output=0, which_parts='all', full_cov=False):
         """
-        Predict the function(s) at the new point(s) Xnew.
+        For a specific output, predict the function at the new point(s) Xnew.
         Arguments
         ---------
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray, Nnew x self.input_dim
+        :param output: output to predict
+        :type output: integer in {0,..., num_outputs-1}
         :param which_parts:  specifies which outputs kernel(s) to use in prediction
         :type which_parts: ('all', list of bools)
-        :param full_cov: whether to return the folll covariance matrix, or just the diagonal
+        :param full_cov: whether to return the full covariance matrix, or just the diagonal
         :type full_cov: bool
         :rtype: posterior mean,  a Numpy array, Nnew x self.input_dim
         :rtype: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
         :rtype: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
 
-
-           If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
-           This is to allow for different normalizations of the output dimensions.
-
+        .. Note:: For multiple output models only
         """
+
         assert hasattr(self,'multioutput')
         index = np.ones_like(Xnew)*output
         Xnew = np.hstack((Xnew,index))
@@ -366,18 +378,24 @@ class SparseGP(GPBase):
         mu, var = self._raw_predict(Xnew, full_cov=full_cov, which_parts=which_parts)
 
         # now push through likelihood
-        if isinstance(self.likelihood,EP_Mixed_Noise):
-            mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, noise_model = output)
-        else:
-            mean, var, _025pm, _975pm = self.likelihood_list[output].predictive_values(mu, var, full_cov)
+        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, noise_model = output)
         return mean, var, _025pm, _975pm
-
-
 
     def _raw_predict_single_output(self, _Xnew, output=0, X_variance_new=None, which_parts='all', full_cov=False,stop=False):
         """
-        Internal helper function for making predictions, does not account
-        for normalization or likelihood
+        Internal helper function for making predictions for a specific output,
+        does not account for normalization or likelihood
+        ---------
+
+        :param Xnew: The points at which to make a prediction
+        :type Xnew: np.ndarray, Nnew x self.input_dim
+        :param output: output to predict
+        :type output: integer in {0,..., num_outputs-1}
+        :param which_parts:  specifies which outputs kernel(s) to use in prediction
+        :type which_parts: ('all', list of bools)
+        :param full_cov: whether to return the full covariance matrix, or just the diagonal
+
+        .. Note:: For multiple output models only
         """
         Bi, _ = dpotri(self.LB, lower=0)  # WTH? this lower switch should be 1, but that doesn't work!
         symmetrify(Bi)
@@ -403,8 +421,7 @@ class SparseGP(GPBase):
                 Kxx = self.kern.Kdiag(_Xnew, which_parts=which_parts)
                 var = Kxx - np.sum(Kx * np.dot(Kmmi_LmiBLmi, Kx), 0)
         else:
-            # assert which_p.Tarts=='all', "swithching out parts of variational kernels is not implemented"
-            Kx = self.kern.psi1(self.Z, _Xnew, X_variance_new) # , which_parts=which_parts) TODO: which_parts
+            Kx = self.kern.psi1(self.Z, _Xnew, X_variance_new)
             mu = np.dot(Kx, self.Cpsi1V)
             if full_cov:
                 raise NotImplementedError, "TODO"

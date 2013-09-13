@@ -22,8 +22,8 @@ def coregionalisation_toy2(max_iters=100):
     Y = np.vstack((Y1, Y2))
 
     k1 = GPy.kern.rbf(1) + GPy.kern.bias(1)
-    k2 = GPy.kern.coregionalise(2, 1)
-    k = k1**k2
+    k2 = GPy.kern.coregionalise(2,1)
+    k = k1**k2 #k = k1.prod(k2,tensor=True)
     m = GPy.models.GPRegression(X, Y, kernel=k)
     m.constrain_fixed('.*rbf_var', 1.)
     # m.constrain_positive('.*kappa')
@@ -90,7 +90,6 @@ def coregionalisation_sparse(max_iters=100):
     k1 = GPy.kern.rbf(1)
     k2 = GPy.kern.coregionalise(2, 2)
     k = k1**k2 #.prod(k2, tensor=True) # + GPy.kern.white(2,0.001)
-
     m = GPy.models.SparseGPRegression(X, Y, kernel=k, Z=Z)
     m.constrain_fixed('.*rbf_var', 1.)
     m.constrain_fixed('iip')
@@ -400,8 +399,6 @@ def silhouette(max_iters=100):
 
     print(m)
     return m
-
-
 
 def sparse_GP_regression_1D(num_samples=400, num_inducing=5, max_iters=100):
     """Run a 1D example of a sparse GP regression."""

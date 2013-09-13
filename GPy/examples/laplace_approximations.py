@@ -1,6 +1,7 @@
 import GPy
 import numpy as np
 import matplotlib.pyplot as plt
+from GPy.util import datasets
 np.random.seed(1)
 
 def timing():
@@ -405,7 +406,7 @@ def student_t_approx():
     """
     real_std = 0.1
     #Start a function, any function
-    X = np.linspace(0.0, 10.0, 50)[:, None]
+    X = np.linspace(0.0, 10.0, 100)[:, None]
     Y = np.sin(X) + np.random.randn(*X.shape)*real_std
     Yc = Y.copy()
 
@@ -422,7 +423,7 @@ def student_t_approx():
     #Yc = Yc/Yc.max()
 
     #Add student t random noise to datapoints
-    deg_free = 8
+    deg_free = 5
     print "Real noise: ", real_std
 
     initial_var_guess = 0.1
@@ -456,11 +457,13 @@ def student_t_approx():
     m = GPy.models.GPRegression(X, Y, kernel=kernel1)
     # optimize
     m.ensure_default_constraints()
+    m.randomize()
     m.optimize()
     # plot
-    plt.subplot(211)
-    m.plot()
+    ax = plt.subplot(211)
+    m.plot(ax=ax)
     plt.plot(X_full, Y_full)
+    plt.ylim(-1.5, 1.5)
     plt.title('Gaussian clean')
     print m
 
@@ -468,16 +471,18 @@ def student_t_approx():
     print "Corrupt Gaussian"
     m = GPy.models.GPRegression(X, Yc, kernel=kernel2)
     m.ensure_default_constraints()
-    #m.optimize()
-    plt.subplot(212)
-    m.plot()
+    m.randomize()
+    m.optimize()
+    ax = plt.subplot(212)
+    m.plot(ax=ax)
     plt.plot(X_full, Y_full)
+    plt.ylim(-1.5, 1.5)
     plt.title('Gaussian corrupt')
     print m
 
     plt.figure(2)
     plt.suptitle('Student-t likelihood')
-    edited_real_sd = real_std #initial_var_guess
+    edited_real_sd = initial_var_guess
 
     print "Clean student t, rasm"
     t_distribution = GPy.likelihoods.functions.StudentT(deg_free, sigma2=edited_real_sd)
@@ -486,13 +491,14 @@ def student_t_approx():
     m.ensure_default_constraints()
     m.constrain_positive('t_noise')
     m.randomize()
-    m.update_likelihood_approximation()
+    import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+    #m.update_likelihood_approximation()
     m.optimize()
     print(m)
-    plt.subplot(222)
-    m.plot()
+    ax = plt.subplot(211)
+    m.plot(ax=ax)
     plt.plot(X_full, Y_full)
-    plt.ylim(-2.5, 2.5)
+    plt.ylim(-1.5, 1.5)
     plt.title('Student-t rasm clean')
 
     print "Corrupt student t, rasm"
@@ -502,15 +508,17 @@ def student_t_approx():
     m.ensure_default_constraints()
     m.constrain_positive('t_noise')
     m.randomize()
-    m.update_likelihood_approximation()
+    #m.update_likelihood_approximation()
+    import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
     m.optimize()
     print(m)
-    plt.subplot(224)
-    m.plot()
+    ax = plt.subplot(212)
+    m.plot(ax=ax)
     plt.plot(X_full, Y_full)
-    plt.ylim(-2.5, 2.5)
+    plt.ylim(-1.5, 1.5)
     plt.title('Student-t rasm corrupt')
 
+    import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
     return m
 
     #print "Clean student t, ncg"
@@ -607,7 +615,6 @@ def gaussian_f_check():
     mgp.optimize()
     print "Gaussian"
     print mgp
-    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
     kernelg = kernelgp.copy()
     #kernelst += GPy.kern.bias(X.shape[1])
@@ -615,6 +622,7 @@ def gaussian_f_check():
     g_distribution = GPy.likelihoods.functions.Gaussian(variance=0.1, N=N, D=D)
     g_likelihood = GPy.likelihoods.Laplace(Y.copy(), g_distribution, opt='rasm')
     m = GPy.models.GPRegression(X, Y, kernelg, likelihood=g_likelihood)
+    m.likelihood.X = X
     #m['rbf_v'] = mgp._get_params()[0]
     #m['rbf_l'] = mgp._get_params()[1] + 1
     m.ensure_default_constraints()
@@ -623,18 +631,37 @@ def gaussian_f_check():
     #m.constrain_bounded('t_no', 2*real_std**2, 1e3)
     #m.constrain_positive('bias')
     m.constrain_positive('noise_var')
+    #m['noise_variance'] = 0.1
+    #m.likelihood.X = X
     m.randomize()
     import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
-    m['noise_variance'] = 0.1
-    #m.likelihood.X = X
     plt.figure()
     ax = plt.subplot(211)
     m.plot(ax=ax)
-    ax = plt.subplot(212)
+
     m.optimize()
+    ax = plt.subplot(212)
     m.plot(ax=ax)
+
     print "final optimised gaussian"
     print m
     print "real GP"
     print mgp
     import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
+
+def boston_example():
+    data = datasets.boston_housing()
+    X = data['X'].copy()
+    Y = data['Y'].copy()
+    kernelgp = GPy.kern.rbf(X.shape[1]) # + GPy.kern.white(X.shape[1])
+    mgp = GPy.models.GPRegression(X, Y, kernel=kernelgp)
+    mgp.ensure_default_constraints()
+    mgp.randomize()
+    mgp.optimize()
+    mgp.plot()
+    import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+
+def plot_f_approx(model):
+    plt.figure()
+    model.plot(ax=plt.gca())
+    plt.plot(model.X, model.likelihood.f_hat, c='g')

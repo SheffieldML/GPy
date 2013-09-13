@@ -12,4 +12,6 @@ from warped_gp import WarpedGP
 from bayesian_gplvm import BayesianGPLVM
 from mrd import MRD
 from gp_multioutput import GPMultioutput
+from gp_multioutput_regression import GPMultioutputRegression
+from sparse_gp_multioutput_regression import SparseGPMultioutputRegression
 from sparse_gp_multioutput import SparseGPMultioutput

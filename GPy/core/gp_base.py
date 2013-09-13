@@ -46,6 +46,8 @@ class GPBase(Model):
         :param which_parts: which of the kernel functions to plot (additively)
         :type which_parts: 'all', or list of bools
         :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
+        :param output: which output to plot (for multiple output models only)
+        :type output: integer (first output is 0)
 
         Plot the posterior of the GP.
           - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
@@ -92,13 +94,14 @@ class GPBase(Model):
 
 
         elif self.X.shape[1] == 2 and hasattr(self,'multioutput'):
+            output -= 1
+            assert self.num_outputs >= output, 'The model has only %s outputs.' %self.num_outputs
             Xu = self.X[self.X[:,-1]==output ,0:1]
             Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
 
             if samples == 0:
                 m, v = self._raw_predict_single_output(Xnew, output=output, which_parts=which_parts)
                 gpplot(Xnew, m, m - 2 * np.sqrt(v), m + 2 * np.sqrt(v), axes=ax)
-                #ax.plot(self.X[which_data], self.likelihood.Y[which_data], 'kx', mew=1.5)
                 ax.plot(Xu[which_data], self.likelihood.Y[self.likelihood.index==output][:,None], 'kx', mew=1.5)
             else:
                 m, v = self._raw_predict_single_output(Xnew, output=output, which_parts=which_parts, full_cov=True)
@@ -117,6 +120,11 @@ class GPBase(Model):
                 Zu = self.Z[self.Z[:,-1]==output ,0:1] #??
                 ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
 
+        elif self.X.shape[1] == 3 and hasattr(self,'multioutput'):
+            raise NotImplementedError, "Plots not implemented for multioutput models with 2D inputs...yet"
+            output -= 1
+            assert self.num_outputs >= output, 'The model has only %s outputs.' %self.num_outputs
+
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
@@ -126,6 +134,8 @@ class GPBase(Model):
 
         :param levels: for 2D plotting, the number of contour levels to use
         is ax is None, create a new figure
+        :param output: which output to plot (for multiple output models only)
+        :type output: integer (first output is 0)
         """
         # TODO include samples
         if which_data == 'all':
@@ -135,60 +145,61 @@ class GPBase(Model):
             fig = pb.figure(num=fignum)
             ax = fig.add_subplot(111)
 
-        if self.X.shape[1] == 1 and not hasattr(self,'multioutput'):
-            resolution = resolution or 200
+        if not hasattr(self,'multioutput'):
 
-            Xu = self.X * self._Xscale + self._Xoffset # NOTE self.X are the normalized values now
+            if self.X.shape[1] == 1:
+                resolution = resolution or 200
 
-            Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits,resolution=resolution)
-            m, _, lower, upper = self.predict(Xnew, which_parts=which_parts)
-            for d in range(m.shape[1]):
-                gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax)
-                ax.plot(Xu[which_data], self.likelihood.data[which_data, d], 'kx', mew=1.5)
-            ymin, ymax = min(np.append(self.likelihood.data, lower)), max(np.append(self.likelihood.data, upper))
-            ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
-            ax.set_xlim(xmin, xmax)
-            ax.set_ylim(ymin, ymax)
+                Xu = self.X * self._Xscale + self._Xoffset # NOTE self.X are the normalized values now
 
-        elif self.X.shape[1] == 2 and not hasattr(self,'multioutput'):
-            resolution = resolution or 50
-            Xnew, _, _, xmin, xmax = x_frame2D(self.X, plot_limits, resolution)
-            x, y = np.linspace(xmin[0], xmax[0], resolution), np.linspace(xmin[1], xmax[1], resolution)
-            m, _, lower, upper = self.predict(Xnew, which_parts=which_parts)
-            m = m.reshape(resolution, resolution).T
-            ax.contour(x, y, m, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet) # @UndefinedVariable
-            Yf = self.likelihood.Y.flatten()
-            ax.scatter(self.X[:, 0], self.X[:, 1], 40, Yf, cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.) # @UndefinedVariable
-            ax.set_xlim(xmin[0], xmax[0])
-            ax.set_ylim(xmin[1], xmax[1])
+                Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits,resolution=resolution)
+                m, _, lower, upper = self.predict(Xnew, which_parts=which_parts)
+                for d in range(m.shape[1]):
+                    gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax)
+                    ax.plot(Xu[which_data], self.likelihood.data[which_data, d], 'kx', mew=1.5)
+                ymin, ymax = min(np.append(self.likelihood.data, lower)), max(np.append(self.likelihood.data, upper))
+                ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
+                ax.set_xlim(xmin, xmax)
+                ax.set_ylim(ymin, ymax)
 
-        elif self.X.shape[1] == 2 and hasattr(self,'multioutput'):
-            Xu = self.X[self.X[:,-1]==output,:] #keep the output of interest
-            Xu = self.X * self._Xscale + self._Xoffset
-            Xu = self.X[self.X[:,-1]==output ,0:1] #get rid of the index column
+            elif self.X.shape[1] == 2:
+                resolution = resolution or 50
+                Xnew, _, _, xmin, xmax = x_frame2D(self.X, plot_limits, resolution)
+                x, y = np.linspace(xmin[0], xmax[0], resolution), np.linspace(xmin[1], xmax[1], resolution)
+                m, _, lower, upper = self.predict(Xnew, which_parts=which_parts)
+                m = m.reshape(resolution, resolution).T
+                ax.contour(x, y, m, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet) # @UndefinedVariable
+                Yf = self.likelihood.Y.flatten()
+                ax.scatter(self.X[:, 0], self.X[:, 1], 40, Yf, cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.) # @UndefinedVariable
+                ax.set_xlim(xmin[0], xmax[0])
+                ax.set_ylim(xmin[1], xmax[1])
 
-            Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
-
-            m, _, lower, upper = self.predict_single_output(Xnew, which_parts=which_parts,output=output)
-            #if not isinstance(self.likelihood,EP_Mixed_Noise):
-            #    m, _, lower, upper = self.predict(np.hstack([Xnew,np.repeat(output,Xnew.size)[:,None]]), which_parts=which_parts)
-            #else:
-            #    m, _, lower, upper = self.predict_single_output(Xnew, which_parts=which_parts,output=output)
-
-            for d in range(m.shape[1]):
-                gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax)
-                #ax.plot(Xu[which_data], self.likelihood.data[self.likelihood.index==output][:,None], 'kx', mew=1.5)
-                ax.plot(Xu[which_data], self.likelihood.noise_model_list[output].data, 'kx', mew=1.5)
-            ymin, ymax = min(np.append(self.likelihood.data, lower)), max(np.append(self.likelihood.data, upper))
-            ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
-            ax.set_xlim(xmin, xmax)
-            ax.set_ylim(ymin, ymax)
-
+            else:
+                raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
         else:
-            raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
+            assert self.num_outputs > output, 'The model has only %s outputs.' %self.num_outputs
+            if self.X.shape[1] == 2:
+                resolution = resolution or 200
+                Xu = self.X[self.X[:,-1]==output,:] #keep the output of interest
+                Xu = self.X * self._Xscale + self._Xoffset
+                Xu = self.X[self.X[:,-1]==output ,0:1] #get rid of the index column
 
+                Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
+                m, _, lower, upper = self.predict_single_output(Xnew, which_parts=which_parts,output=output)
 
+                for d in range(m.shape[1]):
+                    gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax)
+                    ax.plot(Xu[which_data], self.likelihood.noise_model_list[output].data, 'kx', mew=1.5)
+                ymin, ymax = min(np.append(self.likelihood.data, lower)), max(np.append(self.likelihood.data, upper))
+                ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
+                ax.set_xlim(xmin, xmax)
+                ax.set_ylim(ymin, ymax)
 
+            elif self.X.shape[1] == 3:
+                raise NotImplementedError, "Plots not yet implemented for multioutput models with 2D inputs"
+                resolution = resolution or 50
 
+            else:
+                raise NotImplementedError, "Cannot define a frame with more than two input dimensions"

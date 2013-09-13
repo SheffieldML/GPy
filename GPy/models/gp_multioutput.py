@@ -69,8 +69,9 @@ class GPMultioutput(GP):
         if kernel_list is None:
             kernel_list = [[kern.rbf(original_dim)],[kern.white(original_dim+1)]]
 
-        mkernel = multioutput.build_cor_kernel(input_dim=original_dim, Nout=len(X_list), CK = kernel_list[0], NC = kernel_list[1], W=1)
+        mkernel = multioutput.build_cor_kernel(input_dim=original_dim, Nout=len(X_list), CK = kernel_list[0], NC = kernel_list[1], W=W)
 
         self.multioutput = True
+        self.num_outputs = len(Y_list)
         GP.__init__(self, X, likelihood, mkernel, normalize_X=normalize_X)
         self.ensure_default_constraints()

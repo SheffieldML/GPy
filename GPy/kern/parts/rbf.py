@@ -138,7 +138,10 @@ class RBF(Kernpart):
 
     def dK_dX(self, dL_dK, X, X2, target):
         self._K_computations(X, X2)
-        _K_dist = X[:, None, :] - X2[None, :, :] # don't cache this in _K_computations because it is high memory. If this function is being called, chances are we're not in the high memory arena.
+        if X2 is None:
+            _K_dist = 2*(X[:, None, :] - X[None, :, :])
+        else:
+            _K_dist = X[:, None, :] - X2[None, :, :] # don't cache this in _K_computations because it is high memory. If this function is being called, chances are we're not in the high memory arena.
         dK_dX = (-self.variance / self.lengthscale2) * np.transpose(self._K_dvar[:, :, np.newaxis] * _K_dist, (1, 0, 2))
         target += np.sum(dK_dX * dL_dK.T[:, :, None], 0)
 

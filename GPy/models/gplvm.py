@@ -61,7 +61,7 @@ class GPLVM(GP):
         GP._set_params(self, x[self.X.size:])
 
     def _log_likelihood_gradients(self):
-        dL_dX = 2.*self.kern.dK_dX(self.dL_dK, self.X)
+        dL_dX = self.kern.dK_dX(self.dL_dK, self.X)
 
         return np.hstack((dL_dX.flatten(), GP._log_likelihood_gradients(self)))
 

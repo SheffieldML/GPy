@@ -5,7 +5,6 @@ import numpy as np
 from kern import kern
 import parts
 
-
 def rbf_inv(input_dim,variance=1., inv_lengthscale=None,ARD=False):
     """
     Construct an RBF kernel
@@ -103,6 +102,12 @@ def gibbs(input_dim,variance=1., mapping=None):
     part = parts.gibbs.Gibbs(input_dim,variance,mapping)
     return kern(input_dim, [part])
 
+def hetero(input_dim, mapping=None, transform=None):
+    """
+    """
+    part = parts.hetero.Hetero(input_dim,mapping,transform)
+    return kern(input_dim, [part])
+
 def poly(input_dim,variance=1., weight_variance=None,bias_variance=1.,degree=2, ARD=False):
     """
     Construct a polynomial kernel
@@ -134,6 +139,7 @@ def white(input_dim,variance=1.):
     """
     part = parts.white.White(input_dim,variance)
     return kern(input_dim, [part])
+
 
 def exponential(input_dim,variance=1., lengthscale=None, ARD=False):
     """

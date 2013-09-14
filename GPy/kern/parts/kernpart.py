@@ -59,6 +59,45 @@ class Kernpart(object):
     def dK_dX(self, dL_dK, X, X2, target):
         raise NotImplementedError
 
+
+
+class Kernpart_stationary(Kernpart):
+    def __init__(self, input_dim, lengthscale=None, ARD=False):
+        self.input_dim = input_dim
+        self.ARD = ARD
+        if not ARD:
+            self.num_params = 2
+            if lengthscale is not None:
+                self.lengthscale = np.asarray(lengthscale)
+                assert self.lengthscale.size == 1, "Only one lengthscale needed for non-ARD kernel"
+            else:
+                self.lengthscale = np.ones(1)
+        else:
+            self.num_params = self.input_dim + 1
+            if lengthscale is not None:
+                self.lengthscale = np.asarray(lengthscale)
+                assert self.lengthscale.size == self.input_dim, "bad number of lengthscales"
+            else:
+                self.lengthscale = np.ones(self.input_dim)
+
+        # initialize cache
+        self._Z, self._mu, self._S = np.empty(shape=(3, 1))
+        self._X, self._X2, self._params = np.empty(shape=(3, 1))
+
+    def _set_params(self, x):
+        self.lengthscale = x
+        self.lengthscale2 = np.square(self.lengthscale)
+        # reset cached results
+        self._X, self._X2, self._params = np.empty(shape=(3, 1))
+        self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
+
+
+    def dKdiag_dtheta(self, dL_dKdiag, X, target):
+        # For stationary covariances, derivative of diagonal elements
+        # wrt lengthscale is 0.
+        target[0] += np.sum(dL_dKdiag)
+
+
 class Kernpart_inner(Kernpart):
     def __init__(self,input_dim):
         """
@@ -74,3 +113,5 @@ class Kernpart_inner(Kernpart):
         # initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3, 1))
         self._X, self._X2, self._params = np.empty(shape=(3, 1))
+
+

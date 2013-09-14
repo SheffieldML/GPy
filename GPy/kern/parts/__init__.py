@@ -5,6 +5,8 @@ import exponential
 import finite_dimensional
 import fixed
 import gibbs
+import hetero
+import hierarchical
 import independent_outputs
 import linear
 import Matern32
@@ -19,8 +21,7 @@ import prod
 import rational_quadratic
 import rbfcos
 import rbf
+import rbf_inv
 import spline
 import symmetric
 import white
-import hierarchical
-import rbf_inv

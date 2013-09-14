@@ -98,9 +98,13 @@ class Matern32(Kernpart):
 
     def dK_dX(self, dL_dK, X, X2, target):
         """derivative of the covariance matrix with respect to X."""
-        if X2 is None: X2 = X
-        dist = np.sqrt(np.sum(np.square((X[:, None, :] - X2[None, :, :]) / self.lengthscale), -1))[:, :, None]
-        ddist_dX = (X[:, None, :] - X2[None, :, :]) / self.lengthscale ** 2 / np.where(dist != 0., dist, np.inf)
+        if X2 is None:
+            dist = np.sqrt(np.sum(np.square((X[:, None, :] - X[None, :, :]) / self.lengthscale), -1))[:, :, None]
+            ddist_dX = 2*(X[:, None, :] - X[None, :, :]) / self.lengthscale ** 2 / np.where(dist != 0., dist, np.inf)
+
+        else:
+            dist = np.sqrt(np.sum(np.square((X[:, None, :] - X2[None, :, :]) / self.lengthscale), -1))[:, :, None]
+            ddist_dX = (X[:, None, :] - X2[None, :, :]) / self.lengthscale ** 2 / np.where(dist != 0., dist, np.inf)
         dK_dX = -np.transpose(3 * self.variance * dist * np.exp(-np.sqrt(3) * dist) * ddist_dX, (1, 0, 2))
         target += np.sum(dK_dX * dL_dK.T[:, :, None], 0)
 

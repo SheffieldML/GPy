@@ -1,6 +1,6 @@
 import bias
 import Brownian
-import coregionalise
+import coregionalize
 import exponential
 import finite_dimensional
 import fixed

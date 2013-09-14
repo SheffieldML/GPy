@@ -6,7 +6,6 @@ import numpy as np
 from ..core import GP
 from .. import likelihoods
 from .. import kern
-#from ..util import multioutput
 
 class GPMultioutputRegression(GP):
     """

@@ -7,7 +7,7 @@ from GPy.util.linalg import mdot, pdinv
 import pdb
 from scipy import weave
 
-class Coregionalise(Kernpart):
+class Coregionalize(Kernpart):
     """
     Kernel for intrinsic/linear coregionalization models
 
@@ -25,12 +25,12 @@ class Coregionalise(Kernpart):
     :type num_outputs: int
     :param W_columns: number of columns of the W matrix (this parameter is ignored if parameter W is not None)
     :type W_colunns: int
-    :param W: a low rank matrix that determines the correlations between the different outputs, together with kappa it forms the coregionalisation matrix B
+    :param W: a low rank matrix that determines the correlations between the different outputs, together with kappa it forms the coregionalization matrix B
     :type W: numpy array of dimensionality (num_outpus, W_columns)
     :param kappa: a vector which allows the outputs to behave independently
     :type kappa: numpy array of dimensionality  (num_outputs,)
 
-    .. Note: see coregionalisation examples in GPy.examples.regression for some usage.
+    .. Note: see coregionalization examples in GPy.examples.regression for some usage.
     """
     def __init__(self,num_outputs,W_columns=1, W=None, kappa=None):
         self.input_dim = 1

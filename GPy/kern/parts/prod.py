@@ -18,7 +18,7 @@ class Prod(Kernpart):
     """
     def __init__(self,k1,k2,tensor=False):
         self.num_params = k1.num_params + k2.num_params
-        self.name = '['+k1.name + '(x)' + k2.name +']'
+        self.name = '['+k1.name + '**' + k2.name +']'
         self.k1 = k1
         self.k2 = k2
         if tensor:

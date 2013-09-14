@@ -50,7 +50,7 @@ class KernelTests(unittest.TestCase):
         m = GPy.models.GPRegression(X,Y,kernel=kernel)
         self.assertTrue(m.checkgrad())
 
-    def test_coregionalisation(self):
+    def test_coregionalization(self):
         X1 = np.random.rand(50,1)*8
         X2 = np.random.rand(30,1)*5
         index = np.vstack((np.zeros_like(X1),np.ones_like(X2)))
@@ -60,7 +60,7 @@ class KernelTests(unittest.TestCase):
         Y = np.vstack((Y1,Y2))
 
         k1 = GPy.kern.rbf(1) + GPy.kern.bias(1)
-        k2 = GPy.kern.coregionalise(2,1)
+        k2 = GPy.kern.coregionalize(2,1)
         k = k1.prod(k2,tensor=True)
         m = GPy.models.GPRegression(X,Y,kernel=k)
         self.assertTrue(m.checkgrad())

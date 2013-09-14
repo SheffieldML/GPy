@@ -458,7 +458,7 @@ class Model(Parameterized):
             numerical_gradient = (f1 - f2) / (2 * dx)
             global_ratio = (f1 - f2) / (2 * np.dot(dx, np.where(gradient==0, 1e-32, gradient)))
             
-            return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gradient - numerical_gradient).mean() - 1) < tolerance
+            return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gradient - numerical_gradient).mean() < tolerance)
         else:
             # check the gradient of each parameter individually, and do some pretty printing
             try:
@@ -549,7 +549,7 @@ class Model(Parameterized):
         :type optimzer: string TODO: valid strings?
 
         """
-        assert isinstance(self.likelihood, likelihoods.EP), "pseudo_EM is only available for EP likelihoods"
+        assert isinstance(self.likelihood, likelihoods.EP) or isinstance(self.likelihood, likelihoods.EP_Mixed_Noise), "pseudo_EM is only available for EP likelihoods"
         ll_change = epsilon + 1.
         iteration = 0
         last_ll = -np.inf

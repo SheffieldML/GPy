@@ -19,9 +19,6 @@ class GP(GPBase):
     :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_X: False|True
     :rtype: model object
-    :param epsilon_ep: convergence criterion for the Expectation Propagation algorithm, defaults to 0.1
-    :param powerep: power-EP parameters [$\eta$,$\delta$], defaults to [1.,1.]
-    :type powerep: list
 
     .. Note:: Multiple independent outputs are allowed using columns of Y
 
@@ -105,7 +102,12 @@ class GP(GPBase):
 
         Note, we use the chain rule: dL_dtheta = dL_dK * d_K_dtheta
         """
-        return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        #return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        if not isinstance(self.likelihood,EP):
+            tmp = np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        else:
+            tmp = np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        return tmp
 
     def _raw_predict(self, _Xnew, which_parts='all', full_cov=False, stop=False):
         """
@@ -136,7 +138,7 @@ class GP(GPBase):
         :type Xnew: np.ndarray, Nnew x self.input_dim
         :param which_parts:  specifies which outputs kernel(s) to use in prediction
         :type which_parts: ('all', list of bools)
-        :param full_cov: whether to return the folll covariance matrix, or just the diagonal
+        :param full_cov: whether to return the full covariance matrix, or just the diagonal
         :type full_cov: bool
         :rtype: posterior mean,  a Numpy array, Nnew x self.input_dim
         :rtype: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
@@ -153,5 +155,71 @@ class GP(GPBase):
 
         # now push through likelihood
         mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, **likelihood_args)
-
         return mean, var, _025pm, _975pm
+
+    def predict_single_output(self, Xnew, output=0, which_parts='all', full_cov=False):
+        """
+        For a specific output, predict the function at the new point(s) Xnew.
+        Arguments
+        ---------
+        :param Xnew: The points at which to make a prediction
+        :type Xnew: np.ndarray, Nnew x self.input_dim
+        :param output: output to predict
+        :type output: integer in {0,..., num_outputs-1}
+        :param which_parts:  specifies which outputs kernel(s) to use in prediction
+        :type which_parts: ('all', list of bools)
+        :param full_cov: whether to return the full covariance matrix, or just the diagonal
+        :type full_cov: bool
+        :rtype: posterior mean,  a Numpy array, Nnew x self.input_dim
+        :rtype: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
+        :rtype: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
+
+        .. Note:: For multiple output models only
+        """
+        assert hasattr(self,'multioutput')
+        index = np.ones_like(Xnew)*output
+        Xnew = np.hstack((Xnew,index))
+
+        # normalize X values
+        Xnew = (Xnew.copy() - self._Xoffset) / self._Xscale
+        mu, var = self._raw_predict(Xnew, full_cov=full_cov, which_parts=which_parts)
+
+        # now push through likelihood
+        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, noise_model = output)
+        return mean, var, _025pm, _975pm
+
+    def _raw_predict_single_output(self, _Xnew, output=0, which_parts='all', full_cov=False,stop=False):
+        """
+        Internal helper function for making predictions for a specific output,
+        does not account for normalization or likelihood
+        ---------
+
+        :param Xnew: The points at which to make a prediction
+        :type Xnew: np.ndarray, Nnew x self.input_dim
+        :param output: output to predict
+        :type output: integer in {0,..., num_outputs-1}
+        :param which_parts:  specifies which outputs kernel(s) to use in prediction
+        :type which_parts: ('all', list of bools)
+        :param full_cov: whether to return the full covariance matrix, or just the diagonal
+
+        .. Note:: For multiple output models only
+        """
+        assert hasattr(self,'multioutput')
+
+        # creates an index column and appends it to _Xnew
+        index = np.ones_like(_Xnew)*output
+        _Xnew = np.hstack((_Xnew,index))
+
+        Kx = self.kern.K(_Xnew,self.X,which_parts=which_parts).T
+        KiKx, _ = dpotrs(self.L, np.asfortranarray(Kx), lower=1)
+        mu = np.dot(KiKx.T, self.likelihood.Y)
+        if full_cov:
+            Kxx = self.kern.K(_Xnew, which_parts=which_parts)
+            var = Kxx - np.dot(KiKx.T, Kx)
+        else:
+            Kxx = self.kern.Kdiag(_Xnew, which_parts=which_parts)
+            var = Kxx - np.sum(np.multiply(KiKx, Kx), 0)
+            var = var[:, None]
+        if stop:
+            debug_this # @UndefinedVariable
+        return mu, var

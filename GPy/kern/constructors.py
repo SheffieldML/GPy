@@ -346,7 +346,7 @@ def symmetric(k):
     k_.parts = [symmetric.Symmetric(p) for p in k.parts]
     return k_
 
-def coregionalise(num_outputs,W_columns=1, W=None, kappa=None):
+def coregionalize(num_outputs,W_columns=1, W=None, kappa=None):
     """
     Coregionlization matrix B, of the form:
     .. math::
@@ -358,7 +358,7 @@ def coregionalise(num_outputs,W_columns=1, W=None, kappa=None):
 
     it is obtainded as the tensor product between a kernel k(x,y) and B.
 
-    :param num_outputs: the number of outputs to corregionalise
+    :param num_outputs: the number of outputs to corregionalize
     :type num_outputs: int
     :param W_columns: number of columns of the W matrix (this parameter is ignored if parameter W is not None)
     :type W_colunns: int
@@ -369,7 +369,7 @@ def coregionalise(num_outputs,W_columns=1, W=None, kappa=None):
     :rtype: kernel object
 
     """
-    p = parts.coregionalise.Coregionalise(num_outputs,W_columns,W,kappa)
+    p = parts.coregionalize.Coregionalize(num_outputs,W_columns,W,kappa)
     return kern(1,[p])
 
 
@@ -448,11 +448,11 @@ def build_lcm(input_dim, num_outputs, kernel_list = [], W_columns=1,W=None,kappa
             k.input_dim = input_dim
             warnings.warn("kernel's input dimension overwritten to fit input_dim parameter.")
 
-    k_coreg = coregionalise(num_outputs,W_columns,W,kappa)
+    k_coreg = coregionalize(num_outputs,W_columns,W,kappa)
     kernel = kernel_list[0]**k_coreg.copy()
 
     for k in kernel_list[1:]:
-        k_coreg = coregionalise(num_outputs,W_columns,W,kappa)
+        k_coreg = coregionalize(num_outputs,W_columns,W,kappa)
         kernel += k**k_coreg.copy()
 
     return kernel

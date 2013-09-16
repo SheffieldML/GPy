@@ -7,7 +7,7 @@ from GPy.util.linalg import mdot, pdinv
 import pdb
 from scipy import weave
 
-class Coregionalise(Kernpart):
+class Coregionalize(Kernpart):
     """
     Kernel for intrinsic/linear coregionalization models
 

@@ -1,7 +1,8 @@
 import numpy as np
 import copy
+from ..core.parameterized import Parameterized
 
-class likelihood:
+class likelihood(Parameterized):
     """
     The atom for a likelihood class
 
@@ -16,10 +17,10 @@ class likelihood:
     self.is_heteroscedastic : enables significant computational savings in GP
     self.precision : a scalar or vector representation of the effective target precision
     self.YYT : (optional) = np.dot(self.Y, self.Y.T) enables computational savings for D>N
-    self.V : self.precision * self.Y 
+    self.V : self.precision * self.Y
     """
-    def __init__(self,data):
-        raise ValueError, "this class is not to be instantiated"
+    def __init__(self):
+        Parameterized.__init__(self)
 
     def _get_params(self):
         raise NotImplementedError
@@ -38,7 +39,3 @@ class likelihood:
 
     def predictive_values(self, mu, var):
         raise NotImplementedError
-
-    def copy(self):
-        """ Returns a (deep) copy of the current likelihood """
-        return copy.deepcopy(self)

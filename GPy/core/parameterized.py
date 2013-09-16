@@ -372,7 +372,10 @@ class Parameterized(object):
             for j in tie:
                 ties[j] = '(' + str(i) + ')'
 
-        values = ['%.4f' % float(v) for v in values]
+        if values.size == 1:
+            values = ['%.4f' %float(values)]
+        else:
+            values = ['%.4f' % float(v) for v in values]
         max_names = max([len(names[i]) for i in range(len(names))] + [len(header[0])])
         max_values = max([len(values[i]) for i in range(len(values))] + [len(header[1])])
         max_constraint = max([len(constraints[i]) for i in range(len(constraints))] + [len(header[2])])

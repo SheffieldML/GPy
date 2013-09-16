@@ -45,6 +45,8 @@ class Gaussian_Mixed_Noise(likelihood):
         self.set_data(data_list)
         self._set_params(np.asarray(noise_params))
 
+        super(Gaussian_Mixed_Noise, self).__init__()
+
     def set_data(self, data_list):
         self.data = np.vstack(data_list)
         self.N, D = self.data.shape

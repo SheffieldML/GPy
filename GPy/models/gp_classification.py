@@ -14,7 +14,7 @@ class GPClassification(GP):
     This is a thin wrapper around the models.GP class, with a set of sensible defaults
 
     :param X: input observations
-    :param Y: observed values
+    :param Y: observed values, can be None if likelihood is not None
     :param likelihood: a GPy likelihood, defaults to Binomial with probit link_function
     :param kernel: a GPy kernel, defaults to rbf
     :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)

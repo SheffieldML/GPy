@@ -64,7 +64,7 @@ class Binomial(NoiseDistribution):
         if isinstance(self.gp_link,gp_transformations.Probit):
             return stats.norm.cdf(mu/np.sqrt(1+sigma**2))
         elif isinstance(self.gp_link,gp_transformations.Heaviside):
-            return stats.norm.cdf(mu/sigma) 
+            return stats.norm.cdf(mu/sigma)
         else:
             raise NotImplementedError
 
@@ -73,8 +73,6 @@ class Binomial(NoiseDistribution):
             return 0.
         else:
             raise NotImplementedError
-
-
 
     def _mass(self,gp,obs):
         #NOTE obs must be in {0,1}

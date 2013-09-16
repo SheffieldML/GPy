@@ -358,7 +358,7 @@ def coregionalize(num_outputs,W_columns=1, W=None, kappa=None):
 
     it is obtainded as the tensor product between a kernel k(x,y) and B.
 
-    :param num_outputs: the number of outputs to corregionalise
+    :param num_outputs: the number of outputs to corregionalize
     :type num_outputs: int
     :param W_columns: number of columns of the W matrix (this parameter is ignored if parameter W is not None)
     :type W_colunns: int

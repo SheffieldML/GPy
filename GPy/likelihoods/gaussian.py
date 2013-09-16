@@ -34,6 +34,8 @@ class Gaussian(likelihood):
         self._variance = np.asarray(variance) + 1.
         self._set_params(np.asarray(variance))
 
+        super(Gaussian, self).__init__()
+
     def set_data(self, data):
         self.data = data
         self.N, D = data.shape

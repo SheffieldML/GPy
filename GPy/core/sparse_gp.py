@@ -208,8 +208,8 @@ class SparseGP(GPBase):
         return sum([['iip_%i_%i' % (i, j) for j in range(self.Z.shape[1])] for i in range(self.Z.shape[0])], [])\
             + self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
-    def _get_print_names(self):
-        return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
+    #def _get_print_names(self):
+    #    return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
     def update_likelihood_approximation(self):
         """

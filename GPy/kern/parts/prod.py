@@ -90,6 +90,8 @@ class Prod(Kernpart):
     def dK_dX(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
         self._K_computations(X,X2)
+        if X2 is None:
+            X2 = X
         self.k1.dK_dX(dL_dK*self._K2, X[:,self.slice1], X2[:,self.slice1], target[:,self.slice1])
         self.k2.dK_dX(dL_dK*self._K1, X[:,self.slice2], X2[:,self.slice2], target[:,self.slice2])
 

@@ -108,7 +108,7 @@ class Reciprocal(GPTransformation):
     def d2transf_df2(self,f):
         return 2./f**3
 
-class Step(GPTransformation):
+class Heaviside(GPTransformation):
     """
     $$
     g(f) = I_{x \in A}
@@ -119,7 +119,7 @@ class Step(GPTransformation):
         return np.where(f>0, 1, -1)
 
     def dtransf_df(self,f):
-        pass
+        raise NotImplementedError, "this function is not differentiable!"
 
     def d2transf_df2(self,f):
-        pass
+        raise NotImplementedError, "this function is not differentiable!"

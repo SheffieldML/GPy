@@ -19,7 +19,7 @@ def binomial(gp_link=None):
         analytical_mean = True
         analytical_variance = False
 
-    elif isinstance(gp_link,noise_models.gp_transformations.Step):
+    elif isinstance(gp_link,noise_models.gp_transformations.Heaviside):
         analytical_mean = True
         analytical_variance = True
 

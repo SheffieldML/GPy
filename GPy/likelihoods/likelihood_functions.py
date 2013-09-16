@@ -286,12 +286,7 @@ class StudentT(LikelihoodFunction):
         """
         assert y.shape == f.shape
         e = y - f
-        #FIXME: OUT BY SOME FUNCTION OF N, or the fact that we are summing over several things in the objective?
         dlik_dvar = self.v*(e**2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e**2))
-        #dlik_dvar = ( 0.5*(1/float(self.sigma2))
-                     #-0.5*(self.v + 1)*(-(1/float(self.v))*(e**2)/(1/(float(self.sigma2**2))))
-                     #/ (1 + (1/float(self.v))*((e**2)/float(self.sigma2)))
-                     #)
         return np.sum(dlik_dvar) #May not want to sum over all dimensions if using many D?
 
     def dlik_df_dvar(self, y, f, extra_data=None):

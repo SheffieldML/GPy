@@ -76,6 +76,7 @@ class Laplace(likelihood):
         #FIXME: Careful of side effects! And make sure W and K are up to date!
         d3lik_d3fhat = self.likelihood_function.d3lik_d3f(self.data, self.f_hat)
         dL_dfhat = -0.5*(np.diag(self.Ki_W_i)[:, None]*d3lik_d3fhat).T
+        import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
         I_KW_i = np.eye(self.N) - np.dot(self.K, self.Wi_K_i)
         return dL_dfhat, I_KW_i
 
@@ -88,7 +89,6 @@ class Laplace(likelihood):
 
         #Implicit
         impl = mdot(dlp, dL_dfhat, I_KW_i)
-        #expl_a = mdot(self.Ki_f, self.Ki_f.T)
         expl_a = np.dot(self.Ki_f, self.Ki_f.T)
         expl_b = self.Wi_K_i
         #print "expl_a: {}, expl_b: {}".format(expl_a, expl_b)

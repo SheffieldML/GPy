@@ -9,8 +9,8 @@ def build_lcm(input_dim, num_outputs, CK = [], NC = [], W_columns=1,W=None,kappa
 
     :input_dim: Input dimensionality
     :num_outputs: Number of outputs
-    :param CK: List of coregionalized kernels (i.e., this will be multiplied by a coregionalise kernel).
-    :param K: List of kernels that will be added up together with CK, but won't be multiplied by a coregionalise kernel
+    :param CK: List of coregionalized kernels (i.e., this will be multiplied by a coregionalize kernel).
+    :param K: List of kernels that will be added up together with CK, but won't be multiplied by a coregionalize kernel
     :param W_columns: number tuples of the corregionalization parameters 'coregion_W'
     :type W_columns: integer
     """
@@ -25,9 +25,9 @@ def build_lcm(input_dim, num_outputs, CK = [], NC = [], W_columns=1,W=None,kappa
             k.input_dim = input_dim + 1
             warnings.warn("kernel's input dimension overwritten to fit input_dim parameter.")
 
-    kernel = CK[0].prod(kern.coregionalise(num_outputs,W_columns,W,kappa),tensor=True)
+    kernel = CK[0].prod(kern.coregionalize(num_outputs,W_columns,W,kappa),tensor=True)
     for k in CK[1:]:
-        k_coreg = kern.coregionalise(num_outputs,W_columns,W,kappa)
+        k_coreg = kern.coregionalize(num_outputs,W_columns,W,kappa)
         kernel += k.prod(k_coreg,tensor=True)
     for k in NC:
         kernel += k

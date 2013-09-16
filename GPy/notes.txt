@@ -38,7 +38,7 @@ In sparse GPs wouldn't it be clearer to call Z inducing?
 
 In coregionalisation matrix, setting the W to all ones will (surely?) ensure that symmetry isn't broken. Also, but allowing it to scale like that, the output variance increases as rank is increased (and if user sets rank to more than output dim they could get very different results).
 
-We are inconsistent about our use of ise and ize e.g. optimize and normalize_X, but coregionalise, we should choose one and stick to it. Suggest -ize.
+We are inconsistent about our use of ise and ize e.g. optimize and normalize_X, but coregionalise, we should choose one and stick to it. Suggest -ize. Neil- I'm imposing the US spellings to keep things consistent, so -ize it is.
 
 Exceptions: we need to provide a list of exceptions we throw and specify what is thrown where. 
 

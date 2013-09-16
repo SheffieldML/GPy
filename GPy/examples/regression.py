@@ -22,7 +22,7 @@ def coregionalisation_toy2(max_iters=100):
     Y = np.vstack((Y1, Y2))
 
     k1 = GPy.kern.rbf(1) + GPy.kern.bias(1)
-    k2 = GPy.kern.coregionalise(2,1)
+    k2 = GPy.kern.coregionalize(2,1)
     k = k1**k2 #k = k1.prod(k2,tensor=True)
     m = GPy.models.GPRegression(X, Y, kernel=k)
     m.constrain_fixed('.*rbf_var', 1.)
@@ -82,7 +82,7 @@ def coregionalisation_sparse(max_iters=100):
     k1 = GPy.kern.rbf(1)
 
     m = GPy.models.SparseGPMultioutputRegression(X_list=[X1,X2],Y_list=[Y1,Y2],kernel_list=[k1],num_inducing=20)
-    #k2 = GPy.kern.coregionalise(2, 2)
+    #k2 = GPy.kern.coregionalize(2, 2)
     #k = k1**k2 #.prod(k2, tensor=True) # + GPy.kern.white(2,0.001)
     #m = GPy.models.SparseGPRegression(X, Y, kernel=k, Z=Z)
     m.constrain_fixed('.*rbf_var', 1.)
@@ -135,7 +135,7 @@ def epomeo_gpx(max_iters=100):
                    np.random.randint(0, 4, num_inducing)[:, None]))
 
     k1 = GPy.kern.rbf(1)
-    k2 = GPy.kern.coregionalise(output_dim=5, rank=5)
+    k2 = GPy.kern.coregionalize(output_dim=5, rank=5)
     k = k1**k2 
 
     m = GPy.models.SparseGPRegression(t, Y, kernel=k, Z=Z, normalize_Y=True)

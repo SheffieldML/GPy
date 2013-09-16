@@ -110,9 +110,13 @@ class MLP(Kernpart):
         arg = self._K_asin_arg
         numer = self._K_numer
         denom = self._K_denom
-        vec2 = (X2*X2).sum(1)*self.weight_variance + self.bias_variance + 1.
         denom3 = denom*denom*denom
-        target += four_over_tau*self.weight_variance*self.variance*((X2[None, :, :]/denom[:, :, None] - vec2[None, :, None]*X[:, None, :]*(numer/denom3)[:, :, None])*(dL_dK/np.sqrt(1-arg*arg))[:, :, None]).sum(1)
+        if X2 is not None:
+            vec2 = (X2*X2).sum(1)*self.weight_variance+self.bias_variance + 1.
+            target += four_over_tau*self.weight_variance*self.variance*((X2[None, :, :]/denom[:, :, None] - vec2[None, :, None]*X[:, None, :]*(numer/denom3)[:, :, None])*(dL_dK/np.sqrt(1-arg*arg))[:, :, None]).sum(1)
+        else:
+            vec = (X*X).sum(1)*self.weight_variance+self.bias_variance + 1.
+            target += 2*four_over_tau*self.weight_variance*self.variance*((X[None, :, :]/denom[:, :, None] - vec[None, :, None]*X[:, None, :]*(numer/denom3)[:, :, None])*(dL_dK/np.sqrt(1-arg*arg))[:, :, None]).sum(1)
             
     def dKdiag_dX(self, dL_dKdiag, X, target):
         """Gradient of diagonal of covariance with respect to X"""

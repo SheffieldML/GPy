@@ -81,7 +81,6 @@ def coregionalization_sparse(max_iters=100):
     k1 = GPy.kern.rbf(1)
 
     m = GPy.models.SparseGPMultioutputRegression(X_list=[X1,X2],Y_list=[Y1,Y2],kernel_list=[k1],num_inducing=20)
-
     #m.constrain_fixed('iip')
     m.constrain_bounded('noise_variance', 1e-3, 1e-1)
 #     m.optimize_restarts(5, robust=True, messages=1, max_iters=max_iters, optimizer='bfgs')

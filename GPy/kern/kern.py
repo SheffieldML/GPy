@@ -12,7 +12,9 @@ from matplotlib.transforms import offset_copy
 class kern(Parameterized):
     def __init__(self, input_dim, parts=[], input_slices=None):
         """
-        This is the main kernel class for GPy. It handles multiple (additive) kernel functions, and keeps track of variaous things like which parameters live where.
+        This is the main kernel class for GPy. It handles multiple
+        (additive) kernel functions, and keeps track of various things
+        like which parameters live where.
 
         The technical code for kernels is divided into _parts_ (see
         e.g. rbf.py). This object contains a list of parts, which are
@@ -33,6 +35,11 @@ class kern(Parameterized):
 
         self.input_dim = input_dim
 
+        part_names = [k.name for k in self.parts]
+        self.name=''
+        for name in part_names:
+            self.name += name + '+'
+        self.name = self.name[:-1]
         # deal with input_slices
         if input_slices is None:
             self.input_slices = [slice(None) for p in self.parts]
@@ -333,10 +340,8 @@ class kern(Parameterized):
         :type X: np.ndarray (num_samples x input_dim)
         :param X2: Observed data inputs (optional, defaults to X)
         :type X2: np.ndarray (num_inducing x input_dim)"""
-        if X2 is None:
-            X2 = X
         target = np.zeros_like(X)
-        if X2 is None:
+        if X2 is None: 
             [p.dK_dX(dL_dK, X[:, i_s], None, target[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
         else:
             [p.dK_dX(dL_dK, X[:, i_s], X2[:, i_s], target[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
@@ -653,17 +658,85 @@ def kern_test(kern, X=None, X2=None, verbose=False):
     :param X2: X2 input values to test the covariance function.
     :type X2: ndarray
     """
+    pass_checks = True
     if X==None:
         X = np.random.randn(10, kern.input_dim)
     if X2==None:
         X2 = np.random.randn(20, kern.input_dim)
-    result = [Kern_check_model(kern, X=X).is_positive_definite(),
-              Kern_check_dK_dtheta(kern, X=X, X2=X2).checkgrad(verbose=verbose),
-              Kern_check_dK_dtheta(kern, X=X, X2=None).checkgrad(verbose=verbose),
-             Kern_check_dKdiag_dtheta(kern, X=X).checkgrad(verbose=verbose),
-              Kern_check_dK_dX(kern, X=X, X2=X2).checkgrad(verbose=verbose),
-              Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=verbose)]
-    # Need to check 
-    #Kern_check_dK_dX(kern, X, X2=None).checkgrad(verbose=verbose)]
-    # but currently I think these aren't implemented.
-    return np.all(result)
+    if verbose:
+        print("Checking covariance function is positive definite.")
+    result = Kern_check_model(kern, X=X).is_positive_definite()
+    if result and verbose:
+        print("Check passed.")
+    if not result:
+        print("Positive definite check failed for " + kern.name + " covariance function.")
+        pass_checks = False
+        return False
+
+    if verbose:
+        print("Checking gradients of K(X, X) wrt theta.")
+    result = Kern_check_dK_dtheta(kern, X=X, X2=None).checkgrad(verbose=verbose)
+    if result and verbose:
+        print("Check passed.")
+    if not result:
+        print("Gradient of K(X, X) wrt theta failed for " + kern.name + " covariance function. Gradient values as follows:")
+        Kern_check_dK_dtheta(kern, X=X, X2=None).checkgrad(verbose=True)
+        pass_checks = False
+        return False
+    
+    if verbose:
+        print("Checking gradients of K(X, X2) wrt theta.")
+    result = Kern_check_dK_dtheta(kern, X=X, X2=X2).checkgrad(verbose=verbose)
+    if result and verbose:
+        print("Check passed.")
+    if not result:
+        print("Gradient of K(X, X) wrt theta failed for " + kern.name + " covariance function. Gradient values as follows:")
+        Kern_check_dK_dtheta(kern, X=X, X2=X2).checkgrad(verbose=True)
+        pass_checks = False
+        return False
+    
+    if verbose:
+        print("Checking gradients of Kdiag(X) wrt theta.")
+    result = Kern_check_dKdiag_dtheta(kern, X=X).checkgrad(verbose=verbose)
+    if result and verbose:
+        print("Check passed.")
+    if not result:
+        print("Gradient of Kdiag(X) wrt theta failed for " + kern.name + " covariance function. Gradient values as follows:")
+        Kern_check_dKdiag_dtheta(kern, X=X).checkgrad(verbose=True)
+        pass_checks = False
+        return False
+        
+    if verbose:
+        print("Checking gradients of K(X, X) wrt X.")
+    result = Kern_check_dK_dX(kern, X=X, X2=None).checkgrad(verbose=verbose)
+    if result and verbose:
+        print("Check passed.")
+    if not result:
+        print("Gradient of K(X, X) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:")
+        Kern_check_dK_dX(kern, X=X, X2=None).checkgrad(verbose=True)
+        pass_checks = False
+        return False
+
+    if verbose:
+        print("Checking gradients of K(X, X2) wrt X.")
+    result = Kern_check_dK_dX(kern, X=X, X2=X2).checkgrad(verbose=verbose)
+    if result and verbose:
+        print("Check passed.")
+    if not result:
+        print("Gradient of K(X, X) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:")
+        Kern_check_dK_dX(kern, X=X, X2=X2).checkgrad(verbose=True)
+        pass_checks = False
+        return False
+
+    if verbose:
+        print("Checking gradients of Kdiag(X) wrt X.")
+    result = Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=verbose)
+    if result and verbose:
+        print("Check passed.")
+    if not result:
+        print("Gradient of Kdiag(X) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:")
+        Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=True)
+        pass_checks = False
+        return False
+    
+    return pass_checks

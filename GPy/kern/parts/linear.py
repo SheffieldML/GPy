@@ -99,7 +99,10 @@ class Linear(Kernpart):
             target += tmp.sum()
 
     def dK_dX(self, dL_dK, X, X2, target):
-        target += (((X2[None,:, :] * self.variances)) * dL_dK[:, :, None]).sum(1)
+        if X2 is None:
+            target += 2*(((X[None,:, :] * self.variances)) * dL_dK[:, :, None]).sum(1)
+        else:
+            target += (((X2[None,:, :] * self.variances)) * dL_dK[:, :, None]).sum(1)
 
     def dKdiag_dX(self,dL_dKdiag,X,target):
         target += 2.*self.variances*dL_dKdiag[:,None]*X

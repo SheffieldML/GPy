@@ -1,4 +1,4 @@
-# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2012, 2013, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
@@ -459,8 +459,8 @@ class Model(Parameterized):
             gradient = self.objective_function_gradients(x)
 
             numerical_gradient = (f1 - f2) / (2 * dx)
-            global_ratio = (f1 - f2) / (2 * np.dot(dx, gradient))
-
+            global_ratio = (f1 - f2) / (2 * np.dot(dx, np.where(gradient==0, 1e-32, gradient)))
+            
             return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gradient - numerical_gradient).mean() < tolerance)
         else:
             # check the gradient of each parameter individually, and do some pretty printing
@@ -499,7 +499,7 @@ class Model(Parameterized):
                 gradient = self.objective_function_gradients(x)[i]
 
                 numerical_gradient = (f1 - f2) / (2 * step)
-                ratio = (f1 - f2) / (2 * step * gradient)
+                ratio = (f1 - f2) / (2 * step * np.where(gradient==0, 1e-312, gradient))
                 difference = np.abs((f1 - f2) / 2 / step - gradient)
 
                 if (np.abs(1. - ratio) < tolerance) or np.abs(difference) < tolerance:

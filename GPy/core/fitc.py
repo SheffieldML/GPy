@@ -173,7 +173,7 @@ class FITC(SparseGP):
 
     def dL_dZ(self):
         dL_dZ = self.kern.dK_dX(self._dL_dpsi1.T,self.Z,self.X)
-        dL_dZ += 2. * self.kern.dK_dX(self._dL_dKmm,X=self.Z)
+        dL_dZ += self.kern.dK_dX(self._dL_dKmm,X=self.Z)
         dL_dZ += self._dpsi1_dX
         dL_dZ += self._dKmm_dX
         return dL_dZ

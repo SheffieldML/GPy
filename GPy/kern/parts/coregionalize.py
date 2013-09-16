@@ -9,17 +9,18 @@ from scipy import weave
 
 class Coregionalize(Kernpart):
     """
-    Kernel for intrinsic/linear coregionalization models
+    Covariance function for intrinsic/linear coregionalization models
 
-    This kernel has the form
+    This covariance has the form
     .. math::
        \mathbf{B} = \mathbf{W}\mathbf{W}^\top + kappa \mathbf{I}
 
-    An intrinsic/linear coregionalization kernel of the form
+    An intrinsic/linear coregionalization covariance function of the form
     .. math::
        k_2(x, y)=\mathbf{B} k(x, y)
 
-    it is obtainded as the tensor product between a kernel k(x,y) and B.
+    it is obtained as the tensor product between a covariance function
+    k(x,y) and B.
 
     :param num_outputs: number of outputs to coregionalize
     :type num_outputs: int

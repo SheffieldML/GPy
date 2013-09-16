@@ -18,9 +18,11 @@ class transformation(object):
     def gradfactor(self, f):
         """ df_dx evaluated at self.f(x)=f"""
         raise NotImplementedError
+
     def initialize(self, f):
         """ produce a sensible initial value for f(x)"""
         raise NotImplementedError
+
     def __str__(self):
         raise NotImplementedError
 
@@ -42,15 +44,13 @@ class logexp(transformation):
 class negative_logexp(transformation):
     domain = NEGATIVE
     def f(self, x):
-        return -logexp.f(x) #np.log(1. + np.exp(x))
+        return -logexp.f(x)
     def finv(self, f):
-        return logexp.finv(-f) #np.log(np.exp(-f) - 1.)
+        return logexp.finv(-f) 
     def gradfactor(self, f):
         return -logexp.gradfactor(-f)
-        #ef = np.exp(-f)
-        #return -(ef - 1.) / ef
     def initialize(self, f):
-        return -logexp.initialize(f) #np.abs(f)
+        return -logexp.initialize(f)
     def __str__(self):
         return '(-ve)'
 
@@ -82,7 +82,6 @@ class logexp_clipped(logexp):
         return '(+ve_c)'
 
 class exponent(transformation):
-    # TODO: can't allow this to go to zero, need to set a lower bound. Similar with negative exponent below. See old MATLAB code.
     domain = POSITIVE
     def f(self, x):
         return np.where(x<lim_val, np.where(x>-lim_val, np.exp(x), np.exp(-lim_val)), np.exp(lim_val))

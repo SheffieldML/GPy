@@ -51,7 +51,7 @@ def dpotri(A, lower=0):
 
     :param A: Matrix A
     :param lower: is matrix lower (true) or upper (false)
-    :returns:
+    :returns: A inverse
     """
     return lapack.dpotri(A, lower=lower)
 

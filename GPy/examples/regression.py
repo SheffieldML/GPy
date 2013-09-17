@@ -75,16 +75,12 @@ def coregionalization_sparse(max_iters=100):
     Y2 = -np.sin(X2) + np.random.randn(*X2.shape) * 0.05
     Y = np.vstack((Y1, Y2))
 
-    num_inducing = 40
-    #Z = np.hstack((np.random.rand(num_inducing, 1) * 8, np.random.randint(0, 2, num_inducing)[:, None]))
-
     k1 = GPy.kern.rbf(1)
 
     m = GPy.models.SparseGPMultioutputRegression(X_list=[X1,X2],Y_list=[Y1,Y2],kernel_list=[k1],num_inducing=20)
-    #m.constrain_fixed('iip')
-    m.constrain_bounded('noise_variance', 1e-3, 1e-1)
-#     m.optimize_restarts(5, robust=True, messages=1, max_iters=max_iters, optimizer='bfgs')
-    m.optimize(max_iters=max_iters)
+    m.constrain_fixed('.*rbf_var',1.)
+    m.optimize(messages=1)
+    #m.optimize_restarts(5, robust=True, messages=1, max_iters=max_iters, optimizer='bfgs')
 
     fig, axes = pb.subplots(2,1)
     m.plot(output=0,ax=axes[0])

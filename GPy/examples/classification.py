@@ -168,7 +168,7 @@ def FITC_crescent_data(num_inducing=10, seed=default_seed):
     return m
 
 
-def toy_heavyside(seed=default_seed):
+def toy_heaviside(seed=default_seed):
     """
     Simple 1D classification example using a heavy side gp transformation
     :param seed : seed value for data generation (default is 4).

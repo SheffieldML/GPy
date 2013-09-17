@@ -351,38 +351,45 @@ class SparseGP(GPBase):
             which_data = slice(None)
 
         GPBase.plot(self, samples=0, plot_limits=plot_limits, which_data='all', which_parts='all', resolution=None, levels=20, ax=ax, output=output)
-        if self.X.shape[1] == 1 and not hasattr(self,'multioutput'):
-            if self.has_uncertain_inputs:
-                Xu = self.X * self._Xscale + self._Xoffset # NOTE self.X are the normalized values now
-                ax.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
-                            xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
-                            ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
-            Zu = self.Z * self._Xscale + self._Xoffset
-            ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
 
-        elif self.X.shape[1] == 2 and not hasattr(self,'multioutput'):
-            Zu = self.Z * self._Xscale + self._Xoffset
-            ax.plot(Zu[:, 0], Zu[:, 1], 'wo')
+        if not hasattr(self,'multioutput'):
 
-        elif self.X.shape[1] == 2 and hasattr(self,'multioutput'):
-            Xu = self.X[self.X[:,-1]==output,:]
-            if self.has_uncertain_inputs:
-                Xu = self.X * self._Xscale + self._Xoffset  # NOTE self.X are the normalized values now
+            if self.X.shape[1] == 1:
+                if self.has_uncertain_inputs:
+                    Xu = self.X * self._Xscale + self._Xoffset # NOTE self.X are the normalized values now
+                    ax.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
+                                xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
+                                ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
+                Zu = self.Z * self._Xscale + self._Xoffset
+                ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
 
-                Xu = self.X[self.X[:,-1]==output ,0:1] #??
-
-                ax.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
-                            xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
-                            ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
-
-            Zu = self.Z[self.Z[:,-1]==output,:]
-            Zu = self.Z * self._Xscale + self._Xoffset
-            Zu = self.Z[self.Z[:,-1]==output ,0:1] #??
-            ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
-            #ax.set_ylim(ax.get_ylim()[0],)
+            elif self.X.shape[1] == 2:
+                Zu = self.Z * self._Xscale + self._Xoffset
+                ax.plot(Zu[:, 0], Zu[:, 1], 'wo')
 
         else:
-            raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
+            pass
+            """
+            if self.X.shape[1] == 2 and hasattr(self,'multioutput'):
+                Xu = self.X[self.X[:,-1]==output,:]
+                if self.has_uncertain_inputs:
+                    Xu = self.X * self._Xscale + self._Xoffset  # NOTE self.X are the normalized values now
+
+                    Xu = self.X[self.X[:,-1]==output ,0:1] #??
+
+                    ax.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
+                                xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
+                                ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
+
+                Zu = self.Z[self.Z[:,-1]==output,:]
+                Zu = self.Z * self._Xscale + self._Xoffset
+                Zu = self.Z[self.Z[:,-1]==output ,0:1] #??
+                ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
+                #ax.set_ylim(ax.get_ylim()[0],)
+
+            else:
+                raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
+            """
 
     def predict_single_output(self, Xnew, output=0, which_parts='all', full_cov=False):
         """

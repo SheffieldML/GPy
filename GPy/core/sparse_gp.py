@@ -165,13 +165,17 @@ class SparseGP(GPBase):
                 raise NotImplementedError, "heteroscedatic derivates with uncertain inputs not implemented"
 
             else:
+
+                LBi = chol_inv(self.LB)
                 Lmi_psi1, nil = dtrtrs(self._Lm, np.asfortranarray(self.psi1.T), lower=1, trans=0)
                 _LBi_Lmi_psi1, _ = dtrtrs(self.LB, np.asfortranarray(Lmi_psi1), lower=1, trans=0)
-                _Bi_Lmi_psi1, _ = dtrtrs(self.LB.T, np.asfortranarray(_LBi_Lmi_psi1), lower=1, trans=0)
+
 
                 self.partial_for_likelihood = -0.5 * self.likelihood.precision + 0.5 * self.likelihood.V**2
                 self.partial_for_likelihood += 0.5 * self.output_dim * (self.psi0 - np.sum(Lmi_psi1**2,0))[:,None] * self.likelihood.precision**2
-                self.partial_for_likelihood += 0.5*np.sum(_Bi_Lmi_psi1*Lmi_psi1,0)[:,None]*self.likelihood.precision**2 #NOTE this term has numerical issues
+
+                self.partial_for_likelihood += 0.5*np.sum(mdot(LBi.T,LBi,Lmi_psi1)*Lmi_psi1,0)[:,None]*self.likelihood.precision**2
+
                 self.partial_for_likelihood += -np.dot(self._LBi_Lmi_psi1Vf.T,_LBi_Lmi_psi1).T * self.likelihood.Y * self.likelihood.precision**2
                 self.partial_for_likelihood += 0.5*np.dot(self._LBi_Lmi_psi1Vf.T,_LBi_Lmi_psi1).T**2 * self.likelihood.precision**2
 
@@ -254,7 +258,10 @@ class SparseGP(GPBase):
         """
         The derivative of the bound wrt the inducing inputs Z
         """
-        dL_dZ = self.kern.dK_dX(self.dL_dKmm, self.Z) 
+        dL_dZ = self.kern.dK_dX(self.dL_dKmm, self.Z)
+        if hasattr(self,'multioutput'):
+            dL_dZ = dL_dZ*2 #NOTE Yes, this looks weird... but it works
+
         if self.has_uncertain_inputs:
             dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1, self.Z, self.X, self.X_variance)
             dL_dZ += self.kern.dpsi2_dZ(self.dL_dpsi2, self.Z, self.X, self.X_variance)

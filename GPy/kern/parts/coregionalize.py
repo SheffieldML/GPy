@@ -158,4 +158,5 @@ class Coregionalize(Kernpart):
         target += np.hstack([dW.flatten(),dkappa])
 
     def dK_dX(self,dL_dK,X,X2,target):
+        #NOTE In this case, pass is equivalent to returning zero.
         pass

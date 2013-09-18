@@ -259,9 +259,6 @@ class SparseGP(GPBase):
         The derivative of the bound wrt the inducing inputs Z
         """
         dL_dZ = self.kern.dK_dX(self.dL_dKmm, self.Z)
-        if hasattr(self,'multioutput'):
-            dL_dZ = dL_dZ*2 #NOTE Yes, this looks weird... but it works
-
         if self.has_uncertain_inputs:
             dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1, self.Z, self.X, self.X_variance)
             dL_dZ += self.kern.dpsi2_dZ(self.dL_dpsi2, self.Z, self.X, self.X_variance)

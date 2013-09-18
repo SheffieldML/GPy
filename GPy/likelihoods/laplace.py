@@ -291,7 +291,7 @@ class Laplace(likelihood):
         f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess, disp=False)
         return f_hat[:, None]
 
-    def rasm_mode(self, K, MAX_ITER=200, MAX_RESTART=10):
+    def rasm_mode(self, K, MAX_ITER=100, MAX_RESTART=10):
         """
         Rasmussen's numerically stable mode finding
         For nomenclature see Rasmussen & Williams 2006
@@ -320,7 +320,7 @@ class Laplace(likelihood):
             return -0.5*np.dot(a.T, f) + self.likelihood_function.link_function(self.data, f, extra_data=self.extra_data)
 
         difference = np.inf
-        epsilon = 1e-10
+        epsilon = 1e-6
         step_size = 1
         rs = 0
         i = 0
@@ -330,7 +330,7 @@ class Laplace(likelihood):
             #W = np.maximum(W, 0)
             if not self.likelihood_function.log_concave:
                 #print "Under 1e-10: {}".format(np.sum(W < 1e-10))
-                W[W < 1e-10] = 1e-10     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+                W[W < 1e-6] = 1e-6     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                     # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                     # To cause the posterior to become less certain than the prior and likelihood,
                                     # This is a property only held by non-log-concave likelihoods
@@ -355,7 +355,7 @@ class Laplace(likelihood):
 
             i_o = partial(inner_obj, old_a=old_a, da=da, K=K)
             #new_obj = sp.optimize.brent(i_o, tol=1e-4, maxiter=20)
-            new_obj = sp.optimize.minimize_scalar(i_o, method='brent', tol=1e-6, options={'maxiter':20, 'disp':True}).fun
+            new_obj = sp.optimize.minimize_scalar(i_o, method='brent', tol=1e-4, options={'maxiter':20}).fun
             f = self.f.copy()
             a = self.a.copy()
 

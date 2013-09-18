@@ -199,7 +199,7 @@ def student_t_fix_optimise_check():
 
     #GP
     kernelgp = GPy.kern.rbf(X.shape[1]) # + GPy.kern.white(X.shape[1])
-    mgp = GPy.models.GPRegression(X, Y, kernel=kernelgp)
+    mgp = GPy.models.GPRegression(X, Y.copy(), kernel=kernelgp)
     mgp.ensure_default_constraints()
     mgp.randomize()
     mgp.optimize()
@@ -212,7 +212,7 @@ def student_t_fix_optimise_check():
 
     plt.figure(1)
     plt.suptitle('Student likelihood')
-    m = GPy.models.GPRegression(X, Y, kernelst, likelihood=stu_t_likelihood)
+    m = GPy.models.GPRegression(X, Y.copy(), kernelst, likelihood=stu_t_likelihood)
     m.constrain_fixed('rbf_var', mgp._get_params()[0])
     m.constrain_fixed('rbf_len', mgp._get_params()[1])
     m.constrain_positive('t_noise')
@@ -406,27 +406,29 @@ def student_t_approx():
     """
     real_std = 0.1
     #Start a function, any function
-    X = np.linspace(0.0, 10.0, 100)[:, None]
+    X = np.linspace(0.0, np.pi*2, 100)[:, None]
     Y = np.sin(X) + np.random.randn(*X.shape)*real_std
     Yc = Y.copy()
 
-    X_full = np.linspace(0.0, 10.0, 500)[:, None]
+    X_full = np.linspace(0.0, np.pi*2, 500)[:, None]
     Y_full = np.sin(X_full)
 
     Y = Y/Y.max()
 
-    Yc[10] += 100
-    Yc[25] += 10
-    Yc[23] += 10
-    Yc[26] += 1000
-    Yc[24] += 10
+    Yc[75:80] += 1
+
+    #Yc[10] += 100
+    #Yc[25] += 10
+    #Yc[23] += 10
+    #Yc[26] += 1000
+    #Yc[24] += 10
     #Yc = Yc/Yc.max()
 
     #Add student t random noise to datapoints
     deg_free = 5
     print "Real noise: ", real_std
 
-    initial_var_guess = 0.1
+    initial_var_guess = 0.5
     #t_rv = t(deg_free, loc=0, scale=real_var)
     #noise = t_rvrvs(size=Y.shape)
     #Y += noise
@@ -650,16 +652,78 @@ def gaussian_f_check():
     import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
 
 def boston_example():
+    import sklearn
+    from sklearn.cross_validation import KFold
     data = datasets.boston_housing()
     X = data['X'].copy()
     Y = data['Y'].copy()
-    kernelgp = GPy.kern.rbf(X.shape[1]) # + GPy.kern.white(X.shape[1])
-    mgp = GPy.models.GPRegression(X, Y, kernel=kernelgp)
-    mgp.ensure_default_constraints()
-    mgp.randomize()
-    mgp.optimize()
-    mgp.plot()
-    import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+    Y = Y-Y.mean()
+    Y = Y/Y.std()
+    num_folds = 2
+    kf = KFold(len(Y), n_folds=num_folds, indices=True)
+    score_folds = np.zeros((3, num_folds))
+    def rmse(Y, Ystar):
+        return np.sqrt(np.mean((Y-Ystar)**2))
+    #for train, test in kf:
+    for n, (train, test) in enumerate(kf):
+        X_train, X_test, Y_train, Y_test = X[train], X[test], Y[train], Y[test]
+        print "Fold {}".format(n)
+
+        noise = np.exp(-2)
+
+        #Gaussian GP
+        print "Gauss GP"
+        kernelgp = GPy.kern.rbf(X.shape[1]) #+ GPy.kern.white(X.shape[1])
+        mgp = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelgp)
+        mgp.ensure_default_constraints()
+        mgp['noise'] = noise
+        mgp.optimize(messages=1)
+        Y_test_pred = mgp.predict(X_test)
+        score_folds[0, n] = rmse(Y_test, Y_test_pred[0])
+        plt.figure()
+        plt.scatter(X_test[:, 0], Y_test_pred[0])
+        plt.scatter(X_test[:, 0], Y_test, c='r', marker='x')
+        print score_folds
+        plt.title('GP gauss')
+
+        print "Gaussian Laplace GP"
+        sigma2_start = 1
+        kernelstu = GPy.kern.rbf(X.shape[1]) #+ GPy.kern.white(X.shape[1], variance=0.01)
+        N, D = Y_train.shape
+        g_distribution = GPy.likelihoods.functions.Gaussian(variance=noise, N=N, D=D)
+        g_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), g_distribution, opt='rasm')
+        mg = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=g_likelihood)
+        mg.ensure_default_constraints()
+        mg.constrain_positive('noise_variance')
+        mg.optimize(messages=1)
+        Y_test_pred = mg.predict(X_test)
+        score_folds[1, n] = rmse(Y_test, Y_test_pred[0])
+        print score_folds
+        plt.figure()
+        plt.scatter(X_test[:, 0], Y_test_pred[0])
+        plt.scatter(X_test[:, 0], Y_test, c='r', marker='x')
+        plt.title('Lap gauss')
+
+        #Student t likelihood
+        print "Student-T GP"
+        deg_free = 5
+        kernelstu = GPy.kern.rbf(X.shape[1]) #+ GPy.kern.white(X.shape[1], variance=0.01)
+        t_distribution = GPy.likelihoods.functions.StudentT(deg_free, sigma2=noise)
+        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution, opt='rasm')
+        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=stu_t_likelihood)
+        mstu_t.ensure_default_constraints()
+        #mstu_t.constrain_positive('t_noise')
+        mstu_t.constrain_bounded('t_noise', 0.01, 1000)
+        mstu_t.optimize(messages=1)
+        Y_test_pred = mstu_t.predict(X_test)
+        score_folds[2, n] = rmse(Y_test, Y_test_pred[0])
+        print score_folds
+        plt.figure()
+        plt.scatter(X_test[:, 0], Y_test_pred[0])
+        plt.scatter(X_test[:, 0], Y_test, c='r', marker='x')
+        plt.title('Stu t')
+        import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+
 
 def plot_f_approx(model):
     plt.figure()

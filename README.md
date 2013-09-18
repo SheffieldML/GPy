@@ -48,7 +48,10 @@ Running unit tests:
 ===================
 
 Ensure nose is installed via pip:
+
     pip install nose
 
 Run nosetests from the root directory of the repository:
+
     nosetests -v
+

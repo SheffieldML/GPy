@@ -4,7 +4,7 @@ import GPy
 from scipy.linalg import inv, cho_solve, det
 from numpy.linalg import cond
 from likelihood import likelihood
-from ..util.linalg import pdinv, mdot, jitchol, chol_inv, pddet
+from ..util.linalg import pdinv, mdot, jitchol, chol_inv, pddet, dtrtrs
 from scipy.linalg.lapack import dtrtrs
 import random
 from functools import partial
@@ -46,7 +46,6 @@ class Laplace(likelihood):
 
         self.restart()
 
-
     def restart(self):
         #Initial values for the GP variables
         self.Y = np.zeros((self.N, 1))
@@ -56,7 +55,6 @@ class Laplace(likelihood):
         self.YYT = None
 
         self.old_a = None
-
 
     def predictive_values(self, mu, var, full_cov):
         if full_cov:
@@ -73,10 +71,8 @@ class Laplace(likelihood):
         return self.likelihood_function._set_params(p)
 
     def _shared_gradients_components(self):
-        #FIXME: Careful of side effects! And make sure W and K are up to date!
-        d3lik_d3fhat = self.likelihood_function.d3lik_d3f(self.data, self.f_hat)
-        dL_dfhat = -0.5*(np.diag(self.Ki_W_i)[:, None]*d3lik_d3fhat).T
-        import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+        d3lik_d3fhat = self.likelihood_function.d3lik_d3f(self.data, self.f_hat, extra_data=self.extra_data)
+        dL_dfhat = 0.5*(np.diag(self.Ki_W_i)[:, None]*d3lik_d3fhat).T #why isn't this -0.5?
         I_KW_i = np.eye(self.N) - np.dot(self.K, self.Wi_K_i)
         return dL_dfhat, I_KW_i
 
@@ -87,19 +83,16 @@ class Laplace(likelihood):
         dL_dfhat, I_KW_i = self._shared_gradients_components()
         dlp = self.likelihood_function.dlik_df(self.data, self.f_hat)
 
-        #Implicit
-        impl = mdot(dlp, dL_dfhat, I_KW_i)
+        #Explicit
         expl_a = np.dot(self.Ki_f, self.Ki_f.T)
         expl_b = self.Wi_K_i
-        #print "expl_a: {}, expl_b: {}".format(expl_a, expl_b)
-        #expl = 0.5*expl_a - 0.5*expl_b # Might need to be -?
-        #dL_dthetaK_exp = dK_dthetaK(expl, X)
-        dL_dthetaK_exp_a = dK_dthetaK(expl_a, X)
-        dL_dthetaK_exp_b = dK_dthetaK(expl_b, X)
-        dL_dthetaK_exp = 0.5*dL_dthetaK_exp_a - 0.5*dL_dthetaK_exp_b
+        expl = 0.5*expl_a - 0.5*expl_b
+        dL_dthetaK_exp = dK_dthetaK(expl, X)
+
+        #Implicit
+        impl = mdot(dlp, dL_dfhat, I_KW_i)
         dL_dthetaK_imp = dK_dthetaK(impl, X)
-        #print "dL_dthetaK_exp: {}     dL_dthetaK_implicit: {}".format(dL_dthetaK_exp, dL_dthetaK_imp)
-        #print "expl_a: {}, {}     expl_b: {}, {}".format(np.mean(expl_a), np.std(expl_a), np.mean(expl_b), np.std(expl_b))
+        #print "K: dL_dthetaK_exp: {}     dL_dthetaK_implicit: {}".format(dL_dthetaK_exp, dL_dthetaK_imp)
         dL_dthetaK = dL_dthetaK_exp + dL_dthetaK_imp
         return dL_dthetaK
 
@@ -111,27 +104,19 @@ class Laplace(likelihood):
         dlik_dthetaL, dlik_grad_dthetaL, dlik_hess_dthetaL = self.likelihood_function._gradients(self.data, self.f_hat)
 
         num_params = len(dlik_dthetaL)
-        dL_dthetaL = np.zeros(num_params) # make space for one derivative for each likelihood parameter
+        # make space for one derivative for each likelihood parameter
+        dL_dthetaL = np.zeros(num_params)
         for thetaL_i in range(num_params):
             #Explicit
-            #dL_dthetaL_exp = np.sum(dlik_dthetaL[thetaL_i]) - 0.5*np.dot(np.diag(self.Ki_W_i), dlik_hess_dthetaL[thetaL_i])
-            #a = 0.5*np.dot(np.diag(self.Ki_W_i), dlik_hess_dthetaL[thetaL_i])
-            #d = dlik_hess_dthetaL[thetaL_i]
-            #e = pdinv(pdinv(self.K)[0] + np.diagflat(self.W))[0]
-            #b = 0.5*np.dot(np.diag(e).T, d)
-            #g = 0.5*(np.diag(self.K) - np.sum(cho_solve((self.B_chol, True), np.dot(np.diagflat(self.W_12),self.K))**2, 1))
-            #dL_dthetaL_exp = np.sum(dlik_dthetaL[thetaL_i]) - np.dot(g.T, dlik_hess_dthetaL[thetaL_i])
-
-            #dL_dthetaL_exp = np.sum(dlik_dthetaL[thetaL_i]) - 0.5*np.dot(np.diag(self.Ki_W_i), dlik_hess_dthetaL[thetaL_i])
             dL_dthetaL_exp = ( np.sum(dlik_dthetaL[thetaL_i])
                              #- 0.5*np.trace(mdot(self.Ki_W_i, (self.K, np.diagflat(dlik_hess_dthetaL[thetaL_i]))))
                              + np.dot(0.5*np.diag(self.Ki_W_i)[:,None].T, dlik_hess_dthetaL[thetaL_i])
                              )
 
             #Implicit
-            df_hat_dthetaL = mdot(I_KW_i, self.K, dlik_grad_dthetaL[thetaL_i])
-            dL_dthetaL_imp = np.dot(dL_dfhat, df_hat_dthetaL)
-            #print "dL_dthetaL_exp: {}     dL_dthetaL_implicit: {}".format(dL_dthetaL_exp, dL_dthetaL_imp)
+            dfhat_dthetaL = mdot(I_KW_i, self.K, dlik_grad_dthetaL[thetaL_i])
+            dL_dthetaL_imp = np.dot(dL_dfhat, dfhat_dthetaL)
+            #print "LIK: dL_dthetaL_exp: {}     dL_dthetaL_implicit: {}".format(dL_dthetaL_exp, dL_dthetaL_imp)
             dL_dthetaL[thetaL_i] = dL_dthetaL_exp + dL_dthetaL_imp
 
         return dL_dthetaL #should be array of length *params-being optimized*, for student t just optimising 1 parameter, this is (1,)
@@ -177,32 +162,21 @@ class Laplace(likelihood):
 
         Y_tilde = Wi*self.Ki_f + self.f_hat
 
-        self.Wi_K_i = self.W_12*self.Bi*self.W_12.T #same as rasms R
+        #self.Wi_K_i = self.W_12*self.Bi*self.W_12.T #same as rasms R
+        self.Wi_K_i = self.W_12*cho_solve((self.B_chol, True), np.diagflat(self.W_12))
         #self.Wi_K_i, _, _, self.ln_det_Wi_K = pdinv(self.Sigma_tilde + self.K) # TODO: Check if Wi_K_i == R above and same with det below
+
         self.ln_det_Wi_K = pddet(self.Sigma_tilde + self.K)
 
-        #self.Wi_K_i[self.Wi_K_i< 1e-6] = 1e-6
-
-        #self.ln_det_K_Wi__Bi = self.ln_I_KW_det + pddet(self.Sigma_tilde + self.K)
         self.lik = self.likelihood_function.link_function(self.data, self.f_hat, extra_data=self.extra_data)
 
         self.y_Wi_Ki_i_y = mdot(Y_tilde.T, self.Wi_K_i, Y_tilde)
-        #self.aA = 0.5*self.ln_det_K_Wi__Bi
-        #self.bB = - 0.5*self.f_Ki_f
-        #self.cC = 0.5*self.y_Wi_Ki_i_y
         Z_tilde = (+ self.lik
-                    #+ 0.5*self.ln_det_K_Wi__Bi
                    - 0.5*self.ln_B_det
                    + 0.5*self.ln_det_Wi_K
                    - 0.5*self.f_Ki_f
                    + 0.5*self.y_Wi_Ki_i_y
                   )
-        #self.aA = 0.5*self.ln_det_Wi_K
-        #self.bB = - 0.5*self.f_Ki_f
-        #self.cC = 0.5*self.y_Wi_Ki_i_y
-        #self.dD = -0.5*self.ln_B_det
-        #print "Ztilde: {} lik: {} a: {} b: {} c: {} d:".format(Z_tilde, self.lik, self.aA, self.bB, self.cC, self.dD)
-        #print "param value: {}".format(self.likelihood_function._get_params())
 
         #Convert to float as its (1, 1) and Z must be a scalar
         self.Z = np.float64(Z_tilde)
@@ -234,7 +208,8 @@ class Laplace(likelihood):
         self.W = -self.likelihood_function.d2lik_d2f(self.data, self.f_hat, extra_data=self.extra_data)
 
         if not self.likelihood_function.log_concave:
-            self.W[self.W < 0] = 1e-6  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+            #print "Under 1e-6: {}".format(np.sum(self.W < 1e-6))
+            self.W[self.W < 1e-6] = 1e-6  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                        #If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                        #To cause the posterior to become less certain than the prior and likelihood,
                                        #This is a property only held by non-log-concave likelihoods
@@ -250,7 +225,7 @@ class Laplace(likelihood):
         self.Ki_f = self.a
 
         self.f_Ki_f = np.dot(self.f_hat.T, self.Ki_f)
-        self.Ki_W_i = self.K - mdot(self.K, self.W_12*self.Bi*self.W_12.T, self.K)
+        self.Ki_W_i = self.K - mdot(self.K, self.W_12*cho_solve((self.B_chol, True), np.diagflat(self.W_12)), self.K)
 
         #For det, |I + KW| == |I + W_12*K*W_12|
         #self.ln_I_KW_det = pddet(np.eye(self.N) + self.W_12*self.K*self.W_12.T)
@@ -316,7 +291,7 @@ class Laplace(likelihood):
         f_hat = sp.optimize.fmin_ncg(obj, f, fprime=obj_grad, fhess=obj_hess, disp=False)
         return f_hat[:, None]
 
-    def rasm_mode(self, K, MAX_ITER=100, MAX_RESTART=10):
+    def rasm_mode(self, K, MAX_ITER=200, MAX_RESTART=10):
         """
         Rasmussen's numerically stable mode finding
         For nomenclature see Rasmussen & Williams 2006
@@ -326,7 +301,7 @@ class Laplace(likelihood):
         :MAX_RESTART: Maximum number of restarts (reducing step_size) before forcing finish of optimisation
         :returns: f_mode
         """
-        self.old_before_s = self.likelihood_function._get_params()
+        #self.old_before_s = self.likelihood_function._get_params()
         #print "before: ", self.old_before_s
         #if self.old_before_s < 1e-5:
 
@@ -345,7 +320,7 @@ class Laplace(likelihood):
             return -0.5*np.dot(a.T, f) + self.likelihood_function.link_function(self.data, f, extra_data=self.extra_data)
 
         difference = np.inf
-        epsilon = 1e-4
+        epsilon = 1e-10
         step_size = 1
         rs = 0
         i = 0
@@ -354,7 +329,8 @@ class Laplace(likelihood):
             W = -self.likelihood_function.d2lik_d2f(self.data, f, extra_data=self.extra_data)
             #W = np.maximum(W, 0)
             if not self.likelihood_function.log_concave:
-                W[W < 0] = 1e-6     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+                #print "Under 1e-10: {}".format(np.sum(W < 1e-10))
+                W[W < 1e-10] = 1e-10     # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                     # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                     # To cause the posterior to become less certain than the prior and likelihood,
                                     # This is a property only held by non-log-concave likelihoods
@@ -379,7 +355,7 @@ class Laplace(likelihood):
 
             i_o = partial(inner_obj, old_a=old_a, da=da, K=K)
             #new_obj = sp.optimize.brent(i_o, tol=1e-4, maxiter=20)
-            new_obj = sp.optimize.minimize_scalar(i_o, method='brent', tol=1e-4, options={'maxiter':20, 'disp':True}).fun
+            new_obj = sp.optimize.minimize_scalar(i_o, method='brent', tol=1e-6, options={'maxiter':20, 'disp':True}).fun
             f = self.f.copy()
             a = self.a.copy()
 
@@ -418,10 +394,9 @@ class Laplace(likelihood):
         #print "Positive difference obj: ", np.float(difference)
         #print "Iterations: {}, Step size reductions: {}, Final_difference: {}, step_size: {}".format(i, rs, difference, step_size)
         #print "Iterations: {}, Final_difference: {}".format(i, difference)
-        if difference > 1e-4:
-        #if True:
-            #print "Not perfect f_hat fit difference: {}".format(difference)
-            if True:
+        if difference > epsilon:
+            print "Not perfect f_hat fit difference: {}".format(difference)
+            if False:
                 import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
                 if hasattr(self, 'X'):
                     import pylab as pb

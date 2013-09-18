@@ -68,12 +68,13 @@ class LaplaceTests(unittest.TestCase):
         self.D = 1
         self.X = np.linspace(0, self.D, self.N)[:, None]
 
-        self.real_std = 0.2
+        self.real_std = 0.1
         noise = np.random.randn(*self.X.shape)*self.real_std
         self.Y = np.sin(self.X*2*np.pi) + noise
         #self.Y = np.array([[1.0]])#np.sin(self.X*2*np.pi) + noise
+        self.var = 0.3
 
-        self.f = np.random.rand(self.N, 1)
+        self.f = np.random.rand(self.N, self.D)
         #self.f = np.array([[3.0]])#np.sin(self.X*2*np.pi) + noise
 
         self.var = np.random.rand(1)
@@ -206,6 +207,57 @@ class LaplaceTests(unittest.TestCase):
                     [self.var], args=(self.Y.copy(), self.f.copy()),
                     constrain_positive=True, randomize=True, verbose=True)
                 )
+
+    def test_gauss_rbf(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        self.Y = self.Y/self.Y.max()
+        kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1])
+        gauss_laplace = GPy.likelihoods.Laplace(self.Y.copy(), self.gauss, opt='rasm')
+        m = GPy.models.GPRegression(self.X, self.Y.copy(), kernel, likelihood=gauss_laplace)
+        m.ensure_default_constraints()
+        m.randomize()
+        m.checkgrad(verbose=1)
+        self.assertTrue(m.checkgrad())
+
+    def test_studentt_approx_gauss_rbf(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        self.Y = self.Y/self.Y.max()
+        self.stu_t = GPy.likelihoods.functions.StudentT(deg_free=1000, sigma2=self.var)
+        kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1])
+        stu_t_laplace = GPy.likelihoods.Laplace(self.Y.copy(), self.stu_t, opt='rasm')
+        m = GPy.models.GPRegression(self.X, self.Y.copy(), kernel, likelihood=stu_t_laplace)
+        m.ensure_default_constraints()
+        m.constrain_positive('t_noise')
+        m.randomize()
+        m.checkgrad(verbose=1)
+        print m
+        self.assertTrue(m.checkgrad())
+
+    def test_studentt_rbf(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        self.Y = self.Y/self.Y.max()
+        kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1], variance=2.0)
+        stu_t_laplace = GPy.likelihoods.Laplace(self.Y.copy(), self.stu_t, opt='rasm')
+        m = GPy.models.GPRegression(self.X, self.Y.copy(), kernel, likelihood=stu_t_laplace)
+        m.ensure_default_constraints()
+        m.constrain_positive('t_noise')
+        m.randomize()
+        m.checkgrad(verbose=1)
+        print m
+        self.assertTrue(m.checkgrad())
+
+    def test_studentt_rbf_smallvar(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        self.Y = self.Y/self.Y.max()
+        kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1], variance=2.0)
+        stu_t_laplace = GPy.likelihoods.Laplace(self.Y.copy(), self.stu_t, opt='rasm')
+        m = GPy.models.GPRegression(self.X, self.Y.copy(), kernel, likelihood=stu_t_laplace)
+        m.ensure_default_constraints()
+        m.constrain_positive('t_noise')
+        m['t_noise'] = 0.01
+        m.checkgrad(verbose=1)
+        print m
+        self.assertTrue(m.checkgrad())
 
 if __name__ == "__main__":
     print "Running unit tests"

@@ -83,7 +83,7 @@ class SparseGP(GPBase):
 
     def _computations(self):
         if self._const_jitter is None or not(self._const_jitter.shape[0] == self.num_inducing):
-            self._const_jitter = np.eye(self.num_inducing) * 1e-7
+            self._const_jitter = np.eye(self.num_inducing) * 1e-8
 
         # factor Kmm
         self._Lm = jitchol(self.Kmm + self._const_jitter)

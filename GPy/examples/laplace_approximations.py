@@ -657,6 +657,190 @@ def boston_example():
     data = datasets.boston_housing()
     X = data['X'].copy()
     Y = data['Y'].copy()
+    X = X-X.mean(axis=0)
+    X = X/X.std(axis=0)
+    Y = Y-Y.mean()
+    Y = Y/Y.std()
+    num_folds = 10
+    kf = KFold(len(Y), n_folds=num_folds, indices=True)
+    score_folds = np.zeros((6, num_folds))
+    def rmse(Y, Ystar):
+        return np.sqrt(np.mean((Y-Ystar)**2))
+    for n, (train, test) in enumerate(kf):
+        X_train, X_test, Y_train, Y_test = X[train], X[test], Y[train], Y[test]
+        print "Fold {}".format(n)
+
+        noise = 1e-1 #np.exp(-2)
+        rbf_len = 0.5
+        data_axis_plot = 4
+        plot = True
+
+        #Gaussian GP
+        print "Gauss GP"
+        kernelgp = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
+        mgp = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelgp)
+        mgp.ensure_default_constraints()
+        mgp.constrain_fixed('white', 1e-5)
+        mgp['rbf_len'] = rbf_len
+        mgp['noise'] = noise
+        print mgp
+        mgp.optimize(messages=1)
+        Y_test_pred = mgp.predict(X_test)
+        score_folds[0, n] = rmse(Y_test, Y_test_pred[0])
+        print mgp
+        print score_folds
+        if plot:
+            plt.figure()
+            plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
+            plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
+            plt.title('GP gauss')
+
+        print "Gaussian Laplace GP"
+        kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
+        N, D = Y_train.shape
+        g_distribution = GPy.likelihoods.functions.Gaussian(variance=noise, N=N, D=D)
+        g_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), g_distribution, opt='rasm')
+        mg = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=g_likelihood)
+        mg.ensure_default_constraints()
+        mg.constrain_positive('noise_variance')
+        mg.constrain_fixed('white', 1e-5)
+        mg['rbf_len'] = rbf_len
+        mg['noise'] = noise
+        print mg
+        try:
+            mg.optimize(messages=1)
+        except Exception:
+            print "Blew up"
+        Y_test_pred = mg.predict(X_test)
+        score_folds[1, n] = rmse(Y_test, Y_test_pred[0])
+        print score_folds
+        print mg
+        if plot:
+            plt.figure()
+            plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
+            plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
+            plt.title('Lap gauss')
+
+        #Student T
+        deg_free = 1
+        print "Student-T GP {}df".format(deg_free)
+        kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
+        t_distribution = GPy.likelihoods.functions.StudentT(deg_free, sigma2=noise)
+        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution, opt='rasm')
+        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=stu_t_likelihood)
+        mstu_t.ensure_default_constraints()
+        mstu_t.constrain_fixed('white', 1e-5)
+        mstu_t.constrain_bounded('t_noise', 0.0001, 1000)
+        mstu_t['rbf_len'] = rbf_len
+        mstu_t['t_noise'] = noise
+        print mstu_t
+        try:
+            mstu_t.optimize(messages=1)
+        except Exception:
+            print "Blew up"
+        Y_test_pred = mstu_t.predict(X_test)
+        score_folds[2, n] = rmse(Y_test, Y_test_pred[0])
+        print score_folds
+        print mstu_t
+        if plot:
+            plt.figure()
+            plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
+            plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
+            plt.title('Stu t {}df'.format(deg_free))
+
+        deg_free = 2
+        print "Student-T GP {}df".format(deg_free)
+        kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
+        t_distribution = GPy.likelihoods.functions.StudentT(deg_free, sigma2=noise)
+        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution, opt='rasm')
+        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=stu_t_likelihood)
+        mstu_t.ensure_default_constraints()
+        mstu_t.constrain_fixed('white', 1e-5)
+        mstu_t.constrain_bounded('t_noise', 0.0001, 1000)
+        mstu_t['rbf_len'] = rbf_len
+        mstu_t['t_noise'] = noise
+        print mstu_t
+        try:
+            mstu_t.optimize(messages=1)
+        except Exception:
+            print "Blew up"
+        Y_test_pred = mstu_t.predict(X_test)
+        score_folds[3, n] = rmse(Y_test, Y_test_pred[0])
+        print score_folds
+        print mstu_t
+        if plot:
+            plt.figure()
+            plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
+            plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
+            plt.title('Stu t {}df'.format(deg_free))
+
+        #Student t likelihood
+        deg_free = 3
+        print "Student-T GP {}df".format(deg_free)
+        kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
+        t_distribution = GPy.likelihoods.functions.StudentT(deg_free, sigma2=noise)
+        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution, opt='rasm')
+        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=stu_t_likelihood)
+        mstu_t.ensure_default_constraints()
+        mstu_t.constrain_fixed('white', 1e-5)
+        mstu_t.constrain_bounded('t_noise', 0.0001, 1000)
+        mstu_t['rbf_len'] = rbf_len
+        mstu_t['t_noise'] = noise
+        print mstu_t
+        try:
+            mstu_t.optimize(messages=1)
+        except Exception:
+            print "Blew up"
+        Y_test_pred = mstu_t.predict(X_test)
+        score_folds[4, n] = rmse(Y_test, Y_test_pred[0])
+        print score_folds
+        print mstu_t
+        if plot:
+            plt.figure()
+            plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
+            plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
+            plt.title('Stu t {}df'.format(deg_free))
+
+        deg_free = 5
+        print "Student-T GP {}df".format(deg_free)
+        kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
+        t_distribution = GPy.likelihoods.functions.StudentT(deg_free, sigma2=noise)
+        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution, opt='rasm')
+        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=stu_t_likelihood)
+        mstu_t.ensure_default_constraints()
+        mstu_t.constrain_fixed('white', 1e-5)
+        mstu_t.constrain_bounded('t_noise', 0.0001, 1000)
+        mstu_t['rbf_len'] = rbf_len
+        mstu_t['t_noise'] = noise
+        print mstu_t
+        try:
+            mstu_t.optimize(messages=1)
+        except Exception:
+            print "Blew up"
+        Y_test_pred = mstu_t.predict(X_test)
+        score_folds[5, n] = rmse(Y_test, Y_test_pred[0])
+        print score_folds
+        print mstu_t
+        if plot:
+            plt.figure()
+            plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
+            plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
+            plt.title('Stu t {}df'.format(deg_free))
+
+
+
+
+    import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+    return score_folds
+
+def precipitation_example():
+    import sklearn
+    from sklearn.cross_validation import KFold
+    data = datasets.boston_housing()
+    X = data['X'].copy()
+    Y = data['Y'].copy()
+    X = X-X.mean(axis=0)
+    X = X/X.std(axis=0)
     Y = Y-Y.mean()
     Y = Y/Y.std()
     import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
@@ -669,103 +853,6 @@ def boston_example():
     for n, (train, test) in enumerate(kf):
         X_train, X_test, Y_train, Y_test = X[train], X[test], Y[train], Y[test]
         print "Fold {}".format(n)
-
-        noise = np.exp(-2)
-
-        #Gaussian GP
-        print "Gauss GP"
-        kernelgp = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1], variance=0.01)
-        mgp = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelgp)
-        mgp.ensure_default_constraints()
-        mgp['noise'] = noise
-        mgp.constrain_fixed('white', 0.01)
-        print mgp
-        mgp.optimize(messages=1)
-        Y_test_pred = mgp.predict(X_test)
-        score_folds[0, n] = rmse(Y_test, Y_test_pred[0])
-        print mgp
-        print score_folds
-        #plt.figure()
-        #plt.scatter(X_test[:, 0], Y_test_pred[0])
-        #plt.scatter(X_test[:, 0], Y_test, c='r', marker='x')
-        #plt.title('GP gauss')
-
-        print "Gaussian Laplace GP"
-        sigma2_start = 1
-        kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1], variance=0.1)
-        N, D = Y_train.shape
-        g_distribution = GPy.likelihoods.functions.Gaussian(variance=noise, N=N, D=D)
-        g_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), g_distribution, opt='rasm')
-        mg = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=g_likelihood)
-        mg.ensure_default_constraints()
-        mg.constrain_positive('noise_variance')
-        mg.constrain_fixed('white', 0.01)
-        mg['noise'] = noise
-        print mg
-        try:
-            mg.optimize(messages=1)
-        except Exception:
-            print "Blew up"
-        Y_test_pred = mg.predict(X_test)
-        score_folds[1, n] = rmse(Y_test, Y_test_pred[0])
-        print score_folds
-        print mg
-        #plt.figure()
-        #plt.scatter(X_test[:, 0], Y_test_pred[0])
-        #plt.scatter(X_test[:, 0], Y_test, c='r', marker='x')
-        #plt.title('Lap gauss')
-
-        #Student t likelihood
-        deg_free = 5
-        print "Student-T GP {}df".format(deg_free)
-        kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1], variance=0.1)
-        t_distribution = GPy.likelihoods.functions.StudentT(deg_free, sigma2=noise)
-        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution, opt='rasm')
-        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=stu_t_likelihood)
-        mstu_t.ensure_default_constraints()
-        mstu_t.constrain_fixed('white', 0.01)
-        #mstu_t.constrain_positive('t_noise')
-        mstu_t.constrain_bounded('t_noise', 0.001, 1000)
-        mstu_t['t_noise'] = noise
-        print mstu_t
-        try:
-            mstu_t.optimize(messages=1)
-        except Exception:
-            print "Blew up"
-        Y_test_pred = mstu_t.predict(X_test)
-        score_folds[2, n] = rmse(Y_test, Y_test_pred[0])
-        print score_folds
-        print mstu_t
-        #plt.figure()
-        #plt.scatter(X_test[:, 0], Y_test_pred[0])
-        #plt.scatter(X_test[:, 0], Y_test, c='r', marker='x')
-        #plt.title('Stu t {}df'.format(deg_free))
-
-        deg_free = 3
-        print "Student-T GP {}df".format(deg_free)
-        kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1], variance=0.1)
-        t_distribution = GPy.likelihoods.functions.StudentT(deg_free, sigma2=noise)
-        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution, opt='rasm')
-        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=stu_t_likelihood)
-        mstu_t.ensure_default_constraints()
-        mstu_t.constrain_fixed('white', 0.01)
-        #mstu_t.constrain_positive('t_noise')
-        mstu_t.constrain_bounded('t_noise', 0.001, 1000)
-        mstu_t['t_noise'] = noise
-        print mstu_t
-        try:
-            mstu_t.optimize(messages=1)
-        except Exception:
-            print "Blew up"
-        mstu_t.optimize(messages=1)
-        Y_test_pred = mstu_t.predict(X_test)
-        score_folds[3, n] = rmse(Y_test, Y_test_pred[0])
-        print score_folds
-        print mstu_t
-        #plt.figure()
-        #plt.scatter(X_test[:, 0], Y_test_pred[0])
-        #plt.scatter(X_test[:, 0], Y_test, c='r', marker='x')
-        #plt.title('Stu t {}df'.format(deg_free))
 
 
 def plot_f_approx(model):

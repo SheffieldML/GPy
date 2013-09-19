@@ -1,51 +1,62 @@
-inference Package
-=================
+GPy.inference package
+=====================
 
-:mod:`conjugate_gradient_descent` Module
-----------------------------------------
+Submodules
+----------
+
+GPy.inference.conjugate_gradient_descent module
+-----------------------------------------------
 
 .. automodule:: GPy.inference.conjugate_gradient_descent
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`gradient_descent_update_rules` Module
--------------------------------------------
+GPy.inference.gradient_descent_update_rules module
+--------------------------------------------------
 
 .. automodule:: GPy.inference.gradient_descent_update_rules
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`optimization` Module
---------------------------
+GPy.inference.optimization module
+---------------------------------
 
 .. automodule:: GPy.inference.optimization
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`samplers` Module
-----------------------
+GPy.inference.samplers module
+-----------------------------
 
 .. automodule:: GPy.inference.samplers
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`scg` Module
------------------
+GPy.inference.scg module
+------------------------
 
 .. automodule:: GPy.inference.scg
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`sgd` Module
------------------
+GPy.inference.sgd module
+------------------------
 
 .. automodule:: GPy.inference.sgd
     :members:
     :undoc-members:
     :show-inheritance:
 
+
+Module contents
+---------------
+
+.. automodule:: GPy.inference
+    :members:
+    :undoc-members:
+    :show-inheritance:

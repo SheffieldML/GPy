@@ -390,3 +390,77 @@ class Parameterized(object):
 
 
         return ('\n'.join([header_string[0], separator] + param_string)) + '\n'
+
+    def grep_model(self,regexp):
+        regexp_indices = self.grep_param_names(regexp)
+        all_names = self._get_param_names()
+
+        names = [all_names[pj] for pj in regexp_indices]
+        N = len(names)
+
+        if not N:
+            return "Match not found."
+
+        header = ['Name', 'Value', 'Constraints', 'Ties']
+        all_values = self._get_params()
+        values = np.array([all_values[pj] for pj in regexp_indices])
+        constraints = [''] * len(names)
+
+        _constrained_indices,aux = self._pick_elements(regexp_indices,self.constrained_indices)
+        _constraints = [self.constraints[pj] for pj in aux]
+
+        for i, t in zip(_constrained_indices, _constraints):
+            for ii in i:
+                iii = regexp_indices.tolist().index(ii)
+                constraints[iii] = t.__str__()
+
+        _fixed_indices,aux = self._pick_elements(regexp_indices,self.fixed_indices)
+        for i in _fixed_indices:
+            for ii in i:
+                iii = regexp_indices.tolist().index(ii)
+                constraints[ii] = 'Fixed'
+
+        _tied_indices,aux = self._pick_elements(regexp_indices,self.tied_indices)
+        ties = [''] * len(names)
+        for i,ti in zip(_tied_indices,aux):
+            for ii in i:
+                iii = regexp_indices.tolist().index(ii)
+                ties[iii] = '(' + str(ti) + ')'
+
+        if values.size == 1:
+            values = ['%.4f' %float(values)]
+        else:
+            values = ['%.4f' % float(v) for v in values]
+
+        max_names = max([len(names[i]) for i in range(len(names))] + [len(header[0])])
+        max_values = max([len(values[i]) for i in range(len(values))] + [len(header[1])])
+        max_constraint = max([len(constraints[i]) for i in range(len(constraints))] + [len(header[2])])
+        max_ties = max([len(ties[i]) for i in range(len(ties))] + [len(header[3])])
+        cols = np.array([max_names, max_values, max_constraint, max_ties]) + 4
+
+        header_string = ["{h:^{col}}".format(h=header[i], col=cols[i]) for i in range(len(cols))]
+        header_string = map(lambda x: '|'.join(x), [header_string])
+        separator = '-' * len(header_string[0])
+        param_string = ["{n:^{c0}}|{v:^{c1}}|{c:^{c2}}|{t:^{c3}}".format(n=names[i], v=values[i], c=constraints[i], t=ties[i], c0=cols[0], c1=cols[1], c2=cols[2], c3=cols[3]) for i in range(len(values))]
+
+        print header_string[0]
+        print separator
+        for string in param_string:
+            print string
+
+    def _pick_elements(self,regexp_ind,array_list):
+        """Removes from array_list the elements different from regexp_ind"""
+        new_array_list = [] #New list with elements matching regexp_ind
+        array_indices = [] #Indices that matches the arrays in new_array_list and array_list
+
+        array_index = 0
+        for array in array_list:
+            _new = []
+            for ai in array:
+                if ai in regexp_ind:
+                    _new.append(ai)
+            if len(_new):
+                new_array_list.append(np.array(_new))
+                array_indices.append(array_index)
+            array_index += 1
+        return new_array_list, array_indices

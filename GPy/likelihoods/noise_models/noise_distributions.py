@@ -20,7 +20,7 @@ class NoiseDistribution(object):
     .. note:: Y values allowed depend on the LikelihoodFunction used
     """
     def __init__(self,gp_link,analytical_mean=False,analytical_variance=False):
-        #assert isinstance(gp_link,gp_transformations.GPTransformation), "gp_link is not a valid GPTransformation."#FIXME
+        assert isinstance(gp_link,gp_transformations.GPTransformation), "gp_link is not a valid GPTransformation."
         self.gp_link = gp_link
         self.analytical_mean = analytical_mean
         self.analytical_variance = analytical_variance
@@ -51,7 +51,8 @@ class NoiseDistribution(object):
         """
         In case it is needed, this function assess the output values or makes any pertinent transformation on them.
 
-        :param Y: observed output (Nx1 numpy.darray)
+        :param Y: observed output
+        :type Y: Nx1 numpy.darray
 
         """
         return Y

@@ -10,7 +10,6 @@ from GPy.util.univariate_Gaussian import std_norm_pdf,std_norm_cdf,inv_std_norm_
 
 class GPTransformation(object):
     """
-
     Link function class for doing non-Gaussian likelihoods approximation
 
     :param Y: observed output (Nx1 numpy.darray)
@@ -21,6 +20,24 @@ class GPTransformation(object):
     def __init__(self):
         pass
 
+    def transf(self,f):
+        """
+        Gaussian process tranformation function, latent space -> output space
+        """
+        pass
+
+    def dtransf_df(self,f):
+        """
+        derivative of transf(f) w.r.t. f
+        """
+        pass
+
+    def d2transf_df2(self,f):
+        """
+        second derivative of transf(f) w.r.t. f
+        """
+        pass
+
 class Identity(GPTransformation):
     """
     .. math::
@@ -28,9 +45,6 @@ class Identity(GPTransformation):
         g(f) = f
 
     """
-    #def transf(self,mu):
-    #    return mu
-
     def transf(self,f):
         return f
 
@@ -48,9 +62,6 @@ class Probit(GPTransformation):
         g(f) = \\Phi^{-1} (mu)
 
     """
-    #def transf(self,mu):
-    #    return inv_std_norm_cdf(mu)
-
     def transf(self,f):
         return std_norm_cdf(f)
 
@@ -63,12 +74,10 @@ class Probit(GPTransformation):
 class Log(GPTransformation):
     """
     .. math::
+
         g(f) = \\log(\\mu)
 
     """
-    #def transf(self,mu):
-    #    return np.log(mu)
-
     def transf(self,f):
         return np.exp(f)
 
@@ -81,19 +90,11 @@ class Log(GPTransformation):
 class Log_ex_1(GPTransformation):
     """
     .. math::
+
         g(f) = \\log(\\exp(\\mu) - 1)
 
     """
-    #def transf(self,mu):
-    #    """
-    #    function: output space -> latent space
-    #    """
-    #    return np.log(np.exp(mu) - 1)
-
     def transf(self,f):
-        """
-        function: latent space -> output space
-        """
         return np.log(1.+np.exp(f))
 
     def dtransf_df(self,f):

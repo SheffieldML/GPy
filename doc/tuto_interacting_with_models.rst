@@ -20,7 +20,7 @@ All of the examples included in GPy return an instance
 of a model class, and therefore they can be called in 
 the following way: ::
 
-	import numpy as np
+    import numpy as np
     import pylab as pb
     pb.ion()
     import GPy

@@ -47,6 +47,7 @@ class Model(Parameterized):
 
         :param state: the state of the model.
         :type state: list as returned from getstate.
+
         """
         self.preferred_optimizer = state.pop()
         self.sampling_runs = state.pop()
@@ -543,10 +544,11 @@ class Model(Parameterized):
         """
         EM - like algorithm  for Expectation Propagation and Laplace approximation
 
-        :stop_crit: convergence criterion
+        :param stop_crit: convergence criterion
         :type stop_crit: float
 
-        ..Note: kwargs are passed to update_likelihood and optimize functions.        """
+        .. Note: kwargs are passed to update_likelihood and optimize functions. 
+        """
         assert isinstance(self.likelihood, likelihoods.EP) or isinstance(self.likelihood, likelihoods.EP_Mixed_Noise), "pseudo_EM is only available for EP likelihoods"
         ll_change = stop_crit + 1.
         iteration = 0

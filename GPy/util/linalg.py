@@ -123,7 +123,7 @@ def jitchol(A, maxtries=5):
 
 def jitchol_old(A, maxtries=5):
     """
-    :param A : An almost pd square matrix
+    :param A: An almost pd square matrix
 
     :rval L: the Cholesky decomposition of A
 

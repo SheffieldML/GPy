@@ -17,6 +17,7 @@ def rbf_inv(input_dim,variance=1., inv_lengthscale=None,ARD=False):
     :type lengthscale: float
     :param ARD: Auto Relevance Determination (one lengthscale per dimension)
     :type ARD: Boolean
+
     """
     part = parts.rbf_inv.RBFInv(input_dim,variance,inv_lengthscale,ARD)
     return kern(input_dim, [part])
@@ -33,6 +34,7 @@ def rbf(input_dim,variance=1., lengthscale=None,ARD=False):
     :type lengthscale: float
     :param ARD: Auto Relevance Determination (one lengthscale per dimension)
     :type ARD: Boolean
+
     """
     part = parts.rbf.RBF(input_dim,variance,lengthscale,ARD)
     return kern(input_dim, [part])
@@ -41,11 +43,13 @@ def linear(input_dim,variances=None,ARD=False):
     """
      Construct a linear kernel.
 
-     Arguments
-     ---------
-    input_dimD (int), obligatory
-     variances (np.ndarray)
-     ARD (boolean)
+    :param input_dim: dimensionality of the kernel, obligatory
+    :type input_dim: int
+    :param variances:
+    :type variances: np.ndarray
+    :param ARD: Auto Relevance Determination (one lengthscale per dimension)
+    :type ARD: Boolean
+
     """
     part = parts.linear.Linear(input_dim,variances,ARD)
     return kern(input_dim, [part])
@@ -64,12 +68,14 @@ def mlp(input_dim,variance=1., weight_variance=None,bias_variance=100.,ARD=False
     :type bias_variance: float
     :param ARD: Auto Relevance Determination (allows for ARD version of covariance)
     :type ARD: Boolean
+
     """
     part = parts.mlp.MLP(input_dim,variance,weight_variance,bias_variance,ARD)
     return kern(input_dim, [part])
 
 def gibbs(input_dim,variance=1., mapping=None):
     """
+
     Gibbs and MacKay non-stationary covariance function.
 
     .. math::
@@ -124,6 +130,7 @@ def poly(input_dim,variance=1., weight_variance=None,bias_variance=1.,degree=2, 
     :type degree: int
     :param ARD: Auto Relevance Determination (allows for ARD version of covariance)
     :type ARD: Boolean
+
     """
     part = parts.poly.POLY(input_dim,variance,weight_variance,bias_variance,degree,ARD)
     return kern(input_dim, [part])
@@ -132,10 +139,11 @@ def white(input_dim,variance=1.):
     """
      Construct a white kernel.
 
-     Arguments
-     ---------
-    input_dimD (int), obligatory
-     variance (float)
+    :param input_dim: dimensionality of the kernel, obligatory
+    :type input_dim: int
+    :param variance: the variance of the kernel
+    :type variance: float
+
     """
     part = parts.white.White(input_dim,variance)
     return kern(input_dim, [part])
@@ -153,6 +161,7 @@ def exponential(input_dim,variance=1., lengthscale=None, ARD=False):
     :type lengthscale: float
     :param ARD: Auto Relevance Determination (one lengthscale per dimension)
     :type ARD: Boolean
+
     """
     part = parts.exponential.Exponential(input_dim,variance, lengthscale, ARD)
     return kern(input_dim, [part])
@@ -169,6 +178,7 @@ def Matern32(input_dim,variance=1., lengthscale=None, ARD=False):
     :type lengthscale: float
     :param ARD: Auto Relevance Determination (one lengthscale per dimension)
     :type ARD: Boolean
+
     """
     part = parts.Matern32.Matern32(input_dim,variance, lengthscale, ARD)
     return kern(input_dim, [part])
@@ -185,6 +195,7 @@ def Matern52(input_dim, variance=1., lengthscale=None, ARD=False):
     :type lengthscale: float
     :param ARD: Auto Relevance Determination (one lengthscale per dimension)
     :type ARD: Boolean
+
     """
     part = parts.Matern52.Matern52(input_dim, variance, lengthscale, ARD)
     return kern(input_dim, [part])
@@ -193,10 +204,11 @@ def bias(input_dim, variance=1.):
     """
      Construct a bias kernel.
 
-     Arguments
-     ---------
-     input_dim (int), obligatory
-     variance (float)
+    :param input_dim: dimensionality of the kernel, obligatory
+    :type input_dim: int
+    :param variance: the variance of the kernel
+    :type variance: float
+
     """
     part = parts.bias.Bias(input_dim, variance)
     return kern(input_dim, [part])
@@ -204,10 +216,15 @@ def bias(input_dim, variance=1.):
 def finite_dimensional(input_dim, F, G, variances=1., weights=None):
     """
     Construct a finite dimensional kernel.
-    input_dim: int - the number of input dimensions
-    F: np.array of functions with shape (n,) - the n basis functions
-    G: np.array with shape (n,n) - the Gram matrix associated to F
-    variances : np.ndarray with shape (n,)
+
+    :param input_dim: the number of input dimensions
+    :type input_dim: int
+    :param F: np.array of functions with shape (n,) - the n basis functions
+    :type F: np.array
+    :param G: np.array with shape (n,n) - the Gram matrix associated to F
+    :type G: np.array
+    :param variances: np.ndarray with shape (n,)
+    :type: np.ndarray
     """
     part = parts.finite_dimensional.FiniteDimensional(input_dim, F, G, variances, weights)
     return kern(input_dim, [part])
@@ -220,6 +237,7 @@ def spline(input_dim, variance=1.):
     :type input_dim: int
     :param variance: the variance of the kernel
     :type variance: float
+
     """
     part = parts.spline.Spline(input_dim, variance)
     return kern(input_dim, [part])
@@ -232,6 +250,7 @@ def Brownian(input_dim, variance=1.):
     :type input_dim: int
     :param variance: the variance of the kernel
     :type variance: float
+
     """
     part = parts.Brownian.Brownian(input_dim, variance)
     return kern(input_dim, [part])
@@ -285,6 +304,7 @@ def periodic_exponential(input_dim=1, variance=1., lengthscale=None, period=2 * 
     :type period: float
     :param n_freq: the number of frequencies considered for the periodic subspace
     :type n_freq: int
+
     """
     part = parts.periodic_exponential.PeriodicExponential(input_dim, variance, lengthscale, period, n_freq, lower, upper)
     return kern(input_dim, [part])
@@ -303,6 +323,7 @@ def periodic_Matern32(input_dim, variance=1., lengthscale=None, period=2 * np.pi
      :type period: float
      :param n_freq: the number of frequencies considered for the periodic subspace
      :type n_freq: int
+
     """
     part = parts.periodic_Matern32.PeriodicMatern32(input_dim, variance, lengthscale, period, n_freq, lower, upper)
     return kern(input_dim, [part])
@@ -321,6 +342,7 @@ def periodic_Matern52(input_dim, variance=1., lengthscale=None, period=2 * np.pi
      :type period: float
      :param n_freq: the number of frequencies considered for the periodic subspace
      :type n_freq: int
+
     """
     part = parts.periodic_Matern52.PeriodicMatern52(input_dim, variance, lengthscale, period, n_freq, lower, upper)
     return kern(input_dim, [part])
@@ -334,6 +356,7 @@ def prod(k1,k2,tensor=False):
     :param tensor: The kernels are either multiply as functions defined on the same input space (default) or on the product of the input spaces
     :type tensor: Boolean
     :rtype: kernel object
+
     """
     part = parts.prod.Prod(k1, k2, tensor)
     return kern(part.input_dim, [part])
@@ -349,10 +372,12 @@ def symmetric(k):
 def coregionalize(num_outputs,W_columns=1, W=None, kappa=None):
     """
     Coregionlization matrix B, of the form:
+
     .. math::
        \mathbf{B} = \mathbf{W}\mathbf{W}^\top + kappa \mathbf{I}
 
-    An intrinsic/linear coregionalization kernel of the form
+    An intrinsic/linear coregionalization kernel of the form:
+
     .. math::
        k_2(x, y)=\mathbf{B} k(x, y)
 
@@ -422,7 +447,7 @@ def independent_outputs(k):
 
 def hierarchical(k):
     """
-    TODO THis can't be right! Construct a kernel with independent outputs from an existing kernel
+    TODO This can't be right! Construct a kernel with independent outputs from an existing kernel
     """
     # for sl in k.input_slices:
     #     assert (sl.start is None) and (sl.stop is None), "cannot adjust input slices! (TODO)"
@@ -440,7 +465,8 @@ def build_lcm(input_dim, num_outputs, kernel_list = [], W_columns=1,W=None,kappa
     :param W_columns: number tuples of the corregionalization parameters 'coregion_W'
     :type W_columns: integer
 
-    ..Note the kernels dimensionality is overwritten to fit input_dim
+    ..note the kernels dimensionality is overwritten to fit input_dim
+
     """
 
     for k in kernel_list:

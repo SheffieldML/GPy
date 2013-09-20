@@ -78,13 +78,15 @@ class kern(Parameterized):
 
 
     def plot_ARD(self, fignum=None, ax=None, title='', legend=False):
-        """If an ARD kernel is present, it bar-plots the ARD parameters,
+        """If an ARD kernel is present, it bar-plots the ARD parameters.
+
         :param fignum: figure number of the plot
         :param ax: matplotlib axis to plot on
         :param title: 
             title of the plot, 
             pass '' to not print a title
             pass None for a generic title
+
         """
         if ax is None:
             fig = pb.figure(fignum)
@@ -175,8 +177,10 @@ class kern(Parameterized):
     def add(self, other, tensor=False):
         """
         Add another kernel to this one. Both kernels are defined on the same _space_
+
         :param other: the other kernel to be added
         :type other: GPy.kern
+
         """
         if tensor:
             D = self.input_dim + other.input_dim
@@ -223,6 +227,7 @@ class kern(Parameterized):
         :type other: GPy.kern
         :param tensor: whether or not to use the tensor space (default is false).
         :type tensor: bool 
+
         """
         K1 = self.copy()
         K2 = other.copy()
@@ -321,6 +326,7 @@ class kern(Parameterized):
         :type X: np.ndarray (num_samples x input_dim)
         :param X2: Observed data inputs (optional, defaults to X)
         :type X2: np.ndarray (num_inducing x input_dim)
+
         """
         assert X.shape[1] == self.input_dim
         target = np.zeros(self.num_params)
@@ -340,6 +346,7 @@ class kern(Parameterized):
         :type X: np.ndarray (num_samples x input_dim)
         :param X2: Observed data inputs (optional, defaults to X)
         :type X2: np.ndarray (num_inducing x input_dim)"""
+
         target = np.zeros_like(X)
         if X2 is None: 
             [p.dK_dX(dL_dK, X[:, i_s], None, target[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
@@ -413,6 +420,7 @@ class kern(Parameterized):
         :param Z: np.ndarray of inducing inputs (num_inducing x input_dim)
         :param mu, S: np.ndarrays of means and variances (each num_samples x input_dim)
         :returns psi2: np.ndarray (num_samples,num_inducing,num_inducing)
+
         """
         target = np.zeros((mu.shape[0], Z.shape[0], Z.shape[0]))
         [p.psi2(Z[:, i_s], mu[:, i_s], S[:, i_s], target) for p, i_s in zip(self.parts, self.input_slices)]
@@ -657,6 +665,7 @@ def kern_test(kern, X=None, X2=None, verbose=False):
     :type X: ndarray
     :param X2: X2 input values to test the covariance function.
     :type X2: ndarray
+
     """
     pass_checks = True
     if X==None:

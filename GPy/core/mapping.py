@@ -49,6 +49,7 @@ class Mapping(Parameterized):
 
     def plot(self, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, samples=0, fignum=None, ax=None, fixed_inputs=[], linecol=Tango.colorsHex['darkBlue']):
         """
+
         Plot the mapping.
         
         Plots the mapping associated with the model.
@@ -79,8 +80,7 @@ class Mapping(Parameterized):
         :type fixed_inputs: a list of tuples
         :param linecol: color of line to plot.
         :type linecol:
-        :param levels: for 2D plotting, the number of contour levels to use
-        is ax is None, create a new figure
+        :param levels: for 2D plotting, the number of contour levels to use is ax is None, create a new figure
 
         """
         # TODO include samples

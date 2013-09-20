@@ -107,7 +107,7 @@ inputs: ::
 	m['iip'] = np.arange(-5,0)
 
 Getting the model's likelihood and gradients
-===========================================
+=============================================
 Appart form the printing the model,  the marginal 
 log-likelihood can be obtained by using the function
 ``log_likelihood()``. Also, the log-likelihood gradients

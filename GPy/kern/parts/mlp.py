@@ -7,11 +7,13 @@ four_over_tau = 2./np.pi
 
 class MLP(Kernpart):
     """
-    multi layer perceptron kernel (also known as arc sine kernel or neural network kernel)
+
+    Multi layer perceptron kernel (also known as arc sine kernel or neural network kernel)
 
     .. math::
 
-       k(x,y) = \sigma^2 \frac{2}{\pi}  \text{asin} \left(\frac{\sigma_w^2 x^\top y+\sigma_b^2}{\sqrt{\sigma_w^2x^\top x + \sigma_b^2 + 1}\sqrt{\sigma_w^2 y^\top y \sigma_b^2 +1}} \right)
+          k(x,y) = \\sigma^{2}\\frac{2}{\\pi }  \\text{asin} \\left ( \\frac{ \\sigma_w^2 x^\\top y+\\sigma_b^2}{\\sqrt{\\sigma_w^2x^\\top x + \\sigma_b^2 + 1}\\sqrt{\\sigma_w^2 y^\\top y \\sigma_b^2 +1}} \\right )
+          
 
     :param input_dim: the number of input dimensions
     :type input_dim: int 
@@ -23,6 +25,7 @@ class MLP(Kernpart):
     :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one weight variance parameter \sigma^2_w), otherwise there is one weight variance parameter per dimension.
     :type ARD: Boolean
     :rtype: Kernpart object
+
 
     """
 

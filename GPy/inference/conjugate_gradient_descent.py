@@ -233,7 +233,7 @@ class CGD(Async_Optimize):
         """
         opt_async(self, f, df, x0, callback, update_rule=FletcherReeves,
                messages=0, maxiter=5e3, max_f_eval=15e3, gtol=1e-6,
-               report_every=10, *args, **kwargs)
+               report_every=10, \*args, \*\*kwargs)
         
         callback gets called every `report_every` iterations
 
@@ -244,16 +244,14 @@ class CGD(Async_Optimize):
     
         f, and df will be called with
             
-            f(xi, *args, **kwargs)
-            df(xi, *args, **kwargs)
+            f(xi, \*args, \*\*kwargs)
+            df(xi, \*args, \*\*kwargs)
         
-        **returns**
-        -----------
+        **Returns:**
         
             Started `Process` object, optimizing asynchronously 
         
-        **calls** 
-        ---------
+        **Calls:** 
         
             callback(x_opt, f_opt, g_opt, iteration, function_calls, gradient_calls, status_message)
         
@@ -265,7 +263,7 @@ class CGD(Async_Optimize):
         """
         opt(self, f, df, x0, callback=None, update_rule=FletcherReeves,
                messages=0, maxiter=5e3, max_f_eval=15e3, gtol=1e-6,
-               report_every=10, *args, **kwargs)
+               report_every=10, \*args, \*\*kwargs)
         
         Minimize f, calling callback every `report_every` iterations with following syntax:
         
@@ -276,11 +274,10 @@ class CGD(Async_Optimize):
     
         f, and df will be called with
             
-            f(xi, *args, **kwargs)
-            df(xi, *args, **kwargs)
+            f(xi, \*args, \*\*kwargs)
+            df(xi, \*args, \*\*kwargs)
                 
         **returns** 
-        ---------
         
             x_opt, f_opt, g_opt, iteration, function_calls, gradient_calls, status_message
         

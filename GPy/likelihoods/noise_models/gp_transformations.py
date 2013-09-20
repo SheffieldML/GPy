@@ -10,19 +10,23 @@ from GPy.util.univariate_Gaussian import std_norm_pdf,std_norm_cdf,inv_std_norm_
 
 class GPTransformation(object):
     """
+
     Link function class for doing non-Gaussian likelihoods approximation
 
     :param Y: observed output (Nx1 numpy.darray)
-    ..Note:: Y values allowed depend on the likelihood_function used
+
+    .. note:: Y values allowed depend on the likelihood_function used
+
     """
     def __init__(self):
         pass
 
 class Identity(GPTransformation):
     """
-    $$
-    g(f) = f
-    $$
+    .. math::
+
+        g(f) = f
+
     """
     #def transf(self,mu):
     #    return mu
@@ -39,9 +43,10 @@ class Identity(GPTransformation):
 
 class Probit(GPTransformation):
     """
-    $$
-    g(f) = \\Phi^{-1} (mu)
-    $$
+    .. math::
+
+        g(f) = \\Phi^{-1} (mu)
+
     """
     #def transf(self,mu):
     #    return inv_std_norm_cdf(mu)
@@ -57,9 +62,9 @@ class Probit(GPTransformation):
 
 class Log(GPTransformation):
     """
-    $$
-    g(f) = \log(\mu)
-    $$
+    .. math::
+        g(f) = \\log(\\mu)
+
     """
     #def transf(self,mu):
     #    return np.log(mu)
@@ -75,9 +80,9 @@ class Log(GPTransformation):
 
 class Log_ex_1(GPTransformation):
     """
-    $$
-    g(f) = \log(\exp(\mu) - 1)
-    $$
+    .. math::
+        g(f) = \\log(\\exp(\\mu) - 1)
+
     """
     #def transf(self,mu):
     #    """
@@ -110,9 +115,11 @@ class Reciprocal(GPTransformation):
 
 class Heaviside(GPTransformation):
     """
-    $$
-    g(f) = I_{x \in A}
-    $$
+
+    .. math::
+
+        g(f) = I_{x \\in A}
+
     """
     def transf(self,f):
         #transformation goes here

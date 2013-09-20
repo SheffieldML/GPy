@@ -11,13 +11,15 @@ import GPy
 
 default_seed = 10000
 def crescent_data(seed=default_seed, kernel=None): # FIXME
-    """Run a Gaussian process classification on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
+    """
+    Run a Gaussian process classification on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
 
     :param model_type: type of model to fit ['Full', 'FITC', 'DTC'].
-    :param seed : seed value for data generation.
+    :param seed: seed value for data generation.
     :type seed: int
-    :param inducing : number of inducing variables (only used for 'FITC' or 'DTC').
+    :param inducing: number of inducing variables (only used for 'FITC' or 'DTC').
     :type inducing: int
+
     """
 
     data = GPy.util.datasets.crescent_data(seed=seed)
@@ -35,6 +37,7 @@ def crescent_data(seed=default_seed, kernel=None): # FIXME
 def oil(num_inducing=50, max_iters=100, kernel=None):
     """
     Run a Gaussian process classification on the three phase oil data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
+
     """
     data = GPy.util.datasets.oil()
     X = data['X']
@@ -64,8 +67,10 @@ def oil(num_inducing=50, max_iters=100, kernel=None):
 def toy_linear_1d_classification(seed=default_seed):
     """
     Simple 1D classification example
-    :param seed : seed value for data generation (default is 4).
+
+    :param seed: seed value for data generation (default is 4).
     :type seed: int
+
     """
 
     data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
@@ -92,8 +97,10 @@ def toy_linear_1d_classification(seed=default_seed):
 def sparse_toy_linear_1d_classification(num_inducing=10,seed=default_seed):
     """
     Sparse 1D classification example
-    :param seed : seed value for data generation (default is 4).
+
+    :param seed: seed value for data generation (default is 4).
     :type seed: int
+
     """
 
     data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
@@ -123,10 +130,11 @@ def sparse_crescent_data(num_inducing=10, seed=default_seed, kernel=None):
     Run a Gaussian process classification with DTC approxiamtion on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
 
     :param model_type: type of model to fit ['Full', 'FITC', 'DTC'].
-    :param seed : seed value for data generation.
+    :param seed: seed value for data generation.
     :type seed: int
-    :param inducing : number of inducing variables (only used for 'FITC' or 'DTC').
+    :param inducing: number of inducing variables (only used for 'FITC' or 'DTC').
     :type inducing: int
+
     """
 
     data = GPy.util.datasets.crescent_data(seed=seed)
@@ -147,10 +155,11 @@ def FITC_crescent_data(num_inducing=10, seed=default_seed):
     Run a Gaussian process classification with FITC approximation on the crescent data. The demonstration uses EP to approximate the likelihood.
 
     :param model_type: type of model to fit ['Full', 'FITC', 'DTC'].
-    :param seed : seed value for data generation.
+    :param seed: seed value for data generation.
     :type seed: int
-    :param inducing : number of inducing variables (only used for 'FITC' or 'DTC').
+    :param inducing: number of inducing variables (only used for 'FITC' or 'DTC').
     :type num_inducing: int
+
     """
 
     data = GPy.util.datasets.crescent_data(seed=seed)
@@ -171,8 +180,10 @@ def FITC_crescent_data(num_inducing=10, seed=default_seed):
 def toy_heaviside(seed=default_seed):
     """
     Simple 1D classification example using a heavy side gp transformation
-    :param seed : seed value for data generation (default is 4).
+
+    :param seed: seed value for data generation (default is 4).
     :type seed: int
+
     """
 
     data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)

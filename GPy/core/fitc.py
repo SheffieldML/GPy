@@ -11,18 +11,20 @@ from sparse_gp import SparseGP
 
 class FITC(SparseGP):
     """
-    sparse FITC approximation
+
+    Sparse FITC approximation
 
     :param X: inputs
     :type X: np.ndarray (num_data x Q)
     :param likelihood: a likelihood instance, containing the observed data
     :type likelihood: GPy.likelihood.(Gaussian | EP)
-    :param kernel : the kernel (covariance function). See link kernels
+    :param kernel: the kernel (covariance function). See link kernels
     :type kernel: a GPy.kern.kern instance
     :param Z: inducing inputs (optional, see note)
     :type Z: np.ndarray (M x Q) | None
-    :param normalize_(X|Y) : whether to normalize the data before computing (predictions will be in original scales)
+    :param normalize_(X|Y): whether to normalize the data before computing (predictions will be in original scales)
     :type normalize_(X|Y): bool
+
     """
 
     def __init__(self, X, likelihood, kernel, Z, normalize_X=False):

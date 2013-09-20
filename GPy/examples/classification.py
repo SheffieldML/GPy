@@ -152,7 +152,6 @@ def crescent_data(model_type='Full', num_inducing=10, seed=default_seed, kernel=
 
     elif model_type == 'FITC':
         m = GPy.models.FITCClassification(data['X'], Y, kernel=kernel, num_inducing=num_inducing)
-        m.constrain_bounded('.*len',1.,1e3)
         m['.*len'] = 3.
 
     m.pseudo_EM()

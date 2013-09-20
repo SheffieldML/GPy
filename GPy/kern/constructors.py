@@ -5,7 +5,6 @@ import numpy as np
 from kern import kern
 import parts
 
-
 def rbf_inv(input_dim,variance=1., inv_lengthscale=None,ARD=False):
     """
     Construct an RBF kernel
@@ -74,9 +73,9 @@ def gibbs(input_dim,variance=1., mapping=None):
     Gibbs and MacKay non-stationary covariance function.
 
     .. math::
-       
+
        r = sqrt((x_i - x_j)'*(x_i - x_j))
-       
+
        k(x_i, x_j) = \sigma^2*Z*exp(-r^2/(l(x)*l(x) + l(x')*l(x')))
 
        Z = \sqrt{2*l(x)*l(x')/(l(x)*l(x) + l(x')*l(x')}
@@ -90,7 +89,7 @@ def gibbs(input_dim,variance=1., mapping=None):
         The parameters are :math:`\sigma^2`, the process variance, and the parameters of l(x) which is a function that can be specified by the user, by default an multi-layer peceptron is used is used.
 
         :param input_dim: the number of input dimensions
-        :type input_dim: int 
+        :type input_dim: int
         :param variance: the variance :math:`\sigma^2`
         :type variance: float
         :param mapping: the mapping that gives the lengthscale across the input space.
@@ -101,6 +100,12 @@ def gibbs(input_dim,variance=1., mapping=None):
 
     """
     part = parts.gibbs.Gibbs(input_dim,variance,mapping)
+    return kern(input_dim, [part])
+
+def hetero(input_dim, mapping=None, transform=None):
+    """
+    """
+    part = parts.hetero.Hetero(input_dim,mapping,transform)
     return kern(input_dim, [part])
 
 def poly(input_dim,variance=1., weight_variance=None,bias_variance=1.,degree=2, ARD=False):
@@ -134,6 +139,7 @@ def white(input_dim,variance=1.):
     """
     part = parts.white.White(input_dim,variance)
     return kern(input_dim, [part])
+
 
 def exponential(input_dim,variance=1., lengthscale=None, ARD=False):
     """
@@ -340,29 +346,30 @@ def symmetric(k):
     k_.parts = [symmetric.Symmetric(p) for p in k.parts]
     return k_
 
-def coregionalise(output_dim, rank=1, W=None, kappa=None):
+def coregionalize(num_outputs,W_columns=1, W=None, kappa=None):
     """
-        Coregionalisation kernel. 
-
-    Used for computing covariance functions of the form
-    .. math::
-       k_2(x, y)=\mathbf{B} k(x, y)
-    where
+    Coregionlization matrix B, of the form:
     .. math::
        \mathbf{B} = \mathbf{W}\mathbf{W}^\top + kappa \mathbf{I}
 
-    :param output_dim: the number of output dimensions
-    :type output_dim: int
-    :param rank: the rank of the coregionalisation matrix.
-    :type rank: int
-    :param W: a low rank matrix that determines the correlations between the different outputs, together with kappa it forms the coregionalisation matrix B.
-    :type W: ndarray
-    :param kappa: a diagonal term which allows the outputs to behave independently.
+    An intrinsic/linear coregionalization kernel of the form
+    .. math::
+       k_2(x, y)=\mathbf{B} k(x, y)
+
+    it is obtainded as the tensor product between a kernel k(x,y) and B.
+
+    :param num_outputs: the number of outputs to coregionalize
+    :type num_outputs: int
+    :param W_columns: number of columns of the W matrix (this parameter is ignored if parameter W is not None)
+    :type W_colunns: int
+    :param W: a low rank matrix that determines the correlations between the different outputs, together with kappa it forms the coregionalization matrix B
+    :type W: numpy array of dimensionality (num_outpus, W_columns)
+    :param kappa: a vector which allows the outputs to behave independently
+    :type kappa: numpy array of dimensionality  (num_outputs,)
     :rtype: kernel object
 
-    .. Note: see coregionalisation examples in GPy.examples.regression for some usage.
     """
-    p = parts.coregionalise.Coregionalise(output_dim,rank,W,kappa)
+    p = parts.coregionalize.Coregionalize(num_outputs,W_columns,W,kappa)
     return kern(1,[p])
 
 
@@ -421,3 +428,31 @@ def hierarchical(k):
     #     assert (sl.start is None) and (sl.stop is None), "cannot adjust input slices! (TODO)"
     _parts = [parts.hierarchical.Hierarchical(k.parts)]
     return kern(k.input_dim+len(k.parts),_parts)
+
+def build_lcm(input_dim, num_outputs, kernel_list = [], W_columns=1,W=None,kappa=None):
+    """
+    Builds a kernel of a linear coregionalization model
+
+    :input_dim: Input dimensionality
+    :num_outputs: Number of outputs
+    :kernel_list: List of coregionalized kernels, each element in the list will be multiplied by a different corregionalization matrix
+    :type kernel_list: list of GPy kernels
+    :param W_columns: number tuples of the corregionalization parameters 'coregion_W'
+    :type W_columns: integer
+
+    ..Note the kernels dimensionality is overwritten to fit input_dim
+    """
+
+    for k in kernel_list:
+        if k.input_dim <> input_dim:
+            k.input_dim = input_dim
+            warnings.warn("kernel's input dimension overwritten to fit input_dim parameter.")
+
+    k_coreg = coregionalize(num_outputs,W_columns,W,kappa)
+    kernel = kernel_list[0]**k_coreg.copy()
+
+    for k in kernel_list[1:]:
+        k_coreg = coregionalize(num_outputs,W_columns,W,kappa)
+        kernel += k**k_coreg.copy()
+
+    return kernel

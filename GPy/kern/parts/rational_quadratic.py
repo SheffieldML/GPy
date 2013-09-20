@@ -57,7 +57,7 @@ class RationalQuadratic(Kernpart):
         dist2 = np.square((X-X2.T)/self.lengthscale)
 
         dvar = (1 + dist2/2.)**(-self.power)
-        dl = self.power * self.variance * dist2 * self.lengthscale**(-3) * (1 + dist2/2./self.power)**(-self.power-1)
+        dl = self.power * self.variance * dist2 / self.lengthscale * (1 + dist2/2.)**(-self.power-1)
         dp = - self.variance * np.log(1 + dist2/2.) * (1 + dist2/2.)**(-self.power)
 
         target[0] += np.sum(dvar*dL_dK)
@@ -70,10 +70,12 @@ class RationalQuadratic(Kernpart):
 
     def dK_dX(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
-        if X2 is None: X2 = X
-        dist2 = np.square((X-X2.T)/self.lengthscale)
-
-        dX = -self.variance*self.power * (X-X2.T)/self.lengthscale**2 *  (1 + dist2/2./self.lengthscale)**(-self.power-1)
+        if X2 is None:
+            dist2 = np.square((X-X.T)/self.lengthscale)
+            dX = -2.*self.variance*self.power * (X-X.T)/self.lengthscale**2 *  (1 + dist2/2./self.lengthscale)**(-self.power-1)
+        else:
+            dist2 = np.square((X-X2.T)/self.lengthscale)
+            dX = -self.variance*self.power * (X-X2.T)/self.lengthscale**2 *  (1 + dist2/2./self.lengthscale)**(-self.power-1)
         target += np.sum(dL_dK*dX,1)[:,np.newaxis]
 
     def dKdiag_dX(self,dL_dKdiag,X,target):

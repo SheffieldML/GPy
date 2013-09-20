@@ -18,9 +18,11 @@ class Transformation(object):
     def gradfactor(self, f):
         """ df_dx evaluated at self.f(x)=f"""
         raise NotImplementedError
+
     def initialize(self, f):
         """ produce a sensible initial value for f(x)"""
         raise NotImplementedError
+
     def __str__(self):
         raise NotImplementedError
 
@@ -47,8 +49,6 @@ class Negative_logexp(Transformation):
         return Logexp.finv(-f)  # np.log(np.exp(-f) - 1.)
     def gradfactor(self, f):
         return -Logexp.gradfactor(-f)
-        #ef = np.exp(-f)
-        #return -(ef - 1.) / ef
     def initialize(self, f):
         return -Logexp.initialize(f)  # np.abs(f)
     def __str__(self):

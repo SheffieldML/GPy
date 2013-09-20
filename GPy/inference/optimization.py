@@ -130,7 +130,7 @@ class opt_lbfgsb(Optimizer):
             opt_dict['pgtol'] = self.gtol
 
         opt_result = optimize.fmin_l_bfgs_b(f_fp, self.x_init, iprint=iprint,
-                                            maxfun=self.max_f_eval, **opt_dict)
+                                            maxfun=self.max_iters, **opt_dict)
         self.x_opt = opt_result[0]
         self.f_opt = f_fp(self.x_opt)[0]
         self.funct_eval = opt_result[2]['funcalls']

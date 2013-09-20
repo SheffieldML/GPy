@@ -140,7 +140,6 @@ class FITC(SparseGP):
 
             dA_dnoise = 0.5 * self.input_dim * (dbstar_dnoise/self.beta_star).sum() - 0.5 * self.input_dim * np.sum(self.likelihood.Y**2 * dbstar_dnoise)
             dC_dnoise = -0.5 * np.sum(mdot(self.LBi.T,self.LBi,Lmi_psi1) *  Lmi_psi1 * dbstar_dnoise.T)
-            dC_dnoise = -0.5 * np.sum(mdot(self.LBi.T,self.LBi,Lmi_psi1) *  Lmi_psi1 * dbstar_dnoise.T)
 
             dD_dnoise_1 =  mdot(self.V_star*LBiLmipsi1.T,LBiLmipsi1*dbstar_dnoise.T*self.likelihood.Y.T)
             alpha = mdot(LBiLmipsi1,self.V_star)
@@ -174,7 +173,7 @@ class FITC(SparseGP):
 
     def dL_dZ(self):
         dL_dZ = self.kern.dK_dX(self._dL_dpsi1.T,self.Z,self.X)
-        dL_dZ += 2. * self.kern.dK_dX(self._dL_dKmm,X=self.Z)
+        dL_dZ += self.kern.dK_dX(self._dL_dKmm,X=self.Z)
         dL_dZ += self._dpsi1_dX
         dL_dZ += self._dKmm_dX
         return dL_dZ

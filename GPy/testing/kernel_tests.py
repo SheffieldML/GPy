@@ -4,40 +4,68 @@
 import unittest
 import numpy as np
 import GPy
-    
 
+verbose = False
 
 class KernelTests(unittest.TestCase):
     def test_kerneltie(self):
         K = GPy.kern.rbf(5, ARD=True)
         K.tie_params('.*[01]')
         K.constrain_fixed('2')
-        
         X = np.random.rand(5,5)
         Y = np.ones((5,1))
         m = GPy.models.GPRegression(X,Y,K)
         self.assertTrue(m.checkgrad())
 
     def test_rbfkernel(self):
-        verbose = False
         kern = GPy.kern.rbf(5)
-        self.assertTrue(GPy.kern.Kern_check_model(kern).is_positive_definite())
-        self.assertTrue(GPy.kern.Kern_check_dK_dtheta(kern).checkgrad(verbose=verbose))
-        self.assertTrue(GPy.kern.Kern_check_dKdiag_dtheta(kern).checkgrad(verbose=verbose))
-        self.assertTrue(GPy.kern.Kern_check_dK_dX(kern).checkgrad(verbose=verbose))
+        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+
+    def test_rbf_invkernel(self):
+        kern = GPy.kern.rbf_inv(5)
+        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+
+    def test_Matern32kernel(self):
+        kern = GPy.kern.Matern32(5)
+        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+
+    def test_Matern52kernel(self):
+        kern = GPy.kern.Matern52(5)
+        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+
+    def test_linearkernel(self):
+        kern = GPy.kern.linear(5)
+        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+
+    def test_periodic_exponentialkernel(self):
+        kern = GPy.kern.periodic_exponential(1)
+        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+
+    def test_periodic_Matern32kernel(self):
+        kern = GPy.kern.periodic_Matern32(1)
+        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+
+    def test_periodic_Matern52kernel(self):
+        kern = GPy.kern.periodic_Matern52(1)
+        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+
+    def test_rational_quadratickernel(self):
+        kern = GPy.kern.rational_quadratic(1)
+        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
     def test_gibbskernel(self):
-        verbose = False
         kern = GPy.kern.gibbs(5, mapping=GPy.mappings.Linear(5, 1))
         self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
+    def test_heterokernel(self):
+        kern = GPy.kern.hetero(5, mapping=GPy.mappings.Linear(5, 1), transform=GPy.core.transformations.logexp())
+        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+
     def test_mlpkernel(self):
-        verbose = False
         kern = GPy.kern.mlp(5)
         self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
     def test_polykernel(self):
-        verbose = False
         kern = GPy.kern.poly(5, degree=4)
         self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
@@ -48,11 +76,10 @@ class KernelTests(unittest.TestCase):
         X = np.random.rand(30, 4)
         K = np.dot(X, X.T)
         kernel = GPy.kern.fixed(4, K)
-        Y = np.ones((30,1))
-        m = GPy.models.GPRegression(X,Y,kernel=kernel)
-        self.assertTrue(m.checkgrad())
+        kern = GPy.kern.poly(5, degree=4)
+        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
-    def test_coregionalisation(self):
+    def test_coregionalization(self):
         X1 = np.random.rand(50,1)*8
         X2 = np.random.rand(30,1)*5
         index = np.vstack((np.zeros_like(X1),np.ones_like(X2)))
@@ -62,13 +89,11 @@ class KernelTests(unittest.TestCase):
         Y = np.vstack((Y1,Y2))
 
         k1 = GPy.kern.rbf(1) + GPy.kern.bias(1)
-        k2 = GPy.kern.coregionalise(2,1)
-        k = k1.prod(k2,tensor=True)
-        m = GPy.models.GPRegression(X,Y,kernel=k)
-        self.assertTrue(m.checkgrad())
+        k2 = GPy.kern.coregionalize(2,1)
+        kern = k1**k2
+        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
 
-       
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."
     unittest.main()

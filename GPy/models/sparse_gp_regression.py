@@ -20,7 +20,11 @@ class SparseGPRegression(SparseGP):
     :type normalize_X: False|True
     :param normalize_Y:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_Y: False|True
+    :param Z: inducing inputs (optional, see note)
+    :type Z: np.ndarray (num_inducing x input_dim) | None
     :rtype: model object
+    :param X_variance: The uncertainty in the measurements of X (Gaussian variance)
+    :type X_variance: np.ndarray (num_data x input_dim) | None
 
     .. Note:: Multiple independent outputs are allowed using columns of Y
 

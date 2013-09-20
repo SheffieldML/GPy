@@ -524,11 +524,14 @@ def simulation_BGPLVM():
             'info': "Simulated test dataset generated in MATLAB to compare BGPLVM between python and MATLAB"}
 
 def toy_rbf_1d(seed=default_seed, num_samples=500):
-    """Samples values of a function from an RBF covariance with very small noise for inputs uniformly distributed between -1 and 1.
+    """
+    Samples values of a function from an RBF covariance with very small noise for inputs uniformly distributed between -1 and 1.
+
     :param seed: seed to use for random sampling.
     :type seed: int
     :param num_samples: number of samples to sample in the function (default 500).
     :type num_samples: int
+
     """
     np.random.seed(seed=seed)
     num_in = 1
@@ -631,11 +634,15 @@ def olympic_marathon_men(data_set='olympic_marathon_men'):
 
 
 def crescent_data(num_data=200, seed=default_seed):
-    """Data set formed from a mixture of four Gaussians. In each class two of the Gaussians are elongated at right angles to each other and offset to form an approximation to the crescent data that is popular in semi-supervised learning as a toy problem.
+    """
+Data set formed from a mixture of four Gaussians. In each class two of the Gaussians are elongated at right angles to each other and offset to form an approximation to the crescent data that is popular in semi-supervised learning as a toy problem.
+
     :param num_data_part: number of data to be sampled (default is 200).
     :type num_data: int
     :param seed: random seed to be used for data generation.
-    :type seed: int"""
+    :type seed: int
+
+    """
     np.random.seed(seed=seed)
     sqrt2 = np.sqrt(2)
     # Rotation matrix

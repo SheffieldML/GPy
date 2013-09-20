@@ -95,6 +95,7 @@ class EP(likelihood):
         :type epsilon: float
         :param power_ep: Power EP parameters
         :type power_ep: list of floats
+
         """
         self.epsilon = epsilon
         self.eta, self.delta = power_ep
@@ -165,6 +166,7 @@ class EP(likelihood):
         :type epsilon: float
         :param power_ep: Power EP parameters
         :type power_ep: list of floats
+
         """
         self.epsilon = epsilon
         self.eta, self.delta = power_ep

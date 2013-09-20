@@ -222,7 +222,8 @@ class kern(Parameterized):
 
     def prod(self, other, tensor=False):
         """
-        multiply two kernels (either on the same space, or on the tensor product of the input space).
+        Multiply two kernels (either on the same space, or on the tensor product of the input space).
+
         :param other: the other kernel to be added
         :type other: GPy.kern
         :param tensor: whether or not to use the tensor space (default is false).

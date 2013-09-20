@@ -692,7 +692,7 @@ def kern_test(kern, X=None, X2=None, verbose=False):
         Kern_check_dK_dtheta(kern, X=X, X2=None).checkgrad(verbose=True)
         pass_checks = False
         return False
-    
+
     if verbose:
         print("Checking gradients of K(X, X2) wrt theta.")
     result = Kern_check_dK_dtheta(kern, X=X, X2=X2).checkgrad(verbose=verbose)
@@ -703,7 +703,7 @@ def kern_test(kern, X=None, X2=None, verbose=False):
         Kern_check_dK_dtheta(kern, X=X, X2=X2).checkgrad(verbose=True)
         pass_checks = False
         return False
-    
+
     if verbose:
         print("Checking gradients of Kdiag(X) wrt theta.")
     result = Kern_check_dKdiag_dtheta(kern, X=X).checkgrad(verbose=verbose)
@@ -714,10 +714,15 @@ def kern_test(kern, X=None, X2=None, verbose=False):
         Kern_check_dKdiag_dtheta(kern, X=X).checkgrad(verbose=True)
         pass_checks = False
         return False
-        
+
     if verbose:
         print("Checking gradients of K(X, X) wrt X.")
-    result = Kern_check_dK_dX(kern, X=X, X2=None).checkgrad(verbose=verbose)
+    try:
+        result = Kern_check_dK_dX(kern, X=X, X2=None).checkgrad(verbose=verbose)
+    except NotImplementedError:
+        result=True
+        if verbose:
+            print("dK_dX not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
@@ -728,7 +733,12 @@ def kern_test(kern, X=None, X2=None, verbose=False):
 
     if verbose:
         print("Checking gradients of K(X, X2) wrt X.")
-    result = Kern_check_dK_dX(kern, X=X, X2=X2).checkgrad(verbose=verbose)
+    try:
+        result = Kern_check_dK_dX(kern, X=X, X2=X2).checkgrad(verbose=verbose)
+    except NotImplementedError:
+        result=True
+        if verbose:
+            print("dK_dX not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
@@ -739,7 +749,12 @@ def kern_test(kern, X=None, X2=None, verbose=False):
 
     if verbose:
         print("Checking gradients of Kdiag(X) wrt X.")
-    result = Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=verbose)
+    try:
+        result = Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=verbose)
+    except NotImplementedError:
+        result=True
+        if verbose:
+            print("dK_dX not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
@@ -747,5 +762,5 @@ def kern_test(kern, X=None, X2=None, verbose=False):
         Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=True)
         pass_checks = False
         return False
-    
+
     return pass_checks

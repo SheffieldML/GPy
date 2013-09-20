@@ -10,27 +10,6 @@ import numpy as np
 import GPy
 
 default_seed = 10000
-def crescent_data(seed=default_seed, kernel=None): # FIXME
-    """Run a Gaussian process classification on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
-
-    :param model_type: type of model to fit ['Full', 'FITC', 'DTC'].
-    :param seed : seed value for data generation.
-    :type seed: int
-    :param inducing : number of inducing variables (only used for 'FITC' or 'DTC').
-    :type inducing: int
-    """
-
-    data = GPy.util.datasets.crescent_data(seed=seed)
-    Y = data['Y']
-    Y[Y.flatten()==-1] = 0
-
-    m = GPy.models.GPClassification(data['X'], Y)
-    #m.update_likelihood_approximation()
-    #m.optimize()
-    m.pseudo_EM()
-    print(m)
-    m.plot()
-    return m
 
 def oil(num_inducing=50, max_iters=100, kernel=None):
     """
@@ -118,56 +97,6 @@ def sparse_toy_linear_1d_classification(num_inducing=10,seed=default_seed):
 
     return m
 
-def sparse_crescent_data(num_inducing=10, seed=default_seed, kernel=None):
-    """
-    Run a Gaussian process classification with DTC approxiamtion on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
-
-    :param model_type: type of model to fit ['Full', 'FITC', 'DTC'].
-    :param seed : seed value for data generation.
-    :type seed: int
-    :param inducing : number of inducing variables (only used for 'FITC' or 'DTC').
-    :type inducing: int
-    """
-
-    data = GPy.util.datasets.crescent_data(seed=seed)
-    Y = data['Y']
-    Y[Y.flatten()==-1]=0
-
-    m = GPy.models.SparseGPClassification(data['X'], Y, kernel=kernel, num_inducing=num_inducing)
-    m['.*len'] = 10.
-    #m.update_likelihood_approximation()
-    #m.optimize()
-    m.pseudo_EM()
-    print(m)
-    m.plot()
-    return m
-
-def FITC_crescent_data(num_inducing=10, seed=default_seed):
-    """
-    Run a Gaussian process classification with FITC approximation on the crescent data. The demonstration uses EP to approximate the likelihood.
-
-    :param model_type: type of model to fit ['Full', 'FITC', 'DTC'].
-    :param seed : seed value for data generation.
-    :type seed: int
-    :param inducing : number of inducing variables (only used for 'FITC' or 'DTC').
-    :type num_inducing: int
-    """
-
-    data = GPy.util.datasets.crescent_data(seed=seed)
-    Y = data['Y']
-    Y[Y.flatten()==-1]=0
-
-    m = GPy.models.FITCClassification(data['X'], Y,num_inducing=num_inducing)
-    m.constrain_bounded('.*len',1.,1e3)
-    m['.*len'] = 3.
-    #m.update_likelihood_approximation()
-    #m.optimize()
-    m.pseudo_EM()
-    print(m)
-    m.plot()
-    return m
-
-
 def toy_heaviside(seed=default_seed):
     """
     Simple 1D classification example using a heavy side gp transformation
@@ -198,3 +127,36 @@ def toy_heaviside(seed=default_seed):
 
     return m
 
+def crescent_data(model_type='Full', num_inducing=10, seed=default_seed, kernel=None):
+    """
+    Run a Gaussian process classification on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
+
+    :param model_type: type of model to fit ['Full', 'FITC', 'DTC'].
+    :param inducing: number of inducing variables (only used for 'FITC' or 'DTC').
+    :type inducing: int
+    :param seed: seed value for data generation.
+    :type seed: int
+    :param kernel: kernel to use in the model
+    :type kernel: a GPy kernel
+    """
+    data = GPy.util.datasets.crescent_data(seed=seed)
+    Y = data['Y']
+    Y[Y.flatten()==-1] = 0
+
+    if model_type == 'Full':
+        m = GPy.models.GPClassification(data['X'], Y,kernel=kernel)
+
+    elif model_type == 'DTC':
+        m = GPy.models.SparseGPClassification(data['X'], Y, kernel=kernel, num_inducing=num_inducing)
+        m['.*len'] = 10.
+
+    elif model_type == 'FITC':
+        m = GPy.models.FITCClassification(data['X'], Y, kernel=kernel, num_inducing=num_inducing)
+        m.constrain_bounded('.*len',1.,1e3)
+        m['.*len'] = 3.
+
+    m.pseudo_EM()
+    print(m)
+    m.plot()
+
+    return m

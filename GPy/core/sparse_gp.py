@@ -292,7 +292,7 @@ class SparseGP(GPBase):
                 Kxx = self.kern.Kdiag(Xnew, which_parts=which_parts)
                 var = Kxx - np.sum(Kx * np.dot(Kmmi_LmiBLmi, Kx), 0)
         else:
-            # assert which_p.Tarts=='all', "swithching out parts of variational kernels is not implemented"
+            # assert which_parts=='all', "swithching out parts of variational kernels is not implemented"
             Kx = self.kern.psi1(self.Z, Xnew, X_variance_new) # , which_parts=which_parts) TODO: which_parts
             mu = np.dot(Kx, self.Cpsi1V)
             if full_cov:

@@ -15,7 +15,7 @@ class GP(GPBase):
 
     :param X: input observations
     :param kernel: a GPy kernel, defaults to rbf+white
-    :parm likelihood: a GPy likelihood
+    :param likelihood: a GPy likelihood
     :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_X: False|True
     :rtype: model object
@@ -132,17 +132,16 @@ class GP(GPBase):
     def predict(self, Xnew, which_parts='all', full_cov=False, likelihood_args=dict()):
         """
         Predict the function(s) at the new point(s) Xnew.
-        Arguments
-        ---------
+
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray, Nnew x self.input_dim
         :param which_parts:  specifies which outputs kernel(s) to use in prediction
         :type which_parts: ('all', list of bools)
         :param full_cov: whether to return the full covariance matrix, or just the diagonal
         :type full_cov: bool
-        :rtype: posterior mean,  a Numpy array, Nnew x self.input_dim
-        :rtype: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
-        :rtype: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
+        :returns: mean: posterior mean,  a Numpy array, Nnew x self.input_dim
+        :returns: var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
+        :returns: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
 
 
            If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
@@ -160,8 +159,7 @@ class GP(GPBase):
     def predict_single_output(self, Xnew, output=0, which_parts='all', full_cov=False):
         """
         For a specific output, predict the function at the new point(s) Xnew.
-        Arguments
-        ---------
+
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray, Nnew x self.input_dim
         :param output: output to predict
@@ -170,9 +168,9 @@ class GP(GPBase):
         :type which_parts: ('all', list of bools)
         :param full_cov: whether to return the full covariance matrix, or just the diagonal
         :type full_cov: bool
-        :rtype: posterior mean,  a Numpy array, Nnew x self.input_dim
-        :rtype: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
-        :rtype: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
+        :returns: posterior mean,  a Numpy array, Nnew x self.input_dim
+        :returns: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
+        :returns: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
 
         .. Note:: For multiple output models only
         """

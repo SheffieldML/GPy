@@ -393,8 +393,7 @@ class SparseGP(GPBase):
     def predict_single_output(self, Xnew, output=0, which_parts='all', full_cov=False):
         """
         For a specific output, predict the function at the new point(s) Xnew.
-        Arguments
-        ---------
+
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray, Nnew x self.input_dim
         :param output: output to predict

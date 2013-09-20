@@ -10,11 +10,10 @@ class opt_SGD(Optimizer):
     """
     Optimize using stochastic gradient descent.
 
-    *** Parameters ***
-    Model: reference to the Model object
-    iterations: number of iterations
-    learning_rate: learning rate
-    momentum: momentum
+    :param Model: reference to the Model object
+    :param iterations: number of iterations
+    :param learning_rate: learning rate
+    :param momentum: momentum
 
     """
 

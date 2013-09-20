@@ -245,12 +245,13 @@ class BayesianGPLVM(SparseGP, GPLVM):
         """
         Plot latent space X in 1D:
 
-            -if fig is given, create input_dim subplots in fig and plot in these
-            -if ax is given plot input_dim 1D latent space plots of X into each `axis`
-            -if neither fig nor ax is given create a figure with fignum and plot in there
+            - if fig is given, create input_dim subplots in fig and plot in these
+            - if ax is given plot input_dim 1D latent space plots of X into each `axis`
+            - if neither fig nor ax is given create a figure with fignum and plot in there
 
         colors:
             colors of different latent space dimensions input_dim
+
         """
         import pylab
         if ax is None:

@@ -231,17 +231,19 @@ class Parameterized(object):
 
     def constrain_fixed(self, regexp, value=None):
         """
-        Arguments
-        ---------
+
         :param regexp: which parameters need to be fixed.
         :type regexp: ndarray(dtype=int) or regular expression object or string
         :param value: the vlaue to fix the parameters to. If the value is not specified,
                  the parameter is fixed to the current value
         :type value: float
-        Notes
-        -----
+
+        **Notes**
+
         Fixing a parameter which is tied to another, or constrained in some way will result in an error.
-        To fix multiple parameters to the same value, simply pass a regular expression which matches both parameter names, or pass both of the indexes
+
+        To fix multiple parameters to the same value, simply pass a regular expression which matches both parameter names, or pass both of the indexes.
+
         """
         matches = self.grep_param_names(regexp)
         overlap = set(matches).intersection(set(self.all_constrained_indices()))

@@ -13,10 +13,10 @@ class Poisson(NoiseDistribution):
     """
     Poisson likelihood
     Y is expected to take values in {0,1,2,...}
-    -----
-    $$
-    L(x) = \exp(\lambda) * \lambda**Y_i / Y_i!
-    $$
+
+    .. math::
+        L(x) = \\exp(\\lambda) * \\frac{\\lambda^Y_i}{Y_i!}
+
     """
     def __init__(self,gp_link=None,analytical_mean=False,analytical_variance=False):
         #self.discrete = True

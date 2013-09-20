@@ -29,7 +29,7 @@ class FITC(SparseGP):
         SparseGP.__init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False)
         assert self.output_dim == 1, "FITC model is not defined for handling multiple outputs"
 
-    def update_likelihood_approximation(self):
+    def update_likelihood_approximation(self, **kwargs):
         """
         Approximates a non-Gaussian likelihood using Expectation Propagation
 
@@ -37,7 +37,7 @@ class FITC(SparseGP):
         this function does nothing
         """
         self.likelihood.restart()
-        self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
+        self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0, **kwargs)
         self._set_params(self._get_params())
 
     def _compute_kernel_matrices(self):

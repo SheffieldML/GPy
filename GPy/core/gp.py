@@ -62,7 +62,7 @@ class GP(GPBase):
     def _get_param_names(self):
         return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
-    def update_likelihood_approximation(self):
+    def update_likelihood_approximation(self, **kwargs):
         """
         Approximates a non-gaussian likelihood using Expectation Propagation
 
@@ -70,7 +70,7 @@ class GP(GPBase):
         this function does nothing
         """
         self.likelihood.restart()
-        self.likelihood.fit_full(self.kern.K(self.X))
+        self.likelihood.fit_full(self.kern.K(self.X), **kwargs)
         self._set_params(self._get_params()) # update the GP
 
     def _model_fit_term(self):

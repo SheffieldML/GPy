@@ -215,7 +215,7 @@ class SparseGP(GPBase):
     #def _get_print_names(self):
     #    return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
-    def update_likelihood_approximation(self):
+    def update_likelihood_approximation(self, **kwargs):
         """
         Approximates a non-gaussian likelihood using Expectation Propagation
 
@@ -229,10 +229,10 @@ class SparseGP(GPBase):
                 Kmmi = tdot(Lmi.T)
                 diag_tr_psi2Kmmi = np.array([np.trace(psi2_Kmmi) for psi2_Kmmi in np.dot(self.psi2, Kmmi)])
 
-                self.likelihood.fit_FITC(self.Kmm, self.psi1.T, diag_tr_psi2Kmmi) # This uses the fit_FITC code, but does not perfomr a FITC-EP.#TODO solve potential confusion
+                self.likelihood.fit_FITC(self.Kmm, self.psi1.T, diag_tr_psi2Kmmi, **kwargs) # This uses the fit_FITC code, but does not perfomr a FITC-EP.#TODO solve potential confusion
                 # raise NotImplementedError, "EP approximation not implemented for uncertain inputs"
             else:
-                self.likelihood.fit_DTC(self.Kmm, self.psi1.T)
+                self.likelihood.fit_DTC(self.Kmm, self.psi1.T, **kwargs)
                 # self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
                 self._set_params(self._get_params()) # update the GP
 

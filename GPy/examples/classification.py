@@ -14,6 +14,7 @@ default_seed = 10000
 def oil(num_inducing=50, max_iters=100, kernel=None):
     """
     Run a Gaussian process classification on the three phase oil data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
+
     """
     data = GPy.util.datasets.oil()
     X = data['X']
@@ -43,8 +44,10 @@ def oil(num_inducing=50, max_iters=100, kernel=None):
 def toy_linear_1d_classification(seed=default_seed):
     """
     Simple 1D classification example
-    :param seed : seed value for data generation (default is 4).
+
+    :param seed: seed value for data generation (default is 4).
     :type seed: int
+
     """
 
     data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
@@ -71,8 +74,10 @@ def toy_linear_1d_classification(seed=default_seed):
 def sparse_toy_linear_1d_classification(num_inducing=10,seed=default_seed):
     """
     Sparse 1D classification example
-    :param seed : seed value for data generation (default is 4).
+
+    :param seed: seed value for data generation (default is 4).
     :type seed: int
+
     """
 
     data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
@@ -100,8 +105,10 @@ def sparse_toy_linear_1d_classification(num_inducing=10,seed=default_seed):
 def toy_heaviside(seed=default_seed):
     """
     Simple 1D classification example using a heavy side gp transformation
-    :param seed : seed value for data generation (default is 4).
+
+    :param seed: seed value for data generation (default is 4).
     :type seed: int
+
     """
 
     data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)

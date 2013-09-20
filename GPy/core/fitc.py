@@ -120,7 +120,7 @@ class FITC(SparseGP):
             _dKmm = .5*(V_n**2 + alpha_n + gamma_n**2 - 2.*gamma_k) * K_pp_K #Diag_dD_dKmm
             self._dpsi1_dtheta += self.kern.dK_dtheta(_dpsi1,self.X[i:i+1,:],self.Z)
             self._dKmm_dtheta += self.kern.dK_dtheta(_dKmm,self.Z)
-            self._dKmm_dX += 2.*self.kern.dK_dX(_dKmm ,self.Z)
+            self._dKmm_dX += self.kern.dK_dX(_dKmm ,self.Z)
             self._dpsi1_dX += self.kern.dK_dX(_dpsi1.T,self.Z,self.X[i:i+1,:])
 
         # the partial derivative vector for the likelihood

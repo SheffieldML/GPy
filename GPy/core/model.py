@@ -56,10 +56,11 @@ class Model(Parameterized):
 
     def set_prior(self, regexp, what):
         """
+
         Sets priors on the model parameters.
 
-        Notes
-        -----
+        **Notes**
+
         Asserts that the prior is suitable for the constraint. If the
         wrong constraint is in place, an error is raised.  If no
         constraint is in place, one is added (warning printed).
@@ -185,8 +186,8 @@ class Model(Parameterized):
         be handled silently.  If _all_ runs fail, the model is reset to the
         existing parameter values.
 
-        Notes
-        -----
+        **Notes**
+
         :param num_restarts: number of restarts to use (default 10)
         :type num_restarts: int
         :param robust: whether to handle exceptions silently or not (default False)
@@ -195,7 +196,9 @@ class Model(Parameterized):
         :type parallel: bool
         :param num_processes: number of workers in the multiprocessing pool
         :type numprocesses: int
-        **kwargs are passed to the optimizer. They can be:
+
+        \*\*kwargs are passed to the optimizer. They can be:
+
         :param max_f_eval: maximum number of function evaluations
         :type max_f_eval: int
         :param max_iters: maximum number of iterations
@@ -203,9 +206,7 @@ class Model(Parameterized):
         :param messages: whether to display during optimisation
         :type messages: bool
 
-        ..Note: If num_processes is None, the number of workes in the multiprocessing pool is automatically
-        set to the number of processors on the current machine.
-
+        .. note:: If num_processes is None, the number of workes in the multiprocessing pool is automatically set to the number of processors on the current machine.
 
         """
         initial_parameters = self._get_params_transformed()

@@ -16,16 +16,17 @@ class SparseGP(GPBase):
     :type X: np.ndarray (num_data x input_dim)
     :param likelihood: a likelihood instance, containing the observed data
     :type likelihood: GPy.likelihood.(Gaussian | EP | Laplace)
-    :param kernel : the kernel (covariance function). See link kernels
+    :param kernel: the kernel (covariance function). See link kernels
     :type kernel: a GPy.kern.kern instance
     :param X_variance: The uncertainty in the measurements of X (Gaussian variance)
     :type X_variance: np.ndarray (num_data x input_dim) | None
     :param Z: inducing inputs (optional, see note)
     :type Z: np.ndarray (num_inducing x input_dim) | None
-    :param num_inducing : Number of inducing points (optional, default 10. Ignored if Z is not None)
+    :param num_inducing: Number of inducing points (optional, default 10. Ignored if Z is not None)
     :type num_inducing: int
-    :param normalize_(X|Y) : whether to normalize the data before computing (predictions will be in original scales)
+    :param normalize_(X|Y): whether to normalize the data before computing (predictions will be in original scales)
     :type normalize_(X|Y): bool
+
     """
 
     def __init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False):
@@ -306,10 +307,11 @@ class SparseGP(GPBase):
 
     def predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
         """
+
         Predict the function(s) at the new point(s) Xnew.
 
-        Arguments
-        ---------
+        **Arguments**
+
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray, Nnew x self.input_dim
         :param X_variance_new: The uncertainty in the prediction points

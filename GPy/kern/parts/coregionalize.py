@@ -24,8 +24,8 @@ class Coregionalize(Kernpart):
 
     :param output_dim: number of outputs to coregionalize
     :type output_dim: int
-    :param W_columns: number of columns of the W matrix (this parameter is ignored if parameter W is not None)
-    :type W_colunns: int
+    :param rank: number of columns of the W matrix (this parameter is ignored if parameter W is not None)
+    :type rank: int
     :param W: a low rank matrix that determines the correlations between the different outputs, together with kappa it forms the coregionalization matrix B
     :type W: numpy array of dimensionality (num_outpus, W_columns)
     :param kappa: a vector which allows the outputs to behave independently
@@ -38,6 +38,8 @@ class Coregionalize(Kernpart):
         self.name = 'coregion'
         self.output_dim = output_dim
         self.rank = rank
+        if self.rank>output_dim-1:
+            print("Warning: Unusual choice of rank, it should normally be less than the output_dim.")
         if W is None:
             self.W = 0.5*np.random.randn(self.output_dim,self.rank)/np.sqrt(self.rank)
         else:
@@ -158,4 +160,5 @@ class Coregionalize(Kernpart):
         target += np.hstack([dW.flatten(),dkappa])
 
     def dK_dX(self,dL_dK,X,X2,target):
+        #NOTE In this case, pass is equivalent to returning zero.
         pass

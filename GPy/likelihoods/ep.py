@@ -37,6 +37,8 @@ class EP(likelihood):
         self.VVT_factor = self.V
         self.trYYT = 0.
 
+        super(EP, self).__init__()
+
     def restart(self):
         self.tau_tilde = np.zeros(self.N)
         self.v_tilde = np.zeros(self.N)

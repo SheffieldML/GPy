@@ -31,8 +31,8 @@ class Model(Parameterized):
     def getstate(self):
         """
         Get the current state of the class.
-        
         Inherited from Parameterized, so add those parameters to the state
+
         :return: list of states from the model.
 
         """
@@ -46,7 +46,7 @@ class Model(Parameterized):
         call Parameterized with the rest of the state
 
         :param state: the state of the model.
-        :type state: list as returned from getstate.        
+        :type state: list as returned from getstate.
         """
         self.preferred_optimizer = state.pop()
         self.sampling_runs = state.pop()
@@ -397,17 +397,20 @@ class Model(Parameterized):
             return np.nan
         return 0.5 * self._get_params().size * np.log(2 * np.pi) + self.log_likelihood() - hld
 
-    def __str__(self, names=None):
-        if names is None:
-            names = self._get_print_names()
-        s = Parameterized.__str__(self, names=names).split('\n')
+    def __str__(self):
+        s = Parameterized.__str__(self).split('\n')
+        #def __str__(self, names=None):
+        #    if names is None:
+        #        names = self._get_print_names()
+        #s = Parameterized.__str__(self, names=names).split('\n')
         # add priors to the string
         if self.priors is not None:
             strs = [str(p) if p is not None else '' for p in self.priors]
         else:
-            strs = [''] * len(self._get_param_names())
-        name_indices = self.grep_param_names("|".join(names))
-        strs = np.array(strs)[name_indices]
+            strs = [''] * len(self._get_params())
+       #         strs = [''] * len(self._get_param_names())
+       #     name_indices = self.grep_param_names("|".join(names))
+       #     strs = np.array(strs)[name_indices]
         width = np.array(max([len(p) for p in strs] + [5])) + 4
 
         log_like = self.log_likelihood()

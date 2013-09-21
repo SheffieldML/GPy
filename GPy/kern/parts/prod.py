@@ -2,6 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from kernpart import Kernpart
+from coregionalize import Coregionalize
 import numpy as np
 import hashlib
 
@@ -18,7 +19,7 @@ class Prod(Kernpart):
     """
     def __init__(self,k1,k2,tensor=False):
         self.num_params = k1.num_params + k2.num_params
-        self.name = '['+k1.name + '(x)' + k2.name +']'
+        self.name = '['+k1.name + '**' + k2.name +']'
         self.k1 = k1
         self.k2 = k2
         if tensor:
@@ -60,7 +61,7 @@ class Prod(Kernpart):
         """Compute the part of the kernel associated with k2."""
         self._K_computations(X, X2)
         return self._K2
-    
+
     def dK_dtheta(self,dL_dK,X,X2,target):
         """Derivative of the covariance matrix with respect to the parameters."""
         self._K_computations(X,X2)
@@ -90,8 +91,18 @@ class Prod(Kernpart):
     def dK_dX(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
         self._K_computations(X,X2)
-        self.k1.dK_dX(dL_dK*self._K2, X[:,self.slice1], X2[:,self.slice1], target[:,self.slice1])
-        self.k2.dK_dX(dL_dK*self._K1, X[:,self.slice2], X2[:,self.slice2], target[:,self.slice2])
+        if X2 is None:
+            if not isinstance(self.k1,Coregionalize) and not isinstance(self.k2,Coregionalize):
+                self.k1.dK_dX(dL_dK*self._K2, X[:,self.slice1], None, target[:,self.slice1])
+                self.k2.dK_dX(dL_dK*self._K1, X[:,self.slice2], None, target[:,self.slice2])
+            else:#if isinstance(self.k1,Coregionalize) or isinstance(self.k2,Coregionalize):
+                #NOTE The indices column in the inputs makes the ki.dK_dX fail when passing None instead of X[:,self.slicei]
+                X2 = X
+                self.k1.dK_dX(2.*dL_dK*self._K2, X[:,self.slice1], X2[:,self.slice1], target[:,self.slice1])
+                self.k2.dK_dX(2.*dL_dK*self._K1, X[:,self.slice2], X2[:,self.slice2], target[:,self.slice2])
+        else:
+            self.k1.dK_dX(dL_dK*self._K2, X[:,self.slice1], X2[:,self.slice1], target[:,self.slice1])
+            self.k2.dK_dX(dL_dK*self._K1, X[:,self.slice2], X2[:,self.slice2], target[:,self.slice2])
 
     def dKdiag_dX(self, dL_dKdiag, X, target):
         K1 = np.zeros(X.shape[0])

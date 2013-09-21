@@ -176,7 +176,7 @@ class GP(GPBase):
 
         .. Note:: For multiple output models only
         """
-        assert hasattr(self,'multioutput')
+        assert hasattr(self,'multioutput'), 'This function is for multiple output models only.'
         index = np.ones_like(Xnew)*output
         Xnew = np.hstack((Xnew,index))
 
@@ -204,8 +204,7 @@ class GP(GPBase):
 
         .. Note:: For multiple output models only
         """
-        assert hasattr(self,'multioutput')
-
+        assert hasattr(self,'multioutput'), 'This function is for multiple output models only.'
         # creates an index column and appends it to _Xnew
         index = np.ones_like(_Xnew)*output
         _Xnew = np.hstack((_Xnew,index))

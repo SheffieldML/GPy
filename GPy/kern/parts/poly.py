@@ -20,8 +20,8 @@ class POLY(Kernpart):
 
     The kernel is not recommended as it is badly behaved when the
     \sigma^2_w*x'*y + \sigma^2_b has a magnitude greater than one. For completeness
-    there is an automatic relevance determination version of this
-    kernel provided.
+    there will be an automatic relevance determination version of this
+    kernel provided (NOT YET IMPLEMENTED!).
 
     :param input_dim: the number of input dimensions
     :type input_dim: int 

@@ -19,7 +19,7 @@ def binomial(gp_link=None):
         analytical_mean = True
         analytical_variance = False
 
-    elif isinstance(gp_link,noise_models.gp_transformations.Step):
+    elif isinstance(gp_link,noise_models.gp_transformations.Heaviside):
         analytical_mean = True
         analytical_variance = True
 
@@ -42,7 +42,7 @@ def exponential(gp_link=None):
     analytical_variance = False
     return noise_models.exponential_noise.Exponential(gp_link,analytical_mean,analytical_variance)
 
-def gaussian(gp_link=None,variance=1.):
+def gaussian_ep(gp_link=None,variance=1.):
     """
     Construct a gaussian likelihood
 

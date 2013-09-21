@@ -1,123 +1,133 @@
-util Package
-============
+GPy.util package
+================
 
-:mod:`util` Package
--------------------
+Subpackages
+-----------
 
-.. automodule:: GPy.util
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. toctree::
 
-:mod:`Tango` Module
--------------------
+    GPy.util.latent_space_visualizations
+
+Submodules
+----------
+
+GPy.util.Tango module
+---------------------
 
 .. automodule:: GPy.util.Tango
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`classification` Module
-----------------------------
+GPy.util.classification module
+------------------------------
 
 .. automodule:: GPy.util.classification
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`datasets` Module
-----------------------
+GPy.util.datasets module
+------------------------
 
 .. automodule:: GPy.util.datasets
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`decorators` Module
-------------------------
+GPy.util.decorators module
+--------------------------
 
 .. automodule:: GPy.util.decorators
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`linalg` Module
---------------------
+GPy.util.linalg module
+----------------------
 
 .. automodule:: GPy.util.linalg
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`misc` Module
-------------------
+GPy.util.misc module
+--------------------
 
 .. automodule:: GPy.util.misc
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`mocap` Module
--------------------
+GPy.util.mocap module
+---------------------
 
 .. automodule:: GPy.util.mocap
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`pca` Module
------------------
+GPy.util.multioutput module
+---------------------------
 
-.. automodule:: GPy.util.pca
+.. automodule:: GPy.util.multioutput
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`plot` Module
-------------------
+GPy.util.plot module
+--------------------
 
 .. automodule:: GPy.util.plot
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`plot_latent` Module
--------------------------
+GPy.util.plot_latent module
+---------------------------
 
 .. automodule:: GPy.util.plot_latent
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`squashers` Module
------------------------
+GPy.util.squashers module
+-------------------------
 
 .. automodule:: GPy.util.squashers
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`univariate_Gaussian` Module
----------------------------------
+GPy.util.univariate_Gaussian module
+-----------------------------------
 
 .. automodule:: GPy.util.univariate_Gaussian
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`visualize` Module
------------------------
+GPy.util.visualize module
+-------------------------
 
 .. automodule:: GPy.util.visualize
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`warping_functions` Module
--------------------------------
+GPy.util.warping_functions module
+---------------------------------
 
 .. automodule:: GPy.util.warping_functions
     :members:
     :undoc-members:
     :show-inheritance:
 
+
+Module contents
+---------------
+
+.. automodule:: GPy.util
+    :members:
+    :undoc-members:
+    :show-inheritance:

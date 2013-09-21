@@ -4,7 +4,7 @@
 import unittest
 import numpy as np
 import GPy
-    
+
 verbose = False
 
 class KernelTests(unittest.TestCase):
@@ -18,11 +18,11 @@ class KernelTests(unittest.TestCase):
         self.assertTrue(m.checkgrad())
 
     def test_rbfkernel(self):
-        kern = GPy.kern.rbf(5)        
+        kern = GPy.kern.rbf(5)
         self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
     def test_rbf_invkernel(self):
-        kern = GPy.kern.rbf_inv(5)        
+        kern = GPy.kern.rbf_inv(5)
         self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
     def test_Matern32kernel(self):
@@ -79,7 +79,7 @@ class KernelTests(unittest.TestCase):
         kern = GPy.kern.poly(5, degree=4)
         self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
-    def test_coregionalisation(self):
+    def test_coregionalization(self):
         X1 = np.random.rand(50,1)*8
         X2 = np.random.rand(30,1)*5
         index = np.vstack((np.zeros_like(X1),np.ones_like(X2)))

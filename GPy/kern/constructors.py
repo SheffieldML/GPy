@@ -373,7 +373,7 @@ def symmetric(k):
     k_.parts = [symmetric.Symmetric(p) for p in k.parts]
     return k_
 
-def coregionalize(output_dim,W_columns=1, W=None, kappa=None):
+def coregionalize(output_dim,rank=1, W=None, kappa=None):
     """
     Coregionlization matrix B, of the form:
     .. math::
@@ -387,16 +387,16 @@ def coregionalize(output_dim,W_columns=1, W=None, kappa=None):
 
     :param output_dim: the number of outputs to corregionalize
     :type output_dim: int
-    :param W_columns: number of columns of the W matrix (this parameter is ignored if parameter W is not None)
-    :type W_colunns: int
-    :param W: a low rank matrix that determines the correlations between the different outputs, together with kappa it forms the coregionalisation matrix B
-    :type W: numpy array of dimensionality (num_outpus, W_columns)
+    :param rank: number of columns of the W matrix (this parameter is ignored if parameter W is not None)
+    :type rank: int
+    :param W: a low rank matrix that determines the correlations between the different outputs, together with kappa it forms the coregionalization matrix B
+    :type W: numpy array of dimensionality (num_outpus, rank)
     :param kappa: a vector which allows the outputs to behave independently
     :type kappa: numpy array of dimensionality  (output_dim,)
     :rtype: kernel object
 
     """
-    p = parts.coregionalize.Coregionalize(output_dim,W_columns,W,kappa)
+    p = parts.coregionalize.Coregionalize(output_dim,rank,W,kappa)
     return kern(1,[p])
 
 
@@ -456,7 +456,7 @@ def hierarchical(k):
     _parts = [parts.hierarchical.Hierarchical(k.parts)]
     return kern(k.input_dim+len(k.parts),_parts)
 
-def build_lcm(input_dim, output_dim, kernel_list = [], W_columns=1,W=None,kappa=None):
+def build_lcm(input_dim, output_dim, kernel_list = [], rank=1,W=None,kappa=None):
     """
     Builds a kernel of a linear coregionalization model
 
@@ -464,8 +464,8 @@ def build_lcm(input_dim, output_dim, kernel_list = [], W_columns=1,W=None,kappa=
     :output_dim: Number of outputs
     :kernel_list: List of coregionalized kernels, each element in the list will be multiplied by a different corregionalization matrix
     :type kernel_list: list of GPy kernels
-    :param W_columns: number tuples of the corregionalization parameters 'coregion_W'
-    :type W_columns: integer
+    :param rank: number tuples of the corregionalization parameters 'coregion_W'
+    :type rank: integer
 
     ..Note the kernels dimensionality is overwritten to fit input_dim
     """
@@ -475,11 +475,11 @@ def build_lcm(input_dim, output_dim, kernel_list = [], W_columns=1,W=None,kappa=
             k.input_dim = input_dim
             warnings.warn("kernel's input dimension overwritten to fit input_dim parameter.")
 
-    k_coreg = coregionalize(output_dim,W_columns,W,kappa)
+    k_coreg = coregionalize(output_dim,rank,W,kappa)
     kernel = kernel_list[0]**k_coreg.copy()
 
     for k in kernel_list[1:]:
-        k_coreg = coregionalize(output_dim,W_columns,W,kappa)
+        k_coreg = coregionalize(output_dim,rank,W,kappa)
         kernel += k**k_coreg.copy()
 
     return kernel

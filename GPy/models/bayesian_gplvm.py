@@ -8,7 +8,7 @@ from .. import kern
 import itertools
 from matplotlib.colors import colorConverter
 from GPy.inference.optimization import SCG
-from GPy.util import plot_latent
+from GPy.util import plot_latent, linalg
 from GPy.models.gplvm import GPLVM
 from GPy.util.plot_latent import most_significant_input_dimensions
 from matplotlib import pyplot
@@ -66,8 +66,8 @@ class BayesianGPLVM(SparseGP, GPLVM):
         S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
         return (X_names + S_names + SparseGP._get_param_names(self))
 
-    def _get_print_names(self):
-        return SparseGP._get_print_names(self)
+    #def _get_print_names(self):
+    #    return SparseGP._get_print_names(self)
 
     def _get_params(self):
         """
@@ -140,12 +140,20 @@ class BayesianGPLVM(SparseGP, GPLVM):
         dpsi0 = -0.5 * self.input_dim * self.likelihood.precision
         dpsi2 = self.dL_dpsi2[0][None, :, :] # TODO: this may change if we ignore het. likelihoods
         V = self.likelihood.precision * Y
+
+        #compute CPsi1V
+        if self.Cpsi1V is None:
+            psi1V = np.dot(self.psi1.T, self.likelihood.V)
+            tmp, _ = linalg.dtrtrs(self._Lm, np.asfortranarray(psi1V), lower=1, trans=0)
+            tmp, _ = linalg.dpotrs(self.LB, tmp, lower=1)
+            self.Cpsi1V, _ = linalg.dtrtrs(self._Lm, tmp, lower=1, trans=1)
+
         dpsi1 = np.dot(self.Cpsi1V, V.T)
 
         start = np.zeros(self.input_dim * 2)
 
         for n, dpsi1_n in enumerate(dpsi1.T[:, :, None]):
-            args = (self.kern, self.Z, dpsi0, dpsi1_n, dpsi2)
+            args = (self.kern, self.Z, dpsi0, dpsi1_n.T, dpsi2)
             xopt, fopt, neval, status = SCG(f=latent_cost, gradf=latent_grad, x=start, optargs=args, display=False)
 
             mu, log_S = xopt.reshape(2, 1, -1)

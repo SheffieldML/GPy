@@ -165,13 +165,17 @@ class SparseGP(GPBase):
                 raise NotImplementedError, "heteroscedatic derivates with uncertain inputs not implemented"
 
             else:
+
+                LBi = chol_inv(self.LB)
                 Lmi_psi1, nil = dtrtrs(self._Lm, np.asfortranarray(self.psi1.T), lower=1, trans=0)
                 _LBi_Lmi_psi1, _ = dtrtrs(self.LB, np.asfortranarray(Lmi_psi1), lower=1, trans=0)
-                _Bi_Lmi_psi1, _ = dtrtrs(self.LB.T, np.asfortranarray(_LBi_Lmi_psi1), lower=1, trans=0)
+
 
                 self.partial_for_likelihood = -0.5 * self.likelihood.precision + 0.5 * self.likelihood.V**2
                 self.partial_for_likelihood += 0.5 * self.output_dim * (self.psi0 - np.sum(Lmi_psi1**2,0))[:,None] * self.likelihood.precision**2
-                self.partial_for_likelihood += 0.5*np.sum(_Bi_Lmi_psi1*Lmi_psi1,0)[:,None]*self.likelihood.precision**2 #NOTE this term has numerical issues
+
+                self.partial_for_likelihood += 0.5*np.sum(mdot(LBi.T,LBi,Lmi_psi1)*Lmi_psi1,0)[:,None]*self.likelihood.precision**2
+
                 self.partial_for_likelihood += -np.dot(self._LBi_Lmi_psi1Vf.T,_LBi_Lmi_psi1).T * self.likelihood.Y * self.likelihood.precision**2
                 self.partial_for_likelihood += 0.5*np.dot(self._LBi_Lmi_psi1Vf.T,_LBi_Lmi_psi1).T**2 * self.likelihood.precision**2
 
@@ -208,8 +212,8 @@ class SparseGP(GPBase):
         return sum([['iip_%i_%i' % (i, j) for j in range(self.Z.shape[1])] for i in range(self.Z.shape[0])], [])\
             + self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
-    def _get_print_names(self):
-        return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
+    #def _get_print_names(self):
+    #    return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
     def update_likelihood_approximation(self):
         """
@@ -254,7 +258,7 @@ class SparseGP(GPBase):
         """
         The derivative of the bound wrt the inducing inputs Z
         """
-        dL_dZ = self.kern.dK_dX(self.dL_dKmm, self.Z) 
+        dL_dZ = self.kern.dK_dX(self.dL_dKmm, self.Z)
         if self.has_uncertain_inputs:
             dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1, self.Z, self.X, self.X_variance)
             dL_dZ += self.kern.dpsi2_dZ(self.dL_dpsi2, self.Z, self.X, self.X_variance)
@@ -288,7 +292,7 @@ class SparseGP(GPBase):
                 Kxx = self.kern.Kdiag(Xnew, which_parts=which_parts)
                 var = Kxx - np.sum(Kx * np.dot(Kmmi_LmiBLmi, Kx), 0)
         else:
-            # assert which_p.Tarts=='all', "swithching out parts of variational kernels is not implemented"
+            # assert which_parts=='all', "swithching out parts of variational kernels is not implemented"
             Kx = self.kern.psi1(self.Z, Xnew, X_variance_new) # , which_parts=which_parts) TODO: which_parts
             mu = np.dot(Kx, self.Cpsi1V)
             if full_cov:
@@ -344,38 +348,45 @@ class SparseGP(GPBase):
             which_data = slice(None)
 
         GPBase.plot(self, samples=0, plot_limits=plot_limits, which_data='all', which_parts='all', resolution=None, levels=20, ax=ax, output=output)
-        if self.X.shape[1] == 1 and not hasattr(self,'multioutput'):
-            if self.has_uncertain_inputs:
-                Xu = self.X * self._Xscale + self._Xoffset # NOTE self.X are the normalized values now
-                ax.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
-                            xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
-                            ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
-            Zu = self.Z * self._Xscale + self._Xoffset
-            ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
 
-        elif self.X.shape[1] == 2 and not hasattr(self,'multioutput'):
-            Zu = self.Z * self._Xscale + self._Xoffset
-            ax.plot(Zu[:, 0], Zu[:, 1], 'wo')
+        if not hasattr(self,'multioutput'):
 
-        elif self.X.shape[1] == 2 and hasattr(self,'multioutput'):
-            Xu = self.X[self.X[:,-1]==output,:]
-            if self.has_uncertain_inputs:
-                Xu = self.X * self._Xscale + self._Xoffset  # NOTE self.X are the normalized values now
+            if self.X.shape[1] == 1:
+                if self.has_uncertain_inputs:
+                    Xu = self.X * self._Xscale + self._Xoffset # NOTE self.X are the normalized values now
+                    ax.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
+                                xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
+                                ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
+                Zu = self.Z * self._Xscale + self._Xoffset
+                ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
 
-                Xu = self.X[self.X[:,-1]==output ,0:1] #??
-
-                ax.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
-                            xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
-                            ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
-
-            Zu = self.Z[self.Z[:,-1]==output,:]
-            Zu = self.Z * self._Xscale + self._Xoffset
-            Zu = self.Z[self.Z[:,-1]==output ,0:1] #??
-            ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
-            #ax.set_ylim(ax.get_ylim()[0],)
+            elif self.X.shape[1] == 2:
+                Zu = self.Z * self._Xscale + self._Xoffset
+                ax.plot(Zu[:, 0], Zu[:, 1], 'wo')
 
         else:
-            raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
+            pass
+            """
+            if self.X.shape[1] == 2 and hasattr(self,'multioutput'):
+                Xu = self.X[self.X[:,-1]==output,:]
+                if self.has_uncertain_inputs:
+                    Xu = self.X * self._Xscale + self._Xoffset  # NOTE self.X are the normalized values now
+
+                    Xu = self.X[self.X[:,-1]==output ,0:1] #??
+
+                    ax.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
+                                xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
+                                ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
+
+                Zu = self.Z[self.Z[:,-1]==output,:]
+                Zu = self.Z * self._Xscale + self._Xoffset
+                Zu = self.Z[self.Z[:,-1]==output ,0:1] #??
+                ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
+                #ax.set_ylim(ax.get_ylim()[0],)
+
+            else:
+                raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
+            """
 
     def predict_single_output(self, Xnew, output=0, which_parts='all', full_cov=False):
         """

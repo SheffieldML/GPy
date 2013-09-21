@@ -166,3 +166,35 @@ def FITC_crescent_data(num_inducing=10, seed=default_seed):
     print(m)
     m.plot()
     return m
+
+
+def toy_heaviside(seed=default_seed):
+    """
+    Simple 1D classification example using a heavy side gp transformation
+    :param seed : seed value for data generation (default is 4).
+    :type seed: int
+    """
+
+    data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
+    Y = data['Y'][:, 0:1]
+    Y[Y.flatten() == -1] = 0
+
+    # Model definition
+    noise_model = GPy.likelihoods.binomial(GPy.likelihoods.noise_models.gp_transformations.Heaviside())
+    likelihood = GPy.likelihoods.EP(Y,noise_model)
+    m = GPy.models.GPClassification(data['X'], likelihood=likelihood)
+
+    # Optimize
+    m.update_likelihood_approximation()
+    # Parameters optimization:
+    m.optimize()
+    #m.pseudo_EM()
+
+    # Plot
+    fig, axes = pb.subplots(2,1)
+    m.plot_f(ax=axes[0])
+    m.plot(ax=axes[1])
+    print(m)
+
+    return m
+

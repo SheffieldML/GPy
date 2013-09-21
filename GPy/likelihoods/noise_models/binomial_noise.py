@@ -1,6 +1,7 @@
 # Copyright (c) 2012, 2013 Ricardo Andrade
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
+
 import numpy as np
 from scipy import stats,special
 import scipy as sp
@@ -116,18 +117,3 @@ class Binomial(NoiseDistribution):
 
     def _d2variance_dgp2(self,gp):
         return self.gp_link.d2transf_df2(gp)*(1. - 2.*self.gp_link.transf(gp)) - 2*self.gp_link.dtransf_df(gp)**2
-
-    """
-    def predictive_values(self,mu,var): #TODO remove
-        mu = mu.flatten()
-        var = var.flatten()
-        #mean = stats.norm.cdf(mu/np.sqrt(1+var))
-        mean = self._predictive_mean_analytical(mu,np.sqrt(var))
-        norm_025 = [stats.norm.ppf(.025,m,v) for m,v in zip(mu,var)]
-        norm_975 = [stats.norm.ppf(.975,m,v) for m,v in zip(mu,var)]
-        #p_025 = stats.norm.cdf(norm_025/np.sqrt(1+var))
-        #p_975 = stats.norm.cdf(norm_975/np.sqrt(1+var))
-        p_025 = self._predictive_mean_analytical(norm_025,np.sqrt(var))
-        p_975 = self._predictive_mean_analytical(norm_975,np.sqrt(var))
-        return mean[:,None], np.nan*var, p_025[:,None], p_975[:,None] # TODO: var
-    """

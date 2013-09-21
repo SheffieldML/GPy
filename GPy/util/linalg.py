@@ -27,48 +27,56 @@ except:
     _blas_available = False
 
 def dtrtrs(A, B, lower=0, trans=0, unitdiag=0):
-    """Wrapper for lapack dtrtrs function
+    """
+    Wrapper for lapack dtrtrs function
 
     :param A: Matrix A
     :param B: Matrix B
     :param lower: is matrix lower (true) or upper (false)
     :returns:
+
     """
     return lapack.dtrtrs(A, B, lower=lower, trans=trans, unitdiag=unitdiag)
 
 def dpotrs(A, B, lower=0):
-    """Wrapper for lapack dpotrs function
+    """
+    Wrapper for lapack dpotrs function
 
     :param A: Matrix A
     :param B: Matrix B
     :param lower: is matrix lower (true) or upper (false)
     :returns:
+
     """
     return lapack.dpotrs(A, B, lower=lower)
 
 def dpotri(A, lower=0):
-    """Wrapper for lapack dpotri function
+    """
+    Wrapper for lapack dpotri function
 
     :param A: Matrix A
     :param lower: is matrix lower (true) or upper (false)
     :returns: A inverse
+
     """
     return lapack.dpotri(A, lower=lower)
 
 def trace_dot(a, b):
     """
-    efficiently compute the trace of the matrix product of a and b
+    Efficiently compute the trace of the matrix product of a and b
     """
     return np.sum(a * b)
 
 def mdot(*args):
-    """Multiply all the arguments using matrix product rules.
+    """
+    Multiply all the arguments using matrix product rules.
     The output is equivalent to multiplying the arguments one by one
     from left to right using dot().
     Precedence can be controlled by creating tuples of arguments,
     for instance mdot(a,((b,c),d)) multiplies a (a*((b*c)*d)).
     Note that this means the output of dot(a,b) and mdot(a,b) will differ if
     a or b is a pure tuple of numbers.
+
     """
     if len(args) == 1:
         return args[0]
@@ -115,14 +123,16 @@ def jitchol(A, maxtries=5):
 
 def jitchol_old(A, maxtries=5):
     """
-    :param A : An almost pd square matrix
+    :param A: An almost pd square matrix
 
     :rval L: the Cholesky decomposition of A
 
-    .. Note:
+    .. note:
+
       Adds jitter to K, to enforce positive-definiteness
       if stuff breaks, please check:
       np.allclose(sp.linalg.cholesky(XXT, lower = True), np.triu(sp.linalg.cho_factor(XXT)[0]).T)
+
     """
     try:
         return linalg.cholesky(A, lower=True)
@@ -142,6 +152,7 @@ def jitchol_old(A, maxtries=5):
 
 def pdinv(A, *args):
     """
+
     :param A: A DxD pd numpy array
 
     :rval Ai: the inverse of A
@@ -152,6 +163,7 @@ def pdinv(A, *args):
     :rtype Li: np.ndarray
     :rval logdet: the log of the determinant of A
     :rtype logdet: float64
+
     """
     L = jitchol(A, *args)
     logdet = 2.*np.sum(np.log(np.diag(L)))
@@ -177,14 +189,13 @@ def chol_inv(L):
 
 def multiple_pdinv(A):
     """
-    Arguments
-    ---------
     :param A: A DxDxN numpy array (each A[:,:,i] is pd)
 
-    Returns
-    -------
-    invs : the inverses of A
-    hld: 0.5* the log of the determinants of A
+    :rval invs: the inverses of A
+    :rtype invs: np.ndarray
+    :rval hld: 0.5* the log of the determinants of A
+    :rtype hld: np.array
+
     """
     N = A.shape[-1]
     chols = [jitchol(A[:, :, i]) for i in range(N)]
@@ -198,15 +209,13 @@ def PCA(Y, input_dim):
     """
     Principal component analysis: maximum likelihood solution by SVD
 
-    Arguments
-    ---------
     :param Y: NxD np.array of data
     :param input_dim: int, dimension of projection
 
-    Returns
-    -------
+
     :rval X: - Nxinput_dim np.array of dimensionality reduced data
-    W - input_dimxD mapping from X to Y
+    :rval W: - input_dimxD mapping from X to Y
+
     """
     if not np.allclose(Y.mean(axis=0), 0.0):
         print "Y is not zero mean, centering it locally (GPy.util.linalg.PCA)"
@@ -273,11 +282,10 @@ def DSYR_blas(A, x, alpha=1.):
     Performs a symmetric rank-1 update operation:
     A <- A + alpha * np.dot(x,x.T)
 
-    Arguments
-    ---------
     :param A: Symmetric NxN np.array
     :param x: Nx1 np.array
     :param alpha: scalar
+
     """
     N = c_int(A.shape[0])
     LDA = c_int(A.shape[0])
@@ -295,11 +303,10 @@ def DSYR_numpy(A, x, alpha=1.):
     Performs a symmetric rank-1 update operation:
     A <- A + alpha * np.dot(x,x.T)
 
-    Arguments
-    ---------
     :param A: Symmetric NxN np.array
     :param x: Nx1 np.array
     :param alpha: scalar
+
     """
     A += alpha * np.dot(x[:, None], x[None, :])
 
@@ -363,8 +370,9 @@ def cholupdate(L, x):
     """
     update the LOWER cholesky factor of a pd matrix IN PLACE
 
-    if L is the lower chol. of K, then this function computes L_
-    where L_ is the lower chol of K + x*x^T
+    if L is the lower chol. of K, then this function computes L\_
+    where L\_ is the lower chol of K + x*x^T
+
     """
     support_code = """
     #include <math.h>

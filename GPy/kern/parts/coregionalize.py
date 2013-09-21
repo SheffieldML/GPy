@@ -11,12 +11,13 @@ class Coregionalize(Kernpart):
     """
     Covariance function for intrinsic/linear coregionalization models
 
-    This covariance has the form
+    This covariance has the form:
     .. math::
        \mathbf{B} = \mathbf{W}\mathbf{W}^\top + \text{diag}(kappa)
 
-    An intrinsic/linear coregionalization covariance function of the form
+    An intrinsic/linear coregionalization covariance function of the form:
     .. math::
+
        k_2(x, y)=\mathbf{B} k(x, y)
 
     it is obtained as the tensor product between a covariance function
@@ -31,7 +32,7 @@ class Coregionalize(Kernpart):
     :param kappa: a vector which allows the outputs to behave independently
     :type kappa: numpy array of dimensionality  (output_dim,)
 
-    .. Note: see coregionalization examples in GPy.examples.regression for some usage.
+    .. note: see coregionalization examples in GPy.examples.regression for some usage.
     """
     def __init__(self, output_dim, rank=1, W=None, kappa=None):
         self.input_dim = 1

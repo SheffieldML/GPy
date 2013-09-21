@@ -4,18 +4,17 @@ from ..util.linalg import pdinv,mdot,jitchol,chol_inv,DSYR,tdot,dtrtrs
 from likelihood import likelihood
 
 class EP(likelihood):
-    def __init__(self,data,noise_model,epsilon=1e-3,power_ep=[1.,1.]):
+    def __init__(self,data,noise_model):
         """
         Expectation Propagation
 
-        Arguments
-        ---------
-        epsilon : Convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
-        noise_model : a likelihood function (see likelihood_functions.py)
+        :param data: data to model
+        :type data: numpy array
+        :param noise_model: noise distribution
+        :type noise_model: A GPy noise model
+
         """
         self.noise_model = noise_model
-        self.epsilon = epsilon
-        self.eta, self.delta = power_ep
         self.data = data
         self.N, self.output_dim = self.data.shape
         self.is_heteroscedastic = True
@@ -87,11 +86,20 @@ class EP(likelihood):
         self.VVT_factor = self.V
         self.trYYT = np.trace(self.YYT)
 
-    def fit_full(self,K):
+    def fit_full(self, K, epsilon=1e-3,power_ep=[1.,1.]):
         """
         The expectation-propagation algorithm.
         For nomenclature see Rasmussen & Williams 2006.
+
+        :param epsilon: Convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
+        :type epsilon: float
+        :param power_ep: Power EP parameters
+        :type power_ep: list of floats
+
         """
+        self.epsilon = epsilon
+        self.eta, self.delta = power_ep
+
         #Initial values - Posterior distribution parameters: q(f|X,Y) = N(f|mu,Sigma)
         mu = np.zeros(self.N)
         Sigma = K.copy()
@@ -149,11 +157,20 @@ class EP(likelihood):
 
         return self._compute_GP_variables()
 
-    def fit_DTC(self, Kmm, Kmn):
+    def fit_DTC(self, Kmm, Kmn, epsilon=1e-3,power_ep=[1.,1.]):
         """
         The expectation-propagation algorithm with sparse pseudo-input.
         For nomenclature see ... 2013.
+
+        :param epsilon: Convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
+        :type epsilon: float
+        :param power_ep: Power EP parameters
+        :type power_ep: list of floats
+
         """
+        self.epsilon = epsilon
+        self.eta, self.delta = power_ep
+
         num_inducing = Kmm.shape[0]
 
         #TODO: this doesn't work with uncertain inputs!
@@ -245,11 +262,19 @@ class EP(likelihood):
 
         self._compute_GP_variables()
 
-    def fit_FITC(self, Kmm, Kmn, Knn_diag):
+    def fit_FITC(self, Kmm, Kmn, Knn_diag, epsilon=1e-3,power_ep=[1.,1.]):
         """
         The expectation-propagation algorithm with sparse pseudo-input.
         For nomenclature see Naish-Guzman and Holden, 2008.
+
+        :param epsilon: Convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
+        :type epsilon: float
+        :param power_ep: Power EP parameters
+        :type power_ep: list of floats
         """
+        self.epsilon = epsilon
+        self.eta, self.delta = power_ep
+
         num_inducing = Kmm.shape[0]
 
         """

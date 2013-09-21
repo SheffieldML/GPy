@@ -92,13 +92,15 @@ class tree:
 
 
     def swap_vertices(self, i, j):
-        """Swap two vertices in the tree structure array.
+        """
+        Swap two vertices in the tree structure array.
         swap_vertex swaps the location of two vertices in a tree structure array. 
-         ARG tree : the tree for which two vertices are to be swapped.
-         ARG i : the index of the first vertex to be swapped.
-         ARG j : the index of the second vertex to be swapped.
-         RETURN tree : the tree structure with the two vertex locations
-         swapped.
+
+        :param tree: the tree for which two vertices are to be swapped.
+        :param i: the index of the first vertex to be swapped.
+        :param j: the index of the second vertex to be swapped.
+        :rval tree: the tree structure with the two vertex locations swapped.
+
         """
         store_vertex_i = self.vertices[i]
         store_vertex_j = self.vertices[j]
@@ -117,12 +119,17 @@ class tree:
 
 def rotation_matrix(xangle, yangle, zangle, order='zxy', degrees=False):
 
-    """Compute the rotation matrix for an angle in each direction.
+    """
+
+    Compute the rotation matrix for an angle in each direction.
     This is a helper function for computing the rotation matrix for a given set of angles in a given order.
-     ARG xangle : rotation for x-axis.
-     ARG yangle : rotation for y-axis.
-     ARG zangle : rotation for z-axis.
-     ARG order : the order for the rotations."""
+
+    :param xangle: rotation for x-axis.
+    :param yangle: rotation for y-axis.
+    :param zangle: rotation for z-axis.
+    :param order: the order for the rotations.
+
+     """
     if degrees:
         xangle = math.radians(xangle)
         yangle = math.radians(yangle)
@@ -301,10 +308,12 @@ class acclaim_skeleton(skeleton):
 
     def load_skel(self, file_name):
 
-        """Loads an ASF file into a skeleton structure.
-        loads skeleton structure from an acclaim skeleton file.
-         ARG file_name : the file name to load in.
-         RETURN skel : the skeleton for the file."""         
+        """
+        Loads an ASF file into a skeleton structure.
+
+        :param file_name: The file name to load in.
+
+         """         
 
         fid = open(file_name, 'r')
         self.read_skel(fid)

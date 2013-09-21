@@ -11,7 +11,7 @@ from noise_distributions import NoiseDistribution
 
 class Exponential(NoiseDistribution):
     """
-    Gamma likelihood
+    Expoential likelihood
     Y is expected to take values in {0,1,2,...}
     -----
     $$

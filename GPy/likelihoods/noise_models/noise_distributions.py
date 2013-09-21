@@ -16,10 +16,11 @@ class NoiseDistribution(object):
     Likelihood class for doing Expectation propagation
 
     :param Y: observed output (Nx1 numpy.darray)
-    ..Note:: Y values allowed depend on the LikelihoodFunction used
+
+    .. note:: Y values allowed depend on the LikelihoodFunction used
     """
     def __init__(self,gp_link,analytical_mean=False,analytical_variance=False):
-        #assert isinstance(gp_link,gp_transformations.GPTransformation), "gp_link is not a valid GPTransformation."#FIXME
+        assert isinstance(gp_link,gp_transformations.GPTransformation), "gp_link is not a valid GPTransformation."
         self.gp_link = gp_link
         self.analytical_mean = analytical_mean
         self.analytical_variance = analytical_variance
@@ -50,7 +51,9 @@ class NoiseDistribution(object):
         """
         In case it is needed, this function assess the output values or makes any pertinent transformation on them.
 
-        :param Y: observed output (Nx1 numpy.darray)
+        :param Y: observed output
+        :type Y: Nx1 numpy.darray
+
         """
         return Y
 
@@ -62,18 +65,21 @@ class NoiseDistribution(object):
         :param obs: observed output
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
+
         """
         return stats.norm.pdf(gp,loc=mu,scale=sigma) * self._mass(gp,obs)
 
     def _nlog_product_scaled(self,gp,obs,mu,sigma):
         """
         Negative log-product between the cavity distribution and a likelihood factor.
-        ..Note:: The constant term in the Gaussian distribution is ignored.
+
+        .. note:: The constant term in the Gaussian distribution is ignored.
 
         :param gp: latent variable
         :param obs: observed output
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
+
         """
         return .5*((gp-mu)/sigma)**2 + self._nlog_mass(gp,obs)
 
@@ -85,6 +91,7 @@ class NoiseDistribution(object):
         :param obs: observed output
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
+
         """
         return (gp - mu)/sigma**2 + self._dnlog_mass_dgp(gp,obs)
 
@@ -96,6 +103,7 @@ class NoiseDistribution(object):
         :param obs: observed output
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
+
         """
         return 1./sigma**2 + self._d2nlog_mass_dgp2(gp,obs)
 
@@ -106,6 +114,7 @@ class NoiseDistribution(object):
         :param obs: observed output
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
+
         """
         return sp.optimize.fmin_ncg(self._nlog_product_scaled,x0=mu,fprime=self._dnlog_product_dgp,fhess=self._d2nlog_product_dgp2,args=(obs,mu,sigma),disp=False)
 
@@ -122,6 +131,7 @@ class NoiseDistribution(object):
         :param obs: observed output
         :param tau: cavity distribution 1st natural parameter (precision)
         :param v: cavity distribution 2nd natural paramenter (mu*precision)
+
         """
         mu = v/tau
         mu_hat = self._product_mode(obs,mu,np.sqrt(1./tau))
@@ -137,7 +147,8 @@ class NoiseDistribution(object):
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
 
-        ..Note:: This function helps computing E(Y_star) = E(E(Y_star|f_star))
+        .. note:: This function helps computing E(Y_star) = E(E(Y_star|f_star))
+
         """
         return .5*((gp - mu)/sigma)**2 - np.log(self._mean(gp))
 
@@ -148,6 +159,7 @@ class NoiseDistribution(object):
         :param gp: latent variable
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
+
         """
         return (gp - mu)/sigma**2 - self._dmean_dgp(gp)/self._mean(gp)
 
@@ -158,6 +170,7 @@ class NoiseDistribution(object):
         :param gp: latent variable
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
+
         """
         return 1./sigma**2 - self._d2mean_dgp2(gp)/self._mean(gp) + (self._dmean_dgp(gp)/self._mean(gp))**2
 
@@ -169,7 +182,8 @@ class NoiseDistribution(object):
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
 
-        ..Note:: This function helps computing E(V(Y_star|f_star))
+        .. note:: This function helps computing E(V(Y_star|f_star))
+
         """
         return .5*((gp - mu)/sigma)**2 - np.log(self._variance(gp))
 
@@ -180,6 +194,7 @@ class NoiseDistribution(object):
         :param gp: latent variable
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
+
         """
         return (gp - mu)/sigma**2 - self._dvariance_dgp(gp)/self._variance(gp)
 
@@ -190,6 +205,7 @@ class NoiseDistribution(object):
         :param gp: latent variable
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
+
         """
         return 1./sigma**2 - self._d2variance_dgp2(gp)/self._variance(gp) + (self._dvariance_dgp(gp)/self._variance(gp))**2
 
@@ -201,7 +217,8 @@ class NoiseDistribution(object):
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
 
-        ..Note:: This function helps computing E( E(Y_star|f_star)**2 )
+        .. note:: This function helps computing E( E(Y_star|f_star)**2 )
+
         """
         return .5*((gp - mu)/sigma)**2 - 2*np.log(self._mean(gp))
 
@@ -212,6 +229,7 @@ class NoiseDistribution(object):
         :param gp: latent variable
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
+
         """
         return (gp - mu)/sigma**2 - 2*self._dmean_dgp(gp)/self._mean(gp)
 
@@ -222,6 +240,7 @@ class NoiseDistribution(object):
         :param gp: latent variable
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
+
         """
         return 1./sigma**2 - 2*( self._d2mean_dgp2(gp)/self._mean(gp) - (self._dmean_dgp(gp)/self._mean(gp))**2 )
 
@@ -243,6 +262,7 @@ class NoiseDistribution(object):
 
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
+
         """
         maximum = sp.optimize.fmin_ncg(self._nlog_conditional_mean_scaled,x0=self._mean(mu),fprime=self._dnlog_conditional_mean_dgp,fhess=self._d2nlog_conditional_mean_dgp2,args=(mu,sigma),disp=False)
         mean = np.exp(-self._nlog_conditional_mean_scaled(maximum,mu,sigma))/(np.sqrt(self._d2nlog_conditional_mean_dgp2(maximum,mu,sigma))*sigma)
@@ -266,6 +286,7 @@ class NoiseDistribution(object):
 
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
+
         """
         maximum = sp.optimize.fmin_ncg(self._nlog_exp_conditional_mean_sq_scaled,x0=self._mean(mu),fprime=self._dnlog_exp_conditional_mean_sq_dgp,fhess=self._d2nlog_exp_conditional_mean_sq_dgp2,args=(mu,sigma),disp=False)
         mean_squared = np.exp(-self._nlog_exp_conditional_mean_sq_scaled(maximum,mu,sigma))/(np.sqrt(self._d2nlog_exp_conditional_mean_sq_dgp2(maximum,mu,sigma))*sigma)
@@ -278,6 +299,7 @@ class NoiseDistribution(object):
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
         :predictive_mean: output's predictive mean, if None _predictive_mean function will be called.
+
         """
         # E( V(Y_star|f_star) )
         maximum = sp.optimize.fmin_ncg(self._nlog_exp_conditional_variance_scaled,x0=self._variance(mu),fprime=self._dnlog_exp_conditional_variance_dgp,fhess=self._d2nlog_exp_conditional_variance_dgp2,args=(mu,sigma),disp=False)
@@ -310,6 +332,7 @@ class NoiseDistribution(object):
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
         :predictive_mean: output's predictive mean, if None _predictive_mean function will be called.
+
         """
         qf = stats.norm.ppf(p,mu,sigma)
         return self.gp_link.transf(qf)
@@ -321,6 +344,7 @@ class NoiseDistribution(object):
         :param x: tuple (latent variable,output)
         :param mu: latent variable's predictive mean
         :param sigma: latent variable's predictive standard deviation
+
         """
         return self._nlog_product_scaled(x[0],x[1],mu,sigma)
 
@@ -331,7 +355,9 @@ class NoiseDistribution(object):
         :param x: tuple (latent variable,output)
         :param mu: latent variable's predictive mean
         :param sigma: latent variable's predictive standard deviation
-        ..Note: Only avilable when the output is continuous
+
+        .. note: Only available when the output is continuous
+
         """
         assert not self.discrete, "Gradient not available for discrete outputs."
         return np.array((self._dnlog_product_dgp(gp=x[0],obs=x[1],mu=mu,sigma=sigma),self._dnlog_mass_dobs(obs=x[1],gp=x[0])))
@@ -343,7 +369,9 @@ class NoiseDistribution(object):
         :param x: tuple (latent variable,output)
         :param mu: latent variable's predictive mean
         :param sigma: latent variable's predictive standard deviation
-        ..Note: Only avilable when the output is continuous
+
+        .. note: Only available when the output is continuous
+
         """
         assert not self.discrete, "Hessian not available for discrete outputs."
         cross_derivative = self._d2nlog_mass_dcross(gp=x[0],obs=x[1])
@@ -356,14 +384,17 @@ class NoiseDistribution(object):
         :param x: tuple (latent variable,output)
         :param mu: latent variable's predictive mean
         :param sigma: latent variable's predictive standard deviation
+
         """
         return sp.optimize.fmin_ncg(self._nlog_joint_predictive_scaled,x0=(mu,self.gp_link.transf(mu)),fprime=self._gradient_nlog_joint_predictive,fhess=self._hessian_nlog_joint_predictive,args=(mu,sigma),disp=False)
 
     def predictive_values(self,mu,var):
         """
-        Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction
+        Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction.
+
         :param mu: mean of the latent variable
         :param var: variance of the latent variable
+
         """
         if isinstance(mu,float) or isinstance(mu,int):
             mu = [mu]

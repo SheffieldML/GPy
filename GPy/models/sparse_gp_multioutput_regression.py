@@ -30,23 +30,23 @@ class SparseGPMultioutputRegression(SparseGP):
     :type Z_list: list of numpy arrays (num_inducing_output_i x input_dim), one array per output | empty list
     :param num_inducing: number of inducing inputs per output, defaults to 10 (ignored if Z_list is not empty)
     :type num_inducing: integer
-    :param W_columns: number tuples of the corregionalization parameters 'coregion_W' (see coregionalize kernel documentation)
-    :type W_columns: integer
+    :param rank: number tuples of the corregionalization parameters 'coregion_W' (see coregionalize kernel documentation)
+    :type rank: integer
     """
     #NOTE not tested with uncertain inputs
-    def __init__(self,X_list,Y_list,kernel_list=None,noise_variance_list=None,normalize_X=False,normalize_Y=False,Z_list=[],num_inducing=10,W_columns=1):
+    def __init__(self,X_list,Y_list,kernel_list=None,noise_variance_list=None,normalize_X=False,normalize_Y=False,Z_list=[],num_inducing=10,rank=1):
 
-        self.num_outputs = len(Y_list)
-        assert len(X_list) == self.num_outputs, 'Number of outputs do not match length of inputs list.'
+        self.output_dim = len(Y_list)
+        assert len(X_list) == self.output_dim, 'Number of outputs do not match length of inputs list.'
 
         #Inducing inputs list
         if len(Z_list):
-            assert len(Z_list) == self.num_outputs, 'Number of outputs do not match length of inducing inputs list.'
+            assert len(Z_list) == self.output_dim, 'Number of outputs do not match length of inducing inputs list.'
         else:
             if isinstance(num_inducing,np.int):
-                num_inducing = [num_inducing] * self.num_outputs
+                num_inducing = [num_inducing] * self.output_dim
             num_inducing = np.asarray(num_inducing)
-            assert num_inducing.size == self.num_outputs, 'Number of outputs do not match length of inducing inputs list.'
+            assert num_inducing.size == self.output_dim, 'Number of outputs do not match length of inducing inputs list.'
             for ni,X in zip(num_inducing,X_list):
                 i = np.random.permutation(X.shape[0])[:ni]
                 Z_list.append(X[i].copy())
@@ -72,7 +72,7 @@ class SparseGPMultioutputRegression(SparseGP):
         #Coregionalization kernel definition
         if kernel_list is None:
             kernel_list = [kern.rbf(original_dim)]
-        mkernel = kern.build_lcm(input_dim=original_dim, num_outputs=self.num_outputs, kernel_list = kernel_list, W_columns=W_columns)
+        mkernel = kern.build_lcm(input_dim=original_dim, output_dim=self.output_dim, kernel_list = kernel_list, rank=rank)
 
         self.multioutput = True
         SparseGP.__init__(self, X, likelihood, mkernel, Z=Z, normalize_X=normalize_X)

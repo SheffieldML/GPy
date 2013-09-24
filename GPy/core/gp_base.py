@@ -128,10 +128,9 @@ class GPBase(Model):
             else:
                 raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
         else:
-            assert self.num_outputs > output, 'The model has only %s outputs.' %self.num_outputs
+            assert len(self.likelihood.noise_model_list) > output, 'The model has only %s outputs.' %self.num_outputs
 
             if self.X.shape[1] == 2:
-                assert self.num_outputs >= output, 'The model has only %s outputs.' %self.num_outputs
                 Xu = self.X[self.X[:,-1]==output ,0:1]
                 Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
 
@@ -263,7 +262,7 @@ class GPBase(Model):
                 raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
         else:
-            assert self.num_outputs > output, 'The model has only %s outputs.' %self.num_outputs
+            assert len(self.likelihood.noise_model_list) > output, 'The model has only %s outputs.' %self.num_outputs
             if self.X.shape[1] == 2:
                 resolution = resolution or 200
                 Xu = self.X[self.X[:,-1]==output,:] #keep the output of interest
@@ -287,3 +286,20 @@ class GPBase(Model):
 
             else:
                 raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
+
+    """
+    def samples_f(self,X,samples=10, which_data='all', which_parts='all',output=None):
+        if which_data == 'all':
+            which_data = slice(None)
+
+        if hasattr(self,'multioutput'):
+            np.hstack([X,np.ones((X.shape[0],1))*output])
+
+        m, v = self._raw_predict(X, which_parts=which_parts, full_cov=True)
+        v = v.reshape(m.size,-1) if len(v.shape)==3 else v
+        Ysim = np.random.multivariate_normal(m.flatten(), v, samples)
+        #gpplot(X, m, m - 2 * np.sqrt(np.diag(v)[:, None]), m + 2 * np.sqrt(np.diag(v))[:, None, ], axes=ax)
+        for i in range(samples):
+            ax.plot(X, Ysim[i, :], Tango.colorsHex['darkBlue'], linewidth=0.25)
+
+    """

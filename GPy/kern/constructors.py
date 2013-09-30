@@ -544,3 +544,23 @@ def build_lcm(input_dim, output_dim, kernel_list = [], rank=1,W=None,kappa=None)
         kernel += k**k_coreg.copy()
 
     return kernel
+
+def ODE_1(input_dim=1, varianceU=1.,  varianceY=1., lengthscaleU=None,  lengthscaleY=None):
+    """
+    kernel resultiong from a first order ODE with OU driving GP
+
+    :param input_dim: the number of input dimension, has to be equal to one
+    :type input_dim: int
+    :param varianceU: variance of the driving GP
+    :type varianceU: float
+    :param lengthscaleU: lengthscale of the driving GP
+    :type lengthscaleU: float
+    :param varianceY: 'variance' of the transfer function
+    :type varianceY: float
+    :param lengthscaleY: 'lengthscale' of the transfer function
+    :type lengthscaleY: float
+    :rtype: kernel object
+
+    """
+    part = parts.ODE_1.ODE_1(input_dim, varianceU, varianceY, lengthscaleU, lengthscaleY)
+    return kern(input_dim, [part])

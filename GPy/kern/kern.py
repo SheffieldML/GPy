@@ -578,7 +578,7 @@ class Kern_check_model(Model):
 
     def is_positive_definite(self):
         v = np.linalg.eig(self.kernel.K(self.X))[0]
-        if any(v<-sys.float_info.epsilon):
+        if any(v<-10*sys.float_info.epsilon):
             return False
         else:
             return True

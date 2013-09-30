@@ -283,15 +283,16 @@ def Brownian(input_dim, variance=1.):
     part = parts.Brownian.Brownian(input_dim, variance)
     return kern(input_dim, [part])
 
-#try:
-import sympy as sp
-from parts.sympykern import spkern
-from sympy.parsing.sympy_parser import parse_expr
-sympy_available = True
-#except ImportError:
-#    sympy_available = False
+try:
+    import sympy as sp
+    sympy_available = True
+except ImportError:
+    sympy_available = False
 
 if sympy_available:
+    from parts.sympykern import spkern
+    from sympy.parsing.sympy_parser import parse_expr
+
     def rbf_sympy(input_dim, ARD=False, variance=1., lengthscale=1.):
         """
         Radial Basis Function covariance.

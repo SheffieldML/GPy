@@ -9,3 +9,17 @@ double DiracDelta(double x){
 double DiracDelta(double x,int foo){
     return 0.0;
 };
+
+double sinc(double x){
+  if (x==0)
+    return 1.0;
+  else 
+    return sin(x)/x;
+}
+
+double sinc_grad(double x){
+  if (x==0)
+    return 0.0;
+  else 
+    return (x*cos(x) - sin(x))/(x*x);
+}

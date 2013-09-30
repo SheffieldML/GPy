@@ -47,6 +47,7 @@ class Model(Parameterized):
 
         :param state: the state of the model.
         :type state: list as returned from getstate.
+
         """
         self.preferred_optimizer = state.pop()
         self.sampling_runs = state.pop()
@@ -56,10 +57,11 @@ class Model(Parameterized):
 
     def set_prior(self, regexp, what):
         """
+
         Sets priors on the model parameters.
 
-        Notes
-        -----
+        **Notes**
+
         Asserts that the prior is suitable for the constraint. If the
         wrong constraint is in place, an error is raised.  If no
         constraint is in place, one is added (warning printed).
@@ -185,8 +187,8 @@ class Model(Parameterized):
         be handled silently.  If _all_ runs fail, the model is reset to the
         existing parameter values.
 
-        Notes
-        -----
+        **Notes**
+
         :param num_restarts: number of restarts to use (default 10)
         :type num_restarts: int
         :param robust: whether to handle exceptions silently or not (default False)
@@ -195,7 +197,9 @@ class Model(Parameterized):
         :type parallel: bool
         :param num_processes: number of workers in the multiprocessing pool
         :type numprocesses: int
-        **kwargs are passed to the optimizer. They can be:
+
+        \*\*kwargs are passed to the optimizer. They can be:
+
         :param max_f_eval: maximum number of function evaluations
         :type max_f_eval: int
         :param max_iters: maximum number of iterations
@@ -203,9 +207,7 @@ class Model(Parameterized):
         :param messages: whether to display during optimisation
         :type messages: bool
 
-        ..Note: If num_processes is None, the number of workes in the multiprocessing pool is automatically
-        set to the number of processors on the current machine.
-
+        .. note:: If num_processes is None, the number of workes in the multiprocessing pool is automatically set to the number of processors on the current machine.
 
         """
         initial_parameters = self._get_params_transformed()
@@ -538,22 +540,17 @@ class Model(Parameterized):
             return k.variances
 
 
-    def pseudo_EM(self, epsilon=.1, **kwargs):
+    def pseudo_EM(self, stop_crit=.1, **kwargs):
         """
-        TODO: Should this not bein the GP class?
         EM - like algorithm  for Expectation Propagation and Laplace approximation
 
-        kwargs are passed to the optimize function. They can be:
+        :param stop_crit: convergence criterion
+        :type stop_crit: float
 
-        :epsilon: convergence criterion
-        :max_f_eval: maximum number of function evaluations
-        :messages: whether to display during optimisation
-        :param optimzer: whice optimizer to use (defaults to self.preferred optimizer)
-        :type optimzer: string TODO: valid strings?
-
+        .. Note: kwargs are passed to update_likelihood and optimize functions. 
         """
         assert isinstance(self.likelihood, likelihoods.EP) or isinstance(self.likelihood, likelihoods.EP_Mixed_Noise), "pseudo_EM is only available for EP likelihoods"
-        ll_change = epsilon + 1.
+        ll_change = stop_crit + 1.
         iteration = 0
         last_ll = -np.inf
 
@@ -561,10 +558,25 @@ class Model(Parameterized):
         alpha = 0
         stop = False
 
+        #Handle **kwargs
+        ep_args = {}
+        for arg in kwargs.keys():
+            if arg in ('epsilon','power_ep'):
+                ep_args[arg] = kwargs[arg]
+                del kwargs[arg]
+
         while not stop:
             last_approximation = self.likelihood.copy()
             last_params = self._get_params()
-            self.update_likelihood_approximation()
+            if len(ep_args) == 2:
+                self.update_likelihood_approximation(epsilon=ep_args['epsilon'],power_ep=ep_args['power_ep'])
+            elif len(ep_args) == 1:
+                if  ep_args.keys()[0] == 'epsilon':
+                    self.update_likelihood_approximation(epsilon=ep_args['epsilon'])
+                elif ep_args.keys()[0] == 'power_ep':
+                    self.update_likelihood_approximation(power_ep=ep_args['power_ep'])
+            else:
+                self.update_likelihood_approximation()
             new_ll = self.log_likelihood()
             ll_change = new_ll - last_ll
 
@@ -576,7 +588,7 @@ class Model(Parameterized):
             else:
                 self.optimize(**kwargs)
                 last_ll = self.log_likelihood()
-                if ll_change < epsilon:
+                if ll_change < stop_crit:
                     stop = True
             iteration += 1
             if stop:

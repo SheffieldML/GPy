@@ -57,12 +57,12 @@ class Gaussian(NoiseDistribution):
         new_sigma2 = self.predictive_variance(mu,sigma)
         return new_sigma2*(mu/sigma**2 + self.gp_link.transf(mu)/self.variance)
 
-    def _predictive_variance_analytical(self,mu,sigma,*args): #TODO *args?
+    def _predictive_variance_analytical(self,mu,sigma):
         return 1./(1./self.variance + 1./sigma**2)
 
     def _mass(self,gp,obs):
         #return std_norm_pdf( (self.gp_link.transf(gp)-obs)/np.sqrt(self.variance) )
-        return stats.norm.pdf(obs,self.gp_link.transf(gp),np.sqrt(self.variance)) #FIXME
+        return stats.norm.pdf(obs,self.gp_link.transf(gp),np.sqrt(self.variance))
 
     def _nlog_mass(self,gp,obs):
         return .5*((self.gp_link.transf(gp)-obs)**2/self.variance + np.log(2.*np.pi*self.variance))

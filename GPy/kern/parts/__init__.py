@@ -2,10 +2,11 @@ import bias
 import Brownian
 import coregionalize
 import exponential
+import eq_ode1
 import finite_dimensional
 import fixed
 import gibbs
-#import hetero #hetero.py is not commited: omitting for now. JH. 
+import hetero
 import hierarchical
 import independent_outputs
 import linear

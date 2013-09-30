@@ -58,6 +58,8 @@ class Kernpart(object):
         raise NotImplementedError
     def dK_dX(self, dL_dK, X, X2, target):
         raise NotImplementedError
+    def dKdiag_dX(self, dL_dK, X, target):
+        raise NotImplementedError
 
 
 
@@ -96,6 +98,9 @@ class Kernpart_stationary(Kernpart):
         # For stationary covariances, derivative of diagonal elements
         # wrt lengthscale is 0.
         target[0] += np.sum(dL_dKdiag)
+
+    def dKdiag_dX(self, dL_dK, X, target):
+        pass # true for all stationary kernels
 
 
 class Kernpart_inner(Kernpart):

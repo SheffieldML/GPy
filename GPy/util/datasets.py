@@ -7,9 +7,21 @@ import urllib as url
 import zipfile
 import tarfile
 import datetime
-    
+
+ipython_notebook = False
+if ipython_notebook:
+    import IPython.core.display
+    def ipynb_input(varname, prompt=''):
+        """Prompt user for input and assign string val to given variable name."""
+        js_code = ("""
+            var value = prompt("{prompt}","");
+            var py_code = "{varname} = '" + value + "'";
+            IPython.notebook.kernel.execute(py_code);
+        """).format(prompt=prompt, varname=varname)
+        return IPython.core.display.Javascript(js_code)
 
 import sys, urllib
+
 def reporthook(a,b,c): 
     # ',' at the end of the line is important!
     #print "% 3.1f%% of %d bytes\r" % (min(100, float(a * b) / c * 100), c),
@@ -130,14 +142,18 @@ The database was created with funding from NSF EIA-0196217.""",
                                         'license' : None,
                                         'size' : 24229368},
                   }
-                  
+
+
 def prompt_user():
     """Ask user for agreeing to data set licenses."""
     # raw_input returns the empty string for "enter"
     yes = set(['yes', 'y'])
     no = set(['no','n'])
-
-    choice = raw_input().lower()
+    choice = ''
+    if ipython_notebook:
+        ipynb_input(choice, prompt='provide your answer here')
+    else:
+        choice = raw_input().lower()
     if choice in yes:
         return True
     elif choice in no:
@@ -145,6 +161,7 @@ def prompt_user():
     else:
         sys.stdout.write("Please respond with 'yes', 'y' or 'no', 'n'")
         return prompt_user()
+
 
 def data_available(dataset_name=None):
     """Check if the data set is available on the local machine already."""
@@ -524,11 +541,14 @@ def simulation_BGPLVM():
             'info': "Simulated test dataset generated in MATLAB to compare BGPLVM between python and MATLAB"}
 
 def toy_rbf_1d(seed=default_seed, num_samples=500):
-    """Samples values of a function from an RBF covariance with very small noise for inputs uniformly distributed between -1 and 1.
+    """
+    Samples values of a function from an RBF covariance with very small noise for inputs uniformly distributed between -1 and 1.
+
     :param seed: seed to use for random sampling.
     :type seed: int
     :param num_samples: number of samples to sample in the function (default 500).
     :type num_samples: int
+
     """
     np.random.seed(seed=seed)
     num_in = 1
@@ -631,11 +651,15 @@ def olympic_marathon_men(data_set='olympic_marathon_men'):
 
 
 def crescent_data(num_data=200, seed=default_seed):
-    """Data set formed from a mixture of four Gaussians. In each class two of the Gaussians are elongated at right angles to each other and offset to form an approximation to the crescent data that is popular in semi-supervised learning as a toy problem.
+    """
+Data set formed from a mixture of four Gaussians. In each class two of the Gaussians are elongated at right angles to each other and offset to form an approximation to the crescent data that is popular in semi-supervised learning as a toy problem.
+
     :param num_data_part: number of data to be sampled (default is 200).
     :type num_data: int
     :param seed: random seed to be used for data generation.
-    :type seed: int"""
+    :type seed: int
+
+    """
     np.random.seed(seed=seed)
     sqrt2 = np.sqrt(2)
     # Rotation matrix

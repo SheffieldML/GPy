@@ -16,16 +16,17 @@ class SparseGP(GPBase):
     :type X: np.ndarray (num_data x input_dim)
     :param likelihood: a likelihood instance, containing the observed data
     :type likelihood: GPy.likelihood.(Gaussian | EP | Laplace)
-    :param kernel : the kernel (covariance function). See link kernels
+    :param kernel: the kernel (covariance function). See link kernels
     :type kernel: a GPy.kern.kern instance
     :param X_variance: The uncertainty in the measurements of X (Gaussian variance)
     :type X_variance: np.ndarray (num_data x input_dim) | None
     :param Z: inducing inputs (optional, see note)
     :type Z: np.ndarray (num_inducing x input_dim) | None
-    :param num_inducing : Number of inducing points (optional, default 10. Ignored if Z is not None)
+    :param num_inducing: Number of inducing points (optional, default 10. Ignored if Z is not None)
     :type num_inducing: int
-    :param normalize_(X|Y) : whether to normalize the data before computing (predictions will be in original scales)
+    :param normalize_(X|Y): whether to normalize the data before computing (predictions will be in original scales)
     :type normalize_(X|Y): bool
+
     """
 
     def __init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False):
@@ -215,7 +216,7 @@ class SparseGP(GPBase):
     #def _get_print_names(self):
     #    return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
-    def update_likelihood_approximation(self):
+    def update_likelihood_approximation(self, **kwargs):
         """
         Approximates a non-gaussian likelihood using Expectation Propagation
 
@@ -229,10 +230,10 @@ class SparseGP(GPBase):
                 Kmmi = tdot(Lmi.T)
                 diag_tr_psi2Kmmi = np.array([np.trace(psi2_Kmmi) for psi2_Kmmi in np.dot(self.psi2, Kmmi)])
 
-                self.likelihood.fit_FITC(self.Kmm, self.psi1.T, diag_tr_psi2Kmmi) # This uses the fit_FITC code, but does not perfomr a FITC-EP.#TODO solve potential confusion
+                self.likelihood.fit_FITC(self.Kmm, self.psi1.T, diag_tr_psi2Kmmi, **kwargs) # This uses the fit_FITC code, but does not perfomr a FITC-EP.#TODO solve potential confusion
                 # raise NotImplementedError, "EP approximation not implemented for uncertain inputs"
             else:
-                self.likelihood.fit_DTC(self.Kmm, self.psi1.T)
+                self.likelihood.fit_DTC(self.Kmm, self.psi1.T, **kwargs)
                 # self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
                 self._set_params(self._get_params()) # update the GP
 
@@ -292,7 +293,7 @@ class SparseGP(GPBase):
                 Kxx = self.kern.Kdiag(Xnew, which_parts=which_parts)
                 var = Kxx - np.sum(Kx * np.dot(Kmmi_LmiBLmi, Kx), 0)
         else:
-            # assert which_p.Tarts=='all', "swithching out parts of variational kernels is not implemented"
+            # assert which_parts=='all', "swithching out parts of variational kernels is not implemented"
             Kx = self.kern.psi1(self.Z, Xnew, X_variance_new) # , which_parts=which_parts) TODO: which_parts
             mu = np.dot(Kx, self.Cpsi1V)
             if full_cov:
@@ -306,10 +307,11 @@ class SparseGP(GPBase):
 
     def predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
         """
+
         Predict the function(s) at the new point(s) Xnew.
 
-        Arguments
-        ---------
+        **Arguments**
+
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray, Nnew x self.input_dim
         :param X_variance_new: The uncertainty in the prediction points
@@ -365,9 +367,8 @@ class SparseGP(GPBase):
                 ax.plot(Zu[:, 0], Zu[:, 1], 'wo')
 
         else:
-            pass
-            """
             if self.X.shape[1] == 2 and hasattr(self,'multioutput'):
+                """
                 Xu = self.X[self.X[:,-1]==output,:]
                 if self.has_uncertain_inputs:
                     Xu = self.X * self._Xscale + self._Xoffset  # NOTE self.X are the normalized values now
@@ -378,6 +379,7 @@ class SparseGP(GPBase):
                                 xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
                                 ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
 
+                """
                 Zu = self.Z[self.Z[:,-1]==output,:]
                 Zu = self.Z * self._Xscale + self._Xoffset
                 Zu = self.Z[self.Z[:,-1]==output ,0:1] #??
@@ -386,13 +388,11 @@ class SparseGP(GPBase):
 
             else:
                 raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
-            """
 
     def predict_single_output(self, Xnew, output=0, which_parts='all', full_cov=False):
         """
         For a specific output, predict the function at the new point(s) Xnew.
-        Arguments
-        ---------
+
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray, Nnew x self.input_dim
         :param output: output to predict

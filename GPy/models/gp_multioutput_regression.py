@@ -25,14 +25,14 @@ class GPMultioutputRegression(GP):
     :type normalize_X: False|True
     :param normalize_Y:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_Y: False|True
-    :param W_columns: number tuples of the corregionalization parameters 'coregion_W' (see coregionalize kernel documentation)
-    :type W_columns: integer
+    :param rank: number tuples of the corregionalization parameters 'coregion_W' (see coregionalize kernel documentation)
+    :type rank: integer
     """
 
-    def __init__(self,X_list,Y_list,kernel_list=None,noise_variance_list=None,normalize_X=False,normalize_Y=False,W_columns=1):
+    def __init__(self,X_list,Y_list,kernel_list=None,noise_variance_list=None,normalize_X=False,normalize_Y=False,rank=1):
 
-        self.num_outputs = len(Y_list)
-        assert len(X_list) == self.num_outputs, 'Number of outputs do not match length of inputs list.'
+        self.output_dim = len(Y_list)
+        assert len(X_list) == self.output_dim, 'Number of outputs do not match length of inputs list.'
 
         #Inputs indexing
         i = 0
@@ -51,7 +51,7 @@ class GPMultioutputRegression(GP):
         #Coregionalization kernel definition
         if kernel_list is None:
             kernel_list = [kern.rbf(original_dim)]
-        mkernel = kern.build_lcm(input_dim=original_dim, num_outputs=self.num_outputs, kernel_list = kernel_list, W_columns=W_columns)
+        mkernel = kern.build_lcm(input_dim=original_dim, output_dim=self.output_dim, kernel_list = kernel_list, rank=rank)
 
         self.multioutput = True
         GP.__init__(self, X, likelihood, mkernel, normalize_X=normalize_X)

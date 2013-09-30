@@ -13,20 +13,38 @@ class GPTransformation(object):
     Link function class for doing non-Gaussian likelihoods approximation
 
     :param Y: observed output (Nx1 numpy.darray)
-    ..Note:: Y values allowed depend on the likelihood_function used
+
+    .. note:: Y values allowed depend on the likelihood_function used
+
     """
     def __init__(self):
         pass
 
+    def transf(self,f):
+        """
+        Gaussian process tranformation function, latent space -> output space
+        """
+        pass
+
+    def dtransf_df(self,f):
+        """
+        derivative of transf(f) w.r.t. f
+        """
+        pass
+
+    def d2transf_df2(self,f):
+        """
+        second derivative of transf(f) w.r.t. f
+        """
+        pass
+
 class Identity(GPTransformation):
     """
-    $$
-    g(f) = f
-    $$
-    """
-    #def transf(self,mu):
-    #    return mu
+    .. math::
 
+        g(f) = f
+
+    """
     def transf(self,f):
         return f
 
@@ -39,13 +57,11 @@ class Identity(GPTransformation):
 
 class Probit(GPTransformation):
     """
-    $$
-    g(f) = \\Phi^{-1} (mu)
-    $$
-    """
-    #def transf(self,mu):
-    #    return inv_std_norm_cdf(mu)
+    .. math::
 
+        g(f) = \\Phi^{-1} (mu)
+
+    """
     def transf(self,f):
         return std_norm_cdf(f)
 
@@ -57,13 +73,11 @@ class Probit(GPTransformation):
 
 class Log(GPTransformation):
     """
-    $$
-    g(f) = \log(\mu)
-    $$
-    """
-    #def transf(self,mu):
-    #    return np.log(mu)
+    .. math::
 
+        g(f) = \\log(\\mu)
+
+    """
     def transf(self,f):
         return np.exp(f)
 
@@ -75,20 +89,12 @@ class Log(GPTransformation):
 
 class Log_ex_1(GPTransformation):
     """
-    $$
-    g(f) = \log(\exp(\mu) - 1)
-    $$
-    """
-    #def transf(self,mu):
-    #    """
-    #    function: output space -> latent space
-    #    """
-    #    return np.log(np.exp(mu) - 1)
+    .. math::
 
+        g(f) = \\log(\\exp(\\mu) - 1)
+
+    """
     def transf(self,f):
-        """
-        function: latent space -> output space
-        """
         return np.log(1.+np.exp(f))
 
     def dtransf_df(self,f):
@@ -110,9 +116,11 @@ class Reciprocal(GPTransformation):
 
 class Heaviside(GPTransformation):
     """
-    $$
-    g(f) = I_{x \in A}
-    $$
+
+    .. math::
+
+        g(f) = I_{x \\in A}
+
     """
     def transf(self,f):
         #transformation goes here

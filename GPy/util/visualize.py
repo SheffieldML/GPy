@@ -502,11 +502,14 @@ def data_play(Y, visualizer, frame_rate=30):
 
     This example loads in the CMU mocap database (http://mocap.cs.cmu.edu) subject number 35 motion number 01. It then plays it using the mocap_show visualize object.
     
-    data = GPy.util.datasets.cmu_mocap(subject='35', train_motions=['01'])
-    Y = data['Y']
-    Y[:, 0:3] = 0.   # Make figure walk in place
-    visualize = GPy.util.visualize.skeleton_show(Y[0, :], data['skel'])
-    GPy.util.visualize.data_play(Y, visualize)
+    .. code-block:: python
+
+       data = GPy.util.datasets.cmu_mocap(subject='35', train_motions=['01'])
+       Y = data['Y']
+       Y[:, 0:3] = 0.   # Make figure walk in place
+       visualize = GPy.util.visualize.skeleton_show(Y[0, :], data['skel'])
+       GPy.util.visualize.data_play(Y, visualize)
+
     """
     
 

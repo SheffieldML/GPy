@@ -26,8 +26,11 @@ class spkern(Kernpart):
      - to handle multiple inputs, call them x1, z1, etc
      - to handle multpile correlated outputs, you'll need to define each covariance function and 'cross' variance function. TODO
     """
-    def __init__(self,input_dim,k,param=None):
-        self.name='sympykern'
+    def __init__(self,input_dim,k,name=None,param=None):
+        if name is None:
+            self.name='sympykern'
+        else:
+            self.name = name
         self._sp_k = k
         sp_vars = [e for e in k.atoms() if e.is_Symbol]
         self._sp_x= sorted([e for e in sp_vars if e.name[0]=='x'],key=lambda x:int(x.name[1:]))
@@ -56,9 +59,9 @@ class spkern(Kernpart):
 
         self.weave_kwargs = {\
             'support_code':self._function_code,\
-            'include_dirs':[tempfile.gettempdir(), os.path.join(current_dir,'kern/')],\
+            'include_dirs':[tempfile.gettempdir(), os.path.join(current_dir,'parts/')],\
             'headers':['"sympy_helpers.h"'],\
-            'sources':[os.path.join(current_dir,"kern/sympy_helpers.cpp")],\
+            'sources':[os.path.join(current_dir,"parts/sympy_helpers.cpp")],\
             #'extra_compile_args':['-ftree-vectorize', '-mssse3', '-ftree-vectorizer-verbose=5'],\
             'extra_compile_args':[],\
             'extra_link_args':['-lgomp'],\
@@ -109,14 +112,15 @@ class spkern(Kernpart):
         f.write(self._function_header)
         f.close()
 
-        #get rid of derivatives of DiracDelta
+        # Substitute any known derivatives which sympy doesn't compute
         self._function_code = re.sub('DiracDelta\(.+?,.+?\)','0.0',self._function_code)
 
-        #Here's some code to do the looping for K
-        arglist = ", ".join(["X[i*input_dim+%s]"%x.name[1:] for x in self._sp_x]\
-                + ["Z[j*input_dim+%s]"%z.name[1:] for z in self._sp_z]\
-                + ["param[%i]"%i for i in range(self.num_params)])
+        # Here's the code to do the looping for K
+        arglist = ", ".join(["X[i*input_dim+%s]"%x.name[1:] for x in self._sp_x]
+                            + ["Z[j*input_dim+%s]"%z.name[1:] for z in self._sp_z]
+                            + ["param[%i]"%i for i in range(self.num_params)])
 
+        
         self._K_code =\
         """
         int i;
@@ -133,9 +137,14 @@ class spkern(Kernpart):
         %s
         """%(arglist,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
+        # Similar code when only X is provided. 
+        self._K_code_X = self._K_code.replace('Z[', 'X[')
+
+        
+        # Code to compute diagonal of covariance.
         diag_arglist = re.sub('Z','X',arglist)
         diag_arglist = re.sub('j','i',diag_arglist)
-        #Here's some code to do the looping for Kdiag
+        # Code to do the looping for Kdiag
         self._Kdiag_code =\
         """
         int i;
@@ -148,8 +157,9 @@ class spkern(Kernpart):
         %s
         """%(diag_arglist,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
-        #here's some code to compute gradients
+        # Code to compute gradients
         funclist = '\n'.join([' '*16 + 'target[%i] += partial[i*num_inducing+j]*dk_d%s(%s);'%(i,theta.name,arglist) for i,theta in  enumerate(self._sp_theta)])
+
         self._dK_dtheta_code =\
         """
         int i;
@@ -164,9 +174,12 @@ class spkern(Kernpart):
             }
         }
         %s
-        """%(funclist,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
+        """%(funclist,"/*"+str(self._sp_k)+"*/") # adding a string representation forces recompile when needed
 
-        #here's some code to compute gradients for Kdiag TODO: thius is yucky.
+        # Similar code when only X is provided, change argument lists.
+        self._dK_dtheta_code_X = self._dK_dtheta_code.replace('Z[', 'X[')
+
+        # Code to compute gradients for Kdiag TODO: needs clean up
         diag_funclist = re.sub('Z','X',funclist,count=0)
         diag_funclist = re.sub('j','i',diag_funclist)
         diag_funclist = re.sub('partial\[i\*num_inducing\+i\]','partial[i]',diag_funclist)
@@ -181,8 +194,12 @@ class spkern(Kernpart):
         %s
         """%(diag_funclist,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
-        #Here's some code to do gradients wrt x
+        # Code for gradients wrt X
         gradient_funcs = "\n".join(["target[i*input_dim+%i] += partial[i*num_inducing+j]*dk_dx%i(%s);"%(q,q,arglist) for q in range(self.input_dim)])
+        if False:
+            gradient_funcs += """if(isnan(target[i*input_dim+2])){printf("%%f\\n",dk_dx2(X[i*input_dim+0], X[i*input_dim+1], X[i*input_dim+2], Z[j*input_dim+0], Z[j*input_dim+1], Z[j*input_dim+2], param[0], param[1], param[2], param[3], param[4], param[5]));}
+            if(isnan(target[i*input_dim+2])){printf("%%f,%%f,%%i,%%i\\n", X[i*input_dim+2], Z[j*input_dim+2],i,j);}"""
+
         self._dK_dX_code = \
         """
         int i;
@@ -192,30 +209,34 @@ class spkern(Kernpart):
         int input_dim = X_array->dimensions[1];
         //#pragma omp parallel for private(j)
         for (i=0;i<N; i++){
-            for (j=0; j<num_inducing; j++){
-                %s
-                //if(isnan(target[i*input_dim+2])){printf("%%f\\n",dk_dx2(X[i*input_dim+0], X[i*input_dim+1], X[i*input_dim+2], Z[j*input_dim+0], Z[j*input_dim+1], Z[j*input_dim+2], param[0], param[1], param[2], param[3], param[4], param[5]));}
-                //if(isnan(target[i*input_dim+2])){printf("%%f,%%f,%%i,%%i\\n", X[i*input_dim+2], Z[j*input_dim+2],i,j);}
-
-            }
+          for (j=0; j<num_inducing; j++){
+            %s
+          }
         }
         %s
         """%(gradient_funcs,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
+  
+        # Create code for call when just X is passed as argument.
+        self._dK_dX_code_X = self._dK_dX_code.replace('Z[', 'X[').replace('+= partial[', '+= 2*partial[')
 
-        #now for gradients of Kdiag wrt X
+        diag_gradient_funcs = re.sub('Z','X',gradient_funcs,count=0)
+        diag_gradient_funcs = re.sub('j','i',diag_gradient_funcs)
+        diag_gradient_funcs = re.sub('partial\[i\*num_inducing\+i\]','2*partial[i]',diag_gradient_funcs)
+
+        # Code for gradients of Kdiag wrt X
         self._dKdiag_dX_code= \
         """
-        int i;
-        int j;
         int N = partial_array->dimensions[0];
-        int num_inducing = 0;
         int input_dim = X_array->dimensions[1];
-        for (i=0;i<N; i++){
-            j = i;
+        for (int i=0;i<N; i++){
             %s
         }
         %s
-        """%(gradient_funcs,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
+        """%(diag_gradient_funcs,"/*"+str(self._sp_k)+"*/") #adding a
+        # string representation forces recompile when needed Get rid
+        # of Zs in argument for diagonal. TODO: Why wasn't
+        # diag_funclist called here? Need to check that.
+        #self._dKdiag_dX_code = self._dKdiag_dX_code.replace('Z[j', 'X[i')
 
 
         #TODO: insert multiple functions here via string manipulation
@@ -223,7 +244,10 @@ class spkern(Kernpart):
 
     def K(self,X,Z,target):
         param = self._param
-        weave.inline(self._K_code,arg_names=['target','X','Z','param'],**self.weave_kwargs)
+        if Z is None:
+            weave.inline(self._K_code_X,arg_names=['target','X','param'],**self.weave_kwargs)
+        else:
+            weave.inline(self._K_code,arg_names=['target','X','Z','param'],**self.weave_kwargs)
 
     def Kdiag(self,X,target):
         param = self._param
@@ -231,21 +255,25 @@ class spkern(Kernpart):
 
     def dK_dtheta(self,partial,X,Z,target):
         param = self._param
-        weave.inline(self._dK_dtheta_code,arg_names=['target','X','Z','param','partial'],**self.weave_kwargs)
+        if Z is None:
+            weave.inline(self._dK_dtheta_code_X, arg_names=['target','X','param','partial'],**self.weave_kwargs)
+        else:
+            weave.inline(self._dK_dtheta_code, arg_names=['target','X','Z','param','partial'],**self.weave_kwargs)
 
     def dKdiag_dtheta(self,partial,X,target):
         param = self._param
-        Z = X
-        weave.inline(self._dKdiag_dtheta_code,arg_names=['target','X','Z','param','partial'],**self.weave_kwargs)
+        weave.inline(self._dKdiag_dtheta_code,arg_names=['target','X','param','partial'],**self.weave_kwargs)
 
     def dK_dX(self,partial,X,Z,target):
         param = self._param
-        weave.inline(self._dK_dX_code,arg_names=['target','X','Z','param','partial'],**self.weave_kwargs)
+        if Z is None:
+            weave.inline(self._dK_dX_code_X,arg_names=['target','X','param','partial'],**self.weave_kwargs)
+        else:
+            weave.inline(self._dK_dX_code,arg_names=['target','X','Z','param','partial'],**self.weave_kwargs)
 
     def dKdiag_dX(self,partial,X,target):
         param = self._param
-        Z = X
-        weave.inline(self._dKdiag_dX_code,arg_names=['target','X','Z','param','partial'],**self.weave_kwargs)
+        weave.inline(self._dKdiag_dX_code,arg_names=['target','X','param','partial'],**self.weave_kwargs)
 
     def _set_params(self,param):
         #print param.flags['C_CONTIGUOUS']

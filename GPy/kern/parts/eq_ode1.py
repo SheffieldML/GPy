@@ -120,14 +120,75 @@ class Eq_ode1(Kernpart):
             t2_mat = self._t2[None, self._rorder2]
             target+=self.initial_variance * np.exp(- self.decay * (t1_mat + t2_mat))
 
-
-
     def Kdiag(self,index,target):
         #target += np.diag(self.B)[np.asarray(index,dtype=np.int).flatten()]
         pass
     
-    def dK_dtheta(self,dL_dK,index,index2,target):
-        pass
+    def dK_dtheta(self,dL_dK,X,X2,target):
+        
+        # First extract times and indices.
+        self._extract_t_indices(X, X2, dL_dK=dL_dK)
+        self._dK_ode_dtheta(target)
+        
+
+    def _dK_ode_dtheta(self, target):
+        """Do all the computations for the ode parts of the covariance function."""
+        t_ode = self._t[self._index>0]
+        dL_dK_ode = self._dL_dK[self._index>0, :]
+        index_ode = self._index[self._index>0]-1
+        if self._t2 is None:
+            if t_ode.size==0:
+                return        
+            t2_ode = t_ode
+            dL_dK_ode = dL_dK_ode[:, self._index>0]
+            index2_ode = index_ode
+        else:
+            t2_ode = self._t2[self._index2>0]
+            dL_dK_ode = dL_dK_ode[:, self._index2>0]
+            if t_ode.size==0 or t2_ode.size==0:
+                return
+            index2_ode = self._index2[self._index2>0]-1
+
+        h1 = self._compute_H(t_ode, index_ode, t2_ode, index2_ode, stationary=self.is_stationary, update_derivatives=True)
+        #self._dK_ddelay = self._dh_ddelay
+        self._dK_dsigma = self._dh_dsigma
+
+        if self._t2 is None:
+            h2 = h1
+        else:
+            h2 = self._compute_H(t2_ode, index2_ode, t_ode, index_ode, stationary=self.is_stationary, update_derivatives=True)
+
+        #self._dK_ddelay += self._dh_ddelay.T
+        self._dK_dsigma += self._dh_dsigma.T
+        # C1 = self.sensitivity
+        # C2 = self.sensitivity
+
+        # K = 0.5 * (h1 + h2.T)
+        # var2 = C1*C2
+        # if self.is_normalized:
+        #     dk_dD1 = (sum(sum(dL_dK.*dh1_dD1)) + sum(sum(dL_dK.*dh2_dD1.T)))*0.5*var2
+        #     dk_dD2 = (sum(sum(dL_dK.*dh1_dD2)) + sum(sum(dL_dK.*dh2_dD2.T)))*0.5*var2
+        #     dk_dsigma = 0.5 * var2 * sum(sum(dL_dK.*dK_dsigma))
+        #     dk_dC1 = C2 * sum(sum(dL_dK.*K))
+        #     dk_dC2 = C1 * sum(sum(dL_dK.*K))
+        # else:
+        #     K = np.sqrt(np.pi) * K
+        #     dk_dD1 = (sum(sum(dL_dK.*dh1_dD1)) + * sum(sum(dL_dK.*K))
+        #     dk_dC2 = self.sigma * C1 * sum(sum(dL_dK.*K))
+
+
+        # dk_dSim1Variance = dk_dC1
+        # Last element is the length scale.
+        (dL_dK_ode[:, :, None]*self._dh_ddelay[:, None, :]).sum(2)
+
+        target[-1] += (dL_dK_ode*self._dK_dsigma/np.sqrt(2)).sum()
+
+
+        # # only pass the gradient with respect to the inverse width to one
+        # # of the gradient vectors ... otherwise it is counted twice.
+        # g1 = real([dk_dD1 dk_dinvWidth dk_dSim1Variance])
+        # g2 = real([dk_dD2 0 dk_dSim2Variance])
+        # return g1, g2"""
 
     def dKdiag_dtheta(self,dL_dKdiag,index,target):
         pass
@@ -135,7 +196,7 @@ class Eq_ode1(Kernpart):
     def dK_dX(self,dL_dK,X,X2,target):
         pass
 
-    def _extract_t_indices(self, X, X2=None):
+    def _extract_t_indices(self, X, X2=None, dL_dK=None):
         """Extract times and output indices from the input matrix X. Times are ordered according to their index for convenience of computation, this ordering is stored in self._order and self.order2. These orderings are then mapped back to the original ordering (in X) using self._rorder and self._rorder2. """
 
         # TODO: some fast checking here to see if this needs recomputing?
@@ -153,6 +214,7 @@ class Eq_ode1(Kernpart):
         if X2 is None:
             self._t2 = None
             self._index2 = None
+            self._order2 = self._order
             self._rorder2 = self._rorder
         else:
             if not X2.shape[1] == 2:
@@ -164,6 +226,10 @@ class Eq_ode1(Kernpart):
             self._t2 = self._t2[self._order2]
             self._rorder2 = self._order2.argsort() # rorder2 is for reversing order
 
+        if dL_dK is not None:
+            self._dL_dK = dL_dK[self._order, :]
+            self._dL_dK = self._dL_dK[:, self._order2]
+            
     def _K_computations(self, X, X2):
         """Perform main body of computations for the ode1 covariance function."""
         # First extract times and indices.
@@ -279,16 +345,16 @@ class Eq_ode1(Kernpart):
         decay_vals = self.decay[index_ode][:, None]
         half_sigma_d_i = 0.5*self.sigma*decay_vals
 
-        if self.is_stationary == False:
-            ln_part, signs = ln_diff_erfs(half_sigma_d_i + t_eq_mat/self.sigma, half_sigma_d_i - inv_sigma_diff_t, return_sign=True)
-        else:
+        if self.is_stationary:
             ln_part, signs = ln_diff_erfs(inf, half_sigma_d_i - inv_sigma_diff_t, return_sign=True)
+        else:
+            ln_part, signs = ln_diff_erfs(half_sigma_d_i + t_eq_mat/self.sigma, half_sigma_d_i - inv_sigma_diff_t, return_sign=True)
         sK = signs*np.exp(half_sigma_d_i*half_sigma_d_i - decay_vals*diff_t + ln_part)
 
         sK *= 0.5
 
         if not self.is_normalized:
-            sK *= sqrt(pi)*self.sigma
+            sK *= np.sqrt(np.pi)*self.sigma
 
 
         if transpose:
@@ -315,24 +381,84 @@ class Eq_ode1(Kernpart):
             index2_ode = self._index2[self._index2>0]-1
         
         # When index is identical
-        if self.is_stationary:
-            h = self._compute_H_stat(t_ode, index_ode, t2_ode, index2_ode)
-        else:
-            h = self._compute_H(t_ode, index_ode, t2_ode, index2_ode)
+        h = self._compute_H(t_ode, index_ode, t2_ode, index2_ode, stationary=self.is_stationary)
 
         if self._t2 is None:
             self._K_ode = 0.5 * (h + h.T)
         else:
-            if self.is_stationary:
-                h2 = self._compute_H_stat(t2_ode, index2_ode, t_ode, index_ode)
-            else:
-                h2 = self._compute_H(t2_ode, index2_ode, t_ode, index_ode)                
+            h2 = self._compute_H(t2_ode, index2_ode, t_ode, index_ode, stationary=self.is_stationary)                
             self._K_ode = 0.5 * (h + h2.T)
 
         if not self.is_normalized:
             self._K_ode *= np.sqrt(np.pi)*self.sigma
+    def _compute_diag_H(self, t, index, update_derivatives=False, stationary=False):
+        """Helper function for computing H for the diagonal only.
+        :param t: time input.
+        :type t: array
+        :param index: first output indices
+        :type index: array of int.
+        :param index: second output indices
+        :type index: array of int.
+        :param update_derivatives: whether or not to update the derivative portions (default False).
+        :type update_derivatives: bool
+        :param stationary: whether to compute the stationary version of the covariance (default False).
+        :type stationary: bool"""
+
+        """if delta_i~=delta_j:
+            [h, dh_dD_i, dh_dD_j, dh_dsigma] = np.diag(simComputeH(t, index, t, index, update_derivatives=True, stationary=self.is_stationary))
+        else:
+            Decay = self.decay[index]
+            if self.delay is not None:
+                t = t - self.delay[index]
+            
+            t_squared = t*t
+            half_sigma_decay = 0.5*self.sigma*Decay
+            [ln_part_1, sign1] = ln_diff_erfs(half_sigma_decay + t/self.sigma,
+                                              half_sigma_decay)
     
-    def _compute_H(self, t, index, t2, index2, update_derivatives=False):
+            [ln_part_2, sign2] = ln_diff_erfs(half_sigma_decay,
+                                              half_sigma_decay - t/self.sigma)
+            
+            h = (sign1*np.exp(half_sigma_decay*half_sigma_decay
+                             + ln_part_1
+                             - log(Decay + D_j)) 
+                 - sign2*np.exp(half_sigma_decay*half_sigma_decay
+                                - (Decay + D_j)*t
+                                + ln_part_2 
+                                - log(Decay + D_j)))
+    
+            sigma2 = self.sigma*self.sigma
+
+        if update_derivatives:
+        
+            dh_dD_i = ((0.5*Decay*sigma2*(Decay + D_j)-1)*h 
+                       + t*sign2*np.exp(
+                half_sigma_decay*half_sigma_decay-(Decay+D_j)*t + ln_part_2
+                )
+                       + self.sigma/np.sqrt(np.pi)*
+                       (-1 + np.exp(-t_squared/sigma2-Decay*t)
+                        + np.exp(-t_squared/sigma2-D_j*t)
+                        - np.exp(-(Decay + D_j)*t)))
+        
+            dh_dD_i = (dh_dD_i/(Decay+D_j)).real
+        
+        
+        
+            dh_dD_j = (t*sign2*np.exp(
+                half_sigma_decay*half_sigma_decay-(Decay + D_j)*t+ln_part_2
+                )
+                       -h)
+            dh_dD_j = (dh_dD_j/(Decay + D_j)).real
+
+            dh_dsigma = 0.5*Decay*Decay*self.sigma*h \
+                        + 2/(np.sqrt(np.pi)*(Decay+D_j))\
+                        *((-Decay/2) \
+                          + (-t/sigma2+Decay/2)*np.exp(-t_squared/sigma2 - Decay*t) \
+                          - (-t/sigma2-Decay/2)*np.exp(-t_squared/sigma2 - D_j*t) \
+                          - Decay/2*np.exp(-(Decay+D_j)*t))"""
+        pass
+    
+    def _compute_H(self, t, index, t2, index2, update_derivatives=False, stationary=False):
         """Helper function for computing part of the ode1 covariance function.
 
         :param t: first time input.
@@ -348,44 +474,16 @@ class Eq_ode1(Kernpart):
         :rtype: ndarray
 """
 
-
+        if stationary:
+            raise NotImplementedError, "Error, stationary version of this covariance not yet implemented."
         # Vector of decays and delays associated with each output.
-        Decay = np.zeros(t.shape[0])
-        Decay2 = np.zeros(t2.shape[0])
-        Delay = np.zeros(t.shape[0])
-        Delay2 = np.zeros(t2.shape[0])
-        code="""
-        for(int i=0;i<N; i++){
-          Decay[i] = decay[index[i]];
-          }
-        for(int i=0; i<N2; i++){
-          Decay2[i] = decay[index2[i]];
-          }
-        """
-        decay = self.decay
-        N, N2 = index.size, index2.size
-        weave.inline(code,['index', 'index2',
-                           'Decay', 'Decay2',
-                           'decay',
-                           'N', 'N2'])
+        Decay = self.decay[index]
+        Decay2 = self.decay[index2]
         t_mat = t[:, None]
         t2_mat = t2[None, :]
         if self.delay is not None:
-            code="""
-            for(int i=0;i<N; i++){
-              Delay[i] = delay[index[i]];
-              }
-            for(int i=0; i<N2; i++){
-              Delay2[i] = delay[index2[i]];
-              }
-            """
-            delay=self.delay
-            N, N2 = index.size, index2.size
-            weave.inline(code,['index', 'index2',
-                               'Delay', 'Delay2', 
-                               'delay', 
-                               'N', 'N2'])
-
+            Delay = self.delay[index]
+            Delay2 = self.delay[index2]
             t_mat-=Delay[:, None]
             t2_mat-=Delay2[None, :]
 
@@ -408,31 +506,51 @@ class Eq_ode1(Kernpart):
                           -Decay[:, None]*t_mat-Decay2[None, :]*t2_mat+ln_part_2
                           -np.log(Decay[:, None] + Decay2[None, :]))
 
-        return h
-        # if update_derivatives:
-        #     sigma2 = self.sigma*self.sigma
-        #     # Update ith decay gradient
-        #     dh_ddecay += (0.5*self.decay[i]*sigma2*(self.decay[i] + decay[j])-1)*h
-        #     + (-diff_t*sign1*np.exp(half_sigma_decay_i*half_sigma_decay_i-self.decay[i]*diff_t+ln_part_1) 
-        #        +t_mat*sign2*np.exp(half_sigma_decay_i*half_sigma_decay_i-self.decay[i]*t_mat - decay[j]*t2_mat+ln_part_2)) ...
-        #     +self.sigma/sqrt(pi)*(-np.exp(-diff_t*diff_t/sigma2)
-        #                           +np.exp(-t2_mat*t2_mat/sigma2-self.decay[i]*t_mat) 
-        #                           +np.exp(-t_mat*t_mat/sigma2-decay[j]*t2_mat) ...
-        #                           -np.exp(-(self.decay[i]*t_mat + decay[j]*t2_mat)))
-        #     self._dh_ddecay[i] += real(dh_ddecay/(self.decay[i]+decay[j]))
+        if update_derivatives:
+            sigma2 = self.sigma*self.sigma
+            # Update ith decay gradient
 
-        #     # Update jth decay gradient
-        #     dh_ddecay = t2_mat*sign2*np.exp(half_sigma_decay_i*half_sigma_decay_i-(self.decay[i]*t_mat + decay[j]*t2_mat)+ln_part_2)-h
-        #     self._dh_ddecay[j] += real(dh_ddecay/(self.decay[i] + decay[j]))
+            dh_ddecay = ((0.5*Decay[:, None]*sigma2*(Decay[:, None] + Decay2[None, :])-1)*h
+                         + (-diff_t*sign1*np.exp(
+                half_sigma_decay_i*half_sigma_decay_i-Decay[:, None]*diff_t+ln_part_1
+                )
+                            +t_mat*sign2*np.exp(
+                half_sigma_decay_i*half_sigma_decay_i-Decay[:, None]*t_mat
+                - Decay2*t2_mat+ln_part_2))
+                         +self.sigma/np.sqrt(np.pi)*(
+                -np.exp(
+                -diff_t*diff_t/sigma2
+                )+np.exp(
+                -t2_mat*t2_mat/sigma2-Decay[:, None]*t_mat
+                )+np.exp(
+                -t_mat*t_mat/sigma2-Decay2[None, :]*t2_mat
+                )-np.exp(
+                -(Decay[:, None]*t_mat + Decay2[None, :]*t2_mat)
+                )
+                ))
+            self._dh_ddecay = (dh_ddecay/(Decay[:, None]+Decay2[None, :])).real
             
-        #     # Update sigma gradient
-        #     self._dh_dsigma += 0.5*self.decay[i]*self.decay[i]*self.sigma*h + 2/(np.sqrt(np.pi)*(self.decay[i]+decay[j]))*((-diff_t/sigma2-self.decay[i]/ 
-        #                                                                                                                     2)*np.exp(-diff_t*
-        #                                                                                                                               diff_t/sigma2) 
-        #                                                                                                                    + (-t2_mat/sigma2+self.decay[i]/2)
-        #                                                                                                                    *np.exp(-t2_mat*t2_mat/sigma2 
-        #                                                                                                                            -self.decay[i]*t_mat) 
-        #                                                                                                                    - (-t_mat/sigma2-self.decay[i]/2) 
-        #                                                                                                                    *np.exp(-t_mat*t_mat/sigma2-decay[j]*t2_mat) 
-        #                                                                                                                    - self.decay[i]/2*np.exp(-(self.decay[i]*t_mat+decay[j]*t2_mat)))
+            # Update jth decay gradient
+            dh_ddecay2 = (t2_mat*sign2
+                         *np.exp(
+                half_sigma_decay_i*half_sigma_decay_i
+                -(Decay[:, None]*t_mat + Decay2[None, :]*t2_mat)
+                +ln_part_2
+                )
+                         -h)
+            self._dh_ddecay2 = (dh_ddecay/(Decay[:, None] + Decay2[None, :])).real
+            
+            # Update sigma gradient
+            self._dh_dsigma = (half_sigma_decay_i*Decay[:, None]*h
+                               + 2/(np.sqrt(np.pi)
+                                    *(Decay[:, None]+Decay2[None, :]))
+                               *((-diff_t/sigma2-Decay[:, None]/2)
+                                 *np.exp(-diff_t*diff_t/sigma2)
+                                 + (-t2_mat/sigma2+Decay[:, None]/2)
+                                 *np.exp(-t2_mat*t2_mat/sigma2-Decay[:, None]*t_mat) 
+                                 - (-t_mat/sigma2-Decay[:, None]/2) 
+                                 *np.exp(-t_mat*t_mat/sigma2-Decay2[None, :]*t2_mat) 
+                                 - Decay[:, None]/2
+                                 *np.exp(-(Decay[:, None]*t_mat+Decay2[None, :]*t2_mat))))
                 
+        return h

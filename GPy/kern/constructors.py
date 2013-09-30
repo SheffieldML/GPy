@@ -283,13 +283,13 @@ def Brownian(input_dim, variance=1.):
     part = parts.Brownian.Brownian(input_dim, variance)
     return kern(input_dim, [part])
 
-try:
-    import sympy as sp
-    from sympykern import spkern
-    from sympy.parsing.sympy_parser import parse_expr
-    sympy_available = True
-except ImportError:
-    sympy_available = False
+#try:
+import sympy as sp
+from parts.sympykern import spkern
+from sympy.parsing.sympy_parser import parse_expr
+sympy_available = True
+#except ImportError:
+#    sympy_available = False
 
 if sympy_available:
     def rbf_sympy(input_dim, ARD=False, variance=1., lengthscale=1.):
@@ -298,24 +298,35 @@ if sympy_available:
         """
         X = [sp.var('x%i' % i) for i in range(input_dim)]
         Z = [sp.var('z%i' % i) for i in range(input_dim)]
-        rbf_variance = sp.var('rbf_variance',positive=True)
+        variance = sp.var('variance',positive=True)
         if ARD:
-            rbf_lengthscales = [sp.var('rbf_lengthscale_%i' % i, positive=True) for i in range(input_dim)]
-            dist_string = ' + '.join(['(x%i-z%i)**2/rbf_lengthscale_%i**2' % (i, i, i) for i in range(input_dim)])
+            lengthscales = [sp.var('lengthscale_%i' % i, positive=True) for i in range(input_dim)]
+            dist_string = ' + '.join(['(x%i-z%i)**2/lengthscale_%i**2' % (i, i, i) for i in range(input_dim)])
             dist = parse_expr(dist_string)
-            f =  rbf_variance*sp.exp(-dist/2.)
+            f =  variance*sp.exp(-dist/2.)
         else:
-            rbf_lengthscale = sp.var('rbf_lengthscale',positive=True)
+            lengthscale = sp.var('lengthscale',positive=True)
             dist_string = ' + '.join(['(x%i-z%i)**2' % (i, i) for i in range(input_dim)])
             dist = parse_expr(dist_string)
-            f =  rbf_variance*sp.exp(-dist/(2*rbf_lengthscale**2))
-        return kern(input_dim, [spkern(input_dim, f)])
+            f =  variance*sp.exp(-dist/(2*lengthscale**2))
+        return kern(input_dim, [spkern(input_dim, f, name='rbf_sympy')])
 
-    def sympykern(input_dim, k):
+    def sympykern(input_dim, k,name=None):
         """
-        A kernel from a symbolic sympy representation
+        A base kernel object, where all the hard work in done by sympy.
+
+        :param k: the covariance function
+        :type k: a positive definite sympy function of x1, z1, x2, z2...
+
+        To construct a new sympy kernel, you'll need to define:
+         - a kernel function using a sympy object. Ensure that the kernel is of the form k(x,z).
+         - that's it! we'll extract the variables from the function k.
+
+        Note:
+         - to handle multiple inputs, call them x1, z1, etc
+         - to handle multpile correlated outputs, you'll need to define each covariance function and 'cross' variance function. TODO
         """
-        return kern(input_dim, [spkern(input_dim, k)])
+        return kern(input_dim, [spkern(input_dim, k,name)])
 del sympy_available
 
 def periodic_exponential(input_dim=1, variance=1., lengthscale=None, period=2 * np.pi, n_freq=10, lower=0., upper=4 * np.pi):

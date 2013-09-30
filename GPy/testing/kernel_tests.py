@@ -83,19 +83,19 @@ class KernelTests(unittest.TestCase):
         kern = GPy.kern.poly(5, degree=4)
         self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
-    def test_coregionalization(self):
-        X1 = np.random.rand(50,1)*8
-        X2 = np.random.rand(30,1)*5
-        index = np.vstack((np.zeros_like(X1),np.ones_like(X2)))
-        X = np.hstack((np.vstack((X1,X2)),index))
-        Y1 = np.sin(X1) + np.random.randn(*X1.shape)*0.05
-        Y2 = np.sin(X2) + np.random.randn(*X2.shape)*0.05 + 2.
-        Y = np.vstack((Y1,Y2))
+    # def test_coregionalization(self):
+    #     X1 = np.random.rand(50,1)*8
+    #     X2 = np.random.rand(30,1)*5
+    #     index = np.vstack((np.zeros_like(X1),np.ones_like(X2)))
+    #     X = np.hstack((np.vstack((X1,X2)),index))
+    #     Y1 = np.sin(X1) + np.random.randn(*X1.shape)*0.05
+    #     Y2 = np.sin(X2) + np.random.randn(*X2.shape)*0.05 + 2.
+    #     Y = np.vstack((Y1,Y2))
 
-        k1 = GPy.kern.rbf(1) + GPy.kern.bias(1)
-        k2 = GPy.kern.coregionalize(2,1)
-        kern = k1**k2
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+    #     k1 = GPy.kern.rbf(1) + GPy.kern.bias(1)
+    #     k2 = GPy.kern.coregionalize(2,1)
+    #     kern = k1**k2
+    #     self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
 
 if __name__ == "__main__":

@@ -22,8 +22,7 @@ class POLY(Kernpart):
     The kernel is not recommended as it is badly behaved when the
     :math:`\sigma^2_w\*x'\*y + \sigma^2_b` has a magnitude greater than one. For completeness
     there is an automatic relevance determination version of this
-    kernel provided.
-
+    kernel provided (NOTE YET IMPLEMENTED!).
     :param input_dim: the number of input dimensions
     :type input_dim: int 
     :param variance: the variance :math:`\sigma^2`

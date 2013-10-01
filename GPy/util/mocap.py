@@ -120,13 +120,14 @@ class tree:
 def rotation_matrix(xangle, yangle, zangle, order='zxy', degrees=False):
 
     """
+
     Compute the rotation matrix for an angle in each direction.
     This is a helper function for computing the rotation matrix for a given set of angles in a given order.
 
-     :param xangle: rotation for x-axis.
-     :param yangle: rotation for y-axis.
-     :param zangle: rotation for z-axis.
-     :param order: the order for the rotations.
+    :param xangle: rotation for x-axis.
+    :param yangle: rotation for y-axis.
+    :param zangle: rotation for z-axis.
+    :param order: the order for the rotations.
 
      """
     if degrees:
@@ -309,10 +310,8 @@ class acclaim_skeleton(skeleton):
 
         """
         Loads an ASF file into a skeleton structure.
-        loads skeleton structure from an acclaim skeleton file.
 
-         :param file_name: the file name to load in.
-         :rval skel: the skeleton for the file. - TODO isn't returning this?
+        :param file_name: The file name to load in.
 
          """         
 

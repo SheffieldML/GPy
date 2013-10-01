@@ -367,9 +367,8 @@ class SparseGP(GPBase):
                 ax.plot(Zu[:, 0], Zu[:, 1], 'wo')
 
         else:
-            pass
-            """
             if self.X.shape[1] == 2 and hasattr(self,'multioutput'):
+                """
                 Xu = self.X[self.X[:,-1]==output,:]
                 if self.has_uncertain_inputs:
                     Xu = self.X * self._Xscale + self._Xoffset  # NOTE self.X are the normalized values now
@@ -380,6 +379,7 @@ class SparseGP(GPBase):
                                 xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
                                 ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
 
+                """
                 Zu = self.Z[self.Z[:,-1]==output,:]
                 Zu = self.Z * self._Xscale + self._Xoffset
                 Zu = self.Z[self.Z[:,-1]==output ,0:1] #??
@@ -388,13 +388,11 @@ class SparseGP(GPBase):
 
             else:
                 raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
-            """
 
     def predict_single_output(self, Xnew, output=0, which_parts='all', full_cov=False):
         """
         For a specific output, predict the function at the new point(s) Xnew.
-        Arguments
-        ---------
+
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray, Nnew x self.input_dim
         :param output: output to predict

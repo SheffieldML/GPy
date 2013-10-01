@@ -1,0 +1,8 @@
+Frequently Asked Questions
+--------------------------
+
+Unit tests are run through Travis-Ci. They can be run locally through entering the GPy route diretory and writing
+
+nosetests testing/
+
+Documentation is handled by Sphinx. To build the documentation:

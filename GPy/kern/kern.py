@@ -1,6 +1,7 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
+import sys
 import numpy as np
 import pylab as pb
 from ..core.parameterized import Parameterized
@@ -222,7 +223,8 @@ class kern(Parameterized):
 
     def prod(self, other, tensor=False):
         """
-        multiply two kernels (either on the same space, or on the tensor product of the input space).
+        Multiply two kernels (either on the same space, or on the tensor product of the input space).
+
         :param other: the other kernel to be added
         :type other: GPy.kern
         :param tensor: whether or not to use the tensor space (default is false).
@@ -576,7 +578,7 @@ class Kern_check_model(Model):
 
     def is_positive_definite(self):
         v = np.linalg.eig(self.kernel.K(self.X))[0]
-        if any(v<-1e-6):
+        if any(v<-10*sys.float_info.epsilon):
             return False
         else:
             return True

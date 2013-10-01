@@ -16,20 +16,20 @@ class EP(likelihood):
         """
         self.noise_model = noise_model
         self.data = data
-        self.N, self.output_dim = self.data.shape
+        self.num_data, self.output_dim = self.data.shape
         self.is_heteroscedastic = True
         self.Nparams = 0
         self._transf_data = self.noise_model._preprocess_values(data)
 
         #Initial values - Likelihood approximation parameters:
         #p(y|f) = t(f|tau_tilde,v_tilde)
-        self.tau_tilde = np.zeros(self.N)
-        self.v_tilde = np.zeros(self.N)
+        self.tau_tilde = np.zeros(self.num_data)
+        self.v_tilde = np.zeros(self.num_data)
 
         #initial values for the GP variables
-        self.Y = np.zeros((self.N,1))
-        self.covariance_matrix = np.eye(self.N)
-        self.precision = np.ones(self.N)[:,None]
+        self.Y = np.zeros((self.num_data,1))
+        self.covariance_matrix = np.eye(self.num_data)
+        self.precision = np.ones(self.num_data)[:,None]
         self.Z = 0
         self.YYT = None
         self.V = self.precision * self.Y
@@ -39,11 +39,11 @@ class EP(likelihood):
         super(EP, self).__init__()
 
     def restart(self):
-        self.tau_tilde = np.zeros(self.N)
-        self.v_tilde = np.zeros(self.N)
-        self.Y = np.zeros((self.N,1))
-        self.covariance_matrix = np.eye(self.N)
-        self.precision = np.ones(self.N)[:,None]
+        self.tau_tilde = np.zeros(self.num_data)
+        self.v_tilde = np.zeros(self.num_data)
+        self.Y = np.zeros((self.num_data,1))
+        self.covariance_matrix = np.eye(self.num_data)
+        self.precision = np.ones(self.num_data)[:,None]
         self.Z = 0
         self.YYT = None
         self.V = self.precision * self.Y
@@ -77,6 +77,7 @@ class EP(likelihood):
         sigma_sum = 1./self.tau_ + 1./self.tau_tilde
         mu_diff_2 = (self.v_/self.tau_ - mu_tilde)**2
         self.Z = np.sum(np.log(self.Z_hat)) + 0.5*np.sum(np.log(sigma_sum)) + 0.5*np.sum(mu_diff_2/sigma_sum) #Normalization constant, aka Z_ep
+        self.Z += 0.5*self.num_data*np.log(2*np.pi)
 
         self.Y =  mu_tilde[:,None]
         self.YYT = np.dot(self.Y,self.Y.T)
@@ -95,12 +96,13 @@ class EP(likelihood):
         :type epsilon: float
         :param power_ep: Power EP parameters
         :type power_ep: list of floats
+
         """
         self.epsilon = epsilon
         self.eta, self.delta = power_ep
 
         #Initial values - Posterior distribution parameters: q(f|X,Y) = N(f|mu,Sigma)
-        mu = np.zeros(self.N)
+        mu = np.zeros(self.num_data)
         Sigma = K.copy()
 
         """
@@ -109,15 +111,15 @@ class EP(likelihood):
         sigma_ = 1./tau_
         mu_ = v_/tau_
         """
-        self.tau_ = np.empty(self.N,dtype=float)
-        self.v_ = np.empty(self.N,dtype=float)
+        self.tau_ = np.empty(self.num_data,dtype=float)
+        self.v_ = np.empty(self.num_data,dtype=float)
 
         #Initial values - Marginal moments
-        z = np.empty(self.N,dtype=float)
-        self.Z_hat = np.empty(self.N,dtype=float)
-        phi = np.empty(self.N,dtype=float)
-        mu_hat = np.empty(self.N,dtype=float)
-        sigma2_hat = np.empty(self.N,dtype=float)
+        z = np.empty(self.num_data,dtype=float)
+        self.Z_hat = np.empty(self.num_data,dtype=float)
+        phi = np.empty(self.num_data,dtype=float)
+        mu_hat = np.empty(self.num_data,dtype=float)
+        sigma2_hat = np.empty(self.num_data,dtype=float)
 
         #Approximation
         epsilon_np1 = self.epsilon + 1.
@@ -126,7 +128,7 @@ class EP(likelihood):
         self.np1 = [self.tau_tilde.copy()]
         self.np2 = [self.v_tilde.copy()]
         while epsilon_np1 > self.epsilon or epsilon_np2 > self.epsilon:
-            update_order = np.random.permutation(self.N)
+            update_order = np.random.permutation(self.num_data)
             for i in update_order:
                 #Cavity distribution parameters
                 self.tau_[i] = 1./Sigma[i,i] - self.eta*self.tau_tilde[i]
@@ -144,13 +146,13 @@ class EP(likelihood):
                 self.iterations += 1
             #Sigma recomptutation with Cholesky decompositon
             Sroot_tilde_K = np.sqrt(self.tau_tilde)[:,None]*K
-            B = np.eye(self.N) + np.sqrt(self.tau_tilde)[None,:]*Sroot_tilde_K
+            B = np.eye(self.num_data) + np.sqrt(self.tau_tilde)[None,:]*Sroot_tilde_K
             L = jitchol(B)
             V,info = dtrtrs(L,Sroot_tilde_K,lower=1)
             Sigma = K - np.dot(V.T,V)
             mu = np.dot(Sigma,self.v_tilde)
-            epsilon_np1 = sum((self.tau_tilde-self.np1[-1])**2)/self.N
-            epsilon_np2 = sum((self.v_tilde-self.np2[-1])**2)/self.N
+            epsilon_np1 = sum((self.tau_tilde-self.np1[-1])**2)/self.num_data
+            epsilon_np2 = sum((self.v_tilde-self.np2[-1])**2)/self.num_data
             self.np1.append(self.tau_tilde.copy())
             self.np2.append(self.v_tilde.copy())
 
@@ -165,6 +167,7 @@ class EP(likelihood):
         :type epsilon: float
         :param power_ep: Power EP parameters
         :type power_ep: list of floats
+
         """
         self.epsilon = epsilon
         self.eta, self.delta = power_ep
@@ -197,7 +200,7 @@ class EP(likelihood):
         Sigma = Diag + P*R.T*R*P.T + K
         mu = w + P*Gamma
         """
-        mu = np.zeros(self.N)
+        mu = np.zeros(self.num_data)
         LLT = Kmm.copy()
         Sigma_diag = Qnn_diag.copy()
 
@@ -207,15 +210,15 @@ class EP(likelihood):
         sigma_ = 1./tau_
         mu_ = v_/tau_
         """
-        self.tau_ = np.empty(self.N,dtype=float)
-        self.v_ = np.empty(self.N,dtype=float)
+        self.tau_ = np.empty(self.num_data,dtype=float)
+        self.v_ = np.empty(self.num_data,dtype=float)
 
         #Initial values - Marginal moments
-        z = np.empty(self.N,dtype=float)
-        self.Z_hat = np.empty(self.N,dtype=float)
-        phi = np.empty(self.N,dtype=float)
-        mu_hat = np.empty(self.N,dtype=float)
-        sigma2_hat = np.empty(self.N,dtype=float)
+        z = np.empty(self.num_data,dtype=float)
+        self.Z_hat = np.empty(self.num_data,dtype=float)
+        phi = np.empty(self.num_data,dtype=float)
+        mu_hat = np.empty(self.num_data,dtype=float)
+        sigma2_hat = np.empty(self.num_data,dtype=float)
 
         #Approximation
         epsilon_np1 = 1
@@ -224,7 +227,7 @@ class EP(likelihood):
         np1 = [self.tau_tilde.copy()]
         np2 = [self.v_tilde.copy()]
         while epsilon_np1 > self.epsilon or epsilon_np2 > self.epsilon:
-            update_order = np.random.permutation(self.N)
+            update_order = np.random.permutation(self.num_data)
             for i in update_order:
                 #Cavity distribution parameters
                 self.tau_[i] = 1./Sigma_diag[i] - self.eta*self.tau_tilde[i]
@@ -253,8 +256,8 @@ class EP(likelihood):
             Sigma_diag = np.sum(V*V,-2)
             Knmv_tilde = np.dot(Kmn,self.v_tilde)
             mu = np.dot(V2.T,Knmv_tilde)
-            epsilon_np1 = sum((self.tau_tilde-np1[-1])**2)/self.N
-            epsilon_np2 = sum((self.v_tilde-np2[-1])**2)/self.N
+            epsilon_np1 = sum((self.tau_tilde-np1[-1])**2)/self.num_data
+            epsilon_np2 = sum((self.v_tilde-np2[-1])**2)/self.num_data
             np1.append(self.tau_tilde.copy())
             np2.append(self.v_tilde.copy())
 
@@ -295,9 +298,9 @@ class EP(likelihood):
         Sigma = Diag + P*R.T*R*P.T + K
         mu = w + P*Gamma
         """
-        self.w = np.zeros(self.N)
+        self.w = np.zeros(self.num_data)
         self.Gamma = np.zeros(num_inducing)
-        mu = np.zeros(self.N)
+        mu = np.zeros(self.num_data)
         P = P0.copy()
         R = R0.copy()
         Diag = Diag0.copy()
@@ -310,15 +313,15 @@ class EP(likelihood):
         sigma_ = 1./tau_
         mu_ = v_/tau_
         """
-        self.tau_ = np.empty(self.N,dtype=float)
-        self.v_ = np.empty(self.N,dtype=float)
+        self.tau_ = np.empty(self.num_data,dtype=float)
+        self.v_ = np.empty(self.num_data,dtype=float)
 
         #Initial values - Marginal moments
-        z = np.empty(self.N,dtype=float)
-        self.Z_hat = np.empty(self.N,dtype=float)
-        phi = np.empty(self.N,dtype=float)
-        mu_hat = np.empty(self.N,dtype=float)
-        sigma2_hat = np.empty(self.N,dtype=float)
+        z = np.empty(self.num_data,dtype=float)
+        self.Z_hat = np.empty(self.num_data,dtype=float)
+        phi = np.empty(self.num_data,dtype=float)
+        mu_hat = np.empty(self.num_data,dtype=float)
+        sigma2_hat = np.empty(self.num_data,dtype=float)
 
         #Approximation
         epsilon_np1 = 1
@@ -327,7 +330,7 @@ class EP(likelihood):
         self.np1 = [self.tau_tilde.copy()]
         self.np2 = [self.v_tilde.copy()]
         while epsilon_np1 > self.epsilon or epsilon_np2 > self.epsilon:
-            update_order = np.random.permutation(self.N)
+            update_order = np.random.permutation(self.num_data)
             for i in update_order:
                 #Cavity distribution parameters
                 self.tau_[i] = 1./Sigma_diag[i] - self.eta*self.tau_tilde[i]
@@ -366,8 +369,8 @@ class EP(likelihood):
             self.w = Diag * self.v_tilde
             self.Gamma = np.dot(R.T, np.dot(RPT,self.v_tilde))
             mu = self.w + np.dot(P,self.Gamma)
-            epsilon_np1 = sum((self.tau_tilde-self.np1[-1])**2)/self.N
-            epsilon_np2 = sum((self.v_tilde-self.np2[-1])**2)/self.N
+            epsilon_np1 = sum((self.tau_tilde-self.np1[-1])**2)/self.num_data
+            epsilon_np2 = sum((self.v_tilde-self.np2[-1])**2)/self.num_data
             self.np1.append(self.tau_tilde.copy())
             self.np2.append(self.v_tilde.copy())
 

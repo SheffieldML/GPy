@@ -2,6 +2,7 @@ import bias
 import Brownian
 import coregionalize
 import exponential
+import eq_ode1
 import finite_dimensional
 import fixed
 import gibbs
@@ -12,6 +13,7 @@ import linear
 import Matern32
 import Matern52
 import mlp
+import ODE_1
 import periodic_exponential
 import periodic_Matern32
 import periodic_Matern52

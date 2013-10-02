@@ -6,8 +6,9 @@ Created on 4 Sep 2013
 import re
 import itertools
 import numpy
-from GPy.core.transformations import Logexp
+from GPy.core.transformations import Logexp, NegativeLogexp
 from GPy.core.index_operations import ParameterIndexOperations
+from types import FunctionType
 _index_re = re.compile('(?:_(\d+))+')  # pattern match for indices
 
 def translate_param_names_to_parameters(param_names):
@@ -34,13 +35,13 @@ class Parameters(object):
         pass
     
     def _get_params(self):
-        return numpy.hstack([x._get_params() for x in self._params])
+        return numpy.fromiter(itertools.chain(*itertools.imap(lambda x: x._get_params(), self._params)), dtype=numpy.float64, count=sum(self.sizes))
     
     def _set_params(self, params):
         [p._set_params(params[s]) for s in self._param_slices]
     
     def _get_params_transformed(self):
-        return numpy.hstack([x._get_params_transformed() for x in self._params])
+        return numpy.fromiter(itertools.chain(*itertools.imap(lambda x: x._get_params_transformed(), self._params)), dtype=numpy.float64, count=sum(self.sizes))
     
     @property
     def names(self):
@@ -81,13 +82,28 @@ class Parameter(object):
     
     def __init__(self, name, value, constraint=None, *args, **kwargs):
         self.name = name
-        self.constraints = ParameterIndexOperations(self)
         self._value = value
         self._current_slice = slice(None)
-
-        for name in dir(value):
-            if not hasattr(self, name):
-                self.__setattr__(name, value.__getattribute__(name))
+#         def attribute_func(value, name):
+#             value_func = self.value.__getattribute__(name)
+#             if isinstance(value_func, FunctionType):
+#                 def f(*args, **kwargs):
+#                     with self.slicing():
+#                         return self.value.__getattribute__(name)(*args, **kwargs)
+#             else:
+#                 with self.slicing():
+#                     return self.value.__getattribute__(name)(*args, **kwargs)
+#             try:
+#                 f.__doc__ = value_func.__doc__
+#             except AttributeError:
+#                 # no docstring present
+#                 pass
+#             return f
+#         
+#         for name in dir(value):
+#             if not hasattr(self, name):
+#                 self.__setattr__(name, attribute_func(value, name))#value.__getattribute__(name))
+        self.constraints = ParameterIndexOperations(self)
     
     @property
     def value(self):
@@ -102,6 +118,9 @@ class Parameter(object):
     def shape(self):
         return self.value.shape
     @property
+    def realshape(self):
+        return self._value.shape
+    @property
     def _desc(self):
         if self.size <= 1:
             return "%f"%self.value
@@ -109,56 +128,102 @@ class Parameter(object):
             return self.shape
     @property
     def _constr(self):
-        return ' '.join([str(c) if c else '' for c in self.constraints.properties.keys()])
+        return ' '.join([str(c) if c else '' for c in self.constraints.keys()])
 
     def _set_params(self, param):
-        self.value.flat = param
+        with self.slicing():
+            self.value.flat = param
 
     def _get_params(self):
-        return self.value.flat
+        with self.slicing():
+            return self.value.flat
     
     def _get_params_transformed(self):
-        params = self.value.copy()
+        with self.slicing():
+            params = self.value.copy()
+        
+    def constrain(self, constraint):
+        with self.slicing():
+            self.constraints.add(constraint, self._current_slice)
     
     def constrain_positive(self):
-        self.constraints.add(Logexp(), self._current_slice)
-        self._current_slice = slice(None)
-    
+        self.constrain(Logexp())
+
+    def constrain_negative(self):
+        self.constrain(NegativeLogexp())
+
+    def unconstrain(self, constraints=None):
+        with self.slicing():
+            if constraints is None:
+                constraints = self.constraints.keys()
+            elif not isinstance(constraints, (tuple, list, numpy.ndarray)):
+                constraints = [constraints]
+            for constr in constraints:
+                self.constraints.remove(constr, self._current_slice)
+
+    def unconstrain_positive(self):
+        self.unconstrain(Logexp())
+        
+        
     def __getitem__(self, s):
         try:
             self.value[s]
             self._current_slice = s#[s if s else slice(s2) for s,s2 in itertools.izip_longest([s], self.shape, fillvalue=None)]
             return self
         except IndexError as i:
+            self._current_slice = slice(None)
             raise i
     
     def __setitem__(self, s, value):
         try:
             self.value[s] = value
+            self._current_slice = slice(None)
             return self
         except IndexError as i:
             raise i
 
         
-    def __repr__(self, *args, **kwargs):
-        view = repr(self.value)
-        self._current_slice = slice(None)
-        return view
+#     def __repr__(self, *args, **kwargs):
+#         view = repr(self.value)
+#         self._current_slice = slice(None)
+#         return view
         
     def __str__(self, format_spec=None):
-        if format_spec is None:
-            return str(self.value)
-        return format_spec.format(self=self)
+        with self.slicing():
+            if format_spec is None:
+                constr_matrix = numpy.empty(self.realshape, dtype=object)
+                constr_matrix[:] = ''
+                for constr, indices in self.constraints.iteritems():
+                    constr_matrix[indices] = numpy.vectorize(lambda x: " ".join([x,str(constr)]) if x else str(constr))(constr_matrix[indices])
+                constr_matrix = constr_matrix.astype(numpy.string_)[self._current_slice]
+                p = numpy.get_printoptions()['precision']
+                constr = constr_matrix.flat
+                ind = numpy.array(list(itertools.product(*itertools.imap(range, self.realshape))))[self.constraints.create_raveled_indices(self._current_slice),...]
+                c_name, x_name, i_name = "Constraint", "Value", "Index"
+                lc = max(reduce(lambda a,b: max(a, len(b)), constr_matrix.flat, 0), len(c_name))
+                lx = max(reduce(lambda a,b: max(a, len("{x:=.{0}G}".format(p,x=b))), self.value.flat, 0), len(x_name))
+                li = max(reduce(lambda a,b: max(a, len(str(b))), ind, 0), len(i_name))
+                header = "  {i:^{3}s}  |  {x:^{1}s}  |  {c:^{0}s}".format(lc,lx,p,li, x=x_name, c=c_name, i=i_name)
+                return "\n".join([header]+["  {i:^{3}s}  |  {x: >{1}.{2}G}  |  {c:^{0}s}".format(lc,lx,p,li, x=x, c=constr.next(), i=i) for i,x in itertools.izip(ind,self.value.flat)])
+            return format_spec.format(self=self)
     
-    
+    import contextlib    
+    @contextlib.contextmanager
+    def slicing(self, *args, **kwargs):
+        try:
+            yield 
+        finally:
+            self._current_slice = slice(None)
+    del contextlib
     
 if __name__ == '__main__':
-    X = numpy.random.randn(3,2)
+    X = numpy.random.randn(2,4)
     p = Parameter("X", X)
     p2 = Parameter("Y", numpy.random.randn(3,1))
     p3 = Parameter("rbf_variance", numpy.random.rand(1))
     p4 = Parameter("rbf_lengthscale", numpy.random.rand(2))
     params = Parameters([p,p2,p3,p4])
-#     params.X[5].constrain_positive()
+    params.X[1].constrain_positive()
+    print params.X
     #params.X[1,1].constrain_positive()
     

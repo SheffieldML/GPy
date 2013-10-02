@@ -7,6 +7,7 @@ import re
 import itertools
 import numpy
 from GPy.core.transformations import Logexp
+from GPy.core.index_operations import ParameterIndexOperations
 _index_re = re.compile('(?:_(\d+))+')  # pattern match for indices
 
 def translate_param_names_to_parameters(param_names):
@@ -73,17 +74,6 @@ class Parameters(object):
         return '\n'.join([x.__str__(format_spec=format_spec) for x in self._params])
     pass
 
-class ParameterIndexing(object):
-    def __init__(self, corresponding_param):
-        self.properties = {}
-        self.param = corresponding_param
-    def add(self, prop, s):
-        if prop in self.properties.keys():
-            self.properties[prop] = self.combine_indices(self.properties[prop], s) 
-        else:
-            self.properties[prop] = [numpy.r_[st] for st in s]
-    def combine_indices(self, s1, s2):
-        return [numpy.union1d(numpy.r_[ar1], numpy.r_[ar2]) for ar1, ar2 in itertools.izip_longest(s1, s2)]
 
 class Parameter(object):
     tied_to = []  # list of parameters this parameter is tied to
@@ -91,7 +81,7 @@ class Parameter(object):
     
     def __init__(self, name, value, constraint=None, *args, **kwargs):
         self.name = name
-        self.constraints = ParameterIndexing(self)
+        self.constraints = ParameterIndexOperations(self)
         self._value = value
         self._current_slice = slice(None)
 
@@ -129,11 +119,8 @@ class Parameter(object):
     
     def _get_params_transformed(self):
         params = self.value.copy()
-        import ipdb;ipdb.set_trace()
-        return  
     
     def constrain_positive(self):
-        import ipdb;ipdb.set_trace()
         self.constraints.add(Logexp(), self._current_slice)
         self._current_slice = slice(None)
     

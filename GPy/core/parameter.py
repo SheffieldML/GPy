@@ -76,50 +76,90 @@ class Parameters(object):
     pass
 
 
-class Parameter(object):
+class Parameter(numpy.ndarray):
     tied_to = []  # list of parameters this parameter is tied to
     fixed = False  # if this parameter is fixed
+    __array_priority__ = 15.0
     
-    def __init__(self, name, value, constraint=None, *args, **kwargs):
-        self.name = name
-        self._value = value
-        self._current_slice = slice(None)
+    def __new__(cls, name, input_array, info=None):
+        obj = numpy.array(input_array).view(cls)
+        obj.name = name
+        obj._current_slice = slice(None)
+        obj._realshape = input_array.shape
 #         def attribute_func(value, name):
 #             value_func = self.value.__getattribute__(name)
-#             if isinstance(value_func, FunctionType):
-#                 def f(*args, **kwargs):
-#                     with self.slicing():
-#                         return self.value.__getattribute__(name)(*args, **kwargs)
-#             else:
+#             def f(*args, **kwargs):
 #                 with self.slicing():
-#                     return self.value.__getattribute__(name)(*args, **kwargs)
+#                     raise AttributeError("This is a parameter view, use self.value for array view")
 #             try:
 #                 f.__doc__ = value_func.__doc__
 #             except AttributeError:
 #                 # no docstring present
 #                 pass
 #             return f
-#         
+#           
 #         for name in dir(value):
 #             if not hasattr(self, name):
 #                 self.__setattr__(name, attribute_func(value, name))#value.__getattribute__(name))
-        self.constraints = ParameterIndexOperations(self)
+        obj.constraints = ParameterIndexOperations(obj)        
+        return obj
+    
+    def __array_finalize__(self, obj):
+        # see InfoArray.__array_finalize__ for comments
+        if obj is None: return
+        self.name = getattr(obj, 'name', None)
+        self._realshape = getattr(obj, '_realshape', None)
+        self.constraints = getattr(obj, 'constraints', None)
+#         self._current_slice = getattr(obj, '_current_slice', None)
+
+    def __array_wrap__(self, out_arr, context=None):
+        return numpy.ndarray.__array_wrap__(self, out_arr, context)
+    
+#     def __init__(self, name, value, constraint=None, *args, **kwargs):
+#         self.constraints = ParameterIndexOperations(self)
+#         
+#         self._value = value
+#         self._current_slice = slice(None)
+#         def attribute_func(value, name):
+#             value_func = self.value.__getattribute__(name)
+#             def f(*args, **kwargs):
+#                 with self.slicing():
+#                     raise AttributeError("This is a parameter view, use self.value for array view")
+#             try:
+#                 f.__doc__ = value_func.__doc__
+#             except AttributeError:
+#                 # no docstring present
+#                 pass
+#             return f
+#            
+#         for name in dir(value):
+#             if not hasattr(self, name):
+#                 self.__setattr__(name, attribute_func(value, name))#value.__getattribute__(name))
+#         super(Parameter, self).__init__(value, *args, **kwargs)
     
     @property
     def value(self):
-        return self._value[self._current_slice]
-    @value.setter
-    def value(self, value):
-        self._value[self._current_slice] = value
-    @property
-    def size(self):
-        return self.value.size
-    @property
-    def shape(self):
-        return self.value.shape
-    @property
-    def realshape(self):
-        return self._value.shape
+        return self#self.base[self._current_slice]
+    
+#     @value.setter
+#     def value(self, value):
+#         self.base[self._current_slice] = value
+
+#     @property
+#     def value(self):
+#         return self._value[self._current_slice]
+#     @value.setter
+#     def value(self, value):
+#         self._value[self._current_slice] = value
+#     @property
+#     def size(self):
+#         return self.value.size
+#     @property
+#     def shape(self):
+#         return self.value.shape
+#     @property
+#     def realshape(self):
+#         return self._value.shape
     @property
     def _desc(self):
         if self.size <= 1:
@@ -165,40 +205,46 @@ class Parameter(object):
         self.unconstrain(Logexp())
         
         
-    def __getitem__(self, s):
-        try:
-            self.value[s]
-            self._current_slice = s#[s if s else slice(s2) for s,s2 in itertools.izip_longest([s], self.shape, fillvalue=None)]
-            return self
-        except IndexError as i:
-            self._current_slice = slice(None)
-            raise i
-    
-    def __setitem__(self, s, value):
-        try:
-            self.value[s] = value
-            self._current_slice = slice(None)
-            return self
-        except IndexError as i:
-            raise i
-
-        
+    def __getitem__(self, s, *args, **kwargs):
+        #self._current_slice = s
+#         import ipdb;ipdb.set_trace()
+        new_arr = numpy.ndarray.__getitem__(self, s, *args, **kwargs)
+        new_arr._current_slice = s
+        return new_arr
+#     def __getitem__(self, s):
+#         try:
+#             self.value[s]
+#             self._current_slice = s#[s if s else slice(s2) for s,s2 in itertools.izip_longest([s], self.shape, fillvalue=None)]
+#             return self
+#         except IndexError as i:
+#             self._current_slice = slice(None)
+#             raise i
+#     
+#     def __setitem__(self, s, value):
+#         try:
+#             self.value[s] = value
+#             self._current_slice = slice(None)
+#             return self
+#         except IndexError as i:
+#             raise i
+# 
+#         
 #     def __repr__(self, *args, **kwargs):
 #         view = repr(self.value)
 #         self._current_slice = slice(None)
 #         return view
         
     def __str__(self, format_spec=None):
-        with self.slicing():
+        #with self.slicing():
             if format_spec is None:
-                constr_matrix = numpy.empty(self.realshape, dtype=object)
+                constr_matrix = numpy.empty(self._realshape, dtype=object)
                 constr_matrix[:] = ''
                 for constr, indices in self.constraints.iteritems():
                     constr_matrix[indices] = numpy.vectorize(lambda x: " ".join([x,str(constr)]) if x else str(constr))(constr_matrix[indices])
                 constr_matrix = constr_matrix.astype(numpy.string_)[self._current_slice]
                 p = numpy.get_printoptions()['precision']
                 constr = constr_matrix.flat
-                ind = numpy.array(list(itertools.product(*itertools.imap(range, self.realshape))))[self.constraints.create_raveled_indices(self._current_slice),...]
+                ind = numpy.array(list(itertools.product(*itertools.imap(range, self._realshape))))[self.constraints.create_raveled_indices(self._current_slice),...]
                 c_name, x_name, i_name = "Constraint", "Value", "Index"
                 lc = max(reduce(lambda a,b: max(a, len(b)), constr_matrix.flat, 0), len(c_name))
                 lx = max(reduce(lambda a,b: max(a, len("{x:=.{0}G}".format(p,x=b))), self.value.flat, 0), len(x_name))

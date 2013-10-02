@@ -236,11 +236,13 @@ class LaplaceTests(unittest.TestCase):
     def test_studentt_rbf(self):
         print "\n{}".format(inspect.stack()[0][3])
         self.Y = self.Y/self.Y.max()
-        kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1], variance=2.0)
+        white_var = 3.0
+        kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1])
         stu_t_laplace = GPy.likelihoods.Laplace(self.Y.copy(), self.stu_t, opt='rasm')
         m = GPy.models.GPRegression(self.X, self.Y.copy(), kernel, likelihood=stu_t_laplace)
         m.ensure_default_constraints()
         m.constrain_positive('t_noise')
+        m.constrain_fixed('white', white_var)
         m.randomize()
         m.checkgrad(verbose=1)
         print m
@@ -249,11 +251,13 @@ class LaplaceTests(unittest.TestCase):
     def test_studentt_rbf_smallvar(self):
         print "\n{}".format(inspect.stack()[0][3])
         self.Y = self.Y/self.Y.max()
-        kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1], variance=2.0)
+        white_var = 3.0
+        kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1])
         stu_t_laplace = GPy.likelihoods.Laplace(self.Y.copy(), self.stu_t, opt='rasm')
         m = GPy.models.GPRegression(self.X, self.Y.copy(), kernel, likelihood=stu_t_laplace)
         m.ensure_default_constraints()
         m.constrain_positive('t_noise')
+        m.constrain_fixed('white', white_var)
         m['t_noise'] = 0.01
         m.checkgrad(verbose=1)
         print m

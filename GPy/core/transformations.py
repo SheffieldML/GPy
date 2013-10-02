@@ -43,7 +43,7 @@ class Logexp(Transformation):
     def __str__(self):
         return '(+ve)'
 
-class Negative_logexp(Transformation):
+class NegativeLogexp(Transformation):
     domain = NEGATIVE
     def f(self, x):
         return -Logexp.f(x)  # np.log(1. + np.exp(x))

@@ -210,7 +210,10 @@ class Parameter(numpy.ndarray):
 #         import ipdb;ipdb.set_trace()
         new_arr = numpy.ndarray.__getitem__(self, s, *args, **kwargs)
         new_arr = new_arr.view(self.__class__)
-        new_arr._current_slice = s
+        try:
+            new_arr._current_slice = s
+        except AttributeError:
+            pass
         return new_arr
 #     def __getitem__(self, s):
 #         try:

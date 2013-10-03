@@ -27,7 +27,7 @@ def timing():
         kernel1 = GPy.kern.rbf(X.shape[1])
 
         t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=edited_real_sd)
-        corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, opt='rasm')
+        corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution)
         m = GPy.models.GPRegression(X, Yc.copy(), kernel1, likelihood=corrupt_stu_t_likelihood)
         m.ensure_default_constraints()
         m.update_likelihood_approximation()
@@ -56,7 +56,7 @@ def v_fail_test():
 
     print "Clean student t, rasm"
     t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=edited_real_sd)
-    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
+    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution)
     m = GPy.models.GPRegression(X, Y.copy(), kernel1, likelihood=stu_t_likelihood)
     m.constrain_positive('')
     vs = 25
@@ -103,7 +103,7 @@ def student_t_obj_plane():
 
     kernelst = kernelgp.copy()
     t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=(real_std**2))
-    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
+    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution)
     m = GPy.models.GPRegression(X, Y, kernelst, likelihood=stu_t_likelihood)
     m.ensure_default_constraints()
     m.constrain_fixed('t_no', real_std**2)
@@ -156,7 +156,7 @@ def student_t_f_check():
     kernelst = kernelgp.copy()
     #kernelst += GPy.kern.bias(X.shape[1])
     t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=0.05)
-    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
+    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution)
     m = GPy.models.GPRegression(X, Y.copy(), kernelst, likelihood=stu_t_likelihood)
     #m['rbf_v'] = mgp._get_params()[0]
     #m['rbf_l'] = mgp._get_params()[1] + 1
@@ -208,7 +208,7 @@ def student_t_fix_optimise_check():
     real_stu_t_std2 = (real_std**2)*((deg_free - 2)/float(deg_free))
 
     t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=real_stu_t_std2)
-    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
+    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution)
 
     plt.figure(1)
     plt.suptitle('Student likelihood')
@@ -351,7 +351,7 @@ def debug_student_t_noise_approx():
 
     print "Clean student t, rasm"
     t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=edited_real_sd)
-    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
+    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution)
 
     m = GPy.models.GPRegression(X, Y, kernel6, likelihood=stu_t_likelihood)
     #m['rbf_len'] = 1.5
@@ -488,7 +488,7 @@ def student_t_approx():
 
     print "Clean student t, rasm"
     t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=edited_real_sd)
-    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution, opt='rasm')
+    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution)
     m = GPy.models.GPRegression(X, Y.copy(), kernel6, likelihood=stu_t_likelihood)
     m.ensure_default_constraints()
     m.constrain_positive('t_noise')
@@ -504,7 +504,7 @@ def student_t_approx():
 
     print "Corrupt student t, rasm"
     t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=edited_real_sd)
-    corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, opt='rasm')
+    corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution)
     m = GPy.models.GPRegression(X, Yc.copy(), kernel4, likelihood=corrupt_stu_t_likelihood)
     m.ensure_default_constraints()
     m.constrain_positive('t_noise')
@@ -526,51 +526,22 @@ def student_t_approx():
     import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
     return m
 
-    #print "Clean student t, ncg"
-    #t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=edited_real_sd)
-    #stu_t_likelihood = GPy.likelihoods.Laplace(Y, t_distribution, opt='ncg')
-    #m = GPy.models.GPRegression(X, Y, kernel3, likelihood=stu_t_likelihood)
-    #m.ensure_default_constraints()
-    #m.update_likelihood_approximation()
-    #m.optimize()
-    #print(m)
-    #plt.subplot(221)
-    #m.plot()
-    #plt.plot(X_full, Y_full)
-    #plt.ylim(-2.5, 2.5)
-    #plt.title('Student-t ncg clean')
+    #with a student t distribution, since it has heavy tails it should work well
+    #likelihood_function = student_t(deg_free=deg_free, sigma2=real_var)
+    #lap = Laplace(Y, likelihood_function)
+    #cov = kernel.K(X)
+    #lap.fit_full(cov)
 
-    #print "Corrupt student t, ncg"
-    #t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=edited_real_sd)
-    #corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution, opt='ncg')
-    #m = GPy.models.GPRegression(X, Y, kernel5, likelihood=corrupt_stu_t_likelihood)
-    #m.ensure_default_constraints()
-    #m.update_likelihood_approximation()
-    #m.optimize()
-    #print(m)
-    #plt.subplot(223)
-    #m.plot()
-    #plt.plot(X_full, Y_full)
-    #plt.ylim(-2.5, 2.5)
-    #plt.title('Student-t ncg corrupt')
-
-
-    ###with a student t distribution, since it has heavy tails it should work well
-    ###likelihood_function = student_t(deg_free=deg_free, sigma2=real_var)
-    ###lap = Laplace(Y, likelihood_function)
-    ###cov = kernel.K(X)
-    ###lap.fit_full(cov)
-
-    ###test_range = np.arange(0, 10, 0.1)
-    ###plt.plot(test_range, t_rv.pdf(test_range))
-    ###for i in xrange(X.shape[0]):
-        ###mode = lap.f_hat[i]
-        ###covariance = lap.hess_hat_i[i,i]
-        ###scaling = np.exp(lap.ln_z_hat)
-        ###normalised_approx = norm(loc=mode, scale=covariance)
-        ###print "Normal with mode %f, and variance %f" % (mode, covariance)
-        ###plt.plot(test_range, scaling*normalised_approx.pdf(test_range))
-    ###plt.show()
+    #test_range = np.arange(0, 10, 0.1)
+    #plt.plot(test_range, t_rv.pdf(test_range))
+    #for i in xrange(X.shape[0]):
+        #mode = lap.f_hat[i]
+        #covariance = lap.hess_hat_i[i,i]
+        #scaling = np.exp(lap.ln_z_hat)
+        #normalised_approx = norm(loc=mode, scale=covariance)
+        #print "Normal with mode %f, and variance %f" % (mode, covariance)
+        #plt.plot(test_range, scaling*normalised_approx.pdf(test_range))
+    #plt.show()
 
     return m
 
@@ -625,7 +596,7 @@ def gaussian_f_check():
     #kernelst += GPy.kern.bias(X.shape[1])
     N, D = X.shape
     g_distribution = GPy.likelihoods.noise_model_constructors.gaussian(variance=0.1, N=N, D=D)
-    g_likelihood = GPy.likelihoods.Laplace(Y.copy(), g_distribution, opt='rasm')
+    g_likelihood = GPy.likelihoods.Laplace(Y.copy(), g_distribution)
     m = GPy.models.GPRegression(X, Y, kernelg, likelihood=g_likelihood)
     m.likelihood.X = X
     #m['rbf_v'] = mgp._get_params()[0]
@@ -702,7 +673,7 @@ def boston_example():
         kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         N, D = Y_train.shape
         g_distribution = GPy.likelihoods.noise_model_constructors.gaussian(variance=noise, N=N, D=D)
-        g_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), g_distribution, opt='rasm')
+        g_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), g_distribution)
         mg = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=g_likelihood)
         mg.ensure_default_constraints()
         mg.constrain_positive('noise_variance')
@@ -729,7 +700,7 @@ def boston_example():
         print "Student-T GP {}df".format(deg_free)
         kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=noise)
-        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution, opt='rasm')
+        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
         mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=stu_t_likelihood)
         mstu_t.ensure_default_constraints()
         mstu_t.constrain_fixed('white', 1e-5)
@@ -755,7 +726,7 @@ def boston_example():
         print "Student-T GP {}df".format(deg_free)
         kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=noise)
-        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution, opt='rasm')
+        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
         mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=stu_t_likelihood)
         mstu_t.ensure_default_constraints()
         mstu_t.constrain_fixed('white', 1e-5)
@@ -782,7 +753,7 @@ def boston_example():
         print "Student-T GP {}df".format(deg_free)
         kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=noise)
-        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution, opt='rasm')
+        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
         mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=stu_t_likelihood)
         mstu_t.ensure_default_constraints()
         mstu_t.constrain_fixed('white', 1e-5)
@@ -808,7 +779,7 @@ def boston_example():
         print "Student-T GP {}df".format(deg_free)
         kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=noise)
-        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution, opt='rasm')
+        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
         mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=stu_t_likelihood)
         mstu_t.ensure_default_constraints()
         mstu_t.constrain_fixed('white', 1e-5)

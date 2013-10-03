@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from scipy import stats,special
+from scipy import stats, special
 import scipy as sp
 import gp_transformations
 from noise_distributions import NoiseDistribution
@@ -180,7 +180,6 @@ class StudentT(NoiseDistribution):
         #However the variance of the student t distribution is not dependent on f, only on sigma and the degrees of freedom
         true_var = sigma**2 + self.variance
 
-        print "True var: {}".format(true_var)
         return true_var
 
     def _predictive_mean_analytical(self, mu, var):

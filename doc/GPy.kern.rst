@@ -1,29 +1,5 @@
-kern Package
-============
-
-:mod:`kern` Package
--------------------
-
-.. automodule:: GPy.kern
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`constructors` Module
---------------------------
-
-.. automodule:: GPy.kern.constructors
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`kern` Module
-------------------
-
-.. automodule:: GPy.kern.kern
-    :members:
-    :undoc-members:
-    :show-inheritance:
+GPy.kern package
+================
 
 Subpackages
 -----------
@@ -32,3 +8,30 @@ Subpackages
 
     GPy.kern.parts
 
+Submodules
+----------
+
+GPy.kern.constructors module
+----------------------------
+
+.. automodule:: GPy.kern.constructors
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.kern.kern module
+--------------------
+
+.. automodule:: GPy.kern.kern
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: GPy.kern
+    :members:
+    :undoc-members:
+    :show-inheritance:

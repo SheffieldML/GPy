@@ -5,7 +5,6 @@
 import unittest
 import numpy as np
 import GPy
-from GPy.likelihoods.likelihood_functions import Binomial
 
 class GradientTests(unittest.TestCase):
     def setUp(self):
@@ -199,10 +198,7 @@ class GradientTests(unittest.TestCase):
         X = np.hstack([np.random.normal(5, 2, N / 2), np.random.normal(10, 2, N / 2)])[:, None]
         Y = np.hstack([np.ones(N / 2), np.zeros(N / 2)])[:, None]
         kernel = GPy.kern.rbf(1)
-        distribution = GPy.likelihoods.likelihood_functions.Binomial()
-        likelihood = GPy.likelihoods.EP(Y, distribution)
-        m = GPy.core.GP(X, likelihood, kernel)
-        m.ensure_default_constraints()
+        m = GPy.models.GPClassification(X,Y,kernel=kernel)
         m.update_likelihood_approximation()
         self.assertTrue(m.checkgrad())
 
@@ -212,10 +208,11 @@ class GradientTests(unittest.TestCase):
         Y = np.hstack([np.ones(N / 2), np.zeros(N / 2)])[:, None]
         Z = np.linspace(0, 15, 4)[:, None]
         kernel = GPy.kern.rbf(1)
-        distribution = GPy.likelihoods.likelihood_functions.Binomial()
-        likelihood = GPy.likelihoods.EP(Y, distribution)
-        m = GPy.core.SparseGP(X, likelihood, kernel, Z)
-        m.ensure_default_constraints()
+        m = GPy.models.SparseGPClassification(X,Y,kernel=kernel,Z=Z)
+        #distribution = GPy.likelihoods.likelihood_functions.Binomial()
+        #likelihood = GPy.likelihoods.EP(Y, distribution)
+        #m = GPy.core.SparseGP(X, likelihood, kernel, Z)
+        #m.ensure_default_constraints()
         m.update_likelihood_approximation()
         self.assertTrue(m.checkgrad())
 
@@ -224,8 +221,34 @@ class GradientTests(unittest.TestCase):
         X = np.hstack([np.random.rand(N / 2) + 1, np.random.rand(N / 2) - 1])[:, None]
         k = GPy.kern.rbf(1) + GPy.kern.white(1)
         Y = np.hstack([np.ones(N/2),np.zeros(N/2)])[:,None]
-        m = GPy.models.FITCClassification(X, Y=Y)
+        m = GPy.models.FITCClassification(X, Y, kernel = k)
         m.update_likelihood_approximation()
+        self.assertTrue(m.checkgrad())
+
+    def multioutput_regression_1D(self):
+        X1 = np.random.rand(50, 1) * 8
+        X2 = np.random.rand(30, 1) * 5
+        X = np.vstack((X1, X2))
+        Y1 = np.sin(X1) + np.random.randn(*X1.shape) * 0.05
+        Y2 = -np.sin(X2) + np.random.randn(*X2.shape) * 0.05
+        Y = np.vstack((Y1, Y2))
+
+        k1 = GPy.kern.rbf(1)
+        m = GPy.models.GPMultioutputRegression(X_list=[X1,X2],Y_list=[Y1,Y2],kernel_list=[k1])
+        m.constrain_fixed('.*rbf_var', 1.)
+        self.assertTrue(m.checkgrad())
+
+    def multioutput_sparse_regression_1D(self):
+        X1 = np.random.rand(500, 1) * 8
+        X2 = np.random.rand(300, 1) * 5
+        X = np.vstack((X1, X2))
+        Y1 = np.sin(X1) + np.random.randn(*X1.shape) * 0.05
+        Y2 = -np.sin(X2) + np.random.randn(*X2.shape) * 0.05
+        Y = np.vstack((Y1, Y2))
+
+        k1 = GPy.kern.rbf(1)
+        m = GPy.models.SparseGPMultioutputRegression(X_list=[X1,X2],Y_list=[Y1,Y2],kernel_list=[k1])
+        m.constrain_fixed('.*rbf_var', 1.)
         self.assertTrue(m.checkgrad())
 
 if __name__ == "__main__":

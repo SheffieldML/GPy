@@ -17,12 +17,9 @@ def linear_grid(D, n = 100, min_max = (-100, 100)):
     """
     Creates a D-dimensional grid of n linearly spaced points
 
-    Parameters:
-
-    D:        dimension of the grid
-    n:        number of points
-    min_max:  (min, max) list
-
+    :param D: dimension of the grid
+    :param n: number of points
+    :param min_max: (min, max) list
 
     """
 
@@ -39,6 +36,7 @@ def kmm_init(X, m = 10):
 
     :param X: data
     :param m: number of inducing points
+
     """
 
     # compute the distances

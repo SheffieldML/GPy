@@ -9,7 +9,7 @@ import GPy
 
 class Gibbs(Kernpart):
     """
-    Gibbs and MacKay non-stationary covariance function.
+    Gibbs non-stationary covariance function. 
 
     .. math::
        
@@ -25,7 +25,10 @@ class Gibbs(Kernpart):
         with input location. This leads to an additional term in front of
         the kernel.
 
-        The parameters are :math:`\sigma^2`, the process variance, and the parameters of l(x) which is a function that can be specified by the user, by default an multi-layer peceptron is used is used.
+        The parameters are :math:`\sigma^2`, the process variance, and
+        the parameters of l(x) which is a function that can be
+        specified by the user, by default an multi-layer peceptron is
+        used.
 
         :param input_dim: the number of input dimensions
         :type input_dim: int 
@@ -36,6 +39,15 @@ class Gibbs(Kernpart):
         :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one weight variance parameter \sigma^2_w), otherwise there is one weight variance parameter per dimension.
         :type ARD: Boolean
         :rtype: Kernpart object
+
+    See Mark Gibbs's thesis for more details: Gibbs,
+    M. N. (1997). Bayesian Gaussian Processes for Regression and
+    Classification. PhD thesis, Department of Physics, University of
+    Cambridge. Or also see Page 93 of Gaussian Processes for Machine
+    Learning by Rasmussen and Williams. Although note that we do not
+    constrain the lengthscale to be positive by default. This allows
+    anticorrelation to occur. The positive constraint can be included
+    by the user manually.
 
     """
 
@@ -89,12 +101,18 @@ class Gibbs(Kernpart):
         """Derivative of the covariance matrix with respect to X."""
         # First account for gradients arising from presence of X in exponent.
         self._K_computations(X, X2)
-        _K_dist = X[:, None, :] - X2[None, :, :]
+        if X2 is None:
+            _K_dist = 2*(X[:, None, :] - X[None, :, :])
+        else:
+            _K_dist = X[:, None, :] - X2[None, :, :] # don't cache this in _K_co
         dK_dX = (-2.*self.variance)*np.transpose((self._K_dvar/self._w2)[:, :, None]*_K_dist, (1, 0, 2))
         target += np.sum(dK_dX*dL_dK.T[:, :, None], 0)
         # Now account for gradients arising from presence of X in lengthscale.
         self._dK_computations(dL_dK)
-        target += self.mapping.df_dX(self._dL_dl[:, None], X)
+        if X2 is None:
+            target += 2.*self.mapping.df_dX(self._dL_dl[:, None], X)
+        else:
+            target += self.mapping.df_dX(self._dL_dl[:, None], X)
     
     def dKdiag_dX(self, dL_dKdiag, X, target):
         """Gradient of diagonal of covariance with respect to X."""
@@ -102,7 +120,8 @@ class Gibbs(Kernpart):
 
     def dKdiag_dtheta(self, dL_dKdiag, X, target):
         """Gradient of diagonal of covariance with respect to parameters."""
-        pass
+        target[0] += np.sum(dL_dKdiag)
+
 
     
     def _K_computations(self, X, X2=None):

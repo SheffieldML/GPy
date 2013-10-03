@@ -72,14 +72,17 @@ class LaplaceTests(unittest.TestCase):
         noise = np.random.randn(*self.X.shape)*self.real_std
         self.Y = np.sin(self.X*2*np.pi) + noise
         #self.Y = np.array([[1.0]])#np.sin(self.X*2*np.pi) + noise
-        self.var = 0.3
+        self.var = 0.2
 
         self.f = np.random.rand(self.N, self.D)
         #self.f = np.array([[3.0]])#np.sin(self.X*2*np.pi) + noise
 
         self.var = np.random.rand(1)
-        self.stu_t = GPy.likelihoods.functions.StudentT(deg_free=5, sigma2=self.var)
-        self.gauss = GPy.likelihoods.functions.Gaussian(self.var, self.D, self.N)
+        self.stu_t = GPy.likelihoods.student_t(deg_free=5, sigma2=self.var)
+        self.gauss = GPy.likelihoods.gaussian(variance=self.var, D=self.D, N=self.N)
+
+        #Make a bigger step as lower bound can be quite curved
+        self.step = 1e-4
 
     def tearDown(self):
         self.stu_t = None
@@ -118,7 +121,7 @@ class LaplaceTests(unittest.TestCase):
         noise = np.random.randn(*self.X.shape)*self.real_std
         self.Y = np.sin(self.X*2*np.pi) + noise
         self.f = np.random.rand(self.N, 1)
-        self.gauss = GPy.likelihoods.functions.Gaussian(self.var, self.D, self.N)
+        self.gauss = GPy.likelihoods.gaussian(variance=self.var, D=self.D, N=self.N)
 
         dlik_df = functools.partial(self.gauss.dlik_df, self.Y)
         d2lik_d2f = functools.partial(self.gauss.d2lik_d2f, self.Y)
@@ -167,6 +170,7 @@ class LaplaceTests(unittest.TestCase):
         grad = GradientChecker(link, dlik_df, self.f.copy(), 'f')
         grad.randomize()
         grad.checkgrad(verbose=1)
+        self.assertTrue(grad.checkgrad())
 
     def test_studentt_d2lik_d2f(self):
         print "\n{}".format(inspect.stack()[0][3])
@@ -175,6 +179,7 @@ class LaplaceTests(unittest.TestCase):
         grad = GradientChecker(dlik_df, d2lik_d2f, self.f.copy(), 'f')
         grad.randomize()
         grad.checkgrad(verbose=1)
+        self.assertTrue(grad.checkgrad())
 
     def test_studentt_d3lik_d3f(self):
         print "\n{}".format(inspect.stack()[0][3])
@@ -183,6 +188,7 @@ class LaplaceTests(unittest.TestCase):
         grad = GradientChecker(d2lik_d2f, d3lik_d3f, self.f.copy(), 'f')
         grad.randomize()
         grad.checkgrad(verbose=1)
+        self.assertTrue(grad.checkgrad())
 
     def test_studentt_dlik_dvar(self):
         print "\n{}".format(inspect.stack()[0][3])
@@ -216,27 +222,27 @@ class LaplaceTests(unittest.TestCase):
         m = GPy.models.GPRegression(self.X, self.Y.copy(), kernel, likelihood=gauss_laplace)
         m.ensure_default_constraints()
         m.randomize()
-        m.checkgrad(verbose=1)
-        self.assertTrue(m.checkgrad())
+        m.checkgrad(verbose=1, step=self.step)
+        self.assertTrue(m.checkgrad(step=self.step))
 
     def test_studentt_approx_gauss_rbf(self):
         print "\n{}".format(inspect.stack()[0][3])
         self.Y = self.Y/self.Y.max()
-        self.stu_t = GPy.likelihoods.functions.StudentT(deg_free=1000, sigma2=self.var)
+        self.stu_t = GPy.likelihoods.student_t(deg_free=1000, sigma2=self.var)
         kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1])
         stu_t_laplace = GPy.likelihoods.Laplace(self.Y.copy(), self.stu_t, opt='rasm')
         m = GPy.models.GPRegression(self.X, self.Y.copy(), kernel, likelihood=stu_t_laplace)
         m.ensure_default_constraints()
         m.constrain_positive('t_noise')
         m.randomize()
-        m.checkgrad(verbose=1)
+        m.checkgrad(verbose=1, step=self.step)
         print m
-        self.assertTrue(m.checkgrad())
+        self.assertTrue(m.checkgrad(step=self.step))
 
     def test_studentt_rbf(self):
         print "\n{}".format(inspect.stack()[0][3])
         self.Y = self.Y/self.Y.max()
-        white_var = 3.0
+        white_var = 1
         kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1])
         stu_t_laplace = GPy.likelihoods.Laplace(self.Y.copy(), self.stu_t, opt='rasm')
         m = GPy.models.GPRegression(self.X, self.Y.copy(), kernel, likelihood=stu_t_laplace)
@@ -244,14 +250,14 @@ class LaplaceTests(unittest.TestCase):
         m.constrain_positive('t_noise')
         m.constrain_fixed('white', white_var)
         m.randomize()
-        m.checkgrad(verbose=1)
+        m.checkgrad(verbose=1, step=self.step)
         print m
-        self.assertTrue(m.checkgrad())
+        self.assertTrue(m.checkgrad(step=self.step))
 
     def test_studentt_rbf_smallvar(self):
         print "\n{}".format(inspect.stack()[0][3])
         self.Y = self.Y/self.Y.max()
-        white_var = 3.0
+        white_var = 1
         kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1])
         stu_t_laplace = GPy.likelihoods.Laplace(self.Y.copy(), self.stu_t, opt='rasm')
         m = GPy.models.GPRegression(self.X, self.Y.copy(), kernel, likelihood=stu_t_laplace)
@@ -259,9 +265,9 @@ class LaplaceTests(unittest.TestCase):
         m.constrain_positive('t_noise')
         m.constrain_fixed('white', white_var)
         m['t_noise'] = 0.01
-        m.checkgrad(verbose=1)
+        m.checkgrad(verbose=1, step=self.step)
         print m
-        self.assertTrue(m.checkgrad())
+        self.assertTrue(m.checkgrad(step=self.step))
 
 if __name__ == "__main__":
     print "Running unit tests"

@@ -79,7 +79,7 @@ class Parameters(object):
 class Parameter(numpy.ndarray):
     tied_to = []  # list of parameters this parameter is tied to
     fixed = False  # if this parameter is fixed
-    __array_priority__ = 15.0
+    __array_priority__ = 3.0
     
     def __new__(cls, name, input_array, info=None):
         obj = numpy.array(input_array).view(cls)
@@ -110,7 +110,7 @@ class Parameter(numpy.ndarray):
         self.name = getattr(obj, 'name', None)
         self._realshape = getattr(obj, '_realshape', None)
         self.constraints = getattr(obj, 'constraints', None)
-#         self._current_slice = getattr(obj, '_current_slice', None)
+        self._current_slice = getattr(obj, '_current_slice', None)
 
     def __array_wrap__(self, out_arr, context=None):
         return numpy.ndarray.__array_wrap__(self, out_arr, context)
@@ -209,6 +209,7 @@ class Parameter(numpy.ndarray):
         #self._current_slice = s
 #         import ipdb;ipdb.set_trace()
         new_arr = numpy.ndarray.__getitem__(self, s, *args, **kwargs)
+        new_arr = new_arr.view(self.__class__)
         new_arr._current_slice = s
         return new_arr
 #     def __getitem__(self, s):
@@ -229,10 +230,9 @@ class Parameter(numpy.ndarray):
 #             raise i
 # 
 #         
-#     def __repr__(self, *args, **kwargs):
-#         view = repr(self.value)
-#         self._current_slice = slice(None)
-#         return view
+    def __repr__(self, *args, **kwargs):
+        view = str(self.value)
+        return view
         
     def __str__(self, format_spec=None):
         #with self.slicing():

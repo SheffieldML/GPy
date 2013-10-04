@@ -248,19 +248,27 @@ class NoiseDistribution(object):
 
     def _predictive_mean_analytical(self,mu,sigma):
         """
+        Predictive mean
+        .. math::
+            E(Y^{*}|Y) = E( E(Y^{*}|f^{*}, Y) )
+
         If available, this function computes the predictive mean analytically.
         """
         pass
 
     def _predictive_variance_analytical(self,mu,sigma):
         """
+        Predictive variance
+        .. math::
+            V(Y^{*}| Y) = E( V(Y^{*}|f^{*}, Y) ) + V( E(Y^{*}|f^{*}, Y) )
+
         If available, this function computes the predictive variance analytically.
         """
         pass
 
     def _predictive_mean_numerical(self,mu,sigma):
         """
-        Laplace approximation to the predictive mean: E(Y_star) = E( E(Y_star|f_star) )
+        Laplace approximation to the predictive mean: E(Y_star|Y) = E( E(Y_star|f_star, Y) )
 
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation

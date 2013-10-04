@@ -94,7 +94,10 @@ class Gaussian(NoiseDistribution):
 
     def _mean(self,gp):
         """
-        Mass (or density) function
+        Expected value of y under the Mass (or density) function p(y|f)
+
+        .. math::
+            E_{p(y|f)}[y]
         """
         return self.gp_link.transf(gp)
 
@@ -106,7 +109,10 @@ class Gaussian(NoiseDistribution):
 
     def _variance(self,gp):
         """
-        Mass (or density) function
+        Variance of y under the Mass (or density) function p(y|f)
+
+        .. math::
+            Var_{p(y|f)}[y]
         """
         return self.variance
 

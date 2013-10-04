@@ -34,9 +34,6 @@ class likelihood(Parameterized):
     def _set_params(self, x):
         raise NotImplementedError
 
-    def fit(self):
-        raise NotImplementedError
-
     def fit_full(self, K):
         """
         No approximations needed by default

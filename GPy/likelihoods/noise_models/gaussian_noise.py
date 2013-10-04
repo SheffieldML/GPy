@@ -117,14 +117,19 @@ class Gaussian(NoiseDistribution):
         return 0
 
     def lik_function(self, y, f, extra_data=None):
-        """lik_function $\ln p(y|f)$
-        $$\ln p(y_{i}|f_{i}) = \ln $$
+        """
+        Log likelihood function
 
-        :y: data
-        :f: latent variables f
-        :extra_data: extra_data which is not used in student t distribution
-        :returns: float(likelihood evaluated for this point)
+        .. math::
+            \\ln p(y_{i}|f_{i}) = -\\frac{D \\ln 2\\pi}{2} - \\frac{\\ln |K|}{2} - \\frac{(y_{i} - f_{i})^{T}\\sigma^{-2}(y_{i} - f_{i})}{2}
 
+        :param y: data
+        :type y: Nx1 array
+        :param f: latent variables f
+        :type f: Nx1 array
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: likelihood evaluated for this point
+        :rtype: float
         """
         assert y.shape == f.shape
         e = y - f
@@ -138,10 +143,16 @@ class Gaussian(NoiseDistribution):
         """
         Gradient of the link function at y, given f w.r.t f
 
-        :y: data
-        :f: latent variables f
-        :extra_data: extra_data which is not used in student t distribution
+        .. math::
+            \\frac{d \\ln p(y_{i}|f_{i})}{df} = \\frac{1}{\\sigma^{2}}(y_{i} - f_{i})
+
+        :param y: data
+        :type y: Nx1 array
+        :param f: latent variables f
+        :type f: Nx1 array
+        :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: gradient of likelihood evaluated at points
+        :rtype: Nx1 array
 
         """
         assert y.shape == f.shape
@@ -151,16 +162,23 @@ class Gaussian(NoiseDistribution):
 
     def d2lik_d2f(self, y, f, extra_data=None):
         """
-        Hessian at this point (if we are only looking at the link function not the prior) the hessian will be 0 unless i == j
-        i.e. second derivative lik_function at y given f f_j  w.r.t f and f_j
+        Hessian at y, given f, w.r.t f the hessian will be 0 unless i == j
+        i.e. second derivative lik_function at y given f_{i} f_{j}  w.r.t f_{i} and f_{j}
 
-        Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
-        (the distribution for y_{i} depends only on f_{i} not on f_{j!=i}
+        .. math::
+            \\frac{d^{2} \\ln p(y_{i}|f_{i})}{d^{2}f} = -\\frac{1}{\\sigma^{2}}
 
-        :y: data
-        :f: latent variables f
-        :extra_data: extra_data which is not used in student t distribution
-        :returns: array which is diagonal of covariance matrix (second derivative of likelihood evaluated at points)
+        :param y: data
+        :type y: Nx1 array
+        :param f: latent variables f
+        :type f: Nx1 array
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: Diagonal of hessian matrix (second derivative of likelihood evaluated at points f)
+        :rtype: Nx1 array
+
+        .. Note::
+            Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
+            (the distribution for y_{i} depends only on f_{i} not on f_{j!=i}
         """
         assert y.shape == f.shape
         hess = -(1.0/self.variance)*np.ones((self.N, 1))
@@ -168,9 +186,18 @@ class Gaussian(NoiseDistribution):
 
     def d3lik_d3f(self, y, f, extra_data=None):
         """
-        Third order derivative lik_function (log-likelihood ) at y given f f_j w.r.t f and f_j
+        Third order derivative log-likelihood function at y given f w.r.t f
 
-        $$\frac{d^{3}p(y_{i}|f_{i})}{d^{3}f} = \frac{-2(v+1)((y_{i} - f_{i})^3 - 3(y_{i} - f_{i}) \sigma^{2} v))}{((y_{i} - f_{i}) + \sigma^{2} v)^3}$$
+        .. math::
+            \\frac{d^{3} \\ln p(y_{i}|f_{i})}{d^{3}f} = 0
+
+        :param y: data
+        :type y: Nx1 array
+        :param f: latent variables f
+        :type f: Nx1 array
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: third derivative of likelihood evaluated at points f
+        :rtype: Nx1 array
         """
         assert y.shape == f.shape
         d3lik_d3f = np.diagonal(0*self.I)[:, None] # FIXME: CAREFUL THIS MAY NOT WORK WITH MULTIDIMENSIONS?
@@ -178,7 +205,18 @@ class Gaussian(NoiseDistribution):
 
     def dlik_dvar(self, y, f, extra_data=None):
         """
-        Gradient of the likelihood (lik) w.r.t sigma parameter (standard deviation)
+        Gradient of the log-likelihood function at y given f, w.r.t variance parameter (noise_variance)
+
+        .. math::
+            \\frac{d \\ln p(y_{i}|f_{i})}{d\\sigma^{2}} = \\frac{N}{2\\sigma^{2}} + \\frac{(y_{i} - f_{i})^{2}}{2\\sigma^{4}}
+
+        :param y: data
+        :type y: Nx1 array
+        :param f: latent variables f
+        :type f: Nx1 array
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
+        :rtype: float
         """
         assert y.shape == f.shape
         e = y - f
@@ -188,7 +226,18 @@ class Gaussian(NoiseDistribution):
 
     def dlik_df_dvar(self, y, f, extra_data=None):
         """
-        Gradient of the dlik_df w.r.t sigma parameter (standard deviation)
+        Derivative of the dlik_df w.r.t variance parameter (noise_variance)
+
+        .. math::
+            \\frac{d}{d\\sigma^{2}}(\\frac{d \\ln p(y_{i}|f_{i})}{df}) = \\frac{1}{\\sigma^{4}}(-y_{i} + f_{i})
+
+        :param y: data
+        :type y: Nx1 array
+        :param f: latent variables f
+        :type f: Nx1 array
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
+        :rtype: Nx1 array
         """
         assert y.shape == f.shape
         s_4 = 1.0/(self.variance**2)
@@ -197,9 +246,18 @@ class Gaussian(NoiseDistribution):
 
     def d2lik_d2f_dvar(self, y, f, extra_data=None):
         """
-        Gradient of the hessian (d2lik_d2f) w.r.t sigma parameter (standard deviation)
+        Gradient of the hessian (d2lik_d2f) w.r.t variance parameter (noise_variance)
 
-        $$\frac{d}{d\sigma}(\frac{d^{2}p(y_{i}|f_{i})}{d^{2}f}) = \frac{2\sigma v(v + 1)(\sigma^2 v - 3(y-f)^2)}{((y-f)^2 + \sigma^2 v)^3}$$
+        .. math::
+            \\frac{d}{d\\sigma^{2}}(\\frac{d^{2} \\ln p(y_{i}|f_{i})}{d^{2}f}) = \\frac{1}{\\sigma^{4}}
+
+        :param y: data
+        :type y: Nx1 array
+        :param f: latent variables f
+        :type f: Nx1 array
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: derivative of hessian evaluated at points f and f_j w.r.t variance parameter
+        :rtype: Nx1 array
         """
         assert y.shape == f.shape
         dlik_hess_dsigma = np.diag((1.0/(self.variance**2))*self.I)[:, None]

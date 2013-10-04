@@ -48,9 +48,9 @@ class StudentT(NoiseDistribution):
             \\ln p(y_{i}|f_{i}) = \\ln \\Gamma(\\frac{v+1}{2}) - \\ln \\Gamma(\\frac{v}{2})\\sqrt{v \\pi}\sigma - \\frac{v+1}{2}\\ln (1 + \\frac{1}{v}\\left(\\frac{y_{i} - f_{i}}{\\sigma}\\right)^2
 
         :param y: data
-        :type y: Nx1 matrix
+        :type y: Nx1 array
         :param f: latent variables f
-        :type f: Nx1 matrix
+        :type f: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: likelihood evaluated for this point
         :rtype: float
@@ -73,9 +73,9 @@ class StudentT(NoiseDistribution):
             \\frac{d \\ln p(y_{i}|f_{i})}{df} = \\frac{(v+1)(y_{i}-f_{i})}{(y_{i}-f_{i})^{2} + \\sigma^{2}v}
 
         :param y: data
-        :type y: Nx1 matrix
+        :type y: Nx1 array
         :param f: latent variables f
-        :type f: Nx1 matrix
+        :type f: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: gradient of likelihood evaluated at points
         :rtype: Nx1 array
@@ -95,9 +95,9 @@ class StudentT(NoiseDistribution):
             \\frac{d^{2} \\ln p(y_{i}|f_{i})}{d^{2}f} = \\frac{(v+1)((y_{i}-f_{i})^{2} - \\sigma^{2}v)}{((y_{i}-f_{i})^{2} + \\sigma^{2}v)^{2}}
 
         :param y: data
-        :type y: Nx1 matrix
+        :type y: Nx1 array
         :param f: latent variables f
-        :type f: Nx1 matrix
+        :type f: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: Diagonal of hessian matrix (second derivative of likelihood evaluated at points f)
         :rtype: Nx1 array
@@ -119,9 +119,9 @@ class StudentT(NoiseDistribution):
             \\frac{d^{3} \\ln p(y_{i}|f_{i})}{d^{3}f} = \\frac{-2(v+1)((y_{i} - f_{i})^3 - 3(y_{i} - f_{i}) \\sigma^{2} v))}{((y_{i} - f_{i}) + \\sigma^{2} v)^3}
 
         :param y: data
-        :type y: Nx1 matrix
+        :type y: Nx1 array
         :param f: latent variables f
-        :type f: Nx1 matrix
+        :type f: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: third derivative of likelihood evaluated at points f
         :rtype: Nx1 array
@@ -140,12 +140,10 @@ class StudentT(NoiseDistribution):
         .. math::
             \\frac{d \\ln p(y_{i}|f_{i})}{d\\sigma^{2}} = \\frac{v((y_{i} - f_{i})^{2} - \\sigma^{2})}{2\\sigma^{2}(\\sigma^{2}v + (y_{i} - f_{i})^{2})}
 
-        -\\frac{1}{\\sigma} + \\frac{(1+v)(y_{i}-f_{i})^2}{\\sigma^3 v(1 + \\frac{1}{v}(\\frac{(y_{i} - f_{i})}{\\sigma^2})^2)}
-
         :param y: data
-        :type y: Nx1 matrix
+        :type y: Nx1 array
         :param f: latent variables f
-        :type f: Nx1 matrix
+        :type f: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
         :rtype: float
@@ -164,9 +162,9 @@ class StudentT(NoiseDistribution):
             \\frac{d}{d\\sigma^{2}}(\\frac{d \\ln p(y_{i}|f_{i})}{df}) = \\frac{-2\\sigma v(v + 1)(y_{i}-f_{i})}{(y_{i}-f_{i})^2 + \\sigma^2 v)^2}
 
         :param y: data
-        :type y: Nx1 matrix
+        :type y: Nx1 array
         :param f: latent variables f
-        :type f: Nx1 matrix
+        :type f: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
         :rtype: Nx1 array
@@ -178,15 +176,15 @@ class StudentT(NoiseDistribution):
 
     def d2lik_d2f_dvar(self, y, f, extra_data=None):
         """
-        Gradient of the hessian (d2lik_d2f) w.r.t sigma parameter (standard deviation)
+        Gradient of the hessian (d2lik_d2f) w.r.t variance parameter (t_noise)
 
         .. math::
-            \\frac{d}{d\\sigma^{2}}(\\frac{d^{2} \\ln p(y_{i}|f_{i})}{d^{2}f}) = \\frac{2\\sigma v(v + 1)(\\sigma^2 v - 3(y-f)^2)}{((y-f)^2 + \\sigma^2 v)^3}
+            \\frac{d}{d\\sigma^{2}}(\\frac{d^{2} \\ln p(y_{i}|f_{i})}{d^{2}f}) = \\frac{v(v+1)(\\sigma^{2}v - 3(y_{i} - f_{i})^{2})}{(\\sigma^{2}v + (y_{i} - f_{i})^{2})^{3}}
 
         :param y: data
-        :type y: Nx1 matrix
+        :type y: Nx1 array
         :param f: latent variables f
-        :type f: Nx1 matrix
+        :type f: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: derivative of hessian evaluated at points f and f_j w.r.t variance parameter
         :rtype: Nx1 array

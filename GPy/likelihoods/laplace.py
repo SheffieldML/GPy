@@ -203,8 +203,9 @@ class Laplace(likelihood):
         """
         The laplace approximation algorithm, find K and expand hessian
         For nomenclature see Rasmussen & Williams 2006 - modified for numerical stability
-        :param K: Covariance matrix evaluated at locations X
-        :type K: NxD matrix
+
+        :param K: Prior covariance matrix evaluated at locations X
+        :type K: NxN matrix
         """
         self.K = K.copy()
 
@@ -236,8 +237,8 @@ class Laplace(likelihood):
         Rasmussen suggests the use of a numerically stable positive definite matrix B
         Which has a positive diagonal element and can be easyily inverted
 
-        :param K: Covariance matrix evaluated at locations X
-        :type K: NxD matrix
+        :param K: Prior covariance matrix evaluated at locations X
+        :type K: NxN matrix
         :param W: Negative hessian at a point (diagonal matrix)
         :type W: Vector of diagonal values of hessian (1xN)
         :param a: Matrix to calculate W12BiW12a

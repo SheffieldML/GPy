@@ -90,7 +90,9 @@ def gaussian(gp_link=None, variance=2, D=None, N=None):
     Construct a Gaussian likelihood
 
     :param gp_link: a GPy gp_link function
-    :param variance: scalar, variance
+    :param variance: variance
+    :type variance: scalar
+    :returns: Gaussian noise model:
     """
     if gp_link is None:
         gp_link = noise_models.gp_transformations.Identity()
@@ -104,8 +106,11 @@ def student_t(gp_link=None, deg_free=5, sigma2=2):
     Construct a Student t likelihood
 
     :param gp_link: a GPy gp_link function
-    :param deg_free: scalar, degrees of freedom
-    :param sigma2: scalar, variance
+    :param deg_free: degrees of freedom of student-t
+    :type deg_free: scalar
+    :param sigma2: variance
+    :type sigma2: scalar
+    :returns: Student-T noise model
     """
     if gp_link is None:
         gp_link = noise_models.gp_transformations.Identity()

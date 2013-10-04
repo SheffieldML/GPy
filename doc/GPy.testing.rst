@@ -4,6 +4,14 @@ GPy.testing package
 Submodules
 ----------
 
+GPy.testing.bcgplvm_tests module
+--------------------------------
+
+.. automodule:: GPy.testing.bcgplvm_tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.testing.bgplvm_tests module
 -------------------------------
 
@@ -40,6 +48,14 @@ GPy.testing.kernel_tests module
 -------------------------------
 
 .. automodule:: GPy.testing.kernel_tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.testing.laplace_tests module
+--------------------------------
+
+.. automodule:: GPy.testing.laplace_tests
     :members:
     :undoc-members:
     :show-inheritance:

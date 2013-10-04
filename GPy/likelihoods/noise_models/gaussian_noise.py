@@ -76,7 +76,7 @@ class Gaussian(NoiseDistribution):
         new_sigma2 = self.predictive_variance(mu,sigma)
         return new_sigma2*(mu/sigma**2 + self.gp_link.transf(mu)/self.variance)
 
-    def _predictive_variance_analytical(self,mu,sigma):
+    def _predictive_variance_analytical(self,mu,sigma,predictive_mean=None):
         return 1./(1./self.variance + 1./sigma**2)
 
     def _mass(self,gp,obs):
@@ -116,8 +116,8 @@ class Gaussian(NoiseDistribution):
     def _d2variance_dgp2(self,gp):
         return 0
 
-    def link_function(self, y, f, extra_data=None):
-        """link_function $\ln p(y|f)$
+    def lik_function(self, y, f, extra_data=None):
+        """lik_function $\ln p(y|f)$
         $$\ln p(y_{i}|f_{i}) = \ln $$
 
         :y: data
@@ -128,10 +128,9 @@ class Gaussian(NoiseDistribution):
         """
         assert y.shape == f.shape
         e = y - f
-        eeT = np.dot(e, e.T)
         objective = (- 0.5*self.D*np.log(2*np.pi)
                      - 0.5*self.ln_det_K
-                     - (0.5/self.variance)*np.dot(e.T, e) # As long as K is diagonal
+                     - (0.5/self.variance)*np.sum(np.square(e)) # As long as K is diagonal
                      )
         return np.sum(objective)
 
@@ -146,14 +145,14 @@ class Gaussian(NoiseDistribution):
 
         """
         assert y.shape == f.shape
-        s2_i = (1.0/self.variance)*self.I
-        grad = np.dot(s2_i, y) - np.dot(s2_i, f)
+        s2_i = (1.0/self.variance)
+        grad = s2_i*y - s2_i*f
         return grad
 
     def d2lik_d2f(self, y, f, extra_data=None):
         """
         Hessian at this point (if we are only looking at the link function not the prior) the hessian will be 0 unless i == j
-        i.e. second derivative link_function at y given f f_j  w.r.t f and f_j
+        i.e. second derivative lik_function at y given f f_j  w.r.t f and f_j
 
         Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
         (the distribution for y_{i} depends only on f_{i} not on f_{j!=i}
@@ -164,13 +163,12 @@ class Gaussian(NoiseDistribution):
         :returns: array which is diagonal of covariance matrix (second derivative of likelihood evaluated at points)
         """
         assert y.shape == f.shape
-        s2_i = (1.0/self.variance)*self.I
-        hess = np.diag(-s2_i)[:, None] # FIXME: CAREFUL THIS MAY NOT WORK WITH MULTIDIMENSIONS?
+        hess = -(1.0/self.variance)*np.ones((self.N, 1))
         return hess
 
     def d3lik_d3f(self, y, f, extra_data=None):
         """
-        Third order derivative link_function (log-likelihood ) at y given f f_j w.r.t f and f_j
+        Third order derivative lik_function (log-likelihood ) at y given f f_j w.r.t f and f_j
 
         $$\frac{d^{3}p(y_{i}|f_{i})}{d^{3}f} = \frac{-2(v+1)((y_{i} - f_{i})^3 - 3(y_{i} - f_{i}) \sigma^{2} v))}{((y_{i} - f_{i}) + \sigma^{2} v)^3}$$
         """

@@ -15,10 +15,8 @@ class StudentT(NoiseDistribution):
 
     For nomanclature see Bayesian Data Analysis 2003 p576
 
-    $$\ln p(y_{i}|f_{i}) = \ln \Gamma(\frac{v+1}{2}) - \ln \Gamma(\frac{v}{2})\sqrt{v \pi}\sigma - \frac{v+1}{2}\ln (1 + \frac{1}{v}\left(\frac{y_{i} - f_{i}}{\sigma}\right)^2)$$
-
     .. math::
-        Fill in maths
+        \\ln p(y_{i}|f_{i}) = \\ln \\Gamma(\\frac{v+1}{2}) - \\ln \\Gamma(\\frac{v}{2})\\sqrt{v \\pi}\\sigma - \\frac{v+1}{2}\\ln (1 + \\frac{1}{v}\\left(\\frac{y_{i} - f_{i}}{\\sigma}\\right)^2)
 
     """
     def __init__(self,gp_link=None,analytical_mean=True,analytical_variance=True, deg_free=5, sigma2=2):
@@ -42,16 +40,20 @@ class StudentT(NoiseDistribution):
     def variance(self, extra_data=None):
         return (self.v / float(self.v - 2)) * self.sigma2
 
-    def link_function(self, y, f, extra_data=None):
-        """link_function $\ln p(y|f)$
-        $$\ln p(y_{i}|f_{i}) = \ln \Gamma(\frac{v+1}{2}) - \ln \Gamma(\frac{v}{2})\sqrt{v \pi}\sigma - \frac{v+1}{2}\ln (1 + \frac{1}{v}\left(\frac{y_{i} - f_{i}}{\sigma}\right)^2$$
+    def lik_function(self, y, f, extra_data=None):
+        """
+        Log Likelihood Function
 
-        For wolfram alpha import parts for derivative of sigma are -log(sqrt(v*pi)*s) -(1/2)*(v + 1)*log(1 + (1/v)*((y-f)/(s))^2))
+        .. math::
+            \\ln p(y_{i}|f_{i}) = \\ln \\Gamma(\\frac{v+1}{2}) - \\ln \\Gamma(\\frac{v}{2})\\sqrt{v \\pi}\sigma - \\frac{v+1}{2}\\ln (1 + \\frac{1}{v}\\left(\\frac{y_{i} - f_{i}}{\\sigma}\\right)^2
 
-        :y: data
-        :f: latent variables f
-        :extra_data: extra_data which is not used in student t distribution
-        :returns: float(likelihood evaluated for this point)
+        :param y: data
+        :type y: NxD matrix
+        :param f: latent variables f
+        :type f: NxD matrix
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: likelihood evaluated for this point
+        :rtype: float
 
         """
         assert y.shape == f.shape
@@ -65,14 +67,18 @@ class StudentT(NoiseDistribution):
 
     def dlik_df(self, y, f, extra_data=None):
         """
-        Gradient of the link function at y, given f w.r.t f
+        Gradient of the log likelihood function at y, given f w.r.t f
 
-        $$\frac{dp(y_{i}|f_{i})}{df} = \frac{(v+1)(y_{i}-f_{i})}{(y_{i}-f_{i})^{2} + \sigma^{2}v}$$
+        .. math::
+            \\frac{d \\ln p(y_{i}|f_{i})}{df} = \\frac{(v+1)(y_{i}-f_{i})}{(y_{i}-f_{i})^{2} + \\sigma^{2}v}
 
-        :y: data
-        :f: latent variables f
-        :extra_data: extra_data which is not used in student t distribution
+        :param y: data
+        :type y: NxD matrix
+        :param f: latent variables f
+        :type f: NxD matrix
+        :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: gradient of likelihood evaluated at points
+        :rtype: 1xN array
 
         """
         assert y.shape == f.shape
@@ -82,18 +88,23 @@ class StudentT(NoiseDistribution):
 
     def d2lik_d2f(self, y, f, extra_data=None):
         """
-        Hessian at this point (if we are only looking at the link function not the prior) the hessian will be 0 unless i == j
-        i.e. second derivative link_function at y given f f_j  w.r.t f and f_j
+        Hessian at y, given f, w.r.t f the hessian will be 0 unless i == j
+        i.e. second derivative lik_function at y given f_{i} f_{j}  w.r.t f_{i} and f_{j}
 
-        Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
-        (the distribution for y_{i} depends only on f_{i} not on f_{j!=i}
+        .. math::
+            \\frac{d^{2} \\ln p(y_{i}|f_{i})}{d^{2}f} = \\frac{(v+1)((y_{i}-f_{i})^{2} - \\sigma^{2}v)}{((y_{i}-f_{i})^{2} + \\sigma^{2}v)^{2}}
 
-        $$\frac{d^{2}p(y_{i}|f_{i})}{d^{3}f} = \frac{(v+1)((y_{i}-f_{i})^{2} - \sigma^{2}v)}{((y_{i}-f_{i})^{2} + \sigma^{2}v)^{2}}$$
+        :param y: data
+        :type y: NxD matrix
+        :param f: latent variables f
+        :type f: NxD matrix
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: Diagonal of hessian matrix (second derivative of likelihood evaluated at points f)
+        :rtype: 1xN array
 
-        :y: data
-        :f: latent variables f
-        :extra_data: extra_data which is not used in student t distribution
-        :returns: array which is diagonal of covariance matrix (second derivative of likelihood evaluated at points)
+        .. Note::
+            Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
+            (the distribution for y_{i} depends only on f_{i} not on f_{j!=i}
         """
         assert y.shape == f.shape
         e = y - f
@@ -102,9 +113,18 @@ class StudentT(NoiseDistribution):
 
     def d3lik_d3f(self, y, f, extra_data=None):
         """
-        Third order derivative link_function (log-likelihood ) at y given f f_j w.r.t f and f_j
+        Third order derivative log-likelihood function at y given f w.r.t f
 
-        $$\frac{d^{3}p(y_{i}|f_{i})}{d^{3}f} = \frac{-2(v+1)((y_{i} - f_{i})^3 - 3(y_{i} - f_{i}) \sigma^{2} v))}{((y_{i} - f_{i}) + \sigma^{2} v)^3}$$
+        .. math::
+            \\frac{d^{3} \\ln p(y_{i}|f_{i})}{d^{3}f} = \\frac{-2(v+1)((y_{i} - f_{i})^3 - 3(y_{i} - f_{i}) \\sigma^{2} v))}{((y_{i} - f_{i}) + \\sigma^{2} v)^3}
+
+        :param y: data
+        :type y: NxD matrix
+        :param f: latent variables f
+        :type f: NxD matrix
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: third derivative of likelihood evaluated at points f
+        :rtype: 1xN array
         """
         assert y.shape == f.shape
         e = y - f
@@ -115,23 +135,39 @@ class StudentT(NoiseDistribution):
 
     def dlik_dvar(self, y, f, extra_data=None):
         """
-        Gradient of the likelihood (lik) w.r.t sigma parameter (standard deviation)
+        Gradient of the log-likelihood function at y given f, w.r.t variance parameter (t_noise)
 
-        Terms relavent to derivatives wrt sigma are:
-        -log(sqrt(v*pi)*s) -(1/2)*(v + 1)*log(1 + (1/v)*((y-f)/(s))^2))
+        .. math::
+            \\frac{d \\ln p(y_{i}|f_{i})}{d\\sigma^{2}} = -\\frac{1}{\\sigma} + \\frac{(1+v)(y_{i}-f_{i})^2}{\\sigma^3 v(1 + \\frac{1}{v}(\\frac{(y_{i} - f_{i})}{\\sigma^2})^2)}
 
-        $$\frac{dp(y_{i}|f_{i})}{d\sigma} = -\frac{1}{\sigma} + \frac{(1+v)(y_{i}-f_{i})^2}{\sigma^3 v(1 + \frac{1}{v}(\frac{(y_{i} - f_{i})}{\sigma^2})^2)}$$
+        :param y: data
+        :type y: NxD matrix
+        :param f: latent variables f
+        :type f: NxD matrix
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
+        :rtype: 1x1 array
         """
         assert y.shape == f.shape
         e = y - f
         dlik_dvar = self.v*(e**2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e**2))
-        return np.sum(dlik_dvar) #May not want to sum over all dimensions if using many D?
+        #FIXME: May not want to sum over all dimensions if using many D?
+        return np.sum(dlik_dvar)
 
     def dlik_df_dvar(self, y, f, extra_data=None):
         """
-        Gradient of the dlik_df w.r.t sigma parameter (standard deviation)
+        Derivative of the dlik_df w.r.t variance parameter (t_noise)
 
-        $$\frac{d}{d\sigma}(\frac{dp(y_{i}|f_{i})}{df}) = \frac{-2\sigma v(v + 1)(y_{i}-f_{i})}{(y_{i}-f_{i})^2 + \sigma^2 v)^2}$$
+        .. math::
+            \\frac{d}{d\\sigma^{2}}(\\frac{d \\ln p(y_{i}|f_{i})}{df}) = \\frac{-2\\sigma v(v + 1)(y_{i}-f_{i})}{(y_{i}-f_{i})^2 + \\sigma^2 v)^2}
+
+        :param y: data
+        :type y: NxD matrix
+        :param f: latent variables f
+        :type f: NxD matrix
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
+        :rtype: 1xN array
         """
         assert y.shape == f.shape
         e = y - f
@@ -180,6 +216,7 @@ class StudentT(NoiseDistribution):
         #However the variance of the student t distribution is not dependent on f, only on sigma and the degrees of freedom
         true_var = sigma**2 + self.variance
 
+        print true_var
         return true_var
 
     def _predictive_mean_analytical(self, mu, var):

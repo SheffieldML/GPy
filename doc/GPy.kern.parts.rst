@@ -28,6 +28,14 @@ GPy.kern.parts.Matern52 module
     :undoc-members:
     :show-inheritance:
 
+GPy.kern.parts.ODE_1 module
+---------------------------
+
+.. automodule:: GPy.kern.parts.ODE_1
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.kern.parts.bias module
 --------------------------
 
@@ -40,6 +48,14 @@ GPy.kern.parts.coregionalize module
 -----------------------------------
 
 .. automodule:: GPy.kern.parts.coregionalize
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.kern.parts.eq_ode1 module
+-----------------------------
+
+.. automodule:: GPy.kern.parts.eq_ode1
     :members:
     :undoc-members:
     :show-inheritance:

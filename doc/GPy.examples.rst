@@ -20,6 +20,14 @@ GPy.examples.dimensionality_reduction module
     :undoc-members:
     :show-inheritance:
 
+GPy.examples.laplace_approximations module
+------------------------------------------
+
+.. automodule:: GPy.examples.laplace_approximations
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.examples.regression module
 ------------------------------
 

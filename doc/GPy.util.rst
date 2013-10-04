@@ -43,10 +43,26 @@ GPy.util.decorators module
     :undoc-members:
     :show-inheritance:
 
+GPy.util.erfcx module
+---------------------
+
+.. automodule:: GPy.util.erfcx
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.util.linalg module
 ----------------------
 
 .. automodule:: GPy.util.linalg
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.ln_diff_erfs module
+----------------------------
+
+.. automodule:: GPy.util.ln_diff_erfs
     :members:
     :undoc-members:
     :show-inheritance:
@@ -95,6 +111,14 @@ GPy.util.squashers module
 -------------------------
 
 .. automodule:: GPy.util.squashers
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.symbolic module
+------------------------
+
+.. automodule:: GPy.util.symbolic
     :members:
     :undoc-members:
     :show-inheritance:

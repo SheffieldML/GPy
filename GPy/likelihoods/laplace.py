@@ -178,7 +178,7 @@ class Laplace(likelihood):
 
         self.Wi_K_i = self.W12BiW12
         self.ln_det_Wi_K = pddet(self.Sigma_tilde + self.K)
-        self.lik = self.noise_model.link_function(self.data, self.f_hat, extra_data=self.extra_data)
+        self.lik = self.noise_model.lik_function(self.data, self.f_hat, extra_data=self.extra_data)
         self.y_Wi_Ki_i_y = mdot(Y_tilde.T, self.Wi_K_i, Y_tilde)
 
         Z_tilde = (+ self.lik
@@ -289,7 +289,7 @@ class Laplace(likelihood):
         old_obj = np.inf
 
         def obj(Ki_f, f):
-            return -0.5*np.dot(Ki_f.T, f) + self.noise_model.link_function(self.data, f, extra_data=self.extra_data)
+            return -0.5*np.dot(Ki_f.T, f) + self.noise_model.lik_function(self.data, f, extra_data=self.extra_data)
 
         difference = np.inf
         epsilon = 1e-6

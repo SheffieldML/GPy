@@ -60,6 +60,14 @@ GPy.likelihoods.noise_models.poisson_noise module
     :undoc-members:
     :show-inheritance:
 
+GPy.likelihoods.noise_models.student_t_noise module
+---------------------------------------------------
+
+.. automodule:: GPy.likelihoods.noise_models.student_t_noise
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------

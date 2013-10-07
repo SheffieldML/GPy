@@ -58,7 +58,6 @@ class GP(GPBase):
     def _get_params(self):
         return np.hstack((self.kern._get_params_transformed(), self.likelihood._get_params()))
 
-
     def _get_param_names(self):
         return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
@@ -129,7 +128,7 @@ class GP(GPBase):
             debug_this # @UndefinedVariable
         return mu, var
 
-    def predict(self, Xnew, which_parts='all', full_cov=False, likelihood_args=dict()):
+    def predict(self, Xnew, which_parts='all', full_cov=False, **likelihood_args):
         """
         Predict the function(s) at the new point(s) Xnew.
 
@@ -156,67 +155,41 @@ class GP(GPBase):
         mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, **likelihood_args)
         return mean, var, _025pm, _975pm
 
-    def predict_single_output(self, Xnew, output=0, which_parts='all', full_cov=False):
+    def _raw_predict_single_output(self, _Xnew, output, which_parts='all', full_cov=False,stop=False):
         """
-        For a specific output, predict the function at the new point(s) Xnew.
-
-        :param Xnew: The points at which to make a prediction
-        :type Xnew: np.ndarray, Nnew x self.input_dim
-        :param output: output to predict
-        :type output: integer in {0,..., num_outputs-1}
-        :param which_parts:  specifies which outputs kernel(s) to use in prediction
-        :type which_parts: ('all', list of bools)
-        :param full_cov: whether to return the full covariance matrix, or just the diagonal
-        :type full_cov: bool
-        :returns: posterior mean,  a Numpy array, Nnew x self.input_dim
-        :returns: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
-        :returns: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
-
-        .. Note:: For multiple output models only
-        """
-        assert hasattr(self,'multioutput'), 'This function is for multiple output models only.'
-        index = np.ones_like(Xnew)*output
-        Xnew = np.hstack((Xnew,index))
-
-        # normalize X values
-        Xnew = (Xnew.copy() - self._Xoffset) / self._Xscale
-        mu, var = self._raw_predict(Xnew, full_cov=full_cov, which_parts=which_parts)
-
-        # now push through likelihood
-        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, noise_model = output)
-        return mean, var, _025pm, _975pm
-
-    def _raw_predict_single_output(self, _Xnew, output=0, which_parts='all', full_cov=False,stop=False):
-        """
-        Internal helper function for making predictions for a specific output,
-        does not account for normalization or likelihood
+        For a specific output, calls _raw_predict() at the new point(s) _Xnew.
+        This functions calls _add_output_index(), so _Xnew should not have an index column specifying the output.
         ---------
 
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray, Nnew x self.input_dim
         :param output: output to predict
-        :type output: integer in {0,..., num_outputs-1}
+        :type output: integer in {0,..., output_dim-1}
         :param which_parts:  specifies which outputs kernel(s) to use in prediction
         :type which_parts: ('all', list of bools)
         :param full_cov: whether to return the full covariance matrix, or just the diagonal
 
-        .. Note:: For multiple output models only
+        .. Note:: For multiple non-independent outputs models only.
         """
-        assert hasattr(self,'multioutput'), 'This function is for multiple output models only.'
-        # creates an index column and appends it to _Xnew
-        index = np.ones_like(_Xnew)*output
-        _Xnew = np.hstack((_Xnew,index))
+        _Xnew = self._add_output_index(_Xnew, output)
+        return self._raw_predict(_Xnew, which_parts=which_parts,full_cov=full_cov, stop=stop)
 
-        Kx = self.kern.K(_Xnew,self.X,which_parts=which_parts).T
-        KiKx, _ = dpotrs(self.L, np.asfortranarray(Kx), lower=1)
-        mu = np.dot(KiKx.T, self.likelihood.Y)
-        if full_cov:
-            Kxx = self.kern.K(_Xnew, which_parts=which_parts)
-            var = Kxx - np.dot(KiKx.T, Kx)
-        else:
-            Kxx = self.kern.Kdiag(_Xnew, which_parts=which_parts)
-            var = Kxx - np.sum(np.multiply(KiKx, Kx), 0)
-            var = var[:, None]
-        if stop:
-            debug_this # @UndefinedVariable
-        return mu, var
+    def predict_single_output(self, Xnew,output=0, which_parts='all', full_cov=False, likelihood_args=dict()):
+        """
+        For a specific output, calls predict() at the new point(s) Xnew.
+        This functions calls _add_output_index(), so Xnew should not have an index column specifying the output.
+
+        :param Xnew: The points at which to make a prediction
+        :type Xnew: np.ndarray, Nnew x self.input_dim
+        :param which_parts:  specifies which outputs kernel(s) to use in prediction
+        :type which_parts: ('all', list of bools)
+        :param full_cov: whether to return the full covariance matrix, or just the diagonal
+        :type full_cov: bool
+        :returns: mean: posterior mean,  a Numpy array, Nnew x self.input_dim
+        :returns: var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
+        :returns: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
+
+        .. Note:: For multiple non-independent outputs models only.
+        """
+        Xnew = self._add_output_index(Xnew, output)
+        return self.predict(Xnew, which_parts=which_parts, full_cov=full_cov, likelihood_args=likelihood_args)

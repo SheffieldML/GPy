@@ -29,7 +29,7 @@ class Test(unittest.TestCase):
     input_dim = 9
     num_inducing = 4
     N = 3
-    Nsamples = 5e6
+    Nsamples = 5e3
 
     def setUp(self):
         i_s_dim_list = [2,4,3]
@@ -46,15 +46,15 @@ class Test(unittest.TestCase):
                                          )
         self.kerns = (
                     input_slice_kern,
-#                       (GPy.kern.rbf(self.input_dim, ARD=True) +
-#                        GPy.kern.linear(self.input_dim, ARD=True) +
-#                        GPy.kern.bias(self.input_dim) +
-#                        GPy.kern.white(self.input_dim)),
-#                     (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
-#                      GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
-#                      GPy.kern.linear(self.input_dim, np.random.rand(self.input_dim), ARD=True) +
-#                      GPy.kern.bias(self.input_dim) +
-#                      GPy.kern.white(self.input_dim)),
+                    (GPy.kern.rbf(self.input_dim, ARD=True) +
+                     GPy.kern.linear(self.input_dim, ARD=True) +
+                     GPy.kern.bias(self.input_dim) +
+                     GPy.kern.white(self.input_dim)),
+                    (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
+                     GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
+                     GPy.kern.linear(self.input_dim, np.random.rand(self.input_dim), ARD=True) +
+                     GPy.kern.bias(self.input_dim) +
+                    GPy.kern.white(self.input_dim)),
 #                       GPy.kern.rbf(self.input_dim), GPy.kern.rbf(self.input_dim, ARD=True),
 #                       GPy.kern.linear(self.input_dim, ARD=False), GPy.kern.linear(self.input_dim, ARD=True),
 #                       GPy.kern.linear(self.input_dim) + GPy.kern.bias(self.input_dim),
@@ -135,7 +135,7 @@ class Test(unittest.TestCase):
 if __name__ == "__main__":
     sys.argv = ['',
          #'Test.test_psi0',
-         'Test.test_psi1',
+         #'Test.test_psi1',
          'Test.test_psi2',
          ]
     unittest.main()

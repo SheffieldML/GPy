@@ -33,7 +33,8 @@ class Gaussian(NoiseDistribution):
         self.I = np.eye(self.N)
         self.covariance_matrix = self.I * self.variance
         self.Ki = self.I*(1.0 / self.variance)
-        self.ln_det_K = np.sum(np.log(np.diag(self.covariance_matrix)))
+        #self.ln_det_K = np.sum(np.log(np.diag(self.covariance_matrix)))
+        self.ln_det_K = self.N*np.log(self.variance)
 
     def _laplace_gradients(self, y, f, extra_data=None):
         #must be listed in same order as 'get_param_names'
@@ -81,10 +82,26 @@ class Gaussian(NoiseDistribution):
 
     def _mass(self,gp,obs):
         #return std_norm_pdf( (self.gp_link.transf(gp)-obs)/np.sqrt(self.variance) )
-        return stats.norm.pdf(obs,self.gp_link.transf(gp),np.sqrt(self.variance))
+        #Assumes no covariance, exp, sum, log for numerical stability
+        return np.exp(np.sum(np.log(stats.norm.pdf(obs,self.gp_link.transf(gp),np.sqrt(self.variance)))))
 
-    def _nlog_mass(self,gp,obs):
-        return .5*((self.gp_link.transf(gp)-obs)**2/self.variance + np.log(2.*np.pi*self.variance))
+    def _nlog_mass(self,gp,obs, extra_data=None):
+        """
+        Negative Log likelihood function
+
+        .. math::
+            \\-ln p(y_{i}|f_{i}) = +\\frac{D \\ln 2\\pi}{2} + \\frac{\\ln |K|}{2} + \\frac{(y_{i} - f_{i})^{T}\\sigma^{-2}(y_{i} - f_{i})}{2}
+
+        :param y: data
+        :type y: Nx1 array
+        :param f: latent variables f
+        :type f: Nx1 array
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: likelihood evaluated for this point
+        :rtype: float
+        """
+        assert gp.shape == obs.shape
+        return .5*(np.sum((self.gp_link.transf(gp)-obs)**2/self.variance) + self.ln_det_K + self.N*np.log(2.*np.pi))
 
     def _dnlog_mass_dgp(self,gp,obs):
         return (self.gp_link.transf(gp)-obs)/self.variance * self.gp_link.dtransf_df(gp)
@@ -139,7 +156,7 @@ class Gaussian(NoiseDistribution):
         """
         assert y.shape == f.shape
         e = y - f
-        objective = (- 0.5*self.D*np.log(2*np.pi)
+        objective = (- 0.5*self.N*np.log(2*np.pi)
                      - 0.5*self.ln_det_K
                      - (0.5/self.variance)*np.sum(np.square(e)) # As long as K is diagonal
                      )
@@ -206,7 +223,7 @@ class Gaussian(NoiseDistribution):
         :rtype: Nx1 array
         """
         assert y.shape == f.shape
-        d3lik_d3f = np.diagonal(0*self.I)[:, None] # FIXME: CAREFUL THIS MAY NOT WORK WITH MULTIDIMENSIONS?
+        d3lik_d3f = np.diagonal(0*self.I)[:, None]
         return d3lik_d3f
 
     def dlik_dvar(self, y, f, extra_data=None):

@@ -433,8 +433,8 @@ class kern(Parameterized):
                 prod = np.multiply(tmp1, tmp2)
                 crossterms += prod[:, :, None] + prod[:, None, :]
 
-        # target += crossterms
-        return target + crossterms
+        target += crossterms
+        return target
 
     def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S):
         """Gradient of the psi2 statistics with respect to the parameters."""
@@ -462,8 +462,8 @@ class kern(Parameterized):
         # compute the "cross" terms
         # TODO: we need input_slices here.
         for p1, p2 in itertools.permutations(self.parts, 2):
-            if p1.name == 'linear' and p2.name == 'linear':
-                raise NotImplementedError("We don't handle linear/linear cross-terms")
+#             if p1.name == 'linear' and p2.name == 'linear':
+#                 raise NotImplementedError("We don't handle linear/linear cross-terms")
             tmp = np.zeros((mu.shape[0], Z.shape[0]))
             p1.psi1(Z, mu, S, tmp)
             p2.dpsi1_dZ((tmp[:, None, :] * dL_dpsi2).sum(1), Z, mu, S, target)
@@ -477,9 +477,8 @@ class kern(Parameterized):
         # compute the "cross" terms
         # TODO: we need input_slices here.
         for p1, p2 in itertools.permutations(self.parts, 2):
-            if p1.name == 'linear' and p2.name == 'linear':
-                raise NotImplementedError("We don't handle linear/linear cross-terms")
-
+#             if p1.name == 'linear' and p2.name == 'linear':
+#                 raise NotImplementedError("We don't handle linear/linear cross-terms")
             tmp = np.zeros((mu.shape[0], Z.shape[0]))
             p1.psi1(Z, mu, S, tmp)
             p2.dpsi1_dmuS((tmp[:, None, :] * dL_dpsi2).sum(1) * 2., Z, mu, S, target_mu, target_S)

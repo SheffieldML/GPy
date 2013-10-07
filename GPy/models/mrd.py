@@ -39,6 +39,7 @@ class MRD(Model):
     :param num_inducing: number of inducing inputs to use
     :param kernels: list of kernels or kernel shared for all BGPLVMS
     :type kernels: [GPy.kern.kern] | GPy.kern.kern | None (default)
+
     """
     def __init__(self, likelihood_or_Y_list, input_dim, num_inducing=10, names=None,
                  kernels=None, initx='PCA',
@@ -338,8 +339,11 @@ class MRD(Model):
 
     def plot_scales(self, fignum=None, ax=None, titles=None, sharex=False, sharey=True, *args, **kwargs):
         """
-        :param:`titles` :
-            titles for axes of datasets
+
+        TODO: Explain other parameters
+
+        :param titles: titles for axes of datasets
+
         """
         if titles is None:
             titles = [r'${}$'.format(name) for name in self.names]

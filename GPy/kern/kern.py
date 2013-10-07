@@ -1,6 +1,7 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
+import sys
 import numpy as np
 import pylab as pb
 from ..core.parameterized import Parameterized
@@ -79,13 +80,15 @@ class kern(Parameterized):
 
 
     def plot_ARD(self, fignum=None, ax=None, title='', legend=False):
-        """If an ARD kernel is present, it bar-plots the ARD parameters,
+        """If an ARD kernel is present, it bar-plots the ARD parameters.
+
         :param fignum: figure number of the plot
         :param ax: matplotlib axis to plot on
         :param title: 
             title of the plot, 
             pass '' to not print a title
             pass None for a generic title
+
         """
         if ax is None:
             fig = pb.figure(fignum)
@@ -176,8 +179,10 @@ class kern(Parameterized):
     def add(self, other, tensor=False):
         """
         Add another kernel to this one. Both kernels are defined on the same _space_
+
         :param other: the other kernel to be added
         :type other: GPy.kern
+
         """
         if tensor:
             D = self.input_dim + other.input_dim
@@ -219,11 +224,13 @@ class kern(Parameterized):
 
     def prod(self, other, tensor=False):
         """
-        multiply two kernels (either on the same space, or on the tensor product of the input space).
+        Multiply two kernels (either on the same space, or on the tensor product of the input space).
+
         :param other: the other kernel to be added
         :type other: GPy.kern
         :param tensor: whether or not to use the tensor space (default is false).
         :type tensor: bool 
+
         """
         K1 = self.copy()
         K2 = other.copy()
@@ -322,6 +329,7 @@ class kern(Parameterized):
         :type X: np.ndarray (num_samples x input_dim)
         :param X2: Observed data inputs (optional, defaults to X)
         :type X2: np.ndarray (num_inducing x input_dim)
+
         """
         assert X.shape[1] == self.input_dim
         target = np.zeros(self.num_params)
@@ -341,6 +349,7 @@ class kern(Parameterized):
         :type X: np.ndarray (num_samples x input_dim)
         :param X2: Observed data inputs (optional, defaults to X)
         :type X2: np.ndarray (num_inducing x input_dim)"""
+
         target = np.zeros_like(X)
         if X2 is None: 
             [p.dK_dX(dL_dK, X[:, i_s], None, target[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
@@ -414,6 +423,7 @@ class kern(Parameterized):
         :param Z: np.ndarray of inducing inputs (num_inducing x input_dim)
         :param mu, S: np.ndarrays of means and variances (each num_samples x input_dim)
         :returns psi2: np.ndarray (num_samples,num_inducing,num_inducing)
+
         """
         target = np.zeros((mu.shape[0], Z.shape[0], Z.shape[0]))
         [p.psi2(Z[:, i_s], mu[:, i_s], S[:, i_s], target) for p, i_s in zip(self.parts, self.input_slices)]
@@ -568,7 +578,7 @@ class Kern_check_model(Model):
 
     def is_positive_definite(self):
         v = np.linalg.eig(self.kernel.K(self.X))[0]
-        if any(v<0):
+        if any(v<-10*sys.float_info.epsilon):
             return False
         else:
             return True
@@ -657,6 +667,7 @@ def kern_test(kern, X=None, X2=None, verbose=False):
     :type X: ndarray
     :param X2: X2 input values to test the covariance function.
     :type X2: ndarray
+
     """
     pass_checks = True
     if X==None:
@@ -683,7 +694,7 @@ def kern_test(kern, X=None, X2=None, verbose=False):
         Kern_check_dK_dtheta(kern, X=X, X2=None).checkgrad(verbose=True)
         pass_checks = False
         return False
-    
+
     if verbose:
         print("Checking gradients of K(X, X2) wrt theta.")
     result = Kern_check_dK_dtheta(kern, X=X, X2=X2).checkgrad(verbose=verbose)
@@ -694,7 +705,7 @@ def kern_test(kern, X=None, X2=None, verbose=False):
         Kern_check_dK_dtheta(kern, X=X, X2=X2).checkgrad(verbose=True)
         pass_checks = False
         return False
-    
+
     if verbose:
         print("Checking gradients of Kdiag(X) wrt theta.")
     result = Kern_check_dKdiag_dtheta(kern, X=X).checkgrad(verbose=verbose)
@@ -705,10 +716,15 @@ def kern_test(kern, X=None, X2=None, verbose=False):
         Kern_check_dKdiag_dtheta(kern, X=X).checkgrad(verbose=True)
         pass_checks = False
         return False
-        
+
     if verbose:
         print("Checking gradients of K(X, X) wrt X.")
-    result = Kern_check_dK_dX(kern, X=X, X2=None).checkgrad(verbose=verbose)
+    try:
+        result = Kern_check_dK_dX(kern, X=X, X2=None).checkgrad(verbose=verbose)
+    except NotImplementedError:
+        result=True
+        if verbose:
+            print("dK_dX not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
@@ -719,7 +735,12 @@ def kern_test(kern, X=None, X2=None, verbose=False):
 
     if verbose:
         print("Checking gradients of K(X, X2) wrt X.")
-    result = Kern_check_dK_dX(kern, X=X, X2=X2).checkgrad(verbose=verbose)
+    try:
+        result = Kern_check_dK_dX(kern, X=X, X2=X2).checkgrad(verbose=verbose)
+    except NotImplementedError:
+        result=True
+        if verbose:
+            print("dK_dX not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
@@ -730,7 +751,12 @@ def kern_test(kern, X=None, X2=None, verbose=False):
 
     if verbose:
         print("Checking gradients of Kdiag(X) wrt X.")
-    result = Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=verbose)
+    try:
+        result = Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=verbose)
+    except NotImplementedError:
+        result=True
+        if verbose:
+            print("dK_dX not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
@@ -738,5 +764,5 @@ def kern_test(kern, X=None, X2=None, verbose=False):
         Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=True)
         pass_checks = False
         return False
-    
+
     return pass_checks

@@ -132,7 +132,7 @@ def multiple_optima(gene_number=937, resolution=80, model_restarts=10, seed=1000
     length_scales = np.linspace(0.1, 60., resolution)
     log_SNRs = np.linspace(-3., 4., resolution)
 
-    data = GPy.util.datasets.della_gatta_TRP63_gene_expression(gene_number)
+    data = GPy.util.datasets.della_gatta_TRP63_gene_expression(data_set='della_gatta',gene_number=gene_number)
     # data['Y'] = data['Y'][0::2, :]
     # data['X'] = data['X'][0::2, :]
 

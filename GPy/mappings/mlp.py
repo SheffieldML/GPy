@@ -10,11 +10,13 @@ class MLP(Mapping):
 
     .. math::
 
-       f(\mathbf{x}*) = \mathbf{W}^0\boldsymbol{\phi}(\mathbf{W}^1\mathbf{x}+\mathb{b}^1)^* + \mathbf{b}^0
+       f(\\mathbf{x}*) = \\mathbf{W}^0\\boldsymbol{\\phi}(\\mathbf{W}^1\\mathbf{x}+\\mathbf{b}^1)^* + \\mathbf{b}^0
 
     where
-    ..math::
-      \phi(\cdot) = \text{tanh}(\cdot)
+
+    .. math::
+
+      \\phi(\\cdot) = \\text{tanh}(\\cdot)
 
     :param X: input observations
     :type X: ndarray
@@ -22,6 +24,7 @@ class MLP(Mapping):
     :type output_dim: int
     :param hidden_dim: dimension of hidden layer. If it is an int, there is one hidden layer of the given dimension. If it is a list of ints there are as manny hidden layers as the length of the list, each with the given number of hidden nodes in it.
     :type hidden_dim: int or list of ints. 
+
     """
 
     def __init__(self, input_dim=1, output_dim=1, hidden_dim=3):

@@ -64,7 +64,7 @@ def dparam_checkgrad(func, dfunc, params, args, constrain_positive=True, randomi
 
 class LaplaceTests(unittest.TestCase):
     def setUp(self):
-        self.N = 50
+        self.N = 5
         self.D = 3
         self.X = np.random.rand(self.N, self.D)*10
 
@@ -101,6 +101,25 @@ class LaplaceTests(unittest.TestCase):
                                -np.log(self.gauss._mass(self.f.copy(), self.Y.copy())),
                                self.gauss._nlog_mass(self.f.copy(), self.Y.copy()))
 
+    def test_mass_dnlog_mass_dgp_ndlik_df(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        np.testing.assert_almost_equal(
+                               self.gauss._dnlog_mass_dgp(gp=self.f.copy(), obs=self.Y.copy()),
+                               -self.gauss.dlik_df(y=self.Y.copy(), f=self.f.copy()))
+
+    def test_mass_d2nlog_mass_dgp2_nd2lik_d2f(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        np.testing.assert_almost_equal(
+                               self.gauss._d2nlog_mass_dgp2(gp=self.f.copy(), obs=self.Y.copy()),
+                               -self.gauss.d2lik_d2f(y=self.Y.copy(), f=self.f.copy()))
+
+    def test_mass_d2nlog_mass_dgp3_nd2lik_d3f(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        np.testing.assert_almost_equal(
+                               self.gauss._d3nlog_mass_dgp3(gp=self.f.copy(), obs=self.Y.copy()),
+                               -self.gauss.d3lik_d3f(y=self.Y.copy(), f=self.f.copy()))
+
+
     def test_gaussian_dnlog_mass_dgp(self):
         print "\n{}".format(inspect.stack()[0][3])
         link = functools.partial(self.gauss._nlog_mass, obs=self.Y)
@@ -119,24 +138,38 @@ class LaplaceTests(unittest.TestCase):
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
-
-    def test_gaussian_dlik_df(self):
+    def test_gaussian_d3nlog_mass_d3gp(self):
         print "\n{}".format(inspect.stack()[0][3])
-        link = functools.partial(self.gauss.lik_function, self.Y)
-        dlik_df = functools.partial(self.gauss.dlik_df, self.Y)
-        grad = GradientChecker(link, dlik_df, self.f.copy(), 'f')
+        link = functools.partial(self.gauss._d2nlog_mass_dgp2, obs=self.Y)
+        dlik_df = functools.partial(self.gauss._d3nlog_mass_dgp3, obs=self.Y)
+        grad = GradientChecker(link, dlik_df, self.f.copy(), 'g')
         grad.randomize()
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
-    def test_gaussian_d2lik_d2f(self):
+    def test_gaussian_dnlog_mass_dvar(self):
         print "\n{}".format(inspect.stack()[0][3])
-        dlik_df = functools.partial(self.gauss.dlik_df, self.Y)
-        d2lik_d2f = functools.partial(self.gauss.d2lik_d2f, self.Y)
-        grad = GradientChecker(dlik_df, d2lik_d2f, self.f.copy(), 'f')
-        grad.randomize()
-        grad.checkgrad(verbose=1)
-        self.assertTrue(grad.checkgrad())
+        self.assertTrue(
+                dparam_checkgrad(self.gauss._nlog_mass, self.gauss._dnlog_mass_dvar,
+                    [self.var], args=(self.Y, self.f), constrain_positive=True,
+                    randomize=False, verbose=True)
+                )
+
+    def test_gaussian_dnlog_mass_dgp_dvar(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        self.assertTrue(
+                dparam_checkgrad(self.gauss._dnlog_mass_dgp, self.gauss._dnlog_mass_dgp_dvar,
+                    [self.var], args=(self.Y, self.f), constrain_positive=True,
+                    randomize=False, verbose=True)
+                )
+
+    def test_gaussian_d2nlog_mass_d2gp_dvar(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        self.assertTrue(
+                dparam_checkgrad(self.gauss._d2nlog_mass_dgp2, self.gauss._d2nlog_mass_dgp2_dvar,
+                    [self.var], args=(self.Y, self.f), constrain_positive=True,
+                    randomize=False, verbose=True)
+                )
 
     """ Gradchecker fault """
     @unittest.expectedFailure
@@ -154,8 +187,8 @@ class LaplaceTests(unittest.TestCase):
         self.f = np.random.rand(self.N, 1)
         self.gauss = GPy.likelihoods.gaussian(variance=self.var, D=self.D, N=self.N)
 
-        dlik_df = functools.partial(self.gauss.dlik_df, self.Y)
-        d2lik_d2f = functools.partial(self.gauss.d2lik_d2f, self.Y)
+        dlik_df = functools.partial(self.gauss._dnlog_mass_dgp, obs=self.Y)
+        d2lik_d2f = functools.partial(self.gauss._d2nlog_mass_dgp2, obs=self.Y)
         grad = GradientChecker(dlik_df, d2lik_d2f, self.f.copy(), 'f')
         grad.randomize()
         grad.checkgrad(verbose=1)

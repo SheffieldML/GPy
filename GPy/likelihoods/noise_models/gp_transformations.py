@@ -24,19 +24,25 @@ class GPTransformation(object):
         """
         Gaussian process tranformation function, latent space -> output space
         """
-        pass
+        raise NotImplementedError
 
     def dtransf_df(self,f):
         """
         derivative of transf(f) w.r.t. f
         """
-        pass
+        raise NotImplementedError
 
     def d2transf_df2(self,f):
         """
         second derivative of transf(f) w.r.t. f
         """
-        pass
+        raise NotImplementedError
+
+    def d3transf_df3(self,f):
+        """
+        third derivative of transf(f) w.r.t. f
+        """
+        raise NotImplementedError
 
 class Identity(GPTransformation):
     """
@@ -52,6 +58,9 @@ class Identity(GPTransformation):
         return 1.
 
     def d2transf_df2(self,f):
+        return 0
+
+    def d3transf_df3(self,f):
         return 0
 
 

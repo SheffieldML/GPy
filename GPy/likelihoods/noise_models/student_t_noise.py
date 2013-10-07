@@ -40,30 +40,30 @@ class StudentT(NoiseDistribution):
     def variance(self, extra_data=None):
         return (self.v / float(self.v - 2)) * self.sigma2
 
-    def lik_function(self, y, f, extra_data=None):
+    def _nlog_mass(self, gp, obs, extra_data=None):
         """
         Log Likelihood Function
 
         .. math::
             \\ln p(y_{i}|f_{i}) = \\ln \\Gamma(\\frac{v+1}{2}) - \\ln \\Gamma(\\frac{v}{2})\\sqrt{v \\pi}\sigma - \\frac{v+1}{2}\\ln (1 + \\frac{1}{v}\\left(\\frac{y_{i} - f_{i}}{\\sigma}\\right)^2
 
-        :param y: data
-        :type y: Nx1 array
-        :param f: latent variables f
-        :type f: Nx1 array
+        :param gp: latent variables (f)
+        :type gp: Nx1 array
+        :param obs: data (y)
+        :type obs: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: likelihood evaluated for this point
         :rtype: float
 
         """
-        assert y.shape == f.shape
-        e = y - f
+        assert gp.shape == obs.shape
+        e = obs - self.gp_link.transf(gp)
         objective = (+ gammaln((self.v + 1) * 0.5)
                      - gammaln(self.v * 0.5)
                      - 0.5*np.log(self.sigma2 * self.v * np.pi)
                      - 0.5*(self.v + 1)*np.log(1 + (1/np.float(self.v))*((e**2)/self.sigma2))
                     )
-        return np.sum(objective)
+        return -np.sum(objective)
 
     def dlik_df(self, y, f, extra_data=None):
         """

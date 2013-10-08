@@ -15,13 +15,10 @@ class GP(GPBase):
 
     :param X: input observations
     :param kernel: a GPy kernel, defaults to rbf+white
-    :parm likelihood: a GPy likelihood
+    :param likelihood: a GPy likelihood
     :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_X: False|True
     :rtype: model object
-    :param epsilon_ep: convergence criterion for the Expectation Propagation algorithm, defaults to 0.1
-    :param powerep: power-EP parameters [$\eta$,$\delta$], defaults to [1.,1.]
-    :type powerep: list
 
     .. Note:: Multiple independent outputs are allowed using columns of Y
 
@@ -61,11 +58,10 @@ class GP(GPBase):
     def _get_params(self):
         return np.hstack((self.kern._get_params_transformed(), self.likelihood._get_params()))
 
-
     def _get_param_names(self):
         return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
-    def update_likelihood_approximation(self):
+    def update_likelihood_approximation(self, **kwargs):
         """
         Approximates a non-gaussian likelihood using Expectation Propagation
 
@@ -73,7 +69,7 @@ class GP(GPBase):
         this function does nothing
         """
         self.likelihood.restart()
-        self.likelihood.fit_full(self.kern.K(self.X))
+        self.likelihood.fit_full(self.kern.K(self.X), **kwargs)
         self._set_params(self._get_params()) # update the GP
 
     def _model_fit_term(self):
@@ -105,7 +101,12 @@ class GP(GPBase):
 
         Note, we use the chain rule: dL_dtheta = dL_dK * d_K_dtheta
         """
-        return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        #return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        if not isinstance(self.likelihood,EP):
+            tmp = np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        else:
+            tmp = np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        return tmp
 
     def _raw_predict(self, _Xnew, which_parts='all', full_cov=False, stop=False):
         """
@@ -127,20 +128,19 @@ class GP(GPBase):
             debug_this # @UndefinedVariable
         return mu, var
 
-    def predict(self, Xnew, which_parts='all', full_cov=False, likelihood_args=dict()):
+    def predict(self, Xnew, which_parts='all', full_cov=False, **likelihood_args):
         """
         Predict the function(s) at the new point(s) Xnew.
-        Arguments
-        ---------
+
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray, Nnew x self.input_dim
         :param which_parts:  specifies which outputs kernel(s) to use in prediction
         :type which_parts: ('all', list of bools)
-        :param full_cov: whether to return the folll covariance matrix, or just the diagonal
+        :param full_cov: whether to return the full covariance matrix, or just the diagonal
         :type full_cov: bool
-        :rtype: posterior mean,  a Numpy array, Nnew x self.input_dim
-        :rtype: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
-        :rtype: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
+        :returns: mean: posterior mean,  a Numpy array, Nnew x self.input_dim
+        :returns: var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
+        :returns: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
 
 
            If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
@@ -153,5 +153,43 @@ class GP(GPBase):
 
         # now push through likelihood
         mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, **likelihood_args)
-
         return mean, var, _025pm, _975pm
+
+    def _raw_predict_single_output(self, _Xnew, output, which_parts='all', full_cov=False,stop=False):
+        """
+        For a specific output, calls _raw_predict() at the new point(s) _Xnew.
+        This functions calls _add_output_index(), so _Xnew should not have an index column specifying the output.
+        ---------
+
+        :param Xnew: The points at which to make a prediction
+        :type Xnew: np.ndarray, Nnew x self.input_dim
+        :param output: output to predict
+        :type output: integer in {0,..., output_dim-1}
+        :param which_parts:  specifies which outputs kernel(s) to use in prediction
+        :type which_parts: ('all', list of bools)
+        :param full_cov: whether to return the full covariance matrix, or just the diagonal
+
+        .. Note:: For multiple non-independent outputs models only.
+        """
+        _Xnew = self._add_output_index(_Xnew, output)
+        return self._raw_predict(_Xnew, which_parts=which_parts,full_cov=full_cov, stop=stop)
+
+    def predict_single_output(self, Xnew,output=0, which_parts='all', full_cov=False, likelihood_args=dict()):
+        """
+        For a specific output, calls predict() at the new point(s) Xnew.
+        This functions calls _add_output_index(), so Xnew should not have an index column specifying the output.
+
+        :param Xnew: The points at which to make a prediction
+        :type Xnew: np.ndarray, Nnew x self.input_dim
+        :param which_parts:  specifies which outputs kernel(s) to use in prediction
+        :type which_parts: ('all', list of bools)
+        :param full_cov: whether to return the full covariance matrix, or just the diagonal
+        :type full_cov: bool
+        :returns: mean: posterior mean,  a Numpy array, Nnew x self.input_dim
+        :returns: var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
+        :returns: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
+
+        .. Note:: For multiple non-independent outputs models only.
+        """
+        Xnew = self._add_output_index(Xnew, output)
+        return self.predict(Xnew, which_parts=which_parts, full_cov=full_cov, likelihood_args=likelihood_args)

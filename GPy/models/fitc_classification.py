@@ -31,8 +31,8 @@ class FITCClassification(FITC):
             kernel = kern.rbf(X.shape[1]) + kern.white(X.shape[1],1e-3)
 
         if likelihood is None:
-            distribution = likelihoods.likelihood_functions.Binomial()
-            likelihood = likelihoods.EP(Y, distribution)
+            noise_model = likelihoods.binomial()
+            likelihood = likelihoods.EP(Y, noise_model)
         elif Y is not None:
             if not all(Y.flatten() == likelihood.data.flatten()):
                 raise Warning, 'likelihood.data and Y are different.'

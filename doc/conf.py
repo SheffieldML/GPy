@@ -83,6 +83,7 @@ print "finished importing"
 #############################################################################
 
 class Mock(object):
+    __all__ = []
     def __init__(self, *args, **kwargs):
         pass
 
@@ -105,8 +106,7 @@ class Mock(object):
 print "Mocking"
 MOCK_MODULES = ['sympy',
     'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache',
-    'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser',
-    'matplotlib.pyplot'
+    'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser', 'Tango', 'numdifftools'
     ]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()

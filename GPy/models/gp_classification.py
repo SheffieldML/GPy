@@ -14,7 +14,7 @@ class GPClassification(GP):
     This is a thin wrapper around the models.GP class, with a set of sensible defaults
 
     :param X: input observations
-    :param Y: observed values
+    :param Y: observed values, can be None if likelihood is not None
     :param likelihood: a GPy likelihood, defaults to Binomial with probit link_function
     :param kernel: a GPy kernel, defaults to rbf
     :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
@@ -31,8 +31,8 @@ class GPClassification(GP):
             kernel = kern.rbf(X.shape[1])
 
         if likelihood is None:
-            distribution = likelihoods.likelihood_functions.Binomial()
-            likelihood = likelihoods.EP(Y, distribution)
+            noise_model = likelihoods.binomial()
+            likelihood = likelihoods.EP(Y, noise_model)
         elif Y is not None:
             if not all(Y.flatten() == likelihood.data.flatten()):
                 raise Warning, 'likelihood.data and Y are different.'

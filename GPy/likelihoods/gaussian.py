@@ -7,9 +7,9 @@ class Gaussian(likelihood):
     """
     Likelihood class for doing Expectation propagation
 
-    :param Y: observed output (Nx1 numpy.darray)
-    ..Note:: Y values allowed depend on the likelihood_function used
-    :param variance :
+    :param data: observed output
+    :type data: Nx1 numpy.darray
+    :param variance: noise parameter
     :param normalize:  whether to normalize the data before computing (predictions will be in original scales)
     :type normalize: False|True
     """
@@ -33,6 +33,8 @@ class Gaussian(likelihood):
 
         self._variance = np.asarray(variance) + 1.
         self._set_params(np.asarray(variance))
+
+        super(Gaussian, self).__init__()
 
     def set_data(self, data):
         self.data = data

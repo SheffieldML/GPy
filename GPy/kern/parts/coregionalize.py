@@ -7,33 +7,40 @@ from GPy.util.linalg import mdot, pdinv
 import pdb
 from scipy import weave
 
-class Coregionalise(Kernpart):
+class Coregionalize(Kernpart):
     """
-    Coregionalisation kernel. 
+    Covariance function for intrinsic/linear coregionalization models
 
-    Used for computing covariance functions of the form
+    This covariance has the form:
     .. math::
-       k_2(x, y)=B k(x, y)
-    where
-    .. math::
-       B = WW^\top + diag(kappa)
+       \mathbf{B} = \mathbf{W}\mathbf{W}^\top + \text{diag}(kappa)
 
-    :param output_dim: the number of output dimensions
+    An intrinsic/linear coregionalization covariance function of the form:
+    .. math::
+
+       k_2(x, y)=\mathbf{B} k(x, y)
+
+    it is obtained as the tensor product between a covariance function
+    k(x,y) and B.
+
+    :param output_dim: number of outputs to coregionalize
     :type output_dim: int
-    :param rank: the rank of the coregionalisation matrix.
+    :param rank: number of columns of the W matrix (this parameter is ignored if parameter W is not None)
     :type rank: int
-    :param W: a low rank matrix that determines the correlations between the different outputs, together with kappa it forms the coregionalisation matrix B.
-    :type W: ndarray
-    :param kappa: a diagonal term which allows the outputs to behave independently.
-    :rtype: kernel object
+    :param W: a low rank matrix that determines the correlations between the different outputs, together with kappa it forms the coregionalization matrix B
+    :type W: numpy array of dimensionality (num_outpus, W_columns)
+    :param kappa: a vector which allows the outputs to behave independently
+    :type kappa: numpy array of dimensionality  (output_dim,)
 
-    .. Note: see coregionalisation examples in GPy.examples.regression for some usage.
+    .. note: see coregionalization examples in GPy.examples.regression for some usage.
     """
-    def __init__(self,output_dim,rank=1, W=None, kappa=None):
+    def __init__(self, output_dim, rank=1, W=None, kappa=None):
         self.input_dim = 1
         self.name = 'coregion'
         self.output_dim = output_dim
         self.rank = rank
+        if self.rank>output_dim-1:
+            print("Warning: Unusual choice of rank, it should normally be less than the output_dim.")
         if W is None:
             self.W = 0.5*np.random.randn(self.output_dim,self.rank)/np.sqrt(self.rank)
         else:
@@ -154,7 +161,5 @@ class Coregionalise(Kernpart):
         target += np.hstack([dW.flatten(),dkappa])
 
     def dK_dX(self,dL_dK,X,X2,target):
+        #NOTE In this case, pass is equivalent to returning zero.
         pass
-
-
-

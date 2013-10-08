@@ -62,7 +62,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
     fnow = fold
     gradnew = gradf(x, *optargs) # Initial gradient.
     if any(np.isnan(gradnew)):
-        raise UnexpectedInfOrNan
+        raise UnexpectedInfOrNan, "Gradient contribution resulted in a NaN value"
     current_grad = np.dot(gradnew, gradnew)
     gradold = gradnew.copy()
     d = -gradnew # Initial search direction.

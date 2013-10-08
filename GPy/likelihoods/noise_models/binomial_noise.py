@@ -117,3 +117,16 @@ class Binomial(NoiseDistribution):
 
     def _d2variance_dgp2(self,gp):
         return self.gp_link.d2transf_df2(gp)*(1. - 2.*self.gp_link.transf(gp)) - 2*self.gp_link.dtransf_df(gp)**2
+
+
+    def samples(self, gp):
+        """
+        Returns a set of samples of observations based on a given value of the latent variable.
+
+        :param size: number of samples to compute
+        :param gp: latent variable
+        """
+        orig_shape = gp.shape
+        gp = gp.flatten()
+        Ysim = np.array([np.random.binomial(1,self.gp_link.transf(gpj),size=1) for gpj in gp])
+        return Ysim.reshape(orig_shape)

@@ -18,7 +18,7 @@ class EP(likelihood):
         self.data = data
         self.num_data, self.output_dim = self.data.shape
         self.is_heteroscedastic = True
-        self.Nparams = 0
+        self.num_params = 0
         self._transf_data = self.noise_model._preprocess_values(data)
 
         #Initial values - Likelihood approximation parameters:

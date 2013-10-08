@@ -348,8 +348,8 @@ class SVIGP(GPBase):
 
             #callback
             if i and not i%callback_interval:
-                callback()
-                time.sleep(0.1)
+                callback(self) # Change this to callback()
+                time.sleep(0.01)
 
             if self.epochs > 10:
                 self._adapt_steplength()
@@ -365,13 +365,13 @@ class SVIGP(GPBase):
         assert self.vb_steplength > 0
 
         if self.adapt_param_steplength:
-            # self._adaptive_param_steplength()
+            self._adaptive_param_steplength()
             # self._adaptive_param_steplength_log()
-            self._adaptive_param_steplength_from_vb()
+            # self._adaptive_param_steplength_from_vb()
         self._param_steplength_trace.append(self.param_steplength)
 
     def _adaptive_param_steplength(self):
-        decr_factor = 0.1
+        decr_factor = 0.02
         g_tp = self._transform_gradients(self._log_likelihood_gradients())
         self.gbar_tp = (1-1/self.tau_tp)*self.gbar_tp + 1/self.tau_tp * g_tp
         self.hbar_tp = (1-1/self.tau_tp)*self.hbar_tp + 1/self.tau_tp * np.dot(g_tp.T, g_tp)
@@ -405,7 +405,7 @@ class SVIGP(GPBase):
         self.tau_t = self.tau_t*(1-self.vb_steplength) + 1
 
     def _adaptive_vb_steplength_KL(self):
-        decr_factor = 1 #0.1
+        decr_factor = 0.1
         natgrad = self.vb_grad_natgrad()
         g_t1 = natgrad[0]
         g_t2 = natgrad[1]

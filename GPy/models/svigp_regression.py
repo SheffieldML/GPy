@@ -25,7 +25,7 @@ class SVIGPRegression(SVIGP):
 
     """
 
-    def __init__(self, X, Y, kernel=None, Z=None, num_inducing=10, q_u=None, batchsize=10):
+    def __init__(self, X, Y, kernel=None, Z=None, num_inducing=10, q_u=None, batchsize=10, normalize_Y=False):
         # kern defaults to rbf (plus white for stability)
         if kernel is None:
             kernel = kern.rbf(X.shape[1], variance=1., lengthscale=4.) + kern.white(X.shape[1], 1e-3)
@@ -38,7 +38,7 @@ class SVIGPRegression(SVIGP):
             assert Z.shape[1] == X.shape[1]
 
         # likelihood defaults to Gaussian
-        likelihood = likelihoods.Gaussian(Y, normalize=False)
+        likelihood = likelihoods.Gaussian(Y, normalize=normalize_Y)
 
         SVIGP.__init__(self, X, likelihood, kernel, Z, q_u=q_u, batchsize=batchsize)
         self.load_batch()

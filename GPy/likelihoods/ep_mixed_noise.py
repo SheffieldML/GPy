@@ -31,7 +31,7 @@ class EP_Mixed_Noise(likelihood):
         self.data = np.vstack(data_list)
         self.N, self.output_dim = self.data.shape
         self.is_heteroscedastic = True
-        self.Nparams = 0#FIXME
+        self.num_params = 0#FIXME
         self._transf_data = np.vstack([noise_model._preprocess_values(data) for noise_model,data in zip(noise_model_list,data_list)])
         #TODO non-gaussian index
 

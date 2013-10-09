@@ -7,6 +7,13 @@ import GPy
 
 verbose = False
 
+try:
+    import sympy
+    SYMPY_AVAILABLE=True
+except ImportError:
+    SYMPY_AVAILABLE=False
+
+
 class KernelTests(unittest.TestCase):
     def test_kerneltie(self):
         K = GPy.kern.rbf(5, ARD=True)
@@ -22,8 +29,9 @@ class KernelTests(unittest.TestCase):
         self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
     def test_rbf_sympykernel(self):
-        kern = GPy.kern.rbf_sympy(5)
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+        if SYMPY_AVAILABLE:
+            kern = GPy.kern.rbf_sympy(5)
+            self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
     def test_eq_sympykernel(self):
         kern = GPy.kern.eq_sympy(5, 3)

@@ -31,7 +31,7 @@ class kern(Parameterized):
 
         """
         self.parts = parts
-        self.Nparts = len(parts)
+        self.num_parts = len(parts)
         self.num_params = sum([p.num_params for p in self.parts])
 
         self.input_dim = input_dim
@@ -61,7 +61,7 @@ class kern(Parameterized):
         here just all the indices, rest can get recomputed
         """
         return Parameterized.getstate(self) + [self.parts,
-                self.Nparts,
+                self.num_parts,
                 self.num_params,
                 self.input_dim,
                 self.input_slices,
@@ -73,7 +73,7 @@ class kern(Parameterized):
         self.input_slices = state.pop()
         self.input_dim = state.pop()
         self.num_params = state.pop()
-        self.Nparts = state.pop()
+        self.num_parts = state.pop()
         self.parts = state.pop()
         Parameterized.setstate(self, state)
 
@@ -308,7 +308,7 @@ class kern(Parameterized):
 
     def K(self, X, X2=None, which_parts='all'):
         if which_parts == 'all':
-            which_parts = [True] * self.Nparts
+            which_parts = [True] * self.num_parts
         assert X.shape[1] == self.input_dim
         if X2 is None:
             target = np.zeros((X.shape[0], X.shape[0]))
@@ -359,7 +359,7 @@ class kern(Parameterized):
     def Kdiag(self, X, which_parts='all'):
         """Compute the diagonal of the covariance function for inputs X."""
         if which_parts == 'all':
-            which_parts = [True] * self.Nparts
+            which_parts = [True] * self.num_parts
         assert X.shape[1] == self.input_dim
         target = np.zeros(X.shape[0])
         [p.Kdiag(X[:, i_s], target=target) for p, i_s, part_on in zip(self.parts, self.input_slices, which_parts) if part_on]
@@ -497,7 +497,7 @@ class kern(Parameterized):
 
     def plot(self, x=None, plot_limits=None, which_parts='all', resolution=None, *args, **kwargs):
         if which_parts == 'all':
-            which_parts = [True] * self.Nparts
+            which_parts = [True] * self.num_parts
         if self.input_dim == 1:
             if x is None:
                 x = np.zeros((1, 1))

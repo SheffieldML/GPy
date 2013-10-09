@@ -12,8 +12,6 @@ class Kernpart(object):
 
         Do not instantiate.
         """
-        # stores indices of any inputs that are for indicating outputs
-        self.output_indicator = []
         # the input dimensionality for the covariance
         self.input_dim = input_dim
         # the number of optimisable parameters

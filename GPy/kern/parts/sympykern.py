@@ -44,7 +44,6 @@ class spkern(Kernpart):
         assert len(self._sp_x)==len(self._sp_z)
         self.input_dim = len(self._sp_x)
         if output_dim > 1:
-            self.output_indicator=[self.input_dim]
             self.input_dim += 1
             
         assert self.input_dim == input_dim
@@ -84,7 +83,7 @@ class spkern(Kernpart):
             if param is not None:
                 if param.has_key(theta):
                     val = param[theta]
-            setattr(self, theta, val)
+            setattr(self, theta.name, val)
         #deal with param            
         self._set_params(self._get_params())
 
@@ -146,7 +145,7 @@ class spkern(Kernpart):
             reverse_arg_list = list(arg_list)
             reverse_arg_list.reverse()
 
-        param_arg_list = ["param[%i]"%i for i in range(self.num_shared_params)]
+        param_arg_list = [shared_params.name for shared_params in self._sp_theta]
         arg_list += param_arg_list
 
         precompute_list=[]
@@ -201,11 +200,12 @@ class spkern(Kernpart):
         """%(diag_precompute_string,diag_arg_string,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
         # Code to compute gradients
-        func_list = ([' '*16 + 'target[%i] += partial[i*num_inducing+j]*dk_d%s(%s);'%(i,theta.name,arg_string) for i,theta in  enumerate(self._sp_theta)])
+        func_list = []
         if self.output_dim>1:
             func_list += [' '*16 + "int %s=(int)%s[%s*input_dim+output_dim];"%(index, var, index2) for index, var, index2 in zip(['ii', 'jj'], ['X', 'Z'], ['i', 'j'])]
             func_list += [' '*16 + 'target[%i+ii] += partial[i*num_inducing+j]*dk_d%s(%s);'%(self.num_shared_params+i*self.output_dim, theta.name, arg_string) for i, theta in enumerate(self._sp_theta_i)]
             func_list += [' '*16 + 'target[%i+jj] += partial[i*num_inducing+j]*dk_d%s(%s);'%(self.num_shared_params+i*self.output_dim, theta.name, reverse_arg_string) for i, theta in enumerate(self._sp_theta_i)]
+        func_list += ([' '*16 + 'target[%i] += partial[i*num_inducing+j]*dk_d%s(%s);'%(i,theta.name,arg_string) for i,theta in  enumerate(self._sp_theta)])
         func_string = '\n'.join(func_list) 
 
         self._dK_dtheta_code =\
@@ -290,7 +290,9 @@ class spkern(Kernpart):
         #TODO: insert multiple functions here via string manipulation
         #TODO: similar functions for psi_stats
     def _get_arg_names(self, Z=None, partial=None):
-        arg_names = ['target','X','param']
+        arg_names = ['target','X']
+        for shared_params in self._sp_theta:
+            arg_names += [shared_params.name]
         if Z is not None:
             arg_names += ['Z']
         if partial is not None:
@@ -301,7 +303,9 @@ class spkern(Kernpart):
         return arg_names
         
     def _weave_inline(self, code, X, target, Z=None, partial=None):
-        param, output_dim = self._shared_params, self.output_dim
+        output_dim = self.output_dim
+        for shared_params in self._sp_theta:
+            locals()[shared_params.name] = getattr(self, shared_params.name)
 
         # Need to extract parameters first
         for split_params in self._split_theta_names:
@@ -369,9 +373,7 @@ class spkern(Kernpart):
     def _set_params(self,param):        
         assert param.size == (self.num_params)
         for i, shared_params in enumerate(self._sp_theta):
-            start = i
-            end = i+1
-            setattr(self, shared_params, param[start:end])
+            setattr(self, shared_params.name, param[i])
             
         if self.output_dim>1:
             for i, split_params in enumerate(self._split_theta_names):
@@ -383,7 +385,7 @@ class spkern(Kernpart):
     def _get_params(self):
         params = np.zeros(0)
         for shared_params in self._sp_theta:
-            params = np.hstack((params, getattr(self, shared_params)))
+            params = np.hstack((params, getattr(self, shared_params.name)))
         if self.output_dim>1:
             for split_params in self._split_theta_names:
                 params = np.hstack((params, getattr(self, split_params).flatten()))

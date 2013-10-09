@@ -491,11 +491,11 @@ def ripley_synth(data_set='ripley_prnn_data'):
 def osu_run1(data_set='osu_run1', sample_every=4):
     if not data_available(data_set):
         download_data(data_set)
-    zip = zipfile.ZipFile(os.path.join(data_path, data_set, 'sprintTXT.ZIP'), 'r')
+    zip = zipfile.ZipFile(os.path.join(data_path, data_set, 'run1TXT.ZIP'), 'r')
     path = os.path.join(data_path, data_set)
     for name in zip.namelist():
         zip.extract(name, path)
-    Y, connect = GPy.util.mocap.load_text_data('Aug210107', path)
+    Y, connect = GPy.util.mocap.load_text_data('Aug210106', path)
     Y = Y[0:-1:sample_every, :]
     return data_details_return({'Y': Y, 'connect' : connect}, data_set)
 

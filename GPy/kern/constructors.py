@@ -302,8 +302,8 @@ if sympy_available:
         Z = sp.symbols('z_:' + str(input_dim))
         variance = sp.var('variance',positive=True)
         if ARD:
-            lengthscales = [sp.var('lengthscale_%i' % i, positive=True) for i in range(input_dim)]
-            dist_string = ' + '.join(['(x_%i-z_%i)**2/lengthscale_%i**2' % (i, i, i) for i in range(input_dim)])
+            lengthscales = sp.symbols('lengthscale_:' + str(input_dim))
+            dist_string = ' + '.join(['(x_%i-z_%i)**2/lengthscale%i**2' % (i, i, i) for i in range(input_dim)])
             dist = parse_expr(dist_string)
             f =  variance*sp.exp(-dist/2.)
         else:
@@ -312,6 +312,25 @@ if sympy_available:
             dist = parse_expr(dist_string)
             f =  variance*sp.exp(-dist/(2*lengthscale**2))
         return kern(input_dim, [spkern(input_dim, f, name='rbf_sympy')])
+
+    def eq_sympy(input_dim, output_dim, ARD=False, variance=1., lengthscale=1.):
+        """
+        Exponentiated quadratic with multiple outputs.
+        """
+        X = sp.symbols('x_:' + str(input_dim))
+        Z = sp.symbols('z_:' + str(input_dim))
+        variance = sp.var('variance',positive=True)
+        if ARD:
+            lengthscales = [sp.var('lengthscale%i_i lengthscale%i_j' % i, positive=True) for i in range(input_dim)]
+            dist_string = ' + '.join(['(x_%i-z_%i)**2/(lengthscale%i_i*lengthscale%i_j)' % (i, i, i) for i in range(input_dim)])
+            dist = parse_expr(dist_string)
+            f =  variance*sp.exp(-dist/2.)
+        else:
+            lengthscale = sp.var('lengthscale_i lengthscale_j',positive=True)
+            dist_string = ' + '.join(['(x_%i-z_%i)**2' % (i, i) for i in range(input_dim)])
+            dist = parse_expr(dist_string)
+            f =  variance*sp.exp(-dist/(2*lengthscale**2))
+        return kern(input_dim, [spkern(input_dim, f, name='eq_sympy')])
 
     def sinc(input_dim, ARD=False, variance=1., lengthscale=1.):
         """

@@ -672,8 +672,13 @@ def kern_test(kern, X=None, X2=None, verbose=False):
     pass_checks = True
     if X==None:
         X = np.random.randn(10, kern.input_dim)
+        for ind in kern.output_indicator:
+            X[:, ind] = np.random.randint(kern.output_dim, X.shape[0])
     if X2==None:
         X2 = np.random.randn(20, kern.input_dim)
+        for ind in kern.output_indicator:
+            X2[:, ind] = np.random.randint(kern.output_dim, X2.shape[0])
+
     if verbose:
         print("Checking covariance function is positive definite.")
     result = Kern_check_model(kern, X=X).is_positive_definite()

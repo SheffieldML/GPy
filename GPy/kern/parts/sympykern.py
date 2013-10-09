@@ -27,7 +27,7 @@ class spkern(Kernpart):
      - to handle multiple inputs, call them x_1, z_1, etc
      - to handle multpile correlated outputs, you'll need to add parameters with an index, such as lengthscale_i and lengthscale_j.
     """
-    def __init__(self,input_dim, k=None, output_dim=1, name=None, param=None):
+    def __init__(self, input_dim, k=None, output_dim=1, name=None, param=None):
         if name is None:
             self.name='sympykern'
         else:
@@ -44,7 +44,9 @@ class spkern(Kernpart):
         assert len(self._sp_x)==len(self._sp_z)
         self.input_dim = len(self._sp_x)
         if output_dim > 1:
+            self.output_indicator=[self.input_dim]
             self.input_dim += 1
+            
         assert self.input_dim == input_dim
         self.output_dim = output_dim
         # extract parameter names
@@ -63,26 +65,28 @@ class spkern(Kernpart):
             self._sp_theta = [theta for theta in thetas if theta not in self._sp_theta_i and theta not in self._sp_theta_j]
             
             self.num_split_params = len(self._sp_theta_i)
-            self._split_param_names = ["%s"%theta.name[:-2] for theta in self._sp_theta_i]
-            for params in self._split_param_names:
-                setattr(self, params, np.ones(self.output_dim))
+            self._split_theta_names = ["%s"%theta.name[:-2] for theta in self._sp_theta_i]
+            for theta in self._split_theta_names:
+                setattr(self, theta, np.ones(self.output_dim))
             
             self.num_shared_params = len(self._sp_theta)
             self.num_params = self.num_shared_params+self.num_split_params*self.output_dim
             
         else:
             self.num_split_params = 0
-            self._split_param_names = []
+            self._split_theta_names = []
             self._sp_theta = thetas
             self.num_shared_params = len(self._sp_theta)
             self.num_params = self.num_shared_params
-
-        #deal with param
-        if param is None:
-            param = np.ones(self.num_params)
-            
-        assert param.size==self.num_params
-        self._set_params(param)
+        
+        for theta in self._sp_theta:
+            val = 1.0
+            if param is not None:
+                if param.has_key(theta):
+                    val = param[theta]
+            setattr(self, theta, val)
+        #deal with param            
+        self._set_params(self._get_params())
 
         #Differentiate!
         self._sp_dk_dtheta = [sp.diff(k,theta).simplify() for theta in self._sp_theta]
@@ -90,52 +94,28 @@ class spkern(Kernpart):
             self._sp_dk_dtheta_i = [sp.diff(k,theta).simplify() for theta in self._sp_theta_i]
             
         self._sp_dk_dx = [sp.diff(k,xi).simplify() for xi in self._sp_x]
-        #self._sp_dk_dz = [sp.diff(k,zi) for zi in self._sp_z]
 
-        #self.compute_psi_stats()
+        if False:
+            self.compute_psi_stats()
+
         self._gen_code()
 
-        self.weave_kwargs = {\
-            'support_code':self._function_code,\
-            'include_dirs':[tempfile.gettempdir(), os.path.join(current_dir,'parts/')],\
-            'headers':['"sympy_helpers.h"'],\
-            'sources':[os.path.join(current_dir,"parts/sympy_helpers.cpp")],\
-            #'extra_compile_args':['-ftree-vectorize', '-mssse3', '-ftree-vectorizer-verbose=5'],\
-            'extra_compile_args':[],\
-            'extra_link_args':['-lgomp'],\
+        if False:
+            extra_compile_args = ['-ftree-vectorize', '-mssse3', '-ftree-vectorizer-verbose=5']
+        else:
+            extra_compile_args = []
+            
+        self.weave_kwargs = {
+            'support_code':self._function_code,
+            'include_dirs':[tempfile.gettempdir(), os.path.join(current_dir,'parts/')],
+            'headers':['"sympy_helpers.h"'],
+            'sources':[os.path.join(current_dir,"parts/sympy_helpers.cpp")],
+            'extra_compile_args':extra_compile_args,
+            'extra_link_args':['-lgomp'],
             'verbose':True}
 
     def __add__(self,other):
         return spkern(self._sp_k+other._sp_k)
-
-    def compute_psi_stats(self):
-        #define some normal distributions
-        mus = [sp.var('mu_%i'%i,real=True) for i in range(self.input_dim)]
-        Ss = [sp.var('S_%i'%i,positive=True) for i in range(self.input_dim)]
-        normals = [(2*sp.pi*Si)**(-0.5)*sp.exp(-0.5*(xi-mui)**2/Si) for xi, mui, Si in zip(self._sp_x, mus, Ss)]
-
-        #do some integration!
-        #self._sp_psi0 = ??
-        self._sp_psi1 = self._sp_k
-        for i in range(self.input_dim):
-            print 'perfoming integrals %i of %i'%(i+1,2*self.input_dim)
-            sys.stdout.flush()
-            self._sp_psi1 *= normals[i]
-            self._sp_psi1 = sp.integrate(self._sp_psi1,(self._sp_x[i],-sp.oo,sp.oo))
-            clear_cache()
-        self._sp_psi1 = self._sp_psi1.simplify()
-
-        #and here's psi2 (eek!)
-        zprime = [sp.Symbol('zp%i'%i) for i in range(self.input_dim)]
-        self._sp_psi2 = self._sp_k.copy()*self._sp_k.copy().subs(zip(self._sp_z,zprime))
-        for i in range(self.input_dim):
-            print 'perfoming integrals %i of %i'%(self.input_dim+i+1,2*self.input_dim)
-            sys.stdout.flush()
-            self._sp_psi2 *= normals[i]
-            self._sp_psi2 = sp.integrate(self._sp_psi2,(self._sp_x[i],-sp.oo,sp.oo))
-            clear_cache()
-        self._sp_psi2 = self._sp_psi2.simplify()
-
 
     def _gen_code(self):
         #generate c functions from sympy objects        
@@ -201,8 +181,10 @@ class spkern(Kernpart):
         
         # Code to compute diagonal of covariance.
         diag_arg_string = re.sub('Z','X',arg_string)
+        diag_arg_string = re.sub('int jj','//int jj',diag_arg_string)
         diag_arg_string = re.sub('j','i',diag_arg_string)
-        diag_precompute_string = re.sub('Z','X',precompute_string)
+        diag_precompute_string = re.sub('int jj','//int jj',precompute_string)
+        diag_precompute_string = re.sub('Z','X',diag_precompute_string)
         diag_precompute_string = re.sub('j','i',diag_precompute_string)
         # Code to do the looping for Kdiag
         self._Kdiag_code =\
@@ -245,6 +227,7 @@ class spkern(Kernpart):
 
         # Code to compute gradients for Kdiag TODO: needs clean up
         diag_func_string = re.sub('Z','X',func_string,count=0)
+        diag_func_string = re.sub('int jj','//int jj',diag_func_string)
         diag_func_string = re.sub('j','i',diag_func_string)
         diag_func_string = re.sub('partial\[i\*num_inducing\+i\]','partial[i]',diag_func_string)
         self._dKdiag_dtheta_code =\
@@ -279,6 +262,7 @@ class spkern(Kernpart):
   
 
         diag_gradient_funcs = re.sub('Z','X',gradient_funcs,count=0)
+        diag_gradient_funcs = re.sub('int jj','//int jj',diag_gradient_funcs)
         diag_gradient_funcs = re.sub('j','i',diag_gradient_funcs)
         diag_gradient_funcs = re.sub('partial\[i\*num_inducing\+i\]','2*partial[i]',diag_gradient_funcs)
 
@@ -312,7 +296,7 @@ class spkern(Kernpart):
         if partial is not None:
             arg_names += ['partial']
         if self.output_dim>1:
-            arg_names += self._split_param_names
+            arg_names += self._split_theta_names
             arg_names += ['output_dim']
         return arg_names
         
@@ -320,7 +304,7 @@ class spkern(Kernpart):
         param, output_dim = self._shared_params, self.output_dim
 
         # Need to extract parameters first
-        for split_params in self._split_param_names:
+        for split_params in self._split_theta_names:
             locals()[split_params] = getattr(self, split_params)
         arg_names = self._get_arg_names(Z, partial)        
         weave.inline(code=code, arg_names=arg_names,**self.weave_kwargs)
@@ -353,21 +337,55 @@ class spkern(Kernpart):
     def dKdiag_dX(self,partial,X,target):
         self._weave.inline(self._dKdiag_dX_code, X, target, Z, partial)
 
-    def _set_params(self,param):
-        #print param.flags['C_CONTIGUOUS']
+    def compute_psi_stats(self):
+        #define some normal distributions
+        mus = [sp.var('mu_%i'%i,real=True) for i in range(self.input_dim)]
+        Ss = [sp.var('S_%i'%i,positive=True) for i in range(self.input_dim)]
+        normals = [(2*sp.pi*Si)**(-0.5)*sp.exp(-0.5*(xi-mui)**2/Si) for xi, mui, Si in zip(self._sp_x, mus, Ss)]
+
+        #do some integration!
+        #self._sp_psi0 = ??
+        self._sp_psi1 = self._sp_k
+        for i in range(self.input_dim):
+            print 'perfoming integrals %i of %i'%(i+1,2*self.input_dim)
+            sys.stdout.flush()
+            self._sp_psi1 *= normals[i]
+            self._sp_psi1 = sp.integrate(self._sp_psi1,(self._sp_x[i],-sp.oo,sp.oo))
+            clear_cache()
+        self._sp_psi1 = self._sp_psi1.simplify()
+
+        #and here's psi2 (eek!)
+        zprime = [sp.Symbol('zp%i'%i) for i in range(self.input_dim)]
+        self._sp_psi2 = self._sp_k.copy()*self._sp_k.copy().subs(zip(self._sp_z,zprime))
+        for i in range(self.input_dim):
+            print 'perfoming integrals %i of %i'%(self.input_dim+i+1,2*self.input_dim)
+            sys.stdout.flush()
+            self._sp_psi2 *= normals[i]
+            self._sp_psi2 = sp.integrate(self._sp_psi2,(self._sp_x[i],-sp.oo,sp.oo))
+            clear_cache()
+        self._sp_psi2 = self._sp_psi2.simplify()
+
+
+    def _set_params(self,param):        
         assert param.size == (self.num_params)
-        self._shared_params = param[0:self.num_shared_params]
+        for i, shared_params in enumerate(self._sp_theta):
+            start = i
+            end = i+1
+            setattr(self, shared_params, param[start:end])
+            
         if self.output_dim>1:
-            for i, split_params in enumerate(self._split_param_names):
+            for i, split_params in enumerate(self._split_theta_names):
                 start = self.num_shared_params + i*self.output_dim
                 end = self.num_shared_params + (i+1)*self.output_dim
                 setattr(self, split_params, param[start:end])
 
 
     def _get_params(self):
-        params = self._shared_params
+        params = np.zeros(0)
+        for shared_params in self._sp_theta:
+            params = np.hstack((params, getattr(self, shared_params)))
         if self.output_dim>1:
-            for split_params in self._split_param_names:
+            for split_params in self._split_theta_names:
                 params = np.hstack((params, getattr(self, split_params).flatten()))
         return params
 

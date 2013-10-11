@@ -4,82 +4,118 @@ Created on Oct 2, 2013
 @author: maxzwiessele
 '''
 import numpy
+import itertools
 
-class ParameterIndexOperations(object):
+class ConstraintIndexOperations(object):
     '''
     Index operations for storing parameter index _properties
-    This class enables indexing with slices retrieved from object.__getitem__ calls.
+    This class enables index with slices retrieved from object.__getitem__ calls.
+    Adding an index will add the selected indexes by the slice of an indexarray
+    indexing a shape shaped array to the flattened index array. Remove will
+    remove the selected slice indices from the flattened array.
+    You can give an offset to set an offset for the given indices in the
+    index array, for multiparameter handling.
     
-    :param _shape: _shape of parameter, handled by this index restriction class
+    
     '''
-    
-
-    def __init__(self, param):
+    def __init__(self):
         self._properties = {}
-        self._shape = param.shape
-    
-#     def iteritems(self):
-#         for prop, indices in self._properties.iteritems():
-#             yield prop, self.unravel_indices(indices)
-
+        
     def iteritems(self):
         return self._properties.iteritems()
     
     def properties(self):
         return self._properties.keys()
 
-    def iterproperties(self):
+    def iter_properties(self):
         return self._properties.iterkeys()
-
-    def values(self):
-        return self._properties.values()
-        
-    def itervalues(self):
-        return self._properties.itervalues()
     
     def clear(self):
         self._properties.clear()
     
     def size(self):
-        return reduce(lambda a,b: a+b.size, self.itervalues(), 0)    
-    
-#     def iterindices(self):
-#         for indices in self.itervalues():
-#             yield self.unravel_indices(indices)
+        return reduce(lambda a,b: a+b.size, self.iterindices(), 0)    
     
     def iterindices(self):
-        return self.itervalues()
+        return self._properties.itervalues()
     
-    def indices(self, prop):
-        """
-        get indices for prop prop.
-        these indices can be used as X[indices], which will be a flattened array of
-        all restricted elements
-        """
-        return self.unravel_indices(self._properties[prop])
-    
-    def add(self, prop, indices):
-        ind = self.create_raveled_indices(indices)
+    def indices(self):
+        return self._properties.values()
+        
+    def add(self, prop, indices, shape, offset=False):
+        ind = create_raveled_indices(indices, shape, offset)
         if prop in self._properties:
-            self._properties[prop] = numpy.union1d(self._properties[prop], ind)
-        else:
-            self._properties[prop] = ind
+            self._properties[prop] = combine_indices(self._properties[prop], ind)
+            return 
+        for a in self.properties(): 
+            if numpy.all(a==prop) and a.name == prop.name and a._parent_index == prop._parent_index:
+                self._properties[a] = combine_indices(self._properties[a], ind)
+                return
+        self._properties[prop] = ind
     
-    def remove(self, prop, indices):
+    def remove(self, prop, indices, shape, offset=False):
         if prop in self._properties:
-            ind = self.create_raveled_indices(indices)
-            diff = numpy.setdiff1d(self._properties[prop], ind, True)
-            if numpy.size(diff):
-                self._properties[prop] = diff
-            else:
-                del self._properties[prop] 
-            
-    def create_raveled_indices(self, indices):
-        if isinstance(indices, (tuple, list)):
-            i = [slice(None)] + list(indices)
+                ind = create_raveled_indices(indices, shape, offset)
+                diff = remove_indices(self[prop], ind)
+                removed = numpy.intersect1d(self[prop], ind, True)
+                if not index_empty(diff):
+                    self._properties[prop] = diff
+                else:
+                    del self._properties[prop]
+                return removed.astype(int)
         else:
-            i = [slice(None), indices]
-        return numpy.array(numpy.ravel_multi_index(numpy.indices(self._shape)[i], self._shape)).flatten()
+            for a in self.properties(): 
+                if numpy.all(a==prop) and a.name == prop.name and a._parent_index == prop._parent_index:
+                    ind = create_raveled_indices(indices, shape, offset)
+                    diff = remove_indices(self[a], ind)
+                    removed = numpy.intersect1d(self[a], ind, True)
+                    if not index_empty(diff):
+                        self._properties[a] = diff
+                    else:
+                        del self._properties[a]
+                    return removed.astype(int)
+        return numpy.array([]).astype(int)
+    def __getitem__(self, prop):
+        return self._properties[prop]
+       
+class TieIndexOperations(object):
+    def __init__(self, params):
+        self.params = params
+        self.tied_from = ConstraintIndexOperations()
+        self.tied_to = ConstraintIndexOperations()
+    def add(self, tied_from, tied_to):
+        self.tied_from.add(tied_to, tied_from._current_slice, tied_from._realshape, self.params._offset(tied_from))
+        self.tied_to.add(tied_to, tied_to._current_slice, tied_to._realshape, self.params._offset(tied_to))
+    def remove(self, tied_from, tied_to):
+        self.tied_from.remove(tied_to, tied_from._current_slice, tied_from._realshape, self.params._offset(tied_from))
+        self.tied_to.remove(tied_to, tied_to._current_slice, tied_to._realshape, self.params._offset(tied_to))
+    def iter_from_to_indices(self):
+        for k, f in self.tied_from.iteritems():
+            yield f, self.tied_to[k]
+    def iter_from_items(self):
+        for f, i in self.tied_from.iteritems():
+            yield f, i
+    def iter_properties(self):
+        return self.tied_from.iter_properties()
+    def properties(self):
+        return self.tied_from.properties()
+    def from_to_indices(self, param):
+        return self.tied_from[param], self.tied_to[param]
     
-    def unravel_indices(self, raveled_indices):
-        return numpy.unravel_index(raveled_indices, self._shape)
+def create_raveled_indices(index, shape, offset=False):
+    if isinstance(index, (tuple, list)): i = [slice(None)] + list(index)
+    else: i = [slice(None), index]
+    ind = numpy.array(numpy.ravel_multi_index(numpy.indices(shape)[i], shape)).flat + numpy.int_(offset)
+    return ind
+
+def combine_indices(arr1, arr2):
+    return numpy.union1d(arr1, arr2)
+
+def remove_indices(arr, to_remove):
+    return numpy.setdiff1d(arr, to_remove, True)
+
+def index_empty(index):
+    return numpy.size(index) == 0 
+
+
+

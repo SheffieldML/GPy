@@ -14,22 +14,22 @@ default_seed = np.random.seed(123344)
 def BGPLVM(seed=default_seed):
     N = 5
     num_inducing = 4
-    Q = 3
+    input_dim = 3
     D = 2
     # generate GPLVM-like data
-    X = np.random.rand(N, Q)
-    lengthscales = np.random.rand(Q)
-    k = (GPy.kern.rbf(Q, .5, lengthscales, ARD=True)
-         + GPy.kern.white(Q, 0.01))
+    X = np.random.rand(N, input_dim)
+    lengthscales = np.random.rand(input_dim)
+    k = (GPy.kern.rbf(input_dim, .5, lengthscales, ARD=True)
+         + GPy.kern.white(input_dim, 0.01))
     K = k.K(X)
     Y = np.random.multivariate_normal(np.zeros(N), K, D).T
     lik = Gaussian(Y, normalize=True)
 
-    k = GPy.kern.rbf_inv(Q, .5, np.ones(Q) * 2., ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
-    # k = GPy.kern.rbf(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
-    # k = GPy.kern.rbf(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)
+    k = GPy.kern.rbf_inv(input_dim, .5, np.ones(input_dim) * 2., ARD=True) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim)
+    # k = GPy.kern.rbf(input_dim) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
+    # k = GPy.kern.rbf(input_dim, ARD = False)  + GPy.kern.white(input_dim, 0.00001)
 
-    m = GPy.models.BayesianGPLVM(lik, Q, kernel=k, num_inducing=num_inducing)
+    m = GPy.models.BayesianGPLVM(lik, input_dim, kernel=k, num_inducing=num_inducing)
     m.lengthscales = lengthscales
     # m.constrain_positive('(rbf|bias|noise|white|S)')
     # m.constrain_fixed('S', 1)
@@ -64,7 +64,7 @@ def GPLVM_oil_100(optimize=True):
     m.plot_latent(labels=m.data_labels)
     return m
 
-def sparseGPLVM_oil(optimize=True, N=100, Q=6, num_inducing=15, max_iters=50):
+def sparseGPLVM_oil(optimize=True, N=100, input_dim=6, num_inducing=15, max_iters=50):
     np.random.seed(0)
     data = GPy.util.datasets.oil()
 
@@ -73,8 +73,8 @@ def sparseGPLVM_oil(optimize=True, N=100, Q=6, num_inducing=15, max_iters=50):
     Y /= Y.std(0)
 
     # create simple GP model
-    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q)
-    m = GPy.models.SparseGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing)
+    kernel = GPy.kern.rbf(input_dim, ARD=True) + GPy.kern.bias(input_dim)
+    m = GPy.models.SparseGPLVM(Y, input_dim, kernel=kernel, num_inducing=num_inducing)
     m.data_labels = data['Y'].argmax(axis=1)
 
     # optimize
@@ -86,7 +86,7 @@ def sparseGPLVM_oil(optimize=True, N=100, Q=6, num_inducing=15, max_iters=50):
     # m.plot_latent(labels=m.data_labels)
     return m
 
-def swiss_roll(optimize=True, N=1000, num_inducing=15, Q=4, sigma=.2, plot=False):
+def swiss_roll(optimize=True, N=1000, num_inducing=15, input_dim=4, sigma=.2, plot=False):
     from GPy.util.datasets import swiss_roll_generated
     from GPy.core.transformations import LogexpClipped
 
@@ -102,10 +102,10 @@ def swiss_roll(optimize=True, N=1000, num_inducing=15, Q=4, sigma=.2, plot=False
         from sklearn.manifold.isomap import Isomap
         iso = Isomap().fit(Y)
         X = iso.embedding_
-        if Q > 2:
-            X = np.hstack((X, np.random.randn(N, Q - 2)))
+        if input_dim > 2:
+            X = np.hstack((X, np.random.randn(N, input_dim - 2)))
     except ImportError:
-        X = np.random.randn(N, Q)
+        X = np.random.randn(N, input_dim)
 
     if plot:
         from mpl_toolkits import mplot3d
@@ -121,14 +121,14 @@ def swiss_roll(optimize=True, N=1000, num_inducing=15, Q=4, sigma=.2, plot=False
 
 
     var = .5
-    S = (var * np.ones_like(X) + np.clip(np.random.randn(N, Q) * var ** 2,
+    S = (var * np.ones_like(X) + np.clip(np.random.randn(N, input_dim) * var ** 2,
                                          - (1 - var),
                                          (1 - var))) + .001
     Z = np.random.permutation(X)[:num_inducing]
 
-    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
+    kernel = GPy.kern.rbf(input_dim, ARD=True) + GPy.kern.bias(input_dim, np.exp(-2)) + GPy.kern.white(input_dim, np.exp(-2))
 
-    m = BayesianGPLVM(Y, Q, X=X, X_variance=S, num_inducing=num_inducing, Z=Z, kernel=kernel)
+    m = BayesianGPLVM(Y, input_dim, X=X, X_variance=S, num_inducing=num_inducing, Z=Z, kernel=kernel)
     m.data_colors = c
     m.data_t = t
 
@@ -140,19 +140,19 @@ def swiss_roll(optimize=True, N=1000, num_inducing=15, Q=4, sigma=.2, plot=False
         m.optimize('scg', messages=1)
     return m
 
-def BGPLVM_oil(optimize=True, N=200, Q=7, num_inducing=40, max_iters=1000, plot=False, **k):
+def BGPLVM_oil(optimize=True, N=200, input_dim=7, num_inducing=40, max_iters=1000, plot=False, **k):
     np.random.seed(0)
     data = GPy.util.datasets.oil()
 
     # create simple GP model
-    kernel = GPy.kern.rbf_inv(Q, 1., [.1] * Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2))
+    kernel = GPy.kern.rbf_inv(input_dim, 1., [.1] * input_dim, ARD=True) + GPy.kern.bias(input_dim, np.exp(-2))
 
     Y = data['X'][:N]
     Yn = Gaussian(Y, normalize=True)
 #     Yn = Y - Y.mean(0)
 #     Yn /= Yn.std(0)
 
-    m = GPy.models.BayesianGPLVM(Yn, Q, kernel=kernel, num_inducing=num_inducing, **k)
+    m = GPy.models.BayesianGPLVM(Yn, input_dim, kernel=kernel, num_inducing=num_inducing, **k)
     m.data_labels = data['Y'][:N].argmax(axis=1)
 
     # m.constrain('variance|leng', LogexpClipped())
@@ -193,7 +193,7 @@ def oil_100():
 
 
 
-def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
+def _simulate_sincos(D1, D2, D3, N, num_inducing, input_dim, plot_sim=False):
     x = np.linspace(0, 4 * np.pi, N)[:, None]
     s1 = np.vectorize(lambda x: np.sin(x))
     s2 = np.vectorize(lambda x: np.cos(x))
@@ -253,13 +253,13 @@ def bgplvm_simulation_matlab_compare():
     Y = sim_data['Y']
     S = sim_data['S']
     mu = sim_data['mu']
-    num_inducing, [_, Q] = 3, mu.shape
+    num_inducing, [_, input_dim] = 3, mu.shape
 
     from GPy.models import mrd
     from GPy import kern
     reload(mrd); reload(kern)
-    k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
-    m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k,
+    k = kern.linear(input_dim, ARD=True) + kern.bias(input_dim, np.exp(-2)) + kern.white(input_dim, np.exp(-2))
+    m = BayesianGPLVM(Y, input_dim, init="PCA", num_inducing=num_inducing, kernel=k,
 #                        X=mu,
 #                        X_variance=S,
                        _debug=False)
@@ -273,8 +273,8 @@ def bgplvm_simulation(optimize='scg',
                       max_iters=2e4,
                       plot_sim=False):
 #     from GPy.core.transformations import LogexpClipped
-    D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 30, 3, 10
-    slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
+    D1, D2, D3, N, num_inducing, input_dim = 15, 5, 8, 30, 3, 10
+    slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, input_dim, plot_sim)
 
     from GPy.models import mrd
     from GPy import kern
@@ -282,8 +282,8 @@ def bgplvm_simulation(optimize='scg',
 
     Y = Ylist[0]
 
-    k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2)) # + kern.bias(Q)
-    m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k)
+    k = kern.linear(input_dim, ARD=True) + kern.bias(input_dim, np.exp(-2)) + kern.white(input_dim, np.exp(-2)) # + kern.bias(input_dim)
+    m = BayesianGPLVM(Y, input_dim, init="PCA", num_inducing=num_inducing, kernel=k)
 
     # m.constrain('variance|noise', LogexpClipped())
     m['noise'] = Y.var() / 100.
@@ -298,8 +298,8 @@ def bgplvm_simulation(optimize='scg',
     return m
 
 def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
-    D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
-    slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
+    D1, D2, D3, N, num_inducing, input_dim = 60, 20, 36, 60, 6, 5
+    slist, Slist, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, input_dim, plot_sim)
 
     likelihood_list = [Gaussian(x, normalize=True) for x in Ylist]
 
@@ -308,8 +308,8 @@ def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
 
     reload(mrd); reload(kern)
 
-    k = kern.linear(Q, ARD=True) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2))
-    m = mrd.MRD(likelihood_list, input_dim=Q, num_inducing=num_inducing, kernels=k, initx="", initz='permute', **kw)
+    k = kern.linear(input_dim, ARD=True) + kern.bias(input_dim, np.exp(-2)) + kern.white(input_dim, np.exp(-2))
+    m = mrd.MRD(likelihood_list, input_dim=input_dim, num_inducing=num_inducing, kernels=k, initx="", initz='permute', **kw)
     m.ensure_default_constraints()
 
     for i, bgplvm in enumerate(m.bgplvms):
@@ -330,14 +330,14 @@ def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
 def brendan_faces():
     from GPy import kern
     data = GPy.util.datasets.brendan_faces()
-    Q = 2
+    input_dim = 2
     Y = data['Y'][0:-1:10, :]
     # Y = data['Y']
     Yn = Y - Y.mean()
     Yn /= Yn.std()
 
-    m = GPy.models.GPLVM(Yn, Q)
-    # m = GPy.models.BayesianGPLVM(Yn, Q, num_inducing=100)
+    m = GPy.models.GPLVM(Yn, input_dim)
+    # m = GPy.models.BayesianGPLVM(Yn, input_dim, num_inducing=100)
 
     # optimize
     m.constrain('rbf|noise|white', GPy.core.transformations.LogexpClipped())
@@ -424,9 +424,9 @@ def robot_wireless():
 
 def stick_bgplvm(model=None):
     data = GPy.util.datasets.osu_run1()
-    Q = 6
-    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, np.exp(-2)) + GPy.kern.white(Q, np.exp(-2))
-    m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20, kernel=kernel)
+    input_dim = 6
+    kernel = GPy.kern.rbf(input_dim, ARD=True) + GPy.kern.bias(input_dim, np.exp(-2)) + GPy.kern.white(input_dim, np.exp(-2))
+    m = BayesianGPLVM(data['Y'], input_dim, init="PCA", num_inducing=20, kernel=kernel)
     # optimize
     m.ensure_default_constraints()
     m.optimize('scg', messages=1, max_iters=200, xtol=1e-300, ftol=1e-300)
@@ -469,11 +469,11 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True):
 #     X -= X.mean(axis=0)
 #     X /= X.std(axis=0)
 #
-#     Q = 10
+#     input_dim = 10
 #     num_inducing = 30
 #
-#     kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
-#     m = GPy.models.BayesianGPLVM(X, Q, kernel=kernel, num_inducing=num_inducing)
+#     kernel = GPy.kern.rbf(input_dim, ARD=True) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim)
+#     m = GPy.models.BayesianGPLVM(X, input_dim, kernel=kernel, num_inducing=num_inducing)
 #     # m.scale_factor = 100.0
 #     m.constrain_positive('(white|noise|bias|X_variance|rbf_variance|rbf_length)')
 #     from sklearn import cluster

@@ -15,7 +15,7 @@ class Gaussian(likelihood):
     """
     def __init__(self, data, variance=1., normalize=False):
         self.is_heteroscedastic = False
-        self.Nparams = 1
+        self.num_params = 1
         self.Z = 0. # a correction factor which accounts for the approximation made
         N, self.output_dim = data.shape
 

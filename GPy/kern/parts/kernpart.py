@@ -5,15 +5,18 @@
 class Kernpart(object):
     def __init__(self,input_dim):
         """
-        The base class for a kernpart: a positive definite function which forms part of a kernel
+        The base class for a kernpart: a positive definite function which forms part of a covariance function (kernel).
 
         :param input_dim: the number of input dimensions to the function
         :type input_dim: int
 
         Do not instantiate.
         """
+        # the input dimensionality for the covariance
         self.input_dim = input_dim
+        # the number of optimisable parameters
         self.num_params = 1
+        # the name of the covariance function.
         self.name = 'unnamed'
 
     def _get_params(self):

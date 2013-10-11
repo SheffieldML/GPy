@@ -57,8 +57,8 @@ def coregionalization_toy(max_iters=100):
     m.optimize(max_iters=max_iters)
 
     fig, axes = pb.subplots(2,1)
-    m.plot(output=0,ax=axes[0])
-    m.plot(output=1,ax=axes[1])
+    m.plot_single_output(output=0,ax=axes[0])
+    m.plot_single_output(output=1,ax=axes[1])
     axes[0].set_title('Output 0')
     axes[1].set_title('Output 1')
     return m
@@ -77,14 +77,14 @@ def coregionalization_sparse(max_iters=100):
 
     k1 = GPy.kern.rbf(1)
 
-    m = GPy.models.SparseGPMultioutputRegression(X_list=[X1,X2],Y_list=[Y1,Y2],kernel_list=[k1],num_inducing=20)
+    m = GPy.models.SparseGPMultioutputRegression(X_list=[X1,X2],Y_list=[Y1,Y2],kernel_list=[k1],num_inducing=5)
     m.constrain_fixed('.*rbf_var',1.)
-    m.optimize(messages=1)
-    #m.optimize_restarts(5, robust=True, messages=1, max_iters=max_iters, optimizer='bfgs')
+    #m.optimize(messages=1)
+    m.optimize_restarts(5, robust=True, messages=1, max_iters=max_iters, optimizer='bfgs')
 
     fig, axes = pb.subplots(2,1)
-    m.plot(output=0,ax=axes[0])
-    m.plot(output=1,ax=axes[1])
+    m.plot_single_output(output=0,ax=axes[0],plot_limits=(-1,9))
+    m.plot_single_output(output=1,ax=axes[1],plot_limits=(-1,9))
     axes[0].set_title('Output 0')
     axes[1].set_title('Output 1')
     return m

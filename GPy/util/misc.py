@@ -61,7 +61,7 @@ def fast_array_equal(A, B):
     int i, j;
     return_val = 1;
 
-    #pragma omp parallel for private(i, j)
+    // #pragma omp parallel for private(i, j)
     for(i=0;i<N;i++){
        for(j=0;j<D;j++){
           if(A(i, j) != B(i, j)){
@@ -76,7 +76,7 @@ def fast_array_equal(A, B):
     int i, j, z;
     return_val = 1;
 
-    #pragma omp parallel for private(i, j, z)
+    // #pragma omp parallel for private(i, j, z)
     for(i=0;i<N;i++){
        for(j=0;j<D;j++){
          for(z=0;z<Q;z++){
@@ -90,7 +90,7 @@ def fast_array_equal(A, B):
     """
 
     support_code = """
-    #include <omp.h>
+    // #include <omp.h>
     #include <math.h>
     """
 
@@ -107,15 +107,17 @@ def fast_array_equal(A, B):
         return False
     elif A.shape == B.shape:
         if A.ndim == 2:
-            N, D = A.shape
-            value = weave.inline(code2, support_code=support_code, libraries=['gomp'],
+            N, D = [int(i) for i in A.shape]
+            value = weave.inline(code2, support_code=support_code,
                                  arg_names=['A', 'B', 'N', 'D'],
-                                 type_converters=weave.converters.blitz,**weave_options)
+                                 type_converters=weave.converters.blitz)
+            # libraries=['gomp'], **weave_options)
         elif A.ndim == 3:
-            N, D, Q = A.shape
-            value = weave.inline(code3, support_code=support_code, libraries=['gomp'],
+            N, D, Q = [int(i) for i in A.shape]
+            value = weave.inline(code3, support_code=support_code,
                                  arg_names=['A', 'B', 'N', 'D', 'Q'],
-                                 type_converters=weave.converters.blitz,**weave_options)
+                                 type_converters=weave.converters.blitz)
+            #libraries=['gomp'], **weave_options)
         else:
             value = np.array_equal(A,B)
 

@@ -41,20 +41,21 @@ class Logexp(Transformation):
             print "Warning: changing parameters to satisfy constraints"
         return np.abs(f)
     def __str__(self):
-        return '(+ve)'
+        return '+ve'
 
 class NegativeLogexp(Transformation):
     domain = NEGATIVE
+    logexp = Logexp()
     def f(self, x):
-        return -Logexp.f(x)  # np.log(1. + np.exp(x))
+        return -self.logexp.f(x)  # np.log(1. + np.exp(x))
     def finv(self, f):
-        return Logexp.finv(-f)  # np.log(np.exp(-f) - 1.)
+        return self.logexp.finv(-f)  # np.log(np.exp(-f) - 1.)
     def gradfactor(self, f):
-        return -Logexp.gradfactor(-f)
+        return -self.logexp.gradfactor(-f)
     def initialize(self, f):
-        return -Logexp.initialize(f)  # np.abs(f)
+        return -self.logexp.initialize(f)  # np.abs(f)
     def __str__(self):
-        return '(-ve)'
+        return '-ve'
 
 class LogexpClipped(Logexp):
     max_bound = 1e100
@@ -91,7 +92,7 @@ class LogexpClipped(Logexp):
             print "Warning: changing parameters to satisfy constraints"
         return np.abs(f)
     def __str__(self):
-        return '(+ve_c)'
+        return '+ve_c'
 
     
 class Exponent(Transformation):
@@ -108,7 +109,7 @@ class Exponent(Transformation):
             print "Warning: changing parameters to satisfy constraints"
         return np.abs(f)
     def __str__(self):
-        return '(+ve)'
+        return '+ve'
 
 class NegativeExponent(Exponent):
     domain = NEGATIVE
@@ -121,7 +122,7 @@ class NegativeExponent(Exponent):
     def initialize(self, f):
         return -Exponent.initialize(f) #np.abs(f)
     def __str__(self):
-        return '(-ve)'
+        return '-ve'
 
 class Square(Transformation):
     domain = POSITIVE
@@ -134,7 +135,7 @@ class Square(Transformation):
     def initialize(self, f):
         return np.abs(f)
     def __str__(self):
-        return '(+sq)'
+        return '+sq'
 
 class Logistic(Transformation):
     domain = BOUNDED
@@ -163,7 +164,7 @@ class Logistic(Transformation):
             print "Warning: changing parameters to satisfy constraints"
         return np.where(np.logical_or(f < self.lower, f > self.upper), self.f(f * 0.), f)
     def __str__(self):
-        return '({},{})'.format(self.lower, self.upper)
+        return '{},{}'.format(self.lower, self.upper)
 
  
 

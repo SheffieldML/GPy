@@ -41,7 +41,7 @@ class Parameterized(object):
             - m.name regular expression matches all parameters beginning with name
             - m['name'] regular expression matches all parameters with name
     
-    Handling of constraining, fixing and tieing parameters together:
+    Handling of constraining, fixing and tieing parameters:
         
         
         
@@ -74,28 +74,23 @@ class Parameterized(object):
                 self.__dict__[p.name] = p
 
     #===========================================================================
-    # Optimization handling:
+    # Optimization handles:
     #===========================================================================
-    
     def _get_params(self):
-        return numpy.hstack([x._get_params() for x in self._params])#numpy.fromiter(itertools.chain(*itertools.imap(lambda x: x._get_params(), self._params)), dtype=numpy.float64, count=sum(self.parameter_sizes))
-    
+        return numpy.hstack([x._get_params() for x in self._params])#numpy.fromiter(itertools.chain(*itertools.imap(lambda x: x._get_params(), self._params)), dtype=numpy.float64, count=sum(self.parameter_sizes))    
     def _set_params(self, params):
         [p._set_params(params[s]) for p,s in itertools.izip(self._params,self._param_slices)]
-    
     def _get_params_transformed(self):
         p = self._get_params()
         [numpy.put(p, ind, c.finv(p[ind])) for c,ind in self._constraints.iteritems() if c is not __fixed__]
         if self._ties_fixes is not None:
             return p[self._ties_fixes]
         return p
-    
     def _set_params_transformed(self, p):
         if self._ties_fixes is not None: tmp = self._get_params(); tmp[self._ties_fixes] = p; p = tmp; del tmp
         [numpy.put(p, ind, c.f(p[ind])) for c,ind in self._constraints.iteritems() if c is not __fixed__]
         [numpy.put(p, f, p[t]) for f,t in self._ties.iter_from_to_indices()]
         self._set_params(p)
-
     def _handle_ties(self):
         if not self._init:
             self._set_params_transformed(self._get_params_transformed())
@@ -466,7 +461,7 @@ class ParamConcatenation(object):
         return "\n".join(map(repr,self.params))
     
 if __name__ == '__main__':
-    X = numpy.random.randn(3,3,2)
+    X = numpy.random.randn(4,2)
     p = Param("q_mean", X)
     p1 = Param("q_variance", numpy.random.rand(*p.shape))
     p2 = Param("Y", numpy.random.randn(p.shape[0],1))

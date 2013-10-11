@@ -3,10 +3,10 @@
 
 
 import numpy as np
-from GPy.core.domains import POSITIVE, NEGATIVE, BOUNDED
+from GPy.core.domains import _POSITIVE,_NEGATIVE, _BOUNDED
 import sys 
 import weakref
-lim_val = -np.log(sys.float_info.epsilon) 
+_lim_val = -np.log(sys.float_info.epsilon) 
 
 class Transformation(object):
     domain = None
@@ -29,13 +29,13 @@ class Transformation(object):
         raise NotImplementedError
 
 class Logexp(Transformation):
-    domain = POSITIVE
+    domain = _POSITIVE
     def f(self, x):
-        return np.where(x>lim_val, x, np.log(1. + np.exp(x)))
+        return np.where(x>_lim_val, x, np.log(1. + np.exp(x)))
     def finv(self, f):
-        return np.where(f>lim_val, f, np.log(np.exp(f) - 1.))
+        return np.where(f>_lim_val, f, np.log(np.exp(f) - 1.))
     def gradfactor(self, f):
-        return np.where(f>lim_val, 1., 1 - np.exp(-f))
+        return np.where(f>_lim_val, 1., 1 - np.exp(-f))
     def initialize(self, f):
         if np.any(f < 0.):
             print "Warning: changing parameters to satisfy constraints"
@@ -44,7 +44,7 @@ class Logexp(Transformation):
         return '+ve'
 
 class NegativeLogexp(Transformation):
-    domain = NEGATIVE
+    domain = _NEGATIVE
     logexp = Logexp()
     def f(self, x):
         return -self.logexp.f(x)  # np.log(1. + np.exp(x))
@@ -62,7 +62,7 @@ class LogexpClipped(Logexp):
     min_bound = 1e-10
     log_max_bound = np.log(max_bound)
     log_min_bound = np.log(min_bound)
-    domain = POSITIVE
+    domain = _POSITIVE
     _instances = []
     def __new__(cls, lower=1e-6, *args, **kwargs):
         if cls._instances:
@@ -97,9 +97,9 @@ class LogexpClipped(Logexp):
     
 class Exponent(Transformation):
     # TODO: can't allow this to go to zero, need to set a lower bound. Similar with negative Exponent below. See old MATLAB code.
-    domain = POSITIVE
+    domain = _POSITIVE
     def f(self, x):
-        return np.where(x<lim_val, np.where(x>-lim_val, np.exp(x), np.exp(-lim_val)), np.exp(lim_val))
+        return np.where(x<_lim_val, np.where(x>-_lim_val, np.exp(x), np.exp(-_lim_val)), np.exp(_lim_val))
     def finv(self, x):
         return np.log(x)
     def gradfactor(self, f):
@@ -112,7 +112,7 @@ class Exponent(Transformation):
         return '+ve'
 
 class NegativeExponent(Exponent):
-    domain = NEGATIVE
+    domain = _NEGATIVE
     def f(self, x):
         return -Exponent.f(x)
     def finv(self, f):
@@ -125,7 +125,7 @@ class NegativeExponent(Exponent):
         return '-ve'
 
 class Square(Transformation):
-    domain = POSITIVE
+    domain = _POSITIVE
     def f(self, x):
         return x ** 2
     def finv(self, x):
@@ -138,7 +138,7 @@ class Square(Transformation):
         return '+sq'
 
 class Logistic(Transformation):
-    domain = BOUNDED
+    domain = _BOUNDED
     _instances = []
     def __new__(cls, lower=1e-6, upper=1e-6, *args, **kwargs):
         if cls._instances:

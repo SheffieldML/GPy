@@ -9,7 +9,7 @@ from GPy.util.misc import opt_wrapper
 from parameterized import Parameterized
 import multiprocessing as mp
 import numpy as np
-from GPy.core.domains import POSITIVE, REAL
+from GPy.core.domains import _POSITIVE, _REAL
 from numpy.linalg.linalg import LinAlgError
 # import numdifftools as ndt
 
@@ -93,8 +93,8 @@ class Model(Parameterized):
 
         # check constraints are okay
 
-        if what.domain is POSITIVE:
-            constrained_positive_indices = [i for i, t in zip(self.constrained_indices, self.constraints) if t.domain is POSITIVE]
+        if what.domain is _POSITIVE:
+            constrained_positive_indices = [i for i, t in zip(self.constrained_indices, self.constraints) if t.domain is _POSITIVE]
             if len(constrained_positive_indices):
                 constrained_positive_indices = np.hstack(constrained_positive_indices)
             else:
@@ -107,7 +107,7 @@ class Model(Parameterized):
                 print '\n'.join([n for i, n in enumerate(self._get_param_names()) if i in unconst])
                 print '\n'
                 self.constrain_positive(unconst)
-        elif what.domain is REAL:
+        elif what.domain is _REAL:
             assert not np.any(which[:, None] == self.all_constrained_indices()), "constraint and prior incompatible"
         else:
             raise ValueError, "prior not recognised"

@@ -6,7 +6,7 @@ import numpy as np
 import pylab as pb
 from scipy.special import gammaln, digamma
 from ..util.linalg import pdinv
-from GPy.core.domains import REAL, POSITIVE
+from GPy.core.domains import _REAL, _POSITIVE
 import warnings
 
 class Prior:
@@ -32,7 +32,7 @@ class Gaussian(Prior):
     .. Note:: Bishop 2006 notation is used throughout the code
 
     """
-    domain = REAL
+    domain = _REAL
     def __init__(self, mu, sigma):
         self.mu = float(mu)
         self.sigma = float(sigma)
@@ -62,7 +62,7 @@ class LogGaussian(Prior):
     .. Note:: Bishop 2006 notation is used throughout the code
 
     """
-    domain = POSITIVE
+    domain = _POSITIVE
     def __init__(self, mu, sigma):
         self.mu = float(mu)
         self.sigma = float(sigma)
@@ -92,7 +92,7 @@ class MultivariateGaussian:
     .. Note:: Bishop 2006 notation is used throughout the code
 
     """
-    domain = REAL
+    domain = _REAL
     def __init__(self, mu, var):
         self.mu = np.array(mu).flatten()
         self.var = np.array(var)
@@ -147,7 +147,7 @@ class Gamma(Prior):
     .. Note:: Bishop 2006 notation is used throughout the code
 
     """
-    domain = POSITIVE
+    domain = _POSITIVE
     def __init__(self, a, b):
         self.a = float(a)
         self.b = float(b)
@@ -198,7 +198,7 @@ class inverse_gamma(Prior):
     .. Note:: Bishop 2006 notation is used throughout the code
 
     """
-    domain = POSITIVE
+    domain = _POSITIVE
     def __init__(self, a, b):
         self.a = float(a)
         self.b = float(b)

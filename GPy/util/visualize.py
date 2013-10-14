@@ -246,17 +246,36 @@ class lvm_dimselect(lvm):
 
 
 class image_show(matplotlib_show):
-    """Show a data vector as an image."""
-    def __init__(self, vals, axes=None, dimensions=(16,16), transpose=False, invert=False, scale=False, palette=[], presetMean = 0., presetSTD = -1., selectImage=0):
+    """Show a data vector as an image. This visualizer rehapes the output vector and displays it as an image.
+
+    :param vals: the values of the output to display.
+    :type vals: ndarray
+    :param axes: the axes to show the output on.
+    :type vals: axes handle
+    :param dimensions: the dimensions that the image needs to be transposed to for display.
+    :type dimensions: tuple
+    :param transpose: whether to transpose the image before display.
+    :type bool: default is False.
+    :param order: whether array is in Fortan ordering ('F') or Python ordering ('C'). Default is python ('C').
+    :type order: string
+    :param invert: whether to invert the pixels or not (default False).
+    :type invert: bool
+    :param palette: a palette to use for the image.
+    :param preset_mean: the preset mean of a scaled image.
+    :type preset_mean: double
+    :param preset_std: the preset standard deviation of a scaled image.
+    :type preset_std: double"""
+    def __init__(self, vals, axes=None, dimensions=(16,16), transpose=False, order='C', invert=False, scale=False, palette=[], preset_mean = 0., preset_std = -1., select_image=0):
         matplotlib_show.__init__(self, vals, axes)
         self.dimensions = dimensions
         self.transpose = transpose
+        self.order = order
         self.invert = invert
         self.scale = scale
         self.palette = palette
-        self.presetMean = presetMean
-        self.presetSTD = presetSTD
-        self.selectImage = selectImage # This is used when the y vector contains multiple images concatenated.
+        self.preset_mean = preset_mean
+        self.preset_std = preset_std
+        self.select_image = select_image # This is used when the y vector contains multiple images concatenated.
 
         self.set_image(self.vals)
         if not self.palette == []: # Can just show the image (self.set_image() took care of setting the palette)
@@ -272,22 +291,22 @@ class image_show(matplotlib_show):
 
     def set_image(self, vals):
         dim = self.dimensions[0] * self.dimensions[1]
-        nImg = np.sqrt(vals[0,].size/dim)
-        if nImg > 1 and nImg.is_integer(): # Show a mosaic of images
-            nImg = np.int(nImg)
-            self.vals = np.zeros((self.dimensions[0]*nImg, self.dimensions[1]*nImg))
-            for iR in range(nImg):
-                for iC in range(nImg):
-                    currImgId = iR*nImg + iC
-                    currImg = np.reshape(vals[0,dim*currImgId+np.array(range(dim))], self.dimensions, order='F')
-                    firstRow = iR*self.dimensions[0]
-                    lastRow = (iR+1)*self.dimensions[0]
-                    firstCol = iC*self.dimensions[1]
-                    lastCol = (iC+1)*self.dimensions[1]
-                    self.vals[firstRow:lastRow, firstCol:lastCol] = currImg
+        num_images = np.sqrt(vals[0,].size/dim)
+        if num_images > 1 and num_images.is_integer(): # Show a mosaic of images
+            num_images = np.int(num_images)
+            self.vals = np.zeros((self.dimensions[0]*num_images, self.dimensions[1]*num_images))
+            for iR in range(num_images):
+                for iC in range(num_images):
+                    cur_img_id = iR*num_images + iC
+                    cur_img = np.reshape(vals[0,dim*cur_img_id+np.array(range(dim))], self.dimensions, order=self.order)
+                    first_row = iR*self.dimensions[0]
+                    last_row = (iR+1)*self.dimensions[0]
+                    first_col = iC*self.dimensions[1]
+                    last_col = (iC+1)*self.dimensions[1]
+                    self.vals[first_row:last_row, first_col:last_col] = cur_img
 
         else: 
-            self.vals = np.reshape(vals[0,dim*self.selectImage+np.array(range(dim))], self.dimensions, order='F')
+            self.vals = np.reshape(vals[0,dim*self.select_image+np.array(range(dim))], self.dimensions, order=self.order)
         if self.transpose:
             self.vals = self.vals.T
         # if not self.scale:
@@ -296,8 +315,8 @@ class image_show(matplotlib_show):
             self.vals = -self.vals
 
         # un-normalizing, for visualisation purposes:
-        if self.presetSTD >= 0: # The Mean is assumed to be in the range (0,255)
-            self.vals = self.vals*self.presetSTD + self.presetMean
+        if self.preset_std >= 0: # The Mean is assumed to be in the range (0,255)
+            self.vals = self.vals*self.preset_std + self.preset_mean
             # Clipping the values:
             self.vals[self.vals < 0] = 0
             self.vals[self.vals > 255] = 255

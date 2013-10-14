@@ -43,9 +43,9 @@ class spkern(Kernpart):
         assert all([z.name=='z_%i'%i for i,z in enumerate(self._sp_z)])
         assert len(self._sp_x)==len(self._sp_z)
         self.input_dim = len(self._sp_x)
+        self._real_input_dim = self.input_dim
         if output_dim > 1:
             self.input_dim += 1
-            
         assert self.input_dim == input_dim
         self.output_dim = output_dim
         # extract parameter names
@@ -139,8 +139,10 @@ class spkern(Kernpart):
         self._function_code = re.sub('DiracDelta\(.+?,.+?\)','0.0',self._function_code)
 
         # This is the basic argument construction for the C code.
-        arg_list = (["X[i*input_dim+%s]"%x.name[2:] for x in self._sp_x]
-                    + ["Z[j*input_dim+%s]"%z.name[2:] for z in self._sp_z])
+        #arg_list = (["X[i*input_dim+%s]"%x.name[2:] for x in self._sp_x]
+        #            + ["Z[j*input_dim+%s]"%z.name[2:] for z in self._sp_z])
+        arg_list = (["X2(i, %s)"%x.name[2:] for x in self._sp_x]
+                    + ["Z2(j, %s)"%z.name[2:] for z in self._sp_z])
         if self.output_dim>1:
             reverse_arg_list = list(arg_list)
             reverse_arg_list.reverse()
@@ -151,17 +153,21 @@ class spkern(Kernpart):
         precompute_list=[]
         if self.output_dim > 1:
             reverse_arg_list+=list(param_arg_list)
-            split_param_arg_list = ["%s[%s]"%(theta.name[:-2],index) for index in ['ii', 'jj'] for theta in self._sp_theta_i]
-            split_param_reverse_arg_list = ["%s[%s]"%(theta.name[:-2],index) for index in ['jj', 'ii'] for theta in self._sp_theta_i]
+            split_param_arg_list = ["%s1(%s)"%(theta.name[:-2].upper(),index) for index in ['ii', 'jj'] for theta in self._sp_theta_i]
+            split_param_reverse_arg_list = ["%s1(%s)"%(theta.name[:-2].upper(),index) for index in ['jj', 'ii'] for theta in self._sp_theta_i]
             arg_list += split_param_arg_list
             reverse_arg_list += split_param_reverse_arg_list
-            precompute_list += [' '*16+"int %s=(int)%s[%s*input_dim+output_dim];"%(index, var, index2) for index, var, index2 in zip(['ii', 'jj'], ['X', 'Z'], ['i', 'j'])]
+            # Extract the right output indices from the inputs.
+            c_define_output_indices = [' '*16 + "int %s=(int)%s(%s, %i);"%(index, var, index2, self.input_dim-1) for index, var, index2 in zip(['ii', 'jj'], ['X2', 'Z2'], ['i', 'j'])]
+            precompute_list += c_define_output_indices
             reverse_arg_string = ", ".join(reverse_arg_list)
         arg_string = ", ".join(arg_list)
         precompute_string = "\n".join(precompute_list)
         # Here's the code to do the looping for K
         self._K_code =\
         """
+        // _K_code
+        // Code for computing the covariance function.
         int i;
         int j;
         int N = target_array->dimensions[0];
@@ -171,7 +177,8 @@ class spkern(Kernpart):
         for (i=0;i<N;i++){
             for (j=0;j<num_inducing;j++){
 %s
-                target[i*num_inducing+j] = k(%s);
+                //target[i*num_inducing+j] = 
+                TARGET2(i, j) += k(%s);
             }
         }
         %s
@@ -188,28 +195,33 @@ class spkern(Kernpart):
         # Code to do the looping for Kdiag
         self._Kdiag_code =\
         """
+        // _Kdiag_code
+        // Code for computing diagonal of covariance function.
         int i;
         int N = target_array->dimensions[0];
         int input_dim = X_array->dimensions[1];
         //#pragma omp parallel for
         for (i=0;i<N;i++){
                 %s
-                target[i] = k(%s);
+                //target[i] =
+                TARGET1(i)=k(%s);
         }
         %s
         """%(diag_precompute_string,diag_arg_string,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
         # Code to compute gradients
-        func_list = []
+        grad_func_list = []
         if self.output_dim>1:
-            func_list += [' '*16 + "int %s=(int)%s[%s*input_dim+output_dim];"%(index, var, index2) for index, var, index2 in zip(['ii', 'jj'], ['X', 'Z'], ['i', 'j'])]
-            func_list += [' '*16 + 'target[%i+ii] += partial[i*num_inducing+j]*dk_d%s(%s);'%(self.num_shared_params+i*self.output_dim, theta.name, arg_string) for i, theta in enumerate(self._sp_theta_i)]
-            func_list += [' '*16 + 'target[%i+jj] += partial[i*num_inducing+j]*dk_d%s(%s);'%(self.num_shared_params+i*self.output_dim, theta.name, reverse_arg_string) for i, theta in enumerate(self._sp_theta_i)]
-        func_list += ([' '*16 + 'target[%i] += partial[i*num_inducing+j]*dk_d%s(%s);'%(i,theta.name,arg_string) for i,theta in  enumerate(self._sp_theta)])
-        func_string = '\n'.join(func_list) 
+            grad_func_list += c_define_output_indices
+            grad_func_list += [' '*16 + 'TARGET1(%i+ii) += partial[i*num_inducing+j]*dk_d%s(%s);'%(self.num_shared_params+i*self.output_dim, theta.name, arg_string) for i, theta in enumerate(self._sp_theta_i)]
+            grad_func_list += [' '*16 + 'TARGET1(%i+jj) += partial[i*num_inducing+j]*dk_d%s(%s);'%(self.num_shared_params+i*self.output_dim, theta.name, reverse_arg_string) for i, theta in enumerate(self._sp_theta_i)]
+        grad_func_list += ([' '*16 + 'TARGET1(%i) += partial[i*num_inducing+j]*dk_d%s(%s);'%(i,theta.name,arg_string) for i,theta in  enumerate(self._sp_theta)])
+        grad_func_string = '\n'.join(grad_func_list) 
 
         self._dK_dtheta_code =\
         """
+        // _dK_dtheta_code
+        // Code for computing gradient of covariance with respect to parameters.
         int i;
         int j;
         int N = partial_array->dimensions[0];
@@ -222,16 +234,18 @@ class spkern(Kernpart):
             }
         }
         %s
-        """%(func_string,"/*"+str(self._sp_k)+"*/") # adding a string representation forces recompile when needed
+        """%(grad_func_string,"/*"+str(self._sp_k)+"*/") # adding a string representation forces recompile when needed
 
 
         # Code to compute gradients for Kdiag TODO: needs clean up
-        diag_func_string = re.sub('Z','X',func_string,count=0)
-        diag_func_string = re.sub('int jj','//int jj',diag_func_string)
-        diag_func_string = re.sub('j','i',diag_func_string)
-        diag_func_string = re.sub('partial\[i\*num_inducing\+i\]','partial[i]',diag_func_string)
+        diag_grad_func_string = re.sub('Z','X',grad_func_string,count=0)
+        diag_grad_func_string = re.sub('int jj','//int jj',diag_grad_func_string)
+        diag_grad_func_string = re.sub('j','i',diag_grad_func_string)
+        diag_grad_func_string = re.sub('partial\[i\*num_inducing\+i\]','partial[i]',diag_grad_func_string)
         self._dKdiag_dtheta_code =\
         """
+        // _dKdiag_dtheta_code
+        // Code for computing gradient of diagonal with respect to parameters.
         int i;
         int N = partial_array->dimensions[0];
         int input_dim = X_array->dimensions[1];
@@ -239,13 +253,19 @@ class spkern(Kernpart):
                 %s
         }
         %s
-        """%(diag_func_string,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
+        """%(diag_grad_func_string,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
-        # Code for gradients wrt X
-        gradient_funcs = "\n".join(["target[i*input_dim+%i] += partial[i*num_inducing+j]*dk_dx%i(%s);"%(q,q,arg_string) for q in range(self.input_dim)])
+        # Code for gradients wrt X, TODO: may need to deal with special case where one input is actually an output.
+        gradX_func_list = []
+        if self.output_dim>1:
+            gradX_func_list += c_define_output_indices
+        gradX_func_list += ["TARGET2(i, %i) += partial[i*num_inducing+j]*dk_dx_%i(%s);"%(q,q,arg_string) for q in range(self._real_input_dim)]
+        gradX_func_string = "\n".join(gradX_func_list)
 
         self._dK_dX_code = \
         """
+        // _dK_dX_code
+        // Code for computing gradient of covariance with respect to inputs.
         int i;
         int j;
         int N = partial_array->dimensions[0];
@@ -258,24 +278,26 @@ class spkern(Kernpart):
           }
         }
         %s
-        """%(gradient_funcs,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
+        """%(gradX_func_string,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
   
 
-        diag_gradient_funcs = re.sub('Z','X',gradient_funcs,count=0)
-        diag_gradient_funcs = re.sub('int jj','//int jj',diag_gradient_funcs)
-        diag_gradient_funcs = re.sub('j','i',diag_gradient_funcs)
-        diag_gradient_funcs = re.sub('partial\[i\*num_inducing\+i\]','2*partial[i]',diag_gradient_funcs)
+        diag_gradX_func_string = re.sub('Z','X',gradX_func_string,count=0)
+        diag_gradX_func_string = re.sub('int jj','//int jj',diag_gradX_func_string)
+        diag_gradX_func_string = re.sub('j','i',diag_gradX_func_string)
+        diag_gradX_func_string = re.sub('partial\[i\*num_inducing\+i\]','2*partial[i]',diag_gradX_func_string)
 
         # Code for gradients of Kdiag wrt X
         self._dKdiag_dX_code= \
         """
+        // _dKdiag_dX_code
+        // Code for computing gradient of diagonal with respect to inputs.
         int N = partial_array->dimensions[0];
         int input_dim = X_array->dimensions[1];
         for (int i=0;i<N; i++){
             %s
         }
         %s
-        """%(diag_gradient_funcs,"/*"+str(self._sp_k)+"*/") #adding a
+        """%(diag_gradX_func_string,"/*"+str(self._sp_k)+"*/") #adding a
         # string representation forces recompile when needed Get rid
         # of Zs in argument for diagonal. TODO: Why wasn't
         # diag_func_string called here? Need to check that.
@@ -285,6 +307,9 @@ class spkern(Kernpart):
         self._K_code_X = self._K_code.replace('Z[', 'X[')
         self._dK_dtheta_code_X = self._dK_dtheta_code.replace('Z[', 'X[')
         self._dK_dX_code_X = self._dK_dX_code.replace('Z[', 'X[').replace('+= partial[', '+= 2*partial[')
+        self._K_code_X = self._K_code.replace('Z2(', 'X2(')
+        self._dK_dtheta_code_X = self._dK_dtheta_code.replace('Z2(', 'X2(')
+        self._dK_dX_code_X = self._dK_dX_code.replace('Z2(', 'X2(')
 
 
         #TODO: insert multiple functions here via string manipulation

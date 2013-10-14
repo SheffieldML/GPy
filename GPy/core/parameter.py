@@ -6,10 +6,9 @@ Created on 4 Sep 2013
 import re
 import itertools
 import numpy
-from GPy.core.transformations import Logexp, NegativeLogexp
-from GPy.core.index_operations import ConstraintIndexOperations,\
+from transformations import Logexp, NegativeLogexp
+from index_operations import ConstraintIndexOperations,\
     create_raveled_indices, index_empty, TieIndexOperations
-from types import FunctionType
 from re import compile, _pattern_type
 _index_re = re.compile('(?:_(\d+))+')  # pattern match for indices
 
@@ -102,7 +101,10 @@ class Parameterized(object):
         ind = ind[ind >= 0]
         internal_offset = (numpy.arange(param._realsize).reshape(param._realshape)[param._current_slice]).flat[0]
         ind = ind[ind < param.size + internal_offset]
-        return ind - internal_offset
+        return ind
+    def _offset(self, param):
+        # offset = reduce(lambda a, b:a + (b.stop - b.start), self._param_slices[:param._parent_index], 0)
+        return self._param_slices[param._parent_index].start 
     #===========================================================================
     # Handle ties:
     #===========================================================================
@@ -119,10 +121,11 @@ class Parameterized(object):
         if len(params) == 0:
             params = self._ties.properties()
         for p in self._ties.properties():
-            if any((p == x).all() for x in params):
-                ind = create_raveled_indices(p._current_slice, param._realshape, self._offset(param))
-                self._ties.remove(param, p)
-                self._ties_fixes[ind] = True
+            for a in params: 
+                if numpy.all(a==p):
+                    ind = create_raveled_indices(p._current_slice, param._realshape, self._offset(param))
+                    self._ties.remove(param, p)
+                    self._ties_fixes[ind] = True
         if numpy.all(self._ties_fixes): self._ties_fixes = None
     def _ties_iter_items(self, param):
         for tied_to, ind in self._ties.iter_from_items():
@@ -138,15 +141,8 @@ class Parameterized(object):
     #===========================================================================
     # Fixing parameters:
     #===========================================================================
-    def _fix(self, param):
-        reconstrained = self._remove_constrain(param, None)
-        if any(reconstrained):
-            # to print whole params: m = str(param[self._backtranslate_index(param, reconstrained)])
-            m = param.name
-            if param._realsize > 1:
-                m += str("".join(map(str,param._indices()[self._backtranslate_index(param, reconstrained)])))
-            print "Reconstrained parameters:\n{}".format(m)
-        self._constraints.add(__fixed__, param._current_slice, param._realshape, self._offset(param))
+    def _fix(self, param, warning=True):
+        self._add_constrain(param, __fixed__, warning)
         if self._ties_fixes is None: self._ties_fixes = numpy.ones(self.parameter_size, dtype=bool)
         f = create_raveled_indices(param._current_slice, param._realshape, self._offset(param))
         self._ties_fixes[f] = False
@@ -160,16 +156,13 @@ class Parameterized(object):
     #===========================================================================
     def constrain(self, regexp, constraint):
         self[regexp].constrain(constraint)
-    def _offset(self, param):
-        # offset = reduce(lambda a, b:a + (b.stop - b.start), self._param_slices[:param._parent_index], 0)
-        return self._param_slices[param._parent_index].start 
-    def _add_constrain(self, param, transform):
+    def _add_constrain(self, param, transform, warning=True):
         reconstrained = self._remove_constrain(param, None)
         self._constraints.add(transform, param._current_slice, param._realshape, self._offset(param))
-        if any(reconstrained):
+        if warning and any(reconstrained):
             # to print whole params: m = str(param[self._backtranslate_index(param, reconstrained)])
             m = param.name + str("".join(map(str,param._indices()[self._backtranslate_index(param, reconstrained)])))
-            print "Reconstrained parameters:\n{}".format(m)
+            print "Warning: re-constraining parameters:\n{}".format(m)
     def _remove_constrain(self, param, transforms):
         if transforms is None:
             transforms = self._constraints.properties()
@@ -298,20 +291,20 @@ class Param(numpy.ndarray):
     #===========================================================================
     # Fixing Parameters:
     #===========================================================================
-    def constrain_fixed(self):
-        self._parent._fix(self)
+    def constrain_fixed(self,warning=True):
+        self._parent._fix(self,warning)
     def unconstrain_fixed(self):
         self._parent._unfix(self)
     #===========================================================================
     # Constrain operations -> done
     #===========================================================================
-    def constrain(self, transform):
-        self._parent._add_constrain(self, transform)
+    def constrain(self, transform, warning=True):
+        self._parent._add_constrain(self, transform, warning)
         self[...] = transform.initialize(self)
-    def constrain_positive(self):
-        self.constrain(Logexp())
-    def constrain_negative(self):
-        self.constrain(NegativeLogexp())
+    def constrain_positive(self, warning=True):
+        self.constrain(Logexp(), warning)
+    def constrain_negative(self, warning=True):
+        self.constrain(NegativeLogexp(), warning)
     def unconstrain(self, transforms=None):
         self._parent._remove_constrain(self, transforms)
     def unconstrain_positive(self):
@@ -357,14 +350,19 @@ class Param(numpy.ndarray):
     @property
     def _desc(self):
         if self.size <= 1: return "%f"%self
-        else: return self.shape
+        else: return str(self.shape)
     @property
     def _constr(self):
         return ' '.join(map(lambda c: str(c[0]) if len(c[1])==self._realsize else "{"+str(c[0])+"}", self._parent._constraints_iter_items(self)))
     @property
     def _t(self):
         # indices one by one: "".join(map(str,c[0]._indices()))
-        return ' '.join(map(lambda c: c[0].name if len(c[1])==self._realsize else c[0].name+"[...]", self._parent._ties_iter_items(self)))
+        def decide(c):
+            if c[0]._realsize > 1:
+                return c[0].name + "".join(map(str,c[0]._indices()))
+            else:
+                return c[0].name
+        return ' '.join(map(lambda c: decide(c), self._parent._ties_iter_items(self)))
     def round(self, decimals=0, out=None):
         view = super(Param, self).round(decimals, out).view(Param)
         view.__array_finalize__(self)
@@ -382,7 +380,7 @@ class Param(numpy.ndarray):
     def _ties_matrix_str(self):
         ties_matr = numpy.empty(self._realsize, dtype=object) # we need the whole constraints matrix
         ties_matr[:] = ''
-        for tie, indices in self._parent._ties_iter_items(self): # go through all ties:
+        for tie, indices in self._parent._ties_iter_items(self): # go through all ties
             tie_cycle = itertools.cycle(tie._indices()) if tie._realsize > 1 else itertools.repeat('')
             ties_matr[indices] = numpy.vectorize(lambda x:" ".join([x, str(tie.name) + str(str(tie_cycle.next()))]) if x else str(tie.name)+str(str(tie_cycle.next())), otypes=[str])(ties_matr[indices])
         return ties_matr.astype(numpy.string_).reshape(*(self._realshape+(-1,)))[self._current_slice] # and get the slice we did before
@@ -396,19 +394,18 @@ class Param(numpy.ndarray):
     def _max_len_index(self, ind):
         return max(reduce(lambda a, b:max(a, len(str(b))), ind, 0), len(__index_name__))
     def __str__(self, constr_matrix=None, indices=None, ties=None, lc=None, lx=None, li=None, lt=None):
-        try:
-            if indices is None: indices = self._indices() 
-            if constr_matrix is None: constr_matrix = self._constr_matrix_str()
-            if ties is None: ties = self._ties_matrix_str()
-            if lc is None: lc = self._max_len_names(constr_matrix, __constraints_name__)
-            if lx is None: lx = self._max_len_values()
-            if li is None: li = self._max_len_index(indices)
-            if lt is None: lt = self._max_len_names(ties, __tie_name__)
-            constr = constr_matrix.flat
-            ties = ties.flat
-            header = "  {i:^{2}s}  |  \033[1m{x:^{1}s}\033[0;0m  |  {c:^{0}s}  |  {t:^{3}s}".format(lc,lx,li,lt, x=self.name, c=__constraints_name__, i=__index_name__, t=__tie_name__) # nice header for printing
-            return "\n".join([header]+["  {i:^{3}s}  |  {x: >{1}.{2}G}  |  {c:^{0}s}  |  {t:^{4}}  ".format(lc,lx,__precision__,li,lt, x=x, c=constr.next(), t=ties.next(), i=i) for i,x in itertools.izip(indices,self.flat)]) # return all the constraints with right indices
-        except: return super(Param, self).__str__()
+        if indices is None: indices = self._indices() 
+        if constr_matrix is None: constr_matrix = self._constr_matrix_str()
+        if ties is None: ties = self._ties_matrix_str()
+        if lc is None: lc = self._max_len_names(constr_matrix, __constraints_name__)
+        if lx is None: lx = self._max_len_values()
+        if li is None: li = self._max_len_index(indices)
+        if lt is None: lt = self._max_len_names(ties, __tie_name__)
+        constr = constr_matrix.flat
+        ties = ties.flat
+        header = "  {i:^{2}s}  |  \033[1m{x:^{1}s}\033[0;0m  |  {c:^{0}s}  |  {t:^{3}s}".format(lc,lx,li,lt, x=self.name, c=__constraints_name__, i=__index_name__, t=__tie_name__) # nice header for printing
+        return "\n".join([header]+["  {i:^{3}s}  |  {x: >{1}.{2}G}  |  {c:^{0}s}  |  {t:^{4}}  ".format(lc,lx,__precision__,li,lt, x=x, c=constr.next(), t=ties.next(), i=i) for i,x in itertools.izip(indices,self.flat)]) # return all the constraints with right indices
+        #except: return super(Param, self).__str__()
 class ParamConcatenation(object):
     def __init__(self, params):
         """
@@ -431,14 +428,14 @@ class ParamConcatenation(object):
         [numpy.place(p, ind[ps], vals[ps]) for p, ps in zip(self.params, self._param_slices)]
     def _vals(self):
         return numpy.hstack([p._get_params() for p in self.params])
-    def constrain(self, constraint):
+    def constrain(self, constraint, warning=True):
         [param.constrain(constraint) for param in self.params]
-    def constrain_positive(self):
-        [param.constrain_positive() for param in self.params]
-    def constrain_fixed(self):
-        [param.constrain_fixed() for param in self.params]
-    def constrain_negative(self):
-        [param.constrain_negative() for param in self.params]
+    def constrain_positive(self, warning=True):
+        [param.constrain_positive(warning) for param in self.params]
+    def constrain_fixed(self, warning=True):
+        [param.constrain_fixed(warning) for param in self.params]
+    def constrain_negative(self, warning=True):
+        [param.constrain_negative(warning) for param in self.params]
     def unconstrain(self, constraints=None):
         [param.unconstrain(constraints) for param in self.params]
     def unconstrain_negative(self):
@@ -447,6 +444,10 @@ class ParamConcatenation(object):
         [param.unconstrain_positive() for param in self.params]
     def unconstrain_fixed(self):
         [param.unconstrain_fixed() for param in self.params]
+    def __eq__(self, val):
+        ind = numpy.zeros(sum(self._param_sizes), dtype=bool); ind[:] = True; 
+        vals = self._vals()
+        return vals==val
     def __str__(self, *args, **kwargs):
         constr_matrices = [p._constr_matrix_str() for p in self.params]
         ties_matrices = [p._ties_matrix_str() for p in self.params]

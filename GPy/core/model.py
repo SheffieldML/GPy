@@ -250,7 +250,7 @@ class Model(Parameterized):
         else:
             self._set_params_transformed(initial_parameters)
 
-    def ensure_default_constraints(self):
+    def ensure_default_constraints(self, warning=True):
         """       
         Ensure that any variables which should clearly be positive
         have been constrained somehow. The method performs a regular
@@ -268,7 +268,7 @@ class Model(Parameterized):
                 if not (i in currently_constrained):
                     to_make_positive.append(i)
         if len(to_make_positive):
-            self.constrain_positive(np.asarray(to_make_positive))
+            self.constrain_positive(np.asarray(to_make_positive), warning=warning)
 
     def objective_function(self, x):
         """

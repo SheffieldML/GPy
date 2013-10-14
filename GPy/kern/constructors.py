@@ -330,11 +330,11 @@ if sympy_available:
             dist = parse_expr(dist_string)
             f =  variance*sp.exp(-dist/2.)
         else:
-            lengthscale = sp.var('lengthscale_i lengthscale_j',positive=True)
+            lengthscales = sp.var('lengthscale_i lengthscale_j',positive=True)
             shared_lengthscale = sp.var('shared_lengthscale',positive=True)
             dist_string = ' + '.join(['(x_%i-z_%i)**2' % (i, i) for i in range(real_input_dim)])
             dist = parse_expr(dist_string)
-            f =  scale_i*scale_j*sp.exp(-dist/(2*(shared_lengthscale**2 + lengthscale_i*lengthscale_j)))
+            f =  scale_i*scale_j*sp.exp(-dist/(2*(lengthscale_i**2 + lengthscale_j**2 + shared_lengthscale**2)))
         return kern(input_dim, [spkern(input_dim, f, output_dim=output_dim, name='eq_sympy')])
 
     def sinc(input_dim, ARD=False, variance=1., lengthscale=1.):

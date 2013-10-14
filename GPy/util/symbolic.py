@@ -22,9 +22,19 @@ class ln_diff_erf(Function):
 class sim_h(Function):
     nargs = 5
 
+    def fdiff(self, argindex=1):
+        pass
+    
     @classmethod
     def eval(cls, t, tprime, d_i, d_j, l):
-        return exp((d_j/2*l)**2)/(d_i+d_j)*(exp(-d_j*(tprime - t))*(erf((tprime-t)/l - d_j/2*l) + erf(t/l + d_j/2*l)) - exp(-(d_j*tprime + d_i))*(erf(tprime/l - d_j/2*l) + erf(d_j/2*l)))
+        # putting in the is_Number stuff forces it to look for a fdiff method for derivative.
+        return (exp((d_j/2*l)**2)/(d_i+d_j)
+                *(exp(-d_j*(tprime - t))
+                  *(erf((tprime-t)/l - d_j/2*l)
+                    + erf(t/l + d_j/2*l))
+                  - exp(-(d_j*tprime + d_i))
+                  *(erf(tprime/l - d_j/2*l)
+                    + erf(d_j/2*l))))
 
 class erfc(Function):
     nargs = 1

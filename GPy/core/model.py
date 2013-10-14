@@ -259,7 +259,7 @@ class Model(Parameterized):
         these terms are present in the name the parameter is
         constrained positive.
         """
-        positive_strings = ['variance', 'lengthscale', 'precision', 'kappa']
+        positive_strings = ['variance', 'lengthscale', 'precision', 'decay', 'kappa']
         # param_names = self._get_param_names()
         currently_constrained = self.all_constrained_indices()
         to_make_positive = []

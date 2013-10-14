@@ -48,7 +48,7 @@ class ConstraintIndexOperations(object):
             self._properties[prop] = combine_indices(self._properties[prop], ind)
             return 
         for a in self.properties(): 
-            if numpy.all(a==prop) and a.name == prop.name and a._parent_index == prop._parent_index:
+            if numpy.all(a==prop) and a._parent_index == prop._parent_index:
                 self._properties[a] = combine_indices(self._properties[a], ind)
                 return
         self._properties[prop] = ind
@@ -65,7 +65,7 @@ class ConstraintIndexOperations(object):
                 return removed.astype(int)
         else:
             for a in self.properties(): 
-                if numpy.all(a==prop) and a.name == prop.name and a._parent_index == prop._parent_index:
+                if numpy.all(a==prop) and a._parent_index == prop._parent_index:
                     ind = create_raveled_indices(indices, shape, offset)
                     diff = remove_indices(self[a], ind)
                     removed = numpy.intersect1d(self[a], ind, True)

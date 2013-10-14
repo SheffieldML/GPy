@@ -327,8 +327,6 @@ def mrd_simulation(optimize=True, plot=True, plot_sim=True, **kw):
         m.plot_scales("MRD Scales")
     return m
 
-
-
 def brendan_faces():
     from GPy import kern
     data = GPy.util.datasets.brendan_faces()
@@ -342,7 +340,7 @@ def brendan_faces():
     # optimize
     m.constrain('rbf|noise|white', GPy.core.transformations.logexp_clipped())
 
-    m.optimize('scg', messages=1, max_iters=10)
+    m.optimize('scg', messages=1, max_iters=1000)
 
     ax = m.plot_latent(which_indices=(0, 1))
     y = m.likelihood.Y[0, :]

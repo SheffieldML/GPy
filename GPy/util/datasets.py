@@ -609,24 +609,8 @@ def olivetti_faces(data_set='olivetti_faces'):
     lbls = np.asarray(lbls)[:, None]
     return data_details_return({'Y': Y, 'lbls' : lbls, 'info': "ORL Faces processed to 64x64 images."}, data_set)
     
-def olympic_100m_men(data_set='rogers_girolami_data'):
-    if not data_available(data_set):
-        download_data(data_set)
-        path = os.path.join(data_path, data_set)
-        tar_file = os.path.join(path, 'firstcoursemldata.tar.gz')
-        tar = tarfile.open(tar_file)
-        print('Extracting file.')
-        tar.extractall(path=path)    
- 
-        tar.close()
-    olympic_data = scipy.io.loadmat(os.path.join(data_path, data_set, 'data', 'olympics.mat'))['male100']
-
-    X = olympic_data[:, 0][:, None]
-    Y = olympic_data[:, 1][:, None]
-    return data_details_return({'X': X, 'Y': Y, 'info': "Olympic sprint times for 100 m men from 1896 until 2008. Example is from Rogers and Girolami's First Course in Machine Learning."}, data_set)
-
-def olympic_100m_women(data_set='rogers_girolami_data'):
-    if not data_available(data_set):
+def download_rogers_girolami_data():
+    if not data_available('rogers_girolami_data'):
         download_data(data_set)
         path = os.path.join(data_path, data_set)
         tar_file = os.path.join(path, 'firstcoursemldata.tar.gz')
@@ -634,11 +618,54 @@ def olympic_100m_women(data_set='rogers_girolami_data'):
         print('Extracting file.')
         tar.extractall(path=path)
         tar.close()
+
+def olympic_100m_men(data_set='rogers_girolami_data'):
+    download_rogers_girolami_data()
+    olympic_data = scipy.io.loadmat(os.path.join(data_path, data_set, 'data', 'olympics.mat'))['male100']
+
+    X = olympic_data[:, 0][:, None]
+    Y = olympic_data[:, 1][:, None]
+    return data_details_return({'X': X, 'Y': Y, 'info': "Olympic sprint times for 100 m men from 1896 until 2008. Example is from Rogers and Girolami's First Course in Machine Learning."}, data_set)
+
+def olympic_100m_women(data_set='rogers_girolami_data'):
+    download_rogers_girolami_data()
     olympic_data = scipy.io.loadmat(os.path.join(data_path, data_set, 'data', 'olympics.mat'))['female100']
 
     X = olympic_data[:, 0][:, None]
     Y = olympic_data[:, 1][:, None]
     return data_details_return({'X': X, 'Y': Y, 'info': "Olympic sprint times for 100 m women from 1896 until 2008. Example is from Rogers and Girolami's First Course in Machine Learning."}, data_set)
+
+def olympic_200m_women(data_set='rogers_girolami_data'):
+    download_rogers_girolami_data()
+    olympic_data = scipy.io.loadmat(os.path.join(data_path, data_set, 'data', 'olympics.mat'))['female200']
+
+    X = olympic_data[:, 0][:, None]
+    Y = olympic_data[:, 1][:, None]
+    return data_details_return({'X': X, 'Y': Y, 'info': "Olympic 200 m winning times for women from 1896 until 2008. Data is from Rogers and Girolami's First Course in Machine Learning."}, data_set)
+
+def olympic_200m_men(data_set='rogers_girolami_data'):
+    download_rogers_girolami_data()
+    olympic_data = scipy.io.loadmat(os.path.join(data_path, data_set, 'data', 'olympics.mat'))['male200']
+
+    X = olympic_data[:, 0][:, None]
+    Y = olympic_data[:, 1][:, None]
+    return data_details_return({'X': X, 'Y': Y, 'info': "Male 200 m winning times for women from 1896 until 2008. Data is from Rogers and Girolami's First Course in Machine Learning."}, data_set)
+
+def olympic_400m_women(data_set='rogers_girolami_data'):
+    download_rogers_girolami_data()
+    olympic_data = scipy.io.loadmat(os.path.join(data_path, data_set, 'data', 'olympics.mat'))['female400']
+
+    X = olympic_data[:, 0][:, None]
+    Y = olympic_data[:, 1][:, None]
+    return data_details_return({'X': X, 'Y': Y, 'info': "Olympic 400 m winning times for women until 2008. Data is from Rogers and Girolami's First Course in Machine Learning."}, data_set)
+
+def olympic_400m_men(data_set='rogers_girolami_data'):
+    download_rogers_girolami_data()
+    olympic_data = scipy.io.loadmat(os.path.join(data_path, data_set, 'data', 'olympics.mat'))['male400']
+
+    X = olympic_data[:, 0][:, None]
+    Y = olympic_data[:, 1][:, None]
+    return data_details_return({'X': X, 'Y': Y, 'info': "Male 400 m winning times for women until 2008. Data is from Rogers and Girolami's First Course in Machine Learning."}, data_set)
 
 def olympic_marathon_men(data_set='olympic_marathon_men'):
     if not data_available(data_set):
@@ -647,6 +674,26 @@ def olympic_marathon_men(data_set='olympic_marathon_men'):
     X = olympics[:, 0:1]
     Y = olympics[:, 1:2]
     return data_details_return({'X': X, 'Y': Y}, data_set)
+
+def olympics():
+    """All olympics sprint winning times for multiple output prediction."""
+    X = np.zeros((0, 2))
+    Y = np.zeros((0, 1))
+    for i, dataset in enumerate([olympic_100m_men,
+                              olympic_100m_women,
+                              olympic_200m_men,
+                              olympic_200m_women,
+                              olympic_400m_men,
+                              olympic_400m_women]):
+        data = dataset()
+        year = data['X']
+        time = data['Y']
+        X = np.vstack((X, np.hstack((year, np.ones_like(year)*i))))
+        Y = np.vstack((Y, time))
+    data['X'] = X
+    data['Y'] = Y
+    data['info'] = "Olympics sprint event winning for men and women to 2008. Data is from Rogers and Girolami's First Course in Machine Learning."
+    return data
 
 # def movielens_small(partNo=1,seed=default_seed):
 #     np.random.seed(seed=seed)

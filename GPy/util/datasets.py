@@ -8,17 +8,12 @@ import zipfile
 import tarfile
 import datetime
 
-ipython_notebook = False
-if ipython_notebook:
-    import IPython.core.display
-    def ipynb_input(varname, prompt=''):
-        """Prompt user for input and assign string val to given variable name."""
-        js_code = ("""
-            var value = prompt("{prompt}","");
-            var py_code = "{varname} = '" + value + "'";
-            IPython.notebook.kernel.execute(py_code);
-        """).format(prompt=prompt, varname=varname)
-        return IPython.core.display.Javascript(js_code)
+ipython_available=True
+try:
+    import IPython
+except ImportError:
+    ipython_available=False
+
 
 import sys, urllib
 
@@ -34,8 +29,11 @@ data_path = os.path.join(os.path.dirname(__file__), 'datasets')
 default_seed = 10000
 overide_manual_authorize=False
 neil_url = 'http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/'
+sam_url = 'http://www.cs.nyu.edu/~roweis/data/'
 cmu_url = 'http://mocap.cs.cmu.edu/subjects/'
-# Note: there may be a better way of storing data resources. One of the pythonistas will need to take a look.
+
+# Note: there may be a better way of storing data resources, for the
+# moment we are storing them in a dictionary.
 data_resources = {'ankur_pose_data' : {'urls' : [neil_url + 'ankur_pose_data/'],
                                        'files' : [['ankurDataPoseSilhouette.mat']],
                                        'license' : None,
@@ -49,7 +47,7 @@ data_resources = {'ankur_pose_data' : {'urls' : [neil_url + 'ankur_pose_data/'],
                                       'license' : None,
                                       'size' : 51276
                                       },
-                  'brendan_faces' : {'urls' : ['http://www.cs.nyu.edu/~roweis/data/'],
+                  'brendan_faces' : {'urls' : [sam_url],
                                      'files': [['frey_rawface.mat']],
                                      'citation' : 'Frey, B. J., Colmenarez, A and Huang, T. S. Mixtures of Local Linear Subspaces for Face Recognition. Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition 1998, 32-37, June 1998. Computer Society Press, Los Alamitos, CA.',
                                      'details' : """A video of Brendan Frey's face popularized as a benchmark for visualization by the Locally Linear Embedding.""",
@@ -93,6 +91,12 @@ The database was created with funding from NSF EIA-0196217.""",
                                             'details' : """Data from the textbook 'A First Course in Machine Learning'. Available from http://www.dcs.gla.ac.uk/~srogers/firstcourseml/.""",
                                             'license' : None,
                                             'size' : 21949154},
+                  'olivetti_faces' : {'urls' : [neil_url + 'olivetti_faces/', sam_url],
+                                      'files' : [['att_faces.zip'], ['olivettifaces.mat']],
+                                            'citation' : 'Ferdinando Samaria and Andy Harter, Parameterisation of a Stochastic Model for Human Face Identification. Proceedings of 2nd IEEE Workshop on Applications of Computer Vision, Sarasota FL, December 1994',
+                                            'details' : """Olivetti Research Labs Face data base, acquired between December 1992 and December 1994 in the Olivetti Research Lab, Cambridge (which later became AT&T Laboratories, Cambridge). When using these images please give credit to AT&T Laboratories, Cambridge. """,
+                                            'license': None,
+                                            'size' : 8561331},
                   'olympic_marathon_men' : {'urls' : [neil_url + 'olympic_marathon_men/'],
                                             'files' : [['olympicMarathonTimes.csv']],
                                             'citation' : None,
@@ -144,23 +148,32 @@ The database was created with funding from NSF EIA-0196217.""",
                   }
 
 
-def prompt_user():
+def prompt_user(prompt):
     """Ask user for agreeing to data set licenses."""
     # raw_input returns the empty string for "enter"
     yes = set(['yes', 'y'])
     no = set(['no','n'])
-    choice = ''
-    if ipython_notebook:
-        ipynb_input(choice, prompt='provide your answer here')
-    else:
+
+    try:
+        print(prompt)
         choice = raw_input().lower()
+        # would like to test for exception here, but not sure if we can do that without importing IPython
+    except: 
+        print('Stdin is not implemented.')
+        print('You need to set')
+        print('overide_manual_authorize=True')
+        print('to proceed with the download. Please set that variable and continue.')
+        raise
+
+    
     if choice in yes:
         return True
     elif choice in no:
         return False
     else:
-        sys.stdout.write("Please respond with 'yes', 'y' or 'no', 'n'")
-        return prompt_user()
+        print("Your response was a " + choice)
+        print("Please respond with 'yes', 'y' or 'no', 'n'")
+        #return prompt_user()
 
 
 def data_available(dataset_name=None):
@@ -212,15 +225,14 @@ def authorize_download(dataset_name=None):
             print('You must also agree to the following license:')
             print(dr['license'])
             print('')
-        print('Do you wish to proceed with the download? [yes/no]')
-        return prompt_user()
+        return prompt_user('Do you wish to proceed with the download? [yes/no]')
 
 def download_data(dataset_name=None):
     """Check with the user that the are happy with terms and conditions for the data set, then download it."""
 
     dr = data_resources[dataset_name]
     if not authorize_download(dataset_name):
-        return False
+        raise Exception("Permission to download data set denied.")
 
     if dr.has_key('suffices'):
         for url, files, suffices in zip(dr['urls'], dr['files'], dr['suffices']):
@@ -489,12 +501,12 @@ def ripley_synth(data_set='ripley_prnn_data'):
     return data_details_return({'X': X, 'y': y, 'Xtest': Xtest, 'ytest': ytest, 'info': 'Synthetic data generated by Ripley for a two class classification problem.'}, data_set)
 
 def osu_run1(data_set='osu_run1', sample_every=4):
+    path = os.path.join(data_path, data_set)
     if not data_available(data_set):
         download_data(data_set)
-    zip = zipfile.ZipFile(os.path.join(data_path, data_set, 'run1TXT.ZIP'), 'r')
-    path = os.path.join(data_path, data_set)
-    for name in zip.namelist():
-        zip.extract(name, path)
+        zip = zipfile.ZipFile(os.path.join(data_path, data_set, 'run1TXT.ZIP'), 'r')
+        for name in zip.namelist():
+            zip.extract(name, path)
     Y, connect = GPy.util.mocap.load_text_data('Aug210106', path)
     Y = Y[0:-1:sample_every, :]
     return data_details_return({'Y': Y, 'connect' : connect}, data_set)
@@ -579,6 +591,24 @@ def toy_linear_1d_classification(seed=default_seed):
     X = (np.r_[x1, x2])[:, None]
     return {'X': X, 'Y':  sample_class(2.*X), 'F': 2.*X, 'seed' : seed}
 
+def olivetti_faces(data_set='olivetti_faces'):
+    path = os.path.join(data_path, data_set)
+    if not data_available(data_set):
+        download_data(data_set)
+        zip = zipfile.ZipFile(os.path.join(path, 'att_faces.zip'), 'r')
+        for name in zip.namelist():
+            zip.extract(name, path)
+    Y = []
+    lbls = []
+    for subject in range(40):
+        for image in range(10):
+            image_path = os.path.join(path, 'orl_faces', 's'+str(subject+1), str(image+1) + '.pgm')
+            Y.append(GPy.util.netpbmfile.imread(image_path).flatten())
+            lbls.append(subject)
+    Y = np.asarray(Y)
+    lbls = np.asarray(lbls)[:, None]
+    return data_details_return({'Y': Y, 'lbls' : lbls, 'info': "ORL Faces processed to 64x64 images."}, data_set)
+    
 def olympic_100m_men(data_set='rogers_girolami_data'):
     if not data_available(data_set):
         download_data(data_set)
@@ -586,7 +616,8 @@ def olympic_100m_men(data_set='rogers_girolami_data'):
         tar_file = os.path.join(path, 'firstcoursemldata.tar.gz')
         tar = tarfile.open(tar_file)
         print('Extracting file.')
-        tar.extractall(path=path)
+        tar.extractall(path=path)    
+ 
         tar.close()
     olympic_data = scipy.io.loadmat(os.path.join(data_path, data_set, 'data', 'olympics.mat'))['male100']
 

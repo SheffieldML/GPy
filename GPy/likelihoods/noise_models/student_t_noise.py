@@ -40,64 +40,82 @@ class StudentT(NoiseDistribution):
     def variance(self, extra_data=None):
         return (self.v / float(self.v - 2)) * self.sigma2
 
-    def _nlog_mass(self, gp, obs, extra_data=None):
+    def _nlog_mass(self, link_f, y, extra_data=None):
+        NotImplementedError("Deprecated, now doing chain in likelihood.py for link function evaluation\
+                            Please negate your function and use logpdf in noise_model.py, if implementing a likelihood\
+                            rederivate the derivative without doing the chain and put in logpdf, dlogpdf_dlink or\
+                            its derivatives")
+
+    def _dnlog_mass_dgp(self, link_f, y, extra_data=None):
+        NotImplementedError("Deprecated, now doing chain in likelihood.py for link function evaluation\
+                            Please negate your function and use logpdf in noise_model.py, if implementing a likelihood\
+                            rederivate the derivative without doing the chain and put in logpdf, dlogpdf_dlink or\
+                            its derivatives")
+
+    def _d2nlog_mass_dgp2(self, link_f, y, extra_data=None):
+        NotImplementedError("Deprecated, now doing chain in likelihood.py for link function evaluation\
+                            Please negate your function and use logpdf in noise_model.py, if implementing a likelihood\
+                            rederivate the derivative without doing the chain and put in logpdf, dlogpdf_dlink or\
+                            its derivatives")
+
+    def logpdf(self, link_f, y, extra_data=None):
         """
         Log Likelihood Function
 
         .. math::
             \\ln p(y_{i}|f_{i}) = \\ln \\Gamma(\\frac{v+1}{2}) - \\ln \\Gamma(\\frac{v}{2})\\sqrt{v \\pi}\sigma - \\frac{v+1}{2}\\ln (1 + \\frac{1}{v}\\left(\\frac{y_{i} - f_{i}}{\\sigma}\\right)^2
 
-        :param gp: latent variables (f)
-        :type gp: Nx1 array
-        :param obs: data (y)
-        :type obs: Nx1 array
+        :param link_f: latent variables (link(f))
+        :type link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: likelihood evaluated for this point
         :rtype: float
 
         """
-        assert gp.shape == obs.shape
-        e = obs - self.gp_link.transf(gp)
+        assert link_f.shape == y.shape
+        e = y - link_f
         objective = (+ gammaln((self.v + 1) * 0.5)
                      - gammaln(self.v * 0.5)
                      - 0.5*np.log(self.sigma2 * self.v * np.pi)
                      - 0.5*(self.v + 1)*np.log(1 + (1/np.float(self.v))*((e**2)/self.sigma2))
                     )
-        return -np.sum(objective)
+        return np.sum(objective)
 
-    def dlik_df(self, y, f, extra_data=None):
+    def dlogpdf_dlink(self, link_f, y, extra_data=None):
         """
-        Gradient of the log likelihood function at y, given f w.r.t f
+        Gradient of the log likelihood function at y, given link(f) w.r.t link(f)
 
         .. math::
             \\frac{d \\ln p(y_{i}|f_{i})}{df} = \\frac{(v+1)(y_{i}-f_{i})}{(y_{i}-f_{i})^{2} + \\sigma^{2}v}
 
+        :param link_f: latent variables (f)
+        :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param f: latent variables f
-        :type f: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: gradient of likelihood evaluated at points
         :rtype: Nx1 array
 
         """
-        assert y.shape == f.shape
-        e = y - f
+        assert y.shape == link_f.shape
+        e = y - link_f
         grad = ((self.v + 1) * e) / (self.v * self.sigma2 + (e**2))
         return grad
 
-    def d2lik_d2f(self, y, f, extra_data=None):
+    def d2logpdf_dlink2(self, link_f, y, extra_data=None):
         """
-        Hessian at y, given f, w.r.t f the hessian will be 0 unless i == j
+        Hessian at y, given link(f), w.r.t link(f) the hessian will be 0 unless i == j
         i.e. second derivative lik_function at y given f_{i} f_{j}  w.r.t f_{i} and f_{j}
 
         .. math::
             \\frac{d^{2} \\ln p(y_{i}|f_{i})}{d^{2}f} = \\frac{(v+1)((y_{i}-f_{i})^{2} - \\sigma^{2}v)}{((y_{i}-f_{i})^{2} + \\sigma^{2}v)^{2}}
 
+        :param link_f: latent variables link(f)
+        :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param f: latent variables f
-        :type f: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: Diagonal of hessian matrix (second derivative of likelihood evaluated at points f)
         :rtype: Nx1 array
@@ -106,101 +124,101 @@ class StudentT(NoiseDistribution):
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
             (the distribution for y_{i} depends only on f_{i} not on f_{j!=i}
         """
-        assert y.shape == f.shape
-        e = y - f
+        assert y.shape == link_f.shape
+        e = y - link_f
         hess = ((self.v + 1)*(e**2 - self.v*self.sigma2)) / ((self.sigma2*self.v + e**2)**2)
         return hess
 
-    def d3lik_d3f(self, y, f, extra_data=None):
+    def d3logpdf_dlink3(self, link_f, y, extra_data=None):
         """
         Third order derivative log-likelihood function at y given f w.r.t f
 
         .. math::
             \\frac{d^{3} \\ln p(y_{i}|f_{i})}{d^{3}f} = \\frac{-2(v+1)((y_{i} - f_{i})^3 - 3(y_{i} - f_{i}) \\sigma^{2} v))}{((y_{i} - f_{i}) + \\sigma^{2} v)^3}
 
+        :param link_f: latent variables link(f)
+        :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param f: latent variables f
-        :type f: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: third derivative of likelihood evaluated at points f
         :rtype: Nx1 array
         """
-        assert y.shape == f.shape
-        e = y - f
-        d3lik_d3f = ( -(2*(self.v + 1)*(-e)*(e**2 - 3*self.v*self.sigma2)) /
+        assert y.shape == link_f.shape
+        e = y - link_f
+        d3lik_dlink3 = ( -(2*(self.v + 1)*(-e)*(e**2 - 3*self.v*self.sigma2)) /
                        ((e**2 + self.sigma2*self.v)**3)
                     )
-        return d3lik_d3f
+        return d3lik_dlink3
 
-    def dlik_dvar(self, y, f, extra_data=None):
+    def dlogpdf_dvar(self, link_f, y, extra_data=None):
         """
         Gradient of the log-likelihood function at y given f, w.r.t variance parameter (t_noise)
 
         .. math::
             \\frac{d \\ln p(y_{i}|f_{i})}{d\\sigma^{2}} = \\frac{v((y_{i} - f_{i})^{2} - \\sigma^{2})}{2\\sigma^{2}(\\sigma^{2}v + (y_{i} - f_{i})^{2})}
 
+        :param link_f: latent variables link(f)
+        :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param f: latent variables f
-        :type f: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
         :rtype: float
         """
-        assert y.shape == f.shape
-        e = y - f
-        dlik_dvar = self.v*(e**2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e**2))
-        #FIXME: May not want to sum over all dimensions if using many D?
-        return np.sum(dlik_dvar)
+        assert y.shape == link_f.shape
+        e = y - link_f
+        dlogpdf_dvar = self.v*(e**2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e**2))
+        #FIXME: Careful as this hasn't been chained with dlink_var, not sure if we want link functions on our parameters?! Shouldn't need them with constraints
+        return np.sum(dlogpdf_dvar)
 
-    def dlik_df_dvar(self, y, f, extra_data=None):
+    def dlogpdf_dlink_dvar(self, link_f, y, extra_data=None):
         """
-        Derivative of the dlik_df w.r.t variance parameter (t_noise)
+        Derivative of the dlogpdf_dlink w.r.t variance parameter (t_noise)
 
         .. math::
             \\frac{d}{d\\sigma^{2}}(\\frac{d \\ln p(y_{i}|f_{i})}{df}) = \\frac{-2\\sigma v(v + 1)(y_{i}-f_{i})}{(y_{i}-f_{i})^2 + \\sigma^2 v)^2}
 
+        :param link_f: latent variables link_f
+        :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param f: latent variables f
-        :type f: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
         :rtype: Nx1 array
         """
-        assert y.shape == f.shape
-        e = y - f
-        dlik_grad_dvar = (self.v*(self.v+1)*(-e))/((self.sigma2*self.v + e**2)**2)
-        return dlik_grad_dvar
+        assert y.shape == link_f.shape
+        e = y - link_f
+        dlogpdf_dlink_dvar = (self.v*(self.v+1)*(-e))/((self.sigma2*self.v + e**2)**2)
+        return dlogpdf_dlink_dvar
 
-    def d2lik_d2f_dvar(self, y, f, extra_data=None):
+    def d2logpdf_dlink2_dvar(self, link_f, y, extra_data=None):
         """
-        Gradient of the hessian (d2lik_d2f) w.r.t variance parameter (t_noise)
+        Gradient of the hessian (d2logpdf_dlink2) w.r.t variance parameter (t_noise)
 
         .. math::
             \\frac{d}{d\\sigma^{2}}(\\frac{d^{2} \\ln p(y_{i}|f_{i})}{d^{2}f}) = \\frac{v(v+1)(\\sigma^{2}v - 3(y_{i} - f_{i})^{2})}{(\\sigma^{2}v + (y_{i} - f_{i})^{2})^{3}}
 
+        :param link_f: latent variables link(f)
+        :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param f: latent variables f
-        :type f: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: derivative of hessian evaluated at points f and f_j w.r.t variance parameter
         :rtype: Nx1 array
         """
-        assert y.shape == f.shape
-        e = y - f
-        dlik_hess_dvar = ( (self.v*(self.v+1)*(self.sigma2*self.v - 3*(e**2)))
+        assert y.shape == link_f.shape
+        e = y - link_f
+        d2logpdf_dlink2_dvar = ( (self.v*(self.v+1)*(self.sigma2*self.v - 3*(e**2)))
                               / ((self.sigma2*self.v + (e**2))**3)
                            )
-        return dlik_hess_dvar
+        return d2logpdf_dlink2_dvar
 
     def _laplace_gradients(self, y, f, extra_data=None):
         #must be listed in same order as 'get_param_names'
-        derivs = ([self.dlik_dvar(y, f, extra_data=extra_data)],
-                  [self.dlik_df_dvar(y, f, extra_data=extra_data)],
-                  [self.d2lik_d2f_dvar(y, f, extra_data=extra_data)]
+        derivs = ([self.dlogpdf_dvar(f, y, extra_data=extra_data)],
+                  [self.dlogpdf_dlink_dvar(f, y, extra_data=extra_data)],
+                  [self.d2logpdf_dlink2_dvar(f, y, extra_data=extra_data)]
                  ) # lists as we might learn many parameters
         # ensure we have gradients for every parameter we want to optimize
         assert len(derivs[0]) == len(self._get_param_names())

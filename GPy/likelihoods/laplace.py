@@ -76,7 +76,7 @@ class Laplace(likelihood):
         return self.noise_model._set_params(p)
 
     def _shared_gradients_components(self):
-        d3lik_d3fhat = -self.noise_model._d3nlog_mass_dgp3(self.f_hat, self.data, extra_data=self.extra_data)
+        d3lik_d3fhat = self.noise_model.d3logpdf_df3(self.f_hat, self.data, extra_data=self.extra_data)
         dL_dfhat = 0.5*(np.diag(self.Ki_W_i)[:, None]*d3lik_d3fhat).T #why isn't this -0.5?
         I_KW_i = np.eye(self.N) - np.dot(self.K, self.Wi_K_i)
         return dL_dfhat, I_KW_i
@@ -89,7 +89,7 @@ class Laplace(likelihood):
         :rtype: Matrix (1 x num_kernel_params)
         """
         dL_dfhat, I_KW_i = self._shared_gradients_components()
-        dlp = -self.noise_model._dnlog_mass_dgp(self.data, self.f_hat)
+        dlp = self.noise_model.dlogpdf_df(self.f_hat, self.data)
 
         #Explicit
         #expl_a = np.dot(self.Ki_f, self.Ki_f.T)
@@ -178,7 +178,7 @@ class Laplace(likelihood):
 
         self.Wi_K_i = self.W12BiW12
         self.ln_det_Wi_K = pddet(self.Sigma_tilde + self.K)
-        self.lik = -self.noise_model._nlog_mass(self.f_hat, self.data, extra_data=self.extra_data)
+        self.lik = self.noise_model.logpdf(self.f_hat, self.data, extra_data=self.extra_data)
         self.y_Wi_Ki_i_y = mdot(Y_tilde.T, self.Wi_K_i, Y_tilde)
 
         Z_tilde = (+ self.lik
@@ -223,7 +223,7 @@ class Laplace(likelihood):
         Compute the variables required to compute gaussian Y variables
         """
         #At this point get the hessian matrix (or vector as W is diagonal)
-        self.W = -self.noise_model.d2lik_d2f(self.data, self.f_hat, extra_data=self.extra_data)
+        self.W = -self.noise_model.d2logpdf_df2(self.f_hat, self.data, extra_data=self.extra_data)
 
         #TODO: Could save on computation when using rasm by returning these, means it isn't just a "mode finder" though
         self.W12BiW12, self.ln_B_det = self._compute_B_statistics(self.K, self.W, np.eye(self.N))
@@ -290,7 +290,7 @@ class Laplace(likelihood):
         old_obj = np.inf
 
         def obj(Ki_f, f):
-            return -0.5*np.dot(Ki_f.T, f) - self.noise_model._nlog_mass(f, self.data, extra_data=self.extra_data)
+            return -0.5*np.dot(Ki_f.T, f) + self.noise_model.logpdf(f, self.data, extra_data=self.extra_data)
 
         difference = np.inf
         epsilon = 1e-6
@@ -299,10 +299,10 @@ class Laplace(likelihood):
         i = 0
 
         while difference > epsilon and i < MAX_ITER:
-            W = -self.noise_model.d2lik_d2f(self.data, f, extra_data=self.extra_data)
+            W = -self.noise_model.d2logpdf_df2(f, self.data, extra_data=self.extra_data)
 
             W_f = W*f
-            grad = -self.noise_model._dnlog_mass_dgp(f, self.data, extra_data=self.extra_data)
+            grad = self.noise_model.dlogpdf_df(f, self.data, extra_data=self.extra_data)
 
             b = W_f + grad
             W12BiW12Kb, _ = self._compute_B_statistics(K, W.copy(), np.dot(K, b))

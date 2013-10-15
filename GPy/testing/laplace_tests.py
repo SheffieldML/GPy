@@ -89,91 +89,124 @@ class LaplaceTests(unittest.TestCase):
         self.f = None
         self.X = None
 
-    def test_lik_mass(self):
+    def test_mass_logpdf(self):
         print "\n{}".format(inspect.stack()[0][3])
         np.testing.assert_almost_equal(
-                                np.sum(self.gauss._nlog_mass(self.f.copy(), self.Y.copy())),
-                                -self.gauss.lik_function(self.Y.copy(), self.f.copy()))
+                               np.log(self.gauss._mass(self.f.copy(), self.Y.copy())),
+                               self.gauss.logpdf(self.f.copy(), self.Y.copy()))
 
-    def test_mass_nlog_mass(self):
+
+    """ dGauss_df's """
+    @unittest.skip("Not Implemented Yet")
+    def test_gaussian_dlogpdf_df(self):
+        #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
-        np.testing.assert_almost_equal(
-                               -np.log(self.gauss._mass(self.f.copy(), self.Y.copy())),
-                               self.gauss._nlog_mass(self.f.copy(), self.Y.copy()))
-
-    def test_mass_dnlog_mass_dgp_ndlik_df(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        np.testing.assert_almost_equal(
-                               self.gauss._dnlog_mass_dgp(gp=self.f.copy(), obs=self.Y.copy()),
-                               -self.gauss.dlik_df(y=self.Y.copy(), f=self.f.copy()))
-
-    def test_mass_d2nlog_mass_dgp2_nd2lik_d2f(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        np.testing.assert_almost_equal(
-                               self.gauss._d2nlog_mass_dgp2(gp=self.f.copy(), obs=self.Y.copy()),
-                               -self.gauss.d2lik_d2f(y=self.Y.copy(), f=self.f.copy()))
-
-    def test_mass_d2nlog_mass_dgp3_nd2lik_d3f(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        np.testing.assert_almost_equal(
-                               self.gauss._d3nlog_mass_dgp3(gp=self.f.copy(), obs=self.Y.copy()),
-                               -self.gauss.d3lik_d3f(y=self.Y.copy(), f=self.f.copy()))
-
-
-    def test_gaussian_dnlog_mass_dgp(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        link = functools.partial(self.gauss._nlog_mass, obs=self.Y)
-        dlik_df = functools.partial(self.gauss._dnlog_mass_dgp, obs=self.Y)
-        grad = GradientChecker(link, dlik_df, self.f.copy(), 'g')
+        logpdf = functools.partial(self.gauss.logpdf, y=self.Y)
+        dlogpdf_df = functools.partial(self.gauss.dlogpdf_df, y=self.Y)
+        grad = GradientChecker(logpdf, dlogpdf_df, self.f.copy(), 'g')
         grad.randomize()
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
-    def test_gaussian_d2nlog_mass_d2gp(self):
+    @unittest.skip("Not Implemented Yet")
+    def test_gaussian_d2logpdf_df2(self):
+        #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
-        link = functools.partial(self.gauss._dnlog_mass_dgp, obs=self.Y)
-        dlik_df = functools.partial(self.gauss._d2nlog_mass_dgp2, obs=self.Y)
-        grad = GradientChecker(link, dlik_df, self.f.copy(), 'g')
+        dlogpdf_df = functools.partial(self.gauss.dlogpdf_df, y=self.Y)
+        d2logpdf_df2 = functools.partial(self.gauss.d2logpdf_df2, y=self.Y)
+        grad = GradientChecker(dlogpdf_df, d2logpdf_df2, self.f.copy(), 'g')
         grad.randomize()
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
-    def test_gaussian_d3nlog_mass_d3gp(self):
+    @unittest.skip("Not Implemented Yet")
+    def test_gaussian_d3logpdf_df3(self):
+        #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
-        link = functools.partial(self.gauss._d2nlog_mass_dgp2, obs=self.Y)
-        dlik_df = functools.partial(self.gauss._d3nlog_mass_dgp3, obs=self.Y)
-        grad = GradientChecker(link, dlik_df, self.f.copy(), 'g')
+        d2logpdf_df2 = functools.partial(self.gauss.d2logpdf_df2, y=self.Y)
+        d3logpdf_df3 = functools.partial(self.gauss.d3logpdf_df3, y=self.Y)
+        grad = GradientChecker(d2logpdf_df2, d3logpdf_df3, self.f.copy(), 'g')
         grad.randomize()
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
-    def test_gaussian_dnlog_mass_dvar(self):
+    @unittest.skip("Not Implemented Yet")
+    def test_gaussian_dlogpdf_df_dvar(self):
+        #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
         self.assertTrue(
-                dparam_checkgrad(self.gauss._nlog_mass, self.gauss._dnlog_mass_dvar,
-                    [self.var], args=(self.Y, self.f), constrain_positive=True,
+                dparam_checkgrad(self.gauss.dlogpdf_df, self.gauss.dlogpdf_df_dvar,
+                    [self.var], args=(self.f, self.Y), constrain_positive=True,
                     randomize=False, verbose=True)
                 )
 
-    def test_gaussian_dnlog_mass_dgp_dvar(self):
+    @unittest.skip("Not Implemented Yet")
+    def test_gaussian_d2logpdf2_df2_dvar(self):
+        #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
         self.assertTrue(
-                dparam_checkgrad(self.gauss._dnlog_mass_dgp, self.gauss._dnlog_mass_dgp_dvar,
-                    [self.var], args=(self.Y, self.f), constrain_positive=True,
+                dparam_checkgrad(self.gauss.d2logpdf_df2, self.gauss.d2logpdf_df2_dvar,
+                    [self.var], args=(self.f, self.Y), constrain_positive=True,
                     randomize=False, verbose=True)
                 )
 
-    def test_gaussian_d2nlog_mass_d2gp_dvar(self):
+
+    """ dGauss_dlink's """
+    def test_gaussian_dlogpdf_dlink(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        logpdf = functools.partial(self.gauss.logpdf, y=self.Y)
+        dlogpdf_dlink = functools.partial(self.gauss.dlogpdf_dlink, y=self.Y)
+        grad = GradientChecker(logpdf, dlogpdf_dlink, self.f.copy(), 'g')
+        grad.randomize()
+        grad.checkgrad(verbose=1)
+        self.assertTrue(grad.checkgrad())
+
+    def test_gaussian_d2logpdf_dlink2(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        dlogpdf_dlink = functools.partial(self.gauss.dlogpdf_dlink, y=self.Y)
+        d2logpdf_dlink2 = functools.partial(self.gauss.d2logpdf_dlink2, y=self.Y)
+        grad = GradientChecker(dlogpdf_dlink, d2logpdf_dlink2, self.f.copy(), 'g')
+        grad.randomize()
+        grad.checkgrad(verbose=1)
+        self.assertTrue(grad.checkgrad())
+
+    def test_gaussian_d3logpdf_dlink3(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        d2logpdf_dlink2 = functools.partial(self.gauss.d2logpdf_dlink2, y=self.Y)
+        d3logpdf_dlink3 = functools.partial(self.gauss.d3logpdf_dlink3, y=self.Y)
+        grad = GradientChecker(d2logpdf_dlink2, d3logpdf_dlink3, self.f.copy(), 'g')
+        grad.randomize()
+        grad.checkgrad(verbose=1)
+        self.assertTrue(grad.checkgrad())
+
+    def test_gaussian_dlogpdf_dvar(self):
         print "\n{}".format(inspect.stack()[0][3])
         self.assertTrue(
-                dparam_checkgrad(self.gauss._d2nlog_mass_dgp2, self.gauss._d2nlog_mass_dgp2_dvar,
-                    [self.var], args=(self.Y, self.f), constrain_positive=True,
+                dparam_checkgrad(self.gauss.logpdf, self.gauss.dlogpdf_dvar,
+                    [self.var], args=(self.f, self.Y), constrain_positive=True,
                     randomize=False, verbose=True)
                 )
+
+    def test_gaussian_dlogpdf_dlink_dvar(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        self.assertTrue(
+                dparam_checkgrad(self.gauss.dlogpdf_dlink, self.gauss.dlogpdf_dlink_dvar,
+                    [self.var], args=(self.f, self.Y), constrain_positive=True,
+                    randomize=False, verbose=True)
+                )
+
+    def test_gaussian_d2logpdf2_dlink2_dvar(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        self.assertTrue(
+                dparam_checkgrad(self.gauss.d2logpdf_dlink2, self.gauss.d2logpdf_dlink2_dvar,
+                    [self.var], args=(self.f, self.Y), constrain_positive=True,
+                    randomize=False, verbose=True)
+                )
+
 
     """ Gradchecker fault """
     @unittest.expectedFailure
-    def test_gaussian_d2lik_d2f_2(self):
+    def test_gaussian_d2logpdf_df2_2(self):
         print "\n{}".format(inspect.stack()[0][3])
         self.Y = None
         self.gauss = None
@@ -187,99 +220,121 @@ class LaplaceTests(unittest.TestCase):
         self.f = np.random.rand(self.N, 1)
         self.gauss = GPy.likelihoods.gaussian(variance=self.var, D=self.D, N=self.N)
 
-        dlik_df = functools.partial(self.gauss._dnlog_mass_dgp, obs=self.Y)
-        d2lik_d2f = functools.partial(self.gauss._d2nlog_mass_dgp2, obs=self.Y)
-        grad = GradientChecker(dlik_df, d2lik_d2f, self.f.copy(), 'f')
-        grad.randomize()
-        grad.checkgrad(verbose=1)
-        grad.checkgrad()
-
-        self.assertTrue(grad.checkgrad())
-
-    def test_gaussian_d3lik_d3f(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        d2lik_d2f = functools.partial(self.gauss.d2lik_d2f, self.Y)
-        d3lik_d3f = functools.partial(self.gauss.d3lik_d3f, self.Y)
-        grad = GradientChecker(d2lik_d2f, d3lik_d3f, self.f.copy(), 'f')
+        dlogpdf_df = functools.partial(self.gauss.dlogpdf_df, y=self.Y)
+        d2logpdf_df2 = functools.partial(self.gauss.d2logpdf_df2, y=self.Y)
+        grad = GradientChecker(dlogpdf_df, d2logpdf_df2, self.f.copy(), 'g')
         grad.randomize()
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
-    def test_gaussian_dlik_dvar(self):
+    """ dStudentT_df's """
+    @unittest.skip("Not Implemented Yet")
+    def test_studentt_dlogpdf_df(self):
+        #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
-        self.assertTrue(
-                dparam_checkgrad(self.gauss.lik_function, self.gauss.dlik_dvar,
-                    [self.var], args=(self.Y, self.f), constrain_positive=True,
-                    randomize=False, verbose=True)
-                )
-
-    def test_gaussian_dlik_df_dvar(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        self.assertTrue(
-                dparam_checkgrad(self.gauss.dlik_df, self.gauss.dlik_df_dvar,
-                    [self.var], args=(self.Y.copy(), self.f.copy()), constrain_positive=True,
-                    randomize=False, verbose=True)
-                )
-
-    def test_gaussian_d2lik_d2f_dvar(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        self.assertTrue(
-                dparam_checkgrad(self.gauss.d2lik_d2f, self.gauss.d2lik_d2f_dvar,
-                    [self.var], args=(self.Y, self.f.copy()), constrain_positive=True,
-                    randomize=True, verbose=True)
-                )
-
-    def test_studentt_dlik_df(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        link = functools.partial(self.stu_t.lik_function, self.Y)
-        dlik_df = functools.partial(self.stu_t.dlik_df, self.Y)
-        grad = GradientChecker(link, dlik_df, self.f.copy(), 'f')
+        link = functools.partial(self.stu_t.logpdf, y=self.Y)
+        dlogpdf_df = functools.partial(self.stu_t.dlogpdf_df, y=self.Y)
+        grad = GradientChecker(link, dlogpdf_df, self.f.copy(), 'f')
         grad.randomize()
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
-    def test_studentt_d2lik_d2f(self):
+    @unittest.skip("Not Implemented Yet")
+    def test_studentt_d2logpdf_df2(self):
+        #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
-        dlik_df = functools.partial(self.stu_t.dlik_df, self.Y)
-        d2lik_d2f = functools.partial(self.stu_t.d2lik_d2f, self.Y)
-        grad = GradientChecker(dlik_df, d2lik_d2f, self.f.copy(), 'f')
+        dlogpdf_df = functools.partial(self.stu_t.dlogpdf_df, y=self.Y)
+        d2logpdf_df2 = functools.partial(self.stu_t.d2logpdf_df2, y=self.Y)
+        grad = GradientChecker(dlogpdf_df, d2logpdf_df2, self.f.copy(), 'f')
         grad.randomize()
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
+    @unittest.skip("Not Implemented Yet")
     def test_studentt_d3lik_d3f(self):
+        #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
-        d2lik_d2f = functools.partial(self.stu_t.d2lik_d2f, self.Y)
-        d3lik_d3f = functools.partial(self.stu_t.d3lik_d3f, self.Y)
-        grad = GradientChecker(d2lik_d2f, d3lik_d3f, self.f.copy(), 'f')
+        d2logpdf_df2 = functools.partial(self.stu_t.d2logpdf_d2f, y=self.Y)
+        d3logpdf_df3 = functools.partial(self.stu_t.d3logpdf_d3f, y=self.Y)
+        grad = GradientChecker(d2logpdf_df2, d3logpdf_df3, self.f.copy(), 'f')
         grad.randomize()
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
-    def test_studentt_dlik_dvar(self):
+    @unittest.skip("Not Implemented Yet")
+    def test_studentt_dlogpdf_df_dvar(self):
+        #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
         self.assertTrue(
-                dparam_checkgrad(self.stu_t.lik_function, self.stu_t.dlik_dvar,
+                dparam_checkgrad(self.stu_t.dlogpdf_df, self.stu_t.dlogpdf_df_dvar,
                     [self.var], args=(self.Y.copy(), self.f.copy()),
                     constrain_positive=True, randomize=True, verbose=True)
                 )
 
-    def test_studentt_dlik_df_dvar(self):
+    @unittest.skip("Not Implemented Yet")
+    def test_studentt_d2logpdf_df2_dvar(self):
+        #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
         self.assertTrue(
-                dparam_checkgrad(self.stu_t.dlik_df, self.stu_t.dlik_df_dvar,
+                dparam_checkgrad(self.stu_t.d2logpdf_df2, self.stu_t.d2logpdf_df2_dvar,
                     [self.var], args=(self.Y.copy(), self.f.copy()),
                     constrain_positive=True, randomize=True, verbose=True)
                 )
 
-    def test_studentt_d2lik_d2f_dvar(self):
+    """ dStudentT_dlink's """
+    def test_studentt_dlogpdf_dlink(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        logpdf = functools.partial(self.stu_t.logpdf, y=self.Y)
+        dlogpdf_dlink = functools.partial(self.stu_t.dlogpdf_dlink, y=self.Y)
+        grad = GradientChecker(logpdf, dlogpdf_dlink, self.f.copy(), 'f')
+        grad.randomize()
+        grad.checkgrad(verbose=1)
+        self.assertTrue(grad.checkgrad())
+
+    def test_studentt_d2logpdf_dlink2(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        dlogpdf_dlink = functools.partial(self.stu_t.dlogpdf_dlink, y=self.Y)
+        d2logpdf_dlink2 = functools.partial(self.stu_t.d2logpdf_dlink2, y=self.Y)
+        grad = GradientChecker(dlogpdf_dlink, d2logpdf_dlink2, self.f.copy(), 'f')
+        grad.randomize()
+        grad.checkgrad(verbose=1)
+        self.assertTrue(grad.checkgrad())
+
+    def test_studentt_d3logpdf_dlink3(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        d2logpdf_dlink2 = functools.partial(self.stu_t.d2logpdf_dlink2, y=self.Y)
+        d3logpdf_dlink3 = functools.partial(self.stu_t.d3logpdf_dlink3, y=self.Y)
+        grad = GradientChecker(d2logpdf_dlink2, d3logpdf_dlink3, self.f.copy(), 'f')
+        grad.randomize()
+        grad.checkgrad(verbose=1)
+        self.assertTrue(grad.checkgrad())
+
+    def test_studentt_dlogpdf_dvar(self):
         print "\n{}".format(inspect.stack()[0][3])
         self.assertTrue(
-                dparam_checkgrad(self.stu_t.d2lik_d2f, self.stu_t.d2lik_d2f_dvar,
+                dparam_checkgrad(self.stu_t.logpdf, self.stu_t.dlogpdf_dvar,
                     [self.var], args=(self.Y.copy(), self.f.copy()),
                     constrain_positive=True, randomize=True, verbose=True)
                 )
 
+    def test_studentt_dlogpdf_dlink_dvar(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        self.assertTrue(
+                dparam_checkgrad(self.stu_t.dlogpdf_dlink, self.stu_t.dlogpdf_dlink_dvar,
+                    [self.var], args=(self.Y.copy(), self.f.copy()),
+                    constrain_positive=True, randomize=True, verbose=True)
+                )
+
+    def test_studentt_d2logpdf_dlink2_dvar(self):
+        print "\n{}".format(inspect.stack()[0][3])
+        self.assertTrue(
+                dparam_checkgrad(self.stu_t.d2logpdf_dlink2, self.stu_t.d2logpdf_dlink2_dvar,
+                    [self.var], args=(self.Y.copy(), self.f.copy()),
+                    constrain_positive=True, randomize=True, verbose=True)
+                )
+
+
+    """ Grad check whole models (grad checking Laplace not just noise models """
     def test_gauss_rbf(self):
         print "\n{}".format(inspect.stack()[0][3])
         self.Y = self.Y/self.Y.max()

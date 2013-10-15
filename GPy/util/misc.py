@@ -3,6 +3,7 @@
 
 import numpy as np
 from scipy import weave
+from config import *
 
 def opt_wrapper(m, **kwargs):
     """
@@ -57,11 +58,18 @@ def kmm_init(X, m = 10):
     return X[inducing]
 
 def fast_array_equal(A, B):
+
+
+    if config.getboolean('parallel', 'openmp'):
+        pragma_string = '#pragma omp parallel for private(i, j)'
+    else:
+        pragma_string = ''
+
     code2="""
     int i, j;
     return_val = 1;
 
-    // #pragma omp parallel for private(i, j)
+    %s
     for(i=0;i<N;i++){
        for(j=0;j<D;j++){
           if(A(i, j) != B(i, j)){
@@ -70,13 +78,18 @@ def fast_array_equal(A, B):
           }
        }
     }
-    """
+    """ % pragma_string
+
+    if config.getboolean('parallel', 'openmp'):
+        pragma_string = '#pragma omp parallel for private(i, j, z)'
+    else:
+        pragma_string = ''
 
     code3="""
     int i, j, z;
     return_val = 1;
 
-    // #pragma omp parallel for private(i, j, z)
+    %s
     for(i=0;i<N;i++){
        for(j=0;j<D;j++){
          for(z=0;z<Q;z++){
@@ -87,19 +100,32 @@ def fast_array_equal(A, B):
           }
        }
     }
-    """
+    """ % pragma_string
+
+    if config.getboolean('parallel', 'openmp'):
+        pragma_string = '#include <omp.h>'
+    else:
+        pragma_string = ''
 
     support_code = """
-    // #include <omp.h>
+    %s
     #include <math.h>
-    """
+    """ % pragma_string
 
-    weave_options = {'headers'           : ['<omp.h>'],
-                     'extra_compile_args': ['-fopenmp -O3'],
-                     'extra_link_args'   : ['-lgomp']}
 
+    weave_options_openmp = {'headers'           : ['<omp.h>'],
+                            'extra_compile_args': ['-fopenmp -O3'],
+                            'extra_link_args'   : ['-lgomp'],
+                            'libraries': ['gomp']}
+    weave_options_noopenmp = {'extra_compile_args': ['-O3']}
+
+    if config.getboolean('parallel', 'openmp'):
+        weave_options = weave_options_openmp
+    else:
+        weave_options = weave_options_noopenmp
 
     value = False
+
 
     if (A == None) and (B == None):
         return True
@@ -110,14 +136,12 @@ def fast_array_equal(A, B):
             N, D = [int(i) for i in A.shape]
             value = weave.inline(code2, support_code=support_code,
                                  arg_names=['A', 'B', 'N', 'D'],
-                                 type_converters=weave.converters.blitz)
-            # libraries=['gomp'], **weave_options)
+                                 type_converters=weave.converters.blitz, **weave_options)
         elif A.ndim == 3:
             N, D, Q = [int(i) for i in A.shape]
             value = weave.inline(code3, support_code=support_code,
                                  arg_names=['A', 'B', 'N', 'D', 'Q'],
-                                 type_converters=weave.converters.blitz)
-            #libraries=['gomp'], **weave_options)
+                                 type_converters=weave.converters.blitz, **weave_options)
         else:
             value = np.array_equal(A,B)
 

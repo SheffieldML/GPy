@@ -26,7 +26,7 @@ def BGPLVM(seed=default_seed):
     lik = Gaussian(Y, normalize=True)
 
     k = GPy.kern.rbf_inv(Q, .5, np.ones(Q) * 2., ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
-    # k = GPy.kern.rbf(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
+    # k = GPy.kern.linear(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
     # k = GPy.kern.rbf(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)
 
     m = GPy.models.BayesianGPLVM(lik, Q, kernel=k, num_inducing=num_inducing)

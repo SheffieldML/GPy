@@ -620,7 +620,7 @@ def xw_pen(data_set='xw_pen'):
         download_data(data_set)
     Y = np.loadtxt(os.path.join(data_path, data_set, 'xw_pen_15.csv'), delimiter=',')
     X = np.arange(485)[:, None]
-    return data_details_return({'Y': Y, 'X': X, 'info': "Tilt data from a personalized digital assistant pen."}, data_set)
+    return data_details_return({'Y': Y, 'X': X, 'info': "Tilt data from a personalized digital assistant pen. Plot in original paper showed regression between time steps 175 and 275."}, data_set)
 
     
 def download_rogers_girolami_data():

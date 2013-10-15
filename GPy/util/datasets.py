@@ -145,6 +145,12 @@ The database was created with funding from NSF EIA-0196217.""",
                                         'citation' : 'A Global Geometric Framework for Nonlinear Dimensionality Reduction, J. B. Tenenbaum, V. de Silva and J. C. Langford, Science 290 (5500): 2319-2323, 22 December 2000',
                                         'license' : None,
                                         'size' : 24229368},
+                  'xw_pen' : {'urls' : [neil_url + 'xw_pen/'],
+                                        'files' : [['xw_pen_15.csv']],
+                                        'details' : """Accelerometer pen data used for robust regression by Tipping and Lawrence.""",
+                                        'citation' : 'Michael E. Tipping and Neil D. Lawrence. Variational inference for Student-t models: Robust Bayesian interpolation and generalised component analysis. Neurocomputing, 69:123--141, 2005',
+                                        'license' : None,
+                                        'size' : 3410}
                   }
 
 
@@ -608,6 +614,14 @@ def olivetti_faces(data_set='olivetti_faces'):
     Y = np.asarray(Y)
     lbls = np.asarray(lbls)[:, None]
     return data_details_return({'Y': Y, 'lbls' : lbls, 'info': "ORL Faces processed to 64x64 images."}, data_set)
+
+def xw_pen(data_set='xw_pen'):
+    if not data_available(data_set):
+        download_data(data_set)
+    Y = np.loadtxt(os.path.join(data_path, data_set, 'xw_pen_15.csv'), delimiter=',')
+    X = np.arange(485)[:, None]
+    return data_details_return({'Y': Y, 'X': X, 'info': "Tilt data from a personalized digital assistant pen."}, data_set)
+
     
 def download_rogers_girolami_data():
     if not data_available('rogers_girolami_data'):

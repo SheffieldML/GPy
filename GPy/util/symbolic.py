@@ -28,13 +28,25 @@ class sim_h(Function):
     @classmethod
     def eval(cls, t, tprime, d_i, d_j, l):
         # putting in the is_Number stuff forces it to look for a fdiff method for derivative.
-        return (exp((d_j/2*l)**2)/(d_i+d_j)
-                *(exp(-d_j*(tprime - t))
-                  *(erf((tprime-t)/l - d_j/2*l)
-                    + erf(t/l + d_j/2*l))
-                  - exp(-(d_j*tprime + d_i))
-                  *(erf(tprime/l - d_j/2*l)
-                    + erf(d_j/2*l))))
+        if (t.is_Number
+            and tprime.is_Number
+            and d_i.is_Number
+            and d_j.is_Number
+            and l.is_Number):
+            if (t is S.NaN
+                or tprime is S.NaN
+                or d_i is S.NaN
+                or d_j is S.NaN
+                or l is S.NaN):
+                return S.NaN
+            else:
+                return (exp((d_j/2*l)**2)/(d_i+d_j)
+                        *(exp(-d_j*(tprime - t))
+                          *(erf((tprime-t)/l - d_j/2*l)
+                            + erf(t/l + d_j/2*l))
+                          - exp(-(d_j*tprime + d_i))
+                          *(erf(tprime/l - d_j/2*l)
+                            + erf(d_j/2*l))))
 
 class erfc(Function):
     nargs = 1

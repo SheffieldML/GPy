@@ -89,7 +89,7 @@ class Laplace(likelihood):
         :rtype: Matrix (1 x num_kernel_params)
         """
         dL_dfhat, I_KW_i = self._shared_gradients_components()
-        dlp = self.noise_model.dlogpdf_df(self.f_hat, self.data)
+        dlp = self.noise_model.dlogpdf_df(self.f_hat, self.data, extra_data=self.extra_data)
 
         #Explicit
         #expl_a = np.dot(self.Ki_f, self.Ki_f.T)
@@ -121,20 +121,20 @@ class Laplace(likelihood):
         :rtype: array of derivatives (1 x num_likelihood_params)
         """
         dL_dfhat, I_KW_i = self._shared_gradients_components()
-        dlik_dthetaL, dlik_grad_dthetaL, dlik_hess_dthetaL = self.noise_model._laplace_gradients(self.data, self.f_hat)
+        dlik_dthetaL, dlik_grad_dthetaL, dlik_hess_dthetaL = self.noise_model._laplace_gradients(self.f_hat, self.data, extra_data=self.extra_data)
 
         num_params = len(dlik_dthetaL)
         # make space for one derivative for each likelihood parameter
         dL_dthetaL = np.zeros(num_params)
         for thetaL_i in range(num_params):
             #Explicit
-            dL_dthetaL_exp = ( np.sum(dlik_dthetaL[thetaL_i])
+            dL_dthetaL_exp = ( np.sum(dlik_dthetaL[:, thetaL_i])
                              #- 0.5*np.trace(mdot(self.Ki_W_i, (self.K, np.diagflat(dlik_hess_dthetaL[thetaL_i]))))
-                             + np.dot(0.5*np.diag(self.Ki_W_i)[:,None].T, dlik_hess_dthetaL[thetaL_i])
+                             + np.dot(0.5*np.diag(self.Ki_W_i)[:,None].T, dlik_hess_dthetaL[:, thetaL_i])
                              )
 
             #Implicit
-            dfhat_dthetaL = mdot(I_KW_i, self.K, dlik_grad_dthetaL[thetaL_i])
+            dfhat_dthetaL = mdot(I_KW_i, self.K, dlik_grad_dthetaL[:, thetaL_i])
             dL_dthetaL_imp = np.dot(dL_dfhat, dfhat_dthetaL)
             dL_dthetaL[thetaL_i] = dL_dthetaL_exp + dL_dthetaL_imp
 

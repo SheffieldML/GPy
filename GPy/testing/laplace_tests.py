@@ -80,7 +80,7 @@ class LaplaceTests(unittest.TestCase):
         self.gauss = GPy.likelihoods.gaussian(variance=self.var, D=self.D, N=self.N)
 
         #Make a bigger step as lower bound can be quite curved
-        self.step = 1e-4
+        self.step = 1e-3
 
     def tearDown(self):
         self.stu_t = None
@@ -97,7 +97,6 @@ class LaplaceTests(unittest.TestCase):
 
 
     """ dGauss_df's """
-    @unittest.skip("Not Implemented Yet")
     def test_gaussian_dlogpdf_df(self):
         #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
@@ -108,7 +107,6 @@ class LaplaceTests(unittest.TestCase):
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
-    @unittest.skip("Not Implemented Yet")
     def test_gaussian_d2logpdf_df2(self):
         #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
@@ -119,7 +117,6 @@ class LaplaceTests(unittest.TestCase):
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
-    @unittest.skip("Not Implemented Yet")
     def test_gaussian_d3logpdf_df3(self):
         #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
@@ -130,22 +127,20 @@ class LaplaceTests(unittest.TestCase):
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
-    @unittest.skip("Not Implemented Yet")
     def test_gaussian_dlogpdf_df_dvar(self):
         #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
         self.assertTrue(
-                dparam_checkgrad(self.gauss.dlogpdf_df, self.gauss.dlogpdf_df_dvar,
+                dparam_checkgrad(self.gauss.dlogpdf_df, self.gauss.dlogpdf_df_dtheta,
                     [self.var], args=(self.f, self.Y), constrain_positive=True,
                     randomize=False, verbose=True)
                 )
 
-    @unittest.skip("Not Implemented Yet")
     def test_gaussian_d2logpdf2_df2_dvar(self):
         #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
         self.assertTrue(
-                dparam_checkgrad(self.gauss.d2logpdf_df2, self.gauss.d2logpdf_df2_dvar,
+                dparam_checkgrad(self.gauss.d2logpdf_df2, self.gauss.d2logpdf_df2_dtheta,
                     [self.var], args=(self.f, self.Y), constrain_positive=True,
                     randomize=False, verbose=True)
                 )
@@ -182,7 +177,7 @@ class LaplaceTests(unittest.TestCase):
     def test_gaussian_dlogpdf_dvar(self):
         print "\n{}".format(inspect.stack()[0][3])
         self.assertTrue(
-                dparam_checkgrad(self.gauss.logpdf, self.gauss.dlogpdf_dvar,
+                dparam_checkgrad(self.gauss.logpdf, self.gauss.dlogpdf_dtheta,
                     [self.var], args=(self.f, self.Y), constrain_positive=True,
                     randomize=False, verbose=True)
                 )
@@ -190,7 +185,7 @@ class LaplaceTests(unittest.TestCase):
     def test_gaussian_dlogpdf_dlink_dvar(self):
         print "\n{}".format(inspect.stack()[0][3])
         self.assertTrue(
-                dparam_checkgrad(self.gauss.dlogpdf_dlink, self.gauss.dlogpdf_dlink_dvar,
+                dparam_checkgrad(self.gauss.dlogpdf_dlink, self.gauss.dlogpdf_dlink_dtheta,
                     [self.var], args=(self.f, self.Y), constrain_positive=True,
                     randomize=False, verbose=True)
                 )
@@ -198,7 +193,7 @@ class LaplaceTests(unittest.TestCase):
     def test_gaussian_d2logpdf2_dlink2_dvar(self):
         print "\n{}".format(inspect.stack()[0][3])
         self.assertTrue(
-                dparam_checkgrad(self.gauss.d2logpdf_dlink2, self.gauss.d2logpdf_dlink2_dvar,
+                dparam_checkgrad(self.gauss.d2logpdf_dlink2, self.gauss.d2logpdf_dlink2_dtheta,
                     [self.var], args=(self.f, self.Y), constrain_positive=True,
                     randomize=False, verbose=True)
                 )
@@ -228,7 +223,6 @@ class LaplaceTests(unittest.TestCase):
         self.assertTrue(grad.checkgrad())
 
     """ dStudentT_df's """
-    @unittest.skip("Not Implemented Yet")
     def test_studentt_dlogpdf_df(self):
         #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
@@ -239,7 +233,6 @@ class LaplaceTests(unittest.TestCase):
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
-    @unittest.skip("Not Implemented Yet")
     def test_studentt_d2logpdf_df2(self):
         #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
@@ -250,34 +243,31 @@ class LaplaceTests(unittest.TestCase):
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
-    @unittest.skip("Not Implemented Yet")
     def test_studentt_d3lik_d3f(self):
         #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
-        d2logpdf_df2 = functools.partial(self.stu_t.d2logpdf_d2f, y=self.Y)
-        d3logpdf_df3 = functools.partial(self.stu_t.d3logpdf_d3f, y=self.Y)
+        d2logpdf_df2 = functools.partial(self.stu_t.d2logpdf_df2, y=self.Y)
+        d3logpdf_df3 = functools.partial(self.stu_t.d3logpdf_df3, y=self.Y)
         grad = GradientChecker(d2logpdf_df2, d3logpdf_df3, self.f.copy(), 'f')
         grad.randomize()
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
-    @unittest.skip("Not Implemented Yet")
     def test_studentt_dlogpdf_df_dvar(self):
         #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
         self.assertTrue(
-                dparam_checkgrad(self.stu_t.dlogpdf_df, self.stu_t.dlogpdf_df_dvar,
-                    [self.var], args=(self.Y.copy(), self.f.copy()),
+                dparam_checkgrad(self.stu_t.dlogpdf_df, self.stu_t.dlogpdf_df_dtheta,
+                    [self.var], args=(self.f.copy(), self.Y.copy()),
                     constrain_positive=True, randomize=True, verbose=True)
                 )
 
-    @unittest.skip("Not Implemented Yet")
     def test_studentt_d2logpdf_df2_dvar(self):
         #FIXME: Needs non-identity Link function
         print "\n{}".format(inspect.stack()[0][3])
         self.assertTrue(
-                dparam_checkgrad(self.stu_t.d2logpdf_df2, self.stu_t.d2logpdf_df2_dvar,
-                    [self.var], args=(self.Y.copy(), self.f.copy()),
+                dparam_checkgrad(self.stu_t.d2logpdf_df2, self.stu_t.d2logpdf_df2_dtheta,
+                    [self.var], args=(self.f.copy(), self.Y.copy()),
                     constrain_positive=True, randomize=True, verbose=True)
                 )
 
@@ -312,24 +302,24 @@ class LaplaceTests(unittest.TestCase):
     def test_studentt_dlogpdf_dvar(self):
         print "\n{}".format(inspect.stack()[0][3])
         self.assertTrue(
-                dparam_checkgrad(self.stu_t.logpdf, self.stu_t.dlogpdf_dvar,
-                    [self.var], args=(self.Y.copy(), self.f.copy()),
+                dparam_checkgrad(self.stu_t.logpdf, self.stu_t.dlogpdf_dtheta,
+                    [self.var], args=(self.f.copy(), self.Y.copy()),
                     constrain_positive=True, randomize=True, verbose=True)
                 )
 
     def test_studentt_dlogpdf_dlink_dvar(self):
         print "\n{}".format(inspect.stack()[0][3])
         self.assertTrue(
-                dparam_checkgrad(self.stu_t.dlogpdf_dlink, self.stu_t.dlogpdf_dlink_dvar,
-                    [self.var], args=(self.Y.copy(), self.f.copy()),
+                dparam_checkgrad(self.stu_t.dlogpdf_dlink, self.stu_t.dlogpdf_dlink_dtheta,
+                    [self.var], args=(self.f.copy(), self.Y.copy()),
                     constrain_positive=True, randomize=True, verbose=True)
                 )
 
     def test_studentt_d2logpdf_dlink2_dvar(self):
         print "\n{}".format(inspect.stack()[0][3])
         self.assertTrue(
-                dparam_checkgrad(self.stu_t.d2logpdf_dlink2, self.stu_t.d2logpdf_dlink2_dvar,
-                    [self.var], args=(self.Y.copy(), self.f.copy()),
+                dparam_checkgrad(self.stu_t.d2logpdf_dlink2, self.stu_t.d2logpdf_dlink2_dtheta,
+                    [self.var], args=(self.f.copy(), self.Y.copy()),
                     constrain_positive=True, randomize=True, verbose=True)
                 )
 
@@ -388,7 +378,9 @@ class LaplaceTests(unittest.TestCase):
         m.constrain_positive('t_noise')
         m.constrain_fixed('white', white_var)
         m['t_noise'] = 0.01
+        m.randomize()
         m.checkgrad(verbose=1)
+        print m
         self.assertTrue(m.checkgrad(step=self.step))
 
 if __name__ == "__main__":

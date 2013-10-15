@@ -9,6 +9,7 @@ import pylab as pb
 from GPy.util.plot import gpplot
 from GPy.util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
 import gp_transformations
+from GPy.util.misc import chain_1, chain_2, chain_3
 
 
 class NoiseDistribution(object):
@@ -398,6 +399,89 @@ class NoiseDistribution(object):
         """
         return sp.optimize.fmin_ncg(self._nlog_joint_predictive_scaled,x0=(mu,self.gp_link.transf(mu)),fprime=self._gradient_nlog_joint_predictive,fhess=self._hessian_nlog_joint_predictive,args=(mu,sigma),disp=False)
 
+    def logpdf(self, f, y, extra_data=None):
+        """
+        Evaluates the link function link(f) then computes the log likelihood using it
+        """
+        link_f = self.gp_link.transf(f)
+        return self.logpdf_link(f, y, extra_data=extra_data)
+
+    def dlogpdf_df(self, f, y, extra_data=None):
+        """
+        TODO: Doc strings
+        """
+        link_f = self.gp_link.transf(f)
+        dlogpdf_dlink = self.dlogpdf_dlink(link_f, y, extra_data=extra_data)
+        dlink_df = self.gp_link.dtransf_df(f)
+        return chain_1(dlogpdf_dlink, dlink_df)
+
+    def d2logpdf_df2(self, f, y, extra_data=None):
+        """
+        TODO: Doc strings
+        """
+        link_f = self.gp_link.transf(f)
+        d2logpdf_dlink2 = self.d2logpdf_dlink2(link_f, y, extra_data=extra_data)
+        dlink_df = self.gp_link.dtransf_df(f)
+        dlogpdf_dlink = self.dlogpdf_dlink(link_f, y, extra_data=extra_data)
+        d2link_df2 = self.gp_link.d2transf_df2(f)
+        return chain_2(d2logpdf_dlink2, dlink_df, dlogpdf_dlink, d2link_df2)
+
+    def d3logpdf_df3(self, f, y, extra_data=None):
+        """
+        TODO: Doc strings
+        """
+        link_f = self.gp_link.transf(f)
+        d3logpdf_dlink3 = self.d3logpdf_dlink3(link_f, y, extra_data=extra_data)
+        dlink_df = self.gp_link.dtransf_df(f)
+        d2logpdf_dlink2 = self.d2logpdf_dlink2(link_f, y, extra_data=extra_data)
+        d2link_df2 = self.gp_link.d2transf_df2(f)
+        dlogpdf_dlink = self.dlogpdf_dlink(link_f, y, extra_data=extra_data)
+        d3link_df3 = self.gp_link.d3transf_df3(f)
+        return chain_3(d3logpdf_dlink3, dlink_df, d2logpdf_dlink2, d2link_df2, dlogpdf_dlink, d3link_df3)
+
+    def dlogpdf_dtheta(self, f, y, extra_data=None):
+        link_f = self.gp_link.transf(f)
+        return self.dlogpdf_link_dtheta(link_f, y, extra_data=extra_data)
+
+    def dlogpdf_df_dtheta(self, f, y, extra_data=None):
+        link_f = self.gp_link.transf(f)
+        dlink_df = self.gp_link.dtransf_df(f)
+        dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, extra_data=extra_data)
+        return chain_1(dlogpdf_dlink_dtheta, dlink_df)
+
+    def d2logpdf_df2_dtheta(self, f, y, extra_data=None):
+        link_f = self.gp_link.transf(f)
+        dlink_df = self.gp_link.dtransf_df(f)
+        d2link_df2 = self.gp_link.d2transf_df2(f) #FIXME: I THINK ITS THIS
+        d2logpdf_dlink2_dtheta = self.d2logpdf_dlink2_dtheta(link_f, y, extra_data=extra_data)
+        dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, extra_data=extra_data)
+        return chain_2(d2logpdf_dlink2_dtheta, dlink_df, dlogpdf_dlink_dtheta, d2link_df2)
+        #return chain_1(d2logpdf_dlink2_dtheta, d2link_df2)
+
+    def _laplace_gradients(self, f, y, extra_data=None):
+        #link_f = self.gp_link.transf(f)
+        #dlink_df = self.gp_link.dtransf_df(f)
+        #d2link_df2 = self.gp_link.d2transf_df2(f)
+
+        #dlogpdf_dtheta = self.dlogpdf_dtheta(link_f, y, extra_data=extra_data)
+        #dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, extra_data=extra_data)
+        #d2logpdf_dlink2_dtheta = self.d2logpdf_dlink2_dtheta(link_f, y, extra_data=extra_data)
+
+        ##now chain them all with dlink_df etc
+        #dlogpdf_df_dtheta = chain_1(dlogpdf_dlink_dtheta, dlink_df)
+        #d2logpdf_df2_dtheta = chain_1(d2logpdf_dlink2_dtheta, d2link_df2)
+
+        dlogpdf_dtheta = self.dlogpdf_dtheta(f, y, extra_data=extra_data)
+        dlogpdf_df_dtheta = self.dlogpdf_df_dtheta(f, y, extra_data=extra_data)
+        d2logpdf_df2_dtheta = self.d2logpdf_df2_dtheta(f, y, extra_data=extra_data)
+
+        #Parameters are stacked vertically. Must be listed in same order as 'get_param_names'
+        # ensure we have gradients for every parameter we want to optimize
+        assert dlogpdf_dtheta.shape[1] == len(self._get_param_names())
+        assert dlogpdf_df_dtheta.shape[1] == len(self._get_param_names())
+        assert d2logpdf_df2_dtheta.shape[1] == len(self._get_param_names())
+        return dlogpdf_dtheta, dlogpdf_df_dtheta, d2logpdf_df2_dtheta
+
     def predictive_values(self,mu,var):
         """
         Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction.
@@ -432,4 +516,6 @@ class NoiseDistribution(object):
         :param gp: latent variable
         """
         pass
+
+
 

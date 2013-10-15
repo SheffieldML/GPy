@@ -36,18 +36,6 @@ class Gaussian(NoiseDistribution):
         #self.ln_det_K = np.sum(np.log(np.diag(self.covariance_matrix)))
         self.ln_det_K = self.N*np.log(self.variance)
 
-    def _laplace_gradients(self, y, f, extra_data=None):
-        #must be listed in same order as 'get_param_names'
-        derivs = ([-self._dnlog_mass_dvar(f, y, extra_data=extra_data)],
-                  [-self._dnlog_mass_dgp_dvar(f, y, extra_data=extra_data)],
-                  [-self._d2nlog_mass_dgp2_dvar(f, y, extra_data=extra_data)]
-                 ) # lists as we might learn many parameters
-        # ensure we have gradients for every parameter we want to optimize
-        assert len(derivs[0]) == len(self._get_param_names())
-        assert len(derivs[1]) == len(self._get_param_names())
-        assert len(derivs[2]) == len(self._get_param_names())
-        return derivs
-
     def _gradients(self,partial):
         return np.zeros(1)
         #return np.sum(partial)
@@ -106,9 +94,9 @@ class Gaussian(NoiseDistribution):
                             rederivate the derivative without doing the chain and put in logpdf, dlogpdf_dlink or\
                             its derivatives")
 
-    def logpdf(self, link_f, y, extra_data=None):
+    def logpdf_link(self, link_f, y, extra_data=None):
         """
-        Log likelihood function
+        Log likelihood function given link(f)
 
         .. math::
             \\ln p(y_{i}|\\lambda(f_{i})) = -\\frac{N \\ln 2\\pi}{2} - \\frac{\\ln |K|}{2} - \\frac{(y_{i} - \\lambda(f_{i}))^{T}\\sigma^{-2}(y_{i} - \\lambda(f_{i}))}{2}
@@ -187,7 +175,7 @@ class Gaussian(NoiseDistribution):
         d3logpdf_dlink3 = np.diagonal(0*self.I)[:, None] # FIXME: CAREFUL THIS MAY NOT WORK WITH MULTIDIMENSIONS?
         return d3logpdf_dlink3
 
-    def dlogpdf_dvar(self, link_f, y, extra_data=None):
+    def dlogpdf_link_dvar(self, link_f, y, extra_data=None):
         """
         Gradient of the negative log-likelihood function at y given link(f), w.r.t variance parameter (noise_variance)
 
@@ -246,6 +234,18 @@ class Gaussian(NoiseDistribution):
         assert link_f.shape == y.shape
         s_4 = 1.0/(self.variance**2)
         d2logpdf_dlink2_dvar = np.diag(s_4*self.I)[:, None]
+        return d2logpdf_dlink2_dvar
+
+    def dlogpdf_link_dtheta(self, f, y, extra_data=None):
+        dlogpdf_dvar = self.dlogpdf_link_dvar(f, y, extra_data=extra_data)
+        return np.asarray([[dlogpdf_dvar]])
+
+    def dlogpdf_dlink_dtheta(self, f, y, extra_data=None):
+        dlogpdf_dlink_dvar = self.dlogpdf_dlink_dvar(f, y, extra_data=extra_data)
+        return dlogpdf_dlink_dvar
+
+    def d2logpdf_dlink2_dtheta(self, f, y, extra_data=None):
+        d2logpdf_dlink2_dvar = self.d2logpdf_dlink2_dvar(f, y, extra_data=extra_data)
         return d2logpdf_dlink2_dvar
 
     def _mean(self,gp):

@@ -40,27 +40,9 @@ class StudentT(NoiseDistribution):
     def variance(self, extra_data=None):
         return (self.v / float(self.v - 2)) * self.sigma2
 
-    def _nlog_mass(self, link_f, y, extra_data=None):
-        NotImplementedError("Deprecated, now doing chain in likelihood.py for link function evaluation\
-                            Please negate your function and use logpdf in noise_model.py, if implementing a likelihood\
-                            rederivate the derivative without doing the chain and put in logpdf, dlogpdf_dlink or\
-                            its derivatives")
-
-    def _dnlog_mass_dgp(self, link_f, y, extra_data=None):
-        NotImplementedError("Deprecated, now doing chain in likelihood.py for link function evaluation\
-                            Please negate your function and use logpdf in noise_model.py, if implementing a likelihood\
-                            rederivate the derivative without doing the chain and put in logpdf, dlogpdf_dlink or\
-                            its derivatives")
-
-    def _d2nlog_mass_dgp2(self, link_f, y, extra_data=None):
-        NotImplementedError("Deprecated, now doing chain in likelihood.py for link function evaluation\
-                            Please negate your function and use logpdf in noise_model.py, if implementing a likelihood\
-                            rederivate the derivative without doing the chain and put in logpdf, dlogpdf_dlink or\
-                            its derivatives")
-
-    def logpdf(self, link_f, y, extra_data=None):
+    def logpdf_link(self, link_f, y, extra_data=None):
         """
-        Log Likelihood Function
+        Log Likelihood Function given link(f)
 
         .. math::
             \\ln p(y_{i}|f_{i}) = \\ln \\Gamma(\\frac{v+1}{2}) - \\ln \\Gamma(\\frac{v}{2})\\sqrt{v \\pi}\sigma - \\frac{v+1}{2}\\ln (1 + \\frac{1}{v}\\left(\\frac{y_{i} - f_{i}}{\\sigma}\\right)^2
@@ -151,7 +133,7 @@ class StudentT(NoiseDistribution):
                     )
         return d3lik_dlink3
 
-    def dlogpdf_dvar(self, link_f, y, extra_data=None):
+    def dlogpdf_link_dvar(self, link_f, y, extra_data=None):
         """
         Gradient of the log-likelihood function at y given f, w.r.t variance parameter (t_noise)
 
@@ -169,7 +151,6 @@ class StudentT(NoiseDistribution):
         assert y.shape == link_f.shape
         e = y - link_f
         dlogpdf_dvar = self.v*(e**2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e**2))
-        #FIXME: Careful as this hasn't been chained with dlink_var, not sure if we want link functions on our parameters?! Shouldn't need them with constraints
         return np.sum(dlogpdf_dvar)
 
     def dlogpdf_dlink_dvar(self, link_f, y, extra_data=None):
@@ -214,17 +195,17 @@ class StudentT(NoiseDistribution):
                            )
         return d2logpdf_dlink2_dvar
 
-    def _laplace_gradients(self, y, f, extra_data=None):
-        #must be listed in same order as 'get_param_names'
-        derivs = ([self.dlogpdf_dvar(f, y, extra_data=extra_data)],
-                  [self.dlogpdf_dlink_dvar(f, y, extra_data=extra_data)],
-                  [self.d2logpdf_dlink2_dvar(f, y, extra_data=extra_data)]
-                 ) # lists as we might learn many parameters
-        # ensure we have gradients for every parameter we want to optimize
-        assert len(derivs[0]) == len(self._get_param_names())
-        assert len(derivs[1]) == len(self._get_param_names())
-        assert len(derivs[2]) == len(self._get_param_names())
-        return derivs
+    def dlogpdf_link_dtheta(self, f, y, extra_data=None):
+        dlogpdf_dvar = self.dlogpdf_link_dvar(f, y, extra_data=extra_data)
+        return np.asarray([[dlogpdf_dvar]])
+
+    def dlogpdf_dlink_dtheta(self, f, y, extra_data=None):
+        dlogpdf_dlink_dvar = self.dlogpdf_dlink_dvar(f, y, extra_data=extra_data)
+        return dlogpdf_dlink_dvar
+
+    def d2logpdf_dlink2_dtheta(self, f, y, extra_data=None):
+        d2logpdf_dlink2_dvar = self.d2logpdf_dlink2_dvar(f, y, extra_data=extra_data)
+        return d2logpdf_dlink2_dvar
 
     def _predictive_variance_analytical(self, mu, sigma, predictive_mean=None):
         """

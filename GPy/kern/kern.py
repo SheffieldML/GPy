@@ -79,15 +79,14 @@ class kern(Parameterized):
 
 
     def plot_ARD(self, fignum=None, ax=None, title='', legend=False):
-        """If an ARD kernel is present, it bar-plots the ARD parameters.
+        """If an ARD kernel is present, plot a bar representation using matplotlib
 
         :param fignum: figure number of the plot
         :param ax: matplotlib axis to plot on
-        :param title: 
-            title of the plot, 
+        :param title:
+            title of the plot,
             pass '' to not print a title
             pass None for a generic title
-
         """
         if ax is None:
             fig = pb.figure(fignum)
@@ -152,6 +151,13 @@ class kern(Parameterized):
         return ax
 
     def _transform_gradients(self, g):
+        """
+        Apply the transformations of the kernel so that the returned vector
+        represents the gradient in the transformed space (i.e. that given by
+        get_params_transformed())
+
+        :param g: the gradient vector for the current model, usually created by dK_dtheta
+        """
         x = self._get_params()
         [np.put(x, i, x * t.gradfactor(x[i])) for i, t in zip(self.constrained_indices, self.constraints)]
         [np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
@@ -162,7 +168,9 @@ class kern(Parameterized):
             return g
 
     def compute_param_slices(self):
-        """create a set of slices that can index the parameters of each part."""
+        """
+        Create a set of slices that can index the parameters of each part.
+        """
         self.param_slices = []
         count = 0
         for p in self.parts:
@@ -170,14 +178,19 @@ class kern(Parameterized):
             count += p.num_params
 
     def __add__(self, other):
-        """
-        Shortcut for `add`.
-        """
+        """ Overloading of the '+' operator. for more control, see self.add """
         return self.add(other)
 
     def add(self, other, tensor=False):
         """
-        Add another kernel to this one. Both kernels are defined on the same _space_
+        Add another kernel to this one.
+
+        If Tensor is False, both kernels are defined on the same _space_. then
+        the created kernel will have the same number of inputs as self and
+        other (which must be the same).
+
+        If Tensor is True, then the dimensions are stacked 'horizontally', so
+        that the resulting kernel has self.input_dim + other.input_dim
 
         :param other: the other kernel to be added
         :type other: GPy.kern
@@ -210,9 +223,7 @@ class kern(Parameterized):
         return newkern
 
     def __mul__(self, other):
-        """
-        Shortcut for `prod`.
-        """
+        """ Here we overload the '*' operator. See self.prod for more information"""
         return self.prod(other)
 
     def __pow__(self, other, tensor=False):
@@ -228,7 +239,7 @@ class kern(Parameterized):
         :param other: the other kernel to be added
         :type other: GPy.kern
         :param tensor: whether or not to use the tensor space (default is false).
-        :type tensor: bool 
+        :type tensor: bool
 
         """
         K1 = self.copy()
@@ -307,6 +318,17 @@ class kern(Parameterized):
         return sum([[name + '_' + n for n in k._get_param_names()] for name, k in zip(names, self.parts)], [])
 
     def K(self, X, X2=None, which_parts='all'):
+        """
+        Compute the kernel function.
+
+        :param X: the first set of inputs to the kernel
+        :param X2: (optional) the second set of arguments to the kernel. If X2
+                   is None, this is passed throgh to the 'part' object, which
+                   handles this as X2 == X.
+        :param which_parts: a list of booleans detailing whether to include
+                            each of the part functions. By default, 'all'
+                            indicates [True]*self.num_parts
+        """
         if which_parts == 'all':
             which_parts = [True] * self.num_parts
         assert X.shape[1] == self.input_dim
@@ -321,7 +343,7 @@ class kern(Parameterized):
     def dK_dtheta(self, dL_dK, X, X2=None):
         """
         Compute the gradient of the covariance function with respect to the parameters.
-        
+
         :param dL_dK: An array of gradients of the objective function with respect to the covariance function.
         :type dL_dK: Np.ndarray (num_samples x num_inducing)
         :param X: Observed data inputs
@@ -329,6 +351,7 @@ class kern(Parameterized):
         :param X2: Observed data inputs (optional, defaults to X)
         :type X2: np.ndarray (num_inducing x input_dim)
 
+        returns: dL_dtheta
         """
         assert X.shape[1] == self.input_dim
         target = np.zeros(self.num_params)
@@ -340,7 +363,7 @@ class kern(Parameterized):
         return self._transform_gradients(target)
 
     def dK_dX(self, dL_dK, X, X2=None):
-        """Compute the gradient of the covariance function with respect to X.
+        """Compute the gradient of the objective function with respect to X.
 
         :param dL_dK: An array of gradients of the objective function with respect to the covariance function.
         :type dL_dK: np.ndarray (num_samples x num_inducing)

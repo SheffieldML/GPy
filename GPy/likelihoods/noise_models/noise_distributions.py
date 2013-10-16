@@ -415,7 +415,10 @@ class NoiseDistribution(object):
         raise NotImplementedError
 
     def dlogpdf_link_dtheta(self, link_f, y, extra_data=None):
-        raise NotImplementedError
+        if len(self._get_params()) == 0:
+            pass
+        else:
+            raise NotImplementedError
 
     def dlogpdf_dlink_dtheta(self, link_f, y, extra_data=None):
         raise NotImplementedError
@@ -474,7 +477,7 @@ class NoiseDistribution(object):
         :type y: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
         :returns: derivative of log likelihood evaluated for this point
-        :rtype: float
+        :rtype: 1xN array
         """
         link_f = self.gp_link.transf(f)
         dlogpdf_dlink = self.dlogpdf_dlink(link_f, y, extra_data=extra_data)
@@ -494,8 +497,8 @@ class NoiseDistribution(object):
         :param y: data
         :type y: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
-        :returns: second derivative of log likelihood evaluated for this point
-        :rtype: float
+        :returns: second derivative of log likelihood evaluated for this point (diagonal only)
+        :rtype: 1xN array
         """
         link_f = self.gp_link.transf(f)
         d2logpdf_dlink2 = self.d2logpdf_dlink2(link_f, y, extra_data=extra_data)

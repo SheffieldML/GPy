@@ -63,7 +63,305 @@ def dparam_checkgrad(func, dfunc, params, args, constrain_positive=True, randomi
     return gradchecking
 
 
+from nose.tools import with_setup
+class TestNoiseModels(object):
+    """
+    Generic model checker
+    """
+    def setUp(self):
+        self.N = 5
+        self.D = 3
+        self.X = np.random.rand(self.N, self.D)*10
+
+        self.real_std = 0.1
+        noise = np.random.randn(*self.X[:, 0].shape)*self.real_std
+        self.Y = (np.sin(self.X[:, 0]*2*np.pi) + noise)[:, None]
+        self.f = np.random.rand(self.N, 1)
+
+        self.var = 0.2
+
+        self.var = np.random.rand(1)
+
+        #Make a bigger step as lower bound can be quite curved
+        self.step = 1e-3
+
+    def tearDown(self):
+        self.Y = None
+        self.f = None
+        self.X = None
+
+    def test_noise_models(self):
+        self.setUp()
+        """
+        Dictionary where we nest models we would like to check
+            Name: {
+                "model": model_instance,
+                "grad_params": {
+                    "names": [names_of_params_we_want, to_grad_check],
+                    "vals": [values_of_params, to_start_at],
+                    "constrain_positive": [boolean_values, of_whether_to_constrain]
+                    },
+                "laplace": boolean_of_whether_model_should_work_for_laplace
+                }
+        """
+        noise_models = {"Student_t_default": {
+                            "model": GPy.likelihoods.student_t(deg_free=5, sigma2=self.var),
+                            "grad_params": {
+                                "names": ["t_noise"],
+                                "vals": [self.var],
+                                "constrain_positive": [True]
+                                },
+                            "laplace": True
+                            },
+                        "Student_t_small_var": {
+                            "model": GPy.likelihoods.student_t(deg_free=5, sigma2=self.var),
+                            "grad_params": {
+                                "names": ["t_noise"],
+                                "vals": [0.01],
+                                "constrain_positive": [True]
+                                },
+                            "laplace": True
+                            },
+                        "Student_t_approx_gauss": {
+                            "model": GPy.likelihoods.student_t(deg_free=1000, sigma2=self.var),
+                            "grad_params": {
+                                "names": ["t_noise"],
+                                "vals": [self.var],
+                                "constrain_positive": [True]
+                                },
+                            "laplace": True
+                            },
+                        "Student_t_log": {
+                            "model": GPy.likelihoods.student_t(gp_link=gp_transformations.Log(), deg_free=5, sigma2=self.var),
+                            "grad_params": {
+                                "names": ["t_noise"],
+                                "vals": [self.var],
+                                "constrain_positive": [True]
+                                },
+                            "laplace": True
+                            },
+                        "Gaussian_default": {
+                            "model": GPy.likelihoods.gaussian(variance=self.var, D=self.D, N=self.N),
+                            "grad_params": {
+                                "names": ["noise_model_variance"],
+                                "vals": [self.var],
+                                "constrain_positive": [True]
+                                },
+                            "laplace": True
+                            },
+                        "Gaussian_log": {
+                            "model": GPy.likelihoods.gaussian(gp_link=gp_transformations.Log(), variance=self.var, D=self.D, N=self.N),
+                            "grad_params": {
+                                "names": ["noise_model_variance"],
+                                "vals": [self.var],
+                                "constrain_positive": [True]
+                                },
+                            "laplace": True
+                            }
+                        }
+
+        for name, attributes in noise_models.iteritems():
+            model = attributes["model"]
+            params = attributes["grad_params"]
+            param_vals = params["vals"]
+            param_names= params["names"]
+            constrain_positive = params["constrain_positive"]
+            laplace = attributes["laplace"]
+
+            if len(param_vals) > 1:
+                raise NotImplementedError("Cannot support multiple params in likelihood yet!")
+
+            #Required by all
+            #Normal derivatives
+            yield self.t_logpdf, model
+            yield self.t_dlogpdf_df, model
+            yield self.t_d2logpdf_df2, model
+            #Link derivatives
+            yield self.t_dlogpdf_dlink, model
+            yield self.t_d2logpdf_dlink2, model
+            yield self.t_d3logpdf_dlink3, model
+            if laplace:
+                #Laplace only derivatives
+                yield self.t_d3logpdf_df3, model
+                #Params
+                yield self.t_dlogpdf_dparams, model, param_vals
+                yield self.t_dlogpdf_df_dparams, model, param_vals
+                yield self.t_d2logpdf2_df2_dparams, model, param_vals
+                #Link params
+                yield self.t_dlogpdf_link_dparams, model, param_vals
+                yield self.t_dlogpdf_dlink_dparams, model, param_vals
+                yield self.t_d2logpdf2_dlink2_dparams, model, param_vals
+
+                #laplace likelihood gradcheck
+                yield self.t_laplace_fit_rbf_white, model, param_vals, param_names, constrain_positive
+
+        self.tearDown()
+
+    #############
+    # dpdf_df's #
+    #############
+    @with_setup(setUp, tearDown)
+    def t_logpdf(self, model):
+        print "\n{}".format(inspect.stack()[0][3])
+        np.testing.assert_almost_equal(
+                               np.log(model.pdf(self.f.copy(), self.Y.copy())),
+                               model.logpdf(self.f.copy(), self.Y.copy()))
+
+    @with_setup(setUp, tearDown)
+    def t_dlogpdf_df(self, model):
+        print "\n{}".format(inspect.stack()[0][3])
+        self.description = "\n{}".format(inspect.stack()[0][3])
+        logpdf = functools.partial(model.logpdf, y=self.Y)
+        dlogpdf_df = functools.partial(model.dlogpdf_df, y=self.Y)
+        grad = GradientChecker(logpdf, dlogpdf_df, self.f.copy(), 'g')
+        grad.randomize()
+        grad.checkgrad(verbose=1)
+        assert grad.checkgrad()
+
+    @with_setup(setUp, tearDown)
+    def t_d2logpdf_df2(self, model):
+        print "\n{}".format(inspect.stack()[0][3])
+        dlogpdf_df = functools.partial(model.dlogpdf_df, y=self.Y)
+        d2logpdf_df2 = functools.partial(model.d2logpdf_df2, y=self.Y)
+        grad = GradientChecker(dlogpdf_df, d2logpdf_df2, self.f.copy(), 'g')
+        grad.randomize()
+        grad.checkgrad(verbose=1)
+        assert grad.checkgrad()
+
+    @with_setup(setUp, tearDown)
+    def t_d3logpdf_df3(self, model):
+        print "\n{}".format(inspect.stack()[0][3])
+        d2logpdf_df2 = functools.partial(model.d2logpdf_df2, y=self.Y)
+        d3logpdf_df3 = functools.partial(model.d3logpdf_df3, y=self.Y)
+        grad = GradientChecker(d2logpdf_df2, d3logpdf_df3, self.f.copy(), 'g')
+        grad.randomize()
+        grad.checkgrad(verbose=1)
+        assert grad.checkgrad()
+
+    ##############
+    # df_dparams #
+    ##############
+    @with_setup(setUp, tearDown)
+    def t_dlogpdf_dparams(self, model, params):
+        print "\n{}".format(inspect.stack()[0][3])
+        assert (
+                dparam_checkgrad(model.logpdf, model.dlogpdf_dtheta,
+                    params, args=(self.f, self.Y), constrain_positive=True,
+                    randomize=False, verbose=True)
+                )
+
+    @with_setup(setUp, tearDown)
+    def t_dlogpdf_df_dparams(self, model, params):
+        print "\n{}".format(inspect.stack()[0][3])
+        assert (
+                dparam_checkgrad(model.dlogpdf_df, model.dlogpdf_df_dtheta,
+                    params, args=(self.f, self.Y), constrain_positive=True,
+                    randomize=False, verbose=True)
+                )
+
+    @with_setup(setUp, tearDown)
+    def t_d2logpdf2_df2_dparams(self, model, params):
+        print "\n{}".format(inspect.stack()[0][3])
+        assert (
+                dparam_checkgrad(model.d2logpdf_df2, model.d2logpdf_df2_dtheta,
+                    params, args=(self.f, self.Y), constrain_positive=True,
+                    randomize=False, verbose=True)
+                )
+
+    ################
+    # dpdf_dlink's #
+    ################
+    @with_setup(setUp, tearDown)
+    def t_dlogpdf_dlink(self, model):
+        print "\n{}".format(inspect.stack()[0][3])
+        logpdf = functools.partial(model.logpdf_link, y=self.Y)
+        dlogpdf_dlink = functools.partial(model.dlogpdf_dlink, y=self.Y)
+        grad = GradientChecker(logpdf, dlogpdf_dlink, self.f.copy(), 'g')
+        grad.randomize()
+        grad.checkgrad(verbose=1)
+        assert grad.checkgrad()
+
+    @with_setup(setUp, tearDown)
+    def t_d2logpdf_dlink2(self, model):
+        print "\n{}".format(inspect.stack()[0][3])
+        dlogpdf_dlink = functools.partial(model.dlogpdf_dlink, y=self.Y)
+        d2logpdf_dlink2 = functools.partial(model.d2logpdf_dlink2, y=self.Y)
+        grad = GradientChecker(dlogpdf_dlink, d2logpdf_dlink2, self.f.copy(), 'g')
+        grad.randomize()
+        grad.checkgrad(verbose=1)
+        assert grad.checkgrad()
+
+    @with_setup(setUp, tearDown)
+    def t_d3logpdf_dlink3(self, model):
+        print "\n{}".format(inspect.stack()[0][3])
+        d2logpdf_dlink2 = functools.partial(model.d2logpdf_dlink2, y=self.Y)
+        d3logpdf_dlink3 = functools.partial(model.d3logpdf_dlink3, y=self.Y)
+        grad = GradientChecker(d2logpdf_dlink2, d3logpdf_dlink3, self.f.copy(), 'g')
+        grad.randomize()
+        grad.checkgrad(verbose=1)
+        assert grad.checkgrad()
+
+    #################
+    # dlink_dparams #
+    #################
+    @with_setup(setUp, tearDown)
+    def t_dlogpdf_link_dparams(self, model, params):
+        print "\n{}".format(inspect.stack()[0][3])
+        assert (
+                dparam_checkgrad(model.logpdf_link, model.dlogpdf_link_dtheta,
+                    params, args=(self.f, self.Y), constrain_positive=True,
+                    randomize=False, verbose=True)
+                )
+
+    @with_setup(setUp, tearDown)
+    def t_dlogpdf_dlink_dparams(self, model, params):
+        print "\n{}".format(inspect.stack()[0][3])
+        assert (
+                dparam_checkgrad(model.dlogpdf_dlink, model.dlogpdf_dlink_dtheta,
+                    params, args=(self.f, self.Y), constrain_positive=True,
+                    randomize=False, verbose=True)
+                )
+
+    @with_setup(setUp, tearDown)
+    def t_d2logpdf2_dlink2_dparams(self, model, params):
+        print "\n{}".format(inspect.stack()[0][3])
+        assert (
+                dparam_checkgrad(model.d2logpdf_dlink2, model.d2logpdf_dlink2_dtheta,
+                    params, args=(self.f, self.Y), constrain_positive=True,
+                    randomize=False, verbose=True)
+                )
+
+    ################
+    # laplace test #
+    ################
+    @with_setup(setUp, tearDown)
+    def t_laplace_fit_rbf_white(self, model, param_vals, param_names, constrain_positive):
+        print "\n{}".format(inspect.stack()[0][3])
+        self.Y = self.Y/self.Y.max()
+        white_var = 0.001
+        kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1])
+        laplace_likelihood = GPy.likelihoods.Laplace(self.Y.copy(), model)
+        m = GPy.models.GPRegression(self.X, self.Y.copy(), kernel, likelihood=laplace_likelihood)
+        m.ensure_default_constraints()
+        m.constrain_fixed('white', white_var)
+
+        for param_num in range(len(param_names)):
+            name = param_names[param_num]
+            if constrain_positive[param_num]:
+                m.constrain_positive(name)
+            m[name] = param_vals[param_num]
+
+        m.randomize()
+        m.checkgrad(verbose=1, step=self.step)
+        print m
+        assert m.checkgrad(step=self.step)
+
+
 class LaplaceTests(unittest.TestCase):
+    """
+    Specific likelihood tests, not general enough for the above tests
+    """
+
     def setUp(self):
         self.N = 5
         self.D = 3
@@ -90,116 +388,6 @@ class LaplaceTests(unittest.TestCase):
         self.f = None
         self.X = None
 
-    def test_mass_logpdf(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        np.testing.assert_almost_equal(
-                               np.log(self.gauss.pdf(self.f.copy(), self.Y.copy())),
-                               self.gauss.logpdf(self.f.copy(), self.Y.copy()))
-
-
-    """ dGauss_df's """
-    def test_gaussian_dlogpdf_df(self):
-        #FIXME: Needs non-identity Link function
-        print "\n{}".format(inspect.stack()[0][3])
-        logpdf = functools.partial(self.gauss.logpdf, y=self.Y)
-        dlogpdf_df = functools.partial(self.gauss.dlogpdf_df, y=self.Y)
-        grad = GradientChecker(logpdf, dlogpdf_df, self.f.copy(), 'g')
-        grad.randomize()
-        grad.checkgrad(verbose=1)
-        self.assertTrue(grad.checkgrad())
-
-    def test_gaussian_d2logpdf_df2(self):
-        #FIXME: Needs non-identity Link function
-        print "\n{}".format(inspect.stack()[0][3])
-        dlogpdf_df = functools.partial(self.gauss.dlogpdf_df, y=self.Y)
-        d2logpdf_df2 = functools.partial(self.gauss.d2logpdf_df2, y=self.Y)
-        grad = GradientChecker(dlogpdf_df, d2logpdf_df2, self.f.copy(), 'g')
-        grad.randomize()
-        grad.checkgrad(verbose=1)
-        self.assertTrue(grad.checkgrad())
-
-    def test_gaussian_d3logpdf_df3(self):
-        #FIXME: Needs non-identity Link function
-        print "\n{}".format(inspect.stack()[0][3])
-        d2logpdf_df2 = functools.partial(self.gauss.d2logpdf_df2, y=self.Y)
-        d3logpdf_df3 = functools.partial(self.gauss.d3logpdf_df3, y=self.Y)
-        grad = GradientChecker(d2logpdf_df2, d3logpdf_df3, self.f.copy(), 'g')
-        grad.randomize()
-        grad.checkgrad(verbose=1)
-        self.assertTrue(grad.checkgrad())
-
-    def test_gaussian_dlogpdf_df_dvar(self):
-        #FIXME: Needs non-identity Link function
-        print "\n{}".format(inspect.stack()[0][3])
-        self.assertTrue(
-                dparam_checkgrad(self.gauss.dlogpdf_df, self.gauss.dlogpdf_df_dtheta,
-                    [self.var], args=(self.f, self.Y), constrain_positive=True,
-                    randomize=False, verbose=True)
-                )
-
-    def test_gaussian_d2logpdf2_df2_dvar(self):
-        #FIXME: Needs non-identity Link function
-        print "\n{}".format(inspect.stack()[0][3])
-        self.assertTrue(
-                dparam_checkgrad(self.gauss.d2logpdf_df2, self.gauss.d2logpdf_df2_dtheta,
-                    [self.var], args=(self.f, self.Y), constrain_positive=True,
-                    randomize=False, verbose=True)
-                )
-
-
-    """ dGauss_dlink's """
-    def test_gaussian_dlogpdf_dlink(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        logpdf = functools.partial(self.gauss.logpdf_link, y=self.Y)
-        dlogpdf_dlink = functools.partial(self.gauss.dlogpdf_dlink, y=self.Y)
-        grad = GradientChecker(logpdf, dlogpdf_dlink, self.f.copy(), 'g')
-        grad.randomize()
-        grad.checkgrad(verbose=1)
-        self.assertTrue(grad.checkgrad())
-
-    def test_gaussian_d2logpdf_dlink2(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        dlogpdf_dlink = functools.partial(self.gauss.dlogpdf_dlink, y=self.Y)
-        d2logpdf_dlink2 = functools.partial(self.gauss.d2logpdf_dlink2, y=self.Y)
-        grad = GradientChecker(dlogpdf_dlink, d2logpdf_dlink2, self.f.copy(), 'g')
-        grad.randomize()
-        grad.checkgrad(verbose=1)
-        self.assertTrue(grad.checkgrad())
-
-    def test_gaussian_d3logpdf_dlink3(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        d2logpdf_dlink2 = functools.partial(self.gauss.d2logpdf_dlink2, y=self.Y)
-        d3logpdf_dlink3 = functools.partial(self.gauss.d3logpdf_dlink3, y=self.Y)
-        grad = GradientChecker(d2logpdf_dlink2, d3logpdf_dlink3, self.f.copy(), 'g')
-        grad.randomize()
-        grad.checkgrad(verbose=1)
-        self.assertTrue(grad.checkgrad())
-
-    def test_gaussian_dlogpdf_dvar(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        self.assertTrue(
-                dparam_checkgrad(self.gauss.logpdf, self.gauss.dlogpdf_dtheta,
-                    [self.var], args=(self.f, self.Y), constrain_positive=True,
-                    randomize=False, verbose=True)
-                )
-
-    def test_gaussian_dlogpdf_dlink_dvar(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        self.assertTrue(
-                dparam_checkgrad(self.gauss.dlogpdf_dlink, self.gauss.dlogpdf_dlink_dtheta,
-                    [self.var], args=(self.f, self.Y), constrain_positive=True,
-                    randomize=False, verbose=True)
-                )
-
-    def test_gaussian_d2logpdf2_dlink2_dvar(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        self.assertTrue(
-                dparam_checkgrad(self.gauss.d2logpdf_dlink2, self.gauss.d2logpdf_dlink2_dtheta,
-                    [self.var], args=(self.f, self.Y), constrain_positive=True,
-                    randomize=False, verbose=True)
-                )
-
-
     """ Gradchecker fault """
     @unittest.expectedFailure
     def test_gaussian_d2logpdf_df2_2(self):
@@ -222,167 +410,6 @@ class LaplaceTests(unittest.TestCase):
         grad.randomize()
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
-
-    """ dStudentT_df's """
-    def test_studentt_dlogpdf_df(self):
-        #FIXME: Needs non-identity Link function
-        print "\n{}".format(inspect.stack()[0][3])
-        link = functools.partial(self.stu_t.logpdf, y=self.Y)
-        dlogpdf_df = functools.partial(self.stu_t.dlogpdf_df, y=self.Y)
-        grad = GradientChecker(link, dlogpdf_df, self.f.copy(), 'f')
-        grad.randomize()
-        grad.checkgrad(verbose=1)
-        self.assertTrue(grad.checkgrad())
-
-    def test_studentt_d2logpdf_df2(self):
-        #FIXME: Needs non-identity Link function
-        print "\n{}".format(inspect.stack()[0][3])
-        dlogpdf_df = functools.partial(self.stu_t.dlogpdf_df, y=self.Y)
-        d2logpdf_df2 = functools.partial(self.stu_t.d2logpdf_df2, y=self.Y)
-        grad = GradientChecker(dlogpdf_df, d2logpdf_df2, self.f.copy(), 'f')
-        grad.randomize()
-        grad.checkgrad(verbose=1)
-        self.assertTrue(grad.checkgrad())
-
-    def test_studentt_d3lik_d3f(self):
-        #FIXME: Needs non-identity Link function
-        print "\n{}".format(inspect.stack()[0][3])
-        d2logpdf_df2 = functools.partial(self.stu_t.d2logpdf_df2, y=self.Y)
-        d3logpdf_df3 = functools.partial(self.stu_t.d3logpdf_df3, y=self.Y)
-        grad = GradientChecker(d2logpdf_df2, d3logpdf_df3, self.f.copy(), 'f')
-        grad.randomize()
-        grad.checkgrad(verbose=1)
-        self.assertTrue(grad.checkgrad())
-
-    def test_studentt_dlogpdf_df_dvar(self):
-        #FIXME: Needs non-identity Link function
-        print "\n{}".format(inspect.stack()[0][3])
-        self.assertTrue(
-                dparam_checkgrad(self.stu_t.dlogpdf_df, self.stu_t.dlogpdf_df_dtheta,
-                    [self.var], args=(self.f.copy(), self.Y.copy()),
-                    constrain_positive=True, randomize=True, verbose=True)
-                )
-
-    def test_studentt_d2logpdf_df2_dvar(self):
-        #FIXME: Needs non-identity Link function
-        print "\n{}".format(inspect.stack()[0][3])
-        self.assertTrue(
-                dparam_checkgrad(self.stu_t.d2logpdf_df2, self.stu_t.d2logpdf_df2_dtheta,
-                    [self.var], args=(self.f.copy(), self.Y.copy()),
-                    constrain_positive=True, randomize=True, verbose=True)
-                )
-
-    """ dStudentT_dlink's """
-    def test_studentt_dlogpdf_dlink(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        logpdf = functools.partial(self.stu_t.logpdf, y=self.Y)
-        dlogpdf_dlink = functools.partial(self.stu_t.dlogpdf_dlink, y=self.Y)
-        grad = GradientChecker(logpdf, dlogpdf_dlink, self.f.copy(), 'f')
-        grad.randomize()
-        grad.checkgrad(verbose=1)
-        self.assertTrue(grad.checkgrad())
-
-    def test_studentt_d2logpdf_dlink2(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        dlogpdf_dlink = functools.partial(self.stu_t.dlogpdf_dlink, y=self.Y)
-        d2logpdf_dlink2 = functools.partial(self.stu_t.d2logpdf_dlink2, y=self.Y)
-        grad = GradientChecker(dlogpdf_dlink, d2logpdf_dlink2, self.f.copy(), 'f')
-        grad.randomize()
-        grad.checkgrad(verbose=1)
-        self.assertTrue(grad.checkgrad())
-
-    def test_studentt_d3logpdf_dlink3(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        d2logpdf_dlink2 = functools.partial(self.stu_t.d2logpdf_dlink2, y=self.Y)
-        d3logpdf_dlink3 = functools.partial(self.stu_t.d3logpdf_dlink3, y=self.Y)
-        grad = GradientChecker(d2logpdf_dlink2, d3logpdf_dlink3, self.f.copy(), 'f')
-        grad.randomize()
-        grad.checkgrad(verbose=1)
-        self.assertTrue(grad.checkgrad())
-
-    def test_studentt_dlogpdf_dvar(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        self.assertTrue(
-                dparam_checkgrad(self.stu_t.logpdf, self.stu_t.dlogpdf_dtheta,
-                    [self.var], args=(self.f.copy(), self.Y.copy()),
-                    constrain_positive=True, randomize=True, verbose=True)
-                )
-
-    def test_studentt_dlogpdf_dlink_dvar(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        self.assertTrue(
-                dparam_checkgrad(self.stu_t.dlogpdf_dlink, self.stu_t.dlogpdf_dlink_dtheta,
-                    [self.var], args=(self.f.copy(), self.Y.copy()),
-                    constrain_positive=True, randomize=True, verbose=True)
-                )
-
-    def test_studentt_d2logpdf_dlink2_dvar(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        self.assertTrue(
-                dparam_checkgrad(self.stu_t.d2logpdf_dlink2, self.stu_t.d2logpdf_dlink2_dtheta,
-                    [self.var], args=(self.f.copy(), self.Y.copy()),
-                    constrain_positive=True, randomize=True, verbose=True)
-                )
-
-
-    """ Grad check whole models (grad checking Laplace not just noise models """
-    def test_gauss_rbf(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        self.Y = self.Y/self.Y.max()
-        kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1])
-        gauss_laplace = GPy.likelihoods.Laplace(self.Y.copy(), self.gauss)
-        m = GPy.models.GPRegression(self.X, self.Y.copy(), kernel, likelihood=gauss_laplace)
-        m.ensure_default_constraints()
-        m.randomize()
-        m.checkgrad(verbose=1, step=self.step)
-        self.assertTrue(m.checkgrad(step=self.step))
-
-    def test_studentt_approx_gauss_rbf(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        self.Y = self.Y/self.Y.max()
-        self.stu_t = GPy.likelihoods.student_t(deg_free=1000, sigma2=self.var)
-        kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1])
-        stu_t_laplace = GPy.likelihoods.Laplace(self.Y.copy(), self.stu_t)
-        m = GPy.models.GPRegression(self.X, self.Y.copy(), kernel, likelihood=stu_t_laplace)
-        m.ensure_default_constraints()
-        m.constrain_positive('t_noise')
-        m.randomize()
-        m.checkgrad(verbose=1, step=self.step)
-        print m
-        self.assertTrue(m.checkgrad(step=self.step))
-
-    def test_studentt_rbf(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        self.Y = self.Y/self.Y.max()
-        white_var = 0.001
-        kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1])
-        stu_t_laplace = GPy.likelihoods.Laplace(self.Y.copy(), self.stu_t)
-        m = GPy.models.GPRegression(self.X, self.Y.copy(), kernel, likelihood=stu_t_laplace)
-        m.ensure_default_constraints()
-        m.constrain_positive('t_noise')
-        m.constrain_fixed('white', white_var)
-        m.randomize()
-        m.checkgrad(verbose=1, step=self.step)
-        print m
-        self.assertTrue(m.checkgrad(step=self.step))
-
-    """ With small variances its likely the implicit part isn't perfectly correct? """
-    @unittest.expectedFailure
-    def test_studentt_rbf_smallvar(self):
-        print "\n{}".format(inspect.stack()[0][3])
-        self.Y = self.Y/self.Y.max()
-        white_var = 0.001
-        kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1])
-        stu_t_laplace = GPy.likelihoods.Laplace(self.Y.copy(), self.stu_t)
-        m = GPy.models.GPRegression(self.X, self.Y.copy(), kernel, likelihood=stu_t_laplace)
-        m.ensure_default_constraints()
-        m.constrain_positive('t_noise')
-        m.constrain_fixed('white', white_var)
-        m['t_noise'] = 0.01
-        m.randomize()
-        m.checkgrad(verbose=1)
-        print m
-        self.assertTrue(m.checkgrad(step=self.step))
 
 if __name__ == "__main__":
     print "Running unit tests"

@@ -27,6 +27,14 @@ GPy.util.classification module
     :undoc-members:
     :show-inheritance:
 
+GPy.util.config module
+----------------------
+
+.. automodule:: GPy.util.config
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.util.datasets module
 ------------------------
 
@@ -87,6 +95,14 @@ GPy.util.multioutput module
 ---------------------------
 
 .. automodule:: GPy.util.multioutput
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.netpbmfile module
+--------------------------
+
+.. automodule:: GPy.util.netpbmfile
     :members:
     :undoc-members:
     :show-inheritance:

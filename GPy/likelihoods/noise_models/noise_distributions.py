@@ -399,16 +399,82 @@ class NoiseDistribution(object):
         """
         return sp.optimize.fmin_ncg(self._nlog_joint_predictive_scaled,x0=(mu,self.gp_link.transf(mu)),fprime=self._gradient_nlog_joint_predictive,fhess=self._hessian_nlog_joint_predictive,args=(mu,sigma),disp=False)
 
-    def logpdf(self, f, y, extra_data=None):
+    def pdf_link(self, link_f, y, extra_data=None):
+        raise NotImplementedError
+
+    def logpdf_link(self, link_f, y, extra_data=None):
+        raise NotImplementedError
+
+    def dlogpdf_dlink(self, link_f, y, extra_data=None):
+        raise NotImplementedError
+
+    def d2logpdf_dlink2(self, link_f, y, extra_data=None):
+        raise NotImplementedError
+
+    def d3logpdf_dlink3(self, link_f, y, extra_data=None):
+        raise NotImplementedError
+
+    def dlogpdf_link_dtheta(self, link_f, y, extra_data=None):
+        raise NotImplementedError
+
+    def dlogpdf_dlink_dtheta(self, link_f, y, extra_data=None):
+        raise NotImplementedError
+
+    def d2logpdf_dlink2_dtheta(self, link_f, y, extra_data=None):
+        raise NotImplementedError
+
+
+    def pdf(self, f, y, extra_data=None):
         """
-        Evaluates the link function link(f) then computes the log likelihood using it
+        Evaluates the link function link(f) then computes the likelihood (pdf) using it
+
+        .. math:
+            p(y|\\lambda(f))
+
+        :param f: latent variables f
+        :type f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: likelihood evaluated for this point
+        :rtype: float
         """
         link_f = self.gp_link.transf(f)
-        return self.logpdf_link(f, y, extra_data=extra_data)
+        return self.pdf_link(link_f, y, extra_data=extra_data)
+
+    def logpdf(self, f, y, extra_data=None):
+        """
+        Evaluates the link function link(f) then computes the log likelihood (log pdf) using it
+
+        .. math:
+            \\log p(y|\\lambda(f))
+
+        :param f: latent variables f
+        :type f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: log likelihood evaluated for this point
+        :rtype: float
+        """
+        link_f = self.gp_link.transf(f)
+        return self.logpdf_link(link_f, y, extra_data=extra_data)
 
     def dlogpdf_df(self, f, y, extra_data=None):
         """
-        TODO: Doc strings
+        Evaluates the link function link(f) then computes the derivative of log likelihood using it
+        Uses the Faa di Bruno's formula for the chain rule
+
+        .. math::
+            \\frac{d\\log p(y|\\lambda(f))}{df} = \\frac{d\\log p(y|\\lambda(f))}{d\\lambda(f)}\\frac{d\\lambda(f)}{df}
+
+        :param f: latent variables f
+        :type f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: derivative of log likelihood evaluated for this point
+        :rtype: float
         """
         link_f = self.gp_link.transf(f)
         dlogpdf_dlink = self.dlogpdf_dlink(link_f, y, extra_data=extra_data)
@@ -417,7 +483,19 @@ class NoiseDistribution(object):
 
     def d2logpdf_df2(self, f, y, extra_data=None):
         """
-        TODO: Doc strings
+        Evaluates the link function link(f) then computes the second derivative of log likelihood using it
+        Uses the Faa di Bruno's formula for the chain rule
+
+        .. math::
+            \\frac{d^{2}\\log p(y|\\lambda(f))}{df^{2}} = \\frac{d^{2}\\log p(y|\\lambda(f))}{d^{2}\\lambda(f)}\\left(\\frac{d\\lambda(f)}{df}\\right)^{2} + \\frac{d\\log p(y|\\lambda(f))}{d\\lambda(f)}\\frac{d^{2}\\lambda(f)}{df^{2}}
+
+        :param f: latent variables f
+        :type f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: second derivative of log likelihood evaluated for this point
+        :rtype: float
         """
         link_f = self.gp_link.transf(f)
         d2logpdf_dlink2 = self.d2logpdf_dlink2(link_f, y, extra_data=extra_data)
@@ -428,7 +506,19 @@ class NoiseDistribution(object):
 
     def d3logpdf_df3(self, f, y, extra_data=None):
         """
-        TODO: Doc strings
+        Evaluates the link function link(f) then computes the third derivative of log likelihood using it
+        Uses the Faa di Bruno's formula for the chain rule
+
+        .. math::
+            \\frac{d^{3}\\log p(y|\\lambda(f))}{df^{3}} = \\frac{d^{3}\\log p(y|\\lambda(f)}{d\\lambda(f)^{3}}\\left(\\frac{d\\lambda(f)}{df}\\right)^{3} + 3\\frac{d^{2}\\log p(y|\\lambda(f)}{d\\lambda(f)^{2}}\\frac{d\\lambda(f)}{df}\\frac{d^{2}\\lambda(f)}{df^{2}} + \\frac{d\\log p(y|\\lambda(f)}{d\\lambda(f)}\\frac{d^{3}\\lambda(f)}{df^{3}}
+
+        :param f: latent variables f
+        :type f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: third derivative of log likelihood evaluated for this point
+        :rtype: float
         """
         link_f = self.gp_link.transf(f)
         d3logpdf_dlink3 = self.d3logpdf_dlink3(link_f, y, extra_data=extra_data)
@@ -440,23 +530,33 @@ class NoiseDistribution(object):
         return chain_3(d3logpdf_dlink3, dlink_df, d2logpdf_dlink2, d2link_df2, dlogpdf_dlink, d3link_df3)
 
     def dlogpdf_dtheta(self, f, y, extra_data=None):
+        """
+        TODO: Doc strings
+        """
         link_f = self.gp_link.transf(f)
         return self.dlogpdf_link_dtheta(link_f, y, extra_data=extra_data)
 
     def dlogpdf_df_dtheta(self, f, y, extra_data=None):
+        """
+        TODO: Doc strings
+        """
         link_f = self.gp_link.transf(f)
         dlink_df = self.gp_link.dtransf_df(f)
         dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, extra_data=extra_data)
         return chain_1(dlogpdf_dlink_dtheta, dlink_df)
 
     def d2logpdf_df2_dtheta(self, f, y, extra_data=None):
+        """
+        TODO: Doc strings
+        """
         link_f = self.gp_link.transf(f)
         dlink_df = self.gp_link.dtransf_df(f)
-        d2link_df2 = self.gp_link.d2transf_df2(f) #FIXME: I THINK ITS THIS
+        d2link_df2 = self.gp_link.d2transf_df2(f)
         d2logpdf_dlink2_dtheta = self.d2logpdf_dlink2_dtheta(link_f, y, extra_data=extra_data)
         dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, extra_data=extra_data)
-        return chain_2(d2logpdf_dlink2_dtheta, dlink_df, dlogpdf_dlink_dtheta, d2link_df2)
+        #FIXME: Why isn't this chain_1?
         #return chain_1(d2logpdf_dlink2_dtheta, d2link_df2)
+        return chain_2(d2logpdf_dlink2_dtheta, dlink_df, dlogpdf_dlink_dtheta, d2link_df2)
 
     def _laplace_gradients(self, f, y, extra_data=None):
         #link_f = self.gp_link.transf(f)
@@ -508,14 +608,10 @@ class NoiseDistribution(object):
         q3 = np.vstack(q3)
         return pred_mean, pred_var, q1, q3
 
-
     def samples(self, gp):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 
         :param gp: latent variable
         """
-        pass
-
-
-
+        raise NotImplementedError

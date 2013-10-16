@@ -4,6 +4,7 @@ import GPy
 from GPy.models import GradientChecker
 import functools
 import inspect
+from GPy.likelihoods.noise_models import gp_transformations
 
 def dparam_partial(inst_func, *args):
     """
@@ -77,7 +78,7 @@ class LaplaceTests(unittest.TestCase):
 
         self.var = np.random.rand(1)
         self.stu_t = GPy.likelihoods.student_t(deg_free=5, sigma2=self.var)
-        self.gauss = GPy.likelihoods.gaussian(variance=self.var, D=self.D, N=self.N)
+        self.gauss = GPy.likelihoods.gaussian(gp_transformations.Log(), variance=self.var, D=self.D, N=self.N)
 
         #Make a bigger step as lower bound can be quite curved
         self.step = 1e-3
@@ -92,7 +93,7 @@ class LaplaceTests(unittest.TestCase):
     def test_mass_logpdf(self):
         print "\n{}".format(inspect.stack()[0][3])
         np.testing.assert_almost_equal(
-                               np.log(self.gauss._mass(self.f.copy(), self.Y.copy())),
+                               np.log(self.gauss.pdf(self.f.copy(), self.Y.copy())),
                                self.gauss.logpdf(self.f.copy(), self.Y.copy()))
 
 
@@ -149,7 +150,7 @@ class LaplaceTests(unittest.TestCase):
     """ dGauss_dlink's """
     def test_gaussian_dlogpdf_dlink(self):
         print "\n{}".format(inspect.stack()[0][3])
-        logpdf = functools.partial(self.gauss.logpdf, y=self.Y)
+        logpdf = functools.partial(self.gauss.logpdf_link, y=self.Y)
         dlogpdf_dlink = functools.partial(self.gauss.dlogpdf_dlink, y=self.Y)
         grad = GradientChecker(logpdf, dlogpdf_dlink, self.f.copy(), 'g')
         grad.randomize()

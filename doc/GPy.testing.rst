@@ -76,6 +76,14 @@ GPy.testing.mrd_tests module
     :undoc-members:
     :show-inheritance:
 
+GPy.testing.noise_distributions module
+--------------------------------------
+
+.. automodule:: GPy.testing.noise_distributions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.testing.prior_tests module
 ------------------------------
 

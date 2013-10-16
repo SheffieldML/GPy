@@ -68,7 +68,7 @@ class Gaussian(NoiseDistribution):
     def _predictive_variance_analytical(self,mu,sigma,predictive_mean=None):
         return 1./(1./self.variance + 1./sigma**2)
 
-    def _mass(self, link_f, y):
+    def pdf_link(self, link_f, y, extra_data=None):
         #FIXME: Careful now passing link_f in not gp (f)!
         #return std_norm_pdf( (self.gp_link.transf(gp)-obs)/np.sqrt(self.variance) )
         #Assumes no covariance, exp, sum, log for numerical stability
@@ -76,21 +76,26 @@ class Gaussian(NoiseDistribution):
         #return np.exp(np.sum(np.log(stats.norm.pdf(y, link_f, np.sqrt(self.variance)))))
         return np.exp(np.sum(np.log(stats.norm.pdf(y, link_f, np.sqrt(self.variance)))))
 
+    def _mass(self, link_f, y, extra_data=None):
+        NotImplementedError("Deprecated, now doing chain in noise_model.py for link function evaluation\
+                            Please negate your function and use pdf in noise_model.py, if implementing a likelihood\
+                            rederivate the derivative without doing the chain and put in logpdf, dlogpdf_dlink or\
+                            its derivatives")
     def _nlog_mass(self, link_f, y, extra_data=None):
-        NotImplementedError("Deprecated, now doing chain in likelihood.py for link function evaluation\
+        NotImplementedError("Deprecated, now doing chain in noise_model.py for link function evaluation\
                             Please negate your function and use logpdf in noise_model.py, if implementing a likelihood\
                             rederivate the derivative without doing the chain and put in logpdf, dlogpdf_dlink or\
                             its derivatives")
 
     def _dnlog_mass_dgp(self, link_f, y, extra_data=None):
-        NotImplementedError("Deprecated, now doing chain in likelihood.py for link function evaluation\
-                            Please negate your function and use logpdf in noise_model.py, if implementing a likelihood\
+        NotImplementedError("Deprecated, now doing chain in noise_model.py for link function evaluation\
+                            Please negate your function and use dlogpdf_df in noise_model.py, if implementing a likelihood\
                             rederivate the derivative without doing the chain and put in logpdf, dlogpdf_dlink or\
                             its derivatives")
 
     def _d2nlog_mass_dgp2(self, link_f, y, extra_data=None):
-        NotImplementedError("Deprecated, now doing chain in likelihood.py for link function evaluation\
-                            Please negate your function and use logpdf in noise_model.py, if implementing a likelihood\
+        NotImplementedError("Deprecated, now doing chain in noise_model.py for link function evaluation\
+                            Please negate your function and use d2logpdf_df2 in noise_model.py, if implementing a likelihood\
                             rederivate the derivative without doing the chain and put in logpdf, dlogpdf_dlink or\
                             its derivatives")
 

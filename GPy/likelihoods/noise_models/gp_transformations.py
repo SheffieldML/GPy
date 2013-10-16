@@ -80,6 +80,10 @@ class Probit(GPTransformation):
     def d2transf_df2(self,f):
         return -f * std_norm_pdf(f)
 
+    def d3transf_df3(self,f):
+        f2 = f**2
+        return -(1/(np.sqrt(2*np.pi)))*np.exp(-0.5*(f2))*(f2-1)
+
 class Log(GPTransformation):
     """
     .. math::
@@ -94,6 +98,9 @@ class Log(GPTransformation):
         return np.exp(f)
 
     def d2transf_df2(self,f):
+        return np.exp(f)
+
+    def d3transf_df3(self,f):
         return np.exp(f)
 
 class Log_ex_1(GPTransformation):

@@ -9,7 +9,7 @@ from GPy.util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
 import gp_transformations
 from noise_distributions import NoiseDistribution
 
-class Binomial(NoiseDistribution):
+class Bernoulli(NoiseDistribution):
     """
     Probit likelihood
     Y is expected to take values in {-1,1}
@@ -19,7 +19,7 @@ class Binomial(NoiseDistribution):
     $$
     """
     def __init__(self,gp_link=None,analytical_mean=False,analytical_variance=False):
-        super(Binomial, self).__init__(gp_link,analytical_mean,analytical_variance)
+        super(Bernoulli, self).__init__(gp_link,analytical_mean,analytical_variance)
 
     def _preprocess_values(self,Y):
         """
@@ -31,7 +31,7 @@ class Binomial(NoiseDistribution):
         Y_prep = Y.copy()
         Y1 = Y[Y.flatten()==1].size
         Y2 = Y[Y.flatten()==0].size
-        assert Y1 + Y2 == Y.size, 'Binomial likelihood is meant to be used only with outputs in {0,1}.'
+        assert Y1 + Y2 == Y.size, 'Bernoulli likelihood is meant to be used only with outputs in {0,1}.'
         Y_prep[Y.flatten() == 0] = -1
         return Y_prep
 

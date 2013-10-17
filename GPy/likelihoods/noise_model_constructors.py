@@ -4,9 +4,9 @@
 import numpy as np
 import noise_models
 
-def binomial(gp_link=None):
+def bernoulli(gp_link=None):
     """
-    Construct a binomial likelihood
+    Construct a bernoulli likelihood
 
     :param gp_link: a GPy gp_link function
     """
@@ -27,11 +27,12 @@ def binomial(gp_link=None):
         analytical_mean = False
         analytical_variance = False
 
-    return noise_models.binomial_noise.Binomial(gp_link,analytical_mean,analytical_variance)
+    return noise_models.bernoulli_noise.Bernoulli(gp_link,analytical_mean,analytical_variance)
 
 def exponential(gp_link=None):
+
     """
-    Construct a binomial likelihood
+    Construct a exponential likelihood
 
     :param gp_link: a GPy gp_link function
     """

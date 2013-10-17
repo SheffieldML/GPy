@@ -116,7 +116,7 @@ def toy_heaviside(seed=default_seed):
     Y[Y.flatten() == -1] = 0
 
     # Model definition
-    noise_model = GPy.likelihoods.binomial(GPy.likelihoods.noise_models.gp_transformations.Heaviside())
+    noise_model = GPy.likelihoods.bernoulli(GPy.likelihoods.noise_models.gp_transformations.Heaviside())
     likelihood = GPy.likelihoods.EP(Y,noise_model)
     m = GPy.models.GPClassification(data['X'], likelihood=likelihood)
 

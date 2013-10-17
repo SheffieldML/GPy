@@ -102,7 +102,7 @@ class Gaussian(NoiseDistribution):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
+        :param extra_data: extra_data not used in gaussian
         :returns: likelihood evaluated for this point
         :rtype: float
         """
@@ -121,11 +121,11 @@ class Gaussian(NoiseDistribution):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
+        :param extra_data: extra_data not used in gaussian
         :returns: log likelihood evaluated for this point
         :rtype: float
         """
-        assert link_f.shape == y.shape
+        assert np.asarray(link_f).shape == np.asarray(y).shape
         return -0.5*(np.sum((y-link_f)**2/self.variance) + self.ln_det_K + self.N*np.log(2.*np.pi))
 
     def dlogpdf_dlink(self, link_f, y, extra_data=None):
@@ -133,17 +133,17 @@ class Gaussian(NoiseDistribution):
         Gradient of the pdf at y, given link(f) w.r.t link(f)
 
         .. math::
-            \\frac{d \\ln p(y_{i}|f_{i})}{df} = \\frac{1}{\\sigma^{2}}(y_{i} - f_{i})
+            \\frac{d \\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)} = \\frac{1}{\\sigma^{2}}(y_{i} - \\lambda(f_{i}))
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
-        :returns: gradient of log likelihood evaluated at points
+        :param extra_data: extra_data not used in gaussian
+        :returns: gradient of log likelihood evaluated at points link(f)
         :rtype: Nx1 array
         """
-        assert link_f.shape == y.shape
+        assert np.asarray(link_f).shape == np.asarray(y).shape
         s2_i = (1.0/self.variance)
         grad = s2_i*y - s2_i*link_f
         return grad
@@ -151,24 +151,24 @@ class Gaussian(NoiseDistribution):
     def d2logpdf_dlink2(self, link_f, y, extra_data=None):
         """
         Hessian at y, given link_f, w.r.t link_f the hessian will be 0 unless i == j
-        i.e. second derivative _nlog_mass at y given f_{i} f_{j}  w.r.t f_{i} and f_{j}
+        i.e. second derivative logpdf at y given link(f_i) link(f_j)  w.r.t link(f_i) and link(f_j)
 
         .. math::
-            \\frac{d^{2} \\ln p(y_{i}|f_{i})}{d^{2}f} = -\\frac{1}{\\sigma^{2}}
+            \\frac{d^{2} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{2}f} = -\\frac{1}{\\sigma^{2}}
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
-        :returns: Diagonal of log hessian matrix (second derivative of log likelihood evaluated at points f)
+        :param extra_data: extra_data not used in gaussian
+        :returns: Diagonal of log hessian matrix (second derivative of log likelihood evaluated at points link(f))
         :rtype: Nx1 array
 
         .. Note::
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
-            (the distribution for y_{i} depends only on f_{i} not on f_{j!=i}
+            (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
         """
-        assert link_f.shape == y.shape
+        assert np.asarray(link_f).shape == np.asarray(y).shape
         hess = -(1.0/self.variance)*np.ones((self.N, 1))
         return hess
 
@@ -177,18 +177,18 @@ class Gaussian(NoiseDistribution):
         Third order derivative log-likelihood function at y given link(f) w.r.t link(f)
 
         .. math::
-            \\frac{d^{3} \\ln p(y_{i}|f_{i})}{d^{3}f} = 0
+            \\frac{d^{3} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{3}\\lambda(f)} = 0
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
-        :returns: third derivative of log likelihood evaluated at points f
+        :param extra_data: extra_data not used in gaussian
+        :returns: third derivative of log likelihood evaluated at points link(f)
         :rtype: Nx1 array
         """
-        assert link_f.shape == y.shape
-        d3logpdf_dlink3 = np.diagonal(0*self.I)[:, None] # FIXME: CAREFUL THIS MAY NOT WORK WITH MULTIDIMENSIONS?
+        assert np.asarray(link_f).shape == np.asarray(y).shape
+        d3logpdf_dlink3 = np.diagonal(0*self.I)[:, None]
         return d3logpdf_dlink3
 
     def dlogpdf_link_dvar(self, link_f, y, extra_data=None):
@@ -196,17 +196,17 @@ class Gaussian(NoiseDistribution):
         Gradient of the negative log-likelihood function at y given link(f), w.r.t variance parameter (noise_variance)
 
         .. math::
-            \\frac{d \\ln p(y_{i}|f_{i})}{d\\sigma^{2}} = \\frac{N}{2\\sigma^{2}} + \\frac{(y_{i} - f_{i})^{2}}{2\\sigma^{4}}
+            \\frac{d \\ln p(y_{i}|\\lambda(f_{i}))}{d\\sigma^{2}} = \\frac{N}{2\\sigma^{2}} + \\frac{(y_{i} - \\lambda(f_{i}))^{2}}{2\\sigma^{4}}
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
-        :returns: derivative of log likelihood evaluated at points f w.r.t variance parameter
+        :param extra_data: extra_data not used in gaussian
+        :returns: derivative of log likelihood evaluated at points link(f) w.r.t variance parameter
         :rtype: float
         """
-        assert link_f.shape == y.shape
+        assert np.asarray(link_f).shape == np.asarray(y).shape
         e = y - link_f
         s_4 = 1.0/(self.variance**2)
         dlik_dsigma = -0.5*self.N/self.variance + 0.5*s_4*np.dot(e.T, e)
@@ -217,17 +217,17 @@ class Gaussian(NoiseDistribution):
         Derivative of the dlogpdf_dlink w.r.t variance parameter (noise_variance)
 
         .. math::
-            \\frac{d}{d\\sigma^{2}}(\\frac{d \\ln p(y_{i}|f_{i})}{df}) = \\frac{1}{\\sigma^{4}}(-y_{i} + f_{i})
+            \\frac{d}{d\\sigma^{2}}(\\frac{d \\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)}) = \\frac{1}{\\sigma^{4}}(-y_{i} + \\lambda(f_{i}))
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
-        :returns: derivative of log likelihood evaluated at points f w.r.t variance parameter
+        :param extra_data: extra_data not used in gaussian
+        :returns: derivative of log likelihood evaluated at points link(f) w.r.t variance parameter
         :rtype: Nx1 array
         """
-        assert link_f.shape == y.shape
+        assert np.asarray(link_f).shape == np.asarray(y).shape
         s_4 = 1.0/(self.variance**2)
         dlik_grad_dsigma = -np.dot(s_4*self.I, y) + np.dot(s_4*self.I, link_f)
         return dlik_grad_dsigma
@@ -237,17 +237,17 @@ class Gaussian(NoiseDistribution):
         Gradient of the hessian (d2logpdf_dlink2) w.r.t variance parameter (noise_variance)
 
         .. math::
-            \\frac{d}{d\\sigma^{2}}(\\frac{d^{2} \\ln p(y_{i}|f_{i})}{d^{2}f}) = \\frac{1}{\\sigma^{4}}
+            \\frac{d}{d\\sigma^{2}}(\\frac{d^{2} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{2}\\lambda(f)}) = \\frac{1}{\\sigma^{4}}
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
-        :returns: derivative of log hessian evaluated at points f and f_j w.r.t variance parameter
+        :param extra_data: extra_data not used in gaussian
+        :returns: derivative of log hessian evaluated at points link(f_i) and link(f_j) w.r.t variance parameter
         :rtype: Nx1 array
         """
-        assert link_f.shape == y.shape
+        assert np.asarray(link_f).shape == np.asarray(y).shape
         s_4 = 1.0/(self.variance**2)
         d2logpdf_dlink2_dvar = np.diag(s_4*self.I)[:, None]
         return d2logpdf_dlink2_dvar

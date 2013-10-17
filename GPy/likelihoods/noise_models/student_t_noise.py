@@ -55,7 +55,7 @@ class StudentT(NoiseDistribution):
         :returns: likelihood evaluated for this point
         :rtype: float
         """
-        assert link_f.shape == y.shape
+        assert np.asarray(link_f).shape == np.asarray(y).shape
         e = y - link_f
         #Careful gamma(big_number) is infinity!
         objective = ((np.exp(gammaln((self.v + 1)*0.5) - gammaln(self.v * 0.5))
@@ -80,7 +80,7 @@ class StudentT(NoiseDistribution):
         :rtype: float
 
         """
-        assert link_f.shape == y.shape
+        assert np.asarray(link_f).shape == np.asarray(y).shape
         e = y - link_f
         objective = (+ gammaln((self.v + 1) * 0.5)
                      - gammaln(self.v * 0.5)
@@ -113,7 +113,7 @@ class StudentT(NoiseDistribution):
     def d2logpdf_dlink2(self, link_f, y, extra_data=None):
         """
         Hessian at y, given link(f), w.r.t link(f) the hessian will be 0 unless i == j
-        i.e. second derivative lik_function at y given f_{i} f_{j}  w.r.t f_{i} and f_{j}
+        i.e. second derivative logpdf at y given link(f_i) and link(f_j)  w.r.t link(f_i) and link(f_j)
 
         .. math::
             \\frac{d^{2} \\ln p(y_{i}|f_{i})}{d^{2}f} = \\frac{(v+1)((y_{i}-f_{i})^{2} - \\sigma^{2}v)}{((y_{i}-f_{i})^{2} + \\sigma^{2}v)^{2}}
@@ -128,7 +128,7 @@ class StudentT(NoiseDistribution):
 
         .. Note::
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
-            (the distribution for y_{i} depends only on f_{i} not on f_{j!=i}
+            (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
         """
         assert y.shape == link_f.shape
         e = y - link_f

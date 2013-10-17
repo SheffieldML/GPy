@@ -5,6 +5,7 @@ from GPy.models import GradientChecker
 import functools
 import inspect
 from GPy.likelihoods.noise_models import gp_transformations
+from functools import partial
 
 def dparam_partial(inst_func, *args):
     """
@@ -24,7 +25,7 @@ def dparam_partial(inst_func, *args):
         return inst_func(*args)
     return functools.partial(param_func, inst_func=inst_func, args=args)
 
-def dparam_checkgrad(func, dfunc, params, args, constrain_positive=True, randomize=False, verbose=False):
+def dparam_checkgrad(func, dfunc, params, args, constraints=None, randomize=False, verbose=False):
     """
     checkgrad expects a f: R^N -> R^1 and df: R^N -> R^N
     However if we are holding other parameters fixed and moving something else
@@ -50,8 +51,10 @@ def dparam_checkgrad(func, dfunc, params, args, constrain_positive=True, randomi
             grad = GradientChecker(lambda x: np.atleast_1d(partial_f(x))[f_ind],
                                    lambda x : np.atleast_1d(partial_df(x))[fixed_val],
                                    param, 'p')
-            if constrain_positive:
-                grad.constrain_positive('p')
+            #This is not general for more than one param...
+            if constraints is not None:
+                for constraint in constraints:
+                    constraint('p', grad)
             if randomize:
                 grad.randomize()
             print grad
@@ -77,6 +80,7 @@ class TestNoiseModels(object):
         noise = np.random.randn(*self.X[:, 0].shape)*self.real_std
         self.Y = (np.sin(self.X[:, 0]*2*np.pi) + noise)[:, None]
         self.f = np.random.rand(self.N, 1)
+        self.binary_Y = np.asarray(np.random.rand(self.N) > 0.5, dtype=np.int)[:, None]
 
         self.var = 0.2
 
@@ -92,6 +96,22 @@ class TestNoiseModels(object):
 
     def test_noise_models(self):
         self.setUp()
+
+        ####################################################
+        # Constraint wrappers so we can just list them off #
+        ####################################################
+        def constrain_negative(regex, model):
+            model.constrain_negative(regex)
+
+        def constrain_positive(regex, model):
+            model.constrain_positive(regex)
+
+        def constrain_bounded(regex, model, lower, upper):
+            """
+            Used like: partial(constrain_bounded, lower=0, upper=1)
+            """
+            model.constrain_bounded(regex, lower, upper)
+
         """
         Dictionary where we nest models we would like to check
             Name: {
@@ -99,9 +119,10 @@ class TestNoiseModels(object):
                 "grad_params": {
                     "names": [names_of_params_we_want, to_grad_check],
                     "vals": [values_of_params, to_start_at],
-                    "constrain_positive": [boolean_values, of_whether_to_constrain]
+                    "constrain": [constraint_wrappers, listed_here]
                     },
-                "laplace": boolean_of_whether_model_should_work_for_laplace
+                "laplace": boolean_of_whether_model_should_work_for_laplace,
+                "link_f_constraints": [constraint_wrappers, listed_here]
                 }
         """
         noise_models = {"Student_t_default": {
@@ -109,7 +130,7 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [self.var],
-                                "constrain_positive": [True]
+                                "constraints": [constrain_positive]
                                 },
                             "laplace": True
                             },
@@ -118,7 +139,7 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [1],
-                                "constrain_positive": [True]
+                                "constraints": [constrain_positive]
                                 },
                             "laplace": True
                             },
@@ -127,7 +148,7 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [0.01],
-                                "constrain_positive": [True]
+                                "constraints": [constrain_positive]
                                 },
                             "laplace": True
                             },
@@ -136,7 +157,7 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [self.var],
-                                "constrain_positive": [True]
+                                "constraints": [constrain_positive]
                                 },
                             "laplace": True
                             },
@@ -145,7 +166,7 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [self.var],
-                                "constrain_positive": [True]
+                                "constraints": [constrain_positive]
                                 },
                             "laplace": True
                             },
@@ -154,7 +175,7 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["noise_model_variance"],
                                 "vals": [self.var],
-                                "constrain_positive": [True]
+                                "constraints": [constrain_positive]
                                 },
                             "laplace": True
                             },
@@ -163,7 +184,7 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["noise_model_variance"],
                                 "vals": [self.var],
-                                "constrain_positive": [True]
+                                "constraints": [constrain_positive]
                                 },
                             "laplace": True
                             },
@@ -172,7 +193,7 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["noise_model_variance"],
                                 "vals": [self.var],
-                                "constrain_positive": [True]
+                                "constraints": [constrain_positive]
                                 },
                             "laplace": True
                             },
@@ -181,18 +202,42 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["noise_model_variance"],
                                 "vals": [self.var],
-                                "constrain_positive": [True]
+                                "constraints": [constrain_positive]
                                 },
                             "laplace": True
-                            }
+                            },
+                        "Bernoulli_default": {
+                            "model": GPy.likelihoods.bernoulli(),
+                            "link_f_constraints": [partial(constrain_bounded, lower=0, upper=1)],
+                            "laplace": True,
+                            "Y": self.binary_Y,
                         }
+                    }
 
         for name, attributes in noise_models.iteritems():
             model = attributes["model"]
-            params = attributes["grad_params"]
-            param_vals = params["vals"]
-            param_names= params["names"]
-            constrain_positive = params["constrain_positive"]
+            if "grad_params" in attributes:
+                params = attributes["grad_params"]
+                param_vals = params["vals"]
+                param_names= params["names"]
+                param_constraints = params["constraints"]
+            else:
+                params = []
+                param_vals = []
+                param_names = []
+                constrain_positive = []
+            if "link_f_constraints" in attributes:
+                link_f_constraints = attributes["link_f_constraints"]
+            else:
+                link_f_constraints = []
+            if "Y" in attributes:
+                Y = attributes["Y"].copy()
+            else:
+                Y = self.Y.copy()
+            if "f" in attributes:
+                f = attributes["f"].copy()
+            else:
+                f = self.f.copy()
             laplace = attributes["laplace"]
 
             if len(param_vals) > 1:
@@ -200,27 +245,27 @@ class TestNoiseModels(object):
 
             #Required by all
             #Normal derivatives
-            yield self.t_logpdf, model
-            yield self.t_dlogpdf_df, model
-            yield self.t_d2logpdf_df2, model
+            yield self.t_logpdf, model, Y, f
+            yield self.t_dlogpdf_df, model, Y, f
+            yield self.t_d2logpdf_df2, model, Y, f
             #Link derivatives
-            yield self.t_dlogpdf_dlink, model
-            yield self.t_d2logpdf_dlink2, model
+            yield self.t_dlogpdf_dlink, model, Y, f, link_f_constraints
+            yield self.t_d2logpdf_dlink2, model, Y, f, link_f_constraints
             if laplace:
                 #Laplace only derivatives
-                yield self.t_d3logpdf_df3, model
-                yield self.t_d3logpdf_dlink3, model
+                yield self.t_d3logpdf_df3, model, Y, f
+                yield self.t_d3logpdf_dlink3, model, Y, f, link_f_constraints
                 #Params
-                yield self.t_dlogpdf_dparams, model, param_vals
-                yield self.t_dlogpdf_df_dparams, model, param_vals
-                yield self.t_d2logpdf2_df2_dparams, model, param_vals
+                yield self.t_dlogpdf_dparams, model, Y, f, param_vals, param_constraints
+                yield self.t_dlogpdf_df_dparams, model, Y, f, param_vals, param_constraints
+                yield self.t_d2logpdf2_df2_dparams, model, Y, f, param_vals, param_constraints
                 #Link params
-                yield self.t_dlogpdf_link_dparams, model, param_vals
-                yield self.t_dlogpdf_dlink_dparams, model, param_vals
-                yield self.t_d2logpdf2_dlink2_dparams, model, param_vals
+                yield self.t_dlogpdf_link_dparams, model, Y, f, param_vals, param_constraints
+                yield self.t_dlogpdf_dlink_dparams, model, Y, f, param_vals, param_constraints
+                yield self.t_d2logpdf2_dlink2_dparams, model, Y, f, param_vals, param_constraints
 
                 #laplace likelihood gradcheck
-                yield self.t_laplace_fit_rbf_white, model, param_vals, param_names, constrain_positive
+                yield self.t_laplace_fit_rbf_white, model, self.X, Y, f, self.step, param_vals, param_names, param_constraints
 
         self.tearDown()
 
@@ -228,42 +273,42 @@ class TestNoiseModels(object):
     # dpdf_df's #
     #############
     @with_setup(setUp, tearDown)
-    def t_logpdf(self, model):
+    def t_logpdf(self, model, Y, f):
         print "\n{}".format(inspect.stack()[0][3])
         print model
         np.testing.assert_almost_equal(
-                               np.log(model.pdf(self.f.copy(), self.Y.copy())),
-                               model.logpdf(self.f.copy(), self.Y.copy()))
+                               np.log(model.pdf(f.copy(), Y.copy())),
+                               model.logpdf(f.copy(), Y.copy()))
 
     @with_setup(setUp, tearDown)
-    def t_dlogpdf_df(self, model):
+    def t_dlogpdf_df(self, model, Y, f):
         print "\n{}".format(inspect.stack()[0][3])
         self.description = "\n{}".format(inspect.stack()[0][3])
-        logpdf = functools.partial(model.logpdf, y=self.Y)
-        dlogpdf_df = functools.partial(model.dlogpdf_df, y=self.Y)
-        grad = GradientChecker(logpdf, dlogpdf_df, self.f.copy(), 'g')
+        logpdf = functools.partial(model.logpdf, y=Y)
+        dlogpdf_df = functools.partial(model.dlogpdf_df, y=Y)
+        grad = GradientChecker(logpdf, dlogpdf_df, f.copy(), 'g')
         grad.randomize()
         grad.checkgrad(verbose=1)
         print model
         assert grad.checkgrad()
 
     @with_setup(setUp, tearDown)
-    def t_d2logpdf_df2(self, model):
+    def t_d2logpdf_df2(self, model, Y, f):
         print "\n{}".format(inspect.stack()[0][3])
-        dlogpdf_df = functools.partial(model.dlogpdf_df, y=self.Y)
-        d2logpdf_df2 = functools.partial(model.d2logpdf_df2, y=self.Y)
-        grad = GradientChecker(dlogpdf_df, d2logpdf_df2, self.f.copy(), 'g')
+        dlogpdf_df = functools.partial(model.dlogpdf_df, y=Y)
+        d2logpdf_df2 = functools.partial(model.d2logpdf_df2, y=Y)
+        grad = GradientChecker(dlogpdf_df, d2logpdf_df2, f.copy(), 'g')
         grad.randomize()
         grad.checkgrad(verbose=1)
         print model
         assert grad.checkgrad()
 
     @with_setup(setUp, tearDown)
-    def t_d3logpdf_df3(self, model):
+    def t_d3logpdf_df3(self, model, Y, f):
         print "\n{}".format(inspect.stack()[0][3])
-        d2logpdf_df2 = functools.partial(model.d2logpdf_df2, y=self.Y)
-        d3logpdf_df3 = functools.partial(model.d3logpdf_df3, y=self.Y)
-        grad = GradientChecker(d2logpdf_df2, d3logpdf_df3, self.f.copy(), 'g')
+        d2logpdf_df2 = functools.partial(model.d2logpdf_df2, y=Y)
+        d3logpdf_df3 = functools.partial(model.d3logpdf_df3, y=Y)
+        grad = GradientChecker(d2logpdf_df2, d3logpdf_df3, f.copy(), 'g')
         grad.randomize()
         grad.checkgrad(verbose=1)
         print model
@@ -273,32 +318,32 @@ class TestNoiseModels(object):
     # df_dparams #
     ##############
     @with_setup(setUp, tearDown)
-    def t_dlogpdf_dparams(self, model, params):
+    def t_dlogpdf_dparams(self, model, Y, f, params, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
         assert (
                 dparam_checkgrad(model.logpdf, model.dlogpdf_dtheta,
-                    params, args=(self.f, self.Y), constrain_positive=True,
+                    params, args=(f, Y), constraints=param_constraints,
                     randomize=False, verbose=True)
                 )
 
     @with_setup(setUp, tearDown)
-    def t_dlogpdf_df_dparams(self, model, params):
+    def t_dlogpdf_df_dparams(self, model, Y, f, params, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
         assert (
                 dparam_checkgrad(model.dlogpdf_df, model.dlogpdf_df_dtheta,
-                    params, args=(self.f, self.Y), constrain_positive=True,
+                    params, args=(f, Y), constraints=param_constraints,
                     randomize=False, verbose=True)
                 )
 
     @with_setup(setUp, tearDown)
-    def t_d2logpdf2_df2_dparams(self, model, params):
+    def t_d2logpdf2_df2_dparams(self, model, Y, f, params, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
         assert (
                 dparam_checkgrad(model.d2logpdf_df2, model.d2logpdf_df2_dtheta,
-                    params, args=(self.f, self.Y), constrain_positive=True,
+                    params, args=(f, Y), constraints=param_constraints,
                     randomize=False, verbose=True)
                 )
 
@@ -306,33 +351,48 @@ class TestNoiseModels(object):
     # dpdf_dlink's #
     ################
     @with_setup(setUp, tearDown)
-    def t_dlogpdf_dlink(self, model):
+    def t_dlogpdf_dlink(self, model, Y, f, link_f_constraints):
         print "\n{}".format(inspect.stack()[0][3])
-        logpdf = functools.partial(model.logpdf_link, y=self.Y)
-        dlogpdf_dlink = functools.partial(model.dlogpdf_dlink, y=self.Y)
-        grad = GradientChecker(logpdf, dlogpdf_dlink, self.f.copy(), 'g')
+        logpdf = functools.partial(model.logpdf_link, y=Y)
+        dlogpdf_dlink = functools.partial(model.dlogpdf_dlink, y=Y)
+        grad = GradientChecker(logpdf, dlogpdf_dlink, f.copy(), 'g')
+
+        #Apply constraints to link_f values
+        for constraint in link_f_constraints:
+            constraint('g', grad)
+
+        grad.randomize()
+        print grad
+        grad.checkgrad(verbose=1)
+        assert grad.checkgrad()
+
+    @with_setup(setUp, tearDown)
+    def t_d2logpdf_dlink2(self, model, Y, f, link_f_constraints):
+        print "\n{}".format(inspect.stack()[0][3])
+        dlogpdf_dlink = functools.partial(model.dlogpdf_dlink, y=Y)
+        d2logpdf_dlink2 = functools.partial(model.d2logpdf_dlink2, y=Y)
+        grad = GradientChecker(dlogpdf_dlink, d2logpdf_dlink2, f.copy(), 'g')
+
+        #Apply constraints to link_f values
+        for constraint in link_f_constraints:
+            constraint('g', grad)
+
         grad.randomize()
         grad.checkgrad(verbose=1)
         print grad
         assert grad.checkgrad()
 
     @with_setup(setUp, tearDown)
-    def t_d2logpdf_dlink2(self, model):
+    def t_d3logpdf_dlink3(self, model, Y, f, link_f_constraints):
         print "\n{}".format(inspect.stack()[0][3])
-        dlogpdf_dlink = functools.partial(model.dlogpdf_dlink, y=self.Y)
-        d2logpdf_dlink2 = functools.partial(model.d2logpdf_dlink2, y=self.Y)
-        grad = GradientChecker(dlogpdf_dlink, d2logpdf_dlink2, self.f.copy(), 'g')
-        grad.randomize()
-        grad.checkgrad(verbose=1)
-        print grad
-        assert grad.checkgrad()
+        d2logpdf_dlink2 = functools.partial(model.d2logpdf_dlink2, y=Y)
+        d3logpdf_dlink3 = functools.partial(model.d3logpdf_dlink3, y=Y)
+        grad = GradientChecker(d2logpdf_dlink2, d3logpdf_dlink3, f.copy(), 'g')
 
-    @with_setup(setUp, tearDown)
-    def t_d3logpdf_dlink3(self, model):
-        print "\n{}".format(inspect.stack()[0][3])
-        d2logpdf_dlink2 = functools.partial(model.d2logpdf_dlink2, y=self.Y)
-        d3logpdf_dlink3 = functools.partial(model.d3logpdf_dlink3, y=self.Y)
-        grad = GradientChecker(d2logpdf_dlink2, d3logpdf_dlink3, self.f.copy(), 'g')
+        #Apply constraints to link_f values
+        for constraint in link_f_constraints:
+            constraint('g', grad)
+
         grad.randomize()
         grad.checkgrad(verbose=1)
         print grad
@@ -342,32 +402,32 @@ class TestNoiseModels(object):
     # dlink_dparams #
     #################
     @with_setup(setUp, tearDown)
-    def t_dlogpdf_link_dparams(self, model, params):
+    def t_dlogpdf_link_dparams(self, model, Y, f, params, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
         assert (
                 dparam_checkgrad(model.logpdf_link, model.dlogpdf_link_dtheta,
-                    params, args=(self.f, self.Y), constrain_positive=True,
+                    params, args=(f, Y), constraints=param_constraints,
                     randomize=False, verbose=True)
                 )
 
     @with_setup(setUp, tearDown)
-    def t_dlogpdf_dlink_dparams(self, model, params):
+    def t_dlogpdf_dlink_dparams(self, model, Y, f, params, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
         assert (
                 dparam_checkgrad(model.dlogpdf_dlink, model.dlogpdf_dlink_dtheta,
-                    params, args=(self.f, self.Y), constrain_positive=True,
+                    params, args=(f, Y), constraints=param_constraints,
                     randomize=False, verbose=True)
                 )
 
     @with_setup(setUp, tearDown)
-    def t_d2logpdf2_dlink2_dparams(self, model, params):
+    def t_d2logpdf2_dlink2_dparams(self, model, Y, f, params, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
         assert (
                 dparam_checkgrad(model.d2logpdf_dlink2, model.d2logpdf_dlink2_dtheta,
-                    params, args=(self.f, self.Y), constrain_positive=True,
+                    params, args=(f, Y), constraints=param_constraints,
                     randomize=False, verbose=True)
                 )
 
@@ -375,26 +435,26 @@ class TestNoiseModels(object):
     # laplace test #
     ################
     @with_setup(setUp, tearDown)
-    def t_laplace_fit_rbf_white(self, model, param_vals, param_names, constrain_positive):
+    def t_laplace_fit_rbf_white(self, model, X, Y, f, step, param_vals, param_names, constraints):
         print "\n{}".format(inspect.stack()[0][3])
-        self.Y = self.Y/self.Y.max()
+        #Normalize
+        Y = Y/Y.max()
         white_var = 0.001
-        kernel = GPy.kern.rbf(self.X.shape[1]) + GPy.kern.white(self.X.shape[1])
-        laplace_likelihood = GPy.likelihoods.Laplace(self.Y.copy(), model)
-        m = GPy.models.GPRegression(self.X, self.Y.copy(), kernel, likelihood=laplace_likelihood)
+        kernel = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
+        laplace_likelihood = GPy.likelihoods.Laplace(Y.copy(), model)
+        m = GPy.models.GPRegression(X.copy(), Y.copy(), kernel, likelihood=laplace_likelihood)
         m.ensure_default_constraints()
         m.constrain_fixed('white', white_var)
 
         for param_num in range(len(param_names)):
             name = param_names[param_num]
-            if constrain_positive[param_num]:
-                m.constrain_positive(name)
             m[name] = param_vals[param_num]
+            constraints[param_num](name, m)
 
         m.randomize()
-        m.checkgrad(verbose=1, step=self.step)
+        m.checkgrad(verbose=1, step=step)
         print m
-        assert m.checkgrad(step=self.step)
+        assert m.checkgrad(step=step)
 
 
 class LaplaceTests(unittest.TestCase):

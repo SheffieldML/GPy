@@ -93,6 +93,110 @@ class Bernoulli(NoiseDistribution):
         p = self.gp_link.transf(gp)
         return (obs/p + (1.-obs)/(1.-p))*self.gp_link.d2transf_df2(gp) + ((1.-obs)/(1.-p)**2-obs/p**2)*self.gp_link.dtransf_df(gp)
 
+    def pdf_link(self, link_f, y, extra_data=None):
+        """
+        Likelihood function given link(f)
+
+        .. math::
+            \\p(y_{i}|\\lambda(f_{i})) = \\lambda(f_{i})^{y_{i}}(1-f_{i})^{1-y_{i}}
+
+        :param link_f: latent variables link(f)
+        :type link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data not used in bernoulli
+        :returns: likelihood evaluated for this point
+        :rtype: float
+
+        .. Note:
+            Each y_{i} must be in {0,1}
+        """
+        assert np.asarray(link_f).shape == np.asarray(y).shape
+        objective = (link_f**y) * ((1.-link_f)**(1.-y))
+        return np.exp(np.sum(np.log(objective)))
+
+    def logpdf_link(self, link_f, y, extra_data=None):
+        """
+        Log Likelihood function given link(f)
+
+        .. math::
+            \\ln p(y_{i}|\\lambda(f_{i})) = y_{i}\\log\\lambda(f_{i}) + (1-y_{i})\\log (1-f_{i})
+
+        :param link_f: latent variables link(f)
+        :type link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data not used in bernoulli
+        :returns: log likelihood evaluated for this point
+        :rtype: float
+        """
+        assert np.asarray(link_f).shape == np.asarray(y).shape
+        objective = np.log(link_f**y) + np.log((1.-link_f)**(1.-y))
+        return np.sum(objective)
+
+    def dlogpdf_dlink(self, link_f, y, extra_data=None):
+        """
+        Gradient of the pdf at y, given link(f) w.r.t link(f)
+
+        .. math::
+            \\frac{d\\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)} = \\frac{y_{i}}{\\lambda(f_{i})} - \\frac{(1 - y_{i})}{(1 - \\lambda(f_{i}))}
+
+        :param link_f: latent variables link(f)
+        :type link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data not used in gaussian
+        :returns: gradient of log likelihood evaluated at points
+        :rtype: Nx1 array
+        """
+        assert np.asarray(link_f).shape == np.asarray(y).shape
+        grad = (y/link_f) - (1.-y)/(1-link_f)
+        return grad
+
+    def d2logpdf_dlink2(self, link_f, y, extra_data=None):
+        """
+        Hessian at y, given link_f, w.r.t link_f the hessian will be 0 unless i == j
+        i.e. second derivative logpdf at y given link(f_i) link(f_j)  w.r.t link(f_i) and link(f_j)
+
+
+        .. math::
+            \\frac{d^{2}\\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)^{2}} = \\frac{-y_{i}}{\\lambda(f)^{2}} - \\frac{(1-y_{i})}{(1-\\lambda(f))^{2}}
+
+        :param link_f: latent variables link(f)
+        :type link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data not used in gaussian
+        :returns: Diagonal of log hessian matrix (second derivative of log likelihood evaluated at points link(f))
+        :rtype: Nx1 array
+
+        .. Note::
+            Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
+            (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
+        """
+        assert np.asarray(link_f).shape == np.asarray(y).shape
+        d2logpdf_dlink2 = -y/(link_f**2) - (1-y)/((1-link_f)**2)
+        return d2logpdf_dlink2
+
+    def d3logpdf_dlink3(self, link_f, y, extra_data=None):
+        """
+        Third order derivative log-likelihood function at y given link(f) w.r.t link(f)
+
+        .. math::
+            \\frac{d^{3} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{3}\\lambda(f)} = \\frac{2y_{i}}{\\lambda(f)^{3}} - \\frac{2(1-y_{i}}{(1-\\lambda(f))^{3}}
+
+        :param link_f: latent variables link(f)
+        :type link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data not used in gaussian
+        :returns: third derivative of log likelihood evaluated at points link(f)
+        :rtype: Nx1 array
+        """
+        assert np.asarray(link_f).shape == np.asarray(y).shape
+        d3logpdf_dlink3 = 2*(y/(link_f**3) - (1-y)/((1-link_f)**3))
+        return d3logpdf_dlink3
+
     def _mean(self,gp):
         """
         Mass (or density) function

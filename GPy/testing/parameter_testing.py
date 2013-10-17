@@ -5,11 +5,13 @@ Created on 4 Sep 2013
 '''
 import unittest
 from GPy.kern.constructors import rbf, linear, white
-from GPy.models.gp_regression import GPRegression
 import numpy
 from GPy.models.bayesian_gplvm import BayesianGPLVM
-from GPy.core.parameter import Param, Parameterized
 from GPy.likelihoods.gaussian import Gaussian
+import pickle
+import os
+from GPy.core.parameterized import Parameterized
+from GPy.core.parameter import Param
 
 
 class Test(unittest.TestCase):
@@ -108,13 +110,22 @@ class Test(unittest.TestCase):
         self.parameter[''].unconstrain()
         self.parameter.X.constrain_positive()
         self.parameter.X[:,numpy.s_[0::2]].unconstrain_positive()
-        assert(numpy.alltrue(self.parameter._constraints.indices()[0] == numpy.r_[1:self.N*self.Q:2]))
+        assert(numpy.alltrue(self.parameter._constraints_.indices()[0] == numpy.r_[1:self.N*self.Q:2]))
 
     def testNdarrayFunc(self):
         assert(numpy.alltrue(self.parameter.X * self.parameter.X == self.X * self.X))
         assert(numpy.alltrue(self.parameter.X[0,:] * self.parameter.X[1,:] == self.X[0,:] * self.X[1,:]))
-        
-    
+
+    def testPickle(self):
+        fname = '/tmp/GPy_io_test.pickle'
+        m = self.parameter
+        m.X.fix()
+        self.parameter.pickle(fname)
+        with open(fname, 'r') as f:
+            m2 = pickle.load(f)
+        self.assertEqual(m.__str__(), m2.__str__()) 
+        self.assertEqual(m.X_v.__str__(), m2.X_v.__str__())
+        os.remove(fname)
 
 
 if __name__ == "__main__":
@@ -125,5 +136,6 @@ if __name__ == "__main__":
                            'Test.testSetParams',
                            'Test.testConstraints',
                            'Test.testSlicingSet',
+                           'Test.testPickle',
                            ]
     unittest.main()

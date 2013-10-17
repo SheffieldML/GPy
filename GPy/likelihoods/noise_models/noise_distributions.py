@@ -270,6 +270,7 @@ class NoiseDistribution(object):
     def _predictive_mean_numerical(self,mu,sigma):
         """
         Laplace approximation to the predictive mean: E(Y_star|Y) = E( E(Y_star|f_star, Y) )
+        if self.
 
         :param mu: cavity distribution mean
         :param sigma: cavity distribution standard deviation
@@ -541,32 +542,45 @@ class NoiseDistribution(object):
         """
         TODO: Doc strings
         """
-        link_f = self.gp_link.transf(f)
-        return self.dlogpdf_link_dtheta(link_f, y, extra_data=extra_data)
+        if len(self._get_param_names()) > 0:
+            link_f = self.gp_link.transf(f)
+            return self.dlogpdf_link_dtheta(link_f, y, extra_data=extra_data)
+        else:
+            #Is no parameters so return an empty array for its derivatives
+            return np.empty([1, 0])
 
     def dlogpdf_df_dtheta(self, f, y, extra_data=None):
         """
         TODO: Doc strings
         """
-        link_f = self.gp_link.transf(f)
-        dlink_df = self.gp_link.dtransf_df(f)
-        dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, extra_data=extra_data)
-        return chain_1(dlogpdf_dlink_dtheta, dlink_df)
+        if len(self._get_param_names()) > 0:
+            link_f = self.gp_link.transf(f)
+            dlink_df = self.gp_link.dtransf_df(f)
+            dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, extra_data=extra_data)
+            return chain_1(dlogpdf_dlink_dtheta, dlink_df)
+        else:
+            #Is no parameters so return an empty array for its derivatives
+            return np.empty([f.shape[0], 0])
 
     def d2logpdf_df2_dtheta(self, f, y, extra_data=None):
         """
         TODO: Doc strings
         """
-        link_f = self.gp_link.transf(f)
-        dlink_df = self.gp_link.dtransf_df(f)
-        d2link_df2 = self.gp_link.d2transf_df2(f)
-        d2logpdf_dlink2_dtheta = self.d2logpdf_dlink2_dtheta(link_f, y, extra_data=extra_data)
-        dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, extra_data=extra_data)
-        #FIXME: Why isn't this chain_1?
-        #return chain_1(d2logpdf_dlink2_dtheta, d2link_df2)
-        return chain_2(d2logpdf_dlink2_dtheta, dlink_df, dlogpdf_dlink_dtheta, d2link_df2)
+        if len(self._get_param_names()) > 0:
+            link_f = self.gp_link.transf(f)
+            dlink_df = self.gp_link.dtransf_df(f)
+            d2link_df2 = self.gp_link.d2transf_df2(f)
+            d2logpdf_dlink2_dtheta = self.d2logpdf_dlink2_dtheta(link_f, y, extra_data=extra_data)
+            dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, extra_data=extra_data)
+            #FIXME: Why isn't this chain_1?
+            #return chain_1(d2logpdf_dlink2_dtheta, d2link_df2)
+            return chain_2(d2logpdf_dlink2_dtheta, dlink_df, dlogpdf_dlink_dtheta, d2link_df2)
+        else:
+            #Is no parameters so return an empty array for its derivatives
+            return np.empty([f.shape[0], 0])
 
     def _laplace_gradients(self, f, y, extra_data=None):
+        #Bit nasty we recompute thesesome of these but it keeps it modular
         #link_f = self.gp_link.transf(f)
         #dlink_df = self.gp_link.dtransf_df(f)
         #d2link_df2 = self.gp_link.d2transf_df2(f)

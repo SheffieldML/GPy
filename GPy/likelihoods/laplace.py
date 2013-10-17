@@ -123,7 +123,9 @@ class Laplace(likelihood):
         dL_dfhat, I_KW_i = self._shared_gradients_components()
         dlik_dthetaL, dlik_grad_dthetaL, dlik_hess_dthetaL = self.noise_model._laplace_gradients(self.f_hat, self.data, extra_data=self.extra_data)
 
-        num_params = len(dlik_dthetaL)
+        #len(dlik_dthetaL)
+        num_params = len(self._get_param_names())
+        print num_params
         # make space for one derivative for each likelihood parameter
         dL_dthetaL = np.zeros(num_params)
         for thetaL_i in range(num_params):
@@ -138,6 +140,7 @@ class Laplace(likelihood):
             dL_dthetaL_imp = np.dot(dL_dfhat, dfhat_dthetaL)
             dL_dthetaL[thetaL_i] = dL_dthetaL_exp + dL_dthetaL_imp
 
+        print dL_dthetaL
         return dL_dthetaL
 
     def _compute_GP_variables(self):

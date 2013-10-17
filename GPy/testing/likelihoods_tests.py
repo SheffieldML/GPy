@@ -113,6 +113,15 @@ class TestNoiseModels(object):
                                 },
                             "laplace": True
                             },
+                        "Student_t_1_var": {
+                            "model": GPy.likelihoods.student_t(deg_free=5, sigma2=self.var),
+                            "grad_params": {
+                                "names": ["t_noise"],
+                                "vals": [1],
+                                "constrain_positive": [True]
+                                },
+                            "laplace": True
+                            },
                         "Student_t_small_var": {
                             "model": GPy.likelihoods.student_t(deg_free=5, sigma2=self.var),
                             "grad_params": {
@@ -157,6 +166,24 @@ class TestNoiseModels(object):
                                 "constrain_positive": [True]
                                 },
                             "laplace": True
+                            },
+                        "Gaussian_probit": {
+                            "model": GPy.likelihoods.gaussian(gp_link=gp_transformations.Probit(), variance=self.var, D=self.D, N=self.N),
+                            "grad_params": {
+                                "names": ["noise_model_variance"],
+                                "vals": [self.var],
+                                "constrain_positive": [True]
+                                },
+                            "laplace": True
+                            },
+                        "Gaussian_log_ex": {
+                            "model": GPy.likelihoods.gaussian(gp_link=gp_transformations.Log_ex_1(), variance=self.var, D=self.D, N=self.N),
+                            "grad_params": {
+                                "names": ["noise_model_variance"],
+                                "vals": [self.var],
+                                "constrain_positive": [True]
+                                },
+                            "laplace": True
                             }
                         }
 
@@ -179,10 +206,10 @@ class TestNoiseModels(object):
             #Link derivatives
             yield self.t_dlogpdf_dlink, model
             yield self.t_d2logpdf_dlink2, model
-            yield self.t_d3logpdf_dlink3, model
             if laplace:
                 #Laplace only derivatives
                 yield self.t_d3logpdf_df3, model
+                yield self.t_d3logpdf_dlink3, model
                 #Params
                 yield self.t_dlogpdf_dparams, model, param_vals
                 yield self.t_dlogpdf_df_dparams, model, param_vals
@@ -203,6 +230,7 @@ class TestNoiseModels(object):
     @with_setup(setUp, tearDown)
     def t_logpdf(self, model):
         print "\n{}".format(inspect.stack()[0][3])
+        print model
         np.testing.assert_almost_equal(
                                np.log(model.pdf(self.f.copy(), self.Y.copy())),
                                model.logpdf(self.f.copy(), self.Y.copy()))
@@ -216,6 +244,7 @@ class TestNoiseModels(object):
         grad = GradientChecker(logpdf, dlogpdf_df, self.f.copy(), 'g')
         grad.randomize()
         grad.checkgrad(verbose=1)
+        print model
         assert grad.checkgrad()
 
     @with_setup(setUp, tearDown)
@@ -226,6 +255,7 @@ class TestNoiseModels(object):
         grad = GradientChecker(dlogpdf_df, d2logpdf_df2, self.f.copy(), 'g')
         grad.randomize()
         grad.checkgrad(verbose=1)
+        print model
         assert grad.checkgrad()
 
     @with_setup(setUp, tearDown)
@@ -236,6 +266,7 @@ class TestNoiseModels(object):
         grad = GradientChecker(d2logpdf_df2, d3logpdf_df3, self.f.copy(), 'g')
         grad.randomize()
         grad.checkgrad(verbose=1)
+        print model
         assert grad.checkgrad()
 
     ##############
@@ -244,6 +275,7 @@ class TestNoiseModels(object):
     @with_setup(setUp, tearDown)
     def t_dlogpdf_dparams(self, model, params):
         print "\n{}".format(inspect.stack()[0][3])
+        print model
         assert (
                 dparam_checkgrad(model.logpdf, model.dlogpdf_dtheta,
                     params, args=(self.f, self.Y), constrain_positive=True,
@@ -253,6 +285,7 @@ class TestNoiseModels(object):
     @with_setup(setUp, tearDown)
     def t_dlogpdf_df_dparams(self, model, params):
         print "\n{}".format(inspect.stack()[0][3])
+        print model
         assert (
                 dparam_checkgrad(model.dlogpdf_df, model.dlogpdf_df_dtheta,
                     params, args=(self.f, self.Y), constrain_positive=True,
@@ -262,6 +295,7 @@ class TestNoiseModels(object):
     @with_setup(setUp, tearDown)
     def t_d2logpdf2_df2_dparams(self, model, params):
         print "\n{}".format(inspect.stack()[0][3])
+        print model
         assert (
                 dparam_checkgrad(model.d2logpdf_df2, model.d2logpdf_df2_dtheta,
                     params, args=(self.f, self.Y), constrain_positive=True,
@@ -279,6 +313,7 @@ class TestNoiseModels(object):
         grad = GradientChecker(logpdf, dlogpdf_dlink, self.f.copy(), 'g')
         grad.randomize()
         grad.checkgrad(verbose=1)
+        print grad
         assert grad.checkgrad()
 
     @with_setup(setUp, tearDown)
@@ -289,6 +324,7 @@ class TestNoiseModels(object):
         grad = GradientChecker(dlogpdf_dlink, d2logpdf_dlink2, self.f.copy(), 'g')
         grad.randomize()
         grad.checkgrad(verbose=1)
+        print grad
         assert grad.checkgrad()
 
     @with_setup(setUp, tearDown)
@@ -299,6 +335,7 @@ class TestNoiseModels(object):
         grad = GradientChecker(d2logpdf_dlink2, d3logpdf_dlink3, self.f.copy(), 'g')
         grad.randomize()
         grad.checkgrad(verbose=1)
+        print grad
         assert grad.checkgrad()
 
     #################
@@ -307,6 +344,7 @@ class TestNoiseModels(object):
     @with_setup(setUp, tearDown)
     def t_dlogpdf_link_dparams(self, model, params):
         print "\n{}".format(inspect.stack()[0][3])
+        print model
         assert (
                 dparam_checkgrad(model.logpdf_link, model.dlogpdf_link_dtheta,
                     params, args=(self.f, self.Y), constrain_positive=True,
@@ -316,6 +354,7 @@ class TestNoiseModels(object):
     @with_setup(setUp, tearDown)
     def t_dlogpdf_dlink_dparams(self, model, params):
         print "\n{}".format(inspect.stack()[0][3])
+        print model
         assert (
                 dparam_checkgrad(model.dlogpdf_dlink, model.dlogpdf_dlink_dtheta,
                     params, args=(self.f, self.Y), constrain_positive=True,
@@ -325,6 +364,7 @@ class TestNoiseModels(object):
     @with_setup(setUp, tearDown)
     def t_d2logpdf2_dlink2_dparams(self, model, params):
         print "\n{}".format(inspect.stack()[0][3])
+        print model
         assert (
                 dparam_checkgrad(model.d2logpdf_dlink2, model.d2logpdf_dlink2_dtheta,
                     params, args=(self.f, self.Y), constrain_positive=True,
@@ -379,7 +419,7 @@ class LaplaceTests(unittest.TestCase):
         self.gauss = GPy.likelihoods.gaussian(gp_transformations.Log(), variance=self.var, D=self.D, N=self.N)
 
         #Make a bigger step as lower bound can be quite curved
-        self.step = 1e-3
+        self.step = 1e-6
 
     def tearDown(self):
         self.stu_t = None
@@ -388,8 +428,6 @@ class LaplaceTests(unittest.TestCase):
         self.f = None
         self.X = None
 
-    """ Gradchecker fault """
-    @unittest.expectedFailure
     def test_gaussian_d2logpdf_df2_2(self):
         print "\n{}".format(inspect.stack()[0][3])
         self.Y = None

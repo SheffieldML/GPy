@@ -68,14 +68,6 @@ class Gaussian(NoiseDistribution):
     def _predictive_variance_analytical(self,mu,sigma,predictive_mean=None):
         return 1./(1./self.variance + 1./sigma**2)
 
-    def pdf_link(self, link_f, y, extra_data=None):
-        #FIXME: Careful now passing link_f in not gp (f)!
-        #return std_norm_pdf( (self.gp_link.transf(gp)-obs)/np.sqrt(self.variance) )
-        #Assumes no covariance, exp, sum, log for numerical stability
-        #return np.exp(np.sum(np.log(stats.norm.pdf(obs,self.gp_link.transf(gp),np.sqrt(self.variance)))))
-        #return np.exp(np.sum(np.log(stats.norm.pdf(y, link_f, np.sqrt(self.variance)))))
-        return np.exp(np.sum(np.log(stats.norm.pdf(y, link_f, np.sqrt(self.variance)))))
-
     def _mass(self, link_f, y, extra_data=None):
         NotImplementedError("Deprecated, now doing chain in noise_model.py for link function evaluation\
                             Please negate your function and use pdf in noise_model.py, if implementing a likelihood\
@@ -99,6 +91,25 @@ class Gaussian(NoiseDistribution):
                             rederivate the derivative without doing the chain and put in logpdf, dlogpdf_dlink or\
                             its derivatives")
 
+    def pdf_link(self, link_f, y, extra_data=None):
+        """
+        Likelihood function given link(f)
+
+        .. math::
+            \\ln p(y_{i}|\\lambda(f_{i})) = -\\frac{N \\ln 2\\pi}{2} - \\frac{\\ln |K|}{2} - \\frac{(y_{i} - \\lambda(f_{i}))^{T}\\sigma^{-2}(y_{i} - \\lambda(f_{i}))}{2}
+
+        :param link_f: latent variables link(f)
+        :type link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: likelihood evaluated for this point
+        :rtype: float
+        """
+        #Assumes no covariance, exp, sum, log for numerical stability
+        return np.exp(np.sum(np.log(stats.norm.pdf(y, link_f, np.sqrt(self.variance)))))
+
+
     def logpdf_link(self, link_f, y, extra_data=None):
         """
         Log likelihood function given link(f)
@@ -111,7 +122,7 @@ class Gaussian(NoiseDistribution):
         :param y: data
         :type y: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
-        :returns: likelihood evaluated for this point
+        :returns: log likelihood evaluated for this point
         :rtype: float
         """
         assert link_f.shape == y.shape
@@ -129,7 +140,7 @@ class Gaussian(NoiseDistribution):
         :param y: data
         :type y: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
-        :returns: gradient of negative likelihood evaluated at points
+        :returns: gradient of log likelihood evaluated at points
         :rtype: Nx1 array
         """
         assert link_f.shape == y.shape
@@ -150,7 +161,7 @@ class Gaussian(NoiseDistribution):
         :param y: data
         :type y: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
-        :returns: Diagonal of hessian matrix (second derivative of likelihood evaluated at points f)
+        :returns: Diagonal of log hessian matrix (second derivative of log likelihood evaluated at points f)
         :rtype: Nx1 array
 
         .. Note::
@@ -173,7 +184,7 @@ class Gaussian(NoiseDistribution):
         :param y: data
         :type y: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
-        :returns: third derivative of likelihood evaluated at points f
+        :returns: third derivative of log likelihood evaluated at points f
         :rtype: Nx1 array
         """
         assert link_f.shape == y.shape
@@ -192,7 +203,7 @@ class Gaussian(NoiseDistribution):
         :param y: data
         :type y: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
-        :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
+        :returns: derivative of log likelihood evaluated at points f w.r.t variance parameter
         :rtype: float
         """
         assert link_f.shape == y.shape
@@ -213,7 +224,7 @@ class Gaussian(NoiseDistribution):
         :param y: data
         :type y: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
-        :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
+        :returns: derivative of log likelihood evaluated at points f w.r.t variance parameter
         :rtype: Nx1 array
         """
         assert link_f.shape == y.shape
@@ -233,7 +244,7 @@ class Gaussian(NoiseDistribution):
         :param y: data
         :type y: Nx1 array
         :param extra_data: extra_data which is not used in student t distribution - not used
-        :returns: derivative of hessian evaluated at points f and f_j w.r.t variance parameter
+        :returns: derivative of log hessian evaluated at points f and f_j w.r.t variance parameter
         :rtype: Nx1 array
         """
         assert link_f.shape == y.shape

@@ -40,12 +40,36 @@ class StudentT(NoiseDistribution):
     def variance(self, extra_data=None):
         return (self.v / float(self.v - 2)) * self.sigma2
 
+    def pdf_link(self, link_f, y, extra_data=None):
+        """
+        Likelihood function given link(f)
+
+        .. math::
+            \\ln p(y_{i}|\\lambda(f_{i})) = \\frac{\\Gamma\\left(\\frac{v+1}{2}\\right)}{\\Gamma\\left(\\frac{v}{2}\\right)\\sqrt{v\\pi\\sigma^{2}}}\\left(1 + \\frac{1}{v}\\left(\\frac{(y_{i} - f_{i})^{2}}{\\sigma^{2}}\\right)\\right)^{\\frac{-v+1}{2}}
+
+        :param link_f: latent variables link(f)
+        :type link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data which is not used in student t distribution - not used
+        :returns: likelihood evaluated for this point
+        :rtype: float
+        """
+        assert link_f.shape == y.shape
+        e = y - link_f
+        #Careful gamma(big_number) is infinity!
+        objective = ((np.exp(gammaln((self.v + 1)*0.5) - gammaln(self.v * 0.5))
+                     / (np.sqrt(self.v * np.pi * self.sigma2)))
+                     * ((1 + (1./float(self.v))*((e**2)/float(self.sigma2)))**(-0.5*(self.v + 1)))
+                    )
+        return np.prod(objective)
+
     def logpdf_link(self, link_f, y, extra_data=None):
         """
         Log Likelihood Function given link(f)
 
         .. math::
-            \\ln p(y_{i}|f_{i}) = \\ln \\Gamma(\\frac{v+1}{2}) - \\ln \\Gamma(\\frac{v}{2})\\sqrt{v \\pi}\sigma - \\frac{v+1}{2}\\ln (1 + \\frac{1}{v}\\left(\\frac{y_{i} - f_{i}}{\\sigma}\\right)^2
+            \\ln p(y_{i}|f_{i}) = \\ln \\Gamma\\left(\\frac{v+1}{2}\\right) - \\ln \\Gamma\\left(\\frac{v}{2}\\right) - \\ln \\sqrt{v \\pi\\sigma^{2}} - \\frac{v+1}{2}\\ln \\left(1 + \\frac{1}{v}\\left(\\frac{(y_{i} - f_{i})^{2}}{\\sigma^{2}}\\right)\\right)
 
         :param link_f: latent variables (link(f))
         :type link_f: Nx1 array

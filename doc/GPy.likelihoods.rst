@@ -59,14 +59,6 @@ GPy.likelihoods.likelihood module
     :undoc-members:
     :show-inheritance:
 
-GPy.likelihoods.likelihood_functions module
--------------------------------------------
-
-.. automodule:: GPy.likelihoods.likelihood_functions
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 GPy.likelihoods.noise_model_constructors module
 -----------------------------------------------
 

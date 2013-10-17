@@ -52,10 +52,10 @@ GPy.testing.kernel_tests module
     :undoc-members:
     :show-inheritance:
 
-GPy.testing.laplace_tests module
---------------------------------
+GPy.testing.likelihoods_tests module
+------------------------------------
 
-.. automodule:: GPy.testing.laplace_tests
+.. automodule:: GPy.testing.likelihoods_tests
     :members:
     :undoc-members:
     :show-inheritance:
@@ -72,14 +72,6 @@ GPy.testing.mrd_tests module
 ----------------------------
 
 .. automodule:: GPy.testing.mrd_tests
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.testing.noise_distributions module
---------------------------------------
-
-.. automodule:: GPy.testing.noise_distributions
     :members:
     :undoc-members:
     :show-inheritance:

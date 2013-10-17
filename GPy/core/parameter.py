@@ -48,6 +48,9 @@ class Param(numpy.ndarray):
         obj._realshape_ = obj.shape
         obj._realsize_ = obj.size
         obj._realndim_ = obj.ndim
+        from index_operations import ParamDict
+        obj._tied_to_me_ = ParamDict(set)
+        obj._tied_to_ = []
         obj._original_ = True
         return obj    
     def __array_finalize__(self, obj):
@@ -58,6 +61,8 @@ class Param(numpy.ndarray):
         self._parent_ = getattr(obj, '_parent_', None)
         self._parent_index_ = getattr(obj, '_parent_index_', None)
         self._gradient_ = getattr(obj, '_gradient_', None)
+        self._tied_to_me_ = getattr(obj, '_tied_to_me_', None)
+        self._tied_to_ = getattr(obj, '_tied_to_', None)
         self._realshape_ = getattr(obj, '_realshape_', None)
         self._realsize_ = getattr(obj, '_realsize_', None)
         self._realndim_ = getattr(obj, '_realndim_', None)
@@ -220,17 +225,37 @@ class Param(numpy.ndarray):
                 self._parent_._get_original(self)[self._current_slice_] = param
         except ValueError:
             raise ValueError("Trying to tie {} with shape {} to {} with shape {}".format(self.name, self.shape, param.name, param.shape))            
-        self._parent_._add_tie(self, param)
+        
+        self._parent_._get_original(self)._tied_to_ += [param]
+        param._add_tie_listener(self)
+        self._parent_._set_fixed(param)
+#         self._parent_._add_tie(self, param)
 
-    def untie(self, *params):
+    def untie(self, *ties):
         """
-        :param params: parameters to untie from
-
-        remove ties to parameters given.
+        remove tie of this parameter to ties it was tied to.
         """
-        if len(params) == 0:
-            params = self._parent_._ties_.properties()
-        self._parent_._remove_tie(self, *params)
+        [t._remove_tie_listener(self) for t in self._tied_to_]
+        def set_index(tied_to,untie_from):
+            tied_to._current_slice_ = numpy.array(set(tied_to._raveled_index()) & set(untie_from._raveled_index()))
+            return tied_to
+        self._tied_to_ = [tied_to for tied_to in self._tied_to_ for untie_from in ties if tied_to._parent_index_ == untie_from._parent_index_ and set_index(tied_to)._current_slice_.size > 0]
+        self._parent_._set_unfixed(self)
+#         self._parent_._remove_tie(self, *params)
+    def _fire_changed(self):
+        for tied, ind in self._tied_to_me_.iteritems():
+            tied._on_change(self[list(ind)])
+    def _add_tie_listener(self, tied_to_me):
+        self._tied_to_me_[tied_to_me] |= set(self._raveled_index())
+    def _remove_tie_listener(self, to_remove):
+        for t in self._tied_to_me_.keys():
+            if t._parent_index_ == self._parent_index_:
+                self._tied_to_me_[t] &= set(t._raveled_index())
+    def _on_change(self, val):
+        if self._original_: # this happens when indexing created a copy of the array
+            self[:] = val
+        else:
+            self._parent_._get_original(self)[self._current_slice_] = val
     #===========================================================================
     # Prior Operations
     #===========================================================================
@@ -266,6 +291,7 @@ class Param(numpy.ndarray):
         return self.__getitem__(slice(start, stop))
     def __setitem__(self, *args, **kwargs):
         numpy.ndarray.__setitem__(self, *args, **kwargs)
+        self._fire_changed()
         self._parent_.parameters_changed()
     #===========================================================================
     # Index Operations:
@@ -330,7 +356,12 @@ class Param(numpy.ndarray):
     def __repr__(self, *args, **kwargs):
         return "\033[1m{x:s}\033[0;0m:\n".format(x=self.name)+super(Param, self).__repr__(*args,**kwargs)
     def _ties_for(self, rav_index):
-        return self._parent_._ties_for(self, rav_index)
+        ties = [[]] * numpy.size(rav_index)
+        for tied_to in self._tied_to_:
+            for t in tied_to._tied_to_me_.iterkeys():
+                if t._parent_index_ == self._parent_index_:
+                    [ties.__setitem__(i, ties[i] + [tied_to]) for i in t._raveled_index()]
+        return ties
     def _constraints_for(self, rav_index):
         return self._parent_._constraints_for(self, rav_index)
     def _indices(self, slice_index=None):
@@ -367,16 +398,9 @@ class Param(numpy.ndarray):
         if lc is None: lc = self._max_len_names(constr_matrix, __constraints_name__)
         if lx is None: lx = self._max_len_values()
         if li is None: li = self._max_len_index(self._indices())
-        if lt is None: lt = self._max_len_names(ties[0], __tie_name__)
-        from index_operations import ParamDict
-        keep_track_of_broadcasting = ParamDict()
-        def tie_broadcasting(tie):
-            if tie in keep_track_of_broadcasting:
-                return keep_track_of_broadcasting[tie].next()
-            else:
-                pass
+        if lt is None: lt = self._max_len_names([t._short() for ti in ties for t in ti], __tie_name__)
         header = "  {i:^{2}s}  |  \033[1m{x:^{1}s}\033[0;0m  |  {c:^{0}s}  |  {t:^{3}s}".format(lc,lx,li,lt, x=self.name, c=__constraints_name__, i=__index_name__, t=__tie_name__) # nice header for printing
-        return "\n".join([header]+["  {i!s:^{3}s}  |  {x: >{1}.{2}G}  |  {c:^{0}s}  |  {t:^{4}}  ".format(lc,lx,__precision__,li,lt, x=x, c=" ".join(map(str,c)), t=" ".join([tie._short() for tie in t]), i=i) for i,x,c,t in itertools.izip(indices,self.flat,constr_matrix,ties[0])]) # return all the constraints with right indices
+        return "\n".join([header]+["  {i!s:^{3}s}  |  {x: >{1}.{2}G}  |  {c:^{0}s}  |  {t:^{4}}  ".format(lc,lx,__precision__,li,lt, x=x, c=" ".join(map(str,c)), t=" ".join([tie._short() for tie in t]), i=i) for i,x,c,t in itertools.izip(indices,self.flat,constr_matrix,ties)]) # return all the constraints with right indices
         #except: return super(Param, self).__str__()
 
 class ParamConcatenation(object):
@@ -480,7 +504,7 @@ if __name__ == '__main__':
     m[".*variance"].constrain_positive()
     print "constraining rbf"
     m.rbf.constrain_positive()
-    m.q_variance[:,[0,2]].tie_to(m.rbf_l)
+    m.q_variance[:,:2].tie_to(m.rbf_l)
     #m.q_v.tie_to(m.rbf_v)
 #     m.rbf_l.tie_to(m.rbf_va)
     # pt = numpy.array(params._get_params_transformed())

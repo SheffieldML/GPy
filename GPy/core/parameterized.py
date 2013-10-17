@@ -7,7 +7,7 @@ import copy
 import cPickle
 from parameter import ParamConcatenation, Param
 from index_operations import ParameterIndexOperations,\
-    TieIndexOperations, index_empty
+    index_empty
 import itertools
 from re import compile, _pattern_type
 import sys
@@ -80,7 +80,7 @@ class Parameterized(object):
     """
     def __init__(self):
         self._constraints_ = ParameterIndexOperations()
-        self._ties_ = TieIndexOperations(self)
+        #self._ties_ = TieIndexOperations(self)
         self._ties_fixes_ = None
         self._in_init_ = True
         if not hasattr(self, "_parameters_"):
@@ -214,7 +214,7 @@ class Parameterized(object):
                 self._ties_fixes_[f] = FIXED
             if fixed == __fixed__:
                 self._ties_fixes_[ind] = FIXED
-        if numpy.all(self._ties_fixes_):
+        if numpy.all(self._ties_fixes_): # ==UNFIXED
             self._ties_fixes_ = None
         self.parameters_changed()
     #===========================================================================
@@ -263,47 +263,55 @@ class Parameterized(object):
     #===========================================================================
     # Handle ties:
     #===========================================================================
-    def _add_tie(self, param, tied_to):
-        # tie param to tie_to, if the values match (with broadcasting)
-        self._remove_tie(param) # delete if multiple ties should be allowed
-        f, _ = self._ties_.add(param, tied_to)
+    def _set_fixed(self, param_or_index):
         if self._ties_fixes_ is None: self._ties_fixes_ = numpy.ones(self._parameter_size_, dtype=bool)
-        self._ties_fixes_[f] = False
-    def _remove_tie(self, param, *params):
-        # remove the tie from param to all *params (can be None, so all ties get deleted for param)
-        if len(params) == 0:
-            params = self._ties_.properties()
-        for p in params: 
-            _, t = self._ties_.remove(param, p)
-            self._ties_fixes_[t] = True
-        if numpy.all(self._ties_fixes_): self._ties_fixes_ = None
-    def _ties_iter_items(self, param):
-        for tied_to, ind in self._ties_.iter_from_items():
-            ind = self._backtranslate_index(param, ind)
-            if not index_empty(ind):
-                yield tied_to, ind
-    def _ties_iter(self, param):
-        for constr, _ in self._ties_iter_items(param):
-            yield constr
-    def _ties_iter_indices(self, param):
-        for _, ind in self._ties_iter_items(param):
-            yield ind
-    def _ties_for(self, param, rav_index):
-        return self._ties_.from_to_for(rav_index+self._offset(param))
+        try:
+            param_or_index = self._raveled_index_for(param_or_index)
+        except AttributeError:
+            self._ties_fixes_[param_or_index] = FIXED
+    def _set_unfixed(self, param_or_index):
+        if self._ties_fixes_ is None: self._ties_fixes_ = numpy.ones(self._parameter_size_, dtype=bool)
+        try:
+            param_or_index = self._raveled_index_for(param_or_index)
+        except AttributeError:
+            self._ties_fixes_[param_or_index] = UNFIXED
+#     def _add_tie(self, param, tied_to):
+#         # tie param to tie_to, if the values match (with broadcasting)
+#         self._remove_tie(param) # delete if multiple ties should be allowed
+#         f, _ = self._ties_.add(param, tied_to)
+#         if self._ties_fixes_ is None: self._ties_fixes_ = numpy.ones(self._parameter_size_, dtype=bool)
+#         self._ties_fixes_[f] = False
+#     def _remove_tie(self, param, *params):
+#         # remove the tie from param to all *params (can be None, so all ties get deleted for param)
+#         if len(params) == 0:
+#             params = self._ties_.properties()
+#         for p in params: 
+#             _, t = self._ties_.remove(param, p)
+#             self._ties_fixes_[t] = True
+#         if numpy.all(self._ties_fixes_): self._ties_fixes_ = None # ==UNFIXED
+#     def _ties_iter_items(self, param):
+#         for tied_to, ind in self._ties_.iter_from_items():
+#             ind = self._backtranslate_index(param, ind)
+#             if not index_empty(ind):
+#                 yield tied_to, ind
+#     def _ties_iter(self, param):
+#         for constr, _ in self._ties_iter_items(param):
+#             yield constr
+#     def _ties_iter_indices(self, param):
+#         for _, ind in self._ties_iter_items(param):
+#             yield ind
+#     def _ties_for(self, param, rav_index):
+#         return self._ties_.from_to_for(rav_index+self._offset(param))
     #===========================================================================
     # Fixing parameters:
     #===========================================================================
     def _fix(self, param, warning=True):
         f = self._add_constrain(param, __fixed__, warning)
-        if self._ties_fixes_ is None: self._ties_fixes_ = numpy.ones(self._parameter_size_, dtype=bool)
-        self._ties_fixes_[f] = False
+        self._set_fixed(f)
     def _unfix(self, param):
         if self._ties_fixes_ is not None:
-            self._remove_constrain(param, __fixed__)
-            ind = self._raveled_index_for(param)
-            self._ties_fixes_[ind] = UNFIXED
-            if numpy.all(self._ties_fixes_==UNFIXED): self._ties_fixes_ = None
-            self._handle_ties()
+            f = self._remove_constrain(param, __fixed__)
+            self._set_unfixed(f)
     #===========================================================================
     # Convenience for fixed, tied checking of parameter:
     #===========================================================================
@@ -424,7 +432,7 @@ class Parameterized(object):
         constrs = self._constrs; ts = self._ts
         cl = max([len(str(x)) if x else 0 for x in constrs  + ["Constraint"]])
         tl = max([len(str(x)) if x else 0 for x in ts + ["Tied to"]])
-        format_spec = "  \033[1m{{p.name:^{0}s}}\033[0;0m  |  {{p._desc:^{1}s}}  |  {{const:^{2}s}}  |  {{t:^{2}s}}".format(nl, sl, cl)
+        format_spec = "  \033[1m{{p.name:^{0}s}}\033[0;0m  |  {{p._desc:^{1}s}}  |  {{const:^{2}s}}  |  {{t:^{3}s}}".format(nl, sl, cl, tl)
         to_print = [format_spec.format(p=p, const=c, t=t) for p, c, t in itertools.izip(self._parameters_, constrs, ts)]
         sep = '-'*(nl+sl+cl+tl+8*2+3)
         if header:

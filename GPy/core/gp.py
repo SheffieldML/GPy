@@ -25,22 +25,18 @@ class GP(GPBase):
     """
     def __init__(self, X, likelihood, kernel, normalize_X=False):
         GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
-        self._set_params(self._get_params())
+        #self._set_params(self._get_params())
 
     def getstate(self):
         return GPBase.getstate(self)
 
     def setstate(self, state):
         GPBase.setstate(self, state)
-        self._set_params(self._get_params())
+        #self._set_params(self._get_params())
 
-    def _set_params(self, p):
-        self.kern._set_params_transformed(p[:self.kern.num_params_transformed()])
-        self.likelihood._set_params(p[self.kern.num_params_transformed():])
-
+    def parameters_changed(self):
         self.K = self.kern.K(self.X)
         self.K += self.likelihood.covariance_matrix
-
         self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
 
         # the gradient of the likelihood wrt the covariance matrix
@@ -102,6 +98,7 @@ class GP(GPBase):
         Note, we use the chain rule: dL_dtheta = dL_dK * d_K_dtheta
         """
         #return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+        
         if not isinstance(self.likelihood,EP):
             tmp = np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
         else:

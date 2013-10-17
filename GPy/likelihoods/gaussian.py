@@ -31,8 +31,10 @@ class Gaussian(likelihood):
 
         self.set_data(data)
 
-        self._variance = np.asarray(variance) + 1.
-        self._set_params(np.asarray(variance))
+        self._variance = np.asarray(variance) + 1
+        self.variance = np.asarray(variance)
+        self.set_as_parameter(noise_variance=self.variance)
+#         self._set_params(np.asarray(variance))
 
         super(Gaussian, self).__init__()
 
@@ -50,24 +52,24 @@ class Gaussian(likelihood):
             self.trYYT = np.sum(np.square(self.Y))
             self.YYT_factor = self.Y
 
-    def _get_params(self):
-        return np.asarray(self._variance)
-
-    def _get_param_names(self):
-        return ["noise_variance"]
-
-    def _set_params(self, x):
-        x = np.float64(x)
-        if np.all(self._variance != x):
-            if x == 0.:#special case of zero noise
+#     def _get_params(self):
+#         return np.asarray(self._variance)
+# 
+#     def _get_param_names(self):
+#         return ["noise_variance"]
+# 
+#     def _set_params(self, x):
+    def parameters_changed(self):
+        if np.any(self._variance != self.variance):
+            if np.all(self.variance == 0.):#special case of zero noise
                 self.precision = np.inf
                 self.V = None
             else:
-                self.precision = 1. / x
+                self.precision = 1. / self.variance
                 self.V = (self.precision) * self.Y
                 self.VVT_factor = self.precision * self.YYT_factor
-            self.covariance_matrix = np.eye(self.N) * x
-            self._variance = x
+            self.covariance_matrix = np.eye(self.N) * self.variance
+            self._variance = self.variance
 
     def predictive_values(self, mu, var, full_cov):
         """

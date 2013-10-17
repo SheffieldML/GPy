@@ -22,15 +22,17 @@ class Exponential(Kernpart):
     :type lengthscale: array or list of the appropriate size (or float if there is only one lengthscale parameter)
     :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one single lengthscale parameter \ell), otherwise there is one lengthscale parameter per dimension.
     :type ARD: Boolean
+    :param name: the name of the kernel
     :rtype: kernel object
 
     """
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False):
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='exp'):
         self.input_dim = input_dim
         self.ARD = ARD
+        self.variance = variance
+        self.name = name
         if ARD == False:
             self.num_params = 2
-            self.name = 'exp'
             if lengthscale is not None:
                 lengthscale = np.asarray(lengthscale)
                 assert lengthscale.size == 1, "Only one lengthscale needed for non-ARD kernel"
@@ -38,30 +40,30 @@ class Exponential(Kernpart):
                 lengthscale = np.ones(1)
         else:
             self.num_params = self.input_dim + 1
-            self.name = 'exp'
             if lengthscale is not None:
                 lengthscale = np.asarray(lengthscale)
                 assert lengthscale.size == self.input_dim, "bad number of lengthscales"
             else:
                 lengthscale = np.ones(self.input_dim)
-        self._set_params(np.hstack((variance, lengthscale.flatten())))
+        #self._set_params(np.hstack((variance, lengthscale.flatten())))
+        self.set_as_parameter('variance', 'lengthscale')
 
-    def _get_params(self):
-        """return the value of the parameters."""
-        return np.hstack((self.variance, self.lengthscale))
-
-    def _set_params(self, x):
-        """set the value of the parameters."""
-        assert x.size == self.num_params
-        self.variance = x[0]
-        self.lengthscale = x[1:]
-
-    def _get_param_names(self):
-        """return parameter names."""
-        if self.num_params == 2:
-            return ['variance', 'lengthscale']
-        else:
-            return ['variance'] + ['lengthscale_%i' % i for i in range(self.lengthscale.size)]
+#     def _get_params(self):
+#         """return the value of the parameters."""
+#         return np.hstack((self.variance, self.lengthscale))
+# 
+#     def _set_params(self, x):
+#         """set the value of the parameters."""
+#         assert x.size == self.num_params
+#         self.variance = x[0]
+#         self.lengthscale = x[1:]
+# 
+#     def _get_param_names(self):
+#         """return parameter names."""
+#         if self.num_params == 2:
+#             return ['variance', 'lengthscale']
+#         else:
+#             return ['variance'] + ['lengthscale_%i' % i for i in range(self.lengthscale.size)]
 
     def K(self, X, X2, target):
         """Compute the covariance matrix between X and X2."""

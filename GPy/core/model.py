@@ -5,12 +5,13 @@
 from .. import likelihoods
 from ..inference import optimization
 from ..util.linalg import jitchol
-from GPy.util.misc import opt_wrapper
+from ..util.misc import opt_wrapper
 from parameterized import Parameterized
 import multiprocessing as mp
 import numpy as np
-from GPy.core.domains import _POSITIVE, _REAL
+from domains import _POSITIVE, _REAL
 from numpy.linalg.linalg import LinAlgError
+from index_operations import ParameterIndexOperations
 # import numdifftools as ndt
 
 class Model(Parameterized):
@@ -18,7 +19,7 @@ class Model(Parameterized):
     _allowed_failures = 10 # number of allowed failures
     def __init__(self):
         Parameterized.__init__(self)
-        self.priors = None
+        self._priors = ParameterIndexOperations()
         self.optimization_runs = []
         self.sampling_runs = []
         self.preferred_optimizer = 'scg'
@@ -399,36 +400,36 @@ class Model(Parameterized):
             return np.nan
         return 0.5 * self._get_params().size * np.log(2 * np.pi) + self.log_likelihood() - hld
 
-    def __str__(self):
-        s = Parameterized.__str__(self).split('\n')
-        #def __str__(self, names=None):
-        #    if names is None:
-        #        names = self._get_print_names()
-        #s = Parameterized.__str__(self, names=names).split('\n')
-        # add priors to the string
-        if self.priors is not None:
-            strs = [str(p) if p is not None else '' for p in self.priors]
-        else:
-            strs = [''] * len(self._get_params())
-       #         strs = [''] * len(self._get_param_names())
-       #     name_indices = self.grep_param_names("|".join(names))
-       #     strs = np.array(strs)[name_indices]
-        width = np.array(max([len(p) for p in strs] + [5])) + 4
-
-        log_like = self.log_likelihood()
-        log_prior = self.log_prior()
-        obj_funct = '\nLog-likelihood: {0:.3e}'.format(log_like)
-        if len(''.join(strs)) != 0:
-            obj_funct += ', Log prior: {0:.3e}, LL+prior = {0:.3e}'.format(log_prior, log_like + log_prior)
-        obj_funct += '\n\n'
-        s[0] = obj_funct + s[0]
-        s[0] += "|{h:^{col}}".format(h='prior', col=width)
-        s[1] += '-' * (width + 1)
-
-        for p in range(2, len(strs) + 2):
-            s[p] += '|{prior:^{width}}'.format(prior=strs[p - 2], width=width)
-
-        return '\n'.join(s)
+#     def __str__(self):
+#         s = Parameterized.__str__(self).split('\n')
+#         #def __str__(self, names=None):
+#         #    if names is None:
+#         #        names = self._get_print_names()
+#         #s = Parameterized.__str__(self, names=names).split('\n')
+#         # add priors to the string
+#         if self.priors is not None:
+#             strs = [str(p) if p is not None else '' for p in self.priors]
+#         else:
+#             strs = [''] * len(self._get_params())
+#        #         strs = [''] * len(self._get_param_names())
+#        #     name_indices = self.grep_param_names("|".join(names))
+#        #     strs = np.array(strs)[name_indices]
+#         width = np.array(max([len(p) for p in strs] + [5])) + 4
+# 
+#         log_like = self.log_likelihood()
+#         log_prior = self.log_prior()
+#         obj_funct = '\nLog-likelihood: {0:.3e}'.format(log_like)
+#         if len(''.join(strs)) != 0:
+#             obj_funct += ', Log prior: {0:.3e}, LL+prior = {0:.3e}'.format(log_prior, log_like + log_prior)
+#         obj_funct += '\n\n'
+#         s[0] = obj_funct + s[0]
+#         s[0] += "|{h:^{col}}".format(h='prior', col=width)
+#         s[1] += '-' * (width + 1)
+# 
+#         for p in range(2, len(strs) + 2):
+#             s[p] += '|{prior:^{width}}'.format(prior=strs[p - 2], width=width)
+# 
+#         return '\n'.join(s)
 
 
     def checkgrad(self, target_param=None, verbose=False, step=1e-6, tolerance=1e-3):

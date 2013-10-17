@@ -8,9 +8,11 @@ from scipy.special import gammaln, digamma
 from ..util.linalg import pdinv
 from GPy.core.domains import _REAL, _POSITIVE
 import warnings
+import weakref
 
 class Prior:
     domain = None
+    
     def pdf(self, x):
         return np.exp(self.lnpdf(x))
 
@@ -33,6 +35,16 @@ class Gaussian(Prior):
 
     """
     domain = _REAL
+    _instances = []
+    def __new__(cls, mu, sigma): # Singleton:
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if instance().mu == mu and instance().sigma == sigma:
+                    return instance()
+        o = super(Prior, cls).__new__(cls, mu, sigma)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
     def __init__(self, mu, sigma):
         self.mu = float(mu)
         self.sigma = float(sigma)
@@ -63,6 +75,16 @@ class LogGaussian(Prior):
 
     """
     domain = _POSITIVE
+    _instances = []
+    def __new__(cls, mu, sigma): # Singleton:
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if instance().mu == mu and instance().sigma == sigma:
+                    return instance()
+        o = super(Prior, cls).__new__(cls, mu, sigma)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
     def __init__(self, mu, sigma):
         self.mu = float(mu)
         self.sigma = float(sigma)
@@ -93,6 +115,16 @@ class MultivariateGaussian:
 
     """
     domain = _REAL
+    _instances = []
+    def __new__(cls, mu, var): # Singleton:
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if np.all(instance().mu == mu) and np.all(instance().var == var):
+                    return instance()
+        o = super(Prior, cls).__new__(cls, mu, var)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
     def __init__(self, mu, var):
         self.mu = np.array(mu).flatten()
         self.var = np.array(var)
@@ -148,6 +180,16 @@ class Gamma(Prior):
 
     """
     domain = _POSITIVE
+    _instances = []
+    def __new__(cls, a, b): # Singleton:
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if instance().a == a and instance().b == b:
+                    return instance()
+        o = super(Prior, cls).__new__(cls, a, b)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
     def __init__(self, a, b):
         self.a = float(a)
         self.b = float(b)
@@ -199,6 +241,15 @@ class inverse_gamma(Prior):
 
     """
     domain = _POSITIVE
+    def __new__(cls, a, b): # Singleton:
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if instance().a == a and instance().b == b:
+                    return instance()
+        o = super(Prior, cls).__new__(cls, a, b)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
     def __init__(self, a, b):
         self.a = float(a)
         self.b = float(b)

@@ -7,6 +7,7 @@ import numpy as np
 from scipy import weave
 from ...util.linalg import tdot
 from ...util.misc import fast_array_equal
+from GPy.core.parameter import Param
 
 class RBF(Kernpart):
     """
@@ -31,10 +32,11 @@ class RBF(Kernpart):
     .. Note: this object implements both the ARD and 'spherical' version of the function
     """
 
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False):
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='rbf'):
         self.input_dim = input_dim
-        self.name = 'rbf'
+        self.name = name
         self.ARD = ARD
+        self.variance = variance
         if not ARD:
             self.num_params = 2
             if lengthscale is not None:
@@ -50,36 +52,43 @@ class RBF(Kernpart):
             else:
                 lengthscale = np.ones(self.input_dim)
 
-        self._set_params(np.hstack((variance, lengthscale.flatten())))
-
+        #self._set_params(np.hstack((variance, lengthscale.flatten())))
+        self.set_as_parameter_named('variance', )
         # initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3, 1))
-        self._X, self._X2, self._params = np.empty(shape=(3, 1))
+        self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
 
         # a set of optional args to pass to weave
         self.weave_options = {'headers'           : ['<omp.h>'],
                          'extra_compile_args': ['-fopenmp -O3'], # -march=native'],
                          'extra_link_args'   : ['-lgomp']}
-
-
-
-    def _get_params(self):
-        return np.hstack((self.variance, self.lengthscale))
-
-    def _set_params(self, x):
-        assert x.size == (self.num_params)
-        self.variance = x[0]
-        self.lengthscale = x[1:]
+        
+    def parameters_changed(self):
         self.lengthscale2 = np.square(self.lengthscale)
         # reset cached results
-        self._X, self._X2, self._params = np.empty(shape=(3, 1))
+        self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
         self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
 
-    def _get_param_names(self):
-        if self.num_params == 2:
-            return ['variance', 'lengthscale']
-        else:
-            return ['variance'] + ['lengthscale_%i' % i for i in range(self.lengthscale.size)]
+#     def _get_params(self):
+#         return np.hstack((self.variance, self.lengthscale))
+# 
+#     def _set_params(self, x):
+#         assert x.size == (self.num_params)
+#         self.variance = x[0]
+#         self.lengthscale = x[1:]
+#         self.lengthscale2 = np.square(self.lengthscale)
+#         # reset cached results
+#         self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
+#         self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
+# 
+#     def _get_param_names(self):
+#         if self.num_params == 2:
+#             return ['variance', 'lengthscale']
+#         else:
+#             return ['variance'] + ['lengthscale_%i' % i for i in range(self.lengthscale.size)]
+
+    def _dK_dvariance(self, model):
+        pass
 
     def K(self, X, X2, target):
         self._K_computations(X, X2)
@@ -225,9 +234,9 @@ class RBF(Kernpart):
 
     def _K_computations(self, X, X2):
         params = self._get_params()
-        if not (fast_array_equal(X, self._X) and fast_array_equal(X2, self._X2) and fast_array_equal(self._params , params)):
+        if not (fast_array_equal(X, self._X) and fast_array_equal(X2, self._X2) and fast_array_equal(self._params_save , params)):
             self._X = X.copy()
-            self._params = params.copy()
+            self._params_save = params.copy()
             if X2 is None:
                 self._X2 = None
                 X = X / self.lengthscale

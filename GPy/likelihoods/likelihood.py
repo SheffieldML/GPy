@@ -23,15 +23,15 @@ class likelihood(Parameterized):
     """
     def __init__(self):
         Parameterized.__init__(self)
-
-    def _get_params(self):
-        raise NotImplementedError
-
-    def _get_param_names(self):
-        raise NotImplementedError
-
-    def _set_params(self, x):
-        raise NotImplementedError
+    
+#     def _get_params(self):
+#         raise NotImplementedError
+# 
+#     def _get_param_names(self):
+#         raise NotImplementedError
+# 
+#     def _set_params(self, x):
+#         raise NotImplementedError
 
     def fit(self):
         raise NotImplementedError

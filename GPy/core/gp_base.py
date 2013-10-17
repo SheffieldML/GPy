@@ -28,11 +28,18 @@ class GPBase(Model):
         else:
             self._Xoffset = np.zeros((1, self.input_dim))
             self._Xscale = np.ones((1, self.input_dim))
+        
+        self.set_as_parameter(self.kern._parameters_)
+        self.set_as_parameter(self.likelihood._parameters_)
 
         super(GPBase, self).__init__()
         # Model.__init__(self)
         # All leaf nodes should call self._set_params(self._get_params()) at
         # the end
+
+    def parameters_changed(self):
+        self.kern.parameters_changed()
+        self.likelihood.parameters_changed()
 
     def getstate(self):
         """

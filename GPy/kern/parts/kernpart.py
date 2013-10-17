@@ -1,11 +1,13 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-
+from ...core.parameter import Param
+#from ...core.parameterized.Parameterized import set_as_parameter
 
 class Kernpart(object):
     def __init__(self,input_dim):
         """
-        The base class for a kernpart: a positive definite function which forms part of a covariance function (kernel).
+        The base class for a kernpart: a positive definite function 
+        which forms part of a covariance function (kernel).
 
         :param input_dim: the number of input dimensions to the function
         :type input_dim: int
@@ -18,13 +20,42 @@ class Kernpart(object):
         self.num_params = 1
         # the name of the covariance function.
         self.name = 'unnamed'
-
-    def _get_params(self):
-        raise NotImplementedError
-    def _set_params(self,x):
-        raise NotImplementedError
-    def _get_param_names(self):
-        raise NotImplementedError
+        # link to parameterized objects
+        self._parameters_ = []
+    def set_as_parameter_named(self, name, gradient, index=None, *args, **kwargs):
+        """
+        :param names:        name of parameter to set as parameter
+        :param gradient:     gradient method to get the gradient of this parameter
+        :param index:        index of where to place parameter in printing
+        :param args, kwargs: additional arguments to gradient
+    
+        Convenience method to connect Kernpart parameters:
+        parameter with name (attribute of this Kernpart) will be set as parameter with following name:
+        
+            kernel_name + _ + parameter_name
+    
+        To add the kernels name to the parameter name use this method to 
+        add parameters.
+        """
+        self.set_as_parameter(name, getattr(self, name), gradient, index, *args, **kwargs)
+    def set_as_parameter(self, name, array, gradient, index=None, *args, **kwargs):
+        """
+        See :py:func:`GPy.core.parameterized.Parameterized.set_as_parameter`
+        
+        Note: this method adds the kernels name in front of the parameter.
+        """
+        p = Param(self.name+"_"+name, array, gradient, *args, **kwargs)
+        if index is None:
+            self._parameters_.append(p)
+        else:
+            self._parameters_.insert(index, p)
+    #set_as_parameter.__doc__ += set_as_parameter.__doc__  # @UndefinedVariable
+#     def _get_params(self):
+#         raise NotImplementedError
+#     def _set_params(self,x):
+#         raise NotImplementedError
+#     def _get_param_names(self):
+#         raise NotImplementedError
     def K(self,X,X2,target):
         raise NotImplementedError
     def Kdiag(self,X,target):
@@ -87,13 +118,13 @@ class Kernpart_stationary(Kernpart):
 
         # initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3, 1))
-        self._X, self._X2, self._params = np.empty(shape=(3, 1))
+        self._X, self._X2, self._parameters_ = np.empty(shape=(3, 1))
 
     def _set_params(self, x):
         self.lengthscale = x
         self.lengthscale2 = np.square(self.lengthscale)
         # reset cached results
-        self._X, self._X2, self._params = np.empty(shape=(3, 1))
+        self._X, self._X2, self._parameters_ = np.empty(shape=(3, 1))
         self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
 
 
@@ -120,4 +151,4 @@ class Kernpart_inner(Kernpart):
 
         # initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3, 1))
-        self._X, self._X2, self._params = np.empty(shape=(3, 1))
+        self._X, self._X2, self._parameters_ = np.empty(shape=(3, 1))

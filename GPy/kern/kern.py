@@ -53,8 +53,13 @@ class kern(Parameterized):
             assert isinstance(p, Kernpart), "bad kernel part"
 
         self.compute_param_slices()
-
+        self._parameters_ = []
+        for p in self.parts:
+            self._parameters_.extend(p._parameters_)
         Parameterized.__init__(self)
+
+    def parameters_changed(self):
+        [p.parameters_changed() for p in self.parts]
 
     def getstate(self):
         """
@@ -303,20 +308,20 @@ class kern(Parameterized):
         for i, t in zip(prev_constr_ind, prev_constr):
             self.constrain(np.where(index_param == i)[0], t)
 
-    def _get_params(self):
-        return np.hstack([p._get_params() for p in self.parts])
-
-    def _set_params(self, x):
-        [p._set_params(x[s]) for p, s in zip(self.parts, self.param_slices)]
-
-    def _get_param_names(self):
-        # this is a bit nasty: we want to distinguish between parts with the same name by appending a count
-        part_names = np.array([k.name for k in self.parts], dtype=np.str)
-        counts = [np.sum(part_names == ni) for i, ni in enumerate(part_names)]
-        cum_counts = [np.sum(part_names[i:] == ni) for i, ni in enumerate(part_names)]
-        names = [name + '_' + str(cum_count) if count > 1 else name for name, count, cum_count in zip(part_names, counts, cum_counts)]
-
-        return sum([[name + '_' + n for n in k._get_param_names()] for name, k in zip(names, self.parts)], [])
+#     def _get_params(self):
+#         return np.hstack([p._get_params() for p in self.parts])
+# 
+#     def _set_params(self, x):
+#         [p._set_params(x[s]) for p, s in zip(self.parts, self.param_slices)]
+# 
+#     def _get_param_names(self):
+#         # this is a bit nasty: we want to distinguish between parts with the same name by appending a count
+#         part_names = np.array([k.name for k in self.parts], dtype=np.str)
+#         counts = [np.sum(part_names == ni) for i, ni in enumerate(part_names)]
+#         cum_counts = [np.sum(part_names[i:] == ni) for i, ni in enumerate(part_names)]
+#         names = [name + '_' + str(cum_count) if count > 1 else name for name, count, cum_count in zip(part_names, counts, cum_counts)]
+# 
+#         return sum([[name + '_' + n for n in k._get_param_names()] for name, k in zip(names, self.parts)], [])
 
     def K(self, X, X2=None, which_parts='all'):
         """
@@ -606,14 +611,14 @@ class Kern_check_model(Model):
         else:
             return True
         
-    def _get_params(self):
-        return self.kernel._get_params()
-
-    def _get_param_names(self):
-        return self.kernel._get_param_names()
-
-    def _set_params(self, x):
-        self.kernel._set_params(x)
+#     def _get_params(self):
+#         return self.kernel._get_params()
+# 
+#     def _get_param_names(self):
+#         return self.kernel._get_param_names()
+# 
+#     def _set_params(self, x):
+#         self.kernel._set_params(x)
 
     def log_likelihood(self):
         return (self.dL_dK*self.kernel.K(self.X, self.X2)).sum()

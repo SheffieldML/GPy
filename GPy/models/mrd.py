@@ -61,13 +61,13 @@ class MRD(Model):
         self._debug = _debug
         self.num_inducing = num_inducing
 
-        self._init = True
+        self._in_init_ = True
         X = self._init_X(initx, likelihood_or_Y_list)
         Z = self._init_Z(initz, X)
         self.num_inducing = Z.shape[0] # ensure M==N if M>N
 
         self.bgplvms = [BayesianGPLVM(l, input_dim=input_dim, kernel=k, X=X, Z=Z, num_inducing=self.num_inducing, **kw) for l, k in zip(likelihood_or_Y_list, kernels)]
-        del self._init
+        del self._in_init_
 
         self.gref = self.bgplvms[0]
         nparams = numpy.array([0] + [SparseGP._get_params(g).size - g.Z.size for g in self.bgplvms])
@@ -112,7 +112,7 @@ class MRD(Model):
         try:
             self.propagate_param(X=X)
         except AttributeError:
-            if not self._init:
+            if not self._in_init_:
                 raise AttributeError("bgplvm list not initialized")
     @property
     def Z(self):
@@ -122,7 +122,7 @@ class MRD(Model):
         try:
             self.propagate_param(Z=Z)
         except AttributeError:
-            if not self._init:
+            if not self._in_init_:
                 raise AttributeError("bgplvm list not initialized")
     @property
     def X_variance(self):
@@ -132,7 +132,7 @@ class MRD(Model):
         try:
             self.propagate_param(X_variance=X_var)
         except AttributeError:
-            if not self._init:
+            if not self._in_init_:
                 raise AttributeError("bgplvm list not initialized")
     @property
     def likelihood_list(self):

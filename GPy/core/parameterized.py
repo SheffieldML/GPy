@@ -7,7 +7,7 @@ import copy
 import cPickle
 from parameter import ParamConcatenation, Param
 from index_operations import ParameterIndexOperations,\
-    TieIndexOperations, create_raveled_indices, index_empty
+    TieIndexOperations, index_empty
 import itertools
 from re import compile, _pattern_type
 import sys
@@ -17,6 +17,22 @@ import sys
 __fixed__ = "fixed"
 #===============================================================================
 
+#===============================================================================
+# constants
+class _F_(object):
+    def __bool__(self):
+        return False
+    def __str__(self):
+        return "FIXED"
+FIXED = _F_()
+class _U_(object):
+    def __bool__(self):
+        return True
+    def __str__(self):
+        return "UNFIXED"
+UNFIXED = _U_()
+del _U_, _F_
+#===============================================================================
 
 class Parameterized(object):
     """
@@ -195,9 +211,9 @@ class Parameterized(object):
         self._ties_fixes_ = numpy.ones(self._parameter_size_, dtype=bool)
         for f, (fixed, ind) in itertools.izip_longest(self._ties_.iter_from_indices(), self._constraints_.iteritems()):
             if f is not None:
-                self._ties_fixes_[f] = False
+                self._ties_fixes_[f] = FIXED
             if fixed == __fixed__:
-                self._ties_fixes_[ind] = False
+                self._ties_fixes_[ind] = FIXED
         if numpy.all(self._ties_fixes_):
             self._ties_fixes_ = None
         self.parameters_changed()
@@ -237,30 +253,29 @@ class Parameterized(object):
         ind = ind-self._offset(param)
         ind = ind[ind >= 0]
         internal_offset = param._internal_offset()
-        internal_offset_old = (numpy.arange(param._realsize_).reshape(param._realshape_)[param._current_slice_]).flat[0]        
-        assert internal_offset == internal_offset_old
         ind = ind[ind < param.size + internal_offset]
         return ind
     def _offset(self, param):
         # get the offset in the parameterized index array for param
-        return self._param_slices[param._parent_index_].start 
+        return self._param_slices[param._parent_index_].start
+    def _raveled_index_for(self, param):
+        return param._raveled_index() + self._offset(param)
     #===========================================================================
     # Handle ties:
     #===========================================================================
     def _add_tie(self, param, tied_to):
         # tie param to tie_to, if the values match (with broadcasting)
-        self._ties_.add(param, tied_to)
+        self._remove_tie(param) # delete if multiple ties should be allowed
+        f, _ = self._ties_.add(param, tied_to)
         if self._ties_fixes_ is None: self._ties_fixes_ = numpy.ones(self._parameter_size_, dtype=bool)
-        f = create_raveled_indices(param._current_slice_, param._realshape_, self._offset(param))
         self._ties_fixes_[f] = False
     def _remove_tie(self, param, *params):
         # remove the tie from param to all *params (can be None, so all ties get deleted for param)
         if len(params) == 0:
             params = self._ties_.properties()
         for p in params: 
-            ind = create_raveled_indices(p._current_slice_, param._realshape_, self._offset(param))
-            self._ties_.remove(param, p)
-            self._ties_fixes_[ind] = True
+            _, t = self._ties_.remove(param, p)
+            self._ties_fixes_[t] = True
         if numpy.all(self._ties_fixes_): self._ties_fixes_ = None
     def _ties_iter_items(self, param):
         for tied_to, ind in self._ties_.iter_from_items():
@@ -273,38 +288,56 @@ class Parameterized(object):
     def _ties_iter_indices(self, param):
         for _, ind in self._ties_iter_items(param):
             yield ind
-    def _ties_for(self, param, index):
-        return self._ties_.from_to_for(index+self._offset(param))
-        #===========================================================================
+    def _ties_for(self, param, rav_index):
+        return self._ties_.from_to_for(rav_index+self._offset(param))
+    #===========================================================================
     # Fixing parameters:
     #===========================================================================
     def _fix(self, param, warning=True):
-        self._add_constrain(param, __fixed__, warning)
+        f = self._add_constrain(param, __fixed__, warning)
         if self._ties_fixes_ is None: self._ties_fixes_ = numpy.ones(self._parameter_size_, dtype=bool)
-        f = create_raveled_indices(param._current_slice_, param._realshape_, self._offset(param))
         self._ties_fixes_[f] = False
     def _unfix(self, param):
-        self._remove_constrain(param, __fixed__)
-        ind = create_raveled_indices(param._current_slice_, param._realshape_, self._offset(param))
-        self._ties_fixes_[ind] = True
-        if numpy.all(self._ties_fixes_): self._ties_fixes_ = None
+        if self._ties_fixes_ is not None:
+            self._remove_constrain(param, __fixed__)
+            ind = self._raveled_index_for(param)
+            self._ties_fixes_[ind] = UNFIXED
+            if numpy.all(self._ties_fixes_==UNFIXED): self._ties_fixes_ = None
+            self._handle_ties()
+    #===========================================================================
+    # Convenience for fixed, tied checking of parameter:
+    #===========================================================================
+    def _is_fixed(self, param):
+        # returns if the whole parameter is fixed
+        if self._ties_fixes_ is None:
+            return False
+        return not self._ties_fixes_[self._offset(param): self._offset(param)+param._realsize_].any()
+    def _get_original(self, param):
+        # if advanced indexing is activated it happens that the array is a copy
+        # you can retrieve the original parameter through this method, by passing
+        # the copy here
+        return self._parameters_[param._parent_index_]
     #===========================================================================
     # Constraint Handling:
     #===========================================================================
     def _add_constrain(self, param, transform, warning=True):
-        reconstrained = self._remove_constrain(param) # remove constraints before
+        rav_i = self._raveled_index_for(param)
+        reconstrained = self._remove_constrain(param, index=rav_i) # remove constraints before
         # if removing constraints before adding new is not wanted, just delete the above line!
-        self._constraints_.add(transform, param._current_slice_, param._realshape_, self._offset(param))
+        self._constraints_.add(transform, rav_i)
         if warning and any(reconstrained):
             # if you want to print the whole params object, which was reconstrained use:
             # m = str(param[self._backtranslate_index(param, reconstrained)])
             print "Warning: re-constraining parameters:\n{}".format(param._short())
-    def _remove_constrain(self, param, *transforms):
+        return rav_i
+    def _remove_constrain(self, param, *transforms, **kwargs):
         if transforms is ():
             transforms = self._constraints_.properties()
         removed_indices = numpy.array([]).astype(int)
+        if "index" in kwargs: index = kwargs['index'] 
+        else: index = self._raveled_index_for(param)
         for constr in transforms:
-            removed = self._constraints_.remove(constr, param._current_slice_, param._realshape_, self._offset(param))
+            removed = self._constraints_.remove(constr, index)
             removed_indices = numpy.union1d(removed_indices, removed)
         return removed_indices
     # convienience for iterating over items
@@ -321,8 +354,8 @@ class Parameterized(object):
             yield ind
     def _constraint_indices(self, param, constraint):
         return self._backtranslate_index(param, self._constraints_[constraint])
-    def _constraints_for(self, param, index):
-        return self._constraints_.properties_for(index+self._offset(param))
+    def _constraints_for(self, param, rav_index):
+        return self._constraints_.properties_for(rav_index+self._offset(param))
     #===========================================================================
     # Get/set parameters:
     #===========================================================================
@@ -384,7 +417,7 @@ class Parameterized(object):
         return [x._desc for x in self._parameters_]
     @property
     def _ts(self):
-        return [x._t for x in self._parameters_]
+        return [' '.join([t._short() for t in self._ties_iter(x)]) for x in self._parameters_]
     def __str__(self, header=True):
         nl = max([len(str(x)) for x in self.parameter_names + ["Name"]])
         sl = max([len(str(x)) for x in self._descs + ["Value"]])
@@ -393,7 +426,7 @@ class Parameterized(object):
         tl = max([len(str(x)) if x else 0 for x in ts + ["Tied to"]])
         format_spec = "  \033[1m{{p.name:^{0}s}}\033[0;0m  |  {{p._desc:^{1}s}}  |  {{const:^{2}s}}  |  {{t:^{2}s}}".format(nl, sl, cl)
         to_print = [format_spec.format(p=p, const=c, t=t) for p, c, t in itertools.izip(self._parameters_, constrs, ts)]
-        sep = '-'*len(to_print[0])
+        sep = '-'*(nl+sl+cl+tl+8*2+3)
         if header:
             header = "  {{0:^{0}s}}  |  {{1:^{1}s}}  |  {{2:^{2}s}}  |  {{3:^{3}s}}".format(nl, sl, cl, tl).format("Name", "Value", "Constraint", "Tied to")
             header += '\n' + sep

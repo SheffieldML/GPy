@@ -5,9 +5,7 @@ Created on 4 Sep 2013
 '''
 import itertools
 import numpy
-from transformations import Logexp, NegativeLogexp
-from GPy.core.transformations import Logistic
-import collections
+from transformations import Logexp, NegativeLogexp, Logistic
 
 ###### printing
 __constraints_name__ = "Constraint"
@@ -23,7 +21,9 @@ class Param(numpy.ndarray):
     :param name:        name of the parameter to be printed
     :param input_array: array which this parameter handles
     :param gradient:    callable with one argument, which is the model of this parameter
-
+    :param args:        additional arguments to gradient
+    :param kwargs:      additional keyword arguments to gradient
+    
     You can add/remove constraints by calling the constrain on the parameter itself, e.g:
     
         - self[:,1].constrain_positive()
@@ -38,17 +38,17 @@ class Param(numpy.ndarray):
     See :py:class:`GPy.core.parameterized.Parameterized` for more details.
     """
     __array_priority__ = -numpy.inf # Never give back Param
-    def __new__(cls, name, input_array, gradient):
+    def __new__(cls, name, input_array, gradient, *args, **kwargs):
         obj = numpy.atleast_1d(numpy.array(input_array)).view(cls)
         obj._name_ = name
         obj._parent_ = None
         obj._parent_index_ = None
         obj._gradient_ = gradient
-        obj._current_slice_ = [slice(obj.shape[0])]
+        obj._current_slice_ = (slice(obj.shape[0]),)
         obj._realshape_ = obj.shape
         obj._realsize_ = obj.size
         obj._realndim_ = obj.ndim
-        obj._flat_indices_ = None
+        obj._original_ = True
         return obj    
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments
@@ -57,11 +57,11 @@ class Param(numpy.ndarray):
         self._current_slice_ = getattr(obj, '_current_slice_', None)
         self._parent_ = getattr(obj, '_parent_', None)
         self._parent_index_ = getattr(obj, '_parent_index_', None)
-        self._flat_indices_ = getattr(obj, '_flat_indices_', None)
         self._gradient_ = getattr(obj, '_gradient_', None)
         self._realshape_ = getattr(obj, '_realshape_', None)
         self._realsize_ = getattr(obj, '_realsize_', None)
         self._realndim_ = getattr(obj, '_realndim_', None)
+        self._original_ = getattr(obj, '_original_', None)
     def __array_wrap__(self, out_arr, context=None):
         return out_arr.view(numpy.ndarray)
     #===========================================================================
@@ -131,6 +131,12 @@ class Param(numpy.ndarray):
         self._parent_._unfix(self)
     unfix = unconstrain_fixed
     #===========================================================================
+    # Convenience methods:
+    #===========================================================================
+    @property
+    def is_fixed(self):
+        return self._parent_._is_fixed(self)
+    #===========================================================================
     # Constrain operations -> done
     #===========================================================================
     def constrain(self, transform, warning=True):
@@ -142,7 +148,10 @@ class Param(numpy.ndarray):
         Constrain the parameter to the given
         :py:class:`GPy.core.transformations.Transformation`.
         """
-        self[...] = transform.initialize(self)
+        if self._original_: # this happens when indexing created a copy of the array
+            self.__setitem__(slice(None), transform.initialize(self))
+        else:
+            self._parent_._get_original(self)[self._current_slice_] = transform.initialize(self)
         self._parent_._add_constrain(self, transform, warning)
     def constrain_positive(self, warning=True):
         """
@@ -205,12 +214,14 @@ class Param(numpy.ndarray):
         """
         assert isinstance(param, Param), "Argument {1} not of type {0}".format(Param,param.__class__)
         try:
-            self[...] = param
-            self._parent_._add_tie(self, param)
-            if self.base is None: # this happens when indexing created a copy of the array
-                self._parent_._handle_ties() 
+            if self._original_: # this happens when indexing created a copy of the array
+                self[:] = param
+            else:
+                self._parent_._get_original(self)[self._current_slice_] = param
         except ValueError:
             raise ValueError("Trying to tie {} with shape {} to {} with shape {}".format(self.name, self.shape, param.name, param.shape))            
+        self._parent_._add_tie(self, param)
+
     def untie(self, *params):
         """
         :param params: parameters to untie from
@@ -219,7 +230,7 @@ class Param(numpy.ndarray):
         """
         if len(params) == 0:
             params = self._parent_._ties_.properties()
-        self._parent_._remove_tie(self, params)
+        self._parent_._remove_tie(self, *params)
     #===========================================================================
     # Prior Operations
     #===========================================================================
@@ -248,7 +259,7 @@ class Param(numpy.ndarray):
         if not reduce(lambda a,b: a or numpy.any(b is Ellipsis), s, False):
             s += (Ellipsis,)
         new_arr = numpy.ndarray.__getitem__(self, s, *args, **kwargs)
-        try: new_arr._current_slice_ = s
+        try: new_arr._current_slice_ = s; new_arr._original_ = self.base is new_arr.base
         except AttributeError: pass# returning 0d array or float, double etc
         return new_arr
     def __getslice__(self, start, stop):
@@ -274,17 +285,19 @@ class Param(numpy.ndarray):
                 a = self._realshape_[i]+a
             internal_offset += a * extended_realshape[i]
         return internal_offset
-    def _raveled_index(self):
+    def _raveled_index(self, slice_index=None):
         # return an index array on the raveled array, which is formed by the current_slice
         # of this object
         extended_realshape = numpy.cumprod((1,) + self._realshape_[:0:-1])[::-1]
-        ind = self._indices() 
+        ind = self._indices(slice_index)
         if ind.ndim < 2: ind=ind[:,None]
         return numpy.apply_along_axis(lambda x: numpy.sum(extended_realshape*x), 1, ind)
-    def _expand_index(self):
+    def _expand_index(self, slice_index=None):
         # this calculates the full indexing arrays from the slicing objects given by get_item for _real..._ attributes
         # it basically translates slices to their respective index arrays and turns negative indices around
         # it tells you in the second return argument if it has only seen arrays as indices
+        if slice_index is None:
+            slice_index = self._current_slice_
         def f(a):
             a, b = a
             if a not in (slice(None), Ellipsis):
@@ -298,7 +311,7 @@ class Param(numpy.ndarray):
                     a = b+a
                 return numpy.r_[a]
             return numpy.r_[:b]
-        return itertools.imap(f, itertools.izip_longest(self._current_slice_[:self._realndim_], self._realshape_, fillvalue=slice(None)))
+        return itertools.imap(f, itertools.izip_longest(slice_index[:self._realndim_], self._realshape_, fillvalue=slice(None)))
     #===========================================================================
     # Printing -> done
     #===========================================================================
@@ -309,15 +322,6 @@ class Param(numpy.ndarray):
     @property
     def _constr(self):
         return ' '.join(map(lambda c: str(c[0]) if c[1].size==self._realsize_ else "{"+str(c[0])+"}", self._parent_._constraints_iter_items(self)))
-    @property
-    def _t(self):
-        # indices one by one: "".join(map(str,c[0]._indices()))
-        def decide(c):
-            if c[0]._realsize_ > 1 and not c[0].size==self.size:
-                return c[0].name + "".join(map(str,c[0]._indices()))
-            else:
-                return c[0].name
-        return ' '.join(map(lambda c: decide(c), self._parent_._ties_iter_items(self)))
     def round(self, decimals=0, out=None):
         view = super(Param, self).round(decimals, out).view(Param)
         view.__array_finalize__(self)
@@ -325,58 +329,21 @@ class Param(numpy.ndarray):
     round.__doc__ = numpy.round.__doc__
     def __repr__(self, *args, **kwargs):
         return "\033[1m{x:s}\033[0;0m:\n".format(x=self.name)+super(Param, self).__repr__(*args,**kwargs)
-#     def _constr_matrix_str(self):
-        # create an iterator, which shows the constraints of all indices
-#         cons_turnaround = collections.defaultdict(list)
-#         for c, index in self._parent_._constraints_iter_items(self):
-#             for i in index:
-#                 cons_turnaround[i] += [str(c)]
-#         offset = self._internal_offset()
-#         return [" ".join(cons_turnaround[i]) for i in xrange(offset, offset+self.size)]
-#         self._str_dummy_ = numpy.empty(self._realshape_, dtype=object)
-#         constr_matrix = self._str_dummy_ # we need the whole constraints matrix
-#         constr_matrix[:] = ''
-#         for constr, indices in self._parent_._constraints_iter_items(self): # put in all the constraints:
-#             cstr = ""+str(constr)+""
-#             constr_matrix[indices] = numpy.vectorize(lambda x:" ".join([x, cstr]) if x else cstr, otypes=[str])(constr_matrix[indices])
-#         return constr_matrix.astype(numpy.string_).reshape(self._realshape_)[self._current_slice_].flatten() # and get the slice we did before
-#     def _ties_matrix_str(self):
-        # create an iterator, which shows the ties of all indices
-#         ties_turnaround = collections.defaultdict(list)
-#         for tie, index in self._parent_._ties_iter_items(self):
-#             for i in index:
-#                 ties_turnaround[i] += [str(tie)]
-#         offset = self._internal_offset()
-#         return [" ".join(ties_turnaround[i]) for i in xrange(offset, offset+self.size)]
-#         for i in xrange(self.size):
-#             yield " ".join(ties_turnaround[i])
-#         if self._str_dummy_ is None:
-#             self._str_dummy_ = numpy.empty(self._realshape_, dtype=object)
-#         ties_matr = self._str_dummy_; ties_matr[:] = ''
-#         for tie, indices in self._parent_._ties_iter_items(self): # go through all ties
-#             tie_cycle = itertools.cycle(tie._indices()) if tie._realsize_ > 1 else itertools.repeat('')
-#             ties_matr[indices] = numpy.vectorize(lambda x:" ".join([x, str(tie.name) + str(str(tie_cycle.next()))]) if x else str(tie.name)+str(str(tie_cycle.next())), otypes=[str])(ties_matr[indices])
-#         return ties_matr.astype(numpy.string_).reshape(*(self._realshape_+(-1,)))[self._current_slice_] # and get the slice we did before
-        
-#     def _in_index(self, i, index):
-#         if isinstance(index, slice):
-#             start,stop,step = index.indices()
-#             return i>=start and i<stop and step%i==0
-#         elif index.dtype in (numpy.bool, numpy.bool_):
-#             return index[]
-    def _ties_for(self, index):
-        return self._parent_._ties_for(self, index)
-    def _constraints_for(self, index):
-        return self._parent_._constraints_for(self, index)
-    def _indices(self):
+    def _ties_for(self, rav_index):
+        return self._parent_._ties_for(self, rav_index)
+    def _constraints_for(self, rav_index):
+        return self._parent_._constraints_for(self, rav_index)
+    def _indices(self, slice_index=None):
         # get a int-array containing all indices in the first axis.
-        if isinstance(self._current_slice_, (tuple, list)):
-            clean_curr_slice = [s for s in self._current_slice_ if s != Ellipsis]
+        if slice_index is None:
+            slice_index = self._current_slice_
+        if isinstance(slice_index, (tuple, list)):
+            clean_curr_slice = [s for s in slice_index if numpy.any(s != Ellipsis)]
             if (all(isinstance(n, (numpy.ndarray, list, tuple)) for n in clean_curr_slice) 
                 and len(set(map(len,clean_curr_slice))) <= 1):
                 return numpy.fromiter(itertools.izip(*self._expand_index()),
                     dtype=[('',int)]*self._realndim_,count=self.size).view((int, self._realndim_)) 
-        return numpy.fromiter(itertools.product(*self._expand_index()),
+        return numpy.fromiter(itertools.product(*self._expand_index(slice_index)),
                  dtype=[('',int)]*self._realndim_,count=self.size).view((int, self._realndim_))
     def _max_len_names(self, gen, header):
         return reduce(lambda a, b:max(a, len(b)), gen, len(header))
@@ -384,12 +351,13 @@ class Param(numpy.ndarray):
         return reduce(lambda a, b:max(a, len("{x:=.{0}G}".format(__precision__, x=b))), self.flat, len(self.name))
     def _max_len_index(self, ind):
         return reduce(lambda a, b:max(a, len(str(b))), ind, len(__index_name__))
-    def _short(self):
+    def _short(self, slice_index=None):
+        # short string to print
         if self._realsize_ < 2:
             return self.name
-        ind = self._indices()
-        if self.size > 4: indstr = ','.join(map(str,ind[:2])) + "..." + ','.join(map(str,ind[-2:])) 
-        else: indstr = ','.join(map(str,ind)) 
+        ind = self._indices(slice_index)
+        if ind.size > 4: indstr = ','.join(map(str,ind[:2])) + "..." + ','.join(map(str,ind[-2:])) 
+        else: indstr = ','.join(map(str,ind))
         return self.name+'['+indstr+']'
     def __str__(self, constr_matrix=None, indices=None, ties=None, lc=None, lx=None, li=None, lt=None):
         if indices is None: indices = self._indices()
@@ -400,6 +368,13 @@ class Param(numpy.ndarray):
         if lx is None: lx = self._max_len_values()
         if li is None: li = self._max_len_index(self._indices())
         if lt is None: lt = self._max_len_names(ties[0], __tie_name__)
+        from index_operations import ParamDict
+        keep_track_of_broadcasting = ParamDict()
+        def tie_broadcasting(tie):
+            if tie in keep_track_of_broadcasting:
+                return keep_track_of_broadcasting[tie].next()
+            else:
+                pass
         header = "  {i:^{2}s}  |  \033[1m{x:^{1}s}\033[0;0m  |  {c:^{0}s}  |  {t:^{3}s}".format(lc,lx,li,lt, x=self.name, c=__constraints_name__, i=__index_name__, t=__tie_name__) # nice header for printing
         return "\n".join([header]+["  {i!s:^{3}s}  |  {x: >{1}.{2}G}  |  {c:^{0}s}  |  {t:^{4}}  ".format(lc,lx,__precision__,li,lt, x=x, c=" ".join(map(str,c)), t=" ".join([tie._short() for tie in t]), i=i) for i,x,c,t in itertools.izip(indices,self.flat,constr_matrix,ties[0])]) # return all the constraints with right indices
         #except: return super(Param, self).__str__()
@@ -473,8 +448,10 @@ class ParamConcatenation(object):
     __gt__ = lambda self, val: self._vals()>val
     __ge__ = lambda self, val: self._vals()>=val
     def __str__(self, *args, **kwargs):
-        constr_matrices = [p._constr_matrix_str() for p in self.params]
-        ties_matrices = [p._ties_matrix_str() for p in self.params]
+        def f(p):
+            ind = p._raveled_index()
+            return p._constraints_for(ind), p._ties_for(ind) 
+        constr_matrices, ties_matrices = zip(*map(f, self.params))
         indices = [p._indices() for p in self.params]
         lc = max([p._max_len_names(cm, __constraints_name__) for p, cm in itertools.izip(self.params, constr_matrices)])
         lx = max([p._max_len_values() for p in self.params])
@@ -488,17 +465,22 @@ class ParamConcatenation(object):
 if __name__ == '__main__':
     from GPy.core.parameterized import Parameterized
     #X = numpy.random.randn(2,3,1,5,2,4,3)
-    X = numpy.random.randn(800,1e4)
+    X = numpy.random.randn(2,3)
+    print "random done"
     p = Param("q_mean", X, None)
     p1 = Param("q_variance", numpy.random.rand(*p.shape), None)
     p2 = Param("Y", numpy.random.randn(p.shape[0],1), None)
     p3 = Param("rbf_variance", numpy.random.rand(), None)
     p4 = Param("rbf_lengthscale", numpy.random.rand(2), None)
     m = Parameterized()
+    print "setting params"
     m.set_as_parameters(p,p1,p2,p3,p4)
     #print m.q_v[3:5,[1,4,5]]
+    print "constraining variance"
     m[".*variance"].constrain_positive()
+    print "constraining rbf"
     m.rbf.constrain_positive()
+    m.q_variance[:,[0,2]].tie_to(m.rbf_l)
     #m.q_v.tie_to(m.rbf_v)
 #     m.rbf_l.tie_to(m.rbf_va)
     # pt = numpy.array(params._get_params_transformed())

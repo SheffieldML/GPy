@@ -6,19 +6,23 @@ Created on Oct 2, 2013
 import numpy
 from numpy.lib.function_base import vectorize
 from parameter import Param
+from collections import defaultdict
 
-class ParamDict(dict):
+class ParamDict(defaultdict):
+    def __init__(self):
+        defaultdict.__init__(self, lambda: numpy.array([], dtype=int))
+    
     def __getitem__(self, key):
         try:
-            return super(ParamDict, self).__getitem__(key)
+            return defaultdict.__getitem__(self, key)
         except KeyError:
             for a in self.iterkeys():
                 if numpy.all(a==key) and a._parent_index_==key._parent_index_:
-                    return super(ParamDict, self).__getitem__(a)
+                    return defaultdict.__getitem__(self, a)
             raise        
         
     def __contains__(self, key):
-        if super(ParamDict, self).__contains__(key):
+        if defaultdict.__contains__(self, key):
             return True
         for a in self.iterkeys():
             if numpy.all(a==key) and a._parent_index_==key._parent_index_:
@@ -31,7 +35,7 @@ class ParamDict(dict):
                 if numpy.all(a==key) and a._parent_index_==key._parent_index_:
                     return super(ParamDict, self).__setitem__(a, value)
             raise KeyError, key
-        super(ParamDict, self).__setitem__(key, value)
+        defaultdict.__setitem__(self, key, value)
         
 
 class ParameterIndexOperations(object):
@@ -84,23 +88,16 @@ class ParameterIndexOperations(object):
 #             yield already_seen[ni]
         return vectorize(lambda i: [prop for prop in self.iter_properties() if i in self._properties[prop]], otypes=[list])(index)
         
-    def add(self, prop, indices, shape, offset=False):
-        ind = create_raveled_indices(indices, shape, offset)
-        #[self._reverse[i].__add__(prop) for i in ind]
+    def add(self, prop, indices):
         try:
-            self._properties[prop] = combine_indices(self._properties[prop], ind)
+            self._properties[prop] = combine_indices(self._properties[prop], indices)
         except KeyError: 
-#         for a in self.properties(): 
-#             if numpy.all(a==prop) and a._parent_index_ == prop._parent_index_:
-#                 self._properties[a] = combine_indices(self._properties[a], ind)
-#                 return
-            self._properties[prop] = ind
+            self._properties[prop] = indices
     
-    def remove(self, prop, indices, shape, offset=False):
+    def remove(self, prop, indices):
         if prop in self._properties:
-            ind = create_raveled_indices(indices, shape, offset)
-            diff = remove_indices(self[prop], ind)
-            removed = numpy.intersect1d(self[prop], ind, True)
+            diff = remove_indices(self[prop], indices)
+            removed = numpy.intersect1d(self[prop], indices, True)
             if not index_empty(diff):
                 self._properties[prop] = diff
             else:
@@ -129,11 +126,17 @@ class TieIndexOperations(object):
         self.tied_from = ParameterIndexOperations()
         self.tied_to = ParameterIndexOperations()
     def add(self, tied_from, tied_to):
-        self.tied_from.add(tied_to, tied_from._current_slice_, tied_from._realshape_, self.params._offset(tied_from))
-        self.tied_to.add(tied_to, tied_to._current_slice_, tied_to._realshape_, self.params._offset(tied_to))
+        rav_from = self.params._raveled_index_for(tied_from)
+        rav_to = self.params._raveled_index_for(tied_to)
+        self.tied_from.add(tied_to, rav_from)
+        self.tied_to.add(tied_to, rav_to)
+        return rav_from, rav_to
     def remove(self, tied_from, tied_to):
-        self.tied_from.remove(tied_to, tied_from._current_slice_, tied_from._realshape_, self.params._offset(tied_from))
-        self.tied_to.remove(tied_to, tied_to._current_slice_, tied_to._realshape_, self.params._offset(tied_to))
+        rav_from = self.params._raveled_index_for(tied_from)
+        rav_to = self.params._raveled_index_for(tied_to)
+        self.tied_from.remove(tied_to, rav_from)
+        self.tied_to.remove(tied_to, rav_to)
+        return rav_from, rav_to
     def from_to_for(self, index):
         return self.tied_from.properties_for(index), self.tied_to.properties_for(index)
     def iter_from_to_indices(self):
@@ -153,11 +156,11 @@ class TieIndexOperations(object):
     def from_to_indices(self, param):
         return self.tied_from[param], self.tied_to[param]
     
-def create_raveled_indices(index, shape, offset=0):
-    if isinstance(index, (tuple, list)): i = [slice(None)] + list(index)
-    else: i = [slice(None), index]
-    ind = numpy.array(numpy.ravel_multi_index(numpy.indices(shape)[i], shape)).flat + numpy.int_(offset)
-    return ind
+# def create_raveled_indices(index, shape, offset=0):
+#     if isinstance(index, (tuple, list)): i = [slice(None)] + list(index)
+#     else: i = [slice(None), index]
+#     ind = numpy.array(numpy.ravel_multi_index(numpy.indices(shape)[i], shape)).flat + numpy.int_(offset)
+#     return ind
 
 def combine_indices(arr1, arr2):
     return numpy.union1d(arr1, arr2)

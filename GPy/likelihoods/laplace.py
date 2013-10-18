@@ -1,6 +1,14 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-
+#
+#Parts of this file were influenced by the Matlab GPML framework written by
+#Carl Edward Rasmussen & Hannes Nickisch, however all bugs are our own.
+#
+#The GPML code is released under the FreeBSD License.
+#Copyright (c) 2005-2013 Carl Edward Rasmussen & Hannes Nickisch. All rights reserved.
+#
+#The code and associated documentation is available from
+#http://gaussianprocess.org/gpml/code.
 
 import numpy as np
 import scipy as sp
@@ -32,7 +40,6 @@ class Laplace(likelihood):
         :param noise_model: likelihood function - subclass of noise_model
         :type noise_model: noise_model
         :param extra_data: additional data used by some likelihood functions,
-                           for example survival likelihoods need censoring data
         """
         self.data = data
         self.noise_model = noise_model
@@ -125,7 +132,6 @@ class Laplace(likelihood):
 
         #len(dlik_dthetaL)
         num_params = len(self._get_param_names())
-        print num_params
         # make space for one derivative for each likelihood parameter
         dL_dthetaL = np.zeros(num_params)
         for thetaL_i in range(num_params):
@@ -140,7 +146,6 @@ class Laplace(likelihood):
             dL_dthetaL_imp = np.dot(dL_dfhat, dfhat_dthetaL)
             dL_dthetaL[thetaL_i] = dL_dthetaL_exp + dL_dthetaL_imp
 
-        print dL_dthetaL
         return dL_dthetaL
 
     def _compute_GP_variables(self):
@@ -265,7 +270,7 @@ class Laplace(likelihood):
         ln_B_det = 2*np.sum(np.log(np.diag(L)))
         return W12BiW12, ln_B_det
 
-    def rasm_mode(self, K, MAX_ITER=100):
+    def rasm_mode(self, K, MAX_ITER=30):
         """
         Rasmussen's numerically stable mode finding
         For nomenclature see Rasmussen & Williams 2006

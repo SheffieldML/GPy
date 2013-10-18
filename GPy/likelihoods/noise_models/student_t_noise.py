@@ -233,7 +233,7 @@ class StudentT(NoiseDistribution):
 
     def _predictive_variance_analytical(self, mu, sigma, predictive_mean=None):
         """
-        Compute  mean, and conficence interval (percentiles 5 and 95) of the prediction
+        Compute predictive variance of student_t*normal p(y*|f*)p(f*)
 
         Need to find what the variance is at the latent points for a student t*normal p(y*|f*)p(f*)
         (((g((v+1)/2))/(g(v/2)*s*sqrt(v*pi)))*(1+(1/v)*((y-f)/s)^2)^(-(v+1)/2))
@@ -313,4 +313,3 @@ class StudentT(NoiseDistribution):
         p_025 = mu - p
         p_975 = mu + p
         return mu, np.nan*mu, p_025, p_975
-

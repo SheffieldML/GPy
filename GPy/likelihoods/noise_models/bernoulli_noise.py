@@ -58,6 +58,8 @@ class Bernoulli(NoiseDistribution):
             sigma2_hat = (1. - a*N/Z_hat - np.square(N/Z_hat))/tau_i
             if np.any(np.isnan([Z_hat, mu_hat, sigma2_hat])):
                 stop
+        else:
+            raise ValueError("Exact moment matching not available for link {}".format(self.gp_link.gp_transformations.__name__))
 
         return Z_hat, mu_hat, sigma2_hat
 
@@ -75,24 +77,6 @@ class Bernoulli(NoiseDistribution):
         else:
             raise NotImplementedError
 
-    def _mass(self,gp,obs):
-        #NOTE obs must be in {0,1}
-        p = self.gp_link.transf(gp)
-        return p**obs * (1.-p)**(1.-obs)
-
-    def _nlog_mass(self,gp,obs):
-        p = self.gp_link.transf(gp)
-        return obs*np.log(p) + (1.-obs)*np.log(1-p)
-
-    def _dnlog_mass_dgp(self,gp,obs):
-        p = self.gp_link.transf(gp)
-        dp = self.gp_link.dtransf_df(gp)
-        return obs/p * dp - (1.-obs)/(1.-p) * dp
-
-    def _d2nlog_mass_dgp2(self,gp,obs):
-        p = self.gp_link.transf(gp)
-        return (obs/p + (1.-obs)/(1.-p))*self.gp_link.d2transf_df2(gp) + ((1.-obs)/(1.-p)**2-obs/p**2)*self.gp_link.dtransf_df(gp)
-
     def pdf_link(self, link_f, y, extra_data=None):
         """
         Likelihood function given link(f)
@@ -109,7 +93,7 @@ class Bernoulli(NoiseDistribution):
         :rtype: float
 
         .. Note:
-            Each y_{i} must be in {0,1}
+            Each y_i must be in {0,1}
         """
         assert np.asarray(link_f).shape == np.asarray(y).shape
         objective = (link_f**y) * ((1.-link_f)**(1.-y))
@@ -131,7 +115,8 @@ class Bernoulli(NoiseDistribution):
         :rtype: float
         """
         assert np.asarray(link_f).shape == np.asarray(y).shape
-        objective = np.log(link_f**y) + np.log((1.-link_f)**(1.-y))
+        #objective = y*np.log(link_f) + (1.-y)*np.log(link_f)
+        objective = np.where(y==1, np.log(link_f), np.log(1-link_f))
         return np.sum(objective)
 
     def dlogpdf_dlink(self, link_f, y, extra_data=None):
@@ -221,7 +206,6 @@ class Bernoulli(NoiseDistribution):
 
     def _d2variance_dgp2(self,gp):
         return self.gp_link.d2transf_df2(gp)*(1. - 2.*self.gp_link.transf(gp)) - 2*self.gp_link.dtransf_df(gp)**2
-
 
     def samples(self, gp):
         """

@@ -10,6 +10,7 @@ from GPy.util.plot import gpplot
 from GPy.util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
 import gp_transformations
 from GPy.util.misc import chain_1, chain_2, chain_3
+from scipy.integrate import quad
 
 
 class NoiseDistribution(object):
@@ -125,9 +126,41 @@ class NoiseDistribution(object):
         """
         If available, this function computes the moments analytically.
         """
-        pass
+        raise NotImplementedError
 
     def _moments_match_numerical(self,obs,tau,v):
+        """
+        Calculation of moments using quadrature
+
+        :param obs: observed output
+        :param tau: cavity distribution 1st natural parameter (precision)
+        :param v: cavity distribution 2nd natural paramenter (mu*precision)
+        """
+        #Compute first integral for zeroth moment
+        mu = v/tau
+        def int_1(f):
+            return self.pdf(f, obs)*np.exp(-0.5*tau*np.square(mu-f))
+        z, accuracy = quad(int_1, -np.inf, np.inf)
+        z /= np.sqrt(2*np.pi/tau)
+
+        #Compute second integral for first moment
+        def int_2(f):
+            return f*self.pdf(f, obs)*np.exp(-0.5*tau*np.square(mu-f))
+        mean, accuracy = quad(int_2, -np.inf, np.inf)
+        mean /= np.sqrt(2*np.pi/tau)
+        mean /= z
+
+        #Compute integral for variance
+        def int_3(f):
+            return (f**2)*self.pdf(f, obs)*np.exp(-0.5*tau*np.square(mu-f))
+        Ef2, accuracy = quad(int_3, -np.inf, np.inf)
+        Ef2 /= np.sqrt(2*np.pi/tau)
+        Ef2 /= z
+        variance = Ef2 - mean**2
+
+        return z, mean, variance
+
+    def _moments_match_numerical_laplace(self,obs,tau,v):
         """
         Lapace approximation to calculate the moments.
 
@@ -255,7 +288,7 @@ class NoiseDistribution(object):
 
         If available, this function computes the predictive mean analytically.
         """
-        pass
+        raise NotImplementedError
 
     def _predictive_variance_analytical(self,mu,sigma):
         """
@@ -265,7 +298,7 @@ class NoiseDistribution(object):
 
         If available, this function computes the predictive variance analytically.
         """
-        pass
+        raise NotImplementedError
 
     def _predictive_mean_numerical(self,mu,sigma):
         """
@@ -572,27 +605,12 @@ class NoiseDistribution(object):
             d2link_df2 = self.gp_link.d2transf_df2(f)
             d2logpdf_dlink2_dtheta = self.d2logpdf_dlink2_dtheta(link_f, y, extra_data=extra_data)
             dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, extra_data=extra_data)
-            #FIXME: Why isn't this chain_1?
-            #return chain_1(d2logpdf_dlink2_dtheta, d2link_df2)
             return chain_2(d2logpdf_dlink2_dtheta, dlink_df, dlogpdf_dlink_dtheta, d2link_df2)
         else:
             #Is no parameters so return an empty array for its derivatives
             return np.empty([f.shape[0], 0])
 
     def _laplace_gradients(self, f, y, extra_data=None):
-        #Bit nasty we recompute thesesome of these but it keeps it modular
-        #link_f = self.gp_link.transf(f)
-        #dlink_df = self.gp_link.dtransf_df(f)
-        #d2link_df2 = self.gp_link.d2transf_df2(f)
-
-        #dlogpdf_dtheta = self.dlogpdf_dtheta(link_f, y, extra_data=extra_data)
-        #dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, extra_data=extra_data)
-        #d2logpdf_dlink2_dtheta = self.d2logpdf_dlink2_dtheta(link_f, y, extra_data=extra_data)
-
-        ##now chain them all with dlink_df etc
-        #dlogpdf_df_dtheta = chain_1(dlogpdf_dlink_dtheta, dlink_df)
-        #d2logpdf_df2_dtheta = chain_1(d2logpdf_dlink2_dtheta, d2link_df2)
-
         dlogpdf_dtheta = self.dlogpdf_dtheta(f, y, extra_data=extra_data)
         dlogpdf_df_dtheta = self.dlogpdf_df_dtheta(f, y, extra_data=extra_data)
         d2logpdf_df2_dtheta = self.d2logpdf_df2_dtheta(f, y, extra_data=extra_data)

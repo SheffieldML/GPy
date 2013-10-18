@@ -19,19 +19,8 @@ __fixed__ = "fixed"
 
 #===============================================================================
 # constants
-class _F_(object):
-    def __bool__(self):
-        return False
-    def __str__(self):
-        return "FIXED"
-FIXED = _F_()
-class _U_(object):
-    def __bool__(self):
-        return True
-    def __str__(self):
-        return "UNFIXED"
-UNFIXED = _U_()
-del _U_, _F_
+FIXED = False
+UNFIXED = True
 #===============================================================================
 
 class Parameterized(object):
@@ -268,13 +257,17 @@ class Parameterized(object):
         try:
             param_or_index = self._raveled_index_for(param_or_index)
         except AttributeError:
-            self._ties_fixes_[param_or_index] = FIXED
+            pass
+        self._ties_fixes_[param_or_index] = FIXED
+        if numpy.all(self._ties_fixes_): self._ties_fixes_ = None # ==UNFIXED
     def _set_unfixed(self, param_or_index):
         if self._ties_fixes_ is None: self._ties_fixes_ = numpy.ones(self._parameter_size_, dtype=bool)
         try:
             param_or_index = self._raveled_index_for(param_or_index)
         except AttributeError:
-            self._ties_fixes_[param_or_index] = UNFIXED
+            pass
+        self._ties_fixes_[param_or_index] = UNFIXED
+        if numpy.all(self._ties_fixes_): self._ties_fixes_ = None # ==UNFIXED
 #     def _add_tie(self, param, tied_to):
 #         # tie param to tie_to, if the values match (with broadcasting)
 #         self._remove_tie(param) # delete if multiple ties should be allowed
@@ -425,7 +418,7 @@ class Parameterized(object):
         return [x._desc for x in self._parameters_]
     @property
     def _ts(self):
-        return [' '.join([t._short() for t in self._ties_iter(x)]) for x in self._parameters_]
+        return [' '.join([t._short() for t in x._tied_to_]) for x in self._parameters_]
     def __str__(self, header=True):
         nl = max([len(str(x)) for x in self.parameter_names + ["Name"]])
         sl = max([len(str(x)) for x in self._descs + ["Value"]])

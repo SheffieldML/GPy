@@ -45,18 +45,24 @@ class Bernoulli(NoiseDistribution):
         :param tau_i: precision of the cavity distribution (float)
         :param v_i: mean/variance of the cavity distribution (float)
         """
+        if data_i == 1:
+            sign = 1.
+        elif data_i == 0:
+            sign = -1
+        else:
+            raise ValueError("bad value for Bernouilli observation (0,1)")
         if isinstance(self.gp_link,gp_transformations.Probit):
-            z = data_i*v_i/np.sqrt(tau_i**2 + tau_i)
+            z = sign*v_i/np.sqrt(tau_i**2 + tau_i)
             Z_hat = std_norm_cdf(z)
             phi = std_norm_pdf(z)
-            mu_hat = v_i/tau_i + data_i*phi/(Z_hat*np.sqrt(tau_i**2 + tau_i))
+            mu_hat = v_i/tau_i + sign*phi/(Z_hat*np.sqrt(tau_i**2 + tau_i))
             sigma2_hat = 1./tau_i - (phi/((tau_i**2+tau_i)*Z_hat))*(z+phi/Z_hat)
 
         elif isinstance(self.gp_link,gp_transformations.Heaviside):
-            a = data_i*v_i/np.sqrt(tau_i)
+            a = sign*v_i/np.sqrt(tau_i)
             Z_hat = std_norm_cdf(a)
             N = std_norm_pdf(a)
-            mu_hat = v_i/tau_i + data_i*N/Z_hat/np.sqrt(tau_i)
+            mu_hat = v_i/tau_i + sign*N/Z_hat/np.sqrt(tau_i)
             sigma2_hat = (1. - a*N/Z_hat - np.square(N/Z_hat))/tau_i
             if np.any(np.isnan([Z_hat, mu_hat, sigma2_hat])):
                 stop
@@ -97,7 +103,7 @@ class Bernoulli(NoiseDistribution):
         .. Note:
             Each y_i must be in {0,1}
         """
-        assert np.asarray(link_f).shape == np.asarray(y).shape
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         objective = (link_f**y) * ((1.-link_f)**(1.-y))
         return np.exp(np.sum(np.log(objective)))
 
@@ -116,7 +122,7 @@ class Bernoulli(NoiseDistribution):
         :returns: log likelihood evaluated at points link(f)
         :rtype: float
         """
-        assert np.asarray(link_f).shape == np.asarray(y).shape
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         #objective = y*np.log(link_f) + (1.-y)*np.log(link_f)
         objective = np.where(y==1, np.log(link_f), np.log(1-link_f))
         return np.sum(objective)
@@ -136,7 +142,7 @@ class Bernoulli(NoiseDistribution):
         :returns: gradient of log likelihood evaluated at points link(f)
         :rtype: Nx1 array
         """
-        assert np.asarray(link_f).shape == np.asarray(y).shape
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         grad = (y/link_f) - (1.-y)/(1-link_f)
         return grad
 
@@ -161,7 +167,7 @@ class Bernoulli(NoiseDistribution):
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
             (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
         """
-        assert np.asarray(link_f).shape == np.asarray(y).shape
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         d2logpdf_dlink2 = -y/(link_f**2) - (1-y)/((1-link_f)**2)
         return d2logpdf_dlink2
 
@@ -180,7 +186,7 @@ class Bernoulli(NoiseDistribution):
         :returns: third derivative of log likelihood evaluated at points link(f)
         :rtype: Nx1 array
         """
-        assert np.asarray(link_f).shape == np.asarray(y).shape
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         d3logpdf_dlink3 = 2*(y/(link_f**3) - (1-y)/((1-link_f)**3))
         return d3logpdf_dlink3
 

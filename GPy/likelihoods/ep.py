@@ -19,7 +19,6 @@ class EP(likelihood):
         self.num_data, self.output_dim = self.data.shape
         self.is_heteroscedastic = True
         self.num_params = 0
-        self._transf_data = self.noise_model._preprocess_values(data)
 
         #Initial values - Likelihood approximation parameters:
         #p(y|f) = t(f|tau_tilde,v_tilde)
@@ -134,7 +133,7 @@ class EP(likelihood):
                 self.tau_[i] = 1./Sigma[i,i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = mu[i]/Sigma[i,i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self.data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma[i,i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma[i,i])
@@ -233,7 +232,7 @@ class EP(likelihood):
                 self.tau_[i] = 1./Sigma_diag[i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = mu[i]/Sigma_diag[i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self.data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma_diag[i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma_diag[i])
@@ -336,7 +335,7 @@ class EP(likelihood):
                 self.tau_[i] = 1./Sigma_diag[i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = mu[i]/Sigma_diag[i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self.data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma_diag[i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma_diag[i])

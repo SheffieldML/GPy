@@ -33,10 +33,11 @@ class RBF(Kernpart):
     """
 
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='rbf'):
+        super(RBF, self).__init__(input_dim)
         self.input_dim = input_dim
         self.name = name
         self.ARD = ARD
-        self.variance = variance
+        
         if not ARD:
             self.num_params = 2
             if lengthscale is not None:
@@ -53,15 +54,21 @@ class RBF(Kernpart):
                 lengthscale = np.ones(self.input_dim)
 
         #self._set_params(np.hstack((variance, lengthscale.flatten())))
-        self.set_as_parameter_named('variance', )
+        self.variance = variance
+        self.lengthscale = lengthscale
+        self.set_as_parameter('variance', self.variance, None)
+        self.set_as_parameter('lengthscale', self.lengthscale, None)
+        
         # initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3, 1))
         self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
 
         # a set of optional args to pass to weave
         self.weave_options = {'headers'           : ['<omp.h>'],
-                         'extra_compile_args': ['-fopenmp -O3'], # -march=native'],
-                         'extra_link_args'   : ['-lgomp']}
+                              'extra_compile_args': ['-fopenmp -O3'], # -march=native'],
+                              'extra_link_args'   : ['-lgomp']}
+        
+    
         
     def parameters_changed(self):
         self.lengthscale2 = np.square(self.lengthscale)
@@ -69,25 +76,27 @@ class RBF(Kernpart):
         self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
         self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
 
-#     def _get_params(self):
-#         return np.hstack((self.variance, self.lengthscale))
+    def _get_params(self):
+        return np.hstack((self.variance, self.lengthscale))
 # 
-#     def _set_params(self, x):
-#         assert x.size == (self.num_params)
-#         self.variance = x[0]
-#         self.lengthscale = x[1:]
-#         self.lengthscale2 = np.square(self.lengthscale)
-#         # reset cached results
-#         self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
-#         self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
-# 
-#     def _get_param_names(self):
-#         if self.num_params == 2:
-#             return ['variance', 'lengthscale']
-#         else:
-#             return ['variance'] + ['lengthscale_%i' % i for i in range(self.lengthscale.size)]
+    def _set_params(self, x):
+        assert x.size == (self.num_params)
+        #self.variance = x[0]
+        #self.lengthscale = x[1:]
+        
+        #self.lengthscale2 = np.square(self.lengthscale)
+        
+        # reset cached results
+        #self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
+        #self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
+ 
+    def _get_param_names(self):
+        if self.num_params == 2:
+            return ['variance', 'lengthscale']
+        else:
+            return ['variance'] + ['lengthscale_%i' % i for i in range(self.lengthscale.size)]
 
-    def _dK_dvariance(self, model):
+    def _dK_dvariance(self, model, target):
         pass
 
     def K(self, X, X2, target):

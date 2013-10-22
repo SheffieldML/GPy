@@ -22,6 +22,7 @@ class Kernpart(object):
         self.name = 'unnamed'
         # link to parameterized objects
         self._parameters_ = []
+        
     def set_as_parameter_named(self, name, gradient, index=None, *args, **kwargs):
         """
         :param names:        name of parameter to set as parameter
@@ -49,6 +50,7 @@ class Kernpart(object):
             self._parameters_.append(p)
         else:
             self._parameters_.insert(index, p)
+        self.__dict__[name] = p
     #set_as_parameter.__doc__ += set_as_parameter.__doc__  # @UndefinedVariable
 #     def _get_params(self):
 #         raise NotImplementedError

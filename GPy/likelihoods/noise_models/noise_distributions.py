@@ -297,6 +297,23 @@ class NoiseDistribution(object):
 
     def _predictive_mean_numerical(self,mu,sigma):
         """
+        Quadrature calculation of the predictive mean: E(Y_star|Y) = E( E(Y_star|f_star, Y) )
+
+        :param mu: mean of posterior
+        :param sigma: standard deviation of posterior
+
+        """
+        sigma2 = sigma**2
+        #Compute first moment
+        def int_mean(f):
+            return self._mean(f)*np.exp(-(0.5/sigma2)*np.square(f - mu))
+        scaled_mean, accuracy = quad(int_mean, -np.inf, np.inf)
+        mean = scaled_mean / np.sqrt(2*np.pi*(sigma2))
+
+        return mean
+
+    def _predictive_mean_numerical_laplace(self,mu,sigma):
+        """
         Laplace approximation to the predictive mean: E(Y_star|Y) = E( E(Y_star|f_star, Y) )
         if self.
 
@@ -333,6 +350,40 @@ class NoiseDistribution(object):
         return mean_squared
 
     def _predictive_variance_numerical(self,mu,sigma,predictive_mean=None):
+        """
+        Laplace approximation to the predictive variance: V(Y_star) = E( V(Y_star|f_star) ) + V( E(Y_star|f_star) )
+
+        :param mu: mean of posterior
+        :param sigma: standard deviation of posterior
+        :predictive_mean: output's predictive mean, if None _predictive_mean function will be called.
+
+        """
+        sigma2 = sigma**2
+        normalizer = np.sqrt(2*np.pi*sigma2)
+
+        # E( V(Y_star|f_star) )
+        #Compute expected value of variance
+        def int_var(f):
+            return self._variance(f)*np.exp(-(0.5/sigma2)*np.square(f - mu))
+        scaled_exp_variance, accuracy = quad(int_var, -np.inf, np.inf)
+        exp_var = scaled_exp_variance / normalizer
+
+        #V( E(Y_star|f_star) ) =  E( E(Y_star|f_star)**2 ) - E( E(Y_star|f_star) )**2
+        if predictive_mean is None:
+            predictive_mean = self.predictive_mean(mu,sigma)
+
+        predictive_mean_sq = predictive_mean**2
+        def int_pred_mean_sq(f):
+            return predictive_mean_sq*np.exp(-(0.5/(sigma2))*np.square(f - mu))
+
+        scaled_exp_exp2, accuracy = quad(int_pred_mean_sq, -np.inf, np.inf)
+        exp_exp2 = scaled_exp_exp2 / normalizer
+
+        var_exp = exp_exp2 - predictive_mean**2
+        # V(Y_star | f_star) = E( V(Y_star|f_star) ) + V( E(Y_star|f_star) )
+        return exp_var + var_exp
+
+    def _predictive_variance_numerical_laplace(self,mu,sigma,predictive_mean=None):
         """
         Laplace approximation to the predictive variance: V(Y_star) = E( V(Y_star|f_star) ) + V( E(Y_star|f_star) )
 

@@ -31,8 +31,8 @@ class GPBase(Model):
             self._Xoffset = np.zeros((1, self.input_dim))
             self._Xscale = np.ones((1, self.input_dim))
         
-        self.set_as_parameters(*self.kern._parameters_, highest_parent=self)
-        self.set_as_parameters(*self.likelihood._parameters_, highest_parent=self)
+        self.set_as_parameters(*self.kern._parameters_)
+        self.set_as_parameters(*self.likelihood._parameters_)
 
         # Model.__init__(self)
         # All leaf nodes should call self._set_params(self._get_params()) at

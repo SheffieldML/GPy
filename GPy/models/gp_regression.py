@@ -31,7 +31,7 @@ class GPRegression(GP):
 
         likelihood = likelihoods.Gaussian(Y, normalize=normalize_Y)
 
-        GP.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
+        super(GPRegression, self).__init__(X, likelihood, kernel, normalize_X=normalize_X)
         self.ensure_default_constraints()
 
     def getstate(self):

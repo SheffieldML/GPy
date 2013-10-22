@@ -3,9 +3,7 @@
 
 
 import numpy as np
-import pylab as pb
-from .. import kern
-from ..util.linalg import pdinv, mdot, tdot, dpotrs, dtrtrs
+from ..util.linalg import pdinv, tdot, dpotrs, dtrtrs
 from ..likelihoods import EP
 from gp_base import GPBase
 
@@ -35,6 +33,7 @@ class GP(GPBase):
         #self._set_params(self._get_params())
 
     def parameters_changed(self):
+        super(GP, self).parameters_changed()
         self.K = self.kern.K(self.X)
         self.K += self.likelihood.covariance_matrix
         self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
@@ -51,11 +50,11 @@ class GP(GPBase):
             tmp, _ = dpotrs(self.L, np.asfortranarray(tmp.T), lower=1)
             self.dL_dK = 0.5 * (tmp - self.output_dim * self.Ki)
 
-    def _get_params(self):
-        return np.hstack((self.kern._get_params_transformed(), self.likelihood._get_params()))
+#     def _get_params(self):
+#         return np.hstack((self.kern._get_params_transformed(), self.likelihood._get_params()))
 
-    def _get_param_names(self):
-        return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
+#     def _get_param_names(self):
+#         return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
     def update_likelihood_approximation(self, **kwargs):
         """
@@ -66,7 +65,7 @@ class GP(GPBase):
         """
         self.likelihood.restart()
         self.likelihood.fit_full(self.kern.K(self.X), **kwargs)
-        self._set_params(self._get_params()) # update the GP
+#         self._set_params(self._get_params()) # update the GP
 
     def _model_fit_term(self):
         """

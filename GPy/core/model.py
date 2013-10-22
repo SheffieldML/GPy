@@ -6,7 +6,7 @@ from .. import likelihoods
 from ..inference import optimization
 from ..util.linalg import jitchol
 from ..util.misc import opt_wrapper
-from parameterized import Parameterized
+from parameterized import Parameterized, __fixed__
 import multiprocessing as mp
 import numpy as np
 from domains import _POSITIVE, _REAL
@@ -18,7 +18,8 @@ class Model(Parameterized):
     _fail_count = 0 # Count of failed optimization steps (see objective)
     _allowed_failures = 10 # number of allowed failures
     def __init__(self):
-        Parameterized.__init__(self)
+        super(Model, self).__init__()#Parameterized.__init__(self)
+        self.priors = []
         self._priors = ParameterIndexOperations()
         self.optimization_runs = []
         self.sampling_runs = []
@@ -151,16 +152,20 @@ class Model(Parameterized):
         [np.put(ret, i, p.lnpdf_grad(xx)) for i, (p, xx) in enumerate(zip(self.priors, x)) if not p is None]
         return ret
 
+
     def _transform_gradients(self, g):
         x = self._get_params()
-        for index, constraint in zip(self.constrained_indices, self.constraints):
-            g[index] = g[index] * constraint.gradfactor(x[index])
-        [np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
-        if len(self.tied_indices) or len(self.fixed_indices):
-            to_remove = np.hstack((self.fixed_indices + [t[1:] for t in self.tied_indices]))
-            return np.delete(g, to_remove)
-        else:
-            return g
+        for constraint, index in self._constraints_.iteritems():
+            if constraint != __fixed__:
+                g[index] = g[index] * constraint.gradfactor(x[index])
+        #[np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
+        [np.put(g, i, v) for i, v in [[i, t.sum()] for p in self._parameters_ for t,i in p._tied_to_me_.iteritems()]]
+#         if len(self.tied_indices) or len(self.fixed_indices):
+#             to_remove = np.hstack((self.fixed_indices + [t[1:] for t in self.tied_indices]))
+#             return np.delete(g, to_remove)
+#         else:
+        if self._fixes_ is not None: return g[self._fixes_]
+        return g
 
     def randomize(self):
         """
@@ -262,14 +267,18 @@ class Model(Parameterized):
         """
         positive_strings = ['variance', 'lengthscale', 'precision', 'kappa']
         # param_names = self._get_param_names()
-        currently_constrained = self.all_constrained_indices()
-        to_make_positive = []
         for s in positive_strings:
-            for i in self.grep_param_names(".*" + s):
-                if not (i in currently_constrained):
-                    to_make_positive.append(i)
-        if len(to_make_positive):
-            self.constrain_positive(np.asarray(to_make_positive), warning=warning)
+            paramlist = self.grep_param_names(".*"+s)
+            if paramlist:
+                self.__getitem__(None, paramlist).constrain_positive(warning=warning)
+#         currently_constrained = self.all_constrained_indices()
+#         to_make_positive = []
+#         for s in positive_strings:
+#             for i in self.grep_param_names(".*" + s):
+#                 if not (i in currently_constrained):
+#                     to_make_positive.append(i)
+#         if len(to_make_positive):
+#             self.constrain_positive(np.asarray(to_make_positive), warning=warning)
 
     def objective_function(self, x):
         """
@@ -277,7 +286,7 @@ class Model(Parameterized):
         the likelihood and the priors.
         
         Failures are handled robustly. The algorithm will try several times to
-        return the objective, and will raise the original exception if it
+        return the objective, and will raise the original exception if
         the objective cannot be computed.
 
         :param x: the parameters of the model.
@@ -298,7 +307,7 @@ class Model(Parameterized):
         Gets the gradients from the likelihood and the priors.
 
         Failures are handled robustly. The algorithm will try several times to
-        return the gradients, and will raise the original exception if it
+        return the gradients, and will raise the original exception if
         the objective cannot be computed.
 
         :param x: the parameters of the model.
@@ -345,8 +354,8 @@ class Model(Parameterized):
         :type max_f_eval: int
         :messages: whether to display during optimisation
         :type messages: bool
-        :param optimzer: which optimizer to use (defaults to self.preferred optimizer)
-        :type optimzer: string TODO: valid strings?
+        :param optimizer: which optimizer to use (defaults to self.preferred optimizer)
+        :type optimizer: string TODO: valid strings?
         """
         if optimizer is None:
             optimizer = self.preferred_optimizer

@@ -2,7 +2,7 @@ import numpy as np
 from .. import kern
 from ..util.plot import gpplot, Tango, x_frame1D, x_frame2D
 import pylab as pb
-from GPy.core.model import Model
+from model import Model
 import warnings
 from ..likelihoods import Gaussian, Gaussian_Mixed_Noise
 
@@ -12,6 +12,8 @@ class GPBase(Model):
     sparse_GP and GP models.
     """
     def __init__(self, X, likelihood, kernel, normalize_X=False):
+        super(GPBase, self).__init__()
+        
         self.X = X
         assert len(self.X.shape) == 2
         self.num_data, self.input_dim = self.X.shape
@@ -29,10 +31,9 @@ class GPBase(Model):
             self._Xoffset = np.zeros((1, self.input_dim))
             self._Xscale = np.ones((1, self.input_dim))
         
-        self.set_as_parameter(self.kern._parameters_)
-        self.set_as_parameter(self.likelihood._parameters_)
+        self.set_as_parameters(*self.kern._parameters_, highest_parent=self)
+        self.set_as_parameters(*self.likelihood._parameters_, highest_parent=self)
 
-        super(GPBase, self).__init__()
         # Model.__init__(self)
         # All leaf nodes should call self._set_params(self._get_params()) at
         # the end

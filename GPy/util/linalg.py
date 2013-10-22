@@ -325,6 +325,7 @@ def symmetrify(A, upper=False):
     """
     N, M = A.shape
     assert N == M
+    
     c_contig_code = """
     int iN;
     for (int i=1; i<N; i++){
@@ -343,6 +344,8 @@ def symmetrify(A, upper=False):
       }
     }
     """
+
+    N = int(N) # for safe type casting
     if A.flags['C_CONTIGUOUS'] and upper:
         weave.inline(f_contig_code, ['A', 'N'], extra_compile_args=['-O3'])
     elif A.flags['C_CONTIGUOUS'] and not upper:
@@ -403,4 +406,3 @@ def backsub_both_sides(L, X, transpose='left'):
     else:
         tmp, _ = lapack.dtrtrs(L, np.asfortranarray(X), lower=1, trans=0)
         return lapack.dtrtrs(L, np.asfortranarray(tmp.T), lower=1, trans=0)[0].T
-

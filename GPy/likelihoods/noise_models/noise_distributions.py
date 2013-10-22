@@ -413,3 +413,13 @@ class NoiseDistribution(object):
         q1 = np.vstack(q1)
         q3 = np.vstack(q3)
         return pred_mean, pred_var, q1, q3
+
+
+    def samples(self, gp):
+        """
+        Returns a set of samples of observations based on a given value of the latent variable.
+
+        :param gp: latent variable
+        """
+        pass
+

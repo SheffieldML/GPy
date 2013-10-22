@@ -298,43 +298,67 @@ if sympy_available:
         """
         Radial Basis Function covariance.
         """
-        X = [sp.var('x%i' % i) for i in range(input_dim)]
-        Z = [sp.var('z%i' % i) for i in range(input_dim)]
+        X = sp.symbols('x_:' + str(input_dim))
+        Z = sp.symbols('z_:' + str(input_dim))
         variance = sp.var('variance',positive=True)
         if ARD:
-            lengthscales = [sp.var('lengthscale_%i' % i, positive=True) for i in range(input_dim)]
-            dist_string = ' + '.join(['(x%i-z%i)**2/lengthscale_%i**2' % (i, i, i) for i in range(input_dim)])
+            lengthscales = sp.symbols('lengthscale_:' + str(input_dim))
+            dist_string = ' + '.join(['(x_%i-z_%i)**2/lengthscale%i**2' % (i, i, i) for i in range(input_dim)])
             dist = parse_expr(dist_string)
             f =  variance*sp.exp(-dist/2.)
         else:
             lengthscale = sp.var('lengthscale',positive=True)
-            dist_string = ' + '.join(['(x%i-z%i)**2' % (i, i) for i in range(input_dim)])
+            dist_string = ' + '.join(['(x_%i-z_%i)**2' % (i, i) for i in range(input_dim)])
             dist = parse_expr(dist_string)
             f =  variance*sp.exp(-dist/(2*lengthscale**2))
         return kern(input_dim, [spkern(input_dim, f, name='rbf_sympy')])
+
+    def eq_sympy(input_dim, output_dim, ARD=False, variance=1., lengthscale=1.):
+        """
+        Exponentiated quadratic with multiple outputs.
+        """
+        real_input_dim = input_dim
+        if output_dim>1:
+            real_input_dim -= 1
+        X = sp.symbols('x_:' + str(real_input_dim))
+        Z = sp.symbols('z_:' + str(real_input_dim))
+        scale = sp.var('scale_i scale_j',positive=True)
+        if ARD:
+            lengthscales = [sp.var('lengthscale%i_i lengthscale%i_j' % i, positive=True) for i in range(real_input_dim)]
+            shared_lengthscales = [sp.var('shared_lengthscale%i' % i, positive=True) for i in range(real_input_dim)]
+            dist_string = ' + '.join(['(x_%i-z_%i)**2/(shared_lengthscale%i**2 + lengthscale%i_i*lengthscale%i_j)' % (i, i, i) for i in range(real_input_dim)])
+            dist = parse_expr(dist_string)
+            f =  variance*sp.exp(-dist/2.)
+        else:
+            lengthscales = sp.var('lengthscale_i lengthscale_j',positive=True)
+            shared_lengthscale = sp.var('shared_lengthscale',positive=True)
+            dist_string = ' + '.join(['(x_%i-z_%i)**2' % (i, i) for i in range(real_input_dim)])
+            dist = parse_expr(dist_string)
+            f =  scale_i*scale_j*sp.exp(-dist/(2*(lengthscale_i**2 + lengthscale_j**2 + shared_lengthscale**2)))
+        return kern(input_dim, [spkern(input_dim, f, output_dim=output_dim, name='eq_sympy')])
 
     def sinc(input_dim, ARD=False, variance=1., lengthscale=1.):
         """
         TODO: Not clear why this isn't working, suggests argument of sinc is not a number.
         sinc covariance funciton
         """
-        X = [sp.var('x%i' % i) for i in range(input_dim)]
-        Z = [sp.var('z%i' % i) for i in range(input_dim)]
+        X = sp.symbols('x_:' + str(input_dim))
+        Z = sp.symbols('z_:' + str(input_dim))
         variance = sp.var('variance',positive=True)
         if ARD:
             lengthscales = [sp.var('lengthscale_%i' % i, positive=True) for i in range(input_dim)]
-            dist_string = ' + '.join(['(x%i-z%i)**2/lengthscale_%i**2' % (i, i, i) for i in range(input_dim)])
+            dist_string = ' + '.join(['(x_%i-z_%i)**2/lengthscale_%i**2' % (i, i, i) for i in range(input_dim)])
             dist = parse_expr(dist_string)
             f =  variance*sinc(sp.pi*sp.sqrt(dist))
         else:
             lengthscale = sp.var('lengthscale',positive=True)
-            dist_string = ' + '.join(['(x%i-z%i)**2' % (i, i) for i in range(input_dim)])
+            dist_string = ' + '.join(['(x_%i-z_%i)**2' % (i, i) for i in range(input_dim)])
             dist = parse_expr(dist_string)
             f =  variance*sinc(sp.pi*sp.sqrt(dist)/lengthscale)
             
         return kern(input_dim, [spkern(input_dim, f, name='sinc')])
 
-    def sympykern(input_dim, k,name=None):
+    def sympykern(input_dim, k=None, output_dim=1, name=None, param=None):
         """
         A base kernel object, where all the hard work in done by sympy.
 
@@ -349,7 +373,7 @@ if sympy_available:
          - to handle multiple inputs, call them x1, z1, etc
          - to handle multpile correlated outputs, you'll need to define each covariance function and 'cross' variance function. TODO
         """
-        return kern(input_dim, [spkern(input_dim, k,name)])
+        return kern(input_dim, [spkern(input_dim, k=k, output_dim=output_dim, name=name, param=param)])
 del sympy_available
 
 def periodic_exponential(input_dim=1, variance=1., lengthscale=None, period=2 * np.pi, n_freq=10, lower=0., upper=4 * np.pi):

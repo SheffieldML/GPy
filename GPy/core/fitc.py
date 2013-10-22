@@ -126,7 +126,7 @@ class FITC(SparseGP):
             self._dpsi1_dX += self.kern.dK_dX(_dpsi1.T,self.Z,self.X[i:i+1,:])
 
         # the partial derivative vector for the likelihood
-        if self.likelihood.Nparams == 0:
+        if self.likelihood.num_params == 0:
             # save computation here.
             self.partial_for_likelihood = None
         elif self.likelihood.is_heteroscedastic:

@@ -211,8 +211,8 @@ class MRD(Model):
 #         g.Z = Z.reshape(self.num_inducing, self.input_dim)
 #
 #     def _set_kern_params(self, g, p):
-#         g.kern._set_params(p[:g.kern.Nparam])
-#         g.likelihood._set_params(p[g.kern.Nparam:])
+#         g.kern._set_params(p[:g.kern.num_params])
+#         g.likelihood._set_params(p[g.kern.num_params:])
 
     def _set_params(self, x):
         start = 0; end = self.NQ

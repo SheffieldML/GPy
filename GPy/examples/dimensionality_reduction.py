@@ -26,7 +26,7 @@ def BGPLVM(seed=default_seed):
     lik = Gaussian(Y, normalize=True)
 
     k = GPy.kern.rbf_inv(Q, .5, np.ones(Q) * 2., ARD=True) + GPy.kern.bias(Q) + GPy.kern.white(Q)
-    # k = GPy.kern.rbf(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
+    # k = GPy.kern.linear(Q) + GPy.kern.bias(Q) + GPy.kern.white(Q, 0.00001)
     # k = GPy.kern.rbf(Q, ARD = False)  + GPy.kern.white(Q, 0.00001)
 
     m = GPy.models.BayesianGPLVM(lik, Q, kernel=k, num_inducing=num_inducing)
@@ -331,27 +331,46 @@ def brendan_faces():
     from GPy import kern
     data = GPy.util.datasets.brendan_faces()
     Q = 2
-    Y = data['Y'][0:-1:10, :]
-    # Y = data['Y']
+    Y = data['Y']
     Yn = Y - Y.mean()
     Yn /= Yn.std()
 
     m = GPy.models.GPLVM(Yn, Q)
-    # m = GPy.models.BayesianGPLVM(Yn, Q, num_inducing=100)
 
     # optimize
     m.constrain('rbf|noise|white', GPy.core.transformations.logexp_clipped())
 
-    m.optimize('scg', messages=1, max_f_eval=10000)
+    m.optimize('scg', messages=1, max_iters=1000)
 
     ax = m.plot_latent(which_indices=(0, 1))
     y = m.likelihood.Y[0, :]
-    data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, invert=False, scale=False)
+    data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, order='F', invert=False, scale=False)
     lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
     raw_input('Press enter to finish')
 
     return m
+
+def olivetti_faces():
+    from GPy import kern
+    data = GPy.util.datasets.olivetti_faces()
+    Q = 2
+    Y = data['Y']
+    Yn = Y - Y.mean()
+    Yn /= Yn.std()
+
+    m = GPy.models.GPLVM(Yn, Q)
+    m.optimize('scg', messages=1, max_iters=1000)
+
+    ax = m.plot_latent(which_indices=(0, 1))
+    y = m.likelihood.Y[0, :]
+    data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(112, 92), transpose=False, invert=False, scale=False)
+    lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+    raw_input('Press enter to finish')
+
+    return m
+
 def stick_play(range=None, frame_rate=15):
+
     data = GPy.util.datasets.osu_run1()
     # optimize
     if range == None:

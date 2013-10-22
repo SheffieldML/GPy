@@ -213,7 +213,7 @@ class Gaussian(NoiseDistribution):
         assert np.asarray(link_f).shape == np.asarray(y).shape
         e = y - link_f
         s_4 = 1.0/(self.variance**2)
-        dlik_dsigma = -0.5*self.N/self.variance + 0.5*s_4*np.square(e)
+        dlik_dsigma = -0.5*self.N/self.variance + 0.5*s_4*np.sum(np.square(e))
         return np.sum(dlik_dsigma) # Sure about this sum?
 
     def dlogpdf_dlink_dvar(self, link_f, y, extra_data=None):
@@ -232,8 +232,7 @@ class Gaussian(NoiseDistribution):
         :rtype: Nx1 array
         """
         assert np.asarray(link_f).shape == np.asarray(y).shape
-        s_4 = 1./(self.variance**2)
-        #dlik_grad_dsigma = -np.dot(s_4*self.I, y) + np.dot(s_4*self.I, link_f)
+        s_4 = 1.0/(self.variance**2)
         dlik_grad_dsigma = -s_4*y + s_4*link_f
         return dlik_grad_dsigma
 

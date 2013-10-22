@@ -1,6 +1,7 @@
 import numpy as np
 from likelihood import likelihood
 from ..util.linalg import jitchol
+from ..core.parameter import Param
 
 
 class Gaussian(likelihood):
@@ -32,9 +33,11 @@ class Gaussian(likelihood):
 
         self.set_data(data)
 
-        self._variance = np.asarray(variance) + 1
-        self.variance = np.asarray(variance)
-        self.set_as_parameter('noise_variance', self.variance, None)
+        self.variance = Param('noise_variance', variance, None)
+        self.set_as_parameters(self.variance)
+
+        self._variance = variance + 1
+        
 #         self._set_params(np.asarray(variance))
 
 
@@ -69,7 +72,7 @@ class Gaussian(likelihood):
                 self.V = (self.precision) * self.Y
                 self.VVT_factor = self.precision * self.YYT_factor
             self.covariance_matrix = np.eye(self.N) * self.variance
-            self._variance = self.variance
+            self._variance = self.variance.copy()
 
     def predictive_values(self, mu, var, full_cov):
         """

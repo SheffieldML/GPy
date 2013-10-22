@@ -311,7 +311,7 @@ class Model(Parameterized):
         the objective cannot be computed.
 
         :param x: the parameters of the model.
-        :parameter type: np.array
+        :type x: np.array
         """
         try:
             self._set_params_transformed(x)
@@ -329,7 +329,7 @@ class Model(Parameterized):
         Compute the objective function of the model and the gradient of the model at the point given by x.
 
         :param x: the point at which gradients are to be computed.
-        :type np.array:
+        :type x: np.array
         """
 
         try:

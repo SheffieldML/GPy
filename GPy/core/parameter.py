@@ -45,7 +45,7 @@ class Param(numpy.ndarray):
         obj._name_ = name
         obj._parent_ = None
         obj._parent_index_ = None
-        obj._updates_parent_ = None
+        obj._gradient_parent_ = None
         obj._gradient_ = gradient
         obj._current_slice_ = (slice(obj.shape[0]),)
         obj._realshape_ = obj.shape
@@ -72,7 +72,7 @@ class Param(numpy.ndarray):
         self._realndim_ = getattr(obj, '_realndim_', None)
         self._updated_ = getattr(obj, '_updated_', None)
         self._original_ = getattr(obj, '_original_', None)
-        self._updates_parent_ = getattr(obj, '_updates_parent_', None)
+        self._gradient_parent_ = getattr(obj, '_gradient_parent_', None)
         
     def __array_wrap__(self, out_arr, context=None):
         return out_arr.view(numpy.ndarray)
@@ -85,7 +85,7 @@ class Param(numpy.ndarray):
                             (self._name_,
                              self._parent_,
                              self._parent_index_,
-                             self._updates_parent_,
+                             self._gradient_parent_,
                              self._gradient_,
                              self._current_slice_,
                              self._realshape_,
@@ -107,7 +107,7 @@ class Param(numpy.ndarray):
         self._realshape_ = state.pop()
         self._current_slice_ = state.pop()
         self._gradient_ = state.pop()
-        self._updates_parent_ = state.pop()
+        self._gradient_parent_ = state.pop()
         self._parent_index_ = state.pop()
         self._parent_ = state.pop()
         self._name_ = state.pop()
@@ -174,7 +174,7 @@ class Param(numpy.ndarray):
             self._parent_._get_original(self).__setitem__(self._current_slice_, transform.initialize(self), update=False)
         self._parent_._add_constrain(self, transform, warning)
         if update:
-            self._updates_parent_.parameters_changed()        
+            self._parent_.parameters_changed()        
     def constrain_positive(self, warning=True):
         """
         :param warning: print a warning if re-constraining parameters.
@@ -321,7 +321,7 @@ class Param(numpy.ndarray):
         numpy.ndarray.__setitem__(self, s, val)
         self._fire_changed()
         if update:
-            self._updates_parent_.parameters_changed()
+            self._parent_.parameters_changed()
     #===========================================================================
     # Index Operations:
     #===========================================================================
@@ -467,7 +467,7 @@ class ParamConcatenation(object):
         [numpy.place(p, ind[ps], vals[ps]) and p._fire_changed() 
          for p, ps in zip(self.params, self._param_slices_)]
         if update:
-            self.params[0]._updates_parent_.parameters_changed()
+            self.params[0]._parent_.parameters_changed()
     def _vals(self):
         return numpy.hstack([p._get_params() for p in self.params])
     #===========================================================================
@@ -489,8 +489,8 @@ class ParamConcatenation(object):
     def constrain_bounded(self, lower, upper, warning=True):
         [param.constrain_bounded(lower, upper, warning) for param in self.params]
     constrain_bounded.__doc__ = Param.constrain_bounded.__doc__
-    def unconstrain(self, constraints=None):
-        [param.unconstrain(constraints) for param in self.params]
+    def unconstrain(self, *constraints):
+        [param.unconstrain(*constraints) for param in self.params]
     unconstrain.__doc__ = Param.unconstrain.__doc__
     def unconstrain_negative(self):
         [param.unconstrain_negative() for param in self.params]

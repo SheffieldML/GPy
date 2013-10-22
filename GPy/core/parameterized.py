@@ -12,6 +12,7 @@ import transformations
 import itertools
 from re import compile, _pattern_type
 import re
+from GPy.util.misc import fast_array_equal
 
 #===============================================================================
 # Printing:
@@ -81,7 +82,7 @@ class Parameterized(object):
     #===========================================================================
     # Parameter connection for model creation:
     #===========================================================================
-    def set_as_parameter(self, name, array, gradient, index=None, highest_parent=None):
+    def set_as_parameter(self, name, array, gradient, index=None, gradient_parent=None):
         """
         :param name:     name of the parameter (in print and plots), can be callable without parameters
         :type name:      str, callable
@@ -91,7 +92,7 @@ class Parameterized(object):
         :type gradient:  callable
         :param index:    (optional) index of the parameter when printing
         
-        (:param highest_parent:  connect these parameters to this class, but tell
+        (:param gradient_parent:  connect these parameters to this class, but tell
                         updates to highest_parent, this is needed when parameterized classes
                         contain parameterized classes, but want to access the parameters
                         of their children) 
@@ -107,7 +108,7 @@ class Parameterized(object):
             self._parameters_.append(Param(name, array, gradient))
         else:
             self._parameters_.insert(index, Param(name, array, gradient))
-        self._connect_parameters(highest_parent=highest_parent)
+        self._connect_parameters(gradient_parent=gradient_parent)
     def set_as_parameters(self, *parameters, **kwargs):
         """
         :param parameters: the parameters to add
@@ -115,13 +116,13 @@ class Parameterized(object):
         
         
         Add all parameters to this parameter class, you can insert parameters 
-        at any given point using the :py:func:`list.insert` syntax 
+        at any given index using the :py:func:`list.insert` syntax 
         """
         if kwargs.get('index',None) is None:
             self._parameters_.extend(parameters)
         else:
             self._parameters_.insert(kwargs['index'], parameters)
-        self._connect_parameters(highest_parent=kwargs.get('highest_parent', self))
+        self._connect_parameters(gradient_parent=kwargs.get('gradient_parent', self))
 #     def remove_parameter(self, *names_params_indices):
 #         """
 #         :param names_params_indices: mix of parameter_names, parameter objects, or indices 
@@ -137,7 +138,7 @@ class Parameterized(object):
     def parameters_changed(self):
         # will be called as soon as paramters have changed
         pass
-    def _connect_parameters(self, highest_parent=None):
+    def _connect_parameters(self, gradient_parent=None):
         # connect parameterlist to this parameterized object
         # This just sets up the right connection for the params objects 
         # to be used as parameters
@@ -147,11 +148,20 @@ class Parameterized(object):
         sizes = numpy.cumsum([0] + self._parameter_sizes_)
         self._parameter_size_ = sizes[-1] 
         self._param_slices_ = [slice(start, stop) for start,stop in zip(sizes, sizes[1:])]
-        for i, p in enumerate(self._parameters_):
+        i = 0
+        for p in self._parameters_:
+            #if p._parent_ is None:
             p._parent_ = self
             p._parent_index_ = i
-            p._updates_parent_ = highest_parent or self
+            i += 1
+            p._gradient_parent_ = gradient_parent or p._gradient_parent_ or self
             not_unique = []
+#             for k,v in self.__dict__.iteritems():
+#                 try: 
+#                     if fast_array_equal(v,p):
+#                         self.__dict__[k] = p
+#                 except: # parameter comparison, just for convenience
+#                     pass                    
             if p.name in self.__dict__:
                 if p.base is self.__dict__[p.name] or p is self.__dict__[p.name]:
                     self.__dict__[p.name] = p
@@ -218,7 +228,6 @@ class Parameterized(object):
     #===========================================================================
     def _get_param_names_transformed(self):
         return numpy.array([p.name+str(i) for p in self._parameters_ for i in p._indices()])[self._fixes_][0]
-    
     def _get_params(self):
         # don't overwrite this anymore!
         return numpy.hstack([x._get_params() for x in self._parameters_])#numpy.fromiter(itertools.chain(*itertools.imap(lambda x: x._get_params(), self._parameters_)), dtype=numpy.float64, count=sum(self._parameter_sizes_))    
@@ -233,6 +242,7 @@ class Parameterized(object):
             return p[self._fixes_]
         return p
     def _set_params_transformed(self, p):
+        p = p.copy()
         if self._fixes_ is not None: tmp = self._get_params(); tmp[self._fixes_] = p; p = tmp; del tmp
         [numpy.put(p, ind, c.f(p[ind])) for c,ind in self._constraints_.iteritems() if c != __fixed__]
         self._set_params(p)
@@ -338,13 +348,15 @@ class Parameterized(object):
             print "Warning: re-constraining parameters:\n{}".format(param._short())
         return rav_i
     def _remove_constrain(self, param, *transforms, **kwargs):
-        if transforms is ():
+        if not transforms:
             transforms = self._constraints_.properties()
         removed_indices = numpy.array([]).astype(int)
         if "index" in kwargs: index = kwargs['index'] 
         else: index = self._raveled_index_for(param)
         for constr in transforms:
             removed = self._constraints_.remove(constr, index)
+            if constr is __fixed__:
+                self._set_unfixed(removed)
             removed_indices = numpy.union1d(removed_indices, removed)
         return removed_indices
     # convienience for iterating over items

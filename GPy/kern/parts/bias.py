@@ -5,6 +5,7 @@
 from kernpart import Kernpart
 import numpy as np
 import hashlib
+from GPy.core.parameter import Param
 
 class Bias(Kernpart):
     def __init__(self,input_dim,variance=1.):
@@ -14,20 +15,24 @@ class Bias(Kernpart):
         :param variance: the variance of the kernel
         :type variance: float
         """
+        super(Bias, self).__init__(input_dim)
         self.input_dim = input_dim
         self.num_params = 1
         self.name = 'bias'
-        self._set_params(np.array([variance]).flatten())
 
-    def _get_params(self):
-        return self.variance
+        self.variance = Param(lambda: self.name+"_variance", variance, None)
+        self.set_as_parameters(self.variance)
+        #self._set_params(np.array([variance]).flatten())
 
-    def _set_params(self,x):
-        assert x.shape==(1,)
-        self.variance = x
-
-    def _get_param_names(self):
-        return ['variance']
+#     def _get_params(self):
+#         return self.variance
+# 
+#     def _set_params(self,x):
+#         assert x.shape==(1,)
+#         self.variance = x
+# 
+#     def _get_param_names(self):
+#         return ['variance']
 
     def K(self,X,X2,target):
         target += self.variance

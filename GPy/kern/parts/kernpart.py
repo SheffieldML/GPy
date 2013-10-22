@@ -22,35 +22,41 @@ class Kernpart(object):
         self.name = 'unnamed'
         # link to parameterized objects
         self._parameters_ = []
-        
-    def set_as_parameter_named(self, name, gradient, index=None, *args, **kwargs):
-        """
-        :param names:        name of parameter to set as parameter
-        :param gradient:     gradient method to get the gradient of this parameter
-        :param index:        index of where to place parameter in printing
-        :param args, kwargs: additional arguments to gradient
     
-        Convenience method to connect Kernpart parameters:
-        parameter with name (attribute of this Kernpart) will be set as parameter with following name:
-        
-            kernel_name + _ + parameter_name
+    def set_as_parameters(self, *params):
+        self._parameters_.extend(params)
     
-        To add the kernels name to the parameter name use this method to 
-        add parameters.
-        """
-        self.set_as_parameter(name, getattr(self, name), gradient, index, *args, **kwargs)
-    def set_as_parameter(self, name, array, gradient, index=None, *args, **kwargs):
-        """
-        See :py:func:`GPy.core.parameterized.Parameterized.set_as_parameter`
-        
-        Note: this method adds the kernels name in front of the parameter.
-        """
-        p = Param(self.name+"_"+name, array, gradient, *args, **kwargs)
-        if index is None:
-            self._parameters_.append(p)
-        else:
-            self._parameters_.insert(index, p)
-        self.__dict__[name] = p
+    def parameters_changed(self):
+        pass
+    
+#     def set_as_parameter_named(self, name, gradient, index=None, *args, **kwargs):
+#         """
+#         :param names:        name of parameter to set as parameter
+#         :param gradient:     gradient method to get the gradient of this parameter
+#         :param index:        index of where to place parameter in printing
+#         :param args, kwargs: additional arguments to gradient
+#     
+#         Convenience method to connect Kernpart parameters:
+#         parameter with name (attribute of this Kernpart) will be set as parameter with following name:
+#         
+#             kernel_name + _ + parameter_name
+#     
+#         To add the kernels name to the parameter name use this method to 
+#         add parameters.
+#         """
+#         self.set_as_parameter(name, getattr(self, name), gradient, index, *args, **kwargs)
+#     def set_as_parameter(self, name, array, gradient, index=None, *args, **kwargs):
+#         """
+#         See :py:func:`GPy.core.parameterized.Parameterized.set_as_parameter`
+#         
+#         Note: this method adds the kernels name in front of the parameter.
+#         """
+#         p = Param(self.name+"_"+name, array, gradient, *args, **kwargs)
+#         if index is None:
+#             self._parameters_.append(p)
+#         else:
+#             self._parameters_.insert(index, p)
+#         self.__dict__[name] = p
     #set_as_parameter.__doc__ += set_as_parameter.__doc__  # @UndefinedVariable
 #     def _get_params(self):
 #         raise NotImplementedError

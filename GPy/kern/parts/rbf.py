@@ -54,10 +54,11 @@ class RBF(Kernpart):
                 lengthscale = np.ones(self.input_dim)
 
         #self._set_params(np.hstack((variance, lengthscale.flatten())))
-        self.variance = variance
-        self.lengthscale = lengthscale
-        self.set_as_parameter('variance', self.variance, None)
-        self.set_as_parameter('lengthscale', self.lengthscale, None)
+        self.variance = Param(lambda: self.name+'_variance', variance, None)
+        self.lengthscale = Param(lambda: self.name+'_lengthscale', lengthscale, None)
+        self.set_as_parameters(self.variance, self.lengthscale)
+#         self.set_as_parameter('variance', self.variance, None)
+#         self.set_as_parameter('lengthscale', self.lengthscale, None)
         
         # initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3, 1))

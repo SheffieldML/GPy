@@ -3,6 +3,7 @@
 
 from kernpart import Kernpart
 import numpy as np
+from ...core.parameter import Param
 
 class White(Kernpart):
     """
@@ -18,20 +19,20 @@ class White(Kernpart):
         self.input_dim = input_dim
         self.num_params = 1
         self.name = 'white'
-        self.variance=variance
-        self.set_as_parameter_named('variance', None)
+        self.variance = Param(lambda: self.name+'_variance', variance, None)
+        self.set_as_parameters(self.variance)
 #         self._set_params(np.array([variance]).flatten())
         self._psi1 = 0 # TODO: more elegance here
         
-    def _get_params(self):
-        return self.variance
- 
-    def _set_params(self,x):
-        assert x.shape==(1,)
-        self.variance = x
- 
-    def _get_param_names(self):
-        return ['variance']
+#     def _get_params(self):
+#         return self.variance
+#  
+#     def _set_params(self,x):
+#         assert x.shape==(1,)
+#         self.variance = x
+#  
+#     def _get_param_names(self):
+#         return ['variance']
 
     def K(self,X,X2,target):
         if X2 is None:

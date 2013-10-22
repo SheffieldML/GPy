@@ -4,10 +4,10 @@ GPy.likelihoods.noise_models package
 Submodules
 ----------
 
-GPy.likelihoods.noise_models.binomial_noise module
---------------------------------------------------
+GPy.likelihoods.noise_models.bernoulli_noise module
+---------------------------------------------------
 
-.. automodule:: GPy.likelihoods.noise_models.binomial_noise
+.. automodule:: GPy.likelihoods.noise_models.bernoulli_noise
     :members:
     :undoc-members:
     :show-inheritance:

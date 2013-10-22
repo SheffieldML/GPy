@@ -36,6 +36,14 @@ GPy.testing.examples_tests module
     :undoc-members:
     :show-inheritance:
 
+GPy.testing.gp_transformation_tests module
+------------------------------------------
+
+.. automodule:: GPy.testing.gp_transformation_tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.testing.gplvm_tests module
 ------------------------------
 

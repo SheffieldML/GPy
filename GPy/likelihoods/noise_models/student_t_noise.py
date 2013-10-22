@@ -16,7 +16,7 @@ class StudentT(NoiseDistribution):
     For nomanclature see Bayesian Data Analysis 2003 p576
 
     .. math::
-        \\ln p(y_{i}|f_{i}) = \\ln \\Gamma(\\frac{v+1}{2}) - \\ln \\Gamma(\\frac{v}{2})\\sqrt{v \\pi}\\sigma - \\frac{v+1}{2}\\ln (1 + \\frac{1}{v}\\left(\\frac{y_{i} - f_{i}}{\\sigma}\\right)^2)
+        p(y_{i}|\\lambda(f_{i})) = \\frac{\\Gamma\\left(\\frac{v+1}{2}\\right)}{\\Gamma\\left(\\frac{v}{2}\\right)\\sqrt{v\\pi\\sigma^{2}}}\\left(1 + \\frac{1}{v}\\left(\\frac{(y_{i} - f_{i})^{2}}{\\sigma^{2}}\\right)\\right)^{\\frac{-v+1}{2}}
 
     """
     def __init__(self,gp_link=None,analytical_mean=True,analytical_variance=True, deg_free=5, sigma2=2):
@@ -45,13 +45,13 @@ class StudentT(NoiseDistribution):
         Likelihood function given link(f)
 
         .. math::
-            \\ln p(y_{i}|\\lambda(f_{i})) = \\frac{\\Gamma\\left(\\frac{v+1}{2}\\right)}{\\Gamma\\left(\\frac{v}{2}\\right)\\sqrt{v\\pi\\sigma^{2}}}\\left(1 + \\frac{1}{v}\\left(\\frac{(y_{i} - f_{i})^{2}}{\\sigma^{2}}\\right)\\right)^{\\frac{-v+1}{2}}
+            p(y_{i}|\\lambda(f_{i})) = \\frac{\\Gamma\\left(\\frac{v+1}{2}\\right)}{\\Gamma\\left(\\frac{v}{2}\\right)\\sqrt{v\\pi\\sigma^{2}}}\\left(1 + \\frac{1}{v}\\left(\\frac{(y_{i} - \\lambda(f_{i}))^{2}}{\\sigma^{2}}\\right)\\right)^{\\frac{-v+1}{2}}
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
+        :param extra_data: extra_data which is not used in student t distribution
         :returns: likelihood evaluated for this point
         :rtype: float
         """
@@ -69,13 +69,13 @@ class StudentT(NoiseDistribution):
         Log Likelihood Function given link(f)
 
         .. math::
-            \\ln p(y_{i}|f_{i}) = \\ln \\Gamma\\left(\\frac{v+1}{2}\\right) - \\ln \\Gamma\\left(\\frac{v}{2}\\right) - \\ln \\sqrt{v \\pi\\sigma^{2}} - \\frac{v+1}{2}\\ln \\left(1 + \\frac{1}{v}\\left(\\frac{(y_{i} - f_{i})^{2}}{\\sigma^{2}}\\right)\\right)
+            \\ln p(y_{i}|\lambda(f_{i})) = \\ln \\Gamma\\left(\\frac{v+1}{2}\\right) - \\ln \\Gamma\\left(\\frac{v}{2}\\right) - \\ln \\sqrt{v \\pi\\sigma^{2}} - \\frac{v+1}{2}\\ln \\left(1 + \\frac{1}{v}\\left(\\frac{(y_{i} - \lambda(f_{i}))^{2}}{\\sigma^{2}}\\right)\\right)
 
         :param link_f: latent variables (link(f))
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
+        :param extra_data: extra_data which is not used in student t distribution
         :returns: likelihood evaluated for this point
         :rtype: float
 
@@ -94,13 +94,13 @@ class StudentT(NoiseDistribution):
         Gradient of the log likelihood function at y, given link(f) w.r.t link(f)
 
         .. math::
-            \\frac{d \\ln p(y_{i}|f_{i})}{df} = \\frac{(v+1)(y_{i}-f_{i})}{(y_{i}-f_{i})^{2} + \\sigma^{2}v}
+            \\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{d\\lambda(f)} = \\frac{(v+1)(y_{i}-\lambda(f_{i}))}{(y_{i}-\lambda(f_{i}))^{2} + \\sigma^{2}v}
 
         :param link_f: latent variables (f)
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
+        :param extra_data: extra_data which is not used in student t distribution
         :returns: gradient of likelihood evaluated at points
         :rtype: Nx1 array
 
@@ -112,17 +112,18 @@ class StudentT(NoiseDistribution):
 
     def d2logpdf_dlink2(self, link_f, y, extra_data=None):
         """
-        Hessian at y, given link(f), w.r.t link(f) the hessian will be 0 unless i == j
+        Hessian at y, given link(f), w.r.t link(f)
         i.e. second derivative logpdf at y given link(f_i) and link(f_j)  w.r.t link(f_i) and link(f_j)
+        The hessian will be 0 unless i == j
 
         .. math::
-            \\frac{d^{2} \\ln p(y_{i}|f_{i})}{d^{2}f} = \\frac{(v+1)((y_{i}-f_{i})^{2} - \\sigma^{2}v)}{((y_{i}-f_{i})^{2} + \\sigma^{2}v)^{2}}
+            \\frac{d^{2} \\ln p(y_{i}|\lambda(f_{i}))}{d^{2}\\lambda(f)} = \\frac{(v+1)((y_{i}-\lambda(f_{i}))^{2} - \\sigma^{2}v)}{((y_{i}-\lambda(f_{i}))^{2} + \\sigma^{2}v)^{2}}
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
+        :param extra_data: extra_data which is not used in student t distribution
         :returns: Diagonal of hessian matrix (second derivative of likelihood evaluated at points f)
         :rtype: Nx1 array
 
@@ -137,16 +138,16 @@ class StudentT(NoiseDistribution):
 
     def d3logpdf_dlink3(self, link_f, y, extra_data=None):
         """
-        Third order derivative log-likelihood function at y given f w.r.t f
+        Third order derivative log-likelihood function at y given link(f) w.r.t link(f)
 
         .. math::
-            \\frac{d^{3} \\ln p(y_{i}|f_{i})}{d^{3}f} = \\frac{-2(v+1)((y_{i} - f_{i})^3 - 3(y_{i} - f_{i}) \\sigma^{2} v))}{((y_{i} - f_{i}) + \\sigma^{2} v)^3}
+            \\frac{d^{3} \\ln p(y_{i}|\lambda(f_{i}))}{d^{3}\\lambda(f)} = \\frac{-2(v+1)((y_{i} - \lambda(f_{i}))^3 - 3(y_{i} - \lambda(f_{i})) \\sigma^{2} v))}{((y_{i} - \lambda(f_{i})) + \\sigma^{2} v)^3}
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
+        :param extra_data: extra_data which is not used in student t distribution
         :returns: third derivative of likelihood evaluated at points f
         :rtype: Nx1 array
         """
@@ -162,13 +163,13 @@ class StudentT(NoiseDistribution):
         Gradient of the log-likelihood function at y given f, w.r.t variance parameter (t_noise)
 
         .. math::
-            \\frac{d \\ln p(y_{i}|f_{i})}{d\\sigma^{2}} = \\frac{v((y_{i} - f_{i})^{2} - \\sigma^{2})}{2\\sigma^{2}(\\sigma^{2}v + (y_{i} - f_{i})^{2})}
+            \\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{d\\sigma^{2}} = \\frac{v((y_{i} - \lambda(f_{i}))^{2} - \\sigma^{2})}{2\\sigma^{2}(\\sigma^{2}v + (y_{i} - \lambda(f_{i}))^{2})}
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
+        :param extra_data: extra_data which is not used in student t distribution
         :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
         :rtype: float
         """
@@ -182,13 +183,13 @@ class StudentT(NoiseDistribution):
         Derivative of the dlogpdf_dlink w.r.t variance parameter (t_noise)
 
         .. math::
-            \\frac{d}{d\\sigma^{2}}(\\frac{d \\ln p(y_{i}|f_{i})}{df}) = \\frac{-2\\sigma v(v + 1)(y_{i}-f_{i})}{(y_{i}-f_{i})^2 + \\sigma^2 v)^2}
+            \\frac{d}{d\\sigma^{2}}(\\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{df}) = \\frac{-2\\sigma v(v + 1)(y_{i}-\lambda(f_{i}))}{(y_{i}-\lambda(f_{i}))^2 + \\sigma^2 v)^2}
 
         :param link_f: latent variables link_f
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
+        :param extra_data: extra_data which is not used in student t distribution
         :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
         :rtype: Nx1 array
         """
@@ -202,13 +203,13 @@ class StudentT(NoiseDistribution):
         Gradient of the hessian (d2logpdf_dlink2) w.r.t variance parameter (t_noise)
 
         .. math::
-            \\frac{d}{d\\sigma^{2}}(\\frac{d^{2} \\ln p(y_{i}|f_{i})}{d^{2}f}) = \\frac{v(v+1)(\\sigma^{2}v - 3(y_{i} - f_{i})^{2})}{(\\sigma^{2}v + (y_{i} - f_{i})^{2})^{3}}
+            \\frac{d}{d\\sigma^{2}}(\\frac{d^{2} \\ln p(y_{i}|\lambda(f_{i}))}{d^{2}f}) = \\frac{v(v+1)(\\sigma^{2}v - 3(y_{i} - \lambda(f_{i}))^{2})}{(\\sigma^{2}v + (y_{i} - \lambda(f_{i}))^{2})^{3}}
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
+        :param extra_data: extra_data which is not used in student t distribution
         :returns: derivative of hessian evaluated at points f and f_j w.r.t variance parameter
         :rtype: Nx1 array
         """

@@ -12,12 +12,15 @@ class Gaussian(NoiseDistribution):
     """
     Gaussian likelihood
 
-    :param mean: mean value of the Gaussian distribution
-    :param variance: mean value of the Gaussian distribution
+    .. math::
+        \\ln p(y_{i}|\\lambda(f_{i})) = -\\frac{N \\ln 2\\pi}{2} - \\frac{\\ln |K|}{2} - \\frac{(y_{i} - \\lambda(f_{i}))^{T}\\sigma^{-2}(y_{i} - \\lambda(f_{i}))}{2}
+
+    :param variance: variance value of the Gaussian distribution
+    :param N: Number of data points
+    :type N: int
     """
     def __init__(self,gp_link=None,analytical_mean=False,analytical_variance=False,variance=1., D=None, N=None):
         self.variance = variance
-        self.D = D
         self.N = N
         self._set_params(np.asarray(variance))
         super(Gaussian, self).__init__(gp_link,analytical_mean,analytical_variance)
@@ -109,7 +112,6 @@ class Gaussian(NoiseDistribution):
         #Assumes no covariance, exp, sum, log for numerical stability
         return np.exp(np.sum(np.log(stats.norm.pdf(y, link_f, np.sqrt(self.variance)))))
 
-
     def logpdf_link(self, link_f, y, extra_data=None):
         """
         Log likelihood function given link(f)
@@ -150,8 +152,10 @@ class Gaussian(NoiseDistribution):
 
     def d2logpdf_dlink2(self, link_f, y, extra_data=None):
         """
-        Hessian at y, given link_f, w.r.t link_f the hessian will be 0 unless i == j
+        Hessian at y, given link_f, w.r.t link_f.
         i.e. second derivative logpdf at y given link(f_i) link(f_j)  w.r.t link(f_i) and link(f_j)
+
+        The hessian will be 0 unless i == j
 
         .. math::
             \\frac{d^{2} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{2}f} = -\\frac{1}{\\sigma^{2}}
@@ -193,10 +197,10 @@ class Gaussian(NoiseDistribution):
 
     def dlogpdf_link_dvar(self, link_f, y, extra_data=None):
         """
-        Gradient of the negative log-likelihood function at y given link(f), w.r.t variance parameter (noise_variance)
+        Gradient of the log-likelihood function at y given link(f), w.r.t variance parameter (noise_variance)
 
         .. math::
-            \\frac{d \\ln p(y_{i}|\\lambda(f_{i}))}{d\\sigma^{2}} = \\frac{N}{2\\sigma^{2}} + \\frac{(y_{i} - \\lambda(f_{i}))^{2}}{2\\sigma^{4}}
+            \\frac{d \\ln p(y_{i}|\\lambda(f_{i}))}{d\\sigma^{2}} = -\\frac{N}{2\\sigma^{2}} + \\frac{(y_{i} - \\lambda(f_{i}))^{2}}{2\\sigma^{4}}
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
@@ -209,7 +213,7 @@ class Gaussian(NoiseDistribution):
         assert np.asarray(link_f).shape == np.asarray(y).shape
         e = y - link_f
         s_4 = 1.0/(self.variance**2)
-        dlik_dsigma = -0.5*self.N/self.variance + 0.5*s_4*np.dot(e.T, e)
+        dlik_dsigma = -0.5*self.N/self.variance + 0.5*s_4*np.square(e)
         return np.sum(dlik_dsigma) # Sure about this sum?
 
     def dlogpdf_dlink_dvar(self, link_f, y, extra_data=None):
@@ -228,8 +232,9 @@ class Gaussian(NoiseDistribution):
         :rtype: Nx1 array
         """
         assert np.asarray(link_f).shape == np.asarray(y).shape
-        s_4 = 1.0/(self.variance**2)
-        dlik_grad_dsigma = -np.dot(s_4*self.I, y) + np.dot(s_4*self.I, link_f)
+        s_4 = 1./(self.variance**2)
+        #dlik_grad_dsigma = -np.dot(s_4*self.I, y) + np.dot(s_4*self.I, link_f)
+        dlik_grad_dsigma = -s_4*y + s_4*link_f
         return dlik_grad_dsigma
 
     def d2logpdf_dlink2_dvar(self, link_f, y, extra_data=None):

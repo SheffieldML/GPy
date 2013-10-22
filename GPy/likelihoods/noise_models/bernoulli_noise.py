@@ -11,12 +11,14 @@ from noise_distributions import NoiseDistribution
 
 class Bernoulli(NoiseDistribution):
     """
-    Probit likelihood
-    Y is expected to take values in {-1,1}
-    -----
-    $$
-    L(x) = \\Phi (Y_i*f_i)
-    $$
+    Bernoulli likelihood
+
+    .. math::
+        p(y_{i}|\\lambda(f_{i})) = \\lambda(f_{i})^{y_{i}}(1-f_{i})^{1-y_{i}}
+
+    .. Note::
+        Y is expected to take values in {-1,1}
+        Probit likelihood usually used
     """
     def __init__(self,gp_link=None,analytical_mean=False,analytical_variance=False):
         super(Bernoulli, self).__init__(gp_link,analytical_mean,analytical_variance)
@@ -82,7 +84,7 @@ class Bernoulli(NoiseDistribution):
         Likelihood function given link(f)
 
         .. math::
-            \\p(y_{i}|\\lambda(f_{i})) = \\lambda(f_{i})^{y_{i}}(1-f_{i})^{1-y_{i}}
+            p(y_{i}|\\lambda(f_{i})) = \\lambda(f_{i})^{y_{i}}(1-f_{i})^{1-y_{i}}
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
@@ -111,7 +113,7 @@ class Bernoulli(NoiseDistribution):
         :param y: data
         :type y: Nx1 array
         :param extra_data: extra_data not used in bernoulli
-        :returns: log likelihood evaluated for this point
+        :returns: log likelihood evaluated at points link(f)
         :rtype: float
         """
         assert np.asarray(link_f).shape == np.asarray(y).shape
@@ -130,8 +132,8 @@ class Bernoulli(NoiseDistribution):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data not used in gaussian
-        :returns: gradient of log likelihood evaluated at points
+        :param extra_data: extra_data not used in bernoulli
+        :returns: gradient of log likelihood evaluated at points link(f)
         :rtype: Nx1 array
         """
         assert np.asarray(link_f).shape == np.asarray(y).shape
@@ -151,7 +153,7 @@ class Bernoulli(NoiseDistribution):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data not used in gaussian
+        :param extra_data: extra_data not used in bernoulli
         :returns: Diagonal of log hessian matrix (second derivative of log likelihood evaluated at points link(f))
         :rtype: Nx1 array
 
@@ -174,7 +176,7 @@ class Bernoulli(NoiseDistribution):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data not used in gaussian
+        :param extra_data: extra_data not used in bernoulli
         :returns: third derivative of log likelihood evaluated at points link(f)
         :rtype: Nx1 array
         """

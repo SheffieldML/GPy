@@ -12,14 +12,9 @@ import gp_transformations
 from GPy.util.misc import chain_1, chain_2, chain_3
 from scipy.integrate import quad
 
-
 class NoiseDistribution(object):
     """
-    Likelihood class for doing Expectation propagation
-
-    :param Y: observed output (Nx1 numpy.darray)
-
-    .. note:: Y values allowed depend on the LikelihoodFunction used
+    Likelihood class for doing approximations
     """
     def __init__(self,gp_link,analytical_mean=False,analytical_variance=False):
         assert isinstance(gp_link,gp_transformations.GPTransformation), "gp_link is not a valid GPTransformation."

@@ -94,7 +94,7 @@ def toy_linear_1d_classification_laplace(seed=default_seed):
     # Optimize
     #m.update_likelihood_approximation()
     # Parameters optimization:
-    m.optimize(messages=1)
+    m.optimize('bfgs', messages=1)
     #m.pseudo_EM()
 
     # Plot

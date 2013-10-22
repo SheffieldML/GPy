@@ -80,7 +80,7 @@ class NoiseDistribution(object):
         :param sigma: cavity distribution standard deviation
 
         """
-        return .5*((gp-mu)/sigma)**2 + self._nlog_mass(gp,obs)
+        return .5*((gp-mu)/sigma)**2 - self.logpdf(gp,obs)
 
     def _dnlog_product_dgp(self,gp,obs,mu,sigma):
         """
@@ -92,7 +92,7 @@ class NoiseDistribution(object):
         :param sigma: cavity distribution standard deviation
 
         """
-        return (gp - mu)/sigma**2 + self._dnlog_mass_dgp(gp,obs)
+        return (gp - mu)/sigma**2 - self.dlogpdf_df(gp,obs)
 
     def _d2nlog_product_dgp2(self,gp,obs,mu,sigma):
         """
@@ -104,7 +104,7 @@ class NoiseDistribution(object):
         :param sigma: cavity distribution standard deviation
 
         """
-        return 1./sigma**2 + self._d2nlog_mass_dgp2(gp,obs)
+        return 1./sigma**2 - self.d2logpdf_df2(gp,obs)
 
     def _product_mode(self,obs,mu,sigma):
         """
@@ -166,8 +166,8 @@ class NoiseDistribution(object):
         """
         mu = v/tau
         mu_hat = self._product_mode(obs,mu,np.sqrt(1./tau))
-        sigma2_hat = 1./(tau + self._d2nlog_mass_dgp2(mu_hat,obs))
-        Z_hat = np.exp(-.5*tau*(mu_hat-mu)**2) * self._mass(mu_hat,obs)*np.sqrt(tau*sigma2_hat)
+        sigma2_hat = 1./(tau - self.d2logpdf_df2(mu_hat,obs))
+        Z_hat = np.exp(-.5*tau*(mu_hat-mu)**2) * self.pdf(mu_hat,obs)*np.sqrt(tau*sigma2_hat)
         return Z_hat,mu_hat,sigma2_hat
 
     def _nlog_conditional_mean_scaled(self,gp,mu,sigma):

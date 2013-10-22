@@ -10,6 +10,7 @@ import itertools
 from parts.prod import Prod as prod
 from matplotlib.transforms import offset_copy
 import GPy
+from GPy.core.parameterized import Parameterized_old, __fixed__
 
 class kern(Parameterized):
     def __init__(self, input_dim, parts=[], input_slices=None):
@@ -56,7 +57,8 @@ class kern(Parameterized):
         self._parameters_ = []
         for p in self.parts:
             self._parameters_.extend(p._parameters_)
-        Parameterized.__init__(self)
+        super(kern, self).__init__()
+        #Parameterized_old.__init__(self)
 
     def parameters_changed(self):
         [p.parameters_changed() for p in self.parts]
@@ -165,13 +167,27 @@ class kern(Parameterized):
         :param g: the gradient vector for the current model, usually created by dK_dtheta
         """
         x = self._get_params()
-        [np.put(x, i, x * t.gradfactor(x[i])) for i, t in zip(self.constrained_indices, self.constraints)]
-        [np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
-        if len(self.tied_indices) or len(self.fixed_indices):
-            to_remove = np.hstack((self.fixed_indices + [t[1:] for t in self.tied_indices]))
-            return np.delete(g, to_remove)
-        else:
-            return g
+        [np.place(g, index, g[index] * constraint.gradfactor(x[index])) 
+         for constraint, index in self._constraints_.iteritems() if constraint is not __fixed__]
+#         for constraint, index in self._constraints_.iteritems():
+#             if constraint != __fixed__:
+#                 g[index] = g[index] * constraint.gradfactor(x[index])
+        #[np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
+        [np.put(g, i, v) for i, v in [[i, t.sum()] for p in self._parameters_ for t,i in p._tied_to_me_.iteritems()]]
+#         if len(self.tied_indices) or len(self.fixed_indices):
+#             to_remove = np.hstack((self.fixed_indices + [t[1:] for t in self.tied_indices]))
+#             return np.delete(g, to_remove)
+#         else:
+        if self._fixes_ is not None: return g[self._fixes_]
+        return g
+#         x = self._get_params()
+#         [np.put(x, i, x * t.gradfactor(x[i])) for i, t in zip(self.constrained_indices, self.constraints)]
+#         [np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
+#         if len(self.tied_indices) or len(self.fixed_indices):
+#             to_remove = np.hstack((self.fixed_indices + [t[1:] for t in self.tied_indices]))
+#             return np.delete(g, to_remove)
+#         else:
+#             return g
 
     def compute_param_slices(self):
         """
@@ -211,21 +227,27 @@ class kern(Parameterized):
             newkern = kern(D, self.parts + other.parts, self_input_slices + other_input_slices)
 
             # transfer constraints:
-            newkern.constrained_indices = self.constrained_indices + [x + self.num_params for x in other.constrained_indices]
-            newkern.constraints = self.constraints + other.constraints
-            newkern.fixed_indices = self.fixed_indices + [self.num_params + x for x in other.fixed_indices]
-            newkern.fixed_values = self.fixed_values + other.fixed_values
-            newkern.constraints = self.constraints + other.constraints
-            newkern.tied_indices = self.tied_indices + [self.num_params + x for x in other.tied_indices]
+#             newkern.constrained_indices = self.constrained_indices + [x + self.num_params for x in other.constrained_indices]
+#             newkern.constraints = self.constraints + other.constraints
+#             newkern.fixed_indices = self.fixed_indices + [self.num_params + x for x in other.fixed_indices]
+#             newkern.fixed_values = self.fixed_values + other.fixed_values
+#             newkern.constraints = self.constraints + other.constraints
+#             newkern.tied_indices = self.tied_indices + [self.num_params + x for x in other.tied_indices]
         else:
             assert self.input_dim == other.input_dim
             newkern = kern(self.input_dim, self.parts + other.parts, self.input_slices + other.input_slices)
             # transfer constraints:
-            newkern.constrained_indices = self.constrained_indices + [i + self.num_params  for i in other.constrained_indices]
-            newkern.constraints = self.constraints + other.constraints
-            newkern.fixed_indices = self.fixed_indices + [self.num_params + x for x in other.fixed_indices]
-            newkern.fixed_values = self.fixed_values + other.fixed_values
-            newkern.tied_indices = self.tied_indices + [self.num_params + x for x in other.tied_indices]
+#             newkern.constrained_indices = self.constrained_indices + [i + self.num_params  for i in other.constrained_indices]
+#             newkern.constraints = self.constraints + other.constraints
+#             newkern.fixed_indices = self.fixed_indices + [self.num_params + x for x in other.fixed_indices]
+#             newkern.fixed_values = self.fixed_values + other.fixed_values
+#             newkern.tied_indices = self.tied_indices + [self.num_params + x for x in other.tied_indices]
+        [newkern._add_constrain(param, transform, warning=False) 
+         for param, transform in itertools.izip(
+                *itertools.chain(self._constraints_.iteritems(), 
+                                 other._constraints_.iteritems()))] 
+        newkern._fixes_ = ((self._fixes_ or 0) + (other._fixes_ or 0)) or None
+
         return newkern
 
     def __mul__(self, other):
@@ -308,20 +330,22 @@ class kern(Parameterized):
         for i, t in zip(prev_constr_ind, prev_constr):
             self.constrain(np.where(index_param == i)[0], t)
 
-#     def _get_params(self):
-#         return np.hstack([p._get_params() for p in self.parts])
-# 
-#     def _set_params(self, x):
-#         [p._set_params(x[s]) for p, s in zip(self.parts, self.param_slices)]
-# 
-#     def _get_param_names(self):
-#         # this is a bit nasty: we want to distinguish between parts with the same name by appending a count
-#         part_names = np.array([k.name for k in self.parts], dtype=np.str)
-#         counts = [np.sum(part_names == ni) for i, ni in enumerate(part_names)]
-#         cum_counts = [np.sum(part_names[i:] == ni) for i, ni in enumerate(part_names)]
-#         names = [name + '_' + str(cum_count) if count > 1 else name for name, count, cum_count in zip(part_names, counts, cum_counts)]
-# 
-#         return sum([[name + '_' + n for n in k._get_param_names()] for name, k in zip(names, self.parts)], [])
+    def _get_params(self):
+        return np.hstack(self._parameters_)
+        return np.hstack([p._get_params() for p in self.parts])
+  
+    def _set_params(self, x):
+        import ipdb;ipdb.set_trace()
+        [p._set_params(x[s]) for p, s in zip(self.parts, self.param_slices)]
+  
+    def _get_param_names(self):
+        # this is a bit nasty: we want to distinguish between parts with the same name by appending a count
+        part_names = np.array([k.name for k in self.parts], dtype=np.str)
+        counts = [np.sum(part_names == ni) for i, ni in enumerate(part_names)]
+        cum_counts = [np.sum(part_names[i:] == ni) for i, ni in enumerate(part_names)]
+        names = [name + '_' + str(cum_count) if count > 1 else name for name, count, cum_count in zip(part_names, counts, cum_counts)]
+ 
+        return sum([[name + '_' + n for n in k._get_param_names()] for name, k in zip(names, self.parts)], [])
 
     def K(self, X, X2=None, which_parts='all'):
         """

@@ -196,6 +196,7 @@ def boston_example():
     optimizer='bfgs'
     messages=0
     data = datasets.boston_housing()
+    degrees_freedoms = [3, 5, 8, 10]
     X = data['X'].copy()
     Y = data['Y'].copy()
     X = X-X.mean(axis=0)
@@ -204,7 +205,9 @@ def boston_example():
     Y = Y/Y.std()
     num_folds = 30
     kf = KFold(len(Y), n_folds=num_folds, indices=True)
-    score_folds = np.zeros((7, num_folds))
+    num_models = len(degrees_freedoms) + 3 #3 for baseline, gaussian, gaussian laplace approx
+    score_folds = np.zeros((num_models, num_folds))
+    pred_density = score_folds.copy()
     def rmse(Y, Ystar):
         return np.sqrt(np.mean((Y-Ystar)**2))
     for n, (train, test) in enumerate(kf):
@@ -218,6 +221,9 @@ def boston_example():
         kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1]) + GPy.kern.bias(X.shape[1])
         kernelgp = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1]) + GPy.kern.bias(X.shape[1])
 
+        #Baseline
+        score_folds[0, n] = rmse(Y_test, np.mean(Y_train))
+
         #Gaussian GP
         print "Gauss GP"
         mgp = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelgp.copy())
@@ -228,9 +234,10 @@ def boston_example():
         print mgp
         mgp.optimize(optimizer=optimizer,messages=messages)
         Y_test_pred = mgp.predict(X_test)
-        score_folds[0, n] = rmse(Y_test, Y_test_pred[0])
+        score_folds[1, n] = rmse(Y_test, Y_test_pred[0])
+        pred_density[1, n] = np.mean(mgp.log_predictive_density(X_test, Y_test))
         print mgp
-        print score_folds
+        print pred_density
         if plot:
             plt.figure()
             plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
@@ -253,8 +260,9 @@ def boston_example():
         except Exception:
             print "Blew up"
         Y_test_pred = mg.predict(X_test)
-        score_folds[1, n] = rmse(Y_test, Y_test_pred[0])
-        print score_folds
+        score_folds[2, n] = rmse(Y_test, Y_test_pred[0])
+        pred_density[2, n] = np.mean(mg.log_predictive_density(X_test, Y_test))
+        print pred_density
         print mg
         if plot:
             plt.figure()
@@ -262,114 +270,74 @@ def boston_example():
             plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
             plt.title('Lap gauss')
 
-        #Student T
-        deg_free = 1
-        print "Student-T GP {}df".format(deg_free)
-        t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=noise)
-        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
-        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=stu_t_likelihood)
-        mstu_t.ensure_default_constraints()
-        mstu_t.constrain_fixed('white', 1e-5)
-        mstu_t.constrain_bounded('t_noise', 0.0001, 1000)
-        mstu_t['rbf_len'] = rbf_len
-        mstu_t['t_noise'] = noise
-        print mstu_t
-        try:
-            mstu_t.optimize(optimizer=optimizer, messages=messages)
-        except Exception:
-            print "Blew up"
-        Y_test_pred = mstu_t.predict(X_test)
-        score_folds[2, n] = rmse(Y_test, Y_test_pred[0])
-        print score_folds
-        print mstu_t
-        if plot:
-            plt.figure()
-            plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
-            plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
-            plt.title('Stu t {}df'.format(deg_free))
-
-        deg_free = 8
-        print "Student-T GP {}df".format(deg_free)
-        t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=noise)
-        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
-        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=stu_t_likelihood)
-        mstu_t.ensure_default_constraints()
-        mstu_t.constrain_fixed('white', 1e-5)
-        mstu_t.constrain_bounded('t_noise', 0.0001, 1000)
-        mstu_t['rbf_len'] = rbf_len
-        mstu_t['t_noise'] = noise
-        print mstu_t
-        try:
-            mstu_t.optimize(optimizer=optimizer, messages=messages)
-        except Exception:
-            print "Blew up"
-        Y_test_pred = mstu_t.predict(X_test)
-        score_folds[3, n] = rmse(Y_test, Y_test_pred[0])
-        print score_folds
-        print mstu_t
-        if plot:
-            plt.figure()
-            plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
-            plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
-            plt.title('Stu t {}df'.format(deg_free))
-
-        #Student t likelihood
-        deg_free = 3
-        print "Student-T GP {}df".format(deg_free)
-        t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=noise)
-        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
-        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=stu_t_likelihood)
-        mstu_t.ensure_default_constraints()
-        mstu_t.constrain_fixed('white', 1e-5)
-        mstu_t.constrain_bounded('t_noise', 0.0001, 1000)
-        mstu_t['rbf_len'] = rbf_len
-        mstu_t['t_noise'] = noise
-        print mstu_t
-        try:
-            mstu_t.optimize(optimizer=optimizer, messages=messages)
-        except Exception:
-            print "Blew up"
-        Y_test_pred = mstu_t.predict(X_test)
-        score_folds[4, n] = rmse(Y_test, Y_test_pred[0])
-        print score_folds
-        print mstu_t
-        if plot:
-            plt.figure()
-            plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
-            plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
-            plt.title('Stu t {}df'.format(deg_free))
-
-        deg_free = 5
-        print "Student-T GP {}df".format(deg_free)
-        t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=noise)
-        stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
-        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=stu_t_likelihood)
-        mstu_t.ensure_default_constraints()
-        mstu_t.constrain_fixed('white', 1e-5)
-        mstu_t.constrain_bounded('t_noise', 0.0001, 1000)
-        mstu_t['rbf_len'] = rbf_len
-        mstu_t['t_noise'] = noise
-        print mstu_t
-        try:
-            mstu_t.optimize(optimizer=optimizer, messages=messages)
-        except Exception:
-            print "Blew up"
-        Y_test_pred = mstu_t.predict(X_test)
-        score_folds[5, n] = rmse(Y_test, Y_test_pred[0])
-        print score_folds
-        print mstu_t
-        if plot:
-            plt.figure()
-            plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
-            plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
-            plt.title('Stu t {}df'.format(deg_free))
-
-        score_folds[6, n] = rmse(Y_test, np.mean(Y_train))
-
+        for stu_num, df in enumerate(degrees_freedoms):
+            #Student T
+            print "Student-T GP {}df".format(df)
+            t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=df, sigma2=noise)
+            stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
+            mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=stu_t_likelihood)
+            mstu_t.ensure_default_constraints()
+            mstu_t.constrain_fixed('white', 1e-5)
+            mstu_t.constrain_bounded('t_noise', 0.0001, 1000)
+            mstu_t['rbf_len'] = rbf_len
+            mstu_t['t_noise'] = noise
+            print mstu_t
+            try:
+                mstu_t.optimize(optimizer=optimizer, messages=messages)
+            except Exception:
+                print "Blew up"
+            Y_test_pred = mstu_t.predict(X_test)
+            score_folds[3+stu_num, n] = rmse(Y_test, Y_test_pred[0])
+            pred_density[3+stu_num, n] = np.mean(mstu_t.log_predictive_density(X_test, Y_test))
+            print pred_density
+            print mstu_t
+            if plot:
+                plt.figure()
+                plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
+                plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
+                plt.title('Stu t {}df'.format(df))
 
     print "Average scores: {}".format(np.mean(score_folds, 1))
-    import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
-    return score_folds
+    print "Average pred density: {}".format(np.mean(pred_density, 1))
+
+    #Plotting
+    stu_t_legends = ['Student T, df={}'.format(df) for df in degrees_freedoms]
+    legends = ['Baseline', 'Gaussian', 'Laplace Approx Gaussian'] + stu_t_legends
+
+    #Plot boxplots for RMSE density
+    fig = plt.figure()
+    ax=fig.add_subplot(111)
+    plt.title('RMSE')
+    bp = ax.boxplot(score_folds.T, notch=0, sym='+', vert=1, whis=1.5)
+    plt.setp(bp['boxes'], color='black')
+    plt.setp(bp['whiskers'], color='black')
+    plt.setp(bp['fliers'], color='red', marker='+')
+    xtickNames = plt.setp(ax, xticklabels=legends)
+    plt.setp(xtickNames, rotation=45, fontsize=8)
+    ax.set_ylabel('RMSE')
+    ax.set_xlabel('Distribution')
+    #Make grid and put it below boxes
+    ax.yaxis.grid(True, linestyle='-', which='major', color='lightgrey',
+              alpha=0.5)
+    ax.set_axisbelow(True)
+
+    #Plot boxplots for predictive density
+    fig = plt.figure()
+    ax=fig.add_subplot(111)
+    plt.title('Predictive density')
+    bp = ax.boxplot(pred_density[1:,:].T, notch=0, sym='+', vert=1, whis=1.5)
+    plt.setp(bp['boxes'], color='black')
+    plt.setp(bp['whiskers'], color='black')
+    plt.setp(bp['fliers'], color='red', marker='+')
+    xtickNames = plt.setp(ax, xticklabels=legends[1:])
+    plt.setp(xtickNames, rotation=45, fontsize=8)
+    ax.set_ylabel('Mean Log probability P(Y*|Y)')
+    ax.set_xlabel('Distribution')
+    #Make grid and put it below boxes
+    ax.yaxis.grid(True, linestyle='-', which='major', color='lightgrey',
+              alpha=0.5)
+    ax.set_axisbelow(True)
+    return score_folds, pred_density
 
 def precipitation_example():
     import sklearn

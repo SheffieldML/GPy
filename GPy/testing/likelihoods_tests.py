@@ -321,6 +321,7 @@ class TestNoiseModels(object):
     def t_dlogpdf_dparams(self, model, Y, f, params, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
+        print param_constraints
         assert (
                 dparam_checkgrad(model.logpdf, model.dlogpdf_dtheta,
                     params, args=(f, Y), constraints=param_constraints,
@@ -331,6 +332,7 @@ class TestNoiseModels(object):
     def t_dlogpdf_df_dparams(self, model, Y, f, params, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
+        print param_constraints
         assert (
                 dparam_checkgrad(model.dlogpdf_df, model.dlogpdf_df_dtheta,
                     params, args=(f, Y), constraints=param_constraints,
@@ -341,6 +343,7 @@ class TestNoiseModels(object):
     def t_d2logpdf2_df2_dparams(self, model, Y, f, params, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
+        #print param_constraints
         assert (
                 dparam_checkgrad(model.d2logpdf_df2, model.d2logpdf_df2_dtheta,
                     params, args=(f, Y), constraints=param_constraints,

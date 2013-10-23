@@ -75,7 +75,7 @@ class GradientChecker(Model):
             self.names = names
             self.shapes = [get_shape(x0)]
         for name, xi in zip(self.names, at_least_one_element(x0)):
-            self.__setattr__(name, xi)
+            self.__setattr__(name, numpy.float_(xi))
 #         self._param_names = []
 #         for name, shape in zip(self.names, self.shapes):
 #             self._param_names.extend(map(lambda nameshape: ('_'.join(nameshape)).strip('_'), itertools.izip(itertools.repeat(name), itertools.imap(lambda t: '_'.join(map(str, t)), itertools.product(*map(lambda xi: range(xi), shape))))))

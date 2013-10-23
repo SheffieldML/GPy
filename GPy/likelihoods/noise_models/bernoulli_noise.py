@@ -196,24 +196,12 @@ class Bernoulli(NoiseDistribution):
         """
         return self.gp_link.transf(gp)
 
-    def _dmean_dgp(self,gp):
-        return self.gp_link.dtransf_df(gp)
-
-    def _d2mean_dgp2(self,gp):
-        return self.gp_link.d2transf_df2(gp)
-
     def _variance(self,gp):
         """
         Mass (or density) function
         """
         p = self.gp_link.transf(gp)
         return p*(1.-p)
-
-    def _dvariance_dgp(self,gp):
-        return self.gp_link.dtransf_df(gp)*(1. - 2.*self.gp_link.transf(gp))
-
-    def _d2variance_dgp2(self,gp):
-        return self.gp_link.d2transf_df2(gp)*(1. - 2.*self.gp_link.transf(gp)) - 2*self.gp_link.dtransf_df(gp)**2
 
     def samples(self, gp):
         """

@@ -371,8 +371,8 @@ class NoiseDistribution(object):
         """
         Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction.
 
-        :param mu: mean of the latent variable
-        :param var: variance of the latent variable
+        :param mu: mean of the latent variable, f
+        :param var: variance of the latent variable, f
 
         """
         if isinstance(mu,float) or isinstance(mu,int):

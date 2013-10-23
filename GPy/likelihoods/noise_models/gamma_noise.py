@@ -52,20 +52,8 @@ class Gamma(NoiseDistribution):
         """
         return self.gp_link.transf(gp)
 
-    def _dmean_dgp(self,gp):
-        return self.gp_link.dtransf_df(gp)
-
-    def _d2mean_dgp2(self,gp):
-        return self.gp_link.d2transf_df2(gp)
-
     def _variance(self,gp):
         """
         Mass (or density) function
         """
         return self.gp_link.transf(gp)/self.beta
-
-    def _dvariance_dgp(self,gp):
-        return self.gp_link.dtransf_df(gp)/self.beta
-
-    def _d2variance_dgp2(self,gp):
-        return self.gp_link.d2transf_df2(gp)/self.beta

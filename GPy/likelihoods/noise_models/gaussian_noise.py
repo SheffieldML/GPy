@@ -277,12 +277,6 @@ class Gaussian(NoiseDistribution):
         """
         return self.gp_link.transf(gp)
 
-    def _dmean_dgp(self,gp):
-        return self.gp_link.dtransf_df(gp)
-
-    def _d2mean_dgp2(self,gp):
-        return self.gp_link.d2transf_df2(gp)
-
     def _variance(self,gp):
         """
         Variance of y under the Mass (or density) function p(y|f)
@@ -291,9 +285,3 @@ class Gaussian(NoiseDistribution):
             Var_{p(y|f)}[y]
         """
         return self.variance
-
-    def _dvariance_dgp(self,gp):
-        return 0
-
-    def _d2variance_dgp2(self,gp):
-        return 0

@@ -105,7 +105,7 @@ class Test(unittest.TestCase):
 
     def test_psi2(self):
         for kern in self.kerns:
-            Nsamples = self.Nsamples/300.
+            Nsamples = self.Nsamples/10.
             psi2 = kern.psi2(self.Z, self.q_x_mean, self.q_x_variance)
             K_ = np.zeros((self.num_inducing, self.num_inducing))
             diffs = []
@@ -135,7 +135,7 @@ class Test(unittest.TestCase):
 if __name__ == "__main__":
     sys.argv = ['',
          #'Test.test_psi0',
-         'Test.test_psi1',
+         #'Test.test_psi1',
          'Test.test_psi2',
          ]
     unittest.main()

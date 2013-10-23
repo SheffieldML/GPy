@@ -301,9 +301,9 @@ class Laplace(likelihood):
             return -0.5*np.dot(Ki_f.T, f) + self.noise_model.logpdf(f, self.data, extra_data=self.extra_data)
 
         difference = np.inf
-        epsilon = 1e-6
-        step_size = 1
-        rs = 0
+        epsilon = 1e-5
+        #step_size = 1
+        #rs = 0
         i = 0
 
         while difference > epsilon and i < MAX_ITER:
@@ -330,7 +330,9 @@ class Laplace(likelihood):
 
             i_o = partial_func(inner_obj, old_Ki_f=old_Ki_f, dKi_f=dKi_f, K=K)
             #Find the stepsize that minimizes the objective function using a brent line search
-            new_obj = sp.optimize.minimize_scalar(i_o, method='brent', tol=1e-4, options={'maxiter':30}).fun
+            #The tolerance and maxiter matter for speed! Seems to be best to keep them low and make more full
+            #steps than get this exact then make a step, if B was bigger it might be the other way around though
+            new_obj = sp.optimize.minimize_scalar(i_o, method='brent', tol=1e-4, options={'maxiter':5}).fun
             f = self.f.copy()
             Ki_f = self.Ki_f.copy()
 

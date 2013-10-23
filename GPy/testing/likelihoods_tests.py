@@ -30,9 +30,9 @@ def dparam_checkgrad(func, dfunc, params, args, constraints=None, randomize=Fals
     checkgrad expects a f: R^N -> R^1 and df: R^N -> R^N
     However if we are holding other parameters fixed and moving something else
     We need to check the gradient of each of the fixed parameters
-    (f and y for example) seperately.
-    Whilst moving another parameter. otherwise f: gives back R^N and
-    df: gives back R^NxM where M is
+    (f and y for example) seperately,  whilst moving another parameter.
+    Otherwise f: gives back R^N and
+              df: gives back R^NxM where M is
     The number of parameters and N is the number of data
     Need to take a slice out from f and a slice out of df
     """
@@ -48,6 +48,8 @@ def dparam_checkgrad(func, dfunc, params, args, constraints=None, randomize=Fals
             #dlik and dlik_dvar gives back 1 value for each
             f_ind = min(fnum, fixed_val+1) - 1
             print "fnum: {} dfnum: {} f_ind: {} fixed_val: {}".format(fnum, dfnum, f_ind, fixed_val)
+            #Make grad checker with this param moving, note that set_params is NOT being called
+            #The parameter is being set directly with __setattr__
             grad = GradientChecker(lambda x: np.atleast_1d(partial_f(x))[f_ind],
                                    lambda x : np.atleast_1d(partial_df(x))[fixed_val],
                                    param, 'p')
@@ -57,8 +59,8 @@ def dparam_checkgrad(func, dfunc, params, args, constraints=None, randomize=Fals
                     constraint('p', grad)
             if randomize:
                 grad.randomize()
-            print grad
             if verbose:
+                print grad
                 grad.checkgrad(verbose=1)
             if not grad.checkgrad():
                 gradchecking = False
@@ -122,6 +124,7 @@ class TestNoiseModels(object):
                     "constrain": [constraint_wrappers, listed_here]
                     },
                 "laplace": boolean_of_whether_model_should_work_for_laplace,
+                "ep": boolean_of_whether_model_should_work_for_laplace,
                 "link_f_constraints": [constraint_wrappers, listed_here]
                 }
         """
@@ -177,7 +180,8 @@ class TestNoiseModels(object):
                                 "vals": [self.var],
                                 "constraints": [constrain_positive]
                                 },
-                            "laplace": True
+                            "laplace": True,
+                            "ep": True
                             },
                         "Gaussian_log": {
                             "model": GPy.likelihoods.gaussian(gp_link=gp_transformations.Log(), variance=self.var, D=self.D, N=self.N),
@@ -211,6 +215,7 @@ class TestNoiseModels(object):
                             "link_f_constraints": [partial(constrain_bounded, lower=0, upper=1)],
                             "laplace": True,
                             "Y": self.binary_Y,
+                            "ep": True
                         }
                     }
 
@@ -238,7 +243,14 @@ class TestNoiseModels(object):
                 f = attributes["f"].copy()
             else:
                 f = self.f.copy()
-            laplace = attributes["laplace"]
+            if "laplace" in attributes:
+                laplace = attributes["laplace"]
+            else:
+                laplace = False
+            if "ep" in attributes:
+                ep = attributes["ep"]
+            else:
+                ep = False
 
             if len(param_vals) > 1:
                 raise NotImplementedError("Cannot support multiple params in likelihood yet!")
@@ -266,6 +278,10 @@ class TestNoiseModels(object):
 
                 #laplace likelihood gradcheck
                 yield self.t_laplace_fit_rbf_white, model, self.X, Y, f, self.step, param_vals, param_names, param_constraints
+            if ep:
+                #ep likelihood gradcheck
+                yield self.t_ep_fit_rbf_white, model, self.X, Y, f, self.step, param_vals, param_names, param_constraints
+
 
         self.tearDown()
 
@@ -321,7 +337,6 @@ class TestNoiseModels(object):
     def t_dlogpdf_dparams(self, model, Y, f, params, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
-        print param_constraints
         assert (
                 dparam_checkgrad(model.logpdf, model.dlogpdf_dtheta,
                     params, args=(f, Y), constraints=param_constraints,
@@ -332,7 +347,6 @@ class TestNoiseModels(object):
     def t_dlogpdf_df_dparams(self, model, Y, f, params, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
-        print param_constraints
         assert (
                 dparam_checkgrad(model.dlogpdf_df, model.dlogpdf_df_dtheta,
                     params, args=(f, Y), constraints=param_constraints,
@@ -343,7 +357,6 @@ class TestNoiseModels(object):
     def t_d2logpdf2_df2_dparams(self, model, Y, f, params, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
-        #print param_constraints
         assert (
                 dparam_checkgrad(model.d2logpdf_df2, model.d2logpdf_df2_dtheta,
                     params, args=(f, Y), constraints=param_constraints,
@@ -446,6 +459,31 @@ class TestNoiseModels(object):
         kernel = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         laplace_likelihood = GPy.likelihoods.Laplace(Y.copy(), model)
         m = GPy.models.GPRegression(X.copy(), Y.copy(), kernel, likelihood=laplace_likelihood)
+        m.ensure_default_constraints()
+        m.constrain_fixed('white', white_var)
+
+        for param_num in range(len(param_names)):
+            name = param_names[param_num]
+            m[name] = param_vals[param_num]
+            constraints[param_num](name, m)
+
+        m.randomize()
+        m.checkgrad(verbose=1, step=step)
+        print m
+        assert m.checkgrad(step=step)
+
+    ###########
+    # EP test #
+    ###########
+    @with_setup(setUp, tearDown)
+    def t_ep_fit_rbf_white(self, model, X, Y, f, step, param_vals, param_names, constraints):
+        print "\n{}".format(inspect.stack()[0][3])
+        #Normalize
+        Y = Y/Y.max()
+        white_var = 0.001
+        kernel = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
+        ep_likelihood = GPy.likelihoods.EP(Y.copy(), model)
+        m = GPy.models.GPRegression(X.copy(), Y.copy(), kernel, likelihood=ep_likelihood)
         m.ensure_default_constraints()
         m.constrain_fixed('white', white_var)
 

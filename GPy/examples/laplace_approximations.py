@@ -193,6 +193,8 @@ def gaussian_f_check():
 def boston_example():
     import sklearn
     from sklearn.cross_validation import KFold
+    optimizer='bfgs'
+    messages=0
     data = datasets.boston_housing()
     X = data['X'].copy()
     Y = data['Y'].copy()
@@ -200,9 +202,9 @@ def boston_example():
     X = X/X.std(axis=0)
     Y = Y-Y.mean()
     Y = Y/Y.std()
-    num_folds = 10
+    num_folds = 30
     kf = KFold(len(Y), n_folds=num_folds, indices=True)
-    score_folds = np.zeros((6, num_folds))
+    score_folds = np.zeros((7, num_folds))
     def rmse(Y, Ystar):
         return np.sqrt(np.mean((Y-Ystar)**2))
     for n, (train, test) in enumerate(kf):
@@ -212,18 +214,19 @@ def boston_example():
         noise = 1e-1 #np.exp(-2)
         rbf_len = 0.5
         data_axis_plot = 4
-        plot = True
+        plot = False
+        kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1]) + GPy.kern.bias(X.shape[1])
+        kernelgp = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1]) + GPy.kern.bias(X.shape[1])
 
         #Gaussian GP
         print "Gauss GP"
-        kernelgp = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
-        mgp = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelgp)
+        mgp = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelgp.copy())
         mgp.ensure_default_constraints()
         mgp.constrain_fixed('white', 1e-5)
         mgp['rbf_len'] = rbf_len
         mgp['noise'] = noise
         print mgp
-        mgp.optimize(messages=1)
+        mgp.optimize(optimizer=optimizer,messages=messages)
         Y_test_pred = mgp.predict(X_test)
         score_folds[0, n] = rmse(Y_test, Y_test_pred[0])
         print mgp
@@ -235,11 +238,10 @@ def boston_example():
             plt.title('GP gauss')
 
         print "Gaussian Laplace GP"
-        kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         N, D = Y_train.shape
         g_distribution = GPy.likelihoods.noise_model_constructors.gaussian(variance=noise, N=N, D=D)
         g_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), g_distribution)
-        mg = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=g_likelihood)
+        mg = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=g_likelihood)
         mg.ensure_default_constraints()
         mg.constrain_positive('noise_variance')
         mg.constrain_fixed('white', 1e-5)
@@ -247,7 +249,7 @@ def boston_example():
         mg['noise'] = noise
         print mg
         try:
-            mg.optimize(messages=1)
+            mg.optimize(optimizer=optimizer, messages=messages)
         except Exception:
             print "Blew up"
         Y_test_pred = mg.predict(X_test)
@@ -263,10 +265,9 @@ def boston_example():
         #Student T
         deg_free = 1
         print "Student-T GP {}df".format(deg_free)
-        kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=noise)
         stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
-        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=stu_t_likelihood)
+        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=stu_t_likelihood)
         mstu_t.ensure_default_constraints()
         mstu_t.constrain_fixed('white', 1e-5)
         mstu_t.constrain_bounded('t_noise', 0.0001, 1000)
@@ -274,7 +275,7 @@ def boston_example():
         mstu_t['t_noise'] = noise
         print mstu_t
         try:
-            mstu_t.optimize(messages=1)
+            mstu_t.optimize(optimizer=optimizer, messages=messages)
         except Exception:
             print "Blew up"
         Y_test_pred = mstu_t.predict(X_test)
@@ -287,12 +288,11 @@ def boston_example():
             plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
             plt.title('Stu t {}df'.format(deg_free))
 
-        deg_free = 2
+        deg_free = 8
         print "Student-T GP {}df".format(deg_free)
-        kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=noise)
         stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
-        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=stu_t_likelihood)
+        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=stu_t_likelihood)
         mstu_t.ensure_default_constraints()
         mstu_t.constrain_fixed('white', 1e-5)
         mstu_t.constrain_bounded('t_noise', 0.0001, 1000)
@@ -300,7 +300,7 @@ def boston_example():
         mstu_t['t_noise'] = noise
         print mstu_t
         try:
-            mstu_t.optimize(messages=1)
+            mstu_t.optimize(optimizer=optimizer, messages=messages)
         except Exception:
             print "Blew up"
         Y_test_pred = mstu_t.predict(X_test)
@@ -316,10 +316,9 @@ def boston_example():
         #Student t likelihood
         deg_free = 3
         print "Student-T GP {}df".format(deg_free)
-        kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=noise)
         stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
-        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=stu_t_likelihood)
+        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=stu_t_likelihood)
         mstu_t.ensure_default_constraints()
         mstu_t.constrain_fixed('white', 1e-5)
         mstu_t.constrain_bounded('t_noise', 0.0001, 1000)
@@ -327,7 +326,7 @@ def boston_example():
         mstu_t['t_noise'] = noise
         print mstu_t
         try:
-            mstu_t.optimize(messages=1)
+            mstu_t.optimize(optimizer=optimizer, messages=messages)
         except Exception:
             print "Blew up"
         Y_test_pred = mstu_t.predict(X_test)
@@ -342,10 +341,9 @@ def boston_example():
 
         deg_free = 5
         print "Student-T GP {}df".format(deg_free)
-        kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=noise)
         stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
-        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu, likelihood=stu_t_likelihood)
+        mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=stu_t_likelihood)
         mstu_t.ensure_default_constraints()
         mstu_t.constrain_fixed('white', 1e-5)
         mstu_t.constrain_bounded('t_noise', 0.0001, 1000)
@@ -353,7 +351,7 @@ def boston_example():
         mstu_t['t_noise'] = noise
         print mstu_t
         try:
-            mstu_t.optimize(messages=1)
+            mstu_t.optimize(optimizer=optimizer, messages=messages)
         except Exception:
             print "Blew up"
         Y_test_pred = mstu_t.predict(X_test)
@@ -366,9 +364,10 @@ def boston_example():
             plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
             plt.title('Stu t {}df'.format(deg_free))
 
+        score_folds[6, n] = rmse(Y_test, np.mean(Y_train))
 
 
-
+    print "Average scores: {}".format(np.mean(score_folds, 1))
     import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
     return score_folds
 

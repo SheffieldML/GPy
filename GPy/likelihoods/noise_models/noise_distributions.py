@@ -62,6 +62,34 @@ class NoiseDistribution(object):
         """
         raise NotImplementedError
 
+    def log_predictive_density(self, y_test, mu_star, var_star):
+        """
+        Calculation of the log predictive density
+
+        .. math:
+            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+
+        :param y_test: test observations (y_{*})
+        :type y_test: (Nx1) array
+        :param mu_star: predictive mean of gaussian p(f_{*}|mu_{*}, var_{*})
+        :type mu_star: (Nx1) array
+        :param var_star: predictive variance of gaussian p(f_{*}|mu_{*}, var_{*})
+        :type var_star: (Nx1) array
+        """
+        assert y_test.shape==mu_star.shape
+        assert y_test.shape==var_star.shape
+        assert y_test.shape[1] == 1
+        def integral_generator(y, m, v):
+            """Generate a function which can be integrated to give p(Y*|Y) = int p(Y*|f*)p(f*|Y) df*"""
+            def f(f_star):
+                return self.pdf(f_star, y)*np.exp(-(1./(2*v))*np.square(m-f_star))
+            return f
+
+        scaled_p_ystar, accuracy = zip(*[quad(integral_generator(y, m, v), -np.inf, np.inf) for y, m, v in zip(y_test.flatten(), mu_star.flatten(), var_star.flatten())])
+        scaled_p_ystar = np.array(scaled_p_ystar).reshape(-1,1)
+        p_ystar = scaled_p_ystar/np.sqrt(2*np.pi*var_star)
+        return np.log(p_ystar)
+
     def _moments_match_numerical(self,obs,tau,v):
         """
         Calculation of moments using quadrature

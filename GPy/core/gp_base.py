@@ -418,3 +418,18 @@ class GPBase(Model):
 
         index = np.ones((X.shape[0],1))*output
         return np.hstack((X,index))
+
+    def log_predictive_density(self, x_test, y_test):
+        """
+        Calculation of the log predictive density
+
+        .. math:
+            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+
+        :param x_test: test observations (x_{*})
+        :type x_test: (Nx1) array
+        :param y_test: test observations (y_{*})
+        :type y_test: (Nx1) array
+        """
+        mu_star, var_star = self._raw_predict(x_test)
+        return self.likelihood.log_predictive_density(y_test, mu_star, var_star)

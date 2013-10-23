@@ -54,6 +54,22 @@ class EP(likelihood):
             raise NotImplementedError, "Cannot make correlated predictions with an EP likelihood"
         return self.noise_model.predictive_values(mu,var)
 
+    def log_predictive_density(self, y_test, mu_star, var_star):
+        """
+        Calculation of the log predictive density
+
+        .. math:
+            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+
+        :param y_test: test observations (y_{*})
+        :type y_test: (Nx1) array
+        :param mu_star: predictive mean of gaussian p(f_{*}|mu_{*}, var_{*})
+        :type mu_star: (Nx1) array
+        :param var_star: predictive variance of gaussian p(f_{*}|mu_{*}, var_{*})
+        :type var_star: (Nx1) array
+        """
+        return self.noise_model.log_predictive_density(y_test, mu_star, var_star)
+
     def _get_params(self):
         #return np.zeros(0)
         return self.noise_model._get_params()

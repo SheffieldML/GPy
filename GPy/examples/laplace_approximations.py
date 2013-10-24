@@ -155,13 +155,15 @@ def boston_example():
     X = X/X.std(axis=0)
     Y = Y-Y.mean()
     Y = Y/Y.std()
-    num_folds = 30
+    num_folds = 10
     kf = KFold(len(Y), n_folds=num_folds, indices=True)
     num_models = len(degrees_freedoms) + 3 #3 for baseline, gaussian, gaussian laplace approx
     score_folds = np.zeros((num_models, num_folds))
     pred_density = score_folds.copy()
+
     def rmse(Y, Ystar):
         return np.sqrt(np.mean((Y-Ystar)**2))
+
     for n, (train, test) in enumerate(kf):
         X_train, X_test, Y_train, Y_test = X[train], X[test], Y[train], Y[test]
         print "Fold {}".format(n)
@@ -184,7 +186,7 @@ def boston_example():
         mgp['rbf_len'] = rbf_len
         mgp['noise'] = noise
         print mgp
-        mgp.optimize(optimizer=optimizer,messages=messages)
+        mgp.optimize(optimizer=optimizer, messages=messages)
         Y_test_pred = mgp.predict(X_test)
         score_folds[1, n] = rmse(Y_test, Y_test_pred[0])
         pred_density[1, n] = np.mean(mgp.log_predictive_density(X_test, Y_test))
@@ -289,7 +291,7 @@ def boston_example():
     ax.yaxis.grid(True, linestyle='-', which='major', color='lightgrey',
               alpha=0.5)
     ax.set_axisbelow(True)
-    return mstu
+    return mstu_t
 
 def precipitation_example():
     import sklearn

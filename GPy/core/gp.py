@@ -27,12 +27,6 @@ class GP(GPBase):
         GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
         self._set_params(self._get_params())
 
-    def getstate(self):
-        return GPBase.getstate(self)
-
-    def setstate(self, state):
-        GPBase.setstate(self, state)
-        self._set_params(self._get_params())
 
     def _set_params(self, p):
         self.kern._set_params_transformed(p[:self.kern.num_params_transformed()])
@@ -101,12 +95,7 @@ class GP(GPBase):
 
         Note, we use the chain rule: dL_dtheta = dL_dK * d_K_dtheta
         """
-        #return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
-        if not isinstance(self.likelihood,EP):
-            tmp = np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
-        else:
-            tmp = np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
-        return tmp
+        return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
 
     def _raw_predict(self, _Xnew, which_parts='all', full_cov=False, stop=False):
         """
@@ -193,3 +182,11 @@ class GP(GPBase):
         """
         Xnew = self._add_output_index(Xnew, output)
         return self.predict(Xnew, which_parts=which_parts, full_cov=full_cov, likelihood_args=likelihood_args)
+
+    def getstate(self):
+        return GPBase.getstate(self)
+
+    def setstate(self, state):
+        GPBase.setstate(self, state)
+        self._set_params(self._get_params())
+

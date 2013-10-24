@@ -142,54 +142,6 @@ def student_t_approx():
 
     return m
 
-def gaussian_f_check():
-    plt.close('all')
-    X = np.linspace(0, 1, 50)[:, None]
-    real_std = 0.2
-    noise = np.random.randn(*X.shape)*real_std
-    Y = np.sin(X*2*np.pi) + noise
-
-    kernelgp = GPy.kern.rbf(X.shape[1]) # + GPy.kern.white(X.shape[1])
-    mgp = GPy.models.GPRegression(X, Y, kernel=kernelgp)
-    mgp.ensure_default_constraints()
-    mgp.randomize()
-    mgp.optimize()
-    print "Gaussian"
-    print mgp
-
-    kernelg = kernelgp.copy()
-    #kernelst += GPy.kern.bias(X.shape[1])
-    N, D = X.shape
-    g_distribution = GPy.likelihoods.noise_model_constructors.gaussian(variance=0.1, N=N, D=D)
-    g_likelihood = GPy.likelihoods.Laplace(Y.copy(), g_distribution)
-    m = GPy.models.GPRegression(X, Y, kernelg, likelihood=g_likelihood)
-    m.likelihood.X = X
-    #m['rbf_v'] = mgp._get_params()[0]
-    #m['rbf_l'] = mgp._get_params()[1] + 1
-    m.ensure_default_constraints()
-    #m.constrain_fixed('rbf_v', mgp._get_params()[0])
-    #m.constrain_fixed('rbf_l', mgp._get_params()[1])
-    #m.constrain_bounded('t_no', 2*real_std**2, 1e3)
-    #m.constrain_positive('bias')
-    m.constrain_positive('noise_var')
-    #m['noise_variance'] = 0.1
-    #m.likelihood.X = X
-    m.randomize()
-    import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
-    plt.figure()
-    ax = plt.subplot(211)
-    m.plot(ax=ax)
-
-    m.optimize()
-    ax = plt.subplot(212)
-    m.plot(ax=ax)
-
-    print "final optimised gaussian"
-    print m
-    print "real GP"
-    print mgp
-    import ipdb; ipdb.set_trace() ### XXX BREAKPOINT
-
 def boston_example():
     import sklearn
     from sklearn.cross_validation import KFold
@@ -337,7 +289,7 @@ def boston_example():
     ax.yaxis.grid(True, linestyle='-', which='major', color='lightgrey',
               alpha=0.5)
     ax.set_axisbelow(True)
-    return score_folds, pred_density
+    return mstu
 
 def precipitation_example():
     import sklearn
@@ -359,9 +311,3 @@ def precipitation_example():
     for n, (train, test) in enumerate(kf):
         X_train, X_test, Y_train, Y_test = X[train], X[test], Y[train], Y[test]
         print "Fold {}".format(n)
-
-
-def plot_f_approx(model):
-    plt.figure()
-    model.plot(ax=plt.gca())
-    plt.plot(model.X, model.likelihood.f_hat, c='g')

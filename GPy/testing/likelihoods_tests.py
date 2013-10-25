@@ -84,6 +84,10 @@ class TestNoiseModels(object):
         self.f = np.random.rand(self.N, 1)
         self.binary_Y = np.asarray(np.random.rand(self.N) > 0.5, dtype=np.int)[:, None]
         self.positive_Y = np.exp(self.Y.copy())
+        self.integer_Y = np.round(self.X[:, 0]*3-3)[:, None] + np.random.randint(0,3, self.X.shape[0])[:, None]
+        self.integer_Y = np.where(self.integer_Y > 0, self.integer_Y, 0)
+        print self.integer_Y
+        print self.Y
 
         self.var = 0.2
 
@@ -223,6 +227,13 @@ class TestNoiseModels(object):
                             "link_f_constraints": [constrain_positive],
                             "Y": self.positive_Y,
                             "laplace": True,
+                        },
+                        "Poisson_default": {
+                            "model": GPy.likelihoods.poisson(),
+                            "link_f_constraints": [constrain_positive],
+                            "Y": self.integer_Y,
+                            "laplace": True,
+                            "ep": False #Should work though...
                         }
                     }
 

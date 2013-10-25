@@ -270,6 +270,50 @@ def toy_rbf_1d_50(max_iters=100):
     print(m)
     return m
 
+def toy_poisson_rbf_1d(optimizer='bfgs', max_nb_eval_optim=100):
+    """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
+    X = np.linspace(0,10)[:, None]
+    F = np.round(X*3-4)
+    F = np.where(F > 0, F, 0)
+    eps = np.random.randint(0,4, F.shape[0])[:, None]
+    Y = F + eps
+
+    noise_model = GPy.likelihoods.poisson()
+    likelihood = GPy.likelihoods.EP(Y,noise_model)
+
+    # create simple GP Model
+    m = GPy.models.GPRegression(X, Y, likelihood=likelihood)
+
+    # optimize
+    m.optimize(optimizer, max_f_eval=max_nb_eval_optim)
+    # plot
+    m.plot()
+    print(m)
+    return m
+
+def toy_poisson_rbf_1d_laplace(optimizer='bfgs', max_nb_eval_optim=100):
+    """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
+    X = np.linspace(0,10)[:, None]
+    F = np.round(X*3-4)
+    F = np.where(F > 0, F, 0)
+    eps = np.random.randint(0,4, F.shape[0])[:, None]
+    Y = F + eps
+
+    noise_model = GPy.likelihoods.poisson()
+    likelihood = GPy.likelihoods.Laplace(Y,noise_model)
+
+    # create simple GP Model
+    m = GPy.models.GPRegression(X, Y, likelihood=likelihood)
+
+    # optimize
+    m.optimize(optimizer, max_f_eval=max_nb_eval_optim)
+    # plot
+    m.plot()
+    print(m)
+    return m
+
+
+
 def toy_ARD(max_iters=1000, kernel_type='linear', num_samples=300, D=4):
     # Create an artificial dataset where the values in the targets (Y)
     # only depend in dimensions 1 and 3 of the inputs (X). Run ARD to

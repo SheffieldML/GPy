@@ -24,24 +24,112 @@ class Exponential(NoiseDistribution):
     def _preprocess_values(self,Y):
         return Y
 
-    def _mass(self,gp,obs):
+    def pdf_link(self, link_f, y, extra_data=None):
         """
-        Mass (or density) function
-        """
-        return np.exp(-obs/self.gp_link.transf(gp))/self.gp_link.transf(gp)
+        Likelihood function given link(f)
 
-    def _nlog_mass(self,gp,obs):
-        """
-        Negative logarithm of the un-normalized distribution: factors that are not a function of gp are omitted
-        """
-        return obs/self.gp_link.transf(gp) + np.log(self.gp_link.transf(gp))
+        .. math::
+            p(y_{i}|\\lambda(f_{i})) = \\lambda(f_{i})\\exp (-y\\lambda(f_{i}))
 
-    def _dnlog_mass_dgp(self,gp,obs):
-        return ( 1./self.gp_link.transf(gp) - obs/self.gp_link.transf(gp)**2) * self.gp_link.dtransf_df(gp)
+        :param link_f: latent variables link(f)
+        :type link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data which is not used in exponential distribution
+        :returns: likelihood evaluated for this point
+        :rtype: float
+        """
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
+        return np.exp(np.sum(np.log(link_f*np.exp(-y*link_f))))
+        #return np.exp(np.sum(-y/link_f - np.log(link_f) ))
 
-    def _d2nlog_mass_dgp2(self,gp,obs):
-        fgp = self.gp_link.transf(gp)
-        return (2*obs/fgp**3 - 1./fgp**2) * self.gp_link.dtransf_df(gp)**2 + ( 1./fgp - obs/fgp**2) * self.gp_link.d2transf_df2(gp)
+    def logpdf_link(self, link_f, y, extra_data=None):
+        """
+        Log Likelihood Function given link(f)
+
+        .. math::
+            \\ln p(y_{i}|\lambda(f_{i})) = \\ln \\lambda(f_{i}) - y_{i}\\lambda(f_{i})
+
+        :param link_f: latent variables (link(f))
+        :type link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data which is not used in exponential distribution
+        :returns: likelihood evaluated for this point
+        :rtype: float
+
+        """
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
+        logpdf_link = np.sum(np.log(link_f) - y*link_f)
+        #logpdf_link = np.sum(-np.log(link_f) - y/link_f)
+        return logpdf_link
+
+    def dlogpdf_dlink(self, link_f, y, extra_data=None):
+        """
+        Gradient of the log likelihood function at y, given link(f) w.r.t link(f)
+
+        .. math::
+            \\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{d\\lambda(f)} = \\frac{1}{\\lambda(f)} - y_{i}
+
+        :param link_f: latent variables (f)
+        :type link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data which is not used in exponential distribution
+        :returns: gradient of likelihood evaluated at points
+        :rtype: Nx1 array
+
+        """
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
+        grad = 1./link_f - y
+        #grad = y/(link_f**2) - 1./link_f
+        return grad
+
+    def d2logpdf_dlink2(self, link_f, y, extra_data=None):
+        """
+        Hessian at y, given link(f), w.r.t link(f)
+        i.e. second derivative logpdf at y given link(f_i) and link(f_j)  w.r.t link(f_i) and link(f_j)
+        The hessian will be 0 unless i == j
+
+        .. math::
+            \\frac{d^{2} \\ln p(y_{i}|\lambda(f_{i}))}{d^{2}\\lambda(f)} = -\\frac{1}{\\lambda(f_{i})^{2}}
+
+        :param link_f: latent variables link(f)
+        :type link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data which is not used in exponential distribution
+        :returns: Diagonal of hessian matrix (second derivative of likelihood evaluated at points f)
+        :rtype: Nx1 array
+
+        .. Note::
+            Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
+            (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
+        """
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
+        hess = -1./(link_f**2)
+        #hess = -2*y/(link_f**3) + 1/(link_f**2)
+        return hess
+
+    def d3logpdf_dlink3(self, link_f, y, extra_data=None):
+        """
+        Third order derivative log-likelihood function at y given link(f) w.r.t link(f)
+
+        .. math::
+            \\frac{d^{3} \\ln p(y_{i}|\lambda(f_{i}))}{d^{3}\\lambda(f)} = \\frac{2}{\\lambda(f_{i})^{3}}
+
+        :param link_f: latent variables link(f)
+        :type link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param extra_data: extra_data which is not used in exponential distribution
+        :returns: third derivative of likelihood evaluated at points f
+        :rtype: Nx1 array
+        """
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
+        d3lik_dlink3 = 2./(link_f**3)
+        #d3lik_dlink3 = 6*y/(link_f**4) - 2./(link_f**3)
+        return d3lik_dlink3
 
     def _mean(self,gp):
         """

@@ -222,21 +222,12 @@ class NoiseDistribution(object):
         raise NotImplementedError
 
     def dlogpdf_link_dtheta(self, link_f, y, extra_data=None):
-        """
-        Need to check if it should even exist by checking length of getparams
-        """
         raise NotImplementedError
 
     def dlogpdf_dlink_dtheta(self, link_f, y, extra_data=None):
-        """
-        Need to check if it should even exist by checking length of getparams
-        """
         raise NotImplementedError
 
     def d2logpdf_dlink2_dtheta(self, link_f, y, extra_data=None):
-        """
-        Need to check if it should even exist by checking length of getparams
-        """
         raise NotImplementedError
 
     def pdf(self, f, y, extra_data=None):

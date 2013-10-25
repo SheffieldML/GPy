@@ -55,7 +55,7 @@ class StudentT(NoiseDistribution):
         :returns: likelihood evaluated for this point
         :rtype: float
         """
-        assert np.asarray(link_f).shape == np.asarray(y).shape
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         e = y - link_f
         #Careful gamma(big_number) is infinity!
         objective = ((np.exp(gammaln((self.v + 1)*0.5) - gammaln(self.v * 0.5))
@@ -80,7 +80,7 @@ class StudentT(NoiseDistribution):
         :rtype: float
 
         """
-        assert np.asarray(link_f).shape == np.asarray(y).shape
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         e = y - link_f
         objective = (+ gammaln((self.v + 1) * 0.5)
                      - gammaln(self.v * 0.5)
@@ -105,7 +105,7 @@ class StudentT(NoiseDistribution):
         :rtype: Nx1 array
 
         """
-        assert y.shape == link_f.shape
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         e = y - link_f
         grad = ((self.v + 1) * e) / (self.v * self.sigma2 + (e**2))
         return grad
@@ -131,7 +131,7 @@ class StudentT(NoiseDistribution):
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
             (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
         """
-        assert y.shape == link_f.shape
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         e = y - link_f
         hess = ((self.v + 1)*(e**2 - self.v*self.sigma2)) / ((self.sigma2*self.v + e**2)**2)
         return hess
@@ -151,7 +151,7 @@ class StudentT(NoiseDistribution):
         :returns: third derivative of likelihood evaluated at points f
         :rtype: Nx1 array
         """
-        assert y.shape == link_f.shape
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         e = y - link_f
         d3lik_dlink3 = ( -(2*(self.v + 1)*(-e)*(e**2 - 3*self.v*self.sigma2)) /
                        ((e**2 + self.sigma2*self.v)**3)
@@ -173,7 +173,7 @@ class StudentT(NoiseDistribution):
         :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
         :rtype: float
         """
-        assert y.shape == link_f.shape
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         e = y - link_f
         dlogpdf_dvar = self.v*(e**2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e**2))
         return np.sum(dlogpdf_dvar)
@@ -193,7 +193,7 @@ class StudentT(NoiseDistribution):
         :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
         :rtype: Nx1 array
         """
-        assert y.shape == link_f.shape
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         e = y - link_f
         dlogpdf_dlink_dvar = (self.v*(self.v+1)*(-e))/((self.sigma2*self.v + e**2)**2)
         return dlogpdf_dlink_dvar
@@ -213,7 +213,7 @@ class StudentT(NoiseDistribution):
         :returns: derivative of hessian evaluated at points f and f_j w.r.t variance parameter
         :rtype: Nx1 array
         """
-        assert y.shape == link_f.shape
+        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         e = y - link_f
         d2logpdf_dlink2_dvar = ( (self.v*(self.v+1)*(self.sigma2*self.v - 3*(e**2)))
                               / ((self.sigma2*self.v + (e**2))**3)
@@ -314,3 +314,19 @@ class StudentT(NoiseDistribution):
         p_025 = mu - p
         p_975 = mu + p
         return mu, np.nan*mu, p_025, p_975
+
+    def samples(self, gp):
+        """
+        Returns a set of samples of observations based on a given value of the latent variable.
+
+        :param size: number of samples to compute
+        :param gp: latent variable
+        """
+        orig_shape = gp.shape
+        gp = gp.flatten()
+        f = self.gp_link.transf(gp)
+        #student_t_samples = stats.t.rvs(self.v, loc=f,
+                                        #scale=np.sqrt(self.sigma2),
+                                        #size=(num_test_points, num_y_samples, num_f_samples))
+        #Ysim = np.array([np.random.binomial(1,self.gp_link.transf(gpj),size=1) for gpj in gp])
+        return Ysim.reshape(orig_shape)

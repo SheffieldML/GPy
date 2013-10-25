@@ -37,7 +37,7 @@ def exponential(gp_link=None):
     :param gp_link: a GPy gp_link function
     """
     if gp_link is None:
-        gp_link = noise_models.gp_transformations.Identity()
+        gp_link = noise_models.gp_transformations.Log_ex_1()
 
     analytical_mean = False
     analytical_variance = False

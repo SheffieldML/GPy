@@ -83,6 +83,7 @@ class TestNoiseModels(object):
         self.Y = (np.sin(self.X[:, 0]*2*np.pi) + noise)[:, None]
         self.f = np.random.rand(self.N, 1)
         self.binary_Y = np.asarray(np.random.rand(self.N) > 0.5, dtype=np.int)[:, None]
+        self.positive_Y = np.exp(self.Y.copy())
 
         self.var = 0.2
 
@@ -216,6 +217,12 @@ class TestNoiseModels(object):
                             "laplace": True,
                             "Y": self.binary_Y,
                             "ep": True
+                            },
+                        "Exponential_default": {
+                            "model": GPy.likelihoods.exponential(),
+                            "link_f_constraints": [constrain_positive],
+                            "Y": self.positive_Y,
+                            "laplace": True,
                         }
                     }
 

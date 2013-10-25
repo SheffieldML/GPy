@@ -15,7 +15,7 @@ class Gaussian(likelihood):
     :type normalize: False|True
     """
     def __init__(self, data, variance=1., normalize=False):
-        super(Gaussian, self).__init__()
+        super(Gaussian, self).__init__('gaussian')
         self.is_heteroscedastic = False
         self.num_params = 1
         self.Z = 0. # a correction factor which accounts for the approximation made
@@ -33,10 +33,11 @@ class Gaussian(likelihood):
 
         self.set_data(data)
 
-        self.variance = Param('noise_variance', variance, None)
-        self.set_as_parameters(self.variance)
-
+        self.variance = Param('variance', variance)
         self._variance = variance + 1
+        
+        self.add_parameter(self.variance)
+
         
 #         self._set_params(np.asarray(variance))
 
@@ -62,6 +63,7 @@ class Gaussian(likelihood):
 #         return ["noise_variance"]
 # 
 #     def _set_params(self, x):
+#         self.variance = x[0]
     def parameters_changed(self):
         if np.any(self._variance != self.variance):
             if np.all(self.variance == 0.):#special case of zero noise

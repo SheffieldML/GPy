@@ -31,10 +31,10 @@ class Test(unittest.TestCase):
 
         self.Y = numpy.random.multivariate_normal(numpy.zeros(self.N), K + numpy.eye(self.N) * .2, self.D).T
         
-        self.bgplvm = BayesianGPLVM(Gaussian(self.Y, variance=self.noise_variance), self.Q, self.X, self.X_variance, kernel=self.kern)
-        self.bgplvm.ensure_default_constraints(warning=False)
-        self.bgplvm.tie_params("noise_variance|white_variance")
-        self.bgplvm.constrain_fixed("rbf_var", warning=False)
+#         self.bgplvm = BayesianGPLVM(Gaussian(self.Y, variance=self.noise_variance), self.Q, self.X, self.X_variance, kernel=self.kern)
+#         self.bgplvm.ensure_default_constraints(warning=False)
+#         self.bgplvm.tie_params("noise_variance|white_variance")
+#         self.bgplvm.constrain_fixed("rbf_var", warning=False)
         self.parameter = Parameterized([
                                     Parameterized([
                                                 Param('X', self.X),
@@ -110,7 +110,7 @@ class Test(unittest.TestCase):
         self.parameter[''].unconstrain()
         self.parameter.X.constrain_positive()
         self.parameter.X[:,numpy.s_[0::2]].unconstrain_positive()
-        assert(numpy.alltrue(self.parameter._constraints_.indices()[0] == numpy.r_[1:self.N*self.Q:2]))
+        assert(numpy.alltrue(self.parameter.constraints.indices()[0] == numpy.r_[1:self.N*self.Q:2]))
 
     def testNdarrayFunc(self):
         assert(numpy.alltrue(self.parameter.X * self.parameter.X == self.X * self.X))

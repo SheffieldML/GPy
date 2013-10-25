@@ -23,6 +23,7 @@ class GP(GPBase):
     """
     def __init__(self, X, likelihood, kernel, normalize_X=False):
         GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
+
         #self._set_params(self._get_params())
 
     def getstate(self):
@@ -89,21 +90,26 @@ class GP(GPBase):
         return (-0.5 * self.num_data * self.output_dim * np.log(2.*np.pi) -
             0.5 * self.output_dim * self.K_logdet + self._model_fit_term() + self.likelihood.Z)
 
+#     def _log_likelihood_gradients(self):
+#         """
+#         The gradient of all parameters.
+# 
+#         Note, we use the chain rule: dL_dtheta = dL_dK * d_K_dtheta
+#         """
+#         #return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+#         
+#         if not isinstance(self.likelihood,EP):
+#             tmp = np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+#         else:
+#             tmp = np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
+#         return tmp
+    
+    def dL_dtheta(self):
+        return self.kern.dK_dtheta(self.dL_dK, self.X)
 
-    def _log_likelihood_gradients(self):
-        """
-        The gradient of all parameters.
-
-        Note, we use the chain rule: dL_dtheta = dL_dK * d_K_dtheta
-        """
-        #return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
-        
-        if not isinstance(self.likelihood,EP):
-            tmp = np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
-        else:
-            tmp = np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
-        return tmp
-
+    def dL_dlikelihood(self):
+        return self.likelihood._gradients(partial=np.diag(self.dL_dK))
+    
     def _raw_predict(self, _Xnew, which_parts='all', full_cov=False, stop=False):
         """
         Internal helper function for making predictions, does not account

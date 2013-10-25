@@ -7,6 +7,7 @@ import numpy as np
 from ...util.linalg import tdot
 from ...util.misc import fast_array_equal
 from scipy import weave
+from GPy.core.parameter import Param
 
 class Linear(Kernpart):
     """
@@ -26,11 +27,9 @@ class Linear(Kernpart):
     """
 
     def __init__(self, input_dim, variances=None, ARD=False):
-        self.input_dim = input_dim
+        super(Linear, self).__init__(input_dim, 'linear')
         self.ARD = ARD
         if ARD == False:
-            self.num_params = 1
-            self.name = 'linear'
             if variances is not None:
                 variances = np.asarray(variances)
                 assert variances.size == 1, "Only one variance needed for non-ARD kernel"
@@ -38,32 +37,33 @@ class Linear(Kernpart):
                 variances = np.ones(1)
             self._Xcache, self._X2cache = np.empty(shape=(2,))
         else:
-            self.num_params = self.input_dim
-            self.name = 'linear'
             if variances is not None:
                 variances = np.asarray(variances)
                 assert variances.size == self.input_dim, "bad number of lengthscales"
             else:
                 variances = np.ones(self.input_dim)
-        self._set_params(variances.flatten())
+        
+        self.variances = Param('variances', variances)
+        self.add_parameters(self.variances)
 
         # initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3, 1))
-        self._X, self._X2, self._params = np.empty(shape=(3, 1))
+        self._X, self._X2 = np.empty(shape=(2, 1))
 
-    def _get_params(self):
-        return self.variances
-
-    def _set_params(self, x):
-        assert x.size == (self.num_params)
-        self.variances = x
+#     def _get_params(self):
+#         return self.variances
+# 
+#     def _set_params(self, x):
+#         assert x.size == (self.num_params)
+#         self.variances = x
+    def parameters_changed(self):
         self.variances2 = np.square(self.variances)
-
-    def _get_param_names(self):
-        if self.num_params == 1:
-            return ['variance']
-        else:
-            return ['variance_%i' % i for i in range(self.variances.size)]
+# 
+#     def _get_param_names(self):
+#         if self.num_params == 1:
+#             return ['variance']
+#         else:
+#             return ['variance_%i' % i for i in range(self.variances.size)]
 
     def K(self, X, X2, target):
         if self.ARD:

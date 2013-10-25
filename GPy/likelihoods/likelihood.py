@@ -21,8 +21,8 @@ class likelihood(Parameterized):
         - self.V : self.precision * self.Y
 
     """
-    def __init__(self):
-        Parameterized.__init__(self)
+    def __init__(self, name=None):
+        Parameterized.__init__(self, name)
     
 #     def _get_params(self):
 #         raise NotImplementedError

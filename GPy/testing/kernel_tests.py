@@ -78,7 +78,7 @@ class KernelTests(unittest.TestCase):
         self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
     def test_heterokernel(self):
-        kern = GPy.kern.hetero(5, mapping=GPy.mappings.Linear(5, 1), transform=GPy.core.transformations.logexp())
+        kern = GPy.kern.hetero(5, mapping=GPy.mappings.Linear(5, 1), transform=GPy.core.transformations.Logexp())
         self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
     def test_mlpkernel(self):

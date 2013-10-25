@@ -5,14 +5,36 @@
 import numpy; np = numpy
 import copy
 import cPickle
-from parameter import ParamConcatenation, Param
-from index_operations import ParameterIndexOperations,\
-    index_empty
 import transformations
 import itertools
 from re import compile, _pattern_type
 import re
-from GPy.util.misc import fast_array_equal
+
+class Parentable(object):
+    _direct_parent_ = None
+    _parent_index_ = None
+    
+    def has_parent(self):
+        return self._direct_parent_ is not None
+    
+class Nameable(Parentable):
+    _name = None
+    def __init__(self, name):
+        self._name = name or self.__class__.__name__
+        self.name = name
+    @property
+    def name(self):
+        return self._name
+    @name.setter
+    def name(self, name):
+        from_name = self.name
+        self._name = name        
+        if self.has_parent():
+            self._direct_parent_._name_changed(self, from_name)
+
+from parameter import ParamConcatenation
+from index_operations import ParameterIndexOperations,\
+    index_empty
 
 #===============================================================================
 # Printing:
@@ -25,7 +47,7 @@ FIXED = False
 UNFIXED = True
 #===============================================================================
 
-class Parameterized(object):
+class Parameterized(Nameable):
     """
     Parameterized class
     
@@ -64,65 +86,85 @@ class Parameterized(object):
             - m.name[0].tie_to(m.name[1])
             
         Fixing parameters will fix them to the value they are right now. If you change
-        the paramters value, the parameter will be fixed to the new value!
+        the parameters value, the parameter will be fixed to the new value!
         
         If you want to operate on all parameters use m[''] to wildcard select all paramters 
         and concatenate them. Printing m[''] will result in printing of all parameters in detail.
     """
-    def __init__(self):
-        self._constraints_ = ParameterIndexOperations()
-        #self._fixes_ = TieIndexOperations(self)
-        #self._fixes_ = None
-        self._fixes_ = None
+    def __init__(self, name=None):
+        super(Parameterized, self).__init__(name)
         self._in_init_ = True
+        self._constraints_ = None#ParameterIndexOperations()
+        self._fixes_ = None
         if not hasattr(self, "_parameters_"):
             self._parameters_ = []
+        #else:
+        #    self._parameters_.extend(parameters)
         self._connect_parameters()
+        self.gradient_mapping = {}
         del self._in_init_
+
+    @property
+    def constraints(self):
+        if self._constraints_ is None:
+            self._constraints_ = ParameterIndexOperations()
+        return self._constraints_
     #===========================================================================
     # Parameter connection for model creation:
     #===========================================================================
-    def set_as_parameter(self, name, array, gradient, index=None, gradient_parent=None):
+#     def set_as_parameter(self, name, array, gradient, index=None, gradient_parent=None):
+#         """
+#         :param name:     name of the parameter (in print and plots), can be callable without parameters
+#         :type name:      str, callable
+#         :param array:    array which the parameter consists of
+#         :type array:     array-like
+#         :param gradient: gradient method of the parameter
+#         :type gradient:  callable
+#         :param index:    (optional) index of the parameter when printing
+#         
+#         (:param gradient_parent:  connect these parameters to this class, but tell
+#                         updates to highest_parent, this is needed when parameterized classes
+#                         contain parameterized classes, but want to access the parameters
+#                         of their children) 
+#                          
+# 
+#         Set array (e.g. self.X) as parameter with name and gradient.
+#         I.e: self.set_as_parameter('curvature', self.lengthscale, self.dK_dlengthscale)
+#         
+#         Note: the order in which parameters are added can be adjusted by 
+#               giving an index, of where to put this parameter in printing  
+#         """
+#         if index is None:
+#             self._parameters_.append(Param(name, array, gradient))
+#         else:
+#             self._parameters_.insert(index, Param(name, array, gradient))
+#         self._connect_parameters(gradient_parent=gradient_parent)
+    def add_parameter(self, parameter, gradient=None, index=None):
         """
-        :param name:     name of the parameter (in print and plots), can be callable without parameters
-        :type name:      str, callable
-        :param array:    array which the parameter consists of
-        :type array:     array-like
-        :param gradient: gradient method of the parameter
-        :type gradient:  callable
-        :param index:    (optional) index of the parameter when printing
-        
-        (:param gradient_parent:  connect these parameters to this class, but tell
-                        updates to highest_parent, this is needed when parameterized classes
-                        contain parameterized classes, but want to access the parameters
-                        of their children) 
-                         
-
-        Set array (e.g. self.X) as parameter with name and gradient.
-        I.e: self.set_as_parameter('curvature', self.lengthscale, self.dK_dlengthscale)
-        
-        Note: the order in which parameters are added can be adjusted by 
-              giving an index, of where to put this parameter in printing  
-        """
-        if index is None:
-            self._parameters_.append(Param(name, array, gradient))
-        else:
-            self._parameters_.insert(index, Param(name, array, gradient))
-        self._connect_parameters(gradient_parent=gradient_parent)
-    def set_as_parameters(self, *parameters, **kwargs):
-        """
-        :param parameters: the parameters to add
-        :param index: index of where to put parameters
+        :param parameters:  the parameters to add
+        :type parameters:   list of or one :py:class:`GPy.core.parameter.Param`
+        :param [gradients]: gradients for each parameter, 
+                            one gradient per parameter
+        :param [index]:     index of where to put parameters
         
         
         Add all parameters to this parameter class, you can insert parameters 
         at any given index using the :py:func:`list.insert` syntax 
         """
-        if kwargs.get('index',None) is None:
-            self._parameters_.extend(parameters)
+        if index is None:
+            self._parameters_.append(parameter)
         else:
-            self._parameters_.insert(kwargs['index'], parameters)
-        self._connect_parameters(gradient_parent=kwargs.get('gradient_parent', self))
+            self._parameters_.insert(index, parameter)
+        self._connect_parameters()
+        if gradient:
+            self.gradient_mapping[parameter] = gradient    
+
+    def add_parameters(self, *parameters):
+        """
+        convinience method for adding several 
+        parameters without gradient specification
+        """
+        [self.add_parameter(p) for p in parameters]
 #     def remove_parameter(self, *names_params_indices):
 #         """
 #         :param names_params_indices: mix of parameter_names, parameter objects, or indices 
@@ -138,23 +180,21 @@ class Parameterized(object):
     def parameters_changed(self):
         # will be called as soon as paramters have changed
         pass
-    def _connect_parameters(self, gradient_parent=None):
+    def _connect_parameters(self):
         # connect parameterlist to this parameterized object
         # This just sets up the right connection for the params objects 
         # to be used as parameters
         if not hasattr(self, "_parameters_") or len(self._parameters_) < 1:
             # no parameters for this class
             return
-        sizes = numpy.cumsum([0] + self._parameter_sizes_)
-        self._parameter_size_ = sizes[-1] 
-        self._param_slices_ = [slice(start, stop) for start,stop in zip(sizes, sizes[1:])]
         i = 0
         for p in self._parameters_:
             #if p._parent_ is None:
-            p._parent_ = self
+            p._direct_parent_ = self
             p._parent_index_ = i
             i += 1
-            p._gradient_parent_ = gradient_parent or p._gradient_parent_ or self
+            for pi in p.flattened_parameters:
+                pi._highest_parent_ = self
             not_unique = []
 #             for k,v in self.__dict__.iteritems():
 #                 try: 
@@ -163,13 +203,15 @@ class Parameterized(object):
 #                 except: # parameter comparison, just for convenience
 #                     pass                    
             if p.name in self.__dict__:
-                if p.base is self.__dict__[p.name] or p is self.__dict__[p.name]:
-                    self.__dict__[p.name] = p
-                else:
+                if not p is self.__dict__[p.name]:
                     not_unique.append(p.name)
                     del self.__dict__[p.name]
             elif not (p.name in not_unique):
                 self.__dict__[p.name] = p
+        sizes = numpy.cumsum([0] + self._parameter_sizes_)
+        self.size = sizes[-1] 
+        self._param_slices_ = [slice(start, stop) for start,stop in zip(sizes, sizes[1:])]
+        self.parameters_changed()
     #===========================================================================
     # Pickling operations
     #===========================================================================
@@ -214,9 +256,13 @@ class Parameterized(object):
                 self._constraints_,
                 self._priors_,
                 self._parameters_,
+                self._name,
+                self.gradient_mapping,
                 ]
         
     def setstate(self, state):
+        self.gradient_mapping = state.pop(),
+        self._name = state.pop()
         self._parameters_ = state.pop()
         self._connect_parameters()
         self._priors = state.pop()
@@ -224,10 +270,36 @@ class Parameterized(object):
         self._fixes_ = state.pop()
         self.parameters_changed()
     #===========================================================================
+    # Gradient control
+    #===========================================================================
+    def _transform_gradients(self, g):
+        if self.has_parent():
+            return g
+        x = self._get_params()
+        #g = g.copy()
+        #for constraint, index in self.constraints.iteritems():
+        #    if constraint != __fixed__:
+        #        g[index] = g[index] * constraint.gradfactor(x[index])
+        [numpy.put(g, i, g[i]*c.gradfactor(x[i])) for c,i in self.constraints.iteritems() if c != __fixed__]
+        #[np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
+        for p in self.flattened_parameters:
+            for t,i in p._tied_to_me_.iteritems():
+                g[self._offset_for(p) + numpy.array(list(i))] += g[self._raveled_index_for(t)]
+        #[g[self._offset_for(t) + numpy.array(list(i))].__iadd__(v) for i, v in [[i, g[self._raveled_index_for(p)].sum()] for p in self.flattened_parameters for t,i in p._tied_to_me_.iteritems()]]
+#         if len(self.tied_indices) or len(self.fixed_indices):
+#             to_remove = np.hstack((self.fixed_indices + [t[1:] for t in self.tied_indices]))
+#             return np.delete(g, to_remove)
+#         else:
+        if self._fixes_ is not None: return g[self._fixes_]
+        return g
+    #===========================================================================
     # Optimization handles:
     #===========================================================================
     def _get_param_names_transformed(self):
-        return numpy.array([p.name+str(i) for p in self._parameters_ for i in p._indices()])[self._fixes_][0]
+        n = numpy.array([p.name_hirarchical+'['+str(i)+']' for p in self.flattened_parameters for i in p._indices()])
+        if self._fixes_ is not None:
+            return n[self._fixes_]
+        return n
     def _get_params(self):
         # don't overwrite this anymore!
         return numpy.hstack([x._get_params() for x in self._parameters_])#numpy.fromiter(itertools.chain(*itertools.imap(lambda x: x._get_params(), self._parameters_)), dtype=numpy.float64, count=sum(self._parameter_sizes_))    
@@ -237,14 +309,14 @@ class Parameterized(object):
         self.parameters_changed()
     def _get_params_transformed(self):
         p = self._get_params()
-        [numpy.put(p, ind, c.finv(p[ind])) for c,ind in self._constraints_.iteritems() if c != __fixed__]
+        [numpy.put(p, ind, c.finv(p[ind])) for c,ind in self.constraints.iteritems() if c != __fixed__]
         if self._fixes_ is not None:
             return p[self._fixes_]
         return p
     def _set_params_transformed(self, p):
         p = p.copy()
         if self._fixes_ is not None: tmp = self._get_params(); tmp[self._fixes_] = p; p = tmp; del tmp
-        [numpy.put(p, ind, c.f(p[ind])) for c,ind in self._constraints_.iteritems() if c != __fixed__]
+        [numpy.put(p, ind, c.f(p[ind])) for c,ind in self.constraints.iteritems() if c != __fixed__]
         self._set_params(p)
     def _name_changed(self, param, old_name):
         if hasattr(self, old_name):
@@ -262,14 +334,19 @@ class Parameterized(object):
         return ind
     def _offset_for(self, param):
         # get the offset in the parameterized index array for param
-        return self._param_slices_[param._parent_index_].start
+        if param._direct_parent_._get_original(param) in self._parameters_:
+            return self._param_slices_[param._direct_parent_._get_original(param)._parent_index_].start
+        if param.has_parent():
+            return self._offset_for(param._direct_parent_) + param._direct_parent_._offset_for(param)
+        return 0
+    
     def _raveled_index_for(self, param):
         return param._raveled_index() + self._offset_for(param)
     #===========================================================================
     # Handle ties:
     #===========================================================================
     def _set_fixed(self, param_or_index):
-        if self._fixes_ is None: self._fixes_ = numpy.ones(self._parameter_size_, dtype=bool)
+        if self._fixes_ is None: self._fixes_ = numpy.ones(self.size, dtype=bool)
         try:
             param_or_index = self._raveled_index_for(param_or_index)
         except AttributeError:
@@ -277,7 +354,7 @@ class Parameterized(object):
         self._fixes_[param_or_index] = FIXED
         if numpy.all(self._fixes_): self._fixes_ = None # ==UNFIXED
     def _set_unfixed(self, param_or_index):
-        if self._fixes_ is None: self._fixes_ = numpy.ones(self._parameter_size_, dtype=bool)
+        if self._fixes_ is None: self._fixes_ = numpy.ones(self.size, dtype=bool)
         try:
             param_or_index = self._raveled_index_for(param_or_index)
         except AttributeError:
@@ -288,7 +365,7 @@ class Parameterized(object):
 #         # tie param to tie_to, if the values match (with broadcasting)
 #         self._remove_tie(param) # delete if multiple ties should be allowed
 #         f, _ = self._fixes_.add(param, tied_to)
-#         if self._fixes_ is None: self._fixes_ = numpy.ones(self._parameter_size_, dtype=bool)
+#         if self._fixes_ is None: self._fixes_ = numpy.ones(self.size, dtype=bool)
 #         self._fixes_[f] = False
 #     def _remove_tie(self, param, *params):
 #         # remove the tie from param to all *params (can be None, so all ties get deleted for param)
@@ -329,11 +406,20 @@ class Parameterized(object):
         if self._fixes_ is None:
             return False
         return not self._fixes_[self._offset_for(param): self._offset_for(param)+param._realsize_].any()
+    @property
+    def is_fixed(self):
+        for p in self._parameters_:
+            if not p.is_fixed: return False
+        return True
     def _get_original(self, param):
         # if advanced indexing is activated it happens that the array is a copy
         # you can retrieve the original parameter through this method, by passing
         # the copy here
         return self._parameters_[param._parent_index_]
+    def hirarchy_name(self):
+        if self.has_parent():
+            return self._direct_parent_.hirarchy_name() + self.name + "."
+        return ''
     #===========================================================================
     # Constraint Handling:
     #===========================================================================
@@ -341,7 +427,7 @@ class Parameterized(object):
         rav_i = self._raveled_index_for(param)
         reconstrained = self._remove_constrain(param, index=rav_i) # remove constraints before
         # if removing constraints before adding new is not wanted, just delete the above line!        
-        self._constraints_.add(transform, rav_i)
+        self.constraints.add(transform, rav_i)
         if warning and any(reconstrained):
             # if you want to print the whole params object, which was reconstrained use:
             # m = str(param[self._backtranslate_index(param, reconstrained)])
@@ -349,19 +435,19 @@ class Parameterized(object):
         return rav_i
     def _remove_constrain(self, param, *transforms, **kwargs):
         if not transforms:
-            transforms = self._constraints_.properties()
+            transforms = self.constraints.properties()
         removed_indices = numpy.array([]).astype(int)
         if "index" in kwargs: index = kwargs['index'] 
         else: index = self._raveled_index_for(param)
         for constr in transforms:
-            removed = self._constraints_.remove(constr, index)
+            removed = self.constraints.remove(constr, index)
             if constr is __fixed__:
                 self._set_unfixed(removed)
             removed_indices = numpy.union1d(removed_indices, removed)
         return removed_indices
     # convienience for iterating over items
     def _constraints_iter_items(self, param):
-        for constr, ind in self._constraints_.iteritems():
+        for constr, ind in self.constraints.iteritems():
             ind = self._backtranslate_index(param, ind)
             if not index_empty(ind):
                 yield constr, ind
@@ -372,9 +458,9 @@ class Parameterized(object):
         for _, ind in self._constraints_iter_items(param):
             yield ind
     def _constraint_indices(self, param, constraint):
-        return self._backtranslate_index(param, self._constraints_[constraint])
+        return self._backtranslate_index(param, self.constraints[constraint])
     def _constraints_for(self, param, rav_index):
-        return self._constraints_.properties_for(rav_index+self._offset_for(param))
+        return self.constraints.properties_for(rav_index+self._offset_for(param))
     #===========================================================================
     # Get/set parameters:
     #===========================================================================
@@ -383,6 +469,13 @@ class Parameterized(object):
         create a list of parameters, matching regular expression regexp
         """
         if not isinstance(regexp, _pattern_type): regexp = compile(regexp)
+        found_params = []
+        for p in self._parameters_:
+            if regexp.match(p.name) is not None:
+                found_params.append(p)
+            if isinstance(p, Parameterized):
+                found_params.extend(p.grep_param_names(regexp))
+        return found_params
         return [param for param in self._parameters_ if regexp.match(param.name) is not None]
     def __getitem__(self, name, paramlist=None):
         if paramlist is None:
@@ -394,8 +487,8 @@ class Parameterized(object):
         try: param = self.__getitem__(name, paramlist)
         except AttributeError as a: raise a
         param[:] = value
-    def __getattr__(self, name):
-        return self.__getitem__(name)
+#     def __getattr__(self, name):
+#         return self.__getitem__(name)
 #     def __getattribute__(self, name):
 #         #try: 
 #             return object.__getattribute__(self, name)
@@ -412,41 +505,52 @@ class Parameterized(object):
             if len(paramlist) == 1: self.__setitem__(name, val, paramlist); return
         object.__setattr__(self, name, val);
     #===========================================================================
-    # Printing:        
+    # Printing:
     #===========================================================================
+    def _parameter_names(self, add_name=False):
+        if add_name:
+            return [self.name + "." + xi for x in self._parameters_ for xi in x._parameter_names(add_name=True)]
+        return [xi for x in self._parameters_ for xi in x._parameter_names(add_name=True)]
+    parameter_names = property(_parameter_names, doc="Names for all parameters handled by this parameterization object")
     @property
-    def parameter_names(self):
-        return [x.name for x in self._parameters_]
+    def flattened_parameters(self):
+        return [xi for x in self._parameters_ for xi in x.flattened_parameters]
     @property
     def _parameter_sizes_(self):
         return [x.size for x in self._parameters_]
     @property
-    def _parameter_size_transformed_(self):
-        return sum(self._fixes_)
+    def size_transformed(self):
+        if self._fixes_ is not None:
+            return sum(self._fixes_)
+        return self.size
     @property
-    def _parameter_shapes_(self):
-        return [x.shape for x in self._parameters_]
+    def parameter_shapes(self):
+        return [xi for x in self._parameters_ for xi in x.parameter_shapes]
     @property
-    def _constrs(self):
-        return [p._constr for p in self._parameters_]
+    def _constraints_str(self):
+        return [cs for p in self._parameters_ for cs in p._constraints_str]
     @property
-    def _descs(self):
-        return [x._desc for x in self._parameters_]
+    def _description_str(self):
+        return [xi for x in self._parameters_ for xi in x._description_str]
     @property
-    def _ts(self):
-        return [' '.join([t._short() for t in x._tied_to_]) for x in self._parameters_]
+    def _ties_str(self):
+        return [xi for x in self._parameters_ for xi in x._ties_str]
     def __str__(self, header=True):
-        nl = max([len(str(x)) for x in self.parameter_names + ["Name"]])
-        sl = max([len(str(x)) for x in self._descs + ["Value"]])
-        constrs = self._constrs; ts = self._ts
+        constrs = self._constraints_str; ts = self._ties_str
+        desc = self._description_str; names = self.parameter_names
+        nl = max([len(str(x)) for x in names + ["Name"]])
+        sl = max([len(str(x)) for x in desc + ["Value"]])
         cl = max([len(str(x)) if x else 0 for x in constrs  + ["Constraint"]])
         tl = max([len(str(x)) if x else 0 for x in ts + ["Tied to"]])
-        format_spec = "  \033[1m{{p.name:^{0}s}}\033[0;0m  |  {{p._desc:^{1}s}}  |  {{const:^{2}s}}  |  {{t:^{3}s}}".format(nl, sl, cl, tl)
-        to_print = [format_spec.format(p=p, const=c, t=t) for p, c, t in itertools.izip(self._parameters_, constrs, ts)]
+        format_spec = "  \033[1m{{name:<{0}s}}\033[0;0m  |  {{desc:^{1}s}}  |  {{const:^{2}s}}  |  {{t:^{3}s}}".format(nl, sl, cl, tl)
+        to_print = []
+        for n, d, c, t in itertools.izip(names, desc, constrs, ts):
+            to_print.append(format_spec.format(name=n, desc=d, const=c, t=t))
+        #to_print = [format_spec.format(p=p, const=c, t=t) if isinstance(p, Param) else p.__str__(header=False) for p, c, t in itertools.izip(self._parameters_, constrs, ts)]
         sep = '-'*(nl+sl+cl+tl+8*2+3)
         if header:
-            header = "  {{0:^{0}s}}  |  {{1:^{1}s}}  |  {{2:^{2}s}}  |  {{3:^{3}s}}".format(nl, sl, cl, tl).format("Name", "Value", "Constraint", "Tied to")
-            header += '\n' + sep
+            header = "  {{0:<{0}s}}  |  {{1:^{1}s}}  |  {{2:^{2}s}}  |  {{3:^{3}s}}".format(nl, sl, cl, tl).format("Name", "Value", "Constraint", "Tied to")
+            #header += '\n' + sep
             to_print.insert(0, header)
         return '\n'.format(sep).join(to_print)
     pass

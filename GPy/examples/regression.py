@@ -255,7 +255,7 @@ def toy_rbf_1d(optimizer='tnc', max_nb_eval_optim=100):
     print(m)
     return m
 
-def toy_rbf_1d_50(max_iters=100):
+def toy_rbf_1d_50(max_iters=100, optimize=True):
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
     data = GPy.util.datasets.toy_rbf_1d_50()
 
@@ -263,14 +263,15 @@ def toy_rbf_1d_50(max_iters=100):
     m = GPy.models.GPRegression(data['X'], data['Y'])
 
     # optimize
-    m.optimize(max_iters=max_iters)
+    if optimize:
+        m.optimize(max_iters=max_iters)
 
     # plot
     m.plot()
     print(m)
     return m
 
-def toy_ARD(max_iters=1000, kernel_type='linear', num_samples=300, D=4):
+def toy_ARD(max_iters=1000, kernel_type='linear', num_samples=300, D=4, optimize=True):
     # Create an artificial dataset where the values in the targets (Y)
     # only depend in dimensions 1 and 3 of the inputs (X). Run ARD to
     # see if this dependency can be recovered
@@ -300,7 +301,7 @@ def toy_ARD(max_iters=1000, kernel_type='linear', num_samples=300, D=4):
     # len_prior = GPy.priors.inverse_gamma(1,18) # 1, 25
     # m.set_prior('.*lengthscale',len_prior)
 
-    m.optimize(optimizer='scg', max_iters=max_iters, messages=1)
+    if optimize: m.optimize(optimizer='scg', max_iters=max_iters, messages=1)
 
     m.kern.plot_ARD()
     print(m)

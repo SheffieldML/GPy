@@ -24,19 +24,8 @@ class Symmetric(Kernpart):
         self.num_params = k.num_params
         self.name = k.name + '_symm'
         self.k = k
-        self._set_params(k._get_params())
-
-    def _get_params(self):
-        """return the value of the parameters."""
-        return self.k._get_params()
-
-    def _set_params(self,x):
-        """set the value of the parameters."""
-        self.k._set_params(x)
-
-    def _get_param_names(self):
-        """return parameter names."""
-        return self.k._get_param_names()
+        self.add_parameter(k)
+        #self._set_params(k._get_params())
 
     def K(self,X,X2,target):
         """Compute the covariance matrix between X and X2."""

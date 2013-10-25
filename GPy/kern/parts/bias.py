@@ -15,13 +15,9 @@ class Bias(Kernpart):
         :param variance: the variance of the kernel
         :type variance: float
         """
-        super(Bias, self).__init__(input_dim)
-        self.input_dim = input_dim
-        self.num_params = 1
-        self.name = 'bias'
-
-        self.variance = Param(lambda: self.name+"_variance", variance, None)
-        self.set_as_parameters(self.variance)
+        super(Bias, self).__init__(input_dim, 'bias')
+        self.variance = Param("variance", variance, None)
+        self.add_parameter(self.variance)
         #self._set_params(np.array([variance]).flatten())
 
 #     def _get_params(self):

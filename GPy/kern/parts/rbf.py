@@ -33,20 +33,17 @@ class RBF(Kernpart):
     """
 
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='rbf'):
-        super(RBF, self).__init__(input_dim)
+        super(RBF, self).__init__(input_dim, name)
         self.input_dim = input_dim
-        self.name = name
         self.ARD = ARD
         
         if not ARD:
-            self.num_params = 2
             if lengthscale is not None:
                 lengthscale = np.asarray(lengthscale)
                 assert lengthscale.size == 1, "Only one lengthscale needed for non-ARD kernel"
             else:
                 lengthscale = np.ones(1)
         else:
-            self.num_params = self.input_dim + 1
             if lengthscale is not None:
                 lengthscale = np.asarray(lengthscale)
                 assert lengthscale.size == self.input_dim, "bad number of lengthscales"
@@ -54,9 +51,10 @@ class RBF(Kernpart):
                 lengthscale = np.ones(self.input_dim)
 
         #self._set_params(np.hstack((variance, lengthscale.flatten())))
-        self.variance = Param(lambda: self.name+'_variance', variance, None)
-        self.lengthscale = Param(lambda: self.name+'_lengthscale', lengthscale, None)
-        self.set_as_parameters(self.variance, self.lengthscale)
+        self.variance = Param('variance', variance, None)
+        self.lengthscale = Param('lengthscale', lengthscale, None)
+        
+        self.add_parameters(self.variance, self.lengthscale)
 #         self.set_as_parameter('variance', self.variance, None)
 #         self.set_as_parameter('lengthscale', self.lengthscale, None)
         
@@ -68,37 +66,35 @@ class RBF(Kernpart):
         self.weave_options = {'headers'           : ['<omp.h>'],
                               'extra_compile_args': ['-fopenmp -O3'], # -march=native'],
                               'extra_link_args'   : ['-lgomp']}
-        
     
         
     def parameters_changed(self):
         self.lengthscale2 = np.square(self.lengthscale)
         # reset cached results
-        self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
-        self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
-
-    def _get_params(self):
-        return np.hstack((self.variance, self.lengthscale))
-# 
-    def _set_params(self, x):
-        assert x.size == (self.num_params)
-        #self.variance = x[0]
-        #self.lengthscale = x[1:]
-        
-        #self.lengthscale2 = np.square(self.lengthscale)
-        
-        # reset cached results
         #self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
         #self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
- 
-    def _get_param_names(self):
-        if self.num_params == 2:
-            return ['variance', 'lengthscale']
-        else:
-            return ['variance'] + ['lengthscale_%i' % i for i in range(self.lengthscale.size)]
+        self._X, self._X2 = np.empty(shape=(2, 1))
+        self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
 
-    def _dK_dvariance(self, model, target):
-        pass
+#     def _get_params(self):
+#         return np.hstack((self.variance, self.lengthscale))
+# # 
+#     def _set_params(self, x):
+#         assert x.size == (self.num_params)
+#         #self.variance = x[0]
+#         #self.lengthscale = x[1:]
+#         
+#         #self.lengthscale2 = np.square(self.lengthscale)
+#         
+#         # reset cached results
+#         #self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
+#         #self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
+#  
+#     def _get_param_names(self):
+#         if self.num_params == 2:
+#             return ['variance', 'lengthscale']
+#         else:
+#             return ['variance'] + ['lengthscale_%i' % i for i in range(self.lengthscale.size)]
 
     def K(self, X, X2, target):
         self._K_computations(X, X2)
@@ -243,10 +239,10 @@ class RBF(Kernpart):
     #---------------------------------------#
 
     def _K_computations(self, X, X2):
-        params = self._get_params()
-        if not (fast_array_equal(X, self._X) and fast_array_equal(X2, self._X2) and fast_array_equal(self._params_save , params)):
+        #params = self._get_params()
+        if not (fast_array_equal(X, self._X) and fast_array_equal(X2, self._X2)):# and fast_array_equal(self._params_save , params)):
             self._X = X.copy()
-            self._params_save = params.copy()
+            #self._params_save = params.copy()
             if X2 is None:
                 self._X2 = None
                 X = X / self.lengthscale

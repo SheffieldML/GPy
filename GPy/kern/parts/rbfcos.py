@@ -5,6 +5,7 @@
 
 from kernpart import Kernpart
 import numpy as np
+from ...core.parameter import Param
 
 class RBFCos(Kernpart):
     def __init__(self,input_dim,variance=1.,frequencies=None,bandwidths=None,ARD=False):
@@ -41,29 +42,30 @@ class RBFCos(Kernpart):
             else:
                 bandwidths = np.ones(1)
 
+        self.variance = Param('variance', variance)
+        self.frequencies = Param('frequencies', frequencies)
+        self.bandwidths = Param('bandwidths', bandwidths)
+
         #initialise cache
-        self._X, self._X2, self._params = np.empty(shape=(3,1))
+        self._X, self._X2 = np.empty(shape=(3,1))
 
-        self._set_params(np.hstack((variance,frequencies.flatten(),bandwidths.flatten())))
+#     def _get_params(self):
+#         return np.hstack((self.variance,self.frequencies, self.bandwidths))
 
+#     def _set_params(self,x):
+#         assert x.size==(self.num_params)
+#         if self.ARD:
+#             self.variance = x[0]
+#             self.frequencies = x[1:1+self.input_dim]
+#             self.bandwidths = x[1+self.input_dim:]
+#         else:
+#             self.variance, self.frequencies, self.bandwidths = x
 
-    def _get_params(self):
-        return np.hstack((self.variance,self.frequencies, self.bandwidths))
-
-    def _set_params(self,x):
-        assert x.size==(self.num_params)
-        if self.ARD:
-            self.variance = x[0]
-            self.frequencies = x[1:1+self.input_dim]
-            self.bandwidths = x[1+self.input_dim:]
-        else:
-            self.variance, self.frequencies, self.bandwidths = x
-
-    def _get_param_names(self):
-        if self.num_params == 3:
-            return ['variance','frequency','bandwidth']
-        else:
-            return ['variance']+['frequency_%i'%i for i in range(self.input_dim)]+['bandwidth_%i'%i for i in range(self.input_dim)]
+#     def _get_param_names(self):
+#         if self.num_params == 3:
+#             return ['variance','frequency','bandwidth']
+#         else:
+#             return ['variance']+['frequency_%i'%i for i in range(self.input_dim)]+['bandwidth_%i'%i for i in range(self.input_dim)]
 
     def K(self,X,X2,target):
         self._K_computations(X,X2)
@@ -94,6 +96,11 @@ class RBFCos(Kernpart):
     def dKdiag_dX(self,dL_dKdiag,X,target):
         pass
 
+    def parameters_changed(self):
+        self._rbf_part = np.exp(-2.*np.pi**2*np.sum(self._dist2*self.bandwidths,-1))
+        self._cos_part = np.prod(np.cos(2.*np.pi*self._dist*self.frequencies),-1)
+        self._dvar = self._rbf_part*self._cos_part
+
     def _K_computations(self,X,X2):
         if not (np.all(X==self._X) and np.all(X2==self._X2)):
             if X2 is None: X2 = X
@@ -107,11 +114,3 @@ class RBFCos(Kernpart):
 
             #ensure the next section is computed:
             self._params = np.empty(self.num_params)
-
-        if not np.all(self._params == self._get_params()):
-            self._params == self._get_params().copy()
-
-            self._rbf_part = np.exp(-2.*np.pi**2*np.sum(self._dist2*self.bandwidths,-1))
-            self._cos_part = np.prod(np.cos(2.*np.pi*self._dist*self.frequencies),-1)
-            self._dvar = self._rbf_part*self._cos_part
-

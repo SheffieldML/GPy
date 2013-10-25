@@ -34,7 +34,6 @@ class ParamDict(defaultdict):
             for a in self.iterkeys():
                 if numpy.all(a==key) and a._parent_index_==key._parent_index_:
                     return super(ParamDict, self).__setitem__(a, value)
-            raise KeyError, key
         defaultdict.__setitem__(self, key, value)
         
 

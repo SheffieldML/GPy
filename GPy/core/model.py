@@ -12,6 +12,7 @@ import numpy as np
 from domains import _POSITIVE, _REAL
 from numpy.linalg.linalg import LinAlgError
 from index_operations import ParameterIndexOperations
+import itertools
 # import numdifftools as ndt
 
 class Model(Parameterized):
@@ -28,8 +29,15 @@ class Model(Parameterized):
     def log_likelihood(self):
         raise NotImplementedError, "this needs to be implemented to use the model class"
     def _log_likelihood_gradients(self):
+        #def dK_d(self, param, dL_dK, X, X2)
+        g = np.zeros(self.size)
+        try:
+            [g.__setitem__(s, self.gradient_mapping[p]().flat) for p, s in itertools.izip(self._parameters_, self._param_slices_) if not p.is_fixed]
+        except KeyError:
+            raise KeyError, 'Gradient for {} not defined, please specify gradients for parameters to optimize'.format(p.name)
+        return g
         raise NotImplementedError, "this needs to be implemented to use the model class"
-
+    
     def getstate(self):
         """
         Get the current state of the class.
@@ -153,19 +161,19 @@ class Model(Parameterized):
         return ret
 
 
-    def _transform_gradients(self, g):
-        x = self._get_params()
-        for constraint, index in self._constraints_.iteritems():
-            if constraint != __fixed__:
-                g[index] = g[index] * constraint.gradfactor(x[index])
-        #[np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
-        [np.put(g, i, v) for i, v in [[i, t.sum()] for p in self._parameters_ for t,i in p._tied_to_me_.iteritems()]]
-#         if len(self.tied_indices) or len(self.fixed_indices):
-#             to_remove = np.hstack((self.fixed_indices + [t[1:] for t in self.tied_indices]))
-#             return np.delete(g, to_remove)
-#         else:
-        if self._fixes_ is not None: return g[self._fixes_]
-        return g
+#     def _transform_gradients(self, g):
+#         x = self._get_params()
+#         for constraint, index in self.constraints.iteritems():
+#             if constraint != __fixed__:
+#                 g[index] = g[index] * constraint.gradfactor(x[index])
+#         #[np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
+#         [np.put(g, i, v) for i, v in [[i, t.sum()] for p in self.flattened_parameters for t,i in p._tied_to_me_.iteritems()]]
+# #         if len(self.tied_indices) or len(self.fixed_indices):
+# #             to_remove = np.hstack((self.fixed_indices + [t[1:] for t in self.tied_indices]))
+# #             return np.delete(g, to_remove)
+# #         else:
+#         if self._fixes_ is not None: return g[self._fixes_]
+#         return g
 
     def randomize(self):
         """
@@ -173,15 +181,15 @@ class Model(Parameterized):
         Make this draw from the prior if one exists, else draw from N(0,1)
         """
         # first take care of all parameters (from N(0,1))
-        x = self._get_params_transformed()
-        x = np.random.randn(x.size)
+        #x = self._get_params_transformed()
+        x = np.random.randn(self.size_transformed)
         self._set_params_transformed(x)
         # now draw from prior where possible
         x = self._get_params()
         if self.priors is not None:
             [np.put(x, i, p.rvs(1)) for i, p in enumerate(self.priors) if not p is None]
         self._set_params(x)
-        self._set_params_transformed(self._get_params_transformed()) # makes sure all of the tied parameters get the same init (since there's only one prior object...)
+        #self._set_params_transformed(self._get_params_transformed()) # makes sure all of the tied parameters get the same init (since there's only one prior object...)
 
 
     def optimize_restarts(self, num_restarts=10, robust=False, verbose=True, parallel=False, num_processes=None, **kwargs):
@@ -480,7 +488,7 @@ class Model(Parameterized):
                 names = self._get_param_names_transformed()
             except NotImplementedError:
                 names = ['Variable %i' % i for i in range(len(x))]
-
+            import ipdb;ipdb.set_trace()
             # Prepare for pretty-printing
             header = ['Name', 'Ratio', 'Difference', 'Analytical', 'Numerical']
             max_names = max([len(names[i]) for i in range(len(names))] + [len(header[0])])
@@ -522,7 +530,7 @@ class Model(Parameterized):
                 d = '%.6f' % float(difference)
                 g = '%.6f' % gradient
                 ng = '%.6f' % float(numerical_gradient)
-                grad_string = "{0:^{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name, r, d, g, ng, c0=cols[0] + 9, c1=cols[1], c2=cols[2], c3=cols[3], c4=cols[4])
+                grad_string = "{0:<{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name, r, d, g, ng, c0=cols[0] + 9, c1=cols[1], c2=cols[2], c3=cols[3], c4=cols[4])
                 print grad_string
 
     def input_sensitivity(self):

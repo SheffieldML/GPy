@@ -5,6 +5,7 @@
 from kernpart import Kernpart
 import numpy as np
 import hashlib
+from ...core.parameter import Param
 def theta(x):
     """Heaviside step function"""
     return np.where(x>=0.,1.,0.)
@@ -25,16 +26,18 @@ class Spline(Kernpart):
         assert self.input_dim==1
         self.num_params = 1
         self.name = 'spline'
-        self._set_params(np.squeeze(variance))
-
-    def _get_params(self):
-        return self.variance
-
-    def _set_params(self,x):
-        self.variance = x
-
-    def _get_param_names(self):
-        return ['variance']
+        self.variance = Param('variance', variance)
+        self.lengthscale = Param('lengthscale', lengthscale)
+        self.add_parameters(self.variance, self.lengthscale)
+        
+#     def _get_params(self):
+#         return self.variance
+# 
+#     def _set_params(self,x):
+#         self.variance = x
+# 
+#     def _get_param_names(self):
+#         return ['variance']
 
     def K(self,X,X2,target):
         assert np.all(X>0), "Spline covariance is for +ve domain only. TODO: symmetrise"

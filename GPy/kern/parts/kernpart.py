@@ -1,10 +1,10 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-from ...core.parameter import Param
 #from ...core.parameterized.Parameterized import set_as_parameter
+from GPy.core.parameterized import Parameterized
 
-class Kernpart(object):
-    def __init__(self,input_dim):
+class Kernpart(Parameterized):
+    def __init__(self,input_dim,name):
         """
         The base class for a kernpart: a positive definite function 
         which forms part of a covariance function (kernel).
@@ -14,20 +14,13 @@ class Kernpart(object):
 
         Do not instantiate.
         """
+        super(Kernpart, self).__init__(name)
         # the input dimensionality for the covariance
         self.input_dim = input_dim
         # the number of optimisable parameters
-        self.num_params = 1
         # the name of the covariance function.
-        self.name = 'unnamed'
         # link to parameterized objects
         self._parameters_ = []
-    
-    def set_as_parameters(self, *params):
-        self._parameters_.extend(params)
-    
-    def parameters_changed(self):
-        pass
     
 #     def set_as_parameter_named(self, name, gradient, index=None, *args, **kwargs):
 #         """

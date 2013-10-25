@@ -18,35 +18,37 @@ class Prod(Kernpart):
 
     """
     def __init__(self,k1,k2,tensor=False):
-        self.num_params = k1.num_params + k2.num_params
-        self.name = '['+k1.name + '**' + k2.name +']'
-        self.k1 = k1
-        self.k2 = k2
         if tensor:
-            self.input_dim = k1.input_dim + k2.input_dim
-            self.slice1 = slice(0,self.k1.input_dim)
-            self.slice2 = slice(self.k1.input_dim,self.k1.input_dim+self.k2.input_dim)
+            super(Prod, self).__init__(k1.input_dim + k2.input_dim, '['+k1.name + '**' + k2.name +']')
         else:
             assert k1.input_dim == k2.input_dim, "Error: The input spaces of the kernels to sum don't have the same dimension."
-            self.input_dim = k1.input_dim
-            self.slice1 = slice(0,self.input_dim)
-            self.slice2 = slice(0,self.input_dim)
+            super(Prod, self).__init__(k1.input_dim, '['+k1.name + '*' + k2.name +']')
+        #self.num_params = k1.num_params + k2.num_params
+        self.k1 = k1
+        self.k2 = k2
+#         if tensor:
+#             self.slice1 = slice(0,self.k1.input_dim)
+#             self.slice2 = slice(self.k1.input_dim,self.k1.input_dim+self.k2.input_dim)
+#         else:
+#             self.slice1 = slice(0,self.input_dim)
+#             self.slice2 = slice(0,self.input_dim)
 
-        self._X, self._X2, self._params = np.empty(shape=(3,1))
-        self._set_params(np.hstack((k1._get_params(),k2._get_params())))
+        self._X, self._X2 = np.empty(shape=(2,1))
+        self.add_parameters(self.k1, self.k2)
+#         self._set_params(np.hstack((k1._get_params(),k2._get_params())))
 
-    def _get_params(self):
-        """return the value of the parameters."""
-        return np.hstack((self.k1._get_params(), self.k2._get_params()))
-
-    def _set_params(self,x):
-        """set the value of the parameters."""
-        self.k1._set_params(x[:self.k1.num_params])
-        self.k2._set_params(x[self.k1.num_params:])
-
-    def _get_param_names(self):
-        """return parameter names."""
-        return [self.k1.name + '_' + param_name for param_name in self.k1._get_param_names()] + [self.k2.name + '_' + param_name for param_name in self.k2._get_param_names()]
+#     def _get_params(self):
+#         """return the value of the parameters."""
+#         return np.hstack((self.k1._get_params(), self.k2._get_params()))
+# 
+#     def _set_params(self,x):
+#         """set the value of the parameters."""
+#         self.k1._set_params(x[:self.k1.num_params])
+#         self.k2._set_params(x[self.k1.num_params:])
+# 
+#     def _get_param_names(self):
+#         """return parameter names."""
+#         return [self.k1.name + '_' + param_name for param_name in self.k1._get_param_names()] + [self.k2.name + '_' + param_name for param_name in self.k2._get_param_names()]
 
     def K(self,X,X2,target):
         self._K_computations(X,X2)

@@ -32,57 +32,44 @@ class kern(Parameterized):
         :type input_slices: list of slice objects, or list of bools
 
         """
-        self.parts = parts
-        self.num_parts = len(parts)
-        self.num_params = sum([p.num_params for p in self.parts])
-
+        super(kern, self).__init__('kern')
+        self.add_parameters(*parts)
         self.input_dim = input_dim
 
-        part_names = [k.name for k in self.parts]
-        self.name=''
-        for name in part_names:
-            self.name += name + '+'
-        self.name = self.name[:-1]
-        # deal with input_slices
         if input_slices is None:
-            self.input_slices = [slice(None) for p in self.parts]
+            self.input_slices = [slice(None) for p in self._parameters_]
         else:
-            assert len(input_slices) == len(self.parts)
+            assert len(input_slices) == len(self._parameters_)
             self.input_slices = [sl if type(sl) is slice else slice(None) for sl in input_slices]
 
-        for p in self.parts:
+        for p in self._parameters_:
             assert isinstance(p, Kernpart), "bad kernel part"
 
-        self.compute_param_slices()
-        self._parameters_ = []
-        for p in self.parts:
-            self._parameters_.extend(p._parameters_)
-        super(kern, self).__init__()
+        
+        
         #Parameterized_old.__init__(self)
 
     def parameters_changed(self):
-        [p.parameters_changed() for p in self.parts]
+        [p.parameters_changed() for p in self._parameters_]
 
     def getstate(self):
         """
         Get the current state of the class,
         here just all the indices, rest can get recomputed
         """
-        return Parameterized.getstate(self) + [self.parts,
-                self.num_parts,
-                self.num_params,
+        return Parameterized.getstate(self) + [self._parameters_,
+                #self.num_params,
                 self.input_dim,
                 self.input_slices,
-                self.param_slices
+                self._param_slices_
                 ]
 
     def setstate(self, state):
-        self.param_slices = state.pop()
+        self._param_slices_ = state.pop()
         self.input_slices = state.pop()
         self.input_dim = state.pop()
-        self.num_params = state.pop()
-        self.num_parts = state.pop()
-        self.parts = state.pop()
+        #self.num_params = state.pop()
+        self._parameters_ = state.pop()
         Parameterized.setstate(self, state)
 
 
@@ -107,7 +94,7 @@ class kern(Parameterized):
         xticklabels = []
         bars = []
         x0 = 0
-        for p in self.parts:
+        for p in self._parameters_:
             c = Tango.nextMedium()
             if hasattr(p, 'ARD') and p.ARD:
                 if title is None:
@@ -158,28 +145,28 @@ class kern(Parameterized):
                 ax.legend()
         return ax
 
-    def _transform_gradients(self, g):
-        """
-        Apply the transformations of the kernel so that the returned vector
-        represents the gradient in the transformed space (i.e. that given by
-        get_params_transformed())
-
-        :param g: the gradient vector for the current model, usually created by dK_dtheta
-        """
-        x = self._get_params()
-        [np.place(g, index, g[index] * constraint.gradfactor(x[index])) 
-         for constraint, index in self._constraints_.iteritems() if constraint is not __fixed__]
-#         for constraint, index in self._constraints_.iteritems():
-#             if constraint != __fixed__:
-#                 g[index] = g[index] * constraint.gradfactor(x[index])
-        #[np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
-        [np.put(g, i, v) for i, v in [[i, t.sum()] for p in self._parameters_ for t,i in p._tied_to_me_.iteritems()]]
-#         if len(self.tied_indices) or len(self.fixed_indices):
-#             to_remove = np.hstack((self.fixed_indices + [t[1:] for t in self.tied_indices]))
-#             return np.delete(g, to_remove)
-#         else:
-        if self._fixes_ is not None: return g[self._fixes_]
-        return g
+#     def _transform_gradients(self, g):
+#         """
+#         Apply the transformations of the kernel so that the returned vector
+#         represents the gradient in the transformed space (i.e. that given by
+#         get_params_transformed())
+# 
+#         :param g: the gradient vector for the current model, usually created by dK_dtheta
+#         """
+#         x = self._get_params()
+#         [np.place(g, index, g[index] * constraint.gradfactor(x[index])) 
+#          for constraint, index in self.constraints.iteritems() if constraint is not __fixed__]
+# #         for constraint, index in self.constraints.iteritems():
+# #             if constraint != __fixed__:
+# #                 g[index] = g[index] * constraint.gradfactor(x[index])
+#         #[np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
+#         [np.put(g, i, v) for i, v in [[i, t.sum()] for p in self._parameters_ for t,i in p._tied_to_me_.iteritems()]]
+# #         if len(self.tied_indices) or len(self.fixed_indices):
+# #             to_remove = np.hstack((self.fixed_indices + [t[1:] for t in self.tied_indices]))
+# #             return np.delete(g, to_remove)
+# #         else:
+#         if self._fixes_ is not None: return g[self._fixes_]
+#         return g
 #         x = self._get_params()
 #         [np.put(x, i, x * t.gradfactor(x[i])) for i, t in zip(self.constrained_indices, self.constraints)]
 #         [np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
@@ -188,16 +175,6 @@ class kern(Parameterized):
 #             return np.delete(g, to_remove)
 #         else:
 #             return g
-
-    def compute_param_slices(self):
-        """
-        Create a set of slices that can index the parameters of each part.
-        """
-        self.param_slices = []
-        count = 0
-        for p in self.parts:
-            self.param_slices.append(slice(count, count + p.num_params))
-            count += p.num_params
 
     def __add__(self, other):
         """ Overloading of the '+' operator. for more control, see self.add """
@@ -224,7 +201,7 @@ class kern(Parameterized):
             other_input_indices = [sl.indices(other.input_dim) for sl in other.input_slices]
             other_input_slices = [slice(i[0] + self.input_dim, i[1] + self.input_dim, i[2]) for i in other_input_indices]
 
-            newkern = kern(D, self.parts + other.parts, self_input_slices + other_input_slices)
+            newkern = kern(D, self._parameters_ + other._parameters_, self_input_slices + other_input_slices)
 
             # transfer constraints:
 #             newkern.constrained_indices = self.constrained_indices + [x + self.num_params for x in other.constrained_indices]
@@ -235,7 +212,7 @@ class kern(Parameterized):
 #             newkern.tied_indices = self.tied_indices + [self.num_params + x for x in other.tied_indices]
         else:
             assert self.input_dim == other.input_dim
-            newkern = kern(self.input_dim, self.parts + other.parts, self.input_slices + other.input_slices)
+            newkern = kern(self.input_dim, self._parameters_ + other._parameters_, self.input_slices + other.input_slices)
             # transfer constraints:
 #             newkern.constrained_indices = self.constrained_indices + [i + self.num_params  for i in other.constrained_indices]
 #             newkern.constraints = self.constraints + other.constraints
@@ -244,8 +221,8 @@ class kern(Parameterized):
 #             newkern.tied_indices = self.tied_indices + [self.num_params + x for x in other.tied_indices]
         [newkern._add_constrain(param, transform, warning=False) 
          for param, transform in itertools.izip(
-                *itertools.chain(self._constraints_.iteritems(), 
-                                 other._constraints_.iteritems()))] 
+                *itertools.chain(self.constraints.iteritems(), 
+                                 other.constraints.iteritems()))] 
         newkern._fixes_ = ((self._fixes_ or 0) + (other._fixes_ or 0)) or None
 
         return newkern
@@ -279,73 +256,73 @@ class kern(Parameterized):
             s1[sl1], s2[sl2] = [True], [True]
             slices += [s1 + s2]
 
-        newkernparts = [prod(k1, k2, tensor) for k1, k2 in itertools.product(K1.parts, K2.parts)]
+        newkernparts = [prod(k1, k2, tensor) for k1, k2 in itertools.product(K1._parameters_, K2._parameters_)]
 
         if tensor:
             newkern = kern(K1.input_dim + K2.input_dim, newkernparts, slices)
         else:
             newkern = kern(K1.input_dim, newkernparts, slices)
 
-        newkern._follow_constrains(K1, K2)
+        #newkern._follow_constrains(K1, K2)
         return newkern
 
-    def _follow_constrains(self, K1, K2):
-
-        # Build the array that allows to go from the initial indices of the param to the new ones
-        K1_param = []
-        n = 0
-        for k1 in K1.parts:
-            K1_param += [range(n, n + k1.num_params)]
-            n += k1.num_params
-        n = 0
-        K2_param = []
-        for k2 in K2.parts:
-            K2_param += [range(K1.num_params + n, K1.num_params + n + k2.num_params)]
-            n += k2.num_params
-        index_param = []
-        for p1 in K1_param:
-            for p2 in K2_param:
-                index_param += p1 + p2
-        index_param = np.array(index_param)
-
-        # Get the ties and constrains of the kernels before the multiplication
-        prev_ties = K1.tied_indices + [arr + K1.num_params for arr in K2.tied_indices]
-
-        prev_constr_ind = [K1.constrained_indices] + [K1.num_params + i for i in K2.constrained_indices]
-        prev_constr = K1.constraints + K2.constraints
-
-        # prev_constr_fix = K1.fixed_indices + [arr + K1.num_params for arr in K2.fixed_indices]
-        # prev_constr_fix_values = K1.fixed_values + K2.fixed_values
-
-        # follow the previous ties
-        for arr in prev_ties:
-            for j in arr:
-                index_param[np.where(index_param == j)[0]] = arr[0]
-
-        # ties and constrains
-        for i in range(K1.num_params + K2.num_params):
-            index = np.where(index_param == i)[0]
-            if index.size > 1:
-                self.tie_params(index)
-        for i, t in zip(prev_constr_ind, prev_constr):
-            self.constrain(np.where(index_param == i)[0], t)
-
-    def _get_params(self):
-        return np.hstack(self._parameters_)
-        return np.hstack([p._get_params() for p in self.parts])
+#     def _follow_constrains(self, K1, K2):
+# 
+#         # Build the array that allows to go from the initial indices of the param to the new ones
+#         K1_param = []
+#         n = 0
+#         for k1 in K1.parts:
+#             K1_param += [range(n, n + k1.num_params)]
+#             n += k1.num_params
+#         n = 0
+#         K2_param = []
+#         for k2 in K2.parts:
+#             K2_param += [range(K1.num_params + n, K1.num_params + n + k2.num_params)]
+#             n += k2.num_params
+#         index_param = []
+#         for p1 in K1_param:
+#             for p2 in K2_param:
+#                 index_param += p1 + p2
+#         index_param = np.array(index_param)
+# 
+#         # Get the ties and constrains of the kernels before the multiplication
+#         prev_ties = K1.tied_indices + [arr + K1.num_params for arr in K2.tied_indices]
+# 
+#         prev_constr_ind = [K1.constrained_indices] + [K1.num_params + i for i in K2.constrained_indices]
+#         prev_constr = K1.constraints + K2.constraints
+# 
+#         # prev_constr_fix = K1.fixed_indices + [arr + K1.num_params for arr in K2.fixed_indices]
+#         # prev_constr_fix_values = K1.fixed_values + K2.fixed_values
+# 
+#         # follow the previous ties
+#         for arr in prev_ties:
+#             for j in arr:
+#                 index_param[np.where(index_param == j)[0]] = arr[0]
+# 
+#         # ties and constrains
+#         for i in range(K1.num_params + K2.num_params):
+#             index = np.where(index_param == i)[0]
+#             if index.size > 1:
+#                 self.tie_params(index)
+#         for i, t in zip(prev_constr_ind, prev_constr):
+#             self.constrain(np.where(index_param == i)[0], t)
+# 
+#     def _get_params(self):
+#         return np.hstack(self._parameters_)
+#         return np.hstack([p._get_params() for p in self._parameters_])
   
-    def _set_params(self, x):
-        import ipdb;ipdb.set_trace()
-        [p._set_params(x[s]) for p, s in zip(self.parts, self.param_slices)]
+#     def _set_params(self, x):
+#         import ipdb;ipdb.set_trace()
+#         [p._set_params(x[s]) for p, s in zip(self._parameters_, self._param_slices_)]
   
-    def _get_param_names(self):
-        # this is a bit nasty: we want to distinguish between parts with the same name by appending a count
-        part_names = np.array([k.name for k in self.parts], dtype=np.str)
-        counts = [np.sum(part_names == ni) for i, ni in enumerate(part_names)]
-        cum_counts = [np.sum(part_names[i:] == ni) for i, ni in enumerate(part_names)]
-        names = [name + '_' + str(cum_count) if count > 1 else name for name, count, cum_count in zip(part_names, counts, cum_counts)]
- 
-        return sum([[name + '_' + n for n in k._get_param_names()] for name, k in zip(names, self.parts)], [])
+#     def _get_param_names(self):
+#         # this is a bit nasty: we want to distinguish between parts with the same name by appending a count
+#         part_names = np.array([k.name for k in self._parameters_], dtype=np.str)
+#         counts = [np.sum(part_names == ni) for i, ni in enumerate(part_names)]
+#         cum_counts = [np.sum(part_names[i:] == ni) for i, ni in enumerate(part_names)]
+#         names = [name + '_' + str(cum_count) if count > 1 else name for name, count, cum_count in zip(part_names, counts, cum_counts)]
+#  
+#         return sum([[name + '_' + n for n in k._get_param_names()] for name, k in zip(names, self._parameters_)], [])
 
     def K(self, X, X2=None, which_parts='all'):
         """
@@ -357,17 +334,17 @@ class kern(Parameterized):
                    handles this as X2 == X.
         :param which_parts: a list of booleans detailing whether to include
                             each of the part functions. By default, 'all'
-                            indicates [True]*self.num_parts
+                            indicates all parts
         """
         if which_parts == 'all':
-            which_parts = [True] * self.num_parts
+            which_parts = [True] * self.size
         assert X.shape[1] == self.input_dim
         if X2 is None:
             target = np.zeros((X.shape[0], X.shape[0]))
-            [p.K(X[:, i_s], None, target=target) for p, i_s, part_i_used in zip(self.parts, self.input_slices, which_parts) if part_i_used]
+            [p.K(X[:, i_s], None, target=target) for p, i_s, part_i_used in zip(self._parameters_, self.input_slices, which_parts) if part_i_used]
         else:
             target = np.zeros((X.shape[0], X2.shape[0]))
-            [p.K(X[:, i_s], X2[:, i_s], target=target) for p, i_s, part_i_used in zip(self.parts, self.input_slices, which_parts) if part_i_used]
+            [p.K(X[:, i_s], X2[:, i_s], target=target) for p, i_s, part_i_used in zip(self._parameters_, self.input_slices, which_parts) if part_i_used]
         return target
 
     def dK_dtheta(self, dL_dK, X, X2=None):
@@ -384,11 +361,11 @@ class kern(Parameterized):
         returns: dL_dtheta
         """
         assert X.shape[1] == self.input_dim
-        target = np.zeros(self.num_params)
+        target = np.zeros(self.size)
         if X2 is None:
-            [p.dK_dtheta(dL_dK, X[:, i_s], None, target[ps]) for p, i_s, ps, in zip(self.parts, self.input_slices, self.param_slices)]
+            [p.dK_dtheta(dL_dK, X[:, i_s], None, target[ps]) for p, i_s, ps, in zip(self._parameters_, self.input_slices, self._param_slices_)]
         else:
-            [p.dK_dtheta(dL_dK, X[:, i_s], X2[:, i_s], target[ps]) for p, i_s, ps, in zip(self.parts, self.input_slices, self.param_slices)]
+            [p.dK_dtheta(dL_dK, X[:, i_s], X2[:, i_s], target[ps]) for p, i_s, ps, in zip(self._parameters_, self.input_slices, self._param_slices_)]
 
         return self._transform_gradients(target)
 
@@ -404,18 +381,18 @@ class kern(Parameterized):
 
         target = np.zeros_like(X)
         if X2 is None: 
-            [p.dK_dX(dL_dK, X[:, i_s], None, target[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
+            [p.dK_dX(dL_dK, X[:, i_s], None, target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
         else:
-            [p.dK_dX(dL_dK, X[:, i_s], X2[:, i_s], target[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
+            [p.dK_dX(dL_dK, X[:, i_s], X2[:, i_s], target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
         return target
 
     def Kdiag(self, X, which_parts='all'):
         """Compute the diagonal of the covariance function for inputs X."""
         if which_parts == 'all':
-            which_parts = [True] * self.num_parts
+            which_parts = [True] * self.size
         assert X.shape[1] == self.input_dim
         target = np.zeros(X.shape[0])
-        [p.Kdiag(X[:, i_s], target=target) for p, i_s, part_on in zip(self.parts, self.input_slices, which_parts) if part_on]
+        [p.Kdiag(X[:, i_s], target=target) for p, i_s, part_on in zip(self._parameters_, self.input_slices, which_parts) if part_on]
         return target
 
     def dKdiag_dtheta(self, dL_dKdiag, X):
@@ -423,49 +400,49 @@ class kern(Parameterized):
         assert X.shape[1] == self.input_dim
         assert dL_dKdiag.size == X.shape[0]
         target = np.zeros(self.num_params)
-        [p.dKdiag_dtheta(dL_dKdiag, X[:, i_s], target[ps]) for p, i_s, ps in zip(self.parts, self.input_slices, self.param_slices)]
+        [p.dKdiag_dtheta(dL_dKdiag, X[:, i_s], target[ps]) for p, i_s, ps in zip(self._parameters_, self.input_slices, self._param_slices_)]
         return self._transform_gradients(target)
 
     def dKdiag_dX(self, dL_dKdiag, X):
         assert X.shape[1] == self.input_dim
         target = np.zeros_like(X)
-        [p.dKdiag_dX(dL_dKdiag, X[:, i_s], target[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
+        [p.dKdiag_dX(dL_dKdiag, X[:, i_s], target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
         return target
 
     def psi0(self, Z, mu, S):
         target = np.zeros(mu.shape[0])
-        [p.psi0(Z[:, i_s], mu[:, i_s], S[:, i_s], target) for p, i_s in zip(self.parts, self.input_slices)]
+        [p.psi0(Z[:, i_s], mu[:, i_s], S[:, i_s], target) for p, i_s in zip(self._parameters_, self.input_slices)]
         return target
 
     def dpsi0_dtheta(self, dL_dpsi0, Z, mu, S):
         target = np.zeros(self.num_params)
-        [p.dpsi0_dtheta(dL_dpsi0, Z[:, i_s], mu[:, i_s], S[:, i_s], target[ps]) for p, ps, i_s in zip(self.parts, self.param_slices, self.input_slices)]
+        [p.dpsi0_dtheta(dL_dpsi0, Z[:, i_s], mu[:, i_s], S[:, i_s], target[ps]) for p, ps, i_s in zip(self._parameters_, self._param_slices_, self.input_slices)]
         return self._transform_gradients(target)
 
     def dpsi0_dmuS(self, dL_dpsi0, Z, mu, S):
         target_mu, target_S = np.zeros_like(mu), np.zeros_like(S)
-        [p.dpsi0_dmuS(dL_dpsi0, Z[:, i_s], mu[:, i_s], S[:, i_s], target_mu[:, i_s], target_S[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
+        [p.dpsi0_dmuS(dL_dpsi0, Z[:, i_s], mu[:, i_s], S[:, i_s], target_mu[:, i_s], target_S[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
         return target_mu, target_S
 
     def psi1(self, Z, mu, S):
         target = np.zeros((mu.shape[0], Z.shape[0]))
-        [p.psi1(Z[:, i_s], mu[:, i_s], S[:, i_s], target) for p, i_s in zip(self.parts, self.input_slices)]
+        [p.psi1(Z[:, i_s], mu[:, i_s], S[:, i_s], target) for p, i_s in zip(self._parameters_, self.input_slices)]
         return target
 
     def dpsi1_dtheta(self, dL_dpsi1, Z, mu, S):
         target = np.zeros((self.num_params))
-        [p.dpsi1_dtheta(dL_dpsi1, Z[:, i_s], mu[:, i_s], S[:, i_s], target[ps]) for p, ps, i_s in zip(self.parts, self.param_slices, self.input_slices)]
+        [p.dpsi1_dtheta(dL_dpsi1, Z[:, i_s], mu[:, i_s], S[:, i_s], target[ps]) for p, ps, i_s in zip(self._parameters_, self._param_slices_, self.input_slices)]
         return self._transform_gradients(target)
 
     def dpsi1_dZ(self, dL_dpsi1, Z, mu, S):
         target = np.zeros_like(Z)
-        [p.dpsi1_dZ(dL_dpsi1, Z[:, i_s], mu[:, i_s], S[:, i_s], target[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
+        [p.dpsi1_dZ(dL_dpsi1, Z[:, i_s], mu[:, i_s], S[:, i_s], target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
         return target
 
     def dpsi1_dmuS(self, dL_dpsi1, Z, mu, S):
         """return shapes are num_samples,num_inducing,input_dim"""
         target_mu, target_S = np.zeros((2, mu.shape[0], mu.shape[1]))
-        [p.dpsi1_dmuS(dL_dpsi1, Z[:, i_s], mu[:, i_s], S[:, i_s], target_mu[:, i_s], target_S[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
+        [p.dpsi1_dmuS(dL_dpsi1, Z[:, i_s], mu[:, i_s], S[:, i_s], target_mu[:, i_s], target_S[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
         return target_mu, target_S
 
     def psi2(self, Z, mu, S):
@@ -478,13 +455,13 @@ class kern(Parameterized):
 
         """
         target = np.zeros((mu.shape[0], Z.shape[0], Z.shape[0]))
-        [p.psi2(Z[:, i_s], mu[:, i_s], S[:, i_s], target) for p, i_s in zip(self.parts, self.input_slices)]
+        [p.psi2(Z[:, i_s], mu[:, i_s], S[:, i_s], target) for p, i_s in zip(self._parameters_, self.input_slices)]
 
         # compute the "cross" terms
         # TODO: input_slices needed
         crossterms = 0
 
-        for [p1, i_s1], [p2, i_s2] in itertools.combinations(zip(self.parts, self.input_slices), 2):
+        for [p1, i_s1], [p2, i_s2] in itertools.combinations(zip(self._parameters_, self.input_slices), 2):
             if i_s1 == i_s2:
                 # TODO psi1 this must be faster/better/precached/more nice
                 tmp1 = np.zeros((mu.shape[0], Z.shape[0]))
@@ -501,14 +478,14 @@ class kern(Parameterized):
     def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S):
         """Gradient of the psi2 statistics with respect to the parameters."""
         target = np.zeros(self.num_params)
-        [p.dpsi2_dtheta(dL_dpsi2, Z[:, i_s], mu[:, i_s], S[:, i_s], target[ps]) for p, i_s, ps in zip(self.parts, self.input_slices, self.param_slices)]
+        [p.dpsi2_dtheta(dL_dpsi2, Z[:, i_s], mu[:, i_s], S[:, i_s], target[ps]) for p, i_s, ps in zip(self._parameters_, self.input_slices, self._param_slices_)]
 
         # compute the "cross" terms
         # TODO: better looping, input_slices
-        for i1, i2 in itertools.permutations(range(len(self.parts)), 2):
-            p1, p2 = self.parts[i1], self.parts[i2]
+        for i1, i2 in itertools.permutations(range(len(self._parameters_)), 2):
+            p1, p2 = self._parameters_[i1], self._parameters_[i2]
 #             ipsl1, ipsl2 = self.input_slices[i1], self.input_slices[i2]
-            ps1, ps2 = self.param_slices[i1], self.param_slices[i2]
+            ps1, ps2 = self._param_slices_[i1], self._param_slices_[i2]
 
             tmp = np.zeros((mu.shape[0], Z.shape[0]))
             p1.psi1(Z, mu, S, tmp)
@@ -518,12 +495,12 @@ class kern(Parameterized):
 
     def dpsi2_dZ(self, dL_dpsi2, Z, mu, S):
         target = np.zeros_like(Z)
-        [p.dpsi2_dZ(dL_dpsi2, Z[:, i_s], mu[:, i_s], S[:, i_s], target[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
+        [p.dpsi2_dZ(dL_dpsi2, Z[:, i_s], mu[:, i_s], S[:, i_s], target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
         # target *= 2
 
         # compute the "cross" terms
         # TODO: we need input_slices here.
-        for p1, p2 in itertools.permutations(self.parts, 2):
+        for p1, p2 in itertools.permutations(self._parameters_, 2):
 #             if p1.name == 'linear' and p2.name == 'linear':
 #                 raise NotImplementedError("We don't handle linear/linear cross-terms")
             tmp = np.zeros((mu.shape[0], Z.shape[0]))
@@ -534,11 +511,11 @@ class kern(Parameterized):
 
     def dpsi2_dmuS(self, dL_dpsi2, Z, mu, S):
         target_mu, target_S = np.zeros((2, mu.shape[0], mu.shape[1]))
-        [p.dpsi2_dmuS(dL_dpsi2, Z[:, i_s], mu[:, i_s], S[:, i_s], target_mu[:, i_s], target_S[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
+        [p.dpsi2_dmuS(dL_dpsi2, Z[:, i_s], mu[:, i_s], S[:, i_s], target_mu[:, i_s], target_S[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
 
         # compute the "cross" terms
         # TODO: we need input_slices here.
-        for p1, p2 in itertools.permutations(self.parts, 2):
+        for p1, p2 in itertools.permutations(self._parameters_, 2):
 #             if p1.name == 'linear' and p2.name == 'linear':
 #                 raise NotImplementedError("We don't handle linear/linear cross-terms")
             tmp = np.zeros((mu.shape[0], Z.shape[0]))
@@ -549,7 +526,7 @@ class kern(Parameterized):
 
     def plot(self, x=None, plot_limits=None, which_parts='all', resolution=None, *args, **kwargs):
         if which_parts == 'all':
-            which_parts = [True] * self.num_parts
+            which_parts = [True] * self.size
         if self.input_dim == 1:
             if x is None:
                 x = np.zeros((1, 1))

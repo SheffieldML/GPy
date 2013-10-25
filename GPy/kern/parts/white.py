@@ -15,12 +15,10 @@ class White(Kernpart):
     :type variance: float
     """
     def __init__(self,input_dim,variance=1.):
-        super(White, self).__init__(input_dim)
+        super(White, self).__init__(input_dim, 'white')
         self.input_dim = input_dim
-        self.num_params = 1
-        self.name = 'white'
-        self.variance = Param(lambda: self.name+'_variance', variance, None)
-        self.set_as_parameters(self.variance)
+        self.variance = Param('variance', variance, None)
+        self.add_parameters(self.variance)
 #         self._set_params(np.array([variance]).flatten())
         self._psi1 = 0 # TODO: more elegance here
         

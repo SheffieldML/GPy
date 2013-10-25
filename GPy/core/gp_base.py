@@ -31,9 +31,9 @@ class GPBase(Model):
             self._Xoffset = np.zeros((1, self.input_dim))
             self._Xscale = np.ones((1, self.input_dim))
         
-        self.set_as_parameters(*self.kern._parameters_)
-        self.set_as_parameters(*self.likelihood._parameters_)
-
+        self.add_parameter(self.kern, gradient=self.dL_dtheta)
+        self.add_parameter(self.likelihood, gradient=self.dL_dlikelihood)
+        
         # Model.__init__(self)
         # All leaf nodes should call self._set_params(self._get_params()) at
         # the end
@@ -53,7 +53,8 @@ class GPBase(Model):
                 self.likelihood,
                 self.output_dim,
                 self._Xoffset,
-                self._Xscale]
+                self._Xscale,
+                ]
 
     def setstate(self, state):
         self._Xscale = state.pop()

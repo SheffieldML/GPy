@@ -27,12 +27,6 @@ class GP(GPBase):
         GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
         self.update_likelihood_approximation()
 
-    def getstate(self):
-        return GPBase.getstate(self)
-
-    def setstate(self, state):
-        GPBase.setstate(self, state)
-        self._set_params(self._get_params())
 
     def _set_params(self, p):
         new_kern_params = p[:self.kern.num_params_transformed()]
@@ -200,3 +194,11 @@ class GP(GPBase):
         """
         Xnew = self._add_output_index(Xnew, output)
         return self.predict(Xnew, which_parts=which_parts, full_cov=full_cov, likelihood_args=likelihood_args)
+
+    def getstate(self):
+        return GPBase.getstate(self)
+
+    def setstate(self, state):
+        GPBase.setstate(self, state)
+        self._set_params(self._get_params())
+

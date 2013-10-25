@@ -57,8 +57,8 @@ def coregionalization_toy(max_iters=100):
     m.optimize(max_iters=max_iters)
 
     fig, axes = pb.subplots(2,1)
-    m.plot_single_output(output=0,ax=axes[0])
-    m.plot_single_output(output=1,ax=axes[1])
+    m.plot(fixed_inputs=[(1,0)],ax=axes[0])
+    m.plot(fixed_inputs=[(1,1)],ax=axes[1])
     axes[0].set_title('Output 0')
     axes[1].set_title('Output 1')
     return m

@@ -323,7 +323,10 @@ class SparseGP(GPBase):
         return mean, var, _025pm, _975pm
 
 
-    def plot_f(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, full_cov=False, fignum=None, ax=None):
+    def plot_f(self, samples=0, plot_limits=None, which_data_rows='all',
+            which_data_cols='all', which_parts='all', resolution=None,
+            full_cov=False, fignum=None, ax=None):
+
         """
         Plot the GP's view of the world, where the data is normalized and the
           - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
@@ -332,8 +335,8 @@ class SparseGP(GPBase):
 
         :param samples: the number of a posteriori samples to plot
         :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
-        :param which_data: which if the training data to plot (default all)
-        :type which_data: 'all' or a slice object to slice self.X, self.Y
+        :param which_data_rows: which if the training data to plot (default all)
+        :type which_data_rows: 'all' or a slice object to slice self.X, self.Y
         :param which_parts: which of the kernel functions to plot (additively)
         :type which_parts: 'all', or list of bools
         :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
@@ -353,10 +356,10 @@ class SparseGP(GPBase):
             ax = fig.add_subplot(111)
         if fignum is None and ax is None:
                 fignum = fig.num
-        if which_data is 'all':
-            which_data = slice(None)
+        if which_data_rows is 'all':
+            which_data_rows = slice(None)
 
-        GPBase.plot_f(self, samples=samples, plot_limits=plot_limits, which_data='all', which_parts='all', resolution=resolution, full_cov=full_cov, fignum=fignum, ax=ax)
+        GPBase.plot_f(self, samples=samples, plot_limits=plot_limits, which_data_rows=which_data_rows, which_data_ycols=which_data_ycols, which_parts=which_parts, resolution=resolution, full_cov=full_cov, fignum=fignum, ax=ax)
 
         if self.X.shape[1] == 1:
             if self.has_uncertain_inputs:
@@ -370,35 +373,79 @@ class SparseGP(GPBase):
         elif self.X.shape[1] == 2:
             Zu = self.Z * self._Xscale + self._Xoffset
             ax.plot(Zu[:, 0], Zu[:, 1], 'wo')
-
 
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
-    def plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, fignum=None, ax=None):
+    def plot(self, plot_limits=None, which_data_rows='all',
+            which_data_ycols='all', which_parts='all', fixed_inputs=[],
+            levels=20, samples=0, fignum=None, ax=None, resolution=None):
+        """ 
+        Plot the posterior of the sparse GP.
+          - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
+          - In two dimsensions, a contour-plot shows the mean predicted function
+          - In higher dimensions, use fixed_inputs to plot the GP  with some of the inputs fixed.
+
+        Can plot only part of the data and part of the posterior functions
+        using which_data_rowsm which_data_ycols and which_parts
+
+        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
+        :type plot_limits: np.array
+        :param which_data_rows: which of the training data to plot (default all)
+        :type which_data_rows: 'all' or a slice object to slice self.X, self.Y
+        :param which_data_ycols: when the data has several columns (independant outputs), only plot these
+        :type which_data_rows: 'all' or a list of integers
+        :param which_parts: which of the kernel functions to plot (additively)
+        :type which_parts: 'all', or list of bools
+        :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
+        :type fixed_inputs: a list of tuples
+        :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
+        :type resolution: int
+        :param levels: number of levels to plot in a contour plot.
+        :type levels: int
+        :param samples: the number of a posteriori samples to plot
+        :type samples: int
+        :param fignum: figure to plot on.
+        :type fignum: figure number
+        :param ax: axes to plot on.
+        :type ax: axes handle
+        :type output: integer (first output is 0)
+        :param linecol: color of line to plot.
+        :type linecol:
+        :param fillcol: color of fill
+        :param levels: for 2D plotting, the number of contour levels to use is ax is None, create a new figure
+        """
+        #deal work out which ax to plot on
         if ax is None:
             fig = pb.figure(num=fignum)
             ax = fig.add_subplot(111)
-        if fignum is None and ax is None:
-                fignum = fig.num
-        if which_data is 'all':
-            which_data = slice(None)
 
-        GPBase.plot(self, samples=samples, plot_limits=plot_limits, which_data='all', which_parts='all', resolution=resolution, levels=20, fignum=fignum, ax=ax)
+        #work out what the inputs are for plotting (1D or 2D)
+        fixed_dims = np.array([i for i,v in fixed_inputs])
+        free_dims = np.setdiff1d(np.arange(self.input_dim),fixed_dims)
 
-        if self.X.shape[1] == 1:
+        #call the base plotting
+        GPBase.plot(self, samples=samples, plot_limits=plot_limits,
+                which_data_rows=which_data_rows,
+                which_data_ycols=which_data_ycols, fixed_inputs=fixed_inputs,
+                which_parts=which_parts, resolution=resolution, levels=20,
+                fignum=fignum, ax=ax)
+
+        if len(free_dims) == 1:
+            #plot errorbars for the uncertain inputs
             if self.has_uncertain_inputs:
                 Xu = self.X * self._Xscale + self._Xoffset # NOTE self.X are the normalized values now
-                ax.errorbar(Xu[which_data, 0], self.likelihood.data[which_data, 0],
-                            xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
+                ax.errorbar(Xu[which_data_rows, 0], self.likelihood.data[which_data_rows, 0],
+                            xerr=2 * np.sqrt(self.X_variance[which_data_rows, 0]),
                             ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
+
+            #plot the inducing inputs
             Zu = self.Z * self._Xscale + self._Xoffset
             ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
 
-        elif self.X.shape[1] == 2:
+        elif len(free_dims) == 2:
             Zu = self.Z * self._Xscale + self._Xoffset
             ax.plot(Zu[:, 0], Zu[:, 1], 'wo')
-
 
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"

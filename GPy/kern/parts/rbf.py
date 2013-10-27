@@ -50,32 +50,34 @@ class RBF(Kernpart):
             else:
                 lengthscale = np.ones(self.input_dim)
 
-        #self._set_params(np.hstack((variance, lengthscale.flatten())))
-        self.variance = Param('variance', variance, None)
-        self.lengthscale = Param('lengthscale', lengthscale, None)
-        
+        self.variance = Param('variance', variance)
+        self.lengthscale = Param('lengthscale', lengthscale)
+        self.lengthscale.add_observer(self, self.update_lengthscale)
         self.add_parameters(self.variance, self.lengthscale)
-#         self.set_as_parameter('variance', self.variance, None)
-#         self.set_as_parameter('lengthscale', self.lengthscale, None)
         
         # initialize cache
-        self._Z, self._mu, self._S = np.empty(shape=(3, 1))
-        self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
+        #self._Z, self._mu, self._S = np.empty(shape=(3, 1))
+        #self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
 
         # a set of optional args to pass to weave
         self.weave_options = {'headers'           : ['<omp.h>'],
                               'extra_compile_args': ['-fopenmp -O3'], # -march=native'],
                               'extra_link_args'   : ['-lgomp']}
     
+    def on_input_change(self, X):
+        import pdb;pdb.set_trace()
+        self._K_computations(X, None)
+    
+    def update_lengthscale(self, l):
+        self.lengthscale2 = np.square(self.lengthscale)
         
     def parameters_changed(self):
-        self.lengthscale2 = np.square(self.lengthscale)
         # reset cached results
         #self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
         #self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
-        self._X, self._X2 = np.empty(shape=(2, 1))
-        self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
-
+        #self._X, self._X2 = np.empty(shape=(2, 1))
+        #self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
+        pass
 #     def _get_params(self):
 #         return np.hstack((self.variance, self.lengthscale))
 # # 
@@ -97,14 +99,17 @@ class RBF(Kernpart):
 #             return ['variance'] + ['lengthscale_%i' % i for i in range(self.lengthscale.size)]
 
     def K(self, X, X2, target):
-        self._K_computations(X, X2)
+        if self._X is None or X.base is not self._X.base or X2 is not None:
+            import pdb;pdb.set_trace()
+            self._K_computations(X, X2)
         target += self.variance * self._K_dvar
 
     def Kdiag(self, X, target):
         np.add(target, self.variance, target)
 
     def dK_dtheta(self, dL_dK, X, X2, target):
-        self._K_computations(X, X2)
+        if self._X is None or X.base is not self._X.base or X2 is not None:
+            self._K_computations(X, X2)
         target[0] += np.sum(self._K_dvar * dL_dK)
         if self.ARD:
             dvardLdK = self._K_dvar * dL_dK
@@ -152,7 +157,8 @@ class RBF(Kernpart):
         target[0] += np.sum(dL_dKdiag)
 
     def dK_dX(self, dL_dK, X, X2, target):
-        self._K_computations(X, X2)
+        if self._X is None or X.base is not self._X.base or X2 is not None:
+            self._K_computations(X, X2)
         if X2 is None:
             _K_dist = 2*(X[:, None, :] - X[None, :, :])
         else:
@@ -241,7 +247,7 @@ class RBF(Kernpart):
     def _K_computations(self, X, X2):
         #params = self._get_params()
         if not (fast_array_equal(X, self._X) and fast_array_equal(X2, self._X2)):# and fast_array_equal(self._params_save , params)):
-            self._X = X.copy()
+            #self._X = X.copy()
             #self._params_save = params.copy()
             if X2 is None:
                 self._X2 = None

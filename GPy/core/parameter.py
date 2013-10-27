@@ -6,7 +6,7 @@ Created on 4 Sep 2013
 import itertools
 import numpy
 from transformations import Logexp, NegativeLogexp, Logistic
-from parameterized import Parentable
+from parameterized import Nameable, Pickleable
 
 ###### printing
 __constraints_name__ = "Constraint"
@@ -16,7 +16,48 @@ __precision__ = numpy.get_printoptions()['precision'] # numpy printing precision
 __print_threshold__ = 5
 ######    
 
-class Param(numpy.ndarray, Parentable):
+class ListArray(numpy.ndarray):
+    """
+    ndarray which can be stored in lists and checked if it is in.
+    """
+    def __new__(cls, input_array):
+        obj = numpy.asanyarray(input_array).view(cls)
+        return obj
+    def __eq__(self, other):
+        return other is self
+
+class ObservableArray(ListArray):
+    """
+    An ndarray which reports changed to it's observers.
+    The observers can add themselves with a callable, which
+    will be called every time this array changes. The callable
+    takes exactly one argument, which is this array itself.
+    """
+    def __new__(cls, input_array):
+        obj = super(ObservableArray, cls).__new__(cls, input_array).view(cls)
+        obj._observers_ = {}
+        return obj
+    def __array_finalize__(self, obj):
+        # see InfoArray.__array_finalize__ for comments
+        if obj is None: return
+        self._observers_ = getattr(obj, '_observers_', None)
+    def add_observer(self, observer, callble):
+        self._observers_[observer] = callble
+    def remove_observer(self, observer):
+        del self._observers_[observer]
+    def _notify_observers(self):
+        [callble(self) for callble in self._observers_.itervalues()]
+    def __setitem__(self, s, val):
+        if not numpy.all(numpy.equal(self[s], val)):
+            numpy.put(self,s,val)
+            self._notify_observers()
+    def __getslice__(self, start, stop):
+        return self.__getitem__(slice(start, stop))
+    def __setslice__(self, start, stop, val):
+        return self.__setitem__(slice(start, stop), val)    
+
+    
+class Param(ObservableArray, Nameable, Pickleable):
     """
     Parameter object for GPy models.
 
@@ -41,9 +82,9 @@ class Param(numpy.ndarray, Parentable):
     """
     __array_priority__ = -numpy.inf # Never give back Param
     def __new__(cls, name, input_array, *args, **kwargs):
-        obj = numpy.atleast_1d(numpy.array(input_array)).view(cls)
-        obj._name_ = name
+        obj = numpy.atleast_1d(super(Param, cls).__new__(cls, input_array=input_array))
         obj._direct_parent_ = None
+        obj._name_ = name
         obj._parent_index_ = None
         obj._highest_parent_ = None
         obj._current_slice_ = (slice(obj.shape[0]),)
@@ -55,7 +96,10 @@ class Param(numpy.ndarray, Parentable):
         obj._tied_to_me_ = ParamDict(set)
         obj._tied_to_ = []
         obj._original_ = True
-        return obj    
+        return obj
+    def __init__(self, name, input_array):
+        super(Param, self).__init__(name=name)
+        
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
@@ -71,11 +115,6 @@ class Param(numpy.ndarray, Parentable):
         self._realndim_ = getattr(obj, '_realndim_', None)
         self._updated_ = getattr(obj, '_updated_', None)
         self._original_ = getattr(obj, '_original_', None)
-    def __eq__(self, other):
-        return other is self
-        if other is self:
-            return True
-        return super(Param, self).__eq__(other)
         
     def __array_wrap__(self, out_arr, context=None):
         return out_arr.view(numpy.ndarray)
@@ -117,24 +156,24 @@ class Param(numpy.ndarray, Parentable):
     #===========================================================================
     def _set_params(self, param):
         self.flat = param
-        self._fire_changed()
+        self._notify_tied_parameters()
     def _get_params(self):
         return self.flat
-    @property
-    def name(self):
-        """
-        Name of this parameter. 
-        This can be a callable without parameters. The callable will be called
-        every time the name property is accessed.
-        """
-        if callable(self._name_):
-            return self._name_()
-        return self._name_
-    @name.setter
-    def name(self, new_name):
-        from_name = self.name
-        self._name_ = new_name
-        self._direct_parent_._name_changed(self, from_name)
+#     @property
+#     def name(self):
+#         """
+#         Name of this parameter. 
+#         This can be a callable without parameters. The callable will be called
+#         every time the name property is accessed.
+#         """
+#         if callable(self._name_):
+#             return self._name_()
+#         return self._name_
+#     @name.setter
+#     def name(self, new_name):
+#         from_name = self.name
+#         self._name_ = new_name
+#         self._direct_parent_._name_changed(self, from_name)
     @property
     def _parameters_(self):
         return []
@@ -232,6 +271,11 @@ class Param(numpy.ndarray, Parentable):
         Broadcasting is allowed, so you can tie a whole dimension to
         one parameter:  self[:,0].tie_to(other), where other is a one-value
         parameter.
+        
+        Note: this method will tie to the parameter which is the last in 
+              the chain of ties. Thus, if you tie to a tied parameter,
+              this tie will be created to the parameter the param is tied
+              to.
         """
         assert isinstance(param, Param), "Argument {1} not of type {0}".format(Param,param.__class__)
         try:
@@ -241,9 +285,17 @@ class Param(numpy.ndarray, Parentable):
                 self._direct_parent_._get_original(self)[self._current_slice_] = param
         except ValueError:
             raise ValueError("Trying to tie {} with shape {} to {} with shape {}".format(self.name, self.shape, param.name, param.shape))            
+        if param is self:
+            raise RuntimeError, 'Cyclic tieing is not allowed'
+        if len(param._tied_to_) > 0:
+            self.tie_to(param._tied_to_[0])
+            return
         self._direct_parent_._get_original(self)._tied_to_ += [param]
         param._add_tie_listener(self)
         self._highest_parent_._set_fixed(self)
+        for t in self._tied_to_me_.iterkeys():
+            t.untie()
+            t.tie_to(param)
 #         self._direct_parent_._add_tie(self, param)
 
     def untie(self, *ties):
@@ -254,9 +306,9 @@ class Param(numpy.ndarray, Parentable):
         self._tied_to_ = [tied_to for tied_to in self._tied_to_ for t in tied_to._tied_to_me_ if self._parent_index_==t._direct_parent_._get_original(t)._parent_index_]
         self._highest_parent_._set_unfixed(self)
 #         self._direct_parent_._remove_tie(self, *params)
-    def _fire_changed(self):
+    def _notify_tied_parameters(self):
         for tied, ind in self._tied_to_me_.iteritems():
-            tied._on_change(self.base, list(ind))
+            tied._on_tied_parameter_changed(self.base, list(ind))
     def _add_tie_listener(self, tied_to_me):
         self._tied_to_me_[tied_to_me] |= set(self._raveled_index())
     def _remove_tie_listener(self, to_remove):
@@ -271,14 +323,14 @@ class Param(numpy.ndarray, Parentable):
                         del self._tied_to_me_[tmp]
                 else:
                     del self._tied_to_me_[t]
-    def _on_change(self, val, ind):
+    def _on_tied_parameter_changed(self, val, ind):
         if not self._updated_: #not fast_array_equal(self, val[ind]):
             self._updated_ = True
             if self._original_:
                 self.__setitem__(slice(None), val[ind], update=False)
             else: # this happens when indexing created a copy of the array
                 self._direct_parent_._get_original(self).__setitem__(self._current_slice_, val[ind], update=False)
-            self._fire_changed()
+            self._notify_tied_parameters()
             self._updated_ = False
     #===========================================================================
     # Prior Operations
@@ -307,17 +359,13 @@ class Param(numpy.ndarray, Parentable):
             s = (s,)
         if not reduce(lambda a,b: a or numpy.any(b is Ellipsis), s, False) and len(s) <= self.ndim:
             s += (Ellipsis,)
-        new_arr = numpy.ndarray.__getitem__(self, s, *args, **kwargs)
+        new_arr = super(Param, self).__getitem__(s, *args, **kwargs)
         try: new_arr._current_slice_ = s; new_arr._original_ = self.base is new_arr.base
         except AttributeError: pass# returning 0d array or float, double etc
         return new_arr
-    def __getslice__(self, start, stop):
-        return self.__getitem__(slice(start, stop))
-    def __setslice__(self, start, stop, val):
-        return self.__setitem__(slice(start, stop), val)    
     def __setitem__(self, s, val, update=True):
-        numpy.ndarray.__setitem__(self, s, val)
-        self._fire_changed()
+        super(Param, self).__setitem__(s, val)
+        self._notify_tied_parameters()
         if update:
             self._highest_parent_.parameters_changed()
     #===========================================================================
@@ -494,7 +542,7 @@ class ParamConcatenation(object):
     def __setitem__(self, s, val, update=True):
         ind = numpy.zeros(sum(self._param_sizes), dtype=bool); ind[s] = True; 
         vals = self._vals(); vals[s] = val; del val
-        [numpy.place(p, ind[ps], vals[ps]) and p._fire_changed() 
+        [numpy.place(p, ind[ps], vals[ps]) and p._notify_tied_parameters() 
          for p, ps in zip(self.params, self._param_slices_)]
         if update:
             self.params[0]._highest_parent_.parameters_changed()

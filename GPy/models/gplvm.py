@@ -13,6 +13,7 @@ from ..core import GP
 from ..likelihoods import Gaussian
 from .. import util
 from GPy.util import plot_latent
+from GPy.core.parameter import Param
 
 
 class GPLVM(GP):
@@ -34,7 +35,9 @@ class GPLVM(GP):
             kernel = kern.rbf(input_dim, ARD=input_dim > 1) + kern.bias(input_dim, np.exp(-2))
         likelihood = Gaussian(Y, normalize=normalize_Y, variance=np.exp(-2.))
         GP.__init__(self, X, likelihood, kernel, normalize_X=False)
-        self.set_prior('.*X', Gaussian_prior(0, 1))
+        self.X = Param('q_mean', self.X)
+        self.add_parameter(self.X, self.dL_dK, 0)
+        #self.set_prior('.*X', Gaussian_prior(0, 1))
         self.ensure_default_constraints()
 
     def initialise_latent(self, init, input_dim, Y):
@@ -50,33 +53,35 @@ class GPLVM(GP):
     def setstate(self, state):
         GP.setstate(self, state)
 
-    def _get_param_names(self):
-        return sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], []) + GP._get_param_names(self)
+#     def _get_param_names(self):
+#         return sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], []) + GP._get_param_names(self)
+# 
+#     def _get_params(self):
+#         return np.hstack((self.X.flatten(), GP._get_params(self)))
+# 
+#     def _set_params(self, x):
+#         self.X = x[:self.num_data * self.input_dim].reshape(self.num_data, self.input_dim).copy()
+#         GP._set_params(self, x[self.X.size:])
 
-    def _get_params(self):
-        return np.hstack((self.X.flatten(), GP._get_params(self)))
-
-    def _set_params(self, x):
-        self.X = x[:self.num_data * self.input_dim].reshape(self.num_data, self.input_dim).copy()
-        GP._set_params(self, x[self.X.size:])
-
-    def _log_likelihood_gradients(self):
-        dL_dX = self.kern.dK_dX(self.dL_dK, self.X)
-
-        return np.hstack((dL_dX.flatten(), GP._log_likelihood_gradients(self)))
+    def dK_dX(self):
+        return self.kern.dK_dX(self.dL_dK, self.X)
+#     def _log_likelihood_gradients(self):
+#         dL_dX = self.kern.dK_dX(self.dL_dK, self.X)
+# 
+#         return np.hstack((dL_dX.flatten(), GP._log_likelihood_gradients(self)))
 
     def jacobian(self,X):
         target = np.zeros((X.shape[0],X.shape[1],self.output_dim))
         for i in range(self.output_dim):
-        	target[:,:,i]=self.kern.dK_dX(np.dot(self.Ki,self.likelihood.Y[:,i])[None, :],X,self.X)
+            target[:,:,i]=self.kern.dK_dX(np.dot(self.Ki,self.likelihood.Y[:,i])[None, :],X,self.X)
         return target
    
     def magnification(self,X):
         target=np.zeros(X.shape[0])
-        J = np.zeros((X.shape[0],X.shape[1],self.output_dim))
-    	J=self.jacobian(X)
+        #J = np.zeros((X.shape[0],X.shape[1],self.output_dim))
+        J = self.jacobian(X)
         for i in range(X.shape[0]):
-		    target[i]=np.sqrt(pb.det(np.dot(J[i,:,:],np.transpose(J[i,:,:]))))
+            target[i]=np.sqrt(pb.det(np.dot(J[i,:,:],np.transpose(J[i,:,:]))))
         return target
 
     def plot(self):

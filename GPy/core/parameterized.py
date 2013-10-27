@@ -32,6 +32,24 @@ class Nameable(Parentable):
         if self.has_parent():
             self._direct_parent_._name_changed(self, from_name)
 
+class Pickleable(object):
+    def getstate(self):
+        """
+        Returns the state of this class in a memento pattern.
+        The state must be a list-like structure of all the fields
+        this class need to run
+        """
+        raise NotImplementedError, "To be able to use pickling you need to implement this method"
+    def setstate(self, state):
+        """
+        Set the state (memento pattern) of this class to the given state.
+        Usually this is just the counterpart to getstate, such that
+        an object is a copy of another when calling
+    
+            copy = <classname>.__new__(*args,**kw).setstate(<to_be_copied>.getstate())
+        """
+        raise NotImplementedError, "To be able to use pickling you need to implement this method"
+
 from parameter import ParamConcatenation
 from index_operations import ParameterIndexOperations,\
     index_empty
@@ -47,7 +65,7 @@ FIXED = False
 UNFIXED = True
 #===============================================================================
 
-class Parameterized(Nameable):
+class Parameterized(Nameable, Pickleable):
     """
     Parameterized class
     
@@ -161,7 +179,7 @@ class Parameterized(Nameable):
 
     def add_parameters(self, *parameters):
         """
-        convinience method for adding several 
+        convenience method for adding several 
         parameters without gradient specification
         """
         [self.add_parameter(p) for p in parameters]
@@ -178,8 +196,15 @@ class Parameterized(Nameable):
 #                                 or p in names_params_indices)]
 #         self._connect_parameters()
     def parameters_changed(self):
+        """
+        This method gets called when parameters have changed. 
+        Another way of listening to parameter changes is to 
+        add self as a listener to the parameter, such that 
+        updates get passed through. See :py:function:``GPy.core.parameter.Observable.add_observer``
+        """
         # will be called as soon as paramters have changed
         pass
+    
     def _connect_parameters(self):
         # connect parameterlist to this parameterized object
         # This just sets up the right connection for the params objects 

@@ -17,7 +17,7 @@ class White(Kernpart):
     def __init__(self,input_dim,variance=1.):
         super(White, self).__init__(input_dim, 'white')
         self.input_dim = input_dim
-        self.variance = Param('variance', variance, None)
+        self.variance = Param('variance', variance)
         self.add_parameters(self.variance)
 #         self._set_params(np.array([variance]).flatten())
         self._psi1 = 0 # TODO: more elegance here

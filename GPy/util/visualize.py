@@ -4,7 +4,7 @@ import GPy
 import numpy as np
 import matplotlib as mpl
 import time
-import Image
+from PIL import Image
 try:
     import visual
     visual_available = True

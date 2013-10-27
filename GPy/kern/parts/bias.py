@@ -16,7 +16,7 @@ class Bias(Kernpart):
         :type variance: float
         """
         super(Bias, self).__init__(input_dim, 'bias')
-        self.variance = Param("variance", variance, None)
+        self.variance = Param("variance", variance)
         self.add_parameter(self.variance)
         #self._set_params(np.array([variance]).flatten())
 

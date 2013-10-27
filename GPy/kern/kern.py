@@ -52,6 +52,9 @@ class kern(Parameterized):
     def parameters_changed(self):
         [p.parameters_changed() for p in self._parameters_]
 
+    def connect_input(self, Xparam):
+        [p.connect_input(Xparam) for p in self._parameters_]
+                
     def getstate(self):
         """
         Get the current state of the class,

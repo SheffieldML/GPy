@@ -21,7 +21,22 @@ class Kernpart(Parameterized):
         # the name of the covariance function.
         # link to parameterized objects
         self._parameters_ = []
+        self._X = None
     
+    def connect_input(self, X):
+        X.add_observer(self, self.on_input_change)
+        self._X = X
+        
+    def on_input_change(self, X):
+        """
+        During optimization this function will be called when
+        the inputs X changed. Use this to update caches dependent
+        on the inputs X.
+        """
+        # overwrite this to update kernel when inputs X change
+        pass
+    
+        
 #     def set_as_parameter_named(self, name, gradient, index=None, *args, **kwargs):
 #         """
 #         :param names:        name of parameter to set as parameter

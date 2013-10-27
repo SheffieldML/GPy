@@ -39,16 +39,23 @@ class Linear(Kernpart):
         else:
             if variances is not None:
                 variances = np.asarray(variances)
-                assert variances.size == self.input_dim, "bad number of lengthscales"
+                assert variances.size == self.input_dim, "bad number of variances, need one ARD variance per input_dim"
             else:
                 variances = np.ones(self.input_dim)
         
         self.variances = Param('variances', variances)
         self.add_parameters(self.variances)
+        self.variances.add_observer(self, self.update_variance)
 
         # initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3, 1))
         self._X, self._X2 = np.empty(shape=(2, 1))
+    
+    def update_variance(self, v):
+        self.variances2 = np.square(self.variances)
+
+    def on_input_change(self, X):
+        self._K_computations(X, None)
 
 #     def _get_params(self):
 #         return self.variances
@@ -56,8 +63,8 @@ class Linear(Kernpart):
 #     def _set_params(self, x):
 #         assert x.size == (self.num_params)
 #         self.variances = x
-    def parameters_changed(self):
-        self.variances2 = np.square(self.variances)
+    #def parameters_changed(self):
+    #    self.variances2 = np.square(self.variances)
 # 
 #     def _get_param_names(self):
 #         if self.num_params == 1:
@@ -74,7 +81,8 @@ class Linear(Kernpart):
                 XX2 = X2 * np.sqrt(self.variances)
                 target += np.dot(XX, XX2.T)
         else:
-            self._K_computations(X, X2)
+            if X is not self._X or X2 is not None:
+                self._K_computations(X, X2)
             target += self.variances * self._dot_product
 
     def Kdiag(self, X, target):
@@ -88,7 +96,8 @@ class Linear(Kernpart):
                 product = X[:, None, :] * X2[None, :, :]
                 target += (dL_dK[:, :, None] * product).sum(0).sum(0)
         else:
-            self._K_computations(X, X2)
+            if X is not self._X or X2 is not None:
+                self._K_computations(X, X2)
             target += np.sum(self._dot_product * dL_dK)
 
     def dKdiag_dtheta(self, dL_dKdiag, X, target):

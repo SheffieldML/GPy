@@ -5,6 +5,7 @@ import pylab as pb
 from model import Model
 import warnings
 from ..likelihoods import Gaussian, Gaussian_Mixed_Noise
+from ..core.parameter import ObservableArray
 
 class GPBase(Model):
     """
@@ -14,7 +15,7 @@ class GPBase(Model):
     def __init__(self, X, likelihood, kernel, normalize_X=False):
         super(GPBase, self).__init__()
         
-        self.X = X
+        self.X = ObservableArray(X)
         assert len(self.X.shape) == 2
         self.num_data, self.input_dim = self.X.shape
         assert isinstance(kernel, kern.kern)
@@ -26,13 +27,14 @@ class GPBase(Model):
         if normalize_X:
             self._Xoffset = X.mean(0)[None, :]
             self._Xscale = X.std(0)[None, :]
-            self.X = (X.copy() - self._Xoffset) / self._Xscale
+            self.X = ObservableArray((X.copy() - self._Xoffset) / self._Xscale)
         else:
             self._Xoffset = np.zeros((1, self.input_dim))
             self._Xscale = np.ones((1, self.input_dim))
         
         self.add_parameter(self.kern, gradient=self.dL_dtheta)
         self.add_parameter(self.likelihood, gradient=self.dL_dlikelihood)
+        self.kern.connect_input(self.X)
         
         # Model.__init__(self)
         # All leaf nodes should call self._set_params(self._get_params()) at

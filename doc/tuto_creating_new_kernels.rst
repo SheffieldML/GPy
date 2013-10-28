@@ -73,6 +73,8 @@ precomputations for the kernel.
     def parameters_changed(self):
         # nothing todo here
 
+
+
 .. **_get_params(self)**
 
 .. The implementation of this function in mandatory.

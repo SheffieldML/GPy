@@ -65,7 +65,6 @@ class RBF(Kernpart):
                               'extra_link_args'   : ['-lgomp']}
     
     def on_input_change(self, X):
-        import pdb;pdb.set_trace()
         self._K_computations(X, None)
     
     def update_lengthscale(self, l):

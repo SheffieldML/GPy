@@ -12,10 +12,8 @@
 
 import numpy as np
 import scipy as sp
-from scipy.linalg import cho_solve
 from likelihood import likelihood
-from ..util.linalg import mdot, jitchol, pddet
-from scipy.linalg.lapack import dtrtrs
+from ..util.linalg import mdot, jitchol, pddet, dpotrs
 from functools import partial as partial_func
 
 class Laplace(likelihood):
@@ -282,7 +280,7 @@ class Laplace(likelihood):
         B = np.eye(self.N) + W_12*K*W_12.T
         L = jitchol(B)
 
-        W12BiW12= W_12*cho_solve((L, True), W_12*a)
+        W12BiW12, _ = W_12*dpotrs(L, np.asfortranarray(W_12*a), lower=1)
         ln_B_det = 2*np.sum(np.log(np.diag(L)))
         return W12BiW12, ln_B_det
 

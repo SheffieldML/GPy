@@ -123,25 +123,6 @@ def student_t_approx():
 
     return m
 
-    #with a student t distribution, since it has heavy tails it should work well
-    #likelihood_function = student_t(deg_free=deg_free, sigma2=real_var)
-    #lap = Laplace(Y, likelihood_function)
-    #cov = kernel.K(X)
-    #lap.fit_full(cov)
-
-    #test_range = np.arange(0, 10, 0.1)
-    #plt.plot(test_range, t_rv.pdf(test_range))
-    #for i in xrange(X.shape[0]):
-        #mode = lap.f_hat[i]
-        #covariance = lap.hess_hat_i[i,i]
-        #scaling = np.exp(lap.ln_z_hat)
-        #normalised_approx = norm(loc=mode, scale=covariance)
-        #print "Normal with mode %f, and variance %f" % (mode, covariance)
-        #plt.plot(test_range, scaling*normalised_approx.pdf(test_range))
-    #plt.show()
-
-    return m
-
 def boston_example():
     import sklearn
     from sklearn.cross_validation import KFold

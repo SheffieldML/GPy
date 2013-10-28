@@ -285,3 +285,14 @@ class Gaussian(NoiseDistribution):
             Var_{p(y|f)}[y]
         """
         return self.variance
+
+    def samples(self, gp):
+        """
+        Returns a set of samples of observations based on a given value of the latent variable.
+
+        :param gp: latent variable
+        """
+        orig_shape = gp.shape
+        gp = gp.flatten()
+        Ysim = np.array([np.random.normal(self.gp_link.transf(gpj), scale=np.sqrt(self.variance), size=1) for gpj in gp])
+        return Ysim.reshape(orig_shape)

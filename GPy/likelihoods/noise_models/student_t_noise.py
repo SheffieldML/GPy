@@ -269,7 +269,9 @@ class StudentT(NoiseDistribution):
         gp = gp.flatten()
         #FIXME: Very slow as we are computing a new random variable per input!
         #Can't get it to sample all at the same time
-        student_t_samples = np.array([stats.t.rvs(self.v, self.gp_link.transf(gpj),scale=np.sqrt(self.sigma2), size=1) for gpj in gp])
-        #student_t_samples = stats.t.rvs(self.v, loc=self.gp_link.transf(gp),
-                                        #scale=np.sqrt(self.sigma2))
+        #student_t_samples = np.array([stats.t.rvs(self.v, self.gp_link.transf(gpj),scale=np.sqrt(self.sigma2), size=1) for gpj in gp])
+        dfs = np.ones_like(gp)*self.v
+        scales = np.ones_like(gp)*np.sqrt(self.sigma2)
+        student_t_samples = stats.t.rvs(dfs, loc=self.gp_link.transf(gp),
+                                        scale=scales)
         return student_t_samples.reshape(orig_shape)

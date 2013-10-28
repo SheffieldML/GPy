@@ -375,7 +375,7 @@ class NoiseDistribution(object):
         assert d2logpdf_df2_dtheta.shape[1] == len(self._get_param_names())
         return dlogpdf_dtheta, dlogpdf_df_dtheta, d2logpdf_df2_dtheta
 
-    def predictive_values(self, mu, var, full_cov=False, num_samples=5000,
+    def predictive_values(self, mu, var, full_cov=False, num_samples=30000,
                           sampling=False):
         """
         Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction.

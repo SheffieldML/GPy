@@ -144,10 +144,9 @@ class Poisson(NoiseDistribution):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 
-        :param size: number of samples to compute
         :param gp: latent variable
         """
         orig_shape = gp.shape
         gp = gp.flatten()
-        Ysim = np.array([np.random.poisson(self.gp_link.transf(gpj),size=1) for gpj in gp])
+        Ysim = np.random.poisson(self.gp_link.transf(gp))
         return Ysim.reshape(orig_shape)

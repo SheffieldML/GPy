@@ -143,3 +143,14 @@ class Exponential(NoiseDistribution):
         Mass (or density) function
         """
         return self.gp_link.transf(gp)**2
+
+    def samples(self, gp):
+        """
+        Returns a set of samples of observations based on a given value of the latent variable.
+
+        :param gp: latent variable
+        """
+        orig_shape = gp.shape
+        gp = gp.flatten()
+        Ysim = np.random.exponential(1.0/self.gp_link.transf(gp))
+        return Ysim.reshape(orig_shape)

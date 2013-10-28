@@ -150,6 +150,8 @@ class NoiseDistribution(object):
         :param sigma: standard deviation of posterior
 
         """
+        #FIXME: Quadrature does not work!
+        raise NotImplementedError
         sigma2 = sigma**2
         #Compute first moment
         def int_mean(f):
@@ -192,19 +194,6 @@ class NoiseDistribution(object):
         var_exp = exp_exp2 - predictive_mean**2
         # V(Y_star | f_star) = E( V(Y_star|f_star) ) + V( E(Y_star|f_star) )
         return exp_var + var_exp
-
-    def _predictive_percentiles(self,p,mu,sigma):
-        """
-        Percentiles of the predictive distribution
-
-        :parm p: lower tail probability
-        :param mu: cavity distribution mean
-        :param sigma: cavity distribution standard deviation
-        :predictive_mean: output's predictive mean, if None _predictive_mean function will be called.
-
-        """
-        qf = stats.norm.ppf(p,mu,sigma)
-        return self.gp_link.transf(qf)
 
     def pdf_link(self, link_f, y, extra_data=None):
         raise NotImplementedError
@@ -386,26 +375,50 @@ class NoiseDistribution(object):
         assert d2logpdf_df2_dtheta.shape[1] == len(self._get_param_names())
         return dlogpdf_dtheta, dlogpdf_df_dtheta, d2logpdf_df2_dtheta
 
-    def predictive_values(self,mu,var):
+    def predictive_values(self, mu, var, full_cov=False, num_samples=5000,
+                          sampling=False):
         """
         Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction.
 
-        :param mu: mean of the latent variable, f
-        :param var: variance of the latent variable, f
+        :param mu: mean of the latent variable, f, of posterior
+        :param var: variance of the latent variable, f, of posterior
+        :param full_cov: whether to use the full covariance or just the diagonal
+        :type full_cov: Boolean
+        :param num_samples: number of samples to use in computing quantiles and
+                            possibly mean variance
+        :type num_samples: integer
+        :param sampling: Whether to use samples for mean and variances anyway
+        :type sampling: Boolean
 
         """
-        if isinstance(mu,float) or isinstance(mu,int):
-            mu = [mu]
-            var = [var]
-        pred_mean = []
-        pred_var = []
-        q1 = []
-        q3 = []
-        for m,s in zip(mu,np.sqrt(var)):
-            pred_mean.append(self.predictive_mean(m,s))
-            pred_var.append(self.predictive_variance(m,s,pred_mean[-1]))
-            q1.append(self._predictive_percentiles(.025,m,s))
-            q3.append(self._predictive_percentiles(.975,m,s))
+
+        #Get gp_samples f* using posterior mean and variance
+        if not full_cov:
+            gp_samples = np.random.multivariate_normal(mu.flatten(), np.diag(var.flatten()),
+                                                        size=num_samples).T
+        else:
+            gp_samples = np.random.multivariate_normal(mu.flatten(), var,
+                                                           size=num_samples).T
+
+        #Push gp samples (f*) through likelihood to give p(y*|f*)
+        samples = self.samples(gp_samples)
+        axis=-1
+
+        if self.analytical_mean and not sampling:
+            pred_mean = self.predictive_mean(mu, np.sqrt(var))
+        else:
+            pred_mean = np.mean(samples, axis=axis)
+
+        if self.analytical_variance and not sampling:
+            pred_var = self.predictive_variance(mu, np.sqrt(var), pred_mean)
+        else:
+            pred_var = np.var(samples, axis=axis)
+
+        #Calculate quantiles from samples
+        q1 = np.percentile(samples, 2.5, axis=axis)
+        q3 = np.percentile(samples, 97.5, axis=axis)
+        print "WARNING: Using sampling to calculate predictive quantiles"
+
         pred_mean = np.vstack(pred_mean)
         pred_var = np.vstack(pred_var)
         q1 = np.vstack(q1)

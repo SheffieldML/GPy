@@ -272,11 +272,10 @@ def toy_rbf_1d_50(max_iters=100):
 
 def toy_poisson_rbf_1d(optimizer='bfgs', max_nb_eval_optim=100):
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
-    X = np.linspace(0,10)[:, None]
-    F = np.round(X*3-4)
-    F = np.where(F > 0, F, 0)
-    eps = np.random.randint(0,4, F.shape[0])[:, None]
-    Y = F + eps
+    x_len = 400
+    X = np.linspace(0, 10, x_len)[:, None]
+    f_true = np.random.multivariate_normal(np.zeros(x_len), GPy.kern.rbf(1).K(X))
+    Y = np.array([np.random.poisson(np.exp(f)) for f in f_true])[:,None]
 
     noise_model = GPy.likelihoods.poisson()
     likelihood = GPy.likelihoods.EP(Y,noise_model)
@@ -293,11 +292,10 @@ def toy_poisson_rbf_1d(optimizer='bfgs', max_nb_eval_optim=100):
 
 def toy_poisson_rbf_1d_laplace(optimizer='bfgs', max_nb_eval_optim=100):
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
-    X = np.linspace(0,10)[:, None]
-    F = np.round(X*3-4)
-    F = np.where(F > 0, F, 0)
-    eps = np.random.randint(0,4, F.shape[0])[:, None]
-    Y = F + eps
+    x_len = 30
+    X = np.linspace(0, 10, x_len)[:, None]
+    f_true = np.random.multivariate_normal(np.zeros(x_len), GPy.kern.rbf(1).K(X))
+    Y = np.array([np.random.poisson(np.exp(f)) for f in f_true])[:,None]
 
     noise_model = GPy.likelihoods.poisson()
     likelihood = GPy.likelihoods.Laplace(Y,noise_model)
@@ -309,6 +307,8 @@ def toy_poisson_rbf_1d_laplace(optimizer='bfgs', max_nb_eval_optim=100):
     m.optimize(optimizer, max_f_eval=max_nb_eval_optim)
     # plot
     m.plot()
+    # plot the real underlying rate function
+    pb.plot(X, np.exp(f_true), '--k', linewidth=2)
     print(m)
     return m
 

@@ -40,7 +40,8 @@ class Exponential(NoiseDistribution):
         :rtype: float
         """
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        return np.exp(np.sum(np.log(link_f*np.exp(-y*link_f))))
+        log_objective = link_f*np.exp(-y*link_f)
+        return np.exp(np.sum(np.log(log_objective)))
         #return np.exp(np.sum(-y/link_f - np.log(link_f) ))
 
     def logpdf_link(self, link_f, y, extra_data=None):
@@ -60,9 +61,9 @@ class Exponential(NoiseDistribution):
 
         """
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        logpdf_link = np.sum(np.log(link_f) - y*link_f)
+        log_objective = np.log(link_f) - y*link_f
         #logpdf_link = np.sum(-np.log(link_f) - y/link_f)
-        return logpdf_link
+        return np.sum(log_objective)
 
     def dlogpdf_dlink(self, link_f, y, extra_data=None):
         """

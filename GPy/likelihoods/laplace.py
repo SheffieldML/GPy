@@ -340,8 +340,8 @@ class Laplace(likelihood):
                 Ki_f = old_Ki_f + step_size*dKi_f
                 f = np.dot(K, Ki_f)
                 # This is nasty, need to set something within an optimization though
-                self.Ki_f = Ki_f.copy()
-                self.f = f.copy()
+                self.tmp_Ki_f = Ki_f.copy()
+                self.tmp_f = f.copy()
                 return -obj(Ki_f, f)
 
             i_o = partial_func(inner_obj, old_Ki_f=old_Ki_f, dKi_f=dKi_f, K=K)
@@ -349,8 +349,8 @@ class Laplace(likelihood):
             #The tolerance and maxiter matter for speed! Seems to be best to keep them low and make more full
             #steps than get this exact then make a step, if B was bigger it might be the other way around though
             new_obj = sp.optimize.minimize_scalar(i_o, method='brent', tol=1e-4, options={'maxiter':5}).fun
-            f = self.f.copy()
-            Ki_f = self.Ki_f.copy()
+            f = self.tmp_f.copy()
+            Ki_f = self.tmp_Ki_f.copy()
 
             #Optimize without linesearch
             #f_old = f.copy()

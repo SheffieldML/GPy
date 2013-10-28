@@ -44,7 +44,8 @@ class Gamma(NoiseDistribution):
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         #return stats.gamma.pdf(obs,a = self.gp_link.transf(gp)/self.variance,scale=self.variance)
         alpha = link_f*self.beta
-        return (y**(alpha - 1.) * np.exp(-self.beta*y) * self.beta**alpha)/ special.gamma(alpha)
+        objective = (y**(alpha - 1.) * np.exp(-self.beta*y) * self.beta**alpha)/ special.gamma(alpha)
+        return np.exp(np.sum(np.log(objective)))
 
     def logpdf_link(self, link_f, y, extra_data=None):
         """
@@ -67,7 +68,8 @@ class Gamma(NoiseDistribution):
         #alpha = self.gp_link.transf(gp)*self.beta
         #return (1. - alpha)*np.log(obs) + self.beta*obs - alpha * np.log(self.beta) + np.log(special.gamma(alpha))
         alpha = link_f*self.beta
-        return alpha*np.log(self.beta) - np.log(special.gamma(alpha)) + (alpha - 1)*np.log(y) - self.beta*y
+        log_objective = alpha*np.log(self.beta) - np.log(special.gamma(alpha)) + (alpha - 1)*np.log(y) - self.beta*y
+        return np.sum(log_objective)
 
     def dlogpdf_dlink(self, link_f, y, extra_data=None):
         """

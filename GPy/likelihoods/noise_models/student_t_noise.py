@@ -241,92 +241,35 @@ class StudentT(NoiseDistribution):
         *((1/(s*sqrt(2*pi)))*exp(-(1/(2*(s^2)))*((y-f)^2)))
         """
 
+        #FIXME: Not correct
         #We want the variance around test points y which comes from int p(y*|f*)p(f*) df*
         #Var(y*) = Var(E[y*|f*]) + E[Var(y*|f*)]
         #Since we are given f* (mu) which is our mean (expected) value of y*|f* then the variance is the variance around this
         #Which was also given to us as (var)
         #We also need to know the expected variance of y* around samples f*, this is the variance of the student t distribution
         #However the variance of the student t distribution is not dependent on f, only on sigma and the degrees of freedom
-        true_var = sigma**2 + self.variance
+        true_var = 1/(1/sigma**2 + 1/self.variance)
 
         return true_var
 
-    def _predictive_mean_analytical(self, mu, var):
+    def _predictive_mean_analytical(self, mu, sigma):
         """
         Compute mean of the prediction
         """
+        #FIXME: Not correct
         return mu
-
-    def sample_predicted_values(self, mu, var):
-        """ Experimental sample approches and numerical integration """
-        raise NotImplementedError
-        #p_025 = stats.t.ppf(.025, mu)
-        #p_975 = stats.t.ppf(.975, mu)
-
-        num_test_points = mu.shape[0]
-        #Each mu is the latent point f* at the test point x*,
-        #and the var is the gaussian variance at this point
-        #Take lots of samples from this, so we have lots of possible values
-        #for latent point f* for each test point x* weighted by how likely we were to pick it
-        print "Taking %d samples of f*".format(num_test_points)
-        num_f_samples = 10
-        num_y_samples = 10
-        student_t_means = np.random.normal(loc=mu, scale=np.sqrt(var), size=(num_test_points, num_f_samples))
-        print "Student t means shape: ", student_t_means.shape
-
-        #Now we have lots of f*, lets work out the likelihood of getting this by sampling
-        #from a student t centred on this point, sample many points from this distribution
-        #centred on f*
-        #for test_point, f in enumerate(student_t_means):
-            #print test_point
-            #print f.shape
-            #student_t_samples = stats.t.rvs(self.v, loc=f[:,None],
-                                            #scale=self.sigma,
-                                            #size=(num_f_samples, num_y_samples))
-            #print student_t_samples.shape
-
-        student_t_samples = stats.t.rvs(self.v, loc=student_t_means[:, None],
-                                        scale=self.sigma,
-                                        size=(num_test_points, num_y_samples, num_f_samples))
-        student_t_samples = np.reshape(student_t_samples,
-                                       (num_test_points, num_y_samples*num_f_samples))
-
-        #Now take the 97.5 and 0.25 percentile of these points
-        p_025 = stats.scoreatpercentile(student_t_samples, .025, axis=1)[:, None]
-        p_975 = stats.scoreatpercentile(student_t_samples, .975, axis=1)[:, None]
-
-        ##Alernenately we could sample from int p(y|f*)p(f*|x*) df*
-        def t_gaussian(f, mu, var):
-            return (((gamma((self.v+1)*0.5)) / (gamma(self.v*0.5)*self.sigma*np.sqrt(self.v*np.pi))) * ((1+(1/self.v)*(((mu-f)/self.sigma)**2))**(-(self.v+1)*0.5))
-                    * ((1/(np.sqrt(2*np.pi*var)))*np.exp(-(1/(2*var)) *((mu-f)**2)))
-                    )
-
-        def t_gauss_int(mu, var):
-            print "Mu: ", mu
-            print "var: ", var
-            result = integrate.quad(t_gaussian, 0.025, 0.975, args=(mu, var))
-            print "Result: ", result
-            return result[0]
-
-        vec_t_gauss_int = np.vectorize(t_gauss_int)
-
-        p = vec_t_gauss_int(mu, var)
-        p_025 = mu - p
-        p_975 = mu + p
-        return mu, np.nan*mu, p_025, p_975
 
     def samples(self, gp):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 
-        :param size: number of samples to compute
         :param gp: latent variable
         """
         orig_shape = gp.shape
         gp = gp.flatten()
-        f = self.gp_link.transf(gp)
-        #student_t_samples = stats.t.rvs(self.v, loc=f,
-                                        #scale=np.sqrt(self.sigma2),
-                                        #size=(num_test_points, num_y_samples, num_f_samples))
-        #Ysim = np.array([np.random.binomial(1,self.gp_link.transf(gpj),size=1) for gpj in gp])
-        return Ysim.reshape(orig_shape)
+        #FIXME: Very slow as we are computing a new random variable per input!
+        #Can't get it to sample all at the same time
+        student_t_samples = np.array([stats.t.rvs(self.v, self.gp_link.transf(gpj),scale=np.sqrt(self.sigma2), size=1) for gpj in gp])
+        #student_t_samples = stats.t.rvs(self.v, loc=self.gp_link.transf(gp),
+                                        #scale=np.sqrt(self.sigma2))
+        return student_t_samples.reshape(orig_shape)

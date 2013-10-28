@@ -280,7 +280,7 @@ class Laplace(likelihood):
         B = np.eye(self.N) + W_12*K*W_12.T
         L = jitchol(B)
 
-        W12BiW12, _ = W_12*dpotrs(L, np.asfortranarray(W_12*a), lower=1)
+        W12BiW12 = W_12*dpotrs(L, np.asfortranarray(W_12*a), lower=1)[0]
         ln_B_det = 2*np.sum(np.log(np.diag(L)))
         return W12BiW12, ln_B_det
 

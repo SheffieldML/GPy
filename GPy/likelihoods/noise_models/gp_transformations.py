@@ -105,7 +105,7 @@ class Log_ex_1(GPTransformation):
         return aux*(1.-aux)
 
 class Reciprocal(GPTransformation):
-    def transf(sefl,f):
+    def transf(self,f):
         return 1./f
 
     def dtransf_df(self,f):

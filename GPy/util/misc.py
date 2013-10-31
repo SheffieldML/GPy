@@ -5,6 +5,33 @@ import numpy as np
 from scipy import weave
 from config import *
 
+def chain_1(df_dg, dg_dx):
+    """
+    Generic chaining function for first derivative
+
+    .. math::
+        \\frac{d(f . g)}{dx} = \\frac{df}{dg} \\frac{dg}{dx}
+    """
+    return df_dg * dg_dx
+
+def chain_2(d2f_dg2, dg_dx, df_dg, d2g_dx2):
+    """
+    Generic chaining function for second derivative
+
+    .. math::
+        \\frac{d^{2}(f . g)}{dx^{2}} = \\frac{d^{2}f}{dg^{2}}(\\frac{dg}{dx})^{2} + \\frac{df}{dg}\\frac{d^{2}g}{dx^{2}}
+    """
+    return d2f_dg2*(dg_dx**2) + df_dg*d2g_dx2
+
+def chain_3(d3f_dg3, dg_dx, d2f_dg2, d2g_dx2, df_dg, d3g_dx3):
+    """
+    Generic chaining function for third derivative
+
+    .. math::
+        \\frac{d^{3}(f . g)}{dx^{3}} = \\frac{d^{3}f}{dg^{3}}(\\frac{dg}{dx})^{3} + 3\\frac{d^{2}f}{dg^{2}}\\frac{dg}{dx}\\frac{d^{2}g}{dx^{2}} + \\frac{df}{dg}\\frac{d^{3}g}{dx^{3}}
+    """
+    return d3f_dg3*(dg_dx**3) + 3*d2f_dg2*dg_dx*d2g_dx2 + df_dg*d3g_dx3
+
 def opt_wrapper(m, **kwargs):
     """
     This function just wraps the optimization procedure of a GPy

@@ -324,7 +324,7 @@ class SparseGP(GPBase):
 
 
     def plot_f(self, samples=0, plot_limits=None, which_data_rows='all',
-            which_data_cols='all', which_parts='all', resolution=None,
+            which_data_ycols='all', which_parts='all', resolution=None,
             full_cov=False, fignum=None, ax=None):
 
         """
@@ -359,7 +359,7 @@ class SparseGP(GPBase):
         if which_data_rows is 'all':
             which_data_rows = slice(None)
 
-        GPBase.plot_f(self, samples=samples, plot_limits=plot_limits, which_data_rows=which_data_rows, which_data_ycols=which_data_ycols, which_parts=which_parts, resolution=resolution, full_cov=full_cov, fignum=fignum, ax=ax)
+        GPBase.plot_f(self, samples=samples, plot_limits=plot_limits, which_data_rows=which_data_rows, which_data_ycols=which_data_ycols, which_parts=which_parts, resolution=resolution, fignum=fignum, ax=ax)
 
         if self.X.shape[1] == 1:
             if self.has_uncertain_inputs:
@@ -379,6 +379,7 @@ class SparseGP(GPBase):
 
     def plot(self, plot_limits=None, which_data_rows='all',
             which_data_ycols='all', which_parts='all', fixed_inputs=[],
+            plot_raw=False,
             levels=20, samples=0, fignum=None, ax=None, resolution=None):
         """ 
         Plot the posterior of the sparse GP.

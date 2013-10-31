@@ -90,11 +90,25 @@ class Gaussian(likelihood):
             _95pc = mean + 2.*np.sqrt(true_var)
         return mean, true_var, _5pc, _95pc
 
-    def fit_full(self):
+    def log_predictive_density(self, y_test, mu_star, var_star):
         """
-        No approximations needed
+        Calculation of the log predictive density
+
+        .. math:
+            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+
+        :param y_test: test observations (y_{*})
+        :type y_test: (Nx1) array
+        :param mu_star: predictive mean of gaussian p(f_{*}|mu_{*}, var_{*})
+        :type mu_star: (Nx1) array
+        :param var_star: predictive variance of gaussian p(f_{*}|mu_{*}, var_{*})
+        :type var_star: (Nx1) array
+
+        .. Note:
+            Works as if each test point was provided individually, i.e. not full_cov
         """
-        pass
+        y_rescaled = (y_test - self._offset)/self._scale
+        return -0.5*np.log(2*np.pi) -0.5*np.log(var_star + self._variance) -0.5*(np.square(y_rescaled - mu_star))/(var_star + self._variance)
 
     def _gradients(self, partial):
         return np.sum(partial)

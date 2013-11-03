@@ -18,8 +18,8 @@ import itertools
 class Model(Parameterized):
     _fail_count = 0 # Count of failed optimization steps (see objective)
     _allowed_failures = 10 # number of allowed failures
-    def __init__(self):
-        super(Model, self).__init__()#Parameterized.__init__(self)
+    def __init__(self, name):
+        super(Model, self).__init__(name)#Parameterized.__init__(self)
         self.priors = []
         self._priors = ParameterIndexOperations()
         self.optimization_runs = []
@@ -488,7 +488,6 @@ class Model(Parameterized):
                 names = self._get_param_names_transformed()
             except NotImplementedError:
                 names = ['Variable %i' % i for i in range(len(x))]
-            import ipdb;ipdb.set_trace()
             # Prepare for pretty-printing
             header = ['Name', 'Ratio', 'Difference', 'Analytical', 'Numerical']
             max_names = max([len(names[i]) for i in range(len(names))] + [len(header[0])])

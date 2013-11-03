@@ -378,7 +378,7 @@ def silhouette(max_iters=100):
     print(m)
     return m
 
-def sparse_GP_regression_1D(num_samples=400, num_inducing=5, max_iters=100):
+def sparse_GP_regression_1D(num_samples=400, num_inducing=5, max_iters=100, optimize=True, checkgrad=True):
     """Run a 1D example of a sparse GP regression."""
     # sample inputs and outputs
     X = np.random.uniform(-3., 3., (num_samples, 1))
@@ -388,9 +388,10 @@ def sparse_GP_regression_1D(num_samples=400, num_inducing=5, max_iters=100):
     # create simple GP Model
     m = GPy.models.SparseGPRegression(X, Y, kernel=rbf, num_inducing=num_inducing)
 
-
-    m.checkgrad(verbose=1)
-    m.optimize('tnc', messages=1, max_iters=max_iters)
+    if checkgrad:
+        m.checkgrad(verbose=1)
+    if optimize:
+        m.optimize('tnc', messages=1, max_iters=max_iters)
     m.plot()
     return m
 

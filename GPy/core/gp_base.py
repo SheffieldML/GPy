@@ -12,8 +12,8 @@ class GPBase(Model):
     Gaussian process base model for holding shared behaviour between
     sparse_GP and GP models.
     """
-    def __init__(self, X, likelihood, kernel, normalize_X=False):
-        super(GPBase, self).__init__()
+    def __init__(self, X, likelihood, kernel, normalize_X=False, name=''):
+        super(GPBase, self).__init__(name)
         
         self.X = ObservableArray(X)
         assert len(self.X.shape) == 2
@@ -43,6 +43,13 @@ class GPBase(Model):
     def parameters_changed(self):
         self.kern.parameters_changed()
         self.likelihood.parameters_changed()
+
+    def dL_dtheta(self):
+        return self.kern.dK_dtheta(self.dL_dK, self.X)
+
+    def dL_dlikelihood(self):
+        return self.likelihood._gradients(partial=np.diag(self.dL_dK))
+
 
     def getstate(self):
         """

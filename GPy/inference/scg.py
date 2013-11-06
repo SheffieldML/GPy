@@ -28,7 +28,7 @@ import sys
 
 def print_out(len_maxiters, fnow, current_grad, beta, iteration):
     print '\r',
-    print '{0:>0{mi}g}  {1:> 12e}  {2:> 12e}  {3:> 12e}'.format(iteration, float(fnow), float(beta), float(current_grad), mi=len_maxiters), # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
+    print '{0:>0{mi}g}  {1:> 12e}  {2:< 12.6e}  {3:> 12e}'.format(iteration, float(fnow), float(beta), float(current_grad), mi=len_maxiters), # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
     sys.stdout.flush()
 
 def exponents(fnow, current_grad):

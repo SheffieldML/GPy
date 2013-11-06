@@ -25,9 +25,9 @@ def BGPLVM(seed=default_seed):
     Y = np.random.multivariate_normal(np.zeros(N), K, D).T
     lik = Gaussian(Y, normalize=True)
 
-    k = GPy.kern.rbf_inv(input_dim, .5, np.ones(input_dim) * 2., ARD=True) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim)
-    # k = GPy.kern.rbf(input_dim) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
-    # k = GPy.kern.rbf(input_dim, ARD = False)  + GPy.kern.white(input_dim, 0.00001)
+#     k = GPy.kern.rbf_inv(input_dim, .5, np.ones(input_dim) * 2., ARD=True) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim)
+    k = GPy.kern.rbf(input_dim, ARD=1)
+#     k = GPy.kern.rbf(input_dim, ARD = False)
 
     m = GPy.models.BayesianGPLVM(lik, input_dim, kernel=k, num_inducing=num_inducing)
     m.lengthscales = lengthscales
@@ -158,15 +158,15 @@ def BGPLVM_oil(optimize=True, N=200, input_dim=7, num_inducing=40, max_iters=100
 
     # m.constrain('variance|leng', LogexpClipped())
     # m['.*lengt'] = m.X.var(0).max() / m.X.var(0)
-    m['noise'] = Yn.Y.var() / 100.
+    m['gaussian'] = Yn.Y.var() / 100.
 
 
     # optimize
     if optimize:
-        m.constrain_fixed('noise')
+        m.gaussian.variance.fix() # m.constrain_fixed('noise')
         m.optimize('scg', messages=1, max_iters=200, gtol=.05)
-        m.constrain_positive('noise')
-        m.constrain_bounded('white', 1e-7, 1)
+        m.gaussian.variance.constrain_positive() # m.constrain_positive('noise')
+        #m.constrain_bounded('white', 1e-7, 1)
         m.optimize('scg', messages=1, max_iters=max_iters, gtol=.05)
 
     if plot:
@@ -265,7 +265,7 @@ def bgplvm_simulation_matlab_compare():
 #                        X_variance=S,
                        _debug=False)
     m.auto_scale_factor = True
-    m['noise'] = Y.var() / 100.
+    m['gaussian'] = Y.var() / 100.
     m['linear_variance'] = .01
     return m
 
@@ -287,7 +287,7 @@ def bgplvm_simulation(optimize='scg',
     m = BayesianGPLVM(Y, input_dim, init="PCA", num_inducing=num_inducing, kernel=k)
 
     # m.constrain('variance|noise', LogexpClipped())
-    m['noise'] = Y.var() / 100.
+    m['gaussian'] = Y.var() / 100.
 
     if optimize:
         print "Optimizing model:"

@@ -12,6 +12,7 @@ from GPy.util import plot_latent, linalg
 from GPy.models.gplvm import GPLVM
 from GPy.util.plot_latent import most_significant_input_dimensions
 from matplotlib import pyplot
+from GPy.core.variational import Normal
 
 class BayesianGPLVM(SparseGP, GPLVM):
     """
@@ -47,6 +48,9 @@ class BayesianGPLVM(SparseGP, GPLVM):
             kernel = kern.rbf(input_dim) # + kern.white(input_dim)
 
         SparseGP.__init__(self, X, likelihood, kernel, Z=Z, X_variance=X_variance, **kwargs)
+        
+        self.q = Normal('latent space', self.X, self.X_variance)
+        self.add_parameter(self.q, gradient=self._dbound_dmuS, index=0)
         self.ensure_default_constraints()
 
     def getstate(self):
@@ -61,32 +65,32 @@ class BayesianGPLVM(SparseGP, GPLVM):
         self.init = state.pop()
         SparseGP.setstate(self, state)
 
-    def _get_param_names(self):
-        X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
-        S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
-        return (X_names + S_names + SparseGP._get_param_names(self))
+#     def _get_param_names(self):
+#         X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
+#         S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
+#         return (X_names + S_names + SparseGP._get_param_names(self))
 
     #def _get_print_names(self):
     #    return SparseGP._get_print_names(self)
 
-    def _get_params(self):
-        """
-        Horizontally stacks the parameters in order to present them to the optimizer.
-        The resulting 1-input_dim array has this structure:
+#     def _get_params(self):
+#         """
+#         Horizontally stacks the parameters in order to present them to the optimizer.
+#         The resulting 1-input_dim array has this structure:
+# 
+#         ===============================================================
+#         |       mu       |        S        |    Z    | theta |  beta  |
+#         ===============================================================
+# 
+#         """
+#         x = np.hstack((self.X.flatten(), self.X_variance.flatten(), SparseGP._get_params(self)))
+#         return x
 
-        ===============================================================
-        |       mu       |        S        |    Z    | theta |  beta  |
-        ===============================================================
-
-        """
-        x = np.hstack((self.X.flatten(), self.X_variance.flatten(), SparseGP._get_params(self)))
-        return x
-
-    def _set_params(self, x, save_old=True, save_count=0):
-        N, input_dim = self.num_data, self.input_dim
-        self.X = x[:self.X.size].reshape(N, input_dim).copy()
-        self.X_variance = x[(N * input_dim):(2 * N * input_dim)].reshape(N, input_dim).copy()
-        SparseGP._set_params(self, x[(2 * N * input_dim):])
+#     def _set_params(self, x, save_old=True, save_count=0):
+#         N, input_dim = self.num_data, self.input_dim
+#         self.X = x[:self.X.size].reshape(N, input_dim).copy()
+#         self.X_variance = x[(N * input_dim):(2 * N * input_dim)].reshape(N, input_dim).copy()
+#         SparseGP._set_params(self, x[(2 * N * input_dim):])
 
     def dKL_dmuS(self):
         dKL_dS = (1. - (1. / (self.X_variance))) * 0.5
@@ -112,14 +116,21 @@ class BayesianGPLVM(SparseGP, GPLVM):
         kl = self.KL_divergence()
         return ll - kl
 
-    def _log_likelihood_gradients(self):
+    def _dbound_dmuS(self):
         dKL_dmu, dKL_dS = self.dKL_dmuS()
         dL_dmu, dL_dS = self.dL_dmuS()
         d_dmu = (dL_dmu - dKL_dmu).flatten()
         d_dS = (dL_dS - dKL_dS).flatten()
-        self.dbound_dmuS = np.hstack((d_dmu, d_dS))
-        self.dbound_dZtheta = SparseGP._log_likelihood_gradients(self)
-        return np.hstack((self.dbound_dmuS.flatten(), self.dbound_dZtheta))
+        return np.hstack((d_dmu, d_dS))
+
+#     def _log_likelihood_gradients(self):
+#         dKL_dmu, dKL_dS = self.dKL_dmuS()
+#         dL_dmu, dL_dS = self.dL_dmuS()
+#         d_dmu = (dL_dmu - dKL_dmu).flatten()
+#         d_dS = (dL_dS - dKL_dS).flatten()
+#         self.dbound_dmuS = np.hstack((d_dmu, d_dS))
+#         self.dbound_dZtheta = SparseGP._log_likelihood_gradients(self)
+#         return np.hstack((self.dbound_dmuS.flatten(), self.dbound_dZtheta))
 
     def plot_latent(self, plot_inducing=True, *args, **kwargs):
         return plot_latent.plot_latent(self, plot_inducing=plot_inducing, *args, **kwargs)

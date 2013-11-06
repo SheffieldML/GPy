@@ -202,18 +202,19 @@ class Parameterized(Nameable, Pickleable, Observable):
         """
         [self.add_parameter(p) for p in parameters]
         
-#     def remove_parameter(self, *names_params_indices):
-#         """
-#         :param names_params_indices: mix of parameter_names, parameter objects, or indices 
-#             to remove from being a parameter of this parameterized object. 
-#             
-#             note: if it is a string object it will be regexp-matched automatically
-#         """
-#         self._parameters_ = [p for p in self._parameters_ 
-#                         if not (p._parent_index_ in names_params_indices 
-#                                 or p.name in names_params_indices
-#                                 or p in names_params_indices)]
-#         self._connect_parameters()
+    def remove_parameter(self, *names_params_indices):
+        """
+        :param names_params_indices: mix of parameter_names, parameter objects, or indices 
+            to remove from being a parameter of this parameterized object. 
+             
+            note: if it is a string object it will be regexp-matched automatically
+        """
+        self._parameters_ = [p for p in self._parameters_ 
+                        if not (p._parent_index_ in names_params_indices 
+                                or p.name in names_params_indices
+                                or p in names_params_indices)]
+        self._connect_parameters()
+        
     def parameters_changed(self):
         """
         This method gets called when parameters have changed. 
@@ -471,7 +472,7 @@ class Parameterized(Nameable, Pickleable, Observable):
         return self._parameters_[param._parent_index_]
     def hirarchy_name(self):
         if self.has_parent():
-            return self._direct_parent_.hirarchy_name() + self.name + "."
+            return self._direct_parent_.hirarchy_name() + _adjust_name_for_printing(self.name) + "."
         return ''
     #===========================================================================
     # Constraint Handling:
@@ -534,7 +535,12 @@ class Parameterized(Nameable, Pickleable, Observable):
         if paramlist is None:
             paramlist = self.grep_param_names(name)
         if len(paramlist) < 1: raise AttributeError, name
-        if len(paramlist) == 1: return paramlist[-1]
+        if len(paramlist) == 1: 
+            if isinstance(paramlist[-1], Parameterized):
+                paramlist = paramlist[-1].flattened_parameters
+                if len(paramlist) != 1:
+                    return ParamConcatenation(paramlist)
+            return paramlist[-1]
         return ParamConcatenation(paramlist)
     def __setitem__(self, name, value, paramlist=None):
         try: param = self.__getitem__(name, paramlist)

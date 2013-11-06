@@ -13,6 +13,9 @@ from domains import _POSITIVE, _REAL
 from numpy.linalg.linalg import LinAlgError
 from index_operations import ParameterIndexOperations
 import itertools
+from GPy.kern.parts.rbf import RBF
+from GPy.kern.parts.rbf_inv import RBFInv
+from GPy.kern.parts.linear import Linear
 # import numdifftools as ndt
 
 class Model(Parameterized):
@@ -273,7 +276,7 @@ class Model(Parameterized):
         these terms are present in the name the parameter is
         constrained positive.
         """
-        positive_strings = ['variance', 'lengthscale', 'precision', 'kappa']
+        positive_strings = ['variance', 'lengthscale', 'precision', 'kappa', 'sensitivity']
         # param_names = self._get_param_names()
         for s in positive_strings:
             paramlist = self.grep_param_names(".*"+s)
@@ -308,7 +311,7 @@ class Model(Parameterized):
                 raise e
             self._fail_count += 1
             return np.inf
-        return -self.log_likelihood() - self.log_prior()
+        return -float(self.log_likelihood()) - self.log_prior()
 
     def objective_function_gradients(self, x):
         """
@@ -329,6 +332,7 @@ class Model(Parameterized):
             if self._fail_count >= self._allowed_failures:
                 raise e
             self._fail_count += 1
+            import ipdb;ipdb.set_trace()
             obj_grads = np.clip(-self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients()), -1e100, 1e100)
         return obj_grads
 
@@ -342,7 +346,7 @@ class Model(Parameterized):
 
         try:
             self._set_params_transformed(x)
-            obj_f = -self.log_likelihood() - self.log_prior()
+            obj_f = -float(self.log_likelihood()) - self.log_prior()
             self._fail_count = 0
             obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
         except (LinAlgError, ZeroDivisionError, ValueError) as e:
@@ -544,16 +548,16 @@ class Model(Parameterized):
         if not hasattr(self, 'kern'):
             raise ValueError, "this model has no kernel"
 
-        k = [p for p in self.kern._parameters_ if p.name in ['rbf', 'linear', 'rbf_inv']]
-        if (not len(k) == 1) or (not k[0].ARD):
+        k = [p for p in self.kern._parameters_ if hasattr(p, "ARD") and p.ARD]
+        if (not len(k) == 1):
             raise ValueError, "cannot determine sensitivity for this kernel"
         k = k[0]
 
-        if k.name == 'rbf':
+        if isinstance(k, RBF):
             return 1. / k.lengthscale
-        elif k.name == 'rbf_inv':
+        elif isinstance(k, RBFInv):
             return k.inv_lengthscale
-        elif k.name == 'linear':
+        elif isinstance(k, Linear):
             return k.variances
 
 

@@ -7,6 +7,7 @@ import numpy as np
 import hashlib
 from scipy import weave
 from ...util.linalg import tdot
+from GPy.core.parameter import Param
 
 class RBFInv(RBF):
     """
@@ -33,8 +34,9 @@ class RBFInv(RBF):
     """
 
     def __init__(self, input_dim, variance=1., inv_lengthscale=None, ARD=False):
-        self.input_dim = input_dim
-        self.name = 'rbf_inv'
+        #self.input_dim = input_dim
+        #self.name = 'rbf_inv'
+        super(RBFInv, self).__init__(input_dim, variance=variance, lengthscale=1./np.array(inv_lengthscale), ARD=ARD, name='inverse rbf')
         self.ARD = ARD
         if not ARD:
             self.num_params = 2
@@ -50,8 +52,13 @@ class RBFInv(RBF):
                 assert inv_lengthscale.size == self.input_dim, "bad number of lengthscales"
             else:
                 inv_lengthscale = np.ones(self.input_dim)
-
-        self._set_params(np.hstack((variance, inv_lengthscale.flatten())))
+        
+        self.variance = Param('variance', variance)
+        self.inv_lengthscale = Param('sensitivity', inv_lengthscale)
+        self.inv_lengthscale.add_observer(self, self.update_inv_lengthscale)
+        self.remove_parameter(self.lengthscale)
+        self.add_parameters(self.variance, self.inv_lengthscale)
+        #self._set_params(np.hstack((variance, inv_lengthscale.flatten())))
 
         # initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3, 1))
@@ -64,26 +71,29 @@ class RBFInv(RBF):
 
 
 
-    def _get_params(self):
-        return np.hstack((self.variance, self.inv_lengthscale))
+#     def _get_params(self):
+#         return np.hstack((self.variance, self.inv_lengthscale))
 
-    def _set_params(self, x):
-        assert x.size == (self.num_params)
-        self.variance = x[0]
-        self.inv_lengthscale = x[1:]
+    def update_inv_lengthscale(self, il):
         self.inv_lengthscale2 = np.square(self.inv_lengthscale)
         # TODO: We can rewrite everything with inv_lengthscale and never need to do the below
         self.lengthscale = 1. / self.inv_lengthscale
         self.lengthscale2 = np.square(self.lengthscale)
+
+    #def _set_params(self, x):
+    def parameters_changed(self):
+        #assert x.size == (self.num_params)
+        #self.variance = x[0]
+        #self.inv_lengthscale = x[1:]
         # reset cached results
         self._X, self._X2, self._params = np.empty(shape=(3, 1))
         self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
 
-    def _get_param_names(self):
-        if self.num_params == 2:
-            return ['variance', 'inv_lengthscale']
-        else:
-            return ['variance'] + ['inv_lengthscale%i' % i for i in range(self.inv_lengthscale.size)]
+#     def _get_param_names(self):
+#         if self.num_params == 2:
+#             return ['variance', 'inv_lengthscale']
+#         else:
+#             return ['variance'] + ['inv_lengthscale%i' % i for i in range(self.inv_lengthscale.size)]
 
     # TODO: Rewrite computations so that lengthscale is not needed (but only inv. lengthscale)
     def dK_dtheta(self, dL_dK, X, X2, target):

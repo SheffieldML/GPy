@@ -46,7 +46,7 @@ def BGPLVM(seed=default_seed):
 
     return m
 
-def GPLVM_oil_100(optimize=True):
+def GPLVM_oil_100(optimize=True, plot=True):
     data = GPy.util.datasets.oil_100()
     Y = data['X']
 
@@ -61,7 +61,8 @@ def GPLVM_oil_100(optimize=True):
 
     # plot
     print(m)
-    m.plot_latent(labels=m.data_labels)
+    if plot:
+        m.plot_latent(labels=m.data_labels)
     return m
 
 def sparseGPLVM_oil(optimize=True, N=100, input_dim=6, num_inducing=15, max_iters=50):

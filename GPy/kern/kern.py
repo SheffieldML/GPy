@@ -10,7 +10,6 @@ import itertools
 from parts.prod import Prod as prod
 from matplotlib.transforms import offset_copy
 import GPy
-from GPy.core.parameterized import Parameterized_old, __fixed__
 
 class kern(Parameterized):
     def __init__(self, input_dim, parts=[], input_slices=None):

@@ -51,15 +51,13 @@ class SparseGP(GPBase):
         if self.has_uncertain_inputs:
             self.X_variance /= np.square(self._Xscale)
 
-        self.Z = Param('inducing input', self.Z)
+        self._const_jitter = None
+
+        self.Z = Param('inducing inputs', self.Z)
         self.add_parameter(self.Z, gradient=self.dL_dZ, index=0)
         self.add_parameter(self.kern, gradient=self.dL_dtheta)
-        
-        self._compute_kernel_matrices()
-        self.Z.add_observer(self, lambda Z: self._compute_kernel_matrices())
-        #self.Z._notify_observers()
-        
-        self._const_jitter = None
+        self.add_parameter(self.likelihood, gradient=lambda:self.likelihood._gradients(partial=self.partial_for_likelihood))
+        #self.Z.add_observer(self, lambda Z: self._compute_kernel_matrices() or self._computations())
 
     def getstate(self):
         """
@@ -165,7 +163,7 @@ class SparseGP(GPBase):
 
 
         # the partial derivative vector for the likelihood
-        if self.likelihood.num_params == 0:
+        if self.likelihood.size == 0:
             # save computation here.
             self.partial_for_likelihood = None
         elif self.likelihood.is_heteroscedastic:
@@ -211,19 +209,19 @@ class SparseGP(GPBase):
         #self.Z = p[:self.num_inducing * self.input_dim].reshape(self.num_inducing, self.input_dim)
         #self.kern._set_params(p[self.Z.size:self.Z.size + self.kern.num_params])
         #self.likelihood._set_params(p[self.Z.size + self.kern.num_params:])
-        #self._compute_kernel_matrices()
         self._compute_kernel_matrices()
-        import ipdb;ipdb.set_trace()
         self._computations()
         self.Cpsi1V = None
+        # make sparse_gp compatible with gp_base gradients:
+        self.dL_dK = self.dL_dKmm
         super(SparseGP, self).parameters_changed()
 
-    def _get_params(self):
-        return np.hstack([self.Z.flatten(), self.kern._get_params_transformed(), self.likelihood._get_params()])
-
-    def _get_param_names(self):
-        return sum([['iip_%i_%i' % (i, j) for j in range(self.Z.shape[1])] for i in range(self.Z.shape[0])], [])\
-            + self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
+#     def _get_params(self):
+#         return np.hstack([self.Z.flatten(), self.kern._get_params_transformed(), self.likelihood._get_params()])
+# 
+#     def _get_param_names(self):
+#         return sum([['iip_%i_%i' % (i, j) for j in range(self.Z.shape[1])] for i in range(self.Z.shape[0])], [])\
+#             + self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
     #def _get_print_names(self):
     #    return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
@@ -249,8 +247,8 @@ class SparseGP(GPBase):
                 # self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
                 self._set_params(self._get_params()) # update the GP
 
-    def _log_likelihood_gradients(self):
-        return np.hstack((self.dL_dZ().flatten(), self.dL_dtheta(), self.likelihood._gradients(partial=self.partial_for_likelihood)))
+#     def _log_likelihood_gradients(self):
+#         return np.hstack((self.dL_dZ().flatten(), self.dL_dtheta(), self.likelihood._gradients(partial=self.partial_for_likelihood)))
 
     def dL_dtheta(self):
         """

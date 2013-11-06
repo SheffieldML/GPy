@@ -6,7 +6,8 @@ Created on 4 Sep 2013
 import itertools
 import numpy
 from transformations import Logexp, NegativeLogexp, Logistic
-from parameterized import Nameable, Pickleable
+from parameterized import Nameable, Pickleable, Observable
+from GPy.core.parameterized import _adjust_name_for_printing
 
 ###### printing
 __constraints_name__ = "Constraint"
@@ -26,7 +27,7 @@ class ListArray(numpy.ndarray):
     def __eq__(self, other):
         return other is self
 
-class ObservableArray(ListArray):
+class ObservableArray(ListArray, Observable):
     """
     An ndarray which reports changed to it's observers.
     The observers can add themselves with a callable, which
@@ -41,19 +42,11 @@ class ObservableArray(ListArray):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
         self._observers_ = getattr(obj, '_observers_', None)
-    def add_observer(self, observer, callble):
-        self._observers_[observer] = callble
-    def remove_observer(self, observer):
-        del self._observers_[observer]
-    def _notify_observers(self):
-        [callble(self) for callble in self._observers_.itervalues()]
-    def __setitem__(self, s, val):
+    def __setitem__(self, s, val, update=True):
         if not numpy.all(numpy.equal(self[s], val)):
-            if isinstance(s, slice):
-                super(ObservableArray, self).__setitem__(s, val)
-            else:
-                numpy.put(self,s,val)
-            self._notify_observers()
+            super(ObservableArray, self).__setitem__(s, val)
+            if update:
+                self._notify_observers()
     def __getslice__(self, start, stop):
         return self.__getitem__(slice(start, stop))
     def __setslice__(self, start, stop, val):
@@ -158,10 +151,10 @@ class Param(ObservableArray, Nameable, Pickleable):
     #===========================================================================
     # get/set parameters
     #===========================================================================
-    def _set_params(self, param):
+    def _set_params(self, param, update=True):
         self.flat = param
-        self._notify_observers()
         self._notify_tied_parameters()
+        self._notify_observers()
         
     def _get_params(self):
         return self.flat
@@ -370,7 +363,7 @@ class Param(ObservableArray, Nameable, Pickleable):
         except AttributeError: pass# returning 0d array or float, double etc
         return new_arr
     def __setitem__(self, s, val, update=True):
-        super(Param, self).__setitem__(s, val)
+        super(Param, self).__setitem__(s, val, update=update)
         self._notify_tied_parameters()
         if update:
             self._highest_parent_.parameters_changed()
@@ -456,8 +449,8 @@ class Param(ObservableArray, Nameable, Pickleable):
     @property
     def name_hirarchical(self):
         if self.has_parent():
-            return self._direct_parent_.hirarchy_name()+self.name
-        return self.name
+            return self._direct_parent_.hirarchy_name()+_adjust_name_for_printing(self.name)
+        return _adjust_name_for_printing(self.name)
     def __repr__(self, *args, **kwargs):
         name = "\033[1m{x:s}\033[0;0m:\n".format(
                             x=self.name_hirarchical)
@@ -495,7 +488,7 @@ class Param(ObservableArray, Nameable, Pickleable):
         return reduce(lambda a, b:max(a, len(str(b))), ind, len(__index_name__))
     def _short(self):
         # short string to print
-        name = self._direct_parent_.hirarchy_name() + self.name
+        name = self._direct_parent_.hirarchy_name() + _adjust_name_for_printing(self.name)
         if self._realsize_ < 2:
             return name
         ind = self._indices()

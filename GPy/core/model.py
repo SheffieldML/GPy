@@ -544,7 +544,7 @@ class Model(Parameterized):
         if not hasattr(self, 'kern'):
             raise ValueError, "this model has no kernel"
 
-        k = [p for p in self.kern.parts if p.name in ['rbf', 'linear', 'rbf_inv']]
+        k = [p for p in self.kern._parameters_ if p.name in ['rbf', 'linear', 'rbf_inv']]
         if (not len(k) == 1) or (not k[0].ARD):
             raise ValueError, "cannot determine sensitivity for this kernel"
         k = k[0]

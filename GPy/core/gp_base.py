@@ -32,24 +32,17 @@ class GPBase(Model):
             self._Xoffset = np.zeros((1, self.input_dim))
             self._Xscale = np.ones((1, self.input_dim))
         
-        self.add_parameter(self.kern, gradient=self.dL_dtheta)
-        self.add_parameter(self.likelihood, gradient=self.dL_dlikelihood)
-        self.kern.connect_input(self.X)
+        self.add_parameter(self.kern, gradient=lambda:self.kern.dK_dtheta(self.dL_dK, self.X))
+        self.add_parameter(self.likelihood, gradient=lambda:self.likelihood._gradients(partial=np.diag(self.dL_dK)))
+        #self.kern.connect_input(self.X)
         
         # Model.__init__(self)
         # All leaf nodes should call self._set_params(self._get_params()) at
         # the end
-
-    def parameters_changed(self):
-        self.kern.parameters_changed()
-        self.likelihood.parameters_changed()
-
-    def dL_dtheta(self):
-        return self.kern.dK_dtheta(self.dL_dK, self.X)
-
-    def dL_dlikelihood(self):
-        return self.likelihood._gradients(partial=np.diag(self.dL_dK))
-
+# 
+#     def parameters_changed(self):
+#         self.kern.parameters_changed()
+#         self.likelihood.parameters_changed()
 
     def getstate(self):
         """

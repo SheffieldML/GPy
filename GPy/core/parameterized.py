@@ -50,7 +50,20 @@ class Pickleable(object):
         """
         raise NotImplementedError, "To be able to use pickling you need to implement this method"
 
-from parameter import ParamConcatenation
+class Observable(object):
+    _observers_ = {}
+    def add_observer(self, observer, callble):
+        self._observers_[observer] = callble
+        callble(self)
+    def remove_observer(self, observer):
+        del self._observers_[observer]
+    def _notify_observers(self):
+        [callble(self) for callble in self._observers_.itervalues()]
+
+def _adjust_name_for_printing(name):
+    return name.replace(" ", "_").replace(".", "_")
+
+from parameter import ParamConcatenation, Param
 from index_operations import ParameterIndexOperations,\
     index_empty
 
@@ -65,7 +78,7 @@ FIXED = False
 UNFIXED = True
 #===============================================================================
 
-class Parameterized(Nameable, Pickleable):
+class Parameterized(Nameable, Pickleable, Observable):
     """
     Parameterized class
     
@@ -120,8 +133,8 @@ class Parameterized(Nameable, Pickleable):
         #    self._parameters_.extend(parameters)
         self._connect_parameters()
         self.gradient_mapping = {}
+        self._added_names_ = set()
         del self._in_init_
-        
 
     @property
     def constraints(self):
@@ -188,6 +201,7 @@ class Parameterized(Nameable, Pickleable):
         parameters without gradient specification
         """
         [self.add_parameter(p) for p in parameters]
+        
 #     def remove_parameter(self, *names_params_indices):
 #         """
 #         :param names_params_indices: mix of parameter_names, parameter objects, or indices 
@@ -232,13 +246,15 @@ class Parameterized(Nameable, Pickleable):
 #                         self.__dict__[k] = p
 #                 except: # parameter comparison, just for convenience
 #                     pass
-            pname = p.name.replace(" ", "_").replace(".","_")  
+            pname = _adjust_name_for_printing(p.name)  
             if pname in self.__dict__:
-                if not p is self.__dict__[pname]:
-                    not_unique.append(pname)
-                    del self.__dict__[pname]
+                if isinstance(self.__dict__[pname], (Parameterized, Param)):
+                    if not p is self.__dict__[pname]:
+                        not_unique.append(pname)
+                        del self.__dict__[pname]
             elif not (pname in not_unique):
                 self.__dict__[pname] = p
+                self._added_names_.add(pname)
         sizes = numpy.cumsum([0] + self._parameter_sizes_)
         self.size = sizes[-1] 
         self._param_slices_ = [slice(start, stop) for start,stop in zip(sizes, sizes[1:])]
@@ -289,9 +305,11 @@ class Parameterized(Nameable, Pickleable):
                 self._parameters_,
                 self._name,
                 self.gradient_mapping,
+                self._added_names_,
                 ]
         
     def setstate(self, state):
+        self._added_names_ = state.pop()
         self.gradient_mapping = state.pop(),
         self._name = state.pop()
         self._parameters_ = state.pop()
@@ -334,9 +352,9 @@ class Parameterized(Nameable, Pickleable):
     def _get_params(self):
         # don't overwrite this anymore!
         return numpy.hstack([x._get_params() for x in self._parameters_])#numpy.fromiter(itertools.chain(*itertools.imap(lambda x: x._get_params(), self._parameters_)), dtype=numpy.float64, count=sum(self._parameter_sizes_))    
-    def _set_params(self, params):
+    def _set_params(self, params, update=True):
         # don't overwrite this anymore!
-        [p._set_params(params[s]) for p,s in itertools.izip(self._parameters_,self._param_slices_)]
+        [p._set_params(params[s], update=update) for p,s in itertools.izip(self._parameters_,self._param_slices_)]
         self.parameters_changed()
     def _get_params_transformed(self):
         p = self._get_params()
@@ -350,9 +368,13 @@ class Parameterized(Nameable, Pickleable):
         [numpy.put(p, ind, c.f(p[ind])) for c,ind in self.constraints.iteritems() if c != __fixed__]
         self._set_params(p)
     def _name_changed(self, param, old_name):
-        if hasattr(self, old_name):
+        if hasattr(self, old_name) and old_name in self._added_names_:
             delattr(self, old_name)
-        self.__dict__[param.name] = param
+            self._added_names_.remove(old_name)
+        pname = _adjust_name_for_printing(param.name)
+        if pname not in self.__dict__:
+            self._added_names_.add(pname)
+            self.__dict__[pname] = param
     #===========================================================================
     # Index Handling
     #===========================================================================
@@ -540,9 +562,9 @@ class Parameterized(Nameable, Pickleable):
     #===========================================================================
     def _parameter_names(self, add_name=False):
         if add_name:
-            return [self.name + "." + xi for x in self._parameters_ for xi in x._parameter_names(add_name=True)]
+            return [_adjust_name_for_printing(self.name) + "." + xi for x in self._parameters_ for xi in x._parameter_names(add_name=True)]
         return [xi for x in self._parameters_ for xi in x._parameter_names(add_name=True)]
-    parameter_names = property(_parameter_names, doc="Names for all parameters handled by this parameterization object")
+    parameter_names = property(_parameter_names, doc="Names for all parameters handled by this parameterization object -- will add hirarchy name entries for printing")
     @property
     def flattened_parameters(self):
         return [xi for x in self._parameters_ for xi in x.flattened_parameters]

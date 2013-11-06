@@ -17,7 +17,7 @@ class Gaussian(likelihood):
     def __init__(self, data, variance=1., normalize=False):
         super(Gaussian, self).__init__('gaussian')
         self.is_heteroscedastic = False
-        self.num_params = 1
+        #self.num_params = 1
         self.Z = 0. # a correction factor which accounts for the approximation made
         N, self.output_dim = data.shape
 
@@ -34,10 +34,10 @@ class Gaussian(likelihood):
         self.set_data(data)
 
         self.variance = Param('variance', variance)
-        self._variance = variance + 1
-        
+        self.variance.add_observer(self, self.update_variance)
         self.add_parameter(self.variance)
-        self.parameters_changed()
+        
+        #self.parameters_changed()
 #         self._set_params(np.asarray(variance))
 
 
@@ -63,17 +63,21 @@ class Gaussian(likelihood):
 # 
 #     def _set_params(self, x):
 #         self.variance = x[0]
-    def parameters_changed(self):
-        if np.any(self._variance != self.variance):
-            if np.all(self.variance == 0.):#special case of zero noise
-                self.precision = np.inf
-                self.V = None
-            else:
-                self.precision = 1. / self.variance
-                self.V = (self.precision) * self.Y
-                self.VVT_factor = self.precision * self.YYT_factor
-            self.covariance_matrix = np.eye(self.N) * self.variance
-            self._variance = self.variance.copy()
+
+    def update_variance(self, v):
+        if np.all(self.variance == 0.): #special case of zero noise
+            self.precision = np.inf
+            self.V = None
+        else:
+            self.precision = (1. / self.variance).squeeze()
+            self.V = (self.precision) * self.Y
+            self.VVT_factor = self.precision * self.YYT_factor
+        self.covariance_matrix = np.eye(self.N) * self.variance
+        #self._variance = self.variance.copy()
+
+#     def parameters_changed(self):
+#         if np.any(self._variance != self.variance):
+#             self.update_variance()
 
     def predictive_values(self, mu, var, full_cov):
         """
@@ -87,11 +91,11 @@ class Gaussian(likelihood):
                 # This will mess up computations of diag(true_var), below.
                 # note that the upper, lower quantiles should be the same shape as mean
             # Augment the output variance with the likelihood variance and rescale.
-            true_var = (var + np.eye(var.shape[0]) * self._variance) * self._scale ** 2
+            true_var = (var + np.eye(var.shape[0]) * self.variance) * self._scale ** 2
             _5pc = mean - 2.*np.sqrt(np.diag(true_var))
             _95pc = mean + 2.*np.sqrt(np.diag(true_var))
         else:
-            true_var = (var + self._variance) * self._scale ** 2
+            true_var = (var + self.variance) * self._scale ** 2
             _5pc = mean - 2.*np.sqrt(true_var)
             _95pc = mean + 2.*np.sqrt(true_var)
         return mean, true_var, _5pc, _95pc

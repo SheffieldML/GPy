@@ -21,11 +21,11 @@ class Kernpart(Parameterized):
         # the name of the covariance function.
         # link to parameterized objects
         self._parameters_ = []
-        self._X = None
+        #self._X = None
     
     def connect_input(self, X):
         X.add_observer(self, self.on_input_change)
-        self._X = X
+        #self._X = X
         
     def on_input_change(self, X):
         """

@@ -284,13 +284,13 @@ class Linear(Kernpart):
     #---------------------------------------#
 
     def _K_computations(self, X, X2):
-        if not (fast_array_equal(X, self._Xcache) and fast_array_equal(X2, self._X2cache)):
-            self._Xcache = X.copy()
+        if not (fast_array_equal(X, self._X) and fast_array_equal(X2, self._X2)):
+            self._X = X.copy()
             if X2 is None:
                 self._dot_product = tdot(X)
-                self._X2cache = None
+                self._X2 = None
             else:
-                self._X2cache = X2.copy()
+                self._X2 = X2.copy()
                 self._dot_product = np.dot(X, X2.T)
 
     def _psi_computations(self, Z, mu, S):

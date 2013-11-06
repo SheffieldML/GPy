@@ -36,7 +36,7 @@ class GPLVM(GP):
         likelihood = Gaussian(Y, normalize=normalize_Y, variance=np.exp(-2.))
         GP.__init__(self, X, likelihood, kernel, normalize_X=False)
         self.X = Param('q_mean', self.X)
-        self.add_parameter(self.X, self.dL_dK, 0)
+        self.add_parameter(self.X, self.dK_dX, 0)
         #self.set_prior('.*X', Gaussian_prior(0, 1))
         self.ensure_default_constraints()
 

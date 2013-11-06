@@ -54,9 +54,10 @@ class RBF(Kernpart):
         self.lengthscale = Param('lengthscale', lengthscale)
         self.lengthscale.add_observer(self, self.update_lengthscale)
         self.add_parameters(self.variance, self.lengthscale)
-        
-        self.update_lengthscale(self.lengthscale)
         self.parameters_changed()
+        
+        #self.update_lengthscale(self.lengthscale)
+        #self.parameters_changed()
         # initialize cache
         #self._Z, self._mu, self._S = np.empty(shape=(3, 1))
         #self._X, self._X2, self._params_save = np.empty(shape=(3, 1))

@@ -121,6 +121,7 @@ class Parameterized(Nameable, Pickleable):
         self._connect_parameters()
         self.gradient_mapping = {}
         del self._in_init_
+        
 
     @property
     def constraints(self):
@@ -169,10 +170,14 @@ class Parameterized(Nameable, Pickleable):
         Add all parameters to this parameter class, you can insert parameters 
         at any given index using the :py:func:`list.insert` syntax 
         """
-        if index is None:
-            self._parameters_.append(parameter)
-        else:
+        if parameter in self._parameters_ and index is not None:
+            del self._parameters_[parameter._parent_index_]
             self._parameters_.insert(index, parameter)
+        elif parameter not in self._parameters_:
+            if index is None:
+                self._parameters_.append(parameter)
+            else:
+                self._parameters_.insert(index, parameter)
         self._connect_parameters()
         if gradient:
             self.gradient_mapping[parameter] = gradient    
@@ -226,17 +231,18 @@ class Parameterized(Nameable, Pickleable):
 #                     if fast_array_equal(v,p):
 #                         self.__dict__[k] = p
 #                 except: # parameter comparison, just for convenience
-#                     pass                    
-            if p.name in self.__dict__:
-                if not p is self.__dict__[p.name]:
-                    not_unique.append(p.name)
-                    del self.__dict__[p.name]
-            elif not (p.name in not_unique):
-                self.__dict__[p.name] = p
+#                     pass
+            pname = p.name.replace(" ", "_").replace(".","_")  
+            if pname in self.__dict__:
+                if not p is self.__dict__[pname]:
+                    not_unique.append(pname)
+                    del self.__dict__[pname]
+            elif not (pname in not_unique):
+                self.__dict__[pname] = p
         sizes = numpy.cumsum([0] + self._parameter_sizes_)
         self.size = sizes[-1] 
         self._param_slices_ = [slice(start, stop) for start,stop in zip(sizes, sizes[1:])]
-        self.parameters_changed()
+#         self.parameters_changed()
     #===========================================================================
     # Pickling operations
     #===========================================================================

@@ -49,7 +49,10 @@ class ObservableArray(ListArray):
         [callble(self) for callble in self._observers_.itervalues()]
     def __setitem__(self, s, val):
         if not numpy.all(numpy.equal(self[s], val)):
-            numpy.put(self,s,val)
+            if isinstance(s, slice):
+                super(ObservableArray, self).__setitem__(s, val)
+            else:
+                numpy.put(self,s,val)
             self._notify_observers()
     def __getslice__(self, start, stop):
         return self.__getitem__(slice(start, stop))
@@ -84,7 +87,7 @@ class Param(ObservableArray, Nameable, Pickleable):
     def __new__(cls, name, input_array, *args, **kwargs):
         obj = numpy.atleast_1d(super(Param, cls).__new__(cls, input_array=input_array))
         obj._direct_parent_ = None
-        obj._name_ = name
+        #obj.name = name
         obj._parent_index_ = None
         obj._highest_parent_ = None
         obj._current_slice_ = (slice(obj.shape[0]),)
@@ -103,7 +106,8 @@ class Param(ObservableArray, Nameable, Pickleable):
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
-        self._name_ = getattr(obj, '_name_', None)
+        super(Param, self).__array_finalize__(obj)
+        self.name = getattr(obj, 'name', None)
         self._current_slice_ = getattr(obj, '_current_slice_', None)
         self._direct_parent_ = getattr(obj, '_direct_parent_', None)
         self._parent_index_ = getattr(obj, '_parent_index_', None)
@@ -124,7 +128,7 @@ class Param(ObservableArray, Nameable, Pickleable):
     def __reduce__(self):
         func, args, state = super(Param, self).__reduce__()
         return func, args, (state, 
-                            (self._name_,
+                            (self.name,
                              self._direct_parent_,
                              self._parent_index_,
                              self._highest_parent_,
@@ -150,13 +154,15 @@ class Param(ObservableArray, Nameable, Pickleable):
         self._highest_parent_ = state.pop()
         self._parent_index_ = state.pop()
         self._direct_parent_ = state.pop()
-        self._name_ = state.pop()
+        self.name = state.pop()
     #===========================================================================
     # get/set parameters
     #===========================================================================
     def _set_params(self, param):
         self.flat = param
+        self._notify_observers()
         self._notify_tied_parameters()
+        
     def _get_params(self):
         return self.flat
 #     @property
@@ -166,13 +172,13 @@ class Param(ObservableArray, Nameable, Pickleable):
 #         This can be a callable without parameters. The callable will be called
 #         every time the name property is accessed.
 #         """
-#         if callable(self._name_):
-#             return self._name_()
-#         return self._name_
+#         if callable(self.name):
+#             return self.name()
+#         return self.name
 #     @name.setter
 #     def name(self, new_name):
 #         from_name = self.name
-#         self._name_ = new_name
+#         self.name = new_name
 #         self._direct_parent_._name_changed(self, from_name)
     @property
     def _parameters_(self):

@@ -7,6 +7,7 @@ from ..util.linalg import mdot, jitchol, tdot, symmetrify, backsub_both_sides, c
 from scipy import linalg
 from ..likelihoods import Gaussian, EP,EP_Mixed_Noise
 from gp_base import GPBase
+from GPy.core.parameter import Param
 
 class SparseGP(GPBase):
     """
@@ -30,7 +31,7 @@ class SparseGP(GPBase):
     """
 
     def __init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False):
-        GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
+        GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X, name="sparse GP")
 
         self.Z = Z
         self.num_inducing = Z.shape[0]
@@ -50,6 +51,14 @@ class SparseGP(GPBase):
         if self.has_uncertain_inputs:
             self.X_variance /= np.square(self._Xscale)
 
+        self.Z = Param('inducing input', self.Z)
+        self.add_parameter(self.Z, gradient=self.dL_dZ, index=0)
+        self.add_parameter(self.kern, gradient=self.dL_dtheta)
+        
+        self._compute_kernel_matrices()
+        self.Z.add_observer(self, lambda Z: self._compute_kernel_matrices())
+        #self.Z._notify_observers()
+        
         self._const_jitter = None
 
     def getstate(self):
@@ -197,13 +206,17 @@ class SparseGP(GPBase):
         D = 0.5 * self.data_fit
         return A + B + C + D + self.likelihood.Z
 
-    def _set_params(self, p):
-        self.Z = p[:self.num_inducing * self.input_dim].reshape(self.num_inducing, self.input_dim)
-        self.kern._set_params(p[self.Z.size:self.Z.size + self.kern.num_params])
-        self.likelihood._set_params(p[self.Z.size + self.kern.num_params:])
+    #def _set_params(self, p):
+    def parameters_changed(self):
+        #self.Z = p[:self.num_inducing * self.input_dim].reshape(self.num_inducing, self.input_dim)
+        #self.kern._set_params(p[self.Z.size:self.Z.size + self.kern.num_params])
+        #self.likelihood._set_params(p[self.Z.size + self.kern.num_params:])
+        #self._compute_kernel_matrices()
         self._compute_kernel_matrices()
+        import ipdb;ipdb.set_trace()
         self._computations()
         self.Cpsi1V = None
+        super(SparseGP, self).parameters_changed()
 
     def _get_params(self):
         return np.hstack([self.Z.flatten(), self.kern._get_params_transformed(), self.likelihood._get_params()])

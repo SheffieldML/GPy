@@ -55,6 +55,8 @@ class RBF(Kernpart):
         self.lengthscale.add_observer(self, self.update_lengthscale)
         self.add_parameters(self.variance, self.lengthscale)
         
+        self.update_lengthscale(self.lengthscale)
+        self.parameters_changed()
         # initialize cache
         #self._Z, self._mu, self._S = np.empty(shape=(3, 1))
         #self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
@@ -65,7 +67,8 @@ class RBF(Kernpart):
                               'extra_link_args'   : ['-lgomp']}
     
     def on_input_change(self, X):
-        self._K_computations(X, None)
+        #self._K_computations(X, None)
+        pass
     
     def update_lengthscale(self, l):
         self.lengthscale2 = np.square(self.lengthscale)
@@ -74,8 +77,8 @@ class RBF(Kernpart):
         # reset cached results
         #self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
         #self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
-        #self._X, self._X2 = np.empty(shape=(2, 1))
-        #self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
+        self._X, self._X2 = np.empty(shape=(2, 1))
+        self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
         pass
 #     def _get_params(self):
 #         return np.hstack((self.variance, self.lengthscale))
@@ -98,17 +101,16 @@ class RBF(Kernpart):
 #             return ['variance'] + ['lengthscale_%i' % i for i in range(self.lengthscale.size)]
 
     def K(self, X, X2, target):
-        if self._X is None or X.base is not self._X.base or X2 is not None:
-            import pdb;pdb.set_trace()
-            self._K_computations(X, X2)
+        #if self._X is None or X.base is not self._X.base or X2 is not None:
+        self._K_computations(X, X2)
         target += self.variance * self._K_dvar
 
     def Kdiag(self, X, target):
         np.add(target, self.variance, target)
 
     def dK_dtheta(self, dL_dK, X, X2, target):
-        if self._X is None or X.base is not self._X.base or X2 is not None:
-            self._K_computations(X, X2)
+        #if self._X is None or X.base is not self._X.base or X2 is not None:
+        self._K_computations(X, X2)
         target[0] += np.sum(self._K_dvar * dL_dK)
         if self.ARD:
             dvardLdK = self._K_dvar * dL_dK
@@ -156,8 +158,8 @@ class RBF(Kernpart):
         target[0] += np.sum(dL_dKdiag)
 
     def dK_dX(self, dL_dK, X, X2, target):
-        if self._X is None or X.base is not self._X.base or X2 is not None:
-            self._K_computations(X, X2)
+        #if self._X is None or X.base is not self._X.base or X2 is not None:
+        self._K_computations(X, X2)
         if X2 is None:
             _K_dist = 2*(X[:, None, :] - X[None, :, :])
         else:

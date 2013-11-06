@@ -402,7 +402,7 @@ class kern(Parameterized):
         """Compute the gradient of the diagonal of the covariance function with respect to the parameters."""
         assert X.shape[1] == self.input_dim
         assert dL_dKdiag.size == X.shape[0]
-        target = np.zeros(self.num_params)
+        target = np.zeros(self.size)
         [p.dKdiag_dtheta(dL_dKdiag, X[:, i_s], target[ps]) for p, i_s, ps in zip(self._parameters_, self.input_slices, self._param_slices_)]
         return self._transform_gradients(target)
 
@@ -418,7 +418,7 @@ class kern(Parameterized):
         return target
 
     def dpsi0_dtheta(self, dL_dpsi0, Z, mu, S):
-        target = np.zeros(self.num_params)
+        target = np.zeros(self.size)
         [p.dpsi0_dtheta(dL_dpsi0, Z[:, i_s], mu[:, i_s], S[:, i_s], target[ps]) for p, ps, i_s in zip(self._parameters_, self._param_slices_, self.input_slices)]
         return self._transform_gradients(target)
 
@@ -433,7 +433,7 @@ class kern(Parameterized):
         return target
 
     def dpsi1_dtheta(self, dL_dpsi1, Z, mu, S):
-        target = np.zeros((self.num_params))
+        target = np.zeros((self.size))
         [p.dpsi1_dtheta(dL_dpsi1, Z[:, i_s], mu[:, i_s], S[:, i_s], target[ps]) for p, ps, i_s in zip(self._parameters_, self._param_slices_, self.input_slices)]
         return self._transform_gradients(target)
 
@@ -480,7 +480,7 @@ class kern(Parameterized):
 
     def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S):
         """Gradient of the psi2 statistics with respect to the parameters."""
-        target = np.zeros(self.num_params)
+        target = np.zeros(self.size)
         [p.dpsi2_dtheta(dL_dpsi2, Z[:, i_s], mu[:, i_s], S[:, i_s], target[ps]) for p, i_s, ps in zip(self._parameters_, self.input_slices, self._param_slices_)]
 
         # compute the "cross" terms

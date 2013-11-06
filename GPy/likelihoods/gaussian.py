@@ -37,8 +37,7 @@ class Gaussian(likelihood):
         self._variance = variance + 1
         
         self.add_parameter(self.variance)
-
-        
+        self.parameters_changed()
 #         self._set_params(np.asarray(variance))
 
 

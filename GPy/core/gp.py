@@ -103,13 +103,7 @@ class GP(GPBase):
 #         else:
 #             tmp = np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
 #         return tmp
-    
-    def dL_dtheta(self):
-        return self.kern.dK_dtheta(self.dL_dK, self.X)
-
-    def dL_dlikelihood(self):
-        return self.likelihood._gradients(partial=np.diag(self.dL_dK))
-    
+        
     def _raw_predict(self, _Xnew, which_parts='all', full_cov=False, stop=False):
         """
         Internal helper function for making predictions, does not account

@@ -207,7 +207,8 @@ class Parameterized(Nameable, Pickleable, Observable):
         :param names_params_indices: mix of parameter_names, parameter objects, or indices 
             to remove from being a parameter of this parameterized object. 
              
-            note: if it is a string object it will be regexp-matched automatically
+            note: if it is a string object it will not (!) be regexp-matched
+                  automatically.
         """
         self._parameters_ = [p for p in self._parameters_ 
                         if not (p._parent_index_ in names_params_indices 

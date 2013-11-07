@@ -5,7 +5,7 @@ import numpy as np
 from kern import kern
 import parts
 
-def rbf_inv(input_dim,variance=1., inv_lengthscale=None,ARD=False):
+def rbf_inv(input_dim,variance=1., inv_lengthscale=None,ARD=False,name='inverse rbf'):
     """
     Construct an RBF kernel
 
@@ -19,10 +19,10 @@ def rbf_inv(input_dim,variance=1., inv_lengthscale=None,ARD=False):
     :type ARD: Boolean
 
     """
-    part = parts.rbf_inv.RBFInv(input_dim,variance,inv_lengthscale,ARD)
+    part = parts.rbf_inv.RBFInv(input_dim,variance,inv_lengthscale,ARD,name=name)
     return kern(input_dim, [part])
 
-def rbf(input_dim,variance=1., lengthscale=None,ARD=False):
+def rbf(input_dim,variance=1., lengthscale=None,ARD=False, name='rbf'):
     """
     Construct an RBF kernel
 
@@ -36,10 +36,10 @@ def rbf(input_dim,variance=1., lengthscale=None,ARD=False):
     :type ARD: Boolean
 
     """
-    part = parts.rbf.RBF(input_dim,variance,lengthscale,ARD)
+    part = parts.rbf.RBF(input_dim,variance,lengthscale,ARD, name=name)
     return kern(input_dim, [part])
 
-def linear(input_dim,variances=None,ARD=False):
+def linear(input_dim,variances=None,ARD=False,name='linear'):
     """
      Construct a linear kernel.
 
@@ -51,7 +51,7 @@ def linear(input_dim,variances=None,ARD=False):
     :type ARD: Boolean
 
     """
-    part = parts.linear.Linear(input_dim,variances,ARD)
+    part = parts.linear.Linear(input_dim,variances,ARD,name=name)
     return kern(input_dim, [part])
 
 def mlp(input_dim,variance=1., weight_variance=None,bias_variance=100.,ARD=False):

@@ -9,7 +9,7 @@ from parts.kernpart import Kernpart
 import itertools
 from parts.prod import Prod as prod
 from matplotlib.transforms import offset_copy
-import GPy
+from GPy.kern.parts.linear import Linear
 
 class kern(Parameterized):
     def __init__(self, input_dim, parts=[], input_slices=None):
@@ -103,13 +103,13 @@ class kern(Parameterized):
                     ax.set_title('ARD parameters, %s kernel' % p.name)
                 else:
                     ax.set_title(title)
-                if p.name == 'linear':
+                if isinstance(p, Linear):
                     ard_params = p.variances
                 else:
                     ard_params = 1. / p.lengthscale
 
                 x = np.arange(x0, x0 + len(ard_params))
-                bars.append(ax.bar(x, ard_params, align='center', color=c, edgecolor='k', linewidth=1.2, label=p.name))
+                bars.append(ax.bar(x, ard_params, align='center', color=c, edgecolor='k', linewidth=1.2, label=p.name.replace("_"," ")))
                 xticklabels.extend([r"$\mathrm{{{name}}}\ {x}$".format(name=p.name, x=i) for i in np.arange(len(ard_params))])
                 x0 += len(ard_params)
         x = np.arange(x0)

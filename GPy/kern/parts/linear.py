@@ -26,8 +26,8 @@ class Linear(Kernpart):
     :rtype: kernel object
     """
 
-    def __init__(self, input_dim, variances=None, ARD=False):
-        super(Linear, self).__init__(input_dim, 'linear')
+    def __init__(self, input_dim, variances=None, ARD=False, name='linear'):
+        super(Linear, self).__init__(input_dim, name)
         self.ARD = ARD
         if ARD == False:
             if variances is not None:

@@ -13,9 +13,6 @@ from domains import _POSITIVE, _REAL
 from numpy.linalg.linalg import LinAlgError
 from index_operations import ParameterIndexOperations
 import itertools
-from GPy.kern.parts.rbf import RBF
-from GPy.kern.parts.rbf_inv import RBFInv
-from GPy.kern.parts.linear import Linear
 # import numdifftools as ndt
 
 class Model(Parameterized):
@@ -552,7 +549,9 @@ class Model(Parameterized):
         if (not len(k) == 1):
             raise ValueError, "cannot determine sensitivity for this kernel"
         k = k[0]
-
+        from ..kern.parts.rbf import RBF
+        from ..kern.parts.rbf_inv import RBFInv
+        from ..kern.parts.linear import Linear
         if isinstance(k, RBF):
             return 1. / k.lengthscale
         elif isinstance(k, RBFInv):

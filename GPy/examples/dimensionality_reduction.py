@@ -4,10 +4,9 @@
 import numpy as np
 from matplotlib import pyplot as plt, cm
 
+from ..models.bayesian_gplvm import BayesianGPLVM
+from ..likelihoods.gaussian import Gaussian
 import GPy
-from GPy.core.transformations import Logexp
-from GPy.models.bayesian_gplvm import BayesianGPLVM
-from GPy.likelihoods.gaussian import Gaussian
 
 default_seed = np.random.seed(123344)
 
@@ -26,10 +25,10 @@ def BGPLVM(seed=default_seed):
     lik = Gaussian(Y, normalize=True)
 
 #     k = GPy.kern.rbf_inv(input_dim, .5, np.ones(input_dim) * 2., ARD=True) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim)
-    k = GPy.kern.rbf(input_dim, ARD=1)
+    k = GPy.kern.rbf(input_dim, ARD=1, name="rbf1") + GPy.kern.rbf(input_dim, ARD=1, name='rbf2') + GPy.kern.linear(input_dim, ARD=1, name='linear_part')
 #     k = GPy.kern.rbf(input_dim, ARD = False)
 
-    m = GPy.models.BayesianGPLVM(lik, input_dim, kernel=k, num_inducing=num_inducing)
+    m = BayesianGPLVM(lik, input_dim, kernel=k, num_inducing=num_inducing)
     m.lengthscales = lengthscales
     # m.constrain_positive('(rbf|bias|noise|white|S)')
     # m.constrain_fixed('S', 1)

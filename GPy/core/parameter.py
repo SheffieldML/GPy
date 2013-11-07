@@ -29,7 +29,7 @@ class ListArray(numpy.ndarray):
 
 class ObservableArray(ListArray, Observable):
     """
-    An ndarray which reports changed to it's observers.
+    An ndarray which reports changes to its observers.
     The observers can add themselves with a callable, which
     will be called every time this array changes. The callable
     takes exactly one argument, which is this array itself.
@@ -63,7 +63,7 @@ class Param(ObservableArray, Nameable, Pickleable):
     :param args:        additional arguments to gradient
     :param kwargs:      additional keyword arguments to gradient
     
-    You can add/remove constraints by calling the constrain on the parameter itself, e.g:
+    You can add/remove constraints by calling constrain on the parameter itself, e.g:
     
         - self[:,1].constrain_positive()
         - self[0].tie_to(other)
@@ -93,6 +93,7 @@ class Param(ObservableArray, Nameable, Pickleable):
         obj._tied_to_ = []
         obj._original_ = True
         return obj
+
     def __init__(self, name, input_array):
         super(Param, self).__init__(name=name)
         
@@ -134,6 +135,7 @@ class Param(ObservableArray, Nameable, Pickleable):
                              self._updated_,
                             )
                             )
+
     def __setstate__(self, state):
         super(Param, self).__setstate__(state[0])
         state = list(state[1])
@@ -148,9 +150,11 @@ class Param(ObservableArray, Nameable, Pickleable):
         self._parent_index_ = state.pop()
         self._direct_parent_ = state.pop()
         self.name = state.pop()
+
     #===========================================================================
     # get/set parameters
     #===========================================================================
+
     def _set_params(self, param, update=True):
         self.flat = param
         self._notify_tied_parameters()
@@ -212,6 +216,7 @@ class Param(ObservableArray, Nameable, Pickleable):
         self._highest_parent_._add_constrain(self, transform, warning)
         if update:
             self._highest_parent_.parameters_changed()        
+
     def constrain_positive(self, warning=True):
         """
         :param warning: print a warning if re-constraining parameters.
@@ -219,6 +224,7 @@ class Param(ObservableArray, Nameable, Pickleable):
         Constrain this parameter to the default positive constraint.
         """
         self.constrain(Logexp(), warning)
+
     def constrain_negative(self, warning=True):
         """
         :param warning: print a warning if re-constraining parameters.
@@ -226,6 +232,7 @@ class Param(ObservableArray, Nameable, Pickleable):
         Constrain this parameter to the default negative constraint.
         """
         self.constrain(NegativeLogexp(), warning)
+
     def constrain_bounded(self, lower, upper, warning=True):
         """
         :param lower, upper: the limits to bound this parameter to
@@ -234,6 +241,7 @@ class Param(ObservableArray, Nameable, Pickleable):
         Constrain this parameter to lie within the given range.
         """
         self.constrain(Logistic(lower, upper), warning)
+
     def unconstrain(self, *transforms):
         """
         :param transforms: The transformations to unconstrain from.
@@ -242,16 +250,19 @@ class Param(ObservableArray, Nameable, Pickleable):
         transformats of this parameter object.
         """
         self._highest_parent_._remove_constrain(self, *transforms)
+
     def unconstrain_positive(self):
         """
         Remove positive constraint of this parameter. 
         """
         self.unconstrain(Logexp())
+
     def unconstrain_negative(self):
         """
         Remove negative constraint of this parameter. 
         """
         self.unconstrain(NegativeLogexp())
+
     def unconstrain_bounded(self, lower, upper):
         """
         :param lower, upper: the limits to unbound this parameter from

@@ -49,10 +49,10 @@ class EP(likelihood):
         self.VVT_factor = self.V
         self.trYYT = 0.
 
-    def predictive_values(self,mu,var,full_cov):
+    def predictive_values(self,mu,var,full_cov,**noise_args):
         if full_cov:
             raise NotImplementedError, "Cannot make correlated predictions with an EP likelihood"
-        return self.noise_model.predictive_values(mu,var)
+        return self.noise_model.predictive_values(mu,var,**noise_args)
 
     def log_predictive_density(self, y_test, mu_star, var_star):
         """

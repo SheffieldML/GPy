@@ -27,6 +27,14 @@ GPy.util.classification module
     :undoc-members:
     :show-inheritance:
 
+GPy.util.config module
+----------------------
+
+.. automodule:: GPy.util.config
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.util.datasets module
 ------------------------
 
@@ -43,10 +51,26 @@ GPy.util.decorators module
     :undoc-members:
     :show-inheritance:
 
+GPy.util.erfcx module
+---------------------
+
+.. automodule:: GPy.util.erfcx
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.util.linalg module
 ----------------------
 
 .. automodule:: GPy.util.linalg
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.ln_diff_erfs module
+----------------------------
+
+.. automodule:: GPy.util.ln_diff_erfs
     :members:
     :undoc-members:
     :show-inheritance:
@@ -75,6 +99,14 @@ GPy.util.multioutput module
     :undoc-members:
     :show-inheritance:
 
+GPy.util.netpbmfile module
+--------------------------
+
+.. automodule:: GPy.util.netpbmfile
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.util.plot module
 --------------------
 
@@ -95,6 +127,14 @@ GPy.util.squashers module
 -------------------------
 
 .. automodule:: GPy.util.squashers
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.symbolic module
+------------------------
+
+.. automodule:: GPy.util.symbolic
     :members:
     :undoc-members:
     :show-inheritance:

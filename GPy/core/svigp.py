@@ -18,30 +18,16 @@ class SVIGP(GPBase):
     Stochastic Variational inference in a Gaussian Process
 
     :param X: inputs
-    :type X: np.ndarray (N x Q)
+    :type X: np.ndarray (num_data x num_inputs)
     :param Y: observed data
-    :type Y: np.ndarray of observations (N x D)
-    :param batchsize: the size of a h
-
-    Additional kwargs are used as for a sparse GP. They include:
-
+    :type Y: np.ndarray of observations (num_data x output_dim)
+    :param batchsize: the size of a minibatch
     :param q_u: canonical parameters of the distribution squasehd into a 1D array
     :type q_u: np.ndarray
-    :param M: Number of inducing points (optional, default 10. Ignored if Z is not None)
-    :type M: int
     :param kernel: the kernel/covariance function. See link kernels
     :type kernel: a GPy kernel
-    :param Z: inducing inputs (optional, see note)
-    :type Z: np.ndarray (M x Q) | None
-    :param X_uncertainty: The uncertainty in the measurements of X (Gaussian variance)
-    :type X_uncertainty: np.ndarray (N x Q) | None
-    :param Zslices: slices for the inducing inputs (see slicing TODO: link)
-    :param M: Number of inducing points (optional, default 10. Ignored if Z is not None)
-    :type M: int
-    :param beta: noise precision. TODO: ignore beta if doing EP
-    :type beta: float
-    :param normalize_(X|Y): whether to normalize the data before computing (predictions will be in original scales)
-    :type normalize_(X|Y): bool
+    :param Z: inducing inputs
+    :type Z: np.ndarray (num_inducing x num_inputs)
 
     """
 
@@ -350,8 +336,8 @@ class SVIGP(GPBase):
 
             #callback
             if i and not i%callback_interval:
-                callback()
-                time.sleep(0.1)
+                callback(self) # Change this to callback()
+                time.sleep(0.01)
 
             if self.epochs > 10:
                 self._adapt_steplength()
@@ -367,13 +353,13 @@ class SVIGP(GPBase):
         assert self.vb_steplength > 0
 
         if self.adapt_param_steplength:
-            # self._adaptive_param_steplength()
+            self._adaptive_param_steplength()
             # self._adaptive_param_steplength_log()
-            self._adaptive_param_steplength_from_vb()
+            # self._adaptive_param_steplength_from_vb()
         self._param_steplength_trace.append(self.param_steplength)
 
     def _adaptive_param_steplength(self):
-        decr_factor = 0.1
+        decr_factor = 0.02
         g_tp = self._transform_gradients(self._log_likelihood_gradients())
         self.gbar_tp = (1-1/self.tau_tp)*self.gbar_tp + 1/self.tau_tp * g_tp
         self.hbar_tp = (1-1/self.tau_tp)*self.hbar_tp + 1/self.tau_tp * np.dot(g_tp.T, g_tp)
@@ -407,7 +393,7 @@ class SVIGP(GPBase):
         self.tau_t = self.tau_t*(1-self.vb_steplength) + 1
 
     def _adaptive_vb_steplength_KL(self):
-        decr_factor = 1 #0.1
+        decr_factor = 0.1
         natgrad = self.vb_grad_natgrad()
         g_t1 = natgrad[0]
         g_t2 = natgrad[1]

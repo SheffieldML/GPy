@@ -49,18 +49,6 @@ class BayesianGPLVM(SparseGP, GPLVM):
         SparseGP.__init__(self, X, likelihood, kernel, Z=Z, X_variance=X_variance, **kwargs)
         self.ensure_default_constraints()
 
-    def getstate(self):
-        """
-        Get the current state of the class,
-        here just all the indices, rest can get recomputed
-        """
-        return SparseGP.getstate(self) + [self.init]
-
-    def setstate(self, state):
-        self._const_jitter = None
-        self.init = state.pop()
-        SparseGP.setstate(self, state)
-
     def _get_param_names(self):
         X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
         S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
@@ -284,6 +272,19 @@ class BayesianGPLVM(SparseGP, GPLVM):
         pylab.draw()
         fig.tight_layout(h_pad=.01) # , rect=(0, 0, 1, .95))
         return fig
+
+    def getstate(self):
+        """
+        Get the current state of the class,
+        here just all the indices, rest can get recomputed
+        """
+        return SparseGP.getstate(self) + [self.init]
+
+    def setstate(self, state):
+        self._const_jitter = None
+        self.init = state.pop()
+        SparseGP.setstate(self, state)
+
 
 def latent_cost_and_grad(mu_S, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
     """

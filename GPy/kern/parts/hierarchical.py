@@ -7,7 +7,7 @@ from independent_outputs import index_to_slices
 
 class Hierarchical(Kernpart):
     """
-    A kernel part which can reopresent a hierarchy of indepencnce: a gerenalisation of independent_outputs
+    A kernel part which can reopresent a hierarchy of indepencnce: a generalisation of independent_outputs
 
     """
     def __init__(self,parts):

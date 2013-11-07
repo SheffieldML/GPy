@@ -43,7 +43,7 @@ def oil(num_inducing=50, max_iters=100, kernel=None):
 
 def toy_linear_1d_classification(seed=default_seed):
     """
-    Simple 1D classification example
+    Simple 1D classification example using EP approximation
 
     :param seed: seed value for data generation (default is 4).
     :type seed: int
@@ -61,6 +61,7 @@ def toy_linear_1d_classification(seed=default_seed):
     #m.update_likelihood_approximation()
     # Parameters optimization:
     #m.optimize()
+    #m.update_likelihood_approximation()
     m.pseudo_EM()
 
     # Plot
@@ -70,6 +71,41 @@ def toy_linear_1d_classification(seed=default_seed):
     print(m)
 
     return m
+
+def toy_linear_1d_classification_laplace(seed=default_seed):
+    """
+    Simple 1D classification example using Laplace approximation
+
+    :param seed: seed value for data generation (default is 4).
+    :type seed: int
+
+    """
+
+    data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
+    Y = data['Y'][:, 0:1]
+    Y[Y.flatten() == -1] = 0
+
+    bern_noise_model = GPy.likelihoods.bernoulli()
+    laplace_likelihood = GPy.likelihoods.Laplace(Y.copy(), bern_noise_model)
+
+    # Model definition
+    m = GPy.models.GPClassification(data['X'], Y, likelihood=laplace_likelihood)
+
+    print m
+    # Optimize
+    #m.update_likelihood_approximation()
+    # Parameters optimization:
+    m.optimize('bfgs', messages=1)
+    #m.pseudo_EM()
+
+    # Plot
+    fig, axes = pb.subplots(2,1)
+    m.plot_f(ax=axes[0])
+    m.plot(ax=axes[1])
+    print(m)
+
+    return m
+
 
 def sparse_toy_linear_1d_classification(num_inducing=10,seed=default_seed):
     """
@@ -116,7 +152,7 @@ def toy_heaviside(seed=default_seed):
     Y[Y.flatten() == -1] = 0
 
     # Model definition
-    noise_model = GPy.likelihoods.binomial(GPy.likelihoods.noise_models.gp_transformations.Heaviside())
+    noise_model = GPy.likelihoods.bernoulli(GPy.likelihoods.noise_models.gp_transformations.Heaviside())
     likelihood = GPy.likelihoods.EP(Y,noise_model)
     m = GPy.models.GPClassification(data['X'], likelihood=likelihood)
 

@@ -43,6 +43,14 @@ GPy.likelihoods.gaussian_mixed_noise module
     :undoc-members:
     :show-inheritance:
 
+GPy.likelihoods.laplace module
+------------------------------
+
+.. automodule:: GPy.likelihoods.laplace
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.likelihoods.likelihood module
 ---------------------------------
 

@@ -28,8 +28,8 @@ def ard(p):
 class Test(unittest.TestCase):
     input_dim = 9
     num_inducing = 4
-    N = 3
-    Nsamples = 5e6
+    N = 30
+    Nsamples = 9e6
 
     def setUp(self):
         i_s_dim_list = [2,4,3]
@@ -45,20 +45,26 @@ class Test(unittest.TestCase):
                                          input_slices = input_slices
                                          )
         self.kerns = (
-                    input_slice_kern,
+#                     input_slice_kern,
 #                       (GPy.kern.rbf(self.input_dim, ARD=True) +
 #                        GPy.kern.linear(self.input_dim, ARD=True) +
 #                        GPy.kern.bias(self.input_dim) +
 #                        GPy.kern.white(self.input_dim)),
 #                     (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
-#                      GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
-#                      GPy.kern.linear(self.input_dim, np.random.rand(self.input_dim), ARD=True) +
-#                      GPy.kern.bias(self.input_dim) +
-#                      GPy.kern.white(self.input_dim)),
-#                       GPy.kern.rbf(self.input_dim), GPy.kern.rbf(self.input_dim, ARD=True),
+#                     GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
+#                     GPy.kern.linear(self.input_dim, np.random.rand(self.input_dim), ARD=True) +
+#                     GPy.kern.bias(self.input_dim) +
+#                     GPy.kern.white(self.input_dim)),
+        (GPy.kern.linear(self.input_dim, np.random.rand(self.input_dim), ARD=True) +
+                    GPy.kern.bias(self.input_dim, np.random.rand()) +
+                    GPy.kern.white(self.input_dim, np.random.rand())),
+                (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
+                    GPy.kern.bias(self.input_dim, np.random.rand()) +
+                    GPy.kern.white(self.input_dim, np.random.rand())),
+#                     GPy.kern.rbf(self.input_dim), GPy.kern.rbf(self.input_dim, ARD=True),
 #                       GPy.kern.linear(self.input_dim, ARD=False), GPy.kern.linear(self.input_dim, ARD=True),
 #                       GPy.kern.linear(self.input_dim) + GPy.kern.bias(self.input_dim),
-#                       GPy.kern.rbf(self.input_dim) + GPy.kern.bias(self.input_dim),
+#                     GPy.kern.rbf(self.input_dim) + GPy.kern.bias(self.input_dim),
 #                       GPy.kern.linear(self.input_dim) + GPy.kern.bias(self.input_dim) + GPy.kern.white(self.input_dim),
 #                       GPy.kern.rbf(self.input_dim) + GPy.kern.bias(self.input_dim) + GPy.kern.white(self.input_dim),
 #                       GPy.kern.bias(self.input_dim), GPy.kern.white(self.input_dim),
@@ -79,7 +85,7 @@ class Test(unittest.TestCase):
 
     def test_psi1(self):
         for kern in self.kerns:
-            Nsamples = np.floor(self.Nsamples/300.)
+            Nsamples = np.floor(self.Nsamples/self.N)
             psi1 = kern.psi1(self.Z, self.q_x_mean, self.q_x_variance)
             K_ = np.zeros((Nsamples, self.num_inducing))
             diffs = []
@@ -105,7 +111,7 @@ class Test(unittest.TestCase):
 
     def test_psi2(self):
         for kern in self.kerns:
-            Nsamples = self.Nsamples/300.
+            Nsamples = int(np.floor(self.Nsamples/self.N))
             psi2 = kern.psi2(self.Z, self.q_x_mean, self.q_x_variance)
             K_ = np.zeros((self.num_inducing, self.num_inducing))
             diffs = []
@@ -119,10 +125,10 @@ class Test(unittest.TestCase):
             try:
                 import pylab
                 pylab.figure(msg)
-                pylab.plot(diffs)
+                pylab.plot(diffs, marker='x', mew=1.3)
 #                 print msg, np.allclose(psi2.squeeze(), K_, rtol=1e-1, atol=.1)
-                self.assertTrue(np.allclose(psi2.squeeze(), K_,
-                                            rtol=1e-1, atol=.1),
+                self.assertTrue(np.allclose(psi2.squeeze(), K_),
+                                            #rtol=1e-1, atol=.1),
                                 msg=msg + ": not matching")
 #                 sys.stdout.write(".")
             except:
@@ -135,7 +141,7 @@ class Test(unittest.TestCase):
 if __name__ == "__main__":
     sys.argv = ['',
          #'Test.test_psi0',
-         'Test.test_psi1',
+         #'Test.test_psi1',
          'Test.test_psi2',
          ]
     unittest.main()

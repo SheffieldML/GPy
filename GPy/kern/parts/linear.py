@@ -7,6 +7,7 @@ import numpy as np
 from ...util.linalg import tdot
 from ...util.misc import fast_array_equal
 from scipy import weave
+from ...util.config import *
 
 class Linear(Kernpart):
     """
@@ -50,6 +51,26 @@ class Linear(Kernpart):
         # initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3, 1))
         self._X, self._X2, self._params = np.empty(shape=(3, 1))
+
+        # a set of optional args to pass to weave
+        weave_options_openmp = {'headers'           : ['<omp.h>'],
+                                'extra_compile_args': ['-fopenmp -O3'],
+                                'extra_link_args'   : ['-lgomp'],
+                                'libraries': ['gomp']}
+        weave_options_noopenmp = {'extra_compile_args': ['-O3']}
+
+
+        if config.getboolean('parallel', 'openmp'):
+            self.weave_options = weave_options_openmp
+            self.weave_support_code =  """
+            #include <omp.h>
+            #include <math.h>
+            """
+        else:
+            self.weave_options = weave_options_noopenmp
+            self.weave_support_code = """
+            #include <math.h>
+            """
 
     def _get_params(self):
         return self.variances
@@ -190,11 +211,17 @@ class Linear(Kernpart):
         #target_mu_dummy += (dL_dpsi2[:, :, :, None] * muAZZA).sum(1).sum(1)
         #target_S_dummy += (dL_dpsi2[:, :, :, None] * self.ZA[None, :, None, :] * self.ZA[None, None, :, :]).sum(1).sum(1)
 
+
+        if config.getboolean('parallel', 'openmp'):
+            pragma_string = "#pragma omp parallel for private(m,mm,q,qq,factor,tmp)"
+        else:
+            pragma_string = ''
+
         #Using weave, we can exploiut the symmetry of this problem:
         code = """
         int n, m, mm,q,qq;
         double factor,tmp;
-        #pragma omp parallel for private(m,mm,q,qq,factor,tmp)
+        %s
         for(n=0;n<N;n++){
           for(m=0;m<num_inducing;m++){
             for(mm=0;mm<=m;mm++){
@@ -218,19 +245,13 @@ class Linear(Kernpart):
             }
           }
         }
-        """
-        support_code = """
-        #include <omp.h>
-        #include <math.h>
-        """
-        weave_options = {'headers'           : ['<omp.h>'],
-                         'extra_compile_args': ['-fopenmp -O3'],  #-march=native'],
-                         'extra_link_args'   : ['-lgomp']}
+        """ % pragma_string
 
-        N,num_inducing,input_dim = mu.shape[0],Z.shape[0],mu.shape[1]
-        weave.inline(code, support_code=support_code, libraries=['gomp'],
-                     arg_names=['N','num_inducing','input_dim','mu','AZZA','AZZA_2','target_mu','target_S','dL_dpsi2'],
-                     type_converters=weave.converters.blitz,**weave_options)
+
+        N,num_inducing,input_dim = int(mu.shape[0]),int(Z.shape[0]),int(mu.shape[1])
+        weave.inline(code, support_code=self.weave_support_code,
+                    arg_names=['N','num_inducing','input_dim','mu','AZZA','AZZA_2','target_mu','target_S','dL_dpsi2'],
+                    type_converters=weave.converters.blitz,**self.weave_options)
 
 
     def dpsi2_dZ(self, dL_dpsi2, Z, mu, S, target):
@@ -240,9 +261,15 @@ class Linear(Kernpart):
         #dummy_target += psi2_dZ.sum(0).sum(0)
 
         AZA = self.variances*self.ZAinner
+
+        if config.getboolean('parallel', 'openmp'):
+            pragma_string = '#pragma omp parallel for private(n,mm,q)'
+        else:
+            pragma_string = ''
+
         code="""
         int n,m,mm,q;
-        #pragma omp parallel for private(n,mm,q)
+        %s
         for(m=0;m<num_inducing;m++){
           for(q=0;q<input_dim;q++){
             for(mm=0;mm<num_inducing;mm++){
@@ -252,22 +279,13 @@ class Linear(Kernpart):
             }
           }
         }
-        """
-        support_code = """
-        #include <omp.h>
-        #include <math.h>
-        """
-        weave_options = {'headers'           : ['<omp.h>'],
-                         'extra_compile_args': ['-fopenmp -O3'],  #-march=native'],
-                         'extra_link_args'   : ['-lgomp']}
+        """ % pragma_string
 
-        N,num_inducing,input_dim = mu.shape[0],Z.shape[0],mu.shape[1]
-        weave.inline(code, support_code=support_code, libraries=['gomp'],
+
+        N,num_inducing,input_dim = int(mu.shape[0]),int(Z.shape[0]),int(mu.shape[1])
+        weave.inline(code, support_code=self.weave_support_code, 
                      arg_names=['N','num_inducing','input_dim','AZA','target','dL_dpsi2'],
-                     type_converters=weave.converters.blitz,**weave_options)
-
-
-
+                     type_converters=weave.converters.blitz,**self.weave_options)
 
 
     #---------------------------------------#

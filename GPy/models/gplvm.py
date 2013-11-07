@@ -44,12 +44,6 @@ class GPLVM(GP):
             Xr[:PC.shape[0], :PC.shape[1]] = PC
         return Xr
 
-    def getstate(self):
-        return GP.getstate(self)
-
-    def setstate(self, state):
-        GP.setstate(self, state)
-
     def _get_param_names(self):
         return sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], []) + GP._get_param_names(self)
 
@@ -68,7 +62,7 @@ class GPLVM(GP):
     def jacobian(self,X):
         target = np.zeros((X.shape[0],X.shape[1],self.output_dim))
         for i in range(self.output_dim):
-        	target[:,:,i]=self.kern.dK_dX(np.dot(self.Ki,self.likelihood.Y[:,i])[None, :],X,self.X)
+        	target[:,:,i] = self.kern.dK_dX(np.dot(self.Ki,self.likelihood.Y[:,i])[None, :],X,self.X)
         return target
    
     def magnification(self,X):
@@ -91,3 +85,11 @@ class GPLVM(GP):
 
     def plot_magnification(self, *args, **kwargs):
         return util.plot_latent.plot_magnification(self, *args, **kwargs)
+
+    def getstate(self):
+        return GP.getstate(self)
+
+    def setstate(self, state):
+        GP.setstate(self, state)
+
+

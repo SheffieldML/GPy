@@ -24,19 +24,25 @@ class GPTransformation(object):
         """
         Gaussian process tranformation function, latent space -> output space
         """
-        pass
+        raise NotImplementedError
 
     def dtransf_df(self,f):
         """
         derivative of transf(f) w.r.t. f
         """
-        pass
+        raise NotImplementedError
 
     def d2transf_df2(self,f):
         """
         second derivative of transf(f) w.r.t. f
         """
-        pass
+        raise NotImplementedError
+
+    def d3transf_df3(self,f):
+        """
+        third derivative of transf(f) w.r.t. f
+        """
+        raise NotImplementedError
 
 class Identity(GPTransformation):
     """
@@ -49,10 +55,13 @@ class Identity(GPTransformation):
         return f
 
     def dtransf_df(self,f):
-        return 1.
+        return np.ones_like(f)
 
     def d2transf_df2(self,f):
-        return 0
+        return np.zeros_like(f)
+
+    def d3transf_df3(self,f):
+        return np.zeros_like(f)
 
 
 class Probit(GPTransformation):
@@ -71,6 +80,10 @@ class Probit(GPTransformation):
     def d2transf_df2(self,f):
         return -f * std_norm_pdf(f)
 
+    def d3transf_df3(self,f):
+        f2 = f**2
+        return -(1/(np.sqrt(2*np.pi)))*np.exp(-0.5*(f2))*(1-f2)
+
 class Log(GPTransformation):
     """
     .. math::
@@ -85,6 +98,9 @@ class Log(GPTransformation):
         return np.exp(f)
 
     def d2transf_df2(self,f):
+        return np.exp(f)
+
+    def d3transf_df3(self,f):
         return np.exp(f)
 
 class Log_ex_1(GPTransformation):
@@ -104,15 +120,23 @@ class Log_ex_1(GPTransformation):
         aux = np.exp(f)/(1.+np.exp(f))
         return aux*(1.-aux)
 
+    def d3transf_df3(self,f):
+        aux = np.exp(f)/(1.+np.exp(f))
+        daux_df = aux*(1.-aux)
+        return daux_df - (2.*aux*daux_df)
+
 class Reciprocal(GPTransformation):
-    def transf(sefl,f):
+    def transf(self,f):
         return 1./f
 
     def dtransf_df(self,f):
-        return -1./f**2
+        return -1./(f**2)
 
     def d2transf_df2(self,f):
-        return 2./f**3
+        return 2./(f**3)
+
+    def d3transf_df3(self,f):
+        return -6./(f**4)
 
 class Heaviside(GPTransformation):
     """

@@ -37,7 +37,7 @@ class GPBase(Model):
         # the end
 
 
-    def posterior_samples_f(self,X,size=10,which_parts='all',full_cov=True):
+    def posterior_samples_f(self,X,size=10,which_parts='all'):
         """
         Samples the posterior GP at the points X.
 
@@ -51,16 +51,13 @@ class GPBase(Model):
         :type full_cov: bool.
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
-        m, v = self._raw_predict(X, which_parts=which_parts, full_cov=full_cov)
+        m, v = self._raw_predict(X, which_parts=which_parts, full_cov=True)
         v = v.reshape(m.size,-1) if len(v.shape)==3 else v
-        if not full_cov:
-            Ysim = np.random.multivariate_normal(m.flatten(), np.diag(v.flatten()), size).T
-        else:
-            Ysim = np.random.multivariate_normal(m.flatten(), v, size).T
+        Ysim = np.random.multivariate_normal(m.flatten(), v, size).T
 
         return Ysim
 
-    def posterior_samples(self,X,size=10,which_parts='all',full_cov=True,noise_model=None):
+    def posterior_samples(self,X,size=10,which_parts='all',noise_model=None):
         """
         Samples the posterior GP at the points X.
 
@@ -76,7 +73,7 @@ class GPBase(Model):
         :type noise_model: integer.
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
-        Ysim = self.posterior_samples_f(X, size, which_parts=which_parts, full_cov=full_cov)
+        Ysim = self.posterior_samples_f(X, size, which_parts=which_parts, full_cov=True)
         if isinstance(self.likelihood,Gaussian):
             noise_std = np.sqrt(self.likelihood._get_params())
             Ysim += np.random.normal(0,noise_std,Ysim.shape)
@@ -209,11 +206,11 @@ class GPBase(Model):
             x, y = np.linspace(xmin[0], xmax[0], resolution), np.linspace(xmin[1], xmax[1], resolution)
 
             #predict on the frame and plot
-            if use_raw_predict:
+            if plot_raw:
                 m, _ = self._raw_predict(Xgrid, which_parts=which_parts)
                 Y = self.likelihood.Y
             else:
-                m, _, _, _ = self.predict(Xgrid, which_parts=which_parts)
+                m, _, _, _ = self.predict(Xgrid, which_parts=which_parts,num_samples=100) #FIXME we need a balance between accuracy and speed to define num_samples
                 Y = self.likelihood.data
             for d in which_data_ycols:
                 m_d = m[:,d].reshape(resolution, resolution).T

@@ -137,3 +137,18 @@ class Matern32(Kernpart):
         # print "OLD \n", np.dot(F1lower,F1lower.T), "\n \n"
         # return(G)
         return(self.lengthscale ** 3 / (12.*np.sqrt(3) * self.variance) * G + 1. / self.variance * np.dot(Flower, Flower.T) + self.lengthscale ** 2 / (3.*self.variance) * np.dot(F1lower, F1lower.T))
+
+    def sde(self):
+        """
+        Return the state space representation of the covariance.
+        """
+        foo = np.sqrt(3)/self.lengthscale
+        F  = np.array([[0, 1], [-foo**2, -2*foo]])
+        L  = np.array([[0], [1]])
+        Qc = np.array([12*np.sqrt(3) / self.lengthscale**3 * self.variance])
+        H = np.array([[1, 0]])
+        Pinf = np.array([[self.variance, 0], 
+                        [0,              3*self.variance/(self.lengthscale**2)]])
+        # TODO: return the derivatives as well
+        return (F, L, Qc, H, Pinf) 
+

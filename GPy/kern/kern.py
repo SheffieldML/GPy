@@ -574,6 +574,10 @@ class kern(Parameterized):
         else:
             raise NotImplementedError, "Cannot plot a kernel with more than two input dimensions"
 
+    def sde(self):
+         # TODO: should support adding kernels together
+         return self.parts[0].sde()
+
 from GPy.core.model import Model
 
 class Kern_check_model(Model):
@@ -794,3 +798,4 @@ def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False):
         return False
 
     return pass_checks
+

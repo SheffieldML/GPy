@@ -8,6 +8,7 @@ from svigp_regression import SVIGPRegression
 from sparse_gp_classification import SparseGPClassification
 from fitc_classification import FITCClassification
 from gplvm import GPLVM
+from state_space import StateSpace
 from bcgplvm import BCGPLVM
 from sparse_gplvm import SparseGPLVM
 from warped_gp import WarpedGP

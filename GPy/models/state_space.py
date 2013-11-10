@@ -182,6 +182,8 @@ class StateSpace(Model):
                  MF[:,k] += K.dot(Y[:,k]-H.dot(MF[:,k]))
                  PF[:,:,k] -= K.dot(H).dot(PF[:,:,k])
 
+                 print  K
+
         # Return values
         return (MF, PF)
 
@@ -220,7 +222,7 @@ class StateSpace(Model):
         dt = np.empty(X.shape)
         dt[:,0] = X[:,1]-X[:,0]
         dt[:,1:] = np.diff(X)
-        
+
         # Kalman filter for likelihood evaluation
         for k in range(0,Y.shape[1]):
 
@@ -235,14 +237,15 @@ class StateSpace(Model):
             if not np.isnan(Y[:,k]):
                  v = Y[:,k]-H.dot(m)
                  LL, isupper = linalg.cho_factor(H.dot(P).dot(H.T) + R)
-                 lik -= 0.5*np.sum(np.log(np.diag(LL)))
+                 lik -= np.sum(np.log(np.diag(LL)))
+                 lik -= 0.5*v.shape[0]*np.log(2*np.pi)
                  lik -= 0.5*linalg.cho_solve((LL, isupper),v).dot(v)
                  K = linalg.cho_solve((LL, isupper), H.dot(P.T)).T
                  m += K.dot(v)
                  P -= K.dot(H).dot(P)
 
         # Return likelihood
-        return lik
+        return lik[0,0]
 
     def simulate(self,F,L,Qc,Pinf,X):
         # Simulate a trajectory using the state space model

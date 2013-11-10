@@ -1,8 +1,8 @@
 # Copyright (c) 2013, Arno Solin.
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-# 
+#
 # This implementation of converting GPs to state space models is based on the article:
-# 
+#
 #  @article{Sarkka+Solin+Hartikainen:2013,
 #     author = {Simo S\"arkk\"a and Arno Solin and Jouni Hartikainen},
 #       year = {2013},
@@ -21,7 +21,7 @@ from .. import kern
 
 class StateSpace(Model):
     def __init__(self, X, Y, kernel=None):
-	super(StateSpace, self).__init__()
+        super(StateSpace, self).__init__()
         self.num_data, input_dim = X.shape
         assert input_dim==1, "State space methods for time only"
         num_data_Y, self.output_dim = Y.shape
@@ -92,6 +92,8 @@ class StateSpace(Model):
         # Run the Rauch-Tung-Striebel smoother
         (M, P) = self.rts_smoother(F,L,Qc,X.T,M,P)
 
+        #raise NameError('HiThere')
+
         # Put the data back in the original order
         M = M[:,return_inverse]
         P = P[:,:,return_inverse]
@@ -127,7 +129,7 @@ class StateSpace(Model):
 
         # Reorder X values
         sort_index = np.argsort(X[:,0])
-        X =  X[sort_index]
+        X = X[sort_index]
 
         # Get the model matrices from the kernel
         (F,L,Qc,H,Pinf) = self.kern.sde()
@@ -182,8 +184,6 @@ class StateSpace(Model):
                  MF[:,k] += K.dot(Y[:,k]-H.dot(MF[:,k]))
                  PF[:,:,k] -= K.dot(H).dot(PF[:,:,k])
 
-                 print  K
-
         # Return values
         return (MF, PF)
 
@@ -202,10 +202,10 @@ class StateSpace(Model):
             (A, Q) = self.lti_disc(F,L,Qc,dt[:,1-k])
 
             # Smoothing step
-            LL = linalg.cho_factor(A.dot(PS[:,:,-k].dot(A.T))+Q)
+            LL = linalg.cho_factor(A.dot(PS[:,:,-k]).dot(A.T)+Q)
             G = linalg.cho_solve(LL,A.dot(PS[:,:,-k])).T
-            MS[:,-k]   += G.dot(MS[:,1-k]-A.dot(MS[:,-k]))
-            PS[:,:,-k] += G.dot(PS[:,:,1-k]-A.dot(PS[:,:,-k].dot(A.T)-Q)).dot(G.T)
+            MS[:,-k] += G.dot(MS[:,1-k]-A.dot(MS[:,-k]))
+            PS[:,:,-k] += G.dot(PS[:,:,1-k]-A.dot(PS[:,:,-k]).dot(A.T)-Q).dot(G.T)
 
         # Return
         return (MS, PS)

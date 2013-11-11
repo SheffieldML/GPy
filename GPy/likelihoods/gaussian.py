@@ -69,7 +69,7 @@ class Gaussian(likelihood):
             self.covariance_matrix = np.eye(self.N) * x
             self._variance = x
 
-    def predictive_values(self, mu, var, full_cov):
+    def predictive_values(self, mu, var, full_cov, **likelihood_args):
         """
         Un-normalize the prediction and add the likelihood variance, then return the 5%, 95% interval
         """

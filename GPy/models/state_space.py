@@ -217,11 +217,16 @@ class StateSpace(Model):
         dt[:,0] = X[:,1]-X[:,0]
         dt[:,1:] = np.diff(X)
 
+        # Solve the LTI SDE for these time steps
+        As, Qs, index = self.lti_disc(F,L,Qc,dt)
+
         # Kalman filter
         for k in range(0,Y.shape[1]):
 
             # Form discrete-time model
-            (A, Q) = self.lti_disc(F,L,Qc,dt[:,k])
+            #(A, Q) = self.lti_disc(F,L,Qc,dt[:,k])
+            A = As[:,:,index[k]];
+            Q = Qs[:,:,index[k]];
 
             # Prediction step
             MF[:,k] = A.dot(MF[:,k-1])
@@ -245,11 +250,16 @@ class StateSpace(Model):
         dt[:,0] = X[:,1]-X[:,0]
         dt[:,1:] = np.diff(X)
 
+        # Solve the LTI SDE for these time steps
+        As, Qs, index = self.lti_disc(F,L,Qc,dt)
+
         # Sequentially smooth states starting from the end
         for k in range(2,X.shape[1]+1):
 
             # Form discrete-time model
-            (A, Q) = self.lti_disc(F,L,Qc,dt[:,1-k])
+            #(A, Q) = self.lti_disc(F,L,Qc,dt[:,1-k])
+            A = As[:,:,index[1-k]];
+            Q = Qs[:,:,index[1-k]];
 
             # Smoothing step
             LL = linalg.cho_factor(A.dot(PS[:,:,-k]).dot(A.T)+Q)
@@ -273,11 +283,16 @@ class StateSpace(Model):
         dt[:,0] = X[:,1]-X[:,0]
         dt[:,1:] = np.diff(X)
 
+        # Solve the LTI SDE for these time steps
+        As, Qs, index = self.lti_disc(F,L,Qc,dt)
+
         # Kalman filter for likelihood evaluation
         for k in range(0,Y.shape[1]):
 
             # Form discrete-time model
-            (A,Q) = self.lti_disc(F,L,Qc,dt[:,k])
+            #(A,Q) = self.lti_disc(F,L,Qc,dt[:,k])
+            A = As[:,:,index[k]];
+            Q = Qs[:,:,index[k]];
 
             # Prediction step
             m = A.dot(m)
@@ -323,19 +338,39 @@ class StateSpace(Model):
 
         # Dimensionality
         n = F.shape[0]
+        index = 0
 
-        # The covariance matrix by matrix fraction decomposition
-        Phi = np.zeros((2*n,2*n))
-        Phi[:n,:n] = F
-        Phi[:n,n:] = L.dot(Qc).dot(L.T)
-        Phi[n:,n:] = -F.T
-        AB = linalg.expm(Phi*dt).dot(np.vstack((np.zeros((n,n)),np.eye(n))))
-        #Q = AB[:n,:].dot(linalg.inv(AB[n:,:]))
-        Q = linalg.solve(AB[n:,:].T,AB[:n,:].T)
+        # Check for numbers of time steps
+        if dt.flatten().shape[0]==1:
 
-        # The dynamical model
-        A  = linalg.expm(F*dt)
+            # The covariance matrix by matrix fraction decomposition
+            Phi = np.zeros((2*n,2*n))
+            Phi[:n,:n] = F
+            Phi[:n,n:] = L.dot(Qc).dot(L.T)
+            Phi[n:,n:] = -F.T
+            AB = linalg.expm(Phi*dt).dot(np.vstack((np.zeros((n,n)),np.eye(n))))
+            Q = linalg.solve(AB[n:,:].T,AB[:n,:].T)
 
-        # Return
-        return (A, Q)
+            # The dynamical model
+            A  = linalg.expm(F*dt)
+
+            # Return
+            return A, Q
+
+        # Optimize for cases where time steps occur repeatedly
+        else:
+
+            # Time discretizations
+            dt, _, index = np.unique(dt,True,True)
+
+            # Allocate space for A and Q
+            A = np.empty((n,n,dt.shape[0]))
+            Q = np.empty((n,n,dt.shape[0]))
+
+            # Call this function for each dt
+            for j in range(0,dt.shape[0]):
+                A[:,:,j], Q[:,:,j] = self.lti_disc(F,L,Qc,dt[j])
+
+            # Return
+            return A, Q, index
 

@@ -13,6 +13,7 @@ from domains import _POSITIVE, _REAL
 from numpy.linalg.linalg import LinAlgError
 from index_operations import ParameterIndexOperations
 import itertools
+from GPy.core.parameterized import UNFIXED
 # import numdifftools as ndt
 
 class Model(Parameterized):
@@ -277,8 +278,17 @@ class Model(Parameterized):
         # param_names = self._get_param_names()
         for s in positive_strings:
             paramlist = self.grep_param_names(".*"+s)
-            if paramlist:
-                self.__getitem__(None, paramlist).constrain_positive(warning=warning)
+            for param in paramlist:
+                for p in param.flattened_parameters:
+                    rav_i = set(self._raveled_index_for(p))
+                    for constraint in self.constraints.iter_properties():
+                        rav_i -= set(self._constraint_indices(p, constraint))
+                    rav_i -= set(np.nonzero(self._fixes_for(p)!=UNFIXED)[0])
+                    ind = self._backtranslate_index(p, np.array(list(rav_i), dtype=int))
+                    if ind.size != 0:
+                        p[np.unravel_index(ind, p.shape)].constrain_positive()
+#             if paramlist:
+#                 self.__getitem__(None, paramlist).constrain_positive(warning=warning)
 #         currently_constrained = self.all_constrained_indices()
 #         to_make_positive = []
 #         for s in positive_strings:

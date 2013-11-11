@@ -54,7 +54,7 @@ class RBF(Kernpart):
         self.lengthscale = Param('lengthscale', lengthscale)
         self.lengthscale.add_observer(self, self.update_lengthscale)
         self.add_parameters(self.variance, self.lengthscale)
-        self.parameters_changed()
+        self.parameters_changed() # initializes cache
         
         #self.update_inv_lengthscale(self.lengthscale)
         #self.parameters_changed()

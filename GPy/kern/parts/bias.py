@@ -8,14 +8,14 @@ import hashlib
 from GPy.core.parameter import Param
 
 class Bias(Kernpart):
-    def __init__(self,input_dim,variance=1.):
+    def __init__(self,input_dim,variance=1.,name=None):
         """
         :param input_dim: the number of input dimensions
         :type input_dim: int
         :param variance: the variance of the kernel
         :type variance: float
         """
-        super(Bias, self).__init__(input_dim, 'bias')
+        super(Bias, self).__init__(input_dim, name)
         self.variance = Param("variance", variance)
         self.add_parameter(self.variance)
         #self._set_params(np.array([variance]).flatten())

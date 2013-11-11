@@ -20,6 +20,8 @@ __print_threshold__ = 5
 class ListArray(numpy.ndarray):
     """
     ndarray which can be stored in lists and checked if it is in.
+    WARNING: This overrides the functionality of x==y!!!
+    Use numpy.equal(x,y) for element-wise equality testing.
     """
     def __new__(cls, input_array):
         obj = numpy.asanyarray(input_array).view(cls)
@@ -43,10 +45,16 @@ class ObservableArray(ListArray, Observable):
         if obj is None: return
         self._observers_ = getattr(obj, '_observers_', None)
     def __setitem__(self, s, val, update=True):
-        if not numpy.all(numpy.equal(self[s], val)):
-            super(ObservableArray, self).__setitem__(s, val)
-            if update:
-                self._notify_observers()
+        if self.ndim:
+            if not numpy.all(numpy.equal(self[s], val)):
+                super(ObservableArray, self).__setitem__(s, val)
+                if update:
+                    self._notify_observers()
+        else:
+            if not numpy.all(numpy.equal(self, val)):
+                super(ObservableArray, self).__setitem__(Ellipsis, val)
+                if update:
+                    self._notify_observers()
     def __getslice__(self, start, stop):
         return self.__getitem__(slice(start, stop))
     def __setslice__(self, start, stop, val):
@@ -77,6 +85,7 @@ class Param(ObservableArray, Nameable, Pickleable):
     See :py:class:`GPy.core.parameterized.Parameterized` for more details.
     """
     __array_priority__ = -numpy.inf # Never give back Param
+    _fixes_ = None
     def __new__(cls, name, input_array, *args, **kwargs):
         obj = numpy.atleast_1d(super(Param, cls).__new__(cls, input_array=input_array))
         obj._direct_parent_ = None
@@ -289,9 +298,9 @@ class Param(ObservableArray, Nameable, Pickleable):
         """
         assert isinstance(param, Param), "Argument {1} not of type {0}".format(Param,param.__class__)
         try:
-            if self._original_: # this happens when indexing created a copy of the array
+            if self._original_: 
                 self[:] = param
-            else:
+            else: # this happens when indexing created a copy of the array
                 self._direct_parent_._get_original(self)[self._current_slice_] = param
         except ValueError:
             raise ValueError("Trying to tie {} with shape {} to {} with shape {}".format(self.name, self.shape, param.name, param.shape))            
@@ -304,8 +313,9 @@ class Param(ObservableArray, Nameable, Pickleable):
         param._add_tie_listener(self)
         self._highest_parent_._set_fixed(self)
         for t in self._tied_to_me_.iterkeys():
-            t.untie()
-            t.tie_to(param)
+            if t is not self:
+                t.untie(self)
+                t.tie_to(param)
 #         self._direct_parent_._add_tie(self, param)
 
     def untie(self, *ties):
@@ -433,6 +443,8 @@ class Param(ObservableArray, Nameable, Pickleable):
         view = super(Param, self).round(decimals, out).view(Param)
         view.__array_finalize__(self)
         return view
+    def _has_fixes(self):
+        return False
     round.__doc__ = numpy.round.__doc__
     def _get_original(self, param):
         return self
@@ -494,7 +506,7 @@ class Param(ObservableArray, Nameable, Pickleable):
     def _max_len_names(self, gen, header):
         return reduce(lambda a, b:max(a, len(b)), gen, len(header))
     def _max_len_values(self):
-        return reduce(lambda a, b:max(a, len("{x:=.{0}g}".format(__precision__, x=b))), self.flat, len(self.name))
+        return reduce(lambda a, b:max(a, len("{x:=.{0}g}".format(__precision__, x=b))), self.flat, len(self.name_hirarchical))
     def _max_len_index(self, ind):
         return reduce(lambda a, b:max(a, len(str(b))), ind, len(__index_name__))
     def _short(self):
@@ -518,7 +530,7 @@ class Param(ObservableArray, Nameable, Pickleable):
         if lx is None: lx = self._max_len_values()
         if li is None: li = self._max_len_index(indices)
         if lt is None: lt = self._max_len_names(ties, __tie_name__)
-        header = "  {i:^{2}s}  |  \033[1m{x:^{1}s}\033[0;0m  |  {c:^{0}s}  |  {t:^{3}s}".format(lc,lx,li,lt, x=self.name, c=__constraints_name__, i=__index_name__, t=__tie_name__) # nice header for printing
+        header = "  {i:^{2}s}  |  \033[1m{x:^{1}s}\033[0;0m  |  {c:^{0}s}  |  {t:^{3}s}".format(lc,lx,li,lt, x=self.name_hirarchical, c=__constraints_name__, i=__index_name__, t=__tie_name__) # nice header for printing
         if not ties: ties = itertools.cycle([''])
         return "\n".join([header]+["  {i!s:^{3}s}  |  {x: >{1}.{2}g}  |  {c:^{0}s}  |  {t:^{4}s}  ".format(lc,lx,__precision__,li,lt, x=x, c=" ".join(map(str,c)), t=(t or ''), i=i) for i,x,c,t in itertools.izip(indices,vals,constr_matrix,ties)]) # return all the constraints with right indices
         #except: return super(Param, self).__str__()

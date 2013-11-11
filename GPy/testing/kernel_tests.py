@@ -17,11 +17,13 @@ except ImportError:
 class KernelTests(unittest.TestCase):
     def test_kerneltie(self):
         K = GPy.kern.rbf(5, ARD=True)
-        K.tie_params('.*[01]')
-        K.constrain_fixed('2')
+        K.rbf.lengthscale[:2].tie_to(K.rbf.lengthscale[2:4])
+        K.rbf.lengthscale[2].constrain_fixed()
+        import ipdb;ipdb.set_trace()
         X = np.random.rand(5,5)
         Y = np.ones((5,1))
         m = GPy.models.GPRegression(X,Y,K)
+        import ipdb;ipdb.set_trace()
         self.assertTrue(m.checkgrad())
 
     def test_rbfkernel(self):

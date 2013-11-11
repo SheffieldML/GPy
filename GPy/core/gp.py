@@ -22,7 +22,7 @@ class GP(GPBase):
 
     """
     def __init__(self, X, likelihood, kernel, normalize_X=False):
-        GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
+        super(GP, self).__init__(X, likelihood, kernel, normalize_X=normalize_X)
         #self._set_params(self._get_params())
 
     def getstate(self):

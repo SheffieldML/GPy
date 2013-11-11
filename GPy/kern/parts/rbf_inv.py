@@ -36,7 +36,9 @@ class RBFInv(RBF):
     def __init__(self, input_dim, variance=1., inv_lengthscale=None, ARD=False, name='inverse rbf'):
         #self.input_dim = input_dim
         #self.name = 'rbf_inv'
-        super(RBFInv, self).__init__(input_dim, variance=variance, lengthscale=1./np.array(inv_lengthscale), ARD=ARD, name=name)
+        if inv_lengthscale is not None: lengthscale = 1./np.array(inv_lengthscale)
+        else: lengthscale = None
+        super(RBFInv, self).__init__(input_dim, variance=variance, lengthscale=lengthscale, ARD=ARD, name=name)
         self.ARD = ARD
         if not ARD:
             self.num_params = 2

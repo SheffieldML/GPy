@@ -228,7 +228,7 @@ def Matern52(input_dim, variance=1., lengthscale=None, ARD=False):
     part = parts.Matern52.Matern52(input_dim, variance, lengthscale, ARD)
     return kern(input_dim, [part])
 
-def bias(input_dim, variance=1.):
+def bias(input_dim, variance=1., name='bias'):
     """
      Construct a bias kernel.
 
@@ -238,7 +238,7 @@ def bias(input_dim, variance=1.):
     :type variance: float
 
     """
-    part = parts.bias.Bias(input_dim, variance)
+    part = parts.bias.Bias(input_dim, variance, name=name)
     return kern(input_dim, [part])
 
 def finite_dimensional(input_dim, F, G, variances=1., weights=None):

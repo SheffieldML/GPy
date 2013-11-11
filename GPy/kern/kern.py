@@ -605,7 +605,7 @@ class Kern_check_model(Model):
         self.dL_dK = dL_dK
         #self.constrained_indices=[]
         #self.constraints=[]
-        Model.__init__(self)
+        Model.__init__(self, 'kernel_test_model')
 
     def is_positive_definite(self):
         v = np.linalg.eig(self.kernel.K(self.X))[0]
@@ -614,14 +614,14 @@ class Kern_check_model(Model):
         else:
             return True
         
-#     def _get_params(self):
-#         return self.kernel._get_params()
-# 
-#     def _get_param_names(self):
-#         return self.kernel._get_param_names()
-# 
-#     def _set_params(self, x):
-#         self.kernel._set_params(x)
+    def _get_params(self):
+        return self.kernel._get_params()
+ 
+    def _get_param_names(self):
+        return self.kernel._get_param_names()
+ 
+    def _set_params(self, x):
+        self.kernel._set_params(x)
 
     def log_likelihood(self):
         return (self.dL_dK*self.kernel.K(self.X, self.X2)).sum()

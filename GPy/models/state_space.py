@@ -48,7 +48,7 @@ class StateSpace(Model):
         self.ensure_default_constraints()
 
         # Assert that the kernel is supported
-        #assert self.kern.sde(), "This kernel is not supported for state space estimation"
+        #assert self.kern.sde() not False, "This kernel is not supported for state space estimation"
 
     def _set_params(self, x):
         self.kern._set_params(x[:self.kern.num_params_transformed()])
@@ -96,8 +96,6 @@ class StateSpace(Model):
 
         # Run the Rauch-Tung-Striebel smoother
         (M, P) = self.rts_smoother(F,L,Qc,X.T,M,P)
-
-        #raise NameError('HiThere')
 
         # Put the data back in the original order
         M = M[:,return_inverse]
@@ -193,8 +191,15 @@ class StateSpace(Model):
         return Y.T
 
     def posterior_samples(self, X, size=10):
-        # TODO
-        return self.posterior_samples_f(X,size)
+
+        # Make samples of f
+        Y = self.posterior_samples_f(X,size)
+
+        # Add noise
+        Y += np.sqrt(self.sigma2)*np.random.randn(Y.shape)
+
+        # Return trajectory
+        return Y
 
     def kalman_filter(self,F,L,Qc,H,R,Pinf,X,Y):
         # KALMAN_FILTER - Run the Kalman filter for a given model and data
@@ -299,7 +304,7 @@ class StateSpace(Model):
         f = np.zeros((F.shape[0],X.shape[1]))
 
         # Initial state
-        f[:,0:1] = np.dot(np.linalg.cholesky(Pinf),np.random.randn(F.shape[0],1))
+        f[:,0:1] = np.linalg.cholesky(Pinf).dot(np.random.randn(F.shape[0],1))
 
         # Sweep through remaining time points
         for k in range(1,X.shape[1]):
@@ -323,13 +328,14 @@ class StateSpace(Model):
         Phi = np.zeros((2*n,2*n))
         Phi[:n,:n] = F
         Phi[:n,n:] = L.dot(Qc).dot(L.T)
-        Phi[n:,n:] = -F.T 
+        Phi[n:,n:] = -F.T
         AB = linalg.expm(Phi*dt).dot(np.vstack((np.zeros((n,n)),np.eye(n))))
-        Q = AB[:n,:].dot(linalg.inv(AB[n:,:]))
+        #Q = AB[:n,:].dot(linalg.inv(AB[n:,:]))
+        Q = linalg.solve(AB[n:,:].T,AB[:n,:].T)
 
         # The dynamical model
         A  = linalg.expm(F*dt)
-  
+
         # Return
         return (A, Q)
 

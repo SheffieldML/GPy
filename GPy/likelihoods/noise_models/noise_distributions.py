@@ -99,31 +99,29 @@ class NoiseDistribution(object):
         :param tau: cavity distribution 1st natural parameter (precision)
         :param v: cavity distribution 2nd natural paramenter (mu*precision)
         """
-        #Compute first integral for zeroth moment
+        #Compute first integral for zeroth moment.
+        #NOTE constant np.sqrt(2*pi/tau) added at the end of the function
         mu = v/tau
         def int_1(f):
             return self.pdf(f, obs)*np.exp(-0.5*tau*np.square(mu-f))
-        z, accuracy = quad(int_1, -np.inf, np.inf)
-        #z /= np.sqrt(2*np.pi/tau)
+        z_scaled, accuracy = quad(int_1, -np.inf, np.inf)
 
         #Compute second integral for first moment
         def int_2(f):
             return f*self.pdf(f, obs)*np.exp(-0.5*tau*np.square(mu-f))
         mean, accuracy = quad(int_2, -np.inf, np.inf)
-        #mean /= np.sqrt(2*np.pi/tau)
-        mean /= z
+        mean /= z_scaled
 
         #Compute integral for variance
         def int_3(f):
             return (f**2)*self.pdf(f, obs)*np.exp(-0.5*tau*np.square(mu-f))
         Ef2, accuracy = quad(int_3, -np.inf, np.inf)
-        #Ef2 /= np.sqrt(2*np.pi/tau)
-        Ef2 /= z
+        Ef2 /= z_scaled
         variance = Ef2 - mean**2
 
         #Add constant to the zeroth moment
         #NOTE: this constant is not needed in the other moments because it cancells out.
-        z /= np.sqrt(2*np.pi/tau)
+        z = z_scaled/np.sqrt(2*np.pi/tau)
 
         return z, mean, variance
 
@@ -185,18 +183,17 @@ class NoiseDistribution(object):
 
         #V( E(Y_star|f_star) ) =  E( E(Y_star|f_star)**2 ) - E( E(Y_star|f_star) )**2
 
-        #E( E(Y_star|f_star)**2 )
+        #E( E(Y_star|f_star) )**2
         if predictive_mean is None:
             predictive_mean = self.predictive_mean(mu,variance)
         predictive_mean_sq = predictive_mean**2
 
+        #E( E(Y_star|f_star)**2 )
         def int_pred_mean_sq(f,m,v,predictive_mean_sq):
-            return predictive_mean_sq*np.exp(-(0.5/v)*np.square(f - m))
-
+            return self._mean(f)**2*np.exp(-(0.5/v)*np.square(f - m))
         scaled_exp_exp2 = [quad(int_pred_mean_sq, -np.inf, np.inf,args=(mj,s2j,pm2j))[0] for mj,s2j,pm2j in zip(mu,variance,predictive_mean_sq)]
         exp_exp2 = np.array(scaled_exp_exp2)[:,None] / normalizer
 
-        #E( E(Y_star|f_star) )**2
         var_exp = exp_exp2 - predictive_mean_sq
 
         # V(Y_star) = E( V(Y_star|f_star) ) + V( E(Y_star|f_star) )

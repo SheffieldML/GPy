@@ -11,6 +11,7 @@ from GPy.util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
 import gp_transformations
 from GPy.util.misc import chain_1, chain_2, chain_3
 from scipy.integrate import quad
+import warnings
 
 class NoiseDistribution(object):
     """
@@ -98,27 +99,29 @@ class NoiseDistribution(object):
         :param tau: cavity distribution 1st natural parameter (precision)
         :param v: cavity distribution 2nd natural paramenter (mu*precision)
         """
-        #Compute first integral for zeroth moment
+        #Compute first integral for zeroth moment.
+        #NOTE constant np.sqrt(2*pi/tau) added at the end of the function
         mu = v/tau
         def int_1(f):
             return self.pdf(f, obs)*np.exp(-0.5*tau*np.square(mu-f))
-        z, accuracy = quad(int_1, -np.inf, np.inf)
-        z /= np.sqrt(2*np.pi/tau)
+        z_scaled, accuracy = quad(int_1, -np.inf, np.inf)
 
         #Compute second integral for first moment
         def int_2(f):
             return f*self.pdf(f, obs)*np.exp(-0.5*tau*np.square(mu-f))
         mean, accuracy = quad(int_2, -np.inf, np.inf)
-        mean /= np.sqrt(2*np.pi/tau)
-        mean /= z
+        mean /= z_scaled
 
         #Compute integral for variance
         def int_3(f):
             return (f**2)*self.pdf(f, obs)*np.exp(-0.5*tau*np.square(mu-f))
         Ef2, accuracy = quad(int_3, -np.inf, np.inf)
-        Ef2 /= np.sqrt(2*np.pi/tau)
-        Ef2 /= z
+        Ef2 /= z_scaled
         variance = Ef2 - mean**2
+
+        #Add constant to the zeroth moment
+        #NOTE: this constant is not needed in the other moments because it cancells out.
+        z = z_scaled/np.sqrt(2*np.pi/tau)
 
         return z, mean, variance
 
@@ -142,7 +145,7 @@ class NoiseDistribution(object):
         """
         raise NotImplementedError
 
-    def _predictive_mean_numerical(self,mu,sigma):
+    def _predictive_mean_numerical(self,mu,variance):
         """
         Quadrature calculation of the predictive mean: E(Y_star|Y) = E( E(Y_star|f_star, Y) )
 
@@ -150,49 +153,50 @@ class NoiseDistribution(object):
         :param sigma: standard deviation of posterior
 
         """
-        #FIXME: Quadrature does not work!
-        raise NotImplementedError
-        sigma2 = sigma**2
-        #Compute first moment
-        def int_mean(f):
-            return self._mean(f)*np.exp(-(0.5/sigma2)*np.square(f - mu))
-        scaled_mean, accuracy = quad(int_mean, -np.inf, np.inf)
-        mean = scaled_mean / np.sqrt(2*np.pi*(sigma2))
+        def int_mean(f,m,v):
+            return self._mean(f)*np.exp(-(0.5/v)*np.square(f - m))
+        scaled_mean = [quad(int_mean, -np.inf, np.inf,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
+        mean = np.array(scaled_mean)[:,None] / np.sqrt(2*np.pi*(variance))
 
         return mean
 
-    def _predictive_variance_numerical(self,mu,sigma,predictive_mean=None):
+    def _predictive_variance_numerical(self,mu,variance,predictive_mean=None):
         """
-        Laplace approximation to the predictive variance: V(Y_star) = E( V(Y_star|f_star) ) + V( E(Y_star|f_star) )
+        Numerical approximation to the predictive variance: V(Y_star)
+
+        The following variance decomposition is used:
+        V(Y_star) = E( V(Y_star|f_star) ) + V( E(Y_star|f_star) )
 
         :param mu: mean of posterior
         :param sigma: standard deviation of posterior
         :predictive_mean: output's predictive mean, if None _predictive_mean function will be called.
 
         """
-        sigma2 = sigma**2
-        normalizer = np.sqrt(2*np.pi*sigma2)
+        #sigma2 = sigma**2
+        normalizer = np.sqrt(2*np.pi*variance)
 
         # E( V(Y_star|f_star) )
-        #Compute expected value of variance
-        def int_var(f):
-            return self._variance(f)*np.exp(-(0.5/sigma2)*np.square(f - mu))
-        scaled_exp_variance, accuracy = quad(int_var, -np.inf, np.inf)
-        exp_var = scaled_exp_variance / normalizer
+        def int_var(f,m,v):
+            return self._variance(f)*np.exp(-(0.5/v)*np.square(f - m))
+        scaled_exp_variance = [quad(int_var, -np.inf, np.inf,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
+        exp_var = np.array(scaled_exp_variance)[:,None] / normalizer
 
         #V( E(Y_star|f_star) ) =  E( E(Y_star|f_star)**2 ) - E( E(Y_star|f_star) )**2
+
+        #E( E(Y_star|f_star) )**2
         if predictive_mean is None:
-            predictive_mean = self.predictive_mean(mu,sigma)
-
+            predictive_mean = self.predictive_mean(mu,variance)
         predictive_mean_sq = predictive_mean**2
-        def int_pred_mean_sq(f):
-            return predictive_mean_sq*np.exp(-(0.5/(sigma2))*np.square(f - mu))
 
-        scaled_exp_exp2, accuracy = quad(int_pred_mean_sq, -np.inf, np.inf)
-        exp_exp2 = scaled_exp_exp2 / normalizer
+        #E( E(Y_star|f_star)**2 )
+        def int_pred_mean_sq(f,m,v,predictive_mean_sq):
+            return self._mean(f)**2*np.exp(-(0.5/v)*np.square(f - m))
+        scaled_exp_exp2 = [quad(int_pred_mean_sq, -np.inf, np.inf,args=(mj,s2j,pm2j))[0] for mj,s2j,pm2j in zip(mu,variance,predictive_mean_sq)]
+        exp_exp2 = np.array(scaled_exp_exp2)[:,None] / normalizer
 
-        var_exp = exp_exp2 - predictive_mean**2
-        # V(Y_star | f_star) = E( V(Y_star|f_star) ) + V( E(Y_star|f_star) )
+        var_exp = exp_exp2 - predictive_mean_sq
+
+        # V(Y_star) = E( V(Y_star|f_star) ) + V( E(Y_star|f_star) )
         return exp_var + var_exp
 
     def pdf_link(self, link_f, y, extra_data=None):
@@ -375,8 +379,7 @@ class NoiseDistribution(object):
         assert d2logpdf_df2_dtheta.shape[1] == len(self._get_param_names())
         return dlogpdf_dtheta, dlogpdf_df_dtheta, d2logpdf_df2_dtheta
 
-    def predictive_values(self, mu, var, full_cov=False, num_samples=30000,
-                          sampling=False):
+    def predictive_values(self, mu, var, full_cov=False, sampling=False, num_samples=10000):
         """
         Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction.
 
@@ -392,37 +395,33 @@ class NoiseDistribution(object):
 
         """
 
-        #Get gp_samples f* using posterior mean and variance
-        if not full_cov:
-            gp_samples = np.random.multivariate_normal(mu.flatten(), np.diag(var.flatten()),
-                                                        size=num_samples).T
+        if sampling:
+            #Get gp_samples f* using posterior mean and variance
+            if not full_cov:
+                gp_samples = np.random.multivariate_normal(mu.flatten(), np.diag(var.flatten()),
+                                                            size=num_samples).T
+            else:
+                gp_samples = np.random.multivariate_normal(mu.flatten(), var,
+                                                               size=num_samples).T
+            #Push gp samples (f*) through likelihood to give p(y*|f*)
+            samples = self.samples(gp_samples)
+            axis=-1
+
+            #Calculate mean, variance and precentiles from samples
+            print "WARNING: Using sampling to calculate mean, variance and predictive quantiles."
+            pred_mean = np.mean(samples, axis=axis)[:,None]
+            pred_var = np.var(samples, axis=axis)[:,None]
+            q1 = np.percentile(samples, 2.5, axis=axis)[:,None]
+            q3 = np.percentile(samples, 97.5, axis=axis)[:,None]
+
         else:
-            gp_samples = np.random.multivariate_normal(mu.flatten(), var,
-                                                           size=num_samples).T
 
-        #Push gp samples (f*) through likelihood to give p(y*|f*)
-        samples = self.samples(gp_samples)
-        axis=-1
+            pred_mean = self.predictive_mean(mu, var)
+            pred_var = self.predictive_variance(mu, var, pred_mean)
+            print "WARNING: Predictive quantiles are only computed when sampling."
+            q1 = np.repeat(np.nan,pred_mean.size)[:,None]
+            q3 = q1.copy()
 
-        if self.analytical_mean and not sampling:
-            pred_mean = self.predictive_mean(mu, np.sqrt(var))
-        else:
-            pred_mean = np.mean(samples, axis=axis)
-
-        if self.analytical_variance and not sampling:
-            pred_var = self.predictive_variance(mu, np.sqrt(var), pred_mean)
-        else:
-            pred_var = np.var(samples, axis=axis)
-
-        #Calculate quantiles from samples
-        q1 = np.percentile(samples, 2.5, axis=axis)
-        q3 = np.percentile(samples, 97.5, axis=axis)
-        print "WARNING: Using sampling to calculate predictive quantiles"
-
-        pred_mean = np.vstack(pred_mean)
-        pred_var = np.vstack(pred_var)
-        q1 = np.vstack(q1)
-        q3 = np.vstack(q3)
         return pred_mean, pred_var, q1, q3
 
     def samples(self, gp):

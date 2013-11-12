@@ -450,6 +450,18 @@ def prod(k1,k2,tensor=False):
 def symmetric(k):
     """
     Construct a symmetric kernel from an existing kernel
+
+    The symmetric kernel works by adding two GP functions together, and computing the overall covariance.
+
+    Let f ~ GP(x | 0, k(x, x')). Now let g = f(x) + f(-x).
+
+    It's easy to see that g is a symmetric function: g(x) = g(-x).
+
+    by construction, g, is a gaussian Process with mean 0 and covariance
+
+    k(x, x') + k(-x, x') + k(x, -x') + k(-x, -x')
+
+    This constructor builds a covariance function of this form from the initial kernel
     """
     k_ = k.copy()
     k_.parts = [symmetric.Symmetric(p) for p in k.parts]

@@ -173,7 +173,8 @@ class GPBase(Model):
                 upper = m + 2*np.sqrt(v)
                 Y = self.likelihood.Y
             else:
-                m, v, lower, upper = self.predict(Xgrid, which_parts=which_parts)
+                m, v, lower, upper = self.predict(Xgrid, which_parts=which_parts,sampling=False) #Compute the exact mean
+                m_, v_, lower, upper = self.predict(Xgrid, which_parts=which_parts,sampling=True,num_samples=15000) #Apporximate the percentiles
                 Y = self.likelihood.data
             for d in which_data_ycols:
                 gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax, edgecol=linecol, fillcol=fillcol)
@@ -210,7 +211,7 @@ class GPBase(Model):
                 m, _ = self._raw_predict(Xgrid, which_parts=which_parts)
                 Y = self.likelihood.Y
             else:
-                m, _, _, _ = self.predict(Xgrid, which_parts=which_parts,num_samples=100) #FIXME we need a balance between accuracy and speed to define num_samples
+                m, _, _, _ = self.predict(Xgrid, which_parts=which_parts,sampling=False)
                 Y = self.likelihood.data
             for d in which_data_ycols:
                 m_d = m[:,d].reshape(resolution, resolution).T

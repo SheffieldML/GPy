@@ -284,19 +284,26 @@ class Param(ObservableArray, Nameable, Pickleable):
     #===========================================================================
     def tie_to(self, param):
         """
-        :param param: the parameter object to tie this parameter to.
+        :param param: the parameter object to tie this parameter to. 
+                      Can be ParamConcatenation (retrieved by regexp search)
         
         Tie this parameter to the given parameter.
-        Broadcasting is allowed, so you can tie a whole dimension to
+        Broadcasting is not allowed, but you can tie a whole dimension to
         one parameter:  self[:,0].tie_to(other), where other is a one-value
         parameter.
         
-        Note: this method will tie to the parameter which is the last in 
-              the chain of ties. Thus, if you tie to a tied parameter,
-              this tie will be created to the parameter the param is tied
-              to.
+        Note: For now only one parameter can have ties, so all of a parameter
+              will be removed, when re-tieing!
         """
+        #Note: this method will tie to the parameter which is the last in 
+        #      the chain of ties. Thus, if you tie to a tied parameter,
+        #      this tie will be created to the parameter the param is tied
+        #      to.
+
         assert isinstance(param, Param), "Argument {1} not of type {0}".format(Param,param.__class__)
+        param = numpy.atleast_1d(param)
+        if param.size != 1:
+            raise NotImplementedError, "Broadcast tying is not implemented yet"
         try:
             if self._original_: 
                 self[:] = param
@@ -306,35 +313,55 @@ class Param(ObservableArray, Nameable, Pickleable):
             raise ValueError("Trying to tie {} with shape {} to {} with shape {}".format(self.name, self.shape, param.name, param.shape))            
         if param is self:
             raise RuntimeError, 'Cyclic tieing is not allowed'
-        if len(param._tied_to_) > 0:
-            self.tie_to(param._tied_to_[0])
-            return
-        self._direct_parent_._get_original(self)._tied_to_ += [param]
+#         if len(param._tied_to_) > 0:
+#             if (self._direct_parent_._get_original(self) is param._direct_parent_._get_original(param)
+#                 and len(set(self._raveled_index())&set(param._tied_to_[0]._raveled_index()))!=0):
+#                 raise RuntimeError, 'Cyclic tieing is not allowed'
+#             self.tie_to(param._tied_to_[0])
+#             return
+        if not param in self._direct_parent_._get_original(self)._tied_to_:
+            self._direct_parent_._get_original(self)._tied_to_ += [param]
         param._add_tie_listener(self)
         self._highest_parent_._set_fixed(self)
-        for t in self._tied_to_me_.iterkeys():
-            if t is not self:
-                t.untie(self)
-                t.tie_to(param)
-#         self._direct_parent_._add_tie(self, param)
+#         for t in self._tied_to_me_.keys():
+#             if t is not self:
+#                 t.untie(self)
+#                 t.tie_to(param)
 
     def untie(self, *ties):
         """
-        remove tie of this parameter to ties it was tied to.
+        remove all ties.
         """
         [t._direct_parent_._get_original(t)._remove_tie_listener(self) for t in self._tied_to_]
-        self._tied_to_ = [tied_to for tied_to in self._tied_to_ for t in tied_to._tied_to_me_ if self._parent_index_==t._direct_parent_._get_original(t)._parent_index_]
-        self._highest_parent_._set_unfixed(self)
+        new_ties = []
+        for t in self._direct_parent_._get_original(self)._tied_to_:
+            for tied in t._tied_to_me_.keys():
+                if t._parent_index_ is tied._parent_index_:
+                    new_ties.append(tied)
+        self._direct_parent_._get_original(self)._tied_to_ = new_ties
+        self._direct_parent_._get_original(self)._highest_parent_._set_unfixed(self)
 #         self._direct_parent_._remove_tie(self, *params)
     def _notify_tied_parameters(self):
         for tied, ind in self._tied_to_me_.iteritems():
             tied._on_tied_parameter_changed(self.base, list(ind))
     def _add_tie_listener(self, tied_to_me):
-        self._tied_to_me_[tied_to_me] |= set(self._raveled_index())
+        for t in self._tied_to_me_.keys():
+            if tied_to_me._parent_index_ is t._parent_index_:
+                t_rav_i = t._raveled_index()
+                tr_rav_i = tied_to_me._raveled_index()
+                new_index = list(set(t_rav_i) | set(tr_rav_i))
+                tmp = t._direct_parent_._get_original(t)[numpy.unravel_index(new_index,t._realshape_)]
+                self._tied_to_me_[tmp] = self._tied_to_me_[t] | set(self._raveled_index())
+                del self._tied_to_me_[t]
+                return
+        self._tied_to_me_[tied_to_me] = set(self._raveled_index())
     def _remove_tie_listener(self, to_remove):
         for t in self._tied_to_me_.keys():
             if t._parent_index_ == to_remove._parent_index_:
-                new_index = list(set(t._raveled_index()) - set(to_remove._raveled_index()))
+                t_rav_i = t._raveled_index()
+                tr_rav_i = to_remove._raveled_index()
+                import ipdb;ipdb.set_trace()
+                new_index = list(set(t_rav_i) - set(tr_rav_i))
                 if new_index:
                     tmp = t._direct_parent_._get_original(t)[numpy.unravel_index(new_index,t._realshape_)]
                     self._tied_to_me_[tmp] = self._tied_to_me_[t]
@@ -345,6 +372,7 @@ class Param(ObservableArray, Nameable, Pickleable):
                     del self._tied_to_me_[t]
     def _on_tied_parameter_changed(self, val, ind):
         if not self._updated_: #not fast_array_equal(self, val[ind]):
+            val = numpy.atleast_1d(val)
             self._updated_ = True
             if self._original_:
                 self.__setitem__(slice(None), val[ind], update=False)
@@ -479,14 +507,16 @@ class Param(ObservableArray, Nameable, Pickleable):
                             x=self.name_hirarchical)
         return name + super(Param, self).__repr__(*args,**kwargs)
     def _ties_for(self, rav_index):
+        size = sum(p.size for p in self._tied_to_)
         ties = numpy.empty(shape=(len(self._tied_to_), numpy.size(rav_index)), dtype=Param)
         for i, tied_to in enumerate(self._tied_to_):
-            for t in tied_to._tied_to_me_.iterkeys():
+            for t, ind in tied_to._tied_to_me_.iteritems():
                 if t._parent_index_ == self._parent_index_:
                     matches = numpy.where(rav_index[:,None] == t._raveled_index()[None, :])
                     tt_rav_index = tied_to._raveled_index()
-                    ties[i, matches[0]] = numpy.take(tt_rav_index, matches[1], mode='wrap')
-                    #[ties.__setitem__(i, ties[i] + [tied_to]) for i in t._raveled_index()]
+                    ind_rav_matches = numpy.where(tt_rav_index == numpy.array(list(ind)))[0]
+                    if len(ind) != 1: ties[i, matches[0][ind_rav_matches]] = numpy.take(tt_rav_index, matches[1], mode='wrap')[ind_rav_matches]
+                    else: ties[i, matches[0]] = numpy.take(tt_rav_index, matches[1], mode='wrap')
         return map(lambda a: sum(a,[]), zip(*[[[tie.flatten()] if tx!=None else [] for tx in t] for t,tie in zip(ties,self._tied_to_)]))
     def _constraints_for(self, rav_index):
         return self._highest_parent_._constraints_for(self, rav_index)

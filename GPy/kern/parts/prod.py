@@ -133,12 +133,12 @@ class Prod(Kernpart):
                 self.k1.K(X[:,self.slice1],X2[:,self.slice1],self._K1)
                 self.k2.K(X[:,self.slice2],X2[:,self.slice2],self._K2)
 
-    def __getstate__(self):
-        return [self.k1, self.k2, self.slice1, self.slice2, self.name, self.input_dim, self.num_params]
+    #def __getstate__(self):
+        #return [self.k1, self.k2, self.slice1, self.slice2, self.name, self.input_dim, self.num_params]
 
-    def __setstate__(self, state):
-        self.k1, self.k2, self.slice1, self.slice2, self.name, self.input_dim, self.num_params = state
-        self._X, self._X2, self._params = np.empty(shape=(3,1))
+    #def __setstate__(self, state):
+        #self.k1, self.k2, self.slice1, self.slice2, self.name, self.input_dim, self.num_params = state
+        #self._X, self._X2, self._params = np.empty(shape=(3,1))
 
 
 

@@ -555,6 +555,10 @@ class Parameterized(Nameable, Pickleable, Observable):
     def _constraints_for(self, param, rav_index):
         # constraint for param given its internal rav_index
         return self.constraints.properties_for(rav_index+self._offset_for(param))
+    def _constraints_for_collect(self, param, rav_index):
+        # constraint for param given its internal rav_index
+        cs = self._constraints_for(param, rav_index)
+        return set(itertools.chain(*cs))
     #===========================================================================
     # Get/set parameters:
     #===========================================================================

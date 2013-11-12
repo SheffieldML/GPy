@@ -223,6 +223,9 @@ class Param(ObservableArray, Nameable, Pickleable):
         else:
             self._direct_parent_._get_original(self).__setitem__(self._current_slice_, transform.initialize(self), update=False)
         self._highest_parent_._add_constrain(self, transform, warning)
+        for t in self._tied_to_me_.iterkeys():
+            if transform not in self._highest_parent_._constraints_for_collect(t, t._raveled_index()):
+                t._direct_parent_._get_original(t)[t._current_slice_].constrain(transform, warning, update)
         if update:
             self._highest_parent_.parameters_changed()        
 
@@ -323,6 +326,9 @@ class Param(ObservableArray, Nameable, Pickleable):
             self._direct_parent_._get_original(self)._tied_to_ += [param]
         param._add_tie_listener(self)
         self._highest_parent_._set_fixed(self)
+        cs = self._highest_parent_._constraints_for(param, param._raveled_index())
+        for cs in self._highest_parent_._constraints_for(param, param._raveled_index()):
+            [self.constrain(c, warning=False) for c in cs]
 #         for t in self._tied_to_me_.keys():
 #             if t is not self:
 #                 t.untie(self)

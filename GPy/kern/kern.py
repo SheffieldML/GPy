@@ -462,14 +462,10 @@ class kern(Parameterized):
                 pass
             # rbf X bias
             elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, (RBF, RBFInv)):
-                target += p1.variance * (p2._psi1[:, :, None] + p2._psi1[:, None, :])
+                target += 2 * p1.variance * (p2._psi1[:, :, None] + p2._psi1[:, None, :])
             elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, (RBF, RBFInv)):
-                import ipdb;ipdb.set_trace()
                 tmp1 = p2.variance * (p1._psi1[:, :, None] + p1._psi1[:, None, :])
-
                 renorm = p1.variance*np.exp()
-                
-                tmp2 = asd
                 target += p2.variance * (p1._psi1[:, :, None] + p1._psi1[:, None, :])
             # linear X bias
             elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, Linear):

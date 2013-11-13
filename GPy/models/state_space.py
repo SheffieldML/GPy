@@ -360,8 +360,8 @@ class StateSpace(Model):
         # Optimize for cases where time steps occur repeatedly
         else:
 
-            # Time discretizations
-            dt, _, index = np.unique(dt,True,True)
+            # Time discretizations (round to 14 decimals to avoid problems)
+            dt, _, index = np.unique(np.round(dt,14),True,True)
 
             # Allocate space for A and Q
             A = np.empty((n,n,dt.shape[0]))

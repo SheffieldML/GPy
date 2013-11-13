@@ -7,7 +7,7 @@ config = ConfigParser.ConfigParser()
 
 home = os.getenv('HOME') or os.getenv('USERPROFILE')
 user_file = os.path.join(home,'.gpy_config.cfg')
-default_file = os.path.join('..','gpy_config.cfg')
+default_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'gpy_config.cfg'))
 
 # 1. check if the user has a ~/.gpy_config.cfg
 if os.path.isfile(user_file):

@@ -196,7 +196,7 @@ class StateSpace(Model):
         Y = self.posterior_samples_f(X,size)
 
         # Add noise
-        Y += np.sqrt(self.sigma2)*np.random.randn(Y.shape)
+        Y += np.sqrt(self.sigma2)*np.random.randn(Y.shape[0],Y.shape[1])
 
         # Return trajectory
         return Y

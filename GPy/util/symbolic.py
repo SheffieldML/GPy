@@ -1,4 +1,4 @@
-from sympy import Function, S, oo, I, cos, sin, asin, log, erf,pi,exp
+from sympy import Function, S, oo, I, cos, sin, asin, log, erf,pi,exp, sqrt
 
 
 class ln_diff_erf(Function):
@@ -22,6 +22,19 @@ class ln_diff_erf(Function):
 class sim_h(Function):
     nargs = 5
 
+    def fdiff(self, argindex=5):
+        t, tprime, d_i, d_j, l = self.args
+        if argindex == 5:
+            return -2*sin(t)
+        elif argindex == 4:
+            return 2*exp(d_i)
+        elif argindex == 3:
+            return 4*exp(d_j)
+        elif argindex == 2:
+            return 3*exp(l)
+        elif argindex == 1:
+            return 2*d_j
+            
     @classmethod
     def eval(cls, t, tprime, d_i, d_j, l):
         return exp((d_j/2*l)**2)/(d_i+d_j)*(exp(-d_j*(tprime - t))*(erf((tprime-t)/l - d_j/2*l) + erf(t/l + d_j/2*l)) - exp(-(d_j*tprime + d_i))*(erf(tprime/l - d_j/2*l) + erf(d_j/2*l)))

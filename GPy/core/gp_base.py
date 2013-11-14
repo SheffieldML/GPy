@@ -14,8 +14,11 @@ class GPBase(Model):
     Here we define some functions that are use
     """
     def __init__(self, X, likelihood, kernel, normalize_X=False):
+        if len(X.shape)==1:
+            X = X.reshape(-1,1)
+            warning.warn("One dimension output (N,) being reshaped to (N,1)")
         self.X = X
-        assert len(self.X.shape) == 2
+        assert len(self.X.shape) == 2, "too many dimensions for X input"
         self.num_data, self.input_dim = self.X.shape
         assert isinstance(kernel, kern.kern)
         self.kern = kernel

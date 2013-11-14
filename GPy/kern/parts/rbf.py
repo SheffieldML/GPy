@@ -208,6 +208,16 @@ class RBF(Kernpart):
         self._psi_computations(Z, mu, S)
         target += self._psi2
 
+    def _crossterm_product_expectation(self, K, Z, mu, S):
+        # compute the crossterm expectation for K as the other kernel:
+        import ipdb;ipdb.set_trace()
+        Sigma = 1./self.lengthscale[None,:] + 1./S # is independent across M, 
+        M = (Z[None,:,:]/self.lengthscale[None,None,:] + (mu/S)[:,None,:]) / Sigma[:,None,:]
+        psi1_other = K.psi1()
+        self.variance
+        # return is [N x M x M]
+        return 
+
     def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S, target):
         """Shape N,num_inducing,num_inducing,Ntheta"""
         self._psi_computations(Z, mu, S)

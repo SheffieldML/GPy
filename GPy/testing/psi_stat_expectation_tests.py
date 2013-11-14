@@ -27,7 +27,7 @@ def ard(p):
 @testing.deepTest(__test__())
 class Test(unittest.TestCase):
     input_dim = 9
-    num_inducing = 4
+    num_inducing = 13
     N = 30
     Nsamples = 9e6
 
@@ -51,13 +51,16 @@ class Test(unittest.TestCase):
 #                        GPy.kern.bias(self.input_dim) +
 #                        GPy.kern.white(self.input_dim)),
 #                     (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
-#                     GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
-#                     GPy.kern.linear(self.input_dim, np.random.rand(self.input_dim), ARD=True) +
+                    (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
+                     +GPy.kern.linear(self.input_dim, np.random.rand(self.input_dim), ARD=True)
 #                     GPy.kern.bias(self.input_dim) +
 #                     GPy.kern.white(self.input_dim)),
-        (GPy.kern.linear(self.input_dim, np.random.rand(self.input_dim), ARD=True) +
-                    GPy.kern.bias(self.input_dim, np.random.rand()) +
-                    GPy.kern.white(self.input_dim, np.random.rand())),
+                    ),
+        (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
+         +GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
+         #+GPy.kern.bias(self.input_dim, np.random.rand())
+         #+GPy.kern.white(self.input_dim, np.random.rand())),
+         ),
                 (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
                     GPy.kern.bias(self.input_dim, np.random.rand()) +
                     GPy.kern.white(self.input_dim, np.random.rand())),

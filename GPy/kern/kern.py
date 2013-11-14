@@ -462,10 +462,8 @@ class kern(Parameterized):
                 pass
             # rbf X bias
             elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, (RBF, RBFInv)):
-                target += 2 * p1.variance * (p2._psi1[:, :, None] + p2._psi1[:, None, :])
+                target += p1.variance * (p2._psi1[:, :, None] + p2._psi1[:, None, :])
             elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, (RBF, RBFInv)):
-                tmp1 = p2.variance * (p1._psi1[:, :, None] + p1._psi1[:, None, :])
-                renorm = p1.variance*np.exp()
                 target += p2.variance * (p1._psi1[:, :, None] + p1._psi1[:, None, :])
             # linear X bias
             elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, Linear):
@@ -478,12 +476,21 @@ class kern(Parameterized):
                 target += p2.variance * (tmp[:, :, None] + tmp[:, None, :])
             # rbf X any
             elif isinstance(p1, (RBF, RBFInv)):
-                pass
+                psi11 = np.zeros((mu.shape[0], Z.shape[0]))
+                psi12 = np.zeros((mu.shape[0], Z.shape[0]))
+                p1.psi1(Z, mu, S, psi11)
+                p2.psi1(Z, mu, S, psi12)
+                
+                crossterms  = psi11[:, :, None] + psi12[:, None, :]
+                crossterms += psi12[:, :, None] + psi11[:, None, :]
+                
+                target += p1._crossterm_product_expectation(p2, Z, mu, S)
+                #import ipdb;ipdb.set_trace()
             elif isinstance(p2, (RBF, RBFInv)):
                 raise NotImplementedError # TODO
             else:
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
-        return target
+        return target        
 
     def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S):
         target = np.zeros(self.num_params)

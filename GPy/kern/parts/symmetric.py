@@ -56,7 +56,7 @@ class Symmetric(Kernpart):
         AX = np.dot(X,self.transform)
         if X2 is None:
             X2 = X
-            ZX2 = AX
+            AX2 = AX
         else:
             AX2 = np.dot(X2, self.transform)
         self.k.dK_dtheta(dL_dK,X,X2,target)

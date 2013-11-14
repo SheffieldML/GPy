@@ -37,7 +37,7 @@ def model_checkgrads(model):
 
 def model_instance(model):
     #assert isinstance(model, GPy.core.model)
-    return isinstance(model, GPy.core.model)
+    return isinstance(model, GPy.core.model.Model)
 
 @nottest
 def test_models():
@@ -54,7 +54,7 @@ def test_models():
         print "After"
         print functions
         for example in functions:
-            if example[0] in ['oil', 'silhouette', 'GPLVM_oil_100']:
+            if example[0] in ['oil', 'silhouette', 'GPLVM_oil_100', 'brendan_faces']:
                 print "SKIPPING"
                 continue
 

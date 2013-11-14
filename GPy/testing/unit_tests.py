@@ -209,7 +209,7 @@ class GradientTests(unittest.TestCase):
         Z = np.linspace(0, 15, 4)[:, None]
         kernel = GPy.kern.rbf(1)
         m = GPy.models.SparseGPClassification(X,Y,kernel=kernel,Z=Z)
-        #distribution = GPy.likelihoods.likelihood_functions.Binomial()
+        #distribution = GPy.likelihoods.likelihood_functions.Bernoulli()
         #likelihood = GPy.likelihoods.EP(Y, distribution)
         #m = GPy.core.SparseGP(X, likelihood, kernel, Z)
         #m.ensure_default_constraints()

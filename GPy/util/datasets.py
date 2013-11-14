@@ -17,13 +17,13 @@ except ImportError:
 
 import sys, urllib
 
-def reporthook(a,b,c): 
+def reporthook(a,b,c):
     # ',' at the end of the line is important!
     #print "% 3.1f%% of %d bytes\r" % (min(100, float(a * b) / c * 100), c),
     #you can also use sys.stdout.write
     sys.stdout.write("\r% 3.1f%% of %d bytes" % (min(100, float(a * b) / c * 100), c))
     sys.stdout.flush()
-     
+
 # Global variables
 data_path = os.path.join(os.path.dirname(__file__), 'datasets')
 default_seed = 10000
@@ -39,7 +39,7 @@ data_resources = {'ankur_pose_data' : {'urls' : [neil_url + 'ankur_pose_data/'],
                                        'license' : None,
                                        'citation' : """3D Human Pose from Silhouettes by Relevance Vector Regression (In CVPR'04). A. Agarwal and B. Triggs.""",
                                        'details' : """Artificially generated data of silhouettes given poses. Note that the data does not display a left/right ambiguity because across the entire data set one of the arms sticks out more the the other, disambiguating the pose as to which way the individual is facing."""},
-                   
+
                   'boston_housing' : {'urls' : ['http://archive.ics.uci.edu/ml/machine-learning-databases/housing/'],
                                       'files' : [['Index', 'housing.data', 'housing.names']],
                                       'citation' : """Harrison, D. and Rubinfeld, D.L. 'Hedonic prices and the demand for clean air', J. Environ. Economics & Management, vol.5, 81-102, 1978.""",
@@ -164,14 +164,14 @@ def prompt_user(prompt):
         print(prompt)
         choice = raw_input().lower()
         # would like to test for exception here, but not sure if we can do that without importing IPython
-    except: 
+    except:
         print('Stdin is not implemented.')
         print('You need to set')
         print('overide_manual_authorize=True')
         print('to proceed with the download. Please set that variable and continue.')
         raise
 
-    
+
     if choice in yes:
         return True
     elif choice in no:
@@ -189,7 +189,7 @@ def data_available(dataset_name=None):
             if not os.path.exists(os.path.join(data_path, dataset_name, file)):
                 return False
     return True
-            
+
 def download_url(url, store_directory, save_name = None, messages = True, suffix=''):
     """Download a file from a url and save it to disk."""
     i = url.rfind('/')
@@ -249,18 +249,18 @@ def download_data(dataset_name=None):
             for file in files:
                 download_url(os.path.join(url,file), dataset_name, dataset_name)
     return True
-                  
+
 def data_details_return(data, data_set):
     """Update the data component of the data dictionary with details drawn from the data_resources."""
     data.update(data_resources[data_set])
     return data
 
-    
+
 def cmu_urls_files(subj_motions, messages = True):
     '''
-    Find which resources are missing on the local disk for the requested CMU motion capture motions. 
+    Find which resources are missing on the local disk for the requested CMU motion capture motions.
     '''
-    
+
     subjects_num = subj_motions[0]
     motions_num = subj_motions[1]
 
@@ -280,15 +280,15 @@ def cmu_urls_files(subj_motions, messages = True):
             motions[i].append(curMot)
 
     all_skels = []
-    
+
     assert len(subjects) == len(motions)
-    
+
     all_motions = []
-            
+
     for i in range(len(subjects)):
         skel_dir = os.path.join(data_path, 'cmu_mocap')
         cur_skel_file = os.path.join(skel_dir, subjects[i] + '.asf')
-        
+
         url_required = False
         file_download = []
         if not os.path.exists(cur_skel_file):
@@ -332,7 +332,7 @@ if gpxpy_available:
             points = [point for track in gpx.tracks for segment in track.segments for point in segment.points]
             data = [[(point.time-datetime.datetime(2013,8,21)).total_seconds(), point.latitude, point.longitude, point.elevation] for point in points]
             X.append(np.asarray(data)[::sample_every, :])
-            gpx_file.close()        
+            gpx_file.close()
         return data_details_return({'X' : X, 'info' : 'Data is an array containing time in seconds, latitude, longitude and elevation in that order.'}, data_set)
 
 del gpxpy_available
@@ -408,7 +408,7 @@ def oil(data_set='three_phase_oil_flow'):
     return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'Xtest' : Xtest, 'Xvalid': Xvalid, 'Yvalid': Yvalid}, data_set)
     #else:
     # throw an error
-    
+
 def oil_100(seed=default_seed, data_set = 'three_phase_oil_flow'):
     np.random.seed(seed=seed)
     data = oil()
@@ -622,7 +622,7 @@ def xw_pen(data_set='xw_pen'):
     X = np.arange(485)[:, None]
     return data_details_return({'Y': Y, 'X': X, 'info': "Tilt data from a personalized digital assistant pen. Plot in original paper showed regression between time steps 175 and 275."}, data_set)
 
-    
+
 def download_rogers_girolami_data():
     if not data_available('rogers_girolami_data'):
         download_data(data_set)

@@ -464,7 +464,7 @@ def symmetric(k):
     This constructor builds a covariance function of this form from the initial kernel
     """
     k_ = k.copy()
-    k_.parts = [symmetric.Symmetric(p) for p in k.parts]
+    k_.parts = [parts.symmetric.Symmetric(p) for p in k.parts]
     return k_
 
 def coregionalize(output_dim,rank=1, W=None, kappa=None):

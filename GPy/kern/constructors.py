@@ -600,3 +600,20 @@ def ODE_1(input_dim=1, varianceU=1.,  varianceY=1., lengthscaleU=None,  lengthsc
     """
     part = parts.ODE_1.ODE_1(input_dim, varianceU, varianceY, lengthscaleU, lengthscaleY)
     return kern(input_dim, [part])
+
+def ODE_UY(input_dim=2, varianceU=1.,  varianceY=1., lengthscaleU=None,  lengthscaleY=None):
+    """
+    kernel resultiong from a first order ODE with OU driving GP
+    :param input_dim: the number of input dimension, has to be equal to one
+    :type input_dim: int
+    :param input_lengthU: the number of input U length
+    :param varianceU: variance of the driving GP
+    :type varianceU: float
+    :param varianceY: 'variance' of the transfer function
+    :type varianceY: float
+    :param lengthscaleY: 'lengthscale' of the transfer function
+    :type lengthscaleY: float
+    :rtype: kernel object
+    """
+    part = parts.ODE_UY.ODE_UY(input_dim, varianceU, varianceY, lengthscaleU, lengthscaleY)
+    return kern(input_dim, [part])

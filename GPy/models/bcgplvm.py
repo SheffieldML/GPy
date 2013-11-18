@@ -7,7 +7,7 @@ import pylab as pb
 import sys, pdb
 from ..core import GP
 from ..models import GPLVM
-from ..mappings import *
+from ..mappings import Kernel
 
 
 class BCGPLVM(GPLVM):

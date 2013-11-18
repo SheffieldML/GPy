@@ -6,7 +6,7 @@ import numpy as np
 import pylab as pb
 from .. import kern
 from ..util.linalg import pdinv, mdot, tdot, dpotrs, dtrtrs
-from ..likelihoods import EP
+from ..likelihoods import EP, Laplace
 from gp_base import GPBase
 
 class GP(GPBase):
@@ -25,20 +25,23 @@ class GP(GPBase):
     """
     def __init__(self, X, likelihood, kernel, normalize_X=False):
         GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
-        self._set_params(self._get_params())
+        self.update_likelihood_approximation()
 
-    def getstate(self):
-        return GPBase.getstate(self)
-
-    def setstate(self, state):
-        GPBase.setstate(self, state)
-        self._set_params(self._get_params())
 
     def _set_params(self, p):
-        self.kern._set_params_transformed(p[:self.kern.num_params_transformed()])
-        self.likelihood._set_params(p[self.kern.num_params_transformed():])
+        new_kern_params = p[:self.kern.num_params_transformed()]
+        new_likelihood_params = p[self.kern.num_params_transformed():]
+        old_likelihood_params = self.likelihood._get_params()
+
+        self.kern._set_params_transformed(new_kern_params)
+        self.likelihood._set_params_transformed(new_likelihood_params)
 
         self.K = self.kern.K(self.X)
+
+        #Re fit likelihood approximation (if it is an approx), as parameters have changed
+        if isinstance(self.likelihood, Laplace):
+            self.likelihood.fit_full(self.K)
+
         self.K += self.likelihood.covariance_matrix
 
         self.Ki, self.L, self.Li, self.K_logdet = pdinv(self.K)
@@ -54,6 +57,10 @@ class GP(GPBase):
             tmp, _ = dpotrs(self.L, np.asfortranarray(self.likelihood.YYT), lower=1)
             tmp, _ = dpotrs(self.L, np.asfortranarray(tmp.T), lower=1)
             self.dL_dK = 0.5 * (tmp - self.output_dim * self.Ki)
+
+        #Adding dZ_dK (0 for a non-approximate likelihood, compensates for
+        #additional gradients of K when log-likelihood has non-zero Z term)
+        self.dL_dK += self.likelihood.dZ_dK
 
     def _get_params(self):
         return np.hstack((self.kern._get_params_transformed(), self.likelihood._get_params()))
@@ -94,19 +101,13 @@ class GP(GPBase):
         return (-0.5 * self.num_data * self.output_dim * np.log(2.*np.pi) -
             0.5 * self.output_dim * self.K_logdet + self._model_fit_term() + self.likelihood.Z)
 
-
     def _log_likelihood_gradients(self):
         """
         The gradient of all parameters.
 
         Note, we use the chain rule: dL_dtheta = dL_dK * d_K_dtheta
         """
-        #return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
-        if not isinstance(self.likelihood,EP):
-            tmp = np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
-        else:
-            tmp = np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
-        return tmp
+        return np.hstack((self.kern.dK_dtheta(dL_dK=self.dL_dK, X=self.X), self.likelihood._gradients(partial=np.diag(self.dL_dK))))
 
     def _raw_predict(self, _Xnew, which_parts='all', full_cov=False, stop=False):
         """
@@ -193,3 +194,11 @@ class GP(GPBase):
         """
         Xnew = self._add_output_index(Xnew, output)
         return self.predict(Xnew, which_parts=which_parts, full_cov=full_cov, likelihood_args=likelihood_args)
+
+    def getstate(self):
+        return GPBase.getstate(self)
+
+    def setstate(self, state):
+        GPBase.setstate(self, state)
+        self._set_params(self._get_params())
+

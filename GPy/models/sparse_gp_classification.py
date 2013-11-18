@@ -16,7 +16,7 @@ class SparseGPClassification(SparseGP):
 
     :param X: input observations
     :param Y: observed values
-    :param likelihood: a GPy likelihood, defaults to Binomial with probit link_function
+    :param likelihood: a GPy likelihood, defaults to Bernoulli with probit link_function
     :param kernel: a GPy kernel, defaults to rbf+white
     :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_X: False|True
@@ -31,7 +31,7 @@ class SparseGPClassification(SparseGP):
             kernel = kern.rbf(X.shape[1])# + kern.white(X.shape[1],1e-3)
 
         if likelihood is None:
-            noise_model = likelihoods.binomial()
+            noise_model = likelihoods.bernoulli()
             likelihood = likelihoods.EP(Y, noise_model)
         elif Y is not None:
             if not all(Y.flatten() == likelihood.data.flatten()):

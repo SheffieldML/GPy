@@ -4,6 +4,14 @@ GPy.testing package
 Submodules
 ----------
 
+GPy.testing.bcgplvm_tests module
+--------------------------------
+
+.. automodule:: GPy.testing.bcgplvm_tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.testing.bgplvm_tests module
 -------------------------------
 
@@ -28,6 +36,14 @@ GPy.testing.examples_tests module
     :undoc-members:
     :show-inheritance:
 
+GPy.testing.gp_transformation_tests module
+------------------------------------------
+
+.. automodule:: GPy.testing.gp_transformation_tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.testing.gplvm_tests module
 ------------------------------
 
@@ -40,6 +56,14 @@ GPy.testing.kernel_tests module
 -------------------------------
 
 .. automodule:: GPy.testing.kernel_tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.testing.likelihoods_tests module
+------------------------------------
+
+.. automodule:: GPy.testing.likelihoods_tests
     :members:
     :undoc-members:
     :show-inheritance:

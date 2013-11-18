@@ -19,7 +19,10 @@ class Prod(Kernpart):
     """
     def __init__(self,k1,k2,tensor=False):
         self.num_params = k1.num_params + k2.num_params
-        self.name = '['+k1.name + '**' + k2.name +']'
+        if tensor:
+            self.name = '['+k1.name + '**' + k2.name +']'
+        else:
+            self.name = '['+k1.name + '*' + k2.name +']'
         self.k1 = k1
         self.k2 = k2
         if tensor:
@@ -129,4 +132,14 @@ class Prod(Kernpart):
                 self._K2 = np.zeros((X.shape[0],X2.shape[0]))
                 self.k1.K(X[:,self.slice1],X2[:,self.slice1],self._K1)
                 self.k2.K(X[:,self.slice2],X2[:,self.slice2],self._K2)
+
+    #def __getstate__(self):
+        #return [self.k1, self.k2, self.slice1, self.slice2, self.name, self.input_dim, self.num_params]
+
+    #def __setstate__(self, state):
+        #self.k1, self.k2, self.slice1, self.slice2, self.name, self.input_dim, self.num_params = state
+        #self._X, self._X2, self._params = np.empty(shape=(3,1))
+
+
+
 

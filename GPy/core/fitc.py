@@ -159,7 +159,7 @@ class FITC(SparseGP):
         A = -0.5 * self.num_data * self.output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
         C = -self.output_dim * (np.sum(np.log(np.diag(self.LB))))
         D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
-        return A + C + D
+        return A + C + D + self.likelihood.Z
 
     def _log_likelihood_gradients(self):
         pass

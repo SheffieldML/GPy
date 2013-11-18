@@ -4,9 +4,9 @@
 import numpy as np
 import noise_models
 
-def binomial(gp_link=None):
+def bernoulli(gp_link=None):
     """
-    Construct a binomial likelihood
+    Construct a bernoulli likelihood
 
     :param gp_link: a GPy gp_link function
     """
@@ -27,16 +27,17 @@ def binomial(gp_link=None):
         analytical_mean = False
         analytical_variance = False
 
-    return noise_models.binomial_noise.Binomial(gp_link,analytical_mean,analytical_variance)
+    return noise_models.bernoulli_noise.Bernoulli(gp_link,analytical_mean,analytical_variance)
 
 def exponential(gp_link=None):
+
     """
-    Construct a binomial likelihood
+    Construct a exponential likelihood
 
     :param gp_link: a GPy gp_link function
     """
     if gp_link is None:
-        gp_link = noise_models.gp_transformations.Identity()
+        gp_link = noise_models.gp_transformations.Log_ex_1()
 
     analytical_mean = False
     analytical_variance = False
@@ -85,4 +86,36 @@ def gamma(gp_link=None,beta=1.):
     analytical_variance = False
     return noise_models.gamma_noise.Gamma(gp_link,analytical_mean,analytical_variance,beta)
 
+def gaussian(gp_link=None, variance=2, D=None, N=None):
+    """
+    Construct a Gaussian likelihood
 
+    :param gp_link: a GPy gp_link function
+    :param variance: variance
+    :type variance: scalar
+    :returns: Gaussian noise model:
+    """
+    if gp_link is None:
+        gp_link = noise_models.gp_transformations.Identity()
+    analytical_mean = True
+    analytical_variance = True # ?
+    return noise_models.gaussian_noise.Gaussian(gp_link, analytical_mean,
+            analytical_variance, variance=variance, D=D, N=N)
+
+def student_t(gp_link=None, deg_free=5, sigma2=2):
+    """
+    Construct a Student t likelihood
+
+    :param gp_link: a GPy gp_link function
+    :param deg_free: degrees of freedom of student-t
+    :type deg_free: scalar
+    :param sigma2: variance
+    :type sigma2: scalar
+    :returns: Student-T noise model
+    """
+    if gp_link is None:
+        gp_link = noise_models.gp_transformations.Identity()
+    analytical_mean = True
+    analytical_variance = True
+    return noise_models.student_t_noise.StudentT(gp_link, analytical_mean,
+            analytical_variance,deg_free, sigma2)

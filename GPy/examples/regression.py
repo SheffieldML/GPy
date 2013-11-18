@@ -57,8 +57,8 @@ def coregionalization_toy(max_iters=100):
     m.optimize(max_iters=max_iters)
 
     fig, axes = pb.subplots(2,1)
-    m.plot_single_output(output=0,ax=axes[0])
-    m.plot_single_output(output=1,ax=axes[1])
+    m.plot(fixed_inputs=[(1,0)],ax=axes[0])
+    m.plot(fixed_inputs=[(1,1)],ax=axes[1])
     axes[0].set_title('Output 0')
     axes[1].set_title('Output 1')
     return m
@@ -269,6 +269,50 @@ def toy_rbf_1d_50(max_iters=100):
     m.plot()
     print(m)
     return m
+
+def toy_poisson_rbf_1d(optimizer='bfgs', max_nb_eval_optim=100):
+    """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
+    x_len = 400
+    X = np.linspace(0, 10, x_len)[:, None]
+    f_true = np.random.multivariate_normal(np.zeros(x_len), GPy.kern.rbf(1).K(X))
+    Y = np.array([np.random.poisson(np.exp(f)) for f in f_true])[:,None]
+
+    noise_model = GPy.likelihoods.poisson()
+    likelihood = GPy.likelihoods.EP(Y,noise_model)
+
+    # create simple GP Model
+    m = GPy.models.GPRegression(X, Y, likelihood=likelihood)
+
+    # optimize
+    m.optimize(optimizer, max_f_eval=max_nb_eval_optim)
+    # plot
+    m.plot()
+    print(m)
+    return m
+
+def toy_poisson_rbf_1d_laplace(optimizer='bfgs', max_nb_eval_optim=100):
+    """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
+    x_len = 30
+    X = np.linspace(0, 10, x_len)[:, None]
+    f_true = np.random.multivariate_normal(np.zeros(x_len), GPy.kern.rbf(1).K(X))
+    Y = np.array([np.random.poisson(np.exp(f)) for f in f_true])[:,None]
+
+    noise_model = GPy.likelihoods.poisson()
+    likelihood = GPy.likelihoods.Laplace(Y,noise_model)
+
+    # create simple GP Model
+    m = GPy.models.GPRegression(X, Y, likelihood=likelihood)
+
+    # optimize
+    m.optimize(optimizer, max_f_eval=max_nb_eval_optim)
+    # plot
+    m.plot()
+    # plot the real underlying rate function
+    pb.plot(X, np.exp(f_true), '--k', linewidth=2)
+    print(m)
+    return m
+
+
 
 def toy_ARD(max_iters=1000, kernel_type='linear', num_samples=300, D=4):
     # Create an artificial dataset where the values in the targets (Y)

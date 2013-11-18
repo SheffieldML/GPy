@@ -81,29 +81,6 @@ class MRD(Model):
         Model.__init__(self)
         self.ensure_default_constraints()
 
-    def getstate(self):
-        return Model.getstate(self) + [self.names,
-                self.bgplvms,
-                self.gref,
-                self.nparams,
-                self.input_dim,
-                self.num_inducing,
-                self.num_data,
-                self.NQ,
-                self.MQ]
-
-    def setstate(self, state):
-        self.MQ = state.pop()
-        self.NQ = state.pop()
-        self.num_data = state.pop()
-        self.num_inducing = state.pop()
-        self.input_dim = state.pop()
-        self.nparams = state.pop()
-        self.gref = state.pop()
-        self.bgplvms = state.pop()
-        self.names = state.pop()
-        Model.setstate(self, state)
-
     @property
     def X(self):
         return self.gref.X
@@ -370,5 +347,29 @@ class MRD(Model):
         self.plot_scales(ax=axes)
         pylab.draw()
         fig.tight_layout()
+
+    def getstate(self):
+        return Model.getstate(self) + [self.names,
+                self.bgplvms,
+                self.gref,
+                self.nparams,
+                self.input_dim,
+                self.num_inducing,
+                self.num_data,
+                self.NQ,
+                self.MQ]
+
+    def setstate(self, state):
+        self.MQ = state.pop()
+        self.NQ = state.pop()
+        self.num_data = state.pop()
+        self.num_inducing = state.pop()
+        self.input_dim = state.pop()
+        self.nparams = state.pop()
+        self.gref = state.pop()
+        self.bgplvms = state.pop()
+        self.names = state.pop()
+        Model.setstate(self, state)
+
 
 

@@ -26,4 +26,5 @@ import rbf
 import rbf_inv
 import spline
 import symmetric
+import sympy_helpers
 import white

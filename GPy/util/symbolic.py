@@ -10,7 +10,7 @@ class ln_diff_erf(Function):
             return -2*exp(-x1**2)/(sqrt(pi)*(erf(x0)-erf(x1)))
         elif argindex == 1:
             x0, x1 = self.args
-            return 2*exp(-x0**2)/(sqrt(pi)*(erf(x0)-erf(x1)))
+            return 2.*exp(-x0**2)/(sqrt(pi)*(erf(x0)-erf(x1)))
         else:
             raise ArgumentIndexError(self, argindex)
         

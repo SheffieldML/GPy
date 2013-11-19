@@ -31,7 +31,8 @@ overide_manual_authorize=False
 neil_url = 'http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/'
 
 # Read data resources from json file.
-json_data=open('data_resources.json').read()
+path = os.path.join(os.path.dirname(__file__), 'data_resources.json')
+json_data=open(path).read()
 data_resources = json.loads(json_data)
 
 

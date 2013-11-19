@@ -125,3 +125,16 @@ class Exponential(Kernpart):
                 G[i, j] = G[j, i] = integrate.quad(lambda x : L(x, i) * L(x, j), lower, upper)[0]
         Flower = np.array([f(lower) for f in F])[:, None]
         return(self.lengthscale / 2. / self.variance * G + 1. / self.variance * np.dot(Flower, Flower.T))
+
+    def sde(self):
+        """
+        Return the state space representation of the covariance.
+        """
+        F  = np.array([[-1/self.lengthscale]])
+        L  = np.array([[1]])
+        Qc = np.array([[2*self.variance/self.lengthscale]])
+        H = np.array([[1]])
+        Pinf = np.array([[self.variance]])
+
+        # TODO: return the derivatives as well
+        return (F, L, Qc, H, Pinf) 

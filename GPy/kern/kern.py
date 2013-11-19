@@ -576,7 +576,39 @@ class kern(Parameterized):
 
     def sde(self):
          # TODO: should support adding kernels together
-         return self.parts[0].sde()
+
+         #raise NameError('HiThere')
+
+         # Find out state dimensions
+         n = 0;
+         nq = 0;
+         for p in self.parts:
+             (F,L,Qc,H,Pinf) = p.sde()
+             n += F.shape[0]
+             nq += Qc.shape[0]
+
+         # Allocate space for the matrices
+         F    = np.zeros((n,n))
+         L    = np.zeros((n,nq))
+         Qc   = np.zeros((nq,nq))
+         H    = np.zeros((1,n))
+         Pinf = np.zeros((n,n))
+         n = 0;
+         nq = 0;
+
+         # Assign models
+         for p in self.parts:
+             (Ft,Lt,Qct,Ht,Pinft) = p.sde()
+             F[n:n+Ft.shape[0],n:n+Ft.shape[1]] = Ft
+             L[n:n+Lt.shape[0],nq:nq+Lt.shape[1]] = Lt
+             Qc[nq:nq+Qct.shape[0],nq:nq+Qct.shape[1]] = Qct
+             H[0,n:n+Ht.shape[1]] = Ht
+             Pinf[n:n+Pinft.shape[0],n:n+Pinft.shape[1]] = Pinft
+             n += Ft.shape[0]
+             nq += Qct.shape[0]
+
+         return (F,L,Qc,H,Pinf) 
+         #self.parts[0].sde()
 
 from GPy.core.model import Model
 

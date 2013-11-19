@@ -234,8 +234,11 @@ class StateSpace(Model):
 
             # Update step (only if there is data)
             if not np.isnan(Y[:,k]):
-                 LL = linalg.cho_factor(H.dot(PF[:,:,k]).dot(H.T) + R)
-                 K = linalg.cho_solve(LL, H.dot(PF[:,:,k].T)).T
+                 if Y.shape[0]==1:
+                     K = PF[:,:,k].dot(H.T)/(H.dot(PF[:,:,k]).dot(H.T) + R)
+                 else:
+                     LL = linalg.cho_factor(H.dot(PF[:,:,k]).dot(H.T) + R)
+                     K = linalg.cho_solve(LL, H.dot(PF[:,:,k].T)).T
                  MF[:,k] += K.dot(Y[:,k]-H.dot(MF[:,k]))
                  PF[:,:,k] -= K.dot(H).dot(PF[:,:,k])
 
@@ -301,11 +304,18 @@ class StateSpace(Model):
             # Update step only if there is data
             if not np.isnan(Y[:,k]):
                  v = Y[:,k]-H.dot(m)
-                 LL, isupper = linalg.cho_factor(H.dot(P).dot(H.T) + R)
-                 lik -= np.sum(np.log(np.diag(LL)))
-                 lik -= 0.5*v.shape[0]*np.log(2*np.pi)
-                 lik -= 0.5*linalg.cho_solve((LL, isupper),v).dot(v)
-                 K = linalg.cho_solve((LL, isupper), H.dot(P.T)).T
+                 if Y.shape[0]==1:
+                     S = H.dot(P).dot(H.T) + R
+                     K = P.dot(H.T)/S
+                     lik -= 0.5*np.log(S)
+                     lik -= 0.5*v.shape[0]*np.log(2*np.pi)
+                     lik -= 0.5*v*v/S
+                 else:
+                     LL, isupper = linalg.cho_factor(H.dot(P).dot(H.T) + R)
+                     lik -= np.sum(np.log(np.diag(LL)))
+                     lik -= 0.5*v.shape[0]*np.log(2*np.pi)
+                     lik -= 0.5*linalg.cho_solve((LL, isupper),v).dot(v)
+                     K = linalg.cho_solve((LL, isupper), H.dot(P.T)).T
                  m += K.dot(v)
                  P -= K.dot(H).dot(P)
 

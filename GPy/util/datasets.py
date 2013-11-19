@@ -689,7 +689,7 @@ def olympic_marathon_men(data_set='olympic_marathon_men'):
     Y = olympics[:, 1:2]
     return data_details_return({'X': X, 'Y': Y}, data_set)
 
-def olympics():
+def olympic_sprints(data_set='rogers_girolami_data'):
     """All olympics sprint winning times for multiple output prediction."""
     X = np.zeros((0, 2))
     Y = np.zeros((0, 1))
@@ -707,7 +707,18 @@ def olympics():
     data['X'] = X
     data['Y'] = Y
     data['info'] = "Olympics sprint event winning for men and women to 2008. Data is from Rogers and Girolami's First Course in Machine Learning."
-    return data
+    return data_details_return({
+        'X': X,
+        'Y': Y,
+        'info': "Olympics sprint event winning for men and women to 2008. Data is from Rogers and Girolami's First Course in Machine Learning.",
+        'output_info': {
+          0:'100m Men', 
+          1:'100m Women', 
+          2:'200m Men', 
+          3:'200m Women', 
+          4:'400m Men', 
+          5:'400m Women'}
+        }, data_set)
 
 # def movielens_small(partNo=1,seed=default_seed):
 #     np.random.seed(seed=seed)

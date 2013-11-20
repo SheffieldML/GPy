@@ -6,8 +6,8 @@ from matplotlib import pyplot as plt, cm
 
 import GPy
 from GPy.core.transformations import logexp
-from GPy.models.bayesian_gplvm import BayesianGPLVM
 from GPy.likelihoods.gaussian import Gaussian
+from GPy.models import BayesianGPLVM
 
 default_seed = np.random.seed(123344)
 

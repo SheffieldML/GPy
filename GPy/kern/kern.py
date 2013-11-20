@@ -412,6 +412,9 @@ class kern(Parameterized):
         [p.dpsi0_dtheta(dL_dpsi0, Z[:, i_s], mu[:, i_s], S[:, i_s], target[ps]) for p, ps, i_s in zip(self.parts, self.param_slices, self.input_slices)]
         return self._transform_gradients(target)
 
+    def dpsi0_dZ(self, dL_dpsi0, Z, mu, S):
+        return np.zeros_like(Z)
+
     def dpsi0_dmuS(self, dL_dpsi0, Z, mu, S):
         target_mu, target_S = np.zeros_like(mu), np.zeros_like(S)
         [p.dpsi0_dmuS(dL_dpsi0, Z[:, i_s], mu[:, i_s], S[:, i_s], target_mu[:, i_s], target_S[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]

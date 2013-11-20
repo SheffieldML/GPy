@@ -28,8 +28,8 @@ def ard(p):
 class Test(unittest.TestCase):
     input_dim = 9
     num_inducing = 13
-    N = 30
-    Nsamples = 9e6
+    N = 300
+    Nsamples = 1e6
 
     def setUp(self):
         i_s_dim_list = [2,4,3]
@@ -50,20 +50,20 @@ class Test(unittest.TestCase):
 #                        GPy.kern.linear(self.input_dim, ARD=True) +
 #                        GPy.kern.bias(self.input_dim) +
 #                        GPy.kern.white(self.input_dim)),
-#                     (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
-                    (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
-                     +GPy.kern.linear(self.input_dim, np.random.rand(self.input_dim), ARD=True)
-#                     GPy.kern.bias(self.input_dim) +
-#                     GPy.kern.white(self.input_dim)),
+                    (#GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
+                     GPy.kern.linear(self.input_dim, np.random.rand(self.input_dim), ARD=True)
+                     +GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
+#                      +GPy.kern.bias(self.input_dim)
+#                      +GPy.kern.white(self.input_dim)),
                     ),
-        (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
-         +GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
-         #+GPy.kern.bias(self.input_dim, np.random.rand())
-         #+GPy.kern.white(self.input_dim, np.random.rand())),
-         ),
-                (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
-                    GPy.kern.bias(self.input_dim, np.random.rand()) +
-                    GPy.kern.white(self.input_dim, np.random.rand())),
+#                     (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
+#                      GPy.kern.bias(self.input_dim, np.random.rand())),
+#         (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
+#          +GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
+#          #+GPy.kern.bias(self.input_dim, np.random.rand())
+#          #+GPy.kern.white(self.input_dim, np.random.rand())),
+#         ),
+#                     GPy.kern.white(self.input_dim, np.random.rand())),
 #                     GPy.kern.rbf(self.input_dim), GPy.kern.rbf(self.input_dim, ARD=True),
 #                       GPy.kern.linear(self.input_dim, ARD=False), GPy.kern.linear(self.input_dim, ARD=True),
 #                       GPy.kern.linear(self.input_dim) + GPy.kern.bias(self.input_dim),
@@ -120,25 +120,25 @@ class Test(unittest.TestCase):
             diffs = []
             for i, q_x_sample_stripe in enumerate(np.array_split(self.q_x_samples, self.Nsamples / Nsamples)):
                 K = kern.K(q_x_sample_stripe, self.Z)
-                K = (K[:, :, None] * K[:, None, :]).mean(0)
-                K_ += K
-                diffs.append(((psi2 - (K_ / (i + 1)))**2).mean())
-            K_ /= self.Nsamples / Nsamples
+                K = (K[:, :, None] * K[:, None, :])
+                K_ += K.sum(0) / self.Nsamples
+                diffs.append(((psi2 - (K_*self.Nsamples/((i+1)*Nsamples)))**2).mean())
+            #K_ /= self.Nsamples / Nsamples
             msg = "psi2: {}".format("+".join([p.name + ard(p) for p in kern.parts]))
             try:
                 import pylab
                 pylab.figure(msg)
-                pylab.plot(diffs, marker='x', mew=1.3)
+                pylab.plot(diffs, marker='x', mew=.2)
 #                 print msg, np.allclose(psi2.squeeze(), K_, rtol=1e-1, atol=.1)
                 self.assertTrue(np.allclose(psi2.squeeze(), K_),
                                             #rtol=1e-1, atol=.1),
                                 msg=msg + ": not matching")
 #                 sys.stdout.write(".")
             except:
-#                 import ipdb;ipdb.set_trace()
 #                 kern.psi2(self.Z, self.q_x_mean, self.q_x_variance)
 #                 sys.stdout.write("E")
                 print msg + ": not matching"
+                import ipdb;ipdb.set_trace()
                 pass
 
 if __name__ == "__main__":

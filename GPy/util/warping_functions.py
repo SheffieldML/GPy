@@ -222,7 +222,7 @@ class TanhWarpingFunction_d(WarpingFunction):
         """
 
 
-        mpsi = psi.coSpy()
+        mpsi = psi.copy()
         d = psi[-1]
         mpsi = mpsi[:self.num_parameters-1].reshape(self.n_terms, 3)
 

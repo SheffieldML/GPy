@@ -63,40 +63,54 @@ class DPsiStatTest(unittest.TestCase):
 
     def testPsi0(self):
         for k in self.kernels:
-            m = PsiStatModel('psi0', X=self.X, X_variance=self.X_var, Z=self.Z,
+            m = PsiStatModel('psi0', X=self.X, X_variance=self.X_var, Z=self.Z,\
                              num_inducing=self.num_inducing, kernel=k)
+            m.ensure_default_constraints()
+            m.randomize()
             assert m.checkgrad(), "{} x psi0".format("+".join(map(lambda x: x.name, k.parts)))
-
-#     def testPsi1(self):
-#         for k in self.kernels:
-#             m = PsiStatModel('psi1', X=self.X, X_variance=self.X_var, Z=self.Z,
-#                      num_inducing=self.num_inducing, kernel=k)
-#             assert m.checkgrad(), "{} x psi1".format("+".join(map(lambda x: x.name, k.parts)))
+        
+    def testPsi1(self):
+        for k in self.kernels:
+            m = PsiStatModel('psi1', X=self.X, X_variance=self.X_var, Z=self.Z,
+                     num_inducing=self.num_inducing, kernel=k)
+            m.ensure_default_constraints()
+            m.randomize()
+            assert m.checkgrad(), "{} x psi1".format("+".join(map(lambda x: x.name, k.parts)))
 
     def testPsi2_lin(self):
         k = self.kernels[0]
         m = PsiStatModel('psi2', X=self.X, X_variance=self.X_var, Z=self.Z,
-                     num_inducing=self.num_inducing, kernel=k)
+                 num_inducing=self.num_inducing, kernel=k)
+        m.ensure_default_constraints()
+        m.randomize()
         assert m.checkgrad(), "{} x psi2".format("+".join(map(lambda x: x.name, k.parts)))
     def testPsi2_lin_bia(self):
         k = self.kernels[3]
         m = PsiStatModel('psi2', X=self.X, X_variance=self.X_var, Z=self.Z,
                      num_inducing=self.num_inducing, kernel=k)
+        m.ensure_default_constraints()
+        m.randomize()
         assert m.checkgrad(), "{} x psi2".format("+".join(map(lambda x: x.name, k.parts)))
     def testPsi2_rbf(self):
         k = self.kernels[1]
         m = PsiStatModel('psi2', X=self.X, X_variance=self.X_var, Z=self.Z,
                      num_inducing=self.num_inducing, kernel=k)
+        m.ensure_default_constraints()
+        m.randomize()
         assert m.checkgrad(), "{} x psi2".format("+".join(map(lambda x: x.name, k.parts)))
     def testPsi2_rbf_bia(self):
         k = self.kernels[-1]
         m = PsiStatModel('psi2', X=self.X, X_variance=self.X_var, Z=self.Z,
                      num_inducing=self.num_inducing, kernel=k)
+        m.ensure_default_constraints()
+        m.randomize()
         assert m.checkgrad(), "{} x psi2".format("+".join(map(lambda x: x.name, k.parts)))
     def testPsi2_bia(self):
         k = self.kernels[2]
         m = PsiStatModel('psi2', X=self.X, X_variance=self.X_var, Z=self.Z,
                      num_inducing=self.num_inducing, kernel=k)
+        m.ensure_default_constraints()
+        m.randomize()
         assert m.checkgrad(), "{} x psi2".format("+".join(map(lambda x: x.name, k.parts)))
 
 
@@ -134,8 +148,8 @@ if __name__ == "__main__":
 #                      num_inducing=num_inducing, kernel=k)
 #             assert m.checkgrad(), "{} x psi1".format("+".join(map(lambda x: x.name, k.parts)))
 #
-#         m0 = PsiStatModel('psi0', X=X, X_variance=X_var, Z=Z,
-#                          num_inducing=num_inducing, kernel=GPy.kern.linear(input_dim))
+        m0 = PsiStatModel('psi0', X=X, X_variance=X_var, Z=Z,
+                         num_inducing=num_inducing, kernel=GPy.kern.rbf(input_dim)+GPy.kern.bias(input_dim))
 #         m1 = PsiStatModel('psi1', X=X, X_variance=X_var, Z=Z,
 #                          num_inducing=num_inducing, kernel=kernel)
 #         m1 = PsiStatModel('psi1', X=X, X_variance=X_var, Z=Z,

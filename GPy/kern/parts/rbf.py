@@ -186,7 +186,7 @@ class RBF(Kernpart):
         self._psi_computations(Z, mu, S)
         target[0] += np.sum(dL_dpsi1 * self._psi1 / self.variance)
         d_length = self._psi1[:,:,None] * ((self._psi1_dist_sq - 1.)/(self.lengthscale*self._psi1_denom) +1./self.lengthscale)
-        dpsi1_dlength = d_length * dL_dpsi1[:, :, None]
+        dpsi1_dlength = d_length * np.atleast_3d(dL_dpsi1)
         if not self.ARD:
             target[1] += dpsi1_dlength.sum()
         else:
@@ -208,22 +208,19 @@ class RBF(Kernpart):
         self._psi_computations(Z, mu, S)
         target += self._psi2
 
-    def _crossterm_product_expectation(self, K, Z, mu, S):
+    def _crossterm_mu_S(self, Z, mu, S):
         # compute the crossterm expectation for K as the other kernel:
-        import ipdb;ipdb.set_trace()
-        Sigma = 1./self.lengthscale[None,:] + 1./S # is independent across M, 
-        M = (Z[None,:,:]/self.lengthscale[None,None,:] + (mu/S)[:,None,:]) / Sigma[:,None,:]
-        psi1_other = K.psi1()
-        self.variance
-        # return is [N x M x M]
-        return 
+        Sigma = 1./self.lengthscale2[None,None,:] + 1./S[:,None,:] # is independent across M, 
+        Sigma_tilde = (self.lengthscale2[None, :] + S)
+        M = (S*mu/Sigma_tilde)[:, None, :] + (self.lengthscale2[None,:]*Z)[None, :, :]/Sigma_tilde[:, None, :]
+        # make sure return is [N x M x Q]
+        return M, Sigma.repeat(Z.shape[0],1) 
 
     def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S, target):
         """Shape N,num_inducing,num_inducing,Ntheta"""
         self._psi_computations(Z, mu, S)
         d_var = 2.*self._psi2 / self.variance
         d_length = 2.*self._psi2[:, :, :, None] * (self._psi2_Zdist_sq * self._psi2_denom + self._psi2_mudist_sq + S[:, None, None, :] / self.lengthscale2) / (self.lengthscale * self._psi2_denom)
-
         target[0] += np.sum(dL_dpsi2 * d_var)
         dpsi2_dlength = d_length * dL_dpsi2[:, :, :, None]
         if not self.ARD:
@@ -306,8 +303,8 @@ class RBF(Kernpart):
         psi2 = np.empty((N, num_inducing, num_inducing))
 
         psi2_Zdist_sq = self._psi2_Zdist_sq
-        _psi2_denom = self._psi2_denom.squeeze().reshape(N, self.input_dim)
-        half_log_psi2_denom = 0.5 * np.log(self._psi2_denom).squeeze().reshape(N, self.input_dim)
+        _psi2_denom = self._psi2_denom.squeeze().reshape(-1, input_dim)
+        half_log_psi2_denom = 0.5 * np.log(self._psi2_denom).squeeze().reshape(-1, input_dim)
         variance_sq = float(np.square(self.variance))
         if self.ARD:
             lengthscale2 = self.lengthscale2

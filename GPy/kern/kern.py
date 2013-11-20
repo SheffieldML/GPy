@@ -456,7 +456,7 @@ class kern(Parameterized):
         from parts.linear import Linear
         from parts.fixed import Fixed
 
-        for (p1, i1), (p2, i2) in itertools.combinations(itertools.izip(self.parts, self.param_slices), 2):
+        for (p1, i1), (p2, i2) in itertools.combinations(itertools.izip(self.parts, self.input_slices), 2):
             # white doesn;t combine with anything
             if isinstance(p1, White) or isinstance(p2, White):
                 pass
@@ -466,28 +466,30 @@ class kern(Parameterized):
             elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, (RBF, RBFInv)):
                 target += p2.variance * (p1._psi1[:, :, None] + p1._psi1[:, None, :])
             # linear X bias
-            elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, Linear):
+            elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, (Linear, RBF, RBFInv)):
                 tmp = np.zeros((mu.shape[0], Z.shape[0]))
                 p2.psi1(Z, mu, S, tmp)
                 target += p1.variance * (tmp[:, :, None] + tmp[:, None, :])
-            elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, Linear):
+            elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, (Linear, RBF, RBFInv)):
                 tmp = np.zeros((mu.shape[0], Z.shape[0]))
                 p1.psi1(Z, mu, S, tmp)
                 target += p2.variance * (tmp[:, :, None] + tmp[:, None, :])
             # rbf X any
-            elif isinstance(p1, (RBF, RBFInv)):
-                psi11 = np.zeros((mu.shape[0], Z.shape[0]))
-                psi12 = np.zeros((mu.shape[0], Z.shape[0]))
+            elif False:#isinstance(p1, (RBF, RBFInv)) or isinstance(p2, (RBF, RBFInv)):
+                if isinstance(p2, (RBF, RBFInv)) and not isinstance(p1, (RBF, RBFInv)):
+                    p1t = p1; p1 = p2; p2 = p1t; del p1t  
+                N, M = mu.shape[0], Z.shape[0]; NM=N*M
+                psi11 = np.zeros((N, M))
+                psi12 = np.zeros((NM, M))
                 p1.psi1(Z, mu, S, psi11)
-                p2.psi1(Z, mu, S, psi12)
+                Mu, Sigma = p1._crossterm_mu_S(Z, mu, S)
+                Mu, Sigma = Mu.reshape(NM,self.input_dim), Sigma.reshape(NM,self.input_dim)
                 
-                crossterms  = psi11[:, :, None] + psi12[:, None, :]
-                crossterms += psi12[:, :, None] + psi11[:, None, :]
-                
-                target += p1._crossterm_product_expectation(p2, Z, mu, S)
+                p2.psi1(Z, Mu, Sigma, psi12)
+                eK2 = psi12.reshape(N, M, M)
+                crossterms = eK2 * (psi11[:, :, None] + psi11[:, None, :])
+                target += crossterms
                 #import ipdb;ipdb.set_trace()
-            elif isinstance(p2, (RBF, RBFInv)):
-                raise NotImplementedError # TODO
             else:
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
         return target        
@@ -496,40 +498,81 @@ class kern(Parameterized):
         target = np.zeros(self.num_params)
         [p.dpsi2_dtheta(dL_dpsi2, Z[:, i_s], mu[:, i_s], S[:, i_s], target[ps]) for p, i_s, ps in zip(self.parts, self.input_slices, self.param_slices)]
 
+        from parts.white import White
+        from parts.rbf import RBF
+        from parts.rbf_inv import RBFInv
+        from parts.bias import Bias
+        from parts.linear import Linear
+        from parts.fixed import Fixed
+
         # compute the "cross" terms
         # TODO: better looping, input_slices
         for i1, i2 in itertools.combinations(range(len(self.parts)), 2):
             p1, p2 = self.parts[i1], self.parts[i2]
-#             ipsl1, ipsl2 = self.input_slices[i1], self.input_slices[i2]
-            ps1, ps2 = self.param_slices[i1], self.param_slices[i2]
-
-            # white doesn;t combine with anything
-            if p1.name == 'white' or p2.name == 'white':
+            #ipsl1, ipsl2 = self.input_slices[i1], self.input_slices[i2]
+            ps1, ps2 = self.param_slices[i1], self.param_slices[i2]            
+            if isinstance(p1, White) or isinstance(p2, White):
                 pass
             # rbf X bias
-            elif p1.name == 'bias' and p2.name == 'rbf':
+            elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, (RBF, RBFInv)):
                 p2.dpsi1_dtheta(dL_dpsi2.sum(1) * p1.variance * 2., Z, mu, S, target[ps2])
                 p1.dpsi1_dtheta(dL_dpsi2.sum(1) * p2._psi1 * 2., Z, mu, S, target[ps1])
-            elif p2.name == 'bias' and p1.name == 'rbf':
+            elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, (RBF, RBFInv)):
                 p1.dpsi1_dtheta(dL_dpsi2.sum(1) * p2.variance * 2., Z, mu, S, target[ps1])
                 p2.dpsi1_dtheta(dL_dpsi2.sum(1) * p1._psi1 * 2., Z, mu, S, target[ps2])
             # linear X bias
-            elif p1.name == 'bias' and p2.name == 'linear':
+            elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, Linear):
                 p2.dpsi1_dtheta(dL_dpsi2.sum(1) * p1.variance * 2., Z, mu, S, target[ps2]) # [ps1])
                 psi1 = np.zeros((mu.shape[0], Z.shape[0]))
                 p2.psi1(Z, mu, S, psi1)
                 p1.dpsi1_dtheta(dL_dpsi2.sum(1) * psi1 * 2., Z, mu, S, target[ps1])
-            elif p2.name == 'bias' and p1.name == 'linear':
+            elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, Linear):
                 p1.dpsi1_dtheta(dL_dpsi2.sum(1) * p2.variance * 2., Z, mu, S, target[ps1])
                 psi1 = np.zeros((mu.shape[0], Z.shape[0]))
                 p1.psi1(Z, mu, S, psi1)
                 p2.dpsi1_dtheta(dL_dpsi2.sum(1) * psi1 * 2., Z, mu, S, target[ps2])
             # rbf X any
-            
-            elif p1.name == 'linear' and p2.name == 'rbf':
-                raise NotImplementedError # TODO
-            elif p2.name == 'linear' and p1.name == 'rbf':
-                raise NotImplementedError # TODO
+            elif False:#isinstance(p1, (RBF, RBFInv)) or isinstance(p2, (RBF, RBFInv)):
+                if isinstance(p2, (RBF, RBFInv)) and not isinstance(p1, (RBF, RBFInv)):
+                    # turn around to have rbf in front
+                    p1, p2 = self.parts[i2], self.parts[i1]
+                    ps1, ps2 = self.param_slices[i2], self.param_slices[i1]  
+                
+                N, M = mu.shape[0], Z.shape[0]; NM=N*M
+
+                psi11 = np.zeros((N, M))
+                p1.psi1(Z, mu, S, psi11)
+                
+                Mu, Sigma = p1._crossterm_mu_S(Z, mu, S)
+                Mu, Sigma = Mu.reshape(NM,self.input_dim), Sigma.reshape(NM,self.input_dim)
+                
+                tmp1 = np.zeros_like(target[ps1])
+                tmp2 = np.zeros_like(target[ps2])
+#                 for n in range(N):
+#                     for m in range(M):
+#                         for m_prime in range(M):
+#                             p1.dpsi1_dtheta((dL_dpsi2[n:n+1,m:m+1,m_prime:m_prime+1]*psi12_t.reshape(N,M,M)[n:n+1,m:m+1,m_prime:m_prime+1])[0], Z[m:m+1], mu[n:n+1], S[n:n+1], tmp2)#Z[m_prime:m_prime+1], mu[n:n+1], S[n:n+1], tmp2)
+#                             p1.dpsi1_dtheta((dL_dpsi2[n:n+1,m:m+1,m_prime:m_prime+1]*psi12_t.reshape(N,M,M)[n:n+1,m_prime:m_prime+1,m:m+1])[0], Z[m_prime:m_prime+1], mu[n:n+1], S[n:n+1], tmp2)
+#                             Mu, Sigma= Mu.reshape(N,M,self.input_dim), Sigma.reshape(N,M,self.input_dim)
+#                             p2.dpsi1_dtheta((dL_dpsi2[n:n+1,m:m+1,m_prime:m_prime+1]*(psi11[n:n+1,m_prime:m_prime+1]))[0], Z[m:m+1], Mu[n:n+1,m], Sigma[n:n+1,m], target[ps2])
+#                             p2.dpsi1_dtheta((dL_dpsi2[n:n+1,m:m+1,m_prime:m_prime+1]*(psi11[n:n+1,m:m+1]))[0], Z[m_prime:m_prime+1], Mu[n:n+1, m_prime], Sigma[n:n+1, m_prime], target[ps2])#Z[m_prime:m_prime+1], Mu[n+m:(n+m)+1], Sigma[n+m:(n+m)+1], target[ps2])
+                
+                if isinstance(p1, RBF) and isinstance(p2, RBF):
+                    psi12 = np.zeros((N, M))
+                    p2.psi1(Z, mu, S, psi12)
+                    Mu2, Sigma2 = p2._crossterm_mu_S(Z, mu, S)
+                    Mu2, Sigma2 = Mu2.reshape(NM,self.input_dim), Sigma2.reshape(NM,self.input_dim)
+                    p1.dpsi1_dtheta((dL_dpsi2*(psi12[:,:,None] + psi12[:,None,:])).reshape(NM,M), Z, Mu2, Sigma2, tmp1)
+                    pass
+
+                if isinstance(p1, RBF) and isinstance(p2, Linear):
+                    #import ipdb;ipdb.set_trace()
+                    pass
+                
+                p2.dpsi1_dtheta((dL_dpsi2*(psi11[:,:,None] + psi11[:,None,:])).reshape(NM,M), Z, Mu, Sigma, tmp2)
+                
+                target[ps1] += tmp1
+                target[ps2] += tmp2                
             else:
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
 
@@ -539,61 +582,102 @@ class kern(Parameterized):
         target = np.zeros_like(Z)
         [p.dpsi2_dZ(dL_dpsi2, Z[:, i_s], mu[:, i_s], S[:, i_s], target[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
 
+        from parts.white import White
+        from parts.rbf import RBF
+        from parts.rbf_inv import RBFInv
+        from parts.bias import Bias
+        from parts.linear import Linear
+        from parts.fixed import Fixed
+
         # compute the "cross" terms
-        # TODO: we need input_slices here.
+        # TODO: better looping, input_slices
         for p1, p2 in itertools.combinations(self.parts, 2):
-            # white doesn;t combine with anything
-            if p1.name == 'white' or p2.name == 'white':
+            if isinstance(p1, White) or isinstance(p2, White):
                 pass
             # rbf X bias
-            elif p1.name == 'bias' and p2.name == 'rbf':
-                p2.dpsi1_dX(dL_dpsi2.sum(1).T * p1.variance, Z, mu, S, target)
-            elif p2.name == 'bias' and p1.name == 'rbf':
-                p1.dpsi1_dZ(dL_dpsi2.sum(1).T * p2.variance, Z, mu, S, target)
+            elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, (RBF, RBFInv)):
+                p2.dpsi1_dZ(dL_dpsi2.sum(1) * p1.variance, Z, mu, S, target)
+            elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, (RBF, RBFInv)):
+                p1.dpsi1_dZ(dL_dpsi2.sum(1) * p2.variance, Z, mu, S, target)
             # linear X bias
-            elif p1.name == 'bias' and p2.name == 'linear':
-                p2.dpsi1_dZ(dL_dpsi2.sum(1).T * p1.variance, Z, mu, S, target)
-            elif p2.name == 'bias' and p1.name == 'linear':
-                p1.dpsi1_dZ(dL_dpsi2.sum(1).T * p2.variance, Z, mu, S, target)
-            # rbf X linear
-            elif p1.name == 'linear' and p2.name == 'rbf':
-                raise NotImplementedError # TODO
-            elif p2.name == 'linear' and p1.name == 'rbf':
-                raise NotImplementedError # TODO
+            elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, Linear):
+                p2.dpsi1_dZ(dL_dpsi2.sum(1) * p1.variance, Z, mu, S, target)
+            elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, Linear):
+                p1.dpsi1_dZ(dL_dpsi2.sum(1) * p2.variance, Z, mu, S, target)
+            # rbf X any
+            elif False:#isinstance(p1, (RBF, RBFInv)) or isinstance(p2, (RBF, RBFInv)):
+                if isinstance(p2, (RBF, RBFInv)) and not isinstance(p1, (RBF, RBFInv)):
+                    p1t = p1; p1 = p2; p2 = p1t; del p1t  
+                N, M = mu.shape[0], Z.shape[0]; NM=N*M
+                psi11 = np.zeros((N, M))
+                psi12 = np.zeros((NM, M))
+                #psi12_t = np.zeros((N,M))
+                
+                p1.psi1(Z, mu, S, psi11)
+                Mu, Sigma = p1._crossterm_mu_S(Z, mu, S)
+                Mu, Sigma = Mu.reshape(NM,self.input_dim), Sigma.reshape(NM,self.input_dim)
+                
+                p2.psi1(Z, Mu, Sigma, psi12)
+                tmp1 = np.zeros_like(target)
+                p1.dpsi1_dZ((dL_dpsi2*psi12.reshape(N,M,M)).sum(1), Z, mu, S, tmp1)
+                p1.dpsi1_dZ((dL_dpsi2*psi12.reshape(N,M,M)).sum(2), Z, mu, S, tmp1)
+                target += tmp1
+                
+                #p2.dpsi1_dtheta((dL_dpsi2*(psi11[:,:,None] + psi11[:,None,:])).reshape(NM,M), Z, Mu, Sigma, target)
+                p2.dpsi1_dZ((dL_dpsi2*(psi11[:,:,None] + psi11[:,None,:])).reshape(NM,M), Z, Mu, Sigma, target)
             else:
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
-
-        return target * 2.
+        return target * 2
 
     def dpsi2_dmuS(self, dL_dpsi2, Z, mu, S):
         target_mu, target_S = np.zeros((2, mu.shape[0], mu.shape[1]))
         [p.dpsi2_dmuS(dL_dpsi2, Z[:, i_s], mu[:, i_s], S[:, i_s], target_mu[:, i_s], target_S[:, i_s]) for p, i_s in zip(self.parts, self.input_slices)]
 
+        from parts.white import White
+        from parts.rbf import RBF
+        from parts.rbf_inv import RBFInv
+        from parts.bias import Bias
+        from parts.linear import Linear
+        from parts.fixed import Fixed
+
         # compute the "cross" terms
-        # TODO: we need input_slices here.
+        # TODO: better looping, input_slices
         for p1, p2 in itertools.combinations(self.parts, 2):
-            # white doesn;t combine with anything
-            if p1.name == 'white' or p2.name == 'white':
+            if isinstance(p1, White) or isinstance(p2, White):
                 pass
             # rbf X bias
-            elif p1.name == 'bias' and p2.name == 'rbf':
-                p2.dpsi1_dmuS(dL_dpsi2.sum(1).T * p1.variance * 2., Z, mu, S, target_mu, target_S)
-            elif p2.name == 'bias' and p1.name == 'rbf':
-                p1.dpsi1_dmuS(dL_dpsi2.sum(1).T * p2.variance * 2., Z, mu, S, target_mu, target_S)
+            elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, (RBF, RBFInv)):
+                p2.dpsi1_dmuS(dL_dpsi2.sum(1) * p1.variance * 2., Z, mu, S, target_mu, target_S)
+            elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, (RBF, RBFInv)):
+                p1.dpsi1_dmuS(dL_dpsi2.sum(1) * p2.variance * 2., Z, mu, S, target_mu, target_S)
             # linear X bias
-            elif p1.name == 'bias' and p2.name == 'linear':
-                p2.dpsi1_dmuS(dL_dpsi2.sum(1).T * p1.variance * 2., Z, mu, S, target_mu, target_S)
-            elif p2.name == 'bias' and p1.name == 'linear':
-                p1.dpsi1_dmuS(dL_dpsi2.sum(1).T * p2.variance * 2., Z, mu, S, target_mu, target_S)
-            # rbf X linear
-            elif p1.name == 'linear' and p2.name == 'rbf':
-                raise NotImplementedError # TODO
-            elif p2.name == 'linear' and p1.name == 'rbf':
-                raise NotImplementedError # TODO
+            elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, Linear):
+                p2.dpsi1_dmuS(dL_dpsi2.sum(1) * p1.variance * 2., Z, mu, S, target_mu, target_S)
+            elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, Linear):
+                p1.dpsi1_dmuS(dL_dpsi2.sum(1) * p2.variance * 2., Z, mu, S, target_mu, target_S)
+            # rbf X any
+            elif False:#isinstance(p1, (RBF, RBFInv)) or isinstance(p2, (RBF, RBFInv)):
+                if isinstance(p2, (RBF, RBFInv)) and not isinstance(p1, (RBF, RBFInv)):
+                    p1t = p1; p1 = p2; p2 = p1t; del p1t  
+                N, M = mu.shape[0], Z.shape[0]; NM=N*M
+                psi11 = np.zeros((N, M))
+                psi12 = np.zeros((NM, M))
+                #psi12_t = np.zeros((N,M))
+                
+                p1.psi1(Z, mu, S, psi11)
+                Mu, Sigma = p1._crossterm_mu_S(Z, mu, S)
+                Mu, Sigma = Mu.reshape(NM,self.input_dim), Sigma.reshape(NM,self.input_dim)
+                
+                p2.psi1(Z, Mu, Sigma, psi12)
+                p1.dpsi1_dmuS((dL_dpsi2*psi12.reshape(N,M,M)).sum(1), Z, mu, S, target_mu, target_S)
+                p1.dpsi1_dmuS((dL_dpsi2*psi12.reshape(N,M,M)).sum(2), Z, mu, S, target_mu, target_S)
+                
+                #p2.dpsi1_dtheta((dL_dpsi2*(psi11[:,:,None] + psi11[:,None,:])).reshape(NM,M), Z, Mu, Sigma, target)
+                p2.dpsi1_dmuS((dL_dpsi2*(psi11[:,:,None])).sum(1)*2, Z, Mu.reshape(N,M,self.input_dim).sum(1), Sigma.reshape(N,M,self.input_dim).sum(1), target_mu, target_S)
             else:
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
-
         return target_mu, target_S
+    
     def plot(self, x=None, plot_limits=None, which_parts='all', resolution=None, *args, **kwargs):
         if which_parts == 'all':
             which_parts = [True] * self.num_parts

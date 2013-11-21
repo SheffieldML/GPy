@@ -5,6 +5,7 @@ import numpy as np
 from kern import kern
 import parts
 
+
 def rbf_inv(input_dim,variance=1., inv_lengthscale=None,ARD=False):
     """
     Construct an RBF kernel
@@ -292,7 +293,8 @@ except ImportError:
 if sympy_available:
     from parts.sympykern import spkern
     from sympy.parsing.sympy_parser import parse_expr
-    
+    from GPy.util import symbolic
+
     def rbf_sympy(input_dim, ARD=False, variance=1., lengthscale=1.):
         """
         Radial Basis Function covariance.
@@ -312,9 +314,19 @@ if sympy_available:
             f =  variance*sp.exp(-dist/(2*lengthscale**2))
         return kern(input_dim, [spkern(input_dim, f, name='rbf_sympy')])
 
-    def eq_sympy(input_dim, output_dim, ARD=False, variance=1., lengthscale=1.):
+    def eq_sympy(input_dim, output_dim, ARD=False):
         """
-        Exponentiated quadratic with multiple outputs.
+        Latent force model covariance, exponentiated quadratic with multiple outputs. Derived from a diffusion equation with the initial spatial condition layed down by a Gaussian process with lengthscale given by shared_lengthscale.
+
+        See IEEE Trans Pattern Anal Mach Intell. 2013 Nov;35(11):2693-705. doi: 10.1109/TPAMI.2013.86. Linear latent force models using Gaussian processes. Alvarez MA, Luengo D, Lawrence ND.
+
+        :param input_dim: Dimensionality of the kernel
+        :type input_dim: int
+        :param output_dim: number of outputs in the covariance function.
+        :type output_dim: int
+        :param ARD: whether or not to user ARD (default False).
+        :type ARD: bool
+
         """
         real_input_dim = input_dim
         if output_dim>1:
@@ -325,7 +337,7 @@ if sympy_available:
         if ARD:
             lengthscales = [sp.var('lengthscale%i_i lengthscale%i_j' % i, positive=True) for i in range(real_input_dim)]
             shared_lengthscales = [sp.var('shared_lengthscale%i' % i, positive=True) for i in range(real_input_dim)]
-            dist_string = ' + '.join(['(x_%i-z_%i)**2/(shared_lengthscale%i**2 + lengthscale%i_i*lengthscale%i_j)' % (i, i, i) for i in range(real_input_dim)])
+            dist_string = ' + '.join(['(x_%i-z_%i)**2/(shared_lengthscale%i**2 + lengthscale%i_i**2 + lengthscale%i_j**2)' % (i, i, i) for i in range(real_input_dim)])
             dist = parse_expr(dist_string)
             f =  variance*sp.exp(-dist/2.)
         else:
@@ -335,6 +347,26 @@ if sympy_available:
             dist = parse_expr(dist_string)
             f =  scale_i*scale_j*sp.exp(-dist/(2*(lengthscale_i**2 + lengthscale_j**2 + shared_lengthscale**2)))
         return kern(input_dim, [spkern(input_dim, f, output_dim=output_dim, name='eq_sympy')])
+
+    def ode1_eq(output_dim=1):
+        """
+        Latent force model covariance, first order differential
+        equation driven by exponentiated quadratic.
+
+        See N. D. Lawrence, G. Sanguinetti and M. Rattray. (2007)
+        'Modelling transcriptional regulation using Gaussian
+        processes' in B. Schoelkopf, J. C. Platt and T. Hofmann (eds)
+        Advances in Neural Information Processing Systems, MIT Press,
+        Cambridge, MA, pp 785--792.
+
+        :param output_dim: number of outputs in the covariance function.
+        :type output_dim: int
+        """
+        input_dim = 2
+        x_0, z_0, decay_i, decay_j, scale_i, scale_j, lengthscale = sp.symbols('x_0, z_0, decay_i, decay_j, scale_i, scale_j, lengthscale')
+        f = scale_i*scale_j*(symbolic.h(x_0, z_0, decay_i, decay_j, lengthscale) 
+     + symbolic.h(z_0, x_0, decay_j, decay_i, lengthscale))
+        return kern(input_dim, [spkern(input_dim, f, output_dim=output_dim, name='ode1_eq')])
 
     def sympykern(input_dim, k=None, output_dim=1, name=None, param=None):
         """

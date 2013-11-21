@@ -747,7 +747,7 @@ class Kern_check_model(Model):
         if kernel==None:
             kernel = GPy.kern.rbf(1)
         if X==None:
-            X = np.random.randn(num_samples, kernel.input_dim)
+            X = np.random.normal(size=(num_samples, kernel.input_dim))
         if dL_dK==None:
             if X2==None:
                 dL_dK = np.ones((X.shape[0], X.shape[0]))
@@ -844,7 +844,7 @@ class Kern_check_dKdiag_dX(Kern_check_model):
     def _set_params(self, x):
         self.X=x.reshape(self.X.shape)
 
-def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False):
+def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False, X_positive=False):
     """This function runs on kernels to check the correctness of their implementation. It checks that the covariance function is positive definite for a randomly generated data set.
 
     :param kern: the kernel to be tested.
@@ -858,12 +858,16 @@ def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False):
     pass_checks = True
     if X==None:
         X = np.random.randn(10, kern.input_dim)
+        if X_positive:
+            X = abs(X)
         if output_ind is not None:
-            X[:, output_ind] = np.random.randint(kern.output_dim, X.shape[0])
+            X[:, output_ind] = np.random.randint(kern.parts[0].output_dim, X.shape[0])
     if X2==None:
         X2 = np.random.randn(20, kern.input_dim)
+        if X_positive:
+            X2 = abs(X2)
         if output_ind is not None:
-            X2[:, output_ind] = np.random.randint(kern.output_dim, X2.shape[0])
+            X2[:, output_ind] = np.random.randint(kern.parts[0].output_dim, X2.shape[0])
 
     if verbose:
         print("Checking covariance function is positive definite.")

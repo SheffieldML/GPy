@@ -150,33 +150,6 @@ def white(input_dim,variance=1.):
     part = parts.white.White(input_dim,variance)
     return kern(input_dim, [part])
 
-def eq_ode1(output_dim, W=None, rank=1,  kappa=None, length_scale=1., decay=None, delay=None):
-    """Covariance function for first order differential equation driven by an exponentiated quadratic covariance.
-
-    This outputs of this kernel have the form
-    .. math::
-       \frac{\text{d}y_j}{\text{d}t} = \sum_{i=1}^R w_{j,i} f_i(t-\delta_j) +\sqrt{\kappa_j}g_j(t) - d_jy_j(t)
-
-    where :math:`R` is the rank of the system, :math:`w_{j,i}` is the sensitivity of the :math:`j`th output to the :math:`i`th latent function, :math:`d_j` is the decay rate of the :math:`j`th output and :math:`f_i(t)` and :math:`g_i(t)` are independent latent Gaussian processes goverened by an exponentiated quadratic covariance.
-    
-    :param output_dim: number of outputs driven by latent function.
-    :type output_dim: int
-    :param W: sensitivities of each output to the latent driving function. 
-    :type W: ndarray (output_dim x rank).
-    :param rank: If rank is greater than 1 then there are assumed to be a total of rank latent forces independently driving the system, each with identical covariance.
-    :type rank: int
-    :param decay: decay rates for the first order system. 
-    :type decay: array of length output_dim.
-    :param delay: delay between latent force and output response.
-    :type delay: array of length output_dim.
-    :param kappa: diagonal term that allows each latent output to have an independent component to the response.
-    :type kappa: array of length output_dim.
-    
-    .. Note: see first order differential equation examples in GPy.examples.regression for some usage.
-    """
-    part = parts.eq_ode1.Eq_ode1(output_dim, W, rank, kappa, length_scale, decay, delay)
-    return kern(2, [part])
-
 
 def exponential(input_dim,variance=1., lengthscale=None, ARD=False):
     """

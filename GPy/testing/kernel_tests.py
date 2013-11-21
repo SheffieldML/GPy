@@ -36,12 +36,12 @@ class KernelTests(unittest.TestCase):
     def test_eq_sympykernel(self):
         if SYMPY_AVAILABLE:
             kern = GPy.kern.eq_sympy(5, 3)
-            self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+            self.assertTrue(GPy.kern.kern_test(kern, output_ind=3, verbose=verbose))
 
-    def test_eq_ode1kernel(self):
+    def test_ode1_eqkernel(self):
         if SYMPY_AVAILABLE:
-            kern = GPy.kern.eq_ode1(3)
-            self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+            kern = GPy.kern.ode1_eq(3)
+            self.assertTrue(GPy.kern.kern_test(kern, output_ind=1, verbose=verbose, X_positive=True))
 
     def test_rbf_invkernel(self):
         kern = GPy.kern.rbf_inv(5)

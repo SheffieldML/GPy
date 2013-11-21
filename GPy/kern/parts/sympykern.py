@@ -345,7 +345,7 @@ class spkern(Kernpart):
         self._dK_dtheta_code_X = self._dK_dtheta_code.replace('Z[', 'X[')
         self._dK_dX_code_X = self._dK_dX_code.replace('Z[', 'X[').replace('+= partial[', '+= 2*partial[')
         self._dK_dtheta_code_X = self._dK_dtheta_code.replace('Z2(', 'X2(')
-        self._dK_dX_code_X = self._dK_dX_code.replace('Z2(', 'X2(')
+        self._dK_dX_code_X = self._dK_dX_code_X.replace('Z2(', 'X2(')
 
 
         #TODO: insert multiple functions here via string manipulation

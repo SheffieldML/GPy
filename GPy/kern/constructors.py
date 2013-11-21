@@ -292,7 +292,6 @@ except ImportError:
 if sympy_available:
     from parts.sympykern import spkern
     from sympy.parsing.sympy_parser import parse_expr
-    from GPy.util.symbolic import sinc
     
     def rbf_sympy(input_dim, ARD=False, variance=1., lengthscale=1.):
         """
@@ -336,27 +335,6 @@ if sympy_available:
             dist = parse_expr(dist_string)
             f =  scale_i*scale_j*sp.exp(-dist/(2*(lengthscale_i**2 + lengthscale_j**2 + shared_lengthscale**2)))
         return kern(input_dim, [spkern(input_dim, f, output_dim=output_dim, name='eq_sympy')])
-
-    def sinc(input_dim, ARD=False, variance=1., lengthscale=1.):
-        """
-        TODO: Not clear why this isn't working, suggests argument of sinc is not a number.
-        sinc covariance funciton
-        """
-        X = sp.symbols('x_:' + str(input_dim))
-        Z = sp.symbols('z_:' + str(input_dim))
-        variance = sp.var('variance',positive=True)
-        if ARD:
-            lengthscales = [sp.var('lengthscale_%i' % i, positive=True) for i in range(input_dim)]
-            dist_string = ' + '.join(['(x_%i-z_%i)**2/lengthscale_%i**2' % (i, i, i) for i in range(input_dim)])
-            dist = parse_expr(dist_string)
-            f =  variance*sinc(sp.pi*sp.sqrt(dist))
-        else:
-            lengthscale = sp.var('lengthscale',positive=True)
-            dist_string = ' + '.join(['(x_%i-z_%i)**2' % (i, i) for i in range(input_dim)])
-            dist = parse_expr(dist_string)
-            f =  variance*sinc(sp.pi*sp.sqrt(dist)/lengthscale)
-            
-        return kern(input_dim, [spkern(input_dim, f, name='sinc')])
 
     def sympykern(input_dim, k=None, output_dim=1, name=None, param=None):
         """

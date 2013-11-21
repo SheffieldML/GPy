@@ -345,8 +345,8 @@ class spkern(Kernpart):
 
         # Code to use when only X is provided. 
         self._dK_dtheta_code_X = self._dK_dtheta_code.replace('Z[', 'X[')
-        self._dK_dX_code_X = self._dK_dX_code.replace('Z[', 'X[').replace('+= partial[', '+= 2*partial[') 
-        self._dK_dtheta_code_X = self._dK_dtheta_code.replace('Z2(', 'X2(')
+        self._dK_dX_code_X = self._dK_dX_code.replace('Z[', 'X[').replace('+= PARTIAL2(', '+= 2*PARTIAL2(') 
+        self._dK_dtheta_code_X = self._dK_dtheta_code_X.replace('Z2(', 'X2(')
         self._dK_dX_code_X = self._dK_dX_code_X.replace('Z2(', 'X2(')
 
 
@@ -402,7 +402,7 @@ class spkern(Kernpart):
             self._weave_inline(self._dK_dX_code, X, target, Z, partial)
 
     def dKdiag_dX(self,partial,X,target):
-        self._weave.inline(self._dKdiag_dX_code, X, target, Z, partial)
+        self._weave_inline(self._dKdiag_dX_code, X, target, Z=None, partial=partial)
 
     def compute_psi_stats(self):
         #define some normal distributions

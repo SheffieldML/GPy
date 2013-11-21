@@ -11,6 +11,7 @@ import tempfile
 import pdb
 import ast
 from kernpart import Kernpart
+from ...util.config import config
 
 class spkern(Kernpart):
     """
@@ -110,8 +111,9 @@ class spkern(Kernpart):
             'headers':['"sympy_helpers.h"'],
             'sources':[os.path.join(current_dir,"parts/sympy_helpers.cpp")],
             'extra_compile_args':extra_compile_args,
-            'extra_link_args':['-lgomp'],
+            'extra_link_args':[],
             'verbose':True}
+        if config.getboolean('parallel', 'openmp'): self.weave_kwargs.append('-lgomp')
 
     def __add__(self,other):
         return spkern(self._sp_k+other._sp_k)
@@ -343,7 +345,7 @@ class spkern(Kernpart):
 
         # Code to use when only X is provided. 
         self._dK_dtheta_code_X = self._dK_dtheta_code.replace('Z[', 'X[')
-        self._dK_dX_code_X = self._dK_dX_code.replace('Z[', 'X[').replace('+= partial[', '+= 2*partial[')
+        self._dK_dX_code_X = self._dK_dX_code.replace('Z[', 'X[').replace('+= partial[', '+= 2*partial[') 
         self._dK_dtheta_code_X = self._dK_dtheta_code.replace('Z2(', 'X2(')
         self._dK_dX_code_X = self._dK_dX_code_X.replace('Z2(', 'X2(')
 

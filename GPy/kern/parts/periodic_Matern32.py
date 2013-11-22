@@ -10,22 +10,23 @@ from GPy.util.decorators import silence_errors
 class PeriodicMatern32(Kernpart):
     """
     Kernel of the periodic subspace (up to a given frequency) of a Matern 3/2 RKHS. Only defined for input_dim=1.
-
-    :param input_dim: the number of input dimensions
-    :type input_dim: int
-    :param variance: the variance of the Matern kernel
-    :type variance: float
-    :param lengthscale: the lengthscale of the Matern kernel
-    :type lengthscale: np.ndarray of size (input_dim,)
-    :param period: the period
-    :type period: float
-    :param n_freq: the number of frequencies considered for the periodic subspace
-    :type n_freq: int
-    :rtype: kernel object
-
     """
 
     def __init__(self, input_dim=1, variance=1., lengthscale=None, period=2 * np.pi, n_freq=10, lower=0., upper=4 * np.pi):
+        """
+        :param input_dim: the number of input dimensions
+        :type input_dim: int
+        :param variance: the variance of the Matern kernel
+        :type variance: float
+        :param lengthscale: the lengthscale of the Matern kernel
+        :type lengthscale: np.ndarray of size (input_dim,)
+        :param period: the period
+        :type period: float
+        :param n_freq: the number of frequencies considered for the periodic subspace
+        :type n_freq: int
+        :rtype: kernel object
+        """
+
         assert input_dim==1, "Periodic kernels are only defined for input_dim=1"
         self.name = 'periodic_Mat32'
         self.input_dim = input_dim

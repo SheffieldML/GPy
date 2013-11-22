@@ -1,0 +1,43 @@
+A todo list for the state space models
+
+1) Documentation for the functions
+
+2) implementation for 
+Matern32 - Done
+Matern52
+exponential - Done
+bias
+white
+rbf
+periodic Materns >???
+periodic rbf
+
+3) Addition and multiplication
+addition - computing the sde variables is done, needs brushing
+derivatives
+
+multiplication
+F = kron_sum(F1, F2)
+L, Qc, H P_inf: kron_prod
+derivatives!
+
+4) Examples. Just a draw from a mater32. Show that the standard method gives the same result as the SS
+
+5) Tests. Ensure that the log-likelihood is the same for the standard as the SS
+          same for the derivatives.
+          checkgradding
+          check adding and multiplication works for various combinations
+
+6) plotting
+plot the kalman fitered result, and the smoothed result.
+Copy AS's animation
+posterior samples
+
+
+
+
+
+
+
+
+

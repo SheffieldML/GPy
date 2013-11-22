@@ -124,7 +124,11 @@ class Mapping(Parameterized):
 from GPy.core.model import Model
 
 class Mapping_check_model(Model):
-    """This is a dummy model class used as a base class for checking that the gradients of a given mapping are implemented correctly. It enables checkgradient() to be called independently on each mapping."""
+    """
+    This is a dummy model class used as a base class for checking that the
+    gradients of a given mapping are implemented correctly. It enables
+    checkgradient() to be called independently on each mapping.
+    """
     def __init__(self, mapping=None, dL_df=None, X=None):
         num_samples = 20
         if mapping==None:

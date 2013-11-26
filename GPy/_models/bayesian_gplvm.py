@@ -2,14 +2,14 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ..core import SparseGP
+from ..core.sparse_gp import SparseGP
 from ..likelihoods import Gaussian
 from .. import kern
 import itertools
 from matplotlib.colors import colorConverter
 from GPy.inference.optimization import SCG
 from GPy.util import plot_latent, linalg
-from GPy.models.gplvm import GPLVM
+from .gplvm import GPLVM
 from GPy.util.plot_latent import most_significant_input_dimensions
 from matplotlib import pyplot
 

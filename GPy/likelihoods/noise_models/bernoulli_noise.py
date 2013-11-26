@@ -22,6 +22,8 @@ class Bernoulli(NoiseDistribution):
     """
     def __init__(self,gp_link=None,analytical_mean=False,analytical_variance=False):
         super(Bernoulli, self).__init__(gp_link,analytical_mean,analytical_variance)
+        if isinstance(gp_link , (gp_transformations.Heaviside, gp_transformations.Probit)):
+            self.log_concave = True
 
     def _preprocess_values(self,Y):
         """

@@ -4,15 +4,11 @@
 
 import numpy as np
 import pylab as pb
-import sys, pdb
 from .. import kern
-from ..core import Model
-from ..util.linalg import pdinv, PCA
-from ..core.priors import Gaussian as Gaussian_prior
+from ..core import priors
 from ..core import GP
 from ..likelihoods import Gaussian
 from .. import util
-from GPy.util import plot_latent
 
 
 class GPLVM(GP):
@@ -34,12 +30,13 @@ class GPLVM(GP):
             kernel = kern.rbf(input_dim, ARD=input_dim > 1) + kern.bias(input_dim, np.exp(-2))
         likelihood = Gaussian(Y, normalize=normalize_Y, variance=np.exp(-2.))
         GP.__init__(self, X, likelihood, kernel, normalize_X=False)
-        self.set_prior('.*X', Gaussian_prior(0, 1))
+        self.set_prior('.*X', priors.Gaussian(0, 1))
         self.ensure_default_constraints()
 
     def initialise_latent(self, init, input_dim, Y):
         Xr = np.random.randn(Y.shape[0], input_dim)
         if init == 'PCA':
+            from ..util.linalg import PCA
             PC = PCA(Y, input_dim)[0]
             Xr[:PC.shape[0], :PC.shape[1]] = PC
         return Xr
@@ -62,15 +59,15 @@ class GPLVM(GP):
     def jacobian(self,X):
         target = np.zeros((X.shape[0],X.shape[1],self.output_dim))
         for i in range(self.output_dim):
-        	target[:,:,i] = self.kern.dK_dX(np.dot(self.Ki,self.likelihood.Y[:,i])[None, :],X,self.X)
+            target[:,:,i] = self.kern.dK_dX(np.dot(self.Ki,self.likelihood.Y[:,i])[None, :],X,self.X)
         return target
    
     def magnification(self,X):
         target=np.zeros(X.shape[0])
         J = np.zeros((X.shape[0],X.shape[1],self.output_dim))
-    	J=self.jacobian(X)
+        J=self.jacobian(X)
         for i in range(X.shape[0]):
-		    target[i]=np.sqrt(pb.det(np.dot(J[i,:,:],np.transpose(J[i,:,:]))))
+            target[i]=np.sqrt(pb.det(np.dot(J[i,:,:],np.transpose(J[i,:,:]))))
         return target
 
     def plot(self):

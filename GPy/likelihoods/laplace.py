@@ -278,7 +278,10 @@ class Laplace(likelihood):
         #W is diagonal so its sqrt is just the sqrt of the diagonal elements
         W_12 = np.sqrt(W)
         B = np.eye(self.N) + W_12*K*W_12.T
-        L = jitchol(B)
+        try:
+            L = jitchol(B)
+        except:
+            import ipdb; ipdb.set_trace()
 
         W12BiW12 = W_12*dpotrs(L, np.asfortranarray(W_12*a), lower=1)[0]
         ln_B_det = 2*np.sum(np.log(np.diag(L)))

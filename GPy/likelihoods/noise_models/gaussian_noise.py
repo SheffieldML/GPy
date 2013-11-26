@@ -24,6 +24,8 @@ class Gaussian(NoiseDistribution):
         self.N = N
         self._set_params(np.asarray(variance))
         super(Gaussian, self).__init__(gp_link,analytical_mean,analytical_variance)
+        if isinstance(gp_link , gp_transformations.Identity):
+            self.log_concave = True
 
     def _get_params(self):
         return np.array([self.variance])

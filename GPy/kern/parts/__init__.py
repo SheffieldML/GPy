@@ -14,6 +14,7 @@ import Matern32
 import Matern52
 import mlp
 import ODE_1
+import ODE_UY
 import periodic_exponential
 import periodic_Matern32
 import periodic_Matern52
@@ -26,4 +27,5 @@ import rbf
 import rbf_inv
 import spline
 import symmetric
+import sympy_helpers
 import white

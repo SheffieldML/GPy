@@ -21,9 +21,9 @@ else:
 try:
     _blaslib = ctypes.cdll.LoadLibrary(np.core._dotblas.__file__) # @UndefinedVariable
     _blas_available = True
-    assert hasattr('dsyrk_',_blaslib)
-    assert hasattr('dsyr_',_blaslib)
-except:
+    assert hasattr(_blaslib, 'dsyrk_')
+    assert hasattr(_blaslib, 'dsyr_')
+except AssertionError:
     _blas_available = False
 
 def dtrtrs(A, B, lower=0, trans=0, unitdiag=0):

@@ -33,7 +33,7 @@ class NoiseDistribution(object):
         else:
             self.predictive_variance = self._predictive_variance_numerical
 
-        self.log_concave = True
+        self.log_concave = False
 
     def _get_params(self):
         return np.zeros(0)

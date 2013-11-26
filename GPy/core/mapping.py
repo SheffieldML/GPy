@@ -36,7 +36,6 @@ class Mapping(Parameterized):
 
     def df_dtheta(self, dL_df, X):
         """The gradient of the outputs of the multi-layer perceptron with respect to each of the parameters.
-        
         :param dL_df: gradient of the objective with respect to the function.
         :type dL_df: ndarray (num_data x output_dim)
         :param X: input locations where the function is evaluated.
@@ -44,14 +43,13 @@ class Mapping(Parameterized):
         :returns: Matrix containing gradients with respect to parameters of each output for each input data.
         :rtype: ndarray (num_params length)
         """
-        
         raise NotImplementedError
 
     def plot(self, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, samples=0, fignum=None, ax=None, fixed_inputs=[], linecol=Tango.colorsHex['darkBlue']):
         """
 
         Plot the mapping.
-        
+
         Plots the mapping associated with the model.
           - In one dimension, the function is plotted.
           - In two dimsensions, a contour-plot shows the function
@@ -110,7 +108,7 @@ class Mapping(Parameterized):
             for d in range(y.shape[1]):
                 ax.plot(Xnew, f[:, d], edgecol=linecol)
 
-        elif self.X.shape[1] == 2: 
+        elif self.X.shape[1] == 2:
             resolution = resolution or 50
             Xnew, _, _, xmin, xmax = x_frame2D(self.X, plot_limits, resolution)
             x, y = np.linspace(xmin[0], xmax[0], resolution), np.linspace(xmin[1], xmax[1], resolution)
@@ -126,7 +124,11 @@ class Mapping(Parameterized):
 from GPy.core.model import Model
 
 class Mapping_check_model(Model):
-    """This is a dummy model class used as a base class for checking that the gradients of a given mapping are implemented correctly. It enables checkgradient() to be called independently on each mapping."""
+    """
+    This is a dummy model class used as a base class for checking that the
+    gradients of a given mapping are implemented correctly. It enables
+    checkgradient() to be called independently on each mapping.
+    """
     def __init__(self, mapping=None, dL_df=None, X=None):
         num_samples = 20
         if mapping==None:
@@ -135,14 +137,14 @@ class Mapping_check_model(Model):
             X = np.random.randn(num_samples, mapping.input_dim)
         if dL_df==None:
             dL_df = np.ones((num_samples, mapping.output_dim))
-        
+
         self.mapping=mapping
         self.X = X
         self.dL_df = dL_df
         self.num_params = self.mapping.num_params
         Model.__init__(self)
 
-        
+
     def _get_params(self):
         return self.mapping._get_params()
 
@@ -157,7 +159,7 @@ class Mapping_check_model(Model):
 
     def _log_likelihood_gradients(self):
         raise NotImplementedError, "This needs to be implemented to use the Mapping_check_model class."
-    
+
 class Mapping_check_df_dtheta(Mapping_check_model):
     """This class allows gradient checks for the gradient of a mapping with respect to parameters. """
     def __init__(self, mapping=None, dL_df=None, X=None):
@@ -175,13 +177,13 @@ class Mapping_check_df_dX(Mapping_check_model):
         if dL_df==None:
             dL_df = np.ones((self.X.shape[0],self.mapping.output_dim))
         self.num_params = self.X.shape[0]*self.mapping.input_dim
-        
+
     def _log_likelihood_gradients(self):
         return self.mapping.df_dX(self.dL_df, self.X).flatten()
 
     def _get_param_names(self):
         return ['X_'  +str(i) + ','+str(j) for j in range(self.X.shape[1]) for i in range(self.X.shape[0])]
-                
+
     def _get_params(self):
         return self.X.flatten()
 

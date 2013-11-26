@@ -11,6 +11,7 @@ import tempfile
 import pdb
 import ast
 from kernpart import Kernpart
+from ...util.config import config
 
 class spkern(Kernpart):
     """
@@ -110,8 +111,9 @@ class spkern(Kernpart):
             'headers':['"sympy_helpers.h"'],
             'sources':[os.path.join(current_dir,"parts/sympy_helpers.cpp")],
             'extra_compile_args':extra_compile_args,
-            'extra_link_args':['-lgomp'],
+            'extra_link_args':[],
             'verbose':True}
+        if config.getboolean('parallel', 'openmp'): self.weave_kwargs.append('-lgomp')
 
     def __add__(self,other):
         return spkern(self._sp_k+other._sp_k)
@@ -177,8 +179,15 @@ class spkern(Kernpart):
         # Code to compute argument string when only diagonal is required.
         diag_arg_string = re.sub('int jj','//int jj',X_arg_string)
         diag_arg_string = re.sub('j','i',diag_arg_string)
-        diag_precompute_string = precompute_list[0]
-
+        if precompute_string == '':
+            # if it's not multioutput, the precompute strings are set to zero
+            diag_precompute_string = ''
+            diag_precompute_replace = ''
+        else:
+            # for multioutput we need to extract the index of the output form the input.
+            diag_precompute_string = precompute_list[0]
+            diag_precompute_replace = precompute_list[1]
+        
 
         # Here's the code to do the looping for K
         self._K_code =\
@@ -215,13 +224,13 @@ class spkern(Kernpart):
             TARGET2(i, i) += k(%s);
             for (j=0;j<i;j++){
               %s //int jj=(int)X2(j, 1);
-              double kval = k(%s); //double kval = k(X2(i, 0), X2(j, 0), shared_lengthscale, LENGTHSCALE1(ii), SCALE1(ii), LENGTHSCALE1(jj), SCALE1(jj));
+              double kval = k(%s); //double kval = k(X2(i, 0), shared_lengthscale, LENGTHSCALE1(ii), SCALE1(ii));
               TARGET2(i, j) += kval;
               TARGET2(j, i) += kval;
             }
         }
         /*%s*/
-        """%(diag_precompute_string, diag_arg_string, re.sub('Z2', 'X2', precompute_list[1]), X_arg_string,str(self._sp_k)) #adding a string representation forces recompile when needed
+        """%(diag_precompute_string, diag_arg_string, re.sub('Z2', 'X2', diag_precompute_replace), X_arg_string,str(self._sp_k)) #adding a string representation forces recompile when needed
 
         # Code to do the looping for Kdiag
         self._Kdiag_code =\
@@ -336,9 +345,9 @@ class spkern(Kernpart):
 
         # Code to use when only X is provided. 
         self._dK_dtheta_code_X = self._dK_dtheta_code.replace('Z[', 'X[')
-        self._dK_dX_code_X = self._dK_dX_code.replace('Z[', 'X[').replace('+= partial[', '+= 2*partial[')
-        self._dK_dtheta_code_X = self._dK_dtheta_code.replace('Z2(', 'X2(')
-        self._dK_dX_code_X = self._dK_dX_code.replace('Z2(', 'X2(')
+        self._dK_dX_code_X = self._dK_dX_code.replace('Z[', 'X[').replace('+= PARTIAL2(', '+= 2*PARTIAL2(') 
+        self._dK_dtheta_code_X = self._dK_dtheta_code_X.replace('Z2(', 'X2(')
+        self._dK_dX_code_X = self._dK_dX_code_X.replace('Z2(', 'X2(')
 
 
         #TODO: insert multiple functions here via string manipulation
@@ -393,7 +402,7 @@ class spkern(Kernpart):
             self._weave_inline(self._dK_dX_code, X, target, Z, partial)
 
     def dKdiag_dX(self,partial,X,target):
-        self._weave.inline(self._dKdiag_dX_code, X, target, Z, partial)
+        self._weave_inline(self._dKdiag_dX_code, X, target, Z=None, partial=partial)
 
     def compute_psi_stats(self):
         #define some normal distributions

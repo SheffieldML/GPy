@@ -95,6 +95,8 @@ class ODE_UY(Kernpart):
 
     def K(self, X, X2, target):
         """Compute the covariance matrix between X and X2."""
+        # model :   a * dy/dt + b * y = U
+        #lu=sqrt(3)/theta1  ly=1/theta2  theta2= a/b :thetay   sigma2=1/(2ab) :sigmay   
 
         X,slices = X[:,:-1],index_to_slices(X[:,-1])
         if X2 is None:

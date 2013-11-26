@@ -9,6 +9,7 @@ from sparse_gp_classification import SparseGPClassification
 from fitc_classification import FITCClassification
 from gplvm import GPLVM
 from state_space import StateSpace
+from state_space_xt_sep import StateSpace_1
 from bcgplvm import BCGPLVM
 from sparse_gplvm import SparseGPLVM
 from warped_gp import WarpedGP

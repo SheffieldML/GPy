@@ -66,5 +66,5 @@ class SparseGPLVM(SparseGPRegression, GPLVM):
         pb.plot(mu[:, 0] , mu[:, 1], 'ko')
 
     def plot_latent(self, *args, **kwargs):
-        input_1, input_2 = GPLVM.plot_latent(*args, **kwargs)
-        pb.plot(m.Z[:, input_1], m.Z[:, input_2], '^w')
+        GPLVM.plot_latent(self, *args, **kwargs)
+        #pb.plot(self.Z[:, input_1], self.Z[:, input_2], '^w')

@@ -861,13 +861,13 @@ def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False, X_positive=
         if X_positive:
             X = abs(X)
         if output_ind is not None:
-            X[:, output_ind] = np.random.randint(kern.parts[0].output_dim, X.shape[0])
+            X[:, output_ind] = np.random.randint(low=0,high=kern.parts[0].output_dim, size=X.shape[0])
     if X2==None:
         X2 = np.random.randn(20, kern.input_dim)
         if X_positive:
             X2 = abs(X2)
         if output_ind is not None:
-            X2[:, output_ind] = np.random.randint(kern.parts[0].output_dim, X2.shape[0])
+            X2[:, output_ind] = np.random.randint(low=0, high=kern.parts[0].output_dim, size=X2.shape[0])
 
     if verbose:
         print("Checking covariance function is positive definite.")

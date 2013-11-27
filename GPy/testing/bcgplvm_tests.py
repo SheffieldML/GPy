@@ -15,7 +15,7 @@ class BCGPLVMTests(unittest.TestCase):
         k = GPy.kern.mlp(input_dim) + GPy.kern.bias(input_dim)
         bk = GPy.kern.rbf(output_dim)
         mapping = GPy.mappings.Kernel(output_dim=input_dim, X=Y, kernel=bk)
-        m = GPy._models.BCGPLVM(Y, input_dim, kernel = k, mapping=mapping)
+        m = GPy.models.BCGPLVM(Y, input_dim, kernel = k, mapping=mapping)
         m.randomize()
         self.assertTrue(m.checkgrad())
         
@@ -28,7 +28,7 @@ class BCGPLVMTests(unittest.TestCase):
         k = GPy.kern.mlp(input_dim) + GPy.kern.bias(input_dim)
         bk = GPy.kern.rbf(output_dim)
         mapping = GPy.mappings.Linear(output_dim=input_dim, input_dim=output_dim)
-        m = GPy._models.BCGPLVM(Y, input_dim, kernel = k, mapping=mapping)
+        m = GPy.models.BCGPLVM(Y, input_dim, kernel = k, mapping=mapping)
         m.randomize()
         self.assertTrue(m.checkgrad())
         
@@ -41,7 +41,7 @@ class BCGPLVMTests(unittest.TestCase):
         k = GPy.kern.mlp(input_dim) + GPy.kern.bias(input_dim)
         bk = GPy.kern.rbf(output_dim)
         mapping = GPy.mappings.MLP(output_dim=input_dim, input_dim=output_dim, hidden_dim=[5, 4, 7])
-        m = GPy._models.BCGPLVM(Y, input_dim, kernel = k, mapping=mapping)
+        m = GPy.models.BCGPLVM(Y, input_dim, kernel = k, mapping=mapping)
         m.randomize()
         self.assertTrue(m.checkgrad())
 

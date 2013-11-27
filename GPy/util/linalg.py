@@ -26,7 +26,7 @@ try:
     assert hasattr(_blaslib, 'dsyr_')
 except AssertionError:
     _blas_available = False
-except AttributeError e:
+except AttributeError as e:
     _blas_available = False
     warnings.warn("warning: caught this exception:" + str(e))
 

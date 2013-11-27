@@ -23,7 +23,8 @@ If you'd like to install from source, or want to contribute to the project (e.g.
 Ubuntu
 ------
 For the most part, the developers are using ubuntu. To install the required packages:
-sudo apt-get install python-numpy python-scipy python-matplotlib
+
+    sudo apt-get install python-numpy python-scipy python-matplotlib
 
 clone this git repository and add it to your path:
 
@@ -33,7 +34,11 @@ clone this git repository and add it to your path:
 
 Windows
 -------
-On windows, we recommend the ![anaconda python distribution](http://continuum.io/downloads). We've also had luck with ![enthought](http://www.enthought.com). git clone or unzip the source to a suitable directory, and add a PYTHONPATH environment variable. 
+On windows, we recommend the ![anaconda python distribution](http://continuum.io/downloads). We've also had luck with ![enthought](http://www.enthought.com). git clone or unzip the source to a suitable directory, and add an approptiate PYTHONPATH environment variable. 
+
+On windows 7 (and possibly earlier versions) there's a bug in scipy version 0.13 which tries to write very long filenmnames. Reverting to scipy 0.12 seems to do the trick:
+
+    conda install scipy=0.12
 
 OSX
 ---

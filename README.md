@@ -13,8 +13,12 @@ Getting started
 ===============
 Installing with pip
 -------------------
-The simplest way to install GPy is using pip. 
-pip install gpy
+The simplest way to install GPy is using pip. ubuntu users can do:
+
+    sudo apt-get install python-pip
+    pip install gpy
+
+If you'd like to install from source, or want to contribute to the project (e.g. by sending pull requests via github), read on.
 
 Ubuntu
 ------
@@ -23,8 +27,9 @@ sudo apt-get install python-numpy python-scipy python-matplotlib
 
 clone this git repository and add it to your path:
 
-    git clone git@github.com:SheffieldML/GPy.git ~/gpy
-    echo "PYTHONPATH=$PYTHONPATH:~/gpy > ~/.bashrc
+    git clone git@github.com:SheffieldML/GPy.git ~/SheffieldML
+    echo 'PYTHONPATH=$PYTHONPATH:~/SheffieldML' >> ~/.bashrc
+
 
 Windows
 -------
@@ -32,8 +37,10 @@ On windows, we recommend the ![anaconda python distribution](http://continuum.io
 
 OSX
 ---
-everything appears to work out-of-the box using ![enthought](http://www.enthought.com) on osx Mavericks.
+Everything appears to work out-of-the box using ![enthought](http://www.enthought.com) on osx Mavericks. Download/clone GPy, and then add GPy to your PYTHONPATH
 
+    git clone git@github.com:SheffieldML/GPy.git ~/SheffieldML
+    echo 'PYTHONPATH=$PYTHONPATH:~/SheffieldML' >> ~/.profile
 
 
 Compiling documentation:

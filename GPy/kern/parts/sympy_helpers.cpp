@@ -170,9 +170,25 @@ double dh_dl(double t, double tprime, double d_i, double d_j, double l){
 }
 
 double dh_dt(double t, double tprime, double d_i, double d_j, double l){
-  return 0.0;
+  // compute gradient of h function with respect to t.
+  double diff_t = t - tprime;
+  double half_l_di = 0.5*l*d_i;
+  double arg_1 = half_l_di + tprime/l;
+  double arg_2 = half_l_di - diff_t/l;
+  double ln_part_1 = ln_diff_erf(arg_1, arg_2);
+  arg_2 = half_l_di - t/l;
+  double ln_part_2 = ln_diff_erf(half_l_di, arg_2);
+  
+  return (d_i*(erf(d_i*l/2) - erf(d_i*l/2 - t/l))*exp(-d_i*t - d_j*tprime) - d_i*(erf(d_i*l/2 + tprime/l) - erf(d_i*l/2 - (t - tprime)/l))*exp(-d_i*(t - tprime)) + 2*exp(-d_i*(t - tprime) - pow(d_i*l/2 - (t - tprime)/l, 2))/(sqrt(M_PI)*l) - 2*exp(-d_i*t - d_j*tprime - pow(d_i*l/2 - t/l,2))/(sqrt(M_PI)*l))*exp(d_i*l/2*d_i*l/2)/(d_i + d_j);
 }
 
 double dh_dtprime(double t, double tprime, double d_i, double d_j, double l){
-  return 0.0;
+  // compute gradient of h function with respect to tprime.
+  double diff_t = t - tprime;
+  double half_l_di = 0.5*l*d_i;
+  double arg_1 = half_l_di + tprime/l;
+  double arg_2 = half_l_di - diff_t/l;
+  double ln_part_1 = ln_diff_erf(arg_1, arg_2);
+
+  return (d_i*(erf(d_i*l/2 + tprime/l) - erf(d_i*l/2 - (t - tprime)/l))*exp(-d_i*(t - tprime)) + d_j*(erf(d_i*l/2) - erf(d_i*l/2 - t/l))*exp(-d_i*t - d_j*tprime) + (-2*exp(-pow(d_i*l/2 - (t - tprime)/l,2)) + 2*exp(-pow(d_i*l/2 + tprime/l,2)))*exp(-d_i*(t - tprime))/(sqrt(M_PI)*l))*exp(d_i*l/2*d_i*l/2)/(d_i + d_j);
 }

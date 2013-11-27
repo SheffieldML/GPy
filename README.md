@@ -36,7 +36,7 @@ Windows
 -------
 On windows, we recommend the ![anaconda python distribution](http://continuum.io/downloads). We've also had luck with ![enthought](http://www.enthought.com). git clone or unzip the source to a suitable directory, and add an approptiate PYTHONPATH environment variable. 
 
-On windows 7 (and possibly earlier versions) there's a bug in scipy version 0.13 which tries to write very long filenmnames. Reverting to scipy 0.12 seems to do the trick:
+On windows 7 (and possibly earlier versions) there's a bug in scipy version 0.13 which tries to write very long filenames. Reverting to scipy 0.12 seems to do the trick:
 
     conda install scipy=0.12
 

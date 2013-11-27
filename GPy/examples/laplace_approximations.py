@@ -2,7 +2,7 @@ import GPy
 import numpy as np
 import matplotlib.pyplot as plt
 from GPy.util import datasets
-np.random.seed(1)
+#np.random.seed(1)
 
 def student_t_approx():
     """
@@ -106,7 +106,7 @@ def student_t_approx():
     corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution)
     m = GPy.models.GPRegression(X, Yc.copy(), kernel4, likelihood=corrupt_stu_t_likelihood)
     m.ensure_default_constraints()
-    m.constrain_positive('t_noise')
+    m.constrain_bounded('t_noise', 1e-6, 10.)
     m.constrain_fixed('white', 1e-4)
     m.randomize()
     for a in range(1):

@@ -65,11 +65,10 @@ class Laplace(likelihood):
 
         self.old_Ki_f = None
 
-    def predictive_values(self, mu, var, full_cov):
+    def predictive_values(self,mu,var,full_cov,**noise_args):
         if full_cov:
-            raise NotImplementedError("Cannot make correlated predictions\
-                    with an Laplace likelihood")
-        return self.noise_model.predictive_values(mu, var)
+            raise NotImplementedError, "Cannot make correlated predictions with an EP likelihood"
+        return self.noise_model.predictive_values(mu,var,**noise_args)
 
     def log_predictive_density(self, y_test, mu_star, var_star):
         """
@@ -209,6 +208,7 @@ class Laplace(likelihood):
                    - 0.5*self.f_Ki_f
                    + 0.5*self.y_Wi_Ki_i_y
                   )
+        #print "Term, {}, {}, {}, {}, {}".format(self.lik, - 0.5*self.ln_B_det, + 0.5*self.ln_det_Wi_K, - 0.5*self.f_Ki_f, + 0.5*self.y_Wi_Ki_i_y)
 
         #Convert to float as its (1, 1) and Z must be a scalar
         self.Z = np.float64(Z_tilde)
@@ -349,7 +349,8 @@ class Laplace(likelihood):
             #Find the stepsize that minimizes the objective function using a brent line search
             #The tolerance and maxiter matter for speed! Seems to be best to keep them low and make more full
             #steps than get this exact then make a step, if B was bigger it might be the other way around though
-            new_obj = sp.optimize.minimize_scalar(i_o, method='brent', tol=1e-4, options={'maxiter':5}).fun
+            #new_obj = sp.optimize.minimize_scalar(i_o, method='brent', tol=1e-4, options={'maxiter':5}).fun
+            new_obj = sp.optimize.brent(i_o, tol=1e-4, maxiter=10)
             f = self.tmp_f.copy()
             Ki_f = self.tmp_Ki_f.copy()
 
@@ -380,8 +381,8 @@ class Laplace(likelihood):
 
             #difference = abs(new_obj - old_obj)
             #old_obj = new_obj.copy()
-            #difference = np.abs(np.sum(f - f_old))
-            difference = np.abs(np.sum(Ki_f - old_Ki_f))
+            difference = np.abs(np.sum(f - f_old))
+            #difference = np.abs(np.sum(Ki_f - old_Ki_f))
             old_Ki_f = Ki_f.copy()
             i += 1
 

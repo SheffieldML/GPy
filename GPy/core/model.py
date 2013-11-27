@@ -453,7 +453,12 @@ class Model(Parameterized):
 
         if not verbose:
             # just check the global ratio
-            dx = step * np.sign(np.random.uniform(-1, 1, x.size))
+
+            #choose a random direction to find the linear approximation in
+            if x.size==2:
+                dx = step * np.ones(2) # random direction for 2 parameters can fail dure to symmetry
+            else:
+                dx = step * np.sign(np.random.uniform(-1, 1, x.size))
 
             # evaulate around the point x
             f1, g1 = self.objective_and_gradients(x + dx)

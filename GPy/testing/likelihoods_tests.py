@@ -6,6 +6,8 @@ import functools
 import inspect
 from GPy.likelihoods.noise_models import gp_transformations
 from functools import partial
+#np.random.seed(300)
+np.random.seed(7)
 
 def dparam_partial(inst_func, *args):
     """
@@ -144,7 +146,7 @@ class TestNoiseModels(object):
                             "model": GPy.likelihoods.student_t(deg_free=5, sigma2=self.var),
                             "grad_params": {
                                 "names": ["t_noise"],
-                                "vals": [1],
+                                "vals": [1.0],
                                 "constraints": [constrain_positive]
                                 },
                             "laplace": True
@@ -154,6 +156,15 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [0.01],
+                                "constraints": [constrain_positive]
+                                },
+                            "laplace": True
+                            },
+                        "Student_t_large_var": {
+                            "model": GPy.likelihoods.student_t(deg_free=5, sigma2=self.var),
+                            "grad_params": {
+                                "names": ["t_noise"],
+                                "vals": [10.0],
                                 "constraints": [constrain_positive]
                                 },
                             "laplace": True
@@ -315,9 +326,11 @@ class TestNoiseModels(object):
     def t_logpdf(self, model, Y, f):
         print "\n{}".format(inspect.stack()[0][3])
         print model
+        print model._get_params()
         np.testing.assert_almost_equal(
-                               np.log(model.pdf(f.copy(), Y.copy())),
-                               model.logpdf(f.copy(), Y.copy()))
+                               model.pdf(f.copy(), Y.copy()),
+                               np.exp(model.logpdf(f.copy(), Y.copy()))
+                               )
 
     @with_setup(setUp, tearDown)
     def t_dlogpdf_df(self, model, Y, f):
@@ -363,7 +376,7 @@ class TestNoiseModels(object):
         assert (
                 dparam_checkgrad(model.logpdf, model.dlogpdf_dtheta,
                     params, args=(f, Y), constraints=param_constraints,
-                    randomize=False, verbose=True)
+                    randomize=True, verbose=True)
                 )
 
     @with_setup(setUp, tearDown)
@@ -373,7 +386,7 @@ class TestNoiseModels(object):
         assert (
                 dparam_checkgrad(model.dlogpdf_df, model.dlogpdf_df_dtheta,
                     params, args=(f, Y), constraints=param_constraints,
-                    randomize=False, verbose=True)
+                    randomize=True, verbose=True)
                 )
 
     @with_setup(setUp, tearDown)
@@ -383,7 +396,7 @@ class TestNoiseModels(object):
         assert (
                 dparam_checkgrad(model.d2logpdf_df2, model.d2logpdf_df2_dtheta,
                     params, args=(f, Y), constraints=param_constraints,
-                    randomize=False, verbose=True)
+                    randomize=True, verbose=True)
                 )
 
     ################
@@ -478,7 +491,7 @@ class TestNoiseModels(object):
         print "\n{}".format(inspect.stack()[0][3])
         #Normalize
         Y = Y/Y.max()
-        white_var = 0.001
+        white_var = 1e-6
         kernel = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         laplace_likelihood = GPy.likelihoods.Laplace(Y.copy(), model)
         m = GPy.models.GPRegression(X.copy(), Y.copy(), kernel, likelihood=laplace_likelihood)
@@ -490,12 +503,13 @@ class TestNoiseModels(object):
             m[name] = param_vals[param_num]
             constraints[param_num](name, m)
 
+        print m
         m.randomize()
-        m.optimize(max_iters=8)
+        #m.optimize(max_iters=8)
         print m
         m.checkgrad(verbose=1, step=step)
-        if not m.checkgrad(step=step):
-            m.checkgrad(verbose=1, step=step)
+        #if not m.checkgrad(step=step):
+            #m.checkgrad(verbose=1, step=step)
             #import ipdb; ipdb.set_trace()
             #NOTE this test appears to be stochastic for some likelihoods (student t?)
             # appears to all be working in test mode right now...
@@ -509,7 +523,7 @@ class TestNoiseModels(object):
         print "\n{}".format(inspect.stack()[0][3])
         #Normalize
         Y = Y/Y.max()
-        white_var = 0.001
+        white_var = 1e-6
         kernel = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         ep_likelihood = GPy.likelihoods.EP(Y.copy(), model)
         m = GPy.models.GPRegression(X.copy(), Y.copy(), kernel, likelihood=ep_likelihood)

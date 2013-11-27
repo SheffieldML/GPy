@@ -20,3 +20,4 @@ from _models.mrd import MRD#; _mrd = mrd; del mrd
 from _models.gradient_checker import GradientChecker#; _gradient_checker = gradient_checker ; del gradient_checker 
 from _models.gp_multioutput_regression import GPMultioutputRegression#; _gp_multioutput_regression = gp_multioutput_regression ; del gp_multioutput_regression 
 from _models.sparse_gp_multioutput_regression import SparseGPMultioutputRegression#; _sparse_gp_multioutput_regression = sparse_gp_multioutput_regression ; del sparse_gp_multioutput_regression 
+from _models.gradient_checker import GradientChecker

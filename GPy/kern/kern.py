@@ -487,12 +487,11 @@ class kern(Parameterized):
                 p1.psi1(Z, mu, S, psi11)
                 Mu, Sigma = p1._crossterm_mu_S(Z, mu, S)
                 Mu, Sigma = Mu.reshape(NM,self.input_dim), Sigma.reshape(NM,self.input_dim)
-                
+
                 p2.psi1(Z, Mu, Sigma, psi12)
                 eK2 = psi12.reshape(N, M, M)
                 crossterms = eK2 * (psi11[:, :, None] + psi11[:, None, :])
                 target += crossterms
-                #import ipdb;ipdb.set_trace()
             else:
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
         return target        
@@ -540,15 +539,15 @@ class kern(Parameterized):
                     # turn around to have rbf in front
                     p1, p2 = self.parts[i2], self.parts[i1]
                     ps1, ps2 = self.param_slices[i2], self.param_slices[i1]  
-                
+
                 N, M = mu.shape[0], Z.shape[0]; NM=N*M
 
                 psi11 = np.zeros((N, M))
                 p1.psi1(Z, mu, S, psi11)
-                
+
                 Mu, Sigma = p1._crossterm_mu_S(Z, mu, S)
                 Mu, Sigma = Mu.reshape(NM,self.input_dim), Sigma.reshape(NM,self.input_dim)
-                
+
                 tmp1 = np.zeros_like(target[ps1])
                 tmp2 = np.zeros_like(target[ps2])
 #                 for n in range(N):
@@ -559,7 +558,7 @@ class kern(Parameterized):
 #                             Mu, Sigma= Mu.reshape(N,M,self.input_dim), Sigma.reshape(N,M,self.input_dim)
 #                             p2.dpsi1_dtheta((dL_dpsi2[n:n+1,m:m+1,m_prime:m_prime+1]*(psi11[n:n+1,m_prime:m_prime+1]))[0], Z[m:m+1], Mu[n:n+1,m], Sigma[n:n+1,m], target[ps2])
 #                             p2.dpsi1_dtheta((dL_dpsi2[n:n+1,m:m+1,m_prime:m_prime+1]*(psi11[n:n+1,m:m+1]))[0], Z[m_prime:m_prime+1], Mu[n:n+1, m_prime], Sigma[n:n+1, m_prime], target[ps2])#Z[m_prime:m_prime+1], Mu[n+m:(n+m)+1], Sigma[n+m:(n+m)+1], target[ps2])
-                
+
                 if isinstance(p1, RBF) and isinstance(p2, RBF):
                     psi12 = np.zeros((N, M))
                     p2.psi1(Z, mu, S, psi12)
@@ -571,11 +570,11 @@ class kern(Parameterized):
                 if isinstance(p1, RBF) and isinstance(p2, Linear):
                     #import ipdb;ipdb.set_trace()
                     pass
-                
+
                 p2.dpsi1_dtheta((dL_dpsi2*(psi11[:,:,None] + psi11[:,None,:])).reshape(NM,M), Z, Mu, Sigma, tmp2)
-                
+
                 target[ps1] += tmp1
-                target[ps2] += tmp2                
+                target[ps2] += tmp2
             else:
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
 
@@ -615,17 +614,17 @@ class kern(Parameterized):
                 psi11 = np.zeros((N, M))
                 psi12 = np.zeros((NM, M))
                 #psi12_t = np.zeros((N,M))
-                
+
                 p1.psi1(Z, mu, S, psi11)
                 Mu, Sigma = p1._crossterm_mu_S(Z, mu, S)
                 Mu, Sigma = Mu.reshape(NM,self.input_dim), Sigma.reshape(NM,self.input_dim)
-                
+
                 p2.psi1(Z, Mu, Sigma, psi12)
                 tmp1 = np.zeros_like(target)
                 p1.dpsi1_dZ((dL_dpsi2*psi12.reshape(N,M,M)).sum(1), Z, mu, S, tmp1)
                 p1.dpsi1_dZ((dL_dpsi2*psi12.reshape(N,M,M)).sum(2), Z, mu, S, tmp1)
                 target += tmp1
-                
+
                 #p2.dpsi1_dtheta((dL_dpsi2*(psi11[:,:,None] + psi11[:,None,:])).reshape(NM,M), Z, Mu, Sigma, target)
                 p2.dpsi1_dZ((dL_dpsi2*(psi11[:,:,None] + psi11[:,None,:])).reshape(NM,M), Z, Mu, Sigma, target)
             else:
@@ -666,21 +665,21 @@ class kern(Parameterized):
                 psi11 = np.zeros((N, M))
                 psi12 = np.zeros((NM, M))
                 #psi12_t = np.zeros((N,M))
-                
+
                 p1.psi1(Z, mu, S, psi11)
                 Mu, Sigma = p1._crossterm_mu_S(Z, mu, S)
                 Mu, Sigma = Mu.reshape(NM,self.input_dim), Sigma.reshape(NM,self.input_dim)
-                
+
                 p2.psi1(Z, Mu, Sigma, psi12)
                 p1.dpsi1_dmuS((dL_dpsi2*psi12.reshape(N,M,M)).sum(1), Z, mu, S, target_mu, target_S)
                 p1.dpsi1_dmuS((dL_dpsi2*psi12.reshape(N,M,M)).sum(2), Z, mu, S, target_mu, target_S)
-                
+
                 #p2.dpsi1_dtheta((dL_dpsi2*(psi11[:,:,None] + psi11[:,None,:])).reshape(NM,M), Z, Mu, Sigma, target)
                 p2.dpsi1_dmuS((dL_dpsi2*(psi11[:,:,None])).sum(1)*2, Z, Mu.reshape(N,M,self.input_dim).sum(1), Sigma.reshape(N,M,self.input_dim).sum(1), target_mu, target_S)
             else:
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
         return target_mu, target_S
-    
+
     def plot(self, x=None, plot_limits=None, which_parts='all', resolution=None, *args, **kwargs):
         if which_parts == 'all':
             which_parts = [True] * self.num_parts
@@ -754,7 +753,7 @@ class Kern_check_model(Model):
                 dL_dK = np.ones((X.shape[0], X.shape[0]))
             else:
                 dL_dK = np.ones((X.shape[0], X2.shape[0]))
-        
+
         self.kernel=kernel
         self.X = X
         self.X2 = X2
@@ -769,7 +768,7 @@ class Kern_check_model(Model):
             return False
         else:
             return True
-        
+
     def _get_params(self):
         return self.kernel._get_params()
 
@@ -784,7 +783,7 @@ class Kern_check_model(Model):
 
     def _log_likelihood_gradients(self):
         raise NotImplementedError, "This needs to be implemented to use the kern_check_model class."
-    
+
 class Kern_check_dK_dtheta(Kern_check_model):
     """This class allows gradient checks for the gradient of a kernel with respect to parameters. """
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
@@ -799,7 +798,7 @@ class Kern_check_dKdiag_dtheta(Kern_check_model):
         Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=None)
         if dL_dK==None:
             self.dL_dK = np.ones((self.X.shape[0]))
-        
+
     def log_likelihood(self):
         return (self.dL_dK*self.kernel.Kdiag(self.X)).sum()
 
@@ -816,7 +815,7 @@ class Kern_check_dK_dX(Kern_check_model):
 
     def _get_param_names(self):
         return ['X_'  +str(i) + ','+str(j) for j in range(self.X.shape[1]) for i in range(self.X.shape[0])]
-                
+
     def _get_params(self):
         return self.X.flatten()
 
@@ -838,7 +837,7 @@ class Kern_check_dKdiag_dX(Kern_check_model):
 
     def _get_param_names(self):
         return ['X_'  +str(i) + ','+str(j) for j in range(self.X.shape[1]) for i in range(self.X.shape[0])]
-                
+
     def _get_params(self):
         return self.X.flatten()
 

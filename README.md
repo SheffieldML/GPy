@@ -13,26 +13,39 @@ Getting started
 ===============
 Installing with pip
 -------------------
-The simplest way to install GPy is using pip. 
-pip install gpy
+The simplest way to install GPy is using pip. ubuntu users can do:
+
+    sudo apt-get install python-pip
+    pip install gpy
+
+If you'd like to install from source, or want to contribute to the project (e.g. by sending pull requests via github), read on.
 
 Ubuntu
 ------
 For the most part, the developers are using ubuntu. To install the required packages:
-sudo apt-get install python-numpy python-scipy python-matplotlib
+
+    sudo apt-get install python-numpy python-scipy python-matplotlib
 
 clone this git repository and add it to your path:
-    git clone git@github.com:SheffieldML/GPy.git \<destination\>
-    echo "PYTHONPATH=$PYTHONPATH:\<detination\> > ~/.bashrc
+
+    git clone git@github.com:SheffieldML/GPy.git ~/SheffieldML
+    echo 'PYTHONPATH=$PYTHONPATH:~/SheffieldML' >> ~/.bashrc
+
 
 Windows
 -------
-On windows, we recommend the ![anaconda python distribution](http://continuum.io/downloads). We've also had luck with ![enthought](http://www.enthought.com). git clone or unzip the source to a suitable directory, and add a PYTHONPATH environement variable. 
+On windows, we recommend the ![anaconda python distribution](http://continuum.io/downloads). We've also had luck with ![enthought](http://www.enthought.com). git clone or unzip the source to a suitable directory, and add an approptiate PYTHONPATH environment variable. 
+
+On windows 7 (and possibly earlier versions) there's a bug in scipy version 0.13 which tries to write very long filenames. Reverting to scipy 0.12 seems to do the trick:
+
+    conda install scipy=0.12
 
 OSX
 ---
-everything appears to work out-of-the box using ![enthought](http://www.enthought.com) on osx Mavericks.
+Everything appears to work out-of-the box using ![enthought](http://www.enthought.com) on osx Mavericks. Download/clone GPy, and then add GPy to your PYTHONPATH
 
+    git clone git@github.com:SheffieldML/GPy.git ~/SheffieldML
+    echo 'PYTHONPATH=$PYTHONPATH:~/SheffieldML' >> ~/.profile
 
 
 Compiling documentation:

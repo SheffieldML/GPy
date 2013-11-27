@@ -862,6 +862,7 @@ def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False, X_positive=
             X = abs(X)
         if output_ind is not None:
             X[:, output_ind] = np.random.randint(low=0,high=kern.parts[0].output_dim, size=X.shape[0])
+            import ipdb; ipdb.set_trace()
     if X2==None:
         X2 = np.random.randn(20, kern.input_dim)
         if X_positive:

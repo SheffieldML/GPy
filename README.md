@@ -9,6 +9,31 @@ A Gaussian processes framework in Python.
 
 Continuous integration status: ![CI status](https://travis-ci.org/SheffieldML/GPy.png)
 
+Getting started
+===============
+Installing with pip
+-------------------
+The simplest way to install GPy is using pip. 
+pip install gpy
+
+Ubuntu
+------
+For the most part, the developers are using ubuntu. To install the required packages:
+sudo apt-get install python-numpy python-scipy python-matplotlib
+
+clone this git repository and add it to your path:
+    git clone git@github.com:SheffieldML/GPy.git \<destination\>
+    echo "PYTHONPATH=$PYTHONPATH:\<detination\> > ~/.bashrc
+
+Windows
+-------
+On windows, we recommend the ![anaconda python distribution](http://continuum.io/downloads). We've also had luck with ![enthought](http://www.enthought.com). git clone or unzip the source to a suitable directory, and add a PYTHONPATH environement variable. 
+
+OSX
+---
+everything appears to work out-of-the box using ![enthought](http://www.enthought.com) on osx Mavericks.
+
+
 
 Compiling documentation:
 ========================

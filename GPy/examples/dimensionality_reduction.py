@@ -165,19 +165,14 @@ def BGPLVM_oil(optimize=True, N=200, Q=7, num_inducing=40, max_iters=1000, plot=
 
     # optimize
     if optimize:
-        m.constrain_fixed('noise')
-        m.optimize('scg', messages=1, max_iters=200, gtol=.05)
-        m.constrain_positive('noise')
-        m.constrain_bounded('white', 1e-7, 1)
         m.optimize('scg', messages=1, max_iters=max_iters, gtol=.05)
 
     if plot:
         y = m.likelihood.Y[0, :]
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
-        plt.sca(latent_axes)
-        m.plot_latent()
+        m.plot_latent(ax=latent_axes)
         data_show = GPy.util.visualize.vector_show(y)
-        lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :], m, data_show, latent_axes=latent_axes) # , sense_axes=sense_axes)
+        lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :], m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
         raw_input('Press enter to finish')
         plt.close(fig)
     return m

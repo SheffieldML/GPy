@@ -349,7 +349,8 @@ class Laplace(likelihood):
             #Find the stepsize that minimizes the objective function using a brent line search
             #The tolerance and maxiter matter for speed! Seems to be best to keep them low and make more full
             #steps than get this exact then make a step, if B was bigger it might be the other way around though
-            new_obj = sp.optimize.minimize_scalar(i_o, method='brent', tol=1e-4, options={'maxiter':5}).fun
+            #new_obj = sp.optimize.minimize_scalar(i_o, method='brent', tol=1e-4, options={'maxiter':5}).fun
+            new_obj = sp.optimize.brent(i_o, tol=1e-4, maxiter=10)
             f = self.tmp_f.copy()
             Ki_f = self.tmp_Ki_f.copy()
 

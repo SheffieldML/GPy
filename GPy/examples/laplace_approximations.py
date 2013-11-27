@@ -2,7 +2,7 @@ import GPy
 import numpy as np
 import matplotlib.pyplot as plt
 from GPy.util import datasets
-np.random.seed(1)
+#np.random.seed(1)
 
 def student_t_approx():
     """

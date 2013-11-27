@@ -7,7 +7,7 @@ import inspect
 from GPy.likelihoods.noise_models import gp_transformations
 from functools import partial
 #np.random.seed(300)
-np.random.seed(690)
+np.random.seed(7)
 
 def dparam_partial(inst_func, *args):
     """

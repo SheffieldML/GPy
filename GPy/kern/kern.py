@@ -737,15 +737,16 @@ class kern(Parameterized):
         else:
             raise NotImplementedError, "Cannot plot a kernel with more than two input dimensions"
 
-from GPy.core.model import Model
-
+from ..core.model import Model
 class Kern_check_model(Model):
     """This is a dummy model class used as a base class for checking that the gradients of a given kernel are implemented correctly. It enables checkgradient() to be called independently on a kernel."""
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
         num_samples = 20
         num_samples2 = 10
         if kernel==None:
+            import GPy
             kernel = GPy.kern.rbf(1)
+            del GPy
         if X==None:
             X = np.random.normal(size=(num_samples, kernel.input_dim))
         if dL_dK==None:
@@ -760,7 +761,7 @@ class Kern_check_model(Model):
         self.dL_dK = dL_dK
         #self.constrained_indices=[]
         #self.constraints=[]
-        Model.__init__(self)
+        super(Kern_check_model, self).__init__()
 
     def is_positive_definite(self):
         v = np.linalg.eig(self.kernel.K(self.X))[0]
@@ -863,7 +864,6 @@ def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False, X_positive=
         if output_ind is not None:
             assert(output_ind<kern.input_dim)
             X[:, output_ind] = np.random.randint(low=0,high=kern.parts[0].output_dim, size=X.shape[0])
-            import ipdb; ipdb.set_trace()
     if X2==None:
         X2 = np.random.randn(20, kern.input_dim)
         if X_positive:
@@ -964,3 +964,4 @@ def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False, X_positive=
         return False
 
     return pass_checks
+del Model

@@ -28,38 +28,37 @@ class GradientChecker(Model):
         :param df: Gradient of function to check
         :param x0:
             Initial guess for inputs x (if it has a shape (a,b) this will be reflected in the parameter names).
-            Can be a list of arrays, if takes a list of arrays. This list will be passed
+            Can be a list of arrays, if f takes a list of arrays. This list will be passed
             to f and df in the same order as given here.
-            If only one argument, make sure not to pass a list!!!
-
+            If f takes only one argument, make sure not to pass a list for x0!!!
         :type x0: [array-like] | array-like | float | int
-        :param names:
+        :param list names:
             Names to print, when performing gradcheck. If a list was passed to x0
             a list of names with the same length is expected.
-        :param args: Arguments passed as f(x, *args, **kwargs) and df(x, *args, **kwargs)
+        :param args kwargs: Arguments passed as f(x, *args, **kwargs) and df(x, *args, **kwargs)
 
         Examples:
         ---------
-            from GPy.models import GradientChecker
-            N, M, Q = 10, 5, 3
+        from GPy.models import GradientChecker
+        N, M, Q = 10, 5, 3
 
-            Sinusoid:
+        Sinusoid:
 
-                X = numpy.random.rand(N, Q)
-                grad = GradientChecker(numpy.sin,numpy.cos,X,'x')
-                grad.checkgrad(verbose=1)
+            X = numpy.random.rand(N, Q)
+            grad = GradientChecker(numpy.sin,numpy.cos,X,'sin_in')
+            grad.checkgrad(verbose=1)
 
-            Using GPy:
+        Using GPy:
 
-                X, Z = numpy.random.randn(N,Q), numpy.random.randn(M,Q)
-                kern = GPy.kern.linear(Q, ARD=True) + GPy.kern.rbf(Q, ARD=True)
-                grad = GradientChecker(kern.K,
-                                       lambda x: 2*kern.dK_dX(numpy.ones((1,1)), x),
-                                       x0 = X.copy(),
-                                       names='X')
-                grad.checkgrad(verbose=1)
-                grad.randomize()
-                grad.checkgrad(verbose=1)
+            X, Z = numpy.random.randn(N,Q), numpy.random.randn(M,Q)
+            kern = GPy.kern.linear(Q, ARD=True) + GPy.kern.rbf(Q, ARD=True)
+            grad = GradientChecker(kern.K,
+                                   lambda x: kern.dK_dX(numpy.ones((1,1)), x),
+                                   x0 = X.copy(),
+                                   names=['X_input'])
+            grad.checkgrad(verbose=1)
+            grad.randomize()
+            grad.checkgrad(verbose=1)
         """
         Model.__init__(self)
         if isinstance(x0, (list, tuple)) and names is None:

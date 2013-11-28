@@ -22,22 +22,22 @@ from GPy.util.plot import gpplot, Tango, x_frame1D
 import pylab as pb
 
 class StateSpace_1(Model):
-    def __init__(self, T,X, Y, kernel=None):
+    def __init__(self, X, Y, kernel=None):
         super(StateSpace_1, self).__init__()
         self.num_data, input_dim = X.shape
-        assert input_dim==2, "State space methods for time and space"
+        assert input_dim==1, "State space methods for time and space  2"
         num_data_Y, self.output_dim = Y.shape
         assert num_data_Y == self.num_data, "X and Y data don't match"
         assert self.output_dim == 1, "State space methods for single outputs only"
 
         # Make sure the observations are ordered in time
-        sort_index = np.argsort(T[:,0])
-        self.T = T[sort_index]
+        sort_index = np.argsort(X[:,0])
+        self.X = X[sort_index]
         self.Y = Y[sort_index]
 
-        #sort_index = np.argsort(X[:,0])
-        #self.X = X[sort_index]
-        #self.Y = Y[sort_index]
+        sort_index = np.argsort(X[:,0])
+        self.X = X[sort_index]
+        self.Y = Y[sort_index]
 
         # Noise variance
         self.sigma2 = 1.
@@ -93,13 +93,13 @@ class StateSpace_1(Model):
         Y = Y[return_index]
 
         # Get the model matrices from the kernel
-        (F1,L1,Qc1,H1,Pinf1) = self.kern.sde()
+        (F,L,Qc,H,Pinf) = self.kern.sde()
 
-        F = np.kron(eye(n),F1);
-        L = np.kron(eye(n),L1);
-        Qc = K*Qc1;               #kron(K,Qc1);
-        H = np.kron(eye(n),H1);
-        Pinf = np.kron(K,Pinf1);
+        #F = np.kron(eye(n),F1);
+        #L = np.kron(eye(n),L1);
+        #Qc = K*Qc1;               #kron(K,Qc1);
+        #H = np.kron(eye(n),H1);
+        #Pinf = np.kron(K,Pinf1);
 
 
 

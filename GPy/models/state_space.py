@@ -163,7 +163,10 @@ class StateSpace(Model):
 
         # Optionally plot some samples
         if samples:
-            Ysim = self.posterior_samples(Xgrid, samples)
+            if plot_raw:
+                Ysim = self.posterior_samples_f(Xgrid, samples)
+            else:
+                Ysim = self.posterior_samples(Xgrid, samples)
             for yi in Ysim.T:
                 ax.plot(Xgrid, yi, Tango.colorsHex['darkBlue'], linewidth=0.25)
 
@@ -173,11 +176,15 @@ class StateSpace(Model):
         ax.set_xlim(xmin, xmax)
         ax.set_ylim(ymin, ymax)
 
-    def posterior_samples_f(self,X,size=10):
+    def prior_samples_f(self,X,size=10):
 
         # Reorder X values
-        sort_index = np.argsort(X[:,0])
-        X = X[sort_index]
+        #sort_index = np.argsort(X[:,0])
+        #X = X[sort_index]
+
+        # Sort the matrix (save the order)
+        _, return_index, return_inverse = np.unique(X,True,True)
+        X = X[return_index]
 
         # Get the model matrices from the kernel
         (F,L,Qc,H,Pinf) = self.kern.sde()
@@ -190,9 +197,42 @@ class StateSpace(Model):
             Y[j,:] = H.dot(self.simulate(F,L,Qc,Pinf,X.T))
 
         # Reorder simulated values
-        Y[:,sort_index] = Y[:,:]
+        Y = Y[:,return_inverse]
 
         # Return trajectory
+        return Y.T
+
+    def posterior_samples_f(self,X,size=10):
+
+        # Reorder X values
+        #sort_index = np.argsort(X[:,0])
+        #X = X[sort_index]
+        # Sort the matrix (save the order)
+        (_, return_index, return_inverse) = np.unique(X,True,True)
+        X = X[return_index]
+
+        # Get the model matrices from the kernel
+        (F,L,Qc,H,Pinf) = self.kern.sde()
+
+        # Run smoother on original data
+        (m,V) = self.predict_raw(X)
+
+        # Simulate random draws from the GP prior
+        y = self.prior_samples_f(np.vstack((self.X, X)),size)
+
+        # Allocate space for sample trajectories
+        Y = np.empty((size,X.shape[0]))
+
+        # Run the RTS smoother on each of these values
+        for j in range(0,size):
+            yobs =  y[0:self.num_data,j:j+1] + np.sqrt(self.sigma2)*np.random.randn(self.num_data,1)
+            (m2,V2) = self.predict_raw(X,Ynew=yobs)
+            Y[j,:] = m.T + y[self.num_data:,j].T - m2.T
+
+        # Reorder simulated values
+        Y = Y[:,return_inverse]
+
+        # Return posterior sample trajectories
         return Y.T
 
     def posterior_samples(self, X, size=10):

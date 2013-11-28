@@ -1,8 +1,16 @@
 '''
-Created on 14 Nov 2013
+GPy Models
+==========
 
-@author: maxz
+Implementations for common models used in GP regression and classification.
+The different models can be viewed in :mod:`GPy.models_modules`, which holds
+detailed explanations for the different models.
+
+:warning: This module is a convienince module for endusers to use. For developers 
+see :mod:`GPy.models_modules`, which holds the implementions for each model. 
 '''
+
+__updated__ = '2013-11-28'
 
 from models_modules.bayesian_gplvm import BayesianGPLVM
 from models_modules.gp_regression import GPRegression

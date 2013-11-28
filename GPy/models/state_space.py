@@ -178,12 +178,8 @@ class StateSpace(Model):
 
     def prior_samples_f(self,X,size=10):
 
-        # Reorder X values
-        #sort_index = np.argsort(X[:,0])
-        #X = X[sort_index]
-
         # Sort the matrix (save the order)
-        _, return_index, return_inverse = np.unique(X,True,True)
+        (_, return_index, return_inverse) = np.unique(X,True,True)
         X = X[return_index]
 
         # Get the model matrices from the kernel
@@ -204,9 +200,6 @@ class StateSpace(Model):
 
     def posterior_samples_f(self,X,size=10):
 
-        # Reorder X values
-        #sort_index = np.argsort(X[:,0])
-        #X = X[sort_index]
         # Sort the matrix (save the order)
         (_, return_index, return_inverse) = np.unique(X,True,True)
         X = X[return_index]

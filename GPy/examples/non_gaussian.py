@@ -2,22 +2,21 @@ import GPy
 import numpy as np
 import matplotlib.pyplot as plt
 from GPy.util import datasets
-#np.random.seed(1)
 
-def student_t_approx():
+def student_t_approx(optimize=True, plot=True):
     """
-    Example of regressing with a student t likelihood
+    Example of regressing with a student t likelihood using Laplace
     """
     real_std = 0.1
     #Start a function, any function
     X = np.linspace(0.0, np.pi*2, 100)[:, None]
     Y = np.sin(X) + np.random.randn(*X.shape)*real_std
+    Y = Y/Y.max()
     Yc = Y.copy()
 
     X_full = np.linspace(0.0, np.pi*2, 500)[:, None]
     Y_full = np.sin(X_full)
-
-    Y = Y/Y.max()
+    Y_full = Y_full/Y_full.max()
 
     #Slightly noisy data
     Yc[75:80] += 1
@@ -34,94 +33,93 @@ def student_t_approx():
     deg_free = 5
     print "Real noise: ", real_std
     initial_var_guess = 0.5
+    edited_real_sd = initial_var_guess
 
-    #t_rv = t(deg_free, loc=0, scale=real_var)
-    #noise = t_rvrvs(size=Y.shape)
-    #Y += noise
-
-    plt.figure(1)
-    plt.suptitle('Gaussian likelihood')
     # Kernel object
     kernel1 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
     kernel2 = kernel1.copy()
     kernel3 = kernel1.copy()
     kernel4 = kernel1.copy()
-    kernel5 = kernel1.copy()
-    kernel6 = kernel1.copy()
 
-    print "Clean Gaussian"
-    #A GP should completely break down due to the points as they get a lot of weight
-    # create simple GP model
-    m = GPy.models.GPRegression(X, Y, kernel=kernel1)
+    #Gaussian GP model on clean data
+    m1 = GPy.models.GPRegression(X, Y.copy(), kernel=kernel1)
     # optimize
-    m.ensure_default_constraints()
-    m.constrain_fixed('white', 1e-4)
-    m.randomize()
-    m.optimize()
-    # plot
-    ax = plt.subplot(211)
-    m.plot(ax=ax)
-    plt.plot(X_full, Y_full)
-    plt.ylim(-1.5, 1.5)
-    plt.title('Gaussian clean')
-    print m
+    m1.ensure_default_constraints()
+    m1.constrain_fixed('white', 1e-5)
+    m1.randomize()
 
-    #Corrupt
-    print "Corrupt Gaussian"
-    m = GPy.models.GPRegression(X, Yc, kernel=kernel2)
-    m.ensure_default_constraints()
-    m.constrain_fixed('white', 1e-4)
-    m.randomize()
-    m.optimize()
-    ax = plt.subplot(212)
-    m.plot(ax=ax)
-    plt.plot(X_full, Y_full)
-    plt.ylim(-1.5, 1.5)
-    plt.title('Gaussian corrupt')
-    print m
+    #Gaussian GP model on corrupt data
+    m2 = GPy.models.GPRegression(X, Yc.copy(), kernel=kernel2)
+    m2.ensure_default_constraints()
+    m2.constrain_fixed('white', 1e-5)
+    m2.randomize()
 
-    plt.figure(2)
-    plt.suptitle('Student-t likelihood')
-    edited_real_sd = initial_var_guess
-
-    print "Clean student t, rasm"
+    #Student t GP model on clean data
     t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=edited_real_sd)
     stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution)
-    m = GPy.models.GPRegression(X, Y.copy(), kernel6, likelihood=stu_t_likelihood)
-    m.ensure_default_constraints()
-    m.constrain_positive('t_noise')
-    m.constrain_fixed('white', 1e-4)
-    m.randomize()
-    #m.update_likelihood_approximation()
-    m.optimize()
-    print(m)
-    ax = plt.subplot(211)
-    m.plot(ax=ax)
-    plt.plot(X_full, Y_full)
-    plt.ylim(-1.5, 1.5)
-    plt.title('Student-t rasm clean')
+    m3 = GPy.models.GPRegression(X, Y.copy(), kernel3, likelihood=stu_t_likelihood)
+    m3.ensure_default_constraints()
+    m3.constrain_bounded('t_noise', 1e-6, 10.)
+    m3.constrain_fixed('white', 1e-5)
+    m3.randomize()
 
-    print "Corrupt student t, rasm"
+    #Student t GP model on corrupt data
     t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=edited_real_sd)
     corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution)
-    m = GPy.models.GPRegression(X, Yc.copy(), kernel4, likelihood=corrupt_stu_t_likelihood)
-    m.ensure_default_constraints()
-    m.constrain_bounded('t_noise', 1e-6, 10.)
-    m.constrain_fixed('white', 1e-4)
-    m.randomize()
-    for a in range(1):
-        m.randomize()
-        m_start = m.copy()
-        print m
-        m.optimize('scg', messages=1)
-    print(m)
-    ax = plt.subplot(212)
-    m.plot(ax=ax)
-    plt.plot(X_full, Y_full)
-    plt.ylim(-1.5, 1.5)
-    plt.title('Student-t rasm corrupt')
+    m4 = GPy.models.GPRegression(X, Yc.copy(), kernel4, likelihood=corrupt_stu_t_likelihood)
+    m4.ensure_default_constraints()
+    m4.constrain_bounded('t_noise', 1e-6, 10.)
+    m4.constrain_fixed('white', 1e-5)
+    m4.randomize()
 
-    return m
+    if optimize:
+        optimizer='scg'
+        print "Clean Gaussian"
+        m1.optimize(optimizer, messages=1)
+        print "Corrupt Gaussian"
+        m2.optimize(optimizer, messages=1)
+        print "Clean student t"
+        m3.optimize(optimizer, messages=1)
+        print "Corrupt student t"
+        m4.optimize(optimizer, messages=1)
+
+    if False:
+        print m1
+        print m3
+        plt.figure(3)
+        plt.scatter(X, m1.likelihood.Y, c='g')
+        plt.scatter(X, m3.likelihood.Y, c='r')
+
+    if plot:
+        plt.figure(1)
+        plt.suptitle('Gaussian likelihood')
+        ax = plt.subplot(211)
+        m1.plot(ax=ax)
+        plt.plot(X_full, Y_full)
+        plt.ylim(-1.5, 1.5)
+        plt.title('Gaussian clean')
+
+        ax = plt.subplot(212)
+        m2.plot(ax=ax)
+        plt.plot(X_full, Y_full)
+        plt.ylim(-1.5, 1.5)
+        plt.title('Gaussian corrupt')
+
+        plt.figure(2)
+        plt.suptitle('Student-t likelihood')
+        ax = plt.subplot(211)
+        m3.plot(ax=ax)
+        plt.plot(X_full, Y_full)
+        plt.ylim(-1.5, 1.5)
+        plt.title('Student-t rasm clean')
+
+        ax = plt.subplot(212)
+        m4.plot(ax=ax)
+        plt.plot(X_full, Y_full)
+        plt.ylim(-1.5, 1.5)
+        plt.title('Student-t rasm corrupt')
+
+    return m1, m2, m3, m4
 
 def boston_example():
     import sklearn
@@ -294,3 +292,4 @@ def precipitation_example():
     for n, (train, test) in enumerate(kf):
         X_train, X_test, Y_train, Y_test = X[train], X[test], Y[train], Y[test]
         print "Fold {}".format(n)
+

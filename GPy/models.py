@@ -1,13 +1,15 @@
 '''
-GPy Models
-==========
+.. module:: GPy.models
 
 Implementations for common models used in GP regression and classification.
 The different models can be viewed in :mod:`GPy.models_modules`, which holds
 detailed explanations for the different models.
 
-:warning: This module is a convienince module for endusers to use. For developers 
-see :mod:`GPy.models_modules`, which holds the implementions for each model. 
+.. note::
+    This module is a convienince module for endusers to use. For developers 
+    see :mod:`GPy.models_modules`, which holds the implementions for each model.: 
+
+.. moduleauthor:: Max Zwiessele <ibinbei@gmail.com>
 '''
 
 __updated__ = '2013-11-28'

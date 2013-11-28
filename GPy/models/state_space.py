@@ -77,11 +77,15 @@ class StateSpace(Model):
         #return self.kf_likelihood_g(F,L,Qc,self.sigma2,H,Pinf,dF,dQc,dPinf,self.X,self.Y) 
         return False
 
-    def predict_raw(self, Xnew, filteronly=False):
+    def predict_raw(self, Xnew, Y=None, filteronly=False):
+
+        # Set defaults
+        if Y is None:
+            Y = self.Y
 
         # Make a single matrix containing training and testing points
         X = np.vstack((self.X, Xnew))
-        Y = np.vstack((self.Y, np.nan*np.zeros(Xnew.shape)))
+        Y = np.vstack((Y, np.nan*np.zeros(Xnew.shape)))
 
         # Sort the matrix (save the order)
         _, return_index, return_inverse = np.unique(X,True,True)

@@ -1,38 +1,35 @@
-GPy.mappings package
-====================
+mappings Package
+================
 
-Submodules
-----------
+:mod:`mappings` Package
+-----------------------
 
-GPy.mappings.kernel module
---------------------------
+.. automodule:: GPy.mappings
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`kernel` Module
+--------------------
 
 .. automodule:: GPy.mappings.kernel
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.mappings.linear module
---------------------------
+:mod:`linear` Module
+--------------------
 
 .. automodule:: GPy.mappings.linear
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.mappings.mlp module
------------------------
+:mod:`mlp` Module
+-----------------
 
 .. automodule:: GPy.mappings.mlp
     :members:
     :undoc-members:
     :show-inheritance:
 
-
-Module contents
----------------
-
-.. automodule:: GPy.mappings
-    :members:
-    :undoc-members:
-    :show-inheritance:

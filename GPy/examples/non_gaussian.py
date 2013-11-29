@@ -114,7 +114,7 @@ def student_t_approx(optimize=True, plot=True):
 
     return m1, m2, m3, m4
 
-def boston_example():
+def boston_example(optimize=True, plot=True):
     import sklearn
     from sklearn.cross_validation import KFold
     optimizer='bfgs'
@@ -143,7 +143,6 @@ def boston_example():
         noise = 1e-1 #np.exp(-2)
         rbf_len = 0.5
         data_axis_plot = 4
-        plot = False
         kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1]) + GPy.kern.bias(X.shape[1])
         kernelgp = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1]) + GPy.kern.bias(X.shape[1])
 
@@ -158,17 +157,13 @@ def boston_example():
         mgp['rbf_len'] = rbf_len
         mgp['noise'] = noise
         print mgp
-        mgp.optimize(optimizer=optimizer, messages=messages)
+        if optimize:
+            mgp.optimize(optimizer=optimizer, messages=messages)
         Y_test_pred = mgp.predict(X_test)
         score_folds[1, n] = rmse(Y_test, Y_test_pred[0])
         pred_density[1, n] = np.mean(mgp.log_predictive_density(X_test, Y_test))
         print mgp
         print pred_density
-        if plot:
-            plt.figure()
-            plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
-            plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
-            plt.title('GP gauss')
 
         print "Gaussian Laplace GP"
         N, D = Y_train.shape
@@ -181,20 +176,13 @@ def boston_example():
         mg['rbf_len'] = rbf_len
         mg['noise'] = noise
         print mg
-        try:
+        if optimize:
             mg.optimize(optimizer=optimizer, messages=messages)
-        except Exception:
-            print "Blew up"
         Y_test_pred = mg.predict(X_test)
         score_folds[2, n] = rmse(Y_test, Y_test_pred[0])
         pred_density[2, n] = np.mean(mg.log_predictive_density(X_test, Y_test))
         print pred_density
         print mg
-        if plot:
-            plt.figure()
-            plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
-            plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
-            plt.title('Lap gauss')
 
         for stu_num, df in enumerate(degrees_freedoms):
             #Student T
@@ -208,61 +196,71 @@ def boston_example():
             mstu_t['rbf_len'] = rbf_len
             mstu_t['t_noise'] = noise
             print mstu_t
-            try:
+            if optimize:
                 mstu_t.optimize(optimizer=optimizer, messages=messages)
-            except Exception:
-                print "Blew up"
             Y_test_pred = mstu_t.predict(X_test)
             score_folds[3+stu_num, n] = rmse(Y_test, Y_test_pred[0])
             pred_density[3+stu_num, n] = np.mean(mstu_t.log_predictive_density(X_test, Y_test))
             print pred_density
             print mstu_t
-            if plot:
-                plt.figure()
-                plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
-                plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
-                plt.title('Stu t {}df'.format(df))
+
+    if plot:
+        plt.figure()
+        plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
+        plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
+        plt.title('GP gauss')
+
+        plt.figure()
+        plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
+        plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
+        plt.title('Lap gauss')
+
+        plt.figure()
+        plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
+        plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
+        plt.title('Stu t {}df'.format(df))
 
     print "Average scores: {}".format(np.mean(score_folds, 1))
     print "Average pred density: {}".format(np.mean(pred_density, 1))
 
-    #Plotting
-    stu_t_legends = ['Student T, df={}'.format(df) for df in degrees_freedoms]
-    legends = ['Baseline', 'Gaussian', 'Laplace Approx Gaussian'] + stu_t_legends
+    if plot:
+        #Plotting
+        stu_t_legends = ['Student T, df={}'.format(df) for df in degrees_freedoms]
+        legends = ['Baseline', 'Gaussian', 'Laplace Approx Gaussian'] + stu_t_legends
 
-    #Plot boxplots for RMSE density
-    fig = plt.figure()
-    ax=fig.add_subplot(111)
-    plt.title('RMSE')
-    bp = ax.boxplot(score_folds.T, notch=0, sym='+', vert=1, whis=1.5)
-    plt.setp(bp['boxes'], color='black')
-    plt.setp(bp['whiskers'], color='black')
-    plt.setp(bp['fliers'], color='red', marker='+')
-    xtickNames = plt.setp(ax, xticklabels=legends)
-    plt.setp(xtickNames, rotation=45, fontsize=8)
-    ax.set_ylabel('RMSE')
-    ax.set_xlabel('Distribution')
-    #Make grid and put it below boxes
-    ax.yaxis.grid(True, linestyle='-', which='major', color='lightgrey',
-              alpha=0.5)
-    ax.set_axisbelow(True)
+        #Plot boxplots for RMSE density
+        fig = plt.figure()
+        ax=fig.add_subplot(111)
+        plt.title('RMSE')
+        bp = ax.boxplot(score_folds.T, notch=0, sym='+', vert=1, whis=1.5)
+        plt.setp(bp['boxes'], color='black')
+        plt.setp(bp['whiskers'], color='black')
+        plt.setp(bp['fliers'], color='red', marker='+')
+        xtickNames = plt.setp(ax, xticklabels=legends)
+        plt.setp(xtickNames, rotation=45, fontsize=8)
+        ax.set_ylabel('RMSE')
+        ax.set_xlabel('Distribution')
+        #Make grid and put it below boxes
+        ax.yaxis.grid(True, linestyle='-', which='major', color='lightgrey',
+                alpha=0.5)
+        ax.set_axisbelow(True)
 
-    #Plot boxplots for predictive density
-    fig = plt.figure()
-    ax=fig.add_subplot(111)
-    plt.title('Predictive density')
-    bp = ax.boxplot(pred_density[1:,:].T, notch=0, sym='+', vert=1, whis=1.5)
-    plt.setp(bp['boxes'], color='black')
-    plt.setp(bp['whiskers'], color='black')
-    plt.setp(bp['fliers'], color='red', marker='+')
-    xtickNames = plt.setp(ax, xticklabels=legends[1:])
-    plt.setp(xtickNames, rotation=45, fontsize=8)
-    ax.set_ylabel('Mean Log probability P(Y*|Y)')
-    ax.set_xlabel('Distribution')
-    #Make grid and put it below boxes
-    ax.yaxis.grid(True, linestyle='-', which='major', color='lightgrey',
-              alpha=0.5)
-    ax.set_axisbelow(True)
+        #Plot boxplots for predictive density
+        fig = plt.figure()
+        ax=fig.add_subplot(111)
+        plt.title('Predictive density')
+        bp = ax.boxplot(pred_density[1:,:].T, notch=0, sym='+', vert=1, whis=1.5)
+        plt.setp(bp['boxes'], color='black')
+        plt.setp(bp['whiskers'], color='black')
+        plt.setp(bp['fliers'], color='red', marker='+')
+        xtickNames = plt.setp(ax, xticklabels=legends[1:])
+        plt.setp(xtickNames, rotation=45, fontsize=8)
+        ax.set_ylabel('Mean Log probability P(Y*|Y)')
+        ax.set_xlabel('Distribution')
+        #Make grid and put it below boxes
+        ax.yaxis.grid(True, linestyle='-', which='major', color='lightgrey',
+                alpha=0.5)
+        ax.set_axisbelow(True)
     return mstu_t
 
 def precipitation_example():

@@ -67,14 +67,14 @@ class tree:
         for i in range(len(self.vertices)):
             if self.vertices[i].id == id:
                 return i
-        raise Error, 'Reverse look up of id failed.'
+        raise ValueError('Reverse look up of id failed.')
 
     def get_index_by_name(self, name):
         """Give the index associated with a given vertex name."""
         for i in range(len(self.vertices)):
             if self.vertices[i].name == name:
                 return i
-        raise Error, 'Reverse look up of name failed.'
+        raise ValueError('Reverse look up of name failed.')
 
     def order_vertices(self):
         """Order vertices in the graph such that parents always have a lower index than children."""
@@ -433,6 +433,8 @@ class acclaim_skeleton(skeleton):
         lin = self.read_line(fid)
         while lin != ':DEGREES':
             lin = self.read_line(fid)
+            if lin == '':
+                raise ValueError('Could not find :DEGREES in ' + fid.name)
 
         counter = 0
         lin = self.read_line(fid)
@@ -443,9 +445,9 @@ class acclaim_skeleton(skeleton):
                 if frame_no:
                     counter += 1
                     if counter != frame_no:
-                        raise Error, 'Unexpected frame number.'
+                        raise ValueError('Unexpected frame number.')
                 else:
-                    raise Error, 'Single bone name  ...'
+                    raise ValueError('Single bone name  ...')
             else:
                 ind = self.get_index_by_name(parts[0])
                 bones[ind].append(np.array([float(channel) for channel in parts[1:]]))
@@ -573,7 +575,7 @@ class acclaim_skeleton(skeleton):
                         return
                     lin = self.read_line(fid)
             else:
-                raise Error, 'Unrecognised file format'
+                raise ValueError('Unrecognised file format')
             self.finalize()
             
     def read_units(self, fid):

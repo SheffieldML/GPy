@@ -3,7 +3,6 @@ import numpy as np
 import GPy
 import scipy.io
 import cPickle as pickle
-import urllib as url
 import zipfile
 import tarfile
 import datetime
@@ -15,7 +14,7 @@ except ImportError:
     ipython_available=False
 
 
-import sys, urllib
+import sys, urllib2
 
 def reporthook(a,b,c):
     # ',' at the end of the line is important!
@@ -82,7 +81,18 @@ def download_url(url, store_directory, save_name = None, messages = True, suffix
     print "Downloading ", url, "->", os.path.join(store_directory, file)
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
-    urllib.urlretrieve(url+suffix, save_name, reporthook)
+    try:
+        response = urllib2.urlopen(url+suffix)
+    except urllib2.URLError, e:
+        if not hasattr(e, "code"):
+            raise
+        response = e
+        if response.code == 404:
+            raise ValueError('Url ' + url + suffix + ' 404 not found.')
+    with open(save_name, 'wb') as f:
+        f.write(response.read())
+    
+    #urllib.urlretrieve(url+suffix, save_name, reporthook)
 
 def authorize_download(dataset_name=None):
     """Check with the user that the are happy with terms and conditions for the data set."""

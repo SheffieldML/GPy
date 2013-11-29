@@ -45,6 +45,7 @@ class StateSpace_1(Model):
         # Default kernel
         if kernel is None:
             self.kern = kern.Matern32(1)
+            self.spacekern = kern.Matern32(1)
         else:
             self.kern = kernel
 
@@ -95,20 +96,23 @@ class StateSpace_1(Model):
         # Get the model matrices from the kernel
         (F,L,Qc,H,Pinf) = self.kern.sde()
 
-        #F = np.kron(eye(n),F1);
-        #L = np.kron(eye(n),L1);
-        #Qc = K*Qc1;               #kron(K,Qc1);
-        #H = np.kron(eye(n),H1);
-        #Pinf = np.kron(K,Pinf1);
-
-
+        n=X.shape[0]
+        F1 = np.kron(np.eye(n),F);
+        L1 = np.kron(np.eye(n),L);
+        K1=self.spacekern.K(X)
+        Qc1 = K1*Qc;               #kron(K,Qc1);
+        H1 = np.kron(np.eye(n),H);
+        Pinf1 = np.kron(K1,Pinf);
+                  
 
         # Run the Kalman filter
-        (M, P) = self.kalman_filter(F,L,Qc,H,self.sigma2,Pinf,X.T,Y.T)
-
+        #(M, P) = self.kalman_filter(F,L,Qc,H,self.sigma2,Pinf,X.T,Y.T)
+        (M, P) = self.kalman_filter(F1,L1,Qc1,H1,self.sigma2,Pinf1,X.T,Y.T)
+        
         # Run the Rauch-Tung-Striebel smoother
         #if not filter:
-        (M, P) = self.rts_smoother(F,L,Qc,X.T,M,P)
+        #(M, P) = self.rts_smoother(F,L,Qc,X.T,M,P)
+        #(M, P) = self.rts_smoother(F1,L1,Qc1,X.T,M,P)
 
         # Put the data back in the original order
         M = M[:,return_inverse]
@@ -123,7 +127,8 @@ class StateSpace_1(Model):
         V = np.tensordot(H[0],P,(0,0))
         V = np.tensordot(V,H[0],(0,0))
         V = V[:,None]
-
+        
+        sfasdfasdfasdf=pppp
         # Return the posterior of the state
         return (m, V)
 
@@ -154,6 +159,8 @@ class StateSpace_1(Model):
         # Define the frame on which to plot
         resolution = resolution or 200
         Xgrid, xmin, xmax = x_frame1D(self.X, plot_limits=plot_limits)
+        # T grid???
+
 
         # Make a prediction on the frame and plot it
         if plot_raw:
@@ -244,17 +251,27 @@ class StateSpace_1(Model):
             # Prediction step
             MF[:,k] = A.dot(MF[:,k-1])
             PF[:,:,k] = A.dot(PF[:,:,k-1]).dot(A.T) + Q
-
+            
             # Update step (only if there is data)
+            #if not np.isnan(Y[:,k]):
+            #     if Y.shape[0]==1:
+            #         K = PF[:,:,k].dot(H.T)/(H.dot(PF[:,:,k]).dot(H.T) + R)
+            #     else:
+            #         LL = linalg.cho_factor(H.dot(PF[:,:,k]).dot(H.T) + R)
+            #         K = linalg.cho_solve(LL, H.dot(PF[:,:,k].T)).T
+            #     stop
+            #     MF[:,k] += K.dot(Y[:,k]-H.dot(MF[:,k]))
+            #     PF[:,:,k] -= K.dot(H).dot(PF[:,:,k])
+            
             if not np.isnan(Y[:,k]):
-                 if Y.shape[0]==1:
-                     K = PF[:,:,k].dot(H.T)/(H.dot(PF[:,:,k]).dot(H.T) + R)
-                 else:
-                     LL = linalg.cho_factor(H.dot(PF[:,:,k]).dot(H.T) + R)
-                     K = linalg.cho_solve(LL, H.dot(PF[:,:,k].T)).T
+
+                 LL = linalg.cho_factor(H.dot(PF[:,:,k]).dot(H.T) + R)
+                 K = linalg.cho_solve(LL, H.dot(PF[:,:,k].T)).T
+
                  MF[:,k] += K.dot(Y[:,k]-H.dot(MF[:,k]))
                  PF[:,:,k] -= K.dot(H).dot(PF[:,:,k])
-
+                 stop
+            
         # Return values
         return (MF, PF)
 

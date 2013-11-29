@@ -142,6 +142,8 @@ def cmu_urls_files(subj_motions, messages = True):
     '''
     Find which resources are missing on the local disk for the requested CMU motion capture motions.
     '''
+    dr = data_resources['cmu_mocap_full']
+    cmu_url = dr['urls'][0]
 
     subjects_num = subj_motions[0]
     motions_num = subj_motions[1]
@@ -187,7 +189,7 @@ def cmu_urls_files(subj_motions, messages = True):
                 url_required = True
                 file_download.append(subjects[i] + '_' + motions[i][j] + '.amc')
         if url_required:
-            resource['urls'].append(cmu_url + subjects[i] + '/')
+            resource['urls'].append(cmu_url + '/' + subjects[i] + '/')
             resource['files'].append(file_download)
     return resource
 
@@ -693,15 +695,15 @@ def creep_data(data_set='creep_rupture'):
     X = all_data[:, features].copy()
     return data_details_return({'X': X, 'y': y}, data_set)
 
-def cmu_mocap_49_balance():
+def cmu_mocap_49_balance(data_set='cmu_mocap'):
     """Load CMU subject 49's one legged balancing motion that was used by Alvarez, Luengo and Lawrence at AISTATS 2009."""
     train_motions = ['18', '19']
     test_motions = ['20']
-    data = cmu_mocap('49', train_motions, test_motions, sample_every=4)
+    data = cmu_mocap('49', train_motions, test_motions, sample_every=4, data_set=data_set)
     data['info'] = "One legged balancing motions from CMU data base subject 49. As used in Alvarez, Luengo and Lawrence at AISTATS 2009. It consists of " + data['info']
     return data
 
-def cmu_mocap_35_walk_jog():
+def cmu_mocap_35_walk_jog(data_set='cmu_mocap'):
     """Load CMU subject 35's walking and jogging motions, the same data that was used by Taylor, Roweis and Hinton at NIPS 2007. but without their preprocessing. Also used by Lawrence at AISTATS 2007."""
     train_motions = ['01', '02', '03', '04', '05', '06',
                 '07', '08', '09', '10', '11', '12',
@@ -709,7 +711,7 @@ def cmu_mocap_35_walk_jog():
                 '20', '21', '22', '23', '24', '25',
                 '26', '28', '30', '31', '32', '33', '34']
     test_motions = ['18', '29']
-    data = cmu_mocap('35', train_motions, test_motions, sample_every=4)
+    data = cmu_mocap('35', train_motions, test_motions, sample_every=4, data_set=data_set)
     data['info'] = "Walk and jog data from CMU data base subject 35. As used in Tayor, Roweis and Hinton at NIPS 2007, but without their pre-processing (i.e. as used by Lawrence at AISTATS 2007). It consists of " + data['info']
     return data
 
@@ -721,7 +723,7 @@ def cmu_mocap(subject, train_motions, test_motions=[], sample_every=4, data_set=
     # Make sure the data is downloaded.
     all_motions = train_motions + test_motions
     resource = cmu_urls_files(([subject], [all_motions]))
-    data_resources[data_set] = data_resources['cmu_mocap_full']
+    data_resources[data_set] = data_resources['cmu_mocap_full'].copy()
     data_resources[data_set]['files'] = resource['files']
     data_resources[data_set]['urls'] = resource['urls']
     if resource['urls']:

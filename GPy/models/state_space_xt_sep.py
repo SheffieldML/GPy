@@ -267,7 +267,7 @@ class StateSpace_1(Model):
 
                  LL = linalg.cho_factor(H.dot(PF[:,:,k]).dot(H.T) + R)
                  K = linalg.cho_solve(LL, H.dot(PF[:,:,k].T)).T
-
+                 stop
                  MF[:,k] += K.dot(Y[:,k]-H.dot(MF[:,k]))
                  PF[:,:,k] -= K.dot(H).dot(PF[:,:,k])
                  stop

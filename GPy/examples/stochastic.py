@@ -32,10 +32,3 @@ def toy_1d():
 
     m.plot_traces()
     return m
-
-
-
-
-
-
-

@@ -83,13 +83,6 @@ def student_t_approx(optimize=True, plot=True):
         print "Corrupt student t"
         m4.optimize(optimizer, messages=1)
 
-    if False:
-        print m1
-        print m3
-        plt.figure(3)
-        plt.scatter(X, m1.likelihood.Y, c='g')
-        plt.scatter(X, m3.likelihood.Y, c='r')
-
     if plot:
         plt.figure(1)
         plt.suptitle('Gaussian likelihood')

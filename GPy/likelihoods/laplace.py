@@ -209,7 +209,9 @@ class Laplace(likelihood):
                    + 0.5*ln_det_Wi_K
                    - 0.5*self.f_Ki_f
                    + 0.5*y_Wi_K_i_y
+                   + self.NORMAL_CONST
                   )
+
         #Convert to float as its (1, 1) and Z must be a scalar
         self.Z = np.float64(Z_tilde)
         self.Y = Y_tilde
@@ -271,7 +273,7 @@ class Laplace(likelihood):
         :returns: (W12BiW12, ln_B_det)
         """
         if not self.noise_model.log_concave:
-            #print "Under 1e-10: {}".format(np.sum(W < 1e-10))
+            #print "Under 1e-10: {}".format(np.sum(W < 1e-6))
             W[W < 1e-6] = 1e-6  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                 # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                 # To cause the posterior to become less certain than the prior and likelihood,
@@ -281,10 +283,7 @@ class Laplace(likelihood):
         #W is diagonal so its sqrt is just the sqrt of the diagonal elements
         W_12 = np.sqrt(W)
         B = np.eye(self.N) + W_12*K*W_12.T
-        try:
-            L = jitchol(B)
-        except:
-            import ipdb; ipdb.set_trace()
+        L = jitchol(B)
 
         W12BiW12a = W_12*dpotrs(L, np.asfortranarray(W_12*a), lower=1)[0]
         ln_B_det = 2*np.sum(np.log(np.diag(L)))

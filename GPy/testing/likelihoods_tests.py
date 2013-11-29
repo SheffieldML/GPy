@@ -593,6 +593,95 @@ class LaplaceTests(unittest.TestCase):
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
+    #@unittest.skip('Not working yet, needs to be checked')
+    def test_laplace_log_likelihood(self):
+        debug = False
+        real_std = 0.1
+        initial_var_guess = 0.5
+
+        #Start a function, any function
+        X = np.linspace(0.0, np.pi*2, 100)[:, None]
+        Y = np.sin(X) + np.random.randn(*X.shape)*real_std
+        Y = Y/Y.max()
+        #Yc = Y.copy()
+        #Yc[75:80] += 1
+        kernel1 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
+        kernel2 = kernel1.copy()
+
+        m1 = GPy.models.GPRegression(X, Y.copy(), kernel=kernel1)
+        m1.constrain_fixed('white', 1e-6)
+        m1['noise'] = initial_var_guess
+        m1.constrain_bounded('noise', 1e-4, 10)
+        m1.constrain_bounded('rbf', 1e-4, 10)
+        m1.ensure_default_constraints()
+        m1.randomize()
+
+        gauss_distr = GPy.likelihoods.gaussian(variance=initial_var_guess, D=1, N=Y.shape[0])
+        laplace_likelihood = GPy.likelihoods.Laplace(Y.copy(), gauss_distr)
+        m2 = GPy.models.GPRegression(X, Y.copy(), kernel=kernel2, likelihood=laplace_likelihood)
+        m2.ensure_default_constraints()
+        m2.constrain_fixed('white', 1e-6)
+        m2.constrain_bounded('rbf', 1e-4, 10)
+        m2.constrain_bounded('noise', 1e-4, 10)
+        m2.randomize()
+
+        if debug:
+            print m1
+            print m2
+        optimizer = 'scg'
+        print "Gaussian"
+        m1.optimize(optimizer, messages=debug)
+        print "Laplace Gaussian"
+        m2.optimize(optimizer, messages=debug)
+        if debug:
+            print m1
+            print m2
+
+        m2._set_params(m1._get_params())
+
+        #Predict for training points to get posterior mean and variance
+        post_mean, post_var, _, _ = m1.predict(X)
+        post_mean_approx, post_var_approx, _, _ = m2.predict(X)
+
+        if debug:
+            import pylab as pb
+            pb.figure(5)
+            pb.title('posterior means')
+            pb.scatter(X, post_mean, c='g')
+            pb.scatter(X, post_mean_approx, c='r', marker='x')
+
+            pb.figure(6)
+            pb.title('plot_f')
+            m1.plot_f(fignum=6)
+            m2.plot_f(fignum=6)
+            fig, axes = pb.subplots(2, 1)
+            fig.suptitle('Covariance matricies')
+            a1 = pb.subplot(121)
+            a1.matshow(m1.likelihood.covariance_matrix)
+            a2 = pb.subplot(122)
+            a2.matshow(m2.likelihood.covariance_matrix)
+
+            pb.figure(8)
+            pb.scatter(X, m1.likelihood.Y, c='g')
+            pb.scatter(X, m2.likelihood.Y, c='r', marker='x')
+
+
+
+        #Check Y's are the same
+        np.testing.assert_almost_equal(Y, m2.likelihood.Y, decimal=5)
+        #Check marginals are the same
+        np.testing.assert_almost_equal(m1.log_likelihood(), m2.log_likelihood(), decimal=2)
+        #Check marginals are the same with random
+        m1.randomize()
+        m2._set_params(m1._get_params())
+        np.testing.assert_almost_equal(m1.log_likelihood(), m2.log_likelihood(), decimal=2)
+
+        #Check they are checkgradding
+        #m1.checkgrad(verbose=1)
+        #m2.checkgrad(verbose=1)
+        self.assertTrue(m1.checkgrad())
+        self.assertTrue(m2.checkgrad())
+
 if __name__ == "__main__":
     print "Running unit tests"
     unittest.main()

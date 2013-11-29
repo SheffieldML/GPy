@@ -263,24 +263,24 @@ def boston_example(optimize=True, plot=True):
         ax.set_axisbelow(True)
     return mstu_t
 
-def precipitation_example():
-    import sklearn
-    from sklearn.cross_validation import KFold
-    data = datasets.boston_housing()
-    X = data['X'].copy()
-    Y = data['Y'].copy()
-    X = X-X.mean(axis=0)
-    X = X/X.std(axis=0)
-    Y = Y-Y.mean()
-    Y = Y/Y.std()
-    import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
-    num_folds = 10
-    kf = KFold(len(Y), n_folds=num_folds, indices=True)
-    score_folds = np.zeros((4, num_folds))
-    def rmse(Y, Ystar):
-        return np.sqrt(np.mean((Y-Ystar)**2))
-    #for train, test in kf:
-    for n, (train, test) in enumerate(kf):
-        X_train, X_test, Y_train, Y_test = X[train], X[test], Y[train], Y[test]
-        print "Fold {}".format(n)
+#def precipitation_example():
+    #import sklearn
+    #from sklearn.cross_validation import KFold
+    #data = datasets.boston_housing()
+    #X = data['X'].copy()
+    #Y = data['Y'].copy()
+    #X = X-X.mean(axis=0)
+    #X = X/X.std(axis=0)
+    #Y = Y-Y.mean()
+    #Y = Y/Y.std()
+    #import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+    #num_folds = 10
+    #kf = KFold(len(Y), n_folds=num_folds, indices=True)
+    #score_folds = np.zeros((4, num_folds))
+    #def rmse(Y, Ystar):
+        #return np.sqrt(np.mean((Y-Ystar)**2))
+    ##for train, test in kf:
+    #for n, (train, test) in enumerate(kf):
+        #X_train, X_test, Y_train, Y_test = X[train], X[test], Y[train], Y[test]
+        #print "Fold {}".format(n)
 

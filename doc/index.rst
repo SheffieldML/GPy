@@ -15,6 +15,9 @@ For a quick start, you can have a look at one of the tutorials:
 
 You may also be interested by some examples in the GPy/examples folder.
 
+The detailed Developers Documentation is listed below
+=====================================================
+
 Contents:
 
 .. toctree::

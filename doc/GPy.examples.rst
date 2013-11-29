@@ -1,62 +1,59 @@
-GPy.examples package
-====================
+examples Package
+================
 
-Submodules
-----------
+:mod:`examples` Package
+-----------------------
 
-GPy.examples.classification module
-----------------------------------
+.. automodule:: GPy.examples
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`classification` Module
+----------------------------
 
 .. automodule:: GPy.examples.classification
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.examples.dimensionality_reduction module
---------------------------------------------
+:mod:`dimensionality_reduction` Module
+--------------------------------------
 
 .. automodule:: GPy.examples.dimensionality_reduction
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.examples.laplace_approximations module
-------------------------------------------
+:mod:`laplace_approximations` Module
+------------------------------------
 
 .. automodule:: GPy.examples.laplace_approximations
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.examples.regression module
-------------------------------
+:mod:`regression` Module
+------------------------
 
 .. automodule:: GPy.examples.regression
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.examples.stochastic module
-------------------------------
+:mod:`stochastic` Module
+------------------------
 
 .. automodule:: GPy.examples.stochastic
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.examples.tutorials module
------------------------------
+:mod:`tutorials` Module
+-----------------------
 
 .. automodule:: GPy.examples.tutorials
     :members:
     :undoc-members:
     :show-inheritance:
 
-
-Module contents
----------------
-
-.. automodule:: GPy.examples
-    :members:
-    :undoc-members:
-    :show-inheritance:

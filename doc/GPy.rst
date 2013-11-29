@@ -1,5 +1,21 @@
-GPy package
+GPy Package
 ===========
+
+:mod:`GPy` Package
+------------------
+
+.. automodule:: GPy.__init__
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`models` Module
+--------------------
+
+.. automodule:: GPy.models
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 Subpackages
 -----------
@@ -12,14 +28,7 @@ Subpackages
     GPy.kern
     GPy.likelihoods
     GPy.mappings
-    GPy.models
+    GPy.models_modules
     GPy.testing
     GPy.util
 
-Module contents
----------------
-
-.. automodule:: GPy
-    :members:
-    :undoc-members:
-    :show-inheritance:

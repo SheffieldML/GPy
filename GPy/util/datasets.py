@@ -435,7 +435,7 @@ def simulation_BGPLVM():
     Y = np.array(mat_data['Y'], dtype=float)
     S = np.array(mat_data['initS'], dtype=float)
     mu = np.array(mat_data['initMu'], dtype=float)
-    return data_details_return({'S': S, 'Y': Y, 'mu': mu}, data_set)
+    #return data_details_return({'S': S, 'Y': Y, 'mu': mu}, data_set)
     return {'Y': Y, 'S': S,
             'mu' : mu,
             'info': "Simulated test dataset generated in MATLAB to compare BGPLVM between python and MATLAB"}
@@ -594,11 +594,11 @@ def olympic_sprints(data_set='rogers_girolami_data'):
         'Y': Y,
         'info': "Olympics sprint event winning for men and women to 2008. Data is from Rogers and Girolami's First Course in Machine Learning.",
         'output_info': {
-          0:'100m Men', 
-          1:'100m Women', 
-          2:'200m Men', 
-          3:'200m Women', 
-          4:'400m Men', 
+          0:'100m Men',
+          1:'100m Women',
+          2:'200m Men',
+          3:'200m Women',
+          4:'400m Men',
           5:'400m Women'}
         }, data_set)
 

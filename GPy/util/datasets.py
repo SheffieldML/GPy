@@ -87,8 +87,11 @@ def download_url(url, store_directory, save_name = None, messages = True, suffix
         if not hasattr(e, "code"):
             raise
         response = e
-        if response.code == 404:
-            raise ValueError('Url ' + url + suffix + ' 404 not found.')
+        if response.code > 399 and response.code<500:
+            raise ValueError('Tried url ' + url + suffix + ' and received client error ' + str(response.code))
+        elif response.code > 499:
+            raise ValueError('Tried url ' + url + suffix + ' and received server error ' + str(response.code))
+    # if we wanted to get more sophisticated maybe we should check the response code here again even for successes.
     with open(save_name, 'wb') as f:
         f.write(response.read())
     

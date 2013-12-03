@@ -189,8 +189,12 @@ class StateSpace(Model):
         Y = np.empty((size,X.shape[0]))
 
         # Simulate random draws
-        for j in range(0,size):
-            Y[j,:] = H.dot(self.simulate(F,L,Qc,Pinf,X.T))
+        #for j in range(0,size):
+        #    Y[j,:] = H.dot(self.simulate(F,L,Qc,Pinf,X.T))
+        Y = self.simulate(F,L,Qc,Pinf,X.T,size)
+
+        # Only observations
+        Y = np.tensordot(H[0],Y,(0,0))
 
         # Reorder simulated values
         Y = Y[:,return_inverse]
@@ -360,23 +364,32 @@ class StateSpace(Model):
         # Return likelihood
         return lik[0,0]
 
-    def simulate(self,F,L,Qc,Pinf,X):
+    def simulate(self,F,L,Qc,Pinf,X,size=1):
         # Simulate a trajectory using the state space model
 
         # Allocate space for results
-        f = np.zeros((F.shape[0],X.shape[1]))
+        f = np.zeros((F.shape[0],size,X.shape[1]))
 
         # Initial state
-        f[:,0:1] = np.linalg.cholesky(Pinf).dot(np.random.randn(F.shape[0],1))
+        f[:,:,1] = np.linalg.cholesky(Pinf).dot(np.random.randn(F.shape[0],size))
+
+        # Time step lengths
+        dt = np.empty(X.shape)
+        dt[:,0] = X[:,1]-X[:,0]
+        dt[:,1:] = np.diff(X)
+
+        # Solve the LTI SDE for these time steps
+        As, Qs, index = self.lti_disc(F,L,Qc,dt)
 
         # Sweep through remaining time points
         for k in range(1,X.shape[1]):
 
             # Form discrete-time model
-            (A,Q) = self.lti_disc(F,L,Qc,X[:,k]-X[:,k-1])
+            A = As[:,:,index[1-k]]
+            Q = Qs[:,:,index[1-k]]
 
             # Draw the state
-            f[:,k] = A.dot(f[:,k-1]).T + np.dot(np.linalg.cholesky(Q),np.random.randn(A.shape[0],1)).T
+            f[:,:,k] = A.dot(f[:,:,k-1]) + np.dot(np.linalg.cholesky(Q),np.random.randn(A.shape[0],size))
 
         # Return values
         return f

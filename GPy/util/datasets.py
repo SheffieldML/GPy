@@ -26,7 +26,7 @@ def reporthook(a,b,c):
 # Global variables
 data_path = os.path.join(os.path.dirname(__file__), 'datasets')
 default_seed = 10000
-overide_manual_authorize=False
+overide_manual_authorize=True
 neil_url = 'http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/'
 
 # Read data resources from json file.
@@ -94,7 +94,7 @@ def download_url(url, store_directory, save_name = None, messages = True, suffix
     # if we wanted to get more sophisticated maybe we should check the response code here again even for successes.
     with open(save_name, 'wb') as f:
         f.write(response.read())
-    
+
     #urllib.urlretrieve(url+suffix, save_name, reporthook)
 
 def authorize_download(dataset_name=None):

@@ -56,3 +56,117 @@ class GPMultioutputRegression(GP):
         self.multioutput = True
         GP.__init__(self, X, likelihood, mkernel, normalize_X=normalize_X)
         self.ensure_default_constraints()
+
+    def _add_output_index(self,X,output):
+        """
+        In a multioutput model, appends an index column to X to specify the output it is related to.
+
+        :param X: Input data
+        :type X: np.ndarray, N x self.input_dim
+        :param output: output X is related to
+        :type output: integer in {0,..., output_dim-1}
+
+        .. Note:: For multiple non-independent outputs models only.
+        """
+
+        assert hasattr(self,'multioutput'), 'This function is for multiple output models only.'
+
+        index = np.ones((X.shape[0],1))*output
+        return np.hstack((X,index))
+
+    def plot_single_output(self, X, output):
+        """
+        A simple wrapper around self.plot, with appropriate setting of the fixed_inputs argument
+        """
+        raise NotImplementedError
+
+    def _raw_predict_single_output(self, _Xnew, output, which_parts='all', full_cov=False,stop=False):
+        """
+        For a specific output, calls _raw_predict() at the new point(s) _Xnew.
+        This functions calls _add_output_index(), so _Xnew should not have an index column specifying the output.
+        ---------
+
+        :param Xnew: The points at which to make a prediction
+        :type Xnew: np.ndarray, Nnew x self.input_dim
+        :param output: output to predict
+        :type output: integer in {0,..., output_dim-1}
+        :param which_parts:  specifies which outputs kernel(s) to use in prediction
+        :type which_parts: ('all', list of bools)
+        :param full_cov: whether to return the full covariance matrix, or just the diagonal
+
+        .. Note:: For multiple non-independent outputs models only.
+        """
+        _Xnew = self._add_output_index(_Xnew, output)
+        return self._raw_predict(_Xnew, which_parts=which_parts,full_cov=full_cov, stop=stop)
+
+    def predict_single_output(self, Xnew,output=0, which_parts='all', full_cov=False, likelihood_args=dict()):
+        """
+        For a specific output, calls predict() at the new point(s) Xnew.
+        This functions calls _add_output_index(), so Xnew should not have an index column specifying the output.
+
+        :param Xnew: The points at which to make a prediction
+        :type Xnew: np.ndarray, Nnew x self.input_dim
+        :param which_parts:  specifies which outputs kernel(s) to use in prediction
+        :type which_parts: ('all', list of bools)
+        :param full_cov: whether to return the full covariance matrix, or just the diagonal
+        :type full_cov: bool
+        :returns: mean: posterior mean,  a Numpy array, Nnew x self.input_dim
+        :returns: var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
+        :returns: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
+
+        .. Note:: For multiple non-independent outputs models only.
+        """
+        Xnew = self._add_output_index(Xnew, output)
+        return self.predict(Xnew, which_parts=which_parts, full_cov=full_cov, likelihood_args=likelihood_args)
+
+    def plot_single_output_f(self, output=None, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, full_cov=False, fignum=None, ax=None):
+        """
+        For a specific output, in a multioutput model, this function works just as plot_f on single output models.
+
+        :param output: which output to plot (for multiple output models only)
+        :type output: integer (first output is 0)
+        :param samples: the number of a posteriori samples to plot
+        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
+        :param which_data: which if the training data to plot (default all)
+        :type which_data: 'all' or a slice object to slice self.X, self.Y
+        :param which_parts: which of the kernel functions to plot (additively)
+        :type which_parts: 'all', or list of bools
+        :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
+        :type resolution: int
+        :param full_cov:
+        :type full_cov: bool
+                :param fignum: figure to plot on.
+        :type fignum: figure number
+        :param ax: axes to plot on.
+        :type ax: axes handle
+        """
+        assert output is not None, "An output must be specified."
+        assert len(self.likelihood.noise_model_list) > output, "The model has only %s outputs." %(self.output_dim + 1)
+
+        if which_data == 'all':
+            which_data = slice(None)
+
+        if ax is None:
+            fig = pb.figure(num=fignum)
+            ax = fig.add_subplot(111)
+
+        if self.X.shape[1] == 2:
+            Xu = self.X[self.X[:,-1]==output ,0:1]
+            Xnew, xmin, xmax = x_frame1D(Xu, plot_limits=plot_limits)
+            Xnew_indexed = self._add_output_index(Xnew,output)
+
+            m, v = self._raw_predict(Xnew_indexed, which_parts=which_parts)
+
+            if samples:
+                Ysim = self.posterior_samples_f(Xnew_indexed, samples, which_parts=which_parts, full_cov=True)
+                for yi in Ysim.T:
+                    ax.plot(Xnew, yi[:,None], Tango.colorsHex['darkBlue'], linewidth=0.25)
+
+            gpplot(Xnew, m, m - 2 * np.sqrt(v), m + 2 * np.sqrt(v), axes=ax)
+            ax.plot(Xu[which_data], self.likelihood.Y[self.likelihood.index==output][:,None], 'kx', mew=1.5)
+            ax.set_xlim(xmin, xmax)
+            ymin, ymax = min(np.append(self.likelihood.Y, m - 2 * np.sqrt(np.diag(v)[:, None]))), max(np.append(self.likelihood.Y, m + 2 * np.sqrt(np.diag(v)[:, None])))
+            ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
+            ax.set_ylim(ymin, ymax)
+
+

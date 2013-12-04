@@ -94,7 +94,6 @@ class SparseGP(GPBase):
 
         # factor Kmm
         self._Lm = jitchol(self.Kmm + self._const_jitter)
-        # TODO: no white kernel needed anymore, all noise in likelihood --------
 
         # The rather complex computations of self._A
         if self.has_uncertain_inputs:
@@ -204,27 +203,13 @@ class SparseGP(GPBase):
         D = 0.5 * self.data_fit
         return A + B + C + D + self.likelihood.Z
 
-    #def _set_params(self, p):
     def parameters_changed(self):
-        #self.Z = p[:self.num_inducing * self.input_dim].reshape(self.num_inducing, self.input_dim)
-        #self.kern._set_params(p[self.Z.size:self.Z.size + self.kern.num_params])
-        #self.likelihood._set_params(p[self.Z.size + self.kern.num_params:])
         self._compute_kernel_matrices()
         self._computations()
         self.Cpsi1V = None
-        # make sparse_gp compatible with gp_base gradients:
         self.dL_dK = self.dL_dKmm
         super(SparseGP, self).parameters_changed()
 
-#     def _get_params(self):
-#         return np.hstack([self.Z.flatten(), self.kern._get_params_transformed(), self.likelihood._get_params()])
-# 
-#     def _get_param_names(self):
-#         return sum([['iip_%i_%i' % (i, j) for j in range(self.Z.shape[1])] for i in range(self.Z.shape[0])], [])\
-#             + self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
-
-    #def _get_print_names(self):
-    #    return self.kern._get_param_names_transformed() + self.likelihood._get_param_names()
 
     def update_likelihood_approximation(self, **kwargs):
         """
@@ -246,9 +231,6 @@ class SparseGP(GPBase):
                 self.likelihood.fit_DTC(self.Kmm, self.psi1.T, **kwargs)
                 # self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
                 self._set_params(self._get_params()) # update the GP
-
-#     def _log_likelihood_gradients(self):
-#         return np.hstack((self.dL_dZ().flatten(), self.dL_dtheta(), self.likelihood._gradients(partial=self.partial_for_likelihood)))
 
     def dL_dtheta(self):
         """

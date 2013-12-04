@@ -232,7 +232,7 @@ if gpxpy_available:
             gpx_file.close()
         return data_details_return({'X' : X, 'info' : 'Data is an array containing time in seconds, latitude, longitude and elevation in that order.'}, data_set)
 
-del gpxpy_available
+#del gpxpy_available
 
 
 

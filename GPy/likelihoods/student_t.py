@@ -4,7 +4,7 @@
 import numpy as np
 from scipy import stats, special
 import scipy as sp
-import gp_transformations
+import link_functions
 from scipy import stats, integrate
 from scipy.special import gammaln, gamma
 from likelihood import Likelihood

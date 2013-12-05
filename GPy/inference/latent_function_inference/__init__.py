@@ -22,3 +22,6 @@ use this posterior object for making predictions, optimizing hyper-parameters,
 etc.
 
 """
+
+from exact_gaussian_inference import ExactGaussianInference
+expectation_propagation = 'foo' # TODO

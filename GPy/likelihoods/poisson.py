@@ -6,7 +6,7 @@ import numpy as np
 from scipy import stats,special
 import scipy as sp
 from GPy.util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
-import gp_transformations
+import link_functions
 from likelihood import Likelihood
 
 class Poisson(Likelihood):

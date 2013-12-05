@@ -5,7 +5,6 @@ import numpy as np
 import pylab as pb
 from .. import kern
 from ..util.linalg import pdinv, mdot, tdot, dpotrs, dtrtrs, jitchol, backsub_both_sides
-from ..likelihoods import EP
 from gp_base import GPBase
 from model import Model
 import time

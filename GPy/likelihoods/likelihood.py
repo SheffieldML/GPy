@@ -1,19 +1,19 @@
 # Copyright (c) 2012, 2013 Ricardo Andrade
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-
 import numpy as np
 from scipy import stats,special
 import scipy as sp
 import pylab as pb
-from GPy.util.plot import gpplot
-from GPy.util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
-import gp_transformations
-from GPy.util.misc import chain_1, chain_2, chain_3
+from ..util.plot import gpplot
+from ..util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
+import link_functions
+from ..util.misc import chain_1, chain_2, chain_3
 from scipy.integrate import quad
 import warnings
+from ..core.parameterized import Parameterized
 
-class Likelihood(object):
+class Likelihood(Parameterized):
     """
     Likelihood base class
 
@@ -21,8 +21,12 @@ class Likelihood(object):
 
     The minimum required funciotnality is... TODO
     """
-    def __init__(self,gp_link,analytical_mean=False,analytical_variance=False):
-        assert isinstance(gp_link,gp_transformations.GPTransformation), "gp_link is not a valid GPTransformation."
+    def __init__(self,gp_link,analytical_mean=False,analytical_variance=False, name='likelihood_base'):
+        """
+        What are analytical_mean, analyitical_variance? TODO
+        """
+        super(Likelihood, self).__init__(name) 
+        assert isinstance(gp_link,link_functions.GPTransformation), "gp_link is not a valid GPTransformation."
         self.gp_link = gp_link
         self.analytical_mean = analytical_mean
         self.analytical_variance = analytical_variance
@@ -38,15 +42,6 @@ class Likelihood(object):
             self.predictive_variance = self._predictive_variance_numerical
 
         self.log_concave = False
-
-    def _get_params(self):
-        return np.zeros(0)
-
-    def _get_param_names(self):
-        return []
-
-    def _set_params(self,p):
-        pass
 
     def _gradients(self,partial):
         return np.zeros(0)

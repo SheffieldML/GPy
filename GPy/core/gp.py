@@ -3,6 +3,9 @@
 
 import numpy as np
 from gp_base import GPBase
+from ..util.linalg import dtrtrs
+from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
+from .. import likelihoods
 
 class GP(GPBase):
     """
@@ -18,14 +21,25 @@ class GP(GPBase):
     .. Note:: Multiple independent outputs are allowed using columns of Y
 
     """
-    def __init__(self, X, likelihood, kernel, normalize_X=False):
-        super(GP, self).__init__(X, likelihood, kernel, normalize_X=normalize_X)
-        self.Posterior = self.inference_method.inference(K, likelihood, self.Y)
+    def __init__(self, X, Y, kernel, likelihood, inference_method=None, name='gp'):
+
+        if inference_method is None:
+            if isinstance(likelihood, likelihoods.Gaussian):
+                inference_method = exact_gaussian_inference.ExactGaussianInference()
+        else:
+            inference_method = expectation_propagation
+            print "defaulting to ", inference_method, "for latent function inference"
+
+        super(GP, self).__init__(X, Y, kernel, likelihood, inference_method, name)
+        self.parameters_changed()
 
     def parameters_changed(self):
         super(GP, self).parameters_changed()
         self.K = self.kern.K(self.X)
-        self.Posterior = self.inference_method.inference(K, likelihood, self.Y)
+        self.posterior = self.inference_method.inference(self.K, self.likelihood, self.Y)
+
+    def dL_dtheta_K(self):
+        return self.kern.dK_dtheta(self.posterior.dL_dK, self.X)
 
     def log_likelihood(self):
         return self.posterior.log_marginal
@@ -41,15 +55,15 @@ class GP(GPBase):
 
         """
         Kx = self.kern.K(_Xnew, self.X, which_parts=which_parts).T
-        LiKx, _ = dptrrs(self.posterior._woodbury_chol, np.asfortranarray(Kx), lower=1)
+        LiKx, _ = dtrtrs(self.posterior._woodbury_chol, np.asfortranarray(Kx), lower=1)
         mu = np.dot(Kx.T, self.posterior._woodbury_vector)
         if full_cov:
             Kxx = self.kern.K(_Xnew, which_parts=which_parts)
             var = Kxx - tdot(LiKx.T)
         else:
             Kxx = self.kern.Kdiag(_Xnew, which_parts=which_parts)
-            var = Kxx - np.sum(LiKx.T*LiKx, 0)
-            var = var.reshape(self.num_data, 1)
+            var = Kxx - np.sum(LiKx*LiKx, 0)
+            var = var.reshape(-1, 1)
         return mu, var
 
     def predict(self, Xnew, which_parts='all', full_cov=False, **likelihood_args):

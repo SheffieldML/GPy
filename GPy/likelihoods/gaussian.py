@@ -2,13 +2,13 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from scipy import stats,special
-import scipy as sp
-from GPy.util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
-import gp_transformations
+from scipy import stats, special
+from GPy.util.univariate_Gaussian import std_norm_pdf, std_norm_cdf
+import link_functions
 from likelihood import Likelihood
+from ..core.parameter import Param
 
-class Gaussian(NoiseDistribution):
+class Gaussian(Likelihood):
     """
     Gaussian likelihood
 
@@ -19,40 +19,39 @@ class Gaussian(NoiseDistribution):
     :param N: Number of data points
     :type N: int
     """
-    def __init__(self,gp_link=None,analytical_mean=False,analytical_variance=False,variance=1., D=None, N=None):
-        self.variance = variance
-        self.N = N
-        self._set_params(np.asarray(variance))
-        super(Gaussian, self).__init__(gp_link,analytical_mean,analytical_variance)
-        if isinstance(gp_link , gp_transformations.Identity):
+    def __init__(self, gp_link=None, variance=1., name='Gaussian_noise'):
+        if gp_link is None:
+            gp_link = link_functions.Identity()
+
+        if isinstance(gp_link, link_functions.Identity):
+            analytical_variance = True
+            analytical_mean = True
+        else:
+            analytical_variance = False
+            analytical_mean = False
+
+        super(Gaussian, self).__init__(gp_link, analytical_mean, analytical_variance, name=name)
+
+        self.variance = Param('variance', variance)
+        self.add_parameter(self.variance)
+
+        if isinstance(gp_link , link_functions.Identity):
             self.log_concave = True
 
-    def _get_params(self):
-        return np.array([self.variance])
+    def covariance_matrix(self, Y, Y_metadata=None):
+        return np.eye(Y.shape[0]) * self.variance
 
-    def _get_param_names(self):
-        return ['noise_model_variance']
+    def _gradients(self, partial):
+        return np.sum(partial)
 
-    def _set_params(self, p):
-        self.variance = float(p)
-        self.I = np.eye(self.N)
-        self.covariance_matrix = self.I * self.variance
-        self.Ki = self.I*(1.0 / self.variance)
-        #self.ln_det_K = np.sum(np.log(np.diag(self.covariance_matrix)))
-        self.ln_det_K = self.N*np.log(self.variance)
-
-    def _gradients(self,partial):
-        return np.zeros(1)
-        #return np.sum(partial)
-
-    def _preprocess_values(self,Y):
+    def _preprocess_values(self, Y):
         """
         Check if the values of the observations correspond to the values
         assumed by the likelihood function.
         """
         return Y
 
-    def _moments_match_analytical(self,data_i,tau_i,v_i):
+    def _moments_match_analytical(self, data_i, tau_i, v_i):
         """
         Moments match of the marginal approximation in EP algorithm
 
@@ -66,35 +65,12 @@ class Gaussian(NoiseDistribution):
         Z_hat = 1./np.sqrt(2.*np.pi*sum_var)*np.exp(-.5*(data_i - v_i/tau_i)**2./sum_var)
         return Z_hat, mu_hat, sigma2_hat
 
-    def _predictive_mean_analytical(self,mu,sigma):
-        new_sigma2 = self.predictive_variance(mu,sigma)
+    def _predictive_mean_analytical(self, mu, sigma):
+        new_sigma2 = self.predictive_variance(mu, sigma)
         return new_sigma2*(mu/sigma**2 + self.gp_link.transf(mu)/self.variance)
 
-    def _predictive_variance_analytical(self,mu,sigma,predictive_mean=None):
+    def _predictive_variance_analytical(self, mu, sigma, predictive_mean=None):
         return 1./(1./self.variance + 1./sigma**2)
-
-    def _mass(self, link_f, y, extra_data=None):
-        NotImplementedError("Deprecated, now doing chain in noise_model.py for link function evaluation\
-                            Please negate your function and use pdf in noise_model.py, if implementing a likelihood\
-                            rederivate the derivative without doing the chain and put in logpdf, dlogpdf_dlink or\
-                            its derivatives")
-    def _nlog_mass(self, link_f, y, extra_data=None):
-        NotImplementedError("Deprecated, now doing chain in noise_model.py for link function evaluation\
-                            Please negate your function and use logpdf in noise_model.py, if implementing a likelihood\
-                            rederivate the derivative without doing the chain and put in logpdf, dlogpdf_dlink or\
-                            its derivatives")
-
-    def _dnlog_mass_dgp(self, link_f, y, extra_data=None):
-        NotImplementedError("Deprecated, now doing chain in noise_model.py for link function evaluation\
-                            Please negate your function and use dlogpdf_df in noise_model.py, if implementing a likelihood\
-                            rederivate the derivative without doing the chain and put in logpdf, dlogpdf_dlink or\
-                            its derivatives")
-
-    def _d2nlog_mass_dgp2(self, link_f, y, extra_data=None):
-        NotImplementedError("Deprecated, now doing chain in noise_model.py for link function evaluation\
-                            Please negate your function and use d2logpdf_df2 in noise_model.py, if implementing a likelihood\
-                            rederivate the derivative without doing the chain and put in logpdf, dlogpdf_dlink or\
-                            its derivatives")
 
     def pdf_link(self, link_f, y, extra_data=None):
         """
@@ -270,7 +246,7 @@ class Gaussian(NoiseDistribution):
         d2logpdf_dlink2_dvar = self.d2logpdf_dlink2_dvar(f, y, extra_data=extra_data)
         return d2logpdf_dlink2_dvar
 
-    def _mean(self,gp):
+    def _mean(self, gp):
         """
         Expected value of y under the Mass (or density) function p(y|f)
 
@@ -279,7 +255,7 @@ class Gaussian(NoiseDistribution):
         """
         return self.gp_link.transf(gp)
 
-    def _variance(self,gp):
+    def _variance(self, gp):
         """
         Variance of y under the Mass (or density) function p(y|f)
 

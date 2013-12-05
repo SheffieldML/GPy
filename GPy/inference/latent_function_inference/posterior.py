@@ -6,27 +6,27 @@ import numpy as np
 class Posterior(object):
     """
     An object to represent a Gaussian posterior over latent function values.
-    this may be computed exactly for Gaussian likelihoods, or approximated for
+    This may be computed exactly for Gaussian likelihoods, or approximated for
     non-Gaussian likelihoods. 
 
-    The purpose of this clas is to serve as an interface between the inference
+    The purpose of this class is to serve as an interface between the inference
     schemes and the model classes. 
 
     """
-    def __init__(self, log_marginal, dLM_DK, dLM_dtheta_lik, woodbury_chol, woodbury_mean, K):
+    def __init__(self, log_marginal, dL_dK, dL_dtheta_lik, woodbury_chol, woodbury_vector, K):
         """
         log_marginal: log p(Y|X)
-        DLM_dK: d/dK log p(Y|X)
-        dLM_dtheta_lik : d/dtheta log p(Y|X) (where theta are the parameters of the likelihood)
+        DL_dK: d/dK log p(Y|X)
+        dL_dtheta_lik : d/dtheta log p(Y|X) (where theta are the parameters of the likelihood)
         woodbury_chol : a lower triangular matrix L that satisfies posterior_covariance = K - K L^{-T} L^{-1} K
-        woodbury_mean : a matrix (or vector, as Nx1 matrix) M which satisfies posterior_mean = K M
+        woodbury_vector : a matrix (or vector, as Nx1 matrix) M which satisfies posterior_mean = K M
         K : the proir covariance (required for lazy computation of various quantities)
         """
         self.log_marginal = log_marginal
-        self.dLM_DK = dLM_DK
-        self.dLM_dtheta_lik = _dLM_dtheta_lik
+        self.dL_dK = dL_dK
+        self.dL_dtheta_lik = dL_dtheta_lik
         self._woodbury_chol = woodbury_chol
-        self._woodbury_mean = woodbury_mean
+        self._woodbury_vector = woodbury_vector
         self._K = K
 
         #these are computed lazily below
@@ -37,13 +37,13 @@ class Posterior(object):
     @property
     def mean(self):
         if self._mean is None:
-            self._mean = np.dot(self._K, self._woodbury_mean)
+            self._mean = np.dot(self._K, self._woodbury_vector)
         return self._mean
 
     @property
     def covariance(self):
         if self._covariance is None:
-            LiK, _ = dpotrs
+            LiK, _ = dpotrs(self._woodbury_chol, self._K)
             self._covariance = self._K - tdot(LiK.T)
         return self._covariance
 

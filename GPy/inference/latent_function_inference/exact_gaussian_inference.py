@@ -2,11 +2,12 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from posterior import Posterior
-from .../util.linalg import pdinv, dpotrs, tdot
+from ...util.linalg import pdinv, dpotrs, tdot
+import numpy as np
 log_2_pi = np.log(2*np.pi)
 
 
-class exact_gaussian_inference(object):
+class ExactGaussianInference(object):
     """
     An object for inference when the likelihood is Gaussian.
 
@@ -17,9 +18,9 @@ class exact_gaussian_inference(object):
 
     """
     def __init__(self):
-        self._YYTfactor_cache = caching.cache()
+        pass#self._YYTfactor_cache = caching.cache()
 
-     def get_YYTfactor(self, Y):
+    def get_YYTfactor(self, Y):
         """
         find a matrix L which satisfies LLT = YYT. 
 
@@ -38,16 +39,16 @@ class exact_gaussian_inference(object):
         """
         YYT_factor = self.get_YYTfactor(Y)
 
-        Wi, LW, LWi, W_logdet = pdinv(K + likelhood.covariance(Y, Y_metadata))
+        Wi, LW, LWi, W_logdet = pdinv(K + likelihood.covariance_matrix(Y, Y_metadata))
 
         alpha, _ = dpotrs(LW, YYT_factor, lower=1)
 
         dL_dK = 0.5 * (tdot(alpha) - Y.shape[1] * Wi)
 
-        log_marginal =  0.5*(-Y.size * log_2_pi - Y.shape[1] * W_logdet - np.sum(alpha * YYT_factor.T)
+        log_marginal =  0.5*(-Y.size * log_2_pi - Y.shape[1] * W_logdet - np.sum(alpha * YYT_factor))
 
-        dL_dtheta_lik = likelihood.dL_dtheta(np.diag(dL_dK))
+        dL_dtheta_lik = likelihood._gradients(np.diag(dL_dK))
 
-        return Posterior(log_marginal, dL_DK, dL_dtheta_lik, LW, alpha, K):
+        return Posterior(log_marginal, dL_dK, dL_dtheta_lik, LW, alpha, K)
 
 

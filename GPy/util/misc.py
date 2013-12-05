@@ -3,6 +3,34 @@
 
 import numpy as np
 from scipy import weave
+from config import *
+
+def chain_1(df_dg, dg_dx):
+    """
+    Generic chaining function for first derivative
+
+    .. math::
+        \\frac{d(f . g)}{dx} = \\frac{df}{dg} \\frac{dg}{dx}
+    """
+    return df_dg * dg_dx
+
+def chain_2(d2f_dg2, dg_dx, df_dg, d2g_dx2):
+    """
+    Generic chaining function for second derivative
+
+    .. math::
+        \\frac{d^{2}(f . g)}{dx^{2}} = \\frac{d^{2}f}{dg^{2}}(\\frac{dg}{dx})^{2} + \\frac{df}{dg}\\frac{d^{2}g}{dx^{2}}
+    """
+    return d2f_dg2*(dg_dx**2) + df_dg*d2g_dx2
+
+def chain_3(d3f_dg3, dg_dx, d2f_dg2, d2g_dx2, df_dg, d3g_dx3):
+    """
+    Generic chaining function for third derivative
+
+    .. math::
+        \\frac{d^{3}(f . g)}{dx^{3}} = \\frac{d^{3}f}{dg^{3}}(\\frac{dg}{dx})^{3} + 3\\frac{d^{2}f}{dg^{2}}\\frac{dg}{dx}\\frac{d^{2}g}{dx^{2}} + \\frac{df}{dg}\\frac{d^{3}g}{dx^{3}}
+    """
+    return d3f_dg3*(dg_dx**3) + 3*d2f_dg2*dg_dx*d2g_dx2 + df_dg*d3g_dx3
 
 def opt_wrapper(m, **kwargs):
     """
@@ -57,11 +85,18 @@ def kmm_init(X, m = 10):
     return X[inducing]
 
 def fast_array_equal(A, B):
+
+
+    if config.getboolean('parallel', 'openmp'):
+        pragma_string = '#pragma omp parallel for private(i, j)'
+    else:
+        pragma_string = ''
+
     code2="""
     int i, j;
     return_val = 1;
 
-    // #pragma omp parallel for private(i, j)
+    %s
     for(i=0;i<N;i++){
        for(j=0;j<D;j++){
           if(A(i, j) != B(i, j)){
@@ -70,13 +105,18 @@ def fast_array_equal(A, B):
           }
        }
     }
-    """
+    """ % pragma_string
+
+    if config.getboolean('parallel', 'openmp'):
+        pragma_string = '#pragma omp parallel for private(i, j, z)'
+    else:
+        pragma_string = ''
 
     code3="""
     int i, j, z;
     return_val = 1;
 
-    // #pragma omp parallel for private(i, j, z)
+    %s
     for(i=0;i<N;i++){
        for(j=0;j<D;j++){
          for(z=0;z<Q;z++){
@@ -87,19 +127,32 @@ def fast_array_equal(A, B):
           }
        }
     }
-    """
+    """ % pragma_string
+
+    if config.getboolean('parallel', 'openmp'):
+        pragma_string = '#include <omp.h>'
+    else:
+        pragma_string = ''
 
     support_code = """
-    // #include <omp.h>
+    %s
     #include <math.h>
-    """
+    """ % pragma_string
 
-    weave_options = {'headers'           : ['<omp.h>'],
-                     'extra_compile_args': ['-fopenmp -O3'],
-                     'extra_link_args'   : ['-lgomp']}
 
+    weave_options_openmp = {'headers'           : ['<omp.h>'],
+                            'extra_compile_args': ['-fopenmp -O3'],
+                            'extra_link_args'   : ['-lgomp'],
+                            'libraries': ['gomp']}
+    weave_options_noopenmp = {'extra_compile_args': ['-O3']}
+
+    if config.getboolean('parallel', 'openmp'):
+        weave_options = weave_options_openmp
+    else:
+        weave_options = weave_options_noopenmp
 
     value = False
+
 
     if (A == None) and (B == None):
         return True
@@ -110,14 +163,12 @@ def fast_array_equal(A, B):
             N, D = [int(i) for i in A.shape]
             value = weave.inline(code2, support_code=support_code,
                                  arg_names=['A', 'B', 'N', 'D'],
-                                 type_converters=weave.converters.blitz)
-            # libraries=['gomp'], **weave_options)
+                                 type_converters=weave.converters.blitz, **weave_options)
         elif A.ndim == 3:
             N, D, Q = [int(i) for i in A.shape]
             value = weave.inline(code3, support_code=support_code,
                                  arg_names=['A', 'B', 'N', 'D', 'Q'],
-                                 type_converters=weave.converters.blitz)
-            #libraries=['gomp'], **weave_options)
+                                 type_converters=weave.converters.blitz, **weave_options)
         else:
             value = np.array_equal(A,B)
 

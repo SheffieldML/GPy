@@ -4,19 +4,25 @@ import warnings
 from .. import kern
 from ..util.plot import gpplot, Tango, x_frame1D, x_frame2D
 from model import Model
-from ..core.parameter import ObservableArray
+from parameter import ObservableArray
+from .. import likelihoods
 
 class GPBase(Model):
     """
     Gaussian process base model for holding shared behaviour between
     sparse_GP and GP models.
     """
-    def __init__(self, X, Y, kernel, normalize_X=False, inference_method=None, name=''):
+    def __init__(self, X, Y, kernel, likelihood, inference_method, name=''):
         super(GPBase, self).__init__(name)
         
         assert X.ndim == 2
         self.X = ObservableArray(X)
         self.num_data, self.input_dim = self.X.shape
+
+        assert Y.ndim == 2
+        self.Y = ObservableArray(Y)
+        assert Y.shape[0] == self.num_data
+        _, self.output_dim = self.Y.shape
 
         assert isinstance(kernel, kern.kern)
         self.kern = kernel
@@ -24,14 +30,10 @@ class GPBase(Model):
         assert isinstance(likelihood, likelihoods.Likelihood)
         self.likelihood = likelihood
 
-        if inference_method is None:
-            self.inference_method = self.likelihood.preferred_inference_method
-            print "defaulting to ", inference_method, "for latent function inference"
-        else:
-            self.inference_method = inference_method
+        self.inference_method = inference_method
 
-        assert self.X.shape[0] == Y.shape[0]
-        self.num_data, self.output_dim = self.Y.shape
+        # reinstate this later TODO
+        normalize_X = False
 
         if normalize_X:
             self._Xoffset = X.mean(0)[None, :]
@@ -41,8 +43,8 @@ class GPBase(Model):
             self._Xoffset = np.zeros((1, self.input_dim))
             self._Xscale = np.ones((1, self.input_dim))
         
-        self.add_parameter(self.kern, gradient=lambda:self.kern.dK_dtheta(self.dL_dK, self.X))
-        self.add_parameter(self.likelihood, gradient=lambda:self.likelihood._gradients(partial=np.diag(self.dL_dK)))
+        self.add_parameter(self.kern, gradient=self.dL_dtheta_K)
+        self.add_parameter(self.likelihood, gradient=lambda:self.posterior.dL_dtheta_lik)
 
     def posterior_samples_f(self,X,size=10,which_parts='all',full_cov=True):
         """

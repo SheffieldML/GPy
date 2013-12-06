@@ -2,6 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
+from ...util.linalg import pdinv, dpotrs
 
 class Posterior(object):
     """
@@ -41,6 +42,8 @@ class Posterior(object):
           mean
           cov
           K_chol (for lazy computation)
+
+        Of course, you can supply more than that, but this class will lazily compute all other quantites on demand.
 
         From the supplied quantities, all of the others will be computed on demand (lazy computation)
           
@@ -84,20 +87,23 @@ class Posterior(object):
     @property
     def precision(self):
         if self._precision is None:
-            self._precision = np.linalg.inv(self.covariance)
+            self._precision, _, _, _ = pdinv(self.covariance)
         return self._precision
 
     @property
     def woodbury_chol(self):
         if self._woodbury_chol is None:
-            ???
+            B = self._K - self._covariance
+            tmp, _ = dpotrs(self._K_chol, B)
+            Wi, _ = dpotrs(self._K_chol, tmp.T)
+            _, _, self._woodbury_chol, _ = pdinv(Wi)
         else:
             return self._woodbury_chol
 
     @property
     def woodbury_vector(self):
         if self._woodbury_vector is None:
-            ???
+            self._woodbury_vector, _ = dpotrs(self._K_chol, self.mean)
         else:
             return self._woodbury_vector
 

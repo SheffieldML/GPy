@@ -183,11 +183,10 @@ class GPBase(Model):
                 m, v = self._raw_predict(Xgrid, which_parts=which_parts)
                 lower = m - 2*np.sqrt(v)
                 upper = m + 2*np.sqrt(v)
-                Y = self.likelihood.Y
+                Y = self.Y
             else:
-                m, v, lower, upper = self.predict(Xgrid, which_parts=which_parts, sampling=False) #Compute the exact mean
-                m_, v_, lower, upper = self.predict(Xgrid, which_parts=which_parts, sampling=True, num_samples=15000) #Apporximate the percentiles
-                Y = self.likelihood.data
+                m, v, lower, upper = self.predict(Xgrid, which_parts=which_parts) #Compute the exact mean
+                Y = self.Y
             for d in which_data_ycols:
                 gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax, edgecol=linecol, fillcol=fillcol)
                 ax.plot(Xu[which_data_rows,free_dims], Y[which_data_rows, d], 'kx', mew=1.5)

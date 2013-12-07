@@ -21,8 +21,8 @@ class GP(GPBase):
     .. Note:: Multiple independent outputs are allowed using columns of Y
 
     """
-    def __init__(self, X, likelihood, kernel, normalize_X=False):
-        super(GP, self).__init__(X, likelihood, kernel, normalize_X=normalize_X)
+    def __init__(self, X, likelihood, kernel, normalize_X=False, name='gp'):
+        super(GP, self).__init__(X, likelihood, kernel, normalize_X=normalize_X, name=name)
         #self._set_params(self._get_params())
 
     def getstate(self):

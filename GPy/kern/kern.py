@@ -59,7 +59,7 @@ class kern(Parameterized):
         Get the current state of the class,
         here just all the indices, rest can get recomputed
         """
-        return Parameterized.getstate(self) + [self._parameters_,
+        return Parameterized.getstate(self) + [#self._parameters_,
                 #self.num_params,
                 self.input_dim,
                 self.input_slices,
@@ -71,7 +71,7 @@ class kern(Parameterized):
         self.input_slices = state.pop()
         self.input_dim = state.pop()
         #self.num_params = state.pop()
-        self._parameters_ = state.pop()
+        #self._parameters_ = state.pop()
         Parameterized.setstate(self, state)
 
 

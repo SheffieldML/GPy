@@ -63,10 +63,11 @@ class RBF(Kernpart):
         #self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
 
         # a set of optional args to pass to weave
-        self.weave_options = {'headers'           : ['<omp.h>'],
-                              'extra_compile_args': ['-fopenmp -O3'], # -march=native'],
-                              'extra_link_args'   : ['-lgomp']}
-    
+        # self.weave_options = {'headers'           : ['<omp.h>'],
+        #                       'extra_compile_args': ['-fopenmp -O3'], # -march=native'],
+        #                       'extra_link_args'   : ['-lgomp']}
+        self.weave_options = {}
+        
     def on_input_change(self, X):
         #self._K_computations(X, None)
         pass
@@ -133,7 +134,8 @@ class RBF(Kernpart):
                 }
                 """
                 num_data, num_inducing, input_dim = X.shape[0], X.shape[0], self.input_dim
-                weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'X2', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
+                X = np.asarray(X)
+                weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
             else:
                 code = """
                 int q,i,j;
@@ -150,6 +152,7 @@ class RBF(Kernpart):
                 """
                 num_data, num_inducing, input_dim = X.shape[0], X2.shape[0], self.input_dim
                 # [np.add(target[1+q:2+q],var_len3[q]*np.sum(dvardLdK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.input_dim)]
+                X,X2 = np.asarray(X), numpy.asarray(X2)
                 weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'X2', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
         else:
             target[1] += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)

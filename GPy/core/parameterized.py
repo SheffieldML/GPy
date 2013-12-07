@@ -92,10 +92,9 @@ class Parameterized(Nameable, Pickleable, Observable):
     Printing parameters:
     
         - print m:           prints a nice summary over all parameters
-        - print m.name:      prints details for all the parameters 
-                             which start with name
-        - print m['.*name']: prints details for all the parameters 
-                             which contain "name"
+        - print m.name:      prints details for parameter with name 'name'
+        - print m[regexp]: prints details for all the parameters 
+                             which match (!) regexp
         - print m['']:       prints details for all parameters
     
         Fields:
@@ -108,11 +107,10 @@ class Parameterized(Nameable, Pickleable, Observable):
             Tied_to:    which paramter it is tied to.
     
     Getting and setting parameters:
-        
-        Two ways to get parameters:
-            
-            - m.name regular expression matches all parameters beginning with name
-            - m['name'] regular expression matches all parameters with name
+
+        Set all values in parameter to one:
+
+            m.name.to.parameter = 1
     
     Handling of constraining, fixing and tieing parameters:
         
@@ -120,10 +118,10 @@ class Parameterized(Nameable, Pickleable, Observable):
         
             - m.name[:,1].constrain_positive()
             - m.name[0].tie_to(m.name[1])
-            
+
         Fixing parameters will fix them to the value they are right now. If you change
         the parameters value, the parameter will be fixed to the new value!
-        
+
         If you want to operate on all parameters use m[''] to wildcard select all paramters 
         and concatenate them. Printing m[''] will result in printing of all parameters in detail.
     """
@@ -355,20 +353,18 @@ class Parameterized(Nameable, Pickleable, Observable):
         return [
                 self._fixes_,
                 self._constraints_,
-                self._priors_,
                 self._parameters_,
                 self._name,
-                self.gradient_mapping,
+                #self.gradient_mapping,
                 self._added_names_,
                 ]
         
     def setstate(self, state):
         self._added_names_ = state.pop()
-        self.gradient_mapping = state.pop(),
+        #self.gradient_mapping = state.pop()
         self._name = state.pop()
         self._parameters_ = state.pop()
         self._connect_parameters()
-        self._priors = state.pop()
         self._constraints_ = state.pop()
         self._fixes_ = state.pop()
         self.parameters_changed()
@@ -639,9 +635,10 @@ class Parameterized(Nameable, Pickleable, Observable):
     def _ties_str(self):
         return [','.join(x._ties_str) for x in self.flattened_parameters]
     def __str__(self, header=True):
+        name  = _adjust_name_for_printing(self.name) + "."
         constrs = self._constraints_str; ts = self._ties_str
         desc = self._description_str; names = self.parameter_names
-        nl = max([len(str(x)) for x in names + [_adjust_name_for_printing(self.name)]])
+        nl = max([len(str(x)) for x in names + [name]])
         sl = max([len(str(x)) for x in desc + ["Value"]])
         cl = max([len(str(x)) if x else 0 for x in constrs  + ["Constraint"]])
         tl = max([len(str(x)) if x else 0 for x in ts + ["Tied to"]])
@@ -652,7 +649,7 @@ class Parameterized(Nameable, Pickleable, Observable):
         #to_print = [format_spec.format(p=p, const=c, t=t) if isinstance(p, Param) else p.__str__(header=False) for p, c, t in itertools.izip(self._parameters_, constrs, ts)]
         sep = '-'*(nl+sl+cl+tl+8*2+3)
         if header:
-            header = "  {{0:<{0}s}}  |  {{1:^{1}s}}  |  {{2:^{2}s}}  |  {{3:^{3}s}}".format(nl, sl, cl, tl).format(_adjust_name_for_printing(self.name), "Value", "Constraint", "Tied to")
+            header = "  {{0:<{0}s}}  |  {{1:^{1}s}}  |  {{2:^{2}s}}  |  {{3:^{3}s}}".format(nl, sl, cl, tl).format(name, "Value", "Constraint", "Tied to")
             #header += '\n' + sep
             to_print.insert(0, header)
         return '\n'.format(sep).join(to_print)

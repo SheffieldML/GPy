@@ -51,8 +51,6 @@ class GPBase(Model):
         return Model.getstate(self) + [self.X,
                 self.num_data,
                 self.input_dim,
-                self.kern,
-                self.likelihood,
                 self.output_dim,
                 self._Xoffset,
                 self._Xscale,
@@ -62,8 +60,6 @@ class GPBase(Model):
         self._Xscale = state.pop()
         self._Xoffset = state.pop()
         self.output_dim = state.pop()
-        self.likelihood = state.pop()
-        self.kern = state.pop()
         self.input_dim = state.pop()
         self.num_data = state.pop()
         self.X = state.pop()

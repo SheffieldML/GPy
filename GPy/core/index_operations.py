@@ -9,9 +9,12 @@ from parameter import Param
 from collections import defaultdict
 
 class ParamDict(defaultdict):
-    def __init__(self, default=lambda: numpy.array([], dtype=int)):
-        defaultdict.__init__(self, default)
-    
+    def __init__(self):
+        """
+        Default will be self._default, if not set otherwise
+        """
+        defaultdict.__init__(self, self.default_factory)
+        
     def __getitem__(self, key):
         try:
             return defaultdict.__getitem__(self, key)
@@ -35,7 +38,14 @@ class ParamDict(defaultdict):
                 if numpy.all(a==key) and a._parent_index_==key._parent_index_:
                     return super(ParamDict, self).__setitem__(a, value)
         defaultdict.__setitem__(self, key, value)
-        
+
+class SetDict(ParamDict):
+    def default_factory(self):
+        return set()
+
+class IntArrayDict(ParamDict):
+    def default_factory(self):
+        return numpy.int_([])
 
 class ParameterIndexOperations(object):
     '''
@@ -52,11 +62,11 @@ class ParameterIndexOperations(object):
         #self._reverse = collections.defaultdict(list)
         
     def __getstate__(self):
-        return self._properties, self._reverse
+        return self._properties#, self._reverse
         
     def __setstate__(self, state):
         self._properties = state[0]
-        self._reverse = state[1]
+        # self._reverse = state[1]
 
     def iteritems(self):
         return self._properties.iteritems()

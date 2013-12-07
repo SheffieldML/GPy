@@ -61,7 +61,7 @@ class ObservableArray(ListArray, Observable):
         return self.__setitem__(slice(start, stop), val)    
 
     
-class Param(ObservableArray, Nameable, Pickleable):
+class Param(ObservableArray, Nameable):
     """
     Parameter object for GPy models.
 
@@ -128,7 +128,7 @@ class Param(ObservableArray, Nameable, Pickleable):
     #===========================================================================
     # Pickling operations
     #===========================================================================
-    def __reduce__(self):
+    def __reduce_ex__(self):
         func, args, state = super(Param, self).__reduce__()
         return func, args, (state, 
                             (self.name,

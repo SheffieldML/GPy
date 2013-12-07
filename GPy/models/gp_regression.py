@@ -25,13 +25,13 @@ class GPRegression(GP):
 
     """
 
-    def __init__(self, X, Y, kernel=None, normalize_X=False, normalize_Y=False):
+    def __init__(self, X, Y, kernel=None, normalize_X=False, normalize_Y=False, name="gp regression"):
         if kernel is None:
             kernel = kern.rbf(X.shape[1])
 
         likelihood = likelihoods.Gaussian(Y, normalize=normalize_Y)
 
-        super(GPRegression, self).__init__(X, likelihood, kernel, normalize_X=normalize_X)
+        super(GPRegression, self).__init__(X, likelihood, kernel, normalize_X=normalize_X, name=name)
         self.ensure_default_constraints()
 
     def getstate(self):

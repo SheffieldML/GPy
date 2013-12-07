@@ -17,7 +17,7 @@ class Posterior(object):
     def __init__(self, log_marginal, dL_dK, dL_dtheta_lik, woodbury_chol=None, woodbury_vector=None, K=None, mean=None, cov=None, K_chol=None):
         """
         log_marginal: log p(Y|X)
-        DL_dK: d/dK log p(Y|X)
+        dL_dK: d/dK log p(Y|X)
         dL_dtheta_lik : d/dtheta log p(Y|X) (where theta are the parameters of the likelihood)
         woodbury_chol : a lower triangular matrix L that satisfies posterior_covariance = K - K L^{-T} L^{-1} K
         woodbury_vector : a matrix (or vector, as Nx1 matrix) M which satisfies posterior_mean = K M
@@ -97,15 +97,13 @@ class Posterior(object):
             tmp, _ = dpotrs(self._K_chol, B)
             Wi, _ = dpotrs(self._K_chol, tmp.T)
             _, _, self._woodbury_chol, _ = pdinv(Wi)
-        else:
-            return self._woodbury_chol
+        return self._woodbury_chol
 
     @property
     def woodbury_vector(self):
         if self._woodbury_vector is None:
             self._woodbury_vector, _ = dpotrs(self._K_chol, self.mean)
-        else:
-            return self._woodbury_vector
+        return self._woodbury_vector
 
 
 

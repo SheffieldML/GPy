@@ -30,8 +30,8 @@ class SparseGP(GPBase):
 
     """
 
-    def __init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False):
-        GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X, name="sparse GP")
+    def __init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False, name='sparse gp'):
+        GPBase.__init__(self, X, likelihood, kernel, normalize_X=normalize_X, name=name)
 
         self.Z = Z
         self.num_inducing = Z.shape[0]

@@ -27,7 +27,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
 
     """
     def __init__(self, likelihood_or_Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
-                 Z=None, kernel=None, **kwargs):
+                 Z=None, kernel=None, name='bayesian gplvm', **kwargs):
         if type(likelihood_or_Y) is np.ndarray:
             likelihood = Gaussian(likelihood_or_Y)
         else:
@@ -47,9 +47,8 @@ class BayesianGPLVM(SparseGP, GPLVM):
         if kernel is None:
             kernel = kern.rbf(input_dim) # + kern.white(input_dim)
 
-        SparseGP.__init__(self, X, likelihood, kernel, Z=Z, X_variance=X_variance, **kwargs)
-        
-        self.q = Normal('latent space', self.X, self.X_variance)
+        SparseGP.__init__(self, X=X, likelihood=likelihood, kernel=kernel, Z=Z, X_variance=X_variance, name=name, **kwargs)
+        self.q = Normal(self.X, self.X_variance)
         self.add_parameter(self.q, gradient=self._dbound_dmuS, index=0)
         self.ensure_default_constraints()
 
@@ -251,50 +250,6 @@ class BayesianGPLVM(SparseGP, GPLVM):
             if clear.lower() in 'yes' or clear == '':
                 controller.deactivate()
         return controller.view
-
-    def plot_X_1d(self, fignum=None, ax=None, colors=None):
-        """
-        Plot latent space X in 1D:
-
-            - if fig is given, create input_dim subplots in fig and plot in these
-            - if ax is given plot input_dim 1D latent space plots of X into each `axis`
-            - if neither fig nor ax is given create a figure with fignum and plot in there
-
-        colors:
-            colors of different latent space dimensions input_dim
-
-        """
-        import pylab
-        if ax is None:
-            fig = pylab.figure(num=fignum, figsize=(8, min(12, (2 * self.X.shape[1]))))
-        if colors is None:
-            colors = pylab.gca()._get_lines.color_cycle
-            pylab.clf()
-        else:
-            colors = iter(colors)
-        plots = []
-        x = np.arange(self.X.shape[0])
-        for i in range(self.X.shape[1]):
-            if ax is None:
-                a = fig.add_subplot(self.X.shape[1], 1, i + 1)
-            elif isinstance(ax, (tuple, list)):
-                a = ax[i]
-            else:
-                raise ValueError("Need one ax per latent dimnesion input_dim")
-            a.plot(self.X, c='k', alpha=.3)
-            plots.extend(a.plot(x, self.X.T[i], c=colors.next(), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
-            a.fill_between(x,
-                            self.X.T[i] - 2 * np.sqrt(self.X_variance.T[i]),
-                            self.X.T[i] + 2 * np.sqrt(self.X_variance.T[i]),
-                            facecolor=plots[-1].get_color(),
-                            alpha=.3)
-            a.legend(borderaxespad=0.)
-            a.set_xlim(x.min(), x.max())
-            if i < self.X.shape[1] - 1:
-                a.set_xticklabels('')
-        pylab.draw()
-        fig.tight_layout(h_pad=.01) # , rect=(0, 0, 1, .95))
-        return fig
 
 def latent_cost_and_grad(mu_S, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
     """

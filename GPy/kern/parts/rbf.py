@@ -2,12 +2,12 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import Kernpart
 import numpy as np
 from scipy import weave
+from kernpart import Kernpart
 from ...util.linalg import tdot
-from ...util.misc import fast_array_equal
-from GPy.core.parameter import Param
+from ...util.misc import fast_array_equal, param_to_array
+from ...core.parameter import Param
 
 class RBF(Kernpart):
     """
@@ -134,7 +134,7 @@ class RBF(Kernpart):
                 }
                 """
                 num_data, num_inducing, input_dim = X.shape[0], X.shape[0], self.input_dim
-                X = np.asarray(X)
+                X = param_to_array(X)
                 weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
             else:
                 code = """
@@ -152,7 +152,7 @@ class RBF(Kernpart):
                 """
                 num_data, num_inducing, input_dim = X.shape[0], X2.shape[0], self.input_dim
                 # [np.add(target[1+q:2+q],var_len3[q]*np.sum(dvardLdK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.input_dim)]
-                X,X2 = np.asarray(X), numpy.asarray(X2)
+                X, X2 = param_to_array(X, X2)
                 weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'X2', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
         else:
             target[1] += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)

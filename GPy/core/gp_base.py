@@ -34,16 +34,7 @@ class GPBase(Model):
         
         self.add_parameter(self.kern, gradient=lambda:self.kern.dK_dtheta(self.dL_dK, self.X))
         self.add_parameter(self.likelihood, gradient=lambda:self.likelihood._gradients(partial=np.diag(self.dL_dK)))
-        #self.kern.connect_input(self.X)
         
-        # Model.__init__(self)
-        # All leaf nodes should call self._set_params(self._get_params()) at
-        # the end
-# 
-#     def parameters_changed(self):
-#         self.kern.parameters_changed()
-#         self.likelihood.parameters_changed()
-
     def getstate(self):
         """
         Get the current state of the class, here we return everything that is needed to recompute the model.

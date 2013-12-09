@@ -22,22 +22,22 @@ from GPy.util.plot import gpplot, Tango, x_frame1D
 import pylab as pb
 
 class StateSpace_1(Model):
-    def __init__(self, X, Y, kernel=None):
+    def __init__(self, Sp,X, Y, kernel=None):
         super(StateSpace_1, self).__init__()
         self.num_data, input_dim = X.shape
         assert input_dim==1, "State space methods for time and space  2"
         num_data_Y, self.output_dim = Y.shape
         assert num_data_Y == self.num_data, "X and Y data don't match"
-        assert self.output_dim == 1, "State space methods for single outputs only"
+        #assert self.output_dim == 1, "State space methods for single outputs only"
 
         # Make sure the observations are ordered in time
         sort_index = np.argsort(X[:,0])
         self.X = X[sort_index]
         self.Y = Y[sort_index]
-
-        sort_index = np.argsort(X[:,0])
-        self.X = X[sort_index]
-        self.Y = Y[sort_index]
+          
+        #sort_index = np.argsort(X[:,0])
+        #self.X = X[sort_index]
+        #self.Y = Y[sort_index]
 
         # Noise variance
         self.sigma2 = 1.
@@ -45,7 +45,7 @@ class StateSpace_1(Model):
         # Default kernel
         if kernel is None:
             self.kern = kern.Matern32(1)
-            self.spacekern = kern.Matern32(1)
+            self.spacekern = kern.rbf(1)
         else:
             self.kern = kernel
 
@@ -85,8 +85,10 @@ class StateSpace_1(Model):
     def predict_raw(self, Xnew, filteronly=False):
 
         # Make a single matrix containing training and testing points
-        X = np.vstack((self.X, Xnew))
-        Y = np.vstack((self.Y, np.nan*np.zeros(Xnew.shape)))
+        #X = np.vstack((self.X, Xnew))
+        #Y = np.vstack((self.Y, np.nan*np.zeros(Xnew.shape)))
+        X=self.X
+        Y=self.Y
 
         # Sort the matrix (save the order)
         _, return_index, return_inverse = np.unique(X,True,True)
@@ -97,17 +99,17 @@ class StateSpace_1(Model):
         (F,L,Qc,H,Pinf) = self.kern.sde()
 
         n=X.shape[0]
-        F1 = np.kron(np.eye(n),F);
-        L1 = np.kron(np.eye(n),L);
+        F1 = np.kron(np.eye(n),F)
+        L1 = np.kron(np.eye(n),L)
         K1=self.spacekern.K(X)
-        Qc1 = K1*Qc;               #kron(K,Qc1);
-        H1 = np.kron(np.eye(n),H);
-        Pinf1 = np.kron(K1,Pinf);
+        Qc1 = K1*Qc               #kron(K,Qc1);
+        H1 = np.kron(np.eye(n),H)
+        Pinf1 = np.kron(K1,Pinf)
                   
-
+        
         # Run the Kalman filter
         #(M, P) = self.kalman_filter(F,L,Qc,H,self.sigma2,Pinf,X.T,Y.T)
-        (M, P) = self.kalman_filter(F1,L1,Qc1,H1,self.sigma2,Pinf1,X.T,Y.T)
+        (M, P) = self.kalman_filter(F1,L1,Qc1,H1,self.sigma2,Pinf1,X.T,Y)
         
         # Run the Rauch-Tung-Striebel smoother
         #if not filter:
@@ -119,16 +121,20 @@ class StateSpace_1(Model):
         P = P[:,:,return_inverse]
 
         # Only return the values for Xnew
-        M = M[:,self.num_data:]
-        P = P[:,:,self.num_data:]
-
-        # Calculate the mean and variance
-        m = H.dot(M).T
-        V = np.tensordot(H[0],P,(0,0))
-        V = np.tensordot(V,H[0],(0,0))
-        V = V[:,None]
+        #M = M[:,self.num_data:]
+        #P = P[:,:,self.num_data:]
         
-        sfasdfasdfasdf=pppp
+        # Calculate the mean and variance
+        #m = H.dot(M).T
+        m = H1.dot(M)
+        #V1 = np.tensordot(H[0],P,(0,0))
+        #V2 = np.tensordot(V1,H[0],(0,0))
+        V=P[::F.shape[0],::F.shape[0],:]
+        #V1 = np.tensordot(H1.T,P,(0,0))
+        #V2 = np.tensordot(V1,H1,(1,1))
+        #stop
+        #V3 = V2[:,None]
+               
         # Return the posterior of the state
         return (m, V)
 
@@ -138,12 +144,12 @@ class StateSpace_1(Model):
         (m, V) = self.predict_raw(Xnew,filteronly=filteronly)
 
         # Add the noise variance to the state variance
-        V += self.sigma2
-
+        V += self.sigma2*np.eye(m.shape[0])
+        stop
         # Lower and upper bounds
         lower = m - 2*np.sqrt(V)
         upper = m + 2*np.sqrt(V)
-
+        
         # Return mean and variance
         return (m, V, lower, upper)
 
@@ -164,16 +170,33 @@ class StateSpace_1(Model):
 
         # Make a prediction on the frame and plot it
         if plot_raw:
+            #m, v = self.predict_raw(Xgrid,filteronly=plot_filter)
+            
             m, v = self.predict_raw(Xgrid,filteronly=plot_filter)
-            lower = m - 2*np.sqrt(v)
-            upper = m + 2*np.sqrt(v)
+            
             Y = self.Y
+            #np.random.multivariant_normal(m[:,0],v[:,:,0])
+            #np.random.multivariant_normal(m[:,1],v[:,:,1])
+            pb.figure(1)
+            pb.imshow(m,interpolation="nearest")
+
+            pb.figure(2)
+            pb.imshow(Y,interpolation="nearest")
+
+            stop
+            #lower = m - 2*np.sqrt(v)
+            #upper = m + 2*np.sqrt(v)
+            
+            
+
+
         else:
             m, v, lower, upper = self.predict(Xgrid,filteronly=plot_filter)
             Y = self.Y
 
         # Plot the values
-        gpplot(Xgrid, m, lower, upper, axes=ax, edgecol=linecol, fillcol=fillcol)
+        #gpplot(Xgrid, m, lower, upper, axes=ax, edgecol=linecol, fillcol=fillcol)
+        gpplot(self.X, m, lower, upper, axes=ax, edgecol=linecol, fillcol=fillcol)
         ax.plot(self.X, self.Y, 'kx', mew=1.5)
 
         # Optionally plot some samples
@@ -247,11 +270,10 @@ class StateSpace_1(Model):
             #(A, Q) = self.lti_disc(F,L,Qc,dt[:,k])
             A = As[:,:,index[k]];
             Q = Qs[:,:,index[k]];
-
             # Prediction step
             MF[:,k] = A.dot(MF[:,k-1])
             PF[:,:,k] = A.dot(PF[:,:,k-1]).dot(A.T) + Q
-            
+           
             # Update step (only if there is data)
             #if not np.isnan(Y[:,k]):
             #     if Y.shape[0]==1:
@@ -263,15 +285,15 @@ class StateSpace_1(Model):
             #     MF[:,k] += K.dot(Y[:,k]-H.dot(MF[:,k]))
             #     PF[:,:,k] -= K.dot(H).dot(PF[:,:,k])
             
-            if not np.isnan(Y[:,k]):
+            #if not np.isnan(Y[:,k]):
 
-                 LL = linalg.cho_factor(H.dot(PF[:,:,k]).dot(H.T) + R)
-                 K = linalg.cho_solve(LL, H.dot(PF[:,:,k].T)).T
-                 stop
-                 MF[:,k] += K.dot(Y[:,k]-H.dot(MF[:,k]))
-                 PF[:,:,k] -= K.dot(H).dot(PF[:,:,k])
-                 stop
-            
+            LL = linalg.cho_factor(H.dot(PF[:,:,k]).dot(H.T) + R*np.eye(Y.shape[1]))
+            K = linalg.cho_solve(LL, H.dot(PF[:,:,k].T)).T
+                 
+            MF[:,k] += K.dot(Y[:,k]-H.dot(MF[:,k]))
+            PF[:,:,k] -= K.dot(H).dot(PF[:,:,k])
+                 
+           
         # Return values
         return (MF, PF)
 

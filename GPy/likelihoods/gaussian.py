@@ -1,4 +1,4 @@
-# Copyright (c) 2012, 2013 Ricardo Andrade
+# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
@@ -30,18 +30,22 @@ class Gaussian(Likelihood):
             analytical_variance = False
             analytical_mean = False
 
-        super(Gaussian, self).__init__(gp_link, analytical_mean, analytical_variance, name=name)
+        super(Gaussian, self).__init__(gp_link, name=name)
 
         self.variance = Param('variance', variance)
         self.add_parameter(self.variance)
 
-        if isinstance(gp_link , link_functions.Identity):
+        if isinstance(gp_link, link_functions.Identity):
             self.log_concave = True
 
     def covariance_matrix(self, Y, Y_metadata=None):
         return np.eye(Y.shape[0]) * self.variance
 
     def _gradients(self, partial):
+        """
+        Return the derivative of the log marginal likelihood wrt self.variance, 
+        given the appropriate partial derivative
+        """
         return np.sum(partial)
 
     def _preprocess_values(self, Y):
@@ -51,7 +55,7 @@ class Gaussian(Likelihood):
         """
         return Y
 
-    def _moments_match_analytical(self, data_i, tau_i, v_i):
+    def _moments_match_ep(self, data_i, tau_i, v_i):
         """
         Moments match of the marginal approximation in EP algorithm
 
@@ -65,11 +69,11 @@ class Gaussian(Likelihood):
         Z_hat = 1./np.sqrt(2.*np.pi*sum_var)*np.exp(-.5*(data_i - v_i/tau_i)**2./sum_var)
         return Z_hat, mu_hat, sigma2_hat
 
-    def _predictive_mean_analytical(self, mu, sigma):
+    def _predictive_mean(self, mu, sigma):
         new_sigma2 = self.predictive_variance(mu, sigma)
         return new_sigma2*(mu/sigma**2 + self.gp_link.transf(mu)/self.variance)
 
-    def _predictive_variance_analytical(self, mu, sigma, predictive_mean=None):
+    def _predictive_variance(self, mu, sigma, predictive_mean=None):
         return 1./(1./self.variance + 1./sigma**2)
 
     def pdf_link(self, link_f, y, extra_data=None):

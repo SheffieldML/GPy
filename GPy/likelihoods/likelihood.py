@@ -1,4 +1,4 @@
-# Copyright (c) 2012, 2013 Ricardo Andrade
+# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
@@ -19,28 +19,17 @@ class Likelihood(Parameterized):
 
     To use this class, inherrit and define missing functionality. 
 
-    The minimum required funciotnality is... TODO
+    To enable use with EP, ...
+
+    To enable use with Laplace approximation, ...
+
+    For exact Gaussian inference, define ...
+
     """
-    def __init__(self,gp_link,analytical_mean=False,analytical_variance=False, name='likelihood_base'):
-        """
-        What are analytical_mean, analyitical_variance? TODO
-        """
+    def __init__(self, gp_link, name):
         super(Likelihood, self).__init__(name) 
         assert isinstance(gp_link,link_functions.GPTransformation), "gp_link is not a valid GPTransformation."
         self.gp_link = gp_link
-        self.analytical_mean = analytical_mean
-        self.analytical_variance = analytical_variance
-        if self.analytical_mean:
-            self.moments_match = self._moments_match_analytical
-            self.predictive_mean = self._predictive_mean_analytical
-        else:
-            self.moments_match = self._moments_match_numerical
-            self.predictive_mean = self._predictive_mean_numerical
-        if self.analytical_variance:
-            self.predictive_variance = self._predictive_variance_analytical
-        else:
-            self.predictive_variance = self._predictive_variance_numerical
-
         self.log_concave = False
 
     def _gradients(self,partial):
@@ -55,12 +44,6 @@ class Likelihood(Parameterized):
 
         """
         return Y
-
-    def _moments_match_analytical(self,obs,tau,v):
-        """
-        If available, this function computes the moments analytically.
-        """
-        raise NotImplementedError
 
     def log_predictive_density(self, y_test, mu_star, var_star):
         """
@@ -90,7 +73,7 @@ class Likelihood(Parameterized):
         p_ystar = scaled_p_ystar/np.sqrt(2*np.pi*var_star)
         return np.log(p_ystar)
 
-    def _moments_match_numerical(self,obs,tau,v):
+    def _moments_match_ep(self,obs,tau,v):
         """
         Calculation of moments using quadrature
 
@@ -124,27 +107,7 @@ class Likelihood(Parameterized):
 
         return z, mean, variance
 
-    def _predictive_mean_analytical(self,mu,sigma):
-        """
-        Predictive mean
-        .. math::
-            E(Y^{*}|Y) = E( E(Y^{*}|f^{*}, Y) )
-
-        If available, this function computes the predictive mean analytically.
-        """
-        raise NotImplementedError
-
-    def _predictive_variance_analytical(self,mu,sigma):
-        """
-        Predictive variance
-        .. math::
-            V(Y^{*}| Y) = E( V(Y^{*}|f^{*}, Y) ) + V( E(Y^{*}|f^{*}, Y) )
-
-        If available, this function computes the predictive variance analytically.
-        """
-        raise NotImplementedError
-
-    def _predictive_mean_numerical(self,mu,variance):
+    def _predictive_mean(self,mu,variance):
         """
         Quadrature calculation of the predictive mean: E(Y_star|Y) = E( E(Y_star|f_star, Y) )
 
@@ -159,7 +122,7 @@ class Likelihood(Parameterized):
 
         return mean
 
-    def _predictive_variance_numerical(self,mu,variance,predictive_mean=None):
+    def _predictive_variance(self,mu,variance,predictive_mean=None):
         """
         Numerical approximation to the predictive variance: V(Y_star)
 
@@ -376,6 +339,7 @@ class Likelihood(Parameterized):
         assert dlogpdf_dtheta.shape[1] == len(self._get_param_names())
         assert dlogpdf_df_dtheta.shape[1] == len(self._get_param_names())
         assert d2logpdf_df2_dtheta.shape[1] == len(self._get_param_names())
+
         return dlogpdf_dtheta, dlogpdf_df_dtheta, d2logpdf_df2_dtheta
 
     def predictive_values(self, mu, var, full_cov=False, sampling=False, num_samples=10000):

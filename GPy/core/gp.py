@@ -22,8 +22,8 @@ class GP(GPBase):
 
     """
     def __init__(self, X, Y, kernel, likelihood, inference_method=None, name='gp'):
-        super(GP, self).__init__(X, likelihood, kernel, normalize_X=normalize_X, name=name)
 
+        #find a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
                 inference_method = exact_gaussian_inference.ExactGaussianInference()

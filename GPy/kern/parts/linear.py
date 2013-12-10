@@ -2,12 +2,12 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import Kernpart
 import numpy as np
-from ...util.linalg import tdot
-from ...util.misc import fast_array_equal
 from scipy import weave
-from GPy.core.parameter import Param
+from kernpart import Kernpart
+from ...util.linalg import tdot
+from ...util.misc import fast_array_equal, param_to_array
+from ...core.parameter import Param
 
 class Linear(Kernpart):
     """
@@ -235,8 +235,8 @@ class Linear(Kernpart):
         weave_options = {'headers'           : ['<omp.h>'],
                          'extra_compile_args': ['-fopenmp -O3'],  #-march=native'],
                          'extra_link_args'   : ['-lgomp']}
-
-        N,num_inducing,input_dim = mu.shape[0],Z.shape[0],mu.shape[1]
+        
+        N,num_inducing,input_dim,mu = mu.shape[0],Z.shape[0],mu.shape[1],param_to_array(mu)
         weave.inline(code, support_code=support_code, libraries=['gomp'],
                      arg_names=['N','num_inducing','input_dim','mu','AZZA','AZZA_2','target_mu','target_S','dL_dpsi2'],
                      type_converters=weave.converters.blitz,**weave_options)
@@ -271,6 +271,7 @@ class Linear(Kernpart):
                          'extra_link_args'   : ['-lgomp']}
 
         N,num_inducing,input_dim = mu.shape[0],Z.shape[0],mu.shape[1]
+        mu, AZA, target, dL_dpsi2 = param_to_array(mu, AZA, target, dL_dpsi2)
         weave.inline(code, support_code=support_code, libraries=['gomp'],
                      arg_names=['N','num_inducing','input_dim','AZA','target','dL_dpsi2'],
                      type_converters=weave.converters.blitz,**weave_options)

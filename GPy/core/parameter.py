@@ -6,8 +6,8 @@ Created on 4 Sep 2013
 import itertools
 import numpy
 from transformations import Logexp, NegativeLogexp, Logistic
-from parameterized import Nameable, Pickleable, Observable
-from GPy.core.parameterized import _adjust_name_for_printing
+from parameterized import Nameable, Pickleable, Observable, Parentable
+from parameterized import _adjust_name_for_printing
 
 ###### printing
 __constraints_name__ = "Constraint"
@@ -60,8 +60,95 @@ class ObservableArray(ListArray, Observable):
     def __setslice__(self, start, stop, val):
         return self.__setitem__(slice(start, stop), val)    
 
-    
-class Param(ObservableArray, Nameable, Pickleable):
+class Constrainable(Nameable):
+    def __init__(self, name):
+        super(Constrainable,self).__init__(name)
+    #===========================================================================
+    # Constrain operations -> done
+    #===========================================================================
+    def constrain(self, transform, warning=True, update=True):
+        """
+        :param transform: the :py:class:`GPy.core.transformations.Transformation`
+                          to constrain the this parameter to.
+        :param warning: print a warning if re-constraining parameters.
+        
+        Constrain the parameter to the given
+        :py:class:`GPy.core.transformations.Transformation`.
+        """
+        if self.has_parent():
+            self._highest_parent_._add_constrain(self, transform, warning)
+            if update:
+                self._highest_parent_.parameters_changed()
+        else:
+            for p in self._parameters_:
+                self._add_constrain(p, transform, warning)
+            if update:
+                self.parameters_changed()
+    def constrain_positive(self, warning=True):
+        """
+        :param warning: print a warning if re-constraining parameters.
+        
+        Constrain this parameter to the default positive constraint.
+        """
+        self.constrain(Logexp(), warning)
+
+    def constrain_negative(self, warning=True):
+        """
+        :param warning: print a warning if re-constraining parameters.
+        
+        Constrain this parameter to the default negative constraint.
+        """
+        self.constrain(NegativeLogexp(), warning)
+
+    def constrain_bounded(self, lower, upper, warning=True):
+        """
+        :param lower, upper: the limits to bound this parameter to
+        :param warning: print a warning if re-constraining parameters.
+        
+        Constrain this parameter to lie within the given range.
+        """
+        self.constrain(Logistic(lower, upper), warning)
+
+    def unconstrain(self, *transforms):
+        """
+        :param transforms: The transformations to unconstrain from.
+        
+        remove all :py:class:`GPy.core.transformations.Transformation` 
+        transformats of this parameter object.
+        """
+        if self.has_parent():
+            self._highest_parent_._remove_constrain(self, *transforms)
+        else:
+            for p in self._parameters_:
+                self._remove_constrain(p, *transforms)
+
+    def unconstrain_positive(self):
+        """
+        Remove positive constraint of this parameter. 
+        """
+        self.unconstrain(Logexp())
+
+    def unconstrain_negative(self):
+        """
+        Remove negative constraint of this parameter. 
+        """
+        self.unconstrain(NegativeLogexp())
+
+    def unconstrain_bounded(self, lower, upper):
+        """
+        :param lower, upper: the limits to unbound this parameter from
+        
+        Remove (lower, upper) bounded constrain from this parameter/
+        """
+        self.unconstrain(Logistic(lower, upper))
+
+class Float(numpy.float64, Constrainable):
+    def __init__(self, f, base):
+        super(Float,self).__init__(f)
+        self._base = base
+        
+        
+class Param(ObservableArray, Constrainable):
     """
     Parameter object for GPy models.
 
@@ -82,23 +169,29 @@ class Param(ObservableArray, Nameable, Pickleable):
     Fixing parameters will fix them to the value they are right now. If you change
     the fixed value, it will be fixed to the new value!
     
-    See :py:class:`GPy.core.parameterized.Parameterized` for more details.
+    See :py:class:`GPy.core.parameterized.Parameterized` for more details on constraining etc.
+
+    This ndarray can be stored in lists and checked if it is in.
+
+    >>> import numpy as np
+    >>> x = np.random.normal(size=(10,3))
+    >>> x in [[1], x, [3]]
+    True
+    
+    WARNING: This overrides the functionality of x==y!!!
+    Use numpy.equal(x,y) for element-wise equality testing.
     """
-    __array_priority__ = -numpy.inf # Never give back Param
+    __array_priority__ = 0 # Never give back Param
     _fixes_ = None
     def __new__(cls, name, input_array, *args, **kwargs):
         obj = numpy.atleast_1d(super(Param, cls).__new__(cls, input_array=input_array))
-        obj._direct_parent_ = None
-        #obj.name = name
-        obj._parent_index_ = None
-        obj._highest_parent_ = None
         obj._current_slice_ = (slice(obj.shape[0]),)
         obj._realshape_ = obj.shape
         obj._realsize_ = obj.size
         obj._realndim_ = obj.ndim
         obj._updated_ = False
-        from index_operations import ParamDict
-        obj._tied_to_me_ = ParamDict(set)
+        from index_operations import SetDict
+        obj._tied_to_me_ = SetDict()
         obj._tied_to_ = []
         obj._original_ = True
         return obj
@@ -110,11 +203,10 @@ class Param(ObservableArray, Nameable, Pickleable):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
         super(Param, self).__array_finalize__(obj)
-        self.name = getattr(obj, 'name', None)
-        self._current_slice_ = getattr(obj, '_current_slice_', None)
         self._direct_parent_ = getattr(obj, '_direct_parent_', None)
         self._parent_index_ = getattr(obj, '_parent_index_', None)
         self._highest_parent_ = getattr(obj, '_highest_parent_', None)
+        self._current_slice_ = getattr(obj, '_current_slice_', None)
         self._tied_to_me_ = getattr(obj, '_tied_to_me_', None)
         self._tied_to_ = getattr(obj, '_tied_to_', None)
         self._realshape_ = getattr(obj, '_realshape_', None)
@@ -122,13 +214,14 @@ class Param(ObservableArray, Nameable, Pickleable):
         self._realndim_ = getattr(obj, '_realndim_', None)
         self._updated_ = getattr(obj, '_updated_', None)
         self._original_ = getattr(obj, '_original_', None)
+        self._name = getattr(obj, 'name', None)
         
     def __array_wrap__(self, out_arr, context=None):
         return out_arr.view(numpy.ndarray)
     #===========================================================================
     # Pickling operations
     #===========================================================================
-    def __reduce__(self):
+    def __reduce_ex__(self):
         func, args, state = super(Param, self).__reduce__()
         return func, args, (state, 
                             (self.name,
@@ -207,83 +300,7 @@ class Param(ObservableArray, Nameable, Pickleable):
         self._highest_parent_._unfix(self)
     unfix = unconstrain_fixed
     #===========================================================================
-    # Constrain operations -> done
-    #===========================================================================
-    def constrain(self, transform, warning=True, update=True):
-        """
-        :param transform: the :py:class:`GPy.core.transformations.Transformation`
-                          to constrain the this parameter to.
-        :param warning: print a warning if re-constraining parameters.
-        
-        Constrain the parameter to the given
-        :py:class:`GPy.core.transformations.Transformation`.
-        """
-        if self._original_: # this happens when indexing created a copy of the array
-            self.__setitem__(slice(None), transform.initialize(self), update=False)
-        else:
-            self._direct_parent_._get_original(self).__setitem__(self._current_slice_, transform.initialize(self), update=False)
-        self._highest_parent_._add_constrain(self, transform, warning)
-        for t in self._tied_to_me_.iterkeys():
-            if transform not in self._highest_parent_._constraints_for_collect(t, t._raveled_index()):
-                t._direct_parent_._get_original(t)[t._current_slice_].constrain(transform, warning, update)
-        if update:
-            self._highest_parent_.parameters_changed()        
-
-    def constrain_positive(self, warning=True):
-        """
-        :param warning: print a warning if re-constraining parameters.
-        
-        Constrain this parameter to the default positive constraint.
-        """
-        self.constrain(Logexp(), warning)
-
-    def constrain_negative(self, warning=True):
-        """
-        :param warning: print a warning if re-constraining parameters.
-        
-        Constrain this parameter to the default negative constraint.
-        """
-        self.constrain(NegativeLogexp(), warning)
-
-    def constrain_bounded(self, lower, upper, warning=True):
-        """
-        :param lower, upper: the limits to bound this parameter to
-        :param warning: print a warning if re-constraining parameters.
-        
-        Constrain this parameter to lie within the given range.
-        """
-        self.constrain(Logistic(lower, upper), warning)
-
-    def unconstrain(self, *transforms):
-        """
-        :param transforms: The transformations to unconstrain from.
-        
-        remove all :py:class:`GPy.core.transformations.Transformation` 
-        transformats of this parameter object.
-        """
-        self._highest_parent_._remove_constrain(self, *transforms)
-
-    def unconstrain_positive(self):
-        """
-        Remove positive constraint of this parameter. 
-        """
-        self.unconstrain(Logexp())
-
-    def unconstrain_negative(self):
-        """
-        Remove negative constraint of this parameter. 
-        """
-        self.unconstrain(NegativeLogexp())
-
-    def unconstrain_bounded(self, lower, upper):
-        """
-        :param lower, upper: the limits to unbound this parameter from
-        
-        Remove (lower, upper) bounded constrain from this parameter/
-        """
-        self.unconstrain(Logistic(lower, upper))
-    #===========================================================================
-    # Tying operations -> done
+    # Tying operations -> bugged, TODO
     #===========================================================================
     def tie_to(self, param):
         """
@@ -667,6 +684,8 @@ class ParamConcatenation(object):
         return "\n".join(map(repr,self.params))
     
 if __name__ == '__main__':
+    
+
     from GPy.core.parameterized import Parameterized
     from GPy.core.parameter import Param
 

@@ -323,9 +323,6 @@ class MRD(Model):
         else:
             return pylab.gcf()
 
-    def plot_X_1d(self, *a, **kw):
-        return self.gref.plot_X_1d(*a, **kw)
-
     def plot_X(self, fignum=None, ax=None):
         fig = self._handle_plotting(fignum, ax, lambda i, g, ax: ax.imshow(g.X))
         return fig

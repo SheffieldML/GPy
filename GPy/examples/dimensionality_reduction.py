@@ -285,6 +285,7 @@ def bgplvm_simulation(optimize='scg',
     k = kern.linear(input_dim, ARD=True) + kern.bias(input_dim, np.exp(-2)) + kern.white(input_dim, np.exp(-2)) # + kern.bias(input_dim)
     m = BayesianGPLVM(Y, input_dim, init="PCA", num_inducing=num_inducing, kernel=k)
 
+    import ipdb; ipdb.set_trace()
     # m.constrain('variance|noise', LogexpClipped())
     m['gaussian'] = Y.var() / 100.
 

@@ -32,6 +32,18 @@ def chain_3(d3f_dg3, dg_dx, d2f_dg2, d2g_dx2, df_dg, d3g_dx3):
     """
     return d3f_dg3*(dg_dx**3) + 3*d2f_dg2*dg_dx*d2g_dx2 + df_dg*d3g_dx3
 
+### make a parameter to its corresponding array:
+def param_to_array(*param):
+    """
+    Convert an arbitrary number of parameters to :class:ndarray class objects. This is for
+    converting parameter objects to numpy arrays, when using scipy.weave.inline routine.
+    In scipy.weave.blitz there is no automatic array detection (even when the array inherits
+    from :class:ndarray)"""
+    assert len(param) > 0, "At least one parameter needed"
+    if len(param) == 1:
+        return param[0].view(np.ndarray)
+    return map(lambda x: x.view(np.ndarray), param)
+
 def opt_wrapper(m, **kwargs):
     """
     This function just wraps the optimization procedure of a GPy
@@ -159,6 +171,7 @@ def fast_array_equal(A, B):
     elif ((A == None) and (B != None)) or ((A != None) and (B == None)):
         return False
     elif A.shape == B.shape:
+        A, B = param_to_array(A, B)
         if A.ndim == 2:
             N, D = [int(i) for i in A.shape]
             value = weave.inline(code2, support_code=support_code,
@@ -173,7 +186,6 @@ def fast_array_equal(A, B):
             value = np.array_equal(A,B)
 
     return value
-
 
 if __name__ == '__main__':
     import pylab as plt

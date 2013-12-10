@@ -92,7 +92,7 @@ class lvm(matplotlib_show):
         :param latent_axes: the axes where the latent visualization should be plotted.
         """
         if vals == None:
-            vals = model.X[0]
+            vals = np.asarray(model.X[0])
 
         matplotlib_show.__init__(self, vals, axes=latent_axes)
 
@@ -171,21 +171,21 @@ class lvm_subplots(lvm):
     latent_axes is a np array of dimension np.ceil(input_dim/2),
     one for each pair of the latent dimensions.
     """
-    def __init__(self, vals, Model, data_visualize, latent_axes=None, sense_axes=None):
-        self.nplots = int(np.ceil(Model.input_dim/2.))+1
+    def __init__(self, vals, model, data_visualize, latent_axes=None, sense_axes=None):
+        self.nplots = int(np.ceil(model.input_dim/2.))+1
         assert len(latent_axes)==self.nplots
         if vals==None:
-            vals = Model.X[0, :]
+            vals = np.asarray(model.X[0, :])
         self.latent_values = vals 
 
         for i, axis in enumerate(latent_axes):
             if i == self.nplots-1:
-                if self.nplots*2!=Model.input_dim:
+                if self.nplots*2!=model.input_dim:
                     latent_index = [i*2, i*2]
-                lvm.__init__(self, self.latent_vals, Model, data_visualize, axis, sense_axes, latent_index=latent_index)
+                lvm.__init__(self, self.latent_vals, model, data_visualize, axis, sense_axes, latent_index=latent_index)
             else:
                 latent_index = [i*2, i*2+1]
-                lvm.__init__(self, self.latent_vals, Model, data_visualize, axis, latent_index=latent_index)
+                lvm.__init__(self, self.latent_vals, model, data_visualize, axis, latent_index=latent_index)
 
 
 

@@ -45,6 +45,7 @@ class GPBase(Model):
         
         self.add_parameter(self.kern, gradient=self.dL_dtheta_K)
         self.add_parameter(self.likelihood, gradient=lambda:self.posterior.dL_dtheta_lik)
+        
 
     def posterior_samples_f(self,X,size=10,which_parts='all',full_cov=True):
         """

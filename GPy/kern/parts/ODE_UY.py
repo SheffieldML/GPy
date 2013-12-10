@@ -189,6 +189,13 @@ class ODE_UY(Kernpart):
         if X2 is None: X2 = X
         dist = np.abs(X - X2.T)
 
+        X,slices = X[:,:-1],index_to_slices(X[:,-1])
+        if X2 is None:
+            X2,slices2 = X,slices
+        else:
+            X2,slices2 = X2[:,:-1],index_to_slices(X2[:,-1])
+
+
         ly=1/self.lengthscaleY
         lu=np.sqrt(3)/self.lengthscaleU
         #ly=self.lengthscaleY
@@ -231,6 +238,25 @@ class ODE_UY(Kernpart):
         k2 = lambda dist: (np.exp(-lu*dist)*(ly-2*lu+lu*ly*dist-lu**2*dist) + np.exp(-ly*dist)*(2*lu-ly) ) / (ly-lu)**2 
         k3 = lambda dist: np.exp(-lu*dist) * ( (1+lu*dist)/(lu+ly) + (lu)/(lu+ly)**2 )
         dkdvar = k1+k2+k3
+
+
+        for i, s1 in enumerate(slices):
+            for j, s2 in enumerate(slices2):
+                for ss1 in s1:
+                    for ss2 in s2:
+                        if i==0 and j==0:
+                            #target[ss1,ss2] = kuu(np.abs(rdist[ss1,ss2]))
+                        elif i==0 and j==1:
+                            #target[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , kuyp(np.abs(rdist[ss1,ss2])), kuyn(np.abs(rdist[s1[0],s2[0]]) )   )
+                        elif i==1 and j==1:
+                            #target[ss1,ss2] = kyy(np.abs(rdist[ss1,ss2]))
+                        else:
+                            #target[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , kyup(np.abs(rdist[ss1,ss2])), kyun(np.abs(rdist[s1[0],s2[0]]) )   )
+
+
+
+
+
 
         target[0] += np.sum(self.varianceY*dkdvar * dL_dK)
         target[1] += np.sum(self.varianceU*dkdvar * dL_dK)

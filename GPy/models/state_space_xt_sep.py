@@ -175,13 +175,28 @@ class StateSpace_1(Model):
             m, v = self.predict_raw(Xgrid,filteronly=plot_filter)
             
             Y = self.Y
-            #np.random.multivariant_normal(m[:,0],v[:,:,0])
-            #np.random.multivariant_normal(m[:,1],v[:,:,1])
+            
+            #allocate space for realisation
+            reli = np.empty((Y.shape[0],Y.shape[1]))
+
+            
+            # mean
             pb.figure(1)
             pb.imshow(m,interpolation="nearest")
-
+            # data Y
             pb.figure(2)
             pb.imshow(Y,interpolation="nearest")
+
+            #realisation
+            for i in range(0,Y.shape[1]):
+                reli[:,i] = np.random.multivariate_normal(m[:,i],v[:,:,i])            
+            pb.figure(3)
+            pb.imshow(reli,interpolation="nearest")
+
+            for i in range(0,Y.shape[1]):
+                reli[:,i] = np.random.multivariate_normal(m[:,i],v[:,:,i])
+            pb.figure(4)
+            pb.imshow(reli,interpolation="nearest")            
 
             stop
             #lower = m - 2*np.sqrt(v)

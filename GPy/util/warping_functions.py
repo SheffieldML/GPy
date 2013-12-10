@@ -53,9 +53,11 @@ class TanhWarpingFunction(WarpingFunction):
         self.num_parameters = 3 * self.n_terms
 
     def f(self,y,psi):
-        """transform y with f using parameter vector psi
+        """
+        transform y with f using parameter vector psi
         psi = [[a,b,c]]
-        f = \sum_{terms} a * tanh(b*(y+c))
+        ::math::`f = \\sum_{terms} a * tanh(b*(y+c))`
+
         """
 
         #1. check that number of params is consistent
@@ -77,8 +79,7 @@ class TanhWarpingFunction(WarpingFunction):
         """
         calculate the numerical inverse of f
 
-        == input ==
-        iterations: number of N.R. iterations
+        :param iterations: number of N.R. iterations
 
         """
 
@@ -165,9 +166,11 @@ class TanhWarpingFunction_d(WarpingFunction):
         self.num_parameters = 3 * self.n_terms + 1
 
     def f(self,y,psi):
-        """transform y with f using parameter vector psi
+        """
+        Transform y with f using parameter vector psi
         psi = [[a,b,c]]
-        f = \sum_{terms} a * tanh(b*(y+c))
+
+        :math:`f = \\sum_{terms} a * tanh(b*(y+c))`
         """
 
         #1. check that number of params is consistent
@@ -185,17 +188,18 @@ class TanhWarpingFunction_d(WarpingFunction):
         return z
 
 
-    def f_inv(self, z, psi, max_iterations = 1000):
+    def f_inv(self, z, psi, max_iterations=1000, y=None):
         """
         calculate the numerical inverse of f
 
-        == input ==
-        iterations: number of N.R. iterations
+        :param max_iterations: maximum number of N.R. iterations
 
         """
 
         z = z.copy()
-        y = np.ones_like(z)
+        if y is None:
+            y = np.ones_like(z)
+            
         it = 0
         update = np.inf
 
@@ -205,15 +209,16 @@ class TanhWarpingFunction_d(WarpingFunction):
             it += 1
         if it == max_iterations:
             print "WARNING!!! Maximum number of iterations reached in f_inv "
-            
+
         return y
 
 
     def fgrad_y(self, y, psi, return_precalc = False):
         """
         gradient of f w.r.t to y ([N x 1])
-        returns: Nx1 vector of derivatives, unless return_precalc is true,
-        then it also returns the precomputed stuff
+
+        :returns: Nx1 vector of derivatives, unless return_precalc is true, then it also returns the precomputed stuff
+
         """
 
 
@@ -240,7 +245,7 @@ class TanhWarpingFunction_d(WarpingFunction):
         """
         gradient of f w.r.t to y and psi
 
-        returns: NxIx4 tensor of partial derivatives
+        :returns: NxIx4 tensor of partial derivatives
 
         """
 

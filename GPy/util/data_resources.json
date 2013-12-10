@@ -1,0 +1,319 @@
+{
+   "rogers_girolami_data":{
+      "files":[
+         [
+            "firstcoursemldata.tar.gz"
+         ]
+      ],
+      "license":null,
+      "citation":"A First Course in Machine Learning. Simon Rogers and Mark Girolami: Chapman & Hall/CRC, ISBN-13: 978-1439824146",
+      "details":"Data from the textbook 'A First Course in Machine Learning'. Available from http://www.dcs.gla.ac.uk/~srogers/firstcourseml/.",
+      "urls":[
+         "https://www.dropbox.com/sh/7p6tu1t29idgliq/_XqlH_3nt9/"
+      ],
+      "suffices":[
+         [
+            "?dl=1"
+         ]
+      ],
+      "size":21949154
+   },
+   "ankur_pose_data":{
+      "files":[
+         [
+            "ankurDataPoseSilhouette.mat"
+         ]
+      ],
+      "citation":"3D Human Pose from Silhouettes by Relevance Vector Regression (In CVPR'04). A. Agarwal and B. Triggs.",
+      "license":null,
+      "urls":[
+         "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/ankur_pose_data/"
+      ],
+      "details":"Artificially generated data of silhouettes given poses. Note that the data does not display a left/right ambiguity because across the entire data set one of the arms sticks out more the the other, disambiguating the pose as to which way the individual is facing."
+   },
+   "osu_accad":{
+      "files":[
+         [
+            "swagger1TXT.ZIP",
+            "handspring1TXT.ZIP",
+            "quickwalkTXT.ZIP",
+            "run1TXT.ZIP",
+            "sprintTXT.ZIP",
+            "dogwalkTXT.ZIP",
+            "camper_04TXT.ZIP",
+            "dance_KB3_TXT.ZIP",
+            "per20_TXT.ZIP",
+            "perTWO07_TXT.ZIP",
+            "perTWO13_TXT.ZIP",
+            "perTWO14_TXT.ZIP",
+            "perTWO15_TXT.ZIP",
+            "perTWO16_TXT.ZIP"
+         ],
+         [
+            "connections.txt"
+         ]
+      ],
+      "license":"Data is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License (http://creativecommons.org/licenses/by-nc-sa/3.0/).",
+      "citation":"The Open Motion Data Project by The Ohio State University Advanced Computing Center for the Arts and Design, http://accad.osu.edu/research/mocap/mocap_data.htm.",
+      "details":"Motion capture data of different motions from the Open Motion Data Project at Ohio State University.",
+      "urls":[
+         "http://accad.osu.edu/research/mocap/data/",
+         "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/stick/"
+      ],
+      "size":15922790
+   },
+   "isomap_face_data":{
+      "files":[
+         [
+            "face_data.mat"
+         ]
+      ],
+      "license":null,
+      "citation":"A Global Geometric Framework for Nonlinear Dimensionality Reduction, J. B. Tenenbaum, V. de Silva and J. C. Langford, Science 290 (5500): 2319-2323, 22 December 2000",
+      "details":"Face data made available by Tenenbaum, de Silva and Langford to demonstrate isomap, available from http://isomap.stanford.edu/datasets.html.",
+      "urls":[
+         "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/isomap_face_data/"
+      ],
+      "size":24229368
+   },
+   "boston_housing":{
+      "files":[
+         [
+            "Index",
+            "housing.data",
+            "housing.names"
+         ]
+      ],
+      "license":null,
+      "citation":"Harrison, D. and Rubinfeld, D.L. 'Hedonic prices and the demand for clean air', J. Environ. Economics & Management, vol.5, 81-102, 1978.",
+      "details":"The Boston Housing data relates house values in Boston to a range of input variables.",
+      "urls":[
+         "http://archive.ics.uci.edu/ml/machine-learning-databases/housing/"
+      ],
+      "size":51276
+   },
+   "cmu_mocap_full":{
+      "files":[
+         [
+            "allasfamc.zip"
+         ]
+      ],
+      "license":"From http://mocap.cs.cmu.edu. This data is free for use in research projects. You may include this data in commercially-sold products, but you may not resell this data directly, even in converted form. If you publish results obtained using this data, we would appreciate it if you would send the citation to your published paper to jkh+mocap@cs.cmu.edu, and also would add this text to your acknowledgments section: The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.",
+      "citation":"Please include this in your acknowledgements: The data used in this project was obtained from mocap.cs.cmu.edu.\nThe database was created with funding from NSF EIA-0196217.",
+      "details":"CMU Motion Capture data base. Captured by a Vicon motion capture system consisting of 12 infrared MX-40 cameras, each of which is capable of recording at 120 Hz with images of 4 megapixel resolution. Motions are captured in a working volume of approximately 3m x 8m. The capture subject wears 41 markers and a stylish black garment.",
+      "urls":[
+         "http://mocap.cs.cmu.edu/subjects"
+      ],
+      "size":null
+   },
+   "brendan_faces":{
+      "files":[
+         [
+            "frey_rawface.mat"
+         ]
+      ],
+      "license":null,
+      "citation":"Frey, B. J., Colmenarez, A and Huang, T. S. Mixtures of Local Linear Subspaces for Face Recognition. Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition 1998, 32-37, June 1998. Computer Society Press, Los Alamitos, CA.",
+      "details":"A video of Brendan Frey's face popularized as a benchmark for visualization by the Locally Linear Embedding.",
+      "urls":[
+         "http://www.cs.nyu.edu/~roweis/data/"
+      ],
+      "size":1100584
+   },
+   "olympic_marathon_men":{
+      "files":[
+         [
+            "olympicMarathonTimes.csv"
+         ]
+      ],
+      "license":null,
+      "citation":null,
+      "details":"Olympic mens' marathon gold medal winning times from 1896 to 2012. Time given in pace (minutes per kilometer). Data is originally downloaded and collated from Wikipedia, we are not responsible for errors in the data",
+      "urls":[
+         "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/olympic_marathon_men/"
+      ],
+      "size":584
+   },
+   "pumadyn-32nm":{
+      "files":[
+         [
+            "pumadyn-32nm.tar.gz"
+         ]
+      ],
+      "license":"Data is made available by the Delve system at the University of Toronto",
+      "citation":"Created by Zoubin Ghahramani using the Matlab Robotics Toolbox of Peter Corke. Corke, P. I. (1996). A Robotics Toolbox for MATLAB. IEEE Robotics and Automation Magazine, 3 (1): 24-32.",
+      "details":"Pumadyn non linear 32 input data set with moderate noise. See http://www.cs.utoronto.ca/~delve/data/pumadyn/desc.html for details.",
+      "urls":[
+         "ftp://ftp.cs.toronto.edu/pub/neuron/delve/data/tarfiles/pumadyn-family/"
+      ],
+      "size":5861646
+   },
+   "ripley_prnn_data":{
+      "files":[
+         [
+            "Cushings.dat",
+            "README",
+            "crabs.dat",
+            "fglass.dat",
+            "fglass.grp",
+            "pima.te",
+            "pima.tr",
+            "pima.tr2",
+            "synth.te",
+            "synth.tr",
+            "viruses.dat",
+            "virus3.dat"
+         ]
+      ],
+      "license":null,
+      "citation":"Pattern Recognition and Neural Networks by B.D. Ripley (1996) Cambridge University Press ISBN 0 521 46986 7",
+      "details":"Data sets from Brian Ripley's Pattern Recognition and Neural Networks",
+      "urls":[
+         "http://www.stats.ox.ac.uk/pub/PRNN/"
+      ],
+      "size":93565
+   },
+   "three_phase_oil_flow":{
+      "files":[
+         [
+            "DataTrnLbls.txt",
+            "DataTrn.txt",
+            "DataTst.txt",
+            "DataTstLbls.txt",
+            "DataVdn.txt",
+            "DataVdnLbls.txt"
+         ]
+      ],
+      "license":null,
+      "citation":"Bishop, C. M. and G. D. James (1993). Analysis of multiphase flows using dual-energy gamma densitometry and neural networks. Nuclear Instruments and Methods in Physics Research A327, 580-593",
+      "details":"The three phase oil data used initially for demonstrating the Generative Topographic mapping.",
+      "urls":[
+         "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/three_phase_oil_flow/"
+      ],
+      "size":712796
+   },
+   "robot_wireless":{
+      "files":[
+         [
+            "uw-floor.txt"
+         ]
+      ],
+      "license":null,
+      "citation":"WiFi-SLAM using Gaussian Process Latent Variable Models by Brian Ferris, Dieter Fox and Neil Lawrence in IJCAI'07 Proceedings pages 2480-2485. Data used in A Unifying Probabilistic Perspective for Spectral Dimensionality Reduction: Insights and New Models by Neil D. Lawrence, JMLR 13 pg 1609--1638, 2012.",
+      "details":"Data created by Brian Ferris and Dieter Fox. Consists of WiFi access point strengths taken during a circuit of the Paul Allen building at the University of Washington.",
+      "urls":[
+         "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/robot_wireless/"
+      ],
+      "size":284390
+   },
+   "xw_pen":{
+      "files":[
+         [
+            "xw_pen_15.csv"
+         ]
+      ],
+      "license":null,
+      "citation":"Michael E. Tipping and Neil D. Lawrence. Variational inference for Student-t models: Robust Bayesian interpolation and generalised component analysis. Neurocomputing, 69:123--141, 2005",
+      "details":"Accelerometer pen data used for robust regression by Tipping and Lawrence.",
+      "urls":[
+         "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/xw_pen/"
+      ],
+      "size":3410
+   },
+   "swiss_roll":{
+      "files":[
+         [
+            "swiss_roll_data.mat"
+         ]
+      ],
+      "license":null,
+      "citation":"A Global Geometric Framework for Nonlinear Dimensionality Reduction, J. B. Tenenbaum, V. de Silva and J. C. Langford, Science 290 (5500): 2319-2323, 22 December 2000",
+      "details":"Swiss roll data made available by Tenenbaum, de Silva and Langford to demonstrate isomap, available from http://isomap.stanford.edu/datasets.html.",
+      "urls":[
+         "http://isomap.stanford.edu/"
+      ],
+      "size":800256
+   },
+   "osu_run1":{
+      "files":[
+         [
+            "run1TXT.ZIP"
+         ],
+         [
+            "connections.txt"
+         ]
+      ],
+      "license":"Data is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License (http://creativecommons.org/licenses/by-nc-sa/3.0/).",
+      "citation":"The Open Motion Data Project by The Ohio State University Advanced Computing Center for the Arts and Design, http://accad.osu.edu/research/mocap/mocap_data.htm.",
+      "details":"Motion capture data of a stick man running from the Open Motion Data Project at Ohio State University.",
+      "urls":[
+         "http://accad.osu.edu/research/mocap/data/",
+         "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/stick/"
+      ],
+      "size":338103
+   },
+   "creep_rupture":{
+      "files":[
+         [
+            "creeprupt.tar"
+         ]
+      ],
+      "license":null,
+      "citation":"Materials Algorithms Project Data Library: MAP_DATA_CREEP_RUPTURE. F. Brun and T. Yoshida.",
+      "details":"Provides 2066 creep rupture test results of steels (mainly of two kinds of steels: 2.25Cr and 9-12 wt% Cr ferritic steels). See http://www.msm.cam.ac.uk/map/data/materials/creeprupt-b.html.",
+      "urls":[
+         "http://www.msm.cam.ac.uk/map/data/tar/"
+      ],
+      "size":602797
+   },
+   "olivetti_faces":{
+      "files":[
+         [
+            "att_faces.zip"
+         ],
+         [
+            "olivettifaces.mat"
+         ]
+      ],
+      "license":null,
+      "citation":"Ferdinando Samaria and Andy Harter, Parameterisation of a Stochastic Model for Human Face Identification. Proceedings of 2nd IEEE Workshop on Applications of Computer Vision, Sarasota FL, December 1994",
+      "details":"Olivetti Research Labs Face data base, acquired between December 1992 and December 1994 in the Olivetti Research Lab, Cambridge (which later became AT&T Laboratories, Cambridge). When using these images please give credit to AT&T Laboratories, Cambridge. ",
+      "urls":[
+         "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/olivetti_faces/",
+         "http://www.cs.nyu.edu/~roweis/data/"
+      ],
+      "size":8561331
+   },
+   "della_gatta":{
+      "files":[
+         [
+            "DellaGattadata.mat"
+         ]
+      ],
+      "license":null,
+      "citation":"Direct targets of the TRP63 transcription factor revealed by a combination of gene expression profiling and reverse engineering. Giusy Della Gatta, Mukesh Bansal, Alberto Ambesi-Impiombato, Dario Antonini, Caterina Missero, and Diego di Bernardo, Genome Research 2008",
+      "details":"The full gene expression data set from della Gatta et al (http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2413161/) processed by RMA.",
+      "urls":[
+         "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/della_gatta/"
+      ],
+      "size":3729650
+   },
+   "epomeo_gpx":{
+      "files":[
+         [
+            "endomondo_1.gpx",
+            "endomondo_2.gpx",
+            "garmin_watch_via_endomondo.gpx",
+            "viewranger_phone.gpx",
+            "viewranger_tablet.gpx"
+         ]
+      ],
+      "license":null,
+      "citation":"",
+      "details":"Five different GPS traces of the same run up Mount Epomeo in Ischia. The traces are from different sources. endomondo_1 and endomondo_2 are traces from the mobile phone app Endomondo, with a split in the middle. garmin_watch_via_endomondo is the trace from a Garmin watch, with a segment missing about 4 kilometers in. viewranger_phone and viewranger_tablet are traces from a phone and a tablet through the viewranger app. The viewranger_phone data comes from the same mobile phone as the Endomondo data (i.e. there are 3 GPS devices, but one device recorded two traces).",
+      "urls":[
+         "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/epomeo_gpx/"
+      ],
+      "size":2031872
+   }
+}

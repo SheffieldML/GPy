@@ -10,6 +10,7 @@ import os
 import random
 from nose.tools import nottest
 import sys
+import itertools
 
 class ExamplesTests(unittest.TestCase):
     def _checkgrad(self, Model):
@@ -19,14 +20,14 @@ class ExamplesTests(unittest.TestCase):
         self.assertTrue(isinstance(Model, GPy.models))
 
 """
-def model_instance_generator(Model):
+def model_instance_generator(model):
     def check_model_returned(self):
-        self._model_instance(Model)
+        self._model_instance(model)
     return check_model_returned
 
-def checkgrads_generator(Model):
+def checkgrads_generator(model):
     def model_checkgrads(self):
-        self._checkgrad(Model)
+        self._checkgrad(model)
     return model_checkgrads
 """
 
@@ -37,10 +38,21 @@ def model_checkgrads(model):
 
 def model_instance(model):
     #assert isinstance(model, GPy.core.model)
-    return isinstance(model, GPy.core.Model)
+    return isinstance(model, GPy.core.model.Model)
 
-@nottest
+def flatten_nested(lst):
+    result = []
+    for element in lst:
+        if hasattr(element, '__iter__'):
+            result.extend(flatten_nested(element))
+        else:
+            result.append(element)
+    return result
+
+#@nottest
 def test_models():
+    optimize=False
+    plot=True
     examples_path = os.path.dirname(GPy.examples.__file__)
     # Load modules
     failing_models = {}
@@ -54,29 +66,34 @@ def test_models():
         print "After"
         print functions
         for example in functions:
-            if example[0] in ['oil', 'silhouette', 'GPLVM_oil_100']:
-                print "SKIPPING"
-                continue
+            #if example[0] in ['oil', 'silhouette', 'GPLVM_oil_100', 'brendan_faces']:
+                #print "SKIPPING"
+                #continue
 
             print "Testing example: ", example[0]
             # Generate model
+
             try:
-                model = example[1]()
+                models = [ example[1](optimize=optimize, plot=plot) ]
+                #If more than one model returned, flatten them
+                models = flatten_nested(models)
             except Exception as e:
                 failing_models[example[0]] = "Cannot make model: \n{e}".format(e=e)
             else:
-                print model
+                print models
                 model_checkgrads.description = 'test_checkgrads_%s' % example[0]
                 try:
-                    if not model_checkgrads(model):
-                        failing_models[model_checkgrads.description] = False
+                    for model in models:
+                        if not model_checkgrads(model):
+                            failing_models[model_checkgrads.description] = False
                 except Exception as e:
                     failing_models[model_checkgrads.description] = e
 
                 model_instance.description = 'test_instance_%s' % example[0]
                 try:
-                    if not model_instance(model):
-                        failing_models[model_instance.description] = False
+                    for model in models:
+                        if not model_instance(model):
+                            failing_models[model_instance.description] = False
                 except Exception as e:
                     failing_models[model_instance.description] = e
 

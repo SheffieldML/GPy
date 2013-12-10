@@ -4,7 +4,7 @@
 import unittest
 import numpy as np
 import GPy
-from GPy.models.sparse_gplvm import SparseGPLVM
+from ..models import SparseGPLVM
 
 class sparse_GPLVMTests(unittest.TestCase):
     def test_bias_kern(self):

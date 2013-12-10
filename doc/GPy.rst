@@ -9,6 +9,14 @@ GPy Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`models` Module
+--------------------
+
+.. automodule:: GPy.models
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Subpackages
 -----------
 
@@ -19,7 +27,8 @@ Subpackages
     GPy.inference
     GPy.kern
     GPy.likelihoods
-    GPy.models
+    GPy.mappings
+    GPy.models_modules
     GPy.testing
     GPy.util
 

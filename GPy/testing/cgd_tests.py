@@ -7,7 +7,6 @@ import unittest
 import numpy
 from GPy.inference.conjugate_gradient_descent import CGD, RUNNING
 import pylab
-import time
 from scipy.optimize.optimize import rosen, rosen_der
 from GPy.inference.gradient_descent_update_rules import PolakRibiere
 

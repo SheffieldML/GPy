@@ -25,10 +25,10 @@ examples Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`non_gaussian` Module
---------------------------
+:mod:`laplace_approximations` Module
+------------------------------------
 
-.. automodule:: GPy.examples.non_gaussian
+.. automodule:: GPy.examples.laplace_approximations
     :members:
     :undoc-members:
     :show-inheritance:
@@ -37,6 +37,14 @@ examples Package
 ------------------------
 
 .. automodule:: GPy.examples.regression
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`stochastic` Module
+------------------------
+
+.. automodule:: GPy.examples.stochastic
     :members:
     :undoc-members:
     :show-inheritance:

@@ -9,7 +9,7 @@ likelihoods Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`EP` Module
+:mod:`ep` Module
 ----------------
 
 .. automodule:: GPy.likelihoods.ep
@@ -17,10 +17,34 @@ likelihoods Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`Gaussian` Module
+:mod:`ep_mixed_noise` Module
+----------------------------
+
+.. automodule:: GPy.likelihoods.ep_mixed_noise
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`gaussian` Module
 ----------------------
 
 .. automodule:: GPy.likelihoods.gaussian
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`gaussian_mixed_noise` Module
+----------------------------------
+
+.. automodule:: GPy.likelihoods.gaussian_mixed_noise
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`laplace` Module
+---------------------
+
+.. automodule:: GPy.likelihoods.laplace
     :members:
     :undoc-members:
     :show-inheritance:
@@ -33,11 +57,18 @@ likelihoods Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`likelihood_functions` Module
-----------------------------------
+:mod:`noise_model_constructors` Module
+--------------------------------------
 
-.. automodule:: GPy.likelihoods.likelihood_functions
+.. automodule:: GPy.likelihoods.noise_model_constructors
     :members:
     :undoc-members:
     :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+
+    GPy.likelihoods.noise_models
 

@@ -4,6 +4,8 @@
 
 import numpy as np
 from GPy.core.domains import POSITIVE, NEGATIVE, BOUNDED
+import sys 
+lim_val = -np.log(sys.float_info.epsilon) 
 
 class transformation(object):
     domain = None
@@ -16,27 +18,43 @@ class transformation(object):
     def gradfactor(self, f):
         """ df_dx evaluated at self.f(x)=f"""
         raise NotImplementedError
+
     def initialize(self, f):
-        """ produce a sensible initial values for f(x)"""
+        """ produce a sensible initial value for f(x)"""
         raise NotImplementedError
+
     def __str__(self):
         raise NotImplementedError
 
 class logexp(transformation):
     domain = POSITIVE
     def f(self, x):
-        return np.log(1. + np.exp(x))
+        return np.where(x>lim_val, x, np.log(1. + np.exp(x)))
     def finv(self, f):
-        return np.log(np.exp(f) - 1.)
+        return np.where(f>lim_val, f, np.log(np.exp(f) - 1.))
     def gradfactor(self, f):
-        ef = np.exp(f)
-        return (ef - 1.) / ef
+        return np.where(f>lim_val, 1., 1 - np.exp(-f))
     def initialize(self, f):
+        if np.any(f < 0.):
+            print "Warning: changing parameters to satisfy constraints"
         return np.abs(f)
     def __str__(self):
         return '(+ve)'
 
-class logexp_clipped(transformation):
+class negative_logexp(transformation):
+    domain = NEGATIVE
+    def f(self, x):
+        return -logexp.f(x)
+    def finv(self, f):
+        return logexp.finv(-f) 
+    def gradfactor(self, f):
+        return -logexp.gradfactor(-f)
+    def initialize(self, f):
+        return -logexp.initialize(f)
+    def __str__(self):
+        return '(-ve)'
+
+class logexp_clipped(logexp):
     max_bound = 1e100
     min_bound = 1e-10
     log_max_bound = np.log(max_bound)
@@ -66,7 +84,7 @@ class logexp_clipped(transformation):
 class exponent(transformation):
     domain = POSITIVE
     def f(self, x):
-        return np.exp(x)
+        return np.where(x<lim_val, np.where(x>-lim_val, np.exp(x), np.exp(-lim_val)), np.exp(lim_val))
     def finv(self, x):
         return np.log(x)
     def gradfactor(self, f):
@@ -78,18 +96,16 @@ class exponent(transformation):
     def __str__(self):
         return '(+ve)'
 
-class negative_exponent(transformation):
+class negative_exponent(exponent):
     domain = NEGATIVE
     def f(self, x):
-        return -np.exp(x)
-    def finv(self, x):
-        return np.log(-x)
+        return -exponent.f(x)
+    def finv(self, f):
+        return exponent.finv(-f)
     def gradfactor(self, f):
         return f
     def initialize(self, f):
-        if np.any(f > 0.):
-            print "Warning: changing parameters to satisfy constraints"
-        return -np.abs(f)
+        return -exponent.initialize(f) #np.abs(f)
     def __str__(self):
         return '(-ve)'
 

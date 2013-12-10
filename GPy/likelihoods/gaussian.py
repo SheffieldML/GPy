@@ -1,19 +1,21 @@
 import numpy as np
 from likelihood import likelihood
+from ..util.linalg import jitchol
+
 
 class Gaussian(likelihood):
     """
     Likelihood class for doing Expectation propagation
 
-    :param Y: observed output (Nx1 numpy.darray)
-    ..Note:: Y values allowed depend on the likelihood_function used
-    :param variance : 
+    :param data: observed output
+    :type data: Nx1 numpy.darray
+    :param variance: noise parameter
     :param normalize:  whether to normalize the data before computing (predictions will be in original scales)
     :type normalize: False|True
     """
     def __init__(self, data, variance=1., normalize=False):
         self.is_heteroscedastic = False
-        self.Nparams = 1
+        self.num_params = 1
         self.Z = 0. # a correction factor which accounts for the approximation made
         N, self.output_dim = data.shape
 
@@ -32,6 +34,8 @@ class Gaussian(likelihood):
         self._variance = np.asarray(variance) + 1.
         self._set_params(np.asarray(variance))
 
+        super(Gaussian, self).__init__()
+
     def set_data(self, data):
         self.data = data
         self.N, D = data.shape
@@ -40,9 +44,11 @@ class Gaussian(likelihood):
         if D > self.N:
             self.YYT = np.dot(self.Y, self.Y.T)
             self.trYYT = np.trace(self.YYT)
+            self.YYT_factor = jitchol(self.YYT)
         else:
             self.YYT = None
             self.trYYT = np.sum(np.square(self.Y))
+            self.YYT_factor = self.Y
 
     def _get_params(self):
         return np.asarray(self._variance)
@@ -53,16 +59,17 @@ class Gaussian(likelihood):
     def _set_params(self, x):
         x = np.float64(x)
         if np.all(self._variance != x):
-            if x == 0.:
+            if x == 0.:#special case of zero noise
                 self.precision = np.inf
                 self.V = None
             else:
                 self.precision = 1. / x
                 self.V = (self.precision) * self.Y
+                self.VVT_factor = self.precision * self.YYT_factor
             self.covariance_matrix = np.eye(self.N) * x
             self._variance = x
 
-    def predictive_values(self, mu, var, full_cov):
+    def predictive_values(self, mu, var, full_cov, **likelihood_args):
         """
         Un-normalize the prediction and add the likelihood variance, then return the 5%, 95% interval
         """
@@ -83,11 +90,25 @@ class Gaussian(likelihood):
             _95pc = mean + 2.*np.sqrt(true_var)
         return mean, true_var, _5pc, _95pc
 
-    def fit_full(self):
+    def log_predictive_density(self, y_test, mu_star, var_star):
         """
-        No approximations needed
+        Calculation of the log predictive density
+
+        .. math:
+            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+
+        :param y_test: test observations (y_{*})
+        :type y_test: (Nx1) array
+        :param mu_star: predictive mean of gaussian p(f_{*}|mu_{*}, var_{*})
+        :type mu_star: (Nx1) array
+        :param var_star: predictive variance of gaussian p(f_{*}|mu_{*}, var_{*})
+        :type var_star: (Nx1) array
+
+        .. Note:
+            Works as if each test point was provided individually, i.e. not full_cov
         """
-        pass
+        y_rescaled = (y_test - self._offset)/self._scale
+        return -0.5*np.log(2*np.pi) -0.5*np.log(var_star + self._variance) -0.5*(np.square(y_rescaled - mu_star))/(var_star + self._variance)
 
     def _gradients(self, partial):
         return np.sum(partial)

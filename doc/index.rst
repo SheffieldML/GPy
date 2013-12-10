@@ -11,8 +11,12 @@ For a quick start, you can have a look at one of the tutorials:
 * `Interacting with models <tuto_interacting_with_models.html>`_
 * `A kernel overview <tuto_kernel_overview.html>`_ 
 * `Writing new kernels <tuto_creating_new_kernels.html>`_
+* `Writing new models <tuto_creating_new_models.html>`_
 
 You may also be interested by some examples in the GPy/examples folder.
+
+The detailed Developers Documentation is listed below
+=====================================================
 
 Contents:
 

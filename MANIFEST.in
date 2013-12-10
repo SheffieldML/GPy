@@ -2,3 +2,5 @@ include *.txt
 recursive-include doc *.txt
 include *.md
 recursive-include doc *.md
+include *.cfg
+recursive-include doc *.cfg

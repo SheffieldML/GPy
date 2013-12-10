@@ -83,6 +83,7 @@ print "finished importing"
 #############################################################################
 
 class Mock(object):
+    __all__ = []
     def __init__(self, *args, **kwargs):
         pass
 
@@ -103,8 +104,10 @@ class Mock(object):
 #import mock
 
 print "Mocking"
-MOCK_MODULES = ['pylab', 'sympy', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser', 'matplotlib']
-#'matplotlib', 'matplotlib.color', 'matplotlib.pyplot', 'pylab' ]
+MOCK_MODULES = ['sympy',
+    'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache',
+    'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser', 'Tango', 'numdifftools'
+    ]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
 
@@ -288,7 +291,7 @@ latex_elements = {
     #'pointsize': '10pt',
 
     # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
+    'preamble': '\\usepackage{MnSymbol}',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples

@@ -5,7 +5,7 @@ import pylab as pb
 import numpy as np
 import GPy
 
-def toy_1d():
+def toy_1d(optimize=True, plot=True):
     N = 2000
     M = 20
 
@@ -16,25 +16,22 @@ def toy_1d():
 
     m = GPy.models.SVIGPRegression(X,Y, batchsize=10, Z=Z)
     m.constrain_bounded('noise_variance',1e-3,1e-1)
+    m.constrain_bounded('white_variance',1e-3,1e-1)
 
     m.param_steplength = 1e-4
 
-    fig = pb.figure()
-    ax = fig.add_subplot(111)
-    def cb():
-        ax.cla()
-        m.plot(ax=ax,Z_height=-3)
-        ax.set_ylim(-3,3)
-        fig.canvas.draw()
+    if plot:
+        fig = pb.figure()
+        ax = fig.add_subplot(111)
+        def cb(foo):
+            ax.cla()
+            m.plot(ax=ax,Z_height=-3)
+            ax.set_ylim(-3,3)
+            fig.canvas.draw()
 
-    m.optimize(500, callback=cb, callback_interval=1)
+    if optimize:
+        m.optimize(500, callback=cb, callback_interval=1)
 
-    m.plot_traces()
+    if plot:
+        m.plot_traces()
     return m
-
-
-
-
-
-
-

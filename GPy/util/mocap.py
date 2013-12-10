@@ -67,14 +67,14 @@ class tree:
         for i in range(len(self.vertices)):
             if self.vertices[i].id == id:
                 return i
-        raise Error, 'Reverse look up of id failed.'
+        raise ValueError('Reverse look up of id failed.')
 
     def get_index_by_name(self, name):
         """Give the index associated with a given vertex name."""
         for i in range(len(self.vertices)):
             if self.vertices[i].name == name:
                 return i
-        raise Error, 'Reverse look up of name failed.'
+        raise ValueError('Reverse look up of name failed.')
 
     def order_vertices(self):
         """Order vertices in the graph such that parents always have a lower index than children."""
@@ -92,13 +92,15 @@ class tree:
 
 
     def swap_vertices(self, i, j):
-        """Swap two vertices in the tree structure array.
+        """
+        Swap two vertices in the tree structure array.
         swap_vertex swaps the location of two vertices in a tree structure array. 
-         ARG tree : the tree for which two vertices are to be swapped.
-         ARG i : the index of the first vertex to be swapped.
-         ARG j : the index of the second vertex to be swapped.
-         RETURN tree : the tree structure with the two vertex locations
-         swapped.
+
+        :param tree: the tree for which two vertices are to be swapped.
+        :param i: the index of the first vertex to be swapped.
+        :param j: the index of the second vertex to be swapped.
+        :rval tree: the tree structure with the two vertex locations swapped.
+
         """
         store_vertex_i = self.vertices[i]
         store_vertex_j = self.vertices[j]
@@ -117,12 +119,17 @@ class tree:
 
 def rotation_matrix(xangle, yangle, zangle, order='zxy', degrees=False):
 
-    """Compute the rotation matrix for an angle in each direction.
+    """
+
+    Compute the rotation matrix for an angle in each direction.
     This is a helper function for computing the rotation matrix for a given set of angles in a given order.
-     ARG xangle : rotation for x-axis.
-     ARG yangle : rotation for y-axis.
-     ARG zangle : rotation for z-axis.
-     ARG order : the order for the rotations."""
+
+    :param xangle: rotation for x-axis.
+    :param yangle: rotation for y-axis.
+    :param zangle: rotation for z-axis.
+    :param order: the order for the rotations.
+
+     """
     if degrees:
         xangle = math.radians(xangle)
         yangle = math.radians(yangle)
@@ -301,10 +308,12 @@ class acclaim_skeleton(skeleton):
 
     def load_skel(self, file_name):
 
-        """Loads an ASF file into a skeleton structure.
-        loads skeleton structure from an acclaim skeleton file.
-         ARG file_name : the file name to load in.
-         RETURN skel : the skeleton for the file."""         
+        """
+        Loads an ASF file into a skeleton structure.
+
+        :param file_name: The file name to load in.
+
+         """         
 
         fid = open(file_name, 'r')
         self.read_skel(fid)
@@ -424,6 +433,8 @@ class acclaim_skeleton(skeleton):
         lin = self.read_line(fid)
         while lin != ':DEGREES':
             lin = self.read_line(fid)
+            if lin == '':
+                raise ValueError('Could not find :DEGREES in ' + fid.name)
 
         counter = 0
         lin = self.read_line(fid)
@@ -434,9 +445,9 @@ class acclaim_skeleton(skeleton):
                 if frame_no:
                     counter += 1
                     if counter != frame_no:
-                        raise Error, 'Unexpected frame number.'
+                        raise ValueError('Unexpected frame number.')
                 else:
-                    raise Error, 'Single bone name  ...'
+                    raise ValueError('Single bone name  ...')
             else:
                 ind = self.get_index_by_name(parts[0])
                 bones[ind].append(np.array([float(channel) for channel in parts[1:]]))
@@ -564,7 +575,7 @@ class acclaim_skeleton(skeleton):
                         return
                     lin = self.read_line(fid)
             else:
-                raise Error, 'Unrecognised file format'
+                raise ValueError('Unrecognised file format')
             self.finalize()
             
     def read_units(self, fid):
@@ -690,86 +701,5 @@ def read_connections(file_name, point_names):
   
 skel = acclaim_skeleton()
 
-
-
-    
-def fetch_cmu(subj_motions, base_url = 'http://mocap.cs.cmu.edu:8080/subjects', skel_store_dir = '.', motion_store_dir = '.', store_motions = True, return_motions = True, messages = True):
-    ''' 
-    Download and store the skel. and motions indicated in a tuple (A,B) where A is a list of skeletons and B
-    the corresponding 2-D list of motions, ie B_ij is the j-th motion to download for skeleton A_i
-    The method can optionally store the fetched data and / or return them as arrays.
-    If the data are already stored, they are not fetched but just retrieved.
-
-    e.g.
-    # Download the data, do not return anything
-    GPy.util.mocap.fetch_cmu(subj_motions = ([35],[[1,2,3]]), return_motions = False)
-    # Fetch and return the data in a list. Do not store them anywhere
-    GPy.util.mocap.fetch_cmu(subj_motions = ([35],[[1,2,3]]), return_motions = True, store_motions = False)
-
-    In both cases above, if the data do exist in the given skel_store_dir and motion_store_dir, they are just loaded from there.
-    '''
-    
-    subjectsNum = subj_motions[0]
-    motionsNum = subj_motions[1]
-
-    # Convert numbers to strings
-    subjects = []
-    motions = [list() for _ in range(len(subjectsNum))]
-    for i in range(len(subjectsNum)):
-        curSubj = str(int(subjectsNum[i]))
-        if subjectsNum[i] < 10:
-            curSubj = '0' + curSubj
-        subjects.append(curSubj)
-        for j in range(len(motionsNum[i])):
-            curMot = str(int(motionsNum[i][j]))
-            if motionsNum[i][j] < 10:
-                curMot = '0' + curMot
-            motions[i].append(curMot)
-
-
-    all_skels = []
-    
-    assert len(subjects) == len(motions)
-    
-    if return_motions:
-        all_motions = [list() for _ in range(len(subjects))]
-    else:
-        all_motions = []
-            
-    for i in range(len(subjects)):
-        cur_skel_suffix = '/' + subjects[i] + '/' 
-        cur_skel_dir = skel_store_dir + cur_skel_suffix
-        cur_skel_file = cur_skel_dir + subjects[i] + '.asf'
-        cur_skel_url = base_url + cur_skel_suffix + subjects[i] + '.asf'
-        
-        if os.path.isfile(cur_skel_file):
-            if return_motions:
-                with open(cur_skel_file, 'r') as f:
-                    cur_skel_data = f.read()
-        else:
-            if store_motions:
-                if not os.path.isdir(cur_skel_dir):
-                    os.mkdir(cur_skel_dir)
-                if not os.path.isdir(motion_store_dir + cur_skel_suffix):
-                    os.mkdir(motion_store_dir + cur_skel_suffix)
-            cur_skel_data = dat.download_resource(cur_skel_url, cur_skel_file, store_motions, messages)
-        
-        if return_motions:
-            all_skels.append(cur_skel_data)
-        
-        for j in range(len(motions[i])):
-            cur_motion_url = base_url + cur_skel_suffix + subjects[i] + '_' + motions[i][j] + '.amc'
-            cur_motion_file = motion_store_dir + cur_skel_suffix  + subjects[i] + '_' + motions[i][j] + '.amc'
-            if os.path.isfile(cur_motion_file):
-                with open(cur_motion_file, 'r') as f:
-                    if return_motions:
-                        cur_motion_data = f.read()
-            else:
-                cur_motion_data = dat.download_resource(cur_motion_url, cur_motion_file, store_motions, messages)
-
-            if return_motions:
-                all_motions[i].append(cur_motion_data)
-
-    return all_skels, all_motions
 
 

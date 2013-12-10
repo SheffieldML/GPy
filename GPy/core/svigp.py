@@ -14,35 +14,22 @@ import sys
 
 class SVIGP(GPBase):
     """
+
     Stochastic Variational inference in a Gaussian Process
 
     :param X: inputs
-    :type X: np.ndarray (N x Q)
+    :type X: np.ndarray (num_data x num_inputs)
     :param Y: observed data
-    :type Y: np.ndarray of observations (N x D)
-    :param batchsize: the size of a h
-
-    Additional kwargs are used as for a sparse GP. They include
-
+    :type Y: np.ndarray of observations (num_data x output_dim)
+    :param batchsize: the size of a minibatch
     :param q_u: canonical parameters of the distribution squasehd into a 1D array
     :type q_u: np.ndarray
-    :param M : Number of inducing points (optional, default 10. Ignored if Z is not None)
-    :type M: int
-    :param kernel : the kernel/covariance function. See link kernels
+    :param kernel: the kernel/covariance function. See link kernels
     :type kernel: a GPy kernel
-    :param Z: inducing inputs (optional, see note)
-    :type Z: np.ndarray (M x Q) | None
-    :param X_uncertainty: The uncertainty in the measurements of X (Gaussian variance)
-    :type X_uncertainty: np.ndarray (N x Q) | None
-    :param Zslices: slices for the inducing inputs (see slicing TODO: link)
-    :param M : Number of inducing points (optional, default 10. Ignored if Z is not None)
-    :type M: int
-    :param beta: noise precision. TODO> ignore beta if doing EP
-    :type beta: float
-    :param normalize_(X|Y) : whether to normalize the data before computing (predictions will be in original scales)
-    :type normalize_(X|Y): bool
-    """
+    :param Z: inducing inputs
+    :type Z: np.ndarray (num_inducing x num_inputs)
 
+    """
 
     def __init__(self, X, likelihood, kernel, Z, q_u=None, batchsize=10, X_variance=None):
         GPBase.__init__(self, X, likelihood, kernel, normalize_X=False)
@@ -90,6 +77,58 @@ class SVIGP(GPBase):
         self.adapt_vb_steplength = True
         self._param_steplength_trace = []
         self._vb_steplength_trace = []
+
+    def getstate(self):
+        steplength_params = [self.hbar_t, self.tau_t, self.gbar_t, self.gbar_t1, self.gbar_t2, self.hbar_tp, self.tau_tp, self.gbar_tp, self.adapt_param_steplength, self.adapt_vb_steplength, self.vb_steplength, self.param_steplength]
+        return GPBase.getstate(self) + \
+            [self.get_vb_param(),
+             self.Z,
+             self.num_inducing,
+             self.has_uncertain_inputs,
+             self.X_variance,
+             self.X_batch,
+             self.X_variance_batch,
+             steplength_params,
+             self.batchcounter,
+             self.batchsize,
+             self.epochs,
+             self.momentum,
+             self.data_prop,
+             self._param_trace,
+             self._param_steplength_trace,
+             self._vb_steplength_trace,
+             self._ll_trace,
+             self._grad_trace,
+             self.Y,
+             self._permutation,
+             self.iterations
+            ]
+
+    def setstate(self, state):
+        self.iterations = state.pop()
+        self._permutation = state.pop()
+        self.Y = state.pop()
+        self._grad_trace = state.pop()
+        self._ll_trace = state.pop()
+        self._vb_steplength_trace = state.pop()
+        self._param_steplength_trace = state.pop()
+        self._param_trace = state.pop()
+        self.data_prop = state.pop()
+        self.momentum = state.pop()
+        self.epochs = state.pop()
+        self.batchsize = state.pop()
+        self.batchcounter = state.pop()
+        steplength_params = state.pop()
+        (self.hbar_t, self.tau_t, self.gbar_t, self.gbar_t1, self.gbar_t2, self.hbar_tp, self.tau_tp, self.gbar_tp, self.adapt_param_steplength, self.adapt_vb_steplength, self.vb_steplength, self.param_steplength) = steplength_params
+        self.X_variance_batch = state.pop()
+        self.X_batch = state.pop()
+        self.X_variance = state.pop()
+        self.has_uncertain_inputs = state.pop()
+        self.num_inducing = state.pop()
+        self.Z = state.pop()
+        vb_param = state.pop()
+        GPBase.setstate(self, state)
+        self.set_vb_param(vb_param)
 
     def _compute_kernel_matrices(self):
         # kernel computations, using BGPLVM notation
@@ -166,7 +205,7 @@ class SVIGP(GPBase):
                 psi2_beta = (self.psi2 * (self.likelihood.precision.flatten().reshape(self.batchsize, 1, 1))).sum(0)
             else:
                 psi2_beta = self.psi2.sum(0) * self.likelihood.precision
-            evals, evecs = linalg.eigh(psi2_beta)
+            evals, evecs = np.linalg.eigh(psi2_beta)
             clipped_evals = np.clip(evals, 0., 1e6) # TODO: make clipping configurable
             tmp = evecs * np.sqrt(clipped_evals)
         else:
@@ -296,8 +335,8 @@ class SVIGP(GPBase):
 
             #callback
             if i and not i%callback_interval:
-                callback()
-                time.sleep(0.1)
+                callback(self) # Change this to callback()
+                time.sleep(0.01)
 
             if self.epochs > 10:
                 self._adapt_steplength()
@@ -313,13 +352,13 @@ class SVIGP(GPBase):
         assert self.vb_steplength > 0
 
         if self.adapt_param_steplength:
-            # self._adaptive_param_steplength()
+            self._adaptive_param_steplength()
             # self._adaptive_param_steplength_log()
-            self._adaptive_param_steplength_from_vb()
+            # self._adaptive_param_steplength_from_vb()
         self._param_steplength_trace.append(self.param_steplength)
 
     def _adaptive_param_steplength(self):
-        decr_factor = 0.1
+        decr_factor = 0.02
         g_tp = self._transform_gradients(self._log_likelihood_gradients())
         self.gbar_tp = (1-1/self.tau_tp)*self.gbar_tp + 1/self.tau_tp * g_tp
         self.hbar_tp = (1-1/self.tau_tp)*self.hbar_tp + 1/self.tau_tp * np.dot(g_tp.T, g_tp)
@@ -353,7 +392,7 @@ class SVIGP(GPBase):
         self.tau_t = self.tau_t*(1-self.vb_steplength) + 1
 
     def _adaptive_vb_steplength_KL(self):
-        decr_factor = 1 #0.1
+        decr_factor = 0.1
         natgrad = self.vb_grad_natgrad()
         g_t1 = natgrad[0]
         g_t2 = natgrad[1]
@@ -393,7 +432,7 @@ class SVIGP(GPBase):
             else:
                 return mu, diag_var[:,None]
 
-    def predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
+    def predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False, sampling=False, num_samples=15000):
         # normalize X values
         Xnew = (Xnew.copy() - self._Xoffset) / self._Xscale
         if X_variance_new is not None:
@@ -403,7 +442,7 @@ class SVIGP(GPBase):
         mu, var = self._raw_predict(Xnew, X_variance_new, full_cov=full_cov, which_parts=which_parts)
 
         # now push through likelihood
-        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov)
+        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, sampling=sampling, num_samples=num_samples)
 
         return mean, var, _025pm, _975pm
 
@@ -449,7 +488,7 @@ class SVIGP(GPBase):
             ax.plot(Zu, np.zeros_like(Zu) + Z_height, 'r|', mew=1.5, markersize=12)
 
         if self.input_dim==2:
-            ax.scatter(self.X_all[:,0], self.X_all[:,1], 20., self.Y[:,0], linewidth=0, cmap=pb.cm.jet)
+            ax.scatter(self.X[:,0], self.X[:,1], 20., self.Y[:,0], linewidth=0, cmap=pb.cm.jet)
             ax.plot(Zu[:,0], Zu[:,1], 'w^')
 
     def plot_traces(self):

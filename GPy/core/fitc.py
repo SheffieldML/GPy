@@ -11,25 +11,27 @@ from sparse_gp import SparseGP
 
 class FITC(SparseGP):
     """
-    sparse FITC approximation
+
+    Sparse FITC approximation
 
     :param X: inputs
     :type X: np.ndarray (num_data x Q)
     :param likelihood: a likelihood instance, containing the observed data
     :type likelihood: GPy.likelihood.(Gaussian | EP)
-    :param kernel : the kernel (covariance function). See link kernels
+    :param kernel: the kernel (covariance function). See link kernels
     :type kernel: a GPy.kern.kern instance
     :param Z: inducing inputs (optional, see note)
     :type Z: np.ndarray (M x Q) | None
-    :param normalize_(X|Y) : whether to normalize the data before computing (predictions will be in original scales)
+    :param normalize_(X|Y): whether to normalize the data before computing (predictions will be in original scales)
     :type normalize_(X|Y): bool
+
     """
 
     def __init__(self, X, likelihood, kernel, Z, normalize_X=False):
         SparseGP.__init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False)
         assert self.output_dim == 1, "FITC model is not defined for handling multiple outputs"
 
-    def update_likelihood_approximation(self):
+    def update_likelihood_approximation(self, **kwargs):
         """
         Approximates a non-Gaussian likelihood using Expectation Propagation
 
@@ -37,7 +39,7 @@ class FITC(SparseGP):
         this function does nothing
         """
         self.likelihood.restart()
-        self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0)
+        self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0, **kwargs)
         self._set_params(self._get_params())
 
     def _compute_kernel_matrices(self):
@@ -120,11 +122,11 @@ class FITC(SparseGP):
             _dKmm = .5*(V_n**2 + alpha_n + gamma_n**2 - 2.*gamma_k) * K_pp_K #Diag_dD_dKmm
             self._dpsi1_dtheta += self.kern.dK_dtheta(_dpsi1,self.X[i:i+1,:],self.Z)
             self._dKmm_dtheta += self.kern.dK_dtheta(_dKmm,self.Z)
-            self._dKmm_dX += 2.*self.kern.dK_dX(_dKmm ,self.Z)
+            self._dKmm_dX += self.kern.dK_dX(_dKmm ,self.Z)
             self._dpsi1_dX += self.kern.dK_dX(_dpsi1.T,self.Z,self.X[i:i+1,:])
 
         # the partial derivative vector for the likelihood
-        if self.likelihood.Nparams == 0:
+        if self.likelihood.num_params == 0:
             # save computation here.
             self.partial_for_likelihood = None
         elif self.likelihood.is_heteroscedastic:
@@ -139,7 +141,6 @@ class FITC(SparseGP):
             aux_2 = np.dot(LBiLmipsi1.T,self._LBi_Lmi_psi1V)
 
             dA_dnoise = 0.5 * self.input_dim * (dbstar_dnoise/self.beta_star).sum() - 0.5 * self.input_dim * np.sum(self.likelihood.Y**2 * dbstar_dnoise)
-            dC_dnoise = -0.5 * np.sum(mdot(self.LBi.T,self.LBi,Lmi_psi1) *  Lmi_psi1 * dbstar_dnoise.T)
             dC_dnoise = -0.5 * np.sum(mdot(self.LBi.T,self.LBi,Lmi_psi1) *  Lmi_psi1 * dbstar_dnoise.T)
 
             dD_dnoise_1 =  mdot(self.V_star*LBiLmipsi1.T,LBiLmipsi1*dbstar_dnoise.T*self.likelihood.Y.T)
@@ -158,7 +159,7 @@ class FITC(SparseGP):
         A = -0.5 * self.num_data * self.output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
         C = -self.output_dim * (np.sum(np.log(np.diag(self.LB))))
         D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
-        return A + C + D
+        return A + C + D + self.likelihood.Z
 
     def _log_likelihood_gradients(self):
         pass
@@ -174,7 +175,7 @@ class FITC(SparseGP):
 
     def dL_dZ(self):
         dL_dZ = self.kern.dK_dX(self._dL_dpsi1.T,self.Z,self.X)
-        dL_dZ += 2. * self.kern.dK_dX(self._dL_dKmm,X=self.Z)
+        dL_dZ += self.kern.dK_dX(self._dL_dKmm,X=self.Z)
         dL_dZ += self._dpsi1_dX
         dL_dZ += self._dKmm_dX
         return dL_dZ

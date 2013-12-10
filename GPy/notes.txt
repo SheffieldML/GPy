@@ -1,0 +1,80 @@
+Prod.py kernel could also take a list of kernels rather than two arguments for kernels.
+transformations.py should have limits on what is fed into exp() particularly for the negative log logistic (done -neil). 
+
+Load in a model with mlp kernel, plot it, change a parameter, plot it again. It doesn't update the plot.
+
+Tests for kernels which work directly on the kernel implementation (not through GP).
+
+Should stationary covariances have their own kernpart type, I think so, also inner product kernels. That way the caching so carefully constructed for RBF or linear could be shared.
+
+Where do we declare default kernel parameters. In constructors.py or in the definition file for the kernel?
+
+When printing to stdout, can we check that our approach is also working nicely for the ipython notebook? I like the way our optimization ticks over, but at the moment this doesn't seem to work in the ipython notebook, it would be nice if it did. My problems may be due to using ipython 0.12, I've had a poke around at fixing this and I can't do it for 0.12.
+
+When we print a model should we also include information such as number of inputs and number of outputs?
+
+Let's not use N for giving the number of data in the model. When it pops up as a help tip it's not as clear as num_samples or num_data. Prefer the second, but oddly I've been using first.
+
+Loving the fact that the * has been overloaded on the kernels (oddly never thought to check this before). Although naming can be a bit confusing. Can we think how to deal with the names in a clearer way when we use a kernel like this one:
+kern = GPy.kern.rbf(30)*(GPy.kern.mlp(30)+GPy.kern.poly(30, degree=5)) + GPy.kern.bias(30). There seems to be some tieing of parameters going on ... should there be? (you can try it as the kernel for the robot wireless model).
+
+Can we comment up some of the list incomprehensions in hierarchical.py??
+
+Need to tidy up classification.py, 
+many examples include help that doesn't apply 
+(it is suggested that you can try different approximation types)
+
+Shall we overload the ** operator to have tensor products? (I've done this now we can see if we like it)
+
+People aren't filling the doc strings in as they go *everyone* needs to get in the habit of this (and modifying them as they edit, or correcting them when there is a problem).
+
+Need some nice way of explaining how to compile documentation and run the unit tests, could this be in a readme or FAQ somewhere? Maybe it's there already somewhere and I've missed it.
+
+Shouldn't EP be in the inference package (not likelihoods)?
+
+When using bfgs in ipython notebook, text appears in the original console, not in the notebook.
+
+In sparse GPs wouldn't it be clearer to call Z inducing?
+
+In coregionalisation matrix, setting the W to all ones will (surely?) ensure that symmetry isn't broken. Also, but allowing it to scale like that, the output variance increases as rank is increased (and if user sets rank to more than output dim they could get very different results).
+
+We are inconsistent about our use of ise and ize e.g. optimize and normalize_X, but coregionalise, we should choose one and stick to it. Suggest -ize. Neil- I'm imposing the US spellings to keep things consistent, so -ize it is.
+
+Exceptions: we need to provide a list of exceptions we throw and specify what is thrown where. 
+
+Why is it get_params() but it's getstate()? Should be get_state(). Why is it get_gradient instead of get_gradients? Need to be consistent!! Doesn't matter which way we choose as long as it's consistent.
+
+In likelihood Nparams should be num_params
+
+In likelihood N should be num_data
+
+The Gaussian target in likelihood should be F What is V doing here?
+
+Need to check for nan values in likelihoods. These should be treated as missing values. If the likelihood can't handle the missing value an error should be throw.
+
+
+Sometimes you want to print kernpart objects, for diagnosis etc. This isn't possible currently. 
+
+Why do likelihoods still have YYT everywhere, didn't we agree to set observed data to Y and latent function to F?
+
+For some reason a stub of _get_param_names(self) wasn't available in the Parameterized base class. Have put it in (is this right?)
+
+Is there a quick FAQ or something on how to build the documentation? I did it once, but can't remember! Have started a FAQ.txt file where we can add this type of information. 
+
+Similar for the nosetests ... even ran them last week but can't remember the command!
+
+Now added Gaussian priors to GPLVM latent variables by default. When running the GPy.examples.dimensionality_reduction.stick() example the print out from print model has the same value for the prior+likelihood as for the prior.
+
+For the back constrained GP-LVM need priors to be on the Xs not on the model parameters (because they aren't parameters, they are constraints). Need to work out how to do this, perhaps by creating the full GP-LVM model then constraining around it, rather than overriding inside the GP-LVM model.
+
+
+This code fails:
+
+kern = GPy.kern.rbf(2)
+GPy.kern.Kern_check_dK_dX(kern, X=np.random.randn(10, 2), X2=None).checkgrad(verbose=True)
+
+because X2 is now equal to X, so there is a factor of 2 missing. Does this every come up? Yes, in the GP-LVM, (gplvm.py, line 64) where it is called with a corrective factor of 2! And on line 241 of sparse_gp where it is also called with a corrective factor of 2! In original matlab GPLVM, didn't allow gradients with respect to X alone, and multiplied by 2 in base code, but then add diagonal across those elements. This is missing in the new code.
+
+
+In white.py, line 41, Need to check here if X and X2 refer to the same reference too ... becaue up the pipeline somewhere someone may have set X2=X when X2 arrived originally equal to None.
+

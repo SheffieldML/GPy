@@ -9,7 +9,6 @@
 dist
 build
 eggs
-parts
 bin
 var
 sdist

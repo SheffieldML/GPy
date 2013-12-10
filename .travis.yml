@@ -7,7 +7,7 @@ virtualenv:
   system_site_packages: true
 
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
-before_install: 
+before_install:
   - sudo apt-get install -qq python-scipy python-pip
   - sudo apt-get install -qq python-matplotlib
   # Workaround for a permissions issue with Travis virtual machine images
@@ -17,10 +17,10 @@ before_install:
   - sudo ln -s /run/shm /dev/shm
 
 install:
-  - pip install --upgrade numpy==1.7.1 
-  - pip install sphinx 
+  - pip install --upgrade numpy==1.7.1
+  - pip install sphinx
   - pip install nose
   - pip install . --use-mirrors
 # command to run tests, e.g. python setup.py test
-script: 
+script:
   - nosetests GPy/testing

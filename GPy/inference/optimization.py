@@ -4,6 +4,7 @@
 import pylab as pb
 import datetime as dt
 from scipy import optimize
+from warnings import warn
 
 try:
     import rasmussens_minimize as rasm
@@ -28,7 +29,7 @@ class Optimizer():
 
     """
     def __init__(self, x_init, messages=False, model=None, max_f_eval=1e4, max_iters=1e3,
-                 ftol=None, gtol=None, xtol=None):
+                 ftol=None, gtol=None, xtol=None, bfgs_factor=None):
         self.opt_name = None
         self.x_init = x_init
         self.messages = messages
@@ -38,6 +39,7 @@ class Optimizer():
         self.status = None
         self.max_f_eval = int(max_f_eval)
         self.max_iters = int(max_iters)
+        self.bfgs_factor = bfgs_factor
         self.trace = None
         self.time = "Not available"
         self.xtol = xtol
@@ -127,9 +129,11 @@ class opt_lbfgsb(Optimizer):
             print "WARNING: l-bfgs-b doesn't have an ftol arg, so I'm going to ignore it"
         if self.gtol is not None:
             opt_dict['pgtol'] = self.gtol
+        if self.bfgs_factor is not None:
+            opt_dict['factr'] = self.bfgs_factor
 
         opt_result = optimize.fmin_l_bfgs_b(f_fp, self.x_init, iprint=iprint,
-                                            maxfun=self.max_f_eval, **opt_dict)
+                                            maxfun=self.max_iters, **opt_dict)
         self.x_opt = opt_result[0]
         self.f_opt = f_fp(self.x_opt)[0]
         self.funct_eval = opt_result[2]['funcalls']
@@ -198,17 +202,22 @@ class opt_rasm(Optimizer):
 
 class opt_SCG(Optimizer):
     def __init__(self, *args, **kwargs):
+        if 'max_f_eval' in kwargs:
+            warn("max_f_eval deprecated for SCG optimizer: use max_iters instead!\nIgnoring max_f_eval!", FutureWarning)
         Optimizer.__init__(self, *args, **kwargs)
+
         self.opt_name = "Scaled Conjugate Gradients"
 
     def opt(self, f_fp=None, f=None, fp=None):
         assert not f is None
         assert not fp is None
+
         opt_result = SCG(f, fp, self.x_init, display=self.messages,
                          maxiters=self.max_iters,
                          max_f_eval=self.max_f_eval,
                          xtol=self.xtol, ftol=self.ftol,
                          gtol=self.gtol)
+
         self.x_opt = opt_result[0]
         self.trace = opt_result[1]
         self.f_opt = self.trace[-1]

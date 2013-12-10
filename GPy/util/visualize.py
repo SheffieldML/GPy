@@ -5,7 +5,13 @@ import numpy as np
 import matplotlib as mpl
 import time
 import Image
-#import visual
+try:
+    import visual
+    visual_available = True
+
+except ImportError:
+    visual_available = False
+
 
 class data_show:
     """
@@ -23,7 +29,6 @@ class data_show:
 
     def close(self):
         raise NotImplementedError, "this needs to be implemented to use the data_show class"
-
 
 class vpython_show(data_show):
     """
@@ -103,7 +108,7 @@ class lvm(matplotlib_show):
             self.cid = latent_axes[0].figure.canvas.mpl_connect('axes_enter_event', self.on_enter)
 
         self.data_visualize = data_visualize
-        self.Model = model
+        self.model = model
         self.latent_axes = latent_axes
         self.sense_axes = sense_axes
         self.called = False
@@ -120,7 +125,7 @@ class lvm(matplotlib_show):
     def modify(self, vals):
         """When latent values are modified update the latent representation and ulso update the output visualization."""
         self.vals = vals.copy()
-        y = self.Model.predict(self.vals)[0]
+        y = self.model.predict(self.vals)[0]
         self.data_visualize.modify(y)
         self.latent_handle.set_data(self.vals[self.latent_index[0]], self.vals[self.latent_index[1]])
         self.axes.figure.canvas.draw()
@@ -148,15 +153,15 @@ class lvm(matplotlib_show):
         # A click in the bar chart axis for selection a dimension.
         if self.sense_axes != None:
             self.sense_axes.cla()
-            self.sense_axes.bar(np.arange(self.Model.input_dim),1./self.Model.input_sensitivity(),color='b')
+            self.sense_axes.bar(np.arange(self.model.input_dim), self.model.input_sensitivity(), color='b')
 
             if self.latent_index[1] == self.latent_index[0]:
-                self.sense_axes.bar(np.array(self.latent_index[0]),1./self.Model.input_sensitivity()[self.latent_index[0]],color='y')
-                self.sense_axes.bar(np.array(self.latent_index[1]),1./self.Model.input_sensitivity()[self.latent_index[1]],color='y')
+                self.sense_axes.bar(np.array(self.latent_index[0]), self.model.input_sensitivity()[self.latent_index[0]], color='y')
+                self.sense_axes.bar(np.array(self.latent_index[1]), self.model.input_sensitivity()[self.latent_index[1]], color='y')
 
             else:
-                self.sense_axes.bar(np.array(self.latent_index[0]),1./self.Model.input_sensitivity()[self.latent_index[0]],color='g')
-                self.sense_axes.bar(np.array(self.latent_index[1]),1./self.Model.input_sensitivity()[self.latent_index[1]],color='r')
+                self.sense_axes.bar(np.array(self.latent_index[0]), self.model.input_sensitivity()[self.latent_index[0]], color='g')
+                self.sense_axes.bar(np.array(self.latent_index[1]), self.model.input_sensitivity()[self.latent_index[1]], color='r')
 
             self.sense_axes.figure.canvas.draw()
 
@@ -193,7 +198,7 @@ class lvm_dimselect(lvm):
     GPy.examples.dimensionality_reduction.BGPVLM_oil()
 
     """
-    def __init__(self, vals, Model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0, 1], labels=None):
+    def __init__(self, vals, model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0, 1], labels=None):
         if latent_axes==None and sense_axes==None:
             self.fig,(latent_axes,self.sense_axes) = plt.subplots(1,2)
         elif sense_axes==None:
@@ -202,14 +207,15 @@ class lvm_dimselect(lvm):
         else:
             self.sense_axes = sense_axes
         self.labels = labels
-        lvm.__init__(self,vals,Model,data_visualize,latent_axes,sense_axes,latent_index)
+        lvm.__init__(self,vals,model,data_visualize,latent_axes,sense_axes,latent_index)
+        self.show_sensitivities()
         print "use left and right mouse butons to select dimensions"
 
 
     def on_click(self, event):
 
         if event.inaxes==self.sense_axes:
-            new_index = max(0,min(int(np.round(event.xdata-0.5)),self.Model.input_dim-1))
+            new_index = max(0,min(int(np.round(event.xdata-0.5)),self.model.input_dim-1))
             if event.button == 1:
                 # Make it red if and y-axis (red=port=left) if it is a left button click
                 self.latent_index[1] = new_index                
@@ -220,7 +226,7 @@ class lvm_dimselect(lvm):
             self.show_sensitivities()
 
             self.latent_axes.cla()
-            self.Model.plot_latent(which_indices=self.latent_index,
+            self.model.plot_latent(which_indices=self.latent_index,
                                    ax=self.latent_axes, labels=self.labels)
             self.latent_handle = self.latent_axes.plot([0],[0],'rx',mew=2)[0]
             self.modify(self.latent_values)
@@ -234,23 +240,42 @@ class lvm_dimselect(lvm):
 
     def on_leave(self,event):
         latent_values = self.latent_values.copy()
-        y = self.Model.predict(latent_values[None,:])[0]
+        y = self.model.predict(latent_values[None,:])[0]
         self.data_visualize.modify(y)
 
 
 
 class image_show(matplotlib_show):
-    """Show a data vector as an image."""
-    def __init__(self, vals, axes=None, dimensions=(16,16), transpose=False, invert=False, scale=False, palette=[], presetMean = 0., presetSTD = -1., selectImage=0):
+    """Show a data vector as an image. This visualizer rehapes the output vector and displays it as an image.
+
+    :param vals: the values of the output to display.
+    :type vals: ndarray
+    :param axes: the axes to show the output on.
+    :type vals: axes handle
+    :param dimensions: the dimensions that the image needs to be transposed to for display.
+    :type dimensions: tuple
+    :param transpose: whether to transpose the image before display.
+    :type bool: default is False.
+    :param order: whether array is in Fortan ordering ('F') or Python ordering ('C'). Default is python ('C').
+    :type order: string
+    :param invert: whether to invert the pixels or not (default False).
+    :type invert: bool
+    :param palette: a palette to use for the image.
+    :param preset_mean: the preset mean of a scaled image.
+    :type preset_mean: double
+    :param preset_std: the preset standard deviation of a scaled image.
+    :type preset_std: double"""
+    def __init__(self, vals, axes=None, dimensions=(16,16), transpose=False, order='C', invert=False, scale=False, palette=[], preset_mean = 0., preset_std = -1., select_image=0):
         matplotlib_show.__init__(self, vals, axes)
         self.dimensions = dimensions
         self.transpose = transpose
+        self.order = order
         self.invert = invert
         self.scale = scale
         self.palette = palette
-        self.presetMean = presetMean
-        self.presetSTD = presetSTD
-        self.selectImage = selectImage # This is used when the y vector contains multiple images concatenated.
+        self.preset_mean = preset_mean
+        self.preset_std = preset_std
+        self.select_image = select_image # This is used when the y vector contains multiple images concatenated.
 
         self.set_image(self.vals)
         if not self.palette == []: # Can just show the image (self.set_image() took care of setting the palette)
@@ -266,22 +291,22 @@ class image_show(matplotlib_show):
 
     def set_image(self, vals):
         dim = self.dimensions[0] * self.dimensions[1]
-        nImg = np.sqrt(vals[0,].size/dim)
-        if nImg > 1 and nImg.is_integer(): # Show a mosaic of images
-            nImg = np.int(nImg)
-            self.vals = np.zeros((self.dimensions[0]*nImg, self.dimensions[1]*nImg))
-            for iR in range(nImg):
-                for iC in range(nImg):
-                    currImgId = iR*nImg + iC
-                    currImg = np.reshape(vals[0,dim*currImgId+np.array(range(dim))], self.dimensions, order='F')
-                    firstRow = iR*self.dimensions[0]
-                    lastRow = (iR+1)*self.dimensions[0]
-                    firstCol = iC*self.dimensions[1]
-                    lastCol = (iC+1)*self.dimensions[1]
-                    self.vals[firstRow:lastRow, firstCol:lastCol] = currImg
+        num_images = np.sqrt(vals[0,].size/dim)
+        if num_images > 1 and num_images.is_integer(): # Show a mosaic of images
+            num_images = np.int(num_images)
+            self.vals = np.zeros((self.dimensions[0]*num_images, self.dimensions[1]*num_images))
+            for iR in range(num_images):
+                for iC in range(num_images):
+                    cur_img_id = iR*num_images + iC
+                    cur_img = np.reshape(vals[0,dim*cur_img_id+np.array(range(dim))], self.dimensions, order=self.order)
+                    first_row = iR*self.dimensions[0]
+                    last_row = (iR+1)*self.dimensions[0]
+                    first_col = iC*self.dimensions[1]
+                    last_col = (iC+1)*self.dimensions[1]
+                    self.vals[first_row:last_row, first_col:last_col] = cur_img
 
         else: 
-            self.vals = np.reshape(vals[0,dim*self.selectImage+np.array(range(dim))], self.dimensions, order='F')
+            self.vals = np.reshape(vals[0,dim*self.select_image+np.array(range(dim))], self.dimensions, order=self.order)
         if self.transpose:
             self.vals = self.vals.T
         # if not self.scale:
@@ -290,8 +315,8 @@ class image_show(matplotlib_show):
             self.vals = -self.vals
 
         # un-normalizing, for visualisation purposes:
-        if self.presetSTD >= 0: # The Mean is assumed to be in the range (0,255)
-            self.vals = self.vals*self.presetSTD + self.presetMean
+        if self.preset_std >= 0: # The Mean is assumed to be in the range (0,255)
+            self.vals = self.vals*self.preset_std + self.preset_mean
             # Clipping the values:
             self.vals[self.vals < 0] = 0
             self.vals[self.vals > 255] = 255
@@ -317,7 +342,7 @@ class mocap_data_show_vpython(vpython_show):
         for i in range(self.vals.shape[0]):
             self.spheres.append(visual.sphere(pos=(self.vals[i, 0], self.vals[i, 2], self.vals[i, 1]), radius=self.radius))
         self.scene.visible=True
-        
+
     def draw_edges(self):
         self.rods = []
         self.line_handle = []
@@ -434,7 +459,6 @@ class mocap_data_show(matplotlib_show):
         self.axes.set_ylim(self.y_lim)
         self.axes.set_zlim(self.z_lim)
 
-
 class stick_show(mocap_data_show_vpython):
     """Show a three dimensional point cloud as a figure. Connect elements of the figure together using the matrix connect."""
     def __init__(self, vals, connect=None, scene=None):
@@ -497,14 +521,17 @@ def data_play(Y, visualizer, frame_rate=30):
 
     This example loads in the CMU mocap database (http://mocap.cs.cmu.edu) subject number 35 motion number 01. It then plays it using the mocap_show visualize object.
     
-    data = GPy.util.datasets.cmu_mocap(subject='35', train_motions=['01'])
-    Y = data['Y']
-    Y[:, 0:3] = 0.   # Make figure walk in place
-    visualize = GPy.util.visualize.skeleton_show(Y[0, :], data['skel'])
-    GPy.util.visualize.data_play(Y, visualize)
+    .. code-block:: python
+
+       data = GPy.util.datasets.cmu_mocap(subject='35', train_motions=['01'])
+       Y = data['Y']
+       Y[:, 0:3] = 0.   # Make figure walk in place
+       visualize = GPy.util.visualize.skeleton_show(Y[0, :], data['skel'])
+       GPy.util.visualize.data_play(Y, visualize)
+
     """
     
 
     for y in Y:
-        visualizer.modify(y)
+        visualizer.modify(y[None, :])
         time.sleep(1./float(frame_rate))

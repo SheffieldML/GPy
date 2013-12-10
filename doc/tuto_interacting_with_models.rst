@@ -1,3 +1,5 @@
+.. _interacting_with_models:
+
 *************************************
 Interacting with models
 *************************************
@@ -18,7 +20,7 @@ All of the examples included in GPy return an instance
 of a model class, and therefore they can be called in 
 the following way: ::
 
-	import numpy as np
+    import numpy as np
     import pylab as pb
     pb.ion()
     import GPy
@@ -105,7 +107,7 @@ inputs: ::
 	m['iip'] = np.arange(-5,0)
 
 Getting the model's likelihood and gradients
-===========================================
+=============================================
 Appart form the printing the model,  the marginal 
 log-likelihood can be obtained by using the function
 ``log_likelihood()``. Also, the log-likelihood gradients
@@ -210,6 +212,6 @@ white_variance and noise_variance are tied together.::
 
 Further Reading
 ===============
-All of the mechansiams for dealing with parameters are baked right into GPy.core.model, from which all of the classes in GPy.models inherrit. To learn how to construct your own model, you might want to read ??link?? creating_new_models. 
+All of the mechansiams for dealing with parameters are baked right into GPy.core.model, from which all of the classes in GPy.models inherrit. To learn how to construct your own model, you might want to read :ref:`creating_new_models`. 
 
-By deafult, GPy uses the tnc optimizer (from scipy.optimize.tnc). To use other optimisers, and to control the setting of those optimisers, as well as other funky features like automated restarts and diagnostics, you can read the optimization tutorial ??link??.
+By deafult, GPy uses the scg optimizer. To use other optimisers, and to control the setting of those optimisers, as well as other funky features like automated restarts and diagnostics, you can read the optimization tutorial ??link??.

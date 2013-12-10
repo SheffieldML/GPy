@@ -36,7 +36,7 @@ class KernelTests(unittest.TestCase):
     def test_eq_sympykernel(self):
         if SYMPY_AVAILABLE:
             kern = GPy.kern.eq_sympy(5, 3)
-            self.assertTrue(GPy.kern.kern_test(kern, output_ind=3, verbose=verbose))
+            self.assertTrue(GPy.kern.kern_test(kern, output_ind=4, verbose=verbose))
 
     def test_ode1_eqkernel(self):
         if SYMPY_AVAILABLE:

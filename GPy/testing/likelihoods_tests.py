@@ -6,6 +6,8 @@ import functools
 import inspect
 from GPy.likelihoods.noise_models import gp_transformations
 from functools import partial
+#np.random.seed(300)
+np.random.seed(7)
 
 def dparam_partial(inst_func, *args):
     """
@@ -144,7 +146,7 @@ class TestNoiseModels(object):
                             "model": GPy.likelihoods.student_t(deg_free=5, sigma2=self.var),
                             "grad_params": {
                                 "names": ["t_noise"],
-                                "vals": [1],
+                                "vals": [1.0],
                                 "constraints": [constrain_positive]
                                 },
                             "laplace": True
@@ -154,6 +156,15 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [0.01],
+                                "constraints": [constrain_positive]
+                                },
+                            "laplace": True
+                            },
+                        "Student_t_large_var": {
+                            "model": GPy.likelihoods.student_t(deg_free=5, sigma2=self.var),
+                            "grad_params": {
+                                "names": ["t_noise"],
+                                "vals": [10.0],
                                 "constraints": [constrain_positive]
                                 },
                             "laplace": True
@@ -315,9 +326,11 @@ class TestNoiseModels(object):
     def t_logpdf(self, model, Y, f):
         print "\n{}".format(inspect.stack()[0][3])
         print model
+        print model._get_params()
         np.testing.assert_almost_equal(
-                               np.log(model.pdf(f.copy(), Y.copy())),
-                               model.logpdf(f.copy(), Y.copy()))
+                               model.pdf(f.copy(), Y.copy()),
+                               np.exp(model.logpdf(f.copy(), Y.copy()))
+                               )
 
     @with_setup(setUp, tearDown)
     def t_dlogpdf_df(self, model, Y, f):
@@ -363,7 +376,7 @@ class TestNoiseModels(object):
         assert (
                 dparam_checkgrad(model.logpdf, model.dlogpdf_dtheta,
                     params, args=(f, Y), constraints=param_constraints,
-                    randomize=False, verbose=True)
+                    randomize=True, verbose=True)
                 )
 
     @with_setup(setUp, tearDown)
@@ -373,7 +386,7 @@ class TestNoiseModels(object):
         assert (
                 dparam_checkgrad(model.dlogpdf_df, model.dlogpdf_df_dtheta,
                     params, args=(f, Y), constraints=param_constraints,
-                    randomize=False, verbose=True)
+                    randomize=True, verbose=True)
                 )
 
     @with_setup(setUp, tearDown)
@@ -383,7 +396,7 @@ class TestNoiseModels(object):
         assert (
                 dparam_checkgrad(model.d2logpdf_df2, model.d2logpdf_df2_dtheta,
                     params, args=(f, Y), constraints=param_constraints,
-                    randomize=False, verbose=True)
+                    randomize=True, verbose=True)
                 )
 
     ################
@@ -478,7 +491,7 @@ class TestNoiseModels(object):
         print "\n{}".format(inspect.stack()[0][3])
         #Normalize
         Y = Y/Y.max()
-        white_var = 0.001
+        white_var = 1e-6
         kernel = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         laplace_likelihood = GPy.likelihoods.Laplace(Y.copy(), model)
         m = GPy.models.GPRegression(X.copy(), Y.copy(), kernel, likelihood=laplace_likelihood)
@@ -490,12 +503,13 @@ class TestNoiseModels(object):
             m[name] = param_vals[param_num]
             constraints[param_num](name, m)
 
+        print m
         m.randomize()
-        m.optimize(max_iters=8)
+        #m.optimize(max_iters=8)
         print m
         m.checkgrad(verbose=1, step=step)
-        if not m.checkgrad(step=step):
-            m.checkgrad(verbose=1, step=step)
+        #if not m.checkgrad(step=step):
+            #m.checkgrad(verbose=1, step=step)
             #import ipdb; ipdb.set_trace()
             #NOTE this test appears to be stochastic for some likelihoods (student t?)
             # appears to all be working in test mode right now...
@@ -509,7 +523,7 @@ class TestNoiseModels(object):
         print "\n{}".format(inspect.stack()[0][3])
         #Normalize
         Y = Y/Y.max()
-        white_var = 0.001
+        white_var = 1e-6
         kernel = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         ep_likelihood = GPy.likelihoods.EP(Y.copy(), model)
         m = GPy.models.GPRegression(X.copy(), Y.copy(), kernel, likelihood=ep_likelihood)
@@ -578,6 +592,95 @@ class LaplaceTests(unittest.TestCase):
         grad.randomize()
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
+
+    #@unittest.skip('Not working yet, needs to be checked')
+    def test_laplace_log_likelihood(self):
+        debug = False
+        real_std = 0.1
+        initial_var_guess = 0.5
+
+        #Start a function, any function
+        X = np.linspace(0.0, np.pi*2, 100)[:, None]
+        Y = np.sin(X) + np.random.randn(*X.shape)*real_std
+        Y = Y/Y.max()
+        #Yc = Y.copy()
+        #Yc[75:80] += 1
+        kernel1 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
+        kernel2 = kernel1.copy()
+
+        m1 = GPy.models.GPRegression(X, Y.copy(), kernel=kernel1)
+        m1.constrain_fixed('white', 1e-6)
+        m1['noise'] = initial_var_guess
+        m1.constrain_bounded('noise', 1e-4, 10)
+        m1.constrain_bounded('rbf', 1e-4, 10)
+        m1.ensure_default_constraints()
+        m1.randomize()
+
+        gauss_distr = GPy.likelihoods.gaussian(variance=initial_var_guess, D=1, N=Y.shape[0])
+        laplace_likelihood = GPy.likelihoods.Laplace(Y.copy(), gauss_distr)
+        m2 = GPy.models.GPRegression(X, Y.copy(), kernel=kernel2, likelihood=laplace_likelihood)
+        m2.ensure_default_constraints()
+        m2.constrain_fixed('white', 1e-6)
+        m2.constrain_bounded('rbf', 1e-4, 10)
+        m2.constrain_bounded('noise', 1e-4, 10)
+        m2.randomize()
+
+        if debug:
+            print m1
+            print m2
+        optimizer = 'scg'
+        print "Gaussian"
+        m1.optimize(optimizer, messages=debug)
+        print "Laplace Gaussian"
+        m2.optimize(optimizer, messages=debug)
+        if debug:
+            print m1
+            print m2
+
+        m2._set_params(m1._get_params())
+
+        #Predict for training points to get posterior mean and variance
+        post_mean, post_var, _, _ = m1.predict(X)
+        post_mean_approx, post_var_approx, _, _ = m2.predict(X)
+
+        if debug:
+            import pylab as pb
+            pb.figure(5)
+            pb.title('posterior means')
+            pb.scatter(X, post_mean, c='g')
+            pb.scatter(X, post_mean_approx, c='r', marker='x')
+
+            pb.figure(6)
+            pb.title('plot_f')
+            m1.plot_f(fignum=6)
+            m2.plot_f(fignum=6)
+            fig, axes = pb.subplots(2, 1)
+            fig.suptitle('Covariance matricies')
+            a1 = pb.subplot(121)
+            a1.matshow(m1.likelihood.covariance_matrix)
+            a2 = pb.subplot(122)
+            a2.matshow(m2.likelihood.covariance_matrix)
+
+            pb.figure(8)
+            pb.scatter(X, m1.likelihood.Y, c='g')
+            pb.scatter(X, m2.likelihood.Y, c='r', marker='x')
+
+
+
+        #Check Y's are the same
+        np.testing.assert_almost_equal(Y, m2.likelihood.Y, decimal=5)
+        #Check marginals are the same
+        np.testing.assert_almost_equal(m1.log_likelihood(), m2.log_likelihood(), decimal=2)
+        #Check marginals are the same with random
+        m1.randomize()
+        m2._set_params(m1._get_params())
+        np.testing.assert_almost_equal(m1.log_likelihood(), m2.log_likelihood(), decimal=2)
+
+        #Check they are checkgradding
+        #m1.checkgrad(verbose=1)
+        #m2.checkgrad(verbose=1)
+        self.assertTrue(m1.checkgrad())
+        self.assertTrue(m2.checkgrad())
 
 if __name__ == "__main__":
     print "Running unit tests"

@@ -1,102 +1,107 @@
-GPy.core package
-================
+core Package
+============
 
-Submodules
-----------
+:mod:`core` Package
+-------------------
 
-GPy.core.domains module
------------------------
+.. automodule:: GPy.core
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`domains` Module
+---------------------
 
 .. automodule:: GPy.core.domains
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.core.fitc module
---------------------
+:mod:`fitc` Module
+------------------
 
 .. automodule:: GPy.core.fitc
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.core.gp module
-------------------
+:mod:`gp` Module
+----------------
 
 .. automodule:: GPy.core.gp
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.core.gp_base module
------------------------
+:mod:`gp_base` Module
+---------------------
 
 .. automodule:: GPy.core.gp_base
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.core.mapping module
------------------------
+:mod:`mapping` Module
+---------------------
 
 .. automodule:: GPy.core.mapping
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.core.model module
----------------------
+:mod:`model` Module
+-------------------
 
 .. automodule:: GPy.core.model
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.core.parameterized module
------------------------------
+:mod:`parameterized` Module
+---------------------------
 
 .. automodule:: GPy.core.parameterized
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.core.priors module
-----------------------
+:mod:`priors` Module
+--------------------
 
 .. automodule:: GPy.core.priors
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.core.sparse_gp module
--------------------------
+:mod:`sparse_gp` Module
+-----------------------
 
 .. automodule:: GPy.core.sparse_gp
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.core.svigp module
----------------------
+:mod:`svigp` Module
+-------------------
 
 .. automodule:: GPy.core.svigp
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.core.transformations module
--------------------------------
+:mod:`transformations` Module
+-----------------------------
 
 .. automodule:: GPy.core.transformations
     :members:
     :undoc-members:
     :show-inheritance:
 
+:mod:`variational` Module
+-------------------------
 
-Module contents
----------------
-
-.. automodule:: GPy.core
+.. automodule:: GPy.core.variational
     :members:
     :undoc-members:
     :show-inheritance:
+

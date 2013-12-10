@@ -31,7 +31,6 @@ class SVIGP(GPBase):
 
     """
 
-
     def __init__(self, X, likelihood, kernel, Z, q_u=None, batchsize=10, X_variance=None):
         GPBase.__init__(self, X, likelihood, kernel, normalize_X=False)
         self.batchsize=batchsize
@@ -433,7 +432,7 @@ class SVIGP(GPBase):
             else:
                 return mu, diag_var[:,None]
 
-    def predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
+    def predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False, sampling=False, num_samples=15000):
         # normalize X values
         Xnew = (Xnew.copy() - self._Xoffset) / self._Xscale
         if X_variance_new is not None:
@@ -443,7 +442,7 @@ class SVIGP(GPBase):
         mu, var = self._raw_predict(Xnew, X_variance_new, full_cov=full_cov, which_parts=which_parts)
 
         # now push through likelihood
-        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov)
+        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, sampling=sampling, num_samples=num_samples)
 
         return mean, var, _025pm, _975pm
 

@@ -80,7 +80,7 @@ double ln_diff_erf(double x0, double x1){
   else //x0 and x1 non-positive
     return log(erfcx(-x0)-erfcx(-x1)*exp(x0*x0 - x1*x1))-x0*x0;
 }
-
+// TODO: For all these computations of h things are very efficient at the moment. Need to recode sympykern to allow the precomputations to take place and all the gradients to be computed in one function. Not sure of best way forward for that yet. Neil
 double h(double t, double tprime, double d_i, double d_j, double l){
   // Compute the h function for the sim covariance.
   double half_l_di = 0.5*l*d_i;
@@ -170,9 +170,27 @@ double dh_dl(double t, double tprime, double d_i, double d_j, double l){
 }
 
 double dh_dt(double t, double tprime, double d_i, double d_j, double l){
-  return 0.0;
+  // compute gradient of h function with respect to t.
+  double diff_t = t - tprime;
+  double half_l_di = 0.5*l*d_i;
+  double arg_1 = half_l_di + tprime/l;
+  double arg_2 = half_l_di - diff_t/l;
+  double ln_part_1 = ln_diff_erf(arg_1, arg_2);
+  arg_2 = half_l_di - t/l;
+  double ln_part_2 = ln_diff_erf(half_l_di, arg_2);
+  
+  return (d_i*exp(ln_part_2-d_i*t - d_j*tprime) - d_i*exp(ln_part_1-d_i*diff_t) + 2*exp(-d_i*diff_t - pow(half_l_di - diff_t/l, 2))/(sqrt(M_PI)*l) - 2*exp(-d_i*t - d_j*tprime - pow(half_l_di - t/l,2))/(sqrt(M_PI)*l))*exp(half_l_di*half_l_di)/(d_i + d_j);
 }
 
 double dh_dtprime(double t, double tprime, double d_i, double d_j, double l){
-  return 0.0;
+  // compute gradient of h function with respect to tprime.
+  double diff_t = t - tprime;
+  double half_l_di = 0.5*l*d_i;
+  double arg_1 = half_l_di + tprime/l;
+  double arg_2 = half_l_di - diff_t/l;
+  double ln_part_1 = ln_diff_erf(arg_1, arg_2);
+  arg_2 = half_l_di - t/l;
+  double ln_part_2 = ln_diff_erf(half_l_di, arg_2);
+
+  return (d_i*exp(ln_part_1-d_i*diff_t) + d_j*exp(ln_part_2-d_i*t - d_j*tprime) + (-2*exp(-pow(half_l_di - diff_t/l,2)) + 2*exp(-pow(half_l_di + tprime/l,2)))*exp(-d_i*diff_t)/(sqrt(M_PI)*l))*exp(half_l_di*half_l_di)/(d_i + d_j);
 }

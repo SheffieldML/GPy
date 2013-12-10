@@ -15,6 +15,7 @@ import scipy as sp
 from likelihood import likelihood
 from ..util.linalg import mdot, jitchol, pddet, dpotrs
 from functools import partial as partial_func
+import warnings
 
 class Laplace(likelihood):
     """Laplace approximation to a posterior"""
@@ -64,12 +65,12 @@ class Laplace(likelihood):
         self.YYT = None
 
         self.old_Ki_f = None
+        self.bad_fhat = False
 
-    def predictive_values(self, mu, var, full_cov):
+    def predictive_values(self,mu,var,full_cov,**noise_args):
         if full_cov:
-            raise NotImplementedError("Cannot make correlated predictions\
-                    with an Laplace likelihood")
-        return self.noise_model.predictive_values(mu, var)
+            raise NotImplementedError, "Cannot make correlated predictions with an EP likelihood"
+        return self.noise_model.predictive_values(mu,var,**noise_args)
 
     def log_predictive_density(self, y_test, mu_star, var_star):
         """
@@ -199,15 +200,16 @@ class Laplace(likelihood):
         Y_tilde = Wi*self.Ki_f + self.f_hat
 
         self.Wi_K_i = self.W12BiW12
-        self.ln_det_Wi_K = pddet(self.Sigma_tilde + self.K)
-        self.lik = self.noise_model.logpdf(self.f_hat, self.data, extra_data=self.extra_data)
-        self.y_Wi_Ki_i_y = mdot(Y_tilde.T, self.Wi_K_i, Y_tilde)
+        ln_det_Wi_K = pddet(self.Sigma_tilde + self.K)
+        lik = self.noise_model.logpdf(self.f_hat, self.data, extra_data=self.extra_data)
+        y_Wi_K_i_y = mdot(Y_tilde.T, self.Wi_K_i, Y_tilde)
 
-        Z_tilde = (+ self.lik
+        Z_tilde = (+ lik
                    - 0.5*self.ln_B_det
-                   + 0.5*self.ln_det_Wi_K
+                   + 0.5*ln_det_Wi_K
                    - 0.5*self.f_Ki_f
-                   + 0.5*self.y_Wi_Ki_i_y
+                   + 0.5*y_Wi_K_i_y
+                   + self.NORMAL_CONST
                   )
 
         #Convert to float as its (1, 1) and Z must be a scalar
@@ -247,7 +249,10 @@ class Laplace(likelihood):
         #At this point get the hessian matrix (or vector as W is diagonal)
         self.W = -self.noise_model.d2logpdf_df2(self.f_hat, self.data, extra_data=self.extra_data)
 
-        #TODO: Could save on computation when using rasm by returning these, means it isn't just a "mode finder" though
+        if not self.noise_model.log_concave:
+            #print "Under 1e-10: {}".format(np.sum(self.W < 1e-6))
+            self.W[self.W < 1e-6] = 1e-6  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+
         self.W12BiW12, self.ln_B_det = self._compute_B_statistics(self.K, self.W, np.eye(self.N))
 
         self.Ki_f = self.Ki_f
@@ -268,7 +273,7 @@ class Laplace(likelihood):
         :returns: (W12BiW12, ln_B_det)
         """
         if not self.noise_model.log_concave:
-            #print "Under 1e-10: {}".format(np.sum(W < 1e-10))
+            #print "Under 1e-10: {}".format(np.sum(W < 1e-6))
             W[W < 1e-6] = 1e-6  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                 # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                 # To cause the posterior to become less certain than the prior and likelihood,
@@ -278,16 +283,13 @@ class Laplace(likelihood):
         #W is diagonal so its sqrt is just the sqrt of the diagonal elements
         W_12 = np.sqrt(W)
         B = np.eye(self.N) + W_12*K*W_12.T
-        try:
-            L = jitchol(B)
-        except:
-            import ipdb; ipdb.set_trace()
+        L = jitchol(B)
 
-        W12BiW12 = W_12*dpotrs(L, np.asfortranarray(W_12*a), lower=1)[0]
+        W12BiW12a = W_12*dpotrs(L, np.asfortranarray(W_12*a), lower=1)[0]
         ln_B_det = 2*np.sum(np.log(np.diag(L)))
-        return W12BiW12, ln_B_det
+        return W12BiW12a, ln_B_det
 
-    def rasm_mode(self, K, MAX_ITER=30):
+    def rasm_mode(self, K, MAX_ITER=40):
         """
         Rasmussen's numerically stable mode finding
         For nomenclature see Rasmussen & Williams 2006
@@ -302,9 +304,10 @@ class Laplace(likelihood):
         """
         #old_Ki_f = np.zeros((self.N, 1))
 
-        #Start f's at zero originally
-        if self.old_Ki_f is None:
-            old_Ki_f = np.zeros((self.N, 1))
+        #Start f's at zero originally of if we have gone off track, try restarting
+        if self.old_Ki_f is None or self.bad_fhat:
+            old_Ki_f = np.random.rand(self.N, 1)/50.0
+            #old_Ki_f = self.Y
             f = np.dot(K, old_Ki_f)
         else:
             #Start at the old best point
@@ -318,7 +321,7 @@ class Laplace(likelihood):
             return -0.5*np.dot(Ki_f.T, f) + self.noise_model.logpdf(f, self.data, extra_data=self.extra_data)
 
         difference = np.inf
-        epsilon = 1e-5
+        epsilon = 1e-7
         #step_size = 1
         #rs = 0
         i = 0
@@ -349,7 +352,8 @@ class Laplace(likelihood):
             #Find the stepsize that minimizes the objective function using a brent line search
             #The tolerance and maxiter matter for speed! Seems to be best to keep them low and make more full
             #steps than get this exact then make a step, if B was bigger it might be the other way around though
-            new_obj = sp.optimize.minimize_scalar(i_o, method='brent', tol=1e-4, options={'maxiter':5}).fun
+            #new_obj = sp.optimize.minimize_scalar(i_o, method='brent', tol=1e-4, options={'maxiter':5}).fun
+            new_obj = sp.optimize.brent(i_o, tol=1e-4, maxiter=10)
             f = self.tmp_f.copy()
             Ki_f = self.tmp_Ki_f.copy()
 
@@ -380,14 +384,20 @@ class Laplace(likelihood):
 
             #difference = abs(new_obj - old_obj)
             #old_obj = new_obj.copy()
-            #difference = np.abs(np.sum(f - f_old))
-            difference = np.abs(np.sum(Ki_f - old_Ki_f))
+            difference = np.abs(np.sum(f - f_old)) + np.abs(np.sum(Ki_f - old_Ki_f))
+            #difference = np.abs(np.sum(Ki_f - old_Ki_f))/np.float(self.N)
             old_Ki_f = Ki_f.copy()
             i += 1
 
         self.old_Ki_f = old_Ki_f.copy()
+
+        #Warn of bad fits
         if difference > epsilon:
-            print "Not perfect f_hat fit difference: {}".format(difference)
+            self.bad_fhat = True
+            warnings.warn("Not perfect f_hat fit difference: {}".format(difference))
+        elif self.bad_fhat:
+            self.bad_fhat = False
+            warnings.warn("f_hat now perfect again")
 
         self.Ki_f = Ki_f
         return f

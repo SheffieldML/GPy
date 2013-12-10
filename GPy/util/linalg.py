@@ -12,6 +12,7 @@ import ctypes
 from ctypes import byref, c_char, c_int, c_double # TODO
 # import scipy.lib.lapack
 import scipy
+import warnings
 
 if np.all(np.float64((scipy.__version__).split('.')[:2]) >= np.array([0, 12])):
     import scipy.linalg.lapack as lapack
@@ -25,6 +26,9 @@ try:
     assert hasattr(_blaslib, 'dsyr_')
 except AssertionError:
     _blas_available = False
+except AttributeError as e:
+    _blas_available = False
+    warnings.warn("warning: caught this exception:" + str(e))
 
 def dtrtrs(A, B, lower=0, trans=0, unitdiag=0):
     """

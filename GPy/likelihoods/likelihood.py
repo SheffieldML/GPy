@@ -15,15 +15,26 @@ from ..core.parameterized import Parameterized
 
 class Likelihood(Parameterized):
     """
-    Likelihood base class
+    Likelihood base class, used to defing p(y|f). 
+
+    All instances use _inverse_ link functions, which can be swapped out. It is
+    expected that inherriting classes define a default inverse link function
 
     To use this class, inherrit and define missing functionality. 
 
-    To enable use with EP, ...
+    Inherriting classes *must* implement:
+       pdf_link : a bound method which turns the output of the link function into the pdf
+       logpdf_link : the logarithm of the above
 
-    To enable use with Laplace approximation, ...
+    To enable use with EP, inherriting classes *must* define:
+       TODO: a suitable derivative function for any parameters of the class
+    It is also desirable to define:
+       moments_match_ep : a function to compute the EP moments If this isn't defined, the moments will be computed using 1D quadrature. 
 
-    For exact Gaussian inference, define ...
+    To enable use with Laplace approximation, inherriting classes *must* define:
+       Some derivative functions *AS TODO*
+
+    For exact Gaussian inference, define *JH TODO*
 
     """
     def __init__(self, gp_link, name):

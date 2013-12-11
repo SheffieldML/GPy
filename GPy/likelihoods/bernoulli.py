@@ -18,6 +18,9 @@ class Bernoulli(Likelihood):
     .. Note::
         Y is expected to take values in {-1, 1}
         Probit likelihood usually used
+
+    .. See also::
+        likelihood.py, for the parent class
     """
     def __init__(self, gp_link=None, analytical_mean=False, analytical_variance=False):
         super(Bernoulli, self).__init__(gp_link, analytical_mean, analytical_variance)
@@ -38,7 +41,7 @@ class Bernoulli(Likelihood):
         Y_prep[Y.flatten() == 0] = -1
         return Y_prep
 
-    def _moments_match_analytical(self, data_i, tau_i, v_i):
+    def moments_match_ep(self, data_i, tau_i, v_i):
         """
         Moments match of the marginal approximation in EP algorithm
 

@@ -1,8 +1,7 @@
+# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
 '''
-Created on 4 Jun 2013
-
-@author: maxz
-
 (Hyper-)Parameter domains defined for :py:mod:`~GPy.core.priors` and :py:mod:`~GPy.kern`.
 These domains specify the legitimate realm of the parameters to live in.
 

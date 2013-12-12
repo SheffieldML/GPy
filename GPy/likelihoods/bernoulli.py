@@ -22,8 +22,12 @@ class Bernoulli(Likelihood):
     .. See also::
         likelihood.py, for the parent class
     """
-    def __init__(self, gp_link=None, analytical_mean=False, analytical_variance=False):
-        super(Bernoulli, self).__init__(gp_link, analytical_mean, analytical_variance)
+    def __init__(self, gp_link=None):
+        if gp_link is None:
+            gp_link = link_functions.Probit()
+
+        super(Bernoulli, self).__init__(gp_link, 'Bernoulli')
+
         if isinstance(gp_link , (link_functions.Heaviside, link_functions.Probit)):
             self.log_concave = True
 

@@ -1,8 +1,6 @@
-'''
-Created on 10 Apr 2013
+# ## Copyright (c) 2013, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-@author: Max Zwiessele
-'''
 from GPy.core import Model
 from GPy.core import SparseGP
 from GPy.util.linalg import PCA

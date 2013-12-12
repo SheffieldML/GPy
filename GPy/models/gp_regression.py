@@ -22,6 +22,7 @@ class GPRegression(GP):
     """
 
     def __init__(self, X, Y, kernel=None):
+
         if kernel is None:
             kernel = kern.rbf(X.shape[1])
 

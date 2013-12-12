@@ -1,8 +1,6 @@
-'''
-Created on 17 Jul 2013
+# ## Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-@author: maxz
-'''
 from GPy.core.model import Model
 import itertools
 import numpy

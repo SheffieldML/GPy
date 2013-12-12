@@ -78,6 +78,8 @@ class SVIGP(GPBase):
         self._param_steplength_trace = []
         self._vb_steplength_trace = []
 
+        self.ensure_default_constraints()
+
     def getstate(self):
         steplength_params = [self.hbar_t, self.tau_t, self.gbar_t, self.gbar_t1, self.gbar_t2, self.hbar_tp, self.tau_tp, self.gbar_tp, self.adapt_param_steplength, self.adapt_vb_steplength, self.vb_steplength, self.param_steplength]
         return GPBase.getstate(self) + \

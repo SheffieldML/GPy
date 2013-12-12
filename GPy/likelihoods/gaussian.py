@@ -1,6 +1,17 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
+#TODO
+"""
+A lot of this code assumes that the link functio nis the identity. 
+
+I think laplace code is okay, but I'm quite sure that the EP moments will only work if the link is identity. 
+
+Furthermore, exact Guassian inference can only be done for the identity link, so we should be asserting so for all calls which relate to that.
+
+James 11/12/13
+"""
+
 import numpy as np
 from scipy import stats, special
 from GPy.util.univariate_Gaussian import std_norm_pdf, std_norm_cdf
@@ -69,12 +80,14 @@ class Gaussian(Likelihood):
         Z_hat = 1./np.sqrt(2.*np.pi*sum_var)*np.exp(-.5*(data_i - v_i/tau_i)**2./sum_var)
         return Z_hat, mu_hat, sigma2_hat
 
-    def _predictive_mean(self, mu, sigma):
-        new_sigma2 = self.predictive_variance(mu, sigma)
-        return new_sigma2*(mu/sigma**2 + self.gp_link.transf(mu)/self.variance)
+    def predictive_mean(self, mu, sigma):
+        #new_sigma2 = self.predictive_variance(mu, sigma)
+        #return new_sigma2*(mu/sigma**2 + self.gp_link.transf(mu)/self.variance)
+        return mu
 
-    def _predictive_variance(self, mu, sigma, predictive_mean=None):
-        return 1./(1./self.variance + 1./sigma**2)
+    def predictive_variance(self, mu, sigma, predictive_mean=None):
+        #what on earth was the sum of precisions doing here? JH
+        return self.variance + sigma**2
 
     def pdf_link(self, link_f, y, extra_data=None):
         """

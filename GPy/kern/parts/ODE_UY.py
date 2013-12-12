@@ -7,7 +7,7 @@ import numpy as np
 
 def index_to_slices(index):
     """
-    take a numpy array of integers (index) and return a  nested list of slices such that the slices describe the start, stop points for each integer in the index. 
+    take a numpy array of integers (index) and return a  nested list of slices such that the slices describe the start, stop points for each integer in the index.
 
     e.g.
     >>> index = np.asarray([0,0,0,1,1,1,2,2,2])
@@ -38,7 +38,7 @@ class ODE_UY(Kernpart):
     :param input_dim: the number of input dimension, has to be equal to one
     :type input_dim: int
     :param input_lengthU: the number of input U length
-    :type input_dim: int   
+    :type input_dim: int
     :param varianceU: variance of the driving GP
     :type varianceU: float
     :param lengthscaleU: lengthscale of the driving GP  (sqrt(3)/lengthscaleU)
@@ -96,7 +96,7 @@ class ODE_UY(Kernpart):
     def K(self, X, X2, target):
         """Compute the covariance matrix between X and X2."""
         # model :   a * dy/dt + b * y = U
-        #lu=sqrt(3)/theta1  ly=1/theta2  theta2= a/b :thetay   sigma2=1/(2ab) :sigmay   
+        #lu=sqrt(3)/theta1  ly=1/theta2  theta2= a/b :thetay   sigma2=1/(2ab) :sigmay
 
         X,slices = X[:,:-1],index_to_slices(X[:,-1])
         if X2 is None:
@@ -110,14 +110,14 @@ class ODE_UY(Kernpart):
         ly=1/self.lengthscaleY
         lu=np.sqrt(3)/self.lengthscaleU
         #iu=self.input_lengthU  #dimention of U
-        
+
         Vu=self.varianceU
         Vy=self.varianceY
 
         kuu = lambda dist:Vu * (1 + lu* np.abs(dist)) * np.exp(-lu * np.abs(dist))
 
         k1 = lambda dist:np.exp(-ly*np.abs(dist))*(2*lu+ly)/(lu+ly)**2
-        k2 = lambda dist:(np.exp(-lu*dist)*(ly-2*lu+lu*ly*dist-lu**2*dist) + np.exp(-ly*dist)*(2*lu-ly) ) / (ly-lu)**2 
+        k2 = lambda dist:(np.exp(-lu*dist)*(ly-2*lu+lu*ly*dist-lu**2*dist) + np.exp(-ly*dist)*(2*lu-ly) ) / (ly-lu)**2
         k3 = lambda dist:np.exp(-lu*dist) * ( (1+lu*dist)/(lu+ly) + (lu)/(lu+ly)**2 )
         kyy = lambda dist:Vu*Vy*(k1(dist) + k2(dist) + k3(dist))
 
@@ -127,7 +127,7 @@ class ODE_UY(Kernpart):
 
         kuyp = lambda dist:Vu*Vy*(kyu3(dist))       #t>0 kuy
         kuyn = lambda dist:Vu*Vy*(k1(dist)+k2(dist))      #t<0 kuy
-        
+
         for i, s1 in enumerate(slices):
             for j, s2 in enumerate(slices2):
                 for ss1 in s1:
@@ -160,22 +160,22 @@ class ODE_UY(Kernpart):
         lu=np.sqrt(3)/self.lengthscaleU
         #ly=self.lengthscaleY
         #lu=self.lengthscaleU
-        
+
         k1 = (2*lu+ly)/(lu+ly)**2
-        k2 = (ly-2*lu + 2*lu-ly ) / (ly-lu)**2 
-        k3 = 1/(lu+ly) + (lu)/(lu+ly)**2 
+        k2 = (ly-2*lu + 2*lu-ly ) / (ly-lu)**2
+        k3 = 1/(lu+ly) + (lu)/(lu+ly)**2
 
         slices = index_to_slices(X[:,-1])
 
         for i, ss1 in enumerate(slices):
             for s1 in ss1:
                 if i==0:
-                    target[s1]+= self.varianceU 
+                    target[s1]+= self.varianceU
                 elif i==1:
                     target[s1]+= self.varianceU*self.varianceY*(k1+k2+k3)
                 else:
                     raise ValueError, "invalid input/output index"
-        
+
         #target[slices[0][0]]+= self.varianceU   #matern32 diag
         #target[slices[1][0]]+= self.varianceU*self.varianceY*(k1+k2+k3)  #  diag
 
@@ -207,13 +207,13 @@ class ODE_UY(Kernpart):
         #t2=1/ly
         #dk1theta1=np.exp(-dist*ly)*t2*( (2*c*t2+2*t1)/(c*t2+t1)**2 -2*(2*c*t2*t1+t1**2)/(c*t2+t1)**3   )
 
-        dk2theta1 = lambda dist: 1*( 
-            np.exp(-lu*dist)*dist*(-ly+2*lu-lu*ly*dist+dist*lu**2)*(ly-lu)**(-2) + np.exp(-lu*dist)*(-2+ly*dist-2*dist*lu)*(ly-lu)**(-2) 
-            +np.exp(-dist*lu)*(ly-2*lu+ly*lu*dist-dist*lu**2)*2*(ly-lu)**(-3) 
+        dk2theta1 = lambda dist: 1*(
+            np.exp(-lu*dist)*dist*(-ly+2*lu-lu*ly*dist+dist*lu**2)*(ly-lu)**(-2) + np.exp(-lu*dist)*(-2+ly*dist-2*dist*lu)*(ly-lu)**(-2)
+            +np.exp(-dist*lu)*(ly-2*lu+ly*lu*dist-dist*lu**2)*2*(ly-lu)**(-3)
             +np.exp(-dist*ly)*2*(ly-lu)**(-2)
             +np.exp(-dist*ly)*2*(2*lu-ly)*(ly-lu)**(-3)
             )
-      
+
         dk3theta1 = lambda dist: np.exp(-dist*lu)*(lu+ly)**(-2)*((2*lu+ly+dist*lu**2+lu*ly*dist)*(-dist-2/(lu+ly))+2+2*lu*dist+ly*dist)
 
         dktheta1 = lambda dist: self.varianceU*self.varianceY*(dk1theta1+dk2theta1+dk3theta1)
@@ -235,7 +235,7 @@ class ODE_UY(Kernpart):
 
 
         k1 = lambda dist: np.exp(-ly*dist)*(2*lu+ly)/(lu+ly)**2
-        k2 = lambda dist: (np.exp(-lu*dist)*(ly-2*lu+lu*ly*dist-lu**2*dist) + np.exp(-ly*dist)*(2*lu-ly) ) / (ly-lu)**2 
+        k2 = lambda dist: (np.exp(-lu*dist)*(ly-2*lu+lu*ly*dist-lu**2*dist) + np.exp(-ly*dist)*(2*lu-ly) ) / (ly-lu)**2
         k3 = lambda dist: np.exp(-lu*dist) * ( (1+lu*dist)/(lu+ly) + (lu)/(lu+ly)**2 )
         dkdvar = k1+k2+k3
 
@@ -246,12 +246,16 @@ class ODE_UY(Kernpart):
                     for ss2 in s2:
                         if i==0 and j==0:
                             #target[ss1,ss2] = kuu(np.abs(rdist[ss1,ss2]))
+                            pass
                         elif i==0 and j==1:
                             #target[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , kuyp(np.abs(rdist[ss1,ss2])), kuyn(np.abs(rdist[s1[0],s2[0]]) )   )
+                            pass
                         elif i==1 and j==1:
                             #target[ss1,ss2] = kyy(np.abs(rdist[ss1,ss2]))
+                            pass
                         else:
                             #target[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , kyup(np.abs(rdist[ss1,ss2])), kyun(np.abs(rdist[s1[0],s2[0]]) )   )
+                            pass
 
 
 

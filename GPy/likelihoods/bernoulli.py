@@ -1,4 +1,4 @@
-# Copyright (c) 2012, 2013 The GPy authors
+# Copyright (c) 2012, 2013 The GPy authors (see AUTHORS.txt)
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
@@ -16,8 +16,8 @@ class Bernoulli(Likelihood):
         p(y_{i}|\\lambda(f_{i})) = \\lambda(f_{i})^{y_{i}}(1-f_{i})^{1-y_{i}}
 
     .. Note::
-        Y is expected to take values in {-1, 1}
-        Probit likelihood usually used
+        Y is expected to take values in {-1, 1} TODO: {0, 1}??
+        link function should have the domain [0, 1], e.g. probit (default) or Heaviside
 
     .. See also::
         likelihood.py, for the parent class
@@ -68,9 +68,8 @@ class Bernoulli(Likelihood):
             N = std_norm_pdf(a)
             mu_hat = v_i/tau_i + sign*N/Z_hat/np.sqrt(tau_i)
             sigma2_hat = (1. - a*N/Z_hat - np.square(N/Z_hat))/tau_i
-            if np.any(np.isnan([Z_hat, mu_hat, sigma2_hat])):
-                stop
         else:
+            #TODO: do we want to revert to numerical quadrature here?
             raise ValueError("Exact moment matching not available for link {}".format(self.gp_link.__name__))
 
         return Z_hat, mu_hat, sigma2_hat
@@ -197,19 +196,6 @@ class Bernoulli(Likelihood):
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         d3logpdf_dlink3 = 2*(y/(link_f**3) - (1-y)/((1-link_f)**3))
         return d3logpdf_dlink3
-
-    def _mean(self, gp):
-        """
-        Mass (or density) function
-        """
-        return self.gp_link.transf(gp)
-
-    def _variance(self, gp):
-        """
-        Mass (or density) function
-        """
-        p = self.gp_link.transf(gp)
-        return p*(1.-p)
 
     def samples(self, gp):
         """

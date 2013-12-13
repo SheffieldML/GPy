@@ -7,6 +7,7 @@ import numpy as np
 from scipy import weave
 from ...util.linalg import tdot
 from ...util.misc import fast_array_equal
+from ...util.config import *
 
 class RBF(Kernpart):
     """
@@ -57,10 +58,25 @@ class RBF(Kernpart):
         self._X, self._X2, self._params = np.empty(shape=(3, 1))
 
         # a set of optional args to pass to weave
-        self.weave_options = {'headers'           : ['<omp.h>'],
-                         'extra_compile_args': ['-fopenmp -O3'], # -march=native'],
-                         'extra_link_args'   : ['-lgomp']}
+        weave_options_openmp = {'headers'           : ['<omp.h>'],
+                                'extra_compile_args': ['-fopenmp -O3'],
+                                'extra_link_args'   : ['-lgomp'],
+                                'libraries': ['gomp']}
+        weave_options_noopenmp = {'extra_compile_args': ['-O3']}
 
+
+
+        if config.getboolean('parallel', 'openmp'):
+            self.weave_options = weave_options_openmp
+            self.weave_support_code =  """
+            #include <omp.h>
+            #include <math.h>
+            """
+        else:
+            self.weave_options = weave_options_noopenmp
+            self.weave_support_code = """
+            #include <math.h>
+            """
 
 
     def _get_params(self):
@@ -110,7 +126,7 @@ class RBF(Kernpart):
                   target(q+1) += var_len3(q)*tmp;
                 }
                 """
-                num_data, num_inducing, input_dim = X.shape[0], X.shape[0], self.input_dim
+                num_data, num_inducing, input_dim = int(X.shape[0]), int(X.shape[0]), int(self.input_dim)
                 weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'X2', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
             else:
                 code = """
@@ -126,7 +142,7 @@ class RBF(Kernpart):
                   target(q+1) += var_len3(q)*tmp;
                 }
                 """
-                num_data, num_inducing, input_dim = X.shape[0], X2.shape[0], self.input_dim
+                num_data, num_inducing, input_dim = int(X.shape[0]), int(X2.shape[0]), int(self.input_dim)
                 # [np.add(target[1+q:2+q],var_len3[q]*np.sum(dvardLdK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.input_dim)]
                 weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'X2', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
         else:
@@ -170,7 +186,7 @@ class RBF(Kernpart):
         self._psi_computations(Z, mu, S)
         target[0] += np.sum(dL_dpsi1 * self._psi1 / self.variance)
         d_length = self._psi1[:,:,None] * ((self._psi1_dist_sq - 1.)/(self.lengthscale*self._psi1_denom) +1./self.lengthscale)
-        dpsi1_dlength = d_length * dL_dpsi1[:, :, None]
+        dpsi1_dlength = d_length * np.atleast_3d(dL_dpsi1)
         if not self.ARD:
             target[1] += dpsi1_dlength.sum()
         else:
@@ -192,12 +208,19 @@ class RBF(Kernpart):
         self._psi_computations(Z, mu, S)
         target += self._psi2
 
+    def _crossterm_mu_S(self, Z, mu, S):
+        # compute the crossterm expectation for K as the other kernel:
+        Sigma = 1./self.lengthscale2[None,None,:] + 1./S[:,None,:] # is independent across M, 
+        Sigma_tilde = (self.lengthscale2[None, :] + S)
+        M = (S*mu/Sigma_tilde)[:, None, :] + (self.lengthscale2[None,:]*Z)[None, :, :]/Sigma_tilde[:, None, :]
+        # make sure return is [N x M x Q]
+        return M, Sigma.repeat(Z.shape[0],1) 
+
     def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S, target):
         """Shape N,num_inducing,num_inducing,Ntheta"""
         self._psi_computations(Z, mu, S)
         d_var = 2.*self._psi2 / self.variance
         d_length = 2.*self._psi2[:, :, :, None] * (self._psi2_Zdist_sq * self._psi2_denom + self._psi2_mudist_sq + S[:, None, None, :] / self.lengthscale2) / (self.lengthscale * self._psi2_denom)
-
         target[0] += np.sum(dL_dpsi2 * d_var)
         dpsi2_dlength = d_length * dL_dpsi2[:, :, :, None]
         if not self.ARD:
@@ -280,17 +303,23 @@ class RBF(Kernpart):
         psi2 = np.empty((N, num_inducing, num_inducing))
 
         psi2_Zdist_sq = self._psi2_Zdist_sq
-        _psi2_denom = self._psi2_denom.squeeze().reshape(N, self.input_dim)
-        half_log_psi2_denom = 0.5 * np.log(self._psi2_denom).squeeze().reshape(N, self.input_dim)
+        _psi2_denom = self._psi2_denom.squeeze().reshape(-1, input_dim)
+        half_log_psi2_denom = 0.5 * np.log(self._psi2_denom).squeeze().reshape(-1, input_dim)
         variance_sq = float(np.square(self.variance))
         if self.ARD:
             lengthscale2 = self.lengthscale2
         else:
             lengthscale2 = np.ones(input_dim) * self.lengthscale2
+
+        if config.getboolean('parallel', 'openmp'):
+            pragma_string = '#pragma omp parallel for private(tmp)'
+        else:
+            pragma_string = ''
+
         code = """
         double tmp;
 
-        #pragma omp parallel for private(tmp)
+        %s
         for (int n=0; n<N; n++){
             for (int m=0; m<num_inducing; m++){
                for (int mm=0; mm<(m+1); mm++){
@@ -320,13 +349,20 @@ class RBF(Kernpart):
             }
         }
 
-        """
+        """ % pragma_string
+
+        if config.getboolean('parallel', 'openmp'):
+            pragma_string = '#include <omp.h>'
+        else:
+            pragma_string = ''
 
         support_code = """
-        #include <omp.h>
+        %s
         #include <math.h>
-        """
-        weave.inline(code, support_code=support_code, libraries=['gomp'],
+        """ % pragma_string
+
+        N, num_inducing, input_dim = int(N), int(num_inducing), int(input_dim)
+        weave.inline(code, support_code=support_code,
                      arg_names=['N', 'num_inducing', 'input_dim', 'mu', 'Zhat', 'mudist_sq', 'mudist', 'lengthscale2', '_psi2_denom', 'psi2_Zdist_sq', 'psi2_exponent', 'half_log_psi2_denom', 'psi2', 'variance_sq'],
                      type_converters=weave.converters.blitz, **self.weave_options)
 

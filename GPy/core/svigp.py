@@ -18,33 +18,18 @@ class SVIGP(GPBase):
     Stochastic Variational inference in a Gaussian Process
 
     :param X: inputs
-    :type X: np.ndarray (N x Q)
+    :type X: np.ndarray (num_data x num_inputs)
     :param Y: observed data
-    :type Y: np.ndarray of observations (N x D)
-    :param batchsize: the size of a h
-
-    Additional kwargs are used as for a sparse GP. They include:
-
+    :type Y: np.ndarray of observations (num_data x output_dim)
+    :param batchsize: the size of a minibatch
     :param q_u: canonical parameters of the distribution squasehd into a 1D array
     :type q_u: np.ndarray
-    :param M: Number of inducing points (optional, default 10. Ignored if Z is not None)
-    :type M: int
     :param kernel: the kernel/covariance function. See link kernels
     :type kernel: a GPy kernel
-    :param Z: inducing inputs (optional, see note)
-    :type Z: np.ndarray (M x Q) | None
-    :param X_uncertainty: The uncertainty in the measurements of X (Gaussian variance)
-    :type X_uncertainty: np.ndarray (N x Q) | None
-    :param Zslices: slices for the inducing inputs (see slicing TODO: link)
-    :param M: Number of inducing points (optional, default 10. Ignored if Z is not None)
-    :type M: int
-    :param beta: noise precision. TODO: ignore beta if doing EP
-    :type beta: float
-    :param normalize_(X|Y): whether to normalize the data before computing (predictions will be in original scales)
-    :type normalize_(X|Y): bool
+    :param Z: inducing inputs
+    :type Z: np.ndarray (num_inducing x num_inputs)
 
     """
-
 
     def __init__(self, X, likelihood, kernel, Z, q_u=None, batchsize=10, X_variance=None):
         GPBase.__init__(self, X, likelihood, kernel, normalize_X=False)
@@ -452,7 +437,7 @@ class SVIGP(GPBase):
             else:
                 return mu, diag_var[:,None]
 
-    def predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
+    def predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False, sampling=False, num_samples=15000):
         # normalize X values
         Xnew = (Xnew.copy() - self._Xoffset) / self._Xscale
         if X_variance_new is not None:
@@ -462,7 +447,7 @@ class SVIGP(GPBase):
         mu, var = self._raw_predict(Xnew, X_variance_new, full_cov=full_cov, which_parts=which_parts)
 
         # now push through likelihood
-        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov)
+        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, sampling=sampling, num_samples=num_samples)
 
         return mean, var, _025pm, _975pm
 

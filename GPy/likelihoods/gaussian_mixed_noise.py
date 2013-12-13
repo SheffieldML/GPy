@@ -23,14 +23,14 @@ class Gaussian_Mixed_Noise(likelihood):
     :type normalize: False|True
     """
     def __init__(self, data_list, noise_params=None, normalize=True):
-        self.Nparams = len(data_list)
+        self.num_params = len(data_list)
         self.n_list = [data.size for data in data_list]
-        self.index = np.vstack([np.repeat(i,n)[:,None] for i,n in zip(range(self.Nparams),self.n_list)])
+        self.index = np.vstack([np.repeat(i,n)[:,None] for i,n in zip(range(self.num_params),self.n_list)])
 
         if noise_params is None:
-            noise_params = [1.] * self.Nparams
+            noise_params = [1.] * self.num_params
         else:
-            assert self.Nparams == len(noise_params), 'Number of noise parameters does not match the number of noise models.'
+            assert self.num_params == len(noise_params), 'Number of noise parameters does not match the number of noise models.'
 
         self.noise_model_list = [Gaussian(Y,variance=v,normalize = normalize) for Y,v in zip(data_list,noise_params)]
         self.n_params = [noise_model._get_params().size for noise_model in self.noise_model_list]

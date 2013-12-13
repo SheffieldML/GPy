@@ -3,20 +3,20 @@
 
 
 import numpy as np
-from ..core import SparseGP
+from ..core import FITC
 from .. import likelihoods
 from .. import kern
 from ..likelihoods import likelihood
 
-class SparseGPClassification(SparseGP):
+class FITCClassification(FITC):
     """
-    sparse Gaussian Process model for classification
+    FITC approximation for classification
 
-    This is a thin wrapper around the sparse_GP class, with a set of sensible defaults
+    This is a thin wrapper around the FITC class, with a set of sensible defaults
 
     :param X: input observations
     :param Y: observed values
-    :param likelihood: a GPy likelihood, defaults to Binomial with probit link_function
+    :param likelihood: a GPy likelihood, defaults to Bernoulli with probit link function
     :param kernel: a GPy kernel, defaults to rbf+white
     :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_X: False|True
@@ -28,10 +28,10 @@ class SparseGPClassification(SparseGP):
 
     def __init__(self, X, Y=None, likelihood=None, kernel=None, normalize_X=False, normalize_Y=False, Z=None, num_inducing=10):
         if kernel is None:
-            kernel = kern.rbf(X.shape[1])# + kern.white(X.shape[1],1e-3)
+            kernel = kern.rbf(X.shape[1]) + kern.white(X.shape[1],1e-3)
 
         if likelihood is None:
-            noise_model = likelihoods.binomial()
+            noise_model = likelihoods.bernoulli()
             likelihood = likelihoods.EP(Y, noise_model)
         elif Y is not None:
             if not all(Y.flatten() == likelihood.data.flatten()):
@@ -41,16 +41,7 @@ class SparseGPClassification(SparseGP):
             i = np.random.permutation(X.shape[0])[:num_inducing]
             Z = X[i].copy()
         else:
-            assert Z.shape[1] == X.shape[1]
+            assert Z.shape[1]==X.shape[1]
 
-        SparseGP.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X)
+        FITC.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X)
         self.ensure_default_constraints()
-
-    def getstate(self):
-        return SparseGP.getstate(self)
-
-
-    def setstate(self, state):
-        return SparseGP.setstate(self, state)
-
-    pass

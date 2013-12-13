@@ -18,8 +18,7 @@ class EP(likelihood):
         self.data = data
         self.num_data, self.output_dim = self.data.shape
         self.is_heteroscedastic = True
-        self.Nparams = 0
-        self._transf_data = self.noise_model._preprocess_values(data)
+        self.num_params = 0
 
         #Initial values - Likelihood approximation parameters:
         #p(y|f) = t(f|tau_tilde,v_tilde)
@@ -50,10 +49,26 @@ class EP(likelihood):
         self.VVT_factor = self.V
         self.trYYT = 0.
 
-    def predictive_values(self,mu,var,full_cov):
+    def predictive_values(self,mu,var,full_cov,**noise_args):
         if full_cov:
             raise NotImplementedError, "Cannot make correlated predictions with an EP likelihood"
-        return self.noise_model.predictive_values(mu,var)
+        return self.noise_model.predictive_values(mu,var,**noise_args)
+
+    def log_predictive_density(self, y_test, mu_star, var_star):
+        """
+        Calculation of the log predictive density
+
+        .. math:
+            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+
+        :param y_test: test observations (y_{*})
+        :type y_test: (Nx1) array
+        :param mu_star: predictive mean of gaussian p(f_{*}|mu_{*}, var_{*})
+        :type mu_star: (Nx1) array
+        :param var_star: predictive variance of gaussian p(f_{*}|mu_{*}, var_{*})
+        :type var_star: (Nx1) array
+        """
+        return self.noise_model.log_predictive_density(y_test, mu_star, var_star)
 
     def _get_params(self):
         #return np.zeros(0)
@@ -134,7 +149,7 @@ class EP(likelihood):
                 self.tau_[i] = 1./Sigma[i,i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = mu[i]/Sigma[i,i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self.data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma[i,i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma[i,i])
@@ -233,7 +248,7 @@ class EP(likelihood):
                 self.tau_[i] = 1./Sigma_diag[i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = mu[i]/Sigma_diag[i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self.data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma_diag[i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma_diag[i])
@@ -336,7 +351,7 @@ class EP(likelihood):
                 self.tau_[i] = 1./Sigma_diag[i] - self.eta*self.tau_tilde[i]
                 self.v_[i] = mu[i]/Sigma_diag[i] - self.eta*self.v_tilde[i]
                 #Marginal moments
-                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self._transf_data[i],self.tau_[i],self.v_[i])
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.noise_model.moments_match(self.data[i],self.tau_[i],self.v_[i])
                 #Site parameters update
                 Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma_diag[i])
                 Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma_diag[i])

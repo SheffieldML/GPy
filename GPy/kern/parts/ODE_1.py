@@ -137,7 +137,11 @@ class ODE_1(Kernpart):
         k2 = (np.exp(-lu*dist)*(ly-2*lu+lu*ly*dist-lu**2*dist) + np.exp(-ly*dist)*(2*lu-ly) ) / (ly-lu)**2 
         k3 = np.exp(-lu*dist) * ( (1+lu*dist)/(lu+ly) + (lu)/(lu+ly)**2 )
         dkdvar = k1+k2+k3
-
+        
+        #target[0] dk dvarU
+        #target[1] dk dvarY
+        #target[2] dk d theta1
+        #target[3] dk d theta2 
         target[0] += np.sum(self.varianceY*dkdvar * dL_dK)
         target[1] += np.sum(self.varianceU*dkdvar * dL_dK)
         target[2] += np.sum(dktheta1*(-np.sqrt(3)*self.lengthscaleU**(-2)) * dL_dK)

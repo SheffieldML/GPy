@@ -5,6 +5,7 @@ import numpy as np
 from kern import kern
 import parts
 
+
 def rbf_inv(input_dim,variance=1., inv_lengthscale=None,ARD=False):
     """
     Construct an RBF kernel
@@ -149,33 +150,6 @@ def white(input_dim,variance=1.):
     part = parts.white.White(input_dim,variance)
     return kern(input_dim, [part])
 
-def eq_ode1(output_dim, W=None, rank=1,  kappa=None, length_scale=1., decay=None, delay=None):
-    """Covariance function for first order differential equation driven by an exponentiated quadratic covariance.
-
-    This outputs of this kernel have the form
-    .. math::
-       \frac{\text{d}y_j}{\text{d}t} = \sum_{i=1}^R w_{j,i} f_i(t-\delta_j) +\sqrt{\kappa_j}g_j(t) - d_jy_j(t)
-
-    where :math:`R` is the rank of the system, :math:`w_{j,i}` is the sensitivity of the :math:`j`th output to the :math:`i`th latent function, :math:`d_j` is the decay rate of the :math:`j`th output and :math:`f_i(t)` and :math:`g_i(t)` are independent latent Gaussian processes goverened by an exponentiated quadratic covariance.
-    
-    :param output_dim: number of outputs driven by latent function.
-    :type output_dim: int
-    :param W: sensitivities of each output to the latent driving function. 
-    :type W: ndarray (output_dim x rank).
-    :param rank: If rank is greater than 1 then there are assumed to be a total of rank latent forces independently driving the system, each with identical covariance.
-    :type rank: int
-    :param decay: decay rates for the first order system. 
-    :type decay: array of length output_dim.
-    :param delay: delay between latent force and output response.
-    :type delay: array of length output_dim.
-    :param kappa: diagonal term that allows each latent output to have an independent component to the response.
-    :type kappa: array of length output_dim.
-    
-    .. Note: see first order differential equation examples in GPy.examples.regression for some usage.
-    """
-    part = parts.eq_ode1.Eq_ode1(output_dim, W, rank, kappa, length_scale, decay, delay)
-    return kern(2, [part])
-
 
 def exponential(input_dim,variance=1., lengthscale=None, ARD=False):
     """
@@ -292,8 +266,8 @@ except ImportError:
 if sympy_available:
     from parts.sympykern import spkern
     from sympy.parsing.sympy_parser import parse_expr
-    from GPy.util.symbolic import sinc
-    
+    from GPy.util import symbolic
+
     def rbf_sympy(input_dim, ARD=False, variance=1., lengthscale=1.):
         """
         Radial Basis Function covariance.
@@ -302,8 +276,8 @@ if sympy_available:
         Z = sp.symbols('z_:' + str(input_dim))
         variance = sp.var('variance',positive=True)
         if ARD:
-            lengthscales = [sp.var('lengthscale_%i' % i, positive=True) for i in range(input_dim)]
-            dist_string = ' + '.join(['(x_%i-z_%i)**2/lengthscale_%i**2' % (i, i, i) for i in range(input_dim)])
+            lengthscales = sp.symbols('lengthscale_:' + str(input_dim))
+            dist_string = ' + '.join(['(x_%i-z_%i)**2/lengthscale%i**2' % (i, i, i) for i in range(input_dim)])
             dist = parse_expr(dist_string)
             f =  variance*sp.exp(-dist/2.)
         else:
@@ -313,26 +287,59 @@ if sympy_available:
             f =  variance*sp.exp(-dist/(2*lengthscale**2))
         return kern(input_dim, [spkern(input_dim, f, name='rbf_sympy')])
 
-    def sinc(input_dim, ARD=False, variance=1., lengthscale=1.):
+    def eq_sympy(input_dim, output_dim, ARD=False):
         """
-        TODO: Not clear why this isn't working, suggests argument of sinc is not a number.
-        sinc covariance funciton
+        Latent force model covariance, exponentiated quadratic with multiple outputs. Derived from a diffusion equation with the initial spatial condition layed down by a Gaussian process with lengthscale given by shared_lengthscale.
+
+        See IEEE Trans Pattern Anal Mach Intell. 2013 Nov;35(11):2693-705. doi: 10.1109/TPAMI.2013.86. Linear latent force models using Gaussian processes. Alvarez MA, Luengo D, Lawrence ND.
+
+        :param input_dim: Dimensionality of the kernel
+        :type input_dim: int
+        :param output_dim: number of outputs in the covariance function.
+        :type output_dim: int
+        :param ARD: whether or not to user ARD (default False).
+        :type ARD: bool
+
         """
-        X = sp.symbols('x_:' + str(input_dim))
-        Z = sp.symbols('z_:' + str(input_dim))
-        variance = sp.var('variance',positive=True)
+        real_input_dim = input_dim
+        if output_dim>1:
+            real_input_dim -= 1
+        X = sp.symbols('x_:' + str(real_input_dim))
+        Z = sp.symbols('z_:' + str(real_input_dim))
+        scale = sp.var('scale_i scale_j',positive=True)
         if ARD:
-            lengthscales = [sp.var('lengthscale_%i' % i, positive=True) for i in range(input_dim)]
-            dist_string = ' + '.join(['(x_%i-z_%i)**2/lengthscale_%i**2' % (i, i, i) for i in range(input_dim)])
+            lengthscales = [sp.var('lengthscale%i_i lengthscale%i_j' % i, positive=True) for i in range(real_input_dim)]
+            shared_lengthscales = [sp.var('shared_lengthscale%i' % i, positive=True) for i in range(real_input_dim)]
+            dist_string = ' + '.join(['(x_%i-z_%i)**2/(shared_lengthscale%i**2 + lengthscale%i_i**2 + lengthscale%i_j**2)' % (i, i, i) for i in range(real_input_dim)])
             dist = parse_expr(dist_string)
-            f =  variance*sinc(sp.pi*sp.sqrt(dist))
+            f =  variance*sp.exp(-dist/2.)
         else:
-            lengthscale = sp.var('lengthscale',positive=True)
-            dist_string = ' + '.join(['(x_%i-z_%i)**2' % (i, i) for i in range(input_dim)])
+            lengthscales = sp.var('lengthscale_i lengthscale_j',positive=True)
+            shared_lengthscale = sp.var('shared_lengthscale',positive=True)
+            dist_string = ' + '.join(['(x_%i-z_%i)**2' % (i, i) for i in range(real_input_dim)])
             dist = parse_expr(dist_string)
-            f =  variance*sinc(sp.pi*sp.sqrt(dist)/lengthscale)
-            
-        return kern(input_dim, [spkern(input_dim, f, name='sinc')])
+            f =  scale_i*scale_j*sp.exp(-dist/(2*(lengthscale_i**2 + lengthscale_j**2 + shared_lengthscale**2)))
+        return kern(input_dim, [spkern(input_dim, f, output_dim=output_dim, name='eq_sympy')])
+
+    def ode1_eq(output_dim=1):
+        """
+        Latent force model covariance, first order differential
+        equation driven by exponentiated quadratic.
+
+        See N. D. Lawrence, G. Sanguinetti and M. Rattray. (2007)
+        'Modelling transcriptional regulation using Gaussian
+        processes' in B. Schoelkopf, J. C. Platt and T. Hofmann (eds)
+        Advances in Neural Information Processing Systems, MIT Press,
+        Cambridge, MA, pp 785--792.
+
+        :param output_dim: number of outputs in the covariance function.
+        :type output_dim: int
+        """
+        input_dim = 2
+        x_0, z_0, decay_i, decay_j, scale_i, scale_j, lengthscale = sp.symbols('x_0, z_0, decay_i, decay_j, scale_i, scale_j, lengthscale')
+        f = scale_i*scale_j*(symbolic.h(x_0, z_0, decay_i, decay_j, lengthscale) 
+     + symbolic.h(z_0, x_0, decay_j, decay_i, lengthscale))
+        return kern(input_dim, [spkern(input_dim, f, output_dim=output_dim, name='ode1_eq')])
 
     def sympykern(input_dim, k=None, output_dim=1, name=None, param=None):
         """
@@ -426,9 +433,21 @@ def prod(k1,k2,tensor=False):
 def symmetric(k):
     """
     Construct a symmetric kernel from an existing kernel
+
+    The symmetric kernel works by adding two GP functions together, and computing the overall covariance.
+
+    Let f ~ GP(x | 0, k(x, x')). Now let g = f(x) + f(-x).
+
+    It's easy to see that g is a symmetric function: g(x) = g(-x).
+
+    by construction, g, is a gaussian Process with mean 0 and covariance
+
+    k(x, x') + k(-x, x') + k(x, -x') + k(-x, -x')
+
+    This constructor builds a covariance function of this form from the initial kernel
     """
     k_ = k.copy()
-    k_.parts = [symmetric.Symmetric(p) for p in k.parts]
+    k_.parts = [parts.symmetric.Symmetric(p) for p in k.parts]
     return k_
 
 def coregionalize(output_dim,rank=1, W=None, kappa=None):
@@ -563,4 +582,21 @@ def ODE_1(input_dim=1, varianceU=1.,  varianceY=1., lengthscaleU=None,  lengthsc
 
     """
     part = parts.ODE_1.ODE_1(input_dim, varianceU, varianceY, lengthscaleU, lengthscaleY)
+    return kern(input_dim, [part])
+
+def ODE_UY(input_dim=2, varianceU=1.,  varianceY=1., lengthscaleU=None,  lengthscaleY=None):
+    """
+    kernel resultiong from a first order ODE with OU driving GP
+    :param input_dim: the number of input dimension, has to be equal to one
+    :type input_dim: int
+    :param input_lengthU: the number of input U length
+    :param varianceU: variance of the driving GP
+    :type varianceU: float
+    :param varianceY: 'variance' of the transfer function
+    :type varianceY: float
+    :param lengthscaleY: 'lengthscale' of the transfer function
+    :type lengthscaleY: float
+    :rtype: kernel object
+    """
+    part = parts.ODE_UY.ODE_UY(input_dim, varianceU, varianceY, lengthscaleU, lengthscaleY)
     return kern(input_dim, [part])

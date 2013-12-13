@@ -2,16 +2,17 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ..core import SparseGP
+from ..core.sparse_gp import SparseGP
 from ..likelihoods import Gaussian
 from .. import kern
 import itertools
 from matplotlib.colors import colorConverter
 from GPy.inference.optimization import SCG
 from GPy.util import plot_latent, linalg
-from GPy.models.gplvm import GPLVM
+from .gplvm import GPLVM
 from GPy.util.plot_latent import most_significant_input_dimensions
 from matplotlib import pyplot
+from GPy.core.model import Model
 
 class BayesianGPLVM(SparseGP, GPLVM):
     """
@@ -48,18 +49,6 @@ class BayesianGPLVM(SparseGP, GPLVM):
 
         SparseGP.__init__(self, X, likelihood, kernel, Z=Z, X_variance=X_variance, **kwargs)
         self.ensure_default_constraints()
-
-    def getstate(self):
-        """
-        Get the current state of the class,
-        here just all the indices, rest can get recomputed
-        """
-        return SparseGP.getstate(self) + [self.init]
-
-    def setstate(self, state):
-        self._const_jitter = None
-        self.init = state.pop()
-        SparseGP.setstate(self, state)
 
     def _get_param_names(self):
         X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
@@ -284,6 +273,70 @@ class BayesianGPLVM(SparseGP, GPLVM):
         pylab.draw()
         fig.tight_layout(h_pad=.01) # , rect=(0, 0, 1, .95))
         return fig
+
+    def getstate(self):
+        """
+        Get the current state of the class,
+        here just all the indices, rest can get recomputed
+        """
+        return SparseGP.getstate(self) + [self.init]
+
+    def setstate(self, state):
+        self._const_jitter = None
+        self.init = state.pop()
+        SparseGP.setstate(self, state)
+
+class BayesianGPLVMWithMissingData(Model):
+    """
+    Bayesian Gaussian Process Latent Variable Model with missing data support.
+    NOTE: Missing data is assumed to be missing at random!
+    
+    This extension comes with a large memory and computing time deficiency.
+    Use only if fraction of missing data at random is higher than 60%.
+    Otherwise, try filtering data before using this extension.
+    
+    Y can hold missing data as given by `missing`, standard is :class:`~numpy.nan`.
+    
+    If likelihood is given for Y, this likelihood will be discarded, but the parameters
+    of the likelihood will be taken. Also every effort of creating the same likelihood
+    will be done.
+     
+    :param likelihood_or_Y: observed data (np.ndarray) or GPy.likelihood
+    :type likelihood_or_Y: :class:`~numpy.ndarray` | :class:`~GPy.likelihoods.likelihood.likelihood` instance
+    :param int input_dim: latent dimensionality
+    :param init: initialisation method for the latent space
+    :type init: 'PCA' | 'random'
+    """
+    def __init__(self, likelihood_or_Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
+                 Z=None, kernel=None, missing=np.nan, **kwargs):
+        if type(likelihood_or_Y) is np.ndarray:
+            likelihood = Gaussian(likelihood_or_Y)
+        else:
+            likelihood = likelihood_or_Y
+
+        if X == None:
+            X = self.initialise_latent(init, input_dim, likelihood.Y)
+        self.init = init
+
+        if X_variance is None:
+            X_variance = np.clip((np.ones_like(X) * 0.5) + .01 * np.random.randn(*X.shape), 0.001, 1)
+
+        if Z is None:
+            Z = np.random.permutation(X.copy())[:num_inducing]
+        assert Z.shape[1] == X.shape[1]
+
+        if kernel is None:
+            kernel = kern.rbf(input_dim) # + kern.white(input_dim)
+
+        SparseGP.__init__(self, X, likelihood, kernel, Z=Z, X_variance=X_variance, **kwargs)
+        self.ensure_default_constraints()
+
+    def _get_param_names(self):
+        X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
+        S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
+        return (X_names + S_names + SparseGP._get_param_names(self))
+
+    pass
 
 def latent_cost_and_grad(mu_S, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
     """

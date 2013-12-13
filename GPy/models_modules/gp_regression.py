@@ -1,21 +1,19 @@
-# Copyright (c) 2013, Ricardo Andrade
+# Copyright (c) 2012, James Hensman
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-import numpy as np
 from ..core import GP
 from .. import likelihoods
 from .. import kern
 
-class GPClassification(GP):
+class GPRegression(GP):
     """
-    Gaussian Process classification
+    Gaussian Process model for regression
 
     This is a thin wrapper around the models.GP class, with a set of sensible defaults
 
     :param X: input observations
-    :param Y: observed values, can be None if likelihood is not None
-    :param likelihood: a GPy likelihood, defaults to Binomial with probit link_function
+    :param Y: observed values
     :param kernel: a GPy kernel, defaults to rbf
     :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_X: False|True
@@ -26,16 +24,18 @@ class GPClassification(GP):
 
     """
 
-    def __init__(self,X,Y=None,likelihood=None,kernel=None,normalize_X=False,normalize_Y=False):
+    def __init__(self, X, Y, kernel=None, normalize_X=False, normalize_Y=False, likelihood=None):
         if kernel is None:
             kernel = kern.rbf(X.shape[1])
 
         if likelihood is None:
-            noise_model = likelihoods.binomial()
-            likelihood = likelihoods.EP(Y, noise_model)
-        elif Y is not None:
-            if not all(Y.flatten() == likelihood.data.flatten()):
-                raise Warning, 'likelihood.data and Y are different.'
+            likelihood = likelihoods.Gaussian(Y, normalize=normalize_Y)
 
         GP.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
         self.ensure_default_constraints()
+
+    def getstate(self):
+        return GP.getstate(self)
+
+    def setstate(self, state):
+        return GP.setstate(self, state)

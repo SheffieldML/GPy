@@ -126,7 +126,7 @@ class FITC(SparseGP):
             self._dpsi1_dX += self.kern.dK_dX(_dpsi1.T,self.Z,self.X[i:i+1,:])
 
         # the partial derivative vector for the likelihood
-        if self.likelihood.Nparams == 0:
+        if self.likelihood.num_params == 0:
             # save computation here.
             self.partial_for_likelihood = None
         elif self.likelihood.is_heteroscedastic:
@@ -159,7 +159,7 @@ class FITC(SparseGP):
         A = -0.5 * self.num_data * self.output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
         C = -self.output_dim * (np.sum(np.log(np.diag(self.LB))))
         D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
-        return A + C + D
+        return A + C + D + self.likelihood.Z
 
     def _log_likelihood_gradients(self):
         pass

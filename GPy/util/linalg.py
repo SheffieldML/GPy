@@ -12,6 +12,7 @@ import ctypes
 from ctypes import byref, c_char, c_int, c_double # TODO
 # import scipy.lib.lapack
 import scipy
+import warnings
 
 if np.all(np.float64((scipy.__version__).split('.')[:2]) >= np.array([0, 12])):
     import scipy.linalg.lapack as lapack
@@ -21,10 +22,13 @@ else:
 try:
     _blaslib = ctypes.cdll.LoadLibrary(np.core._dotblas.__file__) # @UndefinedVariable
     _blas_available = True
-    assert hasattr('dsyrk_',_blaslib)
-    assert hasattr('dsyr_',_blaslib)
-except:
+    assert hasattr(_blaslib, 'dsyrk_')
+    assert hasattr(_blaslib, 'dsyr_')
+except AssertionError:
     _blas_available = False
+except AttributeError as e:
+    _blas_available = False
+    warnings.warn("warning: caught this exception:" + str(e))
 
 def dtrtrs(A, B, lower=0, trans=0, unitdiag=0):
     """
@@ -60,6 +64,14 @@ def dpotri(A, lower=0):
 
     """
     return lapack.dpotri(A, lower=lower)
+
+def pddet(A):
+    """
+    Determinant of a positive definite matrix, only symmetric matricies though
+    """
+    L = jitchol(A)
+    logdetA = 2*sum(np.log(np.diag(L)))
+    return logdetA
 
 def trace_dot(a, b):
     """
@@ -325,6 +337,7 @@ def symmetrify(A, upper=False):
     """
     N, M = A.shape
     assert N == M
+    
     c_contig_code = """
     int iN;
     for (int i=1; i<N; i++){
@@ -343,6 +356,8 @@ def symmetrify(A, upper=False):
       }
     }
     """
+
+    N = int(N) # for safe type casting
     if A.flags['C_CONTIGUOUS'] and upper:
         weave.inline(f_contig_code, ['A', 'N'], extra_compile_args=['-O3'])
     elif A.flags['C_CONTIGUOUS'] and not upper:
@@ -403,4 +418,3 @@ def backsub_both_sides(L, X, transpose='left'):
     else:
         tmp, _ = lapack.dtrtrs(L, np.asfortranarray(X), lower=1, trans=0)
         return lapack.dtrtrs(L, np.asfortranarray(tmp.T), lower=1, trans=0)[0].T
-

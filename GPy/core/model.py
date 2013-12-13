@@ -251,7 +251,7 @@ class Model(Parameterized):
             self._set_params_transformed(initial_parameters)
 
     def ensure_default_constraints(self):
-        """       
+        """
         Ensure that any variables which should clearly be positive
         have been constrained somehow. The method performs a regular
         expression search on parameter names looking for the terms
@@ -259,7 +259,7 @@ class Model(Parameterized):
         these terms are present in the name the parameter is
         constrained positive.
         """
-        positive_strings = ['variance', 'lengthscale', 'precision', 'kappa']
+        positive_strings = ['variance', 'lengthscale', 'precision', 'decay', 'kappa']
         # param_names = self._get_param_names()
         currently_constrained = self.all_constrained_indices()
         to_make_positive = []
@@ -274,7 +274,7 @@ class Model(Parameterized):
         """
         The objective function passed to the optimizer. It combines
         the likelihood and the priors.
-        
+
         Failures are handled robustly. The algorithm will try several times to
         return the objective, and will raise the original exception if it
         the objective cannot be computed.
@@ -453,7 +453,12 @@ class Model(Parameterized):
 
         if not verbose:
             # just check the global ratio
-            dx = step * np.sign(np.random.uniform(-1, 1, x.size))
+
+            #choose a random direction to find the linear approximation in
+            if x.size==2:
+                dx = step * np.ones(2) # random direction for 2 parameters can fail dure to symmetry
+            else:
+                dx = step * np.sign(np.random.uniform(-1, 1, x.size))
 
             # evaulate around the point x
             f1, g1 = self.objective_and_gradients(x + dx)
@@ -462,7 +467,7 @@ class Model(Parameterized):
 
             numerical_gradient = (f1 - f2) / (2 * dx)
             global_ratio = (f1 - f2) / (2 * np.dot(dx, np.where(gradient==0, 1e-32, gradient)))
-            
+
             return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gradient - numerical_gradient).mean() < tolerance)
         else:
             # check the gradient of each parameter individually, and do some pretty printing
@@ -547,9 +552,9 @@ class Model(Parameterized):
         :param stop_crit: convergence criterion
         :type stop_crit: float
 
-        .. Note: kwargs are passed to update_likelihood and optimize functions. 
+        .. Note: kwargs are passed to update_likelihood and optimize functions.
         """
-        assert isinstance(self.likelihood, likelihoods.EP) or isinstance(self.likelihood, likelihoods.EP_Mixed_Noise), "pseudo_EM is only available for EP likelihoods"
+        assert isinstance(self.likelihood, (likelihoods.EP, likelihoods.EP_Mixed_Noise, likelihoods.Laplace)), "pseudo_EM is only available for approximate likelihoods"
         ll_change = stop_crit + 1.
         iteration = 0
         last_ll = -np.inf

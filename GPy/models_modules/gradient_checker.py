@@ -26,40 +26,39 @@ class GradientChecker(Model):
         """
         :param f: Function to check gradient for
         :param df: Gradient of function to check
-        :param x0: 
+        :param x0:
             Initial guess for inputs x (if it has a shape (a,b) this will be reflected in the parameter names).
-            Can be a list of arrays, if takes a list of arrays. This list will be passed 
+            Can be a list of arrays, if f takes a list of arrays. This list will be passed
             to f and df in the same order as given here.
-            If only one argument, make sure not to pass a list!!!
-            
+            If f takes only one argument, make sure not to pass a list for x0!!!
         :type x0: [array-like] | array-like | float | int
-        :param names:
+        :param list names:
             Names to print, when performing gradcheck. If a list was passed to x0
             a list of names with the same length is expected.
-        :param args: Arguments passed as f(x, *args, **kwargs) and df(x, *args, **kwargs)
-        
+        :param args kwargs: Arguments passed as f(x, *args, **kwargs) and df(x, *args, **kwargs)
+
         Examples:
         ---------
-            from GPy.models import GradientChecker
-            N, M, Q = 10, 5, 3
-        
-            Sinusoid:
-            
-                X = numpy.random.rand(N, Q)
-                grad = GradientChecker(numpy.sin,numpy.cos,X,'x')
-                grad.checkgrad(verbose=1)
-    
-            Using GPy:
-            
-                X, Z = numpy.random.randn(N,Q), numpy.random.randn(M,Q)
-                kern = GPy.kern.linear(Q, ARD=True) + GPy.kern.rbf(Q, ARD=True)
-                grad = GradientChecker(kern.K, 
-                                       lambda x: 2*kern.dK_dX(numpy.ones((1,1)), x),
-                                       x0 = X.copy(),
-                                       names='X')  
-                grad.checkgrad(verbose=1)
-                grad.randomize()
-                grad.checkgrad(verbose=1)      
+        from GPy.models import GradientChecker
+        N, M, Q = 10, 5, 3
+
+        Sinusoid:
+
+            X = numpy.random.rand(N, Q)
+            grad = GradientChecker(numpy.sin,numpy.cos,X,'sin_in')
+            grad.checkgrad(verbose=1)
+
+        Using GPy:
+
+            X, Z = numpy.random.randn(N,Q), numpy.random.randn(M,Q)
+            kern = GPy.kern.linear(Q, ARD=True) + GPy.kern.rbf(Q, ARD=True)
+            grad = GradientChecker(kern.K,
+                                   lambda x: kern.dK_dX(numpy.ones((1,1)), x),
+                                   x0 = X.copy(),
+                                   names=['X_input'])
+            grad.checkgrad(verbose=1)
+            grad.randomize()
+            grad.checkgrad(verbose=1)
         """
         Model.__init__(self)
         if isinstance(x0, (list, tuple)) and names is None:
@@ -75,14 +74,14 @@ class GradientChecker(Model):
             self.names = names
             self.shapes = [get_shape(x0)]
         for name, xi in zip(self.names, at_least_one_element(x0)):
-            self.__setattr__(name, xi)
+            self.__setattr__(name, numpy.float_(xi))
 #         self._param_names = []
 #         for name, shape in zip(self.names, self.shapes):
 #             self._param_names.extend(map(lambda nameshape: ('_'.join(nameshape)).strip('_'), itertools.izip(itertools.repeat(name), itertools.imap(lambda t: '_'.join(map(str, t)), itertools.product(*map(lambda xi: range(xi), shape))))))
         self.args = args
         self.kwargs = kwargs
-        self.f = f
-        self.df = df
+        self._f = f
+        self._df = df
 
     def _get_x(self):
         if len(self.names) > 1:
@@ -90,10 +89,10 @@ class GradientChecker(Model):
         return [self.__getattribute__(self.names[0])] + list(self.args)
 
     def log_likelihood(self):
-        return float(numpy.sum(self.f(*self._get_x(), **self.kwargs)))
+        return float(numpy.sum(self._f(*self._get_x(), **self.kwargs)))
 
     def _log_likelihood_gradients(self):
-        return numpy.atleast_1d(self.df(*self._get_x(), **self.kwargs)).flatten()
+        return numpy.atleast_1d(self._df(*self._get_x(), **self.kwargs)).flatten()
 
 
     def _get_params(self):

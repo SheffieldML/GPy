@@ -7,6 +7,8 @@ import numpy as np
 import hashlib
 from scipy import weave
 from ...util.linalg import tdot
+from ...util.config import *
+
 
 class RBFInv(RBF):
     """
@@ -58,11 +60,23 @@ class RBFInv(RBF):
         self._X, self._X2, self._params = np.empty(shape=(3, 1))
 
         # a set of optional args to pass to weave
-        self.weave_options = {'headers'           : ['<omp.h>'],
-                         'extra_compile_args': ['-fopenmp -O3'], # -march=native'],
-                         'extra_link_args'   : ['-lgomp']}
+        weave_options_openmp = {'headers'           : ['<omp.h>'],
+                                'extra_compile_args': ['-fopenmp -O3'],
+                                'extra_link_args'   : ['-lgomp'],
+                                'libraries': ['gomp']}
+        weave_options_noopenmp = {'extra_compile_args': ['-O3']}
 
-
+        if config.getboolean('parallel', 'openmp'):
+            self.weave_options = weave_options_openmp
+            self.weave_support_code =  """
+            #include <omp.h>
+            #include <math.h>
+            """
+        else:
+            self.weave_options = weave_options_noopenmp
+            self.weave_support_code = """
+            #include <math.h>
+            """
 
     def _get_params(self):
         return np.hstack((self.variance, self.inv_lengthscale))
@@ -109,7 +123,7 @@ class RBFInv(RBF):
                   target(q+1) += var_len3(q)*tmp*(-len2(q));
                 }
                 """
-                num_data, num_inducing, input_dim = X.shape[0], X.shape[0], self.input_dim
+                num_data, num_inducing, input_dim = int(X.shape[0]), int(X.shape[0]), int(self.input_dim)
                 weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'X2', 'target', 'dvardLdK', 'var_len3', 'len2'], type_converters=weave.converters.blitz, **self.weave_options)
             else:
                 code = """
@@ -125,7 +139,7 @@ class RBFInv(RBF):
                   target(q+1) += var_len3(q)*tmp*(-len2(q));
                 }
                 """
-                num_data, num_inducing, input_dim = X.shape[0], X2.shape[0], self.input_dim
+                num_data, num_inducing, input_dim = int(X.shape[0]), int(X2.shape[0]), int(self.input_dim)
                 # [np.add(target[1+q:2+q],var_len3[q]*np.sum(dvardLdK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.input_dim)]
                 weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'X2', 'target', 'dvardLdK', 'var_len3', 'len2'], type_converters=weave.converters.blitz, **self.weave_options)
         else:
@@ -133,7 +147,7 @@ class RBFInv(RBF):
 
     def dK_dX(self, dL_dK, X, X2, target):
         self._K_computations(X, X2)
-        if X2 is None:            
+        if X2 is None:
             _K_dist = 2*(X[:, None, :] - X[None, :, :])
         else:
             _K_dist = X[:, None, :] - X2[None, :, :] # don't cache this in _K_computations because it is high memory. If this function is being called, chances are we're not in the high memory arena.
@@ -263,8 +277,8 @@ class RBFInv(RBF):
             self._Z, self._mu, self._S = Z, mu, S
 
     def weave_psi2(self, mu, Zhat):
-        N, input_dim = mu.shape
-        num_inducing = Zhat.shape[0]
+        N, input_dim = int(mu.shape[0]), int(mu.shape[1])
+        num_inducing = int(Zhat.shape[0])
 
         mudist = np.empty((N, num_inducing, num_inducing, input_dim))
         mudist_sq = np.empty((N, num_inducing, num_inducing, input_dim))
@@ -279,10 +293,16 @@ class RBFInv(RBF):
             inv_lengthscale2 = self.inv_lengthscale2
         else:
             inv_lengthscale2 = np.ones(input_dim) * self.inv_lengthscale2
+
+        if config.getboolean('parallel', 'openmp'):
+            pragma_string = '#pragma omp parallel for private(tmp)'
+        else:
+            pragma_string = ''
+
         code = """
         double tmp;
 
-        #pragma omp parallel for private(tmp)
+        %s
         for (int n=0; n<N; n++){
             for (int m=0; m<num_inducing; m++){
                for (int mm=0; mm<(m+1); mm++){
@@ -312,13 +332,9 @@ class RBFInv(RBF):
             }
         }
 
-        """
+        """ % pragma_string
 
-        support_code = """
-        #include <omp.h>
-        #include <math.h>
-        """
-        weave.inline(code, support_code=support_code, libraries=['gomp'],
+        weave.inline(code, support_code=self.weave_support_code,
                      arg_names=['N', 'num_inducing', 'input_dim', 'mu', 'Zhat', 'mudist_sq', 'mudist', 'inv_lengthscale2', '_psi2_denom', 'psi2_Zdist_sq', 'psi2_exponent', 'half_log_psi2_denom', 'psi2', 'variance_sq'],
                      type_converters=weave.converters.blitz, **self.weave_options)
 

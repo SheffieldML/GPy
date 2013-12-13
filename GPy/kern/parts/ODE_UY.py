@@ -209,7 +209,8 @@ class ODE_UY(Kernpart):
         rd=rdist.shape[0]
         dktheta1 = np.zeros([rd,rd])
         dktheta2 = np.zeros([rd,rd])
-        dkdvar = np.zeros([rd,rd])
+        dkUdvar = np.zeros([rd,rd])
+        dkYdvar = np.zeros([rd,rd])
 
         # dk dtheta for UU
         UUdtheta1 = lambda dist: np.exp(-lu* dist)*dist + (-dist)*np.exp(-lu* dist)*(1+lu*dist)
@@ -287,7 +288,8 @@ class ODE_UY(Kernpart):
                             #target[ss1,ss2] = kuu(np.abs(rdist[ss1,ss2]))
                             dktheta1[ss1,ss2] = self.varianceU*self.varianceY*UUdtheta1(np.abs(rdist[ss1,ss2]))
                             dktheta2[ss1,ss2] = 0
-                            dkdvar[ss1,ss2] = UUdvar(np.abs(rdist[ss1,ss2]))
+                            dkUdvar[ss1,ss2] = UUdvar(np.abs(rdist[ss1,ss2]))
+                            dkYdvar[ss1,ss2] = 0
                         elif i==0 and j==1:
                             #target[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , kuyp(np.abs(rdist[ss1,ss2])), kuyn(np.abs(rdist[s1[0],s2[0]]) )   )
                             #dktheta1[ss1,ss2] =
@@ -295,23 +297,24 @@ class ODE_UY(Kernpart):
                             #dkdvar[ss1,ss2] =           np.where(  rdist[ss1,ss2]>0 , kuyp(np.abs(rdist[ss1,ss2])), kuyn(np.abs(rdist[s1[0],s2[0]]) )   )                 
                             dktheta1[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , dkcrtheta1(np.abs(rdist[ss1,ss2])) ,self.varianceU*self.varianceY*(dk1theta1(np.abs(rdist[ss1,ss2]))+dk2theta1(np.abs(rdist[ss1,ss2])))    )  
                             dktheta2[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , dkcrtheta2(np.abs(rdist[ss1,ss2])) ,self.varianceU*self.varianceY*(dk1theta2(np.abs(rdist[ss1,ss2]))+dk2theta2(np.abs(rdist[ss1,ss2])))    )  
-                            dkdvar[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 ,  kyu3(np.abs(rdist[ss1,ss2]))  ,k1(np.abs(rdist[ss1,ss2]))+k2(np.abs(rdist[ss1,ss2]))  )  
-        #stop                   
+                            dkUdvar[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 ,  kyu3(np.abs(rdist[ss1,ss2]))  ,k1(np.abs(rdist[ss1,ss2]))+k2(np.abs(rdist[ss1,ss2]))  )  
+                            dkYdvar[ss1,ss2] = dkUdvar[ss1,ss2]   
                         elif i==1 and j==1:
                             #target[ss1,ss2] = kyy(np.abs(rdist[ss1,ss2]))
                             dktheta1[ss1,ss2] = self.varianceU*self.varianceY*(dk1theta1(np.abs(rdist[ss1,ss2]))+dk2theta1(np.abs(rdist[ss1,ss2]))+dk3theta1(np.abs(rdist[ss1,ss2])))
                             dktheta2[ss1,ss2] = self.varianceU*self.varianceY*(dk1theta2(np.abs(rdist[ss1,ss2])) + dk2theta2(np.abs(rdist[ss1,ss2])) +dk3theta2(np.abs(rdist[ss1,ss2])))
-                            dkdvar[ss1,ss2] = (k1(np.abs(rdist[ss1,ss2]))+k2(np.abs(rdist[ss1,ss2]))+k3(np.abs(rdist[ss1,ss2])) )
+                            dkUdvar[ss1,ss2] = (k1(np.abs(rdist[ss1,ss2]))+k2(np.abs(rdist[ss1,ss2]))+k3(np.abs(rdist[ss1,ss2])) )
+                            dkYdvar[ss1,ss2] = dkUdvar[ss1,ss2] 
                         else:
                             #target[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , kyup(np.abs(rdist[ss1,ss2])), kyun(np.abs(rdist[s1[0],s2[0]]) )   )
                             dktheta1[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 ,self.varianceU*self.varianceY*(dk1theta1(np.abs(rdist[ss1,ss2]))+dk2theta1(np.abs(rdist[ss1,ss2]))) , dkcrtheta1(np.abs(rdist[ss1,ss2])) )  
                             dktheta2[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 ,self.varianceU*self.varianceY*(dk1theta2(np.abs(rdist[ss1,ss2]))+dk2theta2(np.abs(rdist[ss1,ss2]))) , dkcrtheta2(np.abs(rdist[ss1,ss2])) )  
-                            dkdvar[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , k1(np.abs(rdist[ss1,ss2]))+k2(np.abs(rdist[ss1,ss2])), kyu3(np.abs(rdist[ss1,ss2])) )  
-        #stop                   
+                            dkUdvar[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , k1(np.abs(rdist[ss1,ss2]))+k2(np.abs(rdist[ss1,ss2])), kyu3(np.abs(rdist[ss1,ss2])) )  
+                            dkYdvar[ss1,ss2] = dkUdvar[ss1,ss2]                    
 
 
-        target[0] += np.sum(self.varianceY*dkdvar * dL_dK)
-        target[1] += np.sum(self.varianceU*dkdvar * dL_dK)
+        target[0] += np.sum(self.varianceY*dkUdvar * dL_dK)
+        target[1] += np.sum(self.varianceU*dkYdvar * dL_dK)
         target[2] += np.sum(dktheta1*(-np.sqrt(3)*self.lengthscaleU**(-2)) * dL_dK)
         target[3] += np.sum(dktheta2*(-self.lengthscaleY**(-2)) * dL_dK)
 

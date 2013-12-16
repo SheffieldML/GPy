@@ -135,6 +135,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
         self._constraints_ = None#ParameterIndexOperations()
         if not hasattr(self, "_parameters_"):
             self._parameters_ = []
+        self.size = sum(p.size for p in self._parameters_)
         if not self._has_fixes():
             self._fixes_ = None
         self._connect_parameters()

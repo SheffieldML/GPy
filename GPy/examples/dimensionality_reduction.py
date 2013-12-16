@@ -52,6 +52,67 @@ def bgplvm_test_model(seed=default_seed, optimize=0, verbose=1, plot=0):
 
     return m
 
+def bgplvm_test_model_missing_data(seed=default_seed, optimize=0, verbose=1, plot=0):
+    """
+    model for testing purposes. Samples from a GP with rbf kernel and learns 
+    the samples with a new kernel. Normally not for optimization, just model cheking
+    """
+    from GPy.likelihoods.gaussian import Gaussian
+    import GPy, numpy as np
+    
+    num_inputs = 13
+    num_inducing = 5
+    if plot: 
+        output_dim = 1
+        input_dim = 2
+    else: 
+        input_dim = 2
+        output_dim = 25
+    
+    # generate GPLVM-like data
+    X = _np.random.rand(num_inputs, input_dim)
+    lengthscales = _np.random.rand(input_dim)
+    k = (GPy.kern.rbf(input_dim, .5, lengthscales, ARD=True)
+         + GPy.kern.white(input_dim, 0.01))
+    K = k.K(X)
+    Y = _np.random.multivariate_normal(_np.zeros(num_inputs), K, output_dim).T
+    lik = Gaussian(Y, normalize=True)
+
+    k = GPy.kern.rbf_inv(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim)
+    # k = GPy.kern.linear(input_dim) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
+    # k = GPy.kern.rbf(input_dim, ARD = False)  + GPy.kern.white(input_dim, 0.00001)
+    # k = GPy.kern.rbf(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.rbf(input_dim, .3, _np.ones(input_dim) * .2, ARD=True)
+    # k = GPy.kern.rbf(input_dim, .5, 2., ARD=0) + GPy.kern.rbf(input_dim, .3, .2, ARD=0)
+    # k = GPy.kern.rbf(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.linear(input_dim, _np.ones(input_dim) * .2, ARD=True)
+
+    m = GPy.models.BayesianGPLVM(lik, input_dim, kernel=k, num_inducing=num_inducing)
+    #===========================================================================
+    # randomly obstruct data with percentage p
+    p = .8
+    Y_obstruct = Y.copy()
+    Y_obstruct[np.random.uniform(size=(Y.shape)) < p] = np.nan
+    #===========================================================================
+    m2 = GPy.models.BayesianGPLVMWithMissingData(Y_obstruct, input_dim, kernel=k, num_inducing=num_inducing)
+    m.lengthscales = lengthscales
+
+    if plot:
+        import matplotlib.pyplot as pb
+        m.plot()
+        pb.title('PCA initialisation')
+        m2.plot()
+        pb.title('PCA initialisation')
+   
+    if optimize:
+        m.optimize('scg', messages=verbose)
+        m2.optimize('scg', messages=verbose)
+        if plot:
+            m.plot()
+            pb.title('After optimisation')
+            m2.plot()
+            pb.title('After optimisation')
+
+    return m, m2
+
 def gplvm_oil_100(optimize=1, verbose=1, plot=1):
     import GPy
     data = GPy.util.datasets.oil_100()
@@ -205,7 +266,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
     Ylist = [Y1, Y2, Y3]
 
     if plot_sim:
-        import pylab
+        import pylab, matplotlib.cm as cm
         import itertools
         fig = pylab.figure("MRD Simulation Data", figsize=(8, 6))
         fig.clf()
@@ -216,7 +277,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
         ax.legend()
         for i, Y in enumerate(Ylist):
             ax = fig.add_subplot(2, len(Ylist), len(Ylist) + 1 + i)
-            ax.imshow(Y, aspect='auto', cmap=cm.gray) # @UndefinedVariable
+            ax.imshow(Y, aspect='auto', cmap=cm.gray)  # @UndefinedVariable
             ax.set_title("Y{}".format(i + 1))
         pylab.draw()
         pylab.tight_layout()

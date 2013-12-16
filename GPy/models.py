@@ -14,7 +14,7 @@ detailed explanations for the different models.
 
 __updated__ = '2013-11-28'
 
-from models_modules.bayesian_gplvm import BayesianGPLVM
+from models_modules.bayesian_gplvm import BayesianGPLVM, BayesianGPLVMWithMissingData
 from models_modules.gp_regression import GPRegression
 from models_modules.gp_classification import GPClassification#; _gp_classification = gp_classification ; del gp_classification 
 from models_modules.sparse_gp_regression import SparseGPRegression#; _sparse_gp_regression = sparse_gp_regression ; del sparse_gp_regression 

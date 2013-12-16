@@ -218,8 +218,8 @@ class GPBase(Model):
                 Y = self.likelihood.data
             for d in which_data_ycols:
                 m_d = m[:,d].reshape(resolution, resolution).T
-                ax.contour(x, y, m_d, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
-                ax.scatter(self.X[which_data_rows, free_dims[0]], self.X[which_data_rows, free_dims[1]], 40, Y[which_data_rows, d], cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.)
+                contour = ax.contour(x, y, m_d, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
+                scatter = ax.scatter(self.X[which_data_rows, free_dims[0]], self.X[which_data_rows, free_dims[1]], 40, Y[which_data_rows, d], cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.)
 
             #set the limits of the plot to some sensible values
             ax.set_xlim(xmin[0], xmax[0])
@@ -227,7 +227,7 @@ class GPBase(Model):
 
             if samples:
                 warnings.warn("Samples are rather difficult to plot for 2D inputs...")
-
+            return contour, scatter
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 

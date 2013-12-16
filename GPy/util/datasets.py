@@ -30,9 +30,12 @@ overide_manual_authorize=False
 neil_url = 'http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/'
 
 # Read data resources from json file.
-path = os.path.join(os.path.dirname(__file__), 'data_resources.json')
-json_data=open(path).read()
-data_resources = json.loads(json_data)
+# Don't do this when ReadTheDocs is scanning as it breaks things
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True' #Checks if RTD is scanning
+if not (on_rtd):
+    path = os.path.join(os.path.dirname(__file__), 'data_resources.json')
+    json_data=open(path).read()
+    data_resources = json.loads(json_data)
 
 
 def prompt_user(prompt):

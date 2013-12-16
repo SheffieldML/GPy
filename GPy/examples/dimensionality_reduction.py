@@ -41,7 +41,7 @@ def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False):
     # randomly obstruct data with percentage p
     p = .8
     Y_obstruct = Y.copy()
-    Y_obstruct[np.random.uniform(size=(Y.shape)) < p] = np.nan
+    Y_obstruct[_np.random.uniform(size=(Y.shape)) < p] = _np.nan
     #===========================================================================
     m2 = GPy.models.BayesianGPLVMWithMissingData(Y_obstruct, input_dim, kernel=k, num_inducing=num_inducing)
     m.lengthscales = lengthscales
@@ -52,7 +52,7 @@ def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False):
         pb.title('PCA initialisation')
         m2.plot()
         pb.title('PCA initialisation')
-   
+
     if optimize:
         m.optimize('scg', messages=verbose)
         m2.optimize('scg', messages=verbose)

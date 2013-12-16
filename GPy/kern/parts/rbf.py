@@ -7,7 +7,7 @@ from scipy import weave
 from kernpart import Kernpart
 from ...util.linalg import tdot
 from ...util.misc import fast_array_equal, param_to_array
-from ...core.parameter import Param
+from ...core.parameterization import Param
 
 class RBF(Kernpart):
     """

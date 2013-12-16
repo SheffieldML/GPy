@@ -4,8 +4,8 @@
 
 from kernpart import Kernpart
 import numpy as np
-import hashlib
-from ...core.parameter import Param
+from ...core.parameterization import Param
+
 def theta(x):
     """Heaviside step function"""
     return np.where(x>=0.,1.,0.)

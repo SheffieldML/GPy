@@ -5,8 +5,8 @@
 import numpy as np
 import pylab as pb
 from scipy.special import gammaln, digamma
-from ..util.linalg import pdinv
-from GPy.core.domains import _REAL, _POSITIVE
+from ...util.linalg import pdinv
+from domains import _REAL, _POSITIVE
 import warnings
 import weakref
 

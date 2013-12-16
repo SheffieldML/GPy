@@ -3,9 +3,7 @@
 
 
 from kernpart import Kernpart
-import numpy as np
-import hashlib
-from GPy.core.parameter import Param
+from ...core.parameterization import Param
 
 class Bias(Kernpart):
     def __init__(self,input_dim,variance=1.,name=None):

@@ -4,12 +4,12 @@
 import sys
 import numpy as np
 import pylab as pb
-from ..core.parameterized import Parameterized
-from parts.kernpart import Kernpart
 import itertools
-from parts.prod import Prod as prod
 from matplotlib.transforms import offset_copy
-from GPy.kern.parts.linear import Linear
+from parts.prod import Prod as prod
+from parts.linear import Linear
+from parts.kernpart import Kernpart
+from ..core.parameterization import Parameterized
 
 class kern(Parameterized):
     def __init__(self, input_dim, parts=[], input_slices=None):

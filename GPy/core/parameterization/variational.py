@@ -5,8 +5,8 @@ Created on 6 Nov 2013
 '''
 import numpy as np
 from parameterized import Parameterized
-from parameter import Param
-from ..util.misc import param_to_array
+from param import Param
+from ...util.misc import param_to_array
 
 class Normal(Parameterized):
     '''

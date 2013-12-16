@@ -2,10 +2,10 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from model import *
-from parameterized import *
-import priors
+from parameterization import priors
+from parameterization.parameterized import *
 from gp import GP
 from sparse_gp import SparseGP
-from fitc import FITC
+from ..inference.latent_function_inference.fitc import FITC
 from svigp import SVIGP
 from mapping import *

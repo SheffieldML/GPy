@@ -4,16 +4,12 @@
 
 import numpy as np
 import pylab as pb
-import sys, pdb
 from .. import kern
-from ..core import Model
-from ..util.linalg import pdinv, PCA
-from ..core.priors import Gaussian as Gaussian_prior
+from ..util.linalg import PCA
 from ..core import GP
 from ..likelihoods import Gaussian
 from .. import util
-from GPy.util import plot_latent
-from GPy.core.parameter import Param
+from ..core import Param
 
 
 class GPLVM(GP):
@@ -37,7 +33,6 @@ class GPLVM(GP):
         GP.__init__(self, X, likelihood, kernel, normalize_X=False, name=name)
         self.X = Param('q_mean', self.X)
         self.add_parameter(self.X, gradient=self.dK_dX, index=0)
-        #self.set_prior('.*X', Gaussian_prior(0, 1))
         self.ensure_default_constraints()
 
     def initialise_latent(self, init, input_dim, Y):
@@ -86,7 +81,7 @@ class GPLVM(GP):
 
     def plot(self):
         assert self.likelihood.Y.shape[1] == 2
-        pb.scatter(self.likelihood.Y[:, 0], self.likelihood.Y[:, 1], 40, self.X[:, 0].copy(), linewidth=0, cmap=pb.cm.jet)
+        pb.scatter(self.likelihood.Y[:, 0], self.likelihood.Y[:, 1], 40, self.X[:, 0].copy(), linewidth=0, cmap=pb.cm.jet)  # @UndefinedVariable
         Xnew = np.linspace(self.X.min(), self.X.max(), 200)[:, None]
         mu, var, upper, lower = self.predict(Xnew)
         pb.plot(mu[:, 0], mu[:, 1], 'k', linewidth=1.5)

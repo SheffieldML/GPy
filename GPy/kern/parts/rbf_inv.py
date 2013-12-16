@@ -4,10 +4,9 @@
 
 from rbf import RBF
 import numpy as np
-import hashlib
 from scipy import weave
 from ...util.linalg import tdot
-from GPy.core.parameter import Param
+from ...core.parameterization import Param
 
 class RBFInv(RBF):
     """

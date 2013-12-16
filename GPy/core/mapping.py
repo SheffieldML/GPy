@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from ..util.plot import Tango, x_frame1D, x_frame2D
-from parameterized import Parameterized
+from parameterization import Parameterized
 import numpy as np
 import pylab as pb
 

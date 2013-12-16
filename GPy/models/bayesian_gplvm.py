@@ -2,17 +2,16 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
+import itertools
+from matplotlib import pyplot
+from gplvm import GPLVM
+from .. import kern
 from ..core import SparseGP
 from ..likelihoods import Gaussian
-from .. import kern
-import itertools
-from matplotlib.colors import colorConverter
-from GPy.inference.optimization import SCG
-from GPy.util import plot_latent, linalg
-from GPy.models.gplvm import GPLVM
-from GPy.util.plot_latent import most_significant_input_dimensions
-from matplotlib import pyplot
-from GPy.core.variational import Normal
+from ..inference.optimization import SCG
+from ..util import plot_latent, linalg
+from ..util.plot_latent import most_significant_input_dimensions
+from ..core.parameterization.variational import Normal
 
 class BayesianGPLVM(SparseGP, GPLVM):
     """

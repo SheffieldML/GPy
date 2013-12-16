@@ -3,10 +3,9 @@
 
 import numpy as np
 import pylab as pb
-from ..util.linalg import mdot, jitchol, tdot, symmetrify, backsub_both_sides, chol_inv, dtrtrs, dpotrs, dpotri
-from scipy import linalg
+from ..util.linalg import mdot, tdot, symmetrify, backsub_both_sides, chol_inv, dtrtrs, dpotrs, dpotri
 from gp_base import GPBase
-from GPy.core.parameter import Param
+from GPy.core import Param
 
 class SparseGP(GPBase):
     """

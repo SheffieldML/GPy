@@ -2,12 +2,8 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-import pylab as pb
-from ..util.linalg import mdot, jitchol, chol_inv, tdot, symmetrify, pdinv, dtrtrs
-from ..util.plot import gpplot
-from .. import kern
-from scipy import stats
-from sparse_gp import SparseGP
+from ...util.linalg import mdot, jitchol, chol_inv, tdot, dtrtrs
+from ...core import SparseGP
 
 class FITC(SparseGP):
     """

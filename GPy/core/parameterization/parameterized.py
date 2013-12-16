@@ -5,74 +5,10 @@
 import numpy; np = numpy
 import copy
 import cPickle
-import transformations
 import itertools
 from re import compile, _pattern_type
-import re
-
-class Parentable(object):
-    def __init__(self, direct_parent=None, highest_parent=None, parent_index=None):
-        super(Parentable,self).__init__()        
-        self._direct_parent_ = direct_parent
-        self._parent_index_ = parent_index
-        self._highest_parent_ = highest_parent
-        
-    def has_parent(self):
-        return self._direct_parent_ is not None
-    
-class Nameable(Parentable):
-    _name = None
-    def __init__(self, name, direct_parent=None, highest_parent=None, parent_index=None):
-        super(Nameable,self).__init__(direct_parent, highest_parent, parent_index)
-        self._name = name or self.__class__.__name__
-
-    @property
-    def name(self):
-        return self._name
-    @name.setter
-    def name(self, name):
-        from_name = self.name
-        self._name = name        
-        if self.has_parent():
-            self._direct_parent_._name_changed(self, from_name)
-
-class Pickleable(object):
-    def getstate(self):
-        """
-        Returns the state of this class in a memento pattern.
-        The state must be a list-like structure of all the fields
-        this class needs to run.
-
-        See python doc "pickling" (`__getstate__` and `__setstate__`) for details.
-        """
-        raise NotImplementedError, "To be able to use pickling you need to implement this method"
-    def setstate(self, state):
-        """
-        Set the state (memento pattern) of this class to the given state.
-        Usually this is just the counterpart to getstate, such that
-        an object is a copy of another when calling
-    
-            copy = <classname>.__new__(*args,**kw).setstate(<to_be_copied>.getstate())
-            
-        See python doc "pickling" (`__getstate__` and `__setstate__`) for details.
-        """
-        raise NotImplementedError, "To be able to use pickling you need to implement this method"
-
-class Observable(object):
-    _observers_ = {}
-    def add_observer(self, observer, callble):
-        self._observers_[observer] = callble
-        callble(self)
-    def remove_observer(self, observer):
-        del self._observers_[observer]
-    def _notify_observers(self):
-        [callble(self) for callble in self._observers_.itervalues()]
-
-def _adjust_name_for_printing(name):
-    if name is not None:
-        return name.replace(" ", "_").replace(".", "_").replace("-","").replace("+","").replace("!","").replace("*","").replace("/","")
-    return ''
-from parameter import ParamConcatenation, Param, Constrainable
+from param import ParamConcatenation, Param
+from parameter_core import Constrainable, Pickleable, Observable, adjust_name_for_printing
 from index_operations import ParameterIndexOperations,\
     index_empty
 
@@ -96,35 +32,35 @@ class Parameterized(Constrainable, Pickleable, Observable):
     Printing parameters:
     
         - print m:           prints a nice summary over all parameters
-        - print m.name:      prints details for parameter with name 'name'
+        - print m.name:      prints details for param with name 'name'
         - print m[regexp]: prints details for all the parameters 
                              which match (!) regexp
         - print m['']:       prints details for all parameters
     
         Fields:
 
-            Name:       The name of the parameter, can be renamed!
+            Name:       The name of the param, can be renamed!
             Value:      Shape or value, if one-valued
-            Constrain:  constraint of the parameter, curly "{c}" brackets indicate 
+            Constrain:  constraint of the param, curly "{c}" brackets indicate 
                         some parameters are constrained by c. See detailed print
                         to get exact constraints.
             Tied_to:    which paramter it is tied to.
     
     Getting and setting parameters:
 
-        Set all values in parameter to one:
+        Set all values in param to one:
 
-            m.name.to.parameter = 1
+            m.name.to.param = 1
     
     Handling of constraining, fixing and tieing parameters:
         
-        You can constrain parameters by calling the constrain on the parameter itself, e.g:
+        You can constrain parameters by calling the constrain on the param itself, e.g:
         
             - m.name[:,1].constrain_positive()
             - m.name[0].tie_to(m.name[1])
 
         Fixing parameters will fix them to the value they are right now. If you change
-        the parameters value, the parameter will be fixed to the new value!
+        the parameters value, the param will be fixed to the new value!
 
         If you want to operate on all parameters use m[''] to wildcard select all paramters 
         and concatenate them. Printing m[''] will result in printing of all parameters in detail.
@@ -153,13 +89,13 @@ class Parameterized(Constrainable, Pickleable, Observable):
     #===========================================================================
 #     def set_as_parameter(self, name, array, gradient, index=None, gradient_parent=None):
 #         """
-#         :param name:     name of the parameter (in print and plots), can be callable without parameters
+#         :param name:     name of the param (in print and plots), can be callable without parameters
 #         :type name:      str, callable
-#         :param array:    array which the parameter consists of
+#         :param array:    array which the param consists of
 #         :type array:     array-like
-#         :param gradient: gradient method of the parameter
+#         :param gradient: gradient method of the param
 #         :type gradient:  callable
-#         :param index:    (optional) index of the parameter when printing
+#         :param index:    (optional) index of the param when printing
 #         
 #         (:param gradient_parent:  connect these parameters to this class, but tell
 #                         updates to highest_parent, this is needed when parameterized classes
@@ -167,11 +103,11 @@ class Parameterized(Constrainable, Pickleable, Observable):
 #                         of their children) 
 #                          
 # 
-#         Set array (e.g. self.X) as parameter with name and gradient.
+#         Set array (e.g. self.X) as param with name and gradient.
 #         I.e: self.set_as_parameter('curvature', self.lengthscale, self.dK_dlengthscale)
 #         
 #         Note: the order in which parameters are added can be adjusted by 
-#               giving an index, of where to put this parameter in printing  
+#               giving an index, of where to put this param in printing  
 #         """
 #         if index is None:
 #             self._parameters_.append(Param(name, array, gradient))
@@ -182,63 +118,63 @@ class Parameterized(Constrainable, Pickleable, Observable):
     def _has_fixes(self):
         return hasattr(self, "_fixes_") and self._fixes_ is not None
 
-    def add_parameter(self, parameter, gradient=None, index=None):
+    def add_parameter(self, param, gradient=None, index=None):
         """
         :param parameters:  the parameters to add
-        :type parameters:   list of or one :py:class:`GPy.core.parameter.Param`
-        :param [gradients]: gradients for each parameter, 
-                            one gradient per parameter
+        :type parameters:   list of or one :py:class:`GPy.core.param.Param`
+        :param [gradients]: gradients for each param, 
+                            one gradient per param
         :param [index]:     index of where to put parameters
         
         
-        Add all parameters to this parameter class, you can insert parameters 
+        Add all parameters to this param class, you can insert parameters 
         at any given index using the :func:`list.insert` syntax 
         """
-        if parameter in self._parameters_ and index is not None:
+        if param in self._parameters_ and index is not None:
             # make sure fixes and constraints are indexed right
             if self._has_fixes():
-                param_slice = slice(self._offset_for(parameter),self._offset_for(parameter)+parameter.size)
+                param_slice = slice(self._offset_for(param),self._offset_for(param)+param.size)
                 dest_index = sum((p.size for p in self._parameters_[:index]))
-                dest_slice = slice(dest_index,dest_index+parameter.size)
+                dest_slice = slice(dest_index,dest_index+param.size)
                 fixes_param = self._fixes_[param_slice].copy()
                 self._fixes_[param_slice] = self._fixes_[dest_slice]
                 self._fixes_[dest_slice] = fixes_param
             
-            del self._parameters_[parameter._parent_index_]
-            self._parameters_.insert(index, parameter)
-        elif parameter not in self._parameters_:
+            del self._parameters_[param._parent_index_]
+            self._parameters_.insert(index, param)
+        elif param not in self._parameters_:
             # make sure the size is set
             if not hasattr(self, 'size'):
                 self.size = sum(p.size for p in self._parameters_)
             if index is None:
-                self._parameters_.append(parameter)
+                self._parameters_.append(param)
                 
                 # make sure fixes and constraints are indexed right
-                if parameter._has_fixes(): fixes_param = parameter._fixes_.copy()
-                else: fixes_param = numpy.ones(parameter.size, dtype=bool)
+                if param._has_fixes(): fixes_param = param._fixes_.copy()
+                else: fixes_param = numpy.ones(param.size, dtype=bool)
                 if self._has_fixes(): self._fixes_ = np.r_[self._fixes_, fixes_param]
-                elif parameter._has_fixes(): self._fixes_ = np.r_[np.ones(self.size, dtype=bool), fixes_param]
+                elif param._has_fixes(): self._fixes_ = np.r_[np.ones(self.size, dtype=bool), fixes_param]
             
             else:
-                self._parameters_.insert(index, parameter)
+                self._parameters_.insert(index, param)
                 
                 # make sure fixes and constraints are indexed right
-                if parameter._has_fixes(): fixes_param = parameter._fixes_.copy()
-                else: fixes_param = numpy.ones(parameter.size, dtype=bool)
+                if param._has_fixes(): fixes_param = param._fixes_.copy()
+                else: fixes_param = numpy.ones(param.size, dtype=bool)
                 ins = sum((p.size for p in self._parameters_[:index]))
                 if self._has_fixes(): self._fixes_ = np.r_[self._fixes_[:ins], fixes_param, self._fixes[ins:]]
                 elif not np.all(fixes_param): 
-                    self._fixes_ = np.ones(self.size+parameter.size, dtype=bool)
-                    self._fixes_[ins:ins+parameter.size] = fixes_param
-            self.size += parameter.size
+                    self._fixes_ = np.ones(self.size+param.size, dtype=bool)
+                    self._fixes_[ins:ins+param.size] = fixes_param
+            self.size += param.size
         if gradient:
-            self.gradient_mapping[parameter] = gradient    
+            self.gradient_mapping[param] = gradient    
         self._connect_parameters()
         # make sure the constraints are pulled over:
-        if hasattr(parameter, "_constraints_") and parameter._constraints_ is not None:
-            for t, ind in parameter._constraints_.iteritems():
-                self.constraints.add(t, ind+self._offset_for(parameter))
-            parameter._constraints_.clear()    
+        if hasattr(param, "_constraints_") and param._constraints_ is not None:
+            for t, ind in param._constraints_.iteritems():
+                self.constraints.add(t, ind+self._offset_for(param))
+            param._constraints_.clear()    
         if self._has_fixes() and np.all(self._fixes_): # ==UNFIXED
             self._fixes_= None
 
@@ -251,8 +187,8 @@ class Parameterized(Constrainable, Pickleable, Observable):
         
     def remove_parameter(self, *names_params_indices):
         """
-        :param names_params_indices: mix of parameter_names, parameter objects, or indices 
-            to remove from being a parameter of this parameterized object. 
+        :param names_params_indices: mix of parameter_names, param objects, or indices 
+            to remove from being a param of this parameterized object. 
              
             note: if it is a string object it will not (!) be regexp-matched
                   automatically.
@@ -266,9 +202,9 @@ class Parameterized(Constrainable, Pickleable, Observable):
     def parameters_changed(self):
         """
         This method gets called when parameters have changed. 
-        Another way of listening to parameter changes is to 
-        add self as a listener to the parameter, such that 
-        updates get passed through. See :py:function:``GPy.core.parameter.Observable.add_observer``
+        Another way of listening to param changes is to 
+        add self as a listener to the param, such that 
+        updates get passed through. See :py:function:``GPy.core.param.Observable.add_observer``
         """
         # will be called as soon as paramters have changed
         pass
@@ -292,7 +228,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
             not_unique = []
             sizes.append(p.size+sizes[-1])
             self._param_slices_.append(slice(sizes[-2], sizes[-1]))
-            pname = _adjust_name_for_printing(p.name)  
+            pname = adjust_name_for_printing(p.name)  
             # and makes sure to not delete programmatically added parameters
             if pname in self.__dict__:
                 if isinstance(self.__dict__[pname], (Parameterized, Param)):
@@ -404,7 +340,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
         if hasattr(self, old_name) and old_name in self._added_names_:
             delattr(self, old_name)
             self._added_names_.remove(old_name)
-        pname = _adjust_name_for_printing(param.name)
+        pname = adjust_name_for_printing(param.name)
         if pname not in self.__dict__:
             self._added_names_.add(pname)
             self.__dict__[pname] = param
@@ -428,9 +364,9 @@ class Parameterized(Constrainable, Pickleable, Observable):
     
     def _raveled_index_for(self, param):
         """
-        get the raveled index for a parameter
+        get the raveled index for a param
         that is an int array, containing the indexes for the flattened
-        parameter inside this parameterized logic.
+        param inside this parameterized logic.
         """
         return param._raveled_index() + self._offset_for(param)
     
@@ -477,10 +413,10 @@ class Parameterized(Constrainable, Pickleable, Observable):
             f = self._remove_constrain(param, __fixed__)
             self._set_unfixed(f)
     #===========================================================================
-    # Convenience for fixed, tied checking of parameter:
+    # Convenience for fixed, tied checking of param:
     #===========================================================================
     def _is_fixed(self, param):
-        # returns if the whole parameter is fixed
+        # returns if the whole param is fixed
         if not self._has_fixes():
             return False
         return not self._fixes_[self._raveled_index_for(param)].any()
@@ -492,12 +428,12 @@ class Parameterized(Constrainable, Pickleable, Observable):
         return True
     def _get_original(self, param):
         # if advanced indexing is activated it happens that the array is a copy
-        # you can retrieve the original parameter through this method, by passing
+        # you can retrieve the original param through this method, by passing
         # the copy here
         return self._parameters_[param._parent_index_]
     def hirarchy_name(self):
         if self.has_parent():
-            return self._direct_parent_.hirarchy_name() + _adjust_name_for_printing(self.name) + "."
+            return self._direct_parent_.hirarchy_name() + adjust_name_for_printing(self.name) + "."
         return ''
     #===========================================================================
     # Constraint Handling:
@@ -540,7 +476,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
         for _, ind in self._constraints_iter_items(param):
             yield ind
     def _constraint_indices(self, param, constraint):
-        # indices in model range for parameter and constraint
+        # indices in model range for param and constraint
         return self._backtranslate_index(param, self.constraints[constraint]) + self._offset_for(param)
     def _constraints_for(self, param, rav_index):
         # constraint for param given its internal rav_index
@@ -592,7 +528,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
         #    except AttributeError:
         #        raise AttributeError, a.message, tb
     def __setattr__(self, name, val):
-        # override the default behaviour, if setting a parameter, so broadcasting can by used
+        # override the default behaviour, if setting a param, so broadcasting can by used
         if hasattr(self, "_parameters_"):
             paramlist = self.grep_param_names(name)
             if len(paramlist) == 1: self.__setitem__(name, val, paramlist); return
@@ -603,12 +539,12 @@ class Parameterized(Constrainable, Pickleable, Observable):
     def _short(self):
         # short string to print
         if self.has_parent():
-            return self._direct_parent_.hirarchy_name() + _adjust_name_for_printing(self.name)
+            return self._direct_parent_.hirarchy_name() + adjust_name_for_printing(self.name)
         else:
-            return _adjust_name_for_printing(self.name)
+            return adjust_name_for_printing(self.name)
     def _parameter_names(self, add_name=False):
         if add_name:
-            return [_adjust_name_for_printing(self.name) + "." + xi for x in self._parameters_ for xi in x._parameter_names(add_name=True)]
+            return [adjust_name_for_printing(self.name) + "." + xi for x in self._parameters_ for xi in x._parameter_names(add_name=True)]
         return [xi for x in self._parameters_ for xi in x._parameter_names(add_name=True)]
     parameter_names = property(_parameter_names, doc="Names for all parameters handled by this parameterization object -- will add hirarchy name entries for printing")
     @property
@@ -636,7 +572,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
         return [','.join(x._ties_str) for x in self.flattened_parameters]
     def __str__(self, header=True):
         
-        name  = _adjust_name_for_printing(self.name) + "."
+        name  = adjust_name_for_printing(self.name) + "."
         constrs = self._constraints_str; ts = self._ties_str
         desc = self._description_str; names = self.parameter_names
         nl = max([len(str(x)) for x in names + [name]])
@@ -731,7 +667,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
 #  
 #     def __getitem__(self, regexp, return_names=False):
 #         """
-#         Get a model parameter by name.  The name is applied as a regular
+#         Get a model param by name.  The name is applied as a regular
 #         expression and all parameters that match that regular expression are
 #         returned.
 #         """
@@ -742,11 +678,11 @@ class Parameterized(Constrainable, Pickleable, Observable):
 #             else:
 #                 return self._get_params()[matches]
 #         else:
-#             raise AttributeError, "no parameter matches %s" % regexp
+#             raise AttributeError, "no param matches %s" % regexp
 #  
 #     def __setitem__(self, name, val):
 #         """
-#         Set model parameter(s) by name. The name is provided as a regular
+#         Set model param(s) by name. The name is provided as a regular
 #         expression. All parameters matching that regular expression are set to
 #         the given value.
 #         """
@@ -758,7 +694,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
 #             x[matches] = val
 #             self._set_params(x)
 #         else:
-#             raise AttributeError, "no parameter matches %s" % name
+#             raise AttributeError, "no param matches %s" % name
 #  
 #     def tie_params(self, regexp):
 #         """
@@ -781,7 +717,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
 #  
 #     def grep_param_names(self, regexp, transformed=False, search=False):
 #         """
-#         :param regexp: regular expression to select parameter parameter_names
+#         :param regexp: regular expression to select param parameter_names
 #         :type regexp: re | str | int
 #         :rtype: the indices of self._get_param_names which match the regular expression.
 #  
@@ -884,14 +820,14 @@ class Parameterized(Constrainable, Pickleable, Observable):
 #         :param regexp: which parameters need to be fixed.
 #         :type regexp: ndarray(dtype=int) or regular expression object or string
 #         :param value: the vlaue to fix the parameters to. If the value is not specified,
-#                  the parameter is fixed to the current value
+#                  the param is fixed to the current value
 #         :type value: float
 #  
 #         **Notes**
 #  
-#         Fixing a parameter which is tied to another, or constrained in some way will result in an error.
+#         Fixing a param which is tied to another, or constrained in some way will result in an error.
 #  
-#         To fix multiple parameters to the same value, simply pass a regular expression which matches both parameter parameter_names, or pass both of the indexes.
+#         To fix multiple parameters to the same value, simply pass a regular expression which matches both param parameter_names, or pass both of the indexes.
 #  
 #         """
 #         matches = self.grep_param_names(regexp)
@@ -933,7 +869,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
 #         The Transformation required for _set_params_transformed.
 #  
 #         This moves the vector x seen by the optimiser (unconstrained) to the
-#         valid parameter vector seen by the model
+#         valid param vector seen by the model
 #  
 #         Note:
 #           - This function is separate from _set_params_transformed for downstream flexibility
@@ -963,12 +899,12 @@ class Parameterized(Constrainable, Pickleable, Observable):
 #  
 #     def _get_param_names_transformed(self):
 #         """
-#         Returns the parameter parameter_names as propagated after constraining,
+#         Returns the param parameter_names as propagated after constraining,
 #         tying or fixing, i.e. a list of the same length as _get_params_transformed()
 #         """
 #         n = self._get_param_names()
 #  
-#         # remove/concatenate the tied parameter parameter_names
+#         # remove/concatenate the tied param parameter_names
 #         if len(self.tied_indices):
 #             for t in self.tied_indices:
 #                 n[t[0]] = "<tie>".join([n[tt] for tt in t])
@@ -996,7 +932,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
 #     #def __str__(self, parameter_names=None, nw=30):
 #     def __str__(self, nw=30):
 #         """
-#         Return a string describing the parameter parameter_names and their ties and constraints
+#         Return a string describing the param parameter_names and their ties and constraints
 #         """
 #         parameter_names = self._get_param_names()
 #         #if parameter_names is None:

@@ -1,7 +1,7 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 #from ...core.parameterized.Parameterized import set_as_parameter
-from GPy.core.parameterized import Parameterized
+from ...core.parameterization import Parameterized
 
 class Kernpart(Parameterized):
     def __init__(self,input_dim,name):

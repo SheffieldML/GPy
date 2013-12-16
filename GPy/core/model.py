@@ -6,14 +6,14 @@ from .. import likelihoods
 from ..inference import optimization
 from ..util.linalg import jitchol
 from ..util.misc import opt_wrapper
-from parameterized import Parameterized, __fixed__
+from parameterization import Parameterized
+from parameterization.parameterized import UNFIXED
+from parameterization.domains import _POSITIVE, _REAL
+from parameterization.index_operations import ParameterIndexOperations
 import multiprocessing as mp
 import numpy as np
-from domains import _POSITIVE, _REAL
 from numpy.linalg.linalg import LinAlgError
-from index_operations import ParameterIndexOperations
 import itertools
-from GPy.core.parameterized import UNFIXED
 # import numdifftools as ndt
 
 class Model(Parameterized):
@@ -160,21 +160,6 @@ class Model(Parameterized):
         ret = np.zeros(x.size)
         [np.put(ret, i, p.lnpdf_grad(xx)) for i, (p, xx) in enumerate(zip(self.priors, x)) if not p is None]
         return ret
-
-
-#     def _transform_gradients(self, g):
-#         x = self._get_params()
-#         for constraint, index in self.constraints.iteritems():
-#             if constraint != __fixed__:
-#                 g[index] = g[index] * constraint.gradfactor(x[index])
-#         #[np.put(g, i, v) for i, v in [(t[0], np.sum(g[t])) for t in self.tied_indices]]
-#         [np.put(g, i, v) for i, v in [[i, t.sum()] for p in self.flattened_parameters for t,i in p._tied_to_me_.iteritems()]]
-# #         if len(self.tied_indices) or len(self.fixed_indices):
-# #             to_remove = np.hstack((self.fixed_indices + [t[1:] for t in self.tied_indices]))
-# #             return np.delete(g, to_remove)
-# #         else:
-#         if self._fixes_ is not None: return g[self._fixes_]
-#         return g
 
     def randomize(self):
         """

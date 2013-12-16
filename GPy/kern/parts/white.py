@@ -3,7 +3,7 @@
 
 from kernpart import Kernpart
 import numpy as np
-from ...core.parameter import Param
+from ...core.parameterization import Param
 
 class White(Kernpart):
     """

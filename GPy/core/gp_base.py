@@ -1,11 +1,15 @@
+# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
 import numpy as np
 import pylab as pb
 import warnings
 from .. import kern
 from ..util.plot import gpplot, Tango, x_frame1D, x_frame2D
 from model import Model
-from parameter import ObservableArray
+from parameterization import ObservableArray
 from .. import likelihoods
+from GPy.likelihoods.gaussian import Gaussian
 
 class GPBase(Model):
     """
@@ -87,10 +91,10 @@ class GPBase(Model):
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
         Ysim = self.posterior_samples_f(X, size, which_parts=which_parts, full_cov=full_cov)
-        if isinstance(self.likelihood,Gaussian):
+        if isinstance(self.likelihood, Gaussian):
             noise_std = np.sqrt(self.likelihood._get_params())
             Ysim += np.random.normal(0,noise_std,Ysim.shape)
-        elif isinstance(self.likelihood,Gaussian_Mixed_Noise):
+        elif isinstance(self.likelihood, Gaussian_Mixed_Noise):
             assert noise_model is not None, "A noise model must be specified."
             noise_std = np.sqrt(self.likelihood._get_params()[noise_model])
             Ysim += np.random.normal(0,noise_std,Ysim.shape)

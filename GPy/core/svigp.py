@@ -3,10 +3,8 @@
 
 import numpy as np
 import pylab as pb
-from .. import kern
 from ..util.linalg import pdinv, mdot, tdot, dpotrs, dtrtrs, jitchol, backsub_both_sides
 from gp_base import GPBase
-from model import Model
 import time
 import sys
 
@@ -502,7 +500,7 @@ class SVIGP(GPBase):
             ax.plot(Zu, np.zeros_like(Zu) + Z_height, 'r|', mew=1.5, markersize=12)
 
         if self.input_dim==2:
-            ax.scatter(self.X[:,0], self.X[:,1], 20., self.Y[:,0], linewidth=0, cmap=pb.cm.jet)
+            ax.scatter(self.X[:,0], self.X[:,1], 20., self.Y[:,0], linewidth=0, cmap=pb.cm.jet)  # @UndefinedVariable
             ax.plot(Zu[:,0], Zu[:,1], 'w^')
 
     def plot_traces(self):

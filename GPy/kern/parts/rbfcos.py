@@ -1,11 +1,10 @@
-
 # Copyright (c) 2012, James Hensman and Andrew Gordon Wilson
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
 from kernpart import Kernpart
 import numpy as np
-from ...core.parameter import Param
+from ...core.parameterization import Param
 
 class RBFCos(Kernpart):
     def __init__(self,input_dim,variance=1.,frequencies=None,bandwidths=None,ARD=False):

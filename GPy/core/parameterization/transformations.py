@@ -3,7 +3,7 @@
 
 
 import numpy as np
-from GPy.core.domains import _POSITIVE,_NEGATIVE, _BOUNDED
+from domains import _POSITIVE,_NEGATIVE, _BOUNDED
 import sys 
 import weakref
 _lim_val = -np.log(sys.float_info.epsilon) 

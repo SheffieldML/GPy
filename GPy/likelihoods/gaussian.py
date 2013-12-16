@@ -17,7 +17,7 @@ from scipy import stats, special
 from GPy.util.univariate_Gaussian import std_norm_pdf, std_norm_cdf
 import link_functions
 from likelihood import Likelihood
-from ..core.parameter import Param
+from ..core.parameterization import Param
 
 class Gaussian(Likelihood):
     """

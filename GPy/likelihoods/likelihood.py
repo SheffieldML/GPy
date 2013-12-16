@@ -11,7 +11,7 @@ import link_functions
 from ..util.misc import chain_1, chain_2, chain_3
 from scipy.integrate import quad
 import warnings
-from ..core.parameterized import Parameterized
+from ..core.parameterization import Parameterized
 
 class Likelihood(Parameterized):
     """

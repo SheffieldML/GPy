@@ -1,13 +1,10 @@
-'''
-Created on 4 Sep 2013
+# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-@author: maxz
-'''
 import itertools
 import numpy
-from transformations import Logexp, NegativeLogexp, Logistic
-from parameterized import Nameable, Pickleable, Observable, Parentable
-from parameterized import _adjust_name_for_printing
+from parameter_core import Constrainable, adjust_name_for_printing
+from array_core import ObservableArray
 
 ###### printing
 __constraints_name__ = "Constraint"
@@ -15,132 +12,7 @@ __index_name__ = "Index"
 __tie_name__ = "Tied to"
 __precision__ = numpy.get_printoptions()['precision'] # numpy printing precision used, sublassing numpy ndarray after all
 __print_threshold__ = 5
-######    
-
-class ListArray(numpy.ndarray):
-    """
-    ndarray which can be stored in lists and checked if it is in.
-    WARNING: This overrides the functionality of x==y!!!
-    Use numpy.equal(x,y) for element-wise equality testing.
-    """
-    def __new__(cls, input_array):
-        obj = numpy.asanyarray(input_array).view(cls)
-        return obj
-    def __eq__(self, other):
-        return other is self
-
-class ObservableArray(ListArray, Observable):
-    """
-    An ndarray which reports changes to its observers.
-    The observers can add themselves with a callable, which
-    will be called every time this array changes. The callable
-    takes exactly one argument, which is this array itself.
-    """
-    def __new__(cls, input_array):
-        obj = super(ObservableArray, cls).__new__(cls, input_array).view(cls)
-        obj._observers_ = {}
-        return obj
-    def __array_finalize__(self, obj):
-        # see InfoArray.__array_finalize__ for comments
-        if obj is None: return
-        self._observers_ = getattr(obj, '_observers_', None)
-    def __setitem__(self, s, val, update=True):
-        if self.ndim:
-            if not numpy.all(numpy.equal(self[s], val)):
-                super(ObservableArray, self).__setitem__(s, val)
-                if update:
-                    self._notify_observers()
-        else:
-            if not numpy.all(numpy.equal(self, val)):
-                super(ObservableArray, self).__setitem__(Ellipsis, val)
-                if update:
-                    self._notify_observers()
-    def __getslice__(self, start, stop):
-        return self.__getitem__(slice(start, stop))
-    def __setslice__(self, start, stop, val):
-        return self.__setitem__(slice(start, stop), val)    
-
-class Constrainable(Nameable):
-    def __init__(self, name):
-        super(Constrainable,self).__init__(name)
-    #===========================================================================
-    # Constrain operations -> done
-    #===========================================================================
-    def constrain(self, transform, warning=True, update=True):
-        """
-        :param transform: the :py:class:`GPy.core.transformations.Transformation`
-                          to constrain the this parameter to.
-        :param warning: print a warning if re-constraining parameters.
-        
-        Constrain the parameter to the given
-        :py:class:`GPy.core.transformations.Transformation`.
-        """
-        if self.has_parent():
-            self._highest_parent_._add_constrain(self, transform, warning)
-            if update:
-                self._highest_parent_.parameters_changed()
-        else:
-            for p in self._parameters_:
-                self._add_constrain(p, transform, warning)
-            if update:
-                self.parameters_changed()
-    def constrain_positive(self, warning=True):
-        """
-        :param warning: print a warning if re-constraining parameters.
-        
-        Constrain this parameter to the default positive constraint.
-        """
-        self.constrain(Logexp(), warning)
-
-    def constrain_negative(self, warning=True):
-        """
-        :param warning: print a warning if re-constraining parameters.
-        
-        Constrain this parameter to the default negative constraint.
-        """
-        self.constrain(NegativeLogexp(), warning)
-
-    def constrain_bounded(self, lower, upper, warning=True):
-        """
-        :param lower, upper: the limits to bound this parameter to
-        :param warning: print a warning if re-constraining parameters.
-        
-        Constrain this parameter to lie within the given range.
-        """
-        self.constrain(Logistic(lower, upper), warning)
-
-    def unconstrain(self, *transforms):
-        """
-        :param transforms: The transformations to unconstrain from.
-        
-        remove all :py:class:`GPy.core.transformations.Transformation` 
-        transformats of this parameter object.
-        """
-        if self.has_parent():
-            self._highest_parent_._remove_constrain(self, *transforms)
-        else:
-            for p in self._parameters_:
-                self._remove_constrain(p, *transforms)
-
-    def unconstrain_positive(self):
-        """
-        Remove positive constraint of this parameter. 
-        """
-        self.unconstrain(Logexp())
-
-    def unconstrain_negative(self):
-        """
-        Remove negative constraint of this parameter. 
-        """
-        self.unconstrain(NegativeLogexp())
-
-    def unconstrain_bounded(self, lower, upper):
-        """
-        :param lower, upper: the limits to unbound this parameter from
-        
-        Remove (lower, upper) bounded constrain from this parameter/
-        """
-        self.unconstrain(Logistic(lower, upper))
+######      
 
 class Float(numpy.float64, Constrainable):
     def __init__(self, f, base):
@@ -523,8 +395,8 @@ class Param(ObservableArray, Constrainable):
     @property
     def name_hirarchical(self):
         if self.has_parent():
-            return self._direct_parent_.hirarchy_name()+_adjust_name_for_printing(self.name)
-        return _adjust_name_for_printing(self.name)
+            return self._direct_parent_.hirarchy_name()+adjust_name_for_printing(self.name)
+        return adjust_name_for_printing(self.name)
     def __repr__(self, *args, **kwargs):
         name = "\033[1m{x:s}\033[0;0m:\n".format(
                             x=self.name_hirarchical)
@@ -564,7 +436,7 @@ class Param(ObservableArray, Constrainable):
         return reduce(lambda a, b:max(a, len(str(b))), ind, len(__index_name__))
     def _short(self):
         # short string to print
-        name = self._direct_parent_.hirarchy_name() + _adjust_name_for_printing(self.name)
+        name = self._direct_parent_.hirarchy_name() + adjust_name_for_printing(self.name)
         if self._realsize_ < 2:
             return name
         ind = self._indices()

@@ -5,7 +5,7 @@ Created on Oct 2, 2013
 '''
 import numpy
 from numpy.lib.function_base import vectorize
-from parameter import Param
+from param import Param
 from collections import defaultdict
 
 class ParamDict(defaultdict):
@@ -49,13 +49,13 @@ class IntArrayDict(ParamDict):
 
 class ParameterIndexOperations(object):
     '''
-    Index operations for storing parameter index _properties
+    Index operations for storing param index _properties
     This class enables index with slices retrieved from object.__getitem__ calls.
     Adding an index will add the selected indexes by the slice of an indexarray
     indexing a shape shaped array to the flattened index array. Remove will
     remove the selected slice indices from the flattened array.
     You can give an offset to set an offset for the given indices in the
-    index array, for multi-parameter handling.
+    index array, for multi-param handling.
     '''
     def __init__(self):
         self._properties = ParamDict()

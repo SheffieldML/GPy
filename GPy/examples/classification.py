@@ -6,12 +6,11 @@
 Gaussian Processes classification
 """
 import pylab as pb
-import numpy as np
 import GPy
 
 default_seed = 10000
 
-def oil(num_inducing=50, max_iters=100, kernel=None):
+def oil(num_inducing=50, max_iters=100, kernel=None, optimize=True, plot=True):
     """
     Run a Gaussian process classification on the three phase oil data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
 
@@ -25,7 +24,7 @@ def oil(num_inducing=50, max_iters=100, kernel=None):
     Ytest[Ytest.flatten()==-1] = 0
 
     # Create GP model
-    m = GPy.models.SparseGPClassification(X, Y,kernel=kernel,num_inducing=num_inducing)
+    m = GPy.models.SparseGPClassification(X, Y, kernel=kernel, num_inducing=num_inducing)
 
     # Contrain all parameters to be positive
     m.tie_params('.*len')
@@ -33,15 +32,16 @@ def oil(num_inducing=50, max_iters=100, kernel=None):
     m.update_likelihood_approximation()
 
     # Optimize
-    m.optimize(max_iters=max_iters)
+    if optimize:
+        m.optimize(max_iters=max_iters)
     print(m)
 
     #Test
     probs = m.predict(Xtest)[0]
-    GPy.util.classification.conf_matrix(probs,Ytest)
+    GPy.util.classification.conf_matrix(probs, Ytest)
     return m
 
-def toy_linear_1d_classification(seed=default_seed):
+def toy_linear_1d_classification(seed=default_seed, optimize=True, plot=True):
     """
     Simple 1D classification example using EP approximation
 
@@ -58,21 +58,23 @@ def toy_linear_1d_classification(seed=default_seed):
     m = GPy.models.GPClassification(data['X'], Y)
 
     # Optimize
-    #m.update_likelihood_approximation()
-    # Parameters optimization:
-    #m.optimize()
-    #m.update_likelihood_approximation()
-    m.pseudo_EM()
+    if optimize:
+        #m.update_likelihood_approximation()
+        # Parameters optimization:
+        #m.optimize()
+        #m.update_likelihood_approximation()
+        m.pseudo_EM()
 
     # Plot
-    fig, axes = pb.subplots(2,1)
-    m.plot_f(ax=axes[0])
-    m.plot(ax=axes[1])
-    print(m)
+    if plot:
+        fig, axes = pb.subplots(2, 1)
+        m.plot_f(ax=axes[0])
+        m.plot(ax=axes[1])
 
+    print m
     return m
 
-def toy_linear_1d_classification_laplace(seed=default_seed):
+def toy_linear_1d_classification_laplace(seed=default_seed, optimize=True, plot=True):
     """
     Simple 1D classification example using Laplace approximation
 
@@ -90,24 +92,25 @@ def toy_linear_1d_classification_laplace(seed=default_seed):
 
     # Model definition
     m = GPy.models.GPClassification(data['X'], Y, likelihood=laplace_likelihood)
-
     print m
+
     # Optimize
-    #m.update_likelihood_approximation()
-    # Parameters optimization:
-    m.optimize('bfgs', messages=1)
-    #m.pseudo_EM()
+    if optimize:
+        #m.update_likelihood_approximation()
+        # Parameters optimization:
+        m.optimize('bfgs', messages=1)
+        #m.pseudo_EM()
 
     # Plot
-    fig, axes = pb.subplots(2,1)
-    m.plot_f(ax=axes[0])
-    m.plot(ax=axes[1])
-    print(m)
+    if plot:
+        fig, axes = pb.subplots(2, 1)
+        m.plot_f(ax=axes[0])
+        m.plot(ax=axes[1])
 
+    print m
     return m
 
-
-def sparse_toy_linear_1d_classification(num_inducing=10,seed=default_seed):
+def sparse_toy_linear_1d_classification(num_inducing=10, seed=default_seed, optimize=True, plot=True):
     """
     Sparse 1D classification example
 
@@ -121,24 +124,26 @@ def sparse_toy_linear_1d_classification(num_inducing=10,seed=default_seed):
     Y[Y.flatten() == -1] = 0
 
     # Model definition
-    m = GPy.models.SparseGPClassification(data['X'], Y,num_inducing=num_inducing)
-    m['.*len']= 4.
+    m = GPy.models.SparseGPClassification(data['X'], Y, num_inducing=num_inducing)
+    m['.*len'] = 4.
 
     # Optimize
-    #m.update_likelihood_approximation()
-    # Parameters optimization:
-    #m.optimize()
-    m.pseudo_EM()
+    if optimize:
+        #m.update_likelihood_approximation()
+        # Parameters optimization:
+        #m.optimize()
+        m.pseudo_EM()
 
     # Plot
-    fig, axes = pb.subplots(2,1)
-    m.plot_f(ax=axes[0])
-    m.plot(ax=axes[1])
-    print(m)
+    if plot:
+        fig, axes = pb.subplots(2, 1)
+        m.plot_f(ax=axes[0])
+        m.plot(ax=axes[1])
 
+    print m
     return m
 
-def toy_heaviside(seed=default_seed):
+def toy_heaviside(seed=default_seed, optimize=True, plot=True):
     """
     Simple 1D classification example using a heavy side gp transformation
 
@@ -153,24 +158,26 @@ def toy_heaviside(seed=default_seed):
 
     # Model definition
     noise_model = GPy.likelihoods.bernoulli(GPy.likelihoods.noise_models.gp_transformations.Heaviside())
-    likelihood = GPy.likelihoods.EP(Y,noise_model)
+    likelihood = GPy.likelihoods.EP(Y, noise_model)
     m = GPy.models.GPClassification(data['X'], likelihood=likelihood)
 
     # Optimize
-    m.update_likelihood_approximation()
-    # Parameters optimization:
-    m.optimize()
-    #m.pseudo_EM()
+    if optimize:
+        m.update_likelihood_approximation()
+        # Parameters optimization:
+        m.optimize()
+        #m.pseudo_EM()
 
     # Plot
-    fig, axes = pb.subplots(2,1)
-    m.plot_f(ax=axes[0])
-    m.plot(ax=axes[1])
-    print(m)
+    if plot:
+        fig, axes = pb.subplots(2, 1)
+        m.plot_f(ax=axes[0])
+        m.plot(ax=axes[1])
 
+    print m
     return m
 
-def crescent_data(model_type='Full', num_inducing=10, seed=default_seed, kernel=None):
+def crescent_data(model_type='Full', num_inducing=10, seed=default_seed, kernel=None, optimize=True, plot=True):
     """
     Run a Gaussian process classification on the crescent data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
 
@@ -187,7 +194,7 @@ def crescent_data(model_type='Full', num_inducing=10, seed=default_seed, kernel=
     Y[Y.flatten()==-1] = 0
 
     if model_type == 'Full':
-        m = GPy.models.GPClassification(data['X'], Y,kernel=kernel)
+        m = GPy.models.GPClassification(data['X'], Y, kernel=kernel)
 
     elif model_type == 'DTC':
         m = GPy.models.SparseGPClassification(data['X'], Y, kernel=kernel, num_inducing=num_inducing)
@@ -197,8 +204,11 @@ def crescent_data(model_type='Full', num_inducing=10, seed=default_seed, kernel=
         m = GPy.models.FITCClassification(data['X'], Y, kernel=kernel, num_inducing=num_inducing)
         m['.*len'] = 3.
 
-    m.pseudo_EM()
-    print(m)
-    m.plot()
+    if optimize:
+        m.pseudo_EM()
 
+    if plot:
+        m.plot()
+
+    print m
     return m

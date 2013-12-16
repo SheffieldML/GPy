@@ -3,7 +3,6 @@ import numpy as np
 import GPy
 import scipy.io
 import cPickle as pickle
-import urllib as url
 import zipfile
 import tarfile
 import datetime
@@ -15,7 +14,7 @@ except ImportError:
     ipython_available=False
 
 
-import sys, urllib
+import sys, urllib2
 
 def reporthook(a,b,c):
     # ',' at the end of the line is important!
@@ -82,7 +81,21 @@ def download_url(url, store_directory, save_name = None, messages = True, suffix
     print "Downloading ", url, "->", os.path.join(store_directory, file)
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
-    urllib.urlretrieve(url+suffix, save_name, reporthook)
+    try:
+        response = urllib2.urlopen(url+suffix)
+    except urllib2.URLError, e:
+        if not hasattr(e, "code"):
+            raise
+        response = e
+        if response.code > 399 and response.code<500:
+            raise ValueError('Tried url ' + url + suffix + ' and received client error ' + str(response.code))
+        elif response.code > 499:
+            raise ValueError('Tried url ' + url + suffix + ' and received server error ' + str(response.code))
+    # if we wanted to get more sophisticated maybe we should check the response code here again even for successes.
+    with open(save_name, 'wb') as f:
+        f.write(response.read())
+    
+    #urllib.urlretrieve(url+suffix, save_name, reporthook)
 
 def authorize_download(dataset_name=None):
     """Check with the user that the are happy with terms and conditions for the data set."""
@@ -142,6 +155,8 @@ def cmu_urls_files(subj_motions, messages = True):
     '''
     Find which resources are missing on the local disk for the requested CMU motion capture motions.
     '''
+    dr = data_resources['cmu_mocap_full']
+    cmu_url = dr['urls'][0]
 
     subjects_num = subj_motions[0]
     motions_num = subj_motions[1]
@@ -187,7 +202,7 @@ def cmu_urls_files(subj_motions, messages = True):
                 url_required = True
                 file_download.append(subjects[i] + '_' + motions[i][j] + '.amc')
         if url_required:
-            resource['urls'].append(cmu_url + subjects[i] + '/')
+            resource['urls'].append(cmu_url + '/' + subjects[i] + '/')
             resource['files'].append(file_download)
     return resource
 
@@ -435,7 +450,7 @@ def simulation_BGPLVM():
     Y = np.array(mat_data['Y'], dtype=float)
     S = np.array(mat_data['initS'], dtype=float)
     mu = np.array(mat_data['initMu'], dtype=float)
-    return data_details_return({'S': S, 'Y': Y, 'mu': mu}, data_set)
+    #return data_details_return({'S': S, 'Y': Y, 'mu': mu}, data_set)
     return {'Y': Y, 'S': S,
             'mu' : mu,
             'info': "Simulated test dataset generated in MATLAB to compare BGPLVM between python and MATLAB"}
@@ -594,11 +609,11 @@ def olympic_sprints(data_set='rogers_girolami_data'):
         'Y': Y,
         'info': "Olympics sprint event winning for men and women to 2008. Data is from Rogers and Girolami's First Course in Machine Learning.",
         'output_info': {
-          0:'100m Men', 
-          1:'100m Women', 
-          2:'200m Men', 
-          3:'200m Women', 
-          4:'400m Men', 
+          0:'100m Men',
+          1:'100m Women',
+          2:'200m Men',
+          3:'200m Women',
+          4:'400m Men',
           5:'400m Women'}
         }, data_set)
 
@@ -693,15 +708,15 @@ def creep_data(data_set='creep_rupture'):
     X = all_data[:, features].copy()
     return data_details_return({'X': X, 'y': y}, data_set)
 
-def cmu_mocap_49_balance():
+def cmu_mocap_49_balance(data_set='cmu_mocap'):
     """Load CMU subject 49's one legged balancing motion that was used by Alvarez, Luengo and Lawrence at AISTATS 2009."""
     train_motions = ['18', '19']
     test_motions = ['20']
-    data = cmu_mocap('49', train_motions, test_motions, sample_every=4)
+    data = cmu_mocap('49', train_motions, test_motions, sample_every=4, data_set=data_set)
     data['info'] = "One legged balancing motions from CMU data base subject 49. As used in Alvarez, Luengo and Lawrence at AISTATS 2009. It consists of " + data['info']
     return data
 
-def cmu_mocap_35_walk_jog():
+def cmu_mocap_35_walk_jog(data_set='cmu_mocap'):
     """Load CMU subject 35's walking and jogging motions, the same data that was used by Taylor, Roweis and Hinton at NIPS 2007. but without their preprocessing. Also used by Lawrence at AISTATS 2007."""
     train_motions = ['01', '02', '03', '04', '05', '06',
                 '07', '08', '09', '10', '11', '12',
@@ -709,7 +724,7 @@ def cmu_mocap_35_walk_jog():
                 '20', '21', '22', '23', '24', '25',
                 '26', '28', '30', '31', '32', '33', '34']
     test_motions = ['18', '29']
-    data = cmu_mocap('35', train_motions, test_motions, sample_every=4)
+    data = cmu_mocap('35', train_motions, test_motions, sample_every=4, data_set=data_set)
     data['info'] = "Walk and jog data from CMU data base subject 35. As used in Tayor, Roweis and Hinton at NIPS 2007, but without their pre-processing (i.e. as used by Lawrence at AISTATS 2007). It consists of " + data['info']
     return data
 
@@ -721,7 +736,7 @@ def cmu_mocap(subject, train_motions, test_motions=[], sample_every=4, data_set=
     # Make sure the data is downloaded.
     all_motions = train_motions + test_motions
     resource = cmu_urls_files(([subject], [all_motions]))
-    data_resources[data_set] = data_resources['cmu_mocap_full']
+    data_resources[data_set] = data_resources['cmu_mocap_full'].copy()
     data_resources[data_set]['files'] = resource['files']
     data_resources[data_set]['urls'] = resource['urls']
     if resource['urls']:

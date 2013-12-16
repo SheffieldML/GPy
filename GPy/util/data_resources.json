@@ -102,7 +102,7 @@
       "citation":"Please include this in your acknowledgements: The data used in this project was obtained from mocap.cs.cmu.edu.\nThe database was created with funding from NSF EIA-0196217.",
       "details":"CMU Motion Capture data base. Captured by a Vicon motion capture system consisting of 12 infrared MX-40 cameras, each of which is capable of recording at 120 Hz with images of 4 megapixel resolution. Motions are captured in a working volume of approximately 3m x 8m. The capture subject wears 41 markers and a stylish black garment.",
       "urls":[
-         "http://mocap.cs.cmu.edu"
+         "http://mocap.cs.cmu.edu/subjects"
       ],
       "size":null
    },

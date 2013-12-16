@@ -16,7 +16,7 @@ class GPBase(Model):
     def __init__(self, X, likelihood, kernel, normalize_X=False):
         if len(X.shape)==1:
             X = X.reshape(-1,1)
-            warning.warn("One dimension output (N,) being reshaped to (N,1)")
+            warnings.warn("One dimension output (N,) being reshaped to (N,1)")
         self.X = X
         assert len(self.X.shape) == 2, "too many dimensions for X input"
         self.num_data, self.input_dim = self.X.shape
@@ -76,7 +76,7 @@ class GPBase(Model):
         :type noise_model: integer.
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
-        Ysim = self.posterior_samples_f(X, size, which_parts=which_parts, full_cov=True)
+        Ysim = self.posterior_samples_f(X, size, which_parts=which_parts)
         if isinstance(self.likelihood,Gaussian):
             noise_std = np.sqrt(self.likelihood._get_params())
             Ysim += np.random.normal(0,noise_std,Ysim.shape)
@@ -107,7 +107,7 @@ class GPBase(Model):
             levels=20, samples=0, fignum=None, ax=None, resolution=None,
             plot_raw=False,
             linecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue']):
-        """ 
+        """
         Plot the posterior of the GP.
           - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
           - In two dimsensions, a contour-plot shows the mean predicted function
@@ -176,8 +176,8 @@ class GPBase(Model):
                 upper = m + 2*np.sqrt(v)
                 Y = self.likelihood.Y
             else:
-                m, v, lower, upper = self.predict(Xgrid, which_parts=which_parts,sampling=False) #Compute the exact mean
-                m_, v_, lower, upper = self.predict(Xgrid, which_parts=which_parts,sampling=True,num_samples=15000) #Apporximate the percentiles
+                m, v, lower, upper = self.predict(Xgrid, which_parts=which_parts, sampling=False) #Compute the exact mean
+                m_, v_, lower, upper = self.predict(Xgrid, which_parts=which_parts, sampling=True, num_samples=15000) #Apporximate the percentiles
                 Y = self.likelihood.data
             for d in which_data_ycols:
                 gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax, edgecol=linecol, fillcol=fillcol)
@@ -185,7 +185,7 @@ class GPBase(Model):
 
             #optionally plot some samples
             if samples: #NOTE not tested with fixed_inputs
-                Ysim = self.posterior_samples(Xgrid, samples, which_parts=which_parts, full_cov=True)
+                Ysim = self.posterior_samples(Xgrid, samples, which_parts=which_parts)
                 for yi in Ysim.T:
                     ax.plot(Xnew, yi[:,None], Tango.colorsHex['darkBlue'], linewidth=0.25)
                     #ax.plot(Xnew, yi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.

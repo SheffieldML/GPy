@@ -3,72 +3,23 @@
 import numpy as _np
 default_seed = _np.random.seed(123344)
 
-def bgplvm_test_model(seed=default_seed, optimize=0, verbose=1, plot=0):
+def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False):
     """
-    model for testing purposes. Samples from a GP with rbf kernel and learns 
+    model for testing purposes. Samples from a GP with rbf kernel and learns
     the samples with a new kernel. Normally not for optimization, just model cheking
     """
     from GPy.likelihoods.gaussian import Gaussian
     import GPy
-    
+
     num_inputs = 13
     num_inducing = 5
-    if plot: 
-        output_dim = 1
-        input_dim = 2
-    else: 
-        input_dim = 2
-        output_dim = 25
-    
-    # generate GPLVM-like data
-    X = _np.random.rand(num_inputs, input_dim)
-    lengthscales = _np.random.rand(input_dim)
-    k = (GPy.kern.rbf(input_dim, .5, lengthscales, ARD=True)
-         + GPy.kern.white(input_dim, 0.01))
-    K = k.K(X)
-    Y = _np.random.multivariate_normal(_np.zeros(num_inputs), K, output_dim).T
-    lik = Gaussian(Y, normalize=True)
-
-    k = GPy.kern.rbf_inv(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim)
-    # k = GPy.kern.linear(input_dim) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
-    # k = GPy.kern.rbf(input_dim, ARD = False)  + GPy.kern.white(input_dim, 0.00001)
-    # k = GPy.kern.rbf(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.rbf(input_dim, .3, _np.ones(input_dim) * .2, ARD=True)
-    # k = GPy.kern.rbf(input_dim, .5, 2., ARD=0) + GPy.kern.rbf(input_dim, .3, .2, ARD=0)
-    # k = GPy.kern.rbf(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.linear(input_dim, _np.ones(input_dim) * .2, ARD=True)
-
-    m = GPy.models.BayesianGPLVM(lik, input_dim, kernel=k, num_inducing=num_inducing)
-    m.lengthscales = lengthscales
-
     if plot:
-        import matplotlib.pyplot as pb
-        m.plot()
-        pb.title('PCA initialisation')
-   
-    if optimize:
-        m.optimize('scg', messages=verbose)
-        if plot:
-            m.plot()
-            pb.title('After optimisation')
-
-    return m
-
-def bgplvm_test_model_missing_data(seed=default_seed, optimize=0, verbose=1, plot=0):
-    """
-    model for testing purposes. Samples from a GP with rbf kernel and learns 
-    the samples with a new kernel. Normally not for optimization, just model cheking
-    """
-    from GPy.likelihoods.gaussian import Gaussian
-    import GPy, numpy as np
-    
-    num_inputs = 13
-    num_inducing = 5
-    if plot: 
         output_dim = 1
         input_dim = 2
-    else: 
+    else:
         input_dim = 2
         output_dim = 25
-    
+
     # generate GPLVM-like data
     X = _np.random.rand(num_inputs, input_dim)
     lengthscales = _np.random.rand(input_dim)
@@ -113,7 +64,7 @@ def bgplvm_test_model_missing_data(seed=default_seed, optimize=0, verbose=1, plo
 
     return m, m2
 
-def gplvm_oil_100(optimize=1, verbose=1, plot=1):
+def gplvm_oil_100(optimize=True, verbose=1, plot=True):
     import GPy
     data = GPy.util.datasets.oil_100()
     Y = data['X']
@@ -125,7 +76,7 @@ def gplvm_oil_100(optimize=1, verbose=1, plot=1):
     if plot: m.plot_latent(labels=m.data_labels)
     return m
 
-def sparse_gplvm_oil(optimize=1, verbose=0, plot=1, N=100, Q=6, num_inducing=15, max_iters=50):
+def sparse_gplvm_oil(optimize=True, verbose=0, plot=True, N=100, Q=6, num_inducing=15, max_iters=50):
     import GPy
     _np.random.seed(0)
     data = GPy.util.datasets.oil()
@@ -138,12 +89,12 @@ def sparse_gplvm_oil(optimize=1, verbose=0, plot=1, N=100, Q=6, num_inducing=15,
     m.data_labels = data['Y'][:N].argmax(axis=1)
 
     if optimize: m.optimize('scg', messages=verbose, max_iters=max_iters)
-    if plot: 
+    if plot:
         m.plot_latent(labels=m.data_labels)
         m.kern.plot_ARD()
     return m
 
-def swiss_roll(optimize=1, verbose=1, plot=1, N=1000, num_inducing=15, Q=4, sigma=.2):
+def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=15, Q=4, sigma=.2):
     import GPy
     from GPy.util.datasets import swiss_roll_generated
     from GPy.models import BayesianGPLVM
@@ -192,16 +143,16 @@ def swiss_roll(optimize=1, verbose=1, plot=1, N=1000, num_inducing=15, Q=4, sigm
 
     if optimize:
         m.optimize('scg', messages=verbose, max_iters=2e3)
-    
+
     if plot:
         fig = plt.figure('fitted')
         ax = fig.add_subplot(111)
         s = m.input_sensitivity().argsort()[::-1][:2]
         ax.scatter(*m.X.T[s], c=c)
-        
+
     return m
 
-def bgplvm_oil(optimize=1, verbose=1, plot=1, N=200, Q=7, num_inducing=40, max_iters=1000, **k):
+def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40, max_iters=1000, **k):
     import GPy
     from GPy.likelihoods import Gaussian
     from matplotlib import pyplot as plt
@@ -225,7 +176,7 @@ def bgplvm_oil(optimize=1, verbose=1, plot=1, N=200, Q=7, num_inducing=40, max_i
         m.plot_latent(ax=latent_axes)
         data_show = GPy.util.visualize.vector_show(y)
         lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :], # @UnusedVariable
-            m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)  
+            m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
         raw_input('Press enter to finish')
         plt.close(fig)
     return m
@@ -266,7 +217,8 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
     Ylist = [Y1, Y2, Y3]
 
     if plot_sim:
-        import pylab, matplotlib.cm as cm
+        import pylab
+        import matplotlib.cm as cm
         import itertools
         fig = pylab.figure("MRD Simulation Data", figsize=(8, 6))
         fig.clf()
@@ -277,7 +229,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
         ax.legend()
         for i, Y in enumerate(Ylist):
             ax = fig.add_subplot(2, len(Ylist), len(Ylist) + 1 + i)
-            ax.imshow(Y, aspect='auto', cmap=cm.gray)  # @UndefinedVariable
+            ax.imshow(Y, aspect='auto', cmap=cm.gray) # @UndefinedVariable
             ax.set_title("Y{}".format(i + 1))
         pylab.draw()
         pylab.tight_layout()
@@ -288,12 +240,12 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
 #     from GPy.util.datasets import simulation_BGPLVM
 #     from GPy import kern
 #     from GPy.models import BayesianGPLVM
-# 
+#
 #     sim_data = simulation_BGPLVM()
 #     Y = sim_data['Y']
 #     mu = sim_data['mu']
 #     num_inducing, [_, Q] = 3, mu.shape
-# 
+#
 #     k = kern.linear(Q, ARD=True) + kern.bias(Q, _np.exp(-2)) + kern.white(Q, _np.exp(-2))
 #     m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k,
 #                        _debug=False)
@@ -302,8 +254,8 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
 #     m['linear_variance'] = .01
 #     return m
 
-def bgplvm_simulation(optimize=1, verbose=1, 
-                      plot=1, plot_sim=False,
+def bgplvm_simulation(optimize=True, verbose=1,
+                      plot=True, plot_sim=False,
                       max_iters=2e4,
                       ):
     from GPy import kern
@@ -329,7 +281,7 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     from GPy import kern
     from GPy.models import MRD
     from GPy.likelihoods import Gaussian
-    
+
     D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     likelihood_list = [Gaussian(x, normalize=True) for x in Ylist]
@@ -351,7 +303,7 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
 
 def brendan_faces(optimize=True, verbose=True, plot=True):
     import GPy
-    
+
     data = GPy.util.datasets.brendan_faces()
     Q = 2
     Y = data['Y']
@@ -376,7 +328,7 @@ def brendan_faces(optimize=True, verbose=True, plot=True):
 
 def olivetti_faces(optimize=True, verbose=True, plot=True):
     import GPy
-    
+
     data = GPy.util.datasets.olivetti_faces()
     Q = 2
     Y = data['Y']
@@ -411,7 +363,7 @@ def stick_play(range=None, frame_rate=15, optimize=False, verbose=True, plot=Tru
 def stick(kernel=None, optimize=True, verbose=True, plot=True):
     from matplotlib import pyplot as plt
     import GPy
-    
+
     data = GPy.util.datasets.osu_run1()
     # optimize
     m = GPy.models.GPLVM(data['Y'], 2, kernel=kernel)
@@ -423,13 +375,13 @@ def stick(kernel=None, optimize=True, verbose=True, plot=True):
         data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
         GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
         raw_input('Press enter to finish')
-        
+
     return m
 
 def bcgplvm_linear_stick(kernel=None, optimize=True, verbose=True, plot=True):
     from matplotlib import pyplot as plt
     import GPy
-    
+
     data = GPy.util.datasets.osu_run1()
     # optimize
     mapping = GPy.mappings.Linear(data['Y'].shape[1], 2)
@@ -448,7 +400,7 @@ def bcgplvm_linear_stick(kernel=None, optimize=True, verbose=True, plot=True):
 def bcgplvm_stick(kernel=None, optimize=True, verbose=True, plot=True):
     from matplotlib import pyplot as plt
     import GPy
-    
+
     data = GPy.util.datasets.osu_run1()
     # optimize
     back_kernel=GPy.kern.rbf(data['Y'].shape[1], lengthscale=5.)
@@ -468,7 +420,7 @@ def bcgplvm_stick(kernel=None, optimize=True, verbose=True, plot=True):
 def robot_wireless(optimize=True, verbose=True, plot=True):
     from matplotlib import pyplot as plt
     import GPy
-    
+
     data = GPy.util.datasets.robot_wireless()
     # optimize
     m = GPy.models.GPLVM(data['Y'], 2)
@@ -483,7 +435,7 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
     from GPy.models import BayesianGPLVM
     from matplotlib import pyplot as plt
     import GPy
-    
+
     data = GPy.util.datasets.osu_run1()
     Q = 6
     kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, _np.exp(-2)) + GPy.kern.white(Q, _np.exp(-2))
@@ -506,7 +458,7 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
 
 def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose=True, plot=True):
     import GPy
-    
+
     data = GPy.util.datasets.cmu_mocap(subject, motion)
     if in_place:
         # Make figure move in place.

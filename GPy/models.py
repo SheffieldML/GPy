@@ -1,18 +1,20 @@
 '''
-GPy Models
-==========
+.. module:: GPy.models
 
 Implementations for common models used in GP regression and classification.
 The different models can be viewed in :mod:`GPy.models_modules`, which holds
 detailed explanations for the different models.
 
-:warning: This module is a convienince module for endusers to use. For developers 
-see :mod:`GPy.models_modules`, which holds the implementions for each model. 
+.. note::
+    This module is a convienince module for endusers to use. For developers 
+    see :mod:`GPy.models_modules`, which holds the implementions for each model.: 
+
+.. moduleauthor:: Max Zwiessele <ibinbei@gmail.com>
 '''
 
 __updated__ = '2013-11-28'
 
-from models_modules.bayesian_gplvm import BayesianGPLVM
+from models_modules.bayesian_gplvm import BayesianGPLVM, BayesianGPLVMWithMissingData
 from models_modules.gp_regression import GPRegression
 from models_modules.gp_classification import GPClassification#; _gp_classification = gp_classification ; del gp_classification 
 from models_modules.sparse_gp_regression import SparseGPRegression#; _sparse_gp_regression = sparse_gp_regression ; del sparse_gp_regression 

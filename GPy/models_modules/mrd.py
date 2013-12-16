@@ -5,7 +5,7 @@ Created on 10 Apr 2013
 '''
 from GPy.core import Model
 from GPy.core import SparseGP
-from GPy.util.linalg import PCA
+from GPy.util.linalg import pca
 import numpy
 import itertools
 import pylab
@@ -26,8 +26,8 @@ class MRD(Model):
     :type input_dim: int
     :param initx: initialisation method for the latent space :
 
-        * 'concat' - PCA on concatenation of all datasets
-        * 'single' - Concatenation of PCA on datasets, respectively
+        * 'concat' - pca on concatenation of all datasets
+        * 'single' - Concatenation of pca on datasets, respectively
         * 'random' - Random draw from a normal
 
     :type initx: ['concat'|'single'|'random']
@@ -42,7 +42,7 @@ class MRD(Model):
 
     """
     def __init__(self, likelihood_or_Y_list, input_dim, num_inducing=10, names=None,
-                 kernels=None, initx='PCA',
+                 kernels=None, initx='pca',
                  initz='permute', _debug=False, **kw):
         if names is None:
             self.names = ["{}".format(i) for i in range(len(likelihood_or_Y_list))]
@@ -237,7 +237,7 @@ class MRD(Model):
                                                 partial=g.partial_for_likelihood)]) \
                               for g in self.bgplvms])))
 
-    def _init_X(self, init='PCA', likelihood_list=None):
+    def _init_X(self, init='pca', likelihood_list=None):
         if likelihood_list is None:
             likelihood_list = self.likelihood_list
         Ylist = []
@@ -248,11 +248,11 @@ class MRD(Model):
                 Ylist.append(likelihood_or_Y.Y)
         del likelihood_list
         if init in "PCA_concat":
-            X = PCA(numpy.hstack(Ylist), self.input_dim)[0]
+            X = pca(numpy.hstack(Ylist), self.input_dim)[0]
         elif init in "PCA_single":
             X = numpy.zeros((Ylist[0].shape[0], self.input_dim))
             for qs, Y in itertools.izip(numpy.array_split(numpy.arange(self.input_dim), len(Ylist)), Ylist):
-                X[:, qs] = PCA(Y, len(qs))[0]
+                X[:, qs] = pca(Y, len(qs))[0]
         else: # init == 'random':
             X = numpy.random.randn(Ylist[0].shape[0], self.input_dim)
         self.X = X

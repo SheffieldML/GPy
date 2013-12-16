@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ...util.linalg import pdinv, dpotrs
+from ...util.linalg import pdinv, dpotrs, tdot
 
 class Posterior(object):
     """

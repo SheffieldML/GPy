@@ -10,6 +10,13 @@ from ..core import GP
 from ..likelihoods import Gaussian
 from .. import util
 
+def initialise_latent(init, input_dim, Y):
+    Xr = np.random.randn(Y.shape[0], input_dim)
+    if init == 'pca':
+        from ..util.linalg import pca
+        PC = pca(Y, input_dim)[0]
+        Xr[:PC.shape[0], :PC.shape[1]] = PC
+    return Xr
 
 class GPLVM(GP):
     """
@@ -20,26 +27,18 @@ class GPLVM(GP):
     :param input_dim: latent dimensionality
     :type input_dim: int
     :param init: initialisation method for the latent space
-    :type init: 'PCA'|'random'
+    :type init: 'pca'|'random'
 
     """
-    def __init__(self, Y, input_dim, init='PCA', X=None, kernel=None, normalize_Y=False):
+    def __init__(self, Y, input_dim, init='pca', X=None, kernel=None, normalize_Y=False):
         if X is None:
-            X = self.initialise_latent(init, input_dim, Y)
+            X = initialise_latent(init, input_dim, Y)
         if kernel is None:
             kernel = kern.rbf(input_dim, ARD=input_dim > 1) + kern.bias(input_dim, np.exp(-2))
         likelihood = Gaussian(Y, normalize=normalize_Y, variance=np.exp(-2.))
         GP.__init__(self, X, likelihood, kernel, normalize_X=False)
         self.set_prior('.*X', priors.Gaussian(0, 1))
         self.ensure_default_constraints()
-
-    def initialise_latent(self, init, input_dim, Y):
-        Xr = np.random.randn(Y.shape[0], input_dim)
-        if init == 'PCA':
-            from ..util.linalg import PCA
-            PC = PCA(Y, input_dim)[0]
-            Xr[:PC.shape[0], :PC.shape[1]] = PC
-        return Xr
 
     def _get_param_names(self):
         return sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], []) + GP._get_param_names(self)

@@ -381,7 +381,7 @@ class SparseGP(GPBase):
             which_data_ycols='all', which_parts='all', fixed_inputs=[],
             plot_raw=False,
             levels=20, samples=0, fignum=None, ax=None, resolution=None):
-        """ 
+        """
         Plot the posterior of the sparse GP.
           - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
           - In two dimsensions, a contour-plot shows the mean predicted function
@@ -417,6 +417,11 @@ class SparseGP(GPBase):
         :param levels: for 2D plotting, the number of contour levels to use is ax is None, create a new figure
         """
         #deal work out which ax to plot on
+        #Need these because we use which_data_rows in this function not just base
+        if which_data_rows == 'all':
+            which_data_rows = slice(None)
+        if which_data_ycols == 'all':
+            which_data_ycols = np.arange(self.output_dim)
         if ax is None:
             fig = pb.figure(num=fignum)
             ax = fig.add_subplot(111)

@@ -20,8 +20,8 @@ def most_significant_input_dimensions(model, which_indices):
         input_1, input_2 = which_indices
     return input_1, input_2
 
-def plot_latent(model, labels=None, which_indices=None, 
-                resolution=50, ax=None, marker='o', s=40, 
+def plot_latent(model, labels=None, which_indices=None,
+                resolution=50, ax=None, marker='o', s=40,
                 fignum=None, plot_inducing=False, legend=True,
                 aspect='auto', updates=False):
     """
@@ -48,10 +48,10 @@ def plot_latent(model, labels=None, which_indices=None,
         var = var[:, :1]
         return np.log(var)
     view = ImshowController(ax, plot_function,
-                            tuple(model.X.min(0)[:, [input_1, input_2]]) + tuple(model.X.max(0)[:, [input_1, input_2]]),
+                            tuple(model.X[:, [input_1, input_2]].min(0)) + tuple(model.X[:, [input_1, input_2]].max(0)),
                             resolution, aspect=aspect, interpolation='bilinear',
                             cmap=pb.cm.binary)
-    
+
 #     ax.imshow(var.reshape(resolution, resolution).T,
 #               extent=[xmin[0], xmax[0], xmin[1], xmax[1]], cmap=pb.cm.binary, interpolation='bilinear', origin='lower')
 
@@ -100,8 +100,8 @@ def plot_latent(model, labels=None, which_indices=None,
         raw_input('Enter to continue')
     return ax
 
-def plot_magnification(model, labels=None, which_indices=None, 
-                resolution=60, ax=None, marker='o', s=40, 
+def plot_magnification(model, labels=None, which_indices=None,
+                resolution=60, ax=None, marker='o', s=40,
                 fignum=None, plot_inducing=False, legend=True,
                 aspect='auto', updates=False):
     """

@@ -29,7 +29,8 @@
       "urls":[
          "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/ankur_pose_data/"
       ],
-      "details":"Artificially generated data of silhouettes given poses. Note that the data does not display a left/right ambiguity because across the entire data set one of the arms sticks out more the the other, disambiguating the pose as to which way the individual is facing."
+      "details":"Artificially generated data of silhouettes given poses. Note that the data does not display a left/right ambiguity because across the entire data set one of the arms sticks out more the the other, disambiguating the pose as to which way the individual is facing.",
+      "size":1
    },
    "osu_accad":{
       "files":[

@@ -1,75 +1,78 @@
-noise_models Package
-====================
+GPy.likelihoods.noise_models package
+====================================
 
-:mod:`noise_models` Package
----------------------------
+Submodules
+----------
 
-.. automodule:: GPy.likelihoods.noise_models
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`bernoulli_noise` Module
------------------------------
+GPy.likelihoods.noise_models.bernoulli_noise module
+---------------------------------------------------
 
 .. automodule:: GPy.likelihoods.noise_models.bernoulli_noise
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`exponential_noise` Module
--------------------------------
+GPy.likelihoods.noise_models.exponential_noise module
+-----------------------------------------------------
 
 .. automodule:: GPy.likelihoods.noise_models.exponential_noise
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`gamma_noise` Module
--------------------------
+GPy.likelihoods.noise_models.gamma_noise module
+-----------------------------------------------
 
 .. automodule:: GPy.likelihoods.noise_models.gamma_noise
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`gaussian_noise` Module
-----------------------------
+GPy.likelihoods.noise_models.gaussian_noise module
+--------------------------------------------------
 
 .. automodule:: GPy.likelihoods.noise_models.gaussian_noise
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`gp_transformations` Module
---------------------------------
+GPy.likelihoods.noise_models.gp_transformations module
+------------------------------------------------------
 
 .. automodule:: GPy.likelihoods.noise_models.gp_transformations
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`noise_distributions` Module
----------------------------------
+GPy.likelihoods.noise_models.noise_distributions module
+-------------------------------------------------------
 
 .. automodule:: GPy.likelihoods.noise_models.noise_distributions
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`poisson_noise` Module
----------------------------
+GPy.likelihoods.noise_models.poisson_noise module
+-------------------------------------------------
 
 .. automodule:: GPy.likelihoods.noise_models.poisson_noise
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`student_t_noise` Module
------------------------------
+GPy.likelihoods.noise_models.student_t_noise module
+---------------------------------------------------
 
 .. automodule:: GPy.likelihoods.noise_models.student_t_noise
     :members:
     :undoc-members:
     :show-inheritance:
 
+
+Module contents
+---------------
+
+.. automodule:: GPy.likelihoods.noise_models
+    :members:
+    :undoc-members:
+    :show-inheritance:

@@ -7,9 +7,6 @@ import pylab as pb
 import sys, pdb
 from sparse_gp_regression import SparseGPRegression
 from gplvm import GPLVM, initialise_latent
-# from .. import kern
-# from ..core import model
-# from ..util.linalg import pdinv, PCA
 
 class SparseGPLVM(SparseGPRegression, GPLVM):
     """

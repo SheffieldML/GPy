@@ -12,7 +12,7 @@ from .. import util
 
 def initialise_latent(init, input_dim, Y):
     Xr = np.random.randn(Y.shape[0], input_dim)
-    if init == 'pca':
+    if init.lower() == 'pca':
         from ..util.linalg import pca
         PC = pca(Y, input_dim)[0]
         Xr[:PC.shape[0], :PC.shape[1]] = PC
@@ -30,7 +30,7 @@ class GPLVM(GP):
     :type init: 'pca'|'random'
 
     """
-    def __init__(self, Y, input_dim, init='pca', X=None, kernel=None, normalize_Y=False):
+    def __init__(self, Y, input_dim, init='PCA', X=None, kernel=None, normalize_Y=False):
         if X is None:
             X = initialise_latent(init, input_dim, Y)
         if kernel is None:
@@ -60,7 +60,7 @@ class GPLVM(GP):
         for i in range(self.output_dim):
             target[:,:,i] = self.kern.dK_dX(np.dot(self.Ki,self.likelihood.Y[:,i])[None, :],X,self.X)
         return target
-   
+
     def magnification(self,X):
         target=np.zeros(X.shape[0])
         J = np.zeros((X.shape[0],X.shape[1],self.output_dim))

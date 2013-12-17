@@ -42,7 +42,7 @@ class MRD(Model):
 
     """
     def __init__(self, likelihood_or_Y_list, input_dim, num_inducing=10, names=None,
-                 kernels=None, initx='pca',
+                 kernels=None, initx='PCA',
                  initz='permute', _debug=False, **kw):
         if names is None:
             self.names = ["{}".format(i) for i in range(len(likelihood_or_Y_list))]
@@ -237,7 +237,7 @@ class MRD(Model):
                                                 partial=g.partial_for_likelihood)]) \
                               for g in self.bgplvms])))
 
-    def _init_X(self, init='pca', likelihood_list=None):
+    def _init_X(self, init='PCA', likelihood_list=None):
         if likelihood_list is None:
             likelihood_list = self.likelihood_list
         Ylist = []

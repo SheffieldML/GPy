@@ -60,10 +60,10 @@ GPy.testing.kernel_tests module
     :undoc-members:
     :show-inheritance:
 
-GPy.testing.likelihoods_tests module
-------------------------------------
+GPy.testing.likelihood_tests module
+-----------------------------------
 
-.. automodule:: GPy.testing.likelihoods_tests
+.. automodule:: GPy.testing.likelihood_tests
     :members:
     :undoc-members:
     :show-inheritance:

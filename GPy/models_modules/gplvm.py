@@ -9,11 +9,11 @@ from ..core import priors
 from ..core import GP
 from ..likelihoods import Gaussian
 from .. import util
+from ..util.linalg import pca
 
 def initialise_latent(init, input_dim, Y):
     Xr = np.random.randn(Y.shape[0], input_dim)
     if init.lower() == 'pca':
-        from ..util.linalg import pca
         PC = pca(Y, input_dim)[0]
         Xr[:PC.shape[0], :PC.shape[1]] = PC
     return Xr

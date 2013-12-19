@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ...util.linalg import pdinv, dpotrs
+from ...util.linalg import pdinv, dpotrs, tdot, dtrtrs
 
 class Posterior(object):
     """
@@ -26,19 +26,19 @@ class Posterior(object):
         cov : the posterior covariance
 
         Not all of the above need to be supplied! You *must* supply:
-          
+
           log_marginal
           dL_dK
           dL_dtheta_lik
           K (for lazy computation)
 
        You may supply either:
-         
+         cc
           woodbury_chol
           woodbury_vector
 
         Or:
-          
+
           mean
           cov
           K_chol (for lazy computation)
@@ -46,7 +46,6 @@ class Posterior(object):
         Of course, you can supply more than that, but this class will lazily compute all other quantites on demand.
 
         From the supplied quantities, all of the others will be computed on demand (lazy computation)
-          
         """
         #obligatory
         self.log_marginal = log_marginal
@@ -80,7 +79,7 @@ class Posterior(object):
     @property
     def covariance(self):
         if self._covariance is None:
-            LiK, _ = dpotrs(self._woodbury_chol, self._K)
+            LiK, _ = dtrtrs(self.woodbury_chol, self._K, lower=1)
             self._covariance = self._K - tdot(LiK.T)
         return self._covariance
 

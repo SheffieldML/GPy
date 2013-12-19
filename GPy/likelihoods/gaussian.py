@@ -80,6 +80,13 @@ class Gaussian(Likelihood):
         Z_hat = 1./np.sqrt(2.*np.pi*sum_var)*np.exp(-.5*(data_i - v_i/tau_i)**2./sum_var)
         return Z_hat, mu_hat, sigma2_hat
 
+    def predictive_values(self, mu, var, full_cov=False):
+        if full_cov:
+            low, up = mu - np.diag(var)[:,None], mu + np.diag(var)[:,None]
+        else:
+            low, up = mu - var, mu + var
+        return mu, var, low, up
+
     def predictive_mean(self, mu, sigma):
         #new_sigma2 = self.predictive_variance(mu, sigma)
         #return new_sigma2*(mu/sigma**2 + self.gp_link.transf(mu)/self.variance)

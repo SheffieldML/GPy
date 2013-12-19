@@ -3,7 +3,7 @@
 
 import numpy as np
 from gp_base import GPBase
-from ..util.linalg import dtrtrs
+from ..util.linalg import dtrtrs, tdot
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
 from .. import likelihoods
 

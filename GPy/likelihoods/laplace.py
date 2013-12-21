@@ -250,8 +250,11 @@ class Laplace(likelihood):
         self.W = -self.noise_model.d2logpdf_df2(self.f_hat, self.data, extra_data=self.extra_data)
 
         if not self.noise_model.log_concave:
-            #print "Under 1e-10: {}".format(np.sum(self.W < 1e-6))
-            self.W[self.W < 1e-6] = 1e-6  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+            i = self.W < 1e-6
+            if np.any(i):
+                warnings.warn('truncating non log-concave likelihood curvature')
+                # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+                self.W[i] = 1e-6
 
         self.W12BiW12, self.ln_B_det = self._compute_B_statistics(self.K, self.W, np.eye(self.N))
 
@@ -270,14 +273,14 @@ class Laplace(likelihood):
         :type W: Vector of diagonal values of hessian (1xN)
         :param a: Matrix to calculate W12BiW12a
         :type a: Matrix NxN
-        :returns: (W12BiW12, ln_B_det)
+        :returns: (W12BiW12a, ln_B_det)
         """
         if not self.noise_model.log_concave:
             #print "Under 1e-10: {}".format(np.sum(W < 1e-6))
-            W[W < 1e-6] = 1e-6  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
-                                # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
-                                # To cause the posterior to become less certain than the prior and likelihood,
-                                # This is a property only held by non-log-concave likelihoods
+            W[W < 1e-10] = 1e-10  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+                                  # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
+                                  # To cause the posterior to become less certain than the prior and likelihood,
+                                  # This is a property only held by non-log-concave likelihoods
 
 
         #W is diagonal so its sqrt is just the sqrt of the diagonal elements

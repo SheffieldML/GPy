@@ -1,275 +1,278 @@
-parts Package
-=============
+GPy.kern.parts package
+======================
 
-:mod:`parts` Package
---------------------
+Submodules
+----------
 
-.. automodule:: GPy.kern.parts
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`Brownian` Module
-----------------------
+GPy.kern.parts.Brownian module
+------------------------------
 
 .. automodule:: GPy.kern.parts.Brownian
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`Matern32` Module
-----------------------
+GPy.kern.parts.Matern32 module
+------------------------------
 
 .. automodule:: GPy.kern.parts.Matern32
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`Matern52` Module
-----------------------
+GPy.kern.parts.Matern52 module
+------------------------------
 
 .. automodule:: GPy.kern.parts.Matern52
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`ODE_1` Module
--------------------
+GPy.kern.parts.ODE_1 module
+---------------------------
 
 .. automodule:: GPy.kern.parts.ODE_1
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`ODE_UY` Module
---------------------
+GPy.kern.parts.ODE_UY module
+----------------------------
 
 .. automodule:: GPy.kern.parts.ODE_UY
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`bias` Module
-------------------
+GPy.kern.parts.bias module
+--------------------------
 
 .. automodule:: GPy.kern.parts.bias
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`coregionalize` Module
----------------------------
+GPy.kern.parts.coregionalize module
+-----------------------------------
 
 .. automodule:: GPy.kern.parts.coregionalize
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`eq_ode1` Module
----------------------
+GPy.kern.parts.eq_ode1 module
+-----------------------------
 
 .. automodule:: GPy.kern.parts.eq_ode1
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`exponential` Module
--------------------------
+GPy.kern.parts.exponential module
+---------------------------------
 
 .. automodule:: GPy.kern.parts.exponential
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`finite_dimensional` Module
---------------------------------
+GPy.kern.parts.finite_dimensional module
+----------------------------------------
 
 .. automodule:: GPy.kern.parts.finite_dimensional
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`fixed` Module
--------------------
+GPy.kern.parts.fixed module
+---------------------------
 
 .. automodule:: GPy.kern.parts.fixed
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`gibbs` Module
--------------------
+GPy.kern.parts.gibbs module
+---------------------------
 
 .. automodule:: GPy.kern.parts.gibbs
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`hetero` Module
---------------------
+GPy.kern.parts.hetero module
+----------------------------
 
 .. automodule:: GPy.kern.parts.hetero
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`hierarchical` Module
---------------------------
+GPy.kern.parts.hierarchical module
+----------------------------------
 
 .. automodule:: GPy.kern.parts.hierarchical
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`independent_outputs` Module
----------------------------------
+GPy.kern.parts.independent_outputs module
+-----------------------------------------
 
 .. automodule:: GPy.kern.parts.independent_outputs
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`kernpart` Module
-----------------------
+GPy.kern.parts.kernpart module
+------------------------------
 
 .. automodule:: GPy.kern.parts.kernpart
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`linear` Module
---------------------
+GPy.kern.parts.linear module
+----------------------------
 
 .. automodule:: GPy.kern.parts.linear
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`mlp` Module
------------------
+GPy.kern.parts.mlp module
+-------------------------
 
 .. automodule:: GPy.kern.parts.mlp
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`periodic_Matern32` Module
--------------------------------
+GPy.kern.parts.periodic_Matern32 module
+---------------------------------------
 
 .. automodule:: GPy.kern.parts.periodic_Matern32
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`periodic_Matern52` Module
--------------------------------
+GPy.kern.parts.periodic_Matern52 module
+---------------------------------------
 
 .. automodule:: GPy.kern.parts.periodic_Matern52
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`periodic_exponential` Module
-----------------------------------
+GPy.kern.parts.periodic_exponential module
+------------------------------------------
 
 .. automodule:: GPy.kern.parts.periodic_exponential
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`poly` Module
-------------------
+GPy.kern.parts.poly module
+--------------------------
 
 .. automodule:: GPy.kern.parts.poly
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`prod` Module
-------------------
+GPy.kern.parts.prod module
+--------------------------
 
 .. automodule:: GPy.kern.parts.prod
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`prod_orthogonal` Module
------------------------------
+GPy.kern.parts.prod_orthogonal module
+-------------------------------------
 
 .. automodule:: GPy.kern.parts.prod_orthogonal
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`rational_quadratic` Module
---------------------------------
+GPy.kern.parts.rational_quadratic module
+----------------------------------------
 
 .. automodule:: GPy.kern.parts.rational_quadratic
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`rbf` Module
------------------
+GPy.kern.parts.rbf module
+-------------------------
 
 .. automodule:: GPy.kern.parts.rbf
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`rbf_inv` Module
----------------------
+GPy.kern.parts.rbf_inv module
+-----------------------------
 
 .. automodule:: GPy.kern.parts.rbf_inv
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`rbfcos` Module
---------------------
+GPy.kern.parts.rbfcos module
+----------------------------
 
 .. automodule:: GPy.kern.parts.rbfcos
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`spline` Module
---------------------
+GPy.kern.parts.spline module
+----------------------------
 
 .. automodule:: GPy.kern.parts.spline
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`symmetric` Module
------------------------
+GPy.kern.parts.symmetric module
+-------------------------------
 
 .. automodule:: GPy.kern.parts.symmetric
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`sympy_helpers` Module
----------------------------
+GPy.kern.parts.sympy_helpers module
+-----------------------------------
 
 .. automodule:: GPy.kern.parts.sympy_helpers
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`sympykern` Module
------------------------
+GPy.kern.parts.sympykern module
+-------------------------------
 
 .. automodule:: GPy.kern.parts.sympykern
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`white` Module
--------------------
+GPy.kern.parts.white module
+---------------------------
 
 .. automodule:: GPy.kern.parts.white
     :members:
     :undoc-members:
     :show-inheritance:
 
+
+Module contents
+---------------
+
+.. automodule:: GPy.kern.parts
+    :members:
+    :undoc-members:
+    :show-inheritance:

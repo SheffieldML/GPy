@@ -37,20 +37,32 @@ def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False):
     # k = GPy.kern.rbf(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.linear(input_dim, _np.ones(input_dim) * .2, ARD=True)
 
     m = GPy.models.BayesianGPLVM(lik, input_dim, kernel=k, num_inducing=num_inducing)
+    #===========================================================================
+    # randomly obstruct data with percentage p
+    p = .8
+    Y_obstruct = Y.copy()
+    Y_obstruct[_np.random.uniform(size=(Y.shape)) < p] = _np.nan
+    #===========================================================================
+    m2 = GPy.models.BayesianGPLVMWithMissingData(Y_obstruct, input_dim, kernel=k, num_inducing=num_inducing)
     m.lengthscales = lengthscales
 
     if plot:
         import matplotlib.pyplot as pb
         m.plot()
         pb.title('PCA initialisation')
+        m2.plot()
+        pb.title('PCA initialisation')
 
     if optimize:
         m.optimize('scg', messages=verbose)
+        m2.optimize('scg', messages=verbose)
         if plot:
             m.plot()
             pb.title('After optimisation')
+            m2.plot()
+            pb.title('After optimisation')
 
-    return m
+    return m, m2
 
 def gplvm_oil_100(optimize=True, verbose=1, plot=True):
     import GPy
@@ -217,7 +229,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
         ax.legend()
         for i, Y in enumerate(Ylist):
             ax = fig.add_subplot(2, len(Ylist), len(Ylist) + 1 + i)
-            ax.imshow(Y, aspect='auto', cmap=cm.gray)
+            ax.imshow(Y, aspect='auto', cmap=cm.gray) # @UndefinedVariable
             ax.set_title("Y{}".format(i + 1))
         pylab.draw()
         pylab.tight_layout()
@@ -451,12 +463,9 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose
     if in_place:
         # Make figure move in place.
         data['Y'][:, 0:3] = 0.0
-
     m = GPy.models.GPLVM(data['Y'], 2, normalize_Y=True)
 
-    if optimize:
-        m.optimize(messages=verbose, max_f_eval=10000)
-
+    if optimize: m.optimize(messages=verbose, max_f_eval=10000)
     if plot:
         ax = m.plot_latent()
         y = m.likelihood.Y[0, :]

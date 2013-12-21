@@ -153,9 +153,11 @@ class NoiseDistribution(object):
         :param sigma: standard deviation of posterior
 
         """
+        #import ipdb; ipdb.set_trace()
         def int_mean(f,m,v):
             return self._mean(f)*np.exp(-(0.5/v)*np.square(f - m))
-        scaled_mean = [quad(int_mean, -np.inf, np.inf,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
+        #scaled_mean = [quad(int_mean, -np.inf, np.inf,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
+        scaled_mean = [quad(int_mean, mj-6*np.sqrt(s2j), mj+6*np.sqrt(s2j), args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
         mean = np.array(scaled_mean)[:,None] / np.sqrt(2*np.pi*(variance))
 
         return mean
@@ -172,16 +174,16 @@ class NoiseDistribution(object):
         :predictive_mean: output's predictive mean, if None _predictive_mean function will be called.
 
         """
-        #sigma2 = sigma**2
         normalizer = np.sqrt(2*np.pi*variance)
 
         # E( V(Y_star|f_star) )
         def int_var(f,m,v):
             return self._variance(f)*np.exp(-(0.5/v)*np.square(f - m))
-        scaled_exp_variance = [quad(int_var, -np.inf, np.inf,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
+        #Most of the weight is within 6 stds and this avoids some negative infinity and infinity problems of taking f^2
+        scaled_exp_variance = [quad(int_var, mj-6*np.sqrt(s2j), mj+6*np.sqrt(s2j), args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
         exp_var = np.array(scaled_exp_variance)[:,None] / normalizer
 
-        #V( E(Y_star|f_star) ) =  E( E(Y_star|f_star)**2 ) - E( E(Y_star|f_star) )**2
+        #V( E(Y_star|f_star) ) = E( E(Y_star|f_star)**2 ) - E( E(Y_star|f_star) )**2
 
         #E( E(Y_star|f_star) )**2
         if predictive_mean is None:
@@ -189,9 +191,9 @@ class NoiseDistribution(object):
         predictive_mean_sq = predictive_mean**2
 
         #E( E(Y_star|f_star)**2 )
-        def int_pred_mean_sq(f,m,v,predictive_mean_sq):
+        def int_pred_mean_sq(f,m,v):
             return self._mean(f)**2*np.exp(-(0.5/v)*np.square(f - m))
-        scaled_exp_exp2 = [quad(int_pred_mean_sq, -np.inf, np.inf,args=(mj,s2j,pm2j))[0] for mj,s2j,pm2j in zip(mu,variance,predictive_mean_sq)]
+        scaled_exp_exp2 = [quad(int_pred_mean_sq, mj-6*np.sqrt(s2j), mj+6*np.sqrt(s2j), args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
         exp_exp2 = np.array(scaled_exp_exp2)[:,None] / normalizer
 
         var_exp = exp_exp2 - predictive_mean_sq
@@ -408,17 +410,16 @@ class NoiseDistribution(object):
             axis=-1
 
             #Calculate mean, variance and precentiles from samples
-            print "WARNING: Using sampling to calculate mean, variance and predictive quantiles."
+            warnings.warn("Using sampling to calculate mean, variance and predictive quantiles.")
             pred_mean = np.mean(samples, axis=axis)[:,None]
             pred_var = np.var(samples, axis=axis)[:,None]
             q1 = np.percentile(samples, 2.5, axis=axis)[:,None]
             q3 = np.percentile(samples, 97.5, axis=axis)[:,None]
 
         else:
-
             pred_mean = self.predictive_mean(mu, var)
             pred_var = self.predictive_variance(mu, var, pred_mean)
-            print "WARNING: Predictive quantiles are only computed when sampling."
+            warnings.warn("Predictive quantiles are only computed when sampling.")
             q1 = np.repeat(np.nan,pred_mean.size)[:,None]
             q3 = q1.copy()
 

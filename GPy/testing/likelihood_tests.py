@@ -593,7 +593,6 @@ class LaplaceTests(unittest.TestCase):
         grad.checkgrad(verbose=1)
         self.assertTrue(grad.checkgrad())
 
-    #@unittest.skip('Not working yet, needs to be checked')
     def test_laplace_log_likelihood(self):
         debug = False
         real_std = 0.1

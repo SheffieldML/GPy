@@ -6,10 +6,7 @@ import numpy as np
 import pylab as pb
 import sys, pdb
 from sparse_gp_regression import SparseGPRegression
-from gplvm import GPLVM
-# from .. import kern
-# from ..core import model
-# from ..util.linalg import pdinv, PCA
+from gplvm import GPLVM, initialise_latent
 
 class SparseGPLVM(SparseGPRegression, GPLVM):
     """
@@ -24,7 +21,7 @@ class SparseGPLVM(SparseGPRegression, GPLVM):
 
     """
     def __init__(self, Y, input_dim, kernel=None, init='PCA', num_inducing=10):
-        X = self.initialise_latent(init, input_dim, Y)
+        X = initialise_latent(init, input_dim, Y)
         SparseGPRegression.__init__(self, X, Y, kernel=kernel, num_inducing=num_inducing)
         self.ensure_default_constraints()
 

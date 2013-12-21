@@ -2,17 +2,18 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
+import itertools
+from matplotlib import pyplot
+
 from ..core.sparse_gp import SparseGP
 from ..likelihoods import Gaussian
 from .. import kern
-import itertools
-from matplotlib.colors import colorConverter
-from GPy.inference.optimization import SCG
-from GPy.util import plot_latent, linalg
-from .gplvm import GPLVM
-from GPy.util.plot_latent import most_significant_input_dimensions
-from matplotlib import pyplot
-from GPy.core.model import Model
+from ..inference.optimization import SCG
+from ..util import plot_latent, linalg
+from .gplvm import GPLVM, initialise_latent
+from ..util.plot_latent import most_significant_input_dimensions
+from ..core.model import Model
+from ..util.subarray_and_sorting import common_subarrays
 
 class BayesianGPLVM(SparseGP, GPLVM):
     """
@@ -34,7 +35,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
             likelihood = likelihood_or_Y
 
         if X == None:
-            X = self.initialise_latent(init, input_dim, likelihood.Y)
+            X = initialise_latent(init, input_dim, likelihood.Y)
         self.init = init
 
         if X_variance is None:
@@ -308,14 +309,36 @@ class BayesianGPLVMWithMissingData(Model):
     :type init: 'PCA' | 'random'
     """
     def __init__(self, likelihood_or_Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
-                 Z=None, kernel=None, missing=np.nan, **kwargs):
+                 Z=None, kernel=None, **kwargs):
+        #=======================================================================
+        # Filter Y, such that same missing data is at same positions. 
+        # If full rows are missing, delete them entirely!
         if type(likelihood_or_Y) is np.ndarray:
-            likelihood = Gaussian(likelihood_or_Y)
+            Y = likelihood_or_Y
+            likelihood = Gaussian
+            params = 1.
+            normalize=None
         else:
-            likelihood = likelihood_or_Y
+            Y = likelihood_or_Y.Y
+            likelihood = likelihood_or_Y.__class__
+            params = likelihood_or_Y._get_params()
+            if isinstance(likelihood_or_Y, Gaussian):
+                normalize = True
+                scale = likelihood_or_Y._scale
+                offset = likelihood_or_Y._offset
+        # Get common subrows
+        filter_ = np.isnan(Y)
+        self.subarray_indices = common_subarrays(filter_,axis=1)
+        likelihoods = [likelihood(Y[~np.array(v,dtype=bool),:][:,ind]) for v,ind in self.subarray_indices.iteritems()]
+        for l in likelihoods:
+            l._set_params(params)
+            if normalize: # get normalization in common
+                l._scale = scale
+                l._offset = offset
+        #=======================================================================
 
         if X == None:
-            X = self.initialise_latent(init, input_dim, likelihood.Y)
+            X = initialise_latent(init, input_dim, Y[:,np.any(np.isnan(Y),1)])
         self.init = init
 
         if X_variance is None:
@@ -328,13 +351,52 @@ class BayesianGPLVMWithMissingData(Model):
         if kernel is None:
             kernel = kern.rbf(input_dim) # + kern.white(input_dim)
 
-        SparseGP.__init__(self, X, likelihood, kernel, Z=Z, X_variance=X_variance, **kwargs)
+        self.submodels = [BayesianGPLVM(l, input_dim, X, X_variance, init, num_inducing, Z, kernel) for l in likelihoods]
+        self.gref = self.submodels[0] 
+        #:type self.gref: BayesianGPLVM 
         self.ensure_default_constraints()
+
+    def log_likelihood(self):
+        ll = -self.gref.KL_divergence()
+        for g in self.submodels:
+            ll += SparseGP.log_likelihood(g)
+        return ll
+
+    def _log_likelihood_gradients(self):
+        dLdmu, dLdS = reduce(lambda a, b: [a[0] + b[0], a[1] + b[1]], (g.dL_dmuS() for g in self.bgplvms))
+        dKLmu, dKLdS = self.gref.dKL_dmuS()
+        dLdmu -= dKLmu
+        dLdS -= dKLdS
+        dLdmuS = np.hstack((dLdmu.flatten(), dLdS.flatten())).flatten()
+        dldzt1 = reduce(lambda a, b: a + b, (SparseGP._log_likelihood_gradients(g)[:self.gref.num_inducing*self.gref.input_dim] for g in self.submodels))
+
+        return np.hstack((dLdmuS,
+                             dldzt1,
+                np.hstack([np.hstack([g.dL_dtheta(),
+                                            g.likelihood._gradients(\
+                                                partial=g.partial_for_likelihood)]) \
+                              for g in self.submodels])))
+
+    def getstate(self):
+        return Model.getstate(self)+[self.submodels,self.subarray_indices]
+
+    def setstate(self, state):
+        self.subarray_indices = state.pop()
+        self.submodels = state.pop()
+        self.gref = self.submodels[0]
+        Model.setstate(self, state)
+        self._set_params(self._get_params())
 
     def _get_param_names(self):
         X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
         S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
-        return (X_names + S_names + SparseGP._get_param_names(self))
+        return (X_names + S_names + SparseGP._get_param_names(self.gref))
+
+    def _get_params(self):
+        return self.gref._get_params()
+    def _set_params(self, x):
+        [g._set_params(x) for g in self.submodels]
+    
 
     pass
 

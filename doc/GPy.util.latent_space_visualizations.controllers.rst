@@ -1,27 +1,30 @@
-controllers Package
-===================
+GPy.util.latent_space_visualizations.controllers package
+========================================================
 
-:mod:`controllers` Package
---------------------------
+Submodules
+----------
 
-.. automodule:: GPy.util.latent_space_visualizations.controllers
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`axis_event_controller` Module
------------------------------------
+GPy.util.latent_space_visualizations.controllers.axis_event_controller module
+-----------------------------------------------------------------------------
 
 .. automodule:: GPy.util.latent_space_visualizations.controllers.axis_event_controller
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`imshow_controller` Module
--------------------------------
+GPy.util.latent_space_visualizations.controllers.imshow_controller module
+-------------------------------------------------------------------------
 
 .. automodule:: GPy.util.latent_space_visualizations.controllers.imshow_controller
     :members:
     :undoc-members:
     :show-inheritance:
 
+
+Module contents
+---------------
+
+.. automodule:: GPy.util.latent_space_visualizations.controllers
+    :members:
+    :undoc-members:
+    :show-inheritance:

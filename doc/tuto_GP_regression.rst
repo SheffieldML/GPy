@@ -141,4 +141,4 @@ The flag ``ARD=True`` in the definition of the Matern kernel specifies that we w
     :align:   center
     :height: 350px
 
-    Contour plot of the best predictor (posterior mean).
+    Contour plot of the mean predictor (posterior mean).

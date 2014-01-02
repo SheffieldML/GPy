@@ -273,27 +273,6 @@ def toy_rbf_1d_50(optimize=True, plot=True):
 
     return m
 
-
-def toy_poisson_rbf_1d(optimize=True, plot=True):
-    """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
-    x_len = 400
-    X = np.linspace(0, 10, x_len)[:, None]
-    f_true = np.random.multivariate_normal(np.zeros(x_len), GPy.kern.rbf(1).K(X))
-    Y = np.array([np.random.poisson(np.exp(f)) for f in f_true]).reshape(x_len,1)
-
-    noise_model = GPy.likelihoods.poisson()
-    likelihood = GPy.likelihoods.EP(Y,noise_model)
-
-    # create simple GP Model
-    m = GPy.models.GPRegression(X, Y, likelihood=likelihood)
-
-    if optimize:
-        m.optimize('bfgs')
-    if plot:
-        m.plot()
-
-    return m
-
 def toy_poisson_rbf_1d_laplace(optimize=True, plot=True):
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
     optimizer='scg'

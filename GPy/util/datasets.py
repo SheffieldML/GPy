@@ -26,13 +26,16 @@ def reporthook(a,b,c):
 # Global variables
 data_path = os.path.join(os.path.dirname(__file__), 'datasets')
 default_seed = 10000
-overide_manual_authorize=False
+overide_manual_authorize=True
 neil_url = 'http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/'
 
 # Read data resources from json file.
-path = os.path.join(os.path.dirname(__file__), 'data_resources.json')
-json_data=open(path).read()
-data_resources = json.loads(json_data)
+# Don't do this when ReadTheDocs is scanning as it breaks things
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True' #Checks if RTD is scanning
+if not (on_rtd):
+    path = os.path.join(os.path.dirname(__file__), 'data_resources.json')
+    json_data=open(path).read()
+    data_resources = json.loads(json_data)
 
 
 def prompt_user(prompt):
@@ -94,7 +97,7 @@ def download_url(url, store_directory, save_name = None, messages = True, suffix
     # if we wanted to get more sophisticated maybe we should check the response code here again even for successes.
     with open(save_name, 'wb') as f:
         f.write(response.read())
-    
+
     #urllib.urlretrieve(url+suffix, save_name, reporthook)
 
 def authorize_download(dataset_name=None):
@@ -232,7 +235,7 @@ if gpxpy_available:
             gpx_file.close()
         return data_details_return({'X' : X, 'info' : 'Data is an array containing time in seconds, latitude, longitude and elevation in that order.'}, data_set)
 
-del gpxpy_available
+#del gpxpy_available
 
 
 

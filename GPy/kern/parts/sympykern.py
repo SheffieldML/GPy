@@ -6,7 +6,7 @@ from scipy import weave
 import re
 import os
 import sys
-current_dir = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
+current_dir = os.path.dirname(os.path.abspath(__file__))
 import tempfile
 import pdb
 import ast
@@ -107,9 +107,9 @@ class spkern(Kernpart):
             
         self.weave_kwargs = {
             'support_code':self._function_code,
-            'include_dirs':[tempfile.gettempdir(), os.path.join(current_dir,'parts/')],
+            'include_dirs':[tempfile.gettempdir(), current_dir],
             'headers':['"sympy_helpers.h"'],
-            'sources':[os.path.join(current_dir,"parts/sympy_helpers.cpp")],
+            'sources':[os.path.join(current_dir,"sympy_helpers.cpp")],
             'extra_compile_args':extra_compile_args,
             'extra_link_args':[],
             'verbose':True}

@@ -37,7 +37,6 @@ class SVIGP(GPBase):
         self.Y = self.likelihood.Y.copy()
         self.Z = Z
         self.num_inducing = Z.shape[0]
-
         self.batchcounter = 0
         self.epochs = 0
         self.iterations = 0
@@ -77,6 +76,8 @@ class SVIGP(GPBase):
         self.adapt_vb_steplength = True
         self._param_steplength_trace = []
         self._vb_steplength_trace = []
+
+        self.ensure_default_constraints()
 
     def getstate(self):
         steplength_params = [self.hbar_t, self.tau_t, self.gbar_t, self.gbar_t1, self.gbar_t2, self.hbar_tp, self.tau_tp, self.gbar_tp, self.adapt_param_steplength, self.adapt_vb_steplength, self.vb_steplength, self.param_steplength]
@@ -303,12 +304,12 @@ class SVIGP(GPBase):
 
         #Iterate!
         for i in range(iterations):
-
+            
             #store the current configuration for plotting later
             self._param_trace.append(self._get_params())
             self._ll_trace.append(self.log_likelihood() + self.log_prior())
 
-            #load a batch
+            #load a batch and do the appropriate computations (kernel matrices, etc)
             self.load_batch()
 
             #compute the (stochastic) gradient
@@ -318,7 +319,8 @@ class SVIGP(GPBase):
 
             #compute the steps in all parameters
             vb_step = self.vb_steplength*natgrads[0]
-            if (self.epochs>=1):#only move the parameters after the first epoch
+            #only move the parameters after the first epoch and only if the steplength is nonzero
+            if (self.epochs>=1) and (self.param_steplength > 0):
                 param_step = self.momentum*param_step + self.param_steplength*grads
             else:
                 param_step = 0.
@@ -340,6 +342,8 @@ class SVIGP(GPBase):
 
             if self.epochs > 10:
                 self._adapt_steplength()
+            self._vb_steplength_trace.append(self.vb_steplength)
+            self._param_steplength_trace.append(self.param_steplength)
 
             self.iterations += 1
 
@@ -348,17 +352,20 @@ class SVIGP(GPBase):
         if self.adapt_vb_steplength:
             # self._adaptive_vb_steplength()
             self._adaptive_vb_steplength_KL()
-        self._vb_steplength_trace.append(self.vb_steplength)
-        assert self.vb_steplength > 0
+        #self._vb_steplength_trace.append(self.vb_steplength)
+        assert self.vb_steplength >= 0
 
         if self.adapt_param_steplength:
             self._adaptive_param_steplength()
             # self._adaptive_param_steplength_log()
             # self._adaptive_param_steplength_from_vb()
-        self._param_steplength_trace.append(self.param_steplength)
+        #self._param_steplength_trace.append(self.param_steplength)
 
     def _adaptive_param_steplength(self):
-        decr_factor = 0.02
+        if hasattr(self, 'adapt_param_steplength_decr'):
+            decr_factor = self.adapt_param_steplength_decr
+        else:
+            decr_factor = 0.02
         g_tp = self._transform_gradients(self._log_likelihood_gradients())
         self.gbar_tp = (1-1/self.tau_tp)*self.gbar_tp + 1/self.tau_tp * g_tp
         self.hbar_tp = (1-1/self.tau_tp)*self.hbar_tp + 1/self.tau_tp * np.dot(g_tp.T, g_tp)

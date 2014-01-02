@@ -4,17 +4,17 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 import os
 
-import util
 import core
-import kern
-import mappings
-import likelihoods
-import inference
 import models
+import mappings
+import inference
+import util
 import examples
+import likelihoods
 import testing
 from numpy.testing import Tester
 from nose.tools import nottest
+import kern
 from core import priors
 
 @nottest

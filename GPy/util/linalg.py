@@ -13,22 +13,33 @@ from ctypes import byref, c_char, c_int, c_double # TODO
 # import scipy.lib.lapack
 import scipy
 import warnings
+import os
+from config import *
 
 if np.all(np.float64((scipy.__version__).split('.')[:2]) >= np.array([0, 12])):
     import scipy.linalg.lapack as lapack
 else:
     from scipy.linalg.lapack import flapack as lapack
 
-try:
-    _blaslib = ctypes.cdll.LoadLibrary(np.core._dotblas.__file__) # @UndefinedVariable
-    _blas_available = True
-    assert hasattr(_blaslib, 'dsyrk_')
-    assert hasattr(_blaslib, 'dsyr_')
-except AssertionError:
-    _blas_available = False
-except AttributeError as e:
-    _blas_available = False
-    warnings.warn("warning: caught this exception:" + str(e))
+
+if config.getboolean('anaconda', 'installed') and config.getboolean('anaconda', 'MKL'):
+    try:
+        anaconda_path = str(config.get('anaconda', 'location'))
+        mkl_rt = ctypes.cdll.LoadLibrary(os.path.join(anaconda_path, 'DLLs', 'mkl_rt.dll'))
+        dsyrk = mkl_rt.dsyrk
+        dsyr = mkl_rt.dsyr
+        _blas_available = True
+    except:
+        _blas_available = False
+else:
+    try:
+        _blaslib = ctypes.cdll.LoadLibrary(np.core._dotblas.__file__) # @UndefinedVariable
+        dsyrk = _blaslib.dsyrk_
+        dsyr = _blaslib.dsyr_
+        _blas_available = True
+    except AttributeError as e:
+        _blas_available = False
+        warnings.warn("warning: caught this exception:" + str(e))
 
 def dtrtrs(A, B, lower=0, trans=0, unitdiag=0):
     """
@@ -394,7 +405,7 @@ def tdot_blas(mat, out=None):
     BETA = c_double(0.0)
     C = out.ctypes.data_as(ctypes.c_void_p)
     LDC = c_int(np.max(out.strides) / 8)
-    _blaslib.dsyrk_(byref(UPLO), byref(TRANS), byref(N), byref(K),
+    dsyrk(byref(UPLO), byref(TRANS), byref(N), byref(K),
             byref(ALPHA), A, byref(LDA), byref(BETA), C, byref(LDC))
 
     symmetrify(out, upper=True)
@@ -424,7 +435,7 @@ def DSYR_blas(A, x, alpha=1.):
     A_ = A.ctypes.data_as(ctypes.c_void_p)
     x_ = x.ctypes.data_as(ctypes.c_void_p)
     INCX = c_int(1)
-    _blaslib.dsyr_(byref(UPLO), byref(N), byref(ALPHA),
+    dsyr(byref(UPLO), byref(N), byref(ALPHA),
             x_, byref(INCX), A_, byref(LDA))
     symmetrify(A, upper=True)
 
@@ -455,7 +466,7 @@ def symmetrify(A, upper=False):
     """
     N, M = A.shape
     assert N == M
-    
+
     c_contig_code = """
     int iN;
     for (int i=1; i<N; i++){

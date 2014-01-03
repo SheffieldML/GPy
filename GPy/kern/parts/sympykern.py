@@ -134,9 +134,9 @@ class spkern(Kernpart):
             argument_sequence += self._sp_theta_i + self._sp_theta_j
             code_list += [('dk_d%s'%theta.name,dtheta) for theta,dtheta in zip(self._sp_theta_i,self._sp_dk_dtheta_i)]
         (foo_c,self._function_code), (foo_h,self._function_header) = \
-                                     codegen(code_list, "C",'foobar',argument_sequence=argument_sequence)
+                                     codegen(code_list, "C",'kernel_code',argument_sequence=argument_sequence)
         #put the header file where we can find it
-        f = file(os.path.join(tempfile.gettempdir(),'foobar.h'),'w')
+        f = file(os.path.join(tempfile.gettempdir(),'kernel_code.h'),'w')
         f.write(self._function_header)
         f.close()
 

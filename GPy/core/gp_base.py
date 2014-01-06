@@ -190,7 +190,7 @@ class GPBase(Model):
                 upper = m + 2*np.sqrt(v)
                 Y = self.Y
             else:
-                m, v, lower, upper = self.predict(Xgrid, which_parts=which_parts) #Compute the exact mean
+                m, v, lower, upper = self.predict(Xgrid, which_parts=which_parts)
                 Y = self.Y
             for d in which_data_ycols:
                 gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax, edgecol=linecol, fillcol=fillcol)

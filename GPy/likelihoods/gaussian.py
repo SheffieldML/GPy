@@ -54,7 +54,7 @@ class Gaussian(Likelihood):
 
     def _gradients(self, partial):
         """
-        Return the derivative of the log marginal likelihood wrt self.variance, 
+        Return the derivative of the log marginal likelihood wrt self.variance,
         given the appropriate partial derivative
         """
         return np.sum(partial)
@@ -82,9 +82,13 @@ class Gaussian(Likelihood):
 
     def predictive_values(self, mu, var, full_cov=False):
         if full_cov:
-            low, up = mu - np.diag(var)[:,None], mu + np.diag(var)[:,None]
+            var += np.eye(var.shape[0])*self.variance
+            d = 2*np.sqrt(np.diag(var))
+            low, up = mu - d, mu + d
         else:
-            low, up = mu - var, mu + var
+            var += self.variance
+            d = 2*np.sqrt(var)
+            low, up = mu - d, mu + d
         return mu, var, low, up
 
     def predictive_mean(self, mu, sigma):

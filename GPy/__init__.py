@@ -4,6 +4,9 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 import os
 
+with open("version", 'r') as f:
+    __version__ = f.read() 
+
 import core
 import models
 import mappings

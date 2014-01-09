@@ -129,12 +129,15 @@ class StateSpace_1(Model):
         m = H1.dot(M)
         #V1 = np.tensordot(H[0],P,(0,0))
         #V2 = np.tensordot(V1,H[0],(0,0))
-        V=P[::F.shape[0],::F.shape[0],:]
+
+        #1st and 2nd dim, pick every 2nd elements
+        V=P[::F.shape[0],::F.shape[0],:]  
+        
         #V1 = np.tensordot(H1.T,P,(0,0))
         #V2 = np.tensordot(V1,H1,(1,1))
         #stop
         #V3 = V2[:,None]
-               
+     
         # Return the posterior of the state
         return (m, V)
 

@@ -66,12 +66,31 @@ class StateSpace_1(Model):
         return self.kern._get_param_names_transformed() + ['noise_variance']
 
     def log_likelihood(self):
+        
+        X=self.X
+
+        # Sort the matrix (save the order)
+        _, return_index, return_inverse = np.unique(X,True,True)
+        X = X[return_index]
+
 
         # Get the model matrices from the kernel
         (F,L,Qc,H,Pinf) = self.kern.sde()
 
+        n=X.shape[0]
+        F1 = np.kron(np.eye(n),F)
+        L1 = np.kron(np.eye(n),L)
+        K1=self.spacekern.K(X)
+        Qc1 = K1*Qc               #kron(K,Qc1);
+        H1 = np.kron(np.eye(n),H)
+        Pinf1 = np.kron(K1,Pinf)
+
+
+
         # Use the Kalman filter to evaluate the likelihood
         return self.kf_likelihood(F,L,Qc,H,self.sigma2,Pinf,self.X.T,self.Y.T)
+        #return self.kf_likelihood(F1,L1,Qc1,H1,self.sigma2,Pinf1,self.X.T,self.Y.T)
+
 
     def _log_likelihood_gradients(self):
 

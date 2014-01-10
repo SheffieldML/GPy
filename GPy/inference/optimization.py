@@ -118,7 +118,7 @@ class opt_lbfgsb(Optimizer):
         assert f_fp != None, "BFGS requires f_fp"
 
         if self.messages:
-            iprint = 1
+            iprint = 0
         else:
             iprint = -1
 
@@ -126,18 +126,29 @@ class opt_lbfgsb(Optimizer):
         if self.xtol is not None:
             print "WARNING: l-bfgs-b doesn't have an xtol arg, so I'm going to ignore it"
         if self.ftol is not None:
-            print "WARNING: l-bfgs-b doesn't have an ftol arg, so I'm going to ignore it"
+            opt_dict['ftol'] = self.ftol
+        #    print "WARNING: l-bfgs-b doesn't have an ftol arg, so I'm going to ignore it"
         if self.gtol is not None:
-            opt_dict['pgtol'] = self.gtol
+            opt_dict['gtol'] = self.gtol
         if self.bfgs_factor is not None:
             opt_dict['factr'] = self.bfgs_factor
-
-        opt_result = optimize.fmin_l_bfgs_b(f_fp, self.x_init, iprint=iprint,
-                                            maxfun=self.max_iters, **opt_dict)
-        self.x_opt = opt_result[0]
-        self.f_opt = f_fp(self.x_opt)[0]
-        self.funct_eval = opt_result[2]['funcalls']
-        self.status = rcstrings[opt_result[2]['warnflag']]
+        opt_dict['iprint'] = iprint
+        opt_dict['maxiter'] = self.max_iters
+        opt_dict['disp'] = self.messages
+        #dict(maxiter=self.max_iters, disp=self.messages, iprint=iprint, ftol=self.ftol, gtol=self.gtol)
+            
+        opt_result = optimize.minimize(f_fp, self.x_init, method='L-BFGS-B', jac=True, options=opt_dict)
+        #opt_result = optimize.fmin_l_bfgs_b(f_fp, self.x_init, iprint=iprint,
+        #                                    maxfun=self.max_iters, **opt_dict)
+        #self.x_opt = opt_result[0]
+        #self.f_opt = f_fp(self.x_opt)[0]
+        #self.funct_eval = opt_result[2]['funcalls']
+        #self.status = rcstrings[opt_result[2]['warnflag']]
+        self.x_opt = opt_result.x
+        self.status = opt_result.success
+        self.funct_eval = opt_result.nfev
+        self.f_opt = opt_result.fun
+        self.opt_result = opt_result
 
 class opt_simplex(Optimizer):
     def __init__(self, *args, **kwargs):

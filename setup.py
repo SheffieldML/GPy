@@ -24,7 +24,7 @@ setup(name = 'GPy',
       package_data = {'GPy': ['GPy/examples', 'gpy_config.cfg', 'util/data_resources.json', 'version']},
       py_modules = ['GPy.__init__'],
       long_description=read('README.md'),
-      install_requires=['numpy >= 1.6', 'scipy == 0.12','matplotlib >= 1.2', 'nose'],
+      install_requires=['scipy == 0.12','matplotlib >= 1.2', 'nose'],
       extras_require = {
         'docs':['Sphinx', 'ipython'],
       },

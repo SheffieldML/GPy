@@ -4,7 +4,6 @@ import GPy
 import numpy as np
 import matplotlib as mpl
 import time
-import Image
 try:
     import visual
     visual_available = True
@@ -323,6 +322,7 @@ class image_show(matplotlib_show):
         else:
             self.vals = 255*(self.vals - self.vals.min())/(self.vals.max() - self.vals.min())
         if not self.palette == []: # applying using an image palette (e.g. if the image has been quantized)
+            from PIL import Image
             self.vals = Image.fromarray(self.vals.astype('uint8'))
             self.vals.putpalette(self.palette) # palette is a list, must be loaded before calling this function
 

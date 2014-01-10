@@ -9,7 +9,7 @@ import numpy
 
 
 class ImshowController(BufferedAxisChangedController):
-    def __init__(self, ax, plot_function, plot_limits, resolution=50, update_lim=.5, **kwargs):
+    def __init__(self, ax, plot_function, plot_limits, resolution=50, update_lim=.8, **kwargs):
         """
         :param plot_function: 
             function to use for creating image for plotting (return ndarray-like)

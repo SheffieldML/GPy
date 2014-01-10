@@ -31,14 +31,9 @@ class Parameterized(object):
     #    """ Override for which names to print out, when using print m """
     #    return self._get_param_names()
 
-    def pickle(self, filename, protocol=None):
-        if protocol is None:
-            if self._has_get_set_state():
-                protocol = 0
-            else:
-                protocol = -1
-        with open(filename, 'w') as f:
-            cPickle.dump(self, f, protocol)
+    def pickle(self, filename, protocol=-1):
+        with open(filename, 'wb') as f:
+            cPickle.dump(self, f, protocol=protocol)
 
     def copy(self):
         """Returns a (deep) copy of the current model """

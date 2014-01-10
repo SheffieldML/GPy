@@ -1,7 +1,7 @@
 import pylab as pb
 import numpy as np
 from .. import util
-from GPy.util.latent_space_visualizations.controllers.imshow_controller import ImshowController
+from .latent_space_visualizations.controllers.imshow_controller import ImshowController
 import itertools
 
 def most_significant_input_dimensions(model, which_indices):
@@ -40,15 +40,20 @@ def plot_latent(model, labels=None, which_indices=None,
 
     # first, plot the output variance as a function of the latent space
     Xtest, xx, yy, xmin, xmax = util.plot.x_frame2D(model.X[:, [input_1, input_2]], resolution=resolution)
-    Xtest_full = np.zeros((Xtest.shape[0], model.X.shape[1]))
+    #Xtest_full = np.zeros((Xtest.shape[0], model.X.shape[1]))
 
     def plot_function(x):
+        Xtest_full = np.zeros((Xtest.shape[0], model.X.shape[1]))
         Xtest_full[:, [input_1, input_2]] = x
         mu, var, low, up = model.predict(Xtest_full)
         var = var[:, :1]
         return np.log(var)
+    
+    xmi, ymi = xmin
+    xma, yma = xmax
+    
     view = ImshowController(ax, plot_function,
-                            tuple(model.X[:, [input_1, input_2]].min(0)) + tuple(model.X[:, [input_1, input_2]].max(0)),
+                            (xmi, ymi, xma, yma),
                             resolution, aspect=aspect, interpolation='bilinear',
                             cmap=pb.cm.binary)
 

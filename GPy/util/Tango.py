@@ -2,9 +2,6 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-import matplotlib as mpl
-import pylab as pb
-import sys
 #sys.path.append('/home/james/mlprojects/sitran_cluster/')
 #from switch_pylab_backend import *
 
@@ -84,6 +81,7 @@ def reset():
         lightList.append(lightList.pop(0))
 
 def setLightFigures():
+    import matplotlib as mpl
     mpl.rcParams['axes.edgecolor']=colorsHex['Aluminium6']
     mpl.rcParams['axes.facecolor']=colorsHex['Aluminium2']
     mpl.rcParams['axes.labelcolor']=colorsHex['Aluminium6']
@@ -97,6 +95,7 @@ def setLightFigures():
     mpl.rcParams['ytick.color']=colorsHex['Aluminium6']
 
 def setDarkFigures():
+    import matplotlib as mpl
     mpl.rcParams['axes.edgecolor']=colorsHex['Aluminium2']
     mpl.rcParams['axes.facecolor']=colorsHex['Aluminium6']
     mpl.rcParams['axes.labelcolor']=colorsHex['Aluminium2']
@@ -157,10 +156,10 @@ cdict_Alu = {'red' :((0./5,colorsRGB['Aluminium1'][0]/256.,colorsRGB['Aluminium1
                      (5./5,colorsRGB['Aluminium6'][2]/256.,colorsRGB['Aluminium6'][2]/256.))}
 # cmap_Alu = mpl.colors.LinearSegmentedColormap('TangoAluminium',cdict_Alu,256)
 # cmap_BGR = mpl.colors.LinearSegmentedColormap('TangoRedBlue',cdict_BGR,256)
-# cmap_RB = mpl.colors.LinearSegmentedColormap('TangoRedBlue',cdict_RB,256)
 if __name__=='__main__':
-    import pylab as pb
+    import matplotlib.pyplot as pb, numpy as np
     pb.figure()
-    pb.pcolor(pb.rand(10,10),cmap=cmap_RB)
+    cmap_RB = mpl.colors.LinearSegmentedColormap('TangoRedBlue',cdict_RB,256)
+    pb.pcolor(np.random.rand(10,10),cmap=cmap_RB)
     pb.colorbar()
     pb.show()

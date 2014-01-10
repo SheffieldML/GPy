@@ -4,8 +4,11 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 import os
 
-with open("version", 'r') as f:
-    __version__ = f.read() 
+
+def read(fname):
+    with open(os.path.join(os.path.dirname(__file__), fname)) as f:
+        return f.read()
+__version__ = read('version') 
 
 import core
 import models

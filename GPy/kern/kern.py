@@ -126,7 +126,7 @@ class kern(Parameterized):
                 xi = patch.get_x() + patch.get_width() / 2.
                 va = 'top'
                 c = 'w'
-                t = TextPath((0, 0), "${xi}$".format(xi=xi), rotation=0, usetex=True, ha='center')
+                t = TextPath((0, 0), "${xi}$".format(xi=xi), rotation=0, ha='center')
                 transform = transOffset
                 if patch.get_extents().height <= t.get_extents().height + 3:
                     va = 'bottom'

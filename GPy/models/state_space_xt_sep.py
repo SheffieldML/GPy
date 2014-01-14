@@ -22,11 +22,11 @@ from GPy.util.plot import gpplot, Tango, x_frame1D
 import pylab as pb
 
 class StateSpace_1(Model):
-    def __init__(self, Sp,X, Y, kernel=None):
+    def __init__(self, SXP, SI, X, Y, kernel=None):
         super(StateSpace_1, self).__init__()
         self.num_data, input_dim = X.shape
         assert input_dim==1, "State space methods for time and space  2"
-        num_data_Y, self.output_dim = Y.shape
+        self.output_dim, num_data_Y = Y.shape
         assert num_data_Y == self.num_data, "X and Y data don't match"
         #assert self.output_dim == 1, "State space methods for single outputs only"
 
@@ -34,6 +34,9 @@ class StateSpace_1(Model):
         sort_index = np.argsort(X[:,0])
         self.X = X[sort_index]
         self.Y = Y[sort_index]
+
+        self.SXP = SXP
+        self.SI = SI
           
         #sort_index = np.argsort(X[:,0])
         #self.X = X[sort_index]
@@ -44,8 +47,8 @@ class StateSpace_1(Model):
 
         # Default kernel
         if kernel is None:
-            self.kern = kern.Matern32(1)
-            self.spacekern = kern.rbf(1)
+            self.kern = kern.Matern32(1,lengthscale=0.3)
+            self.spacekern = kern.rbf(1,lengthscale=0.3)
         else:
             self.kern = kernel
 
@@ -88,8 +91,8 @@ class StateSpace_1(Model):
 
 
         # Use the Kalman filter to evaluate the likelihood
-        return self.kf_likelihood(F,L,Qc,H,self.sigma2,Pinf,self.X.T,self.Y.T)
-        #return self.kf_likelihood(F1,L1,Qc1,H1,self.sigma2,Pinf1,self.X.T,self.Y.T)
+        #return self.kf_likelihood(F,L,Qc,H,self.sigma2,Pinf,self.X.T,self.Y.T)
+        return self.kf_likelihood(F1,L1,Qc1,H1,self.sigma2,Pinf1,self.X.T,self.Y.T)
 
 
     def _log_likelihood_gradients(self):
@@ -106,8 +109,10 @@ class StateSpace_1(Model):
         # Make a single matrix containing training and testing points
         #X = np.vstack((self.X, Xnew))
         #Y = np.vstack((self.Y, np.nan*np.zeros(Xnew.shape)))
-        X=self.X
+        X=self.X        
         Y=self.Y
+        SXP=self.SXP
+        SI=self.SI
 
         # Sort the matrix (save the order)
         _, return_index, return_inverse = np.unique(X,True,True)
@@ -117,27 +122,51 @@ class StateSpace_1(Model):
         # Get the model matrices from the kernel
         (F,L,Qc,H,Pinf) = self.kern.sde()
 
-        n=X.shape[0]
+        n=SXP.shape[0]
         F1 = np.kron(np.eye(n),F)
         L1 = np.kron(np.eye(n),L)
-        K1=self.spacekern.K(X)
+        K1=self.spacekern.K(SXP)
         Qc1 = K1*Qc               #kron(K,Qc1);
-        H1 = np.kron(np.eye(n),H)
+        H2 = np.zeros([len(SI),SXP.shape[0]])
+        count = 0
+        for index in SI:
+            H2[count,index] = 1
+            count = count+1
+#        H1 = np.kron(np.eye(n),H)
+        H1 = np.kron(H2,H)
         Pinf1 = np.kron(K1,Pinf)
                   
         
         # Run the Kalman filter
         #(M, P) = self.kalman_filter(F,L,Qc,H,self.sigma2,Pinf,X.T,Y.T)
-        (M, P) = self.kalman_filter(F1,L1,Qc1,H1,self.sigma2,Pinf1,X.T,Y)
-        
+        #(M, P) = self.kalman_filter(F1,L1,Qc1,H1,self.sigma2,Pinf1,X.T,Y)
+        NY = np.zeros([Y.shape[0],Xnew.shape[0]+X.shape[0]]) * np.nan
+        NX = np.zeros([Xnew.shape[0] + X.shape[0],1])
+        # Assume that Xmax is ordered !!!
+        oi = 0
+        ni = 0
+        xni = 0
+        for xni in range(Xnew.shape[0]):
+            if oi < X.shape[0]:
+                if (xni == 0 and X[oi] < Xnew[xni]) or (xni > 0 and X[oi] >= Xnew[xni-1] and X[oi] < Xnew[xni]):
+                    NY[:,ni] = Y[:,oi]
+                    NX[ni]   = X[oi]
+                    ni = ni + 1
+                    oi = oi + 1
+            NX[ni] = Xnew[xni]
+            ni = ni + 1
+            count = count+1
+
+        (M, P) = self.kalman_filter(F1,L1,Qc1,H1,self.sigma2,Pinf1,NX.T,NY)
+        #stop
         # Run the Rauch-Tung-Striebel smoother
         #if not filter:
         #(M, P) = self.rts_smoother(F,L,Qc,X.T,M,P)
-        #(M, P) = self.rts_smoother(F1,L1,Qc1,X.T,M,P)
+        (M, P) = self.rts_smoother(F1,L1,Qc1,NX.T,M,P)
 
         # Put the data back in the original order
-        M = M[:,return_inverse]
-        P = P[:,:,return_inverse]
+        #M = M[:,return_inverse]  # Do not use with Xnew
+        #P = P[:,:,return_inverse]
 
         # Only return the values for Xnew
         #M = M[:,self.num_data:]
@@ -145,7 +174,12 @@ class StateSpace_1(Model):
         
         # Calculate the mean and variance
         #m = H.dot(M).T
-        m = H1.dot(M)
+        #m = H1.dot(M)
+
+        n=SXP.shape[0]
+        H3 = np.kron(np.eye(n),H)
+        m = H3.dot(M)
+
         #V1 = np.tensordot(H[0],P,(0,0))
         #V2 = np.tensordot(V1,H[0],(0,0))
 
@@ -188,7 +222,7 @@ class StateSpace_1(Model):
         resolution = resolution or 200
         Xgrid, xmin, xmax = x_frame1D(self.X, plot_limits=plot_limits)
         # T grid???
-
+        #stop
 
         # Make a prediction on the frame and plot it
         if plot_raw:
@@ -312,23 +346,20 @@ class StateSpace_1(Model):
             PF[:,:,k] = A.dot(PF[:,:,k-1]).dot(A.T) + Q
            
             # Update step (only if there is data)
-            #if not np.isnan(Y[:,k]):
-            #     if Y.shape[0]==1:
-            #         K = PF[:,:,k].dot(H.T)/(H.dot(PF[:,:,k]).dot(H.T) + R)
-            #     else:
-            #         LL = linalg.cho_factor(H.dot(PF[:,:,k]).dot(H.T) + R)
-            #         K = linalg.cho_solve(LL, H.dot(PF[:,:,k].T)).T
-            #     stop
-            #     MF[:,k] += K.dot(Y[:,k]-H.dot(MF[:,k]))
-            #     PF[:,:,k] -= K.dot(H).dot(PF[:,:,k])
-            
-            #if not np.isnan(Y[:,k]):
-
-            LL = linalg.cho_factor(H.dot(PF[:,:,k]).dot(H.T) + R*np.eye(Y.shape[1]))
-            K = linalg.cho_solve(LL, H.dot(PF[:,:,k].T)).T
+            if not np.isnan(Y[0,k]):
+                 if Y.shape[0]==1:
+                     K = PF[:,:,k].dot(H.T)/(H.dot(PF[:,:,k]).dot(H.T) + R)
+                 else:
+                     LL = linalg.cho_factor(H.dot(PF[:,:,k]).dot(H.T) + R*np.eye(Y.shape[0]))
+                     K = linalg.cho_solve(LL, H.dot(PF[:,:,k].T)).T                
                  
-            MF[:,k] += K.dot(Y[:,k]-H.dot(MF[:,k]))
-            PF[:,:,k] -= K.dot(H).dot(PF[:,:,k])
+                 MF[:,k] += K.dot(Y[:,k]-H.dot(MF[:,k]))
+                 PF[:,:,k] -= K.dot(H).dot(PF[:,:,k])
+            
+#            LL = linalg.cho_factor(H.dot(PF[:,:,k]).dot(H.T) + R*np.eye(Y.shape[1]))
+#            K = linalg.cho_solve(LL, H.dot(PF[:,:,k].T)).T                
+#            MF[:,k] += K.dot(Y[:,k]-H.dot(MF[:,k]))
+#            PF[:,:,k] -= K.dot(H).dot(PF[:,:,k])
                  
            
         # Return values
@@ -345,19 +376,24 @@ class StateSpace_1(Model):
         # Solve the LTI SDE for these time steps
         As, Qs, index = self.lti_disc(F,L,Qc,dt)
 
-        # Sequentially smooth states starting from the end
-        for k in range(2,X.shape[1]+1):
+        try:
 
-            # Form discrete-time model
-            #(A, Q) = self.lti_disc(F,L,Qc,dt[:,1-k])
-            A = As[:,:,index[1-k]];
-            Q = Qs[:,:,index[1-k]];
+            # Sequentially smooth states starting from the end
+            for k in range(2,X.shape[1]+1):
 
-            # Smoothing step
-            LL = linalg.cho_factor(A.dot(PS[:,:,-k]).dot(A.T)+Q)
-            G = linalg.cho_solve(LL,A.dot(PS[:,:,-k])).T
-            MS[:,-k] += G.dot(MS[:,1-k]-A.dot(MS[:,-k]))
-            PS[:,:,-k] += G.dot(PS[:,:,1-k]-A.dot(PS[:,:,-k]).dot(A.T)-Q).dot(G.T)
+                # Form discrete-time model
+                #(A, Q) = self.lti_disc(F,L,Qc,dt[:,1-k])
+                A = As[:,:,index[1-k]];
+                Q = Qs[:,:,index[1-k]];
+
+                # Smoothing step
+                LL = linalg.cho_factor(A.dot(PS[:,:,-k]).dot(A.T)+Q)
+                G = linalg.cho_solve(LL,A.dot(PS[:,:,-k])).T
+                MS[:,-k] += G.dot(MS[:,1-k]-A.dot(MS[:,-k]))
+                PS[:,:,-k] += G.dot(PS[:,:,1-k]-A.dot(PS[:,:,-k]).dot(A.T)-Q).dot(G.T)
+
+        except linalg.LinAlgError:
+"""numerical"""
 
         # Return
         return (MS, PS)
@@ -391,25 +427,37 @@ class StateSpace_1(Model):
             P = A.dot(P).dot(A.T) + Q
 
             # Update step only if there is data
-            if not np.isnan(Y[:,k]):
-                 v = Y[:,k]-H.dot(m)
+            if not np.isnan(Y[0,k]):
                  if Y.shape[0]==1:
+                     v = Y[:,k]-H.dot(m)
                      S = H.dot(P).dot(H.T) + R
                      K = P.dot(H.T)/S
                      lik -= 0.5*np.log(S)
                      lik -= 0.5*v.shape[0]*np.log(2*np.pi)
-                     lik -= 0.5*v*v/S
+                     lik -= 0.5*(v*v/S)[0,0]  # !!!
                  else:
-                     LL, isupper = linalg.cho_factor(H.dot(P).dot(H.T) + R)
+                     v = Y[:,k][None].T-H.dot(m)
+                     LL, isupper = linalg.cho_factor(H.dot(P).dot(H.T) + R*np.eye(Y.shape[1]))
+                     K = linalg.cho_solve((LL, isupper), H.dot(P)).T
                      lik -= np.sum(np.log(np.diag(LL)))
                      lik -= 0.5*v.shape[0]*np.log(2*np.pi)
-                     lik -= 0.5*linalg.cho_solve((LL, isupper),v).dot(v)
-                     K = linalg.cho_solve((LL, isupper), H.dot(P.T)).T
+                     lik -= 0.5*linalg.cho_solve((LL, isupper),v).T.dot(v)[0,0]
                  m += K.dot(v)
                  P -= K.dot(H).dot(P)
 
+            #stop
+#            v = Y[:,k][None].T-H.dot(m)
+#            LL, isupper = linalg.cho_factor(H.dot(P).dot(H.T) + R*np.eye(Y.shape[1]))
+#            K = linalg.cho_solve((LL, isupper), H.dot(P)).T
+#            lik -= np.sum(np.log(np.diag(LL)))
+#            lik -= 0.5*v.shape[0]*np.log(2*np.pi)
+#            lik -= 0.5*linalg.cho_solve((LL, isupper),v).T.dot(v)[0,0]
+#            m += K.dot(v)
+#            P -= K.dot(H).dot(P)
+            
+       
         # Return likelihood
-        return lik[0,0]
+        return lik
 
     def simulate(self,F,L,Qc,Pinf,X):
         # Simulate a trajectory using the state space model

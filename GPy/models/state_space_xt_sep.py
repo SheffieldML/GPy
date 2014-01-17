@@ -47,8 +47,8 @@ class StateSpace_1(Model):
 
         # Default kernel
         if kernel is None:
-            self.kern = kern.Matern32(1,lengthscale=0.5)
-            self.spacekern = kern.rbf(1,lengthscale=0.5)
+            self.kern = kern.Matern32(1,lengthscale=0.1)
+            self.spacekern = kern.rbf(1,lengthscale=0.1)
         else:
             self.kern = kernel
 

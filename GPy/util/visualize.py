@@ -137,6 +137,7 @@ class lvm(matplotlib_show):
         pass
 
     def on_click(self, event):
+        print 'click!'
         if event.inaxes!=self.latent_axes: return
         self.move_on = not self.move_on
         self.called = True
@@ -459,17 +460,17 @@ class mocap_data_show(matplotlib_show):
         self.axes.set_ylim(self.y_lim)
         self.axes.set_zlim(self.z_lim)
 
-class stick_show(mocap_data_show_vpython):
+class stick_show(mocap_data_show):
     """Show a three dimensional point cloud as a figure. Connect elements of the figure together using the matrix connect."""
-    def __init__(self, vals, connect=None, scene=None):
-        mocap_data_show_vpython.__init__(self, vals, scene=scene, connect=connect, radius=0.04)
+    def __init__(self, vals, connect=None, axes=None):
+        mocap_data_show.__init__(self, vals, axes=axes, connect=connect)
 
     def process_values(self):
         self.vals = self.vals.reshape((3, self.vals.shape[1]/3)).T
 
-class skeleton_show(mocap_data_show_vpython):
+class skeleton_show(mocap_data_show):
     """data_show class for visualizing motion capture data encoded as a skeleton with angles."""
-    def __init__(self, vals, skel, scene=None, padding=0):
+    def __init__(self, vals, skel, axes=None, padding=0):
         """data_show class for visualizing motion capture data encoded as a skeleton with angles.
         :param vals: set of modeled angles to use for printing in the axis when it's first created.
         :type vals: np.array
@@ -481,7 +482,7 @@ class skeleton_show(mocap_data_show_vpython):
         self.skel = skel
         self.padding = padding
         connect = skel.connection_matrix()
-        mocap_data_show_vpython.__init__(self, vals, scene=scene, connect=connect, radius=0.4)
+        mocap_data_show.__init__(self, vals, axes=axes, connect=connect)
     def process_values(self):
         """Takes a set of angles and converts them to the x,y,z coordinates in the internal prepresentation of the class, ready for plotting.
 

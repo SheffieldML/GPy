@@ -94,7 +94,7 @@ def gibbs(input_dim,variance=1., mapping=None):
     with input location. This leads to an additional term in front of
     the kernel.
 
-    The parameters are :math:`\\sigma^2`, the process variance, and the parameters of l(x) which is a function that can be specified by the user, by default an multi-layer peceptron is used is used.
+    The parameters are :math:`\\sigma^2`, the process variance, and the parameters of l(x) which is a function that can be specified by the user, by default a multi-layer peceptron is used.
 
     :param input_dim: the number of input dimensions
     :type input_dim: int
@@ -116,7 +116,7 @@ def hetero(input_dim, mapping=None, transform=None):
     part = parts.hetero.Hetero(input_dim,mapping,transform)
     return kern(input_dim, [part])
 
-def poly(input_dim,variance=1., weight_variance=None,bias_variance=1.,degree=2, ARD=False):
+def poly(input_dim,variance=1., weight_variance=None, bias_variance=1., degree=2, ARD=False):
     """
     Construct a polynomial kernel
 
@@ -312,14 +312,14 @@ if sympy_available:
             shared_lengthscales = [sp.var('shared_lengthscale%i' % i, positive=True) for i in range(real_input_dim)]
             dist_string = ' + '.join(['(x_%i-z_%i)**2/(shared_lengthscale%i**2 + lengthscale%i_i**2 + lengthscale%i_j**2)' % (i, i, i) for i in range(real_input_dim)])
             dist = parse_expr(dist_string)
-            f =  variance*sp.exp(-dist/2.)
+            k =  variance*sp.exp(-dist/2.)
         else:
             lengthscales = sp.var('lengthscale_i lengthscale_j',positive=True)
             shared_lengthscale = sp.var('shared_lengthscale',positive=True)
             dist_string = ' + '.join(['(x_%i-z_%i)**2' % (i, i) for i in range(real_input_dim)])
             dist = parse_expr(dist_string)
-            f =  scale_i*scale_j*sp.exp(-dist/(2*(lengthscale_i**2 + lengthscale_j**2 + shared_lengthscale**2)))
-        return kern(input_dim, [spkern(input_dim, f, output_dim=output_dim, name='eq_sympy')])
+            k =  scale_i*scale_j*sp.exp(-dist/(2*(lengthscale_i**2 + lengthscale_j**2 + shared_lengthscale**2)))
+        return kern(input_dim, [spkern(input_dim, k, output_dim=output_dim, name='eq_sympy')])
 
     def ode1_eq(output_dim=1):
         """

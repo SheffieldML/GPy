@@ -497,6 +497,21 @@ def toy_linear_1d_classification(seed=default_seed):
     X = (np.r_[x1, x2])[:, None]
     return {'X': X, 'Y':  sample_class(2.*X), 'F': 2.*X, 'seed' : seed}
 
+def olivetti_glasses(data_set='olivetti_glasses', num_training=200, seed=default_seed):
+    path = os.path.join(data_path, data_set)
+    if not data_available(data_set):
+        download_data(data_set)
+    y = np.load(os.path.join(path, 'has_glasses.np'))
+    y = np.where(y=='y',1,0).reshape(-1,1)
+    faces = scipy.io.loadmat(os.path.join(path, 'olivettifaces.mat'))['faces'].T
+    np.random.seed(seed=seed)
+    index = np.random.permutation(faces.shape[0])
+    X = faces[index[:num_training],:]
+    Xtest = faces[index[num_training:],:]
+    Y = y[index[:num_training],:]
+    Ytest = y[index[num_training:]]
+    return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'seed' : seed, 'info': "ORL Faces with labels identifiying who is wearing glasses and who isn't. Data is randomly partitioned according to given seed. Presence or absence of glasses was labelled by James Hensman."}, 'olivetti_faces')
+    
 def olivetti_faces(data_set='olivetti_faces'):
     path = os.path.join(data_path, data_set)
     if not data_available(data_set):

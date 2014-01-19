@@ -285,6 +285,24 @@
       ],
       "size":8561331
    },
+   "olivetti_glasses":{
+      "files":[
+         [
+            "has_glasses.np"
+         ],
+         [
+            "olivettifaces.mat"
+         ]
+      ],
+      "license":null,
+      "citation":"Information recorded in olivetti_faces entry. Should be used from there.",
+      "details":"Information recorded in olivetti_faces entry. Should be used from there.",
+      "urls":[
+         "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/olivetti_faces/",
+         "http://www.cs.nyu.edu/~roweis/data/"
+      ],
+      "size":8561331
+   },
    "della_gatta":{
       "files":[
          [

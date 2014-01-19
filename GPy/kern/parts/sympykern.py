@@ -13,116 +13,14 @@ import ast
 from kernpart import Kernpart
 from ...util.config import config
 
-class spkern(Kernpart):
-    """
-    A kernel object, where all the hard work in done by sympy.
-
-    :param k: the covariance function
-    :type k: a positive definite sympy function of x_0, z_0, x_1, z_1, x_2, z_2...
-
-    To construct a new sympy kernel, you'll need to define:
-     - a kernel function using a sympy object. Ensure that the kernel is of the form k(x,z).
-     - that's it! we'll extract the variables from the function k.
-
-    Note:
-     - to handle multiple inputs, call them x_1, z_1, etc
-     - to handle multpile correlated outputs, you'll need to add parameters with an index, such as lengthscale_i and lengthscale_j.
-    """
-    def __init__(self, input_dim, k=None, output_dim=1, name=None, param=None):
-        if name is None:
-            self.name='sympykern'
-        else:
-            self.name = name
-        if k is None:
-            raise ValueError, "You must provide an argument for the covariance function."
-        self._sp_k = k
-        sp_vars = [e for e in k.atoms() if e.is_Symbol]
-        self._sp_x= sorted([e for e in sp_vars if e.name[0:2]=='x_'],key=lambda x:int(x.name[2:]))
-        self._sp_z= sorted([e for e in sp_vars if e.name[0:2]=='z_'],key=lambda z:int(z.name[2:]))
-        # Check that variable names make sense.
-        assert all([x.name=='x_%i'%i for i,x in enumerate(self._sp_x)])
-        assert all([z.name=='z_%i'%i for i,z in enumerate(self._sp_z)])
-        assert len(self._sp_x)==len(self._sp_z)
-        self.input_dim = len(self._sp_x)
-        self._real_input_dim = self.input_dim
-        if output_dim > 1:
-            self.input_dim += 1
-        assert self.input_dim == input_dim
-        self.output_dim = output_dim
-        # extract parameter names
-        thetas = sorted([e for e in sp_vars if not (e.name[0:2]=='x_' or e.name[0:2]=='z_')],key=lambda e:e.name)
-
-
-        # Look for parameters with index.
-        if self.output_dim>1:
-            self._sp_theta_i = sorted([e for e in thetas if (e.name[-2:]=='_i')], key=lambda e:e.name)
-            self._sp_theta_j = sorted([e for e in thetas if (e.name[-2:]=='_j')], key=lambda e:e.name)
-            # Make sure parameter appears with both indices!
-            assert len(self._sp_theta_i)==len(self._sp_theta_j)
-            assert all([theta_i.name[:-2]==theta_j.name[:-2] for theta_i, theta_j in zip(self._sp_theta_i, self._sp_theta_j)])
-
-            # Extract names of shared parameters
-            self._sp_theta = [theta for theta in thetas if theta not in self._sp_theta_i and theta not in self._sp_theta_j]
-            
-            self.num_split_params = len(self._sp_theta_i)
-            self._split_theta_names = ["%s"%theta.name[:-2] for theta in self._sp_theta_i]
-            for theta in self._split_theta_names:
-                setattr(self, theta, np.ones(self.output_dim))
-            
-            self.num_shared_params = len(self._sp_theta)
-            self.num_params = self.num_shared_params+self.num_split_params*self.output_dim
-            
-        else:
-            self.num_split_params = 0
-            self._split_theta_names = []
-            self._sp_theta = thetas
-            self.num_shared_params = len(self._sp_theta)
-            self.num_params = self.num_shared_params
-        
-        for theta in self._sp_theta:
-            val = 1.0
-            if param is not None:
-                if param.has_key(theta):
-                    val = param[theta]
-            setattr(self, theta.name, val)
-        #deal with param            
-        self._set_params(self._get_params())
-
-        #Differentiate!
-        self._sp_dk_dtheta = [sp.diff(k,theta).simplify() for theta in self._sp_theta]
-        if self.output_dim > 1:
-            self._sp_dk_dtheta_i = [sp.diff(k,theta).simplify() for theta in self._sp_theta_i]
-            
-        self._sp_dk_dx = [sp.diff(k,xi).simplify() for xi in self._sp_x]
-
-        if False:
-            self.compute_psi_stats()
-
-        self._gen_code()
-
-        if False:
-            extra_compile_args = ['-ftree-vectorize', '-mssse3', '-ftree-vectorizer-verbose=5']
-        else:
-            extra_compile_args = []
-            
-        self.weave_kwargs = {
-            'support_code':self._function_code,
-            'include_dirs':[tempfile.gettempdir(), os.path.join(current_dir,'parts/')],
-            'headers':['"sympy_helpers.h"'],
-            'sources':[os.path.join(current_dir,"parts/sympy_helpers.cpp")],
-            'extra_compile_args':extra_compile_args,
-            'extra_link_args':[],
-            'verbose':True}
-        if config.getboolean('parallel', 'openmp'): self.weave_kwargs.append('-lgomp')
-
-    def __add__(self,other):
-        return spkern(self._sp_k+other._sp_k)
+class spkern_base(Kernpart):
 
     def _gen_code(self):
-        """Generates the C functions necessary for computing the covariance function using the sympy objects as input."""
+        """Generates the C functions necessary for computing the covariance function using the sympy objects as input. This is the main sympy.weave specific bit and it requires a rewrite."""
+
         #TODO: maybe generate one C function only to save compile time? Also easier to take that as a basis and hand craft other covariances??
 
-        #generate c functions from sympy objects        
+        # generate c functions from sympy objects
         argument_sequence = self._sp_x+self._sp_z+self._sp_theta
         code_list = [('k',self._sp_k)]
         # gradients with respect to covariance input
@@ -331,9 +229,9 @@ class spkern(Kernpart):
         """
         // _dKdiag_dX_code
         // Code for computing gradient of diagonal with respect to inputs.
-        int N = partial_array->dimensions[0];
+        int n = partial_array->dimensions[0];
         int input_dim = X_array->dimensions[1];
-        for (int i=0;i<N; i++){
+        for (int i=0;i<n; i++){
             %s
         }
         %s
@@ -350,9 +248,29 @@ class spkern(Kernpart):
         self._dK_dX_code_X = self._dK_dX_code_X.replace('Z2(', 'X2(')
 
 
-        #TODO: insert multiple functions here via string manipulation
+        if False:
+            extra_compile_args = ['-ftree-vectorize', '-mssse3', '-ftree-vectorizer-verbose=5']
+        else:
+            extra_compile_args = []
+            
+        self.weave_kwargs = {
+            'support_code':self._function_code,
+            'include_dirs':[tempfile.gettempdir(), os.path.join(current_dir,'parts/')],
+            'headers':['"sympy_helpers.h"'],
+            'sources':[os.path.join(current_dir,"parts/sympy_helpers.cpp")],
+            'extra_compile_args':extra_compile_args,
+            'extra_link_args':[],
+            'verbose':True}
+
+        if config.getboolean('parallel', 'openmp'): self.weave_kwargs.append('-lgomp')
+
+
         #TODO: similar functions for psi_stats
+    def __add__(self,other):
+        return spkern(self._sp_k+other._sp_k)
+
     def _get_arg_names(self, Z=None, partial=None):
+        """Get names of arguments that need to be passed to the weave.inline function."""
         arg_names = ['target','X']
         for shared_params in self._sp_theta:
             arg_names += [shared_params.name]
@@ -364,8 +282,9 @@ class spkern(Kernpart):
             arg_names += self._split_theta_names
             arg_names += ['output_dim']
         return arg_names
-        
+
     def _weave_inline(self, code, X, target, Z=None, partial=None):
+        """Helper function for compiling the generated C code on the fly."""
         output_dim = self.output_dim
         for shared_params in self._sp_theta:
             locals()[shared_params.name] = getattr(self, shared_params.name)
@@ -376,12 +295,140 @@ class spkern(Kernpart):
         arg_names = self._get_arg_names(Z, partial)        
         weave.inline(code=code, arg_names=arg_names,**self.weave_kwargs)
 
+    def _set_shared_params(self):
+        """Extract names of parameters that are shared for all outputs within the base kernel from the sympy kernel code."""
+        # Extract names of shared parameters
+        if self.output_dim>1:
+
+            self._sp_theta = [theta for theta in self.thetas if theta not in self._sp_theta_i and theta not in self._sp_theta_j]
+        
+            for theta in self._split_theta_names:
+                setattr(self, theta, np.ones(self.output_dim))
+            self.num_shared_params = len(self._sp_theta)
+        else:
+            self._sp_theta = self.thetas
+            self.num_shared_params = len(self._sp_theta)
+
+
+    def _set_split_params(self):
+        """Extract the names of parameters that are separate for each output from the sympy kernel code."""
+        if self.output_dim>1:
+            self._sp_theta_i = sorted([e for e in self.thetas if (e.name[-2:]=='_i')], key=lambda e:e.name)
+            self._sp_theta_j = sorted([e for e in self.thetas if (e.name[-2:]=='_j')], key=lambda e:e.name)
+            # Make sure parameter appears with both indices, otherwise things aren't symmetric.
+            self.num_split_params = len(self._sp_theta_i)
+            self._split_theta_names = ["%s"%theta.name[:-2] for theta in self._sp_theta_i]
+            assert len(self._sp_theta_i)==len(self._sp_theta_j)
+            assert all([theta_i.name[:-2]==theta_j.name[:-2] for theta_i, theta_j in zip(self._sp_theta_i, self._sp_theta_j)])
+        else:
+            # Not sure this is right, surely we should check for split
+            # params even at one output dimension.
+            self.num_split_params = 0
+            self._split_theta_names = []
+
+
+    def _set_variables_and_params(self):
+        """Extract variable and parameter names from the defined covariance function."""
+
+        # Extract variables from covariance
+        sp_vars = [e for e in self._sp_k.atoms() if e.is_Symbol]
+
+        ########## Extract input variables and check z and x match ##########
+        self._sp_x= sorted([e for e in sp_vars if e.name[0:2]=='x_'],key=lambda x:int(x.name[2:]))
+        self._sp_z= sorted([e for e in sp_vars if e.name[0:2]=='z_'],key=lambda z:int(z.name[2:]))
+
+        # Check that variable names make sense.
+        assert all([x.name=='x_%i'%i for i,x in enumerate(self._sp_x)])
+        assert all([z.name=='z_%i'%i for i,z in enumerate(self._sp_z)])
+        assert len(self._sp_x)==len(self._sp_z)
+
+        self._real_input_dim = len(self._sp_x)
+
+
+        ########## Extract parameter names ##########
+
+        # extract parameter names from the symbolic term
+        self.thetas = sorted([e for e in sp_vars if not (e.name[0:2]=='x_' or e.name[0:2]=='z_')],key=lambda e:e.name)
+
+        # Extract parameter names from sympy object
+        self._set_split_params()
+        self._set_shared_params()
+        self.num_params = self.num_shared_params+self.num_split_params*self.output_dim
+
+
+
+class spkern(spkern_base):
+    """
+    A kernel object, where all the hard work in done by sympy.
+
+    :param k: the covariance function
+    :type k: a positive definite sympy function of x_0, z_0, x_1, z_1, x_2, z_2...
+
+    To construct a new sympy kernel, you'll need to define:
+     - a kernel function using a sympy object. Ensure that the kernel is of the form k(x,z).
+     - that's it! we'll extract the variables from the function k.
+
+    Note:
+     - to handle multiple inputs, call them x_1, z_1, etc
+     - to handle multpile correlated outputs, you'll need to add parameters with an index, such as lengthscale_i and lengthscale_j.
+    """
+    def __init__(self, input_dim, k=None, output_dim=1, name=None, param=None):
+        if name is None:
+            self.name='sympykern'
+        else:
+            self.name = name
+
+        if k is None:
+            raise ValueError, "You must provide a sympy function as an argument for the covariance function."
+        self._sp_k = k
+        self.output_dim = output_dim
+
+        self._set_variables_and_params()
+
+        # Multiple output covariances have an additional input to specify which output is used.
+        self.input_dim = self._real_input_dim
+        if self.output_dim > 1:
+            self.input_dim += 1
+
+        if not self.input_dim == input_dim:
+            raise ValueError('Input dimension does not match number of inputs in sympy kernel description.')
+
+        # Extract provided values from default parameter vector and set them.
+        for theta in self._sp_theta:
+            val = 1.0
+            if param is not None:
+                if param.has_key(theta):
+                    val = param[theta]
+            setattr(self, theta.name, val)
+        # Ensure recomputation of dependents is  done.
+        self._set_params(self._get_params())
+
+        # do the automatic differentiation.
+        self._do_sympy_computations()
+
+        # generate the code.
+        self._gen_code()
+
+
+
+    def _do_sympy_computations(self):
+        # Differentiate covariance
+        self._sp_dk_dtheta = [sp.diff(self._sp_k,theta).simplify() for theta in self._sp_theta]
+        if self.output_dim > 1:
+            self._sp_dk_dtheta_i = [sp.diff(self._sp_k,theta).simplify() for theta in self._sp_theta_i]
+            
+        self._sp_dk_dx = [sp.diff(self._sp_k,xi).simplify() for xi in self._sp_x]
+#        for operator in self._sp_operators:
+#            f_i = self.
+        if False:
+            self.compute_psi_stats()
+
+        
     def K(self,X,Z,target):        
         if Z is None:
             self._weave_inline(self._K_code_X, X, target)
         else:
             self._weave_inline(self._K_code, X, target, Z)
-
 
     def Kdiag(self,X,target):
         self._weave_inline(self._Kdiag_code, X, target)

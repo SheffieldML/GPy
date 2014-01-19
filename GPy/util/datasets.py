@@ -395,6 +395,18 @@ def silhouette(data_set='ankur_pose_data'):
     Ytest = mat_data['Z_test']
     return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest}, data_set)
 
+def decampos_digits(data_set='decampos_characters', which_digits=[0,1,2,3,4,5,6,7,8,9]):
+    if not data_available(data_set):
+        download_data(data_set)
+    path = os.path.join(data_path, data_set)
+    digits = np.load(os.path.join(path, 'digits.npy'))
+    digits = digits[which_digits,:,:,:]
+    num_classes, num_samples, height, width = digits.shape
+    Y = digits.reshape((digits.shape[0]*digits.shape[1],digits.shape[2]*digits.shape[3]))
+    lbls = np.array([[l]*num_samples for l in which_digits]).reshape(Y.shape[0], 1)
+    str_lbls = np.array([[str(l)]*num_samples for l in which_digits])
+    return data_details_return({'Y': Y, 'lbls': lbls, 'str_lbls' : str_lbls, 'info': 'Digits data set from the de Campos characters data'}, data_set)
+    
 def ripley_synth(data_set='ripley_prnn_data'):
     if not data_available(data_set):
         download_data(data_set)

@@ -301,7 +301,7 @@
          "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/olivetti_faces/",
          "http://www.cs.nyu.edu/~roweis/data/"
       ],
-      "size":8561331
+      "size":4261047
    },
    "della_gatta":{
       "files":[
@@ -332,6 +332,21 @@
       "details":"Five different GPS traces of the same run up Mount Epomeo in Ischia. The traces are from different sources. endomondo_1 and endomondo_2 are traces from the mobile phone app Endomondo, with a split in the middle. garmin_watch_via_endomondo is the trace from a Garmin watch, with a segment missing about 4 kilometers in. viewranger_phone and viewranger_tablet are traces from a phone and a tablet through the viewranger app. The viewranger_phone data comes from the same mobile phone as the Endomondo data (i.e. there are 3 GPS devices, but one device recorded two traces).",
       "urls":[
          "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/epomeo_gpx/"
+      ],
+      "size":2031872
+   },
+   "decampos_characters":{
+      "files":[
+         [
+            "characters.npy",
+            "digits.npy"
+         ]
+      ],
+      "license":null,
+      "citation":"T. de Campos, B. R. Babu, and M. Varma. Character recognition in natural images. VISAPP 2009.",
+      "details":"Examples of hand written digits taken from the de Campos et al paper on Character Recognition in Natural Images.",
+      "urls":[
+         "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/decampos_digits/"
       ],
       "size":2031872
    }

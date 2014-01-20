@@ -349,6 +349,21 @@
       ],
       "size":46779
    },
+   "boxjenkins_airline":{
+      "files":[
+         [
+            "boxjenkins_airline.csv"
+         ]
+      ],
+      "license":"You may copy and redistribute the data. You may make derivative works from the data. You may use the data for commercial purposes. You may not sublicence the data when redistributing it. You may not redistribute the data under a different license. Source attribution on any use of this data: Must refer source.",
+      "citation":"Box & Jenkins (1976), in file: data/airpass, Description: International airline passengers: monthly totals in thousands. Jan 49 – Dec 60",
+      "details":"International airline passengers, monthly totals from January 1949 to December 1960.",
+      "urls":[
+                  "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/boxjenkins_airline/"
+      ],
+      "size":46779
+   },
+
    "decampos_characters":{
       "files":[
          [

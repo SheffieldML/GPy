@@ -434,7 +434,19 @@ def mauna_loa(data_set='mauna_loa', num_train=543, refresh_data=False):
     Ytest = allY[num_train:, 0:1]
     return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'info': "Mauna Loa data with " + str(num_train) + " values used as training points."}, data_set)
     
+
+def boxjenkins_airline(data_set='boxjenkins_airline', num_train=96):
+    path = os.path.join(data_path, data_set)
+    if not data_available(data_set):
+        download_data(data_set)
+    data = np.loadtxt(os.path.join(data_path, data_set, 'boxjenkins_airline.csv'), delimiter=',')
+    Y = data[:num_train, 1:2]
+    X = data[:num_train, 0:1]
+    Xtest = data[num_train:, 0:1]
+    Ytest = data[num_train:, 1:2]
+    return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'info': "Montly airline passenger data from Box & Jenkins 1976."}, data_set)
     
+
 def osu_run1(data_set='osu_run1', sample_every=4):
     path = os.path.join(data_path, data_set)
     if not data_available(data_set):

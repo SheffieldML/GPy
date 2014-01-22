@@ -35,10 +35,9 @@ class DTCVar(object):
     def inference(self, Kmm, Kmn, Knn_diag, likelihood, Y):
 
         num_inducing, num_data = Kmn.shape
-        const_jitter = np.eye(num_inducing) * self.const_jitter
 
         #factor Kmm # TODO: cache?
-        _Lm = jitchol(Kmm + _const_jitter)
+        _Lm = jitchol(Kmm)
 
         # The rather complex computations of A
         if has_uncertain_inputs:

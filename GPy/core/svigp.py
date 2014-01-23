@@ -4,12 +4,12 @@
 import numpy as np
 import pylab as pb
 from ..util.linalg import pdinv, mdot, tdot, dpotrs, dtrtrs, jitchol, backsub_both_sides
-from gp_base import GPBase
+from gp import GP
 import time
 import sys
 
 
-class SVIGP(GPBase):
+class SVIGP(GP):
     """
 
     Stochastic Variational inference in a Gaussian Process
@@ -44,7 +44,7 @@ class SVIGP(GPBase):
 
 
     def __init__(self, X, likelihood, kernel, Z, q_u=None, batchsize=10, X_variance=None):
-        GPBase.__init__(self, X, likelihood, kernel, normalize_X=False)
+        GP.__init__(self, X, likelihood, kernel, normalize_X=False)
         self.batchsize=batchsize
         self.Y = self.likelihood.Y.copy()
         self.Z = Z

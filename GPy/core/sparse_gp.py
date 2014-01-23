@@ -68,7 +68,7 @@ class SparseGP(GP):
             self.psi1 = self.kern.K(self.X, self.Z)
             self.psi2 = None
 
-        self.posterior = self.inference_method.inference(??)
+        #self.posterior = self.inference_method.inference(??)
         super(SparseGP, self).parameters_changed()
 
 

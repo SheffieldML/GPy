@@ -88,7 +88,8 @@ def plot_bbox(sf,bbox,exact=True):
 
 def plot_subset(sf,regex,field):
     index,shape_records = string_match(sf,regex,field)
-    plot(sf,subset)
+    #plot(sf,subset)
+    plot(sf,shape_records)
 
 
 def new_shape_string(sf,regex,field=2,type=shapefile.POINT):
@@ -124,6 +125,10 @@ def plot_shape(sf,facecolor='w',edgecolor='k',linewidths=.5, ax=None,bbox=True):
         points = np.vstack(srec.shape.points)
         sparts = srec.shape.parts
         par = list(sparts) + [points.shape[0]]
+    #for srec in list(sf.iterShapes()):
+    #    points = np.vstack(srec.points)
+    #    sparts = srec.parts
+    #    par = list(sparts) + [points.shape[0]]
 
         polygs = []
         for pj in xrange(len(sparts)):

@@ -7,27 +7,26 @@ from matplotlib.collections import PatchCollection
 import shapefile
 import re
 
-
 pb.ion()
 
+def plot(shape_records,facecolor='w',edgecolor='k',linewidths=.5, ax=None,xlims=None,ylims=None):
+    """
+    Plot the geometry of a shapefile
 
-def plot(sf,subset=None,facecolor='w',edgecolor='k',linewidths=.5, ax=None,xlims=None,ylims=None):
-    records = [sf.records()[sj] for sj in subset]
-    shapes = [sf.shapes()[sj] for sj in subset]
-    N = len(shapes)
-
+    :param shape_records: geometry and attributes list
+    :type shape_records: ShapeRecord object (output of a shapeRecords() method)
+    :param facecolor: color to be used to fill in polygons
+    :param edgecolor: color to be used for lines
+    :param ax: axes to plot on.
+    :type ax: axes handle
+    """
+    #Axes handle
     if ax is None:
         fig     = pb.figure()
         ax      = fig.add_subplot(111)
 
-    if subset is None:
-        shape_records = sf.shapeRecords()
-        #index = range(len(shape_records))
-    else:
-        index,shape_records = subset
-
+    #Iterate over shape_records
     for srec in shape_records:
-        #for srec in [sf.shapeRecords()[sj] for sj in subset]:
         points = np.vstack(srec.shape.points)
         sparts = srec.shape.parts
         par = list(sparts) + [points.shape[0]]
@@ -37,7 +36,11 @@ def plot(sf,subset=None,facecolor='w',edgecolor='k',linewidths=.5, ax=None,xlims
             polygs.append(Polygon(points[par[pj]:par[pj+1]]))
         ax.add_collection(PatchCollection(polygs,facecolor=facecolor,edgecolor=edgecolor, linewidths=linewidths))
 
-    minx,miny,maxx,maxy = sf.bbox
+    #Plot limits
+    _box = np.vstack([srec.shape.bbox for srec in shape_records])
+    minx,miny = np.min(_box[:,:2],0)
+    maxx,maxy = np.max(_box[:,2:],0)
+
     if xlims is not None:
         minx,maxx = xlims
     if ylims is not None:
@@ -47,22 +50,42 @@ def plot(sf,subset=None,facecolor='w',edgecolor='k',linewidths=.5, ax=None,xlims
 
 
 def string_match(sf,regex,field=2):
+    """
+    Return the geometry and attributes of a shapefile whose fields match a regular expression given
+
+    :param sf: shapefile
+    :type sf: shapefile object
+    :regex: regular expression to match
+    :type regex: string
+    :field: field number to be matched with the regex
+    :type field: integer
+    """
     index = []
     shape_records = []
-    for rec in enumerate(sf.records()):
-        m = re.search(regex,rec[1][field])
+    for rec in enumerate(sf.shapeRecords()):
+        m = re.search(regex,rec[1].record[field])
         if m is not None:
             index.append(rec[0])
             shape_records.append(rec[1])
     return index,shape_records
 
-def bbox_match(sf,bbox,exact=True):
+def bbox_match(sf,bbox,inside_only=True):
+    """
+    Return the geometry and attributes of a shapefile that lie within (or intersect) a bounding box
+
+    :param sf: shapefile
+    :type sf: shapefile object
+    :param bbox: bounding box
+    :type bbox: list of floats [x_min,y_min,x_max,y_max]
+    :inside_only: True if the objects returned are those that lie within the bbox and False if the objects returned are any that intersect the bbox
+    :type inside_only: Boolean
+    """
     A,B,C,D = bbox
     index = []
     shape_records = []
     for rec in enumerate(sf.shapeRecords()):
         a,b,c,d = rec[1].shape.bbox
-        if exact:
+        if inside_only:
             if A <= a and B <= b and C >= c and D >= d:
                 index.append(rec[0])
                 shape_records.append(rec[1])
@@ -81,61 +104,58 @@ def bbox_match(sf,bbox,exact=True):
     return index,shape_records
 
 
-def plot_bbox(sf,bbox,exact=True):
-    index,shape_records = bbox_match(sf,bbox,exact)
+def plot_bbox(sf,bbox,inside_only=True):
+    """
+    Plot the geometry of a shapefile within a bbox
+
+    :param sf: shapefile
+    :type sf: shapefile object
+    :param bbox: bounding box
+    :type bbox: list of floats [x_min,y_min,x_max,y_max]
+    :inside_only: True if the objects returned are those that lie within the bbox and False if the objects returned are any that intersect the bbox
+    :type inside_only: Boolean
+    """
+    index,shape_records = bbox_match(sf,bbox,inside_only)
     A,B,C,D = bbox
-    plot(sf,subset,xlims=[bbox[0],bbox[2]],ylims=[bbox[1],bbox[3]])
+    plot(shape_records,xlims=[bbox[0],bbox[2]],ylims=[bbox[1],bbox[3]])
 
-def plot_subset(sf,regex,field):
+def plot_string_match(sf,regex,field):
+    """
+    Plot the geometry of a shapefile whose fields match a regular expression given
+
+    :param sf: shapefile
+    :type sf: shapefile object
+    :regex: regular expression to match
+    :type regex: string
+    :field: field number to be matched with the regex
+    :type field: integer
+    """
     index,shape_records = string_match(sf,regex,field)
-    #plot(sf,subset)
-    plot(sf,shape_records)
+    plot(shape_records)
 
 
-def new_shape_string(sf,regex,field=2,type=shapefile.POINT):
-    new_shape = shapefile.Writer(shapeType=type)
+def new_shape_string(sf,name,regex,field=2,type=shapefile.POINT):
+
+    newshp = shapefile.Writer(shapeType = sf.shapeType)
+    newshp.autoBalance = 1
 
     index,shape_records = string_match(sf,regex,field)
-    #keep = []
-    #for srec in [sf.shapeRecords()[sj] for sj in subset]:
-    #    keep.append(srec)
 
-    for sj,sr in zip(index,shape_records):
-        new_shape._shapes.append(sf.shape(sj))
-        new_shape.records.append(sr.record)
-    stop
-    return new_shape
+    _fi = [sf.fields[j] for j in index]
+    for f in _fi:
+        newshp.field(name=f[0],fieldType=f[1],size=f[2],decimal=f[3])
 
+    _shre = shape_records
+    for sr in _shre:
+        _points = []
+        _parts = []
+        for point in sr.shape.points:
+            _points.append(point)
+        _parts.append(_points)
 
+        newshp.line(parts=_parts)
+        newshp.records.append(sr.record)
+        print len(sr.record)
 
-def plot_shape(sf,facecolor='w',edgecolor='k',linewidths=.5, ax=None,bbox=True):
-    #if isinstance(file,str):
-    #    sf = shapefile.Reader(file)
-    #else:
-    #    sf = file
-    records = sf.records()
-    shapes = sf.shapes()
-    N = len(shapes)
-
-    if ax is None:
-        fig     = pb.figure()
-        ax      = fig.add_subplot(111)
-
-    for srec in sf.shapeRecords():
-        points = np.vstack(srec.shape.points)
-        sparts = srec.shape.parts
-        par = list(sparts) + [points.shape[0]]
-    #for srec in list(sf.iterShapes()):
-    #    points = np.vstack(srec.points)
-    #    sparts = srec.parts
-    #    par = list(sparts) + [points.shape[0]]
-
-        polygs = []
-        for pj in xrange(len(sparts)):
-            polygs.append(Polygon(points[par[pj]:par[pj+1]]))
-        ax.add_collection(PatchCollection(polygs,facecolor=facecolor,edgecolor=edgecolor, linewidths=linewidths))
-
-    if bbox:
-        minx,miny,maxx,maxy = sf.bbox
-        ax.set_xlim(minx,maxx)
-        ax.set_ylim(miny,maxy)
+    newshp.save(name)
+    print index

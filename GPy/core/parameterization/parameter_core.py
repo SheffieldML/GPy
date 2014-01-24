@@ -21,7 +21,7 @@ class Observable(object):
         [callble(self) for callble in self._observers_.itervalues()]
         
 class Pickleable(object):
-    def getstate(self):
+    def _getstate(self):
         """
         Returns the state of this class in a memento pattern.
         The state must be a list-like structure of all the fields
@@ -30,13 +30,13 @@ class Pickleable(object):
         See python doc "pickling" (`__getstate__` and `__setstate__`) for details.
         """
         raise NotImplementedError, "To be able to use pickling you need to implement this method"
-    def setstate(self, state):
+    def _setstate(self, state):
         """
         Set the state (memento pattern) of this class to the given state.
-        Usually this is just the counterpart to getstate, such that
+        Usually this is just the counterpart to _getstate, such that
         an object is a copy of another when calling
     
-            copy = <classname>.__new__(*args,**kw).setstate(<to_be_copied>.getstate())
+            copy = <classname>.__new__(*args,**kw)._setstate(<to_be_copied>._getstate())
             
         See python doc "pickling" (`__getstate__` and `__setstate__`) for details.
         """
@@ -54,7 +54,7 @@ class Parentable(object):
         self._highest_parent_ = highest_parent
         
     def has_parent(self):
-        return self._direct_parent_ is not None
+        return self._direct_parent_ is not None and self._highest_parent_ is not None
     
 class Nameable(Parentable):
     _name = None
@@ -96,6 +96,7 @@ class Constrainable(Nameable):
                 self._add_constrain(p, transform, warning)
             if update:
                 self.parameters_changed()
+                
     def constrain_positive(self, warning=True):
         """
         :param warning: print a warning if re-constraining parameters.

@@ -309,11 +309,11 @@ class GP(Model):
 
 
 
-    def getstate(self):
+    def _getstate(self):
         """
         Get the current state of the class, here we return everything that is needed to recompute the model.
         """
-        return Model.getstate(self) + [self.X,
+        return Model._getstate(self) + [self.X,
                 self.num_data,
                 self.input_dim,
                 self.kern,
@@ -323,7 +323,7 @@ class GP(Model):
                 self._Xscale,
                 ]
 
-    def setstate(self, state):
+    def _setstate(self, state):
         self._Xscale = state.pop()
         self._Xoffset = state.pop()
         self.output_dim = state.pop()
@@ -332,6 +332,6 @@ class GP(Model):
         self.input_dim = state.pop()
         self.num_data = state.pop()
         self.X = state.pop()
-        Model.setstate(self, state)
+        Model._setstate(self, state)
 
 

@@ -218,7 +218,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
             p._direct_parent_ = self
             p._parent_index_ = i
             i += 1
-            for pi in p.flattened_parameters:
+            for pi in p._parameters_:
                 pi._highest_parent_ = self
             not_unique = []
             sizes.append(p.size+sizes[-1])
@@ -233,6 +233,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
             elif not (pname in not_unique):
                 self.__dict__[pname] = p
                 self._added_names_.add(pname)
+            
     #===========================================================================
     # Pickling operations
     #===========================================================================
@@ -253,24 +254,24 @@ class Parameterized(Constrainable, Pickleable, Observable):
         return copy.deepcopy(self)
     def __getstate__(self):
         if self._has_get_set_state():
-            return self.getstate()
+            return self._getstate()
         return self.__dict__
     def __setstate__(self, state):
         if self._has_get_set_state():
-            self.setstate(state) # set state
+            self._setstate(state) # set state
             #self._set_params(self._get_params()) # restore all values
             return
         self.__dict__ = state
     def _has_get_set_state(self):
-        return 'getstate' in vars(self.__class__) and 'setstate' in vars(self.__class__)
-    def getstate(self):
+        return '_getstate' in vars(self.__class__) and '_setstate' in vars(self.__class__)
+    def _getstate(self):
         """
         Get the current state of the class,
         here just all the indices, rest can get recomputed
         For inheriting from Parameterized:
 
         Allways append the state of the inherited object
-        and call down to the inherited object in setstate!!
+        and call down to the inherited object in _setstate!!
         """
         return [
                 self._fixes_,
@@ -280,7 +281,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
                 self._added_names_,
                 ]
 
-    def setstate(self, state):
+    def _setstate(self, state):
         self._added_names_ = state.pop()
         self._name = state.pop()
         self._parameters_ = state.pop()

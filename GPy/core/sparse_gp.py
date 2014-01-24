@@ -183,20 +183,20 @@ class SparseGP(GP):
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
-    def getstate(self):
+    def _getstate(self):
         """
         Get the current state of the class,
         here just all the indices, rest can get recomputed
         """
-        return GP.getstate(self) + [self.Z,
+        return GP._getstate(self) + [self.Z,
                 self.num_inducing,
                 self.has_uncertain_inputs,
                 self.X_variance]
 
-    def setstate(self, state):
+    def _setstate(self, state):
         self.X_variance = state.pop()
         self.has_uncertain_inputs = state.pop()
         self.num_inducing = state.pop()
         self.Z = state.pop()
-        GP.setstate(self, state)
+        GP._setstate(self, state)
 

@@ -403,7 +403,7 @@ class Param(ObservableArray, Constrainable):
                             x=self.name_hirarchical)
         return name + super(Param, self).__repr__(*args,**kwargs)
     def _ties_for(self, rav_index):
-        size = sum(p.size for p in self._tied_to_)
+        #size = sum(p.size for p in self._tied_to_)
         ties = numpy.empty(shape=(len(self._tied_to_), numpy.size(rav_index)), dtype=Param)
         for i, tied_to in enumerate(self._tied_to_):
             for t, ind in tied_to._tied_to_me_.iteritems():

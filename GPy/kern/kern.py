@@ -50,25 +50,25 @@ class kern(Parameterized):
     def connect_input(self, Xparam):
         [p.connect_input(Xparam) for p in self._parameters_]
 
-    def getstate(self):
+    def _getstate(self):
         """
         Get the current state of the class,
         here just all the indices, rest can get recomputed
         """
-        return Parameterized.getstate(self) + [#self._parameters_,
+        return Parameterized._getstate(self) + [#self._parameters_,
                 #self.num_params,
                 self.input_dim,
                 self.input_slices,
                 self._param_slices_
                 ]
 
-    def setstate(self, state):
+    def _setstate(self, state):
         self._param_slices_ = state.pop()
         self.input_slices = state.pop()
         self.input_dim = state.pop()
         #self.num_params = state.pop()
         #self._parameters_ = state.pop()
-        Parameterized.setstate(self, state)
+        Parameterized._setstate(self, state)
 
 
     def plot_ARD(self, fignum=None, ax=None, title='', legend=False):

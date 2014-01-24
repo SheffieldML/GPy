@@ -431,6 +431,31 @@ def swiss_roll_generated(num_samples=1000, sigma=0.0):
     c = c[so, :]
     return {'Y':Y, 't':t, 'colors':c}
 
+def hapmapIII(data_set='hapmapIII'):
+    try:
+        from pandas import read_pickle
+    except ImportError as i:
+        raise i, "Need pandas for hapmap dataset, make sure to install pandas before loading the hapmap dataset"
+    if not data_available(data_set):
+        download_data(data_set)
+    datadf = read_pickle(os.path.join(data_path,'HapMapIII','hapmap3_r2_b36_fwd.consensus.qc.poly.snps.pickle'))
+    infodf = read_pickle(os.path.join(data_path,'HapMapIII','hapmap3_r2_b36_fwd.consensus.qc.poly.info.pickle'))
+    inan = read_pickle(os.path.join(data_path,'HapMapIII','hapmap3_r2_b36_fwd.consensus.qc.poly.nan.pickle'))
+    snps = datadf.iloc[:,6:].values
+    populations = datadf.population.values.astype('S3')
+    hapmap = dict(name='HapMapIII', 
+                  describtion='The HapMap phase three SNP dataset - '
+                  '1184 samples out of 11 populations. inan is a '
+                  'boolean array, containing wheather or not the '
+                  'given entry is nan (nans are masked as '
+                  '-128 in snps).',
+                  datadf=datadf,
+                  infodf=infodf,
+                  snps=snps,
+                  inan=inan,
+                  populations=populations)
+    return hapmap
+    
 def swiss_roll_1000():
     return swiss_roll(num_samples=1000)
 

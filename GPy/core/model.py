@@ -38,7 +38,7 @@ class Model(Parameterized):
             raise KeyError, 'Gradient for {} not defined, please specify gradients for parameters to optimize'.format(p.name)
         return g
         raise NotImplementedError, "this needs to be implemented to use the model class"
-    
+
     def getstate(self):
         """
         Get the current state of the class.

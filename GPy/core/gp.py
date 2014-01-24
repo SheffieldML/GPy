@@ -60,9 +60,7 @@ class GP(Model):
         self.parameters_changed()
 
     def parameters_changed(self):
-        super(GP, self).parameters_changed()
-        self.K = self.kern.K(self.X)
-        self.posterior = self.inference_method.inference(self.K, self.likelihood, self.Y)
+        self.posterior = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y)
 
     def log_likelihood(self):
         return self.posterior.log_marginal

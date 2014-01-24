@@ -22,15 +22,15 @@ class ExactGaussianInference(object):
 
     def get_YYTfactor(self, Y):
         """
-        find a matrix L which satisfies LLT = YYT. 
+        find a matrix L which satisfies LL^T = YY^T.
 
-        Note that L may have fewer columns than Y.
+        Note that L may have fewer columns than Y, else L=Y. 
         """
         N, D = Y.shape
         if (N>D):
             return Y
         else:
-            #if Y in self.cache, return self.Cache[Y], else stor Y in cache and return L.
+            #if Y in self.cache, return self.Cache[Y], else store Y in cache and return L.
             raise NotImplementedError, 'TODO' #TODO
 
     def inference(self, K, likelihood, Y, Y_metadata=None):

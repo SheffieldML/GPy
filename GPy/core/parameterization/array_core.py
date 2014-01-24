@@ -25,6 +25,7 @@ class ObservableArray(ListArray, Observable):
     will be called every time this array changes. The callable
     takes exactly one argument, which is this array itself.
     """
+    __array_priority__ = 0 # Never give back Param
     def __new__(cls, input_array):
         obj = super(ObservableArray, cls).__new__(cls, input_array).view(cls)
         obj._observers_ = {}

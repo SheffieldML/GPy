@@ -14,7 +14,11 @@ import visualize
 import decorators
 import classification
 import latent_space_visualizations
-import maps
+try:
+    import maps
+except:
+    pass
+    maps = "warning: the maps module requires pyshp (shapefile). Install it to remove this message"
 
 try:
     import sympy

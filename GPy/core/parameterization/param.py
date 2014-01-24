@@ -66,6 +66,7 @@ class Param(ObservableArray, Constrainable):
         obj._tied_to_me_ = SetDict()
         obj._tied_to_ = []
         obj._original_ = True
+        obj.gradient = None
         return obj
 
     def __init__(self, name, input_array):
@@ -87,6 +88,7 @@ class Param(ObservableArray, Constrainable):
         self._updated_ = getattr(obj, '_updated_', None)
         self._original_ = getattr(obj, '_original_', None)
         self._name = getattr(obj, 'name', None)
+        self.gradient = getattr(obj, 'gradient', None)
         
     def __array_wrap__(self, out_arr, context=None):
         return out_arr.view(numpy.ndarray)

@@ -51,17 +51,17 @@ class BayesianGPLVM(SparseGP, GPLVM):
         self.add_parameter(self.q, gradient=self._dbound_dmuS, index=0)
         self.ensure_default_constraints()
 
-    def getstate(self):
+    def _getstate(self):
         """
         Get the current state of the class,
         here just all the indices, rest can get recomputed
         """
-        return SparseGP.getstate(self) + [self.init]
+        return SparseGP._getstate(self) + [self.init]
 
-    def setstate(self, state):
+    def _setstate(self, state):
         self._const_jitter = None
         self.init = state.pop()
-        SparseGP.setstate(self, state)
+        SparseGP._setstate(self, state)
 
 #     def _get_param_names(self):
 #         X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])

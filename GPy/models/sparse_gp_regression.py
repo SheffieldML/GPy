@@ -49,11 +49,11 @@ class SparseGPRegression(SparseGP):
         self.ensure_default_constraints()
         pass
 
-    def getstate(self):
-        return SparseGP.getstate(self)
+    def _getstate(self):
+        return SparseGP._getstate(self)
 
 
-    def setstate(self, state):
-        return SparseGP.setstate(self, state)
+    def _setstate(self, state):
+        return SparseGP._setstate(self, state)
 
     pass

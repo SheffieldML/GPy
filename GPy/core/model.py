@@ -40,7 +40,7 @@ class Model(Parameterized):
         return g
         raise NotImplementedError, "this needs to be implemented to use the model class"
 
-    def getstate(self):
+    def _getstate(self):
         """
         Get the current state of the class.
         Inherited from Parameterized, so add those parameters to the state
@@ -48,24 +48,24 @@ class Model(Parameterized):
         :return: list of states from the model.
 
         """
-        return Parameterized.getstate(self) + \
+        return Parameterized._getstate(self) + \
             [self.priors, self.optimization_runs,
              self.sampling_runs, self.preferred_optimizer]
 
-    def setstate(self, state):
+    def _setstate(self, state):
         """
-        set state from previous call to getstate
+        set state from previous call to _getstate
         call Parameterized with the rest of the state
 
         :param state: the state of the model.
-        :type state: list as returned from getstate.
+        :type state: list as returned from _getstate.
 
         """
         self.preferred_optimizer = state.pop()
         self.sampling_runs = state.pop()
         self.optimization_runs = state.pop()
         self.priors = state.pop()
-        Parameterized.setstate(self, state)
+        Parameterized._setstate(self, state)
 
     def set_prior(self, regexp, what):
         """

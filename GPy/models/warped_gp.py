@@ -30,12 +30,12 @@ class WarpedGP(GP):
         GP.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
         self._set_params(self._get_params())
 
-    def getstate(self):
-        return GP.getstate(self)
+    def _getstate(self):
+        return GP._getstate(self)
 
 
-    def setstate(self, state):
-        return GP.setstate(self, state)
+    def _setstate(self, state):
+        return GP._setstate(self, state)
 
 
     def _scale_data(self, Y):

@@ -41,11 +41,11 @@ class GPLVM(GP):
             Xr[:PC.shape[0], :PC.shape[1]] = PC
         return Xr
 
-    def getstate(self):
-        return GP.getstate(self)
+    def _getstate(self):
+        return GP._getstate(self)
 
-    def setstate(self, state):
-        GP.setstate(self, state)
+    def _setstate(self, state):
+        GP._setstate(self, state)
 
 #     def _get_param_names(self):
 #         return sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], []) + GP._get_param_names(self)

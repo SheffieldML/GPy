@@ -46,11 +46,11 @@ class SparseGPClassification(SparseGP):
         SparseGP.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X)
         self.ensure_default_constraints()
 
-    def getstate(self):
-        return SparseGP.getstate(self)
+    def _getstate(self):
+        return SparseGP._getstate(self)
 
 
-    def setstate(self, state):
-        return SparseGP.setstate(self, state)
+    def _setstate(self, state):
+        return SparseGP._setstate(self, state)
 
     pass

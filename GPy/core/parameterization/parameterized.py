@@ -216,8 +216,11 @@ class Parameterized(Constrainable, Pickleable, Observable):
         self._param_slices_ = []
         for p in self._parameters_:
             p._direct_parent_ = self
+            p._highest_parent_ = self
             p._parent_index_ = i
             i += 1
+            for pi in p.flattened_parameters:
+                pi._highest_parent_ = self
             for pi in p._parameters_:
                 pi._highest_parent_ = self
             not_unique = []

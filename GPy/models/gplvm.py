@@ -6,10 +6,9 @@ import numpy as np
 import pylab as pb
 from .. import kern
 from ..util.linalg import PCA
-from ..core import GP
+from ..core import GP, Param
 from ..likelihoods import Gaussian
 from .. import util
-from ..core import Param
 
 
 class GPLVM(GP):

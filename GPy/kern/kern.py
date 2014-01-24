@@ -346,6 +346,7 @@ class kern(Parameterized):
         return target
 
     def update_gradients_full(self, dL_dK, X):
+        [p.update_gradients_full(dL_dK, X) for p in self._parameters_]
         pass
     def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
         pass

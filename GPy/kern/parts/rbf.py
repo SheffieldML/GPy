@@ -80,9 +80,6 @@ class RBF(Kernpart):
         self._X, self._X2 = np.empty(shape=(2, 1))
         self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
 
-
-
-
     def K(self, X, X2, target):
         self._K_computations(X, X2)
         target += self.variance * self._K_dvar
@@ -101,11 +98,8 @@ class RBF(Kernpart):
         self._psi_computations(Z, mu, S)
         target += self._psi2
 
-
-
-
     def update_gradients_full(self, dL_dK, X):
-        self._K_computations(X, X2)
+        self._K_computations(X, None)
         self.variance.gradient = np.sum(self._K_dvar * dL_dK)
         if self.ARD:
             self.lengthscale.gradient = self._dL_dlengthscales_via_K(dL_dK, X, None)
@@ -123,7 +117,7 @@ class RBF(Kernpart):
             self.lengthscales.gradient = self._dL_dlengthscales_via_K(dL_dKnm, X, Z)
 
         else:
-            self.lengthscale.gradient = (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)
+            self.lengthscale.gradient = (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
 
         #from Kmm
         self._K_computations(Z, None)
@@ -131,7 +125,7 @@ class RBF(Kernpart):
         if self.ARD:
             self.lengthscales.gradient += self._dL_dlengthscales_via_K(dL_dKmm, Z, None)
         else:
-            self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)
+            self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
 
     def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
         self._psi_computations(Z, mu, S)

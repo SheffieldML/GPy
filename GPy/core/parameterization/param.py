@@ -26,9 +26,6 @@ class Param(ObservableArray, Constrainable):
 
     :param name:        name of the parameter to be printed
     :param input_array: array which this parameter handles
-    :param gradient:    callable with one argument, which is the model of this parameter
-    :param args:        additional arguments to gradient
-    :param kwargs:      additional keyword arguments to gradient
     
     You can add/remove constraints by calling constrain on the parameter itself, e.g:
     
@@ -156,6 +153,8 @@ class Param(ObservableArray, Constrainable):
     @property
     def _parameters_(self):
         return []
+    def _collect_gradient(self, target):
+        target[:] = self.gradient
     #===========================================================================
     # Fixing Parameters:
     #===========================================================================

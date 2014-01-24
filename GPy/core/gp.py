@@ -54,8 +54,8 @@ class GP(Model):
             print "defaulting to ", inference_method, "for latent function inference"
         self.inference_method = inference_method
 
-        self.add_parameter(self.kern, gradient=self.dL_dtheta_K)
-        self.add_parameter(self.likelihood, gradient=lambda:self.posterior.dL_dtheta_lik)
+        self.add_parameter(self.kern)
+        self.add_parameter(self.likelihood)
 
         self.parameters_changed()
 

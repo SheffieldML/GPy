@@ -49,7 +49,7 @@ class Normal(Parameterized):
             elif isinstance(ax, (tuple, list)):
                 a = ax[i]
             else:
-                raise ValueError("Need one ax per latent dimnesion input_dim")
+                raise ValueError("Need one ax per latent dimension input_dim")
             a.plot(means, c='k', alpha=.3)
             plots.extend(a.plot(x, means.T[i], c=colors.next(), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
             a.fill_between(x,

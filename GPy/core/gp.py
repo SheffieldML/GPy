@@ -6,6 +6,7 @@ import pylab as pb
 import warnings
 from .. import kern
 from ..util.plot import gpplot, Tango, x_frame1D, x_frame2D
+from ..util.linalg import dtrtrs
 from model import Model
 from parameterization import ObservableArray
 from .. import likelihoods

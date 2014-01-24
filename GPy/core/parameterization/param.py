@@ -154,7 +154,7 @@ class Param(ObservableArray, Constrainable):
     def _parameters_(self):
         return []
     def _collect_gradient(self, target):
-        target[:] = self.gradient
+        target[:] = self.gradient.flat
     #===========================================================================
     # Fixing Parameters:
     #===========================================================================

@@ -36,7 +36,7 @@ class GPLVM(GP):
 
         super(GPLVM, self).__init__(X, Y, kernel, likelihood, name='GPLVM')
         self.X = Param('X', X)
-        self.add_parameter(self.X, ndex=0)
+        self.add_parameter(self.X, index=0)
 
     def initialise_latent(self, init, input_dim, Y):
         Xr = np.random.randn(Y.shape[0], input_dim)

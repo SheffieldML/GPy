@@ -2,6 +2,7 @@ import pylab as pb
 import numpy as np
 from .. import util
 from GPy.util.latent_space_visualizations.controllers.imshow_controller import ImshowController
+from misc import param_to_array
 import itertools
 
 def most_significant_input_dimensions(model, which_indices):
@@ -74,7 +75,7 @@ def plot_latent(model, labels=None, which_indices=None,
 
         index = np.nonzero(labels == ul)[0]
         if model.input_dim == 1:
-            x = model.X[index, input_1]
+            x = param_to_array(model.X)[index, input_1]
             y = np.zeros(index.size)
         else:
             x = model.X[index, input_1]

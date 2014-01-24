@@ -347,11 +347,11 @@ class kern(Parameterized):
 
     def update_gradients_full(self, dL_dK, X):
         [p.update_gradients_full(dL_dK, X) for p in self._parameters_]
-        pass
+
     def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
-        pass
+        raise NotImplementedError
     def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
-        pass
+        raise NotImplementedError
 
     def dK_dtheta(self, dL_dK, X, X2=None):
         """
@@ -375,7 +375,7 @@ class kern(Parameterized):
 
         return self._transform_gradients(target)
 
-    def dK_dX(self, dL_dK, X, X2=None):
+    def gradients_X(self, dL_dK, X, X2=None):
         """Compute the gradient of the objective function with respect to X.
 
         :param dL_dK: An array of gradients of the objective function with respect to the covariance function.
@@ -387,9 +387,9 @@ class kern(Parameterized):
 
         target = np.zeros_like(X)
         if X2 is None:
-            [p.dK_dX(dL_dK, X[:, i_s], None, target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
+            [p.gradients_X(dL_dK, X[:, i_s], None, target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
         else:
-            [p.dK_dX(dL_dK, X[:, i_s], X2[:, i_s], target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
+            [p.gradients_X(dL_dK, X[:, i_s], X2[:, i_s], target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
         return target
 
     def Kdiag(self, X, which_parts='all'):

@@ -38,9 +38,10 @@ def plot_latent(model, labels=None, which_indices=None,
         labels = np.ones(model.num_data)
 
     input_1, input_2 = most_significant_input_dimensions(model, which_indices)
-
+    X = param_to_array(model.X)
+    
     # first, plot the output variance as a function of the latent space
-    Xtest, xx, yy, xmin, xmax = util.plot.x_frame2D(model.X[:, [input_1, input_2]], resolution=resolution)
+    Xtest, xx, yy, xmin, xmax = util.plot.x_frame2D(X[:, [input_1, input_2]], resolution=resolution)
     Xtest_full = np.zeros((Xtest.shape[0], model.X.shape[1]))
 
     def plot_function(x):
@@ -49,7 +50,7 @@ def plot_latent(model, labels=None, which_indices=None,
         var = var[:, :1]
         return np.log(var)
     view = ImshowController(ax, plot_function,
-                            tuple(model.X[:, [input_1, input_2]].min(0)) + tuple(model.X[:, [input_1, input_2]].max(0)),
+                            tuple(X[:, [input_1, input_2]].min(0)) + tuple(X[:, [input_1, input_2]].max(0)),
                             resolution, aspect=aspect, interpolation='bilinear',
                             cmap=pb.cm.binary)
 
@@ -75,11 +76,11 @@ def plot_latent(model, labels=None, which_indices=None,
 
         index = np.nonzero(labels == ul)[0]
         if model.input_dim == 1:
-            x = param_to_array(model.X)[index, input_1]
+            x = X[index, input_1]
             y = np.zeros(index.size)
         else:
-            x = model.X[index, input_1]
-            y = model.X[index, input_2]
+            x = X[index, input_1]
+            y = X[index, input_2]
         ax.scatter(x, y, marker=m, s=s, color=util.plot.Tango.nextMedium(), label=this_label)
 
     ax.set_xlabel('latent dimension %i' % input_1)
@@ -94,7 +95,8 @@ def plot_latent(model, labels=None, which_indices=None,
     ax.set_aspect('auto') # set a nice aspect ratio
 
     if plot_inducing:
-        ax.plot(model.Z[:, input_1], model.Z[:, input_2], '^w')
+        Z = param_to_array(model.Z)
+        ax.plot(Z[:, input_1], Z[:, input_2], '^w')
 
     if updates:
         ax.figure.canvas.show()

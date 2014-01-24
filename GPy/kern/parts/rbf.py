@@ -80,12 +80,29 @@ class RBF(Kernpart):
         self._X, self._X2 = np.empty(shape=(2, 1))
         self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
 
+
+
+
     def K(self, X, X2, target):
         self._K_computations(X, X2)
         target += self.variance * self._K_dvar
 
     def Kdiag(self, X, target):
         np.add(target, self.variance, target)
+
+    def psi0(self, Z, mu, S, target):
+        target += self.variance
+
+    def psi1(self, Z, mu, S, target):
+        self._psi_computations(Z, mu, S)
+        target += self._psi1
+
+    def psi2(self, Z, mu, S, target):
+        self._psi_computations(Z, mu, S)
+        target += self._psi2
+
+
+
 
     def update_gradients_full(self, dL_dK, X):
         self._K_computations(X, X2)
@@ -150,9 +167,7 @@ class RBF(Kernpart):
         else:
             self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)
 
-
-
-    def dK_dX(self, dL_dK, X, X2, target):
+    def _gradients_X(self, dL_dK, X, X2, target):
         #if self._X is None or X.base is not self._X.base or X2 is not None:
         self._K_computations(X, X2)
         if X2 is None:
@@ -165,21 +180,12 @@ class RBF(Kernpart):
     def dKdiag_dX(self, dL_dKdiag, X, target):
         pass
 
-
     #---------------------------------------#
     #             PSI statistics            #
     #---------------------------------------#
 
-    def psi0(self, Z, mu, S, target):
-        target += self.variance
-
-
     def dpsi0_dmuS(self, dL_dpsi0, Z, mu, S, target_mu, target_S):
         pass
-
-    def psi1(self, Z, mu, S, target):
-        self._psi_computations(Z, mu, S)
-        target += self._psi1
 
     def dpsi1_dZ(self, dL_dpsi1, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
@@ -192,10 +198,6 @@ class RBF(Kernpart):
         tmp = self._psi1[:, :, None] / self.lengthscale2 / self._psi1_denom
         target_mu += np.sum(dL_dpsi1[:, :, None] * tmp * self._psi1_dist, 1)
         target_S += np.sum(dL_dpsi1[:, :, None] * 0.5 * tmp * (self._psi1_dist_sq - 1), 1)
-
-    def psi2(self, Z, mu, S, target):
-        self._psi_computations(Z, mu, S)
-        target += self._psi2
 
     def dpsi2_dZ(self, dL_dpsi2, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
@@ -283,6 +285,7 @@ class RBF(Kernpart):
             num_data, num_inducing, input_dim = X.shape[0], X2.shape[0], self.input_dim
             X, X2 = param_to_array(X, X2)
             weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'X2', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
+        return target
 
 
 

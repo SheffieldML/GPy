@@ -14,7 +14,7 @@ class Posterior(object):
     schemes and the model classes. 
 
     """
-    def __init__(self, log_marginal, dL_dK, dL_dtheta_lik, woodbury_chol=None, woodbury_vector=None, K=None, mean=None, cov=None, K_chol=None):
+    def __init__(self, log_marginal, dL_dK, woodbury_chol=None, woodbury_vector=None, K=None, mean=None, cov=None, K_chol=None):
         """
         log_marginal: log p(Y|X)
         dL_dK: d/dK log p(Y|X)
@@ -56,7 +56,7 @@ class Posterior(object):
         if ((woodbury_chol is not None) and (woodbury_vector is not None) and (K is not None)) or ((mean is not None) and (cov is not None) and (K is not None)):
             pass # we have sufficient to compute the posterior
         else:
-            raise ValueError, "insufficient onformation to compute the posterior"
+            raise ValueError, "insufficient information to compute the posterior"
 
         #option 1:
         self._woodbury_chol = woodbury_chol

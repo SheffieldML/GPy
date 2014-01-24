@@ -52,12 +52,8 @@ class Gaussian(Likelihood):
     def covariance_matrix(self, Y, Y_metadata=None):
         return np.eye(Y.shape[0]) * self.variance
 
-    def _gradients(self, partial):
-        """
-        Return the derivative of the log marginal likelihood wrt self.variance,
-        given the appropriate partial derivative
-        """
-        return np.sum(partial)
+    def set_gradients(self, partial):
+        self.variance.gradient = np.sum(partial)
 
     def _preprocess_values(self, Y):
         """

@@ -174,13 +174,14 @@ def fast_array_equal(A, B):
 
     return value
 
-
-if __name__ == '__main__':
-    import pylab as plt
-    X = np.linspace(1,10, 100)[:, None]
-    X = X[np.random.permutation(X.shape[0])[:20]]
-    inducing = kmm_init(X, m = 5)
-    plt.figure()
-    plt.plot(X.flatten(), np.ones((X.shape[0],)), 'x')
-    plt.plot(inducing, 0.5* np.ones((len(inducing),)), 'o')
-    plt.ylim((0.0, 10.0))
+### make a parameter to its corresponding array:
+def param_to_array(*param):
+    """
+Convert an arbitrary number of parameters to :class:ndarray class objects. This is for
+converting parameter objects to numpy arrays, when using scipy.weave.inline routine.
+In scipy.weave.blitz there is no automatic array detection (even when the array inherits
+from :class:ndarray)"""
+    assert len(param) > 0, "At least one parameter needed"
+    if len(param) == 1:
+        return param[0].view(np.ndarray)
+    return map(lambda x: x.view(np.ndarray), param)

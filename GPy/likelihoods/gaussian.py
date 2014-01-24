@@ -52,7 +52,7 @@ class Gaussian(Likelihood):
     def covariance_matrix(self, Y, Y_metadata=None):
         return np.eye(Y.shape[0]) * self.variance
 
-    def set_gradients(self, partial):
+    def update_gradients(self, partial):
         self.variance.gradient = np.sum(partial)
 
     def _preprocess_values(self, Y):

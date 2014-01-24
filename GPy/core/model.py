@@ -33,7 +33,8 @@ class Model(Parameterized):
         #def dK_d(self, param, dL_dK, X, X2)
         g = np.zeros(self.size)
         try:
-            [g.__setitem__(s, self.gradient_mapping[p]().flat) for p, s in itertools.izip(self._parameters_, self._param_slices_) if not p.is_fixed]
+            #[g.__setitem__(s, self.gradient_mapping[p]().flat) for p, s in itertools.izip(self._parameters_, self._param_slices_) if not p.is_fixed]
+            [g.__setitem__(s, p.gradient.flat) for p, s in itertools.izip(self._parameters_, self._param_slices_) if not p.is_fixed]
         except KeyError:
             raise KeyError, 'Gradient for {} not defined, please specify gradients for parameters to optimize'.format(p.name)
         return g

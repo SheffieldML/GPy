@@ -49,7 +49,7 @@ class ExactGaussianInference(object):
 
         dL_dK = 0.5 * (tdot(alpha) - Y.shape[1] * Wi)
 
-        kern.update_gradients_full(dL_dK)
+        kern.update_gradients_full(dL_dK, X)
 
         likelihood.update_gradients(np.diag(dL_dK))
 

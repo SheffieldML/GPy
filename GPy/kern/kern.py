@@ -345,6 +345,13 @@ class kern(Parameterized):
             [p.K(X[:, i_s], X2[:, i_s], target=target) for p, i_s, part_i_used in zip(self._parameters_, self.input_slices, which_parts) if part_i_used]
         return target
 
+    def update_gradients_full(self, dL_dK, X):
+        pass
+    def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
+        pass
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        pass
+
     def dK_dtheta(self, dL_dK, X, X2=None):
         """
         Compute the gradient of the covariance function with respect to the parameters.

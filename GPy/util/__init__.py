@@ -14,5 +14,16 @@ import visualize
 import decorators
 import classification
 import latent_space_visualizations
+import maps
+
+try:
+    import sympy
+    _sympy_available = True
+    del sympy
+except ImportError as e:
+    _sympy_available = False
+
+if _sympy_available:
+    import symbolic
 
 import netpbmfile

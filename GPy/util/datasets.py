@@ -3,11 +3,10 @@ import numpy as np
 import GPy
 import scipy.io
 import cPickle as pickle
-import urllib as url
 import zipfile
 import tarfile
 import datetime
-
+import json
 ipython_available=True
 try:
     import IPython
@@ -15,137 +14,28 @@ except ImportError:
     ipython_available=False
 
 
-import sys, urllib
+import sys, urllib2
 
-def reporthook(a,b,c): 
+def reporthook(a,b,c):
     # ',' at the end of the line is important!
     #print "% 3.1f%% of %d bytes\r" % (min(100, float(a * b) / c * 100), c),
     #you can also use sys.stdout.write
     sys.stdout.write("\r% 3.1f%% of %d bytes" % (min(100, float(a * b) / c * 100), c))
     sys.stdout.flush()
-     
+
 # Global variables
 data_path = os.path.join(os.path.dirname(__file__), 'datasets')
 default_seed = 10000
 overide_manual_authorize=False
 neil_url = 'http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/'
-sam_url = 'http://www.cs.nyu.edu/~roweis/data/'
-cmu_url = 'http://mocap.cs.cmu.edu/subjects/'
 
-# Note: there may be a better way of storing data resources, for the
-# moment we are storing them in a dictionary.
-data_resources = {'ankur_pose_data' : {'urls' : [neil_url + 'ankur_pose_data/'],
-                                       'files' : [['ankurDataPoseSilhouette.mat']],
-                                       'license' : None,
-                                       'citation' : """3D Human Pose from Silhouettes by Relevance Vector Regression (In CVPR'04). A. Agarwal and B. Triggs.""",
-                                       'details' : """Artificially generated data of silhouettes given poses. Note that the data does not display a left/right ambiguity because across the entire data set one of the arms sticks out more the the other, disambiguating the pose as to which way the individual is facing."""},
-                   
-                  'boston_housing' : {'urls' : ['http://archive.ics.uci.edu/ml/machine-learning-databases/housing/'],
-                                      'files' : [['Index', 'housing.data', 'housing.names']],
-                                      'citation' : """Harrison, D. and Rubinfeld, D.L. 'Hedonic prices and the demand for clean air', J. Environ. Economics & Management, vol.5, 81-102, 1978.""",
-                                      'details' : """The Boston Housing data relates house values in Boston to a range of input variables.""",
-                                      'license' : None,
-                                      'size' : 51276
-                                      },
-                  'brendan_faces' : {'urls' : [sam_url],
-                                     'files': [['frey_rawface.mat']],
-                                     'citation' : 'Frey, B. J., Colmenarez, A and Huang, T. S. Mixtures of Local Linear Subspaces for Face Recognition. Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition 1998, 32-37, June 1998. Computer Society Press, Los Alamitos, CA.',
-                                     'details' : """A video of Brendan Frey's face popularized as a benchmark for visualization by the Locally Linear Embedding.""",
-                                     'license': None,
-                                     'size' : 1100584},
-                  'cmu_mocap_full' : {'urls' : ['http://mocap.cs.cmu.edu'],
-                                 'files' : [['allasfamc.zip']],
-                                 'citation' : """Please include this in your acknowledgements: The data used in this project was obtained from mocap.cs.cmu.edu.
-The database was created with funding from NSF EIA-0196217.""",
-                                 'details' : """CMU Motion Capture data base. Captured by a Vicon motion capture system consisting of 12 infrared MX-40 cameras, each of which is capable of recording at 120 Hz with images of 4 megapixel resolution. Motions are captured in a working volume of approximately 3m x 8m. The capture subject wears 41 markers and a stylish black garment.""",
-                                 'license' : """From http://mocap.cs.cmu.edu. This data is free for use in research projects. You may include this data in commercially-sold products, but you may not resell this data directly, even in converted form. If you publish results obtained using this data, we would appreciate it if you would send the citation to your published paper to jkh+mocap@cs.cmu.edu, and also would add this text to your acknowledgments section: The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.""",
-                                 'size' : None},
-                  'creep_rupture' : {'urls' : ['http://www.msm.cam.ac.uk/map/data/tar/'],
-                                     'files' : [['creeprupt.tar']],
-                                     'citation' : 'Materials Algorithms Project Data Library: MAP_DATA_CREEP_RUPTURE. F. Brun and T. Yoshida.',
-                                     'details' : """Provides 2066 creep rupture test results of steels (mainly of two kinds of steels: 2.25Cr and 9-12 wt% Cr ferritic steels). See http://www.msm.cam.ac.uk/map/data/materials/creeprupt-b.html.""",
-                                     'license' : None,
-                                     'size' : 602797},
-                  'della_gatta' : {'urls' : [neil_url + 'della_gatta/'],
-                                   'files': [['DellaGattadata.mat']],
-                                   'citation' : 'Direct targets of the TRP63 transcription factor revealed by a combination of gene expression profiling and reverse engineering. Giusy Della Gatta, Mukesh Bansal, Alberto Ambesi-Impiombato, Dario Antonini, Caterina Missero, and Diego di Bernardo, Genome Research 2008',
-                                   'details': "The full gene expression data set from della Gatta et al (http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2413161/) processed by RMA.",
-                                   'license':None,
-                                   'size':3729650},
-                  'epomeo_gpx' : {'urls' : [neil_url + 'epomeo_gpx/'],
-                                   'files': [['endomondo_1.gpx', 'endomondo_2.gpx', 'garmin_watch_via_endomondo.gpx','viewranger_phone.gpx','viewranger_tablet.gpx']],
-                                   'citation' : '',
-                                   'details': "Five different GPS traces of the same run up Mount Epomeo in Ischia. The traces are from different sources. endomondo_1 and endomondo_2 are traces from the mobile phone app Endomondo, with a split in the middle. garmin_watch_via_endomondo is the trace from a Garmin watch, with a segment missing about 4 kilometers in. viewranger_phone and viewranger_tablet are traces from a phone and a tablet through the viewranger app. The viewranger_phone data comes from the same mobile phone as the Endomondo data (i.e. there are 3 GPS devices, but one device recorded two traces).",
-                                   'license':None,
-                                   'size': 2031872},
-                  'three_phase_oil_flow': {'urls' : [neil_url + 'three_phase_oil_flow/'],
-                                           'files' : [['DataTrnLbls.txt', 'DataTrn.txt', 'DataTst.txt', 'DataTstLbls.txt', 'DataVdn.txt', 'DataVdnLbls.txt']],
-                                           'citation' : 'Bishop, C. M. and G. D. James (1993). Analysis of multiphase flows using dual-energy gamma densitometry and neural networks. Nuclear Instruments and Methods in Physics Research A327, 580-593',
-                                           'details' : """The three phase oil data used initially for demonstrating the Generative Topographic mapping.""",
-                                           'license' : None,
-                                           'size' : 712796},
-                  'rogers_girolami_data' : {'urls' : ['https://www.dropbox.com/sh/7p6tu1t29idgliq/_XqlH_3nt9/'],
-                                            'files' : [['firstcoursemldata.tar.gz']],
-                                            'suffices' : [['?dl=1']],
-                                            'citation' : 'A First Course in Machine Learning. Simon Rogers and Mark Girolami: Chapman & Hall/CRC, ISBN-13: 978-1439824146',
-                                            'details' : """Data from the textbook 'A First Course in Machine Learning'. Available from http://www.dcs.gla.ac.uk/~srogers/firstcourseml/.""",
-                                            'license' : None,
-                                            'size' : 21949154},
-                  'olivetti_faces' : {'urls' : [neil_url + 'olivetti_faces/', sam_url],
-                                      'files' : [['att_faces.zip'], ['olivettifaces.mat']],
-                                            'citation' : 'Ferdinando Samaria and Andy Harter, Parameterisation of a Stochastic Model for Human Face Identification. Proceedings of 2nd IEEE Workshop on Applications of Computer Vision, Sarasota FL, December 1994',
-                                            'details' : """Olivetti Research Labs Face data base, acquired between December 1992 and December 1994 in the Olivetti Research Lab, Cambridge (which later became AT&T Laboratories, Cambridge). When using these images please give credit to AT&T Laboratories, Cambridge. """,
-                                            'license': None,
-                                            'size' : 8561331},
-                  'olympic_marathon_men' : {'urls' : [neil_url + 'olympic_marathon_men/'],
-                                            'files' : [['olympicMarathonTimes.csv']],
-                                            'citation' : None,
-                                            'details' : """Olympic mens' marathon gold medal winning times from 1896 to 2012. Time given in pace (minutes per kilometer). Data is originally downloaded and collated from Wikipedia, we are not responsible for errors in the data""",
-                                            'license': None,
-                                            'size' : 584},
-                  'osu_run1' : {'urls': ['http://accad.osu.edu/research/mocap/data/', neil_url + 'stick/'],
-                                'files': [['run1TXT.ZIP'],['connections.txt']],
-                                'details' : "Motion capture data of a stick man running from the Open Motion Data Project at Ohio State University.",
-                                'citation' : 'The Open Motion Data Project by The Ohio State University Advanced Computing Center for the Arts and Design, http://accad.osu.edu/research/mocap/mocap_data.htm.',
-                                'license' : 'Data is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License (http://creativecommons.org/licenses/by-nc-sa/3.0/).',
-                                'size': 338103},
-                  'osu_accad' : {'urls': ['http://accad.osu.edu/research/mocap/data/', neil_url + 'stick/'],
-                                'files': [['swagger1TXT.ZIP','handspring1TXT.ZIP','quickwalkTXT.ZIP','run1TXT.ZIP','sprintTXT.ZIP','dogwalkTXT.ZIP','camper_04TXT.ZIP','dance_KB3_TXT.ZIP','per20_TXT.ZIP','perTWO07_TXT.ZIP','perTWO13_TXT.ZIP','perTWO14_TXT.ZIP','perTWO15_TXT.ZIP','perTWO16_TXT.ZIP'],['connections.txt']],
-                                'details' : "Motion capture data of different motions from the Open Motion Data Project at Ohio State University.",
-                                'citation' : 'The Open Motion Data Project by The Ohio State University Advanced Computing Center for the Arts and Design, http://accad.osu.edu/research/mocap/mocap_data.htm.',
-                                'license' : 'Data is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License (http://creativecommons.org/licenses/by-nc-sa/3.0/).',
-                                'size': 15922790},
-                  'pumadyn-32nm' : {'urls' : ['ftp://ftp.cs.toronto.edu/pub/neuron/delve/data/tarfiles/pumadyn-family/'],
-                                    'files' : [['pumadyn-32nm.tar.gz']],
-                                    'details' : """Pumadyn non linear 32 input data set with moderate noise. See http://www.cs.utoronto.ca/~delve/data/pumadyn/desc.html for details.""",
-                                    'citation' : """Created by Zoubin Ghahramani using the Matlab Robotics Toolbox of Peter Corke. Corke, P. I. (1996). A Robotics Toolbox for MATLAB. IEEE Robotics and Automation Magazine, 3 (1): 24-32.""",
-                                    'license' : """Data is made available by the Delve system at the University of Toronto""",
-                                    'size' : 5861646},
-                  'robot_wireless' : {'urls' : [neil_url + 'robot_wireless/'],
-                                      'files' : [['uw-floor.txt']],
-                                      'citation' : """WiFi-SLAM using Gaussian Process Latent Variable Models by Brian Ferris, Dieter Fox and Neil Lawrence in IJCAI'07 Proceedings pages 2480-2485. Data used in A Unifying Probabilistic Perspective for Spectral Dimensionality Reduction: Insights and New Models by Neil D. Lawrence, JMLR 13 pg 1609--1638, 2012.""",
-                                      'details' : """Data created by Brian Ferris and Dieter Fox. Consists of WiFi access point strengths taken during a circuit of the Paul Allen building at the University of Washington.""",
-                                      'license' : None,
-                                      'size' : 284390},
-                  'swiss_roll' : {'urls' : ['http://isomap.stanford.edu/'],
-                                  'files' : [['swiss_roll_data.mat']],
-                                  'details' : """Swiss roll data made available by Tenenbaum, de Silva and Langford to demonstrate isomap, available from http://isomap.stanford.edu/datasets.html.""",
-                                  'citation' : 'A Global Geometric Framework for Nonlinear Dimensionality Reduction, J. B. Tenenbaum, V. de Silva and J. C. Langford, Science 290 (5500): 2319-2323, 22 December 2000',
-                                  'license' : None,
-                                  'size' : 800256},
-                  'ripley_prnn_data' : {'urls' : ['http://www.stats.ox.ac.uk/pub/PRNN/'],
-                                        'files' : [['Cushings.dat', 'README', 'crabs.dat', 'fglass.dat', 'fglass.grp', 'pima.te', 'pima.tr', 'pima.tr2', 'synth.te', 'synth.tr', 'viruses.dat', 'virus3.dat']],
-                                        'details' : """Data sets from Brian Ripley's Pattern Recognition and Neural Networks""",
-                                        'citation': """Pattern Recognition and Neural Networks by B.D. Ripley (1996) Cambridge University Press ISBN 0 521 46986 7""",
-                                        'license' : None,
-                                        'size' : 93565},
-                  'isomap_face_data' : {'urls' : [neil_url + 'isomap_face_data/'],
-                                        'files' : [['face_data.mat']],
-                                        'details' : """Face data made available by Tenenbaum, de Silva and Langford to demonstrate isomap, available from http://isomap.stanford.edu/datasets.html.""",
-                                        'citation' : 'A Global Geometric Framework for Nonlinear Dimensionality Reduction, J. B. Tenenbaum, V. de Silva and J. C. Langford, Science 290 (5500): 2319-2323, 22 December 2000',
-                                        'license' : None,
-                                        'size' : 24229368},
-                  }
+# Read data resources from json file.
+# Don't do this when ReadTheDocs is scanning as it breaks things
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True' #Checks if RTD is scanning
+if not (on_rtd):
+    path = os.path.join(os.path.dirname(__file__), 'data_resources.json')
+    json_data=open(path).read()
+    data_resources = json.loads(json_data)
 
 
 def prompt_user(prompt):
@@ -158,14 +48,14 @@ def prompt_user(prompt):
         print(prompt)
         choice = raw_input().lower()
         # would like to test for exception here, but not sure if we can do that without importing IPython
-    except: 
+    except:
         print('Stdin is not implemented.')
         print('You need to set')
         print('overide_manual_authorize=True')
         print('to proceed with the download. Please set that variable and continue.')
         raise
 
-    
+
     if choice in yes:
         return True
     elif choice in no:
@@ -183,7 +73,7 @@ def data_available(dataset_name=None):
             if not os.path.exists(os.path.join(data_path, dataset_name, file)):
                 return False
     return True
-            
+
 def download_url(url, store_directory, save_name = None, messages = True, suffix=''):
     """Download a file from a url and save it to disk."""
     i = url.rfind('/')
@@ -194,7 +84,21 @@ def download_url(url, store_directory, save_name = None, messages = True, suffix
     print "Downloading ", url, "->", os.path.join(store_directory, file)
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
-    urllib.urlretrieve(url+suffix, save_name, reporthook)
+    try:
+        response = urllib2.urlopen(url+suffix)
+    except urllib2.URLError, e:
+        if not hasattr(e, "code"):
+            raise
+        response = e
+        if response.code > 399 and response.code<500:
+            raise ValueError('Tried url ' + url + suffix + ' and received client error ' + str(response.code))
+        elif response.code > 499:
+            raise ValueError('Tried url ' + url + suffix + ' and received server error ' + str(response.code))
+    # if we wanted to get more sophisticated maybe we should check the response code here again even for successes.
+    with open(save_name, 'wb') as f:
+        f.write(response.read())
+
+    #urllib.urlretrieve(url+suffix, save_name, reporthook)
 
 def authorize_download(dataset_name=None):
     """Check with the user that the are happy with terms and conditions for the data set."""
@@ -243,18 +147,20 @@ def download_data(dataset_name=None):
             for file in files:
                 download_url(os.path.join(url,file), dataset_name, dataset_name)
     return True
-                  
+
 def data_details_return(data, data_set):
     """Update the data component of the data dictionary with details drawn from the data_resources."""
     data.update(data_resources[data_set])
     return data
 
-    
+
 def cmu_urls_files(subj_motions, messages = True):
     '''
-    Find which resources are missing on the local disk for the requested CMU motion capture motions. 
+    Find which resources are missing on the local disk for the requested CMU motion capture motions.
     '''
-    
+    dr = data_resources['cmu_mocap_full']
+    cmu_url = dr['urls'][0]
+
     subjects_num = subj_motions[0]
     motions_num = subj_motions[1]
 
@@ -274,15 +180,15 @@ def cmu_urls_files(subj_motions, messages = True):
             motions[i].append(curMot)
 
     all_skels = []
-    
+
     assert len(subjects) == len(motions)
-    
+
     all_motions = []
-            
+
     for i in range(len(subjects)):
         skel_dir = os.path.join(data_path, 'cmu_mocap')
         cur_skel_file = os.path.join(skel_dir, subjects[i] + '.asf')
-        
+
         url_required = False
         file_download = []
         if not os.path.exists(cur_skel_file):
@@ -299,7 +205,7 @@ def cmu_urls_files(subj_motions, messages = True):
                 url_required = True
                 file_download.append(subjects[i] + '_' + motions[i][j] + '.amc')
         if url_required:
-            resource['urls'].append(cmu_url + subjects[i] + '/')
+            resource['urls'].append(cmu_url + '/' + subjects[i] + '/')
             resource['files'].append(file_download)
     return resource
 
@@ -326,10 +232,10 @@ if gpxpy_available:
             points = [point for track in gpx.tracks for segment in track.segments for point in segment.points]
             data = [[(point.time-datetime.datetime(2013,8,21)).total_seconds(), point.latitude, point.longitude, point.elevation] for point in points]
             X.append(np.asarray(data)[::sample_every, :])
-            gpx_file.close()        
+            gpx_file.close()
         return data_details_return({'X' : X, 'info' : 'Data is an array containing time in seconds, latitude, longitude and elevation in that order.'}, data_set)
 
-del gpxpy_available
+#del gpxpy_available
 
 
 
@@ -402,7 +308,7 @@ def oil(data_set='three_phase_oil_flow'):
     return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'Xtest' : Xtest, 'Xvalid': Xvalid, 'Yvalid': Yvalid}, data_set)
     #else:
     # throw an error
-    
+
 def oil_100(seed=default_seed, data_set = 'three_phase_oil_flow'):
     np.random.seed(seed=seed)
     data = oil()
@@ -489,6 +395,18 @@ def silhouette(data_set='ankur_pose_data'):
     Ytest = mat_data['Z_test']
     return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest}, data_set)
 
+def decampos_digits(data_set='decampos_characters', which_digits=[0,1,2,3,4,5,6,7,8,9]):
+    if not data_available(data_set):
+        download_data(data_set)
+    path = os.path.join(data_path, data_set)
+    digits = np.load(os.path.join(path, 'digits.npy'))
+    digits = digits[which_digits,:,:,:]
+    num_classes, num_samples, height, width = digits.shape
+    Y = digits.reshape((digits.shape[0]*digits.shape[1],digits.shape[2]*digits.shape[3]))
+    lbls = np.array([[l]*num_samples for l in which_digits]).reshape(Y.shape[0], 1)
+    str_lbls = np.array([[str(l)]*num_samples for l in which_digits])
+    return data_details_return({'Y': Y, 'lbls': lbls, 'str_lbls' : str_lbls, 'info': 'Digits data set from the de Campos characters data'}, data_set)
+    
 def ripley_synth(data_set='ripley_prnn_data'):
     if not data_available(data_set):
         download_data(data_set)
@@ -498,7 +416,36 @@ def ripley_synth(data_set='ripley_prnn_data'):
     test = np.genfromtxt(os.path.join(data_path, data_set, 'synth.te'), skip_header=1)
     Xtest = test[:, 0:2]
     ytest = test[:, 2:3]
-    return data_details_return({'X': X, 'y': y, 'Xtest': Xtest, 'ytest': ytest, 'info': 'Synthetic data generated by Ripley for a two class classification problem.'}, data_set)
+    return data_details_return({'X': X, 'Y': y, 'Xtest': Xtest, 'Ytest': ytest, 'info': 'Synthetic data generated by Ripley for a two class classification problem.'}, data_set)
+
+def mauna_loa(data_set='mauna_loa', num_train=543, refresh_data=False):
+    path = os.path.join(data_path, data_set)
+    if data_available(data_set) and not refresh_data:
+        print 'Using cached version of the data set, to use latest version set refresh_data to True'
+    else:
+        download_data(data_set)
+    data = np.loadtxt(os.path.join(data_path, data_set, 'co2_mm_mlo.txt'))
+    print 'Most recent data observation from month ', data[-1, 1], ' in year ', data[-1, 0]
+    allX = data[data[:, 3]!=-99.99, 2:3]
+    allY = data[data[:, 3]!=-99.99, 3:4]
+    X = allX[:num_train, 0:1]
+    Xtest = allX[num_train:, 0:1]
+    Y = allY[:num_train, 0:1]
+    Ytest = allY[num_train:, 0:1]
+    return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'info': "Mauna Loa data with " + str(num_train) + " values used as training points."}, data_set)
+    
+
+def boxjenkins_airline(data_set='boxjenkins_airline', num_train=96):
+    path = os.path.join(data_path, data_set)
+    if not data_available(data_set):
+        download_data(data_set)
+    data = np.loadtxt(os.path.join(data_path, data_set, 'boxjenkins_airline.csv'), delimiter=',')
+    Y = data[:num_train, 1:2]
+    X = data[:num_train, 0:1]
+    Xtest = data[num_train:, 0:1]
+    Ytest = data[num_train:, 1:2]
+    return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'info': "Montly airline passenger data from Box & Jenkins 1976."}, data_set)
+    
 
 def osu_run1(data_set='osu_run1', sample_every=4):
     path = os.path.join(data_path, data_set)
@@ -547,7 +494,7 @@ def simulation_BGPLVM():
     Y = np.array(mat_data['Y'], dtype=float)
     S = np.array(mat_data['initS'], dtype=float)
     mu = np.array(mat_data['initMu'], dtype=float)
-    return data_details_return({'S': S, 'Y': Y, 'mu': mu}, mat_data)
+    #return data_details_return({'S': S, 'Y': Y, 'mu': mu}, data_set)
     return {'Y': Y, 'S': S,
             'mu' : mu,
             'info': "Simulated test dataset generated in MATLAB to compare BGPLVM between python and MATLAB"}
@@ -591,6 +538,21 @@ def toy_linear_1d_classification(seed=default_seed):
     X = (np.r_[x1, x2])[:, None]
     return {'X': X, 'Y':  sample_class(2.*X), 'F': 2.*X, 'seed' : seed}
 
+def olivetti_glasses(data_set='olivetti_glasses', num_training=200, seed=default_seed):
+    path = os.path.join(data_path, data_set)
+    if not data_available(data_set):
+        download_data(data_set)
+    y = np.load(os.path.join(path, 'has_glasses.np'))
+    y = np.where(y=='y',1,0).reshape(-1,1)
+    faces = scipy.io.loadmat(os.path.join(path, 'olivettifaces.mat'))['faces'].T
+    np.random.seed(seed=seed)
+    index = np.random.permutation(faces.shape[0])
+    X = faces[index[:num_training],:]
+    Xtest = faces[index[num_training:],:]
+    Y = y[index[:num_training],:]
+    Ytest = y[index[num_training:]]
+    return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'seed' : seed, 'info': "ORL Faces with labels identifiying who is wearing glasses and who isn't. Data is randomly partitioned according to given seed. Presence or absence of glasses was labelled by James Hensman."}, 'olivetti_faces')
+    
 def olivetti_faces(data_set='olivetti_faces'):
     path = os.path.join(data_path, data_set)
     if not data_available(data_set):
@@ -608,8 +570,16 @@ def olivetti_faces(data_set='olivetti_faces'):
     Y = np.asarray(Y)
     lbls = np.asarray(lbls)[:, None]
     return data_details_return({'Y': Y, 'lbls' : lbls, 'info': "ORL Faces processed to 64x64 images."}, data_set)
-    
-def download_rogers_girolami_data():
+
+def xw_pen(data_set='xw_pen'):
+    if not data_available(data_set):
+        download_data(data_set)
+    Y = np.loadtxt(os.path.join(data_path, data_set, 'xw_pen_15.csv'), delimiter=',')
+    X = np.arange(485)[:, None]
+    return data_details_return({'Y': Y, 'X': X, 'info': "Tilt data from a personalized digital assistant pen. Plot in original paper showed regression between time steps 175 and 275."}, data_set)
+
+
+def download_rogers_girolami_data(data_set='rogers_girolami_data'):
     if not data_available('rogers_girolami_data'):
         download_data(data_set)
         path = os.path.join(data_path, data_set)
@@ -675,7 +645,7 @@ def olympic_marathon_men(data_set='olympic_marathon_men'):
     Y = olympics[:, 1:2]
     return data_details_return({'X': X, 'Y': Y}, data_set)
 
-def olympics():
+def olympic_sprints(data_set='rogers_girolami_data'):
     """All olympics sprint winning times for multiple output prediction."""
     X = np.zeros((0, 2))
     Y = np.zeros((0, 1))
@@ -693,7 +663,18 @@ def olympics():
     data['X'] = X
     data['Y'] = Y
     data['info'] = "Olympics sprint event winning for men and women to 2008. Data is from Rogers and Girolami's First Course in Machine Learning."
-    return data
+    return data_details_return({
+        'X': X,
+        'Y': Y,
+        'info': "Olympics sprint event winning for men and women to 2008. Data is from Rogers and Girolami's First Course in Machine Learning.",
+        'output_info': {
+          0:'100m Men',
+          1:'100m Women',
+          2:'200m Men',
+          3:'200m Women',
+          4:'400m Men',
+          5:'400m Women'}
+        }, data_set)
 
 # def movielens_small(partNo=1,seed=default_seed):
 #     np.random.seed(seed=seed)
@@ -786,15 +767,15 @@ def creep_data(data_set='creep_rupture'):
     X = all_data[:, features].copy()
     return data_details_return({'X': X, 'y': y}, data_set)
 
-def cmu_mocap_49_balance():
+def cmu_mocap_49_balance(data_set='cmu_mocap'):
     """Load CMU subject 49's one legged balancing motion that was used by Alvarez, Luengo and Lawrence at AISTATS 2009."""
     train_motions = ['18', '19']
     test_motions = ['20']
-    data = cmu_mocap('49', train_motions, test_motions, sample_every=4)
+    data = cmu_mocap('49', train_motions, test_motions, sample_every=4, data_set=data_set)
     data['info'] = "One legged balancing motions from CMU data base subject 49. As used in Alvarez, Luengo and Lawrence at AISTATS 2009. It consists of " + data['info']
     return data
 
-def cmu_mocap_35_walk_jog():
+def cmu_mocap_35_walk_jog(data_set='cmu_mocap'):
     """Load CMU subject 35's walking and jogging motions, the same data that was used by Taylor, Roweis and Hinton at NIPS 2007. but without their preprocessing. Also used by Lawrence at AISTATS 2007."""
     train_motions = ['01', '02', '03', '04', '05', '06',
                 '07', '08', '09', '10', '11', '12',
@@ -802,7 +783,7 @@ def cmu_mocap_35_walk_jog():
                 '20', '21', '22', '23', '24', '25',
                 '26', '28', '30', '31', '32', '33', '34']
     test_motions = ['18', '29']
-    data = cmu_mocap('35', train_motions, test_motions, sample_every=4)
+    data = cmu_mocap('35', train_motions, test_motions, sample_every=4, data_set=data_set)
     data['info'] = "Walk and jog data from CMU data base subject 35. As used in Tayor, Roweis and Hinton at NIPS 2007, but without their pre-processing (i.e. as used by Lawrence at AISTATS 2007). It consists of " + data['info']
     return data
 
@@ -814,7 +795,7 @@ def cmu_mocap(subject, train_motions, test_motions=[], sample_every=4, data_set=
     # Make sure the data is downloaded.
     all_motions = train_motions + test_motions
     resource = cmu_urls_files(([subject], [all_motions]))
-    data_resources[data_set] = data_resources['cmu_mocap_full']
+    data_resources[data_set] = data_resources['cmu_mocap_full'].copy()
     data_resources[data_set]['files'] = resource['files']
     data_resources[data_set]['urls'] = resource['urls']
     if resource['urls']:
@@ -884,3 +865,5 @@ def cmu_mocap(subject, train_motions, test_motions=[], sample_every=4, data_set=
     if sample_every != 1:
         info += ' Data is sub-sampled to every ' + str(sample_every) + ' frames.'
     return data_details_return({'Y': Y, 'lbls' : lbls, 'Ytest': Ytest, 'lblstest' : lblstest, 'info': info, 'skel': skel}, data_set)
+
+

@@ -12,19 +12,34 @@ import ctypes
 from ctypes import byref, c_char, c_int, c_double # TODO
 # import scipy.lib.lapack
 import scipy
+import warnings
+import os
+from config import *
 
 if np.all(np.float64((scipy.__version__).split('.')[:2]) >= np.array([0, 12])):
     import scipy.linalg.lapack as lapack
 else:
     from scipy.linalg.lapack import flapack as lapack
 
-try:
-    _blaslib = ctypes.cdll.LoadLibrary(np.core._dotblas.__file__) # @UndefinedVariable
-    _blas_available = True
-    assert hasattr('dsyrk_',_blaslib)
-    assert hasattr('dsyr_',_blaslib)
-except:
-    _blas_available = False
+
+if config.getboolean('anaconda', 'installed') and config.getboolean('anaconda', 'MKL'):
+    try:
+        anaconda_path = str(config.get('anaconda', 'location'))
+        mkl_rt = ctypes.cdll.LoadLibrary(os.path.join(anaconda_path, 'DLLs', 'mkl_rt.dll'))
+        dsyrk = mkl_rt.dsyrk
+        dsyr = mkl_rt.dsyr
+        _blas_available = True
+    except:
+        _blas_available = False
+else:
+    try:
+        _blaslib = ctypes.cdll.LoadLibrary(np.core._dotblas.__file__) # @UndefinedVariable
+        dsyrk = _blaslib.dsyrk_
+        dsyr = _blaslib.dsyr_
+        _blas_available = True
+    except AttributeError as e:
+        _blas_available = False
+        warnings.warn("warning: caught this exception:" + str(e))
 
 def dtrtrs(A, B, lower=0, trans=0, unitdiag=0):
     """
@@ -60,6 +75,14 @@ def dpotri(A, lower=0):
 
     """
     return lapack.dpotri(A, lower=lower)
+
+def pddet(A):
+    """
+    Determinant of a positive definite matrix, only symmetric matricies though
+    """
+    L = jitchol(A)
+    logdetA = 2*sum(np.log(np.diag(L)))
+    return logdetA
 
 def trace_dot(a, b):
     """
@@ -205,7 +228,7 @@ def multiple_pdinv(A):
     return np.dstack(invs), np.array(halflogdets)
 
 
-def PCA(Y, input_dim):
+def pca(Y, input_dim):
     """
     Principal component analysis: maximum likelihood solution by SVD
 
@@ -218,7 +241,7 @@ def PCA(Y, input_dim):
 
     """
     if not np.allclose(Y.mean(axis=0), 0.0):
-        print "Y is not zero mean, centering it locally (GPy.util.linalg.PCA)"
+        print "Y is not zero mean, centering it locally (GPy.util.linalg.pca)"
 
         # Y -= Y.mean(axis=0)
 
@@ -228,6 +251,124 @@ def PCA(Y, input_dim):
     X /= v;
     W *= v;
     return X, W.T
+
+def ppca(Y, Q, iterations=100):
+    """
+    EM implementation for probabilistic pca.
+
+    :param array-like Y: Observed Data
+    :param int Q: Dimensionality for reduced array
+    :param int iterations: number of iterations for EM
+    """
+    from numpy.ma import dot as madot
+    N, D = Y.shape
+    # Initialise W randomly
+    W = np.random.randn(D, Q) * 1e-3
+    Y = np.ma.masked_invalid(Y, copy=0)
+    mu = Y.mean(0)
+    Ycentered = Y - mu
+    try:
+        for _ in range(iterations):
+            exp_x = np.asarray_chkfinite(np.linalg.solve(W.T.dot(W), madot(W.T, Ycentered.T))).T
+            W = np.asarray_chkfinite(np.linalg.solve(exp_x.T.dot(exp_x), madot(exp_x.T, Ycentered))).T
+    except np.linalg.linalg.LinAlgError:
+        #"converged"
+        pass
+    return np.asarray_chkfinite(exp_x), np.asarray_chkfinite(W)
+
+def ppca_missing_data_at_random(Y, Q, iters=100):
+    """
+    EM implementation of Probabilistic pca for when there is missing data.
+    
+    Taken from <SheffieldML, https://github.com/SheffieldML>
+
+    .. math:
+        \\mathbf{Y} = \mathbf{XW} + \\epsilon \\text{, where}
+        \\epsilon = \\mathcal{N}(0, \\sigma^2 \mathbf{I})
+        
+    :returns: X, W, sigma^2 
+    """
+    from numpy.ma import dot as madot
+    import diag
+    from GPy.util.subarray_and_sorting import common_subarrays
+    import time
+    debug = 1
+    # Initialise W randomly
+    N, D = Y.shape
+    W = np.random.randn(Q, D) * 1e-3
+    Y = np.ma.masked_invalid(Y, copy=1)
+    nu = 1.
+    #num_obs_i = 1./Y.count()
+    Ycentered = Y - Y.mean(0)
+    
+    X = np.zeros((N,Q))
+    cs = common_subarrays(Y.mask)
+    cr = common_subarrays(Y.mask, 1)
+    Sigma = np.zeros((N, Q, Q))
+    Sigma2 = np.zeros((N, Q, Q))
+    mu = np.zeros(D)
+    if debug:
+        import matplotlib.pyplot as pylab
+        fig = pylab.figure("FIT MISSING DATA"); 
+        ax = fig.gca()
+        ax.cla()
+        lines = pylab.plot(np.zeros((N,Q)).dot(W))
+    W2 = np.zeros((Q,D))
+
+    for i in range(iters):
+#         Sigma = np.linalg.solve(diag.add(madot(W,W.T), nu), diag.times(np.eye(Q),nu))
+#         exp_x = madot(madot(Ycentered, W.T),Sigma)/nu
+#         Ycentered = (Y - exp_x.dot(W).mean(0))
+#         #import ipdb;ipdb.set_trace()
+#         #Ycentered = mu
+#         W = np.linalg.solve(madot(exp_x.T,exp_x) + Sigma, madot(exp_x.T, Ycentered))
+#         nu = (((Ycentered - madot(exp_x, W))**2).sum(0) + madot(W.T,madot(Sigma,W)).sum(0)).sum()/N
+        for csi, (mask, index) in enumerate(cs.iteritems()):
+            mask = ~np.array(mask)
+            Sigma2[index, :, :] = nu * np.linalg.inv(diag.add(W2[:,mask].dot(W2[:,mask].T), nu))
+            #X[index,:] = madot((Sigma[csi]/nu),madot(W,Ycentered[index].T))[:,0]
+        X2 = ((Sigma2/nu) * (madot(Ycentered,W2.T).base)[:,:,None]).sum(-1)
+        mu2 = (Y - X.dot(W)).mean(0)
+        for n in range(N):
+            Sigma[n] = nu * np.linalg.inv(diag.add(W[:,~Y.mask[n]].dot(W[:,~Y.mask[n]].T), nu))
+            X[n, :] = (Sigma[n]/nu).dot(W[:,~Y.mask[n]].dot(Ycentered[n,~Y.mask[n]].T))
+        for d in range(D):
+            mu[d] = (Y[~Y.mask[:,d], d] - X[~Y.mask[:,d]].dot(W[:, d])).mean()
+        Ycentered = (Y - mu)
+        nu3 = 0.
+        for cri, (mask, index) in enumerate(cr.iteritems()):
+            mask = ~np.array(mask)
+            W2[:,index] = np.linalg.solve(X[mask].T.dot(X[mask]) + Sigma[mask].sum(0), madot(X[mask].T, Ycentered[mask,index]))[:,None]
+            W2[:,index] = np.linalg.solve(X.T.dot(X) + Sigma.sum(0), madot(X.T, Ycentered[:,index]))
+            #nu += (((Ycentered[mask,index] - X[mask].dot(W[:,index]))**2).sum(0) + W[:,index].T.dot(Sigma[mask].sum(0).dot(W[:,index])).sum(0)).sum()
+            nu3 += (((Ycentered[index] - X.dot(W[:,index]))**2).sum(0) + W[:,index].T.dot(Sigma.sum(0).dot(W[:,index])).sum(0)).sum()
+        nu3 /= N
+        nu = 0.
+        nu2 = 0.
+        W = np.zeros((Q,D))
+        for j in range(D):
+            W[:,j] = np.linalg.solve(X[~Y.mask[:,j]].T.dot(X[~Y.mask[:,j]]) + Sigma[~Y.mask[:,j]].sum(0), madot(X[~Y.mask[:,j]].T, Ycentered[~Y.mask[:,j],j]))
+            nu2f = np.tensordot(W[:,j].T, Sigma[~Y.mask[:,j],:,:], [0,1]).dot(W[:,j])
+            nu2s = W[:,j].T.dot(Sigma[~Y.mask[:,j],:,:].sum(0).dot(W[:,j]))
+            nu2 += (((Ycentered[~Y.mask[:,j],j] - X[~Y.mask[:,j],:].dot(W[:,j]))**2) + nu2f).sum()
+            for i in range(N):
+                if not Y.mask[i,j]:
+                    nu += ((Ycentered[i,j] - X[i,:].dot(W[:,j]))**2) + W[:,j].T.dot(Sigma[i,:,:].dot(W[:,j]))
+        nu /= N
+        nu2 /= N
+        nu4 = (((Ycentered - X.dot(W))**2).sum(0) + W.T.dot(Sigma.sum(0).dot(W)).sum(0)).sum()/N
+        import ipdb;ipdb.set_trace()
+        if debug:
+            #print Sigma[0]
+            print "nu:", nu, "sum(X):", X.sum()
+            pred_y = X.dot(W)
+            for x, l in zip(pred_y.T, lines):
+                l.set_ydata(x)
+            ax.autoscale_view()
+            ax.set_ylim(pred_y.min(), pred_y.max())
+            fig.canvas.draw()
+            time.sleep(.3)
+    return np.asarray_chkfinite(X), np.asarray_chkfinite(W), nu
 
 
 def tdot_numpy(mat, out=None):
@@ -264,7 +405,7 @@ def tdot_blas(mat, out=None):
     BETA = c_double(0.0)
     C = out.ctypes.data_as(ctypes.c_void_p)
     LDC = c_int(np.max(out.strides) / 8)
-    _blaslib.dsyrk_(byref(UPLO), byref(TRANS), byref(N), byref(K),
+    dsyrk(byref(UPLO), byref(TRANS), byref(N), byref(K),
             byref(ALPHA), A, byref(LDA), byref(BETA), C, byref(LDC))
 
     symmetrify(out, upper=True)
@@ -294,7 +435,7 @@ def DSYR_blas(A, x, alpha=1.):
     A_ = A.ctypes.data_as(ctypes.c_void_p)
     x_ = x.ctypes.data_as(ctypes.c_void_p)
     INCX = c_int(1)
-    _blaslib.dsyr_(byref(UPLO), byref(N), byref(ALPHA),
+    dsyr(byref(UPLO), byref(N), byref(ALPHA),
             x_, byref(INCX), A_, byref(LDA))
     symmetrify(A, upper=True)
 
@@ -325,7 +466,7 @@ def symmetrify(A, upper=False):
     """
     N, M = A.shape
     assert N == M
-    
+
     c_contig_code = """
     int iN;
     for (int i=1; i<N; i++){

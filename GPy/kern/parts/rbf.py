@@ -161,7 +161,7 @@ class RBF(Kernpart):
         else:
             self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)
 
-    def _gradients_X(self, dL_dK, X, X2, target):
+    def gradients_X(self, dL_dK, X, X2, target):
         #if self._X is None or X.base is not self._X.base or X2 is not None:
         self._K_computations(X, X2)
         if X2 is None:
@@ -260,7 +260,7 @@ class RBF(Kernpart):
             }
             """
             num_data, num_inducing, input_dim = X.shape[0], X.shape[0], self.input_dim
-            X = param_to_array(X)
+            X, dvardLdK = param_to_array(X, dvardLdK)
             weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
         else:
             code = """
@@ -277,7 +277,7 @@ class RBF(Kernpart):
             }
             """
             num_data, num_inducing, input_dim = X.shape[0], X2.shape[0], self.input_dim
-            X, X2 = param_to_array(X, X2)
+            X, X2, dvardLdK = param_to_array(X, X2, dvardLdK)
             weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'X2', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
         return target
 

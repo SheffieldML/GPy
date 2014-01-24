@@ -16,17 +16,6 @@ class Bias(Kernpart):
         super(Bias, self).__init__(input_dim, name)
         self.variance = Param("variance", variance)
         self.add_parameter(self.variance)
-        #self._set_params(np.array([variance]).flatten())
-
-#     def _get_params(self):
-#         return self.variance
-# 
-#     def _set_params(self,x):
-#         assert x.shape==(1,)
-#         self.variance = x
-# 
-#     def _get_param_names(self):
-#         return ['variance']
 
     def K(self,X,X2,target):
         target += self.variance
@@ -34,17 +23,20 @@ class Bias(Kernpart):
     def Kdiag(self,X,target):
         target += self.variance
 
-    def dK_dtheta(self,dL_dKdiag,X,X2,target):
-        target += dL_dKdiag.sum()
+    #def dK_dtheta(self,dL_dKdiag,X,X2,target):
+        #target += dL_dKdiag.sum()
+    def update_gradients_full(self, dL_dK, X):
+        self.variance.gradient = dL_dK.sum()
 
     def dKdiag_dtheta(self,dL_dKdiag,X,target):
         target += dL_dKdiag.sum()
 
-    def dK_dX(self, dL_dK,X, X2, target):
+    def gradients_X(self, dL_dK,X, X2, target):
         pass
 
     def dKdiag_dX(self,dL_dKdiag,X,target):
         pass
+
 
     #---------------------------------------#
     #             PSI statistics            #

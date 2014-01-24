@@ -8,7 +8,7 @@ import pylab as pb
 
 class Mapping(Parameterized):
     """
-    Base model for shared behavior between models that can act like a mapping. 
+    Base model for shared behavior between models that can act like a mapping.
     """
 
     def __init__(self, input_dim, output_dim):
@@ -36,7 +36,7 @@ class Mapping(Parameterized):
 
     def df_dtheta(self, dL_df, X):
         """The gradient of the outputs of the multi-layer perceptron with respect to each of the parameters.
-        
+
         :param dL_df: gradient of the objective with respect to the function.
         :type dL_df: ndarray (num_data x output_dim)
         :param X: input locations where the function is evaluated.
@@ -44,14 +44,14 @@ class Mapping(Parameterized):
         :returns: Matrix containing gradients with respect to parameters of each output for each input data.
         :rtype: ndarray (num_params length)
         """
-        
+
         raise NotImplementedError
 
     def plot(self, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, samples=0, fignum=None, ax=None, fixed_inputs=[], linecol=Tango.colorsHex['darkBlue']):
         """
 
         Plot the mapping.
-        
+
         Plots the mapping associated with the model.
           - In one dimension, the function is plotted.
           - In two dimsensions, a contour-plot shows the function
@@ -110,7 +110,7 @@ class Mapping(Parameterized):
             for d in range(y.shape[1]):
                 ax.plot(Xnew, f[:, d], edgecol=linecol)
 
-        elif self.X.shape[1] == 2: 
+        elif self.X.shape[1] == 2:
             resolution = resolution or 50
             Xnew, _, _, xmin, xmax = x_frame2D(self.X, plot_limits, resolution)
             x, y = np.linspace(xmin[0], xmax[0], resolution), np.linspace(xmin[1], xmax[1], resolution)
@@ -123,7 +123,7 @@ class Mapping(Parameterized):
         else:
             raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
-from GPy.core.model import Model
+from model import Model
 
 class Mapping_check_model(Model):
     """This is a dummy model class used as a base class for checking that the gradients of a given mapping are implemented correctly. It enables checkgradient() to be called independently on each mapping."""

@@ -4,7 +4,7 @@
 import unittest
 import numpy as np
 import GPy
-from GPy.models.bayesian_gplvm import BayesianGPLVM
+from ..models import BayesianGPLVM
 
 class BGPLVMTests(unittest.TestCase):
     def test_bias_kern(self):

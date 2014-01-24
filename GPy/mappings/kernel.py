@@ -57,4 +57,4 @@ class Kernel(Mapping):
         return np.hstack((self._df_dA.flatten(), self._df_dbias))
 
     def df_dX(self, dL_df, X):
-        return self.kern.dK_dX((dL_df[:, None, :]*self.A[None, :, :]).sum(2), X, self.X) 
+        return self.kern.dK_dX((dL_df[:, None, :]*self.A[None, :, :]).sum(2), X, self.X)

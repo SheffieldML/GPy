@@ -36,7 +36,7 @@ class RBF(Kernpart):
         super(RBF, self).__init__(input_dim, name)
         self.input_dim = input_dim
         self.ARD = ARD
-        
+
         if not ARD:
             if lengthscale is not None:
                 lengthscale = np.asarray(lengthscale)
@@ -55,7 +55,7 @@ class RBF(Kernpart):
         self.lengthscale.add_observer(self, self.update_lengthscale)
         self.add_parameters(self.variance, self.lengthscale)
         self.parameters_changed() # initializes cache
-        
+
         #self.update_inv_lengthscale(self.lengthscale)
         #self.parameters_changed()
         # initialize cache
@@ -67,99 +67,90 @@ class RBF(Kernpart):
         #                       'extra_compile_args': ['-fopenmp -O3'], # -march=native'],
         #                       'extra_link_args'   : ['-lgomp']}
         self.weave_options = {}
-        
+
     def on_input_change(self, X):
         #self._K_computations(X, None)
         pass
-    
+
     def update_lengthscale(self, l):
         self.lengthscale2 = np.square(self.lengthscale)
-        
+
     def parameters_changed(self):
         # reset cached results
-        #self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
-        #self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
         self._X, self._X2 = np.empty(shape=(2, 1))
         self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
-        pass
-#     def _get_params(self):
-#         return np.hstack((self.variance, self.lengthscale))
-# # 
-#     def _set_params(self, x):
-#         assert x.size == (self.num_params)
-#         #self.variance = x[0]
-#         #self.lengthscale = x[1:]
-#         
-#         #self.lengthscale2 = np.square(self.lengthscale)
-#         
-#         # reset cached results
-#         #self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
-#         #self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
-#  
-#     def _get_param_names(self):
-#         if self.num_params == 2:
-#             return ['variance', 'lengthscale']
-#         else:
-#             return ['variance'] + ['lengthscale_%i' % i for i in range(self.lengthscale.size)]
 
     def K(self, X, X2, target):
-        #if self._X is None or X.base is not self._X.base or X2 is not None:
         self._K_computations(X, X2)
         target += self.variance * self._K_dvar
 
     def Kdiag(self, X, target):
         np.add(target, self.variance, target)
 
-    def dK_dtheta(self, dL_dK, X, X2, target):
-        #if self._X is None or X.base is not self._X.base or X2 is not None:
+    def update_gradients_full(self, dL_dK, X):
         self._K_computations(X, X2)
-        target[0] += np.sum(self._K_dvar * dL_dK)
+        self.variance.gradient = np.sum(self._K_dvar * dL_dK)
         if self.ARD:
-            dvardLdK = self._K_dvar * dL_dK
-            var_len3 = self.variance / np.power(self.lengthscale, 3)
-            if X2 is None:
-                # save computation for the symmetrical case
-                dvardLdK = dvardLdK + dvardLdK.T
-                code = """
-                int q,i,j;
-                double tmp;
-                for(q=0; q<input_dim; q++){
-                  tmp = 0;
-                  for(i=0; i<num_data; i++){
-                    for(j=0; j<i; j++){
-                      tmp += (X(i,q)-X(j,q))*(X(i,q)-X(j,q))*dvardLdK(i,j);
-                    }
-                  }
-                  target(q+1) += var_len3(q)*tmp;
-                }
-                """
-                num_data, num_inducing, input_dim = X.shape[0], X.shape[0], self.input_dim
-                X = param_to_array(X)
-                weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
-            else:
-                code = """
-                int q,i,j;
-                double tmp;
-                for(q=0; q<input_dim; q++){
-                  tmp = 0;
-                  for(i=0; i<num_data; i++){
-                    for(j=0; j<num_inducing; j++){
-                      tmp += (X(i,q)-X2(j,q))*(X(i,q)-X2(j,q))*dvardLdK(i,j);
-                    }
-                  }
-                  target(q+1) += var_len3(q)*tmp;
-                }
-                """
-                num_data, num_inducing, input_dim = X.shape[0], X2.shape[0], self.input_dim
-                # [np.add(target[1+q:2+q],var_len3[q]*np.sum(dvardLdK*np.square(X[:,q][:,None]-X2[:,q][None,:])),target[1+q:2+q]) for q in range(self.input_dim)]
-                X, X2 = param_to_array(X, X2)
-                weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'X2', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
+            self.lengthscale.gradient = self._dL_dlengthscales_via_K(dL_dK, X, None)
         else:
-            target[1] += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)
+            self.lengthscale.gradient = (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)
 
-    def dKdiag_dtheta(self, dL_dKdiag, X, target):
-        # NB: derivative of diagonal elements wrt lengthscale is 0
-        target[0] += np.sum(dL_dKdiag)
+    def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
+        #contributions from Kdiag
+        self.variance.gradient = np.sum(dL_dKdiag)
+
+        #from Knm
+        self._K_computations(X, Z)
+        self.variance.gradient += np.sum(dL_dKnm * self._K_dvar)
+        if self.ARD:
+            self.lengthscales.gradient = self._dL_dlengthscales_via_K(dL_dKnm, X, Z)
+
+        else:
+            self.lengthscale.gradient = (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)
+
+        #from Kmm
+        self._K_computations(Z, None)
+        self.variance.gradient += np.sum(dL_dKmm * self._K_dvar)
+        if self.ARD:
+            self.lengthscales.gradient += self._dL_dlengthscales_via_K(dL_dKmm, Z, None)
+        else:
+            self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)
+
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        self._psi_computations(Z, mu, S)
+
+        #contributions from psi0:
+        self.variance.gradient = np.sum(dL_dpsi0)
+
+        #from psi1
+        self.variance.gradient += np.sum(dL_dpsi1 * self._psi1 / self.variance)
+        d_length = self._psi1[:,:,None] * ((self._psi1_dist_sq - 1.)/(self.lengthscale*self._psi1_denom) +1./self.lengthscale)
+        dpsi1_dlength = d_length * dL_dpsi1[:, :, None]
+        if not self.ARD:
+            self.lengthscale.gradeint = dpsi1_dlength.sum()
+        else:
+            self.lengthscale.gradient = dpsi1_dlength.sum(0).sum(0)
+
+        #from psi2
+        d_var = 2.*self._psi2 / self.variance
+        d_length = 2.*self._psi2[:, :, :, None] * (self._psi2_Zdist_sq * self._psi2_denom + self._psi2_mudist_sq + S[:, None, None, :] / self.lengthscale2) / (self.lengthscale * self._psi2_denom)
+
+        self.variance.gradient += np.sum(dL_dpsi2 * d_var)
+        dpsi2_dlength = d_length * dL_dpsi2[:, :, :, None]
+        if not self.ARD:
+            self.lengthscale.gradient += dpsi2_dlength.sum()
+        else:
+            self.lengthscale.gradient += dpsi2_dlength.sum(0).sum(0).sum(0)
+
+        #from Kmm
+        self._K_computations(Z, None)
+        self.variance.gradient += np.sum(dL_dKmm * self._K_dvar)
+        if self.ARD:
+            self.lengthscales.gradient += self._dL_dlengthscales_via_K(dL_dKmm, Z, None)
+        else:
+            self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)
+
+
 
     def dK_dX(self, dL_dK, X, X2, target):
         #if self._X is None or X.base is not self._X.base or X2 is not None:
@@ -182,8 +173,6 @@ class RBF(Kernpart):
     def psi0(self, Z, mu, S, target):
         target += self.variance
 
-    def dpsi0_dtheta(self, dL_dpsi0, Z, mu, S, target):
-        target[0] += np.sum(dL_dpsi0)
 
     def dpsi0_dmuS(self, dL_dpsi0, Z, mu, S, target_mu, target_S):
         pass
@@ -191,16 +180,6 @@ class RBF(Kernpart):
     def psi1(self, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
         target += self._psi1
-
-    def dpsi1_dtheta(self, dL_dpsi1, Z, mu, S, target):
-        self._psi_computations(Z, mu, S)
-        target[0] += np.sum(dL_dpsi1 * self._psi1 / self.variance)
-        d_length = self._psi1[:,:,None] * ((self._psi1_dist_sq - 1.)/(self.lengthscale*self._psi1_denom) +1./self.lengthscale)
-        dpsi1_dlength = d_length * dL_dpsi1[:, :, None]
-        if not self.ARD:
-            target[1] += dpsi1_dlength.sum()
-        else:
-            target[1:] += dpsi1_dlength.sum(0).sum(0)
 
     def dpsi1_dZ(self, dL_dpsi1, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
@@ -217,19 +196,6 @@ class RBF(Kernpart):
     def psi2(self, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
         target += self._psi2
-
-    def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S, target):
-        """Shape N,num_inducing,num_inducing,Ntheta"""
-        self._psi_computations(Z, mu, S)
-        d_var = 2.*self._psi2 / self.variance
-        d_length = 2.*self._psi2[:, :, :, None] * (self._psi2_Zdist_sq * self._psi2_denom + self._psi2_mudist_sq + S[:, None, None, :] / self.lengthscale2) / (self.lengthscale * self._psi2_denom)
-
-        target[0] += np.sum(dL_dpsi2 * d_var)
-        dpsi2_dlength = d_length * dL_dpsi2[:, :, :, None]
-        if not self.ARD:
-            target[1] += dpsi2_dlength.sum()
-        else:
-            target[1:] += dpsi2_dlength.sum(0).sum(0).sum(0)
 
     def dpsi2_dZ(self, dL_dpsi2, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
@@ -265,6 +231,60 @@ class RBF(Kernpart):
                 X2 = X2 / self.lengthscale
                 self._K_dist2 = -2.*np.dot(X, X2.T) + (np.sum(np.square(X), 1)[:, None] + np.sum(np.square(X2), 1)[None, :])
             self._K_dvar = np.exp(-0.5 * self._K_dist2)
+
+    def _dL_dlengthscales_via_K(self, dL_dK, X, X2):
+        """
+        A helper function for update_gradients_* methods
+
+        Computes the derivative of the objective L wrt the lengthscales via
+
+        dL_dl = sum_{i,j}(dL_dK_{ij} dK_dl)
+
+        assumes self._K_computations has just been called.
+
+        This is only valid if self.ARD=True
+        """
+        target = np.zeros(self.input_dim)
+        dvardLdK = self._K_dvar * dL_dK
+        var_len3 = self.variance / np.power(self.lengthscale, 3)
+        if X2 is None:
+            # save computation for the symmetrical case
+            dvardLdK = dvardLdK + dvardLdK.T
+            code = """
+            int q,i,j;
+            double tmp;
+            for(q=0; q<input_dim; q++){
+              tmp = 0;
+              for(i=0; i<num_data; i++){
+                for(j=0; j<i; j++){
+                  tmp += (X(i,q)-X(j,q))*(X(i,q)-X(j,q))*dvardLdK(i,j);
+                }
+              }
+              target(q) += var_len3(q)*tmp;
+            }
+            """
+            num_data, num_inducing, input_dim = X.shape[0], X.shape[0], self.input_dim
+            X = param_to_array(X)
+            weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
+        else:
+            code = """
+            int q,i,j;
+            double tmp;
+            for(q=0; q<input_dim; q++){
+              tmp = 0;
+              for(i=0; i<num_data; i++){
+                for(j=0; j<num_inducing; j++){
+                  tmp += (X(i,q)-X2(j,q))*(X(i,q)-X2(j,q))*dvardLdK(i,j);
+                }
+              }
+              target(q) += var_len3(q)*tmp;
+            }
+            """
+            num_data, num_inducing, input_dim = X.shape[0], X2.shape[0], self.input_dim
+            X, X2 = param_to_array(X, X2)
+            weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'X2', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
+
+
 
     def _psi_computations(self, Z, mu, S):
         # here are the "statistics" for psi1 and psi2

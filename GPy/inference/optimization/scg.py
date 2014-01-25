@@ -154,9 +154,9 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
                 break
             else:
                 # Update variables for new position
+                gradold = gradnew
                 gradnew = gradf(x, *optargs)
                 current_grad = np.dot(gradnew, gradnew)
-                gradold = gradnew
                 fold = fnew
                 # If the gradient is zero then we are done.
                 if current_grad <= gtol:

@@ -26,43 +26,43 @@ UNFIXED = True
 class Parameterized(Constrainable, Pickleable, Observable):
     """
     Parameterized class
-    
+
     Say m is a handle to a parameterized class.
 
     Printing parameters:
-    
+
         - print m:           prints a nice summary over all parameters
         - print m.name:      prints details for param with name 'name'
-        - print m[regexp]: prints details for all the parameters 
+        - print m[regexp]: prints details for all the parameters
                              which match (!) regexp
         - print m['']:       prints details for all parameters
-    
+
         Fields:
 
             Name:       The name of the param, can be renamed!
             Value:      Shape or value, if one-valued
-            Constrain:  constraint of the param, curly "{c}" brackets indicate 
+            Constrain:  constraint of the param, curly "{c}" brackets indicate
                         some parameters are constrained by c. See detailed print
                         to get exact constraints.
             Tied_to:    which paramter it is tied to.
-    
+
     Getting and setting parameters:
 
         Set all values in param to one:
 
             m.name.to.param = 1
-    
+
     Handling of constraining, fixing and tieing parameters:
-        
+
         You can constrain parameters by calling the constrain on the param itself, e.g:
-        
+
             - m.name[:,1].constrain_positive()
             - m.name[0].tie_to(m.name[1])
 
         Fixing parameters will fix them to the value they are right now. If you change
         the parameters value, the param will be fixed to the new value!
 
-        If you want to operate on all parameters use m[''] to wildcard select all paramters 
+        If you want to operate on all parameters use m[''] to wildcard select all paramters
         and concatenate them. Printing m[''] will result in printing of all parameters in detail.
     """
     def __init__(self, name=None):
@@ -75,7 +75,6 @@ class Parameterized(Constrainable, Pickleable, Observable):
         if not self._has_fixes():
             self._fixes_ = None
         self._connect_parameters()
-        self.gradient_mapping = {}
         self._added_names_ = set()
         del self._in_init_
 
@@ -96,18 +95,18 @@ class Parameterized(Constrainable, Pickleable, Observable):
 #         :param gradient: gradient method of the param
 #         :type gradient:  callable
 #         :param index:    (optional) index of the param when printing
-#         
+#
 #         (:param gradient_parent:  connect these parameters to this class, but tell
 #                         updates to highest_parent, this is needed when parameterized classes
 #                         contain parameterized classes, but want to access the parameters
-#                         of their children) 
-#                          
-# 
+#                         of their children)
+#
+#
 #         Set array (e.g. self.X) as param with name and gradient.
 #         I.e: self.set_as_parameter('curvature', self.lengthscale, self.dK_dlengthscale)
-#         
-#         Note: the order in which parameters are added can be adjusted by 
-#               giving an index, of where to put this param in printing  
+#
+#         Note: the order in which parameters are added can be adjusted by
+#               giving an index, of where to put this param in printing
 #         """
 #         if index is None:
 #             self._parameters_.append(Param(name, array, gradient))
@@ -118,17 +117,15 @@ class Parameterized(Constrainable, Pickleable, Observable):
     def _has_fixes(self):
         return hasattr(self, "_fixes_") and self._fixes_ is not None
 
-    def add_parameter(self, param, gradient=None, index=None):
+    def add_parameter(self, param, index=None):
         """
         :param parameters:  the parameters to add
         :type parameters:   list of or one :py:class:`GPy.core.param.Param`
-        :param [gradients]: gradients for each param, 
-                            one gradient per param
         :param [index]:     index of where to put parameters
-        
-        
-        Add all parameters to this param class, you can insert parameters 
-        at any given index using the :func:`list.insert` syntax 
+
+
+        Add all parameters to this param class, you can insert parameters
+        at any given index using the :func:`list.insert` syntax
         """
         if param in self._parameters_ and index is not None:
             # make sure fixes and constraints are indexed right
@@ -139,7 +136,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
                 fixes_param = self._fixes_[param_slice].copy()
                 self._fixes_[param_slice] = self._fixes_[dest_slice]
                 self._fixes_[dest_slice] = fixes_param
-            
+
             del self._parameters_[param._parent_index_]
             self._parameters_.insert(index, param)
         elif param not in self._parameters_:
@@ -148,70 +145,68 @@ class Parameterized(Constrainable, Pickleable, Observable):
                 self.size = sum(p.size for p in self._parameters_)
             if index is None:
                 self._parameters_.append(param)
-                
+
                 # make sure fixes and constraints are indexed right
                 if param._has_fixes(): fixes_param = param._fixes_.copy()
                 else: fixes_param = numpy.ones(param.size, dtype=bool)
                 if self._has_fixes(): self._fixes_ = np.r_[self._fixes_, fixes_param]
                 elif param._has_fixes(): self._fixes_ = np.r_[np.ones(self.size, dtype=bool), fixes_param]
-            
+
             else:
                 self._parameters_.insert(index, param)
-                
+
                 # make sure fixes and constraints are indexed right
                 if param._has_fixes(): fixes_param = param._fixes_.copy()
                 else: fixes_param = numpy.ones(param.size, dtype=bool)
                 ins = sum((p.size for p in self._parameters_[:index]))
                 if self._has_fixes(): self._fixes_ = np.r_[self._fixes_[:ins], fixes_param, self._fixes[ins:]]
-                elif not np.all(fixes_param): 
+                elif not np.all(fixes_param):
                     self._fixes_ = np.ones(self.size+param.size, dtype=bool)
                     self._fixes_[ins:ins+param.size] = fixes_param
             self.size += param.size
-        if gradient:
-            self.gradient_mapping[param] = gradient    
         self._connect_parameters()
         # make sure the constraints are pulled over:
         if hasattr(param, "_constraints_") and param._constraints_ is not None:
             for t, ind in param._constraints_.iteritems():
                 self.constraints.add(t, ind+self._offset_for(param))
-            param._constraints_.clear()    
+            param._constraints_.clear()
         if self._has_fixes() and np.all(self._fixes_): # ==UNFIXED
             self._fixes_= None
 
     def add_parameters(self, *parameters):
         """
-        convenience method for adding several 
+        convenience method for adding several
         parameters without gradient specification
         """
         [self.add_parameter(p) for p in parameters]
-        
+
     def remove_parameter(self, *names_params_indices):
         """
-        :param names_params_indices: mix of parameter_names, param objects, or indices 
-            to remove from being a param of this parameterized object. 
-             
+        :param names_params_indices: mix of parameter_names, param objects, or indices
+            to remove from being a param of this parameterized object.
+
             note: if it is a string object it will not (!) be regexp-matched
                   automatically.
         """
-        self._parameters_ = [p for p in self._parameters_ 
-                        if not (p._parent_index_ in names_params_indices 
+        self._parameters_ = [p for p in self._parameters_
+                        if not (p._parent_index_ in names_params_indices
                                 or p.name in names_params_indices
                                 or p in names_params_indices)]
         self._connect_parameters()
-        
+
     def parameters_changed(self):
         """
-        This method gets called when parameters have changed. 
-        Another way of listening to param changes is to 
-        add self as a listener to the param, such that 
+        This method gets called when parameters have changed.
+        Another way of listening to param changes is to
+        add self as a listener to the param, such that
         updates get passed through. See :py:function:``GPy.core.param.Observable.add_observer``
         """
-        # will be called as soon as paramters have changed
+        # will be called as soon as parameters have changed
         pass
-    
+
     def _connect_parameters(self):
         # connect parameterlist to this parameterized object
-        # This just sets up the right connection for the params objects 
+        # This just sets up the right connection for the params objects
         # to be used as parameters
         if not hasattr(self, "_parameters_") or len(self._parameters_) < 1:
             # no parameters for this class
@@ -221,14 +216,17 @@ class Parameterized(Constrainable, Pickleable, Observable):
         self._param_slices_ = []
         for p in self._parameters_:
             p._direct_parent_ = self
+            p._highest_parent_ = self
             p._parent_index_ = i
             i += 1
             for pi in p.flattened_parameters:
                 pi._highest_parent_ = self
+            for pi in p._parameters_:
+                pi._highest_parent_ = self
             not_unique = []
             sizes.append(p.size+sizes[-1])
             self._param_slices_.append(slice(sizes[-2], sizes[-1]))
-            pname = adjust_name_for_printing(p.name)  
+            pname = adjust_name_for_printing(p.name)
             # and makes sure to not delete programmatically added parameters
             if pname in self.__dict__:
                 if isinstance(self.__dict__[pname], (Parameterized, Param)):
@@ -238,6 +236,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
             elif not (pname in not_unique):
                 self.__dict__[pname] = p
                 self._added_names_.add(pname)
+            
     #===========================================================================
     # Pickling operations
     #===========================================================================
@@ -258,37 +257,35 @@ class Parameterized(Constrainable, Pickleable, Observable):
         return copy.deepcopy(self)
     def __getstate__(self):
         if self._has_get_set_state():
-            return self.getstate()
+            return self._getstate()
         return self.__dict__
     def __setstate__(self, state):
         if self._has_get_set_state():
-            self.setstate(state) # set state
+            self._setstate(state) # set state
             #self._set_params(self._get_params()) # restore all values
             return
         self.__dict__ = state
     def _has_get_set_state(self):
-        return 'getstate' in vars(self.__class__) and 'setstate' in vars(self.__class__)
-    def getstate(self):
+        return '_getstate' in vars(self.__class__) and '_setstate' in vars(self.__class__)
+    def _getstate(self):
         """
         Get the current state of the class,
         here just all the indices, rest can get recomputed
         For inheriting from Parameterized:
- 
+
         Allways append the state of the inherited object
-        and call down to the inherited object in setstate!!
+        and call down to the inherited object in _setstate!!
         """
         return [
                 self._fixes_,
                 self._constraints_,
                 self._parameters_,
                 self._name,
-                #self.gradient_mapping,
                 self._added_names_,
                 ]
-        
-    def setstate(self, state):
+
+    def _setstate(self, state):
         self._added_names_ = state.pop()
-        #self.gradient_mapping = state.pop()
         self._name = state.pop()
         self._parameters_ = state.pop()
         self._connect_parameters()
@@ -361,7 +358,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
                 return self._param_slices_[param._direct_parent_._get_original(param)._parent_index_].start
             return self._offset_for(param._direct_parent_) + param._direct_parent_._offset_for(param)
         return 0
-    
+
     def _raveled_index_for(self, param):
         """
         get the raveled index for a param
@@ -369,7 +366,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
         param inside this parameterized logic.
         """
         return param._raveled_index() + self._offset_for(param)
-    
+
     def _raveled_index(self):
         """
         get the raveled index for this object,
@@ -441,7 +438,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
     def _add_constrain(self, param, transform, warning=True):
         rav_i = self._raveled_index_for(param)
         reconstrained = self._remove_constrain(param, index=rav_i) # remove constraints before
-        # if removing constraints before adding new is not wanted, just delete the above line!        
+        # if removing constraints before adding new is not wanted, just delete the above line!
         self.constraints.add(transform, rav_i)
         param = self._get_original(param)
         param._set_params(transform.initialize(param._get_params()))
@@ -454,7 +451,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
         if not transforms:
             transforms = self.constraints.properties()
         removed_indices = numpy.array([]).astype(int)
-        if "index" in kwargs: index = kwargs['index'] 
+        if "index" in kwargs: index = kwargs['index']
         else: index = self._raveled_index_for(param)
         for constr in transforms:
             removed = self.constraints.remove(constr, index)
@@ -505,7 +502,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
         if paramlist is None:
             paramlist = self.grep_param_names(name)
         if len(paramlist) < 1: raise AttributeError, name
-        if len(paramlist) == 1: 
+        if len(paramlist) == 1:
             if isinstance(paramlist[-1], Parameterized):
                 paramlist = paramlist[-1].flattened_parameters
                 if len(paramlist) != 1:
@@ -519,7 +516,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
 #     def __getattr__(self, name):
 #         return self.__getitem__(name)
 #     def __getattribute__(self, name):
-#         #try: 
+#         #try:
 #             return object.__getattribute__(self, name)
         #except AttributeError:
         #    _, a, tb = sys.exc_info()
@@ -547,6 +544,8 @@ class Parameterized(Constrainable, Pickleable, Observable):
             return [adjust_name_for_printing(self.name) + "." + xi for x in self._parameters_ for xi in x._parameter_names(add_name=True)]
         return [xi for x in self._parameters_ for xi in x._parameter_names(add_name=True)]
     parameter_names = property(_parameter_names, doc="Names for all parameters handled by this parameterization object -- will add hirarchy name entries for printing")
+    def _collect_gradient(self, target):
+        [p._collect_gradient(target[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
     @property
     def flattened_parameters(self):
         return [xi for x in self._parameters_ for xi in x.flattened_parameters]
@@ -571,7 +570,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
     def _ties_str(self):
         return [','.join(x._ties_str) for x in self.flattened_parameters]
     def __str__(self, header=True):
-        
+
         name  = adjust_name_for_printing(self.name) + "."
         constrs = self._constraints_str; ts = self._ties_str
         desc = self._description_str; names = self.parameter_names
@@ -592,463 +591,4 @@ class Parameterized(Constrainable, Pickleable, Observable):
         return '\n'.format(sep).join(to_print)
     pass
 
-# 
-# class Parameterized_old(object):
-#     def __init__(self):
-#         """
-#         This is the base class for model and kernel. Mostly just handles tieing and constraining of parameters
-#         """
-#         self.tied_indices = []
-#         self.fixed_indices = []
-#         self.fixed_values = []
-#         self.constrained_indices = []
-#         self.constraints = []
-#  
-#     def _get_params(self):
-#         raise NotImplementedError, "this needs to be implemented to use the Parameterized class"
-#     def _set_params(self, x):
-#         raise NotImplementedError, "this needs to be implemented to use the Parameterized class"
-#  
-#     def _get_param_names(self):
-#         raise NotImplementedError, "this needs to be implemented to use the Parameterized class"
-#     #def _get_print_names(self):
-#     #    """ Override for which parameter_names to print out, when using print m """
-#     #    return self._get_param_names()
-#  
-#     def pickle(self, filename, protocol=None):
-#         if protocol is None:
-#             if self._has_get_set_state():
-#                 protocol = 0
-#             else:
-#                 protocol = -1
-#         with open(filename, 'w') as f:
-#             cPickle.dump(self, f, protocol)
-#  
-#     def copy(self):
-#         """Returns a (deep) copy of the current model """
-#         return copy.deepcopy(self)
-#  
-#     def __getstate__(self):
-#         if self._has_get_set_state():
-#             return self.getstate()
-#         return self.__dict__
-#  
-#     def __setstate__(self, state):
-#         if self._has_get_set_state():
-#             self.setstate(state) # set state
-#             self._set_params(self._get_params()) # restore all values
-#             return
-#         self.__dict__ = state
-#  
-#     def _has_get_set_state(self):
-#         return 'getstate' in vars(self.__class__) and 'setstate' in vars(self.__class__)
-#  
-#     def getstate(self):
-#         """
-#         Get the current state of the class,
-#         here just all the indices, rest can get recomputed
-#         For inheriting from Parameterized:
-#  
-#         Allways append the state of the inherited object
-#         and call down to the inherited object in setstate!!
-#         """
-#         return [self.tied_indices,
-#                 self.fixed_indices,
-#                 self.fixed_values,
-#                 self.constrained_indices,
-#                 self.constraints]
-#  
-#     def setstate(self, state):
-#         self.constraints = state.pop()
-#         self.constrained_indices = state.pop()
-#         self.fixed_values = state.pop()
-#         self.fixed_indices = state.pop()
-#         self.tied_indices = state.pop()
-#  
-#     def __getitem__(self, regexp, return_names=False):
-#         """
-#         Get a model param by name.  The name is applied as a regular
-#         expression and all parameters that match that regular expression are
-#         returned.
-#         """
-#         matches = self.grep_param_names(regexp)
-#         if len(matches):
-#             if return_names:
-#                 return self._get_params()[matches], np.asarray(self._get_param_names())[matches].tolist()
-#             else:
-#                 return self._get_params()[matches]
-#         else:
-#             raise AttributeError, "no param matches %s" % regexp
-#  
-#     def __setitem__(self, name, val):
-#         """
-#         Set model param(s) by name. The name is provided as a regular
-#         expression. All parameters matching that regular expression are set to
-#         the given value.
-#         """
-#         matches = self.grep_param_names(name)
-#         if len(matches):
-#             val = np.array(val)
-#             assert (val.size == 1) or val.size == len(matches), "Shape mismatch: {}:({},)".format(val.size, len(matches))
-#             x = self._get_params()
-#             x[matches] = val
-#             self._set_params(x)
-#         else:
-#             raise AttributeError, "no param matches %s" % name
-#  
-#     def tie_params(self, regexp):
-#         """
-#         Tie (all!) parameters matching the regular expression `regexp`. 
-#         """
-#         matches = self.grep_param_names(regexp)
-#         assert matches.size > 0, "need at least something to tie together"
-#         if len(self.tied_indices):
-#             assert not np.any(matches[:, None] == np.hstack(self.tied_indices)), "Some indices are already tied!"
-#         self.tied_indices.append(matches)
-#         # TODO only one of the priors will be evaluated. Give a warning message if the priors are not identical
-#         if hasattr(self, 'prior'):
-#             pass
-#  
-#         self._set_params_transformed(self._get_params_transformed()) # sets tied parameters to single value
-#  
-#     def untie_everything(self):
-#         """Unties all parameters by setting tied_indices to an empty list."""
-#         self.tied_indices = []
-#  
-#     def grep_param_names(self, regexp, transformed=False, search=False):
-#         """
-#         :param regexp: regular expression to select param parameter_names
-#         :type regexp: re | str | int
-#         :rtype: the indices of self._get_param_names which match the regular expression.
-#  
-#         Note:-
-#           Other objects are passed through - i.e. integers which weren't meant for grepping
-#         """
-#  
-#         if transformed:
-#             parameter_names = self._get_param_names_transformed()
-#         else:
-#             parameter_names = self._get_param_names()
-#  
-#         if type(regexp) in [str, np.string_, np.str]:
-#             regexp = re.compile(regexp)
-#         elif type(regexp) is re._pattern_type:
-#             pass
-#         else:
-#             return regexp
-#         if search:
-#             return np.nonzero([regexp.search(name) for name in parameter_names])[0]
-#         else:
-#             return np.nonzero([regexp.match(name) for name in parameter_names])[0]
-#  
-#     def num_params_transformed(self):
-#         removed = 0
-#         for tie in self.tied_indices:
-#             removed += tie.size - 1
-#  
-#         for fix in self.fixed_indices:
-#             removed += fix.size
-#  
-#         return len(self._get_params()) - removed
-#  
-#     def unconstrain(self, regexp):
-#         """Unconstrain matching parameters.  Does not untie parameters"""
-#         matches = self.grep_param_names(regexp)
-#  
-#         # tranformed contraints:
-#         for match in matches:
-#             self.constrained_indices = [i[i <> match] for i in self.constrained_indices]
-#  
-#         # remove empty constraints
-#         tmp = zip(*[(i, t) for i, t in zip(self.constrained_indices, self.constraints) if len(i)])
-#         if tmp:
-#             self.constrained_indices, self.constraints = zip(*[(i, t) for i, t in zip(self.constrained_indices, self.constraints) if len(i)])
-#             self.constrained_indices, self.constraints = list(self.constrained_indices), list(self.constraints)
-#  
-#         # fixed:
-#         self.fixed_values = [np.delete(values, np.nonzero(np.sum(indices[:, None] == matches[None, :], 1))[0]) for indices, values in zip(self.fixed_indices, self.fixed_values)]
-#         self.fixed_indices = [np.delete(indices, np.nonzero(np.sum(indices[:, None] == matches[None, :], 1))[0]) for indices in self.fixed_indices]
-#  
-#         # remove empty elements
-#         tmp = [(i, v) for i, v in zip(self.fixed_indices, self.fixed_values) if len(i)]
-#         if tmp:
-#             self.fixed_indices, self.fixed_values = zip(*tmp)
-#             self.fixed_indices, self.fixed_values = list(self.fixed_indices), list(self.fixed_values)
-#         else:
-#             self.fixed_indices, self.fixed_values = [], []
-#  
-#     def constrain_negative(self, regexp, warning=True):
-#         """ Set negative constraints. """
-#         self.constrain(regexp, transformations.NegativeLogexp(), warning)
-#  
-#     def constrain_positive(self, regexp, warning=True):
-#         """ Set positive constraints. """
-#         self.constrain(regexp, transformations.Logexp(), warning)
-#  
-#     def constrain_bounded(self, regexp, lower, upper, warning=True):
-#         """ Set bounded constraints. """
-#         self.constrain(regexp, transformations.Logistic(lower, upper), warning)
-#  
-#     def all_constrained_indices(self):
-#         if len(self.constrained_indices) or len(self.fixed_indices):
-#             return np.hstack(self.constrained_indices + self.fixed_indices)
-#         else:
-#             return np.empty(shape=(0,))
-#  
-#     def constrain(self, regexp, transform, warning=True):
-#         assert isinstance(transform, transformations.Transformation)
-#  
-#         matches = self.grep_param_names(regexp)
-#         overlap = set(matches).intersection(set(self.all_constrained_indices()))
-#         if overlap:
-#             self.unconstrain(np.asarray(list(overlap)))
-#             if warning:
-#                 print 'Warning: re-constraining these parameters'
-#                 pn = self._get_param_names()
-#                 for i in overlap:
-#                     print pn[i]
-#  
-#         self.constrained_indices.append(matches)
-#         self.constraints.append(transform)
-#         x = self._get_params()
-#         x[matches] = transform.initialize(x[matches])
-#         self._set_params(x)
-#  
-#     def constrain_fixed(self, regexp, value=None, warning=True):
-#         """
-#  
-#         :param regexp: which parameters need to be fixed.
-#         :type regexp: ndarray(dtype=int) or regular expression object or string
-#         :param value: the vlaue to fix the parameters to. If the value is not specified,
-#                  the param is fixed to the current value
-#         :type value: float
-#  
-#         **Notes**
-#  
-#         Fixing a param which is tied to another, or constrained in some way will result in an error.
-#  
-#         To fix multiple parameters to the same value, simply pass a regular expression which matches both param parameter_names, or pass both of the indexes.
-#  
-#         """
-#         matches = self.grep_param_names(regexp)
-#         overlap = set(matches).intersection(set(self.all_constrained_indices()))
-#         if overlap:
-#             self.unconstrain(np.asarray(list(overlap)))
-#             if warning:
-#                 print 'Warning: re-constraining these parameters'
-#                 pn = self._get_param_names()
-#                 for i in overlap:
-#                     print pn[i]
-#  
-#         self.fixed_indices.append(matches)
-#         if value != None:
-#             self.fixed_values.append(value)
-#         else:
-#             self.fixed_values.append(self._get_params()[self.fixed_indices[-1]])
-#  
-#         # self.fixed_values.append(value)
-#         self._set_params_transformed(self._get_params_transformed())
-#  
-#     def _get_params_transformed(self):
-#         """use self._get_params to get the 'true' parameters of the model, which are then tied, constrained and fixed"""
-#         x = self._get_params()
-#         [np.put(x, i, t.finv(x[i])) for i, t in zip(self.constrained_indices, self.constraints)]
-#  
-#         to_remove = self.fixed_indices + [t[1:] for t in self.tied_indices]
-#         if len(to_remove):
-#             return np.delete(x, np.hstack(to_remove))
-#         else:
-#             return x
-#  
-#     def _set_params_transformed(self, x):
-#         """ takes the vector x, which is then modified (by untying, reparameterising or inserting fixed values), and then call self._set_params"""
-#         self._set_params(self._untransform_params(x))
-#  
-#     def _untransform_params(self, x):
-#         """
-#         The Transformation required for _set_params_transformed.
-#  
-#         This moves the vector x seen by the optimiser (unconstrained) to the
-#         valid param vector seen by the model
-#  
-#         Note:
-#           - This function is separate from _set_params_transformed for downstream flexibility
-#         """
-#         # work out how many places are fixed, and where they are. tricky logic!
-#         fix_places = self.fixed_indices + [t[1:] for t in self.tied_indices]
-#         if len(fix_places):
-#             fix_places = np.hstack(fix_places)
-#             Nfix_places = fix_places.size
-#         else:
-#             Nfix_places = 0
-#  
-#         free_places = np.setdiff1d(np.arange(Nfix_places + x.size, dtype=np.int), fix_places)
-#  
-#         # put the models values in the vector xx
-#         xx = np.zeros(Nfix_places + free_places.size, dtype=np.float64)
-#  
-#         xx[free_places] = x
-#         [np.put(xx, i, v) for i, v in zip(self.fixed_indices, self.fixed_values)]
-#         [np.put(xx, i, v) for i, v in [(t[1:], xx[t[0]]) for t in self.tied_indices] ]
-#  
-#         [np.put(xx, i, t.f(xx[i])) for i, t in zip(self.constrained_indices, self.constraints)]
-#         if hasattr(self, 'debug'):
-#             stop # @UndefinedVariable
-#  
-#         return xx
-#  
-#     def _get_param_names_transformed(self):
-#         """
-#         Returns the param parameter_names as propagated after constraining,
-#         tying or fixing, i.e. a list of the same length as _get_params_transformed()
-#         """
-#         n = self._get_param_names()
-#  
-#         # remove/concatenate the tied param parameter_names
-#         if len(self.tied_indices):
-#             for t in self.tied_indices:
-#                 n[t[0]] = "<tie>".join([n[tt] for tt in t])
-#             remove = np.hstack([t[1:] for t in self.tied_indices])
-#         else:
-#             remove = np.empty(shape=(0,), dtype=np.int)
-#  
-#         # also remove the fixed params
-#         if len(self.fixed_indices):
-#             remove = np.hstack((remove, np.hstack(self.fixed_indices)))
-#  
-#         # add markers to show that some variables are constrained
-#         for i, t in zip(self.constrained_indices, self.constraints):
-#             for ii in i:
-#                 n[ii] = n[ii] + t.__str__()
-#  
-#         n = [nn for i, nn in enumerate(n) if not i in remove]
-#         return n
-#  
-#     #@property
-#     #def all(self):
-#     #    return self.__str__(self._get_param_names())
-#  
-#  
-#     #def __str__(self, parameter_names=None, nw=30):
-#     def __str__(self, nw=30):
-#         """
-#         Return a string describing the param parameter_names and their ties and constraints
-#         """
-#         parameter_names = self._get_param_names()
-#         #if parameter_names is None:
-#         #    parameter_names = self._get_print_names()
-#         #name_indices = self.grep_param_names("|".join(parameter_names))
-#         N = len(parameter_names)
-#  
-#         if not N:
-#             return "This object has no free parameters."
-#         header = ['Name', 'Value', 'Constraints', 'Ties']
-#         values = self._get_params() # map(str,self._get_params())
-#         #values = self._get_params()[name_indices] # map(str,self._get_params())
-#         # sort out the constraints
-#         constraints = [''] * len(parameter_names)
-#         #constraints = [''] * len(self._get_param_names())
-#         for i, t in zip(self.constrained_indices, self.constraints):
-#             for ii in i:
-#                 constraints[ii] = t.__str__()
-#         for i in self.fixed_indices:
-#             for ii in i:
-#                 constraints[ii] = 'Fixed'
-#         # sort out the ties
-#         ties = [''] * len(parameter_names)
-#         for i, tie in enumerate(self.tied_indices):
-#             for j in tie:
-#                 ties[j] = '(' + str(i) + ')'
-#  
-#         if values.size == 1:
-#             values = ['%.4f' %float(values)]
-#         else:
-#             values = ['%.4f' % float(v) for v in values]
-#         max_names = max([len(parameter_names[i]) for i in range(len(parameter_names))] + [len(header[0])])
-#         max_values = max([len(values[i]) for i in range(len(values))] + [len(header[1])])
-#         max_constraint = max([len(constraints[i]) for i in range(len(constraints))] + [len(header[2])])
-#         max_ties = max([len(ties[i]) for i in range(len(ties))] + [len(header[3])])
-#         cols = np.array([max_names, max_values, max_constraint, max_ties]) + 4
-#         # columns = cols.sum()
-#  
-#         header_string = ["{h:^{col}}".format(h=header[i], col=cols[i]) for i in range(len(cols))]
-#         header_string = map(lambda x: '|'.join(x), [header_string])
-#         separator = '-' * len(header_string[0])
-#         param_string = ["{n:^{c0}}|{v:^{c1}}|{c:^{c2}}|{t:^{c3}}".format(n=parameter_names[i], v=values[i], c=constraints[i], t=ties[i], c0=cols[0], c1=cols[1], c2=cols[2], c3=cols[3]) for i in range(len(values))]
-#  
-#  
-#         return ('\n'.join([header_string[0], separator] + param_string)) + '\n'
-#  
-#     def grep_model(self,regexp):
-#         regexp_indices = self.grep_param_names(regexp)
-#         all_names = self._get_param_names()
-#  
-#         parameter_names = [all_names[pj] for pj in regexp_indices]
-#         N = len(parameter_names)
-#  
-#         if not N:
-#             return "Match not found."
-#  
-#         header = ['Name', 'Value', 'Constraints', 'Ties']
-#         all_values = self._get_params()
-#         values = np.array([all_values[pj] for pj in regexp_indices])
-#         constraints = [''] * len(parameter_names)
-#  
-#         _constrained_indices,aux = self._pick_elements(regexp_indices,self.constrained_indices)
-#         _constraints_ = [self.constraints[pj] for pj in aux]
-#  
-#         for i, t in zip(_constrained_indices, _constraints_):
-#             for ii in i:
-#                 iii = regexp_indices.tolist().index(ii)
-#                 constraints[iii] = t.__str__()
-#  
-#         _fixed_indices,aux = self._pick_elements(regexp_indices,self.fixed_indices)
-#         for i in _fixed_indices:
-#             for ii in i:
-#                 iii = regexp_indices.tolist().index(ii)
-#                 constraints[ii] = 'Fixed'
-#  
-#         _tied_indices,aux = self._pick_elements(regexp_indices,self.tied_indices)
-#         ties = [''] * len(parameter_names)
-#         for i,ti in zip(_tied_indices,aux):
-#             for ii in i:
-#                 iii = regexp_indices.tolist().index(ii)
-#                 ties[iii] = '(' + str(ti) + ')'
-#  
-#         if values.size == 1:
-#             values = ['%.4f' %float(values)]
-#         else:
-#             values = ['%.4f' % float(v) for v in values]
-#  
-#         max_names = max([len(parameter_names[i]) for i in range(len(parameter_names))] + [len(header[0])])
-#         max_values = max([len(values[i]) for i in range(len(values))] + [len(header[1])])
-#         max_constraint = max([len(constraints[i]) for i in range(len(constraints))] + [len(header[2])])
-#         max_ties = max([len(ties[i]) for i in range(len(ties))] + [len(header[3])])
-#         cols = np.array([max_names, max_values, max_constraint, max_ties]) + 4
-#  
-#         header_string = ["{h:^{col}}".format(h=header[i], col=cols[i]) for i in range(len(cols))]
-#         header_string = map(lambda x: '|'.join(x), [header_string])
-#         separator = '-' * len(header_string[0])
-#         param_string = ["{n:^{c0}}|{v:^{c1}}|{c:^{c2}}|{t:^{c3}}".format(n=parameter_names[i], v=values[i], c=constraints[i], t=ties[i], c0=cols[0], c1=cols[1], c2=cols[2], c3=cols[3]) for i in range(len(values))]
-#  
-#         print header_string[0]
-#         print separator
-#         for string in param_string:
-#             print string
-#  
-#     def _pick_elements(self,regexp_ind,array_list):
-#         """Removes from array_list the elements different from regexp_ind"""
-#         new_array_list = [] #New list with elements matching regexp_ind
-#         array_indices = [] #Indices that matches the arrays in new_array_list and array_list
-#  
-#         array_index = 0
-#         for array in array_list:
-#             _new = []
-#             for ai in array:
-#                 if ai in regexp_ind:
-#                     _new.append(ai)
-#             if len(_new):
-#                 new_array_list.append(np.array(_new))
-#                 array_indices.append(array_index)
-#             array_index += 1
-#         return new_array_list, array_indices
+

@@ -22,33 +22,37 @@ class ExactGaussianInference(object):
 
     def get_YYTfactor(self, Y):
         """
-        find a matrix L which satisfies LLT = YYT. 
+        find a matrix L which satisfies LL^T = YY^T.
 
-        Note that L may have fewer columns than Y.
+        Note that L may have fewer columns than Y, else L=Y.
         """
         N, D = Y.shape
         if (N>D):
             return Y
         else:
-            #if Y in self.cache, return self.Cache[Y], else stor Y in cache and return L.
+            #if Y in self.cache, return self.Cache[Y], else store Y in cache and return L.
             raise NotImplementedError, 'TODO' #TODO
 
-    def inference(self, K, likelihood, Y, Y_metadata=None):
+    def inference(self, kern, X, likelihood, Y, Y_metadata=None):
         """
         Returns a Posterior class containing essential quantities of the posterior
         """
         YYT_factor = self.get_YYTfactor(Y)
 
+        K = kern.K(X)
+
         Wi, LW, LWi, W_logdet = pdinv(K + likelihood.covariance_matrix(Y, Y_metadata))
 
         alpha, _ = dpotrs(LW, YYT_factor, lower=1)
 
-        dL_dK = 0.5 * (tdot(alpha) - Y.shape[1] * Wi)
-
         log_marginal =  0.5*(-Y.size * log_2_pi - Y.shape[1] * W_logdet - np.sum(alpha * YYT_factor))
 
-        dL_dtheta_lik = likelihood._gradients(np.diag(dL_dK))
+        dL_dK = 0.5 * (tdot(alpha) - Y.shape[1] * Wi)
 
-        return Posterior(log_marginal, dL_dK, dL_dtheta_lik, LW, alpha, K)
+        kern.update_gradients_full(dL_dK, X)
+
+        likelihood.update_gradients(np.diag(dL_dK))
+
+        return Posterior(log_marginal, dL_dK, LW, alpha, K)
 
 

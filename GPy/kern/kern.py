@@ -44,35 +44,31 @@ class kern(Parameterized):
         for p in self._parameters_:
             assert isinstance(p, Kernpart), "bad kernel part"
 
-        
-        
-        #Parameterized_old.__init__(self)
-
     def parameters_changed(self):
         [p.parameters_changed() for p in self._parameters_]
 
     def connect_input(self, Xparam):
         [p.connect_input(Xparam) for p in self._parameters_]
-                
-    def getstate(self):
+
+    def _getstate(self):
         """
         Get the current state of the class,
         here just all the indices, rest can get recomputed
         """
-        return Parameterized.getstate(self) + [#self._parameters_,
+        return Parameterized._getstate(self) + [#self._parameters_,
                 #self.num_params,
                 self.input_dim,
                 self.input_slices,
                 self._param_slices_
                 ]
 
-    def setstate(self, state):
+    def _setstate(self, state):
         self._param_slices_ = state.pop()
         self.input_slices = state.pop()
         self.input_dim = state.pop()
         #self.num_params = state.pop()
         #self._parameters_ = state.pop()
-        Parameterized.setstate(self, state)
+        Parameterized._setstate(self, state)
 
 
     def plot_ARD(self, fignum=None, ax=None, title='', legend=False):
@@ -152,11 +148,11 @@ class kern(Parameterized):
 #         Apply the transformations of the kernel so that the returned vector
 #         represents the gradient in the transformed space (i.e. that given by
 #         get_params_transformed())
-# 
+#
 #         :param g: the gradient vector for the current model, usually created by dK_dtheta
 #         """
 #         x = self._get_params()
-#         [np.place(g, index, g[index] * constraint.gradfactor(x[index])) 
+#         [np.place(g, index, g[index] * constraint.gradfactor(x[index]))
 #          for constraint, index in self.constraints.iteritems() if constraint is not __fixed__]
 # #         for constraint, index in self.constraints.iteritems():
 # #             if constraint != __fixed__:
@@ -221,10 +217,10 @@ class kern(Parameterized):
 #             newkern.fixed_indices = self.fixed_indices + [self.num_params + x for x in other.fixed_indices]
 #             newkern.fixed_values = self.fixed_values + other.fixed_values
 #             newkern.tied_indices = self.tied_indices + [self.num_params + x for x in other.tied_indices]
-        [newkern._add_constrain(param, transform, warning=False) 
+        [newkern._add_constrain(param, transform, warning=False)
          for param, transform in itertools.izip(
-                *itertools.chain(self.constraints.iteritems(), 
-                                 other.constraints.iteritems()))] 
+                *itertools.chain(self.constraints.iteritems(),
+                                 other.constraints.iteritems()))]
         newkern._fixes_ = ((self._fixes_ or 0) + (other._fixes_ or 0)) or None
 
         return newkern
@@ -269,7 +265,7 @@ class kern(Parameterized):
         return newkern
 
 #     def _follow_constrains(self, K1, K2):
-# 
+#
 #         # Build the array that allows to go from the initial indices of the param to the new ones
 #         K1_param = []
 #         n = 0
@@ -286,21 +282,21 @@ class kern(Parameterized):
 #             for p2 in K2_param:
 #                 index_param += p1 + p2
 #         index_param = np.array(index_param)
-# 
+#
 #         # Get the ties and constrains of the kernels before the multiplication
 #         prev_ties = K1.tied_indices + [arr + K1.num_params for arr in K2.tied_indices]
-# 
+#
 #         prev_constr_ind = [K1.constrained_indices] + [K1.num_params + i for i in K2.constrained_indices]
 #         prev_constr = K1.constraints + K2.constraints
-# 
+#
 #         # prev_constr_fix = K1.fixed_indices + [arr + K1.num_params for arr in K2.fixed_indices]
 #         # prev_constr_fix_values = K1.fixed_values + K2.fixed_values
-# 
+#
 #         # follow the previous ties
 #         for arr in prev_ties:
 #             for j in arr:
 #                 index_param[np.where(index_param == j)[0]] = arr[0]
-# 
+#
 #         # ties and constrains
 #         for i in range(K1.num_params + K2.num_params):
 #             index = np.where(index_param == i)[0]
@@ -308,22 +304,22 @@ class kern(Parameterized):
 #                 self.tie_params(index)
 #         for i, t in zip(prev_constr_ind, prev_constr):
 #             self.constrain(np.where(index_param == i)[0], t)
-# 
+#
 #     def _get_params(self):
 #         return np.hstack(self._parameters_)
 #         return np.hstack([p._get_params() for p in self._parameters_])
-  
+
 #     def _set_params(self, x):
 #         import ipdb;ipdb.set_trace()
 #         [p._set_params(x[s]) for p, s in zip(self._parameters_, self._param_slices_)]
-  
+
 #     def _get_param_names(self):
 #         # this is a bit nasty: we want to distinguish between parts with the same name by appending a count
 #         part_names = np.array([k.name for k in self._parameters_], dtype=np.str)
 #         counts = [np.sum(part_names == ni) for i, ni in enumerate(part_names)]
 #         cum_counts = [np.sum(part_names[i:] == ni) for i, ni in enumerate(part_names)]
 #         names = [name + '_' + str(cum_count) if count > 1 else name for name, count, cum_count in zip(part_names, counts, cum_counts)]
-#  
+#
 #         return sum([[name + '_' + n for n in k._get_param_names()] for name, k in zip(names, self._parameters_)], [])
 
     def K(self, X, X2=None, which_parts='all'):
@@ -349,6 +345,14 @@ class kern(Parameterized):
             [p.K(X[:, i_s], X2[:, i_s], target=target) for p, i_s, part_i_used in zip(self._parameters_, self.input_slices, which_parts) if part_i_used]
         return target
 
+    def update_gradients_full(self, dL_dK, X):
+        [p.update_gradients_full(dL_dK, X) for p in self._parameters_]
+
+    def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
+        raise NotImplementedError
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        raise NotImplementedError
+
     def dK_dtheta(self, dL_dK, X, X2=None):
         """
         Compute the gradient of the covariance function with respect to the parameters.
@@ -371,7 +375,7 @@ class kern(Parameterized):
 
         return self._transform_gradients(target)
 
-    def dK_dX(self, dL_dK, X, X2=None):
+    def gradients_X(self, dL_dK, X, X2=None):
         """Compute the gradient of the objective function with respect to X.
 
         :param dL_dK: An array of gradients of the objective function with respect to the covariance function.
@@ -382,10 +386,10 @@ class kern(Parameterized):
         :type X2: np.ndarray (num_inducing x input_dim)"""
 
         target = np.zeros_like(X)
-        if X2 is None: 
-            [p.dK_dX(dL_dK, X[:, i_s], None, target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
+        if X2 is None:
+            [p.gradients_X(dL_dK, X[:, i_s], None, target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
         else:
-            [p.dK_dX(dL_dK, X[:, i_s], X2[:, i_s], target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
+            [p.gradients_X(dL_dK, X[:, i_s], X2[:, i_s], target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
         return target
 
     def Kdiag(self, X, which_parts='all'):
@@ -450,7 +454,7 @@ class kern(Parameterized):
     def psi2(self, Z, mu, S):
         """
         Computer the psi2 statistics for the covariance function.
-        
+
         :param Z: np.ndarray of inducing inputs (num_inducing x input_dim)
         :param mu, S: np.ndarrays of means and variances (each num_samples x input_dim)
         :returns psi2: np.ndarray (num_samples,num_inducing,num_inducing)
@@ -470,7 +474,7 @@ class kern(Parameterized):
                 p1.psi1(Z[:, i_s1], mu[:, i_s1], S[:, i_s1], tmp1)
                 tmp2 = np.zeros((mu.shape[0], Z.shape[0]))
                 p2.psi1(Z[:, i_s2], mu[:, i_s2], S[:, i_s2], tmp2)
-    
+
                 prod = np.multiply(tmp1, tmp2)
                 crossterms += prod[:, :, None] + prod[:, None, :]
 
@@ -598,7 +602,7 @@ class Kern_check_model(Model):
                 dL_dK = np.ones((X.shape[0], X.shape[0]))
             else:
                 dL_dK = np.ones((X.shape[0], X2.shape[0]))
-        
+
         self.kernel=kernel
         self.X = X
         self.X2 = X2
@@ -613,13 +617,13 @@ class Kern_check_model(Model):
             return False
         else:
             return True
-        
+
     def _get_params(self):
         return self.kernel._get_params()
- 
+
     def _get_param_names(self):
         return self.kernel._get_param_names()
- 
+
     def _set_params(self, x):
         self.kernel._set_params(x)
 
@@ -628,7 +632,7 @@ class Kern_check_model(Model):
 
     def _log_likelihood_gradients(self):
         raise NotImplementedError, "This needs to be implemented to use the kern_check_model class."
-    
+
 class Kern_check_dK_dtheta(Kern_check_model):
     """This class allows gradient checks for the gradient of a kernel with respect to parameters. """
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
@@ -643,7 +647,7 @@ class Kern_check_dKdiag_dtheta(Kern_check_model):
         Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=None)
         if dL_dK==None:
             self.dL_dK = np.ones((self.X.shape[0]))
-        
+
     def log_likelihood(self):
         return (self.dL_dK*self.kernel.Kdiag(self.X)).sum()
 
@@ -660,7 +664,7 @@ class Kern_check_dK_dX(Kern_check_model):
 
     def _get_param_names(self):
         return ['X_'  +str(i) + ','+str(j) for j in range(self.X.shape[1]) for i in range(self.X.shape[0])]
-                
+
     def _get_params(self):
         return self.X.flatten()
 
@@ -682,7 +686,7 @@ class Kern_check_dKdiag_dX(Kern_check_model):
 
     def _get_param_names(self):
         return ['X_'  +str(i) + ','+str(j) for j in range(self.X.shape[1]) for i in range(self.X.shape[0])]
-                
+
     def _get_params(self):
         return self.X.flatten()
 
@@ -690,7 +694,10 @@ class Kern_check_dKdiag_dX(Kern_check_model):
         self.X=x.reshape(self.X.shape)
 
 def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False):
-    """This function runs on kernels to check the correctness of their implementation. It checks that the covariance function is positive definite for a randomly generated data set.
+    """
+    This function runs on kernels to check the correctness of their
+    implementation. It checks that the covariance function is positive definite
+    for a randomly generated data set.
 
     :param kern: the kernel to be tested.
     :type kern: GPy.kern.Kernpart

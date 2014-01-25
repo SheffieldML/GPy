@@ -22,7 +22,7 @@ class SVIGP(GP):
 
     Additional kwargs are used as for a sparse GP. They include:
 
-    :param q_u: canonical parameters of the distribution squasehd into a 1D array
+    :param q_u: canonical parameters of the distribution sqehd into a 1D array
     :type q_u: np.ndarray
     :param M: Number of inducing points (optional, default 10. Ignored if Z is not None)
     :type M: int
@@ -90,9 +90,9 @@ class SVIGP(GP):
         self._param_steplength_trace = []
         self._vb_steplength_trace = []
 
-    def getstate(self):
+    def _getstate(self):
         steplength_params = [self.hbar_t, self.tau_t, self.gbar_t, self.gbar_t1, self.gbar_t2, self.hbar_tp, self.tau_tp, self.gbar_tp, self.adapt_param_steplength, self.adapt_vb_steplength, self.vb_steplength, self.param_steplength]
-        return GPBase.getstate(self) + \
+        return GP._getstate(self) + \
             [self.get_vb_param(),
              self.Z,
              self.num_inducing,
@@ -116,7 +116,7 @@ class SVIGP(GP):
              self.iterations
             ]
 
-    def setstate(self, state):
+    def _setstate(self, state):
         self.iterations = state.pop()
         self._permutation = state.pop()
         self.Y = state.pop()
@@ -139,7 +139,7 @@ class SVIGP(GP):
         self.num_inducing = state.pop()
         self.Z = state.pop()
         vb_param = state.pop()
-        GPBase.setstate(self, state)
+        GP._setstate(self, state)
         self.set_vb_param(vb_param)
 
     def _compute_kernel_matrices(self):
@@ -489,7 +489,7 @@ class SVIGP(GP):
         #horrible hack here:
         data = self.likelihood.data.copy()
         self.likelihood.data = self.Y
-        GPBase.plot(self, ax=ax, **kwargs)
+        GP.plot(self, ax=ax, **kwargs)
         self.likelihood.data = data
 
         Zu = self.Z * self._Xscale + self._Xoffset

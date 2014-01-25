@@ -17,16 +17,11 @@ except ImportError:
 class KernelTests(unittest.TestCase):
     def test_kerneltie(self):
         K = GPy.kern.rbf(5, ARD=True)
-        K.rbf.lengthscale[0].tie_to(K.rbf.lengthscale[2])
-        K.rbf.lengthscale[1].tie_to(K.rbf.lengthscale[3])
-        K.rbf.lengthscale[2].constrain_fixed()
+        K.tie_params('.*[01]')
+        K.constrain_fixed('2')
         X = np.random.rand(5,5)
         Y = np.ones((5,1))
         m = GPy.models.GPRegression(X,Y,K)
-        #self.assertRaises(RuntimeError, lambda: m.kern.rbf.lengthscale[3].tie_to(m.kern.rbf.lengthscale[1]))
-        #self.assertRaises(RuntimeError, lambda: m.kern.rbf.lengthscale[3].tie_to(m.kern.rbf.lengthscale[0]))
-        #self.assertRaises(RuntimeError, lambda: m.kern.rbf.lengthscale.tie_to(m.kern.rbf.lengthscale))
-        import ipdb;ipdb.set_trace()
         self.assertTrue(m.checkgrad())
 
     def test_rbfkernel(self):
@@ -39,12 +34,14 @@ class KernelTests(unittest.TestCase):
             self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
     def test_eq_sympykernel(self):
-        kern = GPy.kern.eq_sympy(5, 3, output_ind=4)
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+        if SYMPY_AVAILABLE:
+            kern = GPy.kern.eq_sympy(5, 3)
+            self.assertTrue(GPy.kern.kern_test(kern, output_ind=4, verbose=verbose))
 
-    def test_sinckernel(self):
-        kern = GPy.kern.sinc(5)
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+    def test_ode1_eqkernel(self):
+        if SYMPY_AVAILABLE:
+            kern = GPy.kern.ode1_eq(3)
+            self.assertTrue(GPy.kern.kern_test(kern, output_ind=1, verbose=verbose, X_positive=True))
 
     def test_rbf_invkernel(self):
         kern = GPy.kern.rbf_inv(5)
@@ -83,7 +80,7 @@ class KernelTests(unittest.TestCase):
         self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
     def test_heterokernel(self):
-        kern = GPy.kern.hetero(5, mapping=GPy.mappings.Linear(5, 1), transform=GPy.core.transformations.Logexp())
+        kern = GPy.kern.hetero(5, mapping=GPy.mappings.Linear(5, 1), transform=GPy.core.transformations.logexp())
         self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
     def test_mlpkernel(self):
@@ -120,15 +117,5 @@ class KernelTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-#     K = GPy.kern.rbf(5, ARD=True)
-#     K.rbf.lengthscale[0].tie_to(K.rbf.lengthscale[2])
-#     K.rbf.lengthscale[1].tie_to(K.rbf.lengthscale[3])
-#     K.rbf.lengthscale[2].constrain_fixed()
-#     
-#     K.rbf.lengthscale[2:].tie_to(K.rbf.variance)
-#     X = np.random.rand(5,5)
-#     Y = np.ones((5,1))
-#     m = GPy.models.GPRegression(X,Y,K)
-    
     print "Running unit tests, please be (very) patient..."
     unittest.main()

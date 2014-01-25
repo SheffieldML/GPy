@@ -33,13 +33,14 @@ class Model(Parameterized):
         #def dK_d(self, param, dL_dK, X, X2)
         g = np.zeros(self.size)
         try:
-            [g.__setitem__(s, self.gradient_mapping[p]().flat) for p, s in itertools.izip(self._parameters_, self._param_slices_) if not p.is_fixed]
-        except KeyError:
-            raise KeyError, 'Gradient for {} not defined, please specify gradients for parameters to optimize'.format(p.name)
+            #[g.__setitem__(s, self.gradient_mapping[p]().flat) for p, s in itertools.izip(self._parameters_, self._param_slices_) if not p.is_fixed]
+            [p._collect_gradient(g[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_) if not p.is_fixed]
+        except ValueError:
+            raise ValueError, 'Gradient for {} not defined, please specify gradients for parameters to optimize'.format(p.name)
         return g
         raise NotImplementedError, "this needs to be implemented to use the model class"
-    
-    def getstate(self):
+
+    def _getstate(self):
         """
         Get the current state of the class.
         Inherited from Parameterized, so add those parameters to the state
@@ -47,24 +48,24 @@ class Model(Parameterized):
         :return: list of states from the model.
 
         """
-        return Parameterized.getstate(self) + \
+        return Parameterized._getstate(self) + \
             [self.priors, self.optimization_runs,
              self.sampling_runs, self.preferred_optimizer]
 
-    def setstate(self, state):
+    def _setstate(self, state):
         """
-        set state from previous call to getstate
+        set state from previous call to _getstate
         call Parameterized with the rest of the state
 
         :param state: the state of the model.
-        :type state: list as returned from getstate.
+        :type state: list as returned from _getstate.
 
         """
         self.preferred_optimizer = state.pop()
         self.sampling_runs = state.pop()
         self.optimization_runs = state.pop()
         self.priors = state.pop()
-        Parameterized.setstate(self, state)
+        Parameterized._setstate(self, state)
 
     def set_prior(self, regexp, what):
         """

@@ -6,10 +6,12 @@ import pylab as pb
 import warnings
 from .. import kern
 from ..util.plot import gpplot, Tango, x_frame1D, x_frame2D
+from ..util.linalg import dtrtrs
 from model import Model
 from parameterization import ObservableArray
 from .. import likelihoods
-from GPy.likelihoods.gaussian import Gaussian
+from ..likelihoods.gaussian import Gaussian
+from ..inference.latent_function_inference import exact_gaussian_inference
 
 class GP(Model):
     """
@@ -26,7 +28,7 @@ class GP(Model):
 
     """
     def __init__(self, X, Y, kernel, likelihood, inference_method=None, name='gp'):
-        super(GPBase, self).__init__(name)
+        super(GP, self).__init__(name)
 
         assert X.ndim == 2
         self.X = ObservableArray(X)
@@ -50,17 +52,15 @@ class GP(Model):
         else:
             inference_method = expectation_propagation
             print "defaulting to ", inference_method, "for latent function inference"
+        self.inference_method = inference_method
 
-        super(GP, self).__init__(X, Y, kernel, likelihood, inference_method, name)
+        self.add_parameter(self.kern)
+        self.add_parameter(self.likelihood)
+
         self.parameters_changed()
 
-        self.add_parameter(self.kern, gradient=self.dL_dtheta_K)
-        self.add_parameter(self.likelihood, gradient=lambda:self.posterior.dL_dtheta_lik)
-
     def parameters_changed(self):
-        super(GP, self).parameters_changed()
-        self.K = self.kern.K(self.X)
-        self.posterior = self.inference_method.inference(self.K, self.likelihood, self.Y)
+        self.posterior = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y)
 
     def log_likelihood(self):
         return self.posterior.log_marginal
@@ -241,8 +241,7 @@ class GP(Model):
 
             #define the frame on which to plot
             resolution = resolution or 200
-            Xu = self.X * self._Xscale + self._Xoffset #NOTE self.X are the normalized values now
-            Xnew, xmin, xmax = x_frame1D(Xu[:,free_dims], plot_limits=plot_limits)
+            Xnew, xmin, xmax = x_frame1D(self.X[:,free_dims], plot_limits=plot_limits)
             Xgrid = np.empty((Xnew.shape[0],self.input_dim))
             Xgrid[:,free_dims] = Xnew
             for i,v in fixed_inputs:
@@ -259,7 +258,7 @@ class GP(Model):
                 Y = self.Y
             for d in which_data_ycols:
                 gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax, edgecol=linecol, fillcol=fillcol)
-                ax.plot(Xu[which_data_rows,free_dims], Y[which_data_rows, d], 'kx', mew=1.5)
+                ax.plot(self.X[which_data_rows,free_dims], Y[which_data_rows, d], 'kx', mew=1.5)
 
             #optionally plot some samples
             if samples: #NOTE not tested with fixed_inputs
@@ -279,8 +278,7 @@ class GP(Model):
 
             #define the frame for plotting on
             resolution = resolution or 50
-            Xu = self.X * self._Xscale + self._Xoffset #NOTE self.X are the normalized values now
-            Xnew, _, _, xmin, xmax = x_frame2D(Xu[:,free_dims], plot_limits, resolution)
+            Xnew, _, _, xmin, xmax = x_frame2D(self.X[:,free_dims], plot_limits, resolution)
             Xgrid = np.empty((Xnew.shape[0],self.input_dim))
             Xgrid[:,free_dims] = Xnew
             for i,v in fixed_inputs:
@@ -311,11 +309,11 @@ class GP(Model):
 
 
 
-    def getstate(self):
+    def _getstate(self):
         """
         Get the current state of the class, here we return everything that is needed to recompute the model.
         """
-        return Model.getstate(self) + [self.X,
+        return Model._getstate(self) + [self.X,
                 self.num_data,
                 self.input_dim,
                 self.kern,
@@ -325,7 +323,7 @@ class GP(Model):
                 self._Xscale,
                 ]
 
-    def setstate(self, state):
+    def _setstate(self, state):
         self._Xscale = state.pop()
         self._Xoffset = state.pop()
         self.output_dim = state.pop()
@@ -334,6 +332,6 @@ class GP(Model):
         self.input_dim = state.pop()
         self.num_data = state.pop()
         self.X = state.pop()
-        Model.setstate(self, state)
+        Model._setstate(self, state)
 
 

@@ -26,9 +26,6 @@ class Param(ObservableArray, Constrainable):
 
     :param name:        name of the parameter to be printed
     :param input_array: array which this parameter handles
-    :param gradient:    callable with one argument, which is the model of this parameter
-    :param args:        additional arguments to gradient
-    :param kwargs:      additional keyword arguments to gradient
     
     You can add/remove constraints by calling constrain on the parameter itself, e.g:
     
@@ -66,6 +63,7 @@ class Param(ObservableArray, Constrainable):
         obj._tied_to_me_ = SetDict()
         obj._tied_to_ = []
         obj._original_ = True
+        obj.gradient = None
         return obj
 
     def __init__(self, name, input_array):
@@ -87,6 +85,7 @@ class Param(ObservableArray, Constrainable):
         self._updated_ = getattr(obj, '_updated_', None)
         self._original_ = getattr(obj, '_original_', None)
         self._name = getattr(obj, 'name', None)
+        self.gradient = getattr(obj, 'gradient', None)
         
     def __array_wrap__(self, out_arr, context=None):
         return out_arr.view(numpy.ndarray)
@@ -154,6 +153,8 @@ class Param(ObservableArray, Constrainable):
     @property
     def _parameters_(self):
         return []
+    def _collect_gradient(self, target):
+        target[:] = self.gradient.flat
     #===========================================================================
     # Fixing Parameters:
     #===========================================================================
@@ -402,7 +403,7 @@ class Param(ObservableArray, Constrainable):
                             x=self.name_hirarchical)
         return name + super(Param, self).__repr__(*args,**kwargs)
     def _ties_for(self, rav_index):
-        size = sum(p.size for p in self._tied_to_)
+        #size = sum(p.size for p in self._tied_to_)
         ties = numpy.empty(shape=(len(self._tied_to_), numpy.size(rav_index)), dtype=Param)
         for i, tied_to in enumerate(self._tied_to_):
             for t, ind in tied_to._tied_to_me_.iteritems():

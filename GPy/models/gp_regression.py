@@ -1,6 +1,5 @@
-# Copyright (c) 2012, James Hensman
+# Copyright (c) 2012 - 2014 the GPy Austhors (see AUTHORS.txt)
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-
 
 import numpy as np
 from ..core import GP
@@ -28,10 +27,10 @@ class GPRegression(GP):
 
         likelihood = likelihoods.Gaussian()
 
-        super(GPRegression, self).__init__(X, Y, kernel, likelihood, name='gp_regression')
+        super(GPRegression, self).__init__(X, Y, kernel, likelihood, name='GP regression')
 
-    def getstate(self):
-        return GP.getstate(self)
+    def _getstate(self):
+        return GP._getstate(self)
 
-    def setstate(self, state):
-        return GP.setstate(self, state)
+    def _setstate(self, state):
+        return GP._setstate(self, state)

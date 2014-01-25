@@ -19,18 +19,7 @@ class White(Kernpart):
         self.input_dim = input_dim
         self.variance = Param('variance', variance)
         self.add_parameters(self.variance)
-#         self._set_params(np.array([variance]).flatten())
         self._psi1 = 0 # TODO: more elegance here
-        
-#     def _get_params(self):
-#         return self.variance
-#  
-#     def _set_params(self,x):
-#         assert x.shape==(1,)
-#         self.variance = x
-#  
-#     def _get_param_names(self):
-#         return ['variance']
 
     def K(self,X,X2,target):
         if X2 is None:
@@ -39,14 +28,19 @@ class White(Kernpart):
     def Kdiag(self,X,target):
         target += self.variance
 
-    def dK_dtheta(self,dL_dK,X,X2,target):
-        if X2 is None:
-            target += np.trace(dL_dK)
+    def update_gradients_full(self, dL_dK, X):
+        self.variance.gradient = np.trace(dL_dK)
+
+    def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
+        raise NotImplementedError
+
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        raise NotImplementedError
 
     def dKdiag_dtheta(self,dL_dKdiag,X,target):
         target += np.sum(dL_dKdiag)
 
-    def dK_dX(self,dL_dK,X,X2,target):        
+    def gradients_X(self,dL_dK,X,X2,target):
         pass
 
     def dKdiag_dX(self,dL_dKdiag,X,target):

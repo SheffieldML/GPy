@@ -17,7 +17,7 @@ from ..util.linalg import mdot, jitchol, pddet, dpotrs
 from functools import partial as partial_func
 import warnings
 
-class Laplace(likelihood):
+class LaplaceInference(object):
     """Laplace approximation to a posterior"""
 
     def __init__(self, data, noise_model, extra_data=None):

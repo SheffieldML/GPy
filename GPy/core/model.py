@@ -383,69 +383,6 @@ class Model(Parameterized):
         sgd.run()
         self.optimization_runs.append(sgd)
 
-    def Laplace_covariance(self):
-        """return the covariance matrix of a Laplace approximation at the current (stationary) point."""
-        # TODO add in the prior contributions for MAP estimation
-        # TODO fix the hessian for tied, constrained and fixed components
-        if hasattr(self, 'log_likelihood_hessian'):
-            A = -self.log_likelihood_hessian()
-
-        else:
-            print "numerically calculating Hessian. please be patient!"
-            x = self._get_params()
-            def f(x):
-                self._set_params(x)
-                return self.log_likelihood()
-            h = ndt.Hessian(f) # @UndefinedVariable
-            A = -h(x)
-            self._set_params(x)
-        # check for almost zero components on the diagonal which screw up the cholesky
-        aa = np.nonzero((np.diag(A) < 1e-6) & (np.diag(A) > 0.))[0]
-        A[aa, aa] = 0.
-        return A
-
-    def Laplace_evidence(self):
-        """Returns an estiamte of the model evidence based on the Laplace approximation.
-        Uses a numerical estimate of the Hessian if none is available analytically."""
-        A = self.Laplace_covariance()
-        try:
-            hld = np.sum(np.log(np.diag(jitchol(A)[0])))
-        except:
-            return np.nan
-        return 0.5 * self._get_params().size * np.log(2 * np.pi) + self.log_likelihood() - hld
-
-#     def __str__(self):
-#         s = Parameterized.__str__(self).split('\n')
-#         #def __str__(self, names=None):
-#         #    if names is None:
-#         #        names = self._get_print_names()
-#         #s = Parameterized.__str__(self, names=names).split('\n')
-#         # add priors to the string
-#         if self.priors is not None:
-#             strs = [str(p) if p is not None else '' for p in self.priors]
-#         else:
-#             strs = [''] * len(self._get_params())
-#        #         strs = [''] * len(self._get_param_names())
-#        #     name_indices = self.grep_param_names("|".join(names))
-#        #     strs = np.array(strs)[name_indices]
-#         width = np.array(max([len(p) for p in strs] + [5])) + 4
-# 
-#         log_like = self.log_likelihood()
-#         log_prior = self.log_prior()
-#         obj_funct = '\nLog-likelihood: {0:.3e}'.format(log_like)
-#         if len(''.join(strs)) != 0:
-#             obj_funct += ', Log prior: {0:.3e}, LL+prior = {0:.3e}'.format(log_prior, log_like + log_prior)
-#         obj_funct += '\n\n'
-#         s[0] = obj_funct + s[0]
-#         s[0] += "|{h:^{col}}".format(h='prior', col=width)
-#         s[1] += '-' * (width + 1)
-# 
-#         for p in range(2, len(strs) + 2):
-#             s[p] += '|{prior:^{width}}'.format(prior=strs[p - 2], width=width)
-# 
-#         return '\n'.join(s)
-
-
     def checkgrad(self, target_param=None, verbose=False, step=1e-6, tolerance=1e-3):
         """
         Check the gradient of the ,odel by comparing to a numerical

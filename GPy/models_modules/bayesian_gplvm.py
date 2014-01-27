@@ -127,7 +127,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
         means = np.zeros((N_test, input_dim))
         covars = np.zeros((N_test, input_dim))
 
-        dpsi0 = -0.5 * self.input_dim * self.likelihood.precision
+        dpsi0 = -0.5 * self.output_dim * self.likelihood.precision
         dpsi2 = self.dL_dpsi2[0][None, :, :] # TODO: this may change if we ignore het. likelihoods
         V = self.likelihood.precision * Y
 

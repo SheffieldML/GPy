@@ -2,10 +2,11 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from posterior import Posterior
-from .../util.linalg import pdinv, dpotrs, tdot
+from ...util.linalg import pdinv, dpotrs, tdot
+import numpy as np
 log_2_pi = np.log(2*np.pi)
 
-class DTCVar(object):
+class VarDTC(object):
     """
     An object for inference when the likelihood is Gaussian, but we want to do sparse inference.
 
@@ -19,7 +20,7 @@ class DTCVar(object):
         self._YYTfactor_cache = caching.cache()
         self.const_jitter = 1e-6
 
-     def get_YYTfactor(self, Y):
+    def get_YYTfactor(self, Y):
         """
         find a matrix L which satisfies LLT = YYT. 
 

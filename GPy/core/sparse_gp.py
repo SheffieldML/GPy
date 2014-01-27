@@ -6,7 +6,6 @@ import pylab as pb
 from gp import GP
 from parameterization.param import Param
 from ..inference.latent_function_inference import varDTC
-from posterior import Posterior
 
 class SparseGP(GP):
     """

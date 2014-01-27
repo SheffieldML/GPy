@@ -53,6 +53,6 @@ class ExactGaussianInference(object):
 
         likelihood.update_gradients(np.diag(dL_dK))
 
-        return Posterior(log_marginal, dL_dK, LW, alpha, K)
+        return Posterior(LW, alpha, K), log_marginal, dL_dK
 
 

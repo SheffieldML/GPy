@@ -3,9 +3,10 @@
 
 import numpy as np
 import pylab as pb
-from ..util.linalg import mdot, tdot, symmetrify, backsub_both_sides, chol_inv, dtrtrs, dpotrs, dpotri
 from gp import GP
 from parameterization.param import Param
+from ..inference.latent_function_inference import varDTC
+from posterior import Posterior
 
 class SparseGP(GP):
     """
@@ -55,49 +56,16 @@ class SparseGP(GP):
         self.add_parameter(self.kern, gradient=self.dL_dtheta)
         self.add_parameter(self.likelihood, gradient=lambda:self.likelihood._gradients(partial=self.partial_for_likelihood))
 
-
     def parameters_changed(self):
-        # kernel computations, using BGPLVM notation
-        self.Kmm = self.kern.K(self.Z)
+        self.posterior = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
+
+                #The derivative of the bound wrt the inducing inputs Z
+        self.Z.gradient = self.kern.dK_dX(self.dL_dKmm, self.Z)
         if self.has_uncertain_inputs:
-            self.psi0 = self.kern.psi0(self.Z, self.X, self.X_variance)
-            self.psi1 = self.kern.psi1(self.Z, self.X, self.X_variance)
-            self.psi2 = self.kern.psi2(self.Z, self.X, self.X_variance)
+            self.Z.gradient += self.kern.dpsi1_dZ(self.dL_dpsi1, self.Z, self.X, self.X_variance)
+            self.Z.gradient += self.kern.dpsi2_dZ(self.dL_dpsi2, self.Z, self.X, self.X_variance)
         else:
-            self.psi0 = self.kern.Kdiag(self.X)
-            self.psi1 = self.kern.K(self.X, self.Z)
-            self.psi2 = None
-
-        #self.posterior = self.inference_method.inference(??)
-        super(SparseGP, self).parameters_changed()
-
-
-    def dL_dtheta(self):
-        """
-        Compute and return the derivative of the log marginal likelihood wrt the parameters of the kernel
-        """
-        dL_dtheta = self.kern.dK_dtheta(self.dL_dKmm, self.Z)
-        if self.has_uncertain_inputs:
-            dL_dtheta += self.kern.dpsi0_dtheta(self.dL_dpsi0, self.Z, self.X, self.X_variance)
-            dL_dtheta += self.kern.dpsi1_dtheta(self.dL_dpsi1, self.Z, self.X, self.X_variance)
-            dL_dtheta += self.kern.dpsi2_dtheta(self.dL_dpsi2, self.Z, self.X, self.X_variance)
-        else:
-            dL_dtheta += self.kern.dK_dtheta(self.dL_dpsi1, self.X, self.Z)
-            dL_dtheta += self.kern.dKdiag_dtheta(self.dL_dpsi0, self.X)
-
-        return dL_dtheta
-
-    def dL_dZ(self):
-        """
-        The derivative of the bound wrt the inducing inputs Z
-        """
-        dL_dZ = self.kern.dK_dX(self.dL_dKmm, self.Z)
-        if self.has_uncertain_inputs:
-            dL_dZ += self.kern.dpsi1_dZ(self.dL_dpsi1, self.Z, self.X, self.X_variance)
-            dL_dZ += self.kern.dpsi2_dZ(self.dL_dpsi2, self.Z, self.X, self.X_variance)
-        else:
-            dL_dZ += self.kern.dK_dX(self.dL_dpsi1.T, self.Z, self.X)
-        return dL_dZ
+            self.Z.gradient += self.kern.dK_dX(self.dL_dpsi1.T, self.Z, self.X)
 
     def _raw_predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
         """

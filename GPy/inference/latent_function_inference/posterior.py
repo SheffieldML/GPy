@@ -8,10 +8,10 @@ class Posterior(object):
     """
     An object to represent a Gaussian posterior over latent function values.
     This may be computed exactly for Gaussian likelihoods, or approximated for
-    non-Gaussian likelihoods. 
+    non-Gaussian likelihoods.
 
     The purpose of this class is to serve as an interface between the inference
-    schemes and the model classes. 
+    schemes and the model classes.
 
     """
     def __init__(self, log_marginal, dL_dK, woodbury_chol=None, woodbury_vector=None, K=None, mean=None, cov=None, K_chol=None):
@@ -31,7 +31,7 @@ class Posterior(object):
           K (for lazy computation)
 
        You may supply either:
-         cc
+
           woodbury_chol
           woodbury_vector
 
@@ -64,7 +64,7 @@ class Posterior(object):
         self._covariance = cov
         self._K_chol = K_chol
 
-        #copmute this lazily
+        #compute this lazily
         self._precision = None
 
     @property

@@ -3,7 +3,7 @@ Created on 24 Jul 2013
 
 @author: maxz
 '''
-from GPy.util.latent_space_visualizations.controllers.axis_event_controller import BufferedAxisChangedController
+from axis_event_controller import BufferedAxisChangedController
 import itertools
 import numpy
 
@@ -11,13 +11,13 @@ import numpy
 class ImshowController(BufferedAxisChangedController):
     def __init__(self, ax, plot_function, plot_limits, resolution=50, update_lim=.5, **kwargs):
         """
-        :param plot_function: 
+        :param plot_function:
             function to use for creating image for plotting (return ndarray-like)
             plot_function gets called with (2D!) Xtest grid if replotting required
         :type plot_function: function
         :param plot_limits:
             beginning plot limits [xmin, ymin, xmax, ymax]
-            
+
         :param kwargs: additional kwargs are for pyplot.imshow(**kwargs)
         """
         super(ImshowController, self).__init__(ax, plot_function, plot_limits, resolution, update_lim, **kwargs)
@@ -36,7 +36,7 @@ class ImshowController(BufferedAxisChangedController):
 class ImAnnotateController(ImshowController):
     def __init__(self, ax, plot_function, plot_limits, resolution=20, update_lim=.99, **kwargs):
         """
-        :param plot_function: 
+        :param plot_function:
             function to use for creating image for plotting (return ndarray-like)
             plot_function gets called with (2D!) Xtest grid if replotting required
         :type plot_function: function

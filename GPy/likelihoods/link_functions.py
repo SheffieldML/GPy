@@ -4,7 +4,6 @@
 import numpy as np
 from scipy import stats
 import scipy as sp
-import pylab as pb
 from GPy.util.univariate_Gaussian import std_norm_pdf,std_norm_cdf,inv_std_norm_cdf
 
 class GPTransformation(object):

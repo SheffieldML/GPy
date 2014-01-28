@@ -1,7 +1,6 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import pylab as pb
 import datetime as dt
 from scipy import optimize
 from warnings import warn
@@ -57,13 +56,13 @@ class Optimizer():
         raise NotImplementedError, "this needs to be implemented to use the optimizer class"
 
     def plot(self):
-        if self.trace == None:
-            print "No trace present so I can't plot it. Please check that the optimizer actually supplies a trace."
-        else:
-            pb.figure()
-            pb.plot(self.trace)
-            pb.xlabel('Iteration')
-            pb.ylabel('f(x)')
+        """
+        See GPy.plotting.matplot_dep.inference_plots
+        """
+        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        from ..plotting.matplot_dep import inference_plots
+        inference_plots.plot_optimizer(self)
+
 
     def __str__(self):
         diagnostics = "Optimizer: \t\t\t\t %s\n" % self.opt_name

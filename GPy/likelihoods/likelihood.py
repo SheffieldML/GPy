@@ -4,8 +4,6 @@
 import numpy as np
 from scipy import stats,special
 import scipy as sp
-import pylab as pb
-from ..util.plot import gpplot
 from ..util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
 import link_functions
 from ..util.misc import chain_1, chain_2, chain_3

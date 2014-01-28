@@ -80,13 +80,13 @@ class AxisChangedController(AxisEventController):
 class BufferedAxisChangedController(AxisChangedController):
     def __init__(self, ax, plot_function, plot_limits, resolution=50, update_lim=None, **kwargs):
         """
-        :param plot_function: 
+        :param plot_function:
             function to use for creating image for plotting (return ndarray-like)
             plot_function gets called with (2D!) Xtest grid if replotting required
         :type plot_function: function
         :param plot_limits:
             beginning plot limits [xmin, ymin, xmax, ymax]
-            
+
         :param kwargs: additional kwargs are for pyplot.imshow(**kwargs)
         """
         super(BufferedAxisChangedController, self).__init__(ax, update_lim=update_lim)
@@ -137,6 +137,3 @@ class BufferedAxisChangedController(AxisChangedController):
         except:
             buffersize = .4
         return buffersize
-
-
-

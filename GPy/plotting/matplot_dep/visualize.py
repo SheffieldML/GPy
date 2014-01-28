@@ -177,7 +177,7 @@ class lvm_subplots(lvm):
         assert len(latent_axes)==self.nplots
         if vals==None:
             vals = Model.X[0, :]
-        self.latent_values = vals 
+        self.latent_values = vals
 
         for i, axis in enumerate(latent_axes):
             if i == self.nplots-1:
@@ -195,7 +195,7 @@ class lvm_dimselect(lvm):
     A visualizer for latent variable models which allows selection of the latent dimensions to use by clicking on a bar chart of their length scales.
 
     For an example of the visualizer's use try:
-    
+
     GPy.examples.dimensionality_reduction.BGPVLM_oil()
 
     """
@@ -219,11 +219,11 @@ class lvm_dimselect(lvm):
             new_index = max(0,min(int(np.round(event.xdata-0.5)),self.model.input_dim-1))
             if event.button == 1:
                 # Make it red if and y-axis (red=port=left) if it is a left button click
-                self.latent_index[1] = new_index                
+                self.latent_index[1] = new_index
             else:
                 # Make it green and x-axis (green=starboard=right) if it is a right button click
                 self.latent_index[0] = new_index
-                
+
             self.show_sensitivities()
 
             self.latent_axes.cla()
@@ -288,7 +288,7 @@ class image_show(matplotlib_show):
     def modify(self, vals):
         self.set_image(vals.copy())
         self.handle.set_array(self.vals)
-        self.axes.figure.canvas.draw() 
+        self.axes.figure.canvas.draw()
 
     def set_image(self, vals):
         dim = self.dimensions[0] * self.dimensions[1]
@@ -306,7 +306,7 @@ class image_show(matplotlib_show):
                     last_col = (iC+1)*self.dimensions[1]
                     self.vals[first_row:last_row, first_col:last_col] = cur_img
 
-        else: 
+        else:
             self.vals = np.reshape(vals[0,dim*self.select_image+np.array(range(dim))], self.dimensions, order=self.order)
         if self.transpose:
             self.vals = self.vals.T
@@ -359,7 +359,7 @@ class mocap_data_show_vpython(vpython_show):
 
     def modify_edges(self):
         self.line_handle = []
-        if not self.connect==None:            
+        if not self.connect==None:
             self.I, self.J = np.nonzero(self.connect)
             for rod, i, j in zip(self.rods, self.I, self.J):
                 rod.pos, rod.axis = self.pos_axis(i, j)
@@ -404,7 +404,7 @@ class mocap_data_show(matplotlib_show):
 
     def draw_vertices(self):
         self.points_handle = self.axes.scatter(self.vals[:, 0], self.vals[:, 1], self.vals[:, 2])
-        
+
     def draw_edges(self):
         self.line_handle = []
         if not self.connect==None:
@@ -423,7 +423,7 @@ class mocap_data_show(matplotlib_show):
                 z.append(self.vals[j, 2])
                 z.append(np.NaN)
             self.line_handle = self.axes.plot(np.array(x), np.array(y), np.array(z), 'b-')
-            
+
     def modify(self, vals):
         self.vals = vals.copy()
         self.process_values()

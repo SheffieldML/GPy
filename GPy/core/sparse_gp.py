@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-import pylab as pb
+from ..util.linalg import mdot, tdot, symmetrify, backsub_both_sides, chol_inv, dtrtrs, dpotrs, dpotri
 from gp import GP
 from parameterization.param import Param
 from ..inference.latent_function_inference import varDTC
@@ -73,83 +73,6 @@ class SparseGP(GP):
         #TODO!!!
 
 
-    def plot_f(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, full_cov=False, fignum=None, ax=None):
-        """
-        Plot the belief in the latent function, the "GP's view of the world"
-          - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
-          - In two dimsensions, a contour-plot shows the mean predicted function
-          - Not implemented in higher dimensions
-
-        :param samples: the number of a posteriori samples to plot
-        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
-        :param which_data: which if the training data to plot (default all)
-        :type which_data: 'all' or a slice object to slice self.X, self.Y
-        :param which_parts: which of the kernel functions to plot (additively)
-        :type which_parts: 'all', or list of bools
-        :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
-        :type resolution: int
-        :param full_cov:
-        :type full_cov: bool
-                :param fignum: figure to plot on.
-        :type fignum: figure number
-        :param ax: axes to plot on.
-        :type ax: axes handle
-
-        :param output: which output to plot (for multiple output models only)
-        :type output: integer (first output is 0)
-        """
-        if ax is None:
-            fig = pb.figure(num=fignum)
-            ax = fig.add_subplot(111)
-        if fignum is None and ax is None:
-                fignum = fig.num
-        if which_data is 'all':
-            which_data = slice(None)
-
-        GP.plot_f(self, samples=samples, plot_limits=plot_limits, which_data='all', which_parts='all', resolution=resolution, full_cov=full_cov, fignum=fignum, ax=ax)
-
-        if self.X.shape[1] == 1:
-            if self.has_uncertain_inputs:
-                ax.errorbar(self.X[which_data, 0], self.likelihood.data[which_data, 0],
-                            xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
-                            ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
-            Zu = self.Z * self._Xscale + self._Xoffset
-            ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
-
-        elif self.X.shape[1] == 2:
-            Zu = self.Z * self._Xscale + self._Xoffset
-            ax.plot(Zu[:, 0], Zu[:, 1], 'wo')
-
-        else:
-            raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
-
-    def plot(self, samples=0, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, fignum=None, ax=None):
-        if ax is None:
-            fig = pb.figure(num=fignum)
-            ax = fig.add_subplot(111)
-        if fignum is None and ax is None:
-                fignum = fig.num
-        if which_data is 'all':
-            which_data = slice(None)
-
-        GP.plot(self, samples=samples, plot_limits=plot_limits, which_data='all', which_parts='all', resolution=resolution, levels=20, fignum=fignum, ax=ax)
-
-        if self.X.shape[1] == 1:
-            if self.has_uncertain_inputs:
-                ax.errorbar(self.X[which_data, 0], self.likelihood.data[which_data, 0],
-                            xerr=2 * np.sqrt(self.X_variance[which_data, 0]),
-                            ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
-            Zu = self.Z * self._Xscale + self._Xoffset
-            ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
-
-        elif self.X.shape[1] == 2:
-            Zu = self.Z * self._Xscale + self._Xoffset
-            ax.plot(Zu[:, 0], Zu[:, 1], 'wo')
-
-
-        else:
-            raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
-
     def _getstate(self):
         """
         Get the current state of the class,
@@ -166,4 +89,3 @@ class SparseGP(GP):
         self.num_inducing = state.pop()
         self.Z = state.pop()
         GP._setstate(self, state)
-

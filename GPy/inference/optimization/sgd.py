@@ -68,16 +68,12 @@ class opt_SGD(Optimizer):
         return status
 
     def plot_traces(self):
-        plt.figure()
-        plt.subplot(211)
-        plt.title('Parameters')
-        for k in self.param_traces.keys():
-            plt.plot(self.param_traces[k], label=k)
-        plt.legend(loc=0)
-        plt.subplot(212)
-        plt.title('Objective function')
-        plt.plot(self.fopt_trace)
-
+        """
+        See GPy.plotting.matplot_dep.inference_plots
+        """
+        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        from ..plotting.matplot_dep import inference_plots
+        inference_plots.plot_sgd_traces(self)
 
     def non_null_samples(self, data):
         return (np.isnan(data).sum(axis=1) == 0)

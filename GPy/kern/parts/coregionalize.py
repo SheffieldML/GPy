@@ -3,9 +3,8 @@
 
 from kernpart import Kernpart
 import numpy as np
-from GPy.util.linalg import mdot, pdinv
-import pdb
 from scipy import weave
+from ...core.parameterization import Param
 
 class Coregionalize(Kernpart):
     """
@@ -34,37 +33,28 @@ class Coregionalize(Kernpart):
 
     .. note: see coregionalization examples in GPy.examples.regression for some usage.
     """
-    def __init__(self, output_dim, rank=1, W=None, kappa=None):
-        self.input_dim = 1
-        self.name = 'coregion'
+    def __init__(self, output_dim, rank=1, W=None, kappa=None, name='coregion'):
+        super(Coregionalize, self).__init__(input_dim=1, name=name)
         self.output_dim = output_dim
         self.rank = rank
         if self.rank>output_dim-1:
             print("Warning: Unusual choice of rank, it should normally be less than the output_dim.")
         if W is None:
-            self.W = 0.5*np.random.randn(self.output_dim,self.rank)/np.sqrt(self.rank)
+            W = 0.5*np.random.randn(self.output_dim,self.rank)/np.sqrt(self.rank)
         else:
             assert W.shape==(self.output_dim,self.rank)
-            self.W = W
+        self.W = Param('W',W)
         if kappa is None:
             kappa = 0.5*np.ones(self.output_dim)
         else:
             assert kappa.shape==(self.output_dim,)
-        self.kappa = kappa
-        self.num_params = self.output_dim*(self.rank + 1)
-        self._set_params(np.hstack([self.W.flatten(),self.kappa]))
+        self.kappa = Param('kappa', kappa)
+        self.add_parameters(self.W, self.kappa)
+        self.parameters_changed()
 
-    def _get_params(self):
-        return np.hstack([self.W.flatten(),self.kappa])
 
-    def _set_params(self,x):
-        assert x.size == self.num_params
-        self.kappa = x[-self.output_dim:]
-        self.W = x[:-self.output_dim].reshape(self.output_dim,self.rank)
-        self.B = np.dot(self.W,self.W.T) + np.diag(self.kappa)
-
-    def _get_param_names(self):
-        return sum([['W%i_%i'%(i,j) for j in range(self.rank)] for i in range(self.output_dim)],[]) + ['kappa_%i'%i for i in range(self.output_dim)]
+    def parameters_changed(self):
+        self.B = np.dot(self.W, self.W.T) + np.diag(self.kappa)
 
     def K(self,index,index2,target):
         index = np.asarray(index,dtype=np.int)
@@ -107,7 +97,7 @@ class Coregionalize(Kernpart):
     def Kdiag(self,index,target):
         target += np.diag(self.B)[np.asarray(index,dtype=np.int).flatten()]
 
-    def dK_dtheta(self,dL_dK,index,index2,target):
+    def update_gradients_full(self,dL_dK, index, index2=None):
         index = np.asarray(index,dtype=np.int)
         dL_dK_small = np.zeros_like(self.B)
         if index2 is None:
@@ -129,37 +119,20 @@ class Coregionalize(Kernpart):
         dL_dK_small += dL_dK_small.T
         dW = (self.W[:,None,:]*dL_dK_small[:,:,None]).sum(0)
 
-        target += np.hstack([dW.flatten(),dkappa])
+        self.W.gradient = dW
+        self.kappa.gradient = dkappa
 
-    def dK_dtheta_old(self,dL_dK,index,index2,target):
-        if index2 is None:
-            index2 = index
-        else:
-            index2 = np.asarray(index2,dtype=np.int)
-        ii,jj = np.meshgrid(index,index2)
-        ii,jj = ii.T, jj.T
+    def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
+        raise NotImplementedError, "some code below"
+    #def dKdiag_dtheta(self,dL_dKdiag,index,target):
+        #index = np.asarray(index,dtype=np.int).flatten()
+        #dL_dKdiag_small = np.zeros(self.output_dim)
+        #for i in range(self.output_dim):
+            #dL_dKdiag_small[i] += np.sum(dL_dKdiag[index==i])
+        #dW = 2.*self.W*dL_dKdiag_small[:,None]
+        #dkappa = dL_dKdiag_small
+        #target += np.hstack([dW.flatten(),dkappa])
 
-        dL_dK_small = np.zeros_like(self.B)
-        for i in range(self.output_dim):
-            for j in range(self.output_dim):
-                tmp = np.sum(dL_dK[(ii==i)*(jj==j)])
-                dL_dK_small[i,j] = tmp
-
-        dkappa = np.diag(dL_dK_small)
-        dL_dK_small += dL_dK_small.T
-        dW = (self.W[:,None,:]*dL_dK_small[:,:,None]).sum(0)
-
-        target += np.hstack([dW.flatten(),dkappa])
-
-    def dKdiag_dtheta(self,dL_dKdiag,index,target):
-        index = np.asarray(index,dtype=np.int).flatten()
-        dL_dKdiag_small = np.zeros(self.output_dim)
-        for i in range(self.output_dim):
-            dL_dKdiag_small[i] += np.sum(dL_dKdiag[index==i])
-        dW = 2.*self.W*dL_dKdiag_small[:,None]
-        dkappa = dL_dKdiag_small
-        target += np.hstack([dW.flatten(),dkappa])
-
-    def dK_dX(self,dL_dK,X,X2,target):
+    def gradients_X(self,dL_dK,X,X2,target):
         #NOTE In this case, pass is equivalent to returning zero.
         pass

@@ -11,6 +11,10 @@ class SparseGP(GP):
     """
     A general purpose Sparse GP model
 
+    This model allows (approximate) inference using variational DTC or FITC
+    (Gaussian likelihoods) as well as non-conjugate sparse methods based on
+    these.
+
     :param X: inputs
     :type X: np.ndarray (num_data x input_dim)
     :param likelihood: a likelihood instance, containing the observed data
@@ -56,7 +60,7 @@ class SparseGP(GP):
         self.add_parameter(self.likelihood, gradient=lambda:self.likelihood._gradients(partial=self.partial_for_likelihood))
 
     def parameters_changed(self):
-        self.posterior = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
 
                 #The derivative of the bound wrt the inducing inputs Z
         self.Z.gradient = self.kern.dK_dX(self.dL_dKmm, self.Z)

@@ -3,7 +3,6 @@
 
 
 import numpy as np
-import pylab as pb
 from scipy.special import gammaln, digamma
 from ...util.linalg import pdinv
 from domains import _REAL, _POSITIVE
@@ -12,16 +11,14 @@ import weakref
 
 class Prior:
     domain = None
-    
+
     def pdf(self, x):
         return np.exp(self.lnpdf(x))
 
     def plot(self):
-        rvs = self.rvs(1000)
-        pb.hist(rvs, 100, normed=True)
-        xmin, xmax = pb.xlim()
-        xx = np.linspace(xmin, xmax, 1000)
-        pb.plot(xx, self.pdf(xx), 'r', linewidth=2)
+        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        from ..plotting.matplot_dep import priors_plots
+        priors_plots.univariate_plot(self)
 
 
 class Gaussian(Prior):
@@ -153,16 +150,9 @@ class MultivariateGaussian:
         return np.random.multivariate_normal(self.mu, self.var, n)
 
     def plot(self):
-        if self.input_dim == 2:
-            rvs = self.rvs(200)
-            pb.plot(rvs[:, 0], rvs[:, 1], 'kx', mew=1.5)
-            xmin, xmax = pb.xlim()
-            ymin, ymax = pb.ylim()
-            xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
-            xflat = np.vstack((xx.flatten(), yy.flatten())).T
-            zz = self.pdf(xflat).reshape(100, 100)
-            pb.contour(xx, yy, zz, linewidths=2)
-
+        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        from ..plotting.matplot_dep import priors_plots
+        priors_plots.multivariate_plot(self)
 
 def gamma_from_EV(E, V):
     warnings.warn("use Gamma.from_EV to create Gamma Prior", FutureWarning)

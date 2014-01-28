@@ -279,14 +279,14 @@ def ppca(Y, Q, iterations=100):
 def ppca_missing_data_at_random(Y, Q, iters=100):
     """
     EM implementation of Probabilistic pca for when there is missing data.
-    
+
     Taken from <SheffieldML, https://github.com/SheffieldML>
 
     .. math:
         \\mathbf{Y} = \mathbf{XW} + \\epsilon \\text{, where}
         \\epsilon = \\mathcal{N}(0, \\sigma^2 \mathbf{I})
-        
-    :returns: X, W, sigma^2 
+
+    :returns: X, W, sigma^2
     """
     from numpy.ma import dot as madot
     import diag
@@ -300,19 +300,21 @@ def ppca_missing_data_at_random(Y, Q, iters=100):
     nu = 1.
     #num_obs_i = 1./Y.count()
     Ycentered = Y - Y.mean(0)
-    
+
     X = np.zeros((N,Q))
     cs = common_subarrays(Y.mask)
     cr = common_subarrays(Y.mask, 1)
     Sigma = np.zeros((N, Q, Q))
     Sigma2 = np.zeros((N, Q, Q))
     mu = np.zeros(D)
+    """
     if debug:
         import matplotlib.pyplot as pylab
-        fig = pylab.figure("FIT MISSING DATA"); 
+        fig = pylab.figure("FIT MISSING DATA");
         ax = fig.gca()
         ax.cla()
         lines = pylab.plot(np.zeros((N,Q)).dot(W))
+    """
     W2 = np.zeros((Q,D))
 
     for i in range(iters):
@@ -358,6 +360,7 @@ def ppca_missing_data_at_random(Y, Q, iters=100):
         nu2 /= N
         nu4 = (((Ycentered - X.dot(W))**2).sum(0) + W.T.dot(Sigma.sum(0).dot(W)).sum(0)).sum()/N
         import ipdb;ipdb.set_trace()
+        """
         if debug:
             #print Sigma[0]
             print "nu:", nu, "sum(X):", X.sum()
@@ -368,6 +371,7 @@ def ppca_missing_data_at_random(Y, Q, iters=100):
             ax.set_ylim(pred_y.min(), pred_y.max())
             fig.canvas.draw()
             time.sleep(.3)
+        """
     return np.asarray_chkfinite(X), np.asarray_chkfinite(W), nu
 
 

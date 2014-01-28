@@ -15,6 +15,7 @@ from numpy.testing import Tester
 from nose.tools import nottest
 import kern
 from core import priors
+import plotting
 
 @nottest
 def tests():

@@ -46,7 +46,9 @@ class MRD(Model):
                  initz='permute', _debug=False, **kw):
         if names is None:
             self.names = ["{}".format(i) for i in range(len(likelihood_or_Y_list))]
-
+        else:
+            self.names = names
+            assert len(names) == len(likelihood_or_Y_list), "one name per data set required"
         # sort out the kernels
         if kernels is None:
             kernels = [None] * len(likelihood_or_Y_list)

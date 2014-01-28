@@ -188,17 +188,17 @@ class Parameterized(object):
         else:
             self.fixed_indices, self.fixed_values = [], []
 
-    def constrain_negative(self, regexp):
+    def constrain_negative(self, regexp, warning=True):
         """ Set negative constraints. """
-        self.constrain(regexp, transformations.negative_logexp())
+        self.constrain(regexp, transformations.negative_logexp(), warning=warning)
 
-    def constrain_positive(self, regexp):
+    def constrain_positive(self, regexp, warning=True):
         """ Set positive constraints. """
-        self.constrain(regexp, transformations.logexp())
+        self.constrain(regexp, transformations.logexp(), warning=warning)
 
-    def constrain_bounded(self, regexp, lower, upper):
+    def constrain_bounded(self, regexp, lower, upper, warning=True):
         """ Set bounded constraints. """
-        self.constrain(regexp, transformations.logistic(lower, upper))
+        self.constrain(regexp, transformations.logistic(lower, upper), warning=warning)
 
     def all_constrained_indices(self):
         if len(self.constrained_indices) or len(self.fixed_indices):
@@ -206,17 +206,18 @@ class Parameterized(object):
         else:
             return np.empty(shape=(0,))
 
-    def constrain(self, regexp, transform):
+    def constrain(self, regexp, transform, warning=True):
         assert isinstance(transform, transformations.transformation)
 
         matches = self.grep_param_names(regexp)
-        overlap = set(matches).intersection(set(self.all_constrained_indices()))
-        if overlap:
-            self.unconstrain(np.asarray(list(overlap)))
-            print 'Warning: re-constraining these parameters'
-            pn = self._get_param_names()
-            for i in overlap:
-                print pn[i]
+        if warning:
+            overlap = set(matches).intersection(set(self.all_constrained_indices()))
+            if overlap:
+                self.unconstrain(np.asarray(list(overlap)))
+                print 'Warning: re-constraining these parameters'
+                pn = self._get_param_names()
+                for i in overlap:
+                    print pn[i]
 
         self.constrained_indices.append(matches)
         self.constraints.append(transform)

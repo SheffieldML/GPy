@@ -225,7 +225,7 @@ class Parameterized(object):
         x[matches] = transform.initialize(x[matches])
         self._set_params(x)
 
-    def constrain_fixed(self, regexp, value=None):
+    def constrain_fixed(self, regexp, value=None, warning=True):
         """
 
         :param regexp: which parameters need to be fixed.
@@ -242,13 +242,14 @@ class Parameterized(object):
 
         """
         matches = self.grep_param_names(regexp)
-        overlap = set(matches).intersection(set(self.all_constrained_indices()))
-        if overlap:
-            self.unconstrain(np.asarray(list(overlap)))
-            print 'Warning: re-constraining these parameters'
-            pn = self._get_param_names()
-            for i in overlap:
-                print pn[i]
+        if warning:
+            overlap = set(matches).intersection(set(self.all_constrained_indices()))
+            if overlap:
+                self.unconstrain(np.asarray(list(overlap)))
+                print 'Warning: re-constraining these parameters'
+                pn = self._get_param_names()
+                for i in overlap:
+                    print pn[i]
 
         self.fixed_indices.append(matches)
         if value != None:

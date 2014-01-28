@@ -3,7 +3,6 @@ import scipy as sp
 import scipy.sparse
 from optimization import Optimizer
 from scipy import linalg, optimize
-import pylab as plt
 import copy, sys, pickle
 
 class opt_SGD(Optimizer):
@@ -285,7 +284,6 @@ class opt_SGD(Optimizer):
             b = len(features)/self.batch_size
             features = [features[i::b] for i in range(b)]
             NLL = []
-            import pylab as plt
             for count, j in enumerate(features):
                 self.Model.input_dim = len(j)
                 self.Model.likelihood.input_dim = len(j)
@@ -318,9 +316,6 @@ class opt_SGD(Optimizer):
                 self.adapt_learning_rate(it+count, D)
                 NLL.append(f)
                 self.fopt_trace.append(NLL[-1])
-                # fig = plt.figure('traces')
-                # plt.clf()
-                # plt.plot(self.param_traces['noise'])
 
                 # for k in self.param_traces.keys():
                 #     self.param_traces[k].append(self.Model.get(k)[0])

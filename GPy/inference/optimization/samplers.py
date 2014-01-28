@@ -4,7 +4,6 @@
 
 import numpy as np
 from scipy import linalg, optimize
-import pylab as pb
 import Tango
 import sys
 import re
@@ -80,6 +79,3 @@ class Metropolis_Hastings:
             fs.append(function(*args))
         self.model._set_params(param)# reset model to starting state
         return fs
-
-
-

@@ -4,21 +4,12 @@
 
 import linalg
 import misc
-import plot
 import squashers
-import Tango
 import warping_functions
 import datasets
 import mocap
-import visualize
 import decorators
 import classification
-import latent_space_visualizations
-try:
-    import maps
-except:
-    pass
-    maps = "warning: the maps module requires pyshp (shapefile). Install it to remove this message"
 
 try:
     import sympy
@@ -29,5 +20,3 @@ except ImportError as e:
 
 if _sympy_available:
     import symbolic
-
-import netpbmfile

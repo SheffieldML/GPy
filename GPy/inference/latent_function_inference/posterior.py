@@ -8,16 +8,14 @@ class Posterior(object):
     """
     An object to represent a Gaussian posterior over latent function values.
     This may be computed exactly for Gaussian likelihoods, or approximated for
-    non-Gaussian likelihoods. 
+    non-Gaussian likelihoods.
 
     The purpose of this class is to serve as an interface between the inference
-    schemes and the model classes. 
+    schemes and the model classes.
 
     """
-    def __init__(self, log_marginal, dL_dK, woodbury_chol=None, woodbury_vector=None, K=None, mean=None, cov=None, K_chol=None):
+    def __init__(self, woodbury_chol=None, woodbury_vector=None, K=None, mean=None, cov=None, K_chol=None):
         """
-        log_marginal: log p(Y|X)
-        dL_dK: d/dK log p(Y|X)
         woodbury_chol : a lower triangular matrix L that satisfies posterior_covariance = K - K L^{-T} L^{-1} K
         woodbury_vector : a matrix (or vector, as Nx1 matrix) M which satisfies posterior_mean = K M
         K : the proir covariance (required for lazy computation of various quantities)
@@ -26,12 +24,10 @@ class Posterior(object):
 
         Not all of the above need to be supplied! You *must* supply:
 
-          log_marginal
-          dL_dK
           K (for lazy computation)
 
        You may supply either:
-         cc
+
           woodbury_chol
           woodbury_vector
 
@@ -46,8 +42,6 @@ class Posterior(object):
         From the supplied quantities, all of the others will be computed on demand (lazy computation)
         """
         #obligatory
-        self.log_marginal = log_marginal
-        self.dL_dK = dL_dK
         self._K = K
 
         if ((woodbury_chol is not None) and (woodbury_vector is not None) and (K is not None)) or ((mean is not None) and (cov is not None) and (K is not None)):
@@ -64,7 +58,7 @@ class Posterior(object):
         self._covariance = cov
         self._K_chol = K_chol
 
-        #copmute this lazily
+        #compute this lazily
         self._precision = None
 
     @property

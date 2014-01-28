@@ -71,8 +71,8 @@ def align_subplots(N,M,xlim=None, ylim=None):
             removeUpperTicks()
 
 def align_subplot_array(axes,xlim=None, ylim=None):
-    """make all of the axes in the array hae the same limits, turn off unnecessary ticks
-    
+    """
+    Make all of the axes in the array hae the same limits, turn off unnecessary ticks
     use pb.subplots() to get an array of axes
     """
     #find sensible xlim,ylim

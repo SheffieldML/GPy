@@ -2,10 +2,11 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from posterior import Posterior
-from .../util.linalg import pdinv, dpotrs, tdot
+from ...util.linalg import pdinv, dpotrs, tdot
+import numpy as np
 log_2_pi = np.log(2*np.pi)
 
-class DTCVar(object):
+class VarDTC(object):
     """
     An object for inference when the likelihood is Gaussian, but we want to do sparse inference.
 
@@ -19,7 +20,7 @@ class DTCVar(object):
         self._YYTfactor_cache = caching.cache()
         self.const_jitter = 1e-6
 
-     def get_YYTfactor(self, Y):
+    def get_YYTfactor(self, Y):
         """
         find a matrix L which satisfies LLT = YYT. 
 
@@ -32,15 +33,29 @@ class DTCVar(object):
             #if Y in self.cache, return self.Cache[Y], else stor Y in cache and return L.
             raise NotImplementedError, 'TODO' #TODO
 
-    def inference(self, Kmm, Kmn, Knn_diag, likelihood, Y):
+    def inference(self, kern, X, X_variance, Z, likelihood, Y):
 
-        num_inducing, num_data = Kmn.shape
+        num_inducing, _ = Z.shape
+        num_data, output_dim = Y.shape
+
+        #see whether we're using variational uncertain inputs
+        uncertain_inputs = (X_variance is None)
+
+        # kernel computations, using BGPLVM notation
+        Kmm = kern.K(Z)
+        if uncertain_inputs:
+            psi0 = kern.psi0(Z, X, X_variance)
+            psi1 = kern.psi1(Z, X, X_variance)
+            psi2 = kern.psi2(Z, X, X_variance)
+        else:
+            psi0 = kern.Kdiag(X)
+            psi1 = kern.K(X, Z)
 
         #factor Kmm # TODO: cache?
-        _Lm = jitchol(Kmm)
+        Lm = jitchol(Kmm)
 
         # The rather complex computations of A
-        if has_uncertain_inputs:
+        if uncertain_inputs:
             if likelihood.is_heteroscedastic:
                 psi2_beta = (psi2 * (likelihood.precision.flatten().reshape(num_data, 1, 1))).sum(0)
             else:
@@ -56,7 +71,7 @@ class DTCVar(object):
                 tmp = psi1 * (np.sqrt(likelihood.precision.flatten().reshape(num_data, 1)))
             else:
                 tmp = psi1 * (np.sqrt(likelihood.precision))
-        tmp, _ = dtrtrs(_Lm, np.asfortranarray(tmp.T), lower=1)
+        tmp, _ = dtrtrs(Lm, np.asfortranarray(tmp.T), lower=1)
         A = tdot(tmp)
 
         # factor B
@@ -67,11 +82,23 @@ class DTCVar(object):
         psi1Vf = np.dot(psi1.T, likelihood.VVT_factor)
 
         # back substutue C into psi1Vf
-        tmp, info1 = dtrtrs(_Lm, np.asfortranarray(psi1Vf), lower=1, trans=0)
+        tmp, info1 = dtrtrs(Lm, np.asfortranarray(psi1Vf), lower=1, trans=0)
         _LBi_Lmi_psi1Vf, _ = dtrtrs(LB, np.asfortranarray(tmp), lower=1, trans=0)
         # tmp, info2 = dpotrs(LB, tmp, lower=1)
         tmp, info2 = dtrtrs(LB, _LBi_Lmi_psi1Vf, lower=1, trans=1)
-        Cpsi1Vf, info3 = dtrtrs(_Lm, tmp, lower=1, trans=1)
+        Cpsi1Vf, info3 = dtrtrs(Lm, tmp, lower=1, trans=1)
+
+        #compute log marginal likelihood
+        if likelihood.is_heteroscedastic:
+            A = -0.5 * num_data * output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(likelihood.precision)) - 0.5 * np.sum(likelihood.V * likelihood.Y)
+            B = -0.5 * output_dim * (np.sum(likelihood.precision.flatten() * psi0) - np.trace(_A))
+        else:
+            A = -0.5 * num_data * output_dim * (np.log(2.*np.pi) - np.log(likelihood.precision)) - 0.5 * likelihood.precision * likelihood.trYYT
+            B = -0.5 * output_dim * (np.sum(likelihood.precision * psi0) - np.trace(_A))
+        C = -output_dim * (np.sum(np.log(np.diag(LB)))) # + 0.5 * num_inducing * np.log(sf2))
+        D = 0.5 * data_fit
+        log_marginal = A + B + C + D
+
 
         # Compute dL_dKmm
         tmp = tdot(_LBi_Lmi_psi1Vf)
@@ -80,12 +107,12 @@ class DTCVar(object):
         tmp = -0.5 * DBi_plus_BiPBi
         tmp += -0.5 * B * output_dim
         tmp += output_dim * np.eye(num_inducing)
-        dL_dKmm = backsub_both_sides(_Lm, tmp)
+        dL_dKmm = backsub_both_sides(Lm, tmp)
 
         # Compute dL_dpsi # FIXME: this is untested for the heterscedastic + uncertain inputs case
         dL_dpsi0 = -0.5 * output_dim * (likelihood.precision * np.ones([num_data, 1])).flatten()
         dL_dpsi1 = np.dot(likelihood.VVT_factor, Cpsi1Vf.T)
-        dL_dpsi2_beta = 0.5 * backsub_both_sides(_Lm, output_dim * np.eye(num_inducing) - DBi_plus_BiPBi)
+        dL_dpsi2_beta = 0.5 * backsub_both_sides(Lm, output_dim * np.eye(num_inducing) - DBi_plus_BiPBi)
 
         if likelihood.is_heteroscedastic:
 
@@ -117,7 +144,7 @@ class DTCVar(object):
             else:
 
                 LBi = chol_inv(LB)
-                Lmi_psi1, nil = dtrtrs(_Lm, np.asfortranarray(psi1.T), lower=1, trans=0)
+                Lmi_psi1, nil = dtrtrs(Lm, np.asfortranarray(psi1.T), lower=1, trans=0)
                 _LBi_Lmi_psi1, _ = dtrtrs(LB, np.asfortranarray(Lmi_psi1), lower=1, trans=0)
 
 
@@ -135,14 +162,4 @@ class DTCVar(object):
             partial_for_likelihood += 0.5 * output_dim * (psi0.sum() * likelihood.precision ** 2 - np.trace(_A) * likelihood.precision)
             partial_for_likelihood += likelihood.precision * (0.5 * np.sum(_A * DBi_plus_BiPBi) - data_fit)
 
-    #def log_likelihood(self):
-        if likelihood.is_heteroscedastic:
-            A = -0.5 * num_data * output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(likelihood.precision)) - 0.5 * np.sum(likelihood.V * likelihood.Y)
-            B = -0.5 * output_dim * (np.sum(likelihood.precision.flatten() * psi0) - np.trace(_A))
-        else:
-            A = -0.5 * num_data * output_dim * (np.log(2.*np.pi) - np.log(likelihood.precision)) - 0.5 * likelihood.precision * likelihood.trYYT
-            B = -0.5 * output_dim * (np.sum(likelihood.precision * psi0) - np.trace(_A))
-        C = -output_dim * (np.sum(np.log(np.diag(LB)))) # + 0.5 * num_inducing * np.log(sf2))
-        D = 0.5 * data_fit
-        return A + B + C + D + likelihood.Z
 

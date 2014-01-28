@@ -59,10 +59,10 @@ class GP(Model):
         self.parameters_changed()
 
     def parameters_changed(self):
-        self.posterior = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y)
+        self.posterior, self._log_marginal_likelihood, self._dL_dK = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y)
 
     def log_likelihood(self):
-        return self.posterior.log_marginal
+        return self._log_marginal_likelihood
 
     def dL_dtheta_K(self):
         return self.kern.dK_dtheta(self.posterior.dL_dK, self.X)

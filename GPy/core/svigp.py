@@ -481,17 +481,17 @@ class SVIGP(GP):
 
     def plot(self, *args, **kwargs):
         """
-        See GPy.plotting.matplot_dep.svgi_plots.plot
+        See GPy.plotting.matplot_dep.svig_plots.plot
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import svgi_plots
-        svgi_plots.plot(self,*args,**kwargs)
+        from ..plotting.matplot_dep import svig_plots
+        svig_plots.plot(self,*args,**kwargs)
 
 
     def plot_traces(self):
         """
-        See GPy.plotting.matplot_dep.svgi_plots.plot_traces
+        See GPy.plotting.matplot_dep.svig_plots.plot_traces
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import svgi_plots
-        svgi_plots.plot_traces(self)
+        from ..plotting.matplot_dep import svig_plots
+        svig_plots.plot_traces(self)

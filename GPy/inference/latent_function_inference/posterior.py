@@ -25,6 +25,8 @@ class Posterior(object):
         Not all of the above need to be supplied! You *must* supply:
 
           K (for lazy computation)
+          or
+          K_chol (for lazy computation)
 
        You may supply either:
 
@@ -35,11 +37,10 @@ class Posterior(object):
 
           mean
           cov
-          K_chol (for lazy computation)
 
-        Of course, you can supply more than that, but this class will lazily compute all other quantites on demand.
+        Of course, you can supply more than that, but this class will lazily
+        compute all other quantites on demand.
 
-        From the supplied quantities, all of the others will be computed on demand (lazy computation)
         """
         #obligatory
         self._K = K
@@ -49,6 +50,8 @@ class Posterior(object):
         else:
             raise ValueError, "insufficient information to compute the posterior"
 
+        self._K_chol = K_chol
+        self._K = K
         #option 1:
         self._woodbury_chol = woodbury_chol
         self._woodbury_vector = woodbury_vector
@@ -56,7 +59,6 @@ class Posterior(object):
         #option 2:
         self._mean = mean
         self._covariance = cov
-        self._K_chol = K_chol
 
         #compute this lazily
         self._precision = None
@@ -94,6 +96,12 @@ class Posterior(object):
         if self._woodbury_vector is None:
             self._woodbury_vector, _ = dpotrs(self._K_chol, self.mean)
         return self._woodbury_vector
+
+    @property
+    def K_chol(self):
+        if self._K_chol is None:
+            self._K_chol = dportf(self._K)
+        return self._K_chol
 
 
 

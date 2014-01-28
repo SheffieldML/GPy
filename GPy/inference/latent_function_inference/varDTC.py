@@ -33,6 +33,9 @@ class VarDTC(object):
             #if Y in self.cache, return self.Cache[Y], else stor Y in cache and return L.
             raise NotImplementedError, 'TODO' #TODO
 
+    def get_VVTfactor(self, Y, prec):
+        return Y * prec # TODO chache this, and make it effective
+
     def inference(self, kern, X, X_variance, Z, likelihood, Y):
 
         num_inducing, _ = Z.shape
@@ -79,12 +82,12 @@ class VarDTC(object):
         LB = jitchol(B)
 
         # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
-        psi1Vf = np.dot(psi1.T, likelihood.VVT_factor)
+        VVT_factor = self.get_VVTfactor(Y, likelihood.precision)
+        psi1Vf = np.dot(psi1.T, VVT_factor)
 
         # back substutue C into psi1Vf
         tmp, info1 = dtrtrs(Lm, np.asfortranarray(psi1Vf), lower=1, trans=0)
         _LBi_Lmi_psi1Vf, _ = dtrtrs(LB, np.asfortranarray(tmp), lower=1, trans=0)
-        # tmp, info2 = dpotrs(LB, tmp, lower=1)
         tmp, info2 = dtrtrs(LB, _LBi_Lmi_psi1Vf, lower=1, trans=1)
         Cpsi1Vf, info3 = dtrtrs(Lm, tmp, lower=1, trans=1)
 
@@ -161,5 +164,16 @@ class VarDTC(object):
             partial_for_likelihood = -0.5 * num_data * output_dim * likelihood.precision + 0.5 * likelihood.trYYT * likelihood.precision ** 2
             partial_for_likelihood += 0.5 * output_dim * (psi0.sum() * likelihood.precision ** 2 - np.trace(_A) * likelihood.precision)
             partial_for_likelihood += likelihood.precision * (0.5 * np.sum(_A * DBi_plus_BiPBi) - data_fit)
+
+
+        #get sufficient things for posterior prediction
+        if VVT_factor.shape[1] == Y.shape[1]:
+            Cpsi1V = Cpsi1Vf
+        else:
+            raise NotImplementedError #TODO
+
+        #construct a posterior object
+        post = Posterior(woodbury_chol=None, woodbury_vector=Cpsi1V, K=None, mean=None, cov=None, K_chol=None):
+        return
 
 

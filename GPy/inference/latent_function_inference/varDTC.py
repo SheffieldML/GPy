@@ -173,7 +173,7 @@ class VarDTC(object):
             raise NotImplementedError #TODO
 
         #construct a posterior object
-        post = Posterior(woodbury_chol=None, woodbury_vector=Cpsi1V, K=None, mean=None, cov=None, K_chol=None):
+        post = Posterior(woodbury_chol=None, woodbury_vector=Cpsi1V, K=None, mean=None, cov=None, K_chol=None)
         return
 
 

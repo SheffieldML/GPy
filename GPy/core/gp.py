@@ -98,11 +98,14 @@ class GP(Model):
         :type Xnew: np.ndarray, Nnew x self.input_dim
         :param which_parts:  specifies which outputs kernel(s) to use in prediction
         :type which_parts: ('all', list of bools)
-        :param full_cov: whether to return the full covariance matrix, or just the diagonal
+        :param full_cov: whether to return the full covariance matrix, or just
+                         the diagonal
         :type full_cov: bool
         :returns: mean: posterior mean,  a Numpy array, Nnew x self.input_dim
-        :returns: var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
-        :returns: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
+        :returns: var: posterior variance, a Numpy array, Nnew x 1 if
+                       full_cov=False, Nnew x Nnew otherwise
+        :returns: lower and upper boundaries of the 95% confidence intervals,
+                  Numpy arrays,  Nnew x self.input_dim
 
 
            If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
@@ -170,9 +173,13 @@ class GP(Model):
 
     def plot_f(self, *args, **kwargs):
         """
-        Plot the GP's view of the world, where the data is normalized and before applying a likelihood.
 
-        This is a convenience function: arguments are passed to GPy.plotting.matplot_dep.models_plots.plot_f_fit
+        Plot the GP's view of the world, where the data is normalized and
+        before applying a likelihood.
+
+        This is a convenience function: arguments are passed to
+        GPy.plotting.matplot_dep.models_plots.plot_f_fit
+
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
@@ -181,14 +188,19 @@ class GP(Model):
     def plot(self, *args):
         """
         Plot the posterior of the GP.
-          - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
-          - In two dimsensions, a contour-plot shows the mean predicted function
-          - In higher dimensions, use fixed_inputs to plot the GP  with some of the inputs fixed.
+          - In one dimension, the function is plotted with a shaded region
+            identifying two standard deviations.
+          - In two dimsensions, a contour-plot shows the mean predicted
+            function
+          - In higher dimensions, use fixed_inputs to plot the GP  with some of
+            the inputs fixed.
 
         Can plot only part of the data and part of the posterior functions
         using which_data_rows which_data_ycols and which_parts
 
-        This is a convenience function: arguments are passed to GPy.plotting.matplot_dep.models_plots.plot_fit
+        This is a convenience function: arguments are passed to
+        GPy.plotting.matplot_dep.models_plots.plot_fit
+
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
@@ -196,8 +208,12 @@ class GP(Model):
 
     def _getstate(self):
         """
-        Get the current state of the class, here we return everything that is needed to recompute the model.
+
+        Get the current state of the class, here we return everything that is
+        needed to recompute the model.
+
         """
+
         return Model._getstate(self) + [self.X,
                 self.num_data,
                 self.input_dim,

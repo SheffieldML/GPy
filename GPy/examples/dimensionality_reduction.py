@@ -264,8 +264,9 @@ def bgplvm_simulation(optimize=True, verbose=1,
     D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 30, 3, 10
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
-    k = kern.linear(Q, ARD=True) + kern.bias(Q, _np.exp(-2)) + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    k = kern.linear(Q, ARD=True)
     m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k)
+    m.X_variance = m.X_variance * .05
     m['noise'] = Y.var() / 100.
 
     if optimize:
@@ -286,8 +287,9 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     likelihood_list = [Gaussian(x, normalize=True) for x in Ylist]
 
-    k = kern.linear(Q, ARD=True) + kern.bias(Q, _np.exp(-2)) + kern.white(Q, _np.exp(-2))
+    k = kern.linear(Q, ARD=True)# + kern.bias(Q, _np.exp(-2)) + kern.white(Q, _np.exp(-2))
     m = MRD(likelihood_list, input_dim=Q, num_inducing=num_inducing, kernels=k, initx="", initz='permute', **kw)
+    m.X_variance = m.X_variance * .05
     m.ensure_default_constraints()
 
     for i, bgplvm in enumerate(m.bgplvms):

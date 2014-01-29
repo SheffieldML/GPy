@@ -16,44 +16,83 @@ class SparseGPRegression(SparseGP):
     :param X: input observations
     :param Y: observed values
     :param kernel: a GPy kernel, defaults to rbf+white
-    :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
-    :type normalize_X: False|True
-    :param normalize_Y:  whether to normalize the input data before computing (predictions will be in original scales)
-    :type normalize_Y: False|True
     :param Z: inducing inputs (optional, see note)
     :type Z: np.ndarray (num_inducing x input_dim) | None
+    :param num_inducing: number of inducing points (ignored if Z is passed, see note)
+    :type num_inducing: int
     :rtype: model object
-    :param X_variance: The uncertainty in the measurements of X (Gaussian variance)
-    :type X_variance: np.ndarray (num_data x input_dim) | None
 
+    .. Note:: If no Z array is passed, num_inducing (default 10) points are selected from the data. Other wise num_inducing is ignored
     .. Note:: Multiple independent outputs are allowed using columns of Y
 
     """
 
-    def __init__(self, X, Y, kernel=None, normalize_X=False, normalize_Y=False, Z=None, num_inducing=10, X_variance=None):
+    def __init__(self, X, Y, kernel=None, Z=None, num_inducing=10, X_variance=None):
+        num_data, input_dim = X.shape
+
         # kern defaults to rbf (plus white for stability)
         if kernel is None:
-            kernel = kern.rbf(X.shape[1]) # + kern.white(X.shape[1], 1e-3)
+            kernel = kern.rbf(input_dim)  + kern.white(input_dim, variance=1e-3)
 
         # Z defaults to a subset of the data
         if Z is None:
-            i = np.random.permutation(X.shape[0])[:num_inducing]
+            i = np.random.permutation(num_data)[:min(num_inducing, num_data)]
             Z = X[i].copy()
         else:
-            assert Z.shape[1] == X.shape[1]
+            assert Z.shape[1] == input_dim
 
-        # likelihood defaults to Gaussian
-        likelihood = likelihoods.Gaussian(Y, normalize=normalize_Y)
+        likelihood = likelihoods.Gaussian()
 
-        SparseGP.__init__(self, X, likelihood, kernel, Z=Z, normalize_X=normalize_X, X_variance=X_variance)
+        SparseGP.__init__(self, X, Y, Z, kernel, likelihood)
         self.ensure_default_constraints()
-        pass
 
     def _getstate(self):
         return SparseGP._getstate(self)
 
-
     def _setstate(self, state):
         return SparseGP._setstate(self, state)
 
-    pass
+
+
+class SparseGPRegressionUncertainInput(SparseGP):
+    """
+    Gaussian Process model for regression with Gaussian variance on the inputs (X_variance)
+
+    This is a thin wrapper around the SparseGP class, with a set of sensible defalts
+
+    """
+
+    def __init__(self, X, X_variance, Y, kernel=None, Z=None, num_inducing=10):
+        """
+        :param X: input observations
+        :type X: np.ndarray (num_data x input_dim)
+        :param X_variance: The uncertainty in the measurements of X (Gaussian variance, optional)
+        :type X_variance: np.ndarray (num_data x input_dim)
+        :param Y: observed values
+        :param kernel: a GPy kernel, defaults to rbf+white
+        :param Z: inducing inputs (optional, see note)
+        :type Z: np.ndarray (num_inducing x input_dim) | None
+        :param num_inducing: number of inducing points (ignored if Z is passed, see note)
+        :type num_inducing: int
+        :rtype: model object
+
+        .. Note:: If no Z array is passed, num_inducing (default 10) points are selected from the data. Other wise num_inducing is ignored
+        .. Note:: Multiple independent outputs are allowed using columns of Y
+        """
+        num_data, input_dim = X.shape
+
+        # kern defaults to rbf (plus white for stability)
+        if kernel is None:
+            kernel = kern.rbf(input_dim)  + kern.white(input_dim, variance=1e-3)
+
+        # Z defaults to a subset of the data
+        if Z is None:
+            i = np.random.permutation(num_data)[:min(num_inducing, num_data)]
+            Z = X[i].copy()
+        else:
+            assert Z.shape[1] == input_dim
+
+        likelihood = likelihoods.Gaussian()
+
+        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, X_variance=X_variance)
+        self.ensure_default_constraints()

@@ -53,6 +53,27 @@ class LaplaceInference(object):
         self.restart()
         likelihood.__init__(self)
 
+    def inference(self, kern, X, likelihood, Y, Y_metadata=None):
+        """
+        Returns a Posterior class containing essential quantities of the posterior
+        """
+
+        # Compute K
+        self.K = kern.K(X)
+        self.data = Y
+        self.N, self.D = Y.shape
+
+        #Find mode
+        self.f_hat = self.rasm_mode(self.K)
+
+        #Compute hessian and other variables at mode
+        self._compute_likelihood_variables()
+
+        #Compute fake variables replicating laplace approximation to posterior
+        self._compute_GP_variables()
+
+        return Posterior(mean=self.f_hat, cov=self.covariance_matrix, K=self.K)
+
     def restart(self):
         """
         Reset likelihood variables to their defaults

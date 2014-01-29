@@ -272,7 +272,8 @@ class BayesianGPLVM(SparseGP, GPLVM):
             if i < self.X.shape[1] - 1:
                 a.set_xticklabels('')
         pylab.draw()
-        fig.tight_layout(h_pad=.01) # , rect=(0, 0, 1, .95))
+        if ax is None:
+            fig.tight_layout(h_pad=.01) # , rect=(0, 0, 1, .95))
         return fig
 
     def getstate(self):

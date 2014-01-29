@@ -48,9 +48,9 @@ class GP(Model):
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
                 inference_method = exact_gaussian_inference.ExactGaussianInference()
-        else:
-            inference_method = expectation_propagation
-            print "defaulting to ", inference_method, "for latent function inference"
+            else:
+                inference_method = expectation_propagation
+                print "defaulting to ", inference_method, "for latent function inference"
         self.inference_method = inference_method
 
         self.add_parameter(self.kern)

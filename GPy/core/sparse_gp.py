@@ -6,6 +6,7 @@ from ..util.linalg import mdot, tdot, symmetrify, backsub_both_sides, chol_inv, 
 from gp import GP
 from parameterization.param import Param
 from ..inference.latent_function_inference import varDTC
+from .. import likelihoods
 
 class SparseGP(GP):
     """
@@ -35,24 +36,21 @@ class SparseGP(GP):
         #pick a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
-                inference_method = varDTC.Gaussian_inference()
+                inference_method = varDTC.VarDTC()
         else:
             #inference_method = ??
             raise NotImplementedError, "what to do what to do?"
             print "defaulting to ", inference_method, "for latent function inference"
 
-        GP.__init__(self, X, Y, likelihood, inference_method, kernel, name)
 
         self.Z = Z
         self.num_inducing = Z.shape[0]
 
-        if X_variance is None:
-            self.has_uncertain_inputs = False
-            self.X_variance = None
-        else:
+        if not (X_variance is None):
             assert X_variance.shape == X.shape
-            self.has_uncertain_inputs = True
-            self.X_variance = X_variance
+        self.X_variance = X_variance
+
+        GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name)
 
         self.Z = Param('inducing inputs', self.Z)
         self.add_parameter(self.Z, gradient=self.dL_dZ, index=0)

@@ -266,7 +266,7 @@ def bgplvm_simulation(optimize=True, verbose=1,
     Y = Ylist[0]
     k = kern.linear(Q, ARD=True)
     m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k)
-    m.X_variance = m.X_variance * .05
+    m.X_variance = m.X_variance * .1
     m['noise'] = Y.var() / 100.
 
     if optimize:
@@ -289,12 +289,11 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
 
     k = kern.linear(Q, ARD=True)# + kern.bias(Q, _np.exp(-2)) + kern.white(Q, _np.exp(-2))
     m = MRD(likelihood_list, input_dim=Q, num_inducing=num_inducing, kernels=k, initx="", initz='permute', **kw)
-    m.X_variance = m.X_variance * .05
     m.ensure_default_constraints()
 
     for i, bgplvm in enumerate(m.bgplvms):
         m['{}_noise'.format(i)] = bgplvm.likelihood.Y.var() / 500.
-
+        bgplvm.X_variance = bgplvm.X_variance * .1
     if optimize:
         print "Optimizing Model:"
         m.optimize(messages=verbose, max_iters=8e3, gtol=.1)

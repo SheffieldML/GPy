@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ...util.linalg import pdinv, dpotrs, tdot, dtrtrs
+from ...util.linalg import pdinv, dpotrs, tdot, dtrtrs, dpotri, symmetrify
 
 class Posterior(object):
     """
@@ -62,6 +62,7 @@ class Posterior(object):
 
         #compute this lazily
         self._precision = None
+        self._woodbury_inv = None
 
     @property
     def mean(self):
@@ -90,6 +91,14 @@ class Posterior(object):
             Wi, _ = dpotrs(self._K_chol, tmp.T)
             _, _, self._woodbury_chol, _ = pdinv(Wi)
         return self._woodbury_chol
+
+    @property
+    def woodbury_inv(self):
+        if self._woodbury_inv is None:
+            self._woodbury_inv, _ = dpotri(self.woodbury_chol)
+            symmetrify(self._woodbury_inv)
+        return self._woodbury_inv
+
 
     @property
     def woodbury_vector(self):

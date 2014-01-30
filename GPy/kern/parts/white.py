@@ -32,7 +32,7 @@ class White(Kernpart):
         self.variance.gradient = np.trace(dL_dK)
 
     def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
-        raise NotImplementedError
+        self.variance.gradient = np.trace(dL_dKmm) + np.sum(dL_dKdiag)
 
     def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
         raise NotImplementedError

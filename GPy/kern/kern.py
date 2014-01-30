@@ -284,9 +284,10 @@ class kern(Parameterized):
         [p.update_gradients_full(dL_dK, X) for p in self._parameters_]
 
     def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
-        raise NotImplementedError
+        [p.update_gradients_sparse(dL_dKmm, dL_dKnm, dL_dKdiag, X, Z) for p in self._parameters_]
+
     def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
-        raise NotImplementedError
+        [p.update_gradients_variational(dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z) for p in self._parameters_]
 
     def dK_dtheta(self, dL_dK, X, X2=None):
         """

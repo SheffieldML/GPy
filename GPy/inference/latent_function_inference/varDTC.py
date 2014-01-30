@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from posterior import Posterior
-from ...util.linalg import jitchol, backsub_both_sides, tdot
+from ...util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs
 import numpy as np
 log_2_pi = np.log(2*np.pi)
 
@@ -30,7 +30,7 @@ class VarDTC(object):
         if (N>D):
             return Y
         else:
-            #if Y in self.cache, return self.Cache[Y], else stor Y in cache and return L.
+            #if Y in self.cache, return self.Cache[Y], else store Y in cache and return L.
             raise NotImplementedError, 'TODO' #TODO
 
     def get_VVTfactor(self, Y, prec):
@@ -66,9 +66,9 @@ class VarDTC(object):
         # The rather complex computations of A
         if uncertain_inputs:
             if het_noise:
-                psi2_beta = (psi2 * (likelihood.precision.flatten().reshape(num_data, 1, 1))).sum(0)
+                psi2_beta = (psi2 * (beta.flatten().reshape(num_data, 1, 1))).sum(0)
             else:
-                psi2_beta = psi2.sum(0) * likelihood.precision
+                psi2_beta = psi2.sum(0) * beta
             evals, evecs = linalg.eigh(psi2_beta)
             clipped_evals = np.clip(evals, 0., 1e6) # TODO: make clipping configurable
             if not np.array_equal(evals, clipped_evals):
@@ -89,6 +89,7 @@ class VarDTC(object):
 
         # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
         VVT_factor = self.get_VVTfactor(Y, beta)
+        trYYT = np.sum(np.square(Y))
         psi1Vf = np.dot(psi1.T, VVT_factor)
 
         # back substutue C into psi1Vf
@@ -96,17 +97,6 @@ class VarDTC(object):
         _LBi_Lmi_psi1Vf, _ = dtrtrs(LB, np.asfortranarray(tmp), lower=1, trans=0)
         tmp, info2 = dtrtrs(LB, _LBi_Lmi_psi1Vf, lower=1, trans=1)
         Cpsi1Vf, info3 = dtrtrs(Lm, tmp, lower=1, trans=1)
-
-        #compute log marginal likelihood
-        if het_noise:
-            A = -0.5 * num_data * output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(beta)) - 0.5 * np.sum(likelihood.V * likelihood.Y)
-            B = -0.5 * output_dim * (np.sum(beta * psi0) - np.trace(_A))
-        else:
-            A = -0.5 * num_data * output_dim * (np.log(2.*np.pi) - np.log(beta)) - 0.5 * beta * likelihood.trYYT
-            B = -0.5 * output_dim * (np.sum(beta * psi0) - np.trace(_A))
-        C = -output_dim * (np.sum(np.log(np.diag(LB)))) # + 0.5 * num_inducing * np.log(sf2))
-        D = 0.5 * data_fit
-        log_marginal = A + B + C + D
 
 
         # Compute dL_dKmm
@@ -120,17 +110,17 @@ class VarDTC(object):
 
         # Compute dL_dpsi 
         dL_dpsi0 = -0.5 * output_dim * (beta * np.ones([num_data, 1])).flatten()
-        dL_dpsi1 = np.dot(likelihood.VVT_factor, Cpsi1Vf.T)
+        dL_dpsi1 = np.dot(VVT_factor, Cpsi1Vf.T)
         dL_dpsi2_beta = 0.5 * backsub_both_sides(Lm, output_dim * np.eye(num_inducing) - DBi_plus_BiPBi)
 
         if het_noise:
             if uncertain_inputs:
                 dL_dpsi2 = beta[:, None, None] * dL_dpsi2_beta[None, :, :]
             else:
-                dL_dpsi1 += 2.*np.dot(dL_dpsi2_beta, (psi1 * likelihood.precision.reshape(num_data, 1)).T).T
+                dL_dpsi1 += 2.*np.dot(dL_dpsi2_beta, (psi1 * beta.reshape(num_data, 1)).T).T
                 dL_dpsi2 = None
         else:
-            dL_dpsi2 = likelihood.precision * dL_dpsi2_beta
+            dL_dpsi2 = beta * dL_dpsi2_beta
             if uncertain_inputs:
                 # repeat for each of the N psi_2 matrices
                 dL_dpsi2 = np.repeat(dL_dpsi2[None, :, :], num_data, axis=0)
@@ -152,40 +142,55 @@ class VarDTC(object):
                 Lmi_psi1, nil = dtrtrs(Lm, np.asfortranarray(psi1.T), lower=1, trans=0)
                 _LBi_Lmi_psi1, _ = dtrtrs(LB, np.asfortranarray(Lmi_psi1), lower=1, trans=0)
 
-                partial_for_likelihood = -0.5 * likelihood.precision + 0.5 * likelihood.V**2
-                partial_for_likelihood += 0.5 * output_dim * (psi0 - np.sum(Lmi_psi1**2,0))[:,None] * likelihood.precision**2
+                partial_for_likelihood = -0.5 * beta + 0.5 * likelihood.V**2
+                partial_for_likelihood += 0.5 * output_dim * (psi0 - np.sum(Lmi_psi1**2,0))[:,None] * beta**2
 
-                partial_for_likelihood += 0.5*np.sum(mdot(LBi.T,LBi,Lmi_psi1)*Lmi_psi1,0)[:,None]*likelihood.precision**2
+                partial_for_likelihood += 0.5*np.sum(mdot(LBi.T,LBi,Lmi_psi1)*Lmi_psi1,0)[:,None]*beta**2
 
-                partial_for_likelihood += -np.dot(_LBi_Lmi_psi1Vf.T,_LBi_Lmi_psi1).T * likelihood.Y * likelihood.precision**2
-                partial_for_likelihood += 0.5*np.dot(_LBi_Lmi_psi1Vf.T,_LBi_Lmi_psi1).T**2 * likelihood.precision**2
+                partial_for_likelihood += -np.dot(_LBi_Lmi_psi1Vf.T,_LBi_Lmi_psi1).T * likelihood.Y * beta**2
+                partial_for_likelihood += 0.5*np.dot(_LBi_Lmi_psi1Vf.T,_LBi_Lmi_psi1).T**2 * beta**2
 
         else:
             # likelihood is not heteroscedatic
-            partial_for_likelihood = -0.5 * num_data * output_dim * likelihood.precision + 0.5 * likelihood.trYYT * likelihood.precision ** 2
-            partial_for_likelihood += 0.5 * output_dim * (psi0.sum() * likelihood.precision ** 2 - np.trace(_A) * likelihood.precision)
-            partial_for_likelihood += likelihood.precision * (0.5 * np.sum(_A * DBi_plus_BiPBi) - data_fit)
+            partial_for_likelihood = -0.5 * num_data * output_dim * beta + 0.5 * trYYT * beta ** 2
+            partial_for_likelihood += 0.5 * output_dim * (psi0.sum() * beta ** 2 - np.trace(A) * beta)
+            partial_for_likelihood += beta * (0.5 * np.sum(A * DBi_plus_BiPBi) - data_fit)
+
+        #compute log marginal likelihood
+        if het_noise:
+            lik_1 = -0.5 * num_data * output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(beta)) - 0.5 * np.sum(likelihood.V * likelihood.Y)
+            lik_2 = -0.5 * output_dim * (np.sum(beta * psi0) - np.trace(A))
+        else:
+            lik_1 = -0.5 * num_data * output_dim * (np.log(2.*np.pi) - np.log(beta)) - 0.5 * beta * trYYT
+            lik_2 = -0.5 * output_dim * (np.sum(beta * psi0) - np.trace(A))
+        lik_3 = -output_dim * (np.sum(np.log(np.diag(LB)))) # + 0.5 * num_inducing * np.log(sf2))
+        lik_4 = 0.5 * data_fit
+        log_marginal = lik_1 + lik_2 + lik_3 + lik_4
 
         #put the gradients in the right places
-        likelihood.update_gradients(np.diag(partial_for_likelihood))
+        likelihood.update_gradients(partial_for_likelihood)
 
         if uncertain_inputs:
-            kern.update_gradients_variational(??)
             grad_dict = {'dL_dKmm': dL_dKmm, 'dL_dpsi0':dL_dpsi0, 'dL_dpsi1':dL_dpsi1, 'dL_dpsi2':dL_dpsi2}
+            kern.update_gradients_variational(mu=X, S=X_variance, Z=Z, **grad_dict)
         else:
-            kern.update_gradients_sparse(??)
-            grad_dict = {'dL_dKmm': dL_dKmm, 'dL_dpsi0':dL_dpsi0, 'dL_dpsi1':dL_dpsi1, 'dL_dpsi2':dL_dpsi2}
+            grad_dict = {'dL_dKmm': dL_dKmm, 'dL_dKdiag':dL_dpsi0, 'dL_dKnm':dL_dpsi1}
+            kern.update_gradients_sparse(X=X, Z=Z, **grad_dict)
 
         #get sufficient things for posterior prediction
         if VVT_factor.shape[1] == Y.shape[1]:
             woodbury_vector = Cpsi1Vf # == Cpsi1V
-            woodbury_chol = ??
         else:
-            raise NotImplementedError #TODO
+            psi1V = np.dot(Y.T*beta, psi1).T
+            tmp, _ = dtrtrs(Lm, np.asfortranarray(psi1V), lower=1, trans=0)
+            tmp, _ = dpotrs(LB, tmp, lower=1)
+            woodbury_vector, _ = dtrtrs(Lm, tmp, lower=1, trans=1)
+        #TODO: totally wrong, fix.
+        woodbury_chol = np.eye(num_inducing)
 
         #construct a posterior object
         post = Posterior(woodbury_chol=woodbury_chol, woodbury_vector=woodbury_vector, K=Kmm, mean=None, cov=None, K_chol=Lm)
 
-        return Posterior, log_marginal, grad_dict
+        return post, log_marginal, grad_dict
 
 

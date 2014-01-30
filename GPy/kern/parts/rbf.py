@@ -117,7 +117,7 @@ class RBF(Kernpart):
             self.lengthscales.gradient = self._dL_dlengthscales_via_K(dL_dKnm, X, Z)
 
         else:
-            self.lengthscale.gradient = (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
+            self.lengthscale.gradient = (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKnm)
 
         #from Kmm
         self._K_computations(Z, None)

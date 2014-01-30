@@ -142,13 +142,37 @@ class Matern32(Kernpart):
         """
         Return the state space representation of the covariance.
         """
-        foo = np.sqrt(3)/self.lengthscale
-        F  = np.array([[0, 1], [-foo**2, -2*foo]])
-        L  = np.array([[0], [1]])
-        Qc = np.array([12*np.sqrt(3) / self.lengthscale**3 * self.variance])
-        H = np.array([[1, 0]])
+        foo  = np.sqrt(3.)/self.lengthscale
+        F    = np.array([[0, 1], [-foo**2, -2*foo]])
+        L    = np.array([[0], [1]])
+        Qc   = np.array([12.*np.sqrt(3) / self.lengthscale**3 * self.variance])
+        H    = np.array([[1, 0]])
         Pinf = np.array([[self.variance, 0], 
-                        [0,              3*self.variance/(self.lengthscale**2)]])
+                         [0,              3.*self.variance/(self.lengthscale**2)]])
+
+        # Allocate space for the derivatives
+        dF    = np.empty([F.shape[0],F.shape[1],2])
+        dQc   = np.empty([Qc.shape[0],Qc.shape[1],2])
+        dPinf = np.empty([Pinf.shape[0],Pinf.shape[1],2])
+
+        # The partial derivatives
+        dFvariance       = np.zeros([2,2])
+        dFlengthscale    = np.array([[0,0],
+                                     [6./self.lengthscale**3,2*np.sqrt(3)/self.lengthscale**2]])
+        dQcvariance      = np.array([12.*np.sqrt(3)/self.lengthscale**3])
+        dQclengthscale   = np.array([-3*12*np.sqrt(3)/self.lengthscale**4*self.variance])
+        dPinfvariance    = np.array([[1,0],[0,3./self.lengthscale**2]])
+        dPinflengthscale = np.array([[0,0],
+                                     [0,-6*self.variance/self.lengthscale**3]])
+
+        # Combine the derivatives
+        dF[:,:,0]    = dFvariance
+        dF[:,:,1]    = dFlengthscale
+        dQc[:,:,0]   = dQcvariance
+        dQc[:,:,1]   = dQclengthscale
+        dPinf[:,:,0] = dPinfvariance
+        dPinf[:,:,1] = dPinflengthscale
+
         # TODO: return the derivatives as well
-        return (F, L, Qc, H, Pinf) 
+        return (F, L, Qc, H, Pinf, dF, dQc, dPinf) 
 

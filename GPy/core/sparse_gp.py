@@ -51,11 +51,8 @@ class SparseGP(GP):
         self.X_variance = X_variance
 
         GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name)
-
         self.Z = Param('inducing inputs', self.Z)
         self.add_parameter(self.Z, index=0)
-        self.add_parameter(self.kern)
-        self.add_parameter(self.likelihood)
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)

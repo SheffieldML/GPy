@@ -53,6 +53,6 @@ class ExactGaussianInference(object):
 
         likelihood.update_gradients(np.diag(dL_dK))
 
-        return Posterior(LW, alpha, K), log_marginal, {'dL_dK':dL_dK}
+        return Posterior(woodbury_chol=LW, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK}
 
 

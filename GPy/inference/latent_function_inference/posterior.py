@@ -6,12 +6,13 @@ from ...util.linalg import pdinv, dpotrs, tdot, dtrtrs, dpotri, symmetrify
 
 class Posterior(object):
     """
-    An object to represent a Gaussian posterior over latent function values.
+    An object to represent a Gaussian posterior over latent function values, p(f|D).
     This may be computed exactly for Gaussian likelihoods, or approximated for
     non-Gaussian likelihoods.
 
     The purpose of this class is to serve as an interface between the inference
-    schemes and the model classes.
+    schemes and the model classes.  the model class can make predictions for
+    the function at any new point x_* by integrating over this posterior.
 
     """
     def __init__(self, woodbury_chol=None, woodbury_vector=None, K=None, mean=None, cov=None, K_chol=None, woodbury_inv=None):

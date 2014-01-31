@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from posterior import Posterior
-from ...util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs
+from ...util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dpotri, symmetrify
 import numpy as np
 log_2_pi = np.log(2*np.pi)
 
@@ -163,7 +163,7 @@ class VarDTC(object):
         else:
             lik_1 = -0.5 * num_data * output_dim * (np.log(2.*np.pi) - np.log(beta)) - 0.5 * beta * trYYT
             lik_2 = -0.5 * output_dim * (np.sum(beta * psi0) - np.trace(A))
-        lik_3 = -output_dim * (np.sum(np.log(np.diag(LB)))) # + 0.5 * num_inducing * np.log(sf2))
+        lik_3 = -output_dim * (np.sum(np.log(np.diag(LB))))
         lik_4 = 0.5 * data_fit
         log_marginal = lik_1 + lik_2 + lik_3 + lik_4
 
@@ -178,6 +178,7 @@ class VarDTC(object):
             kern.update_gradients_sparse(X=X, Z=Z, **grad_dict)
 
         #get sufficient things for posterior prediction
+        #TODO: do we really want to do this in  the loop?
         if VVT_factor.shape[1] == Y.shape[1]:
             woodbury_vector = Cpsi1Vf # == Cpsi1V
         else:
@@ -185,11 +186,13 @@ class VarDTC(object):
             tmp, _ = dtrtrs(Lm, np.asfortranarray(psi1V), lower=1, trans=0)
             tmp, _ = dpotrs(LB, tmp, lower=1)
             woodbury_vector, _ = dtrtrs(Lm, tmp, lower=1, trans=1)
-        #TODO: totally wrong, fix.
-        woodbury_chol = np.eye(num_inducing)
+        Bi, _ = dpotri(LB, lower=0)
+        symmetrify(Bi)
+        woodbury_inv = backsub_both_sides(Lm, np.eye(num_inducing) - Bi)
+
 
         #construct a posterior object
-        post = Posterior(woodbury_chol=woodbury_chol, woodbury_vector=woodbury_vector, K=Kmm, mean=None, cov=None, K_chol=Lm)
+        post = Posterior(woodbury_inv=woodbury_inv, woodbury_vector=woodbury_vector, K=Kmm, mean=None, cov=None, K_chol=Lm)
 
         return post, log_marginal, grad_dict
 

@@ -14,7 +14,7 @@ class Posterior(object):
     schemes and the model classes.
 
     """
-    def __init__(self, woodbury_chol=None, woodbury_vector=None, K=None, mean=None, cov=None, K_chol=None):
+    def __init__(self, woodbury_chol=None, woodbury_vector=None, K=None, mean=None, cov=None, K_chol=None, woodbury_inv=None):
         """
         woodbury_chol : a lower triangular matrix L that satisfies posterior_covariance = K - K L^{-T} L^{-1} K
         woodbury_vector : a matrix (or vector, as Nx1 matrix) M which satisfies posterior_mean = K M
@@ -45,7 +45,9 @@ class Posterior(object):
         #obligatory
         self._K = K
 
-        if ((woodbury_chol is not None) and (woodbury_vector is not None) and (K is not None)) or ((mean is not None) and (cov is not None) and (K is not None)):
+        if ((woodbury_chol is not None) and (woodbury_vector is not None))\
+                or ((woodbury_inv is not None) and (woodbury_vector is not None))\
+                or ((mean is not None) and (cov is not None)):
             pass # we have sufficient to compute the posterior
         else:
             raise ValueError, "insufficient information to compute the posterior"
@@ -56,13 +58,16 @@ class Posterior(object):
         self._woodbury_chol = woodbury_chol
         self._woodbury_vector = woodbury_vector
 
+        #option 2.
+        self._woodbury_inv = woodbury_inv
+        #and woodbury vector
+
         #option 2:
         self._mean = mean
         self._covariance = cov
 
         #compute this lazily
         self._precision = None
-        self._woodbury_inv = None
 
     @property
     def mean(self):
@@ -98,7 +103,6 @@ class Posterior(object):
             self._woodbury_inv, _ = dpotri(self.woodbury_chol)
             symmetrify(self._woodbury_inv)
         return self._woodbury_inv
-
 
     @property
     def woodbury_vector(self):

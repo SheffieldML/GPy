@@ -5,6 +5,7 @@ import pylab as pb
 import numpy as np
 import Tango
 from base_plots import gpplot, x_frame1D, x_frame2D
+from ...util.misc import param_to_array
 
 
 def plot_fit(model, plot_limits=None, which_data_rows='all',
@@ -95,8 +96,11 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         #add inducing inputs (if a sparse model is used)
         if hasattr(model,"Z"):
-            Zu = model.Z[:,free_dims] * model._Xscale[:,free_dims] + model._Xoffset[:,free_dims]
-            ax.plot(Zu, np.zeros_like(Zu) + ax.get_ylim()[0], 'r|', mew=1.5, markersize=12)
+            #Zu = model.Z[:,free_dims] * model._Xscale[:,free_dims] + model._Xoffset[:,free_dims]
+            Zu = param_to_array(model.Z[:,free_dims])
+            z_height = ax.get_ylim()[0]
+            ax.plot(Zu, np.zeros_like(Zu) + z_height, 'r|', mew=1.5, markersize=12)
+
 
         #add error bars for uncertain (if input uncertainty is being modelled)
         if hasattr(model,"has_uncertain_inputs"):
@@ -144,7 +148,8 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         #add inducing inputs (if a sparse model is used)
         if hasattr(model,"Z"):
-            Zu = model.Z[:,free_dims] * model._Xscale[:,free_dims] + model._Xoffset[:,free_dims]
+            #Zu = model.Z[:,free_dims] * model._Xscale[:,free_dims] + model._Xoffset[:,free_dims]
+            Zu = model.Z[:,free_dims]
             ax.plot(Zu[:,free_dims[0]], Zu[:,free_dims[1]], 'wo')
 
     else:

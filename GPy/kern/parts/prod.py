@@ -17,21 +17,21 @@ class Prod(Kernpart):
     :rtype: kernel object
 
     """
-    def __init__(self,k1,k2,tensor=False):
+    def __init__(self,k1,k2,tensor=False,name="product"):
         if tensor:
-            super(Prod, self).__init__(k1.input_dim + k2.input_dim, '['+k1.name + '**' + k2.name +']')
+            super(Prod, self).__init__(k1.input_dim + k2.input_dim, name)
         else:
             assert k1.input_dim == k2.input_dim, "Error: The input spaces of the kernels to sum don't have the same dimension."
-            super(Prod, self).__init__(k1.input_dim, '['+k1.name + '*' + k2.name +']')
+            super(Prod, self).__init__(k1.input_dim, name)
         #self.num_params = k1.num_params + k2.num_params
         self.k1 = k1
         self.k2 = k2
-#         if tensor:
-#             self.slice1 = slice(0,self.k1.input_dim)
-#             self.slice2 = slice(self.k1.input_dim,self.k1.input_dim+self.k2.input_dim)
-#         else:
-#             self.slice1 = slice(0,self.input_dim)
-#             self.slice2 = slice(0,self.input_dim)
+        if tensor:
+            self.slice1 = slice(0,self.k1.input_dim)
+            self.slice2 = slice(self.k1.input_dim,self.k1.input_dim+self.k2.input_dim)
+        else:
+            self.slice1 = slice(0,self.input_dim)
+            self.slice2 = slice(0,self.input_dim)
 
         self._X, self._X2 = np.empty(shape=(2,1))
         self.add_parameters(self.k1, self.k2)
@@ -117,18 +117,19 @@ class Prod(Kernpart):
 
     def _K_computations(self,X,X2):
         if not (np.array_equal(X,self._X) and np.array_equal(X2,self._X2) and np.array_equal(self._params , self._get_params())):
-            self._X = X.copy()
-            self._params == self._get_params().copy()
+            #self._X = X.copy()
+            #self._params == self._get_params().copy()
             if X2 is None:
                 self._X2 = None
                 self._K1 = np.zeros((X.shape[0],X.shape[0]))
                 self._K2 = np.zeros((X.shape[0],X.shape[0]))
                 self.k1.K(X[:,self.slice1],None,self._K1)
                 self.k2.K(X[:,self.slice2],None,self._K2)
+                #self.k1.K(X[:,self.k1.input_slices],None,self._K1)
+                #self.k2.K(X[:,self.k2_input_slices],None,self._K2)
             else:
                 self._X2 = X2.copy()
                 self._K1 = np.zeros((X.shape[0],X2.shape[0]))
                 self._K2 = np.zeros((X.shape[0],X2.shape[0]))
                 self.k1.K(X[:,self.slice1],X2[:,self.slice1],self._K1)
                 self.k2.K(X[:,self.slice2],X2[:,self.slice2],self._K2)
-

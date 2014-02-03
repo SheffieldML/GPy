@@ -170,7 +170,7 @@ class kern(Parameterized):
         """
         return self.prod(other, tensor=True)
 
-    def prod(self, other, tensor=False):
+    def prod(self, other, tensor=False, **kwargs):
         """
         Multiply two kernels (either on the same space, or on the tensor product of the input space).
 
@@ -189,7 +189,7 @@ class kern(Parameterized):
             s1[sl1], s2[sl2] = [True], [True]
             slices += [s1 + s2]
 
-        newkernparts = [prod(k1, k2, tensor) for k1, k2 in itertools.product(K1._parameters_, K2._parameters_)]
+        newkernparts = [prod(k1, k2, tensor, **kwargs) for k1, k2 in itertools.product(K1._parameters_, K2._parameters_)]
 
         if tensor:
             newkern = kern(K1.input_dim + K2.input_dim, newkernparts, slices)

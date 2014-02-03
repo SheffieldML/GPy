@@ -411,7 +411,7 @@ def periodic_Matern52(input_dim, variance=1., lengthscale=None, period=2 * np.pi
     part = parts.periodic_Matern52.PeriodicMatern52(input_dim, variance, lengthscale, period, n_freq, lower, upper)
     return kern(input_dim, [part])
 
-def prod(k1,k2,tensor=False):
+def prod(k1,k2,**kwargs):
     """
      Construct a product kernel over input_dim from two kernels over input_dim
 
@@ -422,7 +422,7 @@ def prod(k1,k2,tensor=False):
     :rtype: kernel object
 
     """
-    part = parts.prod.Prod(k1, k2, tensor)
+    part = parts.prod.Prod(k1, k2, **kwargs)
     return kern(part.input_dim, [part])
 
 def symmetric(k):
@@ -433,7 +433,7 @@ def symmetric(k):
     k_.parts = [symmetric.Symmetric(p) for p in k.parts]
     return k_
 
-def coregionalize(output_dim,rank=1, W=None, kappa=None):
+def coregionalize(output_dim,rank=1, W=None, kappa=None,name='coregion'):
     """
     Coregionlization matrix B, of the form:
 
@@ -458,7 +458,7 @@ def coregionalize(output_dim,rank=1, W=None, kappa=None):
     :rtype: kernel object
 
     """
-    p = parts.coregionalize.Coregionalize(output_dim,rank,W,kappa)
+    p = parts.coregionalize.Coregionalize(output_dim,rank,W,kappa,name)
     return kern(1,[p])
 
 

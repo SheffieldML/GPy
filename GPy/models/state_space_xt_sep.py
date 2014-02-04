@@ -89,7 +89,7 @@ class StateSpace_1(Model):
 
 
         # Get the model matrices from the kernel
-        (F,L,Qc,H,Pinf) = self.kern.sde()
+        (F,L,Qc,H,Pinf,use1,use2,use3) = self.kern.sde()
 
         n=X.shape[0]
         F1 = np.kron(np.eye(n),F)
@@ -109,7 +109,7 @@ class StateSpace_1(Model):
     def _log_likelihood_gradients(self):
 
         # Get the model matrices from the kernel
-        (F,L,Qc,H,Pinf,dF,dQc,dPinf) = self.kern.sde()
+        (F,L,Qc,H,Pinf,dF,dQc,dPinf,use1,use2,use3) = self.kern.sde()
 
         # Calculate the likelihood gradients TODO
         #return self.kf_likelihood_g(F,L,Qc,self.sigma2,H,Pinf,dF,dQc,dPinf,self.X,self.Y) 
@@ -131,7 +131,7 @@ class StateSpace_1(Model):
         Y = Y[return_index]
 
         # Get the model matrices from the kernel
-        (F,L,Qc,H,Pinf) = self.kern.sde()
+        (F,L,Qc,H,Pinf,use1,use2,use3) = self.kern.sde()
 
         n=SXP.shape[0]
         F1 = np.kron(np.eye(n),F)

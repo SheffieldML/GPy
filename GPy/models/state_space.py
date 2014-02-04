@@ -63,7 +63,7 @@ class StateSpace(Model):
     def log_likelihood(self):
 
         # Get the model matrices from the kernel
-        (F,L,Qc,H,Pinf) = self.kern.sde()
+        (F,L,Qc,H,Pinf,dF,dQc,dPinf) = self.kern.sde()
 
         # Use the Kalman filter to evaluate the likelihood
         return self.kf_likelihood(F,L,Qc,H,self.sigma2,Pinf,self.X.T,self.Y.T)
@@ -71,17 +71,34 @@ class StateSpace(Model):
     def _log_likelihood_gradients(self):
 
         # Get the model matrices from the kernel
-        (F,L,Qc,H,Pinf,dF,dQc,dPinf) = self.kern.sde()
+        (F,L,Qc,H,Pinf,dFt,dQct,dPinft) = self.kern.sde()
 
-        # Calculate the likelihood gradients TODO
-        #return self.kf_likelihood_g(F,L,Qc,self.sigma2,H,Pinf,dF,dQc,dPinf,self.X,self.Y) 
-        return False
+        # Allocate space for the full partial derivative matrices
+        dF    = np.zeros([dFt.shape[0],dFt.shape[1],dFt.shape[2]+1])
+        dQc   = np.zeros([dQct.shape[0],dQct.shape[1],dQct.shape[2]+1])
+        dPinf = np.zeros([dPinft.shape[0],dPinft.shape[1],dPinft.shape[2]+1])
+        
+        # Assign the values for the kernel function
+        dF[:,:,:-1] = dFt
+        dQc[:,:,:-1] = dQct
+        dPinf[:,:,:-1] = dPinft
 
-    def predict_raw(self, Xnew, filteronly=False):
+        # The sigma2 derivative
+        dR = np.zeros([1,1,dF.shape[2]])
+        dR[:,:,-1] = 1
+
+        # Calculate the likelihood gradients
+        return self.kf_likelihood_g(F,L,Qc,H,self.sigma2,Pinf,dF,dQc,dPinf,dR,self.X.T,self.Y.T)
+
+    def predict_raw(self, Xnew, Ynew=None, filteronly=False):
+
+        # Set defaults
+        if Ynew is None:
+            Ynew = self.Y
 
         # Make a single matrix containing training and testing points
         X = np.vstack((self.X, Xnew))
-        Y = np.vstack((self.Y, np.nan*np.zeros(Xnew.shape)))
+        Y = np.vstack((Ynew, np.nan*np.zeros(Xnew.shape)))
 
         # Sort the matrix (save the order)
         _, return_index, return_inverse = np.unique(X,True,True)
@@ -89,13 +106,13 @@ class StateSpace(Model):
         Y = Y[return_index]
 
         # Get the model matrices from the kernel
-        (F,L,Qc,H,Pinf) = self.kern.sde()
+        (F,L,Qc,H,Pinf,dF,dQc,dPinf) = self.kern.sde()
 
         # Run the Kalman filter
         (M, P) = self.kalman_filter(F,L,Qc,H,self.sigma2,Pinf,X.T,Y.T)
 
         # Run the Rauch-Tung-Striebel smoother
-        if not filter:
+        if not filteronly:
             (M, P) = self.rts_smoother(F,L,Qc,X.T,M,P)
 
         # Put the data back in the original order
@@ -159,7 +176,10 @@ class StateSpace(Model):
 
         # Optionally plot some samples
         if samples:
-            Ysim = self.posterior_samples(Xgrid, samples)
+            if plot_raw:
+                Ysim = self.posterior_samples_f(Xgrid, samples)
+            else:
+                Ysim = self.posterior_samples(Xgrid, samples)
             for yi in Ysim.T:
                 ax.plot(Xgrid, yi, Tango.colorsHex['darkBlue'], linewidth=0.25)
 
@@ -169,26 +189,60 @@ class StateSpace(Model):
         ax.set_xlim(xmin, xmax)
         ax.set_ylim(ymin, ymax)
 
-    def posterior_samples_f(self,X,size=10):
+    def prior_samples_f(self,X,size=10):
 
-        # Reorder X values
-        sort_index = np.argsort(X[:,0])
-        X = X[sort_index]
+        # Sort the matrix (save the order)
+        (_, return_index, return_inverse) = np.unique(X,True,True)
+        X = X[return_index]
 
         # Get the model matrices from the kernel
-        (F,L,Qc,H,Pinf) = self.kern.sde()
+        (F,L,Qc,H,Pinf,dF,dQc,dPinf) = self.kern.sde()
 
         # Allocate space for results
         Y = np.empty((size,X.shape[0]))
 
         # Simulate random draws
-        for j in range(0,size):
-            Y[j,:] = H.dot(self.simulate(F,L,Qc,Pinf,X.T))
+        #for j in range(0,size):
+        #    Y[j,:] = H.dot(self.simulate(F,L,Qc,Pinf,X.T))
+        Y = self.simulate(F,L,Qc,Pinf,X.T,size)
+
+        # Only observations
+        Y = np.tensordot(H[0],Y,(0,0))
 
         # Reorder simulated values
-        Y[:,sort_index] = Y[:,:]
+        Y = Y[:,return_inverse]
 
         # Return trajectory
+        return Y.T
+
+    def posterior_samples_f(self,X,size=10):
+
+        # Sort the matrix (save the order)
+        (_, return_index, return_inverse) = np.unique(X,True,True)
+        X = X[return_index]
+
+        # Get the model matrices from the kernel
+        (F,L,Qc,H,Pinf,dF,dQc,dPinf) = self.kern.sde()
+
+        # Run smoother on original data
+        (m,V) = self.predict_raw(X)
+
+        # Simulate random draws from the GP prior
+        y = self.prior_samples_f(np.vstack((self.X, X)),size)
+
+        # Allocate space for sample trajectories
+        Y = np.empty((size,X.shape[0]))
+
+        # Run the RTS smoother on each of these values
+        for j in range(0,size):
+            yobs =  y[0:self.num_data,j:j+1] + np.sqrt(self.sigma2)*np.random.randn(self.num_data,1)
+            (m2,V2) = self.predict_raw(X,Ynew=yobs)
+            Y[j,:] = m.T + y[self.num_data:,j].T - m2.T
+
+        # Reorder simulated values
+        Y = Y[:,return_inverse]
+
+        # Return posterior sample trajectories
         return Y.T
 
     def posterior_samples(self, X, size=10):
@@ -323,23 +377,323 @@ class StateSpace(Model):
         # Return likelihood
         return lik[0,0]
 
-    def simulate(self,F,L,Qc,Pinf,X):
+    def kf_likelihood_g(self,F,L,Qc,H,R,Pinf,dF,dQc,dPinf,dR,X,Y):
+        # Evaluate marginal likelihood gradient
+
+        # State dimension, number of data points and number of parameters
+        n      = F.shape[0]
+        steps  = Y.shape[1]
+        nparam = dF.shape[2]
+
+        # Time steps
+        t = X.squeeze()
+  
+        # Allocate space
+        e  = 0
+        eg = np.zeros(nparam)
+  
+        # Set up
+        m  = np.zeros([n,1])
+        P  = Pinf.copy()
+        dm = np.zeros([n,nparam])
+        dP = dPinf.copy()
+        mm = m.copy()
+        PP = P.copy()
+
+        # Initial dt
+        dt = -np.Inf
+
+        # Allocate space for expm results
+        AA  = np.zeros([2*n, 2*n, nparam])
+        FF  = np.zeros([2*n, 2*n])
+
+        # Loop over all observations
+        for k in range(0,steps):
+
+            # The previous time step
+            dt_old = dt;
+
+            # The time discretization step length
+            if k>0:
+                dt = t[k]-t[k-1]
+            else:
+                dt = 0
+
+            # Loop through all parameters (Kalman filter prediction step)
+            for j in range(0,nparam):
+
+                # Should we recalculate the matrix exponential?
+                if abs(dt-dt_old) > 1e-9:
+
+                    # The first matrix for the matrix factor decomposition
+                    FF[:n,:n] = F
+                    FF[n:,:n] = dF[:,:,j]
+                    FF[n:,n:] = F
+
+                    # Solve the matrix exponential
+                    AA[:,:,j] = linalg.expm3(FF*dt)
+
+                # Solve the differential equation
+                foo         = AA[:,:,j].dot(np.vstack([m, dm[:,j:j+1]]))
+                mm          = foo[:n,:]
+                dm[:,j:j+1] = foo[n:,:]
+
+                # The discrete-time dynamical model
+                if j==0:
+                    A  = AA[:n,:n,j]
+                    Q  = Pinf - A.dot(Pinf).dot(A.T)
+                    PP = A.dot(P).dot(A.T) + Q
+
+                # The derivatives of A and Q
+                dA = AA[n:,:n,j]
+                dQ = dPinf[:,:,j] - dA.dot(Pinf).dot(A.T) \
+                   - A.dot(dPinf[:,:,j]).dot(A.T) - A.dot(Pinf).dot(dA.T)
+
+                # The derivatives of P
+                dP[:,:,j] = dA.dot(P).dot(A.T) + A.dot(dP[:,:,j]).dot(A.T) \
+                   + A.dot(P).dot(dA.T) + dQ
+
+            # Set predicted m and P
+            m = mm
+            P = PP
+
+            # Start the Kalman filter update step and precalculate variables
+            S = H.dot(P).dot(H.T) + R
+
+            # We should calculate the Cholesky factor if S is a matrix
+            # [LS,notposdef] = chol(S,'lower');
+
+            # The Kalman filter update (S is scalar)
+            HtiS = H.T/S
+            iS   = 1/S
+            K    = P.dot(HtiS)
+            v    = Y[:,k]-H.dot(m)
+            vtiS = v.T/S
+
+            # Loop through all parameters (Kalman filter update step derivative)
+            for j in range(0,nparam):
+
+                # Innovation covariance derivative
+                dS = H.dot(dP[:,:,j]).dot(H.T) + dR[:,:,j];
+
+                # Evaluate the energy derivative for j
+                eg[j] = eg[j]                           \
+                    - .5*np.sum(iS*dS)                  \
+                    + .5*H.dot(dm[:,j:j+1]).dot(vtiS.T) \
+                    + .5*vtiS.dot(dS).dot(vtiS.T)       \
+                    + .5*vtiS.dot(H.dot(dm[:,j:j+1]))
+
+                # Kalman filter update step derivatives
+                dK          = dP[:,:,j].dot(HtiS) - P.dot(HtiS).dot(dS)/S
+                dm[:,j:j+1] = dm[:,j:j+1] + dK.dot(v) - K.dot(H).dot(dm[:,j:j+1])
+                dKSKt       = dK.dot(S).dot(K.T)
+                dP[:,:,j]   = dP[:,:,j] - dKSKt - K.dot(dS).dot(K.T) - dKSKt.T
+
+            # Evaluate the energy
+            # e = e - .5*S.shape[0]*np.log(2*np.pi) - np.sum(np.log(np.diag(LS))) - .5*vtiS.dot(v);
+            e = e - .5*S.shape[0]*np.log(2*np.pi) - np.sum(np.log(np.sqrt(S))) - .5*vtiS.dot(v)
+
+            # Finish Kalman filter update step
+            m = m + K.dot(v)
+            P = P - K.dot(S).dot(K.T)
+
+            # Make sure the covariances stay symmetric
+            P  = (P+P.T)/2
+            dP = (dP + dP.transpose([1,0,2]))/2
+
+            # raise NameError('Debug me')
+
+        # Return the gradient
+        return eg
+
+    def kf_likelihood_g_notstable(self,F,L,Qc,H,R,Pinf,dF,dQc,dPinf,dR,X,Y):
+        # Evaluate marginal likelihood gradient
+
+        # State dimension, number of data points and number of parameters
+        steps  = Y.shape[1]
+        nparam = dF.shape[2]
+        n      = F.shape[0]
+
+        # Time steps
+        t = X.squeeze()
+
+        # Allocate space
+        e  = 0
+        eg = np.zeros(nparam)
+
+        # Set up
+        Z  = np.zeros(F.shape)
+        QC = L.dot(Qc).dot(L.T)
+        m  = np.zeros([n,1])
+        P  = Pinf.copy()
+        dm = np.zeros([n,nparam])
+        dP = dPinf.copy()
+        mm = m.copy()
+        PP = P.copy()
+
+        # % Initial dt
+        dt = -np.Inf
+
+        # Allocate space for expm results
+        AA  = np.zeros([2*F.shape[0], 2*F.shape[0], nparam])
+        AAA = np.zeros([4*F.shape[0], 4*F.shape[0], nparam])
+        FF  = np.zeros([2*F.shape[0], 2*F.shape[0]])
+        FFF = np.zeros([4*F.shape[0], 4*F.shape[0]])
+
+        # Loop over all observations
+        for k in range(0,steps):
+
+            # The previous time step
+            dt_old = dt;
+
+            # The time discretization step length
+            if k>0:
+                dt = t[k]-t[k-1]
+            else:
+                dt = t[1]-t[0]
+
+            # Loop through all parameters (Kalman filter prediction step)
+            for j in range(0,nparam):
+
+                # Should we recalculate the matrix exponential?
+                if abs(dt-dt_old) > 1e-9:
+
+                    # The first matrix for the matrix factor decomposition
+                    FF[:n,:n] = F
+                    FF[n:,:n] = dF[:,:,j]
+                    FF[n:,n:] = F
+
+                    # Solve the matrix exponential
+                    AA[:,:,j] = linalg.expm3(FF*dt)
+
+                # Solve using matrix fraction decomposition
+                foo = AA[:,:,j].dot(np.vstack([m, dm[:,j:j+1]]))
+
+                # Pick the parts
+                mm          = foo[:n,:]
+                dm[:,j:j+1] = foo[n:,:]
+
+                # Should we recalculate the matrix exponential?
+                if abs(dt-dt_old) > 1e-9:
+
+                    # Define W and G
+                    W = L.dot(dQc[:,:,j]).dot(L.T)
+                    G = dF[:,:,j];
+
+                    # The second matrix for the matrix factor decomposition
+                    FFF[:n,:n]         =  F
+                    FFF[2*n:-n,:n]     =  G
+                    FFF[:n,    n:2*n]  =  QC
+                    FFF[n:2*n, n:2*n]  = -F.T
+                    FFF[2*n:-n,n:2*n]  =  W
+                    FFF[-n:,   n:2*n]  = -G.T
+                    FFF[2*n:-n,2*n:-n] =  F
+                    FFF[2*n:-n,-n:]    =  QC
+                    FFF[-n:,-n:]       = -F.T
+
+                    # Solve the matrix exponential
+                    AAA[:,:,j] = linalg.expm3(FFF*dt)
+
+                # Solve using matrix fraction decomposition
+                foo = AAA[:,:,j].dot(np.vstack([P, np.eye(n), dP[:,:,j], np.zeros([n,n])]))
+
+                # Pick the parts
+                C  = foo[:n,    :]
+                D  = foo[n:2*n, :]
+                dC = foo[2*n:-n,:]
+                dD = foo[-n:,   :]
+
+                # The prediction step covariance (PP = C/D)
+                if j==0:
+                    PP = linalg.solve(D.T,C.T).T
+                    PP = (PP + PP.T)/2
+
+                # Sove dP for j (C/D == P_{k|k-1})
+                dP[:,:,j] = linalg.solve(D.T,(dC - PP.dot(dD)).T).T
+
+            # Set predicted m and P
+            m = mm
+            P = PP
+
+            # Start the Kalman filter update step and precalculate variables
+            S = H.dot(P).dot(H.T) + R
+
+            # We should calculate the Cholesky factor if S is a matrix
+            # [LS,notposdef] = chol(S,'lower');
+
+            # The Kalman filter update (S is scalar)
+            HtiS = H.T/S
+            iS   = 1/S
+            K    = P.dot(HtiS)
+            v    = Y[:,k]-H.dot(m)
+            vtiS = v.T/S
+
+            # Loop through all parameters (Kalman filter update step derivative)
+            for j in range(0,nparam):
+
+                # Innovation covariance derivative
+                dS = H.dot(dP[:,:,j]).dot(H.T) + dR[:,:,j];
+
+                # Evaluate the energy derivative for j
+                eg[j] = eg[j]                           \
+                    - .5*np.sum(iS*dS)                  \
+                    + .5*H.dot(dm[:,j:j+1]).dot(vtiS.T) \
+                    + .5*vtiS.dot(dS).dot(vtiS.T)       \
+                    + .5*vtiS.dot(H.dot(dm[:,j:j+1]))
+
+                # Kalman filter update step derivatives
+                dK          = dP[:,:,j].dot(HtiS) - P.dot(HtiS).dot(dS)/S
+                dm[:,j:j+1] = dm[:,j:j+1] + dK.dot(v) - K.dot(H).dot(dm[:,j:j+1])
+                dKSKt       = dK.dot(S).dot(K.T)
+                dP[:,:,j]   = dP[:,:,j] - dKSKt - K.dot(dS).dot(K.T) - dKSKt.T
+
+            # Evaluate the energy
+            # e = e - .5*S.shape[0]*np.log(2*np.pi) - np.sum(np.log(np.diag(LS))) - .5*vtiS.dot(v);
+            e = e - .5*S.shape[0]*np.log(2*np.pi) - np.sum(np.log(np.sqrt(S))) - .5*vtiS.dot(v)
+
+            # Finish Kalman filter update step
+            m = m + K.dot(v)
+            P = P - K.dot(S).dot(K.T)
+
+            # Make sure the covariances stay symmetric
+            P  = (P+P.T)/2
+            dP = (dP + dP.transpose([1,0,2]))/2
+
+            # raise NameError('Debug me')
+
+        # Report
+        #print e
+        #print eg
+
+        # Return the gradient
+        return eg
+
+    def simulate(self,F,L,Qc,Pinf,X,size=1):
         # Simulate a trajectory using the state space model
 
         # Allocate space for results
-        f = np.zeros((F.shape[0],X.shape[1]))
+        f = np.zeros((F.shape[0],size,X.shape[1]))
 
         # Initial state
-        f[:,0:1] = np.linalg.cholesky(Pinf).dot(np.random.randn(F.shape[0],1))
+        f[:,:,1] = np.linalg.cholesky(Pinf).dot(np.random.randn(F.shape[0],size))
+
+        # Time step lengths
+        dt = np.empty(X.shape)
+        dt[:,0] = X[:,1]-X[:,0]
+        dt[:,1:] = np.diff(X)
+
+        # Solve the LTI SDE for these time steps
+        As, Qs, index = self.lti_disc(F,L,Qc,dt)
 
         # Sweep through remaining time points
         for k in range(1,X.shape[1]):
 
             # Form discrete-time model
-            (A,Q) = self.lti_disc(F,L,Qc,X[:,k]-X[:,k-1])
+            A = As[:,:,index[1-k]]
+            Q = Qs[:,:,index[1-k]]
 
             # Draw the state
-            f[:,k] = A.dot(f[:,k-1]).T + np.dot(np.linalg.cholesky(Q),np.random.randn(A.shape[0],1)).T
+            f[:,:,k] = A.dot(f[:,:,k-1]) + np.dot(np.linalg.cholesky(Q),np.random.randn(A.shape[0],size))
 
         # Return values
         return f

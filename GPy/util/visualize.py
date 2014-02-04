@@ -5,6 +5,9 @@ import numpy as np
 import matplotlib as mpl
 import time
 import Image
+from sklearn.feature_extraction.image import reconstruct_from_patches_2d
+# import pdb
+
 try:
     import visual
     visual_available = True
@@ -262,11 +265,14 @@ class image_show(matplotlib_show):
     :param invert: whether to invert the pixels or not (default False).
     :type invert: bool
     :param palette: a palette to use for the image.
+    :type palette: ndarray
     :param preset_mean: the preset mean of a scaled image.
     :type preset_mean: double
     :param preset_std: the preset standard deviation of a scaled image.
-    :type preset_std: double"""
-    def __init__(self, vals, axes=None, dimensions=(16,16), transpose=False, order='C', invert=False, scale=False, palette=[], preset_mean = 0., preset_std = -1., select_image=0):
+    :type preset_std: double
+    :param dictionary: array of dictionary bases used in sparse coding.
+    :type dictionary ndarray"""
+    def __init__(self, vals, axes=None, dimensions=(16,16), transpose=False, order='C', invert=False, scale=False, palette=[], preset_mean = 0., preset_std = -1., select_image=0, dictionary=[]):
         matplotlib_show.__init__(self, vals, axes)
         self.dimensions = dimensions
         self.transpose = transpose
@@ -276,13 +282,16 @@ class image_show(matplotlib_show):
         self.palette = palette
         self.preset_mean = preset_mean
         self.preset_std = preset_std
+        self.dictionary = dictionary
         self.select_image = select_image # This is used when the y vector contains multiple images concatenated.
 
         self.set_image(self.vals)
-        if not self.palette == []: # Can just show the image (self.set_image() took care of setting the palette)
+        if not self.palette == []: # Can just show the image (self.set_image() takes care of setting the palette or the dictionary-based reconstruction)
             self.handle = self.axes.imshow(self.vals, interpolation='nearest')
-        else: # Use a boring gray map.
-            self.handle = self.axes.imshow(self.vals, cmap=plt.cm.gray, interpolation='nearest') # @UndefinedVariable
+        else: 
+            # Use a boring gray map.
+            self.handle = self.axes.imshow(self.vals, cmap=plt.cm.gray, interpolation='nearest') # @UndefinedVariable 
+               
         plt.show()
 
     def modify(self, vals):
@@ -307,7 +316,21 @@ class image_show(matplotlib_show):
                     self.vals[first_row:last_row, first_col:last_col] = cur_img
 
         else: 
-            self.vals = np.reshape(vals[0,dim*self.select_image+np.array(range(dim))], self.dimensions, order=self.order)
+            if self.dictionary == []:
+                self.vals = np.reshape(vals[0,dim*self.select_image+np.array(range(dim))], self.dimensions, order=self.order)
+            else: # Reconstruct the image using sparse coding.
+                vals_reshaped = vals.reshape((vals.shape[1]/self.dictionary.shape[0],self.dictionary.shape[0]))
+                patches = np.dot(vals_reshaped, self.dictionary)
+                if not np.shape(self.preset_mean) == () and not np.shape(self.preset_std) == ():
+                    # un-normalizing the data, if possible
+                    patches *= np.preset_std
+                    patches += np.preset_mean
+
+                patch_width = np.int(np.sqrt(self.dictionary.shape[1]))
+                patches = patches.reshape(patches.shape[0], *(patch_width, patch_width))
+                # pdb.set_trace()
+                self.vals = reconstruct_from_patches_2d(patches, self.dimensions)
+
         if self.transpose:
             self.vals = self.vals.T
         # if not self.scale:

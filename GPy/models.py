@@ -12,7 +12,7 @@ detailed explanations for the different models.
 .. moduleauthor:: Max Zwiessele <ibinbei@gmail.com>
 '''
 
-__updated__ = '2013-11-28'
+__updated__ = '2014-02-04'
 
 from models_modules.bayesian_gplvm import BayesianGPLVM, BayesianGPLVMWithMissingData
 from models_modules.gp_regression import GPRegression
@@ -22,6 +22,7 @@ from models_modules.svigp_regression import SVIGPRegression#; _svigp_regression 
 from models_modules.sparse_gp_classification import SparseGPClassification#; _sparse_gp_classification = sparse_gp_classification ; del sparse_gp_classification 
 from models_modules.fitc_classification import FITCClassification#; _fitc_classification = fitc_classification ; del fitc_classification 
 from models_modules.gplvm import GPLVM#; _gplvm = gplvm ; del gplvm 
+from models_modules.scaled_gplvm import ScaledGPLVM#; _gplvm = gplvm ; del gplvm 
 from models_modules.bcgplvm import BCGPLVM#; _bcgplvm = bcgplvm; del bcgplvm
 from models_modules.sparse_gplvm import SparseGPLVM#; _sparse_gplvm = sparse_gplvm ; del sparse_gplvm 
 from models_modules.warped_gp import WarpedGP#; _warped_gp = warped_gp ; del warped_gp 

@@ -1,4 +1,4 @@
-# Copyright (c) 2013, Mu Niu, Arno Solin.
+# Copyright (c) 2013,  Arno Solin, Mu Niu, Simo Sarkka.
 # Licensed under the BSD 3-clause license (see LICENSE.txt) ??
 #
 # This implementation of converting GPs to state space models is based on the article:
@@ -12,7 +12,16 @@
 #     number = {4},
 #      pages = {51--61}
 #  }
+# 
+# Input parameter :   
+# X: temporal coordinate of data point     Y: spatio-temporal data   SXP: spatial coordinate grid
+# SI: indicate the spatial coordinate of the data point from the spatial grid. 
 #
+# The spatial coordinate of data point do not change over time
+# Kernel structure: separatable kernel   
+# 
+# Spatial kernel  : Matern32
+# Temporal kernel : state space of of rbf
 
 import numpy as np
 from scipy import linalg
@@ -158,7 +167,7 @@ class StateSpace_1(Model):
             count = count+1
 
         (M, P) = self.kalman_filter(F1,L1,Qc1,H1,self.sigma2,Pinf1,NX.T,NY)
-        #stop
+        stop
         # Run the Rauch-Tung-Striebel smoother
         #if not filter:
         #(M, P) = self.rts_smoother(F,L,Qc,X.T,M,P)
@@ -201,7 +210,7 @@ class StateSpace_1(Model):
 
         # Add the noise variance to the state variance
         V += self.sigma2*np.eye(m.shape[0])
-        stop
+        #stop
         # Lower and upper bounds
         lower = m - 2*np.sqrt(V)
         upper = m + 2*np.sqrt(V)
@@ -244,17 +253,17 @@ class StateSpace_1(Model):
             pb.imshow(Y,interpolation="nearest")
 
             #realisation
-            for i in range(0,Y.shape[1]):
-                reli[:,i] = np.random.multivariate_normal(m[:,i],v[:,:,i])            
-            pb.figure(3)
-            pb.imshow(reli,interpolation="nearest")
+            #for i in range(0,Y.shape[1]):
+            #    reli[:,i] = np.random.multivariate_normal(m[:,i],v[:,:,i])            
+            #pb.figure(3)
+            #pb.imshow(reli,interpolation="nearest")
 
-            for i in range(0,Y.shape[1]):
-                reli[:,i] = np.random.multivariate_normal(m[:,i],v[:,:,i])
-            pb.figure(4)
-            pb.imshow(reli,interpolation="nearest")            
+            #for i in range(0,Y.shape[1]):
+            #    reli[:,i] = np.random.multivariate_normal(m[:,i],v[:,:,i])
+            #pb.figure(4)
+            #pb.imshow(reli,interpolation="nearest")            
 
-            stop
+            
             #lower = m - 2*np.sqrt(v)
             #upper = m + 2*np.sqrt(v)
             

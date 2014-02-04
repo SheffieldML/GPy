@@ -20,8 +20,8 @@
 # The spatial coordinate of data point do not change over time
 # Kernel structure: separatable kernel   
 # 
-# Spatial kernel  : Matern32
-# Temporal kernel : state space of of rbf
+# Spatial kernel  : rbf
+# Temporal kernel : state space of of Matern32
 
 import numpy as np
 from scipy import linalg
@@ -56,8 +56,10 @@ class StateSpace_1(Model):
 
         # Default kernel
         if kernel is None:
-            self.kern = kern.Matern32(1,lengthscale=0.1)
-            self.spacekern = kern.rbf(1,lengthscale=0.1)
+            self.kern = kern.Matern32(1,lengthscale=0.5)
+            #self.spacekern = kern.rbf(1,lengthscale=0.1)
+            self.spacekern = kern.exponential(1,lengthscale=0.4)
+            #self.spacekern = kern.Matern32(1,lengthscale=0.5)
         else:
             self.kern = kernel
 
@@ -167,7 +169,7 @@ class StateSpace_1(Model):
             count = count+1
 
         (M, P) = self.kalman_filter(F1,L1,Qc1,H1,self.sigma2,Pinf1,NX.T,NY)
-        stop
+        #stop
         # Run the Rauch-Tung-Striebel smoother
         #if not filter:
         #(M, P) = self.rts_smoother(F,L,Qc,X.T,M,P)

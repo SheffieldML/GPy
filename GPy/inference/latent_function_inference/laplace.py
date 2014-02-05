@@ -11,7 +11,7 @@
 #http://gaussianprocess.org/gpml/code.
 
 import numpy as np
-from ...util.linalg import mdot, jitchol, pddet, dpotrs, dtrtrs
+from ...util.linalg import mdot, jitchol, pddet, dpotrs, dtrtrs, dpotri, symmetrify
 from ...util.misc import param_to_array
 from functools import partial as partial_func
 from posterior import Posterior
@@ -216,8 +216,15 @@ class LaplaceInference(object):
         B = np.eye(K.shape[0]) + W_12*K*W_12.T
         L = jitchol(B)
 
-        LiW12, _ = dtrtrs(L, np.diag(W_12[:,0]), lower=1, trans=0)
+        LiW12, _ = dtrtrs(L, np.diagflat(W_12), lower=1, trans=0)
         K_Wi_i = np.dot(LiW12.T, LiW12) # R = W12BiW12, in R&W p 126, eq 5.25
+
+        #here's a better way to compute the required matrix. 
+        # you could do the model finding witha backsub, instead of a dot...
+        #L2 = L/W_12
+        #K_Wi_i_2 , _= dpotri(L2)
+        #symmetrify(K_Wi_i_2)
+
 
         return K_Wi_i, L, LiW12
 

@@ -76,14 +76,17 @@ class GP(Model):
 
         """
         Kx = self.kern.K(_Xnew, self.X, which_parts=which_parts).T
-        LiKx, _ = dtrtrs(self.posterior.woodbury_chol, np.asfortranarray(Kx), lower=1)
+        #LiKx, _ = dtrtrs(self.posterior.woodbury_chol, np.asfortranarray(Kx), lower=1)
+        WiKx = np.dot(self.posterior.woodbury_inv, Kx)
         mu = np.dot(Kx.T, self.posterior.woodbury_vector)
         if full_cov:
             Kxx = self.kern.K(_Xnew, which_parts=which_parts)
-            var = Kxx - tdot(LiKx.T)
+            #var = Kxx - tdot(LiKx.T)
+            var = np.dot(Kx.T, WiKx)
         else:
             Kxx = self.kern.Kdiag(_Xnew, which_parts=which_parts)
-            var = Kxx - np.sum(LiKx*LiKx, 0)
+            #var = Kxx - np.sum(LiKx*LiKx, 0)
+            var = Kxx - np.sum(WiKx*Kx, 0)
             var = var.reshape(-1, 1)
         return mu, var
 

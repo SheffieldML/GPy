@@ -41,6 +41,17 @@ else:
         _blas_available = False
         warnings.warn("warning: caught this exception:" + str(e))
 
+def dtrtri(L, lower=0):
+    """
+    Wrapper for lapack dtrtrs function
+    Inverse of L
+
+    :param L: Triangular Matrix L
+    :param lower: is matrix lower (true) or upper (false)
+    :returns: Li, info
+    """
+    return lapack.dtrtri(L, lower=lower)
+
 def dtrtrs(A, B, lower=0, trans=0, unitdiag=0):
     """
     Wrapper for lapack dtrtrs function

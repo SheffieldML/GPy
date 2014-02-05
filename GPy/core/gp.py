@@ -185,7 +185,7 @@ class GP(Model):
         from ..plotting.matplot_dep import models_plots
         models_plots.plot_fit_f(self,*args,**kwargs)
 
-    def plot(self, *args):
+    def plot(self, *args, **kwargs):
         """
         Plot the posterior of the GP.
           - In one dimension, the function is plotted with a shaded region
@@ -204,7 +204,7 @@ class GP(Model):
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
-        models_plots.plot_fit(self,*args)
+        models_plots.plot_fit(self,*args,**kwargs)
 
     def _getstate(self):
         """

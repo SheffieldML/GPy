@@ -159,7 +159,7 @@ class RBF(Kernpart):
         if self.ARD:
             self.lengthscales.gradient += self._dL_dlengthscales_via_K(dL_dKmm, Z, None)
         else:
-            self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)
+            self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
 
     def gradients_X(self, dL_dK, X, X2, target):
         #if self._X is None or X.base is not self._X.base or X2 is not None:

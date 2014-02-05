@@ -156,11 +156,11 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
 
 
-def plot_f_fit(model, *args, **kwargs):
+def plot_fit_f(model, *args, **kwargs):
     """
     Plot the GP's view of the world, where the data is normalized and before applying a likelihood.
 
     All args and kwargs are passed on to models_plots.plot.
     """
     kwargs['plot_raw'] = True
-    plot(model,*args, **kwargs)
+    plot_fit(model,*args, **kwargs)

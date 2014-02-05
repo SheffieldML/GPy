@@ -74,7 +74,7 @@ class Posterior(object):
     @property
     def mean(self):
         if self._mean is None:
-            self._mean = np.dot(self._K, self._woodbury_vector)
+            self._mean = np.dot(self._K, self.woodbury_vector)
         return self._mean
 
     @property
@@ -93,10 +93,14 @@ class Posterior(object):
     @property
     def woodbury_chol(self):
         if self._woodbury_chol is None:
-            B = self._K - self._covariance
-            tmp, _ = dpotrs(self._K_chol, B)
-            Wi, _ = dpotrs(self._K_chol, tmp.T)
-            _, _, self._woodbury_chol, _ = pdinv(Wi)
+            #try computing woodbury chol from cov
+            if self._woodbury_inv is not None:
+                _, _, self._woodbury_chol, _ = pdinv(self._woodbury_inv)
+            elif self._covariance is not None:
+                B = self._K - self._covariance
+                tmp, _ = dpotrs(self.K_chol, B)
+                self._woodbury_inv, _ = dpotrs(self.K_chol, tmp.T)
+                _, _, self._woodbury_chol, _ = pdinv(self._woodbury_inv)
         return self._woodbury_chol
 
     @property
@@ -109,7 +113,7 @@ class Posterior(object):
     @property
     def woodbury_vector(self):
         if self._woodbury_vector is None:
-            self._woodbury_vector, _ = dpotrs(self._K_chol, self.mean)
+            self._woodbury_vector, _ = dpotrs(self.K_chol, self.mean)
         return self._woodbury_vector
 
     @property

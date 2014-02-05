@@ -214,6 +214,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
             return
         i = 0
         sizes = [0]
+        self._param_slices_ = []
         for p in self._parameters_:
             p._direct_parent_ = self
             p._highest_parent_ = self

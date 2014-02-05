@@ -78,7 +78,7 @@ class Bernoulli(Likelihood):
 
         return Z_hat, mu_hat, sigma2_hat
 
-    def _predictive_mean_analytical(self, mu, variance):
+    def predictive_mean(self, mu, variance):
 
         if isinstance(self.gp_link, link_functions.Probit):
             return stats.norm.cdf(mu/np.sqrt(1+variance))
@@ -89,12 +89,13 @@ class Bernoulli(Likelihood):
         else:
             raise NotImplementedError
 
-    def _predictive_variance_analytical(self, mu, variance, pred_mean):
+    def predictive_variance(self, mu, variance, pred_mean):
 
         if isinstance(self.gp_link, link_functions.Heaviside):
             return 0.
         else:
-            raise NotImplementedError
+            return np.nan
+            #raise NotImplementedError
 
     def pdf_link(self, link_f, y, extra_data=None):
         """

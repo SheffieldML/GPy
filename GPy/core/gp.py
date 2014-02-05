@@ -58,6 +58,7 @@ class GP(Model):
         self.parameters_changed()
 
     def parameters_changed(self):
+        print self.kern
         self.posterior, self._log_marginal_likelihood, grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y)
         self._dL_dK = grad_dict['dL_dK']
 
@@ -75,8 +76,8 @@ class GP(Model):
 
         """
         Kx = self.kern.K(_Xnew, self.X, which_parts=which_parts).T
-        LiKx, _ = dtrtrs(self.posterior._woodbury_chol, np.asfortranarray(Kx), lower=1)
-        mu = np.dot(Kx.T, self.posterior._woodbury_vector)
+        LiKx, _ = dtrtrs(self.posterior.woodbury_chol, np.asfortranarray(Kx), lower=1)
+        mu = np.dot(Kx.T, self.posterior.woodbury_vector)
         if full_cov:
             Kxx = self.kern.K(_Xnew, which_parts=which_parts)
             var = Kxx - tdot(LiKx.T)

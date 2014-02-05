@@ -55,8 +55,8 @@ class GP(Model):
 
         self.add_parameter(self.kern)
         self.add_parameter(self.likelihood)
-
         self.parameters_changed()
+
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y)
@@ -64,9 +64,6 @@ class GP(Model):
 
     def log_likelihood(self):
         return self._log_marginal_likelihood
-
-    def dL_dtheta_K(self):
-        return self.kern.dK_dtheta(self.posterior.dL_dK, self.X)
 
     def _raw_predict(self, _Xnew, which_parts='all', full_cov=False, stop=False):
         """

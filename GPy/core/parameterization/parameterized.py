@@ -74,6 +74,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
         self.size = sum(p.size for p in self._parameters_)
         if not self._has_fixes():
             self._fixes_ = None
+        self._param_slices_ = []
         self._connect_parameters()
         self._added_names_ = set()
         del self._in_init_
@@ -213,7 +214,6 @@ class Parameterized(Constrainable, Pickleable, Observable):
             return
         i = 0
         sizes = [0]
-        self._param_slices_ = []
         for p in self._parameters_:
             p._direct_parent_ = self
             p._highest_parent_ = self
@@ -315,7 +315,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
         return n
     def _get_params(self):
         # don't overwrite this anymore!
-        return numpy.hstack([x._get_params() for x in self._parameters_])
+        return numpy.hstack([x._get_params() for x in self._parameters_ if x.size>0])
     def _set_params(self, params, update=True):
         # don't overwrite this anymore!
         [p._set_params(params[s], update=update) for p,s in itertools.izip(self._parameters_,self._param_slices_)]

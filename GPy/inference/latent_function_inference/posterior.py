@@ -48,6 +48,7 @@ class Posterior(object):
 
         if ((woodbury_chol is not None) and (woodbury_vector is not None))\
                 or ((woodbury_inv is not None) and (woodbury_vector is not None))\
+                or ((woodbury_inv is not None) and (mean is not None))\
                 or ((mean is not None) and (cov is not None)):
             pass # we have sufficient to compute the posterior
         else:

@@ -325,7 +325,6 @@ class Model(Parameterized):
             if self._fail_count >= self._allowed_failures:
                 raise e
             self._fail_count += 1
-            import ipdb;ipdb.set_trace()
             obj_grads = np.clip(-self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients()), -1e100, 1e100)
         return obj_grads
 

@@ -467,7 +467,8 @@ def hapmap3(data_set='hapmap3'):
                                 '.info.pickle',
                                 '.nan.pickle']]
     if not reduce(lambda a,b: a and b, map(os.path.exists, preprocessed_data_paths)):
-        if not overide_manual_authorize and prompt_user("Preprocessing requires 17GB of memory and can take alot of time, continue? [Y/n]\n"):
+        if not overide_manual_authorize and prompt_user("Preprocessing requires 17GB "
+                            "of memory and can take a long time, continue? [Y/n]\n"):
             print "Preprocessing required for further usage."
             return
         status = "Preprocessing data, please be patient..."
@@ -513,7 +514,7 @@ def hapmap3(data_set='hapmap3'):
         status=write_status('encoding snps...', 70, status)
         # Encode the information for each gene in {-1,0,1}:
         status=write_status('encoding snps...', 73, status)
-        snps = (snpstr==ref[:,:,None])
+        snps = (snpstr==ref[None,:,:])
         status=write_status('encoding snps...', 76, status)
         snps = (snps*np.array([1,-1])[None,None,:])
         status=write_status('encoding snps...', 78, status)

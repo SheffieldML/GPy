@@ -54,7 +54,6 @@ class SparseGP(GP):
 
         self.add_parameter(self.Z, index=0)
 
-
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
 

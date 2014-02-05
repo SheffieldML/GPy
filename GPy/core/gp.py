@@ -57,7 +57,6 @@ class GP(Model):
         self.add_parameter(self.likelihood)
         self.parameters_changed()
 
-
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y)
         self._dL_dK = grad_dict['dL_dK']
@@ -182,7 +181,7 @@ class GP(Model):
         from ..plotting.matplot_dep import models_plots
         models_plots.plot_fit_f(self,*args,**kwargs)
 
-    def plot(self, *args):
+    def plot(self, *args, **kwargs):
         """
         Plot the posterior of the GP.
           - In one dimension, the function is plotted with a shaded region
@@ -201,7 +200,7 @@ class GP(Model):
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
-        models_plots.plot_fit(self,*args)
+        models_plots.plot_fit(self,*args,**kwargs)
 
     def _getstate(self):
         """

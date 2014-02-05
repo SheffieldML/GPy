@@ -3,14 +3,14 @@
 
 
 import numpy as np
-from scipy import weave
 from kernpart import Kernpart
 from ...util.linalg import tdot
 from ...util.misc import fast_array_equal, param_to_array
 from ...core.parameterization import Param
 
-class RBF(Kernpart):
+class SS_RBF(Kernpart):
     """
+    The RBF kernel for Spike-and-Slab GPLVM
     Radial Basis Function kernel, aka squared-exponential, exponentiated quadratic or Gaussian kernel:
 
     .. math::
@@ -25,48 +25,24 @@ class RBF(Kernpart):
     :type variance: float
     :param lengthscale: the vector of lengthscale of the kernel
     :type lengthscale: array or list of the appropriate size (or float if there is only one lengthscale parameter)
-    :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one single lengthscale parameter \ell), otherwise there is one lengthscale parameter per dimension.
-    :type ARD: Boolean
     :rtype: kernel object
-
-    .. Note: this object implements both the ARD and 'spherical' version of the function
     """
 
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='rbf'):
+    def __init__(self, input_dim, variance=1., lengthscale=None, name='rbf'):
         super(RBF, self).__init__(input_dim, name)
         self.input_dim = input_dim
-        self.ARD = ARD
 
-        if not ARD:
-            if lengthscale is not None:
-                lengthscale = np.asarray(lengthscale)
-                assert lengthscale.size == 1, "Only one lengthscale needed for non-ARD kernel"
-            else:
-                lengthscale = np.ones(1)
+        if lengthscale is not None:
+            lengthscale = np.asarray(lengthscale)
+            assert lengthscale.size == self.input_dim, "bad number of lengthscales"
         else:
-            if lengthscale is not None:
-                lengthscale = np.asarray(lengthscale)
-                assert lengthscale.size == self.input_dim, "bad number of lengthscales"
-            else:
-                lengthscale = np.ones(self.input_dim)
+            lengthscale = np.ones(self.input_dim)
 
         self.variance = Param('variance', variance)
         self.lengthscale = Param('lengthscale', lengthscale)
         self.lengthscale.add_observer(self, self.update_lengthscale)
         self.add_parameters(self.variance, self.lengthscale)
         self.parameters_changed() # initializes cache
-
-        #self.update_inv_lengthscale(self.lengthscale)
-        #self.parameters_changed()
-        # initialize cache
-        #self._Z, self._mu, self._S = np.empty(shape=(3, 1))
-        #self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
-
-        # a set of optional args to pass to weave
-        # self.weave_options = {'headers'           : ['<omp.h>'],
-        #                       'extra_compile_args': ['-fopenmp -O3'], # -march=native'],
-        #                       'extra_link_args'   : ['-lgomp']}
-        self.weave_options = {}
 
     def on_input_change(self, X):
         #self._K_computations(X, None)
@@ -117,7 +93,7 @@ class RBF(Kernpart):
             self.lengthscales.gradient = self._dL_dlengthscales_via_K(dL_dKnm, X, Z)
 
         else:
-            self.lengthscale.gradient = (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKnm)
+            self.lengthscale.gradient = (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
 
         #from Kmm
         self._K_computations(Z, None)
@@ -159,7 +135,7 @@ class RBF(Kernpart):
         if self.ARD:
             self.lengthscales.gradient += self._dL_dlengthscales_via_K(dL_dKmm, Z, None)
         else:
-            self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
+            self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)
 
     def gradients_X(self, dL_dK, X, X2, target):
         #if self._X is None or X.base is not self._X.base or X2 is not None:

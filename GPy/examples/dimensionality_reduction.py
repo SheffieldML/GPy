@@ -261,12 +261,12 @@ def bgplvm_simulation(optimize=True, verbose=1,
     from GPy import kern
     from GPy.models import BayesianGPLVM
 
-    D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 30, 3, 10
+    D1, D2, D3, N, num_inducing, Q = 49, 30, 10, 12, 3, 10
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
     k = kern.linear(Q, ARD=True)
     m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k)
-    m.X_variance = m.X_variance * .1
+    m.X_variance = m.X_variance * .7
     m['noise'] = Y.var() / 100.
 
     if optimize:
@@ -292,8 +292,8 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     m.ensure_default_constraints()
 
     for i, bgplvm in enumerate(m.bgplvms):
-        m['{}_noise'.format(i)] = bgplvm.likelihood.Y.var() / 500.
-        bgplvm.X_variance = bgplvm.X_variance * .1
+        m['{}_noise'.format(i)] = 1 #bgplvm.likelihood.Y.var() / 500.
+        bgplvm.X_variance = bgplvm.X_variance #* .1
     if optimize:
         print "Optimizing Model:"
         m.optimize(messages=verbose, max_iters=8e3, gtol=.1)

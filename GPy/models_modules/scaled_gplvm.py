@@ -43,6 +43,7 @@ class ScaledGPLVM(GPLVM):
         GP.__init__(self, X, likelihood, kernel, normalize_X=False)
         self.set_prior('.*X', priors.Gaussian(0, 1))
         #self.constrain_fixed('.*w', 1) #Collapses to normal GPLVM
+        self.constrain_positive('.*w')
         self.ensure_default_constraints()
 
     def _get_param_names(self):

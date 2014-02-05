@@ -34,7 +34,8 @@ class SparseGP(GPBase):
 
         self.Z = Z
         self.num_inducing = Z.shape[0]
-
+        self.backsub = 0
+        
         if X_variance is None:
             self.has_uncertain_inputs = False
             self.X_variance = None
@@ -69,28 +70,37 @@ class SparseGP(GPBase):
             self._const_jitter = np.eye(self.num_inducing) * 1e-7
 
         # factor Kmm
-        self._Lm = jitchol(self.Kmm + self._const_jitter)
-
+        self._Lm = jitchol(self.Kmm + self._const_jitter)    
+        if not self.backsub:
+            self._LmInv = linalg.lapack.dtrtri(self._Lm, lower=1)[0] # TODO: not needed in old version
+        
         # The rather complex computations of self._A
         if self.has_uncertain_inputs:
             if self.likelihood.is_heteroscedastic:
                 psi2_beta = (self.psi2 * (self.likelihood.precision.flatten().reshape(self.num_data, 1, 1))).sum(0)
             else:
                 psi2_beta = self.psi2.sum(0) * self.likelihood.precision
-            evals, evecs = linalg.eigh(psi2_beta)
-            clipped_evals = np.clip(evals, 0., 1e6) # TODO: make clipping configurable
-            if not np.array_equal(evals, clipped_evals):
-                pass # print evals
-            tmp = evecs * np.sqrt(clipped_evals)
-            tmp = tmp.T
+            if self.backsub:
+                evals, evecs = linalg.eigh(psi2_beta)
+                clipped_evals = np.clip(evals, 0., 1e6) # TODO: make clipping configurable
+                if not np.array_equal(evals, clipped_evals):
+                    pass # print evals
+                tmp = evecs * np.sqrt(clipped_evals)
+                tmp = tmp.T
+                tmp, _ = dtrtrs(self._Lm, np.asfortranarray(tmp.T), lower=1)
+                self._A = tdot(tmp) 
+            else:
+                self._A = np.dot(np.dot(self._LmInv,
+                                        psi2_beta),
+                                 self._LmInv.T)
         else:
             if self.likelihood.is_heteroscedastic:
                 tmp = self.psi1 * (np.sqrt(self.likelihood.precision.flatten().reshape(self.num_data, 1)))
             else:
                 tmp = self.psi1 * (np.sqrt(self.likelihood.precision))
-        tmp, _ = dtrtrs(self._Lm, np.asfortranarray(tmp.T), lower=1)
-        self._A = tdot(tmp)
-
+            tmp, _ = dtrtrs(self._Lm, np.asfortranarray(tmp.T), lower=1)
+            self._A = tdot(tmp)        
+        
         # factor B
         self.B = np.eye(self.num_inducing) + self._A
         self.LB = jitchol(self.B)
@@ -98,13 +108,23 @@ class SparseGP(GPBase):
         # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
         self.psi1Vf = np.dot(self.psi1.T, self.likelihood.VVT_factor)
 
-        # back substutue C into psi1Vf
-        tmp, info1 = dtrtrs(self._Lm, np.asfortranarray(self.psi1Vf), lower=1, trans=0)
-        self._LBi_Lmi_psi1Vf, _ = dtrtrs(self.LB, np.asfortranarray(tmp), lower=1, trans=0)
-        # tmp, info2 = dpotrs(self.LB, tmp, lower=1)
-        tmp, info2 = dtrtrs(self.LB, self._LBi_Lmi_psi1Vf, lower=1, trans=1)
-        self.Cpsi1Vf, info3 = dtrtrs(self._Lm, tmp, lower=1, trans=1)
-
+        if 1:#self.backsub:
+            # back substutue C into psi1Vf
+            tmp, info1 = dtrtrs(self._Lm, np.asfortranarray(self.psi1Vf), lower=1, trans=0)
+            self._LBi_Lmi_psi1Vf, _ = dtrtrs(self.LB, np.asfortranarray(tmp), lower=1, trans=0)
+            # tmp, info2 = dpotrs(self.LB, tmp, lower=1)
+            tmp, info2 = dtrtrs(self.LB, self._LBi_Lmi_psi1Vf, lower=1, trans=1)
+            self.Cpsi1Vf, info3 = dtrtrs(self._Lm, tmp, lower=1, trans=1)
+        else:
+            # slower, but more stable (?) version:
+            tmp = np.dot(self._LmInv, self.psi1Vf)
+            self._LBInv = linalg.lapack.dtrtri(self.LB, lower=True)[0]
+            self._LBi_Lmi_psi1Vf = np.dot(self._LBInv, tmp)
+            tmp = np.dot(self._LBInv.T, self._LBi_Lmi_psi1Vf)
+            self.Cpsi1Vf = np.dot(self._LmInv.T, tmp)
+        
+        #import ipdb;ipdb.set_trace()
+        
         # Compute dL_dKmm
         tmp = tdot(self._LBi_Lmi_psi1Vf)
         self.data_fit = np.trace(tmp)
@@ -177,6 +197,7 @@ class SparseGP(GPBase):
             B = -0.5 * self.output_dim * (np.sum(self.likelihood.precision * self.psi0) - np.trace(self._A))
         C = -self.output_dim * (np.sum(np.log(np.diag(self.LB)))) # + 0.5 * self.num_inducing * np.log(sf2))
         D = 0.5 * self.data_fit
+        self._A_part, self._B_part, self._C_part, self._D_part = A, B, C, D
         return A + B + C + D + self.likelihood.Z
 
     def _set_params(self, p):

@@ -215,12 +215,13 @@ class BayesianGPLVM(SparseGP, GPLVM):
 
         from matplotlib.cm import get_cmap
         from GPy.util.latent_space_visualizations.controllers.imshow_controller import ImAnnotateController
+        if not 'cmap' in kwargs.keys():
+            kwargs.update(cmap=get_cmap('jet'))
         controller = ImAnnotateController(ax,
                                       plot_function,
                                       tuple(self.X.min(0)[:, significant_dims]) + tuple(self.X.max(0)[:, significant_dims]),
                                       resolution=resolution,
                                       aspect=aspect,
-                                      cmap=get_cmap('jet'),
                                       **kwargs)
         ax.legend()
         ax.figure.tight_layout()
@@ -272,7 +273,8 @@ class BayesianGPLVM(SparseGP, GPLVM):
             if i < self.X.shape[1] - 1:
                 a.set_xticklabels('')
         pylab.draw()
-        fig.tight_layout(h_pad=.01) # , rect=(0, 0, 1, .95))
+        if ax is None:
+            fig.tight_layout(h_pad=.01) # , rect=(0, 0, 1, .95))
         return fig
 
     def getstate(self):

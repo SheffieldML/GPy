@@ -94,7 +94,6 @@ Run nosetests from the root directory of the repository:
 
     nosetests -v
 
-
 Funding Acknowledgements
 ========================
 

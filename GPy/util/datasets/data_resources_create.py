@@ -24,12 +24,12 @@ data_resources = {'ankur_pose_data' : {'urls' : [neil_url + 'ankur_pose_data/'],
                                      'license': None,
                                      'size' : 1100584},
                   'cmu_mocap_full' : {'urls' : ['http://mocap.cs.cmu.edu'],
-                                 'files' : [['allasfamc.zip']],
-                                 'citation' : """Please include this in your acknowledgements: The data used in this project was obtained from mocap.cs.cmu.edu.
-The database was created with funding from NSF EIA-0196217.""",
-                                 'details' : """CMU Motion Capture data base. Captured by a Vicon motion capture system consisting of 12 infrared MX-40 cameras, each of which is capable of recording at 120 Hz with images of 4 megapixel resolution. Motions are captured in a working volume of approximately 3m x 8m. The capture subject wears 41 markers and a stylish black garment.""",
-                                 'license' : """From http://mocap.cs.cmu.edu. This data is free for use in research projects. You may include this data in commercially-sold products, but you may not resell this data directly, even in converted form. If you publish results obtained using this data, we would appreciate it if you would send the citation to your published paper to jkh+mocap@cs.cmu.edu, and also would add this text to your acknowledgments section: The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.""",
-                                 'size' : None},
+                                      'files' : [['allasfamc.zip']],
+                                      'citation' : """Please include this in your acknowledgements: The data used in this project was obtained from mocap.cs.cmu.edu.'
+                                      'The database was created with funding from NSF EIA-0196217.""",
+                                      'details' : """CMU Motion Capture data base. Captured by a Vicon motion capture system consisting of 12 infrared MX-40 cameras, each of which is capable of recording at 120 Hz with images of 4 megapixel resolution. Motions are captured in a working volume of approximately 3m x 8m. The capture subject wears 41 markers and a stylish black garment.""",
+                                      'license' : """From http://mocap.cs.cmu.edu. This data is free for use in research projects. You may include this data in commercially-sold products, but you may not resell this data directly, even in converted form. If you publish results obtained using this data, we would appreciate it if you would send the citation to your published paper to jkh+mocap@cs.cmu.edu, and also would add this text to your acknowledgments section: The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.""",
+                                      'size' : None},
                   'creep_rupture' : {'urls' : ['http://www.msm.cam.ac.uk/map/data/tar/'],
                                      'files' : [['creeprupt.tar']],
                                      'citation' : 'Materials Algorithms Project Data Library: MAP_DATA_CREEP_RUPTURE. F. Brun and T. Yoshida.',
@@ -120,8 +120,15 @@ The database was created with funding from NSF EIA-0196217.""",
                                         'details' : """Accelerometer pen data used for robust regression by Tipping and Lawrence.""",
                                         'citation' : 'Michael E. Tipping and Neil D. Lawrence. Variational inference for Student-t models: Robust Bayesian interpolation and generalised component analysis. Neurocomputing, 69:123--141, 2005',
                                         'license' : None,
-                                        'size' : 3410}
+                                        'size' : 3410},
+                  'hapmap3' : {'urls' : ['http://hapmap.ncbi.nlm.nih.gov/downloads/genotypes/latest_phaseIII_ncbi_b36/plink_format/'],
+                                 'files' : [['hapmap3_r2_b36_fwd.consensus.qc.poly.map.bz2', 'hapmap3_r2_b36_fwd.consensus.qc.poly.ped.bz2', 'relationships_w_pops_121708.txt']],
+                                 'details' : """HapMap Project: Single Nucleotide Polymorphism sequenced in all human populations. See http://www.nature.com/nature/journal/v426/n6968/abs/nature02168.html for details.""",
+                                 'citation': """Gibbs, Richard A., et al. "The international HapMap project." Nature 426.6968 (2003): 789-796.""",
+                                 'license' : """International HapMap Project Public Access License (http://hapmap.ncbi.nlm.nih.gov/cgi-perl/registration#licence)""",
+                                 'size' : 2*1729092237 + 62265},
                   }
 
-with open('data_resources.json', 'w') as file:
-    json.dump(data_resources, file)
+with open('data_resources.json', 'w') as f:
+    print "writing data_resources"
+    json.dump(data_resources, f)

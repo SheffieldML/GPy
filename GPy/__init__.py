@@ -4,13 +4,18 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 import os
 
+def read(fname):
+    with open(os.path.join(os.path.dirname(__file__), fname)) as f:
+        return f.read()
+__version__ = read('version') 
+
 import core
 import models
 import mappings
+import likelihoods
 import inference
 import util
 import examples
-import likelihoods
 import testing
 from numpy.testing import Tester
 from nose.tools import nottest

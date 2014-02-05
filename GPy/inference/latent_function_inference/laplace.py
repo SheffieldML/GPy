@@ -11,15 +11,13 @@
 #http://gaussianprocess.org/gpml/code.
 
 import numpy as np
-import scipy as sp
-from likelihood import likelihood
-from ..util.linalg import mdot, jitchol, pddet, dpotrs
+from ...util.linalg import mdot, jitchol, pddet, dpotrs
 from functools import partial as partial_func
 from posterior import Posterior
 import warnings
+from scipy import optimize
 
 class LaplaceInference(object):
-    """Laplace approximation to a posterior"""
 
     def __init__(self):
         """
@@ -29,8 +27,11 @@ class LaplaceInference(object):
         (using Newton-Raphson) of the unnormalised posterior
 
         """
-        #Inital values
-        self.NORMAL_CONST = ((0.5 * self.N) * np.log(2 * np.pi))
+        self.NORMAL_CONST = (0.5 * np.log(2 * np.pi))
+
+        self._mode_finding_tolerance = 1e-7
+        self._mode_finding_max_iter = 40
+        self.bad_fhat = True
 
 
     def inference(self, kern, X, likelihood, Y, Y_metadata=None):
@@ -38,16 +39,17 @@ class LaplaceInference(object):
         Returns a Posterior class containing essential quantities of the posterior
         """
 
-        self.N, self.D = self.data.shape
-        self.restart()
-
         # Compute K
-        self.K = kern.K(X)
-        self.data = Y
-        self.N, self.D = Y.shape
+        K = kern.K(X)
 
         #Find mode
-        self.f_hat = self.rasm_mode(self.K)
+        if self.bad_fhat:
+            Ki_f_init = np.random.randn(*Y.shape)/50
+        else:
+            Ki_f_init = self._previous_Ki_fhat
+        self.f_hat, self._previous_Ki_fhat = self.rasm_mode(K, Y, likelihood, Ki_f_init, Y_metadata=Y_metadata)
+
+        stop
 
         #Compute hessian and other variables at mode
         self._compute_likelihood_variables()
@@ -58,25 +60,11 @@ class LaplaceInference(object):
 
         return Posterior(mean=self.f_hat, cov=self.Sigma, K=self.K), log_marginal_approx, {'dL_dK':dL_dK}
 
-    def restart(self):
-        """
-        Reset likelihood variables to their defaults
-        """
-        #Initial values for the GP variables
-        self.Y = np.zeros((self.N, 1))
-        self.covariance_matrix = np.eye(self.N)
-        self.precision = np.ones(self.N)[:, None]
-        self.Z = 0
-        self.YYT = None
-
-        self.old_Ki_f = None
-        self.bad_fhat = False
-
     def _shared_gradients_components(self):
         """
         A helper function to compute some common quantities
         """
-        d3lik_d3fhat = self.noise_model.d3logpdf_df3(self.f_hat, self.data, extra_data=self.extra_data)
+        d3lik_d3fhat = likelihood.d3logpdf_df3(self.f_hat, self.data, extra_data=self.extra_data)
         dL_dfhat = 0.5*(np.diag(self.Ki_W_i)[:, None]*d3lik_d3fhat).T #why isn't this -0.5?
         I_KW_i = np.eye(self.N) - np.dot(self.K, self.Wi_K_i)
         return dL_dfhat, I_KW_i
@@ -111,7 +99,7 @@ class LaplaceInference(object):
         :rtype: array of derivatives (1 x num_likelihood_params)
         """
         dL_dfhat, I_KW_i = self._shared_gradients_components()
-        dlik_dthetaL, dlik_grad_dthetaL, dlik_hess_dthetaL = self.noise_model._laplace_gradients(self.f_hat, self.data, extra_data=self.extra_data)
+        dlik_dthetaL, dlik_grad_dthetaL, dlik_hess_dthetaL = likelihood._laplace_gradients(self.f_hat, self.data, extra_data=self.extra_data)
 
         num_params = len(self._get_param_names())
         # make space for one derivative for each likelihood parameter
@@ -135,19 +123,19 @@ class LaplaceInference(object):
         At the mode, compute the hessian and effective covaraince matrix.
         """
         #At this point get the hessian matrix (or vector as W is diagonal)
-        self.W = -self.noise_model.d2logpdf_df2(self.f_hat, self.data, extra_data=self.extra_data)
+        self.W = -likelihood.d2logpdf_df2(self.f_hat, self.data, extra_data=self.extra_data)
 
-        if not self.noise_model.log_concave:
+        if not likelihood.log_concave:
             #print "Under 1e-10: {}".format(np.sum(self.W < 1e-6))
             self.W[self.W < 1e-6] = 1e-6  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
 
-        self.W12BiW12, self.ln_B_det = self._compute_B_statistics(self.K, self.W, np.eye(self.N))
+        self.W12BiW12, self.ln_B_det = self._compute_B_statistics(self.K, self.W, np.eye(self.N), likelihood.log_concave)
 
         self.Ki_f = self.Ki_f
         self.f_Ki_f = np.dot(self.f_hat.T, self.Ki_f)
         self.Ki_W_i = self.K - mdot(self.K, self.W12BiW12, self.K)
 
-    def _compute_B_statistics(self, K, W, a):
+    def _compute_B_statistics(self, K, W, a, log_concave):
         """
         Rasmussen suggests the use of a numerically stable positive definite matrix B
         Which has a positive diagonal element and can be easyily inverted
@@ -160,7 +148,7 @@ class LaplaceInference(object):
         :type a: Matrix NxN
         :returns: (W12BiW12, ln_B_det)
         """
-        if not self.noise_model.log_concave:
+        if not log_concave:
             #print "Under 1e-10: {}".format(np.sum(W < 1e-6))
             W[W < 1e-6] = 1e-6  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                 # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
@@ -170,14 +158,14 @@ class LaplaceInference(object):
 
         #W is diagonal so its sqrt is just the sqrt of the diagonal elements
         W_12 = np.sqrt(W)
-        B = np.eye(self.N) + W_12*K*W_12.T
+        B = np.eye(K.shape[0]) + W_12*K*W_12.T
         L = jitchol(B)
 
         W12BiW12a = W_12*dpotrs(L, np.asfortranarray(W_12*a), lower=1)[0]
-        ln_B_det = 2*np.sum(np.log(np.diag(L)))
+        ln_B_det = 2.*np.sum(np.log(np.diag(L)))
         return W12BiW12a, ln_B_det
 
-    def rasm_mode(self, K, MAX_ITER=40):
+    def rasm_mode(self, K, Y, likelihood, Ki_f_init, Y_metadata=None):
         """
         Rasmussen's numerically stable mode finding
         For nomenclature see Rasmussen & Williams 2006
@@ -185,110 +173,92 @@ class LaplaceInference(object):
 
         :param K: Covariance matrix evaluated at locations X
         :type K: NxD matrix
-        :param MAX_ITER: Maximum number of iterations of newton-raphson before forcing finish of optimisation
-        :type MAX_ITER: scalar
+        :param Y: The data
+        :type Y: np.ndarray
+        :param likelihood: the likelihood of the latent function value for the given data
+        :type likelihood: a GPy.likelihood object
+        :param Ki_f_init: the initial guess at the mode
+        :type Ki_f_init: np.ndarray
+        :param Y_metadata: information about the data, e.g. which likelihood to take from a multi-likelihood object
+        :type Y_metadata: np.ndarray | None
         :returns: f_hat, mode on which to make laplace approxmiation
-        :rtype: NxD matrix
+        :rtype: np.ndarray
         """
-        #old_Ki_f = np.zeros((self.N, 1))
 
-        #Start f's at zero originally of if we have gone off track, try restarting
-        if self.old_Ki_f is None or self.bad_fhat:
-            old_Ki_f = np.random.rand(self.N, 1)/50.0
-            #old_Ki_f = self.Y
-            f = np.dot(K, old_Ki_f)
-        else:
-            #Start at the old best point
-            old_Ki_f = self.old_Ki_f.copy()
-            f = self.f_hat.copy()
+        ##Start f's at zero originally or if we have gone off track, try restarting
+        #if self.old_Ki_f is None or self.bad_fhat:
+            #old_Ki_f = np.random.rand(self.N, 1)/50.0
+            ##old_Ki_f = self.Y
+            #f = np.dot(K, old_Ki_f)
+        #else:
+            ##Start at the old best point
+            #old_Ki_f = self.old_Ki_f.copy()
+            #f = self.f_hat.copy()
 
-        new_obj = -np.inf
-        old_obj = np.inf
+        Ki_f = Ki_f_init.copy()
+        f = np.dot(K, Ki_f)
 
+
+        #define the objective function (to be maximised)
         def obj(Ki_f, f):
-            return -0.5*np.dot(Ki_f.T, f) + self.noise_model.logpdf(f, self.data, extra_data=self.extra_data)
+            return -0.5*np.dot(Ki_f.T, f) + likelihood.logpdf(f, Y, extra_data=Y_metadata)
 
         difference = np.inf
-        epsilon = 1e-7
-        #step_size = 1
-        #rs = 0
         i = 0
-
-        while difference > epsilon and i < MAX_ITER:
-            W = -self.noise_model.d2logpdf_df2(f, self.data, extra_data=self.extra_data)
+        while difference > self._mode_finding_tolerance and i < self._mode_finding_max_iter:
+            W = -likelihood.d2logpdf_df2(f, Y, extra_data=Y_metadata)
 
             W_f = W*f
-            grad = self.noise_model.dlogpdf_df(f, self.data, extra_data=self.extra_data)
+            grad = likelihood.dlogpdf_df(f, Y, extra_data=Y_metadata)
 
             b = W_f + grad
-            W12BiW12Kb, _ = self._compute_B_statistics(K, W.copy(), np.dot(K, b))
+            W12BiW12Kb, _ = self._compute_B_statistics(K, W.copy(), np.dot(K, b), likelihood.log_concave)
 
             #Work out the DIRECTION that we want to move in, but don't choose the stepsize yet
             full_step_Ki_f = b - W12BiW12Kb
-            dKi_f = full_step_Ki_f - old_Ki_f
+            dKi_f = full_step_Ki_f - Ki_f
 
-            f_old = f.copy()
-            def inner_obj(step_size, old_Ki_f, dKi_f, K):
-                Ki_f = old_Ki_f + step_size*dKi_f
-                f = np.dot(K, Ki_f)
-                # This is nasty, need to set something within an optimization though
-                self.tmp_Ki_f = Ki_f.copy()
-                self.tmp_f = f.copy()
-                return -obj(Ki_f, f)
+            #define an objective for the line search
+            def inner_obj(step_size):
+                Ki_f_trial = Ki_f + step_size*dKi_f
+                f_trial = np.dot(K, Ki_f_trial)
+                print -obj(Ki_f_trial, f_trial),
+                return -obj(Ki_f_trial, f_trial)
 
-            i_o = partial_func(inner_obj, old_Ki_f=old_Ki_f, dKi_f=dKi_f, K=K)
+            #use scipy for the line search, the compute new values of f, Ki_f
+            step = optimize.brent(inner_obj, tol=1e-4, maxiter=12)
+            Ki_f_new = Ki_f + step*dKi_f
+            f_new = np.dot(K, Ki_f_new)
+
+            print ""
+            print obj(Ki_f, f), obj(Ki_f_new, f_new), step
+            print ""
+
+            #i_o = partial_func(inner_obj, old_Ki_f=old_Ki_f, dKi_f=dKi_f, K=K)
             #Find the stepsize that minimizes the objective function using a brent line search
             #The tolerance and maxiter matter for speed! Seems to be best to keep them low and make more full
             #steps than get this exact then make a step, if B was bigger it might be the other way around though
             #new_obj = sp.optimize.minimize_scalar(i_o, method='brent', tol=1e-4, options={'maxiter':5}).fun
-            new_obj = sp.optimize.brent(i_o, tol=1e-4, maxiter=10)
-            f = self.tmp_f.copy()
-            Ki_f = self.tmp_Ki_f.copy()
+            #new_obj = sp.optimize.brent(i_o, tol=1e-4, maxiter=10)
+            #f = self.tmp_f.copy()
+            #Ki_f = self.tmp_Ki_f.copy()
 
-            #Optimize without linesearch
-            #f_old = f.copy()
-            #update_passed = False
-            #while not update_passed:
-                #Ki_f = old_Ki_f + step_size*dKi_f
-                #f = np.dot(K, Ki_f)
-
-                #old_obj = new_obj
-                #new_obj = obj(Ki_f, f)
-                #difference = new_obj - old_obj
-                ##print "difference: ",difference
-                #if difference < 0:
-                    ##print "Objective function rose", np.float(difference)
-                    ##If the objective function isn't rising, restart optimization
-                    #step_size *= 0.8
-                    ##print "Reducing step-size to {ss:.3} and restarting optimization".format(ss=step_size)
-                    ##objective function isn't increasing, try reducing step size
-                    #f = f_old.copy() #it's actually faster not to go back to old location and just zigzag across the mode
-                    #old_obj = new_obj
-                    #rs += 1
-                #else:
-                    #update_passed = True
-
-            #old_Ki_f = self.Ki_f.copy()
-
-            #difference = abs(new_obj - old_obj)
-            #old_obj = new_obj.copy()
-            difference = np.abs(np.sum(f - f_old)) + np.abs(np.sum(Ki_f - old_Ki_f))
-            #difference = np.abs(np.sum(Ki_f - old_Ki_f))/np.float(self.N)
-            old_Ki_f = Ki_f.copy()
+            difference = np.abs(np.sum(f_new - f)) + np.abs(np.sum(Ki_f_new - Ki_f))
+            Ki_f = Ki_f_new
+            f = f_new
             i += 1
 
-        self.old_Ki_f = old_Ki_f.copy()
 
         #Warn of bad fits
-        if difference > epsilon:
+        if difference > self._mode_finding_tolerance:
+            if not self.bad_fhat:
+                warnings.warn("Not perfect f_hat fit difference: {}".format(difference))
             self.bad_fhat = True
-            warnings.warn("Not perfect f_hat fit difference: {}".format(difference))
         elif self.bad_fhat:
             self.bad_fhat = False
-            warnings.warn("f_hat now perfect again")
+            warnings.warn("f_hat now fine again")
 
-        self.Ki_f = Ki_f
-        return f
+        return f, Ki_f
 
     def _compute_GP_variables(self):
         """
@@ -328,7 +298,7 @@ class LaplaceInference(object):
 
         self.Wi_K_i = self.W12BiW12
         ln_det_Wi_K = pddet(self.Sigma_tilde + self.K)
-        lik = self.noise_model.logpdf(self.f_hat, self.data, extra_data=self.extra_data)
+        lik = likelihood.logpdf(self.f_hat, self.data, extra_data=self.extra_data)
         y_Wi_K_i_y = mdot(Y_tilde.T, self.Wi_K_i, Y_tilde)
 
         Z_tilde = (+ lik

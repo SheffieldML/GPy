@@ -41,9 +41,8 @@ def plot_latent(model, labels=None, which_indices=None,
     # first, plot the output variance as a function of the latent space
     Xtest, xx, yy, xmin, xmax = util.plot.x_frame2D(model.X[:, [input_1, input_2]], resolution=resolution)
     #Xtest_full = np.zeros((Xtest.shape[0], model.X.shape[1]))
-
+    Xtest_full = np.zeros((Xtest.shape[0], model.X.shape[1]))
     def plot_function(x):
-        Xtest_full = np.zeros((Xtest.shape[0], model.X.shape[1]))
         Xtest_full[:, [input_1, input_2]] = x
         mu, var, low, up = model.predict(Xtest_full)
         var = var[:, :1]

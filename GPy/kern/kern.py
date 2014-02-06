@@ -180,8 +180,10 @@ class kern(Parameterized):
         :type tensor: bool
 
         """
-        K1 = self.copy()
-        K2 = other.copy()
+        K1 = self
+        K2 = other
+        #K1 = self.copy()
+        #K2 = other.copy()
 
         slices = []
         for sl1, sl2 in itertools.product(K1.input_slices, K2.input_slices):

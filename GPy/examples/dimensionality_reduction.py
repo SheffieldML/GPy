@@ -278,6 +278,37 @@ def bgplvm_simulation(optimize=True, verbose=1,
         m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
     return m
 
+def bgplvm_simulation_missing_data(optimize=True, verbose=1,
+                      plot=True, plot_sim=False,
+                      max_iters=2e4,
+                      ):
+    from GPy import kern
+    from GPy.models import BayesianGPLVMWithMissingData
+    from GPy.util.linalg import pca
+
+    D1, D2, D3, N, num_inducing, Q = 49, 30, 10, 12, 3, 10
+    _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
+    Y = Ylist[0]
+    # 10% missing data:
+    inan = _np.random.binomial(1, .1, size=(N, D1))==1
+    Yn = Y.copy()
+    Yn[inan] = _np.nan
+    Yn = _np.ma.masked_invalid(Yn, False)
+    k = kern.linear(Q, ARD=True)
+    m = BayesianGPLVMWithMissingData(Yn, Q, init="random", X=pca(Y, Q)[0], num_inducing=num_inducing, kernel=k)
+    m.X_variance = m.X_variance * .1
+    m['noise'] = _np.ma.var(Yn) / 100.
+
+    if optimize:
+        print "Optimizing model:"
+        m.optimize('scg', messages=verbose, max_iters=max_iters,
+                   gtol=.05)
+    if plot:
+        m.plot_X_1d("BGPLVM Latent Space 1D")
+        m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
+    return m
+
+
 def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     from GPy import kern
     from GPy.models import MRD

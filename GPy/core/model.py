@@ -170,14 +170,12 @@ class Model(Parameterized):
         # first take care of all parameters (from N(0,1))
         #x = self._get_params_transformed()
         x = np.random.randn(self.size_transformed)
-        self._set_params_transformed(x)
+        x = self._untransform_params(x)
         # now draw from prior where possible
-        x = self._get_params()
-        if self.priors is not None:
+        if self.priors is not None and len(self.priors):
             [np.put(x, i, p.rvs(1)) for i, p in enumerate(self.priors) if not p is None]
         self._set_params(x)
         #self._set_params_transformed(self._get_params_transformed()) # makes sure all of the tied parameters get the same init (since there's only one prior object...)
-
 
     def optimize_restarts(self, num_restarts=10, robust=False, verbose=True, parallel=False, num_processes=None, **kwargs):
         """

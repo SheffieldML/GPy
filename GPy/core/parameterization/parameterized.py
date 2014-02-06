@@ -316,7 +316,10 @@ class Parameterized(Constrainable, Pickleable, Observable):
         return n
     def _get_params(self):
         # don't overwrite this anymore!
+        if not self.size:
+            return np.empty(shape=(0,), dtype=np.float64)
         return numpy.hstack([x._get_params() for x in self._parameters_ if x.size>0])
+
     def _set_params(self, params, update=True):
         # don't overwrite this anymore!
         [p._set_params(params[s], update=update) for p,s in itertools.izip(self._parameters_,self._param_slices_)]
@@ -330,10 +333,12 @@ class Parameterized(Constrainable, Pickleable, Observable):
         return p
     def _set_params_transformed(self, p):
         # inverse apply transformations for parameters and set the resulting parameters
+        self._set_params(self._untransform_params(p))
+    def _untransform_params(self, p):
         p = p.copy()
         if self._has_fixes(): tmp = self._get_params(); tmp[self._fixes_] = p; p = tmp; del tmp
         [numpy.put(p, ind, c.f(p[ind])) for c,ind in self.constraints.iteritems() if c != __fixed__]
-        self._set_params(p)
+        return p
     def _name_changed(self, param, old_name):
         if hasattr(self, old_name) and old_name in self._added_names_:
             delattr(self, old_name)

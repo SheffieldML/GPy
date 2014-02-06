@@ -27,6 +27,7 @@ class ObservableArray(ListArray, Observable):
     """
     __array_priority__ = 0 # Never give back Param
     def __new__(cls, input_array):
+        cls.__name__ = "ObservableArray\n     "
         obj = super(ObservableArray, cls).__new__(cls, input_array).view(cls)
         obj._observers_ = {}
         return obj

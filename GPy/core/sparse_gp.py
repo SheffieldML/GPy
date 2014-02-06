@@ -43,7 +43,6 @@ class SparseGP(GP):
             print "defaulting to ", inference_method, "for latent function inference"
 
         self.Z = Param('inducing inputs', Z)
-
         self.num_inducing = Z.shape[0]
 
         if not (X_variance is None):

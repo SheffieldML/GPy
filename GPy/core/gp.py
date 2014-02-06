@@ -58,7 +58,6 @@ class GP(Model):
         self.parameters_changed()
 
     def parameters_changed(self):
-        print self.kern
         self.posterior, self._log_marginal_likelihood, grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y)
         self._dL_dK = grad_dict['dL_dK']
 

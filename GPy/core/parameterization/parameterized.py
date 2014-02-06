@@ -233,7 +233,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
             elif not (pname in not_unique):
                 self.__dict__[pname] = p
                 self._added_names_.add(pname)
-        
+
     def _connect_highest_parent(self, highest_parent):
         self._highest_parent_ = highest_parent
         if not hasattr(self, "_parameters_") or len(self._parameters_) < 1:
@@ -242,7 +242,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
         for p in self._parameters_:
             p._highest_parent_ = highest_parent
             p._connect_highest_parent(highest_parent)
-        
+
     #===========================================================================
     # Pickling operations
     #===========================================================================
@@ -413,10 +413,10 @@ class Parameterized(Constrainable, Pickleable, Observable):
     #===========================================================================
     # Fixing parameters:
     #===========================================================================
-    def _fix(self, param, warning=True):
+    def _fix(self, param, warning=True, update=True):
         f = self._add_constrain(param, __fixed__, warning)
         self._set_fixed(f)
-    def _unfix(self, param):
+    def _unfix(self, param, update=True):
         if self._has_fixes():
             f = self._remove_constrain(param, __fixed__)
             self._set_unfixed(f)
@@ -438,7 +438,8 @@ class Parameterized(Constrainable, Pickleable, Observable):
         # if advanced indexing is activated it happens that the array is a copy
         # you can retrieve the original param through this method, by passing
         # the copy here
-        return self._parameters_[param._parent_index_]
+        #return self._parameters_[param._parent_index_]
+        return param._direct_parent_._parameters_[param._parent_index_]
     def hirarchy_name(self):
         if self.has_parent():
             return self._direct_parent_.hirarchy_name() + adjust_name_for_printing(self.name) + "."
@@ -452,7 +453,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
         # if removing constraints before adding new is not wanted, just delete the above line!
         self.constraints.add(transform, rav_i)
         param = self._get_original(param)
-        param._set_params(transform.initialize(param._get_params()))
+        param._set_params(transform.initialize(param._get_params()), update=False)
         if warning and any(reconstrained):
             # if you want to print the whole params object, which was reconstrained use:
             # m = str(param[self._backtranslate_index(param, reconstrained)])

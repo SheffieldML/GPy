@@ -20,7 +20,7 @@ class Observable(object):
     def _notify_observers(self):
         [callble(self) for callble in self._observers_.itervalues()]
 
-        
+
 class Pickleable(object):
     def _getstate(self):
         """
@@ -36,9 +36,9 @@ class Pickleable(object):
         Set the state (memento pattern) of this class to the given state.
         Usually this is just the counterpart to _getstate, such that
         an object is a copy of another when calling
-    
+
             copy = <classname>.__new__(*args,**kw)._setstate(<to_be_copied>._getstate())
-            
+
         See python doc "pickling" (`__getstate__` and `__setstate__`) for details.
         """
         raise NotImplementedError, "To be able to use pickling you need to implement this method"
@@ -49,14 +49,14 @@ class Pickleable(object):
 
 class Parentable(object):
     def __init__(self, direct_parent=None, highest_parent=None, parent_index=None):
-        super(Parentable,self).__init__()        
+        super(Parentable,self).__init__()
         self._direct_parent_ = direct_parent
         self._parent_index_ = parent_index
         self._highest_parent_ = highest_parent
-        
+
     def has_parent(self):
         return self._direct_parent_ is not None and self._highest_parent_ is not None
-    
+
 class Nameable(Parentable):
     _name = None
     def __init__(self, name, direct_parent=None, highest_parent=None, parent_index=None):
@@ -69,10 +69,10 @@ class Nameable(Parentable):
     @name.setter
     def name(self, name):
         from_name = self.name
-        self._name = name        
+        self._name = name
         if self.has_parent():
             self._direct_parent_._name_changed(self, from_name)
-            
+
 class Constrainable(Nameable):
     def __init__(self, name):
         super(Constrainable,self).__init__(name)
@@ -84,7 +84,7 @@ class Constrainable(Nameable):
         :param transform: the :py:class:`GPy.core.transformations.Transformation`
                           to constrain the this parameter to.
         :param warning: print a warning if re-constraining parameters.
-        
+
         Constrain the parameter to the given
         :py:class:`GPy.core.transformations.Transformation`.
         """
@@ -97,37 +97,37 @@ class Constrainable(Nameable):
                 self._add_constrain(p, transform, warning)
             if update:
                 self.parameters_changed()
-                
-    def constrain_positive(self, warning=True):
+
+    def constrain_positive(self, warning=True, update=True):
         """
         :param warning: print a warning if re-constraining parameters.
-        
+
         Constrain this parameter to the default positive constraint.
         """
-        self.constrain(Logexp(), warning)
+        self.constrain(Logexp(), warning=warning, update=update)
 
-    def constrain_negative(self, warning=True):
+    def constrain_negative(self, warning=True, update=True):
         """
         :param warning: print a warning if re-constraining parameters.
-        
+
         Constrain this parameter to the default negative constraint.
         """
-        self.constrain(NegativeLogexp(), warning)
+        self.constrain(NegativeLogexp(), warning=warning, update=update)
 
-    def constrain_bounded(self, lower, upper, warning=True):
+    def constrain_bounded(self, lower, upper, warning=True, update=True):
         """
         :param lower, upper: the limits to bound this parameter to
         :param warning: print a warning if re-constraining parameters.
-        
+
         Constrain this parameter to lie within the given range.
         """
-        self.constrain(Logistic(lower, upper), warning)
+        self.constrain(Logistic(lower, upper), warning=warning, update=update)
 
     def unconstrain(self, *transforms):
         """
         :param transforms: The transformations to unconstrain from.
-        
-        remove all :py:class:`GPy.core.transformations.Transformation` 
+
+        remove all :py:class:`GPy.core.transformations.Transformation`
         transformats of this parameter object.
         """
         if self.has_parent():
@@ -138,20 +138,20 @@ class Constrainable(Nameable):
 
     def unconstrain_positive(self):
         """
-        Remove positive constraint of this parameter. 
+        Remove positive constraint of this parameter.
         """
         self.unconstrain(Logexp())
 
     def unconstrain_negative(self):
         """
-        Remove negative constraint of this parameter. 
+        Remove negative constraint of this parameter.
         """
         self.unconstrain(NegativeLogexp())
 
     def unconstrain_bounded(self, lower, upper):
         """
         :param lower, upper: the limits to unbound this parameter from
-        
+
         Remove (lower, upper) bounded constrain from this parameter/
         """
         self.unconstrain(Logistic(lower, upper))

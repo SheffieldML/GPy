@@ -3,7 +3,7 @@
 
 #TODO
 """
-A lot of this code assumes that the link functio nis the identity. 
+A lot of this code assumes that the link function is the identity. 
 
 I think laplace code is okay, but I'm quite sure that the EP moments will only work if the link is identity. 
 

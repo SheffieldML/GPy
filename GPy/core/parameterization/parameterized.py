@@ -69,8 +69,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
         super(Parameterized, self).__init__(name=name)
         self._in_init_ = True
         self._constraints_ = None#ParameterIndexOperations()
-        if not hasattr(self, "_parameters_"):
-            self._parameters_ = []
+        self._parameters_ = []
         self.size = sum(p.size for p in self._parameters_)
         if not self._has_fixes():
             self._fixes_ = None
@@ -212,14 +211,12 @@ class Parameterized(Constrainable, Pickleable, Observable):
         if not hasattr(self, "_parameters_") or len(self._parameters_) < 1:
             # no parameters for this class
             return
-        i = 0
         sizes = [0]
         self._param_slices_ = []
-        for p in self._parameters_:
+        for i,p in enumerate(self._parameters_):
             p._direct_parent_ = self
             p._parent_index_ = i
             p._connect_highest_parent(self)
-            i += 1
             not_unique = []
             sizes.append(p.size+sizes[-1])
             self._param_slices_.append(slice(sizes[-2], sizes[-1]))
@@ -240,7 +237,6 @@ class Parameterized(Constrainable, Pickleable, Observable):
             # no parameters for this class
             return
         for p in self._parameters_:
-            p._highest_parent_ = highest_parent
             p._connect_highest_parent(highest_parent)
         
     #===========================================================================

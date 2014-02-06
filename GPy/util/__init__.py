@@ -10,6 +10,7 @@ import datasets
 import mocap
 import decorators
 import classification
+import caching
 
 try:
     import sympy

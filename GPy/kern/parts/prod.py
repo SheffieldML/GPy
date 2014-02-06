@@ -19,36 +19,21 @@ class Prod(Kernpart):
     """
     def __init__(self,k1,k2,tensor=False):
         if tensor:
-            super(Prod, self).__init__(k1.input_dim + k2.input_dim, '['+k1.name + '**' + k2.name +']')
+            super(Prod, self).__init__(k1.input_dim + k2.input_dim, k1.name + '_xx_' + k2.name)
+            self.slice1 = slice(0,k1.input_dim)
+            self.slice2 = slice(k1.input_dim,k1.input_dim+k2.input_dim)
         else:
-            assert k1.input_dim == k2.input_dim, "Error: The input spaces of the kernels to sum don't have the same dimension."
-            super(Prod, self).__init__(k1.input_dim, '['+k1.name + '*' + k2.name +']')
-        #self.num_params = k1.num_params + k2.num_params
+            assert k1.input_dim == k2.input_dim, "Error: The input spaces of the kernels to multiply don't have the same dimension."
+            super(Prod, self).__init__(k1.input_dim, k1.name + '_x_' + k2.name)
+            self.slice1 = slice(0,self.input_dim)
+            self.slice2 = slice(0,self.input_dim)
         self.k1 = k1
         self.k2 = k2
-#         if tensor:
-#             self.slice1 = slice(0,self.k1.input_dim)
-#             self.slice2 = slice(self.k1.input_dim,self.k1.input_dim+self.k2.input_dim)
-#         else:
-#             self.slice1 = slice(0,self.input_dim)
-#             self.slice2 = slice(0,self.input_dim)
-
-        self._X, self._X2 = np.empty(shape=(2,1))
         self.add_parameters(self.k1, self.k2)
-#         self._set_params(np.hstack((k1._get_params(),k2._get_params())))
 
-#     def _get_params(self):
-#         """return the value of the parameters."""
-#         return np.hstack((self.k1._get_params(), self.k2._get_params()))
-# 
-#     def _set_params(self,x):
-#         """set the value of the parameters."""
-#         self.k1._set_params(x[:self.k1.num_params])
-#         self.k2._set_params(x[self.k1.num_params:])
-# 
-#     def _get_param_names(self):
-#         """return parameter names."""
-#         return [self.k1.name + '_' + param_name for param_name in self.k1._get_param_names()] + [self.k2.name + '_' + param_name for param_name in self.k2._get_param_names()]
+        #initialize cache
+        self._X, self._X2 = np.empty(shape=(2,1))
+        self._params = None
 
     def K(self,X,X2,target):
         self._K_computations(X,X2)
@@ -63,6 +48,11 @@ class Prod(Kernpart):
         """Compute the part of the kernel associated with k2."""
         self._K_computations(X, X2)
         return self._K2
+
+    def update_gradients_full(self, dL_dK, X):
+        self._K_computations(X, None)
+        self.k1.update_gradients_full(dL_dK*self._K2, X[:,self.slice1])
+        self.k2.update_gradients_full(dL_dK*self._K1, X[:,self.slice2])
 
     def dK_dtheta(self,dL_dK,X,X2,target):
         """Derivative of the covariance matrix with respect to the parameters."""
@@ -81,6 +71,7 @@ class Prod(Kernpart):
         self.k1.Kdiag(X[:,self.slice1],target1)
         self.k2.Kdiag(X[:,self.slice2],target2)
         target += target1 * target2
+
 
     def dKdiag_dtheta(self,dL_dKdiag,X,target):
         K1 = np.zeros(X.shape[0])

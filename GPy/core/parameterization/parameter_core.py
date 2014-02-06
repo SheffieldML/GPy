@@ -14,11 +14,12 @@ class Observable(object):
     _observers_ = {}
     def add_observer(self, observer, callble):
         self._observers_[observer] = callble
-        callble(self)
+        #callble(self)
     def remove_observer(self, observer):
         del self._observers_[observer]
     def _notify_observers(self):
         [callble(self) for callble in self._observers_.itervalues()]
+
         
 class Pickleable(object):
     def _getstate(self):

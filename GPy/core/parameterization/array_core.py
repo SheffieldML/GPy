@@ -50,3 +50,7 @@ class ObservableArray(ListArray, Observable):
         return self.__getitem__(slice(start, stop))
     def __setslice__(self, start, stop, val):
         return self.__setitem__(slice(start, stop), val)  
+    def __copy__(self, *args):
+        return ObservableArray(self.base.base.copy(*args))
+    def copy(self, *args):
+        return self.__copy__(*args)

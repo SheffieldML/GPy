@@ -508,8 +508,8 @@ def hapmap3(data_set='hapmap3'):
                                 '.info.pickle',
                                 '.nan.pickle']]
     if not reduce(lambda a,b: a and b, map(os.path.exists, preprocessed_data_paths)):
-        if not overide_manual_authorize and prompt_user("Preprocessing requires 17GB "
-                            "of memory and can take a long time, continue? [Y/n]\n"):
+        if not overide_manual_authorize and not prompt_user("Preprocessing requires 17GB "
+                            "of memory and can take a long time, continue? [Y/n]"):
             print "Preprocessing required for further usage."
             return
         status = "Preprocessing data, please be patient..."
@@ -535,7 +535,7 @@ def hapmap3(data_set='hapmap3'):
                         for data in iter(lambda : f.read(buffsize), b''):
                             new_file.write(decomp.decompress(data))
                             file_processed += len(data)
-                            write_status('unpacking...', curr+12.*file_processed/(file_size), status)
+                            status=write_status('unpacking...', curr+12.*file_processed/(file_size), status)
                 curr += 12
                 status=write_status('unpacking...', curr, status)
         status=write_status('reading .ped...', 25, status)
@@ -560,8 +560,8 @@ def hapmap3(data_set='hapmap3'):
         snps = (snps*np.array([1,-1])[None,None,:])
         status=write_status('encoding snps...', 78, status)
         snps = snps.sum(-1)
-        status=write_status('encoding snps', 81, status)
-        snps = snps.astype('S1')
+        status=write_status('encoding snps...', 81, status)
+        snps = snps.astype('i8')
         status=write_status('marking nan values...', 88, status)
         # put in nan values (masked as -128):
         snps[inan] = -128
@@ -575,7 +575,8 @@ def hapmap3(data_set='hapmap3'):
         # put everything together:
         status=write_status('setting up snps...', 96, status)
         snpsdf = DataFrame(index=metadf.index, data=snps, columns=mapnp[:,1])
-        snpsdf.to_pickle(preprocessed_data_paths[0])
+        with open(preprocessed_data_paths[0], 'wb') as f:
+            pickle.dump(f, snpsdf, protocoll=-1)
         status=write_status('setting up snps...', 98, status)
         inandf = DataFrame(index=metadf.index, data=inan, columns=mapnp[:,1])
         inandf.to_pickle(preprocessed_data_paths[2])

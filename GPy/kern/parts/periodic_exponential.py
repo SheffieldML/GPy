@@ -6,6 +6,7 @@ from kernpart import Kernpart
 import numpy as np
 from GPy.util.linalg import mdot
 from GPy.util.decorators import silence_errors
+from GPy.core.parameterization.param import Param
 
 class PeriodicExponential(Kernpart):
     """
@@ -25,9 +26,9 @@ class PeriodicExponential(Kernpart):
 
     """
 
-    def __init__(self, input_dim=1, variance=1., lengthscale=None, period=2 * np.pi, n_freq=10, lower=0., upper=4 * np.pi):
+    def __init__(self, input_dim=1, variance=1., lengthscale=None, period=2 * np.pi, n_freq=10, lower=0., upper=4 * np.pi, name='periodic_exp'):
+        super(PeriodicExponential, self).__init__(input_dim, name)
         assert input_dim==1, "Periodic kernels are only defined for input_dim=1"
-        self.name = 'periodic_exp'
         self.input_dim = input_dim
         if lengthscale is not None:
             lengthscale = np.asarray(lengthscale)
@@ -38,7 +39,11 @@ class PeriodicExponential(Kernpart):
         self.num_params = 3
         self.n_freq = n_freq
         self.n_basis = 2*n_freq
-        self._set_params(np.hstack((variance,lengthscale,period)))
+        self.variance = Param('variance', variance)
+        self.lengthscale = Param('lengthscale', lengthscale)
+        self.period = Param('period', period)
+        self.parameters_changed()
+        #self._set_params(np.hstack((variance,lengthscale,period)))
 
     def _cos(self,alpha,omega,phase):
         def f(x):
@@ -61,30 +66,25 @@ class PeriodicExponential(Kernpart):
         Gint = np.dot(r1,r2.T)/2 * np.where(np.isnan(Gint1),Gint2,Gint1)
         return Gint
 
-    def _get_params(self):
-        """return the value of the parameters."""
-        return np.hstack((self.variance,self.lengthscale,self.period))
+    #def _get_params(self):
+    #    """return the value of the parameters."""
+    #    return np.hstack((self.variance,self.lengthscale,self.period))
 
-    def _set_params(self,x):
+    def parameters_changed(self):
         """set the value of the parameters."""
-        assert x.size==3
-        self.variance = x[0]
-        self.lengthscale = x[1]
-        self.period = x[2]
-
         self.a = [1./self.lengthscale, 1.]
         self.b = [1]
 
         self.basis_alpha = np.ones((self.n_basis,))
-        self.basis_omega = np.array(sum([[i*2*np.pi/self.period]*2 for i in  range(1,self.n_freq+1)],[]))
+        self.basis_omega = np.array(sum([[i*2*np.pi/self.period]*2 for i in  range(1,self.n_freq+1)],[]))[:,0]
         self.basis_phi =   np.array(sum([[-np.pi/2, 0.]  for i in range(1,self.n_freq+1)],[]))
 
         self.G = self.Gram_matrix()
         self.Gi = np.linalg.inv(self.G)
 
-    def _get_param_names(self):
-        """return parameter names."""
-        return ['variance','lengthscale','period']
+    #def _get_param_names(self):
+    #    """return parameter names."""
+    #    return ['variance','lengthscale','period']
 
     def Gram_matrix(self):
         La = np.column_stack((self.a[0]*np.ones((self.n_basis,1)),self.a[1]*self.basis_omega))

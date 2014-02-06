@@ -153,6 +153,8 @@ class Param(ObservableArray, Constrainable):
     @property
     def _parameters_(self):
         return []
+    def _connect_highest_parent(self, highest_parent):
+        self._highest_parent_ = highest_parent
     def _collect_gradient(self, target):
         target[:] = self.gradient.flat
     #===========================================================================

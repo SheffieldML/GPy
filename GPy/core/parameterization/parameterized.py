@@ -217,13 +217,9 @@ class Parameterized(Constrainable, Pickleable, Observable):
         self._param_slices_ = []
         for p in self._parameters_:
             p._direct_parent_ = self
-            p._highest_parent_ = self
             p._parent_index_ = i
+            p._connect_highest_parent(self)
             i += 1
-            for pi in p.flattened_parameters:
-                pi._highest_parent_ = self
-            for pi in p._parameters_:
-                pi._highest_parent_ = self
             not_unique = []
             sizes.append(p.size+sizes[-1])
             self._param_slices_.append(slice(sizes[-2], sizes[-1]))
@@ -237,7 +233,16 @@ class Parameterized(Constrainable, Pickleable, Observable):
             elif not (pname in not_unique):
                 self.__dict__[pname] = p
                 self._added_names_.add(pname)
-            
+        
+    def _connect_highest_parent(self, highest_parent):
+        self._highest_parent_ = highest_parent
+        if not hasattr(self, "_parameters_") or len(self._parameters_) < 1:
+            # no parameters for this class
+            return
+        for p in self._parameters_:
+            p._highest_parent_ = highest_parent
+            p._connect_highest_parent(highest_parent)
+        
     #===========================================================================
     # Pickling operations
     #===========================================================================

@@ -3,9 +3,9 @@
 
 #TODO
 """
-A lot of this code assumes that the link functio nis the identity. 
+A lot of this code assumes that the link functio nis the identity.
 
-I think laplace code is okay, but I'm quite sure that the EP moments will only work if the link is identity. 
+I think laplace code is okay, but I'm quite sure that the EP moments will only work if the link is identity.
 
 Furthermore, exact Guassian inference can only be done for the identity link, so we should be asserting so for all calls which relate to that.
 
@@ -130,7 +130,10 @@ class Gaussian(Likelihood):
         :rtype: float
         """
         assert np.asarray(link_f).shape == np.asarray(y).shape
-        return -0.5*(np.sum((y-link_f)**2/self.variance) + self.ln_det_K + self.N*np.log(2.*np.pi))
+        N = y.shape[0]
+        ln_det_cov = N*np.log(self.variance)
+
+        return -0.5*(np.sum((y-link_f)**2/self.variance) + ln_det_cov + N*np.log(2.*np.pi))
 
     def dlogpdf_dlink(self, link_f, y, extra_data=None):
         """
@@ -175,7 +178,8 @@ class Gaussian(Likelihood):
             (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
         """
         assert np.asarray(link_f).shape == np.asarray(y).shape
-        hess = -(1.0/self.variance)*np.ones((self.N, 1))
+        N = y.shape[0]
+        hess = -(1.0/self.variance)*np.ones((N, 1))
         return hess
 
     def d3logpdf_dlink3(self, link_f, y, extra_data=None):
@@ -194,7 +198,8 @@ class Gaussian(Likelihood):
         :rtype: Nx1 array
         """
         assert np.asarray(link_f).shape == np.asarray(y).shape
-        d3logpdf_dlink3 = np.diagonal(0*self.I)[:, None]
+        N = y.shape[0]
+        d3logpdf_dlink3 = np.zeros((N,1))
         return d3logpdf_dlink3
 
     def dlogpdf_link_dvar(self, link_f, y, extra_data=None):
@@ -215,7 +220,8 @@ class Gaussian(Likelihood):
         assert np.asarray(link_f).shape == np.asarray(y).shape
         e = y - link_f
         s_4 = 1.0/(self.variance**2)
-        dlik_dsigma = -0.5*self.N/self.variance + 0.5*s_4*np.sum(np.square(e))
+        N = y.shape[0]
+        dlik_dsigma = -0.5*N/self.variance + 0.5*s_4*np.sum(np.square(e))
         return np.sum(dlik_dsigma) # Sure about this sum?
 
     def dlogpdf_dlink_dvar(self, link_f, y, extra_data=None):
@@ -255,7 +261,8 @@ class Gaussian(Likelihood):
         """
         assert np.asarray(link_f).shape == np.asarray(y).shape
         s_4 = 1.0/(self.variance**2)
-        d2logpdf_dlink2_dvar = np.diag(s_4*self.I)[:, None]
+        N = y.shape[0]
+        d2logpdf_dlink2_dvar = np.ones((N,1))*s_4
         return d2logpdf_dlink2_dvar
 
     def dlogpdf_link_dtheta(self, f, y, extra_data=None):

@@ -4,7 +4,8 @@ import GPy
 from GPy.models import GradientChecker
 import functools
 import inspect
-from GPy.likelihoods.noise_models import gp_transformations
+from GPy.likelihoods import link_functions
+from ..core.parameterization import Param
 from functools import partial
 #np.random.seed(300)
 np.random.seed(7)
@@ -22,12 +23,14 @@ def dparam_partial(inst_func, *args):
           the f or Y that are being used in the function whilst we tweak the
           param
     """
-    def param_func(param, inst_func, args):
-        inst_func.im_self._set_params(param)
+    def param_func(param_val, param_name, inst_func, args):
+        #inst_func.im_self._set_params(param)
+        #inst_func.im_self.add_parameter(Param(param_name, param_val))
+        inst_func.im_self[param_name] = param_val
         return inst_func(*args)
     return functools.partial(param_func, inst_func=inst_func, args=args)
 
-def dparam_checkgrad(func, dfunc, params, args, constraints=None, randomize=False, verbose=False):
+def dparam_checkgrad(func, dfunc, params, params_names, args, constraints=None, randomize=False, verbose=False):
     """
     checkgrad expects a f: R^N -> R^1 and df: R^N -> R^N
     However if we are holding other parameters fixed and moving something else
@@ -43,22 +46,27 @@ def dparam_checkgrad(func, dfunc, params, args, constraints=None, randomize=Fals
     partial_f = dparam_partial(func, *args)
     partial_df = dparam_partial(dfunc, *args)
     gradchecking = True
-    for param in params:
-        fnum = np.atleast_1d(partial_f(param)).shape[0]
-        dfnum = np.atleast_1d(partial_df(param)).shape[0]
+    zipped_params = zip(params, params_names)
+    for param_val, param_name in zipped_params:
+        fnum = np.atleast_1d(partial_f(param_val, param_name)).shape[0]
+        dfnum = np.atleast_1d(partial_df(param_val, param_name)).shape[0]
         for fixed_val in range(dfnum):
             #dlik and dlik_dvar gives back 1 value for each
             f_ind = min(fnum, fixed_val+1) - 1
             print "fnum: {} dfnum: {} f_ind: {} fixed_val: {}".format(fnum, dfnum, f_ind, fixed_val)
             #Make grad checker with this param moving, note that set_params is NOT being called
             #The parameter is being set directly with __setattr__
-            grad = GradientChecker(lambda x: np.atleast_1d(partial_f(x))[f_ind],
-                                   lambda x : np.atleast_1d(partial_df(x))[fixed_val],
-                                   param, 'p')
+            grad = GradientChecker(lambda p_val: np.atleast_1d(partial_f(p_val, param_name))[f_ind],
+                                   lambda p_val: np.atleast_1d(partial_df(p_val, param_name))[fixed_val],
+                                   param_val, [param_name])
             #This is not general for more than one param...
             if constraints is not None:
-                for constraint in constraints:
-                    constraint('p', grad)
+                for constrain_param, constraint in constraints:
+                    if grad.grep_param_names(constrain_param):
+                        constraint(constrain_param, grad)
+                    else:
+                        print "parameter didn't exist"
+                    print constrain_param, " ", constraint
             if randomize:
                 grad.randomize()
             if verbose:
@@ -107,17 +115,20 @@ class TestNoiseModels(object):
         ####################################################
         # Constraint wrappers so we can just list them off #
         ####################################################
+        def constrain_fixed(regex, model, value):
+            model[regex].constrain_fixed(value)
+
         def constrain_negative(regex, model):
-            model.constrain_negative(regex)
+            model[regex].constrain_negative()
 
         def constrain_positive(regex, model):
-            model.constrain_positive(regex)
+            model[regex].constrain_positive()
 
         def constrain_bounded(regex, model, lower, upper):
             """
             Used like: partial(constrain_bounded, lower=0, upper=1)
             """
-            model.constrain_bounded(regex, lower, upper)
+            model[regex].constrain_bounded(lower, upper)
 
         """
         Dictionary where we nest models we would like to check
@@ -134,71 +145,72 @@ class TestNoiseModels(object):
                 }
         """
         noise_models = {"Student_t_default": {
-                            "model": GPy.likelihoods.student_t(deg_free=5, sigma2=self.var),
+                            "model": GPy.likelihoods.StudentT(deg_free=5, sigma2=self.var),
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [self.var],
-                                "constraints": [constrain_positive]
+                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_positive)]
+                                #"constraints": [("t_noise", constrain_positive), ("deg_free", partial(constrain_fixed, value=5))]
                                 },
                             "laplace": True
                             },
                         "Student_t_1_var": {
-                            "model": GPy.likelihoods.student_t(deg_free=5, sigma2=self.var),
+                            "model": GPy.likelihoods.StudentT(deg_free=5, sigma2=self.var),
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [1.0],
-                                "constraints": [constrain_positive]
+                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_positive)]
                                 },
                             "laplace": True
                             },
                         "Student_t_small_var": {
-                            "model": GPy.likelihoods.student_t(deg_free=5, sigma2=self.var),
+                            "model": GPy.likelihoods.StudentT(deg_free=5, sigma2=self.var),
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [0.01],
-                                "constraints": [constrain_positive]
+                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_positive)]
                                 },
                             "laplace": True
                             },
                         "Student_t_large_var": {
-                            "model": GPy.likelihoods.student_t(deg_free=5, sigma2=self.var),
+                            "model": GPy.likelihoods.StudentT(deg_free=5, sigma2=self.var),
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [10.0],
-                                "constraints": [constrain_positive]
+                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_positive)]
                                 },
                             "laplace": True
                             },
                         "Student_t_approx_gauss": {
-                            "model": GPy.likelihoods.student_t(deg_free=1000, sigma2=self.var),
+                            "model": GPy.likelihoods.StudentT(deg_free=1000, sigma2=self.var),
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [self.var],
-                                "constraints": [constrain_positive]
+                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_positive)]
                                 },
                             "laplace": True
                             },
                         "Student_t_log": {
-                            "model": GPy.likelihoods.student_t(gp_link=gp_transformations.Log(), deg_free=5, sigma2=self.var),
+                            "model": GPy.likelihoods.StudentT(gp_link=link_functions.Log(), deg_free=5, sigma2=self.var),
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [self.var],
-                                "constraints": [constrain_positive]
+                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_positive)]
                                 },
                             "laplace": True
                             },
                         "Gaussian_default": {
-                            "model": GPy.likelihoods.gaussian(variance=self.var, D=self.D, N=self.N),
+                            "model": GPy.likelihoods.Gaussian(variance=self.var),
                             "grad_params": {
-                                "names": ["noise_model_variance"],
+                                "names": ["variance"],
                                 "vals": [self.var],
-                                "constraints": [constrain_positive]
+                                "constraints": [("variance", constrain_positive)]
                                 },
                             "laplace": True,
                             "ep": True
                             },
                         #"Gaussian_log": {
-                            #"model": GPy.likelihoods.gaussian(gp_link=gp_transformations.Log(), variance=self.var, D=self.D, N=self.N),
+                            #"model": GPy.likelihoods.gaussian(gp_link=link_functions.Log(), variance=self.var, D=self.D, N=self.N),
                             #"grad_params": {
                                 #"names": ["noise_model_variance"],
                                 #"vals": [self.var],
@@ -207,7 +219,7 @@ class TestNoiseModels(object):
                             #"laplace": True
                             #},
                         #"Gaussian_probit": {
-                            #"model": GPy.likelihoods.gaussian(gp_link=gp_transformations.Probit(), variance=self.var, D=self.D, N=self.N),
+                            #"model": GPy.likelihoods.gaussian(gp_link=link_functions.Probit(), variance=self.var, D=self.D, N=self.N),
                             #"grad_params": {
                                 #"names": ["noise_model_variance"],
                                 #"vals": [self.var],
@@ -216,7 +228,7 @@ class TestNoiseModels(object):
                             #"laplace": True
                             #},
                         #"Gaussian_log_ex": {
-                            #"model": GPy.likelihoods.gaussian(gp_link=gp_transformations.Log_ex_1(), variance=self.var, D=self.D, N=self.N),
+                            #"model": GPy.likelihoods.gaussian(gp_link=link_functions.Log_ex_1(), variance=self.var, D=self.D, N=self.N),
                             #"grad_params": {
                                 #"names": ["noise_model_variance"],
                                 #"vals": [self.var],
@@ -225,31 +237,31 @@ class TestNoiseModels(object):
                             #"laplace": True
                             #},
                         "Bernoulli_default": {
-                            "model": GPy.likelihoods.bernoulli(),
+                            "model": GPy.likelihoods.Bernoulli(),
                             "link_f_constraints": [partial(constrain_bounded, lower=0, upper=1)],
                             "laplace": True,
                             "Y": self.binary_Y,
                             "ep": True
                             },
-                        "Exponential_default": {
-                            "model": GPy.likelihoods.exponential(),
-                            "link_f_constraints": [constrain_positive],
-                            "Y": self.positive_Y,
-                            "laplace": True,
-                        },
-                        "Poisson_default": {
-                            "model": GPy.likelihoods.poisson(),
-                            "link_f_constraints": [constrain_positive],
-                            "Y": self.integer_Y,
-                            "laplace": True,
-                            "ep": False #Should work though...
-                        },
-                        "Gamma_default": {
-                            "model": GPy.likelihoods.gamma(),
-                            "link_f_constraints": [constrain_positive],
-                            "Y": self.positive_Y,
-                            "laplace": True
-                        }
+                        #"Exponential_default": {
+                            #"model": GPy.likelihoods.exponential(),
+                            #"link_f_constraints": [constrain_positive],
+                            #"Y": self.positive_Y,
+                            #"laplace": True,
+                        #},
+                        #"Poisson_default": {
+                            #"model": GPy.likelihoods.poisson(),
+                            #"link_f_constraints": [constrain_positive],
+                            #"Y": self.integer_Y,
+                            #"laplace": True,
+                            #"ep": False #Should work though...
+                        #},
+                        #"Gamma_default": {
+                            #"model": GPy.likelihoods.gamma(),
+                            #"link_f_constraints": [constrain_positive],
+                            #"Y": self.positive_Y,
+                            #"laplace": True
+                        #}
                     }
 
         for name, attributes in noise_models.iteritems():
@@ -286,8 +298,8 @@ class TestNoiseModels(object):
             else:
                 ep = False
 
-            if len(param_vals) > 1:
-                raise NotImplementedError("Cannot support multiple params in likelihood yet!")
+            #if len(param_vals) > 1:
+                #raise NotImplementedError("Cannot support multiple params in likelihood yet!")
 
             #Required by all
             #Normal derivatives
@@ -302,13 +314,13 @@ class TestNoiseModels(object):
                 yield self.t_d3logpdf_df3, model, Y, f
                 yield self.t_d3logpdf_dlink3, model, Y, f, link_f_constraints
                 #Params
-                yield self.t_dlogpdf_dparams, model, Y, f, param_vals, param_constraints
-                yield self.t_dlogpdf_df_dparams, model, Y, f, param_vals, param_constraints
-                yield self.t_d2logpdf2_df2_dparams, model, Y, f, param_vals, param_constraints
+                yield self.t_dlogpdf_dparams, model, Y, f, param_vals, param_names, param_constraints
+                yield self.t_dlogpdf_df_dparams, model, Y, f, param_vals, param_names, param_constraints
+                yield self.t_d2logpdf2_df2_dparams, model, Y, f, param_vals, param_names, param_constraints
                 #Link params
-                yield self.t_dlogpdf_link_dparams, model, Y, f, param_vals, param_constraints
-                yield self.t_dlogpdf_dlink_dparams, model, Y, f, param_vals, param_constraints
-                yield self.t_d2logpdf2_dlink2_dparams, model, Y, f, param_vals, param_constraints
+                yield self.t_dlogpdf_link_dparams, model, Y, f, param_vals, param_names, param_constraints
+                yield self.t_dlogpdf_dlink_dparams, model, Y, f, param_vals, param_names, param_constraints
+                yield self.t_d2logpdf2_dlink2_dparams, model, Y, f, param_vals, param_names, param_constraints
 
                 #laplace likelihood gradcheck
                 yield self.t_laplace_fit_rbf_white, model, self.X, Y, f, self.step, param_vals, param_names, param_constraints
@@ -370,33 +382,33 @@ class TestNoiseModels(object):
     # df_dparams #
     ##############
     @with_setup(setUp, tearDown)
-    def t_dlogpdf_dparams(self, model, Y, f, params, param_constraints):
+    def t_dlogpdf_dparams(self, model, Y, f, params, params_names, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
         assert (
                 dparam_checkgrad(model.logpdf, model.dlogpdf_dtheta,
-                    params, args=(f, Y), constraints=param_constraints,
-                    randomize=True, verbose=True)
+                    params, params_names, args=(f, Y), constraints=param_constraints,
+                    randomize=False, verbose=True)
                 )
 
     @with_setup(setUp, tearDown)
-    def t_dlogpdf_df_dparams(self, model, Y, f, params, param_constraints):
+    def t_dlogpdf_df_dparams(self, model, Y, f, params, params_names, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
         assert (
                 dparam_checkgrad(model.dlogpdf_df, model.dlogpdf_df_dtheta,
-                    params, args=(f, Y), constraints=param_constraints,
-                    randomize=True, verbose=True)
+                    params, params_names, args=(f, Y), constraints=param_constraints,
+                    randomize=False, verbose=True)
                 )
 
     @with_setup(setUp, tearDown)
-    def t_d2logpdf2_df2_dparams(self, model, Y, f, params, param_constraints):
+    def t_d2logpdf2_df2_dparams(self, model, Y, f, params, params_names, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
         assert (
                 dparam_checkgrad(model.d2logpdf_df2, model.d2logpdf_df2_dtheta,
-                    params, args=(f, Y), constraints=param_constraints,
-                    randomize=True, verbose=True)
+                    params, params_names, args=(f, Y), constraints=param_constraints,
+                    randomize=False, verbose=True)
                 )
 
     ################
@@ -454,32 +466,32 @@ class TestNoiseModels(object):
     # dlink_dparams #
     #################
     @with_setup(setUp, tearDown)
-    def t_dlogpdf_link_dparams(self, model, Y, f, params, param_constraints):
+    def t_dlogpdf_link_dparams(self, model, Y, f, params, param_names, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
         assert (
                 dparam_checkgrad(model.logpdf_link, model.dlogpdf_link_dtheta,
-                    params, args=(f, Y), constraints=param_constraints,
+                    params, param_names, args=(f, Y), constraints=param_constraints,
                     randomize=False, verbose=True)
                 )
 
     @with_setup(setUp, tearDown)
-    def t_dlogpdf_dlink_dparams(self, model, Y, f, params, param_constraints):
+    def t_dlogpdf_dlink_dparams(self, model, Y, f, params, param_names, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
         assert (
                 dparam_checkgrad(model.dlogpdf_dlink, model.dlogpdf_dlink_dtheta,
-                    params, args=(f, Y), constraints=param_constraints,
+                    params, param_names, args=(f, Y), constraints=param_constraints,
                     randomize=False, verbose=True)
                 )
 
     @with_setup(setUp, tearDown)
-    def t_d2logpdf2_dlink2_dparams(self, model, Y, f, params, param_constraints):
+    def t_d2logpdf2_dlink2_dparams(self, model, Y, f, params, param_names, param_constraints):
         print "\n{}".format(inspect.stack()[0][3])
         print model
         assert (
                 dparam_checkgrad(model.d2logpdf_dlink2, model.d2logpdf_dlink2_dtheta,
-                    params, args=(f, Y), constraints=param_constraints,
+                    params, param_names, args=(f, Y), constraints=param_constraints,
                     randomize=False, verbose=True)
                 )
 
@@ -493,18 +505,23 @@ class TestNoiseModels(object):
         Y = Y/Y.max()
         white_var = 1e-6
         kernel = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
-        laplace_likelihood = GPy.likelihoods.Laplace(Y.copy(), model)
-        m = GPy.models.GPRegression(X.copy(), Y.copy(), kernel, likelihood=laplace_likelihood)
+        laplace_likelihood = GPy.inference.latent_function_inference.LaplaceInference()
+        m = GPy.core.GP(X.copy(), Y.copy(), kernel, likelihood=model, inference_method=laplace_likelihood)
         m.ensure_default_constraints()
-        m.constrain_fixed('white', white_var)
+        m['white'].constrain_fixed(white_var)
 
-        for param_num in range(len(param_names)):
-            name = param_names[param_num]
-            m[name] = param_vals[param_num]
-            constraints[param_num](name, m)
+        #Set constraints
+        for constrain_param, constraint in constraints:
+            constraint(constrain_param, m)
 
         print m
         m.randomize()
+
+        #Set params
+        for param_num in range(len(param_names)):
+            name = param_names[param_num]
+            m[name] = param_vals[param_num]
+
         #m.optimize(max_iters=8)
         print m
         m.checkgrad(verbose=1, step=step)
@@ -526,9 +543,9 @@ class TestNoiseModels(object):
         white_var = 1e-6
         kernel = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         ep_likelihood = GPy.likelihoods.EP(Y.copy(), model)
-        m = GPy.models.GPRegression(X.copy(), Y.copy(), kernel, likelihood=ep_likelihood)
+        m = GPy.core.GP(X.copy(), Y.copy(), kernel, likelihood=ep_likelihood)
         m.ensure_default_constraints()
-        m.constrain_fixed('white', white_var)
+        m['white'].constrain_fixed(white_var)
 
         for param_num in range(len(param_names)):
             name = param_names[param_num]
@@ -559,8 +576,8 @@ class LaplaceTests(unittest.TestCase):
         self.var = 0.2
 
         self.var = np.random.rand(1)
-        self.stu_t = GPy.likelihoods.student_t(deg_free=5, sigma2=self.var)
-        self.gauss = GPy.likelihoods.gaussian(gp_transformations.Log(), variance=self.var, D=self.D, N=self.N)
+        self.stu_t = GPy.likelihoods.StudentT(deg_free=5, sigma2=self.var)
+        self.gauss = GPy.likelihoods.Gaussian(gp_link=link_functions.Log(), variance=self.var)
 
         #Make a bigger step as lower bound can be quite curved
         self.step = 1e-6
@@ -584,7 +601,7 @@ class LaplaceTests(unittest.TestCase):
         noise = np.random.randn(*self.X.shape)*self.real_std
         self.Y = np.sin(self.X*2*np.pi) + noise
         self.f = np.random.rand(self.N, 1)
-        self.gauss = GPy.likelihoods.gaussian(variance=self.var, D=self.D, N=self.N)
+        self.gauss = GPy.likelihoods.Gaussian(variance=self.var)
 
         dlogpdf_df = functools.partial(self.gauss.dlogpdf_df, y=self.Y)
         d2logpdf_df2 = functools.partial(self.gauss.d2logpdf_df2, y=self.Y)
@@ -607,21 +624,23 @@ class LaplaceTests(unittest.TestCase):
         kernel1 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         kernel2 = kernel1.copy()
 
-        m1 = GPy.models.GPRegression(X, Y.copy(), kernel=kernel1)
-        m1.constrain_fixed('white', 1e-6)
-        m1['noise'] = initial_var_guess
-        m1.constrain_bounded('noise', 1e-4, 10)
-        m1.constrain_bounded('rbf', 1e-4, 10)
+        gauss_distr1 = GPy.likelihoods.Gaussian(variance=initial_var_guess)
+        exact_inf = GPy.inference.latent_function_inference.ExactGaussianInference()
+        m1 = GPy.core.GP(X, Y.copy(), kernel=kernel1, likelihood=gauss_distr1, inference_method=exact_inf)
+        m1['white'].constrain_fixed(1e-6)
+        m1['variance'] = initial_var_guess
+        m1['variance'].constrain_bounded(1e-4, 10)
+        m1['rbf'].constrain_bounded(1e-4, 10)
         m1.ensure_default_constraints()
         m1.randomize()
 
-        gauss_distr = GPy.likelihoods.gaussian(variance=initial_var_guess, D=1, N=Y.shape[0])
-        laplace_likelihood = GPy.likelihoods.Laplace(Y.copy(), gauss_distr)
-        m2 = GPy.models.GPRegression(X, Y.copy(), kernel=kernel2, likelihood=laplace_likelihood)
+        gauss_distr2 = GPy.likelihoods.Gaussian(variance=initial_var_guess)
+        laplace_inf = GPy.inference.latent_function_inference.LaplaceInference()
+        m2 = GPy.core.GP(X, Y.copy(), kernel=kernel2, likelihood=gauss_distr2, inference_method=laplace_inf)
         m2.ensure_default_constraints()
-        m2.constrain_fixed('white', 1e-6)
-        m2.constrain_bounded('rbf', 1e-4, 10)
-        m2.constrain_bounded('noise', 1e-4, 10)
+        m2['white'].constrain_fixed(1e-6)
+        m2['rbf'].constrain_bounded(1e-4, 10)
+        m2['variance'].constrain_bounded(1e-4, 10)
         m2.randomize()
 
         if debug:

@@ -33,7 +33,6 @@ class LaplaceInference(object):
         self._mode_finding_max_iter = 40
         self.bad_fhat = True
 
-
     def inference(self, kern, X, likelihood, Y, Y_metadata=None):
         """
         Returns a Posterior class containing essential quantities of the posterior
@@ -50,6 +49,7 @@ class LaplaceInference(object):
             Ki_f_init = np.zeros_like(Y)
         else:
             Ki_f_init = self._previous_Ki_fhat
+
         f_hat, Ki_fhat = self.rasm_mode(K, Y, likelihood, Ki_f_init, Y_metadata=Y_metadata)
 
         #Compute hessian and other variables at mode
@@ -57,6 +57,7 @@ class LaplaceInference(object):
 
         #likelihood.gradient = self.likelihood_gradients()
         kern.update_gradients_full(dL_dK, X)
+        likelihood.update_gradients(np.ones(10))
 
         self._previous_Ki_fhat = Ki_fhat.copy()
         return Posterior(woodbury_vector=woodbury_vector, woodbury_inv = K_Wi_i, K=K), log_marginal, {'dL_dK':dL_dK}
@@ -157,9 +158,12 @@ class LaplaceInference(object):
         explicit_part = 0.5*(np.dot(Ki_f, Ki_f.T) - K_Wi_i)
 
         #Implicit
-        d3lik_d3fhat = likelihood.d3logpdf_df3(f_hat, Y, extra_data=Y_metadata)
-        dL_dfhat = 0.5*(np.diag(Ki_W_i)[:, None]*d3lik_d3fhat) #why isn't this -0.5? s2 in R&W p126 line 9.
+        dW_df = likelihood.d3logpdf_df3(f_hat, Y, extra_data=Y_metadata) # d3lik_d3fhat
         woodbury_vector = likelihood.dlogpdf_df(f_hat, Y, extra_data=Y_metadata)
+        dL_dfhat = 0.5*(np.diag(Ki_W_i)[:, None]*dW_df) #why isn't this -0.5? s2 in R&W p126 line 9.
+        #implicit_part = np.dot(woodbury_vector, dL_dfhat.T).dot(np.eye(Y.shape[0]) - np.dot(K, K_Wi_i))
+        BiK, _ = dpotrs(L, K, lower=1)
+        #dL_dfhat = 0.5*np.diag(BiK)[:, None]*dW_df
         implicit_part = np.dot(woodbury_vector, dL_dfhat.T).dot(np.eye(Y.shape[0]) - np.dot(K, K_Wi_i))
 
         dL_dK = explicit_part + implicit_part
@@ -219,7 +223,7 @@ class LaplaceInference(object):
         LiW12, _ = dtrtrs(L, np.diagflat(W_12), lower=1, trans=0)
         K_Wi_i = np.dot(LiW12.T, LiW12) # R = W12BiW12, in R&W p 126, eq 5.25
 
-        #here's a better way to compute the required matrix. 
+        #here's a better way to compute the required matrix.
         # you could do the model finding witha backsub, instead of a dot...
         #L2 = L/W_12
         #K_Wi_i_2 , _= dpotri(L2)

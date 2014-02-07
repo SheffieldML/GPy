@@ -8,6 +8,7 @@ import link_functions
 from scipy import stats, integrate
 from scipy.special import gammaln, gamma
 from likelihood import Likelihood
+from ..core.parameterization import Param
 
 class StudentT(Likelihood):
     """
@@ -19,26 +20,25 @@ class StudentT(Likelihood):
         p(y_{i}|\\lambda(f_{i})) = \\frac{\\Gamma\\left(\\frac{v+1}{2}\\right)}{\\Gamma\\left(\\frac{v}{2}\\right)\\sqrt{v\\pi\\sigma^{2}}}\\left(1 + \\frac{1}{v}\\left(\\frac{(y_{i} - f_{i})^{2}}{\\sigma^{2}}\\right)\\right)^{\\frac{-v+1}{2}}
 
     """
-    def __init__(self,gp_link=None,analytical_mean=True,analytical_variance=True, deg_free=5, sigma2=2):
-        self.v = deg_free
-        self.sigma2 = sigma2
+    def __init__(self,gp_link=None, deg_free=5, sigma2=2):
+        if gp_link is None:
+            gp_link = link_functions.Identity()
 
-        self._set_params(np.asarray(sigma2))
-        super(StudentT, self).__init__(gp_link,analytical_mean,analytical_variance)
+        super(StudentT, self).__init__(gp_link, name='Student_T')
+
+        self.sigma2 = Param('t_noise', float(sigma2))
+        self.v = Param('deg_free', float(deg_free))
+        self.add_parameter(self.sigma2)
+        self.add_parameter(self.v)
+
         self.log_concave = False
 
-    def _get_params(self):
-        return np.asarray(self.sigma2)
+    def parameters_changed(self):
+        self.variance = (self.v / float(self.v - 2)) * self.sigma2
 
-    def _get_param_names(self):
-        return ["t_noise_std2"]
-
-    def _set_params(self, x):
-        self.sigma2 = float(x)
-
-    @property
-    def variance(self, extra_data=None):
-        return (self.v / float(self.v - 2)) * self.sigma2
+    def update_gradients(self, partial):
+        self.sigma2.gradient = np.ones(1) #FIXME: Not done yet
+        self.v.gradient = np.ones(1) #FIXME: Not done yet
 
     def pdf_link(self, link_f, y, extra_data=None):
         """
@@ -82,10 +82,14 @@ class StudentT(Likelihood):
         """
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         e = y - link_f
+        #FIXME:
+        #Why does np.log(1 + (1/self.v)*((y-link_f)**2)/self.sigma2) suppress the divide by zero?!
+        #But np.log(1 + (1/float(self.v))*((y-link_f)**2)/self.sigma2) throws it correctly
+        #print - 0.5*(self.v + 1)*np.log(1 + (1/np.float(self.v))*((e**2)/self.sigma2))
         objective = (+ gammaln((self.v + 1) * 0.5)
-                     - gammaln(self.v * 0.5)
-                     - 0.5*np.log(self.sigma2 * self.v * np.pi)
-                     - 0.5*(self.v + 1)*np.log(1 + (1/np.float(self.v))*((e**2)/self.sigma2))
+                    - gammaln(self.v * 0.5)
+                    - 0.5*np.log(self.sigma2 * self.v * np.pi)
+                    - 0.5*(self.v + 1)*np.log(1 + (1/np.float(self.v))*((e**2)/self.sigma2))
                     )
         return np.sum(objective)
 

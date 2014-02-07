@@ -449,7 +449,9 @@ class Parameterized(Constrainable, Pickleable, Observable):
         # if removing constraints before adding new is not wanted, just delete the above line!
         self.constraints.add(transform, rav_i)
         param = self._get_original(param)
-        param._set_params(transform.initialize(param._get_params()), update=False)
+        #FIXME: Max, is this the right thing to do to handle fixed?
+        if not (transform == __fixed__):
+            param._set_params(transform.initialize(param._get_params()), update=False)
         if warning and any(reconstrained):
             # if you want to print the whole params object, which was reconstrained use:
             # m = str(param[self._backtranslate_index(param, reconstrained)])

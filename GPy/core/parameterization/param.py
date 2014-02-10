@@ -4,40 +4,40 @@
 import itertools
 import numpy
 from parameter_core import Constrainable, adjust_name_for_printing
-from array_core import ObservableArray, ParamList
+from array_core import ObservableArray
 
 ###### printing
 __constraints_name__ = "Constraint"
 __index_name__ = "Index"
 __tie_name__ = "Tied to"
-__precision__ = numpy.get_printoptions()['precision']  # numpy printing precision used, sublassing numpy ndarray after all
+__precision__ = numpy.get_printoptions()['precision'] # numpy printing precision used, sublassing numpy ndarray after all
 __print_threshold__ = 5
-######      
+######
 
 class Float(numpy.float64, Constrainable):
     def __init__(self, f, base):
-        super(Float, self).__init__(f)
+        super(Float,self).__init__(f)
         self._base = base
-        
-        
+
+
 class Param(ObservableArray, Constrainable):
     """
     Parameter object for GPy models.
 
     :param name:        name of the parameter to be printed
     :param input_array: array which this parameter handles
-    
+
     You can add/remove constraints by calling constrain on the parameter itself, e.g:
-    
+
         - self[:,1].constrain_positive()
         - self[0].tie_to(other)
         - self.untie()
         - self[:3,:].unconstrain()
         - self[1].fix()
-        
+
     Fixing parameters will fix them to the value they are right now. If you change
     the fixed value, it will be fixed to the new value!
-    
+
     See :py:class:`GPy.core.parameterized.Parameterized` for more details on constraining etc.
 
     This ndarray can be stored in lists and checked if it is in.
@@ -46,11 +46,11 @@ class Param(ObservableArray, Constrainable):
     >>> x = np.random.normal(size=(10,3))
     >>> x in [[1], x, [3]]
     True
-    
+
     WARNING: This overrides the functionality of x==y!!!
     Use numpy.equal(x,y) for element-wise equality testing.
     """
-    __array_priority__ = 0  # Never give back Param
+    __array_priority__ = 0 # Never give back Param
     _fixes_ = None
     def __new__(cls, name, input_array, *args, **kwargs):
         obj = numpy.atleast_1d(super(Param, cls).__new__(cls, input_array=input_array))
@@ -68,7 +68,7 @@ class Param(ObservableArray, Constrainable):
 
     def __init__(self, name, input_array):
         super(Param, self).__init__(name=name)
-        
+
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
@@ -85,7 +85,7 @@ class Param(ObservableArray, Constrainable):
         self._original_ = getattr(obj, '_original_', None)
         self._name = getattr(obj, 'name', None)
         self.gradient = getattr(obj, 'gradient', None)
-        
+
     def __array_wrap__(self, out_arr, context=None):
         return out_arr.view(numpy.ndarray)
     #===========================================================================
@@ -129,13 +129,13 @@ class Param(ObservableArray, Constrainable):
         self.flat = param
         self._notify_tied_parameters()
         self._notify_observers()
-        
+
     def _get_params(self):
         return self.flat
 #     @property
 #     def name(self):
 #         """
-#         Name of this parameter. 
+#         Name of this parameter.
 #         This can be a callable without parameters. The callable will be called
 #         every time the name property is accessed.
 #         """
@@ -158,7 +158,7 @@ class Param(ObservableArray, Constrainable):
     def constrain_fixed(self, warning=True):
         """
         Constrain this paramter to be fixed to the current value it carries.
-        
+
         :param warning: print a warning for overwriting constraints.
         """
         self._highest_parent_._fix(self, warning)
@@ -185,7 +185,7 @@ class Param(ObservableArray, Constrainable):
         Note: For now only one parameter can have ties, so all of a parameter
               will be removed, when re-tieing!
         """
-        # Note: this method will tie to the parameter which is the last in 
+        #Note: this method will tie to the parameter which is the last in
         #      the chain of ties. Thus, if you tie to a tied parameter,
         #      this tie will be created to the parameter the param is tied
         #      to.
@@ -195,12 +195,12 @@ class Param(ObservableArray, Constrainable):
         if param.size != 1:
             raise NotImplementedError, "Broadcast tying is not implemented yet"
         try:
-            if self._original_: 
+            if self._original_:
                 self[:] = param
-            else:  # this happens when indexing created a copy of the array
+            else: # this happens when indexing created a copy of the array
                 self._direct_parent_._get_original(self)[self._current_slice_] = param
         except ValueError:
-            raise ValueError("Trying to tie {} with shape {} to {} with shape {}".format(self.name, self.shape, param.name, param.shape))            
+            raise ValueError("Trying to tie {} with shape {} to {} with shape {}".format(self.name, self.shape, param.name, param.shape))
         if param is self:
             raise RuntimeError, 'Cyclic tieing is not allowed'
 #         if len(param._tied_to_) > 0:
@@ -288,7 +288,7 @@ class Param(ObservableArray, Constrainable):
     def unset_prior(self, *priors):
         """
         :param priors: priors to remove from this parameter
-        
+
         Remove all priors from this parameter
         """
         self._highest_parent_._remove_prior(self, *priors)
@@ -319,8 +319,8 @@ class Param(ObservableArray, Constrainable):
             if numpy.all(si == Ellipsis):
                 continue
             if isinstance(si, slice):
-                a = si.indices(self._realshape_[i])[0] 
-            elif isinstance(si, (list, numpy.ndarray, tuple)):
+                a = si.indices(self._realshape_[i])[0]
+            elif isinstance(si, (list,numpy.ndarray,tuple)):
                 a = si[0]
             else: a = si
             if a < 0:
@@ -475,20 +475,20 @@ class ParamConcatenation(object):
                     self.params.append(p)           
         self._param_sizes = [p.size for p in self.params]
         startstops = numpy.cumsum([0] + self._param_sizes)
-        self._param_slices_ = [slice(start, stop) for start, stop in zip(startstops, startstops[1:])]
+        self._param_slices_ = [slice(start, stop) for start,stop in zip(startstops, startstops[1:])]
     #===========================================================================
     # Get/set items, enable broadcasting
     #===========================================================================
     def __getitem__(self, s):
-        ind = numpy.zeros(sum(self._param_sizes), dtype=bool); ind[s] = True; 
-        params = [p._get_params()[ind[ps]] for p, ps in zip(self.params, self._param_slices_) if numpy.any(p._get_params()[ind[ps]])]
-        if len(params) == 1: return params[0]
+        ind = numpy.zeros(sum(self._param_sizes), dtype=bool); ind[s] = True;
+        params = [p._get_params()[ind[ps]] for p,ps in zip(self.params, self._param_slices_) if numpy.any(p._get_params()[ind[ps]])]
+        if len(params)==1: return params[0]
         return ParamConcatenation(params)
     def __setitem__(self, s, val, update=True):
-        ind = numpy.zeros(sum(self._param_sizes), dtype=bool); ind[s] = True; 
+        ind = numpy.zeros(sum(self._param_sizes), dtype=bool); ind[s] = True;
         vals = self._vals(); vals[s] = val; del val
-        [numpy.place(p, ind[ps], vals[ps]) and p._notify_tied_parameters() 
-         for p, ps in zip(self.params, self._param_slices_)]
+        [numpy.place(p, ind[ps], vals[ps]) and p._notify_tied_parameters()
+        for p, ps in zip(self.params, self._param_slices_)]
         if update:
             self.params[0]._highest_parent_.parameters_changed()
     def _vals(self):
@@ -496,38 +496,55 @@ class ParamConcatenation(object):
     #===========================================================================
     # parameter operations:
     #===========================================================================
+    def update_all_params(self):
+        self.params[0]._highest_parent_.parameters_changed()
+
     def constrain(self, constraint, warning=True):
-        [param.constrain(constraint) for param in self.params]
+        [param.constrain(constraint, update=False) for param in self.params]
+        self.update_all_params()
     constrain.__doc__ = Param.constrain.__doc__
+
     def constrain_positive(self, warning=True):
-        [param.constrain_positive(warning) for param in self.params]
+        [param.constrain_positive(warning, update=False) for param in self.params]
+        self.update_all_params()
     constrain_positive.__doc__ = Param.constrain_positive.__doc__
+
     def constrain_fixed(self, warning=True):
         [param.constrain_fixed(warning) for param in self.params]
     constrain_fixed.__doc__ = Param.constrain_fixed.__doc__
     fix = constrain_fixed
+
     def constrain_negative(self, warning=True):
-        [param.constrain_negative(warning) for param in self.params]
+        [param.constrain_negative(warning, update=False) for param in self.params]
+        self.update_all_params()
     constrain_negative.__doc__ = Param.constrain_negative.__doc__
+
     def constrain_bounded(self, lower, upper, warning=True):
-        [param.constrain_bounded(lower, upper, warning) for param in self.params]
+        [param.constrain_bounded(lower, upper, warning, update=False) for param in self.params]
+        self.update_all_params()
     constrain_bounded.__doc__ = Param.constrain_bounded.__doc__
+
     def unconstrain(self, *constraints):
         [param.unconstrain(*constraints) for param in self.params]
     unconstrain.__doc__ = Param.unconstrain.__doc__
+
     def unconstrain_negative(self):
         [param.unconstrain_negative() for param in self.params]
     unconstrain_negative.__doc__ = Param.unconstrain_negative.__doc__
+
     def unconstrain_positive(self):
         [param.unconstrain_positive() for param in self.params]
     unconstrain_positive.__doc__ = Param.unconstrain_positive.__doc__
+
     def unconstrain_fixed(self):
         [param.unconstrain_fixed() for param in self.params]
     unconstrain_fixed.__doc__ = Param.unconstrain_fixed.__doc__
     unfix = unconstrain_fixed
+
     def unconstrain_bounded(self, lower, upper):
         [param.unconstrain_bounded(lower, upper) for param in self.params]
     unconstrain_bounded.__doc__ = Param.unconstrain_bounded.__doc__
+
     def untie(self, *ties):
         [param.untie(*ties) for param in self.params]
     __lt__ = lambda self, val: self._vals() < val
@@ -547,20 +564,20 @@ class ParamConcatenation(object):
         lx = max([p._max_len_values() for p in params])
         li = max([p._max_len_index(i) for p, i in itertools.izip(params, indices)])
         lt = max([p._max_len_names(tm, __tie_name__) for p, tm in itertools.izip(params, ties_matrices)])
-        strings = [p.__str__(cm, i, tm, lc, lx, li, lt) for p, cm, i, tm in itertools.izip(params, constr_matrices, indices, ties_matrices)]
+        strings = [p.__str__(cm, i, tm, lc, lx, li, lt) for p, cm, i, tm in itertools.izip(params,constr_matrices,indices,ties_matrices)]
         return "\n".join(strings)
-        return "\n{}\n".format(" -" + "- | -".join(['-' * l for l in [li, lx, lc, lt]])).join(strings)
+        return "\n{}\n".format(" -"+"- | -".join(['-'*l for l in [li,lx,lc,lt]])).join(strings)
     def __repr__(self):
-        return "\n".join(map(repr, self.params))
-    
+        return "\n".join(map(repr,self.params))
+
 if __name__ == '__main__':
-    
+
 
     from GPy.core.parameterized import Parameterized
     from GPy.core.parameter import Param
 
-    # X = numpy.random.randn(2,3,1,5,2,4,3)
-    X = numpy.random.randn(3, 2)
+    #X = numpy.random.randn(2,3,1,5,2,4,3)
+    X = numpy.random.randn(3,2)
     print "random done"
     p = Param("q_mean", X)
     p1 = Param("q_variance", numpy.random.rand(*p.shape))
@@ -568,23 +585,23 @@ if __name__ == '__main__':
     
     p3 = Param("variance", numpy.random.rand())
     p4 = Param("lengthscale", numpy.random.rand(2))
-    
+
     m = Parameterized()
     rbf = Parameterized(name='rbf')
-    
-    rbf.add_parameter(p3, p4)
-    m.add_parameter(p, p1, rbf)
-    
+
+    rbf.add_parameter(p3,p4)
+    m.add_parameter(p,p1,rbf)
+
     print "setting params"
-    # print m.q_v[3:5,[1,4,5]]
+    #print m.q_v[3:5,[1,4,5]]
     print "constraining variance"
-    # m[".*variance"].constrain_positive()
-    # print "constraining rbf"
-    # m.rbf_l.constrain_positive()
-    # m.q_variance[1,[0,5,11,19,2]].tie_to(m.rbf_v)
-    # m.rbf_v.tie_to(m.rbf_l[0])
-    # m.rbf_l[0].tie_to(m.rbf_l[1])
-    # m.q_v.tie_to(m.rbf_v)
+    #m[".*variance"].constrain_positive()
+    #print "constraining rbf"
+    #m.rbf_l.constrain_positive()
+    #m.q_variance[1,[0,5,11,19,2]].tie_to(m.rbf_v)
+    #m.rbf_v.tie_to(m.rbf_l[0])
+    #m.rbf_l[0].tie_to(m.rbf_l[1])
+    #m.q_v.tie_to(m.rbf_v)
 #     m.rbf_l.tie_to(m.rbf_va)
     # pt = numpy.array(params._get_params_transformed())
     # ptr = numpy.random.randn(*pt.shape)

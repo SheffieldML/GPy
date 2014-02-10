@@ -37,39 +37,43 @@ def student_t_approx(optimize=True, plot=True):
 
     # Kernel object
     kernel1 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
-    kernel2 = kernel1.copy()
-    kernel3 = kernel1.copy()
-    kernel4 = kernel1.copy()
+    kernel2 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
+    kernel3 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
+    kernel4 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
 
     #Gaussian GP model on clean data
     m1 = GPy.models.GPRegression(X, Y.copy(), kernel=kernel1)
     # optimize
     m1.ensure_default_constraints()
-    m1.constrain_fixed('white', 1e-5)
+    m1['white'] = 1e-5
+    m1['white'].constrain_fixed('white')
     m1.randomize()
 
     #Gaussian GP model on corrupt data
     m2 = GPy.models.GPRegression(X, Yc.copy(), kernel=kernel2)
     m2.ensure_default_constraints()
-    m2.constrain_fixed('white', 1e-5)
+    m1['white'] = 1e-5
+    m1['white'].constrain_fixed('white')
     m2.randomize()
 
     #Student t GP model on clean data
-    t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=edited_real_sd)
-    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution)
-    m3 = GPy.models.GPRegression(X, Y.copy(), kernel3, likelihood=stu_t_likelihood)
+    t_distribution = GPy.likelihoods.StudentT(deg_free=deg_free, sigma2=edited_real_sd)
+    laplace_inf = GPy.inference.latent_function_inference.LaplaceInference()
+    m3 = GPy.core.GP(X, Y.copy(), kernel3, likelihood=t_distribution, inference_method=laplace_inf)
     m3.ensure_default_constraints()
-    m3.constrain_bounded('t_noise', 1e-6, 10.)
-    m3.constrain_fixed('white', 1e-5)
+    m3['t_noise'].constrain_bounded(1e-6, 10.)
+    m3['white'] = 1e-5
+    m3['white'].constrain_fixed()
     m3.randomize()
 
     #Student t GP model on corrupt data
-    t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=edited_real_sd)
-    corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution)
-    m4 = GPy.models.GPRegression(X, Yc.copy(), kernel4, likelihood=corrupt_stu_t_likelihood)
+    t_distribution = GPy.likelihoods.StudentT(deg_free=deg_free, sigma2=edited_real_sd)
+    laplace_inf = GPy.inference.latent_function_inference.LaplaceInference()
+    m4 = GPy.core.GP(X, Yc.copy(), kernel4, likelihood=t_distribution, inference_method=laplace_inf)
     m4.ensure_default_constraints()
-    m4.constrain_bounded('t_noise', 1e-6, 10.)
-    m4.constrain_fixed('white', 1e-5)
+    m4['t_noise'].constrain_bounded(1e-6, 10.)
+    m4['white'] = 1e-5
+    m4['white'].constrain_fixed()
     m4.randomize()
 
     if optimize:

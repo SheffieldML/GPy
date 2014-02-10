@@ -86,7 +86,7 @@ class TestNoiseModels(object):
     Generic model checker
     """
     def setUp(self):
-        self.N = 5
+        self.N = 15
         self.D = 3
         self.X = np.random.rand(self.N, self.D)*10
 
@@ -104,7 +104,7 @@ class TestNoiseModels(object):
         self.var = np.random.rand(1)
 
         #Make a bigger step as lower bound can be quite curved
-        self.step = 1e-3
+        self.step = 1e-4
 
     def tearDown(self):
         self.Y = None
@@ -165,11 +165,20 @@ class TestNoiseModels(object):
                                 },
                             "laplace": True
                             },
+                        "Student_t_small_deg_free": {
+                            "model": GPy.likelihoods.StudentT(deg_free=1.5, sigma2=self.var),
+                            "grad_params": {
+                                "names": ["t_noise"],
+                                "vals": [self.var],
+                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_fixed)]
+                                },
+                            "laplace": True
+                            },
                         "Student_t_small_var": {
                             "model": GPy.likelihoods.StudentT(deg_free=5, sigma2=self.var),
                             "grad_params": {
                                 "names": ["t_noise"],
-                                "vals": [0.01],
+                                "vals": [0.0001],
                                 "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_fixed)]
                                 },
                             "laplace": True

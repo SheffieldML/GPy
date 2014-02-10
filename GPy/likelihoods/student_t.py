@@ -244,7 +244,7 @@ class StudentT(Likelihood):
         d2logpdf_dlink2_dv = np.zeros_like(d2logpdf_dlink2_dvar) #FIXME: Not done yet
         return np.hstack((d2logpdf_dlink2_dvar, d2logpdf_dlink2_dv))
 
-    def _predictive_variance_analytical(self, mu, sigma, predictive_mean=None):
+    def predictive_variance(self, mu, sigma, predictive_mean=None):
         """
         Compute predictive variance of student_t*normal p(y*|f*)p(f*)
 
@@ -264,7 +264,7 @@ class StudentT(Likelihood):
 
         return true_var
 
-    def _predictive_mean_analytical(self, mu, sigma):
+    def predictive_mean(self, mu, sigma):
         """
         Compute mean of the prediction
         """

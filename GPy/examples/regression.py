@@ -281,11 +281,12 @@ def toy_poisson_rbf_1d_laplace(optimize=True, plot=True):
     f_true = np.random.multivariate_normal(np.zeros(x_len), GPy.kern.rbf(1).K(X))
     Y = np.array([np.random.poisson(np.exp(f)) for f in f_true])[:,None]
 
-    noise_model = GPy.likelihoods.poisson()
-    likelihood = GPy.likelihoods.Laplace(Y,noise_model)
+    kern = GPy.kern.rbf(1)
+    poisson_lik = GPy.likelihoods.Poisson()
+    laplace_inf = GPy.inference.latent_function_inference.LaplaceInference()
 
     # create simple GP Model
-    m = GPy.models.GPRegression(X, Y, likelihood=likelihood)
+    m = GPy.core.GP(X, Y, kernel=kern, likelihood=poisson_lik, inference_method=laplace_inf)
 
     if optimize:
         m.optimize(optimizer)

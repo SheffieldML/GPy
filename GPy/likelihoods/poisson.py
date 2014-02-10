@@ -19,8 +19,11 @@ class Poisson(Likelihood):
     .. Note::
         Y is expected to take values in {0,1,2,...}
     """
-    def __init__(self,gp_link=None,analytical_mean=False,analytical_variance=False):
-        super(Poisson, self).__init__(gp_link,analytical_mean,analytical_variance)
+    def __init__(self, gp_link=None):
+        if gp_link is None:
+            gp_link = link_functions.Log_ex_1()
+
+        super(Poisson, self).__init__(gp_link, name='Poisson')
 
     def _preprocess_values(self,Y):
         return Y

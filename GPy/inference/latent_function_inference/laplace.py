@@ -11,9 +11,8 @@
 #http://gaussianprocess.org/gpml/code.
 
 import numpy as np
-from ...util.linalg import mdot, jitchol, pddet, dpotrs, dtrtrs, dpotri, symmetrify
+from ...util.linalg import mdot, jitchol, dpotrs, dtrtrs, dpotri, symmetrify
 from ...util.misc import param_to_array
-from functools import partial as partial_func
 from posterior import Posterior
 import warnings
 from scipy import optimize
@@ -84,7 +83,6 @@ class LaplaceInference(object):
 
         Ki_f = Ki_f_init.copy()
         f = np.dot(K, Ki_f)
-
 
         #define the objective function (to be maximised)
         def obj(Ki_f, f):
@@ -205,14 +203,6 @@ class LaplaceInference(object):
 
         return log_marginal, woodbury_vector, K_Wi_i, dL_dK, dL_dthetaL
 
-
-    #def likelihood_gradients(self, f_hat, K, Y, Ki_W_i, dL_dfhat, I_KW_i, likelihood, Y_metadata):
-        #"""
-        #Gradients with respect to likelihood parameters (dL_dthetaL)
-
-        #:rtype: array of derivatives (1 x num_likelihood_params)
-        #"""
-
     def _compute_B_statistics(self, K, W, log_concave):
         """
         Rasmussen suggests the use of a numerically stable positive definite matrix B
@@ -244,7 +234,6 @@ class LaplaceInference(object):
         #L2 = L/W_12
         #K_Wi_i_2 , _= dpotri(L2)
         #symmetrify(K_Wi_i_2)
-
 
         return K_Wi_i, L, LiW12
 

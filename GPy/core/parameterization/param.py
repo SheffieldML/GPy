@@ -153,23 +153,6 @@ class Param(ObservableArray, Constrainable, Gradcheckable):
     def _collect_gradient(self, target):
         target[:] = self.gradient.flat
     #===========================================================================
-    # Fixing Parameters:
-    #===========================================================================
-    def constrain_fixed(self, warning=True):
-        """
-        Constrain this paramter to be fixed to the current value it carries.
-
-        :param warning: print a warning for overwriting constraints.
-        """
-        self._highest_parent_._fix(self, warning)
-    fix = constrain_fixed
-    def unconstrain_fixed(self):
-        """
-        This parameter will no longer be fixed.
-        """
-        self._highest_parent_._unfix(self)
-    unfix = unconstrain_fixed
-    #===========================================================================
     # Tying operations -> bugged, TODO
     #===========================================================================
     def tie_to(self, param):
@@ -419,7 +402,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable):
             slice_index = self._current_slice_
         if isinstance(slice_index, (tuple, list)):
             clean_curr_slice = [s for s in slice_index if numpy.any(s != Ellipsis)]
-            if (all(isinstance(n, (numpy.ndarray, list, tuple)) for n in clean_curr_slice) 
+            if (all(isinstance(n, (numpy.ndarray, list, tuple)) for n in clean_curr_slice)
                 and len(set(map(len, clean_curr_slice))) <= 1):
                 return numpy.fromiter(itertools.izip(*clean_curr_slice),
                     dtype=[('', int)] * self._realndim_, count=len(clean_curr_slice[0])).view((int, self._realndim_))
@@ -438,7 +421,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable):
         if self._realsize_ < 2:
             return name
         ind = self._indices()
-        if ind.size > 4: indstr = ','.join(map(str, ind[:2])) + "..." + ','.join(map(str, ind[-2:])) 
+        if ind.size > 4: indstr = ','.join(map(str, ind[:2])) + "..." + ','.join(map(str, ind[-2:]))
         else: indstr = ','.join(map(str, ind))
         return name + '[' + indstr + ']'
     def __str__(self, constr_matrix=None, indices=None, ties=None, lc=None, lx=None, li=None, lt=None):
@@ -472,7 +455,7 @@ class ParamConcatenation(object):
         for p in params:
             for p in p.flattened_parameters:
                 if p not in self.params:
-                    self.params.append(p)           
+                    self.params.append(p)
         self._param_sizes = [p.size for p in self.params]
         startstops = numpy.cumsum([0] + self._param_sizes)
         self._param_slices_ = [slice(start, stop) for start,stop in zip(startstops, startstops[1:])]
@@ -587,7 +570,7 @@ if __name__ == '__main__':
     p = Param("q_mean", X)
     p1 = Param("q_variance", numpy.random.rand(*p.shape))
     p2 = Param("Y", numpy.random.randn(p.shape[0], 1))
-    
+
     p3 = Param("variance", numpy.random.rand())
     p4 = Param("lengthscale", numpy.random.rand(2))
 

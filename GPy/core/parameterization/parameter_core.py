@@ -49,19 +49,19 @@ class Pickleable(object):
 
 class Parentable(object):
     def __init__(self, direct_parent=None, parent_index=None):
-        super(Parentable,self).__init__()        
+        super(Parentable,self).__init__()
         self._direct_parent_ = direct_parent
         self._parent_index_ = parent_index
 
     def has_parent(self):
         return self._direct_parent_ is not None
-    
+
     @property
     def _highest_parent_(self):
         if self._direct_parent_ is None:
             return self
         return self._direct_parent_._highest_parent_
-    
+
 class Nameable(Parentable):
     _name = None
     def __init__(self, name, direct_parent=None, parent_index=None):
@@ -93,6 +93,25 @@ class Gradcheckable(Parentable):
 class Constrainable(Nameable):
     def __init__(self, name):
         super(Constrainable,self).__init__(name)
+    #===========================================================================
+    # Fixing Parameters:
+    #===========================================================================
+    def constrain_fixed(self, value=None, warning=True):
+        """
+        Constrain this paramter to be fixed to the current value it carries.
+
+        :param warning: print a warning for overwriting constraints.
+        """
+        if value is not None:
+            self[:] = value
+        self._highest_parent_._fix(self,warning)
+    fix = constrain_fixed
+    def unconstrain_fixed(self):
+        """
+        This parameter will no longer be fixed.
+        """
+        self._highest_parent_._unfix(self)
+    unfix = unconstrain_fixed
     #===========================================================================
     # Constrain operations -> done
     #===========================================================================

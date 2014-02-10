@@ -77,6 +77,27 @@ class Constrainable(Nameable):
     def __init__(self, name):
         super(Constrainable,self).__init__(name)
     #===========================================================================
+    # Fixing Parameters:
+    #===========================================================================
+    def constrain_fixed(self, value=None, warning=True):
+        """
+        Constrain this paramter to be fixed to the current value it carries.
+
+        :param warning: print a warning for overwriting constraints.
+        """
+        if value is not None:
+            self[:] = value
+        self._highest_parent_._fix(self,warning)
+    fix = constrain_fixed
+    def unconstrain_fixed(self):
+        """
+        This parameter will no longer be fixed.
+        """
+        self._highest_parent_._unfix(self)
+    unfix = unconstrain_fixed
+
+
+    #===========================================================================
     # Constrain operations -> done
     #===========================================================================
     def constrain(self, transform, warning=True, update=True):

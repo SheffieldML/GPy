@@ -158,23 +158,6 @@ class Param(ObservableArray, Constrainable):
     def _collect_gradient(self, target):
         target[:] = self.gradient.flat
     #===========================================================================
-    # Fixing Parameters:
-    #===========================================================================
-    def constrain_fixed(self, warning=True):
-        """
-        Constrain this paramter to be fixed to the current value it carries.
-
-        :param warning: print a warning for overwriting constraints.
-        """
-        self._highest_parent_._fix(self,warning)
-    fix = constrain_fixed
-    def unconstrain_fixed(self):
-        """
-        This parameter will no longer be fixed.
-        """
-        self._highest_parent_._unfix(self)
-    unfix = unconstrain_fixed
-    #===========================================================================
     # Tying operations -> bugged, TODO
     #===========================================================================
     def tie_to(self, param):

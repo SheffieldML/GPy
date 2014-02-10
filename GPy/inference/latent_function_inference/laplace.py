@@ -159,7 +159,7 @@ class LaplaceInference(object):
         #Compute vival matrices for derivatives
         dW_df = likelihood.d3logpdf_df3(f_hat, Y, extra_data=Y_metadata) # d3lik_d3fhat
         woodbury_vector = likelihood.dlogpdf_df(f_hat, Y, extra_data=Y_metadata)
-        dL_dfhat = 0.5*(np.diag(Ki_W_i)[:, None]*dW_df) #why isn't this -0.5? s2 in R&W p126 line 9.
+        dL_dfhat = -0.5*(np.diag(Ki_W_i)[:, None]*dW_df) #why isn't this -0.5? s2 in R&W p126 line 9.
         #BiK, _ = dpotrs(L, K, lower=1)
         #dL_dfhat = 0.5*np.diag(BiK)[:, None]*dW_df
         I_KW_i = np.eye(Y.shape[0]) - np.dot(K, K_Wi_i)
@@ -172,7 +172,7 @@ class LaplaceInference(object):
             explicit_part = 0.5*(np.dot(Ki_f, Ki_f.T) - K_Wi_i)
 
             #Implicit
-            implicit_part = np.dot(woodbury_vector, dL_dfhat.T).dot(I_KW_i)
+            implicit_part = -np.dot(woodbury_vector, dL_dfhat.T).dot(I_KW_i)
 
             dL_dK = explicit_part + implicit_part
         else:

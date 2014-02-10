@@ -118,8 +118,8 @@ class FITC(SparseGP):
             _dKmm = .5*(V_n**2 + alpha_n + gamma_n**2 - 2.*gamma_k) * K_pp_K #Diag_dD_dKmm
             self._dpsi1_dtheta += self.kern.dK_dtheta(_dpsi1,self.X[i:i+1,:],self.Z)
             self._dKmm_dtheta += self.kern.dK_dtheta(_dKmm,self.Z)
-            self._dKmm_dX += self.kern.dK_dX(_dKmm ,self.Z)
-            self._dpsi1_dX += self.kern.dK_dX(_dpsi1.T,self.Z,self.X[i:i+1,:])
+            self._dKmm_dX += self.kern.gradients_X(_dKmm ,self.Z)
+            self._dpsi1_dX += self.kern.gradients_X(_dpsi1.T,self.Z,self.X[i:i+1,:])
 
         # the partial derivative vector for the likelihood
         if self.likelihood.num_params == 0:
@@ -170,8 +170,8 @@ class FITC(SparseGP):
         return dL_dtheta
 
     def dL_dZ(self):
-        dL_dZ = self.kern.dK_dX(self._dL_dpsi1.T,self.Z,self.X)
-        dL_dZ += self.kern.dK_dX(self._dL_dKmm,X=self.Z)
+        dL_dZ = self.kern.gradients_X(self._dL_dpsi1.T,self.Z,self.X)
+        dL_dZ += self.kern.gradients_X(self._dL_dKmm,X=self.Z)
         dL_dZ += self._dpsi1_dX
         dL_dZ += self._dKmm_dX
         return dL_dZ

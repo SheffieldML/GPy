@@ -107,7 +107,7 @@ class MLP(Kernpart):
             
         target[0] += np.sum(self._K_dvar*dL_dK)
 
-    def dK_dX(self, dL_dK, X, X2, target):
+    def gradients_X(self, dL_dK, X, X2, target):
         """Derivative of the covariance matrix with respect to X"""
         self._K_computations(X, X2)
         arg = self._K_asin_arg

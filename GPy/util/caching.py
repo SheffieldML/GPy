@@ -1,10 +1,9 @@
-import numpy as np
-from ..core.parameterization.array_core import ObservableArray
+from ..core.parameterization.array_core import ObservableArray, ParamList
 class Cacher(object):
     def __init__(self, operation, limit=5):
         self.limit = int(limit)
         self.operation=operation
-        self.cached_inputs = []
+        self.cached_inputs = ParamList([])
         self.cached_outputs = []
         self.inputs_changed = []
 

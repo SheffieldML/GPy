@@ -15,8 +15,18 @@ class ListArray(np.ndarray):
     def __new__(cls, input_array):
         obj = np.asanyarray(input_array).view(cls)
         return obj
-    def __eq__(self, other):
-        return other is self
+    #def __eq__(self, other):
+    #    return other is self
+
+class ParamList(list):
+
+    def __contains__(self, other):
+        for el in self:
+            if el is other:
+                return True
+        return False
+    
+    pass
 
 class ObservableArray(ListArray, Observable):
     """
@@ -36,16 +46,19 @@ class ObservableArray(ListArray, Observable):
         if obj is None: return
         self._observers_ = getattr(obj, '_observers_', None)
     def __setitem__(self, s, val, update=True):
-        if self.ndim:
-            if not np.all(np.equal(self[s], val)):
-                super(ObservableArray, self).__setitem__(s, val)
-                if update:
-                    self._notify_observers()
-        else:
-            if not np.all(np.equal(self, val)):
-                super(ObservableArray, self).__setitem__(Ellipsis, val)
-                if update:
-                    self._notify_observers()
+        super(ObservableArray, self).__setitem__(s, val)
+        if update:
+            self._notify_observers()
+#         if self.ndim:
+#             if not np.all(np.equal(self[s], val)):
+#                 super(ObservableArray, self).__setitem__(s, val)
+#                 if update:
+#                     self._notify_observers()
+#         else:
+#             if not np.all(np.equal(self, val)):
+#                 super(ObservableArray, self).__setitem__(Ellipsis, val)
+#                 if update:
+#                     self._notify_observers()
     def __getslice__(self, start, stop):
         return self.__getitem__(slice(start, stop))
     def __setslice__(self, start, stop, val):

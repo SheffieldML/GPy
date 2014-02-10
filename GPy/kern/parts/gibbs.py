@@ -97,7 +97,7 @@ class Gibbs(Kernpart):
 
         target+= np.hstack([(dL_dK*self._K_dvar).sum(), gmapping])
 
-    def dK_dX(self, dL_dK, X, X2, target):
+    def gradients_X(self, dL_dK, X, X2, target):
         """Derivative of the covariance matrix with respect to X."""
         # First account for gradients arising from presence of X in exponent.
         self._K_computations(X, X2)
@@ -105,8 +105,8 @@ class Gibbs(Kernpart):
             _K_dist = 2*(X[:, None, :] - X[None, :, :])
         else:
             _K_dist = X[:, None, :] - X2[None, :, :] # don't cache this in _K_co
-        dK_dX = (-2.*self.variance)*np.transpose((self._K_dvar/self._w2)[:, :, None]*_K_dist, (1, 0, 2))
-        target += np.sum(dK_dX*dL_dK.T[:, :, None], 0)
+        gradients_X = (-2.*self.variance)*np.transpose((self._K_dvar/self._w2)[:, :, None]*_K_dist, (1, 0, 2))
+        target += np.sum(gradients_X*dL_dK.T[:, :, None], 0)
         # Now account for gradients arising from presence of X in lengthscale.
         self._dK_computations(dL_dK)
         if X2 is None:

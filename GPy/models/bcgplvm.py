@@ -44,7 +44,7 @@ class BCGPLVM(GPLVM):
         GP._set_params(self, x[self.mapping.num_params:])
 
     def _log_likelihood_gradients(self):
-        dL_df = self.kern.dK_dX(self.dL_dK, self.X)
+        dL_df = self.kern.gradients_X(self.dL_dK, self.X)
         dL_dtheta = self.mapping.df_dtheta(dL_df, self.likelihood.Y)
         return np.hstack((dL_dtheta.flatten(), GP._log_likelihood_gradients(self)))
 

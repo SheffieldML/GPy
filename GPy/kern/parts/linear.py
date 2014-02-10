@@ -57,6 +57,27 @@ class Linear(Kernpart):
     def on_input_change(self, X):
         self._K_computations(X, None)
 
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        self._psi_computations(Z, mu, S)
+        
+        # psi0:
+        tmp = dL_dpsi0[:, None] * self.mu2_S
+        if self.ARD: self.variances.gradient = tmp.sum(0)
+        else: self.variances.gradient = tmp.sum()
+
+        #psi1
+        self.dK_dtheta(dL_dpsi1, mu, Z, self.variances.gradient)
+        
+        #from psi2
+        tmp = dL_dpsi2[:, :, :, None] * (self.ZAinner[:, :, None, :] * (2 * Z)[None, None, :, :])
+        if self.ARD: self.variances.gradient += tmp.sum(0).sum(0).sum(0)
+        else: self.variances.gradient += tmp.sum()
+
+        #from Kmm
+        self._K_computations(Z, None)
+        self.dK_dtheta(dL_dKmm, Z, None, self.variances.gradient)
+        
+        
 #     def _get_params(self):
 #         return self.variances
 # 
@@ -107,7 +128,7 @@ class Linear(Kernpart):
         else:
             target += tmp.sum()
 
-    def dK_dX(self, dL_dK, X, X2, target):
+    def gradients_X(self, dL_dK, X, X2, target):
         if X2 is None:
             target += 2*(((X[None,:, :] * self.variances)) * dL_dK[:, :, None]).sum(1)
         else:
@@ -150,7 +171,7 @@ class Linear(Kernpart):
         target_mu += (dL_dpsi1[:, :, None] * (Z * self.variances)).sum(1)
 
     def dpsi1_dZ(self, dL_dpsi1, Z, mu, S, target):
-        self.dK_dX(dL_dpsi1.T, Z, mu, target)
+        self.gradients_X(dL_dpsi1.T, Z, mu, target)
 
     def psi2(self, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
@@ -182,7 +203,7 @@ class Linear(Kernpart):
     def dpsi2_dmuS_new(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
         tmp = np.zeros((mu.shape[0], Z.shape[0]))
         self.K(mu,Z,tmp)
-        self.dK_dX(2.*np.sum(dL_dpsi2*tmp[:,None,:],2),mu,Z,target_mu)
+        self.gradients_X(2.*np.sum(dL_dpsi2*tmp[:,None,:],2),mu,Z,target_mu)
 
         Zs = Z*self.variances
         Zs_sq = Zs[:,None,:]*Zs[None,:,:]

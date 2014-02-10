@@ -11,6 +11,7 @@ from param import ParamConcatenation, Param
 from parameter_core import Constrainable, Pickleable, Observable, adjust_name_for_printing
 from index_operations import ParameterIndexOperations,\
     index_empty
+from array_core import ParamList
 
 #===============================================================================
 # Printing:
@@ -69,7 +70,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
         super(Parameterized, self).__init__(name=name)
         self._in_init_ = True
         self._constraints_ = None#ParameterIndexOperations()
-        self._parameters_ = []
+        self._parameters_ = ParamList()
         self.size = sum(p.size for p in self._parameters_)
         if not self._has_fixes():
             self._fixes_ = None
@@ -188,10 +189,10 @@ class Parameterized(Constrainable, Pickleable, Observable):
             note: if it is a string object it will not (!) be regexp-matched
                   automatically.
         """
-        self._parameters_ = [p for p in self._parameters_
+        self._parameters_ = ParamList([p for p in self._parameters_
                         if not (p._parent_index_ in names_params_indices
                                 or p.name in names_params_indices
-                                or p in names_params_indices)]
+                                or p in names_params_indices)])
         self._connect_parameters()
 
     def parameters_changed(self):
@@ -216,7 +217,6 @@ class Parameterized(Constrainable, Pickleable, Observable):
         for i,p in enumerate(self._parameters_):
             p._direct_parent_ = self
             p._parent_index_ = i
-            p._connect_highest_parent(self)
             not_unique = []
             sizes.append(p.size+sizes[-1])
             self._param_slices_.append(slice(sizes[-2], sizes[-1]))
@@ -230,14 +230,6 @@ class Parameterized(Constrainable, Pickleable, Observable):
             elif not (pname in not_unique):
                 self.__dict__[pname] = p
                 self._added_names_.add(pname)
-        
-    def _connect_highest_parent(self, highest_parent):
-        self._highest_parent_ = highest_parent
-        if not hasattr(self, "_parameters_") or len(self._parameters_) < 1:
-            # no parameters for this class
-            return
-        for p in self._parameters_:
-            p._connect_highest_parent(highest_parent)
         
     #===========================================================================
     # Pickling operations
@@ -372,6 +364,8 @@ class Parameterized(Constrainable, Pickleable, Observable):
         that is an int array, containing the indexes for the flattened
         param inside this parameterized logic.
         """
+        if isinstance(param, ParamConcatenation):
+            return numpy.hstack((self._raveled_index_for(p) for p in param.params))
         return param._raveled_index() + self._offset_for(param)
 
     def _raveled_index(self):

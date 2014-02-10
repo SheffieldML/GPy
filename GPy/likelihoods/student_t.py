@@ -38,8 +38,12 @@ class StudentT(Likelihood):
         self.variance = (self.v / float(self.v - 2)) * self.sigma2
 
     def update_gradients(self, partial):
-        self.sigma2.gradient = np.ones(1) #FIXME: Not done yet
-        self.v.gradient = np.ones(1) #FIXME: Not done yet
+        """
+        Pull out the gradients, be careful as the order must match the order
+        in which the parameters are added
+        """
+        self.sigma2.gradient = partial[0]
+        self.v.gradient = partial[1]
 
     def pdf_link(self, link_f, y, extra_data=None):
         """

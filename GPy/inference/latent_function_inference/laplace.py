@@ -157,7 +157,7 @@ class LaplaceInference(object):
         log_marginal = -0.5*np.dot(Ki_f.flatten(), f_hat.flatten()) + likelihood.logpdf(f_hat, Y, extra_data=Y_metadata) - np.sum(np.log(np.diag(L)))
 
         #Compute vival matrices for derivatives
-        dW_df = likelihood.d3logpdf_df3(f_hat, Y, extra_data=Y_metadata) # d3lik_d3fhat
+        dW_df = -likelihood.d3logpdf_df3(f_hat, Y, extra_data=Y_metadata) # -d3lik_d3fhat
         woodbury_vector = likelihood.dlogpdf_df(f_hat, Y, extra_data=Y_metadata)
         dL_dfhat = -0.5*(np.diag(Ki_W_i)[:, None]*dW_df) #why isn't this -0.5? s2 in R&W p126 line 9.
         #BiK, _ = dpotrs(L, K, lower=1)
@@ -172,7 +172,7 @@ class LaplaceInference(object):
             explicit_part = 0.5*(np.dot(Ki_f, Ki_f.T) - K_Wi_i)
 
             #Implicit
-            implicit_part = -np.dot(woodbury_vector, dL_dfhat.T).dot(I_KW_i)
+            implicit_part = np.dot(woodbury_vector, dL_dfhat.T).dot(I_KW_i)
 
             dL_dK = explicit_part + implicit_part
         else:
@@ -189,28 +189,15 @@ class LaplaceInference(object):
             dL_dthetaL = np.zeros(num_params)
             for thetaL_i in range(num_params):
                 #Explicit
-                dL_dthetaL_exp = ( + np.sum(dlik_dthetaL[thetaL_i])
+                dL_dthetaL_exp = ( np.sum(dlik_dthetaL[thetaL_i])
+                                # The + comes from the fact that dlik_hess_dthetaL == -dW_dthetaL
                                 + 0.5*np.sum(np.diag(Ki_W_i).flatten()*dlik_hess_dthetaL[:, thetaL_i].flatten())
-                                #- 0.5*np.trace(np.diag(Ki_W_i)[:,None]*dlik_hess_dthetaL[:, thetaL_i])
-                                #+ 0.5*np.trace(np.dot(I_KW_i, K)*dlik_hess_dthetaL[:, thetaL_i])
                                 )
 
                 #Implicit
                 dfhat_dthetaL = mdot(I_KW_i, K, dlik_grad_dthetaL[:, thetaL_i])
-                #dfhat_dthetaL = mdot(Wi_K_i, dlik_grad_dthetaL[:, thetaL_i])
+                #dfhat_dthetaL = mdot(Ki_W_i, dlik_grad_dthetaL[:, thetaL_i])
                 dL_dthetaL_imp = np.dot(dL_dfhat.T, dfhat_dthetaL)
-                #import pylab as pb
-                #pb.figure(1)
-                #pb.matshow(Ki_W_i)
-                #pb.title('I_KW_i approx')
-                #pb.colorbar()
-                #pb.figure(2)
-                #pb.matshow(np.linalg.inv(np.dot(np.eye(Y.shape[0]) + np.sqrt(W).T*K*np.sqrt(W), K)))
-                #pb.title('I_KW_i')
-                #pb.colorbar()
-                #print likelihood
-                #pb.show()
-                #import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
                 dL_dthetaL[thetaL_i] = dL_dthetaL_exp + dL_dthetaL_imp
 
         else:

@@ -312,7 +312,7 @@ class Likelihood(Parameterized):
             return self.dlogpdf_link_dtheta(link_f, y, extra_data=extra_data)
         else:
             #Is no parameters so return an empty array for its derivatives
-            return np.empty([1, 0])
+            return np.zeros([1, 0])
 
     def dlogpdf_df_dtheta(self, f, y, extra_data=None):
         """
@@ -325,7 +325,7 @@ class Likelihood(Parameterized):
             return chain_1(dlogpdf_dlink_dtheta, dlink_df)
         else:
             #Is no parameters so return an empty array for its derivatives
-            return np.empty([f.shape[0], 0])
+            return np.zeros([f.shape[0], 0])
 
     def d2logpdf_df2_dtheta(self, f, y, extra_data=None):
         """
@@ -340,7 +340,7 @@ class Likelihood(Parameterized):
             return chain_2(d2logpdf_dlink2_dtheta, dlink_df, dlogpdf_dlink_dtheta, d2link_df2)
         else:
             #Is no parameters so return an empty array for its derivatives
-            return np.empty([f.shape[0], 0])
+            return np.zeros([f.shape[0], 0])
 
     def _laplace_gradients(self, f, y, extra_data=None):
         dlogpdf_dtheta = self.dlogpdf_dtheta(f, y, extra_data=extra_data)
@@ -349,9 +349,12 @@ class Likelihood(Parameterized):
 
         #Parameters are stacked vertically. Must be listed in same order as 'get_param_names'
         # ensure we have gradients for every parameter we want to optimize
-        assert dlogpdf_dtheta.shape[1] == self.size
-        assert dlogpdf_df_dtheta.shape[1] == self.size
-        assert d2logpdf_df2_dtheta.shape[1] == self.size
+        try:
+            assert len(dlogpdf_dtheta) == self.size #1 x num_param array
+            assert dlogpdf_df_dtheta.shape[1] == self.size #f x num_param matrix
+            assert d2logpdf_df2_dtheta.shape[1] == self.size #f x num_param matrix
+        except Exception as e:
+            import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
 
         return dlogpdf_dtheta, dlogpdf_df_dtheta, d2logpdf_df2_dtheta
 

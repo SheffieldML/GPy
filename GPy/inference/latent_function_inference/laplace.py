@@ -32,6 +32,7 @@ class LaplaceInference(object):
         self._mode_finding_tolerance = 1e-7
         self._mode_finding_max_iter = 40
         self.bad_fhat = True
+        self._previous_Ki_fhat = None
 
     def inference(self, kern, X, likelihood, Y, Y_metadata=None):
         """
@@ -53,14 +54,13 @@ class LaplaceInference(object):
         f_hat, Ki_fhat = self.rasm_mode(K, Y, likelihood, Ki_f_init, Y_metadata=Y_metadata)
 
         #Compute hessian and other variables at mode
-        log_marginal, Ki_W_i, K_Wi_i, dL_dK, woodbury_vector = self.mode_computations(f_hat, Ki_fhat, K, Y, likelihood, Y_metadata)
+        log_marginal, woodbury_vector, woodbury_inv, dL_dK, dL_dthetaL = self.mode_computations(f_hat, Ki_fhat, K, Y, likelihood, kern, Y_metadata)
 
-        #likelihood.gradient = self.likelihood_gradients()
         kern.update_gradients_full(dL_dK, X)
-        likelihood.update_gradients(np.ones(10))
+        likelihood.update_gradients(dL_dthetaL)
 
         self._previous_Ki_fhat = Ki_fhat.copy()
-        return Posterior(woodbury_vector=woodbury_vector, woodbury_inv = K_Wi_i, K=K), log_marginal, {'dL_dK':dL_dK}
+        return Posterior(woodbury_vector=woodbury_vector, woodbury_inv=woodbury_inv, K=K), log_marginal, {'dL_dK':dL_dK}
 
     def rasm_mode(self, K, Y, likelihood, Ki_f_init, Y_metadata=None):
         """
@@ -134,13 +134,15 @@ class LaplaceInference(object):
 
         return f, Ki_f
 
-
-    def mode_computations(self, f_hat, Ki_f, K, Y, likelihood, Y_metadata):
+    def mode_computations(self, f_hat, Ki_f, K, Y, likelihood, kern, Y_metadata):
         """
         At the mode, compute the hessian and effective covariance matrix.
 
         returns: logZ : approximation to the marginal likelihood
-        Cov : the approximation to the covariance matrix
+                 woodbury_vector : variable required for calculating the approximation to the covariance matrix
+                 woodbury_inv : variable required for calculating the approximation to the covariance matrix
+                 dL_dthetaL : array of derivatives (1 x num_kernel_params)
+                 dL_dthetaL : array of derivatives (1 x num_likelihood_params)
         """
         #At this point get the hessian matrix (or vector as W is diagonal)
         W = -likelihood.d2logpdf_df2(f_hat, Y, extra_data=Y_metadata)
@@ -154,48 +156,75 @@ class LaplaceInference(object):
         #compute the log marginal
         log_marginal = -0.5*np.dot(Ki_f.flatten(), f_hat.flatten()) + likelihood.logpdf(f_hat, Y, extra_data=Y_metadata) - np.sum(np.log(np.diag(L)))
 
-        #compute dL_dK
-        explicit_part = 0.5*(np.dot(Ki_f, Ki_f.T) - K_Wi_i)
-
-        #Implicit
+        #Compute vival matrices for derivatives
         dW_df = likelihood.d3logpdf_df3(f_hat, Y, extra_data=Y_metadata) # d3lik_d3fhat
         woodbury_vector = likelihood.dlogpdf_df(f_hat, Y, extra_data=Y_metadata)
         dL_dfhat = 0.5*(np.diag(Ki_W_i)[:, None]*dW_df) #why isn't this -0.5? s2 in R&W p126 line 9.
-        #implicit_part = np.dot(woodbury_vector, dL_dfhat.T).dot(np.eye(Y.shape[0]) - np.dot(K, K_Wi_i))
-        BiK, _ = dpotrs(L, K, lower=1)
+        #BiK, _ = dpotrs(L, K, lower=1)
         #dL_dfhat = 0.5*np.diag(BiK)[:, None]*dW_df
-        implicit_part = np.dot(woodbury_vector, dL_dfhat.T).dot(np.eye(Y.shape[0]) - np.dot(K, K_Wi_i))
+        I_KW_i = np.eye(Y.shape[0]) - np.dot(K, K_Wi_i)
 
-        dL_dK = explicit_part + implicit_part
-
-        return log_marginal, Ki_W_i, K_Wi_i, dL_dK, woodbury_vector
-
-
-    def likelihood_gradients(self):
-        """
-        Gradients with respect to likelihood parameters (dL_dthetaL)
-
-        :rtype: array of derivatives (1 x num_likelihood_params)
-        """
-        dL_dfhat, I_KW_i = self._shared_gradients_components()
-        dlik_dthetaL, dlik_grad_dthetaL, dlik_hess_dthetaL = likelihood._laplace_gradients(self.f_hat, self.data, extra_data=self.extra_data)
-
-        num_params = len(self._get_param_names())
-        # make space for one derivative for each likelihood parameter
-        dL_dthetaL = np.zeros(num_params)
-        for thetaL_i in range(num_params):
+        ####################
+        #compute dL_dK#
+        ####################
+        if kern.size > 0 and not kern.is_fixed:
             #Explicit
-            dL_dthetaL_exp = ( np.sum(dlik_dthetaL[:, thetaL_i])
-                             #- 0.5*np.trace(mdot(self.Ki_W_i, (self.K, np.diagflat(dlik_hess_dthetaL[thetaL_i]))))
-                             + np.dot(0.5*np.diag(self.Ki_W_i)[:,None].T, dlik_hess_dthetaL[:, thetaL_i])
-                             )
+            explicit_part = 0.5*(np.dot(Ki_f, Ki_f.T) - K_Wi_i)
 
             #Implicit
-            dfhat_dthetaL = mdot(I_KW_i, self.K, dlik_grad_dthetaL[:, thetaL_i])
-            dL_dthetaL_imp = np.dot(dL_dfhat, dfhat_dthetaL)
-            dL_dthetaL[thetaL_i] = dL_dthetaL_exp + dL_dthetaL_imp
+            implicit_part = np.dot(woodbury_vector, dL_dfhat.T).dot(I_KW_i)
 
-        return dL_dthetaL
+            dL_dK = explicit_part + implicit_part
+        else:
+            dL_dK = np.zeros(likelihood.size)
+
+        ####################
+        #compute dL_dthetaL#
+        ####################
+        if likelihood.size > 0 and not likelihood.is_fixed:
+            dlik_dthetaL, dlik_grad_dthetaL, dlik_hess_dthetaL = likelihood._laplace_gradients(f_hat, Y, extra_data=Y_metadata)
+
+            num_params = likelihood.size
+            # make space for one derivative for each likelihood parameter
+            dL_dthetaL = np.zeros(num_params)
+            for thetaL_i in range(num_params):
+                #Explicit
+                dL_dthetaL_exp = ( + np.sum(dlik_dthetaL[thetaL_i])
+                                + 0.5*np.sum(np.diag(Ki_W_i).flatten()*dlik_hess_dthetaL[:, thetaL_i].flatten())
+                                #- 0.5*np.trace(np.diag(Ki_W_i)[:,None]*dlik_hess_dthetaL[:, thetaL_i])
+                                #+ 0.5*np.trace(np.dot(I_KW_i, K)*dlik_hess_dthetaL[:, thetaL_i])
+                                )
+
+                #Implicit
+                dfhat_dthetaL = mdot(I_KW_i, K, dlik_grad_dthetaL[:, thetaL_i])
+                #dfhat_dthetaL = mdot(Wi_K_i, dlik_grad_dthetaL[:, thetaL_i])
+                dL_dthetaL_imp = np.dot(dL_dfhat.T, dfhat_dthetaL)
+                #import pylab as pb
+                #pb.figure(1)
+                #pb.matshow(Ki_W_i)
+                #pb.title('I_KW_i approx')
+                #pb.colorbar()
+                #pb.figure(2)
+                #pb.matshow(np.linalg.inv(np.dot(np.eye(Y.shape[0]) + np.sqrt(W).T*K*np.sqrt(W), K)))
+                #pb.title('I_KW_i')
+                #pb.colorbar()
+                #print likelihood
+                #pb.show()
+                #import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+                dL_dthetaL[thetaL_i] = dL_dthetaL_exp + dL_dthetaL_imp
+
+        else:
+            dL_dthetaL = np.zeros(likelihood.size)
+
+        return log_marginal, woodbury_vector, K_Wi_i, dL_dK, dL_dthetaL
+
+
+    #def likelihood_gradients(self, f_hat, K, Y, Ki_W_i, dL_dfhat, I_KW_i, likelihood, Y_metadata):
+        #"""
+        #Gradients with respect to likelihood parameters (dL_dthetaL)
+
+        #:rtype: array of derivatives (1 x num_likelihood_params)
+        #"""
 
     def _compute_B_statistics(self, K, W, log_concave):
         """

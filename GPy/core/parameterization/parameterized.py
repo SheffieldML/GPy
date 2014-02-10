@@ -256,6 +256,16 @@ class Parameterized(Constrainable, Pickleable, Observable):
             cPickle.dump(self, f, protocol)
     def copy(self):
         """Returns a (deep) copy of the current model """
+        #dc = dict()
+        #for k, v in self.__dict__.iteritems():
+            #if k not in ['_highest_parent_', '_direct_parent_']:
+                #dc[k] = copy.deepcopy(v)
+
+        #dc = copy.deepcopy(self.__dict__)
+        #dc['_highest_parent_'] = None
+        #dc['_direct_parent_'] = None
+        #s = self.__class__.new()
+        #s.__dict__ = dc
         return copy.deepcopy(self)
     def __getstate__(self):
         if self._has_get_set_state():
@@ -419,6 +429,8 @@ class Parameterized(Constrainable, Pickleable, Observable):
     #===========================================================================
     # Convenience for fixed, tied checking of param:
     #===========================================================================
+    def fixed_indices(self):
+        return np.array([x.is_fixed for x in self._parameters_])
     def _is_fixed(self, param):
         # returns if the whole param is fixed
         if not self._has_fixes():
@@ -449,7 +461,6 @@ class Parameterized(Constrainable, Pickleable, Observable):
         # if removing constraints before adding new is not wanted, just delete the above line!
         self.constraints.add(transform, rav_i)
         param = self._get_original(param)
-        #FIXME: Max, is this the right thing to do to handle fixed?
         if not (transform == __fixed__):
             param._set_params(transform.initialize(param._get_params()), update=False)
         if warning and any(reconstrained):

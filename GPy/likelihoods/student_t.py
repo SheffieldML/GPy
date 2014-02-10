@@ -30,6 +30,7 @@ class StudentT(Likelihood):
         self.v = Param('deg_free', float(deg_free))
         self.add_parameter(self.sigma2)
         self.add_parameter(self.v)
+        self.v.constrain_fixed()
 
         self.log_concave = False
 
@@ -226,15 +227,18 @@ class StudentT(Likelihood):
 
     def dlogpdf_link_dtheta(self, f, y, extra_data=None):
         dlogpdf_dvar = self.dlogpdf_link_dvar(f, y, extra_data=extra_data)
-        return np.asarray([[dlogpdf_dvar]])
+        dlogpdf_dv = np.zeros_like(dlogpdf_dvar) #FIXME: Not done yet
+        return np.hstack((dlogpdf_dvar, dlogpdf_dv))
 
     def dlogpdf_dlink_dtheta(self, f, y, extra_data=None):
         dlogpdf_dlink_dvar = self.dlogpdf_dlink_dvar(f, y, extra_data=extra_data)
-        return dlogpdf_dlink_dvar
+        dlogpdf_dlink_dv = np.zeros_like(dlogpdf_dlink_dvar) #FIXME: Not done yet
+        return np.hstack((dlogpdf_dlink_dvar, dlogpdf_dlink_dv))
 
     def d2logpdf_dlink2_dtheta(self, f, y, extra_data=None):
         d2logpdf_dlink2_dvar = self.d2logpdf_dlink2_dvar(f, y, extra_data=extra_data)
-        return d2logpdf_dlink2_dvar
+        d2logpdf_dlink2_dv = np.zeros_like(d2logpdf_dlink2_dvar) #FIXME: Not done yet
+        return np.hstack((d2logpdf_dlink2_dvar, d2logpdf_dlink2_dv))
 
     def _predictive_variance_analytical(self, mu, sigma, predictive_mean=None):
         """

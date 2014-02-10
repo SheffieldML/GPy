@@ -8,7 +8,7 @@ from GPy.likelihoods import link_functions
 from ..core.parameterization import Param
 from functools import partial
 #np.random.seed(300)
-np.random.seed(7)
+#np.random.seed(7)
 
 def dparam_partial(inst_func, *args):
     """
@@ -41,25 +41,27 @@ def dparam_checkgrad(func, dfunc, params, params_names, args, constraints=None, 
     The number of parameters and N is the number of data
     Need to take a slice out from f and a slice out of df
     """
-    #print "\n{} likelihood: {} vs {}".format(func.im_self.__class__.__name__,
-                                           #func.__name__, dfunc.__name__)
+    print "\n{} likelihood: {} vs {}".format(func.im_self.__class__.__name__,
+                                           func.__name__, dfunc.__name__)
     partial_f = dparam_partial(func, *args)
     partial_df = dparam_partial(dfunc, *args)
     gradchecking = True
     zipped_params = zip(params, params_names)
-    for param_val, param_name in zipped_params:
-        fnum = np.atleast_1d(partial_f(param_val, param_name)).shape[0]
-        dfnum = np.atleast_1d(partial_df(param_val, param_name)).shape[0]
+    for param_ind, (param_val, param_name) in enumerate(zipped_params):
+        #Check one parameter at a time, make sure it is 2d (as some gradients only return arrays) then strip out the parameter
+        fnum = np.atleast_2d(partial_f(param_val, param_name))[:, param_ind].shape[0]
+        dfnum = np.atleast_2d(partial_df(param_val, param_name))[:, param_ind].shape[0]
         for fixed_val in range(dfnum):
             #dlik and dlik_dvar gives back 1 value for each
             f_ind = min(fnum, fixed_val+1) - 1
             print "fnum: {} dfnum: {} f_ind: {} fixed_val: {}".format(fnum, dfnum, f_ind, fixed_val)
             #Make grad checker with this param moving, note that set_params is NOT being called
             #The parameter is being set directly with __setattr__
-            grad = GradientChecker(lambda p_val: np.atleast_1d(partial_f(p_val, param_name))[f_ind],
-                                   lambda p_val: np.atleast_1d(partial_df(p_val, param_name))[fixed_val],
+            #Check only the parameter and function value we wish to check at a time
+            grad = GradientChecker(lambda p_val: np.atleast_2d(partial_f(p_val, param_name))[f_ind, param_ind],
+                                   lambda p_val: np.atleast_2d(partial_df(p_val, param_name))[fixed_val, param_ind],
                                    param_val, [param_name])
-            #This is not general for more than one param...
+
             if constraints is not None:
                 for constrain_param, constraint in constraints:
                     if grad.grep_param_names(constrain_param):
@@ -115,8 +117,8 @@ class TestNoiseModels(object):
         ####################################################
         # Constraint wrappers so we can just list them off #
         ####################################################
-        def constrain_fixed(regex, model, value):
-            model[regex].constrain_fixed(value)
+        def constrain_fixed(regex, model):
+            model[regex].constrain_fixed()
 
         def constrain_negative(regex, model):
             model[regex].constrain_negative()
@@ -149,7 +151,7 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [self.var],
-                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_positive)]
+                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_fixed)]
                                 #"constraints": [("t_noise", constrain_positive), ("deg_free", partial(constrain_fixed, value=5))]
                                 },
                             "laplace": True
@@ -159,7 +161,7 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [1.0],
-                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_positive)]
+                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_fixed)]
                                 },
                             "laplace": True
                             },
@@ -168,7 +170,7 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [0.01],
-                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_positive)]
+                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_fixed)]
                                 },
                             "laplace": True
                             },
@@ -177,7 +179,7 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [10.0],
-                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_positive)]
+                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_fixed)]
                                 },
                             "laplace": True
                             },
@@ -186,7 +188,7 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [self.var],
-                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_positive)]
+                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_fixed)]
                                 },
                             "laplace": True
                             },
@@ -195,7 +197,7 @@ class TestNoiseModels(object):
                             "grad_params": {
                                 "names": ["t_noise"],
                                 "vals": [self.var],
-                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_positive)]
+                                "constraints": [("t_noise", constrain_positive), ("deg_free", constrain_fixed)]
                                 },
                             "laplace": True
                             },
@@ -542,8 +544,8 @@ class TestNoiseModels(object):
         Y = Y/Y.max()
         white_var = 1e-6
         kernel = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
-        ep_likelihood = GPy.likelihoods.EP(Y.copy(), model)
-        m = GPy.core.GP(X.copy(), Y.copy(), kernel, likelihood=ep_likelihood)
+        ep_inf = GPy.inference.latent_function_inference.EP()
+        m = GPy.core.GP(X.copy(), Y.copy(), kernel=kernel, likelihood=model, inference_method=ep_inf)
         m.ensure_default_constraints()
         m['white'].constrain_fixed(white_var)
 
@@ -622,7 +624,9 @@ class LaplaceTests(unittest.TestCase):
         #Yc = Y.copy()
         #Yc[75:80] += 1
         kernel1 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
-        kernel2 = kernel1.copy()
+        #FIXME: Make sure you can copy kernels when params is fixed
+        #kernel2 = kernel1.copy()
+        kernel2 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
 
         gauss_distr1 = GPy.likelihoods.Gaussian(variance=initial_var_guess)
         exact_inf = GPy.inference.latent_function_inference.ExactGaussianInference()
@@ -686,7 +690,7 @@ class LaplaceTests(unittest.TestCase):
 
 
         #Check Y's are the same
-        np.testing.assert_almost_equal(Y, m2.likelihood.Y, decimal=5)
+        np.testing.assert_almost_equal(m1.Y, m2.Y, decimal=5)
         #Check marginals are the same
         np.testing.assert_almost_equal(m1.log_likelihood(), m2.log_likelihood(), decimal=2)
         #Check marginals are the same with random

@@ -435,6 +435,8 @@ class Model(Parameterized):
                 param_list = range(len(x))
             else:
                 param_list = self._raveled_index_for(target_param)
+                if self._has_fixes():
+                    param_list = param_list[self._fixes_]
                 if not np.any(param_list):
                     print "No free parameters to check"
                     return

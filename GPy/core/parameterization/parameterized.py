@@ -312,8 +312,11 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
     #===========================================================================
     # Optimization handles:
     #===========================================================================
-    def _get_param_names_transformed(self):
+    def _get_param_names(self):
         n = numpy.array([p.name_hirarchical+'['+str(i)+']' for p in self.flattened_parameters for i in p._indices()])
+        return n
+    def _get_param_names_transformed(self):
+        n = self._get_param_names()
         if self._has_fixes():
             return n[self._fixes_]
         return n

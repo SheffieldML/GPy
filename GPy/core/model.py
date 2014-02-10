@@ -416,7 +416,7 @@ class Model(Parameterized):
         else:
             # check the gradient of each parameter individually, and do some pretty printing
             try:
-                names = self._get_param_names_transformed()
+                names = self._get_param_names()
             except NotImplementedError:
                 names = ['Variable %i' % i for i in range(len(x))]
             # Prepare for pretty-printing
@@ -436,7 +436,8 @@ class Model(Parameterized):
             else:
                 param_list = self._raveled_index_for(target_param)
                 if self._has_fixes():
-                    param_list = param_list[self._fixes_]
+                    param_list = np.intersect1d(param_list, np.r_[:self.size][self._fixes_], True)
+
                 if not np.any(param_list):
                     print "No free parameters to check"
                     return
@@ -444,7 +445,7 @@ class Model(Parameterized):
             gradient = self.objective_function_gradients(x)
             np.where(gradient==0, 1e-312, gradient)
             
-            for i in param_list:
+            for i, ind in enumerate(param_list):
                 xx = x.copy()
                 xx[i] += step
                 f1, g1 = self.objective_and_gradients(xx)
@@ -456,9 +457,9 @@ class Model(Parameterized):
                 difference = np.abs((f1 - f2) / 2 / step - gradient[i])
 
                 if (np.abs(1. - ratio) < tolerance) or np.abs(difference) < tolerance:
-                    formatted_name = "\033[92m {0} \033[0m".format(names[i])
+                    formatted_name = "\033[92m {0} \033[0m".format(names[ind])
                 else:
-                    formatted_name = "\033[91m {0} \033[0m".format(names[i])
+                    formatted_name = "\033[91m {0} \033[0m".format(names[ind])
                 r = '%.6f' % float(ratio)
                 d = '%.6f' % float(difference)
                 g = '%.6f' % gradient[i]

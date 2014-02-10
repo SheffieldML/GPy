@@ -3,8 +3,8 @@
 
 import itertools
 import numpy
-from parameter_core import Constrainable, adjust_name_for_printing
-from array_core import ObservableArray
+from parameter_core import Constrainable, Gradcheckable, adjust_name_for_printing
+from array_core import ObservableArray, ParamList
 
 ###### printing
 __constraints_name__ = "Constraint"
@@ -20,7 +20,7 @@ class Float(numpy.float64, Constrainable):
         self._base = base
 
 
-class Param(ObservableArray, Constrainable):
+class Param(ObservableArray, Constrainable, Gradcheckable):
     """
     Parameter object for GPy models.
 
@@ -547,6 +547,11 @@ class ParamConcatenation(object):
 
     def untie(self, *ties):
         [param.untie(*ties) for param in self.params]
+
+    def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3):
+        return self.params[0]._highest_parent_._checkgrad(self, verbose, step, tolerance)
+    #checkgrad.__doc__ = Gradcheckable.checkgrad.__doc__
+    
     __lt__ = lambda self, val: self._vals() < val
     __le__ = lambda self, val: self._vals() <= val
     __eq__ = lambda self, val: self._vals() == val

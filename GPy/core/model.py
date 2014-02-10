@@ -380,7 +380,7 @@ class Model(Parameterized):
         sgd.run()
         self.optimization_runs.append(sgd)
 
-    def checkgrad(self, target_param=None, verbose=False, step=1e-6, tolerance=1e-3):
+    def _checkgrad(self, target_param=None, verbose=False, step=1e-6, tolerance=1e-3):
         """
         Check the gradient of the ,odel by comparing to a numerical
         estimate.  If the verbose flag is passed, invividual
@@ -434,7 +434,7 @@ class Model(Parameterized):
             if target_param is None:
                 param_list = range(len(x))
             else:
-                param_list = self.grep_param_names(target_param, transformed=True, search=True)
+                param_list = self._raveled_index_for(target_param)
                 if not np.any(param_list):
                     print "No free parameters to check"
                     return

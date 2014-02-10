@@ -52,7 +52,6 @@ class Parentable(object):
         super(Parentable,self).__init__()        
         self._direct_parent_ = direct_parent
         self._parent_index_ = parent_index
-        self._highest_parent_ = highest_parent
 
     def has_parent(self):
         return self._direct_parent_ is not None
@@ -77,7 +76,19 @@ class Nameable(Parentable):
         from_name = self.name
         self._name = name
         if self.has_parent():
-            self._direct_parent_._name_changed(self, from_name)
+            self._direct_parent_._name_changed(self, from_name)    
+
+class Gradcheckable(Parentable):
+    #===========================================================================
+    # Gradchecking
+    #===========================================================================
+    def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3):
+        if self.has_parent():
+            return self._highest_parent_._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance)
+        return self._checkgrad(self[''], verbose=verbose, step=step, tolerance=tolerance)
+    def _checkgrad(self, param):
+        raise NotImplementedError, "Need log likelihood to check gradient against"
+
 
 class Constrainable(Nameable):
     def __init__(self, name):

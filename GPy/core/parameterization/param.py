@@ -4,7 +4,7 @@
 import itertools
 import numpy
 from parameter_core import Constrainable, adjust_name_for_printing
-from array_core import ObservableArray
+from array_core import ObservableArray, ParamList
 
 ###### printing
 __constraints_name__ = "Constraint"

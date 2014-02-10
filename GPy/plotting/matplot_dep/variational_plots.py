@@ -1,4 +1,5 @@
-import pylab as pb
+import pylab as pb, numpy as np
+from ...util.misc import param_to_array
 
 def plot(parameterized, fignum=None, ax=None, colors=None):
     """

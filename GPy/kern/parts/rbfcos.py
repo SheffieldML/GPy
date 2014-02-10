@@ -88,7 +88,7 @@ class RBFCos(Kernpart):
     def dKdiag_dtheta(self,dL_dKdiag,X,target):
         target[0] += np.sum(dL_dKdiag)
 
-    def dK_dX(self,dL_dK,X,X2,target):
+    def gradients_X(self,dL_dK,X,X2,target):
         #TODO!!!
         raise NotImplementedError
 

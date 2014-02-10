@@ -20,7 +20,6 @@ class Kernpart(Parameterized):
         # the number of optimisable parameters
         # the name of the covariance function.
         # link to parameterized objects
-        self._parameters_ = []
         #self._X = None
     
     def connect_input(self, X):
@@ -106,7 +105,7 @@ class Kernpart(Parameterized):
         raise NotImplementedError
     def dpsi2_dmuS(self,dL_dpsi2,Z,mu,S,target_mu,target_S):
         raise NotImplementedError
-    def dK_dX(self, dL_dK, X, X2, target):
+    def gradients_X(self, dL_dK, X, X2, target):
         raise NotImplementedError
     def dKdiag_dX(self, dL_dK, X, target):
         raise NotImplementedError

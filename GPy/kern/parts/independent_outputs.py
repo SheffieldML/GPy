@@ -79,13 +79,13 @@ class IndependentOutputs(Kernpart):
         [[[self.k.dK_dtheta(dL_dK[s,s2],X[s],X2[s2],target) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
 
 
-    def dK_dX(self,dL_dK,X,X2,target):
+    def gradients_X(self,dL_dK,X,X2,target):
         X,slices = X[:,:-1],index_to_slices(X[:,-1])
         if X2 is None:
             X2,slices2 = X,slices
         else:
             X2,slices2 = X2[:,:-1],index_to_slices(X2[:,-1])
-        [[[self.k.dK_dX(dL_dK[s,s2],X[s],X2[s2],target[s,:-1]) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
+        [[[self.k.gradients_X(dL_dK[s,s2],X[s],X2[s2],target[s,:-1]) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
 
     def dKdiag_dX(self,dL_dKdiag,X,target):
         X,slices = X[:,:-1],index_to_slices(X[:,-1])

@@ -160,6 +160,9 @@ class kern(Parameterized):
 
         return newkern
 
+    def __call__(self, X, X2=None):
+        return self.K(X, X2)
+
     def __mul__(self, other):
         """ Here we overload the '*' operator. See self.prod for more information"""
         return self.prod(other)
@@ -550,7 +553,7 @@ class Kern_check_dK_dX(Kern_check_model):
         Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
 
     def _log_likelihood_gradients(self):
-        return self.kernel.dK_dX(self.dL_dK, self.X, self.X2).flatten()
+        return self.kernel.gradients_X(self.dL_dK, self.X, self.X2).flatten()
 
     def _get_param_names(self):
         return ['X_'  +str(i) + ','+str(j) for j in range(self.X.shape[1]) for i in range(self.X.shape[0])]
@@ -657,7 +660,7 @@ def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False):
     except NotImplementedError:
         result=True
         if verbose:
-            print("dK_dX not implemented for " + kern.name)
+            print("gradients_X not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
@@ -673,7 +676,7 @@ def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False):
     except NotImplementedError:
         result=True
         if verbose:
-            print("dK_dX not implemented for " + kern.name)
+            print("gradients_X not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
@@ -689,7 +692,7 @@ def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False):
     except NotImplementedError:
         result=True
         if verbose:
-            print("dK_dX not implemented for " + kern.name)
+            print("gradients_X not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:

@@ -90,7 +90,7 @@ class Hetero(Kernpart):
         """Gradient of diagonal of covariance with respect to parameters."""
         target += 2.*self.mapping.df_dtheta(dL_dKdiag[:, None]*self.mapping.f(X), X)
 
-    def dK_dX(self, dL_dK, X, X2, target):
+    def gradients_X(self, dL_dK, X, X2, target):
         """Derivative of the covariance matrix with respect to X."""
         if X2==None or X2 is X:
             dL_dKdiag = dL_dK.flat[::dL_dK.shape[0]+1]

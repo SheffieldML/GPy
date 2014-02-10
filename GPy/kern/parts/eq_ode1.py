@@ -193,7 +193,7 @@ class Eq_ode1(Kernpart):
     def dKdiag_dtheta(self,dL_dKdiag,index,target):
         pass
 
-    def dK_dX(self,dL_dK,X,X2,target):
+    def gradients_X(self,dL_dK,X,X2,target):
         pass
 
     def _extract_t_indices(self, X, X2=None, dL_dK=None):

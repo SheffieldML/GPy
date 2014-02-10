@@ -75,7 +75,6 @@ class Param(ObservableArray, Constrainable):
         super(Param, self).__array_finalize__(obj)
         self._direct_parent_ = getattr(obj, '_direct_parent_', None)
         self._parent_index_ = getattr(obj, '_parent_index_', None)
-        self._highest_parent_ = getattr(obj, '_highest_parent_', None)
         self._current_slice_ = getattr(obj, '_current_slice_', None)
         self._tied_to_me_ = getattr(obj, '_tied_to_me_', None)
         self._tied_to_ = getattr(obj, '_tied_to_', None)
@@ -98,7 +97,6 @@ class Param(ObservableArray, Constrainable):
                             (self.name,
                              self._direct_parent_,
                              self._parent_index_,
-                             self._highest_parent_,
                              self._current_slice_,
                              self._realshape_,
                              self._realsize_,
@@ -119,7 +117,6 @@ class Param(ObservableArray, Constrainable):
         self._realsize_ = state.pop()
         self._realshape_ = state.pop()
         self._current_slice_ = state.pop()
-        self._highest_parent_ = state.pop()
         self._parent_index_ = state.pop()
         self._direct_parent_ = state.pop()
         self.name = state.pop()
@@ -153,8 +150,6 @@ class Param(ObservableArray, Constrainable):
     @property
     def _parameters_(self):
         return []
-    def _connect_highest_parent(self, highest_parent):
-        self._highest_parent_ = highest_parent
     def _collect_gradient(self, target):
         target[:] = self.gradient.flat
     #===========================================================================
@@ -178,7 +173,7 @@ class Param(ObservableArray, Constrainable):
         #      this tie will be created to the parameter the param is tied
         #      to.
 
-        assert isinstance(param, Param), "Argument {1} not of type {0}".format(Param,param.__class__)
+        assert isinstance(param, Param), "Argument {1} not of type {0}".format(Param, param.__class__)
         param = numpy.atleast_1d(param)
         if param.size != 1:
             raise NotImplementedError, "Broadcast tying is not implemented yet"
@@ -231,7 +226,7 @@ class Param(ObservableArray, Constrainable):
                 t_rav_i = t._raveled_index()
                 tr_rav_i = tied_to_me._raveled_index()
                 new_index = list(set(t_rav_i) | set(tr_rav_i))
-                tmp = t._direct_parent_._get_original(t)[numpy.unravel_index(new_index,t._realshape_)]
+                tmp = t._direct_parent_._get_original(t)[numpy.unravel_index(new_index, t._realshape_)]
                 self._tied_to_me_[tmp] = self._tied_to_me_[t] | set(self._raveled_index())
                 del self._tied_to_me_[t]
                 return
@@ -244,7 +239,7 @@ class Param(ObservableArray, Constrainable):
                 import ipdb;ipdb.set_trace()
                 new_index = list(set(t_rav_i) - set(tr_rav_i))
                 if new_index:
-                    tmp = t._direct_parent_._get_original(t)[numpy.unravel_index(new_index,t._realshape_)]
+                    tmp = t._direct_parent_._get_original(t)[numpy.unravel_index(new_index, t._realshape_)]
                     self._tied_to_me_[tmp] = self._tied_to_me_[t]
                     del self._tied_to_me_[t]
                     if len(self._tied_to_me_[tmp]) == 0:
@@ -252,12 +247,12 @@ class Param(ObservableArray, Constrainable):
                 else:
                     del self._tied_to_me_[t]
     def _on_tied_parameter_changed(self, val, ind):
-        if not self._updated_: #not fast_array_equal(self, val[ind]):
+        if not self._updated_:  # not fast_array_equal(self, val[ind]):
             val = numpy.atleast_1d(val)
             self._updated_ = True
             if self._original_:
                 self.__setitem__(slice(None), val[ind], update=False)
-            else: # this happens when indexing created a copy of the array
+            else:  # this happens when indexing created a copy of the array
                 self._direct_parent_._get_original(self).__setitem__(self._current_slice_, val[ind], update=False)
             self._notify_tied_parameters()
             self._updated_ = False
@@ -286,11 +281,11 @@ class Param(ObservableArray, Constrainable):
     def __getitem__(self, s, *args, **kwargs):
         if not isinstance(s, tuple):
             s = (s,)
-        if not reduce(lambda a,b: a or numpy.any(b is Ellipsis), s, False) and len(s) <= self.ndim:
+        if not reduce(lambda a, b: a or numpy.any(b is Ellipsis), s, False) and len(s) <= self.ndim:
             s += (Ellipsis,)
         new_arr = super(Param, self).__getitem__(s, *args, **kwargs)
         try: new_arr._current_slice_ = s; new_arr._original_ = self.base is new_arr.base
-        except AttributeError: pass# returning 0d array or float, double etc
+        except AttributeError: pass  # returning 0d array or float, double etc
         return new_arr
     def __setitem__(self, s, val, update=True):
         super(Param, self).__setitem__(s, val, update=update)
@@ -311,8 +306,8 @@ class Param(ObservableArray, Constrainable):
             elif isinstance(si, (list,numpy.ndarray,tuple)):
                 a = si[0]
             else: a = si
-            if a<0:
-                a = self._realshape_[i]+a
+            if a < 0:
+                a = self._realshape_[i] + a
             internal_offset += a * extended_realshape[i]
         return internal_offset
     def _raveled_index(self, slice_index=None):
@@ -320,8 +315,8 @@ class Param(ObservableArray, Constrainable):
         # of this object
         extended_realshape = numpy.cumprod((1,) + self._realshape_[:0:-1])[::-1]
         ind = self._indices(slice_index)
-        if ind.ndim < 2: ind=ind[:,None]
-        return numpy.asarray(numpy.apply_along_axis(lambda x: numpy.sum(extended_realshape*x), 1, ind), dtype=int)
+        if ind.ndim < 2: ind = ind[:, None]
+        return numpy.asarray(numpy.apply_along_axis(lambda x: numpy.sum(extended_realshape * x), 1, ind), dtype=int)
     def _expand_index(self, slice_index=None):
         # this calculates the full indexing arrays from the slicing objects given by get_item for _real..._ attributes
         # it basically translates slices to their respective index arrays and turns negative indices around
@@ -334,11 +329,11 @@ class Param(ObservableArray, Constrainable):
                 if isinstance(a, slice):
                     start, stop, step = a.indices(b)
                     return numpy.r_[start:stop:step]
-                elif isinstance(a, (list,numpy.ndarray,tuple)):
+                elif isinstance(a, (list, numpy.ndarray, tuple)):
                     a = numpy.asarray(a, dtype=int)
-                    a[a<0] = b + a[a<0]
-                elif a<0:
-                    a = b+a
+                    a[a < 0] = b + a[a < 0]
+                elif a < 0:
+                    a = b + a
                 return numpy.r_[a]
             return numpy.r_[:b]
         return itertools.imap(f, itertools.izip_longest(slice_index[:self._realndim_], self._realshape_, fillvalue=slice(self.size)))
@@ -362,7 +357,7 @@ class Param(ObservableArray, Constrainable):
     #===========================================================================
     @property
     def _description_str(self):
-        if self.size <= 1: return ["%f"%self]
+        if self.size <= 1: return ["%f" % self]
         else: return [str(self.shape)]
     def _parameter_names(self, add_name):
         return [self.name]
@@ -374,31 +369,31 @@ class Param(ObservableArray, Constrainable):
         return [self.shape]
     @property
     def _constraints_str(self):
-        return [' '.join(map(lambda c: str(c[0]) if c[1].size==self._realsize_ else "{"+str(c[0])+"}", self._highest_parent_._constraints_iter_items(self)))]
+        return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self._highest_parent_._constraints_iter_items(self)))]
     @property
     def _ties_str(self):
         return [t._short() for t in self._tied_to_] or ['']
     @property
     def name_hirarchical(self):
         if self.has_parent():
-            return self._direct_parent_.hirarchy_name()+adjust_name_for_printing(self.name)
+            return self._direct_parent_.hirarchy_name() + adjust_name_for_printing(self.name)
         return adjust_name_for_printing(self.name)
     def __repr__(self, *args, **kwargs):
         name = "\033[1m{x:s}\033[0;0m:\n".format(
                             x=self.name_hirarchical)
-        return name + super(Param, self).__repr__(*args,**kwargs)
+        return name + super(Param, self).__repr__(*args, **kwargs)
     def _ties_for(self, rav_index):
-        #size = sum(p.size for p in self._tied_to_)
+        # size = sum(p.size for p in self._tied_to_)
         ties = numpy.empty(shape=(len(self._tied_to_), numpy.size(rav_index)), dtype=Param)
         for i, tied_to in enumerate(self._tied_to_):
             for t, ind in tied_to._tied_to_me_.iteritems():
                 if t._parent_index_ == self._parent_index_:
-                    matches = numpy.where(rav_index[:,None] == t._raveled_index()[None, :])
+                    matches = numpy.where(rav_index[:, None] == t._raveled_index()[None, :])
                     tt_rav_index = tied_to._raveled_index()
                     ind_rav_matches = numpy.where(tt_rav_index == numpy.array(list(ind)))[0]
                     if len(ind) != 1: ties[i, matches[0][ind_rav_matches]] = numpy.take(tt_rav_index, matches[1], mode='wrap')[ind_rav_matches]
                     else: ties[i, matches[0]] = numpy.take(tt_rav_index, matches[1], mode='wrap')
-        return map(lambda a: sum(a,[]), zip(*[[[tie.flatten()] if tx!=None else [] for tx in t] for t,tie in zip(ties,self._tied_to_)]))
+        return map(lambda a: sum(a, []), zip(*[[[tie.flatten()] if tx != None else [] for tx in t] for t, tie in zip(ties, self._tied_to_)]))
     def _constraints_for(self, rav_index):
         return self._highest_parent_._constraints_for(self, rav_index)
     def _indices(self, slice_index=None):
@@ -408,12 +403,12 @@ class Param(ObservableArray, Constrainable):
         if isinstance(slice_index, (tuple, list)):
             clean_curr_slice = [s for s in slice_index if numpy.any(s != Ellipsis)]
             if (all(isinstance(n, (numpy.ndarray, list, tuple)) for n in clean_curr_slice)
-                and len(set(map(len,clean_curr_slice))) <= 1):
+                and len(set(map(len, clean_curr_slice))) <= 1):
                 return numpy.fromiter(itertools.izip(*clean_curr_slice),
-                    dtype=[('',int)]*self._realndim_,count=len(clean_curr_slice[0])).view((int, self._realndim_))
+                    dtype=[('', int)] * self._realndim_, count=len(clean_curr_slice[0])).view((int, self._realndim_))
         expanded_index = list(self._expand_index(slice_index))
         return numpy.fromiter(itertools.product(*expanded_index),
-                 dtype=[('',int)]*self._realndim_,count=reduce(lambda a,b: a*b.size,expanded_index,1)).view((int, self._realndim_))
+                 dtype=[('', int)] * self._realndim_, count=reduce(lambda a, b: a * b.size, expanded_index, 1)).view((int, self._realndim_))
     def _max_len_names(self, gen, header):
         return reduce(lambda a, b:max(a, len(b)), gen, len(header))
     def _max_len_values(self):
@@ -426,9 +421,9 @@ class Param(ObservableArray, Constrainable):
         if self._realsize_ < 2:
             return name
         ind = self._indices()
-        if ind.size > 4: indstr = ','.join(map(str,ind[:2])) + "..." + ','.join(map(str,ind[-2:]))
-        else: indstr = ','.join(map(str,ind))
-        return name+'['+indstr+']'
+        if ind.size > 4: indstr = ','.join(map(str, ind[:2])) + "..." + ','.join(map(str, ind[-2:]))
+        else: indstr = ','.join(map(str, ind))
+        return name + '[' + indstr + ']'
     def __str__(self, constr_matrix=None, indices=None, ties=None, lc=None, lx=None, li=None, lt=None):
         filter_ = self._current_slice_
         vals = self.flat
@@ -441,10 +436,10 @@ class Param(ObservableArray, Constrainable):
         if lx is None: lx = self._max_len_values()
         if li is None: li = self._max_len_index(indices)
         if lt is None: lt = self._max_len_names(ties, __tie_name__)
-        header = "  {i:^{2}s}  |  \033[1m{x:^{1}s}\033[0;0m  |  {c:^{0}s}  |  {t:^{3}s}".format(lc,lx,li,lt, x=self.name_hirarchical, c=__constraints_name__, i=__index_name__, t=__tie_name__) # nice header for printing
+        header = "  {i:^{2}s}  |  \033[1m{x:^{1}s}\033[0;0m  |  {c:^{0}s}  |  {t:^{3}s}".format(lc, lx, li, lt, x=self.name_hirarchical, c=__constraints_name__, i=__index_name__, t=__tie_name__)  # nice header for printing
         if not ties: ties = itertools.cycle([''])
-        return "\n".join([header]+["  {i!s:^{3}s}  |  {x: >{1}.{2}g}  |  {c:^{0}s}  |  {t:^{4}s}  ".format(lc,lx,__precision__,li,lt, x=x, c=" ".join(map(str,c)), t=(t or ''), i=i) for i,x,c,t in itertools.izip(indices,vals,constr_matrix,ties)]) # return all the constraints with right indices
-        #except: return super(Param, self).__str__()
+        return "\n".join([header] + ["  {i!s:^{3}s}  |  {x: >{1}.{2}g}  |  {c:^{0}s}  |  {t:^{4}s}  ".format(lc, lx, __precision__, li, lt, x=x, c=" ".join(map(str, c)), t=(t or ''), i=i) for i, x, c, t in itertools.izip(indices, vals, constr_matrix, ties)])  # return all the constraints with right indices
+        # except: return super(Param, self).__str__()
 
 class ParamConcatenation(object):
     def __init__(self, params):
@@ -455,8 +450,8 @@ class ParamConcatenation(object):
 
         See :py:class:`GPy.core.parameter.Param` for more details on constraining.
         """
-        #self.params = params
-        self.params = []
+        # self.params = params
+        self.params = ParamList([])
         for p in params:
             for p in p.flattened_parameters:
                 if p not in self.params:
@@ -535,12 +530,12 @@ class ParamConcatenation(object):
 
     def untie(self, *ties):
         [param.untie(*ties) for param in self.params]
-    __lt__ = lambda self, val: self._vals()<val
-    __le__ = lambda self, val: self._vals()<=val
-    __eq__ = lambda self, val: self._vals()==val
-    __ne__ = lambda self, val: self._vals()!=val
-    __gt__ = lambda self, val: self._vals()>val
-    __ge__ = lambda self, val: self._vals()>=val
+    __lt__ = lambda self, val: self._vals() < val
+    __le__ = lambda self, val: self._vals() <= val
+    __eq__ = lambda self, val: self._vals() == val
+    __ne__ = lambda self, val: self._vals() != val
+    __gt__ = lambda self, val: self._vals() > val
+    __ge__ = lambda self, val: self._vals() >= val
     def __str__(self, *args, **kwargs):
         def f(p):
             ind = p._raveled_index()
@@ -569,7 +564,7 @@ if __name__ == '__main__':
     print "random done"
     p = Param("q_mean", X)
     p1 = Param("q_variance", numpy.random.rand(*p.shape))
-    p2 = Param("Y", numpy.random.randn(p.shape[0],1))
+    p2 = Param("Y", numpy.random.randn(p.shape[0], 1))
 
     p3 = Param("variance", numpy.random.rand())
     p4 = Param("lengthscale", numpy.random.rand(2))

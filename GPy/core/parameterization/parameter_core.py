@@ -48,19 +48,25 @@ class Pickleable(object):
 #===============================================================================
 
 class Parentable(object):
-    def __init__(self, direct_parent=None, highest_parent=None, parent_index=None):
-        super(Parentable,self).__init__()
+    def __init__(self, direct_parent=None, parent_index=None):
+        super(Parentable,self).__init__()        
         self._direct_parent_ = direct_parent
         self._parent_index_ = parent_index
         self._highest_parent_ = highest_parent
 
     def has_parent(self):
-        return self._direct_parent_ is not None and self._highest_parent_ is not None
-
+        return self._direct_parent_ is not None
+    
+    @property
+    def _highest_parent_(self):
+        if self._direct_parent_ is None:
+            return self
+        return self._direct_parent_._highest_parent_
+    
 class Nameable(Parentable):
     _name = None
-    def __init__(self, name, direct_parent=None, highest_parent=None, parent_index=None):
-        super(Nameable,self).__init__(direct_parent, highest_parent, parent_index)
+    def __init__(self, name, direct_parent=None, parent_index=None):
+        super(Nameable,self).__init__(direct_parent, parent_index)
         self._name = name or self.__class__.__name__
 
     @property

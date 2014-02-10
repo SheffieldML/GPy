@@ -51,7 +51,7 @@ class Brownian(Kernpart):
     def dKdiag_dtheta(self,dL_dKdiag,X,target):
         target += np.dot(X.flatten(), dL_dKdiag)
 
-    def dK_dX(self,dL_dK,X,X2,target):
+    def gradients_X(self,dL_dK,X,X2,target):
         raise NotImplementedError, "TODO"
         #target += self.variance
         #target -= self.variance*theta(X-X2.T)

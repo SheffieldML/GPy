@@ -144,8 +144,8 @@ class SS_RBF(Kernpart):
             _K_dist = 2*(X[:, None, :] - X[None, :, :])
         else:
             _K_dist = X[:, None, :] - X2[None, :, :] # don't cache this in _K_computations because it is high memory. If this function is being called, chances are we're not in the high memory arena.
-        dK_dX = (-self.variance / self.lengthscale2) * np.transpose(self._K_dvar[:, :, np.newaxis] * _K_dist, (1, 0, 2))
-        target += np.sum(dK_dX * dL_dK.T[:, :, None], 0)
+        gradients_X = (-self.variance / self.lengthscale2) * np.transpose(self._K_dvar[:, :, np.newaxis] * _K_dist, (1, 0, 2))
+        target += np.sum(gradients_X * dL_dK.T[:, :, None], 0)
 
     def dKdiag_dX(self, dL_dKdiag, X, target):
         pass

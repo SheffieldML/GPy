@@ -67,11 +67,11 @@ class prod_orthogonal(Kernpart):
         self.k1.dKdiag_dtheta(dL_dKdiag*K2,X[:,:self.k1.input_dim],target[:self.k1.num_params])
         self.k2.dKdiag_dtheta(dL_dKdiag*K1,X[:,self.k1.input_dim:],target[self.k1.num_params:])
 
-    def dK_dX(self,dL_dK,X,X2,target):
+    def gradients_X(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
         self._K_computations(X,X2)
-        self.k1.dK_dX(dL_dK*self._K2, X[:,:self.k1.input_dim], X2[:,:self.k1.input_dim], target)
-        self.k2.dK_dX(dL_dK*self._K1, X[:,self.k1.input_dim:], X2[:,self.k1.input_dim:], target)
+        self.k1.gradients_X(dL_dK*self._K2, X[:,:self.k1.input_dim], X2[:,:self.k1.input_dim], target)
+        self.k2.gradients_X(dL_dK*self._K1, X[:,self.k1.input_dim:], X2[:,self.k1.input_dim:], target)
 
     def dKdiag_dX(self, dL_dKdiag, X, target):
         K1 = np.zeros(X.shape[0])
@@ -79,8 +79,8 @@ class prod_orthogonal(Kernpart):
         self.k1.Kdiag(X[:,0:self.k1.input_dim],K1)
         self.k2.Kdiag(X[:,self.k1.input_dim:],K2)
 
-        self.k1.dK_dX(dL_dKdiag*K2, X[:,:self.k1.input_dim], target)
-        self.k2.dK_dX(dL_dKdiag*K1, X[:,self.k1.input_dim:], target)
+        self.k1.gradients_X(dL_dKdiag*K2, X[:,:self.k1.input_dim], target)
+        self.k2.gradients_X(dL_dKdiag*K1, X[:,self.k1.input_dim:], target)
 
     def _K_computations(self,X,X2):
         if not (np.array_equal(X,self._X) and np.array_equal(X2,self._X2) and np.array_equal(self._params , self._get_params())):

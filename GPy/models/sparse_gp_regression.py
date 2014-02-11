@@ -44,7 +44,7 @@ class SparseGPRegression(SparseGP):
         likelihood = likelihoods.Gaussian()
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, X_variance=X_variance)
-        self.ensure_default_constraints()
+        #self.ensure_default_constraints()
 
     def _getstate(self):
         return SparseGP._getstate(self)

@@ -258,6 +258,7 @@ class Model(Parameterized):
         these terms are present in the name the parameter is
         constrained positive.
         """
+        raise DeprecationWarning, 'parameters now have default constraints'
         positive_strings = ['variance', 'lengthscale', 'precision', 'kappa', 'sensitivity']
         # param_names = self._get_param_names()
         

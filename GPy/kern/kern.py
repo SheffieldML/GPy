@@ -153,10 +153,9 @@ class kern(Parameterized):
 #             newkern.fixed_indices = self.fixed_indices + [self.num_params + x for x in other.fixed_indices]
 #             newkern.fixed_values = self.fixed_values + other.fixed_values
 #             newkern.tied_indices = self.tied_indices + [self.num_params + x for x in other.tied_indices]
-        [newkern._add_constrain(param, transform, warning=False)
-         for param, transform in itertools.izip(
-                *itertools.chain(self.constraints.iteritems(),
-                                 other.constraints.iteritems()))]
+        
+        [newkern.constraints.add(transform, ind) for transform, ind in self.constraints.iteritems()]
+        [newkern.constraints.add(transform, ind+self.size) for transform, ind in other.constraints.iteritems()]
         newkern._fixes_ = ((self._fixes_ or 0) + (other._fixes_ or 0)) or None
 
         return newkern

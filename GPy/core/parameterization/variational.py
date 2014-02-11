@@ -15,9 +15,9 @@ class Normal(Parameterized):
     '''
     def __init__(self, means, variances, name='latent space'):
         Parameterized.__init__(self, name=name)
-        self.means = Param("mean", means)
-        self.variances = Param('variance', variances, Logexp())
-        self.add_parameters(self.means, self.variances)
+        self.mean = Param("mean", means)
+        self.variance = Param('variance', variances, Logexp())
+        self.add_parameters(self.mean, self.variance)
 
     def plot(self, *args):
         """

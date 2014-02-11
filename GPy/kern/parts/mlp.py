@@ -77,7 +77,7 @@ class MLP(Kernpart):
         self._K_diag_computations(X)
         target+= self.variance*self._K_diag_dvar
 
-    def dK_dtheta(self, dL_dK, X, X2, target):
+    def _param_grad_helper(self, dL_dK, X, X2, target):
         """Derivative of the covariance with respect to the parameters."""
         self._K_computations(X, X2)
         denom3 = self._K_denom*self._K_denom*self._K_denom

@@ -52,7 +52,7 @@ class RationalQuadratic(Kernpart):
     def Kdiag(self,X,target):
         target += self.variance
 
-    def dK_dtheta(self,dL_dK,X,X2,target):
+    def _param_grad_helper(self,dL_dK,X,X2,target):
         if X2 is None: X2 = X
         dist2 = np.square((X-X2.T)/self.lengthscale)
 

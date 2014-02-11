@@ -171,6 +171,8 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
             for t, ind in param._constraints_.iteritems():
                 self.constraints.add(t, ind+self._offset_for(param))
             param._constraints_.clear()
+        if param._default_constraint_ is not None:
+            self._add_constrain(param, param._default_constraint_, False)
         if self._has_fixes() and np.all(self._fixes_): # ==UNFIXED
             self._fixes_= None
 

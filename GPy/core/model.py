@@ -260,17 +260,18 @@ class Model(Parameterized):
         """
         positive_strings = ['variance', 'lengthscale', 'precision', 'kappa', 'sensitivity']
         # param_names = self._get_param_names()
-        for s in positive_strings:
-            paramlist = self.grep_param_names(".*"+s)
-            for param in paramlist:
-                for p in param.flattened_parameters:
-                    rav_i = set(self._raveled_index_for(p))
-                    for constraint in self.constraints.iter_properties():
-                        rav_i -= set(self._constraint_indices(p, constraint))
-                    rav_i -= set(np.nonzero(self._fixes_for(p)!=UNFIXED)[0])
-                    ind = self._backtranslate_index(p, np.array(list(rav_i), dtype=int))
-                    if ind.size != 0:
-                        p[np.unravel_index(ind, p.shape)].constrain_positive()
+        
+#         for s in positive_strings:
+#             paramlist = self.grep_param_names(".*"+s)
+#             for param in paramlist:
+#                 for p in param.flattened_parameters:
+#                     rav_i = set(self._raveled_index_for(p))
+#                     for constraint in self.constraints.iter_properties():
+#                         rav_i -= set(self._constraint_indices(p, constraint))
+#                     rav_i -= set(np.nonzero(self._fixes_for(p)!=UNFIXED)[0])
+#                     ind = self._backtranslate_index(p, np.array(list(rav_i), dtype=int))
+#                     if ind.size != 0:
+#                         p[np.unravel_index(ind, p.shape)].constrain_positive(warning=warning)
 #             if paramlist:
 #                 self.__getitem__(None, paramlist).constrain_positive(warning=warning)
 #         currently_constrained = self.all_constrained_indices()
@@ -405,13 +406,13 @@ class Model(Parameterized):
             dx = step * np.sign(np.random.uniform(-1, 1, x.size))
 
             # evaulate around the point x
-            f1, g1 = self.objective_and_gradients(x + dx)
-            f2, g2 = self.objective_and_gradients(x - dx)
+            f1 = self.objective_function(x + dx)
+            f2 = self.objective_function(x - dx)
             gradient = self.objective_function_gradients(x)
 
             numerical_gradient = (f1 - f2) / (2 * dx)
             global_ratio = (f1 - f2) / (2 * np.dot(dx, np.where(gradient==0, 1e-32, gradient)))
-            
+
             return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gradient - numerical_gradient).mean() < tolerance)
         else:
             # check the gradient of each parameter individually, and do some pretty printing
@@ -430,7 +431,6 @@ class Model(Parameterized):
             header_string = map(lambda x: '|'.join(x), [header_string])
             separator = '-' * len(header_string[0])
             print '\n'.join([header_string[0], separator])
-
             if target_param is None:
                 param_list = range(len(x))
             else:
@@ -438,19 +438,19 @@ class Model(Parameterized):
                 if self._has_fixes():
                     param_list = np.intersect1d(param_list, np.r_[:self.size][self._fixes_], True)
 
-                if not np.any(param_list):
+                if param_list.size == 0:
                     print "No free parameters to check"
                     return
 
             gradient = self.objective_function_gradients(x)
             np.where(gradient==0, 1e-312, gradient)
-            
+            ret = True
             for i, ind in enumerate(param_list):
                 xx = x.copy()
                 xx[ind] += step
-                f1, g1 = self.objective_and_gradients(xx)
+                f1 = self.objective_function(xx)
                 xx[ind] -= 2.*step
-                f2, g2 = self.objective_and_gradients(xx)
+                f2 = self.objective_function(xx)
                 
                 numerical_gradient = (f1 - f2) / (2 * step)
                 ratio = (f1 - f2) / (2 * step * gradient[ind])
@@ -458,15 +458,19 @@ class Model(Parameterized):
 
                 if (np.abs(1. - ratio) < tolerance) or np.abs(difference) < tolerance:
                     formatted_name = "\033[92m {0} \033[0m".format(names[ind])
+                    ret &= True
                 else:
                     formatted_name = "\033[91m {0} \033[0m".format(names[ind])
+                    ret &= False
+
                 r = '%.6f' % float(ratio)
                 d = '%.6f' % float(difference)
                 g = '%.6f' % gradient[ind]
                 ng = '%.6f' % float(numerical_gradient)
                 grad_string = "{0:<{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name, r, d, g, ng, c0=cols[0] + 9, c1=cols[1], c2=cols[2], c3=cols[3], c4=cols[4])
                 print grad_string
-
+            return ret
+        
     def input_sensitivity(self):
         """
         return an array describing the sesitivity of the model to each input

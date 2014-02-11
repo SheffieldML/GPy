@@ -24,8 +24,11 @@ class Param(ObservableArray, Constrainable, Gradcheckable):
     """
     Parameter object for GPy models.
 
-    :param name:        name of the parameter to be printed
-    :param input_array: array which this parameter handles
+    :param str name:           name of the parameter to be printed
+    :param input_array:        array which this parameter handles
+    :type input_array:         numpy.ndarray
+    :param default_constraint: The default constraint for this parameter
+    :type default_constraint:  
 
     You can add/remove constraints by calling constrain on the parameter itself, e.g:
 
@@ -40,19 +43,10 @@ class Param(ObservableArray, Constrainable, Gradcheckable):
 
     See :py:class:`GPy.core.parameterized.Parameterized` for more details on constraining etc.
 
-    This ndarray can be stored in lists and checked if it is in.
-
-    >>> import numpy as np
-    >>> x = np.random.normal(size=(10,3))
-    >>> x in [[1], x, [3]]
-    True
-
-    WARNING: This overrides the functionality of x==y!!!
-    Use numpy.equal(x,y) for element-wise equality testing.
     """
-    __array_priority__ = 0 # Never give back Param
+    __array_priority__ = -1 # Never give back Param
     _fixes_ = None
-    def __new__(cls, name, input_array, *args, **kwargs):
+    def __new__(cls, name, input_array, default_constraint=None):
         obj = numpy.atleast_1d(super(Param, cls).__new__(cls, input_array=input_array))
         obj._current_slice_ = (slice(obj.shape[0]),)
         obj._realshape_ = obj.shape
@@ -66,8 +60,8 @@ class Param(ObservableArray, Constrainable, Gradcheckable):
         obj.gradient = None
         return obj
 
-    def __init__(self, name, input_array):
-        super(Param, self).__init__(name=name)
+    def __init__(self, name, input_array, default_constraint=None):
+        super(Param, self).__init__(name=name, default_constraint=default_constraint)
 
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments
@@ -75,6 +69,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable):
         super(Param, self).__array_finalize__(obj)
         self._direct_parent_ = getattr(obj, '_direct_parent_', None)
         self._parent_index_ = getattr(obj, '_parent_index_', None)
+        self._default_constraint_ = getattr(obj, '_default_constraint_', None)
         self._current_slice_ = getattr(obj, '_current_slice_', None)
         self._tied_to_me_ = getattr(obj, '_tied_to_me_', None)
         self._tied_to_ = getattr(obj, '_tied_to_', None)
@@ -97,6 +92,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable):
                             (self.name,
                              self._direct_parent_,
                              self._parent_index_,
+                             self._default_constraint_,
                              self._current_slice_,
                              self._realshape_,
                              self._realsize_,
@@ -117,6 +113,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable):
         self._realsize_ = state.pop()
         self._realshape_ = state.pop()
         self._current_slice_ = state.pop()
+        self._default_constraint_ = state.pop()
         self._parent_index_ = state.pop()
         self._direct_parent_ = state.pop()
         self.name = state.pop()

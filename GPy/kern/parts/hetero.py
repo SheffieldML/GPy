@@ -80,7 +80,7 @@ class Hetero(Kernpart):
         """Helper function for computing the diagonal elements of the covariance."""
         return self.mapping.f(X).flatten()**2
 
-    def dK_dtheta(self, dL_dK, X, X2, target):
+    def _param_grad_helper(self, dL_dK, X, X2, target):
         """Derivative of the covariance with respect to the parameters."""
         if (X2 is None) or (X2 is X):
             dL_dKdiag = dL_dK.flat[::dL_dK.shape[0]+1]

@@ -41,15 +41,15 @@ class prod_orthogonal(Kernpart):
         self._K_computations(X,X2)
         target += self._K1 * self._K2
 
-    def dK_dtheta(self,dL_dK,X,X2,target):
+    def _param_grad_helper(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to the parameters."""
         self._K_computations(X,X2)
         if X2 is None:
-            self.k1.dK_dtheta(dL_dK*self._K2, X[:,:self.k1.input_dim], None, target[:self.k1.num_params])
-            self.k2.dK_dtheta(dL_dK*self._K1, X[:,self.k1.input_dim:], None, target[self.k1.num_params:])
+            self.k1._param_grad_helper(dL_dK*self._K2, X[:,:self.k1.input_dim], None, target[:self.k1.num_params])
+            self.k2._param_grad_helper(dL_dK*self._K1, X[:,self.k1.input_dim:], None, target[self.k1.num_params:])
         else:
-            self.k1.dK_dtheta(dL_dK*self._K2, X[:,:self.k1.input_dim], X2[:,:self.k1.input_dim], target[:self.k1.num_params])
-            self.k2.dK_dtheta(dL_dK*self._K1, X[:,self.k1.input_dim:], X2[:,self.k1.input_dim:], target[self.k1.num_params:])
+            self.k1._param_grad_helper(dL_dK*self._K2, X[:,:self.k1.input_dim], X2[:,:self.k1.input_dim], target[:self.k1.num_params])
+            self.k2._param_grad_helper(dL_dK*self._K1, X[:,self.k1.input_dim:], X2[:,self.k1.input_dim:], target[self.k1.num_params:])
 
     def Kdiag(self,X,target):
         """Compute the diagonal of the covariance matrix associated to X."""

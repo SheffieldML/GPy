@@ -8,6 +8,7 @@ from kernpart import Kernpart
 from ...util.linalg import tdot
 from ...util.misc import fast_array_equal, param_to_array
 from ...core.parameterization import Param
+from ...core.parameterization.transformations import Logexp
 
 class RBF(Kernpart):
     """
@@ -50,7 +51,7 @@ class RBF(Kernpart):
             else:
                 lengthscale = np.ones(self.input_dim)
 
-        self.variance = Param('variance', variance)
+        self.variance = Param('variance', variance, Logexp())
         
         self.lengthscale = Param('lengthscale', lengthscale)
         self.lengthscale.add_observer(self, self.update_lengthscale)
@@ -141,7 +142,7 @@ class RBF(Kernpart):
         d_length = self._psi1[:,:,None] * ((self._psi1_dist_sq - 1.)/(self.lengthscale*self._psi1_denom) +1./self.lengthscale)
         dpsi1_dlength = d_length * dL_dpsi1[:, :, None]
         if not self.ARD:
-            self.lengthscale.gradeint = dpsi1_dlength.sum()
+            self.lengthscale.gradient = dpsi1_dlength.sum()
         else:
             self.lengthscale.gradient = dpsi1_dlength.sum(0).sum(0)
 

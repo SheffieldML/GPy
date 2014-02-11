@@ -91,8 +91,9 @@ class Gradcheckable(Parentable):
 
 
 class Constrainable(Nameable):
-    def __init__(self, name):
+    def __init__(self, name, default_constraint=None):
         super(Constrainable,self).__init__(name)
+        self._default_constraint_ = default_constraint
     #===========================================================================
     # Fixing Parameters:
     #===========================================================================

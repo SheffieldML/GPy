@@ -75,14 +75,14 @@ class Kernpart(Parameterized):
         raise NotImplementedError
     def Kdiag(self,X,target):
         raise NotImplementedError
-    def dK_dtheta(self,dL_dK,X,X2,target):
+    def _param_grad_helper(self,dL_dK,X,X2,target):
         raise NotImplementedError
     def dKdiag_dtheta(self,dL_dKdiag,X,target):
-        # In the base case compute this by calling dK_dtheta. Need to
+        # In the base case compute this by calling _param_grad_helper. Need to
         # override for stationary covariances (for example) to save
         # time.
         for i in range(X.shape[0]):
-            self.dK_dtheta(dL_dKdiag[i], X[i, :][None, :], X2=None, target=target)
+            self._param_grad_helper(dL_dKdiag[i], X[i, :][None, :], X2=None, target=target)
     def psi0(self,Z,mu,S,target):
         raise NotImplementedError
     def dpsi0_dtheta(self,dL_dpsi0,Z,mu,S,target):
@@ -109,8 +109,15 @@ class Kernpart(Parameterized):
         raise NotImplementedError
     def dKdiag_dX(self, dL_dK, X, target):
         raise NotImplementedError
-
-
+    def update_gradients_full(self, dL_dK, X):
+        """Set the gradients of all parameters when doing full (N) inference."""
+        raise NotImplementedError
+    def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
+        """Set the gradients of all parameters when doing sparse (M) inference."""
+        raise NotImplementedError
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        """Set the gradients of all parameters when doing variational (M) inference with uncertain inputs."""
+        raise NotImplementedError
 
 class Kernpart_stationary(Kernpart):
     def __init__(self, input_dim, lengthscale=None, ARD=False):

@@ -348,7 +348,7 @@ class spkern(Kernpart):
     def Kdiag(self,X,target):
         self._weave_inline(self._Kdiag_code, X, target)
 
-    def dK_dtheta(self,partial,X,Z,target):
+    def _param_grad_helper(self,partial,X,Z,target):
         if Z is None:
             self._weave_inline(self._dK_dtheta_code_X, X, target, Z, partial)
         else:

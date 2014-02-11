@@ -50,7 +50,7 @@ class Spline(Kernpart):
     def Kdiag(self,X,target):
         target += self.variance*X.flatten()**3/3.
 
-    def dK_dtheta(self,X,X2,target):
+    def _param_grad_helper(self,X,X2,target):
         target += 0.5*(t*s**2) - s**3/6. + (s_t)**3*theta(s_t)/6.
 
     def dKdiag_dtheta(self,X,target):

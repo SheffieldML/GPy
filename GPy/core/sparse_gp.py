@@ -61,8 +61,8 @@ class SparseGP(GP):
         if self.X_variance is None:
             self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
         else:
-            self.Z.gradient += self.kern.dpsi1_dZ(self.dL_dpsi1, self.Z, self.X, self.X_variance)
-            self.Z.gradient += self.kern.dpsi2_dZ(self.dL_dpsi2, self.Z, self.X, self.X_variance)
+            self.Z.gradient += self.kern.dpsi1_dZ(self.grad_dict['dL_dpsi1'], self.Z, self.X, self.X_variance)
+            self.Z.gradient += self.kern.dpsi2_dZ(self.grad_dict['dL_dpsi2'], self.Z, self.X, self.X_variance)
 
     def _raw_predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
         """

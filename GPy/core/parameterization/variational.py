@@ -5,6 +5,7 @@ Created on 6 Nov 2013
 '''
 from parameterized import Parameterized
 from param import Param
+from transformations import Logexp
 
 class Normal(Parameterized):
     '''
@@ -15,7 +16,7 @@ class Normal(Parameterized):
     def __init__(self, means, variances, name='latent space'):
         Parameterized.__init__(self, name=name)
         self.means = Param("mean", means)
-        self.variances = Param('variance', variances)
+        self.variances = Param('variance', variances, Logexp())
         self.add_parameters(self.means, self.variances)
 
     def plot(self, *args):

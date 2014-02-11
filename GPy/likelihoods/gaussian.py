@@ -1,6 +1,5 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-
 #TODO
 """
 A lot of this code assumes that the link functio nis the identity.
@@ -18,6 +17,7 @@ from GPy.util.univariate_Gaussian import std_norm_pdf, std_norm_cdf
 import link_functions
 from likelihood import Likelihood
 from ..core.parameterization import Param
+from ..core.parameterization.transformations import Logexp
 
 class Gaussian(Likelihood):
     """
@@ -43,7 +43,7 @@ class Gaussian(Likelihood):
 
         super(Gaussian, self).__init__(gp_link, name=name)
 
-        self.variance = Param('variance', variance)
+        self.variance = Param('variance', variance, Logexp())
         self.add_parameter(self.variance)
 
         if isinstance(gp_link, link_functions.Identity):

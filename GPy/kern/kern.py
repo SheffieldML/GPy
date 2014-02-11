@@ -8,6 +8,7 @@ from parts.prod import Prod as prod
 from parts.linear import Linear
 from parts.kernpart import Kernpart
 from ..core.parameterization import Parameterized
+from GPy.core.parameterization.param import Param
 
 class kern(Parameterized):
     def __init__(self, input_dim, parts=[], input_slices=None):
@@ -84,7 +85,7 @@ class kern(Parameterized):
 #         represents the gradient in the transformed space (i.e. that given by
 #         get_params_transformed())
 #
-#         :param g: the gradient vector for the current model, usually created by dK_dtheta
+#         :param g: the gradient vector for the current model, usually created by _param_grad_helper
 #         """
 #         x = self._get_params()
 #         [np.place(g, index, g[index] * constraint.gradfactor(x[index]))
@@ -152,13 +153,15 @@ class kern(Parameterized):
 #             newkern.fixed_indices = self.fixed_indices + [self.num_params + x for x in other.fixed_indices]
 #             newkern.fixed_values = self.fixed_values + other.fixed_values
 #             newkern.tied_indices = self.tied_indices + [self.num_params + x for x in other.tied_indices]
-        [newkern._add_constrain(param, transform, warning=False)
-         for param, transform in itertools.izip(
-                *itertools.chain(self.constraints.iteritems(),
-                                 other.constraints.iteritems()))]
+        
+        [newkern.constraints.add(transform, ind) for transform, ind in self.constraints.iteritems()]
+        [newkern.constraints.add(transform, ind+self.size) for transform, ind in other.constraints.iteritems()]
         newkern._fixes_ = ((self._fixes_ or 0) + (other._fixes_ or 0)) or None
 
         return newkern
+
+    def __call__(self, X, X2=None):
+        return self.K(X, X2)
 
     def __mul__(self, other):
         """ Here we overload the '*' operator. See self.prod for more information"""
@@ -180,8 +183,10 @@ class kern(Parameterized):
         :type tensor: bool
 
         """
-        K1 = self.copy()
-        K2 = other.copy()
+        K1 = self
+        K2 = other
+        #K1 = self.copy()
+        #K2 = other.copy()
 
         slices = []
         for sl1, sl2 in itertools.product(K1.input_slices, K2.input_slices):
@@ -284,11 +289,12 @@ class kern(Parameterized):
         [p.update_gradients_full(dL_dK, X) for p in self._parameters_]
 
     def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
-        raise NotImplementedError
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
-        raise NotImplementedError
+        [p.update_gradients_sparse(dL_dKmm, dL_dKnm, dL_dKdiag, X, Z) for p in self._parameters_]
 
-    def dK_dtheta(self, dL_dK, X, X2=None):
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        [p.update_gradients_variational(dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z) for p in self._parameters_]
+
+    def _param_grad_helper(self, dL_dK, X, X2=None):
         """
         Compute the gradient of the covariance function with respect to the parameters.
 
@@ -304,9 +310,9 @@ class kern(Parameterized):
         assert X.shape[1] == self.input_dim
         target = np.zeros(self.size)
         if X2 is None:
-            [p.dK_dtheta(dL_dK, X[:, i_s], None, target[ps]) for p, i_s, ps, in zip(self._parameters_, self.input_slices, self._param_slices_)]
+            [p._param_grad_helper(dL_dK, X[:, i_s], None, target[ps]) for p, i_s, ps, in zip(self._parameters_, self.input_slices, self._param_slices_)]
         else:
-            [p.dK_dtheta(dL_dK, X[:, i_s], X2[:, i_s], target[ps]) for p, i_s, ps, in zip(self._parameters_, self.input_slices, self._param_slices_)]
+            [p._param_grad_helper(dL_dK, X[:, i_s], X2[:, i_s], target[ps]) for p, i_s, ps, in zip(self._parameters_, self.input_slices, self._param_slices_)]
 
         return self._transform_gradients(target)
 
@@ -478,6 +484,7 @@ from GPy.core.model import Model
 class Kern_check_model(Model):
     """This is a dummy model class used as a base class for checking that the gradients of a given kernel are implemented correctly. It enables checkgradient() to be called independently on a kernel."""
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
+        Model.__init__(self, 'kernel_test_model')
         num_samples = 20
         num_samples2 = 10
         if kernel==None:
@@ -489,14 +496,12 @@ class Kern_check_model(Model):
                 dL_dK = np.ones((X.shape[0], X.shape[0]))
             else:
                 dL_dK = np.ones((X.shape[0], X2.shape[0]))
-
+        
         self.kernel=kernel
+        self.add_parameter(kernel)
         self.X = X
         self.X2 = X2
         self.dL_dK = dL_dK
-        #self.constrained_indices=[]
-        #self.constraints=[]
-        Model.__init__(self, 'kernel_test_model')
 
     def is_positive_definite(self):
         v = np.linalg.eig(self.kernel.K(self.X))[0]
@@ -504,15 +509,6 @@ class Kern_check_model(Model):
             return False
         else:
             return True
-
-    def _get_params(self):
-        return self.kernel._get_params()
-
-    def _get_param_names(self):
-        return self.kernel._get_param_names()
-
-    def _set_params(self, x):
-        self.kernel._set_params(x)
 
     def log_likelihood(self):
         return (self.dL_dK*self.kernel.K(self.X, self.X2)).sum()
@@ -526,7 +522,7 @@ class Kern_check_dK_dtheta(Kern_check_model):
         Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
 
     def _log_likelihood_gradients(self):
-        return self.kernel.dK_dtheta(self.dL_dK, self.X, self.X2)
+        return self.kernel._param_grad_helper(self.dL_dK, self.X, self.X2)
 
 class Kern_check_dKdiag_dtheta(Kern_check_model):
     """This class allows gradient checks of the gradient of the diagonal of a kernel with respect to the parameters."""
@@ -534,6 +530,8 @@ class Kern_check_dKdiag_dtheta(Kern_check_model):
         Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=None)
         if dL_dK==None:
             self.dL_dK = np.ones((self.X.shape[0]))
+    def parameters_changed(self):
+        self.kernel.update_gradients_full(self.dL_dK, self.X)        
 
     def log_likelihood(self):
         return (self.dL_dK*self.kernel.Kdiag(self.X)).sum()
@@ -545,40 +543,24 @@ class Kern_check_dK_dX(Kern_check_model):
     """This class allows gradient checks for the gradient of a kernel with respect to X. """
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
         Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
-
+        self.remove_parameter(kernel)
+        self.X = Param('X', self.X)
+        self.add_parameter(self.X)
     def _log_likelihood_gradients(self):
-        return self.kernel.dK_dX(self.dL_dK, self.X, self.X2).flatten()
+        return self.kernel.gradients_X(self.dL_dK, self.X, self.X2).flatten()
 
-    def _get_param_names(self):
-        return ['X_'  +str(i) + ','+str(j) for j in range(self.X.shape[1]) for i in range(self.X.shape[0])]
-
-    def _get_params(self):
-        return self.X.flatten()
-
-    def _set_params(self, x):
-        self.X=x.reshape(self.X.shape)
-
-class Kern_check_dKdiag_dX(Kern_check_model):
+class Kern_check_dKdiag_dX(Kern_check_dK_dX):
     """This class allows gradient checks for the gradient of a kernel diagonal with respect to X. """
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
-        Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=None)
+        Kern_check_dK_dX.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=None)
         if dL_dK==None:
             self.dL_dK = np.ones((self.X.shape[0]))
-
+        
     def log_likelihood(self):
         return (self.dL_dK*self.kernel.Kdiag(self.X)).sum()
 
     def _log_likelihood_gradients(self):
         return self.kernel.dKdiag_dX(self.dL_dK, self.X).flatten()
-
-    def _get_param_names(self):
-        return ['X_'  +str(i) + ','+str(j) for j in range(self.X.shape[1]) for i in range(self.X.shape[0])]
-
-    def _get_params(self):
-        return self.X.flatten()
-
-    def _set_params(self, x):
-        self.X=x.reshape(self.X.shape)
 
 def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False):
     """
@@ -654,7 +636,7 @@ def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False):
     except NotImplementedError:
         result=True
         if verbose:
-            print("dK_dX not implemented for " + kern.name)
+            print("gradients_X not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
@@ -670,7 +652,7 @@ def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False):
     except NotImplementedError:
         result=True
         if verbose:
-            print("dK_dX not implemented for " + kern.name)
+            print("gradients_X not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
@@ -686,7 +668,7 @@ def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False):
     except NotImplementedError:
         result=True
         if verbose:
-            print("dK_dX not implemented for " + kern.name)
+            print("gradients_X not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:

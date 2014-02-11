@@ -4,6 +4,7 @@
 from kernpart import Kernpart
 import numpy as np
 from ...core.parameterization import Param
+from ...core.parameterization.transformations import Logexp
 
 class White(Kernpart):
     """
@@ -17,7 +18,7 @@ class White(Kernpart):
     def __init__(self,input_dim,variance=1.):
         super(White, self).__init__(input_dim, 'white')
         self.input_dim = input_dim
-        self.variance = Param('variance', variance)
+        self.variance = Param('variance', variance, Logexp())
         self.add_parameters(self.variance)
         self._psi1 = 0 # TODO: more elegance here
 
@@ -32,7 +33,7 @@ class White(Kernpart):
         self.variance.gradient = np.trace(dL_dK)
 
     def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
-        raise NotImplementedError
+        self.variance.gradient = np.trace(dL_dKmm) + np.sum(dL_dKdiag)
 
     def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
         raise NotImplementedError

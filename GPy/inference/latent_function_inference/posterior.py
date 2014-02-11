@@ -2,19 +2,20 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ...util.linalg import pdinv, dpotrs, tdot, dtrtrs
+from ...util.linalg import pdinv, dpotrs, tdot, dtrtrs, dpotri, symmetrify
 
 class Posterior(object):
     """
-    An object to represent a Gaussian posterior over latent function values.
+    An object to represent a Gaussian posterior over latent function values, p(f|D).
     This may be computed exactly for Gaussian likelihoods, or approximated for
     non-Gaussian likelihoods.
 
     The purpose of this class is to serve as an interface between the inference
-    schemes and the model classes.
+    schemes and the model classes.  the model class can make predictions for
+    the function at any new point x_* by integrating over this posterior.
 
     """
-    def __init__(self, woodbury_chol=None, woodbury_vector=None, K=None, mean=None, cov=None, K_chol=None):
+    def __init__(self, woodbury_chol=None, woodbury_vector=None, K=None, mean=None, cov=None, K_chol=None, woodbury_inv=None):
         """
         woodbury_chol : a lower triangular matrix L that satisfies posterior_covariance = K - K L^{-T} L^{-1} K
         woodbury_vector : a matrix (or vector, as Nx1 matrix) M which satisfies posterior_mean = K M
@@ -45,7 +46,10 @@ class Posterior(object):
         #obligatory
         self._K = K
 
-        if ((woodbury_chol is not None) and (woodbury_vector is not None) and (K is not None)) or ((mean is not None) and (cov is not None) and (K is not None)):
+        if ((woodbury_chol is not None) and (woodbury_vector is not None))\
+                or ((woodbury_inv is not None) and (woodbury_vector is not None))\
+                or ((woodbury_inv is not None) and (mean is not None))\
+                or ((mean is not None) and (cov is not None)):
             pass # we have sufficient to compute the posterior
         else:
             raise ValueError, "insufficient information to compute the posterior"
@@ -55,6 +59,10 @@ class Posterior(object):
         #option 1:
         self._woodbury_chol = woodbury_chol
         self._woodbury_vector = woodbury_vector
+
+        #option 2.
+        self._woodbury_inv = woodbury_inv
+        #and woodbury vector
 
         #option 2:
         self._mean = mean
@@ -66,7 +74,7 @@ class Posterior(object):
     @property
     def mean(self):
         if self._mean is None:
-            self._mean = np.dot(self._K, self._woodbury_vector)
+            self._mean = np.dot(self._K, self.woodbury_vector)
         return self._mean
 
     @property
@@ -85,16 +93,27 @@ class Posterior(object):
     @property
     def woodbury_chol(self):
         if self._woodbury_chol is None:
-            B = self._K - self._covariance
-            tmp, _ = dpotrs(self._K_chol, B)
-            Wi, _ = dpotrs(self._K_chol, tmp.T)
-            _, _, self._woodbury_chol, _ = pdinv(Wi)
+            #try computing woodbury chol from cov
+            if self._woodbury_inv is not None:
+                _, _, self._woodbury_chol, _ = pdinv(self._woodbury_inv)
+            elif self._covariance is not None:
+                B = self._K - self._covariance
+                tmp, _ = dpotrs(self.K_chol, B)
+                self._woodbury_inv, _ = dpotrs(self.K_chol, tmp.T)
+                _, _, self._woodbury_chol, _ = pdinv(self._woodbury_inv)
         return self._woodbury_chol
+
+    @property
+    def woodbury_inv(self):
+        if self._woodbury_inv is None:
+            self._woodbury_inv, _ = dpotri(self.woodbury_chol)
+            symmetrify(self._woodbury_inv)
+        return self._woodbury_inv
 
     @property
     def woodbury_vector(self):
         if self._woodbury_vector is None:
-            self._woodbury_vector, _ = dpotrs(self._K_chol, self.mean)
+            self._woodbury_vector, _ = dpotrs(self.K_chol, self.mean)
         return self._woodbury_vector
 
     @property

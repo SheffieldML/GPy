@@ -31,10 +31,10 @@ class Fixed(Kernpart):
     def K(self, X, X2, target):
         target += self.variance * self.fixed_K
 
-    def dK_dtheta(self, partial, X, X2, target):
+    def _param_grad_helper(self, partial, X, X2, target):
         target += (partial * self.fixed_K).sum()
 
-    def dK_dX(self, partial, X, X2, target):
+    def gradients_X(self, partial, X, X2, target):
         pass
 
     def dKdiag_dX(self, partial, X, target):

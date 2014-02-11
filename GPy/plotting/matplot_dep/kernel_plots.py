@@ -7,6 +7,7 @@ import pylab as pb
 import Tango
 from matplotlib.textpath import TextPath
 from matplotlib.transforms import offset_copy
+from ...kern.parts.linear import Linear
 
 
 def plot_ARD(kernel, fignum=None, ax=None, title='', legend=False):

@@ -75,7 +75,7 @@ class Exponential(Kernpart):
         """Compute the diagonal of the covariance matrix associated to X."""
         np.add(target, self.variance, target)
 
-    def dK_dtheta(self, dL_dK, X, X2, target):
+    def _param_grad_helper(self, dL_dK, X, X2, target):
         """derivative of the covariance matrix with respect to the parameters."""
         if X2 is None: X2 = X
         dist = np.sqrt(np.sum(np.square((X[:, None, :] - X2[None, :, :]) / self.lengthscale), -1))
@@ -95,13 +95,13 @@ class Exponential(Kernpart):
         # NB: derivative of diagonal elements wrt lengthscale is 0
         target[0] += np.sum(dL_dKdiag)
 
-    def dK_dX(self, dL_dK, X, X2, target):
+    def gradients_X(self, dL_dK, X, X2, target):
         """derivative of the covariance matrix with respect to X."""
         if X2 is None: X2 = X
         dist = np.sqrt(np.sum(np.square((X[:, None, :] - X2[None, :, :]) / self.lengthscale), -1))[:, :, None]
         ddist_dX = (X[:, None, :] - X2[None, :, :]) / self.lengthscale ** 2 / np.where(dist != 0., dist, np.inf)
-        dK_dX = -np.transpose(self.variance * np.exp(-dist) * ddist_dX, (1, 0, 2))
-        target += np.sum(dK_dX * dL_dK.T[:, :, None], 0)
+        gradients_X = -np.transpose(self.variance * np.exp(-dist) * ddist_dX, (1, 0, 2))
+        target += np.sum(gradients_X * dL_dK.T[:, :, None], 0)
 
     def dKdiag_dX(self, dL_dKdiag, X, target):
         pass

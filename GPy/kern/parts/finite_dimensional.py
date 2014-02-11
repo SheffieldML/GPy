@@ -50,7 +50,7 @@ class FiniteDimensional(Kernpart):
     def Kdiag(self,X,target):
         product = np.diag(self.K(X, X))
         np.add(target,product,target)
-    def dK_dtheta(self,X,X2,target):
+    def _param_grad_helper(self,X,X2,target):
         """Return shape is NxMx(Ntheta)"""
         if X2 is None: X2 = X
         FX = np.column_stack([f(X) for f in self.F])

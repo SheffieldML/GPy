@@ -97,7 +97,7 @@ class RBFInv(RBF):
 #             return ['variance'] + ['inv_lengthscale%i' % i for i in range(self.inv_lengthscale.size)]
 
     # TODO: Rewrite computations so that lengthscale is not needed (but only inv. lengthscale)
-    def dK_dtheta(self, dL_dK, X, X2, target):
+    def _param_grad_helper(self, dL_dK, X, X2, target):
         self._K_computations(X, X2)
         target[0] += np.sum(self._K_dvar * dL_dK)
         if self.ARD:
@@ -142,14 +142,14 @@ class RBFInv(RBF):
         else:
             target[1] += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK) * (-self.lengthscale2)
 
-    def dK_dX(self, dL_dK, X, X2, target):
+    def gradients_X(self, dL_dK, X, X2, target):
         self._K_computations(X, X2)
         if X2 is None:            
             _K_dist = 2*(X[:, None, :] - X[None, :, :])
         else:
             _K_dist = X[:, None, :] - X2[None, :, :] # don't cache this in _K_computations because it is high memory. If this function is being called, chances are we're not in the high memory arena.
-        dK_dX = (-self.variance * self.inv_lengthscale2) * np.transpose(self._K_dvar[:, :, np.newaxis] * _K_dist, (1, 0, 2))
-        target += np.sum(dK_dX * dL_dK.T[:, :, None], 0)
+        gradients_X = (-self.variance * self.inv_lengthscale2) * np.transpose(self._K_dvar[:, :, np.newaxis] * _K_dist, (1, 0, 2))
+        target += np.sum(gradients_X * dL_dK.T[:, :, None], 0)
 
     def dKdiag_dX(self, dL_dKdiag, X, target):
         pass

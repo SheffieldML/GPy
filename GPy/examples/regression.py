@@ -281,11 +281,12 @@ def toy_poisson_rbf_1d_laplace(optimize=True, plot=True):
     f_true = np.random.multivariate_normal(np.zeros(x_len), GPy.kern.rbf(1).K(X))
     Y = np.array([np.random.poisson(np.exp(f)) for f in f_true])[:,None]
 
-    noise_model = GPy.likelihoods.poisson()
-    likelihood = GPy.likelihoods.Laplace(Y,noise_model)
+    kern = GPy.kern.rbf(1)
+    poisson_lik = GPy.likelihoods.Poisson()
+    laplace_inf = GPy.inference.latent_function_inference.LaplaceInference()
 
     # create simple GP Model
-    m = GPy.models.GPRegression(X, Y, likelihood=likelihood)
+    m = GPy.core.GP(X, Y, kernel=kern, likelihood=poisson_lik, inference_method=laplace_inf)
 
     if optimize:
         m.optimize(optimizer)
@@ -472,9 +473,9 @@ def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
     Z = np.random.uniform(-3., 3., (7, 1))
 
     k = GPy.kern.rbf(1)
-
+    import ipdb;ipdb.set_trace()
     # create simple GP Model - no input uncertainty on this one
-    m = GPy.models.SparseGPRegression(X, Y, kernel=k, Z=Z)
+    m = GPy.models.SparseGPRegression(X, Y, kernel=GPy.kern.rbf(1), Z=Z)
 
     if optimize:
         m.optimize('scg', messages=1, max_iters=max_iters)
@@ -485,7 +486,7 @@ def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
     print m
 
     # the same Model with uncertainty
-    m = GPy.models.SparseGPRegression(X, Y, kernel=k, Z=Z, X_variance=S)
+    m = GPy.models.SparseGPRegression(X, Y, kernel=GPy.kern.rbf(1), Z=Z, X_variance=S)
     if optimize:
         m.optimize('scg', messages=1, max_iters=max_iters)
     if plot:

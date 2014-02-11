@@ -3,10 +3,9 @@ Created on 6 Nov 2013
 
 @author: maxz
 '''
-import numpy as np
 from parameterized import Parameterized
 from param import Param
-from ...util.misc import param_to_array
+from transformations import Logexp
 
 class Normal(Parameterized):
     '''
@@ -16,9 +15,9 @@ class Normal(Parameterized):
     '''
     def __init__(self, means, variances, name='latent space'):
         Parameterized.__init__(self, name=name)
-        self.means = Param("mean", means)
-        self.variances = Param('variance', variances)
-        self.add_parameters(self.means, self.variances)
+        self.mean = Param("mean", means)
+        self.variance = Param('variance', variances, Logexp())
+        self.add_parameters(self.mean, self.variance)
 
     def plot(self, *args):
         """
@@ -26,6 +25,7 @@ class Normal(Parameterized):
 
         See  GPy.plotting.matplot_dep.variational_plots
         """
+        import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import variational_plots
+        from ...plotting.matplot_dep import variational_plots
         return variational_plots.plot(self,*args)

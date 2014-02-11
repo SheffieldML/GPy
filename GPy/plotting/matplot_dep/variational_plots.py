@@ -1,4 +1,5 @@
-import pylab as pb
+import pylab as pb, numpy as np
+from ...util.misc import param_to_array
 
 def plot(parameterized, fignum=None, ax=None, colors=None):
     """
@@ -13,14 +14,14 @@ def plot(parameterized, fignum=None, ax=None, colors=None):
 
     """
     if ax is None:
-        fig = pb.figure(num=fignum, figsize=(8, min(12, (2 * parameterized.means.shape[1]))))
+        fig = pb.figure(num=fignum, figsize=(8, min(12, (2 * parameterized.mean.shape[1]))))
     if colors is None:
         colors = pb.gca()._get_lines.color_cycle
         pb.clf()
     else:
         colors = iter(colors)
     plots = []
-    means, variances = param_to_array(parameterized.means, parameterized.variances)
+    means, variances = param_to_array(parameterized.mean, parameterized.variance)
     x = np.arange(means.shape[0])
     for i in range(means.shape[1]):
         if ax is None:

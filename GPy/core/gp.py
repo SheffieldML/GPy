@@ -48,14 +48,13 @@ class GP(Model):
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
                 inference_method = exact_gaussian_inference.ExactGaussianInference()
-        else:
-            inference_method = expectation_propagation
-            print "defaulting to ", inference_method, "for latent function inference"
+            else:
+                inference_method = expectation_propagation
+                print "defaulting to ", inference_method, "for latent function inference"
         self.inference_method = inference_method
 
         self.add_parameter(self.kern)
         self.add_parameter(self.likelihood)
-
         self.parameters_changed()
 
     def parameters_changed(self):
@@ -64,9 +63,6 @@ class GP(Model):
 
     def log_likelihood(self):
         return self._log_marginal_likelihood
-
-    def dL_dtheta_K(self):
-        return self.kern.dK_dtheta(self.posterior.dL_dK, self.X)
 
     def _raw_predict(self, _Xnew, which_parts='all', full_cov=False, stop=False):
         """
@@ -79,14 +75,17 @@ class GP(Model):
 
         """
         Kx = self.kern.K(_Xnew, self.X, which_parts=which_parts).T
-        LiKx, _ = dtrtrs(self.posterior._woodbury_chol, np.asfortranarray(Kx), lower=1)
-        mu = np.dot(Kx.T, self.posterior._woodbury_vector)
+        #LiKx, _ = dtrtrs(self.posterior.woodbury_chol, np.asfortranarray(Kx), lower=1)
+        WiKx = np.dot(self.posterior.woodbury_inv, Kx)
+        mu = np.dot(Kx.T, self.posterior.woodbury_vector)
         if full_cov:
             Kxx = self.kern.K(_Xnew, which_parts=which_parts)
-            var = Kxx - tdot(LiKx.T)
+            #var = Kxx - tdot(LiKx.T)
+            var = np.dot(Kx.T, WiKx)
         else:
             Kxx = self.kern.Kdiag(_Xnew, which_parts=which_parts)
-            var = Kxx - np.sum(LiKx*LiKx, 0)
+            #var = Kxx - np.sum(LiKx*LiKx, 0)
+            var = Kxx - np.sum(WiKx*Kx, 0)
             var = var.reshape(-1, 1)
         return mu, var
 
@@ -185,7 +184,7 @@ class GP(Model):
         from ..plotting.matplot_dep import models_plots
         models_plots.plot_fit_f(self,*args,**kwargs)
 
-    def plot(self, *args):
+    def plot(self, *args, **kwargs):
         """
         Plot the posterior of the GP.
           - In one dimension, the function is plotted with a shaded region
@@ -204,7 +203,7 @@ class GP(Model):
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
-        models_plots.plot_fit(self,*args)
+        models_plots.plot_fit(self,*args,**kwargs)
 
     def _getstate(self):
         """

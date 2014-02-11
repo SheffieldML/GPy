@@ -1,73 +1,54 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import numpy as np
-from ...util.linalg import mdot, jitchol, chol_inv, tdot, dtrtrs
-from ...core import SparseGP
+class VarDTC(object):
+    def __init__(self):
+        self.const_jitter = 1e-6
 
-class FITC(SparseGP):
-    """
+    def inference(self, kern, X, X_variance, Z, likelihood, Y):
 
-    Sparse FITC approximation
+        num_inducing, _ = Z.shape
+        num_data, output_dim = Y.shape
 
-    :param X: inputs
-    :type X: np.ndarray (num_data x Q)
-    :param likelihood: a likelihood instance, containing the observed data
-    :type likelihood: GPy.likelihood.(Gaussian | EP)
-    :param kernel: the kernel (covariance function). See link kernels
-    :type kernel: a GPy.kern.kern instance
-    :param Z: inducing inputs (optional, see note)
-    :type Z: np.ndarray (M x Q) | None
-    :param normalize_(X|Y): whether to normalize the data before computing (predictions will be in original scales)
-    :type normalize_(X|Y): bool
+        #make sure we're not using variational uncertain inputs
+        assert = X_variance is None, "variational inducing inputs only for use with varDTC inference"
+        #Note: we can;t do the variational thing after making the GITC conditional approximation because K~ appears in the log determinant.
 
-    """
+        #see whether we've got a different noise variance for each datum
+        sigma2 = np.squeeze(likelihood.variance)
+        het_noise = False
+        if sigma2.size <1:
+            het_noise = True
 
-    def __init__(self, X, likelihood, kernel, Z, normalize_X=False):
-        SparseGP.__init__(self, X, likelihood, kernel, Z, X_variance=None, normalize_X=False)
-        assert self.output_dim == 1, "FITC model is not defined for handling multiple outputs"
-
-    def update_likelihood_approximation(self, **kwargs):
-        """
-        Approximates a non-Gaussian likelihood using Expectation Propagation
-
-        For a Gaussian likelihood, no iteration is required:
-        this function does nothing
-        """
-        self.likelihood.restart()
-        self.likelihood.fit_FITC(self.Kmm,self.psi1,self.psi0, **kwargs)
-        self._set_params(self._get_params())
-
-    def _compute_kernel_matrices(self):
         # kernel computations, using BGPLVM notation
-        self.Kmm = self.kern.K(self.Z)
-        self.psi0 = self.kern.Kdiag(self.X)
-        self.psi1 = self.kern.K(self.Z, self.X)
-        self.psi2 = None
+        Kmm = kern.K(Z)
+        Kdiag = kern.Kdiag(X)
+        Kmn = kern.K(X, Z)
 
-    def _computations(self):
         #factor Kmm
-        self.Lm = jitchol(self.Kmm)
-        self.Lmi,info = dtrtrs(self.Lm,np.eye(self.num_inducing),lower=1)
-        Lmipsi1 = np.dot(self.Lmi,self.psi1)
-        self.Qnn = np.dot(Lmipsi1.T,Lmipsi1).copy()
-        self.Diag0 = self.psi0 - np.diag(self.Qnn)
-        self.beta_star = self.likelihood.precision/(1. + self.likelihood.precision*self.Diag0[:,None]) #NOTE: beta_star contains Diag0 and the precision
-        self.V_star = self.beta_star * self.likelihood.Y
+        Lm = jitchol(Kmm)
+        V = dtrtrs(Lm, Kmn, lower=1)
 
-        # The rather complex computations of self.A
-        tmp = self.psi1 * (np.sqrt(self.beta_star.flatten().reshape(1, self.num_data)))
-        tmp, _ = dtrtrs(self.Lm, np.asfortranarray(tmp), lower=1)
-        self.A = tdot(tmp)
+        #compute effective noise
+        g_sn2 = sigma2 + Kdiag - np.sum(V*V, 0)
 
-        # factor B
-        self.B = np.eye(self.num_inducing) + self.A
-        self.LB = jitchol(self.B)
-        self.LBi = chol_inv(self.LB)
-        self.psi1V = np.dot(self.psi1, self.V_star)
+        #compute and factor B
+        tmp = Kmn / np.sqrt(g_snd)
+        tmp, _ = dtrtrs(Lm, tmp, lower=1)
+        A = tdot(tmp)
+        B = np.eye(num_inducing) + A
+        Bi, Lb, LBi, log_det_B = pdinv(B)
 
-        Lmi_psi1V, info = dtrtrs(self.Lm, np.asfortranarray(self.psi1V), lower=1, trans=0)
-        self._LBi_Lmi_psi1V, _ = dtrtrs(self.LB, np.asfortranarray(Lmi_psi1V), lower=1, trans=0)
+        #compute posterior parameters
+        tmp, _ = dtrtrs()
+        woodbury_vec = 
+
+        
+
+
+        psi1V = np.dot(self.psi1, self.V_star)
+        Lmi_psi1V, _ = dtrtrs(Lm, self.psi1V, lower=1, trans=0)
+        LBi_Lmi_psi1V, _ = dtrtrs(LB, Lmi_psi1V, lower=1, trans=0)
 
         Kmmipsi1 = np.dot(self.Lmi.T,Lmipsi1)
         b_psi1_Ki = self.beta_star * Kmmipsi1.T
@@ -116,10 +97,10 @@ class FITC(SparseGP):
             K_pp_K = np.dot(Kmmipsi1[:,i:(i+1)],Kmmipsi1[:,i:(i+1)].T)
             _dpsi1 = (-V_n**2 - alpha_n + 2.*gamma_k - gamma_n**2) * Kmmipsi1.T[i:(i+1),:]
             _dKmm = .5*(V_n**2 + alpha_n + gamma_n**2 - 2.*gamma_k) * K_pp_K #Diag_dD_dKmm
-            self._dpsi1_dtheta += self.kern.dK_dtheta(_dpsi1,self.X[i:i+1,:],self.Z)
-            self._dKmm_dtheta += self.kern.dK_dtheta(_dKmm,self.Z)
-            self._dKmm_dX += self.kern.dK_dX(_dKmm ,self.Z)
-            self._dpsi1_dX += self.kern.dK_dX(_dpsi1.T,self.Z,self.X[i:i+1,:])
+            self._dpsi1_dtheta += self.kern._param_grad_helper(_dpsi1,self.X[i:i+1,:],self.Z)
+            self._dKmm_dtheta += self.kern._param_grad_helper(_dKmm,self.Z)
+            self._dKmm_dX += self.kern.gradients_X(_dKmm ,self.Z)
+            self._dpsi1_dX += self.kern.gradients_X(_dpsi1.T,self.Z,self.X[i:i+1,:])
 
         # the partial derivative vector for the likelihood
         if self.likelihood.num_params == 0:
@@ -163,15 +144,15 @@ class FITC(SparseGP):
 
     def dL_dtheta(self):
         dL_dtheta = self.kern.dKdiag_dtheta(self._dL_dpsi0,self.X)
-        dL_dtheta += self.kern.dK_dtheta(self._dL_dpsi1,self.X,self.Z)
-        dL_dtheta += self.kern.dK_dtheta(self._dL_dKmm,X=self.Z)
+        dL_dtheta += self.kern._param_grad_helper(self._dL_dpsi1,self.X,self.Z)
+        dL_dtheta += self.kern._param_grad_helper(self._dL_dKmm,X=self.Z)
         dL_dtheta += self._dKmm_dtheta
         dL_dtheta += self._dpsi1_dtheta
         return dL_dtheta
 
     def dL_dZ(self):
-        dL_dZ = self.kern.dK_dX(self._dL_dpsi1.T,self.Z,self.X)
-        dL_dZ += self.kern.dK_dX(self._dL_dKmm,X=self.Z)
+        dL_dZ = self.kern.gradients_X(self._dL_dpsi1.T,self.Z,self.X)
+        dL_dZ += self.kern.gradients_X(self._dL_dKmm,X=self.Z)
         dL_dZ += self._dpsi1_dX
         dL_dZ += self._dKmm_dX
         return dL_dZ

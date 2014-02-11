@@ -6,6 +6,8 @@ from ..util.linalg import mdot, tdot, symmetrify, backsub_both_sides, chol_inv, 
 from gp import GP
 from parameterization.param import Param
 from ..inference.latent_function_inference import varDTC
+from .. import likelihoods
+from GPy.util.misc import param_to_array
 
 class SparseGP(GP):
     """
@@ -35,46 +37,58 @@ class SparseGP(GP):
         #pick a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
-                inference_method = varDTC.Gaussian_inference()
+                inference_method = varDTC.VarDTC()
         else:
             #inference_method = ??
             raise NotImplementedError, "what to do what to do?"
             print "defaulting to ", inference_method, "for latent function inference"
 
-        GP.__init__(self, X, Y, likelihood, inference_method, kernel, name)
-
-        self.Z = Z
+        self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]
 
-        if X_variance is None:
-            self.has_uncertain_inputs = False
-            self.X_variance = None
-        else:
+        if not (X_variance is None):
             assert X_variance.shape == X.shape
-            self.has_uncertain_inputs = True
-            self.X_variance = X_variance
+        self.X_variance = X_variance
 
-        self.Z = Param('inducing inputs', self.Z)
-        self.add_parameter(self.Z, gradient=self.dL_dZ, index=0)
-        self.add_parameter(self.kern, gradient=self.dL_dtheta)
-        self.add_parameter(self.likelihood, gradient=lambda:self.likelihood._gradients(partial=self.partial_for_likelihood))
+        GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name)
+
+        self.add_parameter(self.Z, index=0)
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
 
-                #The derivative of the bound wrt the inducing inputs Z
-        self.Z.gradient = self.kern.dK_dX(self.dL_dKmm, self.Z)
-        if self.has_uncertain_inputs:
-            self.Z.gradient += self.kern.dpsi1_dZ(self.dL_dpsi1, self.Z, self.X, self.X_variance)
-            self.Z.gradient += self.kern.dpsi2_dZ(self.dL_dpsi2, self.Z, self.X, self.X_variance)
+        #The derivative of the bound wrt the inducing inputs Z
+        self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
+        if self.X_variance is None:
+            self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
         else:
-            self.Z.gradient += self.kern.dK_dX(self.dL_dpsi1.T, self.Z, self.X)
+            self.Z.gradient += self.kern.dpsi1_dZ(self.grad_dict['dL_dpsi1'], self.Z, self.X, self.X_variance)
+            self.Z.gradient += self.kern.dpsi2_dZ(self.grad_dict['dL_dpsi2'], self.Z, self.X, self.X_variance)
 
     def _raw_predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
         """
         Make a prediction for the latent function values
         """
-        #TODO!!!
+        if X_variance_new is None:
+            Kx = self.kern.K(self.Z, Xnew, which_parts=which_parts)
+            mu = np.dot(Kx.T, self.posterior.woodbury_vector)
+            if full_cov:
+                Kxx = self.kern.K(Xnew, which_parts=which_parts)
+                var = Kxx - mdot(Kx.T, self.posterior.woodbury_inv, Kx) # NOTE this won't work for plotting
+            else:
+                Kxx = self.kern.Kdiag(Xnew, which_parts=which_parts)
+                var = Kxx - np.sum(Kx * np.dot(self.posterior.woodbury_inv, Kx), 0)
+        else:
+            # assert which_parts=='all', "swithching out parts of variational kernels is not implemented"
+            Kx = self.kern.psi1(self.Z, Xnew, X_variance_new) # , which_parts=which_parts) TODO: which_parts
+            mu = np.dot(Kx, self.Cpsi1V)
+            if full_cov:
+                raise NotImplementedError, "TODO"
+            else:
+                Kxx = self.kern.psi0(self.Z, Xnew, X_variance_new)
+                psi2 = self.kern.psi2(self.Z, Xnew, X_variance_new)
+                var = Kxx - np.sum(np.sum(psi2 * Kmmi_LmiBLmi[None, :, :], 1), 1)
+        return mu, var[:,None]
 
 
     def _getstate(self):

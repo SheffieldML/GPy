@@ -25,7 +25,7 @@ class ParamList(list):
             if el is other:
                 return True
         return False
-    
+
     pass
 class C(np.ndarray):
     __array_priority__ = 1.
@@ -80,8 +80,8 @@ class ObservableArray(ListArray, Observable):
     def __getslice__(self, start, stop):
         return self.__getitem__(slice(start, stop))
     def __setslice__(self, start, stop, val):
-        return self.__setitem__(slice(start, stop), val)  
+        return self.__setitem__(slice(start, stop), val)
     def __copy__(self, *args):
-        return ObservableArray(self.base.base.copy(*args))
+        return ObservableArray(self.view(np.ndarray).copy())
     def copy(self, *args):
         return self.__copy__(*args)

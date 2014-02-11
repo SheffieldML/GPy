@@ -3,7 +3,7 @@
 import numpy as _np
 default_seed = _np.random.seed(123344)
 
-def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False):
+def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False, output_dim=1e4):
     """
     model for testing purposes. Samples from a GP with rbf kernel and learns
     the samples with a new kernel. Normally not for optimization, just model cheking
@@ -18,7 +18,7 @@ def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False):
         input_dim = 3
     else:
         input_dim = 1
-        output_dim = 25
+        output_dim = output_dim
 
     # generate GPLVM-like data
     X = _np.random.rand(num_inputs, input_dim)
@@ -27,7 +27,7 @@ def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False):
          #+ GPy.kern.white(input_dim, 0.01)
          )
     K = k.K(X)
-    Y = _np.random.multivariate_normal(_np.zeros(num_inputs), K, output_dim).T
+    Y = _np.random.multivariate_normal(_np.zeros(num_inputs), K, (output_dim,)).T
 
     # k = GPy.kern.rbf_inv(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim)
     k = GPy.kern.linear(input_dim)# + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
@@ -266,11 +266,10 @@ def bgplvm_simulation(optimize=True, verbose=1,
     Y = Ylist[0]
     k = kern.linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k)
-    m.Gaussian_noise = Y.var() / 100.
-
+    
     if optimize:
         print "Optimizing model:"
-        m.optimize('scg', messages=verbose, max_iters=max_iters,
+        m.optimize('bfgs', messages=verbose, max_iters=max_iters,
                    gtol=.05)
     if plot:
         m.q.plot("BGPLVM Latent Space 1D")

@@ -71,17 +71,17 @@ class BayesianGPLVM(SparseGP, GPLVM):
 
     def parameters_changed(self):
         super(BayesianGPLVM, self).parameters_changed()
-        #self._log_marginal_likelihood -= self.KL_divergence()
+        self._log_marginal_likelihood -= self.KL_divergence()
 
         dL_dmu, dL_dS = self.dL_dmuS()
 
         # dL:
-        self.q.means.gradient  = dL_dmu
-        self.q.variances.gradient  = dL_dS  
+        self.q.mean.gradient  = dL_dmu
+        self.q.variance.gradient  = dL_dS  
 
         # dKL:
-        #self.q.means.gradient -= self.X
-        #self.q.variances.gradient -= (1. - (1. / (self.X_variance))) * 0.5
+        self.q.mean.gradient -= self.X
+        self.q.variance.gradient -= (1. - (1. / (self.X_variance))) * 0.5
     
     def plot_latent(self, plot_inducing=True, *args, **kwargs):
         """

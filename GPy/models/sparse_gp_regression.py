@@ -32,7 +32,7 @@ class SparseGPRegression(SparseGP):
 
         # kern defaults to rbf (plus white for stability)
         if kernel is None:
-            kernel = kern.rbf(input_dim)  + kern.white(input_dim, variance=1e-3)
+            kernel = kern.rbf(input_dim)#  + kern.white(input_dim, variance=1e-3)
 
         # Z defaults to a subset of the data
         if Z is None:

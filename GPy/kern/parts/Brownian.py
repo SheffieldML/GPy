@@ -43,7 +43,7 @@ class Brownian(Kernpart):
     def Kdiag(self,X,target):
         target += self.variance*X.flatten()
 
-    def dK_dtheta(self,dL_dK,X,X2,target):
+    def _param_grad_helper(self,dL_dK,X,X2,target):
         if X2 is None:
             X2 = X
         target += np.sum(np.fmin(X,X2.T)*dL_dK)

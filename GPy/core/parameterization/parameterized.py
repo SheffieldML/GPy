@@ -171,6 +171,8 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
             for t, ind in param._constraints_.iteritems():
                 self.constraints.add(t, ind+self._offset_for(param))
             param._constraints_.clear()
+        if param._default_constraint_ is not None:
+            self._add_constrain(param, param._default_constraint_, False)
         if self._has_fixes() and np.all(self._fixes_): # ==UNFIXED
             self._fixes_= None
 
@@ -312,8 +314,11 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
     #===========================================================================
     # Optimization handles:
     #===========================================================================
-    def _get_param_names_transformed(self):
+    def _get_param_names(self):
         n = numpy.array([p.name_hirarchical+'['+str(i)+']' for p in self.flattened_parameters for i in p._indices()])
+        return n
+    def _get_param_names_transformed(self):
+        n = self._get_param_names()
         if self._has_fixes():
             return n[self._fixes_]
         return n

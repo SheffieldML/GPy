@@ -112,7 +112,7 @@ class PeriodicMatern32(Kernpart):
         np.add(target,np.diag(mdot(FX,self.Gi,FX.T)),target)
 
     @silence_errors
-    def dK_dtheta(self,dL_dK,X,X2,target):
+    def _param_grad_helper(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to the parameters (shape is num_data x num_inducing x num_params)"""
         if X2 is None: X2 = X
         FX  = self._cos(self.basis_alpha[None,:],self.basis_omega[None,:],self.basis_phi[None,:])(X)

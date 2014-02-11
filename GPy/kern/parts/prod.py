@@ -54,15 +54,15 @@ class Prod(Kernpart):
         self.k1.update_gradients_full(dL_dK*self._K2, X[:,self.slice1])
         self.k2.update_gradients_full(dL_dK*self._K1, X[:,self.slice2])
 
-    def dK_dtheta(self,dL_dK,X,X2,target):
+    def _param_grad_helper(self,dL_dK,X,X2,target):
         """Derivative of the covariance matrix with respect to the parameters."""
         self._K_computations(X,X2)
         if X2 is None:
-            self.k1.dK_dtheta(dL_dK*self._K2, X[:,self.slice1], None, target[:self.k1.num_params])
-            self.k2.dK_dtheta(dL_dK*self._K1, X[:,self.slice2], None, target[self.k1.num_params:])
+            self.k1._param_grad_helper(dL_dK*self._K2, X[:,self.slice1], None, target[:self.k1.num_params])
+            self.k2._param_grad_helper(dL_dK*self._K1, X[:,self.slice2], None, target[self.k1.num_params:])
         else:
-            self.k1.dK_dtheta(dL_dK*self._K2, X[:,self.slice1], X2[:,self.slice1], target[:self.k1.num_params])
-            self.k2.dK_dtheta(dL_dK*self._K1, X[:,self.slice2], X2[:,self.slice2], target[self.k1.num_params:])
+            self.k1._param_grad_helper(dL_dK*self._K2, X[:,self.slice1], X2[:,self.slice1], target[:self.k1.num_params])
+            self.k2._param_grad_helper(dL_dK*self._K1, X[:,self.slice2], X2[:,self.slice2], target[self.k1.num_params:])
 
     def Kdiag(self,X,target):
         """Compute the diagonal of the covariance matrix associated to X."""

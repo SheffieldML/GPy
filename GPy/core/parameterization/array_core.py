@@ -27,6 +27,24 @@ class ParamList(list):
         return False
     
     pass
+class C(np.ndarray):
+    __array_priority__ = 1.
+    def __new__(cls, array):
+        obj = array.view(cls)
+        return obj
+    #def __array_finalize__(self, obj):
+    #    #print 'finalize'
+    #    return obj
+    def __array_prepare__(self, out_arr, context):
+        #print 'prepare'
+        while type(out_arr) is C:
+            out_arr = out_arr.base
+        return out_arr
+    def __array_wrap__(self, out_arr, context):
+        #print 'wrap', type(self), type(out_arr), context
+        while type(out_arr) is C:
+            out_arr = out_arr.base
+        return out_arr
 
 class ObservableArray(ListArray, Observable):
     """
@@ -35,7 +53,7 @@ class ObservableArray(ListArray, Observable):
     will be called every time this array changes. The callable
     takes exactly one argument, which is this array itself.
     """
-    __array_priority__ = 0 # Never give back Param
+    __array_priority__ = -1 # Never give back ObservableArray
     def __new__(cls, input_array):
         cls.__name__ = "ObservableArray\n     "
         obj = super(ObservableArray, cls).__new__(cls, input_array).view(cls)

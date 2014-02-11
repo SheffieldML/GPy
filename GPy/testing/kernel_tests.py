@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 import GPy
 
-verbose = False
+verbose = True
 
 try:
     import sympy

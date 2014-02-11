@@ -97,7 +97,7 @@ class RBFInv(RBF):
 #             return ['variance'] + ['inv_lengthscale%i' % i for i in range(self.inv_lengthscale.size)]
 
     # TODO: Rewrite computations so that lengthscale is not needed (but only inv. lengthscale)
-    def dK_dtheta(self, dL_dK, X, X2, target):
+    def _param_grad_helper(self, dL_dK, X, X2, target):
         self._K_computations(X, X2)
         target[0] += np.sum(self._K_dvar * dL_dK)
         if self.ARD:

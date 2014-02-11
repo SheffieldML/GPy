@@ -90,7 +90,7 @@ class ODE_1(Kernpart):
 
         np.add(self.varianceU*self.varianceY*(k1+k2+k3), target, target)
 
-    def dK_dtheta(self, dL_dK, X, X2, target):
+    def _param_grad_helper(self, dL_dK, X, X2, target):
         """derivative of the covariance matrix with respect to the parameters."""
         if X2 is None: X2 = X
         dist = np.abs(X - X2.T)

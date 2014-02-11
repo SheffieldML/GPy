@@ -75,7 +75,7 @@ class Exponential(Kernpart):
         """Compute the diagonal of the covariance matrix associated to X."""
         np.add(target, self.variance, target)
 
-    def dK_dtheta(self, dL_dK, X, X2, target):
+    def _param_grad_helper(self, dL_dK, X, X2, target):
         """derivative of the covariance matrix with respect to the parameters."""
         if X2 is None: X2 = X
         dist = np.sqrt(np.sum(np.square((X[:, None, :] - X2[None, :, :]) / self.lengthscale), -1))

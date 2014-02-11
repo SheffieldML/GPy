@@ -85,7 +85,7 @@ class Gibbs(Kernpart):
         """Compute the diagonal of the covariance matrix for X."""
         np.add(target, self.variance, target)
 
-    def dK_dtheta(self, dL_dK, X, X2, target):
+    def _param_grad_helper(self, dL_dK, X, X2, target):
         """Derivative of the covariance with respect to the parameters."""
         self._K_computations(X, X2)
         self._dK_computations(dL_dK)

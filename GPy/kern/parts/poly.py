@@ -86,7 +86,7 @@ class POLY(Kernpart):
         self._K_diag_computations(X)
         target+= self.variance*self._K_diag_dvar
 
-    def dK_dtheta(self, dL_dK, X, X2, target):
+    def _param_grad_helper(self, dL_dK, X, X2, target):
         """Derivative of the covariance with respect to the parameters."""
         self._K_computations(X, X2)
         base = self.variance*self.degree*self._K_poly_arg**(self.degree-1)

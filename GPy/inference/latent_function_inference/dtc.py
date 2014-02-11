@@ -52,20 +52,20 @@ class DTC(object):
         b, _ = dtrtrs(LA, tmp*beta, lower=1)
         tmp, _ = dtrtrs(LA, b, lower=1, trans=1)
         v, _ = dtrtrs(L, tmp, lower=1, trans=1)
-        tmp = tdrtrs(LA, Li, lower=1, trans=0)
+        tmp, _ = dtrtrs(LA, Li, lower=1, trans=0)
         P = tdot(tmp.T)
 
         #compute log marginal
         log_marginal = -0.5*num_data*output_dim*np.log(2*np.pi) + \
                        -np.sum(np.log(np.diag(LA)))*output_dim + \
                        0.5*num_data*output_dim*np.log(beta) + \
-                       -0.5*beta*np.sum(np.square(Y)) + 
+                       -0.5*beta*np.sum(np.square(Y)) + \
                        0.5*np.sum(np.square(b))
 
         # Compute dL_dKmm
         tmp, _ = dtrtrs(L, A_I, lower=1, trans=1)
         dL_dK, _ = dtrtrs(L, tmp.T, lower=1, trans=0)
-        tmp, _ = dtrtrs(LA, tmp.T. lower=1, trans=1)
+        tmp, _ = dtrtrs(LA, tmp.T, lower=1, trans=1)
         dL_dK -= tdot(tmp.T)
         dL_dK *= output_dim
         dL_dK -= tdot(v)
@@ -79,17 +79,17 @@ class DTC(object):
 
         #compute dL_dR
         Uv = np.dot(U, v)
-        dL_dR = 0.5*(np.sum(U*np.dot(P, U.T), 1) - beta * np.sum(np.square(Y, 1)) - 2.*np.sum(Uv*Y, 1) + np.sum(np.square(Uv), 1)
+        dL_dR = 0.5*(np.sum(U*np.dot(U,P), 1) - beta * np.sum(np.square(Y), 1) - 2.*np.sum(Uv*Y, 1) + np.sum(np.square(Uv), 1)
                 )*beta**2
 
-        grad_dict = {'dL_dKmm': dL_dKmm, 'dL_dKdiag':np.zeros_like(Knn), 'dL_dKnm':dL_dU}
+        grad_dict = {'dL_dKmm': dL_dK, 'dL_dKdiag':np.zeros_like(Knn), 'dL_dKnm':dL_dU.T}
 
         #update gradients
         kern.update_gradients_sparse(X=X, Z=Z, **grad_dict)
         likelihood.update_gradients(dL_dR)
 
         #construct a posterior object
-        post = Posterior(woodbury_inv=Kmmi-P, woodbury_vector=v, K=Kmm, mean=None, cov=None, K_chol=Lm)
+        post = Posterior(woodbury_inv=Kmmi-P, woodbury_vector=v, K=Kmm, mean=None, cov=None, K_chol=L)
 
         return post, log_marginal, grad_dict
 

@@ -4,9 +4,9 @@
 
 import numpy as np
 from domains import _POSITIVE,_NEGATIVE, _BOUNDED
-import sys 
+import sys
 import weakref
-_lim_val = -np.log(sys.float_info.epsilon) 
+_lim_val = -np.log(sys.float_info.epsilon)
 
 class Transformation(object):
     domain = None
@@ -94,7 +94,7 @@ class LogexpClipped(Logexp):
     def __str__(self):
         return '+ve_c'
 
-    
+
 class Exponent(Transformation):
     # TODO: can't allow this to go to zero, need to set a lower bound. Similar with negative Exponent below. See old MATLAB code.
     domain = _POSITIVE
@@ -162,9 +162,11 @@ class Logistic(Transformation):
     def initialize(self, f):
         if np.any(np.logical_or(f < self.lower, f > self.upper)):
             print "Warning: changing parameters to satisfy constraints"
-        return np.where(np.logical_or(f < self.lower, f > self.upper), self.f(f * 0.), f)
+        #return np.where(np.logical_or(f < self.lower, f > self.upper), self.f(f * 0.), f)
+        #FIXME: Max, zeros_like right?
+        return np.where(np.logical_or(f < self.lower, f > self.upper), self.f(np.zeros_like(f)), f)
     def __str__(self):
         return '{},{}'.format(self.lower, self.upper)
 
- 
+
 

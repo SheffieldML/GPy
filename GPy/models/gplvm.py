@@ -60,7 +60,7 @@ class GPLVM(GP):
     def jacobian(self,X):
         target = np.zeros((X.shape[0],X.shape[1],self.output_dim))
         for i in range(self.output_dim):
-            target[:,:,i]=self.kern.dK_dX(np.dot(self.Ki,self.likelihood.Y[:,i])[None, :],X,self.X)
+            target[:,:,i]=self.kern.gradients_X(np.dot(self.Ki,self.likelihood.Y[:,i])[None, :],X,self.X)
         return target
 
     def magnification(self,X):

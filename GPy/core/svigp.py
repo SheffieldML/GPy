@@ -154,13 +154,13 @@ class SVIGP(GP):
             self.psi2 = None
 
     def dL_dtheta(self):
-        dL_dtheta = self.kern.dK_dtheta(self.dL_dKmm, self.Z)
+        dL_dtheta = self.kern._param_grad_helper(self.dL_dKmm, self.Z)
         if self.has_uncertain_inputs:
             dL_dtheta += self.kern.dpsi0_dtheta(self.dL_dpsi0, self.Z, self.X_batch, self.X_variance_batch)
             dL_dtheta += self.kern.dpsi1_dtheta(self.dL_dpsi1, self.Z, self.X_batch, self.X_variance_batch)
             dL_dtheta += self.kern.dpsi2_dtheta(self.dL_dpsi2, self.Z, self.X_batch, self.X_variance_batch)
         else:
-            dL_dtheta += self.kern.dK_dtheta(self.dL_dpsi1, self.X_batch, self.Z)
+            dL_dtheta += self.kern._param_grad_helper(self.dL_dpsi1, self.X_batch, self.Z)
             dL_dtheta += self.kern.dKdiag_dtheta(self.dL_dpsi0, self.X_batch)
         return dL_dtheta
 

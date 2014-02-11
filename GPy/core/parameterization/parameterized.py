@@ -8,9 +8,10 @@ import cPickle
 import itertools
 from re import compile, _pattern_type
 from param import ParamConcatenation, Param
-from parameter_core import Constrainable, Pickleable, Observable, adjust_name_for_printing
+from parameter_core import Constrainable, Pickleable, Observable, adjust_name_for_printing, Gradcheckable
 from index_operations import ParameterIndexOperations,\
     index_empty
+from array_core import ParamList
 
 #===============================================================================
 # Printing:
@@ -23,7 +24,7 @@ FIXED = False
 UNFIXED = True
 #===============================================================================
 
-class Parameterized(Constrainable, Pickleable, Observable):
+class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
     """
     Parameterized class
 
@@ -69,7 +70,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
         super(Parameterized, self).__init__(name=name)
         self._in_init_ = True
         self._constraints_ = None#ParameterIndexOperations()
-        self._parameters_ = []
+        self._parameters_ = ParamList()
         self.size = sum(p.size for p in self._parameters_)
         if not self._has_fixes():
             self._fixes_ = None
@@ -170,6 +171,8 @@ class Parameterized(Constrainable, Pickleable, Observable):
             for t, ind in param._constraints_.iteritems():
                 self.constraints.add(t, ind+self._offset_for(param))
             param._constraints_.clear()
+        if param._default_constraint_ is not None:
+            self._add_constrain(param, param._default_constraint_, False)
         if self._has_fixes() and np.all(self._fixes_): # ==UNFIXED
             self._fixes_= None
 
@@ -188,10 +191,10 @@ class Parameterized(Constrainable, Pickleable, Observable):
             note: if it is a string object it will not (!) be regexp-matched
                   automatically.
         """
-        self._parameters_ = [p for p in self._parameters_
+        self._parameters_ = ParamList([p for p in self._parameters_
                         if not (p._parent_index_ in names_params_indices
                                 or p.name in names_params_indices
-                                or p in names_params_indices)]
+                                or p in names_params_indices)])
         self._connect_parameters()
 
     def parameters_changed(self):
@@ -216,7 +219,6 @@ class Parameterized(Constrainable, Pickleable, Observable):
         for i,p in enumerate(self._parameters_):
             p._direct_parent_ = self
             p._parent_index_ = i
-            p._connect_highest_parent(self)
             not_unique = []
             sizes.append(p.size+sizes[-1])
             self._param_slices_.append(slice(sizes[-2], sizes[-1]))
@@ -230,15 +232,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
             elif not (pname in not_unique):
                 self.__dict__[pname] = p
                 self._added_names_.add(pname)
-        
-    def _connect_highest_parent(self, highest_parent):
-        self._highest_parent_ = highest_parent
-        if not hasattr(self, "_parameters_") or len(self._parameters_) < 1:
-            # no parameters for this class
-            return
-        for p in self._parameters_:
-            p._connect_highest_parent(highest_parent)
-        
+            
     #===========================================================================
     # Pickling operations
     #===========================================================================
@@ -256,6 +250,16 @@ class Parameterized(Constrainable, Pickleable, Observable):
             cPickle.dump(self, f, protocol)
     def copy(self):
         """Returns a (deep) copy of the current model """
+        #dc = dict()
+        #for k, v in self.__dict__.iteritems():
+            #if k not in ['_highest_parent_', '_direct_parent_']:
+                #dc[k] = copy.deepcopy(v)
+
+        #dc = copy.deepcopy(self.__dict__)
+        #dc['_highest_parent_'] = None
+        #dc['_direct_parent_'] = None
+        #s = self.__class__.new()
+        #s.__dict__ = dc
         return copy.deepcopy(self)
     def __getstate__(self):
         if self._has_get_set_state():
@@ -310,8 +314,11 @@ class Parameterized(Constrainable, Pickleable, Observable):
     #===========================================================================
     # Optimization handles:
     #===========================================================================
-    def _get_param_names_transformed(self):
+    def _get_param_names(self):
         n = numpy.array([p.name_hirarchical+'['+str(i)+']' for p in self.flattened_parameters for i in p._indices()])
+        return n
+    def _get_param_names_transformed(self):
+        n = self._get_param_names()
         if self._has_fixes():
             return n[self._fixes_]
         return n
@@ -372,6 +379,8 @@ class Parameterized(Constrainable, Pickleable, Observable):
         that is an int array, containing the indexes for the flattened
         param inside this parameterized logic.
         """
+        if isinstance(param, ParamConcatenation):
+            return numpy.hstack((self._raveled_index_for(p) for p in param.params))
         return param._raveled_index() + self._offset_for(param)
 
     def _raveled_index(self):
@@ -381,7 +390,7 @@ class Parameterized(Constrainable, Pickleable, Observable):
         """
         return numpy.r_[:self.size]
     #===========================================================================
-    # Handle ties:
+    # Fixing parameters:
     #===========================================================================
     def _set_fixed(self, param_or_index):
         if not self._has_fixes(): self._fixes_ = numpy.ones(self.size, dtype=bool)
@@ -406,9 +415,6 @@ class Parameterized(Constrainable, Pickleable, Observable):
         if self._has_fixes():
             return self._fixes_[self._raveled_index_for(param)]
         return numpy.ones(self.size, dtype=bool)[self._raveled_index_for(param)]
-    #===========================================================================
-    # Fixing parameters:
-    #===========================================================================
     def _fix(self, param, warning=True):
         f = self._add_constrain(param, __fixed__, warning)
         self._set_fixed(f)
@@ -419,6 +425,8 @@ class Parameterized(Constrainable, Pickleable, Observable):
     #===========================================================================
     # Convenience for fixed, tied checking of param:
     #===========================================================================
+    def fixed_indices(self):
+        return np.array([x.is_fixed for x in self._parameters_])
     def _is_fixed(self, param):
         # returns if the whole param is fixed
         if not self._has_fixes():
@@ -448,7 +456,8 @@ class Parameterized(Constrainable, Pickleable, Observable):
         # if removing constraints before adding new is not wanted, just delete the above line!
         self.constraints.add(transform, rav_i)
         param = self._get_original(param)
-        param._set_params(transform.initialize(param._get_params()))
+        if not (transform == __fixed__):
+            param._set_params(transform.initialize(param._get_params()), update=False)
         if warning and any(reconstrained):
             # if you want to print the whole params object, which was reconstrained use:
             # m = str(param[self._backtranslate_index(param, reconstrained)])

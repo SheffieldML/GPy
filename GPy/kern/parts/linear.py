@@ -8,6 +8,7 @@ from kernpart import Kernpart
 from ...util.linalg import tdot
 from ...util.misc import fast_array_equal, param_to_array
 from ...core.parameterization import Param
+from ...core.parameterization.transformations import Logexp
 
 class Linear(Kernpart):
     """
@@ -43,8 +44,9 @@ class Linear(Kernpart):
             else:
                 variances = np.ones(self.input_dim)
         
-        self.variances = Param('variances', variances)
-        self.add_parameters(self.variances)
+        self.variances = Param('variances', variances, Logexp())
+        self.variances.gradient = np.zeros(self.variances.shape)
+        self.add_parameter(self.variances)
         self.variances.add_observer(self, self.update_variance)
 
         # initialize cache
@@ -57,21 +59,35 @@ class Linear(Kernpart):
     def on_input_change(self, X):
         self._K_computations(X, None)
 
-#     def _get_params(self):
-#         return self.variances
-# 
-#     def _set_params(self, x):
-#         assert x.size == (self.num_params)
-#         self.variances = x
-    #def parameters_changed(self):
-    #    self.variances2 = np.square(self.variances)
-# 
-#     def _get_param_names(self):
-#         if self.num_params == 1:
-#             return ['variance']
-#         else:
-#             return ['variance_%i' % i for i in range(self.variances.size)]
-
+    def update_gradients_full(self, dL_dK, X):
+        #self.variances.gradient[:] = 0
+        self._param_grad_helper(dL_dK, X, self.variances.gradient)
+    
+    def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
+        tmp = dL_dKdiag[:, None] * X ** 2
+        if self.ARD:
+            self.variances.gradient = tmp.sum(0)
+        else:
+            self.variances.gradient = tmp.sum()
+        self._param_grad_helper(dL_dKmm, Z, None, self.variances.gradient)
+        self._param_grad_helper(dL_dKnm, X, Z, self.variances.gradient)
+        
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        self._psi_computations(Z, mu, S)
+        # psi0:
+        tmp = dL_dpsi0[:, None] * self.mu2_S
+        if self.ARD: self.variances.gradient[:] = tmp.sum(0)
+        else: self.variances.gradient[:] = tmp.sum()
+        #psi1
+        self._param_grad_helper(dL_dpsi1, mu, Z, self.variances.gradient)
+        #psi2
+        tmp = dL_dpsi2[:, :, :, None] * (self.ZAinner[:, :, None, :] * (2 * Z)[None, None, :, :])
+        if self.ARD: self.variances.gradient += tmp.sum(0).sum(0).sum(0)
+        else: self.variances.gradient += tmp.sum()
+        #from Kmm
+        self._K_computations(Z, None)
+        self._param_grad_helper(dL_dKmm, Z, None, self.variances.gradient)
+        
     def K(self, X, X2, target):
         if self.ARD:
             XX = X * np.sqrt(self.variances)
@@ -88,7 +104,7 @@ class Linear(Kernpart):
     def Kdiag(self, X, target):
         np.add(target, np.sum(self.variances * np.square(X), -1), target)
 
-    def dK_dtheta(self, dL_dK, X, X2, target):
+    def _param_grad_helper(self, dL_dK, X, X2, target):
         if self.ARD:
             if X2 is None:
                 [np.add(target[i:i + 1], np.sum(dL_dK * tdot(X[:, i:i + 1])), target[i:i + 1]) for i in range(self.input_dim)]
@@ -100,14 +116,7 @@ class Linear(Kernpart):
                 self._K_computations(X, X2)
             target += np.sum(self._dot_product * dL_dK)
 
-    def dKdiag_dtheta(self, dL_dKdiag, X, target):
-        tmp = dL_dKdiag[:, None] * X ** 2
-        if self.ARD:
-            target += tmp.sum(0)
-        else:
-            target += tmp.sum()
-
-    def dK_dX(self, dL_dK, X, X2, target):
+    def gradients_X(self, dL_dK, X, X2, target):
         if X2 is None:
             target += 2*(((X[None,:, :] * self.variances)) * dL_dK[:, :, None]).sum(1)
         else:
@@ -124,14 +133,6 @@ class Linear(Kernpart):
         self._psi_computations(Z, mu, S)
         target += np.sum(self.variances * self.mu2_S, 1)
 
-    def dpsi0_dtheta(self, dL_dpsi0, Z, mu, S, target):
-        self._psi_computations(Z, mu, S)
-        tmp = dL_dpsi0[:, None] * self.mu2_S
-        if self.ARD:
-            target += tmp.sum(0)
-        else:
-            target += tmp.sum()
-
     def dpsi0_dmuS(self, dL_dpsi0, Z, mu, S, target_mu, target_S):
         target_mu += dL_dpsi0[:, None] * (2.0 * mu * self.variances)
         target_S += dL_dpsi0[:, None] * self.variances
@@ -140,17 +141,13 @@ class Linear(Kernpart):
         """the variance, it does nothing"""
         self._psi1 = self.K(mu, Z, target)
 
-    def dpsi1_dtheta(self, dL_dpsi1, Z, mu, S, target):
-        """the variance, it does nothing"""
-        self.dK_dtheta(dL_dpsi1, mu, Z, target)
-
     def dpsi1_dmuS(self, dL_dpsi1, Z, mu, S, target_mu, target_S):
         """Do nothing for S, it does not affect psi1"""
         self._psi_computations(Z, mu, S)
         target_mu += (dL_dpsi1[:, :, None] * (Z * self.variances)).sum(1)
 
     def dpsi1_dZ(self, dL_dpsi1, Z, mu, S, target):
-        self.dK_dX(dL_dpsi1.T, Z, mu, target)
+        self.gradients_X(dL_dpsi1.T, Z, mu, target)
 
     def psi2(self, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
@@ -164,25 +161,17 @@ class Linear(Kernpart):
     def dpsi2_dtheta_new(self, dL_dpsi2, Z, mu, S, target):
         tmp = np.zeros((mu.shape[0], Z.shape[0]))
         self.K(mu,Z,tmp)
-        self.dK_dtheta(2.*np.sum(dL_dpsi2*tmp[:,None,:],2),mu,Z,target)
+        self._param_grad_helper(2.*np.sum(dL_dpsi2*tmp[:,None,:],2),mu,Z,target)
         result= 2.*(dL_dpsi2[:,:,:,None]*S[:,None,None,:]*self.variances*Z[None,:,None,:]*Z[None,None,:,:]).sum(0).sum(0).sum(0)
         if self.ARD:
             target += result.sum(0).sum(0).sum(0)
         else:
             target += result.sum()
 
-    def dpsi2_dtheta(self, dL_dpsi2, Z, mu, S, target):
-        self._psi_computations(Z, mu, S)
-        tmp = dL_dpsi2[:, :, :, None] * (self.ZAinner[:, :, None, :] * (2 * Z)[None, None, :, :])
-        if self.ARD:
-            target += tmp.sum(0).sum(0).sum(0)
-        else:
-            target += tmp.sum()
-
     def dpsi2_dmuS_new(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
         tmp = np.zeros((mu.shape[0], Z.shape[0]))
         self.K(mu,Z,tmp)
-        self.dK_dX(2.*np.sum(dL_dpsi2*tmp[:,None,:],2),mu,Z,target_mu)
+        self.gradients_X(2.*np.sum(dL_dpsi2*tmp[:,None,:],2),mu,Z,target_mu)
 
         Zs = Z*self.variances
         Zs_sq = Zs[:,None,:]*Zs[None,:,:]
@@ -288,11 +277,11 @@ class Linear(Kernpart):
         if not (fast_array_equal(X, self._X) and fast_array_equal(X2, self._X2)):
             self._X = X.copy()
             if X2 is None:
-                self._dot_product = tdot(X)
+                self._dot_product = tdot(param_to_array(X))
                 self._X2 = None
             else:
                 self._X2 = X2.copy()
-                self._dot_product = np.dot(X, X2.T)
+                self._dot_product = np.dot(param_to_array(X), param_to_array(X2.T))  
 
     def _psi_computations(self, Z, mu, S):
         # here are the "statistics" for psi1 and psi2

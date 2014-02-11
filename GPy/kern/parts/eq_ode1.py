@@ -124,7 +124,7 @@ class Eq_ode1(Kernpart):
         #target += np.diag(self.B)[np.asarray(index,dtype=np.int).flatten()]
         pass
     
-    def dK_dtheta(self,dL_dK,X,X2,target):
+    def _param_grad_helper(self,dL_dK,X,X2,target):
         
         # First extract times and indices.
         self._extract_t_indices(X, X2, dL_dK=dL_dK)
@@ -193,7 +193,7 @@ class Eq_ode1(Kernpart):
     def dKdiag_dtheta(self,dL_dKdiag,index,target):
         pass
 
-    def dK_dX(self,dL_dK,X,X2,target):
+    def gradients_X(self,dL_dK,X,X2,target):
         pass
 
     def _extract_t_indices(self, X, X2=None, dL_dK=None):

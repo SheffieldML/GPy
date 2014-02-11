@@ -8,6 +8,7 @@ from kernpart import Kernpart
 from ...util.linalg import tdot
 from ...util.misc import fast_array_equal, param_to_array
 from ...core.parameterization import Param
+from ...core.parameterization.transformations import Logexp
 
 class RBF(Kernpart):
     """
@@ -50,9 +51,12 @@ class RBF(Kernpart):
             else:
                 lengthscale = np.ones(self.input_dim)
 
-        self.variance = Param('variance', variance)
+        self.variance = Param('variance', variance, Logexp())
+        
         self.lengthscale = Param('lengthscale', lengthscale)
         self.lengthscale.add_observer(self, self.update_lengthscale)
+        self.update_lengthscale(self.lengthscale)
+        
         self.add_parameters(self.variance, self.lengthscale)
         self.parameters_changed() # initializes cache
 
@@ -114,7 +118,7 @@ class RBF(Kernpart):
         self._K_computations(X, Z)
         self.variance.gradient += np.sum(dL_dKnm * self._K_dvar)
         if self.ARD:
-            self.lengthscales.gradient = self._dL_dlengthscales_via_K(dL_dKnm, X, Z)
+            self.lengthscale.gradient = self._dL_dlengthscales_via_K(dL_dKnm, X, Z)
 
         else:
             self.lengthscale.gradient = (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKnm)
@@ -123,7 +127,7 @@ class RBF(Kernpart):
         self._K_computations(Z, None)
         self.variance.gradient += np.sum(dL_dKmm * self._K_dvar)
         if self.ARD:
-            self.lengthscales.gradient += self._dL_dlengthscales_via_K(dL_dKmm, Z, None)
+            self.lengthscale.gradient += self._dL_dlengthscales_via_K(dL_dKmm, Z, None)
         else:
             self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
 
@@ -138,7 +142,7 @@ class RBF(Kernpart):
         d_length = self._psi1[:,:,None] * ((self._psi1_dist_sq - 1.)/(self.lengthscale*self._psi1_denom) +1./self.lengthscale)
         dpsi1_dlength = d_length * dL_dpsi1[:, :, None]
         if not self.ARD:
-            self.lengthscale.gradeint = dpsi1_dlength.sum()
+            self.lengthscale.gradient = dpsi1_dlength.sum()
         else:
             self.lengthscale.gradient = dpsi1_dlength.sum(0).sum(0)
 
@@ -157,7 +161,7 @@ class RBF(Kernpart):
         self._K_computations(Z, None)
         self.variance.gradient += np.sum(dL_dKmm * self._K_dvar)
         if self.ARD:
-            self.lengthscales.gradient += self._dL_dlengthscales_via_K(dL_dKmm, Z, None)
+            self.lengthscale.gradient += self._dL_dlengthscales_via_K(dL_dKmm, Z, None)
         else:
             self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
 
@@ -168,8 +172,8 @@ class RBF(Kernpart):
             _K_dist = 2*(X[:, None, :] - X[None, :, :])
         else:
             _K_dist = X[:, None, :] - X2[None, :, :] # don't cache this in _K_computations because it is high memory. If this function is being called, chances are we're not in the high memory arena.
-        dK_dX = (-self.variance / self.lengthscale2) * np.transpose(self._K_dvar[:, :, np.newaxis] * _K_dist, (1, 0, 2))
-        target += np.sum(dK_dX * dL_dK.T[:, :, None], 0)
+        gradients_X = (-self.variance / self.lengthscale2) * np.transpose(self._K_dvar[:, :, np.newaxis] * _K_dist, (1, 0, 2))
+        target += np.sum(gradients_X * dL_dK.T[:, :, None], 0)
 
     def dKdiag_dX(self, dL_dKdiag, X, target):
         pass

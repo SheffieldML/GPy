@@ -80,7 +80,7 @@ class VarDTC(object):
             # no backsubstitution because of bound explosion on tr(A) if not...
             LmInv, _ = dtrtri(Lm, lower=1)
             A = LmInv.T.dot(psi2_beta.dot(LmInv))
-            print A.sum()
+            #print A.sum()
         else:
             if het_noise:
                 tmp = psi1 * (np.sqrt(beta.reshape(num_data, 1)))

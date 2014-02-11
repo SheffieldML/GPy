@@ -73,7 +73,7 @@ class RBFCos(Kernpart):
     def Kdiag(self,X,target):
         np.add(target,self.variance,target)
 
-    def dK_dtheta(self,dL_dK,X,X2,target):
+    def _param_grad_helper(self,dL_dK,X,X2,target):
         self._K_computations(X,X2)
         target[0] += np.sum(dL_dK*self._dvar)
         if self.ARD:
@@ -88,7 +88,7 @@ class RBFCos(Kernpart):
     def dKdiag_dtheta(self,dL_dKdiag,X,target):
         target[0] += np.sum(dL_dKdiag)
 
-    def dK_dX(self,dL_dK,X,X2,target):
+    def gradients_X(self,dL_dK,X,X2,target):
         #TODO!!!
         raise NotImplementedError
 

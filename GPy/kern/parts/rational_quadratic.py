@@ -52,7 +52,7 @@ class RationalQuadratic(Kernpart):
     def Kdiag(self,X,target):
         target += self.variance
 
-    def dK_dtheta(self,dL_dK,X,X2,target):
+    def _param_grad_helper(self,dL_dK,X,X2,target):
         if X2 is None: X2 = X
         dist2 = np.square((X-X2.T)/self.lengthscale)
 
@@ -68,7 +68,7 @@ class RationalQuadratic(Kernpart):
         target[0] += np.sum(dL_dKdiag)
         # here self.lengthscale and self.power have no influence on Kdiag so target[1:] are unchanged
 
-    def dK_dX(self,dL_dK,X,X2,target):
+    def gradients_X(self,dL_dK,X,X2,target):
         """derivative of the covariance matrix with respect to X."""
         if X2 is None:
             dist2 = np.square((X-X.T)/self.lengthscale)

@@ -70,22 +70,22 @@ class IndependentOutputs(Kernpart):
         X,slices = X[:,:-1],index_to_slices(X[:,-1])
         [[self.k.Kdiag(X[s],target[s]) for s in slices_i] for slices_i in slices]
 
-    def dK_dtheta(self,dL_dK,X,X2,target):
+    def _param_grad_helper(self,dL_dK,X,X2,target):
         X,slices = X[:,:-1],index_to_slices(X[:,-1])
         if X2 is None:
             X2,slices2 = X,slices
         else:
             X2,slices2 = X2[:,:-1],index_to_slices(X2[:,-1])
-        [[[self.k.dK_dtheta(dL_dK[s,s2],X[s],X2[s2],target) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
+        [[[self.k._param_grad_helper(dL_dK[s,s2],X[s],X2[s2],target) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
 
 
-    def dK_dX(self,dL_dK,X,X2,target):
+    def gradients_X(self,dL_dK,X,X2,target):
         X,slices = X[:,:-1],index_to_slices(X[:,-1])
         if X2 is None:
             X2,slices2 = X,slices
         else:
             X2,slices2 = X2[:,:-1],index_to_slices(X2[:,-1])
-        [[[self.k.dK_dX(dL_dK[s,s2],X[s],X2[s2],target[s,:-1]) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
+        [[[self.k.gradients_X(dL_dK[s,s2],X[s],X2[s2],target[s,:-1]) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
 
     def dKdiag_dX(self,dL_dKdiag,X,target):
         X,slices = X[:,:-1],index_to_slices(X[:,-1])

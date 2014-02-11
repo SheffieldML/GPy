@@ -13,12 +13,12 @@ from ..core.parameterization import Parameterized
 
 class Likelihood(Parameterized):
     """
-    Likelihood base class, used to defing p(y|f). 
+    Likelihood base class, used to defing p(y|f).
 
     All instances use _inverse_ link functions, which can be swapped out. It is
     expected that inherriting classes define a default inverse link function
 
-    To use this class, inherrit and define missing functionality. 
+    To use this class, inherrit and define missing functionality.
 
     Inherriting classes *must* implement:
        pdf_link : a bound method which turns the output of the link function into the pdf
@@ -27,7 +27,7 @@ class Likelihood(Parameterized):
     To enable use with EP, inherriting classes *must* define:
        TODO: a suitable derivative function for any parameters of the class
     It is also desirable to define:
-       moments_match_ep : a function to compute the EP moments If this isn't defined, the moments will be computed using 1D quadrature. 
+       moments_match_ep : a function to compute the EP moments If this isn't defined, the moments will be computed using 1D quadrature.
 
     To enable use with Laplace approximation, inherriting classes *must* define:
        Some derivative functions *AS TODO*
@@ -36,13 +36,17 @@ class Likelihood(Parameterized):
 
     """
     def __init__(self, gp_link, name):
-        super(Likelihood, self).__init__(name) 
+        super(Likelihood, self).__init__(name)
         assert isinstance(gp_link,link_functions.GPTransformation), "gp_link is not a valid GPTransformation."
         self.gp_link = gp_link
         self.log_concave = False
 
     def _gradients(self,partial):
         return np.zeros(0)
+
+    def update_gradients(self, partial):
+        if self.size > 0:
+            raise NotImplementedError('Must be implemented for likelihoods with parameters to be optimized')
 
     def _preprocess_values(self,Y):
         """
@@ -303,31 +307,31 @@ class Likelihood(Parameterized):
         """
         TODO: Doc strings
         """
-        if len(self._get_param_names()) > 0:
+        if self.size > 0:
             link_f = self.gp_link.transf(f)
             return self.dlogpdf_link_dtheta(link_f, y, extra_data=extra_data)
         else:
             #Is no parameters so return an empty array for its derivatives
-            return np.empty([1, 0])
+            return np.zeros([1, 0])
 
     def dlogpdf_df_dtheta(self, f, y, extra_data=None):
         """
         TODO: Doc strings
         """
-        if len(self._get_param_names()) > 0:
+        if self.size > 0:
             link_f = self.gp_link.transf(f)
             dlink_df = self.gp_link.dtransf_df(f)
             dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, extra_data=extra_data)
             return chain_1(dlogpdf_dlink_dtheta, dlink_df)
         else:
             #Is no parameters so return an empty array for its derivatives
-            return np.empty([f.shape[0], 0])
+            return np.zeros([f.shape[0], 0])
 
     def d2logpdf_df2_dtheta(self, f, y, extra_data=None):
         """
         TODO: Doc strings
         """
-        if len(self._get_param_names()) > 0:
+        if self.size > 0:
             link_f = self.gp_link.transf(f)
             dlink_df = self.gp_link.dtransf_df(f)
             d2link_df2 = self.gp_link.d2transf_df2(f)
@@ -336,7 +340,7 @@ class Likelihood(Parameterized):
             return chain_2(d2logpdf_dlink2_dtheta, dlink_df, dlogpdf_dlink_dtheta, d2link_df2)
         else:
             #Is no parameters so return an empty array for its derivatives
-            return np.empty([f.shape[0], 0])
+            return np.zeros([f.shape[0], 0])
 
     def _laplace_gradients(self, f, y, extra_data=None):
         dlogpdf_dtheta = self.dlogpdf_dtheta(f, y, extra_data=extra_data)
@@ -345,9 +349,12 @@ class Likelihood(Parameterized):
 
         #Parameters are stacked vertically. Must be listed in same order as 'get_param_names'
         # ensure we have gradients for every parameter we want to optimize
-        assert dlogpdf_dtheta.shape[1] == len(self._get_param_names())
-        assert dlogpdf_df_dtheta.shape[1] == len(self._get_param_names())
-        assert d2logpdf_df2_dtheta.shape[1] == len(self._get_param_names())
+        try:
+            assert len(dlogpdf_dtheta) == self.size #1 x num_param array
+            assert dlogpdf_df_dtheta.shape[1] == self.size #f x num_param matrix
+            assert d2logpdf_df2_dtheta.shape[1] == self.size #f x num_param matrix
+        except Exception as e:
+            import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
 
         return dlogpdf_dtheta, dlogpdf_df_dtheta, d2logpdf_df2_dtheta
 

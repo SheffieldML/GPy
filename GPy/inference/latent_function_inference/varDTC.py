@@ -6,6 +6,7 @@ from ...util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dpotri, sy
 import numpy as np
 from ...util.linalg import dtrtri
 from ...util.caching import Cacher
+from ...util.misc import param_to_array
 log_2_pi = np.log(2*np.pi)
 
 class VarDTC(object):
@@ -25,7 +26,7 @@ class VarDTC(object):
         self.get_YYTfactor = Cacher(self._get_YYTfactor, 1)
     
     def _get_trYYT(self, Y):
-        return np.sum(np.square(Y))
+        return param_to_array(np.sum(np.square(Y)))
 
     def _get_YYTfactor(self, Y):
         """
@@ -35,7 +36,7 @@ class VarDTC(object):
         """
         N, D = Y.shape
         if (N>D):
-            return Y
+            return param_to_array(Y)
         else:
             return jitchol(tdot(Y))
             

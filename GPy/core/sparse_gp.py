@@ -7,6 +7,7 @@ from gp import GP
 from parameterization.param import Param
 from ..inference.latent_function_inference import varDTC
 from .. import likelihoods
+from GPy.util.misc import param_to_array
 
 class SparseGP(GP):
     """
@@ -54,7 +55,10 @@ class SparseGP(GP):
         self.add_parameter(self.Z, index=0)
 
     def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
+        Xvar = self.X_variance
+        if self.X_variance is not None:
+            Xvar = param_to_array(self.X_variance)
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, param_to_array(self.X), Xvar, param_to_array(self.Z), self.likelihood, self.Y)
 
         #The derivative of the bound wrt the inducing inputs Z
         self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)

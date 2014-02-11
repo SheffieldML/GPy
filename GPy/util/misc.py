@@ -184,4 +184,4 @@ from :class:ndarray)"""
     assert len(param) > 0, "At least one parameter needed"
     if len(param) == 1:
         return param[0].view(np.ndarray)
-    return map(lambda x: x.view(np.ndarray), param)
+    return [x.view(np.ndarray) for x in param]

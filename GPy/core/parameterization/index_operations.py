@@ -77,6 +77,12 @@ class ParameterIndexOperations(object):
     def iter_properties(self):
         return self._properties.iterkeys()
     
+    def shift(self, start, size):
+        for ind in self.iterindices():
+            toshift = ind>=start
+            if len(toshift) > 0:
+                ind[toshift] += size
+    
     def clear(self):
         self._properties.clear()
     

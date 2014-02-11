@@ -4,7 +4,9 @@
 from posterior import Posterior
 from ...util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dpotri, symmetrify
 import numpy as np
-from GPy.util.linalg import dtrtri
+from ...util.linalg import dtrtri
+from ...util.caching import Cacher
+from ...util.misc import param_to_array
 log_2_pi = np.log(2*np.pi)
 
 class VarDTC(object):
@@ -20,8 +22,13 @@ class VarDTC(object):
     def __init__(self):
         #self._YYTfactor_cache = caching.cache()
         self.const_jitter = 1e-6
+        self.get_trYYT = Cacher(self._get_trYYT, 1)
+        self.get_YYTfactor = Cacher(self._get_YYTfactor, 1)
+    
+    def _get_trYYT(self, Y):
+        return param_to_array(np.sum(np.square(Y)))
 
-    def get_YYTfactor(self, Y):
+    def _get_YYTfactor(self, Y):
         """
         find a matrix L which satisfies LLT = YYT. 
 
@@ -29,11 +36,10 @@ class VarDTC(object):
         """
         N, D = Y.shape
         if (N>D):
-            return Y
+            return param_to_array(Y)
         else:
-            #if Y in self.cache, return self.Cache[Y], else store Y in cache and return L.
-            raise NotImplementedError, 'TODO' #TODO
-
+            return jitchol(tdot(Y))
+            
     def get_VVTfactor(self, Y, prec):
         return Y * prec # TODO chache this, and make it effective
 
@@ -94,8 +100,9 @@ class VarDTC(object):
         LB = jitchol(B)
 
         # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
-        VVT_factor = self.get_VVTfactor(Y, beta)
-        trYYT = np.sum(np.square(Y))
+        self.YYTfactor = self.get_YYTfactor(Y)
+        VVT_factor = self.get_VVTfactor(self.YYTfactor, beta)
+        trYYT = self.get_trYYT(Y)
         psi1Vf = np.dot(psi1.T, VVT_factor)
 
         # back substutue C into psi1Vf

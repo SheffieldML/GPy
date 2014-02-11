@@ -41,7 +41,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
         self.q = Normal(X, X_variance)
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, X_variance, name, **kwargs)
         self.add_parameter(self.q, index=0)
-        self.ensure_default_constraints()
+        #self.ensure_default_constraints()
 
     def _getstate(self):
         """
@@ -54,38 +54,6 @@ class BayesianGPLVM(SparseGP, GPLVM):
         self._const_jitter = None
         self.init = state.pop()
         SparseGP._setstate(self, state)
-
-#     def _get_param_names(self):
-#         X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
-#         S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
-#         return (X_names + S_names + SparseGP._get_param_names(self))
-
-    #def _get_print_names(self):
-    #    return SparseGP._get_print_names(self)
-
-#     def _get_params(self):
-#         """
-#         Horizontally stacks the parameters in order to present them to the optimizer.
-#         The resulting 1-input_dim array has this structure:
-#
-#         ===============================================================
-#         |       mu       |        S        |    Z    | theta |  beta  |
-#         ===============================================================
-#
-#         """
-#         x = np.hstack((self.X.flatten(), self.X_variance.flatten(), SparseGP._get_params(self)))
-#         return x
-
-#     def _set_params(self, x, save_old=True, save_count=0):
-#         N, input_dim = self.num_data, self.input_dim
-#         self.X = x[:self.X.size].reshape(N, input_dim).copy()
-#         self.X_variance = x[(N * input_dim):(2 * N * input_dim)].reshape(N, input_dim).copy()
-#         SparseGP._set_params(self, x[(2 * N * input_dim):])
-
-    def dKL_dmuS(self):
-        dKL_dS = (1. - (1. / (self.X_variance))) * 0.5
-        dKL_dmu = self.X
-        return dKL_dmu, dKL_dS
 
     def dL_dmuS(self):
         dL_dmu_psi0, dL_dS_psi0 = self.kern.dpsi0_dmuS(self.grad_dict['dL_dpsi0'], self.Z, self.X, self.X_variance)
@@ -102,45 +70,24 @@ class BayesianGPLVM(SparseGP, GPLVM):
         return 0.5 * (var_mean + var_S) - 0.5 * self.input_dim * self.num_data
 
     def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
-        self._log_marginal_likelihood -= self.KL_divergence()
+        super(BayesianGPLVM, self).parameters_changed()
+        #self._log_marginal_likelihood -= self.KL_divergence()
 
-        #The derivative of the bound wrt the inducing inputs Z
-        self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
-        self.Z.gradient += self.kern.dpsi1_dZ(self.grad_dict['dL_dpsi1'], self.Z, self.X, self.X_variance)
-        self.Z.gradient += self.kern.dpsi2_dZ(self.grad_dict['dL_dpsi2'], self.Z, self.X, self.X_variance)
-        
         dL_dmu, dL_dS = self.dL_dmuS()
-        dKL_dmu, dKL_dS = self.dKL_dmuS()
-        self.q.means.gradient = dL_dmu - dKL_dmu
-        self.q.variances.gradient = dL_dS - dKL_dS
+
+        # dL:
+        self.q.means.gradient  = dL_dmu
+        self.q.variances.gradient  = dL_dS  
+
+        # dKL:
+        #self.q.means.gradient -= self.X
+        #self.q.variances.gradient -= (1. - (1. / (self.X_variance))) * 0.5
     
-
-#     def log_likelihood(self):        
-#         ll = SparseGP.log_likelihood(self)
-#         kl = self.KL_divergence()
-#         return ll - kl
-
-    def _dbound_dmuS(self):
-        dKL_dmu, dKL_dS = self.dKL_dmuS()
-        dL_dmu, dL_dS = self.dL_dmuS()
-        d_dmu = (dL_dmu - dKL_dmu).flatten()
-        d_dS = (dL_dS - dKL_dS).flatten()
-        return np.hstack((d_dmu, d_dS))
-
-#     def _log_likelihood_gradients(self):
-#         dKL_dmu, dKL_dS = self.dKL_dmuS()
-#         dL_dmu, dL_dS = self.dL_dmuS()
-#         d_dmu = (dL_dmu - dKL_dmu).flatten()
-#         d_dS = (dL_dS - dKL_dS).flatten()
-#         self.dbound_dmuS = np.hstack((d_dmu, d_dS))
-#         self.dbound_dZtheta = SparseGP._log_likelihood_gradients(self)
-#         return np.hstack((self.dbound_dmuS.flatten(), self.dbound_dZtheta))
-
     def plot_latent(self, plot_inducing=True, *args, **kwargs):
         """
         See GPy.plotting.matplot_dep.dim_reduction_plots.plot_latent
         """
+        import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import dim_reduction_plots
 
@@ -210,7 +157,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import dim_reduction_plots
 
-        return dim_reduction_plots.plot_steepest_gradient_map(model,*args,**kwargs)
+        return dim_reduction_plots.plot_steepest_gradient_map(self,*args,**kwargs)
 
 def latent_cost_and_grad(mu_S, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
     """

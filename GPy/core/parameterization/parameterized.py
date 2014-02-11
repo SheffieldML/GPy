@@ -154,6 +154,8 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
                 elif param._has_fixes(): self._fixes_ = np.r_[np.ones(self.size, dtype=bool), fixes_param]
 
             else:
+                start = sum(p.size for p in self._parameters_[:index])
+                self.constraints.shift(start, param.size)
                 self._parameters_.insert(index, param)
 
                 # make sure fixes and constraints are indexed right
@@ -165,10 +167,13 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
                     self._fixes_ = np.ones(self.size+param.size, dtype=bool)
                     self._fixes_[ins:ins+param.size] = fixes_param
             self.size += param.size
+        else:
+            raise RuntimeError, """Parameter exists already added and no copy made"""
         self._connect_parameters()
         # make sure the constraints are pulled over:
         if hasattr(param, "_constraints_") and param._constraints_ is not None:
             for t, ind in param._constraints_.iteritems():
+                
                 self.constraints.add(t, ind+self._offset_for(param))
             param._constraints_.clear()
         if param._default_constraint_ is not None:

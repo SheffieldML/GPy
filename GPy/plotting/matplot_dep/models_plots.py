@@ -94,14 +94,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
                 ax.plot(Xnew, yi[:,None], Tango.colorsHex['darkBlue'], linewidth=0.25)
                 #ax.plot(Xnew, yi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.
 
-        #add inducing inputs (if a sparse model is used)
-        if hasattr(model,"Z"):
-            #Zu = model.Z[:,free_dims] * model._Xscale[:,free_dims] + model._Xoffset[:,free_dims]
-            Zu = param_to_array(model.Z[:,free_dims])
-            z_height = ax.get_ylim()[0]
-            ax.plot(Zu, np.zeros_like(Zu) + z_height, 'r|', mew=1.5, markersize=12)
-
-
+        
         #add error bars for uncertain (if input uncertainty is being modelled)
         if hasattr(model,"has_uncertain_inputs"):
             ax.errorbar(model.X[which_data, free_dims], model.likelihood.data[which_data, 0],
@@ -114,6 +107,15 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
         ax.set_xlim(xmin, xmax)
         ax.set_ylim(ymin, ymax)
+
+        #add inducing inputs (if a sparse model is used)
+        if hasattr(model,"Z"):
+            #Zu = model.Z[:,free_dims] * model._Xscale[:,free_dims] + model._Xoffset[:,free_dims]
+            Zu = param_to_array(model.Z[:,free_dims])
+            z_height = ax.get_ylim()[0]
+            ax.plot(Zu, np.zeros_like(Zu) + z_height, 'r|', mew=1.5, markersize=12)
+
+
 
     #2D plotting
     elif len(free_dims) == 2:

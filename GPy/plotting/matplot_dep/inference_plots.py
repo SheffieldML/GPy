@@ -2,6 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import pylab as pb
+import sys
 #import numpy as np
 #import Tango
 #from base_plots import gpplot, x_frame1D, x_frame2D

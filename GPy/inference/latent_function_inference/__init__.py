@@ -27,3 +27,4 @@ from exact_gaussian_inference import ExactGaussianInference
 from laplace import LaplaceInference
 expectation_propagation = 'foo' # TODO
 from dtc import DTC
+from fitc import FITC

@@ -152,14 +152,14 @@ class Param(ObservableArray, Constrainable, Gradcheckable):
     #===========================================================================
     def tie_to(self, param):
         """
-        :param param: the parameter object to tie this parameter to. 
+        :param param: the parameter object to tie this parameter to.
                       Can be ParamConcatenation (retrieved by regexp search)
-        
+
         Tie this parameter to the given parameter.
         Broadcasting is not allowed, but you can tie a whole dimension to
         one parameter:  self[:,0].tie_to(other), where other is a one-value
         parameter.
-        
+
         Note: For now only one parameter can have ties, so all of a parameter
               will be removed, when re-tieing!
         """
@@ -529,7 +529,7 @@ class ParamConcatenation(object):
     def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3):
         return self.params[0]._highest_parent_._checkgrad(self, verbose, step, tolerance)
     #checkgrad.__doc__ = Gradcheckable.checkgrad.__doc__
-    
+
     __lt__ = lambda self, val: self._vals() < val
     __le__ = lambda self, val: self._vals() <= val
     __eq__ = lambda self, val: self._vals() == val

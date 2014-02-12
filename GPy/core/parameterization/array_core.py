@@ -13,7 +13,7 @@ class ParamList(list):
             if el is other:
                 return True
         return False
-    
+
     pass
 
 class ObservableArray(np.ndarray, Observable):
@@ -33,7 +33,7 @@ class ObservableArray(np.ndarray, Observable):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
         self._observers_ = getattr(obj, '_observers_', None)
-    
+
     def __setitem__(self, s, val, update=True):
         super(ObservableArray, self).__setitem__(s, val)
         if update:
@@ -41,10 +41,11 @@ class ObservableArray(np.ndarray, Observable):
     def __getslice__(self, start, stop):
         return self.__getitem__(slice(start, stop))
     def __setslice__(self, start, stop, val):
-        return self.__setitem__(slice(start, stop), val)  
+        return self.__setitem__(slice(start, stop), val)
 
     def __copy__(self, *args):
-        return ObservableArray(self.base.base.copy(*args))
+        return ObservableArray(self.view(np.ndarray).copy())
+
     def copy(self, *args):
         return self.__copy__(*args)
 
@@ -52,31 +53,26 @@ class ObservableArray(np.ndarray, Observable):
         r =  np.ndarray.__ror__(self, *args, **kwargs)
         self._notify_observers()
         return r
-        
 
     def __ilshift__(self, *args, **kwargs):
         r = np.ndarray.__ilshift__(self, *args, **kwargs)
         self._notify_observers()
         return r
 
-
     def __irshift__(self, *args, **kwargs):
         r = np.ndarray.__irshift__(self, *args, **kwargs)
         self._notify_observers()
         return r
-
 
     def __rrshift__(self, *args, **kwargs):
         r = np.ndarray.__rrshift__(self, *args, **kwargs)
         self._notify_observers()
         return r
 
-
     def __ixor__(self, *args, **kwargs):
         r = np.ndarray.__ixor__(self, *args, **kwargs)
         self._notify_observers()
         return r
-
 
     def __rxor__(self, *args, **kwargs):
         r = np.ndarray.__rxor__(self, *args, **kwargs)

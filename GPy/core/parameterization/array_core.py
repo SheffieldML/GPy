@@ -4,10 +4,13 @@
 __updated__ = '2013-12-16'
 
 import numpy as np
-from parameter_core import Observable
+from parameter_core import Observable, Constrainable, Gradcheckable
 
 class ParamList(list):
-
+    """
+    List to store ndarray-likes in.
+    It will look for 'is' instead of calling __eq__ on each element.
+    """
     def __contains__(self, other):
         for el in self:
             if el is other:
@@ -26,7 +29,7 @@ class ObservableArray(np.ndarray, Observable):
     __array_priority__ = -1 # Never give back ObservableArray
     def __new__(cls, input_array):
         cls.__name__ = "ObservableArray\n     "
-        obj = super(ObservableArray, cls).__new__(cls, input_array).view(cls)
+        obj = np.atleast_1d(input_array).view(cls)
         obj._observers_ = {}
         return obj
     def __array_finalize__(self, obj):

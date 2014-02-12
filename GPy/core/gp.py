@@ -39,7 +39,6 @@ class GP(Model):
         _, self.output_dim = self.Y.shape
 
         if Y_metadata is not None:
-            assert Y_metadata.shape == self.Y.shape
             self.Y_metadata = ObservableArray(Y_metadata)
         else:
             self.Y_metadata = None

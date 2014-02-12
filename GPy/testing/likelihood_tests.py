@@ -540,6 +540,10 @@ class TestNoiseModels(object):
             #import ipdb; ipdb.set_trace()
             #NOTE this test appears to be stochastic for some likelihoods (student t?)
             # appears to all be working in test mode right now...
+
+        if not m.checkgrad():
+            import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+
         assert m.checkgrad(step=step)
 
     ###########

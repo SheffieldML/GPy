@@ -92,12 +92,11 @@ class LaplaceInference(object):
         iteration = 0
         while difference > self._mode_finding_tolerance and iteration < self._mode_finding_max_iter:
             W = -likelihood.d2logpdf_df2(f, Y, extra_data=Y_metadata)
-
-            W_f = W*f
             grad = likelihood.dlogpdf_df(f, Y, extra_data=Y_metadata)
 
+            W_f = W*f
+
             b = W_f + grad # R+W p46 line 6.
-            #W12BiW12Kb, B_logdet = self._compute_B_statistics(K, W.copy(), np.dot(K, b), likelihood.log_concave)
             W12BiW12, _, _ = self._compute_B_statistics(K, W, likelihood.log_concave)
             W12BiW12Kb = np.dot(W12BiW12, np.dot(K, b))
 

@@ -437,7 +437,7 @@ class Model(Parameterized):
             else:
                 param_list = self._raveled_index_for(target_param)
                 if self._has_fixes():
-                    param_list = np.intersect1d(param_list, np.r_[:self.size][self._fixes_], True)
+                    param_list = np.intersect1d(np.r_[:self.size][self._fixes_], param_list, True)
 
                 if param_list.size == 0:
                     print "No free parameters to check"

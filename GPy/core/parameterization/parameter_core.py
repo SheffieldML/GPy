@@ -145,7 +145,9 @@ class Constrainable(Nameable, Indexable, Parameterizable):
         This parameter will no longer be fixed.
         """
         unconstrained = self.unconstrain(__fixed__)
+        import ipdb;ipdb.set_trace()
         self._highest_parent_._set_unfixed(unconstrained)
+        
     unfix = unconstrain_fixed
     #===========================================================================
     # Constrain operations -> done
@@ -221,7 +223,7 @@ class Constrainable(Nameable, Indexable, Parameterizable):
         import numpy as np
         removed = np.empty((0,),dtype=int)
         for t in transforms:
-            removed = np.intersect1d(removed, self.constraints.remove(t, self._raveled_index()))
+            removed = np.union1d(removed, self.constraints.remove(t, self._raveled_index()))
         return removed
     
     def unconstrain_positive(self):

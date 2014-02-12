@@ -2,9 +2,8 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from posterior import Posterior
-from ...util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dpotri, symmetrify
+from ...util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri, dpotri, dpotrs, symmetrify
 import numpy as np
-from ...util.linalg import dtrtri
 from ...util.caching import Cacher
 from ...util.misc import param_to_array
 log_2_pi = np.log(2*np.pi)
@@ -85,7 +84,7 @@ class VarDTC(object):
                 tmp = tmp.T
             # no backsubstitution because of bound explosion on tr(A) if not...
             LmInv, _ = dtrtri(Lm, lower=1)
-            A = LmInv.T.dot(psi2_beta.dot(LmInv))
+            A = LmInv.dot(psi2_beta.dot(LmInv.T))
             #print A.sum()
         else:
             if het_noise:
@@ -97,6 +96,7 @@ class VarDTC(object):
 
         # factor B
         B = np.eye(num_inducing) + A
+        self.A = A
         LB = jitchol(B)
 
         # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!

@@ -69,8 +69,8 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
     success = True # Force calculation of directional derivs.
     nsuccess = 0 # nsuccess counts number of successes.
     beta = 1.0 # Initial scale parameter.
-    betamin = 1.0e-60 # Lower bound on scale.
-    betamax = 1.0e50 # Upper bound on scale.
+    betamin = 1.0e-15 # Lower bound on scale.
+    betamax = 1.0e15 # Upper bound on scale.
     status = "Not converged"
 
     flog = [fold]

@@ -6,19 +6,6 @@ __updated__ = '2013-12-16'
 import numpy as np
 from parameter_core import Observable
 
-class ListArray(np.ndarray):
-    """
-    ndarray which can be stored in lists and checked if it is in.
-    WARNING: This overrides the functionality of x==y!!!
-    Use numpy.equal(x,y) for element-wise equality testing.
-    """
-    
-    def __new__(cls, input_array):
-        obj = np.asanyarray(input_array).view(cls)
-        return obj
-    #def __eq__(self, other):
-    #    return other is self
-
 class ParamList(list):
 
     def __contains__(self, other):
@@ -29,7 +16,7 @@ class ParamList(list):
     
     pass
 
-class ObservableArray(ListArray, Observable):
+class ObservableArray(np.ndarray, Observable):
     """
     An ndarray which reports changes to its observers.
     The observers can add themselves with a callable, which

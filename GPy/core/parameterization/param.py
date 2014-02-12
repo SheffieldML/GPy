@@ -46,6 +46,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable):
     """
     __array_priority__ = -1 # Never give back Param
     _fixes_ = None
+    _parameters_ = []
     def __new__(cls, name, input_array, default_constraint=None):
         obj = numpy.atleast_1d(super(Param, cls).__new__(cls, input_array=input_array))
         obj._current_slice_ = (slice(obj.shape[0]),)
@@ -144,9 +145,6 @@ class Param(ObservableArray, Constrainable, Gradcheckable):
 #         from_name = self.name
 #         self.name = new_name
 #         self._direct_parent_._name_changed(self, from_name)
-    @property
-    def _parameters_(self):
-        return []
     def _collect_gradient(self, target):
         target[:] = self.gradient.flat
     #===========================================================================

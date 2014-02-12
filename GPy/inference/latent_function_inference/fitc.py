@@ -1,225 +1,91 @@
-# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2012, James Hensman
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-class VarDTC(object):
+from posterior import Posterior
+from ...util.linalg import jitchol, tdot, dtrtrs, dpotri, pdinv
+import numpy as np
+log_2_pi = np.log(2*np.pi)
+
+class FITC(object):
+    """
+    An object for inference when the likelihood is Gaussian, but we want to do sparse inference.
+
+    The function self.inference returns a Posterior object, which summarizes
+    the posterior.
+
+    """
     def __init__(self):
         self.const_jitter = 1e-6
 
     def inference(self, kern, X, X_variance, Z, likelihood, Y):
+        assert X_variance is None, "cannot use X_variance with FITC. Try varDTC."
 
         num_inducing, _ = Z.shape
         num_data, output_dim = Y.shape
 
-        #make sure we're not using variational uncertain inputs
-        assert = X_variance is None, "variational inducing inputs only for use with varDTC inference"
-        #Note: we can;t do the variational thing after making the GITC conditional approximation because K~ appears in the log determinant.
+        #make sure the noise is not hetero
+        sigma_n = np.squeeze(likelihood.variance)
+        if sigma_n.size <1:
+            raise NotImplementedError, "no hetero noise with this implementation of FITC"
 
-        #see whether we've got a different noise variance for each datum
-        sigma2 = np.squeeze(likelihood.variance)
-        het_noise = False
-        if sigma2.size <1:
-            het_noise = True
-
-        # kernel computations, using BGPLVM notation
         Kmm = kern.K(Z)
-        Kdiag = kern.Kdiag(X)
-        Kmn = kern.K(X, Z)
+        Knn = kern.Kdiag(X)
+        Knm = kern.K(X, Z)
+        U = Knm
 
-        #factor Kmm
-        Lm = jitchol(Kmm)
-        V = dtrtrs(Lm, Kmn, lower=1)
+        #factor Kmm 
+        Kmmi, L, Li, _ = pdinv(Kmm)
 
-        #compute effective noise
-        g_sn2 = sigma2 + Kdiag - np.sum(V*V, 0)
+        #compute beta_star, the effective noise precision
+        LiUT = np.dot(Li, U.T)
+        sigma_star = Knn + sigma_n - np.sum(np.square(LiUT),0)
+        beta_star = 1./sigma_star
 
-        #compute and factor B
-        tmp = Kmn / np.sqrt(g_snd)
-        tmp, _ = dtrtrs(Lm, tmp, lower=1)
-        A = tdot(tmp)
-        B = np.eye(num_inducing) + A
-        Bi, Lb, LBi, log_det_B = pdinv(B)
+        # Compute and factor A
+        A = tdot(LiUT*np.sqrt(beta_star)) + np.eye(num_inducing)
+        LA = jitchol(A)
 
-        #compute posterior parameters
-        tmp, _ = dtrtrs()
-        woodbury_vec = 
+        # back substutue to get b, P, v
+        URiy = np.dot(U.T*beta_star,Y)
+        tmp, _ = dtrtrs(L, URiy, lower=1)
+        b, _ = dtrtrs(LA, tmp, lower=1)
+        tmp, _ = dtrtrs(LA, b, lower=1, trans=1)
+        v, _ = dtrtrs(L, tmp, lower=1, trans=1)
+        tmp, _ = dtrtrs(LA, Li, lower=1, trans=0)
+        P = tdot(tmp.T)
 
-        
+        #compute log marginal
+        log_marginal = -0.5*num_data*output_dim*np.log(2*np.pi) + \
+                       -np.sum(np.log(np.diag(LA)))*output_dim + \
+                       0.5*output_dim*np.sum(np.log(beta_star)) + \
+                       -0.5*np.sum(np.square(Y.T*np.sqrt(beta_star))) + \
+                       0.5*np.sum(np.square(b))
+        #compute dL_dR
+        Uv = np.dot(U, v)
+        dL_dR = 0.5*(np.sum(U*np.dot(U,P), 1) - 1./beta_star + np.sum(np.square(Y), 1) - 2.*np.sum(Uv*Y, 1) + np.sum(np.square(Uv), 1))*beta_star**2
 
 
-        psi1V = np.dot(self.psi1, self.V_star)
-        Lmi_psi1V, _ = dtrtrs(Lm, self.psi1V, lower=1, trans=0)
-        LBi_Lmi_psi1V, _ = dtrtrs(LB, Lmi_psi1V, lower=1, trans=0)
+        # Compute dL_dKmm
+        vvT_P = tdot(v.reshape(-1,1)) + P
+        dL_dK = 0.5*(Kmmi - vvT_P)
+        KiU = np.dot(Kmmi, U.T)
+        dL_dK += np.dot(KiU*dL_dR, KiU.T) 
 
-        Kmmipsi1 = np.dot(self.Lmi.T,Lmipsi1)
-        b_psi1_Ki = self.beta_star * Kmmipsi1.T
-        Ki_pbp_Ki = np.dot(Kmmipsi1,b_psi1_Ki)
-        Kmmi = np.dot(self.Lmi.T,self.Lmi)
-        LBiLmi = np.dot(self.LBi,self.Lmi)
-        LBL_inv = np.dot(LBiLmi.T,LBiLmi)
-        VVT = np.outer(self.V_star,self.V_star)
-        VV_p_Ki = np.dot(VVT,Kmmipsi1.T)
-        Ki_pVVp_Ki = np.dot(Kmmipsi1,VV_p_Ki)
-        psi1beta = self.psi1*self.beta_star.T
-        H = self.Kmm + mdot(self.psi1,psi1beta.T)
-        LH = jitchol(H)
-        LHi = chol_inv(LH)
-        Hi = np.dot(LHi.T,LHi)
+        # Compute dL_dU
+        vY = np.dot(v.reshape(-1,1),Y.T)
+        dL_dU = vY - np.dot(vvT_P, U.T)
+        dL_dU *= beta_star
+        dL_dU -= 2.*KiU*dL_dR
 
-        betapsi1TLmiLBi = np.dot(psi1beta.T,LBiLmi.T)
-        alpha = np.array([np.dot(a.T,a) for a in betapsi1TLmiLBi])[:,None]
-        gamma_1 = mdot(VVT,self.psi1.T,Hi)
-        pHip = mdot(self.psi1.T,Hi,self.psi1)
-        gamma_2 = mdot(self.beta_star*pHip,self.V_star)
-        gamma_3 = self.V_star * gamma_2
+        grad_dict = {'dL_dKmm': dL_dK, 'dL_dKdiag':dL_dR, 'dL_dKnm':dL_dU.T}
 
-        self._dL_dpsi0 = -0.5 * self.beta_star#dA_dpsi0: logdet(self.beta_star)
-        self._dL_dpsi0 += .5 * self.V_star**2 #dA_psi0: yT*beta_star*y
-        self._dL_dpsi0 += .5 *alpha #dC_dpsi0
-        self._dL_dpsi0 += 0.5*mdot(self.beta_star*pHip,self.V_star)**2 - self.V_star * mdot(self.V_star.T,pHip*self.beta_star).T #dD_dpsi0
+        #update gradients
+        kern.update_gradients_sparse(X=X, Z=Z, **grad_dict)
+        likelihood.update_gradients(dL_dR)
 
-        self._dL_dpsi1 = b_psi1_Ki.copy() #dA_dpsi1: logdet(self.beta_star)
-        self._dL_dpsi1 += -np.dot(psi1beta.T,LBL_inv) #dC_dpsi1
-        self._dL_dpsi1 += gamma_1 - mdot(psi1beta.T,Hi,self.psi1,gamma_1) #dD_dpsi1
+        #construct a posterior object
+        post = Posterior(woodbury_inv=Kmmi-P, woodbury_vector=v, K=Kmm, mean=None, cov=None, K_chol=L)
 
-        self._dL_dKmm = -0.5 * np.dot(Kmmipsi1,b_psi1_Ki) #dA_dKmm: logdet(self.beta_star)
-        self._dL_dKmm += .5*(LBL_inv - Kmmi) + mdot(LBL_inv,psi1beta,Kmmipsi1.T) #dC_dKmm
-        self._dL_dKmm += -.5 * mdot(Hi,self.psi1,gamma_1) #dD_dKmm
+        return post, log_marginal, grad_dict
 
-        self._dpsi1_dtheta = 0
-        self._dpsi1_dX = 0
-        self._dKmm_dtheta = 0
-        self._dKmm_dX = 0
 
-        self._dpsi1_dX_jkj = 0
-        self._dpsi1_dtheta_jkj = 0
-
-        for i,V_n,alpha_n,gamma_n,gamma_k in zip(range(self.num_data),self.V_star,alpha,gamma_2,gamma_3):
-            K_pp_K = np.dot(Kmmipsi1[:,i:(i+1)],Kmmipsi1[:,i:(i+1)].T)
-            _dpsi1 = (-V_n**2 - alpha_n + 2.*gamma_k - gamma_n**2) * Kmmipsi1.T[i:(i+1),:]
-            _dKmm = .5*(V_n**2 + alpha_n + gamma_n**2 - 2.*gamma_k) * K_pp_K #Diag_dD_dKmm
-            self._dpsi1_dtheta += self.kern._param_grad_helper(_dpsi1,self.X[i:i+1,:],self.Z)
-            self._dKmm_dtheta += self.kern._param_grad_helper(_dKmm,self.Z)
-            self._dKmm_dX += self.kern.gradients_X(_dKmm ,self.Z)
-            self._dpsi1_dX += self.kern.gradients_X(_dpsi1.T,self.Z,self.X[i:i+1,:])
-
-        # the partial derivative vector for the likelihood
-        if self.likelihood.num_params == 0:
-            # save computation here.
-            self.partial_for_likelihood = None
-        elif self.likelihood.is_heteroscedastic:
-            raise NotImplementedError, "heteroscedatic derivates not implemented."
-        else:
-            # likelihood is not heterscedatic
-            dbstar_dnoise = self.likelihood.precision * (self.beta_star**2 * self.Diag0[:,None] - self.beta_star)
-            Lmi_psi1 = mdot(self.Lmi,self.psi1)
-            LBiLmipsi1 = np.dot(self.LBi,Lmi_psi1)
-            aux_0 = np.dot(self._LBi_Lmi_psi1V.T,LBiLmipsi1)
-            aux_1 = self.likelihood.Y.T * np.dot(self._LBi_Lmi_psi1V.T,LBiLmipsi1)
-            aux_2 = np.dot(LBiLmipsi1.T,self._LBi_Lmi_psi1V)
-
-            dA_dnoise = 0.5 * self.input_dim * (dbstar_dnoise/self.beta_star).sum() - 0.5 * self.input_dim * np.sum(self.likelihood.Y**2 * dbstar_dnoise)
-            dC_dnoise = -0.5 * np.sum(mdot(self.LBi.T,self.LBi,Lmi_psi1) *  Lmi_psi1 * dbstar_dnoise.T)
-
-            dD_dnoise_1 =  mdot(self.V_star*LBiLmipsi1.T,LBiLmipsi1*dbstar_dnoise.T*self.likelihood.Y.T)
-            alpha = mdot(LBiLmipsi1,self.V_star)
-            alpha_ = mdot(LBiLmipsi1.T,alpha)
-            dD_dnoise_2 = -0.5 * self.input_dim * np.sum(alpha_**2 * dbstar_dnoise )
-
-            dD_dnoise_1 = mdot(self.V_star.T,self.psi1.T,self.Lmi.T,self.LBi.T,self.LBi,self.Lmi,self.psi1,dbstar_dnoise*self.likelihood.Y)
-            dD_dnoise_2 = 0.5*mdot(self.V_star.T,self.psi1.T,Hi,self.psi1,dbstar_dnoise*self.psi1.T,Hi,self.psi1,self.V_star)
-            dD_dnoise = dD_dnoise_1 + dD_dnoise_2
-
-            self.partial_for_likelihood = dA_dnoise + dC_dnoise + dD_dnoise
-
-    def log_likelihood(self):
-        """ Compute the (lower bound on the) log marginal likelihood """
-        A = -0.5 * self.num_data * self.output_dim * np.log(2.*np.pi) + 0.5 * np.sum(np.log(self.beta_star)) - 0.5 * np.sum(self.V_star * self.likelihood.Y)
-        C = -self.output_dim * (np.sum(np.log(np.diag(self.LB))))
-        D = 0.5 * np.sum(np.square(self._LBi_Lmi_psi1V))
-        return A + C + D
-
-    def _log_likelihood_gradients(self):
-        pass
-        return np.hstack((self.dL_dZ().flatten(), self.dL_dtheta(), self.likelihood._gradients(partial=self.partial_for_likelihood)))
-
-    def dL_dtheta(self):
-        dL_dtheta = self.kern.dKdiag_dtheta(self._dL_dpsi0,self.X)
-        dL_dtheta += self.kern._param_grad_helper(self._dL_dpsi1,self.X,self.Z)
-        dL_dtheta += self.kern._param_grad_helper(self._dL_dKmm,X=self.Z)
-        dL_dtheta += self._dKmm_dtheta
-        dL_dtheta += self._dpsi1_dtheta
-        return dL_dtheta
-
-    def dL_dZ(self):
-        dL_dZ = self.kern.gradients_X(self._dL_dpsi1.T,self.Z,self.X)
-        dL_dZ += self.kern.gradients_X(self._dL_dKmm,X=self.Z)
-        dL_dZ += self._dpsi1_dX
-        dL_dZ += self._dKmm_dX
-        return dL_dZ
-
-    def _raw_predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
-        assert X_variance_new is None, "FITC model is not defined for handling uncertain inputs."
-
-        if self.likelihood.is_heteroscedastic:
-            Iplus_Dprod_i = 1./(1.+ self.Diag0 * self.likelihood.precision.flatten())
-            self.Diag = self.Diag0 * Iplus_Dprod_i
-            self.P = Iplus_Dprod_i[:,None] * self.psi1.T
-            self.RPT0 = np.dot(self.Lmi,self.psi1)
-            self.L = np.linalg.cholesky(np.eye(self.num_inducing) + np.dot(self.RPT0,((1. - Iplus_Dprod_i)/self.Diag0)[:,None]*self.RPT0.T))
-            self.R,info = dtrtrs(self.L,self.Lmi,lower=1)
-            self.RPT = np.dot(self.R,self.P.T)
-            self.Sigma = np.diag(self.Diag) + np.dot(self.RPT.T,self.RPT)
-            self.w = self.Diag * self.likelihood.v_tilde
-            self.Gamma = np.dot(self.R.T, np.dot(self.RPT,self.likelihood.v_tilde))
-            self.mu = self.w + np.dot(self.P,self.Gamma)
-
-            """
-            Make a prediction for the generalized FITC model
-
-            Arguments
-            ---------
-            X : Input prediction data - Nx1 numpy array (floats)
-            """
-            # q(u|f) = N(u| R0i*mu_u*f, R0i*C*R0i.T)
-
-            # Ci = I + (RPT0)Di(RPT0).T
-            # C = I - [RPT0] * (input_dim+[RPT0].T*[RPT0])^-1*[RPT0].T
-            #   = I - [RPT0] * (input_dim + self.Qnn)^-1 * [RPT0].T
-            #   = I - [RPT0] * (U*U.T)^-1 * [RPT0].T
-            #   = I - V.T * V
-            U = np.linalg.cholesky(np.diag(self.Diag0) + self.Qnn)
-            V,info = dtrtrs(U,self.RPT0.T,lower=1)
-            C = np.eye(self.num_inducing) - np.dot(V.T,V)
-            mu_u = np.dot(C,self.RPT0)*(1./self.Diag0[None,:])
-            #self.C = C
-            #self.RPT0 = np.dot(self.R0,self.Knm.T) P0.T
-            #self.mu_u = mu_u
-            #self.U = U
-            # q(u|y) = N(u| R0i*mu_H,R0i*Sigma_H*R0i.T)
-            mu_H = np.dot(mu_u,self.mu)
-            self.mu_H = mu_H
-            Sigma_H = C + np.dot(mu_u,np.dot(self.Sigma,mu_u.T))
-            # q(f_star|y) = N(f_star|mu_star,sigma2_star)
-            Kx = self.kern.K(self.Z, Xnew, which_parts=which_parts)
-            KR0T = np.dot(Kx.T,self.Lmi.T)
-            mu_star = np.dot(KR0T,mu_H)
-            if full_cov:
-                Kxx = self.kern.K(Xnew,which_parts=which_parts)
-                var = Kxx + np.dot(KR0T,np.dot(Sigma_H - np.eye(self.num_inducing),KR0T.T))
-            else:
-                Kxx = self.kern.Kdiag(Xnew,which_parts=which_parts)
-                var = (Kxx + np.sum(KR0T.T*np.dot(Sigma_H - np.eye(self.num_inducing),KR0T.T),0))[:,None]
-            return mu_star[:,None],var
-        else:
-            raise NotImplementedError, "Heteroscedastic case not implemented."
-            """
-            Kx = self.kern.K(self.Z, Xnew)
-            mu = mdot(Kx.T, self.C/self.scale_factor, self.psi1V)
-            if full_cov:
-                Kxx = self.kern.K(Xnew)
-                var = Kxx - mdot(Kx.T, (self.Kmmi - self.C/self.scale_factor**2), Kx) #NOTE this won't work for plotting
-            else:
-                Kxx = self.kern.Kdiag(Xnew)
-                var = Kxx - np.sum(Kx*np.dot(self.Kmmi - self.C/self.scale_factor**2, Kx),0)
-            return mu,var[:,None]
-            """

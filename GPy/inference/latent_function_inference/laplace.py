@@ -17,7 +17,7 @@ from posterior import Posterior
 import warnings
 from scipy import optimize
 
-class LaplaceInference(object):
+class Laplace(object):
 
     def __init__(self):
         """
@@ -52,6 +52,7 @@ class LaplaceInference(object):
 
         f_hat, Ki_fhat = self.rasm_mode(K, Y, likelihood, Ki_f_init, Y_metadata=Y_metadata)
 
+        self.f_hat = f_hat
         #Compute hessian and other variables at mode
         log_marginal, woodbury_vector, woodbury_inv, dL_dK, dL_dthetaL = self.mode_computations(f_hat, Ki_fhat, K, Y, likelihood, kern, Y_metadata)
 

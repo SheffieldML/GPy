@@ -87,18 +87,22 @@ def toy_linear_1d_classification_laplace(seed=default_seed, optimize=True, plot=
     Y = data['Y'][:, 0:1]
     Y[Y.flatten() == -1] = 0
 
-    bern_noise_model = GPy.likelihoods.bernoulli()
-    laplace_likelihood = GPy.likelihoods.Laplace(Y.copy(), bern_noise_model)
+    likelihood = GPy.likelihoods.Bernoulli()
+    laplace_inf = GPy.inference.latent_function_inference.Laplace()
+    kernel = GPy.kern.rbf(1)
 
     # Model definition
-    m = GPy.models.GPClassification(data['X'], Y, likelihood=laplace_likelihood)
-    print m
+    m = GPy.core.GP(data['X'], Y, kernel=kernel, likelihood=likelihood, inference_method=laplace_inf)
 
     # Optimize
     if optimize:
         #m.update_likelihood_approximation()
         # Parameters optimization:
-        m.optimize('bfgs', messages=1)
+        try:
+            m.optimize('scg', messages=1)
+        except Exception as e:
+            return m
+
         #m.pseudo_EM()
 
     # Plot

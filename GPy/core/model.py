@@ -410,7 +410,13 @@ class Model(Parameterized):
             f1 = self.objective_function(x + dx)
             f2 = self.objective_function(x - dx)
             gradient = self.objective_function_gradients(x)
-
+            
+            param_list = self._raveled_index_for(target_param)
+            if self._has_fixes():
+                param_list = np.intersect1d(np.r_[:self.size][self._fixes_], param_list, True)
+            
+            
+            
             numerical_gradient = (f1 - f2) / (2 * dx)
             global_ratio = (f1 - f2) / (2 * np.dot(dx, np.where(gradient == 0, 1e-32, gradient)))
 
@@ -448,14 +454,14 @@ class Model(Parameterized):
             ret = True
             for i, ind in enumerate(param_list):
                 xx = x.copy()
-                xx[i] += step
+                xx[ind] += step
                 f1 = self.objective_function(xx)
-                xx[i] -= 2.*step
+                xx[ind] -= 2.*step
                 f2 = self.objective_function(xx)
-                
+                print ind
                 numerical_gradient = (f1 - f2) / (2 * step)
-                ratio = (f1 - f2) / (2 * step * gradient[i])
-                difference = np.abs((f1 - f2) / 2 / step - gradient[i])
+                ratio = (f1 - f2) / (2 * step * gradient[ind])
+                difference = np.abs((f1 - f2) / 2 / step - gradient[ind])
 
                 if (np.abs(1. - ratio) < tolerance) or np.abs(difference) < tolerance:
                     formatted_name = "\033[92m {0} \033[0m".format(names[ind])
@@ -466,7 +472,7 @@ class Model(Parameterized):
 
                 r = '%.6f' % float(ratio)
                 d = '%.6f' % float(difference)
-                g = '%.6f' % gradient[i]
+                g = '%.6f' % gradient[ind]
                 ng = '%.6f' % float(numerical_gradient)
                 grad_string = "{0:<{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name, r, d, g, ng, c0=cols[0] + 9, c1=cols[1], c2=cols[2], c3=cols[3], c4=cols[4])
                 print grad_string

@@ -1,7 +1,7 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from transformations import Logexp, NegativeLogexp, Logistic
+from transformations import Transformation, Logexp, NegativeLogexp, Logistic
 
 __updated__ = '2013-12-16'
 
@@ -9,6 +9,11 @@ def adjust_name_for_printing(name):
     if name is not None:
         return name.replace(" ", "_").replace(".", "_").replace("-","").replace("+","").replace("!","").replace("*","").replace("/","")
     return ''
+
+#===============================================================================
+# Printing:
+__fixed__ = "fixed"
+#===============================================================================
 
 class Observable(object):
     _observers_ = {}
@@ -20,7 +25,23 @@ class Observable(object):
     def _notify_observers(self):
         [callble(self) for callble in self._observers_.itervalues()]
 
-
+class Parameterizable(object):
+    def __init__(self, *args, **kwargs):
+        from GPy.core.parameterization.array_core import ParamList
+        _parameters_ = ParamList()
+    
+    def parameter_names(self):
+        return [p.name for p in self._parameters_]
+    
+    def parameters_changed(self):
+        """
+        This method gets called when parameters have changed.
+        Another way of listening to param changes is to
+        add self as a listener to the param, such that
+        updates get passed through. See :py:function:``GPy.core.param.Observable.add_observer``
+        """
+        pass
+    
 class Pickleable(object):
     def _getstate(self):
         """
@@ -52,7 +73,7 @@ class Parentable(object):
         super(Parentable,self).__init__()
         self._direct_parent_ = direct_parent
         self._parent_index_ = parent_index
-
+        
     def has_parent(self):
         return self._direct_parent_ is not None
 
@@ -89,11 +110,22 @@ class Gradcheckable(Parentable):
     def _checkgrad(self, param):
         raise NotImplementedError, "Need log likelihood to check gradient against"
 
+class Indexable(object):
+    def _raveled_index(self):
+        raise NotImplementedError, "Need to be able to get the raveled Index"
+        
+    def _internal_offset(self):
+        return 0
+    
+    def _offset_for(self, param):
+        raise NotImplementedError, "shouldnt happen, offset required from non parameterization object?"
 
-class Constrainable(Nameable):
+class Constrainable(Nameable, Indexable, Parameterizable):
     def __init__(self, name, default_constraint=None):
         super(Constrainable,self).__init__(name)
         self._default_constraint_ = default_constraint
+        from index_operations import ParameterIndexOperations
+        self.constraints = ParameterIndexOperations()
     #===========================================================================
     # Fixing Parameters:
     #===========================================================================
@@ -105,17 +137,30 @@ class Constrainable(Nameable):
         """
         if value is not None:
             self[:] = value
-        self._highest_parent_._fix(self,warning)
+        self.constrain(__fixed__, warning=warning)
+        self._highest_parent_._set_fixed(self._raveled_index())
     fix = constrain_fixed
     def unconstrain_fixed(self):
         """
         This parameter will no longer be fixed.
         """
-        self._highest_parent_._unfix(self)
+        unconstrained = self.unconstrain(__fixed__)
+        import ipdb;ipdb.set_trace()
+        self._highest_parent_._set_unfixed(unconstrained)
+        
     unfix = unconstrain_fixed
     #===========================================================================
     # Constrain operations -> done
     #===========================================================================
+    def _parent_changed(self, parent):
+        c = self.constraints
+        from index_operations import ParameterIndexOperationsView
+        self.constraints = ParameterIndexOperationsView(parent.constraints, parent._offset_for(self), self.size)
+        self.constraints.update(c)
+        del c
+        for p in self._parameters_:
+            p._parent_changed(parent)
+
     def constrain(self, transform, warning=True, update=True):
         """
         :param transform: the :py:class:`GPy.core.transformations.Transformation`
@@ -125,15 +170,21 @@ class Constrainable(Nameable):
         Constrain the parameter to the given
         :py:class:`GPy.core.transformations.Transformation`.
         """
-        if self.has_parent():
-            self._highest_parent_._add_constrain(self, transform, warning)
-            if update:
-                self._highest_parent_.parameters_changed()
-        else:
-            for p in self._parameters_:
-                self._add_constrain(p, transform, warning)
-            if update:
-                self.parameters_changed()
+        if isinstance(transform, Transformation):
+            self._set_params(transform.initialize(self._get_params()), update=False)
+        reconstrained = self.unconstrain()
+        self.constraints.add(transform, self._raveled_index())
+        if reconstrained.size > 0:
+            print "WARNING: reconstraining parameters {}".format(self.parameter_names)
+        if update:
+            self._highest_parent_.parameters_changed()
+        # if self.has_parent():
+        #     self._highest_parent_._add_constrain(self, transform, warning)
+        # else:
+        #     for p in self._parameters_:
+        #         self._add_constrain(p, transform, warning)
+        #     if update:
+        #         self.parameters_changed()
 
     def constrain_positive(self, warning=True, update=True):
         """
@@ -167,12 +218,14 @@ class Constrainable(Nameable):
         remove all :py:class:`GPy.core.transformations.Transformation`
         transformats of this parameter object.
         """
-        if self.has_parent():
-            self._highest_parent_._remove_constrain(self, *transforms)
-        else:
-            for p in self._parameters_:
-                self._remove_constrain(p, *transforms)
-
+        if len(transforms) == 0:
+            transforms = self.constraints.properties()
+        import numpy as np
+        removed = np.empty((0,),dtype=int)
+        for t in transforms:
+            removed = np.union1d(removed, self.constraints.remove(t, self._raveled_index()))
+        return removed
+    
     def unconstrain_positive(self):
         """
         Remove positive constraint of this parameter.

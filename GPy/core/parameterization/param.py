@@ -3,7 +3,7 @@
 
 import itertools
 import numpy
-from parameter_core import Constrainable, Gradcheckable, adjust_name_for_printing
+from parameter_core import Constrainable, Gradcheckable, Indexable, Parameterizable, adjust_name_for_printing
 from array_core import ObservableArray, ParamList
 
 ###### printing
@@ -14,13 +14,7 @@ __precision__ = numpy.get_printoptions()['precision'] # numpy printing precision
 __print_threshold__ = 5
 ######
 
-class Float(numpy.float64, Constrainable):
-    def __init__(self, f, base):
-        super(Float,self).__init__(f)
-        self._base = base
-
-
-class Param(ObservableArray, Constrainable, Gradcheckable):
+class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameterizable):
     """
     Parameter object for GPy models.
 
@@ -364,7 +358,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable):
         return [self.shape]
     @property
     def _constraints_str(self):
-        return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self._highest_parent_._constraints_iter_items(self)))]
+        return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self.constraints.iteritems()))]
     @property
     def _ties_str(self):
         return [t._short() for t in self._tied_to_] or ['']
@@ -390,7 +384,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable):
                     else: ties[i, matches[0]] = numpy.take(tt_rav_index, matches[1], mode='wrap')
         return map(lambda a: sum(a, []), zip(*[[[tie.flatten()] if tx != None else [] for tx in t] for t, tie in zip(ties, self._tied_to_)]))
     def _constraints_for(self, rav_index):
-        return self._highest_parent_._constraints_for(self, rav_index)
+        return self.constraints.properties_for(rav_index)
     def _indices(self, slice_index=None):
         # get a int-array containing all indices in the first axis.
         if slice_index is None:

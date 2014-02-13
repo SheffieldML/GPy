@@ -17,10 +17,10 @@ import itertools
 # import numdifftools as ndt
 
 class Model(Parameterized):
-    _fail_count = 0 # Count of failed optimization steps (see objective)
-    _allowed_failures = 10 # number of allowed failures
+    _fail_count = 0  # Count of failed optimization steps (see objective)
+    _allowed_failures = 10  # number of allowed failures
     def __init__(self, name):
-        super(Model, self).__init__(name)#Parameterized.__init__(self)
+        super(Model, self).__init__(name)  # Parameterized.__init__(self)
         self.priors = []
         self._priors = ParameterIndexOperations()
         self.optimization_runs = []
@@ -30,10 +30,10 @@ class Model(Parameterized):
     def log_likelihood(self):
         raise NotImplementedError, "this needs to be implemented to use the model class"
     def _log_likelihood_gradients(self):
-        #def dK_d(self, param, dL_dK, X, X2)
+        # def dK_d(self, param, dL_dK, X, X2)
         g = np.zeros(self.size)
         try:
-            #[g.__setitem__(s, self.gradient_mapping[p]().flat) for p, s in itertools.izip(self._parameters_, self._param_slices_) if not p.is_fixed]
+            # [g.__setitem__(s, self.gradient_mapping[p]().flat) for p, s in itertools.izip(self._parameters_, self._param_slices_) if not p.is_fixed]
             [p._collect_gradient(g[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_) if not p.is_fixed]
         except ValueError:
             raise ValueError, 'Gradient for {} not defined, please specify gradients for parameters to optimize'.format(p.name)
@@ -100,7 +100,7 @@ class Model(Parameterized):
         if len(tie_matches) > 1:
             raise ValueError, "cannot place prior across multiple ties"
         elif len(tie_matches) == 1:
-            which = which[:1] # just place a prior object on the first parameter
+            which = which[:1]  # just place a prior object on the first parameter
 
 
         # check constraints are okay
@@ -168,14 +168,14 @@ class Model(Parameterized):
         Make this draw from the prior if one exists, else draw from N(0,1)
         """
         # first take care of all parameters (from N(0,1))
-        #x = self._get_params_transformed()
+        # x = self._get_params_transformed()
         x = np.random.randn(self.size_transformed)
         x = self._untransform_params(x)
         # now draw from prior where possible
         if self.priors is not None and len(self.priors):
             [np.put(x, i, p.rvs(1)) for i, p in enumerate(self.priors) if not p is None]
         self._set_params(x)
-        #self._set_params_transformed(self._get_params_transformed()) # makes sure all of the tied parameters get the same init (since there's only one prior object...)
+        # self._set_params_transformed(self._get_params_transformed()) # makes sure all of the tied parameters get the same init (since there's only one prior object...)
 
     def optimize_restarts(self, num_restarts=10, robust=False, verbose=True, parallel=False, num_processes=None, **kwargs):
         """
@@ -220,8 +220,8 @@ class Model(Parameterized):
                     job = pool.apply_async(opt_wrapper, args=(self,), kwds=kwargs)
                     jobs.append(job)
 
-                pool.close() # signal that no more data coming in
-                pool.join() # wait for all the tasks to complete
+                pool.close()  # signal that no more data coming in
+                pool.join()  # wait for all the tasks to complete
             except KeyboardInterrupt:
                 print "Ctrl+c received, terminating and joining pool."
                 pool.terminate()
@@ -378,7 +378,7 @@ class Model(Parameterized):
 
     def optimize_SGD(self, momentum=0.1, learning_rate=0.01, iterations=20, **kwargs):
         # assert self.Y.shape[1] > 1, "SGD only works with D > 1"
-        sgd = SGD.StochasticGD(self, iterations, learning_rate, momentum, **kwargs) # @UndefinedVariable
+        sgd = SGD.StochasticGD(self, iterations, learning_rate, momentum, **kwargs)  # @UndefinedVariable
         sgd.run()
         self.optimization_runs.append(sgd)
 
@@ -412,7 +412,7 @@ class Model(Parameterized):
             gradient = self.objective_function_gradients(x)
 
             numerical_gradient = (f1 - f2) / (2 * dx)
-            global_ratio = (f1 - f2) / (2 * np.dot(dx, np.where(gradient==0, 1e-32, gradient)))
+            global_ratio = (f1 - f2) / (2 * np.dot(dx, np.where(gradient == 0, 1e-32, gradient)))
 
             return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gradient - numerical_gradient).mean() < tolerance)
         else:
@@ -437,25 +437,25 @@ class Model(Parameterized):
             else:
                 param_list = self._raveled_index_for(target_param)
                 if self._has_fixes():
-                    param_list = np.intersect1d(param_list, np.r_[:self.size][self._fixes_], True)
+                    param_list = np.intersect1d(np.r_[:self.size][self._fixes_], param_list, True)
 
                 if param_list.size == 0:
                     print "No free parameters to check"
                     return
 
             gradient = self.objective_function_gradients(x)
-            np.where(gradient==0, 1e-312, gradient)
+            np.where(gradient == 0, 1e-312, gradient)
             ret = True
             for i, ind in enumerate(param_list):
                 xx = x.copy()
-                xx[ind] += step
+                xx[i] += step
                 f1 = self.objective_function(xx)
-                xx[ind] -= 2.*step
+                xx[i] -= 2.*step
                 f2 = self.objective_function(xx)
                 
                 numerical_gradient = (f1 - f2) / (2 * step)
-                ratio = (f1 - f2) / (2 * step * gradient[ind])
-                difference = np.abs((f1 - f2) / 2 / step - gradient[ind])
+                ratio = (f1 - f2) / (2 * step * gradient[i])
+                difference = np.abs((f1 - f2) / 2 / step - gradient[i])
 
                 if (np.abs(1. - ratio) < tolerance) or np.abs(difference) < tolerance:
                     formatted_name = "\033[92m {0} \033[0m".format(names[ind])
@@ -466,7 +466,7 @@ class Model(Parameterized):
 
                 r = '%.6f' % float(ratio)
                 d = '%.6f' % float(difference)
-                g = '%.6f' % gradient[ind]
+                g = '%.6f' % gradient[i]
                 ng = '%.6f' % float(numerical_gradient)
                 grad_string = "{0:<{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name, r, d, g, ng, c0=cols[0] + 9, c1=cols[1], c2=cols[2], c3=cols[3], c4=cols[4])
                 print grad_string
@@ -517,10 +517,10 @@ class Model(Parameterized):
         alpha = 0
         stop = False
 
-        #Handle **kwargs
+        # Handle **kwargs
         ep_args = {}
         for arg in kwargs.keys():
-            if arg in ('epsilon','power_ep'):
+            if arg in ('epsilon', 'power_ep'):
                 ep_args[arg] = kwargs[arg]
                 del kwargs[arg]
 
@@ -528,7 +528,7 @@ class Model(Parameterized):
             last_approximation = self.likelihood.copy()
             last_params = self._get_params()
             if len(ep_args) == 2:
-                self.update_likelihood_approximation(epsilon=ep_args['epsilon'],power_ep=ep_args['power_ep'])
+                self.update_likelihood_approximation(epsilon=ep_args['epsilon'], power_ep=ep_args['power_ep'])
             elif len(ep_args) == 1:
                 if  ep_args.keys()[0] == 'epsilon':
                     self.update_likelihood_approximation(epsilon=ep_args['epsilon'])
@@ -540,8 +540,8 @@ class Model(Parameterized):
             ll_change = new_ll - last_ll
 
             if ll_change < 0:
-                self.likelihood = last_approximation # restore previous likelihood approximation
-                self._set_params(last_params) # restore model parameters
+                self.likelihood = last_approximation  # restore previous likelihood approximation
+                self._set_params(last_params)  # restore model parameters
                 print "Log-likelihood decrement: %s \nLast likelihood update discarded." % ll_change
                 stop = True
             else:

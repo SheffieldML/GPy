@@ -23,7 +23,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
 
     """
     def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
-                 Z=None, kernel=None, inference_method=None, likelihood=Gaussian(), name='bayesian gplvm', **kwargs):
+                 Z=None, kernel=None, inference_method=None, likelihood=None, name='bayesian gplvm', **kwargs):
         if X == None:
             X = self.initialise_latent(init, input_dim, Y)
         self.init = init
@@ -37,7 +37,9 @@ class BayesianGPLVM(SparseGP, GPLVM):
 
         if kernel is None:
             kernel = kern.rbf(input_dim) # + kern.white(input_dim)
-
+        
+        if likelihood is None:
+            likelihood = Gaussian()
         self.q = Normal(X, X_variance)
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, X_variance, name, **kwargs)
         self.add_parameter(self.q, index=0)

@@ -27,6 +27,8 @@ class Transformation(object):
         raise NotImplementedError
     def __str__(self):
         raise NotImplementedError
+    def __repr__(self):
+        return self.__class__.__name__
 
 class Logexp(Transformation):
     domain = _POSITIVE
@@ -56,7 +58,7 @@ class NegativeLogexp(Transformation):
         return -self.logexp.initialize(f)  # np.abs(f)
     def __str__(self):
         return '-ve'
-
+    
 class LogexpClipped(Logexp):
     max_bound = 1e100
     min_bound = 1e-10
@@ -93,7 +95,6 @@ class LogexpClipped(Logexp):
         return np.abs(f)
     def __str__(self):
         return '+ve_c'
-
 
 class Exponent(Transformation):
     # TODO: can't allow this to go to zero, need to set a lower bound. Similar with negative Exponent below. See old MATLAB code.

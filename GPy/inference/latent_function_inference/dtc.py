@@ -44,9 +44,8 @@ class DTC(object):
         Kmmi, L, Li, _ = pdinv(Kmm)
 
         # Compute A
-        #LiUT, _ = dtrtrs(L, U.T*np.sqrt(beta), lower=1)
-        LiUT = np.dot(Li, U.T)*np.sqrt(beta)
-        A = tdot(LiUT) + np.eye(num_inducing)
+        LiUTbeta = np.dot(Li, U.T)*np.sqrt(beta)
+        A = tdot(LiUTbeta) + np.eye(num_inducing)
 
         # factor A
         LA = jitchol(A)

@@ -34,7 +34,7 @@ class VarDTC(object):
         Note that L may have fewer columns than Y.
         """
         N, D = Y.shape
-        if (N>D):
+        if (N>=D):
             return param_to_array(Y)
         else:
             return jitchol(tdot(Y))

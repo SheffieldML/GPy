@@ -473,7 +473,6 @@ def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
     Z = np.random.uniform(-3., 3., (7, 1))
 
     k = GPy.kern.rbf(1)
-    import ipdb;ipdb.set_trace()
     # create simple GP Model - no input uncertainty on this one
     m = GPy.models.SparseGPRegression(X, Y, kernel=GPy.kern.rbf(1), Z=Z)
 

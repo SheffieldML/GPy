@@ -455,8 +455,8 @@ class Model(Parameterized):
                 if self._has_fixes():
                     indices = np.r_[:self.size]
                     which = (param_index[:,None]==indices[self._fixes_][None,:]).nonzero()
-                    transformed_index = (indices-(~self._fixes_).cumsum())[which[1]]
-                    param_index = indices[which[0]]
+                    param_index = param_index[which[0]]
+                    transformed_index = (indices-(~self._fixes_).cumsum())[param_index]
                     print param_index, transformed_index
                 else:
                     transformed_index = param_index

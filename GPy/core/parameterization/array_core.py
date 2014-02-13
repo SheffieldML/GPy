@@ -28,8 +28,8 @@ class ObservableArray(np.ndarray, Observable):
     """
     __array_priority__ = -1 # Never give back ObservableArray
     def __new__(cls, input_array):
-        cls.__name__ = "ObservableArray\n     "
         obj = np.atleast_1d(input_array).view(cls)
+        cls.__name__ = "ObservableArray\n     "
         obj._observers_ = {}
         return obj
     def __array_finalize__(self, obj):

@@ -25,8 +25,10 @@ class Parameterizable(object):
         from GPy.core.parameterization.array_core import ParamList
         _parameters_ = ParamList()
     
-    def parameter_names(self):
-        return [p.name for p in self._parameters_]
+    def parameter_names(self, add_name=False):
+        if add_name:
+            return [adjust_name_for_printing(self.name) + "." + xi for x in self._parameters_ for xi in x.parameter_names(add_name=True)]
+        return [xi for x in self._parameters_ for xi in x.parameter_names(add_name=True)]
     
     def parameters_changed(self):
         """
@@ -209,7 +211,7 @@ class Constrainable(Nameable, Indexable, Parameterizable):
         reconstrained = self.unconstrain()
         self.constraints.add(transform, self._raveled_index())
         if warning and reconstrained.size > 0:
-            print "WARNING: reconstraining parameters {}".format(self.parameter_names)
+            print "WARNING: reconstraining parameters {}".format(self.parameter_names() or self.name)
         if update:
             self._highest_parent_.parameters_changed()
 

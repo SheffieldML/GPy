@@ -434,11 +434,7 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
             return self._direct_parent_.hirarchy_name() + adjust_name_for_printing(self.name)
         else:
             return adjust_name_for_printing(self.name)
-    def _parameter_names(self, add_name=False):
-        if add_name:
-            return [adjust_name_for_printing(self.name) + "." + xi for x in self._parameters_ for xi in x._parameter_names(add_name=True)]
-        return [xi for x in self._parameters_ for xi in x._parameter_names(add_name=True)]
-    parameter_names = property(_parameter_names, doc="Names for all parameters handled by this parameterization object -- will add hirarchy name entries for printing")
+    #parameter_names = property(parameter_names, doc="Names for all parameters handled by this parameterization object -- will add hirarchy name entries for printing")
     def _collect_gradient(self, target):
         [p._collect_gradient(target[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
     @property
@@ -468,7 +464,7 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
 
         name = adjust_name_for_printing(self.name) + "."
         constrs = self._constraints_str; ts = self._ties_str
-        desc = self._description_str; names = self.parameter_names
+        desc = self._description_str; names = self.parameter_names()
         nl = max([len(str(x)) for x in names + [name]])
         sl = max([len(str(x)) for x in desc + ["Value"]])
         cl = max([len(str(x)) if x else 0 for x in constrs + ["Constraint"]])

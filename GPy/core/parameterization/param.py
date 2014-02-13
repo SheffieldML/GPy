@@ -348,7 +348,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
     def _description_str(self):
         if self.size <= 1: return ["%f" % self]
         else: return [str(self.shape)]
-    def _parameter_names(self, add_name):
+    def parameter_names(self, add_name=False):
         return [self.name]
     @property
     def flattened_parameters(self):

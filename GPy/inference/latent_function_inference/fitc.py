@@ -19,6 +19,10 @@ class FITC(object):
 
     def inference(self, kern, X, X_variance, Z, likelihood, Y):
         assert X_variance is None, "cannot use X_variance with FITC. Try varDTC."
+        
+        #TODO: MAX! fix this!
+        from ...util.misc import param_to_array
+        Y = param_to_array(Y)
 
         num_inducing, _ = Z.shape
         num_data, output_dim = Y.shape

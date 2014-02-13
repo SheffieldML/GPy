@@ -88,12 +88,9 @@ class Gaussian(Likelihood):
         return mu, var, low, up
 
     def predictive_mean(self, mu, sigma):
-        #new_sigma2 = self.predictive_variance(mu, sigma)
-        #return new_sigma2*(mu/sigma**2 + self.gp_link.transf(mu)/self.variance)
         return mu
 
     def predictive_variance(self, mu, sigma, predictive_mean=None):
-        #what on earth was the sum of precisions doing here? JH
         return self.variance + sigma**2
 
     def pdf_link(self, link_f, y, extra_data=None):
@@ -305,3 +302,11 @@ class Gaussian(Likelihood):
         gp = gp.flatten()
         Ysim = np.array([np.random.normal(self.gp_link.transf(gpj), scale=np.sqrt(self.variance), size=1) for gpj in gp])
         return Ysim.reshape(orig_shape)
+
+    def log_predictive_density(self, y_test, mu_star, var_star):
+        """
+        assumes independence
+        """
+        v = var_star + self.variance
+        return -0.5*np.log(2*np.pi) -0.5*np.log(v) - 0.5*np.square(y_test - mu_star)/v
+

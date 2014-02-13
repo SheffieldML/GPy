@@ -39,7 +39,7 @@ class SparseGP(GP):
             if isinstance(likelihood, likelihoods.Gaussian):
                 inference_method = varDTC.VarDTC()
             else:
-            #inference_method = ??
+                #inference_method = ??
                 raise NotImplementedError, "what to do what to do?"
             print "defaulting to ", inference_method, "for latent function inference"
 
@@ -51,19 +51,21 @@ class SparseGP(GP):
         self.X_variance = X_variance
 
         GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name)
-
         self.add_parameter(self.Z, index=0)
+        self.parameters_changed()
+
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
 
-        #The derivative of the bound wrt the inducing inputs Z
-        self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
-        if self.X_variance is None:
-            self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
-        else:
-            self.Z.gradient += self.kern.dpsi1_dZ(self.grad_dict['dL_dpsi1'], self.Z, self.X, self.X_variance)
-            self.Z.gradient += self.kern.dpsi2_dZ(self.grad_dict['dL_dpsi2'], self.Z, self.X, self.X_variance)
+        #The derivative of the bound wrt the inducing inputs Z ( unless they're all fixed)
+        if not self.Z.is_fixed:
+            self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
+            if self.X_variance is None:
+                self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
+            else:
+                self.Z.gradient += self.kern.dpsi1_dZ(self.grad_dict['dL_dpsi1'], self.Z, self.X, self.X_variance)
+                self.Z.gradient += self.kern.dpsi2_dZ(self.grad_dict['dL_dpsi2'], self.Z, self.X, self.X_variance)
 
     def _raw_predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
         """

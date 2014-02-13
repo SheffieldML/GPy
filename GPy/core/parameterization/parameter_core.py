@@ -1,7 +1,7 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from transformations import Transformation, Logexp, NegativeLogexp, Logistic
+from transformations import Transformation, Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 
 __updated__ = '2013-12-16'
 
@@ -9,11 +9,6 @@ def adjust_name_for_printing(name):
     if name is not None:
         return name.replace(" ", "_").replace(".", "_").replace("-","").replace("+","").replace("!","").replace("*","").replace("/","")
     return ''
-
-#===============================================================================
-# Printing:
-__fixed__ = "fixed"
-#===============================================================================
 
 class Observable(object):
     _observers_ = {}
@@ -119,6 +114,14 @@ class Indexable(object):
     
     def _offset_for(self, param):
         raise NotImplementedError, "shouldnt happen, offset required from non parameterization object?"
+    
+    def _raveled_index_for(self, param):
+        """
+        get the raveled index for a param
+        that is an int array, containing the indexes for the flattened
+        param inside this parameterized logic.
+        """
+        raise NotImplementedError, "shouldnt happen, raveld index transformation required from non parameterization object?"
 
 class Constrainable(Nameable, Indexable, Parameterizable):
     def __init__(self, name, default_constraint=None):
@@ -126,6 +129,9 @@ class Constrainable(Nameable, Indexable, Parameterizable):
         self._default_constraint_ = default_constraint
         from index_operations import ParameterIndexOperations
         self.constraints = ParameterIndexOperations()
+        if self._default_constraint_ is not None:
+            self.constrain(self._default_constraint_)
+        
     #===========================================================================
     # Fixing Parameters:
     #===========================================================================
@@ -138,17 +144,40 @@ class Constrainable(Nameable, Indexable, Parameterizable):
         if value is not None:
             self[:] = value
         self.constrain(__fixed__, warning=warning)
-        self._highest_parent_._set_fixed(self._raveled_index())
+        rav_i = self._highest_parent_._raveled_index_for(self)
+        self._highest_parent_._set_fixed(rav_i)
     fix = constrain_fixed
+    
     def unconstrain_fixed(self):
         """
         This parameter will no longer be fixed.
         """
         unconstrained = self.unconstrain(__fixed__)
-        import ipdb;ipdb.set_trace()
-        self._highest_parent_._set_unfixed(unconstrained)
-        
+        self._highest_parent_._set_unfixed(unconstrained)    
     unfix = unconstrain_fixed
+    
+    def _set_fixed(self, index):
+        import numpy as np
+        if not self._has_fixes(): self._fixes_ = np.ones(self.size, dtype=bool)
+        self._fixes_[index] = FIXED
+        if np.all(self._fixes_): self._fixes_ = None  # ==UNFIXED
+    
+    def _set_unfixed(self, index):
+        import numpy as np
+        if not self._has_fixes(): self._fixes_ = np.ones(self.size, dtype=bool)
+        #rav_i = self._raveled_index_for(param)[index]
+        self._fixes_[index] = UNFIXED
+        if np.all(self._fixes_): self._fixes_ = None  # ==UNFIXED
+
+    def _connect_fixes(self):
+        import numpy as np
+        fixed_indices = self.constraints[__fixed__]
+        if fixed_indices.size > 0:
+            self._fixes_ = np.ones(self.size, dtype=bool) * UNFIXED
+            self._fixes_[fixed_indices] = FIXED
+        else:
+            self._fixes_ = None
+
     #===========================================================================
     # Constrain operations -> done
     #===========================================================================
@@ -174,18 +203,29 @@ class Constrainable(Nameable, Indexable, Parameterizable):
             self._set_params(transform.initialize(self._get_params()), update=False)
         reconstrained = self.unconstrain()
         self.constraints.add(transform, self._raveled_index())
-        if reconstrained.size > 0:
+        if warning and reconstrained.size > 0:
             print "WARNING: reconstraining parameters {}".format(self.parameter_names)
         if update:
             self._highest_parent_.parameters_changed()
-        # if self.has_parent():
-        #     self._highest_parent_._add_constrain(self, transform, warning)
-        # else:
-        #     for p in self._parameters_:
-        #         self._add_constrain(p, transform, warning)
-        #     if update:
-        #         self.parameters_changed()
 
+    def unconstrain(self, *transforms):
+        """
+        :param transforms: The transformations to unconstrain from.
+
+        remove all :py:class:`GPy.core.transformations.Transformation`
+        transformats of this parameter object.
+        """
+        if len(transforms) == 0:
+            transforms = self.constraints.properties()
+        import numpy as np
+        removed = np.empty((0,),dtype=int)
+        for t in transforms:
+            unconstrained = self.constraints.remove(t, self._raveled_index())
+            removed = np.union1d(removed, unconstrained)
+            if t is __fixed__:
+                self._highest_parent_._set_unfixed(unconstrained)
+        return removed
+    
     def constrain_positive(self, warning=True, update=True):
         """
         :param warning: print a warning if re-constraining parameters.
@@ -211,21 +251,6 @@ class Constrainable(Nameable, Indexable, Parameterizable):
         """
         self.constrain(Logistic(lower, upper), warning=warning, update=update)
 
-    def unconstrain(self, *transforms):
-        """
-        :param transforms: The transformations to unconstrain from.
-
-        remove all :py:class:`GPy.core.transformations.Transformation`
-        transformats of this parameter object.
-        """
-        if len(transforms) == 0:
-            transforms = self.constraints.properties()
-        import numpy as np
-        removed = np.empty((0,),dtype=int)
-        for t in transforms:
-            removed = np.union1d(removed, self.constraints.remove(t, self._raveled_index()))
-        return removed
-    
     def unconstrain_positive(self):
         """
         Remove positive constraint of this parameter.

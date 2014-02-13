@@ -53,7 +53,7 @@ class RBF(Kernpart):
 
         self.variance = Param('variance', variance, Logexp())
         
-        self.lengthscale = Param('lengthscale', lengthscale)
+        self.lengthscale = Param('lengthscale', lengthscale, Logexp())
         self.lengthscale.add_observer(self, self.update_lengthscale)
         self.update_lengthscale(self.lengthscale)
         

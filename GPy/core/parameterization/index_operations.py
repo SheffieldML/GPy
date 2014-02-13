@@ -57,6 +57,7 @@ class ParameterIndexOperations(object):
     You can give an offset to set an offset for the given indices in the
     index array, for multi-param handling.
     '''
+    _offset = 0
     def __init__(self, constraints=None):
         self._properties = IntArrayDict()
         if constraints is not None:
@@ -119,6 +120,14 @@ class ParameterIndexOperations(object):
                 del self._properties[prop]
             return removed.astype(int)
         return numpy.array([]).astype(int)
+    
+    def update(self, parameter_index_view, offset=0):
+        for i, v in parameter_index_view.iteritems():
+            self.add(i, v+offset)
+
+    
+    def copy(self):
+        return ParameterIndexOperations(dict(self.iteritems()))
     
     def __getitem__(self, prop):
         return self._properties[prop]
@@ -223,9 +232,9 @@ class ParameterIndexOperationsView(object):
         import pprint
         return pprint.pformat(dict(self.iteritems()))
 
-    def update(self, parameter_index_view):
+    def update(self, parameter_index_view, offset=0):
         for i, v in parameter_index_view.iteritems():
-            self.add(i, v)
+            self.add(i, v+offset)
     
     
     def copy(self):

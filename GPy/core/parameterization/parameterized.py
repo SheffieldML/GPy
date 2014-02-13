@@ -87,17 +87,20 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
         elif param not in self._parameters_:
             # make sure the size is set
             if index is None:
+                self.constraints.update(param.constraints, self.size)
                 self._parameters_.append(param)
             else:
                 start = sum(p.size for p in self._parameters_[:index])
                 self.constraints.shift(start, param.size)
+                self.constraints.update(param.constraints, start)
                 self._parameters_.insert(index, param)
             self.size += param.size
         else:
             raise RuntimeError, """Parameter exists already added and no copy made"""
         self._connect_parameters()
-        for p in self._parameters_:
-            p._parent_changed(self)
+        self._notify_parent_change()
+        self._connect_fixes()
+
 
     def add_parameters(self, *parameters):
         """
@@ -120,7 +123,13 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
         param._direct_parent_ = None
         param._parent_index_ = None
         param._connect_fixes()
+        param._notify_parent_change()
+        pname = adjust_name_for_printing(param.name)
+        if pname in self._added_names_:
+            del self.__dict__[pname]
         self._connect_parameters()
+        #self._notify_parent_change()
+        self._connect_fixes()
 
     def _connect_parameters(self):
         # connect parameterlist to this parameterized object
@@ -149,7 +158,6 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
             elif not (pname in not_unique):
                 self.__dict__[pname] = p
                 self._added_names_.add(pname)
-        self._connect_fixes()
 
     #===========================================================================
     # Pickling operations

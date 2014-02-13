@@ -72,6 +72,13 @@ class Parentable(object):
     def has_parent(self):
         return self._direct_parent_ is not None
 
+    def _notify_parent_change(self):
+        for p in self._parameters_:
+            p._parent_changed(self)
+
+    def _parent_changed(self):
+        raise NotImplementedError, "shouldnt happen, Parentable objects need to be able to change their parent"
+
     @property
     def _highest_parent_(self):
         if self._direct_parent_ is None:
@@ -182,11 +189,9 @@ class Constrainable(Nameable, Indexable, Parameterizable):
     # Constrain operations -> done
     #===========================================================================
     def _parent_changed(self, parent):
-        c = self.constraints
         from index_operations import ParameterIndexOperationsView
         self.constraints = ParameterIndexOperationsView(parent.constraints, parent._offset_for(self), self.size)
-        self.constraints.update(c)
-        del c
+        self._fixes_ = None
         for p in self._parameters_:
             p._parent_changed(parent)
 

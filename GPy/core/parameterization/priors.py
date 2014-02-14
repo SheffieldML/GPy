@@ -21,6 +21,8 @@ class Prior(object):
         from ...plotting.matplot_dep import priors_plots
         priors_plots.univariate_plot(self)
 
+    def __repr__(self, *args, **kwargs):
+        return self.__str__()
 
 class Gaussian(Prior):
     """

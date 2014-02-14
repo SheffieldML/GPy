@@ -228,10 +228,9 @@ class Constrainable(Nameable, Indexable, Parameterizable):
     
     def log_prior(self):
         """evaluate the prior"""
-        import numpy as np
         if self.priors.size > 0:
             x = self._get_params()
-            return np.sum([p.lnpdf(x[ind]) for p, ind in self.priors.iteritems()])
+            return reduce(lambda a,b: a+b, [p.lnpdf(x[ind]).sum() for p, ind in self.priors.iteritems()], 0)
         return 0.
     
     def _log_prior_gradients(self):

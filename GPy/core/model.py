@@ -403,32 +403,34 @@ class Model(Parameterized):
         x = self._get_params_transformed().copy()
 
         if not verbose:
-            # just check the global ratio
-            dx = step * np.sign(np.random.uniform(-1, 1, x.size))
-
-            # evaulate around the point x
-            f1 = self.objective_function(x + dx)
-            f2 = self.objective_function(x - dx)
-            gradient = self.objective_function_gradients(x)
-            
+            # make sure only to test the selected parameters
             if target_param is None:
                 transformed_index = range(len(x))
             else:
                 transformed_index = self._raveled_index_for(target_param)
                 if self._has_fixes():
                     indices = np.r_[:self.size]
-                    which = (transformed_index[:,None]==indices[self._fixes_]).nonzero()[0]
-                    indices -= (~self._fixes_).cumsum()
-                    transformed_index = indices[which]
+                    which = (transformed_index[:,None]==indices[self._fixes_][None,:]).nonzero()
+                    transformed_index = (indices-(~self._fixes_).cumsum())[transformed_index[which[0]]]
                     
                 if transformed_index.size == 0:
                     print "No free parameters to check"
                     return
             
+            # just check the global ratio
+            dx = np.zeros_like(x)
+            dx[transformed_index] = step * np.sign(np.random.uniform(-1, 1, transformed_index.size))
+            
+            # evaulate around the point x
+            f1 = self.objective_function(x + dx)
+            f2 = self.objective_function(x - dx)
+            gradient = self.objective_function_gradients(x)
+
+            dx = dx[transformed_index]
             gradient = gradient[transformed_index]
+            
             numerical_gradient = (f1 - f2) / (2 * dx)
             global_ratio = (f1 - f2) / (2 * np.dot(dx, np.where(gradient == 0, 1e-32, gradient)))
-
             return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gradient - numerical_gradient).mean() < tolerance)
         else:
             # check the gradient of each parameter individually, and do some pretty printing
@@ -457,7 +459,7 @@ class Model(Parameterized):
                     which = (param_index[:,None]==indices[self._fixes_][None,:]).nonzero()
                     param_index = param_index[which[0]]
                     transformed_index = (indices-(~self._fixes_).cumsum())[param_index]
-                    print param_index, transformed_index
+                    #print param_index, transformed_index
                 else:
                     transformed_index = param_index
                     

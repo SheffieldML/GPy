@@ -56,10 +56,10 @@ class StateSpace_1(Model):
 
         # Default kernel
         if kernel is None:
-            self.kern = kern.Matern32(1,lengthscale=0.5)
+            self.kern = kern.Matern32(1,lengthscale=1)
             #self.spacekern = kern.rbf(1,lengthscale=0.1)
-            self.spacekern = kern.exponential(1,lengthscale=0.4)
-            #self.spacekern = kern.Matern32(1,lengthscale=0.5)
+            self.spacekern = kern.exponential(1,lengthscale=1)
+            #self.spacekern = kern.Matern52(1,lengthscale=1)
         else:
             self.kern = kernel
 
@@ -247,11 +247,19 @@ class StateSpace_1(Model):
             reli = np.empty((Y.shape[0],Y.shape[1]))
 
             
+            def forceAspect(ax,aspect=1):
+                im = ax.get_images()
+                extent =  im[0].get_extent()
+                ax.set_aspect(abs((extent[1]-extent[0])/(extent[3]-extent[2]))/aspect)
             # mean
-            pb.figure(1)
+            fig = pb.figure(100)
+            ax = fig.add_subplot(111)
             pb.imshow(m,interpolation="nearest")
+            #pb.contour(m)
+            forceAspect(ax,aspect=1)
+            #pb.tight_layout()
             # data Y
-            pb.figure(2)
+            pb.figure(200)
             pb.imshow(Y,interpolation="nearest")
 
             #realisation
@@ -277,8 +285,8 @@ class StateSpace_1(Model):
             Y = self.Y
 
         # Plot the values
-        #gpplot(Xgrid, m, lower, upper, axes=ax, edgecol=linecol, fillcol=fillcol)
-        gpplot(self.X, m, lower, upper, axes=ax, edgecol=linecol, fillcol=fillcol)
+        gpplot(Xgrid, m, lower, upper, axes=ax, edgecol=linecol, fillcol=fillcol)
+        #gpplot(self.X, m, lower, upper, axes=ax, edgecol=linecol, fillcol=fillcol)
         ax.plot(self.X, self.Y, 'kx', mew=1.5)
 
         # Optionally plot some samples
@@ -453,7 +461,8 @@ class StateSpace_1(Model):
                      lik -= 0.5*(v*v/S)[0,0]  # !!!
                  else:
                      v = Y[:,k][None].T-H.dot(m)
-                     S = H.dot(P).dot(H.T) + R*np.eye(Y.shape[0])                
+                     S = H.dot(P).dot(H.T) + R*np.eye(Y.shape[0])
+                     #Should be LL, isupper = ...                
                      LL = linalg.cho_factor(S)
                      K = linalg.cho_solve(LL, H.dot(P)).T                
 #                     LL, isupper = linalg.cho_factor(H.dot(P).dot(H.T) + R*np.eye(Y.shape[1]))

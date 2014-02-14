@@ -147,7 +147,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
         super(Param, self).__setitem__(s, val, update=update)
         #self._notify_tied_parameters()
         if update:
-            self._highest_parent_.parameters_changed()
+            self._notify_parameters_changed()
 
     #===========================================================================
     # Index Operations:
@@ -340,14 +340,14 @@ class ParamConcatenation(object):
         [numpy.place(p, ind[ps], vals[ps])# and p._notify_tied_parameters()
          for p, ps in zip(self.params, self._param_slices_)]
         if update:
-            self.params[0]._highest_parent_.parameters_changed()
+            self.params[0]._notify_parameters_changed()
     def _vals(self):
         return numpy.hstack([p._get_params() for p in self.params])
     #===========================================================================
     # parameter operations:
     #===========================================================================
     def update_all_params(self):
-        self.params[0]._highest_parent_.parameters_changed()
+        self.params[0]._notify_parameters_changed()
 
     def constrain(self, constraint, warning=True):
         [param.constrain(constraint, update=False) for param in self.params]

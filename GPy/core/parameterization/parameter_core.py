@@ -19,43 +19,6 @@ class Observable(object):
         del self._observers_[observer]
     def _notify_observers(self):
         [callble(self) for callble in self._observers_.itervalues()]
-
-class Parameterizable(object):
-    def __init__(self, *args, **kwargs):
-        from GPy.core.parameterization.array_core import ParamList
-        _parameters_ = ParamList()
-    
-    def parameter_names(self, add_name=False):
-        if add_name:
-            return [adjust_name_for_printing(self.name) + "." + xi for x in self._parameters_ for xi in x.parameter_names(add_name=True)]
-        return [xi for x in self._parameters_ for xi in x.parameter_names(add_name=True)]
-
-    def _collect_gradient(self, target):
-        import itertools
-        [p._collect_gradient(target[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
-
-    def _get_params(self):
-        import numpy as np
-        # don't overwrite this anymore!
-        if not self.size:
-            return np.empty(shape=(0,), dtype=np.float64)
-        return np.hstack([x._get_params() for x in self._parameters_ if x.size > 0])
-
-    def _set_params(self, params, update=True):
-        # don't overwrite this anymore!
-        import itertools
-        [p._set_params(params[s], update=update) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
-        self.parameters_changed()
-
-
-    def parameters_changed(self):
-        """
-        This method gets called when parameters have changed.
-        Another way of listening to param changes is to
-        add self as a listener to the param, such that
-        updates get passed through. See :py:function:``GPy.core.param.Observable.add_observer``
-        """
-        pass
     
 class Pickleable(object):
     def _getstate(self):
@@ -120,6 +83,50 @@ class Nameable(Parentable):
         self._name = name
         if self.has_parent():
             self._direct_parent_._name_changed(self, from_name)    
+
+
+class Parameterizable(Parentable):
+    def __init__(self, *args, **kwargs):
+        super(Parameterizable, self).__init__(*args, **kwargs)
+        from GPy.core.parameterization.array_core import ParamList
+        _parameters_ = ParamList()
+    
+    def parameter_names(self, add_name=False):
+        if add_name:
+            return [adjust_name_for_printing(self.name) + "." + xi for x in self._parameters_ for xi in x.parameter_names(add_name=True)]
+        return [xi for x in self._parameters_ for xi in x.parameter_names(add_name=True)]
+
+    def _collect_gradient(self, target):
+        import itertools
+        [p._collect_gradient(target[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
+
+    def _get_params(self):
+        import numpy as np
+        # don't overwrite this anymore!
+        if not self.size:
+            return np.empty(shape=(0,), dtype=np.float64)
+        return np.hstack([x._get_params() for x in self._parameters_ if x.size > 0])
+
+    def _set_params(self, params, update=True):
+        # don't overwrite this anymore!
+        import itertools
+        [p._set_params(params[s], update=update) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
+        self.parameters_changed()
+
+    def parameters_changed(self):
+        """
+        This method gets called when parameters have changed.
+        Another way of listening to param changes is to
+        add self as a listener to the param, such that
+        updates get passed through. See :py:function:``GPy.core.param.Observable.add_observer``
+        """
+        pass
+
+    def _notify_parameters_changed(self):
+        self.parameters_changed()
+        if self.has_parent():
+            self._direct_parent_._notify_parameters_changed()
+
 
 class Gradcheckable(Parentable):
     #===========================================================================
@@ -322,7 +329,7 @@ class Constrainable(Nameable, Indexable, Parameterizable):
             print "WARNING: reconstraining parameters {}".format(self.parameter_names() or self.name)
         which.add(transform, self._raveled_index())
         if update:
-            self._highest_parent_.parameters_changed()
+            self._notify_parameters_changed()
 
     def _remove_from_index_operations(self, which, transforms):
         if len(transforms) == 0:

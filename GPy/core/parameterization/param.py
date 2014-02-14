@@ -146,7 +146,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
     def __setitem__(self, s, val, update=True):
         super(Param, self).__setitem__(s, val, update=update)
         #self._notify_tied_parameters()
-        if update:
+        if update and self._s_not_empty(s):
             self._notify_parameters_changed()
 
     #===========================================================================

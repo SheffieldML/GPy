@@ -37,10 +37,26 @@ class ObservableArray(np.ndarray, Observable):
         if obj is None: return
         self._observers_ = getattr(obj, '_observers_', None)
 
+    def _s_not_empty(self, s):
+        # this checks whether there is something picked by this slice.
+        return True
+        # TODO:  disarmed, for performance increase,
+        if not isinstance(s, (list,tuple,np.ndarray)):
+            return True
+        if isinstance(s, (list,tuple)):
+            return len(s)!=0
+        if isinstance(s, np.ndarray):
+            if s.dtype is bool:
+                return np.all(s)
+            else:
+                return s.size != 0
+
     def __setitem__(self, s, val, update=True):
-        super(ObservableArray, self).__setitem__(s, val)
-        if update:
-            self._notify_observers()
+        if self._s_not_empty(s):
+            super(ObservableArray, self).__setitem__(s, val)
+            if update:
+                self._notify_observers()
+                
     def __getslice__(self, start, stop):
         return self.__getitem__(slice(start, stop))
     def __setslice__(self, start, stop, val):

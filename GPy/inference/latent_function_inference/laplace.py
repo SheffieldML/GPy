@@ -216,6 +216,8 @@ class Laplace(object):
         """
         if not log_concave:
             #print "Under 1e-10: {}".format(np.sum(W < 1e-6))
+            # W[W<1e-6] = 1e-6
+            # NOTE: when setting a parameter inside parameters_changed it will allways come to closed update circles!!!
             W.__setitem__(W < 1e-6, 1e-6, update=False)  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                 # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                 # To cause the posterior to become less certain than the prior and likelihood,

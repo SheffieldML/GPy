@@ -115,7 +115,7 @@ class Posterior(object):
     @property
     def woodbury_inv(self):
         if self._woodbury_inv is None:
-            self._woodbury_inv, _ = dpotri(self.woodbury_chol, lower=0)
+            self._woodbury_inv, _ = dpotri(self.woodbury_chol, lower=1)
             #self._woodbury_inv, _ = dpotrs(self.woodbury_chol, np.eye(self.woodbury_chol.shape[0]), lower=1)
             symmetrify(self._woodbury_inv)
         return self._woodbury_inv

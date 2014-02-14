@@ -17,7 +17,8 @@ import os
 from config import *
 
 if np.all(np.float64((scipy.__version__).split('.')[:2]) >= np.array([0, 12])):
-    import scipy.linalg.lapack as lapack
+    #import scipy.linalg.lapack.clapack as lapack
+    from scipy.linalg import lapack
 else:
     from scipy.linalg.lapack import flapack as lapack
 
@@ -41,42 +42,103 @@ else:
         _blas_available = False
         warnings.warn("warning: caught this exception:" + str(e))
 
-def dtrtri(L, lower=0):
+def force_F_ordered_symmetric(A):
     """
-    Wrapper for lapack dtrtrs function
+    return a F ordered version of A, assuming A is symmetric
+    """
+    if A.flags['F_CONTIGUOUS']:
+        return A
+    if A.flags['C_CONTIGUOUS']:
+        return A.T
+    else:
+        return np.asfortranarray(A)
+
+def force_F_ordered(A):
+    """
+    return a F ordered version of A, assuming A is triangular
+    """
+    if A.flags['F_CONTIGUOUS']:
+        return A
+    print "why are your arrays not F order?"
+    return np.asfortranarray(A)
+
+def jitchol(A, maxtries=5):
+    A = force_F_ordered_symmetric(A)
+    L, info = lapack.dpotrf(A, lower=1)
+    if info == 0:
+        return L
+    else:
+        if maxtries==0:
+            raise linalg.LinAlgError, "not positive definite, even with jitter."
+        diagA = np.diag(A)
+        if np.any(diagA <= 0.):
+            raise linalg.LinAlgError, "not pd: non-positive diagonal elements"
+        jitter = diagA.mean() * 1e-6
+
+        return jitchol(A+np.eye(A.shape[0])*jitter, maxtries-1)
+
+#def jitchol(A, maxtries=5):
+#    A = np.ascontiguousarray(A)
+#    L, info = lapack.dpotrf(A, lower=1)
+#    if info == 0:
+#        return L
+#    else:
+#        diagA = np.diag(A)
+#        if np.any(diagA <= 0.):
+#            raise linalg.LinAlgError, "not pd: non-positive diagonal elements"
+#        jitter = diagA.mean() * 1e-6
+#        while maxtries > 0 and np.isfinite(jitter):
+#            print 'Warning: adding jitter of {:.10e}'.format(jitter)
+#            try:
+#                return linalg.cholesky(A + np.eye(A.shape[0]).T * jitter, lower=True)
+#            except:
+#                jitter *= 10
+#            finally:
+#                maxtries -= 1
+#        raise linalg.LinAlgError, "not positive definite, even with jitter."
+#
+
+
+
+
+def dtrtri(L, lower=1):
+    """
+    Wrapper for lapack dtrtri function
     Inverse of L
 
     :param L: Triangular Matrix L
     :param lower: is matrix lower (true) or upper (false)
     :returns: Li, info
     """
+    L = force_F_ordered(L)
     return lapack.dtrtri(L, lower=lower)
 
-def dtrtrs(A, B, lower=0, trans=0, unitdiag=0):
+def dtrtrs(A, B, lower=1, trans=0, unitdiag=0):
     """
     Wrapper for lapack dtrtrs function
 
-    :param A: Matrix A
+    :param A: Matrix A(triangular)
     :param B: Matrix B
     :param lower: is matrix lower (true) or upper (false)
     :returns:
 
     """
+    A = force_F_ordered(A)
+    #Note: B does not seem to need to be F ordered!
     return lapack.dtrtrs(A, B, lower=lower, trans=trans, unitdiag=unitdiag)
 
-def dpotrs(A, B, lower=0):
+def dpotrs(A, B, lower=1):
     """
     Wrapper for lapack dpotrs function
-
     :param A: Matrix A
     :param B: Matrix B
     :param lower: is matrix lower (true) or upper (false)
     :returns:
-
     """
+    A = force_F_ordered(A)
     return lapack.dpotrs(A, B, lower=lower)
 
-def dpotri(A, lower=0):
+def dpotri(A, lower=1):
     """
     Wrapper for lapack dpotri function
 
@@ -85,7 +147,12 @@ def dpotri(A, lower=0):
     :returns: A inverse
 
     """
-    return lapack.dpotri(A, lower=lower)
+    assert lower==1, "scipy linalg behaviour is very weird. please use lower, fortran ordered arrays"
+
+    A = force_F_ordered(A)
+    R, info = lapack.dpotri(A, lower=0)
+    symmetrify(R)
+    return R, info
 
 def pddet(A):
     """
@@ -133,60 +200,8 @@ def _mdot_r(a, b):
             b = b[0]
     return np.dot(a, b)
 
-def jitchol(A, maxtries=5):
-    A = np.asfortranarray(A)
-    L, info = lapack.dpotrf(A, lower=1)
-    if info == 0:
-        return L
-    else:
-        diagA = np.diag(A)
-        if np.any(diagA <= 0.):
-            raise linalg.LinAlgError, "not pd: non-positive diagonal elements"
-        jitter = diagA.mean() * 1e-6
-        while maxtries > 0 and np.isfinite(jitter):
-            print 'Warning: adding jitter of {:.10e}'.format(jitter)
-            try:
-                return linalg.cholesky(A + np.eye(A.shape[0]).T * jitter, lower=True)
-            except:
-                jitter *= 10
-            finally:
-                maxtries -= 1
-        raise linalg.LinAlgError, "not positive definite, even with jitter."
-
-
-
-def jitchol_old(A, maxtries=5):
-    """
-    :param A: An almost pd square matrix
-
-    :rval L: the Cholesky decomposition of A
-
-    .. note:
-
-      Adds jitter to K, to enforce positive-definiteness
-      if stuff breaks, please check:
-      np.allclose(sp.linalg.cholesky(XXT, lower = True), np.triu(sp.linalg.cho_factor(XXT)[0]).T)
-
-    """
-    try:
-        return linalg.cholesky(A, lower=True)
-    except linalg.LinAlgError:
-        diagA = np.diag(A)
-        if np.any(diagA < 0.):
-            raise linalg.LinAlgError, "not pd: negative diagonal elements"
-        jitter = diagA.mean() * 1e-6
-        for i in range(1, maxtries + 1):
-            print '\rWarning: adding jitter of {:.10e}                        '.format(jitter),
-            try:
-                return linalg.cholesky(A + np.eye(A.shape[0]).T * jitter, lower=True)
-            except:
-                jitter *= 10
-
-        raise linalg.LinAlgError, "not positive definite, even with jitter."
-
 def pdinv(A, *args):
     """
-
     :param A: A DxD pd numpy array
 
     :rval Ai: the inverse of A
@@ -201,7 +216,7 @@ def pdinv(A, *args):
     """
     L = jitchol(A, *args)
     logdet = 2.*np.sum(np.log(np.diag(L)))
-    Li = chol_inv(L)
+    Li = dtrtri(L)
     Ai, _ = lapack.dpotri(L)
     # Ai = np.tril(Ai) + np.tril(Ai,-1).T
     symmetrify(Ai)
@@ -209,7 +224,7 @@ def pdinv(A, *args):
     return Ai, L, Li, logdet
 
 
-def chol_inv(L):
+def dtrtri(L):
     """
     Inverts a Cholesky lower triangular matrix
 
@@ -218,7 +233,8 @@ def chol_inv(L):
 
     """
 
-    return lapack.dtrtri(L, lower=True)[0]
+    L = force_F_ordered(L)
+    return lapack.dtrtri(L, lower=1)[0]
 
 
 def multiple_pdinv(A):
@@ -234,7 +250,7 @@ def multiple_pdinv(A):
     N = A.shape[-1]
     chols = [jitchol(A[:, :, i]) for i in range(N)]
     halflogdets = [np.sum(np.log(np.diag(L[0]))) for L in chols]
-    invs = [lapack.dpotri(L[0], True)[0] for L in chols]
+    invs = [dpotri(L[0], True)[0] for L in chols]
     invs = [np.triu(I) + np.triu(I, 1).T for I in invs]
     return np.dstack(invs), np.array(halflogdets)
 
@@ -425,7 +441,8 @@ def tdot_blas(mat, out=None):
 
     symmetrify(out, upper=True)
 
-    return out
+
+    return np.ascontiguousarray(out)
 
 def tdot(*args, **kwargs):
     if _blas_available:
@@ -557,24 +574,24 @@ def cholupdate(L, x):
 def backsub_both_sides(L, X, transpose='left'):
     """ Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky"""
     if transpose == 'left':
-        tmp, _ = lapack.dtrtrs(L, np.asfortranarray(X), lower=1, trans=1)
-        return lapack.dtrtrs(L, np.asfortranarray(tmp.T), lower=1, trans=1)[0].T
+        tmp, _ = dtrtrs(L, X, lower=1, trans=1)
+        return dtrtrs(L, tmp.T, lower=1, trans=1)[0].T
     else:
-        tmp, _ = lapack.dtrtrs(L, np.asfortranarray(X), lower=1, trans=0)
-        return lapack.dtrtrs(L, np.asfortranarray(tmp.T), lower=1, trans=0)[0].T
+        tmp, _ = dtrtrs(L, X, lower=1, trans=0)
+        return dtrtrs(L, tmp.T, lower=1, trans=0)[0].T
 
 def PCA(Y, input_dim):
     """
-Principal component analysis: maximum likelihood solution by SVD
+    Principal component analysis: maximum likelihood solution by SVD
 
-:param Y: NxD np.array of data
-:param input_dim: int, dimension of projection
+    :param Y: NxD np.array of data
+    :param input_dim: int, dimension of projection
 
 
-:rval X: - Nxinput_dim np.array of dimensionality reduced data
-:rval W: - input_dimxD mapping from X to Y
+    :rval X: - Nxinput_dim np.array of dimensionality reduced data
+    :rval W: - input_dimxD mapping from X to Y
 
-"""
+    """
     if not np.allclose(Y.mean(axis=0), 0.0):
         print "Y is not zero mean, centering it locally (GPy.util.linalg.PCA)"
 

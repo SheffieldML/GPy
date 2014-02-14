@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ..util.linalg import mdot, tdot, symmetrify, backsub_both_sides, chol_inv, dtrtrs, dpotrs, dpotri
+from ..util.linalg import mdot, tdot, symmetrify, backsub_both_sides, dtrtrs, dpotrs, dpotri
 from gp import GP
 from parameterization.param import Param
 from ..inference.latent_function_inference import varDTC

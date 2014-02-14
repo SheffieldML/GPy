@@ -57,9 +57,12 @@ class ParameterIndexOperations(object):
     You can give an offset to set an offset for the given indices in the
     index array, for multi-param handling.
     '''
-    def __init__(self):
+    _offset = 0
+    def __init__(self, constraints=None):
         self._properties = IntArrayDict()
-        #self._reverse = collections.defaultdict(list)
+        if constraints is not None:
+            for t, i in constraints.iteritems():
+                self.add(t, i)
         
     def __getstate__(self):
         return self._properties#, self._reverse
@@ -117,6 +120,14 @@ class ParameterIndexOperations(object):
                 del self._properties[prop]
             return removed.astype(int)
         return numpy.array([]).astype(int)
+    
+    def update(self, parameter_index_view, offset=0):
+        for i, v in parameter_index_view.iteritems():
+            self.add(i, v+offset)
+
+    
+    def copy(self):
+        return ParameterIndexOperations(dict(self.iteritems()))
     
     def __getitem__(self, prop):
         return self._properties[prop]
@@ -191,7 +202,7 @@ class ParameterIndexOperationsView(object):
 
 
     def indices(self):
-        [ind for ind in self.iterindices()]
+        return [ind for ind in self.iterindices()]
 
 
     def properties_for(self, index):
@@ -206,6 +217,8 @@ class ParameterIndexOperationsView(object):
         removed = self._param_index_ops.remove(prop, indices+self._offset)
         if removed.size > 0:
             return removed - self._size + 1
+        if self[prop].size == 0:
+            del self[prop]
         return removed
 
 
@@ -219,9 +232,12 @@ class ParameterIndexOperationsView(object):
         import pprint
         return pprint.pformat(dict(self.iteritems()))
 
-    def update(self, parameter_index_view):
+    def update(self, parameter_index_view, offset=0):
         for i, v in parameter_index_view.iteritems():
-            self.add(i, v)
-        
+            self.add(i, v+offset)
+    
+    
+    def copy(self):
+        return ParameterIndexOperations(dict(self.iteritems()))
     pass
 

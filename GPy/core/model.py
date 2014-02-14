@@ -403,17 +403,34 @@ class Model(Parameterized):
         x = self._get_params_transformed().copy()
 
         if not verbose:
+            # make sure only to test the selected parameters
+            if target_param is None:
+                transformed_index = range(len(x))
+            else:
+                transformed_index = self._raveled_index_for(target_param)
+                if self._has_fixes():
+                    indices = np.r_[:self.size]
+                    which = (transformed_index[:,None]==indices[self._fixes_][None,:]).nonzero()
+                    transformed_index = (indices-(~self._fixes_).cumsum())[transformed_index[which[0]]]
+                    
+                if transformed_index.size == 0:
+                    print "No free parameters to check"
+                    return
+            
             # just check the global ratio
-            dx = step * np.sign(np.random.uniform(-1, 1, x.size))
-
+            dx = np.zeros_like(x)
+            dx[transformed_index] = step * np.sign(np.random.uniform(-1, 1, transformed_index.size))
+            
             # evaulate around the point x
             f1 = self.objective_function(x + dx)
             f2 = self.objective_function(x - dx)
             gradient = self.objective_function_gradients(x)
 
+            dx = dx[transformed_index]
+            gradient = gradient[transformed_index]
+            
             numerical_gradient = (f1 - f2) / (2 * dx)
             global_ratio = (f1 - f2) / (2 * np.dot(dx, np.where(gradient == 0, 1e-32, gradient)))
-
             return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gradient - numerical_gradient).mean() < tolerance)
         else:
             # check the gradient of each parameter individually, and do some pretty printing
@@ -433,43 +450,50 @@ class Model(Parameterized):
             separator = '-' * len(header_string[0])
             print '\n'.join([header_string[0], separator])
             if target_param is None:
-                param_list = range(len(x))
+                param_index = range(len(x))
+                transformed_index = param_index
             else:
-                param_list = self._raveled_index_for(target_param)
+                param_index = self._raveled_index_for(target_param)
                 if self._has_fixes():
-                    param_list = np.intersect1d(np.r_[:self.size][self._fixes_], param_list, True)
-
-                if param_list.size == 0:
+                    indices = np.r_[:self.size]
+                    which = (param_index[:,None]==indices[self._fixes_][None,:]).nonzero()
+                    param_index = param_index[which[0]]
+                    transformed_index = (indices-(~self._fixes_).cumsum())[param_index]
+                    #print param_index, transformed_index
+                else:
+                    transformed_index = param_index
+                    
+                if param_index.size == 0:
                     print "No free parameters to check"
                     return
 
             gradient = self.objective_function_gradients(x)
             np.where(gradient == 0, 1e-312, gradient)
             ret = True
-            for i, ind in enumerate(param_list):
+            for nind, xind in itertools.izip(param_index, transformed_index):
                 xx = x.copy()
-                xx[i] += step
+                xx[xind] += step
                 f1 = self.objective_function(xx)
-                xx[i] -= 2.*step
+                xx[xind] -= 2.*step
                 f2 = self.objective_function(xx)
-                
                 numerical_gradient = (f1 - f2) / (2 * step)
-                ratio = (f1 - f2) / (2 * step * gradient[i])
-                difference = np.abs((f1 - f2) / 2 / step - gradient[i])
+                ratio = (f1 - f2) / (2 * step * gradient[xind])
+                difference = np.abs((f1 - f2) / 2 / step - gradient[xind])
 
                 if (np.abs(1. - ratio) < tolerance) or np.abs(difference) < tolerance:
-                    formatted_name = "\033[92m {0} \033[0m".format(names[ind])
+                    formatted_name = "\033[92m {0} \033[0m".format(names[nind])
                     ret &= True
                 else:
-                    formatted_name = "\033[91m {0} \033[0m".format(names[ind])
+                    formatted_name = "\033[91m {0} \033[0m".format(names[nind])
                     ret &= False
 
                 r = '%.6f' % float(ratio)
                 d = '%.6f' % float(difference)
-                g = '%.6f' % gradient[i]
+                g = '%.6f' % gradient[xind]
                 ng = '%.6f' % float(numerical_gradient)
                 grad_string = "{0:<{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name, r, d, g, ng, c0=cols[0] + 9, c1=cols[1], c2=cols[2], c3=cols[3], c4=cols[4])
                 print grad_string
+            self._set_params_transformed(x)
             return ret
         
     def input_sensitivity(self):

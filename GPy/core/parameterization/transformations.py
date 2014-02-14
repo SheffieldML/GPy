@@ -6,7 +6,16 @@ import numpy as np
 from domains import _POSITIVE,_NEGATIVE, _BOUNDED
 import sys
 import weakref
+
 _lim_val = -np.log(sys.float_info.epsilon)
+
+#===============================================================================
+# Fixing constants
+__fixed__ = "fixed"
+FIXED = False
+UNFIXED = True
+#===============================================================================
+
 
 class Transformation(object):
     domain = None

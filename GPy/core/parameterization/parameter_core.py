@@ -29,7 +29,25 @@ class Parameterizable(object):
         if add_name:
             return [adjust_name_for_printing(self.name) + "." + xi for x in self._parameters_ for xi in x.parameter_names(add_name=True)]
         return [xi for x in self._parameters_ for xi in x.parameter_names(add_name=True)]
-    
+
+    def _collect_gradient(self, target):
+        import itertools
+        [p._collect_gradient(target[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
+
+    def _get_params(self):
+        import numpy as np
+        # don't overwrite this anymore!
+        if not self.size:
+            return np.empty(shape=(0,), dtype=np.float64)
+        return np.hstack([x._get_params() for x in self._parameters_ if x.size > 0])
+
+    def _set_params(self, params, update=True):
+        # don't overwrite this anymore!
+        import itertools
+        [p._set_params(params[s], update=update) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
+        self.parameters_changed()
+
+
     def parameters_changed(self):
         """
         This method gets called when parameters have changed.
@@ -130,17 +148,18 @@ class Indexable(object):
         that is an int array, containing the indexes for the flattened
         param inside this parameterized logic.
         """
-        raise NotImplementedError, "shouldnt happen, raveld index transformation required from non parameterization object?"
-
+        raise NotImplementedError, "shouldnt happen, raveld index transformation required from non parameterization object?"        
+        
 class Constrainable(Nameable, Indexable, Parameterizable):
     def __init__(self, name, default_constraint=None):
         super(Constrainable,self).__init__(name)
         self._default_constraint_ = default_constraint
         from index_operations import ParameterIndexOperations
         self.constraints = ParameterIndexOperations()
+        self.priors = ParameterIndexOperations()
         if self._default_constraint_ is not None:
             self.constrain(self._default_constraint_)
-        
+    
     #===========================================================================
     # Fixing Parameters:
     #===========================================================================
@@ -186,16 +205,41 @@ class Constrainable(Nameable, Indexable, Parameterizable):
             self._fixes_[fixed_indices] = FIXED
         else:
             self._fixes_ = None
+    
+    def _has_fixes(self):
+        return hasattr(self, "_fixes_") and self._fixes_ is not None
 
+    #===========================================================================
+    # Prior Operations
+    #===========================================================================
+    def set_prior(self, prior, warning=True, update=True):
+        repriorized = self.unset_priors()
+        self._add_to_index_operations(self.priors, repriorized, prior, warning, update)
+    
+    def unset_priors(self, *priors):
+        return self._remove_from_index_operations(self.priors, priors)
+    
+    def log_prior(self):
+        """evaluate the prior"""
+        import numpy as np
+        if self.priors.size > 0:
+            x = self._get_params()
+            return np.sum([p.lnpdf(x[ind]) for p, ind in self.priors.iteritems()])
+        return 0.
+    
+    def _log_prior_gradients(self):
+        """evaluate the gradients of the priors"""
+        import numpy as np
+        if self.priors.size > 0:
+            x = self._get_params()
+            ret = np.zeros(x.size)
+            [np.put(ret, ind, p.lnpdf_grad(x[ind])) for p, ind in self.priors.iteritems()]
+            return ret
+        return 0.
+        
     #===========================================================================
     # Constrain operations -> done
     #===========================================================================
-    def _parent_changed(self, parent):
-        from index_operations import ParameterIndexOperationsView
-        self.constraints = ParameterIndexOperationsView(parent.constraints, parent._offset_for(self), self.size)
-        self._fixes_ = None
-        for p in self._parameters_:
-            p._parent_changed(parent)
 
     def constrain(self, transform, warning=True, update=True):
         """
@@ -209,11 +253,7 @@ class Constrainable(Nameable, Indexable, Parameterizable):
         if isinstance(transform, Transformation):
             self._set_params(transform.initialize(self._get_params()), update=False)
         reconstrained = self.unconstrain()
-        self.constraints.add(transform, self._raveled_index())
-        if warning and reconstrained.size > 0:
-            print "WARNING: reconstraining parameters {}".format(self.parameter_names() or self.name)
-        if update:
-            self._highest_parent_.parameters_changed()
+        self._add_to_index_operations(self.constraints, reconstrained, transform, warning, update)
 
     def unconstrain(self, *transforms):
         """
@@ -222,16 +262,7 @@ class Constrainable(Nameable, Indexable, Parameterizable):
         remove all :py:class:`GPy.core.transformations.Transformation`
         transformats of this parameter object.
         """
-        if len(transforms) == 0:
-            transforms = self.constraints.properties()
-        import numpy as np
-        removed = np.empty((0,),dtype=int)
-        for t in transforms:
-            unconstrained = self.constraints.remove(t, self._raveled_index())
-            removed = np.union1d(removed, unconstrained)
-            if t is __fixed__:
-                self._highest_parent_._set_unfixed(unconstrained)
-        return removed
+        return self._remove_from_index_operations(self.constraints, transforms)
     
     def constrain_positive(self, warning=True, update=True):
         """
@@ -277,3 +308,35 @@ class Constrainable(Nameable, Indexable, Parameterizable):
         Remove (lower, upper) bounded constrain from this parameter/
         """
         self.unconstrain(Logistic(lower, upper))
+    
+    def _parent_changed(self, parent):
+        from index_operations import ParameterIndexOperationsView
+        self.constraints = ParameterIndexOperationsView(parent.constraints, parent._offset_for(self), self.size)
+        self.priors = ParameterIndexOperationsView(parent.priors, parent._offset_for(self), self.size)
+        self._fixes_ = None
+        for p in self._parameters_:
+            p._parent_changed(parent)
+
+    def _add_to_index_operations(self, which, reconstrained, transform, warning, update):
+        if warning and reconstrained.size > 0:
+            print "WARNING: reconstraining parameters {}".format(self.parameter_names() or self.name)
+        which.add(transform, self._raveled_index())
+        if update:
+            self._highest_parent_.parameters_changed()
+
+    def _remove_from_index_operations(self, which, transforms):
+        if len(transforms) == 0:
+            transforms = which.properties()
+        import numpy as np
+        removed = np.empty((0, ), dtype=int)
+        for t in transforms:
+            unconstrained = which.remove(t, self._raveled_index())
+            removed = np.union1d(removed, unconstrained)
+            if t is __fixed__:
+                self._highest_parent_._set_unfixed(unconstrained)
+        
+        return removed
+
+
+
+

@@ -107,7 +107,7 @@ class ParameterIndexOperations(object):
     def add(self, prop, indices):
         try:
             self._properties[prop] = combine_indices(self._properties[prop], indices)
-        except KeyError: 
+        except KeyError:
             self._properties[prop] = indices
     
     def remove(self, prop, indices):
@@ -215,10 +215,10 @@ class ParameterIndexOperationsView(object):
 
     def remove(self, prop, indices):
         removed = self._param_index_ops.remove(prop, indices+self._offset)
-        if removed.size > 0:
-            return removed - self._size + 1
         if self[prop].size == 0:
             del self[prop]
+        if removed.size > 0:
+            return removed - self._size + 1
         return removed
 
 

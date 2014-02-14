@@ -21,8 +21,6 @@ class Model(Parameterized):
     _allowed_failures = 10  # number of allowed failures
     def __init__(self, name):
         super(Model, self).__init__(name)  # Parameterized.__init__(self)
-        self.priors = []
-        self._priors = ParameterIndexOperations()
         self.optimization_runs = []
         self.sampling_runs = []
         self.preferred_optimizer = 'scg'
@@ -67,66 +65,66 @@ class Model(Parameterized):
         self.priors = state.pop()
         Parameterized._setstate(self, state)
 
-    def set_prior(self, regexp, what):
-        """
-
-        Sets priors on the model parameters.
-
-        **Notes**
-
-        Asserts that the prior is suitable for the constraint. If the
-        wrong constraint is in place, an error is raised.  If no
-        constraint is in place, one is added (warning printed).
-
-        For tied parameters, the prior will only be "counted" once, thus
-        a prior object is only inserted on the first tied index
-
-        :param regexp: regular expression of parameters on which priors need to be set.
-        :type param: string, regexp, or integer array
-        :param what: prior to set on parameter.
-        :type what: GPy.core.Prior type
-
-        """
-        if self.priors is None:
-            self.priors = [None for i in range(self._get_params().size)]
-
-        which = self.grep_param_names(regexp)
-
-        # check tied situation
-        tie_partial_matches = [tie for tie in self.tied_indices if (not set(tie).isdisjoint(set(which))) & (not set(tie) == set(which))]
-        if len(tie_partial_matches):
-            raise ValueError, "cannot place prior across partial ties"
-        tie_matches = [tie for tie in self.tied_indices if set(which) == set(tie) ]
-        if len(tie_matches) > 1:
-            raise ValueError, "cannot place prior across multiple ties"
-        elif len(tie_matches) == 1:
-            which = which[:1]  # just place a prior object on the first parameter
-
-
-        # check constraints are okay
-
-        if what.domain is _POSITIVE:
-            constrained_positive_indices = [i for i, t in zip(self.constrained_indices, self.constraints) if t.domain is _POSITIVE]
-            if len(constrained_positive_indices):
-                constrained_positive_indices = np.hstack(constrained_positive_indices)
-            else:
-                constrained_positive_indices = np.zeros(shape=(0,))
-            bad_constraints = np.setdiff1d(self.all_constrained_indices(), constrained_positive_indices)
-            assert not np.any(which[:, None] == bad_constraints), "constraint and prior incompatible"
-            unconst = np.setdiff1d(which, constrained_positive_indices)
-            if len(unconst):
-                print "Warning: constraining parameters to be positive:"
-                print '\n'.join([n for i, n in enumerate(self._get_param_names()) if i in unconst])
-                print '\n'
-                self.constrain_positive(unconst)
-        elif what.domain is _REAL:
-            assert not np.any(which[:, None] == self.all_constrained_indices()), "constraint and prior incompatible"
-        else:
-            raise ValueError, "prior not recognised"
-
-        # store the prior in a local list
-        for w in which:
-            self.priors[w] = what
+#     def set_prior(self, regexp, what):
+#         """
+# 
+#         Sets priors on the model parameters.
+# 
+#         **Notes**
+# 
+#         Asserts that the prior is suitable for the constraint. If the
+#         wrong constraint is in place, an error is raised.  If no
+#         constraint is in place, one is added (warning printed).
+# 
+#         For tied parameters, the prior will only be "counted" once, thus
+#         a prior object is only inserted on the first tied index
+# 
+#         :param regexp: regular expression of parameters on which priors need to be set.
+#         :type param: string, regexp, or integer array
+#         :param what: prior to set on parameter.
+#         :type what: GPy.core.Prior type
+# 
+#         """
+#         if self.priors is None:
+#             self.priors = [None for i in range(self._get_params().size)]
+# 
+#         which = self.grep_param_names(regexp)
+# 
+#         # check tied situation
+#         tie_partial_matches = [tie for tie in self.tied_indices if (not set(tie).isdisjoint(set(which))) & (not set(tie) == set(which))]
+#         if len(tie_partial_matches):
+#             raise ValueError, "cannot place prior across partial ties"
+#         tie_matches = [tie for tie in self.tied_indices if set(which) == set(tie) ]
+#         if len(tie_matches) > 1:
+#             raise ValueError, "cannot place prior across multiple ties"
+#         elif len(tie_matches) == 1:
+#             which = which[:1]  # just place a prior object on the first parameter
+# 
+# 
+#         # check constraints are okay
+# 
+#         if what.domain is _POSITIVE:
+#             constrained_positive_indices = [i for i, t in zip(self.constrained_indices, self.constraints) if t.domain is _POSITIVE]
+#             if len(constrained_positive_indices):
+#                 constrained_positive_indices = np.hstack(constrained_positive_indices)
+#             else:
+#                 constrained_positive_indices = np.zeros(shape=(0,))
+#             bad_constraints = np.setdiff1d(self.all_constrained_indices(), constrained_positive_indices)
+#             assert not np.any(which[:, None] == bad_constraints), "constraint and prior incompatible"
+#             unconst = np.setdiff1d(which, constrained_positive_indices)
+#             if len(unconst):
+#                 print "Warning: constraining parameters to be positive:"
+#                 print '\n'.join([n for i, n in enumerate(self._get_param_names()) if i in unconst])
+#                 print '\n'
+#                 self.constrain_positive(unconst)
+#         elif what.domain is _REAL:
+#             assert not np.any(which[:, None] == self.all_constrained_indices()), "constraint and prior incompatible"
+#         else:
+#             raise ValueError, "prior not recognised"
+# 
+#         # store the prior in a local list
+#         for w in which:
+#             self.priors[w] = what
 
     def get_gradient(self, name, return_names=False):
         """
@@ -145,22 +143,6 @@ class Model(Parameterized):
                 return self._log_likelihood_gradients()[matches]
         else:
             raise AttributeError, "no parameter matches %s" % name
-
-    def log_prior(self):
-        """evaluate the prior"""
-        if self.priors is not None:
-            return np.sum([p.lnpdf(x) for p, x in zip(self.priors, self._get_params()) if p is not None])
-        else:
-            return 0.
-
-    def _log_prior_gradients(self):
-        """evaluate the gradients of the priors"""
-        if self.priors is None:
-            return 0.
-        x = self._get_params()
-        ret = np.zeros(x.size)
-        [np.put(ret, i, p.lnpdf_grad(xx)) for i, (p, xx) in enumerate(zip(self.priors, x)) if not p is None]
-        return ret
 
     def randomize(self):
         """

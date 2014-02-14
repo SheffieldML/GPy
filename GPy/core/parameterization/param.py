@@ -145,7 +145,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
         return new_arr
     def __setitem__(self, s, val, update=True):
         super(Param, self).__setitem__(s, val, update=update)
-        self._notify_tied_parameters()
+        #self._notify_tied_parameters()
         if update:
             self._highest_parent_.parameters_changed()
 
@@ -201,11 +201,11 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
     @property
     def is_fixed(self):
         return self._highest_parent_._is_fixed(self)
-    def round(self, decimals=0, out=None):
-        view = super(Param, self).round(decimals, out).view(Param)
-        view.__array_finalize__(self)
-        return view
-    round.__doc__ = numpy.round.__doc__
+    #def round(self, decimals=0, out=None):
+    #    view = super(Param, self).round(decimals, out).view(Param)
+    #    view.__array_finalize__(self)
+    #    return view
+    #round.__doc__ = numpy.round.__doc__
     def _get_original(self, param):
         return self
 
@@ -337,8 +337,8 @@ class ParamConcatenation(object):
     def __setitem__(self, s, val, update=True):
         ind = numpy.zeros(sum(self._param_sizes), dtype=bool); ind[s] = True;
         vals = self._vals(); vals[s] = val; del val
-        [numpy.place(p, ind[ps], vals[ps]) and p._notify_tied_parameters()
-        for p, ps in zip(self.params, self._param_slices_)]
+        [numpy.place(p, ind[ps], vals[ps])# and p._notify_tied_parameters()
+         for p, ps in zip(self.params, self._param_slices_)]
         if update:
             self.params[0]._highest_parent_.parameters_changed()
     def _vals(self):

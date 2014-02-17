@@ -39,9 +39,9 @@ def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False):
     m = GPy.models.BayesianGPLVM(lik, input_dim, kernel=k, num_inducing=num_inducing)
     #===========================================================================
     # randomly obstruct data with percentage p
-    p = .8
+    p = .1
     Y_obstruct = Y.copy()
-    Y_obstruct[_np.random.uniform(size=(Y.shape)) < p] = _np.nan
+    Y_obstruct[_np.random.uniform(size=(Y.shape)) <= p] = _np.nan
     #===========================================================================
     m2 = GPy.models.BayesianGPLVMWithMissingData(Y_obstruct, input_dim, kernel=k, num_inducing=num_inducing)
     m.lengthscales = lengthscales
@@ -286,16 +286,18 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     from GPy.models import BayesianGPLVMWithMissingData
     from GPy.util.linalg import pca
 
-    D1, D2, D3, N, num_inducing, Q = 49, 30, 10, 12, 3, 10
+    D1, D2, D3, N, num_inducing, Q = 49, 30, 10, 30, 3, 10
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
     # 10% missing data:
-    inan = _np.random.binomial(1, .1, size=(N, D1))==1
+    inan = _np.random.binomial(1, .8, size=(N, D1))==1
     Yn = Y.copy()
     Yn[inan] = _np.nan
     Yn = _np.ma.masked_invalid(Yn, False)
     k = kern.linear(Q, ARD=True)
-    m = BayesianGPLVMWithMissingData(Yn, Q, init="random", X=pca(Y, Q)[0], num_inducing=num_inducing, kernel=k)
+    m = BayesianGPLVMWithMissingData(Yn, Q, init="random", 
+                                     #X=pca(Y, Q)[0], 
+                                     num_inducing=num_inducing, kernel=k)
     m.X_variance = m.X_variance * .1
     m['noise'] = _np.ma.var(Yn) / 100.
 

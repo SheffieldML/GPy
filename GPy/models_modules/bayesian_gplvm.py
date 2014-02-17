@@ -289,7 +289,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
         self.init = state.pop()
         SparseGP.setstate(self, state)
 
-class BayesianGPLVMWithMissingData(Model):
+class BayesianGPLVMWithMissingData(BayesianGPLVM):
     """
     Bayesian Gaussian Process Latent Variable Model with missing data support.
     NOTE: Missing data is assumed to be missing at random!
@@ -312,7 +312,7 @@ class BayesianGPLVMWithMissingData(Model):
     """
     def __init__(self, likelihood_or_Y, input_dim, X=None, X_variance=None, init='random', num_inducing=10,
                  Z=None, kernel=None, **kwargs):
-        super(BayesianGPLVMWithMissingData, self).__init__()
+        Model.__init__(self)
         #=======================================================================
         # Filter Y, such that same missing data is at same positions. 
         # If full rows are missing, delete them entirely!
@@ -332,6 +332,7 @@ class BayesianGPLVMWithMissingData(Model):
         # Get common subrows
         filter_ = np.isnan(Y)
         self.subarray_indices = common_subarrays(filter_,axis=1)
+        self.Y = np.ma.masked_invalid(Y, False)
         likelihoods = [likelihood(Y[~np.array(v,dtype=bool),:][:,ind]) for v,ind in self.subarray_indices.iteritems()]
         for l in likelihoods:
             l._set_params(params)
@@ -363,8 +364,8 @@ class BayesianGPLVMWithMissingData(Model):
             kernel = kern.rbf(input_dim) # + kern.white(input_dim)
         else:
             kernel = kernel
-            
-        self.submodels = [BayesianGPLVM(l, input_dim, self.X[~np.array(v,dtype=bool)], self.X_variance[~np.array(v,dtype=bool)], init, num_inducing, self.Z, kernel.copy()) for l,v in itertools.izip(likelihoods, self.subarray_indices.iterkeys())]
+        self.kern = kernel
+        self.submodels = [BayesianGPLVM(l, input_dim, self.X[~np.array(v,dtype=bool)], self.X_variance[~np.array(v,dtype=bool)], init, num_inducing, self.Z, self.kern.copy()) for l,v in itertools.izip(likelihoods, self.subarray_indices.iterkeys())]
         self.gref = self.submodels[0]
         self.num_data, self.input_dim = self.X.shape
         self.num_inducing = num_inducing
@@ -372,11 +373,10 @@ class BayesianGPLVMWithMissingData(Model):
         self.ensure_default_constraints()
 
     def log_likelihood(self):
-        ll = 0
-        #ll = -self.gref.KL_divergence()
+        ll = -self.KL_divergence()
         for g in self.submodels:
             ll += SparseGP.log_likelihood(g)
-            ll -= g.KL_divergence() / g.output_dim
+            #ll -= g.KL_divergence() / g.output_dim
         return ll
 
     def _log_likelihood_gradients(self):
@@ -385,11 +385,16 @@ class BayesianGPLVMWithMissingData(Model):
         for g, v in itertools.izip(self.submodels, self.subarray_indices.iterkeys()):
             va = ~np.array(v,dtype=bool)
             gdldmu, gdlds = g.dL_dmuS()
-            gdkldmu, gdklds = g.dKL_dmuS()
-            dLdmu[va] += gdldmu - gdkldmu
-            dLdS[va] += (gdlds - gdklds/g.output_dim)
+            #gdkldmu, gdklds = g.dKL_dmuS()
+            dLdmu[va] += gdldmu
+            #dLdmu[va] -= gdkldmu
+            dLdS[va] += gdlds
+            #dLdS[va] -= gdklds/g.output_dim
             dldtheta += g.dL_dtheta()
             dldlik += g.likelihood._gradients(partial=g.partial_for_likelihood)
+        gdkldmu, gdklds = self.dKL_dmuS()
+        dLdmu -= gdkldmu
+        dLdS -= gdklds
         dLdmuS = np.hstack((dLdmu.flatten(), dLdS.flatten())).flatten()
         dldzt1 = reduce(lambda a, b: a + b, (SparseGP._log_likelihood_gradients(g)[:self.gref.num_inducing*self.gref.input_dim] for g in self.submodels))
         
@@ -426,6 +431,7 @@ class BayesianGPLVMWithMissingData(Model):
         self.X_variance = x[NP:2*NP].reshape(self.num_data, self.input_dim)
         self.Z = x[2*NP:2*NP+MP]
         rest_params = x[2*NP+MP:]
+        self.kern._set_params(rest_params[:-1])
         [g._set_params(
           np.hstack((
             self.X[~np.array(v,dtype=bool)].flat,

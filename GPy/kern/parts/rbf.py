@@ -247,6 +247,7 @@ class RBF(Kernpart):
         target = np.zeros(self.input_dim)
         dvardLdK = self._K_dvar * dL_dK
         var_len3 = self.variance / np.power(self.lengthscale, 3)
+        var_len3 = param_to_array(var_len3)
         if X2 is None:
             # save computation for the symmetrical case
             dvardLdK = dvardLdK + dvardLdK.T

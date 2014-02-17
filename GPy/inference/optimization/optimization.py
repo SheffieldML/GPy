@@ -59,8 +59,9 @@ class Optimizer():
         """
         See GPy.plotting.matplot_dep.inference_plots
         """
+        import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import inference_plots
+        from ...plotting.matplot_dep import inference_plots
         inference_plots.plot_optimizer(self)
 
 

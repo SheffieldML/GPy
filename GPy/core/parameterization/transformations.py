@@ -6,7 +6,16 @@ import numpy as np
 from domains import _POSITIVE,_NEGATIVE, _BOUNDED
 import sys
 import weakref
+
 _lim_val = -np.log(sys.float_info.epsilon)
+
+#===============================================================================
+# Fixing constants
+__fixed__ = "fixed"
+FIXED = False
+UNFIXED = True
+#===============================================================================
+
 
 class Transformation(object):
     domain = None
@@ -27,11 +36,14 @@ class Transformation(object):
         raise NotImplementedError
     def __str__(self):
         raise NotImplementedError
+    def __repr__(self):
+        return self.__class__.__name__
 
 class Logexp(Transformation):
     domain = _POSITIVE
     def f(self, x):
-        return np.where(x>_lim_val, x, np.log(1. + np.exp(x)))
+        return np.where(x>_lim_val, x, np.log(1. + np.exp(np.clip(x, -np.inf, _lim_val))))
+        #raises overflow warning: return np.where(x>_lim_val, x, np.log(1. + np.exp(x)))
     def finv(self, f):
         return np.where(f>_lim_val, f, np.log(np.exp(f) - 1.))
     def gradfactor(self, f):
@@ -56,7 +68,7 @@ class NegativeLogexp(Transformation):
         return -self.logexp.initialize(f)  # np.abs(f)
     def __str__(self):
         return '-ve'
-
+    
 class LogexpClipped(Logexp):
     max_bound = 1e100
     min_bound = 1e-10
@@ -93,7 +105,6 @@ class LogexpClipped(Logexp):
         return np.abs(f)
     def __str__(self):
         return '+ve_c'
-
 
 class Exponent(Transformation):
     # TODO: can't allow this to go to zero, need to set a lower bound. Similar with negative Exponent below. See old MATLAB code.

@@ -17,12 +17,10 @@ import itertools
 # import numdifftools as ndt
 
 class Model(Parameterized):
-    _fail_count = 0 # Count of failed optimization steps (see objective)
-    _allowed_failures = 10 # number of allowed failures
+    _fail_count = 0  # Count of failed optimization steps (see objective)
+    _allowed_failures = 10  # number of allowed failures
     def __init__(self, name):
-        super(Model, self).__init__(name)#Parameterized.__init__(self)
-        self.priors = []
-        self._priors = ParameterIndexOperations()
+        super(Model, self).__init__(name)  # Parameterized.__init__(self)
         self.optimization_runs = []
         self.sampling_runs = []
         self.preferred_optimizer = 'scg'
@@ -30,10 +28,10 @@ class Model(Parameterized):
     def log_likelihood(self):
         raise NotImplementedError, "this needs to be implemented to use the model class"
     def _log_likelihood_gradients(self):
-        #def dK_d(self, param, dL_dK, X, X2)
+        # def dK_d(self, param, dL_dK, X, X2)
         g = np.zeros(self.size)
         try:
-            #[g.__setitem__(s, self.gradient_mapping[p]().flat) for p, s in itertools.izip(self._parameters_, self._param_slices_) if not p.is_fixed]
+            # [g.__setitem__(s, self.gradient_mapping[p]().flat) for p, s in itertools.izip(self._parameters_, self._param_slices_) if not p.is_fixed]
             [p._collect_gradient(g[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_) if not p.is_fixed]
         except ValueError:
             raise ValueError, 'Gradient for {} not defined, please specify gradients for parameters to optimize'.format(p.name)
@@ -67,66 +65,66 @@ class Model(Parameterized):
         self.priors = state.pop()
         Parameterized._setstate(self, state)
 
-    def set_prior(self, regexp, what):
-        """
-
-        Sets priors on the model parameters.
-
-        **Notes**
-
-        Asserts that the prior is suitable for the constraint. If the
-        wrong constraint is in place, an error is raised.  If no
-        constraint is in place, one is added (warning printed).
-
-        For tied parameters, the prior will only be "counted" once, thus
-        a prior object is only inserted on the first tied index
-
-        :param regexp: regular expression of parameters on which priors need to be set.
-        :type param: string, regexp, or integer array
-        :param what: prior to set on parameter.
-        :type what: GPy.core.Prior type
-
-        """
-        if self.priors is None:
-            self.priors = [None for i in range(self._get_params().size)]
-
-        which = self.grep_param_names(regexp)
-
-        # check tied situation
-        tie_partial_matches = [tie for tie in self.tied_indices if (not set(tie).isdisjoint(set(which))) & (not set(tie) == set(which))]
-        if len(tie_partial_matches):
-            raise ValueError, "cannot place prior across partial ties"
-        tie_matches = [tie for tie in self.tied_indices if set(which) == set(tie) ]
-        if len(tie_matches) > 1:
-            raise ValueError, "cannot place prior across multiple ties"
-        elif len(tie_matches) == 1:
-            which = which[:1] # just place a prior object on the first parameter
-
-
-        # check constraints are okay
-
-        if what.domain is _POSITIVE:
-            constrained_positive_indices = [i for i, t in zip(self.constrained_indices, self.constraints) if t.domain is _POSITIVE]
-            if len(constrained_positive_indices):
-                constrained_positive_indices = np.hstack(constrained_positive_indices)
-            else:
-                constrained_positive_indices = np.zeros(shape=(0,))
-            bad_constraints = np.setdiff1d(self.all_constrained_indices(), constrained_positive_indices)
-            assert not np.any(which[:, None] == bad_constraints), "constraint and prior incompatible"
-            unconst = np.setdiff1d(which, constrained_positive_indices)
-            if len(unconst):
-                print "Warning: constraining parameters to be positive:"
-                print '\n'.join([n for i, n in enumerate(self._get_param_names()) if i in unconst])
-                print '\n'
-                self.constrain_positive(unconst)
-        elif what.domain is _REAL:
-            assert not np.any(which[:, None] == self.all_constrained_indices()), "constraint and prior incompatible"
-        else:
-            raise ValueError, "prior not recognised"
-
-        # store the prior in a local list
-        for w in which:
-            self.priors[w] = what
+#     def set_prior(self, regexp, what):
+#         """
+# 
+#         Sets priors on the model parameters.
+# 
+#         **Notes**
+# 
+#         Asserts that the prior is suitable for the constraint. If the
+#         wrong constraint is in place, an error is raised.  If no
+#         constraint is in place, one is added (warning printed).
+# 
+#         For tied parameters, the prior will only be "counted" once, thus
+#         a prior object is only inserted on the first tied index
+# 
+#         :param regexp: regular expression of parameters on which priors need to be set.
+#         :type param: string, regexp, or integer array
+#         :param what: prior to set on parameter.
+#         :type what: GPy.core.Prior type
+# 
+#         """
+#         if self.priors is None:
+#             self.priors = [None for i in range(self._get_params().size)]
+# 
+#         which = self.grep_param_names(regexp)
+# 
+#         # check tied situation
+#         tie_partial_matches = [tie for tie in self.tied_indices if (not set(tie).isdisjoint(set(which))) & (not set(tie) == set(which))]
+#         if len(tie_partial_matches):
+#             raise ValueError, "cannot place prior across partial ties"
+#         tie_matches = [tie for tie in self.tied_indices if set(which) == set(tie) ]
+#         if len(tie_matches) > 1:
+#             raise ValueError, "cannot place prior across multiple ties"
+#         elif len(tie_matches) == 1:
+#             which = which[:1]  # just place a prior object on the first parameter
+# 
+# 
+#         # check constraints are okay
+# 
+#         if what.domain is _POSITIVE:
+#             constrained_positive_indices = [i for i, t in zip(self.constrained_indices, self.constraints) if t.domain is _POSITIVE]
+#             if len(constrained_positive_indices):
+#                 constrained_positive_indices = np.hstack(constrained_positive_indices)
+#             else:
+#                 constrained_positive_indices = np.zeros(shape=(0,))
+#             bad_constraints = np.setdiff1d(self.all_constrained_indices(), constrained_positive_indices)
+#             assert not np.any(which[:, None] == bad_constraints), "constraint and prior incompatible"
+#             unconst = np.setdiff1d(which, constrained_positive_indices)
+#             if len(unconst):
+#                 print "Warning: constraining parameters to be positive:"
+#                 print '\n'.join([n for i, n in enumerate(self._get_param_names()) if i in unconst])
+#                 print '\n'
+#                 self.constrain_positive(unconst)
+#         elif what.domain is _REAL:
+#             assert not np.any(which[:, None] == self.all_constrained_indices()), "constraint and prior incompatible"
+#         else:
+#             raise ValueError, "prior not recognised"
+# 
+#         # store the prior in a local list
+#         for w in which:
+#             self.priors[w] = what
 
     def get_gradient(self, name, return_names=False):
         """
@@ -146,36 +144,19 @@ class Model(Parameterized):
         else:
             raise AttributeError, "no parameter matches %s" % name
 
-    def log_prior(self):
-        """evaluate the prior"""
-        if self.priors is not None:
-            return np.sum([p.lnpdf(x) for p, x in zip(self.priors, self._get_params()) if p is not None])
-        else:
-            return 0.
-
-    def _log_prior_gradients(self):
-        """evaluate the gradients of the priors"""
-        if self.priors is None:
-            return 0.
-        x = self._get_params()
-        ret = np.zeros(x.size)
-        [np.put(ret, i, p.lnpdf_grad(xx)) for i, (p, xx) in enumerate(zip(self.priors, x)) if not p is None]
-        return ret
-
     def randomize(self):
         """
         Randomize the model.
         Make this draw from the prior if one exists, else draw from N(0,1)
         """
         # first take care of all parameters (from N(0,1))
-        #x = self._get_params_transformed()
+        # x = self._get_params_transformed()
         x = np.random.randn(self.size_transformed)
         x = self._untransform_params(x)
         # now draw from prior where possible
-        if self.priors is not None and len(self.priors):
-            [np.put(x, i, p.rvs(1)) for i, p in enumerate(self.priors) if not p is None]
+        [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
         self._set_params(x)
-        #self._set_params_transformed(self._get_params_transformed()) # makes sure all of the tied parameters get the same init (since there's only one prior object...)
+        # self._set_params_transformed(self._get_params_transformed()) # makes sure all of the tied parameters get the same init (since there's only one prior object...)
 
     def optimize_restarts(self, num_restarts=10, robust=False, verbose=True, parallel=False, num_processes=None, **kwargs):
         """
@@ -220,8 +201,8 @@ class Model(Parameterized):
                     job = pool.apply_async(opt_wrapper, args=(self,), kwds=kwargs)
                     jobs.append(job)
 
-                pool.close() # signal that no more data coming in
-                pool.join() # wait for all the tasks to complete
+                pool.close()  # signal that no more data coming in
+                pool.join()  # wait for all the tasks to complete
             except KeyboardInterrupt:
                 print "Ctrl+c received, terminating and joining pool."
                 pool.terminate()
@@ -378,7 +359,7 @@ class Model(Parameterized):
 
     def optimize_SGD(self, momentum=0.1, learning_rate=0.01, iterations=20, **kwargs):
         # assert self.Y.shape[1] > 1, "SGD only works with D > 1"
-        sgd = SGD.StochasticGD(self, iterations, learning_rate, momentum, **kwargs) # @UndefinedVariable
+        sgd = SGD.StochasticGD(self, iterations, learning_rate, momentum, **kwargs)  # @UndefinedVariable
         sgd.run()
         self.optimization_runs.append(sgd)
 
@@ -403,17 +384,34 @@ class Model(Parameterized):
         x = self._get_params_transformed().copy()
 
         if not verbose:
+            # make sure only to test the selected parameters
+            if target_param is None:
+                transformed_index = range(len(x))
+            else:
+                transformed_index = self._raveled_index_for(target_param)
+                if self._has_fixes():
+                    indices = np.r_[:self.size]
+                    which = (transformed_index[:,None]==indices[self._fixes_][None,:]).nonzero()
+                    transformed_index = (indices-(~self._fixes_).cumsum())[transformed_index[which[0]]]
+                    
+                if transformed_index.size == 0:
+                    print "No free parameters to check"
+                    return
+            
             # just check the global ratio
-            dx = step * np.sign(np.random.uniform(-1, 1, x.size))
-
+            dx = np.zeros_like(x)
+            dx[transformed_index] = step * np.sign(np.random.uniform(-1, 1, transformed_index.size))
+            
             # evaulate around the point x
             f1 = self.objective_function(x + dx)
             f2 = self.objective_function(x - dx)
             gradient = self.objective_function_gradients(x)
 
+            dx = dx[transformed_index]
+            gradient = gradient[transformed_index]
+            
             numerical_gradient = (f1 - f2) / (2 * dx)
-            global_ratio = (f1 - f2) / (2 * np.dot(dx, np.where(gradient==0, 1e-32, gradient)))
-
+            global_ratio = (f1 - f2) / (2 * np.dot(dx, np.where(gradient == 0, 1e-32, gradient)))
             return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gradient - numerical_gradient).mean() < tolerance)
         else:
             # check the gradient of each parameter individually, and do some pretty printing
@@ -433,43 +431,50 @@ class Model(Parameterized):
             separator = '-' * len(header_string[0])
             print '\n'.join([header_string[0], separator])
             if target_param is None:
-                param_list = range(len(x))
+                param_index = range(len(x))
+                transformed_index = param_index
             else:
-                param_list = self._raveled_index_for(target_param)
+                param_index = self._raveled_index_for(target_param)
                 if self._has_fixes():
-                    param_list = np.intersect1d(param_list, np.r_[:self.size][self._fixes_], True)
-
-                if param_list.size == 0:
+                    indices = np.r_[:self.size]
+                    which = (param_index[:,None]==indices[self._fixes_][None,:]).nonzero()
+                    param_index = param_index[which[0]]
+                    transformed_index = (indices-(~self._fixes_).cumsum())[param_index]
+                    #print param_index, transformed_index
+                else:
+                    transformed_index = param_index
+                    
+                if param_index.size == 0:
                     print "No free parameters to check"
                     return
 
             gradient = self.objective_function_gradients(x)
-            np.where(gradient==0, 1e-312, gradient)
+            np.where(gradient == 0, 1e-312, gradient)
             ret = True
-            for i, ind in enumerate(param_list):
+            for nind, xind in itertools.izip(param_index, transformed_index):
                 xx = x.copy()
-                xx[ind] += step
+                xx[xind] += step
                 f1 = self.objective_function(xx)
-                xx[ind] -= 2.*step
+                xx[xind] -= 2.*step
                 f2 = self.objective_function(xx)
-                
                 numerical_gradient = (f1 - f2) / (2 * step)
-                ratio = (f1 - f2) / (2 * step * gradient[ind])
-                difference = np.abs((f1 - f2) / 2 / step - gradient[ind])
+                ratio = (f1 - f2) / (2 * step * gradient[xind])
+                difference = np.abs((f1 - f2) / 2 / step - gradient[xind])
 
                 if (np.abs(1. - ratio) < tolerance) or np.abs(difference) < tolerance:
-                    formatted_name = "\033[92m {0} \033[0m".format(names[ind])
+                    formatted_name = "\033[92m {0} \033[0m".format(names[nind])
                     ret &= True
                 else:
-                    formatted_name = "\033[91m {0} \033[0m".format(names[ind])
+                    formatted_name = "\033[91m {0} \033[0m".format(names[nind])
                     ret &= False
 
                 r = '%.6f' % float(ratio)
                 d = '%.6f' % float(difference)
-                g = '%.6f' % gradient[ind]
+                g = '%.6f' % gradient[xind]
                 ng = '%.6f' % float(numerical_gradient)
                 grad_string = "{0:<{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name, r, d, g, ng, c0=cols[0] + 9, c1=cols[1], c2=cols[2], c3=cols[3], c4=cols[4])
                 print grad_string
+            self._set_params_transformed(x)
             return ret
         
     def input_sensitivity(self):
@@ -517,10 +522,10 @@ class Model(Parameterized):
         alpha = 0
         stop = False
 
-        #Handle **kwargs
+        # Handle **kwargs
         ep_args = {}
         for arg in kwargs.keys():
-            if arg in ('epsilon','power_ep'):
+            if arg in ('epsilon', 'power_ep'):
                 ep_args[arg] = kwargs[arg]
                 del kwargs[arg]
 
@@ -528,7 +533,7 @@ class Model(Parameterized):
             last_approximation = self.likelihood.copy()
             last_params = self._get_params()
             if len(ep_args) == 2:
-                self.update_likelihood_approximation(epsilon=ep_args['epsilon'],power_ep=ep_args['power_ep'])
+                self.update_likelihood_approximation(epsilon=ep_args['epsilon'], power_ep=ep_args['power_ep'])
             elif len(ep_args) == 1:
                 if  ep_args.keys()[0] == 'epsilon':
                     self.update_likelihood_approximation(epsilon=ep_args['epsilon'])
@@ -540,8 +545,8 @@ class Model(Parameterized):
             ll_change = new_ll - last_ll
 
             if ll_change < 0:
-                self.likelihood = last_approximation # restore previous likelihood approximation
-                self._set_params(last_params) # restore model parameters
+                self.likelihood = last_approximation  # restore previous likelihood approximation
+                self._set_params(last_params)  # restore model parameters
                 print "Log-likelihood decrement: %s \nLast likelihood update discarded." % ll_change
                 stop = True
             else:

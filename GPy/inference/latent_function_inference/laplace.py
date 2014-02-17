@@ -17,7 +17,7 @@ from posterior import Posterior
 import warnings
 from scipy import optimize
 
-class LaplaceInference(object):
+class Laplace(object):
 
     def __init__(self):
         """
@@ -52,6 +52,7 @@ class LaplaceInference(object):
 
         f_hat, Ki_fhat = self.rasm_mode(K, Y, likelihood, Ki_f_init, Y_metadata=Y_metadata)
 
+        self.f_hat = f_hat
         #Compute hessian and other variables at mode
         log_marginal, woodbury_vector, woodbury_inv, dL_dK, dL_dthetaL = self.mode_computations(f_hat, Ki_fhat, K, Y, likelihood, kern, Y_metadata)
 
@@ -92,12 +93,11 @@ class LaplaceInference(object):
         iteration = 0
         while difference > self._mode_finding_tolerance and iteration < self._mode_finding_max_iter:
             W = -likelihood.d2logpdf_df2(f, Y, extra_data=Y_metadata)
-
-            W_f = W*f
             grad = likelihood.dlogpdf_df(f, Y, extra_data=Y_metadata)
 
+            W_f = W*f
+
             b = W_f + grad # R+W p46 line 6.
-            #W12BiW12Kb, B_logdet = self._compute_B_statistics(K, W.copy(), np.dot(K, b), likelihood.log_concave)
             W12BiW12, _, _ = self._compute_B_statistics(K, W, likelihood.log_concave)
             W12BiW12Kb = np.dot(W12BiW12, np.dot(K, b))
 
@@ -216,7 +216,9 @@ class LaplaceInference(object):
         """
         if not log_concave:
             #print "Under 1e-10: {}".format(np.sum(W < 1e-6))
-            W[W < 1e-6] = 1e-6  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
+            # W[W<1e-6] = 1e-6
+            # NOTE: when setting a parameter inside parameters_changed it will allways come to closed update circles!!!
+            W.__setitem__(W < 1e-6, 1e-6, update=False)  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                 # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                 # To cause the posterior to become less certain than the prior and likelihood,
                                 # This is a property only held by non-log-concave likelihoods

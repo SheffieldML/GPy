@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ...util.linalg import pdinv, dpotrs, tdot, dtrtrs, dpotri, symmetrify
+from ...util.linalg import pdinv, dpotrs, tdot, dtrtrs, dpotri, symmetrify, jitchol, dtrtri
 
 class Posterior(object):
     """
@@ -80,8 +80,8 @@ class Posterior(object):
     @property
     def covariance(self):
         if self._covariance is None:
-            LiK, _ = dtrtrs(self.woodbury_chol, self._K, lower=1)
-            self._covariance = self._K - tdot(LiK.T)
+            #LiK, _ = dtrtrs(self.woodbury_chol, self._K, lower=1)
+            self._covariance = self._K - self._K.dot(self.woodbury_inv).dot(self._K)
         return self._covariance
 
     @property
@@ -93,20 +93,30 @@ class Posterior(object):
     @property
     def woodbury_chol(self):
         if self._woodbury_chol is None:
-            #try computing woodbury chol from cov
+            #compute woodbury chol from 
             if self._woodbury_inv is not None:
                 _, _, self._woodbury_chol, _ = pdinv(self._woodbury_inv)
+                #Li = jitchol(self._woodbury_inv)
+                #self._woodbury_chol, _ = dtrtri(Li)
+                #W, _, _, _, = pdinv(self._woodbury_inv)
+                #symmetrify(W)
+                #self._woodbury_chol = jitchol(W)
+            #try computing woodbury chol from cov
             elif self._covariance is not None:
+                raise NotImplementedError, "TODO: check code here"
                 B = self._K - self._covariance
                 tmp, _ = dpotrs(self.K_chol, B)
                 self._woodbury_inv, _ = dpotrs(self.K_chol, tmp.T)
                 _, _, self._woodbury_chol, _ = pdinv(self._woodbury_inv)
+            else:
+                raise ValueError, "insufficient information to compute posterior"
         return self._woodbury_chol
 
     @property
     def woodbury_inv(self):
         if self._woodbury_inv is None:
-            self._woodbury_inv, _ = dpotri(self.woodbury_chol)
+            self._woodbury_inv, _ = dpotri(self.woodbury_chol, lower=1)
+            #self._woodbury_inv, _ = dpotrs(self.woodbury_chol, np.eye(self.woodbury_chol.shape[0]), lower=1)
             symmetrify(self._woodbury_inv)
         return self._woodbury_inv
 

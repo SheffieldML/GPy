@@ -4,32 +4,22 @@
 __updated__ = '2013-12-16'
 
 import numpy as np
-from parameter_core import Observable
-
-class ListArray(np.ndarray):
-    """
-    ndarray which can be stored in lists and checked if it is in.
-    WARNING: This overrides the functionality of x==y!!!
-    Use numpy.equal(x,y) for element-wise equality testing.
-    """
-    
-    def __new__(cls, input_array):
-        obj = np.asanyarray(input_array).view(cls)
-        return obj
-    #def __eq__(self, other):
-    #    return other is self
+from parameter_core import Observable, Parameterizable
 
 class ParamList(list):
-
+    """
+    List to store ndarray-likes in.
+    It will look for 'is' instead of calling __eq__ on each element.
+    """
     def __contains__(self, other):
         for el in self:
             if el is other:
                 return True
         return False
-    
+
     pass
 
-class ObservableArray(ListArray, Observable):
+class ObservableArray(np.ndarray, Observable):
     """
     An ndarray which reports changes to its observers.
     The observers can add themselves with a callable, which
@@ -38,26 +28,43 @@ class ObservableArray(ListArray, Observable):
     """
     __array_priority__ = -1 # Never give back ObservableArray
     def __new__(cls, input_array):
+        obj = np.atleast_1d(input_array).view(cls)
         cls.__name__ = "ObservableArray\n     "
-        obj = super(ObservableArray, cls).__new__(cls, input_array).view(cls)
         obj._observers_ = {}
         return obj
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
         self._observers_ = getattr(obj, '_observers_', None)
-    
+
+    def _s_not_empty(self, s):
+        # this checks whether there is something picked by this slice.
+        return True
+        # TODO:  disarmed, for performance increase,
+        if not isinstance(s, (list,tuple,np.ndarray)):
+            return True
+        if isinstance(s, (list,tuple)):
+            return len(s)!=0
+        if isinstance(s, np.ndarray):
+            if s.dtype is bool:
+                return np.all(s)
+            else:
+                return s.size != 0
+
     def __setitem__(self, s, val, update=True):
-        super(ObservableArray, self).__setitem__(s, val)
-        if update:
-            self._notify_observers()
+        if self._s_not_empty(s):
+            super(ObservableArray, self).__setitem__(s, val)
+            if update:
+                self._notify_observers()
+                
     def __getslice__(self, start, stop):
         return self.__getitem__(slice(start, stop))
     def __setslice__(self, start, stop, val):
-        return self.__setitem__(slice(start, stop), val)  
+        return self.__setitem__(slice(start, stop), val)
 
     def __copy__(self, *args):
-        return ObservableArray(self.base.base.copy(*args))
+        return ObservableArray(self.view(np.ndarray).copy())
+
     def copy(self, *args):
         return self.__copy__(*args)
 
@@ -65,31 +72,26 @@ class ObservableArray(ListArray, Observable):
         r =  np.ndarray.__ror__(self, *args, **kwargs)
         self._notify_observers()
         return r
-        
 
     def __ilshift__(self, *args, **kwargs):
         r = np.ndarray.__ilshift__(self, *args, **kwargs)
         self._notify_observers()
         return r
 
-
     def __irshift__(self, *args, **kwargs):
         r = np.ndarray.__irshift__(self, *args, **kwargs)
         self._notify_observers()
         return r
-
 
     def __rrshift__(self, *args, **kwargs):
         r = np.ndarray.__rrshift__(self, *args, **kwargs)
         self._notify_observers()
         return r
 
-
     def __ixor__(self, *args, **kwargs):
         r = np.ndarray.__ixor__(self, *args, **kwargs)
         self._notify_observers()
         return r
-
 
     def __rxor__(self, *args, **kwargs):
         r = np.ndarray.__rxor__(self, *args, **kwargs)

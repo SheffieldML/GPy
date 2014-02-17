@@ -9,17 +9,20 @@ from domains import _REAL, _POSITIVE
 import warnings
 import weakref
 
-class Prior:
+class Prior(object):
     domain = None
 
     def pdf(self, x):
         return np.exp(self.lnpdf(x))
 
     def plot(self):
+        import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import priors_plots
+        from ...plotting.matplot_dep import priors_plots
         priors_plots.univariate_plot(self)
 
+    def __repr__(self, *args, **kwargs):
+        return self.__str__()
 
 class Gaussian(Prior):
     """
@@ -150,6 +153,7 @@ class MultivariateGaussian:
         return np.random.multivariate_normal(self.mu, self.var, n)
 
     def plot(self):
+        import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import priors_plots
         priors_plots.multivariate_plot(self)

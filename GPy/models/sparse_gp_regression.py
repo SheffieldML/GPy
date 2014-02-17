@@ -6,6 +6,7 @@ import numpy as np
 from ..core import SparseGP
 from .. import likelihoods
 from .. import kern
+from ..inference.latent_function_inference import VarDTC
 
 class SparseGPRegression(SparseGP):
     """
@@ -43,8 +44,7 @@ class SparseGPRegression(SparseGP):
 
         likelihood = likelihoods.Gaussian()
 
-        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, X_variance=X_variance)
-        #self.ensure_default_constraints()
+        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, X_variance=X_variance, inference_method=VarDTC())
 
     def _getstate(self):
         return SparseGP._getstate(self)

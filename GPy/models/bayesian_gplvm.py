@@ -23,7 +23,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
 
     """
     def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
-                 Z=None, kernel=None, inference_method=None, likelihood=Gaussian(), name='bayesian gplvm', **kwargs):
+                 Z=None, kernel=None, inference_method=None, likelihood=None, name='bayesian gplvm', **kwargs):
         if X == None:
             X = self.initialise_latent(init, input_dim, Y)
         self.init = init
@@ -37,7 +37,9 @@ class BayesianGPLVM(SparseGP, GPLVM):
 
         if kernel is None:
             kernel = kern.rbf(input_dim) # + kern.white(input_dim)
-
+        
+        if likelihood is None:
+            likelihood = Gaussian()
         self.q = Normal(X, X_variance)
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, X_variance, name, **kwargs)
         self.add_parameter(self.q, index=0)
@@ -70,9 +72,10 @@ class BayesianGPLVM(SparseGP, GPLVM):
         return 0.5 * (var_mean + var_S) - 0.5 * self.input_dim * self.num_data
 
     def parameters_changed(self):
-        super(BayesianGPLVM, self).parameters_changed()
-        self._log_marginal_likelihood -= self.KL_divergence()
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
+        self._update_gradients_Z(add=False)
 
+        self._log_marginal_likelihood -= self.KL_divergence()
         dL_dmu, dL_dS = self.dL_dmuS()
 
         # dL:
@@ -158,6 +161,38 @@ class BayesianGPLVM(SparseGP, GPLVM):
         from ..plotting.matplot_dep import dim_reduction_plots
 
         return dim_reduction_plots.plot_steepest_gradient_map(self,*args,**kwargs)
+
+class BayesianGPLVMWithMissingData(BayesianGPLVM):
+    def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10, 
+        Z=None, kernel=None, inference_method=None, likelihood=None, name='bayesian gplvm', **kwargs):
+        from ..util.subarray_and_sorting import common_subarrays
+        self.subarrays = common_subarrays(Y)
+        import ipdb;ipdb.set_trace()
+        BayesianGPLVM.__init__(self, Y, input_dim, X=X, X_variance=X_variance, init=init, num_inducing=num_inducing, Z=Z, kernel=kernel, inference_method=inference_method, likelihood=likelihood, name=name, **kwargs)
+        
+    
+    def parameters_changed(self):
+        super(BayesianGPLVM, self).parameters_changed()
+        self._log_marginal_likelihood -= self.KL_divergence()
+
+        dL_dmu, dL_dS = self.dL_dmuS()
+
+        # dL:
+        self.q.mean.gradient  = dL_dmu
+        self.q.variance.gradient  = dL_dS  
+
+        # dKL:
+        self.q.mean.gradient -= self.X
+        self.q.variance.gradient -= (1. - (1. / (self.X_variance))) * 0.5
+
+if __name__ == '__main__':
+    import numpy as np
+    X = np.random.randn(20,2)
+    W = np.linspace(0,1,10)[None,:]
+    Y = (X*W).sum(1)
+    missing = np.random.binomial(1,.1,size=Y.shape)
+    
+    pass
 
 def latent_cost_and_grad(mu_S, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
     """

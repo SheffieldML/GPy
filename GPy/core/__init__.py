@@ -2,7 +2,6 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from model import *
-from parameterization import priors
 from parameterization.parameterized import *
 from gp import GP
 from sparse_gp import SparseGP

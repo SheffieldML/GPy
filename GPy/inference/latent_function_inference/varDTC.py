@@ -34,7 +34,7 @@ class VarDTC(object):
         Note that L may have fewer columns than Y.
         """
         N, D = Y.shape
-        if (N>D):
+        if (N>=D):
             return param_to_array(Y)
         else:
             return jitchol(tdot(Y))
@@ -91,7 +91,7 @@ class VarDTC(object):
                 tmp = psi1 * (np.sqrt(beta.reshape(num_data, 1)))
             else:
                 tmp = psi1 * (np.sqrt(beta))
-            tmp, _ = dtrtrs(Lm, np.asfortranarray(tmp.T), lower=1)
+            tmp, _ = dtrtrs(Lm, tmp.T, lower=1)
             A = tdot(tmp)
 
         # factor B
@@ -100,14 +100,16 @@ class VarDTC(object):
         LB = jitchol(B)
 
         # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
-        self.YYTfactor = self.get_YYTfactor(Y)
-        VVT_factor = self.get_VVTfactor(self.YYTfactor, beta)
+        #self.YYTfactor = self.get_YYTfactor(Y)
+        #VVT_factor = self.get_VVTfactor(self.YYTfactor, beta)
+        VVT_factor = beta*param_to_array(Y)
         trYYT = self.get_trYYT(Y)
+
         psi1Vf = np.dot(psi1.T, VVT_factor)
 
         # back substutue C into psi1Vf
-        tmp, info1 = dtrtrs(Lm, np.asfortranarray(psi1Vf), lower=1, trans=0)
-        _LBi_Lmi_psi1Vf, _ = dtrtrs(LB, np.asfortranarray(tmp), lower=1, trans=0)
+        tmp, info1 = dtrtrs(Lm, psi1Vf, lower=1, trans=0)
+        _LBi_Lmi_psi1Vf, _ = dtrtrs(LB, tmp, lower=1, trans=0)
         tmp, info2 = dtrtrs(LB, _LBi_Lmi_psi1Vf, lower=1, trans=1)
         Cpsi1Vf, info3 = dtrtrs(Lm, tmp, lower=1, trans=1)
 
@@ -152,8 +154,8 @@ class VarDTC(object):
                 raise NotImplementedError, "heteroscedatic derivates with uncertain inputs not implemented"
             else:
                 LBi = chol_inv(LB)
-                Lmi_psi1, nil = dtrtrs(Lm, np.asfortranarray(psi1.T), lower=1, trans=0)
-                _LBi_Lmi_psi1, _ = dtrtrs(LB, np.asfortranarray(Lmi_psi1), lower=1, trans=0)
+                Lmi_psi1, nil = dtrtrs(Lm, psi1.T, lower=1, trans=0)
+                _LBi_Lmi_psi1, _ = dtrtrs(LB, Lmi_psi1, lower=1, trans=0)
 
                 partial_for_likelihood = -0.5 * beta + 0.5 * likelihood.V**2
                 partial_for_likelihood += 0.5 * output_dim * (psi0 - np.sum(Lmi_psi1**2,0))[:,None] * beta**2
@@ -195,12 +197,14 @@ class VarDTC(object):
         if VVT_factor.shape[1] == Y.shape[1]:
             woodbury_vector = Cpsi1Vf # == Cpsi1V
         else:
+            print 'foobar'
             psi1V = np.dot(Y.T*beta, psi1).T
-            tmp, _ = dtrtrs(Lm, np.asfortranarray(psi1V), lower=1, trans=0)
+            tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
             tmp, _ = dpotrs(LB, tmp, lower=1)
             woodbury_vector, _ = dtrtrs(Lm, tmp, lower=1, trans=1)
-        Bi, _ = dpotri(LB, lower=0)
+        Bi, _ = dpotri(LB, lower=1)
         symmetrify(Bi)
+        Bi = dpotri(LB, lower=1)[0]
         woodbury_inv = backsub_both_sides(Lm, np.eye(num_inducing) - Bi)
 
 

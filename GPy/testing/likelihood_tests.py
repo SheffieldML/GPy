@@ -1,10 +1,10 @@
 import numpy as np
 import unittest
 import GPy
-from GPy.models import GradientChecker
+from ..models import GradientChecker
 import functools
 import inspect
-from GPy.likelihoods import link_functions
+from ..likelihoods import link_functions
 from ..core.parameterization import Param
 from functools import partial
 #np.random.seed(300)
@@ -516,9 +516,8 @@ class TestNoiseModels(object):
         Y = Y/Y.max()
         white_var = 1e-6
         kernel = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
-        laplace_likelihood = GPy.inference.latent_function_inference.LaplaceInference()
+        laplace_likelihood = GPy.inference.latent_function_inference.Laplace()
         m = GPy.core.GP(X.copy(), Y.copy(), kernel, likelihood=model, inference_method=laplace_likelihood)
-        m.ensure_default_constraints()
         m['white'].constrain_fixed(white_var)
 
         #Set constraints
@@ -541,6 +540,10 @@ class TestNoiseModels(object):
             #import ipdb; ipdb.set_trace()
             #NOTE this test appears to be stochastic for some likelihoods (student t?)
             # appears to all be working in test mode right now...
+
+        if not m.checkgrad():
+            import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+
         assert m.checkgrad(step=step)
 
     ###########
@@ -555,7 +558,6 @@ class TestNoiseModels(object):
         kernel = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
         ep_inf = GPy.inference.latent_function_inference.EP()
         m = GPy.core.GP(X.copy(), Y.copy(), kernel=kernel, likelihood=model, inference_method=ep_inf)
-        m.ensure_default_constraints()
         m['white'].constrain_fixed(white_var)
 
         for param_num in range(len(param_names)):
@@ -644,13 +646,11 @@ class LaplaceTests(unittest.TestCase):
         m1['variance'] = initial_var_guess
         m1['variance'].constrain_bounded(1e-4, 10)
         m1['rbf'].constrain_bounded(1e-4, 10)
-        m1.ensure_default_constraints()
         m1.randomize()
 
         gauss_distr2 = GPy.likelihoods.Gaussian(variance=initial_var_guess)
-        laplace_inf = GPy.inference.latent_function_inference.LaplaceInference()
+        laplace_inf = GPy.inference.latent_function_inference.Laplace()
         m2 = GPy.core.GP(X, Y.copy(), kernel=kernel2, likelihood=gauss_distr2, inference_method=laplace_inf)
-        m2.ensure_default_constraints()
         m2['white'].constrain_fixed(1e-6)
         m2['rbf'].constrain_bounded(1e-4, 10)
         m2['variance'].constrain_bounded(1e-4, 10)

@@ -29,7 +29,7 @@ class Cacher(object):
             return self.cached_outputs[-1]
 
     def on_cache_changed(self, X):
-        print id(X)
+        #print id(X)
         i = self.cached_inputs.index(X)
         self.inputs_changed[i] = True
 

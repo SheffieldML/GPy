@@ -10,6 +10,7 @@ import datasets
 import mocap
 import decorators
 import classification
+import subarray_and_sorting
 import caching
 
 try:

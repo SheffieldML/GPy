@@ -265,7 +265,7 @@ class RBF(Kernpart):
             }
             """
             num_data, num_inducing, input_dim = X.shape[0], X.shape[0], self.input_dim
-            X, dvardLdK = param_to_array(X, dvardLdK)
+            X, dvardLdK, var_len3 = param_to_array(X, dvardLdK, var_len3)
             weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
         else:
             code = """
@@ -282,7 +282,7 @@ class RBF(Kernpart):
             }
             """
             num_data, num_inducing, input_dim = X.shape[0], X2.shape[0], self.input_dim
-            X, X2, dvardLdK = param_to_array(X, X2, dvardLdK)
+            X, X2, dvardLdK, var_len3 = param_to_array(X, X2, dvardLdK, var_len3)
             weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'X2', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
         return target
 

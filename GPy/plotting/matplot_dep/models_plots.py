@@ -134,7 +134,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
             m, _ = model._raw_predict(Xgrid, which_parts=which_parts)
             Y = model.likelihood.Y
         else:
-            m, _, _, _ = model.predict(Xgrid, which_parts=which_parts,sampling=False)
+            m, _, _, _ = model.predict(Xgrid, which_parts=which_parts)
             Y = model.likelihood.data
         for d in which_data_ycols:
             m_d = m[:,d].reshape(resolution, resolution).T

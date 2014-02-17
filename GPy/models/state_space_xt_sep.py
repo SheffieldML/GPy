@@ -463,10 +463,10 @@ class StateSpace_1(Model):
                      v = Y[:,k][None].T-H.dot(m)
                      S = H.dot(P).dot(H.T) + R*np.eye(Y.shape[0])
                      #Should be LL, isupper = ...                
-                     LL = linalg.cho_factor(S)
-                     K = linalg.cho_solve(LL, H.dot(P)).T                
-#                     LL, isupper = linalg.cho_factor(H.dot(P).dot(H.T) + R*np.eye(Y.shape[1]))
-#                     K = linalg.cho_solve((LL, isupper), H.dot(P)).T
+                     #LL = linalg.cho_factor(S)
+                     #K = linalg.cho_solve(LL, H.dot(P)).T                
+                     LL, isupper = linalg.cho_factor(H.dot(P).dot(H.T) + R*np.eye(Y.shape[1]))
+                     K = linalg.cho_solve((LL, isupper), H.dot(P)).T
                      lik -= np.sum(np.log(np.diag(LL)))
                      lik -= 0.5*v.shape[0]*np.log(2*np.pi)
                      lik -= 0.5*linalg.cho_solve((LL, isupper),v).T.dot(v)[0,0]

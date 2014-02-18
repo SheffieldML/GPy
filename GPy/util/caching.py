@@ -30,7 +30,14 @@ class Cacher(object):
 
     def on_cache_changed(self, X):
         #print id(X)
-        i = self.cached_inputs.index(X)
+        Xbase = X
+        while Xbase is not None:
+            try:
+                i = self.cached_inputs.index(X)
+                break
+            except ValueError:
+                Xbase = X.base
+                continue
         self.inputs_changed[i] = True
 
                 

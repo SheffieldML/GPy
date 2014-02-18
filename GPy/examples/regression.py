@@ -361,7 +361,7 @@ def toy_ARD_sparse(max_iters=1000, kernel_type='linear', num_samples=300, D=4, o
         kernel = GPy.kern.rbf_inv(X.shape[1], ARD=1)
     else:
         kernel = GPy.kern.rbf(X.shape[1], ARD=1)
-    kernel += GPy.kern.bias(X.shape[1])
+    #kernel += GPy.kern.bias(X.shape[1])
     X_variance = np.ones(X.shape) * 0.5
     m = GPy.models.SparseGPRegression(X, Y, kernel, X_variance=X_variance)
     # len_prior = GPy.priors.inverse_gamma(1,18) # 1, 25
@@ -434,10 +434,14 @@ def sparse_GP_regression_1D(num_samples=400, num_inducing=5, max_iters=100, opti
 
     return m
 
-def sparse_GP_regression_2D(num_samples=400, num_inducing=50, max_iters=100, optimize=True, plot=True):
+def sparse_GP_regression_2D(num_samples=400, num_inducing=50, max_iters=100, optimize=True, plot=True, nan=False):
     """Run a 2D example of a sparse GP regression."""
+    np.random.seed(1234)
     X = np.random.uniform(-3., 3., (num_samples, 2))
     Y = np.sin(X[:, 0:1]) * np.sin(X[:, 1:2]) + np.random.randn(num_samples, 1) * 0.05
+    if nan:
+        inan = np.random.binomial(1,.2,size=Y.shape)
+        Y[inan] = np.nan
 
     # construct kernel
     rbf = GPy.kern.rbf(2)

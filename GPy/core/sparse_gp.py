@@ -2,12 +2,11 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ..util.linalg import mdot, tdot, symmetrify, backsub_both_sides, dtrtrs, dpotrs, dpotri
+from ..util.linalg import mdot
 from gp import GP
 from parameterization.param import Param
-from ..inference.latent_function_inference import varDTC
+from GPy.inference.latent_function_inference import var_dtc
 from .. import likelihoods
-from GPy.util.misc import param_to_array
 
 class SparseGP(GP):
     """
@@ -37,7 +36,7 @@ class SparseGP(GP):
         #pick a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
-                inference_method = varDTC.VarDTC()
+                inference_method = var_dtc.VarDTC()
             else:
                 #inference_method = ??
                 raise NotImplementedError, "what to do what to do?"

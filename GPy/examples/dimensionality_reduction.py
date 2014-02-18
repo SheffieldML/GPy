@@ -3,12 +3,11 @@
 import numpy as _np
 default_seed = _np.random.seed(123344)
 
-def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False, output_dim=1e4):
+def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False, output_dim=200, nan=False):
     """
     model for testing purposes. Samples from a GP with rbf kernel and learns
     the samples with a new kernel. Normally not for optimization, just model cheking
     """
-    from GPy.likelihoods.gaussian import Gaussian
     import GPy
 
     num_inputs = 13
@@ -36,12 +35,17 @@ def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False, 
     # k = GPy.kern.rbf(input_dim, .5, 2., ARD=0) + GPy.kern.rbf(input_dim, .3, .2, ARD=0)
     # k = GPy.kern.rbf(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.linear(input_dim, _np.ones(input_dim) * .2, ARD=True)
 
+    p = .3
+    
     m = GPy.models.BayesianGPLVM(Y, input_dim, kernel=k, num_inducing=num_inducing)
+
+    if nan:
+        m.inference_method = GPy.inference.latent_function_inference.var_dtc.VarDTCMissingData()
+        m.Y[_np.random.binomial(1,p,size=(Y.shape))] = _np.nan
+        m.parameters_changed()
+
     #===========================================================================
     # randomly obstruct data with percentage p
-    p = .8
-    Y_obstruct = Y.copy()
-    Y_obstruct[_np.random.uniform(size=(Y.shape)) < p] = _np.nan
     #===========================================================================
     #m2 = GPy.models.BayesianGPLVMWithMissingData(Y_obstruct, input_dim, kernel=k, num_inducing=num_inducing)
     m.lengthscales = lengthscales
@@ -275,6 +279,35 @@ def bgplvm_simulation(optimize=True, verbose=1,
         m.q.plot("BGPLVM Latent Space 1D")
         m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
     return m
+
+def bgplvm_simulation_missing_data(optimize=True, verbose=1,
+                      plot=True, plot_sim=False,
+                      max_iters=2e4,
+                      ):
+    from GPy import kern
+    from GPy.models import BayesianGPLVM
+    from GPy.inference.latent_function_inference.var_dtc import VarDTCMissingData
+
+    D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 30, 3, 10
+    _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
+    Y = Ylist[0]
+    k = kern.linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    
+    inan = _np.random.binomial(1, .3, size=Y.shape)
+    m = BayesianGPLVM(Y, Q, init="random", num_inducing=num_inducing, kernel=k)
+    m.inference_method = VarDTCMissingData()
+    m.Y[inan] = _np.nan
+    m.parameters_changed()
+    
+    if optimize:
+        print "Optimizing model:"
+        m.optimize('bfgs', messages=verbose, max_iters=max_iters,
+                   gtol=.05)
+    if plot:
+        m.q.plot("BGPLVM Latent Space 1D")
+        m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
+    return m
+
 
 def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     from GPy import kern

@@ -136,7 +136,7 @@ def poly(input_dim,variance=1., weight_variance=None,bias_variance=1.,degree=2, 
     part = parts.poly.POLY(input_dim,variance,weight_variance,bias_variance,degree,ARD)
     return kern(input_dim, [part])
 
-def white(input_dim,variance=1.):
+def white(input_dim,variance=1.,name='white'):
     """
      Construct a white kernel.
 
@@ -146,7 +146,7 @@ def white(input_dim,variance=1.):
     :type variance: float
 
     """
-    part = parts.white.White(input_dim,variance)
+    part = parts.white.White(input_dim,variance,name=name)
     return kern(input_dim, [part])
 
 def eq_ode1(output_dim, W=None, rank=1,  kappa=None, length_scale=1., decay=None, delay=None):

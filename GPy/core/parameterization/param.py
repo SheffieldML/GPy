@@ -80,8 +80,6 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
         self.constraints = getattr(obj, 'constraints', None)
         self.priors = getattr(obj, 'priors', None)
 
-    #def __array_wrap__(self, out_arr, context=None):
-    #    return out_arr.view(numpy.ndarray)
     #===========================================================================
     # Pickling operations
     #===========================================================================
@@ -335,19 +333,20 @@ class ParamConcatenation(object):
         if len(params)==1: return params[0]
         return ParamConcatenation(params)
     def __setitem__(self, s, val, update=True):
+        if isinstance(val, ParamConcatenation):
+            val = val._vals()
         ind = numpy.zeros(sum(self._param_sizes), dtype=bool); ind[s] = True;
         vals = self._vals(); vals[s] = val; del val
-        [numpy.place(p, ind[ps], vals[ps])# and p._notify_tied_parameters()
+        [numpy.place(p, ind[ps], vals[ps]) and update and p._notify_parameters_changed()
          for p, ps in zip(self.params, self._param_slices_)]
-        if update:
-            self.params[0]._notify_parameters_changed()
     def _vals(self):
         return numpy.hstack([p._get_params() for p in self.params])
     #===========================================================================
     # parameter operations:
     #===========================================================================
     def update_all_params(self):
-        self.params[0]._notify_parameters_changed()
+        for p in self.params:
+            p._notify_parameters_changed()
 
     def constrain(self, constraint, warning=True):
         [param.constrain(constraint, update=False) for param in self.params]

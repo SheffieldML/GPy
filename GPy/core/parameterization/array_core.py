@@ -36,6 +36,8 @@ class ObservableArray(np.ndarray, Observable):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
         self._observers_ = getattr(obj, '_observers_', None)
+    def __array_wrap__(self, out_arr, context=None):
+        return out_arr.view(np.ndarray)
 
     def _s_not_empty(self, s):
         # this checks whether there is something picked by this slice.
@@ -68,11 +70,6 @@ class ObservableArray(np.ndarray, Observable):
     def copy(self, *args):
         return self.__copy__(*args)
 
-    def __ror__(self, *args, **kwargs):
-        r =  np.ndarray.__ror__(self, *args, **kwargs)
-        self._notify_observers()
-        return r
-
     def __ilshift__(self, *args, **kwargs):
         r = np.ndarray.__ilshift__(self, *args, **kwargs)
         self._notify_observers()
@@ -83,43 +80,9 @@ class ObservableArray(np.ndarray, Observable):
         self._notify_observers()
         return r
 
-    def __rrshift__(self, *args, **kwargs):
-        r = np.ndarray.__rrshift__(self, *args, **kwargs)
-        self._notify_observers()
-        return r
 
     def __ixor__(self, *args, **kwargs):
         r = np.ndarray.__ixor__(self, *args, **kwargs)
-        self._notify_observers()
-        return r
-
-    def __rxor__(self, *args, **kwargs):
-        r = np.ndarray.__rxor__(self, *args, **kwargs)
-        self._notify_observers()
-        return r
-
-
-
-    def __rdivmod__(self, *args, **kwargs):
-        r = np.ndarray.__rdivmod__(self, *args, **kwargs)
-        self._notify_observers()
-        return r
-
-
-    def __radd__(self, *args, **kwargs):
-        r = np.ndarray.__radd__(self, *args, **kwargs)
-        self._notify_observers()
-        return r
-
-
-    def __rdiv__(self, *args, **kwargs):
-        r = np.ndarray.__rdiv__(self, *args, **kwargs)
-        self._notify_observers()
-        return r
-
-
-    def __rtruediv__(self, *args, **kwargs):
-        r = np.ndarray.__rtruediv__(self, *args, **kwargs)
         self._notify_observers()
         return r
 
@@ -129,25 +92,7 @@ class ObservableArray(np.ndarray, Observable):
         self._notify_observers()
         return r
 
-
-    def __rmul__(self, *args, **kwargs):
-        r = np.ndarray.__rmul__(self, *args, **kwargs)
-        self._notify_observers()
-        return r
-
-
-    def __rpow__(self, *args, **kwargs):
-        r = np.ndarray.__rpow__(self, *args, **kwargs)
-        self._notify_observers()
-        return r
-
-
-    def __rsub__(self, *args, **kwargs):
-        r = np.ndarray.__rsub__(self, *args, **kwargs)
-        self._notify_observers()
-        return r
-
-
+    
     def __ifloordiv__(self, *args, **kwargs):
         r = np.ndarray.__ifloordiv__(self, *args, **kwargs)
         self._notify_observers()
@@ -178,12 +123,6 @@ class ObservableArray(np.ndarray, Observable):
         return r
 
 
-    def __rfloordiv__(self, *args, **kwargs):
-        r = np.ndarray.__rfloordiv__(self, *args, **kwargs)
-        self._notify_observers()
-        return r
-
-
     def __iand__(self, *args, **kwargs):
         r = np.ndarray.__iand__(self, *args, **kwargs)
         self._notify_observers()
@@ -208,8 +147,74 @@ class ObservableArray(np.ndarray, Observable):
         return r
 
 
-    def __rshift__(self, *args, **kwargs):
-        r = np.ndarray.__rshift__(self, *args, **kwargs)
-        self._notify_observers()
-        return r
+#     def __rrshift__(self, *args, **kwargs):
+#         r = np.ndarray.__rrshift__(self, *args, **kwargs)
+#         self._notify_observers()
+#         return r
+
+
+#     def __ror__(self, *args, **kwargs):
+#         r =  np.ndarray.__ror__(self, *args, **kwargs)
+#         self._notify_observers()
+#         return r
+
+
+#     def __rxor__(self, *args, **kwargs):
+#         r = np.ndarray.__rxor__(self, *args, **kwargs)
+#         self._notify_observers()
+#         return r
+
+
+
+#     def __rdivmod__(self, *args, **kwargs):
+#         r = np.ndarray.__rdivmod__(self, *args, **kwargs)
+#         self._notify_observers()
+#         return r
+
+
+#     def __radd__(self, *args, **kwargs):
+#         r = np.ndarray.__radd__(self, *args, **kwargs)
+#         self._notify_observers()
+#         return r
+
+
+#     def __rdiv__(self, *args, **kwargs):
+#         r = np.ndarray.__rdiv__(self, *args, **kwargs)
+#         self._notify_observers()
+#         return r
+
+
+#     def __rtruediv__(self, *args, **kwargs):
+#         r = np.ndarray.__rtruediv__(self, *args, **kwargs)
+#         self._notify_observers()
+#         return r
+
+
+#     def __rshift__(self, *args, **kwargs):
+#         r = np.ndarray.__rshift__(self, *args, **kwargs)
+#         self._notify_observers()
+#         return r
+
+
+#     def __rmul__(self, *args, **kwargs):
+#         r = np.ndarray.__rmul__(self, *args, **kwargs)
+#         self._notify_observers()
+#         return r
+
+
+#     def __rpow__(self, *args, **kwargs):
+#         r = np.ndarray.__rpow__(self, *args, **kwargs)
+#         self._notify_observers()
+#         return r
+
+
+#     def __rsub__(self, *args, **kwargs):
+#         r = np.ndarray.__rsub__(self, *args, **kwargs)
+#         self._notify_observers()
+#         return r
+
+#     def __rfloordiv__(self, *args, **kwargs):
+#         r = np.ndarray.__rfloordiv__(self, *args, **kwargs)
+#         self._notify_observers()
+#         return r
 

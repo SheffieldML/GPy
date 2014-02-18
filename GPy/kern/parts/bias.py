@@ -14,7 +14,8 @@ class Bias(Kernpart):
         :type variance: float
         """
         super(Bias, self).__init__(input_dim, name)
-        self.variance = Param("variance", variance)
+        from ...core.parameterization.transformations import Logexp
+        self.variance = Param("variance", variance, Logexp())
         self.add_parameter(self.variance)
 
     def K(self,X,X2,target):

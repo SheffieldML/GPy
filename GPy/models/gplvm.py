@@ -44,7 +44,7 @@ class GPLVM(GP):
             PC = PCA(Y, input_dim)[0]
             Xr[:PC.shape[0], :PC.shape[1]] = PC
         else:
-            raise NotImplementedError
+            pass
         return Xr
 
     def parameters_changed(self):

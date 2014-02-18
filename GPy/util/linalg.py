@@ -101,17 +101,17 @@ def jitchol(A, maxtries=5):
 
 
 
-def dtrtri(L, lower=1):
-    """
-    Wrapper for lapack dtrtri function
-    Inverse of L
-
-    :param L: Triangular Matrix L
-    :param lower: is matrix lower (true) or upper (false)
-    :returns: Li, info
-    """
-    L = force_F_ordered(L)
-    return lapack.dtrtri(L, lower=lower)
+# def dtrtri(L, lower=1):
+#     """
+#     Wrapper for lapack dtrtri function
+#     Inverse of L
+# 
+#     :param L: Triangular Matrix L
+#     :param lower: is matrix lower (true) or upper (false)
+#     :returns: Li, info
+#     """
+#     L = force_F_ordered(L)
+#     return lapack.dtrtri(L, lower=lower)
 
 def dtrtrs(A, B, lower=1, trans=0, unitdiag=0):
     """

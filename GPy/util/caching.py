@@ -29,8 +29,15 @@ class Cacher(object):
             return self.cached_outputs[-1]
 
     def on_cache_changed(self, X):
-        print id(X)
-        i = self.cached_inputs.index(X)
+        #print id(X)
+        Xbase = X
+        while Xbase is not None:
+            try:
+                i = self.cached_inputs.index(X)
+                break
+            except ValueError:
+                Xbase = X.base
+                continue
         self.inputs_changed[i] = True
 
                 

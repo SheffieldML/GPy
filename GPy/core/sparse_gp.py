@@ -2,12 +2,11 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ..util.linalg import mdot, tdot, symmetrify, backsub_both_sides, dtrtrs, dpotrs, dpotri
+from ..util.linalg import mdot
 from gp import GP
 from parameterization.param import Param
-from ..inference.latent_function_inference import varDTC
+from GPy.inference.latent_function_inference import var_dtc
 from .. import likelihoods
-from GPy.util.misc import param_to_array
 
 class SparseGP(GP):
     """
@@ -37,7 +36,7 @@ class SparseGP(GP):
         #pick a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
-                inference_method = varDTC.VarDTC()
+                inference_method = var_dtc.VarDTC()
             else:
                 #inference_method = ??
                 raise NotImplementedError, "what to do what to do?"
@@ -54,18 +53,20 @@ class SparseGP(GP):
         self.add_parameter(self.Z, index=0)
         self.parameters_changed()
 
-
-    def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
-
-        #The derivative of the bound wrt the inducing inputs Z ( unless they're all fixed)
+    def _update_gradients_Z(self, add=False):
+    #The derivative of the bound wrt the inducing inputs Z ( unless they're all fixed)
         if not self.Z.is_fixed:
-            self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
+            if add: self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
+            else: self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
             if self.X_variance is None:
                 self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
             else:
                 self.Z.gradient += self.kern.dpsi1_dZ(self.grad_dict['dL_dpsi1'], self.Z, self.X, self.X_variance)
                 self.Z.gradient += self.kern.dpsi2_dZ(self.grad_dict['dL_dpsi2'], self.Z, self.X, self.X_variance)
+
+    def parameters_changed(self):
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
+        self._update_gradients_Z(add=False)
 
     def _raw_predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
         """

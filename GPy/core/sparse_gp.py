@@ -33,12 +33,12 @@ class SparseGP(GP):
 
     def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None, X_variance=None, name='sparse gp'):
 
-        #pick a sensible inference method
+        # pick a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
                 inference_method = var_dtc.VarDTC()
             else:
-                #inference_method = ??
+                # inference_method = ??
                 raise NotImplementedError, "what to do what to do?"
             print "defaulting to ", inference_method, "for latent function inference"
 
@@ -54,7 +54,7 @@ class SparseGP(GP):
         self.parameters_changed()
 
     def _update_gradients_Z(self, add=False):
-    #The derivative of the bound wrt the inducing inputs Z ( unless they're all fixed)
+    # The derivative of the bound wrt the inducing inputs Z ( unless they're all fixed)
         if not self.Z.is_fixed:
             if add: self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
             else: self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
@@ -77,13 +77,14 @@ class SparseGP(GP):
             mu = np.dot(Kx.T, self.posterior.woodbury_vector)
             if full_cov:
                 Kxx = self.kern.K(Xnew, which_parts=which_parts)
-                var = Kxx - mdot(Kx.T, self.posterior.woodbury_inv, Kx) # NOTE this won't work for plotting
+                var = Kxx[:,:,None] - np.tensordot(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx), Kx, [1,0]).T
             else:
-                Kxx = self.kern.Kdiag(Xnew, which_parts=which_parts)
-                var = Kxx - np.sum(Kx * np.dot(self.posterior.woodbury_inv, Kx), 0)
+                Kxx = self.kern.Kdiag(Xnew, which_parts=which_parts)[:, None]
+                #import ipdb;ipdb.set_trace()
+                var = Kxx - (np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx).T * Kx.T[:,:,None]).sum(1)
         else:
             # assert which_parts=='all', "swithching out parts of variational kernels is not implemented"
-            Kx = self.kern.psi1(self.Z, Xnew, X_variance_new) # , which_parts=which_parts) TODO: which_parts
+            Kx = self.kern.psi1(self.Z, Xnew, X_variance_new)  # , which_parts=which_parts) TODO: which_parts
             mu = np.dot(Kx, self.Cpsi1V)
             if full_cov:
                 raise NotImplementedError, "TODO"
@@ -91,7 +92,7 @@ class SparseGP(GP):
                 Kxx = self.kern.psi0(self.Z, Xnew, X_variance_new)
                 psi2 = self.kern.psi2(self.Z, Xnew, X_variance_new)
                 var = Kxx - np.sum(np.sum(psi2 * Kmmi_LmiBLmi[None, :, :], 1), 1)
-        return mu, var[:,None]
+        return mu, var
 
 
     def _getstate(self):

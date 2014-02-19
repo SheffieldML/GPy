@@ -1,9 +1,9 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 import numpy as _np
-default_seed = _np.random.seed(123344)
+#default_seed = _np.random.seed(123344)
 
-def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False, output_dim=200, nan=False):
+def bgplvm_test_model(optimize=False, verbose=1, plot=False, output_dim=200, nan=False):
     """
     model for testing purposes. Samples from a GP with rbf kernel and learns
     the samples with a new kernel. Normally not for optimization, just model cheking
@@ -41,7 +41,7 @@ def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False, 
 
     if nan:
         m.inference_method = GPy.inference.latent_function_inference.var_dtc.VarDTCMissingData()
-        m.Y[_np.random.binomial(1,p,size=(Y.shape))] = _np.nan
+        m.Y[_np.random.binomial(1,p,size=(Y.shape)).astype(bool)] = _np.nan
         m.parameters_changed()
 
     #===========================================================================
@@ -186,6 +186,8 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     return m
 
 def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
+    _np.random.seed(1234)
+    
     x = _np.linspace(0, 4 * _np.pi, N)[:, None]
     s1 = _np.vectorize(lambda x: _np.sin(x))
     s2 = _np.vectorize(lambda x: _np.cos(x))
@@ -293,10 +295,11 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     Y = Ylist[0]
     k = kern.linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     
-    inan = _np.random.binomial(1, .3, size=Y.shape)
+    inan = _np.random.binomial(1, .6, size=Y.shape).astype(bool)
     m = BayesianGPLVM(Y, Q, init="random", num_inducing=num_inducing, kernel=k)
     m.inference_method = VarDTCMissingData()
     m.Y[inan] = _np.nan
+    m.q.variance *= .1
     m.parameters_changed()
     
     if optimize:

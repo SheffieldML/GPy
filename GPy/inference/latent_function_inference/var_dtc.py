@@ -139,7 +139,8 @@ class VarDTCMissingData(object):
             dL_dpsi2_all = np.zeros((X.shape[0], num_inducing, num_inducing))
         
         partial_for_likelihood = 0
-        LB_all = Cpsi1Vf_all = 0
+        woodbury_vector = np.zeros((num_inducing, Y.shape[1]))
+        woodbury_inv_all = np.zeros((num_inducing, num_inducing, Y.shape[1]))
         dL_dKmm = 0
         log_marginal = 0
         
@@ -153,6 +154,8 @@ class VarDTCMissingData(object):
 
         VVT_factor_all = np.empty(Y.shape)
         full_VVT_factor = VVT_factor_all.shape[1] == Y.shape[1]
+        if not full_VVT_factor:
+            psi1V = np.dot(Y.T*beta_all, psi1_all).T
         
         for y, trYYT, [v, ind] in itertools.izip(Ys, traces, self._subarray_indices):
             if het_noise: beta = beta_all[ind]
@@ -185,8 +188,7 @@ class VarDTCMissingData(object):
             psi1Vf = psi1.T.dot(VVT_factor)
             _LBi_Lmi_psi1Vf, Cpsi1Vf = _compute_psi1Vf(Lm, LB, psi1Vf)
             
-            if full_VVT_factor: Cpsi1Vf_all += Cpsi1Vf
-            LB_all += LB    
+            #LB_all[ind, :,:] = LB    
             
             # data fit and derivative of L w.r.t. Kmm
             delit = tdot(_LBi_Lmi_psi1Vf)
@@ -219,6 +221,21 @@ class VarDTCMissingData(object):
                 psi0, psi1, beta, 
                 data_fit, num_data, output_dim, trYYT)
             
+            if full_VVT_factor: woodbury_vector[:, ind] = Cpsi1Vf
+            else:
+                print 'foobar'
+                tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
+                tmp, _ = dpotrs(LB, tmp, lower=1)
+                woodbury_vector[:, ind] = dtrtrs(Lm, tmp, lower=1, trans=1)[0]
+                
+            #import ipdb;ipdb.set_trace()
+            Bi, _ = dpotri(LB, lower=1)
+            symmetrify(Bi)
+            Bi = -dpotri(LB, lower=1)[0]
+            from ...util import diag
+            diag.add(Bi, 1)
+            woodbury_inv_all[:, :, ind] = backsub_both_sides(Lm, Bi)[:,:,None]
+            
         # gradients:
         likelihood.update_gradients(partial_for_likelihood)
 
@@ -231,23 +248,22 @@ class VarDTCMissingData(object):
 
         #get sufficient things for posterior prediction
         #TODO: do we really want to do this in  the loop?
-        if full_VVT_factor:
-            woodbury_vector = Cpsi1Vf_all # == Cpsi1V
-        else:
-            print 'foobar'
-            psi1V = np.dot(Y.T*beta_all, psi1_all).T
-            tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
-            tmp, _ = dpotrs(LB_all, tmp, lower=1)
-            woodbury_vector, _ = dtrtrs(Lm, tmp, lower=1, trans=1)
-        
-        Bi, _ = dpotri(LB_all, lower=1)
-        symmetrify(Bi)
-        Bi = -dpotri(LB_all, lower=1)[0]
-        from ...util import diag
-        diag.add(Bi, 1)
+        #if not full_VVT_factor:
+        #    print 'foobar'
+        #    psi1V = np.dot(Y.T*beta_all, psi1_all).T
+        #    tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
+        #    tmp, _ = dpotrs(LB_all, tmp, lower=1)
+        #    woodbury_vector, _ = dtrtrs(Lm, tmp, lower=1, trans=1)
+        #import ipdb;ipdb.set_trace()
+        #Bi, _ = dpotri(LB_all, lower=1)
+        #symmetrify(Bi)
+        #Bi = -dpotri(LB_all, lower=1)[0]
+        #from ...util import diag
+        #diag.add(Bi, 1)
     
-        woodbury_inv = backsub_both_sides(Lm, Bi)
-        post = Posterior(woodbury_inv=woodbury_inv, woodbury_vector=woodbury_vector, K=Kmm, mean=None, cov=None, K_chol=Lm)
+        #woodbury_inv = backsub_both_sides(Lm, Bi)
+        
+        post = Posterior(woodbury_inv=woodbury_inv_all, woodbury_vector=woodbury_vector, K=Kmm, mean=None, cov=None, K_chol=Lm)
 
         return post, log_marginal, grad_dict
 

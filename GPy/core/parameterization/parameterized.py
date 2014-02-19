@@ -3,16 +3,15 @@
 
 
 import numpy; np = numpy
-import copy
 import cPickle
 import itertools
 from re import compile, _pattern_type
-from param import ParamConcatenation, Param
-from parameter_core import Constrainable, Pickleable, Observable, adjust_name_for_printing, Gradcheckable
-from transformations import __fixed__, FIXED, UNFIXED
+from param import ParamConcatenation
+from parameter_core import Constrainable, Pickleable, Observable, Parameterizable, adjust_name_for_printing, Gradcheckable
+from transformations import __fixed__
 from array_core import ParamList
 
-class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
+class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable, Parameterizable):
     """
     Parameterized class
 
@@ -63,7 +62,6 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
             self._fixes_ = None
         self._param_slices_ = []
         self._connect_parameters()
-        self._added_names_ = set()
         del self._in_init_
 
     def add_parameter(self, param, index=None):
@@ -117,17 +115,10 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
             raise RuntimeError, "Parameter {} does not belong to this object, remove parameters directly from their respective parents".format(param._short())
         del self._parameters_[param._parent_index_]
         self.size -= param.size
-        constr = param.constraints.copy()
-        param.constraints.clear()
-        param.constraints = constr
-        param._direct_parent_ = None
-        param._parent_index_ = None
-        param._connect_fixes()
-        param._notify_parent_change()
-        pname = adjust_name_for_printing(param.name)
-        if pname in self._added_names_:
-            del self.__dict__[pname]
-        self._connect_parameters()
+        
+        param._disconnect_parent()
+        self._remove_parameter_name(param)
+        
         #self._notify_parent_change()
         self._connect_fixes()
 
@@ -145,19 +136,9 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
         for i, p in enumerate(self._parameters_):
             p._direct_parent_ = self
             p._parent_index_ = i
-            not_unique = []
             sizes.append(p.size + sizes[-1])
             self._param_slices_.append(slice(sizes[-2], sizes[-1]))
-            pname = adjust_name_for_printing(p.name)
-            # and makes sure to not delete programmatically added parameters
-            if pname in self.__dict__:
-                if isinstance(self.__dict__[pname], (Parameterized, Param)):
-                    if not p is self.__dict__[pname]:
-                        not_unique.append(pname)
-                        del self.__dict__[pname]
-            elif not (pname in not_unique):
-                self.__dict__[pname] = p
-                self._added_names_.add(pname)
+            self._add_parameter_name(p)
 
     #===========================================================================
     # Pickling operations
@@ -174,19 +155,7 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
                 cPickle.dump(self, f, protocol)
         else:
             cPickle.dump(self, f, protocol)
-    def copy(self):
-        """Returns a (deep) copy of the current model """
-        # dc = dict()
-        # for k, v in self.__dict__.iteritems():
-            # if k not in ['_highest_parent_', '_direct_parent_']:
-                # dc[k] = copy.deepcopy(v)
 
-        # dc = copy.deepcopy(self.__dict__)
-        # dc['_highest_parent_'] = None
-        # dc['_direct_parent_'] = None
-        # s = self.__class__.new()
-        # s.__dict__ = dc
-        return copy.deepcopy(self)
     def __getstate__(self):
         if self._has_get_set_state():
             return self._getstate()
@@ -265,14 +234,6 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
         if self._has_fixes(): tmp = self._get_params(); tmp[self._fixes_] = p; p = tmp; del tmp
         [numpy.put(p, ind, c.f(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
         return p
-    def _name_changed(self, param, old_name):
-        if hasattr(self, old_name) and old_name in self._added_names_:
-            delattr(self, old_name)
-            self._added_names_.remove(old_name)
-        pname = adjust_name_for_printing(param.name)
-        if pname not in self.__dict__:
-            self._added_names_.add(pname)
-            self.__dict__[pname] = param
     #===========================================================================
     # Indexable Handling
     #===========================================================================

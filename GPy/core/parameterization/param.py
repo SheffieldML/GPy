@@ -3,7 +3,7 @@
 
 import itertools
 import numpy
-from parameter_core import Constrainable, Gradcheckable, Indexable, Parameterizable, adjust_name_for_printing
+from parameter_core import Constrainable, Gradcheckable, Indexable, Parentable, adjust_name_for_printing
 from array_core import ObservableArray, ParamList
 
 ###### printing
@@ -15,7 +15,7 @@ __precision__ = numpy.get_printoptions()['precision'] # numpy printing precision
 __print_threshold__ = 5
 ######
 
-class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameterizable):
+class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable):
     """
     Parameter object for GPy models.
 
@@ -114,7 +114,14 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
         self._parent_index_ = state.pop()
         self._direct_parent_ = state.pop()
         self.name = state.pop()
-
+    
+    def copy(self, *args):
+        constr = self.constraints.copy()
+        priors = self.priors.copy()
+        p = Param(self.name, self.view(numpy.ndarray).copy(), self._default_constraint_)
+        p.constraints = constr
+        p.priors = priors
+        return p
     #===========================================================================
     # get/set parameters
     #===========================================================================

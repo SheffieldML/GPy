@@ -7,11 +7,11 @@ import cPickle
 import itertools
 from re import compile, _pattern_type
 from param import ParamConcatenation
-from parameter_core import Constrainable, Pickleable, Observable, Parameterizable, adjust_name_for_printing, Gradcheckable
+from parameter_core import Constrainable, Pickleable, Observable, Parameterizable, Parentable, adjust_name_for_printing, Gradcheckable
 from transformations import __fixed__
 from array_core import ParamList
 
-class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable, Parameterizable):
+class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable, Parameterizable, Parentable):
     """
     Parameterized class
 
@@ -212,7 +212,7 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable, Parame
     # Optimization handles:
     #===========================================================================
     def _get_param_names(self):
-        n = numpy.array([p.name_hirarchical + '[' + str(i) + ']' for p in self.flattened_parameters for i in p._indices()])
+        n = numpy.array([p.hirarchy_name() + '[' + str(i) + ']' for p in self.flattened_parameters for i in p._indices()])
         return n
     def _get_param_names_transformed(self):
         n = self._get_param_names()
@@ -296,10 +296,6 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable, Parame
         # you can retrieve the original param through this method, by passing
         # the copy here
         return self._parameters_[param._parent_index_]
-    def hirarchy_name(self):
-        if self.has_parent():
-            return self._direct_parent_.hirarchy_name() + adjust_name_for_printing(self.name) + "."
-        return ''
     #===========================================================================
     # Get/set parameters:
     #===========================================================================
@@ -309,8 +305,8 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable, Parame
         """
         if not isinstance(regexp, _pattern_type): regexp = compile(regexp)
         found_params = []
-        for p in self._parameters_:
-            if regexp.match(p.name) is not None:
+        for p in self.flattened_parameters:
+            if regexp.match(p.hirarchy_name()) is not None:
                 found_params.append(p)
             if isinstance(p, Parameterized):
                 found_params.extend(p.grep_param_names(regexp))
@@ -352,11 +348,7 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable, Parame
     # Printing:
     #===========================================================================
     def _short(self):
-        # short string to print
-        if self.has_parent():
-            return self._direct_parent_.hirarchy_name() + adjust_name_for_printing(self.name)
-        else:
-            return adjust_name_for_printing(self.name)
+        return self.hirarchy_name()
     @property
     def flattened_parameters(self):
         return [xi for x in self._parameters_ for xi in x.flattened_parameters]

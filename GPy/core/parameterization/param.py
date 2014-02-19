@@ -238,11 +238,6 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
     @property
     def _ties_str(self):
         return [t._short() for t in self._tied_to_] or ['']
-    @property
-    def name_hirarchical(self):
-        if self.has_parent():
-            return self._direct_parent_.hirarchy_name() + adjust_name_for_printing(self.name)
-        return adjust_name_for_printing(self.name)
     def __repr__(self, *args, **kwargs):
         name = "\033[1m{x:s}\033[0;0m:\n".format(
                             x=self.name_hirarchical)
@@ -284,7 +279,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
         return reduce(lambda a, b:max(a, len(str(b))), ind, len(__index_name__))
     def _short(self):
         # short string to print
-        name = self._direct_parent_.hirarchy_name() + adjust_name_for_printing(self.name)
+        name = self.hirarchy_name()
         if self._realsize_ < 2:
             return name
         ind = self._indices()

@@ -88,6 +88,10 @@ class Nameable(Parentable):
         self._name = name
         if self.has_parent():
             self._direct_parent_._name_changed(self, from_name)
+    def hirarchy_name(self):
+        if self.has_parent():
+            return self._direct_parent_.hirarchy_name() + "." + adjust_name_for_printing(self.name)
+        return adjust_name_for_printing(self.name)
 
 class Parameterizable(Parentable):
     def __init__(self, *args, **kwargs):

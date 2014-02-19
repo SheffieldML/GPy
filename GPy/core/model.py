@@ -4,12 +4,8 @@
 
 from .. import likelihoods
 from ..inference import optimization
-from ..util.linalg import jitchol
 from ..util.misc import opt_wrapper
 from parameterization import Parameterized
-from parameterization.parameterized import UNFIXED
-from parameterization.domains import _POSITIVE, _REAL
-from parameterization.index_operations import ParameterIndexOperations
 import multiprocessing as mp
 import numpy as np
 from numpy.linalg.linalg import LinAlgError
@@ -240,7 +236,7 @@ class Model(Parameterized):
         constrained positive.
         """
         raise DeprecationWarning, 'parameters now have default constraints'
-        positive_strings = ['variance', 'lengthscale', 'precision', 'kappa', 'sensitivity']
+        #positive_strings = ['variance', 'lengthscale', 'precision', 'kappa', 'sensitivity']
         # param_names = self._get_param_names()
         
 #         for s in positive_strings:

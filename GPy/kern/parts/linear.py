@@ -60,7 +60,7 @@ class Linear(Kernpart):
         self._K_computations(X, None)
 
     def update_gradients_full(self, dL_dK, X):
-        #self.variances.gradient[:] = 0
+        self.variances.gradient[:] = 0
         self._param_grad_helper(dL_dK, X, None, self.variances.gradient)
     
     def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):

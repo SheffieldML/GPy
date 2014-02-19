@@ -10,6 +10,22 @@ import pylab
 from GPy.kern.kern import kern
 from GPy.models.bayesian_gplvm import BayesianGPLVM
 
+class MRD2(Model):
+    """
+    Apply MRD to all given datasets Y in Ylist. 
+    
+    Y_i in [n x p_i]
+    
+    The samples n in the datasets need 
+    to match up, whereas the dimensionality p_d can differ.
+    
+    :param [array-like] Ylist: List of datasets to apply MRD on
+    :param array-like q_mean: mean of starting latent space q in [n x q]
+    :param array-like q_variance: variance of starting latent space q in [n x q]
+    :param :class:`~GPy.inference.latent_function_inference
+    """
+    
+
 class MRD(Model):
     """
     Do MRD on given Datasets in Ylist.

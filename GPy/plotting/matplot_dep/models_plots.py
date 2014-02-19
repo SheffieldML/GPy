@@ -132,10 +132,10 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         #predict on the frame and plot
         if plot_raw:
             m, _ = model._raw_predict(Xgrid, which_parts=which_parts)
-            Y = model.likelihood.Y
+            Y = model.Y
         else:
             m, _, _, _ = model.predict(Xgrid, which_parts=which_parts)
-            Y = model.likelihood.data
+            Y = model.data
         for d in which_data_ycols:
             m_d = m[:,d].reshape(resolution, resolution).T
             ax.contour(x, y, m_d, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)

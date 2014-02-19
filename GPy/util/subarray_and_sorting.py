@@ -17,7 +17,7 @@ def common_subarrays(X, axis=0):
     
     :param :class:`np.ndarray` X: 2d array to check for common subarrays in
     :param int axis: axis to apply subarray detection over. 
-        When the index is 0, compare rows, columns, otherwise.   
+        When the index is 0, compare rows -- columns, otherwise.   
     
     Examples:
     =========

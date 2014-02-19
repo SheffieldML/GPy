@@ -3,8 +3,8 @@
 
 from kern import Kern
 import numpy as np
-from ..core.parameterization import Param
-from ..core.parameterization.transformations import Logexp
+from ...core.parameterization import Param
+from ...core.parameterization.transformations import Logexp
 
 class White(Kern):
     """
@@ -25,6 +25,8 @@ class White(Kern):
     def K(self,X,X2):
         if X2 is None:
             return np.eye(X.shape[0])*self.variance
+        else:
+            return np.zeros((X.shape[0], X2.shape[0]))
 
     def Kdiag(self,X):
         ret = np.ones(X.shape[0])

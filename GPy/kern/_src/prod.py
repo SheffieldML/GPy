@@ -35,64 +35,36 @@ class Prod(Kern):
         self._X, self._X2 = np.empty(shape=(2,1))
         self._params = None
 
-    def K(self,X,X2,target):
+    def K(self, X, X2=None):
         self._K_computations(X,X2)
-        target += self._K1 * self._K2
-
-    def K1(self,X, X2):
-        """Compute the part of the kernel associated with k1."""
-        self._K_computations(X, X2)
-        return self._K1
-
-    def K2(self, X, X2):
-        """Compute the part of the kernel associated with k2."""
-        self._K_computations(X, X2)
-        return self._K2
+        return self._K1 * self._K2
 
     def update_gradients_full(self, dL_dK, X):
         self._K_computations(X, None)
         self.k1.update_gradients_full(dL_dK*self._K2, X[:,self.slice1])
         self.k2.update_gradients_full(dL_dK*self._K1, X[:,self.slice2])
 
-    def _param_grad_helper(self,dL_dK,X,X2,target):
-        """Derivative of the covariance matrix with respect to the parameters."""
-        self._K_computations(X,X2)
-        if X2 is None:
-            self.k1._param_grad_helper(dL_dK*self._K2, X[:,self.slice1], None, target[:self.k1.num_params])
-            self.k2._param_grad_helper(dL_dK*self._K1, X[:,self.slice2], None, target[self.k1.num_params:])
-        else:
-            self.k1._param_grad_helper(dL_dK*self._K2, X[:,self.slice1], X2[:,self.slice1], target[:self.k1.num_params])
-            self.k2._param_grad_helper(dL_dK*self._K1, X[:,self.slice2], X2[:,self.slice2], target[self.k1.num_params:])
-
-    def Kdiag(self,X,target):
+    def Kdiag(self, X):
         """Compute the diagonal of the covariance matrix associated to X."""
-        target1 = np.zeros(X.shape[0])
-        target2 = np.zeros(X.shape[0])
-        self.k1.Kdiag(X[:,self.slice1],target1)
-        self.k2.Kdiag(X[:,self.slice2],target2)
-        target += target1 * target2
+        return self.k1.Kdiag(X[:,self.slice1]) * self.k2.Kdiag(X[:,self.slice2])
 
+    def update_gradients_sparse(self):
+        pass
+        #wtf goes here??
+    #def dKdiag_dtheta(self,dL_dKdiag,X,target):
+        #K1 = np.zeros(X.shape[0])
+        #K2 = np.zeros(X.shape[0])
+        #self.k1.Kdiag(X[:,self.slice1],K1)
+        #self.k2.Kdiag(X[:,self.slice2],K2)
+        #self.k1.dKdiag_dtheta(dL_dKdiag*K2,X[:,self.slice1],target[:self.k1.num_params])
+        #self.k2.dKdiag_dtheta(dL_dKdiag*K1,X[:,self.slice2],target[self.k1.num_params:])
 
-    def dKdiag_dtheta(self,dL_dKdiag,X,target):
-        K1 = np.zeros(X.shape[0])
-        K2 = np.zeros(X.shape[0])
-        self.k1.Kdiag(X[:,self.slice1],K1)
-        self.k2.Kdiag(X[:,self.slice2],K2)
-        self.k1.dKdiag_dtheta(dL_dKdiag*K2,X[:,self.slice1],target[:self.k1.num_params])
-        self.k2.dKdiag_dtheta(dL_dKdiag*K1,X[:,self.slice2],target[self.k1.num_params:])
-
-    def gradients_X(self,dL_dK,X,X2,target):
+    def gradients_X(self,dL_dK,X,X2):
         """derivative of the covariance matrix with respect to X."""
         self._K_computations(X,X2)
         if X2 is None:
-            if not isinstance(self.k1,Coregionalize) and not isinstance(self.k2,Coregionalize):
-                self.k1.gradients_X(dL_dK*self._K2, X[:,self.slice1], None, target[:,self.slice1])
-                self.k2.gradients_X(dL_dK*self._K1, X[:,self.slice2], None, target[:,self.slice2])
-            else:#if isinstance(self.k1,Coregionalize) or isinstance(self.k2,Coregionalize):
-                #NOTE The indices column in the inputs makes the ki.gradients_X fail when passing None instead of X[:,self.slicei]
-                X2 = X
-                self.k1.gradients_X(2.*dL_dK*self._K2, X[:,self.slice1], X2[:,self.slice1], target[:,self.slice1])
-                self.k2.gradients_X(2.*dL_dK*self._K1, X[:,self.slice2], X2[:,self.slice2], target[:,self.slice2])
+            self.k1.gradients_X(dL_dK*self._K2, X[:,self.slice1], None, target[:,self.slice1])
+            self.k2.gradients_X(dL_dK*self._K1, X[:,self.slice2], None, target[:,self.slice2])
         else:
             self.k1.gradients_X(dL_dK*self._K2, X[:,self.slice1], X2[:,self.slice1], target[:,self.slice1])
             self.k2.gradients_X(dL_dK*self._K1, X[:,self.slice2], X2[:,self.slice2], target[:,self.slice2])
@@ -112,14 +84,10 @@ class Prod(Kern):
             self._params == self._get_params().copy()
             if X2 is None:
                 self._X2 = None
-                self._K1 = np.zeros((X.shape[0],X.shape[0]))
-                self._K2 = np.zeros((X.shape[0],X.shape[0]))
-                self.k1.K(X[:,self.slice1],None,self._K1)
-                self.k2.K(X[:,self.slice2],None,self._K2)
+                self._K1 = self.k1.K(X[:,self.slice1],None)
+                self._K2 = self.k2.K(X[:,self.slice2],None)
             else:
                 self._X2 = X2.copy()
-                self._K1 = np.zeros((X.shape[0],X2.shape[0]))
-                self._K2 = np.zeros((X.shape[0],X2.shape[0]))
-                self.k1.K(X[:,self.slice1],X2[:,self.slice1],self._K1)
-                self.k2.K(X[:,self.slice2],X2[:,self.slice2],self._K2)
+                self._K1 = self.k1.K(X[:,self.slice1],X2[:,self.slice1])
+                self._K2 = self.k2.K(X[:,self.slice2],X2[:,self.slice2])
 

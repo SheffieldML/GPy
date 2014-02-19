@@ -1,12 +1,12 @@
 # Copyright (c) 2012, James Hensman and Ricardo Andrade
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from kernpart import Kernpart
+from kern import Kern
 import numpy as np
 from scipy import weave
 from ...core.parameterization import Param
 
-class Coregionalize(Kernpart):
+class Coregionalize(Kern):
     """
     Covariance function for intrinsic/linear coregionalization models
 
@@ -133,6 +133,8 @@ class Coregionalize(Kernpart):
         #dkappa = dL_dKdiag_small
         #target += np.hstack([dW.flatten(),dkappa])
 
-    def gradients_X(self,dL_dK,X,X2,target):
-        #NOTE In this case, pass is equivalent to returning zero.
-        pass
+    def gradients_X(self,dL_dK,X,X2):
+        if X2 is None:
+            return np.zeros((X.shape[0], X.shape[0]))
+        else:
+            return np.zeros((X.shape[0], X2.shape[0]))

@@ -4,8 +4,8 @@
 import sys
 import numpy as np
 import itertools
-from ..core.parameterization import Parameterized
-from GPy.core.parameterization.param import Param
+from ...core.parameterization import Parameterized
+from ...core.parameterization.param import Param
 
 
 class Kern(Parameterized):

@@ -41,7 +41,7 @@ def coregionalization_toy2(optimize=True, plot=True):
     Y = np.vstack((Y1, Y2))
 
     #build the kernel
-    k1 = GPy.kern.rbf(1) + GPy.kern.bias(1)
+    k1 = GPy.kern.RBF(1) + GPy.kern.bias(1)
     k2 = GPy.kern.coregionalize(2,1)
     k = k1**k2
     m = GPy.models.GPRegression(X, Y, kernel=k)
@@ -68,7 +68,7 @@ def coregionalization_toy2(optimize=True, plot=True):
 #    Y2 = -np.sin(X2) + np.random.randn(*X2.shape) * 0.05
 #    Y = np.vstack((Y1, Y2))
 #
-#    k1 = GPy.kern.rbf(1)
+#    k1 = GPy.kern.RBF(1)
 #    m = GPy.models.GPMultioutputRegression(X_list=[X1,X2],Y_list=[Y1,Y2],kernel_list=[k1])
 #    m.constrain_fixed('.*rbf_var', 1.)
 #    m.optimize(max_iters=100)
@@ -127,7 +127,7 @@ def epomeo_gpx(max_iters=200, optimize=True, plot=True):
     Z = np.hstack((np.linspace(t[:,0].min(), t[:, 0].max(), num_inducing)[:, None],
                    np.random.randint(0, 4, num_inducing)[:, None]))
 
-    k1 = GPy.kern.rbf(1)
+    k1 = GPy.kern.RBF(1)
     k2 = GPy.kern.coregionalize(output_dim=5, rank=5)
     k = k1**k2
 
@@ -156,7 +156,7 @@ def multiple_optima(gene_number=937, resolution=80, model_restarts=10, seed=1000
 
     data['Y'] = data['Y'] - np.mean(data['Y'])
 
-    lls = GPy.examples.regression._contour_data(data, length_scales, log_SNRs, GPy.kern.rbf)
+    lls = GPy.examples.regression._contour_data(data, length_scales, log_SNRs, GPy.kern.RBF)
     if plot:
         pb.contour(length_scales, log_SNRs, np.exp(lls), 20, cmap=pb.cm.jet)
         ax = pb.gca()
@@ -172,8 +172,8 @@ def multiple_optima(gene_number=937, resolution=80, model_restarts=10, seed=1000
     optim_point_y = np.empty(2)
     np.random.seed(seed=seed)
     for i in range(0, model_restarts):
-        # kern = GPy.kern.rbf(1, variance=np.random.exponential(1.), lengthscale=np.random.exponential(50.))
-        kern = GPy.kern.rbf(1, variance=np.random.uniform(1e-3, 1), lengthscale=np.random.uniform(5, 50))
+        # kern = GPy.kern.RBF(1, variance=np.random.exponential(1.), lengthscale=np.random.exponential(50.))
+        kern = GPy.kern.RBF(1, variance=np.random.uniform(1e-3, 1), lengthscale=np.random.uniform(5, 50))
 
         m = GPy.models.GPRegression(data['X'], data['Y'], kernel=kern)
         m['noise_variance'] = np.random.uniform(1e-3, 1)
@@ -196,7 +196,7 @@ def multiple_optima(gene_number=937, resolution=80, model_restarts=10, seed=1000
         ax.set_ylim(ylim)
     return m # (models, lls)
 
-def _contour_data(data, length_scales, log_SNRs, kernel_call=GPy.kern.rbf):
+def _contour_data(data, length_scales, log_SNRs, kernel_call=GPy.kern.RBF):
     """
     Evaluate the GP objective function for a given data set for a range of
     signal to noise ratios and a range of lengthscales.
@@ -278,10 +278,10 @@ def toy_poisson_rbf_1d_laplace(optimize=True, plot=True):
     optimizer='scg'
     x_len = 30
     X = np.linspace(0, 10, x_len)[:, None]
-    f_true = np.random.multivariate_normal(np.zeros(x_len), GPy.kern.rbf(1).K(X))
+    f_true = np.random.multivariate_normal(np.zeros(x_len), GPy.kern.RBF(1).K(X))
     Y = np.array([np.random.poisson(np.exp(f)) for f in f_true])[:,None]
 
-    kern = GPy.kern.rbf(1)
+    kern = GPy.kern.RBF(1)
     poisson_lik = GPy.likelihoods.Poisson()
     laplace_inf = GPy.inference.latent_function_inference.LaplaceInference()
 
@@ -319,10 +319,10 @@ def toy_ARD(max_iters=1000, kernel_type='linear', num_samples=300, D=4, optimize
     if kernel_type == 'linear':
         kernel = GPy.kern.linear(X.shape[1], ARD=1)
     elif kernel_type == 'rbf_inv':
-        kernel = GPy.kern.rbf_inv(X.shape[1], ARD=1)
+        kernel = GPy.kern.RBF_inv(X.shape[1], ARD=1)
     else:
-        kernel = GPy.kern.rbf(X.shape[1], ARD=1)
-    kernel += GPy.kern.white(X.shape[1]) + GPy.kern.bias(X.shape[1])
+        kernel = GPy.kern.RBF(X.shape[1], ARD=1)
+    kernel += GPy.kern.White(X.shape[1]) + GPy.kern.bias(X.shape[1])
     m = GPy.models.GPRegression(X, Y, kernel)
     # len_prior = GPy.priors.inverse_gamma(1,18) # 1, 25
     # m.set_prior('.*lengthscale',len_prior)
@@ -358,9 +358,9 @@ def toy_ARD_sparse(max_iters=1000, kernel_type='linear', num_samples=300, D=4, o
     if kernel_type == 'linear':
         kernel = GPy.kern.linear(X.shape[1], ARD=1)
     elif kernel_type == 'rbf_inv':
-        kernel = GPy.kern.rbf_inv(X.shape[1], ARD=1)
+        kernel = GPy.kern.RBF_inv(X.shape[1], ARD=1)
     else:
-        kernel = GPy.kern.rbf(X.shape[1], ARD=1)
+        kernel = GPy.kern.RBF(X.shape[1], ARD=1)
     #kernel += GPy.kern.bias(X.shape[1])
     X_variance = np.ones(X.shape) * 0.5
     m = GPy.models.SparseGPRegression(X, Y, kernel, X_variance=X_variance)
@@ -421,7 +421,7 @@ def sparse_GP_regression_1D(num_samples=400, num_inducing=5, max_iters=100, opti
     X = np.random.uniform(-3., 3., (num_samples, 1))
     Y = np.sin(X) + np.random.randn(num_samples, 1) * 0.05
     # construct kernel
-    rbf = GPy.kern.rbf(1)
+    rbf = GPy.kern.RBF(1)
     # create simple GP Model
     m = GPy.models.SparseGPRegression(X, Y, kernel=rbf, num_inducing=num_inducing)
     m.checkgrad(verbose=1)
@@ -444,7 +444,7 @@ def sparse_GP_regression_2D(num_samples=400, num_inducing=50, max_iters=100, opt
         Y[inan] = np.nan
 
     # construct kernel
-    rbf = GPy.kern.rbf(2)
+    rbf = GPy.kern.RBF(2)
 
     # create simple GP Model
     m = GPy.models.SparseGPRegression(X, Y, kernel=rbf, num_inducing=num_inducing)
@@ -476,9 +476,9 @@ def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
     # likelihood = GPy.likelihoods.Gaussian(Y)
     Z = np.random.uniform(-3., 3., (7, 1))
 
-    k = GPy.kern.rbf(1)
+    k = GPy.kern.RBF(1)
     # create simple GP Model - no input uncertainty on this one
-    m = GPy.models.SparseGPRegression(X, Y, kernel=GPy.kern.rbf(1), Z=Z)
+    m = GPy.models.SparseGPRegression(X, Y, kernel=GPy.kern.RBF(1), Z=Z)
 
     if optimize:
         m.optimize('scg', messages=1, max_iters=max_iters)
@@ -489,7 +489,7 @@ def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
     print m
 
     # the same Model with uncertainty
-    m = GPy.models.SparseGPRegression(X, Y, kernel=GPy.kern.rbf(1), Z=Z, X_variance=S)
+    m = GPy.models.SparseGPRegression(X, Y, kernel=GPy.kern.RBF(1), Z=Z, X_variance=S)
     if optimize:
         m.optimize('scg', messages=1, max_iters=max_iters)
     if plot:

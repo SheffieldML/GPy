@@ -5,8 +5,8 @@ import sys
 import numpy as np
 import itertools
 from linear import Linear
-from ..core.parameterization import Parameterized
-from GPy.core.parameterization.param import Param
+from ...core.parameterization import Parameterized
+from ...core.parameterization.param import Param
 from kern import Kern
 
 class Add(Kern):
@@ -27,7 +27,7 @@ class Add(Kern):
         self.add_parameters(*subkerns)
 
 
-    def K(self, X, X2=None, which_parts='all'):
+    def K(self, X, X2=None):
         """
         Compute the kernel function.
 
@@ -35,51 +35,21 @@ class Add(Kern):
         :param X2: (optional) the second set of arguments to the kernel. If X2
                    is None, this is passed throgh to the 'part' object, which
                    handles this as X2 == X.
-        :param which_parts: a list of booleans detailing whether to include
-                            each of the part functions. By default, 'all'
-                            indicates all parts
         """
-        if which_parts == 'all':
-            which_parts = [True] * self.size
         assert X.shape[1] == self.input_dim
         if X2 is None:
-            target = np.zeros((X.shape[0], X.shape[0]))
-            [p.K(X[:, i_s], None, target=target) for p, i_s, part_i_used in zip(self._parameters_, self.input_slices, which_parts) if part_i_used]
+            return sum([p.K(X[:, i_s], None) for p, i_s in zip(self._parameters_, self.input_slices)])
         else:
-            target = np.zeros((X.shape[0], X2.shape[0]))
-            [p.K(X[:, i_s], X2[:, i_s], target=target) for p, i_s, part_i_used in zip(self._parameters_, self.input_slices, which_parts) if part_i_used]
-        return target
+            return sum([p.K(X[:, i_s], X2[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)])
 
     def update_gradients_full(self, dL_dK, X):
-        [p.update_gradients_full(dL_dK, X) for p in self._parameters_]
+        [p.update_gradients_full(dL_dK, X[:,i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
 
     def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
-        [p.update_gradients_sparse(dL_dKmm, dL_dKnm, dL_dKdiag, X, Z) for p in self._parameters_]
+        [p.update_gradients_sparse(dL_dKmm, dL_dKnm, dL_dKdiag, X[:,i_s], Z[:,i_s]) for p, i_s in zip(self._parameters_, i_s)]
 
     def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
         [p.update_gradients_variational(dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z) for p in self._parameters_]
-
-    def _param_grad_helper(self, dL_dK, X, X2=None):
-        """
-        Compute the gradient of the covariance function with respect to the parameters.
-
-        :param dL_dK: An array of gradients of the objective function with respect to the covariance function.
-        :type dL_dK: Np.ndarray (num_samples x num_inducing)
-        :param X: Observed data inputs
-        :type X: np.ndarray (num_samples x input_dim)
-        :param X2: Observed data inputs (optional, defaults to X)
-        :type X2: np.ndarray (num_inducing x input_dim)
-
-        returns: dL_dtheta
-        """
-        assert X.shape[1] == self.input_dim
-        target = np.zeros(self.size)
-        if X2 is None:
-            [p._param_grad_helper(dL_dK, X[:, i_s], None, target[ps]) for p, i_s, ps, in zip(self._parameters_, self.input_slices, self._param_slices_)]
-        else:
-            [p._param_grad_helper(dL_dK, X[:, i_s], X2[:, i_s], target[ps]) for p, i_s, ps, in zip(self._parameters_, self.input_slices, self._param_slices_)]
-
-        return self._transform_gradients(target)
 
     def gradients_X(self, dL_dK, X, X2=None):
         """Compute the gradient of the objective function with respect to X.
@@ -93,33 +63,15 @@ class Add(Kern):
 
         target = np.zeros_like(X)
         if X2 is None:
-            [p.gradients_X(dL_dK, X[:, i_s], None, target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
+            [np.add(target[:,i_s], p.gradients_X(dL_dK, X[:, i_s], None), target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
         else:
-            [p.gradients_X(dL_dK, X[:, i_s], X2[:, i_s], target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
+            [np.add(target[:,i_s], p.gradients_X(dL_dK, X[:, i_s], X2[:,i_s]), target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
         return target
 
-    def Kdiag(self, X, which_parts='all'):
+    def Kdiag(self, X):
         """Compute the diagonal of the covariance function for inputs X."""
-        if which_parts == 'all':
-            which_parts = [True] * self.size
         assert X.shape[1] == self.input_dim
-        target = np.zeros(X.shape[0])
-        [p.Kdiag(X[:, i_s], target=target) for p, i_s, part_on in zip(self._parameters_, self.input_slices, which_parts) if part_on]
-        return target
-
-    def dKdiag_dtheta(self, dL_dKdiag, X):
-        """Compute the gradient of the diagonal of the covariance function with respect to the parameters."""
-        assert X.shape[1] == self.input_dim
-        assert dL_dKdiag.size == X.shape[0]
-        target = np.zeros(self.size)
-        [p.dKdiag_dtheta(dL_dKdiag, X[:, i_s], target[ps]) for p, i_s, ps in zip(self._parameters_, self.input_slices, self._param_slices_)]
-        return self._transform_gradients(target)
-
-    def dKdiag_dX(self, dL_dKdiag, X):
-        assert X.shape[1] == self.input_dim
-        target = np.zeros_like(X)
-        [p.dKdiag_dX(dL_dKdiag, X[:, i_s], target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
-        return target
+        return sum([p.Kdiag(X[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)])
 
     def psi0(self, Z, mu, S):
         target = np.zeros(mu.shape[0])

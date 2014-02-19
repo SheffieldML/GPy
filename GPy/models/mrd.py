@@ -7,7 +7,7 @@ from GPy.util.linalg import PCA
 import numpy
 import itertools
 import pylab
-from GPy.kern.kern import Kern
+from GPy.kern import Kern
 from GPy.models.bayesian_gplvm import BayesianGPLVM
 
 class MRD(Model):

@@ -70,7 +70,7 @@ class GP(Model):
     def log_likelihood(self):
         return self._log_marginal_likelihood
 
-    def _raw_predict(self, _Xnew, which_parts='all', full_cov=False, stop=False):
+    def _raw_predict(self, _Xnew, full_cov=False):
         """
         Internal helper function for making predictions, does not account
         for normalization or likelihood
@@ -80,29 +80,27 @@ class GP(Model):
         diagonal of the covariance is returned.
 
         """
-        Kx = self.kern.K(_Xnew, self.X, which_parts=which_parts).T
+        Kx = self.kern.K(_Xnew, self.X).T
         #LiKx, _ = dtrtrs(self.posterior.woodbury_chol, np.asfortranarray(Kx), lower=1)
         WiKx = np.dot(self.posterior.woodbury_inv, Kx)
         mu = np.dot(Kx.T, self.posterior.woodbury_vector)
         if full_cov:
-            Kxx = self.kern.K(_Xnew, which_parts=which_parts)
+            Kxx = self.kern.K(_Xnew)
             #var = Kxx - tdot(LiKx.T)
             var = np.dot(Kx.T, WiKx)
         else:
-            Kxx = self.kern.Kdiag(_Xnew, which_parts=which_parts)
+            Kxx = self.kern.Kdiag(_Xnew)
             #var = Kxx - np.sum(LiKx*LiKx, 0)
             var = Kxx - np.sum(WiKx*Kx, 0)
             var = var.reshape(-1, 1)
         return mu, var
 
-    def predict(self, Xnew, which_parts='all', full_cov=False, **likelihood_args):
+    def predict(self, Xnew, full_cov=False, **likelihood_args):
         """
         Predict the function(s) at the new point(s) Xnew.
 
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray, Nnew x self.input_dim
-        :param which_parts:  specifies which outputs kernel(s) to use in prediction
-        :type which_parts: ('all', list of bools)
         :param full_cov: whether to return the full covariance matrix, or just
                          the diagonal
         :type full_cov: bool
@@ -118,13 +116,13 @@ class GP(Model):
 
         """
         #predict the latent function values
-        mu, var = self._raw_predict(Xnew, full_cov=full_cov, which_parts=which_parts)
+        mu, var = self._raw_predict(Xnew, full_cov=full_cov)
 
         # now push through likelihood
         mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, **likelihood_args)
         return mean, var, _025pm, _975pm
 
-    def posterior_samples_f(self,X,size=10,which_parts='all',full_cov=True):
+    def posterior_samples_f(self,X,size=10, full_cov=True):
         """
         Samples the posterior GP at the points X.
 
@@ -132,13 +130,11 @@ class GP(Model):
         :type X: np.ndarray, Nnew x self.input_dim.
         :param size: the number of a posteriori samples.
         :type size: int.
-        :param which_parts: which of the kernel functions to use (additively).
-        :type which_parts: 'all', or list of bools.
         :param full_cov: whether to return the full covariance matrix, or just the diagonal.
         :type full_cov: bool.
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
-        m, v = self._raw_predict(X, which_parts=which_parts, full_cov=full_cov)
+        m, v = self._raw_predict(X,  full_cov=full_cov)
         v = v.reshape(m.size,-1) if len(v.shape)==3 else v
         if not full_cov:
             Ysim = np.random.multivariate_normal(m.flatten(), np.diag(v.flatten()), size).T
@@ -147,7 +143,7 @@ class GP(Model):
 
         return Ysim
 
-    def posterior_samples(self,X,size=10,which_parts='all',full_cov=True,noise_model=None):
+    def posterior_samples(self,X,size=10, full_cov=True,noise_model=None):
         """
         Samples the posterior GP at the points X.
 
@@ -155,15 +151,13 @@ class GP(Model):
         :type X: np.ndarray, Nnew x self.input_dim.
         :param size: the number of a posteriori samples.
         :type size: int.
-        :param which_parts: which of the kernel functions to use (additively).
-        :type which_parts: 'all', or list of bools.
         :param full_cov: whether to return the full covariance matrix, or just the diagonal.
         :type full_cov: bool.
         :param noise_model: for mixed noise likelihood, the noise model to use in the samples.
         :type noise_model: integer.
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
-        Ysim = self.posterior_samples_f(X, size, which_parts=which_parts, full_cov=full_cov)
+        Ysim = self.posterior_samples_f(X, size, full_cov=full_cov)
         if isinstance(self.likelihood, Gaussian):
             noise_std = np.sqrt(self.likelihood._get_params())
             Ysim += np.random.normal(0,noise_std,Ysim.shape)

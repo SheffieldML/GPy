@@ -23,7 +23,7 @@ class GPRegression(GP):
     def __init__(self, X, Y, kernel=None):
 
         if kernel is None:
-            kernel = kern.rbf(X.shape[1])
+            kernel = kern.RBF(X.shape[1])
 
         likelihood = likelihoods.Gaussian()
 

@@ -68,22 +68,21 @@ class SparseGP(GP):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
         self._update_gradients_Z(add=False)
 
-    def _raw_predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
+    def _raw_predict(self, Xnew, X_variance_new=None, full_cov=False):
         """
         Make a prediction for the latent function values
         """
         if X_variance_new is None:
-            Kx = self.kern.K(self.Z, Xnew, which_parts=which_parts)
+            Kx = self.kern.K(self.Z, Xnew)
             mu = np.dot(Kx.T, self.posterior.woodbury_vector)
             if full_cov:
-                Kxx = self.kern.K(Xnew, which_parts=which_parts)
-                var = Kxx - mdot(Kx.T, self.posterior.woodbury_inv, Kx) # NOTE this won't work for plotting
+                Kxx = self.kern.K(Xnew)
+                var = Kxx - mdot(Kx.T, self.posterior.woodbury_inv, Kx)
             else:
-                Kxx = self.kern.Kdiag(Xnew, which_parts=which_parts)
+                Kxx = self.kern.Kdiag(Xnew)
                 var = Kxx - np.sum(Kx * np.dot(self.posterior.woodbury_inv, Kx), 0)
         else:
-            # assert which_parts=='all', "swithching out parts of variational kernels is not implemented"
-            Kx = self.kern.psi1(self.Z, Xnew, X_variance_new) # , which_parts=which_parts) TODO: which_parts
+            Kx = self.kern.psi1(self.Z, Xnew, X_variance_new)
             mu = np.dot(Kx, self.Cpsi1V)
             if full_cov:
                 raise NotImplementedError, "TODO"

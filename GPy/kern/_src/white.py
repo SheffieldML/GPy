@@ -20,9 +20,8 @@ class White(Kern):
         self.input_dim = input_dim
         self.variance = Param('variance', variance, Logexp())
         self.add_parameters(self.variance)
-        self._psi1 = 0 # TODO: more elegance here
 
-    def K(self,X,X2):
+    def K(self, X, X2=None):
         if X2 is None:
             return np.eye(X.shape[0])*self.variance
         else:

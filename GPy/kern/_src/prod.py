@@ -36,38 +36,33 @@ class Prod(Kern):
         self._params = None
 
     def K(self, X, X2=None):
-        self._K_computations(X,X2)
+        self._K_computations(X, X2)
         return self._K1 * self._K2
+
+    def Kdiag(self, X):
+        return self.k1.Kdiag(X[:,self.slice1]) * self.k2.Kdiag(X[:,self.slice2])
 
     def update_gradients_full(self, dL_dK, X):
         self._K_computations(X, None)
         self.k1.update_gradients_full(dL_dK*self._K2, X[:,self.slice1])
         self.k2.update_gradients_full(dL_dK*self._K1, X[:,self.slice2])
 
-    def Kdiag(self, X):
-        """Compute the diagonal of the covariance matrix associated to X."""
-        return self.k1.Kdiag(X[:,self.slice1]) * self.k2.Kdiag(X[:,self.slice2])
+    def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
+        self.k1.update_gradients_sparse(dL_dKmm * self.k2.K(Z[:,self.slice2]), dL_dKnm * self.k2(X[:,self.slice2], Z[:,self.slice2]), dL_dKdiag * self.k2.Kdiag(X[:,self.slice2]), X[:,self.slice1], Z[:,self.slice1] )
+        self.k2.update_gradients_sparse(dL_dKmm * self.k1.K(Z[:,self.slice1]), dL_dKnm * self.k1(X[:,self.slice1], Z[:,self.slice1]), dL_dKdiag * self.k1.Kdiag(X[:,self.slice1]), X[:,self.slice2], Z[:,self.slice2] )
 
-    def update_gradients_sparse(self):
-        pass
-        #wtf goes here??
-    #def dKdiag_dtheta(self,dL_dKdiag,X,target):
-        #K1 = np.zeros(X.shape[0])
-        #K2 = np.zeros(X.shape[0])
-        #self.k1.Kdiag(X[:,self.slice1],K1)
-        #self.k2.Kdiag(X[:,self.slice2],K2)
-        #self.k1.dKdiag_dtheta(dL_dKdiag*K2,X[:,self.slice1],target[:self.k1.num_params])
-        #self.k2.dKdiag_dtheta(dL_dKdiag*K1,X[:,self.slice2],target[self.k1.num_params:])
-
-    def gradients_X(self,dL_dK,X,X2):
+    def gradients_X(self, dL_dK, X, X2=None):
         """derivative of the covariance matrix with respect to X."""
-        self._K_computations(X,X2)
+        self._K_computations(X, X2)
+        target = np.zeros(X.shape)
         if X2 is None:
-            self.k1.gradients_X(dL_dK*self._K2, X[:,self.slice1], None, target[:,self.slice1])
-            self.k2.gradients_X(dL_dK*self._K1, X[:,self.slice2], None, target[:,self.slice2])
+            target[:,self.slice1] += self.k1.gradients_X(dL_dK*self._K2, X[:,self.slice1], None)
+            target[:,self.slice2] += self.k2.gradients_X(dL_dK*self._K1, X[:,self.slice2], None)
         else:
-            self.k1.gradients_X(dL_dK*self._K2, X[:,self.slice1], X2[:,self.slice1], target[:,self.slice1])
-            self.k2.gradients_X(dL_dK*self._K1, X[:,self.slice2], X2[:,self.slice2], target[:,self.slice2])
+            target[:,self.slice1] += self.k1.gradients_X(dL_dK*self._K2, X[:,self.slice1], X2[:,self.slice1])
+            target[:,self.slice2] += self.k2.gradients_X(dL_dK*self._K1, X[:,self.slice2], X2[:,self.slice2])
+
+        return target
 
     def dKdiag_dX(self, dL_dKdiag, X, target):
         K1 = np.zeros(X.shape[0])
@@ -78,7 +73,7 @@ class Prod(Kern):
         self.k1.gradients_X(dL_dKdiag*K2, X[:,self.slice1], target[:,self.slice1])
         self.k2.gradients_X(dL_dKdiag*K1, X[:,self.slice2], target[:,self.slice2])
 
-    def _K_computations(self,X,X2):
+    def _K_computations(self, X, X2):
         if not (np.array_equal(X,self._X) and np.array_equal(X2,self._X2) and np.array_equal(self._params , self._get_params())):
             self._X = X.copy()
             self._params == self._get_params().copy()

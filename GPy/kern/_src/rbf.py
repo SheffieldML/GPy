@@ -154,7 +154,7 @@ class RBF(Kern):
         else:
             self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
 
-    def gradients_X(self, dL_dK, X, X2):
+    def gradients_X(self, dL_dK, X, X2=None):
         #if self._X is None or X.base is not self._X.base or X2 is not None:
         self._K_computations(X, X2)
         if X2 is None:

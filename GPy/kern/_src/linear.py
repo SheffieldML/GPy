@@ -43,16 +43,16 @@ class Linear(Kern):
                 assert variances.size == self.input_dim, "bad number of variances, need one ARD variance per input_dim"
             else:
                 variances = np.ones(self.input_dim)
-        
+
         self.variances = Param('variances', variances, Logexp())
-        self.variances.gradient = np.zeros(self.variances.shape)
+        #TODO: remove?self.variances.gradient = np.zeros(self.variances.shape)
         self.add_parameter(self.variances)
         self.variances.add_observer(self, self.update_variance)
 
         # initialize cache
         self._Z, self._mu, self._S = np.empty(shape=(3, 1))
         self._X, self._X2 = np.empty(shape=(2, 1))
-    
+
     def update_variance(self, v):
         self.variances2 = np.square(self.variances)
 
@@ -62,7 +62,7 @@ class Linear(Kern):
     def update_gradients_full(self, dL_dK, X):
         self.variances.gradient[:] = 0
         self._param_grad_helper(dL_dK, X, None, self.variances.gradient)
-    
+
     def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
         tmp = dL_dKdiag[:, None] * X ** 2
         if self.ARD:
@@ -71,7 +71,7 @@ class Linear(Kern):
             self.variances.gradient = tmp.sum()
         self._param_grad_helper(dL_dKmm, Z, None, self.variances.gradient)
         self._param_grad_helper(dL_dKnm, X, Z, self.variances.gradient)
-        
+
     def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
         self._psi_computations(Z, mu, S)
         # psi0:
@@ -87,7 +87,7 @@ class Linear(Kern):
         #from Kmm
         self._K_computations(Z, None)
         self._param_grad_helper(dL_dKmm, Z, None, self.variances.gradient)
-        
+
     def K(self, X, X2, target):
         if self.ARD:
             XX = X * np.sqrt(self.variances)
@@ -224,7 +224,7 @@ class Linear(Kern):
         weave_options = {'headers'           : ['<omp.h>'],
                          'extra_compile_args': ['-fopenmp -O3'],  #-march=native'],
                          'extra_link_args'   : ['-lgomp']}
-        
+
         N,num_inducing,input_dim,mu = mu.shape[0],Z.shape[0],mu.shape[1],param_to_array(mu)
         weave.inline(code, support_code=support_code, libraries=['gomp'],
                      arg_names=['N','num_inducing','input_dim','mu','AZZA','AZZA_2','target_mu','target_S','dL_dpsi2'],
@@ -281,7 +281,7 @@ class Linear(Kern):
                 self._X2 = None
             else:
                 self._X2 = X2.copy()
-                self._dot_product = np.dot(param_to_array(X), param_to_array(X2.T))  
+                self._dot_product = np.dot(param_to_array(X), param_to_array(X2.T))
 
     def _psi_computations(self, Z, mu, S):
         # here are the "statistics" for psi1 and psi2

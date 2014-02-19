@@ -221,7 +221,9 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
     def _description_str(self):
         if self.size <= 1: return ["%f" % self]
         else: return [str(self.shape)]
-    def parameter_names(self, add_name=False):
+    def parameter_names(self, add_self=False, adjust_for_printing=False):
+        if adjust_for_printing:
+            return [adjust_name_for_printing(self.name)]
         return [self.name]
     @property
     def flattened_parameters(self):
@@ -240,7 +242,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
         return [t._short() for t in self._tied_to_] or ['']
     def __repr__(self, *args, **kwargs):
         name = "\033[1m{x:s}\033[0;0m:\n".format(
-                            x=self.name_hirarchical)
+                            x=self.hirarchy_name())
         return name + super(Param, self).__repr__(*args, **kwargs)
     def _ties_for(self, rav_index):
         # size = sum(p.size for p in self._tied_to_)
@@ -274,7 +276,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
         gen = map(lambda x: " ".join(map(str, x)), gen)
         return reduce(lambda a, b:max(a, len(b)), gen, len(header))
     def _max_len_values(self):
-        return reduce(lambda a, b:max(a, len("{x:=.{0}g}".format(__precision__, x=b))), self.flat, len(self.name_hirarchical))
+        return reduce(lambda a, b:max(a, len("{x:=.{0}g}".format(__precision__, x=b))), self.flat, len(self.hirarchy_name()))
     def _max_len_index(self, ind):
         return reduce(lambda a, b:max(a, len(str(b))), ind, len(__index_name__))
     def _short(self):
@@ -302,8 +304,8 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
         if lp is None: lp = self._max_len_names(prirs, __tie_name__)
         sep = '-'
         header_format = "  {i:{5}^{2}s}  |  \033[1m{x:{5}^{1}s}\033[0;0m  |  {c:{5}^{0}s}  |  {p:{5}^{4}s}  |  {t:{5}^{3}s}"
-        if only_name: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.name_hirarchical, c=sep*lc, i=sep*li, t=sep*lt, p=sep*lp)  # nice header for printing
-        else: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.name_hirarchical, c=__constraints_name__, i=__index_name__, t=__tie_name__, p=__priors_name__)  # nice header for printing
+        if only_name: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.hirarchy_name(), c=sep*lc, i=sep*li, t=sep*lt, p=sep*lp)  # nice header for printing
+        else: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.hirarchy_name(), c=__constraints_name__, i=__index_name__, t=__tie_name__, p=__priors_name__)  # nice header for printing
         if not ties: ties = itertools.cycle([''])
         return "\n".join([header] + ["  {i!s:^{3}s}  |  {x: >{1}.{2}g}  |  {c:^{0}s}  |  {p:^{5}s}  |  {t:^{4}s}  ".format(lc, lx, __precision__, li, lt, lp, x=x, c=" ".join(map(str, c)), p=" ".join(map(str, p)), t=(t or ''), i=i) for i, x, c, t, p in itertools.izip(indices, vals, constr_matrix, ties, prirs)])  # return all the constraints with right indices
         # except: return super(Param, self).__str__()

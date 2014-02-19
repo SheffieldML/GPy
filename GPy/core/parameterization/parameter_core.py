@@ -88,10 +88,12 @@ class Nameable(Parentable):
         self._name = name
         if self.has_parent():
             self._direct_parent_._name_changed(self, from_name)
-    def hirarchy_name(self):
+    def hirarchy_name(self, adjust_for_printing=True):
+        if adjust_for_printing: adjust = lambda x: adjust_name_for_printing(x)
+        else: adjust = lambda x: x
         if self.has_parent():
-            return self._direct_parent_.hirarchy_name() + "." + adjust_name_for_printing(self.name)
-        return adjust_name_for_printing(self.name)
+            return self._direct_parent_.hirarchy_name() + "." + adjust(self.name)
+        return adjust(self.name)
 
 class Parameterizable(Parentable):
     def __init__(self, *args, **kwargs):
@@ -100,10 +102,13 @@ class Parameterizable(Parentable):
         _parameters_ = ParamList()
         self._added_names_ = set()
     
-    def parameter_names(self, add_name=False):
-        if add_name:
-            return [adjust_name_for_printing(self.name) + "." + xi for x in self._parameters_ for xi in x.parameter_names(add_name=True)]
-        return [xi for x in self._parameters_ for xi in x.parameter_names(add_name=True)]
+    def parameter_names(self, add_self=False, adjust_for_printing=False, recursive=True):
+        if adjust_for_printing: adjust = lambda x: adjust_name_for_printing(x)
+        else: adjust = lambda x: x
+        if recursive: names = [xi for x in self._parameters_ for xi in x.parameter_names(add_self=True, adjust_for_printing=adjust_for_printing)]
+        else: names = [adjust(x.name) for x in self._parameters_]
+        if add_self: names = map(lambda x: adjust(self.name) + "." + x, names)
+        return names
     
     def _add_parameter_name(self, param):
         pname = adjust_name_for_printing(param.name)

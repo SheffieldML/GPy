@@ -305,13 +305,11 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable, Parame
         """
         if not isinstance(regexp, _pattern_type): regexp = compile(regexp)
         found_params = []
-        for p in self.flattened_parameters:
-            if regexp.match(p.hirarchy_name()) is not None:
+        for n, p in itertools.izip(self.parameter_names(False, False, True), self.flattened_parameters):
+            if regexp.match(n) is not None:
                 found_params.append(p)
-            if isinstance(p, Parameterized):
-                found_params.extend(p.grep_param_names(regexp))
         return found_params
-        return [param for param in self._parameters_ if regexp.match(param.name) is not None]
+
     def __getitem__(self, name, paramlist=None):
         if paramlist is None:
             paramlist = self.grep_param_names(name)
@@ -323,26 +321,16 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable, Parame
                     return ParamConcatenation(paramlist)
             return paramlist[-1]
         return ParamConcatenation(paramlist)
+    
     def __setitem__(self, name, value, paramlist=None):
         try: param = self.__getitem__(name, paramlist)
         except AttributeError as a: raise a
         param[:] = value
-#     def __getattr__(self, name):
-#         return self.__getitem__(name)
-#     def __getattribute__(self, name):
-#         #try:
-#             return object.__getattribute__(self, name)
-        # except AttributeError:
-        #    _, a, tb = sys.exc_info()
-        #    try:
-        #        return self.__getitem__(name)
-        #    except AttributeError:
-        #        raise AttributeError, a.message, tb
     def __setattr__(self, name, val):
-        # override the default behaviour, if setting a param, so broadcasting can by used
-        if hasattr(self, "_parameters_"):
-            paramlist = self.grep_param_names(name)
-            if len(paramlist) == 1: self.__setitem__(name, val, paramlist); return
+        # override the default behaviour, if setting a param, so broadcasting can by used        
+        if hasattr(self, '_parameters_'):
+            pnames = self.parameter_names(False, adjust_for_printing=True, recursive=False)
+            if name in pnames: self._parameters_[pnames.index(name)][:] = val; return
         object.__setattr__(self, name, val);
     #===========================================================================
     # Printing:

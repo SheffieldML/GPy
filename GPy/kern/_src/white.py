@@ -1,12 +1,12 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from kernpart import Kernpart
+from kern import Kern
 import numpy as np
-from ...core.parameterization import Param
-from ...core.parameterization.transformations import Logexp
+from ..core.parameterization import Param
+from ..core.parameterization.transformations import Logexp
 
-class White(Kernpart):
+class White(Kern):
     """
     White noise kernel.
 
@@ -22,12 +22,14 @@ class White(Kernpart):
         self.add_parameters(self.variance)
         self._psi1 = 0 # TODO: more elegance here
 
-    def K(self,X,X2,target):
+    def K(self,X,X2):
         if X2 is None:
-            target += np.eye(X.shape[0])*self.variance
+            return np.eye(X.shape[0])*self.variance
 
-    def Kdiag(self,X,target):
-        target += self.variance
+    def Kdiag(self,X):
+        ret = np.ones(X.shape[0])
+        ret[:] = self.variance
+        return ret
 
     def update_gradients_full(self, dL_dK, X):
         self.variance.gradient = np.trace(dL_dK)
@@ -38,14 +40,8 @@ class White(Kernpart):
     def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
         raise NotImplementedError
 
-    def dKdiag_dtheta(self,dL_dKdiag,X,target):
-        target += np.sum(dL_dKdiag)
-
-    def gradients_X(self,dL_dK,X,X2,target):
-        pass
-
-    def dKdiag_dX(self,dL_dKdiag,X,target):
-        pass
+    def gradients_X(self,dL_dK,X,X2):
+        return np.zeros_like(X)
 
     def psi0(self,Z,mu,S,target):
         pass # target += self.variance

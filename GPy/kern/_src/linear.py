@@ -4,13 +4,13 @@
 
 import numpy as np
 from scipy import weave
-from kernpart import Kernpart
-from ...util.linalg import tdot
-from ...util.misc import fast_array_equal, param_to_array
-from ...core.parameterization import Param
-from ...core.parameterization.transformations import Logexp
+from kern import Kern
+from ..util.linalg import tdot
+from ..util.misc import fast_array_equal, param_to_array
+from ..core.parameterization import Param
+from ..core.parameterization.transformations import Logexp
 
-class Linear(Kernpart):
+class Linear(Kern):
     """
     Linear kernel
 

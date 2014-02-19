@@ -4,13 +4,13 @@
 
 import numpy as np
 from scipy import weave
-from kernpart import Kernpart
-from ...util.linalg import tdot
-from ...util.misc import fast_array_equal, param_to_array
-from ...core.parameterization import Param
-from ...core.parameterization.transformations import Logexp
+from kern import Kern
+from ..util.linalg import tdot
+from ..util.misc import fast_array_equal, param_to_array
+from ..core.parameterization import Param
+from ..core.parameterization.transformations import Logexp
 
-class RBF(Kernpart):
+class RBF(Kern):
     """
     Radial Basis Function kernel, aka squared-exponential, exponentiated quadratic or Gaussian kernel:
 
@@ -52,29 +52,15 @@ class RBF(Kernpart):
                 lengthscale = np.ones(self.input_dim)
 
         self.variance = Param('variance', variance, Logexp())
-        
+
         self.lengthscale = Param('lengthscale', lengthscale, Logexp())
         self.lengthscale.add_observer(self, self.update_lengthscale)
         self.update_lengthscale(self.lengthscale)
-        
+
         self.add_parameters(self.variance, self.lengthscale)
         self.parameters_changed() # initializes cache
 
-        #self.update_inv_lengthscale(self.lengthscale)
-        #self.parameters_changed()
-        # initialize cache
-        #self._Z, self._mu, self._S = np.empty(shape=(3, 1))
-        #self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
-
-        # a set of optional args to pass to weave
-        # self.weave_options = {'headers'           : ['<omp.h>'],
-        #                       'extra_compile_args': ['-fopenmp -O3'], # -march=native'],
-        #                       'extra_link_args'   : ['-lgomp']}
         self.weave_options = {}
-
-    def on_input_change(self, X):
-        #self._K_computations(X, None)
-        pass
 
     def update_lengthscale(self, l):
         self.lengthscale2 = np.square(self.lengthscale)
@@ -84,13 +70,16 @@ class RBF(Kernpart):
         self._X, self._X2 = np.empty(shape=(2, 1))
         self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
 
-    def K(self, X, X2, target):
+    def K(self, X, X2=None):
         self._K_computations(X, X2)
-        target += self.variance * self._K_dvar
+        return self.variance * self._K_dvar
 
-    def Kdiag(self, X, target):
-        np.add(target, self.variance, target)
+    def Kdiag(self, X):
+        ret = np.ones(X.shape[0])
+        ret[:] = self.variance
+        return ret
 
+    #TODO: remove TARGET!
     def psi0(self, Z, mu, S, target):
         target += self.variance
 
@@ -165,7 +154,7 @@ class RBF(Kernpart):
         else:
             self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
 
-    def gradients_X(self, dL_dK, X, X2, target):
+    def gradients_X(self, dL_dK, X, X2):
         #if self._X is None or X.base is not self._X.base or X2 is not None:
         self._K_computations(X, X2)
         if X2 is None:
@@ -173,10 +162,10 @@ class RBF(Kernpart):
         else:
             _K_dist = X[:, None, :] - X2[None, :, :] # don't cache this in _K_computations because it is high memory. If this function is being called, chances are we're not in the high memory arena.
         gradients_X = (-self.variance / self.lengthscale2) * np.transpose(self._K_dvar[:, :, np.newaxis] * _K_dist, (1, 0, 2))
-        target += np.sum(gradients_X * dL_dK.T[:, :, None], 0)
+        return np.sum(gradients_X * dL_dK.T[:, :, None], 0)
 
-    def dKdiag_dX(self, dL_dKdiag, X, target):
-        pass
+    def dKdiag_dX(self, dL_dKdiag, X):
+        return np.zeros(X.shape[0])
 
     #---------------------------------------#
     #             PSI statistics            #

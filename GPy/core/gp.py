@@ -43,7 +43,7 @@ class GP(Model):
         else:
             self.Y_metadata = None
 
-        assert isinstance(kernel, kern.kern)
+        assert isinstance(kernel, kern.Kern)
         self.kern = kernel
 
         assert isinstance(likelihood, likelihoods.Likelihood)

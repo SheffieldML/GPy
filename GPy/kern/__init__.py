@@ -1,6 +1,6 @@
-from rbf import RBF
-from white import White
-from kern import Kern
+from _src.rbf import RBF
+from _src.white import White
+from _src.kern import Kern
 #import bias
 #import Brownian
 #import coregionalize

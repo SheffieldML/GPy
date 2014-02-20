@@ -26,6 +26,8 @@ import ast
 from kernpart import Kernpart
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
+# TODO have this set up in a set up file!
+user_code_storage = tempfile.gettempdir()
 
 class spkern(Kernpart):
     """
@@ -61,13 +63,12 @@ class spkern(Kernpart):
         assert all([x.name=='x_%i'%i for i,x in enumerate(self._sp_x)])
         assert all([z.name=='z_%i'%i for i,z in enumerate(self._sp_z)])
         assert len(self._sp_x)==len(self._sp_z)
-        assert len(self._sp_x)==input_dim
+        x_dim=len(self._sp_x)
 
         # If it is a multi-output covariance, add an input for indexing the outputs.
-        self._real_input_dim = self.input_dim
-        if output_dim > 1:
-            self.input_dim += 1
-        assert self.input_dim == input_dim
+        self._real_input_dim = x_dim
+        # Check input dim is number of xs + 1 if output_dim is >1
+        assert self.input_dim == x_dim + int(output_dim > 1)
         self.output_dim = output_dim
 
         # extract parameter names from the covariance
@@ -113,7 +114,6 @@ class spkern(Kernpart):
             #setattr(self, theta.name, val)
             setattr(self, theta.name, Param(theta.name, val, None))
             self.add_parameters(getattr(self, theta.name))
-        self.parameters_changed() # initializes cache
         #deal with param            
         #self._set_params(self._get_params())
 
@@ -139,13 +139,15 @@ class spkern(Kernpart):
                 extra_compile_args = []
             
                 self.weave_kwargs = {
-                    'support_code':self._function_code,
-                    'include_dirs':[tempfile.gettempdir(), os.path.join(current_dir,'parts/')],
-                    'headers':['"sympy_helpers.h"'],
-                    'sources':[os.path.join(current_dir,"parts/sympy_helpers.cpp")],
+                    'support_code': None, #self._function_code,
+                    'include_dirs':[user_code_storage, os.path.join(current_dir,'parts/')],
+                    'headers':['"sympy_helpers.h"', '"'+self.name+'.h"'],
+                    'sources':[os.path.join(current_dir,"parts/sympy_helpers.cpp"), os.path.join(user_code_storage, self.name+'.cpp')],
                     'extra_compile_args':extra_compile_args,
                     'extra_link_args':['-lgomp'],
                     'verbose':True}
+        self.parameters_changed() # initializes caches
+
 
     def __add__(self,other):
         return spkern(self._sp_k+other._sp_k)
@@ -177,31 +179,39 @@ class spkern(Kernpart):
         # Use weave to compute the underlying functions.
         if weave_available:
             # put the header file where we can find it
-            f = file(os.path.join(tempfile.gettempdir(), self.name + '.h'),'w')
+            f = file(os.path.join(user_code_storage, self.name + '.h'),'w')
             f.write(self._function_header)
             f.close()
-
     
-        # Substitute any known derivatives which sympy doesn't compute
-        self._function_code = re.sub('DiracDelta\(.+?,.+?\)','0.0',self._function_code)
+
+        if weave_available:
+            # Substitute any known derivatives which sympy doesn't compute
+            self._function_code = re.sub('DiracDelta\(.+?,.+?\)','0.0',self._function_code)
+            # put the cpp file in user code storage (defaults to temp file location)
+            f = file(os.path.join(user_code_storage, self.name + '.cpp'),'w')
+        else:
+            # put the python file in user code storage
+            f = file(os.path.join(user_code_storage, self.name + '.py'),'w')
+        f.write(self._function_code)
+        f.close()
 
         if weave_available:
             # arg_list will store the arguments required for the C code.
-            arg_list = (["X2(i, %s)"%x.name[2:] for x in self._sp_x]
+            input_arg_list = (["X2(i, %s)"%x.name[2:] for x in self._sp_x]
                         + ["Z2(j, %s)"%z.name[2:] for z in self._sp_z])
 
             # for multiple outputs reverse argument list is also required
             if self.output_dim>1:
-                reverse_arg_list = list(arg_list)
-                reverse_arg_list.reverse()
+                reverse_input_arg_list = list(input_arg_list)
+                reverse_input_arg_list.reverse()
 
             # This gives the parameters for the arg list.
             param_arg_list = [shared_params.name for shared_params in self._sp_theta]
-            arg_list += param_arg_list
+            arg_list = input_arg_list + param_arg_list
 
             precompute_list=[]
             if self.output_dim > 1:
-                reverse_arg_list+=list(param_arg_list)
+                reverse_arg_list= reverse_input_arg_list + list(param_arg_list)
                 # For multiple outputs, also need the split parameters.
                 split_param_arg_list = ["%s1(%s)"%(theta.name[:-2].upper(),index) for index in ['ii', 'jj'] for theta in self._sp_theta_i]
                 split_param_reverse_arg_list = ["%s1(%s)"%(theta.name[:-2].upper(),index) for index in ['jj', 'ii'] for theta in self._sp_theta_i]
@@ -218,9 +228,9 @@ class spkern(Kernpart):
 
             # Any precomputations will be done here eventually.
             self._precompute = \
-                             """
-                             // Precompute code would go here. It will be called when parameters are updated. 
-                             """
+                """
+                // Precompute code would go here. It will be called when parameters are updated. 
+                """
 
             # Here's the code to do the looping for K
             self._K_code =\
@@ -229,11 +239,11 @@ class spkern(Kernpart):
             // Code for computing the covariance function.
             int i;
             int j;
-            int N = target_array->dimensions[0];
+            int n = target_array->dimensions[0];
             int num_inducing = target_array->dimensions[1];
             int input_dim = X_array->dimensions[1];
             //#pragma omp parallel for private(j)
-            for (i=0;i<N;i++){
+            for (i=0;i<n;i++){
                 for (j=0;j<num_inducing;j++){
                     %s
                     //target[i*num_inducing+j] = 
@@ -244,6 +254,7 @@ class spkern(Kernpart):
             """%(precompute_string,arg_string,"/*"+str(self._sp_k)+"*/")
            # adding a string representation of the function in the
            # comment forces recompile when needed
+            self._K_code_X = self._K_code.replace('Z2(', 'X2(')
 
 
             # Code to compute diagonal of covariance.
@@ -259,10 +270,10 @@ class spkern(Kernpart):
             // _Kdiag_code
             // Code for computing diagonal of covariance function.
             int i;
-            int N = target_array->dimensions[0];
+            int n = target_array->dimensions[0];
             int input_dim = X_array->dimensions[1];
             //#pragma omp parallel for
-            for (i=0;i<N;i++){
+            for (i=0;i<n;i++){
                     %s
                     //target[i] =
                     TARGET1(i)=k(%s);
@@ -274,9 +285,9 @@ class spkern(Kernpart):
             grad_func_list = []
             if self.output_dim>1:
                 grad_func_list += c_define_output_indices
-                grad_func_list += [' '*16 + 'TARGET1(%i+ii) += partial[i*num_inducing+j]*dk_d%s(%s);'%(self.num_shared_params+i*self.output_dim, theta.name, arg_string) for i, theta in enumerate(self._sp_theta_i)]
-                grad_func_list += [' '*16 + 'TARGET1(%i+jj) += partial[i*num_inducing+j]*dk_d%s(%s);'%(self.num_shared_params+i*self.output_dim, theta.name, reverse_arg_string) for i, theta in enumerate(self._sp_theta_i)]
-            grad_func_list += ([' '*16 + 'TARGET1(%i) += partial[i*num_inducing+j]*dk_d%s(%s);'%(i,theta.name,arg_string) for i,theta in  enumerate(self._sp_theta)])
+                grad_func_list += [' '*16 + 'TARGET1(%i+ii) += PARTIAL2(i, j)*dk_d%s(%s);'%(self.num_shared_params+i*self.output_dim, theta.name, arg_string) for i, theta in enumerate(self._sp_theta_i)]
+                grad_func_list += [' '*16 + 'TARGET1(%i+jj) += PARTIAL2(i, j)*dk_d%s(%s);'%(self.num_shared_params+i*self.output_dim, theta.name, reverse_arg_string) for i, theta in enumerate(self._sp_theta_i)]
+            grad_func_list += ([' '*16 + 'TARGET1(%i) += PARTIAL2(i, j)*dk_d%s(%s);'%(i,theta.name,arg_string) for i,theta in  enumerate(self._sp_theta)])
             grad_func_string = '\n'.join(grad_func_list) 
 
             self._dK_dtheta_code =\
@@ -285,17 +296,18 @@ class spkern(Kernpart):
             // Code for computing gradient of covariance with respect to parameters.
             int i;
             int j;
-            int N = partial_array->dimensions[0];
+            int n = partial_array->dimensions[0];
             int num_inducing = partial_array->dimensions[1];
             int input_dim = X_array->dimensions[1];
             //#pragma omp parallel for private(j)
-            for (i=0;i<N;i++){
+            for (i=0;i<n;i++){
                 for (j=0;j<num_inducing;j++){
-    %s
+                  %s
                 }
             }
             %s
             """%(grad_func_string,"/*"+str(self._sp_k)+"*/") # adding a string representation forces recompile when needed
+            self._dK_dtheta_code_X = self._dK_dtheta_code.replace('Z2(', 'X2(')
 
 
             # Code to compute gradients for Kdiag TODO: needs clean up
@@ -308,9 +320,9 @@ class spkern(Kernpart):
             // _dKdiag_dtheta_code
             // Code for computing gradient of diagonal with respect to parameters.
             int i;
-            int N = partial_array->dimensions[0];
+            int n = partial_array->dimensions[0];
             int input_dim = X_array->dimensions[1];
-            for (i=0;i<N;i++){
+            for (i=0;i<n;i++){
                     %s
             }
             %s
@@ -329,32 +341,33 @@ class spkern(Kernpart):
             // Code for computing gradient of covariance with respect to inputs.
             int i;
             int j;
-            int N = partial_array->dimensions[0];
+            int n = partial_array->dimensions[0];
             int num_inducing = partial_array->dimensions[1];
             int input_dim = X_array->dimensions[1];
             //#pragma omp parallel for private(j)
-            for (i=0;i<N; i++){
+            for (i=0;i<n; i++){
               for (j=0; j<num_inducing; j++){
                 %s
               }
             }
             %s
             """%(gradX_func_string,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
+            self._dK_dX_code_X = self._dK_dX_code.replace('Z2(', 'X2(')
 
 
             diag_gradX_func_string = re.sub('Z','X',gradX_func_string,count=0)
             diag_gradX_func_string = re.sub('int jj','//int jj',diag_gradX_func_string)
             diag_gradX_func_string = re.sub('j','i',diag_gradX_func_string)
-            diag_gradX_func_string = re.sub('partial\[i\*num_inducing\+i\]','2*partial[i]',diag_gradX_func_string)
+            diag_gradX_func_string = re.sub('PARTIAL2\(i\, i\)','2*PARTIAL(i)',diag_gradX_func_string)
 
             # Code for gradients of Kdiag wrt X
             self._dKdiag_dX_code= \
             """
             // _dKdiag_dX_code
             // Code for computing gradient of diagonal with respect to inputs.
-            int N = partial_array->dimensions[0];
+            int n = partial_array->dimensions[0];
             int input_dim = X_array->dimensions[1];
-            for (int i=0;i<N; i++){
+            for (int i=0;i<n; i++){
                 %s
             }
             %s
@@ -364,13 +377,7 @@ class spkern(Kernpart):
             # diag_func_string called here? Need to check that.
             #self._dKdiag_dX_code = self._dKdiag_dX_code.replace('Z[j', 'X[i')
 
-            # Code to use when only X is provided. 
-            self._K_code_X = self._K_code.replace('Z[', 'X[')
-            self._dK_dtheta_code_X = self._dK_dtheta_code.replace('Z[', 'X[')
-            self._dK_dX_code_X = self._dK_dX_code.replace('Z[', 'X[').replace('+= partial[', '+= 2*partial[')
-            self._K_code_X = self._K_code.replace('Z2(', 'X2(')
-            self._dK_dtheta_code_X = self._dK_dtheta_code.replace('Z2(', 'X2(')
-            self._dK_dX_code_X = self._dK_dX_code.replace('Z2(', 'X2(')
+            
 
 
             #TODO: insert multiple functions here via string manipulation
@@ -378,9 +385,10 @@ class spkern(Kernpart):
             #TODO: similar functions when cython available.
             #TODO: similar functions when only python available.
             
-    def _get_arg_names(self, Z=None, partial=None):
-        
-        arg_names = ['target','X']
+    def _get_arg_names(self, target=None, Z=None, partial=None):
+        arg_names = ['X']
+        if target is not None:
+            arg_names += ['target']
         for shared_params in self._sp_theta:
             arg_names += [shared_params.name]
         if Z is not None:
@@ -392,20 +400,21 @@ class spkern(Kernpart):
             arg_names += ['output_dim']
         return arg_names
 
-    def _generate_inline(self, code, X, target, Z=None, partial=None):
+    def _generate_inline(self, code, X, target=None, Z=None, partial=None):
         output_dim = self.output_dim
+        # Need to extract parameters to local variables first
         for shared_params in self._sp_theta:
             locals()[shared_params.name] = getattr(self, shared_params.name)
-
-        # Need to extract parameters first
+            
         for split_params in self._split_theta_names:
-            locals()[split_params] = getattr(self, split_params)
-        arg_names = self._get_arg_names(Z, partial)        
+            locals()[split_params] = np.asarray(getattr(self, split_params))
+        arg_names = self._get_arg_names(target, Z, partial)        
+
         if weave_available:
-            weave.inline(code=code, arg_names=arg_names,**self.weave_kwargs)
+            return weave.inline(code=code, arg_names=arg_names,**self.weave_kwargs)
         else:
             raise RuntimeError('Weave not available and other variants of sympy covariance not yet implemented')
-        
+
     def K(self,X,Z,target):        
         if Z is None:
             self._generate_inline(self._K_code_X, X, target)
@@ -421,9 +430,9 @@ class spkern(Kernpart):
             self._generate_inline(self._dK_dtheta_code_X, X, target, Z, partial)
         else:
             self._generate_inline(self._dK_dtheta_code, X, target, Z, partial)
-            
+
     def dKdiag_dtheta(self,partial,X,target):
-        self._generate_inline(self._dKdiag_dtheta_code, X, target, Z=None, partial=partial)
+        self._generate_inline(self._dKdiag_dtheta_code, X, target, Z=None, partial=partial).namelocals()[shared_params.name] = getattr(self, shared_params.name)
                
     def gradients_X(self,partial,X,Z,target):
         if Z is None:
@@ -461,34 +470,54 @@ class spkern(Kernpart):
             self._sp_psi2 = sp.integrate(self._sp_psi2,(self._sp_x[i],-sp.oo,sp.oo))
             clear_cache()
         self._sp_psi2 = self._sp_psi2.simplify()
+
     def parameters_changed(self):
-        # Do anything here that needs to happen when parameters change, like precompute.
-        self._generate_inline(self._precompute, X, target, Z, partial)
+        # Reset the caches
+        self._cache, self._cache2 = np.empty(shape=(2, 1))
+        self._cache3, self._cache4, self._cache5 = np.empty(shape=(3, 1)) 
+
+    def update_gradients_full(self, dL_dK, X):
+        # Need to extract parameters to local variables first
+        self._K_computations(X, None)
+        for shared_params in self._sp_theta:
+            parameter = getattr(self, shared_params.name)
+            code = getattr(self, '_dK_d' + shared_params.name + '_code')
+            setattr(parameter, 'gradient', self._generate_inline(code, X, target=None, Z=None, partial=dL_dK))
+            
+        for split_params in self._split_theta_names:
+            parameter = getattr(self, split_params.name)
+            code = getattr(self, '_dK_d' + split_params.name + '_code')
+            setattr(parameter, 'gradient', self._generate_inline(code, X, target=None, Z=None, partial=dL_dK))
+
+
+    def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
+        #contributions from Kdiag
+        self.variance.gradient = np.sum(dL_dKdiag)
+
+        #from Knm
+        self._K_computations(X, Z)
+        self.variance.gradient += np.sum(dL_dKnm * self._K_dvar)
+        if self.ARD:
+            self.lengthscale.gradient = self._dL_dlengthscales_via_K(dL_dKnm, X, Z)
+
+        else:
+            self.lengthscale.gradient = (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKnm)
+
+        #from Kmm
+        self._K_computations(Z, None)
+        self.variance.gradient += np.sum(dL_dKmm * self._K_dvar)
+        if self.ARD:
+            self.lengthscale.gradient += self._dL_dlengthscales_via_K(dL_dKmm, Z, None)
+        else:
+            self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
 
     
-    # def _set_params(self,param):        
-    #     assert param.size == (self.num_params)
-    #     for i, shared_params in enumerate(self._sp_theta):
-    #         setattr(self, shared_params.name, param[i])
-            
-    #     if self.output_dim>1:
-    #         for i, split_params in enumerate(self._split_theta_names):
-    #             start = self.num_shared_params + i*self.output_dim
-    #             end = self.num_shared_params + (i+1)*self.output_dim
-    #             setattr(self, split_params, param[start:end])
+    #---------------------------------------#
+    #            Precomputations            #
+    #---------------------------------------#
 
-
-    # def _get_params(self):
-    #     params = np.zeros(0)
-    #     for shared_params in self._sp_theta:
-    #         params = np.hstack((params, getattr(self, shared_params.name)))
-    #     if self.output_dim>1:
-    #         for split_params in self._split_theta_names:
-    #             params = np.hstack((params, getattr(self, split_params).flatten()))
-    #     return params
-
-    # def _get_param_names(self):
-    #     if self.output_dim>1:
-    #         return [x.name for x in self._sp_theta] + [x.name[:-2] + str(i)  for x in self._sp_theta_i for i in range(self.output_dim)]
-    #     else:
-    #         return [x.name for x in self._sp_theta]
+    def _K_computations(self, X, Z):
+        if Z is None:
+            self._generate_inline(self._precompute, X)
+        else:
+            self._generate_inline(self._precompute, X, Z=Z)

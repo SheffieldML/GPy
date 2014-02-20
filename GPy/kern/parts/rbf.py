@@ -109,7 +109,7 @@ class RBF(Kernpart):
             self.lengthscale.gradient = self._dL_dlengthscales_via_K(dL_dK, X, None)
         else:
             self.lengthscale.gradient = (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dK)
-
+b
     def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
         #contributions from Kdiag
         self.variance.gradient = np.sum(dL_dKdiag)

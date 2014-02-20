@@ -53,20 +53,17 @@ class SparseGP(GP):
         self.add_parameter(self.Z, index=0)
         self.parameters_changed()
 
-    def _gradients_Z(self):
+    def update_gradients_Z(self):
         #The derivative of the bound wrt the inducing inputs Z ( unless they're all fixed)
         if not self.Z.is_fixed:
             if self.X_variance is None:
                 self.Z.gradient = self.kern.gradients_Z_sparse(X=self.X, Z=self.Z, **self.grad_dict)
-                print self.Z.gradient
             else:
                 self.Z.gradient = self.kern.gradients_Z_variational(mu=self.X, S=self.X_variance, Z=self.Z, **self.grad_dict)
-                print self.Z.gradient
-                print id(self.Z)
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
-        self.Z.gradient = self._gradients_Z()
+        self.update_gradients_Z()
 
     def _raw_predict(self, Xnew, X_variance_new=None, full_cov=False):
         """

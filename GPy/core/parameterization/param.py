@@ -23,7 +23,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
     :param input_array:        array which this parameter handles
     :type input_array:         numpy.ndarray
     :param default_constraint: The default constraint for this parameter
-    :type default_constraint:  
+    :type default_constraint:
 
     You can add/remove constraints by calling constrain on the parameter itself, e.g:
 
@@ -59,7 +59,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
 
     def __init__(self, name, input_array, default_constraint=None):
         super(Param, self).__init__(name=name, default_constraint=default_constraint)
-    
+
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
@@ -192,7 +192,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
                 return numpy.r_[a]
             return numpy.r_[:b]
         return itertools.imap(f, itertools.izip_longest(slice_index[:self._realndim_], self._realshape_, fillvalue=slice(self.size)))
-    
+
     #===========================================================================
     # Convenience
     #===========================================================================
@@ -260,7 +260,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
             clean_curr_slice = [s for s in slice_index if numpy.any(s != Ellipsis)]
             for i in range(self._realndim_-len(clean_curr_slice)):
                 i+=len(clean_curr_slice)
-                clean_curr_slice += range(self._realshape_[i]) 
+                clean_curr_slice += range(self._realshape_[i])
             if (all(isinstance(n, (numpy.ndarray, list, tuple)) for n in clean_curr_slice)
                 and len(set(map(len, clean_curr_slice))) <= 1):
                 return numpy.fromiter(itertools.izip(*clean_curr_slice),

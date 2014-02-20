@@ -9,7 +9,7 @@ from ...core.parameterization.param import Param
 
 
 class Kern(Parameterized):
-    def __init__(self,input_dim,name):
+    def __init__(self, input_dim, name):
         """
         The base class for a kernel: a positive definite function
         which forms of a covariance function (kernel).
@@ -22,21 +22,15 @@ class Kern(Parameterized):
         super(Kern, self).__init__(name)
         self.input_dim = input_dim
 
-    def K(self,X,X2,target):
+    def K(self, X, X2, target):
         raise NotImplementedError
-    def Kdiag(self,X,target):
+    def Kdiag(self, Xa ,target):
         raise NotImplementedError
-    def _param_grad_helper(self,dL_dK,X,X2,target):
+    def _param_grad_helper(self, dL_dK,X, X2, target):
         raise NotImplementedError
-    def dKdiag_dtheta(self,dL_dKdiag,X,target): # TODO: Max??
-        # In the base case compute this by calling _param_grad_helper. Need to
-        # override for stationary covariances (for example) to save
-        # time.
-        for i in range(X.shape[0]):
-            self._param_grad_helper(dL_dKdiag[i], X[i, :][None, :], X2=None, target=target)
     def psi0(self,Z,mu,S,target):
         raise NotImplementedError
-    def dpsi0_dtheta(self,dL_dpsi0,Z,mu,S,target):
+    def dpsi0_dtheta(self,dL_dpsi0, Z,mu,S,target):
         raise NotImplementedError
     def dpsi0_dmuS(self,dL_dpsi0,Z,mu,S,target_mu,target_S):
         raise NotImplementedError

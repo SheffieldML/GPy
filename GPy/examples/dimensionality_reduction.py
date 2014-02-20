@@ -22,18 +22,18 @@ def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False, 
     # generate GPLVM-like data
     X = _np.random.rand(num_inputs, input_dim)
     lengthscales = _np.random.rand(input_dim)
-    k = (GPy.kern.rbf(input_dim, .5, lengthscales, ARD=True)
+    k = (GPy.kern.RBF(input_dim, .5, lengthscales, ARD=True)
          #+ GPy.kern.white(input_dim, 0.01)
          )
     K = k.K(X)
     Y = _np.random.multivariate_normal(_np.zeros(num_inputs), K, (output_dim,)).T
 
-    # k = GPy.kern.rbf_inv(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim)
-    k = GPy.kern.linear(input_dim)# + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
-    # k = GPy.kern.rbf(input_dim, ARD = False)  + GPy.kern.white(input_dim, 0.00001)
-    # k = GPy.kern.rbf(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.rbf(input_dim, .3, _np.ones(input_dim) * .2, ARD=True)
-    # k = GPy.kern.rbf(input_dim, .5, 2., ARD=0) + GPy.kern.rbf(input_dim, .3, .2, ARD=0)
-    # k = GPy.kern.rbf(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.linear(input_dim, _np.ones(input_dim) * .2, ARD=True)
+    # k = GPy.kern.RBF_inv(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim)
+    #k = GPy.kern.linear(input_dim)# + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
+    # k = GPy.kern.RBF(input_dim, ARD = False)  + GPy.kern.white(input_dim, 0.00001)
+    # k = GPy.kern.RBF(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.RBF(input_dim, .3, _np.ones(input_dim) * .2, ARD=True)
+    # k = GPy.kern.RBF(input_dim, .5, 2., ARD=0) + GPy.kern.RBF(input_dim, .3, .2, ARD=0)
+    # k = GPy.kern.RBF(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.linear(input_dim, _np.ones(input_dim) * .2, ARD=True)
 
     p = .3
     
@@ -73,7 +73,7 @@ def gplvm_oil_100(optimize=True, verbose=1, plot=True):
     data = GPy.util.datasets.oil_100()
     Y = data['X']
     # create simple GP model
-    kernel = GPy.kern.rbf(6, ARD=True) + GPy.kern.bias(6)
+    kernel = GPy.kern.RBF(6, ARD=True) + GPy.kern.bias(6)
     m = GPy.models.GPLVM(Y, 6, kernel=kernel)
     m.data_labels = data['Y'].argmax(axis=1)
     if optimize: m.optimize('scg', messages=verbose)
@@ -88,7 +88,7 @@ def sparse_gplvm_oil(optimize=True, verbose=0, plot=True, N=100, Q=6, num_induci
     Y = Y - Y.mean(0)
     Y /= Y.std(0)
     # Create the model
-    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q)
+    kernel = GPy.kern.RBF(Q, ARD=True) + GPy.kern.bias(Q)
     m = GPy.models.SparseGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing)
     m.data_labels = data['Y'][:N].argmax(axis=1)
 
@@ -138,7 +138,7 @@ def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=15, Q=4
                                          (1 - var))) + .001
     Z = _np.random.permutation(X)[:num_inducing]
 
-    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, _np.exp(-2)) + GPy.kern.white(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF(Q, ARD=True) + GPy.kern.bias(Q, _np.exp(-2)) + GPy.kern.white(Q, _np.exp(-2))
 
     m = BayesianGPLVM(Y, Q, X=X, X_variance=S, num_inducing=num_inducing, Z=Z, kernel=kernel)
     m.data_colors = c
@@ -164,7 +164,7 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     _np.random.seed(0)
     data = GPy.util.datasets.oil()
 
-    kernel = GPy.kern.rbf_inv(Q, 1., [.1] * Q, ARD=True) + GPy.kern.bias(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF_inv(Q, 1., [.1] * Q, ARD=True) + GPy.kern.bias(Q, _np.exp(-2))
     Y = data['X'][:N]
     Yn = Gaussian(Y, normalize=True)
     m = GPy.models.BayesianGPLVM(Yn, Q, kernel=kernel, num_inducing=num_inducing, **k)
@@ -435,7 +435,7 @@ def bcgplvm_stick(kernel=None, optimize=True, verbose=True, plot=True):
 
     data = GPy.util.datasets.osu_run1()
     # optimize
-    back_kernel=GPy.kern.rbf(data['Y'].shape[1], lengthscale=5.)
+    back_kernel=GPy.kern.RBF(data['Y'].shape[1], lengthscale=5.)
     mapping = GPy.mappings.Kernel(X=data['Y'], output_dim=2, kernel=back_kernel)
     m = GPy.models.BCGPLVM(data['Y'], 2, kernel=kernel, mapping=mapping)
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
@@ -470,7 +470,7 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
 
     data = GPy.util.datasets.osu_run1()
     Q = 6
-    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, _np.exp(-2)) + GPy.kern.white(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF(Q, ARD=True) + GPy.kern.bias(Q, _np.exp(-2)) + GPy.kern.white(Q, _np.exp(-2))
     m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20, kernel=kernel)
     # optimize
     m.ensure_default_constraints()

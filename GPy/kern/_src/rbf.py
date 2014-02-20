@@ -79,17 +79,18 @@ class RBF(Kern):
         ret[:] = self.variance
         return ret
 
-    #TODO: remove TARGET!
-    def psi0(self, Z, mu, S, target):
-        target += self.variance
+    def psi0(self, Z, mu, S):
+        ret = np.empty(mu.shape[0], dtype=np.float64)
+        ret[:] = self.variance
+        return ret
 
-    def psi1(self, Z, mu, S, target):
+    def psi1(self, Z, mu, S):
         self._psi_computations(Z, mu, S)
-        target += self._psi1
+        return self._psi1
 
-    def psi2(self, Z, mu, S, target):
+    def psi2(self, Z, mu, S):
         self._psi_computations(Z, mu, S)
-        target += self._psi2
+        return self._psi2
 
     def update_gradients_full(self, dL_dK, X):
         self._K_computations(X, None)
@@ -154,6 +155,37 @@ class RBF(Kern):
         else:
             self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
 
+    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        self._psi_computations(Z, mu, S)
+
+        #psi1
+        denominator = (self.lengthscale2 * (self._psi1_denom))
+        dpsi1_dZ = -self._psi1[:, :, None] * ((self._psi1_dist / denominator))
+        grad = np.sum(dL_dpsi1[:, :, None] * dpsi1_dZ, 0)
+
+        #psi2
+        term1 = self._psi2_Zdist / self.lengthscale2 # num_inducing, num_inducing, input_dim
+        term2 = self._psi2_mudist / self._psi2_denom / self.lengthscale2 # N, num_inducing, num_inducing, input_dim
+        dZ = self._psi2[:, :, :, None] * (term1[None] + term2)
+        grad += (dL_dpsi2[:, :, :, None] * dZ).sum(0).sum(0)
+
+        return grad
+
+    def gradients_muS_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        self._psi_computations(Z, mu, S)
+        #psi1
+        tmp = self._psi1[:, :, None] / self.lengthscale2 / self._psi1_denom
+        grad_mu = np.sum(dL_dpsi1[:, :, None] * tmp * self._psi1_dist, 1)
+        grad_S = np.sum(dL_dpsi1[:, :, None] * 0.5 * tmp * (self._psi1_dist_sq - 1), 1)
+
+        tmp = self._psi2[:, :, :, None] / self.lengthscale2 / self._psi2_denom
+        grad_mu += -2.*(dL_dpsi2[:, :, :, None] * tmp * self._psi2_mudist).sum(1).sum(1)
+        grad_S += (dL_dpsi2[:, :, :, None] * tmp * (2.*self._psi2_mudist_sq - 1)).sum(1).sum(1)
+
+        return grad_mu, grad_S
+
+
+
     def gradients_X(self, dL_dK, X, X2=None):
         #if self._X is None or X.base is not self._X.base or X2 is not None:
         self._K_computations(X, X2)
@@ -171,36 +203,7 @@ class RBF(Kern):
     #             PSI statistics            #
     #---------------------------------------#
 
-    def dpsi0_dmuS(self, dL_dpsi0, Z, mu, S, target_mu, target_S):
-        pass
-
-    def dpsi1_dZ(self, dL_dpsi1, Z, mu, S, target):
-        self._psi_computations(Z, mu, S)
-        denominator = (self.lengthscale2 * (self._psi1_denom))
-        dpsi1_dZ = -self._psi1[:, :, None] * ((self._psi1_dist / denominator))
-        target += np.sum(dL_dpsi1[:, :, None] * dpsi1_dZ, 0)
-
-    def dpsi1_dmuS(self, dL_dpsi1, Z, mu, S, target_mu, target_S):
-        self._psi_computations(Z, mu, S)
-        tmp = self._psi1[:, :, None] / self.lengthscale2 / self._psi1_denom
-        target_mu += np.sum(dL_dpsi1[:, :, None] * tmp * self._psi1_dist, 1)
-        target_S += np.sum(dL_dpsi1[:, :, None] * 0.5 * tmp * (self._psi1_dist_sq - 1), 1)
-
-    def dpsi2_dZ(self, dL_dpsi2, Z, mu, S, target):
-        self._psi_computations(Z, mu, S)
-        term1 = self._psi2_Zdist / self.lengthscale2 # num_inducing, num_inducing, input_dim
-        term2 = self._psi2_mudist / self._psi2_denom / self.lengthscale2 # N, num_inducing, num_inducing, input_dim
-        dZ = self._psi2[:, :, :, None] * (term1[None] + term2)
-        target += (dL_dpsi2[:, :, :, None] * dZ).sum(0).sum(0)
-
-    def dpsi2_dmuS(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
-        """Think N,num_inducing,num_inducing,input_dim """
-        self._psi_computations(Z, mu, S)
-        tmp = self._psi2[:, :, :, None] / self.lengthscale2 / self._psi2_denom
-        target_mu += -2.*(dL_dpsi2[:, :, :, None] * tmp * self._psi2_mudist).sum(1).sum(1)
-        target_S += (dL_dpsi2[:, :, :, None] * tmp * (2.*self._psi2_mudist_sq - 1)).sum(1).sum(1)
-
-    #---------------------------------------#
+            #---------------------------------------#
     #            Precomputations            #
     #---------------------------------------#
 
@@ -362,6 +365,7 @@ class RBF(Kern):
         #include <omp.h>
         #include <math.h>
         """
+        mu = param_to_array(mu)
         weave.inline(code, support_code=support_code, libraries=['gomp'],
                      arg_names=['N', 'num_inducing', 'input_dim', 'mu', 'Zhat', 'mudist_sq', 'mudist', 'lengthscale2', '_psi2_denom', 'psi2_Zdist_sq', 'psi2_exponent', 'half_log_psi2_denom', 'psi2', 'variance_sq'],
                      type_converters=weave.converters.blitz, **self.weave_options)

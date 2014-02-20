@@ -1,7 +1,7 @@
 from _src.rbf import RBF
 from _src.white import White
 from _src.kern import Kern
-Linear = 'foo'
+from _src.linear import Linear
 #import bias
 #import Brownian
 #import coregionalize

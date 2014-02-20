@@ -9,6 +9,7 @@ from ...util.linalg import tdot
 from ...util.misc import fast_array_equal, param_to_array
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
+from ...util.caching import Cacher, cache_this
 
 class Linear(Kern):
     """
@@ -45,22 +46,35 @@ class Linear(Kern):
                 variances = np.ones(self.input_dim)
 
         self.variances = Param('variances', variances, Logexp())
-        #TODO: remove?self.variances.gradient = np.zeros(self.variances.shape)
         self.add_parameter(self.variances)
-        self.variances.add_observer(self, self.update_variance)
+        self.variances.add_observer(self, self._on_changed)
 
-        # initialize cache
-        self._Z, self._mu, self._S = np.empty(shape=(3, 1))
-        self._X, self._X2 = np.empty(shape=(2, 1))
+    def _on_changed(self, obj):
+        self._notify_observers()
 
-    def update_variance(self, v):
-        self.variances2 = np.square(self.variances)
+    @cache_this(limit=3, reset_on_self=True)
+    def K(self, X, X2=None):
+        if self.ARD:
+            if X2 is None:
+                return tdot(X*np.sqrt(self.variances))
+            else:
+                rv = np.sqrt(self.variances)
+                return np.dot(X*rv, (X2*rv).T)
+        else:
+            return self._dot_product(X, X2) * self.variances
 
-    def on_input_change(self, X):
-        self._K_computations(X, None)
+    @cache_this(limit=3, reset_on_self=False)
+    def _dot_product(self, X, X2=None):
+        if X2 is None:
+            return tdot(X)
+        else:
+            return np.dot(X, X2.T)
+
+    def Kdiag(self, X):
+        return np.sum(self.variances * np.square(X), -1)
 
     def update_gradients_full(self, dL_dK, X):
-        self.variances.gradient[:] = 0
+        self.variances.gradient = np.zeros(self.variances.size)
         self._param_grad_helper(dL_dK, X, None, self.variances.gradient)
 
     def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
@@ -68,7 +82,7 @@ class Linear(Kern):
         if self.ARD:
             self.variances.gradient = tmp.sum(0)
         else:
-            self.variances.gradient = tmp.sum()
+            self.variances.gradient = np.atleast_1d(tmp.sum())
         self._param_grad_helper(dL_dKmm, Z, None, self.variances.gradient)
         self._param_grad_helper(dL_dKnm, X, Z, self.variances.gradient)
 
@@ -85,24 +99,7 @@ class Linear(Kern):
         if self.ARD: self.variances.gradient += tmp.sum(0).sum(0).sum(0)
         else: self.variances.gradient += tmp.sum()
         #from Kmm
-        self._K_computations(Z, None)
         self._param_grad_helper(dL_dKmm, Z, None, self.variances.gradient)
-
-    def K(self, X, X2, target):
-        if self.ARD:
-            XX = X * np.sqrt(self.variances)
-            if X2 is None:
-                target += tdot(XX)
-            else:
-                XX2 = X2 * np.sqrt(self.variances)
-                target += np.dot(XX, XX2.T)
-        else:
-            if X is not self._X or X2 is not None:
-                self._K_computations(X, X2)
-            target += self.variances * self._dot_product
-
-    def Kdiag(self, X, target):
-        np.add(target, np.sum(self.variances * np.square(X), -1), target)
 
     def _param_grad_helper(self, dL_dK, X, X2, target):
         if self.ARD:
@@ -112,18 +109,16 @@ class Linear(Kern):
                 product = X[:, None, :] * X2[None, :, :]
                 target += (dL_dK[:, :, None] * product).sum(0).sum(0)
         else:
-            if X is not self._X or X2 is not None:
-                self._K_computations(X, X2)
-            target += np.sum(self._dot_product * dL_dK)
+            target += np.sum(self._dot_product(X, X2) * dL_dK)
 
-    def gradients_X(self, dL_dK, X, X2, target):
+    def gradients_X(self, dL_dK, X, X2=None):
         if X2 is None:
-            target += 2*(((X[None,:, :] * self.variances)) * dL_dK[:, :, None]).sum(1)
+            return 2.*(((X[None,:, :] * self.variances)) * dL_dK[:, :, None]).sum(1)
         else:
-            target += (((X2[None,:, :] * self.variances)) * dL_dK[:, :, None]).sum(1)
+            return (((X2[None,:, :] * self.variances)) * dL_dK[:, :, None]).sum(1)
 
-    def dKdiag_dX(self,dL_dKdiag,X,target):
-        target += 2.*self.variances*dL_dKdiag[:,None]*X
+    def gradients_X_diag(self, dL_dKdiag, X):
+        return 2.*self.variances*dL_dKdiag[:,None]*X
 
     #---------------------------------------#
     #             PSI statistics            #
@@ -273,15 +268,15 @@ class Linear(Kern):
     #            Precomputations            #
     #---------------------------------------#
 
-    def _K_computations(self, X, X2):
-        if not (fast_array_equal(X, self._X) and fast_array_equal(X2, self._X2)):
-            self._X = X.copy()
-            if X2 is None:
-                self._dot_product = tdot(param_to_array(X))
-                self._X2 = None
-            else:
-                self._X2 = X2.copy()
-                self._dot_product = np.dot(param_to_array(X), param_to_array(X2.T))
+    #def _K_computations(self, X, X2):
+        #if not (fast_array_equal(X, self._X) and fast_array_equal(X2, self._X2)):
+            #self._X = X.copy()
+            #if X2 is None:
+                ##self._dot_product = tdot(param_to_array(X))
+                #self._X2 = None
+            #else:
+                #self._X2 = X2.copy()
+                #self._dot_product = np.dot(param_to_array(X), param_to_array(X2.T))
 
     def _psi_computations(self, Z, mu, S):
         # here are the "statistics" for psi1 and psi2

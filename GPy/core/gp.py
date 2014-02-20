@@ -44,6 +44,7 @@ class GP(Model):
             self.Y_metadata = None
 
         assert isinstance(kernel, kern.Kern)
+        assert self.input_dim == kernel.input_dim
         self.kern = kernel
 
         assert isinstance(likelihood, likelihoods.Likelihood)

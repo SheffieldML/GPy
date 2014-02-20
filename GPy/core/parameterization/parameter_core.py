@@ -18,8 +18,8 @@ class Observable(object):
     def remove_observer(self, observer):
         del self._observers_[observer]
     def _notify_observers(self):
-        [callble(self) for callble in self._observers_.itervalues()]
-    
+        [callble(self) for callble in self._observers_.values()]
+
 class Pickleable(object):
     def _getstate(self):
         """
@@ -51,7 +51,7 @@ class Parentable(object):
         super(Parentable,self).__init__()
         self._direct_parent_ = direct_parent
         self._parent_index_ = parent_index
-        
+
     def has_parent(self):
         return self._direct_parent_ is not None
 
@@ -82,7 +82,7 @@ class Nameable(Parentable):
         from_name = self.name
         self._name = name
         if self.has_parent():
-            self._direct_parent_._name_changed(self, from_name)    
+            self._direct_parent_._name_changed(self, from_name)
 
 
 class Parameterizable(Parentable):
@@ -90,7 +90,7 @@ class Parameterizable(Parentable):
         super(Parameterizable, self).__init__(*args, **kwargs)
         from GPy.core.parameterization.array_core import ParamList
         _parameters_ = ParamList()
-    
+
     def parameter_names(self, add_name=False):
         if add_name:
             return [adjust_name_for_printing(self.name) + "." + xi for x in self._parameters_ for xi in x.parameter_names(add_name=True)]
@@ -142,21 +142,21 @@ class Gradcheckable(Parentable):
 class Indexable(object):
     def _raveled_index(self):
         raise NotImplementedError, "Need to be able to get the raveled Index"
-        
+
     def _internal_offset(self):
         return 0
-    
+
     def _offset_for(self, param):
         raise NotImplementedError, "shouldnt happen, offset required from non parameterization object?"
-    
+
     def _raveled_index_for(self, param):
         """
         get the raveled index for a param
         that is an int array, containing the indexes for the flattened
         param inside this parameterized logic.
         """
-        raise NotImplementedError, "shouldnt happen, raveld index transformation required from non parameterization object?"        
-        
+        raise NotImplementedError, "shouldnt happen, raveld index transformation required from non parameterization object?"
+
 class Constrainable(Nameable, Indexable, Parameterizable):
     def __init__(self, name, default_constraint=None):
         super(Constrainable,self).__init__(name)
@@ -166,7 +166,7 @@ class Constrainable(Nameable, Indexable, Parameterizable):
         self.priors = ParameterIndexOperations()
         if self._default_constraint_ is not None:
             self.constrain(self._default_constraint_)
-    
+
     #===========================================================================
     # Fixing Parameters:
     #===========================================================================
@@ -182,21 +182,21 @@ class Constrainable(Nameable, Indexable, Parameterizable):
         rav_i = self._highest_parent_._raveled_index_for(self)
         self._highest_parent_._set_fixed(rav_i)
     fix = constrain_fixed
-    
+
     def unconstrain_fixed(self):
         """
         This parameter will no longer be fixed.
         """
         unconstrained = self.unconstrain(__fixed__)
-        self._highest_parent_._set_unfixed(unconstrained)    
+        self._highest_parent_._set_unfixed(unconstrained)
     unfix = unconstrain_fixed
-    
+
     def _set_fixed(self, index):
         import numpy as np
         if not self._has_fixes(): self._fixes_ = np.ones(self.size, dtype=bool)
         self._fixes_[index] = FIXED
         if np.all(self._fixes_): self._fixes_ = None  # ==UNFIXED
-    
+
     def _set_unfixed(self, index):
         import numpy as np
         if not self._has_fixes(): self._fixes_ = np.ones(self.size, dtype=bool)
@@ -212,7 +212,7 @@ class Constrainable(Nameable, Indexable, Parameterizable):
             self._fixes_[fixed_indices] = FIXED
         else:
             self._fixes_ = None
-    
+
     def _has_fixes(self):
         return hasattr(self, "_fixes_") and self._fixes_ is not None
 
@@ -222,17 +222,17 @@ class Constrainable(Nameable, Indexable, Parameterizable):
     def set_prior(self, prior, warning=True, update=True):
         repriorized = self.unset_priors()
         self._add_to_index_operations(self.priors, repriorized, prior, warning, update)
-    
+
     def unset_priors(self, *priors):
         return self._remove_from_index_operations(self.priors, priors)
-    
+
     def log_prior(self):
         """evaluate the prior"""
         if self.priors.size > 0:
             x = self._get_params()
             return reduce(lambda a,b: a+b, [p.lnpdf(x[ind]).sum() for p, ind in self.priors.iteritems()], 0)
         return 0.
-    
+
     def _log_prior_gradients(self):
         """evaluate the gradients of the priors"""
         import numpy as np
@@ -242,7 +242,7 @@ class Constrainable(Nameable, Indexable, Parameterizable):
             [np.put(ret, ind, p.lnpdf_grad(x[ind])) for p, ind in self.priors.iteritems()]
             return ret
         return 0.
-        
+
     #===========================================================================
     # Constrain operations -> done
     #===========================================================================
@@ -269,7 +269,7 @@ class Constrainable(Nameable, Indexable, Parameterizable):
         transformats of this parameter object.
         """
         return self._remove_from_index_operations(self.constraints, transforms)
-    
+
     def constrain_positive(self, warning=True, update=True):
         """
         :param warning: print a warning if re-constraining parameters.
@@ -314,7 +314,7 @@ class Constrainable(Nameable, Indexable, Parameterizable):
         Remove (lower, upper) bounded constrain from this parameter/
         """
         self.unconstrain(Logistic(lower, upper))
-    
+
     def _parent_changed(self, parent):
         from index_operations import ParameterIndexOperationsView
         self.constraints = ParameterIndexOperationsView(parent.constraints, parent._offset_for(self), self.size)
@@ -340,7 +340,7 @@ class Constrainable(Nameable, Indexable, Parameterizable):
             removed = np.union1d(removed, unconstrained)
             if t is __fixed__:
                 self._highest_parent_._set_unfixed(unconstrained)
-        
+
         return removed
 
 

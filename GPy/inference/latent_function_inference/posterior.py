@@ -81,13 +81,16 @@ class Posterior(object):
     def covariance(self):
         if self._covariance is None:
             #LiK, _ = dtrtrs(self.woodbury_chol, self._K, lower=1)
-            self._covariance = self._K - self._K.dot(self.woodbury_inv).dot(self._K)
+            self._covariance = np.tensordot(np.dot(np.atleast_3d(self.woodbury_inv).T, self._K), self._K, [1,0]).T
+            #self._covariance = self._K - self._K.dot(self.woodbury_inv).dot(self._K)
         return self._covariance
 
     @property
     def precision(self):
         if self._precision is None:
-            self._precision, _, _, _ = pdinv(self.covariance)
+            self._precision = np.zeros(np.atleast_3d(self.covariance).shape) # if one covariance per dimension
+            for p in xrange(self.covariance.shape[-1]):
+                self._precision[:,:,p] = pdinv(self.covariance[:,:,p])[0]
         return self._precision
 
     @property

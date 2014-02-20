@@ -54,7 +54,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
         obj._tied_to_me_ = SetDict()
         obj._tied_to_ = []
         obj._original_ = True
-        obj.gradient = None
+        obj._gradient_ = None
         return obj
 
     def __init__(self, name, input_array, default_constraint=None):
@@ -76,10 +76,17 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
         self._updated_ = getattr(obj, '_updated_', None)
         self._original_ = getattr(obj, '_original_', None)
         self._name = getattr(obj, 'name', None)
-        self.gradient = getattr(obj, 'gradient', None)
+        self._gradient_ = getattr(obj, '_gradient_', None)
         self.constraints = getattr(obj, 'constraints', None)
         self.priors = getattr(obj, 'priors', None)
 
+
+    @property
+    def gradient(self):
+        if self._gradient_ is None:
+            self._gradient_ = numpy.zeros(self._realshape_)
+        return self._gradient_
+        
     #===========================================================================
     # Pickling operations
     #===========================================================================

@@ -26,33 +26,15 @@ class Kern(Parameterized):
         raise NotImplementedError
     def Kdiag(self, Xa ,target):
         raise NotImplementedError
-    def _param_grad_helper(self, dL_dK,X, X2, target):
-        raise NotImplementedError
     def psi0(self,Z,mu,S,target):
-        raise NotImplementedError
-    def dpsi0_dtheta(self,dL_dpsi0, Z,mu,S,target):
-        raise NotImplementedError
-    def dpsi0_dmuS(self,dL_dpsi0,Z,mu,S,target_mu,target_S):
         raise NotImplementedError
     def psi1(self,Z,mu,S,target):
         raise NotImplementedError
-    def dpsi1_dtheta(self,Z,mu,S,target):
-        raise NotImplementedError
-    def dpsi1_dZ(self,dL_dpsi1,Z,mu,S,target):
-        raise NotImplementedError
-    def dpsi1_dmuS(self,dL_dpsi1,Z,mu,S,target_mu,target_S):
-        raise NotImplementedError
     def psi2(self,Z,mu,S,target):
         raise NotImplementedError
-    def dpsi2_dZ(self,dL_dpsi2,Z,mu,S,target):
+    def gradients_X(self, dL_dK, X, X2):
         raise NotImplementedError
-    def dpsi2_dtheta(self,dL_dpsi2,Z,mu,S,target):
-        raise NotImplementedError
-    def dpsi2_dmuS(self,dL_dpsi2,Z,mu,S,target_mu,target_S):
-        raise NotImplementedError
-    def gradients_X(self, dL_dK, X, X2, target):
-        raise NotImplementedError
-    def dKdiag_dX(self, dL_dK, X, target):
+    def gradients_X_diag(self, dL_dK, X):
         raise NotImplementedError
     def update_gradients_full(self, dL_dK, X):
         """Set the gradients of all parameters when doing full (N) inference."""
@@ -63,6 +45,10 @@ class Kern(Parameterized):
     def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
         """Set the gradients of all parameters when doing variational (M) inference with uncertain inputs."""
         raise NotImplementedError
+    def gradients_Z_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
+        grad = self.gradients_X(dL_dKmm, Z)
+        grad += self.gradients_X(dL_dKnm.T, Z, X)
+        return grad
 
     def plot_ARD(self, *args):
         """If an ARD kernel is present, plot a bar representation using matplotlib

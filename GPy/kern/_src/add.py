@@ -71,7 +71,7 @@ class Add(Kern):
 
 
     def psi0(self, Z, mu, S):
-        return np.sum([p.psi0(Z[:, i_s], mu[:, i_s], S[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices))],0)
+        return np.sum([p.psi0(Z[:, i_s], mu[:, i_s], S[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)],0)
 
     def psi1(self, Z, mu, S):
         return np.sum([p.psi1(Z[:, i_s], mu[:, i_s], S[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)], 0)
@@ -93,7 +93,7 @@ class Add(Kern):
                 pass
             # rbf X bias
             #elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, (RBF, RBFInv)):
-            elif isinstance(p1,  Bias) and isinstance(p2, (RBF, Linear))):
+            elif isinstance(p1,  Bias) and isinstance(p2, (RBF, Linear)):
                 tmp = p2.psi1(Z[:,i2], mu[:,i2], S[:,i2])
                 psi2 += p1.variance * (tmp[:, :, None] + tmp[:, None, :])
             #elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, (RBF, RBFInv)):

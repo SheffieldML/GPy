@@ -58,6 +58,7 @@ class SparseGP(GP):
         if not self.Z.is_fixed:
             if self.X_variance is None:
                 self.Z.gradient = self.kern.gradients_Z_sparse(X=self.X, Z=self.Z, **self.grad_dict)
+                print self.Z.gradient
             else:
                 self.Z.gradient = self.kern.gradients_Z_variational(mu=self.X, S=self.X_variance, Z=self.Z, **self.grad_dict)
                 print self.Z.gradient

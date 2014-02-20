@@ -57,26 +57,16 @@ class BayesianGPLVM(SparseGP, GPLVM):
         self.init = state.pop()
         SparseGP._setstate(self, state)
 
-    def dL_dmuS(self):
-        dL_dmu_psi0, dL_dS_psi0 = self.kern.dpsi0_dmuS(self.grad_dict['dL_dpsi0'], self.Z, self.X, self.X_variance)
-        dL_dmu_psi1, dL_dS_psi1 = self.kern.dpsi1_dmuS(self.grad_dict['dL_dpsi1'], self.Z, self.X, self.X_variance)
-        dL_dmu_psi2, dL_dS_psi2 = self.kern.dpsi2_dmuS(self.grad_dict['dL_dpsi2'], self.Z, self.X, self.X_variance)
-        dL_dmu = dL_dmu_psi0 + dL_dmu_psi1 + dL_dmu_psi2
-        dL_dS = dL_dS_psi0 + dL_dS_psi1 + dL_dS_psi2
-
-        return dL_dmu, dL_dS
-
     def KL_divergence(self):
         var_mean = np.square(self.X).sum()
         var_S = np.sum(self.X_variance - np.log(self.X_variance))
         return 0.5 * (var_mean + var_S) - 0.5 * self.input_dim * self.num_data
 
     def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
-        self._update_gradients_Z(add=False)
+        super(BayesianGPLVM, self).parameters_changed()
 
         self._log_marginal_likelihood -= self.KL_divergence()
-        dL_dmu, dL_dS = self.dL_dmuS()
+        dL_dmu, dL_dS = self.kern.gradients_muS_variational(mu=self.X, S=self.X_variance, Z=self.Z, **self.grad_dict)
 
         # dL:
         self.q.mean.gradient  = dL_dmu

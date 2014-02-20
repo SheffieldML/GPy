@@ -9,7 +9,7 @@ from ...util.misc import param_to_array
 
 
 def plot_fit(model, plot_limits=None, which_data_rows='all',
-        which_data_ycols='all', which_parts='all', fixed_inputs=[],
+        which_data_ycols='all', fixed_inputs=[],
         levels=20, samples=0, fignum=None, ax=None, resolution=None,
         plot_raw=False,
         linecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue']):
@@ -20,7 +20,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
       - In higher dimensions, use fixed_inputs to plot the GP  with some of the inputs fixed.
 
     Can plot only part of the data and part of the posterior functions
-    using which_data_rowsm which_data_ycols and which_parts
+    using which_data_rowsm which_data_ycols. 
 
     :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
     :type plot_limits: np.array
@@ -28,8 +28,6 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     :type which_data_rows: 'all' or a slice object to slice model.X, model.Y
     :param which_data_ycols: when the data has several columns (independant outputs), only plot these
     :type which_data_rows: 'all' or a list of integers
-    :param which_parts: which of the kernel functions to plot (additively)
-    :type which_parts: 'all', or list of bools
     :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
     :type fixed_inputs: a list of tuples
     :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
@@ -76,12 +74,12 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         #make a prediction on the frame and plot it
         if plot_raw:
-            m, v = model._raw_predict(Xgrid, which_parts=which_parts)
+            m, v = model._raw_predict(Xgrid)
             lower = m - 2*np.sqrt(v)
             upper = m + 2*np.sqrt(v)
             Y = model.Y
         else:
-            m, v, lower, upper = model.predict(Xgrid, which_parts=which_parts)
+            m, v, lower, upper = model.predict(Xgrid)
             Y = model.Y
         for d in which_data_ycols:
             gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax, edgecol=linecol, fillcol=fillcol)
@@ -89,7 +87,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         #optionally plot some samples
         if samples: #NOTE not tested with fixed_inputs
-            Ysim = model.posterior_samples(Xgrid, samples, which_parts=which_parts)
+            Ysim = model.posterior_samples(Xgrid, samples)
             for yi in Ysim.T:
                 ax.plot(Xnew, yi[:,None], Tango.colorsHex['darkBlue'], linewidth=0.25)
                 #ax.plot(Xnew, yi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.
@@ -131,10 +129,10 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         #predict on the frame and plot
         if plot_raw:
-            m, _ = model._raw_predict(Xgrid, which_parts=which_parts)
+            m, _ = model._raw_predict(Xgrid)
             Y = model.Y
         else:
-            m, _, _, _ = model.predict(Xgrid, which_parts=which_parts)
+            m, _, _, _ = model.predict(Xgrid)
             Y = model.data
         for d in which_data_ycols:
             m_d = m[:,d].reshape(resolution, resolution).T

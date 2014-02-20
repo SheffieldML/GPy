@@ -4,13 +4,13 @@
 
 import numpy as np
 from scipy import weave
-from kernpart import Kernpart
+from kern import Kern
 from ...util.linalg import tdot
 from ...util.misc import fast_array_equal, param_to_array
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 
-class RBF(Kernpart):
+class RBF(Kern):
     """
     Radial Basis Function kernel, aka squared-exponential, exponentiated quadratic or Gaussian kernel:
 
@@ -52,29 +52,15 @@ class RBF(Kernpart):
                 lengthscale = np.ones(self.input_dim)
 
         self.variance = Param('variance', variance, Logexp())
-        
+
         self.lengthscale = Param('lengthscale', lengthscale, Logexp())
         self.lengthscale.add_observer(self, self.update_lengthscale)
         self.update_lengthscale(self.lengthscale)
-        
+
         self.add_parameters(self.variance, self.lengthscale)
         self.parameters_changed() # initializes cache
 
-        #self.update_inv_lengthscale(self.lengthscale)
-        #self.parameters_changed()
-        # initialize cache
-        #self._Z, self._mu, self._S = np.empty(shape=(3, 1))
-        #self._X, self._X2, self._params_save = np.empty(shape=(3, 1))
-
-        # a set of optional args to pass to weave
-        # self.weave_options = {'headers'           : ['<omp.h>'],
-        #                       'extra_compile_args': ['-fopenmp -O3'], # -march=native'],
-        #                       'extra_link_args'   : ['-lgomp']}
         self.weave_options = {}
-
-    def on_input_change(self, X):
-        #self._K_computations(X, None)
-        pass
 
     def update_lengthscale(self, l):
         self.lengthscale2 = np.square(self.lengthscale)
@@ -84,23 +70,27 @@ class RBF(Kernpart):
         self._X, self._X2 = np.empty(shape=(2, 1))
         self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
 
-    def K(self, X, X2, target):
+    def K(self, X, X2=None):
         self._K_computations(X, X2)
-        target += self.variance * self._K_dvar
+        return self.variance * self._K_dvar
 
-    def Kdiag(self, X, target):
-        np.add(target, self.variance, target)
+    def Kdiag(self, X):
+        ret = np.ones(X.shape[0])
+        ret[:] = self.variance
+        return ret
 
-    def psi0(self, Z, mu, S, target):
-        target += self.variance
+    def psi0(self, Z, mu, S):
+        ret = np.empty(mu.shape[0], dtype=np.float64)
+        ret[:] = self.variance
+        return ret
 
-    def psi1(self, Z, mu, S, target):
+    def psi1(self, Z, mu, S):
         self._psi_computations(Z, mu, S)
-        target += self._psi1
+        return self._psi1
 
-    def psi2(self, Z, mu, S, target):
+    def psi2(self, Z, mu, S):
         self._psi_computations(Z, mu, S)
-        target += self._psi2
+        return self._psi2
 
     def update_gradients_full(self, dL_dK, X):
         self._K_computations(X, None)
@@ -165,7 +155,38 @@ class RBF(Kernpart):
         else:
             self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
 
-    def gradients_X(self, dL_dK, X, X2, target):
+    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        self._psi_computations(Z, mu, S)
+
+        #psi1
+        denominator = (self.lengthscale2 * (self._psi1_denom))
+        dpsi1_dZ = -self._psi1[:, :, None] * ((self._psi1_dist / denominator))
+        grad = np.sum(dL_dpsi1[:, :, None] * dpsi1_dZ, 0)
+
+        #psi2
+        term1 = self._psi2_Zdist / self.lengthscale2 # num_inducing, num_inducing, input_dim
+        term2 = self._psi2_mudist / self._psi2_denom / self.lengthscale2 # N, num_inducing, num_inducing, input_dim
+        dZ = self._psi2[:, :, :, None] * (term1[None] + term2)
+        grad += (dL_dpsi2[:, :, :, None] * dZ).sum(0).sum(0)
+
+        return grad
+
+    def gradients_muS_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        self._psi_computations(Z, mu, S)
+        #psi1
+        tmp = self._psi1[:, :, None] / self.lengthscale2 / self._psi1_denom
+        grad_mu = np.sum(dL_dpsi1[:, :, None] * tmp * self._psi1_dist, 1)
+        grad_S = np.sum(dL_dpsi1[:, :, None] * 0.5 * tmp * (self._psi1_dist_sq - 1), 1)
+
+        tmp = self._psi2[:, :, :, None] / self.lengthscale2 / self._psi2_denom
+        grad_mu += -2.*(dL_dpsi2[:, :, :, None] * tmp * self._psi2_mudist).sum(1).sum(1)
+        grad_S += (dL_dpsi2[:, :, :, None] * tmp * (2.*self._psi2_mudist_sq - 1)).sum(1).sum(1)
+
+        return grad_mu, grad_S
+
+
+
+    def gradients_X(self, dL_dK, X, X2=None):
         #if self._X is None or X.base is not self._X.base or X2 is not None:
         self._K_computations(X, X2)
         if X2 is None:
@@ -173,45 +194,16 @@ class RBF(Kernpart):
         else:
             _K_dist = X[:, None, :] - X2[None, :, :] # don't cache this in _K_computations because it is high memory. If this function is being called, chances are we're not in the high memory arena.
         gradients_X = (-self.variance / self.lengthscale2) * np.transpose(self._K_dvar[:, :, np.newaxis] * _K_dist, (1, 0, 2))
-        target += np.sum(gradients_X * dL_dK.T[:, :, None], 0)
+        return np.sum(gradients_X * dL_dK.T[:, :, None], 0)
 
-    def dKdiag_dX(self, dL_dKdiag, X, target):
-        pass
+    def dKdiag_dX(self, dL_dKdiag, X):
+        return np.zeros(X.shape[0])
 
     #---------------------------------------#
     #             PSI statistics            #
     #---------------------------------------#
 
-    def dpsi0_dmuS(self, dL_dpsi0, Z, mu, S, target_mu, target_S):
-        pass
-
-    def dpsi1_dZ(self, dL_dpsi1, Z, mu, S, target):
-        self._psi_computations(Z, mu, S)
-        denominator = (self.lengthscale2 * (self._psi1_denom))
-        dpsi1_dZ = -self._psi1[:, :, None] * ((self._psi1_dist / denominator))
-        target += np.sum(dL_dpsi1[:, :, None] * dpsi1_dZ, 0)
-
-    def dpsi1_dmuS(self, dL_dpsi1, Z, mu, S, target_mu, target_S):
-        self._psi_computations(Z, mu, S)
-        tmp = self._psi1[:, :, None] / self.lengthscale2 / self._psi1_denom
-        target_mu += np.sum(dL_dpsi1[:, :, None] * tmp * self._psi1_dist, 1)
-        target_S += np.sum(dL_dpsi1[:, :, None] * 0.5 * tmp * (self._psi1_dist_sq - 1), 1)
-
-    def dpsi2_dZ(self, dL_dpsi2, Z, mu, S, target):
-        self._psi_computations(Z, mu, S)
-        term1 = self._psi2_Zdist / self.lengthscale2 # num_inducing, num_inducing, input_dim
-        term2 = self._psi2_mudist / self._psi2_denom / self.lengthscale2 # N, num_inducing, num_inducing, input_dim
-        dZ = self._psi2[:, :, :, None] * (term1[None] + term2)
-        target += (dL_dpsi2[:, :, :, None] * dZ).sum(0).sum(0)
-
-    def dpsi2_dmuS(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
-        """Think N,num_inducing,num_inducing,input_dim """
-        self._psi_computations(Z, mu, S)
-        tmp = self._psi2[:, :, :, None] / self.lengthscale2 / self._psi2_denom
-        target_mu += -2.*(dL_dpsi2[:, :, :, None] * tmp * self._psi2_mudist).sum(1).sum(1)
-        target_S += (dL_dpsi2[:, :, :, None] * tmp * (2.*self._psi2_mudist_sq - 1)).sum(1).sum(1)
-
-    #---------------------------------------#
+            #---------------------------------------#
     #            Precomputations            #
     #---------------------------------------#
 
@@ -373,6 +365,7 @@ class RBF(Kernpart):
         #include <omp.h>
         #include <math.h>
         """
+        mu = param_to_array(mu)
         weave.inline(code, support_code=support_code, libraries=['gomp'],
                      arg_names=['N', 'num_inducing', 'input_dim', 'mu', 'Zhat', 'mudist_sq', 'mudist', 'lengthscale2', '_psi2_denom', 'psi2_Zdist_sq', 'psi2_exponent', 'half_log_psi2_denom', 'psi2', 'variance_sq'],
                      type_converters=weave.converters.blitz, **self.weave_options)

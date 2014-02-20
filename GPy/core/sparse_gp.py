@@ -33,12 +33,12 @@ class SparseGP(GP):
 
     def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None, X_variance=None, name='sparse gp'):
 
-        # pick a sensible inference method
+        #pick a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
                 inference_method = var_dtc.VarDTC()
             else:
-                # inference_method = ??
+                #inference_method = ??
                 raise NotImplementedError, "what to do what to do?"
             print "defaulting to ", inference_method, "for latent function inference"
 
@@ -53,38 +53,35 @@ class SparseGP(GP):
         self.add_parameter(self.Z, index=0)
         self.parameters_changed()
 
-    def _update_gradients_Z(self, add=False):
-    # The derivative of the bound wrt the inducing inputs Z ( unless they're all fixed)
+    def _gradients_Z(self):
+        #The derivative of the bound wrt the inducing inputs Z ( unless they're all fixed)
         if not self.Z.is_fixed:
-            if add: self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
-            else: self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
             if self.X_variance is None:
-                self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
+                self.Z.gradient = self.kern.gradients_Z_sparse(X=self.X, Z=self.Z, **self.grad_dict)
             else:
-                self.Z.gradient += self.kern.dpsi1_dZ(self.grad_dict['dL_dpsi1'], self.Z, self.X, self.X_variance)
-                self.Z.gradient += self.kern.dpsi2_dZ(self.grad_dict['dL_dpsi2'], self.Z, self.X, self.X_variance)
+                self.Z.gradient = self.kern.gradients_Z_variational(mu=self.X, S=self.X_variance, Z=self.Z, **self.grad_dict)
+                print self.Z.gradient
+                print id(self.Z)
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
-        self._update_gradients_Z(add=False)
+        self.Z.gradient = self._gradients_Z()
 
-    def _raw_predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
+    def _raw_predict(self, Xnew, X_variance_new=None, full_cov=False):
         """
         Make a prediction for the latent function values
         """
         if X_variance_new is None:
-            Kx = self.kern.K(self.Z, Xnew, which_parts=which_parts)
+            Kx = self.kern.K(self.Z, Xnew)
             mu = np.dot(Kx.T, self.posterior.woodbury_vector)
             if full_cov:
-                Kxx = self.kern.K(Xnew, which_parts=which_parts)
-                var = Kxx[:,:,None] - np.tensordot(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx), Kx, [1,0]).T
+                Kxx = self.kern.K(Xnew)
+                var = Kxx - mdot(Kx.T, self.posterior.woodbury_inv, Kx)
             else:
-                Kxx = self.kern.Kdiag(Xnew, which_parts=which_parts)[:, None]
-                #import ipdb;ipdb.set_trace()
-                var = Kxx - (np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx).T * Kx.T[:,:,None]).sum(1)
+                Kxx = self.kern.Kdiag(Xnew)
+                var = Kxx - np.sum(Kx * np.dot(self.posterior.woodbury_inv, Kx), 0)
         else:
-            # assert which_parts=='all', "swithching out parts of variational kernels is not implemented"
-            Kx = self.kern.psi1(self.Z, Xnew, X_variance_new)  # , which_parts=which_parts) TODO: which_parts
+            Kx = self.kern.psi1(self.Z, Xnew, X_variance_new)
             mu = np.dot(Kx, self.Cpsi1V)
             if full_cov:
                 raise NotImplementedError, "TODO"
@@ -92,7 +89,7 @@ class SparseGP(GP):
                 Kxx = self.kern.psi0(self.Z, Xnew, X_variance_new)
                 psi2 = self.kern.psi2(self.Z, Xnew, X_variance_new)
                 var = Kxx - np.sum(np.sum(psi2 * Kmmi_LmiBLmi[None, :, :], 1), 1)
-        return mu, var
+        return mu, var[:,None]
 
 
     def _getstate(self):

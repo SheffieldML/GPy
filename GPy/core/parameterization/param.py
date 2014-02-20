@@ -86,6 +86,9 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
         if self._gradient_ is None:
             self._gradient_ = numpy.zeros(self._realshape_)
         return self._gradient_
+    @gradient.setter
+    def gradient(self, val):
+        self.gradient[:] = val
         
     #===========================================================================
     # Pickling operations

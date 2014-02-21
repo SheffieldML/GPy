@@ -12,6 +12,7 @@ import decorators
 import classification
 import subarray_and_sorting
 import caching
+import diag
 
 try:
     import sympy

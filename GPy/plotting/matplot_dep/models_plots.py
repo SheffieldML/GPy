@@ -92,11 +92,11 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
                 ax.plot(Xnew, yi[:,None], Tango.colorsHex['darkBlue'], linewidth=0.25)
                 #ax.plot(Xnew, yi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.
 
-        
+
         #add error bars for uncertain (if input uncertainty is being modelled)
-        if hasattr(model,"has_uncertain_inputs"):
-            ax.errorbar(model.X[which_data, free_dims], model.likelihood.data[which_data, 0],
-                        xerr=2 * np.sqrt(model.X_variance[which_data, free_dims]),
+        if hasattr(model,"has_uncertain_inputs") and model.has_uncertain_inputs():
+            ax.errorbar(model.X[which_data_rows, free_dims], model.Y[which_data_rows, which_data_ycols],
+                        xerr=2 * np.sqrt(model.X_variance[which_data_rows, free_dims]),
                         ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
 
 

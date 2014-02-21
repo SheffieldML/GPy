@@ -40,8 +40,15 @@ class Kern(Parameterized):
         """Set the gradients of all parameters when doing full (N) inference."""
         raise NotImplementedError
     def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
-        """Set the gradients of all parameters when doing sparse (M) inference."""
-        raise NotImplementedError
+        target = np.zeros(self.size)
+        self.update_gradients_diag(dL_dKdiag, X)
+        self._collect_gradient(target)
+        self.update_gradients_full(dL_dKnm, X, Z)
+        self._collect_gradient(target)
+        self.update_gradients_full(dL_dKmm, Z, None)
+        self._collect_gradient(target)
+        self._set_gradient(target)
+
     def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
         """Set the gradients of all parameters when doing variational (M) inference with uncertain inputs."""
         raise NotImplementedError

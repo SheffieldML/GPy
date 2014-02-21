@@ -47,12 +47,13 @@ class Linear(Kern):
 
         self.variances = Param('variances', variances, Logexp())
         self.add_parameter(self.variances)
-        self.variances.add_observer(self, self._on_changed)
+        self.variances.add_observer(self._on_changed)
 
     def _on_changed(self, obj):
+        #TODO: move this to base class? isnt it jst for the caching?
         self._notify_observers()
 
-    @cache_this(limit=3, reset_on_self=True)
+    #@cache_this(limit=3, reset_on_self=True)
     def K(self, X, X2=None):
         if self.ARD:
             if X2 is None:
@@ -63,7 +64,7 @@ class Linear(Kern):
         else:
             return self._dot_product(X, X2) * self.variances
 
-    @cache_this(limit=3, reset_on_self=False)
+    #@cache_this(limit=3, reset_on_self=False)
     def _dot_product(self, X, X2=None):
         if X2 is None:
             return tdot(X)
@@ -73,43 +74,33 @@ class Linear(Kern):
     def Kdiag(self, X):
         return np.sum(self.variances * np.square(X), -1)
 
-    def update_gradients_full(self, dL_dK, X):
-        self.variances.gradient = np.zeros(self.variances.size)
-        self._param_grad_helper(dL_dK, X, None, self.variances.gradient)
-
     def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
+        target = np.zeros(self.size)
+        self.update_gradients_diag(dL_dKdiag, X)
+        self._collect_gradient(target)
+        self.update_gradients_full(dL_dKnm, X, Z)
+        self._collect_gradient(target)
+        self.update_gradients_full(dL_dKmm, Z, None)
+        self._collect_gradient(target)
+        return target
+
+    def update_gradients_full(self, dL_dK, X):
+        if self.ARD:
+            if X2 is None:
+                self.variances.gradient = np.array([np.sum(dL_dK * tdot(X[:, i:i + 1])) for i in range(self.input_dim)])
+            else:
+                product = X[:, None, :] * X2[None, :, :]
+                self.variances.gradient = (dL_dK[:, :, None] * product).sum(0).sum(0)
+        else:
+            self.variances.gradient = np.sum(self._dot_product(X, X2) * dL_dK)
+
+    def update_gradients_diag(self, dL_dKdiag, X):
         tmp = dL_dKdiag[:, None] * X ** 2
         if self.ARD:
             self.variances.gradient = tmp.sum(0)
         else:
             self.variances.gradient = np.atleast_1d(tmp.sum())
-        self._param_grad_helper(dL_dKmm, Z, None, self.variances.gradient)
-        self._param_grad_helper(dL_dKnm, X, Z, self.variances.gradient)
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
-        self._psi_computations(Z, mu, S)
-        # psi0:
-        tmp = dL_dpsi0[:, None] * self.mu2_S
-        if self.ARD: self.variances.gradient[:] = tmp.sum(0)
-        else: self.variances.gradient[:] = tmp.sum()
-        #psi1
-        self._param_grad_helper(dL_dpsi1, mu, Z, self.variances.gradient)
-        #psi2
-        tmp = dL_dpsi2[:, :, :, None] * (self.ZAinner[:, :, None, :] * (2 * Z)[None, None, :, :])
-        if self.ARD: self.variances.gradient += tmp.sum(0).sum(0).sum(0)
-        else: self.variances.gradient += tmp.sum()
-        #from Kmm
-        self._param_grad_helper(dL_dKmm, Z, None, self.variances.gradient)
-
-    def _param_grad_helper(self, dL_dK, X, X2, target):
-        if self.ARD:
-            if X2 is None:
-                [np.add(target[i:i + 1], np.sum(dL_dK * tdot(X[:, i:i + 1])), target[i:i + 1]) for i in range(self.input_dim)]
-            else:
-                product = X[:, None, :] * X2[None, :, :]
-                target += (dL_dK[:, :, None] * product).sum(0).sum(0)
-        else:
-            target += np.sum(self._dot_product(X, X2) * dL_dK)
 
     def gradients_X(self, dL_dK, X, X2=None):
         if X2 is None:
@@ -119,11 +110,36 @@ class Linear(Kern):
 
     def gradients_X_diag(self, dL_dKdiag, X):
         return 2.*self.variances*dL_dKdiag[:,None]*X
-        
+
     #---------------------------------------#
     #             PSI statistics            #
     #              variational              #
     #---------------------------------------#
+
+    def psi0(self, Z, mu, S):
+        return np.sum(self.variances * self._mu2S(mu, S), 1)
+
+    def psi1(self, Z, mu, S):
+        return self.K(mu, Z) #the variance, it does nothing
+
+    def psi2(self, Z, mu, S):
+        ZA = Z * self.variances
+        ZAinner = self._ZAinner(mu, S, Z)
+        return np.dot(ZAinner, ZA.T)
+
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        # psi0:
+        tmp = dL_dpsi0[:, None] * self._mu2S(mu, S)
+        if self.ARD: self.variances.gradient[:] = tmp.sum(0)
+        else: self.variances.gradient[:] = tmp.sum()
+        #psi1
+        self.variances.gradient += self._param_grad_helper(dL_dpsi1, mu, Z)
+        #psi2
+        tmp = dL_dpsi2[:, :, :, None] * (self._ZAinner(mu, S, Z)[:, :, None, :] * (2. * Z)[None, None, :, :])
+        if self.ARD: self.variances.gradient += tmp.sum(0).sum(0).sum(0)
+        else: self.variances.gradient += tmp.sum()
+        #from Kmm
+        self.variances.gradient += self._param_grad_helper(dL_dKmm, Z, None)
 
     def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
         # Kmm
@@ -135,76 +151,30 @@ class Linear(Kern):
         return grad
 
     def gradients_muS_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
-        target_mu, target_S = np.zeros(mu.shape), np.zeros(mu.shape)
+        grad_mu, grad_S = np.zeros(mu.shape), np.zeros(mu.shape)
         # psi0
-        target_mu += dL_dpsi0[:, None] * (2.0 * mu * self.variances)
-        target_S += dL_dpsi0[:, None] * self.variances
+        grad_mu += dL_dpsi0[:, None] * (2.0 * mu * self.variances)
+        grad_S += dL_dpsi0[:, None] * self.variances
         # psi1
-        target_mu += (dL_dpsi1[:, :, None] * (Z * self.variances)).sum(1)
+        grad_mu += (dL_dpsi1[:, :, None] * (Z * self.variances)).sum(1)
         # psi2
-        self._weave_dpsi2_dmuS(dL_dpsi2, Z, mu, S, target_mu, target_S)
-        
-        return target_mu, target_S
-        
-    def psi0(self, Z, mu, S):
-        self._psi_computations(Z, mu, S)
-        return np.sum(self.variances * self.mu2_S, 1)
+        self._weave_dpsi2_dmuS(dL_dpsi2, Z, mu, S, grad_mu, grad_S)
 
-    def psi1(self, Z, mu, S):
-        """the variance, it does nothing"""
-        self._psi1 = self.K(mu, Z)
-        return self._psi1
+        return grad_mu, grad_S
 
-    def psi2(self, Z, mu, S):
-        self._psi_computations(Z, mu, S)
-        return self._psi2
-        
-    def dpsi0_dmuS(self, dL_dpsi0, Z, mu, S, target_mu, target_S):
-        target_mu += dL_dpsi0[:, None] * (2.0 * mu * self.variances)
-        target_S += dL_dpsi0[:, None] * self.variances
+    #--------------------------------------------------#
+    #            Helpers for psi statistics            #
+    #--------------------------------------------------#
 
-    def dpsi1_dmuS(self, dL_dpsi1, Z, mu, S, target_mu, target_S):
-        """Do nothing for S, it does not affect psi1"""
-        self._psi_computations(Z, mu, S)
-        target_mu += (dL_dpsi1[:, :, None] * (Z * self.variances)).sum(1)
-
-
-    def psi2_new(self,Z,mu,S,target):
-        tmp = np.zeros((mu.shape[0], Z.shape[0]))
-        self.K(mu,Z,tmp)
-        target += tmp[:,:,None]*tmp[:,None,:] + np.sum(S[:,None,None,:]*self.variances**2*Z[None,:,None,:]*Z[None,None,:,:],-1)
-
-    def dpsi2_dtheta_new(self, dL_dpsi2, Z, mu, S, target):
-        tmp = np.zeros((mu.shape[0], Z.shape[0]))
-        self.K(mu,Z,tmp)
-        self._param_grad_helper(2.*np.sum(dL_dpsi2*tmp[:,None,:],2),mu,Z,target)
-        result= 2.*(dL_dpsi2[:,:,:,None]*S[:,None,None,:]*self.variances*Z[None,:,None,:]*Z[None,None,:,:]).sum(0).sum(0).sum(0)
-        if self.ARD:
-            target += result.sum(0).sum(0).sum(0)
-        else:
-            target += result.sum()
-
-    def dpsi2_dmuS_new(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
-        tmp = np.zeros((mu.shape[0], Z.shape[0]))
-        self.K(mu,Z,tmp)
-        self.gradients_X(2.*np.sum(dL_dpsi2*tmp[:,None,:],2),mu,Z,target_mu)
-
-        Zs = Z*self.variances
-        Zs_sq = Zs[:,None,:]*Zs[None,:,:]
-        target_S += (dL_dpsi2[:,:,:,None]*Zs_sq[None,:,:,:]).sum(1).sum(1)
 
     def _weave_dpsi2_dmuS(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
-        """Think N,num_inducing,num_inducing,input_dim """
-        self._psi_computations(Z, mu, S)
-        AZZA = self.ZA.T[:, None, :, None] * self.ZA[None, :, None, :]
+        # Think N,num_inducing,num_inducing,input_dim
+        ZA = Z * self.variances
+        AZZA = ZA.T[:, None, :, None] * ZA[None, :, None, :]
         AZZA = AZZA + AZZA.swapaxes(1, 2)
         AZZA_2 = AZZA/2.
-        #muAZZA = np.tensordot(mu,AZZA,(-1,0))
-        #target_mu_dummy, target_S_dummy = np.zeros_like(target_mu), np.zeros_like(target_S)
-        #target_mu_dummy += (dL_dpsi2[:, :, :, None] * muAZZA).sum(1).sum(1)
-        #target_S_dummy += (dL_dpsi2[:, :, :, None] * self.ZA[None, :, None, :] * self.ZA[None, None, :, :]).sum(1).sum(1)
 
-        #Using weave, we can exploiut the symmetry of this problem:
+        #Using weave, we can exploit the symmetry of this problem:
         code = """
         int n, m, mm,q,qq;
         double factor,tmp;
@@ -248,12 +218,8 @@ class Linear(Kern):
 
 
     def _weave_dpsi2_dZ(self, dL_dpsi2, Z, mu, S, target):
-        self._psi_computations(Z, mu, S)
-        #psi2_dZ = dL_dpsi2[:, :, :, None] * self.variances * self.ZAinner[:, :, None, :]
-        #dummy_target = np.zeros_like(target)
-        #dummy_target += psi2_dZ.sum(0).sum(0)
 
-        AZA = self.variances*self.ZAinner
+        AZA = self.variances*self._ZAinner(mu, S, Z)
         code="""
         int n,m,mm,q;
         #pragma omp parallel for private(n,mm,q)
@@ -282,38 +248,14 @@ class Linear(Kern):
                      type_converters=weave.converters.blitz,**weave_options)
 
 
-    #---------------------------------------#
-    #            Precomputations            #
-    #---------------------------------------#
+    def _mu2S(self, mu, S):
+        return np.square(mu) + S
 
-    #def _K_computations(self, X, X2):
-        #if not (fast_array_equal(X, self._X) and fast_array_equal(X2, self._X2)):
-            #self._X = X.copy()
-            #if X2 is None:
-                ##self._dot_product = tdot(param_to_array(X))
-                #self._X2 = None
-            #else:
-                #self._X2 = X2.copy()
-                #self._dot_product = np.dot(param_to_array(X), param_to_array(X2.T))
+    def _ZAinner(self, mu, S, Z):
+        ZA = Z*self.variances
+        inner = (mu[:, None, :] * mu[:, :, None])
+        diag_indices = np.diag_indices(mu.shape[1], 2)
+        inner[:, diag_indices[0], diag_indices[1]] += S
 
-    def _psi_computations(self, Z, mu, S):
-        # here are the "statistics" for psi1 and psi2
-        Zv_changed = not (fast_array_equal(Z, self._Z) and fast_array_equal(self.variances, self._variances))
-        muS_changed = not (fast_array_equal(mu, self._mu) and fast_array_equal(S, self._S))
-        if Zv_changed:
-            # Z has changed, compute Z specific stuff
-            # self.ZZ = Z[:,None,:]*Z[None,:,:] # num_inducing,num_inducing,input_dim
-#             self.ZZ = np.empty((Z.shape[0], Z.shape[0], Z.shape[1]), order='F')
-#             [tdot(Z[:, i:i + 1], self.ZZ[:, :, i].T) for i in xrange(Z.shape[1])]
-            self.ZA = Z * self.variances
-            self._Z = Z.copy()
-            self._variances = self.variances.copy()
-        if muS_changed:
-            self.mu2_S = np.square(mu) + S
-            self.inner = (mu[:, None, :] * mu[:, :, None])
-            diag_indices = np.diag_indices(mu.shape[1], 2)
-            self.inner[:, diag_indices[0], diag_indices[1]] += S
-            self._mu, self._S = mu.copy(), S.copy()
-        if Zv_changed or muS_changed:
-            self.ZAinner = np.dot(self.ZA, self.inner).swapaxes(0, 1)  # NOTE: self.ZAinner \in [num_inducing x N x input_dim]!
-            self._psi2 = np.dot(self.ZAinner, self.ZA.T)
+        return np.dot(ZA, inner).swapaxes(0, 1)  # NOTE: self.ZAinner \in [num_inducing x N x input_dim]!
+

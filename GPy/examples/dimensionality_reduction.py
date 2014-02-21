@@ -21,10 +21,11 @@ def bgplvm_test_model(optimize=False, verbose=1, plot=False, output_dim=200, nan
 
     # generate GPLVM-like data
     X = _np.random.rand(num_inputs, input_dim)
-    lengthscales = _np.random.rand(input_dim)
-    k = (GPy.kern.RBF(input_dim, .5, lengthscales, ARD=True)
-         #+ GPy.kern.white(input_dim, 0.01)
-         )
+    #lengthscales = _np.random.rand(input_dim)
+    #k = (GPy.kern.RBF(input_dim, .5, lengthscales, ARD=True)
+         ##+ GPy.kern.white(input_dim, 0.01)
+         #)
+    k = GPy.kern.Linear(input_dim)# + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
     K = k.K(X)
     Y = _np.random.multivariate_normal(_np.zeros(num_inputs), K, (output_dim,)).T
 
@@ -48,7 +49,7 @@ def bgplvm_test_model(optimize=False, verbose=1, plot=False, output_dim=200, nan
     # randomly obstruct data with percentage p
     #===========================================================================
     #m2 = GPy.models.BayesianGPLVMWithMissingData(Y_obstruct, input_dim, kernel=k, num_inducing=num_inducing)
-    m.lengthscales = lengthscales
+    #m.lengthscales = lengthscales
 
     if plot:
         import matplotlib.pyplot as pb

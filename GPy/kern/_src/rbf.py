@@ -54,7 +54,7 @@ class RBF(Kern):
         self.variance = Param('variance', variance, Logexp())
 
         self.lengthscale = Param('lengthscale', lengthscale, Logexp())
-        self.lengthscale.add_observer(self, self.update_lengthscale)
+        self.lengthscale.add_observer(self.update_lengthscale)
         self.update_lengthscale(self.lengthscale)
 
         self.add_parameters(self.variance, self.lengthscale)

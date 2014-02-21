@@ -144,7 +144,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
         return self.flat
 
     def _collect_gradient(self, target):
-        target[:] = self.gradient.flat
+        target += self.gradient.flat
 
     #===========================================================================
     # Array operations -> done

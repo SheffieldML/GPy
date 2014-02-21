@@ -30,7 +30,7 @@ class ObservableArray(np.ndarray, Observable):
     def __new__(cls, input_array):
         obj = np.atleast_1d(input_array).view(cls)
         cls.__name__ = "ObservableArray\n     "
-        obj._observer_callables_ = {}
+        obj._observer_callables_ = []
         return obj
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments

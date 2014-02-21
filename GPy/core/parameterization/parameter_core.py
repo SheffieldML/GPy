@@ -11,7 +11,7 @@ def adjust_name_for_printing(name):
     return ''
 
 class Observable(object):
-    _observer_callables_ = {}
+    _observer_callables_ = []
     def add_observer(self, callble):
         self._observer_callables_.append(callble)
         #callble(self)

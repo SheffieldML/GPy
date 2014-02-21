@@ -85,7 +85,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
     def gradient(self):
         if self._gradient_ is None:
             self._gradient_ = numpy.zeros(self._realshape_)
-        return self._gradient_
+        return self._gradient_[self._current_slice_]
     @gradient.setter
     def gradient(self, val):
         self.gradient[:] = val

@@ -177,7 +177,7 @@ class RBF(Kern):
         tmp = self._psi1[:, :, None] / self.lengthscale2 / self._psi1_denom
         grad_mu = np.sum(dL_dpsi1[:, :, None] * tmp * self._psi1_dist, 1)
         grad_S = np.sum(dL_dpsi1[:, :, None] * 0.5 * tmp * (self._psi1_dist_sq - 1), 1)
-
+        #psi2
         tmp = self._psi2[:, :, :, None] / self.lengthscale2 / self._psi2_denom
         grad_mu += -2.*(dL_dpsi2[:, :, :, None] * tmp * self._psi2_mudist).sum(1).sum(1)
         grad_S += (dL_dpsi2[:, :, :, None] * tmp * (2.*self._psi2_mudist_sq - 1)).sum(1).sum(1)

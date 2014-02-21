@@ -135,3 +135,7 @@ class Coregionalize(Kern):
 
     def gradients_X(self, dL_dK, X, X2=None):
         return np.zeros(X.shape)
+
+    def gradients_X_diag(self, dL_dKdiag, X):
+        return np.zeros(X.shape)
+

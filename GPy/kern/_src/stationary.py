@@ -49,9 +49,6 @@ class Stationary(Kern):
         self.variance.gradient = np.sum(dL_dKdiag)
         self.lengthscale.gradient = 0.
 
-    def gradients_X_diag(self, dL_dKdiag, X):
-        return np.zeros(X.shape)
-
     def update_gradients_full(self, dL_dK, X, X2=None):
         K = self.K(X, X2)
         self.variance.gradient = np.sum(K * dL_dK)/self.variance
@@ -82,6 +79,9 @@ class Stationary(Kern):
             ret *= 2.
         return ret
 
+    def gradients_X_diag(self, dL_dKdiag, X):
+        return np.zeros(X.shape)
+
 
 
 
@@ -103,16 +103,6 @@ class Matern32(Stationary):
     .. math::
 
        k(r) = \\sigma^2 (1 + \\sqrt{3} r) \exp(- \sqrt{3} r) \\ \\ \\ \\  \\text{ where  } r = \sqrt{\sum_{i=1}^input_dim \\frac{(x_i-y_i)^2}{\ell_i^2} }
-
-    :param input_dim: the number of input dimensions
-    :type input_dim: int
-    :param variance: the variance :math:`\sigma^2`
-    :type variance: float
-    :param lengthscale: the vector of lengthscale :math:`\ell_i`
-    :type lengthscale: array or list of the appropriate size (or float if there is only one lengthscale parameter)
-    :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one single lengthscale parameter \ell), otherwise there is one lengthscale parameter per dimension.
-    :type ARD: Boolean
-    :rtype: kernel object
 
     """
 

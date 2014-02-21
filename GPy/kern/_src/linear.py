@@ -74,16 +74,6 @@ class Linear(Kern):
     def Kdiag(self, X):
         return np.sum(self.variances * np.square(X), -1)
 
-    def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
-        target = np.zeros(self.size)
-        self.update_gradients_diag(dL_dKdiag, X)
-        self._collect_gradient(target)
-        self.update_gradients_full(dL_dKnm, X, Z)
-        self._collect_gradient(target)
-        self.update_gradients_full(dL_dKmm, Z, None)
-        self._collect_gradient(target)
-        self._set_gradient(target)
-
     def update_gradients_full(self, dL_dK, X, X2=None):
         if self.ARD:
             if X2 is None:

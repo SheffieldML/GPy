@@ -169,6 +169,8 @@ class RBF(Kern):
         dZ = self._psi2[:, :, :, None] * (term1[None] + term2)
         grad += (dL_dpsi2[:, :, :, None] * dZ).sum(0).sum(0)
 
+        grad += self.gradients_X(dL_dKmm, Z, None)
+
         return grad
 
     def gradients_muS_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
@@ -183,8 +185,6 @@ class RBF(Kern):
         grad_S += (dL_dpsi2[:, :, :, None] * tmp * (2.*self._psi2_mudist_sq - 1)).sum(1).sum(1)
 
         return grad_mu, grad_S
-
-
 
     def gradients_X(self, dL_dK, X, X2=None):
         #if self._X is None or X.base is not self._X.base or X2 is not None:
@@ -203,7 +203,7 @@ class RBF(Kern):
     #             PSI statistics            #
     #---------------------------------------#
 
-            #---------------------------------------#
+    #---------------------------------------#
     #            Precomputations            #
     #---------------------------------------#
 

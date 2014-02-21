@@ -7,11 +7,11 @@ import cPickle
 import itertools
 from re import compile, _pattern_type
 from param import ParamConcatenation
-from parameter_core import Constrainable, Pickleable, Observable, Parameterizable, Parentable, adjust_name_for_printing, Gradcheckable
+from parameter_core import Constrainable, Pickleable, Parentable, Observable, Parameterizable, adjust_name_for_printing, Gradcheckable
 from transformations import __fixed__
 from array_core import ParamList
 
-class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable, Parameterizable, Parentable):
+class Parameterized(Parameterizable, Pickleable, Observable, Gradcheckable):
     """
     Parameterized class
 
@@ -53,8 +53,8 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable, Parame
         If you want to operate on all parameters use m[''] to wildcard select all paramters
         and concatenate them. Printing m[''] will result in printing of all parameters in detail.
     """
-    def __init__(self, name=None):
-        super(Parameterized, self).__init__(name=name)
+    def __init__(self, name=None, *a, **kw):
+        super(Parameterized, self).__init__(name=name, parent=None, parent_index=None, *a, **kw)
         self._in_init_ = True
         self._parameters_ = ParamList()
         self.size = sum(p.size for p in self._parameters_)

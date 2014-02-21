@@ -36,7 +36,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
         assert Z.shape[1] == X.shape[1]
 
         if kernel is None:
-            kernel = kern.rbf(input_dim) # + kern.white(input_dim)
+            kernel = kern.RBF(input_dim) # + kern.white(input_dim)
         
         if likelihood is None:
             likelihood = Gaussian()

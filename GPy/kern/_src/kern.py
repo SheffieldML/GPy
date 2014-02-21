@@ -22,15 +22,15 @@ class Kern(Parameterized):
         super(Kern, self).__init__(name)
         self.input_dim = input_dim
 
-    def K(self, X, X2, target):
+    def K(self, X, X2):
         raise NotImplementedError
-    def Kdiag(self, Xa ,target):
+    def Kdiag(self, Xa):
         raise NotImplementedError
-    def psi0(self,Z,mu,S,target):
+    def psi0(self,Z,mu,S):
         raise NotImplementedError
-    def psi1(self,Z,mu,S,target):
+    def psi1(self,Z,mu,S):
         raise NotImplementedError
-    def psi2(self,Z,mu,S,target):
+    def psi2(self,Z,mu,S):
         raise NotImplementedError
     def gradients_X(self, dL_dK, X, X2):
         raise NotImplementedError
@@ -49,7 +49,11 @@ class Kern(Parameterized):
         grad = self.gradients_X(dL_dKmm, Z)
         grad += self.gradients_X(dL_dKnm.T, Z, X)
         return grad
-
+    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        raise NotImplementedError
+    def gradients_muS_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        raise NotImplementedError
+    
     def plot_ARD(self, *args):
         """If an ARD kernel is present, plot a bar representation using matplotlib
 

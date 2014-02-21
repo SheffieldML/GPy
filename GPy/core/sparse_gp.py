@@ -44,26 +44,26 @@ class SparseGP(GP):
 
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]
-
-        if not (X_variance is None):
-            assert X_variance.shape == X.shape
+        
         self.X_variance = X_variance
-
+        if self.has_uncertain_inputs():
+            assert X_variance.shape == X.shape
+        
         GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name)
         self.add_parameter(self.Z, index=0)
         self.parameters_changed()
 
-    def update_gradients_Z(self):
-        #The derivative of the bound wrt the inducing inputs Z ( unless they're all fixed)
-        if not self.Z.is_fixed:
-            if self.X_variance is None:
-                self.Z.gradient = self.kern.gradients_Z_sparse(X=self.X, Z=self.Z, **self.grad_dict)
-            else:
-                self.Z.gradient = self.kern.gradients_Z_variational(mu=self.X, S=self.X_variance, Z=self.Z, **self.grad_dict)
+    def has_uncertain_inputs(self):
+        return not (self.X_variance is None)                
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
-        self.update_gradients_Z()
+        if self.has_uncertain_inputs():
+            self.kern.update_gradients_variational(mu=self.X, S=self.X_variance, Z=self.Z, **self.grad_dict)
+            self.Z.gradient = self.kern.gradients_Z_variational(mu=self.X, S=self.X_variance, Z=self.Z, **self.grad_dict)
+        else:
+            self.kern.update_gradients_sparse(X=self.X, Z=self.Z, **self.grad_dict)
+            self.Z.gradient = self.kern.gradients_Z_sparse(X=self.X, Z=self.Z, **self.grad_dict)
 
     def _raw_predict(self, Xnew, X_variance_new=None, full_cov=False):
         """
@@ -97,12 +97,10 @@ class SparseGP(GP):
         """
         return GP._getstate(self) + [self.Z,
                 self.num_inducing,
-                self.has_uncertain_inputs,
                 self.X_variance]
 
     def _setstate(self, state):
         self.X_variance = state.pop()
-        self.has_uncertain_inputs = state.pop()
         self.num_inducing = state.pop()
         self.Z = state.pop()
         GP._setstate(self, state)

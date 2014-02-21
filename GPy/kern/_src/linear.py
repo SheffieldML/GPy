@@ -119,34 +119,55 @@ class Linear(Kern):
 
     def gradients_X_diag(self, dL_dKdiag, X):
         return 2.*self.variances*dL_dKdiag[:,None]*X
-
+        
     #---------------------------------------#
     #             PSI statistics            #
+    #              variational              #
     #---------------------------------------#
 
-    def psi0(self, Z, mu, S, target):
-        self._psi_computations(Z, mu, S)
-        target += np.sum(self.variances * self.mu2_S, 1)
+    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        # Kmm
+        grad = self.gradients_X(dL_dKmm, Z, None)
+        #psi1
+        grad += self.gradients_X(dL_dpsi1.T, Z, mu)
+        #psi2
+        self._weave_dpsi2_dZ(dL_dpsi2, Z, mu, S, grad)
+        return grad
 
+    def gradients_muS_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+        target_mu, target_S = np.zeros(mu.shape), np.zeros(mu.shape)
+        # psi0
+        target_mu += dL_dpsi0[:, None] * (2.0 * mu * self.variances)
+        target_S += dL_dpsi0[:, None] * self.variances
+        # psi1
+        target_mu += (dL_dpsi1[:, :, None] * (Z * self.variances)).sum(1)
+        # psi2
+        self._weave_dpsi2_dmuS(dL_dpsi2, Z, mu, S, target_mu, target_S)
+        
+        return target_mu, target_S
+        
+    def psi0(self, Z, mu, S):
+        self._psi_computations(Z, mu, S)
+        return np.sum(self.variances * self.mu2_S, 1)
+
+    def psi1(self, Z, mu, S):
+        """the variance, it does nothing"""
+        self._psi1 = self.K(mu, Z)
+        return self._psi1
+
+    def psi2(self, Z, mu, S):
+        self._psi_computations(Z, mu, S)
+        return self._psi2
+        
     def dpsi0_dmuS(self, dL_dpsi0, Z, mu, S, target_mu, target_S):
         target_mu += dL_dpsi0[:, None] * (2.0 * mu * self.variances)
         target_S += dL_dpsi0[:, None] * self.variances
-
-    def psi1(self, Z, mu, S, target):
-        """the variance, it does nothing"""
-        self._psi1 = self.K(mu, Z, target)
 
     def dpsi1_dmuS(self, dL_dpsi1, Z, mu, S, target_mu, target_S):
         """Do nothing for S, it does not affect psi1"""
         self._psi_computations(Z, mu, S)
         target_mu += (dL_dpsi1[:, :, None] * (Z * self.variances)).sum(1)
 
-    def dpsi1_dZ(self, dL_dpsi1, Z, mu, S, target):
-        self.gradients_X(dL_dpsi1.T, Z, mu, target)
-
-    def psi2(self, Z, mu, S, target):
-        self._psi_computations(Z, mu, S)
-        target += self._psi2
 
     def psi2_new(self,Z,mu,S,target):
         tmp = np.zeros((mu.shape[0], Z.shape[0]))
@@ -172,7 +193,7 @@ class Linear(Kern):
         Zs_sq = Zs[:,None,:]*Zs[None,:,:]
         target_S += (dL_dpsi2[:,:,:,None]*Zs_sq[None,:,:,:]).sum(1).sum(1)
 
-    def dpsi2_dmuS(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
+    def _weave_dpsi2_dmuS(self, dL_dpsi2, Z, mu, S, target_mu, target_S):
         """Think N,num_inducing,num_inducing,input_dim """
         self._psi_computations(Z, mu, S)
         AZZA = self.ZA.T[:, None, :, None] * self.ZA[None, :, None, :]
@@ -226,7 +247,7 @@ class Linear(Kern):
                      type_converters=weave.converters.blitz,**weave_options)
 
 
-    def dpsi2_dZ(self, dL_dpsi2, Z, mu, S, target):
+    def _weave_dpsi2_dZ(self, dL_dpsi2, Z, mu, S, target):
         self._psi_computations(Z, mu, S)
         #psi2_dZ = dL_dpsi2[:, :, :, None] * self.variances * self.ZAinner[:, :, None, :]
         #dummy_target = np.zeros_like(target)
@@ -259,9 +280,6 @@ class Linear(Kern):
         weave.inline(code, support_code=support_code, libraries=['gomp'],
                      arg_names=['N','num_inducing','input_dim','AZA','target','dL_dpsi2'],
                      type_converters=weave.converters.blitz,**weave_options)
-
-
-
 
 
     #---------------------------------------#

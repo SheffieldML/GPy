@@ -70,10 +70,8 @@ class VarDTC(object):
 
         if uncertain_inputs:
             grad_dict = {'dL_dKmm': dL_dKmm, 'dL_dpsi0':dL_dpsi0, 'dL_dpsi1':dL_dpsi1, 'dL_dpsi2':dL_dpsi2}
-            kern.update_gradients_variational(mu=X, S=X_variance, Z=Z, **grad_dict)
         else:
             grad_dict = {'dL_dKmm': dL_dKmm, 'dL_dKdiag':dL_dpsi0, 'dL_dKnm':dL_dpsi1}
-            kern.update_gradients_sparse(X=X, Z=Z, **grad_dict)
 
         #get sufficient things for posterior prediction
         #TODO: do we really want to do this in  the loop?

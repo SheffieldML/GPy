@@ -11,14 +11,14 @@ def adjust_name_for_printing(name):
     return ''
 
 class Observable(object):
-    _observers_ = {}
-    def add_observer(self, observer, callble):
-        self._observers_[observer] = callble
+    _observer_callables_ = {}
+    def add_observer(self, callble):
+        self._observer_callables_.append(callble)
         #callble(self)
-    def remove_observer(self, observer):
-        del self._observers_[observer]
+    def remove_observer(self, callble):
+        del self._observer_callables_[callble]
     def _notify_observers(self):
-        [callble(self) for callble in self._observers_.itervalues()]
+        [callble(self) for callble in self._observer_callables_]
     
 class Pickleable(object):
     def _getstate(self):

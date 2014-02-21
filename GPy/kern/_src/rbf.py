@@ -54,7 +54,7 @@ class RBF(Kern):
         self.variance = Param('variance', variance, Logexp())
 
         self.lengthscale = Param('lengthscale', lengthscale, Logexp())
-        self.lengthscale.add_observer(self.update_lengthscale)
+        self.lengthscale.add_observer(self, self.update_lengthscale)
         self.update_lengthscale(self.lengthscale)
 
         self.add_parameters(self.variance, self.lengthscale)
@@ -167,7 +167,7 @@ class RBF(Kern):
         term1 = self._psi2_Zdist / self.lengthscale2 # num_inducing, num_inducing, input_dim
         term2 = self._psi2_mudist / self._psi2_denom / self.lengthscale2 # N, num_inducing, num_inducing, input_dim
         dZ = self._psi2[:, :, :, None] * (term1[None] + term2)
-        grad += (dL_dpsi2[:, :, :, None] * dZ).sum(0).sum(0)
+        grad += 2*(dL_dpsi2[:, :, :, None] * dZ).sum(0).sum(0)
 
         grad += self.gradients_X(dL_dKmm, Z, None)
 

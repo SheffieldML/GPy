@@ -58,6 +58,7 @@ class SparseGP(GP):
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
+        self.likelihood.update_gradients(self.grad_dict.pop('partial_for_likelihood'))
         if self.has_uncertain_inputs():
             self.kern.update_gradients_variational(mu=self.X, S=self.X_variance, Z=self.Z, **self.grad_dict)
             self.Z.gradient = self.kern.gradients_Z_variational(mu=self.X, S=self.X_variance, Z=self.Z, **self.grad_dict)

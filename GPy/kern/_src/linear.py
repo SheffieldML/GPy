@@ -47,7 +47,7 @@ class Linear(Kern):
 
         self.variances = Param('variances', variances, Logexp())
         self.add_parameter(self.variances)
-        self.variances.add_observer(self._on_changed)
+        self.variances.add_observer(self, self._on_changed)
 
     def _on_changed(self, obj):
         #TODO: move this to base class? isnt it jst for the caching?
@@ -82,9 +82,9 @@ class Linear(Kern):
         self._collect_gradient(target)
         self.update_gradients_full(dL_dKmm, Z, None)
         self._collect_gradient(target)
-        return target
+        self._set_gradient(target)
 
-    def update_gradients_full(self, dL_dK, X):
+    def update_gradients_full(self, dL_dK, X, X2=None):
         if self.ARD:
             if X2 is None:
                 self.variances.gradient = np.array([np.sum(dL_dK * tdot(X[:, i:i + 1])) for i in range(self.input_dim)])
@@ -130,16 +130,19 @@ class Linear(Kern):
     def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
         # psi0:
         tmp = dL_dpsi0[:, None] * self._mu2S(mu, S)
-        if self.ARD: self.variances.gradient[:] = tmp.sum(0)
-        else: self.variances.gradient[:] = tmp.sum()
+        if self.ARD: grad = tmp.sum(0)
+        else: grad = np.atleast_1d(tmp.sum())
         #psi1
-        self.variances.gradient += self._param_grad_helper(dL_dpsi1, mu, Z)
+        self.update_gradients_full(dL_dpsi1, mu, Z)
+        grad += self.variances.gradient
         #psi2
         tmp = dL_dpsi2[:, :, :, None] * (self._ZAinner(mu, S, Z)[:, :, None, :] * (2. * Z)[None, None, :, :])
-        if self.ARD: self.variances.gradient += tmp.sum(0).sum(0).sum(0)
-        else: self.variances.gradient += tmp.sum()
+        if self.ARD: grad += tmp.sum(0).sum(0).sum(0)
+        else: grad += tmp.sum()
         #from Kmm
-        self.variances.gradient += self._param_grad_helper(dL_dKmm, Z, None)
+        self.update_gradients_full(dL_dpsi1, mu, Z)
+        grad += self.variances.gradient
+        self._set_gradient(grad)
 
     def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
         # Kmm

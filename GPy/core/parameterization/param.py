@@ -147,7 +147,7 @@ class Param(Constrainable, ObservableArray, Gradcheckable, Indexable):
         target += self.gradient.flat
 
     def _set_gradient(self, g):
-        self.gradient = g
+        self.gradient = g.reshape(self._realshape_)
 
     #===========================================================================
     # Array operations -> done

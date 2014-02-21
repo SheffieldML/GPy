@@ -83,11 +83,21 @@ class ParameterIndexOperations(object):
     def iterproperties(self):
         return self._properties.iterkeys()
     
-    def shift(self, start, size):
+    def shift_right(self, start, size):
         for ind in self.iterindices():
             toshift = ind>=start
-            if toshift.size > 0:
-                ind[toshift] += size
+            ind[toshift] += size
+
+    def shift_left(self, start, size):
+        for v, ind in self.items():
+            todelete = (ind>=start) * (ind<start+size)
+            if todelete.size != 0:
+                ind = ind[~todelete]
+            toshift = ind>=start
+            if toshift.size != 0:
+                ind[toshift] -= size
+            if ind.size != 0: self._properties[v] = ind
+            else: del self._properties[v]
     
     def clear(self):
         self._properties.clear()
@@ -183,7 +193,7 @@ class ParameterIndexOperationsView(object):
             yield i 
 
 
-    def shift(self, start, size):
+    def shift_right(self, start, size):
         raise NotImplementedError, 'Shifting only supported in original ParamIndexOperations'
     
 

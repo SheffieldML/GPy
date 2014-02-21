@@ -1,8 +1,8 @@
 import pylab as pb
 import numpy as np
-from ... import util
 from latent_space_visualizations.controllers.imshow_controller import ImshowController,ImAnnotateController
-from GPy.util.misc import param_to_array
+from ...util.misc import param_to_array
+from .base_plots import x_frame2D
 import itertools
 import Tango
 from matplotlib.cm import get_cmap
@@ -37,7 +37,7 @@ def plot_latent(model, labels=None, which_indices=None,
     if ax is None:
         fig = pb.figure(num=fignum)
         ax = fig.add_subplot(111)
-    util.plot.Tango.reset()
+    Tango.reset()
 
     if labels is None:
         labels = np.ones(model.num_data)
@@ -46,7 +46,7 @@ def plot_latent(model, labels=None, which_indices=None,
     X = param_to_array(model.X)
 
     # first, plot the output variance as a function of the latent space
-    Xtest, xx, yy, xmin, xmax = util.plot.x_frame2D(X[:, [input_1, input_2]], resolution=resolution)
+    Xtest, xx, yy, xmin, xmax = x_frame2D(X[:, [input_1, input_2]], resolution=resolution)
     Xtest_full = np.zeros((Xtest.shape[0], model.X.shape[1]))
 
     def plot_function(x):
@@ -87,7 +87,7 @@ def plot_latent(model, labels=None, which_indices=None,
         else:
             x = X[index, input_1]
             y = X[index, input_2]
-        ax.scatter(x, y, marker=m, s=s, color=util.plot.Tango.nextMedium(), label=this_label)
+        ax.scatter(x, y, marker=m, s=s, color=Tango.nextMedium(), label=this_label)
 
     ax.set_xlabel('latent dimension %i' % input_1)
     ax.set_ylabel('latent dimension %i' % input_2)
@@ -120,7 +120,7 @@ def plot_magnification(model, labels=None, which_indices=None,
     if ax is None:
         fig = pb.figure(num=fignum)
         ax = fig.add_subplot(111)
-    util.plot.Tango.reset()
+    Tango.reset()
 
     if labels is None:
         labels = np.ones(model.num_data)
@@ -128,7 +128,7 @@ def plot_magnification(model, labels=None, which_indices=None,
     input_1, input_2 = most_significant_input_dimensions(model, which_indices)
 
     # first, plot the output variance as a function of the latent space
-    Xtest, xx, yy, xmin, xmax = util.plot.x_frame2D(model.X[:, [input_1, input_2]], resolution=resolution)
+    Xtest, xx, yy, xmin, xmax = x_frame2D(model.X[:, [input_1, input_2]], resolution=resolution)
     Xtest_full = np.zeros((Xtest.shape[0], model.X.shape[1]))
 
     def plot_function(x):
@@ -165,7 +165,7 @@ def plot_magnification(model, labels=None, which_indices=None,
         else:
             x = model.X[index, input_1]
             y = model.X[index, input_2]
-        ax.scatter(x, y, marker=m, s=s, color=util.plot.Tango.nextMedium(), label=this_label)
+        ax.scatter(x, y, marker=m, s=s, color=Tango.nextMedium(), label=this_label)
 
     ax.set_xlabel('latent dimension %i' % input_1)
     ax.set_ylabel('latent dimension %i' % input_2)
@@ -205,7 +205,7 @@ def plot_steepest_gradient_map(model, fignum=None, ax=None, which_indices=None, 
         return dmu_dX[indices, argmax], np.array(labels)[argmax]
 
     if ax is None:
-        fig = pyplot.figure(num=fignum)
+        fig = pb.figure(num=fignum)
         ax = fig.add_subplot(111)
 
     if data_labels is None:
@@ -241,7 +241,7 @@ def plot_steepest_gradient_map(model, fignum=None, ax=None, which_indices=None, 
     ax.legend()
     ax.figure.tight_layout()
     if updates:
-        pyplot.show()
+        pb.show()
         clear = raw_input('Enter to continue')
         if clear.lower() in 'yes' or clear == '':
             controller.deactivate()

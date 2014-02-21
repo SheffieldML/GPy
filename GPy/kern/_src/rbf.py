@@ -79,16 +79,21 @@ class RBF(Kern):
         ret[:] = self.variance
         return ret
 
-    def psi0(self, Z, mu, S):
+    def psi0(self, Z, posterior_variational):
+        mu = posterior_variational.mean
         ret = np.empty(mu.shape[0], dtype=np.float64)
         ret[:] = self.variance
         return ret
 
-    def psi1(self, Z, mu, S):
+    def psi1(self, Z, posterior_variational):
+        mu = posterior_variational.mean
+        S = posterior_variational.variance
         self._psi_computations(Z, mu, S)
         return self._psi1
 
-    def psi2(self, Z, mu, S):
+    def psi2(self, Z, posterior_variational):
+        mu = posterior_variational.mean
+        S = posterior_variational.variance
         self._psi_computations(Z, mu, S)
         return self._psi2
 
@@ -121,7 +126,9 @@ class RBF(Kern):
         else:
             self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
+        mu = posterior_variational.mean
+        S = posterior_variational.variance        
         self._psi_computations(Z, mu, S)
 
         #contributions from psi0:
@@ -155,7 +162,9 @@ class RBF(Kern):
         else:
             self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
 
-    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
+        mu = posterior_variational.mean
+        S = posterior_variational.variance
         self._psi_computations(Z, mu, S)
 
         #psi1
@@ -173,7 +182,9 @@ class RBF(Kern):
 
         return grad
 
-    def gradients_muS_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+    def gradients_q_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
+        mu = posterior_variational.mean
+        S = posterior_variational.variance
         self._psi_computations(Z, mu, S)
         #psi1
         tmp = self._psi1[:, :, None] / self.lengthscale2 / self._psi1_denom

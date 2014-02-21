@@ -1,7 +1,6 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import sys
 import numpy as np
 import pylab as pb
 import Tango
@@ -29,22 +28,23 @@ def plot_ARD(kernel, fignum=None, ax=None, title='', legend=False):
     xticklabels = []
     bars = []
     x0 = 0
-    for p in kernel._parameters_:
-        c = Tango.nextMedium()
-        if hasattr(p, 'ARD') and p.ARD:
-            if title is None:
-                ax.set_title('ARD parameters, %s kernel' % p.name)
-            else:
-                ax.set_title(title)
-            if isinstance(p, Linear):
-                ard_params = p.variances
-            else:
-                ard_params = 1. / p.lengthscale
-
-            x = np.arange(x0, x0 + len(ard_params))
-            bars.append(ax.bar(x, ard_params, align='center', color=c, edgecolor='k', linewidth=1.2, label=p.name.replace("_"," ")))
-            xticklabels.extend([r"$\mathrm{{{name}}}\ {x}$".format(name=p.name, x=i) for i in np.arange(len(ard_params))])
-            x0 += len(ard_params)
+    #for p in kernel._parameters_:
+    p = kernel
+    c = Tango.nextMedium()
+    if hasattr(p, 'ARD') and p.ARD:
+        if title is None:
+            ax.set_title('ARD parameters, %s kernel' % p.name)
+        else:
+            ax.set_title(title)
+        if isinstance(p, Linear):
+            ard_params = p.variances
+        else:
+            ard_params = 1. / p.lengthscale
+        x = np.arange(x0, x0 + len(ard_params))
+        from ...util.misc import param_to_array
+        bars.append(ax.bar(x, param_to_array(ard_params), align='center', color=c, edgecolor='k', linewidth=1.2, label=p.name.replace("_"," ")))
+        xticklabels.extend([r"$\mathrm{{{name}}}\ {x}$".format(name=p.name, x=i) for i in np.arange(len(ard_params))])
+        x0 += len(ard_params)
     x = np.arange(x0)
     transOffset = offset_copy(ax.transData, fig=fig,
                               x=0., y= -2., units='points')

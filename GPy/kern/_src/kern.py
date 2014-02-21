@@ -26,11 +26,11 @@ class Kern(Parameterized):
         raise NotImplementedError
     def Kdiag(self, Xa):
         raise NotImplementedError
-    def psi0(self,Z,mu,S):
+    def psi0(self,Z,posterior_variational):
         raise NotImplementedError
-    def psi1(self,Z,mu,S):
+    def psi1(self,Z,posterior_variational):
         raise NotImplementedError
-    def psi2(self,Z,mu,S):
+    def psi2(self,Z,posterior_variational):
         raise NotImplementedError
     def gradients_X(self, dL_dK, X, X2):
         raise NotImplementedError
@@ -49,16 +49,16 @@ class Kern(Parameterized):
         self._collect_gradient(target)
         self._set_gradient(target)
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
         """Set the gradients of all parameters when doing variational (M) inference with uncertain inputs."""
         raise NotImplementedError
     def gradients_Z_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
         grad = self.gradients_X(dL_dKmm, Z)
         grad += self.gradients_X(dL_dKnm.T, Z, X)
         return grad
-    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
         raise NotImplementedError
-    def gradients_muS_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+    def gradients_q_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
         raise NotImplementedError
     
     def plot_ARD(self, *args):
@@ -67,7 +67,7 @@ class Kern(Parameterized):
         See GPy.plotting.matplot_dep.plot_ARD
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import kernel_plots
+        from ...plotting.matplot_dep import kernel_plots
         return kernel_plots.plot_ARD(self,*args)
 
 

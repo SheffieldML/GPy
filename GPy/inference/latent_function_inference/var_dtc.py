@@ -60,18 +60,88 @@ class VarDTC(object):
         trYYT = self.get_trYYT(Y)
     
         # do the inference:
-        dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Cpsi1Vf, \
-         psi1, Lm, LB, log_marginal, Kmm, partial_for_likelihood  = _do_inference_on(
-                kern, X, X_variance, Z, likelihood, 
-                uncertain_inputs, output_dim, 
-                beta, VVT_factor, trYYT)
+        het_noise = beta.size < 1
+        num_inducing = Z.shape[0]
+        num_data = X.shape[0]
+        # kernel computations, using BGPLVM notation
+        Kmm = kern.K(Z)
+        psi0, psi1, psi2 = _compute_psi(kern, X, X_variance, Z, uncertain_inputs) 
+        
+        Lm = jitchol(Kmm)
+        
+        # The rather complex computations of A
+        if uncertain_inputs:
+            if het_noise:
+                psi2_beta = psi2 * (beta.flatten().reshape(num_data, 1, 1)).sum(0)
+            else:
+                psi2_beta = psi2.sum(0) * beta
+            #if 0:
+            #    evals, evecs = linalg.eigh(psi2_beta)
+            #    clipped_evals = np.clip(evals, 0., 1e6) # TODO: make clipping configurable
+            #    if not np.array_equal(evals, clipped_evals):
+            #        pass # print evals
+            #    tmp = evecs * np.sqrt(clipped_evals)
+            #    tmp = tmp.T
+            # no backsubstitution because of bound explosion on tr(A) if not...
+            LmInv = dtrtri(Lm)
+            A = LmInv.dot(psi2_beta.dot(LmInv.T))
+        else:
+            if het_noise:
+                tmp = psi1 * (np.sqrt(beta.reshape(num_data, 1)))
+            else:
+                tmp = psi1 * (np.sqrt(beta))
+            tmp, _ = dtrtrs(Lm, tmp.T, lower=1)
+            A = tdot(tmp) #print A.sum()
 
-        likelihood.update_gradients(partial_for_likelihood)
+        # factor B
+        B = np.eye(num_inducing) + A
+        LB = jitchol(B)
+        psi1Vf = np.dot(psi1.T, VVT_factor)
+        # back substutue C into psi1Vf
+        tmp, _ = dtrtrs(Lm, psi1Vf, lower=1, trans=0)
+        _LBi_Lmi_psi1Vf, _ = dtrtrs(LB, tmp, lower=1, trans=0)
+        tmp, _ = dtrtrs(LB, _LBi_Lmi_psi1Vf, lower=1, trans=1)
+        Cpsi1Vf, _ = dtrtrs(Lm, tmp, lower=1, trans=1)
+
+        # data fit and derivative of L w.r.t. Kmm
+        delit = tdot(_LBi_Lmi_psi1Vf)
+        data_fit = np.trace(delit)
+        DBi_plus_BiPBi = backsub_both_sides(LB, output_dim * np.eye(num_inducing) + delit)
+        delit = -0.5 * DBi_plus_BiPBi
+        delit += -0.5 * B * output_dim
+        delit += output_dim * np.eye(num_inducing)
+        # Compute dL_dKmm
+        dL_dKmm = backsub_both_sides(Lm, delit)
+
+        # derivatives of L w.r.t. psi
+        dL_dpsi0, dL_dpsi1, dL_dpsi2 = _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm, 
+            VVT_factor, Cpsi1Vf, DBi_plus_BiPBi, 
+            psi1, het_noise, uncertain_inputs)
+        
+        # log marginal likelihood
+        log_marginal = _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise, 
+            psi0, A, LB, trYYT, data_fit)
+        
+        #put the gradients in the right places
+        partial_for_likelihood = _compute_partial_for_likelihood(likelihood, 
+            het_noise, uncertain_inputs, LB, 
+            _LBi_Lmi_psi1Vf, DBi_plus_BiPBi, Lm, A, 
+            psi0, psi1, beta, 
+            data_fit, num_data, output_dim, trYYT)
+        
+        #likelihood.update_gradients(partial_for_likelihood)
 
         if uncertain_inputs:
-            grad_dict = {'dL_dKmm': dL_dKmm, 'dL_dpsi0':dL_dpsi0, 'dL_dpsi1':dL_dpsi1, 'dL_dpsi2':dL_dpsi2}
+            grad_dict = {'dL_dKmm': dL_dKmm, 
+                         'dL_dpsi0':dL_dpsi0, 
+                         'dL_dpsi1':dL_dpsi1, 
+                         'dL_dpsi2':dL_dpsi2, 
+                         'partial_for_likelihood':partial_for_likelihood}
         else:
-            grad_dict = {'dL_dKmm': dL_dKmm, 'dL_dKdiag':dL_dpsi0, 'dL_dKnm':dL_dpsi1}
+            grad_dict = {'dL_dKmm': dL_dKmm, 
+                         'dL_dKdiag':dL_dpsi0, 
+                         'dL_dKnm':dL_dpsi1, 
+                         'partial_for_likelihood':partial_for_likelihood}
 
         #get sufficient things for posterior prediction
         #TODO: do we really want to do this in  the loop?
@@ -184,9 +254,10 @@ class VarDTCMissingData(object):
             LB = jitchol(B)
             
             psi1Vf = psi1.T.dot(VVT_factor)
-            _LBi_Lmi_psi1Vf, Cpsi1Vf = _compute_psi1Vf(Lm, LB, psi1Vf)
-            
-            #LB_all[ind, :,:] = LB    
+            tmp, _ = dtrtrs(Lm, psi1Vf, lower=1, trans=0)
+            _LBi_Lmi_psi1Vf, _ = dtrtrs(LB, tmp, lower=1, trans=0)
+            tmp, _ = dtrtrs(LB, _LBi_Lmi_psi1Vf, lower=1, trans=1)
+            Cpsi1Vf, _ = dtrtrs(Lm, tmp, lower=1, trans=1)
             
             # data fit and derivative of L w.r.t. Kmm
             delit = tdot(_LBi_Lmi_psi1Vf)
@@ -233,16 +304,19 @@ class VarDTCMissingData(object):
             from ...util import diag
             diag.add(Bi, 1)
             woodbury_inv_all[:, :, ind] = backsub_both_sides(Lm, Bi)[:,:,None]
-            
-        # gradients:
-        likelihood.update_gradients(partial_for_likelihood)
 
+        # gradients:
         if uncertain_inputs:
-            grad_dict = {'dL_dKmm': dL_dKmm, 'dL_dpsi0':dL_dpsi0_all, 'dL_dpsi1':dL_dpsi1_all, 'dL_dpsi2':dL_dpsi2_all}
-            kern.update_gradients_variational(mu=X, S=X_variance, Z=Z, **grad_dict)
+            grad_dict = {'dL_dKmm': dL_dKmm, 
+                         'dL_dpsi0':dL_dpsi0, 
+                         'dL_dpsi1':dL_dpsi1, 
+                         'dL_dpsi2':dL_dpsi2, 
+                         'partial_for_likelihood':partial_for_likelihood}
         else:
-            grad_dict = {'dL_dKmm': dL_dKmm, 'dL_dKdiag':dL_dpsi0_all, 'dL_dKnm':dL_dpsi1_all}
-            kern.update_gradients_sparse(X=X, Z=Z, **grad_dict)
+            grad_dict = {'dL_dKmm': dL_dKmm, 
+                         'dL_dKdiag':dL_dpsi0, 
+                         'dL_dKnm':dL_dpsi1, 
+                         'partial_for_likelihood':partial_for_likelihood}
 
         #get sufficient things for posterior prediction
         #TODO: do we really want to do this in  the loop?
@@ -266,33 +340,6 @@ class VarDTCMissingData(object):
         return post, log_marginal, grad_dict
 
 
-def _compute_A(num_data, uncertain_inputs, beta, het_noise, psi1, psi2, Lm):
-# The rather complex computations of A
-    if uncertain_inputs:
-        if het_noise:
-            psi2_beta = psi2 * (beta.flatten().reshape(num_data, 1, 1)).sum(0)
-        else:
-            psi2_beta = psi2.sum(0) * beta
-        #if 0:
-        #    evals, evecs = linalg.eigh(psi2_beta)
-        #    clipped_evals = np.clip(evals, 0., 1e6) # TODO: make clipping configurable
-        #    if not np.array_equal(evals, clipped_evals):
-        #        pass # print evals
-        #    tmp = evecs * np.sqrt(clipped_evals)
-        #    tmp = tmp.T
-        # no backsubstitution because of bound explosion on tr(A) if not...
-        LmInv = dtrtri(Lm)
-        A = LmInv.dot(psi2_beta.dot(LmInv.T))
-    else:
-        if het_noise:
-            tmp = psi1 * (np.sqrt(beta.reshape(num_data, 1)))
-        else:
-            tmp = psi1 * (np.sqrt(beta))
-        tmp, _ = dtrtrs(Lm, tmp.T, lower=1)
-        A = tdot(tmp) #print A.sum()
-    return A
-
-
 def _compute_psi(kern, X, X_variance, Z, uncertain_inputs):
     if uncertain_inputs:
         psi0 = kern.psi0(Z, X, X_variance)
@@ -303,22 +350,6 @@ def _compute_psi(kern, X, X_variance, Z, uncertain_inputs):
         psi1 = kern.K(X, Z)
         psi2 = None
     return psi0, psi1, psi2
-
-def _compute_Kmm(kern, X, X_variance, Z, uncertain_inputs):
-    Kmm = kern.K(Z)
-    psi0, psi1, psi2 = _compute_psi(kern, X, X_variance, Z, uncertain_inputs) 
-    return Kmm, psi0, psi1, psi2
-
-def _compute_dL_dKmm(num_inducing, output_dim, Lm, B, LB, _LBi_Lmi_psi1Vf):
-    # Compute dL_dKmm
-    delit = tdot(_LBi_Lmi_psi1Vf)
-    data_fit = np.trace(delit)
-    DBi_plus_BiPBi = backsub_both_sides(LB, output_dim * np.eye(num_inducing) + delit)
-    delit = -0.5 * DBi_plus_BiPBi
-    delit += -0.5 * B * output_dim
-    delit += output_dim * np.eye(num_inducing)
-    dL_dKmm = backsub_both_sides(Lm, delit)
-    return DBi_plus_BiPBi, data_fit, dL_dKmm
 
 def _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm, VVT_factor, Cpsi1Vf, DBi_plus_BiPBi, psi1, het_noise, uncertain_inputs):
     dL_dpsi0 = -0.5 * output_dim * (beta * np.ones([num_data, 1])).flatten()
@@ -341,15 +372,6 @@ def _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm, VVT_factor, C
             dL_dpsi2 = None
 
     return dL_dpsi0, dL_dpsi1, dL_dpsi2
-
-
-def _compute_psi1Vf(Lm, LB, psi1Vf):
-    # back substutue C into psi1Vf
-    tmp, _ = dtrtrs(Lm, psi1Vf, lower=1, trans=0)
-    _LBi_Lmi_psi1Vf, _ = dtrtrs(LB, tmp, lower=1, trans=0)
-    tmp, _ = dtrtrs(LB, _LBi_Lmi_psi1Vf, lower=1, trans=1)
-    Cpsi1Vf, _ = dtrtrs(Lm, tmp, lower=1, trans=1)
-    return _LBi_Lmi_psi1Vf, Cpsi1Vf
 
 
 def _compute_partial_for_likelihood(likelihood, het_noise, uncertain_inputs, LB, _LBi_Lmi_psi1Vf, DBi_plus_BiPBi, Lm, A, psi0, psi1, beta, data_fit, num_data, output_dim, trYYT):
@@ -393,35 +415,3 @@ def _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het
     lik_4 = 0.5 * data_fit
     log_marginal = lik_1 + lik_2 + lik_3 + lik_4
     return log_marginal
-
-def _do_inference_on(kern, X, X_variance, Z, likelihood, uncertain_inputs, output_dim, beta, VVT_factor, trYYT):
-    het_noise = beta.size < 1
-    num_inducing = Z.shape[0]
-    num_data = X.shape[0]
-    # kernel computations, using BGPLVM notation
-    Kmm, psi0, psi1, psi2 = _compute_Kmm(kern, X, X_variance, Z, uncertain_inputs)
-    #factor Kmm # TODO: cache?
-    Lm = jitchol(Kmm)
-    A = _compute_A(num_data, uncertain_inputs, beta, het_noise, psi1, psi2, Lm)
-    # factor B
-    B = np.eye(num_inducing) + A
-    LB = jitchol(B)
-    psi1Vf = np.dot(psi1.T, VVT_factor)
-    _LBi_Lmi_psi1Vf, Cpsi1Vf = _compute_psi1Vf(Lm, LB, psi1Vf)
-    # data fit and derivative of L w.r.t. Kmm
-    DBi_plus_BiPBi, data_fit, dL_dKmm = _compute_dL_dKmm(num_inducing, output_dim, 
-        Lm, B, LB, _LBi_Lmi_psi1Vf)
-    # derivatives of L w.r.t. psi
-    dL_dpsi0, dL_dpsi1, dL_dpsi2 = _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm, 
-        VVT_factor, Cpsi1Vf, DBi_plus_BiPBi, 
-        psi1, het_noise, uncertain_inputs)
-    # log marginal likelihood
-    log_marginal = _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise, 
-        psi0, A, LB, trYYT, data_fit)
-    #put the gradients in the right places
-    partial_for_likelihood = _compute_partial_for_likelihood(likelihood, 
-        het_noise, uncertain_inputs, LB, 
-        _LBi_Lmi_psi1Vf, DBi_plus_BiPBi, Lm, A, 
-        psi0, psi1, beta, 
-        data_fit, num_data, output_dim, trYYT)
-    return dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Cpsi1Vf, psi1, Lm, LB, log_marginal, Kmm, partial_for_likelihood

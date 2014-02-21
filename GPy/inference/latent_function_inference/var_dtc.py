@@ -326,14 +326,14 @@ class VarDTCMissingData(object):
         # gradients:
         if uncertain_inputs:
             grad_dict = {'dL_dKmm': dL_dKmm, 
-                         'dL_dpsi0':dL_dpsi0, 
-                         'dL_dpsi1':dL_dpsi1, 
-                         'dL_dpsi2':dL_dpsi2, 
+                         'dL_dpsi0':dL_dpsi0_all, 
+                         'dL_dpsi1':dL_dpsi1_all, 
+                         'dL_dpsi2':dL_dpsi2_all, 
                          'partial_for_likelihood':partial_for_likelihood}
         else:
             grad_dict = {'dL_dKmm': dL_dKmm, 
-                         'dL_dKdiag':dL_dpsi0, 
-                         'dL_dKnm':dL_dpsi1, 
+                         'dL_dKdiag':dL_dpsi0_all, 
+                         'dL_dKnm':dL_dpsi1_all, 
                          'partial_for_likelihood':partial_for_likelihood}
 
         #get sufficient things for posterior prediction

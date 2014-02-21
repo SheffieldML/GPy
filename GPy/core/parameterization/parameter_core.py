@@ -390,6 +390,7 @@ class Parameterizable(Constrainable):
         import copy
         from .index_operations import ParameterIndexOperations, ParameterIndexOperationsView
         from .array_core import ParamList
+
         dc = dict()
         for k, v in self.__dict__.iteritems():
             if k not in ['_direct_parent_', '_parameters_', '_parent_index_'] + self.parameter_names():
@@ -399,18 +400,21 @@ class Parameterizable(Constrainable):
                     dc[k] = copy.deepcopy(v)
             if k == '_parameters_':
                 params = [p.copy() for p in v]
-        # dc = copy.deepcopy(self.__dict__)
+        
         dc['_direct_parent_'] = None
         dc['_parent_index_'] = None
         dc['_parameters_'] = ParamList()
+        dc['constraints'].clear()
+        dc['priors'].clear()
+        dc['size'] = 0
+
         s = self.__new__(self.__class__)
         s.__dict__ = dc
-        # import ipdb;ipdb.set_trace()
+        
         for p in params:
             s.add_parameter(p)
-        # dc._notify_parent_change()
+        
         return s
-        # return copy.deepcopy(self)
 
     def _notify_parameters_changed(self):
         self.parameters_changed()

@@ -74,7 +74,7 @@ def gplvm_oil_100(optimize=True, verbose=1, plot=True):
     data = GPy.util.datasets.oil_100()
     Y = data['X']
     # create simple GP model
-    kernel = GPy.kern.RBF(6, ARD=True) + GPy.kern.bias(6)
+    kernel = GPy.kern.RBF(6, ARD=True) + GPy.kern.Bias(6)
     m = GPy.models.GPLVM(Y, 6, kernel=kernel)
     m.data_labels = data['Y'].argmax(axis=1)
     if optimize: m.optimize('scg', messages=verbose)
@@ -190,17 +190,22 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
     _np.random.seed(1234)
     
     x = _np.linspace(0, 4 * _np.pi, N)[:, None]
-    s1 = _np.vectorize(lambda x: _np.sin(x))
+    s1 = _np.vectorize(lambda x: -_np.sin(x))
     s2 = _np.vectorize(lambda x: _np.cos(x))
     s3 = _np.vectorize(lambda x:-_np.exp(-_np.cos(2 * x)))
-    sS = _np.vectorize(lambda x: _np.sin(2 * x))
+    sS = _np.vectorize(lambda x: x*_np.sin(x))
 
     s1 = s1(x)
     s2 = s2(x)
     s3 = s3(x)
     sS = sS(x)
 
-    S1 = _np.hstack([s1, sS])
+    s1 -= s1.mean(); s1 /= s1.std(0)
+    s2 -= s2.mean(); s2 /= s2.std(0)
+    s3 -= s3.mean(); s3 /= s3.std(0)
+    sS -= sS.mean(); sS /= sS.std(0)
+
+    S1 = _np.hstack([s1, s2, sS])
     S2 = _np.hstack([s2, s3, sS])
     S3 = _np.hstack([s3, sS])
 
@@ -271,7 +276,7 @@ def bgplvm_simulation(optimize=True, verbose=1,
     D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 30, 3, 10
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
-    k = kern.linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k)
     
     if optimize:
@@ -291,10 +296,10 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     from GPy.models import BayesianGPLVM
     from GPy.inference.latent_function_inference.var_dtc import VarDTCMissingData
 
-    D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 30, 3, 10
+    D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 30, 5, 9
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
-    k = kern.linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     
     inan = _np.random.binomial(1, .6, size=Y.shape).astype(bool)
     m = BayesianGPLVM(Y.copy(), Q, init="random", num_inducing=num_inducing, kernel=k)

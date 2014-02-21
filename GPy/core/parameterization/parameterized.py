@@ -87,8 +87,8 @@ class Parameterized(Parameterizable, Pickleable, Observable, Gradcheckable):
                 self._parameters_.append(param)
             else:
                 start = sum(p.size for p in self._parameters_[:index])
-                self.constraints.shift(start, param.size)
-                self.priors.shift(start, param.size)
+                self.constraints.shift_right(start, param.size)
+                self.priors.shift_right(start, param.size)
                 self.constraints.update(param.constraints, start)
                 self.priors.update(param.priors, start)
                 self._parameters_.insert(index, param)
@@ -113,15 +113,19 @@ class Parameterized(Parameterizable, Pickleable, Observable, Gradcheckable):
         """
         if not param in self._parameters_:
             raise RuntimeError, "Parameter {} does not belong to this object, remove parameters directly from their respective parents".format(param._short())
-        del self._parameters_[param._parent_index_]
+        
+        start = sum([p.size for p in self._parameters_[:param._parent_index_]])
+        self._remove_parameter_name(param)
         self.size -= param.size
+        del self._parameters_[param._parent_index_]
         
         param._disconnect_parent()
-        self._remove_parameter_name(param)
-        
-        #self._notify_parent_change()
+        self.constraints.shift_left(start, param.size)
         self._connect_fixes()
-
+        self._connect_parameters()
+        self._notify_parent_change()
+        
+        
     def _connect_parameters(self):
         # connect parameterlist to this parameterized object
         # This just sets up the right connection for the params objects

@@ -67,7 +67,7 @@ class Kern(Parameterized):
         See GPy.plotting.matplot_dep.plot_ARD
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import kernel_plots
+        from ...plotting.matplot_dep import kernel_plots
         return kernel_plots.plot_ARD(self,*args)
 
 

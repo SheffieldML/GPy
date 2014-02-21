@@ -56,7 +56,10 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     if ax is None:
         fig = pb.figure(num=fignum)
         ax = fig.add_subplot(111)
-
+    
+    X, Y = param_to_array(model.X, model.Y)
+    if model.has_uncertain_inputs(): X_variance = model.X_variance
+    
     #work out what the inputs are for plotting (1D or 2D)
     fixed_dims = np.array([i for i,v in fixed_inputs])
     free_dims = np.setdiff1d(np.arange(model.input_dim),fixed_dims)
@@ -66,7 +69,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         #define the frame on which to plot
         resolution = resolution or 200
-        Xnew, xmin, xmax = x_frame1D(model.X[:,free_dims], plot_limits=plot_limits)
+        Xnew, xmin, xmax = x_frame1D(X[:,free_dims], plot_limits=plot_limits)
         Xgrid = np.empty((Xnew.shape[0],model.input_dim))
         Xgrid[:,free_dims] = Xnew
         for i,v in fixed_inputs:
@@ -77,13 +80,13 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
             m, v = model._raw_predict(Xgrid)
             lower = m - 2*np.sqrt(v)
             upper = m + 2*np.sqrt(v)
-            Y = model.Y
+            Y = Y
         else:
             m, v, lower, upper = model.predict(Xgrid)
-            Y = model.Y
+            Y = Y
         for d in which_data_ycols:
             gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax, edgecol=linecol, fillcol=fillcol)
-            ax.plot(model.X[which_data_rows,free_dims], Y[which_data_rows, d], 'kx', mew=1.5)
+            ax.plot(X[which_data_rows,free_dims], Y[which_data_rows, d], 'kx', mew=1.5)
 
         #optionally plot some samples
         if samples: #NOTE not tested with fixed_inputs
@@ -95,8 +98,8 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         
         #add error bars for uncertain (if input uncertainty is being modelled)
         if hasattr(model,"has_uncertain_inputs") and model.has_uncertain_inputs():
-            ax.errorbar(model.X[which_data_rows, free_dims], model.Y[which_data_rows, which_data_ycols],
-                        xerr=2 * np.sqrt(model.X_variance[which_data_rows, free_dims]),
+            ax.errorbar(X[which_data_rows, free_dims].flatten(), Y[which_data_rows, which_data_ycols].flatten(),
+                        xerr=2 * np.sqrt(X_variance[which_data_rows, free_dims].flatten()),
                         ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
 
 
@@ -120,7 +123,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         #define the frame for plotting on
         resolution = resolution or 50
-        Xnew, _, _, xmin, xmax = x_frame2D(model.X[:,free_dims], plot_limits, resolution)
+        Xnew, _, _, xmin, xmax = x_frame2D(X[:,free_dims], plot_limits, resolution)
         Xgrid = np.empty((Xnew.shape[0],model.input_dim))
         Xgrid[:,free_dims] = Xnew
         for i,v in fixed_inputs:
@@ -130,14 +133,14 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         #predict on the frame and plot
         if plot_raw:
             m, _ = model._raw_predict(Xgrid)
-            Y = model.Y
+            Y = Y
         else:
             m, _, _, _ = model.predict(Xgrid)
             Y = model.data
         for d in which_data_ycols:
             m_d = m[:,d].reshape(resolution, resolution).T
             ax.contour(x, y, m_d, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
-            ax.scatter(model.X[which_data_rows, free_dims[0]], model.X[which_data_rows, free_dims[1]], 40, Y[which_data_rows, d], cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.)
+            ax.scatter(X[which_data_rows, free_dims[0]], X[which_data_rows, free_dims[1]], 40, Y[which_data_rows, d], cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.)
 
         #set the limits of the plot to some sensible values
         ax.set_xlim(xmin[0], xmax[0])

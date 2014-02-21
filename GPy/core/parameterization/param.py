@@ -15,7 +15,7 @@ __precision__ = numpy.get_printoptions()['precision'] # numpy printing precision
 __print_threshold__ = 5
 ######
 
-class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable):
+class Param(Constrainable, ObservableArray, Gradcheckable, Indexable):
     """
     Parameter object for GPy models.
 
@@ -57,8 +57,8 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
         obj._gradient_ = None
         return obj
 
-    def __init__(self, name, input_array, default_constraint=None):
-        super(Param, self).__init__(name=name, default_constraint=default_constraint)
+    def __init__(self, name, input_array, default_constraint=None, *a, **kw):
+        super(Param, self).__init__(name=name, default_constraint=default_constraint, *a, **kw)
 
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments
@@ -145,6 +145,9 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
 
     def _collect_gradient(self, target):
         target += self.gradient.flat
+
+    def _set_gradient(self, g):
+        self.gradient = g
 
     #===========================================================================
     # Array operations -> done

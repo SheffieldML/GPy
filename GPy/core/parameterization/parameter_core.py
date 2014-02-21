@@ -7,19 +7,24 @@ __updated__ = '2013-12-16'
 
 def adjust_name_for_printing(name):
     if name is not None:
-        return name.replace(" ", "_").replace(".", "_").replace("-","").replace("+","").replace("!","").replace("*","").replace("/","")
+        return name.replace(" ", "_").replace(".", "_").replace("-", "").replace("+", "").replace("!", "").replace("*", "").replace("/", "")
     return ''
 
 class Observable(object):
-    _observer_callables_ = []
-    def add_observer(self, callble):
-        self._observer_callables_.append(callble)
-        #callble(self)
-    def remove_observer(self, callble):
-        del self._observer_callables_[callble]
+    def __init__(self, *args, **kwargs):
+        from collections import defaultdict
+        self._observer_callables_ = defaultdict(list)
+
+    def add_observer(self, observer, callble):
+        self._observer_callables_[observer].append(callble)
+
+    def remove_observer(self, observer, callble):
+        del self._observer_callables_[observer][callble]
+
     def _notify_observers(self):
-        [callble(self) for callble in self._observer_callables_]
-    
+        [[callble(self) for callble in callables]
+         for callables in self._observer_callables_.itervalues()]
+
 class Pickleable(object):
     def _getstate(self):
         """
@@ -47,10 +52,8 @@ class Pickleable(object):
 #===============================================================================
 
 class Parentable(object):
-    def __init__(self, direct_parent=None, parent_index=None):
-        super(Parentable,self).__init__()
-        self._direct_parent_ = direct_parent
-        self._parent_index_ = parent_index
+    _direct_parent_ = None
+    _parent_index_ = None
         
     def has_parent(self):
         return self._direct_parent_ is not None
@@ -73,9 +76,8 @@ class Parentable(object):
             self._direct_parent_._notify_parameters_changed()
 
 class Nameable(Parentable):
-    _name = None
-    def __init__(self, name, direct_parent=None, parent_index=None):
-        super(Nameable,self).__init__(direct_parent, parent_index)
+    def __init__(self, name, *a, **kw):
+        super(Nameable, self).__init__(*a, **kw)
         self._name = name or self.__class__.__name__
 
     @property
@@ -95,114 +97,17 @@ class Nameable(Parentable):
             return self._direct_parent_.hirarchy_name() + "." + adjust(self.name)
         return adjust(self.name)
 
-class Parameterizable(Parentable):
-    def __init__(self, *args, **kwargs):
-        super(Parameterizable, self).__init__(*args, **kwargs)
-        from GPy.core.parameterization.array_core import ParamList
-        _parameters_ = ParamList()
-        self._added_names_ = set()
-    
-    def parameter_names(self, add_self=False, adjust_for_printing=False, recursive=True):
-        if adjust_for_printing: adjust = lambda x: adjust_name_for_printing(x)
-        else: adjust = lambda x: x
-        if recursive: names = [xi for x in self._parameters_ for xi in x.parameter_names(add_self=True, adjust_for_printing=adjust_for_printing)]
-        else: names = [adjust(x.name) for x in self._parameters_]
-        if add_self: names = map(lambda x: adjust(self.name) + "." + x, names)
-        return names
-    
-    def _add_parameter_name(self, param):
-        pname = adjust_name_for_printing(param.name)
-        # and makes sure to not delete programmatically added parameters
-        if pname in self.__dict__:
-            if not (param is self.__dict__[pname]):
-                if pname in self._added_names_:
-                    del self.__dict__[pname]
-                    self._add_parameter_name(param)
-        else:
-            self.__dict__[pname] = param
-            self._added_names_.add(pname)
-            
-    def _remove_parameter_name(self, param=None, pname=None):
-        assert param is None or pname is None, "can only delete either param by name, or the name of a param"
-        pname = adjust_name_for_printing(pname) or adjust_name_for_printing(param.name)
-        if pname in self._added_names_:
-            del self.__dict__[pname]
-            self._added_names_.remove(pname)
-        self._connect_parameters()
-
-    def _name_changed(self, param, old_name):
-        self._remove_parameter_name(None, old_name)
-        self._add_parameter_name(param)
-            
-    def _collect_gradient(self, target):
-        import itertools
-        [p._collect_gradient(target[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
-
-    def _get_params(self):
-        import numpy as np
-        # don't overwrite this anymore!
-        if not self.size:
-            return np.empty(shape=(0,), dtype=np.float64)
-        return np.hstack([x._get_params() for x in self._parameters_ if x.size > 0])
-
-    def _set_params(self, params, update=True):
-        # don't overwrite this anymore!
-        import itertools
-        [p._set_params(params[s], update=update) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
-        self.parameters_changed()
-
-    def copy(self):
-        """Returns a (deep) copy of the current model"""
-        import copy
-        from .index_operations import ParameterIndexOperations, ParameterIndexOperationsView
-        from .array_core import ParamList
-        dc = dict()
-        for k, v in self.__dict__.iteritems():
-            if k not in ['_direct_parent_', '_parameters_', '_parent_index_'] + self.parameter_names():
-                if isinstance(v, (Constrainable, ParameterIndexOperations, ParameterIndexOperationsView)):
-                    dc[k] = v.copy()
-                else:
-                    dc[k] = copy.deepcopy(v)
-            if k == '_parameters_':
-                params = [p.copy() for p in v]
-        #dc = copy.deepcopy(self.__dict__)
-        dc['_direct_parent_'] = None
-        dc['_parent_index_'] = None
-        dc['_parameters_'] = ParamList()
-        s = self.__new__(self.__class__)
-        s.__dict__ = dc
-        #import ipdb;ipdb.set_trace()
-        for p in params:
-            s.add_parameter(p)
-        #dc._notify_parent_change()
-        return s
-        #return copy.deepcopy(self)
-
-    def _notify_parameters_changed(self):
-        self.parameters_changed()
-        if self.has_parent():
-            self._direct_parent_._notify_parameters_changed()
-
-    def parameters_changed(self):
-        """
-        This method gets called when parameters have changed.
-        Another way of listening to param changes is to
-        add self as a listener to the param, such that
-        updates get passed through. See :py:function:``GPy.core.param.Observable.add_observer``
-        """
-        pass
-
 
 class Gradcheckable(Parentable):
-    #===========================================================================
-    # Gradchecking
-    #===========================================================================
+    def __init__(self, *a, **kw):
+        super(Gradcheckable, self).__init__(*a, **kw)
     def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3):
         if self.has_parent():
             return self._highest_parent_._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance)
         return self._checkgrad(self[''], verbose=verbose, step=step, tolerance=tolerance)
     def _checkgrad(self, param):
         raise NotImplementedError, "Need log likelihood to check gradient against"
+
 
 class Indexable(object):
     def _raveled_index(self):
@@ -222,9 +127,10 @@ class Indexable(object):
         """
         raise NotImplementedError, "shouldnt happen, raveld index transformation required from non parameterization object?"        
         
-class Constrainable(Nameable, Indexable, Parentable):
-    def __init__(self, name, default_constraint=None):
-        super(Constrainable,self).__init__(name)
+
+class Constrainable(Nameable, Indexable):
+    def __init__(self, name, default_constraint=None, *a, **kw):
+        super(Constrainable, self).__init__(name=name, *a, **kw)
         self._default_constraint_ = default_constraint
         from index_operations import ParameterIndexOperations
         self.constraints = ParameterIndexOperations()
@@ -275,7 +181,7 @@ class Constrainable(Nameable, Indexable, Parentable):
     def _set_unfixed(self, index):
         import numpy as np
         if not self._has_fixes(): self._fixes_ = np.ones(self.size, dtype=bool)
-        #rav_i = self._raveled_index_for(param)[index]
+        # rav_i = self._raveled_index_for(param)[index]
         self._fixes_[index] = UNFIXED
         if np.all(self._fixes_): self._fixes_ = None  # ==UNFIXED
 
@@ -305,7 +211,7 @@ class Constrainable(Nameable, Indexable, Parentable):
         """evaluate the prior"""
         if self.priors.size > 0:
             x = self._get_params()
-            return reduce(lambda a,b: a+b, [p.lnpdf(x[ind]).sum() for p, ind in self.priors.iteritems()], 0)
+            return reduce(lambda a, b: a + b, [p.lnpdf(x[ind]).sum() for p, ind in self.priors.iteritems()], 0)
         return 0.
     
     def _log_prior_gradients(self):
@@ -409,7 +315,7 @@ class Constrainable(Nameable, Indexable, Parentable):
         if len(transforms) == 0:
             transforms = which.properties()
         import numpy as np
-        removed = np.empty((0, ), dtype=int)
+        removed = np.empty((0,), dtype=int)
         for t in transforms:
             unconstrained = which.remove(t, self._raveled_index())
             removed = np.union1d(removed, unconstrained)
@@ -419,5 +325,104 @@ class Constrainable(Nameable, Indexable, Parentable):
         return removed
 
 
+class Parameterizable(Constrainable):
+    def __init__(self, *args, **kwargs):
+        super(Parameterizable, self).__init__(*args, **kwargs)
+        from GPy.core.parameterization.array_core import ParamList
+        _parameters_ = ParamList()
+        self._added_names_ = set()
+    
+    def parameter_names(self, add_self=False, adjust_for_printing=False, recursive=True):
+        if adjust_for_printing: adjust = lambda x: adjust_name_for_printing(x)
+        else: adjust = lambda x: x
+        if recursive: names = [xi for x in self._parameters_ for xi in x.parameter_names(add_self=True, adjust_for_printing=adjust_for_printing)]
+        else: names = [adjust(x.name) for x in self._parameters_]
+        if add_self: names = map(lambda x: adjust(self.name) + "." + x, names)
+        return names
+    
+    def _add_parameter_name(self, param):
+        pname = adjust_name_for_printing(param.name)
+        # and makes sure to not delete programmatically added parameters
+        if pname in self.__dict__:
+            if not (param is self.__dict__[pname]):
+                if pname in self._added_names_:
+                    del self.__dict__[pname]
+                    self._add_parameter_name(param)
+        else:
+            self.__dict__[pname] = param
+            self._added_names_.add(pname)
+            
+    def _remove_parameter_name(self, param=None, pname=None):
+        assert param is None or pname is None, "can only delete either param by name, or the name of a param"
+        pname = adjust_name_for_printing(pname) or adjust_name_for_printing(param.name)
+        if pname in self._added_names_:
+            del self.__dict__[pname]
+            self._added_names_.remove(pname)
+        self._connect_parameters()
 
+    def _name_changed(self, param, old_name):
+        self._remove_parameter_name(None, old_name)
+        self._add_parameter_name(param)
+            
+    def _collect_gradient(self, target):
+        import itertools
+        [p._collect_gradient(target[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
+
+    def _set_gradient(self, g):
+        import itertools
+        [p._set_gradient(g[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
+
+    def _get_params(self):
+        import numpy as np
+        # don't overwrite this anymore!
+        if not self.size:
+            return np.empty(shape=(0,), dtype=np.float64)
+        return np.hstack([x._get_params() for x in self._parameters_ if x.size > 0])
+
+    def _set_params(self, params, update=True):
+        # don't overwrite this anymore!
+        import itertools
+        [p._set_params(params[s], update=update) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
+        self.parameters_changed()
+
+    def copy(self):
+        """Returns a (deep) copy of the current model"""
+        import copy
+        from .index_operations import ParameterIndexOperations, ParameterIndexOperationsView
+        from .array_core import ParamList
+        dc = dict()
+        for k, v in self.__dict__.iteritems():
+            if k not in ['_direct_parent_', '_parameters_', '_parent_index_'] + self.parameter_names():
+                if isinstance(v, (Constrainable, ParameterIndexOperations, ParameterIndexOperationsView)):
+                    dc[k] = v.copy()
+                else:
+                    dc[k] = copy.deepcopy(v)
+            if k == '_parameters_':
+                params = [p.copy() for p in v]
+        # dc = copy.deepcopy(self.__dict__)
+        dc['_direct_parent_'] = None
+        dc['_parent_index_'] = None
+        dc['_parameters_'] = ParamList()
+        s = self.__new__(self.__class__)
+        s.__dict__ = dc
+        # import ipdb;ipdb.set_trace()
+        for p in params:
+            s.add_parameter(p)
+        # dc._notify_parent_change()
+        return s
+        # return copy.deepcopy(self)
+
+    def _notify_parameters_changed(self):
+        self.parameters_changed()
+        if self.has_parent():
+            self._direct_parent_._notify_parameters_changed()
+
+    def parameters_changed(self):
+        """
+        This method gets called when parameters have changed.
+        Another way of listening to param changes is to
+        add self as a listener to the param, such that
+        updates get passed through. See :py:function:``GPy.core.param.Observable.add_observer``
+        """
+        pass
 

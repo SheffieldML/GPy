@@ -9,7 +9,7 @@ from ...util.linalg import tdot
 from ...util.misc import fast_array_equal, param_to_array
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
-from ...util.caching import Cacher, cache_this
+from ...util.caching import cache_this
 
 class Linear(Kern):
     """

@@ -9,7 +9,7 @@ from ...core.parameterization.param import Param
 
 
 class Kern(Parameterized):
-    def __init__(self, input_dim, name):
+    def __init__(self, input_dim, name, *a, **kw):
         """
         The base class for a kernel: a positive definite function
         which forms of a covariance function (kernel).
@@ -19,7 +19,7 @@ class Kern(Parameterized):
 
         Do not instantiate.
         """
-        super(Kern, self).__init__(name)
+        super(Kern, self).__init__(name=name, *a, **kw)
         self.input_dim = input_dim
 
     def K(self, X, X2):

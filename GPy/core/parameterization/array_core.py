@@ -30,12 +30,16 @@ class ObservableArray(np.ndarray, Observable):
     def __new__(cls, input_array):
         obj = np.atleast_1d(input_array).view(cls)
         cls.__name__ = "ObservableArray\n     "
-        obj._observer_callables_ = []
         return obj
+    
+    def __init__(self, *a, **kw):
+        super(ObservableArray, self).__init__(*a, **kw)
+    
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
         self._observer_callables_ = getattr(obj, '_observer_callables_', None)
+        
     def __array_wrap__(self, out_arr, context=None):
         return out_arr.view(np.ndarray)
 

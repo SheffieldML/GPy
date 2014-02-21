@@ -57,11 +57,14 @@ class SparseGP(GP):
         return not (self.X_variance is None)                
 
     def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
+        if self.has_uncertain_inputs():
+            self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference_latent(self.kern, self.q, self.Z, self.likelihood, self.Y)
+        else:
+            self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
         self.likelihood.update_gradients(self.grad_dict.pop('partial_for_likelihood'))
         if self.has_uncertain_inputs():
-            self.kern.update_gradients_variational(mu=self.X, S=self.X_variance, Z=self.Z, **self.grad_dict)
-            self.Z.gradient = self.kern.gradients_Z_variational(mu=self.X, S=self.X_variance, Z=self.Z, **self.grad_dict)
+            self.kern.update_gradients_variational(posterior_variational=self.q, Z=self.Z, **self.grad_dict)
+            self.Z.gradient = self.kern.gradients_Z_variational(posterior_variational=self.q, Z=self.Z, **self.grad_dict)
         else:
             self.kern.update_gradients_sparse(X=self.X, Z=self.Z, **self.grad_dict)
             self.Z.gradient = self.kern.gradients_Z_sparse(X=self.X, Z=self.Z, **self.grad_dict)

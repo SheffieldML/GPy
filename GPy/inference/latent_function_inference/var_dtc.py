@@ -43,9 +43,20 @@ class VarDTC(object):
         return Y * prec # TODO chache this, and make it effective
     
     def inference(self, kern, X, X_variance, Z, likelihood, Y):
+        """Inference for normal sparseGP"""
+        uncertain_inputs = False
+        psi0, psi1, psi2 = _compute_psi(kern, X, X_variance, Z, uncertain_inputs)
+        return self._inference(kern, psi0, psi1, psi2, Z, likelihood, Y, uncertain_inputs)
+
+    def inference_latent(self, kern, posterior_variational, Z, likelihood, Y):
+        """Inference for GPLVM with uncertain inputs"""
+        uncertain_inputs = True
+        psi0, psi1, psi2 = _compute_psi_latent(kern, posterior_variational, Z)
+        return self._inference(kern, psi0, psi1, psi2, Z, likelihood, Y, uncertain_inputs)
+    
+    def _inference(self, kern, psi0, psi1, psi2, Z, likelihood, Y, uncertain_inputs):
 
         #see whether we're using variational uncertain inputs
-        uncertain_inputs = not (X_variance is None)
         
         _, output_dim = Y.shape
         
@@ -62,10 +73,9 @@ class VarDTC(object):
         # do the inference:
         het_noise = beta.size < 1
         num_inducing = Z.shape[0]
-        num_data = X.shape[0]
+        num_data = Y.shape[0]
         # kernel computations, using BGPLVM notation
-        Kmm = kern.K(Z)
-        psi0, psi1, psi2 = _compute_psi(kern, X, X_variance, Z, uncertain_inputs) 
+        Kmm = kern.K(Z) 
         
         Lm = jitchol(Kmm)
         
@@ -191,20 +201,31 @@ class VarDTCMissingData(object):
         else:
             self._subarray_indices = [[slice(None),slice(None)]]
             return [Y], [(Y**2).sum()]
-    
+
     def inference(self, kern, X, X_variance, Z, likelihood, Y):
+        """Inference for normal sparseGP"""
+        uncertain_inputs = False
+        psi0, psi1, psi2 = _compute_psi(kern, X, X_variance, Z, uncertain_inputs)
+        return self._inference(kern, psi0, psi1, psi2, Z, likelihood, Y, uncertain_inputs)
+
+    def inference_latent(self, kern, posterior_variational, Z, likelihood, Y):
+        """Inference for GPLVM with uncertain inputs"""
+        uncertain_inputs = True
+        psi0, psi1, psi2 = _compute_psi_latent(kern, posterior_variational, Z)
+        return self._inference(kern, psi0, psi1, psi2, Z, likelihood, Y, uncertain_inputs)
+    
+    def _inference(self, kern, psi0_all, psi1_all, psi2_all, Z, likelihood, Y, uncertain_inputs):
         Ys, traces = self._Y(Y)
         beta_all = 1./likelihood.variance
-        uncertain_inputs = not (X_variance is None)
         het_noise = beta_all.size != 1
 
         import itertools
         num_inducing = Z.shape[0]
 
-        dL_dpsi0_all = np.zeros(X.shape[0])
-        dL_dpsi1_all = np.zeros((X.shape[0], num_inducing))
+        dL_dpsi0_all = np.zeros(Y.shape[0])
+        dL_dpsi1_all = np.zeros((Y.shape[0], num_inducing))
         if uncertain_inputs:
-            dL_dpsi2_all = np.zeros((X.shape[0], num_inducing, num_inducing))
+            dL_dpsi2_all = np.zeros((Y.shape[0], num_inducing, num_inducing))
         
         partial_for_likelihood = 0
         woodbury_vector = np.zeros((num_inducing, Y.shape[1]))
@@ -216,9 +237,6 @@ class VarDTCMissingData(object):
         #factor Kmm 
         Lm = jitchol(Kmm)
         if uncertain_inputs: LmInv = dtrtri(Lm)
-
-        # kernel computations, using BGPLVM notation
-        psi0_all, psi1_all, psi2_all = _compute_psi(kern, X, X_variance, Z, uncertain_inputs)
 
         VVT_factor_all = np.empty(Y.shape)
         full_VVT_factor = VVT_factor_all.shape[1] == Y.shape[1]
@@ -340,15 +358,16 @@ class VarDTCMissingData(object):
         return post, log_marginal, grad_dict
 
 
-def _compute_psi(kern, X, X_variance, Z, uncertain_inputs):
-    if uncertain_inputs:
-        psi0 = kern.psi0(Z, X, X_variance)
-        psi1 = kern.psi1(Z, X, X_variance)
-        psi2 = kern.psi2(Z, X, X_variance)
-    else:
-        psi0 = kern.Kdiag(X)
-        psi1 = kern.K(X, Z)
-        psi2 = None
+def _compute_psi(kern, X, X_variance, Z):
+    psi0 = kern.Kdiag(X)
+    psi1 = kern.K(X, Z)
+    psi2 = None
+    return psi0, psi1, psi2
+
+def _compute_psi_latent(kern, posterior_variational, Z):
+    psi0 = kern.psi0(Z, posterior_variational)
+    psi1 = kern.psi1(Z, posterior_variational)
+    psi2 = kern.psi2(Z, posterior_variational)
     return psi0, psi1, psi2
 
 def _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm, VVT_factor, Cpsi1Vf, DBi_plus_BiPBi, psi1, het_noise, uncertain_inputs):

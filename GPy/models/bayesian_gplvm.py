@@ -66,7 +66,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
         super(BayesianGPLVM, self).parameters_changed()
 
         self._log_marginal_likelihood -= self.KL_divergence()
-        dL_dmu, dL_dS = self.kern.gradients_muS_variational(mu=self.X, S=self.X_variance, Z=self.Z, **self.grad_dict)
+        dL_dmu, dL_dS = self.kern.gradients_q_variational(posterior_variational=self.q, Z=self.Z, **self.grad_dict)
 
         # dL:
         self.q.mean.gradient  = dL_dmu

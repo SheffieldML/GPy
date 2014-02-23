@@ -24,6 +24,13 @@ class Test(unittest.TestCase):
         self.param_index.remove(one, [1])
         self.assertListEqual(self.param_index[one].tolist(), [3])        
 
+    def test_shift_left(self):
+        self.param_index.shift_left(1, 2)
+        self.assertListEqual(self.param_index[three].tolist(), [2,5])
+        self.assertListEqual(self.param_index[two].tolist(), [0,3])
+        self.assertListEqual(self.param_index[one].tolist(), [1])        
+
+
     def test_index_view(self):
         #=======================================================================
         #          0    1    2    3    4    5    6    7    8    9

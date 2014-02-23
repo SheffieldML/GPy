@@ -9,7 +9,7 @@ from ...util.misc import param_to_array
 
 
 def plot_fit(model, plot_limits=None, which_data_rows='all',
-        which_data_ycols='all', which_parts='all', fixed_inputs=[],
+        which_data_ycols='all', fixed_inputs=[],
         levels=20, samples=0, fignum=None, ax=None, resolution=None,
         plot_raw=False,
         linecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue']):
@@ -20,7 +20,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
       - In higher dimensions, use fixed_inputs to plot the GP  with some of the inputs fixed.
 
     Can plot only part of the data and part of the posterior functions
-    using which_data_rowsm which_data_ycols and which_parts
+    using which_data_rowsm which_data_ycols. 
 
     :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
     :type plot_limits: np.array
@@ -28,8 +28,6 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     :type which_data_rows: 'all' or a slice object to slice model.X, model.Y
     :param which_data_ycols: when the data has several columns (independant outputs), only plot these
     :type which_data_rows: 'all' or a list of integers
-    :param which_parts: which of the kernel functions to plot (additively)
-    :type which_parts: 'all', or list of bools
     :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
     :type fixed_inputs: a list of tuples
     :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
@@ -58,7 +56,10 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     if ax is None:
         fig = pb.figure(num=fignum)
         ax = fig.add_subplot(111)
-
+    
+    X, Y = param_to_array(model.X, model.Y)
+    if model.has_uncertain_inputs(): X_variance = model.X_variance
+    
     #work out what the inputs are for plotting (1D or 2D)
     fixed_dims = np.array([i for i,v in fixed_inputs])
     free_dims = np.setdiff1d(np.arange(model.input_dim),fixed_dims)
@@ -68,7 +69,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         #define the frame on which to plot
         resolution = resolution or 200
-        Xnew, xmin, xmax = x_frame1D(model.X[:,free_dims], plot_limits=plot_limits)
+        Xnew, xmin, xmax = x_frame1D(X[:,free_dims], plot_limits=plot_limits)
         Xgrid = np.empty((Xnew.shape[0],model.input_dim))
         Xgrid[:,free_dims] = Xnew
         for i,v in fixed_inputs:
@@ -76,29 +77,29 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         #make a prediction on the frame and plot it
         if plot_raw:
-            m, v = model._raw_predict(Xgrid, which_parts=which_parts)
+            m, v = model._raw_predict(Xgrid)
             lower = m - 2*np.sqrt(v)
             upper = m + 2*np.sqrt(v)
-            Y = model.Y
+            Y = Y
         else:
-            m, v, lower, upper = model.predict(Xgrid, which_parts=which_parts)
-            Y = model.Y
+            m, v, lower, upper = model.predict(Xgrid)
+            Y = Y
         for d in which_data_ycols:
             gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax, edgecol=linecol, fillcol=fillcol)
-            ax.plot(model.X[which_data_rows,free_dims], Y[which_data_rows, d], 'kx', mew=1.5)
+            ax.plot(X[which_data_rows,free_dims], Y[which_data_rows, d], 'kx', mew=1.5)
 
         #optionally plot some samples
         if samples: #NOTE not tested with fixed_inputs
-            Ysim = model.posterior_samples(Xgrid, samples, which_parts=which_parts)
+            Ysim = model.posterior_samples(Xgrid, samples)
             for yi in Ysim.T:
                 ax.plot(Xnew, yi[:,None], Tango.colorsHex['darkBlue'], linewidth=0.25)
                 #ax.plot(Xnew, yi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.
 
         
         #add error bars for uncertain (if input uncertainty is being modelled)
-        if hasattr(model,"has_uncertain_inputs"):
-            ax.errorbar(model.X[which_data, free_dims], model.likelihood.data[which_data, 0],
-                        xerr=2 * np.sqrt(model.X_variance[which_data, free_dims]),
+        if hasattr(model,"has_uncertain_inputs") and model.has_uncertain_inputs():
+            ax.errorbar(X[which_data_rows, free_dims].flatten(), Y[which_data_rows, which_data_ycols].flatten(),
+                        xerr=2 * np.sqrt(X_variance[which_data_rows, free_dims].flatten()),
                         ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
 
 
@@ -122,7 +123,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         #define the frame for plotting on
         resolution = resolution or 50
-        Xnew, _, _, xmin, xmax = x_frame2D(model.X[:,free_dims], plot_limits, resolution)
+        Xnew, _, _, xmin, xmax = x_frame2D(X[:,free_dims], plot_limits, resolution)
         Xgrid = np.empty((Xnew.shape[0],model.input_dim))
         Xgrid[:,free_dims] = Xnew
         for i,v in fixed_inputs:
@@ -131,15 +132,15 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         #predict on the frame and plot
         if plot_raw:
-            m, _ = model._raw_predict(Xgrid, which_parts=which_parts)
-            Y = model.Y
+            m, _ = model._raw_predict(Xgrid)
+            Y = Y
         else:
-            m, _, _, _ = model.predict(Xgrid, which_parts=which_parts)
+            m, _, _, _ = model.predict(Xgrid)
             Y = model.data
         for d in which_data_ycols:
             m_d = m[:,d].reshape(resolution, resolution).T
             ax.contour(x, y, m_d, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
-            ax.scatter(model.X[which_data_rows, free_dims[0]], model.X[which_data_rows, free_dims[1]], 40, Y[which_data_rows, d], cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.)
+            ax.scatter(X[which_data_rows, free_dims[0]], X[which_data_rows, free_dims[1]], 40, Y[which_data_rows, d], cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.)
 
         #set the limits of the plot to some sensible values
         ax.set_xlim(xmin[0], xmax[0])

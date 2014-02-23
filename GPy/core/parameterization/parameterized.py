@@ -3,16 +3,15 @@
 
 
 import numpy; np = numpy
-import copy
 import cPickle
 import itertools
 from re import compile, _pattern_type
-from param import ParamConcatenation, Param
-from parameter_core import Constrainable, Pickleable, Observable, adjust_name_for_printing, Gradcheckable
-from transformations import __fixed__, FIXED, UNFIXED
+from param import ParamConcatenation
+from parameter_core import Constrainable, Pickleable, Parentable, Observable, Parameterizable, adjust_name_for_printing, Gradcheckable
+from transformations import __fixed__
 from array_core import ParamList
 
-class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
+class Parameterized(Parameterizable, Pickleable, Observable, Gradcheckable):
     """
     Parameterized class
 
@@ -54,8 +53,8 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
         If you want to operate on all parameters use m[''] to wildcard select all paramters
         and concatenate them. Printing m[''] will result in printing of all parameters in detail.
     """
-    def __init__(self, name=None):
-        super(Parameterized, self).__init__(name=name)
+    def __init__(self, name=None, *a, **kw):
+        super(Parameterized, self).__init__(name=name, parent=None, parent_index=None, *a, **kw)
         self._in_init_ = True
         self._parameters_ = ParamList()
         self.size = sum(p.size for p in self._parameters_)
@@ -63,7 +62,6 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
             self._fixes_ = None
         self._param_slices_ = []
         self._connect_parameters()
-        self._added_names_ = set()
         del self._in_init_
 
     def add_parameter(self, param, index=None):
@@ -89,8 +87,8 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
                 self._parameters_.append(param)
             else:
                 start = sum(p.size for p in self._parameters_[:index])
-                self.constraints.shift(start, param.size)
-                self.priors.shift(start, param.size)
+                self.constraints.shift_right(start, param.size)
+                self.priors.shift_right(start, param.size)
                 self.constraints.update(param.constraints, start)
                 self.priors.update(param.priors, start)
                 self._parameters_.insert(index, param)
@@ -115,22 +113,19 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
         """
         if not param in self._parameters_:
             raise RuntimeError, "Parameter {} does not belong to this object, remove parameters directly from their respective parents".format(param._short())
-        del self._parameters_[param._parent_index_]
+        
+        start = sum([p.size for p in self._parameters_[:param._parent_index_]])
+        self._remove_parameter_name(param)
         self.size -= param.size
-        constr = param.constraints.copy()
-        param.constraints.clear()
-        param.constraints = constr
-        param._direct_parent_ = None
-        param._parent_index_ = None
-        param._connect_fixes()
-        param._notify_parent_change()
-        pname = adjust_name_for_printing(param.name)
-        if pname in self._added_names_:
-            del self.__dict__[pname]
-        self._connect_parameters()
-        #self._notify_parent_change()
+        del self._parameters_[param._parent_index_]
+        
+        param._disconnect_parent()
+        self.constraints.shift_left(start, param.size)
         self._connect_fixes()
-
+        self._connect_parameters()
+        self._notify_parent_change()
+        
+        
     def _connect_parameters(self):
         # connect parameterlist to this parameterized object
         # This just sets up the right connection for the params objects
@@ -145,19 +140,9 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
         for i, p in enumerate(self._parameters_):
             p._direct_parent_ = self
             p._parent_index_ = i
-            not_unique = []
             sizes.append(p.size + sizes[-1])
             self._param_slices_.append(slice(sizes[-2], sizes[-1]))
-            pname = adjust_name_for_printing(p.name)
-            # and makes sure to not delete programmatically added parameters
-            if pname in self.__dict__:
-                if isinstance(self.__dict__[pname], (Parameterized, Param)):
-                    if not p is self.__dict__[pname]:
-                        not_unique.append(pname)
-                        del self.__dict__[pname]
-            elif not (pname in not_unique):
-                self.__dict__[pname] = p
-                self._added_names_.add(pname)
+            self._add_parameter_name(p)
 
     #===========================================================================
     # Pickling operations
@@ -174,19 +159,7 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
                 cPickle.dump(self, f, protocol)
         else:
             cPickle.dump(self, f, protocol)
-    def copy(self):
-        """Returns a (deep) copy of the current model """
-        # dc = dict()
-        # for k, v in self.__dict__.iteritems():
-            # if k not in ['_highest_parent_', '_direct_parent_']:
-                # dc[k] = copy.deepcopy(v)
 
-        # dc = copy.deepcopy(self.__dict__)
-        # dc['_highest_parent_'] = None
-        # dc['_direct_parent_'] = None
-        # s = self.__class__.new()
-        # s.__dict__ = dc
-        return copy.deepcopy(self)
     def __getstate__(self):
         if self._has_get_set_state():
             return self._getstate()
@@ -243,7 +216,7 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
     # Optimization handles:
     #===========================================================================
     def _get_param_names(self):
-        n = numpy.array([p.name_hirarchical + '[' + str(i) + ']' for p in self.flattened_parameters for i in p._indices()])
+        n = numpy.array([p.hirarchy_name() + '[' + str(i) + ']' for p in self.flattened_parameters for i in p._indices()])
         return n
     def _get_param_names_transformed(self):
         n = self._get_param_names()
@@ -265,14 +238,6 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
         if self._has_fixes(): tmp = self._get_params(); tmp[self._fixes_] = p; p = tmp; del tmp
         [numpy.put(p, ind, c.f(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
         return p
-    def _name_changed(self, param, old_name):
-        if hasattr(self, old_name) and old_name in self._added_names_:
-            delattr(self, old_name)
-            self._added_names_.remove(old_name)
-        pname = adjust_name_for_printing(param.name)
-        if pname not in self.__dict__:
-            self._added_names_.add(pname)
-            self.__dict__[pname] = param
     #===========================================================================
     # Indexable Handling
     #===========================================================================
@@ -335,10 +300,6 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
         # you can retrieve the original param through this method, by passing
         # the copy here
         return self._parameters_[param._parent_index_]
-    def hirarchy_name(self):
-        if self.has_parent():
-            return self._direct_parent_.hirarchy_name() + adjust_name_for_printing(self.name) + "."
-        return ''
     #===========================================================================
     # Get/set parameters:
     #===========================================================================
@@ -348,13 +309,11 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
         """
         if not isinstance(regexp, _pattern_type): regexp = compile(regexp)
         found_params = []
-        for p in self._parameters_:
-            if regexp.match(p.name) is not None:
+        for n, p in itertools.izip(self.parameter_names(False, False, True), self.flattened_parameters):
+            if regexp.match(n) is not None:
                 found_params.append(p)
-            if isinstance(p, Parameterized):
-                found_params.extend(p.grep_param_names(regexp))
         return found_params
-        return [param for param in self._parameters_ if regexp.match(param.name) is not None]
+
     def __getitem__(self, name, paramlist=None):
         if paramlist is None:
             paramlist = self.grep_param_names(name)
@@ -366,36 +325,22 @@ class Parameterized(Constrainable, Pickleable, Observable, Gradcheckable):
                     return ParamConcatenation(paramlist)
             return paramlist[-1]
         return ParamConcatenation(paramlist)
+    
     def __setitem__(self, name, value, paramlist=None):
         try: param = self.__getitem__(name, paramlist)
         except AttributeError as a: raise a
         param[:] = value
-#     def __getattr__(self, name):
-#         return self.__getitem__(name)
-#     def __getattribute__(self, name):
-#         #try:
-#             return object.__getattribute__(self, name)
-        # except AttributeError:
-        #    _, a, tb = sys.exc_info()
-        #    try:
-        #        return self.__getitem__(name)
-        #    except AttributeError:
-        #        raise AttributeError, a.message, tb
     def __setattr__(self, name, val):
-        # override the default behaviour, if setting a param, so broadcasting can by used
-        if hasattr(self, "_parameters_"):
-            paramlist = self.grep_param_names(name)
-            if len(paramlist) == 1: self.__setitem__(name, val, paramlist); return
+        # override the default behaviour, if setting a param, so broadcasting can by used        
+        if hasattr(self, '_parameters_'):
+            pnames = self.parameter_names(False, adjust_for_printing=True, recursive=False)
+            if name in pnames: self._parameters_[pnames.index(name)][:] = val; return
         object.__setattr__(self, name, val);
     #===========================================================================
     # Printing:
     #===========================================================================
     def _short(self):
-        # short string to print
-        if self.has_parent():
-            return self._direct_parent_.hirarchy_name() + adjust_name_for_printing(self.name)
-        else:
-            return adjust_name_for_printing(self.name)
+        return self.hirarchy_name()
     @property
     def flattened_parameters(self):
         return [xi for x in self._parameters_ for xi in x.flattened_parameters]

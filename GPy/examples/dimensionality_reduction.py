@@ -1,9 +1,9 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 import numpy as _np
-default_seed = _np.random.seed(123344)
+#default_seed = _np.random.seed(123344)
 
-def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False, output_dim=200, nan=False):
+def bgplvm_test_model(optimize=False, verbose=1, plot=False, output_dim=200, nan=False):
     """
     model for testing purposes. Samples from a GP with rbf kernel and learns
     the samples with a new kernel. Normally not for optimization, just model cheking
@@ -21,19 +21,20 @@ def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False, 
 
     # generate GPLVM-like data
     X = _np.random.rand(num_inputs, input_dim)
-    lengthscales = _np.random.rand(input_dim)
-    k = (GPy.kern.rbf(input_dim, .5, lengthscales, ARD=True)
-         #+ GPy.kern.white(input_dim, 0.01)
-         )
+    #lengthscales = _np.random.rand(input_dim)
+    #k = (GPy.kern.RBF(input_dim, .5, lengthscales, ARD=True)
+         ##+ GPy.kern.white(input_dim, 0.01)
+         #)
+    k = GPy.kern.Linear(input_dim, ARD=1)# + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
     K = k.K(X)
     Y = _np.random.multivariate_normal(_np.zeros(num_inputs), K, (output_dim,)).T
 
-    # k = GPy.kern.rbf_inv(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim)
-    k = GPy.kern.linear(input_dim)# + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
-    # k = GPy.kern.rbf(input_dim, ARD = False)  + GPy.kern.white(input_dim, 0.00001)
-    # k = GPy.kern.rbf(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.rbf(input_dim, .3, _np.ones(input_dim) * .2, ARD=True)
-    # k = GPy.kern.rbf(input_dim, .5, 2., ARD=0) + GPy.kern.rbf(input_dim, .3, .2, ARD=0)
-    # k = GPy.kern.rbf(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.linear(input_dim, _np.ones(input_dim) * .2, ARD=True)
+    # k = GPy.kern.RBF_inv(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim)
+    #k = GPy.kern.linear(input_dim)# + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
+    # k = GPy.kern.RBF(input_dim, ARD = False)  + GPy.kern.white(input_dim, 0.00001)
+    # k = GPy.kern.RBF(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.RBF(input_dim, .3, _np.ones(input_dim) * .2, ARD=True)
+    # k = GPy.kern.RBF(input_dim, .5, 2., ARD=0) + GPy.kern.RBF(input_dim, .3, .2, ARD=0)
+    # k = GPy.kern.RBF(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.linear(input_dim, _np.ones(input_dim) * .2, ARD=True)
 
     p = .3
     
@@ -41,14 +42,14 @@ def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False, 
 
     if nan:
         m.inference_method = GPy.inference.latent_function_inference.var_dtc.VarDTCMissingData()
-        m.Y[_np.random.binomial(1,p,size=(Y.shape))] = _np.nan
+        m.Y[_np.random.binomial(1,p,size=(Y.shape)).astype(bool)] = _np.nan
         m.parameters_changed()
 
     #===========================================================================
     # randomly obstruct data with percentage p
     #===========================================================================
     #m2 = GPy.models.BayesianGPLVMWithMissingData(Y_obstruct, input_dim, kernel=k, num_inducing=num_inducing)
-    m.lengthscales = lengthscales
+    #m.lengthscales = lengthscales
 
     if plot:
         import matplotlib.pyplot as pb
@@ -73,7 +74,7 @@ def gplvm_oil_100(optimize=True, verbose=1, plot=True):
     data = GPy.util.datasets.oil_100()
     Y = data['X']
     # create simple GP model
-    kernel = GPy.kern.rbf(6, ARD=True) + GPy.kern.bias(6)
+    kernel = GPy.kern.RBF(6, ARD=True) + GPy.kern.Bias(6)
     m = GPy.models.GPLVM(Y, 6, kernel=kernel)
     m.data_labels = data['Y'].argmax(axis=1)
     if optimize: m.optimize('scg', messages=verbose)
@@ -88,7 +89,7 @@ def sparse_gplvm_oil(optimize=True, verbose=0, plot=True, N=100, Q=6, num_induci
     Y = Y - Y.mean(0)
     Y /= Y.std(0)
     # Create the model
-    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q)
+    kernel = GPy.kern.RBF(Q, ARD=True) + GPy.kern.bias(Q)
     m = GPy.models.SparseGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing)
     m.data_labels = data['Y'][:N].argmax(axis=1)
 
@@ -138,7 +139,7 @@ def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=15, Q=4
                                          (1 - var))) + .001
     Z = _np.random.permutation(X)[:num_inducing]
 
-    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, _np.exp(-2)) + GPy.kern.white(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF(Q, ARD=True) + GPy.kern.bias(Q, _np.exp(-2)) + GPy.kern.white(Q, _np.exp(-2))
 
     m = BayesianGPLVM(Y, Q, X=X, X_variance=S, num_inducing=num_inducing, Z=Z, kernel=kernel)
     m.data_colors = c
@@ -164,7 +165,7 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     _np.random.seed(0)
     data = GPy.util.datasets.oil()
 
-    kernel = GPy.kern.rbf_inv(Q, 1., [.1] * Q, ARD=True) + GPy.kern.bias(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF_inv(Q, 1., [.1] * Q, ARD=True) + GPy.kern.bias(Q, _np.exp(-2))
     Y = data['X'][:N]
     Yn = Gaussian(Y, normalize=True)
     m = GPy.models.BayesianGPLVM(Yn, Q, kernel=kernel, num_inducing=num_inducing, **k)
@@ -186,18 +187,25 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     return m
 
 def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
+    _np.random.seed(1234)
+    
     x = _np.linspace(0, 4 * _np.pi, N)[:, None]
-    s1 = _np.vectorize(lambda x: _np.sin(x))
+    s1 = _np.vectorize(lambda x: -_np.sin(x))
     s2 = _np.vectorize(lambda x: _np.cos(x))
     s3 = _np.vectorize(lambda x:-_np.exp(-_np.cos(2 * x)))
-    sS = _np.vectorize(lambda x: _np.sin(2 * x))
+    sS = _np.vectorize(lambda x: x*_np.sin(x))
 
     s1 = s1(x)
     s2 = s2(x)
     s3 = s3(x)
     sS = sS(x)
 
-    S1 = _np.hstack([s1, sS])
+    s1 -= s1.mean(); s1 /= s1.std(0)
+    s2 -= s2.mean(); s2 /= s2.std(0)
+    s3 -= s3.mean(); s3 /= s3.std(0)
+    sS -= sS.mean(); sS /= sS.std(0)
+
+    S1 = _np.hstack([s1, s2, sS])
     S2 = _np.hstack([s2, s3, sS])
     S3 = _np.hstack([s3, sS])
 
@@ -268,7 +276,7 @@ def bgplvm_simulation(optimize=True, verbose=1,
     D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 30, 3, 10
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
-    k = kern.linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k)
     
     if optimize:
@@ -288,16 +296,18 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     from GPy.models import BayesianGPLVM
     from GPy.inference.latent_function_inference.var_dtc import VarDTCMissingData
 
-    D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 30, 3, 10
+    D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 30, 5, 9
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
-    k = kern.linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     
-    inan = _np.random.binomial(1, .3, size=Y.shape)
-    m = BayesianGPLVM(Y, Q, init="random", num_inducing=num_inducing, kernel=k)
+    inan = _np.random.binomial(1, .6, size=Y.shape).astype(bool)
+    m = BayesianGPLVM(Y.copy(), Q, init="random", num_inducing=num_inducing, kernel=k)
     m.inference_method = VarDTCMissingData()
     m.Y[inan] = _np.nan
+    m.q.variance *= .1
     m.parameters_changed()
+    m.Yreal = Y
     
     if optimize:
         print "Optimizing model:"
@@ -435,7 +445,7 @@ def bcgplvm_stick(kernel=None, optimize=True, verbose=True, plot=True):
 
     data = GPy.util.datasets.osu_run1()
     # optimize
-    back_kernel=GPy.kern.rbf(data['Y'].shape[1], lengthscale=5.)
+    back_kernel=GPy.kern.RBF(data['Y'].shape[1], lengthscale=5.)
     mapping = GPy.mappings.Kernel(X=data['Y'], output_dim=2, kernel=back_kernel)
     m = GPy.models.BCGPLVM(data['Y'], 2, kernel=kernel, mapping=mapping)
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
@@ -470,7 +480,7 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
 
     data = GPy.util.datasets.osu_run1()
     Q = 6
-    kernel = GPy.kern.rbf(Q, ARD=True) + GPy.kern.bias(Q, _np.exp(-2)) + GPy.kern.white(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF(Q, ARD=True) + GPy.kern.bias(Q, _np.exp(-2)) + GPy.kern.white(Q, _np.exp(-2))
     m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20, kernel=kernel)
     # optimize
     m.ensure_default_constraints()

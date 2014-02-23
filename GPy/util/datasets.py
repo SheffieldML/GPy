@@ -513,8 +513,8 @@ def toy_rbf_1d(seed=default_seed, num_samples=500):
     num_in = 1
     X = np.random.uniform(low= -1.0, high=1.0, size=(num_samples, num_in))
     X.sort(axis=0)
-    rbf = GPy.kern.rbf(num_in, variance=1., lengthscale=np.array((0.25,)))
-    white = GPy.kern.white(num_in, variance=1e-2)
+    rbf = GPy.kern.RBF(num_in, variance=1., lengthscale=np.array((0.25,)))
+    white = GPy.kern.White(num_in, variance=1e-2)
     kernel = rbf + white
     K = kernel.K(X)
     y = np.reshape(np.random.multivariate_normal(np.zeros(num_samples), K), (num_samples, 1))

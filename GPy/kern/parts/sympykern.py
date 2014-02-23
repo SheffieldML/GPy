@@ -1,3 +1,4 @@
+# Check Matthew Rocklin's blog post.
 try: 
     import sympy as sp
     sympy_available=True
@@ -129,6 +130,8 @@ class spkern(Kernpart):
         if False:
             self.compute_psi_stats()
 
+        self._code = {}
+
         # generate the code for the covariance functions
         self._gen_code()
 
@@ -169,6 +172,7 @@ class spkern(Kernpart):
             code_type = "C"
         else:
             code_type = "PYTHON"
+        # Need to add the sympy_helpers header in here.
         (foo_c,self._function_code), (foo_h,self._function_header) = \
                                      codegen(code_list,
                                              code_type,
@@ -233,7 +237,7 @@ class spkern(Kernpart):
                 """
 
             # Here's the code to do the looping for K
-            self._K_code =\
+            self._code['K'] =\
             """
             // _K_code
             // Code for computing the covariance function.
@@ -254,7 +258,7 @@ class spkern(Kernpart):
             """%(precompute_string,arg_string,"/*"+str(self._sp_k)+"*/")
            # adding a string representation of the function in the
            # comment forces recompile when needed
-            self._K_code_X = self._K_code.replace('Z2(', 'X2(')
+            self._code['K_X'] = self._code['K'].replace('Z2(', 'X2(')
 
 
             # Code to compute diagonal of covariance.
@@ -265,9 +269,9 @@ class spkern(Kernpart):
             diag_precompute_string = re.sub('Z','X',diag_precompute_string)
             diag_precompute_string = re.sub('j','i',diag_precompute_string)
             # Code to do the looping for Kdiag
-            self._Kdiag_code =\
+            self._code['Kdiag'] =\
             """
-            // _Kdiag_code
+            // _code['Kdiag']
             // Code for computing diagonal of covariance function.
             int i;
             int n = target_array->dimensions[0];
@@ -282,51 +286,88 @@ class spkern(Kernpart):
             """%(diag_precompute_string,diag_arg_string,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
             # Code to compute gradients
-            grad_func_list = []
             if self.output_dim>1:
-                grad_func_list += c_define_output_indices
-                grad_func_list += [' '*16 + 'TARGET1(%i+ii) += PARTIAL2(i, j)*dk_d%s(%s);'%(self.num_shared_params+i*self.output_dim, theta.name, arg_string) for i, theta in enumerate(self._sp_theta_i)]
-                grad_func_list += [' '*16 + 'TARGET1(%i+jj) += PARTIAL2(i, j)*dk_d%s(%s);'%(self.num_shared_params+i*self.output_dim, theta.name, reverse_arg_string) for i, theta in enumerate(self._sp_theta_i)]
-            grad_func_list += ([' '*16 + 'TARGET1(%i) += PARTIAL2(i, j)*dk_d%s(%s);'%(i,theta.name,arg_string) for i,theta in  enumerate(self._sp_theta)])
-            grad_func_string = '\n'.join(grad_func_list) 
+                for i, theta in enumerate(self._sp_theta_i):
+                    grad_func_list = [' '*26 + 'TARGET1(ii) += PARTIAL2(i, j)*dk_d%s(%s);'%(theta.name, arg_string)]
+                    grad_func_list += [' '*26 + 'TARGET1(jj) += PARTIAL2(i, j)*dk_d%s(%s);'%(theta.name, reverse_arg_string)]
+                    grad_func_list = c_define_output_indices+grad_func_list
 
-            self._dK_dtheta_code =\
-            """
-            // _dK_dtheta_code
-            // Code for computing gradient of covariance with respect to parameters.
-            int i;
-            int j;
-            int n = partial_array->dimensions[0];
-            int num_inducing = partial_array->dimensions[1];
-            int input_dim = X_array->dimensions[1];
-            //#pragma omp parallel for private(j)
-            for (i=0;i<n;i++){
-                for (j=0;j<num_inducing;j++){
+                    grad_func_string = '\n'.join(grad_func_list) 
+                    self._code['dK_d' + theta.name] =\
+                      """
+                      int i;
+                      int j;
+                      int n = partial_array->dimensions[0];
+                      int num_inducing = partial_array->dimensions[1];
+                      int input_dim = X_array->dimensions[1];
+                      //#pragma omp parallel for private(j)
+                      for (i=0;i<n;i++){
+                        for (j=0;j<num_inducing;j++){
+%s
+                        }
+                      }
+                      %s
+                      """%(grad_func_string,"/*"+str(self._sp_k)+"*/") # adding a string representation forces recompile when needed
+                    self._code['dK_d' +theta.name + '_X'] = self._code['dK_d' + theta.name].replace('Z2(', 'X2(')
+                    # Code to compute gradients for Kdiag TODO: needs clean up
+                    diag_grad_func_string = re.sub('Z','X',grad_func_string,count=0)
+                    diag_grad_func_string = re.sub('int jj','//int jj',diag_grad_func_string)
+                    diag_grad_func_string = re.sub('j','i',diag_grad_func_string)
+                    diag_grad_func_string = re.sub('PARTIAL2\(i, i\)','PARTIAL(i)',diag_grad_func_string)
+                    self._code['dKdiag_d' + theta.name] =\
+                      """
+                      // _dKdiag_dtheta_code
+                      // Code for computing gradient of diagonal with respect to parameters.
+                      int i;
+                      int n = partial_array->dimensions[0];
+                      int input_dim = X_array->dimensions[1];
+                      for (i=0;i<n;i++){
+                        %s
+                      }
+                      %s
+                      """%(diag_grad_func_string,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
+
+            for i, theta in enumerate(self._sp_theta):
+                grad_func_list = [' '*26 + 'TARGET1(%i) += PARTIAL2(i, j)*dk_d%s(%s);'%(i,theta.name,arg_string)]
+                grad_func_string = '\n'.join(grad_func_list) 
+
+                self._code['dK_d' + theta.name] =\
+                  """
+                  // _dK_dtheta_code
+                  // Code for computing gradient of covariance with respect to parameters.
+                  int i;
+                  int j;
+                  int n = partial_array->dimensions[0];
+                  int num_inducing = partial_array->dimensions[1];
+                  int input_dim = X_array->dimensions[1];
+                  //#pragma omp parallel for private(j)
+                  for (i=0;i<n;i++){
+                    for (j=0;j<num_inducing;j++){
+                      %s
+                    }
+                  }
                   %s
-                }
-            }
-            %s
-            """%(grad_func_string,"/*"+str(self._sp_k)+"*/") # adding a string representation forces recompile when needed
-            self._dK_dtheta_code_X = self._dK_dtheta_code.replace('Z2(', 'X2(')
+                  """%(grad_func_string,"/*"+str(self._sp_k)+"*/") # adding a string representation forces recompile when needed
+                self._code['dK_d' + theta.name +'_X'] = self._code['dK_d' + theta.name].replace('Z2(', 'X2(')
+                # Code to compute gradients for Kdiag TODO: needs clean up
+                diag_grad_func_string = re.sub('Z','X',grad_func_string,count=0)
+                diag_grad_func_string = re.sub('int jj','//int jj',diag_grad_func_string)
+                diag_grad_func_string = re.sub('j','i',diag_grad_func_string)
+                diag_grad_func_string = re.sub('PARTIAL2\(i, i\)','PARTIAL(i)',diag_grad_func_string)
+                self._code['dKdiag_d' + theta.name] =\
+                   """
+                   // _dKdiag_dtheta_code
+                   // Code for computing gradient of diagonal with respect to parameters.
+                   int i;
+                   int n = partial_array->dimensions[0];
+                   int input_dim = X_array->dimensions[1];
+                   for (i=0;i<n;i++){
+                     %s
+                   }
+                   %s
+                   """%(diag_grad_func_string,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
 
-            # Code to compute gradients for Kdiag TODO: needs clean up
-            diag_grad_func_string = re.sub('Z','X',grad_func_string,count=0)
-            diag_grad_func_string = re.sub('int jj','//int jj',diag_grad_func_string)
-            diag_grad_func_string = re.sub('j','i',diag_grad_func_string)
-            diag_grad_func_string = re.sub('partial\[i\*num_inducing\+i\]','partial[i]',diag_grad_func_string)
-            self._dKdiag_dtheta_code =\
-            """
-            // _dKdiag_dtheta_code
-            // Code for computing gradient of diagonal with respect to parameters.
-            int i;
-            int n = partial_array->dimensions[0];
-            int input_dim = X_array->dimensions[1];
-            for (i=0;i<n;i++){
-                    %s
-            }
-            %s
-            """%(diag_grad_func_string,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
 
             # Code for gradients wrt X, TODO: may need to deal with special case where one input is actually an output.
             gradX_func_list = []
@@ -335,7 +376,7 @@ class spkern(Kernpart):
             gradX_func_list += ["TARGET2(i, %i) += partial[i*num_inducing+j]*dk_dx_%i(%s);"%(q,q,arg_string) for q in range(self._real_input_dim)]
             gradX_func_string = "\n".join(gradX_func_list)
 
-            self._dK_dX_code = \
+            self._code['dK_dX'] = \
             """
             // _dK_dX_code
             // Code for computing gradient of covariance with respect to inputs.
@@ -352,7 +393,7 @@ class spkern(Kernpart):
             }
             %s
             """%(gradX_func_string,"/*"+str(self._sp_k)+"*/") #adding a string representation forces recompile when needed
-            self._dK_dX_code_X = self._dK_dX_code.replace('Z2(', 'X2(')
+            self._code['dK_dX_X'] = self._code['dK_dX'].replace('Z2(', 'X2(')
 
 
             diag_gradX_func_string = re.sub('Z','X',gradX_func_string,count=0)
@@ -361,7 +402,7 @@ class spkern(Kernpart):
             diag_gradX_func_string = re.sub('PARTIAL2\(i\, i\)','2*PARTIAL(i)',diag_gradX_func_string)
 
             # Code for gradients of Kdiag wrt X
-            self._dKdiag_dX_code= \
+            self._code['dKdiag_dX'] = \
             """
             // _dKdiag_dX_code
             // Code for computing gradient of diagonal with respect to inputs.
@@ -375,7 +416,6 @@ class spkern(Kernpart):
             # string representation forces recompile when needed Get rid
             # of Zs in argument for diagonal. TODO: Why wasn't
             # diag_func_string called here? Need to check that.
-            #self._dKdiag_dX_code = self._dKdiag_dX_code.replace('Z[j', 'X[i')
 
             
 
@@ -417,31 +457,31 @@ class spkern(Kernpart):
 
     def K(self,X,Z,target):        
         if Z is None:
-            self._generate_inline(self._K_code_X, X, target)
+            self._generate_inline(self._code['K_X'], X, target)
         else:
-            self._generate_inline(self._K_code, X, target, Z)
+            self._generate_inline(self._code['K'], X, target, Z)
 
 
     def Kdiag(self,X,target):
-        self._generate_inline(self._Kdiag_code, X, target)
+        self._generate_inline(self._code['Kdiag'], X, target)
 
     def _param_grad_helper(self,partial,X,Z,target):
         if Z is None:
-            self._generate_inline(self._dK_dtheta_code_X, X, target, Z, partial)
+            self._generate_inline(self._code['dK_dtheta_X'], X, target, Z, partial)
         else:
-            self._generate_inline(self._dK_dtheta_code, X, target, Z, partial)
+            self._generate_inline(self._code['dK_dtheta'], X, target, Z, partial)
 
     def dKdiag_dtheta(self,partial,X,target):
-        self._generate_inline(self._dKdiag_dtheta_code, X, target, Z=None, partial=partial).namelocals()[shared_params.name] = getattr(self, shared_params.name)
+        self._generate_inline(self._code['dKdiag_dtheta'], X, target, Z=None, partial=partial).namelocals()[shared_params.name] = getattr(self, shared_params.name)
                
     def gradients_X(self,partial,X,Z,target):
         if Z is None:
-            self._generate_inline(self._dK_dX_code_X, X, target, Z, partial)
+            self._generate_inline(self._code['dK_dX_X'], X, target, Z, partial)
         else:
-            self._generate_inline(self._dK_dX_code, X, target, Z, partial)
+            self._generate_inline(self._code['dK_dX'], X, target, Z, partial)
 
     def dKdiag_dX(self,partial,X,target):
-        self._generate_inline(self._dKdiag_dX_code, X, target, Z, partial)
+        self._generate_inline(self._code['dKdiag_dX'], X, target, Z, partial)
 
     def compute_psi_stats(self):
         #define some normal distributions
@@ -481,37 +521,37 @@ class spkern(Kernpart):
         self._K_computations(X, None)
         for shared_params in self._sp_theta:
             parameter = getattr(self, shared_params.name)
-            code = getattr(self, '_dK_d' + shared_params.name + '_code')
+            code = self._code['dK_d' + shared_params.name]
             setattr(parameter, 'gradient', self._generate_inline(code, X, target=None, Z=None, partial=dL_dK))
             
         for split_params in self._split_theta_names:
             parameter = getattr(self, split_params.name)
-            code = getattr(self, '_dK_d' + split_params.name + '_code')
+            code = self._code['dK_d' + split_params.name]
             setattr(parameter, 'gradient', self._generate_inline(code, X, target=None, Z=None, partial=dL_dK))
-
-
-    def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
-        #contributions from Kdiag
-        self.variance.gradient = np.sum(dL_dKdiag)
-
-        #from Knm
-        self._K_computations(X, Z)
-        self.variance.gradient += np.sum(dL_dKnm * self._K_dvar)
-        if self.ARD:
-            self.lengthscale.gradient = self._dL_dlengthscales_via_K(dL_dKnm, X, Z)
-
-        else:
-            self.lengthscale.gradient = (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKnm)
-
-        #from Kmm
-        self._K_computations(Z, None)
-        self.variance.gradient += np.sum(dL_dKmm * self._K_dvar)
-        if self.ARD:
-            self.lengthscale.gradient += self._dL_dlengthscales_via_K(dL_dKmm, Z, None)
-        else:
-            self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
-
     
+
+    # def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
+    #     #contributions from Kdiag
+    #     self.variance.gradient = np.sum(dL_dKdiag)
+        
+    #     #from Knm
+    #     self._K_computations(X, Z)
+    #     self.variance.gradient += np.sum(dL_dKnm * self._K_dvar)
+    #     if self.ARD:
+    #         self.lengthscale.gradient = self._dL_dlengthscales_via_K(dL_dKnm, X, Z)
+            
+    #     else:
+    #         self.lengthscale.gradient = (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKnm)
+            
+    #     #from Kmm
+    #     self._K_computations(Z, None)
+    #     self.variance.gradient += np.sum(dL_dKmm * self._K_dvar)
+    #     if self.ARD:
+    #         self.lengthscale.gradient += self._dL_dlengthscales_via_K(dL_dKmm, Z, None)
+    #     else:
+    #         self.lengthscale.gradient += (self.variance / self.lengthscale) * np.sum(self._K_dvar * self._K_dist2 * dL_dKmm)
+            
+            
     #---------------------------------------#
     #            Precomputations            #
     #---------------------------------------#

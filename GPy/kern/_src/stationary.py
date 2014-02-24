@@ -162,6 +162,8 @@ class Matern52(Stationary):
 
        k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r) \ \ \ \ \  \\text{ where  } r = \sqrt{\sum_{i=1}^input_dim \\frac{(x_i-y_i)^2}{\ell_i^2} }
        """
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='Mat52'):
+        super(Matern52, self).__init__(input_dim, variance, lengthscale, ARD, name)
 
     def K_of_r(self, r):
         return self.variance*(1+np.sqrt(5.)*r+5./3*r**2)*np.exp(-np.sqrt(5.)*r)

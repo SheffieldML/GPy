@@ -75,7 +75,7 @@ def jitchol(A, maxtries=5):
             raise linalg.LinAlgError, "not pd: non-positive diagonal elements"
         jitter = diagA.mean() * 1e-6
 
-        return jitchol(A+np.eye(A.shape[0])*jitter, maxtries-1)
+        return jitchol(A + np.eye(A.shape[0])*jitter, maxtries-1)
 
 #def jitchol(A, maxtries=5):
 #    A = np.ascontiguousarray(A)

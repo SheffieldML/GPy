@@ -61,16 +61,20 @@ class Kern(Parameterized):
     def gradients_q_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
         raise NotImplementedError
     
-    def plot_ARD(self, *args):
-        """If an ARD kernel is present, plot a bar representation using matplotlib
-
-        See GPy.plotting.matplot_dep.plot_ARD
-        """
+    def plot_ARD(self, *args, **kw):
+        if "matplotlib" in sys.modules:
+            from ...plotting.matplot_dep import kernel_plots
+            self.plot_ARD.__doc__ += kernel_plots.plot_ARD.__doc__
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ...plotting.matplot_dep import kernel_plots
-        return kernel_plots.plot_ARD(self,*args)
-
-
+        return kernel_plots.plot_ARD(self,*args,**kw)
+    
+    def input_sensitivity(self):
+        """
+        Returns the sensitivity for each dimension of this kernel.
+        """
+        return np.zeros(self.input_dim)
+    
     def __add__(self, other):
         """ Overloading of the '+' operator. for more control, see self.add """
         return self.add(other)

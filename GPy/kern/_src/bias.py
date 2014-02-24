@@ -28,12 +28,12 @@ class Bias(Kern):
         self.variance.gradient = dL_dK.sum()
 
     def update_gradients_diag(self, dL_dKdiag, X):
-        self.variance.gradient = dL_dK.sum()
+        self.variance.gradient = dL_dKdiag.sum()
 
-    def gradients_X(self, dL_dK,X, X2, target):
+    def gradients_X(self, dL_dK,X, X2):
         return np.zeros(X.shape)
 
-    def gradients_X_diag(self,dL_dKdiag,X,target):
+    def gradients_X_diag(self,dL_dKdiag,X):
         return np.zeros(X.shape)
 
 

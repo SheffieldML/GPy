@@ -10,7 +10,7 @@ from ..inference.optimization import SCG
 from ..util import linalg
 from ..core.parameterization.variational import NormalPosterior, NormalPrior
 
-class BayesianGPLVM(SparseGP, GPLVM):
+class BayesianGPLVM(SparseGP):
     """
     Bayesian Gaussian Process Latent Variable Model
 
@@ -25,7 +25,8 @@ class BayesianGPLVM(SparseGP, GPLVM):
     def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
                  Z=None, kernel=None, inference_method=None, likelihood=None, name='bayesian gplvm', **kwargs):
         if X == None:
-            X = self.initialise_latent(init, input_dim, Y)
+            from ..util.initialization import initialize_latent
+            X = initialize_latent(init, input_dim, Y)
         self.init = init
 
         if X_variance is None:

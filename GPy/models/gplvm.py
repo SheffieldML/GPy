@@ -28,28 +28,20 @@ class GPLVM(GP):
         :type init: 'PCA'|'random'
         """
         if X is None:
-            X = self.initialise_latent(init, input_dim, Y)
+            from ..util.initialization import initialize_latent
+            X = initialize_latent(init, input_dim, Y)
         if kernel is None:
-            kernel = kern.rbf(input_dim, ARD=input_dim > 1) + kern.bias(input_dim, np.exp(-2))
+            kernel = kern.RBF(input_dim, ARD=input_dim > 1) + kern.Bias(input_dim, np.exp(-2))
 
         likelihood = Gaussian()
 
         super(GPLVM, self).__init__(X, Y, kernel, likelihood, name='GPLVM')
-        self.X = Param('X', X)
+        self.X = Param('latent_mean', X)
         self.add_parameter(self.X, index=0)
 
-    def initialise_latent(self, init, input_dim, Y):
-        Xr = np.random.randn(Y.shape[0], input_dim)
-        if init == 'PCA':
-            PC = PCA(Y, input_dim)[0]
-            Xr[:PC.shape[0], :PC.shape[1]] = PC
-        else:
-            pass
-        return Xr
-
     def parameters_changed(self):
-        GP.parameters_changed(self)
-        self.X.gradient = self.kern.gradients_X(self.posterior.dL_dK, self.X)
+        super(GPLVM, self).parameters_changed()
+        self.X.gradient = self.kern.gradients_X(self._dL_dK, self.X, None)
 
     def _getstate(self):
         return GP._getstate(self)
@@ -79,7 +71,8 @@ class GPLVM(GP):
         pb.plot(mu[:, 0], mu[:, 1], 'k', linewidth=1.5)
 
     def plot_latent(self, *args, **kwargs):
-        return util.plot_latent.plot_latent(self, *args, **kwargs)
+        from ..plotting.matplot_dep import dim_reduction_plots
 
+        return dim_reduction_plots.plot_latent(self, *args, **kwargs)
     def plot_magnification(self, *args, **kwargs):
         return util.plot_latent.plot_magnification(self, *args, **kwargs)

@@ -382,3 +382,7 @@ class RBF(Kern):
                      type_converters=weave.converters.blitz, **self.weave_options)
 
         return mudist, mudist_sq, psi2_exponent, psi2
+
+    def input_sensitivity(self):
+        if self.ARD: return 1./self.lengthscale
+        else: return (1./self.lengthscale).repeat(self.input_dim)

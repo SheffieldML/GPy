@@ -13,6 +13,7 @@ import classification
 import subarray_and_sorting
 import caching
 import diag
+import initialization
 
 try:
     import sympy

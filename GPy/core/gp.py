@@ -11,6 +11,7 @@ from parameterization import ObservableArray
 from .. import likelihoods
 from ..likelihoods.gaussian import Gaussian
 from ..inference.latent_function_inference import exact_gaussian_inference
+from parameterization.variational import VariationalPosterior
 
 class GP(Model):
     """
@@ -30,7 +31,10 @@ class GP(Model):
         super(GP, self).__init__(name)
 
         assert X.ndim == 2
-        self.X = ObservableArray(X)
+        if isinstance(X, ObservableArray) or isinstance(X, VariationalPosterior):
+            self.X = X
+        else: self.X = ObservableArray(X)
+
         self.num_data, self.input_dim = self.X.shape
 
         assert Y.ndim == 2

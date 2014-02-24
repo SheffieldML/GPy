@@ -42,10 +42,6 @@ class Prod(Kern):
         self.k1.update_gradients_full(dL_dK*self.k2(X[:,self.slice2]), X[:,self.slice1])
         self.k2.update_gradients_full(dL_dK*self.k1(X[:,self.slice1]), X[:,self.slice2])
 
-    def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
-        self.k1.update_gradients_sparse(dL_dKmm * self.k2.K(Z[:,self.slice2]), dL_dKnm * self.k2(X[:,self.slice2], Z[:,self.slice2]), dL_dKdiag * self.k2.Kdiag(X[:,self.slice2]), X[:,self.slice1], Z[:,self.slice1] )
-        self.k2.update_gradients_sparse(dL_dKmm * self.k1.K(Z[:,self.slice1]), dL_dKnm * self.k1(X[:,self.slice1], Z[:,self.slice1]), dL_dKdiag * self.k1.Kdiag(X[:,self.slice1]), X[:,self.slice2], Z[:,self.slice2] )
-
     def gradients_X(self, dL_dK, X, X2=None):
         target = np.zeros(X.shape)
         if X2 is None:

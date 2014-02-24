@@ -20,7 +20,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
       - In higher dimensions, use fixed_inputs to plot the GP  with some of the inputs fixed.
 
     Can plot only part of the data and part of the posterior functions
-    using which_data_rowsm which_data_ycols. 
+    using which_data_rowsm which_data_ycols.
 
     :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
     :type plot_limits: np.array
@@ -56,10 +56,12 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     if ax is None:
         fig = pb.figure(num=fignum)
         ax = fig.add_subplot(111)
-    
+
     X, Y = param_to_array(model.X, model.Y)
-    if model.has_uncertain_inputs(): X_variance = model.X_variance
-    
+    if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs(): X_variance = model.X_variance
+
+    if hasattr(model, 'Z'): Z = param_to_array(model.Z)
+
     #work out what the inputs are for plotting (1D or 2D)
     fixed_dims = np.array([i for i,v in fixed_inputs])
     free_dims = np.setdiff1d(np.arange(model.input_dim),fixed_dims)
@@ -68,8 +70,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     if len(free_dims) == 1:
 
         #define the frame on which to plot
-        resolution = resolution or 200
-        Xnew, xmin, xmax = x_frame1D(X[:,free_dims], plot_limits=plot_limits)
+        Xnew, xmin, xmax = x_frame1D(X[:,free_dims], plot_limits=plot_limits, resolution=resolution or 200)
         Xgrid = np.empty((Xnew.shape[0],model.input_dim))
         Xgrid[:,free_dims] = Xnew
         for i,v in fixed_inputs:
@@ -95,12 +96,12 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
                 ax.plot(Xnew, yi[:,None], Tango.colorsHex['darkBlue'], linewidth=0.25)
                 #ax.plot(Xnew, yi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.
 
-        
+
         #add error bars for uncertain (if input uncertainty is being modelled)
-        if hasattr(model,"has_uncertain_inputs") and model.has_uncertain_inputs():
-            ax.errorbar(X[which_data_rows, free_dims].flatten(), Y[which_data_rows, which_data_ycols].flatten(),
-                        xerr=2 * np.sqrt(X_variance[which_data_rows, free_dims].flatten()),
-                        ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
+        #if hasattr(model,"has_uncertain_inputs") and model.has_uncertain_inputs():
+        #    ax.errorbar(X[which_data_rows, free_dims].flatten(), Y[which_data_rows, which_data_ycols].flatten(),
+        #                xerr=2 * np.sqrt(X_variance[which_data_rows, free_dims].flatten()),
+        #                ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
 
 
         #set the limits of the plot to some sensible values
@@ -112,7 +113,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         #add inducing inputs (if a sparse model is used)
         if hasattr(model,"Z"):
             #Zu = model.Z[:,free_dims] * model._Xscale[:,free_dims] + model._Xoffset[:,free_dims]
-            Zu = param_to_array(model.Z[:,free_dims])
+            Zu = Z[:,free_dims]
             z_height = ax.get_ylim()[0]
             ax.plot(Zu, np.zeros_like(Zu) + z_height, 'r|', mew=1.5, markersize=12)
 
@@ -136,7 +137,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
             Y = Y
         else:
             m, _, _, _ = model.predict(Xgrid)
-            Y = model.data
+            Y = Y
         for d in which_data_ycols:
             m_d = m[:,d].reshape(resolution, resolution).T
             ax.contour(x, y, m_d, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
@@ -152,7 +153,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         #add inducing inputs (if a sparse model is used)
         if hasattr(model,"Z"):
             #Zu = model.Z[:,free_dims] * model._Xscale[:,free_dims] + model._Xoffset[:,free_dims]
-            Zu = model.Z[:,free_dims]
+            Zu = Z[:,free_dims]
             ax.plot(Zu[:,free_dims[0]], Zu[:,free_dims[1]], 'wo')
 
     else:

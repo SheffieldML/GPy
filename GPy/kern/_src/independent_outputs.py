@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kernpart import Kernpart
+from kern import Kern
 import numpy as np
 
 def index_to_slices(index):
@@ -31,67 +31,130 @@ def index_to_slices(index):
     [ret[ind_i].append(slice(*indexes_i)) for ind_i,indexes_i in zip(ind[switchpoints[:-1]],zip(switchpoints,switchpoints[1:]))]
     return ret
 
-class IndependentOutputs(Kernpart):
+class IndependentOutputs(Kern):
     """
-    A kernel part shich can reopresent several independent functions.
+    A kernel which can reopresent several independent functions.
     this kernel 'switches off' parts of the matrix where the output indexes are different.
 
     The index of the functions is given by the last column in the input X
-    the rest of the columns of X are passed to the kernel for computation (in blocks).
+    the rest of the columns of X are passed to the underlying kernel for computation (in blocks).
 
     """
-    def __init__(self,k):
-        self.input_dim = k.input_dim + 1
-        self.num_params = k.num_params
-        self.name = 'iops('+ k.name + ')'
-        self.k = k
+    def __init__(self, kern, name='independ'):
+        super(IndependentOutputs, self).__init__(kern.input_dim+1, name)
+        self.kern = kern
+        self.add_parameters(self.kern)
 
-    def _get_params(self):
-        return self.k._get_params()
+    def K(self,X ,X2=None):
+        X, slices = X[:,:-1], index_to_slices(X[:,-1])
+        if X2 is None:
+            target = np.zeros((X.shape[0], X.shape[0]))
+            [[np.copyto(target[s,s], self.kern.K(X[s], None)) for s in slices_i] for slices_i in slices]
+        else:
+            X2, slices2 = X2[:,:-1],index_to_slices(X2[:,-1])
+            target = np.zeros((X.shape[0], X2.shape[0]))
+            [[[np.copyto(target[s, s2], self.kern.K(X[s],X2[s2])) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
+        return target
 
-    def _set_params(self,x):
-        self.k._set_params(x)
-        self.params = x
+    def Kdiag(self,X):
+        X, slices = X[:,:-1], index_to_slices(X[:,-1])
+        target = np.zeros(X.shape[0])
+        [[np.copyto(target[s], self.kern.Kdiag(X[s])) for s in slices_i] for slices_i in slices]
+        return target
 
-    def _get_param_names(self):
-        return self.k._get_param_names()
+    def update_gradients_full(self,dL_dK,X,X2=None):
+        target = np.zeros(self.kern.size)
+        def collate_grads(dL, X, X2):
+            self.kern.update_gradients_full(dL,X,X2)
+            self.kern._collect_gradient(target)
 
-    def K(self,X,X2,target):
-        #Sort out the slices from the input data
         X,slices = X[:,:-1],index_to_slices(X[:,-1])
         if X2 is None:
-            X2,slices2 = X,slices
+            [[collate_grads(dL_dK[s,s], X[s], None) for s in slices_i] for slices_i in slices]
+        else:
+            X2, slices2 = X2[:,:-1], index_to_slices(X2[:,-1])
+            [[[collate_grads(dL_dK[s,s2],X[s],X2[s2]) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
+
+        self.kern._set_gradient(target)
+
+    def gradients_X(self,dL_dK, X, X2=None):
+        target = np.zeros_like(X)
+        X, slices = X[:,:-1],index_to_slices(X[:,-1])
+        if X2 is None:
+            [[np.copyto(target[s,:-1], self.kern.gradients_X(dL_dK[s,s],X[s],None)) for s in slices_i] for slices_i in slices]
         else:
             X2,slices2 = X2[:,:-1],index_to_slices(X2[:,-1])
+            [[[np.copyto(target[s,:-1], self.kern.gradients_X(dL_dK[s,s2], X[s], X2[s2])) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
+        return target
 
-        [[[self.k.K(X[s],X2[s2],target[s,s2]) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
+    def gradients_X_diag(self, dL_dKdiag, X):
+        X, slices = X[:,:-1], index_to_slices(X[:,-1])
+        target = np.zeros(X.shape)
+        [[np.copyto(target[s,:-1], self.kern.gradients_X_diag(dL_dKdiag[s],X[s])) for s in slices_i] for slices_i in slices]
+        return target
 
-    def Kdiag(self,X,target):
+    def update_gradients_diag(self,dL_dKdiag,X,target):
+        target = np.zeros(self.kern.size)
+        def collate_grads(dL, X):
+            self.kern.update_gradients_diag(dL,X)
+            self.kern._collect_gradient(target)
         X,slices = X[:,:-1],index_to_slices(X[:,-1])
-        [[self.k.Kdiag(X[s],target[s]) for s in slices_i] for slices_i in slices]
+        [[collate_grads(dL_dKdiag[s], X[s,:]) for s in slices_i] for slices_i in slices]
+        self.kern._set_gradient(target)
 
-    def _param_grad_helper(self,dL_dK,X,X2,target):
+class Hierarchical(Kern):
+    """
+    A kernel which can reopresent a simple hierarchical model.
+
+    See Hensman et al 2013, "Hierarchical Bayesian modelling of gene expression time
+    series across irregularly sampled replicates and clusters"
+    http://www.biomedcentral.com/1471-2105/14/252
+
+    The index of the functions is given by additional columns in the input X.
+
+    """
+    def __init__(self, kerns, name='hierarchy'):
+        assert all([k.input_dim==kerns[0].input_dim for k in kerns])
+        super(Hierarchical, self).__init__(kerns[0].input_dim + len(kerns) - 1, name)
+        self.kerns = kerns
+        self.add_parameters(self.kerns)
+
+    def K(self,X ,X2=None):
+        X, slices = X[:,:-self.levels], [index_to_slices(X[:,i]) for i in range(self.kerns[0].input_dim, self.input_dim)]
+        K = self.kerns[0].K(X, X2)
+        if X2 is None:
+            [[[np.copyto(K[s,s], k.K(X[s], None)) for s in slices_i] for slices_i in slices_k] for k, slices_k in zip(self.kerns[1:], slices)]
+        else:
+            X2, slices2 = X2[:,:-1],index_to_slices(X2[:,-1])
+            [[[[np.copyto(K[s, s2], self.kern.K(X[s],X2[s2])) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices_k,slices_k2)] for k, slices_k, slices_k2 in zip(self.kerns[1:], slices, slices2)]
+        return target
+
+    def Kdiag(self,X):
+        X, slices = X[:,:-self.levels], [index_to_slices(X[:,i]) for i in range(self.kerns[0].input_dim, self.input_dim)]
+        K = self.kerns[0].K(X, X2)
+        [[[np.copyto(target[s], self.kern.Kdiag(X[s])) for s in slices_i] for slices_i in slices_k] for k, slices_k in zip(self.kerns[1:], slices)]
+        return target
+
+    def update_gradients_full(self,dL_dK,X,X2=None):
         X,slices = X[:,:-1],index_to_slices(X[:,-1])
         if X2 is None:
-            X2,slices2 = X,slices
+            self.kerns[0].update_gradients_full(dL_dK, X, None)
+            for k, slices_k in zip(self.kerns[1:], slices):
+                target = np.zeros(k.size)
+                def collate_grads(dL, X, X2):
+                    k.update_gradients_full(dL,X,X2)
+                    k._collect_gradient(target)
+                [[k.update_gradients_full(dL_dK[s,s], X[s], None) for s in slices_i] for slices_i in slices_k]
+                k._set_gradient(target)
         else:
-            X2,slices2 = X2[:,:-1],index_to_slices(X2[:,-1])
-        [[[self.k._param_grad_helper(dL_dK[s,s2],X[s],X2[s2],target) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
+            X2, slices2 = X2[:,:-1], index_to_slices(X2[:,-1])
+            self.kerns[0].update_gradients_full(dL_dK, X, None)
+            for k, slices_k in zip(self.kerns[1:], slices):
+                target = np.zeros(k.size)
+                def collate_grads(dL, X, X2):
+                    k.update_gradients_full(dL,X,X2)
+                    k._collect_gradient(target)
+                [[[collate_grads(dL_dK[s,s2],X[s],X2[s2]) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
+                k._set_gradient(target)
 
 
-    def gradients_X(self,dL_dK,X,X2,target):
-        X,slices = X[:,:-1],index_to_slices(X[:,-1])
-        if X2 is None:
-            X2,slices2 = X,slices
-        else:
-            X2,slices2 = X2[:,:-1],index_to_slices(X2[:,-1])
-        [[[self.k.gradients_X(dL_dK[s,s2],X[s],X2[s2],target[s,:-1]) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
-
-    def dKdiag_dX(self,dL_dKdiag,X,target):
-        X,slices = X[:,:-1],index_to_slices(X[:,-1])
-        [[self.k.dKdiag_dX(dL_dKdiag[s],X[s],target[s,:-1]) for s in slices_i] for slices_i in slices]
-
-
-    def dKdiag_dtheta(self,dL_dKdiag,X,target):
-        X,slices = X[:,:-1],index_to_slices(X[:,-1])
-        [[self.k.dKdiag_dX(dL_dKdiag[s],X[s],target) for s in slices_i] for slices_i in slices]

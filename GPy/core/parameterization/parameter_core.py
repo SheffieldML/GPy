@@ -340,6 +340,10 @@ class Parameterizable(Constrainable):
         if add_self: names = map(lambda x: adjust(self.name) + "." + x, names)
         return names
     
+    @property
+    def num_params(self):
+        return len(self._parameters_)
+    
     def _add_parameter_name(self, param):
         pname = adjust_name_for_printing(param.name)
         # and makes sure to not delete programmatically added parameters

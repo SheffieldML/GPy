@@ -26,11 +26,11 @@ class Kern(Parameterized):
         raise NotImplementedError
     def Kdiag(self, Xa):
         raise NotImplementedError
-    def psi0(self,Z,posterior_variational):
+    def psi0(self,Z,variational_posterior):
         raise NotImplementedError
-    def psi1(self,Z,posterior_variational):
+    def psi1(self,Z,variational_posterior):
         raise NotImplementedError
-    def psi2(self,Z,posterior_variational):
+    def psi2(self,Z,variational_posterior):
         raise NotImplementedError
     def gradients_X(self, dL_dK, X, X2):
         raise NotImplementedError
@@ -49,28 +49,32 @@ class Kern(Parameterized):
         self._collect_gradient(target)
         self._set_gradient(target)
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """Set the gradients of all parameters when doing variational (M) inference with uncertain inputs."""
         raise NotImplementedError
     def gradients_Z_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
         grad = self.gradients_X(dL_dKmm, Z)
         grad += self.gradients_X(dL_dKnm.T, Z, X)
         return grad
-    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
+    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         raise NotImplementedError
-    def gradients_q_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
+    def gradients_q_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         raise NotImplementedError
     
-    def plot_ARD(self, *args):
-        """If an ARD kernel is present, plot a bar representation using matplotlib
-
-        See GPy.plotting.matplot_dep.plot_ARD
-        """
+    def plot_ARD(self, *args, **kw):
+        if "matplotlib" in sys.modules:
+            from ...plotting.matplot_dep import kernel_plots
+            self.plot_ARD.__doc__ += kernel_plots.plot_ARD.__doc__
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ...plotting.matplot_dep import kernel_plots
-        return kernel_plots.plot_ARD(self,*args)
-
-
+        return kernel_plots.plot_ARD(self,*args,**kw)
+    
+    def input_sensitivity(self):
+        """
+        Returns the sensitivity for each dimension of this kernel.
+        """
+        return np.zeros(self.input_dim)
+    
     def __add__(self, other):
         """ Overloading of the '+' operator. for more control, see self.add """
         return self.add(other)
@@ -101,7 +105,7 @@ class Kern(Parameterized):
         """ Here we overload the '*' operator. See self.prod for more information"""
         return self.prod(other)
 
-    def __pow__(self, other, tensor=False):
+    def __pow__(self, other):
         """
         Shortcut for tensor `prod`.
         """
@@ -127,11 +131,12 @@ from GPy.core.model import Model
 class Kern_check_model(Model):
     """This is a dummy model class used as a base class for checking that the gradients of a given kernel are implemented correctly. It enables checkgrad() to be called independently on a kernel."""
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
+        from GPy.kern import RBF
         Model.__init__(self, 'kernel_test_model')
         num_samples = 20
         num_samples2 = 10
         if kernel==None:
-            kernel = GPy.kern.rbf(1)
+            kernel = RBF(1)
         if X==None:
             X = np.random.randn(num_samples, kernel.input_dim)
         if dL_dK==None:

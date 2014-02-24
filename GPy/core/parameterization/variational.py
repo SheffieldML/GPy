@@ -35,6 +35,8 @@ class VariationalPosterior(Parameterized):
     def __init__(self, means=None, variances=None, name=None, **kw):
         super(VariationalPosterior, self).__init__(name=name, **kw)
         self.mean = Param("mean", means)
+        self.ndim = self.mean.ndim
+        self.shape = self.mean.shape
         self.variance = Param("variance", variances, Logexp())
         self.add_parameters(self.mean, self.variance)
         self.num_data, self.input_dim = self.mean.shape

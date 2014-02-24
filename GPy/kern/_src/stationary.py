@@ -206,9 +206,19 @@ class ExpQuad(Stationary):
         return -dist*self.K(X, X2)
 
 class RatQuad(Stationary):
+    """
+    Rational Quadratic Kernel
+
+    .. math::
+
+       k(r) = \sigma^2 \\bigg( 1 + \\frac{r^2}{2} \\bigg)^{- \\alpha}
+
+    """
+
+
     def __init__(self, input_dim, variance=1., lengthscale=None, power=2., ARD=False, name='ExpQuad'):
         super(RatQuad, self).__init__(input_dim, variance, lengthscale, ARD, name)
-        self.power = Param('power', power, Logexp)
+        self.power = Param('power', power, Logexp())
         self.add_parameters(self.power)
 
     def K(self, X, X2=None):

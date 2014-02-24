@@ -20,7 +20,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
       - In higher dimensions, use fixed_inputs to plot the GP  with some of the inputs fixed.
 
     Can plot only part of the data and part of the posterior functions
-    using which_data_rowsm which_data_ycols. 
+    using which_data_rowsm which_data_ycols.
 
     :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
     :type plot_limits: np.array
@@ -56,10 +56,10 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     if ax is None:
         fig = pb.figure(num=fignum)
         ax = fig.add_subplot(111)
-    
+
     X, Y = param_to_array(model.X, model.Y)
-    if model.has_uncertain_inputs(): X_variance = model.X_variance
-    
+    if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs(): X_variance = model.X_variance
+
     #work out what the inputs are for plotting (1D or 2D)
     fixed_dims = np.array([i for i,v in fixed_inputs])
     free_dims = np.setdiff1d(np.arange(model.input_dim),fixed_dims)
@@ -95,7 +95,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
                 ax.plot(Xnew, yi[:,None], Tango.colorsHex['darkBlue'], linewidth=0.25)
                 #ax.plot(Xnew, yi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.
 
-        
+
         #add error bars for uncertain (if input uncertainty is being modelled)
         if hasattr(model,"has_uncertain_inputs") and model.has_uncertain_inputs():
             ax.errorbar(X[which_data_rows, free_dims].flatten(), Y[which_data_rows, which_data_ycols].flatten(),

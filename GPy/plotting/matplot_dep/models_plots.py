@@ -57,8 +57,8 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         fig = pb.figure(num=fignum)
         ax = fig.add_subplot(111)
     
-    X, Y = param_to_array(model.X, model.Y)
-    if model.has_uncertain_inputs(): X_variance = model.X_variance
+    X, Y, Z = param_to_array(model.X, model.Y, model.Z)
+    if model.has_uncertain_inputs(): X_variance = param_to_array(model.q.variance)
     
     #work out what the inputs are for plotting (1D or 2D)
     fixed_dims = np.array([i for i,v in fixed_inputs])
@@ -97,10 +97,10 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         
         #add error bars for uncertain (if input uncertainty is being modelled)
-        if hasattr(model,"has_uncertain_inputs") and model.has_uncertain_inputs():
-            ax.errorbar(X[which_data_rows, free_dims].flatten(), Y[which_data_rows, which_data_ycols].flatten(),
-                        xerr=2 * np.sqrt(X_variance[which_data_rows, free_dims].flatten()),
-                        ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
+        #if hasattr(model,"has_uncertain_inputs") and model.has_uncertain_inputs():
+        #    ax.errorbar(X[which_data_rows, free_dims].flatten(), Y[which_data_rows, which_data_ycols].flatten(),
+        #                xerr=2 * np.sqrt(X_variance[which_data_rows, free_dims].flatten()),
+        #                ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
 
 
         #set the limits of the plot to some sensible values
@@ -112,7 +112,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         #add inducing inputs (if a sparse model is used)
         if hasattr(model,"Z"):
             #Zu = model.Z[:,free_dims] * model._Xscale[:,free_dims] + model._Xoffset[:,free_dims]
-            Zu = param_to_array(model.Z[:,free_dims])
+            Zu = Z[:,free_dims]
             z_height = ax.get_ylim()[0]
             ax.plot(Zu, np.zeros_like(Zu) + z_height, 'r|', mew=1.5, markersize=12)
 
@@ -136,7 +136,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
             Y = Y
         else:
             m, _, _, _ = model.predict(Xgrid)
-            Y = model.data
+            Y = Y
         for d in which_data_ycols:
             m_d = m[:,d].reshape(resolution, resolution).T
             ax.contour(x, y, m_d, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
@@ -152,7 +152,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         #add inducing inputs (if a sparse model is used)
         if hasattr(model,"Z"):
             #Zu = model.Z[:,free_dims] * model._Xscale[:,free_dims] + model._Xoffset[:,free_dims]
-            Zu = model.Z[:,free_dims]
+            Zu = Z[:,free_dims]
             ax.plot(Zu[:,free_dims[0]], Zu[:,free_dims[1]], 'wo')
 
     else:

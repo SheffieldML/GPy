@@ -77,13 +77,11 @@ class SparseGP(GP):
             mu = np.dot(Kx.T, self.posterior.woodbury_vector)
             if full_cov:
                 Kxx = self.kern.K(Xnew)
-                var = Kxx - mdot(Kx.T, self.posterior.woodbury_inv, Kx)
+                #var = Kxx - mdot(Kx.T, self.posterior.woodbury_inv, Kx)
+                var = Kxx - np.tensordot(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx).T, Kx, [1,0]).swapaxes(1,2)
             else:
                 Kxx = self.kern.Kdiag(Xnew)
-                WKx_old = np.dot(np.atleast_3d(self.posterior.woodbury_inv)[:,:,0], Kx)
-                WKx = np.tensordot(np.atleast_3d(self.posterior.woodbury_inv), Kx, [0,0])
-                import ipdb;ipdb.set_trace()
-                var = Kxx - np.sum(Kx * WKx, 0)
+                var = (Kxx - np.sum(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx) * Kx[None,:,:], 1)).T
         else:
             Kx = self.kern.psi1(self.Z, Xnew, X_variance_new)
             mu = np.dot(Kx, self.Cpsi1V)
@@ -93,7 +91,7 @@ class SparseGP(GP):
                 Kxx = self.kern.psi0(self.Z, Xnew, X_variance_new)
                 psi2 = self.kern.psi2(self.Z, Xnew, X_variance_new)
                 var = Kxx - np.sum(np.sum(psi2 * Kmmi_LmiBLmi[None, :, :], 1), 1)
-        return mu, var[:,None]
+        return mu, var
 
 
     def _getstate(self):

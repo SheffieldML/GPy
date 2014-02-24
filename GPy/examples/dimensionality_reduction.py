@@ -89,7 +89,7 @@ def sparse_gplvm_oil(optimize=True, verbose=0, plot=True, N=100, Q=6, num_induci
     Y = Y - Y.mean(0)
     Y /= Y.std(0)
     # Create the model
-    kernel = GPy.kern.RBF(Q, ARD=True) + GPy.kern.bias(Q)
+    kernel = GPy.kern.RBF(Q, ARD=True) + GPy.kern.Bias(Q)
     m = GPy.models.SparseGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing)
     m.data_labels = data['Y'][:N].argmax(axis=1)
 
@@ -139,7 +139,7 @@ def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=15, Q=4
                                          (1 - var))) + .001
     Z = _np.random.permutation(X)[:num_inducing]
 
-    kernel = GPy.kern.RBF(Q, ARD=True) + GPy.kern.bias(Q, _np.exp(-2)) + GPy.kern.white(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF(Q, ARD=True) + GPy.kern.Bias(Q, _np.exp(-2)) + GPy.kern.White(Q, _np.exp(-2))
 
     m = BayesianGPLVM(Y, Q, X=X, X_variance=S, num_inducing=num_inducing, Z=Z, kernel=kernel)
     m.data_colors = c
@@ -159,28 +159,26 @@ def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=15, Q=4
 
 def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40, max_iters=1000, **k):
     import GPy
-    from GPy.likelihoods import Gaussian
     from matplotlib import pyplot as plt
 
     _np.random.seed(0)
     data = GPy.util.datasets.oil()
 
-    kernel = GPy.kern.RBF_inv(Q, 1., [.1] * Q, ARD=True) + GPy.kern.bias(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF(Q, 1., [.1] * Q, ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
     Y = data['X'][:N]
-    Yn = Gaussian(Y, normalize=True)
-    m = GPy.models.BayesianGPLVM(Yn, Q, kernel=kernel, num_inducing=num_inducing, **k)
+    m = GPy.models.BayesianGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing, **k)
     m.data_labels = data['Y'][:N].argmax(axis=1)
-    m['noise'] = Yn.Y.var() / 100.
+    m['.*noise.var'] = Y.var() / 100.
 
     if optimize:
         m.optimize('scg', messages=verbose, max_iters=max_iters, gtol=.05)
 
     if plot:
-        y = m.likelihood.Y[0, :]
+        y = m.Y[0, :]
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         m.plot_latent(ax=latent_axes)
-        data_show = GPy.util.visualize.vector_show(y)
-        lvm_visualizer = GPy.util.visualize.lvm_dimselect(m.X[0, :], # @UnusedVariable
+        data_show = GPy.plotting.matplot_dep.visualize.vector_show(y)
+        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X[0, :], # @UnusedVariable
             m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
         raw_input('Press enter to finish')
         plt.close(fig)
@@ -190,8 +188,8 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
     _np.random.seed(1234)
     
     x = _np.linspace(0, 4 * _np.pi, N)[:, None]
-    s1 = _np.vectorize(lambda x: -_np.sin(x))
-    s2 = _np.vectorize(lambda x: _np.cos(x))
+    s1 = _np.vectorize(lambda x: -_np.sin(_np.exp(x)))
+    s2 = _np.vectorize(lambda x: _np.cos(x)**2)
     s3 = _np.vectorize(lambda x:-_np.exp(-_np.cos(2 * x)))
     sS = _np.vectorize(lambda x: x*_np.sin(x))
 
@@ -328,7 +326,7 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     likelihood_list = [Gaussian(x, normalize=True) for x in Ylist]
 
-    k = kern.linear(Q, ARD=True) + kern.bias(Q, _np.exp(-2)) + kern.white(Q, _np.exp(-2))
+    k = kern.Linear(Q, ARD=True) + kern.Bias(Q, _np.exp(-2)) + kern.White(Q, _np.exp(-2))
     m = MRD(likelihood_list, input_dim=Q, num_inducing=num_inducing, kernels=k, initx="", initz='permute', **kw)
     m.ensure_default_constraints()
 
@@ -355,15 +353,15 @@ def brendan_faces(optimize=True, verbose=True, plot=True):
     m = GPy.models.GPLVM(Yn, Q)
 
     # optimize
-    m.constrain('rbf|noise|white', GPy.core.transformations.logexp_clipped())
+    m.constrain('rbf|noise|white', GPy.transformations.LogexpClipped())
 
     if optimize: m.optimize('scg', messages=verbose, max_iters=1000)
 
     if plot:
         ax = m.plot_latent(which_indices=(0, 1))
         y = m.likelihood.Y[0, :]
-        data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, order='F', invert=False, scale=False)
-        GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        data_show = GPy.plotting.matplot_dep.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, order='F', invert=False, scale=False)
+        GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
         raw_input('Press enter to finish')
 
     return m
@@ -382,8 +380,8 @@ def olivetti_faces(optimize=True, verbose=True, plot=True):
     if plot:
         ax = m.plot_latent(which_indices=(0, 1))
         y = m.likelihood.Y[0, :]
-        data_show = GPy.util.visualize.image_show(y[None, :], dimensions=(112, 92), transpose=False, invert=False, scale=False)
-        GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        data_show = GPy.plotting.matplot_dep.visualize.image_show(y[None, :], dimensions=(112, 92), transpose=False, invert=False, scale=False)
+        GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
         raw_input('Press enter to finish')
 
     return m
@@ -398,8 +396,8 @@ def stick_play(range=None, frame_rate=15, optimize=False, verbose=True, plot=Tru
         Y = data['Y'][range[0]:range[1], :].copy()
     if plot:
         y = Y[0, :]
-        data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
-        GPy.util.visualize.data_play(Y, data_show, frame_rate)
+        data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data['connect'])
+        GPy.plotting.matplot_dep.visualize.data_play(Y, data_show, frame_rate)
     return Y
 
 def stick(kernel=None, optimize=True, verbose=True, plot=True):
@@ -410,12 +408,12 @@ def stick(kernel=None, optimize=True, verbose=True, plot=True):
     # optimize
     m = GPy.models.GPLVM(data['Y'], 2, kernel=kernel)
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
-    if plot and GPy.util.visualize.visual_available:
+    if plot and GPy.plotting.matplot_dep.visualize.visual_available:
         plt.clf
         ax = m.plot_latent()
         y = m.likelihood.Y[0, :]
-        data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
-        GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data['connect'])
+        GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
         raw_input('Press enter to finish')
 
     return m
@@ -429,12 +427,12 @@ def bcgplvm_linear_stick(kernel=None, optimize=True, verbose=True, plot=True):
     mapping = GPy.mappings.Linear(data['Y'].shape[1], 2)
     m = GPy.models.BCGPLVM(data['Y'], 2, kernel=kernel, mapping=mapping)
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
-    if plot and GPy.util.visualize.visual_available:
+    if plot and GPy.plotting.matplot_dep.visualize.visual_available:
         plt.clf
         ax = m.plot_latent()
         y = m.likelihood.Y[0, :]
-        data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
-        GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data['connect'])
+        GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
         raw_input('Press enter to finish')
 
     return m
@@ -449,12 +447,12 @@ def bcgplvm_stick(kernel=None, optimize=True, verbose=True, plot=True):
     mapping = GPy.mappings.Kernel(X=data['Y'], output_dim=2, kernel=back_kernel)
     m = GPy.models.BCGPLVM(data['Y'], 2, kernel=kernel, mapping=mapping)
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
-    if plot and GPy.util.visualize.visual_available:
+    if plot and GPy.plotting.matplot_dep.visualize.visual_available:
         plt.clf
         ax = m.plot_latent()
         y = m.likelihood.Y[0, :]
-        data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
-        GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data['connect'])
+        GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
         raw_input('Press enter to finish')
 
     return m
@@ -480,7 +478,7 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
 
     data = GPy.util.datasets.osu_run1()
     Q = 6
-    kernel = GPy.kern.RBF(Q, ARD=True) + GPy.kern.bias(Q, _np.exp(-2)) + GPy.kern.white(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF(Q, ARD=True) + GPy.kern.Bias(Q, _np.exp(-2)) + GPy.kern.White(Q, _np.exp(-2))
     m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20, kernel=kernel)
     # optimize
     m.ensure_default_constraints()
@@ -491,8 +489,8 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
         plt.sca(latent_axes)
         m.plot_latent()
         y = m.likelihood.Y[0, :].copy()
-        data_show = GPy.util.visualize.stick_show(y[None, :], connect=data['connect'])
-        GPy.util.visualize.lvm_dimselect(m.X[0, :].copy(), m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
+        data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data['connect'])
+        GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X[0, :].copy(), m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
         raw_input('Press enter to finish')
 
     return m
@@ -511,8 +509,8 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose
     if plot:
         ax = m.plot_latent()
         y = m.likelihood.Y[0, :]
-        data_show = GPy.util.visualize.skeleton_show(y[None, :], data['skel'])
-        lvm_visualizer = GPy.util.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        data_show = GPy.plotting.matplot_dep.visualize.skeleton_show(y[None, :], data['skel'])
+        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
         raw_input('Press enter to finish')
         lvm_visualizer.close()
 

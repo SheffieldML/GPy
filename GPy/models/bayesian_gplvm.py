@@ -10,7 +10,7 @@ from ..inference.optimization import SCG
 from ..util import linalg
 from ..core.parameterization.variational import NormalPosterior, NormalPrior
 
-class BayesianGPLVM(SparseGP, GPLVM):
+class BayesianGPLVM(SparseGP):
     """
     Bayesian Gaussian Process Latent Variable Model
 
@@ -25,7 +25,8 @@ class BayesianGPLVM(SparseGP, GPLVM):
     def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
                  Z=None, kernel=None, inference_method=None, likelihood=None, name='bayesian gplvm', **kwargs):
         if X == None:
-            X = self.initialise_latent(init, input_dim, Y)
+            from ..util.initialization import initialize_latent
+            X = initialize_latent(init, input_dim, Y)
         self.init = init
 
         if X_variance is None:
@@ -63,7 +64,9 @@ class BayesianGPLVM(SparseGP, GPLVM):
         super(BayesianGPLVM, self).parameters_changed()
         self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.q)
         
-        self.kern.update_gradients_q_variational(posterior_variational=self.q, Z=self.Z, **self.grad_dict)
+        # TODO: This has to go into kern
+        # maybe a update_gradients_q_variational?
+        self.q.mean.gradient, self.q.variance.gradient = self.kern.gradients_q_variational(posterior_variational=self.q, Z=self.Z, **self.grad_dict)
         
         # update for the KL divergence
         self.variational_prior.update_gradients_KL(self.q)

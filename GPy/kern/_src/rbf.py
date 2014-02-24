@@ -182,7 +182,7 @@ class RBF(Kern):
 
         return grad
 
-    def update_gradients_q_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
+    def gradients_q_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
         mu = posterior_variational.mean
         S = posterior_variational.variance
         self._psi_computations(Z, mu, S)
@@ -194,9 +194,8 @@ class RBF(Kern):
         tmp = self._psi2[:, :, :, None] / self.lengthscale2 / self._psi2_denom
         grad_mu += -2.*(dL_dpsi2[:, :, :, None] * tmp * self._psi2_mudist).sum(1).sum(1)
         grad_S += (dL_dpsi2[:, :, :, None] * tmp * (2.*self._psi2_mudist_sq - 1)).sum(1).sum(1)
-        
-        posterior_variational.mean.gradient = grad_mu
-        posterior_variational.variance.gradient = grad_S
+
+        return grad_mu, grad_S
 
     def gradients_X(self, dL_dK, X, X2=None):
         #if self._X is None or X.base is not self._X.base or X2 is not None:
@@ -383,3 +382,7 @@ class RBF(Kern):
                      type_converters=weave.converters.blitz, **self.weave_options)
 
         return mudist, mudist_sq, psi2_exponent, psi2
+
+    def input_sensitivity(self):
+        if self.ARD: return 1./self.lengthscale
+        else: return (1./self.lengthscale).repeat(self.input_dim)

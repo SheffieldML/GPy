@@ -63,7 +63,7 @@ class NormalPosterior(VariationalPosterior):
         from ...plotting.matplot_dep import variational_plots
         return variational_plots.plot(self,*args)
 
-class SpikeAndSlabPosterior(VariationalPosterior):
+class SpikeAndSlab(VariationalPosterior):
     '''
     The SpikeAndSlab distribution for variational approximations.
     '''
@@ -71,7 +71,7 @@ class SpikeAndSlabPosterior(VariationalPosterior):
         """
         binary_prob : the probability of the distribution on the slab part.
         """
-        super(SpikeAndSlabPosterior, self).__init__(means, variances, name)
+        super(SpikeAndSlab, self).__init__(means, variances, name)
         self.gamma = Param("binary_prob",binary_prob,)
         self.add_parameter(self.gamma)
 

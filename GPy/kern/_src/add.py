@@ -83,7 +83,7 @@ class Add(Kern):
         from white import White
         from rbf import RBF
         #from rbf_inv import RBFInv
-        #from bias import Bias
+        from bias import Bias
         from linear import Linear
         #ffrom fixed import Fixed
 
@@ -131,11 +131,11 @@ class Add(Kern):
 
 
     def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
-        from white import white
-        from rbf import rbf
+        from white import White
+        from rbf import RBF
         #from rbf_inv import rbfinv
-        #from bias import bias
-        from linear import linear
+        from bias import Bias
+        from linear import Linear
         #ffrom fixed import fixed
 
         target = np.zeros(Z.shape)
@@ -146,15 +146,15 @@ class Add(Kern):
             for p2, is2 in zip(self._parameters_, self.input_slices):
                 if p2 is p1:
                     continue
-                if isinstance(p2, white):
+                if isinstance(p2, White):
                     continue
-                elif isinstance(p2, bias):
+                elif isinstance(p2, Bias):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
                 else:
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(z[:,is2], mu[:,is2], s[:,is2]) * 2.
+                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z[:,is2], mu[:,is2], S[:,is2]) * 2.
 
 
-            target += p1.gradients_z_variational(dL_dkmm, dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], s[:,is1], z[:,is1])
+            target += p1.gradients_z_variational(dL_dKmm, dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], S[:,is1], Z[:,is1])
         return target
 
     def gradients_muS_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
@@ -195,6 +195,12 @@ class Add(Kern):
         from ..plotting.matplot_dep import kernel_plots
         kernel_plots.plot(self,*args)
 
+    def input_sensitivity(self):
+        in_sen = np.zeros((self.input_dim, self.num_params))
+        for i, [p, i_s] in enumerate(zip(self._parameters_, self.input_slices)):
+            in_sen[i_s, i] = p.input_sensitivity()
+        return in_sen
+    
     def _getstate(self):
         """
         Get the current state of the class,

@@ -105,7 +105,7 @@ class Kern(Parameterized):
         """ Here we overload the '*' operator. See self.prod for more information"""
         return self.prod(other)
 
-    def __pow__(self, other, tensor=False):
+    def __pow__(self, other):
         """
         Shortcut for tensor `prod`.
         """

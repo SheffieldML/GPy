@@ -128,7 +128,7 @@ class RBF(Kern):
 
     def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
         mu = posterior_variational.mean
-        S = posterior_variational.variance        
+        S = posterior_variational.variance
         self._psi_computations(Z, mu, S)
 
         #contributions from psi0:

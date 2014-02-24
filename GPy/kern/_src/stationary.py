@@ -215,7 +215,7 @@ class Cosine(Stationary):
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='Cosine'):
         super(Cosine, self).__init__(input_dim, variance, lengthscale, ARD, name)
 
-    def K_of_r(self, r)
+    def K_of_r(self, r):
         return self.variance * np.cos(r)
 
     def dK_dr(self, r):
@@ -238,7 +238,7 @@ class RatQuad(Stationary):
         self.power = Param('power', power, Logexp())
         self.add_parameters(self.power)
 
-    def K_of_r(self, r)
+    def K_of_r(self, r):
         return self.variance*(1. + r**2/2.)**(-self.power)
 
     def dK_dr(self, r):

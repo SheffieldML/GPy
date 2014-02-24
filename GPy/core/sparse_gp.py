@@ -5,8 +5,9 @@ import numpy as np
 from ..util.linalg import mdot
 from gp import GP
 from parameterization.param import Param
-from GPy.inference.latent_function_inference import var_dtc
+from ..inference.latent_function_inference import var_dtc
 from .. import likelihoods
+from parameterization.variational import NormalPosterior
 
 class SparseGP(GP):
     """
@@ -45,16 +46,14 @@ class SparseGP(GP):
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]
         
-        self.X_variance = X_variance
-        if self.has_uncertain_inputs():
-            assert X_variance.shape == X.shape
+        self.q = NormalPosterior(X, X_variance)
         
-        GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name)
+        GP.__init__(self, self.q.mean, Y, kernel, likelihood, inference_method=inference_method, name=name)
         self.add_parameter(self.Z, index=0)
         self.parameters_changed()
 
     def has_uncertain_inputs(self):
-        return not (self.X_variance is None)                
+        return self.q.has_uncertain_inputs()                
 
     def parameters_changed(self):
         if self.has_uncertain_inputs():
@@ -81,7 +80,10 @@ class SparseGP(GP):
                 var = Kxx - mdot(Kx.T, self.posterior.woodbury_inv, Kx)
             else:
                 Kxx = self.kern.Kdiag(Xnew)
-                var = Kxx - np.sum(Kx * np.dot(self.posterior.woodbury_inv, Kx), 0)
+                WKx_old = np.dot(np.atleast_3d(self.posterior.woodbury_inv)[:,:,0], Kx)
+                WKx = np.tensordot(np.atleast_3d(self.posterior.woodbury_inv), Kx, [0,0])
+                import ipdb;ipdb.set_trace()
+                var = Kxx - np.sum(Kx * WKx, 0)
         else:
             Kx = self.kern.psi1(self.Z, Xnew, X_variance_new)
             mu = np.dot(Kx, self.Cpsi1V)

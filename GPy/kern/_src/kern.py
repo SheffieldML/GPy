@@ -127,11 +127,12 @@ from GPy.core.model import Model
 class Kern_check_model(Model):
     """This is a dummy model class used as a base class for checking that the gradients of a given kernel are implemented correctly. It enables checkgradient() to be called independently on a kernel."""
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
+        from GPy.kern import RBF
         Model.__init__(self, 'kernel_test_model')
         num_samples = 20
         num_samples2 = 10
         if kernel==None:
-            kernel = GPy.kern.rbf(1)
+            kernel = RBF(1)
         if X==None:
             X = np.random.randn(num_samples, kernel.input_dim)
         if dL_dK==None:

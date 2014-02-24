@@ -8,7 +8,7 @@ from ..core import SparseGP
 from ..likelihoods import Gaussian
 from ..inference.optimization import SCG
 from ..util import linalg
-from ..core.parameterization.variational import Normal
+from ..core.parameterization.variational import NormalPosterior, NormalPrior
 
 class BayesianGPLVM(SparseGP, GPLVM):
     """
@@ -29,7 +29,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
         self.init = init
 
         if X_variance is None:
-            X_variance = np.clip((np.ones_like(X) * 0.5) + .01 * np.random.randn(*X.shape), 0.001, 1)
+            X_variance = np.random.uniform(0,.1,X.shape)
 
         if Z is None:
             Z = np.random.permutation(X.copy())[:num_inducing]
@@ -40,7 +40,9 @@ class BayesianGPLVM(SparseGP, GPLVM):
         
         if likelihood is None:
             likelihood = Gaussian()
-        self.q = Normal(X, X_variance)
+        self.q = NormalPosterior(X, X_variance)
+        self.variational_prior = NormalPrior()
+        
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, X_variance, name, **kwargs)
         self.add_parameter(self.q, index=0)
         #self.ensure_default_constraints()
@@ -57,24 +59,17 @@ class BayesianGPLVM(SparseGP, GPLVM):
         self.init = state.pop()
         SparseGP._setstate(self, state)
 
-    def KL_divergence(self):
-        var_mean = np.square(self.X).sum()
-        var_S = np.sum(self.X_variance - np.log(self.X_variance))
-        return 0.5 * (var_mean + var_S) - 0.5 * self.input_dim * self.num_data
-
     def parameters_changed(self):
         super(BayesianGPLVM, self).parameters_changed()
-
-        self._log_marginal_likelihood -= self.KL_divergence()
-        dL_dmu, dL_dS = self.kern.gradients_q_variational(posterior_variational=self.q, Z=self.Z, **self.grad_dict)
-
-        # dL:
-        self.q.mean.gradient  = dL_dmu
-        self.q.variance.gradient  = dL_dS  
-
-        # dKL:
-        self.q.mean.gradient -= self.X
-        self.q.variance.gradient -= (1. - (1. / (self.X_variance))) * 0.5
+        self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.q)
+        
+        # TODO: This has to go into kern
+        # maybe a update_gradients_q_variational?
+        self.q.mean.gradient, self.q.variance.gradient = self.kern.gradients_q_variational(posterior_variational=self.q, Z=self.Z, **self.grad_dict)
+        
+        # update for the KL divergence
+        self.variational_prior.update_gradients_KL(self.q)
+        
     
     def plot_latent(self, plot_inducing=True, *args, **kwargs):
         """
@@ -147,6 +142,7 @@ class BayesianGPLVM(SparseGP, GPLVM):
         """
         See GPy.plotting.matplot_dep.dim_reduction_plots.plot_steepest_gradient_map
         """
+        import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import dim_reduction_plots
 

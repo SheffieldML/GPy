@@ -18,7 +18,7 @@ class Stationary(Kern):
                 lengthscale = np.ones(1)
             else:
                 lengthscale = np.asarray(lengthscale)
-                assert lengthscale.size == 1 "Only  lengthscale needed for non-ARD kernel"
+                assert lengthscale.size == 1, "Only  lengthscale needed for non-ARD kernel"
         else:
             if lengthscale is not None:
                 lengthscale = np.asarray(lengthscale)

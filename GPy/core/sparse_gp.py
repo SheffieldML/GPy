@@ -5,8 +5,9 @@ import numpy as np
 from ..util.linalg import mdot
 from gp import GP
 from parameterization.param import Param
-from GPy.inference.latent_function_inference import var_dtc
+from ..inference.latent_function_inference import var_dtc
 from .. import likelihoods
+from parameterization.variational import NormalPosterior
 
 class SparseGP(GP):
     """
@@ -44,46 +45,45 @@ class SparseGP(GP):
 
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]
-
-        if not (X_variance is None):
-            assert X_variance.shape == X.shape
-        self.X_variance = X_variance
-
-        GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name)
+        
+        self.q = NormalPosterior(X, X_variance)
+        
+        GP.__init__(self, self.q.mean, Y, kernel, likelihood, inference_method=inference_method, name=name)
         self.add_parameter(self.Z, index=0)
         self.parameters_changed()
 
-    def _update_gradients_Z(self, add=False):
-    #The derivative of the bound wrt the inducing inputs Z ( unless they're all fixed)
-        if not self.Z.is_fixed:
-            if add: self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
-            else: self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
-            if self.X_variance is None:
-                self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
-            else:
-                self.Z.gradient += self.kern.dpsi1_dZ(self.grad_dict['dL_dpsi1'], self.Z, self.X, self.X_variance)
-                self.Z.gradient += self.kern.dpsi2_dZ(self.grad_dict['dL_dpsi2'], self.Z, self.X, self.X_variance)
+    def has_uncertain_inputs(self):
+        return self.q.has_uncertain_inputs()                
 
     def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
-        self._update_gradients_Z(add=False)
+        if self.has_uncertain_inputs():
+            self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference_latent(self.kern, self.q, self.Z, self.likelihood, self.Y)
+        else:
+            self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
+        self.likelihood.update_gradients(self.grad_dict.pop('partial_for_likelihood'))
+        if self.has_uncertain_inputs():
+            self.kern.update_gradients_variational(posterior_variational=self.q, Z=self.Z, **self.grad_dict)
+            self.Z.gradient = self.kern.gradients_Z_variational(posterior_variational=self.q, Z=self.Z, **self.grad_dict)
+        else:
+            self.kern.update_gradients_sparse(X=self.X, Z=self.Z, **self.grad_dict)
+            self.Z.gradient = self.kern.gradients_Z_sparse(X=self.X, Z=self.Z, **self.grad_dict)
 
-    def _raw_predict(self, Xnew, X_variance_new=None, which_parts='all', full_cov=False):
+    def _raw_predict(self, Xnew, X_variance_new=None, full_cov=False):
         """
         Make a prediction for the latent function values
         """
         if X_variance_new is None:
-            Kx = self.kern.K(self.Z, Xnew, which_parts=which_parts)
+            Kx = self.kern.K(self.Z, Xnew)
             mu = np.dot(Kx.T, self.posterior.woodbury_vector)
             if full_cov:
-                Kxx = self.kern.K(Xnew, which_parts=which_parts)
-                var = Kxx - mdot(Kx.T, self.posterior.woodbury_inv, Kx) # NOTE this won't work for plotting
+                Kxx = self.kern.K(Xnew)
+                #var = Kxx - mdot(Kx.T, self.posterior.woodbury_inv, Kx)
+                var = Kxx - np.tensordot(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx).T, Kx, [1,0]).swapaxes(1,2)
             else:
-                Kxx = self.kern.Kdiag(Xnew, which_parts=which_parts)
-                var = Kxx - np.sum(Kx * np.dot(self.posterior.woodbury_inv, Kx), 0)
+                Kxx = self.kern.Kdiag(Xnew)
+                var = (Kxx - np.sum(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx) * Kx[None,:,:], 1)).T
         else:
-            # assert which_parts=='all', "swithching out parts of variational kernels is not implemented"
-            Kx = self.kern.psi1(self.Z, Xnew, X_variance_new) # , which_parts=which_parts) TODO: which_parts
+            Kx = self.kern.psi1(self.Z, Xnew, X_variance_new)
             mu = np.dot(Kx, self.Cpsi1V)
             if full_cov:
                 raise NotImplementedError, "TODO"
@@ -91,7 +91,7 @@ class SparseGP(GP):
                 Kxx = self.kern.psi0(self.Z, Xnew, X_variance_new)
                 psi2 = self.kern.psi2(self.Z, Xnew, X_variance_new)
                 var = Kxx - np.sum(np.sum(psi2 * Kmmi_LmiBLmi[None, :, :], 1), 1)
-        return mu, var[:,None]
+        return mu, var
 
 
     def _getstate(self):
@@ -101,12 +101,10 @@ class SparseGP(GP):
         """
         return GP._getstate(self) + [self.Z,
                 self.num_inducing,
-                self.has_uncertain_inputs,
                 self.X_variance]
 
     def _setstate(self, state):
         self.X_variance = state.pop()
-        self.has_uncertain_inputs = state.pop()
         self.num_inducing = state.pop()
         self.Z = state.pop()
         GP._setstate(self, state)

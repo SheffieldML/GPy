@@ -3,7 +3,7 @@
 
 import itertools
 import numpy
-from parameter_core import Constrainable, Gradcheckable, Indexable, Parameterizable, adjust_name_for_printing
+from parameter_core import Constrainable, Gradcheckable, Indexable, Parentable, adjust_name_for_printing
 from array_core import ObservableArray, ParamList
 
 ###### printing
@@ -15,7 +15,7 @@ __precision__ = numpy.get_printoptions()['precision'] # numpy printing precision
 __print_threshold__ = 5
 ######
 
-class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameterizable):
+class Param(Constrainable, ObservableArray, Gradcheckable, Indexable):
     """
     Parameter object for GPy models.
 
@@ -23,7 +23,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
     :param input_array:        array which this parameter handles
     :type input_array:         numpy.ndarray
     :param default_constraint: The default constraint for this parameter
-    :type default_constraint:  
+    :type default_constraint:
 
     You can add/remove constraints by calling constrain on the parameter itself, e.g:
 
@@ -54,12 +54,12 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
         obj._tied_to_me_ = SetDict()
         obj._tied_to_ = []
         obj._original_ = True
-        obj.gradient = None
+        obj._gradient_ = None
         return obj
 
-    def __init__(self, name, input_array, default_constraint=None):
-        super(Param, self).__init__(name=name, default_constraint=default_constraint)
-    
+    def __init__(self, name, input_array, default_constraint=None, *a, **kw):
+        super(Param, self).__init__(name=name, default_constraint=default_constraint, *a, **kw)
+
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
@@ -76,10 +76,20 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
         self._updated_ = getattr(obj, '_updated_', None)
         self._original_ = getattr(obj, '_original_', None)
         self._name = getattr(obj, 'name', None)
-        self.gradient = getattr(obj, 'gradient', None)
+        self._gradient_ = getattr(obj, '_gradient_', None)
         self.constraints = getattr(obj, 'constraints', None)
         self.priors = getattr(obj, 'priors', None)
 
+
+    @property
+    def gradient(self):
+        if self._gradient_ is None:
+            self._gradient_ = numpy.zeros(self._realshape_)
+        return self._gradient_[self._current_slice_]
+    @gradient.setter
+    def gradient(self, val):
+        self.gradient[:] = val
+        
     #===========================================================================
     # Pickling operations
     #===========================================================================
@@ -114,7 +124,14 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
         self._parent_index_ = state.pop()
         self._direct_parent_ = state.pop()
         self.name = state.pop()
-
+    
+    def copy(self, *args):
+        constr = self.constraints.copy()
+        priors = self.priors.copy()
+        p = Param(self.name, self.view(numpy.ndarray).copy(), self._default_constraint_)
+        p.constraints = constr
+        p.priors = priors
+        return p
     #===========================================================================
     # get/set parameters
     #===========================================================================
@@ -127,7 +144,10 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
         return self.flat
 
     def _collect_gradient(self, target):
-        target[:] = self.gradient.flat
+        target += self.gradient.flat
+
+    def _set_gradient(self, g):
+        self.gradient = g.reshape(self._realshape_)
 
     #===========================================================================
     # Array operations -> done
@@ -192,7 +212,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
                 return numpy.r_[a]
             return numpy.r_[:b]
         return itertools.imap(f, itertools.izip_longest(slice_index[:self._realndim_], self._realshape_, fillvalue=slice(self.size)))
-    
+
     #===========================================================================
     # Convenience
     #===========================================================================
@@ -214,7 +234,9 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
     def _description_str(self):
         if self.size <= 1: return ["%f" % self]
         else: return [str(self.shape)]
-    def parameter_names(self, add_name=False):
+    def parameter_names(self, add_self=False, adjust_for_printing=False):
+        if adjust_for_printing:
+            return [adjust_name_for_printing(self.name)]
         return [self.name]
     @property
     def flattened_parameters(self):
@@ -231,14 +253,9 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
     @property
     def _ties_str(self):
         return [t._short() for t in self._tied_to_] or ['']
-    @property
-    def name_hirarchical(self):
-        if self.has_parent():
-            return self._direct_parent_.hirarchy_name() + adjust_name_for_printing(self.name)
-        return adjust_name_for_printing(self.name)
     def __repr__(self, *args, **kwargs):
         name = "\033[1m{x:s}\033[0;0m:\n".format(
-                            x=self.name_hirarchical)
+                            x=self.hirarchy_name())
         return name + super(Param, self).__repr__(*args, **kwargs)
     def _ties_for(self, rav_index):
         # size = sum(p.size for p in self._tied_to_)
@@ -260,7 +277,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
             clean_curr_slice = [s for s in slice_index if numpy.any(s != Ellipsis)]
             for i in range(self._realndim_-len(clean_curr_slice)):
                 i+=len(clean_curr_slice)
-                clean_curr_slice += range(self._realshape_[i]) 
+                clean_curr_slice += range(self._realshape_[i])
             if (all(isinstance(n, (numpy.ndarray, list, tuple)) for n in clean_curr_slice)
                 and len(set(map(len, clean_curr_slice))) <= 1):
                 return numpy.fromiter(itertools.izip(*clean_curr_slice),
@@ -272,12 +289,12 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
         gen = map(lambda x: " ".join(map(str, x)), gen)
         return reduce(lambda a, b:max(a, len(b)), gen, len(header))
     def _max_len_values(self):
-        return reduce(lambda a, b:max(a, len("{x:=.{0}g}".format(__precision__, x=b))), self.flat, len(self.name_hirarchical))
+        return reduce(lambda a, b:max(a, len("{x:=.{0}g}".format(__precision__, x=b))), self.flat, len(self.hirarchy_name()))
     def _max_len_index(self, ind):
         return reduce(lambda a, b:max(a, len(str(b))), ind, len(__index_name__))
     def _short(self):
         # short string to print
-        name = self._direct_parent_.hirarchy_name() + adjust_name_for_printing(self.name)
+        name = self.hirarchy_name()
         if self._realsize_ < 2:
             return name
         ind = self._indices()
@@ -300,8 +317,8 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parameteri
         if lp is None: lp = self._max_len_names(prirs, __tie_name__)
         sep = '-'
         header_format = "  {i:{5}^{2}s}  |  \033[1m{x:{5}^{1}s}\033[0;0m  |  {c:{5}^{0}s}  |  {p:{5}^{4}s}  |  {t:{5}^{3}s}"
-        if only_name: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.name_hirarchical, c=sep*lc, i=sep*li, t=sep*lt, p=sep*lp)  # nice header for printing
-        else: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.name_hirarchical, c=__constraints_name__, i=__index_name__, t=__tie_name__, p=__priors_name__)  # nice header for printing
+        if only_name: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.hirarchy_name(), c=sep*lc, i=sep*li, t=sep*lt, p=sep*lp)  # nice header for printing
+        else: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.hirarchy_name(), c=__constraints_name__, i=__index_name__, t=__tie_name__, p=__priors_name__)  # nice header for printing
         if not ties: ties = itertools.cycle([''])
         return "\n".join([header] + ["  {i!s:^{3}s}  |  {x: >{1}.{2}g}  |  {c:^{0}s}  |  {p:^{5}s}  |  {t:^{4}s}  ".format(lc, lx, __precision__, li, lt, lp, x=x, c=" ".join(map(str, c)), p=" ".join(map(str, p)), t=(t or ''), i=i) for i, x, c, t, p in itertools.izip(indices, vals, constr_matrix, ties, prirs)])  # return all the constraints with right indices
         # except: return super(Param, self).__str__()

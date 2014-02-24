@@ -1,12 +1,11 @@
 from _src.rbf import RBF
-from _src.white import White
 from _src.kern import Kern
 from _src.linear import Linear
-from _src.bias import Bias
+from _src.static import Bias, White
 from _src.brownian import Brownian
-from _src.stationary import Exponential, Matern32, Matern52, ExpQuad
+from _src.stationary import Exponential, Matern32, Matern52, ExpQuad, RatQuad
+from _src.mlp import MLP
 #import coregionalize
-#import exponential
 #import eq_ode1
 #import finite_dimensional
 #import fixed
@@ -14,10 +13,6 @@ from _src.stationary import Exponential, Matern32, Matern52, ExpQuad
 #import hetero
 #import hierarchical
 #import independent_outputs
-#import linear
-#import Matern32
-#import Matern52
-#import mlp
 #import ODE_1
 #import periodic_exponential
 #import periodic_Matern32
@@ -31,4 +26,3 @@ from _src.stationary import Exponential, Matern32, Matern52, ExpQuad
 #import rbf_inv
 #import spline
 #import symmetric
-#import white

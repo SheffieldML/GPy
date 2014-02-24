@@ -193,8 +193,6 @@ class Matern52(Stationary):
         return(1./self.variance* (G_coef*G + orig + orig2))
 
 
-
-
 class ExpQuad(Stationary):
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='ExpQuad'):
         super(ExpQuad, self).__init__(input_dim, variance, lengthscale, ARD, name)
@@ -206,6 +204,27 @@ class ExpQuad(Stationary):
     def dK_dr(self, X, X2):
         dist = self._scaled_dist(X, X2)
         return -dist*self.K(X, X2)
+
+class RatQuad(Stationary):
+    def __init__(self, input_dim, variance=1., lengthscale=None, power=2., ARD=False, name='ExpQuad'):
+        super(RatQuad, self).__init__(input_dim, variance, lengthscale, ARD, name)
+        self.power = Param('power', power, Logexp)
+        self.add_parameters(self.power)
+
+    def K(self, X, X2=None):
+        r = self._scaled_dist(X, X2)
+        return self.variance*(1. + r**2/2.)**(-self.power)
+
+    def dK_dr(self, X, X2):
+        r = self._scaled_dist(X, X2)
+        return -self.variance*self.power*r*(1. + r**2/2)**(-self.power - 1.)
+
+    def update_gradients_full(self, dL_dK, X, X2=None):
+        super(RatQuad, self).update_gradients_full(dL_dK, X, X2)
+        r = self._scaled_dist(X, X2)
+        r2 = r**2
+        dpow = -2.**self.power*(r2 + 2.)**(-self.power)*np.log(0.5*(r2+2.))
+        self.power.gradient = np.sum(dL_dK*dpow)
 
 
 

@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ...util.univariate_Gaussian import std_norm_pdf, std_norm_cdf
+from ..util.univariate_Gaussian import std_norm_pdf, std_norm_cdf
 import link_functions
 from likelihood import Likelihood
 

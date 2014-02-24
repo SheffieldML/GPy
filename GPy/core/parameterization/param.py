@@ -15,7 +15,7 @@ __precision__ = numpy.get_printoptions()['precision'] # numpy printing precision
 __print_threshold__ = 5
 ######
 
-class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable):
+class Param(Constrainable, ObservableArray, Gradcheckable, Indexable):
     """
     Parameter object for GPy models.
 
@@ -23,7 +23,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
     :param input_array:        array which this parameter handles
     :type input_array:         numpy.ndarray
     :param default_constraint: The default constraint for this parameter
-    :type default_constraint:  
+    :type default_constraint:
 
     You can add/remove constraints by calling constrain on the parameter itself, e.g:
 
@@ -54,12 +54,12 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
         obj._tied_to_me_ = SetDict()
         obj._tied_to_ = []
         obj._original_ = True
-        obj.gradient = None
+        obj._gradient_ = None
         return obj
 
-    def __init__(self, name, input_array, default_constraint=None):
-        super(Param, self).__init__(name=name, default_constraint=default_constraint)
-    
+    def __init__(self, name, input_array, default_constraint=None, *a, **kw):
+        super(Param, self).__init__(name=name, default_constraint=default_constraint, *a, **kw)
+
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
@@ -76,10 +76,20 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
         self._updated_ = getattr(obj, '_updated_', None)
         self._original_ = getattr(obj, '_original_', None)
         self._name = getattr(obj, 'name', None)
-        self.gradient = getattr(obj, 'gradient', None)
+        self._gradient_ = getattr(obj, '_gradient_', None)
         self.constraints = getattr(obj, 'constraints', None)
         self.priors = getattr(obj, 'priors', None)
 
+
+    @property
+    def gradient(self):
+        if self._gradient_ is None:
+            self._gradient_ = numpy.zeros(self._realshape_)
+        return self._gradient_[self._current_slice_]
+    @gradient.setter
+    def gradient(self, val):
+        self.gradient[:] = val
+        
     #===========================================================================
     # Pickling operations
     #===========================================================================
@@ -134,7 +144,10 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
         return self.flat
 
     def _collect_gradient(self, target):
-        target[:] = self.gradient.flat
+        target += self.gradient.flat
+
+    def _set_gradient(self, g):
+        self.gradient = g.reshape(self._realshape_)
 
     #===========================================================================
     # Array operations -> done
@@ -199,7 +212,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
                 return numpy.r_[a]
             return numpy.r_[:b]
         return itertools.imap(f, itertools.izip_longest(slice_index[:self._realndim_], self._realshape_, fillvalue=slice(self.size)))
-    
+
     #===========================================================================
     # Convenience
     #===========================================================================
@@ -264,7 +277,7 @@ class Param(ObservableArray, Constrainable, Gradcheckable, Indexable, Parentable
             clean_curr_slice = [s for s in slice_index if numpy.any(s != Ellipsis)]
             for i in range(self._realndim_-len(clean_curr_slice)):
                 i+=len(clean_curr_slice)
-                clean_curr_slice += range(self._realshape_[i]) 
+                clean_curr_slice += range(self._realshape_[i])
             if (all(isinstance(n, (numpy.ndarray, list, tuple)) for n in clean_curr_slice)
                 and len(set(map(len, clean_curr_slice))) <= 1):
                 return numpy.fromiter(itertools.izip(*clean_curr_slice),

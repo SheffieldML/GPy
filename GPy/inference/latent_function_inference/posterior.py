@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ...util.linalg import pdinv, dpotrs, tdot, dtrtrs, dpotri, symmetrify, jitchol, dtrtri
+from ...util.linalg import pdinv, dpotrs, dpotri, symmetrify, jitchol
 
 class Posterior(object):
     """
@@ -81,13 +81,17 @@ class Posterior(object):
     def covariance(self):
         if self._covariance is None:
             #LiK, _ = dtrtrs(self.woodbury_chol, self._K, lower=1)
-            self._covariance = self._K - self._K.dot(self.woodbury_inv).dot(self._K)
-        return self._covariance
+            self._covariance = np.tensordot(np.dot(np.atleast_3d(self.woodbury_inv).T, self._K), self._K, [1,0]).T
+            #self._covariance = self._K - self._K.dot(self.woodbury_inv).dot(self._K)
+        return self._covariance.squeeze()
 
     @property
     def precision(self):
         if self._precision is None:
-            self._precision, _, _, _ = pdinv(self.covariance)
+            cov = np.atleast_3d(self.covariance)
+            self._precision = np.zeros(cov.shape) # if one covariance per dimension
+            for p in xrange(cov.shape[-1]):
+                self._precision[:,:,p] = pdinv(cov[:,:,p])[0]
         return self._precision
 
     @property
@@ -95,7 +99,10 @@ class Posterior(object):
         if self._woodbury_chol is None:
             #compute woodbury chol from 
             if self._woodbury_inv is not None:
-                _, _, self._woodbury_chol, _ = pdinv(self._woodbury_inv)
+                winv = np.atleast_3d(self._woodbury_inv)
+                self._woodbury_chol = np.zeros(winv.shape)
+                for p in xrange(winv.shape[-1]):
+                    self._woodbury_chol[:,:,p] = pdinv(winv[:,:,p])[2]
                 #Li = jitchol(self._woodbury_inv)
                 #self._woodbury_chol, _ = dtrtri(Li)
                 #W, _, _, _, = pdinv(self._woodbury_inv)
@@ -129,7 +136,7 @@ class Posterior(object):
     @property
     def K_chol(self):
         if self._K_chol is None:
-            self._K_chol = dportf(self._K)
+            self._K_chol = jitchol(self._K)
         return self._K_chol
 
 

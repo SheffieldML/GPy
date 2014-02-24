@@ -10,8 +10,8 @@ import numpy as np
 class Test(unittest.TestCase):
 
     def setUp(self):
-        self.rbf = GPy.kern.rbf(1)
-        self.white = GPy.kern.white(1)
+        self.rbf = GPy.kern.RBF(1)
+        self.white = GPy.kern.White(1)
         from GPy.core.parameterization import Param
         from GPy.core.parameterization.transformations import Logistic
         self.param = Param('param', np.random.rand(25,2), Logistic(0, 1))
@@ -39,14 +39,13 @@ class Test(unittest.TestCase):
         
         
     def test_remove_parameter(self):
-        from GPy.core.parameterization.transformations import FIXED, UNFIXED, __fixed__
+        from GPy.core.parameterization.transformations import FIXED, UNFIXED, __fixed__, Logexp
         self.white.fix()
         self.test1.remove_parameter(self.white)
         self.assertIs(self.test1._fixes_,None)
         
         self.assertListEqual(self.white._fixes_.tolist(), [FIXED])
-        self.assertIs(self.white.constraints,self.white.white.constraints._param_index_ops)
-        self.assertEquals(self.white.white.constraints._offset, 0)
+        self.assertEquals(self.white.constraints._offset, 0)
         self.assertIs(self.test1.constraints, self.rbf.constraints._param_index_ops)
         self.assertIs(self.test1.constraints, self.param.constraints._param_index_ops)        
         
@@ -57,18 +56,19 @@ class Test(unittest.TestCase):
         self.assertListEqual(self.test1.constraints[__fixed__].tolist(), [0])
         self.assertIs(self.white._fixes_,None)
         self.assertListEqual(self.test1._fixes_.tolist(),[FIXED] + [UNFIXED] * 52)
+        
         self.test1.remove_parameter(self.white)
         self.assertIs(self.test1._fixes_,None)
         self.assertListEqual(self.white._fixes_.tolist(), [FIXED])
-        self.assertIs(self.white.constraints,self.white.white.constraints._param_index_ops)
         self.assertIs(self.test1.constraints, self.rbf.constraints._param_index_ops)
-        self.assertIs(self.test1.constraints, self.param.constraints._param_index_ops)        
+        self.assertIs(self.test1.constraints, self.param.constraints._param_index_ops)
+        self.assertListEqual(self.test1.constraints[Logexp()].tolist(), [0,1])
         
     def test_add_parameter_already_in_hirarchy(self):
         self.test1.add_parameter(self.white._parameters_[0])
         
     def test_default_constraints(self):
-        self.assertIs(self.rbf.rbf.variance.constraints._param_index_ops, self.rbf.constraints._param_index_ops)
+        self.assertIs(self.rbf.variance.constraints._param_index_ops, self.rbf.constraints._param_index_ops)
         self.assertIs(self.test1.constraints, self.rbf.constraints._param_index_ops)
         self.assertListEqual(self.rbf.constraints.indices()[0].tolist(), range(2))
         from GPy.core.parameterization.transformations import Logexp

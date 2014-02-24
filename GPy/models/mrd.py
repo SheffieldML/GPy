@@ -7,7 +7,7 @@ from GPy.util.linalg import PCA
 import numpy
 import itertools
 import pylab
-from GPy.kern.kern import kern
+from GPy.kern import Kern
 from GPy.models.bayesian_gplvm import BayesianGPLVM
 
 class MRD2(Model):
@@ -64,11 +64,11 @@ class MRD(Model):
         # sort out the kernels
         if kernels is None:
             kernels = [None] * len(likelihood_or_Y_list)
-        elif isinstance(kernels, kern):
+        elif isinstance(kernels, Kern):
             kernels = [kernels.copy() for i in range(len(likelihood_or_Y_list))]
         else:
             assert len(kernels) == len(likelihood_or_Y_list), "need one kernel per output"
-            assert all([isinstance(k, kern) for k in kernels]), "invalid kernel object detected!"
+            assert all([isinstance(k, Kern) for k in kernels]), "invalid kernel object detected!"
         assert not ('kernel' in kw), "pass kernels through `kernels` argument"
 
         self.input_dim = input_dim

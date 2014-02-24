@@ -485,20 +485,17 @@ class Model(Parameterized):
         if not hasattr(self, 'kern'):
             raise ValueError, "this model has no kernel"
 
-        k = [p for p in self.kern._parameters_ if hasattr(p, "ARD") and p.ARD]
-        if (not len(k) == 1):
-            raise ValueError, "cannot determine sensitivity for this kernel"
-        k = k[0]
-        from ..kern.parts.rbf import RBF
-        from ..kern.parts.rbf_inv import RBFInv
-        from ..kern.parts.linear import Linear
+        k = self.kern#[p for p in self.kern._parameters_ if hasattr(p, "ARD") and p.ARD]
+        from ..kern import RBF, Linear#, RBFInv
+
         if isinstance(k, RBF):
             return 1. / k.lengthscale
-        elif isinstance(k, RBFInv):
-            return k.inv_lengthscale
+        #elif isinstance(k, RBFInv):
+        #    return k.inv_lengthscale
         elif isinstance(k, Linear):
             return k.variances
-
+        else:
+            raise ValueError, "cannot determine sensitivity for this kernel"
 
     def pseudo_EM(self, stop_crit=.1, **kwargs):
         """

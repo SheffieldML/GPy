@@ -1,4 +1,5 @@
-# Copyright (c) 2013, Arno Solin.
+# CURRENTLY UNDER PROGRESS
+# Copyright (c) 2013, Arno Solin. Edited by Mu
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 #
 # This implementation of converting GPs to state space models is based on the article:
@@ -114,7 +115,7 @@ class StateSpace_Old(Model):
         V = np.tensordot(H[0],P,(0,0))
         V = np.tensordot(V,H[0],(0,0))
         V = V[:,None]
-
+        stop
         # Return the posterior of the state
         return (m, V)
 

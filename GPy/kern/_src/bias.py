@@ -5,6 +5,7 @@
 from kern import Kern
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
+import numpy as np
 
 class Bias(Kern):
     def __init__(self,input_dim,variance=1.,name=None):

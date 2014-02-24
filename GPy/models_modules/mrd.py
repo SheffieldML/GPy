@@ -46,7 +46,9 @@ class MRD(Model):
                  initz='permute', _debug=False, **kw):
         if names is None:
             self.names = ["{}".format(i) for i in range(len(likelihood_or_Y_list))]
-
+        else:
+            self.names = names
+            assert len(names) == len(likelihood_or_Y_list), "one name per data set required"
         # sort out the kernels
         if kernels is None:
             kernels = [None] * len(likelihood_or_Y_list)
@@ -325,9 +327,9 @@ class MRD(Model):
         if titles is None:
             titles = [r'${}$'.format(name) for name in self.names]
         ymax = reduce(max, [numpy.ceil(max(g.input_sensitivity())) for g in self.bgplvms])
-        def plotf(i, g, ax):
-            ax.set_ylim([0,ymax])
-            g.kern.plot_ARD(ax=ax, title=titles[i], *args, **kwargs)
+        def plotf(i, g, axis):
+            axis.set_ylim([0,ymax])
+            g.kern.plot_ARD(ax=axis, title=titles[i], *args, **kwargs)
         fig = self._handle_plotting(fignum, ax, plotf, sharex=sharex, sharey=sharey)
         return fig
 

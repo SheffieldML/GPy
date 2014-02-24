@@ -31,14 +31,9 @@ class Parameterized(object):
     #    """ Override for which names to print out, when using print m """
     #    return self._get_param_names()
 
-    def pickle(self, filename, protocol=None):
-        if protocol is None:
-            if self._has_get_set_state():
-                protocol = 0
-            else:
-                protocol = -1
-        with open(filename, 'w') as f:
-            cPickle.dump(self, f, protocol)
+    def pickle(self, filename, protocol=-1):
+        with open(filename, 'wb') as f:
+            cPickle.dump(self, f, protocol=protocol)
 
     def copy(self):
         """Returns a (deep) copy of the current model """
@@ -193,17 +188,17 @@ class Parameterized(object):
         else:
             self.fixed_indices, self.fixed_values = [], []
 
-    def constrain_negative(self, regexp):
+    def constrain_negative(self, regexp, warning=True):
         """ Set negative constraints. """
-        self.constrain(regexp, transformations.negative_logexp())
+        self.constrain(regexp, transformations.negative_logexp(), warning=warning)
 
-    def constrain_positive(self, regexp):
+    def constrain_positive(self, regexp, warning=True):
         """ Set positive constraints. """
-        self.constrain(regexp, transformations.logexp())
+        self.constrain(regexp, transformations.logexp(), warning=warning)
 
-    def constrain_bounded(self, regexp, lower, upper):
+    def constrain_bounded(self, regexp, lower, upper, warning=True):
         """ Set bounded constraints. """
-        self.constrain(regexp, transformations.logistic(lower, upper))
+        self.constrain(regexp, transformations.logistic(lower, upper), warning=warning)
 
     def all_constrained_indices(self):
         if len(self.constrained_indices) or len(self.fixed_indices):
@@ -211,17 +206,18 @@ class Parameterized(object):
         else:
             return np.empty(shape=(0,))
 
-    def constrain(self, regexp, transform):
+    def constrain(self, regexp, transform, warning=True):
         assert isinstance(transform, transformations.transformation)
 
         matches = self.grep_param_names(regexp)
-        overlap = set(matches).intersection(set(self.all_constrained_indices()))
-        if overlap:
-            self.unconstrain(np.asarray(list(overlap)))
-            print 'Warning: re-constraining these parameters'
-            pn = self._get_param_names()
-            for i in overlap:
-                print pn[i]
+        if warning:
+            overlap = set(matches).intersection(set(self.all_constrained_indices()))
+            if overlap:
+                self.unconstrain(np.asarray(list(overlap)))
+                print 'Warning: re-constraining these parameters'
+                pn = self._get_param_names()
+                for i in overlap:
+                    print pn[i]
 
         self.constrained_indices.append(matches)
         self.constraints.append(transform)
@@ -229,7 +225,7 @@ class Parameterized(object):
         x[matches] = transform.initialize(x[matches])
         self._set_params(x)
 
-    def constrain_fixed(self, regexp, value=None):
+    def constrain_fixed(self, regexp, value=None, warning=True):
         """
 
         :param regexp: which parameters need to be fixed.
@@ -246,13 +242,14 @@ class Parameterized(object):
 
         """
         matches = self.grep_param_names(regexp)
-        overlap = set(matches).intersection(set(self.all_constrained_indices()))
-        if overlap:
-            self.unconstrain(np.asarray(list(overlap)))
-            print 'Warning: re-constraining these parameters'
-            pn = self._get_param_names()
-            for i in overlap:
-                print pn[i]
+        if warning:
+            overlap = set(matches).intersection(set(self.all_constrained_indices()))
+            if overlap:
+                self.unconstrain(np.asarray(list(overlap)))
+                print 'Warning: re-constraining these parameters'
+                pn = self._get_param_names()
+                for i in overlap:
+                    print pn[i]
 
         self.fixed_indices.append(matches)
         if value != None:

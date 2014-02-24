@@ -28,14 +28,15 @@ class AxisChangedController(AxisEventController):
     '''
     _changing = False
 
-    def __init__(self, ax, update_lim=None):
+    def __init__(self, ax, plot_limits=None, update_lim=None):
         '''
         Constructor
         '''
         super(AxisChangedController, self).__init__(ax)
         self._lim_ratio_threshold = update_lim or .8
-        self._x_lim = self.ax.get_xlim()
-        self._y_lim = self.ax.get_ylim()
+        if plot_limits is not None:
+            self._x_lim = [plot_limits[0], plot_limits[2]]
+            self._y_lim = [plot_limits[0], plot_limits[2]]
 
     def update(self, ax):
         pass
@@ -89,10 +90,11 @@ class BufferedAxisChangedController(AxisChangedController):
             
         :param kwargs: additional kwargs are for pyplot.imshow(**kwargs)
         """
-        super(BufferedAxisChangedController, self).__init__(ax, update_lim=update_lim)
+        super(BufferedAxisChangedController, self).__init__(ax, plot_limits, update_lim=update_lim)
         self.plot_function = plot_function
-        xmin, xmax = self._x_lim # self._compute_buffered(*self._x_lim)
-        ymin, ymax = self._y_lim # self._compute_buffered(*self._y_lim)
+        #xmin, xmax = self._x_lim # self._compute_buffered(*self._x_lim)
+        #ymin, ymax = self._y_lim # self._compute_buffered(*self._y_lim)
+        xmin, ymin, xmax, ymax = plot_limits
         self.resolution = resolution
         self._not_init = False
         self.view = self._init_view(self.ax, self.recompute_X(), xmin, xmax, ymin, ymax, **kwargs)
@@ -112,8 +114,12 @@ class BufferedAxisChangedController(AxisChangedController):
         raise NotImplementedError('update view given in here')
 
     def get_grid(self):
-        xmin, xmax = self._compute_buffered(*self._x_lim)
-        ymin, ymax = self._compute_buffered(*self._y_lim)
+        if self._not_init:
+            xmin, xmax = self._compute_buffered(*self._x_lim)
+            ymin, ymax = self._compute_buffered(*self._y_lim)
+        else:
+            xmin, xmax = self._x_lim
+            ymin, ymax = self._y_lim
         x, y = numpy.mgrid[xmin:xmax:1j * self.resolution, ymin:ymax:1j * self.resolution]
         return numpy.hstack((x.flatten()[:, None], y.flatten()[:, None]))
 

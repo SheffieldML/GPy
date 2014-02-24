@@ -1,4 +1,4 @@
-# Copyright I. Nabney, N.Lawrence and James Hensman (1996 - 2012)
+# Copyright I. Nabney, N.Lawrence and James Hensman (1996 - 2014)
 
 # Scaled Conjuagte Gradients, originally in Matlab as part of the Netlab toolbox by I. Nabney, converted to python N. Lawrence and given a pythonic interface by James Hensman
 
@@ -69,8 +69,8 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
     success = True # Force calculation of directional derivs.
     nsuccess = 0 # nsuccess counts number of successes.
     beta = 1.0 # Initial scale parameter.
-    betamin = 1.0e-60 # Lower bound on scale.
-    betamax = 1.0e50 # Upper bound on scale.
+    betamin = 1.0e-15 # Lower bound on scale.
+    betamax = 1.0e15 # Upper bound on scale.
     status = "Not converged"
 
     flog = [fold]
@@ -154,9 +154,9 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
                 break
             else:
                 # Update variables for new position
+                gradold = gradnew
                 gradnew = gradf(x, *optargs)
                 current_grad = np.dot(gradnew, gradnew)
-                gradold = gradnew
                 fold = fnew
                 # If the gradient is zero then we are done.
                 if current_grad <= gtol:

@@ -86,7 +86,6 @@ def kmm_init(X, m = 10):
 
 def fast_array_equal(A, B):
 
-
     if config.getboolean('parallel', 'openmp'):
         pragma_string = '#pragma omp parallel for private(i, j)'
     else:
@@ -173,6 +172,50 @@ def fast_array_equal(A, B):
             value = np.array_equal(A,B)
 
     return value
+
+def fast_array_equal2(A, B):
+    if (A == None) and (B == None):
+        return True
+    elif ((A == None) and (B != None)) or ((A != None) and (B == None)):
+        return False
+    elif not (A.shape == B.shape):
+        return False
+
+    if config.getboolean('parallel', 'openmp'):
+        pragma_string = '#include <omp.h>'
+        weave_options = {'headers'           : ['<omp.h>'],
+                         'extra_compile_args': ['-fopenmp -O3'],
+                         'extra_link_args'   : ['-lgomp'],
+                         'libraries'         : ['gomp']}
+    else:
+        weave_options = {'extra_compile_args': ['-O3']}
+        pragma_string = ''
+
+    support_code = """
+    %s
+    #include <math.h>
+    """ % pragma_string
+
+    code = """
+    int i;
+    return_val = 1;
+
+    %s
+    for(i=0;i<N;i++){
+      if(A[i] != B[i]){
+        return_val = 0;
+        break;
+      }
+    }
+    """ % pragma_string
+
+    N = A.size
+    value = weave.inline(code, support_code=support_code,
+                         arg_names=['A', 'B', 'N'],
+                         **weave_options)
+    return bool(value)
+
+
 
 
 if __name__ == '__main__':

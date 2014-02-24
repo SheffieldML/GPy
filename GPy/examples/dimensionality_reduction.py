@@ -39,9 +39,9 @@ def bgplvm_test_model(seed=default_seed, optimize=False, verbose=1, plot=False):
     m = GPy.models.BayesianGPLVM(lik, input_dim, kernel=k, num_inducing=num_inducing)
     #===========================================================================
     # randomly obstruct data with percentage p
-    p = .8
+    p = .1
     Y_obstruct = Y.copy()
-    Y_obstruct[_np.random.uniform(size=(Y.shape)) < p] = _np.nan
+    Y_obstruct[_np.random.uniform(size=(Y.shape)) <= p] = _np.nan
     #===========================================================================
     m2 = GPy.models.BayesianGPLVMWithMissingData(Y_obstruct, input_dim, kernel=k, num_inducing=num_inducing)
     m.lengthscales = lengthscales
@@ -261,11 +261,12 @@ def bgplvm_simulation(optimize=True, verbose=1,
     from GPy import kern
     from GPy.models import BayesianGPLVM
 
-    D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 30, 3, 10
+    D1, D2, D3, N, num_inducing, Q = 49, 30, 10, 12, 3, 10
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
-    k = kern.linear(Q, ARD=True) + kern.bias(Q, _np.exp(-2)) + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    k = kern.linear(Q, ARD=True)
     m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k)
+    m.X_variance = m.X_variance * .7
     m['noise'] = Y.var() / 100.
 
     if optimize:
@@ -277,6 +278,39 @@ def bgplvm_simulation(optimize=True, verbose=1,
         m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
     return m
 
+def bgplvm_simulation_missing_data(optimize=True, verbose=1,
+                      plot=True, plot_sim=False,
+                      max_iters=2e4,
+                      ):
+    from GPy import kern
+    from GPy.models import BayesianGPLVMWithMissingData
+    from GPy.util.linalg import pca
+
+    D1, D2, D3, N, num_inducing, Q = 49, 30, 10, 30, 3, 10
+    _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
+    Y = Ylist[0]
+    # 10% missing data:
+    inan = _np.random.binomial(1, .8, size=(N, D1))==1
+    Yn = Y.copy()
+    Yn[inan] = _np.nan
+    Yn = _np.ma.masked_invalid(Yn, False)
+    k = kern.linear(Q, ARD=True)
+    m = BayesianGPLVMWithMissingData(Yn, Q, init="random", 
+                                     #X=pca(Y, Q)[0], 
+                                     num_inducing=num_inducing, kernel=k)
+    m.X_variance = m.X_variance * .1
+    m['noise'] = _np.ma.var(Yn) / 100.
+
+    if optimize:
+        print "Optimizing model:"
+        m.optimize('scg', messages=verbose, max_iters=max_iters,
+                   gtol=.05)
+    if plot:
+        m.plot_X_1d("BGPLVM Latent Space 1D")
+        m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
+    return m
+
+
 def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     from GPy import kern
     from GPy.models import MRD
@@ -286,13 +320,13 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     likelihood_list = [Gaussian(x, normalize=True) for x in Ylist]
 
-    k = kern.linear(Q, ARD=True) + kern.bias(Q, _np.exp(-2)) + kern.white(Q, _np.exp(-2))
+    k = kern.linear(Q, ARD=True)# + kern.bias(Q, _np.exp(-2)) + kern.white(Q, _np.exp(-2))
     m = MRD(likelihood_list, input_dim=Q, num_inducing=num_inducing, kernels=k, initx="", initz='permute', **kw)
     m.ensure_default_constraints()
 
     for i, bgplvm in enumerate(m.bgplvms):
-        m['{}_noise'.format(i)] = bgplvm.likelihood.Y.var() / 500.
-
+        m['{}_noise'.format(i)] = 1 #bgplvm.likelihood.Y.var() / 500.
+        bgplvm.X_variance = bgplvm.X_variance #* .1
     if optimize:
         print "Optimizing Model:"
         m.optimize(messages=verbose, max_iters=8e3, gtol=.1)

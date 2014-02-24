@@ -5,8 +5,9 @@ import numpy as np
 from ..util.linalg import mdot
 from gp import GP
 from parameterization.param import Param
-from GPy.inference.latent_function_inference import var_dtc
+from ..inference.latent_function_inference import var_dtc
 from .. import likelihoods
+from parameterization.variational import NormalPosterior
 
 class SparseGP(GP):
     """
@@ -45,16 +46,14 @@ class SparseGP(GP):
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]
         
-        self.X_variance = X_variance
-        if self.has_uncertain_inputs():
-            assert X_variance.shape == X.shape
+        self.q = NormalPosterior(X, X_variance)
         
-        GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name)
+        GP.__init__(self, self.q.mean, Y, kernel, likelihood, inference_method=inference_method, name=name)
         self.add_parameter(self.Z, index=0)
         self.parameters_changed()
 
     def has_uncertain_inputs(self):
-        return not (self.X_variance is None)                
+        return self.q.has_uncertain_inputs()                
 
     def parameters_changed(self):
         if self.has_uncertain_inputs():
@@ -78,10 +77,11 @@ class SparseGP(GP):
             mu = np.dot(Kx.T, self.posterior.woodbury_vector)
             if full_cov:
                 Kxx = self.kern.K(Xnew)
-                var = Kxx - mdot(Kx.T, self.posterior.woodbury_inv, Kx)
+                #var = Kxx - mdot(Kx.T, self.posterior.woodbury_inv, Kx)
+                var = Kxx - np.tensordot(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx).T, Kx, [1,0]).swapaxes(1,2)
             else:
                 Kxx = self.kern.Kdiag(Xnew)
-                var = Kxx - np.sum(Kx * np.dot(self.posterior.woodbury_inv, Kx), 0)
+                var = (Kxx - np.sum(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx) * Kx[None,:,:], 1)).T
         else:
             Kx = self.kern.psi1(self.Z, Xnew, X_variance_new)
             mu = np.dot(Kx, self.Cpsi1V)
@@ -91,7 +91,7 @@ class SparseGP(GP):
                 Kxx = self.kern.psi0(self.Z, Xnew, X_variance_new)
                 psi2 = self.kern.psi2(self.Z, Xnew, X_variance_new)
                 var = Kxx - np.sum(np.sum(psi2 * Kmmi_LmiBLmi[None, :, :], 1), 1)
-        return mu, var[:,None]
+        return mu, var
 
 
     def _getstate(self):

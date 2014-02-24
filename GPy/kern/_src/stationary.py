@@ -32,6 +32,13 @@ class Stationary(Kern):
         assert self.variance.size==1
         self.add_parameters(self.variance, self.lengthscale)
 
+    def K_of_r(self, r):
+        raise NotImplementedError, "implement the covaraiance functino and a fn of r to use this class"
+
+    def K(self, X, X2=None):
+        r = self._scaled_dist(X, X2)
+        return self.K_of_r(r)
+
     def _dist(self, X, X2):
         if X2 is None:
             X2 = X
@@ -50,17 +57,19 @@ class Stationary(Kern):
         self.lengthscale.gradient = 0.
 
     def update_gradients_full(self, dL_dK, X, X2=None):
-        K = self.K(X, X2)
-        self.variance.gradient = np.sum(K * dL_dK)/self.variance
+        r = self._scaled_dist(X, X2)
+        K = self.K_of_r(r)
 
         rinv = self._inv_dist(X, X2)
-        dL_dr = self.dK_dr(X, X2) * dL_dK
+        dL_dr = self.dK_dr(r) * dL_dK
         x_xl3 = np.square(self._dist(X, X2)) / self.lengthscale**3
 
         if self.ARD:
             self.lengthscale.gradient = -((dL_dr*rinv)[:,:,None]*x_xl3).sum(0).sum(0)
         else:
             self.lengthscale.gradient = -((dL_dr*rinv)[:,:,None]*x_xl3).sum()
+
+        self.variance.gradient = np.sum(K * dL_dK)/self.variance
 
     def _inv_dist(self, X, X2=None):
         dist = self._scaled_dist(X, X2)
@@ -72,7 +81,8 @@ class Stationary(Kern):
             return 1./np.where(dist != 0., dist, np.inf)
 
     def gradients_X(self, dL_dK, X, X2=None):
-        dL_dr = self.dK_dr(X, X2) * dL_dK
+        r = self._scaled_dist(X, X2)
+        dL_dr = self.dK_dr(r) * dL_dK
         invdist = self._inv_dist(X, X2)
         ret = np.sum((invdist*dL_dr)[:,:,None]*self._dist(X, X2),1)/self.lengthscale**2
         if X2 is None:
@@ -82,19 +92,65 @@ class Stationary(Kern):
     def gradients_X_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
 
+    def add(self, other, tensor=False):
+        if not tensor:
+            return StatAdd(self, other)
+        else:
+            return super(Stationary, self).add(other, tensor)
+
+    def prod(self, other, tensor=False):
+        if not tensor:
+            return StatProd(self, other)
+        else:
+            return super(Stationary, self).prod(other, tensor)
 
 
+
+class StatAdd(Stationary):
+    """
+    Addition of two Stationary kernels on the same space is still stationary.
+
+    If you need to add two (stationary) kernels on separate spaces, use the generic add class.
+    """
+    def __init__(self, k1, k2):
+        assert isinstance(k1, Stationary)
+        assert isinstance(k2, Stationary)
+        self.k1, self.k2 = k1, k2
+        self.add_parameters(k1, k2)
+
+    def K_of_r(self, r):
+        return self.k1.K(r) + self.k2.K(r)
+
+    def dK_dr(self, r):
+        return self.k1.dK_dr + self.k2.dK_dr(r)
+
+class StatProd(Stationary):
+    """
+    Product of two Stationary kernels on the same space is still stationary.
+
+    If you need to multiply two (stationary) kernels on separate spaces, use the generic Prod class.
+    """
+    def __init__(self, k1, k2):
+        assert isinstance(k1, Stationary)
+        assert isinstance(k2, Stationary)
+        self.k1, self.k2 = k1, k2
+        self.add_parameters(k1, k2)
+
+    def K_of_r(self, r):
+        return self.k1.K(r) * self.k2.K(r)
+
+    def dK_dr(self, r):
+        return self.k1.dK_dr(r) * self.k2.K_of_r(r) + self.k2.dK_dr(r) * self.k1.K_of_r(r)
 
 class Exponential(Stationary):
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='Exponential'):
         super(Exponential, self).__init__(input_dim, variance, lengthscale, ARD, name)
 
     def K(self, X, X2=None):
-        dist = self._scaled_dist(X, X2)
         return self.variance * np.exp(-0.5 * dist)
 
-    def dK_dr(self, X, X2):
-        return -0.5*self.K(X, X2)
+    def dK_dr(self, r):
+        return -0.5*self.K_of_r(r)
 
 class Matern32(Stationary):
     """
@@ -109,13 +165,11 @@ class Matern32(Stationary):
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='Mat32'):
         super(Matern32, self).__init__(input_dim, variance, lengthscale, ARD, name)
 
-    def K(self, X, X2=None):
-        dist = self._scaled_dist(X, X2)
-        return self.variance * (1. + np.sqrt(3.) * dist) * np.exp(-np.sqrt(3.) * dist)
+    def K_of_r(self, r):
+        return self.variance * (1. + np.sqrt(3.) * r) * np.exp(-np.sqrt(3.) * r)
 
-    def dK_dr(self, X, X2):
-        dist = self._scaled_dist(X, X2)
-        return -3.*self.variance*dist*np.exp(-np.sqrt(3.)*dist)
+    def dK_dr(self,r):
+        return -3.*self.variance*r*np.exp(-np.sqrt(3.)*r)
 
     def Gram_matrix(self, F, F1, F2, lower, upper):
         """
@@ -153,12 +207,10 @@ class Matern52(Stationary):
        k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r) \ \ \ \ \  \\text{ where  } r = \sqrt{\sum_{i=1}^input_dim \\frac{(x_i-y_i)^2}{\ell_i^2} }
        """
 
-    def K(self, X, X2=None):
-        r = self._scaled_dist(X, X2)
+    def K_of_r(self, r):
         return self.variance*(1+np.sqrt(5.)*r+5./3*r**2)*np.exp(-np.sqrt(5.)*r)
 
-    def dK_dr(self, X, X2):
-        r = self._scaled_dist(X, X2)
+    def dK_dr(self, r):
         return self.variance*(10./3*r -5.*r -5.*np.sqrt(5.)/3*r**2)*np.exp(-np.sqrt(5.)*r)
 
     def Gram_matrix(self,F,F1,F2,F3,lower,upper):
@@ -193,19 +245,55 @@ class Matern52(Stationary):
         return(1./self.variance* (G_coef*G + orig + orig2))
 
 
-
-
 class ExpQuad(Stationary):
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='ExpQuad'):
         super(ExpQuad, self).__init__(input_dim, variance, lengthscale, ARD, name)
 
-    def K(self, X, X2=None):
-        r = self._scaled_dist(X, X2)
+    def K_of_r(self, r):
         return self.variance * np.exp(-0.5 * r**2)
 
-    def dK_dr(self, X, X2):
-        dist = self._scaled_dist(X, X2)
-        return -dist*self.K(X, X2)
+    def dK_dr(self, r):
+        return -r*self.K_of_r(r)
+
+class Cosine(Stationary):
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='Cosine'):
+        super(Cosine, self).__init__(input_dim, variance, lengthscale, ARD, name)
+
+    def K_of_r(self, r)
+        return self.variance * np.cos(r)
+
+    def dK_dr(self, r):
+        return -self.variance * np.sin(r)
+
+
+class RatQuad(Stationary):
+    """
+    Rational Quadratic Kernel
+
+    .. math::
+
+       k(r) = \sigma^2 \\bigg( 1 + \\frac{r^2}{2} \\bigg)^{- \\alpha}
+
+    """
+
+
+    def __init__(self, input_dim, variance=1., lengthscale=None, power=2., ARD=False, name='ExpQuad'):
+        super(RatQuad, self).__init__(input_dim, variance, lengthscale, ARD, name)
+        self.power = Param('power', power, Logexp())
+        self.add_parameters(self.power)
+
+    def K_of_r(self, r)
+        return self.variance*(1. + r**2/2.)**(-self.power)
+
+    def dK_dr(self, r):
+        return -self.variance*self.power*r*(1. + r**2/2)**(-self.power - 1.)
+
+    def update_gradients_full(self, dL_dK, X, X2=None):
+        super(RatQuad, self).update_gradients_full(dL_dK, X, X2)
+        r = self._scaled_dist(X, X2)
+        r2 = r**2
+        dpow = -2.**self.power*(r2 + 2.)**(-self.power)*np.log(0.5*(r2+2.))
+        self.power.gradient = np.sum(dL_dK*dpow)
 
 
 

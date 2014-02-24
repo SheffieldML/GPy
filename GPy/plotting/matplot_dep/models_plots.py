@@ -68,8 +68,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     if len(free_dims) == 1:
 
         #define the frame on which to plot
-        resolution = resolution or 200
-        Xnew, xmin, xmax = x_frame1D(X[:,free_dims], plot_limits=plot_limits)
+        Xnew, xmin, xmax = x_frame1D(X[:,free_dims], plot_limits=plot_limits, resolution=resolution or 200)
         Xgrid = np.empty((Xnew.shape[0],model.input_dim))
         Xgrid[:,free_dims] = Xnew
         for i,v in fixed_inputs:

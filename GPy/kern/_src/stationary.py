@@ -205,6 +205,19 @@ class ExpQuad(Stationary):
         dist = self._scaled_dist(X, X2)
         return -dist*self.K(X, X2)
 
+class Cosine(Stationary):
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='Cosine'):
+        super(Cosine, self).__init__(input_dim, variance, lengthscale, ARD, name)
+
+    def K(self, X, X2=None):
+        r = self._scaled_dist(X, X2)
+        return self.variance * np.cos(r)
+
+    def dK_dr(self, X, X2):
+        r = self._scaled_dist(X, X2)
+        return -self.variance * np.sin(r)
+
+
 class RatQuad(Stationary):
     """
     Rational Quadratic Kernel

@@ -32,10 +32,10 @@ class MLP(Kern):
     """
 
     def __init__(self, input_dim, variance=1., weight_variance=1., bias_variance=100., name='mlp'):
-        super(Linear, self).__init__(input_dim, name)
-        self.variance = Param('variance', variance, Logexp)
-        self.weight_variance = Param('weight_variance', weight_variance, Logexp)
-        self.bias_variance = Param('bias_variance', bias_variance, Logexp)
+        super(MLP, self).__init__(input_dim, name)
+        self.variance = Param('variance', variance, Logexp())
+        self.weight_variance = Param('weight_variance', weight_variance, Logexp())
+        self.bias_variance = Param('bias_variance', bias_variance, Logexp())
         self.add_parameters(self.variance, self.weight_variance, self.bias_variance)
 
 
@@ -109,14 +109,15 @@ class MLP(Kern):
         """Pre-computations for the covariance matrix (used for computing the covariance and its gradients."""
         if X2 is None:
             self._K_inner_prod = np.dot(X,X.T)
+            self._K_numer = self._K_inner_prod*self.weight_variance + self.bias_variance
             vec = np.diag(self._K_numer) + 1.
             self._K_denom = np.sqrt(np.outer(vec,vec))
         else:
             self._K_inner_prod = np.dot(X,X2.T)
+            self._K_numer = self._K_inner_prod*self.weight_variance + self.bias_variance
             vec1 = (X*X).sum(1)*self.weight_variance + self.bias_variance + 1.
             vec2 = (X2*X2).sum(1)*self.weight_variance + self.bias_variance + 1.
             self._K_denom = np.sqrt(np.outer(vec1,vec2))
-        self._K_numer = self._K_inner_prod*self.weight_variance + self.bias_variance
         self._K_asin_arg = self._K_numer/self._K_denom
         self._K_dvar = four_over_tau*np.arcsin(self._K_asin_arg)
 

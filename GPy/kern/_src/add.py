@@ -45,9 +45,6 @@ class Add(Kern):
     def update_gradients_full(self, dL_dK, X):
         [p.update_gradients_full(dL_dK, X[:,i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
 
-    def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
-        [p.update_gradients_sparse(dL_dKmm, dL_dKnm, dL_dKdiag, X[:,i_s], Z[:,i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
-
     def gradients_X(self, dL_dK, X, X2=None):
         """Compute the gradient of the objective function with respect to X.
 

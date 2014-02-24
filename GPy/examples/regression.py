@@ -16,7 +16,7 @@ def olympic_marathon_men(optimize=True, plot=True):
     m = GPy.models.GPRegression(data['X'], data['Y'])
 
     # set the lengthscale to be something sensible (defaults to 1)
-    m['rbf_lengthscale'] = 10
+    m.kern.lengthscale = 10.
 
     if optimize:
         m.optimize('bfgs', max_iters=200)
@@ -41,11 +41,10 @@ def coregionalization_toy2(optimize=True, plot=True):
     Y = np.vstack((Y1, Y2))
 
     #build the kernel
-    k1 = GPy.kern.RBF(1) + GPy.kern.bias(1)
-    k2 = GPy.kern.coregionalize(2,1)
+    k1 = GPy.kern.RBF(1) + GPy.kern.Bias(1)
+    k2 = GPy.kern.Coregionalize(2,1)
     k = k1**k2
     m = GPy.models.GPRegression(X, Y, kernel=k)
-    m.constrain_fixed('.*rbf_var', 1.)
 
     if optimize:
         m.optimize('bfgs', max_iters=100)
@@ -86,11 +85,13 @@ def coregionalization_sparse(optimize=True, plot=True):
     """
     #fetch the data from the non sparse examples
     m = coregionalization_toy2(optimize=False, plot=False)
-    X, Y = m.X, m.likelihood.Y
+    X, Y = m.X, m.Y
+
+    k = GPy.kern.RBF(1)**GPy.kern.Coregionalize(2)
 
     #construct a model
-    m = GPy.models.SparseGPRegression(X,Y)
-    m.constrain_fixed('iip_\d+_1') # don't optimize the inducing input indexes
+    m = GPy.models.SparseGPRegression(X,Y, num_inducing=25, kernel=k)
+    m.Z[:,1].fix() # don't optimize the inducing input indexes
 
     if optimize:
         m.optimize('bfgs', max_iters=100, messages=1)
@@ -128,7 +129,7 @@ def epomeo_gpx(max_iters=200, optimize=True, plot=True):
                    np.random.randint(0, 4, num_inducing)[:, None]))
 
     k1 = GPy.kern.RBF(1)
-    k2 = GPy.kern.coregionalize(output_dim=5, rank=5)
+    k2 = GPy.kern.Coregionalize(output_dim=5, rank=5)
     k = k1**k2
 
     m = GPy.models.SparseGPRegression(t, Y, kernel=k, Z=Z, normalize_Y=True)
@@ -322,7 +323,7 @@ def toy_ARD(max_iters=1000, kernel_type='linear', num_samples=300, D=4, optimize
         kernel = GPy.kern.RBF_inv(X.shape[1], ARD=1)
     else:
         kernel = GPy.kern.RBF(X.shape[1], ARD=1)
-    kernel += GPy.kern.White(X.shape[1]) + GPy.kern.bias(X.shape[1])
+    kernel += GPy.kern.White(X.shape[1]) + GPy.kern.Bias(X.shape[1])
     m = GPy.models.GPRegression(X, Y, kernel)
     # len_prior = GPy.priors.inverse_gamma(1,18) # 1, 25
     # m.set_prior('.*lengthscale',len_prior)
@@ -361,7 +362,7 @@ def toy_ARD_sparse(max_iters=1000, kernel_type='linear', num_samples=300, D=4, o
         kernel = GPy.kern.RBF_inv(X.shape[1], ARD=1)
     else:
         kernel = GPy.kern.RBF(X.shape[1], ARD=1)
-    #kernel += GPy.kern.bias(X.shape[1])
+    #kernel += GPy.kern.Bias(X.shape[1])
     X_variance = np.ones(X.shape) * 0.5
     m = GPy.models.SparseGPRegression(X, Y, kernel, X_variance=X_variance)
     # len_prior = GPy.priors.inverse_gamma(1,18) # 1, 25

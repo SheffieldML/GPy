@@ -43,7 +43,7 @@ class Static(Kern):
 
 class White(Static):
     def __init__(self, input_dim, variance=1., name='white'):
-        super(White, self).__init__(input_dim, name)
+        super(White, self).__init__(input_dim, variance, name)
 
     def K(self, X, X2=None):
         if X2 is None:
@@ -66,7 +66,7 @@ class White(Static):
 
 class Bias(Static):
     def __init__(self, input_dim, variance=1., name='bias'):
-        super(Bias, self).__init__(input_dim, name)
+        super(Bias, self).__init__(input_dim, variance, name)
 
     def K(self, X, X2=None):
         shape = (X.shape[0], X.shape[0] if X2 is None else X2.shape[0])

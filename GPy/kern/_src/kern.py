@@ -26,11 +26,11 @@ class Kern(Parameterized):
         raise NotImplementedError
     def Kdiag(self, Xa):
         raise NotImplementedError
-    def psi0(self,Z,posterior_variational):
+    def psi0(self,Z,variational_posterior):
         raise NotImplementedError
-    def psi1(self,Z,posterior_variational):
+    def psi1(self,Z,variational_posterior):
         raise NotImplementedError
-    def psi2(self,Z,posterior_variational):
+    def psi2(self,Z,variational_posterior):
         raise NotImplementedError
     def gradients_X(self, dL_dK, X, X2):
         raise NotImplementedError
@@ -49,16 +49,16 @@ class Kern(Parameterized):
         self._collect_gradient(target)
         self._set_gradient(target)
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """Set the gradients of all parameters when doing variational (M) inference with uncertain inputs."""
         raise NotImplementedError
     def gradients_Z_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
         grad = self.gradients_X(dL_dKmm, Z)
         grad += self.gradients_X(dL_dKnm.T, Z, X)
         return grad
-    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
+    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         raise NotImplementedError
-    def gradients_q_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
+    def gradients_q_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         raise NotImplementedError
     
     def plot_ARD(self, *args, **kw):

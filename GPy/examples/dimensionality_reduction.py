@@ -164,12 +164,11 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     _np.random.seed(0)
     data = GPy.util.datasets.oil()
 
-    kernel = GPy.kern.RBF(Q, 1., [.1] * Q, ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF(Q, 1., _np.random.uniform(0,1,(Q,)), ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
     Y = data['X'][:N]
     m = GPy.models.BayesianGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing, **k)
     m.data_labels = data['Y'][:N].argmax(axis=1)
-    m['.*noise.var'] = Y.var() / 100.
-
+    
     if optimize:
         m.optimize('scg', messages=verbose, max_iters=max_iters, gtol=.05)
 

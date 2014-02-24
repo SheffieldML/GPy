@@ -252,3 +252,6 @@ class Linear(Kern):
 
         return np.dot(ZA, inner).swapaxes(0, 1)  # NOTE: self.ZAinner \in [num_inducing x N x input_dim]!
 
+    def input_sensitivity(self):
+        if self.ARD: return self.variances
+        else: return self.variances.repeat(self.input_dim)

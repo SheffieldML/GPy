@@ -18,26 +18,26 @@ class Static(Kern):
         ret[:] = self.variance
         return ret
 
-    def gradients_X(self, dL_dK, X, X2, target):
+    def gradients_X(self, dL_dK, X, X2=None):
         return np.zeros(X.shape)
 
-    def gradients_X_diag(self, dL_dKdiag, X, target):
+    def gradients_X_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
 
-    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         return np.zeros(Z.shape)
 
-    def gradients_muS_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
-        return np.zeros(mu.shape), np.zeros(S.shape)
+    def gradients_muS_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        return np.zeros(variational_posterior.shape), np.zeros(variational_posterior.shape)
 
-    def psi0(self, Z, mu, S):
-        return self.Kdiag(mu)
+    def psi0(self, Z, variational_posterior):
+        return self.Kdiag(variational_posterior.mean)
 
-    def psi1(self, Z, mu, S, target):
-        return self.K(mu, Z)
+    def psi1(self, Z, variational_posterior):
+        return self.K(variational_posterior.mean, Z)
 
-    def psi2(Z, mu, S):
-        K = self.K(mu, Z)
+    def psi2(self, Z, variational_posterior):
+        K = self.K(variational_posterior.mean, Z)
         return K[:,:,None]*K[:,None,:] # NB. more efficient implementations on inherriting classes
 
 
@@ -51,8 +51,8 @@ class White(Static):
         else:
             return np.zeros((X.shape[0], X2.shape[0]))
 
-    def psi2(self, Z, mu, S, target):
-        return np.zeros((mu.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)
+    def psi2(self, Z, variational_posterior):
+        return np.zeros((variational_posterior.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)
 
     def update_gradients_full(self, dL_dK, X):
         self.variance.gradient = np.trace(dL_dK)
@@ -60,7 +60,7 @@ class White(Static):
     def update_gradients_diag(self, dL_dKdiag, X):
         self.variance.gradient = dL_dKdiag.sum()
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = np.trace(dL_dKmm) + dL_dpsi0.sum()
 
 
@@ -80,11 +80,11 @@ class Bias(Static):
     def update_gradients_diag(self, dL_dKdiag, X):
         self.variance.gradient = dL_dK.sum()
 
-    def psi2(self, Z, mu, S, target):
+    def psi2(self, Z, variational_posterior):
         ret = np.empty((mu.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)
         ret[:] = self.variance**2
         return ret
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dKmm.sum() + dL_dpsi0.sum() + dL_dpsi1.sum() + 2.*self.variance*dL_dpsi2.sum()
 

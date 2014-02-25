@@ -67,13 +67,13 @@ class Add(Kern):
         return sum([p.Kdiag(X[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)])
 
 
-    def psi0(self, Z, mu, S):
+    def psi0(self, Z, variational_posterior):
         return np.sum([p.psi0(Z[:, i_s], mu[:, i_s], S[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)],0)
 
-    def psi1(self, Z, mu, S):
+    def psi1(self, Z, variational_posterior):
         return np.sum([p.psi1(Z[:, i_s], mu[:, i_s], S[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)], 0)
 
-    def psi2(self, Z, mu, S):
+    def psi2(self, Z, variational_posterior):
         psi2 = np.sum([p.psi2(Z[:, i_s], mu[:, i_s], S[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)], 0)
 
         # compute the "cross" terms
@@ -101,7 +101,7 @@ class Add(Kern):
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
         return psi2
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, variational_posterior, Z):
         from white import White
         from rbf import RBF
         #from rbf_inv import RBFInv

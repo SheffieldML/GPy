@@ -3,6 +3,7 @@
 
 
 from kern import Kern
+import numpy as np
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 import numpy as np

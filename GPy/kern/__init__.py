@@ -7,6 +7,7 @@ from _src.stationary import Exponential, Matern32, Matern52, ExpQuad, RatQuad, C
 from _src.mlp import MLP
 from _src.periodic import PeriodicExponential, PeriodicMatern32, PeriodicMatern52
 from _src.independent_outputs import IndependentOutputs
+from _src.ssrbf import SSRBF
 #import coregionalize
 #import eq_ode1
 #import finite_dimensional

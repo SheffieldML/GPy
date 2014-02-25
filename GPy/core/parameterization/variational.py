@@ -9,7 +9,10 @@ from parameterized import Parameterized
 from param import Param
 from transformations import Logexp
 
-class VariationalPrior(object):
+class VariationalPrior(Parameterized):
+    def __init__(self, name=None, **kw):
+        super(VariationalPrior, self).__init__(name=name, **kw)
+        
     def KL_divergence(self, variational_posterior):
         raise NotImplementedError, "override this for variational inference of latent space"
 
@@ -19,7 +22,7 @@ class VariationalPrior(object):
         """
         raise NotImplementedError, "override this for variational inference of latent space"
     
-class NormalPrior(VariationalPrior):
+class NormalPrior(VariationalPrior):        
     def KL_divergence(self, variational_posterior):
         var_mean = np.square(variational_posterior.mean).sum()
         var_S = (variational_posterior.variance - np.log(variational_posterior.variance)).sum()
@@ -29,6 +32,32 @@ class NormalPrior(VariationalPrior):
         # dL:
         variational_posterior.mean.gradient -= variational_posterior.mean
         variational_posterior.variance.gradient -= (1. - (1. / (variational_posterior.variance))) * 0.5
+
+class SpikeAndSlabPrior(VariationalPrior):
+    def __init__(self, variance = 1.0, pi = 0.5, name='SpikeAndSlabPrior', **kw):
+        super(VariationalPrior, self).__init__(name=name, **kw)
+        assert variance==1.0, "Not Implemented!"
+        self.pi = Param('pi', pi)
+        self.variance = Param('variance',variance)
+        self.add_parameters(self.pi, self.variance)
+        
+    def KL_divergence(self, variational_posterior):
+        mu = variational_posterior.mean
+        S = variational_posterior.variance
+        gamma = variational_posterior.binary_prob
+        var_mean = np.square(mu)
+        var_S = (S - np.log(S))
+        var_gamma = (gamma*np.log(gamma/self.pi)).sum()+((1-gamma)*np.log((1-gamma)/(1-self.pi))).sum()
+        return var_gamma+ 0.5 * (gamma* (var_mean + var_S -1)).sum()
+    
+    def update_gradients_KL(self, variational_posterior):
+        mu = variational_posterior.mean
+        S = variational_posterior.variance
+        gamma = variational_posterior.binary_prob
+
+        gamma.gradient -= np.log((1-self.pi)/self.pi*gamma/(1.-gamma))+(np.square(mu)+S-np.log(S)-1.)/2.
+        mu.gradient -= gamma*mu
+        S.gradient -= (1. - (1. / (S))) * gamma /2.
 
 
 class VariationalPosterior(Parameterized):
@@ -65,7 +94,7 @@ class NormalPosterior(VariationalPosterior):
         from ...plotting.matplot_dep import variational_plots
         return variational_plots.plot(self,*args)
 
-class SpikeAndSlab(VariationalPosterior):
+class SpikeAndSlabPosterior(VariationalPosterior):
     '''
     The SpikeAndSlab distribution for variational approximations.
     '''
@@ -73,7 +102,7 @@ class SpikeAndSlab(VariationalPosterior):
         """
         binary_prob : the probability of the distribution on the slab part.
         """
-        super(SpikeAndSlab, self).__init__(means, variances, name)
+        super(SpikeAndSlabPosterior, self).__init__(means, variances, name)
         self.gamma = Param("binary_prob",binary_prob,)
         self.add_parameter(self.gamma)
 

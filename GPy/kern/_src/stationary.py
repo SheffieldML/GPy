@@ -5,6 +5,7 @@
 from kern import Kern
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
+from ...util.linalg import tdot
 from ... import util
 import numpy as np
 from scipy import integrate
@@ -33,10 +34,10 @@ class Stationary(Kern):
         self.add_parameters(self.variance, self.lengthscale)
 
     def K_of_r(self, r):
-        raise NotImplementedError, "implement the covaraiance functino and a fn of r to use this class"
+        raise NotImplementedError, "implement the covaraiance function as a fn of r to use this class"
 
     def dK_dr(self, r):
-        raise NotImplementedError, "implement the covaraiance functino and a fn of r to use this class"
+        raise NotImplementedError, "implement the covaraiance function as a fn of r to use this class"
 
     def K(self, X, X2=None):
         r = self._scaled_dist(X, X2)
@@ -47,8 +48,44 @@ class Stationary(Kern):
             X2 = X
         return X[:, None, :] - X2[None, :, :]
 
+    def _unscaled_dist(self, X, X2=None):
+        """
+        Compute the square distance between each row of X and X2, or between
+        each pair of rows of X if X2 is None.
+        """
+        if X2 is None:
+            Xsq = np.sum(np.square(X),1)
+            return np.sqrt(-2.*tdot(X) + (Xsq[:,None] + Xsq[None,:]))
+        else:
+            X1sq = np.sum(np.square(X),1)
+            X2sq = np.sum(np.square(X2),1)
+            return np.sqrt(-2.*np.dot(X, X2.T) + (X1sq[:,None] + X2sq[None,:]))
+
     def _scaled_dist(self, X, X2=None):
-        return np.sqrt(np.sum(np.square(self._dist(X, X2) / self.lengthscale), -1))
+        """
+        Efficiently compute the scaled distance, r.
+
+        r = \sum_{q=1}^Q (x_q - x'q)^2/l_q^2
+
+        Note that if thre is only one lengthscale, l comes outside the sum. In
+        this case we compute the unscaled distance first (in a separate
+        function for caching) and divide by lengthscale afterwards
+
+        """
+        if self.ARD:
+            if X2 is None:
+                Xl = X/self.lengthscale
+                Xsq = np.sum(np.square(Xl),1)
+                return np.sqrt(np.sqrt(-2.*tdot(Xl) +(Xsq[:,None] + Xsq[None,:])))
+            else:
+                X1l = X/self.lengthscale
+                X2l = X2/self.lengthscale
+                X1sq = np.sum(np.square(X1l),1)
+                X2sq = np.sum(np.square(X2l),1)
+                return np.sqrt(-2.*np.dot(X, X2.T) + (X1sq[:,None] + X2sq[None,:]))
+        else:
+            return self._unscaled_dist(X, X2)/self.lengthscale
+
 
     def Kdiag(self, X):
         ret = np.empty(X.shape[0])
@@ -65,16 +102,22 @@ class Stationary(Kern):
 
         rinv = self._inv_dist(X, X2)
         dL_dr = self.dK_dr(r) * dL_dK
-        x_xl3 = np.square(self._dist(X, X2)) / self.lengthscale**3
 
         if self.ARD:
+            x_xl3 = np.square(self._dist(X, X2)) / self.lengthscale**3
             self.lengthscale.gradient = -((dL_dr*rinv)[:,:,None]*x_xl3).sum(0).sum(0)
         else:
+            x_xl3 = np.square(self._dist(X, X2)) / self.lengthscale**3
             self.lengthscale.gradient = -((dL_dr*rinv)[:,:,None]*x_xl3).sum()
 
         self.variance.gradient = np.sum(K * dL_dK)/self.variance
 
     def _inv_dist(self, X, X2=None):
+        """
+        Compute the elementwise inverse of the distance matrix, expecpt on the
+        diagonal, where we return zero (the distance on the diagonal is zero).
+        This term appears in derviatives.
+        """
         dist = self._scaled_dist(X, X2)
         if X2 is None:
             nondiag = util.diag.offdiag_view(dist)
@@ -84,12 +127,25 @@ class Stationary(Kern):
             return 1./np.where(dist != 0., dist, np.inf)
 
     def gradients_X(self, dL_dK, X, X2=None):
+        """
+        Given the derivative of the objective wrt K (dL_dK), compute the derivative wrt X
+        """
         r = self._scaled_dist(X, X2)
-        dL_dr = self.dK_dr(r) * dL_dK
         invdist = self._inv_dist(X, X2)
-        ret = np.sum((invdist*dL_dr)[:,:,None]*self._dist(X, X2),1)/self.lengthscale**2
+        dL_dr = self.dK_dr(r) * dL_dK
+        #The high-memory numpy way: ret = np.sum((invdist*dL_dr)[:,:,None]*self._dist(X, X2),1)/self.lengthscale**2
+        #if X2 is None:
+            #ret *= 2.
+
+        #the lower memory way with a loop
+        tmp = invdist*dL_dr
         if X2 is None:
-            ret *= 2.
+            tmp *= 2.
+            X2 = X
+        ret = np.empty(X.shape, dtype=np.float64)
+        [np.copyto(ret[:,q], np.sum(tmp*(X[:,q][:,None]-X2[:,q][None,:]), 1)) for q in xrange(self.input_dim)]
+        ret /= self.lengthscale**2
+
         return ret
 
     def gradients_X_diag(self, dL_dKdiag, X):
@@ -162,6 +218,8 @@ class Matern52(Stationary):
 
        k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r) \ \ \ \ \  \\text{ where  } r = \sqrt{\sum_{i=1}^input_dim \\frac{(x_i-y_i)^2}{\ell_i^2} }
        """
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='Mat52'):
+        super(Matern52, self).__init__(input_dim, variance, lengthscale, ARD, name)
 
     def K_of_r(self, r):
         return self.variance*(1+np.sqrt(5.)*r+5./3*r**2)*np.exp(-np.sqrt(5.)*r)
@@ -239,17 +297,19 @@ class RatQuad(Stationary):
         self.add_parameters(self.power)
 
     def K_of_r(self, r):
-        return self.variance*(1. + r**2/2.)**(-self.power)
+        r2 = np.power(r, 2.)
+        return self.variance*np.power(1. + r2/2., -self.power)
 
     def dK_dr(self, r):
-        return -self.variance*self.power*r*(1. + r**2/2)**(-self.power - 1.)
+        r2 = np.power(r, 2.)
+        return -self.variance*self.power*r*np.power(1. + r2/2., - self.power - 1.)
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         super(RatQuad, self).update_gradients_full(dL_dK, X, X2)
         r = self._scaled_dist(X, X2)
-        r2 = r**2
-        dpow = -2.**self.power*(r2 + 2.)**(-self.power)*np.log(0.5*(r2+2.))
-        self.power.gradient = np.sum(dL_dK*dpow)
-
+        r2 = np.power(r, 2.)
+        dK_dpow = -self.variance * np.power(2., self.power) * np.power(r2 + 2., -self.power) * np.log(0.5*(r2+2.))
+        grad = np.sum(dL_dK*dK_dpow)
+        self.power.gradient = grad
 
 

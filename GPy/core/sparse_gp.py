@@ -52,10 +52,7 @@ class SparseGP(GP):
         self.parameters_changed()
 
     def has_uncertain_inputs(self):
-        if isinstance(self.X, VariationalPosterior):
-            return True
-        else:
-            return False
+        return isinstance(self.X, VariationalPosterior)
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood, self.Y)

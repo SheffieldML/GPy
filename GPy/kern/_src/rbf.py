@@ -40,27 +40,27 @@ class RBF(Stationary):
         self._Z, self._mu, self._S = np.empty(shape=(3, 1)) # cached versions of Z,mu,S
 
 
-    def psi0(self, Z, posterior_variational):
-        return self.Kdiag(posterior_variational.mean)
+    def psi0(self, Z, variational_posterior):
+        return self.Kdiag(variational_posterior.mean)
 
-    def psi1(self, Z, posterior_variational):
-        mu = posterior_variational.mean
-        S = posterior_variational.variance
+    def psi1(self, Z, variational_posterior):
+        mu = variational_posterior.mean
+        S = variational_posterior.variance
         self._psi_computations(Z, mu, S)
         return self._psi1
 
-    def psi2(self, Z, posterior_variational):
-        mu = posterior_variational.mean
-        S = posterior_variational.variance
+    def psi2(self, Z, variational_posterior):
+        mu = variational_posterior.mean
+        S = variational_posterior.variance
         self._psi_computations(Z, mu, S)
         return self._psi2
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         #contributions from Kmm
         sself.update_gradients_full(dL_dKmm, Z)
 
-        mu = posterior_variational.mean
-        S = posterior_variational.variance
+        mu = variational_posterior.mean
+        S = variational_posterior.variance
         self._psi_computations(Z, mu, S)
         l2 = self.lengthscale **2
 
@@ -87,9 +87,9 @@ class RBF(Stationary):
         else:
             self.lengthscale.gradient += dpsi2_dlength.sum(0).sum(0).sum(0)
 
-    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
-        mu = posterior_variational.mean
-        S = posterior_variational.variance
+    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        mu = variational_posterior.mean
+        S = variational_posterior.variance
         self._psi_computations(Z, mu, S)
         l2 = self.lengthscale **2
 
@@ -108,9 +108,9 @@ class RBF(Stationary):
 
         return grad
 
-    def gradients_q_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, posterior_variational):
-        mu = posterior_variational.mean
-        S = posterior_variational.variance
+    def gradients_q_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        mu = variational_posterior.mean
+        S = variational_posterior.variance
         self._psi_computations(Z, mu, S)
         l2 = self.lengthscale **2
         #psi1

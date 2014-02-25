@@ -5,10 +5,10 @@ Created on 26 Apr 2013
 '''
 import unittest
 import numpy
-from GPy.inference.conjugate_gradient_descent import CGD, RUNNING
+from GPy.inference.optimization.conjugate_gradient_descent import CGD, RUNNING
 import pylab
 from scipy.optimize.optimize import rosen, rosen_der
-from GPy.inference.gradient_descent_update_rules import PolakRibiere
+from GPy.inference.optimization.gradient_descent_update_rules import PolakRibiere
 
 
 class Test(unittest.TestCase):
@@ -30,7 +30,7 @@ class Test(unittest.TestCase):
                 assert numpy.allclose(res[0], 0, atol=1e-5)
                 break
             except AssertionError:
-                import ipdb;ipdb.set_trace()
+                import pdb;pdb.set_trace()
                 # RESTART
                 pass
         else:
@@ -108,4 +108,3 @@ if __name__ == "__main__":
     res[0] = opt.opt(f, df, x0.copy(), callback, messages=True, maxiter=1000,
                    report_every=7, gtol=1e-12, update_rule=PolakRibiere)
 
-    pass

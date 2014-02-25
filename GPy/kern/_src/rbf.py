@@ -55,10 +55,7 @@ class RBF(Stationary):
         self._psi_computations(Z, mu, S)
         return self._psi2
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        #contributions from Kmm
-        sself.update_gradients_full(dL_dKmm, Z)
-
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         mu = variational_posterior.mean
         S = variational_posterior.variance
         self._psi_computations(Z, mu, S)
@@ -87,7 +84,7 @@ class RBF(Stationary):
         else:
             self.lengthscale.gradient += dpsi2_dlength.sum(0).sum(0).sum(0)
 
-    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         mu = variational_posterior.mean
         S = variational_posterior.variance
         self._psi_computations(Z, mu, S)
@@ -104,11 +101,9 @@ class RBF(Stationary):
         dZ = self._psi2[:, :, :, None] * (term1[None] + term2)
         grad += 2*(dL_dpsi2[:, :, :, None] * dZ).sum(0).sum(0)
 
-        grad += self.gradients_X(dL_dKmm, Z, None)
-
         return grad
 
-    def gradients_q_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         mu = variational_posterior.mean
         S = variational_posterior.variance
         self._psi_computations(Z, mu, S)

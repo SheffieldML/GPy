@@ -58,11 +58,33 @@ class SparseGP(GP):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood, self.Y)
         self.likelihood.update_gradients(self.grad_dict.pop('partial_for_likelihood'))
         if isinstance(self.X, VariationalPosterior):
-            self.kern.update_gradients_variational(posterior_variational=self.X, Z=self.Z, **self.grad_dict)
-            self.Z.gradient = self.kern.gradients_Z_variational(posterior_variational=self.X, Z=self.Z, **self.grad_dict)
+            #gradients wrt kernel
+            dL_dKmm = self.grad_dict.pop('dL_dKmm')
+            self.kern.update_gradients_full(dL_dKmm, self.Z, None)
+            target = np.zeros(self.kern.size)
+            self.kern._collect_gradient(target)
+            self.kern.update_gradients_expectations(variational_posterior=self.X, Z=self.Z, **self.grad_dict)
+            self.kern._collect_gradient(target)
+            self.kern._set_gradient(target)
+
+            #gradients wrt Z
+            self.Z.gradient = self.kern.gradients_X(dL_dKmm, self.Z)
+            self.Z.gradient += self.kern.gradients_Z_expectations(
+                               self.grad_dict['dL_dpsi1'], self.grad_dict['dL_dpis2'], Z=self.Z, variational_posterior=self.X)
         else:
-            self.kern.update_gradients_sparse(X=self.X, Z=self.Z, **self.grad_dict)
-            self.Z.gradient = self.kern.gradients_Z_sparse(X=self.X, Z=self.Z, **self.grad_dict)
+            #gradients wrt kernel
+            target = np.zeros(self.kern.size)
+            self.kern.update_gradients_diag(self.grad_dict['dL_dKdiag'], self.X)
+            self.kern._collect_gradient(target)
+            self.kern.update_gradients_full(self.grad_dict['dL_dKnm'], self.X, self.Z)
+            self.kern._collect_gradient(target)
+            self.kern.update_gradients_full(self.grad_dict['dL_dKmm'], self.Z, None)
+            self.kern._collect_gradient(target)
+            self.kern._set_gradient(target)
+
+            #gradients wrt Z
+            self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
+            self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
 
     def _raw_predict(self, Xnew, X_variance_new=None, full_cov=False):
         """

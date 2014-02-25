@@ -106,52 +106,52 @@ class Linear(Kern):
     #              variational              #
     #---------------------------------------#
 
-    def psi0(self, Z, posterior_variational):
-        return np.sum(self.variances * self._mu2S(posterior_variational), 1)
+    def psi0(self, Z, variational_posterior):
+        return np.sum(self.variances * self._mu2S(variational_posterior), 1)
 
-    def psi1(self, Z, posterior_variational):
-        return self.K(posterior_variational.mean, Z) #the variance, it does nothing
+    def psi1(self, Z, variational_posterior):
+        return self.K(variational_posterior.mean, Z) #the variance, it does nothing
 
-    def psi2(self, Z, posterior_variational):
+    def psi2(self, Z, variational_posterior):
         ZA = Z * self.variances
-        ZAinner = self._ZAinner(posterior_variational, Z)
+        ZAinner = self._ZAinner(variational_posterior, Z)
         return np.dot(ZAinner, ZA.T)
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, posterior_variational, Z):
-        mu, S = posterior_variational.mean, posterior_variational.variance
+    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, variational_posterior, Z):
+        mu, S = variational_posterior.mean, variational_posterior.variance
         # psi0:
-        tmp = dL_dpsi0[:, None] * self._mu2S(posterior_variational)
+        tmp = dL_dpsi0[:, None] * self._mu2S(variational_posterior)
         if self.ARD: grad = tmp.sum(0)
         else: grad = np.atleast_1d(tmp.sum())
         #psi1
         self.update_gradients_full(dL_dpsi1, mu, Z)
         grad += self.variances.gradient
         #psi2
-        tmp = dL_dpsi2[:, :, :, None] * (self._ZAinner(posterior_variational, Z)[:, :, None, :] * (2. * Z)[None, None, :, :])
+        tmp = dL_dpsi2[:, :, :, None] * (self._ZAinner(variational_posterior, Z)[:, :, None, :] * (2. * Z)[None, None, :, :])
         if self.ARD: grad += tmp.sum(0).sum(0).sum(0)
         else: grad += tmp.sum()
         #from Kmm
         self.update_gradients_full(dL_dKmm, Z, None)
         self.variances.gradient += grad
 
-    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, posterior_variational, Z):
+    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, variational_posterior, Z):
         # Kmm
         grad = self.gradients_X(dL_dKmm, Z, None)
         #psi1
-        grad += self.gradients_X(dL_dpsi1.T, Z, posterior_variational.mean)
+        grad += self.gradients_X(dL_dpsi1.T, Z, variational_posterior.mean)
         #psi2
-        self._weave_dpsi2_dZ(dL_dpsi2, Z, posterior_variational, grad)
+        self._weave_dpsi2_dZ(dL_dpsi2, Z, variational_posterior, grad)
         return grad
 
-    def gradients_q_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, posterior_variational, Z):
-        grad_mu, grad_S = np.zeros(posterior_variational.mean.shape), np.zeros(posterior_variational.mean.shape)
+    def gradients_q_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, variational_posterior, Z):
+        grad_mu, grad_S = np.zeros(variational_posterior.mean.shape), np.zeros(variational_posterior.mean.shape)
         # psi0
-        grad_mu += dL_dpsi0[:, None] * (2.0 * posterior_variational.mean * self.variances)
+        grad_mu += dL_dpsi0[:, None] * (2.0 * variational_posterior.mean * self.variances)
         grad_S += dL_dpsi0[:, None] * self.variances
         # psi1
         grad_mu += (dL_dpsi1[:, :, None] * (Z * self.variances)).sum(1)
         # psi2
-        self._weave_dpsi2_dmuS(dL_dpsi2, Z, posterior_variational, grad_mu, grad_S)
+        self._weave_dpsi2_dmuS(dL_dpsi2, Z, variational_posterior, grad_mu, grad_S)
 
         return grad_mu, grad_S
 

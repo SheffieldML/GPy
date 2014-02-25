@@ -14,3 +14,4 @@ import visualize
 import latent_space_visualizations
 import netpbmfile
 import inference_plots
+import maps

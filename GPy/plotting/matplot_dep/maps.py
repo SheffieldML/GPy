@@ -119,7 +119,7 @@ def plot_bbox(sf,bbox,inside_only=True):
     A,B,C,D = bbox
     plot(shape_records,xlims=[bbox[0],bbox[2]],ylims=[bbox[1],bbox[3]])
 
-def plot_string_match(sf,regex,field):
+def plot_string_match(sf,regex,field,**kwargs):
     """
     Plot the geometry of a shapefile whose fields match a regular expression given
 
@@ -131,7 +131,7 @@ def plot_string_match(sf,regex,field):
     :type field: integer
     """
     index,shape_records = string_match(sf,regex,field)
-    plot(shape_records)
+    plot(shape_records,**kwargs)
 
 
 def new_shape_string(sf,name,regex,field=2,type=shapefile.POINT):
@@ -159,3 +159,13 @@ def new_shape_string(sf,name,regex,field=2,type=shapefile.POINT):
 
     newshp.save(name)
     print index
+
+def apply_bbox(sf,ax):
+    """
+    Use bbox as xlim and ylim in ax
+    """
+    limits = sf.bbox
+    xlim = limits[0],limits[2]
+    ylim = limits[1],limits[3]
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)

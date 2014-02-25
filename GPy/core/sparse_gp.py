@@ -7,7 +7,7 @@ from gp import GP
 from parameterization.param import Param
 from ..inference.latent_function_inference import var_dtc
 from .. import likelihoods
-from parameterization.variational import NormalPosterior
+from parameterization.variational import VariationalPosterior
 
 class SparseGP(GP):
     """
@@ -32,7 +32,7 @@ class SparseGP(GP):
 
     """
 
-    def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None, X_variance=None, name='sparse gp'):
+    def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None, name='sparse gp'):
 
         #pick a sensible inference method
         if inference_method is None:
@@ -45,25 +45,21 @@ class SparseGP(GP):
 
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]
-        
-        self.q = NormalPosterior(X, X_variance)
-        
-        GP.__init__(self, self.q.mean, Y, kernel, likelihood, inference_method=inference_method, name=name)
+
+        GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name)
+
         self.add_parameter(self.Z, index=0)
         self.parameters_changed()
 
     def has_uncertain_inputs(self):
-        return self.q.has_uncertain_inputs()                
+        return isinstance(self.X, VariationalPosterior)
 
     def parameters_changed(self):
-        if self.has_uncertain_inputs():
-            self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference_latent(self.kern, self.q, self.Z, self.likelihood, self.Y)
-        else:
-            self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood, self.Y)
         self.likelihood.update_gradients(self.grad_dict.pop('partial_for_likelihood'))
-        if self.has_uncertain_inputs():
-            self.kern.update_gradients_variational(posterior_variational=self.q, Z=self.Z, **self.grad_dict)
-            self.Z.gradient = self.kern.gradients_Z_variational(posterior_variational=self.q, Z=self.Z, **self.grad_dict)
+        if isinstance(self.X, VariationalPosterior):
+            self.kern.update_gradients_variational(posterior_variational=self.X, Z=self.Z, **self.grad_dict)
+            self.Z.gradient = self.kern.gradients_Z_variational(posterior_variational=self.X, Z=self.Z, **self.grad_dict)
         else:
             self.kern.update_gradients_sparse(X=self.X, Z=self.Z, **self.grad_dict)
             self.Z.gradient = self.kern.gradients_Z_sparse(X=self.X, Z=self.Z, **self.grad_dict)

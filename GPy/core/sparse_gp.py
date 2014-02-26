@@ -31,7 +31,7 @@ class SparseGP(GP):
 
     """
 
-    def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None, X_variance=None, name='sparse gp'):
+    def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None, name='sparse gp'):
 
         #pick a sensible inference method
         if inference_method is None:

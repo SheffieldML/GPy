@@ -392,6 +392,7 @@ class Parameterizable(Constrainable, Observable):
         import itertools
         [p._set_params(params[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
         self.parameters_changed()
+        self._notify_observers()
 
     def copy(self):
         """Returns a (deep) copy of the current model"""

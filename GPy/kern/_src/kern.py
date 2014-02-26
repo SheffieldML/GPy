@@ -26,27 +26,41 @@ class Kern(Parameterized):
         raise NotImplementedError
     def Kdiag(self, Xa):
         raise NotImplementedError
-    def psi0(self,Z,variational_posterior):
+    def psi0(self, Z, variational_posterior):
         raise NotImplementedError
-    def psi1(self,Z,variational_posterior):
+    def psi1(self, Z, variational_posterior):
         raise NotImplementedError
-    def psi2(self,Z,variational_posterior):
+    def psi2(self, Z, variational_posterior):
         raise NotImplementedError
     def gradients_X(self, dL_dK, X, X2):
         raise NotImplementedError
     def gradients_X_diag(self, dL_dK, X):
         raise NotImplementedError
+
     def update_gradients_full(self, dL_dK, X, X2):
         """Set the gradients of all parameters when doing full (N) inference."""
         raise NotImplementedError
+
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """
         Set the gradients of all parameters when doing inference with
         uncertain inputs, using expectations of the kernel.
+
+        The esential maths is
+
+        dL_d{theta_i} = dL_dpsi0 * dpsi0_d{theta_i} +
+                        dL_dpsi1 * dpsi1_d{theta_i} +
+                        dL_dpsi2 * dpsi2_d{theta_i}
         """
         raise NotImplementedError
+
     def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        """
+        Returns the derivative of the objective wrt Z, using the chain rule
+        through the expectation variables.
+        """
         raise NotImplementedError
+
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """
         Compute the gradients wrt the parameters of the variational
@@ -106,7 +120,8 @@ class Kern(Parameterized):
 
     def prod(self, other, tensor=False):
         """
-        Multiply two kernels (either on the same space, or on the tensor product of the input space).
+        Multiply two kernels (either on the same space, or on the tensor
+        product of the input space).
 
         :param other: the other kernel to be added
         :type other: GPy.kern

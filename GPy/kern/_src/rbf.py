@@ -4,11 +4,7 @@
 
 import numpy as np
 from scipy import weave
-from kern import Kern
-from ...util.linalg import tdot
-from ...util.misc import fast_array_equal, param_to_array
-from ...core.parameterization import Param
-from ...core.parameterization.transformations import Logexp
+from ...util.misc import param_to_array
 from stationary import Stationary
 
 class RBF(Stationary):
@@ -66,7 +62,7 @@ class RBF(Stationary):
         #from psi2
         S = variational_posterior.variance
         denom, Zdist, Zdist_sq, mudist, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
-        d_length = 2.*psi2[:, :, :, None] * (Zdist_sq[None, :,:,:] * denom[:,None,None,:] + mudist_sq + S[:, None, None, :] / l2) / (self.lengthscale * denom[:,None,None,:])
+        d_length = 2.*psi2[:, :, :, None] * (Zdist_sq[None, :,:,:] * denom + mudist_sq + S[:, None, None, :] / l2) / (self.lengthscale * denom)
         #TODO: combine denom and l2 as denom_l2??
         #TODO: tidy the above!
         #TODO: tensordot below?
@@ -91,7 +87,7 @@ class RBF(Stationary):
         #psi2
         denom, Zdist, Zdist_sq, mudist, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
         term1 = Zdist / l2 # M, M, Q
-        term2 = mudist / denom[:,None,None,:] / l2 # N, M, M, Q
+        term2 = mudist / denom / l2 # N, M, M, Q
         dZ = psi2[:, :, :, None] * (term1[None, :, :, :] + term2) #N,M,M,Q
         grad += 2*(dL_dpsi2[:, :, :, None] * dZ).sum(0).sum(0)
 
@@ -106,7 +102,7 @@ class RBF(Stationary):
         grad_S = np.sum(dL_dpsi1[:, :, None] * 0.5 * tmp * (dist_sq - 1), 1)
         #psi2
         denom, Zdist, Zdist_sq, mudist, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
-        tmp = psi2[:, :, :, None] / l2 / denom[:,None,None,:]
+        tmp = psi2[:, :, :, None] / l2 / denom
         grad_mu += -2.*(dL_dpsi2[:, :, :, None] * tmp * mudist).sum(1).sum(1)
         grad_S += (dL_dpsi2[:, :, :, None] * tmp * (2.*mudist_sq - 1)).sum(1).sum(1)
 
@@ -198,51 +194,50 @@ class RBF(Stationary):
         #allocate memory for the things we want to compute
         mudist = np.empty((N, M, M, Q))
         mudist_sq = np.empty((N, M, M, Q))
+        exponent = np.zeros((N,M,M))
         psi2 = np.empty((N, M, M))
 
         l2 = self.lengthscale **2
-        denom = 2.*S / l2 + 1. # N,Q
-        half_log_denom = 0.5 * np.log(denom)
-        denom_l2 = denom*l2 # TODO: Max and James: divide??
-
+        denom = (2.*S[:,None,None,:] / l2) + 1. # N,Q
+        half_log_denom = 0.5 * np.log(denom[:,0,0,:])
+        denom_l2 = denom[:,0,0,:]*l2
+        
         variance_sq = float(np.square(self.variance))
         code = """
-        double tmp;
-        double exponent;
+        double tmp, exponent_tmp;
 
-        #pragma omp parallel for private(tmp, exponentgg)
-        for (int n=0; n<N; n++){
-            for (int m=0; m<M; m++){
-               for (int mm=0; mm<(m+1); mm++){
-                   exponent = 0;
-                   for (int q=0; q<Q; q++){
-                       //compute mudist
-                       tmp = mu(n,q) - Zhat(m,mm,q);
-                       mudist(n,m,mm,q) = tmp;
-                       mudist(n,mm,m,q) = tmp;
+        //#pragma omp parallel for private(tmp, exponent_tmp)
+        for (int n=0; n<N; n++)
+        {
+            for (int m=0; m<M; m++)
+            {
+                for (int mm=0; mm<(m+1); mm++)
+                {
+                    exponent_tmp = 0.0;
+                    for (int q=0; q<Q; q++)
+                    {
+                        //compute mudist
+                        tmp = mu(n,q) - Zhat(m,mm,q);
+                        mudist(n,m,mm,q) = tmp;
+                        mudist(n,mm,m,q) = tmp;
 
-                       //now mudist_sq
-                       tmp = tmp*tmp/denom_l2(n,q);
-                       mudist_sq(n,m,mm,q) = tmp;
-                       mudist_sq(n,mm,m,q) = tmp;
+                        //now mudist_sq
+                        tmp = tmp*tmp/denom_l2(n,q);
+                        mudist_sq(n,m,mm,q) = tmp;
+                        mudist_sq(n,mm,m,q) = tmp;
 
-                       //now exponent
-                       tmp = -Zdist_sq(m,mm,q) - tmp - half_log_denom(n,q);
-                       exponent += tmp;
-                       if (m !=mm){
-                           exponent += tmp;
-                       }
-                   //compute psi2 by exponentiating
-                   tmp = variance_sq*exp(exponent);
-                   psi2(n,m,mm) = tmp;
-                   psi2(n,mm,m) = tmp;
-                   }
+                        //now exponent
+                        tmp = -Zdist_sq(m,mm,q) - tmp - half_log_denom(n,q);
+                        exponent_tmp += tmp;
+                    }
+                    //compute psi2 by exponontiating
+                    psi2(n,m,mm) = variance_sq * exp(exponent_tmp);
+                    psi2(n,mm,m) = psi2(n,m,mm);
                 }
             }
         }
-
         """
-
+        
         support_code = """
         #include <omp.h>
         #include <math.h>

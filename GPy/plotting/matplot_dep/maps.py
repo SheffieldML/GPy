@@ -4,7 +4,6 @@ import matplotlib.patches as patches
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 #from matplotlib import cm
-import shapefile
 import re
 
 pb.ion()
@@ -134,8 +133,10 @@ def plot_string_match(sf,regex,field,**kwargs):
     plot(shape_records,**kwargs)
 
 
-def new_shape_string(sf,name,regex,field=2,type=shapefile.POINT):
-
+def new_shape_string(sf,name,regex,field=2,type=None):
+    import shapefile
+    if type is None:
+        type = shapefile.POINT
     newshp = shapefile.Writer(shapeType = sf.shapeType)
     newshp.autoBalance = 1
 

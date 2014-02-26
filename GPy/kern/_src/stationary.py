@@ -73,16 +73,9 @@ class Stationary(Kern):
 
         """
         if self.ARD:
-            if X2 is None:
-                Xl = X/self.lengthscale
-                Xsq = np.sum(np.square(Xl),1)
-                return np.sqrt(np.sqrt(-2.*tdot(Xl) +(Xsq[:,None] + Xsq[None,:])))
-            else:
-                X1l = X/self.lengthscale
-                X2l = X2/self.lengthscale
-                X1sq = np.sum(np.square(X1l),1)
-                X2sq = np.sum(np.square(X2l),1)
-                return np.sqrt(-2.*np.dot(X, X2.T) + (X1sq[:,None] + X2sq[None,:]))
+            if X2 is not None:
+                X2 = X2 / self.lengthscale
+            return self._unscaled_dist(X/self.lengthscale, X2)
         else:
             return self._unscaled_dist(X, X2)/self.lengthscale
 

@@ -204,15 +204,14 @@ class VarDTCMissingData(object):
     def inference(self, kern, X, Z, likelihood, Y):
         if isinstance(X, VariationalPosterior):
             uncertain_inputs = True
-            psi0 = kern.psi0(Z, X)
-            psi1 = kern.psi1(Z, X)
-            psi2 = kern.psi2(Z, X)
+            psi0_all = kern.psi0(Z, X)
+            psi1_all = kern.psi1(Z, X)
+            psi2_all = kern.psi2(Z, X)
         else:
             uncertain_inputs = False
-            psi0 = kern.Kdiag(X)
-            psi1 = kern.K(X, Z)
-            psi2 = None
-
+            psi0_all = kern.Kdiag(X)
+            psi1_all = kern.K(X, Z)
+            psi2_all = None
 
         Ys, traces = self._Y(Y)
         beta_all = 1./likelihood.variance

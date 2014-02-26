@@ -22,22 +22,25 @@ class Linear(Kern):
     :param input_dim: the number of input dimensions
     :type input_dim: int
     :param variances: the vector of variances :math:`\sigma^2_i`
-    :type variances: array or list of the appropriate size (or float if there is only one variance parameter)
-    :param ARD: Auto Relevance Determination. If equal to "False", the kernel has only one variance parameter \sigma^2, otherwise there is one variance parameter per dimension.
+    :type variances: array or list of the appropriate size (or float if there
+                     is only one variance parameter)
+    :param ARD: Auto Relevance Determination. If False, the kernel has only one
+                variance parameter \sigma^2, otherwise there is one variance
+                parameter per dimension.
     :type ARD: Boolean
     :rtype: kernel object
+
     """
 
     def __init__(self, input_dim, variances=None, ARD=False, name='linear'):
         super(Linear, self).__init__(input_dim, name)
         self.ARD = ARD
-        if ARD == False:
+        if not ARD:
             if variances is not None:
                 variances = np.asarray(variances)
                 assert variances.size == 1, "Only one variance needed for non-ARD kernel"
             else:
                 variances = np.ones(1)
-            self._Xcache, self._X2cache = np.empty(shape=(2,))
         else:
             if variances is not None:
                 variances = np.asarray(variances)
@@ -103,7 +106,6 @@ class Linear(Kern):
 
     #---------------------------------------#
     #             PSI statistics            #
-    #              variational              #
     #---------------------------------------#
 
     def psi0(self, Z, variational_posterior):
@@ -117,33 +119,26 @@ class Linear(Kern):
         ZAinner = self._ZAinner(variational_posterior, Z)
         return np.dot(ZAinner, ZA.T)
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, variational_posterior, Z):
-        mu, S = variational_posterior.mean, variational_posterior.variance
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        #psi1
+        self.update_gradients_full(dL_dpsi1, variational_posterior.mean, Z)
         # psi0:
         tmp = dL_dpsi0[:, None] * self._mu2S(variational_posterior)
-        if self.ARD: grad = tmp.sum(0)
-        else: grad = np.atleast_1d(tmp.sum())
-        #psi1
-        self.update_gradients_full(dL_dpsi1, mu, Z)
-        grad += self.variances.gradient
+        if self.ARD: self.variances.gradient += tmp.sum(0)
+        else: self.variances.gradient += tmp.sum()
         #psi2
         tmp = dL_dpsi2[:, :, :, None] * (self._ZAinner(variational_posterior, Z)[:, :, None, :] * (2. * Z)[None, None, :, :])
-        if self.ARD: grad += tmp.sum(0).sum(0).sum(0)
-        else: grad += tmp.sum()
-        #from Kmm
-        self.update_gradients_full(dL_dKmm, Z, None)
-        self.variances.gradient += grad
+        if self.ARD: self.variances.gradient += tmp.sum(0).sum(0).sum(0)
+        else: self.variances.gradient += tmp.sum()
 
-    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, variational_posterior, Z):
-        # Kmm
-        grad = self.gradients_X(dL_dKmm, Z, None)
+    def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         #psi1
-        grad += self.gradients_X(dL_dpsi1.T, Z, variational_posterior.mean)
+        grad = self.gradients_X(dL_dpsi1.T, Z, variational_posterior.mean)
         #psi2
         self._weave_dpsi2_dZ(dL_dpsi2, Z, variational_posterior, grad)
         return grad
 
-    def gradients_q_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, variational_posterior, Z):
+    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         grad_mu, grad_S = np.zeros(variational_posterior.mean.shape), np.zeros(variational_posterior.mean.shape)
         # psi0
         grad_mu += dL_dpsi0[:, None] * (2.0 * variational_posterior.mean * self.variances)
@@ -160,7 +155,7 @@ class Linear(Kern):
     #--------------------------------------------------#
 
 
-    def _weave_dpsi2_dmuS(self, dL_dpsi2, Z, pv, target_mu, target_S):
+    def _weave_dpsi2_dmuS(self, dL_dpsi2, Z, vp, target_mu, target_S):
         # Think N,num_inducing,num_inducing,input_dim
         ZA = Z * self.variances
         AZZA = ZA.T[:, None, :, None] * ZA[None, :, None, :]
@@ -203,16 +198,15 @@ class Linear(Kern):
         weave_options = {'headers'           : ['<omp.h>'],
                          'extra_compile_args': ['-fopenmp -O3'],  #-march=native'],
                          'extra_link_args'   : ['-lgomp']}
-        
-        mu = pv.mean
+        mu = vp.mean
         N,num_inducing,input_dim,mu = mu.shape[0],Z.shape[0],mu.shape[1],param_to_array(mu)
         weave.inline(code, support_code=support_code, libraries=['gomp'],
                      arg_names=['N','num_inducing','input_dim','mu','AZZA','AZZA_2','target_mu','target_S','dL_dpsi2'],
                      type_converters=weave.converters.blitz,**weave_options)
 
 
-    def _weave_dpsi2_dZ(self, dL_dpsi2, Z, pv, target):
-        AZA = self.variances*self._ZAinner(pv, Z)
+    def _weave_dpsi2_dZ(self, dL_dpsi2, Z, vp, target):
+        AZA = self.variances*self._ZAinner(vp, Z)
         code="""
         int n,m,mm,q;
         #pragma omp parallel for private(n,mm,q)
@@ -234,23 +228,23 @@ class Linear(Kern):
                          'extra_compile_args': ['-fopenmp -O3'],  #-march=native'],
                          'extra_link_args'   : ['-lgomp']}
 
-        N,num_inducing,input_dim = pv.mean.shape[0],Z.shape[0],pv.mean.shape[1]
-        mu = param_to_array(pv.mean)
+        N,num_inducing,input_dim = vp.mean.shape[0],Z.shape[0],vp.mean.shape[1]
+        mu = param_to_array(vp.mean)
         weave.inline(code, support_code=support_code, libraries=['gomp'],
                      arg_names=['N','num_inducing','input_dim','AZA','target','dL_dpsi2'],
                      type_converters=weave.converters.blitz,**weave_options)
 
 
-    def _mu2S(self, pv):
-        return np.square(pv.mean) + pv.variance
+    def _mu2S(self, vp):
+        return np.square(vp.mean) + vp.variance
 
-    def _ZAinner(self, pv, Z):
+    def _ZAinner(self, vp, Z):
         ZA = Z*self.variances
-        inner = (pv.mean[:, None, :] * pv.mean[:, :, None])
-        diag_indices = np.diag_indices(pv.mean.shape[1], 2)
-        inner[:, diag_indices[0], diag_indices[1]] += pv.variance
+        inner = (vp.mean[:, None, :] * vp.mean[:, :, None])
+        diag_indices = np.diag_indices(vp.mean.shape[1], 2)
+        inner[:, diag_indices[0], diag_indices[1]] += vp.variance
 
-        return np.dot(ZA, inner).swapaxes(0, 1)  # NOTE: self.ZAinner \in [num_inducing x N x input_dim]!
+        return np.dot(ZA, inner).swapaxes(0, 1)  # NOTE: self.ZAinner \in [num_inducing x num_data x input_dim]!
 
     def input_sensitivity(self):
         if self.ARD: return self.variances

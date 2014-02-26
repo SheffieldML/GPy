@@ -16,16 +16,16 @@ def bgplvm_test_model(optimize=False, verbose=1, plot=False, output_dim=200, nan
         output_dim = 1
         input_dim = 3
     else:
-        input_dim = 1
+        input_dim = 2
         output_dim = output_dim
 
     # generate GPLVM-like data
     X = _np.random.rand(num_inputs, input_dim)
-    #lengthscales = _np.random.rand(input_dim)
-    #k = (GPy.kern.RBF(input_dim, .5, lengthscales, ARD=True)
+    lengthscales = _np.random.rand(input_dim)
+    k = GPy.kern.RBF(input_dim, .5, lengthscales, ARD=True)
          ##+ GPy.kern.white(input_dim, 0.01)
          #)
-    k = GPy.kern.Linear(input_dim, ARD=1)# + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
+    #k = GPy.kern.Linear(input_dim, ARD=1)# + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
     K = k.K(X)
     Y = _np.random.multivariate_normal(_np.zeros(num_inputs), K, (output_dim,)).T
 
@@ -164,7 +164,7 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     _np.random.seed(0)
     data = GPy.util.datasets.oil()
 
-    kernel = GPy.kern.RBF(Q, 1., _np.random.uniform(0,1,(Q,)), ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF(Q, 1., 1./_np.random.uniform(0,1,(Q,)), ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
     Y = data['X'][:N]
     m = GPy.models.BayesianGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing, **k)
     m.data_labels = data['Y'][:N].argmax(axis=1)
@@ -270,10 +270,11 @@ def bgplvm_simulation(optimize=True, verbose=1,
     from GPy import kern
     from GPy.models import BayesianGPLVM
 
-    D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 30, 3, 10
+    D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 5, 9
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    #k = kern.RBF(Q, ARD=True, lengthscale=10.)
     m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k)
     
     if optimize:
@@ -281,7 +282,7 @@ def bgplvm_simulation(optimize=True, verbose=1,
         m.optimize('bfgs', messages=verbose, max_iters=max_iters,
                    gtol=.05)
     if plot:
-        m.q.plot("BGPLVM Latent Space 1D")
+        m.X.plot("BGPLVM Latent Space 1D")
         m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
     return m
 
@@ -293,7 +294,7 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     from GPy.models import BayesianGPLVM
     from GPy.inference.latent_function_inference.var_dtc import VarDTCMissingData
 
-    D1, D2, D3, N, num_inducing, Q = 15, 5, 8, 30, 5, 9
+    D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 5, 9
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
@@ -302,7 +303,7 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     m = BayesianGPLVM(Y.copy(), Q, init="random", num_inducing=num_inducing, kernel=k)
     m.inference_method = VarDTCMissingData()
     m.Y[inan] = _np.nan
-    m.q.variance *= .1
+    m.X.variance *= .1
     m.parameters_changed()
     m.Yreal = Y
     
@@ -311,7 +312,7 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
         m.optimize('bfgs', messages=verbose, max_iters=max_iters,
                    gtol=.05)
     if plot:
-        m.q.plot("BGPLVM Latent Space 1D")
+        m.X.plot("BGPLVM Latent Space 1D")
         m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
     return m
 

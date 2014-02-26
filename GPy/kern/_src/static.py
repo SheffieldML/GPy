@@ -25,10 +25,10 @@ class Static(Kern):
     def gradients_X_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
 
-    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         return np.zeros(Z.shape)
 
-    def gradients_muS_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         return np.zeros(variational_posterior.shape), np.zeros(variational_posterior.shape)
 
     def psi0(self, Z, variational_posterior):
@@ -61,8 +61,8 @@ class White(Static):
     def update_gradients_diag(self, dL_dKdiag, X):
         self.variance.gradient = dL_dKdiag.sum()
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        self.variance.gradient = np.trace(dL_dKmm) + dL_dpsi0.sum()
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        self.variance.gradient = dL_dpsi0.sum()
 
 
 class Bias(Static):
@@ -86,6 +86,6 @@ class Bias(Static):
         ret[:] = self.variance**2
         return ret
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        self.variance.gradient = dL_dKmm.sum() + dL_dpsi0.sum() + dL_dpsi1.sum() + 2.*self.variance*dL_dpsi2.sum()
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        self.variance.gradient = dL_dpsi0.sum() + dL_dpsi1.sum() + 2.*self.variance*dL_dpsi2.sum()
 

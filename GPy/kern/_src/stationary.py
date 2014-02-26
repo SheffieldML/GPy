@@ -312,4 +312,8 @@ class RatQuad(Stationary):
         grad = np.sum(dL_dK*dK_dpow)
         self.power.gradient = grad
 
+    def update_gradients_diag(self, dL_dKdiag, X):
+        super(RatQuad, self).update_gradients_diag(dL_dKdiag, X)
+        self.power.gradient = 0.
+
 

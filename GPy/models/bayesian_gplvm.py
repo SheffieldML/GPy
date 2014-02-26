@@ -49,6 +49,7 @@ class BayesianGPLVM(SparseGP):
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)
         self.add_parameter(self.X, index=0)
+        self.parameters_changed()
 
     def _getstate(self):
         """
@@ -66,7 +67,7 @@ class BayesianGPLVM(SparseGP):
         super(BayesianGPLVM, self).parameters_changed()
         self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
 
-        self.X.mean.gradient, self.X.variance.gradient = self.kern.gradients_q_variational(posterior_variational=self.X, Z=self.Z, **self.grad_dict)
+        self.X.mean.gradient, self.X.variance.gradient = self.kern.gradients_qX_expectations(variational_posterior=self.X, Z=self.Z, **self.grad_dict)
 
         # update for the KL divergence
         self.variational_prior.update_gradients_KL(self.X)

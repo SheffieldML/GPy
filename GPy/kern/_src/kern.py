@@ -26,55 +26,63 @@ class Kern(Parameterized):
         raise NotImplementedError
     def Kdiag(self, Xa):
         raise NotImplementedError
-    def psi0(self,Z,variational_posterior):
+    def psi0(self, Z, variational_posterior):
         raise NotImplementedError
-    def psi1(self,Z,variational_posterior):
+    def psi1(self, Z, variational_posterior):
         raise NotImplementedError
-    def psi2(self,Z,variational_posterior):
+    def psi2(self, Z, variational_posterior):
         raise NotImplementedError
     def gradients_X(self, dL_dK, X, X2):
         raise NotImplementedError
     def gradients_X_diag(self, dL_dK, X):
         raise NotImplementedError
+
     def update_gradients_full(self, dL_dK, X, X2):
         """Set the gradients of all parameters when doing full (N) inference."""
         raise NotImplementedError
-    def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
-        target = np.zeros(self.size)
-        self.update_gradients_diag(dL_dKdiag, X)
-        self._collect_gradient(target)
-        self.update_gradients_full(dL_dKnm, X, Z)
-        self._collect_gradient(target)
-        self.update_gradients_full(dL_dKmm, Z, None)
-        self._collect_gradient(target)
-        self._set_gradient(target)
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        """Set the gradients of all parameters when doing variational (M) inference with uncertain inputs."""
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        """
+        Set the gradients of all parameters when doing inference with
+        uncertain inputs, using expectations of the kernel.
+
+        The esential maths is
+
+        dL_d{theta_i} = dL_dpsi0 * dpsi0_d{theta_i} +
+                        dL_dpsi1 * dpsi1_d{theta_i} +
+                        dL_dpsi2 * dpsi2_d{theta_i}
+        """
         raise NotImplementedError
-    def gradients_Z_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
-        grad = self.gradients_X(dL_dKmm, Z)
-        grad += self.gradients_X(dL_dKnm.T, Z, X)
-        return grad
-    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+
+    def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        """
+        Returns the derivative of the objective wrt Z, using the chain rule
+        through the expectation variables.
+        """
         raise NotImplementedError
-    def gradients_q_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+
+    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        """
+        Compute the gradients wrt the parameters of the variational
+        distruibution q(X), chain-ruling via the expectations of the kernel
+        """
         raise NotImplementedError
-    
+
     def plot_ARD(self, *args, **kw):
-        if "matplotlib" in sys.modules:
-            from ...plotting.matplot_dep import kernel_plots
-            self.plot_ARD.__doc__ += kernel_plots.plot_ARD.__doc__
+        """
+        See :class:`~GPy.plotting.matplot_dep.kernel_plots`
+        """
+        import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ...plotting.matplot_dep import kernel_plots
         return kernel_plots.plot_ARD(self,*args,**kw)
-    
+
     def input_sensitivity(self):
         """
         Returns the sensitivity for each dimension of this kernel.
         """
         return np.zeros(self.input_dim)
-    
+
     def __add__(self, other):
         """ Overloading of the '+' operator. for more control, see self.add """
         return self.add(other)
@@ -113,7 +121,8 @@ class Kern(Parameterized):
 
     def prod(self, other, tensor=False):
         """
-        Multiply two kernels (either on the same space, or on the tensor product of the input space).
+        Multiply two kernels (either on the same space, or on the tensor
+        product of the input space).
 
         :param other: the other kernel to be added
         :type other: GPy.kern

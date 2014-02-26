@@ -134,7 +134,7 @@ class Sympykern(Kern):
         return spkern(self._sp_k+other._sp_k)
 
     def _gen_code(self):
-
+        #fn_theano = theano_function([self.arg_lists], [self._sp_k + self.derivatives], dims={x: 1}, dtypes={x_0: 'float64', z_0: 'float64'})
         self._K_function = lambdify(self.arg_list, self._sp_k, 'numpy')
         for key in self.derivatives.keys():
             setattr(self, '_K_diff_' + key, lambdify(self.arg_list, self.derivatives[key], 'numpy'))

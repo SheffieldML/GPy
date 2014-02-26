@@ -3,7 +3,7 @@ Created on 24 Apr 2013
 
 @author: maxz
 '''
-from GPy.inference.gradient_descent_update_rules import FletcherReeves, \
+from gradient_descent_update_rules import FletcherReeves, \
     PolakRibiere
 from Queue import Empty
 from multiprocessing import Value

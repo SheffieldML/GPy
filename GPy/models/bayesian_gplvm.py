@@ -32,21 +32,23 @@ class BayesianGPLVM(SparseGP):
         if X_variance is None:
             X_variance = np.random.uniform(0,.1,X.shape)
 
+
         if Z is None:
             Z = np.random.permutation(X.copy())[:num_inducing]
         assert Z.shape[1] == X.shape[1]
 
         if kernel is None:
             kernel = kern.RBF(input_dim) # + kern.white(input_dim)
-        
+
         if likelihood is None:
             likelihood = Gaussian()
-        #self.q = NormalPosterior(X, X_variance)
+
+
         self.variational_prior = NormalPrior()
-        
-        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, X_variance, name, **kwargs)
-        self.add_parameter(self.q, index=0)
-        #self.ensure_default_constraints()
+        X = NormalPosterior(X, X_variance)
+
+        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)
+        self.add_parameter(self.X, index=0)
 
     def _getstate(self):
         """
@@ -62,16 +64,14 @@ class BayesianGPLVM(SparseGP):
 
     def parameters_changed(self):
         super(BayesianGPLVM, self).parameters_changed()
-        self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.q)
-        
-        # TODO: This has to go into kern
-        # maybe a update_gradients_q_variational?
-        self.q.mean.gradient, self.q.variance.gradient = self.kern.gradients_q_variational(posterior_variational=self.q, Z=self.Z, **self.grad_dict)
-        
+        self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
+
+        self.X.mean.gradient, self.X.variance.gradient = self.kern.gradients_qX_expectations(variational_posterior=self.X, Z=self.Z, **self.grad_dict)
+
         # update for the KL divergence
-        self.variational_prior.update_gradients_KL(self.q)
-        
-    
+        self.variational_prior.update_gradients_KL(self.X)
+
+
     def plot_latent(self, plot_inducing=True, *args, **kwargs):
         """
         See GPy.plotting.matplot_dep.dim_reduction_plots.plot_latent
@@ -150,14 +150,14 @@ class BayesianGPLVM(SparseGP):
         return dim_reduction_plots.plot_steepest_gradient_map(self,*args,**kwargs)
 
 class BayesianGPLVMWithMissingData(BayesianGPLVM):
-    def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10, 
+    def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
         Z=None, kernel=None, inference_method=None, likelihood=None, name='bayesian gplvm', **kwargs):
         from ..util.subarray_and_sorting import common_subarrays
         self.subarrays = common_subarrays(Y)
         import ipdb;ipdb.set_trace()
         BayesianGPLVM.__init__(self, Y, input_dim, X=X, X_variance=X_variance, init=init, num_inducing=num_inducing, Z=Z, kernel=kernel, inference_method=inference_method, likelihood=likelihood, name=name, **kwargs)
-        
-    
+
+
     def parameters_changed(self):
         super(BayesianGPLVM, self).parameters_changed()
         self._log_marginal_likelihood -= self.KL_divergence()
@@ -165,12 +165,12 @@ class BayesianGPLVMWithMissingData(BayesianGPLVM):
         dL_dmu, dL_dS = self.dL_dmuS()
 
         # dL:
-        self.q.mean.gradient  = dL_dmu
-        self.q.variance.gradient  = dL_dS  
+        self.X.mean.gradient  = dL_dmu
+        self.X.variance.gradient  = dL_dS
 
         # dKL:
-        self.q.mean.gradient -= self.X
-        self.q.variance.gradient -= (1. - (1. / (self.X_variance))) * 0.5
+        self.X.mean.gradient -= self.X.mean
+        self.X.variance.gradient -= (1. - (1. / (self.X.variance))) * 0.5
 
 if __name__ == '__main__':
     import numpy as np
@@ -178,7 +178,7 @@ if __name__ == '__main__':
     W = np.linspace(0,1,10)[None,:]
     Y = (X*W).sum(1)
     missing = np.random.binomial(1,.1,size=Y.shape)
-    
+
     pass
 
 def latent_cost_and_grad(mu_S, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):

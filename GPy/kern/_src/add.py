@@ -45,9 +45,6 @@ class Add(Kern):
     def update_gradients_full(self, dL_dK, X):
         [p.update_gradients_full(dL_dK, X[:,i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
 
-    def update_gradients_sparse(self, dL_dKmm, dL_dKnm, dL_dKdiag, X, Z):
-        [p.update_gradients_sparse(dL_dKmm, dL_dKnm, dL_dKdiag, X[:,i_s], Z[:,i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
-
     def gradients_X(self, dL_dK, X, X2=None):
         """Compute the gradient of the objective function with respect to X.
 
@@ -70,13 +67,13 @@ class Add(Kern):
         return sum([p.Kdiag(X[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)])
 
 
-    def psi0(self, Z, mu, S):
+    def psi0(self, Z, variational_posterior):
         return np.sum([p.psi0(Z[:, i_s], mu[:, i_s], S[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)],0)
 
-    def psi1(self, Z, mu, S):
+    def psi1(self, Z, variational_posterior):
         return np.sum([p.psi1(Z[:, i_s], mu[:, i_s], S[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)], 0)
 
-    def psi2(self, Z, mu, S):
+    def psi2(self, Z, variational_posterior):
         psi2 = np.sum([p.psi2(Z[:, i_s], mu[:, i_s], S[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)], 0)
 
         # compute the "cross" terms
@@ -104,7 +101,7 @@ class Add(Kern):
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
         return psi2
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         from white import White
         from rbf import RBF
         #from rbf_inv import RBFInv
@@ -127,10 +124,10 @@ class Add(Kern):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z[:,is2], mu[:,is2], S[:,is2]) * 2.
 
 
-            p1.update_gradients_variational(dL_dKmm, dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], S[:,is1], Z[:,is1])
+            p1.update_gradients_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], S[:,is1], Z[:,is1])
 
 
-    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+    def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         from white import White
         from rbf import RBF
         #from rbf_inv import rbfinv
@@ -154,10 +151,10 @@ class Add(Kern):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z[:,is2], mu[:,is2], S[:,is2]) * 2.
 
 
-            target += p1.gradients_z_variational(dL_dKmm, dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], S[:,is1], Z[:,is1])
+            target += p1.gradients_z_variational(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], S[:,is1], Z[:,is1])
         return target
 
-    def gradients_muS_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         from white import white
         from rbf import rbf
         #from rbf_inv import rbfinv
@@ -182,7 +179,7 @@ class Add(Kern):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(z[:,is2], mu[:,is2], s[:,is2]) * 2.
 
 
-            a, b = p1.gradients_muS_variational(dL_dkmm, dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], s[:,is1], z[:,is1])
+            a, b = p1.gradients_qX_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], s[:,is1], z[:,is1])
             target_mu += a
             target_S += b
         return target_mu, target_S

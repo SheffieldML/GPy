@@ -3,6 +3,7 @@
 
 from posterior import Posterior
 from ...util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri, dpotri, dpotrs, symmetrify
+from ...core.parameterization.variational import VariationalPosterior
 import numpy as np
 from ...util.misc import param_to_array
 log_2_pi = np.log(2*np.pi)
@@ -23,13 +24,13 @@ class VarDTC(object):
         from ...util.caching import Cacher
         self.get_trYYT = Cacher(self._get_trYYT, 1)
         self.get_YYTfactor = Cacher(self._get_YYTfactor, 1)
-    
+
     def _get_trYYT(self, Y):
         return param_to_array(np.sum(np.square(Y)))
 
     def _get_YYTfactor(self, Y):
         """
-        find a matrix L which satisfies LLT = YYT. 
+        find a matrix L which satisfies LLT = YYT.
 
         Note that L may have fewer columns than Y.
         """
@@ -38,28 +39,26 @@ class VarDTC(object):
             return param_to_array(Y)
         else:
             return jitchol(tdot(Y))
-            
+
     def get_VVTfactor(self, Y, prec):
         return Y * prec # TODO chache this, and make it effective
-    
-    def inference(self, kern, X, X_variance, Z, likelihood, Y):
-        """Inference for normal sparseGP"""
-        uncertain_inputs = False
-        psi0, psi1, psi2 = _compute_psi(kern, X, Z)
-        return self._inference(kern, psi0, psi1, psi2, Z, likelihood, Y, uncertain_inputs)
 
-    def inference_latent(self, kern, posterior_variational, Z, likelihood, Y):
-        """Inference for GPLVM with uncertain inputs"""
-        uncertain_inputs = True
-        psi0, psi1, psi2 = _compute_psi_latent(kern, posterior_variational, Z)
-        return self._inference(kern, psi0, psi1, psi2, Z, likelihood, Y, uncertain_inputs)
-    
-    def _inference(self, kern, psi0, psi1, psi2, Z, likelihood, Y, uncertain_inputs):
+    def inference(self, kern, X, Z, likelihood, Y):
+        if isinstance(X, VariationalPosterior):
+            uncertain_inputs = True
+            psi0 = kern.psi0(Z, X)
+            psi1 = kern.psi1(Z, X)
+            psi2 = kern.psi2(Z, X)
+        else:
+            uncertain_inputs = False
+            psi0 = kern.Kdiag(X)
+            psi1 = kern.K(X, Z)
+            psi2 = None
 
         #see whether we're using variational uncertain inputs
-        
+
         _, output_dim = Y.shape
-        
+
         #see whether we've got a different noise variance for each datum
         beta = 1./np.squeeze(likelihood.variance)
 
@@ -69,16 +68,16 @@ class VarDTC(object):
         VVT_factor = beta*Y
         #VVT_factor = beta*Y
         trYYT = self.get_trYYT(Y)
-    
+
         # do the inference:
         het_noise = beta.size < 1
         num_inducing = Z.shape[0]
         num_data = Y.shape[0]
         # kernel computations, using BGPLVM notation
-        Kmm = kern.K(Z) 
-        
+        Kmm = kern.K(Z)
+
         Lm = jitchol(Kmm)
-        
+
         # The rather complex computations of A
         if uncertain_inputs:
             if het_noise:
@@ -124,33 +123,33 @@ class VarDTC(object):
         dL_dKmm = backsub_both_sides(Lm, delit)
 
         # derivatives of L w.r.t. psi
-        dL_dpsi0, dL_dpsi1, dL_dpsi2 = _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm, 
-            VVT_factor, Cpsi1Vf, DBi_plus_BiPBi, 
+        dL_dpsi0, dL_dpsi1, dL_dpsi2 = _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm,
+            VVT_factor, Cpsi1Vf, DBi_plus_BiPBi,
             psi1, het_noise, uncertain_inputs)
-        
+
         # log marginal likelihood
-        log_marginal = _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise, 
+        log_marginal = _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise,
             psi0, A, LB, trYYT, data_fit)
-        
+
         #put the gradients in the right places
-        partial_for_likelihood = _compute_partial_for_likelihood(likelihood, 
-            het_noise, uncertain_inputs, LB, 
-            _LBi_Lmi_psi1Vf, DBi_plus_BiPBi, Lm, A, 
-            psi0, psi1, beta, 
+        partial_for_likelihood = _compute_partial_for_likelihood(likelihood,
+            het_noise, uncertain_inputs, LB,
+            _LBi_Lmi_psi1Vf, DBi_plus_BiPBi, Lm, A,
+            psi0, psi1, beta,
             data_fit, num_data, output_dim, trYYT)
-        
+
         #likelihood.update_gradients(partial_for_likelihood)
 
         if uncertain_inputs:
-            grad_dict = {'dL_dKmm': dL_dKmm, 
-                         'dL_dpsi0':dL_dpsi0, 
-                         'dL_dpsi1':dL_dpsi1, 
-                         'dL_dpsi2':dL_dpsi2, 
+            grad_dict = {'dL_dKmm': dL_dKmm,
+                         'dL_dpsi0':dL_dpsi0,
+                         'dL_dpsi1':dL_dpsi1,
+                         'dL_dpsi2':dL_dpsi2,
                          'partial_for_likelihood':partial_for_likelihood}
         else:
-            grad_dict = {'dL_dKmm': dL_dKmm, 
-                         'dL_dKdiag':dL_dpsi0, 
-                         'dL_dKnm':dL_dpsi1, 
+            grad_dict = {'dL_dKmm': dL_dKmm,
+                         'dL_dKdiag':dL_dpsi0,
+                         'dL_dKnm':dL_dpsi1,
                          'partial_for_likelihood':partial_for_likelihood}
 
         #get sufficient things for posterior prediction
@@ -181,7 +180,7 @@ class VarDTCMissingData(object):
         from ...util.caching import Cacher
         self._Y = Cacher(self._subarray_computations, 1)
         pass
-    
+
     def _subarray_computations(self, Y):
         inan = np.isnan(Y)
         has_none = inan.any()
@@ -202,19 +201,18 @@ class VarDTCMissingData(object):
             self._subarray_indices = [[slice(None),slice(None)]]
             return [Y], [(Y**2).sum()]
 
-    def inference(self, kern, X, X_variance, Z, likelihood, Y):
-        """Inference for normal sparseGP"""
-        uncertain_inputs = False
-        psi0, psi1, psi2 = _compute_psi(kern, X, Z)
-        return self._inference(kern, psi0, psi1, psi2, Z, likelihood, Y, uncertain_inputs)
+    def inference(self, kern, X, Z, likelihood, Y):
+        if isinstance(X, VariationalPosterior):
+            uncertain_inputs = True
+            psi0 = kern.psi0(Z, X)
+            psi1 = kern.psi1(Z, X)
+            psi2 = kern.psi2(Z, X)
+        else:
+            uncertain_inputs = False
+            psi0 = kern.Kdiag(X)
+            psi1 = kern.K(X, Z)
+            psi2 = None
 
-    def inference_latent(self, kern, posterior_variational, Z, likelihood, Y):
-        """Inference for GPLVM with uncertain inputs"""
-        uncertain_inputs = True
-        psi0, psi1, psi2 = _compute_psi_latent(kern, posterior_variational, Z)
-        return self._inference(kern, psi0, psi1, psi2, Z, likelihood, Y, uncertain_inputs)
-    
-    def _inference(self, kern, psi0_all, psi1_all, psi2_all, Z, likelihood, Y, uncertain_inputs):
         Ys, traces = self._Y(Y)
         beta_all = 1./likelihood.variance
         het_noise = beta_all.size != 1
@@ -226,15 +224,15 @@ class VarDTCMissingData(object):
         dL_dpsi1_all = np.zeros((Y.shape[0], num_inducing))
         if uncertain_inputs:
             dL_dpsi2_all = np.zeros((Y.shape[0], num_inducing, num_inducing))
-        
+
         partial_for_likelihood = 0
         woodbury_vector = np.zeros((num_inducing, Y.shape[1]))
         woodbury_inv_all = np.zeros((num_inducing, num_inducing, Y.shape[1]))
         dL_dKmm = 0
         log_marginal = 0
-        
+
         Kmm = kern.K(Z)
-        #factor Kmm 
+        #factor Kmm
         Lm = jitchol(Kmm)
         if uncertain_inputs: LmInv = dtrtri(Lm)
 
@@ -242,11 +240,11 @@ class VarDTCMissingData(object):
         full_VVT_factor = VVT_factor_all.shape[1] == Y.shape[1]
         if not full_VVT_factor:
             psi1V = np.dot(Y.T*beta_all, psi1_all).T
-        
+
         for y, trYYT, [v, ind] in itertools.izip(Ys, traces, self._subarray_indices):
             if het_noise: beta = beta_all[ind]
             else: beta = beta_all[0]
-            
+
             VVT_factor = (beta*y)
             VVT_factor_all[v, ind].flat = VVT_factor.flat
             output_dim = y.shape[1]
@@ -256,7 +254,7 @@ class VarDTCMissingData(object):
             if uncertain_inputs: psi2 = psi2_all[v, :]
             else: psi2 = None
             num_data = psi1.shape[0]
-            
+
             if uncertain_inputs:
                 if het_noise: psi2_beta = psi2 * (beta.flatten().reshape(num_data, 1, 1)).sum(0)
                 else: psi2_beta = psi2.sum(0) * beta
@@ -270,13 +268,13 @@ class VarDTCMissingData(object):
             # factor B
             B = np.eye(num_inducing) + A
             LB = jitchol(B)
-            
+
             psi1Vf = psi1.T.dot(VVT_factor)
             tmp, _ = dtrtrs(Lm, psi1Vf, lower=1, trans=0)
             _LBi_Lmi_psi1Vf, _ = dtrtrs(LB, tmp, lower=1, trans=0)
             tmp, _ = dtrtrs(LB, _LBi_Lmi_psi1Vf, lower=1, trans=1)
             Cpsi1Vf, _ = dtrtrs(Lm, tmp, lower=1, trans=1)
-            
+
             # data fit and derivative of L w.r.t. Kmm
             delit = tdot(_LBi_Lmi_psi1Vf)
             data_fit = np.trace(delit)
@@ -287,34 +285,34 @@ class VarDTCMissingData(object):
             dL_dKmm += backsub_both_sides(Lm, delit)
 
             # derivatives of L w.r.t. psi
-            dL_dpsi0, dL_dpsi1, dL_dpsi2 = _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm, 
-                VVT_factor, Cpsi1Vf, DBi_plus_BiPBi, 
+            dL_dpsi0, dL_dpsi1, dL_dpsi2 = _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm,
+                VVT_factor, Cpsi1Vf, DBi_plus_BiPBi,
                 psi1, het_noise, uncertain_inputs)
-            
+
             #import ipdb;ipdb.set_trace()
             dL_dpsi0_all[v] += dL_dpsi0
             dL_dpsi1_all[v, :] += dL_dpsi1
             if uncertain_inputs:
                 dL_dpsi2_all[v, :] += dL_dpsi2
-            
+
             # log marginal likelihood
-            log_marginal += _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise, 
+            log_marginal += _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise,
                 psi0, A, LB, trYYT, data_fit)
 
             #put the gradients in the right places
-            partial_for_likelihood += _compute_partial_for_likelihood(likelihood, 
-                het_noise, uncertain_inputs, LB, 
-                _LBi_Lmi_psi1Vf, DBi_plus_BiPBi, Lm, A, 
-                psi0, psi1, beta, 
+            partial_for_likelihood += _compute_partial_for_likelihood(likelihood,
+                het_noise, uncertain_inputs, LB,
+                _LBi_Lmi_psi1Vf, DBi_plus_BiPBi, Lm, A,
+                psi0, psi1, beta,
                 data_fit, num_data, output_dim, trYYT)
-            
+
             if full_VVT_factor: woodbury_vector[:, ind] = Cpsi1Vf
             else:
                 print 'foobar'
                 tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
                 tmp, _ = dpotrs(LB, tmp, lower=1)
                 woodbury_vector[:, ind] = dtrtrs(Lm, tmp, lower=1, trans=1)[0]
-                
+
             #import ipdb;ipdb.set_trace()
             Bi, _ = dpotri(LB, lower=1)
             symmetrify(Bi)
@@ -325,15 +323,15 @@ class VarDTCMissingData(object):
 
         # gradients:
         if uncertain_inputs:
-            grad_dict = {'dL_dKmm': dL_dKmm, 
-                         'dL_dpsi0':dL_dpsi0_all, 
-                         'dL_dpsi1':dL_dpsi1_all, 
-                         'dL_dpsi2':dL_dpsi2_all, 
+            grad_dict = {'dL_dKmm': dL_dKmm,
+                         'dL_dpsi0':dL_dpsi0_all,
+                         'dL_dpsi1':dL_dpsi1_all,
+                         'dL_dpsi2':dL_dpsi2_all,
                          'partial_for_likelihood':partial_for_likelihood}
         else:
-            grad_dict = {'dL_dKmm': dL_dKmm, 
-                         'dL_dKdiag':dL_dpsi0_all, 
-                         'dL_dKnm':dL_dpsi1_all, 
+            grad_dict = {'dL_dKmm': dL_dKmm,
+                         'dL_dKdiag':dL_dpsi0_all,
+                         'dL_dKnm':dL_dpsi1_all,
                          'partial_for_likelihood':partial_for_likelihood}
 
         #get sufficient things for posterior prediction
@@ -350,25 +348,12 @@ class VarDTCMissingData(object):
         #Bi = -dpotri(LB_all, lower=1)[0]
         #from ...util import diag
         #diag.add(Bi, 1)
-    
+
         #woodbury_inv = backsub_both_sides(Lm, Bi)
-        
+
         post = Posterior(woodbury_inv=woodbury_inv_all, woodbury_vector=woodbury_vector, K=Kmm, mean=None, cov=None, K_chol=Lm)
 
         return post, log_marginal, grad_dict
-
-
-def _compute_psi(kern, X, Z):
-    psi0 = kern.Kdiag(X)
-    psi1 = kern.K(X, Z)
-    psi2 = None
-    return psi0, psi1, psi2
-
-def _compute_psi_latent(kern, posterior_variational, Z):
-    psi0 = kern.psi0(Z, posterior_variational)
-    psi1 = kern.psi1(Z, posterior_variational)
-    psi2 = kern.psi2(Z, posterior_variational)
-    return psi0, psi1, psi2
 
 def _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm, VVT_factor, Cpsi1Vf, DBi_plus_BiPBi, psi1, het_noise, uncertain_inputs):
     dL_dpsi0 = -0.5 * output_dim * (beta * np.ones([num_data, 1])).flatten()

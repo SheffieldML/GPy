@@ -274,6 +274,7 @@ def bgplvm_simulation(optimize=True, verbose=1,
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    #k = kern.RBF(Q, ARD=True, lengthscale=10.)
     m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k)
     
     if optimize:
@@ -281,7 +282,7 @@ def bgplvm_simulation(optimize=True, verbose=1,
         m.optimize('bfgs', messages=verbose, max_iters=max_iters,
                    gtol=.05)
     if plot:
-        m.q.plot("BGPLVM Latent Space 1D")
+        m.X.plot("BGPLVM Latent Space 1D")
         m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
     return m
 
@@ -302,7 +303,7 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     m = BayesianGPLVM(Y.copy(), Q, init="random", num_inducing=num_inducing, kernel=k)
     m.inference_method = VarDTCMissingData()
     m.Y[inan] = _np.nan
-    m.q.variance *= .1
+    m.X.variance *= .1
     m.parameters_changed()
     m.Yreal = Y
     
@@ -311,7 +312,7 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
         m.optimize('bfgs', messages=verbose, max_iters=max_iters,
                    gtol=.05)
     if plot:
-        m.q.plot("BGPLVM Latent Space 1D")
+        m.X.plot("BGPLVM Latent Space 1D")
         m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
     return m
 

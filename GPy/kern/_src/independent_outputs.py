@@ -102,7 +102,7 @@ class IndependentOutputs(Kern):
         [[collate_grads(dL_dKdiag[s], X[s,:]) for s in slices_i] for slices_i in slices]
         self.kern._set_gradient(target)
 
-def Hierarchical(kern_f, kern_g, name='hierarchy'):
+class Hierarchical(Kern):
     """
     A kernel which can reopresent a simple hierarchical model.
 
@@ -110,10 +110,51 @@ def Hierarchical(kern_f, kern_g, name='hierarchy'):
     series across irregularly sampled replicates and clusters"
     http://www.biomedcentral.com/1471-2105/14/252
 
-    The index of the functions is given by the last column in the input X
-    the rest of the columns of X are passed to the underlying kernel for computation (in blocks).
+    The index of the functions is given by additional columns in the input X.
 
     """
-    assert kern_f.input_dim == kern_g.input_dim
-    return kern_f + IndependentOutputs(kern_g)
+    def __init__(self, kerns, name='hierarchy'):
+        assert all([k.input_dim==kerns[0].input_dim for k in kerns])
+        super(Hierarchical, self).__init__(kerns[0].input_dim + len(kerns) - 1, name)
+        self.kerns = kerns
+        self.add_parameters(self.kerns)
+
+    def K(self,X ,X2=None):
+        X, slices = X[:,:-self.levels], [index_to_slices(X[:,i]) for i in range(self.kerns[0].input_dim, self.input_dim)]
+        K = self.kerns[0].K(X, X2)
+        if X2 is None:
+            [[[np.copyto(K[s,s], k.K(X[s], None)) for s in slices_i] for slices_i in slices_k] for k, slices_k in zip(self.kerns[1:], slices)]
+        else:
+            X2, slices2 = X2[:,:-1],index_to_slices(X2[:,-1])
+            [[[[np.copyto(K[s, s2], self.kern.K(X[s],X2[s2])) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices_k,slices_k2)] for k, slices_k, slices_k2 in zip(self.kerns[1:], slices, slices2)]
+        return target
+
+    def Kdiag(self,X):
+        X, slices = X[:,:-self.levels], [index_to_slices(X[:,i]) for i in range(self.kerns[0].input_dim, self.input_dim)]
+        K = self.kerns[0].K(X, X2)
+        [[[np.copyto(target[s], self.kern.Kdiag(X[s])) for s in slices_i] for slices_i in slices_k] for k, slices_k in zip(self.kerns[1:], slices)]
+        return target
+
+    def update_gradients_full(self,dL_dK,X,X2=None):
+        X,slices = X[:,:-1],index_to_slices(X[:,-1])
+        if X2 is None:
+            self.kerns[0].update_gradients_full(dL_dK, X, None)
+            for k, slices_k in zip(self.kerns[1:], slices):
+                target = np.zeros(k.size)
+                def collate_grads(dL, X, X2):
+                    k.update_gradients_full(dL,X,X2)
+                    k._collect_gradient(target)
+                [[k.update_gradients_full(dL_dK[s,s], X[s], None) for s in slices_i] for slices_i in slices_k]
+                k._set_gradient(target)
+        else:
+            X2, slices2 = X2[:,:-1], index_to_slices(X2[:,-1])
+            self.kerns[0].update_gradients_full(dL_dK, X, None)
+            for k, slices_k in zip(self.kerns[1:], slices):
+                target = np.zeros(k.size)
+                def collate_grads(dL, X, X2):
+                    k.update_gradients_full(dL,X,X2)
+                    k._collect_gradient(target)
+                [[[collate_grads(dL_dK[s,s2],X[s],X2[s2]) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
+                k._set_gradient(target)
+
 

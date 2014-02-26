@@ -1,21 +1,23 @@
 from ..core.parameterization.parameter_core import Observable
 
 class Cacher(object):
-    def __init__(self, operation, limit=5, reset_on_first=False):
+    def __init__(self, operation, limit=5, ignore_args=()):
         self.limit = int(limit)
-        self._reset_on_first = reset_on_first
+        self.ignore_args = ignore_args
         self.operation=operation
         self.cached_inputs = []
         self.cached_outputs = []
         self.inputs_changed = []
 
     def __call__(self, *args):
-        if self._reset_on_first:
-            assert isinstance(args[0], Observable)
-            args[0].add_observer(self, self.reset)
-            cached_args = args
+        if len(self.ignore_args) != 0:
+            ca = [a for i,a in enumerate(args) if i not in self.ignore_args]
+            cached_args = []
+            for a in ca:
+                if not any(a is ai for ai in cached_args):
+                    cached_args.append(a)
         else:
-            cached_args = args[1:]
+            cached_args = args
 
 
         if not all([isinstance(arg, Observable) for arg in cached_args]):
@@ -36,7 +38,7 @@ class Cacher(object):
             self.cached_inputs.append(cached_args)
             self.cached_outputs.append(self.operation(*args))
             self.inputs_changed.append(False)
-            [a.add_observer(self, self.on_cache_changed) for a in args]
+            [a.add_observer(self, self.on_cache_changed) for a in cached_args]
             return self.cached_outputs[-1]
 
     def on_cache_changed(self, arg):
@@ -48,42 +50,15 @@ class Cacher(object):
         self.cached_outputs = []
         self.inputs_changed = []
 
-
-
-
-def cache_this(limit=5, reset_on_self=False):
-    def limited_cache(f):
-        c = Cacher(f, limit, reset_on_first=reset_on_self)
+class Cache_this(object):
+    def __init__(self, limit=5, ignore_args=()):
+        self.limit = limit
+        self.ignore_args = ignore_args
+        self.c = None
+    def __call__(self, f):
         def f_wrap(*args):
-            return c(*args)
-        f_wrap._cacher = c
+            if self.c is None:
+                self.c = Cacher(f, self.limit, ignore_args=self.ignore_args)
+            return self.c(*args)
+        f_wrap._cacher = self
         return f_wrap
-    return limited_cache
-
-
-
-
-
-
-
-
-
-
-
-
-        #Xbase = X
-        #while Xbase is not None:
-            #try:
-                #i = self.cached_inputs.index(X)
-                #break
-            #except ValueError:
-                #Xbase = X.base
-                #continue
-        #self.inputs_changed[i] = True
-
-
-
-
-
-
-

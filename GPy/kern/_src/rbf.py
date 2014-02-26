@@ -6,6 +6,7 @@ import numpy as np
 from scipy import weave
 from ...util.misc import param_to_array
 from stationary import Stationary
+from GPy.util.caching import Cache_this
 
 class RBF(Stationary):
     """
@@ -166,7 +167,7 @@ class RBF(Stationary):
         return target
 
 
-    #@cache_this TODO
+    @Cache_this(limit=1)
     def _psi1computations(self, Z, vp):
         mu, S = vp.mean, vp.variance
         l2 = self.lengthscale **2
@@ -179,7 +180,7 @@ class RBF(Stationary):
 
 
 
-    #@cache_this TODO
+    @Cache_this(limit=1)
     def _psi2computations(self, Z, vp):
         mu, S = vp.mean, vp.variance
 

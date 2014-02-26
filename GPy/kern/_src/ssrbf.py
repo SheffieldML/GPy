@@ -6,7 +6,6 @@ from kern import Kern
 import numpy as np
 from ...util.linalg import tdot
 from ...util.config import *
-from ...util.caching import cache_this
 from stationary import Stationary
 
 class SSRBF(Stationary):
@@ -155,7 +154,7 @@ class SSRBF(Stationary):
     #            Precomputations            #
     #---------------------------------------#
 
-    @cache_this(1)
+    #@cache_this(1)
     def _K_computations(self, X, X2):
         """
         K(X,X2) - X is NxQ 
@@ -175,7 +174,7 @@ class SSRBF(Stationary):
             self._K_dist2 = -2.*np.dot(X, X2.T) + (np.sum(np.square(X), axis=1)[:, None] + np.sum(np.square(X2), axis=1)[None, :])
         self._K_dvar = np.exp(-0.5 * self._K_dist2)
 
-    @cache_this(1)
+    #@cache_this(1)
     def _psi_computations(self, Z, mu, S, gamma):
         """
         Z - MxQ

@@ -16,16 +16,16 @@ def bgplvm_test_model(optimize=False, verbose=1, plot=False, output_dim=200, nan
         output_dim = 1
         input_dim = 3
     else:
-        input_dim = 1
+        input_dim = 2
         output_dim = output_dim
 
     # generate GPLVM-like data
     X = _np.random.rand(num_inputs, input_dim)
-    #lengthscales = _np.random.rand(input_dim)
-    #k = (GPy.kern.RBF(input_dim, .5, lengthscales, ARD=True)
+    lengthscales = _np.random.rand(input_dim)
+    k = GPy.kern.RBF(input_dim, .5, lengthscales, ARD=True)
          ##+ GPy.kern.white(input_dim, 0.01)
          #)
-    k = GPy.kern.Linear(input_dim, ARD=1)# + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
+    #k = GPy.kern.Linear(input_dim, ARD=1)# + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
     K = k.K(X)
     Y = _np.random.multivariate_normal(_np.zeros(num_inputs), K, (output_dim,)).T
 

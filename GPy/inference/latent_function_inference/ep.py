@@ -23,10 +23,25 @@ class EP(object):
         self.old_mutilde, self.old_vtilde = None, None
 
     def inference(self, kern, X, likelihood, Y, Y_metadata=None):
+        num_data, output_dim = X.shape
+        assert output_dim ==1, "ep in 1D only (for now!)"
 
         K = kern.K(X)
 
         mu_tilde, tau_tilde = self.expectation_propagation()
+
+        Wi, LW, LWi, W_logdet = pdinv(K + np.diag(1./tau_tilde)
+
+        alpha, _ = dpotrs(LW, mu_tilde, lower=1)
+
+        log_marginal =  0.5*(-num_data * log_2_pi - W_logdet - np.sum(alpha * mu_tilde))
+
+        dL_dK = 0.5 * (tdot(alpha[:,None]) - Wi)
+
+        #TODO: what abot derivatives of the likelihood parameters?
+
+        return Posterior(woodbury_inv=Wi, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK}
+
 
 
     def expectation_propagation(self, K, Y, Y_metadata, likelihood)

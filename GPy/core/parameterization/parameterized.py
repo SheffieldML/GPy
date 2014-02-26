@@ -11,7 +11,7 @@ from parameter_core import Constrainable, Pickleable, Parentable, Observable, Pa
 from transformations import __fixed__
 from array_core import ParamList
 
-class Parameterized(Parameterizable, Pickleable, Observable, Gradcheckable):
+class Parameterized(Parameterizable, Pickleable, Gradcheckable):
     """
     Parameterized class
 
@@ -92,6 +92,7 @@ class Parameterized(Parameterizable, Pickleable, Observable, Gradcheckable):
                 self.constraints.update(param.constraints, start)
                 self.priors.update(param.priors, start)
                 self._parameters_.insert(index, param)
+            param.add_observer(self, self._notify_parameters_changed)
             self.size += param.size
         else:
             raise RuntimeError, """Parameter exists already added and no copy made"""
@@ -120,6 +121,7 @@ class Parameterized(Parameterizable, Pickleable, Observable, Gradcheckable):
         del self._parameters_[param._parent_index_]
         
         param._disconnect_parent()
+        param.remove_observer(self, self._notify_parameters_changed)
         self.constraints.shift_left(start, param.size)
         self._connect_fixes()
         self._connect_parameters()

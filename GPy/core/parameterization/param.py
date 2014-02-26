@@ -137,8 +137,6 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
     #===========================================================================
     def _set_params(self, param, update=True):
         self.flat = param
-        #self._notify_tied_parameters()
-        self._notify_observers()
 
     def _get_params(self):
         return self.flat
@@ -161,12 +159,10 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
         try: new_arr._current_slice_ = s; new_arr._original_ = self.base is new_arr.base
         except AttributeError: pass  # returning 0d array or float, double etc
         return new_arr
-    def __setitem__(self, s, val, update=True):
-        super(Param, self).__setitem__(s, val, update=update)
-        #self._notify_tied_parameters()
-        if update and self._s_not_empty(s):
-            self._notify_parameters_changed()
-
+    def __setitem__(self, s, val):
+        super(Param, self).__setitem__(s, val)
+        #self._notify_observers()
+        
     #===========================================================================
     # Index Operations:
     #===========================================================================
@@ -185,6 +181,7 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
                 a = self._realshape_[i] + a
             internal_offset += a * extended_realshape[i]
         return internal_offset
+    
     def _raveled_index(self, slice_index=None):
         # return an index array on the raveled array, which is formed by the current_slice
         # of this object
@@ -354,7 +351,7 @@ class ParamConcatenation(object):
             val = val._vals()
         ind = numpy.zeros(sum(self._param_sizes), dtype=bool); ind[s] = True;
         vals = self._vals(); vals[s] = val; del val
-        [numpy.place(p, ind[ps], vals[ps]) and update and p._notify_parameters_changed()
+        [numpy.place(p, ind[ps], vals[ps]) and update and p._notify_observers()
          for p, ps in zip(self.params, self._param_slices_)]
     def _vals(self):
         return numpy.hstack([p._get_params() for p in self.params])
@@ -363,7 +360,7 @@ class ParamConcatenation(object):
     #===========================================================================
     def update_all_params(self):
         for p in self.params:
-            p._notify_parameters_changed()
+            p._notify_observers()
 
     def constrain(self, constraint, warning=True):
         [param.constrain(constraint, update=False) for param in self.params]

@@ -18,8 +18,13 @@ class Observable(object):
     def add_observer(self, observer, callble):
         self._observer_callables_[observer].append(callble)
 
-    def remove_observer(self, observer, callble):
-        del self._observer_callables_[observer][callble]
+    def remove_observer(self, observer, callble=None):
+        if callble is None:
+            del self._observer_callables_[observer]
+        else:
+            self._observer_callables_[observer].remove(callble)
+            if len(self._observer_callables_[observer]) == 0:
+                self.remove_observer(observer)
 
     def _notify_observers(self):
         [[callble(self) for callble in callables]
@@ -72,9 +77,8 @@ class Parentable(object):
         return self._direct_parent_._highest_parent_
 
     def _notify_parameters_changed(self):
-        if self.has_parent():
-            self._direct_parent_._notify_parameters_changed()
-
+        raise NotImplementedError, "shouldnt happen, abstract superclass"
+        
 class Nameable(Parentable):
     def __init__(self, name, *a, **kw):
         super(Nameable, self).__init__(*a, **kw)
@@ -309,7 +313,7 @@ class Constrainable(Nameable, Indexable):
             print "WARNING: reconstraining parameters {}".format(self.parameter_names() or self.name)
         which.add(transform, self._raveled_index())
         if update:
-            self._notify_parameters_changed()
+            self._notify_observers()
 
     def _remove_from_index_operations(self, which, transforms):
         if len(transforms) == 0:
@@ -325,7 +329,7 @@ class Constrainable(Nameable, Indexable):
         return removed
 
 
-class Parameterizable(Constrainable):
+class Parameterizable(Constrainable, Observable):
     def __init__(self, *args, **kwargs):
         super(Parameterizable, self).__init__(*args, **kwargs)
         from GPy.core.parameterization.array_core import ParamList
@@ -386,7 +390,7 @@ class Parameterizable(Constrainable):
     def _set_params(self, params, update=True):
         # don't overwrite this anymore!
         import itertools
-        [p._set_params(params[s], update=update) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
+        [p._set_params(params[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
         self.parameters_changed()
 
     def copy(self):
@@ -420,11 +424,10 @@ class Parameterizable(Constrainable):
         
         return s
 
-    def _notify_parameters_changed(self):
+    def _notify_parameters_changed(self, which):
         self.parameters_changed()
-        if self.has_parent():
-            self._direct_parent_._notify_parameters_changed()
-
+        self._notify_observers()
+        
     def parameters_changed(self):
         """
         This method gets called when parameters have changed.

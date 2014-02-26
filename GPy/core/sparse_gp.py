@@ -2,12 +2,11 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ..util.linalg import mdot
 from gp import GP
 from parameterization.param import Param
 from ..inference.latent_function_inference import var_dtc
 from .. import likelihoods
-from parameterization.variational import NormalPosterior
+from parameterization.variational import VariationalPosterior
 
 class SparseGP(GP):
     """

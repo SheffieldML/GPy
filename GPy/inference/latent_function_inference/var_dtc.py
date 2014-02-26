@@ -45,7 +45,7 @@ class VarDTC(object):
     def inference(self, kern, X, X_variance, Z, likelihood, Y):
         """Inference for normal sparseGP"""
         uncertain_inputs = False
-        psi0, psi1, psi2 = _compute_psi(kern, X, X_variance, Z, uncertain_inputs)
+        psi0, psi1, psi2 = _compute_psi(kern, X, Z)
         return self._inference(kern, psi0, psi1, psi2, Z, likelihood, Y, uncertain_inputs)
 
     def inference_latent(self, kern, posterior_variational, Z, likelihood, Y):
@@ -205,7 +205,7 @@ class VarDTCMissingData(object):
     def inference(self, kern, X, X_variance, Z, likelihood, Y):
         """Inference for normal sparseGP"""
         uncertain_inputs = False
-        psi0, psi1, psi2 = _compute_psi(kern, X, X_variance, Z, uncertain_inputs)
+        psi0, psi1, psi2 = _compute_psi(kern, X, Z)
         return self._inference(kern, psi0, psi1, psi2, Z, likelihood, Y, uncertain_inputs)
 
     def inference_latent(self, kern, posterior_variational, Z, likelihood, Y):
@@ -358,7 +358,7 @@ class VarDTCMissingData(object):
         return post, log_marginal, grad_dict
 
 
-def _compute_psi(kern, X, X_variance, Z):
+def _compute_psi(kern, X, Z):
     psi0 = kern.Kdiag(X)
     psi1 = kern.K(X, Z)
     psi2 = None

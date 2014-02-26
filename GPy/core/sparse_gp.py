@@ -46,28 +46,33 @@ class SparseGP(GP):
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]
         
-        self.q = NormalPosterior(X, X_variance)
-        
-        GP.__init__(self, self.q.mean, Y, kernel, likelihood, inference_method=inference_method, name=name)
+        if not (X_variance is None):
+            self.q = NormalPosterior(X, X_variance)
+            GP.__init__(self, self.q.mean, Y, kernel, likelihood, inference_method=inference_method, name=name)
+        else:
+            self.X = X
+            GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name)
+
         self.add_parameter(self.Z, index=0)
         self.parameters_changed()
 
     def has_uncertain_inputs(self):
-        return self.q.has_uncertain_inputs()                
-
+        return hasattr(self, 'q')
+    
     def parameters_changed(self):
         if self.has_uncertain_inputs():
             self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference_latent(self.kern, self.q, self.Z, self.likelihood, self.Y)
-        else:
-            self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.X_variance, self.Z, self.likelihood, self.Y)
-        self.likelihood.update_gradients(self.grad_dict.pop('partial_for_likelihood'))
-        if self.has_uncertain_inputs():
+            # gradients
+            self.likelihood.update_gradients(self.grad_dict.pop('partial_for_likelihood'))
             self.kern.update_gradients_variational(posterior_variational=self.q, Z=self.Z, **self.grad_dict)
             self.Z.gradient = self.kern.gradients_Z_variational(posterior_variational=self.q, Z=self.Z, **self.grad_dict)
         else:
+            self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, None, self.Z, self.likelihood, self.Y)
+            # gradients
+            self.likelihood.update_gradients(self.grad_dict.pop('partial_for_likelihood'))
             self.kern.update_gradients_sparse(X=self.X, Z=self.Z, **self.grad_dict)
             self.Z.gradient = self.kern.gradients_Z_sparse(X=self.X, Z=self.Z, **self.grad_dict)
-
+            
     def _raw_predict(self, Xnew, X_variance_new=None, full_cov=False):
         """
         Make a prediction for the latent function values

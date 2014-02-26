@@ -41,7 +41,7 @@ class BayesianGPLVM(SparseGP):
         
         if likelihood is None:
             likelihood = Gaussian()
-        self.q = NormalPosterior(X, X_variance)
+        #self.q = NormalPosterior(X, X_variance)
         self.variational_prior = NormalPrior()
         
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, X_variance, name, **kwargs)

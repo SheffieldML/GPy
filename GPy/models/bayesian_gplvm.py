@@ -49,6 +49,7 @@ class BayesianGPLVM(SparseGP):
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)
         self.add_parameter(self.X, index=0)
+        self.parameters_changed()
 
     def _getstate(self):
         """

@@ -178,6 +178,11 @@ class RBF(Stationary):
         return denom, dist, dist_sq, psi1
 
 
+    #@cache_this(ignore_args=(1,))
+    def _Z_distances(self, Z):
+        Zhat = 0.5 * (Z[:, None, :] + Z[None, :, :]) # M,M,Q
+        Zdist = 0.5 * (Z[:, None, :] - Z[None, :, :]) # M,M,Q
+        return Zhat, Zdist
 
     #@cache_this TODO
     def _psi2computations(self, Z, vp):
@@ -187,8 +192,7 @@ class RBF(Stationary):
         M = Z.shape[0]
 
         #compute required distances
-        Zhat = 0.5 * (Z[:, None, :] + Z[None, :, :]) # M,M,Q
-        Zdist = 0.5 * (Z[:, None, :] - Z[None, :, :]) # M,M,Q
+        Zhat, Zdist = self._Z_distances(Z)
         Zdist_sq = np.square(Zdist / self.lengthscale) # M,M,Q
 
         #allocate memory for the things we want to compute
@@ -201,7 +205,7 @@ class RBF(Stationary):
         denom = (2.*S[:,None,None,:] / l2) + 1. # N,Q
         half_log_denom = 0.5 * np.log(denom[:,0,0,:])
         denom_l2 = denom[:,0,0,:]*l2
-        
+
         variance_sq = float(np.square(self.variance))
         code = """
         double tmp, exponent_tmp;
@@ -237,7 +241,7 @@ class RBF(Stationary):
             }
         }
         """
-        
+
         support_code = """
         #include <omp.h>
         #include <math.h>

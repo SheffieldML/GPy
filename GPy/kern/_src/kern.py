@@ -68,6 +68,14 @@ class Kern(Parameterized):
         """
         raise NotImplementedError
 
+    def plot(self, *args, **kwargs):
+        """
+        See GPy.plotting.matplot_dep.plot
+        """
+        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        from ..plotting.matplot_dep import kernel_plots
+        kernel_plots.plot(self,*args)
+
     def plot_ARD(self, *args, **kw):
         """
         See :class:`~GPy.plotting.matplot_dep.kernel_plots`

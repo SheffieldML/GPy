@@ -61,8 +61,8 @@ class RBF(Stationary):
 
         #from psi2
         S = variational_posterior.variance
-        denom, Zdist, Zdist_sq, mudist, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
-        d_length = 2.*psi2[:, :, :, None] * (Zdist_sq[None, :,:,:] * denom + mudist_sq + S[:, None, None, :] / l2) / (self.lengthscale * denom)
+        denom, _, Zdist_sq, _, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
+        d_length = 2.*psi2[:, :, :, None] * (Zdist_sq * denom + mudist_sq + S[:, None, None, :] / l2) / (self.lengthscale * denom)
         #TODO: combine denom and l2 as denom_l2??
         #TODO: tidy the above!
         #TODO: tensordot below?

@@ -225,7 +225,7 @@ class RBF(Stationary):
         if self.ARD:
             lengthscale2 = self.lengthscale **2
         else:
-            lengthscale2 = np.ones(input_dim) * self.lengthscale2**2
+            lengthscale2 = np.ones(input_dim) * self.lengthscale**2
         code = """
         double tmp;
 

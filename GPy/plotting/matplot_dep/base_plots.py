@@ -6,27 +6,48 @@ import Tango
 import pylab as pb
 import numpy as np
 
-def gpplot(x,mu,lower,upper,edgecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue'],axes=None,**kwargs):
-    if axes is None:
-        axes = pb.gca()
+def ax_default(fignum, ax):
+    if ax is None:
+        fig = pb.figure(fignum)
+        ax = fig.add_subplot(111)
+    else:
+        fig = ax.figure
+    return fig, ax
+
+def meanplot(x, mu, color=Tango.colorsHex['darkBlue'], ax=None, fignum=None, linewidth=2,**kw):
+    _, axes = ax_default(fignum, ax)
+    #here's the mean
+    return axes.plot(x,mu,color=color,linewidth=linewidth,**kw)
+    
+def gpplot(x,mu,lower,upper,edgecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue'],ax=None,fignum=None,xlabel='x',ylabel='y',**kwargs):
+    _, axes = ax_default(ax, fignum)
+        
     mu = mu.flatten()
     x = x.flatten()
     lower = lower.flatten()
     upper = upper.flatten()
 
+    plots = []
+    
     #here's the mean
-    axes.plot(x,mu,color=edgecol,linewidth=2)
+    plots.append(meanplot(x, mu, edgecol, axes))
 
     #here's the box
     kwargs['linewidth']=0.5
     if not 'alpha' in kwargs.keys():
         kwargs['alpha'] = 0.3
-    axes.fill(np.hstack((x,x[::-1])),np.hstack((upper,lower[::-1])),color=fillcol,**kwargs)
+    plots.append(axes.fill(np.hstack((x,x[::-1])),np.hstack((upper,lower[::-1])),color=fillcol,**kwargs))
 
     #this is the edge:
-    axes.plot(x,upper,color=edgecol,linewidth=0.2)
-    axes.plot(x,lower,color=edgecol,linewidth=0.2)
-
+    plots.append(meanplot(x, upper,color=edgecol,linewidth=0.2,axes=axes))
+    plots.append(meanplot(x, lower,color=edgecol,linewidth=0.2,axes=axes))
+    
+    axes.set_xlabel(xlabel)
+    axes.set_ylabel(ylabel)
+    
+    return plots
+    
+    
 def removeRightTicks(ax=None):
     ax = ax or pb.gca()
     for i, line in enumerate(ax.get_yticklines()):

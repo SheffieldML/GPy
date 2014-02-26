@@ -6,7 +6,7 @@ import pylab as pb
 import Tango
 from matplotlib.textpath import TextPath
 from matplotlib.transforms import offset_copy
-from ...kern import Linear
+from .base_plots import ax_default
 
 
 
@@ -52,11 +52,7 @@ def plot_ARD(kernel, fignum=None, ax=None, title='', legend=False):
         pass '' to not print a title
         pass None for a generic title
     """
-    if ax is None:
-        fig = pb.figure(fignum)
-        ax = fig.add_subplot(111)
-    else:
-        fig = ax.figure
+    fig, ax = ax_default(fignum,ax)
 
     if title is None:
         ax.set_title('ARD parameters, %s kernel' % kernel.name)
@@ -70,13 +66,13 @@ def plot_ARD(kernel, fignum=None, ax=None, title='', legend=False):
     bottom = 0
     x = np.arange(kernel.input_dim)
     
-    for i in range(ard_params.shape[-1]):
+    for i in range(ard_params.shape[0]):
         c = Tango.nextMedium()
-        bars.append(plot_bars(fig, ax, x, ard_params[:,i], c, kernel._parameters_[i].name, bottom=bottom))
-        bottom += ard_params[:,i]
+        bars.append(plot_bars(fig, ax, x, ard_params[i,:], c, kernel._parameters_[i].name, bottom=bottom))
+        bottom += ard_params[i,:]
     
     ax.set_xlim(-.5, kernel.input_dim - .5)
-    add_bar_labels(fig, ax, [bars[-1]], bottom=bottom-ard_params[:,i])
+    add_bar_labels(fig, ax, [bars[-1]], bottom=bottom-ard_params[i,:])
 
     if legend:
         if title is '':

@@ -196,9 +196,9 @@ class Add(Kern):
         kernel_plots.plot(self,*args)
 
     def input_sensitivity(self):
-        in_sen = np.zeros((self.input_dim, self.num_params))
+        in_sen = np.zeros((self.num_params, self.input_dim))
         for i, [p, i_s] in enumerate(zip(self._parameters_, self.input_slices)):
-            in_sen[i_s, i] = p.input_sensitivity()
+            in_sen[i, i_s] = p.input_sensitivity()
         return in_sen
     
     def _getstate(self):

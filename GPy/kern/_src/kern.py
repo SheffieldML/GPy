@@ -62,9 +62,10 @@ class Kern(Parameterized):
         raise NotImplementedError
     
     def plot_ARD(self, *args, **kw):
-        if "matplotlib" in sys.modules:
-            from ...plotting.matplot_dep import kernel_plots
-            self.plot_ARD.__doc__ += kernel_plots.plot_ARD.__doc__
+        """
+        See :class:`~GPy.plotting.matplot_dep.kernel_plots`
+        """
+        import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ...plotting.matplot_dep import kernel_plots
         return kernel_plots.plot_ARD(self,*args,**kw)

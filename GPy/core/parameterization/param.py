@@ -60,6 +60,15 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
     def __init__(self, name, input_array, default_constraint=None, *a, **kw):
         super(Param, self).__init__(name=name, default_constraint=default_constraint, *a, **kw)
 
+    def build_pydot(self,G):
+        import pydot
+        node = pydot.Node(id(self), shape='record', label=self.name)
+        G.add_node(node)
+        for o in self._observer_callables_.keys():
+            print o, self.hirarchy_name()
+
+        return node
+
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return

@@ -64,6 +64,26 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
         self._connect_parameters()
         del self._in_init_
 
+    def build_pydot(self, G=None):
+        import pydot
+        iamroot = False
+        if G is None:
+            G = pydot.Dot(graph_type='digraph')
+            iamroot=True
+        node = pydot.Node(id(self), shape='record', label=self.name)
+        G.add_node(node)
+        for child in self._parameters_:
+            child_node = child.build_pydot(G)
+            G.add_edge(pydot.Edge(node, child_node))
+
+        for o in self._observer_callables_.keys():
+            print id(o), self.hirarchy_name()
+
+        if iamroot:
+            return G
+        return node
+
+
     def add_parameter(self, param, index=None):
         """
         :param parameters:  the parameters to add

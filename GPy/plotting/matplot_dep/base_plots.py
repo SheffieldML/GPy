@@ -18,17 +18,17 @@ def meanplot(x, mu, color=Tango.colorsHex['darkBlue'], ax=None, fignum=None, lin
     _, axes = ax_default(fignum, ax)
     #here's the mean
     return axes.plot(x,mu,color=color,linewidth=linewidth,**kw)
-    
+
 def gpplot(x,mu,lower,upper,edgecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue'],ax=None,fignum=None,xlabel='x',ylabel='y',**kwargs):
-    _, axes = ax_default(ax, fignum)
-        
+    _, axes = ax_default(fignum, ax)
+
     mu = mu.flatten()
     x = x.flatten()
     lower = lower.flatten()
     upper = upper.flatten()
 
     plots = []
-    
+
     #here's the mean
     plots.append(meanplot(x, mu, edgecol, axes))
 
@@ -39,15 +39,15 @@ def gpplot(x,mu,lower,upper,edgecol=Tango.colorsHex['darkBlue'],fillcol=Tango.co
     plots.append(axes.fill(np.hstack((x,x[::-1])),np.hstack((upper,lower[::-1])),color=fillcol,**kwargs))
 
     #this is the edge:
-    plots.append(meanplot(x, upper,color=edgecol,linewidth=0.2,axes=axes))
-    plots.append(meanplot(x, lower,color=edgecol,linewidth=0.2,axes=axes))
-    
+    plots.append(meanplot(x, upper,color=edgecol,linewidth=0.2,ax=axes))
+    plots.append(meanplot(x, lower,color=edgecol,linewidth=0.2,ax=axes))
+
     axes.set_xlabel(xlabel)
     axes.set_ylabel(ylabel)
-    
+
     return plots
-    
-    
+
+
 def removeRightTicks(ax=None):
     ax = ax or pb.gca()
     for i, line in enumerate(ax.get_yticklines()):

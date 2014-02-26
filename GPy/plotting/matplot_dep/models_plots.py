@@ -86,7 +86,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
             m, v, lower, upper = model.predict(Xgrid)
             Y = Y
         for d in which_data_ycols:
-            gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax, edgecol=linecol, fillcol=fillcol)
+            gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], ax=ax, edgecol=linecol, fillcol=fillcol)
             ax.plot(X[which_data_rows,free_dims], Y[which_data_rows, d], 'kx', mew=1.5)
 
         #optionally plot some samples

@@ -77,7 +77,11 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
             G.add_edge(pydot.Edge(node, child_node))
 
         for o in self._observer_callables_.keys():
-            print id(o), self.hirarchy_name()
+            label = o.name if hasattr(o, 'name') else str(o)
+            observed_node = pydot.Node(id(o), label=label)
+            G.add_node(observed_node)
+            edge = pydot.Edge(str(id(self)), str(id(o)), color='darkorange2', arrowhead='vee')
+            G.add_edge(edge)
 
         if iamroot:
             return G

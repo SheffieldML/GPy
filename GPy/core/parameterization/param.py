@@ -65,7 +65,11 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
         node = pydot.Node(id(self), shape='record', label=self.name)
         G.add_node(node)
         for o in self._observer_callables_.keys():
-            print o, self.hirarchy_name()
+            label = o.name if hasattr(o, 'name') else str(o)
+            observed_node = pydot.Node(id(o), label=label)
+            G.add_node(observed_node)
+            edge = pydot.Edge(str(id(self)), str(id(o)), color='darkorange2', arrowhead='vee')
+            G.add_edge(edge)
 
         return node
 

@@ -9,3 +9,4 @@ from _src.mlp import MLP
 from _src.periodic import PeriodicExponential, PeriodicMatern32, PeriodicMatern52
 from _src.independent_outputs import IndependentOutputs, Hierarchical
 from _src.coregionalize import Coregionalize
+from _src.ssrbf import SSRBF

@@ -8,13 +8,6 @@ import sys
 
 verbose = True
 
-try:
-    import sympy
-    SYMPY_AVAILABLE=True
-except ImportError:
-    SYMPY_AVAILABLE=False
-
-
 class Kern_check_model(GPy.core.Model):
     """
     This is a dummy model class used as a base class for checking that the
@@ -70,14 +63,11 @@ class Kern_check_dKdiag_dtheta(Kern_check_model):
         Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=None)
         self.add_parameter(self.kernel)
 
-    def parameters_changed(self):
-        self.kernel.update_gradients_diag(self.dL_dK, self.X)
-
     def log_likelihood(self):
         return (np.diag(self.dL_dK)*self.kernel.Kdiag(self.X)).sum()
 
     def parameters_changed(self):
-        return self.kernel.update_gradients_diag(np.diag(self.dL_dK), self.X)
+        self.kernel.update_gradients_diag(np.diag(self.dL_dK), self.X)
 
 class Kern_check_dK_dX(Kern_check_model):
     """This class allows gradient checks for the gradient of a kernel with respect to X. """
@@ -98,6 +88,8 @@ class Kern_check_dKdiag_dX(Kern_check_dK_dX):
 
     def parameters_changed(self):
         self.X.gradient =  self.kernel.gradients_X_diag(self.dL_dK, self.X)
+
+
 
 def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False):
     """
@@ -217,10 +209,14 @@ def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False):
     return pass_checks
 
 
+
 class KernelTestsContinuous(unittest.TestCase):
     def setUp(self):
         self.X = np.random.randn(100,2)
         self.X2 = np.random.randn(110,2)
+
+        continuous_kerns = ['RBF', 'Linear']
+        self.kernclasses = [getattr(GPy.kern, s) for s in continuous_kerns]
 
     def test_Matern32(self):
         k = GPy.kern.Matern32(2)
@@ -231,6 +227,7 @@ class KernelTestsContinuous(unittest.TestCase):
         self.assertTrue(kern_test(k, X=self.X, X2=self.X2, verbose=verbose))
 
     #TODO: turn off grad checkingwrt X for indexed kernels liek coregionalize
+
 
 
 

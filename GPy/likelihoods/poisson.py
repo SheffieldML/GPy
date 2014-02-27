@@ -28,7 +28,7 @@ class Poisson(Likelihood):
     def _preprocess_values(self,Y):
         return Y
 
-    def pdf_link(self, link_f, y, extra_data=None):
+    def pdf_link(self, link_f, y, Y_metadata=None):
         """
         Likelihood function given link(f)
 
@@ -39,14 +39,14 @@ class Poisson(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in poisson distribution
+        :param Y_metadata: Y_metadata which is not used in poisson distribution
         :returns: likelihood evaluated for this point
         :rtype: float
         """
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         return np.prod(stats.poisson.pmf(y,link_f))
 
-    def logpdf_link(self, link_f, y, extra_data=None):
+    def logpdf_link(self, link_f, y, Y_metadata=None):
         """
         Log Likelihood Function given link(f)
 
@@ -57,7 +57,7 @@ class Poisson(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in poisson distribution
+        :param Y_metadata: Y_metadata which is not used in poisson distribution
         :returns: likelihood evaluated for this point
         :rtype: float
 
@@ -65,7 +65,7 @@ class Poisson(Likelihood):
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         return np.sum(-link_f + y*np.log(link_f) - special.gammaln(y+1))
 
-    def dlogpdf_dlink(self, link_f, y, extra_data=None):
+    def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
         """
         Gradient of the log likelihood function at y, given link(f) w.r.t link(f)
 
@@ -76,7 +76,7 @@ class Poisson(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in poisson distribution
+        :param Y_metadata: Y_metadata which is not used in poisson distribution
         :returns: gradient of likelihood evaluated at points
         :rtype: Nx1 array
 
@@ -84,7 +84,7 @@ class Poisson(Likelihood):
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         return y/link_f - 1
 
-    def d2logpdf_dlink2(self, link_f, y, extra_data=None):
+    def d2logpdf_dlink2(self, link_f, y, Y_metadata=None):
         """
         Hessian at y, given link(f), w.r.t link(f)
         i.e. second derivative logpdf at y given link(f_i) and link(f_j)  w.r.t link(f_i) and link(f_j)
@@ -97,7 +97,7 @@ class Poisson(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in poisson distribution
+        :param Y_metadata: Y_metadata which is not used in poisson distribution
         :returns: Diagonal of hessian matrix (second derivative of likelihood evaluated at points f)
         :rtype: Nx1 array
 
@@ -112,7 +112,7 @@ class Poisson(Likelihood):
         #transf = self.gp_link.transf(gp)
         #return obs * ((self.gp_link.dtransf_df(gp)/transf)**2 - d2_df/transf) + d2_df
 
-    def d3logpdf_dlink3(self, link_f, y, extra_data=None):
+    def d3logpdf_dlink3(self, link_f, y, Y_metadata=None):
         """
         Third order derivative log-likelihood function at y given link(f) w.r.t link(f)
 
@@ -123,25 +123,13 @@ class Poisson(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in poisson distribution
+        :param Y_metadata: Y_metadata which is not used in poisson distribution
         :returns: third derivative of likelihood evaluated at points f
         :rtype: Nx1 array
         """
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         d3lik_dlink3 = 2*y/(link_f)**3
         return d3lik_dlink3
-
-    def _mean(self,gp):
-        """
-        Mass (or density) function
-        """
-        return self.gp_link.transf(gp)
-
-    def _variance(self,gp):
-        """
-        Mass (or density) function
-        """
-        return self.gp_link.transf(gp)
 
     def samples(self, gp):
         """

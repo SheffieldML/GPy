@@ -36,28 +36,28 @@ def student_t_approx(optimize=True, plot=True):
     edited_real_sd = initial_var_guess
 
     # Kernel object
-    kernel1 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
-    kernel2 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
-    kernel3 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
-    kernel4 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
+    kernel1 = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
+    kernel2 = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
+    kernel3 = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
+    kernel4 = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
 
     #Gaussian GP model on clean data
-    #m1 = GPy.models.GPRegression(X, Y.copy(), kernel=kernel1)
-    ## optimize
-    #m1['white'].constrain_fixed(1e-5)
-    #m1.randomize()
+    m1 = GPy.models.GPRegression(X, Y.copy(), kernel=kernel1)
+    # optimize
+    m1['.*white'].constrain_fixed(1e-5)
+    m1.randomize()
 
     ##Gaussian GP model on corrupt data
-    #m2 = GPy.models.GPRegression(X, Yc.copy(), kernel=kernel2)
-    #m1['white'].constrain_fixed(1e-5)
-    #m2.randomize()
+    m2 = GPy.models.GPRegression(X, Yc.copy(), kernel=kernel2)
+    m1['.*white'].constrain_fixed(1e-5)
+    m2.randomize()
 
     #Student t GP model on clean data
     t_distribution = GPy.likelihoods.StudentT(deg_free=deg_free, sigma2=edited_real_sd)
     laplace_inf = GPy.inference.latent_function_inference.Laplace()
     m3 = GPy.core.GP(X, Y.copy(), kernel3, likelihood=t_distribution, inference_method=laplace_inf)
-    m3['t_noise'].constrain_bounded(1e-6, 10.)
-    m3['white'].constrain_fixed(1e-5)
+    m3['.*t_noise'].constrain_bounded(1e-6, 10.)
+    m3['.*white'].constrain_fixed(1e-5)
     m3.randomize()
     debug = True
     print m3
@@ -69,8 +69,8 @@ def student_t_approx(optimize=True, plot=True):
     t_distribution = GPy.likelihoods.StudentT(deg_free=deg_free, sigma2=edited_real_sd)
     laplace_inf = GPy.inference.latent_function_inference.Laplace()
     m4 = GPy.core.GP(X, Yc.copy(), kernel4, likelihood=t_distribution, inference_method=laplace_inf)
-    m4['t_noise'].constrain_bounded(1e-6, 10.)
-    m4['white'].constrain_fixed(1e-5)
+    m4['.*t_noise'].constrain_bounded(1e-6, 10.)
+    m4['.*white'].constrain_fixed(1e-5)
     m4.randomize()
 
     if optimize:
@@ -153,7 +153,7 @@ def boston_example(optimize=True, plot=True):
         #Gaussian GP
         print "Gauss GP"
         mgp = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelgp.copy())
-        mgp.constrain_fixed('white', 1e-5)
+        mgp.constrain_fixed('.*white', 1e-5)
         mgp['rbf_len'] = rbf_len
         mgp['noise'] = noise
         print mgp
@@ -171,7 +171,7 @@ def boston_example(optimize=True, plot=True):
         g_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), g_distribution)
         mg = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=g_likelihood)
         mg.constrain_positive('noise_variance')
-        mg.constrain_fixed('white', 1e-5)
+        mg.constrain_fixed('.*white', 1e-5)
         mg['rbf_len'] = rbf_len
         mg['noise'] = noise
         print mg
@@ -189,10 +189,10 @@ def boston_example(optimize=True, plot=True):
             t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=df, sigma2=noise)
             stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
             mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=stu_t_likelihood)
-            mstu_t.constrain_fixed('white', 1e-5)
-            mstu_t.constrain_bounded('t_noise', 0.0001, 1000)
+            mstu_t.constrain_fixed('.*white', 1e-5)
+            mstu_t.constrain_bounded('.*t_noise', 0.0001, 1000)
             mstu_t['rbf_len'] = rbf_len
-            mstu_t['t_noise'] = noise
+            mstu_t['.*t_noise'] = noise
             print mstu_t
             if optimize:
                 mstu_t.optimize(optimizer=optimizer, messages=messages)

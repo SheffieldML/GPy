@@ -93,7 +93,7 @@ class Gaussian(Likelihood):
     def predictive_variance(self, mu, sigma, predictive_mean=None):
         return self.variance + sigma**2
 
-    def pdf_link(self, link_f, y, extra_data=None):
+    def pdf_link(self, link_f, y, Y_metadata=None):
         """
         Likelihood function given link(f)
 
@@ -104,14 +104,14 @@ class Gaussian(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data not used in gaussian
+        :param Y_metadata: Y_metadata not used in gaussian
         :returns: likelihood evaluated for this point
         :rtype: float
         """
         #Assumes no covariance, exp, sum, log for numerical stability
         return np.exp(np.sum(np.log(stats.norm.pdf(y, link_f, np.sqrt(self.variance)))))
 
-    def logpdf_link(self, link_f, y, extra_data=None):
+    def logpdf_link(self, link_f, y, Y_metadata=None):
         """
         Log likelihood function given link(f)
 
@@ -122,7 +122,7 @@ class Gaussian(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data not used in gaussian
+        :param Y_metadata: Y_metadata not used in gaussian
         :returns: log likelihood evaluated for this point
         :rtype: float
         """
@@ -132,7 +132,7 @@ class Gaussian(Likelihood):
 
         return -0.5*(np.sum((y-link_f)**2/self.variance) + ln_det_cov + N*np.log(2.*np.pi))
 
-    def dlogpdf_dlink(self, link_f, y, extra_data=None):
+    def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
         """
         Gradient of the pdf at y, given link(f) w.r.t link(f)
 
@@ -143,7 +143,7 @@ class Gaussian(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data not used in gaussian
+        :param Y_metadata: Y_metadata not used in gaussian
         :returns: gradient of log likelihood evaluated at points link(f)
         :rtype: Nx1 array
         """
@@ -152,7 +152,7 @@ class Gaussian(Likelihood):
         grad = s2_i*y - s2_i*link_f
         return grad
 
-    def d2logpdf_dlink2(self, link_f, y, extra_data=None):
+    def d2logpdf_dlink2(self, link_f, y, Y_metadata=None):
         """
         Hessian at y, given link_f, w.r.t link_f.
         i.e. second derivative logpdf at y given link(f_i) link(f_j)  w.r.t link(f_i) and link(f_j)
@@ -166,7 +166,7 @@ class Gaussian(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data not used in gaussian
+        :param Y_metadata: Y_metadata not used in gaussian
         :returns: Diagonal of log hessian matrix (second derivative of log likelihood evaluated at points link(f))
         :rtype: Nx1 array
 
@@ -179,7 +179,7 @@ class Gaussian(Likelihood):
         hess = -(1.0/self.variance)*np.ones((N, 1))
         return hess
 
-    def d3logpdf_dlink3(self, link_f, y, extra_data=None):
+    def d3logpdf_dlink3(self, link_f, y, Y_metadata=None):
         """
         Third order derivative log-likelihood function at y given link(f) w.r.t link(f)
 
@@ -190,7 +190,7 @@ class Gaussian(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data not used in gaussian
+        :param Y_metadata: Y_metadata not used in gaussian
         :returns: third derivative of log likelihood evaluated at points link(f)
         :rtype: Nx1 array
         """
@@ -199,7 +199,7 @@ class Gaussian(Likelihood):
         d3logpdf_dlink3 = np.zeros((N,1))
         return d3logpdf_dlink3
 
-    def dlogpdf_link_dvar(self, link_f, y, extra_data=None):
+    def dlogpdf_link_dvar(self, link_f, y, Y_metadata=None):
         """
         Gradient of the log-likelihood function at y given link(f), w.r.t variance parameter (noise_variance)
 
@@ -210,7 +210,7 @@ class Gaussian(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data not used in gaussian
+        :param Y_metadata: Y_metadata not used in gaussian
         :returns: derivative of log likelihood evaluated at points link(f) w.r.t variance parameter
         :rtype: float
         """
@@ -221,7 +221,7 @@ class Gaussian(Likelihood):
         dlik_dsigma = -0.5*N/self.variance + 0.5*s_4*np.sum(np.square(e))
         return np.sum(dlik_dsigma) # Sure about this sum?
 
-    def dlogpdf_dlink_dvar(self, link_f, y, extra_data=None):
+    def dlogpdf_dlink_dvar(self, link_f, y, Y_metadata=None):
         """
         Derivative of the dlogpdf_dlink w.r.t variance parameter (noise_variance)
 
@@ -232,7 +232,7 @@ class Gaussian(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data not used in gaussian
+        :param Y_metadata: Y_metadata not used in gaussian
         :returns: derivative of log likelihood evaluated at points link(f) w.r.t variance parameter
         :rtype: Nx1 array
         """
@@ -241,7 +241,7 @@ class Gaussian(Likelihood):
         dlik_grad_dsigma = -s_4*y + s_4*link_f
         return dlik_grad_dsigma
 
-    def d2logpdf_dlink2_dvar(self, link_f, y, extra_data=None):
+    def d2logpdf_dlink2_dvar(self, link_f, y, Y_metadata=None):
         """
         Gradient of the hessian (d2logpdf_dlink2) w.r.t variance parameter (noise_variance)
 
@@ -252,7 +252,7 @@ class Gaussian(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data not used in gaussian
+        :param Y_metadata: Y_metadata not used in gaussian
         :returns: derivative of log hessian evaluated at points link(f_i) and link(f_j) w.r.t variance parameter
         :rtype: Nx1 array
         """
@@ -262,16 +262,16 @@ class Gaussian(Likelihood):
         d2logpdf_dlink2_dvar = np.ones((N,1))*s_4
         return d2logpdf_dlink2_dvar
 
-    def dlogpdf_link_dtheta(self, f, y, extra_data=None):
-        dlogpdf_dvar = self.dlogpdf_link_dvar(f, y, extra_data=extra_data)
+    def dlogpdf_link_dtheta(self, f, y, Y_metadata=None):
+        dlogpdf_dvar = self.dlogpdf_link_dvar(f, y, Y_metadata=Y_metadata)
         return np.asarray([[dlogpdf_dvar]])
 
-    def dlogpdf_dlink_dtheta(self, f, y, extra_data=None):
-        dlogpdf_dlink_dvar = self.dlogpdf_dlink_dvar(f, y, extra_data=extra_data)
+    def dlogpdf_dlink_dtheta(self, f, y, Y_metadata=None):
+        dlogpdf_dlink_dvar = self.dlogpdf_dlink_dvar(f, y, Y_metadata=Y_metadata)
         return dlogpdf_dlink_dvar
 
-    def d2logpdf_dlink2_dtheta(self, f, y, extra_data=None):
-        d2logpdf_dlink2_dvar = self.d2logpdf_dlink2_dvar(f, y, extra_data=extra_data)
+    def d2logpdf_dlink2_dtheta(self, f, y, Y_metadata=None):
+        d2logpdf_dlink2_dvar = self.d2logpdf_dlink2_dvar(f, y, Y_metadata=Y_metadata)
         return d2logpdf_dlink2_dvar
 
     def _mean(self, gp):

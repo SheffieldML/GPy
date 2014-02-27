@@ -37,15 +37,15 @@ class StudentT(Likelihood):
     def parameters_changed(self):
         self.variance = (self.v / float(self.v - 2)) * self.sigma2
 
-    def update_gradients(self, partial):
+    def update_gradients(self, derivatives):
         """
         Pull out the gradients, be careful as the order must match the order
         in which the parameters are added
         """
-        self.sigma2.gradient = partial[0]
-        self.v.gradient = partial[1]
+        self.sigma2.gradient = derivatives[0]
+        self.v.gradient = derivatives[1]
 
-    def pdf_link(self, link_f, y, extra_data=None):
+    def pdf_link(self, link_f, y, Y_metadata=None):
         """
         Likelihood function given link(f)
 
@@ -56,7 +56,7 @@ class StudentT(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution
+        :param Y_metadata: Y_metadata which is not used in student t distribution
         :returns: likelihood evaluated for this point
         :rtype: float
         """
@@ -69,7 +69,7 @@ class StudentT(Likelihood):
                     )
         return np.prod(objective)
 
-    def logpdf_link(self, link_f, y, extra_data=None):
+    def logpdf_link(self, link_f, y, Y_metadata=None):
         """
         Log Likelihood Function given link(f)
 
@@ -80,7 +80,7 @@ class StudentT(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution
+        :param Y_metadata: Y_metadata which is not used in student t distribution
         :returns: likelihood evaluated for this point
         :rtype: float
 
@@ -98,7 +98,7 @@ class StudentT(Likelihood):
                     )
         return np.sum(objective)
 
-    def dlogpdf_dlink(self, link_f, y, extra_data=None):
+    def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
         """
         Gradient of the log likelihood function at y, given link(f) w.r.t link(f)
 
@@ -109,7 +109,7 @@ class StudentT(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution
+        :param Y_metadata: Y_metadata which is not used in student t distribution
         :returns: gradient of likelihood evaluated at points
         :rtype: Nx1 array
 
@@ -119,7 +119,7 @@ class StudentT(Likelihood):
         grad = ((self.v + 1) * e) / (self.v * self.sigma2 + (e**2))
         return grad
 
-    def d2logpdf_dlink2(self, link_f, y, extra_data=None):
+    def d2logpdf_dlink2(self, link_f, y, Y_metadata=None):
         """
         Hessian at y, given link(f), w.r.t link(f)
         i.e. second derivative logpdf at y given link(f_i) and link(f_j)  w.r.t link(f_i) and link(f_j)
@@ -132,7 +132,7 @@ class StudentT(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution
+        :param Y_metadata: Y_metadata which is not used in student t distribution
         :returns: Diagonal of hessian matrix (second derivative of likelihood evaluated at points f)
         :rtype: Nx1 array
 
@@ -145,7 +145,7 @@ class StudentT(Likelihood):
         hess = ((self.v + 1)*(e**2 - self.v*self.sigma2)) / ((self.sigma2*self.v + e**2)**2)
         return hess
 
-    def d3logpdf_dlink3(self, link_f, y, extra_data=None):
+    def d3logpdf_dlink3(self, link_f, y, Y_metadata=None):
         """
         Third order derivative log-likelihood function at y given link(f) w.r.t link(f)
 
@@ -156,7 +156,7 @@ class StudentT(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution
+        :param Y_metadata: Y_metadata which is not used in student t distribution
         :returns: third derivative of likelihood evaluated at points f
         :rtype: Nx1 array
         """
@@ -167,7 +167,7 @@ class StudentT(Likelihood):
                     )
         return d3lik_dlink3
 
-    def dlogpdf_link_dvar(self, link_f, y, extra_data=None):
+    def dlogpdf_link_dvar(self, link_f, y, Y_metadata=None):
         """
         Gradient of the log-likelihood function at y given f, w.r.t variance parameter (t_noise)
 
@@ -178,7 +178,7 @@ class StudentT(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution
+        :param Y_metadata: Y_metadata which is not used in student t distribution
         :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
         :rtype: float
         """
@@ -187,7 +187,7 @@ class StudentT(Likelihood):
         dlogpdf_dvar = self.v*(e**2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e**2))
         return np.sum(dlogpdf_dvar)
 
-    def dlogpdf_dlink_dvar(self, link_f, y, extra_data=None):
+    def dlogpdf_dlink_dvar(self, link_f, y, Y_metadata=None):
         """
         Derivative of the dlogpdf_dlink w.r.t variance parameter (t_noise)
 
@@ -198,7 +198,7 @@ class StudentT(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution
+        :param Y_metadata: Y_metadata which is not used in student t distribution
         :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
         :rtype: Nx1 array
         """
@@ -207,7 +207,7 @@ class StudentT(Likelihood):
         dlogpdf_dlink_dvar = (self.v*(self.v+1)*(-e))/((self.sigma2*self.v + e**2)**2)
         return dlogpdf_dlink_dvar
 
-    def d2logpdf_dlink2_dvar(self, link_f, y, extra_data=None):
+    def d2logpdf_dlink2_dvar(self, link_f, y, Y_metadata=None):
         """
         Gradient of the hessian (d2logpdf_dlink2) w.r.t variance parameter (t_noise)
 
@@ -218,7 +218,7 @@ class StudentT(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution
+        :param Y_metadata: Y_metadata which is not used in student t distribution
         :returns: derivative of hessian evaluated at points f and f_j w.r.t variance parameter
         :rtype: Nx1 array
         """
@@ -229,18 +229,18 @@ class StudentT(Likelihood):
                            )
         return d2logpdf_dlink2_dvar
 
-    def dlogpdf_link_dtheta(self, f, y, extra_data=None):
-        dlogpdf_dvar = self.dlogpdf_link_dvar(f, y, extra_data=extra_data)
+    def dlogpdf_link_dtheta(self, f, y, Y_metadata=None):
+        dlogpdf_dvar = self.dlogpdf_link_dvar(f, y, Y_metadata=Y_metadata)
         dlogpdf_dv = np.zeros_like(dlogpdf_dvar) #FIXME: Not done yet
         return np.hstack((dlogpdf_dvar, dlogpdf_dv))
 
-    def dlogpdf_dlink_dtheta(self, f, y, extra_data=None):
-        dlogpdf_dlink_dvar = self.dlogpdf_dlink_dvar(f, y, extra_data=extra_data)
+    def dlogpdf_dlink_dtheta(self, f, y, Y_metadata=None):
+        dlogpdf_dlink_dvar = self.dlogpdf_dlink_dvar(f, y, Y_metadata=Y_metadata)
         dlogpdf_dlink_dv = np.zeros_like(dlogpdf_dlink_dvar) #FIXME: Not done yet
         return np.hstack((dlogpdf_dlink_dvar, dlogpdf_dlink_dv))
 
-    def d2logpdf_dlink2_dtheta(self, f, y, extra_data=None):
-        d2logpdf_dlink2_dvar = self.d2logpdf_dlink2_dvar(f, y, extra_data=extra_data)
+    def d2logpdf_dlink2_dtheta(self, f, y, Y_metadata=None):
+        d2logpdf_dlink2_dvar = self.d2logpdf_dlink2_dvar(f, y, Y_metadata=Y_metadata)
         d2logpdf_dlink2_dv = np.zeros_like(d2logpdf_dlink2_dvar) #FIXME: Not done yet
         return np.hstack((d2logpdf_dlink2_dvar, d2logpdf_dlink2_dv))
 
@@ -268,7 +268,6 @@ class StudentT(Likelihood):
         """
         Compute mean of the prediction
         """
-        #FIXME: Not correct
         return mu
 
     def samples(self, gp):

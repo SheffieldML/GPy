@@ -255,25 +255,25 @@ class TestNoiseModels(object):
                             "Y": self.binary_Y,
                             "ep": False # FIXME: Should be True when we have it working again
                             },
-                        #"Exponential_default": {
-                            #"model": GPy.likelihoods.exponential(),
-                            #"link_f_constraints": [constrain_positive],
-                            #"Y": self.positive_Y,
-                            #"laplace": True,
-                        #},
-                        #"Poisson_default": {
-                            #"model": GPy.likelihoods.poisson(),
-                            #"link_f_constraints": [constrain_positive],
-                            #"Y": self.integer_Y,
-                            #"laplace": True,
-                            #"ep": False #Should work though...
-                        #},
-                        #"Gamma_default": {
-                            #"model": GPy.likelihoods.gamma(),
-                            #"link_f_constraints": [constrain_positive],
-                            #"Y": self.positive_Y,
-                            #"laplace": True
-                        #}
+                        "Exponential_default": {
+                            "model": GPy.likelihoods.Exponential(),
+                            "link_f_constraints": [constrain_positive],
+                            "Y": self.positive_Y,
+                            "laplace": True,
+                        },
+                        "Poisson_default": {
+                            "model": GPy.likelihoods.Poisson(),
+                            "link_f_constraints": [constrain_positive],
+                            "Y": self.integer_Y,
+                            "laplace": True,
+                            "ep": False #Should work though...
+                        },
+                        "Gamma_default": {
+                            "model": GPy.likelihoods.Gamma(),
+                            "link_f_constraints": [constrain_positive],
+                            "Y": self.positive_Y,
+                            "laplace": True
+                        }
                     }
 
         for name, attributes in noise_models.iteritems():

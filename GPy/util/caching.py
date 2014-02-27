@@ -12,16 +12,17 @@ class Cacher(object):
     def __call__(self, *args):
         if len(self.ignore_args) != 0:
             ca = [a for i,a in enumerate(args) if i not in self.ignore_args]
-            cached_args = []
-            for a in ca:
-                if not any(a is ai for ai in cached_args):
-                    cached_args.append(a)
         else:
-            cached_args = args
-
+            ca = args
+        # this makes sure we only add an observer once, and that None can be in args
+        cached_args = []
+        for a in ca:
+            if (not any(a is ai for ai in cached_args)) and a is not None:
+                cached_args.append(a)
 
         if not all([isinstance(arg, Observable) for arg in cached_args]):
             return self.operation(*args)
+        
         if cached_args in self.cached_inputs:
             i = self.cached_inputs.index(cached_args)
             if self.inputs_changed[i]:

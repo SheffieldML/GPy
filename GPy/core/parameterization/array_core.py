@@ -4,7 +4,7 @@
 __updated__ = '2013-12-16'
 
 import numpy as np
-from parameter_core import Observable, Parameterizable
+from parameter_core import Observable
 
 class ParamList(list):
     """

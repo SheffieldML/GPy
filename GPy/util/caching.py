@@ -19,8 +19,9 @@ class Cacher(object):
         for a in ca:
             if (not any(a is ai for ai in cached_args)) and a is not None:
                 cached_args.append(a)
-
         if not all([isinstance(arg, Observable) for arg in cached_args]):
+            print cached_args
+            import ipdb;ipdb.set_trace()
             return self.operation(*args)
         
         if cached_args in self.cached_inputs:
@@ -46,6 +47,7 @@ class Cacher(object):
         self.inputs_changed = [any([a is arg for a in args]) or old_ic for args, old_ic in zip(self.cached_inputs, self.inputs_changed)]
 
     def reset(self, obj):
+        [[a.remove_observer(self, self.on_cache_changed) for a in args] for args in self.cached_inputs]
         [[a.remove_observer(self, self.reset) for a in args] for args in self.cached_inputs]
         self.cached_inputs = []
         self.cached_outputs = []

@@ -19,12 +19,13 @@ class Observable(object):
         self._observer_callables_[observer].append(callble)
 
     def remove_observer(self, observer, callble=None):
-        if callble is None:
-            del self._observer_callables_[observer]
-        else:
-            self._observer_callables_[observer].remove(callble)
-            if len(self._observer_callables_[observer]) == 0:
-                self.remove_observer(observer)
+        if observer in self._observer_callables_:
+            if callble is None:
+                del self._observer_callables_[observer]
+            elif callble in self._observer_callables_[observer]:
+                self._observer_callables_[observer].remove(callble)
+                if len(self._observer_callables_[observer]) == 0:
+                    self.remove_observer(observer)
 
     def _notify_observers(self):
         [[callble(self) for callble in callables]

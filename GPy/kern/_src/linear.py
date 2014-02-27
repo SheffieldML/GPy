@@ -9,6 +9,7 @@ from ...util.linalg import tdot
 from ...util.misc import fast_array_equal, param_to_array
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
+from ...util.caching import Cache_this
 
 class Linear(Kern):
     """
@@ -61,7 +62,7 @@ class Linear(Kern):
         else:
             return self._dot_product(X, X2) * self.variances
 
-    @Cache_this(limit=1, ignore_args(0,))
+    @Cache_this(limit=1, ignore_args=(0,))
     def _dot_product(self, X, X2=None):
         if X2 is None:
             return tdot(X)

@@ -424,7 +424,7 @@ class Parameterizable(Constrainable, Observable):
         
         return s
 
-    def _notify_parameters_changed(self, which):
+    def _notify_parameters_changed(self):
         self.parameters_changed()
         self._notify_observers()
         if self.has_parent():

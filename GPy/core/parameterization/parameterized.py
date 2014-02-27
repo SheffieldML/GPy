@@ -64,6 +64,30 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
         self._connect_parameters()
         del self._in_init_
 
+    def build_pydot(self, G=None):
+        import pydot
+        iamroot = False
+        if G is None:
+            G = pydot.Dot(graph_type='digraph')
+            iamroot=True
+        node = pydot.Node(id(self), shape='record', label=self.name)
+        G.add_node(node)
+        for child in self._parameters_:
+            child_node = child.build_pydot(G)
+            G.add_edge(pydot.Edge(node, child_node))
+
+        for o in self._observer_callables_.keys():
+            label = o.name if hasattr(o, 'name') else str(o)
+            observed_node = pydot.Node(id(o), label=label)
+            G.add_node(observed_node)
+            edge = pydot.Edge(str(id(self)), str(id(o)), color='darkorange2', arrowhead='vee')
+            G.add_edge(edge)
+
+        if iamroot:
+            return G
+        return node
+
+
     def add_parameter(self, param, index=None):
         """
         :param parameters:  the parameters to add

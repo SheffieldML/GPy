@@ -184,20 +184,12 @@ class Add(Kern):
             target_S += b
         return target_mu, target_S
 
-    def plot(self, *args, **kwargs):
-        """
-        See GPy.plotting.matplot_dep.plot
-        """
-        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import kernel_plots
-        kernel_plots.plot(self,*args)
-
     def input_sensitivity(self):
         in_sen = np.zeros((self.num_params, self.input_dim))
         for i, [p, i_s] in enumerate(zip(self._parameters_, self.input_slices)):
             in_sen[i, i_s] = p.input_sensitivity()
         return in_sen
-    
+
     def _getstate(self):
         """
         Get the current state of the class,

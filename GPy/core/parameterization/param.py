@@ -161,6 +161,8 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
         return new_arr
     def __setitem__(self, s, val):
         super(Param, self).__setitem__(s, val)
+        if self.has_parent():
+            self._direct_parent_._notify_parameters_changed()
         #self._notify_observers()
         
     #===========================================================================

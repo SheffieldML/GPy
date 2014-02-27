@@ -391,8 +391,7 @@ class Parameterizable(Constrainable, Observable):
         # don't overwrite this anymore!
         import itertools
         [p._set_params(params[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
-        self.parameters_changed()
-        self._notify_observers()
+        self._notify_parameters_changed()
 
     def copy(self):
         """Returns a (deep) copy of the current model"""
@@ -428,6 +427,8 @@ class Parameterizable(Constrainable, Observable):
     def _notify_parameters_changed(self, which):
         self.parameters_changed()
         self._notify_observers()
+        if self.has_parent():
+            self._direct_parent_._notify_parameters_changed()
         
     def parameters_changed(self):
         """

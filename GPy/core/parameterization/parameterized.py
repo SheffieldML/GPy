@@ -92,7 +92,6 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
                 self.constraints.update(param.constraints, start)
                 self.priors.update(param.priors, start)
                 self._parameters_.insert(index, param)
-            param.add_observer(self, self._notify_parameters_changed)
             self.size += param.size
         else:
             raise RuntimeError, """Parameter exists already added and no copy made"""

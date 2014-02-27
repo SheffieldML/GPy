@@ -113,6 +113,7 @@ class RBF(Stationary):
     #            Precomputations            #
     #---------------------------------------#
 
+    #TODO: this function is unused, but it will be useful in the stationary class
     def _dL_dlengthscales_via_K(self, dL_dK, X, X2):
         """
         A helper function for update_gradients_* methods

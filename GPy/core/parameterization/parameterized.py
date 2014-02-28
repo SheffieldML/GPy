@@ -116,6 +116,7 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
                 self.constraints.update(param.constraints, start)
                 self.priors.update(param.priors, start)
                 self._parameters_.insert(index, param)
+            param.add_observer(self, self._pass_through_notify, -1)
             self.size += param.size
         else:
             raise RuntimeError, """Parameter exists already added and no copy made"""
@@ -168,6 +169,12 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
             sizes.append(p.size + sizes[-1])
             self._param_slices_.append(slice(sizes[-2], sizes[-1]))
             self._add_parameter_name(p)
+
+    #===========================================================================
+    # notification system
+    #===========================================================================
+    def _pass_through_notify(self, which):
+        self._notify_observers(which)
 
     #===========================================================================
     # Pickling operations

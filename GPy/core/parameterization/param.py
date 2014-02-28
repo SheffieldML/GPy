@@ -172,6 +172,7 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
         try: new_arr._current_slice_ = s; new_arr._original_ = self.base is new_arr.base
         except AttributeError: pass  # returning 0d array or float, double etc
         return new_arr
+    
     def __setitem__(self, s, val):
         super(Param, self).__setitem__(s, val)
         if self.has_parent():

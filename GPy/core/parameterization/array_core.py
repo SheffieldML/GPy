@@ -62,7 +62,7 @@ class ObservableArray(np.ndarray, Observable):
     def __setitem__(self, s, val):
         if self._s_not_empty(s):
             super(ObservableArray, self).__setitem__(s, val)
-            self._notify_observers()
+            self._notify_observers(self[s])
                 
     def __getslice__(self, start, stop):
         return self.__getitem__(slice(start, stop))

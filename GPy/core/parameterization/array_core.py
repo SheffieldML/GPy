@@ -66,6 +66,7 @@ class ObservableArray(np.ndarray, Observable):
                 
     def __getslice__(self, start, stop):
         return self.__getitem__(slice(start, stop))
+    
     def __setslice__(self, start, stop, val):
         return self.__setitem__(slice(start, stop), val)
 

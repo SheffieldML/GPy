@@ -257,7 +257,6 @@ class RBF(Stationary):
         #allocate memory for the things we want to compute
         mudist = np.empty((N, M, M, Q))
         mudist_sq = np.empty((N, M, M, Q))
-        exponent = np.zeros((N,M,M))
         psi2 = np.empty((N, M, M))
 
         l2 = self.lengthscale **2

@@ -9,7 +9,7 @@ from re import compile, _pattern_type
 from param import ParamConcatenation
 from parameter_core import Pickleable, Parameterizable, adjust_name_for_printing, Gradcheckable
 from transformations import __fixed__
-from array_core import ParamList
+from lists_and_dicts import ArrayList
 
 class Parameterized(Parameterizable, Pickleable, Gradcheckable):
     """
@@ -56,7 +56,7 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
     def __init__(self, name=None, *a, **kw):
         super(Parameterized, self).__init__(name=name, parent=None, parent_index=None, *a, **kw)
         self._in_init_ = True
-        self._parameters_ = ParamList()
+        self._parameters_ = ArrayList()
         self.size = sum(p.size for p in self._parameters_)
         self.add_observer(self, self._parameters_changed_notification, -100)
         if not self._has_fixes():
@@ -265,16 +265,6 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
         if self._has_fixes(): return g[self._fixes_]
         return g
 
-    #===========================================================================
-    # Indexable Handling
-    #===========================================================================
-    def _backtranslate_index(self, param, ind):
-        # translate an index in parameterized indexing into the index of param
-        ind = ind - self._offset_for(param)
-        ind = ind[ind >= 0]
-        internal_offset = param._internal_offset()
-        ind = ind[ind < param.size + internal_offset]
-        return ind
     def _offset_for(self, param):
         # get the offset in the parameterized index array for param
         if param.has_parent():
@@ -301,34 +291,20 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
         return numpy.r_[:self.size]
     
     #===========================================================================
-    # Fixing parameters:
-    #===========================================================================
-    def _fixes_for(self, param):
-        if self._has_fixes():
-            return self._fixes_[self._raveled_index_for(param)]
-        return numpy.ones(self.size, dtype=bool)[self._raveled_index_for(param)]
-    
-    #===========================================================================
     # Convenience for fixed, tied checking of param:
     #===========================================================================
-    def fixed_indices(self):
-        return np.array([x.is_fixed for x in self._parameters_])
-    def _is_fixed(self, param):
-        # returns if the whole param is fixed
-        if not self._has_fixes():
-            return False
-        return not self._fixes_[self._raveled_index_for(param)].any()
-        # return not self._fixes_[self._offset_for(param): self._offset_for(param)+param._realsize_].any()
     @property
     def is_fixed(self):
         for p in self._parameters_:
             if not p.is_fixed: return False
         return True
+
     def _get_original(self, param):
         # if advanced indexing is activated it happens that the array is a copy
         # you can retrieve the original param through this method, by passing
         # the copy here
         return self._parameters_[param._parent_index_]
+    
     #===========================================================================
     # Get/set parameters:
     #===========================================================================

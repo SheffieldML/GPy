@@ -335,6 +335,7 @@ class Constrainable(Nameable, Indexable):
 
     def _add_to_index_operations(self, which, reconstrained, transform, warning):
         if warning and reconstrained.size > 0:
+            # TODO: figure out which parameters have changed and only print those
             print "WARNING: reconstraining parameters {}".format(self.parameter_names() or self.name)
         which.add(transform, self._raveled_index())
 
@@ -419,8 +420,8 @@ import numpy as np
 class Parameterizable(OptimizationHandlable):
     def __init__(self, *args, **kwargs):
         super(Parameterizable, self).__init__(*args, **kwargs)
-        from GPy.core.parameterization.lists_and_dicts import ParamList
-        _parameters_ = ParamList()
+        from GPy.core.parameterization.lists_and_dicts import ArrayList
+        _parameters_ = ArrayList()
         self._added_names_ = set()
     
     def parameter_names(self, add_self=False, adjust_for_printing=False, recursive=True):
@@ -482,7 +483,7 @@ class Parameterizable(OptimizationHandlable):
         """Returns a (deep) copy of the current model"""
         import copy
         from .index_operations import ParameterIndexOperations, ParameterIndexOperationsView
-        from .lists_and_dicts import ParamList
+        from .lists_and_dicts import ArrayList
 
         dc = dict()
         for k, v in self.__dict__.iteritems():
@@ -496,7 +497,7 @@ class Parameterizable(OptimizationHandlable):
         
         dc['_direct_parent_'] = None
         dc['_parent_index_'] = None
-        dc['_parameters_'] = ParamList()
+        dc['_parameters_'] = ArrayList()
         dc['constraints'].clear()
         dc['priors'].clear()
         dc['size'] = 0

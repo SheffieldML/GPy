@@ -5,47 +5,7 @@ Created on Oct 2, 2013
 '''
 import numpy
 from numpy.lib.function_base import vectorize
-from param import Param
-from collections import defaultdict
-
-class ParamDict(defaultdict):
-    def __init__(self):
-        """
-        Default will be self._default, if not set otherwise
-        """
-        defaultdict.__init__(self, self.default_factory)
-        
-    def __getitem__(self, key):
-        try:
-            return defaultdict.__getitem__(self, key)
-        except KeyError:
-            for a in self.iterkeys():
-                if numpy.all(a==key) and a._parent_index_==key._parent_index_:
-                    return defaultdict.__getitem__(self, a)
-            raise        
-        
-    def __contains__(self, key):
-        if defaultdict.__contains__(self, key):
-            return True
-        for a in self.iterkeys():
-            if numpy.all(a==key) and a._parent_index_==key._parent_index_:
-                return True
-        return False
-
-    def __setitem__(self, key, value):
-        if isinstance(key, Param):
-            for a in self.iterkeys():
-                if numpy.all(a==key) and a._parent_index_==key._parent_index_:
-                    return super(ParamDict, self).__setitem__(a, value)
-        defaultdict.__setitem__(self, key, value)
-
-class SetDict(ParamDict):
-    def default_factory(self):
-        return set()
-
-class IntArrayDict(ParamDict):
-    def default_factory(self):
-        return numpy.int_([])
+from lists_and_dicts import IntArrayDict
 
 class ParameterIndexOperations(object):
     '''

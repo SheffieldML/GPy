@@ -226,6 +226,11 @@ class Model(Parameterized):
 
         TODO: valid args
         """
+        if self.is_fixed:
+            raise RuntimeError, "Cannot optimize, when everything is fixed"
+        if self.size == 0:
+            raise RuntimeError, "Model without parameters cannot be minimized"
+        
         if optimizer is None:
             optimizer = self.preferred_optimizer
 
@@ -294,9 +299,8 @@ class Model(Parameterized):
             dx = dx[transformed_index]
             gradient = gradient[transformed_index]
 
-            numerical_gradient = (f1 - f2) / (2 * dx)
             global_ratio = (f1 - f2) / (2 * np.dot(dx, np.where(gradient == 0, 1e-32, gradient)))
-            return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gradient - numerical_gradient).mean() < tolerance)
+            return (np.abs(1. - global_ratio) < tolerance)
         else:
             # check the gradient of each parameter individually, and do some pretty printing
             try:

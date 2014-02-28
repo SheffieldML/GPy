@@ -75,15 +75,9 @@ class Stationary(Kern):
         return self.K_of_r(r)
 
     #@Cache_this(limit=5, ignore_args=(0,))
-    def _dist(self, X, X2):
-        if X2 is None:
-            X2 = X
-        return X[:, None, :] - X2[None, :, :]
-
-    #@Cache_this(limit=5, ignore_args=(0,))
     def _unscaled_dist(self, X, X2=None):
         """
-        Compute the square distance between each row of X and X2, or between
+        Compute the Euclidean distance between each row of X and X2, or between
         each pair of rows of X if X2 is None.
         """
         if X2 is None:
@@ -99,7 +93,7 @@ class Stationary(Kern):
         """
         Efficiently compute the scaled distance, r.
 
-        r = \sum_{q=1}^Q (x_q - x'q)^2/l_q^2
+        r = \sqrt( \sum_{q=1}^Q (x_q - x'q)^2/l_q^2 )
 
         Note that if thre is only one lengthscale, l comes outside the sum. In
         this case we compute the unscaled distance first (in a separate
@@ -129,10 +123,10 @@ class Stationary(Kern):
         dL_dr = self.dK_dr(r) * dL_dK
 
         if self.ARD:
-            #rinv = self._inv_dist(X, X2)
-            #x_xl3 = np.square(self._dist(X, X2)) # TODO: this is rather high memory? Should we loop instead?
+            #rinv = self._inv_dis# this is rather high memory? Should we loop instead?t(X, X2)
+            #d =  X[:, None, :] - X2[None, :, :]
+            #x_xl3 = np.square(d) 
             #self.lengthscale.gradient = -((dL_dr*rinv)[:,:,None]*x_xl3).sum(0).sum(0)/self.lengthscale**3
-            self.lengthscale.gradient = np.zeros(self.input_dim)
             tmp = dL_dr*self._inv_dist(X, X2)
             if X2 is None: X2 = X
             [np.copyto(self.lengthscale.gradient[q:q+1], -np.sum(tmp * np.square(X[:,q:q+1] - X2[:,q:q+1].T))/self.lengthscale[q]**3) for q in xrange(self.input_dim)]
@@ -162,7 +156,9 @@ class Stationary(Kern):
         r = self._scaled_dist(X, X2)
         invdist = self._inv_dist(X, X2)
         dL_dr = self.dK_dr(r) * dL_dK
-        #The high-memory numpy way: ret = np.sum((invdist*dL_dr)[:,:,None]*self._dist(X, X2),1)/self.lengthscale**2
+        #The high-memory numpy way:
+        #d =  X[:, None, :] - X2[None, :, :]
+        #ret = np.sum((invdist*dL_dr)[:,:,None]*d,1)/self.lengthscale**2
         #if X2 is None:
             #ret *= 2.
 
@@ -245,7 +241,7 @@ class Matern52(Stationary):
 
     .. math::
 
-       k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r) \ \ \ \ \  \\text{ where  } r = \sqrt{\sum_{i=1}^input_dim \\frac{(x_i-y_i)^2}{\ell_i^2} }
+       k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r) 
        """
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='Mat52'):
         super(Matern52, self).__init__(input_dim, variance, lengthscale, ARD, name)
@@ -256,7 +252,7 @@ class Matern52(Stationary):
     def dK_dr(self, r):
         return self.variance*(10./3*r -5.*r -5.*np.sqrt(5.)/3*r**2)*np.exp(-np.sqrt(5.)*r)
 
-    def Gram_matrix(self,F,F1,F2,F3,lower,upper):
+    def Gram_matrix(self, F, F1, F2, F3, lower, upper):
         """
         Return the Gram matrix of the vector of functions F with respect to the RKHS norm. The use of this function is limited to input_dim=1.
 

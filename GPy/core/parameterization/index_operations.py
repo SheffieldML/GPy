@@ -194,9 +194,13 @@ class ParameterIndexOperationsView(object):
 
 
     def shift_right(self, start, size):
-        raise NotImplementedError, 'Shifting only supported in original ParamIndexOperations'
-    
+        self._param_index_ops.shift_right(start+self._offset, size)
 
+    def shift_left(self, start, size):
+        self._param_index_ops.shift_left(start+self._offset, size)
+        self._offset -= size
+        self._size -= size
+            
     def clear(self):
         for i, ind in self.items():
             self._param_index_ops.remove(i, ind+self._offset)
@@ -232,9 +236,7 @@ class ParameterIndexOperationsView(object):
 
     def __getitem__(self, prop):
         ind = self._filter_index(self._param_index_ops[prop])
-        if ind.size > 0:
-            return ind
-        raise KeyError, prop
+        return ind
     
     def __str__(self, *args, **kwargs):
         import pprint

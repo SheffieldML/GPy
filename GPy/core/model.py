@@ -265,7 +265,7 @@ class Model(Parameterized):
            and numerical gradients is within <tolerance> of unity.
         """
 
-        x = self._get_params_transformed().copy()
+        x = self._get_params_transformed()
 
         if not verbose:
             # make sure only to test the selected parameters
@@ -283,7 +283,7 @@ class Model(Parameterized):
                     return
 
             # just check the global ratio
-            dx = np.zeros_like(x)
+            dx = np.zeros(x.shape())
             dx[transformed_index] = step * np.sign(np.random.uniform(-1, 1, transformed_index.size))
 
             # evaulate around the point x

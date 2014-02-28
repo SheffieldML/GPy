@@ -6,6 +6,7 @@ Created on Feb 13, 2014
 import unittest
 import GPy
 import numpy as np
+from GPy.core.parameterization.parameter_core import HierarchyError
 
 class Test(unittest.TestCase):
 
@@ -65,7 +66,7 @@ class Test(unittest.TestCase):
         self.assertListEqual(self.test1.constraints[Logexp()].tolist(), [0,1])
         
     def test_add_parameter_already_in_hirarchy(self):
-        self.test1.add_parameter(self.white._parameters_[0])
+        self.assertRaises(HierarchyError, self.test1.add_parameter, self.white._parameters_[0])        
         
     def test_default_constraints(self):
         self.assertIs(self.rbf.variance.constraints._param_index_ops, self.rbf.constraints._param_index_ops)

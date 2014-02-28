@@ -6,6 +6,11 @@ import heapq
 
 __updated__ = '2013-12-16'
 
+class HierarchyError(Exception):
+    """
+    Gets thrown when something is wrong with the parameter hierarchy
+    """
+
 def adjust_name_for_printing(name):
     if name is not None:
         return name.replace(" ", "_").replace(".", "_").replace("-", "").replace("+", "").replace("!", "").replace("*", "").replace("/", "")
@@ -114,11 +119,11 @@ class Nameable(Parentable):
         self._name = name
         if self.has_parent():
             self._direct_parent_._name_changed(self, from_name)
-    def hirarchy_name(self, adjust_for_printing=True):
+    def hierarchy_name(self, adjust_for_printing=True):
         if adjust_for_printing: adjust = lambda x: adjust_name_for_printing(x)
         else: adjust = lambda x: x
         if self.has_parent():
-            return self._direct_parent_.hirarchy_name() + "." + adjust(self.name)
+            return self._direct_parent_.hierarchy_name() + "." + adjust(self.name)
         return adjust(self.name)
 
 
@@ -175,7 +180,7 @@ class Constrainable(Nameable, Indexable):
     #===========================================================================
     # Fixing Parameters:
     #===========================================================================
-    def constrain_fixed(self, value=None, warning=True):
+    def constrain_fixed(self, value=None, warning=True, trigger_parent=True):
         """
         Constrain this paramter to be fixed to the current value it carries.
 
@@ -183,7 +188,7 @@ class Constrainable(Nameable, Indexable):
         """
         if value is not None:
             self[:] = value
-        self.constrain(__fixed__, warning=warning)
+        self.constrain(__fixed__, warning=warning, trigger_parent=trigger_parent)
         rav_i = self._highest_parent_._raveled_index_for(self)
         self._highest_parent_._set_fixed(rav_i)
     fix = constrain_fixed
@@ -224,7 +229,7 @@ class Constrainable(Nameable, Indexable):
     #===========================================================================
     # Prior Operations
     #===========================================================================
-    def set_prior(self, prior, warning=True):
+    def set_prior(self, prior, warning=True, trigger_parent=True):
         repriorized = self.unset_priors()
         self._add_to_index_operations(self.priors, repriorized, prior, warning)
     
@@ -252,7 +257,7 @@ class Constrainable(Nameable, Indexable):
     # Constrain operations -> done
     #===========================================================================
 
-    def constrain(self, transform, warning=True):
+    def constrain(self, transform, warning=True, trigger_parent=True):
         """
         :param transform: the :py:class:`GPy.core.transformations.Transformation`
                           to constrain the this parameter to.
@@ -262,7 +267,7 @@ class Constrainable(Nameable, Indexable):
         :py:class:`GPy.core.transformations.Transformation`.
         """
         if isinstance(transform, Transformation):
-            self._set_params(transform.initialize(self._get_params()), trigger_parent=True)
+            self._set_params(transform.initialize(self._get_params()), trigger_parent=trigger_parent)
         reconstrained = self.unconstrain()
         self._add_to_index_operations(self.constraints, reconstrained, transform, warning)
 
@@ -275,30 +280,30 @@ class Constrainable(Nameable, Indexable):
         """
         return self._remove_from_index_operations(self.constraints, transforms)
     
-    def constrain_positive(self, warning=True):
+    def constrain_positive(self, warning=True, trigger_parent=True):
         """
         :param warning: print a warning if re-constraining parameters.
 
         Constrain this parameter to the default positive constraint.
         """
-        self.constrain(Logexp(), warning=warning)
+        self.constrain(Logexp(), warning=warning, trigger_parent=trigger_parent)
 
-    def constrain_negative(self, warning=True):
+    def constrain_negative(self, warning=True, trigger_parent=True):
         """
         :param warning: print a warning if re-constraining parameters.
 
         Constrain this parameter to the default negative constraint.
         """
-        self.constrain(NegativeLogexp(), warning=warning)
+        self.constrain(NegativeLogexp(), warning=warning, trigger_parent=trigger_parent)
 
-    def constrain_bounded(self, lower, upper, warning=True):
+    def constrain_bounded(self, lower, upper, warning=True, trigger_parent=True):
         """
         :param lower, upper: the limits to bound this parameter to
         :param warning: print a warning if re-constraining parameters.
 
         Constrain this parameter to lie within the given range.
         """
-        self.constrain(Logistic(lower, upper), warning=warning)
+        self.constrain(Logistic(lower, upper), warning=warning, trigger_parent=trigger_parent)
 
     def unconstrain_positive(self):
         """
@@ -359,6 +364,9 @@ class OptimizationHandlable(Constrainable, Observable):
         # inverse apply transformations for parameters and set the resulting parameters
         self._set_params(self._untransform_params(p))
     
+    def _size_transformed(self):
+        return self.size - self.constraints[__fixed__].size
+    
     def _untransform_params(self, p):
         p = p.copy()
         if self._has_fixes(): tmp = self._get_params(); tmp[self._fixes_] = p; p = tmp; del tmp
@@ -373,13 +381,13 @@ class OptimizationHandlable(Constrainable, Observable):
 
     def _set_params(self, params, trigger_parent=True):
         # don't overwrite this anymore!
-        raise NotImplementedError, "This needs to be implemented seperately"
+        raise NotImplementedError, "This needs to be implemented in Param and Parametrizable"
     
     #===========================================================================
     # Optimization handles:
     #===========================================================================
     def _get_param_names(self):
-        n = np.array([p.hirarchy_name() + '[' + str(i) + ']' for p in self.flattened_parameters for i in p._indices()])
+        n = np.array([p.hierarchy_name() + '[' + str(i) + ']' for p in self.flattened_parameters for i in p._indices()])
         return n
     def _get_param_names_transformed(self):
         n = self._get_param_names()
@@ -398,7 +406,7 @@ class OptimizationHandlable(Constrainable, Observable):
         import numpy as np
         # first take care of all parameters (from N(0,1))
         # x = self._get_params_transformed()
-        x = np.random.randn(self.size_transformed)
+        x = np.random.randn(self._size_transformed())
         x = self._untransform_params(x)
         # now draw from prior where possible
         [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
@@ -435,7 +443,7 @@ class Parameterizable(OptimizationHandlable):
                 if pname in self._added_names_:
                     del self.__dict__[pname]
                     self._add_parameter_name(param)
-        else:
+        elif pname not in dir(self):
             self.__dict__[pname] = param
             self._added_names_.add(pname)
             

@@ -269,7 +269,7 @@ class Param(OptimizationHandlable, ObservableArray, Gradcheckable):
         return [t._short() for t in self._tied_to_] or ['']
     def __repr__(self, *args, **kwargs):
         name = "\033[1m{x:s}\033[0;0m:\n".format(
-                            x=self.hirarchy_name())
+                            x=self.hierarchy_name())
         return name + super(Param, self).__repr__(*args, **kwargs)
     def _ties_for(self, rav_index):
         # size = sum(p.size for p in self._tied_to_)
@@ -303,12 +303,12 @@ class Param(OptimizationHandlable, ObservableArray, Gradcheckable):
         gen = map(lambda x: " ".join(map(str, x)), gen)
         return reduce(lambda a, b:max(a, len(b)), gen, len(header))
     def _max_len_values(self):
-        return reduce(lambda a, b:max(a, len("{x:=.{0}g}".format(__precision__, x=b))), self.flat, len(self.hirarchy_name()))
+        return reduce(lambda a, b:max(a, len("{x:=.{0}g}".format(__precision__, x=b))), self.flat, len(self.hierarchy_name()))
     def _max_len_index(self, ind):
         return reduce(lambda a, b:max(a, len(str(b))), ind, len(__index_name__))
     def _short(self):
         # short string to print
-        name = self.hirarchy_name()
+        name = self.hierarchy_name()
         if self._realsize_ < 2:
             return name
         ind = self._indices()
@@ -331,8 +331,8 @@ class Param(OptimizationHandlable, ObservableArray, Gradcheckable):
         if lp is None: lp = self._max_len_names(prirs, __tie_name__)
         sep = '-'
         header_format = "  {i:{5}^{2}s}  |  \033[1m{x:{5}^{1}s}\033[0;0m  |  {c:{5}^{0}s}  |  {p:{5}^{4}s}  |  {t:{5}^{3}s}"
-        if only_name: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.hirarchy_name(), c=sep*lc, i=sep*li, t=sep*lt, p=sep*lp)  # nice header for printing
-        else: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.hirarchy_name(), c=__constraints_name__, i=__index_name__, t=__tie_name__, p=__priors_name__)  # nice header for printing
+        if only_name: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.hierarchy_name(), c=sep*lc, i=sep*li, t=sep*lt, p=sep*lp)  # nice header for printing
+        else: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.hierarchy_name(), c=__constraints_name__, i=__index_name__, t=__tie_name__, p=__priors_name__)  # nice header for printing
         if not ties: ties = itertools.cycle([''])
         return "\n".join([header] + ["  {i!s:^{3}s}  |  {x: >{1}.{2}g}  |  {c:^{0}s}  |  {p:^{5}s}  |  {t:^{4}s}  ".format(lc, lx, __precision__, li, lt, lp, x=x, c=" ".join(map(str, c)), p=" ".join(map(str, p)), t=(t or ''), i=i) for i, x, c, t, p in itertools.izip(indices, vals, constr_matrix, ties, prirs)])  # return all the constraints with right indices
         # except: return super(Param, self).__str__()
@@ -356,6 +356,21 @@ class ParamConcatenation(object):
         self._param_sizes = [p.size for p in self.params]
         startstops = numpy.cumsum([0] + self._param_sizes)
         self._param_slices_ = [slice(start, stop) for start,stop in zip(startstops, startstops[1:])]
+        
+        parents = dict()
+        for p in self.params:
+            if p.has_parent():
+                parent = p._direct_parent_
+                level = 0
+                while parent is not None:
+                    if parent in parents:
+                        parents[parent] = max(level, parents[parent])
+                    else:
+                        parents[parent] = level
+                    level += 1
+                    parent = parent._direct_parent_
+        import operator
+        self.parents = map(lambda x: x[0], sorted(parents.iteritems(), key=operator.itemgetter(1)))
     #===========================================================================
     # Get/set items, enable broadcasting
     #===========================================================================
@@ -369,24 +384,26 @@ class ParamConcatenation(object):
             val = val._vals()
         ind = numpy.zeros(sum(self._param_sizes), dtype=bool); ind[s] = True;
         vals = self._vals(); vals[s] = val; del val
-        [numpy.place(p, ind[ps], vals[ps]) and update and p._notify_observers()
+        [numpy.place(p, ind[ps], vals[ps])
          for p, ps in zip(self.params, self._param_slices_)]
+        if update:
+            self.update_all_params()
     def _vals(self):
         return numpy.hstack([p._get_params() for p in self.params])
     #===========================================================================
     # parameter operations:
     #===========================================================================
     def update_all_params(self):
-        for p in self.params:
-            p._notify_observers()
-
+        for par in self.parents:
+            par._notify_observers(-numpy.inf)
+        
     def constrain(self, constraint, warning=True):
-        [param.constrain(constraint, update=False) for param in self.params]
+        [param.constrain(constraint, trigger_parent=False) for param in self.params]
         self.update_all_params()
     constrain.__doc__ = Param.constrain.__doc__
 
     def constrain_positive(self, warning=True):
-        [param.constrain_positive(warning, update=False) for param in self.params]
+        [param.constrain_positive(warning, trigger_parent=False) for param in self.params]
         self.update_all_params()
     constrain_positive.__doc__ = Param.constrain_positive.__doc__
 
@@ -396,12 +413,12 @@ class ParamConcatenation(object):
     fix = constrain_fixed
 
     def constrain_negative(self, warning=True):
-        [param.constrain_negative(warning, update=False) for param in self.params]
+        [param.constrain_negative(warning, trigger_parent=False) for param in self.params]
         self.update_all_params()
     constrain_negative.__doc__ = Param.constrain_negative.__doc__
 
     def constrain_bounded(self, lower, upper, warning=True):
-        [param.constrain_bounded(lower, upper, warning, update=False) for param in self.params]
+        [param.constrain_bounded(lower, upper, warning, trigger_parent=False) for param in self.params]
         self.update_all_params()
     constrain_bounded.__doc__ = Param.constrain_bounded.__doc__
 

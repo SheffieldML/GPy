@@ -187,10 +187,10 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
     _np.random.seed(1234)
     
     x = _np.linspace(0, 4 * _np.pi, N)[:, None]
-    s1 = _np.vectorize(lambda x: -_np.sin(_np.exp(x)))
+    s1 = _np.vectorize(lambda x: _np.sin(x))
     s2 = _np.vectorize(lambda x: _np.cos(x)**2)
     s3 = _np.vectorize(lambda x:-_np.exp(-_np.cos(2 * x)))
-    sS = _np.vectorize(lambda x: x*_np.sin(x))
+    sS = _np.vectorize(lambda x: _np.cos(x))
 
     s1 = s1(x)
     s2 = s2(x)
@@ -202,7 +202,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
     s3 -= s3.mean(); s3 /= s3.std(0)
     sS -= sS.mean(); sS /= sS.std(0)
 
-    S1 = _np.hstack([s1, s2, sS])
+    S1 = _np.hstack([s1, sS])
     S2 = _np.hstack([s2, s3, sS])
     S3 = _np.hstack([s3, sS])
 
@@ -270,7 +270,7 @@ def bgplvm_simulation(optimize=True, verbose=1,
     from GPy import kern
     from GPy.models import BayesianGPLVM
 
-    D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 5, 9
+    D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
@@ -294,7 +294,7 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     from GPy.models import BayesianGPLVM
     from GPy.inference.latent_function_inference.var_dtc import VarDTCMissingData
 
-    D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 5, 9
+    D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 7, 9
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)

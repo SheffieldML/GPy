@@ -60,8 +60,7 @@ class VarDTC(object):
         _, output_dim = Y.shape
 
         #see whether we've got a different noise variance for each datum
-        beta = 1./max(1e-6, np.squeeze(likelihood.variance))
-
+        beta = 1./np.fmax(likelihood.variance, 1e-6)
         # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
         #self.YYTfactor = self.get_YYTfactor(Y)
         #VVT_factor = self.get_VVTfactor(self.YYTfactor, beta)
@@ -214,7 +213,7 @@ class VarDTCMissingData(object):
             psi2_all = None
 
         Ys, traces = self._Y(Y)
-        beta_all = 1./max(1e-6, likelihood.variance)
+        beta_all = 1./np.fmax(likelihood.variance, 1e-6)
         het_noise = beta_all.size != 1
 
         import itertools

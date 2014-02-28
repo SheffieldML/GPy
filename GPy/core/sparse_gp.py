@@ -85,11 +85,11 @@ class SparseGP(GP):
             self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
             self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
 
-    def _raw_predict(self, Xnew, X_variance_new=None, full_cov=False):
+    def _raw_predict(self, Xnew, full_cov=False):
         """
         Make a prediction for the latent function values
         """
-        if X_variance_new is None:
+        if not isinstance(Xnew, VariationalPosterior):
             Kx = self.kern.K(self.Z, Xnew)
             mu = np.dot(Kx.T, self.posterior.woodbury_vector)
             if full_cov:
@@ -100,13 +100,13 @@ class SparseGP(GP):
                 Kxx = self.kern.Kdiag(Xnew)
                 var = (Kxx - np.sum(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx) * Kx[None,:,:], 1)).T
         else:
-            Kx = self.kern.psi1(self.Z, Xnew, X_variance_new)
-            mu = np.dot(Kx, self.Cpsi1V)
+            Kx = self.kern.psi1(self.Z, Xnew)
+            mu = np.dot(Kx, self.posterior.woodbury_vector)
             if full_cov:
                 raise NotImplementedError, "TODO"
             else:
-                Kxx = self.kern.psi0(self.Z, Xnew, X_variance_new)
-                psi2 = self.kern.psi2(self.Z, Xnew, X_variance_new)
+                Kxx = self.kern.psi0(self.Z, Xnew)
+                psi2 = self.kern.psi2(self.Z, Xnew)
                 var = Kxx - np.sum(np.sum(psi2 * Kmmi_LmiBLmi[None, :, :], 1), 1)
         return mu, var
 

@@ -6,8 +6,11 @@ import numpy as np
 from domains import _POSITIVE,_NEGATIVE, _BOUNDED
 import weakref
 
+import sys
+#_lim_val = -np.log(sys.float_info.epsilon)
+
 _exp_lim_val = np.finfo(np.float64).max
-_lim_val = np.log(_exp_lim_val)#-np.log(sys.float_info.epsilon)
+_lim_val = np.log(_exp_lim_val)#
 
 #===============================================================================
 # Fixing constants
@@ -35,7 +38,6 @@ class Transformation(object):
         """ produce a sensible initial value for f(x)"""
         raise NotImplementedError
     def plot(self, xlabel=r'transformed $\theta$', ylabel=r'$\theta$', axes=None, *args,**kw):
-        import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         import matplotlib.pyplot as plt
         from ...plotting.matplot_dep import base_plots
@@ -52,7 +54,7 @@ class Transformation(object):
 class Logexp(Transformation):
     domain = _POSITIVE
     def f(self, x):
-        return np.where(x>_lim_val, x, np.log(1. + np.exp(np.clip(x, -np.inf, _lim_val))))
+        return np.where(x>_lim_val, x, np.log(1. + np.exp(np.clip(x, -_lim_val, _lim_val))))
         #raises overflow warning: return np.where(x>_lim_val, x, np.log(1. + np.exp(x)))
     def finv(self, f):
         return np.where(f>_lim_val, f, np.log(np.exp(f) - 1.))

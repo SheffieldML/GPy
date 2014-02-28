@@ -64,6 +64,36 @@ class Gaussian(Prior):
         return np.random.randn(n) * self.sigma + self.mu
 
 
+class Uniform(Prior):
+    domain = _REAL
+    _instances = []
+    def __new__(cls, lower, upper): # Singleton:
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if instance().lower == lower and instance().upper == upper:
+                    return instance()
+        o = super(Prior, cls).__new__(cls, lower, upper)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
+    
+    def __init__(self, lower, upper):
+        self.lower = float(lower)
+        self.upper = float(upper)
+    
+    def __str__(self):
+        return "[" + str(np.round(self.lower)) + ', ' + str(np.round(self.upper)) + ']'
+
+    def lnpdf(self, x):
+        region = (x>=self.lower) * (x<=self.upper)
+        return region
+
+    def lnpdf_grad(self, x):
+        return np.zeros(x.shape)
+
+    def rvs(self, n):
+        return np.random.uniform(self.lower, self.upper, size=n)
+    
 class LogGaussian(Prior):
     """
     Implementation of the univariate *log*-Gaussian probability function, coupled with random variables.

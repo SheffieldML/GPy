@@ -8,7 +8,7 @@ from .. import likelihoods
 from .. import kern
 from ..inference.latent_function_inference import VarDTC
 from ..util.misc import param_to_array
-from ..core.parameterization.variational import VariationalPosterior
+from ..core.parameterization.variational import NormalPosterior
 
 class SparseGPRegression(SparseGP):
     """
@@ -47,7 +47,7 @@ class SparseGPRegression(SparseGP):
         likelihood = likelihoods.Gaussian()
         
         if not (X_variance is None):
-            X = VariationalPosterior(X,X_variance)
+            X = NormalPosterior(X,X_variance)
         
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method=VarDTC())
 

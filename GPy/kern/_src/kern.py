@@ -112,10 +112,12 @@ class Kern(Parameterized):
         """
         assert isinstance(other, Kern), "only kernels can be added to kernels..."
         from add import Add
-        return Add([self, other], tensor)
-
-    def __call__(self, X, X2=None):
-        return self.K(X, X2)
+        kernels = []
+        if not tensor and isinstance(self, Add): kernels.extend(self._parameters_)
+        else: kernels.append(self)
+        if not tensor and isinstance(other, Add): kernels.extend(other._parameters_)
+        else: kernels.append(other)
+        return Add(kernels, tensor)
 
     def __mul__(self, other):
         """ Here we overload the '*' operator. See self.prod for more information"""

@@ -20,7 +20,7 @@ class RBF(Stationary):
 
     """
 
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='RBF'):
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='rbf'):
         super(RBF, self).__init__(input_dim, variance, lengthscale, ARD, name)
         self.weave_options = {}
 
@@ -48,7 +48,7 @@ class RBF(Stationary):
         if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             psi2, _, _, _, _, _, _ = ssrbf_psi_comp._psi2computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
         else:
-            _, _, _, _, _, psi2 = self._psi2computations(Z, variational_posterior)
+            _, _, _, _, psi2 = self._psi2computations(Z, variational_posterior)
         return psi2
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
@@ -70,37 +70,39 @@ class RBF(Stationary):
             self.lengthscale.gradient += (dL_dpsi2[:,:,:,None] * _dpsi2_dlengthscale).reshape(-1,self.input_dim).sum(axis=0)        
             return
         
-        l2 = self.lengthscale **2
+        elif isinstance(variational_posterior, variational.NormalPosterior):
+        
+            l2 = self.lengthscale **2
 
-        #contributions from psi0:
-        self.variance.gradient = np.sum(dL_dpsi0)
-        self.lengthscale.gradient = 0.
+            #contributions from psi0:
+            self.variance.gradient = np.sum(dL_dpsi0)
+            self.lengthscale.gradient = 0.
 
-        #from psi1
-        denom, _, dist_sq, psi1 = self._psi1computations(Z, variational_posterior)
-        d_length = psi1[:,:,None] * ((dist_sq - 1.)/(self.lengthscale*denom) +1./self.lengthscale)
-        dpsi1_dlength = d_length * dL_dpsi1[:, :, None]
-        if not self.ARD:
-            self.lengthscale.gradient += dpsi1_dlength.sum()
+            #from psi1
+            denom, _, dist_sq, psi1 = self._psi1computations(Z, variational_posterior)
+            d_length = psi1[:,:,None] * ((dist_sq - 1.)/(self.lengthscale*denom) +1./self.lengthscale)
+            dpsi1_dlength = d_length * dL_dpsi1[:, :, None]
+            if self.ARD:
+                self.lengthscale.gradient += dpsi1_dlength.sum(0).sum(0)
+            else:
+                self.lengthscale.gradient += dpsi1_dlength.sum()
+            self.variance.gradient += np.sum(dL_dpsi1 * psi1) / self.variance
+
+            #from psi2
+            S = variational_posterior.variance
+            _, Zdist_sq, _, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
+            d_length = 2.*psi2[:, :, :, None] * (Zdist_sq * (2.*S[:,None,None,:]/l2 + 1.) + mudist_sq + S[:, None, None, :] / l2) / (2.*S[:,None,None,:] + l2)*self.lengthscale
+
+            dpsi2_dlength = d_length * dL_dpsi2[:, :, :, None]
+            if not self.ARD:
+                self.lengthscale.gradient += dpsi2_dlength.sum()
+            else:
+                self.lengthscale.gradient += dpsi2_dlength.sum(0).sum(0).sum(0)
+
+            self.variance.gradient += 2.*np.sum(dL_dpsi2 * psi2)/self.variance
+
         else:
-            self.lengthscale.gradient += dpsi1_dlength.sum(0).sum(0)
-        self.variance.gradient += np.sum(dL_dpsi1 * psi1) / self.variance
-
-        #from psi2
-        S = variational_posterior.variance
-        denom, _, Zdist_sq, _, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
-        d_length = 2.*psi2[:, :, :, None] * (Zdist_sq * denom + mudist_sq + S[:, None, None, :] / l2) / (self.lengthscale * denom)
-        #TODO: combine denom and l2 as denom_l2??
-        #TODO: tidy the above!
-        #TODO: tensordot below?
-
-        dpsi2_dlength = d_length * dL_dpsi2[:, :, :, None]
-        if not self.ARD:
-            self.lengthscale.gradient += dpsi2_dlength.sum()
-        else:
-            self.lengthscale.gradient += dpsi2_dlength.sum(0).sum(0).sum(0)
-
-        self.variance.gradient += 2.*np.sum(dL_dpsi2 * psi2)/self.variance
+            raise ValueError, "unknown distriubtion received for psi-statistics"
 
     def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         # Spike-and-Slab GPLVM
@@ -115,23 +117,26 @@ class RBF(Stationary):
             grad += (dL_dpsi2[:, :, :, None] * _dpsi2_dZ).sum(axis=0).sum(axis=1)
     
             return grad
-        
-        l2 = self.lengthscale **2
 
-        #psi1
-        denom, dist, dist_sq, psi1 = self._psi1computations(Z, variational_posterior)
-        denominator = l2 * denom
-        dpsi1_dZ = -psi1[:, :, None] * (dist / denominator)
-        grad = np.sum(dL_dpsi1[:, :, None] * dpsi1_dZ, 0)
+        elif isinstance(variational_posterior, variational.NormalPosterior):
+            
+            l2 = self.lengthscale **2
 
-        #psi2
-        denom, Zdist, Zdist_sq, mudist, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
-        term1 = Zdist / l2 # M, M, Q
-        term2 = mudist / denom / l2 # N, M, M, Q
-        dZ = psi2[:, :, :, None] * (term1[None, :, :, :] + term2) #N,M,M,Q
-        grad += 2*(dL_dpsi2[:, :, :, None] * dZ).sum(0).sum(0)
+            #psi1
+            denom, dist, dist_sq, psi1 = self._psi1computations(Z, variational_posterior)
+            grad = np.einsum('ij,ij,ijk,ijk->jk', dL_dpsi1, psi1, dist, -1./(denom*l2))
 
-        return grad
+            #psi2
+            Zdist, Zdist_sq, mudist, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
+            term1 = Zdist / l2 # M, M, Q
+            S = variational_posterior.variance
+            term2 = mudist / (2.*S[:,None,None,:] + l2) # N, M, M, Q
+
+            grad += 2.*np.einsum('ijk,ijk,ijkl->kl', dL_dpsi2, psi2, term1[None,:,:,:] + term2)
+
+            return grad
+        else:
+            raise ValueError, "unknown distriubtion received for psi-statistics"
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         # Spike-and-Slab GPLVM
@@ -151,79 +156,30 @@ class RBF(Stationary):
             grad_gamma += (dL_dpsi2[:,:,:, None] * _dpsi2_dgamma).reshape(ndata,-1,self.input_dim).sum(axis=1)
             
             return grad_mu, grad_S, grad_gamma
+
+        elif isinstance(variational_posterior, variational.NormalPosterior):
         
-        l2 = self.lengthscale **2
-        #psi1
-        denom, dist, dist_sq, psi1 = self._psi1computations(Z, variational_posterior)
-        tmp = psi1[:, :, None] / l2 / denom
-        grad_mu = np.sum(dL_dpsi1[:, :, None] * tmp * dist, 1)
-        grad_S = np.sum(dL_dpsi1[:, :, None] * 0.5 * tmp * (dist_sq - 1), 1)
-        #psi2
-        denom, Zdist, Zdist_sq, mudist, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
-        tmp = psi2[:, :, :, None] / l2 / denom
-        grad_mu += -2.*(dL_dpsi2[:, :, :, None] * tmp * mudist).sum(1).sum(1)
-        grad_S += (dL_dpsi2[:, :, :, None] * tmp * (2.*mudist_sq - 1)).sum(1).sum(1)
+            l2 = self.lengthscale **2
+            #psi1
+            denom, dist, dist_sq, psi1 = self._psi1computations(Z, variational_posterior)
+            tmp = psi1[:, :, None] / l2 / denom
+            grad_mu = np.sum(dL_dpsi1[:, :, None] * tmp * dist, 1)
+            grad_S = np.sum(dL_dpsi1[:, :, None] * 0.5 * tmp * (dist_sq - 1), 1)
+            #psi2
+            _, _, mudist, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
+            S = variational_posterior.variance
+            tmp = psi2[:, :, :, None] / (2.*S[:,None,None,:] + l2)
+            grad_mu += -2.*np.einsum('ijk,ijkl,ijkl->il', dL_dpsi2, tmp , mudist)
+            grad_S += np.einsum('ijk,ijkl,ijkl->il', dL_dpsi2 , tmp , (2.*mudist_sq - 1))
+
+        else:
+            raise ValueError, "unknown distriubtion received for psi-statistics"
 
         return grad_mu, grad_S
 
     #---------------------------------------#
     #            Precomputations            #
     #---------------------------------------#
-
-    #TODO: this function is unused, but it will be useful in the stationary class
-    def _dL_dlengthscales_via_K(self, dL_dK, X, X2):
-        """
-        A helper function for update_gradients_* methods
-
-        Computes the derivative of the objective L wrt the lengthscales via
-
-        dL_dl = sum_{i,j}(dL_dK_{ij} dK_dl)
-
-        assumes self._K_computations has just been called.
-
-        This is only valid if self.ARD=True
-        """
-        target = np.zeros(self.input_dim)
-        dvardLdK = self._K_dvar * dL_dK
-        var_len3 = self.variance / np.power(self.lengthscale, 3)
-        if X2 is None:
-            # save computation for the symmetrical case
-            dvardLdK = dvardLdK + dvardLdK.T
-            code = """
-            int q,i,j;
-            double tmp;
-            for(q=0; q<input_dim; q++){
-              tmp = 0;
-              for(i=0; i<num_data; i++){
-                for(j=0; j<i; j++){
-                  tmp += (X(i,q)-X(j,q))*(X(i,q)-X(j,q))*dvardLdK(i,j);
-                }
-              }
-              target(q) += var_len3(q)*tmp;
-            }
-            """
-            num_data, num_inducing, input_dim = X.shape[0], X.shape[0], self.input_dim
-            X, dvardLdK, var_len3 = param_to_array(X, dvardLdK, var_len3)
-            weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
-        else:
-            code = """
-            int q,i,j;
-            double tmp;
-            for(q=0; q<input_dim; q++){
-              tmp = 0;
-              for(i=0; i<num_data; i++){
-                for(j=0; j<num_inducing; j++){
-                  tmp += (X(i,q)-X2(j,q))*(X(i,q)-X2(j,q))*dvardLdK(i,j);
-                }
-              }
-              target(q) += var_len3(q)*tmp;
-            }
-            """
-            num_data, num_inducing, input_dim = X.shape[0], X2.shape[0], self.input_dim
-            X, X2, dvardLdK, var_len3 = param_to_array(X, X2, dvardLdK, var_len3)
-            weave.inline(code, arg_names=['num_data', 'num_inducing', 'input_dim', 'X', 'X2', 'target', 'dvardLdK', 'var_len3'], type_converters=weave.converters.blitz, **self.weave_options)
-        return target
-
 
     @Cache_this(limit=1)
     def _psi1computations(self, Z, vp):
@@ -237,7 +193,7 @@ class RBF(Stationary):
         return denom, dist, dist_sq, psi1
 
 
-    #@cache_this(ignore_args=(1,))
+    @Cache_this(limit=1, ignore_args=(0,))
     def _Z_distances(self, Z):
         Zhat = 0.5 * (Z[:, None, :] + Z[None, :, :]) # M,M,Q
         Zdist = 0.5 * (Z[:, None, :] - Z[None, :, :]) # M,M,Q
@@ -309,8 +265,4 @@ class RBF(Stationary):
                      arg_names=['N', 'M', 'Q', 'mu', 'Zhat', 'mudist_sq', 'mudist', 'denom_l2', 'Zdist_sq', 'half_log_denom', 'psi2', 'variance_sq'],
                      type_converters=weave.converters.blitz, **self.weave_options)
 
-        return denom, Zdist, Zdist_sq, mudist, mudist_sq, psi2
-
-    def input_sensitivity(self):
-        if self.ARD: return 1./self.lengthscale
-        else: return (1./self.lengthscale).repeat(self.input_dim)
+        return Zdist, Zdist_sq, mudist, mudist_sq, psi2

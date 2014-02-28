@@ -18,7 +18,7 @@ class RBF(Stationary):
 
     """
 
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='RBF'):
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='rbf'):
         super(RBF, self).__init__(input_dim, variance, lengthscale, ARD, name)
         self.weave_options = {}
 
@@ -200,7 +200,6 @@ class RBF(Stationary):
         #allocate memory for the things we want to compute
         mudist = np.empty((N, M, M, Q))
         mudist_sq = np.empty((N, M, M, Q))
-        exponent = np.zeros((N,M,M))
         psi2 = np.empty((N, M, M))
 
         l2 = self.lengthscale **2

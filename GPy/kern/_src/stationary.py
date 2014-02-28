@@ -13,13 +13,13 @@ from ...util.caching import Cache_this
 
 class Stationary(Kern):
     """
-    Stationary kernels (covaraince functions).
+    Stationary kernels (covariance functions).
 
     Stationary covariance fucntion depend only on r, where r is defined as 
 
       r = \sqrt{ \sum_{q=1}^Q (x_q - x'_q)^2 }
 
-    The covaraince function k(x, x' can then be written k(r). 
+    The covariance function k(x, x' can then be written k(r). 
 
     In this implementation, r is scaled by the lengthscales parameter(s):
 
@@ -28,7 +28,7 @@ class Stationary(Kern):
     By default, there's only one lengthscale: seaprate lengthscales for each
     dimension can be enables by setting ARD=True. 
 
-    To implement a stationary covaraince function using this class, one need
+    To implement a stationary covariance function using this class, one need
     only define the covariance function k(r), and it derivative. 
 
       ...
@@ -74,6 +74,11 @@ class Stationary(Kern):
         r = self._scaled_dist(X, X2)
         return self.K_of_r(r)
 
+    @Cache_this(limit=3, ignore_args=())
+    def dK_dr_via_X(self, X, X2):
+        #a convenience function, so we can cache dK_dr
+        return self.dK_dr(self._scaled_dist(X, X2))
+
     @Cache_this(limit=5, ignore_args=(0,))
     def _unscaled_dist(self, X, X2=None):
         """
@@ -117,11 +122,11 @@ class Stationary(Kern):
         self.lengthscale.gradient = 0.
 
     def update_gradients_full(self, dL_dK, X, X2=None):
-        r = self._scaled_dist(X, X2)
-        K = self.K_of_r(r)
 
-        dL_dr = self.dK_dr(r) * dL_dK
+        self.variance.gradient = np.einsum('ij,ij,i', self.K(X, X2), dL_dK, 1./self.variance)
 
+        #now the lengthscale gradient(s)
+        dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
         if self.ARD:
             #rinv = self._inv_dis# this is rather high memory? Should we loop instead?t(X, X2)
             #d =  X[:, None, :] - X2[None, :, :]
@@ -129,11 +134,11 @@ class Stationary(Kern):
             #self.lengthscale.gradient = -((dL_dr*rinv)[:,:,None]*x_xl3).sum(0).sum(0)/self.lengthscale**3
             tmp = dL_dr*self._inv_dist(X, X2)
             if X2 is None: X2 = X
-            [np.copyto(self.lengthscale.gradient[q:q+1], -np.sum(tmp * np.square(X[:,q:q+1] - X2[:,q:q+1].T))/self.lengthscale[q]**3) for q in xrange(self.input_dim)]
+            self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(X[:,q:q+1] - X2[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in xrange(self.input_dim)])
         else:
+            r = self._scaled_dist(X, X2)
             self.lengthscale.gradient = -np.sum(dL_dr*r)/self.lengthscale
 
-        self.variance.gradient = np.sum(K * dL_dK)/self.variance
 
     def _inv_dist(self, X, X2=None):
         """
@@ -153,9 +158,8 @@ class Stationary(Kern):
         """
         Given the derivative of the objective wrt K (dL_dK), compute the derivative wrt X
         """
-        r = self._scaled_dist(X, X2)
         invdist = self._inv_dist(X, X2)
-        dL_dr = self.dK_dr(r) * dL_dK
+        dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
         #The high-memory numpy way:
         #d =  X[:, None, :] - X2[None, :, :]
         #ret = np.sum((invdist*dL_dr)[:,:,None]*d,1)/self.lengthscale**2
@@ -168,7 +172,7 @@ class Stationary(Kern):
             tmp *= 2.
             X2 = X
         ret = np.empty(X.shape, dtype=np.float64)
-        [np.copyto(ret[:,q], np.sum(tmp*(X[:,q][:,None]-X2[:,q][None,:]), 1)) for q in xrange(self.input_dim)]
+        [np.einsum('ij,ij->i', tmp, X[:,q][:,None]-X2[:,q][None,:], out=ret[:,q]) for q in xrange(self.input_dim)]
         ret /= self.lengthscale**2
 
         return ret

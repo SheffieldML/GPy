@@ -40,7 +40,7 @@ class Cacher(object):
             return self.operation(*args)
 
         # TODO: WARNING !!! Cache OFFSWITCH !!! WARNING
-        return self.operation(*args)
+        # return self.operation(*args)
 
         #if the result is cached, return the cached computation
         state = [all(a is b for a, b in itertools.izip_longest(args, cached_i)) for cached_i in self.cached_inputs]

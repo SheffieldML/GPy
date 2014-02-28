@@ -69,12 +69,12 @@ class Stationary(Kern):
     def dK_dr(self, r):
         raise NotImplementedError, "implement derivative of the covariance function wrt r to use this class"
 
-    #@Cache_this(limit=5, ignore_args=())
+    @Cache_this(limit=5, ignore_args=())
     def K(self, X, X2=None):
         r = self._scaled_dist(X, X2)
         return self.K_of_r(r)
 
-    #@Cache_this(limit=5, ignore_args=(0,))
+    @Cache_this(limit=5, ignore_args=(0,))
     def _unscaled_dist(self, X, X2=None):
         """
         Compute the Euclidean distance between each row of X and X2, or between
@@ -88,7 +88,7 @@ class Stationary(Kern):
             X2sq = np.sum(np.square(X2),1)
             return np.sqrt(-2.*np.dot(X, X2.T) + (X1sq[:,None] + X2sq[None,:]))
 
-    #@Cache_this(limit=5, ignore_args=())
+    @Cache_this(limit=5, ignore_args=())
     def _scaled_dist(self, X, X2=None):
         """
         Efficiently compute the scaled distance, r.
@@ -141,7 +141,7 @@ class Stationary(Kern):
         diagonal, where we return zero (the distance on the diagonal is zero).
         This term appears in derviatives.
         """
-        dist = self._scaled_dist(X, X2)
+        dist = self._scaled_dist(X, X2).copy()
         if X2 is None:
             nondiag = util.diag.offdiag_view(dist)
             nondiag[:] = 1./nondiag

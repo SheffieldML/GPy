@@ -58,6 +58,7 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
         self._in_init_ = True
         self._parameters_ = ParamList()
         self.size = sum(p.size for p in self._parameters_)
+        self.add_observer(self, self._parameters_changed_notification, -100)
         if not self._has_fixes():
             self._fixes_ = None
         self._param_slices_ = []
@@ -65,7 +66,7 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
         del self._in_init_
 
     def build_pydot(self, G=None):
-        import pydot
+        import pydot  # @UnresolvedImport
         iamroot = False
         if G is None:
             G = pydot.Dot(graph_type='digraph')
@@ -116,6 +117,7 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
                 self.constraints.update(param.constraints, start)
                 self.priors.update(param.priors, start)
                 self._parameters_.insert(index, param)
+            param.add_observer(self, self._pass_through_notify_observers, -np.inf)
             self.size += param.size
         else:
             raise RuntimeError, """Parameter exists already added and no copy made"""
@@ -169,6 +171,13 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
             self._param_slices_.append(slice(sizes[-2], sizes[-1]))
             self._add_parameter_name(p)
 
+    #===========================================================================
+    # notification system
+    #===========================================================================
+    def _parameters_changed_notification(self, which):
+        self.parameters_changed()
+    def _pass_through_notify_observers(self, which):
+        self._notify_observers(which)
     #===========================================================================
     # Pickling operations
     #===========================================================================
@@ -237,32 +246,7 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
                 g[self._offset_for(p) + numpy.array(list(i))] += g[self._raveled_index_for(t)]
         if self._has_fixes(): return g[self._fixes_]
         return g
-    #===========================================================================
-    # Optimization handles:
-    #===========================================================================
-    def _get_param_names(self):
-        n = numpy.array([p.hirarchy_name() + '[' + str(i) + ']' for p in self.flattened_parameters for i in p._indices()])
-        return n
-    def _get_param_names_transformed(self):
-        n = self._get_param_names()
-        if self._has_fixes():
-            return n[self._fixes_]
-        return n
-    def _get_params_transformed(self):
-        # transformed parameters (apply transformation rules)
-        p = self._get_params()
-        [numpy.put(p, ind, c.finv(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-        if self._has_fixes():
-            return p[self._fixes_]
-        return p
-    def _set_params_transformed(self, p):
-        # inverse apply transformations for parameters and set the resulting parameters
-        self._set_params(self._untransform_params(p))
-    def _untransform_params(self, p):
-        p = p.copy()
-        if self._has_fixes(): tmp = self._get_params(); tmp[self._fixes_] = p; p = tmp; del tmp
-        [numpy.put(p, ind, c.f(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-        return p
+
     #===========================================================================
     # Indexable Handling
     #===========================================================================
@@ -297,6 +281,7 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
         this is not in the global view of things!
         """
         return numpy.r_[:self.size]
+    
     #===========================================================================
     # Fixing parameters:
     #===========================================================================
@@ -304,6 +289,7 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
         if self._has_fixes():
             return self._fixes_[self._raveled_index_for(param)]
         return numpy.ones(self.size, dtype=bool)[self._raveled_index_for(param)]
+    
     #===========================================================================
     # Convenience for fixed, tied checking of param:
     #===========================================================================

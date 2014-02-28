@@ -60,20 +60,6 @@ class Model(Parameterized):
         self.priors = state.pop()
         Parameterized._setstate(self, state)
 
-    def randomize(self):
-        """
-        Randomize the model.
-        Make this draw from the prior if one exists, else draw from N(0,1)
-        """
-        # first take care of all parameters (from N(0,1))
-        # x = self._get_params_transformed()
-        x = np.random.randn(self.size_transformed)
-        x = self._untransform_params(x)
-        # now draw from prior where possible
-        [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
-        self._set_params(x)
-        # self._set_params_transformed(self._get_params_transformed()) # makes sure all of the tied parameters get the same init (since there's only one prior object...)
-
     def optimize_restarts(self, num_restarts=10, robust=False, verbose=True, parallel=False, num_processes=None, **kwargs):
         """
         Perform random restarts of the model, and set the model to the best

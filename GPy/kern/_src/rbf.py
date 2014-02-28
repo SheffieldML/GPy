@@ -20,7 +20,7 @@ class RBF(Stationary):
 
     """
 
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='RBF'):
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='rbf'):
         super(RBF, self).__init__(input_dim, variance, lengthscale, ARD, name)
         self.weave_options = {}
 
@@ -159,7 +159,7 @@ class RBF(Stationary):
         grad_mu = np.sum(dL_dpsi1[:, :, None] * tmp * dist, 1)
         grad_S = np.sum(dL_dpsi1[:, :, None] * 0.5 * tmp * (dist_sq - 1), 1)
         #psi2
-        denom, Zdist, Zdist_sq, mudist, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
+        denom, _, _, mudist, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
         tmp = psi2[:, :, :, None] / l2 / denom
         grad_mu += -2.*(dL_dpsi2[:, :, :, None] * tmp * mudist).sum(1).sum(1)
         grad_S += (dL_dpsi2[:, :, :, None] * tmp * (2.*mudist_sq - 1)).sum(1).sum(1)
@@ -237,7 +237,7 @@ class RBF(Stationary):
         return denom, dist, dist_sq, psi1
 
 
-    #@cache_this(ignore_args=(1,))
+    @Cache_this(limit=1, ignore_args=(0,))
     def _Z_distances(self, Z):
         Zhat = 0.5 * (Z[:, None, :] + Z[None, :, :]) # M,M,Q
         Zdist = 0.5 * (Z[:, None, :] - Z[None, :, :]) # M,M,Q
@@ -257,7 +257,6 @@ class RBF(Stationary):
         #allocate memory for the things we want to compute
         mudist = np.empty((N, M, M, Q))
         mudist_sq = np.empty((N, M, M, Q))
-        exponent = np.zeros((N,M,M))
         psi2 = np.empty((N, M, M))
 
         l2 = self.lengthscale **2

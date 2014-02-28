@@ -70,34 +70,39 @@ class RBF(Stationary):
             self.lengthscale.gradient += (dL_dpsi2[:,:,:,None] * _dpsi2_dlengthscale).reshape(-1,self.input_dim).sum(axis=0)        
             return
         
-        l2 = self.lengthscale **2
+        elif isinstance(variational_posterior, variational.NormalPosterior):
+        
+            l2 = self.lengthscale **2
 
-        #contributions from psi0:
-        self.variance.gradient = np.sum(dL_dpsi0)
-        self.lengthscale.gradient = 0.
+            #contributions from psi0:
+            self.variance.gradient = np.sum(dL_dpsi0)
+            self.lengthscale.gradient = 0.
 
-        #from psi1
-        denom, _, dist_sq, psi1 = self._psi1computations(Z, variational_posterior)
-        d_length = psi1[:,:,None] * ((dist_sq - 1.)/(self.lengthscale*denom) +1./self.lengthscale)
-        dpsi1_dlength = d_length * dL_dpsi1[:, :, None]
-        if self.ARD:
-            self.lengthscale.gradient += dpsi1_dlength.sum(0).sum(0)
+            #from psi1
+            denom, _, dist_sq, psi1 = self._psi1computations(Z, variational_posterior)
+            d_length = psi1[:,:,None] * ((dist_sq - 1.)/(self.lengthscale*denom) +1./self.lengthscale)
+            dpsi1_dlength = d_length * dL_dpsi1[:, :, None]
+            if self.ARD:
+                self.lengthscale.gradient += dpsi1_dlength.sum(0).sum(0)
+            else:
+                self.lengthscale.gradient += dpsi1_dlength.sum()
+            self.variance.gradient += np.sum(dL_dpsi1 * psi1) / self.variance
+
+            #from psi2
+            S = variational_posterior.variance
+            _, Zdist_sq, _, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
+            d_length = 2.*psi2[:, :, :, None] * (Zdist_sq * (2.*S[:,None,None,:]/l2 + 1.) + mudist_sq + S[:, None, None, :] / l2) / (2.*S[:,None,None,:] + l2)*self.lengthscale
+
+            dpsi2_dlength = d_length * dL_dpsi2[:, :, :, None]
+            if not self.ARD:
+                self.lengthscale.gradient += dpsi2_dlength.sum()
+            else:
+                self.lengthscale.gradient += dpsi2_dlength.sum(0).sum(0).sum(0)
+
+            self.variance.gradient += 2.*np.sum(dL_dpsi2 * psi2)/self.variance
+
         else:
-            self.lengthscale.gradient += dpsi1_dlength.sum()
-        self.variance.gradient += np.sum(dL_dpsi1 * psi1) / self.variance
-
-        #from psi2
-        S = variational_posterior.variance
-        _, Zdist_sq, _, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
-        d_length = 2.*psi2[:, :, :, None] * (Zdist_sq * (2.*S[:,None,None,:]/l2 + 1.) + mudist_sq + S[:, None, None, :] / l2) / (2.*S[:,None,None,:] + l2)*self.lengthscale
-
-        dpsi2_dlength = d_length * dL_dpsi2[:, :, :, None]
-        if not self.ARD:
-            self.lengthscale.gradient += dpsi2_dlength.sum()
-        else:
-            self.lengthscale.gradient += dpsi2_dlength.sum(0).sum(0).sum(0)
-
-        self.variance.gradient += 2.*np.sum(dL_dpsi2 * psi2)/self.variance
+            raise ValueError, "unknown distriubtion received for psi-statistics"
 
     def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         # Spike-and-Slab GPLVM
@@ -112,25 +117,26 @@ class RBF(Stationary):
             grad += (dL_dpsi2[:, :, :, None] * _dpsi2_dZ).sum(axis=0).sum(axis=1)
     
             return grad
-        
-        l2 = self.lengthscale **2
 
-        #psi1
-        denom, dist, dist_sq, psi1 = self._psi1computations(Z, variational_posterior)
-        denominator = l2 * denom
-        dpsi1_dZ = -psi1[:, :, None] * (dist / denominator)
-        grad = np.sum(dL_dpsi1[:, :, None] * dpsi1_dZ, 0)
+        elif isinstance(variational_posterior, variational.NormalPosterior):
+            
+            l2 = self.lengthscale **2
 
-        #psi2
-        Zdist, Zdist_sq, mudist, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
-        term1 = Zdist / l2 # M, M, Q
-        S = variational_posterior.variance
-        term2 = mudist / (2.*S[:,None,None,:] + l2) # N, M, M, Q
+            #psi1
+            denom, dist, dist_sq, psi1 = self._psi1computations(Z, variational_posterior)
+            grad = np.einsum('ij,ij,ijk,ijk->jk', dL_dpsi1, psi1, dist, -1./(denom*l2))
 
-        dZ = psi2[:, :, :, None] * (term1[None, :, :, :] + term2) #N,M,M,Q
-        grad += 2*(dL_dpsi2[:, :, :, None] * dZ).sum(0).sum(0)
+            #psi2
+            Zdist, Zdist_sq, mudist, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
+            term1 = Zdist / l2 # M, M, Q
+            S = variational_posterior.variance
+            term2 = mudist / (2.*S[:,None,None,:] + l2) # N, M, M, Q
 
-        return grad
+            grad += 2.*np.einsum('ijk,ijk,ijkl->kl', dL_dpsi2, psi2, term1[None,:,:,:] + term2)
+
+            return grad
+        else:
+            raise ValueError, "unknown distriubtion received for psi-statistics"
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         # Spike-and-Slab GPLVM
@@ -150,19 +156,24 @@ class RBF(Stationary):
             grad_gamma += (dL_dpsi2[:,:,:, None] * _dpsi2_dgamma).reshape(ndata,-1,self.input_dim).sum(axis=1)
             
             return grad_mu, grad_S, grad_gamma
+
+        elif isinstance(variational_posterior, variational.NormalPosterior):
         
-        l2 = self.lengthscale **2
-        #psi1
-        denom, dist, dist_sq, psi1 = self._psi1computations(Z, variational_posterior)
-        tmp = psi1[:, :, None] / l2 / denom
-        grad_mu = np.sum(dL_dpsi1[:, :, None] * tmp * dist, 1)
-        grad_S = np.sum(dL_dpsi1[:, :, None] * 0.5 * tmp * (dist_sq - 1), 1)
-        #psi2
-        _, _, mudist, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
-        S = variational_posterior.variance
-        tmp = psi2[:, :, :, None] / (2.*S[:,None,None,:] + l2)
-        grad_mu += -2.*(dL_dpsi2[:, :, :, None] * tmp * mudist).sum(1).sum(1)
-        grad_S += (dL_dpsi2[:, :, :, None] * tmp * (2.*mudist_sq - 1)).sum(1).sum(1)
+            l2 = self.lengthscale **2
+            #psi1
+            denom, dist, dist_sq, psi1 = self._psi1computations(Z, variational_posterior)
+            tmp = psi1[:, :, None] / l2 / denom
+            grad_mu = np.sum(dL_dpsi1[:, :, None] * tmp * dist, 1)
+            grad_S = np.sum(dL_dpsi1[:, :, None] * 0.5 * tmp * (dist_sq - 1), 1)
+            #psi2
+            _, _, mudist, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
+            S = variational_posterior.variance
+            tmp = psi2[:, :, :, None] / (2.*S[:,None,None,:] + l2)
+            grad_mu += -2.*np.einsum('ijk,ijkl,ijkl->il', dL_dpsi2, tmp , mudist)
+            grad_S += np.einsum('ijk,ijkl,ijkl->il', dL_dpsi2 , tmp , (2.*mudist_sq - 1))
+
+        else:
+            raise ValueError, "unknown distriubtion received for psi-statistics"
 
         return grad_mu, grad_S
 

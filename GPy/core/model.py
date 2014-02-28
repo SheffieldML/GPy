@@ -283,7 +283,7 @@ class Model(Parameterized):
                     return
 
             # just check the global ratio
-            dx = np.zeros(x.shape())
+            dx = np.zeros(x.shape)
             dx[transformed_index] = step * np.sign(np.random.uniform(-1, 1, transformed_index.size))
 
             # evaulate around the point x

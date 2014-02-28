@@ -12,6 +12,35 @@ from scipy import integrate
 from ...util.caching import Cache_this
 
 class Stationary(Kern):
+    """
+    Stationary kernels (covaraince functions).
+
+    Stationary covariance fucntion depend only on r, where r is defined as 
+
+      r = \sqrt{ \sum_{q=1}^Q (x_q - x'_q)^2 }
+
+    The covaraince function k(x, x' can then be written k(r). 
+
+    In this implementation, r is scaled by the lengthscales parameter(s):
+
+      r = \sqrt{ \sum_{q=1}^Q \frac{(x_q - x'_q)^2}{\ell_q^2} }. 
+    
+    By default, there's only one lengthscale: seaprate lengthscales for each
+    dimension can be enables by setting ARD=True. 
+
+    To implement a stationary covaraince function using this class, one need
+    only define the covariance function k(r), and it derivative. 
+
+      ...
+      def K_of_r(self, r):
+          return foo
+      def dK_dr(self, r):
+          return bar
+
+    The lengthscale(s) and variance parameters are added to the structure automatically. 
+          
+    """
+    
     def __init__(self, input_dim, variance, lengthscale, ARD, name):
         super(Stationary, self).__init__(input_dim, name)
         self.ARD = ARD
@@ -20,11 +49,11 @@ class Stationary(Kern):
                 lengthscale = np.ones(1)
             else:
                 lengthscale = np.asarray(lengthscale)
-                assert lengthscale.size == 1, "Only  lengthscale needed for non-ARD kernel"
+                assert lengthscale.size == 1, "Only 1 lengthscale needed for non-ARD kernel"
         else:
             if lengthscale is not None:
                 lengthscale = np.asarray(lengthscale)
-                assert lengthscale.size in [1, input_dim], "Bad lengthscales"
+                assert lengthscale.size in [1, input_dim], "Bad number of lengthscales"
                 if lengthscale.size != input_dim:
                     lengthscale = np.ones(input_dim)*lengthscale
             else:
@@ -35,10 +64,10 @@ class Stationary(Kern):
         self.add_parameters(self.variance, self.lengthscale)
 
     def K_of_r(self, r):
-        raise NotImplementedError, "implement the covaraiance function as a fn of r to use this class"
+        raise NotImplementedError, "implement the covariance function as a fn of r to use this class"
 
     def dK_dr(self, r):
-        raise NotImplementedError, "implement the covaraiance function as a fn of r to use this class"
+        raise NotImplementedError, "implement derivative of the covariance function wrt r to use this class"
 
     #@Cache_this(limit=5, ignore_args=())
     def K(self, X, X2=None):
@@ -84,7 +113,6 @@ class Stationary(Kern):
         else:
             return self._unscaled_dist(X, X2)/self.lengthscale
 
-
     def Kdiag(self, X):
         ret = np.empty(X.shape[0])
         ret[:] = self.variance
@@ -98,15 +126,18 @@ class Stationary(Kern):
         r = self._scaled_dist(X, X2)
         K = self.K_of_r(r)
 
-        rinv = self._inv_dist(X, X2)
         dL_dr = self.dK_dr(r) * dL_dK
 
         if self.ARD:
-            x_xl3 = np.square(self._dist(X, X2)) / self.lengthscale**3
-            self.lengthscale.gradient = -((dL_dr*rinv)[:,:,None]*x_xl3).sum(0).sum(0)
+            #rinv = self._inv_dist(X, X2)
+            #x_xl3 = np.square(self._dist(X, X2)) # TODO: this is rather high memory? Should we loop instead?
+            #self.lengthscale.gradient = -((dL_dr*rinv)[:,:,None]*x_xl3).sum(0).sum(0)/self.lengthscale**3
+            self.lengthscale.gradient = np.zeros(self.input_dim)
+            tmp = dL_dr*self._inv_dist(X, X2)
+            if X2 is None: X2 = X
+            [np.copyto(self.lengthscale.gradient[q:q+1], -np.sum(tmp * np.square(X[:,q:q+1] - X2[:,q:q+1].T))/self.lengthscale[q]**3) for q in xrange(self.input_dim)]
         else:
-            x_xl3 = np.square(self._dist(X, X2)) / self.lengthscale**3
-            self.lengthscale.gradient = -((dL_dr*rinv)[:,:,None]*x_xl3).sum()
+            self.lengthscale.gradient = -np.sum(dL_dr*r)/self.lengthscale
 
         self.variance.gradient = np.sum(K * dL_dK)/self.variance
 

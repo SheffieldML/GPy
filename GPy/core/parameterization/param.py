@@ -50,7 +50,7 @@ class Param(OptimizationHandlable, ObservableArray, Gradcheckable):
         obj._realsize_ = obj.size
         obj._realndim_ = obj.ndim
         obj._updated_ = False
-        from index_operations import SetDict
+        from lists_and_dicts import SetDict
         obj._tied_to_me_ = SetDict()
         obj._tied_to_ = []
         obj._original_ = True
@@ -232,7 +232,8 @@ class Param(OptimizationHandlable, ObservableArray, Gradcheckable):
     #===========================================================================
     @property
     def is_fixed(self):
-        return self._highest_parent_._is_fixed(self)
+        from transformations import __fixed__
+        return self.constraints[__fixed__].size == self.size
     #def round(self, decimals=0, out=None):
     #    view = super(Param, self).round(decimals, out).view(Param)
     #    view.__array_finalize__(self)
@@ -347,8 +348,8 @@ class ParamConcatenation(object):
         See :py:class:`GPy.core.parameter.Param` for more details on constraining.
         """
         # self.params = params
-        from lists_and_dicts import ParamList
-        self.params = ParamList([])
+        from lists_and_dicts import ArrayList
+        self.params = ArrayList([])
         for p in params:
             for p in p.flattened_parameters:
                 if p not in self.params:

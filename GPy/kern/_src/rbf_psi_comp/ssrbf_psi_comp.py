@@ -6,22 +6,15 @@ The package for the psi statistics computation
 """
 
 import numpy as np
+from GPy.util.caching import Cache_this
 
+@Cache_this(limit=1)
 def _Z_distances(Z):
     Zhat = 0.5 * (Z[:, None, :] + Z[None, :, :]) # M,M,Q
     Zdist = 0.5 * (Z[:, None, :] - Z[None, :, :]) # M,M,Q
     return Zhat, Zdist
 
-# def _psi1computations(self, Z, vp):
-#     mu, S = vp.mean, vp.variance
-#     l2 = lengthscale **2
-#     denom = S[:, None, :] / l2 + 1. # N,1,Q
-#     dist = Z[None, :, :] - mu[:, None, :] # N,M,Q
-#     dist_sq = np.square(dist) / l2 / denom # N,M,Q
-#     exponent = -0.5 * np.sum(dist_sq + np.log(denom), -1)#N,M
-#     psi1 = self.variance * np.exp(exponent) # N,M
-#     return denom, dist, dist_sq, psi1
-
+@Cache_this(limit=1)
 def _psi1computations(variance, lengthscale, Z, mu, S, gamma):
     """
     Z - MxQ
@@ -64,6 +57,7 @@ def _psi1computations(variance, lengthscale, Z, mu, S, gamma):
 
     return _psi1, _dpsi1_dvariance, _dpsi1_dgamma, _dpsi1_dmu, _dpsi1_dS, _dpsi1_dZ, _dpsi1_dlengthscale
 
+@Cache_this(limit=1)
 def _psi2computations(variance, lengthscale, Z, mu, S, gamma):
     """
     Z - MxQ

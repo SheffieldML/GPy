@@ -87,7 +87,9 @@ class Stationary(Kern):
         """
         if X2 is None:
             Xsq = np.sum(np.square(X),1)
-            return np.sqrt(-2.*tdot(X) + (Xsq[:,None] + Xsq[None,:]))
+            r2 = -2.*tdot(X) + (Xsq[:,None] + Xsq[None,:])
+            util.diag.view(r2)[:,]= 0. # force diagnoal to be zero: sometime numerically a little negative
+            return np.sqrt(r2)
         else:
             X1sq = np.sum(np.square(X),1)
             X2sq = np.sum(np.square(X2),1)

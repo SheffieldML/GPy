@@ -150,37 +150,6 @@ class BayesianGPLVM(SparseGP):
 
         return dim_reduction_plots.plot_steepest_gradient_map(self,*args,**kwargs)
 
-class BayesianGPLVMWithMissingData(BayesianGPLVM):
-    def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
-        Z=None, kernel=None, inference_method=None, likelihood=None, name='bayesian gplvm', **kwargs):
-        from ..util.subarray_and_sorting import common_subarrays
-        self.subarrays = common_subarrays(Y)
-        import ipdb;ipdb.set_trace()
-        BayesianGPLVM.__init__(self, Y, input_dim, X=X, X_variance=X_variance, init=init, num_inducing=num_inducing, Z=Z, kernel=kernel, inference_method=inference_method, likelihood=likelihood, name=name, **kwargs)
-
-
-    def parameters_changed(self):
-        super(BayesianGPLVM, self).parameters_changed()
-        self._log_marginal_likelihood -= self.KL_divergence()
-
-        dL_dmu, dL_dS = self.dL_dmuS()
-
-        # dL:
-        self.X.mean.gradient  = dL_dmu
-        self.X.variance.gradient  = dL_dS
-
-        # dKL:
-        self.X.mean.gradient -= self.X.mean
-        self.X.variance.gradient -= (1. - (1. / (self.X.variance))) * 0.5
-
-if __name__ == '__main__':
-    import numpy as np
-    X = np.random.randn(20,2)
-    W = np.linspace(0,1,10)[None,:]
-    Y = (X*W).sum(1)
-    missing = np.random.binomial(1,.1,size=Y.shape)
-
-    pass
 
 def latent_cost_and_grad(mu_S, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
     """

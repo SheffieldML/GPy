@@ -8,7 +8,7 @@ from .. import likelihoods
 from .. import kern
 from ..inference.latent_function_inference import VarDTC
 from ..util.misc import param_to_array
-from ..core.parameterization.variational import VariationalPosterior
+from ..core.parameterization.variational import NormalPosterior
 
 class SparseGPRegression(SparseGP):
     """
@@ -47,7 +47,7 @@ class SparseGPRegression(SparseGP):
         likelihood = likelihoods.Gaussian()
         
         if not (X_variance is None):
-            X = VariationalPosterior(X,X_variance)
+            X = NormalPosterior(X,X_variance)
         
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method=VarDTC())
 
@@ -88,7 +88,7 @@ class SparseGPRegressionUncertainInput(SparseGP):
 
         # kern defaults to rbf (plus white for stability)
         if kernel is None:
-            kernel = kern.rbf(input_dim)  + kern.white(input_dim, variance=1e-3)
+            kernel = kern.RBF(input_dim) + kern.White(input_dim, variance=1e-3)
 
         # Z defaults to a subset of the data
         if Z is None:
@@ -99,5 +99,5 @@ class SparseGPRegressionUncertainInput(SparseGP):
 
         likelihood = likelihoods.Gaussian()
 
-        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, X_variance=X_variance)
+        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, X_variance=X_variance, inference_method=VarDTC())
         self.ensure_default_constraints()

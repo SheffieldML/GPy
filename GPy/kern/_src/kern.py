@@ -73,7 +73,7 @@ class Kern(Parameterized):
         See GPy.plotting.matplot_dep.plot
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import kernel_plots
+        from ...plotting.matplot_dep import kernel_plots
         kernel_plots.plot(self,*args)
 
     def plot_ARD(self, *args, **kw):
@@ -112,10 +112,12 @@ class Kern(Parameterized):
         """
         assert isinstance(other, Kern), "only kernels can be added to kernels..."
         from add import Add
-        return Add([self, other], tensor)
-
-    def __call__(self, X, X2=None):
-        return self.K(X, X2)
+        kernels = []
+        if not tensor and isinstance(self, Add): kernels.extend(self._parameters_)
+        else: kernels.append(self)
+        if not tensor and isinstance(other, Add): kernels.extend(other._parameters_)
+        else: kernels.append(other)
+        return Add(kernels, tensor)
 
     def __mul__(self, other):
         """ Here we overload the '*' operator. See self.prod for more information"""

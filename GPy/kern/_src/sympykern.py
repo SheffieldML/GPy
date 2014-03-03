@@ -76,34 +76,32 @@ class Sympykern(Kern):
             
             self.num_split_params = len(self._sp_theta_i)
             self._split_theta_names = ["%s"%theta.name[:-2] for theta in self._sp_theta_i]
+            # Add split parameters to the model.
             for theta in self._split_theta_names:
+                # TODO: what if user has passed a parameter vector, how should that be stored and interpreted?
                 setattr(self, theta, Param(theta, np.ones(self.output_dim), None))
-                self.add_parameters(getattr(self, theta))
+                self.add_parameter(getattr(self, theta))
 
-                #setattr(self, theta, np.ones(self.output_dim))
             
             self.num_shared_params = len(self._sp_theta)
             for theta_i, theta_j in zip(self._sp_theta_i, self._sp_theta_j):
                 self._sp_kdiag = self._sp_kdiag.subs(theta_j, theta_i)
-            #self.num_params = self.num_shared_params+self.num_split_params*self.output_dim
             
         else:
             self.num_split_params = 0
             self._split_theta_names = []
             self._sp_theta = thetas
             self.num_shared_params = len(self._sp_theta)
-            #self.num_params = self.num_shared_params
 
         # Add parameters to the model.
         for theta in self._sp_theta:
             val = 1.0
+            # TODO: what if user has passed a parameter vector, how should that be stored and interpreted? This is the old way before params class.
             if param is not None:
                 if param.has_key(theta):
                     val = param[theta]
             setattr(self, theta.name, Param(theta.name, val, None))
             self.add_parameters(getattr(self, theta.name))
-        #deal with param            
-        #self._set_params(self._get_params())
 
         # Differentiate with respect to parameters.
         derivative_arguments = self._sp_x + self._sp_theta
@@ -112,7 +110,6 @@ class Sympykern(Kern):
         
         self.derivatives = {theta.name : sp.diff(self._sp_k,theta).simplify() for theta in derivative_arguments}
         self.diag_derivatives = {theta.name : sp.diff(self._sp_kdiag,theta).simplify() for theta in derivative_arguments}
-        
         
         # This gives the parameters for the arg list.
         self.arg_list = self._sp_x + self._sp_z + self._sp_theta
@@ -134,7 +131,7 @@ class Sympykern(Kern):
         return spkern(self._sp_k+other._sp_k)
 
     def _gen_code(self):
-
+        #fn_theano = theano_function([self.arg_lists], [self._sp_k + self.derivatives], dims={x: 1}, dtypes={x_0: 'float64', z_0: 'float64'})
         self._K_function = lambdify(self.arg_list, self._sp_k, 'numpy')
         for key in self.derivatives.keys():
             setattr(self, '_K_diff_' + key, lambdify(self.arg_list, self.derivatives[key], 'numpy'))

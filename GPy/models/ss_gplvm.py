@@ -58,7 +58,7 @@ class SSGPLVM(SparseGP):
         super(SSGPLVM, self).parameters_changed()
         self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
 
-        self.X.mean.gradient, self.X.variance.gradient, self.X.binary_prob.gradient = self.kern.gradients_q_variational(posterior_variational=self.X, Z=self.Z, **self.grad_dict)
+        self.X.mean.gradient, self.X.variance.gradient, self.X.binary_prob.gradient = self.kern.gradients_qX_expectations(variational_posterior=self.X, Z=self.Z, **self.grad_dict)
 
         # update for the KL divergence
         self.variational_prior.update_gradients_KL(self.X)

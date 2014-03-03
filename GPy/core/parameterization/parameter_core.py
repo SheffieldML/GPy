@@ -2,8 +2,14 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from transformations import Transformation, Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
+import heapq
 
 __updated__ = '2013-12-16'
+
+class HierarchyError(Exception):
+    """
+    Gets thrown when something is wrong with the parameter hierarchy
+    """
 
 def adjust_name_for_printing(name):
     if name is not None:
@@ -11,19 +17,43 @@ def adjust_name_for_printing(name):
     return ''
 
 class Observable(object):
+    _updated = True
     def __init__(self, *args, **kwargs):
-        from collections import defaultdict
-        self._observer_callables_ = defaultdict(list)
+        self._observer_callables_ = []
 
-    def add_observer(self, observer, callble):
-        self._observer_callables_[observer].append(callble)
-
-    def remove_observer(self, observer, callble):
-        del self._observer_callables_[observer][callble]
-
-    def _notify_observers(self):
-        [[callble(self) for callble in callables]
-         for callables in self._observer_callables_.itervalues()]
+    def add_observer(self, observer, callble, priority=0):
+        heapq.heappush(self._observer_callables_, (priority, observer, callble))
+    
+    def remove_observer(self, observer, callble=None):
+        to_remove = []
+        for p, obs, clble in self._observer_callables_:
+            if callble is not None:
+                if (obs == observer) and (callble == clble):
+                    to_remove.append((p, obs, clble))
+            else:
+                if obs is observer:
+                    to_remove.append((p, obs, clble))
+        for r in to_remove:
+            self._observer_callables_.remove(r)
+                
+    def _notify_observers(self, which=None, min_priority=None):
+        """
+        Notifies all observers. Which is the element, which kicked off this 
+        notification loop.
+        
+        NOTE: notifies only observers with priority p > min_priority!
+                                                    ^^^^^^^^^^^^^^^^
+        
+        :param which: object, which started this notification loop
+        :param min_priority: only notify observers with priority > min_priority
+                             if min_priority is None, notify all observers in order
+        """
+        if which is None:
+            which = self
+        if min_priority is None:
+            [callble(which) for _, _, callble in heapq.nlargest(len(self._observer_callables_), self._observer_callables_)]
+        else:
+            [callble(which) for p, _, callble in heapq.nlargest(len(self._observer_callables_), self._observer_callables_) if p > min_priority]
 
 class Pickleable(object):
     def _getstate(self):
@@ -72,9 +102,8 @@ class Parentable(object):
         return self._direct_parent_._highest_parent_
 
     def _notify_parameters_changed(self):
-        if self.has_parent():
-            self._direct_parent_._notify_parameters_changed()
-
+        raise NotImplementedError, "shouldnt happen, abstract superclass"
+        
 class Nameable(Parentable):
     def __init__(self, name, *a, **kw):
         super(Nameable, self).__init__(*a, **kw)
@@ -90,11 +119,11 @@ class Nameable(Parentable):
         self._name = name
         if self.has_parent():
             self._direct_parent_._name_changed(self, from_name)
-    def hirarchy_name(self, adjust_for_printing=True):
+    def hierarchy_name(self, adjust_for_printing=True):
         if adjust_for_printing: adjust = lambda x: adjust_name_for_printing(x)
         else: adjust = lambda x: x
         if self.has_parent():
-            return self._direct_parent_.hirarchy_name() + "." + adjust(self.name)
+            return self._direct_parent_.hierarchy_name() + "." + adjust(self.name)
         return adjust(self.name)
 
 
@@ -151,7 +180,7 @@ class Constrainable(Nameable, Indexable):
     #===========================================================================
     # Fixing Parameters:
     #===========================================================================
-    def constrain_fixed(self, value=None, warning=True):
+    def constrain_fixed(self, value=None, warning=True, trigger_parent=True):
         """
         Constrain this paramter to be fixed to the current value it carries.
 
@@ -159,7 +188,7 @@ class Constrainable(Nameable, Indexable):
         """
         if value is not None:
             self[:] = value
-        self.constrain(__fixed__, warning=warning)
+        self.constrain(__fixed__, warning=warning, trigger_parent=trigger_parent)
         rav_i = self._highest_parent_._raveled_index_for(self)
         self._highest_parent_._set_fixed(rav_i)
     fix = constrain_fixed
@@ -200,9 +229,9 @@ class Constrainable(Nameable, Indexable):
     #===========================================================================
     # Prior Operations
     #===========================================================================
-    def set_prior(self, prior, warning=True, update=True):
+    def set_prior(self, prior, warning=True, trigger_parent=True):
         repriorized = self.unset_priors()
-        self._add_to_index_operations(self.priors, repriorized, prior, warning, update)
+        self._add_to_index_operations(self.priors, repriorized, prior, warning)
     
     def unset_priors(self, *priors):
         return self._remove_from_index_operations(self.priors, priors)
@@ -228,7 +257,7 @@ class Constrainable(Nameable, Indexable):
     # Constrain operations -> done
     #===========================================================================
 
-    def constrain(self, transform, warning=True, update=True):
+    def constrain(self, transform, warning=True, trigger_parent=True):
         """
         :param transform: the :py:class:`GPy.core.transformations.Transformation`
                           to constrain the this parameter to.
@@ -238,9 +267,9 @@ class Constrainable(Nameable, Indexable):
         :py:class:`GPy.core.transformations.Transformation`.
         """
         if isinstance(transform, Transformation):
-            self._set_params(transform.initialize(self._get_params()), update=False)
+            self._set_params(transform.initialize(self._get_params()), trigger_parent=trigger_parent)
         reconstrained = self.unconstrain()
-        self._add_to_index_operations(self.constraints, reconstrained, transform, warning, update)
+        self._add_to_index_operations(self.constraints, reconstrained, transform, warning)
 
     def unconstrain(self, *transforms):
         """
@@ -251,30 +280,30 @@ class Constrainable(Nameable, Indexable):
         """
         return self._remove_from_index_operations(self.constraints, transforms)
     
-    def constrain_positive(self, warning=True, update=True):
+    def constrain_positive(self, warning=True, trigger_parent=True):
         """
         :param warning: print a warning if re-constraining parameters.
 
         Constrain this parameter to the default positive constraint.
         """
-        self.constrain(Logexp(), warning=warning, update=update)
+        self.constrain(Logexp(), warning=warning, trigger_parent=trigger_parent)
 
-    def constrain_negative(self, warning=True, update=True):
+    def constrain_negative(self, warning=True, trigger_parent=True):
         """
         :param warning: print a warning if re-constraining parameters.
 
         Constrain this parameter to the default negative constraint.
         """
-        self.constrain(NegativeLogexp(), warning=warning, update=update)
+        self.constrain(NegativeLogexp(), warning=warning, trigger_parent=trigger_parent)
 
-    def constrain_bounded(self, lower, upper, warning=True, update=True):
+    def constrain_bounded(self, lower, upper, warning=True, trigger_parent=True):
         """
         :param lower, upper: the limits to bound this parameter to
         :param warning: print a warning if re-constraining parameters.
 
         Constrain this parameter to lie within the given range.
         """
-        self.constrain(Logistic(lower, upper), warning=warning, update=update)
+        self.constrain(Logistic(lower, upper), warning=warning, trigger_parent=trigger_parent)
 
     def unconstrain_positive(self):
         """
@@ -304,12 +333,11 @@ class Constrainable(Nameable, Indexable):
         for p in self._parameters_:
             p._parent_changed(parent)
 
-    def _add_to_index_operations(self, which, reconstrained, transform, warning, update):
+    def _add_to_index_operations(self, which, reconstrained, transform, warning):
         if warning and reconstrained.size > 0:
+            # TODO: figure out which parameters have changed and only print those
             print "WARNING: reconstraining parameters {}".format(self.parameter_names() or self.name)
         which.add(transform, self._raveled_index())
-        if update:
-            self._notify_parameters_changed()
 
     def _remove_from_index_operations(self, which, transforms):
         if len(transforms) == 0:
@@ -324,12 +352,76 @@ class Constrainable(Nameable, Indexable):
         
         return removed
 
+class OptimizationHandlable(Constrainable, Observable):
+    def _get_params_transformed(self):
+        # transformed parameters (apply transformation rules)
+        p = self._get_params()
+        [np.put(p, ind, c.finv(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
+        if self._has_fixes():
+            return p[self._fixes_]
+        return p
+    
+    def _set_params_transformed(self, p):
+        # inverse apply transformations for parameters and set the resulting parameters
+        self._set_params(self._untransform_params(p))
+    
+    def _size_transformed(self):
+        return self.size - self.constraints[__fixed__].size
+    
+    def _untransform_params(self, p):
+        p = p.copy()
+        if self._has_fixes(): tmp = self._get_params(); tmp[self._fixes_] = p; p = tmp; del tmp
+        [np.put(p, ind, c.f(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
+        return p
+    
+    def _get_params(self):
+        # don't overwrite this anymore!
+        if not self.size:
+            return np.empty(shape=(0,), dtype=np.float64)
+        return np.hstack([x._get_params() for x in self._parameters_ if x.size > 0])
 
-class Parameterizable(Constrainable):
+    def _set_params(self, params, trigger_parent=True):
+        # don't overwrite this anymore!
+        raise NotImplementedError, "This needs to be implemented in Param and Parametrizable"
+    
+    #===========================================================================
+    # Optimization handles:
+    #===========================================================================
+    def _get_param_names(self):
+        n = np.array([p.hierarchy_name() + '[' + str(i) + ']' for p in self.flattened_parameters for i in p._indices()])
+        return n
+    def _get_param_names_transformed(self):
+        n = self._get_param_names()
+        if self._has_fixes():
+            return n[self._fixes_]
+        return n
+
+    #===========================================================================
+    # Randomizeable
+    #===========================================================================
+    def randomize(self):
+        """
+        Randomize the model.
+        Make this draw from the prior if one exists, else draw from N(0,1)
+        """
+        import numpy as np
+        # first take care of all parameters (from N(0,1))
+        # x = self._get_params_transformed()
+        x = np.random.randn(self._size_transformed())
+        x = self._untransform_params(x)
+        # now draw from prior where possible
+        [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
+        self._set_params(x)
+        # self._set_params_transformed(self._get_params_transformed()) # makes sure all of the tied parameters get the same init (since there's only one prior object...)
+    
+
+import numpy as np
+
+class Parameterizable(OptimizationHandlable):
     def __init__(self, *args, **kwargs):
         super(Parameterizable, self).__init__(*args, **kwargs)
-        from GPy.core.parameterization.array_core import ParamList
-        _parameters_ = ParamList()
+        from GPy.core.parameterization.lists_and_dicts import ArrayList
+        _parameters_ = ArrayList()
         self._added_names_ = set()
     
     def parameter_names(self, add_self=False, adjust_for_printing=False, recursive=True):
@@ -352,7 +444,7 @@ class Parameterizable(Constrainable):
                 if pname in self._added_names_:
                     del self.__dict__[pname]
                     self._add_parameter_name(param)
-        else:
+        elif pname not in dir(self):
             self.__dict__[pname] = param
             self._added_names_.add(pname)
             
@@ -372,28 +464,26 @@ class Parameterizable(Constrainable):
         import itertools
         [p._collect_gradient(target[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
 
+    def _set_params(self, params, trigger_parent=True):
+        import itertools
+        [p._set_params(params[s], trigger_parent=False) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
+        if trigger_parent: min_priority = None
+        else: min_priority = -np.inf
+        self._notify_observers(None, min_priority)
+
     def _set_gradient(self, g):
         import itertools
         [p._set_gradient(g[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
 
-    def _get_params(self):
-        import numpy as np
-        # don't overwrite this anymore!
-        if not self.size:
-            return np.empty(shape=(0,), dtype=np.float64)
-        return np.hstack([x._get_params() for x in self._parameters_ if x.size > 0])
-
-    def _set_params(self, params, update=True):
-        # don't overwrite this anymore!
-        import itertools
-        [p._set_params(params[s], update=update) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
-        self.parameters_changed()
-
+    
+    #===========================================================================
+    # TODO: not working yet
+    #===========================================================================
     def copy(self):
         """Returns a (deep) copy of the current model"""
         import copy
         from .index_operations import ParameterIndexOperations, ParameterIndexOperationsView
-        from .array_core import ParamList
+        from .lists_and_dicts import ArrayList
 
         dc = dict()
         for k, v in self.__dict__.iteritems():
@@ -407,7 +497,7 @@ class Parameterizable(Constrainable):
         
         dc['_direct_parent_'] = None
         dc['_parent_index_'] = None
-        dc['_parameters_'] = ParamList()
+        dc['_parameters_'] = ArrayList()
         dc['constraints'].clear()
         dc['priors'].clear()
         dc['size'] = 0
@@ -419,12 +509,7 @@ class Parameterizable(Constrainable):
             s.add_parameter(p)
         
         return s
-
-    def _notify_parameters_changed(self):
-        self.parameters_changed()
-        if self.has_parent():
-            self._direct_parent_._notify_parameters_changed()
-
+        
     def parameters_changed(self):
         """
         This method gets called when parameters have changed.

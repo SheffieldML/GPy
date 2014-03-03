@@ -60,8 +60,7 @@ class VarDTC(object):
         _, output_dim = Y.shape
 
         #see whether we've got a different noise variance for each datum
-        beta = 1./np.squeeze(likelihood.variance)
-
+        beta = 1./np.fmax(likelihood.variance, 1e-6)
         # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
         #self.YYTfactor = self.get_YYTfactor(Y)
         #VVT_factor = self.get_VVTfactor(self.YYTfactor, beta)
@@ -204,18 +203,17 @@ class VarDTCMissingData(object):
     def inference(self, kern, X, Z, likelihood, Y):
         if isinstance(X, VariationalPosterior):
             uncertain_inputs = True
-            psi0 = kern.psi0(Z, X)
-            psi1 = kern.psi1(Z, X)
-            psi2 = kern.psi2(Z, X)
+            psi0_all = kern.psi0(Z, X)
+            psi1_all = kern.psi1(Z, X)
+            psi2_all = kern.psi2(Z, X)
         else:
             uncertain_inputs = False
-            psi0 = kern.Kdiag(X)
-            psi1 = kern.K(X, Z)
-            psi2 = None
-
+            psi0_all = kern.Kdiag(X)
+            psi1_all = kern.K(X, Z)
+            psi2_all = None
 
         Ys, traces = self._Y(Y)
-        beta_all = 1./likelihood.variance
+        beta_all = 1./np.fmax(likelihood.variance, 1e-6)
         het_noise = beta_all.size != 1
 
         import itertools

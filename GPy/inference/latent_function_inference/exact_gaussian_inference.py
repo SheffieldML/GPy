@@ -49,8 +49,7 @@ class ExactGaussianInference(object):
 
         dL_dK = 0.5 * (tdot(alpha) - Y.shape[1] * Wi)
 
-        kern.update_gradients_full(dL_dK, X)
-
+        #TODO: does this really live here?
         likelihood.update_gradients(np.diag(dL_dK))
 
         return Posterior(woodbury_chol=LW, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK}

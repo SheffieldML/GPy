@@ -2,6 +2,27 @@ import numpy as np
 import warnings
 from .. import kern
 
+def build_XY(input_list,output_list=None,index=None):
+    num_outputs = len(input_list)
+    _s = [0] + [ _x.shape[0] for _x in input_list ]
+    _s = np.cumsum(_s)
+    slices = [slice(a,b) for a,b in zip(_s[:-1],_s[1:])]
+    if output_list is not None:
+        assert num_outputs == len(output_list)
+        Y = np.vstack(output_list)
+    else:
+        Y = None
+
+    if index is not None:
+        assert len(index) == num_outputs
+        I = np.vstack( [j*np.ones((_x.shape[0],1)) for _x,j in zip(input_list,index)] )
+    else:
+        I = np.vstack( [j*np.ones((_x.shape[0],1)) for _x,j in zip(input_list,range(num_outputs))] )
+
+    X = np.vstack(input_list)
+    X = np.hstack([X,I])
+    return X,Y,slices
+
 def build_lcm(input_dim, num_outputs, CK = [], NC = [], W_columns=1,W=None,kappa=None):
     #TODO build_icm or build_lcm
     """
@@ -25,9 +46,9 @@ def build_lcm(input_dim, num_outputs, CK = [], NC = [], W_columns=1,W=None,kappa
             k.input_dim = input_dim + 1
             warnings.warn("kernel's input dimension overwritten to fit input_dim parameter.")
 
-    kernel = CK[0].prod(kern.coregionalize(num_outputs,W_columns,W,kappa),tensor=True)
+    kernel = CK[0].prod(kern.Coregionalize(num_outputs,W_columns,W,kappa),tensor=True)
     for k in CK[1:]:
-        k_coreg = kern.coregionalize(num_outputs,W_columns,W,kappa)
+        k_coreg = kern.Coregionalize(num_outputs,W_columns,W,kappa)
         kernel += k.prod(k_coreg,tensor=True)
     for k in NC:
         kernel += k

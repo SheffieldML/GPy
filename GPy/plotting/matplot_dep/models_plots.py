@@ -56,10 +56,13 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     if ax is None:
         fig = pb.figure(num=fignum)
         ax = fig.add_subplot(111)
-
-    X, Y = param_to_array(model.X, model.Y)
-    if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs(): X_variance = model.X_variance
-
+    
+    if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs(): 
+        X = model.X.mean
+        X_variance = param_to_array(model.X.variance)
+    else:
+        X = model.X
+    X, Y = param_to_array(X, model.Y)
     if hasattr(model, 'Z'): Z = param_to_array(model.Z)
 
     #work out what the inputs are for plotting (1D or 2D)
@@ -86,7 +89,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
             m, v, lower, upper = model.predict(Xgrid)
             Y = Y
         for d in which_data_ycols:
-            gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], axes=ax, edgecol=linecol, fillcol=fillcol)
+            gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], ax=ax, edgecol=linecol, fillcol=fillcol)
             ax.plot(X[which_data_rows,free_dims], Y[which_data_rows, d], 'kx', mew=1.5)
 
         #optionally plot some samples
@@ -98,10 +101,10 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
 
         #add error bars for uncertain (if input uncertainty is being modelled)
-        #if hasattr(model,"has_uncertain_inputs") and model.has_uncertain_inputs():
-        #    ax.errorbar(X[which_data_rows, free_dims].flatten(), Y[which_data_rows, which_data_ycols].flatten(),
-        #                xerr=2 * np.sqrt(X_variance[which_data_rows, free_dims].flatten()),
-        #                ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
+        if hasattr(model,"has_uncertain_inputs") and model.has_uncertain_inputs():
+            ax.errorbar(X[which_data_rows, free_dims].flatten(), Y[which_data_rows, which_data_ycols].flatten(),
+                        xerr=2 * np.sqrt(X_variance[which_data_rows, free_dims].flatten()),
+                        ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
 
 
         #set the limits of the plot to some sensible values

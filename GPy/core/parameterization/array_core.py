@@ -4,20 +4,7 @@
 __updated__ = '2013-12-16'
 
 import numpy as np
-from parameter_core import Observable, Parameterizable
-
-class ParamList(list):
-    """
-    List to store ndarray-likes in.
-    It will look for 'is' instead of calling __eq__ on each element.
-    """
-    def __contains__(self, other):
-        for el in self:
-            if el is other:
-                return True
-        return False
-
-    pass
+from parameter_core import Observable
 
 class ObservableArray(np.ndarray, Observable):
     """
@@ -59,14 +46,14 @@ class ObservableArray(np.ndarray, Observable):
             else:
                 return s.size != 0
 
-    def __setitem__(self, s, val, update=True):
+    def __setitem__(self, s, val):
         if self._s_not_empty(s):
             super(ObservableArray, self).__setitem__(s, val)
-            if update:
-                self._notify_observers()
+            self._notify_observers(self[s])
                 
     def __getslice__(self, start, stop):
         return self.__getitem__(slice(start, stop))
+    
     def __setslice__(self, start, stop, val):
         return self.__setitem__(slice(start, stop), val)
 

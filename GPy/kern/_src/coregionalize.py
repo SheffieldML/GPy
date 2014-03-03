@@ -60,17 +60,6 @@ class Coregionalize(Kern):
     def K(self, X, X2=None):
         index = np.asarray(X, dtype=np.int)
 
-        #here's the old code (numpy)
-        #if index2 is None:
-            #index2 = index
-        #else:
-            #index2 = np.asarray(index2, dtype=np.int)
-        #false_target = target.copy()
-        #ii, jj = np.meshgrid(index, index2)
-        #ii, jj = ii.T, jj.T
-        #false_target += self.B[ii, jj]
-
-
         if X2 is None:
             target = np.empty((X.shape[0], X.shape[0]), dtype=np.float64)
             code="""

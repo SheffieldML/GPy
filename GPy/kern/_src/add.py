@@ -101,7 +101,7 @@ class Add(Kern):
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
         return psi2
 
-    def update_gradients_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, variational_posterior, Z):
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         from white import White
         from rbf import RBF
         #from rbf_inv import RBFInv
@@ -124,10 +124,10 @@ class Add(Kern):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z[:,is2], mu[:,is2], S[:,is2]) * 2.
 
 
-            p1.update_gradients_variational(dL_dKmm, dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], S[:,is1], Z[:,is1])
+            p1.update_gradients_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], S[:,is1], Z[:,is1])
 
 
-    def gradients_Z_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+    def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         from white import White
         from rbf import RBF
         #from rbf_inv import rbfinv
@@ -151,10 +151,10 @@ class Add(Kern):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z[:,is2], mu[:,is2], S[:,is2]) * 2.
 
 
-            target += p1.gradients_z_variational(dL_dKmm, dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], S[:,is1], Z[:,is1])
+            target += p1.gradients_z_variational(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], S[:,is1], Z[:,is1])
         return target
 
-    def gradients_muS_variational(self, dL_dKmm, dL_dpsi0, dL_dpsi1, dL_dpsi2, mu, S, Z):
+    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         from white import white
         from rbf import rbf
         #from rbf_inv import rbfinv
@@ -179,25 +179,17 @@ class Add(Kern):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(z[:,is2], mu[:,is2], s[:,is2]) * 2.
 
 
-            a, b = p1.gradients_muS_variational(dL_dkmm, dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], s[:,is1], z[:,is1])
+            a, b = p1.gradients_qX_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], s[:,is1], z[:,is1])
             target_mu += a
             target_S += b
         return target_mu, target_S
 
-    def plot(self, *args, **kwargs):
-        """
-        See GPy.plotting.matplot_dep.plot
-        """
-        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import kernel_plots
-        kernel_plots.plot(self,*args)
-
     def input_sensitivity(self):
-        in_sen = np.zeros((self.input_dim, self.num_params))
+        in_sen = np.zeros((self.num_params, self.input_dim))
         for i, [p, i_s] in enumerate(zip(self._parameters_, self.input_slices)):
-            in_sen[i_s, i] = p.input_sensitivity()
+            in_sen[i, i_s] = p.input_sensitivity()
         return in_sen
-    
+
     def _getstate(self):
         """
         Get the current state of the class,

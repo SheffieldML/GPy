@@ -62,7 +62,7 @@ class Test(unittest.TestCase):
         self.par.add_observer(self, self._trigger, -1)
         self.assertEqual(self.par.params_changed_count, 0, 'no params changed yet')
         self.assertEqual(self.par.params_changed_count, self.parent.parent_changed_count, 'parent should be triggered as often as param')
-
+        
         self.p[0,1] = 3 # trigger observers
         self.assertEqual(self._observer_triggered, 3, 'observer should have triggered')
         self.assertEqual(self._trigger_count, 1, 'observer should have triggered once')

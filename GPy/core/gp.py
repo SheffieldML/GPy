@@ -31,7 +31,7 @@ class GP(Model):
         super(GP, self).__init__(name)
 
         assert X.ndim == 2
-        if isinstance(X, ObservableArray) or isinstance(X, VariationalPosterior):
+        if isinstance(X, (ObservableArray, VariationalPosterior)):
             self.X = X
         else: self.X = ObservableArray(X)
 
@@ -224,13 +224,9 @@ class GP(Model):
                 self.kern,
                 self.likelihood,
                 self.output_dim,
-                self._Xoffset,
-                self._Xscale,
                 ]
 
     def _setstate(self, state):
-        self._Xscale = state.pop()
-        self._Xoffset = state.pop()
         self.output_dim = state.pop()
         self.likelihood = state.pop()
         self.kern = state.pop()

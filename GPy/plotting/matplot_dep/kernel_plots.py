@@ -106,7 +106,7 @@ def plot(kernel, x=None, plot_limits=None, which_parts='all', resolution=None, *
             raise ValueError, "Bad limits for plotting"
 
         Xnew = np.linspace(xmin, xmax, resolution or 201)[:, None]
-        Kx = kernel.K(Xnew, x, which_parts)
+        Kx = kernel.K(Xnew, x)
         pb.plot(Xnew, Kx, *args, **kwargs)
         pb.xlim(xmin, xmax)
         pb.xlabel("x")

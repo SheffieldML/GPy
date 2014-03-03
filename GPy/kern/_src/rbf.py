@@ -91,13 +91,11 @@ class RBF(Stationary):
             #from psi2
             S = variational_posterior.variance
             _, Zdist_sq, _, mudist_sq, psi2 = self._psi2computations(Z, variational_posterior)
-            d_length = 2.*psi2[:, :, :, None] * (Zdist_sq * (2.*S[:,None,None,:]/l2 + 1.) + mudist_sq + S[:, None, None, :] / l2) / (2.*S[:,None,None,:] + l2)*self.lengthscale
 
-            dpsi2_dlength = d_length * dL_dpsi2[:, :, :, None]
             if not self.ARD:
-                self.lengthscale.gradient += dpsi2_dlength.sum()
+                self.lengthscale.gradient += self._weave_psi2_lengthscale_grads(dL_dpsi2, psi2, Zdist_sq, S, mudist_sq, l2).sum()
             else:
-                self.lengthscale.gradient += dpsi2_dlength.sum(0).sum(0).sum(0)
+                self.lengthscale.gradient += self._weave_psi2_lengthscale_grads(dL_dpsi2, psi2, Zdist_sq, S, mudist_sq, l2)
 
             self.variance.gradient += 2.*np.sum(dL_dpsi2 * psi2)/self.variance
 
@@ -224,7 +222,7 @@ class RBF(Stationary):
         code = """
         double tmp, exponent_tmp;
 
-        //#pragma omp parallel for private(tmp, exponent_tmp)
+        #pragma omp parallel for private(tmp, exponent_tmp)
         for (int n=0; n<N; n++)
         {
             for (int m=0; m<M; m++)
@@ -266,3 +264,47 @@ class RBF(Stationary):
                      type_converters=weave.converters.blitz, **self.weave_options)
 
         return Zdist, Zdist_sq, mudist, mudist_sq, psi2
+
+    def _weave_psi2_lengthscale_grads(self, dL_dpsi2, psi2, Zdist_sq, S, mudist_sq, l2):
+
+        #here's the einsum equivalent, it's ~3 times slower
+        #return 2.*np.einsum( 'ijk,ijk,ijkl,il->l', dL_dpsi2, psi2, Zdist_sq * (2.*S[:,None,None,:]/l2 + 1.) + mudist_sq + S[:, None, None, :] / l2, 1./(2.*S + l2))*self.lengthscale
+
+        result = np.zeros(self.input_dim)
+        code = """
+        double tmp;
+        for(int q=0; q<Q; q++)
+        {
+            tmp = 0.0;
+            #pragma omp parallel for reduction(+:tmp)
+            for(int n=0; n<N; n++)
+            {
+                for(int m=0; m<M; m++)
+                {
+                    //diag terms
+                    tmp += dL_dpsi2(n,m,m) * psi2(n,m,m) * (Zdist_sq(m,m,q) * (2.0*S(n,q)/l2(q) + 1.0) + mudist_sq(n,m,m,q) + S(n,q)/l2(q)) / (2.0*S(n,q) + l2(q)) ;
+
+                    //off-diag terms
+                    for(int mm=0; mm<m; mm++)
+                    {
+                        tmp += 2.0 * dL_dpsi2(n,m,mm) * psi2(n,m,mm) * (Zdist_sq(m,mm,q) * (2.0*S(n,q)/l2(q) + 1.0) + mudist_sq(n,m,mm,q) + S(n,q)/l2(q)) / (2.0*S(n,q) + l2(q)) ;
+                    }
+                }
+            }
+            result(q) = tmp;
+        }
+
+        """
+        support_code = """
+        #include <omp.h>
+        #include <math.h>
+        """
+        N,Q = S.shape
+        M = psi2.shape[-1]
+
+        S = param_to_array(S)
+        weave.inline(code, support_code=support_code, libraries=['gomp'],
+                     arg_names=['psi2', 'dL_dpsi2', 'N', 'M', 'Q', 'mudist_sq', 'l2', 'Zdist_sq', 'S', 'result'],
+                     type_converters=weave.converters.blitz, **self.weave_options)
+
+        return 2.*result*self.lengthscale

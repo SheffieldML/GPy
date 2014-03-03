@@ -36,21 +36,21 @@ def student_t_approx(optimize=True, plot=True):
     edited_real_sd = initial_var_guess
 
     # Kernel object
-    kernel1 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
-    kernel2 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
-    kernel3 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
-    kernel4 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
+    kernel1 = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
+    kernel2 = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
+    kernel3 = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
+    kernel4 = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
 
     #Gaussian GP model on clean data
-    #m1 = GPy.models.GPRegression(X, Y.copy(), kernel=kernel1)
-    ## optimize
-    #m1['white'].constrain_fixed(1e-5)
-    #m1.randomize()
+    m1 = GPy.models.GPRegression(X, Y.copy(), kernel=kernel1)
+    # optimize
+    m1['white'].constrain_fixed(1e-5)
+    m1.randomize()
 
-    ##Gaussian GP model on corrupt data
-    #m2 = GPy.models.GPRegression(X, Yc.copy(), kernel=kernel2)
-    #m1['white'].constrain_fixed(1e-5)
-    #m2.randomize()
+    #Gaussian GP model on corrupt data
+    m2 = GPy.models.GPRegression(X, Yc.copy(), kernel=kernel2)
+    m2['white'].constrain_fixed(1e-5)
+    m2.randomize()
 
     #Student t GP model on clean data
     t_distribution = GPy.likelihoods.StudentT(deg_free=deg_free, sigma2=edited_real_sd)

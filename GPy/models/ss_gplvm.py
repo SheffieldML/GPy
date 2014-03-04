@@ -66,6 +66,12 @@ class SSGPLVM(SparseGP):
         # update for the KL divergence
         self.variational_prior.update_gradients_KL(self.X)
 
+    def input_sensitivity(self):
+        if self.kern.ARD:
+            return self.kern.input_sensitivity()
+        else:
+            return self.variational_prior.pi
+
     def plot_latent(self, plot_inducing=True, *args, **kwargs):
         import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."

@@ -48,11 +48,14 @@ class SSGPLVM(SparseGP):
         if kernel is None:
             kernel = kern.SSRBF(input_dim)
             
-        self.variational_prior = SpikeAndSlabPrior(pi=0.5) # the prior probability of the latent binary variable b
+        pi = np.empty((input_dim))
+        pi[:] = 0.5
+        self.variational_prior = SpikeAndSlabPrior(pi=pi) # the prior probability of the latent binary variable b
         X = SpikeAndSlabPosterior(X, X_variance, gamma)
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)
         self.add_parameter(self.X, index=0)
+        self.add_parameter(self.variational_prior)
 
     def parameters_changed(self):
         super(SSGPLVM, self).parameters_changed()

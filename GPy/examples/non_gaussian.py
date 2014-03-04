@@ -30,7 +30,7 @@ def student_t_approx(optimize=True, plot=True):
     #Yc = Yc/Yc.max()
 
     #Add student t random noise to datapoints
-    deg_free = 5
+    deg_free = 1
     print "Real noise: ", real_std
     initial_var_guess = 0.5
     edited_real_sd = initial_var_guess
@@ -44,34 +44,39 @@ def student_t_approx(optimize=True, plot=True):
     #Gaussian GP model on clean data
     m1 = GPy.models.GPRegression(X, Y.copy(), kernel=kernel1)
     # optimize
-    m1['white'].constrain_fixed(1e-5)
+    m1['.*white'].constrain_fixed(1e-5)
     m1.randomize()
 
     #Gaussian GP model on corrupt data
     m2 = GPy.models.GPRegression(X, Yc.copy(), kernel=kernel2)
-    m2['white'].constrain_fixed(1e-5)
+    m2['.*white'].constrain_fixed(1e-5)
     m2.randomize()
 
     #Student t GP model on clean data
     t_distribution = GPy.likelihoods.StudentT(deg_free=deg_free, sigma2=edited_real_sd)
     laplace_inf = GPy.inference.latent_function_inference.Laplace()
     m3 = GPy.core.GP(X, Y.copy(), kernel3, likelihood=t_distribution, inference_method=laplace_inf)
-    m3['t_noise'].constrain_bounded(1e-6, 10.)
-    m3['white'].constrain_fixed(1e-5)
+    m3['.*t_noise'].constrain_bounded(1e-6, 10.)
+    m3['.*white'].constrain_fixed(1e-5)
     m3.randomize()
-    debug = True
-    print m3
-    if debug:
-        m3.optimize(messages=1)
-        return m3
 
     #Student t GP model on corrupt data
     t_distribution = GPy.likelihoods.StudentT(deg_free=deg_free, sigma2=edited_real_sd)
     laplace_inf = GPy.inference.latent_function_inference.Laplace()
     m4 = GPy.core.GP(X, Yc.copy(), kernel4, likelihood=t_distribution, inference_method=laplace_inf)
-    m4['t_noise'].constrain_bounded(1e-6, 10.)
-    m4['white'].constrain_fixed(1e-5)
+    m4['.*t_noise'].constrain_bounded(1e-6, 10.)
+    m4['.*white'].constrain_fixed(1e-5)
     m4.randomize()
+    print m4
+    debug=True
+    if debug:
+        m4.optimize(messages=1)
+        import pylab as pb
+        pb.plot(m4.X, m4.inference_method.f_hat)
+        pb.plot(m4.X, m4.Y, 'rx')
+        m4.plot()
+        print m4
+        return m4
 
     if optimize:
         optimizer='scg'

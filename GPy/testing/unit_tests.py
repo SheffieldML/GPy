@@ -33,7 +33,7 @@ class GradientTests(unittest.TestCase):
         # Get model type (GPRegression, SparseGPRegression, etc)
         model_fit = getattr(GPy.models, model_type)
 
-        # noise = GPy.kern.white(dimension)
+        # noise = GPy.kern.White(dimension)
         kern = kern #  + noise
         if uncertain_inputs:
             m = model_fit(X, Y, kernel=kern, X_variance=np.random.rand(X.shape[0], X.shape[1]))
@@ -45,17 +45,17 @@ class GradientTests(unittest.TestCase):
 
     def test_GPRegression_rbf_1d(self):
         ''' Testing the GP regression with rbf kernel with white kernel on 1d data '''
-        rbf = GPy.kern.rbf(1)
+        rbf = GPy.kern.RBF(1)
         self.check_model(rbf, model_type='GPRegression', dimension=1)
 
     def test_GPRegression_rbf_2D(self):
         ''' Testing the GP regression with rbf kernel on 2d data '''
-        rbf = GPy.kern.rbf(2)
+        rbf = GPy.kern.RBF(2)
         self.check_model(rbf, model_type='GPRegression', dimension=2)
 
     def test_GPRegression_rbf_ARD_2D(self):
         ''' Testing the GP regression with rbf kernel on 2d data '''
-        k = GPy.kern.rbf(2, ARD=True)
+        k = GPy.kern.RBF(2, ARD=True)
         self.check_model(k, model_type='GPRegression', dimension=2)
 
     def test_GPRegression_mlp_1d(self):
@@ -65,7 +65,7 @@ class GradientTests(unittest.TestCase):
 
     def test_GPRegression_poly_1d(self):
         ''' Testing the GP regression with polynomial kernel with white kernel on 1d data '''
-        mlp = GPy.kern.poly(1, degree=5)
+        mlp = GPy.kern.Poly(1, degree=5)
         self.check_model(mlp, model_type='GPRegression', dimension=1)
 
     def test_GPRegression_matern52_1D(self):
@@ -100,80 +100,80 @@ class GradientTests(unittest.TestCase):
 
     def test_GPRegression_exponential_1D(self):
         ''' Testing the GP regression with exponential kernel on 1d data '''
-        exponential = GPy.kern.exponential(1)
+        exponential = GPy.kern.Exponential(1)
         self.check_model(exponential, model_type='GPRegression', dimension=1)
 
     def test_GPRegression_exponential_2D(self):
         ''' Testing the GP regression with exponential kernel on 2d data '''
-        exponential = GPy.kern.exponential(2)
+        exponential = GPy.kern.Exponential(2)
         self.check_model(exponential, model_type='GPRegression', dimension=2)
 
     def test_GPRegression_exponential_ARD_2D(self):
         ''' Testing the GP regression with exponential kernel on 2d data '''
-        exponential = GPy.kern.exponential(2, ARD=True)
+        exponential = GPy.kern.Exponential(2, ARD=True)
         self.check_model(exponential, model_type='GPRegression', dimension=2)
 
     def test_GPRegression_bias_kern_1D(self):
         ''' Testing the GP regression with bias kernel on 1d data '''
-        bias = GPy.kern.bias(1)
+        bias = GPy.kern.Bias(1)
         self.check_model(bias, model_type='GPRegression', dimension=1)
 
     def test_GPRegression_bias_kern_2D(self):
         ''' Testing the GP regression with bias kernel on 2d data '''
-        bias = GPy.kern.bias(2)
+        bias = GPy.kern.Bias(2)
         self.check_model(bias, model_type='GPRegression', dimension=2)
 
     def test_GPRegression_linear_kern_1D_ARD(self):
         ''' Testing the GP regression with linear kernel on 1d data '''
-        linear = GPy.kern.linear(1, ARD=True)
+        linear = GPy.kern.Linear(1, ARD=True)
         self.check_model(linear, model_type='GPRegression', dimension=1)
 
     def test_GPRegression_linear_kern_2D_ARD(self):
         ''' Testing the GP regression with linear kernel on 2d data '''
-        linear = GPy.kern.linear(2, ARD=True)
+        linear = GPy.kern.Linear(2, ARD=True)
         self.check_model(linear, model_type='GPRegression', dimension=2)
 
     def test_GPRegression_linear_kern_1D(self):
         ''' Testing the GP regression with linear kernel on 1d data '''
-        linear = GPy.kern.linear(1)
+        linear = GPy.kern.Linear(1)
         self.check_model(linear, model_type='GPRegression', dimension=1)
 
     def test_GPRegression_linear_kern_2D(self):
         ''' Testing the GP regression with linear kernel on 2d data '''
-        linear = GPy.kern.linear(2)
+        linear = GPy.kern.Linear(2)
         self.check_model(linear, model_type='GPRegression', dimension=2)
 
     def test_SparseGPRegression_rbf_white_kern_1d(self):
         ''' Testing the sparse GP regression with rbf kernel with white kernel on 1d data '''
-        rbf = GPy.kern.rbf(1)
+        rbf = GPy.kern.RBF(1)
         self.check_model(rbf, model_type='SparseGPRegression', dimension=1)
 
     def test_SparseGPRegression_rbf_white_kern_2D(self):
         ''' Testing the sparse GP regression with rbf kernel on 2d data '''
-        rbf = GPy.kern.rbf(2)
+        rbf = GPy.kern.RBF(2)
         self.check_model(rbf, model_type='SparseGPRegression', dimension=2)
 
     def test_SparseGPRegression_rbf_linear_white_kern_1D(self):
         ''' Testing the sparse GP regression with rbf kernel on 2d data '''
-        rbflin = GPy.kern.rbf(1) + GPy.kern.linear(1)
+        rbflin = GPy.kern.RBF(1) + GPy.kern.Linear(1)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=1)
 
     def test_SparseGPRegression_rbf_linear_white_kern_2D(self):
         ''' Testing the sparse GP regression with rbf kernel on 2d data '''
-        rbflin = GPy.kern.rbf(2) + GPy.kern.linear(2)
+        rbflin = GPy.kern.RBF(2) + GPy.kern.Linear(2)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=2)
 
     #@unittest.expectedFailure
     def test_SparseGPRegression_rbf_linear_white_kern_2D_uncertain_inputs(self):
         ''' Testing the sparse GP regression with rbf, linear kernel on 2d data with uncertain inputs'''
-        rbflin = GPy.kern.rbf(2) + GPy.kern.linear(2)
+        rbflin = GPy.kern.RBF(2) + GPy.kern.Linear(2)
         raise unittest.SkipTest("This is not implemented yet!")
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=2, uncertain_inputs=1)
 
     #@unittest.expectedFailure
     def test_SparseGPRegression_rbf_linear_white_kern_1D_uncertain_inputs(self):
         ''' Testing the sparse GP regression with rbf, linear kernel on 1d data with uncertain inputs'''
-        rbflin = GPy.kern.rbf(1) + GPy.kern.linear(1)
+        rbflin = GPy.kern.RBF(1) + GPy.kern.Linear(1)
         raise unittest.SkipTest("This is not implemented yet!")
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=1, uncertain_inputs=1)
 
@@ -181,7 +181,7 @@ class GradientTests(unittest.TestCase):
         """ Testing GPLVM with rbf + bias kernel """
         N, input_dim, D = 50, 1, 2
         X = np.random.rand(N, input_dim)
-        k = GPy.kern.rbf(input_dim, 0.5, 0.9 * np.ones((1,))) + GPy.kern.bias(input_dim, 0.1) + GPy.kern.white(input_dim, 0.05)
+        k = GPy.kern.RBF(input_dim, 0.5, 0.9 * np.ones((1,))) + GPy.kern.Bias(input_dim, 0.1) + GPy.kern.White(input_dim, 0.05)
         K = k.K(X)
         Y = np.random.multivariate_normal(np.zeros(N), K, input_dim).T
         m = GPy.models.GPLVM(Y, input_dim, kernel=k)
@@ -191,7 +191,7 @@ class GradientTests(unittest.TestCase):
         """ Testing GPLVM with rbf + bias kernel """
         N, input_dim, D = 50, 1, 2
         X = np.random.rand(N, input_dim)
-        k = GPy.kern.linear(input_dim) + GPy.kern.bias(input_dim, 0.1) + GPy.kern.white(input_dim, 0.05)
+        k = GPy.kern.Linear(input_dim) + GPy.kern.Bias(input_dim, 0.1) + GPy.kern.White(input_dim, 0.05)
         K = k.K(X)
         Y = np.random.multivariate_normal(np.zeros(N), K, input_dim).T
         m = GPy.models.GPLVM(Y, input_dim, init='PCA', kernel=k)
@@ -201,7 +201,7 @@ class GradientTests(unittest.TestCase):
         N = 20
         X = np.hstack([np.random.normal(5, 2, N / 2), np.random.normal(10, 2, N / 2)])[:, None]
         Y = np.hstack([np.ones(N / 2), np.zeros(N / 2)])[:, None]
-        kernel = GPy.kern.rbf(1)
+        kernel = GPy.kern.RBF(1)
         m = GPy.models.GPClassification(X,Y,kernel=kernel)
         m.update_likelihood_approximation()
         self.assertTrue(m.checkgrad())
@@ -211,7 +211,7 @@ class GradientTests(unittest.TestCase):
         X = np.hstack([np.random.normal(5, 2, N / 2), np.random.normal(10, 2, N / 2)])[:, None]
         Y = np.hstack([np.ones(N / 2), np.zeros(N / 2)])[:, None]
         Z = np.linspace(0, 15, 4)[:, None]
-        kernel = GPy.kern.rbf(1)
+        kernel = GPy.kern.RBF(1)
         m = GPy.models.SparseGPClassification(X,Y,kernel=kernel,Z=Z)
         #distribution = GPy.likelihoods.likelihood_functions.Bernoulli()
         #likelihood = GPy.likelihoods.EP(Y, distribution)
@@ -223,7 +223,7 @@ class GradientTests(unittest.TestCase):
     def test_generalized_FITC(self):
         N = 20
         X = np.hstack([np.random.rand(N / 2) + 1, np.random.rand(N / 2) - 1])[:, None]
-        k = GPy.kern.rbf(1) + GPy.kern.white(1)
+        k = GPy.kern.RBF(1) + GPy.kern.White(1)
         Y = np.hstack([np.ones(N/2),np.zeros(N/2)])[:,None]
         m = GPy.models.FITCClassification(X, Y, kernel = k)
         m.update_likelihood_approximation()
@@ -237,7 +237,7 @@ class GradientTests(unittest.TestCase):
         Y2 = -np.sin(X2) + np.random.randn(*X2.shape) * 0.05
         Y = np.vstack((Y1, Y2))
 
-        k1 = GPy.kern.rbf(1)
+        k1 = GPy.kern.RBF(1)
         m = GPy.models.GPMultioutputRegression(X_list=[X1,X2],Y_list=[Y1,Y2],kernel_list=[k1])
         m.constrain_fixed('.*rbf_var', 1.)
         self.assertTrue(m.checkgrad())
@@ -250,7 +250,7 @@ class GradientTests(unittest.TestCase):
         Y2 = -np.sin(X2) + np.random.randn(*X2.shape) * 0.05
         Y = np.vstack((Y1, Y2))
 
-        k1 = GPy.kern.rbf(1)
+        k1 = GPy.kern.RBF(1)
         m = GPy.models.SparseGPMultioutputRegression(X_list=[X1,X2],Y_list=[Y1,Y2],kernel_list=[k1])
         m.constrain_fixed('.*rbf_var', 1.)
         self.assertTrue(m.checkgrad())

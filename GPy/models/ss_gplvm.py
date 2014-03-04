@@ -67,8 +67,11 @@ class SSGPLVM(SparseGP):
         self.variational_prior.update_gradients_KL(self.X)
 
     def plot_latent(self, plot_inducing=True, *args, **kwargs):
-        pass
-        #return plot_latent.plot_latent(self, plot_inducing=plot_inducing, *args, **kwargs)
+        import sys
+        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        from ..plotting.matplot_dep import dim_reduction_plots
+
+        return dim_reduction_plots.plot_latent(self, plot_inducing=plot_inducing, *args, **kwargs)
 
     def do_test_latents(self, Y):
         """

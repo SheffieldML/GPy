@@ -37,7 +37,7 @@ class SpikeAndSlabPrior(VariationalPrior):
     def __init__(self, pi, variance = 1.0, name='SpikeAndSlabPrior', **kw):
         super(VariationalPrior, self).__init__(name=name, **kw)
         assert variance==1.0, "Not Implemented!"
-        self.pi = Param('pi', pi, Logistic(1e-10,1-1e-10))
+        self.pi = Param('pi', pi, Logistic(1e-10,1.-1e-10))
         self.variance = Param('variance',variance)
         self.add_parameters(self.pi)
         
@@ -105,7 +105,7 @@ class SpikeAndSlabPosterior(VariationalPosterior):
         binary_prob : the probability of the distribution on the slab part.
         """
         super(SpikeAndSlabPosterior, self).__init__(means, variances, name)
-        self.gamma = Param("binary_prob",binary_prob, Logistic(1e-10,1-1e-10))
+        self.gamma = Param("binary_prob",binary_prob, Logistic(1e-10,1.-1e-10))
         self.add_parameter(self.gamma)
 
     def plot(self, *args):

@@ -65,8 +65,6 @@ class GP(Model):
 
         self.add_parameter(self.kern)
         self.add_parameter(self.likelihood)
-        if self.__class__ is GP:
-            self.parameters_changed()
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y, Y_metadata=self.Y_metadata)

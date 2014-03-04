@@ -28,7 +28,6 @@ class GPRegression(GP):
         likelihood = likelihoods.Gaussian()
 
         super(GPRegression, self).__init__(X, Y, kernel, likelihood, name='GP regression')
-        self.parameters_changed()
 
     def _getstate(self):
         return GP._getstate(self)

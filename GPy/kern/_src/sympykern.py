@@ -124,9 +124,6 @@ class Sympykern(Kern):
         # generate the code for the covariance functions
         self._gen_code()
 
-        self.parameters_changed() # initializes caches
-
-
     def __add__(self,other):
         return spkern(self._sp_k+other._sp_k)
 

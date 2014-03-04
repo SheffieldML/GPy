@@ -19,12 +19,16 @@ class VarDTC(object):
 
     """
     const_jitter = 1e-6
-    def __init__(self):
+    def __init__(self, limit=1):
         #self._YYTfactor_cache = caching.cache()
         from ...util.caching import Cacher
-        self.get_trYYT = Cacher(self._get_trYYT, 1)
-        self.get_YYTfactor = Cacher(self._get_YYTfactor, 1)
+        self.get_trYYT = Cacher(self._get_trYYT, limit)
+        self.get_YYTfactor = Cacher(self._get_YYTfactor, limit)
 
+    def set_limit(self, limit):
+        self.get_trYYT.limit = limit
+        self.get_YYTfactor.limit = limit
+        
     def _get_trYYT(self, Y):
         return param_to_array(np.sum(np.square(Y)))
 
@@ -175,10 +179,13 @@ class VarDTC(object):
         return post, log_marginal, grad_dict
 
 class VarDTCMissingData(object):
-    def __init__(self):
+    def __init__(self, limit=1):
         from ...util.caching import Cacher
-        self._Y = Cacher(self._subarray_computations, 1)
+        self._Y = Cacher(self._subarray_computations, limit)
         pass
+
+    def set_limit(self, limit):
+        self._Y.limit = limit
 
     def _subarray_computations(self, Y):
         inan = np.isnan(Y)

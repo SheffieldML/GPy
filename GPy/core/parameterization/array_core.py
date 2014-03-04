@@ -49,7 +49,7 @@ class ObservableArray(np.ndarray, Observable):
     def __setitem__(self, s, val):
         if self._s_not_empty(s):
             super(ObservableArray, self).__setitem__(s, val)
-            self._notify_observers(self[s])
+            self.notify_observers(self[s])
                 
     def __getslice__(self, start, stop):
         return self.__getitem__(slice(start, stop))
@@ -65,149 +65,149 @@ class ObservableArray(np.ndarray, Observable):
 
     def __ilshift__(self, *args, **kwargs):
         r = np.ndarray.__ilshift__(self, *args, **kwargs)
-        self._notify_observers()
+        self.notify_observers()
         return r
 
     def __irshift__(self, *args, **kwargs):
         r = np.ndarray.__irshift__(self, *args, **kwargs)
-        self._notify_observers()
+        self.notify_observers()
         return r
 
 
     def __ixor__(self, *args, **kwargs):
         r = np.ndarray.__ixor__(self, *args, **kwargs)
-        self._notify_observers()
+        self.notify_observers()
         return r
 
 
     def __ipow__(self, *args, **kwargs):
         r = np.ndarray.__ipow__(self, *args, **kwargs)
-        self._notify_observers()
+        self.notify_observers()
         return r
 
     
     def __ifloordiv__(self, *args, **kwargs):
         r = np.ndarray.__ifloordiv__(self, *args, **kwargs)
-        self._notify_observers()
+        self.notify_observers()
         return r
 
 
     def __isub__(self, *args, **kwargs):
         r = np.ndarray.__isub__(self, *args, **kwargs)
-        self._notify_observers()
+        self.notify_observers()
         return r
 
 
     def __ior__(self, *args, **kwargs):
         r = np.ndarray.__ior__(self, *args, **kwargs)
-        self._notify_observers()
+        self.notify_observers()
         return r
 
 
     def __itruediv__(self, *args, **kwargs):
         r = np.ndarray.__itruediv__(self, *args, **kwargs)
-        self._notify_observers()
+        self.notify_observers()
         return r
 
 
     def __idiv__(self, *args, **kwargs):
         r = np.ndarray.__idiv__(self, *args, **kwargs)
-        self._notify_observers()
+        self.notify_observers()
         return r
 
 
     def __iand__(self, *args, **kwargs):
         r = np.ndarray.__iand__(self, *args, **kwargs)
-        self._notify_observers()
+        self.notify_observers()
         return r
 
 
     def __imod__(self, *args, **kwargs):
         r = np.ndarray.__imod__(self, *args, **kwargs)
-        self._notify_observers()
+        self.notify_observers()
         return r
 
 
     def __iadd__(self, *args, **kwargs):
         r = np.ndarray.__iadd__(self, *args, **kwargs)
-        self._notify_observers()
+        self.notify_observers()
         return r
 
 
     def __imul__(self, *args, **kwargs):
         r = np.ndarray.__imul__(self, *args, **kwargs)
-        self._notify_observers()
+        self.notify_observers()
         return r
 
 
 #     def __rrshift__(self, *args, **kwargs):
 #         r = np.ndarray.__rrshift__(self, *args, **kwargs)
-#         self._notify_observers()
+#         self.notify_observers()
 #         return r
 
 
 #     def __ror__(self, *args, **kwargs):
 #         r =  np.ndarray.__ror__(self, *args, **kwargs)
-#         self._notify_observers()
+#         self.notify_observers()
 #         return r
 
 
 #     def __rxor__(self, *args, **kwargs):
 #         r = np.ndarray.__rxor__(self, *args, **kwargs)
-#         self._notify_observers()
+#         self.notify_observers()
 #         return r
 
 
 
 #     def __rdivmod__(self, *args, **kwargs):
 #         r = np.ndarray.__rdivmod__(self, *args, **kwargs)
-#         self._notify_observers()
+#         self.notify_observers()
 #         return r
 
 
 #     def __radd__(self, *args, **kwargs):
 #         r = np.ndarray.__radd__(self, *args, **kwargs)
-#         self._notify_observers()
+#         self.notify_observers()
 #         return r
 
 
 #     def __rdiv__(self, *args, **kwargs):
 #         r = np.ndarray.__rdiv__(self, *args, **kwargs)
-#         self._notify_observers()
+#         self.notify_observers()
 #         return r
 
 
 #     def __rtruediv__(self, *args, **kwargs):
 #         r = np.ndarray.__rtruediv__(self, *args, **kwargs)
-#         self._notify_observers()
+#         self.notify_observers()
 #         return r
 
 
 #     def __rshift__(self, *args, **kwargs):
 #         r = np.ndarray.__rshift__(self, *args, **kwargs)
-#         self._notify_observers()
+#         self.notify_observers()
 #         return r
 
 
 #     def __rmul__(self, *args, **kwargs):
 #         r = np.ndarray.__rmul__(self, *args, **kwargs)
-#         self._notify_observers()
+#         self.notify_observers()
 #         return r
 
 
 #     def __rpow__(self, *args, **kwargs):
 #         r = np.ndarray.__rpow__(self, *args, **kwargs)
-#         self._notify_observers()
+#         self.notify_observers()
 #         return r
 
 
 #     def __rsub__(self, *args, **kwargs):
 #         r = np.ndarray.__rsub__(self, *args, **kwargs)
-#         self._notify_observers()
+#         self.notify_observers()
 #         return r
 
 #     def __rfloordiv__(self, *args, **kwargs):
 #         r = np.ndarray.__rfloordiv__(self, *args, **kwargs)
-#         self._notify_observers()
+#         self.notify_observers()
 #         return r
 

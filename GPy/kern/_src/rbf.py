@@ -62,13 +62,18 @@ class RBF(Stationary):
     
             #from psi1
             self.variance.gradient += np.sum(dL_dpsi1 * _dpsi1_dvariance)
-            self.lengthscale.gradient = (dL_dpsi1[:,:,None]*_dpsi1_dlengthscale).reshape(-1,self.input_dim).sum(axis=0) 
+            if self.ARD:
+                self.lengthscale.gradient = (dL_dpsi1[:,:,None]*_dpsi1_dlengthscale).reshape(-1,self.input_dim).sum(axis=0)
+            else:
+                self.lengthscale.gradient = (dL_dpsi1[:,:,None]*_dpsi1_dlengthscale).sum()  
         
     
             #from psi2
             self.variance.gradient += (dL_dpsi2 * _dpsi2_dvariance).sum()
-            self.lengthscale.gradient += (dL_dpsi2[:,:,:,None] * _dpsi2_dlengthscale).reshape(-1,self.input_dim).sum(axis=0)        
-            return
+            if self.ARD:
+                self.lengthscale.gradient += (dL_dpsi2[:,:,:,None] * _dpsi2_dlengthscale).reshape(-1,self.input_dim).sum(axis=0)
+            else:
+                self.lengthscale.gradient += (dL_dpsi2[:,:,:,None] * _dpsi2_dlengthscale).sum()
         
         elif isinstance(variational_posterior, variational.NormalPosterior):
         

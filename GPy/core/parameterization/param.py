@@ -250,7 +250,7 @@ class Param(OptimizationHandlable, ObservableArray):
     @property
     def _description_str(self):
         if self.size <= 1: 
-            return [str(numpy.take(self, 0))]
+            return [str(self.view(numpy.ndarray)[0])]
         else: return [str(self.shape)]
     def parameter_names(self, add_self=False, adjust_for_printing=False):
         if adjust_for_printing:

@@ -15,14 +15,16 @@ class Prod(Kern):
     :rtype: kernel object
 
     """
-    def __init__(self, k1, k2, tensor=False):
+    def __init__(self, k1, k2, tensor=False,name=None):
         if tensor:
-            super(Prod, self).__init__(k1.input_dim + k2.input_dim, k1.name + '_xx_' + k2.name)
+            name = k1.name + '_xx_' + k2.name if name is None else name
+            super(Prod, self).__init__(k1.input_dim + k2.input_dim, name)
             self.slice1 = slice(0,k1.input_dim)
             self.slice2 = slice(k1.input_dim,k1.input_dim+k2.input_dim)
         else:
             assert k1.input_dim == k2.input_dim, "Error: The input spaces of the kernels to multiply don't have the same dimension."
-            super(Prod, self).__init__(k1.input_dim, k1.name + '_x_' + k2.name)
+            name = k1.name + '_x_' + k2.name if name is None else name
+            super(Prod, self).__init__(k1.input_dim, name)
             self.slice1 = slice(0, self.input_dim)
             self.slice2 = slice(0, self.input_dim)
         self.k1 = k1

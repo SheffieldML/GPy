@@ -7,7 +7,7 @@ import cPickle
 import itertools
 from re import compile, _pattern_type
 from param import ParamConcatenation
-from parameter_core import Pickleable, Parameterizable, adjust_name_for_printing, Gradcheckable
+from parameter_core import Pickleable, Parameterizable, adjust_name_for_printing
 from transformations import __fixed__
 from lists_and_dicts import ArrayList
 
@@ -17,7 +17,7 @@ class ParametersChangedMeta(type):
         instance.parameters_changed()
         return instance
 
-class Parameterized(Parameterizable, Pickleable, Gradcheckable):
+class Parameterized(Parameterizable, Pickleable):
     """
     Parameterized class
 

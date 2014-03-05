@@ -195,7 +195,41 @@ class Parentable(object):
         Dont do anything if in leaf node
         """
         pass
-class Nameable(Parentable):
+
+class Gradcheckable(Parentable):
+    """
+    Adds the functionality for an object to be gradcheckable.
+    It is just a thin wrapper of a call to the highest parent for now.
+    TODO: Can be done better, by only changing parameters of the current parameter handle,
+    such that object hierarchy only has to change for those. 
+    """
+    def __init__(self, *a, **kw):
+        super(Gradcheckable, self).__init__(*a, **kw)
+    def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3):
+        """
+        Check the gradient of this parameter with respect to the highest parent's 
+        objective function.
+        This is a three point estimate of the gradient, wiggling at the parameters
+        with a stepsize step.
+        The check passes if either the ratio or the difference between numerical and 
+        analytical gradient is smaller then tolerance.
+        
+        :param bool verbose: whether each parameter shall be checked individually.
+        :param float step: the stepsize for the numerical three point gradient estimate.
+        :param flaot tolerance: the tolerance for the gradient ratio or difference.
+        """
+        if self.has_parent():
+            return self._highest_parent_._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance)
+        return self._checkgrad(self[''], verbose=verbose, step=step, tolerance=tolerance)
+    def _checkgrad(self, param):
+        """
+        Perform the checkgrad on the model.
+        TODO: this can be done more efficiently, when doing it inside here
+        """
+        raise NotImplementedError, "Need log likelihood to check gradient against"
+
+
+class Nameable(Gradcheckable):
     """
     Make an object nameable inside the hierarchy.
     """
@@ -232,40 +266,6 @@ class Nameable(Parentable):
         if self.has_parent():
             return self._parent_.hierarchy_name() + "." + adjust(self.name)
         return adjust(self.name)
-
-
-class Gradcheckable(Parentable):
-    """
-    Adds the functionality for an object to be gradcheckable.
-    It is just a thin wrapper of a call to the highest parent for now.
-    TODO: Can be done better, by only changing parameters of the current parameter handle,
-    such that object hierarchy only has to change for those. 
-    """
-    def __init__(self, *a, **kw):
-        super(Gradcheckable, self).__init__(*a, **kw)
-    def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3):
-        """
-        Check the gradient of this parameter with respect to the highest parent's 
-        objective function.
-        This is a three point estimate of the gradient, wiggling at the parameters
-        with a stepsize step.
-        The check passes if either the ratio or the difference between numerical and 
-        analytical gradient is smaller then tolerance.
-        
-        :param bool verbose: whether each parameter shall be checked individually.
-        :param float step: the stepsize for the numerical three point gradient estimate.
-        :param flaot tolerance: the tolerance for the gradient ratio or difference.
-        """
-        if self.has_parent():
-            return self._highest_parent_._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance)
-        return self._checkgrad(self[''], verbose=verbose, step=step, tolerance=tolerance)
-    def _checkgrad(self, param):
-        """
-        Perform the checkgrad on the model.
-        TODO: this can be done more efficiently, when doing it inside here
-        """
-        raise NotImplementedError, "Need log likelihood to check gradient against"
-
 
 class Indexable(object):
     """
@@ -551,8 +551,10 @@ class OptimizationHandlable(Constrainable, Observable):
         return p
 
     def _set_params_transformed(self, p):
-        if self._has_fixes(): self._param_array_[self._fixes_] = p.copy()
-        else: self._param_array_[:] = p.copy()
+        if p is self._param_array_:
+            p = p.copy()
+        if self._has_fixes(): self._param_array_[self._fixes_] = p
+        else: self._param_array_[:] = p
         self.untransform()
         self._trigger_params_changed()
         
@@ -611,6 +613,11 @@ class OptimizationHandlable(Constrainable, Observable):
         """
         Randomize the model.
         Make this draw from the prior if one exists, else draw from given random generator
+        
+        :param rand_gen: numpy random number generator which takes args and kwargs
+        :param flaot loc: loc parameter for random number generator
+        :param float scale: scale parameter for random number generator
+        :param args, kwargs: will be passed through to random number generator
         """
         # first take care of all parameters (from N(0,1))
         x = rand_gen(loc=loc, scale=scale, size=self._size_transformed(), *args, **kwargs)
@@ -623,6 +630,9 @@ class Parameterizable(OptimizationHandlable):
         super(Parameterizable, self).__init__(*args, **kwargs)
         from GPy.core.parameterization.lists_and_dicts import ArrayList
         _parameters_ = ArrayList()
+        self.size = 0
+        self._param_array_ = np.empty(self.size, dtype=np.float64)
+        self._gradient_array_ = np.empty(self.size, dtype=np.float64)
         self._added_names_ = set()
     
     def parameter_names(self, add_self=False, adjust_for_printing=False, recursive=True):

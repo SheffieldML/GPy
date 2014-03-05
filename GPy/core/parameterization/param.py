@@ -15,7 +15,7 @@ __precision__ = numpy.get_printoptions()['precision'] # numpy printing precision
 __print_threshold__ = 5
 ######
 
-class Param(OptimizationHandlable, ObservableArray, Gradcheckable):
+class Param(OptimizationHandlable, ObservableArray):
     """
     Parameter object for GPy models.
 

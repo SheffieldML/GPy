@@ -300,9 +300,9 @@ class Model(Parameterized):
             gradient = gradient[transformed_index]
             
             global_ratio = (f1 - f2) / (2 * np.dot(dx, np.where(gradient == 0, 1e-32, gradient)))
-            num_grad =(np.abs((f1-f2)/-(2*dx)*np.where(gradient == 0, 1e-32, gradient))).mean() 
+            gloabl_diff = (f1 - f2) - (2 * np.dot(dx, np.where(gradient == 0, 1e-32, gradient))) 
         
-            return (np.abs(1. - global_ratio) < tolerance) or (num_grad < tolerance) 
+            return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gloabl_diff) < tolerance) 
         else:
             # check the gradient of each parameter individually, and do some pretty printing
             try:

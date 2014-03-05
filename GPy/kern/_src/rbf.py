@@ -8,7 +8,7 @@ from ...util.misc import param_to_array
 from stationary import Stationary
 from GPy.util.caching import Cache_this
 from ...core.parameterization import variational
-from rbf_psi_comp import ssrbf_psi_comp
+from psi_comp import ssrbf_psi_comp
 
 class RBF(Stationary):
     """

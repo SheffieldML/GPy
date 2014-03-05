@@ -6,10 +6,12 @@ import numpy as np
 from scipy import weave
 from kern import Kern
 from ...util.linalg import tdot
-from ...util.misc import fast_array_equal, param_to_array
+from ...util.misc import param_to_array
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 from ...util.caching import Cache_this
+from ...core.parameterization import variational
+from psi_comp import linear_psi_comp
 
 class Linear(Kern):
     """
@@ -104,49 +106,109 @@ class Linear(Kern):
     #---------------------------------------#
 
     def psi0(self, Z, variational_posterior):
-        return np.sum(self.variances * self._mu2S(variational_posterior), 1)
+        if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
+            gamma = variational_posterior.binary_prob
+            mu = variational_posterior.mean
+            S = variational_posterior.variance
+            return np.einsum('q,nq,nq->n',self.variances,gamma,np.square(mu)+S)
+#            return (self.variances*gamma*(np.square(mu)+S)).sum(axis=1)
+        else:
+            return np.sum(self.variances * self._mu2S(variational_posterior), 1)
 
     def psi1(self, Z, variational_posterior):
-        return self.K(variational_posterior.mean, Z) #the variance, it does nothing
+        if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
+            gamma = variational_posterior.binary_prob
+            mu = variational_posterior.mean
+            return np.einsum('nq,q,mq,nq->nm',gamma,self.variances,Z,mu)
+#            return (self.variances*gamma*mu).sum(axis=1)       
+        else:
+            return self.K(variational_posterior.mean, Z) #the variance, it does nothing
 
     @Cache_this(limit=1)
     def psi2(self, Z, variational_posterior):
-        ZA = Z * self.variances
-        ZAinner = self._ZAinner(variational_posterior, Z)
-        return np.dot(ZAinner, ZA.T)
+        if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
+            gamma = variational_posterior.binary_prob
+            mu = variational_posterior.mean
+            S = variational_posterior.variance
+            mu2 = np.square(mu)
+            variances2 = np.square(self.variances)
+            tmp = np.einsum('nq,q,mq,nq->nm',gamma,self.variances,Z,mu)
+            return np.einsum('nq,q,mq,oq,nq->nmo',gamma,variances2,Z,Z,mu2+S)+\
+                np.einsum('nm,no->nmo',tmp,tmp) - np.einsum('nq,q,mq,oq,nq->nmo',np.square(gamma),variances2,Z,Z,mu2)
+        else:
+            ZA = Z * self.variances
+            ZAinner = self._ZAinner(variational_posterior, Z)
+            return np.dot(ZAinner, ZA.T)
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        #psi1
-        self.update_gradients_full(dL_dpsi1, variational_posterior.mean, Z)
-        # psi0:
-        tmp = dL_dpsi0[:, None] * self._mu2S(variational_posterior)
-        if self.ARD: self.variances.gradient += tmp.sum(0)
-        else: self.variances.gradient += tmp.sum()
-        #psi2
-        if self.ARD:
-            tmp = dL_dpsi2[:, :, :, None] * (self._ZAinner(variational_posterior, Z)[:, :, None, :] * Z[None, None, :, :])
-            self.variances.gradient += 2.*tmp.sum(0).sum(0).sum(0)
+        if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
+            gamma = variational_posterior.binary_prob
+            mu = variational_posterior.mean
+            S = variational_posterior.variance
+            mu2S = np.square(mu)+S
+            
+            _dpsi2_dvariance, _, _, _, _ = linear_psi_comp._psi2computations(self.variances, Z, mu, S, gamma)
+            grad = np.einsum('n,nq,nq->q',dL_dpsi0,gamma,mu2S) + np.einsum('nm,nq,mq,nq->q',dL_dpsi1,gamma,Z,mu) +\
+                 np.einsum('nmo,nmoq->q',dL_dpsi2,_dpsi2_dvariance)
+            self.variances.gradient = grad
         else:
-            self.variances.gradient += 2.*np.sum(dL_dpsi2 * self.psi2(Z, variational_posterior))/self.variances
+            #psi1
+            self.update_gradients_full(dL_dpsi1, variational_posterior.mean, Z)
+            # psi0:
+            tmp = dL_dpsi0[:, None] * self._mu2S(variational_posterior)
+            if self.ARD: self.variances.gradient += tmp.sum(0)
+            else: self.variances.gradient += tmp.sum()
+            #psi2
+            if self.ARD:
+                tmp = dL_dpsi2[:, :, :, None] * (self._ZAinner(variational_posterior, Z)[:, :, None, :] * Z[None, None, :, :])
+                self.variances.gradient += 2.*tmp.sum(0).sum(0).sum(0)
+            else:
+                self.variances.gradient += 2.*np.sum(dL_dpsi2 * self.psi2(Z, variational_posterior))/self.variances
 
     def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        #psi1
-        grad = self.gradients_X(dL_dpsi1.T, Z, variational_posterior.mean)
-        #psi2
-        self._weave_dpsi2_dZ(dL_dpsi2, Z, variational_posterior, grad)
-        return grad
+        if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
+            gamma = variational_posterior.binary_prob
+            mu = variational_posterior.mean
+            S = variational_posterior.variance
+            _, _, _, _, _dpsi2_dZ = linear_psi_comp._psi2computations(self.variances, Z, mu, S, gamma)
+            
+            grad =  np.einsum('nm,nq,q,nq->mq',dL_dpsi1,gamma, self.variances,mu) +\
+                 np.einsum('nmo,noq->mq',dL_dpsi2,_dpsi2_dZ)
+            
+            return grad
+        else:
+            #psi1
+            grad = self.gradients_X(dL_dpsi1.T, Z, variational_posterior.mean)
+            #psi2
+            self._weave_dpsi2_dZ(dL_dpsi2, Z, variational_posterior, grad)
+            return grad
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        grad_mu, grad_S = np.zeros(variational_posterior.mean.shape), np.zeros(variational_posterior.mean.shape)
-        # psi0
-        grad_mu += dL_dpsi0[:, None] * (2.0 * variational_posterior.mean * self.variances)
-        grad_S += dL_dpsi0[:, None] * self.variances
-        # psi1
-        grad_mu += (dL_dpsi1[:, :, None] * (Z * self.variances)).sum(1)
-        # psi2
-        self._weave_dpsi2_dmuS(dL_dpsi2, Z, variational_posterior, grad_mu, grad_S)
-
-        return grad_mu, grad_S
+        if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
+            gamma = variational_posterior.binary_prob
+            mu = variational_posterior.mean
+            S = variational_posterior.variance
+            mu2S = np.square(mu)+S            
+            _, _dpsi2_dgamma, _dpsi2_dmu, _dpsi2_dS, _ = linear_psi_comp._psi2computations(self.variances, Z, mu, S, gamma)
+            
+            grad_gamma = np.einsum('n,q,nq->nq',dL_dpsi0,self.variances,mu2S) + np.einsum('nm,q,mq,nq->nq',dL_dpsi1,self.variances,Z,mu) +\
+                 np.einsum('nmo,nmoq->nq',dL_dpsi2,_dpsi2_dgamma)
+            grad_mu = np.einsum('n,nq,q,nq->nq',dL_dpsi0,gamma,2.*self.variances,mu) + np.einsum('nm,nq,q,mq->nq',dL_dpsi1,gamma,self.variances,Z) +\
+                 np.einsum('nmo,nmoq->nq',dL_dpsi2,_dpsi2_dmu)
+            grad_S = np.einsum('n,nq,q->nq',dL_dpsi0,gamma,self.variances) + np.einsum('nmo,nmoq->nq',dL_dpsi2,_dpsi2_dS)
+            
+            return grad_mu, grad_S, grad_gamma
+        else:
+            grad_mu, grad_S = np.zeros(variational_posterior.mean.shape), np.zeros(variational_posterior.mean.shape)
+            # psi0
+            grad_mu += dL_dpsi0[:, None] * (2.0 * variational_posterior.mean * self.variances)
+            grad_S += dL_dpsi0[:, None] * self.variances
+            # psi1
+            grad_mu += (dL_dpsi1[:, :, None] * (Z * self.variances)).sum(1)
+            # psi2
+            self._weave_dpsi2_dmuS(dL_dpsi2, Z, variational_posterior, grad_mu, grad_S)
+    
+            return grad_mu, grad_S
 
     #--------------------------------------------------#
     #            Helpers for psi statistics            #

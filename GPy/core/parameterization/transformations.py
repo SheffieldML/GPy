@@ -10,7 +10,7 @@ import sys
 #_lim_val = -np.log(sys.float_info.epsilon)
 
 _exp_lim_val = np.finfo(np.float64).max
-_lim_val = np.log(_exp_lim_val)#
+_lim_val = np.log(_exp_lim_val)
 
 #===============================================================================
 # Fixing constants
@@ -57,7 +57,7 @@ class Logexp(Transformation):
         return np.where(x>_lim_val, x, np.log(1. + np.exp(np.clip(x, -_lim_val, _lim_val))))
         #raises overflow warning: return np.where(x>_lim_val, x, np.log(1. + np.exp(x)))
     def finv(self, f):
-        return np.where(f>_lim_val, f, np.log(np.exp(f) - 1.))
+        return np.where(f>_lim_val, f, np.log(np.exp(f+1e-20) - 1.))
     def gradfactor(self, f):
         return np.where(f>_lim_val, 1., 1 - np.exp(-f))
     def initialize(self, f):

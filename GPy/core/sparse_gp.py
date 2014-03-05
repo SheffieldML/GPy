@@ -48,7 +48,6 @@ class SparseGP(GP):
         GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name)
 
         self.add_parameter(self.Z, index=0)
-        self.parameters_changed()
 
     def has_uncertain_inputs(self):
         return isinstance(self.X, VariationalPosterior)
@@ -60,11 +59,9 @@ class SparseGP(GP):
             #gradients wrt kernel
             dL_dKmm = self.grad_dict.pop('dL_dKmm')
             self.kern.update_gradients_full(dL_dKmm, self.Z, None)
-            target = np.zeros(self.kern.size)
-            self.kern._collect_gradient(target)
+            target = self.kern.gradient.copy()
             self.kern.update_gradients_expectations(variational_posterior=self.X, Z=self.Z, **self.grad_dict)
-            self.kern._collect_gradient(target)
-            self.kern._set_gradient(target)
+            self.kern.gradient += target
 
             #gradients wrt Z
             self.Z.gradient = self.kern.gradients_X(dL_dKmm, self.Z)
@@ -72,14 +69,12 @@ class SparseGP(GP):
                                self.grad_dict['dL_dpsi1'], self.grad_dict['dL_dpsi2'], Z=self.Z, variational_posterior=self.X)
         else:
             #gradients wrt kernel
-            target = np.zeros(self.kern.size)
             self.kern.update_gradients_diag(self.grad_dict['dL_dKdiag'], self.X)
-            self.kern._collect_gradient(target)
+            target = self.kern.gradient.copy()
             self.kern.update_gradients_full(self.grad_dict['dL_dKnm'], self.X, self.Z)
-            self.kern._collect_gradient(target)
+            target += self.kern.gradient
             self.kern.update_gradients_full(self.grad_dict['dL_dKmm'], self.Z, None)
-            self.kern._collect_gradient(target)
-            self.kern._set_gradient(target)
+            self.kern.gradient += target
 
             #gradients wrt Z
             self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)

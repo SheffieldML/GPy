@@ -10,7 +10,7 @@ from param import Param
 from transformations import Logexp, Logistic
 
 class VariationalPrior(Parameterized):
-    def __init__(self, name=None, **kw):
+    def __init__(self, name='latent space', **kw):
         super(VariationalPrior, self).__init__(name=name, **kw)
         
     def KL_divergence(self, variational_posterior):

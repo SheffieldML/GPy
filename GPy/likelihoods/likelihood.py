@@ -358,7 +358,7 @@ class Likelihood(Parameterized):
 
         return dlogpdf_dtheta, dlogpdf_df_dtheta, d2logpdf_df2_dtheta
 
-    def predictive_values(self, mu, var, full_cov=False, sampling=False, num_samples=10000):
+    def predictive_values(self, mu, var, full_cov=False, sampling=True, num_samples=10000):
         """
         Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction.
 

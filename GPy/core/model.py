@@ -299,8 +299,9 @@ class Model(Parameterized):
             dx = dx[transformed_index]
             gradient = gradient[transformed_index]
             
-            global_ratio = (f1 - f2) / (2 * np.dot(dx, np.where(gradient == 0, 1e-32, gradient)))
-            gloabl_diff = (f1 - f2) - (2 * np.dot(dx, np.where(gradient == 0, 1e-32, gradient))) 
+            denominator = (2 * np.dot(dx, gradient))
+            global_ratio = (f1 - f2) / np.where(denominator==0., 1e-32, denominator)
+            gloabl_diff = (f1 - f2) - denominator
         
             return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gloabl_diff) < tolerance) 
         else:
@@ -348,7 +349,8 @@ class Model(Parameterized):
                 xx[xind] -= 2.*step
                 f2 = self.objective_function(xx)
                 numerical_gradient = (f1 - f2) / (2 * step)
-                ratio = (f1 - f2) / (2 * step * gradient[xind])
+                if np.all(gradient[xind]==0): ratio = (f1-f2) == gradient[xind] 
+                else: ratio = (f1 - f2) / (2 * step * gradient[xind])
                 difference = np.abs((f1 - f2) / 2 / step - gradient[xind])
 
                 if (np.abs(1. - ratio) < tolerance) or np.abs(difference) < tolerance:

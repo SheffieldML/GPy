@@ -1,11 +1,10 @@
 # Check Matthew Rocklin's blog post.
-try: 
+try:
     import sympy as sp
     sympy_available=True
     from sympy.utilities.lambdify import lambdify
 except ImportError:
     sympy_available=False
-    exit()
 
 import numpy as np
 from kern import Kern
@@ -36,7 +35,7 @@ class Sympykern(Kern):
         super(Sympykern, self).__init__(input_dim, name)
 
         self._sp_k = k
-        
+
         # pull the variable names out of the symbolic covariance function.
         sp_vars = [e for e in k.atoms() if e.is_Symbol]
         self._sp_x= sorted([e for e in sp_vars if e.name[0:2]=='x_'],key=lambda x:int(x.name[2:]))
@@ -51,7 +50,7 @@ class Sympykern(Kern):
         self._sp_kdiag = k
         for x, z in zip(self._sp_x, self._sp_z):
             self._sp_kdiag = self._sp_kdiag.subs(z, x)
-            
+
         # If it is a multi-output covariance, add an input for indexing the outputs.
         self._real_input_dim = x_dim
         # Check input dim is number of xs + 1 if output_dim is >1
@@ -73,7 +72,7 @@ class Sympykern(Kern):
 
             # Extract names of shared parameters (those without a subscript)
             self._sp_theta = [theta for theta in thetas if theta not in self._sp_theta_i and theta not in self._sp_theta_j]
-            
+
             self.num_split_params = len(self._sp_theta_i)
             self._split_theta_names = ["%s"%theta.name[:-2] for theta in self._sp_theta_i]
             # Add split parameters to the model.
@@ -82,11 +81,11 @@ class Sympykern(Kern):
                 setattr(self, theta, Param(theta, np.ones(self.output_dim), None))
                 self.add_parameter(getattr(self, theta))
 
-            
+
             self.num_shared_params = len(self._sp_theta)
             for theta_i, theta_j in zip(self._sp_theta_i, self._sp_theta_j):
                 self._sp_kdiag = self._sp_kdiag.subs(theta_j, theta_i)
-            
+
         else:
             self.num_split_params = 0
             self._split_theta_names = []
@@ -107,10 +106,10 @@ class Sympykern(Kern):
         derivative_arguments = self._sp_x + self._sp_theta
         if self.output_dim > 1:
             derivative_arguments += self._sp_theta_i
-        
+
         self.derivatives = {theta.name : sp.diff(self._sp_k,theta).simplify() for theta in derivative_arguments}
         self.diag_derivatives = {theta.name : sp.diff(self._sp_kdiag,theta).simplify() for theta in derivative_arguments}
-        
+
         # This gives the parameters for the arg list.
         self.arg_list = self._sp_x + self._sp_z + self._sp_theta
         self.diag_arg_list = self._sp_x + self._sp_theta
@@ -137,7 +136,7 @@ class Sympykern(Kern):
         for key in self.derivatives.keys():
             setattr(self, '_Kdiag_diff_' + key, lambdify(self.diag_arg_list, self.diag_derivatives[key], 'numpy'))
 
-    def K(self,X,X2=None):        
+    def K(self,X,X2=None):
         self._K_computations(X, X2)
         return self._K_function(**self._arguments)
 
@@ -145,11 +144,11 @@ class Sympykern(Kern):
     def Kdiag(self,X):
         self._K_computations(X)
         return self._Kdiag_function(**self._diag_arguments)
-    
+
     def _param_grad_helper(self,partial,X,Z,target):
         pass
 
-               
+
     def gradients_X(self, dL_dK, X, X2=None):
         #if self._X is None or X.base is not self._X.base or X2 is not None:
         self._K_computations(X, X2)
@@ -168,7 +167,7 @@ class Sympykern(Kern):
             gf = getattr(self, '_Kdiag_diff_' + x.name)
             dX[:, i] = gf(**self._diag_arguments)*dL_dK
         return dX
-    
+
     def update_gradients_full(self, dL_dK, X, X2=None):
         # Need to extract parameters to local variables first
         self._K_computations(X, X2)
@@ -193,7 +192,7 @@ class Sympykern(Kern):
                     gradient += np.asarray([A[np.where(self._output_ind2==i)].T.sum()
                                  for i in np.arange(self.output_dim)])
                 setattr(parameter, 'gradient', gradient)
-                
+
 
     def update_gradients_diag(self, dL_dKdiag, X):
         self._K_computations(X)
@@ -209,7 +208,7 @@ class Sympykern(Kern):
                 setattr(parameter, 'gradient',
                         np.asarray([a[np.where(self._output_ind==i)].sum()
                          for i in np.arange(self.output_dim)]))
-    
+
     def _K_computations(self, X, X2=None):
         """Set up argument lists for the derivatives."""
         # Could check if this needs doing or not, there could

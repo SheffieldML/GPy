@@ -117,4 +117,4 @@ class SpikeAndSlabPosterior(VariationalPosterior):
         import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ...plotting.matplot_dep import variational_plots
-        return variational_plots.plot(self,*args)
+        return variational_plots.plot_SpikeSlab(self,*args)

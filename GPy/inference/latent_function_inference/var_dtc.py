@@ -79,7 +79,7 @@ class VarDTC(object):
         # kernel computations, using BGPLVM notation
         Kmm = kern.K(Z)
 
-        Lm = jitchol(Kmm)
+        Lm = jitchol(Kmm+np.eye(Z.shape[0])*self.const_jitter)
 
         # The rather complex computations of A
         if uncertain_inputs:

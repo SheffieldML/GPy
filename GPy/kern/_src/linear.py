@@ -110,6 +110,7 @@ class Linear(Kern):
             gamma = variational_posterior.binary_prob
             mu = variational_posterior.mean
             S = variational_posterior.variance
+
             return np.einsum('q,nq,nq->n',self.variances,gamma,np.square(mu)+S)
 #            return (self.variances*gamma*(np.square(mu)+S)).sum(axis=1)
         else:
@@ -150,7 +151,10 @@ class Linear(Kern):
             _dpsi2_dvariance, _, _, _, _ = linear_psi_comp._psi2computations(self.variances, Z, mu, S, gamma)
             grad = np.einsum('n,nq,nq->q',dL_dpsi0,gamma,mu2S) + np.einsum('nm,nq,mq,nq->q',dL_dpsi1,gamma,Z,mu) +\
                  np.einsum('nmo,nmoq->q',dL_dpsi2,_dpsi2_dvariance)
-            self.variances.gradient = grad
+            if self.ARD:
+                self.variances.gradient = grad
+            else:
+                self.variances.gradient = grad.sum()
         else:
             #psi1
             self.update_gradients_full(dL_dpsi1, variational_posterior.mean, Z)

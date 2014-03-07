@@ -9,8 +9,8 @@ import numpy as np
 from GPy import testing
 import sys
 import numpy
-from GPy.kern.parts.rbf import RBF
-from GPy.kern.parts.linear import Linear
+from GPy.kern import RBF
+from GPy.kern import Linear
 from copy import deepcopy
 
 __test__ = lambda: 'deep' in sys.argv
@@ -36,7 +36,7 @@ class Test(unittest.TestCase):
         indices = numpy.cumsum(i_s_dim_list).tolist()
         input_slices = [slice(a,b) for a,b in zip([None]+indices, indices)]
         #input_slices[2] = deepcopy(input_slices[1])
-        input_slice_kern = GPy.kern.kern(9, 
+        input_slice_kern = GPy.kern.kern(9,
                                          [
                                           RBF(i_s_dim_list[0], np.random.rand(), np.random.rand(i_s_dim_list[0]), ARD=True),
                                           RBF(i_s_dim_list[1], np.random.rand(), np.random.rand(i_s_dim_list[1]), ARD=True),
@@ -51,8 +51,8 @@ class Test(unittest.TestCase):
 #                        GPy.kern.bias(self.input_dim) +
 #                        GPy.kern.white(self.input_dim)),
                     (#GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
-                     GPy.kern.linear(self.input_dim, np.random.rand(self.input_dim), ARD=True)
-                     +GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
+                     GPy.kern.Linear(self.input_dim, np.random.rand(self.input_dim), ARD=True)
+                     +GPy.kern.RBF(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
 #                      +GPy.kern.bias(self.input_dim)
 #                      +GPy.kern.white(self.input_dim)),
                     ),

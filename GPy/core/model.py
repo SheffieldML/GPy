@@ -15,6 +15,7 @@ import itertools
 class Model(Parameterized):
     _fail_count = 0  # Count of failed optimization steps (see objective)
     _allowed_failures = 10  # number of allowed failures
+        
     def __init__(self, name):
         super(Model, self).__init__(name)  # Parameterized.__init__(self)
         self.optimization_runs = []
@@ -25,14 +26,8 @@ class Model(Parameterized):
         raise NotImplementedError, "this needs to be implemented to use the model class"
 
     def _log_likelihood_gradients(self):
-        g = np.zeros(self.size)
-        try:
-            [p._collect_gradient(g[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_) if not p.is_fixed]
-        except ValueError:
-            raise ValueError, 'Gradient for {} not defined, please specify gradients for parameters to optimize'.format(p.name)
-        return g
-        raise NotImplementedError, "this needs to be implemented to use the model class"
-
+        return self.gradient
+        
     def _getstate(self):
         """
         Get the current state of the class.
@@ -147,6 +142,12 @@ class Model(Parameterized):
         """
         raise DeprecationWarning, 'parameters now have default constraints'
 
+    def input_sensitivity(self):
+        """
+        Returns the sensitivity for each dimension of this kernel.
+        """
+        return self.kern.input_sensitivity()
+
     def objective_function(self, x):
         """
         The objective function passed to the optimizer. It combines
@@ -202,8 +203,8 @@ class Model(Parameterized):
         try:
             self._set_params_transformed(x)
             obj_f = -float(self.log_likelihood()) - self.log_prior()
-            self._fail_count = 0
             obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
+            self._fail_count = 0
         except (LinAlgError, ZeroDivisionError, ValueError) as e:
             if self._fail_count >= self._allowed_failures:
                 raise e
@@ -269,9 +270,8 @@ class Model(Parameterized):
            The gradient is considered correct if the ratio of the analytical
            and numerical gradients is within <tolerance> of unity.
         """
-
-        x = self._get_params_transformed()
-
+        x = self._get_params_transformed().copy()
+        
         if not verbose:
             # make sure only to test the selected parameters
             if target_param is None:
@@ -298,9 +298,12 @@ class Model(Parameterized):
 
             dx = dx[transformed_index]
             gradient = gradient[transformed_index]
-
-            global_ratio = (f1 - f2) / (2 * np.dot(dx, np.where(gradient == 0, 1e-32, gradient)))
-            return (np.abs(1. - global_ratio) < tolerance)
+            
+            denominator = (2 * np.dot(dx, gradient))
+            global_ratio = (f1 - f2) / np.where(denominator==0., 1e-32, denominator)
+            gloabl_diff = (f1 - f2) - denominator
+        
+            return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gloabl_diff) < tolerance) 
         else:
             # check the gradient of each parameter individually, and do some pretty printing
             try:
@@ -346,7 +349,8 @@ class Model(Parameterized):
                 xx[xind] -= 2.*step
                 f2 = self.objective_function(xx)
                 numerical_gradient = (f1 - f2) / (2 * step)
-                ratio = (f1 - f2) / (2 * step * gradient[xind])
+                if np.all(gradient[xind]==0): ratio = (f1-f2) == gradient[xind] 
+                else: ratio = (f1 - f2) / (2 * step * gradient[xind])
                 difference = np.abs((f1 - f2) / 2 / step - gradient[xind])
 
                 if (np.abs(1. - ratio) < tolerance) or np.abs(difference) < tolerance:
@@ -362,6 +366,7 @@ class Model(Parameterized):
                 ng = '%.6f' % float(numerical_gradient)
                 grad_string = "{0:<{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name, r, d, g, ng, c0=cols[0] + 9, c1=cols[1], c2=cols[2], c3=cols[3], c4=cols[4])
                 print grad_string
+                
             self._set_params_transformed(x)
             return ret
 

@@ -8,14 +8,17 @@ from GPy.core.parameterization.parameterized import Parameterized
 from GPy.core.parameterization.param import Param
 import numpy
 
+# One trigger in init 
+_trigger_start = -1
 
 class ParamTestParent(Parameterized):
-    parent_changed_count = 0
+    parent_changed_count = _trigger_start
     def parameters_changed(self):
         self.parent_changed_count += 1
 
 class ParameterizedTest(Parameterized):
-    params_changed_count = 0
+    # One trigger after initialization
+    params_changed_count = _trigger_start
     def parameters_changed(self):
         self.params_changed_count += 1
     def _set_params(self, params, trigger_parent=True):
@@ -92,29 +95,31 @@ class Test(unittest.TestCase):
 
     def test_set_params(self):
         self.assertEqual(self.par.params_changed_count, 0, 'no params changed yet')
-        self.par._set_params(numpy.ones(self.par.size))
+        self.par._param_array_[:] = 1
+        self.par._trigger_params_changed()
         self.assertEqual(self.par.params_changed_count, 1, 'now params changed')
         self.assertEqual(self.parent.parent_changed_count, self.par.params_changed_count)
         
-        self.parent._set_params(numpy.ones(self.parent.size) * 2)
+        self.par._param_array_[:] = 2
+        self.par._trigger_params_changed()
         self.assertEqual(self.par.params_changed_count, 2, 'now params changed')
         self.assertEqual(self.parent.parent_changed_count, self.par.params_changed_count)
 
 
     def test_priority_notify(self):
         self.assertEqual(self.par.params_changed_count, 0)
-        self.par._notify_observers(0, None)
+        self.par.notify_observers(0, None)
         self.assertEqual(self.par.params_changed_count, 1)
         self.assertEqual(self.parent.parent_changed_count, self.par.params_changed_count)
 
-        self.par._notify_observers(0, -numpy.inf)
+        self.par.notify_observers(0, -numpy.inf)
         self.assertEqual(self.par.params_changed_count, 2)
         self.assertEqual(self.parent.parent_changed_count, 1)
 
     def test_priority(self):
         self.par.add_observer(self, self._trigger, -1)
         self.par.add_observer(self, self._trigger_priority, 0)
-        self.par._notify_observers(0)
+        self.par.notify_observers(0)
         self.assertEqual(self._first, self._trigger_priority, 'priority should be first')
         self.assertEqual(self._second, self._trigger, 'priority should be first')
 
@@ -123,7 +128,7 @@ class Test(unittest.TestCase):
         
         self.par.add_observer(self, self._trigger, 1)
         self.par.add_observer(self, self._trigger_priority, 0)
-        self.par._notify_observers(0)
+        self.par.notify_observers(0)
         self.assertEqual(self._first, self._trigger, 'priority should be second')
         self.assertEqual(self._second, self._trigger_priority, 'priority should be second')
         

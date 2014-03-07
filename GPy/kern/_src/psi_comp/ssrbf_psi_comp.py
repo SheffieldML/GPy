@@ -6,22 +6,15 @@ The package for the psi statistics computation
 """
 
 import numpy as np
+from GPy.util.caching import Cache_this
 
+@Cache_this(limit=1)
 def _Z_distances(Z):
     Zhat = 0.5 * (Z[:, None, :] + Z[None, :, :]) # M,M,Q
     Zdist = 0.5 * (Z[:, None, :] - Z[None, :, :]) # M,M,Q
     return Zhat, Zdist
 
-# def _psi1computations(self, Z, vp):
-#     mu, S = vp.mean, vp.variance
-#     l2 = lengthscale **2
-#     denom = S[:, None, :] / l2 + 1. # N,1,Q
-#     dist = Z[None, :, :] - mu[:, None, :] # N,M,Q
-#     dist_sq = np.square(dist) / l2 / denom # N,M,Q
-#     exponent = -0.5 * np.sum(dist_sq + np.log(denom), -1)#N,M
-#     psi1 = self.variance * np.exp(exponent) # N,M
-#     return denom, dist, dist_sq, psi1
-
+@Cache_this(limit=1)
 def _psi1computations(variance, lengthscale, Z, mu, S, gamma):
     """
     Z - MxQ
@@ -49,7 +42,8 @@ def _psi1computations(variance, lengthscale, Z, mu, S, gamma):
     _psi1_common = gamma[:,None,:] / (lengthscale2*_psi1_denom*_psi1_denom_sqrt) #Nx1xQ
     _psi1_exponent1 = np.log(gamma[:,None,:]) -0.5 * (_psi1_dist_sq + np.log(_psi1_denom)) # NxMxQ
     _psi1_exponent2 = np.log(1.-gamma[:,None,:]) -0.5 * (np.square(Z[None,:,:])/lengthscale2) # NxMxQ
-    _psi1_exponent = np.log(np.exp(_psi1_exponent1) + np.exp(_psi1_exponent2)) #NxMxQ
+    _psi1_exponent_max = np.maximum(_psi1_exponent1,_psi1_exponent2)
+    _psi1_exponent = _psi1_exponent_max+np.log(np.exp(_psi1_exponent1-_psi1_exponent_max) + np.exp(_psi1_exponent2-_psi1_exponent_max)) #NxMxQ
     _psi1_exp_sum = _psi1_exponent.sum(axis=-1) #NxM
     _psi1_exp_dist_sq = np.exp(-0.5*_psi1_dist_sq) # NxMxQ
     _psi1_exp_Z = np.exp(-0.5*np.square(Z[None,:,:])/lengthscale2) # 1xMxQ
@@ -64,6 +58,7 @@ def _psi1computations(variance, lengthscale, Z, mu, S, gamma):
 
     return _psi1, _dpsi1_dvariance, _dpsi1_dgamma, _dpsi1_dmu, _dpsi1_dS, _dpsi1_dZ, _dpsi1_dlengthscale
 
+@Cache_this(limit=1)
 def _psi2computations(variance, lengthscale, Z, mu, S, gamma):
     """
     Z - MxQ
@@ -95,7 +90,8 @@ def _psi2computations(variance, lengthscale, Z, mu, S, gamma):
     _psi2_common = gamma[:,None,None,:]/(lengthscale2 * _psi2_denom * _psi2_denom_sqrt) # Nx1x1xQ
     _psi2_exponent1 = -_psi2_Zdist_sq -_psi2_mudist_sq -0.5*np.log(_psi2_denom)+np.log(gamma[:,None,None,:]) #N,M,M,Q
     _psi2_exponent2 = np.log(1.-gamma[:,None,None,:]) - 0.5*(_psi2_Z_sq_sum) # NxMxMxQ
-    _psi2_exponent = np.log(np.exp(_psi2_exponent1) + np.exp(_psi2_exponent2))
+    _psi2_exponent_max = np.maximum(_psi2_exponent1, _psi2_exponent2)
+    _psi2_exponent = _psi2_exponent_max+np.log(np.exp(_psi2_exponent1-_psi2_exponent_max) + np.exp(_psi2_exponent2-_psi2_exponent_max))
     _psi2_exp_sum = _psi2_exponent.sum(axis=-1) #NxM
     _psi2_q = np.square(variance) * np.exp(_psi2_exp_sum[:,:,:,None]-_psi2_exponent) # NxMxMxQ 
     _psi2_exp_dist_sq = np.exp(-_psi2_Zdist_sq -_psi2_mudist_sq) # NxMxMxQ

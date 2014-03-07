@@ -62,6 +62,7 @@ class ParameterIndexOperations(object):
     def clear(self):
         self._properties.clear()
     
+    @property
     def size(self):
         return reduce(lambda a,b: a+b.size, self.iterindices(), 0)    
     
@@ -165,7 +166,7 @@ class ParameterIndexOperationsView(object):
         for i, ind in self.items():
             self._param_index_ops.remove(i, ind+self._offset)
 
-
+    @property
     def size(self):
         return reduce(lambda a,b: a+b.size, self.iterindices(), 0)
 

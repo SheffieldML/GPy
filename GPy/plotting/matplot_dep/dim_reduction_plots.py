@@ -20,7 +20,7 @@ def most_significant_input_dimensions(model, which_indices):
             input_1, input_2 = 0, 1
         else:
             try:
-                input_1, input_2 = np.argsort(model.kern.input_sensitivity())[::-1][:2]
+                input_1, input_2 = np.argsort(model.input_sensitivity())[::-1][:2]
             except:
                 raise ValueError, "cannot automatically determine which dimensions to plot, please pass 'which_indices'"
     else:

@@ -34,7 +34,6 @@ class Periodic(Kern):
         self.lengthscale = Param('lengthscale', np.float64(lengthscale), Logexp())
         self.period = Param('period', np.float64(period), Logexp())
         self.add_parameters(self.variance, self.lengthscale, self.period)
-        self.parameters_changed()
 
     def _cos(self, alpha, omega, phase):
         def f(x):

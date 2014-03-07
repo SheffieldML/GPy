@@ -89,7 +89,7 @@ class Kern(Parameterized):
         """
         Returns the sensitivity for each dimension of this kernel.
         """
-        return np.zeros(self.input_dim)
+        return self.kern.input_sensitivity()
 
     def __add__(self, other):
         """ Overloading of the '+' operator. for more control, see self.add """
@@ -129,7 +129,7 @@ class Kern(Parameterized):
         """
         return self.prod(other, tensor=True)
 
-    def prod(self, other, tensor=False):
+    def prod(self, other, tensor=False, name=None):
         """
         Multiply two kernels (either on the same space, or on the tensor
         product of the input space).
@@ -142,4 +142,4 @@ class Kern(Parameterized):
         """
         assert isinstance(other, Kern), "only kernels can be added to kernels..."
         from prod import Prod
-        return Prod(self, other, tensor)
+        return Prod(self, other, tensor, name)

@@ -284,7 +284,7 @@ def toy_poisson_rbf_1d_laplace(optimize=True, plot=True):
 
     kern = GPy.kern.RBF(1)
     poisson_lik = GPy.likelihoods.Poisson()
-    laplace_inf = GPy.inference.latent_function_inference.LaplaceInference()
+    laplace_inf = GPy.inference.latent_function_inference.Laplace()
 
     # create simple GP Model
     m = GPy.core.GP(X, Y, kernel=kern, likelihood=poisson_lik, inference_method=laplace_inf)

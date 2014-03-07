@@ -1,12 +1,10 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import sys
 import numpy as np
 import itertools
-from linear import Linear
 from ...core.parameterization import Parameterized
-from ...core.parameterization.param import Param
+from ...util.caching import Cache_this
 from kern import Kern
 
 class Add(Kern):
@@ -14,19 +12,24 @@ class Add(Kern):
         assert all([isinstance(k, Kern) for k in subkerns])
         if tensor:
             input_dim  = sum([k.input_dim for k in subkerns])
-            self.input_slices = []
+            self.self.active_dims = []
             n = 0
             for k in subkerns:
-                self.input_slices.append(slice(n, n+k.input_dim))
+                self.self.active_dims.append(slice(n, n+k.input_dim))
                 n += k.input_dim
         else:
-            assert all([k.input_dim == subkerns[0].input_dim for k in subkerns])
-            input_dim = subkerns[0].input_dim
-            self.input_slices = [slice(None) for k in subkerns]
+            #assert all([k.input_dim == subkerns[0].input_dim for k in subkerns])
+            #input_dim = subkerns[0].input_dim
+            #self.input_slices = [slice(None) for k in subkerns]
+            input_dim = reduce(np.union1d, map(lambda x: np.r_[x.active_dims], subkerns))
         super(Add, self).__init__(input_dim, 'add')
         self.add_parameters(*subkerns)
-
-
+    
+    @property
+    def parts(self):
+        return self._parameters_
+    
+    @Cache_this(limit=1, force_kwargs=('which_parts',))
     def K(self, X, X2=None):
         """
         Compute the kernel function.
@@ -37,13 +40,19 @@ class Add(Kern):
                    handLes this as X2 == X.
         """
         assert X.shape[1] == self.input_dim
-        if X2 is None:
-            return sum([p.K(X[:, i_s], None) for p, i_s in zip(self._parameters_, self.input_slices)])
-        else:
-            return sum([p.K(X[:, i_s], X2[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)])
+        which_parts=None
+        if which_parts is None:
+            which_parts = self.parts
+        elif not isinstance(which_parts, (list, tuple)):
+            # if only one part is given
+            which_parts = [which_parts]
+        return sum([p.K(X, X2) for p in which_parts])
 
-    def update_gradients_full(self, dL_dK, X):
-        [p.update_gradients_full(dL_dK, X[:,i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
+    def update_gradients_full(self, dL_dK, X, X2=None):
+        [p.update_gradients_full(dL_dK, X, X2) for p in self.parts]
+
+    def update_gradients_diag(self, dL_dK, X):
+        [p.update_gradients_diag(dL_dK, X) for p in self.parts]
 
     def gradients_X(self, dL_dK, X, X2=None):
         """Compute the gradient of the objective function with respect to X.
@@ -55,16 +64,17 @@ class Add(Kern):
         :param X2: Observed data inputs (optional, defaults to X)
         :type X2: np.ndarray (num_inducing x input_dim)"""
 
-        target = np.zeros_like(X)
-        if X2 is None:
-            [np.add(target[:,i_s], p.gradients_X(dL_dK, X[:, i_s], None), target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
-        else:
-            [np.add(target[:,i_s], p.gradients_X(dL_dK, X[:, i_s], X2[:,i_s]), target[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
+        target = np.zeros(X.shape)
+        for p in self.parts:
+            target[:, p.active_dims] += p.gradients_X(dL_dK, X, X2)
         return target
 
     def Kdiag(self, X):
+        which_parts=None
         assert X.shape[1] == self.input_dim
-        return sum([p.Kdiag(X[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)])
+        if which_parts is None:
+            which_parts = self.parts
+        return sum([p.Kdiag(X) for p in which_parts])
 
 
     def psi0(self, Z, variational_posterior):

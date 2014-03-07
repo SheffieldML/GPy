@@ -15,7 +15,6 @@ Observable Pattern for patameterization
 
 from transformations import Transformation, Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
-import itertools
 
 __updated__ = '2013-12-16'
 
@@ -43,6 +42,7 @@ class Observable(object):
     _updated = True
     def __init__(self, *args, **kwargs):
         self._observer_callables_ = []
+    
     def __del__(self, *args, **kwargs):
         del self._observer_callables_
         
@@ -551,8 +551,8 @@ class OptimizationHandlable(Constrainable, Observable):
         return p
 
     def _set_params_transformed(self, p):
-        if p is self._param_array_:
-            p = p.copy()
+        #if p is self._param_array_:
+        p = p.copy()
         if self._has_fixes(): self._param_array_[self._fixes_] = p
         else: self._param_array_[:] = p
         self.untransform()

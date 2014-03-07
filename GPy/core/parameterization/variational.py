@@ -66,10 +66,10 @@ class VariationalPosterior(Parameterized):
     def __init__(self, means=None, variances=None, name=None, **kw):
         super(VariationalPosterior, self).__init__(name=name, **kw)
         self.mean = Param("mean", means)
-        self.ndim = self.mean.ndim
-        self.shape = self.mean.shape
         self.variance = Param("variance", variances, Logexp())
         self.add_parameters(self.mean, self.variance)
+        self.ndim = self.mean.ndim
+        self.shape = self.mean.shape
         self.num_data, self.input_dim = self.mean.shape
         if self.has_uncertain_inputs():
             assert self.variance.shape == self.mean.shape, "need one variance per sample and dimenion"
@@ -77,6 +77,18 @@ class VariationalPosterior(Parameterized):
     def has_uncertain_inputs(self):
         return not self.variance is None
 
+    def __getitem__(self, s):
+        import copy
+        n = self.__new__(self.__class__)
+        dc = copy.copy(self.__dict__)
+        dc['mean'] = dc['mean'][s]
+        dc['variance'] = dc['variance'][s]
+        dc['shape'] = dc['mean'].shape
+        dc['ndim'] = dc['ndim']
+        dc['num_data'], dc['input_dim'] = self.mean.shape[0], self.mean.shape[1] if dc['ndim'] > 1 else 1
+        n.__dict__ = dc
+        return n
+    
 
 class NormalPosterior(VariationalPosterior):
     '''

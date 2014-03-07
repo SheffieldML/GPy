@@ -16,7 +16,7 @@ class ObservableArray(np.ndarray, Observable):
     __array_priority__ = -1 # Never give back ObservableArray
     def __new__(cls, input_array):
         if not isinstance(input_array, ObservableArray):
-            obj = np.atleast_1d(input_array).view(cls)
+            obj = np.atleast_1d(np.require(input_array, dtype=np.float64, requirements=['W', 'C'])).view(cls)
         else: obj = input_array
         cls.__name__ = "ObservableArray\n     "
         return obj

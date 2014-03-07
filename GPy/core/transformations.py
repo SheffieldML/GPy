@@ -29,7 +29,7 @@ class transformation(object):
 class logexp(transformation):
     domain = POSITIVE
     def f(self, x):
-        return np.where(x>lim_val, x, np.log(1. + np.exp(x)))
+        return np.where(x<-lim_val, np.log(1+np.exp(-lim_val)), np.where(x>lim_val, x, np.log(1. + np.exp(x))))
     def finv(self, f):
         return np.where(f>lim_val, f, np.log(np.exp(f) - 1.))
     def gradfactor(self, f):

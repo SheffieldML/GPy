@@ -274,7 +274,27 @@ def della_gatta_TRP63_gene_expression(data_set='della_gatta', gene_number=None):
             Y = Y[:, None]
     return data_details_return({'X': X, 'Y': Y, 'gene_number' : gene_number}, data_set)
 
+def google_trends(query_terms=['big data', 'machine learning', 'data science'], data_set='google_trends'):
+    # Inspired by this notebook:
+    # http://nbviewer.ipython.org/github/sahuguet/notebooks/blob/master/GoogleTrends%20meet%20Notebook.ipynb
+    # quote the query terms.
+    for i, element in enumerate(query_terms):
+        query_terms[i] = urllib2.quote(element)
+    query = 'http://www.google.com/trends/fetchComponent?q=%s&cid=TIMESERIES_GRAPH_0&export=3' % ",".join(query_terms)
 
+    data = urllib2.urlopen(query).read()
+
+    # We need to do some data cleaning: remove Javascript header+footer, and translate new Date(....,..,..) into YYYY-MM-DD.
+    header = """// Data table response\ngoogle.visualization.Query.setResponse("""
+    data = data[len(header):-2]
+    data = re.sub('new Date\((\d+),(\d+),(\d+)\)', (lambda m: '"%s-%02d-%02d"' % (m.group(1).strip(), 1+int(m.group(2)), int(m.group(3)))), data)
+    timeseries = json.loads(data)
+    import pandas as pd
+    columns = [k['label'] for k in timeseries['table']['cols']]
+    rows = map(lambda x: [k['v'] for k in x['c']], timeseries['table']['rows'])
+    df = pd.DataFrame(rows, columns=columns)
+    df.set_index('Date', inplace=True)
+    df.plot(figsize=(16, 8))
 
 # The data sets
 def oil(data_set='three_phase_oil_flow'):

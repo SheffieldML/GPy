@@ -51,16 +51,16 @@ class Laplace(object):
             Ki_f_init = self._previous_Ki_fhat
 
         f_hat, Ki_fhat = self.rasm_mode(K, Y, likelihood, Ki_f_init, Y_metadata=Y_metadata)
-
         self.f_hat = f_hat
+
         #Compute hessian and other variables at mode
-        log_marginal, woodbury_vector, woodbury_inv, dL_dK, dL_dthetaL = self.mode_computations(f_hat, Ki_fhat, K, Y, likelihood, kern, Y_metadata)
+        log_marginal, woodbury_inv, dL_dK, dL_dthetaL = self.mode_computations(f_hat, Ki_fhat, K, Y, likelihood, kern, Y_metadata)
 
         kern.update_gradients_full(dL_dK, X)
         likelihood.update_gradients(dL_dthetaL)
 
         self._previous_Ki_fhat = Ki_fhat.copy()
-        return Posterior(woodbury_vector=woodbury_vector, woodbury_inv=woodbury_inv, K=K), log_marginal, {'dL_dK':dL_dK}
+        return Posterior(woodbury_vector=Ki_fhat, woodbury_inv=woodbury_inv, K=K), log_marginal, {'dL_dK':dL_dK}
 
     def rasm_mode(self, K, Y, likelihood, Ki_f_init, Y_metadata=None):
         """
@@ -137,7 +137,6 @@ class Laplace(object):
         At the mode, compute the hessian and effective covariance matrix.
 
         returns: logZ : approximation to the marginal likelihood
-                 woodbury_vector : variable required for calculating the approximation to the covariance matrix
                  woodbury_inv : variable required for calculating the approximation to the covariance matrix
                  dL_dthetaL : array of derivatives (1 x num_kernel_params)
                  dL_dthetaL : array of derivatives (1 x num_likelihood_params)
@@ -156,7 +155,6 @@ class Laplace(object):
 
         #Compute vival matrices for derivatives
         dW_df = -likelihood.d3logpdf_df3(f_hat, Y, Y_metadata=Y_metadata) # -d3lik_d3fhat
-        woodbury_vector = likelihood.dlogpdf_df(f_hat, Y, Y_metadata=Y_metadata)
         dL_dfhat = -0.5*(np.diag(Ki_W_i)[:, None]*dW_df) #why isn't this -0.5? s2 in R&W p126 line 9.
         #BiK, _ = dpotrs(L, K, lower=1)
         #dL_dfhat = 0.5*np.diag(BiK)[:, None]*dW_df
@@ -170,7 +168,7 @@ class Laplace(object):
             explicit_part = 0.5*(np.dot(Ki_f, Ki_f.T) - K_Wi_i)
 
             #Implicit
-            implicit_part = np.dot(woodbury_vector, dL_dfhat.T).dot(I_KW_i)
+            implicit_part = np.dot(Ki_f, dL_dfhat.T).dot(I_KW_i)
 
             dL_dK = explicit_part + implicit_part
         else:
@@ -201,7 +199,7 @@ class Laplace(object):
         else:
             dL_dthetaL = np.zeros(likelihood.size)
 
-        return log_marginal, woodbury_vector, K_Wi_i, dL_dK, dL_dthetaL
+        return log_marginal, K_Wi_i, dL_dK, dL_dthetaL
 
     def _compute_B_statistics(self, K, W, log_concave):
         """

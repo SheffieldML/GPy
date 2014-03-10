@@ -120,7 +120,7 @@ class Likelihood(Parameterized):
 
         return z, mean, variance
 
-    def _predictive_mean(self,mu,variance):
+    def _predictive_mean(self, mu, variance):
         """
         Quadrature calculation of the predictive mean: E(Y_star|Y) = E( E(Y_star|f_star, Y) )
 
@@ -134,6 +134,10 @@ class Likelihood(Parameterized):
         mean = np.array(scaled_mean)[:,None] / np.sqrt(2*np.pi*(variance))
 
         return mean
+
+    def _conditional_mean(self, f):
+        """Quadrature calculation of the conditional mean: E(Y_star|f)"""
+        raise NotImplementedError, "implement this function to make predictions"
 
     def _predictive_variance(self,mu,variance,predictive_mean=None):
         """
@@ -358,50 +362,16 @@ class Likelihood(Parameterized):
 
         return dlogpdf_dtheta, dlogpdf_df_dtheta, d2logpdf_df2_dtheta
 
-    def predictive_values(self, mu, var, full_cov=False, sampling=False, num_samples=10000):
+    def predictive_values(self, mu, var):
         """
-        Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction.
+        Compute  mean, variance of the  predictive distibution.
 
         :param mu: mean of the latent variable, f, of posterior
         :param var: variance of the latent variable, f, of posterior
-        :param full_cov: whether to use the full covariance or just the diagonal
-        :type full_cov: Boolean
-        :param num_samples: number of samples to use in computing quantiles and
-                            possibly mean variance
-        :type num_samples: integer
-        :param sampling: Whether to use samples for mean and variances anyway
-        :type sampling: Boolean
-
         """
-
-        if sampling:
-            #Get gp_samples f* using posterior mean and variance
-            if not full_cov:
-                gp_samples = np.random.multivariate_normal(mu.flatten(), np.diag(var.flatten()),
-                                                            size=num_samples).T
-            else:
-                gp_samples = np.random.multivariate_normal(mu.flatten(), var,
-                                                               size=num_samples).T
-            #Push gp samples (f*) through likelihood to give p(y*|f*)
-            samples = self.samples(gp_samples)
-            axis=-1
-
-            #Calculate mean, variance and precentiles from samples
-            print "WARNING: Using sampling to calculate mean, variance and predictive quantiles."
-            pred_mean = np.mean(samples, axis=axis)[:,None]
-            pred_var = np.var(samples, axis=axis)[:,None]
-            q1 = np.percentile(samples, 2.5, axis=axis)[:,None]
-            q3 = np.percentile(samples, 97.5, axis=axis)[:,None]
-
-        else:
-
-            pred_mean = self.predictive_mean(mu, var)
-            pred_var = self.predictive_variance(mu, var, pred_mean)
-            print "WARNING: Predictive quantiles are only computed when sampling."
-            q1 = np.repeat(np.nan,pred_mean.size)[:,None]
-            q3 = q1.copy()
-
-        return pred_mean, pred_var, q1, q3
+        pred_mean = self.predictive_mean(mu, var)
+        pred_var = self.predictive_variance(mu, var, pred_mean)
+        return pred_mean, pred_var
 
     def samples(self, gp):
         """

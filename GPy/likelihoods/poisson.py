@@ -25,8 +25,11 @@ class Poisson(Likelihood):
 
         super(Poisson, self).__init__(gp_link, name='Poisson')
 
-    def _preprocess_values(self,Y):
-        return Y
+    def _conditional_mean(self, f):
+        """
+        the expected value of y given a value of f
+        """
+        return self.gp_link.transf(gp)
 
     def pdf_link(self, link_f, y, Y_metadata=None):
         """

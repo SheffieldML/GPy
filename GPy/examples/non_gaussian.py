@@ -60,10 +60,9 @@ def student_t_approx(optimize=True, plot=True):
     m3['.*white'].constrain_fixed(1e-5)
     m3.randomize()
     debug = True
-    print m3
-    if debug:
-        m3.optimize(messages=1)
-        return m3
+
+    #TODO: remove
+    return m3
 
     #Student t GP model on corrupt data
     t_distribution = GPy.likelihoods.StudentT(deg_free=deg_free, sigma2=edited_real_sd)

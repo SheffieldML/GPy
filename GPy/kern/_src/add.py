@@ -24,6 +24,9 @@ class Add(Kern):
         super(Add, self).__init__(input_dim, 'add')
         self.add_parameters(*subkerns)
 
+    @property
+    def parts(self):
+        return self._parameters_
 
     def K(self, X, X2=None):
         """
@@ -107,8 +110,6 @@ class Add(Kern):
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         from static import White, Bias
-        mu, S = variational_posterior.mean, variational_posterior.variance
-        
         for p1, is1 in zip(self._parameters_, self.input_slices):
 
             #compute the effective dL_dpsi1. Extra terms appear becaue of the cross terms in psi2!
@@ -129,7 +130,6 @@ class Add(Kern):
 
     def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         from static import White, Bias
-        
         target = np.zeros(Z.shape)
         for p1, is1 in zip(self._parameters_, self.input_slices):
 
@@ -151,7 +151,6 @@ class Add(Kern):
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         from static import White, Bias
-        
         target_mu = np.zeros(variational_posterior.shape)
         target_S = np.zeros(variational_posterior.shape)
         for p1, is1 in zip(self._parameters_, self.input_slices):

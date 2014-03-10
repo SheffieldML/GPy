@@ -89,7 +89,7 @@ class Kern(Parameterized):
         """
         Returns the sensitivity for each dimension of this kernel.
         """
-        return self.kern.input_sensitivity()
+        return np.zeros(self.input_dim)
 
     def __add__(self, other):
         """ Overloading of the '+' operator. for more control, see self.add """

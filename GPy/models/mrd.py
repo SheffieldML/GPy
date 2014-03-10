@@ -5,15 +5,15 @@ import numpy as np
 import itertools
 import pylab
 
-from ..core import Model, SparseGP
+from ..core import Model
 from ..util.linalg import PCA
 from ..kern import Kern
-from bayesian_gplvm import BayesianGPLVM
 from ..core.parameterization.variational import NormalPosterior, NormalPrior
-from ..inference.latent_function_inference.var_dtc import VarDTCMissingData
-from ..likelihoods.gaussian import Gaussian
+from ..core.parameterization import Param, Parameterized
+from ..inference.latent_function_inference.var_dtc import VarDTCMissingData, VarDTC
+from ..likelihoods import Gaussian
 
-class MRD2(Model):
+class MRD(Model):
     """
     Apply MRD to all given datasets Y in Ylist. 
     
@@ -43,61 +43,110 @@ class MRD2(Model):
     :param :class:`~GPy.inference.latent_function_inference inference_method: the inference method to use
     :param :class:`~GPy.likelihoods.likelihood.Likelihood` likelihood: the likelihood to use
     :param str name: the name of this model
+    :param [str] Ynames: the names for the datasets given, must be of equal length as Ylist or None
     """
     
     def __init__(self, Ylist, input_dim, X=None, X_variance=None, 
                  initx = 'PCA', initz = 'permute',
                  num_inducing=10, Z=None, kernel=None, 
-                 inference_method=None, likelihood=None, name='mrd'):
-        super(MRD2, self).__init__(name)
+                 inference_method=None, likelihood=None, name='mrd', Ynames=None):
+        super(MRD, self).__init__(name)
         
         # sort out the kernels
         if kernel is None:
             from ..kern import RBF
-            self.kern = [RBF(input_dim, ARD=1, name='Y_{}'.format(i)) for i in range(len(Ylist))]
+            self.kern = [RBF(input_dim, ARD=1, name='rbf'.format(i)) for i in range(len(Ylist))]
         elif isinstance(kernel, Kern):
-            self.kern = [kernel.copy(name='Y_{}'.format(i)) for i in range(len(Ylist))]
+            self.kern = [kernel.copy(name='{}'.format(kernel.name, i)) for i in range(len(Ylist))]
         else:
             assert len(kernel) == len(Ylist), "need one kernel per output"
             assert all([isinstance(k, Kern) for k in kernel]), "invalid kernel object detected!"
-
+            self.kern = kernel
         self.input_dim = input_dim
         self.num_inducing = num_inducing
-
+        
+        self.Ylist = Ylist
         self._in_init_ = True
         X = self._init_X(initx, Ylist)
-        self.Z = self._init_Z(initz, X)
+        self.Z = Param('inducing inputs', self._init_Z(initz, X))
         self.num_inducing = self.Z.shape[0] # ensure M==N if M>N
         
         if X_variance is None:
-            X_variance = np.random.uniform(0,.2,X.shape)
+            X_variance = np.random.uniform(0, .2, X.shape)
         
         self.variational_prior = NormalPrior()
         self.X = NormalPosterior(X, X_variance)
         
         if likelihood is None:
-            likelihood = Gaussian()
+            self.likelihood = [Gaussian(name='Gaussian_noise'.format(i)) for i in range(len(Ylist))]
+        else: self.likelihood = likelihood
         
         if inference_method is None:
-            if any(np.any(np.isnan(y)) for y in Ylist):
-                self.inference_method = VarDTCMissingData(limit=len(Ylist))
+            self.inference_method= []
+            for y in Ylist:
+                if np.any(np.isnan(y)):
+                    self.inference_method.append(VarDTCMissingData(limit=1))
+                else:
+                    self.inference_method.append(VarDTC(limit=1))
+        else:
+            self.inference_method = inference_method
+            self.inference_method.set_limit(len(Ylist))
                 
-        self.Ylist = Ylist
-
+        self.add_parameters(self.X, self.Z)
+        
+        if Ynames is None:
+            Ynames = ['Y{}'.format(i) for i in range(len(Ylist))]
+        
+        for i, n, k, l in itertools.izip(itertools.count(), Ynames, self.kern, self.likelihood):
+            p = Parameterized(name=n)
+            p.add_parameter(k)
+            p.add_parameter(l)
+            setattr(self, 'Y{}'.format(i), p)
+            self.add_parameter(p)
+        self._in_init_ = False
+            
     def parameters_changed(self):
-        for y in self.Ylist:
-            pass
+        self._log_marginal_likelihood = 0
+        self.posteriors = []
+        self.Z.gradient = 0.
+        self.X.mean.gradient = 0.
+        self.X.variance.gradient = 0.
+        
+        for y, k, l, i in itertools.izip(self.Ylist, self.kern, self.likelihood, self.inference_method):
+            posterior, lml, grad_dict = i.inference(k, self.X, self.Z, l, y)
+            
+            self.posteriors.append(posterior)
+            self._log_marginal_likelihood += lml
+            
+            # likelihood gradients
+            l.update_gradients(grad_dict.pop('partial_for_likelihood'))
+            
+            #gradients wrt kernel
+            dL_dKmm = grad_dict.pop('dL_dKmm')
+            k.update_gradients_full(dL_dKmm, self.Z, None)
+            target = k.gradient.copy()
+            k.update_gradients_expectations(variational_posterior=self.X, Z=self.Z, **grad_dict)
+            k.gradient += target
 
-    def _init_X(self, init='PCA', likelihood_list=None):
-        if likelihood_list is None:
-            likelihood_list = self.likelihood_list
-        Ylist = []
-        for likelihood_or_Y in likelihood_list:
-            if type(likelihood_or_Y) is np.ndarray:
-                Ylist.append(likelihood_or_Y)
-            else:
-                Ylist.append(likelihood_or_Y.Y)
-        del likelihood_list
+            #gradients wrt Z
+            self.Z.gradient += k.gradients_X(dL_dKmm, self.Z)
+            self.Z.gradient += k.gradients_Z_expectations(
+                               grad_dict['dL_dpsi1'], grad_dict['dL_dpsi2'], Z=self.Z, variational_posterior=self.X)
+            
+            dL_dmean, dL_dS = k.gradients_qX_expectations(variational_posterior=self.X, Z=self.Z, **grad_dict)
+            self.X.mean.gradient += dL_dmean
+            self.X.variance.gradient += dL_dS
+
+        # update for the KL divergence
+        self.variational_prior.update_gradients_KL(self.X)
+        self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
+
+    def log_likelihood(self):
+        return self._log_marginal_likelihood
+
+    def _init_X(self, init='PCA', Ylist=None):
+        if Ylist is None:
+            Ylist = self.Ylist
         if init in "PCA_concat":
             X = PCA(np.hstack(Ylist), self.input_dim)[0]
         elif init in "PCA_single":
@@ -106,7 +155,6 @@ class MRD2(Model):
                 X[:, qs] = PCA(Y, len(qs))[0]
         else: # init == 'random':
             X = np.random.randn(Ylist[0].shape[0], self.input_dim)
-        self.X = X
         return X
 
     def _init_Z(self, init="permute", X=None):
@@ -116,258 +164,7 @@ class MRD2(Model):
             Z = np.random.permutation(X.copy())[:self.num_inducing]
         elif init in "random":
             Z = np.random.randn(self.num_inducing, self.input_dim) * X.var()
-        self.Z = Z
         return Z
-
-class MRD(Model):
-    """
-    Do MRD on given Datasets in Ylist.
-    All Ys in likelihood_list are in [N x Dn], where Dn can be different per Yn,
-    N must be shared across datasets though.
-
-    :param likelihood_list: list of observed datasets (:py:class:`~GPy.likelihoods.gaussian.Gaussian` if not supplied directly)
-    :type likelihood_list: [:py:class:`~GPy.likelihoods.likelihood.likelihood` | :py:class:`ndarray`]
-    :param names: names for different gplvm models
-    :type names: [str]
-    :param input_dim: latent dimensionality
-    :type input_dim: int
-    :param initx: initialisation method for the latent space :
-
-        * 'concat' - PCA on concatenation of all datasets
-        * 'single' - Concatenation of PCA on datasets, respectively
-        * 'random' - Random draw from a normal
-
-    :type initx: ['concat'|'single'|'random']
-    :param initz: initialisation method for inducing inputs
-    :type initz: 'permute'|'random'
-    :param X: Initial latent space
-    :param X_variance: Initial latent space variance
-    :param Z: initial inducing inputs
-    :param num_inducing: number of inducing inputs to use
-    :param kernels: list of kernels or kernel shared for all BGPLVMS
-    :type kernels: [GPy.kern.kern] | GPy.kern.kern | None (default)
-
-    """
-    def __init__(self, likelihood_or_Y_list, input_dim, num_inducing=10, names=None,
-                 kernels=None, initx='PCA',
-                 initz='permute', _debug=False, **kw):
-        if names is None:
-            self.names = ["{}".format(i) for i in range(len(likelihood_or_Y_list))]
-
-        # sort out the kernels
-        if kernels is None:
-            kernels = [None] * len(likelihood_or_Y_list)
-        elif isinstance(kernels, Kern):
-            kernels = [kernels.copy() for i in range(len(likelihood_or_Y_list))]
-        else:
-            assert len(kernels) == len(likelihood_or_Y_list), "need one kernel per output"
-            assert all([isinstance(k, Kern) for k in kernels]), "invalid kernel object detected!"
-        assert not ('kernel' in kw), "pass kernels through `kernels` argument"
-
-        self.input_dim = input_dim
-        self._debug = _debug
-        self.num_inducing = num_inducing
-
-        self._in_init_ = True
-        X = self._init_X(initx, likelihood_or_Y_list)
-        Z = self._init_Z(initz, X)
-        self.num_inducing = Z.shape[0] # ensure M==N if M>N
-
-        self.bgplvms = [BayesianGPLVM(l, input_dim=input_dim, kernel=k, X=X, Z=Z, num_inducing=self.num_inducing, **kw) for l, k in zip(likelihood_or_Y_list, kernels)]
-        del self._in_init_
-
-        self.gref = self.bgplvms[0]
-        nparams = np.array([0] + [SparseGP._get_params(g).size - g.Z.size for g in self.bgplvms])
-        self.nparams = nparams.cumsum()
-
-        self.num_data = self.gref.num_data
-
-        self.NQ = self.num_data * self.input_dim
-        self.MQ = self.num_inducing * self.input_dim
-
-        Model.__init__(self)
-        self.ensure_default_constraints()
-
-    def _getstate(self):
-        return Model._getstate(self) + [self.names,
-                self.bgplvms,
-                self.gref,
-                self.nparams,
-                self.input_dim,
-                self.num_inducing,
-                self.num_data,
-                self.NQ,
-                self.MQ]
-
-    def _setstate(self, state):
-        self.MQ = state.pop()
-        self.NQ = state.pop()
-        self.num_data = state.pop()
-        self.num_inducing = state.pop()
-        self.input_dim = state.pop()
-        self.nparams = state.pop()
-        self.gref = state.pop()
-        self.bgplvms = state.pop()
-        self.names = state.pop()
-        Model._setstate(self, state)
-
-    @property
-    def X(self):
-        return self.gref.X
-    @X.setter
-    def X(self, X):
-        try:
-            self.propagate_param(X=X)
-        except AttributeError:
-            if not self._in_init_:
-                raise AttributeError("bgplvm list not initialized")
-    @property
-    def Z(self):
-        return self.gref.Z
-    @Z.setter
-    def Z(self, Z):
-        try:
-            self.propagate_param(Z=Z)
-        except AttributeError:
-            if not self._in_init_:
-                raise AttributeError("bgplvm list not initialized")
-    @property
-    def X_variance(self):
-        return self.gref.X_variance
-    @X_variance.setter
-    def X_variance(self, X_var):
-        try:
-            self.propagate_param(X_variance=X_var)
-        except AttributeError:
-            if not self._in_init_:
-                raise AttributeError("bgplvm list not initialized")
-    @property
-    def likelihood_list(self):
-        return [g.likelihood.Y for g in self.bgplvms]
-    @likelihood_list.setter
-    def likelihood_list(self, likelihood_list):
-        for g, Y in itertools.izip(self.bgplvms, likelihood_list):
-            g.likelihood.Y = Y
-
-    @property
-    def auto_scale_factor(self):
-        """
-        set auto_scale_factor for all gplvms
-        :param b: auto_scale_factor
-        :type b:
-        """
-        return self.gref.auto_scale_factor
-    @auto_scale_factor.setter
-    def auto_scale_factor(self, b):
-        self.propagate_param(auto_scale_factor=b)
-
-    def propagate_param(self, **kwargs):
-        for key, val in kwargs.iteritems():
-            for g in self.bgplvms:
-                g.__setattr__(key, val)
-
-    def randomize(self, initx='concat', initz='permute', *args, **kw):
-        super(MRD, self).randomize(*args, **kw)
-        self._init_X(initx, self.likelihood_list)
-        self._init_Z(initz, self.X)
-
-    #def _get_latent_param_names(self):
-    def _get_param_names(self):
-        n1 = self.gref._get_param_names()
-        n1var = n1[:self.NQ * 2 + self.MQ]
-    #    return n1var
-    #
-    #def _get_kernel_names(self):
-        map_names = lambda ns, name: map(lambda x: "{1}_{0}".format(*x),
-                                         itertools.izip(ns,
-                                                        itertools.repeat(name)))
-        return list(itertools.chain(n1var, *(map_names(\
-                SparseGP._get_param_names(g)[self.MQ:], n) \
-                for g, n in zip(self.bgplvms, self.names))))
-    #    kernel_names = (map_names(SparseGP._get_param_names(g)[self.MQ:], n) for g, n in zip(self.bgplvms, self.names))
-    #    return kernel_names
-
-    #def _get_param_names(self):
-        # X_names = sum([['X_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
-        # S_names = sum([['X_variance_%i_%i' % (n, q) for q in range(self.input_dim)] for n in range(self.num_data)], [])
-    #    n1var = self._get_latent_param_names()
-    #    kernel_names = self._get_kernel_names()
-    #    return list(itertools.chain(n1var, *kernel_names))
-
-    #def _get_print_names(self):
-    #    return list(itertools.chain(*self._get_kernel_names()))
-
-    def _get_params(self):
-        """
-        return parameter list containing private and shared parameters as follows:
-
-        =================================================================
-        | mu | S | Z || theta1 | theta2 | .. | thetaN |
-        =================================================================
-        """
-        X = self.gref.X.ravel()
-        X_var = self.gref.X_variance.ravel()
-        Z = self.gref.Z.ravel()
-        thetas = [SparseGP._get_params(g)[g.Z.size:] for g in self.bgplvms]
-        params = np.hstack([X, X_var, Z, np.hstack(thetas)])
-        return params
-
-#     def _set_var_params(self, g, X, X_var, Z):
-#         g.X = X.reshape(self.num_data, self.input_dim)
-#         g.X_variance = X_var.reshape(self.num_data, self.input_dim)
-#         g.Z = Z.reshape(self.num_inducing, self.input_dim)
-#
-#     def _set_kern_params(self, g, p):
-#         g.kern._set_params(p[:g.kern.num_params])
-#         g.likelihood._set_params(p[g.kern.num_params:])
-
-    def _set_params(self, x):
-        start = 0; end = self.NQ
-        X = x[start:end]
-        start = end; end += start
-        X_var = x[start:end]
-        start = end; end += self.MQ
-        Z = x[start:end]
-        thetas = x[end:]
-
-        # set params for all:
-        for g, s, e in itertools.izip(self.bgplvms, self.nparams, self.nparams[1:]):
-            g._set_params(np.hstack([X, X_var, Z, thetas[s:e]]))
-#             self._set_var_params(g, X, X_var, Z)
-#             self._set_kern_params(g, thetas[s:e].copy())
-#             g._compute_kernel_matrices()
-#             if self.auto_scale_factor:
-#                 g.scale_factor = np.sqrt(g.psi2.sum(0).mean() * g.likelihood.precision)
-# #                 self.scale_factor = np.sqrt(self.psi2.sum(0).mean() * self.likelihood.precision)
-#             g._computations()
-
-
-    def update_likelihood_approximation(self): # TODO: object oriented vs script base
-        for bgplvm in self.bgplvms:
-            bgplvm.update_likelihood_approximation()
-
-    def log_likelihood(self):
-        ll = -self.gref.KL_divergence()
-        for g in self.bgplvms:
-            ll += SparseGP.log_likelihood(g)
-        return ll
-
-    def _log_likelihood_gradients(self):
-        dLdmu, dLdS = reduce(lambda a, b: [a[0] + b[0], a[1] + b[1]], (g.dL_dmuS() for g in self.bgplvms))
-        dKLmu, dKLdS = self.gref.dKL_dmuS()
-        dLdmu -= dKLmu
-        dLdS -= dKLdS
-        dLdmuS = np.hstack((dLdmu.flatten(), dLdS.flatten())).flatten()
-        dldzt1 = reduce(lambda a, b: a + b, (SparseGP._log_likelihood_gradients(g)[:self.MQ] for g in self.bgplvms))
-
-        return np.hstack((dLdmuS,
-                             dldzt1,
-                np.hstack([np.hstack([g.dL_dtheta(),
-                                            g.likelihood._gradients(\
-                                                partial=g.partial_for_likelihood)]) \
-                              for g in self.bgplvms])))
-
-
 
     def _handle_plotting(self, fignum, axes, plotf, sharex=False, sharey=False):
         if axes is None:

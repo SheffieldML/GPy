@@ -55,7 +55,7 @@ class White(Static):
     def psi2(self, Z, variational_posterior):
         return np.zeros((variational_posterior.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)
 
-    def update_gradients_full(self, dL_dK, X):
+    def update_gradients_full(self, dL_dK, X, X2=None):
         self.variance.gradient = np.trace(dL_dK)
 
     def update_gradients_diag(self, dL_dKdiag, X):
@@ -79,10 +79,10 @@ class Bias(Static):
         self.variance.gradient = dL_dK.sum()
 
     def update_gradients_diag(self, dL_dKdiag, X):
-        self.variance.gradient = dL_dK.sum()
+        self.variance.gradient = dL_dKdiag.sum()
 
     def psi2(self, Z, variational_posterior):
-        ret = np.empty((mu.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)
+        ret = np.empty((variational_posterior.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)
         ret[:] = self.variance**2
         return ret
 

@@ -12,24 +12,19 @@ class Add(Kern):
         assert all([isinstance(k, Kern) for k in subkerns])
         if tensor:
             input_dim  = sum([k.input_dim for k in subkerns])
-            self.self.active_dims = []
+            self.input_slices = []
             n = 0
             for k in subkerns:
-                self.self.active_dims.append(slice(n, n+k.input_dim))
+                self.input_slices.append(slice(n, n+k.input_dim))
                 n += k.input_dim
         else:
-            #assert all([k.input_dim == subkerns[0].input_dim for k in subkerns])
-            #input_dim = subkerns[0].input_dim
-            #self.input_slices = [slice(None) for k in subkerns]
-            input_dim = reduce(np.union1d, map(lambda x: np.r_[x.active_dims], subkerns))
+            assert all([k.input_dim == subkerns[0].input_dim for k in subkerns])
+            input_dim = subkerns[0].input_dim
+            self.input_slices = [slice(None) for k in subkerns]
         super(Add, self).__init__(input_dim, 'add')
         self.add_parameters(*subkerns)
-    
-    @property
-    def parts(self):
-        return self._parameters_
-    
-    @Cache_this(limit=1, force_kwargs=('which_parts',))
+
+
     def K(self, X, X2=None):
         """
         Compute the kernel function.
@@ -78,19 +73,18 @@ class Add(Kern):
 
 
     def psi0(self, Z, variational_posterior):
-        return np.sum([p.psi0(Z[:, i_s], mu[:, i_s], S[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)],0)
+        return np.sum([p.psi0(Z[:, i_s], variational_posterior[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)],0)
 
     def psi1(self, Z, variational_posterior):
-        return np.sum([p.psi1(Z[:, i_s], mu[:, i_s], S[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)], 0)
+        return np.sum([p.psi1(Z[:, i_s], variational_posterior[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)], 0)
 
     def psi2(self, Z, variational_posterior):
-        psi2 = np.sum([p.psi2(Z[:, i_s], mu[:, i_s], S[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)], 0)
+        psi2 = np.sum([p.psi2(Z[:, i_s], variational_posterior[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)], 0)
 
         # compute the "cross" terms
-        from white import White
+        from static import White, Bias
         from rbf import RBF
         #from rbf_inv import RBFInv
-        from bias import Bias
         from linear import Linear
         #ffrom fixed import Fixed
 
@@ -101,24 +95,20 @@ class Add(Kern):
             # rbf X bias
             #elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, (RBF, RBFInv)):
             elif isinstance(p1,  Bias) and isinstance(p2, (RBF, Linear)):
-                tmp = p2.psi1(Z[:,i2], mu[:,i2], S[:,i2])
+                tmp = p2.psi1(Z[:,i2], variational_posterior[:, i_s])
                 psi2 += p1.variance * (tmp[:, :, None] + tmp[:, None, :])
             #elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, (RBF, RBFInv)):
             elif isinstance(p2, Bias) and isinstance(p1, (RBF, Linear)):
-                tmp = p1.psi1(Z[:,i1], mu[:,i1], S[:,i1])
+                tmp = p1.psi1(Z[:,i1], variational_posterior[:, i_s])
                 psi2 += p2.variance * (tmp[:, :, None] + tmp[:, None, :])
             else:
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
         return psi2
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        from white import White
-        from rbf import RBF
-        #from rbf_inv import RBFInv
-        #from bias import Bias
-        from linear import Linear
-        #ffrom fixed import Fixed
-
+        from static import White, Bias
+        mu, S = variational_posterior.mean, variational_posterior.variance
+        
         for p1, is1 in zip(self._parameters_, self.input_slices):
 
             #compute the effective dL_dpsi1. Extra terms appear becaue of the cross terms in psi2!
@@ -131,20 +121,15 @@ class Add(Kern):
                 elif isinstance(p2, Bias):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
                 else:
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z[:,is2], mu[:,is2], S[:,is2]) * 2.
+                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z[:,is2], variational_posterior[:, is1]) * 2.
 
 
-            p1.update_gradients_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], S[:,is1], Z[:,is1])
+            p1.update_gradients_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z[:,is1], variational_posterior[:, is1])
 
 
     def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        from white import White
-        from rbf import RBF
-        #from rbf_inv import rbfinv
-        from bias import Bias
-        from linear import Linear
-        #ffrom fixed import fixed
-
+        from static import White, Bias
+        
         target = np.zeros(Z.shape)
         for p1, is1 in zip(self._parameters_, self.input_slices):
 
@@ -158,22 +143,17 @@ class Add(Kern):
                 elif isinstance(p2, Bias):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
                 else:
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z[:,is2], mu[:,is2], S[:,is2]) * 2.
+                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z[:,is2], variational_posterior[:, is2]) * 2.
 
 
-            target += p1.gradients_z_variational(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], S[:,is1], Z[:,is1])
+            target += p1.gradients_Z_expectations(eff_dL_dpsi1, dL_dpsi2, Z[:,is1], variational_posterior[:, is1])
         return target
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        from white import white
-        from rbf import rbf
-        #from rbf_inv import rbfinv
-        #from bias import bias
-        from linear import linear
-        #ffrom fixed import fixed
-
-        target_mu = np.zeros(mu.shape)
-        target_S = np.zeros(S.shape)
+        from static import White, Bias
+        
+        target_mu = np.zeros(variational_posterior.shape)
+        target_S = np.zeros(variational_posterior.shape)
         for p1, is1 in zip(self._parameters_, self.input_slices):
 
             #compute the effective dL_dpsi1. extra terms appear becaue of the cross terms in psi2!
@@ -181,15 +161,15 @@ class Add(Kern):
             for p2, is2 in zip(self._parameters_, self.input_slices):
                 if p2 is p1:
                     continue
-                if isinstance(p2, white):
+                if isinstance(p2, White):
                     continue
-                elif isinstance(p2, bias):
+                elif isinstance(p2, Bias):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
                 else:
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(z[:,is2], mu[:,is2], s[:,is2]) * 2.
+                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z[:,is2], variational_posterior[:, is2]) * 2.
 
 
-            a, b = p1.gradients_qX_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, mu[:,is1], s[:,is1], z[:,is1])
+            a, b = p1.gradients_qX_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z[:,is1], variational_posterior[:, is1])
             target_mu += a
             target_S += b
         return target_mu, target_S

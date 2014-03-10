@@ -80,7 +80,7 @@ class VarDTC(object):
         
         Kmm = kern.K(Z) +np.eye(Z.shape[0]) * self.const_jitter
 
-        Lm = jitchol(Kmm)
+        Lm = jitchol(Kmm+np.eye(Z.shape[0])*self.const_jitter)
 
         # The rather complex computations of A
         if uncertain_inputs:

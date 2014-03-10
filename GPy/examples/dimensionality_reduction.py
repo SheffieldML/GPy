@@ -515,3 +515,28 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose
         lvm_visualizer.close()
 
     return m
+
+def ssgplvm_simulation_linear():
+    import numpy as np
+    import GPy
+    N, D, Q = 1000, 20, 5
+    pi = 0.2
+    
+    def sample_X(Q, pi):
+        x = np.empty(Q)
+        dies = np.random.rand(Q)
+        for q in xrange(Q):
+            if dies[q]<pi:
+                x[q] = np.random.randn()
+            else:
+                x[q] = 0.
+        return x
+    
+    Y = np.empty((N,D))
+    X = np.empty((N,Q))
+    # Generate data from random sampled weight matrices
+    for n in xrange(N):
+        X[n] = sample_X(Q,pi)
+        w = np.random.randn(D,Q)
+        Y[n] = np.dot(w,X[n])
+    

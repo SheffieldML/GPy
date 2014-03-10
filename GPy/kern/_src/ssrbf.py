@@ -7,7 +7,7 @@ import numpy as np
 from ...util.linalg import tdot
 from ...util.config import *
 from stationary import Stationary
-from rbf_psi_comp import ssrbf_psi_comp
+from psi_comp import ssrbf_psi_comp
 
 class SSRBF(Stationary):
     """

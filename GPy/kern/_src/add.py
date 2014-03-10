@@ -45,6 +45,9 @@ class Add(Kern):
         else:
             [p.update_gradients_full(dL_dK, X[:,i_s], X2[:, i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
 
+    def update_gradients_diag(self, dL_dKdiag, X):
+        [p.update_gradients_diag(dL_dK, X[:,i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
+
     def gradients_X(self, dL_dK, X, X2=None):
         """Compute the gradient of the objective function with respect to X.
 

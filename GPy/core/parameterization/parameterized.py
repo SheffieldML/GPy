@@ -7,11 +7,17 @@ import cPickle
 import itertools
 from re import compile, _pattern_type
 from param import ParamConcatenation
-from parameter_core import Constrainable, Pickleable, Parentable, Observable, Parameterizable, adjust_name_for_printing, Gradcheckable
+from parameter_core import Pickleable, Parameterizable, adjust_name_for_printing
 from transformations import __fixed__
-from array_core import ParamList
+from lists_and_dicts import ArrayList
 
-class Parameterized(Parameterizable, Pickleable, Gradcheckable):
+class ParametersChangedMeta(type):
+    def __call__(self, *args, **kw):
+        instance = super(ParametersChangedMeta, self).__call__(*args, **kw)
+        instance.parameters_changed()
+        return instance
+
+class Parameterized(Parameterizable, Pickleable):
     """
     Parameterized class
 
@@ -53,11 +59,18 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
         If you want to operate on all parameters use m[''] to wildcard select all paramters
         and concatenate them. Printing m[''] will result in printing of all parameters in detail.
     """
+    #===========================================================================
+    # Metaclass for parameters changed after init. 
+    # This makes sure, that parameters changed will always be called after __init__
+    # **Never** call parameters_changed() yourself 
+    __metaclass__ = ParametersChangedMeta    
+    #===========================================================================
     def __init__(self, name=None, *a, **kw):
         super(Parameterized, self).__init__(name=name, parent=None, parent_index=None, *a, **kw)
         self._in_init_ = True
-        self._parameters_ = ParamList()
+        self._parameters_ = ArrayList()
         self.size = sum(p.size for p in self._parameters_)
+        self.add_observer(self, self._parameters_changed_notification, -100)
         if not self._has_fixes():
             self._fixes_ = None
         self._param_slices_ = []
@@ -65,7 +78,7 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
         del self._in_init_
 
     def build_pydot(self, G=None):
-        import pydot
+        import pydot  # @UnresolvedImport
         iamroot = False
         if G is None:
             G = pydot.Dot(graph_type='digraph')
@@ -87,116 +100,7 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
             return G
         return node
 
-
-    def add_parameter(self, param, index=None):
-        """
-        :param parameters:  the parameters to add
-        :type parameters:   list of or one :py:class:`GPy.core.param.Param`
-        :param [index]:     index of where to put parameters
-
-
-        Add all parameters to this param class, you can insert parameters
-        at any given index using the :func:`list.insert` syntax
-        """
-        # if param.has_parent():
-        #    raise AttributeError, "parameter {} already in another model, create new object (or copy) for adding".format(param._short())
-        if param in self._parameters_ and index is not None:
-            self.remove_parameter(param)
-            self.add_parameter(param, index)
-        elif param not in self._parameters_:
-            # make sure the size is set
-            if index is None:
-                self.constraints.update(param.constraints, self.size)
-                self.priors.update(param.priors, self.size)
-                self._parameters_.append(param)
-            else:
-                start = sum(p.size for p in self._parameters_[:index])
-                self.constraints.shift_right(start, param.size)
-                self.priors.shift_right(start, param.size)
-                self.constraints.update(param.constraints, start)
-                self.priors.update(param.priors, start)
-                self._parameters_.insert(index, param)
-            self.size += param.size
-        else:
-            raise RuntimeError, """Parameter exists already added and no copy made"""
-        self._connect_parameters()
-        self._notify_parent_change()
-        self._connect_fixes()
-
-
-    def add_parameters(self, *parameters):
-        """
-        convenience method for adding several
-        parameters without gradient specification
-        """
-        [self.add_parameter(p) for p in parameters]
-
-    def remove_parameter(self, param):
-        """
-        :param param: param object to remove from being a parameter of this parameterized object.
-        """
-        if not param in self._parameters_:
-            raise RuntimeError, "Parameter {} does not belong to this object, remove parameters directly from their respective parents".format(param._short())
-        
-        start = sum([p.size for p in self._parameters_[:param._parent_index_]])
-        self._remove_parameter_name(param)
-        self.size -= param.size
-        del self._parameters_[param._parent_index_]
-        
-        param._disconnect_parent()
-        param.remove_observer(self, self._notify_parameters_changed)
-        self.constraints.shift_left(start, param.size)
-        self._connect_fixes()
-        self._connect_parameters()
-        self._notify_parent_change()
-        
-        
-    def _connect_parameters(self):
-        # connect parameterlist to this parameterized object
-        # This just sets up the right connection for the params objects
-        # to be used as parameters
-        # it also sets the constraints for each parameter to the constraints 
-        # of their respective parents 
-        if not hasattr(self, "_parameters_") or len(self._parameters_) < 1:
-            # no parameters for this class
-            return
-        sizes = [0]
-        self._param_slices_ = []
-        for i, p in enumerate(self._parameters_):
-            p._direct_parent_ = self
-            p._parent_index_ = i
-            sizes.append(p.size + sizes[-1])
-            self._param_slices_.append(slice(sizes[-2], sizes[-1]))
-            self._add_parameter_name(p)
-
-    #===========================================================================
-    # Pickling operations
-    #===========================================================================
-    def pickle(self, f, protocol=-1):
-        """
-        :param f: either filename or open file object to write to.
-                  if it is an open buffer, you have to make sure to close
-                  it properly.
-        :param protocol: pickling protocol to use, python-pickle for details.
-        """
-        if isinstance(f, str):
-            with open(f, 'w') as f:
-                cPickle.dump(self, f, protocol)
-        else:
-            cPickle.dump(self, f, protocol)
-
-    def __getstate__(self):
-        if self._has_get_set_state():
-            return self._getstate()
-        return self.__dict__
-    def __setstate__(self, state):
-        if self._has_get_set_state():
-            self._setstate(state)  # set state
-            # self._set_params(self._get_params()) # restore all values
-            return
-        self.__dict__ = state
-    def _has_get_set_state(self):
-        return '_getstate' in vars(self.__class__) and '_setstate' in vars(self.__class__)
+    
     def _getstate(self):
         """
         Get the current state of the class,
@@ -225,60 +129,33 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
         self._connect_parameters()
         self.parameters_changed()
     #===========================================================================
+    # Override copy to handle programmatically added observers
+    #===========================================================================
+    def copy(self):
+        c = super(Pickleable, self).copy()
+        c.add_observer(c, c._parameters_changed_notification, -100)
+        return c
+
+    #===========================================================================
     # Gradient control
     #===========================================================================
     def _transform_gradients(self, g):
         if self.has_parent():
             return g
-        x = self._get_params()
-        [numpy.put(g, i, g[i] * c.gradfactor(x[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
-        for p in self.flattened_parameters:
-            for t, i in p._tied_to_me_.iteritems():
-                g[self._offset_for(p) + numpy.array(list(i))] += g[self._raveled_index_for(t)]
+        [numpy.put(g, i, g[i] * c.gradfactor(self._param_array_[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g
+
+
     #===========================================================================
-    # Optimization handles:
+    # Indexable
     #===========================================================================
-    def _get_param_names(self):
-        n = numpy.array([p.hirarchy_name() + '[' + str(i) + ']' for p in self.flattened_parameters for i in p._indices()])
-        return n
-    def _get_param_names_transformed(self):
-        n = self._get_param_names()
-        if self._has_fixes():
-            return n[self._fixes_]
-        return n
-    def _get_params_transformed(self):
-        # transformed parameters (apply transformation rules)
-        p = self._get_params()
-        [numpy.put(p, ind, c.finv(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-        if self._has_fixes():
-            return p[self._fixes_]
-        return p
-    def _set_params_transformed(self, p):
-        # inverse apply transformations for parameters and set the resulting parameters
-        self._set_params(self._untransform_params(p))
-    def _untransform_params(self, p):
-        p = p.copy()
-        if self._has_fixes(): tmp = self._get_params(); tmp[self._fixes_] = p; p = tmp; del tmp
-        [numpy.put(p, ind, c.f(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-        return p
-    #===========================================================================
-    # Indexable Handling
-    #===========================================================================
-    def _backtranslate_index(self, param, ind):
-        # translate an index in parameterized indexing into the index of param
-        ind = ind - self._offset_for(param)
-        ind = ind[ind >= 0]
-        internal_offset = param._internal_offset()
-        ind = ind[ind < param.size + internal_offset]
-        return ind
     def _offset_for(self, param):
         # get the offset in the parameterized index array for param
         if param.has_parent():
-            if param._direct_parent_._get_original(param) in self._parameters_:
-                return self._param_slices_[param._direct_parent_._get_original(param)._parent_index_].start
-            return self._offset_for(param._direct_parent_) + param._direct_parent_._offset_for(param)
+            if param._parent_._get_original(param) in self._parameters_:
+                return self._param_slices_[param._parent_._get_original(param)._parent_index_].start
+            return self._offset_for(param._parent_) + param._parent_._offset_for(param)
         return 0
     
     def _raveled_index_for(self, param):
@@ -297,34 +174,22 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
         this is not in the global view of things!
         """
         return numpy.r_[:self.size]
-    #===========================================================================
-    # Fixing parameters:
-    #===========================================================================
-    def _fixes_for(self, param):
-        if self._has_fixes():
-            return self._fixes_[self._raveled_index_for(param)]
-        return numpy.ones(self.size, dtype=bool)[self._raveled_index_for(param)]
+    
     #===========================================================================
     # Convenience for fixed, tied checking of param:
     #===========================================================================
-    def fixed_indices(self):
-        return np.array([x.is_fixed for x in self._parameters_])
-    def _is_fixed(self, param):
-        # returns if the whole param is fixed
-        if not self._has_fixes():
-            return False
-        return not self._fixes_[self._raveled_index_for(param)].any()
-        # return not self._fixes_[self._offset_for(param): self._offset_for(param)+param._realsize_].any()
     @property
     def is_fixed(self):
         for p in self._parameters_:
             if not p.is_fixed: return False
         return True
+
     def _get_original(self, param):
         # if advanced indexing is activated it happens that the array is a copy
         # you can retrieve the original param through this method, by passing
         # the copy here
         return self._parameters_[param._parent_index_]
+    
     #===========================================================================
     # Get/set parameters:
     #===========================================================================
@@ -352,9 +217,13 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
         return ParamConcatenation(paramlist)
     
     def __setitem__(self, name, value, paramlist=None):
-        try: param = self.__getitem__(name, paramlist)
-        except AttributeError as a: raise a
-        param[:] = value
+        if isinstance(name, (slice, tuple, np.ndarray)):
+            self._param_array_[name] = value
+        else:
+            try: param = self.__getitem__(name, paramlist)
+            except AttributeError as a: raise a
+            param[:] = value
+        
     def __setattr__(self, name, val):
         # override the default behaviour, if setting a param, so broadcasting can by used        
         if hasattr(self, '_parameters_'):
@@ -365,18 +234,13 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
     # Printing:
     #===========================================================================
     def _short(self):
-        return self.hirarchy_name()
+        return self.hierarchy_name()
     @property
     def flattened_parameters(self):
         return [xi for x in self._parameters_ for xi in x.flattened_parameters]
     @property
     def _parameter_sizes_(self):
         return [x.size for x in self._parameters_]
-    @property
-    def size_transformed(self):
-        if self._has_fixes():
-            return sum(self._fixes_)
-        return self.size
     @property
     def parameter_shapes(self):
         return [xi for x in self._parameters_ for xi in x.parameter_shapes]
@@ -404,7 +268,7 @@ class Parameterized(Parameterizable, Pickleable, Gradcheckable):
         cl = max([len(str(x)) if x else 0 for x in constrs + ["Constraint"]])
         tl = max([len(str(x)) if x else 0 for x in ts + ["Tied to"]])
         pl = max([len(str(x)) if x else 0 for x in prirs + ["Prior"]])
-        format_spec = "  \033[1m{{name:<{0}s}}\033[0;0m  |  {{desc:^{1}s}}  |  {{const:^{2}s}}  |  {{pri:^{3}s}}  |  {{t:^{4}s}}".format(nl, sl, cl, pl, tl)
+        format_spec = "  \033[1m{{name:<{0}s}}\033[0;0m  |  {{desc:>{1}s}}  |  {{const:^{2}s}}  |  {{pri:^{3}s}}  |  {{t:^{4}s}}".format(nl, sl, cl, pl, tl)
         to_print = []
         for n, d, c, t, p in itertools.izip(names, desc, constrs, ts, prirs):
             to_print.append(format_spec.format(name=n, desc=d, const=c, t=t, pri=p))

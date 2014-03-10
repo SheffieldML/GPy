@@ -31,7 +31,7 @@ class GP(Model):
         super(GP, self).__init__(name)
 
         assert X.ndim == 2
-        if isinstance(X, ObservableArray) or isinstance(X, VariationalPosterior):
+        if isinstance(X, (ObservableArray, VariationalPosterior)):
             self.X = X
         else: self.X = ObservableArray(X)
 
@@ -65,8 +65,6 @@ class GP(Model):
 
         self.add_parameter(self.kern)
         self.add_parameter(self.likelihood)
-        if self.__class__ is GP:
-            self.parameters_changed()
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y, Y_metadata=self.Y_metadata)
@@ -224,13 +222,9 @@ class GP(Model):
                 self.kern,
                 self.likelihood,
                 self.output_dim,
-                self._Xoffset,
-                self._Xscale,
                 ]
 
     def _setstate(self, state):
-        self._Xscale = state.pop()
-        self._Xoffset = state.pop()
         self.output_dim = state.pop()
         self.likelihood = state.pop()
         self.kern = state.pop()

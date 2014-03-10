@@ -36,7 +36,7 @@ class SSGPLVM(SparseGP):
             X_variance = np.random.uniform(0,.1,X.shape)
             
         gamma = np.empty_like(X) # The posterior probabilities of the binary variable in the variational approximation
-        gamma[:] = 0.5
+        gamma[:] = 0.5 + 0.01 * np.random.randn(X.shape[0], input_dim)
         
         if Z is None:
             Z = np.random.permutation(X.copy())[:num_inducing]
@@ -48,24 +48,36 @@ class SSGPLVM(SparseGP):
         if kernel is None:
             kernel = kern.SSRBF(input_dim)
             
-        self.variational_prior = SpikeAndSlabPrior(pi=0.5) # the prior probability of the latent binary variable b
+        pi = np.empty((input_dim))
+        pi[:] = 0.5
+        self.variational_prior = SpikeAndSlabPrior(pi=pi) # the prior probability of the latent binary variable b
         X = SpikeAndSlabPosterior(X, X_variance, gamma)
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)
         self.add_parameter(self.X, index=0)
+        self.add_parameter(self.variational_prior)
 
     def parameters_changed(self):
         super(SSGPLVM, self).parameters_changed()
         self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
 
-        self.X.mean.gradient, self.X.variance.gradient, self.X.binary_prob.gradient = self.kern.gradients_q_variational(posterior_variational=self.X, Z=self.Z, **self.grad_dict)
+        self.X.mean.gradient, self.X.variance.gradient, self.X.binary_prob.gradient = self.kern.gradients_qX_expectations(variational_posterior=self.X, Z=self.Z, **self.grad_dict)
 
         # update for the KL divergence
         self.variational_prior.update_gradients_KL(self.X)
 
+    def input_sensitivity(self):
+        if self.kern.ARD:
+            return self.kern.input_sensitivity()
+        else:
+            return self.variational_prior.pi
+
     def plot_latent(self, plot_inducing=True, *args, **kwargs):
-        pass
-        #return plot_latent.plot_latent(self, plot_inducing=plot_inducing, *args, **kwargs)
+        import sys
+        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        from ..plotting.matplot_dep import dim_reduction_plots
+
+        return dim_reduction_plots.plot_latent(self, plot_inducing=plot_inducing, *args, **kwargs)
 
     def do_test_latents(self, Y):
         """

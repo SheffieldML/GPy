@@ -1,14 +1,17 @@
 # ## Copyright (c) 2013, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from GPy.core import Model
-from GPy.core import SparseGP
-from GPy.util.linalg import PCA
-import numpy
+import numpy as np
 import itertools
 import pylab
-from GPy.kern import Kern
-from GPy.models.bayesian_gplvm import BayesianGPLVM
+
+from ..core import Model, SparseGP
+from ..util.linalg import PCA
+from ..kern import Kern
+from bayesian_gplvm import BayesianGPLVM
+from ..core.parameterization.variational import NormalPosterior, NormalPrior
+from ..inference.latent_function_inference.var_dtc import VarDTCMissingData
+from ..likelihoods.gaussian import Gaussian
 
 class MRD2(Model):
     """
@@ -20,11 +23,101 @@ class MRD2(Model):
     to match up, whereas the dimensionality p_d can differ.
     
     :param [array-like] Ylist: List of datasets to apply MRD on
-    :param array-like q_mean: mean of starting latent space q in [n x q]
-    :param array-like q_variance: variance of starting latent space q in [n x q]
-    :param :class:`~GPy.inference.latent_function_inference
+    :param input_dim: latent dimensionality
+    :type input_dim: int
+    :param array-like X: mean of starting latent space q in [n x q]
+    :param array-like X_variance: variance of starting latent space q in [n x q]
+    :param initx: initialisation method for the latent space :
+
+        * 'concat' - PCA on concatenation of all datasets
+        * 'single' - Concatenation of PCA on datasets, respectively
+        * 'random' - Random draw from a Normal(0,1)
+
+    :type initx: ['concat'|'single'|'random']
+    :param initz: initialisation method for inducing inputs
+    :type initz: 'permute'|'random'
+    :param num_inducing: number of inducing inputs to use
+    :param Z: initial inducing inputs
+    :param kernel: list of kernels or kernel to copy for each output
+    :type kernel: [GPy.kern.kern] | GPy.kern.kern | None (default)
+    :param :class:`~GPy.inference.latent_function_inference inference_method: the inference method to use
+    :param :class:`~GPy.likelihoods.likelihood.Likelihood` likelihood: the likelihood to use
+    :param str name: the name of this model
     """
     
+    def __init__(self, Ylist, input_dim, X=None, X_variance=None, 
+                 initx = 'PCA', initz = 'permute',
+                 num_inducing=10, Z=None, kernel=None, 
+                 inference_method=None, likelihood=None, name='mrd'):
+        super(MRD2, self).__init__(name)
+        
+        # sort out the kernels
+        if kernel is None:
+            from ..kern import RBF
+            self.kern = [RBF(input_dim, ARD=1, name='Y_{}'.format(i)) for i in range(len(Ylist))]
+        elif isinstance(kernel, Kern):
+            self.kern = [kernel.copy(name='Y_{}'.format(i)) for i in range(len(Ylist))]
+        else:
+            assert len(kernel) == len(Ylist), "need one kernel per output"
+            assert all([isinstance(k, Kern) for k in kernel]), "invalid kernel object detected!"
+
+        self.input_dim = input_dim
+        self.num_inducing = num_inducing
+
+        self._in_init_ = True
+        X = self._init_X(initx, Ylist)
+        self.Z = self._init_Z(initz, X)
+        self.num_inducing = self.Z.shape[0] # ensure M==N if M>N
+        
+        if X_variance is None:
+            X_variance = np.random.uniform(0,.2,X.shape)
+        
+        self.variational_prior = NormalPrior()
+        self.X = NormalPosterior(X, X_variance)
+        
+        if likelihood is None:
+            likelihood = Gaussian()
+        
+        if inference_method is None:
+            if any(np.any(np.isnan(y)) for y in Ylist):
+                self.inference_method = VarDTCMissingData(limit=len(Ylist))
+                
+        self.Ylist = Ylist
+
+    def parameters_changed(self):
+        for y in self.Ylist:
+            pass
+
+    def _init_X(self, init='PCA', likelihood_list=None):
+        if likelihood_list is None:
+            likelihood_list = self.likelihood_list
+        Ylist = []
+        for likelihood_or_Y in likelihood_list:
+            if type(likelihood_or_Y) is np.ndarray:
+                Ylist.append(likelihood_or_Y)
+            else:
+                Ylist.append(likelihood_or_Y.Y)
+        del likelihood_list
+        if init in "PCA_concat":
+            X = PCA(np.hstack(Ylist), self.input_dim)[0]
+        elif init in "PCA_single":
+            X = np.zeros((Ylist[0].shape[0], self.input_dim))
+            for qs, Y in itertools.izip(np.array_split(np.arange(self.input_dim), len(Ylist)), Ylist):
+                X[:, qs] = PCA(Y, len(qs))[0]
+        else: # init == 'random':
+            X = np.random.randn(Ylist[0].shape[0], self.input_dim)
+        self.X = X
+        return X
+
+    def _init_Z(self, init="permute", X=None):
+        if X is None:
+            X = self.X
+        if init in "permute":
+            Z = np.random.permutation(X.copy())[:self.num_inducing]
+        elif init in "random":
+            Z = np.random.randn(self.num_inducing, self.input_dim) * X.var()
+        self.Z = Z
+        return Z
 
 class MRD(Model):
     """
@@ -84,7 +177,7 @@ class MRD(Model):
         del self._in_init_
 
         self.gref = self.bgplvms[0]
-        nparams = numpy.array([0] + [SparseGP._get_params(g).size - g.Z.size for g in self.bgplvms])
+        nparams = np.array([0] + [SparseGP._get_params(g).size - g.Z.size for g in self.bgplvms])
         self.nparams = nparams.cumsum()
 
         self.num_data = self.gref.num_data
@@ -216,7 +309,7 @@ class MRD(Model):
         X_var = self.gref.X_variance.ravel()
         Z = self.gref.Z.ravel()
         thetas = [SparseGP._get_params(g)[g.Z.size:] for g in self.bgplvms]
-        params = numpy.hstack([X, X_var, Z, numpy.hstack(thetas)])
+        params = np.hstack([X, X_var, Z, np.hstack(thetas)])
         return params
 
 #     def _set_var_params(self, g, X, X_var, Z):
@@ -239,13 +332,13 @@ class MRD(Model):
 
         # set params for all:
         for g, s, e in itertools.izip(self.bgplvms, self.nparams, self.nparams[1:]):
-            g._set_params(numpy.hstack([X, X_var, Z, thetas[s:e]]))
+            g._set_params(np.hstack([X, X_var, Z, thetas[s:e]]))
 #             self._set_var_params(g, X, X_var, Z)
 #             self._set_kern_params(g, thetas[s:e].copy())
 #             g._compute_kernel_matrices()
 #             if self.auto_scale_factor:
-#                 g.scale_factor = numpy.sqrt(g.psi2.sum(0).mean() * g.likelihood.precision)
-# #                 self.scale_factor = numpy.sqrt(self.psi2.sum(0).mean() * self.likelihood.precision)
+#                 g.scale_factor = np.sqrt(g.psi2.sum(0).mean() * g.likelihood.precision)
+# #                 self.scale_factor = np.sqrt(self.psi2.sum(0).mean() * self.likelihood.precision)
 #             g._computations()
 
 
@@ -264,47 +357,17 @@ class MRD(Model):
         dKLmu, dKLdS = self.gref.dKL_dmuS()
         dLdmu -= dKLmu
         dLdS -= dKLdS
-        dLdmuS = numpy.hstack((dLdmu.flatten(), dLdS.flatten())).flatten()
+        dLdmuS = np.hstack((dLdmu.flatten(), dLdS.flatten())).flatten()
         dldzt1 = reduce(lambda a, b: a + b, (SparseGP._log_likelihood_gradients(g)[:self.MQ] for g in self.bgplvms))
 
-        return numpy.hstack((dLdmuS,
+        return np.hstack((dLdmuS,
                              dldzt1,
-                numpy.hstack([numpy.hstack([g.dL_dtheta(),
+                np.hstack([np.hstack([g.dL_dtheta(),
                                             g.likelihood._gradients(\
                                                 partial=g.partial_for_likelihood)]) \
                               for g in self.bgplvms])))
 
-    def _init_X(self, init='PCA', likelihood_list=None):
-        if likelihood_list is None:
-            likelihood_list = self.likelihood_list
-        Ylist = []
-        for likelihood_or_Y in likelihood_list:
-            if type(likelihood_or_Y) is numpy.ndarray:
-                Ylist.append(likelihood_or_Y)
-            else:
-                Ylist.append(likelihood_or_Y.Y)
-        del likelihood_list
-        if init in "PCA_concat":
-            X = PCA(numpy.hstack(Ylist), self.input_dim)[0]
-        elif init in "PCA_single":
-            X = numpy.zeros((Ylist[0].shape[0], self.input_dim))
-            for qs, Y in itertools.izip(numpy.array_split(numpy.arange(self.input_dim), len(Ylist)), Ylist):
-                X[:, qs] = PCA(Y, len(qs))[0]
-        else: # init == 'random':
-            X = numpy.random.randn(Ylist[0].shape[0], self.input_dim)
-        self.X = X
-        return X
 
-
-    def _init_Z(self, init="permute", X=None):
-        if X is None:
-            X = self.X
-        if init in "permute":
-            Z = numpy.random.permutation(X.copy())[:self.num_inducing]
-        elif init in "random":
-            Z = numpy.random.randn(self.num_inducing, self.input_dim) * X.var()
-        self.Z = Z
-        return Z
 
     def _handle_plotting(self, fignum, axes, plotf, sharex=False, sharey=False):
         if axes is None:
@@ -358,7 +421,7 @@ class MRD(Model):
         """
         if titles is None:
             titles = [r'${}$'.format(name) for name in self.names]
-        ymax = reduce(max, [numpy.ceil(max(g.input_sensitivity())) for g in self.bgplvms])
+        ymax = reduce(max, [np.ceil(max(g.input_sensitivity())) for g in self.bgplvms])
         def plotf(i, g, ax):
             ax.set_ylim([0,ymax])
             g.kern.plot_ARD(ax=ax, title=titles[i], *args, **kwargs)

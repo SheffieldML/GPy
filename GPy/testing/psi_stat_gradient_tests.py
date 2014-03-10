@@ -25,10 +25,10 @@ class PsiStatModel(Model):
         self.kern = kernel
         self.psi_ = self.kern.__getattribute__(self.which)(self.Z, self.X, self.X_variance)
         self.add_parameters(self.X, self.X_variance, self.Z, self.kern)
-    
+
     def log_likelihood(self):
         return self.kern.__getattribute__(self.which)(self.Z, self.X, self.X_variance).sum()
-    
+
     def parameters_changed(self):
         psimu, psiS = self.kern.__getattribute__("d" + self.which + "_dmuS")(numpy.ones_like(self.psi_), self.Z, self.X, self.X_variance)
         self.X.gradient = psimu
@@ -43,9 +43,9 @@ class PsiStatModel(Model):
         if self.which == 'psi0': dL_dpsi0 += 1
         if self.which == 'psi1': dL_dpsi1 += 1
         if self.which == 'psi2': dL_dpsi2 += 1
-        self.kern.update_gradients_variational(numpy.zeros([1,1]), 
-                                               dL_dpsi0, 
-                                               dL_dpsi1, 
+        self.kern.update_gradients_variational(numpy.zeros([1,1]),
+                                               dL_dpsi0,
+                                               dL_dpsi1,
                                                dL_dpsi2, self.X, self.X_variance, self.Z)
 
 class DPsiStatTest(unittest.TestCase):
@@ -57,14 +57,14 @@ class DPsiStatTest(unittest.TestCase):
     X_var = .5 * numpy.ones_like(X) + .4 * numpy.clip(numpy.random.randn(*X.shape), 0, 1)
     Z = numpy.random.permutation(X)[:num_inducing]
     Y = X.dot(numpy.random.randn(input_dim, input_dim))
-#     kernels = [GPy.kern.linear(input_dim, ARD=True, variances=numpy.random.rand(input_dim)), GPy.kern.rbf(input_dim, ARD=True), GPy.kern.bias(input_dim)]
+#     kernels = [GPy.kern.Linear(input_dim, ARD=True, variances=numpy.random.rand(input_dim)), GPy.kern.RBF(input_dim, ARD=True), GPy.kern.Bias(input_dim)]
 
     kernels = [
-               GPy.kern.linear(input_dim), 
-               GPy.kern.rbf(input_dim), 
-               #GPy.kern.bias(input_dim),
-               #GPy.kern.linear(input_dim) + GPy.kern.bias(input_dim),
-               #GPy.kern.rbf(input_dim) + GPy.kern.bias(input_dim)
+               GPy.kern.Linear(input_dim),
+               GPy.kern.RBF(input_dim),
+               #GPy.kern.Bias(input_dim),
+               #GPy.kern.Linear(input_dim) + GPy.kern.Bias(input_dim),
+               #GPy.kern.RBF(input_dim) + GPy.kern.Bias(input_dim)
                ]
 
     def testPsi0(self):
@@ -73,7 +73,7 @@ class DPsiStatTest(unittest.TestCase):
                              num_inducing=self.num_inducing, kernel=k)
             m.randomize()
             assert m.checkgrad(), "{} x psi0".format("+".join(map(lambda x: x.name, k._parameters_)))
-        
+
     def testPsi1(self):
         for k in self.kernels:
             m = PsiStatModel('psi1', X=self.X, X_variance=self.X_var, Z=self.Z,
@@ -119,11 +119,11 @@ if __name__ == "__main__":
     if interactive:
 #         N, num_inducing, input_dim, input_dim = 30, 5, 4, 30
 #         X = numpy.random.rand(N, input_dim)
-#         k = GPy.kern.linear(input_dim) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
+#         k = GPy.kern.Linear(input_dim) + GPy.kern.Bias(input_dim) + GPy.kern.White(input_dim, 0.00001)
 #         K = k.K(X)
 #         Y = numpy.random.multivariate_normal(numpy.zeros(N), K, input_dim).T
 #         Y -= Y.mean(axis=0)
-#         k = GPy.kern.linear(input_dim) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
+#         k = GPy.kern.Linear(input_dim) + GPy.kern.Bias(input_dim) + GPy.kern.White(input_dim, 0.00001)
 #         m = GPy.models.Bayesian_GPLVM(Y, input_dim, kernel=k, num_inducing=num_inducing)
 #         m.randomize()
 # #         self.assertTrue(m.checkgrad())
@@ -136,11 +136,11 @@ if __name__ == "__main__":
         X_var = .5 * numpy.ones_like(X) + .1 * numpy.clip(numpy.random.randn(*X.shape), 0, 1)
         Z = numpy.random.permutation(X)[:num_inducing]
         Y = X.dot(numpy.random.randn(input_dim, D))
-#         kernel = GPy.kern.bias(input_dim)
+#         kernel = GPy.kern.Bias(input_dim)
 #
-#         kernels = [GPy.kern.linear(input_dim), GPy.kern.rbf(input_dim), GPy.kern.bias(input_dim),
-#                GPy.kern.linear(input_dim) + GPy.kern.bias(input_dim),
-#                GPy.kern.rbf(input_dim) + GPy.kern.bias(input_dim)]
+#         kernels = [GPy.kern.Linear(input_dim), GPy.kern.RBF(input_dim), GPy.kern.Bias(input_dim),
+#                GPy.kern.Linear(input_dim) + GPy.kern.Bias(input_dim),
+#                GPy.kern.RBF(input_dim) + GPy.kern.Bias(input_dim)]
 
 #         for k in kernels:
 #             m = PsiStatModel('psi1', X=X, X_variance=X_var, Z=Z,
@@ -148,32 +148,32 @@ if __name__ == "__main__":
 #             assert m.checkgrad(), "{} x psi1".format("+".join(map(lambda x: x.name, k.parts)))
 #
         m0 = PsiStatModel('psi0', X=X, X_variance=X_var, Z=Z,
-                         num_inducing=num_inducing, kernel=GPy.kern.rbf(input_dim)+GPy.kern.bias(input_dim))
+                         num_inducing=num_inducing, kernel=GPy.kern.RBF(input_dim)+GPy.kern.Bias(input_dim))
 #         m1 = PsiStatModel('psi1', X=X, X_variance=X_var, Z=Z,
 #                          num_inducing=num_inducing, kernel=kernel)
 #         m1 = PsiStatModel('psi1', X=X, X_variance=X_var, Z=Z,
 #                          num_inducing=num_inducing, kernel=kernel)
 #         m2 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
-#                          num_inducing=num_inducing, kernel=GPy.kern.rbf(input_dim))
+#                          num_inducing=num_inducing, kernel=GPy.kern.RBF(input_dim))
 #         m3 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
-#                          num_inducing=num_inducing, kernel=GPy.kern.linear(input_dim, ARD=True, variances=numpy.random.rand(input_dim)))
-        # + GPy.kern.bias(input_dim))
+#                          num_inducing=num_inducing, kernel=GPy.kern.Linear(input_dim, ARD=True, variances=numpy.random.rand(input_dim)))
+        # + GPy.kern.Bias(input_dim))
 #         m = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
-#                          num_inducing=num_inducing, 
+#                          num_inducing=num_inducing,
 #                          kernel=(
-#             GPy.kern.rbf(input_dim, ARD=1) 
-#             +GPy.kern.linear(input_dim, ARD=1) 
-#             +GPy.kern.bias(input_dim))
+#             GPy.kern.RBF(input_dim, ARD=1)
+#             +GPy.kern.Linear(input_dim, ARD=1)
+#             +GPy.kern.Bias(input_dim))
 #                          )
 #         m.ensure_default_constraints()
         m2 = PsiStatModel('psi2', X=X, X_variance=X_var, Z=Z,
                          num_inducing=num_inducing, kernel=(
-            GPy.kern.rbf(input_dim, numpy.random.rand(), numpy.random.rand(input_dim), ARD=1) 
-            #+GPy.kern.linear(input_dim, numpy.random.rand(input_dim), ARD=1) 
-            #+GPy.kern.rbf(input_dim, numpy.random.rand(), numpy.random.rand(input_dim), ARD=1) 
-            #+GPy.kern.rbf(input_dim, numpy.random.rand(), numpy.random.rand(), ARD=0) 
-            +GPy.kern.bias(input_dim)
-            +GPy.kern.white(input_dim)
+            GPy.kern.RBF(input_dim, numpy.random.rand(), numpy.random.rand(input_dim), ARD=1)
+            #+GPy.kern.Linear(input_dim, numpy.random.rand(input_dim), ARD=1)
+            #+GPy.kern.RBF(input_dim, numpy.random.rand(), numpy.random.rand(input_dim), ARD=1)
+            #+GPy.kern.RBF(input_dim, numpy.random.rand(), numpy.random.rand(), ARD=0)
+            +GPy.kern.Bias(input_dim)
+            +GPy.kern.White(input_dim)
             )
             )
         m2.ensure_default_constraints()

@@ -23,7 +23,7 @@ def add_bar_labels(fig, ax, bars, bottom=0):
             xi = patch.get_x() + patch.get_width() / 2.
             va = 'top'
             c = 'w'
-            t = TextPath((0, 0), "${xi}$".format(xi=xi), rotation=0, usetex=True, ha='center')
+            t = TextPath((0, 0), "${xi}$".format(xi=xi), rotation=0, ha='center')
             transform = transOffset
             if patch.get_extents().height <= t.get_extents().height + 3:
                 va = 'bottom'
@@ -106,7 +106,7 @@ def plot(kernel, x=None, plot_limits=None, which_parts='all', resolution=None, *
             raise ValueError, "Bad limits for plotting"
 
         Xnew = np.linspace(xmin, xmax, resolution or 201)[:, None]
-        Kx = kernel.K(Xnew, x, which_parts)
+        Kx = kernel.K(Xnew, x)
         pb.plot(Xnew, Kx, *args, **kwargs)
         pb.xlim(xmin, xmax)
         pb.xlabel("x")

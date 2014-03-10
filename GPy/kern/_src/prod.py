@@ -15,14 +15,16 @@ class Prod(Kern):
     :rtype: kernel object
 
     """
-    def __init__(self, k1, k2, tensor=False):
+    def __init__(self, k1, k2, tensor=False,name=None):
         if tensor:
-            super(Prod, self).__init__(k1.input_dim + k2.input_dim, k1.name + '_xx_' + k2.name)
+            name = k1.name + '_xx_' + k2.name if name is None else name
+            super(Prod, self).__init__(k1.input_dim + k2.input_dim, name)
             self.slice1 = slice(0,k1.input_dim)
             self.slice2 = slice(k1.input_dim,k1.input_dim+k2.input_dim)
         else:
             assert k1.input_dim == k2.input_dim, "Error: The input spaces of the kernels to multiply don't have the same dimension."
-            super(Prod, self).__init__(k1.input_dim, k1.name + '_x_' + k2.name)
+            name = k1.name + '_x_' + k2.name if name is None else name
+            super(Prod, self).__init__(k1.input_dim, name)
             self.slice1 = slice(0, self.input_dim)
             self.slice2 = slice(0, self.input_dim)
         self.k1 = k1
@@ -39,17 +41,17 @@ class Prod(Kern):
         return self.k1.Kdiag(X[:,self.slice1]) * self.k2.Kdiag(X[:,self.slice2])
 
     def update_gradients_full(self, dL_dK, X):
-        self.k1.update_gradients_full(dL_dK*self.k2(X[:,self.slice2]), X[:,self.slice1])
-        self.k2.update_gradients_full(dL_dK*self.k1(X[:,self.slice1]), X[:,self.slice2])
+        self.k1.update_gradients_full(dL_dK*self.k2.K(X[:,self.slice2]), X[:,self.slice1])
+        self.k2.update_gradients_full(dL_dK*self.k1.K(X[:,self.slice1]), X[:,self.slice2])
 
     def gradients_X(self, dL_dK, X, X2=None):
         target = np.zeros(X.shape)
         if X2 is None:
-            target[:,self.slice1] += self.k1.gradients_X(dL_dK*self.k2(X[:,self.slice2]), X[:,self.slice1], None)
-            target[:,self.slice2] += self.k2.gradients_X(dL_dK*self.k1(X[:,self.slice1]), X[:,self.slice2], None)
+            target[:,self.slice1] += self.k1.gradients_X(dL_dK*self.k2.K(X[:,self.slice2]), X[:,self.slice1], None)
+            target[:,self.slice2] += self.k2.gradients_X(dL_dK*self.k1.K(X[:,self.slice1]), X[:,self.slice2], None)
         else:
-            target[:,self.slice1] += self.k1.gradients_X(dL_dK*self.k2(X[:,self.slice2], X2[:,self.slice2]), X[:,self.slice1], X2[:,self.slice1])
-            target[:,self.slice2] += self.k2.gradients_X(dL_dK*self.k1(X[:,self.slice1], X2[:,self.slice1]), X[:,self.slice2], X2[:,self.slice2])
+            target[:,self.slice1] += self.k1.gradients_X(dL_dK*self.k2.K(X[:,self.slice2], X2[:,self.slice2]), X[:,self.slice1], X2[:,self.slice1])
+            target[:,self.slice2] += self.k2.gradients_X(dL_dK*self.k1.K(X[:,self.slice1], X2[:,self.slice1]), X[:,self.slice2], X2[:,self.slice2])
         return target
 
     def gradients_X_diag(self, dL_dKdiag, X):

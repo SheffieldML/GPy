@@ -7,10 +7,10 @@ Created on 6 Nov 2013
 import numpy as np
 from parameterized import Parameterized
 from param import Param
-from transformations import Logexp
+from transformations import Logexp, Logistic
 
 class VariationalPrior(Parameterized):
-    def __init__(self, name=None, **kw):
+    def __init__(self, name='latent space', **kw):
         super(VariationalPrior, self).__init__(name=name, **kw)
         
     def KL_divergence(self, variational_posterior):
@@ -34,12 +34,12 @@ class NormalPrior(VariationalPrior):
         variational_posterior.variance.gradient -= (1. - (1. / (variational_posterior.variance))) * 0.5
 
 class SpikeAndSlabPrior(VariationalPrior):
-    def __init__(self, variance = 1.0, pi = 0.5, name='SpikeAndSlabPrior', **kw):
+    def __init__(self, pi, variance = 1.0, name='SpikeAndSlabPrior', **kw):
         super(VariationalPrior, self).__init__(name=name, **kw)
         assert variance==1.0, "Not Implemented!"
-        self.pi = Param('pi', pi)
+        self.pi = Param('pi', pi, Logistic(1e-10,1.-1e-10))
         self.variance = Param('variance',variance)
-        self.add_parameters(self.pi, self.variance)
+        self.add_parameters(self.pi)
         
     def KL_divergence(self, variational_posterior):
         mu = variational_posterior.mean
@@ -58,6 +58,8 @@ class SpikeAndSlabPrior(VariationalPrior):
         gamma.gradient -= np.log((1-self.pi)/self.pi*gamma/(1.-gamma))+(np.square(mu)+S-np.log(S)-1.)/2.
         mu.gradient -= gamma*mu
         S.gradient -= (1. - (1. / (S))) * gamma /2.
+        self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum(axis=0)
+        
 
 
 class VariationalPosterior(Parameterized):
@@ -103,7 +105,7 @@ class SpikeAndSlabPosterior(VariationalPosterior):
         binary_prob : the probability of the distribution on the slab part.
         """
         super(SpikeAndSlabPosterior, self).__init__(means, variances, name)
-        self.gamma = Param("binary_prob",binary_prob,)
+        self.gamma = Param("binary_prob",binary_prob, Logistic(1e-10,1.-1e-10))
         self.add_parameter(self.gamma)
 
     def plot(self, *args):
@@ -115,4 +117,4 @@ class SpikeAndSlabPosterior(VariationalPosterior):
         import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ...plotting.matplot_dep import variational_plots
-        return variational_plots.plot(self,*args)
+        return variational_plots.plot_SpikeSlab(self,*args)

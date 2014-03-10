@@ -1,4 +1,5 @@
 from ..core.parameterization.parameter_core import Observable
+import itertools
 
 class Cacher(object):
     """
@@ -38,8 +39,11 @@ class Cacher(object):
         if not all([isinstance(arg, Observable) for arg in observable_args]):
             return self.operation(*args)
 
+        # TODO: WARNING !!! Cache OFFSWITCH !!! WARNING
+        # return self.operation(*args)
+
         #if the result is cached, return the cached computation
-        state = [all(a is b for a, b in zip(args, cached_i)) for cached_i in self.cached_inputs]
+        state = [all(a is b for a, b in itertools.izip_longest(args, cached_i)) for cached_i in self.cached_inputs]
         if any(state):
             i = state.index(True)
             if self.inputs_changed[i]:

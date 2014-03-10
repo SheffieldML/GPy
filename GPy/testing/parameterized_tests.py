@@ -6,6 +6,7 @@ Created on Feb 13, 2014
 import unittest
 import GPy
 import numpy as np
+from GPy.core.parameterization.parameter_core import HierarchyError
 
 class Test(unittest.TestCase):
 
@@ -20,6 +21,10 @@ class Test(unittest.TestCase):
         self.test1.add_parameter(self.white)
         self.test1.add_parameter(self.rbf, 0)
         self.test1.add_parameter(self.param)
+        
+        x = np.linspace(-2,6,4)[:,None]
+        y = np.sin(x)
+        self.testmodel = GPy.models.GPRegression(x,y)
         
     def test_add_parameter(self):
         self.assertEquals(self.rbf._parent_index_, 0)
@@ -36,7 +41,6 @@ class Test(unittest.TestCase):
 
         self.test1.add_parameter(self.white, 0)
         self.assertListEqual(self.test1._fixes_.tolist(),[FIXED,UNFIXED,UNFIXED])
-        
         
     def test_remove_parameter(self):
         from GPy.core.parameterization.transformations import FIXED, UNFIXED, __fixed__, Logexp
@@ -65,7 +69,7 @@ class Test(unittest.TestCase):
         self.assertListEqual(self.test1.constraints[Logexp()].tolist(), [0,1])
         
     def test_add_parameter_already_in_hirarchy(self):
-        self.test1.add_parameter(self.white._parameters_[0])
+        self.assertRaises(HierarchyError, self.test1.add_parameter, self.white._parameters_[0])        
         
     def test_default_constraints(self):
         self.assertIs(self.rbf.variance.constraints._param_index_ops, self.rbf.constraints._param_index_ops)
@@ -87,6 +91,18 @@ class Test(unittest.TestCase):
         self.assertEqual(self.white.constraints._offset, 2)
         self.assertEqual(self.rbf.constraints._offset, 0)
         self.assertEqual(self.param.constraints._offset, 3)
+
+    def test_fixing_randomize(self):
+        self.white.fix(warning=False)
+        val = float(self.test1.white.variance)
+        self.test1.randomize()
+        self.assertEqual(val, self.white.variance)
+
+    def test_fixing_optimize(self):
+        self.testmodel.kern.lengthscale.fix()
+        val = float(self.testmodel.kern.lengthscale)
+        self.testmodel.randomize()
+        self.assertEqual(val, self.testmodel.kern.lengthscale)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.test_add_parameter']

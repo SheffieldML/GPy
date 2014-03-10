@@ -19,12 +19,16 @@ class VarDTC(object):
 
     """
     const_jitter = 1e-6
-    def __init__(self):
+    def __init__(self, limit=1):
         #self._YYTfactor_cache = caching.cache()
         from ...util.caching import Cacher
-        self.get_trYYT = Cacher(self._get_trYYT, 1)
-        self.get_YYTfactor = Cacher(self._get_YYTfactor, 1)
+        self.get_trYYT = Cacher(self._get_trYYT, limit)
+        self.get_YYTfactor = Cacher(self._get_YYTfactor, limit)
 
+    def set_limit(self, limit):
+        self.get_trYYT.limit = limit
+        self.get_YYTfactor.limit = limit
+        
     def _get_trYYT(self, Y):
         return param_to_array(np.sum(np.square(Y)))
 
@@ -60,8 +64,7 @@ class VarDTC(object):
         _, output_dim = Y.shape
 
         #see whether we've got a different noise variance for each datum
-        beta = 1./np.squeeze(likelihood.variance)
-
+        beta = 1./np.fmax(likelihood.variance, 1e-6)
         # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
         #self.YYTfactor = self.get_YYTfactor(Y)
         #VVT_factor = self.get_VVTfactor(self.YYTfactor, beta)
@@ -76,7 +79,7 @@ class VarDTC(object):
         # kernel computations, using BGPLVM notation
         Kmm = kern.K(Z)
 
-        Lm = jitchol(Kmm)
+        Lm = jitchol(Kmm+np.eye(Z.shape[0])*self.const_jitter)
 
         # The rather complex computations of A
         if uncertain_inputs:
@@ -176,10 +179,13 @@ class VarDTC(object):
         return post, log_marginal, grad_dict
 
 class VarDTCMissingData(object):
-    def __init__(self):
+    def __init__(self, limit=1):
         from ...util.caching import Cacher
-        self._Y = Cacher(self._subarray_computations, 1)
+        self._Y = Cacher(self._subarray_computations, limit)
         pass
+
+    def set_limit(self, limit):
+        self._Y.limit = limit
 
     def _subarray_computations(self, Y):
         inan = np.isnan(Y)
@@ -214,7 +220,7 @@ class VarDTCMissingData(object):
             psi2_all = None
 
         Ys, traces = self._Y(Y)
-        beta_all = 1./likelihood.variance
+        beta_all = 1./np.fmax(likelihood.variance, 1e-6)
         het_noise = beta_all.size != 1
 
         import itertools

@@ -10,7 +10,7 @@ from functools import partial
 #np.random.seed(300)
 #np.random.seed(7)
 
-np.seterr(divide='raise')
+#np.seterr(divide='raise')
 def dparam_partial(inst_func, *args):
     """
     If we have a instance method that needs to be called but that doesn't
@@ -350,7 +350,7 @@ class TestNoiseModels(object):
     def t_logpdf(self, model, Y, f):
         print "\n{}".format(inspect.stack()[0][3])
         print model
-        print model._get_params()
+        #print model._get_params()
         np.testing.assert_almost_equal(
                                model.pdf(f.copy(), Y.copy()),
                                np.exp(model.logpdf(f.copy(), Y.copy()))
@@ -664,7 +664,8 @@ class LaplaceTests(unittest.TestCase):
             print m1
             print m2
 
-        m2._set_params(m1._get_params())
+        m2.parameters_changed()
+        #m2._set_params(m1._get_params())
 
         #Predict for training points to get posterior mean and variance
         post_mean, post_var, _, _ = m1.predict(X)
@@ -700,7 +701,8 @@ class LaplaceTests(unittest.TestCase):
         np.testing.assert_almost_equal(m1.log_likelihood(), m2.log_likelihood(), decimal=2)
         #Check marginals are the same with random
         m1.randomize()
-        m2._set_params(m1._get_params())
+        #m2._set_params(m1._get_params())
+        m2.parameters_changed()
         np.testing.assert_almost_equal(m1.log_likelihood(), m2.log_likelihood(), decimal=2)
 
         #Check they are checkgradding

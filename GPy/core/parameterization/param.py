@@ -3,8 +3,8 @@
 
 import itertools
 import numpy
-from parameter_core import Constrainable, Gradcheckable, Indexable, Parentable, adjust_name_for_printing
-from array_core import ObservableArray, ParamList
+from parameter_core import OptimizationHandlable, Gradcheckable, adjust_name_for_printing
+from array_core import ObservableArray
 
 ###### printing
 __constraints_name__ = "Constraint"
@@ -15,7 +15,7 @@ __precision__ = numpy.get_printoptions()['precision'] # numpy printing precision
 __print_threshold__ = 5
 ######
 
-class Param(Constrainable, ObservableArray, Gradcheckable):
+class Param(OptimizationHandlable, ObservableArray):
     """
     Parameter object for GPy models.
 
@@ -50,11 +50,11 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
         obj._realsize_ = obj.size
         obj._realndim_ = obj.ndim
         obj._updated_ = False
-        from index_operations import SetDict
+        from lists_and_dicts import SetDict
         obj._tied_to_me_ = SetDict()
         obj._tied_to_ = []
         obj._original_ = True
-        obj._gradient_ = None
+        obj._gradient_array_ = numpy.zeros(obj.shape, dtype=numpy.float64)
         return obj
 
     def __init__(self, name, input_array, default_constraint=None, *a, **kw):
@@ -77,7 +77,7 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
         super(Param, self).__array_finalize__(obj)
-        self._direct_parent_ = getattr(obj, '_direct_parent_', None)
+        self._parent_ = getattr(obj, '_parent_', None)
         self._parent_index_ = getattr(obj, '_parent_index_', None)
         self._default_constraint_ = getattr(obj, '_default_constraint_', None)
         self._current_slice_ = getattr(obj, '_current_slice_', None)
@@ -89,16 +89,18 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
         self._updated_ = getattr(obj, '_updated_', None)
         self._original_ = getattr(obj, '_original_', None)
         self._name = getattr(obj, 'name', None)
-        self._gradient_ = getattr(obj, '_gradient_', None)
+        self._gradient_array_ = getattr(obj, '_gradient_array_', None)
         self.constraints = getattr(obj, 'constraints', None)
         self.priors = getattr(obj, 'priors', None)
 
-
+    @property
+    def _param_array_(self):
+        return self
+    
     @property
     def gradient(self):
-        if self._gradient_ is None:
-            self._gradient_ = numpy.zeros(self._realshape_)
-        return self._gradient_[self._current_slice_]
+        return self._gradient_array_[self._current_slice_]
+     
     @gradient.setter
     def gradient(self, val):
         self.gradient[:] = val
@@ -110,7 +112,7 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
         func, args, state = super(Param, self).__reduce__()
         return func, args, (state,
                             (self.name,
-                             self._direct_parent_,
+                             self._parent_,
                              self._parent_index_,
                              self._default_constraint_,
                              self._current_slice_,
@@ -135,7 +137,7 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
         self._current_slice_ = state.pop()
         self._default_constraint_ = state.pop()
         self._parent_index_ = state.pop()
-        self._direct_parent_ = state.pop()
+        self._parent_ = state.pop()
         self.name = state.pop()
     
     def copy(self, *args):
@@ -148,17 +150,20 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
     #===========================================================================
     # get/set parameters
     #===========================================================================
-    def _set_params(self, param, update=True):
-        self.flat = param
-
-    def _get_params(self):
-        return self.flat
-
-    def _collect_gradient(self, target):
-        target += self.gradient.flat
-
-    def _set_gradient(self, g):
-        self.gradient = g.reshape(self._realshape_)
+#     def _set_params(self, param, trigger_parent=True):
+#         self.flat = param
+#         if trigger_parent: min_priority = None
+#         else: min_priority = -numpy.inf
+#         self.notify_observers(None, min_priority)
+# 
+#     def _get_params(self):
+#         return self.flat
+# 
+#     def _collect_gradient(self, target):
+#         target += self.gradient.flat
+# 
+#     def _set_gradient(self, g):
+#         self.gradient = g.reshape(self._realshape_)
 
     #===========================================================================
     # Array operations -> done
@@ -172,11 +177,9 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
         try: new_arr._current_slice_ = s; new_arr._original_ = self.base is new_arr.base
         except AttributeError: pass  # returning 0d array or float, double etc
         return new_arr
+    
     def __setitem__(self, s, val):
         super(Param, self).__setitem__(s, val)
-        if self.has_parent():
-            self._direct_parent_._notify_parameters_changed()
-        #self._notify_observers()
         
     #===========================================================================
     # Index Operations:
@@ -204,6 +207,7 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
         ind = self._indices(slice_index)
         if ind.ndim < 2: ind = ind[:, None]
         return numpy.asarray(numpy.apply_along_axis(lambda x: numpy.sum(extended_realshape * x), 1, ind), dtype=int)
+    
     def _expand_index(self, slice_index=None):
         # this calculates the full indexing arrays from the slicing objects given by get_item for _real..._ attributes
         # it basically translates slices to their respective index arrays and turns negative indices around
@@ -230,7 +234,8 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
     #===========================================================================
     @property
     def is_fixed(self):
-        return self._highest_parent_._is_fixed(self)
+        from transformations import __fixed__
+        return self.constraints[__fixed__].size == self.size
     #def round(self, decimals=0, out=None):
     #    view = super(Param, self).round(decimals, out).view(Param)
     #    view.__array_finalize__(self)
@@ -244,7 +249,8 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
     #===========================================================================
     @property
     def _description_str(self):
-        if self.size <= 1: return ["%f" % self]
+        if self.size <= 1: 
+            return [str(self.view(numpy.ndarray)[0])]
         else: return [str(self.shape)]
     def parameter_names(self, add_self=False, adjust_for_printing=False):
         if adjust_for_printing:
@@ -267,7 +273,7 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
         return [t._short() for t in self._tied_to_] or ['']
     def __repr__(self, *args, **kwargs):
         name = "\033[1m{x:s}\033[0;0m:\n".format(
-                            x=self.hirarchy_name())
+                            x=self.hierarchy_name())
         return name + super(Param, self).__repr__(*args, **kwargs)
     def _ties_for(self, rav_index):
         # size = sum(p.size for p in self._tied_to_)
@@ -301,12 +307,12 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
         gen = map(lambda x: " ".join(map(str, x)), gen)
         return reduce(lambda a, b:max(a, len(b)), gen, len(header))
     def _max_len_values(self):
-        return reduce(lambda a, b:max(a, len("{x:=.{0}g}".format(__precision__, x=b))), self.flat, len(self.hirarchy_name()))
+        return reduce(lambda a, b:max(a, len("{x:=.{0}g}".format(__precision__, x=b))), self.flat, len(self.hierarchy_name()))
     def _max_len_index(self, ind):
         return reduce(lambda a, b:max(a, len(str(b))), ind, len(__index_name__))
     def _short(self):
         # short string to print
-        name = self.hirarchy_name()
+        name = self.hierarchy_name()
         if self._realsize_ < 2:
             return name
         ind = self._indices()
@@ -329,8 +335,8 @@ class Param(Constrainable, ObservableArray, Gradcheckable):
         if lp is None: lp = self._max_len_names(prirs, __tie_name__)
         sep = '-'
         header_format = "  {i:{5}^{2}s}  |  \033[1m{x:{5}^{1}s}\033[0;0m  |  {c:{5}^{0}s}  |  {p:{5}^{4}s}  |  {t:{5}^{3}s}"
-        if only_name: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.hirarchy_name(), c=sep*lc, i=sep*li, t=sep*lt, p=sep*lp)  # nice header for printing
-        else: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.hirarchy_name(), c=__constraints_name__, i=__index_name__, t=__tie_name__, p=__priors_name__)  # nice header for printing
+        if only_name: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.hierarchy_name(), c=sep*lc, i=sep*li, t=sep*lt, p=sep*lp)  # nice header for printing
+        else: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.hierarchy_name(), c=__constraints_name__, i=__index_name__, t=__tie_name__, p=__priors_name__)  # nice header for printing
         if not ties: ties = itertools.cycle([''])
         return "\n".join([header] + ["  {i!s:^{3}s}  |  {x: >{1}.{2}g}  |  {c:^{0}s}  |  {p:^{5}s}  |  {t:^{4}s}  ".format(lc, lx, __precision__, li, lt, lp, x=x, c=" ".join(map(str, c)), p=" ".join(map(str, p)), t=(t or ''), i=i) for i, x, c, t, p in itertools.izip(indices, vals, constr_matrix, ties, prirs)])  # return all the constraints with right indices
         # except: return super(Param, self).__str__()
@@ -345,7 +351,8 @@ class ParamConcatenation(object):
         See :py:class:`GPy.core.parameter.Param` for more details on constraining.
         """
         # self.params = params
-        self.params = ParamList([])
+        from lists_and_dicts import ArrayList
+        self.params = ArrayList([])
         for p in params:
             for p in p.flattened_parameters:
                 if p not in self.params:
@@ -353,6 +360,21 @@ class ParamConcatenation(object):
         self._param_sizes = [p.size for p in self.params]
         startstops = numpy.cumsum([0] + self._param_sizes)
         self._param_slices_ = [slice(start, stop) for start,stop in zip(startstops, startstops[1:])]
+        
+        parents = dict()
+        for p in self.params:
+            if p.has_parent():
+                parent = p._parent_
+                level = 0
+                while parent is not None:
+                    if parent in parents:
+                        parents[parent] = max(level, parents[parent])
+                    else:
+                        parents[parent] = level
+                    level += 1
+                    parent = parent._parent_
+        import operator
+        self.parents = map(lambda x: x[0], sorted(parents.iteritems(), key=operator.itemgetter(1)))
     #===========================================================================
     # Get/set items, enable broadcasting
     #===========================================================================
@@ -366,24 +388,26 @@ class ParamConcatenation(object):
             val = val._vals()
         ind = numpy.zeros(sum(self._param_sizes), dtype=bool); ind[s] = True;
         vals = self._vals(); vals[s] = val; del val
-        [numpy.place(p, ind[ps], vals[ps]) and update and p._notify_observers()
+        [numpy.place(p, ind[ps], vals[ps])
          for p, ps in zip(self.params, self._param_slices_)]
+        if update:
+            self.update_all_params()
     def _vals(self):
-        return numpy.hstack([p._get_params() for p in self.params])
+        return numpy.hstack([p._param_array_ for p in self.params])
     #===========================================================================
     # parameter operations:
     #===========================================================================
     def update_all_params(self):
-        for p in self.params:
-            p._notify_observers()
-
+        for par in self.parents:
+            par.notify_observers(-numpy.inf)
+        
     def constrain(self, constraint, warning=True):
-        [param.constrain(constraint, update=False) for param in self.params]
+        [param.constrain(constraint, trigger_parent=False) for param in self.params]
         self.update_all_params()
     constrain.__doc__ = Param.constrain.__doc__
 
     def constrain_positive(self, warning=True):
-        [param.constrain_positive(warning, update=False) for param in self.params]
+        [param.constrain_positive(warning, trigger_parent=False) for param in self.params]
         self.update_all_params()
     constrain_positive.__doc__ = Param.constrain_positive.__doc__
 
@@ -393,12 +417,12 @@ class ParamConcatenation(object):
     fix = constrain_fixed
 
     def constrain_negative(self, warning=True):
-        [param.constrain_negative(warning, update=False) for param in self.params]
+        [param.constrain_negative(warning, trigger_parent=False) for param in self.params]
         self.update_all_params()
     constrain_negative.__doc__ = Param.constrain_negative.__doc__
 
     def constrain_bounded(self, lower, upper, warning=True):
-        [param.constrain_bounded(lower, upper, warning, update=False) for param in self.params]
+        [param.constrain_bounded(lower, upper, warning, trigger_parent=False) for param in self.params]
         self.update_all_params()
     constrain_bounded.__doc__ = Param.constrain_bounded.__doc__
 

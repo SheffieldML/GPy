@@ -109,5 +109,5 @@ class Cache_this(object):
                 self.c = Cacher(f, self.limit, ignore_args=self.ignore_args, force_kwargs=self.force_args)
             return self.c(*args, **kw)
         f_wrap._cacher = self
-        f_wrap.__doc__ = "**cached**\n\n" + (f.__doc__ or "")
+        f_wrap.__doc__ = "**cached**" + (f.__doc__ or "")
         return f_wrap

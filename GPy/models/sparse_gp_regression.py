@@ -45,10 +45,10 @@ class SparseGPRegression(SparseGP):
             assert Z.shape[1] == input_dim
 
         likelihood = likelihoods.Gaussian()
-        
+
         if not (X_variance is None):
             X = NormalPosterior(X,X_variance)
-        
+
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method=VarDTC())
 
     def _getstate(self):

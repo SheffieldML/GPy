@@ -56,7 +56,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     if ax is None:
         fig = pb.figure(num=fignum)
         ax = fig.add_subplot(111)
-    
+
     if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs(): 
         X = model.X.mean
         X_variance = param_to_array(model.X.variance)

@@ -253,7 +253,7 @@ class Model(Parameterized):
         sgd.run()
         self.optimization_runs.append(sgd)
 
-    def _checkgrad(self, target_param=None, verbose=False, step=1e-6, tolerance=1e-3):
+    def _checkgrad(self, target_param=None, verbose=False, step=1e-6, tolerance=1e-3, _debug=False):
         """
         Check the gradient of the ,odel by comparing to a numerical
         estimate.  If the verbose flag is passed, invividual
@@ -271,7 +271,7 @@ class Model(Parameterized):
            and numerical gradients is within <tolerance> of unity.
         """
         x = self._get_params_transformed().copy()
-        
+
         if not verbose:
             # make sure only to test the selected parameters
             if target_param is None:
@@ -298,12 +298,12 @@ class Model(Parameterized):
 
             dx = dx[transformed_index]
             gradient = gradient[transformed_index]
-            
+
             denominator = (2 * np.dot(dx, gradient))
             global_ratio = (f1 - f2) / np.where(denominator==0., 1e-32, denominator)
             gloabl_diff = (f1 - f2) - denominator
-        
-            return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gloabl_diff) < tolerance) 
+
+            return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gloabl_diff) == 0) 
         else:
             # check the gradient of each parameter individually, and do some pretty printing
             try:
@@ -349,6 +349,8 @@ class Model(Parameterized):
                 xx[xind] -= 2.*step
                 f2 = self.objective_function(xx)
                 numerical_gradient = (f1 - f2) / (2 * step)
+                if _debug:
+                    self.gradient[xind] = numerical_gradient
                 if np.all(gradient[xind]==0): ratio = (f1-f2) == gradient[xind] 
                 else: ratio = (f1 - f2) / (2 * step * gradient[xind])
                 difference = np.abs((f1 - f2) / 2 / step - gradient[xind])
@@ -366,7 +368,7 @@ class Model(Parameterized):
                 ng = '%.6f' % float(numerical_gradient)
                 grad_string = "{0:<{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name, r, d, g, ng, c0=cols[0] + 9, c1=cols[1], c2=cols[2], c3=cols[3], c4=cols[4])
                 print grad_string
-                
+
             self._set_params_transformed(x)
             return ret
 

@@ -446,8 +446,8 @@ class ParamConcatenation(object):
     def untie(self, *ties):
         [param.untie(*ties) for param in self.params]
 
-    def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3):
-        return self.params[0]._highest_parent_._checkgrad(self, verbose, step, tolerance)
+    def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3, _debug=False):
+        return self.params[0]._highest_parent_._checkgrad(self, verbose, step, tolerance, _debug=_debug)
     #checkgrad.__doc__ = Gradcheckable.checkgrad.__doc__
 
     __lt__ = lambda self, val: self._vals() < val

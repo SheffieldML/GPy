@@ -16,7 +16,7 @@ Observable Pattern for patameterization
 from transformations import Transformation, Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
 
-__updated__ = '2013-12-16'
+__updated__ = '2014-03-11'
 
 class HierarchyError(Exception):
     """
@@ -34,7 +34,7 @@ def adjust_name_for_printing(name):
 class Observable(object):
     """
     Observable pattern for parameterization.
-    
+
     This Object allows for observers to register with self and a (bound!) function
     as an observer. Every time the observable changes, it sends a notification with
     self as only argument to all its observers.
@@ -43,10 +43,10 @@ class Observable(object):
     def __init__(self, *args, **kwargs):
         super(Observable, self).__init__(*args, **kwargs)
         self._observer_callables_ = []
-        
+
     def add_observer(self, observer, callble, priority=0):
         self._insert_sorted(priority, observer, callble)
-    
+
     def remove_observer(self, observer, callble=None):
         to_remove = []
         for p, obs, clble in self._observer_callables_:
@@ -58,15 +58,15 @@ class Observable(object):
                     to_remove.append((p, obs, clble))
         for r in to_remove:
             self._observer_callables_.remove(r)
-       
+
     def notify_observers(self, which=None, min_priority=None):
         """
         Notifies all observers. Which is the element, which kicked off this 
         notification loop.
-        
+
         NOTE: notifies only observers with priority p > min_priority!
                                                     ^^^^^^^^^^^^^^^^
-        
+
         :param which: object, which started this notification loop
         :param min_priority: only notify observers with priority > min_priority
                              if min_priority is None, notify all observers in order
@@ -88,11 +88,11 @@ class Observable(object):
                 break
             ins += 1
         self._observer_callables_.insert(ins, (p, o, c))
-        
+
 class Pickleable(object):
     """
     Make an object pickleable (See python doc 'pickling'). 
-    
+
     This class allows for pickling support by Memento pattern.
     _getstate returns a memento of the class, which gets pickled.
     _setstate(<memento>) (re-)sets the state of the class to the memento 
@@ -153,7 +153,7 @@ class Pickleable(object):
 class Parentable(object):
     """
     Enable an Object to have a parent.
-    
+
     Additionally this adds the parent_index, which is the index for the parent
     to look for in its parameter list.
     """
@@ -161,7 +161,7 @@ class Parentable(object):
     _parent_index_ = None
     def __init__(self, *args, **kwargs):
         super(Parentable, self).__init__(*args, **kwargs)
-    
+
     def has_parent(self):
         """
         Return whether this parentable object currently has a parent.
@@ -205,8 +205,8 @@ class Gradcheckable(Parentable):
     """
     def __init__(self, *a, **kw):
         super(Gradcheckable, self).__init__(*a, **kw)
-    
-    def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3):
+
+    def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3, _debug=False):
         """
         Check the gradient of this parameter with respect to the highest parent's 
         objective function.
@@ -214,20 +214,21 @@ class Gradcheckable(Parentable):
         with a stepsize step.
         The check passes if either the ratio or the difference between numerical and 
         analytical gradient is smaller then tolerance.
-        
+
         :param bool verbose: whether each parameter shall be checked individually.
         :param float step: the stepsize for the numerical three point gradient estimate.
         :param flaot tolerance: the tolerance for the gradient ratio or difference.
         """
         if self.has_parent():
-            return self._highest_parent_._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance)
-        return self._checkgrad(self[''], verbose=verbose, step=step, tolerance=tolerance)
-    def _checkgrad(self, param):
+            return self._highest_parent_._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance, _debug=_debug)
+        return self._checkgrad(self[''], verbose=verbose, step=step, tolerance=tolerance, _debug=_debug)
+
+    def _checkgrad(self, param, verbose=0, step=1e-6, tolerance=1e-3, _debug=False):
         """
         Perform the checkgrad on the model.
         TODO: this can be done more efficiently, when doing it inside here
         """
-        raise NotImplementedError, "Need log likelihood to check gradient against"
+        raise HierarchyError, "This parameter is not in a model with a likelihood, and, therefore, cannot be gradient checked!"
 
 
 class Nameable(Gradcheckable):
@@ -258,7 +259,7 @@ class Nameable(Gradcheckable):
     def hierarchy_name(self, adjust_for_printing=True):
         """
         return the name for this object with the parents names attached by dots.
-        
+
         :param bool adjust_for_printing: whether to call :func:`~adjust_for_printing()`
         on the names, recursively
         """

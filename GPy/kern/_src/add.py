@@ -5,52 +5,25 @@ import numpy as np
 import itertools
 from ...core.parameterization import Parameterized
 from ...util.caching import Cache_this
-from kern import Kern
+from kern import CombinationKernel
 
-class Add(Kern):
-    def __init__(self, subkerns, tensor):
-        assert all([isinstance(k, Kern) for k in subkerns])
-        if tensor:
-            input_dim  = sum([k.input_dim for k in subkerns])
-            self.input_slices = []
-            n = 0
-            for k in subkerns:
-                self.input_slices.append(slice(n, n+k.input_dim))
-                n += k.input_dim
-        else:
-            assert all([k.input_dim == subkerns[0].input_dim for k in subkerns])
-            input_dim = subkerns[0].input_dim
-            self.input_slices = [slice(None) for k in subkerns]
-        super(Add, self).__init__(input_dim, 'add')
-        self.add_parameters(*subkerns)
+class Add(CombinationKernel):
+    """
+    Add given list of kernels together.
+    propagates gradients thorugh.
+    """
+    def __init__(self, subkerns, name='add'):
+        super(Add, self).__init__(subkerns, name)
 
-    @property
-    def parts(self):
-        return self._parameters_
-
-    def K(self, X, X2=None):
-        """
-        Compute the kernel function.
-
-        :param X: the first set of inputs to the kernel
-        :param X2: (optional) the second set of arguments to the kernel. If X2
-                   is None, this is passed throgh to the 'part' object, which
-                   handLes this as X2 == X.
-        """
+    @Cache_this(limit=2, force_kwargs=['which_parts'])
+    def K(self, X, X2=None, which_parts=None):
         assert X.shape[1] == self.input_dim
-        which_parts=None
         if which_parts is None:
             which_parts = self.parts
         elif not isinstance(which_parts, (list, tuple)):
             # if only one part is given
             which_parts = [which_parts]
         return sum([p.K(X, X2) for p in which_parts])
-
-    def update_gradients_full(self, dL_dK, X, X2=None):
-        [p.update_gradients_full(dL_dK, X, X2) for p in self.parts]
-
-    def update_gradients_diag(self, dL_dK, X):
-        [p.update_gradients_diag(dL_dK, X) for p in self.parts]
 
     def gradients_X(self, dL_dK, X, X2=None):
         """Compute the gradient of the objective function with respect to X.
@@ -67,8 +40,8 @@ class Add(Kern):
             target[:, p.active_dims] += p.gradients_X(dL_dK, X, X2)
         return target
 
-    def Kdiag(self, X):
-        which_parts=None
+    @Cache_this(limit=2, force_kwargs=['which_parts'])
+    def Kdiag(self, X, which_parts=None):
         assert X.shape[1] == self.input_dim
         if which_parts is None:
             which_parts = self.parts

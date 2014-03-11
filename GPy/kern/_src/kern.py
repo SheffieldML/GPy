@@ -2,6 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import sys
+import numpy as np
 from ...core.parameterization.parameterized import ParametersChangedMeta, Parameterized
 from ...util.caching import Cache_this
 
@@ -14,8 +15,11 @@ class KernCallsViaSlicerMeta(ParametersChangedMeta):
         instance.update_gradients_diag = instance._slice_wrapper(instance.update_gradients_diag, True, True)
         instance.gradients_X = instance._slice_wrapper(instance.gradients_X, False, True)
         instance.gradients_X_diag = instance._slice_wrapper(instance.gradients_X_diag, True, True)
+        instance.psi0 = instance._slice_wrapper(instance.psi0, False, False)
+        instance.psi1 = instance._slice_wrapper(instance.psi1, False, False)
+        instance.psi2 = instance._slice_wrapper(instance.psi2, False, False)
         return instance
-    
+
 class Kern(Parameterized):
     __metaclass__ = KernCallsViaSlicerMeta
     def __init__(self, input_dim, name, *a, **kw):
@@ -37,11 +41,11 @@ class Kern(Parameterized):
             self.input_dim = len(self.active_dims)
         self._sliced_X = False
         self._sliced_X2 = False
-    
-    @Cache_this(limit=10, ignore_args = (0,))
+
+    @Cache_this(limit=10)#, ignore_args = (0,))
     def _slice_X(self, X):
         return X[:, self.active_dims]
-    
+
     def _slice_wrapper(self, operation, diag=False, derivative=False):
         """
         This method wraps the functions in kernel to make sure all kernels allways see their respective input dimension.
@@ -56,7 +60,8 @@ class Kern(Parameterized):
                     self._sliced_X = True
                     try:
                         ret = operation(dL_dK, X, *args, **kw)
-                    except: raise
+                    except:
+                        raise
                     finally:
                         self._sliced_X = False
                     return ret
@@ -67,7 +72,8 @@ class Kern(Parameterized):
                     self._sliced_X2 = True
                     try:
                         ret = operation(dL_dK, X, X2, *args, **kw)
-                    except: raise
+                    except:
+                        raise
                     finally:
                         self._sliced_X = False
                         self._sliced_X2 = False
@@ -79,7 +85,8 @@ class Kern(Parameterized):
                     self._sliced_X = True
                     try:
                         ret = operation(X, *args, **kw)
-                    except: raise
+                    except:
+                        raise
                     finally:
                         self._sliced_X = False
                     return ret
@@ -100,10 +107,18 @@ class Kern(Parameterized):
                                     +(","+str(bool(diag)) if diag else'')
                                     +(','+str(bool(derivative)) if derivative else '')
                                     +')')
-        x_slice_wrapper.__doc__ = "**sliced**\n\n" + (operation.__doc__ or "")
+        x_slice_wrapper.__doc__ = "**sliced**\n" + (operation.__doc__ or "")
         return x_slice_wrapper
     
     def K(self, X, X2):
+        """
+        Compute the kernel function.
+
+        :param X: the first set of inputs to the kernel
+        :param X2: (optional) the second set of arguments to the kernel. If X2
+                   is None, this is passed throgh to the 'part' object, which
+                   handLes this as X2 == X.
+        """
         raise NotImplementedError
     def Kdiag(self, X):
         raise NotImplementedError
@@ -179,16 +194,9 @@ class Kern(Parameterized):
         """ Overloading of the '+' operator. for more control, see self.add """
         return self.add(other)
 
-    def add(self, other, tensor=False):
+    def add(self, other, name='add'):
         """
         Add another kernel to this one.
-
-        If Tensor is False, both kernels are defined on the same _space_. then
-        the created kernel will have the same number of inputs as self and
-        other (which must be the same).
-
-        If Tensor is True, then the dimensions are stacked 'horizontally', so
-        that the resulting kernel has self.input_dim + other.input_dim
 
         :param other: the other kernel to be added
         :type other: GPy.kern
@@ -197,23 +205,23 @@ class Kern(Parameterized):
         assert isinstance(other, Kern), "only kernels can be added to kernels..."
         from add import Add
         kernels = []
-        if not tensor and isinstance(self, Add): kernels.extend(self._parameters_)
+        if isinstance(self, Add): kernels.extend(self._parameters_)
         else: kernels.append(self)
-        if not tensor and isinstance(other, Add): kernels.extend(other._parameters_)
+        if isinstance(other, Add): kernels.extend(other._parameters_)
         else: kernels.append(other)
-        return Add(kernels, tensor)
+        return Add(kernels, name=name)
 
     def __mul__(self, other):
         """ Here we overload the '*' operator. See self.prod for more information"""
         return self.prod(other)
 
-    def __pow__(self, other):
-        """
-        Shortcut for tensor `prod`.
-        """
-        return self.prod(other, tensor=True)
+    #def __pow__(self, other):
+    #    """
+    #    Shortcut for tensor `prod`.
+    #    """
+    #    return self.prod(other, tensor=True)
 
-    def prod(self, other, tensor=False, name=None):
+    def prod(self, other, name=None):
         """
         Multiply two kernels (either on the same space, or on the tensor
         product of the input space).
@@ -226,4 +234,27 @@ class Kern(Parameterized):
         """
         assert isinstance(other, Kern), "only kernels can be added to kernels..."
         from prod import Prod
-        return Prod(self, other, tensor, name)
+        kernels = []
+        if isinstance(self, Prod): kernels.extend(self._parameters_)
+        else: kernels.append(self)
+        if isinstance(other, Prod): kernels.extend(other._parameters_)
+        else: kernels.append(other)
+        return Prod(self, other, name)
+
+
+class CombinationKernel(Kern):
+    def __init__(self, kernels, name):
+        assert all([isinstance(k, Kern) for k in kernels])
+        input_dim = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels))
+        super(CombinationKernel, self).__init__(input_dim, name)
+        self.add_parameters(*kernels)
+
+    @property
+    def parts(self):
+        return self._parameters_
+
+    def update_gradients_full(self, dL_dK, X, X2=None):
+        [p.update_gradients_full(dL_dK, X, X2) for p in self.parts]
+
+    def update_gradients_diag(self, dL_dK, X):
+        [p.update_gradients_diag(dL_dK, X) for p in self.parts]

@@ -11,6 +11,7 @@ import itertools
 from GPy.core import Model
 from GPy.core.parameterization.param import Param
 from GPy.core.parameterization.transformations import Logexp
+from GPy.core.parameterization.variational import NormalPosterior
 
 class PsiStatModel(Model):
     def __init__(self, which, X, X_variance, Z, num_inducing, kernel):
@@ -18,23 +19,24 @@ class PsiStatModel(Model):
         self.which = which
         self.X = Param("X", X)
         self.X_variance = Param('X_variance', X_variance, Logexp())
+        self.q = NormalPosterior(self.X, self.X_variance)
         self.Z = Param("Z", Z)
         self.N, self.input_dim = X.shape
         self.num_inducing, input_dim = Z.shape
         assert self.input_dim == input_dim, "shape missmatch: Z:{!s} X:{!s}".format(Z.shape, X.shape)
         self.kern = kernel
-        self.psi_ = self.kern.__getattribute__(self.which)(self.Z, self.X, self.X_variance)
-        self.add_parameters(self.X, self.X_variance, self.Z, self.kern)
+        self.psi_ = self.kern.__getattribute__(self.which)(self.Z, self.q)
+        self.add_parameters(self.q, self.Z, self.kern)
 
     def log_likelihood(self):
         return self.kern.__getattribute__(self.which)(self.Z, self.X, self.X_variance).sum()
 
     def parameters_changed(self):
-        psimu, psiS = self.kern.__getattribute__("d" + self.which + "_dmuS")(numpy.ones_like(self.psi_), self.Z, self.X, self.X_variance)
+        psimu, psiS = self.kern.__getattribute__("d" + self.which + "_dmuS")(numpy.ones_like(self.psi_), self.Z, self.q)
         self.X.gradient = psimu
         self.X_variance.gradient = psiS
         #psimu, psiS = numpy.ones(self.N * self.input_dim), numpy.ones(self.N * self.input_dim)
-        try: psiZ = self.kern.__getattribute__("d" + self.which + "_dZ")(numpy.ones_like(self.psi_), self.Z, self.X, self.X_variance)
+        try: psiZ = self.kern.__getattribute__("d" + self.which + "_dZ")(numpy.ones_like(self.psi_), self.Z, self.q)
         except AttributeError: psiZ = numpy.zeros_like(self.Z)
         self.Z.gradient = psiZ
         #psiZ = numpy.ones(self.num_inducing * self.input_dim)
@@ -176,6 +178,6 @@ if __name__ == "__main__":
             +GPy.kern.White(input_dim)
             )
             )
-        m2.ensure_default_constraints()
+        #m2.ensure_default_constraints()
     else:
         unittest.main()

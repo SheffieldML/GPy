@@ -14,21 +14,19 @@ class ObservableArray(np.ndarray, Observable):
     takes exactly one argument, which is this array itself.
     """
     __array_priority__ = -1 # Never give back ObservableArray
-    def __new__(cls, input_array):
+    def __new__(cls, input_array, *a, **kw):
         if not isinstance(input_array, ObservableArray):
-            obj = np.atleast_1d(input_array).view(cls)
+            obj = np.atleast_1d(np.require(input_array, dtype=np.float64, requirements=['W', 'C'])).view(cls)
         else: obj = input_array
         cls.__name__ = "ObservableArray\n     "
+        super(ObservableArray, obj).__init__(*a, **kw)
         return obj
-    
-    def __init__(self, *a, **kw):
-        super(ObservableArray, self).__init__(*a, **kw)
-    
+
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
         self._observer_callables_ = getattr(obj, '_observer_callables_', None)
-        
+
     def __array_wrap__(self, out_arr, context=None):
         return out_arr.view(np.ndarray)
 
@@ -50,10 +48,10 @@ class ObservableArray(np.ndarray, Observable):
         if self._s_not_empty(s):
             super(ObservableArray, self).__setitem__(s, val)
             self.notify_observers(self[s])
-                
+
     def __getslice__(self, start, stop):
         return self.__getitem__(slice(start, stop))
-    
+
     def __setslice__(self, start, stop, val):
         return self.__setitem__(slice(start, stop), val)
 
@@ -85,7 +83,7 @@ class ObservableArray(np.ndarray, Observable):
         self.notify_observers()
         return r
 
-    
+
     def __ifloordiv__(self, *args, **kwargs):
         r = np.ndarray.__ifloordiv__(self, *args, **kwargs)
         self.notify_observers()

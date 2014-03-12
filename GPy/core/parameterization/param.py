@@ -3,7 +3,7 @@
 
 import itertools
 import numpy
-from parameter_core import OptimizationHandlable, Gradcheckable, adjust_name_for_printing
+from parameter_core import OptimizationHandlable, adjust_name_for_printing
 from array_core import ObservableArray
 
 ###### printing
@@ -43,13 +43,12 @@ class Param(OptimizationHandlable, ObservableArray):
     _fixes_ = None
     _parameters_ = []
     def __new__(cls, name, input_array, default_constraint=None):
-        obj = numpy.atleast_1d(super(Param, cls).__new__(cls, input_array=input_array))
+        obj = numpy.atleast_1d(super(Param, cls).__new__(cls, input_array=input_array, name=name, default_constraint=default_constraint))
         cls.__name__ = "Param"
         obj._current_slice_ = (slice(obj.shape[0]),)
         obj._realshape_ = obj.shape
         obj._realsize_ = obj.size
         obj._realndim_ = obj.ndim
-        obj._updated_ = False
         from lists_and_dicts import SetDict
         obj._tied_to_me_ = SetDict()
         obj._tied_to_ = []
@@ -86,7 +85,6 @@ class Param(OptimizationHandlable, ObservableArray):
         self._realshape_ = getattr(obj, '_realshape_', None)
         self._realsize_ = getattr(obj, '_realsize_', None)
         self._realndim_ = getattr(obj, '_realndim_', None)
-        self._updated_ = getattr(obj, '_updated_', None)
         self._original_ = getattr(obj, '_original_', None)
         self._name = getattr(obj, 'name', None)
         self._gradient_array_ = getattr(obj, '_gradient_array_', None)
@@ -121,14 +119,12 @@ class Param(OptimizationHandlable, ObservableArray):
                              self._realndim_,
                              self._tied_to_me_,
                              self._tied_to_,
-                             self._updated_,
                             )
                             )
 
     def __setstate__(self, state):
         super(Param, self).__setstate__(state[0])
         state = list(state[1])
-        self._updated_ = state.pop()
         self._tied_to_ = state.pop()
         self._tied_to_me_ = state.pop()
         self._realndim_ = state.pop()
@@ -393,7 +389,7 @@ class ParamConcatenation(object):
         if update:
             self.update_all_params()
     def _vals(self):
-        return numpy.hstack([p._get_params() for p in self.params])
+        return numpy.hstack([p._param_array_ for p in self.params])
     #===========================================================================
     # parameter operations:
     #===========================================================================
@@ -450,8 +446,8 @@ class ParamConcatenation(object):
     def untie(self, *ties):
         [param.untie(*ties) for param in self.params]
 
-    def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3):
-        return self.params[0]._highest_parent_._checkgrad(self, verbose, step, tolerance)
+    def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3, _debug=False):
+        return self.params[0]._highest_parent_._checkgrad(self, verbose, step, tolerance, _debug=_debug)
     #checkgrad.__doc__ = Gradcheckable.checkgrad.__doc__
 
     __lt__ = lambda self, val: self._vals() < val

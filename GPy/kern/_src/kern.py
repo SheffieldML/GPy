@@ -3,12 +3,19 @@
 
 import sys
 import numpy as np
-import itertools
-from ...core.parameterization import Parameterized
-from ...core.parameterization.param import Param
+from ...core.parameterization.parameterized import Parameterized
+from kernel_slice_operations import KernCallsViaSlicerMeta
+from ...util.caching import Cache_this
+
 
 
 class Kern(Parameterized):
+    #===========================================================================
+    # This adds input slice support. The rather ugly code for slicing can be 
+    # found in kernel_slice_operations
+    __metaclass__ = KernCallsViaSlicerMeta
+    #===========================================================================
+    _debug=False
     def __init__(self, input_dim, name, *a, **kw):
         """
         The base class for a kernel: a positive definite function
@@ -20,11 +27,29 @@ class Kern(Parameterized):
         Do not instantiate.
         """
         super(Kern, self).__init__(name=name, *a, **kw)
-        self.input_dim = input_dim
+        if isinstance(input_dim, int):
+            self.active_dims = np.r_[0:input_dim]
+            self.input_dim = input_dim
+        else:
+            self.active_dims = np.r_[input_dim]
+            self.input_dim = len(self.active_dims)
+        self._sliced_X = 0
+
+    @Cache_this(limit=10)#, ignore_args = (0,))
+    def _slice_X(self, X):
+        return X[:, self.active_dims]
 
     def K(self, X, X2):
+        """
+        Compute the kernel function.
+
+        :param X: the first set of inputs to the kernel
+        :param X2: (optional) the second set of arguments to the kernel. If X2
+                   is None, this is passed throgh to the 'part' object, which
+                   handLes this as X2 == X.
+        """
         raise NotImplementedError
-    def Kdiag(self, Xa):
+    def Kdiag(self, X):
         raise NotImplementedError
     def psi0(self, Z, variational_posterior):
         raise NotImplementedError
@@ -34,13 +59,19 @@ class Kern(Parameterized):
         raise NotImplementedError
     def gradients_X(self, dL_dK, X, X2):
         raise NotImplementedError
-    def gradients_X_diag(self, dL_dK, X):
+    def gradients_X_diag(self, dL_dKdiag, X):
+        raise NotImplementedError
+
+    def update_gradients_diag(self, dL_dKdiag, X):
+        """ update the gradients of all parameters when using only the diagonal elements of the covariance matrix"""
         raise NotImplementedError
 
     def update_gradients_full(self, dL_dK, X, X2):
         """Set the gradients of all parameters when doing full (N) inference."""
         raise NotImplementedError
-
+    def update_gradients_diag(self, dL_dKdiag, X):
+        """Set the gradients for all parameters for the derivative of the diagonal of the covariance w.r.t the kernel parameters."""
+        raise NotImplementedError
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """
         Set the gradients of all parameters when doing inference with
@@ -89,22 +120,15 @@ class Kern(Parameterized):
         """
         Returns the sensitivity for each dimension of this kernel.
         """
-        return self.kern.input_sensitivity()
+        return np.zeros(self.input_dim)
 
     def __add__(self, other):
         """ Overloading of the '+' operator. for more control, see self.add """
         return self.add(other)
 
-    def add(self, other, tensor=False):
+    def add(self, other, name='add'):
         """
         Add another kernel to this one.
-
-        If Tensor is False, both kernels are defined on the same _space_. then
-        the created kernel will have the same number of inputs as self and
-        other (which must be the same).
-
-        If Tensor is True, then the dimensions are stacked 'horizontally', so
-        that the resulting kernel has self.input_dim + other.input_dim
 
         :param other: the other kernel to be added
         :type other: GPy.kern
@@ -113,23 +137,23 @@ class Kern(Parameterized):
         assert isinstance(other, Kern), "only kernels can be added to kernels..."
         from add import Add
         kernels = []
-        if not tensor and isinstance(self, Add): kernels.extend(self._parameters_)
+        if isinstance(self, Add): kernels.extend(self._parameters_)
         else: kernels.append(self)
-        if not tensor and isinstance(other, Add): kernels.extend(other._parameters_)
+        if isinstance(other, Add): kernels.extend(other._parameters_)
         else: kernels.append(other)
-        return Add(kernels, tensor)
+        return Add(kernels, name=name)
 
     def __mul__(self, other):
         """ Here we overload the '*' operator. See self.prod for more information"""
         return self.prod(other)
 
-    def __pow__(self, other):
-        """
-        Shortcut for tensor `prod`.
-        """
-        return self.prod(other, tensor=True)
+    #def __pow__(self, other):
+    #    """
+    #    Shortcut for tensor `prod`.
+    #    """
+    #    return self.prod(other, tensor=True)
 
-    def prod(self, other, tensor=False, name=None):
+    def prod(self, other, name=None):
         """
         Multiply two kernels (either on the same space, or on the tensor
         product of the input space).
@@ -142,4 +166,42 @@ class Kern(Parameterized):
         """
         assert isinstance(other, Kern), "only kernels can be added to kernels..."
         from prod import Prod
-        return Prod(self, other, tensor, name)
+        kernels = []
+        if isinstance(self, Prod): kernels.extend(self._parameters_)
+        else: kernels.append(self)
+        if isinstance(other, Prod): kernels.extend(other._parameters_)
+        else: kernels.append(other)
+        return Prod(self, other, name)
+
+    def _getstate(self):
+        """
+        Get the current state of the class,
+        here just all the indices, rest can get recomputed
+        """
+        return super(Kern, self)._getstate() + [
+                self.active_dims,
+                self.input_dim,
+                self._sliced_X]
+
+    def _setstate(self, state):
+        self._sliced_X = state.pop()
+        self.input_dim = state.pop()
+        self.active_dims = state.pop()
+        super(Kern, self)._setstate(state)
+
+class CombinationKernel(Kern):
+    def __init__(self, kernels, name):
+        assert all([isinstance(k, Kern) for k in kernels])
+        input_dim = reduce(np.union1d, (x.active_dims for x in kernels))
+        super(CombinationKernel, self).__init__(input_dim, name)
+        self.add_parameters(*kernels)
+
+    @property
+    def parts(self):
+        return self._parameters_
+
+    def input_sensitivity(self):
+        in_sen = np.zeros((self.num_params, self.input_dim))
+        for i, p in enumerate(self.parts):
+            in_sen[i, p.active_dims] = p.input_sensitivity()
+        return in_sen

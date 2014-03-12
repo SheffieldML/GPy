@@ -6,7 +6,9 @@ import numpy as np
 import GPy
 import sys
 
-verbose = True
+verbose = 0
+
+
 
 class Kern_check_model(GPy.core.Model):
     """
@@ -91,7 +93,7 @@ class Kern_check_dKdiag_dX(Kern_check_dK_dX):
 
 
 
-def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False):
+def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verbose=False):
     """
     This function runs on kernels to check the correctness of their
     implementation. It checks that the covariance function is positive definite
@@ -210,7 +212,7 @@ def kern_test(kern, X=None, X2=None, output_ind=None, verbose=False):
 
 
 
-class KernelTestsContinuous(unittest.TestCase):
+class KernelGradientTestsContinuous(unittest.TestCase):
     def setUp(self):
         self.X = np.random.randn(100,2)
         self.X2 = np.random.randn(110,2)
@@ -220,16 +222,34 @@ class KernelTestsContinuous(unittest.TestCase):
 
     def test_Matern32(self):
         k = GPy.kern.Matern32(2)
-        self.assertTrue(kern_test(k, X=self.X, X2=self.X2, verbose=verbose))
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
     def test_Matern52(self):
         k = GPy.kern.Matern52(2)
-        self.assertTrue(kern_test(k, X=self.X, X2=self.X2, verbose=verbose))
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
     #TODO: turn off grad checkingwrt X for indexed kernels liek coregionalize
 
 
+class KernelTestsMiscellaneous(unittest.TestCase):
 
+    def setUp(self):
+        N, D = 100, 10
+        self.X = np.linspace(-np.pi, +np.pi, N)[:,None] * np.ones(D)
+        self.rbf = GPy.kern.RBF(range(2))
+        self.linear = GPy.kern.Linear((3,5,6))
+        self.matern = GPy.kern.Matern32(np.array([2,4,7]))
+        self.sumkern = self.rbf + self.linear
+        self.sumkern += self.matern
+        self.sumkern.randomize()
+
+    def test_active_dims(self):
+        self.assertListEqual(self.sumkern.active_dims.tolist(), range(8))
+
+    def test_which_parts(self):
+        self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=[self.linear, self.matern]), self.linear.K(self.X)+self.matern.K(self.X)))
+        self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=[self.linear, self.rbf]), self.linear.K(self.X)+self.rbf.K(self.X)))
+        self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=self.sumkern.parts[0]), self.rbf.K(self.X)))
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."

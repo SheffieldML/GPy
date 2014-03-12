@@ -55,7 +55,7 @@ class White(Static):
     def psi2(self, Z, variational_posterior):
         return np.zeros((variational_posterior.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)
 
-    def update_gradients_full(self, dL_dK, X):
+    def update_gradients_full(self, dL_dK, X, X2=None):
         self.variance.gradient = np.trace(dL_dK)
 
     def update_gradients_diag(self, dL_dKdiag, X):
@@ -79,13 +79,41 @@ class Bias(Static):
         self.variance.gradient = dL_dK.sum()
 
     def update_gradients_diag(self, dL_dKdiag, X):
-        self.variance.gradient = dL_dK.sum()
+        self.variance.gradient = dL_dKdiag.sum()
 
     def psi2(self, Z, variational_posterior):
-        ret = np.empty((mu.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)
+        ret = np.empty((variational_posterior.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)
         ret[:] = self.variance**2
         return ret
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dpsi0.sum() + dL_dpsi1.sum() + 2.*self.variance*dL_dpsi2.sum()
+
+class Fixed(Static):
+    def __init__(self, input_dim, covariance_matrix, variance=1., name='fixed'):
+        """
+        :param input_dim: the number of input dimensions
+        :type input_dim: int
+        :param variance: the variance of the kernel
+        :type variance: float
+        """
+        super(Bias, self).__init__(input_dim, variance, name)
+        self.fixed_K = covariance_matrix
+    def K(self, X, X2):
+        return self.variance * self.fixed_K
+
+    def Kdiag(self, X):
+        return self.variance * self.fixed_K.diag()
+
+    def update_gradients_full(self, dL_dK, X, X2=None):
+        self.variance.gradient = np.einsum('ij,ij', dL_dK, self.fixed_K)
+
+    def update_gradients_diag(self, dL_dKdiag, X):
+        self.variance.gradient = np.einsum('i,i', dL_dKdiag, self.fixed_K)
+
+    def psi2(self, Z, variational_posterior):
+        return np.zeros((variational_posterior.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)
+
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        self.variance.gradient = dL_dpsi0.sum()
 

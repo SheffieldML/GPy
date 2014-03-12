@@ -664,8 +664,7 @@ class LaplaceTests(unittest.TestCase):
             print m1
             print m2
 
-        m2.parameters_changed()
-        #m2._set_params(m1._get_params())
+        m2[:] = m1[:]
 
         #Predict for training points to get posterior mean and variance
         post_mean, post_var, _, _ = m1.predict(X)
@@ -701,8 +700,9 @@ class LaplaceTests(unittest.TestCase):
         np.testing.assert_almost_equal(m1.log_likelihood(), m2.log_likelihood(), decimal=2)
         #Check marginals are the same with random
         m1.randomize()
-        #m2._set_params(m1._get_params())
-        m2.parameters_changed()
+        import ipdb;ipdb.set_trace()
+        m2[:] = m1[:]
+
         np.testing.assert_almost_equal(m1.log_likelihood(), m2.log_likelihood(), decimal=2)
 
         #Check they are checkgradding

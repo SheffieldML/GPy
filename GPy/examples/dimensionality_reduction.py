@@ -324,14 +324,14 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
 
     D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
-    likelihood_list = [Gaussian(x, normalize=True) for x in Ylist]
-
-    k = kern.Linear(Q, ARD=True) + kern.Bias(Q, _np.exp(-2)) + kern.White(Q, _np.exp(-2))
-    m = MRD(likelihood_list, input_dim=Q, num_inducing=num_inducing, kernels=k, initx="", initz='permute', **kw)
-    m.ensure_default_constraints()
-
-    for i, bgplvm in enumerate(m.bgplvms):
-        m['{}_noise'.format(i)] = bgplvm.likelihood.Y.var() / 500.
+    
+    #Ylist = [Ylist[0]]
+    k = [kern.Linear(Q, ARD=True) + kern.White(Q, 1e-4) for _ in range(len(Ylist))]
+    m = MRD(Ylist, input_dim=Q, num_inducing=num_inducing, kernel=k, initx="", initz='permute', **kw)
+    
+    m['.*noise'] = [Y.var()/500. for Y in Ylist]
+    #for i, Y in enumerate(Ylist):
+    #    m['.*Y_{}.*Gaussian.*noise'.format(i)] = Y.var(1) / 500.
 
     if optimize:
         print "Optimizing Model:"
@@ -515,3 +515,28 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose
         lvm_visualizer.close()
 
     return m
+
+def ssgplvm_simulation_linear():
+    import numpy as np
+    import GPy
+    N, D, Q = 1000, 20, 5
+    pi = 0.2
+    
+    def sample_X(Q, pi):
+        x = np.empty(Q)
+        dies = np.random.rand(Q)
+        for q in xrange(Q):
+            if dies[q]<pi:
+                x[q] = np.random.randn()
+            else:
+                x[q] = 0.
+        return x
+    
+    Y = np.empty((N,D))
+    X = np.empty((N,Q))
+    # Generate data from random sampled weight matrices
+    for n in xrange(N):
+        X[n] = sample_X(Q,pi)
+        w = np.random.randn(D,Q)
+        Y[n] = np.dot(w,X[n])
+    

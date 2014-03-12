@@ -14,6 +14,7 @@ import subarray_and_sorting
 import caching
 import diag
 import initialization
+import multioutput
 
 try:
     import sympy

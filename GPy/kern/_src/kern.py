@@ -147,11 +147,14 @@ class Kern(Parameterized):
         """ Here we overload the '*' operator. See self.prod for more information"""
         return self.prod(other)
 
-    #def __pow__(self, other):
-    #    """
-    #    Shortcut for tensor `prod`.
-    #    """
-    #    return self.prod(other, tensor=True)
+    def __pow__(self, other):
+        """
+        Shortcut for tensor `prod`.
+        """
+        assert self.active_dims == range(self.input_dim), "Can only use kernels, which have their input_dims defined from 0"
+        assert other.active_dims == range(other.input_dim), "Can only use kernels, which have their input_dims defined from 0"
+        other.active_dims += self.input_dim
+        return self.prod(other)
 
     def prod(self, other, name=None):
         """

@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 #TODO
 """
-A lot of this code assumes that the link function is the identity. 
+A lot of this code assumes that the link function is the identity.
 
 I think laplace code is okay, but I'm quite sure that the EP moments will only work if the link is identity.
 
@@ -49,7 +49,7 @@ class Gaussian(Likelihood):
         if isinstance(gp_link, link_functions.Identity):
             self.log_concave = True
 
-    def covariance_matrix(self, Y, Y_metadata=None):
+    def covariance_matrix(self, Y, **Y_metadata):
         return np.eye(Y.shape[0]) * self.variance
 
     def update_gradients(self, partial):

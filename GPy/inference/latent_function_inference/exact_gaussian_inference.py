@@ -33,7 +33,7 @@ class ExactGaussianInference(object):
             #if Y in self.cache, return self.Cache[Y], else store Y in cache and return L.
             raise NotImplementedError, 'TODO' #TODO
 
-    def inference(self, kern, X, likelihood, Y, Y_metadata=None):
+    def inference(self, kern, X, likelihood, Y, **Y_metadata):
         """
         Returns a Posterior class containing essential quantities of the posterior
         """
@@ -41,7 +41,7 @@ class ExactGaussianInference(object):
 
         K = kern.K(X)
 
-        Wi, LW, LWi, W_logdet = pdinv(K + likelihood.covariance_matrix(Y, Y_metadata))
+        Wi, LW, LWi, W_logdet = pdinv(K + likelihood.covariance_matrix(Y, **Y_metadata))
 
         alpha, _ = dpotrs(LW, YYT_factor, lower=1)
 
@@ -49,9 +49,4 @@ class ExactGaussianInference(object):
 
         dL_dK = 0.5 * (tdot(alpha) - Y.shape[1] * Wi)
 
-        #TODO: does this really live here?
-        likelihood.update_gradients(np.diag(dL_dK))
-
         return Posterior(woodbury_chol=LW, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK}
-
-

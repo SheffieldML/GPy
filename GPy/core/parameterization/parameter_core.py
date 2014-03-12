@@ -15,9 +15,8 @@ Observable Pattern for patameterization
 
 from transformations import Transformation, Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
-import itertools
 
-__updated__ = '2013-12-16'
+__updated__ = '2014-03-12'
 
 class HierarchyError(Exception):
     """
@@ -35,18 +34,19 @@ def adjust_name_for_printing(name):
 class Observable(object):
     """
     Observable pattern for parameterization.
-    
+
     This Object allows for observers to register with self and a (bound!) function
     as an observer. Every time the observable changes, it sends a notification with
     self as only argument to all its observers.
     """
+    _updated = True
     def __init__(self, *args, **kwargs):
-        super(Observable, self).__init__()
+        super(Observable, self).__init__(*args, **kwargs)
         self._observer_callables_ = []
-        
+
     def add_observer(self, observer, callble, priority=0):
         self._insert_sorted(priority, observer, callble)
-    
+
     def remove_observer(self, observer, callble=None):
         to_remove = []
         for p, obs, clble in self._observer_callables_:
@@ -58,15 +58,15 @@ class Observable(object):
                     to_remove.append((p, obs, clble))
         for r in to_remove:
             self._observer_callables_.remove(r)
-       
+
     def notify_observers(self, which=None, min_priority=None):
         """
         Notifies all observers. Which is the element, which kicked off this 
         notification loop.
-        
+
         NOTE: notifies only observers with priority p > min_priority!
                                                     ^^^^^^^^^^^^^^^^
-        
+
         :param which: object, which started this notification loop
         :param min_priority: only notify observers with priority > min_priority
                              if min_priority is None, notify all observers in order
@@ -88,11 +88,11 @@ class Observable(object):
                 break
             ins += 1
         self._observer_callables_.insert(ins, (p, o, c))
-        
+
 class Pickleable(object):
     """
     Make an object pickleable (See python doc 'pickling'). 
-    
+
     This class allows for pickling support by Memento pattern.
     _getstate returns a memento of the class, which gets pickled.
     _setstate(<memento>) (re-)sets the state of the class to the memento 
@@ -153,15 +153,15 @@ class Pickleable(object):
 class Parentable(object):
     """
     Enable an Object to have a parent.
-    
+
     Additionally this adds the parent_index, which is the index for the parent
     to look for in its parameter list.
     """
     _parent_ = None
     _parent_index_ = None
     def __init__(self, *args, **kwargs):
-        super(Parentable, self).__init__()
-    
+        super(Parentable, self).__init__(*args, **kwargs)
+
     def has_parent(self):
         """
         Return whether this parentable object currently has a parent.
@@ -205,8 +205,8 @@ class Gradcheckable(Parentable):
     """
     def __init__(self, *a, **kw):
         super(Gradcheckable, self).__init__(*a, **kw)
-    
-    def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3):
+
+    def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3, _debug=False):
         """
         Check the gradient of this parameter with respect to the highest parent's 
         objective function.
@@ -214,20 +214,21 @@ class Gradcheckable(Parentable):
         with a stepsize step.
         The check passes if either the ratio or the difference between numerical and 
         analytical gradient is smaller then tolerance.
-        
+
         :param bool verbose: whether each parameter shall be checked individually.
         :param float step: the stepsize for the numerical three point gradient estimate.
         :param flaot tolerance: the tolerance for the gradient ratio or difference.
         """
         if self.has_parent():
-            return self._highest_parent_._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance)
-        return self._checkgrad(self[''], verbose=verbose, step=step, tolerance=tolerance)
-    def _checkgrad(self, param):
+            return self._highest_parent_._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance, _debug=_debug)
+        return self._checkgrad(self[''], verbose=verbose, step=step, tolerance=tolerance, _debug=_debug)
+
+    def _checkgrad(self, param, verbose=0, step=1e-6, tolerance=1e-3, _debug=False):
         """
         Perform the checkgrad on the model.
         TODO: this can be done more efficiently, when doing it inside here
         """
-        raise NotImplementedError, "Need log likelihood to check gradient against"
+        raise HierarchyError, "This parameter is not in a model with a likelihood, and, therefore, cannot be gradient checked!"
 
 
 class Nameable(Gradcheckable):
@@ -258,7 +259,7 @@ class Nameable(Gradcheckable):
     def hierarchy_name(self, adjust_for_printing=True):
         """
         return the name for this object with the parents names attached by dots.
-        
+
         :param bool adjust_for_printing: whether to call :func:`~adjust_for_printing()`
         on the names, recursively
         """
@@ -274,7 +275,7 @@ class Indexable(object):
     The raveled index of an object is the index for its parameters in a flattened int array.
     """
     def __init__(self, *a, **kw):
-        super(Indexable, self).__init__()
+        super(Indexable, self).__init__(*a, **kw)
         
     def _raveled_index(self):
         """
@@ -318,7 +319,7 @@ class Constrainable(Nameable, Indexable):
     :func:`constrain()` and :func:`unconstrain()` are main methods here
     """
     def __init__(self, name, default_constraint=None, *a, **kw):
-        super(Constrainable, self).__init__(name=name, default_constraint=default_constraint, *a, **kw)
+        super(Constrainable, self).__init__(name=name, *a, **kw)
         self._default_constraint_ = default_constraint
         from index_operations import ParameterIndexOperations
         self.constraints = ParameterIndexOperations()
@@ -795,27 +796,27 @@ class Parameterizable(OptimizationHandlable):
         """
         if not param in self._parameters_:
             raise RuntimeError, "Parameter {} does not belong to this object, remove parameters directly from their respective parents".format(param._short())
-        
+
         start = sum([p.size for p in self._parameters_[:param._parent_index_]])
         self._remove_parameter_name(param)
         self.size -= param.size
         del self._parameters_[param._parent_index_]
-        
+
         param._disconnect_parent()
         param.remove_observer(self, self._pass_through_notify_observers)
         self.constraints.shift_left(start, param.size)
-        
+
         self._connect_fixes()
         self._connect_parameters()
         self._notify_parent_change()
-        
+
         parent = self._parent_
         while parent is not None:
             parent._connect_fixes()
             parent._connect_parameters()
             parent._notify_parent_change()
             parent = parent._parent_
-        
+
     def _connect_parameters(self, ignore_added_names=False):
         # connect parameterlist to this parameterized object
         # This just sets up the right connection for the params objects
@@ -828,32 +829,29 @@ class Parameterizable(OptimizationHandlable):
         old_size = 0
         self._param_array_ = np.empty(self.size, dtype=np.float64)
         self._gradient_array_ = np.empty(self.size, dtype=np.float64)
-        
+
         self._param_slices_ = []
-        
         for i, p in enumerate(self._parameters_):
             p._parent_ = self
             p._parent_index_ = i
-            
+
             pslice = slice(old_size, old_size+p.size)
-            
             # first connect all children
             p._propagate_param_grad(self._param_array_[pslice], self._gradient_array_[pslice])            
-            
             # then connect children to self
             self._param_array_[pslice] = p._param_array_.ravel()#, requirements=['C', 'W']).ravel(order='C')
             self._gradient_array_[pslice] = p._gradient_array_.ravel()#, requirements=['C', 'W']).ravel(order='C')
-            
+
             if not p._param_array_.flags['C_CONTIGUOUS']:
                 import ipdb;ipdb.set_trace()
             p._param_array_.data = self._param_array_[pslice].data
             p._gradient_array_.data = self._gradient_array_[pslice].data
-            
+
             self._param_slices_.append(pslice)
-            
+
             self._add_parameter_name(p, ignore_added_names=ignore_added_names)
             old_size += p.size
-            
+
     #===========================================================================
     # notification system
     #===========================================================================
@@ -861,12 +859,13 @@ class Parameterizable(OptimizationHandlable):
         self.parameters_changed()
     def _pass_through_notify_observers(self, which):
         self.notify_observers(which)
-    
+
     #===========================================================================
     # TODO: not working yet
     #===========================================================================
     def copy(self):
         """Returns a (deep) copy of the current model"""
+        raise NotImplementedError, "Copy is not yet implemented, TODO: Observable hierarchy"
         import copy
         from .index_operations import ParameterIndexOperations, ParameterIndexOperationsView
         from .lists_and_dicts import ArrayList

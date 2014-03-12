@@ -21,7 +21,7 @@ class VariationalPrior(Parameterized):
         updates the gradients for mean and variance **in place**
         """
         raise NotImplementedError, "override this for variational inference of latent space"
-        
+    
 class NormalPrior(VariationalPrior):        
     def KL_divergence(self, variational_posterior):
         var_mean = np.square(variational_posterior.mean).sum()
@@ -71,6 +71,7 @@ class VariationalPosterior(Parameterized):
         self.shape = self.mean.shape
         self.num_data, self.input_dim = self.mean.shape
         self.add_parameters(self.mean, self.variance)
+        self.num_data, self.input_dim = self.mean.shape
         if self.has_uncertain_inputs():
             assert self.variance.shape == self.mean.shape, "need one variance per sample and dimenion"
     
@@ -125,7 +126,7 @@ class SpikeAndSlabPosterior(VariationalPosterior):
         super(SpikeAndSlabPosterior, self).__init__(means, variances, name)
         self.gamma = Param("binary_prob",binary_prob, Logistic(1e-10,1.-1e-10))
         self.add_parameter(self.gamma)
-    
+
     def plot(self, *args):
         """
         Plot latent space X in 1D:

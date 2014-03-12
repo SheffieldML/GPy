@@ -56,8 +56,8 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     if ax is None:
         fig = pb.figure(num=fignum)
         ax = fig.add_subplot(111)
-    
-    if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs(): 
+
+    if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs():
         X = model.X.mean
         X_variance = param_to_array(model.X.variance)
     else:
@@ -86,7 +86,14 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
             upper = m + 2*np.sqrt(v)
             Y = Y
         else:
-            m, v, lower, upper = model.predict(Xgrid)
+            if 'noise_index' in model.Y_metadata.keys():
+                if np.unique(model.Y_metadata['noise_index'][which_data_rows]).size > 1:
+                    print "Data slices choosen have different noise models. Just one will be used."
+                noise_index = np.repeat(model.Y_metadata['noise_index'][which_data_rows][0], Xgrid.shape[0])[:,None]
+                m, v, lower, upper = model.predict(Xgrid,full_cov=False,noise_index=noise_index)
+            else:
+                noise_index = None
+                m, v, lower, upper = model.predict(Xgrid,full_cov=False)
             Y = Y
         for d in which_data_ycols:
             gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], ax=ax, edgecol=linecol, fillcol=fillcol)

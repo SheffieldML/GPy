@@ -54,7 +54,8 @@ def ICM(input_dim, num_outputs, kernel, W_rank=1,W=None,kappa=None,name='X'):
         kernel.input_dim = input_dim
         warnings.warn("kernel's input dimension overwritten to fit input_dim parameter.")
 
-    K = kernel.prod(GPy.kern.Coregionalize(num_outputs,W_rank,W,kappa,name='B'),tensor=True,name=name)
+    #K = kernel.prod(GPy.kern.Coregionalize(input_dim, num_outputs,W_rank,W,kappa,name='B'),tensor=True,name=name)
+    K = kernel.prod(GPy.kern.Coregionalize(input_dim, num_outputs,W_rank,W,kappa,name='B'),name=name)
     K['.*variance'] = 1.
     K['.*variance'].fix()
     return K

@@ -34,10 +34,11 @@ class Test(unittest.TestCase):
 
     def setUp(self):
         self.kerns = (
-                      GPy.kern.RBF([0,1,2], ARD=True)+GPy.kern.Bias(self.input_dim)+GPy.kern.White(self.input_dim),
-                      GPy.kern.RBF(self.input_dim)+GPy.kern.Bias(self.input_dim)+GPy.kern.White(self.input_dim),
-                      GPy.kern.Linear(self.input_dim) + GPy.kern.Bias(self.input_dim) + GPy.kern.White(self.input_dim),
-                      GPy.kern.Linear(self.input_dim, ARD=True) + GPy.kern.Bias(self.input_dim) + GPy.kern.White(self.input_dim),
+                      #GPy.kern.RBF([0,1,2], ARD=True)+GPy.kern.Bias(self.input_dim)+GPy.kern.White(self.input_dim),
+                      #GPy.kern.RBF(self.input_dim)+GPy.kern.Bias(self.input_dim)+GPy.kern.White(self.input_dim),
+                      #GPy.kern.Linear(self.input_dim) + GPy.kern.Bias(self.input_dim) + GPy.kern.White(self.input_dim),
+                      #GPy.kern.Linear(self.input_dim, ARD=True) + GPy.kern.Bias(self.input_dim) + GPy.kern.White(self.input_dim),
+                      GPy.kern.Linear([1,3,6,7], ARD=True) + GPy.kern.RBF([0,5,8], ARD=True) + GPy.kern.White(self.input_dim),
                       )
         self.q_x_mean = np.random.randn(self.input_dim)[None]
         self.q_x_variance = np.exp(.5*np.random.randn(self.input_dim))[None]

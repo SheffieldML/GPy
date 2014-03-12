@@ -37,6 +37,10 @@ class Kern(Parameterized):
     def gradients_X_diag(self, dL_dK, X):
         raise NotImplementedError
 
+    def update_gradients_diag(self, dL_dKdiag, X):
+        """ update the gradients of all parameters when using only the diagonal elements of the covariance matrix"""
+        raise NotImplementedError
+
     def update_gradients_full(self, dL_dK, X, X2):
         """Set the gradients of all parameters when doing full (N) inference."""
         raise NotImplementedError
@@ -89,7 +93,7 @@ class Kern(Parameterized):
         """
         Returns the sensitivity for each dimension of this kernel.
         """
-        return self.kern.input_sensitivity()
+        return np.zeros(self.input_dim)
 
     def __add__(self, other):
         """ Overloading of the '+' operator. for more control, see self.add """

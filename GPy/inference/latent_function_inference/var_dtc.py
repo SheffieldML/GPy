@@ -77,7 +77,8 @@ class VarDTC(object):
         num_inducing = Z.shape[0]
         num_data = Y.shape[0]
         # kernel computations, using BGPLVM notation
-        Kmm = kern.K(Z)
+        
+        Kmm = kern.K(Z) +np.eye(Z.shape[0]) * self.const_jitter
 
         Lm = jitchol(Kmm+np.eye(Z.shape[0])*self.const_jitter)
 

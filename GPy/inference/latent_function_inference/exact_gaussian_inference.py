@@ -46,7 +46,7 @@ class ExactGaussianInference(object):
         alpha, _ = dpotrs(LW, YYT_factor, lower=1)
 
         log_marginal =  0.5*(-Y.size * log_2_pi - Y.shape[1] * W_logdet - np.sum(alpha * YYT_factor))
-
+        
         dL_dK = 0.5 * (tdot(alpha) - Y.shape[1] * Wi)
 
         #TODO: does this really live here?

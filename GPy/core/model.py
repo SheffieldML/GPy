@@ -339,7 +339,7 @@ class Model(Parameterized):
                     print "No free parameters to check"
                     return
 
-            gradient = self.objective_function_gradients(x)
+            gradient = self.objective_function_gradients(x).copy()
             np.where(gradient == 0, 1e-312, gradient)
             ret = True
             for nind, xind in itertools.izip(param_index, transformed_index):
@@ -350,7 +350,12 @@ class Model(Parameterized):
                 f2 = self.objective_function(xx)
                 numerical_gradient = (f1 - f2) / (2 * step)
                 if _debug:
+                    for p in self.kern.flattened_parameters:
+                        p._parent_._debug=True
                     self.gradient[xind] = numerical_gradient
+                    self._set_params_transformed(x)
+                    for p in self.kern.flattened_parameters:
+                        p._parent_._debug=False
                 if np.all(gradient[xind]==0): ratio = (f1-f2) == gradient[xind] 
                 else: ratio = (f1 - f2) / (2 * step * gradient[xind])
                 difference = np.abs((f1 - f2) / 2 / step - gradient[xind])

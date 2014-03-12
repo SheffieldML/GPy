@@ -70,7 +70,7 @@ class GP(Model):
         self.posterior, self._log_marginal_likelihood, grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y, Y_metadata=self.Y_metadata)
         self.likelihood.update_gradients(np.diag(grad_dict['dL_dK']))
         self.kern.update_gradients_full(grad_dict['dL_dK'], self.X)
-        
+
     def log_likelihood(self):
         return self._log_marginal_likelihood
 
@@ -186,7 +186,7 @@ class GP(Model):
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
-        models_plots.plot_fit_f(self,*args,**kwargs)
+        return models_plots.plot_fit_f(self,*args,**kwargs)
 
     def plot(self, *args, **kwargs):
         """
@@ -207,7 +207,7 @@ class GP(Model):
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
-        models_plots.plot_fit(self,*args,**kwargs)
+        return models_plots.plot_fit(self,*args,**kwargs)
 
     def _getstate(self):
         """

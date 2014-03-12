@@ -16,7 +16,7 @@ Observable Pattern for patameterization
 from transformations import Transformation, Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
 
-__updated__ = '2014-03-11'
+__updated__ = '2014-03-12'
 
 class HierarchyError(Exception):
     """
@@ -796,27 +796,27 @@ class Parameterizable(OptimizationHandlable):
         """
         if not param in self._parameters_:
             raise RuntimeError, "Parameter {} does not belong to this object, remove parameters directly from their respective parents".format(param._short())
-        
+
         start = sum([p.size for p in self._parameters_[:param._parent_index_]])
         self._remove_parameter_name(param)
         self.size -= param.size
         del self._parameters_[param._parent_index_]
-        
+
         param._disconnect_parent()
         param.remove_observer(self, self._pass_through_notify_observers)
         self.constraints.shift_left(start, param.size)
-        
+
         self._connect_fixes()
         self._connect_parameters()
         self._notify_parent_change()
-        
+
         parent = self._parent_
         while parent is not None:
             parent._connect_fixes()
             parent._connect_parameters()
             parent._notify_parent_change()
             parent = parent._parent_
-        
+
     def _connect_parameters(self, ignore_added_names=False):
         # connect parameterlist to this parameterized object
         # This just sets up the right connection for the params objects
@@ -829,29 +829,26 @@ class Parameterizable(OptimizationHandlable):
         old_size = 0
         self._param_array_ = np.empty(self.size, dtype=np.float64)
         self._gradient_array_ = np.empty(self.size, dtype=np.float64)
-        
+
         self._param_slices_ = []
-        
         for i, p in enumerate(self._parameters_):
             p._parent_ = self
             p._parent_index_ = i
-            
+
             pslice = slice(old_size, old_size+p.size)
-            
             # first connect all children
             p._propagate_param_grad(self._param_array_[pslice], self._gradient_array_[pslice])            
-            
             # then connect children to self
             self._param_array_[pslice] = p._param_array_.ravel()#, requirements=['C', 'W']).ravel(order='C')
             self._gradient_array_[pslice] = p._gradient_array_.ravel()#, requirements=['C', 'W']).ravel(order='C')
-            
+
             if not p._param_array_.flags['C_CONTIGUOUS']:
                 import ipdb;ipdb.set_trace()
             p._param_array_.data = self._param_array_[pslice].data
             p._gradient_array_.data = self._gradient_array_[pslice].data
-            
+
             self._param_slices_.append(pslice)
-            
+
             self._add_parameter_name(p, ignore_added_names=ignore_added_names)
             old_size += p.size
 
@@ -862,12 +859,13 @@ class Parameterizable(OptimizationHandlable):
         self.parameters_changed()
     def _pass_through_notify_observers(self, which):
         self.notify_observers(which)
-    
+
     #===========================================================================
     # TODO: not working yet
     #===========================================================================
     def copy(self):
         """Returns a (deep) copy of the current model"""
+        raise NotImplementedError, "Copy is not yet implemented, TODO: Observable hierarchy"
         import copy
         from .index_operations import ParameterIndexOperations, ParameterIndexOperationsView
         from .lists_and_dicts import ArrayList

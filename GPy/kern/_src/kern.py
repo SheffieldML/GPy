@@ -15,6 +15,7 @@ class Kern(Parameterized):
     # found in kernel_slice_operations
     __metaclass__ = KernCallsViaSlicerMeta
     #===========================================================================
+    _debug=False
     def __init__(self, input_dim, name, *a, **kw):
         """
         The base class for a kernel: a positive definite function
@@ -27,12 +28,12 @@ class Kern(Parameterized):
         """
         super(Kern, self).__init__(name=name, *a, **kw)
         if isinstance(input_dim, int):
-            self.active_dims = slice(0, input_dim)
+            self.active_dims = np.r_[0:input_dim]
             self.input_dim = input_dim
         else:
-            self.active_dims = input_dim
+            self.active_dims = np.r_[input_dim]
             self.input_dim = len(self.active_dims)
-        self._sliced_X = False
+        self._sliced_X = 0
 
     @Cache_this(limit=10)#, ignore_args = (0,))
     def _slice_X(self, X):
@@ -60,14 +61,13 @@ class Kern(Parameterized):
         raise NotImplementedError
     def gradients_X_diag(self, dL_dKdiag, X):
         raise NotImplementedError
-    
+
     def update_gradients_full(self, dL_dK, X, X2):
         """Set the gradients of all parameters when doing full (N) inference."""
         raise NotImplementedError
     def update_gradients_diag(self, dL_dKdiag, X):
         """Set the gradients for all parameters for the derivative of the diagonal of the covariance w.r.t the kernel parameters."""
         raise NotImplementedError
-    
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """
         Set the gradients of all parameters when doing inference with
@@ -188,19 +188,13 @@ class Kern(Parameterized):
 class CombinationKernel(Kern):
     def __init__(self, kernels, name):
         assert all([isinstance(k, Kern) for k in kernels])
-        input_dim = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels))
+        input_dim = reduce(np.union1d, (x.active_dims for x in kernels))
         super(CombinationKernel, self).__init__(input_dim, name)
         self.add_parameters(*kernels)
 
     @property
     def parts(self):
         return self._parameters_
-
-    def update_gradients_full(self, dL_dK, X, X2=None):
-        [p.update_gradients_full(dL_dK, X, X2) for p in self.parts]
-
-    def update_gradients_diag(self, dL_dK, X):
-        [p.update_gradients_diag(dL_dK, X) for p in self.parts]
 
     def input_sensitivity(self):
         in_sen = np.zeros((self.num_params, self.input_dim))

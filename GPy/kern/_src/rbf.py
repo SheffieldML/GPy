@@ -19,7 +19,6 @@ class RBF(Stationary):
        k(r) = \sigma^2 \exp \\bigg(- \\frac{1}{2} r^2 \\bigg)
 
     """
-
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='rbf'):
         super(RBF, self).__init__(input_dim, variance, lengthscale, ARD, name)
         self.weave_options = {}
@@ -81,6 +80,8 @@ class RBF(Stationary):
 
             #contributions from psi0:
             self.variance.gradient = np.sum(dL_dpsi0)
+            if self._debug:
+                num_grad = self.lengthscale.gradient.copy()
             self.lengthscale.gradient = 0.
 
             #from psi1
@@ -100,6 +101,8 @@ class RBF(Stationary):
             else:
                 self.lengthscale.gradient += self._weave_psi2_lengthscale_grads(dL_dpsi2, psi2, Zdist_sq, S, mudist_sq, l2)
 
+            if self._debug:
+                import ipdb;ipdb.set_trace()
             self.variance.gradient += 2.*np.sum(dL_dpsi2 * psi2)/self.variance
 
         else:
@@ -150,6 +153,7 @@ class RBF(Stationary):
             grad_mu = (dL_dpsi1[:, :, None] * _dpsi1_dmu).sum(axis=1)
             grad_S = (dL_dpsi1[:, :, None] * _dpsi1_dS).sum(axis=1)
             grad_gamma = (dL_dpsi1[:,:,None] * _dpsi1_dgamma).sum(axis=1)
+
             #psi2
             grad_mu += (dL_dpsi2[:, :, :, None] * _dpsi2_dmu).reshape(ndata,-1,self.input_dim).sum(axis=1)
             grad_S += (dL_dpsi2[:, :, :, None] * _dpsi2_dS).reshape(ndata,-1,self.input_dim).sum(axis=1)

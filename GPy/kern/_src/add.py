@@ -17,6 +17,11 @@ class Add(CombinationKernel):
 
     @Cache_this(limit=2, force_kwargs=['which_parts'])
     def K(self, X, X2=None, which_parts=None):
+        """
+        Add all kernels together.
+        If a list of parts (of this kernel!) `which_parts` is given, only
+        the parts of the list are taken to compute the covariance.
+        """
         assert X.shape[1] == self.input_dim
         if which_parts is None:
             which_parts = self.parts
@@ -24,6 +29,22 @@ class Add(CombinationKernel):
             # if only one part is given
             which_parts = [which_parts]
         return reduce(np.add, (p.K(X, X2) for p in which_parts))
+
+    @Cache_this(limit=2, force_kwargs=['which_parts'])
+    def Kdiag(self, X, which_parts=None):
+        assert X.shape[1] == self.input_dim
+        if which_parts is None:
+            which_parts = self.parts
+        elif not isinstance(which_parts, (list, tuple)):
+            # if only one part is given
+            which_parts = [which_parts]
+        return reduce(np.add, (p.Kdiag(X) for p in which_parts))
+
+    def update_gradients_full(self, dL_dK, X, X2=None):
+        [p.update_gradients_full(dL_dK, X, X2) for p in self.parts]
+
+    def update_gradients_diag(self, dL_dK, X):
+        [p.update_gradients_diag(dL_dK, X) for p in self.parts]
 
     def gradients_X(self, dL_dK, X, X2=None):
         """Compute the gradient of the objective function with respect to X.
@@ -36,17 +57,8 @@ class Add(CombinationKernel):
         :type X2: np.ndarray (num_inducing x input_dim)"""
 
         target = np.zeros(X.shape)
-        for p in self.parts:
-            target[:, p.active_dims] += p.gradients_X(dL_dK, X, X2)
+        [target.__setitem__([Ellipsis, p.active_dims], target[:, p.active_dims]+p.gradients_X(dL_dK, X, X2)) for p in self.parts]
         return target
-
-    @Cache_this(limit=2, force_kwargs=['which_parts'])
-    def Kdiag(self, X, which_parts=None):
-        assert X.shape[1] == self.input_dim
-        if which_parts is None:
-            which_parts = self.parts
-        return sum([p.Kdiag(X) for p in which_parts])
-
 
     def psi0(self, Z, variational_posterior):
         return reduce(np.add, (p.psi0(Z, variational_posterior) for p in self.parts))
@@ -56,7 +68,7 @@ class Add(CombinationKernel):
 
     def psi2(self, Z, variational_posterior):
         psi2 = reduce(np.add, (p.psi2(Z, variational_posterior) for p in self.parts))
-        return psi2
+        #return psi2
         # compute the "cross" terms
         from static import White, Bias
         from rbf import RBF
@@ -65,23 +77,24 @@ class Add(CombinationKernel):
         #ffrom fixed import Fixed
 
         for p1, p2 in itertools.combinations(self.parts, 2):
-            i1, i2 = p1.active_dims, p2.active_dims
+            # i1, i2 = p1.active_dims, p2.active_dims
             # white doesn;t combine with anything
             if isinstance(p1, White) or isinstance(p2, White):
                 pass
             # rbf X bias
             #elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, (RBF, RBFInv)):
             elif isinstance(p1,  Bias) and isinstance(p2, (RBF, Linear)):
-                # manual override for slicing:
-                p2._sliced_X = p1._sliced_X = True
-                tmp = p2.psi1(Z[:,i2], variational_posterior[:, i1])
+                tmp = p2.psi1(Z, variational_posterior)
                 psi2 += p1.variance * (tmp[:, :, None] + tmp[:, None, :])
             #elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, (RBF, RBFInv)):
             elif isinstance(p2, Bias) and isinstance(p1, (RBF, Linear)):
-                # manual override for slicing:
-                p2._sliced_X = p1._sliced_X = True
-                tmp = p1.psi1(Z[:,i1], variational_posterior[:, i2])
+                tmp = p1.psi1(Z, variational_posterior)
                 psi2 += p2.variance * (tmp[:, :, None] + tmp[:, None, :])
+            elif isinstance(p2, (RBF, Linear)) and isinstance(p1, (RBF, Linear)):
+                assert np.intersect1d(p1.active_dims, p2.active_dims).size == 0, "only non overlapping kernel dimensions allowed so far"
+                tmp1 = p1.psi1(Z, variational_posterior)
+                tmp2 = p2.psi1(Z, variational_posterior)
+                psi2 += (tmp1[:, :, None] * tmp2[:, None, :]) + (tmp2[:, :, None] * tmp1[:, None, :])
             else:
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
         return psi2
@@ -98,7 +111,7 @@ class Add(CombinationKernel):
                     continue
                 elif isinstance(p2, Bias):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
-                else:
+                else:# np.setdiff1d(p1.active_dims, ar2, assume_unique): # TODO: Careful, not correct for overlapping active_dims
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
             p1.update_gradients_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
 
@@ -114,9 +127,9 @@ class Add(CombinationKernel):
                 if isinstance(p2, White):
                     continue
                 elif isinstance(p2, Bias):
-                    eff_dL_dpsi1 += 0#dL_dpsi2.sum(1) * p2.variance * 2.
+                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
                 else:
-                    eff_dL_dpsi1 += 0#dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
+                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
             target[:, p1.active_dims] += p1.gradients_Z_expectations(eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         return target
 

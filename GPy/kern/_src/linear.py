@@ -147,7 +147,6 @@ class Linear(Kern):
             mu = variational_posterior.mean
             S = variational_posterior.variance
             mu2S = np.square(mu)+S
-            
             _dpsi2_dvariance, _, _, _, _ = linear_psi_comp._psi2computations(self.variances, Z, mu, S, gamma)
             grad = np.einsum('n,nq,nq->q',dL_dpsi0,gamma,mu2S) + np.einsum('nm,nq,mq,nq->q',dL_dpsi1,gamma,Z,mu) +\
                  np.einsum('nmo,nmoq->q',dL_dpsi2,_dpsi2_dvariance)
@@ -175,7 +174,7 @@ class Linear(Kern):
             mu = variational_posterior.mean
             S = variational_posterior.variance
             _, _, _, _, _dpsi2_dZ = linear_psi_comp._psi2computations(self.variances, Z, mu, S, gamma)
-            
+
             grad =  np.einsum('nm,nq,q,nq->mq',dL_dpsi1,gamma, self.variances,mu) +\
                  np.einsum('nmo,noq->mq',dL_dpsi2,_dpsi2_dZ)
             

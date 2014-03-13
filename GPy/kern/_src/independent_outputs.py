@@ -4,6 +4,7 @@
 
 from kern import Kern
 import numpy as np
+import itertools
 
 def index_to_slices(index):
     """
@@ -33,17 +34,17 @@ def index_to_slices(index):
 
 class IndependentOutputs(Kern):
     """
-    A kernel which can reopresent several independent functions.
+    A kernel which can represent several independent functions.
     this kernel 'switches off' parts of the matrix where the output indexes are different.
 
     The index of the functions is given by the last column in the input X
     the rest of the columns of X are passed to the underlying kernel for computation (in blocks).
 
     """
-    def __init__(self, active_dim, kern, name='independ'):
-        assert isinstance(active_dim, int), "IndependentOutputs kernel is only defined with one input dimension being the indeces"
-        super(IndependentOutputs, self).__init__(np.r_[0:max(max(kern.active_dims)+1, active_dim+1)], name)
-        self.index_dim = active_dim
+    def __init__(self, index_dim, kern, name='independ'):
+        assert isinstance(index_dim, int), "IndependentOutputs kernel is only defined with one input dimension being the indeces"
+        super(IndependentOutputs, self).__init__(np.r_[0:max(max(kern.active_dims)+1, index_dim+1)], name)
+        self.index_dim = index_dim
         self.kern = kern
         self.add_parameters(self.kern)
 
@@ -51,7 +52,7 @@ class IndependentOutputs(Kern):
         slices = index_to_slices(X[:,self.index_dim])
         if X2 is None:
             target = np.zeros((X.shape[0], X.shape[0]))
-            [[np.copyto(target[s,s], self.kern.K(X[s,:], None)) for s in slices_i] for slices_i in slices]
+            [[np.copyto(target[s,ss], self.kern.K(X[s,:], X[ss,:])) for s,ss in itertools.product(slices_i, slices_i)] for slices_i in slices]
         else:
             slices2 = index_to_slices(X2[:,self.index_dim])
             target = np.zeros((X.shape[0], X2.shape[0]))
@@ -68,7 +69,7 @@ class IndependentOutputs(Kern):
         target = np.zeros(self.kern.size)
         def collate_grads(dL, X, X2):
             self.kern.update_gradients_full(dL,X,X2)
-            target += self.kern.gradient
+            target[:] += self.kern.gradient
 
         slices = index_to_slices(X[:,self.index_dim])
         if X2 is None:

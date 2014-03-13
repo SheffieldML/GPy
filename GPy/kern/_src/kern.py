@@ -156,7 +156,7 @@ class Kern(Parameterized):
         other.active_dims += self.input_dim
         return self.prod(other)
 
-    def prod(self, other, name='prod'):
+    def prod(self, other, name='mul'):
         """
         Multiply two kernels (either on the same space, or on the tensor
         product of the input space).

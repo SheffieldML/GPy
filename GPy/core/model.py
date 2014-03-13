@@ -253,7 +253,7 @@ class Model(Parameterized):
         sgd.run()
         self.optimization_runs.append(sgd)
 
-    def _checkgrad(self, target_param=None, verbose=False, step=1e-6, tolerance=1e-3, _debug=False):
+    def _checkgrad(self, target_param=None, verbose=False, step=1e-6, tolerance=1e-3):
         """
         Check the gradient of the ,odel by comparing to a numerical
         estimate.  If the verbose flag is passed, invividual
@@ -349,13 +349,6 @@ class Model(Parameterized):
                 xx[xind] -= 2.*step
                 f2 = self.objective_function(xx)
                 numerical_gradient = (f1 - f2) / (2 * step)
-                if _debug:
-                    for p in self.kern.flattened_parameters:
-                        p._parent_._debug=True
-                    self.gradient[xind] = numerical_gradient
-                    self._set_params_transformed(x)
-                    for p in self.kern.flattened_parameters:
-                        p._parent_._debug=False
                 if np.all(gradient[xind]==0): ratio = (f1-f2) == gradient[xind] 
                 else: ratio = (f1 - f2) / (2 * step * gradient[xind])
                 difference = np.abs((f1 - f2) / 2 / step - gradient[xind])

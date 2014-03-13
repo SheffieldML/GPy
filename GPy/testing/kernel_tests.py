@@ -227,6 +227,16 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
+    def test_Prod(self):
+        k = GPy.kern.Matern32([2,3]) * GPy.kern.RBF([0,4]) + GPy.kern.Linear(self.D)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_Add(self):
+        k = GPy.kern.Matern32([2,3]) + GPy.kern.RBF([0,4]) + GPy.kern.Linear(self.D)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
     def test_Matern52(self):
         k = GPy.kern.Matern52(self.D)
         k.randomize()
@@ -242,31 +252,30 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
-class KernelGradientTestsContinuous1D(unittest.TestCase):
-    def setUp(self):
-        self.N, self.D = 100, 1
-        self.X = np.random.randn(self.N,self.D)
-        self.X2 = np.random.randn(self.N+10,self.D)
-
-        continuous_kerns = ['RBF', 'Linear']
-        self.kernclasses = [getattr(GPy.kern, s) for s in continuous_kerns]
-
-    def test_PeriodicExponential(self):
-        k = GPy.kern.PeriodicExponential(self.D)
-        k.randomize()
-        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
-
-    def test_PeriodicMatern32(self):
-        k = GPy.kern.PeriodicMatern32(self.D)
-        k.randomize()
-        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
-
-    def test_PeriodicMatern52(self):
-        k = GPy.kern.PeriodicMatern52(self.D)
-        k.randomize()
-        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
-
-    #TODO: turn off grad checkingwrt X for indexed kernels liek coregionalize
+#TODO: turn off grad checkingwrt X for indexed kernels liek coregionalize
+# class KernelGradientTestsContinuous1D(unittest.TestCase):
+#     def setUp(self):
+#         self.N, self.D = 100, 1
+#         self.X = np.random.randn(self.N,self.D)
+#         self.X2 = np.random.randn(self.N+10,self.D)
+# 
+#         continuous_kerns = ['RBF', 'Linear']
+#         self.kernclasses = [getattr(GPy.kern, s) for s in continuous_kerns]
+# 
+#     def test_PeriodicExponential(self):
+#         k = GPy.kern.PeriodicExponential(self.D)
+#         k.randomize()
+#         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+# 
+#     def test_PeriodicMatern32(self):
+#         k = GPy.kern.PeriodicMatern32(self.D)
+#         k.randomize()
+#         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+# 
+#     def test_PeriodicMatern52(self):
+#         k = GPy.kern.PeriodicMatern52(self.D)
+#         k.randomize()
+#         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
 
 class KernelTestsMiscellaneous(unittest.TestCase):
@@ -275,7 +284,7 @@ class KernelTestsMiscellaneous(unittest.TestCase):
         N, D = 100, 10
         self.X = np.linspace(-np.pi, +np.pi, N)[:,None] * np.ones(D)
         self.rbf = GPy.kern.RBF(range(2))
-        self.linear = GPy.kern.Linear((3,5,6))
+        self.linear = GPy.kern.Linear((3,6))
         self.matern = GPy.kern.Matern32(np.array([2,4,7]))
         self.sumkern = self.rbf + self.linear
         self.sumkern += self.matern

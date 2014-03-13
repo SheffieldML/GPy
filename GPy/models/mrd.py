@@ -15,13 +15,13 @@ from ..likelihoods import Gaussian
 
 class MRD(Model):
     """
-    Apply MRD to all given datasets Y in Ylist. 
-    
+    Apply MRD to all given datasets Y in Ylist.
+
     Y_i in [n x p_i]
-    
-    The samples n in the datasets need 
+
+    The samples n in the datasets need
     to match up, whereas the dimensionality p_d can differ.
-    
+
     :param [array-like] Ylist: List of datasets to apply MRD on
     :param input_dim: latent dimensionality
     :type input_dim: int
@@ -45,13 +45,12 @@ class MRD(Model):
     :param str name: the name of this model
     :param [str] Ynames: the names for the datasets given, must be of equal length as Ylist or None
     """
-    
-    def __init__(self, Ylist, input_dim, X=None, X_variance=None, 
+    def __init__(self, Ylist, input_dim, X=None, X_variance=None,
                  initx = 'PCA', initz = 'permute',
-                 num_inducing=10, Z=None, kernel=None, 
+                 num_inducing=10, Z=None, kernel=None,
                  inference_method=None, likelihood=None, name='mrd', Ynames=None):
         super(MRD, self).__init__(name)
-        
+
         # sort out the kernels
         if kernel is None:
             from ..kern import RBF
@@ -64,23 +63,23 @@ class MRD(Model):
             self.kern = kernel
         self.input_dim = input_dim
         self.num_inducing = num_inducing
-        
+
         self.Ylist = Ylist
         self._in_init_ = True
         X = self._init_X(initx, Ylist)
         self.Z = Param('inducing inputs', self._init_Z(initz, X))
         self.num_inducing = self.Z.shape[0] # ensure M==N if M>N
-        
+
         if X_variance is None:
             X_variance = np.random.uniform(0, .2, X.shape)
-        
+
         self.variational_prior = NormalPrior()
         self.X = NormalPosterior(X, X_variance)
-        
+
         if likelihood is None:
             self.likelihood = [Gaussian(name='Gaussian_noise'.format(i)) for i in range(len(Ylist))]
         else: self.likelihood = likelihood
-        
+
         if inference_method is None:
             self.inference_method= []
             for y in Ylist:
@@ -91,12 +90,12 @@ class MRD(Model):
         else:
             self.inference_method = inference_method
             self.inference_method.set_limit(len(Ylist))
-                
+
         self.add_parameters(self.X, self.Z)
-        
+
         if Ynames is None:
             Ynames = ['Y{}'.format(i) for i in range(len(Ylist))]
-        
+
         for i, n, k, l in itertools.izip(itertools.count(), Ynames, self.kern, self.likelihood):
             p = Parameterized(name=n)
             p.add_parameter(k)

@@ -206,7 +206,7 @@ class Gradcheckable(Parentable):
     def __init__(self, *a, **kw):
         super(Gradcheckable, self).__init__(*a, **kw)
 
-    def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3, _debug=False):
+    def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3):
         """
         Check the gradient of this parameter with respect to the highest parent's
         objective function.
@@ -220,10 +220,10 @@ class Gradcheckable(Parentable):
         :param flaot tolerance: the tolerance for the gradient ratio or difference.
         """
         if self.has_parent():
-            return self._highest_parent_._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance, _debug=_debug)
-        return self._checkgrad(self[''], verbose=verbose, step=step, tolerance=tolerance, _debug=_debug)
+            return self._highest_parent_._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance)
+        return self._checkgrad(self[''], verbose=verbose, step=step, tolerance=tolerance)
 
-    def _checkgrad(self, param, verbose=0, step=1e-6, tolerance=1e-3, _debug=False):
+    def _checkgrad(self, param, verbose=0, step=1e-6, tolerance=1e-3):
         """
         Perform the checkgrad on the model.
         TODO: this can be done more efficiently, when doing it inside here
@@ -694,6 +694,10 @@ class Parameterizable(OptimizationHandlable):
         elif pname not in dir(self):
             self.__dict__[pname] = param
             self._added_names_.add(pname)
+        else:
+            print "WARNING: added a parameter with formatted name {}, which is already a member of {} object. Trying to change the parameter name to\n   {}".format(pname, self.__class__, param.name+"_")
+            param.name += "_"
+            self._add_parameter_name(param, ignore_added_names)
 
     def _remove_parameter_name(self, param=None, pname=None):
         assert param is None or pname is None, "can only delete either param by name, or the name of a param"

@@ -17,7 +17,7 @@ class Prod(CombinationKernel):
     :rtype: kernel object
 
     """
-    def __init__(self, kernels, name='prod'):
+    def __init__(self, kernels, name='mul'):
         assert len(kernels) == 2, 'only implemented for two kernels as of yet'
         super(Prod, self).__init__(kernels, name)
 

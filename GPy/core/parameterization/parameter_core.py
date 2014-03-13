@@ -16,7 +16,7 @@ Observable Pattern for patameterization
 from transformations import Transformation, Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
 
-__updated__ = '2014-03-12'
+__updated__ = '2014-03-13'
 
 class HierarchyError(Exception):
     """
@@ -644,10 +644,10 @@ class OptimizationHandlable(Constrainable, Observable):
 
             self._param_array_[pislice] = pi._param_array_.ravel()#, requirements=['C', 'W']).flat
             self._gradient_array_[pislice] = pi._gradient_array_.ravel()#, requirements=['C', 'W']).flat
-                
+
             pi._param_array_.data = parray[pislice].data
             pi._gradient_array_.data = garray[pislice].data
-            
+
             pi._propagate_param_grad(parray[pislice], garray[pislice])
             pi_old_size += pi.size
 
@@ -660,11 +660,11 @@ class Parameterizable(OptimizationHandlable):
         self._param_array_ = np.empty(self.size, dtype=np.float64)
         self._gradient_array_ = np.empty(self.size, dtype=np.float64)
         self._added_names_ = set()
-    
+
     def parameter_names(self, add_self=False, adjust_for_printing=False, recursive=True):
         """
         Get the names of all parameters of this model. 
-        
+
         :param bool add_self: whether to add the own name in front of names
         :param bool adjust_for_printing: whether to call `adjust_name_for_printing` on names
         :param bool recursive: whether to traverse through hierarchy and append leaf node names
@@ -675,11 +675,11 @@ class Parameterizable(OptimizationHandlable):
         else: names = [adjust(x.name) for x in self._parameters_]
         if add_self: names = map(lambda x: adjust(self.name) + "." + x, names)
         return names
-    
+
     @property
     def num_params(self):
         return len(self._parameters_)
-    
+
     def _add_parameter_name(self, param, ignore_added_names=False):
         pname = adjust_name_for_printing(param.name)
         if ignore_added_names:
@@ -694,7 +694,7 @@ class Parameterizable(OptimizationHandlable):
         elif pname not in dir(self):
             self.__dict__[pname] = param
             self._added_names_.add(pname)
-            
+
     def _remove_parameter_name(self, param=None, pname=None):
         assert param is None or pname is None, "can only delete either param by name, or the name of a param"
         pname = adjust_name_for_printing(pname) or adjust_name_for_printing(param.name)
@@ -706,14 +706,14 @@ class Parameterizable(OptimizationHandlable):
     def _name_changed(self, param, old_name):
         self._remove_parameter_name(None, old_name)
         self._add_parameter_name(param)
-    
+
     #=========================================================================
     # Gradient handling
     #=========================================================================
     @property
     def gradient(self):
         return self._gradient_array_ 
-    
+
     @gradient.setter
     def gradient(self, val):
         self._gradient_array_[:] = val
@@ -734,13 +734,13 @@ class Parameterizable(OptimizationHandlable):
     # def _set_gradient(self, g):
     #     [p._set_gradient(g[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
     #===========================================================================
-        
+
     def add_parameter(self, param, index=None, _ignore_added_names=False):
         """
         :param parameters:  the parameters to add
         :type parameters:   list of or one :py:class:`GPy.core.param.Param`
         :param [index]:     index of where to put parameters
-        
+
         :param bool _ignore_added_names: whether the name of the parameter overrides a possibly existing field
 
         Add all parameters to this param class, you can insert parameters
@@ -771,9 +771,9 @@ class Parameterizable(OptimizationHandlable):
                 self.constraints.update(param.constraints, start)
                 self.priors.update(param.priors, start)
                 self._parameters_.insert(index, param)
-            
+
             param.add_observer(self, self._pass_through_notify_observers, -np.inf)
-            
+
             self.size += param.size
 
             self._connect_parameters(ignore_added_names=_ignore_added_names)

@@ -101,7 +101,6 @@ class Parameterized(Parameterizable, Pickleable):
             return G
         return node
 
-    
     def _getstate(self):
         """
         Get the current state of the class,

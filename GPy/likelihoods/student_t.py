@@ -27,9 +27,9 @@ class StudentT(Likelihood):
 
         super(StudentT, self).__init__(gp_link, name='Student_T')
 
-        self.sigma2 = Param('t_noise', float(sigma2))
+        self.sigma2 = Param('t_noise', float(sigma2), Logexp())
         self.v = Param('deg_free', float(deg_free))
-        self.add_parameter(self.sigma2, Logexp())
+        self.add_parameter(self.sigma2)
         self.add_parameter(self.v)
         self.v.constrain_fixed()
 

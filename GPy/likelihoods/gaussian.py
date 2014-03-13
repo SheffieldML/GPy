@@ -18,6 +18,7 @@ import link_functions
 from likelihood import Likelihood
 from ..core.parameterization import Param
 from ..core.parameterization.transformations import Logexp
+from scipy import stats
 
 class Gaussian(Likelihood):
     """
@@ -49,11 +50,14 @@ class Gaussian(Likelihood):
         if isinstance(gp_link, link_functions.Identity):
             self.log_concave = True
 
-    def covariance_matrix(self, Y, **Y_metadata):
+    def covariance_matrix(self, Y, Y_metadata=None):
         return np.eye(Y.shape[0]) * self.variance
 
-    def update_gradients(self, partial):
-        self.variance.gradient = np.sum(partial)
+    def update_gradients(self, grad):
+        self.variance.gradient = grad
+
+    def exact_inference_gradients(self, dL_dKdiag):
+        return dL_dKdiag.sum()
 
     def _preprocess_values(self, Y):
         """
@@ -76,22 +80,21 @@ class Gaussian(Likelihood):
         Z_hat = 1./np.sqrt(2.*np.pi*sum_var)*np.exp(-.5*(data_i - v_i/tau_i)**2./sum_var)
         return Z_hat, mu_hat, sigma2_hat
 
-    def predictive_values(self, mu, var, full_cov=False):
+    def predictive_values(self, mu, var, full_cov=False, Y_metadata=None):
         if full_cov:
             var += np.eye(var.shape[0])*self.variance
-            d = 2*np.sqrt(np.diag(var))
-            low, up = mu - d, mu + d
         else:
             var += self.variance
-            d = 2*np.sqrt(var)
-            low, up = mu - d, mu + d
-        return mu, var, low, up
+        return mu, var
 
     def predictive_mean(self, mu, sigma):
         return mu
 
     def predictive_variance(self, mu, sigma, predictive_mean=None):
         return self.variance + sigma**2
+
+    def predictive_quantiles(self, mu, var, quantiles, Y_metadata):
+        return  [stats.norm.ppf(q)*np.sqrt(var) + mu for q in quantiles]
 
     def pdf_link(self, link_f, y, extra_data=None):
         """

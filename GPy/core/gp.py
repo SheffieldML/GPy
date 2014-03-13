@@ -120,8 +120,12 @@ class GP(Model):
         mu, var = self._raw_predict(Xnew, full_cov=full_cov)
 
         # now push through likelihood
-        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata)
-        return mean, var, _025pm, _975pm
+        mean, var = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata)
+        return mean, var
+
+    def predict_quantiles(self, X, quantiles=(0.025, 0.975), Y_metadata=None):
+        m, v = self._raw_predict(X,  full_cov=False)
+        return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
 
     def posterior_samples_f(self,X,size=10, full_cov=True):
         """

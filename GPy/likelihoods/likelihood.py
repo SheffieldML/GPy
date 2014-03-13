@@ -135,7 +135,7 @@ class Likelihood(Parameterized):
 
         return mean
 
-    def _predictive_variance(self,mu,variance,predictive_mean=None):
+    def _predictive_variance(self, mu,variance, predictive_mean=None):
         """
         Numerical approximation to the predictive variance: V(Y_star)
 
@@ -358,7 +358,7 @@ class Likelihood(Parameterized):
 
         return dlogpdf_dtheta, dlogpdf_df_dtheta, d2logpdf_df2_dtheta
 
-    def predictive_values(self, mu, var, full_cov=False, sampling=True, num_samples=10000):
+    def predictive_values(self, mu, var, full_cov=False, Y_metadata=None):
         """
         Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction.
 
@@ -366,14 +366,21 @@ class Likelihood(Parameterized):
         :param var: variance of the latent variable, f, of posterior
         :param full_cov: whether to use the full covariance or just the diagonal
         :type full_cov: Boolean
-        :param num_samples: number of samples to use in computing quantiles and
-                            possibly mean variance
-        :type num_samples: integer
-        :param sampling: Whether to use samples for mean and variances anyway
-        :type sampling: Boolean
-
         """
 
+        pred_mean = self.predictive_mean(mu, var, Y_metadata)
+        pred_var = self.predictive_variance(mu, var, pred_mean, Y_metadata)
+
+        return pred_mean, pred_var
+
+
+    def samples(self, gp):
+        """
+        Returns a set of samples of observations based on a given value of the latent variable.
+
+        :param gp: latent variable
+        """
+        raise NotImplementedError
         if sampling:
             #Get gp_samples f* using posterior mean and variance
             if not full_cov:
@@ -393,20 +400,4 @@ class Likelihood(Parameterized):
             q1 = np.percentile(samples, 2.5, axis=axis)[:,None]
             q3 = np.percentile(samples, 97.5, axis=axis)[:,None]
 
-        else:
 
-            pred_mean = self.predictive_mean(mu, var)
-            pred_var = self.predictive_variance(mu, var, pred_mean)
-            print "WARNING: Predictive quantiles are only computed when sampling."
-            q1 = np.repeat(np.nan,pred_mean.size)[:,None]
-            q3 = q1.copy()
-
-        return pred_mean, pred_var, q1, q3
-
-    def samples(self, gp):
-        """
-        Returns a set of samples of observations based on a given value of the latent variable.
-
-        :param gp: latent variable
-        """
-        raise NotImplementedError

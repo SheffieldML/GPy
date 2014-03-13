@@ -667,8 +667,8 @@ class LaplaceTests(unittest.TestCase):
         m2[:] = m1[:]
 
         #Predict for training points to get posterior mean and variance
-        post_mean, post_var, _, _ = m1.predict(X)
-        post_mean_approx, post_var_approx, _, _ = m2.predict(X)
+        post_mean, post_var = m1.predict(X)
+        post_mean_approx, post_var_approx, = m2.predict(X)
 
         if debug:
             import pylab as pb

@@ -54,13 +54,13 @@ class SparseGP(GP):
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood, self.Y)
-        self.likelihood.update_gradients(self.grad_dict.pop('partial_for_likelihood'))
+        self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])
         if isinstance(self.X, VariationalPosterior):
             #gradients wrt kernel
             dL_dKmm = self.grad_dict.pop('dL_dKmm')
             self.kern.update_gradients_full(dL_dKmm, self.Z, None)
             target = self.kern.gradient.copy()
-            self.kern.update_gradients_expectations(variational_posterior=self.X, Z=self.Z, **self.grad_dict)
+            self.kern.update_gradients_expectations(variational_posterior=self.X, Z=self.Z, dL_dpsi0=grad_dict['dL_dpsi0'], dL_dpsi1=grad_dict['dL_dpsi1'], dL_dpsi2=grad_dict['dL_dpsi2'])
             self.kern.gradient += target
 
             #gradients wrt Z

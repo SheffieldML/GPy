@@ -41,7 +41,8 @@ class IndependentOutputs(Kern):
 
     """
     def __init__(self, active_dim, kern, name='independ'):
-        super(IndependentOutputs, self).__init__(np.hstack((kern.active_dims,np.r_[active_dim])), name)
+        assert isinstance(active_dim, int), "IndependentOutputs kernel is only defined with one input dimension being the indeces"
+        super(IndependentOutputs, self).__init__(np.r_[0:max(max(kern.active_dims)+1, active_dim+1)], name)
         self.index_dim = active_dim
         self.kern = kern
         self.add_parameters(self.kern)

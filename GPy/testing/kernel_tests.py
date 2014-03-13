@@ -258,20 +258,20 @@ class KernelGradientTestsContinuous(unittest.TestCase):
 #         self.N, self.D = 100, 1
 #         self.X = np.random.randn(self.N,self.D)
 #         self.X2 = np.random.randn(self.N+10,self.D)
-# 
+#
 #         continuous_kerns = ['RBF', 'Linear']
 #         self.kernclasses = [getattr(GPy.kern, s) for s in continuous_kerns]
-# 
+#
 #     def test_PeriodicExponential(self):
 #         k = GPy.kern.PeriodicExponential(self.D)
 #         k.randomize()
 #         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
-# 
+#
 #     def test_PeriodicMatern32(self):
 #         k = GPy.kern.PeriodicMatern32(self.D)
 #         k.randomize()
 #         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
-# 
+#
 #     def test_PeriodicMatern52(self):
 #         k = GPy.kern.PeriodicMatern52(self.D)
 #         k.randomize()
@@ -279,7 +279,6 @@ class KernelGradientTestsContinuous(unittest.TestCase):
 
 
 class KernelTestsMiscellaneous(unittest.TestCase):
-
     def setUp(self):
         N, D = 100, 10
         self.X = np.linspace(-np.pi, +np.pi, N)[:,None] * np.ones(D)
@@ -298,6 +297,24 @@ class KernelTestsMiscellaneous(unittest.TestCase):
         self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=[self.linear, self.rbf]), self.linear.K(self.X)+self.rbf.K(self.X)))
         self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=self.sumkern.parts[0]), self.rbf.K(self.X)))
 
+class KernelTestsNonContinuous(unittest.TestCase):
+    def setUp(self):
+        N = 100
+        N1 = 110
+        self.D = 2
+        D = self.D
+        self.X = np.random.randn(N,D)
+        self.X2 = np.random.randn(N1,D)
+        self.X_block = np.zeros((N+N1, D+D+1))
+        self.X_block[0:N, 0:D] = self.X
+        self.X_block[N:N+N1, D:D+D] = self.X2
+        self.X_block[0:N, -1] = 1
+        self.X_block[N:N+1, -1] = 2
+
+    def test_IndependantOutputs(self):
+        k = GPy.kern.RBF(self.D)
+        kern = GPy.kern.IndependentOutputs(self.D+self.D,k)
+        self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose))
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."

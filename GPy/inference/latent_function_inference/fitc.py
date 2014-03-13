@@ -17,8 +17,7 @@ class FITC(object):
     def __init__(self):
         self.const_jitter = 1e-6
 
-    def inference(self, kern, X, X_variance, Z, likelihood, Y):
-        assert X_variance is None, "cannot use X_variance with FITC. Try varDTC."
+    def inference(self, kern, X, Z, likelihood, Y):
         
         #TODO: MAX! fix this!
         from ...util.misc import param_to_array
@@ -81,11 +80,7 @@ class FITC(object):
         dL_dU *= beta_star
         dL_dU -= 2.*KiU*dL_dR
 
-        grad_dict = {'dL_dKmm': dL_dK, 'dL_dKdiag':dL_dR, 'dL_dKnm':dL_dU.T}
-
-        #update gradients
-        kern.update_gradients_sparse(X=X, Z=Z, **grad_dict)
-        likelihood.update_gradients(dL_dR)
+        grad_dict = {'dL_dKmm': dL_dK, 'dL_dKdiag':dL_dR, 'dL_dKnm':dL_dU.T, 'partial_for_likelihood':dL_dR}
 
         #construct a posterior object
         post = Posterior(woodbury_inv=Kmmi-P, woodbury_vector=v, K=Kmm, mean=None, cov=None, K_chol=L)

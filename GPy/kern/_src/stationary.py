@@ -57,7 +57,7 @@ class Stationary(Kern):
                 if lengthscale.size != input_dim:
                     lengthscale = np.ones(input_dim)*lengthscale
             else:
-                lengthscale = np.ones(self.input_dim)
+                lengthscale = np.ones(self.input_dim)        
         self.lengthscale = Param('lengthscale', lengthscale, Logexp())
         self.variance = Param('variance', variance, Logexp())
         assert self.variance.size==1
@@ -85,12 +85,14 @@ class Stationary(Kern):
         Compute the Euclidean distance between each row of X and X2, or between
         each pair of rows of X if X2 is None.
         """
+        #X, = self._slice_X(X)
         if X2 is None:
             Xsq = np.sum(np.square(X),1)
             r2 = -2.*tdot(X) + (Xsq[:,None] + Xsq[None,:])
             util.diag.view(r2)[:,]= 0. # force diagnoal to be zero: sometime numerically a little negative
             return np.sqrt(r2)
         else:
+            #X2, = self._slice_X(X2)
             X1sq = np.sum(np.square(X),1)
             X2sq = np.sum(np.square(X2),1)
             return np.sqrt(-2.*np.dot(X, X2.T) + (X1sq[:,None] + X2sq[None,:]))
@@ -124,7 +126,6 @@ class Stationary(Kern):
         self.lengthscale.gradient = 0.
 
     def update_gradients_full(self, dL_dK, X, X2=None):
-
         self.variance.gradient = np.einsum('ij,ij,i', self.K(X, X2), dL_dK, 1./self.variance)
 
         #now the lengthscale gradient(s)
@@ -136,7 +137,7 @@ class Stationary(Kern):
             #self.lengthscale.gradient = -((dL_dr*rinv)[:,:,None]*x_xl3).sum(0).sum(0)/self.lengthscale**3
             tmp = dL_dr*self._inv_dist(X, X2)
             if X2 is None: X2 = X
-            self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(X[:,q:q+1] - X2[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in xrange(self.input_dim)])
+            self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(self._slice_X(X)[:,q:q+1] - self._slice_X(X2)[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in xrange(self.input_dim)])
         else:
             r = self._scaled_dist(X, X2)
             self.lengthscale.gradient = -np.sum(dL_dr*r)/self.lengthscale
@@ -176,7 +177,6 @@ class Stationary(Kern):
         ret = np.empty(X.shape, dtype=np.float64)
         [np.einsum('ij,ij->i', tmp, X[:,q][:,None]-X2[:,q][None,:], out=ret[:,q]) for q in xrange(self.input_dim)]
         ret /= self.lengthscale**2
-
         return ret
 
     def gradients_X_diag(self, dL_dKdiag, X):

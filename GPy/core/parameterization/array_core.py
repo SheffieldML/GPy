@@ -6,12 +6,6 @@ __updated__ = '2013-12-16'
 import numpy as np
 from parameter_core import Observable
 
-class _Array(np.ndarray):
-    def __init__(self, dtype=float, buffer=None, offset=0,
-                strides=None, order=None, *args, **kwargs):
-        super(_Array, self).__init__(dtype=dtype, buffer=buffer, offset=offset,
-                strides=strides, order=order, *args, **kwargs)
-
 class ObservableArray(np.ndarray, Observable):
     """
     An ndarray which reports changes to its observers.
@@ -22,7 +16,7 @@ class ObservableArray(np.ndarray, Observable):
     __array_priority__ = -1 # Never give back ObservableArray
     def __new__(cls, input_array, *a, **kw):
         if not isinstance(input_array, ObservableArray):
-            obj = np.atleast_1d(np.require(input_array, dtype=np.float64, requirements=['C', 'W'])).view(cls)
+            obj = np.atleast_1d(np.require(input_array, dtype=np.float64, requirements=['W', 'C'])).view(cls)
         else: obj = input_array
         cls.__name__ = "ObservableArray\n     "
         super(ObservableArray, obj).__init__(*a, **kw)

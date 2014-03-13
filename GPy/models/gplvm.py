@@ -41,7 +41,7 @@ class GPLVM(GP):
 
     def parameters_changed(self):
         super(GPLVM, self).parameters_changed()
-        self.X.gradient = self.kern.gradients_X(self.dL_dK, self.X, None)
+        self.X.gradient = self.kern.gradients_X(self.grad_dict['dL_dK'], self.X, None)
 
     def _getstate(self):
         return GP._getstate(self)

@@ -468,7 +468,7 @@ def sparse_GP_regression_2D(num_samples=400, num_inducing=50, max_iters=100, opt
 
 def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
     """Run a 1D example of a sparse GP regression with uncertain inputs."""
-    fig, axes = pb.subplots(1, 2, figsize=(12, 5))
+    fig, axes = pb.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
 
     # sample inputs and outputs
     S = np.ones((20, 1))

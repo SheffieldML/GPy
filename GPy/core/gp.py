@@ -27,7 +27,7 @@ class GP(Model):
 
 
     """
-    def __init__(self, X, Y, kernel, likelihood, inference_method=None, Y_metadata=None, name='gp'):
+    def __init__(self, X, Y, kernel, likelihood, inference_method=None, name='gp', **Y_metadata):
         super(GP, self).__init__(name)
 
         assert X.ndim == 2
@@ -43,12 +43,12 @@ class GP(Model):
         _, self.output_dim = self.Y.shape
 
         if Y_metadata is not None:
-            self.Y_metadata = ObservableArray(Y_metadata)
+            self.Y_metadata = Y_metadata
         else:
             self.Y_metadata = None
 
         assert isinstance(kernel, kern.Kern)
-        assert self.input_dim == kernel.input_dim
+        #assert self.input_dim == kernel.input_dim
         self.kern = kernel
 
         assert isinstance(likelihood, likelihoods.Likelihood)
@@ -56,7 +56,7 @@ class GP(Model):
 
         #find a sensible inference method
         if inference_method is None:
-            if isinstance(likelihood, likelihoods.Gaussian):
+            if isinstance(likelihood, likelihoods.Gaussian) or isinstance(likelihood, likelihoods.MixedNoise):
                 inference_method = exact_gaussian_inference.ExactGaussianInference()
             else:
                 inference_method = expectation_propagation
@@ -67,8 +67,9 @@ class GP(Model):
         self.add_parameter(self.likelihood)
 
     def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y, Y_metadata=self.Y_metadata)
-        self.kern.update_gradients_full(grad_dict['dL_dK'], self.X)
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y, **self.Y_metadata)
+        self.likelihood.update_gradients(np.diag(self.grad_dict['dL_dK']), **self.Y_metadata)
+        self.kern.update_gradients_full(self.grad_dict['dL_dK'], self.X)
 
     def log_likelihood(self):
         return self._log_marginal_likelihood
@@ -185,7 +186,7 @@ class GP(Model):
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
-        models_plots.plot_fit_f(self,*args,**kwargs)
+        return models_plots.plot_fit_f(self,*args,**kwargs)
 
     def plot(self, *args, **kwargs):
         """
@@ -206,7 +207,7 @@ class GP(Model):
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
-        models_plots.plot_fit(self,*args,**kwargs)
+        return models_plots.plot_fit(self,*args,**kwargs)
 
     def _getstate(self):
         """

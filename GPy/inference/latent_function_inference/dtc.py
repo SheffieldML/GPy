@@ -19,7 +19,7 @@ class DTC(object):
     def __init__(self):
         self.const_jitter = 1e-6
 
-    def inference(self, kern, X, X_variance, Z, likelihood, Y):
+    def inference(self, kern, X, Z, likelihood, Y):
         assert X_variance is None, "cannot use X_variance with DTC. Try varDTC."
 
         #TODO: MAX! fix this!
@@ -79,10 +79,6 @@ class DTC(object):
         dL_dR = 0.5*(np.sum(U*np.dot(U,P), 1) - 1./beta + np.sum(np.square(Y), 1) - 2.*np.sum(Uv*Y, 1) + np.sum(np.square(Uv), 1))*beta**2
 
         grad_dict = {'dL_dKmm': dL_dK, 'dL_dKdiag':np.zeros_like(Knn), 'dL_dKnm':dL_dU.T}
-
-        #update gradients
-        kern.update_gradients_sparse(X=X, Z=Z, **grad_dict)
-        likelihood.update_gradients(dL_dR)
 
         #construct a posterior object
         post = Posterior(woodbury_inv=Kmmi-P, woodbury_vector=v, K=Kmm, mean=None, cov=None, K_chol=L)

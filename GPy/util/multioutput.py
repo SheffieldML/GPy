@@ -1,12 +1,17 @@
 import numpy as np
 import warnings
-from .. import kern
+import GPy
 
-def build_XY(input_list,output_list=None,index=None):
+
+def get_slices(input_list):
     num_outputs = len(input_list)
     _s = [0] + [ _x.shape[0] for _x in input_list ]
     _s = np.cumsum(_s)
     slices = [slice(a,b) for a,b in zip(_s[:-1],_s[1:])]
+    return slices
+
+def build_XY(input_list,output_list=None,index=None):
+    num_outputs = len(input_list)
     if output_list is not None:
         assert num_outputs == len(output_list)
         Y = np.vstack(output_list)
@@ -15,42 +20,82 @@ def build_XY(input_list,output_list=None,index=None):
 
     if index is not None:
         assert len(index) == num_outputs
-        I = np.vstack( [j*np.ones((_x.shape[0],1)) for _x,j in zip(input_list,index)] )
+        I = np.hstack( [np.repeat(j,_x.shape[0]) for _x,j in zip(input_list,index)] )
     else:
-        I = np.vstack( [j*np.ones((_x.shape[0],1)) for _x,j in zip(input_list,range(num_outputs))] )
+        I = np.hstack( [np.repeat(j,_x.shape[0]) for _x,j in zip(input_list,range(num_outputs))] )
 
     X = np.vstack(input_list)
-    X = np.hstack([X,I])
-    return X,Y,slices
+    X = np.hstack([X,I[:,None]])
 
-def build_lcm(input_dim, num_outputs, CK = [], NC = [], W_columns=1,W=None,kappa=None):
-    #TODO build_icm or build_lcm
+    return X,Y,I[:,None]#slices
+
+def build_likelihood(Y_list,noise_index,likelihoods_list=None):
+    Ny = len(Y_list)
+    if likelihoods_list is None:
+       likelihoods_list = [GPy.likelihoods.Gaussian(name="Gaussian_noise_%s" %j) for y,j in zip(Y_list,range(Ny))]
+    else:
+        assert len(likelihoods_list) == Ny
+    likelihood = GPy.likelihoods.mixed_noise.MixedNoise(likelihoods_list=likelihoods_list, noise_index=noise_index)
+    return likelihood
+
+
+def ICM(input_dim, num_outputs, kernel, W_rank=1,W=None,kappa=None,name='X'):
     """
-    Builds a kernel for a linear coregionalization model
+    Builds a kernel for an Intrinsic Coregionalization Model
 
     :input_dim: Input dimensionality
     :num_outputs: Number of outputs
-    :param CK: List of coregionalized kernels (i.e., this will be multiplied by a coregionalize kernel).
-    :param K: List of kernels that will be added up together with CK, but won't be multiplied by a coregionalize kernel
-    :param W_columns: number tuples of the corregionalization parameters 'coregion_W'
-    :type W_columns: integer
+    :param kernel: kernel that will be multiplied by the coregionalize kernel (matrix B).
+    :type kernel: a GPy kernel
+    :param W_rank: number tuples of the corregionalization parameters 'W'
+    :type W_rank: integer
     """
+    if kernel.input_dim <> input_dim:
+        kernel.input_dim = input_dim
+        warnings.warn("kernel's input dimension overwritten to fit input_dim parameter.")
 
-    for k in CK:
-        if k.input_dim <> input_dim:
-            k.input_dim = input_dim
-            warnings.warn("kernel's input dimension overwritten to fit input_dim parameter.")
+    K = kernel.prod(GPy.kern.Coregionalize([input_dim], num_outputs,W_rank,W,kappa,name='B'),name=name)
+    #K = kernel ** GPy.kern.Coregionalize(input_dim, num_outputs,W_rank,W,kappa, name= 'B')
+    K['.*variance'] = 1.
+    K['.*variance'].fix()
+    return K
 
-    for k in NC:
-        if k.input_dim <> input_dim + 1:
-            k.input_dim = input_dim + 1
-            warnings.warn("kernel's input dimension overwritten to fit input_dim parameter.")
 
-    kernel = CK[0].prod(kern.Coregionalize(num_outputs,W_columns,W,kappa),tensor=True)
-    for k in CK[1:]:
-        k_coreg = kern.Coregionalize(num_outputs,W_columns,W,kappa)
-        kernel += k.prod(k_coreg,tensor=True)
-    for k in NC:
-        kernel += k
+def LCM(input_dim, num_outputs, kernels_list, W_rank=1,name='X'):
+    """
+    Builds a kernel for an Linear Coregionalization Model
 
-    return kernel
+    :input_dim: Input dimensionality
+    :num_outputs: Number of outputs
+    :param kernel: kernel that will be multiplied by the coregionalize kernel (matrix B).
+    :type kernel: a GPy kernel
+    :param W_rank: number tuples of the corregionalization parameters 'W'
+    :type W_rank: integer
+    """
+    Nk = len(kernels_list)
+    K = ICM(input_dim,num_outputs,kernels_list[0],W_rank,name='%s%s' %(name,0))
+    j = 1
+    for kernel in kernels_list[1:]:
+        K += ICM(input_dim,num_outputs,kernel,W_rank,name='%s%s' %(name,j))
+    return K
+
+
+def Private(input_dim, num_outputs, kernel, output, kappa=None,name='X'):
+    """
+    Builds a kernel for an Intrinsic Coregionalization Model
+
+    :input_dim: Input dimensionality
+    :num_outputs: Number of outputs
+    :param kernel: kernel that will be multiplied by the coregionalize kernel (matrix B).
+    :type kernel: a GPy kernel
+    :param W_rank: number tuples of the corregionalization parameters 'W'
+    :type W_rank: integer
+    """
+    K = ICM(input_dim,num_outputs,kernel,W_rank=1,kappa=kappa,name=name)
+    K.B.W.fix(0)
+    _range = range(num_outputs)
+    _range.pop(output)
+    for j in _range:
+        K.B.kappa[j] = 0
+        K.B.kappa[j].fix()
+    return K

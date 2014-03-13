@@ -56,11 +56,8 @@ class Laplace(object):
         #Compute hessian and other variables at mode
         log_marginal, woodbury_vector, woodbury_inv, dL_dK, dL_dthetaL = self.mode_computations(f_hat, Ki_fhat, K, Y, likelihood, kern, Y_metadata)
 
-        kern.update_gradients_full(dL_dK, X)
-        likelihood.update_gradients(dL_dthetaL)
-
         self._previous_Ki_fhat = Ki_fhat.copy()
-        return Posterior(woodbury_vector=woodbury_vector, woodbury_inv=woodbury_inv, K=K), log_marginal, {'dL_dK':dL_dK}
+        return Posterior(woodbury_vector=woodbury_vector, woodbury_inv=woodbury_inv, K=K), log_marginal, {'dL_dK':dL_dK, 'dL_dthetaL':dL_dthetaL}
 
     def rasm_mode(self, K, Y, likelihood, Ki_f_init, Y_metadata=None):
         """

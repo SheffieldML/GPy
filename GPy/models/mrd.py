@@ -104,23 +104,23 @@ class MRD(Model):
             setattr(self, 'Y{}'.format(i), p)
             self.add_parameter(p)
         self._in_init_ = False
-            
+
     def parameters_changed(self):
         self._log_marginal_likelihood = 0
         self.posteriors = []
         self.Z.gradient = 0.
         self.X.mean.gradient = 0.
         self.X.variance.gradient = 0.
-        
+
         for y, k, l, i in itertools.izip(self.Ylist, self.kern, self.likelihood, self.inference_method):
             posterior, lml, grad_dict = i.inference(k, self.X, self.Z, l, y)
-            
+
             self.posteriors.append(posterior)
             self._log_marginal_likelihood += lml
-            
+
             # likelihood gradients
             l.update_gradients(grad_dict.pop('partial_for_likelihood'))
-            
+
             #gradients wrt kernel
             dL_dKmm = grad_dict.pop('dL_dKmm')
             k.update_gradients_full(dL_dKmm, self.Z, None)
@@ -132,7 +132,7 @@ class MRD(Model):
             self.Z.gradient += k.gradients_X(dL_dKmm, self.Z)
             self.Z.gradient += k.gradients_Z_expectations(
                                grad_dict['dL_dpsi1'], grad_dict['dL_dpsi2'], Z=self.Z, variational_posterior=self.X)
-            
+
             dL_dmean, dL_dS = k.gradients_qX_expectations(variational_posterior=self.X, Z=self.Z, **grad_dict)
             self.X.mean.gradient += dL_dmean
             self.X.variance.gradient += dL_dS

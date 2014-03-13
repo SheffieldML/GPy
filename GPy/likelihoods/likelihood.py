@@ -397,7 +397,7 @@ class Likelihood(Parameterized):
 
         return [np.percentile(ss_y ,q, axis=1)[:,None] for q in quantiles]
 
-    def samples(self, gp):
+    def samples(self, gp, Y_metadata=None):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 

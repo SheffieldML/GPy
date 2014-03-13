@@ -148,7 +148,7 @@ class GP(Model):
 
         return Ysim
 
-    def posterior_samples(self,X,size=10, full_cov=True, Y_metadata=None):
+    def posterior_samples(self, X, size=10, full_cov=False, Y_metadata=None):
         """
         Samples the posterior GP at the points X.
 
@@ -163,7 +163,7 @@ class GP(Model):
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
         Ysim = self.posterior_samples_f(X, size, full_cov=full_cov)
-        Ysim = self.likelihood.noise_model.samples(Ysim, Y_metadata)
+        Ysim = self.likelihood.samples(Ysim, Y_metadata)
 
         return Ysim
 

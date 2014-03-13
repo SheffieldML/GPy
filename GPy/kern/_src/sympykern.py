@@ -116,6 +116,7 @@ class Sympykern(Kern):
         if self.output_dim > 1:
             self.arg_list += self._sp_theta_i + self._sp_theta_j
             self.diag_arg_list += self._sp_theta_i
+
         # psi_stats aren't yet implemented.
         if False:
             self.compute_psi_stats()

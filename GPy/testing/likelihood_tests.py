@@ -541,7 +541,8 @@ class TestNoiseModels(object):
             #import ipdb; ipdb.set_trace()
             #NOTE this test appears to be stochastic for some likelihoods (student t?)
             # appears to all be working in test mode right now...
-
+        #if isinstance(model, GPy.likelihoods.StudentT):
+        #    import ipdb;ipdb.set_trace()
         assert m.checkgrad(step=step)
 
     ###########
@@ -700,7 +701,6 @@ class LaplaceTests(unittest.TestCase):
         np.testing.assert_almost_equal(m1.log_likelihood(), m2.log_likelihood(), decimal=2)
         #Check marginals are the same with random
         m1.randomize()
-        import ipdb;ipdb.set_trace()
         m2[:] = m1[:]
 
         np.testing.assert_almost_equal(m1.log_likelihood(), m2.log_likelihood(), decimal=2)

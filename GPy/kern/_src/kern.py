@@ -156,7 +156,7 @@ class Kern(Parameterized):
         other.active_dims += self.input_dim
         return self.prod(other)
 
-    def prod(self, other, name=None):
+    def prod(self, other, name='mul'):
         """
         Multiply two kernels (either on the same space, or on the tensor
         product of the input space).
@@ -169,12 +169,12 @@ class Kern(Parameterized):
         """
         assert isinstance(other, Kern), "only kernels can be added to kernels..."
         from prod import Prod
-        kernels = []
-        if isinstance(self, Prod): kernels.extend(self._parameters_)
-        else: kernels.append(self)
-        if isinstance(other, Prod): kernels.extend(other._parameters_)
-        else: kernels.append(other)
-        return Prod(self, other, name)
+        #kernels = []
+        #if isinstance(self, Prod): kernels.extend(self._parameters_)
+        #else: kernels.append(self)
+        #if isinstance(other, Prod): kernels.extend(other._parameters_)
+        #else: kernels.append(other)
+        return Prod([self, other], name)
 
     def _getstate(self):
         """
@@ -195,8 +195,10 @@ class Kern(Parameterized):
 class CombinationKernel(Kern):
     def __init__(self, kernels, name):
         assert all([isinstance(k, Kern) for k in kernels])
+        # make sure the active dimensions of all underlying kernels are covered:
         ma = reduce(lambda a,b: max(a, max(b)), (x.active_dims for x in kernels), 0)
         input_dim = np.r_[0:ma+1]
+        # initialize the kernel with the full input_dim
         super(CombinationKernel, self).__init__(input_dim, name)
         self.add_parameters(*kernels)
 

@@ -32,6 +32,33 @@
       "details":"Artificially generated data of silhouettes given poses. Note that the data does not display a left/right ambiguity because across the entire data set one of the arms sticks out more the the other, disambiguating the pose as to which way the individual is facing.",
       "size":1
    },
+   "football_data":{
+      "files":[
+         [
+	     "E0.csv", "E1.csv", "E2.csv", "E3.csv"
+         ]
+      ],
+      "citation":"",
+      "license":null,
+      "urls":[
+          "http://www.football-data.co.uk/mmz4281/"
+      ],
+      "details":"Results of English football matches since 1993/94 season.",
+      "size":1
+   },
+   "google_trends":{
+      "files":[
+         [
+         ]
+      ],
+      "citation":"",
+      "license":null,
+      "urls":[
+          "http://www.google.com/trends/"
+      ],
+      "details":"Google trends results.",
+      "size":0
+   },
    "osu_accad":{
       "files":[
          [

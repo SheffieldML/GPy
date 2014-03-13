@@ -17,7 +17,8 @@ class Prod(CombinationKernel):
     :rtype: kernel object
 
     """
-    def __init__(self, kernels, name='prod'):
+    def __init__(self, kernels, name='mul'):
+        assert len(kernels) == 2, 'only implemented for two kernels as of yet'
         super(Prod, self).__init__(kernels, name)
 
     @Cache_this(limit=2, force_kwargs=['which_parts'])
@@ -37,26 +38,28 @@ class Prod(CombinationKernel):
             which_parts = self.parts
         return reduce(np.multiply, (p.Kdiag(X) for p in which_parts))
 
-    def update_gradients_full(self, dL_dK, X):
+    def update_gradients_full(self, dL_dK, X, X2=None):
         for k1,k2 in itertools.combinations(self.parts, 2):
-            k1._sliced_X = k1._sliced_X2 = k2._sliced_X = k2._sliced_X2 = True
-            k1.update_gradients_full(dL_dK*k2.K(X, X))
-            self.k2.update_gradients_full(dL_dK*self.k1.K(X[:,self.slice1]), X[:,self.slice2])
+            k1.update_gradients_full(dL_dK*k2.K(X, X2), X, X2)
+            k2.update_gradients_full(dL_dK*k1.K(X, X2), X, X2)
+
+    def update_gradients_diag(self, dL_dKdiag, X):
+        for k1,k2 in itertools.combinations(self.parts, 2):
+            k1.update_gradients_diag(dL_dKdiag*k2.Kdiag(X), X)
+            k2.update_gradients_diag(dL_dKdiag*k1.Kdiag(X), X)
 
     def gradients_X(self, dL_dK, X, X2=None):
         target = np.zeros(X.shape)
-        if X2 is None:
-            target[:,self.slice1] += self.k1.gradients_X(dL_dK*self.k2.K(X[:,self.slice2]), X[:,self.slice1], None)
-            target[:,self.slice2] += self.k2.gradients_X(dL_dK*self.k1.K(X[:,self.slice1]), X[:,self.slice2], None)
-        else:
-            target[:,self.slice1] += self.k1.gradients_X(dL_dK*self.k2.K(X[:,self.slice2], X2[:,self.slice2]), X[:,self.slice1], X2[:,self.slice1])
-            target[:,self.slice2] += self.k2.gradients_X(dL_dK*self.k1.K(X[:,self.slice1], X2[:,self.slice1]), X[:,self.slice2], X2[:,self.slice2])
+        for k1,k2 in itertools.combinations(self.parts, 2):
+            target[:,k1.active_dims] += k1.gradients_X(dL_dK*k2.K(X, X2), X, X2)
+            target[:,k2.active_dims] += k2.gradients_X(dL_dK*k1.K(X, X2), X, X2)
         return target
 
     def gradients_X_diag(self, dL_dKdiag, X):
         target = np.zeros(X.shape)
-        target[:,self.slice1] = self.k1.gradients_X(dL_dKdiag*self.k2.Kdiag(X[:,self.slice2]), X[:,self.slice1])
-        target[:,self.slice2] += self.k2.gradients_X(dL_dKdiag*self.k1.Kdiag(X[:,self.slice1]), X[:,self.slice2])
+        for k1,k2 in itertools.combinations(self.parts, 2):
+            target[:,k1.active_dims] += k1.gradients_X(dL_dKdiag*k2.Kdiag(X), X)
+            target[:,k2.active_dims] += k2.gradients_X(dL_dKdiag*k1.Kdiag(X), X)
         return target
 
 

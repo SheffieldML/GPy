@@ -15,7 +15,7 @@ import itertools
 class Model(Parameterized):
     _fail_count = 0  # Count of failed optimization steps (see objective)
     _allowed_failures = 10  # number of allowed failures
-        
+
     def __init__(self, name):
         super(Model, self).__init__(name)  # Parameterized.__init__(self)
         self.optimization_runs = []
@@ -27,7 +27,7 @@ class Model(Parameterized):
 
     def _log_likelihood_gradients(self):
         return self.gradient
-        
+
     def _getstate(self):
         """
         Get the current state of the class.
@@ -231,7 +231,7 @@ class Model(Parameterized):
             raise RuntimeError, "Cannot optimize, when everything is fixed"
         if self.size == 0:
             raise RuntimeError, "Model without parameters cannot be minimized"
-        
+
         if optimizer is None:
             optimizer = self.preferred_optimizer
 
@@ -301,9 +301,8 @@ class Model(Parameterized):
 
             denominator = (2 * np.dot(dx, gradient))
             global_ratio = (f1 - f2) / np.where(denominator==0., 1e-32, denominator)
-            gloabl_diff = (f1 - f2) - denominator
 
-            return (np.abs(1. - global_ratio) < tolerance) or (np.abs(gloabl_diff) == 0) 
+            return np.abs(1. - global_ratio) < tolerance)
         else:
             # check the gradient of each parameter individually, and do some pretty printing
             try:
@@ -349,7 +348,7 @@ class Model(Parameterized):
                 xx[xind] -= 2.*step
                 f2 = self.objective_function(xx)
                 numerical_gradient = (f1 - f2) / (2 * step)
-                if np.all(gradient[xind]==0): ratio = (f1-f2) == gradient[xind] 
+                if np.all(gradient[xind]==0): ratio = (f1-f2) == gradient[xind]
                 else: ratio = (f1 - f2) / (2 * step * gradient[xind])
                 difference = np.abs((f1 - f2) / 2 / step - gradient[xind])
 

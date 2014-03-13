@@ -1,11 +1,11 @@
 import numpy as np
 import unittest
 import GPy
-from ..models import GradientChecker
+from GPy.models import GradientChecker
 import functools
 import inspect
-from ..likelihoods import link_functions
-from ..core.parameterization import Param
+from GPy.likelihoods import link_functions
+from GPy.core.parameterization import Param
 from functools import partial
 #np.random.seed(300)
 #np.random.seed(7)

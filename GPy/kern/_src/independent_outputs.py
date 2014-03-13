@@ -73,7 +73,7 @@ class IndependentOutputs(Kern):
 
         slices = index_to_slices(X[:,self.index_dim])
         if X2 is None:
-            [[collate_grads(dL_dK[s,s], X[s], None) for s in slices_i] for slices_i in slices]
+            [[collate_grads(dL_dK[s,ss], X[s], X[ss]) for s,ss in itertools.product(slices_i, slices_i)] for slices_i in slices]
         else:
             slices2 = index_to_slices(X2[:,self.index_dim])
             [[[collate_grads(dL_dK[s,s2],X[s],X2[s2]) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
@@ -83,10 +83,10 @@ class IndependentOutputs(Kern):
         target = np.zeros_like(X)
         slices = index_to_slices(X[:,self.index_dim])
         if X2 is None:
-            [[np.copyto(target[s,:-1], self.kern.gradients_X(dL_dK[s,s],X[s],None)) for s in slices_i] for slices_i in slices]
+            [[np.copyto(target[s,self.kern.active_dims], self.kern.gradients_X(dL_dK[s,s],X[s],X[ss])) for s, ss in product(slices_i, slices_i)] for slices_i in slices]
         else:
-            X2,slices2 = X2[:,:-1],index_to_slices(X2[:,-1])
-            [[[np.copyto(target[s,:-1], self.kern.gradients_X(dL_dK[s,s2], X[s], X2[s2])) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
+            X2,slices2 = X2[:,:self.index_dim],index_to_slices(X2[:,-1])
+            [[[np.copyto(target[s,:self.index_dim], self.kern.gradients_X(dL_dK[s,s2], X[s], X2[s2])) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
         return target
 
     def gradients_X_diag(self, dL_dKdiag, X):
@@ -95,12 +95,12 @@ class IndependentOutputs(Kern):
         [[np.copyto(target[s,:-1], self.kern.gradients_X_diag(dL_dKdiag[s],X[s])) for s in slices_i] for slices_i in slices]
         return target
 
-    def update_gradients_diag(self,dL_dKdiag,X,target):
+    def update_gradients_diag(self, dL_dKdiag, X):
         target = np.zeros(self.kern.size)
         def collate_grads(dL, X):
             self.kern.update_gradients_diag(dL,X)
-            self.target += self.kern.gradient
-        X,slices = X[:,:-1],index_to_slices(X[:,-1])
+            target[:] += self.kern.gradient
+        slices = index_to_slices(X[:,self.index_dim])
         [[collate_grads(dL_dKdiag[s], X[s,:]) for s in slices_i] for slices_i in slices]
         self.kern.gradient = target
 

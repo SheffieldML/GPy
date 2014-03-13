@@ -1,7 +1,7 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 """
-Core module for parameterization. 
+Core module for parameterization.
 This module implements all parameterization techniques, split up in modular bits.
 
 HierarchyError:
@@ -41,7 +41,7 @@ class Observable(object):
     """
     _updated = True
     def __init__(self, *args, **kwargs):
-        super(Observable, self).__init__(*args, **kwargs)
+        super(Observable, self).__init__()
         self._observer_callables_ = []
 
     def add_observer(self, observer, callble, priority=0):
@@ -61,7 +61,7 @@ class Observable(object):
 
     def notify_observers(self, which=None, min_priority=None):
         """
-        Notifies all observers. Which is the element, which kicked off this 
+        Notifies all observers. Which is the element, which kicked off this
         notification loop.
 
         NOTE: notifies only observers with priority p > min_priority!
@@ -91,11 +91,11 @@ class Observable(object):
 
 class Pickleable(object):
     """
-    Make an object pickleable (See python doc 'pickling'). 
+    Make an object pickleable (See python doc 'pickling').
 
     This class allows for pickling support by Memento pattern.
     _getstate returns a memento of the class, which gets pickled.
-    _setstate(<memento>) (re-)sets the state of the class to the memento 
+    _setstate(<memento>) (re-)sets the state of the class to the memento
     """
     #===========================================================================
     # Pickling operations
@@ -112,14 +112,14 @@ class Pickleable(object):
             with open(f, 'w') as f:
                 cPickle.dump(self, f, protocol)
         else:
-            cPickle.dump(self, f, protocol)    
+            cPickle.dump(self, f, protocol)
     def __getstate__(self):
         if self._has_get_set_state():
             return self._getstate()
         return self.__dict__
     def __setstate__(self, state):
         if self._has_get_set_state():
-            self._setstate(state)  
+            self._setstate(state)
             # TODO: maybe parameters_changed() here?
             return
         self.__dict__ = state
@@ -160,7 +160,7 @@ class Parentable(object):
     _parent_ = None
     _parent_index_ = None
     def __init__(self, *args, **kwargs):
-        super(Parentable, self).__init__(*args, **kwargs)
+        super(Parentable, self).__init__()
 
     def has_parent(self):
         """
@@ -201,18 +201,18 @@ class Gradcheckable(Parentable):
     Adds the functionality for an object to be gradcheckable.
     It is just a thin wrapper of a call to the highest parent for now.
     TODO: Can be done better, by only changing parameters of the current parameter handle,
-    such that object hierarchy only has to change for those. 
+    such that object hierarchy only has to change for those.
     """
     def __init__(self, *a, **kw):
         super(Gradcheckable, self).__init__(*a, **kw)
 
     def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3, _debug=False):
         """
-        Check the gradient of this parameter with respect to the highest parent's 
+        Check the gradient of this parameter with respect to the highest parent's
         objective function.
         This is a three point estimate of the gradient, wiggling at the parameters
         with a stepsize step.
-        The check passes if either the ratio or the difference between numerical and 
+        The check passes if either the ratio or the difference between numerical and
         analytical gradient is smaller then tolerance.
 
         :param bool verbose: whether each parameter shall be checked individually.
@@ -275,22 +275,22 @@ class Indexable(object):
     The raveled index of an object is the index for its parameters in a flattened int array.
     """
     def __init__(self, *a, **kw):
-        super(Indexable, self).__init__(*a, **kw)
-        
+        super(Indexable, self).__init__()
+
     def _raveled_index(self):
         """
         Flattened array of ints, specifying the index of this object.
         This has to account for shaped parameters!
         """
         raise NotImplementedError, "Need to be able to get the raveled Index"
-        
+
     def _internal_offset(self):
         """
-        The offset for this parameter inside its parent. 
+        The offset for this parameter inside its parent.
         This has to account for shaped parameters!
         """
         return 0
-    
+
     def _offset_for(self, param):
         """
         Return the offset of the param inside this parameterized object.
@@ -298,15 +298,15 @@ class Indexable(object):
         basically just sums up the parameter sizes which come before param.
         """
         raise NotImplementedError, "shouldnt happen, offset required from non parameterization object?"
-    
+
     def _raveled_index_for(self, param):
         """
         get the raveled index for a param
         that is an int array, containing the indexes for the flattened
         param inside this parameterized logic.
         """
-        raise NotImplementedError, "shouldnt happen, raveld index transformation required from non parameterization object?"        
-        
+        raise NotImplementedError, "shouldnt happen, raveld index transformation required from non parameterization object?"
+
 
 class Constrainable(Nameable, Indexable):
     """
@@ -315,7 +315,7 @@ class Constrainable(Nameable, Indexable):
     Adding a constraint to a Parameter means to tell the highest parent that
     the constraint was added and making sure that all parameters covered
     by this object are indeed conforming to the constraint.
-    
+
     :func:`constrain()` and :func:`unconstrain()` are main methods here
     """
     def __init__(self, name, default_constraint=None, *a, **kw):
@@ -326,7 +326,7 @@ class Constrainable(Nameable, Indexable):
         self.priors = ParameterIndexOperations()
         if self._default_constraint_ is not None:
             self.constrain(self._default_constraint_)
-    
+
     def _disconnect_parent(self, constr=None, *args, **kw):
         """
         From Parentable:
@@ -340,7 +340,7 @@ class Constrainable(Nameable, Indexable):
         self._parent_index_ = None
         self._connect_fixes()
         self._notify_parent_change()
-        
+
     #===========================================================================
     # Fixing Parameters:
     #===========================================================================
@@ -356,20 +356,20 @@ class Constrainable(Nameable, Indexable):
         rav_i = self._highest_parent_._raveled_index_for(self)
         self._highest_parent_._set_fixed(rav_i)
     fix = constrain_fixed
-    
+
     def unconstrain_fixed(self):
         """
         This parameter will no longer be fixed.
         """
         unconstrained = self.unconstrain(__fixed__)
-        self._highest_parent_._set_unfixed(unconstrained)    
+        self._highest_parent_._set_unfixed(unconstrained)
     unfix = unconstrain_fixed
-    
+
     def _set_fixed(self, index):
         if not self._has_fixes(): self._fixes_ = np.ones(self.size, dtype=bool)
         self._fixes_[index] = FIXED
         if np.all(self._fixes_): self._fixes_ = None  # ==UNFIXED
-    
+
     def _set_unfixed(self, index):
         if not self._has_fixes(): self._fixes_ = np.ones(self.size, dtype=bool)
         # rav_i = self._raveled_index_for(param)[index]
@@ -383,7 +383,7 @@ class Constrainable(Nameable, Indexable):
             self._fixes_[fixed_indices] = FIXED
         else:
             self._fixes_ = None
-    
+
     def _has_fixes(self):
         return hasattr(self, "_fixes_") and self._fixes_ is not None
 
@@ -398,21 +398,21 @@ class Constrainable(Nameable, Indexable):
         """
         repriorized = self.unset_priors()
         self._add_to_index_operations(self.priors, repriorized, prior, warning)
-    
+
     def unset_priors(self, *priors):
         """
         Un-set all priors given from this parameter handle.
-         
+
         """
         return self._remove_from_index_operations(self.priors, priors)
-    
+
     def log_prior(self):
         """evaluate the prior"""
         if self.priors.size > 0:
             x = self._get_params()
             return reduce(lambda a, b: a + b, [p.lnpdf(x[ind]).sum() for p, ind in self.priors.iteritems()], 0)
         return 0.
-    
+
     def _log_prior_gradients(self):
         """evaluate the gradients of the priors"""
         if self.priors.size > 0:
@@ -421,7 +421,7 @@ class Constrainable(Nameable, Indexable):
             [np.put(ret, ind, p.lnpdf_grad(x[ind])) for p, ind in self.priors.iteritems()]
             return ret
         return 0.
-        
+
     #===========================================================================
     # Constrain operations -> done
     #===========================================================================
@@ -448,7 +448,7 @@ class Constrainable(Nameable, Indexable):
         transformats of this parameter object.
         """
         return self._remove_from_index_operations(self.constraints, transforms)
-    
+
     def constrain_positive(self, warning=True, trigger_parent=True):
         """
         :param warning: print a warning if re-constraining parameters.
@@ -493,7 +493,7 @@ class Constrainable(Nameable, Indexable):
         Remove (lower, upper) bounded constrain from this parameter/
         """
         self.unconstrain(Logistic(lower, upper))
-    
+
     def _parent_changed(self, parent):
         """
         From Parentable:
@@ -522,7 +522,7 @@ class Constrainable(Nameable, Indexable):
     def _remove_from_index_operations(self, which, what):
         """
         Helper preventing copy code.
-        Remove given what (transform prior etc) from which param index ops. 
+        Remove given what (transform prior etc) from which param index ops.
         """
         if len(what) == 0:
             transforms = which.properties()
@@ -532,7 +532,7 @@ class Constrainable(Nameable, Indexable):
             removed = np.union1d(removed, unconstrained)
             if t is __fixed__:
                 self._highest_parent_._set_unfixed(unconstrained)
-        
+
         return removed
 
 class OptimizationHandlable(Constrainable, Observable):
@@ -543,13 +543,13 @@ class OptimizationHandlable(Constrainable, Observable):
     """
     def __init__(self, name, default_constraint=None, *a, **kw):
         super(OptimizationHandlable, self).__init__(name, default_constraint=default_constraint, *a, **kw)
-    
+
     def transform(self):
         [np.put(self._param_array_, ind, c.finv(self._param_array_[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-    
+
     def untransform(self):
         [np.put(self._param_array_, ind, c.f(self._param_array_[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-        
+
     def _get_params_transformed(self):
         # transformed parameters (apply transformation rules)
         p = self._param_array_.copy()
@@ -565,23 +565,23 @@ class OptimizationHandlable(Constrainable, Observable):
         else: self._param_array_[:] = p
         self.untransform()
         self._trigger_params_changed()
-        
+
     def _trigger_params_changed(self, trigger_parent=True):
         [p._trigger_params_changed(trigger_parent=False) for p in self._parameters_]
         if trigger_parent: min_priority = None
         else: min_priority = -np.inf
         self.notify_observers(None, min_priority)
-    
+
     def _size_transformed(self):
         return self.size - self.constraints[__fixed__].size
-#     
+#
 #     def _untransform_params(self, p):
 #         # inverse apply transformations for parameters
 #         #p = p.copy()
 #         if self._has_fixes(): tmp = self._get_params(); tmp[self._fixes_] = p; p = tmp; del tmp
 #         [np.put(p, ind, c.f(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
 #         return p
-#     
+#
 #     def _get_params(self):
 #         """
 #         get all parameters
@@ -592,7 +592,7 @@ class OptimizationHandlable(Constrainable, Observable):
 #             return p
 #         [np.put(p, ind, par._get_params()) for ind, par in itertools.izip(self._param)]
 #         return p
-        
+
 #     def _set_params(self, params, trigger_parent=True):
 #         self._param_array_.flat = params
 #         if trigger_parent: min_priority = None
@@ -600,14 +600,14 @@ class OptimizationHandlable(Constrainable, Observable):
 #         self.notify_observers(None, min_priority)
         # don't overwrite this anymore!
         #raise NotImplementedError, "Abstract superclass: This needs to be implemented in Param and Parameterizable"
-    
+
     #===========================================================================
     # Optimization handles:
     #===========================================================================
     def _get_param_names(self):
         n = np.array([p.hierarchy_name() + '[' + str(i) + ']' for p in self.flattened_parameters for i in p._indices()])
         return n
-    
+
     def _get_param_names_transformed(self):
         n = self._get_param_names()
         if self._has_fixes():
@@ -621,7 +621,7 @@ class OptimizationHandlable(Constrainable, Observable):
         """
         Randomize the model.
         Make this draw from the prior if one exists, else draw from given random generator
-        
+
         :param rand_gen: numpy random number generator which takes args and kwargs
         :param flaot loc: loc parameter for random number generator
         :param float scale: scale parameter for random number generator
@@ -663,7 +663,7 @@ class Parameterizable(OptimizationHandlable):
 
     def parameter_names(self, add_self=False, adjust_for_printing=False, recursive=True):
         """
-        Get the names of all parameters of this model. 
+        Get the names of all parameters of this model.
 
         :param bool add_self: whether to add the own name in front of names
         :param bool adjust_for_printing: whether to call `adjust_name_for_printing` on names
@@ -712,7 +712,7 @@ class Parameterizable(OptimizationHandlable):
     #=========================================================================
     @property
     def gradient(self):
-        return self._gradient_array_ 
+        return self._gradient_array_
 
     @gradient.setter
     def gradient(self, val):
@@ -821,8 +821,8 @@ class Parameterizable(OptimizationHandlable):
         # connect parameterlist to this parameterized object
         # This just sets up the right connection for the params objects
         # to be used as parameters
-        # it also sets the constraints for each parameter to the constraints 
-        # of their respective parents 
+        # it also sets the constraints for each parameter to the constraints
+        # of their respective parents
         if not hasattr(self, "_parameters_") or len(self._parameters_) < 1:
             # no parameters for this class
             return
@@ -837,7 +837,7 @@ class Parameterizable(OptimizationHandlable):
 
             pslice = slice(old_size, old_size+p.size)
             # first connect all children
-            p._propagate_param_grad(self._param_array_[pslice], self._gradient_array_[pslice])            
+            p._propagate_param_grad(self._param_array_[pslice], self._gradient_array_[pslice])
             # then connect children to self
             self._param_array_[pslice] = p._param_array_.ravel()#, requirements=['C', 'W']).ravel(order='C')
             self._gradient_array_[pslice] = p._gradient_array_.ravel()#, requirements=['C', 'W']).ravel(order='C')
@@ -879,7 +879,7 @@ class Parameterizable(OptimizationHandlable):
                     dc[k] = copy.deepcopy(v)
             if k == '_parameters_':
                 params = [p.copy() for p in v]
-            
+
         dc['_parent_'] = None
         dc['_parent_index_'] = None
         dc['_observer_callables_'] = []
@@ -890,12 +890,12 @@ class Parameterizable(OptimizationHandlable):
 
         s = self.__new__(self.__class__)
         s.__dict__ = dc
-        
+
         for p in params:
             s.add_parameter(p, _ignore_added_names=True)
-        
+
         return s
-    
+
     #===========================================================================
     # From being parentable, we have to define the parent_change notification
     #===========================================================================

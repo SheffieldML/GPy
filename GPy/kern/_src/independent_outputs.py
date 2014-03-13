@@ -83,7 +83,7 @@ class IndependentOutputs(Kern):
         target = np.zeros_like(X)
         slices = index_to_slices(X[:,self.index_dim])
         if X2 is None:
-            [[np.copyto(target[s,self.kern.active_dims], self.kern.gradients_X(dL_dK[s,s],X[s],X[ss])) for s, ss in product(slices_i, slices_i)] for slices_i in slices]
+            [[np.copyto(target[s,self.kern.active_dims], self.kern.gradients_X(dL_dK[s,ss],X[s],X[ss])) for s, ss in itertools.product(slices_i, slices_i)] for slices_i in slices]
         else:
             X2,slices2 = X2[:,:self.index_dim],index_to_slices(X2[:,-1])
             [[[np.copyto(target[s,:self.index_dim], self.kern.gradients_X(dL_dK[s,s2], X[s], X2[s2])) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]

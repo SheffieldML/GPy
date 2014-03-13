@@ -46,9 +46,6 @@ class Add(CombinationKernel):
     def update_gradients_diag(self, dL_dK, X):
         [p.update_gradients_diag(dL_dK, X) for p in self.parts]
 
-    def update_gradients_diag(self, dL_dKdiag, X):
-        [p.update_gradients_diag(dL_dKdiag, X[:,i_s]) for p, i_s in zip(self._parameters_, self.input_slices)]
-
     def gradients_X(self, dL_dK, X, X2=None):
         """Compute the gradient of the objective function with respect to X.
 

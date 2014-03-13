@@ -123,7 +123,7 @@ class GP(Model):
         mean, var = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata)
         return mean, var
 
-    def predict_quantiles(self, X, quantiles=(0.025, 0.975), Y_metadata=None):
+    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None):
         m, v = self._raw_predict(X,  full_cov=False)
         return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
 

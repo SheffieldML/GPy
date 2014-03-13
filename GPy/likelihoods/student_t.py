@@ -9,6 +9,7 @@ from scipy import stats, integrate
 from scipy.special import gammaln, gamma
 from likelihood import Likelihood
 from ..core.parameterization import Param
+from ..core.parameterization.transformations import Logexp
 
 class StudentT(Likelihood):
     """
@@ -28,7 +29,7 @@ class StudentT(Likelihood):
 
         self.sigma2 = Param('t_noise', float(sigma2))
         self.v = Param('deg_free', float(deg_free))
-        self.add_parameter(self.sigma2)
+        self.add_parameter(self.sigma2, Logexp())
         self.add_parameter(self.v)
         self.v.constrain_fixed()
 
@@ -244,32 +245,23 @@ class StudentT(Likelihood):
         d2logpdf_dlink2_dv = np.zeros_like(d2logpdf_dlink2_dvar) #FIXME: Not done yet
         return np.hstack((d2logpdf_dlink2_dvar, d2logpdf_dlink2_dv))
 
-    def predictive_variance(self, mu, sigma, predictive_mean=None):
-        """
-        Compute predictive variance of student_t*normal p(y*|f*)p(f*)
-
-        Need to find what the variance is at the latent points for a student t*normal p(y*|f*)p(f*)
-        (((g((v+1)/2))/(g(v/2)*s*sqrt(v*pi)))*(1+(1/v)*((y-f)/s)^2)^(-(v+1)/2))
-        *((1/(s*sqrt(2*pi)))*exp(-(1/(2*(s^2)))*((y-f)^2)))
-        """
-
-        #FIXME: Not correct
-        #We want the variance around test points y which comes from int p(y*|f*)p(f*) df*
-        #Var(y*) = Var(E[y*|f*]) + E[Var(y*|f*)]
-        #Since we are given f* (mu) which is our mean (expected) value of y*|f* then the variance is the variance around this
-        #Which was also given to us as (var)
-        #We also need to know the expected variance of y* around samples f*, this is the variance of the student t distribution
-        #However the variance of the student t distribution is not dependent on f, only on sigma and the degrees of freedom
-        true_var = 1/(1/sigma**2 + 1/self.variance)
-
-        return true_var
-
-    def predictive_mean(self, mu, sigma):
+    def predictive_mean(self, mu, sigma, Y_metadata=None):
         """
         Compute mean of the prediction
         """
-        #FIXME: Not correct
-        return mu
+        return self.gp_link.transf(mu) # only true in link is monotoci, which it is.
+
+    def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
+        if self.deg_free <2.:
+            return np.empty(mu.shape)*np.nan #not defined for small degress fo freedom
+        else:
+            return super(StudentT, self).predictive_variance(mu, variance, predictive_mean, Y_metadata)
+
+    def conditional_mean(self, gp):
+        return self.gp_link.transf(gp)
+
+    def conditional_variance(self, gp):
+        return self.deg_free/(self.deg_free - 2.)
 
     def samples(self, gp):
         """

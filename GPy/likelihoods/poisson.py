@@ -131,15 +131,15 @@ class Poisson(Likelihood):
         d3lik_dlink3 = 2*y/(link_f)**3
         return d3lik_dlink3
 
-    def _mean(self,gp):
+    def conditional_mean(self,gp):
         """
-        Mass (or density) function
+        The mean of the random variable conditioned on one value of the GP
         """
         return self.gp_link.transf(gp)
 
-    def _variance(self,gp):
+    def conditional_variance(self,gp):
         """
-        Mass (or density) function
+        The variance of the random variable conditioned on one value of the GP
         """
         return self.gp_link.transf(gp)
 

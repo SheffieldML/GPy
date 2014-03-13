@@ -58,6 +58,18 @@ class Likelihood(Parameterized):
         """
         return Y
 
+    def conditional_mean(self, gp):
+        """
+        The mean of the random variable conditioned on one value of the GP
+        """
+        raise NotImplementedError
+
+    def conditional_variance(self, gp):
+        """
+        The variance of the random variable conditioned on one value of the GP
+        """
+        raise NotImplementedError
+
     def log_predictive_density(self, y_test, mu_star, var_star):
         """
         Calculation of the log predictive density
@@ -120,7 +132,7 @@ class Likelihood(Parameterized):
 
         return z, mean, variance
 
-    def _predictive_mean(self,mu,variance):
+    def predictive_mean(self, mu, variance, Y_metadata=None):
         """
         Quadrature calculation of the predictive mean: E(Y_star|Y) = E( E(Y_star|f_star, Y) )
 
@@ -128,14 +140,15 @@ class Likelihood(Parameterized):
         :param sigma: standard deviation of posterior
 
         """
+        #conditional_mean: the edpected value of y given some f, under this likelihood
         def int_mean(f,m,v):
-            return self._mean(f)*np.exp(-(0.5/v)*np.square(f - m))
+            return self.conditional_mean(f)*np.exp(-(0.5/v)*np.square(f - m))
         scaled_mean = [quad(int_mean, -np.inf, np.inf,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
         mean = np.array(scaled_mean)[:,None] / np.sqrt(2*np.pi*(variance))
 
         return mean
 
-    def _predictive_variance(self, mu,variance, predictive_mean=None):
+    def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
         """
         Numerical approximation to the predictive variance: V(Y_star)
 
@@ -152,7 +165,7 @@ class Likelihood(Parameterized):
 
         # E( V(Y_star|f_star) )
         def int_var(f,m,v):
-            return self._variance(f)*np.exp(-(0.5/v)*np.square(f - m))
+            return self.conditional_variance(f)*np.exp(-(0.5/v)*np.square(f - m))
         scaled_exp_variance = [quad(int_var, -np.inf, np.inf,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
         exp_var = np.array(scaled_exp_variance)[:,None] / normalizer
 
@@ -165,13 +178,14 @@ class Likelihood(Parameterized):
 
         #E( E(Y_star|f_star)**2 )
         def int_pred_mean_sq(f,m,v,predictive_mean_sq):
-            return self._mean(f)**2*np.exp(-(0.5/v)*np.square(f - m))
+            return self.conditional_mean(f)**2*np.exp(-(0.5/v)*np.square(f - m))
         scaled_exp_exp2 = [quad(int_pred_mean_sq, -np.inf, np.inf,args=(mj,s2j,pm2j))[0] for mj,s2j,pm2j in zip(mu,variance,predictive_mean_sq)]
         exp_exp2 = np.array(scaled_exp_exp2)[:,None] / normalizer
 
         var_exp = exp_exp2 - predictive_mean_sq
 
-        # V(Y_star) = E( V(Y_star|f_star) ) + V( E(Y_star|f_star) )
+        # V(Y_star) = E[ V(Y_star|f_star) ] + V[ E(Y_star|f_star) ]
+        # V(Y_star) = E[ V(Y_star|f_star) ] + E(Y_star**2|f_star) - E[Y_star|f_star]**2
         return exp_var + var_exp
 
     def pdf_link(self, link_f, y, extra_data=None):
@@ -373,6 +387,15 @@ class Likelihood(Parameterized):
 
         return pred_mean, pred_var
 
+    def predictive_quantiles(self, mu, var, quantiles, Y_metadata):
+        #compute the quantiles by sampling!!!
+        N_samp = 1000
+        s = np.random.randn(mu.shape[0], N_samp)*np.sqrt(var) + mu
+        ss_f = s.flatten()
+        ss_y = self.samples(ss_f)
+        ss_y = ss_y.reshape(mu.shape[0], N_samp)
+
+        return [np.percentile(ss_y ,q, axis=1)[:,None] for q in quantiles]
 
     def samples(self, gp):
         """
@@ -381,23 +404,3 @@ class Likelihood(Parameterized):
         :param gp: latent variable
         """
         raise NotImplementedError
-        if sampling:
-            #Get gp_samples f* using posterior mean and variance
-            if not full_cov:
-                gp_samples = np.random.multivariate_normal(mu.flatten(), np.diag(var.flatten()),
-                                                            size=num_samples).T
-            else:
-                gp_samples = np.random.multivariate_normal(mu.flatten(), var,
-                                                               size=num_samples).T
-            #Push gp samples (f*) through likelihood to give p(y*|f*)
-            samples = self.samples(gp_samples)
-            axis=-1
-
-            #Calculate mean, variance and precentiles from samples
-            print "WARNING: Using sampling to calculate mean, variance and predictive quantiles."
-            pred_mean = np.mean(samples, axis=axis)[:,None]
-            pred_var = np.var(samples, axis=axis)[:,None]
-            q1 = np.percentile(samples, 2.5, axis=axis)[:,None]
-            q3 = np.percentile(samples, 97.5, axis=axis)[:,None]
-
-

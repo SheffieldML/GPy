@@ -93,7 +93,6 @@ class Bernoulli(Likelihood):
             return 0.
         else:
             return np.nan
-            #raise NotImplementedError
 
     def pdf_link(self, link_f, y, extra_data=None):
         """

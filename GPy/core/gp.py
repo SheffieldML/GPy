@@ -67,9 +67,9 @@ class GP(Model):
         self.add_parameter(self.likelihood)
 
     def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y, Y_metadata=self.Y_metadata)
-        self.likelihood.update_gradients(np.diag(grad_dict['dL_dK']))
-        self.kern.update_gradients_full(grad_dict['dL_dK'], self.X)
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y, Y_metadata=self.Y_metadata)
+        self.likelihood.update_gradients(np.diag(self.grad_dict['dL_dK']))
+        self.kern.update_gradients_full(self.grad_dict['dL_dK'], self.X)
 
     def log_likelihood(self):
         return self._log_marginal_likelihood

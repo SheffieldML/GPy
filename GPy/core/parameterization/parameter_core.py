@@ -308,7 +308,7 @@ class Indexable(object):
         raise NotImplementedError, "shouldnt happen, raveld index transformation required from non parameterization object?"
 
 
-class Constrainable(Nameable, Indexable):
+class Constrainable(Nameable, Indexable, Observable):
     """
     Make an object constrainable with Priors and Transformations.
     TODO: Mappings!!
@@ -352,9 +352,11 @@ class Constrainable(Nameable, Indexable):
         """
         if value is not None:
             self[:] = value
-        self.constrain(__fixed__, warning=warning, trigger_parent=trigger_parent)
+        reconstrained = self.unconstrain()
+        self._add_to_index_operations(self.constraints, reconstrained, __fixed__, warning)
         rav_i = self._highest_parent_._raveled_index_for(self)
         self._highest_parent_._set_fixed(rav_i)
+        self.notify_observers(self, None if trigger_parent else -np.inf)
     fix = constrain_fixed
 
     def unconstrain_fixed(self):
@@ -435,10 +437,10 @@ class Constrainable(Nameable, Indexable):
         Constrain the parameter to the given
         :py:class:`GPy.core.transformations.Transformation`.
         """
-        if isinstance(transform, Transformation):
-            self._param_array_[:] = transform.initialize(self._param_array_)
+        self._param_array_[:] = transform.initialize(self._param_array_)
         reconstrained = self.unconstrain()
         self._add_to_index_operations(self.constraints, reconstrained, transform, warning)
+        self.notify_observers(self, None if trigger_parent else -np.inf)
 
     def unconstrain(self, *transforms):
         """
@@ -535,7 +537,7 @@ class Constrainable(Nameable, Indexable):
 
         return removed
 
-class OptimizationHandlable(Constrainable, Observable):
+class OptimizationHandlable(Constrainable):
     """
     This enables optimization handles on an Object as done in GPy 0.4.
 
@@ -568,9 +570,7 @@ class OptimizationHandlable(Constrainable, Observable):
 
     def _trigger_params_changed(self, trigger_parent=True):
         [p._trigger_params_changed(trigger_parent=False) for p in self._parameters_]
-        if trigger_parent: min_priority = None
-        else: min_priority = -np.inf
-        self.notify_observers(None, min_priority)
+        self.notify_observers(None, None if trigger_parent else -np.inf)
 
     def _size_transformed(self):
         return self.size - self.constraints[__fixed__].size

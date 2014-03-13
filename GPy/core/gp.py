@@ -27,7 +27,7 @@ class GP(Model):
 
 
     """
-    def __init__(self, X, Y, kernel, likelihood, inference_method=None, name='gp', **Y_metadata):
+    def __init__(self, X, Y, kernel, likelihood, inference_method=None, name='gp', Y_metadata=None):
         super(GP, self).__init__(name)
 
         assert X.ndim == 2
@@ -42,10 +42,7 @@ class GP(Model):
         assert Y.shape[0] == self.num_data
         _, self.output_dim = self.Y.shape
 
-        if Y_metadata is not None:
-            self.Y_metadata = Y_metadata
-        else:
-            self.Y_metadata = None
+        self.Y_metadata = Y_metadata or {}
 
         assert isinstance(kernel, kern.Kern)
         #assert self.input_dim == kernel.input_dim
@@ -67,8 +64,8 @@ class GP(Model):
         self.add_parameter(self.likelihood)
 
     def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y, **self.Y_metadata)
-        self.likelihood.update_gradients(np.diag(self.grad_dict['dL_dK']), **self.Y_metadata)
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y, self.Y_metadata)
+        self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])
         self.kern.update_gradients_full(self.grad_dict['dL_dK'], self.X)
 
     def log_likelihood(self):
@@ -99,7 +96,7 @@ class GP(Model):
             var = var.reshape(-1, 1)
         return mu, var
 
-    def predict(self, Xnew, full_cov=False, **likelihood_args):
+    def predict(self, Xnew, full_cov=False, Y_metadata=None):
         """
         Predict the function(s) at the new point(s) Xnew.
 
@@ -123,7 +120,7 @@ class GP(Model):
         mu, var = self._raw_predict(Xnew, full_cov=full_cov)
 
         # now push through likelihood
-        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, **likelihood_args)
+        mean, var, _025pm, _975pm = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata)
         return mean, var, _025pm, _975pm
 
     def posterior_samples_f(self,X,size=10, full_cov=True):
@@ -147,7 +144,7 @@ class GP(Model):
 
         return Ysim
 
-    def posterior_samples(self,X,size=10, full_cov=True,noise_model=None):
+    def posterior_samples(self,X,size=10, full_cov=True, Y_metadata=None):
         """
         Samples the posterior GP at the points X.
 
@@ -162,15 +159,7 @@ class GP(Model):
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
         Ysim = self.posterior_samples_f(X, size, full_cov=full_cov)
-        if isinstance(self.likelihood, Gaussian):
-            noise_std = np.sqrt(self.likelihood._get_params())
-            Ysim += np.random.normal(0,noise_std,Ysim.shape)
-        elif isinstance(self.likelihood, Gaussian_Mixed_Noise):
-            assert noise_model is not None, "A noise model must be specified."
-            noise_std = np.sqrt(self.likelihood._get_params()[noise_model])
-            Ysim += np.random.normal(0,noise_std,Ysim.shape)
-        else:
-            Ysim = self.likelihood.noise_model.samples(Ysim)
+        Ysim = self.likelihood.noise_model.samples(Ysim, Y_metadata)
 
         return Ysim
 

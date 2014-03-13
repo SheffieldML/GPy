@@ -96,12 +96,12 @@ class MLP(Kern):
             vec = (X*X).sum(1)*self.weight_variance+self.bias_variance + 1.
             return 2*four_over_tau*self.weight_variance*self.variance*((X[None, :, :]/denom[:, :, None] - vec[None, :, None]*X[:, None, :]*(numer/denom3)[:, :, None])*(dL_dK/np.sqrt(1-arg*arg))[:, :, None]).sum(1)
 
-    def dKdiag_dX(self, dL_dKdiag, X, target):
+    def gradients_X_diag(self, dL_dKdiag, X):
         """Gradient of diagonal of covariance with respect to X"""
         self._K_diag_computations(X)
         arg = self._K_diag_asin_arg
         denom = self._K_diag_denom
-        numer = self._K_diag_numer
+        #numer = self._K_diag_numer
         return four_over_tau*2.*self.weight_variance*self.variance*X*(1./denom*(1. - arg)*dL_dKdiag/(np.sqrt(1-arg*arg)))[:, None]
 
 

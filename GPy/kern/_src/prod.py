@@ -40,7 +40,7 @@ class Prod(CombinationKernel):
     def update_gradients_full(self, dL_dK, X):
         for k1,k2 in itertools.combinations(self.parts, 2):
             k1._sliced_X = k1._sliced_X2 = k2._sliced_X = k2._sliced_X2 = True
-            k1.update_gradients_full(dL_dK*k2.K(X, X)
+            k1.update_gradients_full(dL_dK*k2.K(X, X))
             self.k2.update_gradients_full(dL_dK*self.k1.K(X[:,self.slice1]), X[:,self.slice2])
 
     def gradients_X(self, dL_dK, X, X2=None):

@@ -195,7 +195,8 @@ class Kern(Parameterized):
 class CombinationKernel(Kern):
     def __init__(self, kernels, name):
         assert all([isinstance(k, Kern) for k in kernels])
-        input_dim = reduce(np.union1d, (x.active_dims for x in kernels))
+        ma = reduce(lambda a,b: max(a, max(b)), (x.active_dims for x in kernels), 0)
+        input_dim = np.r_[0:ma+1]
         super(CombinationKernel, self).__init__(input_dim, name)
         self.add_parameters(*kernels)
 

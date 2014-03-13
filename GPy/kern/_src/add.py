@@ -3,7 +3,6 @@
 
 import numpy as np
 import itertools
-from ...core.parameterization import Parameterized
 from ...util.caching import Cache_this
 from kern import CombinationKernel
 

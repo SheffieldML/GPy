@@ -16,7 +16,7 @@ Observable Pattern for patameterization
 from transformations import Transformation, Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
 
-__updated__ = '2014-03-13'
+__updated__ = '2014-03-14'
 
 class HierarchyError(Exception):
     """
@@ -31,7 +31,71 @@ def adjust_name_for_printing(name):
         return name.replace(" ", "_").replace(".", "_").replace("-", "_m_").replace("+", "_p_").replace("!", "_I_").replace("**", "_xx_").replace("*", "_x_").replace("/", "_l_").replace("@",'_at_')
     return ''
 
-class Observable(object):
+class InterfacePickleFunctions(object):
+    def __init__(self, *a, **kw):
+        super(InterfacePickleFunctions, self).__init__()
+
+    def _getstate(self):
+        """
+        Returns the state of this class in a memento pattern.
+        The state must be a list-like structure of all the fields
+        this class needs to run.
+
+        See python doc "pickling" (`__getstate__` and `__setstate__`) for details.
+        """
+        raise NotImplementedError, "To be able to use pickling you need to implement this method"
+    def _setstate(self, state):
+        """
+        Set the state (memento pattern) of this class to the given state.
+        Usually this is just the counterpart to _getstate, such that
+        an object is a copy of another when calling
+
+            copy = <classname>.__new__(*args,**kw)._setstate(<to_be_copied>._getstate())
+
+        See python doc "pickling" (`__getstate__` and `__setstate__`) for details.
+        """
+        raise NotImplementedError, "To be able to use pickling you need to implement this method"
+
+class Pickleable(object):
+    """
+    Make an object pickleable (See python doc 'pickling').
+
+    This class allows for pickling support by Memento pattern.
+    _getstate returns a memento of the class, which gets pickled.
+    _setstate(<memento>) (re-)sets the state of the class to the memento
+    """
+    def __init__(self, *a, **kw):
+        super(Pickleable, self).__init__()
+    #===========================================================================
+    # Pickling operations
+    #===========================================================================
+    def pickle(self, f, protocol=-1):
+        """
+        :param f: either filename or open file object to write to.
+                  if it is an open buffer, you have to make sure to close
+                  it properly.
+        :param protocol: pickling protocol to use, python-pickle for details.
+        """
+        import cPickle
+        if isinstance(f, str):
+            with open(f, 'w') as f:
+                cPickle.dump(self, f, protocol)
+        else:
+            cPickle.dump(self, f, protocol)
+    def __getstate__(self):
+        if self._has_get_set_state():
+            return self._getstate()
+        return self.__dict__
+    def __setstate__(self, state):
+        if self._has_get_set_state():
+            self._setstate(state)
+            # TODO: maybe parameters_changed() here?
+            return
+        self.__dict__ = state
+    def _has_get_set_state(self):
+        return '_getstate' in vars(self.__class__) and '_setstate' in vars(self.__class__)
+
+class Observable(InterfacePickleFunctions):
     """
     Observable pattern for parameterization.
 
@@ -41,7 +105,7 @@ class Observable(object):
     """
     _updated = True
     def __init__(self, *args, **kwargs):
-        super(Observable, self).__init__()
+        super(Observable, self).__init__(*args, **kwargs)
         self._observer_callables_ = []
 
     def add_observer(self, observer, callble, priority=0):
@@ -89,68 +153,16 @@ class Observable(object):
             ins += 1
         self._observer_callables_.insert(ins, (p, o, c))
 
-class Pickleable(object):
-    """
-    Make an object pickleable (See python doc 'pickling').
-
-    This class allows for pickling support by Memento pattern.
-    _getstate returns a memento of the class, which gets pickled.
-    _setstate(<memento>) (re-)sets the state of the class to the memento
-    """
-    #===========================================================================
-    # Pickling operations
-    #===========================================================================
-    def pickle(self, f, protocol=-1):
-        """
-        :param f: either filename or open file object to write to.
-                  if it is an open buffer, you have to make sure to close
-                  it properly.
-        :param protocol: pickling protocol to use, python-pickle for details.
-        """
-        import cPickle
-        if isinstance(f, str):
-            with open(f, 'w') as f:
-                cPickle.dump(self, f, protocol)
-        else:
-            cPickle.dump(self, f, protocol)
-    def __getstate__(self):
-        if self._has_get_set_state():
-            return self._getstate()
-        return self.__dict__
-    def __setstate__(self, state):
-        if self._has_get_set_state():
-            self._setstate(state)
-            # TODO: maybe parameters_changed() here?
-            return
-        self.__dict__ = state
-    def _has_get_set_state(self):
-        return '_getstate' in vars(self.__class__) and '_setstate' in vars(self.__class__)
     def _getstate(self):
-        """
-        Returns the state of this class in a memento pattern.
-        The state must be a list-like structure of all the fields
-        this class needs to run.
-
-        See python doc "pickling" (`__getstate__` and `__setstate__`) for details.
-        """
-        raise NotImplementedError, "To be able to use pickling you need to implement this method"
+        return [self._observer_callables_]
     def _setstate(self, state):
-        """
-        Set the state (memento pattern) of this class to the given state.
-        Usually this is just the counterpart to _getstate, such that
-        an object is a copy of another when calling
-
-            copy = <classname>.__new__(*args,**kw)._setstate(<to_be_copied>._getstate())
-
-        See python doc "pickling" (`__getstate__` and `__setstate__`) for details.
-        """
-        raise NotImplementedError, "To be able to use pickling you need to implement this method"
+        self._observer_callables_ = state.pop()
 
 #===============================================================================
 # Foundation framework for parameterized and param objects:
 #===============================================================================
 
-class Parentable(object):
+class Parentable(Observable):
     """
     Enable an Object to have a parent.
 
@@ -160,7 +172,7 @@ class Parentable(object):
     _parent_ = None
     _parent_index_ = None
     def __init__(self, *args, **kwargs):
-        super(Parentable, self).__init__()
+        super(Parentable, self).__init__(*args, **kwargs)
 
     def has_parent(self):
         """
@@ -284,13 +296,6 @@ class Indexable(object):
         """
         raise NotImplementedError, "Need to be able to get the raveled Index"
 
-    def _internal_offset(self):
-        """
-        The offset for this parameter inside its parent.
-        This has to account for shaped parameters!
-        """
-        return 0
-
     def _offset_for(self, param):
         """
         Return the offset of the param inside this parameterized object.
@@ -308,7 +313,7 @@ class Indexable(object):
         raise NotImplementedError, "shouldnt happen, raveld index transformation required from non parameterization object?"
 
 
-class Constrainable(Nameable, Indexable, Observable):
+class Constrainable(Nameable, Indexable):
     """
     Make an object constrainable with Priors and Transformations.
     TODO: Mappings!!
@@ -367,21 +372,26 @@ class Constrainable(Nameable, Indexable, Observable):
         self._highest_parent_._set_unfixed(unconstrained)
     unfix = unconstrain_fixed
 
-    def _set_fixed(self, index):
+    def _ensure_fixes(self):
+        # Ensure that the fixes array is set:
+        # Parameterized: ones(self.size)
+        # Param: ones(self._realsize_
         if not self._has_fixes(): self._fixes_ = np.ones(self.size, dtype=bool)
+
+    def _set_fixed(self, index):
+        self._ensure_fixes()
         self._fixes_[index] = FIXED
         if np.all(self._fixes_): self._fixes_ = None  # ==UNFIXED
 
     def _set_unfixed(self, index):
-        if not self._has_fixes(): self._fixes_ = np.ones(self.size, dtype=bool)
-        # rav_i = self._raveled_index_for(param)[index]
+        self._ensure_fixes()
         self._fixes_[index] = UNFIXED
         if np.all(self._fixes_): self._fixes_ = None  # ==UNFIXED
 
     def _connect_fixes(self):
         fixed_indices = self.constraints[__fixed__]
         if fixed_indices.size > 0:
-            self._fixes_ = np.ones(self.size, dtype=bool) * UNFIXED
+            self._ensure_fixes()
             self._fixes_[fixed_indices] = FIXED
         else:
             self._fixes_ = None

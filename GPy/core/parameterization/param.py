@@ -49,9 +49,6 @@ class Param(OptimizationHandlable, ObservableArray):
         obj._realshape_ = obj.shape
         obj._realsize_ = obj.size
         obj._realndim_ = obj.ndim
-        from lists_and_dicts import SetDict
-        obj._tied_to_me_ = SetDict()
-        obj._tied_to_ = []
         obj._original_ = True
         obj._gradient_array_ = numpy.zeros(obj.shape, dtype=numpy.float64)
         return obj
@@ -80,13 +77,11 @@ class Param(OptimizationHandlable, ObservableArray):
         self._parent_index_ = getattr(obj, '_parent_index_', None)
         self._default_constraint_ = getattr(obj, '_default_constraint_', None)
         self._current_slice_ = getattr(obj, '_current_slice_', None)
-        self._tied_to_me_ = getattr(obj, '_tied_to_me_', None)
-        self._tied_to_ = getattr(obj, '_tied_to_', None)
         self._realshape_ = getattr(obj, '_realshape_', None)
         self._realsize_ = getattr(obj, '_realsize_', None)
         self._realndim_ = getattr(obj, '_realndim_', None)
         self._original_ = getattr(obj, '_original_', None)
-        self._name = getattr(obj, 'name', None)
+        self._name = getattr(obj, '_name', None)
         self._gradient_array_ = getattr(obj, '_gradient_array_', None)
         self.constraints = getattr(obj, 'constraints', None)
         self.priors = getattr(obj, 'priors', None)
@@ -106,10 +101,10 @@ class Param(OptimizationHandlable, ObservableArray):
     #===========================================================================
     # Pickling operations
     #===========================================================================
-    def __reduce_ex__(self):
+    def __reduce__(self):
         func, args, state = super(Param, self).__reduce__()
         return func, args, (state,
-                            (self.name,
+                            (self._name,
                              self._parent_,
                              self._parent_index_,
                              self._default_constraint_,
@@ -117,16 +112,16 @@ class Param(OptimizationHandlable, ObservableArray):
                              self._realshape_,
                              self._realsize_,
                              self._realndim_,
-                             self._tied_to_me_,
-                             self._tied_to_,
+                             self.constraints,
+                             self.priors
                             )
                             )
 
     def __setstate__(self, state):
         super(Param, self).__setstate__(state[0])
         state = list(state[1])
-        self._tied_to_ = state.pop()
-        self._tied_to_me_ = state.pop()
+        self.priors = state.pop()
+        self.constraints = state.pop()
         self._realndim_ = state.pop()
         self._realsize_ = state.pop()
         self._realshape_ = state.pop()
@@ -134,12 +129,13 @@ class Param(OptimizationHandlable, ObservableArray):
         self._default_constraint_ = state.pop()
         self._parent_index_ = state.pop()
         self._parent_ = state.pop()
-        self.name = state.pop()
+        self._name = state.pop()
 
     def copy(self, *args):
         constr = self.constraints.copy()
         priors = self.priors.copy()
         p = Param(self.name, self.view(numpy.ndarray).copy(), self._default_constraint_)
+        import ipdb;ipdb.set_trace()
         p.constraints = constr
         p.priors = priors
         return p
@@ -180,21 +176,21 @@ class Param(OptimizationHandlable, ObservableArray):
     #===========================================================================
     # Index Operations:
     #===========================================================================
-    def _internal_offset(self):
-        internal_offset = 0
-        extended_realshape = numpy.cumprod((1,) + self._realshape_[:0:-1])[::-1]
-        for i, si in enumerate(self._current_slice_[:self._realndim_]):
-            if numpy.all(si == Ellipsis):
-                continue
-            if isinstance(si, slice):
-                a = si.indices(self._realshape_[i])[0]
-            elif isinstance(si, (list,numpy.ndarray,tuple)):
-                a = si[0]
-            else: a = si
-            if a < 0:
-                a = self._realshape_[i] + a
-            internal_offset += a * extended_realshape[i]
-        return internal_offset
+    #def _internal_offset(self):
+    #    internal_offset = 0
+    #    extended_realshape = numpy.cumprod((1,) + self._realshape_[:0:-1])[::-1]
+    #    for i, si in enumerate(self._current_slice_[:self._realndim_]):
+    #        if numpy.all(si == Ellipsis):
+    #            continue
+    #        if isinstance(si, slice):
+    #            a = si.indices(self._realshape_[i])[0]
+    #        elif isinstance(si, (list,numpy.ndarray,tuple)):
+    #            a = si[0]
+    #        else: a = si
+    #        if a < 0:
+    #            a = self._realshape_[i] + a
+    #        internal_offset += a * extended_realshape[i]
+    #    return internal_offset
 
     def _raveled_index(self, slice_index=None):
         # return an index array on the raveled array, which is formed by the current_slice
@@ -203,6 +199,9 @@ class Param(OptimizationHandlable, ObservableArray):
         ind = self._indices(slice_index)
         if ind.ndim < 2: ind = ind[:, None]
         return numpy.asarray(numpy.apply_along_axis(lambda x: numpy.sum(extended_realshape * x), 1, ind), dtype=int)
+
+    def _raveled_index_for(self, obj):
+        return self._raveled_index()
 
     def _expand_index(self, slice_index=None):
         # this calculates the full indexing arrays from the slicing objects given by get_item for _real..._ attributes
@@ -224,6 +223,11 @@ class Param(OptimizationHandlable, ObservableArray):
                 return numpy.r_[a]
             return numpy.r_[:b]
         return itertools.imap(f, itertools.izip_longest(slice_index[:self._realndim_], self._realshape_, fillvalue=slice(self.size)))
+    #===========================================================================
+    # Constrainable
+    #===========================================================================
+    def _ensure_fixes(self):
+        if not self._has_fixes(): self._fixes_ = numpy.ones(self._realsize_, dtype=bool)
 
     #===========================================================================
     # Convenience
@@ -239,7 +243,6 @@ class Param(OptimizationHandlable, ObservableArray):
     #round.__doc__ = numpy.round.__doc__
     def _get_original(self, param):
         return self
-
     #===========================================================================
     # Printing -> done
     #===========================================================================
@@ -266,23 +269,11 @@ class Param(OptimizationHandlable, ObservableArray):
         return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self.priors.iteritems()))]
     @property
     def _ties_str(self):
-        return [t._short() for t in self._tied_to_] or ['']
+        return ['']
     def __repr__(self, *args, **kwargs):
         name = "\033[1m{x:s}\033[0;0m:\n".format(
                             x=self.hierarchy_name())
         return name + super(Param, self).__repr__(*args, **kwargs)
-    def _ties_for(self, rav_index):
-        # size = sum(p.size for p in self._tied_to_)
-        ties = numpy.empty(shape=(len(self._tied_to_), numpy.size(rav_index)), dtype=Param)
-        for i, tied_to in enumerate(self._tied_to_):
-            for t, ind in tied_to._tied_to_me_.iteritems():
-                if t._parent_index_ == self._parent_index_:
-                    matches = numpy.where(rav_index[:, None] == t._raveled_index()[None, :])
-                    tt_rav_index = tied_to._raveled_index()
-                    ind_rav_matches = numpy.where(tt_rav_index == numpy.array(list(ind)))[0]
-                    if len(ind) != 1: ties[i, matches[0][ind_rav_matches]] = numpy.take(tt_rav_index, matches[1], mode='wrap')[ind_rav_matches]
-                    else: ties[i, matches[0]] = numpy.take(tt_rav_index, matches[1], mode='wrap')
-        return map(lambda a: sum(a, []), zip(*[[[tie.flatten()] if tx != None else [] for tx in t] for t, tie in zip(ties, self._tied_to_)]))
     def _indices(self, slice_index=None):
         # get a int-array containing all indices in the first axis.
         if slice_index is None:
@@ -322,8 +313,8 @@ class Param(OptimizationHandlable, ObservableArray):
         ravi = self._raveled_index(filter_)
         if constr_matrix is None: constr_matrix = self.constraints.properties_for(ravi)
         if prirs is None: prirs = self.priors.properties_for(ravi)
-        if ties is None: ties = self._ties_for(ravi)
-        ties = [' '.join(map(lambda x: x._short(), t)) for t in ties]
+        if ties is None: ties = [['N/A']]*self.size
+        ties = [' '.join(map(lambda x: x, t)) for t in ties]
         if lc is None: lc = self._max_len_names(constr_matrix, __constraints_name__)
         if lx is None: lx = self._max_len_values()
         if li is None: li = self._max_len_index(indices)

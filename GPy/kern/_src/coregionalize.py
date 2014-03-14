@@ -34,8 +34,8 @@ class Coregionalize(Kern):
 
     .. note: see coregionalization examples in GPy.examples.regression for some usage.
     """
-    def __init__(self, input_dim, output_dim, rank=1, W=None, kappa=None, name='coregion'):
-        super(Coregionalize, self).__init__(input_dim, name=name)
+    def __init__(self, input_dim, output_dim, rank=1, W=None, kappa=None, active_dims=None, name='coregion'):
+        super(Coregionalize, self).__init__(input_dim, active_dims, name=name)
         self.output_dim = output_dim
         self.rank = rank
         if self.rank>output_dim:

@@ -9,7 +9,9 @@ from kern import CombinationKernel
 class Add(CombinationKernel):
     """
     Add given list of kernels together.
-    propagates gradients thorugh.
+    propagates gradients through.
+    
+    This kernel will take over the active dims of it's subkernels passed in.
     """
     def __init__(self, subkerns, name='add'):
         super(Add, self).__init__(subkerns, name)

@@ -26,13 +26,13 @@ class Sympykern(Kern):
      - to handle multiple inputs, call them x_1, z_1, etc
      - to handle multpile correlated outputs, you'll need to add parameters with an index, such as lengthscale_i and lengthscale_j.
     """
-    def __init__(self, input_dim, k=None, output_dim=1, name=None, param=None):
+    def __init__(self, input_dim, k=None, output_dim=1, name=None, param=None, active_dims=None):
 
         if name is None:
             name='sympykern'
         if k is None:
             raise ValueError, "You must provide an argument for the covariance function."
-        super(Sympykern, self).__init__(input_dim, name)
+        super(Sympykern, self).__init__(input_dim, active_dims, name)
 
         self._sp_k = k
 

@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kern import Kern
+from kern import Kern, CombinationKernel
 import numpy as np
 import itertools
 
@@ -32,7 +32,7 @@ def index_to_slices(index):
     [ret[ind_i].append(slice(*indexes_i)) for ind_i,indexes_i in zip(ind[switchpoints[:-1]],zip(switchpoints,switchpoints[1:]))]
     return ret
 
-class IndependentOutputs(Kern):
+class IndependentOutputs(CombinationKernel):
     """
     A kernel which can represent several independent functions.
     this kernel 'switches off' parts of the matrix where the output indexes are different.
@@ -41,12 +41,12 @@ class IndependentOutputs(Kern):
     the rest of the columns of X are passed to the underlying kernel for computation (in blocks).
 
     """
-    def __init__(self, index_dim, kern, name='independ'):
+    def __init__(self, kern, index_dim=-1, name='independ'):
         assert isinstance(index_dim, int), "IndependentOutputs kernel is only defined with one input dimension being the indeces"
-        super(IndependentOutputs, self).__init__(np.r_[0:max(max(kern.active_dims)+1, index_dim+1)], name)
+        super(IndependentOutputs, self).__init__(kernels=[kern], extra_dims=[index_dim], name=name)
         self.index_dim = index_dim
         self.kern = kern
-        self.add_parameters(self.kern)
+        #self.add_parameters(self.kern)
 
     def K(self,X ,X2=None):
         slices = index_to_slices(X[:,self.index_dim])

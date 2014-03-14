@@ -31,8 +31,8 @@ class MLP(Kern):
 
     """
 
-    def __init__(self, input_dim, variance=1., weight_variance=1., bias_variance=100., name='mlp'):
-        super(MLP, self).__init__(input_dim, name)
+    def __init__(self, input_dim, variance=1., weight_variance=1., bias_variance=100., active_dims=None, name='mlp'):
+        super(MLP, self).__init__(input_dim, active_dims, name)
         self.variance = Param('variance', variance, Logexp())
         self.weight_variance = Param('weight_variance', weight_variance, Logexp())
         self.bias_variance = Param('bias_variance', bias_variance, Logexp())

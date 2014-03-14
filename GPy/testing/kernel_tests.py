@@ -228,12 +228,12 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
     def test_Prod(self):
-        k = GPy.kern.Matern32([2,3]) * GPy.kern.RBF([0,4]) + GPy.kern.Linear(self.D)
+        k = GPy.kern.Matern32(2, active_dims=[2,3]) * GPy.kern.RBF(2, active_dims=[0,4]) + GPy.kern.Linear(self.D)
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
     def test_Add(self):
-        k = GPy.kern.Matern32([2,3]) + GPy.kern.RBF([0,4]) + GPy.kern.Linear(self.D)
+        k = GPy.kern.Matern32(2, active_dims=[2,3]) + GPy.kern.RBF(2, active_dims=[0,4]) + GPy.kern.Linear(self.D)
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
@@ -282,15 +282,16 @@ class KernelTestsMiscellaneous(unittest.TestCase):
     def setUp(self):
         N, D = 100, 10
         self.X = np.linspace(-np.pi, +np.pi, N)[:,None] * np.ones(D)
-        self.rbf = GPy.kern.RBF(range(2))
-        self.linear = GPy.kern.Linear((3,6))
-        self.matern = GPy.kern.Matern32(np.array([2,4,7]))
+        self.rbf = GPy.kern.RBF(2, active_dims=slice(0,4,2))
+        self.linear = GPy.kern.Linear(2, active_dims=(3,9))
+        self.matern = GPy.kern.Matern32(3, active_dims=np.array([2,4,9]))
         self.sumkern = self.rbf + self.linear
         self.sumkern += self.matern
         self.sumkern.randomize()
 
     def test_active_dims(self):
-        self.assertListEqual(self.sumkern.active_dims.tolist(), range(8))
+        self.assertEqual(self.sumkern.input_dim, 10)
+        self.assertEqual(self.sumkern.active_dims, slice(0, 10, 1))
 
     def test_which_parts(self):
         self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=[self.linear, self.matern]), self.linear.K(self.X)+self.matern.K(self.X)))
@@ -310,11 +311,12 @@ class KernelTestsNonContinuous(unittest.TestCase):
         self.X_block[N:N+N1, D:D+D] = self.X2
         self.X_block[0:N, -1] = 1
         self.X_block[N:N+1, -1] = 2
-
-    def test_IndependantOutputs(self):
+        self.X_block = self.X_block[self.X_block.argsort(0)[:, -1], :]
+ 
+    def test_IndependentOutputs(self):
         k = GPy.kern.RBF(self.D)
-        kern = GPy.kern.IndependentOutputs(self.D+self.D,k)
-        self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose))
+        kern = GPy.kern.IndependentOutputs(k, -1)
+        self.assertTrue(check_kernel_gradient_functions(kern, X=self.X_block, X2=self.X_block, verbose=verbose))
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."

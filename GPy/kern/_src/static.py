@@ -9,7 +9,7 @@ from ...core.parameterization.transformations import Logexp
 import numpy as np
 
 class Static(Kern):
-    def __init__(self, input_dim, variance, name):
+    def __init__(self, input_dim, variance, active_dims, name):
         super(Static, self).__init__(input_dim, name)
         self.variance = Param('variance', variance, Logexp())
         self.add_parameters(self.variance)
@@ -43,8 +43,8 @@ class Static(Kern):
 
 
 class White(Static):
-    def __init__(self, input_dim, variance=1., name='white'):
-        super(White, self).__init__(input_dim, variance, name)
+    def __init__(self, input_dim, variance=1., active_dims=None, name='white'):
+        super(White, self).__init__(input_dim, variance, active_dims, name)
 
     def K(self, X, X2=None):
         if X2 is None:
@@ -66,8 +66,8 @@ class White(Static):
 
 
 class Bias(Static):
-    def __init__(self, input_dim, variance=1., name='bias'):
-        super(Bias, self).__init__(input_dim, variance, name)
+    def __init__(self, input_dim, variance=1., active_dims=None, name='bias'):
+        super(Bias, self).__init__(input_dim, variance, active_dims, name)
 
     def K(self, X, X2=None):
         shape = (X.shape[0], X.shape[0] if X2 is None else X2.shape[0])
@@ -90,14 +90,14 @@ class Bias(Static):
         self.variance.gradient = dL_dpsi0.sum() + dL_dpsi1.sum() + 2.*self.variance*dL_dpsi2.sum()
 
 class Fixed(Static):
-    def __init__(self, input_dim, covariance_matrix, variance=1., name='fixed'):
+    def __init__(self, input_dim, covariance_matrix, variance=1., active_dims=None, name='fixed'):
         """
         :param input_dim: the number of input dimensions
         :type input_dim: int
         :param variance: the variance of the kernel
         :type variance: float
         """
-        super(Bias, self).__init__(input_dim, variance, name)
+        super(Bias, self).__init__(input_dim, variance, active_dims, name)
         self.fixed_K = covariance_matrix
     def K(self, X, X2):
         return self.variance * self.fixed_K

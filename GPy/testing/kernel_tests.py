@@ -253,29 +253,29 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
 #TODO: turn off grad checkingwrt X for indexed kernels liek coregionalize
-# class KernelGradientTestsContinuous1D(unittest.TestCase):
-#     def setUp(self):
-#         self.N, self.D = 100, 1
-#         self.X = np.random.randn(self.N,self.D)
-#         self.X2 = np.random.randn(self.N+10,self.D)
-# 
-#         continuous_kerns = ['RBF', 'Linear']
-#         self.kernclasses = [getattr(GPy.kern, s) for s in continuous_kerns]
-# 
-#     def test_PeriodicExponential(self):
-#         k = GPy.kern.PeriodicExponential(self.D)
-#         k.randomize()
-#         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
-# 
-#     def test_PeriodicMatern32(self):
-#         k = GPy.kern.PeriodicMatern32(self.D)
-#         k.randomize()
-#         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
-# 
-#     def test_PeriodicMatern52(self):
-#         k = GPy.kern.PeriodicMatern52(self.D)
-#         k.randomize()
-#         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+class KernelGradientTestsContinuous1D(unittest.TestCase):
+    def setUp(self):
+        self.N, self.D = 100, 1
+        self.X = np.random.randn(self.N,self.D)
+        self.X2 = np.random.randn(self.N+10,self.D)
+ 
+        continuous_kerns = ['RBF', 'Linear']
+        self.kernclasses = [getattr(GPy.kern, s) for s in continuous_kerns]
+ 
+    def test_PeriodicExponential(self):
+        k = GPy.kern.PeriodicExponential(self.D)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+ 
+    def test_PeriodicMatern32(self):
+        k = GPy.kern.PeriodicMatern32(self.D)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+ 
+    def test_PeriodicMatern52(self):
+        k = GPy.kern.PeriodicMatern52(self.D)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
 
 class KernelTestsMiscellaneous(unittest.TestCase):

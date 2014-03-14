@@ -51,7 +51,8 @@ class ParameterizedTest(unittest.TestCase):
         self.white.fix(warning=False)
         self.test1.remove_parameter(self.test1.param)
         self.assertTrue(self.test1._has_fixes())
-
+        import ipdb;ipdb.set_trace()
+        
         from GPy.core.parameterization.transformations import FIXED, UNFIXED
         self.assertListEqual(self.test1._fixes_.tolist(),[UNFIXED,UNFIXED,FIXED])
 
@@ -67,12 +68,12 @@ class ParameterizedTest(unittest.TestCase):
         self.assertListEqual(self.white._fixes_.tolist(), [FIXED])
         self.assertEquals(self.white.constraints._offset, 0)
         self.assertIs(self.test1.constraints, self.rbf.constraints._param_index_ops)
-        self.assertIs(self.test1.constraints, self.param.constraints._param_index_ops)        
+        self.assertIs(self.test1.constraints, self.param.constraints._param_index_ops)
 
         self.test1.add_parameter(self.white, 0)
         self.assertIs(self.test1.constraints, self.white.constraints._param_index_ops)
         self.assertIs(self.test1.constraints, self.rbf.constraints._param_index_ops)
-        self.assertIs(self.test1.constraints, self.param.constraints._param_index_ops)        
+        self.assertIs(self.test1.constraints, self.param.constraints._param_index_ops)
         self.assertListEqual(self.test1.constraints[__fixed__].tolist(), [0])
         self.assertIs(self.white._fixes_,None)
         self.assertListEqual(self.test1._fixes_.tolist(),[FIXED] + [UNFIXED] * 52)
@@ -85,7 +86,7 @@ class ParameterizedTest(unittest.TestCase):
         self.assertListEqual(self.test1.constraints[Logexp()].tolist(), [0,1])
 
     def test_add_parameter_already_in_hirarchy(self):
-        self.assertRaises(HierarchyError, self.test1.add_parameter, self.white._parameters_[0])        
+        self.assertRaises(HierarchyError, self.test1.add_parameter, self.white._parameters_[0])
 
     def test_default_constraints(self):
         self.assertIs(self.rbf.variance.constraints._param_index_ops, self.rbf.constraints._param_index_ops)

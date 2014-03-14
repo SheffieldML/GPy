@@ -376,7 +376,7 @@ class Constrainable(Nameable, Indexable):
         # Ensure that the fixes array is set:
         # Parameterized: ones(self.size)
         # Param: ones(self._realsize_
-        if not self._has_fixes(): self._fixes_ = np.ones(self.size, dtype=bool)
+        self._fixes_ = np.ones(self.size, dtype=bool)
 
     def _set_fixed(self, index):
         self._ensure_fixes()

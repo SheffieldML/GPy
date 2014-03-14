@@ -135,7 +135,6 @@ class Param(OptimizationHandlable, ObservableArray):
         constr = self.constraints.copy()
         priors = self.priors.copy()
         p = Param(self.name, self.view(numpy.ndarray).copy(), self._default_constraint_)
-        import ipdb;ipdb.set_trace()
         p.constraints = constr
         p.priors = priors
         return p

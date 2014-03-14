@@ -290,8 +290,8 @@ class KernelTestsMiscellaneous(unittest.TestCase):
         self.sumkern.randomize()
 
     def test_active_dims(self):
-        self.assertEqual(self.sumkern.input_dim, 9)
-        self.assertEqual(self.sumkern.active_dims, slice(9))
+        self.assertEqual(self.sumkern.input_dim, 10)
+        self.assertEqual(self.sumkern.active_dims, slice(0, 10, 1))
 
     def test_which_parts(self):
         self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=[self.linear, self.matern]), self.linear.K(self.X)+self.matern.K(self.X)))
@@ -311,7 +311,8 @@ class KernelTestsNonContinuous(unittest.TestCase):
         self.X_block[N:N+N1, D:D+D] = self.X2
         self.X_block[0:N, -1] = 1
         self.X_block[N:N+1, -1] = 2
-
+        self.X_block = self.X_block[self.X_block.argsort(-1)[:, -1], :]
+ 
     def test_IndependentOutputs(self):
         k = GPy.kern.RBF(self.D)
         kern = GPy.kern.IndependentOutputs(k, -1)

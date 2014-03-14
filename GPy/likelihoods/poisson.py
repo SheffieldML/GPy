@@ -21,7 +21,7 @@ class Poisson(Likelihood):
     """
     def __init__(self, gp_link=None):
         if gp_link is None:
-            gp_link = link_functions.Log_ex_1()
+            gp_link = link_functions.Log()
 
         super(Poisson, self).__init__(gp_link, name='Poisson')
 

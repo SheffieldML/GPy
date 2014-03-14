@@ -178,7 +178,13 @@ class Likelihood(Parameterized):
 
         #E( E(Y_star|f_star)**2 )
         def int_pred_mean_sq(f,m,v,predictive_mean_sq):
-            return self.conditional_mean(f)**2*np.exp(-(0.5/v)*np.square(f - m))
+            p = np.exp(-(0.5/v)*np.square(f - m))
+            #If p is zero then conditional_mean**2 will overflow
+            if p < 1e-10:
+                return 0.
+            else:
+                return self.conditional_mean(f)**2*p
+
         scaled_exp_exp2 = [quad(int_pred_mean_sq, -np.inf, np.inf,args=(mj,s2j,pm2j))[0] for mj,s2j,pm2j in zip(mu,variance,predictive_mean_sq)]
         exp_exp2 = np.array(scaled_exp_exp2)[:,None] / normalizer
 

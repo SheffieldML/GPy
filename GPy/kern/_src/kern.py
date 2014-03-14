@@ -213,9 +213,6 @@ class CombinationKernel(Kern):
         :param array-like|slice extra_dims: if needed extra dimensions for the combination kernel to work on
         """
         assert all([isinstance(k, Kern) for k in kernels])
-        import itertools
-        # make sure the active dimensions of all underlying kernels are covered:
-        #ma = reduce(lambda a,b: max(a, b.stop if isinstance(b, slice) else max(b)), itertools.chain((x.active_dims for x in kernels)), 0)
         active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
         input_dim = active_dims.max()+1 + len(extra_dims)
         active_dims = slice(active_dims.max()+1+len(extra_dims))

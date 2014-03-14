@@ -318,7 +318,7 @@ def toy_ARD(max_iters=1000, kernel_type='linear', num_samples=300, D=4, optimize
     Y /= Y.std()
 
     if kernel_type == 'linear':
-        kernel = GPy.kern.linear(X.shape[1], ARD=1)
+        kernel = GPy.kern.Linear(X.shape[1], ARD=1)
     elif kernel_type == 'rbf_inv':
         kernel = GPy.kern.RBF_inv(X.shape[1], ARD=1)
     else:
@@ -357,7 +357,7 @@ def toy_ARD_sparse(max_iters=1000, kernel_type='linear', num_samples=300, D=4, o
     Y /= Y.std()
 
     if kernel_type == 'linear':
-        kernel = GPy.kern.linear(X.shape[1], ARD=1)
+        kernel = GPy.kern.Linear(X.shape[1], ARD=1)
     elif kernel_type == 'rbf_inv':
         kernel = GPy.kern.RBF_inv(X.shape[1], ARD=1)
     else:

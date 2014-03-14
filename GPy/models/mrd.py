@@ -118,7 +118,7 @@ class MRD(Model):
             self._log_marginal_likelihood += lml
 
             # likelihood gradients
-            l.update_gradients(grad_dict.pop('partial_for_likelihood'))
+            l.update_gradients(grad_dict.pop('dL_dthetaL'))
 
             #gradients wrt kernel
             dL_dKmm = grad_dict.pop('dL_dKmm')

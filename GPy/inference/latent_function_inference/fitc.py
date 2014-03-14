@@ -3,6 +3,7 @@
 
 from posterior import Posterior
 from ...util.linalg import jitchol, tdot, dtrtrs, dpotri, pdinv
+from ...util import diag
 import numpy as np
 log_2_pi = np.log(2*np.pi)
 
@@ -14,8 +15,7 @@ class FITC(object):
     the posterior.
 
     """
-    def __init__(self):
-        self.const_jitter = 1e-6
+    const_jitter = 1e-6
 
     def inference(self, kern, X, Z, likelihood, Y):
 
@@ -33,6 +33,7 @@ class FITC(object):
         U = Knm
 
         #factor Kmm
+        diag.add(Kmm, self.const_jitter)
         Kmmi, L, Li, _ = pdinv(Kmm)
 
         #compute beta_star, the effective noise precision

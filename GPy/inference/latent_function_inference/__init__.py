@@ -27,8 +27,8 @@ etc.
 
 from exact_gaussian_inference import ExactGaussianInference
 from laplace import Laplace
-expectation_propagation = 'foo' # TODO
 from GPy.inference.latent_function_inference.var_dtc import VarDTC
+from expectation_propagation import EP
 from dtc import DTC
 from fitc import FITC
 

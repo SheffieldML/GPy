@@ -89,7 +89,7 @@ def toy_linear_1d_classification_laplace(seed=default_seed, optimize=True, plot=
 
     likelihood = GPy.likelihoods.Bernoulli()
     laplace_inf = GPy.inference.latent_function_inference.Laplace()
-    kernel = GPy.kern.rbf(1)
+    kernel = GPy.kern.RBF(1)
 
     # Model definition
     m = GPy.core.GP(data['X'], Y, kernel=kernel, likelihood=likelihood, inference_method=laplace_inf)

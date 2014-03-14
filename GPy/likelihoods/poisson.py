@@ -143,7 +143,7 @@ class Poisson(Likelihood):
         """
         return self.gp_link.transf(gp)
 
-    def samples(self, gp):
+    def samples(self, gp, Y_metadata=None):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 

@@ -16,26 +16,32 @@ class Kern(Parameterized):
     __metaclass__ = KernCallsViaSlicerMeta
     #===========================================================================
     _debug=False
-    def __init__(self, input_dim, name, *a, **kw):
+    def __init__(self, input_dim, active_dims, name, *a, **kw):
         """
         The base class for a kernel: a positive definite function
         which forms of a covariance function (kernel).
 
-        :param input_dim: the number of input dimensions to the function
-        :type input_dim: int
+        :param int input_dim: the number of input dimensions to the function
+        :param array-like|slice active_dims: list of indices on which dimensions this kernel works on
 
         Do not instantiate.
         """
         super(Kern, self).__init__(name=name, *a, **kw)
-        if isinstance(input_dim, int):
-            self.active_dims = np.r_[0:input_dim]
-            self.input_dim = input_dim
+        self.active_dims = active_dims if active_dims is not None else slice(0, input_dim)
+        self.input_dim = input_dim
+        assert isinstance(self.active_dims, (slice, list, tuple, np.ndarray)), 'active_dims needs to be an array-like or slice object over dimensions, {} given'.format(self.active_dims.__class__)
+        if isinstance(self.active_dims, slice):
+            self.active_dims = slice(self.active_dims.start or 0, self.active_dims.stop or self.input_dim, self.active_dims.step or 1)
+            active_dim_size = int(np.round((self.active_dims.stop-self.active_dims.start)/self.active_dims.step))
+        elif isinstance(self.active_dims, np.ndarray):
+            assert self.active_dims.ndim == 1, 'only flat indices allowed, given active_dims.shape={}, provide only indexes to the dimensions of the input'.format(self.active_dims.shape)
+            active_dim_size = self.active_dims.size
         else:
-            self.active_dims = np.r_[input_dim]
-            self.input_dim = len(self.active_dims)
+            active_dim_size = len(self.active_dims)
+        assert active_dim_size == self.input_dim, "input_dim={} does not match len(active_dim)={}, active_dims={}".format(self.input_dim, active_dim_size, self.active_dims)
         self._sliced_X = 0
 
-    @Cache_this(limit=10)#, ignore_args = (0,))
+    @Cache_this(limit=10)
     def _slice_X(self, X):
         return X[:, self.active_dims]
 
@@ -69,9 +75,7 @@ class Kern(Parameterized):
     def update_gradients_full(self, dL_dK, X, X2):
         """Set the gradients of all parameters when doing full (N) inference."""
         raise NotImplementedError
-    def update_gradients_diag(self, dL_dKdiag, X):
-        """Set the gradients for all parameters for the derivative of the diagonal of the covariance w.r.t the kernel parameters."""
-        raise NotImplementedError
+
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """
         Set the gradients of all parameters when doing inference with
@@ -193,13 +197,28 @@ class Kern(Parameterized):
         super(Kern, self)._setstate(state)
 
 class CombinationKernel(Kern):
-    def __init__(self, kernels, name):
+    """
+    Abstract super class for combination kernels.
+    A combination kernel combines (a list of) kernels and works on those.
+    Examples are the HierarchicalKernel or Add and Prod kernels.
+    """
+    def __init__(self, kernels, name, extra_dims=[]):
+        """
+        Abstract super class for combination kernels.
+        A combination kernel combines (a list of) kernels and works on those.
+        Examples are the HierarchicalKernel or Add and Prod kernels.
+
+        :param list kernels: List of kernels to combine (can be only one element)
+        :param str name: name of the combination kernel
+        :param array-like|slice extra_dims: if needed extra dimensions for the combination kernel to work on
+        """
         assert all([isinstance(k, Kern) for k in kernels])
-        # make sure the active dimensions of all underlying kernels are covered:
-        ma = reduce(lambda a,b: max(a, max(b)), (x.active_dims for x in kernels), 0)
-        input_dim = np.r_[0:ma+1]
+        active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
+        input_dim = active_dims.max()+1 + len(extra_dims)
+        active_dims = slice(active_dims.max()+1+len(extra_dims))
         # initialize the kernel with the full input_dim
-        super(CombinationKernel, self).__init__(input_dim, name)
+        super(CombinationKernel, self).__init__(input_dim, active_dims, name)
+        self.extra_dims = extra_dims
         self.add_parameters(*kernels)
 
     @property

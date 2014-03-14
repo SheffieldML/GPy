@@ -10,7 +10,7 @@ from ...core.parameterization.param import Param
 from ...core.parameterization.transformations import Logexp
 
 class Periodic(Kern):
-    def __init__(self, input_dim, variance, lengthscale, period, n_freq, lower, upper, name):
+    def __init__(self, input_dim, variance, lengthscale, period, n_freq, lower, upper, active_dims, name):
         """
         :type input_dim: int
         :param variance: the variance of the Matern kernel
@@ -25,7 +25,7 @@ class Periodic(Kern):
         """
 
         assert input_dim==1, "Periodic kernels are only defined for input_dim=1"
-        super(Periodic, self).__init__(input_dim, name)
+        super(Periodic, self).__init__(input_dim, active_dims, name)
         self.input_dim = input_dim
         self.lower,self.upper = lower, upper
         self.n_freq = n_freq
@@ -77,8 +77,8 @@ class PeriodicExponential(Periodic):
     Only defined for input_dim=1.
     """
 
-    def __init__(self, input_dim=1, variance=1., lengthscale=1., period=2.*np.pi, n_freq=10, lower=0., upper=4*np.pi, name='periodic_exponential'):
-        super(PeriodicExponential, self).__init__(input_dim, variance, lengthscale, period, n_freq, lower, upper, name)
+    def __init__(self, input_dim=1, variance=1., lengthscale=1., period=2.*np.pi, n_freq=10, lower=0., upper=4*np.pi, active_dims=None, name='periodic_exponential'):
+        super(PeriodicExponential, self).__init__(input_dim, variance, lengthscale, period, n_freq, lower, upper, active_dims, name)
 
     def parameters_changed(self):
         self.a = [1./self.lengthscale, 1.]
@@ -187,8 +187,8 @@ class PeriodicMatern32(Periodic):
 
     """
 
-    def __init__(self, input_dim=1, variance=1., lengthscale=1., period=2.*np.pi, n_freq=10, lower=0., upper=4*np.pi, name='periodic_Matern32'):
-        super(PeriodicMatern32, self).__init__(input_dim, variance, lengthscale, period, n_freq, lower, upper, name)
+    def __init__(self, input_dim=1, variance=1., lengthscale=1., period=2.*np.pi, n_freq=10, lower=0., upper=4*np.pi, active_dims=None, name='periodic_Matern32'):
+        super(PeriodicMatern32, self).__init__(input_dim, variance, lengthscale, period, n_freq, lower, upper, active_dims, name)
     def parameters_changed(self):
         self.a = [3./self.lengthscale**2, 2*np.sqrt(3)/self.lengthscale, 1.]
         self.b = [1,self.lengthscale**2/3]
@@ -300,8 +300,8 @@ class PeriodicMatern52(Periodic):
 
     """
 
-    def __init__(self, input_dim=1, variance=1., lengthscale=1., period=2.*np.pi, n_freq=10, lower=0., upper=4*np.pi, name='periodic_Matern52'):
-        super(PeriodicMatern52, self).__init__(input_dim, variance, lengthscale, period, n_freq, lower, upper, name)
+    def __init__(self, input_dim=1, variance=1., lengthscale=1., period=2.*np.pi, n_freq=10, lower=0., upper=4*np.pi, active_dims=None, name='periodic_Matern52'):
+        super(PeriodicMatern52, self).__init__(input_dim, variance, lengthscale, period, n_freq, lower, upper, active_dims, name)
 
     def parameters_changed(self):
         self.a = [5*np.sqrt(5)/self.lengthscale**3, 15./self.lengthscale**2,3*np.sqrt(5)/self.lengthscale, 1.]

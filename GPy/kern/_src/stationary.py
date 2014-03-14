@@ -41,8 +41,8 @@ class Stationary(Kern):
           
     """
     
-    def __init__(self, input_dim, variance, lengthscale, ARD, name):
-        super(Stationary, self).__init__(input_dim, name)
+    def __init__(self, input_dim, variance, lengthscale, ARD, active_dims, name):
+        super(Stationary, self).__init__(input_dim, active_dims, name)
         self.ARD = ARD
         if not ARD:
             if lengthscale is None:
@@ -186,8 +186,8 @@ class Stationary(Kern):
         return np.ones(self.input_dim)/self.lengthscale
 
 class Exponential(Stationary):
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='Exponential'):
-        super(Exponential, self).__init__(input_dim, variance, lengthscale, ARD, name)
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Exponential'):
+        super(Exponential, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
         return self.variance * np.exp(-0.5 * r)
@@ -205,8 +205,8 @@ class Matern32(Stationary):
 
     """
 
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='Mat32'):
-        super(Matern32, self).__init__(input_dim, variance, lengthscale, ARD, name)
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Mat32'):
+        super(Matern32, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
         return self.variance * (1. + np.sqrt(3.) * r) * np.exp(-np.sqrt(3.) * r)
@@ -249,8 +249,8 @@ class Matern52(Stationary):
 
        k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r) 
        """
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='Mat52'):
-        super(Matern52, self).__init__(input_dim, variance, lengthscale, ARD, name)
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Mat52'):
+        super(Matern52, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
         return self.variance*(1+np.sqrt(5.)*r+5./3*r**2)*np.exp(-np.sqrt(5.)*r)
@@ -291,8 +291,8 @@ class Matern52(Stationary):
 
 
 class ExpQuad(Stationary):
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='ExpQuad'):
-        super(ExpQuad, self).__init__(input_dim, variance, lengthscale, ARD, name)
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='ExpQuad'):
+        super(ExpQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
         return self.variance * np.exp(-0.5 * r**2)
@@ -301,8 +301,8 @@ class ExpQuad(Stationary):
         return -r*self.K_of_r(r)
 
 class Cosine(Stationary):
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='Cosine'):
-        super(Cosine, self).__init__(input_dim, variance, lengthscale, ARD, name)
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Cosine'):
+        super(Cosine, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
         return self.variance * np.cos(r)
@@ -322,8 +322,8 @@ class RatQuad(Stationary):
     """
 
 
-    def __init__(self, input_dim, variance=1., lengthscale=None, power=2., ARD=False, name='ExpQuad'):
-        super(RatQuad, self).__init__(input_dim, variance, lengthscale, ARD, name)
+    def __init__(self, input_dim, variance=1., lengthscale=None, power=2., ARD=False, active_dims=None, name='ExpQuad'):
+        super(RatQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
         self.power = Param('power', power, Logexp())
         self.add_parameters(self.power)
 

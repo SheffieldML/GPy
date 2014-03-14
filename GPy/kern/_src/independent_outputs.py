@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kern import Kern
+from kern import Kern, CombinationKernel
 import numpy as np
 import itertools
 
@@ -32,7 +32,7 @@ def index_to_slices(index):
     [ret[ind_i].append(slice(*indexes_i)) for ind_i,indexes_i in zip(ind[switchpoints[:-1]],zip(switchpoints,switchpoints[1:]))]
     return ret
 
-class IndependentOutputs(Kern):
+class IndependentOutputs(CombinationKernel):
     """
     A kernel which can represent several independent functions.
     this kernel 'switches off' parts of the matrix where the output indexes are different.
@@ -41,12 +41,12 @@ class IndependentOutputs(Kern):
     the rest of the columns of X are passed to the underlying kernel for computation (in blocks).
 
     """
-    def __init__(self, index_dim, kern, name='independ'):
+    def __init__(self, kern, index_dim=-1, name='independ'):
         assert isinstance(index_dim, int), "IndependentOutputs kernel is only defined with one input dimension being the indeces"
-        super(IndependentOutputs, self).__init__(np.r_[0:max(max(kern.active_dims)+1, index_dim+1)], name)
+        super(IndependentOutputs, self).__init__(kernels=[kern], extra_dims=[index_dim], name=name)
         self.index_dim = index_dim
         self.kern = kern
-        self.add_parameters(self.kern)
+        #self.add_parameters(self.kern)
 
     def K(self,X ,X2=None):
         slices = index_to_slices(X[:,self.index_dim])
@@ -80,19 +80,19 @@ class IndependentOutputs(Kern):
         self.kern.gradient = target
 
     def gradients_X(self,dL_dK, X, X2=None):
-        target = np.zeros_like(X)
+        target = np.zeros(X.shape)
         slices = index_to_slices(X[:,self.index_dim])
         if X2 is None:
             [[np.copyto(target[s,self.kern.active_dims], self.kern.gradients_X(dL_dK[s,ss],X[s],X[ss])) for s, ss in itertools.product(slices_i, slices_i)] for slices_i in slices]
         else:
-            X2,slices2 = X2[:,:self.index_dim],index_to_slices(X2[:,-1])
-            [[[np.copyto(target[s,:self.index_dim], self.kern.gradients_X(dL_dK[s,s2], X[s], X2[s2])) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
+            slices2 = index_to_slices(X2[:,self.index_dim])
+            [[[np.copyto(target[s,self.kern.active_dims], self.kern.gradients_X(dL_dK[s,s2], X[s], X2[s2])) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
         return target
 
     def gradients_X_diag(self, dL_dKdiag, X):
         slices = index_to_slices(X[:,self.index_dim])
         target = np.zeros(X.shape)
-        [[np.copyto(target[s,:-1], self.kern.gradients_X_diag(dL_dKdiag[s],X[s])) for s in slices_i] for slices_i in slices]
+        [[np.copyto(target[s,self.kern.active_dims], self.kern.gradients_X_diag(dL_dKdiag[s],X[s])) for s in slices_i] for slices_i in slices]
         return target
 
     def update_gradients_diag(self, dL_dKdiag, X):

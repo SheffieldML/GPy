@@ -33,9 +33,9 @@ class SSRBF(Stationary):
     .. Note: this object implements both the ARD and 'spherical' version of the function
     """
 
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=True, name='SSRBF'):
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=True, active_dims=None, name='SSRBF'):
         assert ARD==True, "Not Implemented!"
-        super(SSRBF, self).__init__(input_dim, variance, lengthscale, ARD, name)
+        super(SSRBF, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
         
     def K_of_r(self, r):
         return self.variance * np.exp(-0.5 * r**2)

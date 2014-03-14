@@ -15,7 +15,7 @@ class PriorTests(unittest.TestCase):
         X, y = X[:, None], y[:, None]
         m = GPy.models.GPRegression(X, y)
         lognormal = GPy.priors.LogGaussian(1, 2)
-        m.set_prior('rbf', lognormal)
+        m.rbf.set_prior(lognormal)
         m.randomize()
         self.assertTrue(m.checkgrad())
 
@@ -28,7 +28,7 @@ class PriorTests(unittest.TestCase):
         X, y = X[:, None], y[:, None]
         m = GPy.models.GPRegression(X, y)
         Gamma = GPy.priors.Gamma(1, 1)
-        m.set_prior('rbf', Gamma)
+        m.rbf.set_prior(Gamma)
         m.randomize()
         self.assertTrue(m.checkgrad())
 
@@ -41,16 +41,9 @@ class PriorTests(unittest.TestCase):
         X, y = X[:, None], y[:, None]
         m = GPy.models.GPRegression(X, y)
         gaussian = GPy.priors.Gaussian(1, 1)
-        success = False
-
         # setting a Gaussian prior on non-negative parameters
         # should raise an assertionerror.
-        try:
-            m.set_prior('rbf', gaussian)
-        except AssertionError:
-            success = True
-
-        self.assertTrue(success)
+        self.assertRaises(AssertionError, m.rbf.set_prior, gaussian)
 
 
 if __name__ == "__main__":

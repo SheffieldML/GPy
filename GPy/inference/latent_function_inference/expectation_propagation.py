@@ -1,7 +1,7 @@
 import numpy as np
-from scipy import stats
-from ..util.linalg import pdinv,mdot,jitchol,chol_inv,DSYR,tdot,dtrtrs
-from likelihood import likelihood
+from ...util.linalg import pdinv,jitchol,DSYR,tdot,dtrtrs, dpotrs
+from posterior import Posterior
+log_2_pi = np.log(2*np.pi)
 
 class EP(object):
     def __init__(self, epsilon=1e-6, eta=1., delta=1.):
@@ -28,30 +28,30 @@ class EP(object):
 
         K = kern.K(X)
 
-        mu_tilde, tau_tilde = self.expectation_propagation()
+        mu, Sigma, mu_tilde, tau_tilde, Z_hat = self.expectation_propagation(K, Y, likelihood, Y_metadata)
 
-        Wi, LW, LWi, W_logdet = pdinv(K + np.diag(1./tau_tilde)
+        Wi, LW, LWi, W_logdet = pdinv(K + np.diag(1./tau_tilde))
 
         alpha, _ = dpotrs(LW, mu_tilde, lower=1)
 
-        log_marginal =  0.5*(-num_data * log_2_pi - W_logdet - np.sum(alpha * mu_tilde))
+        log_marginal =  0.5*(-num_data * log_2_pi - W_logdet - np.sum(alpha * mu_tilde)) # TODO: add log Z_hat??
 
         dL_dK = 0.5 * (tdot(alpha[:,None]) - Wi)
 
-        #TODO: what abot derivatives of the likelihood parameters?
+        dL_dthetaL = np.zeros(likelihood.size)#TODO: derivatives of the likelihood parameters
 
-        return Posterior(woodbury_inv=Wi, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK}
+        return Posterior(woodbury_inv=Wi, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK, 'dL_dthetaL':dL_dthetaL}
 
 
 
-    def expectation_propagation(self, K, Y, Y_metadata, likelihood)
+    def expectation_propagation(self, K, Y, likelihood, Y_metadata):
 
         num_data, data_dim = Y.shape
         assert data_dim == 1, "This EP methods only works for 1D outputs"
 
 
         #Initial values - Posterior distribution parameters: q(f|X,Y) = N(f|mu,Sigma)
-        mu = np.zeros(self.num_data)
+        mu = np.zeros(num_data)
         Sigma = K.copy()
 
         #Initial values - Marginal moments
@@ -61,33 +61,32 @@ class EP(object):
 
         #initial values - Gaussian factors
         if self.old_mutilde is None:
-            tau_tilde, mu_tilde, v_tilde = np.zeros((3, num_data, num_data))
+            tau_tilde, mu_tilde, v_tilde = np.zeros((3, num_data))
         else:
             assert old_mutilde.size == num_data, "data size mis-match: did you change the data? try resetting!"
             mu_tilde, v_tilde = self.old_mutilde, self.old_vtilde
             tau_tilde = v_tilde/mu_tilde
 
         #Approximation
-        epsilon_np1 = self.epsilon + 1.
-        epsilon_np2 = self.epsilon + 1.
+        tau_diff = self.epsilon + 1.
+        v_diff = self.epsilon + 1.
        	iterations = 0
-        while (epsilon_np1 > self.epsilon) or (epsilon_np2 > self.epsilon):
+        while (tau_diff > self.epsilon) or (v_diff > self.epsilon):
             update_order = np.random.permutation(num_data)
             for i in update_order:
                 #Cavity distribution parameters
                 tau_cav = 1./Sigma[i,i] - self.eta*tau_tilde[i]
                 v_cav = mu[i]/Sigma[i,i] - self.eta*v_tilde[i]
                 #Marginal moments
-                Z_hat[i], mu_hat[i], sigma2_hat[i] = likelihood.moments_match(Y[i], tau_cav, v_cav, Y_metadata=(None if Y_metadata is None else Y_metadata[i]))
+                Z_hat[i], mu_hat[i], sigma2_hat[i] = likelihood.moments_match_ep(Y[i], tau_cav, v_cav)#, Y_metadata=None)#=(None if Y_metadata is None else Y_metadata[i]))
                 #Site parameters update
                 delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma[i,i])
                 delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma[i,i])
                 tau_tilde[i] += delta_tau
                 v_tilde[i] += delta_v
                 #Posterior distribution parameters update
-                DSYR(Sigma, Sigma[:,i].copy(), -Delta_tau/(1.+ Delta_tau*Sigma[i,i]))
+                DSYR(Sigma, Sigma[:,i].copy(), -delta_tau/(1.+ delta_tau*Sigma[i,i]))
                 mu = np.dot(Sigma, v_tilde)
-                iterations += 1
 
             #(re) compute Sigma and mu using full Cholesky decompy
             tau_tilde_root = np.sqrt(tau_tilde)
@@ -99,10 +98,14 @@ class EP(object):
             mu = np.dot(Sigma,v_tilde)
 
             #monitor convergence
-            epsilon_np1 = np.mean(np.square(tau_tilde-tau_tilde_old))
-            epsilon_np2 = np.mean(np.square(v_tilde-v_tilde_old))
+            if iterations>0:
+                tau_diff = np.mean(np.square(tau_tilde-tau_tilde_old))
+                v_diff = np.mean(np.square(v_tilde-v_tilde_old))
             tau_tilde_old = tau_tilde.copy()
             v_tilde_old = v_tilde.copy()
 
-        return mu, Sigma, mu_tilde, tau_tilde
+            iterations += 1
+
+        mu_tilde = v_tilde/tau_tilde
+        return mu, Sigma, mu_tilde, tau_tilde, Z_hat
 

@@ -19,8 +19,8 @@ class RBF(Stationary):
        k(r) = \sigma^2 \exp \\bigg(- \\frac{1}{2} r^2 \\bigg)
 
     """
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='rbf'):
-        super(RBF, self).__init__(input_dim, variance, lengthscale, ARD, name)
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='rbf'):
+        super(RBF, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
         self.weave_options = {}
 
     def K_of_r(self, r):

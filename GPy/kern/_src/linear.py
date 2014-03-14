@@ -34,8 +34,8 @@ class Linear(Kern):
 
     """
 
-    def __init__(self, input_dim, variances=None, ARD=False, name='linear'):
-        super(Linear, self).__init__(input_dim, name)
+    def __init__(self, input_dim, variances=None, ARD=False, active_dims=None, name='linear'):
+        super(Linear, self).__init__(input_dim, active_dims, name)
         self.ARD = ARD
         if not ARD:
             if variances is not None:

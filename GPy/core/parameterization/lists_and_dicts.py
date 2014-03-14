@@ -5,21 +5,17 @@ Created on 27 Feb 2014
 '''
 
 from collections import defaultdict
-class DefaultArrayDict(defaultdict):
-    def __init__(self):
+
+def intarray_default_factory():
+    import numpy as np
+    return np.int_([])
+
+class IntArrayDict(defaultdict):
+    def __init__(self, default_factory=None):
         """
         Default will be self._default, if not set otherwise
         """
-        defaultdict.__init__(self, self.default_factory)
-
-class SetDict(DefaultArrayDict):
-    def default_factory(self):
-        return set()
-
-class IntArrayDict(DefaultArrayDict):
-    def default_factory(self):
-        import numpy as np
-        return np.int_([])
+        defaultdict.__init__(self, intarray_default_factory)
 
 class ArrayList(list):
     """

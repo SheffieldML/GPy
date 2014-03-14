@@ -10,7 +10,7 @@ from model import Model
 from parameterization import ObservableArray
 from .. import likelihoods
 from ..likelihoods.gaussian import Gaussian
-from ..inference.latent_function_inference import exact_gaussian_inference
+from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
 from parameterization.variational import VariationalPosterior
 
 class GP(Model):
@@ -56,7 +56,7 @@ class GP(Model):
             if isinstance(likelihood, likelihoods.Gaussian) or isinstance(likelihood, likelihoods.MixedNoise):
                 inference_method = exact_gaussian_inference.ExactGaussianInference()
             else:
-                inference_method = expectation_propagation
+                inference_method = expectation_propagation.EP()
                 print "defaulting to ", inference_method, "for latent function inference"
         self.inference_method = inference_method
 
@@ -94,6 +94,9 @@ class GP(Model):
             #var = Kxx - np.sum(LiKx*LiKx, 0)
             var = Kxx - np.sum(WiKx*Kx, 0)
             var = var.reshape(-1, 1)
+
+        #force mu to be a column vector
+        if len(mu.shape)==1: mu = mu[:,None]
         return mu, var
 
     def predict(self, Xnew, full_cov=False, Y_metadata=None):

@@ -263,7 +263,7 @@ class StudentT(Likelihood):
     def conditional_variance(self, gp):
         return self.deg_free/(self.deg_free - 2.)
 
-    def samples(self, gp):
+    def samples(self, gp, Y_metadata=None):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 

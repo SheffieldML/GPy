@@ -298,6 +298,24 @@ class KernelTestsMiscellaneous(unittest.TestCase):
         self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=[self.linear, self.rbf]), self.linear.K(self.X)+self.rbf.K(self.X)))
         self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=self.sumkern.parts[0]), self.rbf.K(self.X)))
 
+class KernelTestsNonContinuous(unittest.TestCase):
+    def setUp(self):
+        N = 100
+        N1 = 110
+        self.D = 2
+        D = self.D
+        self.X = np.random.randn(N,D)
+        self.X2 = np.random.randn(N1,D)
+        self.X_block = np.zeros((N+N1, D+D+1))
+        self.X_block[0:N, 0:D] = self.X
+        self.X_block[N:N+N1, D:D+D] = self.X2
+        self.X_block[0:N, -1] = 1
+        self.X_block[N:N+1, -1] = 2
+
+    def test_IndependantOutputs(self):
+        k = GPy.kern.RBF(self.D)
+        kern = GPy.kern.IndependentOutputs(self.D+self.D,k)
+        self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose))
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."

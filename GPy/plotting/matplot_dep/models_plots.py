@@ -86,8 +86,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
             upper = m + 2*np.sqrt(v)
         else:
             m, v = model.predict(Xgrid, full_cov=False, Y_metadata=Y_metadata)
-
-        lower, upper = model.predict_quantiles(Xgrid, Y_metadata=Y_metadata)
+            lower, upper = model.predict_quantiles(Xgrid, Y_metadata=Y_metadata)
 
 
         for d in which_data_ycols:

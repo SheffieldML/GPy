@@ -8,7 +8,7 @@ import itertools
 
 def index_to_slices(index):
     """
-    take a numpy array of integers (index) and return a  nested list of slices such that the slices describe the start, stop points for each integer in the index. 
+    take a numpy array of integers (index) and return a  nested list of slices such that the slices describe the start, stop points for each integer in the index.
 
     e.g.
     >>> index = np.asarray([0,0,0,1,1,1,2,2,2])
@@ -40,6 +40,7 @@ class IndependentOutputs(CombinationKernel):
     The index of the functions is given by the last column in the input X
     the rest of the columns of X are passed to the underlying kernel for computation (in blocks).
 
+    Kern is wrapped with a slicer metaclass
     """
     def __init__(self, kern, index_dim=-1, name='independ'):
         assert isinstance(index_dim, int), "IndependentOutputs kernel is only defined with one input dimension being the indeces"

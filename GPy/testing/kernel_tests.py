@@ -120,6 +120,8 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
 
     if verbose:
         print("Checking covariance function is positive definite.")
+    #if isinstance(kern, GPy.kern.IndependentOutputs):
+        #import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
     result = Kern_check_model(kern, X=X).is_positive_semi_definite()
     if result and verbose:
         print("Check passed.")
@@ -306,17 +308,22 @@ class KernelTestsNonContinuous(unittest.TestCase):
         D = self.D
         self.X = np.random.randn(N,D)
         self.X2 = np.random.randn(N1,D)
-        self.X_block = np.zeros((N+N1, D+D+1))
+        #self.X_block = np.zeros((N+N1, D+D+1))
+        #self.X_block[0:N, 0:D] = self.X
+        #self.X_block[N:N+N1, D:D+D] = self.X2
+        #self.X_block[0:N, -1] = 0
+        #self.X_block[N:N+N1, -1] = 1
+        self.X_block = np.zeros((N+N1, D+1))
         self.X_block[0:N, 0:D] = self.X
-        self.X_block[N:N+N1, D:D+D] = self.X2
-        self.X_block[0:N, -1] = 1
-        self.X_block[N:N+1, -1] = 2
+        self.X_block[N:N+N1, 0:D] = self.X2
+        self.X_block[0:N, -1] = 0
+        self.X_block[N:N+N1, -1] = 1
         self.X_block = self.X_block[self.X_block.argsort(0)[:, -1], :]
- 
+
     def test_IndependentOutputs(self):
         k = GPy.kern.RBF(self.D)
         kern = GPy.kern.IndependentOutputs(k, -1)
-        self.assertTrue(check_kernel_gradient_functions(kern, X=self.X_block, X2=self.X_block, verbose=verbose))
+        self.assertTrue(check_kernel_gradient_functions(kern, X=self.X_block, verbose=verbose))
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."

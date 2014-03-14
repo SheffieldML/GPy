@@ -94,6 +94,9 @@ class GP(Model):
             #var = Kxx - np.sum(LiKx*LiKx, 0)
             var = Kxx - np.sum(WiKx*Kx, 0)
             var = var.reshape(-1, 1)
+
+        #force mu to be a column vector
+        if len(mu.shape)==1: mu = mu[:,None]
         return mu, var
 
     def predict(self, Xnew, full_cov=False, Y_metadata=None):

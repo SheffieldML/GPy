@@ -212,7 +212,7 @@ class Bernoulli(Likelihood):
         np.seterr(**state)
         return d3logpdf_dlink3
 
-    def samples(self, gp):
+    def samples(self, gp, Y_metadata=None):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 

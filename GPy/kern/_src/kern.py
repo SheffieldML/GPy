@@ -27,10 +27,18 @@ class Kern(Parameterized):
         Do not instantiate.
         """
         super(Kern, self).__init__(name=name, *a, **kw)
-        self.active_dims = active_dims or slice(0, input_dim)
+        self.active_dims = active_dims if active_dims is not None else slice(0, input_dim)
         self.input_dim = input_dim
         assert isinstance(self.active_dims, (slice, list, tuple, np.ndarray)), 'active_dims needs to be an array-like or slice object over dimensions, {} given'.format(self.active_dims.__class__)
-        assert self.active_dims.size == self.input_dim, "input_dim {} does not match len(active_dim) {}".format(self.input_dim, self.active_dims.size)
+        if isinstance(self.active_dims, slice):
+            self.active_dims = slice(self.active_dims.start or 0, self.active_dims.stop or self.input_dim, self.active_dims.step or 1)
+            active_dim_size = int(np.round((self.active_dims.stop-self.active_dims.start)/self.active_dims.step))
+        elif isinstance(self.active_dims, np.ndarray):
+            assert self.active_dims.ndim == 1, 'only flat indices allowed, given active_dims.shape={}, provide only indexes to the dimensions of the input'.format(self.active_dims.shape)
+            active_dim_size = self.active_dims.size
+        else:
+            active_dim_size = len(self.active_dims)
+        assert active_dim_size == self.input_dim, "input_dim={} does not match len(active_dim)={}, active_dims={}".format(self.input_dim, active_dim_size, self.active_dims)
         self._sliced_X = 0
 
     @Cache_this(limit=10)
@@ -207,10 +215,12 @@ class CombinationKernel(Kern):
         assert all([isinstance(k, Kern) for k in kernels])
         import itertools
         # make sure the active dimensions of all underlying kernels are covered:
-        ma = reduce(lambda a,b: max(a, b.stop if isinstance(b, slice) else max(b)), itertools.chain((x.active_dims for x in kernels), [extra_dims]), 0)
-        input_dim = np.r_[0:ma+1]
+        #ma = reduce(lambda a,b: max(a, b.stop if isinstance(b, slice) else max(b)), itertools.chain((x.active_dims for x in kernels)), 0)
+        active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
+        input_dim = active_dims.max()+1 + len(extra_dims)
+        active_dims = slice(active_dims.max()+1+len(extra_dims))
         # initialize the kernel with the full input_dim
-        super(CombinationKernel, self).__init__(input_dim, name)
+        super(CombinationKernel, self).__init__(input_dim, active_dims, name)
         self.extra_dims = extra_dims
         self.add_parameters(*kernels)
 

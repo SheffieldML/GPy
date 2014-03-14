@@ -252,7 +252,7 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
-#TODO: turn off grad checkingwrt X for indexed kernels liek coregionalize
+#TODO: turn off grad checkingwrt X for indexed kernels like coregionalize
 # class KernelGradientTestsContinuous1D(unittest.TestCase):
 #     def setUp(self):
 #         self.N, self.D = 100, 1

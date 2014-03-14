@@ -60,7 +60,7 @@ class SparseGP(GP):
             dL_dKmm = self.grad_dict.pop('dL_dKmm')
             self.kern.update_gradients_full(dL_dKmm, self.Z, None)
             target = self.kern.gradient.copy()
-            self.kern.update_gradients_expectations(variational_posterior=self.X, Z=self.Z, dL_dpsi0=grad_dict['dL_dpsi0'], dL_dpsi1=grad_dict['dL_dpsi1'], dL_dpsi2=grad_dict['dL_dpsi2'])
+            self.kern.update_gradients_expectations(variational_posterior=self.X, Z=self.Z, dL_dpsi0=self.grad_dict['dL_dpsi0'], dL_dpsi1=self.grad_dict['dL_dpsi1'], dL_dpsi2=self.grad_dict['dL_dpsi2'])
             self.kern.gradient += target
 
             #gradients wrt Z

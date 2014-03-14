@@ -311,12 +311,12 @@ class KernelTestsNonContinuous(unittest.TestCase):
         self.X_block[N:N+N1, D:D+D] = self.X2
         self.X_block[0:N, -1] = 1
         self.X_block[N:N+1, -1] = 2
-        self.X_block = self.X_block[self.X_block.argsort(-1)[:, -1], :]
+        self.X_block = self.X_block[self.X_block.argsort(0)[:, -1], :]
  
     def test_IndependentOutputs(self):
         k = GPy.kern.RBF(self.D)
         kern = GPy.kern.IndependentOutputs(k, -1)
-        self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose))
+        self.assertTrue(check_kernel_gradient_functions(kern, X=self.X_block, X2=self.X_block, verbose=verbose))
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."

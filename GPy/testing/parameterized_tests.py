@@ -7,8 +7,24 @@ import unittest
 import GPy
 import numpy as np
 from GPy.core.parameterization.parameter_core import HierarchyError
+from GPy.core.parameterization.array_core import ObservableArray
 
-class Test(unittest.TestCase):
+class ArrayCoreTest(unittest.TestCase):
+    def setUp(self):
+        self.X = np.random.normal(1,1, size=(100,10))
+        self.obsX = ObservableArray(self.X)
+
+    def test_init(self):
+        X = ObservableArray(self.X)
+        X2 = ObservableArray(X)
+        self.assertIs(X, X2, "no new Observable array, when Observable is given")
+
+    def test_slice(self):
+        t1 = self.X[2:78]
+        t2 = self.obsX[2:78]
+        self.assertListEqual(t1.tolist(), t2.tolist(), "Slicing should be the exact same, as in ndarray")
+
+class ParameterizedTest(unittest.TestCase):
 
     def setUp(self):
         self.rbf = GPy.kern.RBF(1)

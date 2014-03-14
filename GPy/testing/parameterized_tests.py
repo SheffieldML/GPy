@@ -51,8 +51,6 @@ class ParameterizedTest(unittest.TestCase):
         self.white.fix(warning=False)
         self.test1.remove_parameter(self.test1.param)
         self.assertTrue(self.test1._has_fixes())
-        import ipdb;ipdb.set_trace()
-        
         from GPy.core.parameterization.transformations import FIXED, UNFIXED
         self.assertListEqual(self.test1._fixes_.tolist(),[UNFIXED,UNFIXED,FIXED])
 

@@ -64,7 +64,6 @@ class Add(CombinationKernel):
     def gradients_X_diag(self, dL_dKdiag, X):
         target = np.zeros(X.shape)
         [target.__iadd__(p.gradients_X_diag(dL_dKdiag, X)) for p in self.parts]
-        #[target.__setitem__([Ellipsis, p.active_dims], target[:, p.active_dims]+p.gradients_X(dL_dK, X, X2)) for p in self.parts]
         return target
 
     def psi0(self, Z, variational_posterior):

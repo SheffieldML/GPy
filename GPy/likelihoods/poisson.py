@@ -21,7 +21,7 @@ class Poisson(Likelihood):
     """
     def __init__(self, gp_link=None):
         if gp_link is None:
-            gp_link = link_functions.Log_ex_1()
+            gp_link = link_functions.Log()
 
         super(Poisson, self).__init__(gp_link, name='Poisson')
 
@@ -143,7 +143,7 @@ class Poisson(Likelihood):
         """
         return self.gp_link.transf(gp)
 
-    def samples(self, gp):
+    def samples(self, gp, Y_metadata=None):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 

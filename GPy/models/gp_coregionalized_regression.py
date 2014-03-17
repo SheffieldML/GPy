@@ -31,7 +31,7 @@ class GPCoregionalizedRegression(GP):
     def __init__(self, X_list, Y_list, kernel=None, likelihoods_list=None, name='GPCR',W_rank=1,kernel_name='X'):
 
         #Input and Output
-        X,Y,self.noise_index = util.multioutput.build_XY(X_list,Y_list)
+        X,Y,self.output_index = util.multioutput.build_XY(X_list,Y_list)
         Ny = len(Y_list)
 
         #Kernel
@@ -39,6 +39,6 @@ class GPCoregionalizedRegression(GP):
             kernel = util.multioutput.ICM(input_dim=X.shape[1]-1, num_outputs=Ny, kernel=GPy.kern.rbf(X.shape[1]-1), W_rank=1,name=kernel_name)
 
         #Likelihood
-        likelihood = util.multioutput.build_likelihood(Y_list,self.noise_index,likelihoods_list)
+        likelihood = util.multioutput.build_likelihood(Y_list,self.output_index,likelihoods_list)
 
-        super(GPCoregionalizedRegression, self).__init__(X,Y,kernel,likelihood, noise_index=self.noise_index)
+        super(GPCoregionalizedRegression, self).__init__(X,Y,kernel,likelihood, Y_metadata={'output_index':self.output_index})

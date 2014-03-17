@@ -35,7 +35,8 @@ def build_likelihood(Y_list,noise_index,likelihoods_list=None):
        likelihoods_list = [GPy.likelihoods.Gaussian(name="Gaussian_noise_%s" %j) for y,j in zip(Y_list,range(Ny))]
     else:
         assert len(likelihoods_list) == Ny
-    likelihood = GPy.likelihoods.mixed_noise.MixedNoise(likelihoods_list=likelihoods_list, noise_index=noise_index)
+    #likelihood = GPy.likelihoods.mixed_noise.MixedNoise(likelihoods_list=likelihoods_list, noise_index=noise_index)
+    likelihood = GPy.likelihoods.mixed_noise.MixedNoise(likelihoods_list=likelihoods_list)
     return likelihood
 
 
@@ -43,7 +44,7 @@ def ICM(input_dim, num_outputs, kernel, W_rank=1,W=None,kappa=None,name='X'):
     """
     Builds a kernel for an Intrinsic Coregionalization Model
 
-    :input_dim: Input dimensionality
+    :input_dim: Input dimensionality (does not include dimension of indices)
     :num_outputs: Number of outputs
     :param kernel: kernel that will be multiplied by the coregionalize kernel (matrix B).
     :type kernel: a GPy kernel
@@ -54,7 +55,8 @@ def ICM(input_dim, num_outputs, kernel, W_rank=1,W=None,kappa=None,name='X'):
         kernel.input_dim = input_dim
         warnings.warn("kernel's input dimension overwritten to fit input_dim parameter.")
 
-    K = kernel.prod(GPy.kern.Coregionalize([input_dim], num_outputs,W_rank,W,kappa,name='B'),name=name)
+    K = kernel.prod(GPy.kern.Coregionalize(1, num_outputs, active_dims=[input_dim], rank=W_rank,W=W,kappa=kappa,name='B'),name=name)
+    #K = kernel * GPy.kern.Coregionalize(1, num_outputs, active_dims=[input_dim], rank=W_rank,W=W,kappa=kappa,name='B')
     #K = kernel ** GPy.kern.Coregionalize(input_dim, num_outputs,W_rank,W,kappa, name= 'B')
     K['.*variance'] = 1.
     K['.*variance'].fix()
@@ -65,7 +67,7 @@ def LCM(input_dim, num_outputs, kernels_list, W_rank=1,name='X'):
     """
     Builds a kernel for an Linear Coregionalization Model
 
-    :input_dim: Input dimensionality
+    :input_dim: Input dimensionality (does not include dimension of indices)
     :num_outputs: Number of outputs
     :param kernel: kernel that will be multiplied by the coregionalize kernel (matrix B).
     :type kernel: a GPy kernel

@@ -1,7 +1,7 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-__updated__ = '2013-12-16'
+__updated__ = '2014-03-17'
 
 import numpy as np
 from parameter_core import Observable
@@ -18,7 +18,7 @@ class ObservableArray(np.ndarray, Observable):
         if not isinstance(input_array, ObservableArray):
             obj = np.atleast_1d(np.require(input_array, dtype=np.float64, requirements=['W', 'C'])).view(cls)
         else: obj = input_array
-        cls.__name__ = "ObservableArray\n     "
+        cls.__name__ = "ObsAr" # because of fixed printing of `array` in np printing
         super(ObservableArray, obj).__init__(*a, **kw)
         return obj
 
@@ -29,6 +29,14 @@ class ObservableArray(np.ndarray, Observable):
 
     def __array_wrap__(self, out_arr, context=None):
         return out_arr.view(np.ndarray)
+
+    def __reduce__(self):
+        func, args, state = np.ndarray.__reduce__(self)
+        return func, args, (state, Observable._getstate(self))
+
+    def __setstate__(self, state):
+        np.ndarray.__setstate__(self, state[0])
+        Observable._setstate(self, state[1])
 
     def _s_not_empty(self, s):
         # this checks whether there is something picked by this slice.

@@ -108,7 +108,7 @@ class ParameterizedTest(unittest.TestCase):
         self.assertEqual(self.param.constraints._offset, 3)
 
     def test_fixing_randomize(self):
-        self.white.fix(warning=False)
+        self.white.fix(warning=True)
         val = float(self.test1.white.variance)
         self.test1.randomize()
         self.assertEqual(val, self.white.variance)
@@ -118,6 +118,11 @@ class ParameterizedTest(unittest.TestCase):
         val = float(self.testmodel.kern.lengthscale)
         self.testmodel.randomize()
         self.assertEqual(val, self.testmodel.kern.lengthscale)
+
+    def test_printing(self):
+        print self.test1
+        print self.param
+        print self.test1['']
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.test_add_parameter']

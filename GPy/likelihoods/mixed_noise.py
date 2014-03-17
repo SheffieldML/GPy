@@ -23,22 +23,22 @@ class MixedNoise(Likelihood):
 
     def exact_inference_gradients(self, dL_dKdiag, Y_metadata):
         assert all([isinstance(l, Gaussian) for l in self.likelihoods_list])
-        ind = Y_metadata['output_index']
+        ind = Y_metadata['output_index'].flatten()
         return np.array([dL_dKdiag[ind==i].sum() for i in range(len(self.likelihoods_list))])
 
     def predictive_values(self, mu, var, full_cov=False, Y_metadata=None):
         if all([isinstance(l, Gaussian) for l in self.likelihoods_list]):
-            ind = Y_metadata['output_index']
+            ind = Y_metadata['output_index'].flatten()
             _variance = np.array([self.likelihoods_list[j].variance for j in ind ])
             if full_cov:
                 var += np.eye(var.shape[0])*_variance
-                d = 2*np.sqrt(np.diag(var))
-                low, up = mu - d, mu + d
+                #d = 2*np.sqrt(np.diag(var))
+                #low, up = mu - d, mu + d
             else:
                 var += _variance
-                d = 2*np.sqrt(var)
-                low, up = mu - d, mu + d
-            return mu, var, low, up
+                #d = 2*np.sqrt(var)
+                #low, up = mu - d, mu + d
+            return mu, var#, low, up
         else:
             raise NotImplementedError
 
@@ -52,8 +52,28 @@ class MixedNoise(Likelihood):
 
     def covariance_matrix(self, Y, Y_metadata):
         assert all([isinstance(l, Gaussian) for l in self.likelihoods_list])
+        ind = Y_metadata['output_index'].flatten()
         variance = np.zeros(Y.shape[0])
-        for lik, ind in itertools.izip(self.likelihoods_list, self.likelihoods_indices):
-            variance[ind] = lik.variance
+        for lik, j in zip(self.likelihoods_list, range(len(self.likelihoods_list))):
+            variance[ind==j] = lik.variance
         return np.diag(variance)
+
+
+    def samples(self, gp, Y_metadata):
+        """
+        Returns a set of samples of observations based on a given value of the latent variable.
+
+        :param gp: latent variable
+        """
+        N1, N2 = gp.shape
+        Ysim = np.zeros((N1,N2))
+        ind = Y_metadata['output_index'].flatten()
+        for j in np.unique(ind):
+            flt = ind==j
+            gp_filtered = gp[flt,:]
+            n1 = gp_filtered.shape[0]
+            lik = self.likelihoods_list[j]
+            _ysim = np.array([np.random.normal(lik.gp_link.transf(gpj), scale=np.sqrt(lik.variance), size=1) for gpj in gp_filtered.flatten()])
+            Ysim[flt,:] = _ysim.reshape(n1,N2)
+        return Ysim
 

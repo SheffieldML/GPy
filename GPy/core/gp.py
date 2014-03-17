@@ -43,7 +43,7 @@ class GP(Model):
         _, self.output_dim = self.Y.shape
 
         if Y_metadata is None:
-            Y_metadata = {}
+            self.Y_metadata = {}
         else:
             self.Y_metadata = Y_metadata
 

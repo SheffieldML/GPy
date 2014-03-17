@@ -56,7 +56,7 @@ class Gaussian(Likelihood):
     def update_gradients(self, grad):
         self.variance.gradient = grad
 
-    def exact_inference_gradients(self, dL_dKdiag):
+    def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
         return dL_dKdiag.sum()
 
     def _preprocess_values(self, Y):
@@ -295,13 +295,15 @@ class Gaussian(Likelihood):
         """
         return self.variance
 
-    def samples(self, gp):
+    def samples(self, gp, Y_metadata=None):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 
         :param gp: latent variable
         """
         orig_shape = gp.shape
+        gp = gp.flatten()
+        #orig_shape = gp.shape
         gp = gp.flatten()
         Ysim = np.array([np.random.normal(self.gp_link.transf(gpj), scale=np.sqrt(self.variance), size=1) for gpj in gp])
         return Ysim.reshape(orig_shape)

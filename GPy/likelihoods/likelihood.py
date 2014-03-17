@@ -387,13 +387,14 @@ class Likelihood(Parameterized):
 
         return pred_mean, pred_var
 
-    def predictive_quantiles(self, mu, var, quantiles, Y_metadata):
+    def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None):
         #compute the quantiles by sampling!!!
         N_samp = 1000
         s = np.random.randn(mu.shape[0], N_samp)*np.sqrt(var) + mu
-        ss_f = s.flatten()
-        ss_y = self.samples(ss_f)
-        ss_y = ss_y.reshape(mu.shape[0], N_samp)
+        #ss_f = s.flatten()
+        #ss_y = self.samples(ss_f, Y_metadata)
+        ss_y = self.samples(s, Y_metadata)
+        #ss_y = ss_y.reshape(mu.shape[0], N_samp)
 
         return [np.percentile(ss_y ,q, axis=1)[:,None] for q in quantiles]
 

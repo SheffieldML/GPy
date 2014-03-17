@@ -4,7 +4,7 @@
 import itertools
 import numpy
 from parameter_core import OptimizationHandlable, adjust_name_for_printing
-from array_core import ObservableArray
+from array_core import ObsAr
 
 ###### printing
 __constraints_name__ = "Constraint"
@@ -15,7 +15,7 @@ __precision__ = numpy.get_printoptions()['precision'] # numpy printing precision
 __print_threshold__ = 5
 ######
 
-class Param(OptimizationHandlable, ObservableArray):
+class Param(OptimizationHandlable, ObsAr):
     """
     Parameter object for GPy models.
 

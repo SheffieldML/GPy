@@ -7,16 +7,16 @@ import unittest
 import GPy
 import numpy as np
 from GPy.core.parameterization.parameter_core import HierarchyError
-from GPy.core.parameterization.array_core import ObservableArray
+from GPy.core.parameterization.array_core import ObsAr
 
 class ArrayCoreTest(unittest.TestCase):
     def setUp(self):
         self.X = np.random.normal(1,1, size=(100,10))
-        self.obsX = ObservableArray(self.X)
+        self.obsX = ObsAr(self.X)
 
     def test_init(self):
-        X = ObservableArray(self.X)
-        X2 = ObservableArray(X)
+        X = ObsAr(self.X)
+        X2 = ObsAr(X)
         self.assertIs(X, X2, "no new Observable array, when Observable is given")
 
     def test_slice(self):

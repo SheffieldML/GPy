@@ -6,20 +6,20 @@ __updated__ = '2014-03-17'
 import numpy as np
 from parameter_core import Observable
 
-class ObservableArray(np.ndarray, Observable):
+class ObsAr(np.ndarray, Observable):
     """
     An ndarray which reports changes to its observers.
     The observers can add themselves with a callable, which
     will be called every time this array changes. The callable
     takes exactly one argument, which is this array itself.
     """
-    __array_priority__ = -1 # Never give back ObservableArray
+    __array_priority__ = -1 # Never give back ObsAr
     def __new__(cls, input_array, *a, **kw):
-        if not isinstance(input_array, ObservableArray):
+        if not isinstance(input_array, ObsAr):
             obj = np.atleast_1d(np.require(input_array, dtype=np.float64, requirements=['W', 'C'])).view(cls)
         else: obj = input_array
-        cls.__name__ = "ObsAr" # because of fixed printing of `array` in np printing
-        super(ObservableArray, obj).__init__(*a, **kw)
+        #cls.__name__ = "ObsAr" # because of fixed printing of `array` in np printing
+        super(ObsAr, obj).__init__(*a, **kw)
         return obj
 
     def __array_finalize__(self, obj):
@@ -54,7 +54,7 @@ class ObservableArray(np.ndarray, Observable):
 
     def __setitem__(self, s, val):
         if self._s_not_empty(s):
-            super(ObservableArray, self).__setitem__(s, val)
+            super(ObsAr, self).__setitem__(s, val)
             self.notify_observers(self[s])
 
     def __getslice__(self, start, stop):
@@ -64,7 +64,7 @@ class ObservableArray(np.ndarray, Observable):
         return self.__setitem__(slice(start, stop), val)
 
     def __copy__(self, *args):
-        return ObservableArray(self.view(np.ndarray).copy())
+        return ObsAr(self.view(np.ndarray).copy())
 
     def copy(self, *args):
         return self.__copy__(*args)

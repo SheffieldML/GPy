@@ -20,14 +20,14 @@ class GPRegression(GP):
 
     """
 
-    def __init__(self, X, Y, kernel=None):
+    def __init__(self, X, Y, kernel=None, Y_metadata=None):
 
         if kernel is None:
             kernel = kern.RBF(X.shape[1])
 
         likelihood = likelihoods.Gaussian()
 
-        super(GPRegression, self).__init__(X, Y, kernel, likelihood, name='GP regression')
+        super(GPRegression, self).__init__(X, Y, kernel, likelihood, name='GP regression', Y_metadata=Y_metadata)
 
     def _getstate(self):
         return GP._getstate(self)

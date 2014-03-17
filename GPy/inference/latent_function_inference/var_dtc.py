@@ -65,9 +65,7 @@ class VarDTC(object):
         _, output_dim = Y.shape
 
         #see whether we've got a different noise variance for each datum
-        #beta = 1./np.fmax(likelihood.variance, 1e-6)
         beta = 1./np.fmax(likelihood.gaussian_variance(Y_metadata), 1e-6)
-
         # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
         #self.YYTfactor = self.get_YYTfactor(Y)
         #VVT_factor = self.get_VVTfactor(self.YYTfactor, beta)
@@ -223,7 +221,7 @@ class VarDTCMissingData(object):
             psi2_all = None
 
         Ys, traces = self._Y(Y)
-        beta_all = 1./np.fmax(likelihood.variance, 1e-6)
+        beta_all = 1./np.fmax(likelihood.gaussian_variance(Y_metadata), 1e-6)
         het_noise = beta_all.size != 1
 
         import itertools
@@ -330,18 +328,20 @@ class VarDTCMissingData(object):
             diag.add(Bi, 1)
             woodbury_inv_all[:, :, ind] = backsub_both_sides(Lm, Bi)[:,:,None]
 
+        dL_dthetaL = likelihood.exact_inference_gradients(dL_dR)
+
         # gradients:
         if uncertain_inputs:
             grad_dict = {'dL_dKmm': dL_dKmm,
                          'dL_dpsi0':dL_dpsi0_all,
                          'dL_dpsi1':dL_dpsi1_all,
                          'dL_dpsi2':dL_dpsi2_all,
-                         'dL_dR':dL_dR}
+                         'dL_dthetaL':dL_dthetaL}
         else:
             grad_dict = {'dL_dKmm': dL_dKmm,
                          'dL_dKdiag':dL_dpsi0_all,
                          'dL_dKnm':dL_dpsi1_all,
-                         'dL_dR':dL_dR}
+                         'dL_dthetaL':dL_dthetaL}
 
         #get sufficient things for posterior prediction
         #TODO: do we really want to do this in  the loop?

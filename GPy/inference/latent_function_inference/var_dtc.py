@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from posterior import Posterior
-from ...util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri, dpotri, dpotrs, symmetrify
+from ...util.linalg import mdot, jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri, dpotri, dpotrs, symmetrify
 from ...util import diag
 from ...core.parameterization.variational import VariationalPosterior
 import numpy as np
@@ -48,7 +48,7 @@ class VarDTC(object):
     def get_VVTfactor(self, Y, prec):
         return Y * prec # TODO chache this, and make it effective
 
-    def inference(self, kern, X, Z, likelihood, Y):
+    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None):
         if isinstance(X, VariationalPosterior):
             uncertain_inputs = True
             psi0 = kern.psi0(Z, X)
@@ -65,7 +65,9 @@ class VarDTC(object):
         _, output_dim = Y.shape
 
         #see whether we've got a different noise variance for each datum
-        beta = 1./np.fmax(likelihood.variance, 1e-6)
+        #beta = 1./np.fmax(likelihood.variance, 1e-6)
+        beta = 1./np.fmax(likelihood.gaussian_variance(Y_metadata), 1e-6)
+
         # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
         #self.YYTfactor = self.get_YYTfactor(Y)
         #VVT_factor = self.get_VVTfactor(self.YYTfactor, beta)
@@ -74,7 +76,7 @@ class VarDTC(object):
         trYYT = self.get_trYYT(Y)
 
         # do the inference:
-        het_noise = beta.size < 1
+        het_noise = beta.size > 1
         num_inducing = Z.shape[0]
         num_data = Y.shape[0]
         # kernel computations, using BGPLVM notation
@@ -134,16 +136,16 @@ class VarDTC(object):
 
         # log marginal likelihood
         log_marginal = _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise,
-            psi0, A, LB, trYYT, data_fit)
+            psi0, A, LB, trYYT, data_fit, Y)
 
         #put the gradients in the right places
         dL_dR = _compute_dL_dR(likelihood,
             het_noise, uncertain_inputs, LB,
             _LBi_Lmi_psi1Vf, DBi_plus_BiPBi, Lm, A,
             psi0, psi1, beta,
-            data_fit, num_data, output_dim, trYYT)
+            data_fit, num_data, output_dim, trYYT, Y)
 
-        dL_dthetaL = likelihood.exact_inference_gradients(dL_dR)
+        dL_dthetaL = likelihood.exact_inference_gradients(dL_dR,Y_metadata)
 
         if uncertain_inputs:
             grad_dict = {'dL_dKmm': dL_dKmm,
@@ -385,7 +387,7 @@ def _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm, VVT_factor, C
     return dL_dpsi0, dL_dpsi1, dL_dpsi2
 
 
-def _compute_dL_dR(likelihood, het_noise, uncertain_inputs, LB, _LBi_Lmi_psi1Vf, DBi_plus_BiPBi, Lm, A, psi0, psi1, beta, data_fit, num_data, output_dim, trYYT):
+def _compute_dL_dR(likelihood, het_noise, uncertain_inputs, LB, _LBi_Lmi_psi1Vf, DBi_plus_BiPBi, Lm, A, psi0, psi1, beta, data_fit, num_data, output_dim, trYYT, Y):
     # the partial derivative vector for the likelihood
     if likelihood.size == 0:
         # save computation here.
@@ -394,19 +396,20 @@ def _compute_dL_dR(likelihood, het_noise, uncertain_inputs, LB, _LBi_Lmi_psi1Vf,
         if uncertain_inputs:
             raise NotImplementedError, "heteroscedatic derivates with uncertain inputs not implemented"
         else:
-            from ...util.linalg import chol_inv
-            LBi = chol_inv(LB)
+            #from ...util.linalg import chol_inv
+            #LBi = chol_inv(LB)
+            LBi, _ = dtrtrs(LB,np.eye(LB.shape[0]))
+
             Lmi_psi1, nil = dtrtrs(Lm, psi1.T, lower=1, trans=0)
             _LBi_Lmi_psi1, _ = dtrtrs(LB, Lmi_psi1, lower=1, trans=0)
 
-            dL_dR = -0.5 * beta + 0.5 * likelihood.V**2
+            dL_dR = -0.5 * beta + 0.5 * (beta*Y)**2
             dL_dR += 0.5 * output_dim * (psi0 - np.sum(Lmi_psi1**2,0))[:,None] * beta**2
 
             dL_dR += 0.5*np.sum(mdot(LBi.T,LBi,Lmi_psi1)*Lmi_psi1,0)[:,None]*beta**2
 
-            dL_dR += -np.dot(_LBi_Lmi_psi1Vf.T,_LBi_Lmi_psi1).T * likelihood.Y * beta**2
+            dL_dR += -np.dot(_LBi_Lmi_psi1Vf.T,_LBi_Lmi_psi1).T * Y * beta**2
             dL_dR += 0.5*np.dot(_LBi_Lmi_psi1Vf.T,_LBi_Lmi_psi1).T**2 * beta**2
-
     else:
         # likelihood is not heteroscedatic
         dL_dR = -0.5 * num_data * output_dim * beta + 0.5 * trYYT * beta ** 2
@@ -414,11 +417,11 @@ def _compute_dL_dR(likelihood, het_noise, uncertain_inputs, LB, _LBi_Lmi_psi1Vf,
         dL_dR += beta * (0.5 * np.sum(A * DBi_plus_BiPBi) - data_fit)
     return dL_dR
 
-def _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise, psi0, A, LB, trYYT, data_fit):
-#compute log marginal likelihood
+def _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise, psi0, A, LB, trYYT, data_fit,Y):
+    #compute log marginal likelihood
     if het_noise:
-        lik_1 = -0.5 * num_data * output_dim * np.log(2. * np.pi) + 0.5 * np.sum(np.log(beta)) - 0.5 * np.sum(likelihood.V * likelihood.Y)
-        lik_2 = -0.5 * output_dim * (np.sum(beta * psi0) - np.trace(A))
+        lik_1 = -0.5 * num_data * output_dim * np.log(2. * np.pi) + 0.5 * np.sum(np.log(beta)) - 0.5 * np.sum(beta * Y**2)
+        lik_2 = -0.5 * output_dim * (np.sum(beta.flatten() * psi0) - np.trace(A))
     else:
         lik_1 = -0.5 * num_data * output_dim * (np.log(2. * np.pi) - np.log(beta)) - 0.5 * beta * trYYT
         lik_2 = -0.5 * output_dim * (np.sum(beta * psi0) - np.trace(A))

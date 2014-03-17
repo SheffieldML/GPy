@@ -142,7 +142,12 @@ class Likelihood(Parameterized):
         """
         #conditional_mean: the edpected value of y given some f, under this likelihood
         def int_mean(f,m,v):
-            return self.conditional_mean(f)*np.exp(-(0.5/v)*np.square(f - m))
+            p = np.exp(-(0.5/v)*np.square(f - m))
+            #If p is zero then conditional_mean will overflow
+            if p < 1e-10:
+                return 0.
+            else:
+                return self.conditional_mean(f)*p
         scaled_mean = [quad(int_mean, -np.inf, np.inf,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
         mean = np.array(scaled_mean)[:,None] / np.sqrt(2*np.pi*(variance))
 
@@ -165,7 +170,12 @@ class Likelihood(Parameterized):
 
         # E( V(Y_star|f_star) )
         def int_var(f,m,v):
-            return self.conditional_variance(f)*np.exp(-(0.5/v)*np.square(f - m))
+            p = np.exp(-(0.5/v)*np.square(f - m))
+            #If p is zero then conditional_variance will overflow
+            if p < 1e-10:
+                return 0.
+            else:
+                return self.conditional_variance(f)*p
         scaled_exp_variance = [quad(int_var, -np.inf, np.inf,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
         exp_var = np.array(scaled_exp_variance)[:,None] / normalizer
 
@@ -178,7 +188,13 @@ class Likelihood(Parameterized):
 
         #E( E(Y_star|f_star)**2 )
         def int_pred_mean_sq(f,m,v,predictive_mean_sq):
-            return self.conditional_mean(f)**2*np.exp(-(0.5/v)*np.square(f - m))
+            p = np.exp(-(0.5/v)*np.square(f - m))
+            #If p is zero then conditional_mean**2 will overflow
+            if p < 1e-10:
+                return 0.
+            else:
+                return self.conditional_mean(f)**2*p
+
         scaled_exp_exp2 = [quad(int_pred_mean_sq, -np.inf, np.inf,args=(mj,s2j,pm2j))[0] for mj,s2j,pm2j in zip(mu,variance,predictive_mean_sq)]
         exp_exp2 = np.array(scaled_exp_exp2)[:,None] / normalizer
 

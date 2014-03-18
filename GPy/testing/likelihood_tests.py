@@ -589,7 +589,8 @@ class LaplaceTests(unittest.TestCase):
 
         self.var = np.random.rand(1)
         self.stu_t = GPy.likelihoods.StudentT(deg_free=5, sigma2=self.var)
-        self.gauss = GPy.likelihoods.Gaussian(gp_link=link_functions.Log(), variance=self.var)
+        #TODO: gaussians with on Identity link. self.gauss = GPy.likelihoods.Gaussian(gp_link=link_functions.Log(), variance=self.var)
+        self.gauss = GPy.likelihoods.Gaussian(variance=self.var)
 
         #Make a bigger step as lower bound can be quite curved
         self.step = 1e-6
@@ -613,7 +614,6 @@ class LaplaceTests(unittest.TestCase):
         noise = np.random.randn(*self.X.shape)*self.real_std
         self.Y = np.sin(self.X*2*np.pi) + noise
         self.f = np.random.rand(self.N, 1)
-        self.gauss = GPy.likelihoods.Gaussian(variance=self.var)
 
         dlogpdf_df = functools.partial(self.gauss.dlogpdf_df, y=self.Y)
         d2logpdf_df2 = functools.partial(self.gauss.d2logpdf_df2, y=self.Y)

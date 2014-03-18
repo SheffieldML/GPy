@@ -16,7 +16,7 @@ Observable Pattern for patameterization
 from transformations import Transformation, Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
 
-__updated__ = '2014-03-14'
+__updated__ = '2014-03-17'
 
 class HierarchyError(Exception):
     """
@@ -56,7 +56,7 @@ class InterfacePickleFunctions(object):
         """
         raise NotImplementedError, "To be able to use pickling you need to implement this method"
 
-class Pickleable(object):
+class Pickleable(InterfacePickleFunctions):
     """
     Make an object pickleable (See python doc 'pickling').
 
@@ -95,7 +95,7 @@ class Pickleable(object):
     def _has_get_set_state(self):
         return '_getstate' in vars(self.__class__) and '_setstate' in vars(self.__class__)
 
-class Observable(InterfacePickleFunctions):
+class Observable(Pickleable):
     """
     Observable pattern for parameterization.
 
@@ -155,6 +155,7 @@ class Observable(InterfacePickleFunctions):
 
     def _getstate(self):
         return [self._observer_callables_]
+
     def _setstate(self, state):
         self._observer_callables_ = state.pop()
 

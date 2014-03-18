@@ -126,6 +126,27 @@ class SpikeAndSlabPosterior(VariationalPosterior):
         super(SpikeAndSlabPosterior, self).__init__(means, variances, name)
         self.gamma = Param("binary_prob",binary_prob, Logistic(1e-10,1.-1e-10))
         self.add_parameter(self.gamma)
+        
+    def __getitem__(self, s):
+        if isinstance(s, (int, slice, tuple, list, np.ndarray)):
+            import copy
+            n = self.__new__(self.__class__, self.name)
+            dc = self.__dict__.copy()
+            dc['mean'] = self.mean[s]
+            dc['variance'] = self.variance[s]
+            dc['binary_prob'] = self.binary_prob[s]
+            dc['_parameters_'] = copy.copy(self._parameters_)
+            n.__dict__.update(dc)
+            n._parameters_[dc['mean']._parent_index_] = dc['mean']
+            n._parameters_[dc['variance']._parent_index_] = dc['variance']
+            n._parameters_[dc['binary_prob']._parent_index_] = dc['binary_prob']
+            n.ndim = n.mean.ndim
+            n.shape = n.mean.shape
+            n.num_data = n.mean.shape[0]
+            n.input_dim = n.mean.shape[1] if n.ndim != 1 else 1
+            return n
+        else:
+            return super(VariationalPrior, self).__getitem__(s)
 
     def plot(self, *args):
         """

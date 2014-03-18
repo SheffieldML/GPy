@@ -8,7 +8,7 @@ from GPy.core.parameterization.parameterized import Parameterized
 from GPy.core.parameterization.param import Param
 import numpy
 
-# One trigger in init 
+# One trigger in init
 _trigger_start = -1
 
 class ParamTestParent(Parameterized):
@@ -21,11 +21,9 @@ class ParameterizedTest(Parameterized):
     params_changed_count = _trigger_start
     def parameters_changed(self):
         self.params_changed_count += 1
-    def _set_params(self, params, trigger_parent=True):
-        Parameterized._set_params(self, params, trigger_parent=trigger_parent)
 
 class Test(unittest.TestCase):
-    
+
     def setUp(self):
         self.parent = ParamTestParent('test parent')
         self.par = ParameterizedTest('test model')
@@ -41,12 +39,12 @@ class Test(unittest.TestCase):
 
         self.parent.add_parameter(self.par)
         self.parent.add_parameter(self.par2)
-        
+
         self._observer_triggered = None
         self._trigger_count = 0
         self._first = None
         self._second = None
-        
+
     def _trigger(self, which):
         self._observer_triggered = float(which)
         self._trigger_count += 1
@@ -54,18 +52,18 @@ class Test(unittest.TestCase):
             self._second = self._trigger
         else:
             self._first = self._trigger
-    
+
     def _trigger_priority(self, which):
         if self._first is not None:
             self._second = self._trigger_priority
         else:
             self._first = self._trigger_priority
-            
+
     def test_observable(self):
         self.par.add_observer(self, self._trigger, -1)
         self.assertEqual(self.par.params_changed_count, 0, 'no params changed yet')
         self.assertEqual(self.par.params_changed_count, self.parent.parent_changed_count, 'parent should be triggered as often as param')
-        
+
         self.p[0,1] = 3 # trigger observers
         self.assertEqual(self._observer_triggered, 3, 'observer should have triggered')
         self.assertEqual(self._trigger_count, 1, 'observer should have triggered once')
@@ -78,14 +76,14 @@ class Test(unittest.TestCase):
         self.assertEqual(self._trigger_count, 1, 'observer should have triggered once')
         self.assertEqual(self.par.params_changed_count, 2, 'params changed second')
         self.assertEqual(self.par.params_changed_count, self.parent.parent_changed_count, 'parent should be triggered as often as param')
-        
+
         self.par.add_observer(self, self._trigger, -1)
         self.p[2,1] = 4
         self.assertEqual(self._observer_triggered, 4, 'observer should have triggered')
         self.assertEqual(self._trigger_count, 2, 'observer should have triggered once')
         self.assertEqual(self.par.params_changed_count, 3, 'params changed second')
         self.assertEqual(self.par.params_changed_count, self.parent.parent_changed_count, 'parent should be triggered as often as param')
-        
+
         self.par.remove_observer(self, self._trigger)
         self.p[0,1] = 3
         self.assertEqual(self._observer_triggered, 4, 'observer should not have triggered')
@@ -99,7 +97,7 @@ class Test(unittest.TestCase):
         self.par._trigger_params_changed()
         self.assertEqual(self.par.params_changed_count, 1, 'now params changed')
         self.assertEqual(self.parent.parent_changed_count, self.par.params_changed_count)
-        
+
         self.par._param_array_[:] = 2
         self.par._trigger_params_changed()
         self.assertEqual(self.par.params_changed_count, 2, 'now params changed')
@@ -125,13 +123,13 @@ class Test(unittest.TestCase):
 
         self.par.remove_observer(self)
         self._first = self._second = None
-        
+
         self.par.add_observer(self, self._trigger, 1)
         self.par.add_observer(self, self._trigger_priority, 0)
         self.par.notify_observers(0)
         self.assertEqual(self._first, self._trigger, 'priority should be second')
         self.assertEqual(self._second, self._trigger_priority, 'priority should be second')
-        
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

@@ -35,12 +35,7 @@ class Gaussian(Likelihood):
         if gp_link is None:
             gp_link = link_functions.Identity()
 
-        if isinstance(gp_link, link_functions.Identity):
-            analytical_variance = True
-            analytical_mean = True
-        else:
-            analytical_variance = False
-            analytical_mean = False
+        assert isinstance(gp_link, link_functions.Identity), "the likelihood only implemented for the identity link"
 
         super(Gaussian, self).__init__(gp_link, name=name)
 
@@ -97,14 +92,10 @@ class Gaussian(Likelihood):
     def predictive_variance(self, mu, sigma, predictive_mean=None):
         return self.variance + sigma**2
 
-<<<<<<< HEAD
-    def pdf_link(self, link_f, y, Y_metadata=None):
-=======
     def predictive_quantiles(self, mu, var, quantiles, Y_metadata):
         return  [stats.norm.ppf(q/100.)*np.sqrt(var) + mu for q in quantiles]
 
-    def pdf_link(self, link_f, y, extra_data=None):
->>>>>>> a3287c38ea775155df4e90f7fe1883d12ffb54b9
+    def pdf_link(self, link_f, y, Y_metadata=None):
         """
         Likelihood function given link(f)
 

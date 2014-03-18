@@ -27,6 +27,7 @@ class MixedNoise(Likelihood):
         return variance[:,None]
 
     def betaY(self,Y,Y_metadata):
+        #TODO not here.
         return Y/self.gaussian_variance(Y_metadata=Y_metadata)
 
     def update_gradients(self, gradients):
@@ -55,16 +56,6 @@ class MixedNoise(Likelihood):
         else:
             _variance = np.array([ self.variance[j] for j in noise_index ])[:,None]
         return _variance + sigma**2
-
-
-    def covariance_matrix(self, Y, Y_metadata):
-        #assert all([isinstance(l, Gaussian) for l in self.likelihoods_list])
-        #ind = Y_metadata['output_index'].flatten()
-        #variance = np.zeros(Y.shape[0])
-        #for lik, j in zip(self.likelihoods_list, range(len(self.likelihoods_list))):
-        #    variance[ind==j] = lik.variance
-        #return np.diag(variance)
-        return np.diag(self.gaussian_variance(Y_metadata).flatten())
 
 
     def samples(self, gp, Y_metadata):

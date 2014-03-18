@@ -246,9 +246,6 @@ class StudentT(Likelihood):
         return np.hstack((d2logpdf_dlink2_dvar, d2logpdf_dlink2_dv))
 
     def predictive_mean(self, mu, sigma, Y_metadata=None):
-        """
-        Compute mean of the prediction
-        """
         return self.gp_link.transf(mu) # only true in link is monotoci, which it is.
 
     def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
@@ -260,16 +257,8 @@ class StudentT(Likelihood):
     def conditional_mean(self, gp):
         return self.gp_link.transf(gp)
 
-<<<<<<< HEAD
-    def predictive_mean(self, mu, sigma):
-        """
-        Compute mean of the prediction
-        """
-        return mu
-=======
     def conditional_variance(self, gp):
         return self.deg_free/(self.deg_free - 2.)
->>>>>>> a3287c38ea775155df4e90f7fe1883d12ffb54b9
 
     def samples(self, gp, Y_metadata=None):
         """

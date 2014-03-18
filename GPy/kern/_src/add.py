@@ -170,4 +170,11 @@ class Add(CombinationKernel):
     def _setstate(self, state):
         super(Add, self)._setstate(state)
 
-
+    def add(self, other, name='sum'):
+        if isinstance(other, Add):
+            other_params = other._parameters_.copy()
+            for p in other_params:
+                other.remove_parameter(p)
+            self.add_parameters(*other_params)
+        else: self.add_parameter(other)
+        return self

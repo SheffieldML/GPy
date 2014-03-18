@@ -153,6 +153,10 @@ class Likelihood(Parameterized):
 
         return mean
 
+    def _conditional_mean(self, f):
+        """Quadrature calculation of the conditional mean: E(Y_star|f)"""
+        raise NotImplementedError, "implement this function to make predictions"
+
     def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
         """
         Numerical approximation to the predictive variance: V(Y_star)
@@ -204,31 +208,31 @@ class Likelihood(Parameterized):
         # V(Y_star) = E[ V(Y_star|f_star) ] + E(Y_star**2|f_star) - E[Y_star|f_star]**2
         return exp_var + var_exp
 
-    def pdf_link(self, link_f, y, extra_data=None):
+    def pdf_link(self, link_f, y, Y_metadata=None):
         raise NotImplementedError
 
-    def logpdf_link(self, link_f, y, extra_data=None):
+    def logpdf_link(self, link_f, y, Y_metadata=None):
         raise NotImplementedError
 
-    def dlogpdf_dlink(self, link_f, y, extra_data=None):
+    def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
         raise NotImplementedError
 
-    def d2logpdf_dlink2(self, link_f, y, extra_data=None):
+    def d2logpdf_dlink2(self, link_f, y, Y_metadata=None):
         raise NotImplementedError
 
-    def d3logpdf_dlink3(self, link_f, y, extra_data=None):
+    def d3logpdf_dlink3(self, link_f, y, Y_metadata=None):
         raise NotImplementedError
 
-    def dlogpdf_link_dtheta(self, link_f, y, extra_data=None):
+    def dlogpdf_link_dtheta(self, link_f, y, Y_metadata=None):
         raise NotImplementedError
 
-    def dlogpdf_dlink_dtheta(self, link_f, y, extra_data=None):
+    def dlogpdf_dlink_dtheta(self, link_f, y, Y_metadata=None):
         raise NotImplementedError
 
-    def d2logpdf_dlink2_dtheta(self, link_f, y, extra_data=None):
+    def d2logpdf_dlink2_dtheta(self, link_f, y, Y_metadata=None):
         raise NotImplementedError
 
-    def pdf(self, f, y, extra_data=None):
+    def pdf(self, f, y, Y_metadata=None):
         """
         Evaluates the link function link(f) then computes the likelihood (pdf) using it
 
@@ -239,14 +243,14 @@ class Likelihood(Parameterized):
         :type f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
+        :param Y_metadata: Y_metadata which is not used in student t distribution - not used
         :returns: likelihood evaluated for this point
         :rtype: float
         """
         link_f = self.gp_link.transf(f)
-        return self.pdf_link(link_f, y, extra_data=extra_data)
+        return self.pdf_link(link_f, y, Y_metadata=Y_metadata)
 
-    def logpdf(self, f, y, extra_data=None):
+    def logpdf(self, f, y, Y_metadata=None):
         """
         Evaluates the link function link(f) then computes the log likelihood (log pdf) using it
 
@@ -257,14 +261,14 @@ class Likelihood(Parameterized):
         :type f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
+        :param Y_metadata: Y_metadata which is not used in student t distribution - not used
         :returns: log likelihood evaluated for this point
         :rtype: float
         """
         link_f = self.gp_link.transf(f)
-        return self.logpdf_link(link_f, y, extra_data=extra_data)
+        return self.logpdf_link(link_f, y, Y_metadata=Y_metadata)
 
-    def dlogpdf_df(self, f, y, extra_data=None):
+    def dlogpdf_df(self, f, y, Y_metadata=None):
         """
         Evaluates the link function link(f) then computes the derivative of log likelihood using it
         Uses the Faa di Bruno's formula for the chain rule
@@ -276,16 +280,16 @@ class Likelihood(Parameterized):
         :type f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
+        :param Y_metadata: Y_metadata which is not used in student t distribution - not used
         :returns: derivative of log likelihood evaluated for this point
         :rtype: 1xN array
         """
         link_f = self.gp_link.transf(f)
-        dlogpdf_dlink = self.dlogpdf_dlink(link_f, y, extra_data=extra_data)
+        dlogpdf_dlink = self.dlogpdf_dlink(link_f, y, Y_metadata=Y_metadata)
         dlink_df = self.gp_link.dtransf_df(f)
         return chain_1(dlogpdf_dlink, dlink_df)
 
-    def d2logpdf_df2(self, f, y, extra_data=None):
+    def d2logpdf_df2(self, f, y, Y_metadata=None):
         """
         Evaluates the link function link(f) then computes the second derivative of log likelihood using it
         Uses the Faa di Bruno's formula for the chain rule
@@ -297,18 +301,18 @@ class Likelihood(Parameterized):
         :type f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
+        :param Y_metadata: Y_metadata which is not used in student t distribution - not used
         :returns: second derivative of log likelihood evaluated for this point (diagonal only)
         :rtype: 1xN array
         """
         link_f = self.gp_link.transf(f)
-        d2logpdf_dlink2 = self.d2logpdf_dlink2(link_f, y, extra_data=extra_data)
+        d2logpdf_dlink2 = self.d2logpdf_dlink2(link_f, y, Y_metadata=Y_metadata)
         dlink_df = self.gp_link.dtransf_df(f)
-        dlogpdf_dlink = self.dlogpdf_dlink(link_f, y, extra_data=extra_data)
+        dlogpdf_dlink = self.dlogpdf_dlink(link_f, y, Y_metadata=Y_metadata)
         d2link_df2 = self.gp_link.d2transf_df2(f)
         return chain_2(d2logpdf_dlink2, dlink_df, dlogpdf_dlink, d2link_df2)
 
-    def d3logpdf_df3(self, f, y, extra_data=None):
+    def d3logpdf_df3(self, f, y, Y_metadata=None):
         """
         Evaluates the link function link(f) then computes the third derivative of log likelihood using it
         Uses the Faa di Bruno's formula for the chain rule
@@ -320,44 +324,44 @@ class Likelihood(Parameterized):
         :type f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data which is not used in student t distribution - not used
+        :param Y_metadata: Y_metadata which is not used in student t distribution - not used
         :returns: third derivative of log likelihood evaluated for this point
         :rtype: float
         """
         link_f = self.gp_link.transf(f)
-        d3logpdf_dlink3 = self.d3logpdf_dlink3(link_f, y, extra_data=extra_data)
+        d3logpdf_dlink3 = self.d3logpdf_dlink3(link_f, y, Y_metadata=Y_metadata)
         dlink_df = self.gp_link.dtransf_df(f)
-        d2logpdf_dlink2 = self.d2logpdf_dlink2(link_f, y, extra_data=extra_data)
+        d2logpdf_dlink2 = self.d2logpdf_dlink2(link_f, y, Y_metadata=Y_metadata)
         d2link_df2 = self.gp_link.d2transf_df2(f)
-        dlogpdf_dlink = self.dlogpdf_dlink(link_f, y, extra_data=extra_data)
+        dlogpdf_dlink = self.dlogpdf_dlink(link_f, y, Y_metadata=Y_metadata)
         d3link_df3 = self.gp_link.d3transf_df3(f)
         return chain_3(d3logpdf_dlink3, dlink_df, d2logpdf_dlink2, d2link_df2, dlogpdf_dlink, d3link_df3)
 
-    def dlogpdf_dtheta(self, f, y, extra_data=None):
+    def dlogpdf_dtheta(self, f, y, Y_metadata=None):
         """
         TODO: Doc strings
         """
         if self.size > 0:
             link_f = self.gp_link.transf(f)
-            return self.dlogpdf_link_dtheta(link_f, y, extra_data=extra_data)
+            return self.dlogpdf_link_dtheta(link_f, y, Y_metadata=Y_metadata)
         else:
             #Is no parameters so return an empty array for its derivatives
             return np.zeros([1, 0])
 
-    def dlogpdf_df_dtheta(self, f, y, extra_data=None):
+    def dlogpdf_df_dtheta(self, f, y, Y_metadata=None):
         """
         TODO: Doc strings
         """
         if self.size > 0:
             link_f = self.gp_link.transf(f)
             dlink_df = self.gp_link.dtransf_df(f)
-            dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, extra_data=extra_data)
+            dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, Y_metadata=Y_metadata)
             return chain_1(dlogpdf_dlink_dtheta, dlink_df)
         else:
             #Is no parameters so return an empty array for its derivatives
             return np.zeros([f.shape[0], 0])
 
-    def d2logpdf_df2_dtheta(self, f, y, extra_data=None):
+    def d2logpdf_df2_dtheta(self, f, y, Y_metadata=None):
         """
         TODO: Doc strings
         """
@@ -365,17 +369,17 @@ class Likelihood(Parameterized):
             link_f = self.gp_link.transf(f)
             dlink_df = self.gp_link.dtransf_df(f)
             d2link_df2 = self.gp_link.d2transf_df2(f)
-            d2logpdf_dlink2_dtheta = self.d2logpdf_dlink2_dtheta(link_f, y, extra_data=extra_data)
-            dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, extra_data=extra_data)
+            d2logpdf_dlink2_dtheta = self.d2logpdf_dlink2_dtheta(link_f, y, Y_metadata=Y_metadata)
+            dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, Y_metadata=Y_metadata)
             return chain_2(d2logpdf_dlink2_dtheta, dlink_df, dlogpdf_dlink_dtheta, d2link_df2)
         else:
             #Is no parameters so return an empty array for its derivatives
             return np.zeros([f.shape[0], 0])
 
-    def _laplace_gradients(self, f, y, extra_data=None):
-        dlogpdf_dtheta = self.dlogpdf_dtheta(f, y, extra_data=extra_data)
-        dlogpdf_df_dtheta = self.dlogpdf_df_dtheta(f, y, extra_data=extra_data)
-        d2logpdf_df2_dtheta = self.d2logpdf_df2_dtheta(f, y, extra_data=extra_data)
+    def _laplace_gradients(self, f, y, Y_metadata=None):
+        dlogpdf_dtheta = self.dlogpdf_dtheta(f, y, Y_metadata=Y_metadata)
+        dlogpdf_df_dtheta = self.dlogpdf_df_dtheta(f, y, Y_metadata=Y_metadata)
+        d2logpdf_df2_dtheta = self.d2logpdf_df2_dtheta(f, y, Y_metadata=Y_metadata)
 
         #Parameters are stacked vertically. Must be listed in same order as 'get_param_names'
         # ensure we have gradients for every parameter we want to optimize
@@ -390,7 +394,7 @@ class Likelihood(Parameterized):
 
     def predictive_values(self, mu, var, full_cov=False, Y_metadata=None):
         """
-        Compute  mean, variance and conficence interval (percentiles 5 and 95) of the  prediction.
+        Compute  mean, variance of the  predictive distibution.
 
         :param mu: mean of the latent variable, f, of posterior
         :param var: variance of the latent variable, f, of posterior

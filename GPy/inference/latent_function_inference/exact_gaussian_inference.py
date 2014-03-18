@@ -3,6 +3,7 @@
 
 from posterior import Posterior
 from ...util.linalg import pdinv, dpotrs, tdot
+from ...util import diag
 import numpy as np
 log_2_pi = np.log(2*np.pi)
 
@@ -41,7 +42,9 @@ class ExactGaussianInference(object):
 
         K = kern.K(X)
 
-        Wi, LW, LWi, W_logdet = pdinv(K + likelihood.covariance_matrix(Y, Y_metadata))
+        Ky = K.copy()
+        diag.add(Ky, likelihood.gaussian_variance(Y, Y_metadata))
+        Wi, LW, LWi, W_logdet = pdinv(Ky)
 
         alpha, _ = dpotrs(LW, YYT_factor, lower=1)
 
@@ -49,9 +52,6 @@ class ExactGaussianInference(object):
 
         dL_dK = 0.5 * (tdot(alpha) - Y.shape[1] * Wi)
 
-        #TODO: does this really live here?
-        likelihood.update_gradients(np.diag(dL_dK))
+        dL_dthetaL = likelihood.exact_inference_gradients(np.diag(dL_dK),Y_metadata)
 
-        return Posterior(woodbury_chol=LW, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK}
-
-
+        return Posterior(woodbury_chol=LW, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK, 'dL_dthetaL':dL_dthetaL}

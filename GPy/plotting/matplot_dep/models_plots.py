@@ -6,13 +6,15 @@ import numpy as np
 import Tango
 from base_plots import gpplot, x_frame1D, x_frame2D
 from ...util.misc import param_to_array
+from ...models.gp_coregionalized_regression import GPCoregionalizedRegression
+from ...models.sparse_gp_coregionalized_regression import SparseGPCoregionalizedRegression
 
 
 def plot_fit(model, plot_limits=None, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=[],
         levels=20, samples=0, fignum=None, ax=None, resolution=None,
         plot_raw=False,
-        linecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue']):
+        linecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue'], Y_metadata=None):
     """
     Plot the posterior of the GP.
       - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
@@ -56,8 +58,8 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     if ax is None:
         fig = pb.figure(num=fignum)
         ax = fig.add_subplot(111)
-    
-    if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs(): 
+
+    if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs():
         X = model.X.mean
         X_variance = param_to_array(model.X.variance)
     else:
@@ -68,7 +70,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     #work out what the inputs are for plotting (1D or 2D)
     fixed_dims = np.array([i for i,v in fixed_inputs])
     free_dims = np.setdiff1d(np.arange(model.input_dim),fixed_dims)
-
+    plots = {}
     #one dimensional plotting
     if len(free_dims) == 1:
 
@@ -84,25 +86,30 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
             m, v = model._raw_predict(Xgrid)
             lower = m - 2*np.sqrt(v)
             upper = m + 2*np.sqrt(v)
-            Y = Y
         else:
-            m, v, lower, upper = model.predict(Xgrid)
-            Y = Y
+            if isinstance(model,GPCoregionalizedRegression) or isinstance(model,SparseGPCoregionalizedRegression):
+                meta = {'output_index': Xgrid[:,-1:].astype(np.int)}
+            else:
+                meta = None
+            m, v = model.predict(Xgrid, full_cov=False, Y_metadata=meta)
+            lower, upper = model.predict_quantiles(Xgrid, Y_metadata=meta)
+
+
         for d in which_data_ycols:
-            gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], ax=ax, edgecol=linecol, fillcol=fillcol)
-            ax.plot(X[which_data_rows,free_dims], Y[which_data_rows, d], 'kx', mew=1.5)
+            plots['gpplot'] = gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], ax=ax, edgecol=linecol, fillcol=fillcol)
+            plots['dataplot'] = ax.plot(X[which_data_rows,free_dims], Y[which_data_rows, d], 'kx', mew=1.5)
 
         #optionally plot some samples
         if samples: #NOTE not tested with fixed_inputs
             Ysim = model.posterior_samples(Xgrid, samples)
             for yi in Ysim.T:
-                ax.plot(Xnew, yi[:,None], Tango.colorsHex['darkBlue'], linewidth=0.25)
+                plots['posterior_samples'] = ax.plot(Xnew, yi[:,None], Tango.colorsHex['darkBlue'], linewidth=0.25)
                 #ax.plot(Xnew, yi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.
 
 
         #add error bars for uncertain (if input uncertainty is being modelled)
         if hasattr(model,"has_uncertain_inputs") and model.has_uncertain_inputs():
-            ax.errorbar(X[which_data_rows, free_dims].flatten(), Y[which_data_rows, which_data_ycols].flatten(),
+            plots['xerrorbar'] = ax.errorbar(X[which_data_rows, free_dims].flatten(), Y[which_data_rows, which_data_ycols].flatten(),
                         xerr=2 * np.sqrt(X_variance[which_data_rows, free_dims].flatten()),
                         ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
 
@@ -118,7 +125,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
             #Zu = model.Z[:,free_dims] * model._Xscale[:,free_dims] + model._Xoffset[:,free_dims]
             Zu = Z[:,free_dims]
             z_height = ax.get_ylim()[0]
-            ax.plot(Zu, np.zeros_like(Zu) + z_height, 'r|', mew=1.5, markersize=12)
+            plots['inducing_inputs'] = ax.plot(Zu, np.zeros_like(Zu) + z_height, 'r|', mew=1.5, markersize=12)
 
 
 
@@ -137,14 +144,12 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         #predict on the frame and plot
         if plot_raw:
             m, _ = model._raw_predict(Xgrid)
-            Y = Y
         else:
-            m, _, _, _ = model.predict(Xgrid)
-            Y = Y
+            m, _ = model.predict(Xgrid)
         for d in which_data_ycols:
             m_d = m[:,d].reshape(resolution, resolution).T
-            ax.contour(x, y, m_d, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
-            ax.scatter(X[which_data_rows, free_dims[0]], X[which_data_rows, free_dims[1]], 40, Y[which_data_rows, d], cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.)
+            plots['contour'] = ax.contour(x, y, m_d, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
+            plots['dataplot'] = ax.scatter(X[which_data_rows, free_dims[0]], X[which_data_rows, free_dims[1]], 40, Y[which_data_rows, d], cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.)
 
         #set the limits of the plot to some sensible values
         ax.set_xlim(xmin[0], xmax[0])
@@ -157,11 +162,11 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         if hasattr(model,"Z"):
             #Zu = model.Z[:,free_dims] * model._Xscale[:,free_dims] + model._Xoffset[:,free_dims]
             Zu = Z[:,free_dims]
-            ax.plot(Zu[:,free_dims[0]], Zu[:,free_dims[1]], 'wo')
+            plots['inducing_inputs'] = ax.plot(Zu[:,free_dims[0]], Zu[:,free_dims[1]], 'wo')
 
     else:
         raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
-
+    return plots
 
 def plot_fit_f(model, *args, **kwargs):
     """

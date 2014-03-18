@@ -13,6 +13,7 @@ from warped_gp import WarpedGP
 from bayesian_gplvm import BayesianGPLVM
 from mrd import MRD
 from gradient_checker import GradientChecker
-from gp_multioutput_regression import GPMultioutputRegression
-from sparse_gp_multioutput_regression import SparseGPMultioutputRegression
 from ss_gplvm import SSGPLVM
+from gp_coregionalized_regression import GPCoregionalizedRegression
+from sparse_gp_coregionalized_regression import SparseGPCoregionalizedRegression
+#.py file not included!!! #from sparse_gp_coregionalized_regression import SparseGPCoregionalizedRegression

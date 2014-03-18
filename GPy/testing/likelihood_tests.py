@@ -1,11 +1,11 @@
 import numpy as np
 import unittest
 import GPy
-from ..models import GradientChecker
+from GPy.models import GradientChecker
 import functools
 import inspect
-from ..likelihoods import link_functions
-from ..core.parameterization import Param
+from GPy.likelihoods import link_functions
+from GPy.core.parameterization import Param
 from functools import partial
 #np.random.seed(300)
 #np.random.seed(7)
@@ -541,7 +541,8 @@ class TestNoiseModels(object):
             #import ipdb; ipdb.set_trace()
             #NOTE this test appears to be stochastic for some likelihoods (student t?)
             # appears to all be working in test mode right now...
-
+        #if isinstance(model, GPy.likelihoods.StudentT):
+        #    import ipdb;ipdb.set_trace()
         assert m.checkgrad(step=step)
 
     ###########
@@ -664,12 +665,11 @@ class LaplaceTests(unittest.TestCase):
             print m1
             print m2
 
-        m2.parameters_changed()
-        #m2._set_params(m1._get_params())
+        m2[:] = m1[:]
 
         #Predict for training points to get posterior mean and variance
-        post_mean, post_var, _, _ = m1.predict(X)
-        post_mean_approx, post_var_approx, _, _ = m2.predict(X)
+        post_mean, post_var = m1.predict(X)
+        post_mean_approx, post_var_approx, = m2.predict(X)
 
         if debug:
             import pylab as pb
@@ -701,8 +701,8 @@ class LaplaceTests(unittest.TestCase):
         np.testing.assert_almost_equal(m1.log_likelihood(), m2.log_likelihood(), decimal=2)
         #Check marginals are the same with random
         m1.randomize()
-        #m2._set_params(m1._get_params())
-        m2.parameters_changed()
+        m2[:] = m1[:]
+
         np.testing.assert_almost_equal(m1.log_likelihood(), m2.log_likelihood(), decimal=2)
 
         #Check they are checkgradding

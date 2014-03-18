@@ -6,6 +6,9 @@ from scipy import stats
 import scipy as sp
 from GPy.util.univariate_Gaussian import std_norm_pdf,std_norm_cdf,inv_std_norm_cdf
 
+_exp_lim_val = np.finfo(np.float64).max
+_lim_val = np.log(_exp_lim_val)
+
 class GPTransformation(object):
     """
     Link function class for doing non-Gaussian likelihoods approximation
@@ -92,16 +95,16 @@ class Log(GPTransformation):
 
     """
     def transf(self,f):
-        return np.exp(f)
+        return np.exp(np.clip(f, -_lim_val, _lim_val))
 
     def dtransf_df(self,f):
-        return np.exp(f)
+        return np.exp(np.clip(f, -_lim_val, _lim_val))
 
     def d2transf_df2(self,f):
-        return np.exp(f)
+        return np.exp(np.clip(f, -_lim_val, _lim_val))
 
     def d3transf_df3(self,f):
-        return np.exp(f)
+        return np.exp(np.clip(f, -_lim_val, _lim_val))
 
 class Log_ex_1(GPTransformation):
     """

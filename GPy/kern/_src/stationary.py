@@ -15,21 +15,21 @@ class Stationary(Kern):
     """
     Stationary kernels (covariance functions).
 
-    Stationary covariance fucntion depend only on r, where r is defined as 
+    Stationary covariance fucntion depend only on r, where r is defined as
 
       r = \sqrt{ \sum_{q=1}^Q (x_q - x'_q)^2 }
 
-    The covariance function k(x, x' can then be written k(r). 
+    The covariance function k(x, x' can then be written k(r).
 
     In this implementation, r is scaled by the lengthscales parameter(s):
 
-      r = \sqrt{ \sum_{q=1}^Q \frac{(x_q - x'_q)^2}{\ell_q^2} }. 
-    
+      r = \sqrt{ \sum_{q=1}^Q \frac{(x_q - x'_q)^2}{\ell_q^2} }.
+
     By default, there's only one lengthscale: seaprate lengthscales for each
-    dimension can be enables by setting ARD=True. 
+    dimension can be enables by setting ARD=True.
 
     To implement a stationary covariance function using this class, one need
-    only define the covariance function k(r), and it derivative. 
+    only define the covariance function k(r), and it derivative.
 
       ...
       def K_of_r(self, r):
@@ -37,12 +37,12 @@ class Stationary(Kern):
       def dK_dr(self, r):
           return bar
 
-    The lengthscale(s) and variance parameters are added to the structure automatically. 
-          
+    The lengthscale(s) and variance parameters are added to the structure automatically.
+
     """
-    
-    def __init__(self, input_dim, variance, lengthscale, ARD, name):
-        super(Stationary, self).__init__(input_dim, name)
+
+    def __init__(self, input_dim, variance, lengthscale, ARD, active_dims, name):
+        super(Stationary, self).__init__(input_dim, active_dims, name)
         self.ARD = ARD
         if not ARD:
             if lengthscale is None:
@@ -85,15 +85,19 @@ class Stationary(Kern):
         Compute the Euclidean distance between each row of X and X2, or between
         each pair of rows of X if X2 is None.
         """
+        #X, = self._slice_X(X)
         if X2 is None:
             Xsq = np.sum(np.square(X),1)
             r2 = -2.*tdot(X) + (Xsq[:,None] + Xsq[None,:])
             util.diag.view(r2)[:,]= 0. # force diagnoal to be zero: sometime numerically a little negative
             return np.sqrt(r2)
         else:
+            #X2, = self._slice_X(X2)
             X1sq = np.sum(np.square(X),1)
             X2sq = np.sum(np.square(X2),1)
-            return np.sqrt(-2.*np.dot(X, X2.T) + (X1sq[:,None] + X2sq[None,:]))
+            r2 = -2.*np.dot(X, X2.T) + X1sq[:,None] + X2sq[None,:]
+            r2[r2<0] = 0. # A bit hacky
+            return np.sqrt(r2)
 
     @Cache_this(limit=5, ignore_args=())
     def _scaled_dist(self, X, X2=None):
@@ -124,7 +128,6 @@ class Stationary(Kern):
         self.lengthscale.gradient = 0.
 
     def update_gradients_full(self, dL_dK, X, X2=None):
-
         self.variance.gradient = np.einsum('ij,ij,i', self.K(X, X2), dL_dK, 1./self.variance)
 
         #now the lengthscale gradient(s)
@@ -132,11 +135,11 @@ class Stationary(Kern):
         if self.ARD:
             #rinv = self._inv_dis# this is rather high memory? Should we loop instead?t(X, X2)
             #d =  X[:, None, :] - X2[None, :, :]
-            #x_xl3 = np.square(d) 
+            #x_xl3 = np.square(d)
             #self.lengthscale.gradient = -((dL_dr*rinv)[:,:,None]*x_xl3).sum(0).sum(0)/self.lengthscale**3
             tmp = dL_dr*self._inv_dist(X, X2)
             if X2 is None: X2 = X
-            self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(X[:,q:q+1] - X2[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in xrange(self.input_dim)])
+            self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(self._slice_X(X)[:,q:q+1] - self._slice_X(X2)[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in xrange(self.input_dim)])
         else:
             r = self._scaled_dist(X, X2)
             self.lengthscale.gradient = -np.sum(dL_dr*r)/self.lengthscale
@@ -176,7 +179,6 @@ class Stationary(Kern):
         ret = np.empty(X.shape, dtype=np.float64)
         [np.einsum('ij,ij->i', tmp, X[:,q][:,None]-X2[:,q][None,:], out=ret[:,q]) for q in xrange(self.input_dim)]
         ret /= self.lengthscale**2
-
         return ret
 
     def gradients_X_diag(self, dL_dKdiag, X):
@@ -186,8 +188,8 @@ class Stationary(Kern):
         return np.ones(self.input_dim)/self.lengthscale
 
 class Exponential(Stationary):
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='Exponential'):
-        super(Exponential, self).__init__(input_dim, variance, lengthscale, ARD, name)
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Exponential'):
+        super(Exponential, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
         return self.variance * np.exp(-0.5 * r)
@@ -205,8 +207,8 @@ class Matern32(Stationary):
 
     """
 
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='Mat32'):
-        super(Matern32, self).__init__(input_dim, variance, lengthscale, ARD, name)
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Mat32'):
+        super(Matern32, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
         return self.variance * (1. + np.sqrt(3.) * r) * np.exp(-np.sqrt(3.) * r)
@@ -247,10 +249,10 @@ class Matern52(Stationary):
 
     .. math::
 
-       k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r) 
+       k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r)
        """
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='Mat52'):
-        super(Matern52, self).__init__(input_dim, variance, lengthscale, ARD, name)
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Mat52'):
+        super(Matern52, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
         return self.variance*(1+np.sqrt(5.)*r+5./3*r**2)*np.exp(-np.sqrt(5.)*r)
@@ -291,8 +293,8 @@ class Matern52(Stationary):
 
 
 class ExpQuad(Stationary):
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='ExpQuad'):
-        super(ExpQuad, self).__init__(input_dim, variance, lengthscale, ARD, name)
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='ExpQuad'):
+        super(ExpQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
         return self.variance * np.exp(-0.5 * r**2)
@@ -301,8 +303,8 @@ class ExpQuad(Stationary):
         return -r*self.K_of_r(r)
 
 class Cosine(Stationary):
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, name='Cosine'):
-        super(Cosine, self).__init__(input_dim, variance, lengthscale, ARD, name)
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Cosine'):
+        super(Cosine, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
         return self.variance * np.cos(r)
@@ -322,8 +324,8 @@ class RatQuad(Stationary):
     """
 
 
-    def __init__(self, input_dim, variance=1., lengthscale=None, power=2., ARD=False, name='ExpQuad'):
-        super(RatQuad, self).__init__(input_dim, variance, lengthscale, ARD, name)
+    def __init__(self, input_dim, variance=1., lengthscale=None, power=2., ARD=False, active_dims=None, name='ExpQuad'):
+        super(RatQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
         self.power = Param('power', power, Logexp())
         self.add_parameters(self.power)
 

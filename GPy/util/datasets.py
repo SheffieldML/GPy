@@ -1,5 +1,8 @@
+import csv
 import os
+import copy
 import numpy as np
+import pylab as pb
 import GPy
 import scipy.io
 import cPickle as pickle
@@ -7,6 +10,8 @@ import zipfile
 import tarfile
 import datetime
 import json
+import re
+
 ipython_available=True
 try:
     import IPython
@@ -32,11 +37,18 @@ neil_url = 'http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/'
 # Read data resources from json file.
 # Don't do this when ReadTheDocs is scanning as it breaks things
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True' #Checks if RTD is scanning
+
 if not (on_rtd):
     path = os.path.join(os.path.dirname(__file__), 'data_resources.json')
     json_data=open(path).read()
     data_resources = json.loads(json_data)
 
+if not (on_rtd):
+    path = os.path.join(os.path.dirname(__file__), 'football_teams.json')
+    json_data=open(path).read()
+    football_dict = json.loads(json_data)
+
+    
 
 def prompt_user(prompt):
     """Ask user for agreeing to data set licenses."""
@@ -274,8 +286,76 @@ def della_gatta_TRP63_gene_expression(data_set='della_gatta', gene_number=None):
             Y = Y[:, None]
     return data_details_return({'X': X, 'Y': Y, 'gene_number' : gene_number}, data_set)
 
+    
 
+def football_data(season='1314', data_set='football_data'):
+    """Football data from English games since 1993. This downloads data from football-data.co.uk for the given season. """
+    def league2num(string):
+        league_dict = {'E0':0, 'E1':1, 'E2': 2, 'E3': 3, 'EC':4}
+        return league_dict[string]
 
+    def football2num(string):
+        if football_dict.has_key(string):
+            return football_dict[string]
+        else:
+            football_dict[string] = len(football_dict)+1
+            return len(football_dict)+1
+
+    data_set_season = data_set + '_' + season
+    data_resources[data_set_season] = copy.deepcopy(data_resources[data_set])
+    data_resources[data_set_season]['urls'][0]+=season + '/'
+    start_year = int(year[0:2])
+    end_year = int(year[2:4])
+    files = ['E0.csv', 'E1.csv', 'E2.csv', 'E3.csv']
+    if start_year>4 and start_year < 93:
+        files += ['EC.csv']
+    data_resources[data_set_season]['files'] = [files]
+    if not data_available(data_set_season):
+        download_data(data_set_season)
+    for file in reversed(files):
+        filename = os.path.join(data_path, data_set_season, file)
+        # rewrite files removing blank rows.
+        writename = os.path.join(data_path, data_set_season, 'temp.csv')
+        input = open(filename, 'rb')
+        output = open(writename, 'wb')
+        writer = csv.writer(output)
+        for row in csv.reader(input):
+            if any(field.strip() for field in row):
+                writer.writerow(row)
+        input.close()
+        output.close()
+        table = np.loadtxt(writename,skiprows=1, usecols=(0, 1, 2, 3, 4, 5), converters = {0: league2num, 1: pb.datestr2num, 2:football2num, 3:football2num}, delimiter=',')
+        X = table[:, :4]
+        Y = table[:, 4:]
+    return data_details_return({'X': X, 'Y': Y}, data_set)
+
+# This will be for downloading google trends data.
+def google_trends(query_terms=['big data', 'machine learning', 'data science'], data_set='google_trends'):
+    """Data downloaded from Google trends for given query terms."""
+    # Inspired by this notebook:
+    # http://nbviewer.ipython.org/github/sahuguet/notebooks/blob/master/GoogleTrends%20meet%20Notebook.ipynb
+
+    # quote the query terms.
+    for i, element in enumerate(query_terms):
+        query_terms[i] = urllib2.quote(element)
+    query = 'http://www.google.com/trends/fetchComponent?q=%s&cid=TIMESERIES_GRAPH_0&export=3' % ",".join(query_terms)
+
+    data = urllib2.urlopen(query).read()
+
+    # In the notebook they did some data cleaning: remove Javascript header+footer, and translate new Date(....,..,..) into YYYY-MM-DD.
+    header = """// Data table response\ngoogle.visualization.Query.setResponse("""
+    data = data[len(header):-2]
+    data = re.sub('new Date\((\d+),(\d+),(\d+)\)', (lambda m: '"%s-%02d-%02d"' % (m.group(1).strip(), 1+int(m.group(2)), int(m.group(3)))), data)
+    timeseries = json.loads(data)
+    #import pandas as pd
+    columns = [k['label'] for k in timeseries['table']['cols']]
+    rows = map(lambda x: [k['v'] for k in x['c']], timeseries['table']['rows'])
+    terms = len(columns)-1
+    X = np.asarray([(pb.datestr2num(row[0]), i) for i in range(terms) for row in rows ])
+    Y = np.asarray([[row[i+1]] for i in range(terms) for row in rows ])
+    output_info = columns[1:]
+    return data_details_return({'X': X, 'Y': Y, 'query_terms': output_info, 'info': "Data downloaded from google trends with query terms: " + ', '.join(output_info) + '.'}, data_set)
+    
 # The data sets
 def oil(data_set='three_phase_oil_flow'):
     """The three phase oil data from Bishop and James (1993)."""

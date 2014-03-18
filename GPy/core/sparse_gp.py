@@ -31,7 +31,7 @@ class SparseGP(GP):
 
     """
 
-    def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None, name='sparse gp'):
+    def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None, name='sparse gp', Y_metadata=None):
 
         #pick a sensible inference method
         if inference_method is None:
@@ -45,7 +45,7 @@ class SparseGP(GP):
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]
 
-        GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name)
+        GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata)
 
         self.add_parameter(self.Z, index=0)
 
@@ -53,19 +53,19 @@ class SparseGP(GP):
         return isinstance(self.X, VariationalPosterior)
 
     def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood, self.Y)
-        self.likelihood.update_gradients(self.grad_dict.pop('partial_for_likelihood'))
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood, self.Y, self.Y_metadata)
+        self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])
         if isinstance(self.X, VariationalPosterior):
             #gradients wrt kernel
             dL_dKmm = self.grad_dict.pop('dL_dKmm')
             self.kern.update_gradients_full(dL_dKmm, self.Z, None)
             target = self.kern.gradient.copy()
-            self.kern.update_gradients_expectations(variational_posterior=self.X, Z=self.Z, **self.grad_dict)
+            self.kern.update_gradients_expectations(variational_posterior=self.X, Z=self.Z, dL_dpsi0=self.grad_dict['dL_dpsi0'], dL_dpsi1=self.grad_dict['dL_dpsi1'], dL_dpsi2=self.grad_dict['dL_dpsi2'])
             self.kern.gradient += target
 
             #gradients wrt Z
-            self.Z.gradient = self.kern.gradients_X(dL_dKmm, self.Z)
-            self.Z.gradient += self.kern.gradients_Z_expectations(
+            self.Z.gradient[:,self.kern.active_dims] = self.kern.gradients_X(dL_dKmm, self.Z)
+            self.Z.gradient[:,self.kern.active_dims] += self.kern.gradients_Z_expectations(
                                self.grad_dict['dL_dpsi1'], self.grad_dict['dL_dpsi2'], Z=self.Z, variational_posterior=self.X)
         else:
             #gradients wrt kernel
@@ -75,10 +75,9 @@ class SparseGP(GP):
             target += self.kern.gradient
             self.kern.update_gradients_full(self.grad_dict['dL_dKmm'], self.Z, None)
             self.kern.gradient += target
-
             #gradients wrt Z
-            self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
-            self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
+            self.Z.gradient[:,self.kern.active_dims] = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
+            self.Z.gradient[:,self.kern.active_dims] += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
 
     def _raw_predict(self, Xnew, full_cov=False):
         """

@@ -16,8 +16,8 @@ If the likelihood object is something other than Gaussian, then exact inference
 is not tractable. We then resort to a Laplace approximation (laplace.py) or
 expectation propagation (ep.py).
 
-The inference methods return a 
-:class:`~GPy.inference.latent_function_inference.posterior.Posterior` 
+The inference methods return a
+:class:`~GPy.inference.latent_function_inference.posterior.Posterior`
 instance, which is a simple
 structure which contains a summary of the posterior. The model classes can then
 use this posterior object for making predictions, optimizing hyper-parameters,
@@ -27,19 +27,19 @@ etc.
 
 from exact_gaussian_inference import ExactGaussianInference
 from laplace import Laplace
-expectation_propagation = 'foo' # TODO
 from GPy.inference.latent_function_inference.var_dtc import VarDTC
+from expectation_propagation import EP
 from dtc import DTC
 from fitc import FITC
 
 # class FullLatentFunctionData(object):
-#     
-# 
+#
+#
 # class LatentFunctionInference(object):
 #     def inference(self, kern, X, likelihood, Y, Y_metadata=None):
 #         """
 #         Do inference on the latent functions given a covariance function `kern`,
-#         inputs and outputs `X` and `Y`, and a likelihood `likelihood`. 
+#         inputs and outputs `X` and `Y`, and a likelihood `likelihood`.
 #         Additional metadata for the outputs `Y` can be given in `Y_metadata`.
 #         """
 #         raise NotImplementedError, "Abstract base class for full inference"

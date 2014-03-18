@@ -318,7 +318,7 @@ def toy_ARD(max_iters=1000, kernel_type='linear', num_samples=300, D=4, optimize
     Y /= Y.std()
 
     if kernel_type == 'linear':
-        kernel = GPy.kern.linear(X.shape[1], ARD=1)
+        kernel = GPy.kern.Linear(X.shape[1], ARD=1)
     elif kernel_type == 'rbf_inv':
         kernel = GPy.kern.RBF_inv(X.shape[1], ARD=1)
     else:
@@ -357,7 +357,7 @@ def toy_ARD_sparse(max_iters=1000, kernel_type='linear', num_samples=300, D=4, o
     Y /= Y.std()
 
     if kernel_type == 'linear':
-        kernel = GPy.kern.linear(X.shape[1], ARD=1)
+        kernel = GPy.kern.Linear(X.shape[1], ARD=1)
     elif kernel_type == 'rbf_inv':
         kernel = GPy.kern.RBF_inv(X.shape[1], ARD=1)
     else:
@@ -468,7 +468,7 @@ def sparse_GP_regression_2D(num_samples=400, num_inducing=50, max_iters=100, opt
 
 def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
     """Run a 1D example of a sparse GP regression with uncertain inputs."""
-    fig, axes = pb.subplots(1, 2, figsize=(12, 5))
+    fig, axes = pb.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
 
     # sample inputs and outputs
     S = np.ones((20, 1))

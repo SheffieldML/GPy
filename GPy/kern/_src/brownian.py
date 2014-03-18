@@ -17,9 +17,9 @@ class Brownian(Kern):
     :param variance:
     :type variance: float
     """
-    def __init__(self, input_dim=1, variance=1., name='Brownian'):
+    def __init__(self, input_dim=1, variance=1., active_dims=None, name='Brownian'):
         assert input_dim==1, "Brownian motion in 1D only"
-        super(Brownian, self).__init__(input_dim, name)
+        super(Brownian, self).__init__(input_dim, active_dims, name)
 
         self.variance = Param('variance', variance, Logexp())
         self.add_parameters(self.variance)

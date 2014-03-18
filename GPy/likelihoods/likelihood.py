@@ -58,6 +58,18 @@ class Likelihood(Parameterized):
         """
         return Y
 
+    def conditional_mean(self, gp):
+        """
+        The mean of the random variable conditioned on one value of the GP
+        """
+        raise NotImplementedError
+
+    def conditional_variance(self, gp):
+        """
+        The variance of the random variable conditioned on one value of the GP
+        """
+        raise NotImplementedError
+
     def log_predictive_density(self, y_test, mu_star, var_star):
         """
         Calculation of the log predictive density
@@ -120,7 +132,7 @@ class Likelihood(Parameterized):
 
         return z, mean, variance
 
-    def _predictive_mean(self, mu, variance):
+    def predictive_mean(self, mu, variance, Y_metadata=None):
         """
         Quadrature calculation of the predictive mean: E(Y_star|Y) = E( E(Y_star|f_star, Y) )
 
@@ -128,8 +140,14 @@ class Likelihood(Parameterized):
         :param sigma: standard deviation of posterior
 
         """
+        #conditional_mean: the edpected value of y given some f, under this likelihood
         def int_mean(f,m,v):
-            return self._mean(f)*np.exp(-(0.5/v)*np.square(f - m))
+            p = np.exp(-(0.5/v)*np.square(f - m))
+            #If p is zero then conditional_mean will overflow
+            if p < 1e-10:
+                return 0.
+            else:
+                return self.conditional_mean(f)*p
         scaled_mean = [quad(int_mean, -np.inf, np.inf,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
         mean = np.array(scaled_mean)[:,None] / np.sqrt(2*np.pi*(variance))
 
@@ -139,7 +157,7 @@ class Likelihood(Parameterized):
         """Quadrature calculation of the conditional mean: E(Y_star|f)"""
         raise NotImplementedError, "implement this function to make predictions"
 
-    def _predictive_variance(self,mu,variance,predictive_mean=None):
+    def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
         """
         Numerical approximation to the predictive variance: V(Y_star)
 
@@ -156,7 +174,12 @@ class Likelihood(Parameterized):
 
         # E( V(Y_star|f_star) )
         def int_var(f,m,v):
-            return self._variance(f)*np.exp(-(0.5/v)*np.square(f - m))
+            p = np.exp(-(0.5/v)*np.square(f - m))
+            #If p is zero then conditional_variance will overflow
+            if p < 1e-10:
+                return 0.
+            else:
+                return self.conditional_variance(f)*p
         scaled_exp_variance = [quad(int_var, -np.inf, np.inf,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
         exp_var = np.array(scaled_exp_variance)[:,None] / normalizer
 
@@ -169,13 +192,20 @@ class Likelihood(Parameterized):
 
         #E( E(Y_star|f_star)**2 )
         def int_pred_mean_sq(f,m,v,predictive_mean_sq):
-            return self._mean(f)**2*np.exp(-(0.5/v)*np.square(f - m))
+            p = np.exp(-(0.5/v)*np.square(f - m))
+            #If p is zero then conditional_mean**2 will overflow
+            if p < 1e-10:
+                return 0.
+            else:
+                return self.conditional_mean(f)**2*p
+
         scaled_exp_exp2 = [quad(int_pred_mean_sq, -np.inf, np.inf,args=(mj,s2j,pm2j))[0] for mj,s2j,pm2j in zip(mu,variance,predictive_mean_sq)]
         exp_exp2 = np.array(scaled_exp_exp2)[:,None] / normalizer
 
         var_exp = exp_exp2 - predictive_mean_sq
 
-        # V(Y_star) = E( V(Y_star|f_star) ) + V( E(Y_star|f_star) )
+        # V(Y_star) = E[ V(Y_star|f_star) ] + V[ E(Y_star|f_star) ]
+        # V(Y_star) = E[ V(Y_star|f_star) ] + E(Y_star**2|f_star) - E[Y_star|f_star]**2
         return exp_var + var_exp
 
     def pdf_link(self, link_f, y, Y_metadata=None):
@@ -362,18 +392,33 @@ class Likelihood(Parameterized):
 
         return dlogpdf_dtheta, dlogpdf_df_dtheta, d2logpdf_df2_dtheta
 
-    def predictive_values(self, mu, var):
+    def predictive_values(self, mu, var, full_cov=False, Y_metadata=None):
         """
         Compute  mean, variance of the  predictive distibution.
 
         :param mu: mean of the latent variable, f, of posterior
         :param var: variance of the latent variable, f, of posterior
+        :param full_cov: whether to use the full covariance or just the diagonal
+        :type full_cov: Boolean
         """
-        pred_mean = self.predictive_mean(mu, var)
-        pred_var = self.predictive_variance(mu, var, pred_mean)
+
+        pred_mean = self.predictive_mean(mu, var, Y_metadata)
+        pred_var = self.predictive_variance(mu, var, pred_mean, Y_metadata)
+
         return pred_mean, pred_var
 
-    def samples(self, gp):
+    def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None):
+        #compute the quantiles by sampling!!!
+        N_samp = 1000
+        s = np.random.randn(mu.shape[0], N_samp)*np.sqrt(var) + mu
+        #ss_f = s.flatten()
+        #ss_y = self.samples(ss_f, Y_metadata)
+        ss_y = self.samples(s, Y_metadata)
+        #ss_y = ss_y.reshape(mu.shape[0], N_samp)
+
+        return [np.percentile(ss_y ,q, axis=1)[:,None] for q in quantiles]
+
+    def samples(self, gp, Y_metadata=None):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 

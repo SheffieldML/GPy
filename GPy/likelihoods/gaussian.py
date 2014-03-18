@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 #TODO
 """
-A lot of this code assumes that the link function is the identity. 
+A lot of this code assumes that the link function is the identity.
 
 I think laplace code is okay, but I'm quite sure that the EP moments will only work if the link is identity.
 
@@ -18,6 +18,7 @@ import link_functions
 from likelihood import Likelihood
 from ..core.parameterization import Param
 from ..core.parameterization.transformations import Logexp
+from scipy import stats
 
 class Gaussian(Likelihood):
     """
@@ -49,11 +50,18 @@ class Gaussian(Likelihood):
         if isinstance(gp_link, link_functions.Identity):
             self.log_concave = True
 
-    def covariance_matrix(self, Y, Y_metadata=None):
-        return np.eye(Y.shape[0]) * self.variance
+    def betaY(self,Y,Y_metadata=None):
+        #TODO: ~Ricardo this does not live here
+        return Y/self.gaussian_variance(Y_metadata)
 
-    def update_gradients(self, partial):
-        self.variance.gradient = np.sum(partial)
+    def gaussian_variance(self, Y_metadata=None):
+        return self.variance
+
+    def update_gradients(self, grad):
+        self.variance.gradient = grad
+
+    def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
+        return dL_dKdiag.sum()
 
     def _preprocess_values(self, Y):
         """
@@ -76,16 +84,12 @@ class Gaussian(Likelihood):
         Z_hat = 1./np.sqrt(2.*np.pi*sum_var)*np.exp(-.5*(data_i - v_i/tau_i)**2./sum_var)
         return Z_hat, mu_hat, sigma2_hat
 
-    def predictive_values(self, mu, var, full_cov=False):
+    def predictive_values(self, mu, var, full_cov=False, Y_metadata=None):
         if full_cov:
             var += np.eye(var.shape[0])*self.variance
-            d = 2*np.sqrt(np.diag(var))
-            low, up = mu - d, mu + d
         else:
             var += self.variance
-            d = 2*np.sqrt(var)
-            low, up = mu - d, mu + d
-        return mu, var, low, up
+        return mu, var
 
     def predictive_mean(self, mu, sigma):
         return mu
@@ -93,7 +97,14 @@ class Gaussian(Likelihood):
     def predictive_variance(self, mu, sigma, predictive_mean=None):
         return self.variance + sigma**2
 
+<<<<<<< HEAD
     def pdf_link(self, link_f, y, Y_metadata=None):
+=======
+    def predictive_quantiles(self, mu, var, quantiles, Y_metadata):
+        return  [stats.norm.ppf(q/100.)*np.sqrt(var) + mu for q in quantiles]
+
+    def pdf_link(self, link_f, y, extra_data=None):
+>>>>>>> a3287c38ea775155df4e90f7fe1883d12ffb54b9
         """
         Likelihood function given link(f)
 
@@ -292,13 +303,15 @@ class Gaussian(Likelihood):
         """
         return self.variance
 
-    def samples(self, gp):
+    def samples(self, gp, Y_metadata=None):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 
         :param gp: latent variable
         """
         orig_shape = gp.shape
+        gp = gp.flatten()
+        #orig_shape = gp.shape
         gp = gp.flatten()
         Ysim = np.array([np.random.normal(self.gp_link.transf(gpj), scale=np.sqrt(self.variance), size=1) for gpj in gp])
         return Ysim.reshape(orig_shape)

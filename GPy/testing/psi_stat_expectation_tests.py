@@ -12,6 +12,7 @@ import numpy
 from GPy.kern import RBF
 from GPy.kern import Linear
 from copy import deepcopy
+from GPy.core.parameterization.variational import NormalPosterior
 
 __test__ = lambda: 'deep' in sys.argv
 # np.random.seed(0)
@@ -28,53 +29,21 @@ def ard(p):
 class Test(unittest.TestCase):
     input_dim = 9
     num_inducing = 13
-    N = 300
+    N = 1000
     Nsamples = 1e6
 
     def setUp(self):
-        i_s_dim_list = [2,4,3]
-        indices = numpy.cumsum(i_s_dim_list).tolist()
-        input_slices = [slice(a,b) for a,b in zip([None]+indices, indices)]
-        #input_slices[2] = deepcopy(input_slices[1])
-        input_slice_kern = GPy.kern.kern(9,
-                                         [
-                                          RBF(i_s_dim_list[0], np.random.rand(), np.random.rand(i_s_dim_list[0]), ARD=True),
-                                          RBF(i_s_dim_list[1], np.random.rand(), np.random.rand(i_s_dim_list[1]), ARD=True),
-                                          Linear(i_s_dim_list[2], np.random.rand(i_s_dim_list[2]), ARD=True)
-                                          ],
-                                         input_slices = input_slices
-                                         )
         self.kerns = (
-#                     input_slice_kern,
-#                       (GPy.kern.rbf(self.input_dim, ARD=True) +
-#                        GPy.kern.linear(self.input_dim, ARD=True) +
-#                        GPy.kern.bias(self.input_dim) +
-#                        GPy.kern.white(self.input_dim)),
-                    (#GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
-                     GPy.kern.Linear(self.input_dim, np.random.rand(self.input_dim), ARD=True)
-                     +GPy.kern.RBF(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
-#                      +GPy.kern.bias(self.input_dim)
-#                      +GPy.kern.white(self.input_dim)),
-                    ),
-#                     (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True) +
-#                      GPy.kern.bias(self.input_dim, np.random.rand())),
-#         (GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
-#          +GPy.kern.rbf(self.input_dim, np.random.rand(), np.random.rand(self.input_dim), ARD=True)
-#          #+GPy.kern.bias(self.input_dim, np.random.rand())
-#          #+GPy.kern.white(self.input_dim, np.random.rand())),
-#         ),
-#                     GPy.kern.white(self.input_dim, np.random.rand())),
-#                     GPy.kern.rbf(self.input_dim), GPy.kern.rbf(self.input_dim, ARD=True),
-#                       GPy.kern.linear(self.input_dim, ARD=False), GPy.kern.linear(self.input_dim, ARD=True),
-#                       GPy.kern.linear(self.input_dim) + GPy.kern.bias(self.input_dim),
-#                     GPy.kern.rbf(self.input_dim) + GPy.kern.bias(self.input_dim),
-#                       GPy.kern.linear(self.input_dim) + GPy.kern.bias(self.input_dim) + GPy.kern.white(self.input_dim),
-#                       GPy.kern.rbf(self.input_dim) + GPy.kern.bias(self.input_dim) + GPy.kern.white(self.input_dim),
-#                       GPy.kern.bias(self.input_dim), GPy.kern.white(self.input_dim),
+                      #GPy.kern.RBF([0,1,2], ARD=True)+GPy.kern.Bias(self.input_dim)+GPy.kern.White(self.input_dim),
+                      #GPy.kern.RBF(self.input_dim)+GPy.kern.Bias(self.input_dim)+GPy.kern.White(self.input_dim),
+                      #GPy.kern.Linear(self.input_dim) + GPy.kern.Bias(self.input_dim) + GPy.kern.White(self.input_dim),
+                      #GPy.kern.Linear(self.input_dim, ARD=True) + GPy.kern.Bias(self.input_dim) + GPy.kern.White(self.input_dim),
+                      GPy.kern.Linear([1,3,6,7], ARD=True) + GPy.kern.RBF([0,5,8], ARD=True) + GPy.kern.White(self.input_dim),
                       )
-        self.q_x_mean = np.random.randn(self.input_dim)
-        self.q_x_variance = np.exp(np.random.randn(self.input_dim))
+        self.q_x_mean = np.random.randn(self.input_dim)[None]
+        self.q_x_variance = np.exp(.5*np.random.randn(self.input_dim))[None]
         self.q_x_samples = np.random.randn(self.Nsamples, self.input_dim) * np.sqrt(self.q_x_variance) + self.q_x_mean
+        self.q_x = NormalPosterior(self.q_x_mean, self.q_x_variance)
         self.Z = np.random.randn(self.num_inducing, self.input_dim)
         self.q_x_mean.shape = (1, self.input_dim)
         self.q_x_variance.shape = (1, self.input_dim)
@@ -114,8 +83,9 @@ class Test(unittest.TestCase):
 
     def test_psi2(self):
         for kern in self.kerns:
+            kern.randomize()
             Nsamples = int(np.floor(self.Nsamples/self.N))
-            psi2 = kern.psi2(self.Z, self.q_x_mean, self.q_x_variance)
+            psi2 = kern.psi2(self.Z, self.q_x)
             K_ = np.zeros((self.num_inducing, self.num_inducing))
             diffs = []
             for i, q_x_sample_stripe in enumerate(np.array_split(self.q_x_samples, self.Nsamples / Nsamples)):
@@ -130,8 +100,8 @@ class Test(unittest.TestCase):
                 pylab.figure(msg)
                 pylab.plot(diffs, marker='x', mew=.2)
 #                 print msg, np.allclose(psi2.squeeze(), K_, rtol=1e-1, atol=.1)
-                self.assertTrue(np.allclose(psi2.squeeze(), K_),
-                                            #rtol=1e-1, atol=.1),
+                self.assertTrue(np.allclose(psi2.squeeze(), K_,
+                                            atol=.1, rtol=1),
                                 msg=msg + ": not matching")
 #                 sys.stdout.write(".")
             except:

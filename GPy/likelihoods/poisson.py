@@ -21,7 +21,7 @@ class Poisson(Likelihood):
     """
     def __init__(self, gp_link=None):
         if gp_link is None:
-            gp_link = link_functions.Log_ex_1()
+            gp_link = link_functions.Log()
 
         super(Poisson, self).__init__(gp_link, name='Poisson')
 
@@ -134,7 +134,19 @@ class Poisson(Likelihood):
         d3lik_dlink3 = 2*y/(link_f)**3
         return d3lik_dlink3
 
-    def samples(self, gp):
+    def conditional_mean(self,gp):
+        """
+        The mean of the random variable conditioned on one value of the GP
+        """
+        return self.gp_link.transf(gp)
+
+    def conditional_variance(self,gp):
+        """
+        The variance of the random variable conditioned on one value of the GP
+        """
+        return self.gp_link.transf(gp)
+
+    def samples(self, gp, Y_metadata=None):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 

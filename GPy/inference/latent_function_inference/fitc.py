@@ -3,6 +3,7 @@
 
 from posterior import Posterior
 from ...util.linalg import jitchol, tdot, dtrtrs, dpotri, pdinv
+from ...util import diag
 import numpy as np
 log_2_pi = np.log(2*np.pi)
 
@@ -14,15 +15,9 @@ class FITC(object):
     the posterior.
 
     """
-    def __init__(self):
-        self.const_jitter = 1e-6
+    const_jitter = 1e-6
 
-    def inference(self, kern, X, X_variance, Z, likelihood, Y):
-        assert X_variance is None, "cannot use X_variance with FITC. Try varDTC."
-        
-        #TODO: MAX! fix this!
-        from ...util.misc import param_to_array
-        Y = param_to_array(Y)
+    def inference(self, kern, X, Z, likelihood, Y):
 
         num_inducing, _ = Z.shape
         num_data, output_dim = Y.shape
@@ -37,7 +32,8 @@ class FITC(object):
         Knm = kern.K(X, Z)
         U = Knm
 
-        #factor Kmm 
+        #factor Kmm
+        diag.add(Kmm, self.const_jitter)
         Kmmi, L, Li, _ = pdinv(Kmm)
 
         #compute beta_star, the effective noise precision
@@ -73,7 +69,7 @@ class FITC(object):
         vvT_P = tdot(v.reshape(-1,1)) + P
         dL_dK = 0.5*(Kmmi - vvT_P)
         KiU = np.dot(Kmmi, U.T)
-        dL_dK += np.dot(KiU*dL_dR, KiU.T) 
+        dL_dK += np.dot(KiU*dL_dR, KiU.T)
 
         # Compute dL_dU
         vY = np.dot(v.reshape(-1,1),Y.T)
@@ -81,11 +77,8 @@ class FITC(object):
         dL_dU *= beta_star
         dL_dU -= 2.*KiU*dL_dR
 
-        grad_dict = {'dL_dKmm': dL_dK, 'dL_dKdiag':dL_dR, 'dL_dKnm':dL_dU.T}
-
-        #update gradients
-        kern.update_gradients_sparse(X=X, Z=Z, **grad_dict)
-        likelihood.update_gradients(dL_dR)
+        dL_dthetaL = likelihood.exact_inference_gradients(dL_dR)
+        grad_dict = {'dL_dKmm': dL_dK, 'dL_dKdiag':dL_dR, 'dL_dKnm':dL_dU.T, 'dL_dthetaL':dL_dthetaL}
 
         #construct a posterior object
         post = Posterior(woodbury_inv=Kmmi-P, woodbury_vector=v, K=Kmm, mean=None, cov=None, K_chol=L)

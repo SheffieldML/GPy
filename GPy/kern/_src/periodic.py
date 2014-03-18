@@ -10,7 +10,7 @@ from ...core.parameterization.param import Param
 from ...core.parameterization.transformations import Logexp
 
 class Periodic(Kern):
-    def __init__(self, input_dim, variance, lengthscale, period, n_freq, lower, upper, name):
+    def __init__(self, input_dim, variance, lengthscale, period, n_freq, lower, upper, active_dims, name):
         """
         :type input_dim: int
         :param variance: the variance of the Matern kernel
@@ -25,7 +25,7 @@ class Periodic(Kern):
         """
 
         assert input_dim==1, "Periodic kernels are only defined for input_dim=1"
-        super(Periodic, self).__init__(input_dim, name)
+        super(Periodic, self).__init__(input_dim, active_dims, name)
         self.input_dim = input_dim
         self.lower,self.upper = lower, upper
         self.n_freq = n_freq
@@ -77,16 +77,17 @@ class PeriodicExponential(Periodic):
     Only defined for input_dim=1.
     """
 
-    def __init__(self, input_dim=1, variance=1., lengthscale=1., period=2.*np.pi, n_freq=10, lower=0., upper=4*np.pi, name='periodic_exponential'):
-        super(PeriodicExponential, self).__init__(input_dim, variance, lengthscale, period, n_freq, lower, upper, name)
+    def __init__(self, input_dim=1, variance=1., lengthscale=1., period=2.*np.pi, n_freq=10, lower=0., upper=4*np.pi, active_dims=None, name='periodic_exponential'):
+        super(PeriodicExponential, self).__init__(input_dim, variance, lengthscale, period, n_freq, lower, upper, active_dims, name)
 
     def parameters_changed(self):
         self.a = [1./self.lengthscale, 1.]
         self.b = [1]
 
         self.basis_alpha = np.ones((self.n_basis,))
-        self.basis_omega = np.array(sum([[i*2*np.pi/self.period]*2 for i in  range(1,self.n_freq+1)],[]))[:,0]
-        self.basis_phi =   np.array(sum([[-np.pi/2, 0.]  for i in range(1,self.n_freq+1)],[]))
+        self.basis_omega = (2*np.pi*np.arange(1,self.n_freq+1)/self.period).repeat(2)
+        self.basis_phi =   np.zeros(self.n_freq * 2)
+        self.basis_phi[::2] = -np.pi/2
 
         self.G = self.Gram_matrix()
         self.Gi = np.linalg.inv(self.G)
@@ -100,7 +101,6 @@ class PeriodicExponential(Periodic):
         Flower = np.array(self._cos(self.basis_alpha,self.basis_omega,self.basis_phi)(self.lower))[:,None]
         return(self.lengthscale/(2*self.variance) * Gint + 1./self.variance*np.dot(Flower,Flower.T))
 
-    #@silence_errors
     def update_gradients_full(self, dL_dK, X, X2=None):
         """derivative of the covariance matrix with respect to the parameters (shape is N x num_inducing x num_params)"""
         if X2 is None: X2 = X
@@ -187,15 +187,16 @@ class PeriodicMatern32(Periodic):
 
     """
 
-    def __init__(self, input_dim=1, variance=1., lengthscale=1., period=2.*np.pi, n_freq=10, lower=0., upper=4*np.pi, name='periodic_Matern32'):
-        super(PeriodicMatern32, self).__init__(input_dim, variance, lengthscale, period, n_freq, lower, upper, name)
+    def __init__(self, input_dim=1, variance=1., lengthscale=1., period=2.*np.pi, n_freq=10, lower=0., upper=4*np.pi, active_dims=None, name='periodic_Matern32'):
+        super(PeriodicMatern32, self).__init__(input_dim, variance, lengthscale, period, n_freq, lower, upper, active_dims, name)
     def parameters_changed(self):
         self.a = [3./self.lengthscale**2, 2*np.sqrt(3)/self.lengthscale, 1.]
         self.b = [1,self.lengthscale**2/3]
 
         self.basis_alpha = np.ones((self.n_basis,))
-        self.basis_omega = np.array(sum([[i*2*np.pi/self.period]*2 for i in  range(1,self.n_freq+1)],[]))
-        self.basis_phi =   np.array(sum([[-np.pi/2, 0.]  for i in range(1,self.n_freq+1)],[]))
+        self.basis_omega = (2*np.pi*np.arange(1,self.n_freq+1)/self.period).repeat(2)
+        self.basis_phi =   np.zeros(self.n_freq * 2)
+        self.basis_phi[::2] = -np.pi/2
 
         self.G = self.Gram_matrix()
         self.Gi = np.linalg.inv(self.G)
@@ -212,8 +213,8 @@ class PeriodicMatern32(Periodic):
         return(self.lengthscale**3/(12*np.sqrt(3)*self.variance) * Gint + 1./self.variance*np.dot(Flower,Flower.T) + self.lengthscale**2/(3.*self.variance)*np.dot(F1lower,F1lower.T))
 
 
-    @silence_errors
-    def update_gradients_full(self,dL_dK,X,X2,target):
+    #@silence_errors
+    def update_gradients_full(self,dL_dK,X,X2):
         """derivative of the covariance matrix with respect to the parameters (shape is num_data x num_inducing x num_params)"""
         if X2 is None: X2 = X
         FX  = self._cos(self.basis_alpha[None,:],self.basis_omega[None,:],self.basis_phi[None,:])(X)
@@ -299,16 +300,17 @@ class PeriodicMatern52(Periodic):
 
     """
 
-    def __init__(self, input_dim=1, variance=1., lengthscale=1., period=2.*np.pi, n_freq=10, lower=0., upper=4*np.pi, name='periodic_Matern52'):
-        super(PeriodicMatern52, self).__init__(input_dim, variance, lengthscale, period, n_freq, lower, upper, name)
+    def __init__(self, input_dim=1, variance=1., lengthscale=1., period=2.*np.pi, n_freq=10, lower=0., upper=4*np.pi, active_dims=None, name='periodic_Matern52'):
+        super(PeriodicMatern52, self).__init__(input_dim, variance, lengthscale, period, n_freq, lower, upper, active_dims, name)
 
     def parameters_changed(self):
         self.a = [5*np.sqrt(5)/self.lengthscale**3, 15./self.lengthscale**2,3*np.sqrt(5)/self.lengthscale, 1.]
         self.b  = [9./8, 9*self.lengthscale**4/200., 3*self.lengthscale**2/5., 3*self.lengthscale**2/(5*8.), 3*self.lengthscale**2/(5*8.)]
 
         self.basis_alpha = np.ones((2*self.n_freq,))
-        self.basis_omega = np.array(sum([[i*2*np.pi/self.period]*2 for i in  range(1,self.n_freq+1)],[]))
-        self.basis_phi =   np.array(sum([[-np.pi/2, 0.]  for i in range(1,self.n_freq+1)],[]))
+        self.basis_omega = (2*np.pi*np.arange(1,self.n_freq+1)/self.period).repeat(2)
+        self.basis_phi =   np.zeros(self.n_freq * 2)
+        self.basis_phi[::2] = -np.pi/2
 
         self.G = self.Gram_matrix()
         self.Gi = np.linalg.inv(self.G)

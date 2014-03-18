@@ -134,7 +134,7 @@ class VarDTC(object):
 
         # log marginal likelihood
         log_marginal = _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise,
-            psi0, A, LB, trYYT, data_fit, Y)
+            psi0, A, LB, trYYT, data_fit, VVT_factor)
 
         #put the gradients in the right places
         dL_dR = _compute_dL_dR(likelihood,
@@ -208,7 +208,7 @@ class VarDTCMissingData(object):
             self._subarray_indices = [[slice(None),slice(None)]]
             return [Y], [(Y**2).sum()]
 
-    def inference(self, kern, X, Z, likelihood, Y):
+    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None):
         if isinstance(X, VariationalPosterior):
             uncertain_inputs = True
             psi0_all = kern.psi0(Z, X)
@@ -305,7 +305,7 @@ class VarDTCMissingData(object):
 
             # log marginal likelihood
             log_marginal += _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise,
-                psi0, A, LB, trYYT, data_fit)
+                psi0, A, LB, trYYT, data_fit,VVT_factor)
 
             #put the gradients in the right places
             dL_dR += _compute_dL_dR(likelihood,
@@ -420,7 +420,7 @@ def _compute_dL_dR(likelihood, het_noise, uncertain_inputs, LB, _LBi_Lmi_psi1Vf,
 def _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise, psi0, A, LB, trYYT, data_fit,Y):
     #compute log marginal likelihood
     if het_noise:
-        lik_1 = -0.5 * num_data * output_dim * np.log(2. * np.pi) + 0.5 * np.sum(np.log(beta)) - 0.5 * np.sum(beta * Y**2)
+        lik_1 = -0.5 * num_data * output_dim * np.log(2. * np.pi) + 0.5 * np.sum(np.log(beta)) - 0.5 * np.sum(beta * np.square(Y).sum(axis=-1))
         lik_2 = -0.5 * output_dim * (np.sum(beta.flatten() * psi0) - np.trace(A))
     else:
         lik_1 = -0.5 * num_data * output_dim * (np.log(2. * np.pi) - np.log(beta)) - 0.5 * beta * trYYT

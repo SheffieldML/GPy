@@ -91,12 +91,8 @@ class vDTC(object):
     def __init__(self):
         self.const_jitter = 1e-6
 
-    def inference(self, kern, X, X_variance, Z, likelihood, Y):
-        assert X_variance is None, "cannot use X_variance with DTC. Try varDTC."
-
-        #TODO: MAX! fix this!
-        from ...util.misc import param_to_array
-        Y = param_to_array(Y)
+    def inference(self, kern, X, Z, likelihood, Y):
+        #assert X_variance is None, "cannot use X_variance with DTC. Try varDTC."
 
         num_inducing, _ = Z.shape
         num_data, output_dim = Y.shape
@@ -109,15 +105,14 @@ class vDTC(object):
         Kmm = kern.K(Z)
         Knn = kern.Kdiag(X)
         Knm = kern.K(X, Z)
-        U = Knm
-        Uy = np.dot(U.T,Y)
+        KnmY = np.dot(Knm.T,Y)
 
-        #factor Kmm 
+        #factor Kmm
         Kmmi, L, Li, _ = pdinv(Kmm)
 
         # Compute A
-        LiUTbeta = np.dot(Li, U.T)*np.sqrt(beta)
-        A_ = tdot(LiUTbeta)
+        LiKmnbeta = np.dot(Li, Knm.T)*np.sqrt(beta)
+        A_ = tdot(LiKmnbeta)
         trace_term = -0.5*(np.sum(Knn)*beta - np.trace(A_))
         A = A_ + np.eye(num_inducing)
 
@@ -125,7 +120,7 @@ class vDTC(object):
         LA = jitchol(A)
 
         # back substutue to get b, P, v
-        tmp, _ = dtrtrs(L, Uy, lower=1)
+        tmp, _ = dtrtrs(L, KnmY, lower=1)
         b, _ = dtrtrs(LA, tmp*beta, lower=1)
         tmp, _ = dtrtrs(LA, b, lower=1, trans=1)
         v, _ = dtrtrs(L, tmp, lower=1, trans=1)
@@ -145,19 +140,18 @@ class vDTC(object):
         LAL = Li.T.dot(A).dot(Li)
         dL_dK = Kmmi - 0.5*(vvT_P + LAL)
 
-        # Compute dL_dU
+        # Compute dL_dKnm
         vY = np.dot(v.reshape(-1,1),Y.T)
-        #dL_dU = vY - np.dot(vvT_P, U.T)
-        dL_dU = vY - np.dot(vvT_P - Kmmi, U.T)
-        dL_dU *= beta
+        dL_dKmn = vY - np.dot(vvT_P - Kmmi, Knm.T)
+        dL_dKmn *= beta
 
         #compute dL_dR
-        Uv = np.dot(U, v)
-        dL_dR = 0.5*(np.sum(U*np.dot(U,P), 1) - 1./beta + np.sum(np.square(Y), 1) - 2.*np.sum(Uv*Y, 1) + np.sum(np.square(Uv), 1) )*beta**2
+        Knmv = np.dot(Knm, v)
+        dL_dR = 0.5*(np.sum(Knm*np.dot(Knm,P), 1) - 1./beta + np.sum(np.square(Y), 1) - 2.*np.sum(Knmv*Y, 1) + np.sum(np.square(Knmv), 1) )*beta**2
         dL_dR -=beta*trace_term/num_data
 
         dL_dthetaL = likelihood.exact_inference_gradients(dL_dR)
-        grad_dict = {'dL_dKmm': dL_dK, 'dL_dKdiag':np.zeros_like(Knn) + -0.5*beta, 'dL_dKnm':dL_dU.T, 'dL_dthetaL':dL_dthetaL}
+        grad_dict = {'dL_dKmm': dL_dK, 'dL_dKdiag':np.zeros_like(Knn) + -0.5*beta, 'dL_dKnm':dL_dKmn.T, 'dL_dthetaL':dL_dthetaL}
 
         #construct a posterior object
         post = Posterior(woodbury_inv=Kmmi-P, woodbury_vector=v, K=Kmm, mean=None, cov=None, K_chol=L)

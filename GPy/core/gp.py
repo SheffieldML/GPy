@@ -42,10 +42,8 @@ class GP(Model):
         assert Y.shape[0] == self.num_data
         _, self.output_dim = self.Y.shape
 
-        if Y_metadata is None:
-            Y_metadata = {}
-        else:
-            self.Y_metadata = Y_metadata
+        #TODO: check the type of this is okay?
+        self.Y_metadata = Y_metadata
 
         assert isinstance(kernel, kern.Kern)
         #assert self.input_dim == kernel.input_dim

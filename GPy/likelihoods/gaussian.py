@@ -50,8 +50,8 @@ class Gaussian(Likelihood):
         if isinstance(gp_link, link_functions.Identity):
             self.log_concave = True
 
-    def covariance_matrix(self, Y, Y_metadata=None):
-        return np.eye(Y.shape[0]) * self.variance
+    def gaussian_variance(self, Y, Y_metadata=None):
+        return self.variance
 
     def update_gradients(self, grad):
         self.variance.gradient = grad

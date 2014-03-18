@@ -11,7 +11,7 @@ import itertools
 
 class MixedNoise(Likelihood):
     def __init__(self, likelihoods_list, name='mixed_noise'):
-
+        #NOTE at the moment this likelihood only works for using a list of gaussians
         super(Likelihood, self).__init__(name=name)
 
         self.add_parameters(*likelihoods_list)
@@ -38,34 +38,31 @@ class MixedNoise(Likelihood):
         return np.array([dL_dKdiag[ind==i].sum() for i in range(len(self.likelihoods_list))])
 
     def predictive_values(self, mu, var, full_cov=False, Y_metadata=None):
-        if all([isinstance(l, Gaussian) for l in self.likelihoods_list]):
-            ind = Y_metadata['output_index'].flatten()
-            _variance = np.array([self.likelihoods_list[j].variance for j in ind ])
-            if full_cov:
-                var += np.eye(var.shape[0])*_variance
-            else:
-                var += _variance
-            return mu, var
+        ind = Y_metadata['output_index'].flatten()
+        _variance = np.array([self.likelihoods_list[j].variance for j in ind ])
+        if full_cov:
+            var += np.eye(var.shape[0])*_variance
         else:
-            raise NotImplementedError
+            var += _variance
+        return mu, var
 
-    def predictive_variance(self, mu, sigma, **other_shit):
-        if isinstance(noise_index,int):
-            _variance = self.variance[noise_index]
-        else:
-            _variance = np.array([ self.variance[j] for j in noise_index ])[:,None]
+    def predictive_variance(self, mu, sigma, Y_metadata):
+        _variance = self.gaussian_variance(Y_metadata)
         return _variance + sigma**2
 
+    def predictive_quantiles(self, mu, var, quantiles, Y_metadata):
+        ind = Y_metadata['output_index'].flatten()
+        outputs = np.unique(ind)
+        Q = np.zeros( (mu.size,len(quantiles)) )
+        for j in outputs:
+            q = self.likelihoods_list[j].predictive_quantiles(mu[ind==j,:],
+                var[ind==j,:],quantiles,Y_metadata=None)
+            Q[ind==j,:] = np.hstack(q)
+        return [q[:,None] for q in Q.T]
 
     def covariance_matrix(self, Y, Y_metadata):
-        #assert all([isinstance(l, Gaussian) for l in self.likelihoods_list])
-        #ind = Y_metadata['output_index'].flatten()
-        #variance = np.zeros(Y.shape[0])
-        #for lik, j in zip(self.likelihoods_list, range(len(self.likelihoods_list))):
-        #    variance[ind==j] = lik.variance
-        #return np.diag(variance)
+        #TODO make more general, to allow non-gaussian likelihoods
         return np.diag(self.gaussian_variance(Y_metadata).flatten())
-
 
     def samples(self, gp, Y_metadata):
         """
@@ -84,4 +81,3 @@ class MixedNoise(Likelihood):
             _ysim = np.array([np.random.normal(lik.gp_link.transf(gpj), scale=np.sqrt(lik.variance), size=1) for gpj in gp_filtered.flatten()])
             Ysim[flt,:] = _ysim.reshape(n1,N2)
         return Ysim
-

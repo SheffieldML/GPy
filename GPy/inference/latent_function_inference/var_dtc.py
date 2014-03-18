@@ -65,7 +65,7 @@ class VarDTC(object):
         _, output_dim = Y.shape
 
         #see whether we've got a different noise variance for each datum
-        beta = 1./np.fmax(likelihood.gaussian_variance(Y_metadata), 1e-6)
+        beta = 1./np.fmax(likelihood.gaussian_variance(Y, Y_metadata), 1e-6)
         # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
         #self.YYTfactor = self.get_YYTfactor(Y)
         #VVT_factor = self.get_VVTfactor(self.YYTfactor, beta)

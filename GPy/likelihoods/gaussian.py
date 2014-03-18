@@ -51,13 +51,11 @@ class Gaussian(Likelihood):
             self.log_concave = True
 
     def betaY(self,Y,Y_metadata=None):
+        #TODO: ~Ricardo this does not live here
         return Y/self.gaussian_variance(Y_metadata)
 
     def gaussian_variance(self, Y_metadata=None):
         return self.variance
-
-    def covariance_matrix(self, Y, Y_metadata=None):
-        return np.eye(Y.shape[0]) * self.variance
 
     def update_gradients(self, grad):
         self.variance.gradient = grad

@@ -123,6 +123,8 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         #add inducing inputs (if a sparse model is used)
         if hasattr(model,"Z"):
             #Zu = model.Z[:,free_dims] * model._Xscale[:,free_dims] + model._Xoffset[:,free_dims]
+            if isinstance(model,SparseGPCoregionalizedRegression):
+                Z = Z[Z[:,-1] == Y_metadata['output_index'],:]
             Zu = Z[:,free_dims]
             z_height = ax.get_ylim()[0]
             plots['inducing_inputs'] = ax.plot(Zu, np.zeros_like(Zu) + z_height, 'r|', mew=1.5, markersize=12)

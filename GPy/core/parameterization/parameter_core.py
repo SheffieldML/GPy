@@ -16,7 +16,7 @@ Observable Pattern for patameterization
 from transformations import Transformation, Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
 
-__updated__ = '2014-03-17'
+__updated__ = '2014-03-18'
 
 class HierarchyError(Exception):
     """
@@ -377,7 +377,7 @@ class Constrainable(Nameable, Indexable):
         # Ensure that the fixes array is set:
         # Parameterized: ones(self.size)
         # Param: ones(self._realsize_
-        self._fixes_ = np.ones(self.size, dtype=bool)
+        if not self._has_fixes(): self._fixes_ = np.ones(self.size, dtype=bool)
 
     def _set_fixed(self, index):
         self._ensure_fixes()
@@ -398,7 +398,7 @@ class Constrainable(Nameable, Indexable):
             self._fixes_ = None
 
     def _has_fixes(self):
-        return hasattr(self, "_fixes_") and self._fixes_ is not None
+        return hasattr(self, "_fixes_") and self._fixes_ is not None and self._fixes_.size == self.size
 
     #===========================================================================
     # Prior Operations
@@ -576,14 +576,22 @@ class OptimizationHandlable(Constrainable):
         # transformed parameters (apply transformation rules)
         p = self._param_array_.copy()
         [np.put(p, ind, c.finv(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-        if self._has_fixes():
+        if self.has_parent() and self.constraints[__fixed__].size != 0:
+            fixes = np.ones(self.size).astype(bool)
+            fixes[self.constraints[__fixed__]] = FIXED
+            return p[fixes]
+        elif self._has_fixes():
             return p[self._fixes_]
         return p
 
     def _set_params_transformed(self, p):
         if p is self._param_array_:
             p = p.copy()
-        if self._has_fixes(): self._param_array_[self._fixes_] = p
+        if self.has_parent() and self.constraints[__fixed__].size != 0:
+            fixes = np.ones(self.size).astype(bool)
+            fixes[self.constraints[__fixed__]] = FIXED
+            self._param_array_[fixes] = p
+        elif self._has_fixes(): self._param_array_[self._fixes_] = p
         else: self._param_array_[:] = p
         self.untransform()
         self._trigger_params_changed()
@@ -770,11 +778,11 @@ class Parameterizable(OptimizationHandlable):
         Add all parameters to this param class, you can insert parameters
         at any given index using the :func:`list.insert` syntax
         """
-        # if param.has_parent():
-        #    raise AttributeError, "parameter {} already in another model, create new object (or copy) for adding".format(param._short())
         if param in self._parameters_ and index is not None:
             self.remove_parameter(param)
             self.add_parameter(param, index)
+        elif param.has_parent():
+            raise HierarchyError, "parameter {} already in another model ({}), create new object (or copy) for adding".format(param._short(), param._highest_parent_._short())
         elif param not in self._parameters_:
             if param.has_parent():
                 parent = param._parent_
@@ -798,13 +806,19 @@ class Parameterizable(OptimizationHandlable):
 
             param.add_observer(self, self._pass_through_notify_observers, -np.inf)
 
-            self.size += param.size
+            parent = self
+            while parent is not None:
+                parent.size += param.size
+                parent = parent._parent_
 
-            self._connect_parameters(ignore_added_names=_ignore_added_names)
-            self._notify_parent_change()
-            self._connect_fixes()
+            self._connect_parameters()
+
+            self._highest_parent_._connect_parameters(ignore_added_names=_ignore_added_names)
+            self._highest_parent_._notify_parent_change()
+            self._highest_parent_._connect_fixes()
+
         else:
-            raise RuntimeError, """Parameter exists already added and no copy made"""
+            raise HierarchyError, """Parameter exists already and no copy made"""
 
 
     def add_parameters(self, *parameters):
@@ -830,16 +844,17 @@ class Parameterizable(OptimizationHandlable):
         param.remove_observer(self, self._pass_through_notify_observers)
         self.constraints.shift_left(start, param.size)
 
-        self._connect_fixes()
         self._connect_parameters()
         self._notify_parent_change()
 
         parent = self._parent_
         while parent is not None:
-            parent._connect_fixes()
-            parent._connect_parameters()
-            parent._notify_parent_change()
+            parent.size -= param.size
             parent = parent._parent_
+
+        self._highest_parent_._connect_parameters()
+        self._highest_parent_._connect_fixes()
+        self._highest_parent_._notify_parent_change()
 
     def _connect_parameters(self, ignore_added_names=False):
         # connect parameterlist to this parameterized object

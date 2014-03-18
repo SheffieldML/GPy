@@ -226,7 +226,7 @@ class Param(OptimizationHandlable, ObsAr):
     # Constrainable
     #===========================================================================
     def _ensure_fixes(self):
-        self._fixes_ = numpy.ones(self._realsize_, dtype=bool)
+        if not self._has_fixes(): self._fixes_ = numpy.ones(self._realsize_, dtype=bool)
 
     #===========================================================================
     # Convenience

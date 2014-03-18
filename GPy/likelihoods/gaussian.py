@@ -50,7 +50,10 @@ class Gaussian(Likelihood):
         if isinstance(gp_link, link_functions.Identity):
             self.log_concave = True
 
-    def gaussian_variance(self):
+    def betaY(self,Y,Y_metadata=None):
+        return Y/self.gaussian_variance(Y_metadata)
+
+    def gaussian_variance(self, Y_metadata=None):
         return self.variance
 
     def covariance_matrix(self, Y, Y_metadata=None):

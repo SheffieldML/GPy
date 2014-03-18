@@ -18,6 +18,17 @@ class MixedNoise(Likelihood):
         self.likelihoods_list = likelihoods_list
         self.log_concave = False
 
+    def gaussian_variance(self, Y_metadata):
+        assert all([isinstance(l, Gaussian) for l in self.likelihoods_list])
+        ind = Y_metadata['output_index'].flatten()
+        variance = np.zeros(ind.size)
+        for lik, j in zip(self.likelihoods_list, range(len(self.likelihoods_list))):
+            variance[ind==j] = lik.variance
+        return variance[:,None]
+
+    def betaY(self,Y,Y_metadata):
+        return Y/self.gaussian_variance(Y_metadata=Y_metadata)
+
     def update_gradients(self, gradients):
         self.gradient = gradients
 
@@ -32,13 +43,9 @@ class MixedNoise(Likelihood):
             _variance = np.array([self.likelihoods_list[j].variance for j in ind ])
             if full_cov:
                 var += np.eye(var.shape[0])*_variance
-                #d = 2*np.sqrt(np.diag(var))
-                #low, up = mu - d, mu + d
             else:
                 var += _variance
-                #d = 2*np.sqrt(var)
-                #low, up = mu - d, mu + d
-            return mu, var#, low, up
+            return mu, var
         else:
             raise NotImplementedError
 
@@ -51,12 +58,13 @@ class MixedNoise(Likelihood):
 
 
     def covariance_matrix(self, Y, Y_metadata):
-        assert all([isinstance(l, Gaussian) for l in self.likelihoods_list])
-        ind = Y_metadata['output_index'].flatten()
-        variance = np.zeros(Y.shape[0])
-        for lik, j in zip(self.likelihoods_list, range(len(self.likelihoods_list))):
-            variance[ind==j] = lik.variance
-        return np.diag(variance)
+        #assert all([isinstance(l, Gaussian) for l in self.likelihoods_list])
+        #ind = Y_metadata['output_index'].flatten()
+        #variance = np.zeros(Y.shape[0])
+        #for lik, j in zip(self.likelihoods_list, range(len(self.likelihoods_list))):
+        #    variance[ind==j] = lik.variance
+        #return np.diag(variance)
+        return np.diag(self.gaussian_variance(Y_metadata).flatten())
 
 
     def samples(self, gp, Y_metadata):

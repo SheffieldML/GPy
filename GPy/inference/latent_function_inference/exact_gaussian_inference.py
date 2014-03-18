@@ -52,6 +52,6 @@ class ExactGaussianInference(object):
 
         dL_dK = 0.5 * (tdot(alpha) - Y.shape[1] * Wi)
 
-        dL_dthetaL = likelihood.exact_inference_gradients(np.diag(dL_dK))
+        dL_dthetaL = likelihood.exact_inference_gradients(np.diag(dL_dK),Y_metadata)
 
         return Posterior(woodbury_chol=LW, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK, 'dL_dthetaL':dL_dthetaL}

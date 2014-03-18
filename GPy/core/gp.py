@@ -7,7 +7,7 @@ import warnings
 from .. import kern
 from ..util.linalg import dtrtrs
 from model import Model
-from parameterization import ObservableArray
+from parameterization import ObsAr
 from .. import likelihoods
 from ..likelihoods.gaussian import Gaussian
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
@@ -31,14 +31,14 @@ class GP(Model):
         super(GP, self).__init__(name)
 
         assert X.ndim == 2
-        if isinstance(X, (ObservableArray, VariationalPosterior)):
+        if isinstance(X, (ObsAr, VariationalPosterior)):
             self.X = X
-        else: self.X = ObservableArray(X)
+        else: self.X = ObsAr(X)
 
         self.num_data, self.input_dim = self.X.shape
 
         assert Y.ndim == 2
-        self.Y = ObservableArray(Y)
+        self.Y = ObsAr(Y)
         assert Y.shape[0] == self.num_data
         _, self.output_dim = self.Y.shape
 

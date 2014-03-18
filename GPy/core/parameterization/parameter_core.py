@@ -781,8 +781,8 @@ class Parameterizable(OptimizationHandlable):
         if param in self._parameters_ and index is not None:
             self.remove_parameter(param)
             self.add_parameter(param, index)
-        elif param.has_parent():
-            raise HierarchyError, "parameter {} already in another model ({}), create new object (or copy) for adding".format(param._short(), param._highest_parent_._short())
+        #elif param.has_parent():
+        #    raise HierarchyError, "parameter {} already in another model ({}), create new object (or copy) for adding".format(param._short(), param._highest_parent_._short())
         elif param not in self._parameters_:
             if param.has_parent():
                 parent = param._parent_

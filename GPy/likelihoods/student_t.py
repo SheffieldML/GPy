@@ -43,8 +43,8 @@ class StudentT(Likelihood):
         Pull out the gradients, be careful as the order must match the order
         in which the parameters are added
         """
-        self.sigma2.gradient = derivatives[0]
-        self.v.gradient = derivatives[1]
+        self.sigma2.gradient = grads[0]
+        self.v.gradient = grads[1]
 
     def pdf_link(self, link_f, y, Y_metadata=None):
         """

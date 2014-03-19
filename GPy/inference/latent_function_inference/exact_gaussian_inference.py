@@ -43,7 +43,7 @@ class ExactGaussianInference(object):
         K = kern.K(X)
 
         Ky = K.copy()
-        diag.add(Ky, likelihood.gaussian_variance(Y, Y_metadata))
+        diag.add(Ky, likelihood.gaussian_variance(Y_metadata))
         Wi, LW, LWi, W_logdet = pdinv(Ky)
 
         alpha, _ = dpotrs(LW, YYT_factor, lower=1)

@@ -50,7 +50,7 @@ class SparseGPCoregionalizedRegression(SparseGP):
 
         #Inducing inputs list
         if len(Z_list):
-            assert len(Z_list) == self.output_dim, 'Number of outputs do not match length of inducing inputs list.'
+            assert len(Z_list) == Ny, 'Number of outputs do not match length of inducing inputs list.'
         else:
             if isinstance(num_inducing,np.int):
                 num_inducing = [num_inducing] * Ny

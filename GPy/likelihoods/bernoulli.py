@@ -95,7 +95,7 @@ class Bernoulli(Likelihood):
         else:
             return np.nan
 
-    def pdf_link(self, link_f, y, extra_data=None):
+    def pdf_link(self, link_f, y, Y_metadata=None):
         """
         Likelihood function given link(f)
 
@@ -106,7 +106,7 @@ class Bernoulli(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data not used in bernoulli
+        :param Y_metadata: Y_metadata not used in bernoulli
         :returns: likelihood evaluated for this point
         :rtype: float
 
@@ -118,7 +118,7 @@ class Bernoulli(Likelihood):
         objective = np.where(y, link_f, 1.-link_f)
         return np.exp(np.sum(np.log(objective)))
 
-    def logpdf_link(self, link_f, y, extra_data=None):
+    def logpdf_link(self, link_f, y, Y_metadata=None):
         """
         Log Likelihood function given link(f)
 
@@ -129,7 +129,7 @@ class Bernoulli(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data not used in bernoulli
+        :param Y_metadata: Y_metadata not used in bernoulli
         :returns: log likelihood evaluated at points link(f)
         :rtype: float
         """
@@ -140,7 +140,7 @@ class Bernoulli(Likelihood):
         np.seterr(**state)
         return np.sum(objective)
 
-    def dlogpdf_dlink(self, link_f, y, extra_data=None):
+    def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
         """
         Gradient of the pdf at y, given link(f) w.r.t link(f)
 
@@ -151,7 +151,7 @@ class Bernoulli(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data not used in bernoulli
+        :param Y_metadata: Y_metadata not used in bernoulli
         :returns: gradient of log likelihood evaluated at points link(f)
         :rtype: Nx1 array
         """
@@ -162,7 +162,7 @@ class Bernoulli(Likelihood):
         np.seterr(**state)
         return grad
 
-    def d2logpdf_dlink2(self, link_f, y, extra_data=None):
+    def d2logpdf_dlink2(self, link_f, y, Y_metadata=None):
         """
         Hessian at y, given link_f, w.r.t link_f the hessian will be 0 unless i == j
         i.e. second derivative logpdf at y given link(f_i) link(f_j)  w.r.t link(f_i) and link(f_j)
@@ -175,7 +175,7 @@ class Bernoulli(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data not used in bernoulli
+        :param Y_metadata: Y_metadata not used in bernoulli
         :returns: Diagonal of log hessian matrix (second derivative of log likelihood evaluated at points link(f))
         :rtype: Nx1 array
 
@@ -190,7 +190,7 @@ class Bernoulli(Likelihood):
         np.seterr(**state)
         return d2logpdf_dlink2
 
-    def d3logpdf_dlink3(self, link_f, y, extra_data=None):
+    def d3logpdf_dlink3(self, link_f, y, Y_metadata=None):
         """
         Third order derivative log-likelihood function at y given link(f) w.r.t link(f)
 
@@ -201,7 +201,7 @@ class Bernoulli(Likelihood):
         :type link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param extra_data: extra_data not used in bernoulli
+        :param Y_metadata: Y_metadata not used in bernoulli
         :returns: third derivative of log likelihood evaluated at points link(f)
         :rtype: Nx1 array
         """

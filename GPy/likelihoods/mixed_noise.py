@@ -24,10 +24,11 @@ class MixedNoise(Likelihood):
         variance = np.zeros(ind.size)
         for lik, j in zip(self.likelihoods_list, range(len(self.likelihoods_list))):
             variance[ind==j] = lik.variance
-        return variance[:,None]
+        return variance
 
     def betaY(self,Y,Y_metadata):
-        return Y/self.gaussian_variance(Y_metadata=Y_metadata)
+        #TODO not here.
+        return Y/self.gaussian_variance(Y_metadata=Y_metadata)[:,None]
 
     def update_gradients(self, gradients):
         self.gradient = gradients
@@ -59,10 +60,6 @@ class MixedNoise(Likelihood):
                 var[ind==j,:],quantiles,Y_metadata=None)
             Q[ind==j,:] = np.hstack(q)
         return [q[:,None] for q in Q.T]
-
-    def covariance_matrix(self, Y, Y_metadata):
-        #TODO make more general, to allow non-gaussian likelihoods
-        return np.diag(self.gaussian_variance(Y_metadata).flatten())
 
     def samples(self, gp, Y_metadata):
         """

@@ -10,11 +10,11 @@ class Mapping(Parameterized):
     Base model for shared behavior between models that can act like a mapping.
     """
 
-    def __init__(self, input_dim, output_dim):
+    def __init__(self, input_dim, output_dim, name='mapping'):
         self.input_dim = input_dim
         self.output_dim = output_dim
 
-        super(Mapping, self).__init__()
+        super(Mapping, self).__init__(name=name)
         # Model.__init__(self)
         # All leaf nodes should call self._set_params(self._get_params()) at
         # the end

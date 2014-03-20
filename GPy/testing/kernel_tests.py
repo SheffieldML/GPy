@@ -329,7 +329,7 @@ class KernelTestsNonContinuous(unittest.TestCase):
         kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
         self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
 
-class test_ODE_UY(self):
+class test_ODE_UY(unittest.TestCase):
     def setUp(self):
         self.k = GPy.kern.ODE_UY(2)
         self.X = np.random.randn(50,2)

@@ -18,7 +18,7 @@ setup(name = 'GPy',
       license = "BSD 3-clause",
       keywords = "machine-learning gaussian-processes kernels",
       url = "http://sheffieldml.github.com/GPy/",
-      packages = ['GPy', 'GPy.core', 'GPy.kern', 'GPy.util', 'GPy.models', 'GPy.inference', 'GPy.examples', 'GPy.likelihoods', 'GPy.testing', 'GPy.util.latent_space_visualizations', 'GPy.util.latent_space_visualizations.controllers', 'GPy.likelihoods.noise_models', 'GPy.kern.parts', 'GPy.mappings'],
+      packages = ["GPy.models", "GPy.inference.optimization", "GPy.inference", "GPy.inference.latent_function_inference", "GPy.likelihoods", "GPy.mappings", "GPy.examples", "GPy.core.parameterization", "GPy.core", "GPy.testing", "GPy", "GPy.util", "GPy.kern", "GPy.kern._src.psi_comp", "GPy.kern._src", "GPy.plotting.matplot_dep.latent_space_visualizations.controllers", "GPy.plotting.matplot_dep.latent_space_visualizations", "GPy.plotting.matplot_dep", "GPy.plotting"]
       package_dir={'GPy': 'GPy'},
       package_data = {'GPy': ['GPy/examples']},
       py_modules = ['GPy.__init__'],
@@ -29,6 +29,4 @@ setup(name = 'GPy',
       },
       classifiers=[
       "License :: OSI Approved :: BSD License"],
-      #ext_modules =  [Extension(name = 'GPy.kern.lfmUpsilonf2py',
-      #          sources = ['GPy/kern/src/lfmUpsilonf2py.f90'])],
       )

@@ -4,7 +4,7 @@
 import unittest
 import numpy as np
 import GPy
-    
+
 
 
 class MappingTests(unittest.TestCase):
@@ -23,12 +23,11 @@ class MappingTests(unittest.TestCase):
 
     def test_mlpmapping(self):
         verbose = False
-        mapping = GPy.mappings.MLP(input_dim=2, hidden_dim=[3, 4, 8, 2], output_dim=2)        
+        mapping = GPy.mappings.MLP(input_dim=2, hidden_dim=[3, 4, 8, 2], output_dim=2)
         self.assertTrue(GPy.core.Mapping_check_df_dtheta(mapping=mapping).checkgrad(verbose=verbose))
         self.assertTrue(GPy.core.Mapping_check_df_dX(mapping=mapping).checkgrad(verbose=verbose))
 
 
-       
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."
     unittest.main()

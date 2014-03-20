@@ -590,9 +590,9 @@ class OptimizationHandlable(Constrainable):
         if self.has_parent() and self.constraints[__fixed__].size != 0:
             fixes = np.ones(self.size).astype(bool)
             fixes[self.constraints[__fixed__]] = FIXED
-            self._param_array_[fixes] = p
-        elif self._has_fixes(): self._param_array_[self._fixes_] = p
-        else: self._param_array_[:] = p
+            self._param_array_.flat[fixes] = p
+        elif self._has_fixes(): self._param_array_flat[self._fixes_] = p
+        else: self._param_array_.flat = p
         self.untransform()
         self._trigger_params_changed()
 

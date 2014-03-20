@@ -329,6 +329,19 @@ class KernelTestsNonContinuous(unittest.TestCase):
         kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
         self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
 
+class test_ODE_UY(unittest.TestCase):
+    def setUp(self):
+        self.k = GPy.kern.ODE_UY(2)
+        self.X = np.random.randn(50,2)
+        self.X[:,1] = np.random.randint(0,2,50)
+        i = np.argsort(X[:,1])
+        self.X = self.X[i]
+        self.Y = np.random.randn(50, 1)
+    def checkgrad(self):
+        m = GPy.models.GPRegression(X,Y,kernel=k)
+        self.assertTrue(m.checkgrad())
+
+
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."
     #unittest.main()

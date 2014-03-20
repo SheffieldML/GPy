@@ -17,14 +17,14 @@ class FITC(object):
     """
     const_jitter = 1e-6
 
-    def inference(self, kern, X, Z, likelihood, Y):
+    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None):
 
         num_inducing, _ = Z.shape
         num_data, output_dim = Y.shape
 
         #make sure the noise is not hetero
-        sigma_n = np.squeeze(likelihood.variance)
-        if sigma_n.size <1:
+        sigma_n = likelihood.gaussian_variance(Y_metadata)
+        if sigma_n.size >1:
             raise NotImplementedError, "no hetero noise with this implementation of FITC"
 
         Kmm = kern.K(Z)

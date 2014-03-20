@@ -11,9 +11,9 @@ class EP(object):
 
         :param epsilon: Convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)
         :type epsilon: float
-        :param eta: Power EP thing TODO: Ricardo: what, exactly?
+        :param eta: parameter for fractional EP updates.
         :type eta: float64
-        :param delta: Power EP thing TODO: Ricardo: what, exactly?
+        :param delta: damping EP updates factor.
         :type delta: float64
         """
         self.epsilon, self.eta, self.delta = epsilon, eta, delta

@@ -7,17 +7,17 @@ from ...core.parameterization.transformations import Logexp
 import numpy as np
 from independent_outputs import index_to_slices
 
-class ODEUY(Kern):
+class ODE_UY(Kern):
     def __init__(self, input_dim, variance_U=3., variance_Y=1., lengthscale_U=1., lengthscale_Y=1., active_dims=None, name='ode_uy'):
         assert input_dim ==2, "only defined for 2 input dims"
-        super(ODEUY, self).__init__(input_dim, active_dims, name)
+        super(ODE_UY, self).__init__(input_dim, active_dims, name)
 
-       self.variance_Y = Param('variance_Y', variance_Y, Logexp())
-       self.variance_U = Param('variance_U', variance_Y, Logexp())
-       self.lengthscale_Y = Param('lengthscale_Y', lengthscale_Y, Logexp())
-       self.lengthscale_U = Param('lengthscale_U', lengthscale_Y, Logexp())
+        self.variance_Y = Param('variance_Y', variance_Y, Logexp())
+        self.variance_U = Param('variance_U', variance_Y, Logexp())
+        self.lengthscale_Y = Param('lengthscale_Y', lengthscale_Y, Logexp())
+        self.lengthscale_U = Param('lengthscale_U', lengthscale_Y, Logexp())
 
-       self.add_parameters(self.variance_Y, self.variance_U, self.lengthscale_Y, self.lengthscale_U)
+        self.add_parameters(self.variance_Y, self.variance_U, self.lengthscale_Y, self.lengthscale_U)
 
     def K(self, X, X2=None):
         # model :   a * dy/dt + b * y = U
@@ -34,11 +34,11 @@ class ODEUY(Kern):
 
         #rdist = X[:,0][:,None] - X2[:,0][:,None].T
         rdist = X - X2.T
-        ly=1/self.lengthscaleY
-        lu=np.sqrt(3)/self.lengthscaleU
+        ly=1/self.lengthscale_Y
+        lu=np.sqrt(3)/self.lengthscale_U
         #iu=self.input_lengthU  #dimention of U
-        Vu=self.varianceU
-        Vy=self.varianceY
+        Vu=self.variance_U
+        Vy=self.variance_Y
         #Vy=ly/2
         #stop
 
@@ -95,11 +95,11 @@ class ODEUY(Kern):
     def Kdiag(self, X):
         """Compute the diagonal of the covariance matrix associated to X."""
         Kdiag = np.zeros(X.shape[0])
-        ly=1/self.lengthscaleY
-        lu=np.sqrt(3)/self.lengthscaleU
+        ly=1/self.lengthscale_Y
+        lu=np.sqrt(3)/self.lengthscale_U
 
-        Vu = self.varianceU
-        Vy=self.varianceY
+        Vu = self.variance_U
+        Vy=self.variance_Y
 
         k1 = (2*lu+ly)/(lu+ly)**2
         k2 = (ly-2*lu + 2*lu-ly ) / (ly-lu)**2
@@ -110,13 +110,13 @@ class ODEUY(Kern):
         for i, ss1 in enumerate(slices):
             for s1 in ss1:
                 if i==0:
-                    Kdiag[s1]+= self.varianceU
+                    Kdiag[s1]+= self.variance_U
                 elif i==1:
                     Kdiag[s1]+= Vu*Vy*(k1+k2+k3)
                 else:
                     raise ValueError, "invalid input/output index"
-        #Kdiag[slices[0][0]]+= self.varianceU   #matern32 diag
-        #Kdiag[slices[1][0]]+= self.varianceU*self.varianceY*(k1+k2+k3)  #  diag
+        #Kdiag[slices[0][0]]+= self.variance_U   #matern32 diag
+        #Kdiag[slices[1][0]]+= self.variance_U*self.variance_Y*(k1+k2+k3)  #  diag
         return Kdiag
 
 
@@ -130,11 +130,11 @@ class ODEUY(Kern):
         #rdist = X[:,0][:,None] - X2[:,0][:,None].T
 
         rdist = X - X2.T
-        ly=1/self.lengthscaleY
-        lu=np.sqrt(3)/self.lengthscaleU
+        ly=1/self.lengthscale_Y
+        lu=np.sqrt(3)/self.lengthscale_U
 
-        Vu=self.varianceU
-        Vy=self.varianceY
+        Vu=self.variance_U
+        Vy=self.variance_Y
         Vyu = np.sqrt(Vy*ly*2)
         dVdly = 0.5/np.sqrt(ly)*np.sqrt(2*Vy)
         dVdVy = 0.5/np.sqrt(Vy)*np.sqrt(2*ly)
@@ -164,7 +164,7 @@ class ODEUY(Kern):
 
         dk3theta1 = lambda dist: np.exp(-dist*lu)*(lu+ly)**(-2)*((2*lu+ly+dist*lu**2+lu*ly*dist)*(-dist-2/(lu+ly))+2+2*lu*dist+ly*dist)
 
-        #dktheta1 = lambda dist: self.varianceU*self.varianceY*(dk1theta1+dk2theta1+dk3theta1)
+        #dktheta1 = lambda dist: self.variance_U*self.variance_Y*(dk1theta1+dk2theta1+dk3theta1)
 
 
 
@@ -178,7 +178,7 @@ class ODEUY(Kern):
 
         dk3theta2 = lambda dist: np.exp(-dist*lu) * (-3*lu-ly-dist*lu**2-lu*ly*dist)/(lu+ly)**3
 
-        #dktheta2 = lambda dist: self.varianceU*self.varianceY*(dk1theta2 + dk2theta2 +dk3theta2)
+        #dktheta2 = lambda dist: self.variance_U*self.variance_Y*(dk1theta2 + dk2theta2 +dk3theta2)
 
         # kyy kernel
 
@@ -250,22 +250,22 @@ class ODEUY(Kern):
                         elif i==0 and j==1:
                             ########target[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , kuyp(np.abs(rdist[ss1,ss2])), kuyn(np.abs(rdist[s1[0],s2[0]]) )   )
                             #np.where(  rdist[ss1,ss2]>0 , kuyp(np.abs(rdist[ss1,ss2])), kuyn(np.abs(rdist[s1[0],s2[0]]) )   )
-                            #dktheta1[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , self.varianceU*self.varianceY*dkcrtheta1(np.abs(rdist[ss1,ss2])) ,self.varianceU*self.varianceY*(dk1theta1(np.abs(rdist[ss1,ss2]))+dk2theta1(np.abs(rdist[ss1,ss2])))    )
-                            #dktheta2[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , self.varianceU*self.varianceY*dkcrtheta2(np.abs(rdist[ss1,ss2])) ,self.varianceU*self.varianceY*(dk1theta2(np.abs(rdist[ss1,ss2]))+dk2theta2(np.abs(rdist[ss1,ss2])))    )
+                            #dktheta1[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , self.variance_U*self.variance_Y*dkcrtheta1(np.abs(rdist[ss1,ss2])) ,self.variance_U*self.variance_Y*(dk1theta1(np.abs(rdist[ss1,ss2]))+dk2theta1(np.abs(rdist[ss1,ss2])))    )
+                            #dktheta2[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , self.variance_U*self.variance_Y*dkcrtheta2(np.abs(rdist[ss1,ss2])) ,self.variance_U*self.variance_Y*(dk1theta2(np.abs(rdist[ss1,ss2]))+dk2theta2(np.abs(rdist[ss1,ss2])))    )
                             dktheta1[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , Vu*Vyu*dkuypdtheta1(rdist[ss1,ss2]),Vu*Vyu*dkuyndtheta1(rdist[ss1,ss2]) )
                             dkUdvar[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , Vyu*kuyp(rdist[ss1,ss2]), Vyu* kuyn(rdist[ss1,ss2])  )
                             dktheta2[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , Vu*Vyu*dkuypdtheta2(rdist[ss1,ss2])+Vu*dVdly*kuyp(rdist[ss1,ss2]),Vu*Vyu*dkuyndtheta2(rdist[ss1,ss2])+Vu*dVdly*kuyn(rdist[ss1,ss2]) )
                             dkYdvar[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , Vu*dVdVy*kuyp(rdist[ss1,ss2]), Vu*dVdVy* kuyn(rdist[ss1,ss2])  )
                         elif i==1 and j==1:
                             #target[ss1,ss2] = kyy(np.abs(rdist[ss1,ss2]))
-                            dktheta1[ss1,ss2] = self.varianceU*self.varianceY*(dk1theta1(np.abs(rdist[ss1,ss2]))+dk2theta1(np.abs(rdist[ss1,ss2]))+dk3theta1(np.abs(rdist[ss1,ss2])))
-                            dktheta2[ss1,ss2] = self.varianceU*self.varianceY*(dk1theta2(np.abs(rdist[ss1,ss2])) + dk2theta2(np.abs(rdist[ss1,ss2])) +dk3theta2(np.abs(rdist[ss1,ss2])))
-                            dkUdvar[ss1,ss2] = self.varianceY*(k1(np.abs(rdist[ss1,ss2]))+k2(np.abs(rdist[ss1,ss2]))+k3(np.abs(rdist[ss1,ss2])) )
-                            dkYdvar[ss1,ss2] = self.varianceU*(k1(np.abs(rdist[ss1,ss2]))+k2(np.abs(rdist[ss1,ss2]))+k3(np.abs(rdist[ss1,ss2])) )
+                            dktheta1[ss1,ss2] = self.variance_U*self.variance_Y*(dk1theta1(np.abs(rdist[ss1,ss2]))+dk2theta1(np.abs(rdist[ss1,ss2]))+dk3theta1(np.abs(rdist[ss1,ss2])))
+                            dktheta2[ss1,ss2] = self.variance_U*self.variance_Y*(dk1theta2(np.abs(rdist[ss1,ss2])) + dk2theta2(np.abs(rdist[ss1,ss2])) +dk3theta2(np.abs(rdist[ss1,ss2])))
+                            dkUdvar[ss1,ss2] = self.variance_Y*(k1(np.abs(rdist[ss1,ss2]))+k2(np.abs(rdist[ss1,ss2]))+k3(np.abs(rdist[ss1,ss2])) )
+                            dkYdvar[ss1,ss2] = self.variance_U*(k1(np.abs(rdist[ss1,ss2]))+k2(np.abs(rdist[ss1,ss2]))+k3(np.abs(rdist[ss1,ss2])) )
                         else:
                             #######target[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , kyup(np.abs(rdist[ss1,ss2])), kyun(np.abs(rdist[s1[0],s2[0]]) )   )
-                            #dktheta1[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 ,self.varianceU*self.varianceY*(dk1theta1(np.abs(rdist[ss1,ss2]))+dk2theta1(np.abs(rdist[ss1,ss2]))) , self.varianceU*self.varianceY*dkcrtheta1(np.abs(rdist[ss1,ss2])) )
-                            #dktheta2[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 ,self.varianceU*self.varianceY*(dk1theta2(np.abs(rdist[ss1,ss2]))+dk2theta2(np.abs(rdist[ss1,ss2]))) , self.varianceU*self.varianceY*dkcrtheta2(np.abs(rdist[ss1,ss2])) )
+                            #dktheta1[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 ,self.variance_U*self.variance_Y*(dk1theta1(np.abs(rdist[ss1,ss2]))+dk2theta1(np.abs(rdist[ss1,ss2]))) , self.variance_U*self.variance_Y*dkcrtheta1(np.abs(rdist[ss1,ss2])) )
+                            #dktheta2[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 ,self.variance_U*self.variance_Y*(dk1theta2(np.abs(rdist[ss1,ss2]))+dk2theta2(np.abs(rdist[ss1,ss2]))) , self.variance_U*self.variance_Y*dkcrtheta2(np.abs(rdist[ss1,ss2])) )
                             dktheta1[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , Vu*Vyu*dkyupdtheta1(rdist[ss1,ss2]),Vu*Vyu*dkyundtheta1(rdist[ss1,ss2])  )
                             dkUdvar[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , Vyu*kyup(rdist[ss1,ss2]),Vyu*kyun(rdist[ss1,ss2]))
                             dktheta2[ss1,ss2] = np.where(  rdist[ss1,ss2]>0 , Vu*Vyu*dkyupdtheta2(rdist[ss1,ss2])+Vu*dVdly*kyup(rdist[ss1,ss2]),Vu*Vyu*dkyundtheta2(rdist[ss1,ss2])+Vu*dVdly*kyun(rdist[ss1,ss2])  )
@@ -274,9 +274,9 @@ class ODEUY(Kern):
         #stop
         self.variance_U.gradient = np.sum(dkUdvar * dL_dK)     # Vu
 
-        self.varaince_Y.gradient = np.sum(dkYdvar * dL_dK)     # Vy
+        self.variance_Y.gradient = np.sum(dkYdvar * dL_dK)     # Vy
 
-        self.lengthscale_U.gradient = np.sum(dktheta1*(-np.sqrt(3)*self.lengthscaleU**(-2))* dL_dK)     #lu
+        self.lengthscale_U.gradient = np.sum(dktheta1*(-np.sqrt(3)*self.lengthscale_U**(-2))* dL_dK)     #lu
 
-        self.lengthscaleY.gradient = np.sum(dktheta2*(-self.lengthscaleY**(-2)) * dL_dK)              #ly
+        self.lengthscale_Y.gradient = np.sum(dktheta2*(-self.lengthscale_Y**(-2)) * dL_dK)              #ly
 

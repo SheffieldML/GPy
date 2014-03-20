@@ -10,5 +10,5 @@ from _src.periodic import PeriodicExponential, PeriodicMatern32, PeriodicMatern5
 from _src.independent_outputs import IndependentOutputs, Hierarchical
 from _src.coregionalize import Coregionalize
 from _src.ssrbf import SSRBF # TODO: ZD: did you remove this?
-from _src.ODE_Uy import ODE_UY
+from _src.ODE_UY import ODE_UY
 

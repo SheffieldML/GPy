@@ -541,12 +541,12 @@ class Constrainable(Nameable, Indexable):
             print "WARNING: reconstraining parameters {}".format(self.parameter_names() or self.name)
         which.add(what, self._raveled_index())
 
-    def _remove_from_index_operations(self, which, what):
+    def _remove_from_index_operations(self, which, transforms):
         """
         Helper preventing copy code.
         Remove given what (transform prior etc) from which param index ops.
         """
-        if len(what) == 0:
+        if len(transforms) == 0:
             transforms = which.properties()
         removed = np.empty((0,), dtype=int)
         for t in transforms:
@@ -567,10 +567,10 @@ class OptimizationHandlable(Constrainable):
         super(OptimizationHandlable, self).__init__(name, default_constraint=default_constraint, *a, **kw)
 
     def transform(self):
-        [np.put(self._param_array_, ind, c.finv(self._param_array_[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
+        [np.put(self._param_array_, ind, c.finv(self._param_array_.flat[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
 
     def untransform(self):
-        [np.put(self._param_array_, ind, c.f(self._param_array_[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
+        [np.put(self._param_array_, ind, c.f(self._param_array_.flat[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
 
     def _get_params_transformed(self):
         # transformed parameters (apply transformation rules)
@@ -591,7 +591,7 @@ class OptimizationHandlable(Constrainable):
             fixes = np.ones(self.size).astype(bool)
             fixes[self.constraints[__fixed__]] = FIXED
             self._param_array_.flat[fixes] = p
-        elif self._has_fixes(): self._param_array_flat[self._fixes_] = p
+        elif self._has_fixes(): self._param_array_.flat[self._fixes_] = p
         else: self._param_array_.flat = p
         self.untransform()
         self._trigger_params_changed()
@@ -670,8 +670,8 @@ class OptimizationHandlable(Constrainable):
         for pi in self._parameters_:
             pislice = slice(pi_old_size, pi_old_size+pi.size)
 
-            self._param_array_[pislice] = pi._param_array_.ravel()#, requirements=['C', 'W']).flat
-            self._gradient_array_[pislice] = pi._gradient_array_.ravel()#, requirements=['C', 'W']).flat
+            self._param_array_[pislice] = pi._param_array_.flat#, requirements=['C', 'W']).flat
+            self._gradient_array_[pislice] = pi._gradient_array_.flat#, requirements=['C', 'W']).flat
 
             pi._param_array_.data = parray[pislice].data
             pi._gradient_array_.data = garray[pislice].data
@@ -878,8 +878,8 @@ class Parameterizable(OptimizationHandlable):
             # first connect all children
             p._propagate_param_grad(self._param_array_[pslice], self._gradient_array_[pslice])
             # then connect children to self
-            self._param_array_[pslice] = p._param_array_.ravel()#, requirements=['C', 'W']).ravel(order='C')
-            self._gradient_array_[pslice] = p._gradient_array_.ravel()#, requirements=['C', 'W']).ravel(order='C')
+            self._param_array_[pslice] = p._param_array_.flat#, requirements=['C', 'W']).ravel(order='C')
+            self._gradient_array_[pslice] = p._gradient_array_.flat#, requirements=['C', 'W']).ravel(order='C')
 
             if not p._param_array_.flags['C_CONTIGUOUS']:
                 import ipdb;ipdb.set_trace()

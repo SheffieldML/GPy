@@ -160,6 +160,7 @@ def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=15, Q=4
 def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40, max_iters=1000, **k):
     import GPy
     from matplotlib import pyplot as plt
+    from ..util.misc import param_to_array
 
     _np.random.seed(0)
     data = GPy.util.datasets.oil()
@@ -173,11 +174,11 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
         m.optimize('scg', messages=verbose, max_iters=max_iters, gtol=.05)
 
     if plot:
-        y = m.Y[0, :]
+        y = m.Y
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         m.plot_latent(ax=latent_axes)
         data_show = GPy.plotting.matplot_dep.visualize.vector_show(y)
-        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X[0, :], # @UnusedVariable
+        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(param_to_array(m.X.mean), # @UnusedVariable
             m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
         raw_input('Press enter to finish')
         plt.close(fig)

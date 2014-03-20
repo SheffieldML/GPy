@@ -72,15 +72,19 @@ class BayesianGPLVM(SparseGP):
         self.variational_prior.update_gradients_KL(self.X)
 
 
-    def plot_latent(self, plot_inducing=True, *args, **kwargs):
-        """
-        See GPy.plotting.matplot_dep.dim_reduction_plots.plot_latent
-        """
+    def plot_latent(self, labels=None, which_indices=None,
+                resolution=50, ax=None, marker='o', s=40,
+                fignum=None, plot_inducing=True, legend=True,
+                plot_limits=None, 
+                aspect='auto', updates=False, **kwargs):
         import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import dim_reduction_plots
 
-        return dim_reduction_plots.plot_latent(self, plot_inducing=plot_inducing, *args, **kwargs)
+        return dim_reduction_plots.plot_latent(self, labels, which_indices,
+                resolution, ax, marker, s,
+                fignum, plot_inducing, legend,
+                plot_limits, aspect, updates, **kwargs)
 
     def do_test_latents(self, Y):
         """

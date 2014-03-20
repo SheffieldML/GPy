@@ -67,12 +67,22 @@ class GPLVM(GP):
         assert self.likelihood.Y.shape[1] == 2
         pb.scatter(self.likelihood.Y[:, 0], self.likelihood.Y[:, 1], 40, self.X[:, 0].copy(), linewidth=0, cmap=pb.cm.jet)  # @UndefinedVariable
         Xnew = np.linspace(self.X.min(), self.X.max(), 200)[:, None]
-        mu, var, upper, lower = self.predict(Xnew)
+        mu, _ = self.predict(Xnew)
         pb.plot(mu[:, 0], mu[:, 1], 'k', linewidth=1.5)
 
-    def plot_latent(self, *args, **kwargs):
+    def plot_latent(self, labels=None, which_indices=None,
+                resolution=50, ax=None, marker='o', s=40,
+                fignum=None, legend=True,
+                plot_limits=None, 
+                aspect='auto', updates=False, **kwargs):
+        import sys
+        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import dim_reduction_plots
 
-        return dim_reduction_plots.plot_latent(self, *args, **kwargs)
+        return dim_reduction_plots.plot_latent(self, labels, which_indices,
+                resolution, ax, marker, s,
+                fignum, False, legend,
+                plot_limits, aspect, updates, **kwargs)
+
     def plot_magnification(self, *args, **kwargs):
         return util.plot_latent.plot_magnification(self, *args, **kwargs)

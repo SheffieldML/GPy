@@ -74,25 +74,27 @@ class GP(Model):
 
     def _raw_predict(self, _Xnew, full_cov=False):
         """
-        Internal helper function for making predictions, does not account
-        for normalization or likelihood
+        For making predictions, does not account for normalization or likelihood
 
         full_cov is a boolean which defines whether the full covariance matrix
         of the prediction is computed. If full_cov is False (default), only the
         diagonal of the covariance is returned.
 
+        $$
+        p(f*|X*, X, Y) = \int^{\inf}_{\inf} p(f*|f,X*)p(f|X,Y) df
+                       = N(f*| K_{x*x}(K_{xx} + \Sigma)^{-1}Y, K_{x*x*} - K_{xx*}(K_{xx} + \Sigma)^{-1}K_{xx*}
+        \Sigma := \texttt{Likelihood.variance / Approximate likelihood covariance}
+        $$
+
         """
         Kx = self.kern.K(_Xnew, self.X).T
-        #LiKx, _ = dtrtrs(self.posterior.woodbury_chol, np.asfortranarray(Kx), lower=1)
         WiKx = np.dot(self.posterior.woodbury_inv, Kx)
         mu = np.dot(Kx.T, self.posterior.woodbury_vector)
         if full_cov:
             Kxx = self.kern.K(_Xnew)
-            #var = Kxx - tdot(LiKx.T)
-            var = np.dot(Kx.T, WiKx)
+            var = Kxx - np.dot(Kx.T, WiKx)
         else:
             Kxx = self.kern.Kdiag(_Xnew)
-            #var = Kxx - np.sum(LiKx*LiKx, 0)
             var = Kxx - np.sum(WiKx*Kx, 0)
             var = var.reshape(-1, 1)
 

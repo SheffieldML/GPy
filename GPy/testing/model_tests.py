@@ -6,6 +6,60 @@ import unittest
 import numpy as np
 import GPy
 
+class MiscTests(unittest.TestCase):
+    def setUp(self):
+        self.N = 20
+        self.N_new = 50
+        self.D = 1
+        self.X = np.random.uniform(-3., 3., (self.N, 1))
+        self.Y = np.sin(self.X) + np.random.randn(self.N, self.D) * 0.05
+        self.X_new = np.random.uniform(-3., 3., (self.N_new, 1))
+
+    def test_raw_predict(self):
+        k = GPy.kern.RBF(1)
+        m = GPy.models.GPRegression(self.X, self.Y, kernel=k)
+        m.randomize()
+        Kinv = np.linalg.pinv(k.K(self.X) + np.eye(self.N)*m.Gaussian_noise.variance)
+        K_hat = k.K(self.X_new) - k.K(self.X_new, self.X).dot(Kinv).dot(k.K(self.X, self.X_new))
+        mu_hat = k.K(self.X_new, self.X).dot(Kinv).dot(self.Y)
+
+        mu, covar = m._raw_predict(self.X_new, full_cov=True)
+        self.assertEquals(mu.shape, (self.N_new, self.D))
+        self.assertEquals(covar.shape, (self.N_new, self.N_new))
+        np.testing.assert_almost_equal(K_hat, covar)
+        np.testing.assert_almost_equal(mu_hat, mu)
+
+        mu, var = m._raw_predict(self.X_new)
+        self.assertEquals(mu.shape, (self.N_new, self.D))
+        self.assertEquals(var.shape, (self.N_new, 1))
+        np.testing.assert_almost_equal(np.diag(K_hat)[:, None], var)
+        np.testing.assert_almost_equal(mu_hat, mu)
+
+    def test_sparse_raw_predict(self):
+        k = GPy.kern.RBF(1)
+        m = GPy.models.SparseGPRegression(self.X, self.Y, kernel=k)
+        m.randomize()
+        Z = m.Z[:]
+        X = self.X[:]
+
+        #Not easy to check if woodbury_inv is correct in itself as it requires a large derivation and expression
+        Kinv = m.posterior.woodbury_inv
+        K_hat = k.K(self.X_new) - k.K(self.X_new, Z).dot(Kinv).dot(k.K(Z, self.X_new))
+
+        mu, covar = m._raw_predict(self.X_new, full_cov=True)
+        self.assertEquals(mu.shape, (self.N_new, self.D))
+        self.assertEquals(covar.shape, (self.N_new, self.N_new))
+        np.testing.assert_almost_equal(K_hat, covar)
+        #np.testing.assert_almost_equal(mu_hat, mu)
+
+        mu, var = m._raw_predict(self.X_new)
+        self.assertEquals(mu.shape, (self.N_new, self.D))
+        self.assertEquals(var.shape, (self.N_new, 1))
+        np.testing.assert_almost_equal(np.diag(K_hat)[:, None], var)
+        #np.testing.assert_almost_equal(mu_hat, mu)
+
+
+
 class GradientTests(unittest.TestCase):
     def setUp(self):
         ######################################

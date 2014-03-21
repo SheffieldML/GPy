@@ -121,6 +121,11 @@ class ParameterizedTest(unittest.TestCase):
         self.test1.randomize()
         self.assertEqual(val, self.white.variance)
 
+    def test_randomize(self):
+        ps = self.test1.param.view(np.ndarray).copy()
+        self.test1.param.randomize()
+        self.assertFalse(np.all(ps==self.test1.param))
+
     def test_fixing_randomize_parameter_handling(self):
         self.rbf.fix(warning=True)
         val = float(self.rbf.variance)

@@ -92,7 +92,7 @@ class Gaussian(Likelihood):
     def predictive_variance(self, mu, sigma, predictive_mean=None):
         return self.variance + sigma**2
 
-    def predictive_quantiles(self, mu, var, quantiles, Y_metadata):
+    def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None):
         return  [stats.norm.ppf(q/100.)*np.sqrt(var) + mu for q in quantiles]
 
     def pdf_link(self, link_f, y, Y_metadata=None):

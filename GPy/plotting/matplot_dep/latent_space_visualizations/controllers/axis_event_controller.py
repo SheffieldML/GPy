@@ -33,7 +33,7 @@ class AxisChangedController(AxisEventController):
         Constructor
         '''
         super(AxisChangedController, self).__init__(ax)
-        self._lim_ratio_threshold = update_lim or .8
+        self._lim_ratio_threshold = update_lim or .95
         self._x_lim = self.ax.get_xlim()
         self._y_lim = self.ax.get_ylim()
 
@@ -80,6 +80,10 @@ class AxisChangedController(AxisEventController):
 class BufferedAxisChangedController(AxisChangedController):
     def __init__(self, ax, plot_function, plot_limits, resolution=50, update_lim=None, **kwargs):
         """
+        Buffered axis changed controller. Controls the buffer and handles update events for when the axes changed.
+        
+        Updated plotting will be after first reload (first time will be within plot limits, after that the limits will be buffered)
+        
         :param plot_function:
             function to use for creating image for plotting (return ndarray-like)
             plot_function gets called with (2D!) Xtest grid if replotting required
@@ -91,11 +95,13 @@ class BufferedAxisChangedController(AxisChangedController):
         """
         super(BufferedAxisChangedController, self).__init__(ax, update_lim=update_lim)
         self.plot_function = plot_function
-        xmin, xmax = self._x_lim # self._compute_buffered(*self._x_lim)
-        ymin, ymax = self._y_lim # self._compute_buffered(*self._y_lim)
+        xmin, ymin, xmax, ymax = plot_limits#self._x_lim # self._compute_buffered(*self._x_lim)
+        # imshow acts on the limits of the plot, this is why we need to override the limits here, to make sure the right plot limits are used:
+        self._x_lim = xmin, xmax
+        self._y_lim = ymin, ymax
         self.resolution = resolution
         self._not_init = False
-        self.view = self._init_view(self.ax, self.recompute_X(), xmin, xmax, ymin, ymax, **kwargs)
+        self.view = self._init_view(self.ax, self.recompute_X(buffered=False), xmin, xmax, ymin, ymax, **kwargs)
         self._not_init = True
 
     def update(self, ax):
@@ -111,14 +117,16 @@ class BufferedAxisChangedController(AxisChangedController):
     def update_view(self, view, X, xmin, xmax, ymin, ymax):
         raise NotImplementedError('update view given in here')
 
-    def get_grid(self):
-        xmin, xmax = self._compute_buffered(*self._x_lim)
-        ymin, ymax = self._compute_buffered(*self._y_lim)
+    def get_grid(self, buffered=True):
+        if buffered: comp = self._compute_buffered
+        else: comp = lambda a,b: (a,b)
+        xmin, xmax = comp(*self._x_lim)
+        ymin, ymax = comp(*self._y_lim)
         x, y = numpy.mgrid[xmin:xmax:1j * self.resolution, ymin:ymax:1j * self.resolution]
         return numpy.hstack((x.flatten()[:, None], y.flatten()[:, None]))
 
-    def recompute_X(self):
-        X = self.plot_function(self.get_grid())
+    def recompute_X(self, buffered=True):
+        X = self.plot_function(self.get_grid(buffered))
         if isinstance(X, (tuple, list)):
             for x in X:
                 x.shape = [self.resolution, self.resolution]

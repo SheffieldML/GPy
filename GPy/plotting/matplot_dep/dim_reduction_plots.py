@@ -30,7 +30,8 @@ def most_significant_input_dimensions(model, which_indices):
 def plot_latent(model, labels=None, which_indices=None,
                 resolution=50, ax=None, marker='o', s=40,
                 fignum=None, plot_inducing=False, legend=True,
-                aspect='auto', updates=False):
+                plot_limits=None, 
+                aspect='auto', updates=False, **kwargs):
     """
     :param labels: a np.array of size model.num_data containing labels for the points (can be number, strings, etc)
     :param resolution: the resolution of the grid on which to evaluate the predictive variance
@@ -38,6 +39,8 @@ def plot_latent(model, labels=None, which_indices=None,
     if ax is None:
         fig = pb.figure(num=fignum)
         ax = fig.add_subplot(111)
+    else:
+        fig = ax.figure
     Tango.reset()
 
     if labels is None:
@@ -57,15 +60,28 @@ def plot_latent(model, labels=None, which_indices=None,
     def plot_function(x):
         Xtest_full = np.zeros((x.shape[0], model.X.shape[1]))
         Xtest_full[:, [input_1, input_2]] = x
-        mu, var, low, up = model.predict(Xtest_full)
+        _, var = model.predict(Xtest_full)
         var = var[:, :1]
         return np.log(var)
 
     #Create an IMshow controller that can re-plot the latent space shading at a good resolution
+    if plot_limits is None:
+        xmin, ymin = X[:, [input_1, input_2]].min(0)
+        xmax, ymax = X[:, [input_1, input_2]].max(0)
+        x_r, y_r = xmax-xmin, ymax-ymin
+        xmin -= .1*x_r
+        xmax += .1*x_r
+        ymin -= .1*y_r
+        ymax += .1*y_r
+    else:
+        try:
+            xmin, xmax, ymin, ymax = plot_limits
+        except (TypeError, ValueError) as e:
+            raise e.__class__, "Wrong plot limits: {} given -> need (xmin, xmax, ymin, ymax)".format(plot_limits)
     view = ImshowController(ax, plot_function,
-                            tuple(X[:, [input_1, input_2]].min(0)) + tuple(X[:, [input_1, input_2]].max(0)),
+                            (xmin, ymin, xmax, ymax),
                             resolution, aspect=aspect, interpolation='bilinear',
-                            cmap=pb.cm.binary)
+                            cmap=pb.cm.binary, **kwargs)
 
     # make sure labels are in order of input:
     ulabels = []
@@ -99,18 +115,31 @@ def plot_latent(model, labels=None, which_indices=None,
     if not np.all(labels == 1.) and legend:
         ax.legend(loc=0, numpoints=1)
 
-    #ax.set_xlim(xmin[0], xmax[0])
-    #ax.set_ylim(xmin[1], xmax[1])
     ax.grid(b=False) # remove the grid if present, it doesn't look good
     ax.set_aspect('auto') # set a nice aspect ratio
 
     if plot_inducing:
         Z = param_to_array(model.Z)
         ax.plot(Z[:, input_1], Z[:, input_2], '^w')
+    
+    ax.set_xlim((xmin, xmax))
+    ax.set_ylim((ymin, ymax))
 
+    try:
+        fig.canvas.draw()
+        fig.tight_layout()
+        fig.canvas.draw()
+    except Exception as e:
+        print "Could not invoke tight layout: {}".format(e)
+        pass
+    
     if updates:
-        ax.figure.canvas.show()
+        try:
+            ax.figure.canvas.show()
+        except Exception as e:
+            print "Could not invoke show: {}".format(e)
         raw_input('Enter to continue')
+        view.deactivate()
     return ax
 
 def plot_magnification(model, labels=None, which_indices=None,
@@ -186,7 +215,7 @@ def plot_magnification(model, labels=None, which_indices=None,
         ax.plot(model.Z[:, input_1], model.Z[:, input_2], '^w')
 
     if updates:
-        ax.figure.canvas.show()
+        fig.canvas.show()
         raw_input('Enter to continue')
 
     pb.title('Magnification Factor')

@@ -25,80 +25,51 @@ def olympic_marathon_men(optimize=True, plot=True):
 
     return m
 
-def coregionalization_toy2(optimize=True, plot=True):
+def coregionalization_toy(optimize=True, plot=True):
     """
     A simple demonstration of coregionalization on two sinusoidal functions.
     """
     #build a design matrix with a column of integers indicating the output
     X1 = np.random.rand(50, 1) * 8
     X2 = np.random.rand(30, 1) * 5
-    index = np.vstack((np.zeros_like(X1), np.ones_like(X2)))
-    X = np.hstack((np.vstack((X1, X2)), index))
 
     #build a suitable set of observed variables
     Y1 = np.sin(X1) + np.random.randn(*X1.shape) * 0.05
     Y2 = np.sin(X2) + np.random.randn(*X2.shape) * 0.05 + 2.
-    Y = np.vstack((Y1, Y2))
 
-    #build the kernel
-    k1 = GPy.kern.RBF(1) + GPy.kern.Bias(1)
-    k2 = GPy.kern.Coregionalize(2,1)
-    k = k1**k2
-    m = GPy.models.GPRegression(X, Y, kernel=k)
+    m = GPy.models.GPCoregionalizedRegression(X_list=[X1,X2], Y_list=[Y1,Y2])
 
     if optimize:
         m.optimize('bfgs', max_iters=100)
 
     if plot:
-        m.plot(fixed_inputs=[(1,0)])
-        m.plot(fixed_inputs=[(1,1)], ax=pb.gca())
-
+        slices = GPy.util.multioutput.get_slices([X1,X2])
+        m.plot(fixed_inputs=[(1,0)],which_data_rows=slices[0],Y_metadata={'output_index':0})
+        m.plot(fixed_inputs=[(1,1)],which_data_rows=slices[1],Y_metadata={'output_index':1},ax=pb.gca())
     return m
-
-#FIXME: Needs recovering once likelihoods are consolidated
-#def coregionalization_toy(optimize=True, plot=True):
-#    """
-#    A simple demonstration of coregionalization on two sinusoidal functions.
-#    """
-#    X1 = np.random.rand(50, 1) * 8
-#    X2 = np.random.rand(30, 1) * 5
-#    X = np.vstack((X1, X2))
-#    Y1 = np.sin(X1) + np.random.randn(*X1.shape) * 0.05
-#    Y2 = -np.sin(X2) + np.random.randn(*X2.shape) * 0.05
-#    Y = np.vstack((Y1, Y2))
-#
-#    k1 = GPy.kern.RBF(1)
-#    m = GPy.models.GPMultioutputRegression(X_list=[X1,X2],Y_list=[Y1,Y2],kernel_list=[k1])
-#    m.constrain_fixed('.*rbf_var', 1.)
-#    m.optimize(max_iters=100)
-#
-#    fig, axes = pb.subplots(2,1)
-#    m.plot(fixed_inputs=[(1,0)],ax=axes[0])
-#    m.plot(fixed_inputs=[(1,1)],ax=axes[1])
-#    axes[0].set_title('Output 0')
-#    axes[1].set_title('Output 1')
-#    return m
 
 def coregionalization_sparse(optimize=True, plot=True):
     """
     A simple demonstration of coregionalization on two sinusoidal functions using sparse approximations.
     """
-    #fetch the data from the non sparse examples
-    m = coregionalization_toy2(optimize=False, plot=False)
-    X, Y = m.X, m.Y
+    #build a design matrix with a column of integers indicating the output
+    X1 = np.random.rand(50, 1) * 8
+    X2 = np.random.rand(30, 1) * 5
 
-    k = GPy.kern.RBF(1)**GPy.kern.Coregionalize(2)
+    #build a suitable set of observed variables
+    Y1 = np.sin(X1) + np.random.randn(*X1.shape) * 0.05
+    Y2 = np.sin(X2) + np.random.randn(*X2.shape) * 0.05 + 2.
 
-    #construct a model
-    m = GPy.models.SparseGPRegression(X,Y, num_inducing=25, kernel=k)
-    m.Z[:,1].fix() # don't optimize the inducing input indexes
+    m = GPy.models.SparseGPCoregionalizedRegression(X_list=[X1,X2], Y_list=[Y1,Y2])
 
     if optimize:
-        m.optimize('bfgs', max_iters=100, messages=1)
+        m.optimize('bfgs', max_iters=100)
 
     if plot:
-        m.plot(fixed_inputs=[(1,0)])
-        m.plot(fixed_inputs=[(1,1)], ax=pb.gca())
+        slices = GPy.util.multioutput.get_slices([X1,X2])
+        m.plot(fixed_inputs=[(1,0)],which_data_rows=slices[0],Y_metadata={'output_index':0})
+        m.plot(fixed_inputs=[(1,1)],which_data_rows=slices[1],Y_metadata={'output_index':1},ax=pb.gca())
+        pb.ylim(-3,)
 
     return m
 

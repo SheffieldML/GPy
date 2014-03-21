@@ -4,6 +4,8 @@ import GPy
 import numpy as np
 import matplotlib as mpl
 import time
+from ...util.misc import param_to_array
+from GPy.core.parameterization.variational import VariationalPosterior
 try:
     import visual
     visual_available = True
@@ -72,12 +74,13 @@ class vector_show(matplotlib_show):
     """
     def __init__(self, vals, axes=None):
         matplotlib_show.__init__(self, vals, axes)
-        self.handle = self.axes.plot(np.arange(0, len(vals))[:, None], self.vals.T)[0]
+        self.handle = self.axes.plot(np.arange(0, len(vals))[:, None], self.vals)
 
     def modify(self, vals):
         self.vals = vals.copy()
-        xdata, ydata = self.handle.get_data()
-        self.handle.set_data(xdata, self.vals.T)
+        for handle, vals in zip(self.handle, self.vals.T):
+            xdata, ydata = handle.get_data()
+            handle.set_data(xdata, vals)
         self.axes.figure.canvas.draw()
 
 
@@ -91,8 +94,12 @@ class lvm(matplotlib_show):
         :param latent_axes: the axes where the latent visualization should be plotted.
         """
         if vals == None:
-            vals = model.X[0]
-
+            if isinstance(model.X, VariationalPosterior):
+                vals = param_to_array(model.X.mean)
+            else:
+                vals = param_to_array(model.X)
+        
+        vals = param_to_array(vals)
         matplotlib_show.__init__(self, vals, axes=latent_axes)
 
         if isinstance(latent_axes,mpl.axes.Axes):

@@ -4,7 +4,7 @@
 import itertools
 import numpy
 from parameter_core import OptimizationHandlable, adjust_name_for_printing
-from array_core import ObservableArray
+from array_core import ObsAr
 
 ###### printing
 __constraints_name__ = "Constraint"
@@ -15,7 +15,7 @@ __precision__ = numpy.get_printoptions()['precision'] # numpy printing precision
 __print_threshold__ = 5
 ######
 
-class Param(OptimizationHandlable, ObservableArray):
+class Param(OptimizationHandlable, ObsAr):
     """
     Parameter object for GPy models.
 
@@ -226,7 +226,7 @@ class Param(OptimizationHandlable, ObservableArray):
     # Constrainable
     #===========================================================================
     def _ensure_fixes(self):
-        self._fixes_ = numpy.ones(self._realsize_, dtype=bool)
+        if not self._has_fixes(): self._fixes_ = numpy.ones(self._realsize_, dtype=bool)
 
     #===========================================================================
     # Convenience
@@ -269,6 +269,8 @@ class Param(OptimizationHandlable, ObservableArray):
     @property
     def _ties_str(self):
         return ['']
+    def _ties_for(self, ravi):
+        return [['N/A']]*ravi.size
     def __repr__(self, *args, **kwargs):
         name = "\033[1m{x:s}\033[0;0m:\n".format(
                             x=self.hierarchy_name())
@@ -312,7 +314,7 @@ class Param(OptimizationHandlable, ObservableArray):
         ravi = self._raveled_index(filter_)
         if constr_matrix is None: constr_matrix = self.constraints.properties_for(ravi)
         if prirs is None: prirs = self.priors.properties_for(ravi)
-        if ties is None: ties = [['N/A']]*self.size
+        if ties is None: ties = self._ties_for(ravi)
         ties = [' '.join(map(lambda x: x, t)) for t in ties]
         if lc is None: lc = self._max_len_names(constr_matrix, __constraints_name__)
         if lx is None: lx = self._max_len_values()

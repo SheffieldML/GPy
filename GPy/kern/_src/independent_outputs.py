@@ -8,7 +8,7 @@ import itertools
 
 def index_to_slices(index):
     """
-    take a numpy array of integers (index) and return a  nested list of slices such that the slices describe the start, stop points for each integer in the index.
+    take a numpy array of integers (index) and return a  nested list of slices such that the slices describe the start, stop points for each integer in the index. 
 
     e.g.
     >>> index = np.asarray([0,0,0,1,1,1,2,2,2])
@@ -39,73 +39,102 @@ class IndependentOutputs(CombinationKernel):
 
     The index of the functions is given by the last column in the input X
     the rest of the columns of X are passed to the underlying kernel for computation (in blocks).
-
-    Kern is wrapped with a slicer metaclass
+    
+    :param kernels: either a kernel, or list of kernels to work with. If it is a list of kernels 
+    the indices in the index_dim, index the kernels you gave!
     """
-    def __init__(self, kern, index_dim=-1, name='independ'):
+    def __init__(self, kernels, index_dim=-1, name='independ'):
         assert isinstance(index_dim, int), "IndependentOutputs kernel is only defined with one input dimension being the indeces"
-        super(IndependentOutputs, self).__init__(kernels=[kern], extra_dims=[index_dim], name=name)
+        if not isinstance(kernels, list): 
+            self.single_kern = True
+            self.kern = kernels
+            kernels = [kernels]
+        else:
+            self.single_kern = False
+            self.kern = kernels
+        super(IndependentOutputs, self).__init__(kernels=kernels, extra_dims=[index_dim], name=name)
         self.index_dim = index_dim
-        self.kern = kern
-        #self.add_parameters(self.kern)
+        self.kerns = kernels if len(kernels) != 1 else itertools.repeat(kernels[0])
 
     def K(self,X ,X2=None):
         slices = index_to_slices(X[:,self.index_dim])
         if X2 is None:
             target = np.zeros((X.shape[0], X.shape[0]))
-            [[np.copyto(target[s,ss], self.kern.K(X[s,:], X[ss,:])) for s,ss in itertools.product(slices_i, slices_i)] for slices_i in slices]
+            [[target.__setitem__((s,ss), kern.K(X[s,:], X[ss,:])) for s,ss in itertools.product(slices_i, slices_i)] for kern, slices_i in zip(self.kerns, slices)]
         else:
             slices2 = index_to_slices(X2[:,self.index_dim])
             target = np.zeros((X.shape[0], X2.shape[0]))
-            [[[np.copyto(target[s, s2], self.kern.K(X[s,:],X2[s2,:])) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
+            [[target.__setitem__((s,s2), kern.K(X[s,:],X2[s2,:])) for s,s2 in itertools.product(slices_i, slices_j)] for kern, slices_i,slices_j in zip(self.kerns, slices,slices2)]
         return target
 
     def Kdiag(self,X):
         slices = index_to_slices(X[:,self.index_dim])
         target = np.zeros(X.shape[0])
-        [[np.copyto(target[s], self.kern.Kdiag(X[s])) for s in slices_i] for slices_i in slices]
+        [[np.copyto(target[s], kern.Kdiag(X[s])) for s in slices_i] for kern, slices_i in zip(self.kerns, slices)]
         return target
 
     def update_gradients_full(self,dL_dK,X,X2=None):
-        target = np.zeros(self.kern.size)
-        def collate_grads(dL, X, X2):
-            self.kern.update_gradients_full(dL,X,X2)
-            target[:] += self.kern.gradient
-
         slices = index_to_slices(X[:,self.index_dim])
+        if self.single_kern: target = np.zeros(self.kern.size)
+        else: target = [np.zeros(kern.size) for kern, _ in zip(self.kerns, slices)]
+        def collate_grads(kern, i, dL, X, X2):
+            kern.update_gradients_full(dL,X,X2)
+            if self.single_kern: target[:] += kern.gradient
+            else: target[i][:] += kern.gradient
         if X2 is None:
-            [[collate_grads(dL_dK[s,ss], X[s], X[ss]) for s,ss in itertools.product(slices_i, slices_i)] for slices_i in slices]
+            [[collate_grads(kern, i, dL_dK[s,ss], X[s], X[ss]) for s,ss in itertools.product(slices_i, slices_i)] for i,(kern,slices_i) in enumerate(zip(self.kerns,slices))]
         else:
             slices2 = index_to_slices(X2[:,self.index_dim])
-            [[[collate_grads(dL_dK[s,s2],X[s],X2[s2]) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
-        self.kern.gradient = target
+            [[[collate_grads(kern, i, dL_dK[s,s2],X[s],X2[s2]) for s in slices_i] for s2 in slices_j] for i,(kern,slices_i,slices_j) in enumerate(zip(self.kerns,slices,slices2))]
+        if self.single_kern: kern.gradient = target
+        else:[kern.gradient.__setitem__(Ellipsis, target[i]) for i, [kern, _] in enumerate(zip(self.kerns, slices))]
 
     def gradients_X(self,dL_dK, X, X2=None):
         target = np.zeros(X.shape)
-        slices = index_to_slices(X[:,self.index_dim])
         if X2 is None:
-            [[np.copyto(target[s,self.kern.active_dims], self.kern.gradients_X(dL_dK[s,ss],X[s],X[ss])) for s, ss in itertools.product(slices_i, slices_i)] for slices_i in slices]
+            # TODO: make use of index_to_slices
+            values = np.unique(X[:,self.index_dim])
+            slices = [X[:,self.index_dim]==i for i in values]
+            [target.__setitem__(s, kern.gradients_X(dL_dK[s,s],X[s],None))
+              for kern, s in zip(self.kerns, slices)]
+            #slices = index_to_slices(X[:,self.index_dim])
+            #[[np.add(target[s], kern.gradients_X(dL_dK[s,s], X[s]), out=target[s]) 
+            #  for s in slices_i] for kern, slices_i in zip(self.kerns, slices)]
+            #import ipdb;ipdb.set_trace()
+            #[[(np.add(target[s ], kern.gradients_X(dL_dK[s ,ss],X[s ], X[ss]), out=target[s ]),
+            #   np.add(target[ss], kern.gradients_X(dL_dK[ss,s ],X[ss], X[s ]), out=target[ss]))
+            #  for s, ss in itertools.combinations(slices_i, 2)] for kern, slices_i in zip(self.kerns, slices)]
         else:
-            slices2 = index_to_slices(X2[:,self.index_dim])
-            [[[np.copyto(target[s,self.kern.active_dims], self.kern.gradients_X(dL_dK[s,s2], X[s], X2[s2])) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
+            values = np.unique(X[:,self.index_dim])
+            slices = [X[:,self.index_dim]==i for i in values]
+            slices2 = [X2[:,self.index_dim]==i for i in values]
+            [target.__setitem__(s, kern.gradients_X(dL_dK[s, :][:, s2],X[s],X2[s2]))
+              for kern, s, s2 in zip(self.kerns, slices, slices2)]
+            # TODO: make work with index_to_slices
+            #slices = index_to_slices(X[:,self.index_dim])
+            #slices2 = index_to_slices(X2[:,self.index_dim])
+            #[[target.__setitem__(s, target[s] + kern.gradients_X(dL_dK[s,s2], X[s], X2[s2])) for s, s2 in itertools.product(slices_i, slices_j)] for kern, slices_i,slices_j in zip(self.kerns, slices,slices2)]
         return target
 
     def gradients_X_diag(self, dL_dKdiag, X):
         slices = index_to_slices(X[:,self.index_dim])
         target = np.zeros(X.shape)
-        [[np.copyto(target[s,self.kern.active_dims], self.kern.gradients_X_diag(dL_dKdiag[s],X[s])) for s in slices_i] for slices_i in slices]
+        [[target.__setitem__(s, kern.gradients_X_diag(dL_dKdiag[s],X[s])) for s in slices_i] for kern, slices_i in zip(self.kerns, slices)]
         return target
 
     def update_gradients_diag(self, dL_dKdiag, X):
-        target = np.zeros(self.kern.size)
-        def collate_grads(dL, X):
-            self.kern.update_gradients_diag(dL,X)
-            target[:] += self.kern.gradient
         slices = index_to_slices(X[:,self.index_dim])
-        [[collate_grads(dL_dKdiag[s], X[s,:]) for s in slices_i] for slices_i in slices]
-        self.kern.gradient = target
+        if self.single_kern: target = np.zeros(self.kern.size)
+        else: target = [np.zeros(kern.size) for kern, _ in zip(self.kerns, slices)]
+        def collate_grads(kern, i, dL, X):
+            kern.update_gradients_diag(dL,X)
+            if self.single_kern: target[:] += kern.gradient
+            else: target[i][:] += kern.gradient
+        [[collate_grads(kern, i, dL_dKdiag[s], X[s,:]) for s in slices_i] for i, (kern, slices_i) in enumerate(zip(self.kerns, slices))]
+        if self.single_kern: kern.gradient = target
+        else:[kern.gradient.__setitem__(Ellipsis, target[i]) for i, [kern, _] in enumerate(zip(self.kerns, slices))]
 
-class Hierarchical(Kern):
+class Hierarchical(CombinationKernel):
     """
     A kernel which can reopresent a simple hierarchical model.
 
@@ -116,7 +145,7 @@ class Hierarchical(Kern):
     The index of the functions is given by additional columns in the input X.
 
     """
-    def __init__(self, kerns, name='hierarchy'):
+    def __init__(self, kern, name='hierarchy'):
         assert all([k.input_dim==kerns[0].input_dim for k in kerns])
         super(Hierarchical, self).__init__(kerns[0].input_dim + len(kerns) - 1, name)
         self.kerns = kerns

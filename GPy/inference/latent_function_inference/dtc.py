@@ -19,19 +19,15 @@ class DTC(object):
     def __init__(self):
         self.const_jitter = 1e-6
 
-    def inference(self, kern, X, Z, likelihood, Y):
+    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None):
         assert X_variance is None, "cannot use X_variance with DTC. Try varDTC."
-
-        #TODO: MAX! fix this!
-        from ...util.misc import param_to_array
-        Y = param_to_array(Y)
 
         num_inducing, _ = Z.shape
         num_data, output_dim = Y.shape
 
         #make sure the noise is not hetero
-        beta = 1./np.squeeze(likelihood.variance)
-        if beta.size <1:
+        beta = 1./likelihood.gaussian_variance(Y_metadata)
+        if beta.size > 1:
             raise NotImplementedError, "no hetero noise with this implementation of DTC"
 
         Kmm = kern.K(Z)
@@ -91,19 +87,15 @@ class vDTC(object):
     def __init__(self):
         self.const_jitter = 1e-6
 
-    def inference(self, kern, X, X_variance, Z, likelihood, Y):
+    def inference(self, kern, X, X_variance, Z, likelihood, Y, Y_metadata):
         assert X_variance is None, "cannot use X_variance with DTC. Try varDTC."
-
-        #TODO: MAX! fix this!
-        from ...util.misc import param_to_array
-        Y = param_to_array(Y)
 
         num_inducing, _ = Z.shape
         num_data, output_dim = Y.shape
 
         #make sure the noise is not hetero
-        beta = 1./np.squeeze(likelihood.variance)
-        if beta.size <1:
+        beta = 1./likelihood.gaussian_variance(Y_metadata)
+        if beta.size > 1:
             raise NotImplementedError, "no hetero noise with this implementation of DTC"
 
         Kmm = kern.K(Z)
@@ -112,7 +104,7 @@ class vDTC(object):
         U = Knm
         Uy = np.dot(U.T,Y)
 
-        #factor Kmm 
+        #factor Kmm
         Kmmi, L, Li, _ = pdinv(Kmm)
 
         # Compute A

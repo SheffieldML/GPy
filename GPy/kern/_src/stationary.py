@@ -152,12 +152,7 @@ class Stationary(Kern):
         This term appears in derviatives.
         """
         dist = self._scaled_dist(X, X2).copy()
-        if X2 is None:
-            nondiag = util.diag.offdiag_view(dist)
-            nondiag[:] = 1./nondiag
-            return dist
-        else:
-            return 1./np.where(dist != 0., dist, np.inf)
+        return 1./np.where(dist != 0., dist, np.inf)
 
     def gradients_X(self, dL_dK, X, X2=None):
         """

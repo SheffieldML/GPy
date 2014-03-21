@@ -176,7 +176,6 @@ class VarDTC(object):
 
         #construct a posterior object
         post = Posterior(woodbury_inv=woodbury_inv, woodbury_vector=woodbury_vector, K=Kmm, mean=None, cov=None, K_chol=Lm)
-
         return post, log_marginal, grad_dict
 
 class VarDTCMissingData(object):
@@ -365,7 +364,7 @@ class VarDTCMissingData(object):
         return post, log_marginal, grad_dict
 
 def _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm, VVT_factor, Cpsi1Vf, DBi_plus_BiPBi, psi1, het_noise, uncertain_inputs):
-    dL_dpsi0 = -0.5 * output_dim * (beta * np.ones([num_data, 1])).flatten()
+    dL_dpsi0 = -0.5 * output_dim * (beta[:,None] * np.ones([num_data, 1])).flatten()
     dL_dpsi1 = np.dot(VVT_factor, Cpsi1Vf.T)
     dL_dpsi2_beta = 0.5 * backsub_both_sides(Lm, output_dim * np.eye(num_inducing) - DBi_plus_BiPBi)
     if het_noise:

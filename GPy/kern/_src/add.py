@@ -23,7 +23,7 @@ class Add(CombinationKernel):
         If a list of parts (of this kernel!) `which_parts` is given, only
         the parts of the list are taken to compute the covariance.
         """
-        assert X.shape[1] == self.input_dim
+        assert X.shape[1] > max(np.r_[self.active_dims])
         if which_parts is None:
             which_parts = self.parts
         elif not isinstance(which_parts, (list, tuple)):
@@ -33,7 +33,7 @@ class Add(CombinationKernel):
 
     @Cache_this(limit=2, force_kwargs=['which_parts'])
     def Kdiag(self, X, which_parts=None):
-        assert X.shape[1] == self.input_dim
+        assert X.shape[1] > max(np.r_[self.active_dims])
         if which_parts is None:
             which_parts = self.parts
         elif not isinstance(which_parts, (list, tuple)):
@@ -58,7 +58,12 @@ class Add(CombinationKernel):
         :type X2: np.ndarray (num_inducing x input_dim)"""
 
         target = np.zeros(X.shape)
-        [target.__setitem__([Ellipsis, p.active_dims], target[:, p.active_dims]+p.gradients_X(dL_dK, X, X2)) for p in self.parts]
+        [target.__iadd__(p.gradients_X(dL_dK, X, X2)) for p in self.parts]
+        return target
+
+    def gradients_X_diag(self, dL_dKdiag, X):
+        target = np.zeros(X.shape)
+        [target.__iadd__(p.gradients_X_diag(dL_dKdiag, X)) for p in self.parts]
         return target
 
     def psi0(self, Z, variational_posterior):
@@ -131,7 +136,7 @@ class Add(CombinationKernel):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
                 else:
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
-            target[:, p1.active_dims] += p1.gradients_Z_expectations(eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
+            target += p1.gradients_Z_expectations(eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         return target
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
@@ -151,8 +156,8 @@ class Add(CombinationKernel):
                 else:
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
             a, b = p1.gradients_qX_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
-            target_mu[:, p1.active_dims] += a
-            target_S[:, p1.active_dims] += b
+            target_mu += a
+            target_S += b
         return target_mu, target_S
 
     def _getstate(self):
@@ -165,4 +170,11 @@ class Add(CombinationKernel):
     def _setstate(self, state):
         super(Add, self)._setstate(state)
 
-
+    def add(self, other, name='sum'):
+        if isinstance(other, Add):
+            other_params = other._parameters_[:]
+            for p in other_params:
+                other.remove_parameter(p)
+            self.add_parameters(*other_params)
+        else: self.add_parameter(other)
+        return self

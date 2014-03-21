@@ -158,7 +158,7 @@ def boston_example(optimize=True, plot=True):
         #Gaussian GP
         print "Gauss GP"
         mgp = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelgp.copy())
-        mgp.constrain_fixed('white', 1e-5)
+        mgp.constrain_fixed('.*white', 1e-5)
         mgp['rbf_len'] = rbf_len
         mgp['noise'] = noise
         print mgp
@@ -176,7 +176,7 @@ def boston_example(optimize=True, plot=True):
         g_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), g_distribution)
         mg = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=g_likelihood)
         mg.constrain_positive('noise_variance')
-        mg.constrain_fixed('white', 1e-5)
+        mg.constrain_fixed('.*white', 1e-5)
         mg['rbf_len'] = rbf_len
         mg['noise'] = noise
         print mg
@@ -194,10 +194,10 @@ def boston_example(optimize=True, plot=True):
             t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=df, sigma2=noise)
             stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
             mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=stu_t_likelihood)
-            mstu_t.constrain_fixed('white', 1e-5)
-            mstu_t.constrain_bounded('t_noise', 0.0001, 1000)
+            mstu_t.constrain_fixed('.*white', 1e-5)
+            mstu_t.constrain_bounded('.*t_noise', 0.0001, 1000)
             mstu_t['rbf_len'] = rbf_len
-            mstu_t['t_noise'] = noise
+            mstu_t['.*t_noise'] = noise
             print mstu_t
             if optimize:
                 mstu_t.optimize(optimizer=optimizer, messages=messages)

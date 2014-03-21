@@ -16,7 +16,7 @@ Observable Pattern for patameterization
 from transformations import Transformation, Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
 
-__updated__ = '2014-03-14'
+__updated__ = '2014-03-18'
 
 class HierarchyError(Exception):
     """
@@ -56,7 +56,7 @@ class InterfacePickleFunctions(object):
         """
         raise NotImplementedError, "To be able to use pickling you need to implement this method"
 
-class Pickleable(object):
+class Pickleable(InterfacePickleFunctions):
     """
     Make an object pickleable (See python doc 'pickling').
 
@@ -95,7 +95,7 @@ class Pickleable(object):
     def _has_get_set_state(self):
         return '_getstate' in vars(self.__class__) and '_setstate' in vars(self.__class__)
 
-class Observable(InterfacePickleFunctions):
+class Observable(Pickleable):
     """
     Observable pattern for parameterization.
 
@@ -155,6 +155,7 @@ class Observable(InterfacePickleFunctions):
 
     def _getstate(self):
         return [self._observer_callables_]
+
     def _setstate(self, state):
         self._observer_callables_ = state.pop()
 
@@ -376,7 +377,7 @@ class Constrainable(Nameable, Indexable):
         # Ensure that the fixes array is set:
         # Parameterized: ones(self.size)
         # Param: ones(self._realsize_
-        self._fixes_ = np.ones(self.size, dtype=bool)
+        if not self._has_fixes(): self._fixes_ = np.ones(self.size, dtype=bool)
 
     def _set_fixed(self, index):
         self._ensure_fixes()
@@ -397,7 +398,7 @@ class Constrainable(Nameable, Indexable):
             self._fixes_ = None
 
     def _has_fixes(self):
-        return hasattr(self, "_fixes_") and self._fixes_ is not None
+        return hasattr(self, "_fixes_") and self._fixes_ is not None and self._fixes_.size == self.size
 
     #===========================================================================
     # Prior Operations
@@ -540,12 +541,12 @@ class Constrainable(Nameable, Indexable):
             print "WARNING: reconstraining parameters {}".format(self.parameter_names() or self.name)
         which.add(what, self._raveled_index())
 
-    def _remove_from_index_operations(self, which, what):
+    def _remove_from_index_operations(self, which, transforms):
         """
         Helper preventing copy code.
         Remove given what (transform prior etc) from which param index ops.
         """
-        if len(what) == 0:
+        if len(transforms) == 0:
             transforms = which.properties()
         removed = np.empty((0,), dtype=int)
         for t in transforms:
@@ -566,24 +567,32 @@ class OptimizationHandlable(Constrainable):
         super(OptimizationHandlable, self).__init__(name, default_constraint=default_constraint, *a, **kw)
 
     def transform(self):
-        [np.put(self._param_array_, ind, c.finv(self._param_array_[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
+        [np.put(self._param_array_, ind, c.finv(self._param_array_.flat[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
 
     def untransform(self):
-        [np.put(self._param_array_, ind, c.f(self._param_array_[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
+        [np.put(self._param_array_, ind, c.f(self._param_array_.flat[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
 
     def _get_params_transformed(self):
         # transformed parameters (apply transformation rules)
         p = self._param_array_.copy()
         [np.put(p, ind, c.finv(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-        if self._has_fixes():
+        if self.has_parent() and self.constraints[__fixed__].size != 0:
+            fixes = np.ones(self.size).astype(bool)
+            fixes[self.constraints[__fixed__]] = FIXED
+            return p[fixes]
+        elif self._has_fixes():
             return p[self._fixes_]
         return p
 
     def _set_params_transformed(self, p):
         if p is self._param_array_:
             p = p.copy()
-        if self._has_fixes(): self._param_array_[self._fixes_] = p
-        else: self._param_array_[:] = p
+        if self.has_parent() and self.constraints[__fixed__].size != 0:
+            fixes = np.ones(self.size).astype(bool)
+            fixes[self.constraints[__fixed__]] = FIXED
+            self._param_array_.flat[fixes] = p
+        elif self._has_fixes(): self._param_array_.flat[self._fixes_] = p
+        else: self._param_array_.flat = p
         self.untransform()
         self._trigger_params_changed()
 
@@ -661,8 +670,8 @@ class OptimizationHandlable(Constrainable):
         for pi in self._parameters_:
             pislice = slice(pi_old_size, pi_old_size+pi.size)
 
-            self._param_array_[pislice] = pi._param_array_.ravel()#, requirements=['C', 'W']).flat
-            self._gradient_array_[pislice] = pi._gradient_array_.ravel()#, requirements=['C', 'W']).flat
+            self._param_array_[pislice] = pi._param_array_.flat#, requirements=['C', 'W']).flat
+            self._gradient_array_[pislice] = pi._gradient_array_.flat#, requirements=['C', 'W']).flat
 
             pi._param_array_.data = parray[pislice].data
             pi._gradient_array_.data = garray[pislice].data
@@ -769,11 +778,11 @@ class Parameterizable(OptimizationHandlable):
         Add all parameters to this param class, you can insert parameters
         at any given index using the :func:`list.insert` syntax
         """
-        # if param.has_parent():
-        #    raise AttributeError, "parameter {} already in another model, create new object (or copy) for adding".format(param._short())
         if param in self._parameters_ and index is not None:
             self.remove_parameter(param)
             self.add_parameter(param, index)
+        #elif param.has_parent():
+        #    raise HierarchyError, "parameter {} already in another model ({}), create new object (or copy) for adding".format(param._short(), param._highest_parent_._short())
         elif param not in self._parameters_:
             if param.has_parent():
                 parent = param._parent_
@@ -797,13 +806,19 @@ class Parameterizable(OptimizationHandlable):
 
             param.add_observer(self, self._pass_through_notify_observers, -np.inf)
 
-            self.size += param.size
+            parent = self
+            while parent is not None:
+                parent.size += param.size
+                parent = parent._parent_
 
-            self._connect_parameters(ignore_added_names=_ignore_added_names)
-            self._notify_parent_change()
-            self._connect_fixes()
+            self._connect_parameters()
+
+            self._highest_parent_._connect_parameters(ignore_added_names=_ignore_added_names)
+            self._highest_parent_._notify_parent_change()
+            self._highest_parent_._connect_fixes()
+
         else:
-            raise RuntimeError, """Parameter exists already added and no copy made"""
+            raise HierarchyError, """Parameter exists already and no copy made"""
 
 
     def add_parameters(self, *parameters):
@@ -829,16 +844,17 @@ class Parameterizable(OptimizationHandlable):
         param.remove_observer(self, self._pass_through_notify_observers)
         self.constraints.shift_left(start, param.size)
 
-        self._connect_fixes()
         self._connect_parameters()
         self._notify_parent_change()
 
         parent = self._parent_
         while parent is not None:
-            parent._connect_fixes()
-            parent._connect_parameters()
-            parent._notify_parent_change()
+            parent.size -= param.size
             parent = parent._parent_
+
+        self._highest_parent_._connect_parameters()
+        self._highest_parent_._connect_fixes()
+        self._highest_parent_._notify_parent_change()
 
     def _connect_parameters(self, ignore_added_names=False):
         # connect parameterlist to this parameterized object
@@ -862,8 +878,8 @@ class Parameterizable(OptimizationHandlable):
             # first connect all children
             p._propagate_param_grad(self._param_array_[pslice], self._gradient_array_[pslice])
             # then connect children to self
-            self._param_array_[pslice] = p._param_array_.ravel()#, requirements=['C', 'W']).ravel(order='C')
-            self._gradient_array_[pslice] = p._gradient_array_.ravel()#, requirements=['C', 'W']).ravel(order='C')
+            self._param_array_[pslice] = p._param_array_.flat#, requirements=['C', 'W']).ravel(order='C')
+            self._gradient_array_[pslice] = p._gradient_array_.flat#, requirements=['C', 'W']).ravel(order='C')
 
             if not p._param_array_.flags['C_CONTIGUOUS']:
                 import ipdb;ipdb.set_trace()

@@ -64,8 +64,8 @@ class SparseGP(GP):
             self.kern.gradient += target
 
             #gradients wrt Z
-            self.Z.gradient[:,self.kern.active_dims] = self.kern.gradients_X(dL_dKmm, self.Z)
-            self.Z.gradient[:,self.kern.active_dims] += self.kern.gradients_Z_expectations(
+            self.Z.gradient = self.kern.gradients_X(dL_dKmm, self.Z)
+            self.Z.gradient += self.kern.gradients_Z_expectations(
                                self.grad_dict['dL_dpsi1'], self.grad_dict['dL_dpsi2'], Z=self.Z, variational_posterior=self.X)
         else:
             #gradients wrt kernel
@@ -76,8 +76,8 @@ class SparseGP(GP):
             self.kern.update_gradients_full(self.grad_dict['dL_dKmm'], self.Z, None)
             self.kern.gradient += target
             #gradients wrt Z
-            self.Z.gradient[:,self.kern.active_dims] = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
-            self.Z.gradient[:,self.kern.active_dims] += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
+            self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
+            self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
 
     def _raw_predict(self, Xnew, full_cov=False):
         """
@@ -88,8 +88,9 @@ class SparseGP(GP):
             mu = np.dot(Kx.T, self.posterior.woodbury_vector)
             if full_cov:
                 Kxx = self.kern.K(Xnew)
-                #var = Kxx - mdot(Kx.T, self.posterior.woodbury_inv, Kx)
-                var = Kxx - np.tensordot(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx).T, Kx, [1,0]).swapaxes(1,2)
+                var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
+                #var = Kxx[:,:,None] - np.tensordot(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx).T, Kx, [1,0]).swapaxes(1,2)
+                var = var.squeeze()
             else:
                 Kxx = self.kern.Kdiag(Xnew)
                 var = (Kxx - np.sum(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx) * Kx[None,:,:], 1)).T

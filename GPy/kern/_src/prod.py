@@ -51,15 +51,15 @@ class Prod(CombinationKernel):
     def gradients_X(self, dL_dK, X, X2=None):
         target = np.zeros(X.shape)
         for k1,k2 in itertools.combinations(self.parts, 2):
-            target[:,k1.active_dims] += k1.gradients_X(dL_dK*k2.K(X, X2), X, X2)
-            target[:,k2.active_dims] += k2.gradients_X(dL_dK*k1.K(X, X2), X, X2)
+            target += k1.gradients_X(dL_dK*k2.K(X, X2), X, X2)
+            target += k2.gradients_X(dL_dK*k1.K(X, X2), X, X2)
         return target
 
     def gradients_X_diag(self, dL_dKdiag, X):
         target = np.zeros(X.shape)
         for k1,k2 in itertools.combinations(self.parts, 2):
-            target[:,k1.active_dims] += k1.gradients_X(dL_dKdiag*k2.Kdiag(X), X)
-            target[:,k2.active_dims] += k2.gradients_X(dL_dKdiag*k1.Kdiag(X), X)
+            target += k1.gradients_X(dL_dKdiag*k2.Kdiag(X), X)
+            target += k2.gradients_X(dL_dKdiag*k1.Kdiag(X), X)
         return target
 
 

@@ -43,14 +43,14 @@ class SparseGPCoregionalizedRegression(SparseGP):
 
         #Kernel
         if kernel is None:
-            kernel = util.multioutput.ICM(input_dim=X.shape[1]-1, num_outputs=Ny, kernel=GPy.kern.rbf(X.shape[1]-1), W_rank=1,name=kernel_name)
+            kernel = util.multioutput.ICM(input_dim=X.shape[1]-1, num_outputs=Ny, kernel=kern.RBF(X.shape[1]-1), W_rank=1,name=kernel_name)
 
         #Likelihood
         likelihood = util.multioutput.build_likelihood(Y_list,self.output_index,likelihoods_list)
 
         #Inducing inputs list
         if len(Z_list):
-            assert len(Z_list) == self.output_dim, 'Number of outputs do not match length of inducing inputs list.'
+            assert len(Z_list) == Ny, 'Number of outputs do not match length of inducing inputs list.'
         else:
             if isinstance(num_inducing,np.int):
                 num_inducing = [num_inducing] * Ny

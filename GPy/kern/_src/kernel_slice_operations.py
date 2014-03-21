@@ -126,7 +126,7 @@ def _slice_wrapper(kern, operation, diag=False, derivative=False, psi_stat=False
                     kern._sliced_X -= 1
                 return ret
     x_slice_wrapper._operation = operation
-    x_slice_wrapper.__name__ = ("slicer("+operation.__name__
+    x_slice_wrapper.__name__ = ("slicer("+str(operation)
                                 +(","+str(bool(diag)) if diag else'')
                                 +(','+str(bool(derivative)) if derivative else '')
                                 +')')

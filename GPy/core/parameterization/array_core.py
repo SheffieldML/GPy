@@ -1,7 +1,7 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-__updated__ = '2014-03-17'
+__updated__ = '2014-03-21'
 
 import numpy as np
 from parameter_core import Observable
@@ -55,7 +55,7 @@ class ObsAr(np.ndarray, Observable):
     def __setitem__(self, s, val):
         if self._s_not_empty(s):
             super(ObsAr, self).__setitem__(s, val)
-            self.notify_observers(self[s])
+            self.notify_observers()
 
     def __getslice__(self, start, stop):
         return self.__getitem__(slice(start, stop))

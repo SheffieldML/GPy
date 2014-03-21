@@ -76,9 +76,8 @@ class Cacher(object):
                 [a.add_observer(self, self.on_cache_changed) for a in observable_args]
                 return self.cached_outputs[-1]#return
         except:
-            raise
-        finally:
             self.reset()
+            raise
 
     def on_cache_changed(self, arg):
         """
@@ -98,6 +97,32 @@ class Cacher(object):
         self.cached_outputs = []
         self.inputs_changed = []
 
+    @property
+    def __name__(self):
+        return self.operation.__name__
+
+from functools import wraps, partial
+
+class Cacher_wrap(object):
+    def __init__(self, f, limit, ignore_args, force_kwargs):
+        self.limit = limit
+        self.ignore_args = ignore_args
+        self.force_kwargs = force_kwargs
+        self.f = f
+    def __get__(self, obj, objtype=None):
+        return partial(self, obj)
+    def __call__(self, *args, **kwargs):
+        obj = args[0]
+        try:
+            caches = obj.__cachers
+        except AttributeError:
+            caches = obj.__cachers = {}
+        try:
+            cacher = caches[self.f]
+        except KeyError:
+            cacher = caches[self.f] = Cacher(self.f, self.limit, self.ignore_args, self.force_kwargs)
+        return cacher(*args, **kwargs)
+
 class Cache_this(object):
     """
     A decorator which can be applied to bound methods in order to cache them
@@ -106,12 +131,5 @@ class Cache_this(object):
         self.limit = limit
         self.ignore_args = ignore_args
         self.force_args = force_kwargs
-        self.c = None
     def __call__(self, f):
-        def f_wrap(*args, **kw):
-            if self.c is None:
-                self.c = Cacher(f, self.limit, ignore_args=self.ignore_args, force_kwargs=self.force_args)
-            return self.c(*args, **kw)
-        f_wrap._cacher = self
-        f_wrap.__doc__ = "**cached**" + (f.__doc__ or "")
-        return f_wrap
+        return Cacher_wrap(f, self.limit, self.ignore_args, self.force_args)

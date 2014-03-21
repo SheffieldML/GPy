@@ -46,7 +46,7 @@ class Test(unittest.TestCase):
         self._second = None
 
     def _trigger(self, which):
-        self._observer_triggered = float(which)
+        self._observer_triggered = which
         self._trigger_count += 1
         if self._first is not None:
             self._second = self._trigger
@@ -65,28 +65,28 @@ class Test(unittest.TestCase):
         self.assertEqual(self.par.params_changed_count, self.parent.parent_changed_count, 'parent should be triggered as often as param')
 
         self.p[0,1] = 3 # trigger observers
-        self.assertEqual(self._observer_triggered, 3, 'observer should have triggered')
+        self.assertIs(self._observer_triggered, self.p, 'observer should have triggered')
         self.assertEqual(self._trigger_count, 1, 'observer should have triggered once')
         self.assertEqual(self.par.params_changed_count, 1, 'params changed once')
         self.assertEqual(self.par.params_changed_count, self.parent.parent_changed_count, 'parent should be triggered as often as param')
 
         self.par.remove_observer(self)
-        self.p[2,1] = 4
-        self.assertEqual(self._observer_triggered, 3, 'observer should not have triggered')
+        self.p[0,1] = 4
+        self.assertIs(self._observer_triggered, self.p, 'observer should not have triggered')
         self.assertEqual(self._trigger_count, 1, 'observer should have triggered once')
         self.assertEqual(self.par.params_changed_count, 2, 'params changed second')
         self.assertEqual(self.par.params_changed_count, self.parent.parent_changed_count, 'parent should be triggered as often as param')
 
         self.par.add_observer(self, self._trigger, -1)
-        self.p[2,1] = 4
-        self.assertEqual(self._observer_triggered, 4, 'observer should have triggered')
+        self.p[0,1] = 4
+        self.assertIs(self._observer_triggered, self.p, 'observer should have triggered')
         self.assertEqual(self._trigger_count, 2, 'observer should have triggered once')
         self.assertEqual(self.par.params_changed_count, 3, 'params changed second')
         self.assertEqual(self.par.params_changed_count, self.parent.parent_changed_count, 'parent should be triggered as often as param')
 
         self.par.remove_observer(self, self._trigger)
         self.p[0,1] = 3
-        self.assertEqual(self._observer_triggered, 4, 'observer should not have triggered')
+        self.assertIs(self._observer_triggered, self.p, 'observer should not have triggered')
         self.assertEqual(self._trigger_count, 2, 'observer should have triggered once')
         self.assertEqual(self.par.params_changed_count, 4, 'params changed second')
         self.assertEqual(self.par.params_changed_count, self.parent.parent_changed_count, 'parent should be triggered as often as param')

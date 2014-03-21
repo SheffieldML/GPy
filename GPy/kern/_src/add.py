@@ -172,7 +172,7 @@ class Add(CombinationKernel):
 
     def add(self, other, name='sum'):
         if isinstance(other, Add):
-            other_params = other._parameters_.copy()
+            other_params = other._parameters_[:]
             for p in other_params:
                 other.remove_parameter(p)
             self.add_parameters(*other_params)

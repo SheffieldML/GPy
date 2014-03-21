@@ -81,7 +81,7 @@ class Posterior(object):
     def covariance(self):
         if self._covariance is None:
             #LiK, _ = dtrtrs(self.woodbury_chol, self._K, lower=1)
-            self._covariance = np.tensordot(np.dot(np.atleast_3d(self.woodbury_inv).T, self._K), self._K, [1,0]).T
+            self._covariance = self._K - np.tensordot(np.dot(np.atleast_3d(self.woodbury_inv).T, self._K), self._K, [1,0]).T
             #self._covariance = self._K - self._K.dot(self.woodbury_inv).dot(self._K)
         return self._covariance.squeeze()
 

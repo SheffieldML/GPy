@@ -3,7 +3,7 @@ from scipy.stats import norm
 import matplotlib.pyplot as plt 
 
 
-####### General BO with standad acquisition functions ###############################
+####### Preliminar BO with standad acquisition functions ###############################
 # Types of BO
 # MM: Maximum (or minimum) mean
 # MPI: Maximum posterior improvement  
@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 def BOacquisition(X,Y,model,type_bo="MPI",type_objective="max",par_mpi = 0,z_mui=1.96,plot=True,n_eval = 500):
 
-# Note works in dimension 1 (both for input and output)
+    # Only works in dimension 1
     # Grid where the GP will be evaluated
     X_star 	= np.linspace(min(X)-10,max(X)+10,n_eval)
     X_star 	= X_star[:,None]

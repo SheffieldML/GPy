@@ -73,20 +73,37 @@ class Posterior(object):
 
     @property
     def mean(self):
+        """
+        Posterior mean
+        $$
+        K_{xx}v
+        v := \texttt{Woodbury vector}
+        $$
+        """
         if self._mean is None:
             self._mean = np.dot(self._K, self.woodbury_vector)
         return self._mean
 
     @property
     def covariance(self):
+        """
+        Posterior covariance
+        $$
+        K_{xx} - K_{xx}W_{xx}^{-1}K_{xx}
+        W_{xx} := \texttt{Woodbury inv}
+        $$
+        """
         if self._covariance is None:
             #LiK, _ = dtrtrs(self.woodbury_chol, self._K, lower=1)
-            self._covariance = np.tensordot(np.dot(np.atleast_3d(self.woodbury_inv).T, self._K), self._K, [1,0]).T
-            #self._covariance = self._K - self._K.dot(self.woodbury_inv).dot(self._K)
+            self._covariance = self._K[:, :, None] - np.tensordot(np.dot(np.atleast_3d(self.woodbury_inv).T, self._K), self._K, [1,0]).T
+            #old_covariance = self._K - self._K.dot(self.woodbury_inv).dot(self._K)
         return self._covariance.squeeze()
 
     @property
     def precision(self):
+        """
+        Inverse of posterior covariance
+        """
         if self._precision is None:
             cov = np.atleast_3d(self.covariance)
             self._precision = np.zeros(cov.shape) # if one covariance per dimension
@@ -96,8 +113,15 @@ class Posterior(object):
 
     @property
     def woodbury_chol(self):
+        """
+        return $L_{W}$ where L is the lower triangular Cholesky decomposition of the Woodbury matrix
+        $$
+        L_{W}L_{W}^{\top} = W^{-1}
+        W^{-1} := \texttt{Woodbury inv}
+        $$
+        """
         if self._woodbury_chol is None:
-            #compute woodbury chol from 
+            #compute woodbury chol from
             if self._woodbury_inv is not None:
                 winv = np.atleast_3d(self._woodbury_inv)
                 self._woodbury_chol = np.zeros(winv.shape)
@@ -121,6 +145,13 @@ class Posterior(object):
 
     @property
     def woodbury_inv(self):
+        """
+        The inverse of the woodbury matrix, in the gaussian likelihood case it is defined as
+        $$
+        (K_{xx} + \Sigma_{xx})^{-1}
+        \Sigma_{xx} := \texttt{Likelihood.variance / Approximate likelihood covariance}
+        $$
+        """
         if self._woodbury_inv is None:
             self._woodbury_inv, _ = dpotri(self.woodbury_chol, lower=1)
             #self._woodbury_inv, _ = dpotrs(self.woodbury_chol, np.eye(self.woodbury_chol.shape[0]), lower=1)
@@ -129,17 +160,22 @@ class Posterior(object):
 
     @property
     def woodbury_vector(self):
+        """
+        Woodbury vector in the gaussian likelihood case only is defined as
+        $$
+        (K_{xx} + \Sigma)^{-1}Y
+        \Sigma := \texttt{Likelihood.variance / Approximate likelihood covariance}
+        $$
+        """
         if self._woodbury_vector is None:
             self._woodbury_vector, _ = dpotrs(self.K_chol, self.mean)
         return self._woodbury_vector
 
     @property
     def K_chol(self):
+        """
+        Cholesky of the prior covariance K
+        """
         if self._K_chol is None:
             self._K_chol = jitchol(self._K)
         return self._K_chol
-
-
-
-
-

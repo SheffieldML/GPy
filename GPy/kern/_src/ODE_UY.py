@@ -139,11 +139,11 @@ class ODE_UY(Kern):
         dVdly = 0.5/np.sqrt(ly)*np.sqrt(2*Vy)
         dVdVy = 0.5/np.sqrt(Vy)*np.sqrt(2*ly)
 
-        rd=rdist.shape[0]
-        dktheta1 = np.zeros([rd,rd])
-        dktheta2 = np.zeros([rd,rd])
-        dkUdvar = np.zeros([rd,rd])
-        dkYdvar = np.zeros([rd,rd])
+        rd=rdist.shape
+        dktheta1 = np.zeros(rd)
+        dktheta2 = np.zeros(rd)
+        dkUdvar = np.zeros(rd)
+        dkYdvar = np.zeros(rd)
 
         # dk dtheta for UU
         UUdtheta1 = lambda dist: np.exp(-lu* dist)*dist + (-dist)*np.exp(-lu* dist)*(1+lu*dist)

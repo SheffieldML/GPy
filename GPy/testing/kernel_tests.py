@@ -152,7 +152,12 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
 
     if verbose:
         print("Checking gradients of Kdiag(X) wrt theta.")
-    result = Kern_check_dKdiag_dtheta(kern, X=X).checkgrad(verbose=verbose)
+    try:
+        result = Kern_check_dKdiag_dtheta(kern, X=X).checkgrad(verbose=verbose)
+    except NotImplementedError:
+        result=True
+        if verbose:
+            print("update_gradients_diag not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
@@ -240,8 +245,21 @@ class KernelGradientTestsContinuous(unittest.TestCase):
 
     def test_Add(self):
         k = GPy.kern.Matern32(2, active_dims=[2,3]) + GPy.kern.RBF(2, active_dims=[0,4]) + GPy.kern.Linear(self.D)
+        k += GPy.kern.Matern32(2, active_dims=[2,3]) + GPy.kern.RBF(2, active_dims=[0,4]) + GPy.kern.Linear(self.D)
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_Add_dims(self):
+        k = GPy.kern.Matern32(2, active_dims=[2,self.D]) + GPy.kern.RBF(2, active_dims=[0,4]) + GPy.kern.Linear(self.D)
+        k.randomize()
+        self.assertRaises(AssertionError, k.K, self.X)
+        k = GPy.kern.Matern32(2, active_dims=[2,self.D-1]) + GPy.kern.RBF(2, active_dims=[0,4]) + GPy.kern.Linear(self.D)
+        k.randomize()
+        # assert it runs:
+        try:
+            k.K(self.X)
+        except AssertionError:
+            raise AssertionError, "k.K(X) should run on self.D-1 dimension"
 
     def test_Matern52(self):
         k = GPy.kern.Matern52(self.D)
@@ -329,17 +347,11 @@ class KernelTestsNonContinuous(unittest.TestCase):
         kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
         self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
 
-class test_ODE_UY(unittest.TestCase):
-    def setUp(self):
-        self.k = GPy.kern.ODE_UY(2)
-        self.X = np.random.randn(50,2)
-        self.X[:,1] = np.random.randint(0,2,50)
-        i = np.argsort(X[:,1])
-        self.X = self.X[i]
-        self.Y = np.random.randn(50, 1)
-    def checkgrad(self):
-        m = GPy.models.GPRegression(X,Y,kernel=k)
-        self.assertTrue(m.checkgrad())
+    def test_ODE_UY(self):
+        kern = GPy.kern.ODE_UY(2, active_dims=[0, self.D])
+        X = self.X[self.X[:,-1]!=2]
+        X2 = self.X2[self.X2[:,-1]!=2]
+        self.assertTrue(check_kernel_gradient_functions(kern, X=X, X2=X2, verbose=verbose, fixed_X_dims=-1))
 
 
 if __name__ == "__main__":

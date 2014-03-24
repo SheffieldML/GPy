@@ -282,8 +282,8 @@ class Param(OptimizationHandlable, ObsAr):
         if isinstance(slice_index, (tuple, list)):
             clean_curr_slice = [s for s in slice_index if numpy.any(s != Ellipsis)]
             for i in range(self._realndim_-len(clean_curr_slice)):
-                i+=len(clean_curr_slice)
-                clean_curr_slice += range(self._realshape_[i])
+                i+=1
+                clean_curr_slice += [range(self._realshape_[i])]
             if (all(isinstance(n, (numpy.ndarray, list, tuple)) for n in clean_curr_slice)
                 and len(set(map(len, clean_curr_slice))) <= 1):
                 return numpy.fromiter(itertools.izip(*clean_curr_slice),

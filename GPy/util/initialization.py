@@ -14,5 +14,6 @@ def initialize_latent(init, input_dim, Y):
         PC = p.project(Y, min(input_dim, Y.shape[1]))
         Xr[:PC.shape[0], :PC.shape[1]] = PC
     else:
-        pass
+        var = Xr.var(0)
+        return Xr, var/var.max()
     return Xr, p.fracs[:input_dim]

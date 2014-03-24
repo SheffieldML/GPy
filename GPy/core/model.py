@@ -176,7 +176,7 @@ class Model(Parameterized):
         (including the MAP prior), so we return it here. If your model is not 
         probabilistic, just return your gradient here!
         """
-        return self._log_likelihood_gradients() + self._log_prior_gradients()
+        return -(self._log_likelihood_gradients() + self._log_prior_gradients())
 
     def _grads(self, x):
         """
@@ -191,13 +191,13 @@ class Model(Parameterized):
         """
         try:
             self._set_params_transformed(x)
-            obj_grads = -self._transform_gradients(self.objective_function_gradients())
+            obj_grads = self._transform_gradients(self.objective_function_gradients())
             self._fail_count = 0
         except (LinAlgError, ZeroDivisionError, ValueError):
             if self._fail_count >= self._allowed_failures:
                 raise
             self._fail_count += 1
-            obj_grads = np.clip(-self._transform_gradients(self.objective_function_gradients()), -1e100, 1e100)
+            obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e100, 1e100)
         return obj_grads
 
     def _objective(self, x):
@@ -226,14 +226,14 @@ class Model(Parameterized):
     def _objective_grads(self, x):
         try:
             self._set_params_transformed(x)
-            obj_f, obj_grads = self.objective_function(), self.objective_function_gradients()
+            obj_f, obj_grads = self.objective_function(), self._transform_gradients(self.objective_function_gradients())
             self._fail_count = 0
         except (LinAlgError, ZeroDivisionError, ValueError):
             if self._fail_count >= self._allowed_failures:
                 raise
             self._fail_count += 1
             obj_f = np.inf
-            obj_grads = np.clip(-self._transform_gradients(self.objective_function_gradients()), -1e100, 1e100)
+            obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e100, 1e100)
         return obj_f, obj_grads
 
     def optimize(self, optimizer=None, start=None, **kwargs):

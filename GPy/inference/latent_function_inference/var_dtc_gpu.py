@@ -86,7 +86,7 @@ class VarDTC_GPU(object):
         
         
         psi2_full = np.zeros((num_inducing,num_inducing))
-        psi1Y_full = np.zeros((output_dim,num_inducing)) # DxM
+        psi1Y_full = np.zeros((num_inducing,output_dim)) # DxM
         psi0_full = 0
         YRY_full = 0
         
@@ -109,11 +109,11 @@ class VarDTC_GPU(object):
             if het_noise:
                 beta_slice = beta[n_start:n_end]
                 psi0_full += (beta_slice*psi0).sum()
-                psi1Y_full += np.dot(beta_slice*Y_slice.T,psi1) # DxM
+                psi1Y_full += np.dot(psi1,beta_slice[:,None]*Y_slice) # DxM
                 YRY_full += (beta_slice*np.square(Y_slice).sum(axis=-1)).sum()
             else:
                 psi0_full += psi0.sum()
-                psi1Y_full += np.dot(Y_slice.T,psi1) # DxM
+                psi1Y_full += np.dot(psi1,Y_slice) # DxM
                 
                 
             if uncertain_inputs:
@@ -144,37 +144,68 @@ class VarDTC_GPU(object):
         
         Kmm = kern.K(Z).copy()
         Kmm_gpu = gpuarray.to_gpu(np.asfortranarray(Kmm))
-                
         diag.add(Kmm, self.const_jitter)
         ones_gpu = gpuarray.empty(num_inducing, np.float64)
+        ones_gpu.fill(1.0)
         cublas.cublasDaxpy(self.cublas_handle, num_inducing, self.const_jitter, ones_gpu.gpudata, 1, Kmm_gpu.gpudata, num_inducing+1)
         assert np.allclose(Kmm, Kmm_gpu.get())
         
         Lm = jitchol(Kmm)
+        #
         Lm_gpu = Kmm_gpu.copy()
-        Lm_gpu = culinalg.cho_factor(Lm_gpu,'L')
-        assert np.allclose(Lm,Lm_gpu.get())
+        culinalg.cho_factor(Lm_gpu,'L')
+        print np.abs(np.tril(Lm)-np.tril(Lm_gpu.get())).max()
                 
         Lambda = Kmm+psi2_full
         LL = jitchol(Lambda)
+        #
         Lambda_gpu = gpuarray.empty((num_inducing,num_inducing),np.float64)
-        cublas.cublasDaxpy(self.cublas_handle, Kmm_gpu.size, np.float64(1.0), Kmm_gpu.gpudata, 1, psi2_gpu.gpudata, 1)
+        cublas.cublasDcopy(self.cublas_handle, Kmm_gpu.size, Kmm_gpu.gpudata, 1, Lambda_gpu.gpudata, 1)
+        cublas.cublasDaxpy(self.cublas_handle, psi2_gpu.size, np.float64(1.0), psi2_gpu.gpudata, 1, Lambda_gpu.gpudata, 1)
         LL_gpu = Lambda_gpu.copy()
-        LL_gpu = culinalg.cho_factor(LL_gpu,'L')
-        assert np.allclose(LL,LL_gpu.get())        
+        culinalg.cho_factor(LL_gpu,'L')
+        print np.abs(np.tril(LL)-np.tril(LL_gpu.get())).max()
         
-        b,_ = dtrtrs(LL, psi1Y_full.T)
-        bbt = np.square(b).sum()
-        
+        b,_ = dtrtrs(LL, psi1Y_full)
+        bbt_cpu = np.square(b).sum()
+        #
+        b_gpu = gpuarray.empty((num_inducing,output_dim),np.float64)
+        cublas.cublasDcopy(self.cublas_handle, b_gpu.size, psi1Y_gpu.gpudata, 1, b_gpu.gpudata, 1)
+        cublas.cublasDtrsm(self.cublas_handle , 'L', 'L', 'N', 'N', num_inducing, output_dim, np.float64(1.0), LL_gpu.gpudata, num_inducing, b_gpu.gpudata, num_inducing)
+        bbt = cublas.cublasDdot(self.cublas_handle, b_gpu.size, b_gpu, 1, b_gpu, 1)
+        print np.abs(bbt-bbt_cpu)
         
         v,_ = dtrtrs(LL.T,b,lower=False)
         vvt = np.einsum('md,od->mo',v,v)
         LmInvPsi2LmInvT = backsub_both_sides(Lm,psi2_full,transpose='right')
+        #
+        v_gpu = gpuarray.empty((num_inducing,output_dim),np.float64)
+        cublas.cublasDcopy(self.cublas_handle, v_gpu.size, b_gpu.gpudata, 1, v_gpu.gpudata, 1)
+        cublas.cublasDtrsm(self.cublas_handle , 'L', 'L', 'T', 'N', num_inducing, output_dim, np.float64(1.0), LL_gpu.gpudata, num_inducing, v_gpu.gpudata, num_inducing)
+        vvt_gpu = gpuarray.empty((num_inducing,num_inducing),np.float64)
+        cublas.cublasDgemm(self.cublas_handle, 'N', 'T', num_inducing, num_inducing, output_dim, np.float64(1.0), v_gpu.gpudata, num_inducing, v_gpu.gpudata, num_inducing, np.float64(0.), vvt_gpu.gpudata, num_inducing)
+        LmInvPsi2LmInvT_gpu = gpuarray.empty((num_inducing,num_inducing),np.float64)
+        cublas.cublasDcopy(self.cublas_handle, psi2_gpu.size, psi2_gpu.gpudata, 1, LmInvPsi2LmInvT_gpu.gpudata, 1)
+        cublas.cublasDtrsm(self.cublas_handle , 'L', 'L', 'N', 'N', num_inducing, num_inducing, np.float64(1.0), Lm_gpu.gpudata, num_inducing, LmInvPsi2LmInvT_gpu.gpudata, num_inducing)
+        cublas.cublasDtrsm(self.cublas_handle , 'R', 'L', 'T', 'N', num_inducing, num_inducing, np.float64(1.0), Lm_gpu.gpudata, num_inducing, LmInvPsi2LmInvT_gpu.gpudata, num_inducing)
+        tr_LmInvPsi2LmInvT = cublas.cublasDasum(self.cublas_handle, num_inducing, LmInvPsi2LmInvT_gpu.gpudata, num_inducing+1)
+        print np.abs(vvt-vvt_gpu.get()).max()
+        print np.abs(np.trace(LmInvPsi2LmInvT)-tr_LmInvPsi2LmInvT)
         
         Psi2LLInvT = dtrtrs(LL,psi2_full)[0].T
         LmInvPsi2LLInvT= dtrtrs(Lm,Psi2LLInvT)[0]
         KmmInvPsi2LLInvT = dtrtrs(Lm,LmInvPsi2LLInvT,trans=True)[0]
         KmmInvPsi2P = dtrtrs(LL,KmmInvPsi2LLInvT.T, trans=True)[0].T
+        #
+        KmmInvPsi2LLInvT_gpu = LmInvPsi2LmInvT_gpu # Reuse GPU memory (size:MxM)
+        cublas.cublasDcopy(self.cublas_handle, psi2_gpu.size, psi2_gpu.gpudata, 1, KmmInvPsi2LLInvT_gpu.gpudata, 1)
+        cublas.cublasDtrsm(self.cublas_handle , 'L', 'L', 'N', 'N', num_inducing, num_inducing, np.float64(1.0), Lm_gpu.gpudata, num_inducing, KmmInvPsi2LLInvT_gpu.gpudata, num_inducing)
+        cublas.cublasDtrsm(self.cublas_handle , 'R', 'L', 'T', 'N', num_inducing, num_inducing, np.float64(1.0), LL_gpu.gpudata, num_inducing, KmmInvPsi2LLInvT_gpu.gpudata, num_inducing)
+        cublas.cublasDtrsm(self.cublas_handle , 'L', 'L', 'T', 'N', num_inducing, num_inducing, np.float64(1.0), Lm_gpu.gpudata, num_inducing, KmmInvPsi2LLInvT_gpu.gpudata, num_inducing)
+        KmmInvPsi2P_gpu = gpuarray.empty((num_inducing,num_inducing),np.float64)
+        cublas.cublasDcopy(self.cublas_handle, KmmInvPsi2LLInvT_gpu.size, KmmInvPsi2LLInvT_gpu.gpudata, 1, KmmInvPsi2P_gpu.gpudata, 1)
+        cublas.cublasDtrsm(self.cublas_handle , 'R', 'L', 'N', 'N', num_inducing, num_inducing, np.float64(1.0), LL_gpu.gpudata, num_inducing, KmmInvPsi2P_gpu.gpudata, num_inducing)
+        print np.abs(KmmInvPsi2P-KmmInvPsi2P_gpu.get()).max()
         
         dL_dpsi2R = (output_dim*KmmInvPsi2P - vvt)/2. # dL_dpsi2 with R inside psi2
         

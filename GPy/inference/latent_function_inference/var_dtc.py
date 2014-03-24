@@ -126,7 +126,7 @@ class VarDTC(object):
         delit += output_dim * np.eye(num_inducing)
         # Compute dL_dKmm
         dL_dKmm = backsub_both_sides(Lm, delit)
-
+        
         # derivatives of L w.r.t. psi
         dL_dpsi0, dL_dpsi1, dL_dpsi2 = _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm,
             VVT_factor, Cpsi1Vf, DBi_plus_BiPBi,

@@ -538,11 +538,9 @@ class TestNoiseModels(object):
         m.checkgrad(verbose=1, step=step)
         #if not m.checkgrad(step=step):
             #m.checkgrad(verbose=1, step=step)
-            #import ipdb; ipdb.set_trace()
             #NOTE this test appears to be stochastic for some likelihoods (student t?)
             # appears to all be working in test mode right now...
         #if isinstance(model, GPy.likelihoods.StudentT):
-        #    import ipdb;ipdb.set_trace()
         assert m.checkgrad(step=step)
 
     ###########

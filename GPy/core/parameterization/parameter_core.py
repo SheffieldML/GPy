@@ -16,7 +16,7 @@ Observable Pattern for patameterization
 from transformations import Transformation, Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
 
-__updated__ = '2014-03-18'
+__updated__ = '2014-03-24'
 
 class HierarchyError(Exception):
     """
@@ -28,7 +28,7 @@ def adjust_name_for_printing(name):
     Make sure a name can be printed, alongside used as a variable name.
     """
     if name is not None:
-        return name.replace(" ", "_").replace(".", "_").replace("-", "_m_").replace("+", "_p_").replace("!", "_I_").replace("**", "_xx_").replace("*", "_x_").replace("/", "_l_").replace("@",'_at_')
+        return name.replace(" ", "_").replace(".", "_").replace("-", "_m_").replace("+", "_p_").replace("!", "_I_").replace("**", "_xx_").replace("*", "_x_").replace("/", "_l_").replace("@", '_at_')
     return ''
 
 class InterfacePickleFunctions(object):
@@ -126,24 +126,22 @@ class Observable(Pickleable):
     def notify_observers(self, which=None, min_priority=None):
         """
         Notifies all observers. Which is the element, which kicked off this
-        notification loop.
+        notification loop. The first argument will be self, the second `which`.
 
         NOTE: notifies only observers with priority p > min_priority!
                                                     ^^^^^^^^^^^^^^^^
-
-        :param which: object, which started this notification loop
         :param min_priority: only notify observers with priority > min_priority
                              if min_priority is None, notify all observers in order
         """
         if which is None:
             which = self
         if min_priority is None:
-            [callble(which) for _, _, callble in self._observer_callables_]
+            [callble(self, which=which) for _, _, callble in self._observer_callables_]
         else:
             for p, _, callble in self._observer_callables_:
                 if p <= min_priority:
                     break
-                callble(which)
+                callble(self, which=which)
 
     def _insert_sorted(self, p, o, c):
         ins = 0
@@ -627,7 +625,7 @@ class OptimizationHandlable(Constrainable):
 #         else: min_priority = -np.inf
 #         self.notify_observers(None, min_priority)
         # don't overwrite this anymore!
-        #raise NotImplementedError, "Abstract superclass: This needs to be implemented in Param and Parameterizable"
+        # raise NotImplementedError, "Abstract superclass: This needs to be implemented in Param and Parameterizable"
 
     #===========================================================================
     # Optimization handles:
@@ -659,7 +657,7 @@ class OptimizationHandlable(Constrainable):
         x = rand_gen(loc=loc, scale=scale, size=self._size_transformed(), *args, **kwargs)
         # now draw from prior where possible
         [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
-        self._set_params_transformed(x) # makes sure all of the tied parameters get the same init (since there's only one prior object...)
+        self._set_params_transformed(x)  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
 
     #===========================================================================
     # For shared memory arrays. This does nothing in Param, but sets the memory
@@ -668,10 +666,10 @@ class OptimizationHandlable(Constrainable):
     def _propagate_param_grad(self, parray, garray):
         pi_old_size = 0
         for pi in self._parameters_:
-            pislice = slice(pi_old_size, pi_old_size+pi.size)
+            pislice = slice(pi_old_size, pi_old_size + pi.size)
 
-            self._param_array_[pislice] = pi._param_array_.flat#, requirements=['C', 'W']).flat
-            self._gradient_array_[pislice] = pi._gradient_array_.flat#, requirements=['C', 'W']).flat
+            self._param_array_[pislice] = pi._param_array_.flat  # , requirements=['C', 'W']).flat
+            self._gradient_array_[pislice] = pi._gradient_array_.flat  # , requirements=['C', 'W']).flat
 
             pi._param_array_.data = parray[pislice].data
             pi._gradient_array_.data = garray[pislice].data
@@ -723,7 +721,7 @@ class Parameterizable(OptimizationHandlable):
             self.__dict__[pname] = param
             self._added_names_.add(pname)
         else:
-            print "WARNING: added a parameter with formatted name {}, which is already a member of {} object. Trying to change the parameter name to\n   {}".format(pname, self.__class__, param.name+"_")
+            print "WARNING: added a parameter with formatted name {}, which is already a member of {} object. Trying to change the parameter name to\n   {}".format(pname, self.__class__, param.name + "_")
             param.name += "_"
             self._add_parameter_name(param, ignore_added_names)
 
@@ -781,7 +779,7 @@ class Parameterizable(OptimizationHandlable):
         if param in self._parameters_ and index is not None:
             self.remove_parameter(param)
             self.add_parameter(param, index)
-        #elif param.has_parent():
+        # elif param.has_parent():
         #    raise HierarchyError, "parameter {} already in another model ({}), create new object (or copy) for adding".format(param._short(), param._highest_parent_._short())
         elif param not in self._parameters_:
             if param.has_parent():
@@ -874,12 +872,12 @@ class Parameterizable(OptimizationHandlable):
             p._parent_ = self
             p._parent_index_ = i
 
-            pslice = slice(old_size, old_size+p.size)
+            pslice = slice(old_size, old_size + p.size)
             # first connect all children
             p._propagate_param_grad(self._param_array_[pslice], self._gradient_array_[pslice])
             # then connect children to self
-            self._param_array_[pslice] = p._param_array_.flat#, requirements=['C', 'W']).ravel(order='C')
-            self._gradient_array_[pslice] = p._gradient_array_.flat#, requirements=['C', 'W']).ravel(order='C')
+            self._param_array_[pslice] = p._param_array_.flat  # , requirements=['C', 'W']).ravel(order='C')
+            self._gradient_array_[pslice] = p._gradient_array_.flat  # , requirements=['C', 'W']).ravel(order='C')
 
             if not p._param_array_.flags['C_CONTIGUOUS']:
                 import ipdb;ipdb.set_trace()
@@ -894,10 +892,10 @@ class Parameterizable(OptimizationHandlable):
     #===========================================================================
     # notification system
     #===========================================================================
-    def _parameters_changed_notification(self, which):
+    def _parameters_changed_notification(self, me, which=None):
         self.parameters_changed()
-    def _pass_through_notify_observers(self, which):
-        self.notify_observers(which)
+    def _pass_through_notify_observers(self, me, which=None):
+        self.notify_observers(which=which)
 
     #===========================================================================
     # TODO: not working yet

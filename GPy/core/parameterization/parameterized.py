@@ -157,7 +157,7 @@ class Parameterized(Parameterizable, Pickleable):
                 return self._param_slices_[param._parent_._get_original(param)._parent_index_].start
             return self._offset_for(param._parent_) + param._parent_._offset_for(param)
         return 0
-    
+
     def _raveled_index_for(self, param):
         """
         get the raveled index for a param
@@ -167,7 +167,7 @@ class Parameterized(Parameterizable, Pickleable):
         if isinstance(param, ParamConcatenation):
             return numpy.hstack((self._raveled_index_for(p) for p in param.params))
         return param._raveled_index() + self._offset_for(param)
-    
+
     def _raveled_index(self):
         """
         get the raveled index for this object,
@@ -218,14 +218,17 @@ class Parameterized(Parameterizable, Pickleable):
                         return ParamConcatenation(paramlist)
                 return paramlist[-1]
             return ParamConcatenation(paramlist)
-    
+
     def __setitem__(self, name, value, paramlist=None):
         if isinstance(name, (slice, tuple, np.ndarray)):
-            self._param_array_[name] = value
-            self.notify_observers()
+            try:
+                self._param_array_[name] = value
+            except:
+                raise ValueError, "Setting by slice or index only allowed with array-like"
+            self._trigger_params_changed()
         else:
             try: param = self.__getitem__(name, paramlist)
-            except AttributeError as a: raise a
+            except: raise
             param[:] = value
 
     def __setattr__(self, name, val):

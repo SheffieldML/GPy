@@ -45,7 +45,7 @@ class Test(unittest.TestCase):
         self._first = None
         self._second = None
 
-    def _trigger(self, which):
+    def _trigger(self, me, which):
         self._observer_triggered = which
         self._trigger_count += 1
         if self._first is not None:
@@ -53,7 +53,7 @@ class Test(unittest.TestCase):
         else:
             self._first = self._trigger
 
-    def _trigger_priority(self, which):
+    def _trigger_priority(self, me, which):
         if self._first is not None:
             self._second = self._trigger_priority
         else:

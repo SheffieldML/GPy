@@ -79,13 +79,13 @@ class Cacher(object):
             self.reset()
             raise
 
-    def on_cache_changed(self, arg):
+    def on_cache_changed(self, direct, which=None):
         """
         A callback funtion, which sets local flags when the elements of some cached inputs change
 
         this function gets 'hooked up' to the inputs when we cache them, and upon their elements being changed we update here.
         """
-        self.inputs_changed = [any([a is arg for a in args]) or old_ic for args, old_ic in zip(self.cached_inputs, self.inputs_changed)]
+        self.inputs_changed = [any([a is direct or a is which for a in args]) or old_ic for args, old_ic in zip(self.cached_inputs, self.inputs_changed)]
 
     def reset(self):
         """
@@ -101,7 +101,7 @@ class Cacher(object):
     def __name__(self):
         return self.operation.__name__
 
-from functools import wraps, partial
+from functools import partial
 
 class Cacher_wrap(object):
     def __init__(self, f, limit, ignore_args, force_kwargs):
@@ -113,6 +113,7 @@ class Cacher_wrap(object):
         return partial(self, obj)
     def __call__(self, *args, **kwargs):
         obj = args[0]
+        #import ipdb;ipdb.set_trace()
         try:
             caches = obj.__cachers
         except AttributeError:

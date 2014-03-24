@@ -58,7 +58,77 @@ class MiscTests(unittest.TestCase):
         np.testing.assert_almost_equal(np.diag(K_hat)[:, None], var)
         #np.testing.assert_almost_equal(mu_hat, mu)
 
+    def test_likelihood_replicate(self):
+        m = GPy.models.GPRegression(self.X, self.Y)
+        m2 = GPy.models.GPRegression(self.X, self.Y)
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        m.randomize()
+        m2[:] = m[''].values()
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        m.randomize()
+        m2[''] = m[:]
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        m.randomize()
+        m2[:] = m[:]
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        m.randomize()
+        m2[''] = m['']
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
 
+        m.kern.lengthscale.randomize()
+        m2[:] = m[:]
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+
+        m.Gaussian_noise.randomize()
+        m2[:] = m[:]
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+
+        m['.*var'] = 2
+        m2['.*var'] = m['.*var']
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+
+
+    def test_likelihood_set(self):
+        m = GPy.models.GPRegression(self.X, self.Y)
+        m2 = GPy.models.GPRegression(self.X, self.Y)
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+
+        m.kern.lengthscale.randomize()
+        m._trigger_params_changed()
+        m2.kern.lengthscale = m.kern.lengthscale
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+
+        m.kern.lengthscale.randomize()
+        m._trigger_params_changed()
+        m2['.*lengthscale'] = m.kern.lengthscale
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+
+        m.kern.lengthscale.randomize()
+        m._trigger_params_changed()
+        m2['.*lengthscale'] = m.kern['.*lengthscale']
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+
+        m.kern.lengthscale.randomize()
+        m._trigger_params_changed()
+        m2.kern.lengthscale = m.kern['.*lengthscale']
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+
+    def test_likelihood_replicate_kern(self):
+        m = GPy.models.GPRegression(self.X, self.Y)
+        m2 = GPy.models.GPRegression(self.X, self.Y)
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        m.kern.randomize()
+        m2.kern[''] = m.kern[:]
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        m.kern.randomize()
+        m2.kern[:] = m.kern[:]
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        m.kern.randomize()
+        m2.kern[''] = m.kern['']
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        m.kern.randomize()
+        m2.kern[:] = m.kern[''].values()
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
 
 class GradientTests(unittest.TestCase):
     def setUp(self):

@@ -6,6 +6,7 @@ import numpy as np
 from ..core import GP
 from .. import likelihoods
 from .. import kern
+from ..inference.latent_function_inference.expectation_propagation import EP
 
 class GPClassification(GP):
     """
@@ -27,4 +28,4 @@ class GPClassification(GP):
 
         likelihood = likelihoods.Bernoulli()
 
-        GP.__init__(self, X=X, Y=Y,  kernel=kernel, likelihood=likelihood, name='gp_classification')
+        GP.__init__(self, X=X, Y=Y,  kernel=kernel, likelihood=likelihood, inference_method=EP(), name='gp_classification')

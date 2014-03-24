@@ -130,6 +130,13 @@ class MiscTests(unittest.TestCase):
         m2.kern[:] = m.kern[''].values()
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
 
+    def test_model_optimize(self):
+        X = np.random.uniform(-3., 3., (20, 1))
+        Y = np.sin(X) + np.random.randn(20, 1) * 0.05
+        m = GPy.models.GPRegression(X,Y)
+        m.optimize()
+        print m
+
 class GradientTests(np.testing.TestCase):
     def setUp(self):
         ######################################

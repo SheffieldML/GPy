@@ -50,6 +50,14 @@ class BayesianGPLVM(SparseGP):
         self.variational_prior = NormalPrior()
         X = NormalPosterior(X, X_variance)
 
+        if inference_method is None:
+            if np.any(np.isnan(Y)):
+                from ..inference.latent_function_inference.var_dtc import VarDTCMissingData
+                inference_method = VarDTCMissingData()
+            else:
+                from ..inference.latent_function_inference.var_dtc import VarDTC
+                inference_method = VarDTC()
+
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)
         self.add_parameter(self.X, index=0)
 

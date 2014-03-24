@@ -26,7 +26,10 @@ class BayesianGPLVM(SparseGP):
                  Z=None, kernel=None, inference_method=None, likelihood=None, name='bayesian gplvm', **kwargs):
         if X == None:
             from ..util.initialization import initialize_latent
-            X = initialize_latent(init, input_dim, Y)
+            X, fracs = initialize_latent(init, input_dim, Y)
+        else:
+            fracs = np.ones(input_dim)
+
         self.init = init
 
         if X_variance is None:
@@ -38,7 +41,7 @@ class BayesianGPLVM(SparseGP):
         assert Z.shape[1] == X.shape[1]
 
         if kernel is None:
-            kernel = kern.RBF(input_dim) # + kern.white(input_dim)
+            kernel = kern.RBF(input_dim, lengthscale=fracs, ARD=True) # + kern.white(input_dim)
 
         if likelihood is None:
             likelihood = Gaussian()

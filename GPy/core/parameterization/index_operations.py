@@ -183,7 +183,7 @@ class ParameterIndexOperationsView(object):
 
 
     def remove(self, prop, indices):
-        removed = self._param_index_ops.remove(prop, indices+self._offset)
+        removed = self._param_index_ops.remove(prop, numpy.array(indices)+self._offset)
         if removed.size > 0:
             return removed - self._size + 1
         return removed

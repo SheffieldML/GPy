@@ -63,7 +63,7 @@ class Parameterized(Parameterizable, Pickleable):
     # Metaclass for parameters changed after init. 
     # This makes sure, that parameters changed will always be called after __init__
     # **Never** call parameters_changed() yourself 
-    __metaclass__ = ParametersChangedMeta    
+    __metaclass__ = ParametersChangedMeta
     #===========================================================================
     def __init__(self, name=None, parameters=[], *a, **kw):
         super(Parameterized, self).__init__(name=name, *a, **kw)

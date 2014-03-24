@@ -59,9 +59,10 @@ class MiscTests(unittest.TestCase):
         #np.testing.assert_almost_equal(mu_hat, mu)
 
     def test_likelihood_replicate(self):
+        tol = 1e-5
         m = GPy.models.GPRegression(self.X, self.Y)
         m2 = GPy.models.GPRegression(self.X, self.Y)
-        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood(), tol=tol)
         m.randomize()
         m2[:] = m[''].values()
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())

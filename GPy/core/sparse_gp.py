@@ -485,9 +485,11 @@ class SparseGP(GPBase):
         return GPBase.getstate(self) + [self.Z,
                 self.num_inducing,
                 self.has_uncertain_inputs,
-                self.X_variance]
+                self.X_variance,
+                self.backsub]
 
     def setstate(self, state):
+        self.backsub = state.pop()
         self.X_variance = state.pop()
         self.has_uncertain_inputs = state.pop()
         self.num_inducing = state.pop()

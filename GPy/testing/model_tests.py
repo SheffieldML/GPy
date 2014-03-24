@@ -130,7 +130,7 @@ class MiscTests(unittest.TestCase):
         m2.kern[:] = m.kern[''].values()
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
 
-class GradientTests(unittest.TestCase):
+class GradientTests(np.testing.TestCase):
     def setUp(self):
         ######################################
         # # 1 dimensional example

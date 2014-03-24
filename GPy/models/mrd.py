@@ -6,12 +6,12 @@ import itertools
 import pylab
 
 from ..core import Model
-from ..util.linalg import PCA
 from ..kern import Kern
 from ..core.parameterization.variational import NormalPosterior, NormalPrior
 from ..core.parameterization import Param, Parameterized
 from ..inference.latent_function_inference.var_dtc import VarDTCMissingData, VarDTC
 from ..likelihoods import Gaussian
+from GPy.util.initialization import initialize_latent
 
 class MRD(Model):
     """
@@ -71,7 +71,7 @@ class MRD(Model):
         self.num_inducing = self.Z.shape[0] # ensure M==N if M>N
 
         if X_variance is None:
-            X_variance = np.random.uniform(0, .2, X.shape)
+            X_variance = np.random.uniform(0, .1, X.shape)
 
         self.variational_prior = NormalPrior()
         self.X = NormalPosterior(X, X_variance)
@@ -147,11 +147,11 @@ class MRD(Model):
         if Ylist is None:
             Ylist = self.Ylist
         if init in "PCA_concat":
-            X = PCA(np.hstack(Ylist), self.input_dim)[0]
+            X = initialize_latent('PCA', np.hstack(Ylist), self.input_dim)
         elif init in "PCA_single":
             X = np.zeros((Ylist[0].shape[0], self.input_dim))
             for qs, Y in itertools.izip(np.array_split(np.arange(self.input_dim), len(Ylist)), Ylist):
-                X[:, qs] = PCA(Y, len(qs))[0]
+                X[:, qs] = initialize_latent('PCA', Y, len(qs))
         else: # init == 'random':
             X = np.random.randn(Ylist[0].shape[0], self.input_dim)
         return X

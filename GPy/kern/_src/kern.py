@@ -11,7 +11,7 @@ from ...util.caching import Cache_this
 
 class Kern(Parameterized):
     #===========================================================================
-    # This adds input slice support. The rather ugly code for slicing can be 
+    # This adds input slice support. The rather ugly code for slicing can be
     # found in kernel_slice_operations
     __metaclass__ = KernCallsViaSlicerMeta
     #===========================================================================

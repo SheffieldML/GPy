@@ -64,7 +64,7 @@ class RBF(Stationary):
             if self.ARD:
                 self.lengthscale.gradient = (dL_dpsi1[:,:,None]*_dpsi1_dlengthscale).reshape(-1,self.input_dim).sum(axis=0)
             else:
-                self.lengthscale.gradient = (dL_dpsi1[:,:,None]*_dpsi1_dlengthscale).sum()  
+                self.lengthscale.gradient = (dL_dpsi1[:,:,None]*_dpsi1_dlengthscale).sum()
 
             #from psi2
             self.variance.gradient += (dL_dpsi2 * _dpsi2_dvariance).sum()

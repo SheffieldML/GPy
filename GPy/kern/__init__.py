@@ -1,6 +1,6 @@
 from _src.kern import Kern
 from _src.rbf import RBF
-from _src.linear import Linear
+from _src.linear import Linear, LinearFull
 from _src.static import Bias, White
 from _src.brownian import Brownian
 from _src.sympykern import Sympykern

@@ -580,26 +580,3 @@ def backsub_both_sides(L, X, transpose='left'):
         tmp, _ = dtrtrs(L, X, lower=1, trans=0)
         return dtrtrs(L, tmp.T, lower=1, trans=0)[0].T
 
-def PCA(Y, input_dim):
-    """
-    Principal component analysis: maximum likelihood solution by SVD
-
-    :param Y: NxD np.array of data
-    :param input_dim: int, dimension of projection
-
-
-    :rval X: - Nxinput_dim np.array of dimensionality reduced data
-    :rval W: - input_dimxD mapping from X to Y
-
-    """
-    if not np.allclose(Y.mean(axis=0), 0.0):
-        print "Y is not zero mean, centering it locally (GPy.util.linalg.PCA)"
-
-        # Y -= Y.mean(axis=0)
-
-    Z = linalg.svd(Y - Y.mean(axis=0), full_matrices=False)
-    [X, W] = [Z[0][:, 0:input_dim], np.dot(np.diag(Z[1]), Z[2]).T[:, 0:input_dim]]
-    v = X.std(axis=0)
-    X /= v;
-    W *= v;
-    return X, W.T

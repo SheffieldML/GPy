@@ -24,7 +24,6 @@ class Model(Parameterized):
 
     def log_likelihood(self):
         raise NotImplementedError, "this needs to be implemented to use the model class"
-
     def _log_likelihood_gradients(self):
         return self.gradient
 
@@ -148,7 +147,60 @@ class Model(Parameterized):
         """
         return self.kern.input_sensitivity()
 
-    def objective_function(self, x):
+    def objective_function(self):
+        """
+        The objective function for the given algorithm.
+
+        This function is the true objective, which wants to be minimized. 
+        Note that all parameters are already set and in place, so you just need 
+        to return the objective function here.
+
+        For probabilistic models this is the negative log_likelihood
+        (including the MAP prior), so we return it here. If your model is not 
+        probabilistic, just return your objective here!
+        """
+        return -float(self.log_likelihood()) - self.log_prior()
+
+    def objective_function_gradients(self):
+        """
+        The gradients for the objective function for the given algorithm.
+
+        You can find the gradient for the parameters in self.gradient at all times.
+        This is the place, where gradients get stored for parameters.
+
+        This function is the true objective, which wants to be minimized. 
+        Note that all parameters are already set and in place, so you just need 
+        to return the gradient here.
+
+        For probabilistic models this is the gradient of the negative log_likelihood
+        (including the MAP prior), so we return it here. If your model is not 
+        probabilistic, just return your gradient here!
+        """
+        return -(self._log_likelihood_gradients() + self._log_prior_gradients())
+
+    def _grads(self, x):
+        """
+        Gets the gradients from the likelihood and the priors.
+
+        Failures are handled robustly. The algorithm will try several times to
+        return the gradients, and will raise the original exception if
+        the objective cannot be computed.
+
+        :param x: the parameters of the model.
+        :type x: np.array
+        """
+        try:
+            self._set_params_transformed(x)
+            obj_grads = self._transform_gradients(self.objective_function_gradients())
+            self._fail_count = 0
+        except (LinAlgError, ZeroDivisionError, ValueError):
+            if self._fail_count >= self._allowed_failures:
+                raise
+            self._fail_count += 1
+            obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e100, 1e100)
+        return obj_grads
+
+    def _objective(self, x):
         """
         The objective function passed to the optimizer. It combines
         the likelihood and the priors.
@@ -162,55 +214,26 @@ class Model(Parameterized):
         """
         try:
             self._set_params_transformed(x)
+            obj = self.objective_function()
             self._fail_count = 0
-        except (LinAlgError, ZeroDivisionError, ValueError) as e:
+        except (LinAlgError, ZeroDivisionError, ValueError):
             if self._fail_count >= self._allowed_failures:
-                raise e
+                raise
             self._fail_count += 1
             return np.inf
-        return -float(self.log_likelihood()) - self.log_prior()
+        return obj
 
-    def objective_function_gradients(self, x):
-        """
-        Gets the gradients from the likelihood and the priors.
-
-        Failures are handled robustly. The algorithm will try several times to
-        return the gradients, and will raise the original exception if
-        the objective cannot be computed.
-
-        :param x: the parameters of the model.
-        :type x: np.array
-        """
+    def _objective_grads(self, x):
         try:
             self._set_params_transformed(x)
-            obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
+            obj_f, obj_grads = self.objective_function(), self._transform_gradients(self.objective_function_gradients())
             self._fail_count = 0
-        except (LinAlgError, ZeroDivisionError, ValueError) as e:
+        except (LinAlgError, ZeroDivisionError, ValueError):
             if self._fail_count >= self._allowed_failures:
-                raise e
-            self._fail_count += 1
-            obj_grads = np.clip(-self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients()), -1e100, 1e100)
-        return obj_grads
-
-    def objective_and_gradients(self, x):
-        """
-        Compute the objective function of the model and the gradient of the model at the point given by x.
-
-        :param x: the point at which gradients are to be computed.
-        :type x: np.array
-        """
-
-        try:
-            self._set_params_transformed(x)
-            obj_f = -float(self.log_likelihood()) - self.log_prior()
-            obj_grads = -self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients())
-            self._fail_count = 0
-        except (LinAlgError, ZeroDivisionError, ValueError) as e:
-            if self._fail_count >= self._allowed_failures:
-                raise e
+                raise
             self._fail_count += 1
             obj_f = np.inf
-            obj_grads = np.clip(-self._transform_gradients(self._log_likelihood_gradients() + self._log_prior_gradients()), -1e100, 1e100)
+            obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e100, 1e100)
         return obj_f, obj_grads
 
     def optimize(self, optimizer=None, start=None, **kwargs):
@@ -241,7 +264,7 @@ class Model(Parameterized):
         optimizer = optimization.get_optimizer(optimizer)
         opt = optimizer(start, model=self, **kwargs)
 
-        opt.run(f_fp=self.objective_and_gradients, f=self.objective_function, fp=self.objective_function_gradients)
+        opt.run(f_fp=self._objective_grads, f=self._objective, fp=self._grads)
 
         self.optimization_runs.append(opt)
 
@@ -292,9 +315,9 @@ class Model(Parameterized):
             dx[transformed_index] = step * np.sign(np.random.uniform(-1, 1, transformed_index.size))
 
             # evaulate around the point x
-            f1 = self.objective_function(x + dx)
-            f2 = self.objective_function(x - dx)
-            gradient = self.objective_function_gradients(x)
+            f1 = self._objective(x + dx)
+            f2 = self._objective(x - dx)
+            gradient = self._grads(x)
 
             dx = dx[transformed_index]
             gradient = gradient[transformed_index]
@@ -337,15 +360,15 @@ class Model(Parameterized):
                     print "No free parameters to check"
                     return
 
-            gradient = self.objective_function_gradients(x).copy()
+            gradient = self._grads(x).copy()
             np.where(gradient == 0, 1e-312, gradient)
             ret = True
             for nind, xind in itertools.izip(param_index, transformed_index):
                 xx = x.copy()
                 xx[xind] += step
-                f1 = self.objective_function(xx)
+                f1 = self._objective(xx)
                 xx[xind] -= 2.*step
-                f2 = self.objective_function(xx)
+                f2 = self._objective(xx)
                 numerical_gradient = (f1 - f2) / (2 * step)
                 if np.all(gradient[xind]==0): ratio = (f1-f2) == gradient[xind]
                 else: ratio = (f1 - f2) / (2 * step * gradient[xind])

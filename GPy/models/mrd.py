@@ -6,12 +6,12 @@ import itertools
 import pylab
 
 from ..core import Model
-from ..util.linalg import PCA
 from ..kern import Kern
 from ..core.parameterization.variational import NormalPosterior, NormalPrior
 from ..core.parameterization import Param, Parameterized
 from ..inference.latent_function_inference.var_dtc import VarDTCMissingData, VarDTC
 from ..likelihoods import Gaussian
+from GPy.util.initialization import initialize_latent
 
 class MRD(Model):
     """
@@ -51,27 +51,28 @@ class MRD(Model):
                  inference_method=None, likelihood=None, name='mrd', Ynames=None):
         super(MRD, self).__init__(name)
 
+        self.input_dim = input_dim
+        self.num_inducing = num_inducing
+
+        self.Ylist = Ylist
+        self._in_init_ = True
+        X, fracs = self._init_X(initx, Ylist)
+        self.Z = Param('inducing inputs', self._init_Z(initz, X))
+        self.num_inducing = self.Z.shape[0] # ensure M==N if M>N
+
         # sort out the kernels
         if kernel is None:
             from ..kern import RBF
-            self.kern = [RBF(input_dim, ARD=1, name='rbf'.format(i)) for i in range(len(Ylist))]
+            self.kern = [RBF(input_dim, ARD=1, lengthscale=fracs[i], name='rbf'.format(i)) for i in range(len(Ylist))]
         elif isinstance(kernel, Kern):
             self.kern = [kernel.copy(name='{}'.format(kernel.name, i)) for i in range(len(Ylist))]
         else:
             assert len(kernel) == len(Ylist), "need one kernel per output"
             assert all([isinstance(k, Kern) for k in kernel]), "invalid kernel object detected!"
             self.kern = kernel
-        self.input_dim = input_dim
-        self.num_inducing = num_inducing
-
-        self.Ylist = Ylist
-        self._in_init_ = True
-        X = self._init_X(initx, Ylist)
-        self.Z = Param('inducing inputs', self._init_Z(initz, X))
-        self.num_inducing = self.Z.shape[0] # ensure M==N if M>N
 
         if X_variance is None:
-            X_variance = np.random.uniform(0, .2, X.shape)
+            X_variance = np.random.uniform(0, .1, X.shape)
 
         self.variational_prior = NormalPrior()
         self.X = NormalPosterior(X, X_variance)
@@ -108,8 +109,7 @@ class MRD(Model):
         self._log_marginal_likelihood = 0
         self.posteriors = []
         self.Z.gradient = 0.
-        self.X.mean.gradient = 0.
-        self.X.variance.gradient = 0.
+        self.X.gradient = 0.
 
         for y, k, l, i in itertools.izip(self.Ylist, self.kern, self.likelihood, self.inference_method):
             posterior, lml, grad_dict = i.inference(k, self.X, self.Z, l, y)
@@ -147,14 +147,20 @@ class MRD(Model):
         if Ylist is None:
             Ylist = self.Ylist
         if init in "PCA_concat":
-            X = PCA(np.hstack(Ylist), self.input_dim)[0]
+            X, fracs = initialize_latent('PCA', self.input_dim, np.hstack(Ylist))
+            fracs = [fracs]*self.input_dim
         elif init in "PCA_single":
             X = np.zeros((Ylist[0].shape[0], self.input_dim))
+            fracs = []
             for qs, Y in itertools.izip(np.array_split(np.arange(self.input_dim), len(Ylist)), Ylist):
-                X[:, qs] = PCA(Y, len(qs))[0]
+                x,frcs = initialize_latent('PCA', len(qs), Y)
+                X[:, qs] = x
+                fracs.append(frcs)
         else: # init == 'random':
             X = np.random.randn(Ylist[0].shape[0], self.input_dim)
-        return X
+            fracs = X.var(0)
+            fracs = [fracs]*self.input_dim
+        return X, fracs
 
     def _init_Z(self, init="permute", X=None):
         if X is None:

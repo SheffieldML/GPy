@@ -277,7 +277,9 @@ def bgplvm_simulation(optimize=True, verbose=1,
     k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     #k = kern.RBF(Q, ARD=True, lengthscale=10.)
     m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k)
-    
+    m.X.variance[:] = _np.random.uniform(0,.01,m.X.shape)
+    m.likelihood.variance = .1
+
     if optimize:
         print "Optimizing model:"
         m.optimize('bfgs', messages=verbose, max_iters=max_iters,
@@ -299,15 +301,16 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
-    
+
     inan = _np.random.binomial(1, .6, size=Y.shape).astype(bool)
     m = BayesianGPLVM(Y.copy(), Q, init="random", num_inducing=num_inducing, kernel=k)
     m.inference_method = VarDTCMissingData()
     m.Y[inan] = _np.nan
-    m.X.variance *= .1
+    m.X.variance[:] = _np.random.uniform(0,.01,m.X.shape)
+    m.likelihood.variance = .01
     m.parameters_changed()
     m.Yreal = Y
-    
+
     if optimize:
         print "Optimizing model:"
         m.optimize('bfgs', messages=verbose, max_iters=max_iters,
@@ -325,11 +328,11 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
 
     D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
-    
+
     #Ylist = [Ylist[0]]
-    k = [kern.Linear(Q, ARD=True) + kern.White(Q, 1e-4) for _ in range(len(Ylist))]
+    k = [kern.Linear(Q, ARD=True) for _ in range(len(Ylist))]
     m = MRD(Ylist, input_dim=Q, num_inducing=num_inducing, kernel=k, initx="", initz='permute', **kw)
-    
+
     m['.*noise'] = [Y.var()/500. for Y in Ylist]
     #for i, Y in enumerate(Ylist):
     #    m['.*Y_{}.*Gaussian.*noise'.format(i)] = Y.var(1) / 500.

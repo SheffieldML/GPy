@@ -33,6 +33,8 @@ class Test(unittest.TestCase):
         self.assertListEqual(self.param_index[one].tolist(), [3])
         self.assertListEqual(self.param_index.remove('not in there', [2,3,4]).tolist(), [])
 
+        self.assertListEqual(self.view.remove('not in there', [2,3,4]).tolist(), [])
+
     def test_shift_left(self):
         self.view.shift_left(0, 2)
         self.assertListEqual(self.param_index[three].tolist(), [2,5])
@@ -81,6 +83,10 @@ class Test(unittest.TestCase):
             self.assertListEqual(self.param_index[k].tolist(), v.tolist())
         self.assertEqual(self.param_index.size, 6)
         self.assertEqual(self.view.size, 5)
+
+    def test_print(self):
+        print self.param_index
+        print self.view
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.test_index_view']

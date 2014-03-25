@@ -1,7 +1,7 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-__updated__ = '2014-03-21'
+__updated__ = '2014-03-24'
 
 import numpy as np
 from parameter_core import Observable
@@ -38,24 +38,9 @@ class ObsAr(np.ndarray, Observable):
         np.ndarray.__setstate__(self, state[0])
         Observable._setstate(self, state[1])
 
-    def _s_not_empty(self, s):
-        # this checks whether there is something picked by this slice.
-        return True
-        # TODO:  disarmed, for performance increase,
-        if not isinstance(s, (list,tuple,np.ndarray)):
-            return True
-        if isinstance(s, (list,tuple)):
-            return len(s)!=0
-        if isinstance(s, np.ndarray):
-            if s.dtype is bool:
-                return np.all(s)
-            else:
-                return s.size != 0
-
     def __setitem__(self, s, val):
-        if self._s_not_empty(s):
-            super(ObsAr, self).__setitem__(s, val)
-            self.notify_observers()
+        super(ObsAr, self).__setitem__(s, val)
+        self.notify_observers()
 
     def __getslice__(self, start, stop):
         return self.__getitem__(slice(start, stop))

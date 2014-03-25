@@ -5,7 +5,6 @@
 import numpy as np
 import pylab as pb
 from .. import kern
-from ..util.linalg import PCA
 from ..core import GP, Param
 from ..likelihoods import Gaussian
 from .. import util
@@ -29,9 +28,11 @@ class GPLVM(GP):
         """
         if X is None:
             from ..util.initialization import initialize_latent
-            X = initialize_latent(init, input_dim, Y)
+            X, fracs = initialize_latent(init, input_dim, Y)
+        else:
+            fracs = np.ones(input_dim)
         if kernel is None:
-            kernel = kern.RBF(input_dim, ARD=input_dim > 1) + kern.Bias(input_dim, np.exp(-2))
+            kernel = kern.RBF(input_dim, lengthscale=fracs, ARD=input_dim > 1) + kern.Bias(input_dim, np.exp(-2))
 
         likelihood = Gaussian()
 

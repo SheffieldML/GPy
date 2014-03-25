@@ -8,6 +8,7 @@ import sys
 
 verbose = 0
 
+np.random.seed(50)
 
 
 class Kern_check_model(GPy.core.Model):
@@ -240,6 +241,17 @@ class KernelGradientTestsContinuous(unittest.TestCase):
 
     def test_Prod(self):
         k = GPy.kern.Matern32(2, active_dims=[2,3]) * GPy.kern.RBF(2, active_dims=[0,4]) + GPy.kern.Linear(self.D)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_Prod2(self):
+        k = (GPy.kern.RBF(2, active_dims=[0,4]) * GPy.kern.Linear(self.D))
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_Prod3(self):
+        k = GPy.kern.Matern32(2, active_dims=[2,3]) * (GPy.kern.RBF(2, active_dims=[0,4]) + GPy.kern.Linear(self.D))
+        k = (GPy.kern.RBF(2, active_dims=[0,4]) * GPy.kern.Linear(self.D))
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 

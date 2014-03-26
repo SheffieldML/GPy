@@ -52,17 +52,17 @@ class VarDTC_GPU(object):
     def _initGPUCache(self, num_inducing, output_dim):
         if self.gpuCache == None:
             self.gpuCache = {# inference_likelihood
-                             'Kmm_gpu'              :gpuarray.empty((num_inducing,num_inducing),np.float64),
-                             'Lm_gpu'               :gpuarray.empty((num_inducing,num_inducing),np.float64),
-                             'ones_gpu'             :gpuarray.empty(num_inducing, np.float64),
-                             'LL_gpu'               :gpuarray.empty((num_inducing,num_inducing),np.float64),
-                             'b_gpu'                :gpuarray.empty((num_inducing,output_dim),np.float64),
-                             'v_gpu'                :gpuarray.empty((num_inducing,output_dim),np.float64),
-                             'vvt_gpu'              :gpuarray.empty((num_inducing,num_inducing),np.float64),
-                             'KmmInvPsi2LLInvT_gpu' :gpuarray.empty((num_inducing,num_inducing),np.float64),
-                             'KmmInvPsi2P_gpu'      :gpuarray.empty((num_inducing,num_inducing),np.float64),
-                             'dL_dpsi2R_gpu'        :gpuarray.empty((num_inducing,num_inducing),np.float64),
-                             'dL_dKmm_gpu'          :gpuarray.empty((num_inducing,num_inducing),np.float64),
+                             'Kmm_gpu'              :gpuarray.empty((num_inducing,num_inducing),np.float64,order='F'),
+                             'Lm_gpu'               :gpuarray.empty((num_inducing,num_inducing),np.float64,order='F'),
+                             'ones_gpu'             :gpuarray.empty(num_inducing, np.float64,order='F'),
+                             'LL_gpu'               :gpuarray.empty((num_inducing,num_inducing),np.float64,order='F'),
+                             'b_gpu'                :gpuarray.empty((num_inducing,output_dim),np.float64,order='F'),
+                             'v_gpu'                :gpuarray.empty((num_inducing,output_dim),np.float64,order='F'),
+                             'vvt_gpu'              :gpuarray.empty((num_inducing,num_inducing),np.float64,order='F'),
+                             'KmmInvPsi2LLInvT_gpu' :gpuarray.empty((num_inducing,num_inducing),np.float64,order='F'),
+                             'KmmInvPsi2P_gpu'      :gpuarray.empty((num_inducing,num_inducing),np.float64,order='F'),
+                             'dL_dpsi2R_gpu'        :gpuarray.empty((num_inducing,num_inducing),np.float64,order='F'),
+                             'dL_dKmm_gpu'          :gpuarray.empty((num_inducing,num_inducing),np.float64,order='F'),
                              # inference_minibatch
                              }
             self.gpuCache['ones_gpu'].fill(1.0)
@@ -134,11 +134,11 @@ class VarDTC_GPU(object):
             if het_noise:
                 beta_slice = beta[n_start:n_end]
                 psi0_full += (beta_slice*psi0).sum()
-                psi1Y_full += np.dot(psi1,beta_slice[:,None]*Y_slice) # DxM
+                psi1Y_full += np.dot(psi1.T,beta_slice[:,None]*Y_slice) # MxD
                 YRY_full += (beta_slice*np.square(Y_slice).sum(axis=-1)).sum()
             else:
                 psi0_full += psi0.sum()
-                psi1Y_full += np.dot(psi1,Y_slice) # DxM
+                psi1Y_full += np.dot(psi1.T,Y_slice) # MxD
                 
                 
             if uncertain_inputs:
@@ -275,7 +275,7 @@ class VarDTC_GPU(object):
         # Compute the Posterior distribution of inducing points p(u|Y)
         #======================================================================
                 
-        post = Posterior(woodbury_inv=KmmInvPsi2P_gpu.get(), woodbury_vector=v_gpu.get(), K=Kmm_gpu.get(), mean=None, cov=None, K_chol=Lm.get())
+        post = Posterior(woodbury_inv=KmmInvPsi2P_gpu.get(), woodbury_vector=v_gpu.get(), K=Kmm_gpu.get(), mean=None, cov=None, K_chol=Lm_gpu.get())
 
         return logL, dL_dKmm, post
 

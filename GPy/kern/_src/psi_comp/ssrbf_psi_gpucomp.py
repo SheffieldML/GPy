@@ -13,32 +13,118 @@ try:
     import pycuda.gpuarray as gpuarray
     from scikits.cuda import cublas
     import pycuda.autoinit
-    from pycuda.reduction import ReductionKernel
-    from ...util.linalg_gpu import logDiagSum
-    
+    from pycuda.reduction import ReductionKernel    
     from pycuda.elementwise import ElementwiseKernel
     
     # The kernel form computing psi1
     comp_psi1 = ElementwiseKernel(
-        "double *psi1, double var, double *l, double *Z, double *mu, double *S, double *logGamma, double *log1Gamma, double *logpsi1denom, int N, int M, int Q",
-        "psi1[i] = comp_psi1_element(var,l, Z, mu, S, logGamma, log1Gamma, psi1denom, N, M, Q, i)",
+        "double *psi1, double var, double l, double *Z, double *mu, double *S, double *logGamma, double *log1Gamma, double *logpsi1denom, int N, int M, int Q",
+        "psi1[i] = comp_psi1_element(var,l, Z, mu, S, logGamma, log1Gamma, logpsi1denom, N, M, Q, i)",
         "comp_psi1",
         preamble="""
-        #define IDX_MQ(n,m,q) ((n*M+m)*Q+q)
-        #define IDX_Q(n,q) (n*Q+q)
+        #define IDX_NMQ(n,m,q) ((q*M+m)*N+n)
+        #define IDX_NQ(n,q) (q*N+n)
+        #define IDX_MQ(m,q) (q*M+m)
+        #define LOGEXPSUM(a,b) (a>=b?a+log(1.0+exp(b-a)):b+log(1.0+exp(a-b)))
+        
+        __device__ double comp_psi1_element(double var, double l, double *Z, double *mu, double *S, double *logGamma, double *log1Gamma, double *logpsi1denom, int N, int M, int Q, int idx)
+        {
+            int n = idx%N;
+            int m = idx/N;
+            double psi1_exp=0;
+            for(int q=0;q<Q;q++){
+                double muZ = mu[IDX_NQ(n,q)]-Z[IDX_MQ(m,q)];
+                double exp1 = logGamma[IDX_NQ(n,q)] - (logpsi1denom[IDX_NQ(n,q)] + muZ*muZ/(S[IDX_NQ(n,q)]+l) )/2.0;
+                double exp2 = log1Gamma[IDX_NQ(n,q)] - Z[IDX_MQ(m,q)]*Z[IDX_MQ(m,q)]/(l*2.0);
+                psi1_exp += LOGEXPSUM(exp1,exp2);
+            }
+            return var*exp(psi1_exp);
+        }
+        """)
+    
+    # The kernel form computing psi1 het_noise
+    comp_psi1_het = ElementwiseKernel(
+        "double *psi1, double var, double *l, double *Z, double *mu, double *S, double *logGamma, double *log1Gamma, double *logpsi1denom, int N, int M, int Q",
+        "psi1[i] = comp_psi1_element(var,l, Z, mu, S, logGamma, log1Gamma, logpsi1denom, N, M, Q, i)",
+        "comp_psi1",
+        preamble="""
+        #define IDX_NMQ(n,m,q) ((q*M+m)*N+n)
+        #define IDX_NQ(n,q) (q*N+n)
+        #define IDX_MQ(m,q) (q*M+m)
+        #define LOGEXPSUM(a,b) (a>=b?a+log(1.0+exp(b-a)):b+log(1.0+exp(a-b)))
         
         __device__ double comp_psi1_element(double var, double *l, double *Z, double *mu, double *S, double *logGamma, double *log1Gamma, double *logpsi1denom, int N, int M, int Q, int idx)
         {
-            int n = idx/M;
-            int m = idx%M;
-            double psi1=0;
+            int n = idx%N;
+            int m = idx/N;
+            double psi1_exp=0;
             for(int q=0;q<Q;q++){
-                double muZ = mu[IDX_Q(n,q)]-Z[IDX_Q(m,q)];
-                double exp1 = logGamma[IDX_Q(n,q)] - (logpsi1denom[IDX_Q(n,q)] + muZ*muZ/(S[IDX_Q(n,q)]+l[q]) )/2.0;
-                double exp2 = log1Gamma[IDX_Q(n,q)] - (Z[IDX_Q(m,q)]*Z[IDX_Q(m,q)]/l[q])/2.0;
-                psi1 += exp1>=exp2?exp1+log(1.0+exp(exp2-exp1)):exp2+log(1.0+exp(exp1-exp2));
+                double muZ = mu[IDX_NQ(n,q)]-Z[IDX_MQ(m,q)];
+                double exp1 = logGamma[IDX_NQ(n,q)] - (logpsi1denom[IDX_NQ(n,q)] + muZ*muZ/(S[IDX_NQ(n,q)]+l[q]) )/2.0;
+                double exp2 = log1Gamma[IDX_NQ(n,q)] - Z[IDX_MQ(m,q)]*Z[IDX_MQ(m,q)]/(l[q]*2.0);
+                psi1_exp += LOGEXPSUM(exp1,exp2);
             }
-            return var*exp(psi1);
+            return var*exp(psi1_exp);
+        }
+        """)
+    
+    # The kernel form computing psi2 het_noise
+    comp_psi2_het = ElementwiseKernel(
+        "double *psi2, double var, double *l, double *Z, double *mu, double *S, double *logGamma, double *log1Gamma, double *logpsi2denom, int N, int M, int Q",
+        "psi2[i] = comp_psi1_element(var,l, Z, mu, S, logGamma, log1Gamma, logpsi2denom, N, M, Q, i)",
+        "comp_psi2",
+        preamble="""
+        #define IDX_NMQ(n,m,q) ((q*M+m)*N+n)
+        #define IDX_NQ(n,q) (q*N+n)
+        #define IDX_MQ(m,q) (q*M+m)
+        #define LOGEXPSUM(a,b) (a>=b?a+log(1.0+exp(b-a)):b+log(1.0+exp(a-b)))
+        
+        __device__ double comp_psi1_element(double var, double *l, double *Z, double *mu, double *S, double *logGamma, double *log1Gamma, double *logpsi2denom, int N, int M, int Q, int idx)
+        {
+            // psi2 (n,m1,m2)
+            int m2 = idx/(M*N);
+            int m1 = (idx%(M*N))/N;
+            int n = idx%N;
+
+            double psi2_exp=0;
+            for(int q=0;q<Q;q++){ 
+                double dZ = Z[IDX_MQ(m1,q)]-Z[IDX_MQ(m2,q)];
+                double muZ = mu[IDX_NQ(n,q)] - (Z[IDX_MQ(m1,q)]+Z[IDX_MQ(m2,q)])/2.0;
+                double exp1 = logGamma[IDX_NQ(n,q)] - (logpsi2denom[IDX_NQ(n,q)])/2.0 - dZ*dZ/(l[q]*4.0) - muZ*muZ/(2*mu[IDX_NQ(n,q)]+l[q]);
+                double exp2 = log1Gamma[IDX_NQ(n,q)] - (Z[IDX_MQ(m1,q)]*Z[IDX_MQ(m1,q)]+Z[IDX_MQ(m2,q)]*Z[IDX_MQ(m2,q)])/(l[q]*2.0);
+                psi2_exp += LOGEXPSUM(exp1,exp2);
+            }
+            return var*var*exp(psi2_exp);
+        }
+        """)
+    
+    # The kernel form computing psi2 
+    comp_psi2 = ElementwiseKernel(
+        "double *psi2, double var, double l, double *Z, double *mu, double *S, double *logGamma, double *log1Gamma, double *logpsi2denom, int N, int M, int Q",
+        "psi2[i] = comp_psi1_element(var,l, Z, mu, S, logGamma, log1Gamma, logpsi2denom, N, M, Q, i)",
+        "comp_psi2",
+        preamble="""
+        #define IDX_NMQ(n,m,q) ((q*M+m)*N+n)
+        #define IDX_NQ(n,q) (q*N+n)
+        #define IDX_MQ(m,q) (q*M+m)
+        #define LOGEXPSUM(a,b) (a>=b?a+log(1.0+exp(b-a)):b+log(1.0+exp(a-b)))
+        
+        __device__ double comp_psi1_element(double var, double l, double *Z, double *mu, double *S, double *logGamma, double *log1Gamma, double *logpsi2denom, int N, int M, int Q, int idx)
+        {
+            // psi2 (n,m1,m2)
+            int m2 = idx/(M*N);
+            int m1 = (idx%(M*N))/N;
+            int n = idx%N;
+
+            double psi2_exp=0;
+            for(int q=0;q<Q;q++){ 
+                double dZ = Z[IDX_MQ(m1,q)]-Z[IDX_MQ(m2,q)];
+                double muZ = mu[IDX_NQ(n,q)] - (Z[IDX_MQ(m1,q)]+Z[IDX_MQ(m2,q)])/2.0;
+                double exp1 = logGamma[IDX_NQ(n,q)] - (logpsi2denom[IDX_NQ(n,q)])/2.0 - dZ*dZ/(l*4.0) - muZ*muZ/(2*mu[IDX_NQ(n,q)]+l);
+                double exp2 = log1Gamma[IDX_NQ(n,q)] - (Z[IDX_MQ(m1,q)]*Z[IDX_MQ(m1,q)]+Z[IDX_MQ(m2,q)]*Z[IDX_MQ(m2,q)])/(l*2.0);
+                psi2_exp += LOGEXPSUM(exp1,exp2);
+            }
+            return var*var*exp(psi2_exp);
         }
         """)
 except:
@@ -105,19 +191,19 @@ def _psi1computations(variance, lengthscale, Z, mu, S, gamma):
     M = Z.shape[0]
     Q = mu.shape[1]
 
-    l_gpu = gpuarray.to_gpu(lengthscale2)
-    Z_gpu = gpuarray.to_gpu(Z)
-    mu_gpu = gpuarray.to_gpu(mu)
-    S_gpu = gpuarray.to_gpu(S)
+    l_gpu = gpuarray.to_gpu(np.asfortranarray(lengthscale2))
+    Z_gpu = gpuarray.to_gpu(np.asfortranarray(Z))
+    mu_gpu = gpuarray.to_gpu(np.asfortranarray(mu))
+    S_gpu = gpuarray.to_gpu(np.asfortranarray(S))
     #gamma_gpu = gpuarray.to_gpu(gamma)
-    logGamma_gpu = gpuarray.to_gpu(np.log(gamma))
-    log1Gamma_gpu = gpuarray.to_gpu(np.log(1.-gamma))
-    logpsi1denom_gpu = gpuarray.to_gpu(np.log(S/lengthscale2+1.))
+    logGamma_gpu = gpuarray.to_gpu(np.asfortranarray(np.log(gamma)))
+    log1Gamma_gpu = gpuarray.to_gpu(np.asfortranarray(np.log(1.-gamma)))
+    logpsi1denom_gpu = gpuarray.to_gpu(np.asfortranarray(np.log(S/lengthscale2+1.)))
     psi1_gpu = gpuarray.empty((mu.shape[0],Z.shape[0]),np.float64)
     
-    comp_psi1(psi1_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi1denom_gpu, N, M, Q)
+    comp_psi1(psi1_gpu, variance, lengthscale2, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi1denom_gpu, N, M, Q)
     
-    print np.abs(psi1_gpu.get()-_psi1).max()
+    #print np.abs(psi1_gpu.get()-_psi1).max()
 
     return _psi1, _dpsi1_dvariance, _dpsi1_dgamma, _dpsi1_dmu, _dpsi1_dS, _dpsi1_dZ, _dpsi1_dlengthscale
 
@@ -166,5 +252,23 @@ def _psi2computations(variance, lengthscale, Z, mu, S, gamma):
     _dpsi2_dS = _psi2_q * (_psi2_common * (2.*_psi2_mudist_sq - 1.) * _psi2_exp_dist_sq) # NxMxMxQ
     _dpsi2_dZ = 2.*_psi2_q * (_psi2_common*(-_psi2_Zdist*_psi2_denom+_psi2_mudist)*_psi2_exp_dist_sq - (1-gamma[:,None,None,:])*Z[:,None,:]/lengthscale2*_psi2_exp_Z) # NxMxMxQ
     _dpsi2_dlengthscale = 2.*lengthscale* _psi2_q * (_psi2_common*(S[:,None,None,:]/lengthscale2+_psi2_Zdist_sq*_psi2_denom+_psi2_mudist_sq)*_psi2_exp_dist_sq+(1-gamma[:,None,None,:])*_psi2_Z_sq_sum*0.5/lengthscale2*_psi2_exp_Z) # NxMxMxQ
+
+    N = mu.shape[0]
+    M = Z.shape[0]
+    Q = mu.shape[1]
+
+#    l_gpu = gpuarray.to_gpu(np.asfortranarray(lengthscale2))
+    Z_gpu = gpuarray.to_gpu(np.asfortranarray(Z))
+    mu_gpu = gpuarray.to_gpu(np.asfortranarray(mu))
+    S_gpu = gpuarray.to_gpu(np.asfortranarray(S))
+    #gamma_gpu = gpuarray.to_gpu(gamma)
+    logGamma_gpu = gpuarray.to_gpu(np.asfortranarray(np.log(gamma)))
+    log1Gamma_gpu = gpuarray.to_gpu(np.asfortranarray(np.log(1.-gamma)))
+    logpsi2denom_gpu = gpuarray.to_gpu(np.asfortranarray(np.log(2.*S/lengthscale2+1.)))
+    psi2_gpu = gpuarray.empty((mu.shape[0],Z.shape[0],Z.shape[0]),np.float64)
+    
+    comp_psi2(psi2_gpu, variance, lengthscale2, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi2denom_gpu, N, M, Q)
+    
+    print np.abs(psi2_gpu.get()-_psi2).max()
 
     return _psi2, _dpsi2_dvariance, _dpsi2_dgamma, _dpsi2_dmu, _dpsi2_dS, _dpsi2_dZ, _dpsi2_dlengthscale

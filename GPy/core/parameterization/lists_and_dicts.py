@@ -28,4 +28,11 @@ class ArrayList(list):
                 return True
         return False
 
+    def index(self, item):
+        index = 0
+        for el in self:
+            if el is item:
+                return index
+            index += 1
+        raise ValueError, "{} is not in list".format(item)
     pass

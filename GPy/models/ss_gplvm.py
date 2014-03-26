@@ -25,7 +25,7 @@ class SSGPLVM(SparseGP):
 
     """
     def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
-                 Z=None, kernel=None, inference_method=None, likelihood=None, name='Spike-and-Slab GPLVM', **kwargs):
+                 Z=None, kernel=None, inference_method=None, likelihood=None, name='Spike-and-Slab GPLVM', group_spike=False, **kwargs):
 
         if X == None: # The mean of variational approximation (mu)
             from ..util.initialization import initialize_latent
@@ -38,6 +38,9 @@ class SSGPLVM(SparseGP):
         gamma = np.empty_like(X) # The posterior probabilities of the binary variable in the variational approximation
         gamma[:] = 0.5 + 0.01 * np.random.randn(X.shape[0], input_dim)
         
+        if group_spike:
+            gamma[:] = gamma.mean(axis=0)
+        
         if Z is None:
             Z = np.random.permutation(X.copy())[:num_inducing]
         assert Z.shape[1] == X.shape[1]
@@ -47,11 +50,16 @@ class SSGPLVM(SparseGP):
 
         if kernel is None:
             kernel = kern.SSRBF(input_dim)
-            
+                
         pi = np.empty((input_dim))
         pi[:] = 0.5
         self.variational_prior = SpikeAndSlabPrior(pi=pi) # the prior probability of the latent binary variable b
         X = SpikeAndSlabPosterior(X, X_variance, gamma)
+        
+        if group_spike:
+            kernel.group_spike_prob = True
+            self.variational_prior.group_spike_prob = True
+        
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)
         self.add_parameter(self.X, index=0)

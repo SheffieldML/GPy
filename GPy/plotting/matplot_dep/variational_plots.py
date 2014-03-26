@@ -45,7 +45,7 @@ def plot(parameterized, fignum=None, ax=None, colors=None):
     fig.tight_layout(h_pad=.01) # , rect=(0, 0, 1, .95))
     return fig
 
-def plot_SpikeSlab(parameterized, fignum=None, ax=None, colors=None):
+def plot_SpikeSlab(parameterized, fignum=None, ax=None, colors=None, side_by_side=True):
     """
     Plot latent space X in 1D:
 
@@ -58,7 +58,10 @@ def plot_SpikeSlab(parameterized, fignum=None, ax=None, colors=None):
 
     """
     if ax is None:
-        fig = pb.figure(num=fignum, figsize=(8, min(12, (2 * parameterized.mean.shape[1]))))
+        if side_by_side:
+            fig = pb.figure(num=fignum, figsize=(16, min(12, (2 * parameterized.mean.shape[1]))))
+        else:
+            fig = pb.figure(num=fignum, figsize=(8, min(12, (2 * parameterized.mean.shape[1]))))
     if colors is None:
         colors = pb.gca()._get_lines.color_cycle
         pb.clf()
@@ -68,8 +71,15 @@ def plot_SpikeSlab(parameterized, fignum=None, ax=None, colors=None):
     means, variances, gamma = param_to_array(parameterized.mean, parameterized.variance, parameterized.binary_prob)
     x = np.arange(means.shape[0])
     for i in range(means.shape[1]):
+        if side_by_side:
+            sub1 = (means.shape[1],2,2*i+1)
+            sub2 = (means.shape[1],2,2*i+2)
+        else:
+            sub1 = (means.shape[1]*2,1,2*i+1)
+            sub2 = (means.shape[1]*2,1,2*i+2)
+            
         # mean and variance plot
-        a = fig.add_subplot(means.shape[1]*2, 1, 2*i + 1)
+        a = fig.add_subplot(*sub1)
         a.plot(means, c='k', alpha=.3)
         plots.extend(a.plot(x, means.T[i], c=colors.next(), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
         a.fill_between(x,
@@ -82,7 +92,7 @@ def plot_SpikeSlab(parameterized, fignum=None, ax=None, colors=None):
         if i < means.shape[1] - 1:
             a.set_xticklabels('')
         # binary prob plot
-        a = fig.add_subplot(means.shape[1]*2, 1, 2*i + 2)
+        a = fig.add_subplot(*sub2)
         a.bar(x,gamma[:,i],bottom=0.,linewidth=0,align='center')
         a.set_xlim(x.min(), x.max())
         a.set_ylim([0.,1.])

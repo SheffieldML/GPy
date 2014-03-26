@@ -22,6 +22,7 @@ class RBF(Stationary):
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='rbf'):
         super(RBF, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
         self.weave_options = {}
+        self.group_spike_prob = False
 
     def K_of_r(self, r):
         return self.variance * np.exp(-0.5 * r**2)
@@ -158,6 +159,9 @@ class RBF(Stationary):
             grad_mu += (dL_dpsi2[:, :, :, None] * _dpsi2_dmu).reshape(ndata,-1,self.input_dim).sum(axis=1)
             grad_S += (dL_dpsi2[:, :, :, None] * _dpsi2_dS).reshape(ndata,-1,self.input_dim).sum(axis=1)
             grad_gamma += (dL_dpsi2[:,:,:, None] * _dpsi2_dgamma).reshape(ndata,-1,self.input_dim).sum(axis=1)
+            
+            if self.group_spike_prob:
+                grad_gamma[:] = grad_gamma.mean(axis=0)
 
             return grad_mu, grad_S, grad_gamma
 

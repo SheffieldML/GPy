@@ -17,7 +17,7 @@ try:
     from pycuda.reduction import ReductionKernel
     from ...util.linalg_gpu import logDiagSum
 except:
-    print 'Error in importing GPU modules!'
+    pass
 
 class VarDTC_GPU(object):
     """

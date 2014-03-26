@@ -2,13 +2,12 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from gplvm import GPLVM
 from .. import kern
 from ..core import SparseGP
 from ..likelihoods import Gaussian
 from ..inference.optimization import SCG
 from ..util import linalg
-from ..core.parameterization.variational import NormalPosterior, NormalPrior,VariationalPosterior
+from ..core.parameterization.variational import NormalPosterior, NormalPrior, VariationalPosterior
 from ..inference.latent_function_inference.var_dtc_parallel import update_gradients
 from ..inference.latent_function_inference.var_dtc_gpu import VarDTC_GPU
 

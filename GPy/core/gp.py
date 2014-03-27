@@ -208,6 +208,12 @@ class GP(Model):
         from ..plotting.matplot_dep import models_plots
         return models_plots.plot_fit(self,*args,**kwargs)
 
+    def input_sensitivity(self):
+        """
+        Returns the sensitivity for each dimension of this model
+        """
+        return self.kern.input_sensitivity()
+
     def _getstate(self):
         """
 

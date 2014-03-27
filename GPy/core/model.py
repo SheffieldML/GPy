@@ -141,12 +141,6 @@ class Model(Parameterized):
         """
         raise DeprecationWarning, 'parameters now have default constraints'
 
-    def input_sensitivity(self):
-        """
-        Returns the sensitivity for each dimension of this kernel.
-        """
-        return self.kern.input_sensitivity()
-
     def objective_function(self):
         """
         The objective function for the given algorithm.

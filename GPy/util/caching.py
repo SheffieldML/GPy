@@ -101,7 +101,7 @@ class Cacher(object):
     def __name__(self):
         return self.operation.__name__
 
-from functools import partial
+from functools import partial, update_wrapper
 
 class Cacher_wrap(object):
     def __init__(self, f, limit, ignore_args, force_kwargs):
@@ -109,6 +109,7 @@ class Cacher_wrap(object):
         self.ignore_args = ignore_args
         self.force_kwargs = force_kwargs
         self.f = f
+        update_wrapper(self, self.f)
     def __get__(self, obj, objtype=None):
         return partial(self, obj)
     def __call__(self, *args, **kwargs):

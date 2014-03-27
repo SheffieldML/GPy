@@ -16,7 +16,8 @@ class Kern(Parameterized):
     __metaclass__ = KernCallsViaSlicerMeta
     #===========================================================================
     _debug=False
-    def __init__(self, input_dim, active_dims, name, *a, **kw):
+    _support_GPU=False
+    def __init__(self, input_dim, active_dims, name, useGPU=False,*a, **kw):
         """
         The base class for a kernel: a positive definite function
         which forms of a covariance function (kernel).
@@ -40,6 +41,8 @@ class Kern(Parameterized):
             active_dim_size = len(self.active_dims)
         assert active_dim_size == self.input_dim, "input_dim={} does not match len(active_dim)={}, active_dims={}".format(self.input_dim, active_dim_size, self.active_dims)
         self._sliced_X = 0
+        
+        self.useGPU = self._support_GPU and useGPU
 
     @Cache_this(limit=10)
     def _slice_X(self, X):

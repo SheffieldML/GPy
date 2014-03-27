@@ -8,7 +8,8 @@ from ...util.misc import param_to_array
 from stationary import Stationary
 from GPy.util.caching import Cache_this
 from ...core.parameterization import variational
-from psi_comp import ssrbf_psi_gpucomp as ssrbf_psi_comp
+from psi_comp import ssrbf_psi_comp
+from psi_comp.ssrbf_psi_gpucomp import PSICOMP_SSRBF
 
 class RBF(Stationary):
     """
@@ -19,10 +20,15 @@ class RBF(Stationary):
        k(r) = \sigma^2 \exp \\bigg(- \\frac{1}{2} r^2 \\bigg)
 
     """
+    _support_GPU = True
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='rbf'):
         super(RBF, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
         self.weave_options = {}
         self.group_spike_prob = False
+        
+        if self.useGPU:
+            self.psicomp = PSICOMP_SSRBF()
+            
 
     def K_of_r(self, r):
         return self.variance * np.exp(-0.5 * r**2)
@@ -35,18 +41,28 @@ class RBF(Stationary):
     #---------------------------------------#
 
     def psi0(self, Z, variational_posterior):
-        return self.Kdiag(variational_posterior.mean)
+        if self.useGPU:
+            if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
+                return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)[0]
+        else:
+            return self.Kdiag(variational_posterior.mean)
 
     def psi1(self, Z, variational_posterior):
         if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
-            psi1, _, _, _, _, _, _ = ssrbf_psi_comp._psi1computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
+            if self.useGPU:
+                return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)[1]
+            else:
+                psi1, _, _, _, _, _, _ = ssrbf_psi_comp._psi1computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
         else:
             _, _, _, psi1 = self._psi1computations(Z, variational_posterior)
         return psi1
 
     def psi2(self, Z, variational_posterior):
         if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
-            psi2, _, _, _, _, _, _ = ssrbf_psi_comp._psi2computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
+            if self.useGPU:
+                return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)[2]
+            else:
+                psi2, _, _, _, _, _, _ = ssrbf_psi_comp._psi2computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
         else:
             _, _, _, _, psi2 = self._psi2computations(Z, variational_posterior)
         return psi2

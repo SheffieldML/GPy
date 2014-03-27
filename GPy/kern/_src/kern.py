@@ -221,7 +221,7 @@ class CombinationKernel(Kern):
     def get_input_dim_active_dims(self, kernels, extra_dims = None):
         active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
         input_dim = active_dims.max()+1 + (len(extra_dims) if extra_dims is not None else 0)
-        active_dims = slice(input_dim)
+        active_dims = slice(0, input_dim, 1)
         return input_dim, active_dims
 
     def input_sensitivity(self):

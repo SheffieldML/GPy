@@ -176,5 +176,7 @@ class Add(CombinationKernel):
             for p in other_params:
                 other.remove_parameter(p)
             self.add_parameters(*other_params)
-        else: self.add_parameter(other)
+        else:
+            self.add_parameter(other)
+        self.input_dim, self.active_dims = self.get_input_dim_active_dims(self.parts)
         return self

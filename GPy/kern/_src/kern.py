@@ -208,9 +208,7 @@ class CombinationKernel(Kern):
         :param array-like|slice extra_dims: if needed extra dimensions for the combination kernel to work on
         """
         assert all([isinstance(k, Kern) for k in kernels])
-        active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
-        input_dim = active_dims.max()+1 + len(extra_dims)
-        active_dims = slice(active_dims.max()+1+len(extra_dims))
+        input_dim, active_dims = self.get_input_dim_active_dims(kernels, extra_dims)
         # initialize the kernel with the full input_dim
         super(CombinationKernel, self).__init__(input_dim, active_dims, name)
         self.extra_dims = extra_dims
@@ -219,6 +217,12 @@ class CombinationKernel(Kern):
     @property
     def parts(self):
         return self._parameters_
+
+    def get_input_dim_active_dims(self, kernels, extra_dims = None):
+        active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
+        input_dim = active_dims.max()+1 + (len(extra_dims) if extra_dims is not None else 0)
+        active_dims = slice(input_dim)
+        return input_dim, active_dims
 
     def input_sensitivity(self):
         in_sen = np.zeros((self.num_params, self.input_dim))

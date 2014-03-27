@@ -110,29 +110,15 @@ class Parameterized(Parameterizable, Pickleable):
         Allways append the state of the inherited object
         and call down to the inherited object in _setstate!!
         """
-        return [
-                self._fixes_,
-                self.priors,
-                self.constraints,
-                self._parameters_,
-                self._name,
-                self._added_names_,
-                ]
+        return []
 
     def _setstate(self, state):
-        self._added_names_ = state.pop()
-        self._name = state.pop()
-        self._parameters_ = state.pop()
-        self.constraints = state.pop()
-        self.priors = state.pop()
-        self._fixes_ = state.pop()
-        self._connect_parameters()
         self.parameters_changed()
     #===========================================================================
     # Override copy to handle programmatically added observers
     #===========================================================================
     def copy(self):
-        c = super(Pickleable, self).copy()
+        c = super(Parameterized, self).copy()
         c.add_observer(c, c._parameters_changed_notification, -100)
         return c
 

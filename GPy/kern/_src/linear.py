@@ -313,3 +313,47 @@ class Linear(Kern):
 
     def input_sensitivity(self):
         return np.ones(self.input_dim) * self.variances
+
+class LinearFull(Kern):
+    def __init__(self, input_dim, rank, W=None, kappa=None, active_dims=None, name='linear_full'):
+        super(LinearFull, self).__init__(input_dim, active_dims, name)
+        if W is None:
+            W = np.ones((input_dim, rank))
+        if kappa is None:
+            kappa = np.ones(input_dim)
+        assert W.shape == (input_dim, rank)
+        assert kappa.shape == (input_dim,)
+
+        self.W = Param('W', W)
+        self.kappa = Param('kappa', kappa, Logexp())
+        self.add_parameters(self.W, self.kappa)
+
+    def K(self, X, X2=None):
+        P = np.dot(self.W, self.W.T) + np.diag(self.kappa)
+        return np.einsum('ij,jk,lk->il', X, P, X if X2 is None else X2)
+
+    def update_gradients_full(self, dL_dK, X, X2=None):
+        self.kappa.gradient = np.einsum('ij,ik,kj->j', X, dL_dK, X if X2 is None else X2)
+        self.W.gradient = np.einsum('ij,kl,ik,lm->jm', X, X if X2 is None else X2, dL_dK, self.W)
+        self.W.gradient += np.einsum('ij,kl,ik,jm->lm', X, X if X2 is None else X2, dL_dK, self.W)
+
+    def Kdiag(self, X):
+        P = np.dot(self.W, self.W.T) + np.diag(self.kappa)
+        return np.einsum('ij,jk,ik->i', X, P, X)
+
+    def update_gradients_diag(self, dL_dKdiag, X):
+        self.kappa.gradient = np.einsum('ij,i->j', np.square(X), dL_dKdiag)
+        self.W.gradient = 2.*np.einsum('ij,ik,jl,i->kl', X, X, self.W, dL_dKdiag)
+
+    def gradients_X(self, dL_dK, X, X2=None):
+        P = np.dot(self.W, self.W.T) + np.diag(self.kappa)
+        if X2 is None:
+            return 2.*np.einsum('ij,jk,kl->il', dL_dK, X, P)
+        else:
+            return np.einsum('ij,jk,kl->il', dL_dK, X2, P)
+
+    def gradients_X_diag(self, dL_dKdiag, X):
+        P = np.dot(self.W, self.W.T) + np.diag(self.kappa)
+        return 2.*np.einsum('jk,i,ij->ik', P, dL_dKdiag, X)
+
+

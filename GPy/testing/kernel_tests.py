@@ -288,6 +288,11 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
+    def test_LinearFull(self):
+        k = GPy.kern.LinearFull(self.D, self.D-1)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
 #TODO: turn off grad checkingwrt X for indexed kernels like coregionalize
 # class KernelGradientTestsContinuous1D(unittest.TestCase):
 #     def setUp(self):

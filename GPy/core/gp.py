@@ -222,15 +222,16 @@ class GP(Model):
 
         """
 
-        return Model._getstate(self) + [self.X,
-                self.num_data,
-                self.input_dim,
-                self.kern,
-                self.likelihood,
-                self.output_dim,
-                ]
+        return []#Model._getstate(self) + [self.X,
+#                 self.num_data,
+#                 self.input_dim,
+#                 self.kern,
+#                 self.likelihood,
+#                 self.output_dim,
+#                 ]
 
     def _setstate(self, state):
+        return 
         self.output_dim = state.pop()
         self.likelihood = state.pop()
         self.kern = state.pop()

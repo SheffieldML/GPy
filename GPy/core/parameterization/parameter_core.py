@@ -902,15 +902,19 @@ class Parameterizable(OptimizationHandlable):
     #===========================================================================
     def copy(self):
         """Returns a (deep) copy of the current model"""
-        raise NotImplementedError, "Copy is not yet implemented, TODO: Observable hierarchy"
+        #raise NotImplementedError, "Copy is not yet implemented, TODO: Observable hierarchy"
         import copy
         from .index_operations import ParameterIndexOperations, ParameterIndexOperationsView
         from .lists_and_dicts import ArrayList
+        
+        param_mapping = [[] for _ in range(self.num_params)]
 
         dc = dict()
         for k, v in self.__dict__.iteritems():
             if k not in ['_parent_', '_parameters_', '_parent_index_', '_observer_callables_'] + self.parameter_names(recursive=False):
-                if isinstance(v, (Constrainable, ParameterIndexOperations, ParameterIndexOperationsView)):
+                if v in self._parameters_:
+                    param_mapping[self._parameters_.index(v)] += [k]
+                elif isinstance(v, (Constrainable, ParameterIndexOperations, ParameterIndexOperationsView)):
                     dc[k] = v.copy()
                 else:
                     dc[k] = copy.deepcopy(v)
@@ -928,9 +932,10 @@ class Parameterizable(OptimizationHandlable):
         s = self.__new__(self.__class__)
         s.__dict__ = dc
 
-        for p in params:
+        for p, mlist in zip(params, param_mapping):
             s.add_parameter(p, _ignore_added_names=True)
-
+            for m in mlist:
+                setattr(s, m, p)
         return s
 
     #===========================================================================

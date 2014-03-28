@@ -34,6 +34,7 @@ class _Slice_wrap(object):
         self.k = k
         self.shape = X.shape
         if self.k._sliced_X == 0:
+            assert X.shape[1] > max(np.r_[self.k.active_dims]), "At least {} dimensional X needed".format(max(np.r_[self.k.active_dims]))
             self.X = self.k._slice_X(X)
             self.X2 = self.k._slice_X(X2) if X2 is not None else None
             self.ret = True
@@ -56,7 +57,6 @@ class _Slice_wrap(object):
 def _slice_K(f):
     @wraps(f)
     def wrap(self, X, X2 = None, *a, **kw):
-        assert X.shape[1] > max(np.r_[self.active_dims]), "At least {} dimensional X needed".format(max(np.r_[self.active_dims]))
         with _Slice_wrap(self, X, X2) as s:
             ret = f(self, s.X, s.X2, *a, **kw)
         return ret
@@ -65,7 +65,6 @@ def _slice_K(f):
 def _slice_Kdiag(f):
     @wraps(f)
     def wrap(self, X, *a, **kw):
-        assert X.shape[1] > max(np.r_[self.active_dims]), "At least {} dimensional X needed".format(max(np.r_[self.active_dims]))
         with _Slice_wrap(self, X, None) as s:
             ret = f(self, s.X, *a, **kw)
         return ret

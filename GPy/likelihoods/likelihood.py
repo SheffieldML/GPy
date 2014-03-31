@@ -16,20 +16,20 @@ class Likelihood(Parameterized):
     Likelihood base class, used to defing p(y|f).
 
     All instances use _inverse_ link functions, which can be swapped out. It is
-    expected that inherriting classes define a default inverse link function
+    expected that inheriting classes define a default inverse link function
 
-    To use this class, inherrit and define missing functionality.
+    To use this class, inherit and define missing functionality.
 
-    Inherriting classes *must* implement:
+    Inheriting classes *must* implement:
        pdf_link : a bound method which turns the output of the link function into the pdf
        logpdf_link : the logarithm of the above
 
-    To enable use with EP, inherriting classes *must* define:
+    To enable use with EP, inheriting classes *must* define:
        TODO: a suitable derivative function for any parameters of the class
     It is also desirable to define:
        moments_match_ep : a function to compute the EP moments If this isn't defined, the moments will be computed using 1D quadrature.
 
-    To enable use with Laplace approximation, inherriting classes *must* define:
+    To enable use with Laplace approximation, inheriting classes *must* define:
        Some derivative functions *AS TODO*
 
     For exact Gaussian inference, define *JH TODO*
@@ -159,7 +159,7 @@ class Likelihood(Parameterized):
 
     def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
         """
-        Numerical approximation to the predictive variance: V(Y_star)
+        Approximation to the predictive variance: V(Y_star)
 
         The following variance decomposition is used:
         V(Y_star) = E( V(Y_star|f_star) ) + V( E(Y_star|f_star) )
@@ -208,28 +208,28 @@ class Likelihood(Parameterized):
         # V(Y_star) = E[ V(Y_star|f_star) ] + E(Y_star**2|f_star) - E[Y_star|f_star]**2
         return exp_var + var_exp
 
-    def pdf_link(self, link_f, y, Y_metadata=None):
+    def pdf_link(self, inv_link_f, y, Y_metadata=None):
         raise NotImplementedError
 
-    def logpdf_link(self, link_f, y, Y_metadata=None):
+    def logpdf_link(self, inv_link_f, y, Y_metadata=None):
         raise NotImplementedError
 
-    def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
+    def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
         raise NotImplementedError
 
-    def d2logpdf_dlink2(self, link_f, y, Y_metadata=None):
+    def d2logpdf_dlink2(self, inv_link_f, y, Y_metadata=None):
         raise NotImplementedError
 
-    def d3logpdf_dlink3(self, link_f, y, Y_metadata=None):
+    def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):
         raise NotImplementedError
 
-    def dlogpdf_link_dtheta(self, link_f, y, Y_metadata=None):
+    def dlogpdf_link_dtheta(self, inv_link_f, y, Y_metadata=None):
         raise NotImplementedError
 
-    def dlogpdf_dlink_dtheta(self, link_f, y, Y_metadata=None):
+    def dlogpdf_dlink_dtheta(self, inv_link_f, y, Y_metadata=None):
         raise NotImplementedError
 
-    def d2logpdf_dlink2_dtheta(self, link_f, y, Y_metadata=None):
+    def d2logpdf_dlink2_dtheta(self, inv_link_f, y, Y_metadata=None):
         raise NotImplementedError
 
     def pdf(self, f, y, Y_metadata=None):
@@ -247,8 +247,8 @@ class Likelihood(Parameterized):
         :returns: likelihood evaluated for this point
         :rtype: float
         """
-        link_f = self.gp_link.transf(f)
-        return self.pdf_link(link_f, y, Y_metadata=Y_metadata)
+        inv_link_f = self.gp_link.transf(f)
+        return self.pdf_link(inv_link_f, y, Y_metadata=Y_metadata)
 
     def logpdf(self, f, y, Y_metadata=None):
         """
@@ -265,8 +265,8 @@ class Likelihood(Parameterized):
         :returns: log likelihood evaluated for this point
         :rtype: float
         """
-        link_f = self.gp_link.transf(f)
-        return self.logpdf_link(link_f, y, Y_metadata=Y_metadata)
+        inv_link_f = self.gp_link.transf(f)
+        return self.logpdf_link(inv_link_f, y, Y_metadata=Y_metadata)
 
     def dlogpdf_df(self, f, y, Y_metadata=None):
         """
@@ -284,8 +284,8 @@ class Likelihood(Parameterized):
         :returns: derivative of log likelihood evaluated for this point
         :rtype: 1xN array
         """
-        link_f = self.gp_link.transf(f)
-        dlogpdf_dlink = self.dlogpdf_dlink(link_f, y, Y_metadata=Y_metadata)
+        inv_link_f = self.gp_link.transf(f)
+        dlogpdf_dlink = self.dlogpdf_dlink(inv_link_f, y, Y_metadata=Y_metadata)
         dlink_df = self.gp_link.dtransf_df(f)
         return chain_1(dlogpdf_dlink, dlink_df)
 
@@ -305,10 +305,10 @@ class Likelihood(Parameterized):
         :returns: second derivative of log likelihood evaluated for this point (diagonal only)
         :rtype: 1xN array
         """
-        link_f = self.gp_link.transf(f)
-        d2logpdf_dlink2 = self.d2logpdf_dlink2(link_f, y, Y_metadata=Y_metadata)
+        inv_link_f = self.gp_link.transf(f)
+        d2logpdf_dlink2 = self.d2logpdf_dlink2(inv_link_f, y, Y_metadata=Y_metadata)
         dlink_df = self.gp_link.dtransf_df(f)
-        dlogpdf_dlink = self.dlogpdf_dlink(link_f, y, Y_metadata=Y_metadata)
+        dlogpdf_dlink = self.dlogpdf_dlink(inv_link_f, y, Y_metadata=Y_metadata)
         d2link_df2 = self.gp_link.d2transf_df2(f)
         return chain_2(d2logpdf_dlink2, dlink_df, dlogpdf_dlink, d2link_df2)
 
@@ -328,12 +328,12 @@ class Likelihood(Parameterized):
         :returns: third derivative of log likelihood evaluated for this point
         :rtype: float
         """
-        link_f = self.gp_link.transf(f)
-        d3logpdf_dlink3 = self.d3logpdf_dlink3(link_f, y, Y_metadata=Y_metadata)
+        inv_link_f = self.gp_link.transf(f)
+        d3logpdf_dlink3 = self.d3logpdf_dlink3(inv_link_f, y, Y_metadata=Y_metadata)
         dlink_df = self.gp_link.dtransf_df(f)
-        d2logpdf_dlink2 = self.d2logpdf_dlink2(link_f, y, Y_metadata=Y_metadata)
+        d2logpdf_dlink2 = self.d2logpdf_dlink2(inv_link_f, y, Y_metadata=Y_metadata)
         d2link_df2 = self.gp_link.d2transf_df2(f)
-        dlogpdf_dlink = self.dlogpdf_dlink(link_f, y, Y_metadata=Y_metadata)
+        dlogpdf_dlink = self.dlogpdf_dlink(inv_link_f, y, Y_metadata=Y_metadata)
         d3link_df3 = self.gp_link.d3transf_df3(f)
         return chain_3(d3logpdf_dlink3, dlink_df, d2logpdf_dlink2, d2link_df2, dlogpdf_dlink, d3link_df3)
 
@@ -342,10 +342,10 @@ class Likelihood(Parameterized):
         TODO: Doc strings
         """
         if self.size > 0:
-            link_f = self.gp_link.transf(f)
-            return self.dlogpdf_link_dtheta(link_f, y, Y_metadata=Y_metadata)
+            inv_link_f = self.gp_link.transf(f)
+            return self.dlogpdf_link_dtheta(inv_link_f, y, Y_metadata=Y_metadata)
         else:
-            #Is no parameters so return an empty array for its derivatives
+            # There are no parameters so return an empty array for derivatives
             return np.zeros([1, 0])
 
     def dlogpdf_df_dtheta(self, f, y, Y_metadata=None):
@@ -353,12 +353,12 @@ class Likelihood(Parameterized):
         TODO: Doc strings
         """
         if self.size > 0:
-            link_f = self.gp_link.transf(f)
+            inv_link_f = self.gp_link.transf(f)
             dlink_df = self.gp_link.dtransf_df(f)
-            dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, Y_metadata=Y_metadata)
+            dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(inv_link_f, y, Y_metadata=Y_metadata)
             return chain_1(dlogpdf_dlink_dtheta, dlink_df)
         else:
-            #Is no parameters so return an empty array for its derivatives
+            # There are no parameters so return an empty array for derivatives
             return np.zeros([f.shape[0], 0])
 
     def d2logpdf_df2_dtheta(self, f, y, Y_metadata=None):
@@ -366,14 +366,14 @@ class Likelihood(Parameterized):
         TODO: Doc strings
         """
         if self.size > 0:
-            link_f = self.gp_link.transf(f)
+            inv_link_f = self.gp_link.transf(f)
             dlink_df = self.gp_link.dtransf_df(f)
             d2link_df2 = self.gp_link.d2transf_df2(f)
-            d2logpdf_dlink2_dtheta = self.d2logpdf_dlink2_dtheta(link_f, y, Y_metadata=Y_metadata)
-            dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(link_f, y, Y_metadata=Y_metadata)
+            d2logpdf_dlink2_dtheta = self.d2logpdf_dlink2_dtheta(inv_link_f, y, Y_metadata=Y_metadata)
+            dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(inv_link_f, y, Y_metadata=Y_metadata)
             return chain_2(d2logpdf_dlink2_dtheta, dlink_df, dlogpdf_dlink_dtheta, d2link_df2)
         else:
-            #Is no parameters so return an empty array for its derivatives
+            # There are no parameters so return an empty array for derivatives
             return np.zeros([f.shape[0], 0])
 
     def _laplace_gradients(self, f, y, Y_metadata=None):
@@ -411,7 +411,10 @@ class Likelihood(Parameterized):
         #compute the quantiles by sampling!!!
         N_samp = 1000
         s = np.random.randn(mu.shape[0], N_samp)*np.sqrt(var) + mu
+        #ss_f = s.flatten()
+        #ss_y = self.samples(ss_f, Y_metadata)
         ss_y = self.samples(s, Y_metadata)
+        #ss_y = ss_y.reshape(mu.shape[0], N_samp)
 
         return [np.percentile(ss_y ,q, axis=1)[:,None] for q in quantiles]
 

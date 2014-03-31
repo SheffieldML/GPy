@@ -63,8 +63,6 @@ class SSGPLVM(SparseGP):
             kernel.group_spike_prob = True
             self.variational_prior.group_spike_prob = True
             
-        if isinstance(inference_method, VarDTC_GPU) and self.kern._support_GPU:
-            self.kern.useGPU = True
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)
         self.add_parameter(self.X, index=0)

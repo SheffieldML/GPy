@@ -192,6 +192,9 @@ class ParameterIndexOperationsView(object):
         ind = self._filter_index(self._param_index_ops[prop])
         return ind
 
+    def __delitem__(self, prop):
+        self.remove(prop, self[prop])
+
     def __str__(self, *args, **kwargs):
         import pprint
         return pprint.pformat(dict(self.iteritems()))

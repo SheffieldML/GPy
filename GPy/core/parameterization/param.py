@@ -90,12 +90,6 @@ class Param(OptimizationHandlable, ObsAr):
         return self
 
     @property
-    def current_slice(self):
-        if self._current_slice_ is None:
-            return slice(0, self.shape[0], 1)
-        return self._current_slice_
-
-    @property
     def gradient(self):
         """
         Return a view on the gradient, which is in the same shape as this parameter is.

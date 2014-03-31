@@ -176,11 +176,11 @@ class Pickleable(object):
         import copy
         memo = {}
         memo[id(self._parent_)] = None
-        memo[id(self._parent_index_)] = None
         memo[id(self.gradient)] = None
         memo[id(self.param_array)] = None
         memo[id(self._fixes_)] = None
         c = copy.deepcopy(self, memo)
+        c._parent_index_ = None
         return c
 
     def __deepcopy__(self, memo):
@@ -403,6 +403,7 @@ class Constrainable(Nameable, Indexable, Observable):
             self._fixes_[fixed_indices] = FIXED
         else:
             self._fixes_ = None
+            del self.constraints[__fixed__]
 
     def _has_fixes(self):
         return hasattr(self, "_fixes_") and self._fixes_ is not None and self._fixes_.size == self.size
@@ -875,7 +876,6 @@ class Parameterizable(OptimizationHandlable):
 
             if not p.param_array.flags['C_CONTIGUOUS']:
                 raise ValueError, "This should not happen! Please write an email to the developers with the code, which reproduces this error. All parameter arrays must be C_CONTIGUOUS"
-                import ipdb;ipdb.set_trace()
             p.param_array.data = self.param_array[pslice].data
             p.full_gradient.data = self.full_gradient[pslice].data
 

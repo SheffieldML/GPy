@@ -349,36 +349,36 @@ class KernelTestsMiscellaneous(unittest.TestCase):
         self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=[self.linear, self.rbf]), self.linear.K(self.X)+self.rbf.K(self.X)))
         self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=self.sumkern.parts[0]), self.rbf.K(self.X)))
 
-# class KernelTestsNonContinuous(unittest.TestCase):
-#     def setUp(self):
-#         N0 = 3
-#         N1 = 9
-#         N2 = 4
-#         N = N0+N1+N2
-#         self.D = 3
-#         self.X = np.random.randn(N, self.D+1)
-#         indices = np.random.random_integers(0, 2, size=N)
-#         self.X[indices==0, -1] = 0
-#         self.X[indices==1, -1] = 1
-#         self.X[indices==2, -1] = 2
-#         #self.X = self.X[self.X[:, -1].argsort(), :]
-#         self.X2 = np.random.randn((N0+N1)*2, self.D+1)
-#         self.X2[:(N0*2), -1] = 0
-#         self.X2[(N0*2):, -1] = 1
-#  
-#     def test_IndependentOutputs(self):
-#         k = GPy.kern.RBF(self.D)
-#         kern = GPy.kern.IndependentOutputs(k, -1, 'ind_single')
-#         self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
-#         k = [GPy.kern.RBF(1, active_dims=[1], name='rbf1'), GPy.kern.RBF(self.D, name='rbf012'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf02')]
-#         kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
-#         self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
-#  
-#     def test_ODE_UY(self):
-#         kern = GPy.kern.ODE_UY(2, active_dims=[0, self.D])
-#         X = self.X[self.X[:,-1]!=2]
-#         X2 = self.X2[self.X2[:,-1]!=2]
-#         self.assertTrue(check_kernel_gradient_functions(kern, X=X, X2=X2, verbose=verbose, fixed_X_dims=-1))
+class KernelTestsNonContinuous(unittest.TestCase):
+    def setUp(self):
+        N0 = 3
+        N1 = 9
+        N2 = 4
+        N = N0+N1+N2
+        self.D = 3
+        self.X = np.random.randn(N, self.D+1)
+        indices = np.random.random_integers(0, 2, size=N)
+        self.X[indices==0, -1] = 0
+        self.X[indices==1, -1] = 1
+        self.X[indices==2, -1] = 2
+        #self.X = self.X[self.X[:, -1].argsort(), :]
+        self.X2 = np.random.randn((N0+N1)*2, self.D+1)
+        self.X2[:(N0*2), -1] = 0
+        self.X2[(N0*2):, -1] = 1
+  
+    def test_IndependentOutputs(self):
+        k = GPy.kern.RBF(self.D)
+        kern = GPy.kern.IndependentOutputs(k, -1, 'ind_single')
+        self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
+        k = [GPy.kern.RBF(1, active_dims=[1], name='rbf1'), GPy.kern.RBF(self.D, name='rbf012'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf02')]
+        kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
+        self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
+  
+    def test_ODE_UY(self):
+        kern = GPy.kern.ODE_UY(2, active_dims=[0, self.D])
+        X = self.X[self.X[:,-1]!=2]
+        X2 = self.X2[self.X2[:,-1]!=2]
+        self.assertTrue(check_kernel_gradient_functions(kern, X=X, X2=X2, verbose=verbose, fixed_X_dims=-1))
 
 
 if __name__ == "__main__":

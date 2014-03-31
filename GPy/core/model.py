@@ -294,7 +294,6 @@ class Model(Parameterized):
             global_diff = np.abs(f1 - f2) < tolerance and np.allclose(gradient, 0, atol=tolerance)
             if global_ratio is np.nan:
                 global_ratio = 0
-            print global_ratio, global_diff, np.allclose(gradient, 0, atol=tolerance), np.abs(1. - global_ratio), np.abs(f1-f2).sum() + np.abs((2 * np.dot(dx, gradient))).sum()
             return np.abs(1. - global_ratio) < tolerance or global_diff
         else:
             # check the gradient of each parameter individually, and do some pretty printing

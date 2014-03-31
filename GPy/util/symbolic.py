@@ -1,5 +1,11 @@
-from sympy import Function, S, oo, I, cos, sin, asin, log, erf, pi, exp, sqrt, sign
+from sympy import Function, S, oo, I, cos, sin, asin, log, erf, pi, exp, sqrt, sign, gamma
 
+class gammaln(Function):
+    nargs = 1
+    @classmethod
+    def eval(cls, x):
+        return log(gamma(x))
+    
 
 class ln_diff_erf(Function):
     nargs = 2

@@ -383,12 +383,9 @@ class Likelihood(Parameterized):
 
         #Parameters are stacked vertically. Must be listed in same order as 'get_param_names'
         # ensure we have gradients for every parameter we want to optimize
-        try:
-            assert len(dlogpdf_dtheta) == self.size #1 x num_param array
-            assert dlogpdf_df_dtheta.shape[1] == self.size #f x num_param matrix
-            assert d2logpdf_df2_dtheta.shape[1] == self.size #f x num_param matrix
-        except Exception as e:
-            import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+        assert len(dlogpdf_dtheta) == self.size #1 x num_param array
+        assert dlogpdf_df_dtheta.shape[1] == self.size #f x num_param matrix
+        assert d2logpdf_df2_dtheta.shape[1] == self.size #f x num_param matrix
 
         return dlogpdf_dtheta, dlogpdf_df_dtheta, d2logpdf_df2_dtheta
 

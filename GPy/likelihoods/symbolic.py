@@ -2,14 +2,16 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-import sympy as sp
+import sympy as sym
 from sympy.utilities.lambdify import lambdify
 import link_functions
 from scipy import stats, integrate
-from scipy.special import gammaln, gamma, erf
+from scipy.special import gammaln, gamma, erf, polygamma
 from likelihood import Likelihood
 from ..core.parameterization import Param
 from ..core.parameterization.transformations import Logexp
+
+func_modules = ['numpy', {'gamma':gamma, 'gammaln':gammaln, 'erf':erf,'polygamma':polygamma}]
 
 class Symbolic(Likelihood):
     """
@@ -28,12 +30,12 @@ class Symbolic(Likelihood):
         super(Symbolic, self).__init__(gp_link, name=name)
 
         if likelihood is None and log_likelihood:
-            self._sp_likelihood = sp.exp(log_likelihood).simplify()
+            self._sp_likelihood = sym.exp(log_likelihood).simplify()
             self._sp_log_likelihood = log_likelihood
 
         if log_likelihood is None and likelihood:
             self._sp_likelihood = likelihood
-            self._sp_log_likelihood = sp.log(likelihood).simplify()
+            self._sp_log_likelihood = sym.log(likelihood).simplify()
 
         # TODO: build likelihood and log likelihood from CDF or
         # compute CDF given likelihood/log-likelihood. Also check log
@@ -47,7 +49,7 @@ class Symbolic(Likelihood):
         self._sp_y = [e for e in sp_vars if e.name=='y']
         if not self._sp_f:
             raise ValueError('No variable y in likelihood or log likelihood.')
-        self._sp_theta = sorted([e for e in sp_vars if not (e.name=='f' or e.name=='y')],key=lambda e:e.name)
+        self._sp_theta = sorted([e for e in sp_vars if not (e.name=='f' or e.name=='y')],key=lambda e:e.name, reverse=True)
 
         # These are all the arguments need to compute likelihoods.
         self.arg_list = self._sp_y + self._sp_f + self._sp_theta
@@ -56,9 +58,9 @@ class Symbolic(Likelihood):
         derivative_arguments = self._sp_f + self._sp_theta
         
         # Do symbolic work to compute derivatives.
-        self._log_likelihood_derivatives = {theta.name : sp.diff(self._sp_log_likelihood,theta).simplify() for theta in derivative_arguments}
-        self._log_likelihood_second_derivatives = {theta.name : sp.diff(self._log_likelihood_derivatives['f'],theta).simplify() for theta in derivative_arguments}
-        self._log_likelihood_third_derivatives = {theta.name : sp.diff(self._log_likelihood_second_derivatives['f'],theta).simplify() for theta in derivative_arguments}
+        self._log_likelihood_derivatives = {theta.name : sym.diff(self._sp_log_likelihood,theta).simplify() for theta in derivative_arguments}
+        self._log_likelihood_second_derivatives = {theta.name : sym.diff(self._log_likelihood_derivatives['f'],theta).simplify() for theta in derivative_arguments}
+        self._log_likelihood_third_derivatives = {theta.name : sym.diff(self._log_likelihood_second_derivatives['f'],theta).simplify() for theta in derivative_arguments}
 
         # Add parameters to the model.
         for theta in self._sp_theta:
@@ -85,14 +87,14 @@ class Symbolic(Likelihood):
         """Generate the code from the symbolic parts that will be used for likleihod computation."""
         # TODO: Check here whether theano is available and set up
         # functions accordingly.
-        self._likelihood_function = lambdify(self.arg_list, self._sp_likelihood, 'numpy')
-        self._log_likelihood_function = lambdify(self.arg_list, self._sp_log_likelihood, 'numpy')
+        self._likelihood_function = lambdify(self.arg_list, self._sp_likelihood, func_modules)
+        self._log_likelihood_function = lambdify(self.arg_list, self._sp_log_likelihood, func_modules)
 
         # compute code for derivatives (for implicit likelihood terms
         # we need up to 3rd derivatives)
-        setattr(self, '_first_derivative_code', {key: lambdify(self.arg_list, self._log_likelihood_derivatives[key], 'numpy') for key in self._log_likelihood_derivatives.keys()})
-        setattr(self, '_second_derivative_code', {key: lambdify(self.arg_list, self._log_likelihood_second_derivatives[key], 'numpy') for key in self._log_likelihood_second_derivatives.keys()})
-        setattr(self, '_third_derivative_code', {key: lambdify(self.arg_list, self._log_likelihood_third_derivatives[key], 'numpy') for key in self._log_likelihood_third_derivatives.keys()})
+        setattr(self, '_first_derivative_code', {key: lambdify(self.arg_list, self._log_likelihood_derivatives[key], func_modules) for key in self._log_likelihood_derivatives.keys()})
+        setattr(self, '_second_derivative_code', {key: lambdify(self.arg_list, self._log_likelihood_second_derivatives[key], func_modules) for key in self._log_likelihood_second_derivatives.keys()})
+        setattr(self, '_third_derivative_code', {key: lambdify(self.arg_list, self._log_likelihood_third_derivatives[key], func_modules) for key in self._log_likelihood_third_derivatives.keys()})
             
         # TODO: compute EP code parts based on logZ. We need dlogZ/dmu, d2logZ/dmu2 and dlogZ/dtheta
 
@@ -215,17 +217,17 @@ class Symbolic(Likelihood):
     def dlogpdf_link_dtheta(self, inv_link_f, y, Y_metadata=None):
         assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape 
         self._arguments_update(inv_link_f, y)
-        return np.asarray([self._first_derivative_code[theta.name](**self._arguments).sum() for theta in self._sp_theta])
+        return np.hstack([self._first_derivative_code[theta.name](**self._arguments) for theta in self._sp_theta]).sum(0)
             
     def dlogpdf_dlink_dtheta(self, inv_link_f, y, Y_metadata=None):
         assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape 
         self._arguments_update(inv_link_f, y)
-        return np.asarray([self._second_derivative_code[theta.name](**self._arguments).sum() for theta in self._sp_theta])
+        return np.hstack([self._second_derivative_code[theta.name](**self._arguments) for theta in self._sp_theta])
 
     def d2logpdf_dlink2_dtheta(self, inv_link_f, y, Y_metadata=None):
         assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape 
         self._arguments_update(inv_link_f, y)
-        return np.asarray([self._third_derivative_code[theta.name](**self._arguments).sum() for theta in self._sp_theta])
+        return np.hstack([self._third_derivative_code[theta.name](**self._arguments) for theta in self._sp_theta])
 
     def predictive_mean(self, mu, sigma, Y_metadata=None):
         raise NotImplementedError

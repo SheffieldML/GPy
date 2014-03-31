@@ -26,8 +26,8 @@ class StudentT(Likelihood):
             gp_link = link_functions.Identity()
 
         super(StudentT, self).__init__(gp_link, name='Student_T')
-
-        self.sigma2 = Param('t_noise', float(sigma2), Logexp())
+        # sigma2 is not a noise parameter, it is a squared scale.
+        self.sigma2 = Param('t_scale2', float(sigma2), Logexp())
         self.v = Param('deg_free', float(deg_free))
         self.add_parameter(self.sigma2)
         self.add_parameter(self.v)
@@ -46,23 +46,23 @@ class StudentT(Likelihood):
         self.sigma2.gradient = grads[0]
         self.v.gradient = grads[1]
 
-    def pdf_link(self, link_f, y, Y_metadata=None):
+    def pdf_link(self, inv_link_f, y, Y_metadata=None):
         """
         Likelihood function given link(f)
 
         .. math::
             p(y_{i}|\\lambda(f_{i})) = \\frac{\\Gamma\\left(\\frac{v+1}{2}\\right)}{\\Gamma\\left(\\frac{v}{2}\\right)\\sqrt{v\\pi\\sigma^{2}}}\\left(1 + \\frac{1}{v}\\left(\\frac{(y_{i} - \\lambda(f_{i}))^{2}}{\\sigma^{2}}\\right)\\right)^{\\frac{-v+1}{2}}
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
+        :param inv_link_f: latent variables link(f)
+        :type inv_link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
         :param Y_metadata: Y_metadata which is not used in student t distribution
         :returns: likelihood evaluated for this point
         :rtype: float
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        e = y - link_f
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        e = y - inv_link_f
         #Careful gamma(big_number) is infinity!
         objective = ((np.exp(gammaln((self.v + 1)*0.5) - gammaln(self.v * 0.5))
                      / (np.sqrt(self.v * np.pi * self.sigma2)))
@@ -70,15 +70,15 @@ class StudentT(Likelihood):
                     )
         return np.prod(objective)
 
-    def logpdf_link(self, link_f, y, Y_metadata=None):
+    def logpdf_link(self, inv_link_f, y, Y_metadata=None):
         """
         Log Likelihood Function given link(f)
 
         .. math::
             \\ln p(y_{i}|\lambda(f_{i})) = \\ln \\Gamma\\left(\\frac{v+1}{2}\\right) - \\ln \\Gamma\\left(\\frac{v}{2}\\right) - \\ln \\sqrt{v \\pi\\sigma^{2}} - \\frac{v+1}{2}\\ln \\left(1 + \\frac{1}{v}\\left(\\frac{(y_{i} - \lambda(f_{i}))^{2}}{\\sigma^{2}}\\right)\\right)
 
-        :param link_f: latent variables (link(f))
-        :type link_f: Nx1 array
+        :param inv_link_f: latent variables (link(f))
+        :type inv_link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
         :param Y_metadata: Y_metadata which is not used in student t distribution
@@ -86,11 +86,11 @@ class StudentT(Likelihood):
         :rtype: float
 
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        e = y - link_f
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        e = y - inv_link_f
         #FIXME:
-        #Why does np.log(1 + (1/self.v)*((y-link_f)**2)/self.sigma2) suppress the divide by zero?!
-        #But np.log(1 + (1/float(self.v))*((y-link_f)**2)/self.sigma2) throws it correctly
+        #Why does np.log(1 + (1/self.v)*((y-inv_link_f)**2)/self.sigma2) suppress the divide by zero?!
+        #But np.log(1 + (1/float(self.v))*((y-inv_link_f)**2)/self.sigma2) throws it correctly
         #print - 0.5*(self.v + 1)*np.log(1 + (1/np.float(self.v))*((e**2)/self.sigma2))
         objective = (+ gammaln((self.v + 1) * 0.5)
                     - gammaln(self.v * 0.5)
@@ -99,15 +99,15 @@ class StudentT(Likelihood):
                     )
         return np.sum(objective)
 
-    def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
+    def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
         """
         Gradient of the log likelihood function at y, given link(f) w.r.t link(f)
 
         .. math::
             \\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{d\\lambda(f)} = \\frac{(v+1)(y_{i}-\lambda(f_{i}))}{(y_{i}-\lambda(f_{i}))^{2} + \\sigma^{2}v}
 
-        :param link_f: latent variables (f)
-        :type link_f: Nx1 array
+        :param inv_link_f: latent variables (f)
+        :type inv_link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
         :param Y_metadata: Y_metadata which is not used in student t distribution
@@ -115,12 +115,12 @@ class StudentT(Likelihood):
         :rtype: Nx1 array
 
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        e = y - link_f
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        e = y - inv_link_f
         grad = ((self.v + 1) * e) / (self.v * self.sigma2 + (e**2))
         return grad
 
-    def d2logpdf_dlink2(self, link_f, y, Y_metadata=None):
+    def d2logpdf_dlink2(self, inv_link_f, y, Y_metadata=None):
         """
         Hessian at y, given link(f), w.r.t link(f)
         i.e. second derivative logpdf at y given link(f_i) and link(f_j)  w.r.t link(f_i) and link(f_j)
@@ -129,8 +129,8 @@ class StudentT(Likelihood):
         .. math::
             \\frac{d^{2} \\ln p(y_{i}|\lambda(f_{i}))}{d^{2}\\lambda(f)} = \\frac{(v+1)((y_{i}-\lambda(f_{i}))^{2} - \\sigma^{2}v)}{((y_{i}-\lambda(f_{i}))^{2} + \\sigma^{2}v)^{2}}
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
+        :param inv_link_f: latent variables inv_link(f)
+        :type inv_link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
         :param Y_metadata: Y_metadata which is not used in student t distribution
@@ -141,90 +141,90 @@ class StudentT(Likelihood):
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
             (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        e = y - link_f
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        e = y - inv_link_f
         hess = ((self.v + 1)*(e**2 - self.v*self.sigma2)) / ((self.sigma2*self.v + e**2)**2)
         return hess
 
-    def d3logpdf_dlink3(self, link_f, y, Y_metadata=None):
+    def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):
         """
         Third order derivative log-likelihood function at y given link(f) w.r.t link(f)
 
         .. math::
             \\frac{d^{3} \\ln p(y_{i}|\lambda(f_{i}))}{d^{3}\\lambda(f)} = \\frac{-2(v+1)((y_{i} - \lambda(f_{i}))^3 - 3(y_{i} - \lambda(f_{i})) \\sigma^{2} v))}{((y_{i} - \lambda(f_{i})) + \\sigma^{2} v)^3}
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
+        :param inv_link_f: latent variables link(f)
+        :type inv_link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
         :param Y_metadata: Y_metadata which is not used in student t distribution
         :returns: third derivative of likelihood evaluated at points f
         :rtype: Nx1 array
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        e = y - link_f
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        e = y - inv_link_f
         d3lik_dlink3 = ( -(2*(self.v + 1)*(-e)*(e**2 - 3*self.v*self.sigma2)) /
                        ((e**2 + self.sigma2*self.v)**3)
                     )
         return d3lik_dlink3
 
-    def dlogpdf_link_dvar(self, link_f, y, Y_metadata=None):
+    def dlogpdf_link_dvar(self, inv_link_f, y, Y_metadata=None):
         """
         Gradient of the log-likelihood function at y given f, w.r.t variance parameter (t_noise)
 
         .. math::
             \\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{d\\sigma^{2}} = \\frac{v((y_{i} - \lambda(f_{i}))^{2} - \\sigma^{2})}{2\\sigma^{2}(\\sigma^{2}v + (y_{i} - \lambda(f_{i}))^{2})}
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
+        :param inv_link_f: latent variables link(f)
+        :type inv_link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
         :param Y_metadata: Y_metadata which is not used in student t distribution
         :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
         :rtype: float
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        e = y - link_f
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        e = y - inv_link_f
         dlogpdf_dvar = self.v*(e**2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e**2))
         return np.sum(dlogpdf_dvar)
 
-    def dlogpdf_dlink_dvar(self, link_f, y, Y_metadata=None):
+    def dlogpdf_dlink_dvar(self, inv_link_f, y, Y_metadata=None):
         """
         Derivative of the dlogpdf_dlink w.r.t variance parameter (t_noise)
 
         .. math::
             \\frac{d}{d\\sigma^{2}}(\\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{df}) = \\frac{-2\\sigma v(v + 1)(y_{i}-\lambda(f_{i}))}{(y_{i}-\lambda(f_{i}))^2 + \\sigma^2 v)^2}
 
-        :param link_f: latent variables link_f
-        :type link_f: Nx1 array
+        :param inv_link_f: latent variables inv_link_f
+        :type inv_link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
         :param Y_metadata: Y_metadata which is not used in student t distribution
         :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
         :rtype: Nx1 array
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        e = y - link_f
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        e = y - inv_link_f
         dlogpdf_dlink_dvar = (self.v*(self.v+1)*(-e))/((self.sigma2*self.v + e**2)**2)
         return dlogpdf_dlink_dvar
 
-    def d2logpdf_dlink2_dvar(self, link_f, y, Y_metadata=None):
+    def d2logpdf_dlink2_dvar(self, inv_link_f, y, Y_metadata=None):
         """
         Gradient of the hessian (d2logpdf_dlink2) w.r.t variance parameter (t_noise)
 
         .. math::
             \\frac{d}{d\\sigma^{2}}(\\frac{d^{2} \\ln p(y_{i}|\lambda(f_{i}))}{d^{2}f}) = \\frac{v(v+1)(\\sigma^{2}v - 3(y_{i} - \lambda(f_{i}))^{2})}{(\\sigma^{2}v + (y_{i} - \lambda(f_{i}))^{2})^{3}}
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
+        :param inv_link_f: latent variables link(f)
+        :type inv_link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
         :param Y_metadata: Y_metadata which is not used in student t distribution
         :returns: derivative of hessian evaluated at points f and f_j w.r.t variance parameter
         :rtype: Nx1 array
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        e = y - link_f
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        e = y - inv_link_f
         d2logpdf_dlink2_dvar = ( (self.v*(self.v+1)*(self.sigma2*self.v - 3*(e**2)))
                               / ((self.sigma2*self.v + (e**2))**3)
                            )
@@ -246,11 +246,12 @@ class StudentT(Likelihood):
         return np.hstack((d2logpdf_dlink2_dvar, d2logpdf_dlink2_dv))
 
     def predictive_mean(self, mu, sigma, Y_metadata=None):
-        return self.gp_link.transf(mu) # only true in link is monotoci, which it is.
+        # The comment here confuses mean and median. 
+        return self.gp_link.transf(mu) # only true if link is monotonic, which it is.
 
     def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
-        if self.deg_free <2.:
-            return np.empty(mu.shape)*np.nan #not defined for small degress fo freedom
+        if self.deg_free<=2.:
+            return np.empty(mu.shape)*np.nan # does not exist for degrees of freedom <= 2.
         else:
             return super(StudentT, self).predictive_variance(mu, variance, predictive_mean, Y_metadata)
 

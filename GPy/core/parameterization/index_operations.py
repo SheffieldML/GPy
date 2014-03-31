@@ -95,6 +95,9 @@ class ParameterIndexOperations(object):
     def __getitem__(self, prop):
         return self._properties[prop]
 
+    def __delitem__(self, prop):
+        del self._properties[prop]
+
     def __str__(self, *args, **kwargs):
         import pprint
         return pprint.pformat(dict(self._properties))

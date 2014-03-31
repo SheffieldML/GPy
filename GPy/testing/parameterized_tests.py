@@ -34,6 +34,7 @@ class ParameterizedTest(unittest.TestCase):
         self.param = Param('param', np.random.rand(25,2), Logistic(0, 1))
 
         self.test1 = GPy.core.Parameterized("test model")
+        self.test1.param = self.param
         self.test1.kern = self.rbf+self.white
         self.test1.add_parameter(self.test1.kern)
         self.test1.add_parameter(self.param, 0)
@@ -58,6 +59,9 @@ class ParameterizedTest(unittest.TestCase):
         self.assertListEqual(self.test1._fixes_.tolist(),[FIXED,UNFIXED,UNFIXED])
         self.test1.kern.rbf.fix()
         self.assertListEqual(self.test1._fixes_.tolist(),[FIXED]*3)
+        self.test1.fix()
+        self.assertTrue(self.test1.is_fixed)
+        self.assertListEqual(self.test1._fixes_.tolist(),[FIXED]*self.test1.size)
 
     def test_remove_parameter(self):
         from GPy.core.parameterization.transformations import FIXED, UNFIXED, __fixed__, Logexp

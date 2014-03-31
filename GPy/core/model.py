@@ -279,7 +279,7 @@ class Model(Parameterized):
 
             # just check the global ratio
             dx = np.zeros(x.shape)
-            dx[transformed_index] = step * np.sign(np.random.uniform(-1, 1, transformed_index.size))
+            dx[transformed_index] = step * (np.sign(np.random.uniform(-1, 1, transformed_index.size)) if transformed_index.size != 2 else 1.)
 
             # evaulate around the point x
             f1 = self._objective(x + dx)
@@ -294,7 +294,8 @@ class Model(Parameterized):
             global_diff = np.abs(f1 - f2) < tolerance and np.allclose(gradient, 0, atol=tolerance)
             if global_ratio is np.nan:
                 global_ratio = 0
-            return np.abs(1. - global_ratio) < tolerance or np.abs(f1-f2).sum() + np.abs((2 * np.dot(dx, gradient))).sum() < tolerance or global_diff
+            print global_ratio, global_diff, np.allclose(gradient, 0, atol=tolerance), np.abs(1. - global_ratio), np.abs(f1-f2).sum() + np.abs((2 * np.dot(dx, gradient))).sum()
+            return np.abs(1. - global_ratio) < tolerance or global_diff
         else:
             # check the gradient of each parameter individually, and do some pretty printing
             try:

@@ -15,7 +15,6 @@ class Kern(Parameterized):
     # found in kernel_slice_operations
     __metaclass__ = KernCallsViaSlicerMeta
     #===========================================================================
-    _debug=False
     def __init__(self, input_dim, active_dims, name, *a, **kw):
         """
         The base class for a kernel: a positive definite function
@@ -175,22 +174,6 @@ class Kern(Parameterized):
         #else: kernels.append(other)
         return Prod([self, other], name)
 
-    def _getstate(self):
-        """
-        Get the current state of the class,
-        here just all the indices, rest can get recomputed
-        """
-        return super(Kern, self)._getstate() + [
-                self.active_dims,
-                self.input_dim,
-                self._sliced_X]
-
-    def _setstate(self, state):
-        self._sliced_X = state.pop()
-        self.input_dim = state.pop()
-        self.active_dims = state.pop()
-        super(Kern, self)._setstate(state)
-
 class CombinationKernel(Kern):
     """
     Abstract super class for combination kernels.
@@ -220,7 +203,7 @@ class CombinationKernel(Kern):
 
     def get_input_dim_active_dims(self, kernels, extra_dims = None):
         active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
-        input_dim = active_dims.max()+1 + (len(extra_dims) if extra_dims is not None else 0)
+        input_dim = active_dims.max()+1 + (len(np.r_[extra_dims]) if extra_dims is not None else 0)
         active_dims = slice(0, input_dim, 1)
         return input_dim, active_dims
 

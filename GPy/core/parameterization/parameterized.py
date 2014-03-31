@@ -101,34 +101,13 @@ class Parameterized(Parameterizable, Pickleable):
             return G
         return node
 
-    def _getstate(self):
-        """
-        Get the current state of the class,
-        here just all the indices, rest can get recomputed
-        For inheriting from Parameterized:
-
-        Allways append the state of the inherited object
-        and call down to the inherited object in _setstate!!
-        """
-        return []
-
-    def _setstate(self, state):
-        self.parameters_changed()
-    #===========================================================================
-    # Override copy to handle programmatically added observers
-    #===========================================================================
-    def copy(self):
-        c = super(Parameterized, self).copy()
-        c.add_observer(c, c._parameters_changed_notification, -100)
-        return c
-
     #===========================================================================
     # Gradient control
     #===========================================================================
     def _transform_gradients(self, g):
         if self.has_parent():
             return g
-        [numpy.put(g, i, g[i] * c.gradfactor(self._param_array_[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
+        [numpy.put(g, i, g[i] * c.gradfactor(self.param_array[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g
 
@@ -160,7 +139,7 @@ class Parameterized(Parameterizable, Pickleable):
         this is not in the global view of things!
         """
         return numpy.r_[:self.size]
-    
+
     #===========================================================================
     # Convenience for fixed, tied checking of param:
     #===========================================================================
@@ -175,7 +154,7 @@ class Parameterized(Parameterizable, Pickleable):
         # you can retrieve the original param through this method, by passing
         # the copy here
         return self._parameters_[param._parent_index_]
-    
+
     #===========================================================================
     # Get/set parameters:
     #===========================================================================
@@ -192,7 +171,7 @@ class Parameterized(Parameterizable, Pickleable):
 
     def __getitem__(self, name, paramlist=None):
         if isinstance(name, (int, slice, tuple, np.ndarray)):
-            return self._param_array_[name]
+            return self.param_array[name]
         else:
             if paramlist is None:
                 paramlist = self.grep_param_names(name)
@@ -208,7 +187,7 @@ class Parameterized(Parameterizable, Pickleable):
     def __setitem__(self, name, value, paramlist=None):
         if isinstance(name, (slice, tuple, np.ndarray)):
             try:
-                self._param_array_[name] = value
+                self.param_array[name] = value
             except:
                 raise ValueError, "Setting by slice or index only allowed with array-like"
             self._trigger_params_changed()

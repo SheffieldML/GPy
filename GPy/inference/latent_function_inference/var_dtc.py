@@ -23,6 +23,7 @@ class VarDTC(object):
     def __init__(self, limit=1):
         #self._YYTfactor_cache = caching.cache()
         from ...util.caching import Cacher
+        self.limit = limit
         self.get_trYYT = Cacher(self._get_trYYT, limit)
         self.get_YYTfactor = Cacher(self._get_YYTfactor, limit)
 
@@ -32,6 +33,15 @@ class VarDTC(object):
 
     def _get_trYYT(self, Y):
         return param_to_array(np.sum(np.square(Y)))
+
+    def __getstate__(self):
+        return self.limit
+
+    def __setstate__(self, state):
+        self.limit = state
+        from ...util.caching import Cacher
+        self.get_trYYT = Cacher(self._get_trYYT, self.limit)
+        self.get_YYTfactor = Cacher(self._get_YYTfactor, self.limit)
 
     def _get_YYTfactor(self, Y):
         """
@@ -126,7 +136,7 @@ class VarDTC(object):
         delit += output_dim * np.eye(num_inducing)
         # Compute dL_dKmm
         dL_dKmm = backsub_both_sides(Lm, delit)
-        
+
         # derivatives of L w.r.t. psi
         dL_dpsi0, dL_dpsi1, dL_dpsi2 = _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm,
             VVT_factor, Cpsi1Vf, DBi_plus_BiPBi,

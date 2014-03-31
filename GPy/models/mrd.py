@@ -65,14 +65,17 @@ class MRD(Model):
             from ..kern import RBF
             self.kern = [RBF(input_dim, ARD=1, lengthscale=fracs[i], name='rbf'.format(i)) for i in range(len(Ylist))]
         elif isinstance(kernel, Kern):
-            self.kern = [kernel.copy(name='{}'.format(kernel.name, i)) for i in range(len(Ylist))]
+            self.kern = []
+            for i in range(len(Ylist)):
+                k = kernel.copy()
+                self.kern.append(k)
         else:
             assert len(kernel) == len(Ylist), "need one kernel per output"
             assert all([isinstance(k, Kern) for k in kernel]), "invalid kernel object detected!"
             self.kern = kernel
 
         if X_variance is None:
-            X_variance = np.random.uniform(0, .1, X.shape)
+            X_variance = np.random.uniform(0.1, 0.2, X.shape)
 
         self.variational_prior = NormalPrior()
         self.X = NormalPosterior(X, X_variance)
@@ -108,8 +111,8 @@ class MRD(Model):
     def parameters_changed(self):
         self._log_marginal_likelihood = 0
         self.posteriors = []
-        self.Z.gradient = 0.
-        self.X.gradient = 0.
+        self.Z.gradient[:] = 0.
+        self.X.gradient[:] = 0.
 
         for y, k, l, i in itertools.izip(self.Ylist, self.kern, self.likelihood, self.inference_method):
             posterior, lml, grad_dict = i.inference(k, self.X, self.Z, l, y)
@@ -160,6 +163,8 @@ class MRD(Model):
             X = np.random.randn(Ylist[0].shape[0], self.input_dim)
             fracs = X.var(0)
             fracs = [fracs]*self.input_dim
+        X -= X.mean()
+        X /= X.std()
         return X, fracs
 
     def _init_Z(self, init="permute", X=None):

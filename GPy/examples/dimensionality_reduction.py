@@ -324,18 +324,15 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
 def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     from GPy import kern
     from GPy.models import MRD
-    from GPy.likelihoods import Gaussian
 
     D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
 
     #Ylist = [Ylist[0]]
-    k = [kern.Linear(Q, ARD=True) for _ in range(len(Ylist))]
-    m = MRD(Ylist, input_dim=Q, num_inducing=num_inducing, kernel=k, initx="", initz='permute', **kw)
+    k = kern.Linear(Q, ARD=True)
+    m = MRD(Ylist, input_dim=Q, num_inducing=num_inducing, kernel=k, initx="PCA_concat", initz='permute', **kw)
 
-    m['.*noise'] = [Y.var()/500. for Y in Ylist]
-    #for i, Y in enumerate(Ylist):
-    #    m['.*Y_{}.*Gaussian.*noise'.format(i)] = Y.var(1) / 500.
+    m['.*noise'] = [Y.var()/40. for Y in Ylist]
 
     if optimize:
         print "Optimizing Model:"

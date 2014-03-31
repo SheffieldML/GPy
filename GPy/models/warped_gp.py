@@ -30,14 +30,6 @@ class WarpedGP(GP):
         GP.__init__(self, X, likelihood, kernel, normalize_X=normalize_X)
         self._set_params(self._get_params())
 
-    def _getstate(self):
-        return GP._getstate(self)
-
-
-    def _setstate(self, state):
-        return GP._setstate(self, state)
-
-
     def _scale_data(self, Y):
         self._Ymax = Y.max()
         self._Ymin = Y.min()

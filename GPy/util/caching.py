@@ -97,6 +97,15 @@ class Cacher(object):
         self.cached_outputs = []
         self.inputs_changed = []
 
+    def __deepcopy__(self, memo=None):
+        return Cacher(self.operation, self.limit, self.ignore_args, self.force_kwargs)
+
+    def __getstate__(self, memo=None):
+        raise NotImplementedError, "Trying to pickle Cacher object with function {}, pickling functions not possible.".format(str(self.operation))
+
+    def __setstate__(self, memo=None):
+        raise NotImplementedError, "Trying to pickle Cacher object with function {}, pickling functions not possible.".format(str(self.operation))
+
     @property
     def __name__(self):
         return self.operation.__name__

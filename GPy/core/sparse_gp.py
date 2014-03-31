@@ -106,15 +106,3 @@ class SparseGP(GP):
         return mu, var
 
 
-    def _getstate(self):
-        """
-        Get the current state of the class,
-        """
-        return GP._getstate(self) + [
-                self.Z,
-                self.num_inducing]
-
-    def _setstate(self, state):
-        self.num_inducing = state.pop()
-        self.Z = state.pop()
-        GP._setstate(self, state)

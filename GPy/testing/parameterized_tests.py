@@ -86,9 +86,9 @@ class ParameterizedTest(unittest.TestCase):
         self.assertListEqual(self.test1.constraints[Logexp()].tolist(), range(self.param.size, self.param.size+self.rbf.size))
 
     def test_remove_parameter_param_array_grad_array(self):
-        val = self.test1.kern._param_array_.copy()
+        val = self.test1.kern.param_array.copy()
         self.test1.kern.remove_parameter(self.white)
-        self.assertListEqual(self.test1.kern._param_array_.tolist(), val[:2].tolist())
+        self.assertListEqual(self.test1.kern.param_array.tolist(), val[:2].tolist())
 
     def test_add_parameter_already_in_hirarchy(self):
         self.assertRaises(HierarchyError, self.test1.add_parameter, self.white._parameters_[0])

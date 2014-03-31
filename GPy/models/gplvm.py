@@ -44,12 +44,6 @@ class GPLVM(GP):
         super(GPLVM, self).parameters_changed()
         self.X.gradient = self.kern.gradients_X(self.grad_dict['dL_dK'], self.X, None)
 
-    def _getstate(self):
-        return GP._getstate(self)
-
-    def _setstate(self, state):
-        GP._setstate(self, state)
-
     def jacobian(self,X):
         target = np.zeros((X.shape[0],X.shape[1],self.output_dim))
         for i in range(self.output_dim):

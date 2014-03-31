@@ -2,7 +2,6 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from gplvm import GPLVM
 from .. import kern
 from ..core import SparseGP
 from ..likelihoods import Gaussian
@@ -60,18 +59,6 @@ class BayesianGPLVM(SparseGP):
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)
         self.add_parameter(self.X, index=0)
-
-    def _getstate(self):
-        """
-        Get the current state of the class,
-        here just all the indices, rest can get recomputed
-        """
-        return SparseGP._getstate(self) + [self.init]
-
-    def _setstate(self, state):
-        self._const_jitter = None
-        self.init = state.pop()
-        SparseGP._setstate(self, state)
 
     def set_X_gradients(self, X, X_grad):
         """Set the gradients of the posterior distribution of X in its specific form."""

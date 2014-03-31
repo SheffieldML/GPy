@@ -24,12 +24,6 @@ class ParameterIndexOperations(object):
             for t, i in constraints.iteritems():
                 self.add(t, i)
 
-    def __getstate__(self):
-        return self._properties
-
-    def __setstate__(self, state):
-        self._properties = state
-
     def iteritems(self):
         return self._properties.iteritems()
 
@@ -92,8 +86,10 @@ class ParameterIndexOperations(object):
         for i, v in parameter_index_view.iteritems():
             self.add(i, v+offset)
 
-
     def copy(self):
+        return self.__deepcopy__(None)
+
+    def __deepcopy__(self, memo):
         return ParameterIndexOperations(dict(self.iteritems()))
 
     def __getitem__(self, prop):
@@ -203,6 +199,9 @@ class ParameterIndexOperationsView(object):
 
 
     def copy(self):
+        return self.__deepcopy__(None)
+
+    def __deepcopy__(self, memo):
         return ParameterIndexOperations(dict(self.iteritems()))
     pass
 

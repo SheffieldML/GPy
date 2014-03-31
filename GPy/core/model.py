@@ -27,33 +27,6 @@ class Model(Parameterized):
     def _log_likelihood_gradients(self):
         return self.gradient
 
-    def _getstate(self):
-        """
-        Get the current state of the class.
-        Inherited from Parameterized, so add those parameters to the state
-
-        :return: list of states from the model.
-
-        """
-        return Parameterized._getstate(self) + \
-            [self.priors, self.optimization_runs,
-             self.sampling_runs, self.preferred_optimizer]
-
-    def _setstate(self, state):
-        """
-        set state from previous call to _getstate
-        call Parameterized with the rest of the state
-
-        :param state: the state of the model.
-        :type state: list as returned from _getstate.
-
-        """
-        self.preferred_optimizer = state.pop()
-        self.sampling_runs = state.pop()
-        self.optimization_runs = state.pop()
-        self.priors = state.pop()
-        Parameterized._setstate(self, state)
-
     def optimize_restarts(self, num_restarts=10, robust=False, verbose=True, parallel=False, num_processes=None, **kwargs):
         """
         Perform random restarts of the model, and set the model to the best
@@ -318,7 +291,10 @@ class Model(Parameterized):
 
             denominator = (2 * np.dot(dx, gradient))
             global_ratio = (f1 - f2) / np.where(denominator==0., 1e-32, denominator)
-            return np.abs(1. - global_ratio) < tolerance or np.abs(f1-f2).sum() + np.abs((2 * np.dot(dx, gradient))).sum() < tolerance
+            global_diff = np.abs(f1 - f2) < tolerance and np.allclose(gradient, 0, atol=tolerance)
+            if global_ratio is np.nan:
+                global_ratio = 0
+            return np.abs(1. - global_ratio) < tolerance or np.abs(f1-f2).sum() + np.abs((2 * np.dot(dx, gradient))).sum() < tolerance or global_diff
         else:
             # check the gradient of each parameter individually, and do some pretty printing
             try:

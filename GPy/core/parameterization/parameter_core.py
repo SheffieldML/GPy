@@ -13,10 +13,10 @@ Observable Pattern for patameterization
 
 """
 
-from transformations import Transformation, Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
+from transformations import Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
 
-__updated__ = '2014-03-24'
+__updated__ = '2014-03-31'
 
 class HierarchyError(Exception):
     """
@@ -31,71 +31,8 @@ def adjust_name_for_printing(name):
         return name.replace(" ", "_").replace(".", "_").replace("-", "_m_").replace("+", "_p_").replace("!", "_I_").replace("**", "_xx_").replace("*", "_x_").replace("/", "_l_").replace("@", '_at_')
     return ''
 
-class InterfacePickleFunctions(object):
-    def __init__(self, *a, **kw):
-        super(InterfacePickleFunctions, self).__init__()
 
-    def _getstate(self):
-        """
-        Returns the state of this class in a memento pattern.
-        The state must be a list-like structure of all the fields
-        this class needs to run.
-
-        See python doc "pickling" (`__getstate__` and `__setstate__`) for details.
-        """
-        raise NotImplementedError, "To be able to use pickling you need to implement this method"
-    def _setstate(self, state):
-        """
-        Set the state (memento pattern) of this class to the given state.
-        Usually this is just the counterpart to _getstate, such that
-        an object is a copy of another when calling
-
-            copy = <classname>.__new__(*args,**kw)._setstate(<to_be_copied>._getstate())
-
-        See python doc "pickling" (`__getstate__` and `__setstate__`) for details.
-        """
-        raise NotImplementedError, "To be able to use pickling you need to implement this method"
-
-class Pickleable(InterfacePickleFunctions):
-    """
-    Make an object pickleable (See python doc 'pickling').
-
-    This class allows for pickling support by Memento pattern.
-    _getstate returns a memento of the class, which gets pickled.
-    _setstate(<memento>) (re-)sets the state of the class to the memento
-    """
-    def __init__(self, *a, **kw):
-        super(Pickleable, self).__init__()
-    #===========================================================================
-    # Pickling operations
-    #===========================================================================
-    def pickle(self, f, protocol=-1):
-        """
-        :param f: either filename or open file object to write to.
-                  if it is an open buffer, you have to make sure to close
-                  it properly.
-        :param protocol: pickling protocol to use, python-pickle for details.
-        """
-        import cPickle
-        if isinstance(f, str):
-            with open(f, 'w') as f:
-                cPickle.dump(self, f, protocol)
-        else:
-            cPickle.dump(self, f, protocol)
-    def __getstate__(self):
-        if self._has_get_set_state():
-            return self._getstate()
-        return self.__dict__
-    def __setstate__(self, state):
-        if self._has_get_set_state():
-            self._setstate(state)
-            # TODO: maybe parameters_changed() here?
-            return
-        self.__dict__ = state
-    def _has_get_set_state(self):
-        return '_getstate' in vars(self.__class__) and '_setstate' in vars(self.__class__)
-
-class Observable(Pickleable):
+class Observable(object):
     """
     Observable pattern for parameterization.
 
@@ -105,8 +42,9 @@ class Observable(Pickleable):
     """
     _updated = True
     def __init__(self, *args, **kwargs):
-        super(Observable, self).__init__(*args, **kwargs)
-        self._observer_callables_ = []
+        super(Observable, self).__init__()
+        from lists_and_dicts import ObservablesList
+        self._observer_callables_ = ObservablesList()
 
     def add_observer(self, observer, callble, priority=0):
         self._insert_sorted(priority, observer, callble)
@@ -151,17 +89,11 @@ class Observable(Pickleable):
             ins += 1
         self._observer_callables_.insert(ins, (p, o, c))
 
-    def _getstate(self):
-        return [self._observer_callables_]
-
-    def _setstate(self, state):
-        self._observer_callables_ = state.pop()
-
 #===============================================================================
 # Foundation framework for parameterized and param objects:
 #===============================================================================
 
-class Parentable(Observable):
+class Parentable(object):
     """
     Enable an Object to have a parent.
 
@@ -171,7 +103,7 @@ class Parentable(Observable):
     _parent_ = None
     _parent_index_ = None
     def __init__(self, *args, **kwargs):
-        super(Parentable, self).__init__(*args, **kwargs)
+        super(Parentable, self).__init__()
 
     def has_parent(self):
         """
@@ -207,7 +139,84 @@ class Parentable(Observable):
         """
         pass
 
-class Gradcheckable(Parentable):
+class Pickleable(object):
+    """
+    Make an object pickleable (See python doc 'pickling').
+
+    This class allows for pickling support by Memento pattern.
+    _getstate returns a memento of the class, which gets pickled.
+    _setstate(<memento>) (re-)sets the state of the class to the memento
+    """
+    def __init__(self, *a, **kw):
+        super(Pickleable, self).__init__()
+    #===========================================================================
+    # Pickling operations
+    #===========================================================================
+    def pickle(self, f, protocol=-1):
+        """
+        :param f: either filename or open file object to write to.
+                  if it is an open buffer, you have to make sure to close
+                  it properly.
+        :param protocol: pickling protocol to use, python-pickle for details.
+        """
+        import cPickle as pickle
+        import pickle #TODO: cPickle
+        if isinstance(f, str):
+            with open(f, 'w') as f:
+                pickle.dump(self, f, protocol)
+        else:
+            pickle.dump(self, f, protocol)
+
+        #===========================================================================
+    # copy and pickling
+    #===========================================================================
+    def copy(self):
+        """Returns a (deep) copy of the current model"""
+        #raise NotImplementedError, "Copy is not yet implemented, TODO: Observable hierarchy"
+        import copy
+        memo = {}
+        memo[id(self._parent_)] = None
+        memo[id(self._parent_index_)] = None
+        memo[id(self.gradient)] = None
+        memo[id(self.param_array)] = None
+        memo[id(self._fixes_)] = None
+        c = copy.deepcopy(self, memo)
+        return c
+
+    def __deepcopy__(self, memo):
+        s = self.__new__(self.__class__)
+        memo[id(self)] = s
+        import copy
+        s.__dict__.update(copy.deepcopy(self.__dict__, memo))
+        return s
+
+    def __getstate__(self):
+        ignore_list = ([#'_parent_', '_parent_index_',
+                        #'_observer_callables_',
+                        '_param_array_', '_gradient_array_', '_fixes_',
+                        '_Cacher_wrap__cachers']
+                       #+ self.parameter_names(recursive=False)
+                       )
+        dc = dict()
+        for k,v in self.__dict__.iteritems():
+            if k not in ignore_list:
+                #if hasattr(v, "__getstate__"):
+                #dc[k] = v.__getstate__()
+                #else:
+                dc[k] = v
+        return dc
+ 
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        return self
+
+    #def __getstate__(self, memo):
+    #    raise NotImplementedError, "get state must be implemented to be able to pickle objects"
+
+    #def __setstate__(self, memo):
+    #    raise NotImplementedError, "set state must be implemented to be able to pickle objects"
+
+class Gradcheckable(Pickleable, Parentable):
     """
     Adds the functionality for an object to be gradcheckable.
     It is just a thin wrapper of a call to the highest parent for now.
@@ -312,7 +321,7 @@ class Indexable(object):
         raise NotImplementedError, "shouldnt happen, raveld index transformation required from non parameterization object?"
 
 
-class Constrainable(Nameable, Indexable):
+class Constrainable(Nameable, Indexable, Observable):
     """
     Make an object constrainable with Priors and Transformations.
     TODO: Mappings!!
@@ -429,14 +438,14 @@ class Constrainable(Nameable, Indexable):
     def log_prior(self):
         """evaluate the prior"""
         if self.priors.size > 0:
-            x = self._param_array_
+            x = self.param_array
             return reduce(lambda a, b: a + b, (p.lnpdf(x[ind]).sum() for p, ind in self.priors.iteritems()), 0)
         return 0.
 
     def _log_prior_gradients(self):
         """evaluate the gradients of the priors"""
         if self.priors.size > 0:
-            x = self._param_array_
+            x = self.param_array
             ret = np.zeros(x.size)
             [np.put(ret, ind, p.lnpdf_grad(x[ind])) for p, ind in self.priors.iteritems()]
             return ret
@@ -455,7 +464,7 @@ class Constrainable(Nameable, Indexable):
         Constrain the parameter to the given
         :py:class:`GPy.core.transformations.Transformation`.
         """
-        self._param_array_[:] = transform.initialize(self._param_array_)
+        self.param_array[:] = transform.initialize(self.param_array)
         reconstrained = self.unconstrain()
         self._add_to_index_operations(self.constraints, reconstrained, transform, warning)
         self.notify_observers(self, None if trigger_parent else -np.inf)
@@ -565,14 +574,14 @@ class OptimizationHandlable(Constrainable):
         super(OptimizationHandlable, self).__init__(name, default_constraint=default_constraint, *a, **kw)
 
     def transform(self):
-        [np.put(self._param_array_, ind, c.finv(self._param_array_.flat[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
+        [np.put(self.param_array, ind, c.finv(self.param_array.flat[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
 
     def untransform(self):
-        [np.put(self._param_array_, ind, c.f(self._param_array_.flat[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
+        [np.put(self.param_array, ind, c.f(self.param_array.flat[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
 
     def _get_params_transformed(self):
         # transformed parameters (apply transformation rules)
-        p = self._param_array_.copy()
+        p = self.param_array.copy()
         [np.put(p, ind, c.finv(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
         if self.has_parent() and self.constraints[__fixed__].size != 0:
             fixes = np.ones(self.size).astype(bool)
@@ -583,14 +592,14 @@ class OptimizationHandlable(Constrainable):
         return p
 
     def _set_params_transformed(self, p):
-        if p is self._param_array_:
+        if p is self.param_array:
             p = p.copy()
         if self.has_parent() and self.constraints[__fixed__].size != 0:
             fixes = np.ones(self.size).astype(bool)
             fixes[self.constraints[__fixed__]] = FIXED
-            self._param_array_.flat[fixes] = p
-        elif self._has_fixes(): self._param_array_.flat[self._fixes_] = p
-        else: self._param_array_.flat = p
+            self.param_array.flat[fixes] = p
+        elif self._has_fixes(): self.param_array.flat[self._fixes_] = p
+        else: self.param_array.flat = p
         self.untransform()
         self._trigger_params_changed()
 
@@ -600,36 +609,29 @@ class OptimizationHandlable(Constrainable):
 
     def _size_transformed(self):
         return self.size - self.constraints[__fixed__].size
-#
-#     def _untransform_params(self, p):
-#         # inverse apply transformations for parameters
-#         #p = p.copy()
-#         if self._has_fixes(): tmp = self._get_params(); tmp[self._fixes_] = p; p = tmp; del tmp
-#         [np.put(p, ind, c.f(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-#         return p
-#
-#     def _get_params(self):
-#         """
-#         get all parameters
-#         """
-#         return self._param_array_
-#         p = np.empty(self.size, dtype=np.float64)
-#         if self.size == 0:
-#             return p
-#         [np.put(p, ind, par._get_params()) for ind, par in itertools.izip(self._param)]
-#         return p
 
-#     def _set_params(self, params, trigger_parent=True):
-#         self._param_array_.flat = params
-#         if trigger_parent: min_priority = None
-#         else: min_priority = -np.inf
-#         self.notify_observers(None, min_priority)
-        # don't overwrite this anymore!
-        # raise NotImplementedError, "Abstract superclass: This needs to be implemented in Param and Parameterizable"
+    @property
+    def num_params(self):
+        """
+        Return the number of parameters of this parameter_handle.
+        Param objects will allways return 0.
+        """
+        raise NotImplemented, "Abstract, please implement in respective classes"
 
-    #===========================================================================
-    # Optimization handles:
-    #===========================================================================
+    def parameter_names(self, add_self=False, adjust_for_printing=False, recursive=True):
+        """
+        Get the names of all parameters of this model.
+
+        :param bool add_self: whether to add the own name in front of names
+        :param bool adjust_for_printing: whether to call `adjust_name_for_printing` on names
+        :param bool recursive: whether to traverse through hierarchy and append leaf node names
+        """
+        if adjust_for_printing: adjust = lambda x: adjust_name_for_printing(x)
+        else: adjust = lambda x: x
+        if recursive: names = [xi for x in self._parameters_ for xi in x.parameter_names(add_self=True, adjust_for_printing=adjust_for_printing)]
+        else: names = [adjust(x.name) for x in self._parameters_]
+        if add_self: names = map(lambda x: adjust(self.name) + "." + x, names)
+        return names
     def _get_param_names(self):
         n = np.array([p.hierarchy_name() + '[' + str(i) + ']' for p in self.flattened_parameters for i in p._indices()])
         return n
@@ -663,16 +665,30 @@ class OptimizationHandlable(Constrainable):
     # For shared memory arrays. This does nothing in Param, but sets the memory
     # for all parameterized objects
     #===========================================================================
+    @property
+    def full_gradient(self):
+        """
+        Note to users:
+        This does not return the gradient in the right shape! Use self.gradient
+        for the right gradient array.
+
+        To work on the gradient array, use this as the gradient handle.
+        This method exists for in memory use of parameters.
+        When trying to access the true gradient array, use this.
+        """
+        self.gradient # <<< ensure _gradient_array_
+        return self._gradient_array_
+
     def _propagate_param_grad(self, parray, garray):
         pi_old_size = 0
         for pi in self._parameters_:
             pislice = slice(pi_old_size, pi_old_size + pi.size)
 
-            self._param_array_[pislice] = pi._param_array_.flat  # , requirements=['C', 'W']).flat
-            self._gradient_array_[pislice] = pi._gradient_array_.flat  # , requirements=['C', 'W']).flat
+            self.param_array[pislice] = pi.param_array.flat  # , requirements=['C', 'W']).flat
+            self.full_gradient[pislice] = pi.full_gradient.flat  # , requirements=['C', 'W']).flat
 
-            pi._param_array_.data = parray[pislice].data
-            pi._gradient_array_.data = garray[pislice].data
+            pi.param_array.data = parray[pislice].data
+            pi.full_gradient.data = garray[pislice].data
 
             pi._propagate_param_grad(parray[pislice], garray[pislice])
             pi_old_size += pi.size
@@ -681,26 +697,32 @@ class Parameterizable(OptimizationHandlable):
     def __init__(self, *args, **kwargs):
         super(Parameterizable, self).__init__(*args, **kwargs)
         from GPy.core.parameterization.lists_and_dicts import ArrayList
-        _parameters_ = ArrayList()
+        self._parameters_ = ArrayList()
         self.size = 0
-        self._param_array_ = np.empty(self.size, dtype=np.float64)
-        self._gradient_array_ = np.empty(self.size, dtype=np.float64)
         self._added_names_ = set()
 
-    def parameter_names(self, add_self=False, adjust_for_printing=False, recursive=True):
-        """
-        Get the names of all parameters of this model.
+    @property
+    def param_array(self):
+        if not hasattr(self, '_param_array_'):
+            self._param_array_ = np.empty(self.size, dtype=np.float64)
+        return self._param_array_
 
-        :param bool add_self: whether to add the own name in front of names
-        :param bool adjust_for_printing: whether to call `adjust_name_for_printing` on names
-        :param bool recursive: whether to traverse through hierarchy and append leaf node names
-        """
-        if adjust_for_printing: adjust = lambda x: adjust_name_for_printing(x)
-        else: adjust = lambda x: x
-        if recursive: names = [xi for x in self._parameters_ for xi in x.parameter_names(add_self=True, adjust_for_printing=adjust_for_printing)]
-        else: names = [adjust(x.name) for x in self._parameters_]
-        if add_self: names = map(lambda x: adjust(self.name) + "." + x, names)
-        return names
+    @param_array.setter
+    def param_array(self, arr):
+        self._param_array_ = arr
+
+    #=========================================================================
+    # Gradient handling
+    #=========================================================================
+    @property
+    def gradient(self):
+        if not hasattr(self, '_gradient_array_'):
+            self._gradient_array_ = np.empty(self.size, dtype=np.float64)
+        return self._gradient_array_
+
+    @gradient.setter
+    def gradient(self, val):
+        self._gradient_array_[:] = val
 
     @property
     def num_params(self):
@@ -736,34 +758,6 @@ class Parameterizable(OptimizationHandlable):
     def _name_changed(self, param, old_name):
         self._remove_parameter_name(None, old_name)
         self._add_parameter_name(param)
-
-    #=========================================================================
-    # Gradient handling
-    #=========================================================================
-    @property
-    def gradient(self):
-        return self._gradient_array_
-
-    @gradient.setter
-    def gradient(self, val):
-        self._gradient_array_[:] = val
-    #===========================================================================
-    # def _collect_gradient(self, target):
-    #     [p._collect_gradient(target[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
-    #===========================================================================
-
-    #===========================================================================
-    # def _set_params(self, params, trigger_parent=True):
-    #     [p._set_params(params[s], trigger_parent=False) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
-    #     if trigger_parent: min_priority = None
-    #     else: min_priority = -np.inf
-    #     self.notify_observers(None, min_priority)
-    #===========================================================================
-
-    #===========================================================================
-    # def _set_gradient(self, g):
-    #     [p._set_gradient(g[s]) for p, s in itertools.izip(self._parameters_, self._param_slices_)]
-    #===========================================================================
 
     def add_parameter(self, param, index=None, _ignore_added_names=False):
         """
@@ -864,7 +858,7 @@ class Parameterizable(OptimizationHandlable):
             # no parameters for this class
             return
         old_size = 0
-        self._param_array_ = np.empty(self.size, dtype=np.float64)
+        self.param_array = np.empty(self.size, dtype=np.float64)
         self._gradient_array_ = np.empty(self.size, dtype=np.float64)
 
         self._param_slices_ = []
@@ -874,15 +868,16 @@ class Parameterizable(OptimizationHandlable):
 
             pslice = slice(old_size, old_size + p.size)
             # first connect all children
-            p._propagate_param_grad(self._param_array_[pslice], self._gradient_array_[pslice])
+            p._propagate_param_grad(self.param_array[pslice], self.full_gradient[pslice])
             # then connect children to self
-            self._param_array_[pslice] = p._param_array_.flat  # , requirements=['C', 'W']).ravel(order='C')
-            self._gradient_array_[pslice] = p._gradient_array_.flat  # , requirements=['C', 'W']).ravel(order='C')
+            self.param_array[pslice] = p.param_array.flat  # , requirements=['C', 'W']).ravel(order='C')
+            self.full_gradient[pslice] = p.full_gradient.flat  # , requirements=['C', 'W']).ravel(order='C')
 
-            if not p._param_array_.flags['C_CONTIGUOUS']:
+            if not p.param_array.flags['C_CONTIGUOUS']:
+                raise ValueError, "This should not happen! Please write an email to the developers with the code, which reproduces this error. All parameter arrays must be C_CONTIGUOUS"
                 import ipdb;ipdb.set_trace()
-            p._param_array_.data = self._param_array_[pslice].data
-            p._gradient_array_.data = self._gradient_array_[pslice].data
+            p.param_array.data = self.param_array[pslice].data
+            p.full_gradient.data = self.full_gradient[pslice].data
 
             self._param_slices_.append(pslice)
 
@@ -898,46 +893,22 @@ class Parameterizable(OptimizationHandlable):
         self.notify_observers(which=which)
 
     #===========================================================================
-    # TODO: not working yet
+    # Pickling
     #===========================================================================
+    def __setstate__(self, state):
+        super(Parameterizable, self).__setstate__(state)
+        self._connect_parameters()
+        self._connect_fixes()
+        self._notify_parent_change()
+
+        self.parameters_changed()
+
     def copy(self):
-        """Returns a (deep) copy of the current model"""
-        #raise NotImplementedError, "Copy is not yet implemented, TODO: Observable hierarchy"
-        import copy
-        from .index_operations import ParameterIndexOperations, ParameterIndexOperationsView
-        from .lists_and_dicts import ArrayList
-        
-        param_mapping = [[] for _ in range(self.num_params)]
-
-        dc = dict()
-        for k, v in self.__dict__.iteritems():
-            if k not in ['_parent_', '_parameters_', '_parent_index_', '_observer_callables_'] + self.parameter_names(recursive=False):
-                if v in self._parameters_:
-                    param_mapping[self._parameters_.index(v)] += [k]
-                elif isinstance(v, (Constrainable, ParameterIndexOperations, ParameterIndexOperationsView)):
-                    dc[k] = v.copy()
-                else:
-                    dc[k] = copy.deepcopy(v)
-            if k == '_parameters_':
-                params = [p.copy() for p in v]
-
-        dc['_parent_'] = None
-        dc['_parent_index_'] = None
-        dc['_observer_callables_'] = []
-        dc['_parameters_'] = ArrayList()
-        dc['constraints'].clear()
-        dc['priors'].clear()
-        dc['size'] = 0
-
-        s = self.__new__(self.__class__)
-        s.__dict__ = dc
-
-        for p, mlist in zip(params, param_mapping):
-            s.add_parameter(p, _ignore_added_names=True)
-            for m in mlist:
-                setattr(s, m, p)
-        return s
-
+        c = super(Parameterizable, self).copy()
+        c._connect_parameters()
+        c._connect_fixes()
+        c._notify_parent_change()
+        return c
     #===========================================================================
     # From being parentable, we have to define the parent_change notification
     #===========================================================================

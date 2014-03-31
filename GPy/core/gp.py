@@ -214,28 +214,3 @@ class GP(Model):
         """
         return self.kern.input_sensitivity()
 
-    def _getstate(self):
-        """
-
-        Get the current state of the class, here we return everything that is
-        needed to recompute the model.
-
-        """
-
-        return []#Model._getstate(self) + [self.X,
-#                 self.num_data,
-#                 self.input_dim,
-#                 self.kern,
-#                 self.likelihood,
-#                 self.output_dim,
-#                 ]
-
-    def _setstate(self, state):
-        return 
-        self.output_dim = state.pop()
-        self.likelihood = state.pop()
-        self.kern = state.pop()
-        self.input_dim = state.pop()
-        self.num_data = state.pop()
-        self.X = state.pop()
-        Model._setstate(self, state)

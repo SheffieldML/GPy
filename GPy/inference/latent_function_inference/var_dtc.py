@@ -35,9 +35,11 @@ class VarDTC(object):
         return param_to_array(np.sum(np.square(Y)))
 
     def __getstate__(self):
+        # has to be overridden, as Cacher objects cannot be pickled. 
         return self.limit
 
     def __setstate__(self, state):
+        # has to be overridden, as Cacher objects cannot be pickled. 
         self.limit = state
         from ...util.caching import Cacher
         self.get_trYYT = Cacher(self._get_trYYT, self.limit)

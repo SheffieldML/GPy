@@ -29,7 +29,6 @@ class ExactGaussianInference(object):
         """
         N, D = Y.shape
         if (N>D):
-            print "WARNING: D>N we still need caching of L, such that L*L^T = Y, although fine here"
             return Y
         else:
             #if Y in self.cache, return self.Cache[Y], else store Y in cache and return L.

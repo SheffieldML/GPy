@@ -17,7 +17,7 @@ class ParametersChangedMeta(type):
         instance.parameters_changed()
         return instance
 
-class Parameterized(Parameterizable, Pickleable):
+class Parameterized(Parameterizable):
     """
     Parameterized class
 

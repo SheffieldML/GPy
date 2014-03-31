@@ -2,8 +2,12 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-import sympy as sym
-from sympy.utilities.lambdify import lambdify
+try:
+    import sympy as sym
+    sympy_available=True
+    from sympy.utilities.lambdify import lambdify
+except ImportError:
+    sympy_available=False
 import link_functions
 from scipy import stats, integrate
 from scipy.special import gammaln, gamma, erf, polygamma
@@ -56,7 +60,7 @@ class Symbolic(Likelihood):
 
         # these are arguments for computing derivatives.
         derivative_arguments = self._sp_f + self._sp_theta
-        
+
         # Do symbolic work to compute derivatives.
         self._log_likelihood_derivatives = {theta.name : sym.diff(self._sp_log_likelihood,theta).simplify() for theta in derivative_arguments}
         self._log_likelihood_second_derivatives = {theta.name : sym.diff(self._log_likelihood_derivatives['f'],theta).simplify() for theta in derivative_arguments}
@@ -78,7 +82,7 @@ class Symbolic(Likelihood):
         self.log_concave = log_concave
 
         # initialise code arguments
-        self._arguments = {} 
+        self._arguments = {}
 
         # generate the code for the likelihood and derivatives
         self._gen_code()
@@ -95,7 +99,7 @@ class Symbolic(Likelihood):
         setattr(self, '_first_derivative_code', {key: lambdify(self.arg_list, self._log_likelihood_derivatives[key], func_modules) for key in self._log_likelihood_derivatives.keys()})
         setattr(self, '_second_derivative_code', {key: lambdify(self.arg_list, self._log_likelihood_second_derivatives[key], func_modules) for key in self._log_likelihood_second_derivatives.keys()})
         setattr(self, '_third_derivative_code', {key: lambdify(self.arg_list, self._log_likelihood_third_derivatives[key], func_modules) for key in self._log_likelihood_third_derivatives.keys()})
-            
+
         # TODO: compute EP code parts based on logZ. We need dlogZ/dmu, d2logZ/dmu2 and dlogZ/dtheta
 
     def parameters_changed(self):
@@ -157,7 +161,7 @@ class Symbolic(Likelihood):
         :type inv_inv_link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param Y_metadata: Y_metadata 
+        :param Y_metadata: Y_metadata
         :returns: likelihood evaluated for this point
         :rtype: float
 
@@ -175,12 +179,12 @@ class Symbolic(Likelihood):
         :type inv_inv_link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
-        :param Y_metadata: Y_metadata 
+        :param Y_metadata: Y_metadata
         :returns: gradient of likelihood with respect to each point.
         :rtype: Nx1 array
 
         """
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape 
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         self._arguments_update(inv_link_f, y)
         return self._first_derivative_code['f'](**self._arguments)
 
@@ -204,28 +208,28 @@ class Symbolic(Likelihood):
             distribution for y_i depends only on link(f_i) not on
             link(f_(j!=i))
         """
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape 
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         self._arguments_update(inv_link_f, y)
         return self._second_derivative_code['f'](**self._arguments)
 
     def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape 
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         self._arguments_update(inv_link_f, y)
         return self._third_derivative_code['f'](**self._arguments)
         raise NotImplementedError
 
     def dlogpdf_link_dtheta(self, inv_link_f, y, Y_metadata=None):
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape 
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         self._arguments_update(inv_link_f, y)
         return np.hstack([self._first_derivative_code[theta.name](**self._arguments) for theta in self._sp_theta]).sum(0)
-            
+
     def dlogpdf_dlink_dtheta(self, inv_link_f, y, Y_metadata=None):
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape 
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         self._arguments_update(inv_link_f, y)
         return np.hstack([self._second_derivative_code[theta.name](**self._arguments) for theta in self._sp_theta])
 
     def d2logpdf_dlink2_dtheta(self, inv_link_f, y, Y_metadata=None):
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape 
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         self._arguments_update(inv_link_f, y)
         return np.hstack([self._third_derivative_code[theta.name](**self._arguments) for theta in self._sp_theta])
 

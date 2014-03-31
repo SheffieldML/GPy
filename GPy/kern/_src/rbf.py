@@ -80,8 +80,6 @@ class RBF(Stationary):
 
             #contributions from psi0:
             self.variance.gradient = np.sum(dL_dpsi0)
-            if self._debug:
-                num_grad = self.lengthscale.gradient.copy()
             self.lengthscale.gradient = 0.
 
             #from psi1
@@ -101,8 +99,6 @@ class RBF(Stationary):
             else:
                 self.lengthscale.gradient += self._weave_psi2_lengthscale_grads(dL_dpsi2, psi2, Zdist_sq, S, mudist_sq, l2)
 
-            if self._debug:
-                import ipdb;ipdb.set_trace()
             self.variance.gradient += 2.*np.sum(dL_dpsi2 * psi2)/self.variance
 
         else:

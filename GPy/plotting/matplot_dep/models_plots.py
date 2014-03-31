@@ -53,8 +53,8 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         which_data_rows = slice(None)
     if which_data_ycols == 'all':
         which_data_ycols = np.arange(model.output_dim)
-    if len(which_data_ycols)==0:
-        raise ValueError('No data selected for plotting')
+    #if len(which_data_ycols)==0:
+        #raise ValueError('No data selected for plotting')
     if ax is None:
         fig = pb.figure(num=fignum)
         ax = fig.add_subplot(111)

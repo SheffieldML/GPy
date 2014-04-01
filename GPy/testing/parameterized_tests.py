@@ -7,7 +7,7 @@ import unittest
 import GPy
 import numpy as np
 from GPy.core.parameterization.parameter_core import HierarchyError
-from GPy.core.parameterization.array_core import ObsAr
+from GPy.core.parameterization.observable_array import ObsAr
 
 class ArrayCoreTest(unittest.TestCase):
     def setUp(self):

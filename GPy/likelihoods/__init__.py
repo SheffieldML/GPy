@@ -7,3 +7,4 @@ from student_t import StudentT
 from likelihood import Likelihood
 from mixed_noise import MixedNoise
 from symbolic import Symbolic
+from negative_binomial import Negative_binomial

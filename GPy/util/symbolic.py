@@ -1,11 +1,47 @@
-from sympy import Function, S, oo, I, cos, sin, asin, log, erf, pi, exp, sqrt, sign, gamma
+from sympy import Function, S, oo, I, cos, sin, asin, log, erf, pi, exp, sqrt, sign, gamma,polygamma
 
 class gammaln(Function):
     nargs = 1
+
+    def fdiff(self, argindex=1):
+        x=self.args[0]
+        return polygamma(0, x)
+
     @classmethod
     def eval(cls, x):
-        return log(gamma(x))
+        if x.is_Number:
+            return log(gamma(x))
     
+
+class ln_cum_gaussian(Function):
+    nargs = 1
+
+    def fdiff(self, argindex=1):
+        x = self.args[0]
+        return 1/cum_gaussian(x)*gaussian(x)
+
+    @classmethod
+    def eval(cls, x):
+        if x.is_Number:
+            return log(cum_gaussian(x))
+
+class cum_gaussian(Function):
+    nargs = 1
+    def fdiff(self, argindex=1):
+        x = self.args[0]
+        return gaussian(x)
+
+    @classmethod
+    def eval(cls, x):
+        if x.is_Number:
+            return 0.5*(1+erf(sqrt(2)/2*x))
+
+class gaussian(Function):
+    nargs = 1
+    @classmethod
+    def eval(cls, x):
+        return 1/sqrt(2*pi)*exp(-0.5*x*x)
+
 
 class ln_diff_erf(Function):
     nargs = 2

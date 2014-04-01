@@ -331,7 +331,7 @@ def football_data(season='1314', data_set='football_data'):
 
 # This will be for downloading google trends data.
 def google_trends(query_terms=['big data', 'machine learning', 'data science'], data_set='google_trends'):
-    """Data downloaded from Google trends for given query terms."""
+    """Data downloaded from Google trends for given query terms. Warning, if you use this function multiple times in a row you get blocked due to terms of service violations."""
     # Inspired by this notebook:
     # http://nbviewer.ipython.org/github/sahuguet/notebooks/blob/master/GoogleTrends%20meet%20Notebook.ipynb
 

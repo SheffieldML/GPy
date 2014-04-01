@@ -13,7 +13,7 @@ from ...core.parameterization.transformations import Logexp
 
 class Symbolic(Kern):
     """
-    A kernel object, where all the hard work in done by sympy.
+    A kernel object, where all the hard work is done by sympy.
 
     :param k: the covariance function
     :type k: a positive definite sympy function of x_0, z_0, x_1, z_1, x_2, z_2...

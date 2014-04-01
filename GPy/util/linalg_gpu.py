@@ -16,6 +16,8 @@ try:
     # logDiagSum(A, A.shape[0]+1)
     logDiagSum = ReductionKernel(np.float64, neutral="0", reduce_expr="a+b", map_expr="i%step==0?log(x[i]):0", arguments="double *x, int step")
     
+    strideSum = ReductionKernel(np.float64, neutral="0", reduce_expr="a+b", map_expr="i%step==0?x[i]:0", arguments="double *x, int step")
+    
     #=======================================================================================
     # Element-wise functions
     #=======================================================================================

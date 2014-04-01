@@ -26,8 +26,8 @@ class RBF(Stationary):
         self.weave_options = {}
         self.group_spike_prob = False
         
-        if self.useGPU:
-            self.psicomp = PSICOMP_SSRBF()
+#         if self.useGPU:
+#             self.psicomp = PSICOMP_SSRBF()
             
 
     def K_of_r(self, r):

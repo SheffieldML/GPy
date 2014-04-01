@@ -11,6 +11,9 @@ from ...core.parameterization import variational
 from psi_comp import ssrbf_psi_comp
 from psi_comp.ssrbf_psi_gpucomp import PSICOMP_SSRBF
 
+import pycuda.gpuarray as gpuarray
+import pycuda.autoinit
+
 class RBF(Stationary):
     """
     Radial Basis Function kernel, aka squared-exponential, exponentiated quadratic or Gaussian kernel:
@@ -26,8 +29,8 @@ class RBF(Stationary):
         self.weave_options = {}
         self.group_spike_prob = False
         
-#         if self.useGPU:
-#             self.psicomp = PSICOMP_SSRBF()
+        if self.useGPU:
+            self.psicomp = PSICOMP_SSRBF()
             
 
     def K_of_r(self, r):
@@ -70,6 +73,13 @@ class RBF(Stationary):
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         # Spike-and-Slab GPLVM
         if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
+            dL_dpsi0_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi0))
+            dL_dpsi1_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi1))
+            dL_dpsi2_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi2))
+            self.psicomp.update_gradients_expectations(dL_dpsi0_gpu, dL_dpsi1_gpu, dL_dpsi2_gpu, self.variance, self.lengthscale, Z, variational_posterior)
+            vg = self.variance.gradient.copy()
+            lg = self.lengthscale.gradient.copy()
+            
             _, _dpsi1_dvariance, _, _, _, _, _dpsi1_dlengthscale = ssrbf_psi_comp._psi1computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
             _, _dpsi2_dvariance, _, _, _, _, _dpsi2_dlengthscale = ssrbf_psi_comp._psi2computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
 
@@ -89,6 +99,9 @@ class RBF(Stationary):
                 self.lengthscale.gradient += (dL_dpsi2[:,:,:,None] * _dpsi2_dlengthscale).reshape(-1,self.input_dim).sum(axis=0)
             else:
                 self.lengthscale.gradient += (dL_dpsi2[:,:,:,None] * _dpsi2_dlengthscale).sum()
+                
+            print np.abs(vg-self.variance.gradient)
+            print np.abs(lg-self.lengthscale.gradient)
 
         elif isinstance(variational_posterior, variational.NormalPosterior):
             l2 = self.lengthscale**2

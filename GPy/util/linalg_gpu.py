@@ -25,5 +25,23 @@ try:
     
     # log(1.0-X)
     logOne = ElementwiseKernel("double *in, double *out", "out[i] = log(1.-in[i])", "logOne_element")
+    
+    # multiplication with broadcast on the last dimension
+    mul_bcast = ElementwiseKernel("double *out, double *shorter, double *longer, int shorter_size", "out[i] = longer[i]*shorter[i%shorter_size]", "mul_bcast")
+    
+    # sum through the middle dimension (size_2) of a 3D matrix (size_1, size_2, size_3) 
+    sum_axis = ElementwiseKernel("double *out, double *in, int size_1, int size_2", "out[i] += sum_axis_element(in, size_1, size_2, i)", "sum_axis",preamble="""        
+        __device__ double sum_axis_element(double *in, int size_1, int size_2, int idx)
+        {
+            int k = idx/size_1;
+            int i = idx%size_1;
+            double sum=0;
+            for(int j=0;j<size_2;j++) {
+                sum += in[(k*size_2+j)*size_1+i];
+            }
+            return sum;
+        }
+        """)
+    
 except:
     pass

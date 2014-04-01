@@ -231,8 +231,8 @@ try:
             double S_c = S[IDX_NQ(n,q)];
             double l_c = l[q];
             double l_sqrt_c = sqrt(l[q]);
-            double psi2exp1_c = psi1exp1[IDX_NMMQ(n,m1,m2,q)];
-            double psi2exp2_c = psi1exp2[IDX_MMQ(m1,m2,q)];
+            double psi2exp1_c = psi2exp1[IDX_NMMQ(n,m1,m2,q)];
+            double psi2exp2_c = psi2exp2[IDX_MMQ(m1,m2,q)];
 
             double dZ = Z1_c - Z2_c;
             double muZ = mu[IDX_NQ(n,q)] - (Z1_c+Z2_c)/2.0;
@@ -246,7 +246,7 @@ try:
             dpsi2_dgamma[IDX_NMMQ(n,m1,m2,q)] = var2*neq*(psi2exp1_c/denom_sqrt - psi2exp2_c);
             dpsi2_dmu[IDX_NMMQ(n,m1,m2,q)] = var2*neq*(-2.0*psi2_common*muZ*psi2exp1_c);
             dpsi2_dS[IDX_NMMQ(n,m1,m2,q)] = var2*neq*(psi2_common*(2.0*muZ*muZ/(2.0*S_c+l_c)-1.0)*psi2exp1_c);
-            dpsi2_dZ[IDX_NMMQ(n,m1,m2,q)] = var2*neq*(psi2_common*(dZ*denom/-2.0+muZ)*psi2exp1_c-gamma1*Z_c/l_c*psi2exp2_c)*2.0;
+            dpsi2_dZ[IDX_NMMQ(n,m1,m2,q)] = var2*neq*(psi2_common*(dZ*denom/-2.0+muZ)*psi2exp1_c-gamma1*Z1_c/l_c*psi2exp2_c)*2.0;
             return var2*neq*(psi2_common*(S_c/l_c+dZ*dZ*denom/(4.0*l_c)+muZ*muZ/(2.0*S_c+l_c))*psi2exp1_c+gamma1*Z2/(2.0*l_c)*psi2exp2_c)*l_sqrt_c*2.0;    
         }
         """)
@@ -255,8 +255,8 @@ except:
     pass
 
 class PSICOMP_SSRBF(object):
-    def __init__(self, cublas_handle):
-        self.cuhandle = cublas_handle
+    def __init__(self):
+        self.cublas_handle = cublas.cublasCreate()
         self.gpuCache = None
     
     def _initGPUCache(self, N, M, Q):
@@ -269,17 +269,45 @@ class PSICOMP_SSRBF(object):
                              'gamma_gpu'            :gpuarray.empty((N,Q),np.float64,order='F'),
                              'logGamma_gpu'         :gpuarray.empty((N,Q),np.float64,order='F'),
                              'log1Gamma_gpu'        :gpuarray.empty((N,Q),np.float64,order='F'),
-                             'logpsidenom_gpu'      :gpuarray.empty((N,Q),np.float64,order='F'),
+                             'logpsi1denom_gpu'      :gpuarray.empty((N,Q),np.float64,order='F'),
+                             'logpsi2denom_gpu'      :gpuarray.empty((N,Q),np.float64,order='F'),
                              'psi0_gpu'             :gpuarray.empty((N,),np.float64,order='F'),
                              'psi1_gpu'             :gpuarray.empty((N,M),np.float64,order='F'),
                              'psi2_gpu'             :gpuarray.empty((N,M,M),np.float64,order='F'),
+                             # derivatives psi1
+                             'psi1_neq_gpu'         :gpuarray.empty((N,M,Q),np.float64, order='F'),
+                             'psi1exp1_gpu'         :gpuarray.empty((N,M,Q),np.float64, order='F'),
+                             'psi1exp2_gpu'         :gpuarray.empty((N,M,Q),np.float64, order='F'),
+                             'dpsi1_dvar_gpu'       :gpuarray.empty((N,M),np.float64, order='F'),
+                             'dpsi1_dl_gpu'         :gpuarray.empty((N,M,Q),np.float64, order='F'),
+                             'dpsi1_dZ_gpu'         :gpuarray.empty((N,M,Q),np.float64, order='F'),
+                             'dpsi1_dgamma_gpu'     :gpuarray.empty((N,M,Q),np.float64, order='F'),
+                             'dpsi1_dmu_gpu'        :gpuarray.empty((N,M,Q),np.float64, order='F'),
+                             'dpsi1_dS_gpu'         :gpuarray.empty((N,M,Q),np.float64, order='F'),
+                             # derivatives psi2
+                             'psi2_neq_gpu'         :gpuarray.empty((N,M,M,Q),np.float64, order='F'),
+                             'psi2exp1_gpu'         :gpuarray.empty((N,M,M,Q),np.float64, order='F'),
+                             'psi2exp2_gpu'         :gpuarray.empty((M,M,Q),np.float64, order='F'),
+                             'dpsi2_dvar_gpu'       :gpuarray.empty((N,M,M),np.float64, order='F'),
+                             'dpsi2_dl_gpu'         :gpuarray.empty((N,M,M,Q),np.float64, order='F'),
+                             'dpsi2_dZ_gpu'         :gpuarray.empty((N,M,M,Q),np.float64, order='F'),
+                             'dpsi2_dgamma_gpu'     :gpuarray.empty((N,M,M,Q),np.float64, order='F'),
+                             'dpsi2_dmu_gpu'        :gpuarray.empty((N,M,M,Q),np.float64, order='F'),
+                             'dpsi2_dS_gpu'         :gpuarray.empty((N,M,M,Q),np.float64, order='F'),
+                             # gradients
+                             'grad_l_gpu'           :gpuarray.empty((Q,),np.float64,order='F'),
+                             'grad_Z_gpu'           :gpuarray.empty((M,Q),np.float64,order='F'),
+                             'grad_mu_gpu'          :gpuarray.empty((N,Q),np.float64,order='F'),
+                             'grad_S_gpu'           :gpuarray.empty((N,Q),np.float64,order='F'),
+                             'grad_gamma_gpu'       :gpuarray.empty((N,Q),np.float64,order='F'),
                              }
-    
+
     def psicomputations(self, variance, lengthscale, Z, mu, S, gamma):
+        """Compute Psi statitsitcs"""
         if isinstance(lengthscale, np.ndarray) and len(lengthscale)>1:
-            het_noise = True
+            ARD = True
         else:
-            het_noise = False
+            ARD = False
         
         N = mu.shape[0]
         M = Z.shape[0]
@@ -293,12 +321,13 @@ class PSICOMP_SSRBF(object):
         gamma_gpu = self.gpuCache['gamma_gpu']
         logGamma_gpu = self.gpuCache['logGamma_gpu']
         log1Gamma_gpu = self.gpuCache['log1Gamma_gpu']
-        logpsidenom_gpu = self.gpuCache['logpsidenom_gpu']
+        logpsi1denom_gpu = self.gpuCache['logpsi1denom_gpu']
+        logpsi2denom_gpu = self.gpuCache['logpsi2denom_gpu']
         psi0_gpu = self.gpuCache['psi0_gpu']
         psi1_gpu = self.gpuCache['psi1_gpu']
         psi2_gpu = self.gpuCache['psi2_gpu']
 
-        if het_noise:
+        if ARD:
             l_gpu.set(np.asfortranarray(lengthscale**2))
         else:
             l_gpu.fill(lengthscale*lengthscale)
@@ -308,15 +337,106 @@ class PSICOMP_SSRBF(object):
         gamma_gpu.set(np.asfortranarray(gamma))
         linalg_gpu.log(gamma_gpu,logGamma_gpu)
         linalg_gpu.logOne(gamma_gpu,log1Gamma_gpu)
+        comp_logpsidenom(logpsi1denom_gpu, S_gpu,l_gpu,1.0,N)
+        comp_logpsidenom(logpsi2denom_gpu, S_gpu,l_gpu,2.0,N)
         
-        psi0_gpu.fill(variance)
-        comp_logpsidenom(logpsidenom_gpu, S_gpu,l_gpu,1.0,N)
-        comp_psi1(psi1_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsidenom_gpu, N, M, Q)
-        comp_logpsidenom(logpsidenom_gpu, S_gpu,l_gpu,2.0,N)
-        comp_psi2(psi2_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsidenom_gpu, N, M, Q)
+        comp_psi1(psi1_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi1denom_gpu, N, M, Q)
+        comp_psi2(psi2_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi2denom_gpu, N, M, Q)
         
         return psi0_gpu.get(), psi1_gpu.get(), psi2_gpu.get()
+
+    def _psiDercomputations(self, variance, lengthscale, Z, mu, S, gamma):
+        """Compute the derivatives w.r.t. Psi statistics"""        
+        N, M, Q = mu.shape[0],Z.shape[0], mu.shape[1]
         
+        self._initGPUCache(N,M,Q)
+        l_gpu = self.gpuCache['l_gpu']
+        Z_gpu = self.gpuCache['Z_gpu']
+        mu_gpu = self.gpuCache['mu_gpu']
+        S_gpu = self.gpuCache['S_gpu']
+        gamma_gpu = self.gpuCache['gamma_gpu']
+        logGamma_gpu = self.gpuCache['logGamma_gpu']
+        log1Gamma_gpu = self.gpuCache['log1Gamma_gpu']
+        logpsi1denom_gpu = self.gpuCache['logpsi1denom_gpu']
+        logpsi2denom_gpu = self.gpuCache['logpsi2denom_gpu']
+
+        psi1_neq_gpu = self.gpuCache['psi1_neq_gpu']
+        psi1exp1_gpu = self.gpuCache['psi1exp1_gpu']
+        psi1exp2_gpu = self.gpuCache['psi1exp2_gpu']
+        dpsi1_dvar_gpu = self.gpuCache['dpsi1_dvar_gpu']
+        dpsi1_dl_gpu = self.gpuCache['dpsi1_dl_gpu']
+        dpsi1_dZ_gpu = self.gpuCache['dpsi1_dZ_gpu']
+        dpsi1_dgamma_gpu = self.gpuCache['dpsi1_dgamma_gpu']
+        dpsi1_dmu_gpu = self.gpuCache['dpsi1_dmu_gpu']
+        dpsi1_dS_gpu = self.gpuCache['dpsi1_dS_gpu']
+
+        psi2_neq_gpu = self.gpuCache['psi2_neq_gpu']
+        psi2exp1_gpu = self.gpuCache['psi2exp1_gpu']
+        psi2exp2_gpu = self.gpuCache['psi2exp2_gpu']
+        dpsi2_dvar_gpu = self.gpuCache['dpsi2_dvar_gpu']
+        dpsi2_dl_gpu = self.gpuCache['dpsi2_dl_gpu']
+        dpsi2_dZ_gpu = self.gpuCache['dpsi2_dZ_gpu']
+        dpsi2_dgamma_gpu = self.gpuCache['dpsi2_dgamma_gpu']
+        dpsi2_dmu_gpu = self.gpuCache['dpsi2_dmu_gpu']
+        dpsi2_dS_gpu = self.gpuCache['dpsi2_dS_gpu']
+
+        #==========================================================================================================
+        # Assuming the l_gpu, Z_gpu, mu_gpu, S_gpu, gamma_gpu, logGamma_gpu, log1Gamma_gpu, 
+        # logpsi1denom_gpu, logpsi2denom_gpu has been synchonized.
+        #==========================================================================================================
+        
+        # psi1 derivatives
+        comp_dpsi1_dvar(dpsi1_dvar_gpu, psi1_neq_gpu, psi1exp1_gpu,psi1exp2_gpu, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi1denom_gpu, N, M, Q)
+        comp_psi1_der(dpsi1_dl_gpu,dpsi1_dmu_gpu,dpsi1_dS_gpu,dpsi1_dgamma_gpu, dpsi1_dZ_gpu, psi1_neq_gpu,psi1exp1_gpu,psi1exp2_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, gamma_gpu, N, M, Q)
+
+        # psi2 derivatives
+        comp_dpsi2_dvar(dpsi2_dvar_gpu, psi2_neq_gpu, psi2exp1_gpu,psi2exp2_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi2denom_gpu, N, M, Q)
+        comp_psi2_der(dpsi2_dl_gpu,dpsi2_dmu_gpu,dpsi2_dS_gpu,dpsi2_dgamma_gpu, dpsi2_dZ_gpu, psi2_neq_gpu,psi2exp1_gpu,psi2exp2_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, gamma_gpu, N, M, Q)
+
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
+        mu = variational_posterior.mean
+        S = variational_posterior.variance
+        gamma = variational_posterior.binary_prob
+        self._psiDercomputations(variance, lengthscale, Z, mu, S, gamma)
+        N, M, Q = mu.shape[0],Z.shape[0], mu.shape[1]
+        
+        if isinstance(lengthscale, np.ndarray) and len(lengthscale)>1:
+            ARD = True
+        else:
+            ARD = False
+            
+        dpsi1_dvar_gpu = self.gpuCache['dpsi1_dvar_gpu']
+        dpsi2_dvar_gpu = self.gpuCache['dpsi2_dvar_gpu']
+        dpsi1_dl_gpu = self.gpuCache['dpsi1_dl_gpu']
+        dpsi2_dl_gpu = self.gpuCache['dpsi2_dl_gpu']
+        psi1_comb_gpu = self.gpuCache['psi1_neq_gpu']
+        psi2_comb_gpu = self.gpuCache['psi1_neq_gpu']
+        grad_dl_gpu = self.gpuCache['grad_l_gpu']
+        
+        # variance
+        variance.gradient = cublas.cublasDasum(self.cublas_handle, dL_dpsi0.size, dL_dpsi0, 1) \
+                            + cublas.cublasDdot(self.cublas_handle, dL_dpsi1.size, dL_dpsi1.gpudata, 1, dpsi1_dvar_gpu.gpudata, 1) \
+                            + cublas.cublasDdot(self.cublas_handle, dL_dpsi2.size, dL_dpsi2.gpudata, 1, dpsi2_dvar_gpu.gpudata, 1)
+
+        # lengscale
+        if ARD:
+            grad_dl_gpu.fill(0.)
+            linalg_gpu.mul_bcast(psi1_comb_gpu, dL_dpsi1, dpsi1_dl_gpu, dL_dpsi1.size)
+            linalg_gpu.sum_axis(grad_dl_gpu, psi1_comb_gpu, 1, N*M)
+            linalg_gpu.mul_bcast(psi2_comb_gpu, dL_dpsi2, dpsi2_dl_gpu, dL_dpsi2.size)
+            linalg_gpu.sum_axis(grad_dl_gpu, psi2_comb_gpu, 1, N*M*M)            
+            lengthscale.gradient = grad_dl_gpu.get()
+        else:
+            linalg_gpu.mul_bcast(psi1_comb_gpu, dL_dpsi1, dpsi1_dl_gpu, dL_dpsi1.size)
+            linalg_gpu.mul_bcast(psi2_comb_gpu, dL_dpsi2, dpsi2_dl_gpu, dL_dpsi2.size)
+            lengthscale.gradient = cublas.cublasDasum(self.cublas_handle, psi1_comb_gpu.size, psi1_comb_gpu, 1) \
+                                    + cublas.cublasDasum(self.cublas_handle, psi2_comb_gpu.size, psi2_comb_gpu, 1)            
+                
+    def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, mu, S, gamma):
+        pass
+        
+    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, mu, S, gamma):
+        pass
 
 @Cache_this(limit=1)
 def _Z_distances(Z):
@@ -474,9 +594,9 @@ def _psi2computations(variance, lengthscale, Z, mu, S, gamma):
     
     #comp_psi2(psi2_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi2denom_gpu, N, M, Q)
 
-    comp_dpsi2_dvar(dpsi2_dvar_gpu,psi2_neq_gpu,psi2exp1_gpu,psi2exp2_gpu, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi2denom_gpu, N, M, Q)
+    comp_dpsi2_dvar(dpsi2_dvar_gpu,psi2_neq_gpu,psi2exp1_gpu,psi2exp2_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi2denom_gpu, N, M, Q)
     comp_psi2_der(dpsi2_dl_gpu,dpsi2_dmu_gpu,dpsi2_dS_gpu,dpsi2_dgamma_gpu, dpsi2_dZ_gpu, psi2_neq_gpu,psi2exp1_gpu,psi2exp2_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, gamma_gpu, N, M, Q)
     
-    print np.abs(dpsi2_dvar_gpu.get()-_dpsi2_dvariance).max()
+#     print np.abs(dpsi2_dvar_gpu.get()-_dpsi2_dvariance).max()
 
     return _psi2, _dpsi2_dvariance, _dpsi2_dgamma, _dpsi2_dmu, _dpsi2_dS, _dpsi2_dZ, _dpsi2_dlengthscale

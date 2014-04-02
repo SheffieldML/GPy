@@ -213,7 +213,7 @@ class VarDTC_GPU(object):
         cublas.cublasDtrsm(self.cublas_handle , 'L', 'L', 'N', 'N', num_inducing, num_inducing, np.float64(1.0), Lm_gpu.gpudata, num_inducing, LmInvPsi2LmInvT_gpu.gpudata, num_inducing)
         cublas.cublasDtrsm(self.cublas_handle , 'r', 'L', 'T', 'N', num_inducing, num_inducing, np.float64(1.0), Lm_gpu.gpudata, num_inducing, LmInvPsi2LmInvT_gpu.gpudata, num_inducing)
         #tr_LmInvPsi2LmInvT = cublas.cublasDasum(self.cublas_handle, num_inducing, LmInvPsi2LmInvT_gpu.gpudata, num_inducing+1)
-        tr_LmInvPsi2LmInvT = strideSum(LmInvPsi2LmInvT_gpu, num_inducing+1)
+        tr_LmInvPsi2LmInvT = float(strideSum(LmInvPsi2LmInvT_gpu, num_inducing+1).get())
         print np.abs(vvt-vvt_gpu.get()).max()
         print np.abs(np.trace(LmInvPsi2LmInvT)-tr_LmInvPsi2LmInvT)
         
@@ -255,8 +255,8 @@ class VarDTC_GPU(object):
             logL_R = -num_data*np.log(beta)
         logL_old = -(output_dim*(num_data*log_2_pi+logL_R+psi0_full-np.trace(LmInvPsi2LmInvT))+YRY_full-bbt)/2.-output_dim*(-np.log(np.diag(Lm)).sum()+np.log(np.diag(LL)).sum())
         
-        logdetKmm = logDiagSum(Lm_gpu,num_inducing+1)
-        logdetLambda = logDiagSum(LL_gpu,num_inducing+1)
+        logdetKmm = float(logDiagSum(Lm_gpu,num_inducing+1).get())
+        logdetLambda = float(logDiagSum(LL_gpu,num_inducing+1).get())
         logL = -(output_dim*(num_data*log_2_pi+logL_R+psi0_full-tr_LmInvPsi2LmInvT)+YRY_full-bbt)/2.+output_dim*(logdetKmm-logdetLambda)
         print np.abs(logL_old - logL)
 

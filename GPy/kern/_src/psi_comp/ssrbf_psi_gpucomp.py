@@ -414,7 +414,7 @@ class PSICOMP_SSRBF(object):
         grad_dl_gpu = self.gpuCache['grad_l_gpu']
         
         # variance
-        variance.gradient = gpuarray.sum(dL_dpsi0) \
+        variance.gradient = gpuarray.sum(dL_dpsi0).get() \
                             + cublas.cublasDdot(self.cublas_handle, dL_dpsi1.size, dL_dpsi1.gpudata, 1, dpsi1_dvar_gpu.gpudata, 1) \
                             + cublas.cublasDdot(self.cublas_handle, dL_dpsi2.size, dL_dpsi2.gpudata, 1, dpsi2_dvar_gpu.gpudata, 1)
 
@@ -429,7 +429,7 @@ class PSICOMP_SSRBF(object):
         else:
             linalg_gpu.mul_bcast(psi1_comb_gpu, dL_dpsi1, dpsi1_dl_gpu, dL_dpsi1.size)
             linalg_gpu.mul_bcast(psi2_comb_gpu, dL_dpsi2, dpsi2_dl_gpu, dL_dpsi2.size)
-            lengthscale.gradient = gpuarray.sum(psi1_comb_gpu) + gpuarray.sum(psi2_comb_gpu)            
+            lengthscale.gradient = gpuarray.sum(psi1_comb_gpu).get() + gpuarray.sum(psi2_comb_gpu).get()
                 
     def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, mu, S, gamma):
         pass

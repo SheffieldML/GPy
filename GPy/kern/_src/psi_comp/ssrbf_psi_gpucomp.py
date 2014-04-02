@@ -234,7 +234,7 @@ try:
             double psi2exp1_c = psi2exp1[IDX_NMMQ(n,m1,m2,q)];
             double psi2exp2_c = psi2exp2[IDX_MMQ(m1,m2,q)];
 
-            double dZ = Z1_c - Z2_c;
+            double dZ = Z2_c - Z1_c;
             double muZ = mu[IDX_NQ(n,q)] - (Z1_c+Z2_c)/2.0;
             double Z2 = Z1_c*Z1_c+Z2_c*Z2_c;
             double denom = 2.0*S_c/l_c+1.0;

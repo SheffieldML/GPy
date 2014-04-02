@@ -246,7 +246,7 @@ try:
             dpsi2_dgamma[IDX_NMMQ(n,m1,m2,q)] = var2*neq*(psi2exp1_c/denom_sqrt - psi2exp2_c);
             dpsi2_dmu[IDX_NMMQ(n,m1,m2,q)] = var2*neq*(-2.0*psi2_common*muZ*psi2exp1_c);
             dpsi2_dS[IDX_NMMQ(n,m1,m2,q)] = var2*neq*(psi2_common*(2.0*muZ*muZ/(2.0*S_c+l_c)-1.0)*psi2exp1_c);
-            dpsi2_dZ[IDX_NMMQ(n,m1,m2,q)] = var2*neq*(psi2_common*(dZ*denom/-2.0+muZ)*psi2exp1_c-gamma1*Z1_c/l_c*psi2exp2_c)*2.0;
+            dpsi2_dZ[IDX_NMMQ(n,m1,m2,q)] = var2*neq*(psi2_common*(dZ*denom/-2.0+muZ)*psi2exp1_c-gamma1*Z2_c/l_c*psi2exp2_c)*2.0;
             return var2*neq*(psi2_common*(S_c/l_c+dZ*dZ*denom/(4.0*l_c)+muZ*muZ/(2.0*S_c+l_c))*psi2exp1_c+gamma1*Z2/(2.0*l_c)*psi2exp2_c)*l_sqrt_c*2.0;    
         }
         """)
@@ -411,7 +411,7 @@ class PSICOMP_SSRBF(object):
         dpsi2_dl_gpu = self.gpuCache['dpsi2_dl_gpu']
         psi1_comb_gpu = self.gpuCache['psi1_neq_gpu']
         psi2_comb_gpu = self.gpuCache['psi2_neq_gpu']
-        grad_dl_gpu = self.gpuCache['grad_l_gpu']
+        grad_l_gpu = self.gpuCache['grad_l_gpu']
         
         # variance
         variance.gradient = gpuarray.sum(dL_dpsi0).get() \
@@ -420,22 +420,78 @@ class PSICOMP_SSRBF(object):
 
         # lengscale
         if ARD:
-            grad_dl_gpu.fill(0.)
+            grad_l_gpu.fill(0.)
             linalg_gpu.mul_bcast(psi1_comb_gpu, dL_dpsi1, dpsi1_dl_gpu, dL_dpsi1.size)
-            linalg_gpu.sum_axis(grad_dl_gpu, psi1_comb_gpu, 1, N*M)
+            linalg_gpu.sum_axis(grad_l_gpu, psi1_comb_gpu, 1, N*M)
             linalg_gpu.mul_bcast(psi2_comb_gpu, dL_dpsi2, dpsi2_dl_gpu, dL_dpsi2.size)
-            linalg_gpu.sum_axis(grad_dl_gpu, psi2_comb_gpu, 1, N*M*M)            
-            lengthscale.gradient = grad_dl_gpu.get()
+            linalg_gpu.sum_axis(grad_l_gpu, psi2_comb_gpu, 1, N*M*M)            
+            lengthscale.gradient = grad_l_gpu.get()
         else:
             linalg_gpu.mul_bcast(psi1_comb_gpu, dL_dpsi1, dpsi1_dl_gpu, dL_dpsi1.size)
             linalg_gpu.mul_bcast(psi2_comb_gpu, dL_dpsi2, dpsi2_dl_gpu, dL_dpsi2.size)
             lengthscale.gradient = gpuarray.sum(psi1_comb_gpu).get() + gpuarray.sum(psi2_comb_gpu).get()
                 
-    def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, mu, S, gamma):
-        pass
+    def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
+        mu = variational_posterior.mean
+        S = variational_posterior.variance
+        gamma = variational_posterior.binary_prob
+        self._psiDercomputations(variance, lengthscale, Z, mu, S, gamma)
+        N, M, Q = mu.shape[0],Z.shape[0], mu.shape[1]
+
+        dpsi1_dZ_gpu = self.gpuCache['dpsi1_dZ_gpu']
+        dpsi2_dZ_gpu = self.gpuCache['dpsi2_dZ_gpu']
+        psi1_comb_gpu = self.gpuCache['psi1_neq_gpu']
+        psi2_comb_gpu = self.gpuCache['psi2_neq_gpu']
+        grad_Z_gpu = self.gpuCache['grad_Z_gpu']
+
+        grad_Z_gpu.fill(0.)
+        linalg_gpu.mul_bcast(psi1_comb_gpu, dL_dpsi1, dpsi1_dZ_gpu, dL_dpsi1.size)
+        linalg_gpu.sum_axis(grad_Z_gpu, psi1_comb_gpu, 1, N)
+        linalg_gpu.mul_bcast(psi2_comb_gpu, dL_dpsi2, dpsi2_dZ_gpu, dL_dpsi2.size)
+        linalg_gpu.sum_axis(grad_Z_gpu, psi2_comb_gpu, 1, N*M)
+        return grad_Z_gpu.get()
         
-    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, mu, S, gamma):
-        pass
+    def gradients_qX_expectations(self, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
+        mu = variational_posterior.mean
+        S = variational_posterior.variance
+        gamma = variational_posterior.binary_prob
+        self._psiDercomputations(variance, lengthscale, Z, mu, S, gamma)
+        N, M, Q = mu.shape[0],Z.shape[0], mu.shape[1]
+
+        dpsi1_dmu_gpu = self.gpuCache['dpsi1_dmu_gpu']
+        dpsi2_dmu_gpu = self.gpuCache['dpsi2_dmu_gpu']
+        dpsi1_dS_gpu = self.gpuCache['dpsi1_dS_gpu']
+        dpsi2_dS_gpu = self.gpuCache['dpsi2_dS_gpu']
+        dpsi1_dgamma_gpu = self.gpuCache['dpsi1_dgamma_gpu']
+        dpsi2_dgamma_gpu = self.gpuCache['dpsi2_dgamma_gpu']
+        psi1_comb_gpu = self.gpuCache['psi1_neq_gpu']
+        psi2_comb_gpu = self.gpuCache['psi2_neq_gpu']
+        grad_mu_gpu = self.gpuCache['grad_mu_gpu']
+        grad_S_gpu = self.gpuCache['grad_S_gpu']
+        grad_gamma_gpu = self.gpuCache['grad_gamma_gpu']
+        
+        # mu gradients
+        grad_mu_gpu.fill(0.)
+        linalg_gpu.mul_bcast(psi1_comb_gpu, dL_dpsi1, dpsi1_dmu_gpu, dL_dpsi1.size)
+        linalg_gpu.sum_axis(grad_mu_gpu, psi1_comb_gpu, N, M)
+        linalg_gpu.mul_bcast(psi2_comb_gpu, dL_dpsi2, dpsi2_dmu_gpu, dL_dpsi2.size)
+        linalg_gpu.sum_axis(grad_mu_gpu, psi2_comb_gpu, N, M*M)
+
+        # S gradients
+        grad_S_gpu.fill(0.)
+        linalg_gpu.mul_bcast(psi1_comb_gpu, dL_dpsi1, dpsi1_dS_gpu, dL_dpsi1.size)
+        linalg_gpu.sum_axis(grad_S_gpu, psi1_comb_gpu, N, M)
+        linalg_gpu.mul_bcast(psi2_comb_gpu, dL_dpsi2, dpsi2_dS_gpu, dL_dpsi2.size)
+        linalg_gpu.sum_axis(grad_S_gpu, psi2_comb_gpu, N, M*M)
+
+        # gamma gradients
+        grad_gamma_gpu.fill(0.)
+        linalg_gpu.mul_bcast(psi1_comb_gpu, dL_dpsi1, dpsi1_dgamma_gpu, dL_dpsi1.size)
+        linalg_gpu.sum_axis(grad_gamma_gpu, psi1_comb_gpu, N, M)
+        linalg_gpu.mul_bcast(psi2_comb_gpu, dL_dpsi2, dpsi2_dgamma_gpu, dL_dpsi2.size)
+        linalg_gpu.sum_axis(grad_gamma_gpu, psi2_comb_gpu, N, M*M)
+        
+        return grad_mu_gpu.get(), grad_S_gpu.get(), grad_gamma_gpu.get()
 
 @Cache_this(limit=1)
 def _Z_distances(Z):

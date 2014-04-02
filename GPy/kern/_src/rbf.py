@@ -73,36 +73,33 @@ class RBF(Stationary):
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         # Spike-and-Slab GPLVM
         if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
-            dL_dpsi0_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi0))
-            dL_dpsi1_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi1))
-            dL_dpsi2_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi2))
-            self.psicomp.update_gradients_expectations(dL_dpsi0_gpu, dL_dpsi1_gpu, dL_dpsi2_gpu, self.variance, self.lengthscale, Z, variational_posterior)
-            vg = self.variance.gradient.copy()
-            lg = self.lengthscale.gradient.copy()
-            
-            _, _dpsi1_dvariance, _, _, _, _, _dpsi1_dlengthscale = ssrbf_psi_comp._psi1computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
-            _, _dpsi2_dvariance, _, _, _, _, _dpsi2_dlengthscale = ssrbf_psi_comp._psi2computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
-
-            #contributions from psi0:
-            self.variance.gradient = np.sum(dL_dpsi0)
-
-            #from psi1
-            self.variance.gradient += np.sum(dL_dpsi1 * _dpsi1_dvariance)
-            if self.ARD:
-                self.lengthscale.gradient = (dL_dpsi1[:,:,None]*_dpsi1_dlengthscale).reshape(-1,self.input_dim).sum(axis=0)
+            if self.useGPU:
+                dL_dpsi0_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi0))
+                dL_dpsi1_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi1))
+                dL_dpsi2_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi2))
+                self.psicomp.update_gradients_expectations(dL_dpsi0_gpu, dL_dpsi1_gpu, dL_dpsi2_gpu, self.variance, self.lengthscale, Z, variational_posterior)
             else:
-                self.lengthscale.gradient = (dL_dpsi1[:,:,None]*_dpsi1_dlengthscale).sum()  
-
-            #from psi2
-            self.variance.gradient += (dL_dpsi2 * _dpsi2_dvariance).sum()
-            if self.ARD:
-                self.lengthscale.gradient += (dL_dpsi2[:,:,:,None] * _dpsi2_dlengthscale).reshape(-1,self.input_dim).sum(axis=0)
-            else:
-                self.lengthscale.gradient += (dL_dpsi2[:,:,:,None] * _dpsi2_dlengthscale).sum()
                 
-            print np.abs(vg-self.variance.gradient)
-            print np.abs(lg-self.lengthscale.gradient)
-
+                _, _dpsi1_dvariance, _, _, _, _, _dpsi1_dlengthscale = ssrbf_psi_comp._psi1computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
+                _, _dpsi2_dvariance, _, _, _, _, _dpsi2_dlengthscale = ssrbf_psi_comp._psi2computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
+    
+                #contributions from psi0:
+                self.variance.gradient = np.sum(dL_dpsi0)
+    
+                #from psi1
+                self.variance.gradient += np.sum(dL_dpsi1 * _dpsi1_dvariance)
+                if self.ARD:
+                    self.lengthscale.gradient = (dL_dpsi1[:,:,None]*_dpsi1_dlengthscale).reshape(-1,self.input_dim).sum(axis=0)
+                else:
+                    self.lengthscale.gradient = (dL_dpsi1[:,:,None]*_dpsi1_dlengthscale).sum()  
+    
+                #from psi2
+                self.variance.gradient += (dL_dpsi2 * _dpsi2_dvariance).sum()
+                if self.ARD:
+                    self.lengthscale.gradient += (dL_dpsi2[:,:,:,None] * _dpsi2_dlengthscale).reshape(-1,self.input_dim).sum(axis=0)
+                else:
+                    self.lengthscale.gradient += (dL_dpsi2[:,:,:,None] * _dpsi2_dlengthscale).sum()
+                
         elif isinstance(variational_posterior, variational.NormalPosterior):
             l2 = self.lengthscale**2
             if l2.size != self.input_dim:
@@ -141,6 +138,12 @@ class RBF(Stationary):
     def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         # Spike-and-Slab GPLVM
         if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
+            dL_dpsi1_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi1))
+            dL_dpsi2_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi2))
+            gZ = self.psicomp.gradients_Z_expectations(dL_dpsi1_gpu, dL_dpsi2_gpu, self.variance, self.lengthscale, Z, variational_posterior)
+
+            
+            
             _, _, _, _, _, _dpsi1_dZ, _ = ssrbf_psi_comp._psi1computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
             _, _, _, _, _, _dpsi2_dZ, _ = ssrbf_psi_comp._psi2computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
 
@@ -149,6 +152,8 @@ class RBF(Stationary):
 
             #psi2
             grad += (dL_dpsi2[:, :, :, None] * _dpsi2_dZ).sum(axis=0).sum(axis=1)
+
+            print np.abs(gZ - grad).max()
 
             return grad
 
@@ -174,6 +179,11 @@ class RBF(Stationary):
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         # Spike-and-Slab GPLVM
         if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
+            dL_dpsi1_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi1))
+            dL_dpsi2_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi2))
+            gmu,gS,gg = self.psicomp.gradients_qX_expectations(dL_dpsi1_gpu, dL_dpsi2_gpu, self.variance, self.lengthscale, Z, variational_posterior)
+            
+            
             ndata = variational_posterior.mean.shape[0]
 
             _, _, _dpsi1_dgamma, _dpsi1_dmu, _dpsi1_dS, _, _ = ssrbf_psi_comp._psi1computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
@@ -191,6 +201,8 @@ class RBF(Stationary):
             
             if self.group_spike_prob:
                 grad_gamma[:] = grad_gamma.mean(axis=0)
+                
+            print np.abs(gmu-grad_mu).max(),np.abs(gS-grad_S).max(),np.abs(gg-grad_gamma).max()
 
             return grad_mu, grad_S, grad_gamma
 

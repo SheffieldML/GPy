@@ -410,7 +410,7 @@ class PSICOMP_SSRBF(object):
         dpsi1_dl_gpu = self.gpuCache['dpsi1_dl_gpu']
         dpsi2_dl_gpu = self.gpuCache['dpsi2_dl_gpu']
         psi1_comb_gpu = self.gpuCache['psi1_neq_gpu']
-        psi2_comb_gpu = self.gpuCache['psi1_neq_gpu']
+        psi2_comb_gpu = self.gpuCache['psi2_neq_gpu']
         grad_dl_gpu = self.gpuCache['grad_l_gpu']
         
         # variance

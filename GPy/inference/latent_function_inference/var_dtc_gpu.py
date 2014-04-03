@@ -61,15 +61,15 @@ class VarDTC_GPU(object):
                              'psi1Y_gpu'            :gpuarray.empty((num_inducing,output_dim),np.float64,order='F'),
                              'psi2_gpu'             :gpuarray.empty((num_inducing,num_inducing),np.float64,order='F'),
                              'beta_gpu'             :gpuarray.empty((output_dim,),np.float64,order='F'),
-                             'Y_gpu'                :gpuarray.to_gpu(np.asfortranarray(Y)),
-                             'betaY_gpu'            :gpuarray.empty(Y.shape,np.float64,order='F'),
+                             'YT_gpu'               :gpuarray.to_gpu(np.asfortranarray(Y).T), # DxN
+                             'betaYT_gpu'           :gpuarray.empty(Y.T.shape,np.float64,order='F'), # DxN
                              'psi2_t_gpu'           :gpuarray.empty((self.batchsize,num_inducing,num_inducing),np.float64,order='F'),
                              # inference_minibatch
                              }
             self.gpuCache['ones_gpu'].fill(1.0)
             
-            Y_gpu = self.gpuCache['Y_gpu']
-            self._trYYT = cublas.cublasDdot(self.cublas_handle, Y_gpu.size, Y_gpu.gpudata, 1, Y_gpu.gpudata, 1)
+            YT_gpu = self.gpuCache['YT_gpu']
+            self._trYYT = cublas.cublasDdot(self.cublas_handle, YT_gpu.size, YT_gpu.gpudata, 1, YT_gpu.gpudata, 1)
         
     def _get_YYTfactor(self, Y):
         """
@@ -109,32 +109,32 @@ class VarDTC_GPU(object):
         psi1Y_gpu = self.gpuCache['psi1Y_gpu']
         psi2_gpu = self.gpuCache['psi2_gpu']
         beta_gpu = self.gpuCache['beta_gpu']
-        Y_gpu = self.gpuCache['Y_gpu']
-        betaY_gpu = self.gpuCache['betaY_gpu']
+        YT_gpu = self.gpuCache['YT_gpu']
+        betaYT_gpu = self.gpuCache['betaYT_gpu']
         psi2_t_gpu = self.gpuCache['psi2_t_gpu']
         
         if het_noise:
             beta_gpu.set(np.asfortranarray(beta))
-            mul_bcast(betaY_gpu,beta_gpu,Y_gpu,beta_gpu.size)
-            YRY_full = cublas.cublasDdot(self.cublas_handle, Y_gpu.size, betaY_gpu.gpudata, 1, Y_gpu.gpudata, 1)
+            mul_bcast(betaYT_gpu,beta_gpu,YT_gpu,beta_gpu.size)
+            YRY_full = cublas.cublasDdot(self.cublas_handle, YT_gpu.size, betaYT_gpu.gpudata, 1, YT_gpu.gpudata, 1)
         else:
             beta_gpu.fill(beta)
-            betaY_gpu.fill(0.)
-            cublas.cublasDaxpy(self.cublas_handle, betaY_gpu.size, beta, Y_gpu.gpudata, 1, betaY_gpu.gpudata, 1)
+            betaYT_gpu.fill(0.)
+            cublas.cublasDaxpy(self.cublas_handle, betaYT_gpu.size, beta, YT_gpu.gpudata, 1, betaYT_gpu.gpudata, 1)
             YRY_full = trYYT*beta
 
         if kern.useGPU:
             psi1Y_gpu.fill(0.)
             psi2_gpu.fill(0.)
             psi0_full = 0
+            psi1Y_full = np.zeros((num_inducing,output_dim),order='F') # MxD
             
             for n_start in xrange(0,num_data,self.batchsize):
                 n_end = min(self.batchsize+n_start, num_data)
                 ndata = n_end - n_start
-                Y_slice = Y[n_start:n_end]
                 X_slice = X[n_start:n_end]
                 beta_gpu_slice = beta_gpu[n_start:n_end]
-                betaY_gpu_slice = betaY_gpu[n_start:n_end]
+                betaYT_gpu_slice = betaYT_gpu[:,n_start:n_end]
                 if ndata==self.batchsize:
                     psi2_t_gpu_slice = psi2_t_gpu
                 else:
@@ -147,7 +147,12 @@ class VarDTC_GPU(object):
                     psi0p_gpu = kern.Kdiag(X_slice)
                     psi1p_gpu = kern.K(X_slice, Z)
 
-                cublas.cublasDgemm(self.cublas_handle, 'T', 'N', num_inducing, output_dim, ndata, 1.0, psi1p_gpu.gpudata, ndata, betaY_gpu_slice.gpudata, ndata, 1.0, psi1Y_gpu.gpudata, num_inducing)
+                cublas.cublasDgemm(self.cublas_handle, 'T', 'T', num_inducing, output_dim, ndata, 1.0, psi1p_gpu.gpudata, ndata, betaYT_gpu_slice.gpudata, output_dim, 1.0, psi1Y_gpu.gpudata, num_inducing)
+                psi1Y_full += np.dot(psi1p_gpu.get().T,Y_slice)*beta # MxD
+#                 print psi1Y_gpu.get()
+#                 print psi1Y_full
+                print np.abs(psi1Y_gpu.get()-psi1Y_full).max()
+                
                 if het_noise:
                     psi0_full += cublas.cublasDdot(self.cublas_handle, psi0p_gpu.size, beta_gpu_slice.gpudata, 1, psi0p_gpu.gpudata, 1)
                 else:

@@ -260,7 +260,7 @@ class PSICOMP_SSRBF(object):
         self.gpuCache = None
     
     def _initGPUCache(self, N, M, Q):
-        if self.gpuCache and self.gpuCacheAll['mu_gpu'].shape[0]<N:
+        if self.gpuCache and self.gpuCacheAll['mu_gpu'].shape[0]!=N:
             self._releaseMemory()
             
         if self.gpuCache == None:
@@ -304,13 +304,6 @@ class PSICOMP_SSRBF(object):
                              'grad_S_gpu'           :gpuarray.empty((N,Q),np.float64,order='F'),
                              'grad_gamma_gpu'       :gpuarray.empty((N,Q),np.float64,order='F'),
                              }
-            nonN_list = ['l_gpu','Z_gpu','psi2exp2_gpu','grad_l_gpu','grad_Z_gpu']
-            self._gpuCache_Nlist = [k for k in self.gpuCacheAll.keys() if k not in nonN_list]
-            self.gpuCache = self.gpuCacheAll
-        elif self.gpuCacheAll['mu_gpu'].shape[0]>N:
-            self.gpuCache = self.gpuCacheAll.copy()
-            for k in self._gpuCache_Nlist:
-                self.gpuCache[k] = self.gpuCacheAll[k][0:N]
     
     def _releaseMemory(self):
         if not self.gpuCacheAll:
@@ -361,7 +354,8 @@ class PSICOMP_SSRBF(object):
         comp_psi1(psi1_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi1denom_gpu, N, M, Q)
         comp_psi2(psi2_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi2denom_gpu, N, M, Q)
         
-        return psi0_gpu.get(), psi1_gpu.get(), psi2_gpu.get()
+#         return psi0_gpu.get(), psi1_gpu.get(), psi2_gpu.get()
+        return psi0_gpu, psi1_gpu, psi2_gpu
 
     def _psiDercomputations(self, variance, lengthscale, Z, mu, S, gamma):
         """Compute the derivatives w.r.t. Psi statistics"""        

@@ -28,7 +28,7 @@ try:
     # log(1.0-X)
     logOne = ElementwiseKernel("double *in, double *out", "out[i] = log(1.-in[i])", "logOne_element")
     
-    # multiplication with broadcast on the last dimension
+    # multiplication with broadcast on the last dimension (out = shorter[:,None]*longer)
     mul_bcast = ElementwiseKernel("double *out, double *shorter, double *longer, int shorter_size", "out[i] = longer[i]*shorter[i%shorter_size]", "mul_bcast")
     
     # sum through the middle dimension (size_2) of a 3D matrix (size_1, size_2, size_3) 

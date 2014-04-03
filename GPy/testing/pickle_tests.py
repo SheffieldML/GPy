@@ -10,7 +10,7 @@ from GPy.core.parameterization.index_operations import ParameterIndexOperations,
     ParameterIndexOperationsView
 import tempfile
 from GPy.core.parameterization.param import Param
-from GPy.core.parameterization.array_core import ObsAr
+from GPy.core.parameterization.observable_array import ObsAr
 from GPy.core.parameterization.priors import Gaussian
 from GPy.kern._src.rbf import RBF
 from GPy.kern._src.linear import Linear

@@ -4,7 +4,11 @@ from gaussian import Gaussian
 from gamma import Gamma
 from poisson import Poisson
 from student_t import StudentT
+from sstudent_t import SstudentT
 from likelihood import Likelihood
 from mixed_noise import MixedNoise
 from symbolic import Symbolic
 from negative_binomial import Negative_binomial
+from skew_normal import Skew_normal
+from skew_exponential import Skew_exponential
+from null_category import Null_category

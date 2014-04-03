@@ -16,7 +16,6 @@ from GPy.util.functions import cum_gaussian, ln_cum_gaussian
 from likelihood import Likelihood
 from ..core.parameterization import Param
 
-func_modules = ['numpy', {'gamma':gamma, 'gammaln':gammaln, 'erf':erf,'polygamma':polygamma, 'cum_gaussian':cum_gaussian, 'ln_cum_gaussian':ln_cum_gaussian}]
 
 if sympy_available:
     class Symbolic(Likelihood):
@@ -26,55 +25,73 @@ if sympy_available:
         Likelihood where the form of the likelihood is provided by a sympy expression.
 
         """
-        def __init__(self, pdf=None, log_pdf=None, cdf=None, logZ=None, gp_link=None, name='symbolic', log_concave=False, param=None):
+        def __init__(self, log_pdf=None, logZ=None, missing_log_pdf=None, gp_link=None, name='symbolic', log_concave=False, param=None, func_modules=[]):
+
             if gp_link is None:
                 gp_link = link_functions.Identity()
 
-            if pdf is None and log_pdf is None and cdf is None:
-                raise ValueError, "You must provide an argument for the pdf or the log pdf."
+            if log_pdf is None:
+                raise ValueError, "You must provide an argument for the log pdf."
+
+            self.func_modules = func_modules + [{'gamma':gamma, 'gammaln':gammaln, 'erf':erf,'polygamma':polygamma, 'cum_gaussian':cum_gaussian, 'ln_cum_gaussian':ln_cum_gaussian}, 'numpy']
 
             super(Symbolic, self).__init__(gp_link, name=name)
-
-            if pdf is None and log_pdf:
-                self._sp_pdf = sym.exp(log_pdf).simplify()
-                self._sp_log_pdf = log_pdf
-
-            if log_pdf is None and pdf:
-                self._sp_pdf = pdf
-                self._sp_log_pdf = sym.log(pdf).simplify()
-
-            # TODO: build pdf and log pdf from CDF or
-            # compute CDF given pdf/log-pdf. Also check log
-            # pdf, pdf and CDF are consistent.
+            self.missing_data = False
+            self._sym_log_pdf = log_pdf
+            if missing_log_pdf:
+                self.missing_data = True
+                self._sym_missing_log_pdf = missing_log_pdf
 
             # pull the variable names out of the symbolic pdf
-            sp_vars = [e for e in self._sp_pdf.atoms() if e.is_Symbol]
-            self._sp_f = [e for e in sp_vars if e.name=='f']
-            if not self._sp_f:
-                raise ValueError('No variable f in pdf or log pdf.')
-            self._sp_y = [e for e in sp_vars if e.name=='y']
-            if not self._sp_f:
-                raise ValueError('No variable y in pdf or log pdf.')
-            self._sp_theta = sorted([e for e in sp_vars if not (e.name=='f' or e.name=='y')],key=lambda e:e.name)
+            sym_vars = [e for e in self._sym_log_pdf.atoms() if e.is_Symbol]
+            self._sym_f = [e for e in sym_vars if e.name=='f']
+            if not self._sym_f:
+                raise ValueError('No variable f in log pdf.')
+            self._sym_y = [e for e in sym_vars if e.name=='y']
+            if not self._sym_y:
+                raise ValueError('No variable y in log pdf.')
+            self._sym_theta = sorted([e for e in sym_vars if not (e.name=='f' or e.name=='y')],key=lambda e:e.name)
+
+            theta_names = [theta.name for theta in self._sym_theta]
+            if self.missing_data:
+                # pull the variable names out of missing data
+                sym_vars = [e for e in self._sym_missing_log_pdf.atoms() if e.is_Symbol]
+                sym_f = [e for e in sym_vars if e.name=='f']
+                if not sym_f:
+                    raise ValueError('No variable f in missing log pdf.')
+                sym_y = [e for e in sym_vars if e.name=='y']
+                if sym_y:
+                    raise ValueError('Data is present in missing data portion of likelihood.')
+                # additional missing data parameters
+                missing_theta = sorted([e for e in sym_vars if not (e.name=='f' or e.name=='missing' or e.name in theta_names)],key=lambda e:e.name)
+                self._sym_theta += missing_theta
+                self._sym_theta = sorted(self._sym_theta, key=lambda e:e.name)
 
             # These are all the arguments need to compute likelihoods.
-            self.arg_list = self._sp_y + self._sp_f + self._sp_theta
+            self.arg_list = self._sym_y + self._sym_f + self._sym_theta
 
             # these are arguments for computing derivatives.
-            derivative_arguments = self._sp_f + self._sp_theta
+            derivative_arguments = self._sym_f + self._sym_theta
 
             # Do symbolic work to compute derivatives.
-            self._log_pdf_derivatives = {theta.name : sym.diff(self._sp_log_pdf,theta).simplify() for theta in derivative_arguments}
+            self._log_pdf_derivatives = {theta.name : sym.diff(self._sym_log_pdf,theta).simplify() for theta in derivative_arguments}
             self._log_pdf_second_derivatives = {theta.name : sym.diff(self._log_pdf_derivatives['f'],theta).simplify() for theta in derivative_arguments}
             self._log_pdf_third_derivatives = {theta.name : sym.diff(self._log_pdf_second_derivatives['f'],theta).simplify() for theta in derivative_arguments}
 
+            if self.missing_data:
+                # Do symbolic work to compute derivatives.
+                self._missing_log_pdf_derivatives = {theta.name : sym.diff(self._sym_missing_log_pdf,theta).simplify() for theta in derivative_arguments}
+                self._missing_log_pdf_second_derivatives = {theta.name : sym.diff(self._missing_log_pdf_derivatives['f'],theta).simplify() for theta in derivative_arguments}
+                self._missing_log_pdf_third_derivatives = {theta.name : sym.diff(self._missing_log_pdf_second_derivatives['f'],theta).simplify() for theta in derivative_arguments}
+
+            
             # Add parameters to the model.
-            for theta in self._sp_theta:
+            for theta in self._sym_theta:
                 val = 1.0
                 # TODO: need to decide how to handle user passing values for the se parameter vectors.
                 if param is not None:
-                    if param.has_key(theta):
-                        val = param[theta]
+                    if param.has_key(theta.name):
+                        val = param[theta.name]
                 setattr(self, theta.name, Param(theta.name, val, None))
                 self.add_parameters(getattr(self, theta.name))
 
@@ -93,14 +110,18 @@ if sympy_available:
             """Generate the code from the symbolic parts that will be used for likleihod computation."""
             # TODO: Check here whether theano is available and set up
             # functions accordingly.
-            self._pdf_function = lambdify(self.arg_list, self._sp_pdf, func_modules)
-            self._log_pdf_function = lambdify(self.arg_list, self._sp_log_pdf, func_modules)
+            self._log_pdf_function = lambdify(self.arg_list, self._sym_log_pdf, self.func_modules)
 
             # compute code for derivatives (for implicit likelihood terms
             # we need up to 3rd derivatives)
-            setattr(self, '_first_derivative_code', {key: lambdify(self.arg_list, self._log_pdf_derivatives[key], func_modules) for key in self._log_pdf_derivatives.keys()})
-            setattr(self, '_second_derivative_code', {key: lambdify(self.arg_list, self._log_pdf_second_derivatives[key], func_modules) for key in self._log_pdf_second_derivatives.keys()})
-            setattr(self, '_third_derivative_code', {key: lambdify(self.arg_list, self._log_pdf_third_derivatives[key], func_modules) for key in self._log_pdf_third_derivatives.keys()})
+            setattr(self, '_first_derivative_code', {key: lambdify(self.arg_list, self._log_pdf_derivatives[key], self.func_modules) for key in self._log_pdf_derivatives.keys()})
+            setattr(self, '_second_derivative_code', {key: lambdify(self.arg_list, self._log_pdf_second_derivatives[key], self.func_modules) for key in self._log_pdf_second_derivatives.keys()})
+            setattr(self, '_third_derivative_code', {key: lambdify(self.arg_list, self._log_pdf_third_derivatives[key], self.func_modules) for key in self._log_pdf_third_derivatives.keys()})
+
+            if self.missing_data:
+                setattr(self, '_missing_first_derivative_code', {key: lambdify(self.arg_list, self._missing_log_pdf_derivatives[key], self.func_modules) for key in self._missing_log_pdf_derivatives.keys()})
+                setattr(self, '_missing_second_derivative_code', {key: lambdify(self.arg_list, self._missing_log_pdf_second_derivatives[key], self.func_modules) for key in self._missing_log_pdf_second_derivatives.keys()})
+                setattr(self, '_missing_third_derivative_code', {key: lambdify(self.arg_list, self._missing_log_pdf_third_derivatives[key], self.func_modules) for key in self._missing_log_pdf_third_derivatives.keys()})
 
             # TODO: compute EP code parts based on logZ. We need dlogZ/dmu, d2logZ/dmu2 and dlogZ/dtheta
 
@@ -121,7 +142,7 @@ if sympy_available:
             # computed in the inference code. TODO: Thought: How does this
             # effect EP? Shouldn't this be done by a separate
             # Laplace-approximation specific call?
-            for grad, theta in zip(grads, self._sp_theta):
+            for grad, theta in zip(grads, self._sym_theta):
                 parameter = getattr(self, theta.name)
                 setattr(parameter, 'gradient', grad)
 
@@ -131,11 +152,11 @@ if sympy_available:
             # need to do a lot of precomputation to ensure that the
             # likelihoods and gradients are computed together, then check
             # for parameter changes before updating.
-            for i, fvar in enumerate(self._sp_f):
+            for i, fvar in enumerate(self._sym_f):
                 self._arguments[fvar.name] =  f
-            for i, yvar in enumerate(self._sp_y):
+            for i, yvar in enumerate(self._sym_y):
                 self._arguments[yvar.name] = y
-            for theta in self._sp_theta:
+            for theta in self._sym_theta:
                 self._arguments[theta.name] = np.asarray(getattr(self, theta.name))
 
         def pdf_link(self, inv_link_f, y, Y_metadata=None):
@@ -150,10 +171,7 @@ if sympy_available:
             :returns: likelihood evaluated for this point
             :rtype: float
             """
-            assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
-            self._arguments_update(inv_link_f, y)
-            l = self._pdf_function(**self._arguments)
-            return np.prod(l)
+            return np.exp(self.logpdf_link(inv_link_f, y, Y_metadata=None))
 
         def logpdf_link(self, inv_link_f, y, Y_metadata=None):
             """
@@ -170,7 +188,10 @@ if sympy_available:
             """
             assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
             self._arguments_update(inv_link_f, y)
-            ll = self._log_pdf_function(**self._arguments)
+            if self.missing_data:
+                ll = np.where(np.isnan(y), self._missing_log_pdf_function(**self._missing_arguments), self._log_pdf_function(**self._arguments))
+            else:
+                ll = np.where(np.isnan(y), 0., self._log_pdf_function(**self._arguments))
             return np.sum(ll)
 
         def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
@@ -188,7 +209,10 @@ if sympy_available:
             """
             assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape 
             self._arguments_update(inv_link_f, y)
-            return self._first_derivative_code['f'](**self._arguments)
+            if self.missing_data:
+                return np.where(np.isnan(y), self._missing_first_derivative_code['f'](**self._missing_argments), self._first_derivative_code['f'](**self._argments)) 
+            else:
+                return np.where(np.isnan(y), 0., self._first_derivative_code['f'](**self._arguments))
 
         def d2logpdf_dlink2(self, inv_link_f, y, Y_metadata=None):
             """
@@ -212,36 +236,50 @@ if sympy_available:
             """
             assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape 
             self._arguments_update(inv_link_f, y)
-            return self._second_derivative_code['f'](**self._arguments)
+            if self.missing_data:
+                return np.where(np.isnan(y), self._missing_second_derivative_code['f'](**self._missing_argments), self._second_derivative_code['f'](**self._argments)) 
+            else:
+                return np.where(np.isnan(y), 0., self._second_derivative_code['f'](**self._arguments))
 
         def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):
             assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape 
             self._arguments_update(inv_link_f, y)
-            return self._third_derivative_code['f'](**self._arguments)
-            raise NotImplementedError
+            if self.missing_data:
+                return np.where(np.isnan(y), self._missing_third_derivative_code['f'](**self._missing_argments), self._third_derivative_code['f'](**self._argments)) 
+            else:
+                return np.where(np.isnan(y), 0., self._third_derivative_code['f'](**self._arguments))
 
         def dlogpdf_link_dtheta(self, inv_link_f, y, Y_metadata=None):
             assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape 
             self._arguments_update(inv_link_f, y)
-            g = np.zeros((y.shape[0], len(self._sp_theta)))
-            for i, theta in enumerate(self._sp_theta):
-                g[:, i:i+1] = self._first_derivative_code[theta.name](**self._arguments)
+            g = np.zeros((np.atleast_1d(y).shape[0], len(self._sym_theta)))
+            for i, theta in enumerate(self._sym_theta):
+                if self.missing_data:
+                    g[:, i:i+1] = np.where(np.isnan(y), self._missing_first_derivative_code[theta.name](**self._arguments), self._first_derivative_code[theta.name](**self._arguments))
+                else:
+                    g[:, i:i+1] = np.where(np.isnan(y), 0., self._first_derivative_code[theta.name](**self._arguments))
             return g.sum(0)
 
         def dlogpdf_dlink_dtheta(self, inv_link_f, y, Y_metadata=None):
             assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape 
             self._arguments_update(inv_link_f, y)
-            g = np.zeros((y.shape[0], len(self._sp_theta)))
-            for i, theta in enumerate(self._sp_theta):
-                g[:, i:i+1] = self._second_derivative_code[theta.name](**self._arguments)
+            g = np.zeros((np.atleast_1d(y).shape[0], len(self._sym_theta)))
+            for i, theta in enumerate(self._sym_theta):
+                if self.missing_data:
+                    g[:, i:i+1] = np.where(np.isnan(y), self._missing_second_derivative_code[theta.name](**self._arguments), self._second_derivative_code[theta.name](**self._arguments))
+                else:
+                    g[:, i:i+1] = np.where(np.isnan(y), 0., self._second_derivative_code[theta.name](**self._arguments))
             return g
 
         def d2logpdf_dlink2_dtheta(self, inv_link_f, y, Y_metadata=None):
             assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape 
             self._arguments_update(inv_link_f, y)
-            g = np.zeros((y.shape[0], len(self._sp_theta)))
-            for i, theta in enumerate(self._sp_theta):
-                g[:, i:i+1] = self._third_derivative_code[theta.name](**self._arguments)
+            g = np.zeros((np.atleast_1d(y).shape[0], len(self._sym_theta)))
+            for i, theta in enumerate(self._sym_theta):
+                if self.missing_data:
+                    g[:, i:i+1] = np.where(np.isnan(y), self._missing_third_derivative_code[theta.name](**self._arguments), self._third_derivative_code[theta.name](**self._arguments))
+                else:
+                    g[:, i:i+1] = np.where(np.isnan(y), 0., self._third_derivative_code[theta.name](**self._arguments))
             return g
 
         def predictive_mean(self, mu, sigma, Y_metadata=None):

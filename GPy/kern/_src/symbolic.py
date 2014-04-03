@@ -94,8 +94,8 @@ class Symbolic(Kern):
             val = 1.0
             # TODO: what if user has passed a parameter vector, how should that be stored and interpreted? This is the old way before params class.
             if param is not None:
-                if param.has_key(theta):
-                    val = param[theta]
+                if param.has_key(theta.name):
+                    val = param[theta.name]
             setattr(self, theta.name, Param(theta.name, val, None))
             self.add_parameters(getattr(self, theta.name))
 

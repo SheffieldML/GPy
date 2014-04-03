@@ -260,8 +260,11 @@ class PSICOMP_SSRBF(object):
         self.gpuCache = None
     
     def _initGPUCache(self, N, M, Q):
+        if self.gpuCache and self.gpuCacheAll['mu_gpu'].shape[0]<N:
+            self._releaseMemory()
+            
         if self.gpuCache == None:
-            self.gpuCache = {
+            self.gpuCacheAll = {
                              'l_gpu'                :gpuarray.empty((Q,),np.float64,order='F'),
                              'Z_gpu'                :gpuarray.empty((M,Q),np.float64,order='F'),
                              'mu_gpu'               :gpuarray.empty((N,Q),np.float64,order='F'),
@@ -301,6 +304,21 @@ class PSICOMP_SSRBF(object):
                              'grad_S_gpu'           :gpuarray.empty((N,Q),np.float64,order='F'),
                              'grad_gamma_gpu'       :gpuarray.empty((N,Q),np.float64,order='F'),
                              }
+            nonN_list = ['l_gpu','Z_gpu','psi2exp2_gpu','grad_l_gpu','grad_Z_gpu']
+            self._gpuCache_Nlist = [k for k in self.gpuCacheAll.keys() if k not in nonN_list]
+            self.gpuCache = self.gpuCacheAll
+        elif self.gpuCacheAll['mu_gpu'].shape[0]>N:
+            self.gpuCache = self.gpuCacheAll.copy()
+            for k in self._gpuCache_Nlist:
+                self.gpuCache[k] = self.gpuCacheAll[k][0:N]
+    
+    def _releaseMemory(self):
+        if not self.gpuCacheAll:
+            for k,v in self.gpuCacheAll:
+                v.gpudata.free()
+                del v
+            self.gpuCacheAll = None
+            self.gpuCache = None
 
     def psicomputations(self, variance, lengthscale, Z, mu, S, gamma):
         """Compute Psi statitsitcs"""
@@ -492,166 +510,3 @@ class PSICOMP_SSRBF(object):
         linalg_gpu.sum_axis(grad_gamma_gpu, psi2_comb_gpu, N, M*M)
         
         return grad_mu_gpu.get(), grad_S_gpu.get(), grad_gamma_gpu.get()
-
-@Cache_this(limit=1)
-def _Z_distances(Z):
-    Zhat = 0.5 * (Z[:, None, :] + Z[None, :, :]) # M,M,Q
-    Zdist = 0.5 * (Z[:, None, :] - Z[None, :, :]) # M,M,Q
-    return Zhat, Zdist
-
-def _psicomputations(variance, lengthscale, Z, mu, S, gamma):
-    """
-    """
-    
-
-@Cache_this(limit=1)
-def _psi1computations(variance, lengthscale, Z, mu, S, gamma):
-    """
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    """
-    # here are the "statistics" for psi1 and psi2
-    # Produced intermediate results:
-    # _psi1                NxM
-    # _dpsi1_dvariance     NxM
-    # _dpsi1_dlengthscale  NxMxQ
-    # _dpsi1_dZ            NxMxQ
-    # _dpsi1_dgamma        NxMxQ
-    # _dpsi1_dmu           NxMxQ
-    # _dpsi1_dS            NxMxQ
-    
-    lengthscale2 = np.square(lengthscale)
-
-    # psi1
-    _psi1_denom = S[:, None, :] / lengthscale2 + 1.  # Nx1xQ
-    _psi1_denom_sqrt = np.sqrt(_psi1_denom) #Nx1xQ
-    _psi1_dist = Z[None, :, :] - mu[:, None, :]  # NxMxQ
-    _psi1_dist_sq = np.square(_psi1_dist) / (lengthscale2 * _psi1_denom) # NxMxQ
-    _psi1_common = gamma[:,None,:] / (lengthscale2*_psi1_denom*_psi1_denom_sqrt) #Nx1xQ
-    _psi1_exponent1 = np.log(gamma[:,None,:]) -0.5 * (_psi1_dist_sq + np.log(_psi1_denom)) # NxMxQ
-    _psi1_exponent2 = np.log(1.-gamma[:,None,:]) -0.5 * (np.square(Z[None,:,:])/lengthscale2) # NxMxQ
-    _psi1_exponent_max = np.maximum(_psi1_exponent1,_psi1_exponent2)
-    _psi1_exponent = _psi1_exponent_max+np.log(np.exp(_psi1_exponent1-_psi1_exponent_max) + np.exp(_psi1_exponent2-_psi1_exponent_max)) #NxMxQ
-    _psi1_exp_sum = _psi1_exponent.sum(axis=-1) #NxM
-    _psi1_exp_dist_sq = np.exp(-0.5*_psi1_dist_sq) # NxMxQ
-    _psi1_exp_Z = np.exp(-0.5*np.square(Z[None,:,:])/lengthscale2) # 1xMxQ
-    _psi1_q = variance * np.exp(_psi1_exp_sum[:,:,None] - _psi1_exponent) # NxMxQ
-    _psi1 = variance * np.exp(_psi1_exp_sum) # NxM
-    _dpsi1_dvariance = _psi1 / variance # NxM
-    _dpsi1_dgamma = _psi1_q * (_psi1_exp_dist_sq/_psi1_denom_sqrt-_psi1_exp_Z) # NxMxQ
-    _dpsi1_dmu = _psi1_q * (_psi1_exp_dist_sq * _psi1_dist * _psi1_common) # NxMxQ
-    _dpsi1_dS = _psi1_q * (_psi1_exp_dist_sq * _psi1_common * 0.5 * (_psi1_dist_sq - 1.)) # NxMxQ
-    _dpsi1_dZ = _psi1_q * (- _psi1_common * _psi1_dist * _psi1_exp_dist_sq - (1-gamma[:,None,:])/lengthscale2*Z[None,:,:]*_psi1_exp_Z) # NxMxQ
-    _dpsi1_dlengthscale = 2.*lengthscale*_psi1_q * (0.5*_psi1_common*(S[:,None,:]/lengthscale2+_psi1_dist_sq)*_psi1_exp_dist_sq + 0.5*(1-gamma[:,None,:])*np.square(Z[None,:,:]/lengthscale2)*_psi1_exp_Z) # NxMxQ
-
-    N = mu.shape[0]
-    M = Z.shape[0]
-    Q = mu.shape[1]
-
-    l_gpu = gpuarray.empty((Q,),np.float64, order='F')
-    l_gpu.fill(lengthscale2)
-    Z_gpu = gpuarray.to_gpu(np.asfortranarray(Z))
-    mu_gpu = gpuarray.to_gpu(np.asfortranarray(mu))
-    S_gpu = gpuarray.to_gpu(np.asfortranarray(S))
-    gamma_gpu = gpuarray.to_gpu(np.asfortranarray(gamma))
-    logGamma_gpu = gpuarray.to_gpu(np.asfortranarray(np.log(gamma)))
-    log1Gamma_gpu = gpuarray.to_gpu(np.asfortranarray(np.log(1.-gamma)))
-    logpsi1denom_gpu = gpuarray.to_gpu(np.asfortranarray(np.log(S/lengthscale2+1.)))
-    psi1_gpu = gpuarray.empty((mu.shape[0],Z.shape[0]),np.float64, order='F')
-    psi1_neq_gpu = gpuarray.empty((N,M,Q),np.float64, order='F')
-    psi1exp1_gpu = gpuarray.empty((N,M,Q),np.float64, order='F')
-    psi1exp2_gpu = gpuarray.empty((N,M,Q),np.float64, order='F')
-    dpsi1_dvar_gpu = gpuarray.empty((N,M),np.float64, order='F')
-    dpsi1_dl_gpu = gpuarray.empty((N,M,Q),np.float64, order='F')
-    dpsi1_dZ_gpu = gpuarray.empty((N,M,Q),np.float64, order='F')
-    dpsi1_dgamma_gpu = gpuarray.empty((N,M,Q),np.float64, order='F')
-    dpsi1_dmu_gpu = gpuarray.empty((N,M,Q),np.float64, order='F')
-    dpsi1_dS_gpu = gpuarray.empty((N,M,Q),np.float64, order='F')
-    
-    comp_dpsi1_dvar(dpsi1_dvar_gpu,psi1_neq_gpu,psi1exp1_gpu,psi1exp2_gpu, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi1denom_gpu, N, M, Q)
-    comp_psi1_der(dpsi1_dl_gpu,dpsi1_dmu_gpu,dpsi1_dS_gpu,dpsi1_dgamma_gpu, dpsi1_dZ_gpu, psi1_neq_gpu,psi1exp1_gpu,psi1exp2_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, gamma_gpu, N, M, Q)
-    
-#     print np.abs(dpsi1_dmu_gpu.get()-_dpsi1_dmu).max()
-
-    return _psi1, _dpsi1_dvariance, _dpsi1_dgamma, _dpsi1_dmu, _dpsi1_dS, _dpsi1_dZ, _dpsi1_dlengthscale
-
-@Cache_this(limit=1)
-def _psi2computations(variance, lengthscale, Z, mu, S, gamma):
-    """
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    """
-    # here are the "statistics" for psi1 and psi2
-    # Produced intermediate results:
-    # _psi2                NxMxM
-    # _psi2_dvariance      NxMxM
-    # _psi2_dlengthscale   NxMxMxQ
-    # _psi2_dZ             NxMxMxQ
-    # _psi2_dgamma         NxMxMxQ
-    # _psi2_dmu            NxMxMxQ
-    # _psi2_dS             NxMxMxQ
-    
-    lengthscale2 = np.square(lengthscale)
-    
-    _psi2_Zhat, _psi2_Zdist = _Z_distances(Z)
-    _psi2_Zdist_sq = np.square(_psi2_Zdist / lengthscale) # M,M,Q
-    _psi2_Z_sq_sum = (np.square(Z[:,None,:])+np.square(Z[None,:,:]))/lengthscale2 # MxMxQ
-
-    # psi2
-    _psi2_denom = 2.*S[:, None, None, :] / lengthscale2 + 1. # Nx1x1xQ
-    _psi2_denom_sqrt = np.sqrt(_psi2_denom)
-    _psi2_mudist = mu[:,None,None,:]-_psi2_Zhat #N,M,M,Q
-    _psi2_mudist_sq = np.square(_psi2_mudist)/(lengthscale2*_psi2_denom)
-    _psi2_common = gamma[:,None,None,:]/(lengthscale2 * _psi2_denom * _psi2_denom_sqrt) # Nx1x1xQ
-    _psi2_exponent1 = -_psi2_Zdist_sq -_psi2_mudist_sq -0.5*np.log(_psi2_denom)+np.log(gamma[:,None,None,:]) #N,M,M,Q
-    _psi2_exponent2 = np.log(1.-gamma[:,None,None,:]) - 0.5*(_psi2_Z_sq_sum) # NxMxMxQ
-    _psi2_exponent_max = np.maximum(_psi2_exponent1, _psi2_exponent2)
-    _psi2_exponent = _psi2_exponent_max+np.log(np.exp(_psi2_exponent1-_psi2_exponent_max) + np.exp(_psi2_exponent2-_psi2_exponent_max))
-    _psi2_exp_sum = _psi2_exponent.sum(axis=-1) #NxM
-    _psi2_q = np.square(variance) * np.exp(_psi2_exp_sum[:,:,:,None]-_psi2_exponent) # NxMxMxQ 
-    _psi2_exp_dist_sq = np.exp(-_psi2_Zdist_sq -_psi2_mudist_sq) # NxMxMxQ
-    _psi2_exp_Z = np.exp(-0.5*_psi2_Z_sq_sum) # MxMxQ
-    _psi2 = np.square(variance) * np.exp(_psi2_exp_sum) # N,M,M
-    _dpsi2_dvariance = 2. * _psi2/variance # NxMxM
-    _dpsi2_dgamma = _psi2_q * (_psi2_exp_dist_sq/_psi2_denom_sqrt - _psi2_exp_Z) # NxMxMxQ
-    _dpsi2_dmu = _psi2_q * (-2.*_psi2_common*_psi2_mudist * _psi2_exp_dist_sq) # NxMxMxQ
-    _dpsi2_dS = _psi2_q * (_psi2_common * (2.*_psi2_mudist_sq - 1.) * _psi2_exp_dist_sq) # NxMxMxQ
-    _dpsi2_dZ = 2.*_psi2_q * (_psi2_common*(-_psi2_Zdist*_psi2_denom+_psi2_mudist)*_psi2_exp_dist_sq - (1-gamma[:,None,None,:])*Z[:,None,:]/lengthscale2*_psi2_exp_Z) # NxMxMxQ
-    _dpsi2_dlengthscale = 2.*lengthscale* _psi2_q * (_psi2_common*(S[:,None,None,:]/lengthscale2+_psi2_Zdist_sq*_psi2_denom+_psi2_mudist_sq)*_psi2_exp_dist_sq+(1-gamma[:,None,None,:])*_psi2_Z_sq_sum*0.5/lengthscale2*_psi2_exp_Z) # NxMxMxQ
-
-    N = mu.shape[0]
-    M = Z.shape[0]
-    Q = mu.shape[1]
-
-    l_gpu = gpuarray.empty((Q,),np.float64, order='F')
-    l_gpu.fill(lengthscale2)
-    Z_gpu = gpuarray.to_gpu(np.asfortranarray(Z))
-    mu_gpu = gpuarray.to_gpu(np.asfortranarray(mu))
-    S_gpu = gpuarray.to_gpu(np.asfortranarray(S))
-    gamma_gpu = gpuarray.to_gpu(np.asfortranarray(gamma))
-    logGamma_gpu = gpuarray.to_gpu(np.asfortranarray(np.log(gamma)))
-    log1Gamma_gpu = gpuarray.to_gpu(np.asfortranarray(np.log(1.-gamma)))
-    logpsi2denom_gpu = gpuarray.to_gpu(np.asfortranarray(np.log(2.*S/lengthscale2+1.)))
-    psi2_gpu = gpuarray.empty((mu.shape[0],Z.shape[0],Z.shape[0]),np.float64, order='F')
-    psi2_neq_gpu = gpuarray.empty((N,M,M,Q),np.float64, order='F')
-    psi2exp1_gpu = gpuarray.empty((N,M,M,Q),np.float64, order='F')
-    psi2exp2_gpu = gpuarray.empty((M,M,Q),np.float64, order='F')
-    dpsi2_dvar_gpu = gpuarray.empty((N,M,M),np.float64, order='F')
-    dpsi2_dl_gpu = gpuarray.empty((N,M,M,Q),np.float64, order='F')
-    dpsi2_dZ_gpu = gpuarray.empty((N,M,M,Q),np.float64, order='F')
-    dpsi2_dgamma_gpu = gpuarray.empty((N,M,M,Q),np.float64, order='F')
-    dpsi2_dmu_gpu = gpuarray.empty((N,M,M,Q),np.float64, order='F')
-    dpsi2_dS_gpu = gpuarray.empty((N,M,M,Q),np.float64, order='F')
-    
-    #comp_psi2(psi2_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi2denom_gpu, N, M, Q)
-
-    comp_dpsi2_dvar(dpsi2_dvar_gpu,psi2_neq_gpu,psi2exp1_gpu,psi2exp2_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi2denom_gpu, N, M, Q)
-    comp_psi2_der(dpsi2_dl_gpu,dpsi2_dmu_gpu,dpsi2_dS_gpu,dpsi2_dgamma_gpu, dpsi2_dZ_gpu, psi2_neq_gpu,psi2exp1_gpu,psi2exp2_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, gamma_gpu, N, M, Q)
-    
-#     print np.abs(dpsi2_dvar_gpu.get()-_dpsi2_dvariance).max()
-
-    return _psi2, _dpsi2_dvariance, _dpsi2_dgamma, _dpsi2_dmu, _dpsi2_dS, _dpsi2_dZ, _dpsi2_dlengthscale

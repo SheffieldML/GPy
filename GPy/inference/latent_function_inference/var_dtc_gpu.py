@@ -33,12 +33,7 @@ class VarDTC_GPU(object):
     def __init__(self, batchsize, limit=1):
         
         self.batchsize = batchsize
-        
-        # Cache functions
-        from ...util.caching import Cacher
-        self.get_trYYT = Cacher(self._get_trYYT, limit)
-        self.get_YYTfactor = Cacher(self._get_YYTfactor, limit)
-        
+                
         self.midRes = {}
         self.batch_pos = 0 # the starting position of the current mini-batch
         
@@ -99,7 +94,7 @@ class VarDTC_GPU(object):
         num_inducing = Z.shape[0]
         num_data, output_dim = Y.shape
         
-        self._initGPUCache(num_inducing, output_dim)
+        self._initGPUCache(num_inducing, output_dim, Y)
 
         if isinstance(X, VariationalPosterior):
             uncertain_inputs = True
@@ -125,7 +120,7 @@ class VarDTC_GPU(object):
         else:
             beta_gpu.fill(beta)
             betaY_gpu.fill(0.)
-            cublas.cublasDaxpy(self.cublas_handle, betaY_gpu.size, beta, Y_gpu.gpudata, 1, betaY_gpu, 1)
+            cublas.cublasDaxpy(self.cublas_handle, betaY_gpu.size, beta, Y_gpu.gpudata, 1, betaY_gpu.gpudata, 1)
             YRY_full = trYYT*beta
 
         if kern.useGPU:
@@ -234,37 +229,37 @@ class VarDTC_GPU(object):
         diag.add(Kmm, self.const_jitter)
         ones_gpu = self.gpuCache['ones_gpu']
         cublas.cublasDaxpy(self.cublas_handle, num_inducing, self.const_jitter, ones_gpu.gpudata, 1, Kmm_gpu.gpudata, num_inducing+1)
-        assert np.allclose(Kmm, Kmm_gpu.get())
+#         assert np.allclose(Kmm, Kmm_gpu.get())
         
-        Lm = jitchol(Kmm)
+#         Lm = jitchol(Kmm)
         #
         Lm_gpu = self.gpuCache['Lm_gpu']
         cublas.cublasDcopy(self.cublas_handle, Kmm_gpu.size, Kmm_gpu.gpudata, 1, Lm_gpu.gpudata, 1)
         culinalg.cho_factor(Lm_gpu,'L')
-        print np.abs(np.tril(Lm)-np.tril(Lm_gpu.get())).max()
+#         print np.abs(np.tril(Lm)-np.tril(Lm_gpu.get())).max()
                 
-        Lambda = Kmm+psi2_full
-        LL = jitchol(Lambda)
+#         Lambda = Kmm+psi2_full
+#         LL = jitchol(Lambda)
         #
         Lambda_gpu = self.gpuCache['LL_gpu']
         cublas.cublasDcopy(self.cublas_handle, Kmm_gpu.size, Kmm_gpu.gpudata, 1, Lambda_gpu.gpudata, 1)
         cublas.cublasDaxpy(self.cublas_handle, psi2_gpu.size, np.float64(1.0), psi2_gpu.gpudata, 1, Lambda_gpu.gpudata, 1)
         LL_gpu = Lambda_gpu
         culinalg.cho_factor(LL_gpu,'L')
-        print np.abs(np.tril(LL)-np.tril(LL_gpu.get())).max()
+#         print np.abs(np.tril(LL)-np.tril(LL_gpu.get())).max()
         
-        b,_ = dtrtrs(LL, psi1Y_full)
-        bbt_cpu = np.square(b).sum()
+#         b,_ = dtrtrs(LL, psi1Y_full)
+#         bbt_cpu = np.square(b).sum()
         #
         b_gpu = self.gpuCache['b_gpu']
         cublas.cublasDcopy(self.cublas_handle, b_gpu.size, psi1Y_gpu.gpudata, 1, b_gpu.gpudata, 1)
         cublas.cublasDtrsm(self.cublas_handle , 'L', 'L', 'N', 'N', num_inducing, output_dim, np.float64(1.0), LL_gpu.gpudata, num_inducing, b_gpu.gpudata, num_inducing)
         bbt = cublas.cublasDdot(self.cublas_handle, b_gpu.size, b_gpu.gpudata, 1, b_gpu.gpudata, 1)
-        print np.abs(bbt-bbt_cpu)
+#         print np.abs(bbt-bbt_cpu)
         
-        v,_ = dtrtrs(LL.T,b,lower=False)
-        vvt = np.einsum('md,od->mo',v,v)
-        LmInvPsi2LmInvT = backsub_both_sides(Lm,psi2_full,transpose='right')
+#         v,_ = dtrtrs(LL.T,b,lower=False)
+#         vvt = np.einsum('md,od->mo',v,v)
+#         LmInvPsi2LmInvT = backsub_both_sides(Lm,psi2_full,transpose='right')
         #
         v_gpu = self.gpuCache['v_gpu']
         cublas.cublasDcopy(self.cublas_handle, v_gpu.size, b_gpu.gpudata, 1, v_gpu.gpudata, 1)
@@ -277,13 +272,13 @@ class VarDTC_GPU(object):
         cublas.cublasDtrsm(self.cublas_handle , 'r', 'L', 'T', 'N', num_inducing, num_inducing, np.float64(1.0), Lm_gpu.gpudata, num_inducing, LmInvPsi2LmInvT_gpu.gpudata, num_inducing)
         #tr_LmInvPsi2LmInvT = cublas.cublasDasum(self.cublas_handle, num_inducing, LmInvPsi2LmInvT_gpu.gpudata, num_inducing+1)
         tr_LmInvPsi2LmInvT = float(strideSum(LmInvPsi2LmInvT_gpu, num_inducing+1).get())
-        print np.abs(vvt-vvt_gpu.get()).max()
-        print np.abs(np.trace(LmInvPsi2LmInvT)-tr_LmInvPsi2LmInvT)
+#         print np.abs(vvt-vvt_gpu.get()).max()
+#         print np.abs(np.trace(LmInvPsi2LmInvT)-tr_LmInvPsi2LmInvT)
         
-        Psi2LLInvT = dtrtrs(LL,psi2_full)[0].T
-        LmInvPsi2LLInvT= dtrtrs(Lm,Psi2LLInvT)[0]
-        KmmInvPsi2LLInvT = dtrtrs(Lm,LmInvPsi2LLInvT,trans=True)[0]
-        KmmInvPsi2P = dtrtrs(LL,KmmInvPsi2LLInvT.T, trans=True)[0].T
+#         Psi2LLInvT = dtrtrs(LL,psi2_full)[0].T
+#         LmInvPsi2LLInvT= dtrtrs(Lm,Psi2LLInvT)[0]
+#         KmmInvPsi2LLInvT = dtrtrs(Lm,LmInvPsi2LLInvT,trans=True)[0]
+#         KmmInvPsi2P = dtrtrs(LL,KmmInvPsi2LLInvT.T, trans=True)[0].T
         #
         KmmInvPsi2LLInvT_gpu = LmInvPsi2LmInvT_gpu # Reuse GPU memory (size:MxM)
         cublas.cublasDcopy(self.cublas_handle, psi2_gpu.size, psi2_gpu.gpudata, 1, KmmInvPsi2LLInvT_gpu.gpudata, 1)
@@ -293,19 +288,19 @@ class VarDTC_GPU(object):
         KmmInvPsi2P_gpu = self.gpuCache['KmmInvPsi2P_gpu']
         cublas.cublasDcopy(self.cublas_handle, KmmInvPsi2LLInvT_gpu.size, KmmInvPsi2LLInvT_gpu.gpudata, 1, KmmInvPsi2P_gpu.gpudata, 1)
         cublas.cublasDtrsm(self.cublas_handle , 'r', 'L', 'N', 'N', num_inducing, num_inducing, np.float64(1.0), LL_gpu.gpudata, num_inducing, KmmInvPsi2P_gpu.gpudata, num_inducing)
-        print np.abs(KmmInvPsi2P-KmmInvPsi2P_gpu.get()).max()
+#         print np.abs(KmmInvPsi2P-KmmInvPsi2P_gpu.get()).max()
         
-        dL_dpsi2R = (output_dim*KmmInvPsi2P - vvt)/2. # dL_dpsi2 with R inside psi2
+#         dL_dpsi2R = (output_dim*KmmInvPsi2P - vvt)/2. # dL_dpsi2 with R inside psi2
         #
         dL_dpsi2R_gpu = self.gpuCache['dL_dpsi2R_gpu']
         cublas.cublasDcopy(self.cublas_handle, vvt_gpu.size, vvt_gpu.gpudata, 1, dL_dpsi2R_gpu.gpudata, 1)
         cublas.cublasDaxpy(self.cublas_handle, KmmInvPsi2P_gpu.size, np.float64(-output_dim), KmmInvPsi2P_gpu.gpudata, 1, dL_dpsi2R_gpu.gpudata, 1)
         cublas.cublasDscal(self.cublas_handle, dL_dpsi2R_gpu.size, np.float64(-0.5), dL_dpsi2R_gpu.gpudata, 1)
-        print np.abs(dL_dpsi2R_gpu.get()-dL_dpsi2R).max()
+#         print np.abs(dL_dpsi2R_gpu.get()-dL_dpsi2R).max()
 
         # Cache intermediate results
-        self.midRes['dL_dpsi2R'] = dL_dpsi2R
-        self.midRes['v'] = v
+        self.midRes['dL_dpsi2R'] = dL_dpsi2R_gpu.get()
+        self.midRes['v'] = v_gpu.get()
         
         #logDiagSum = ReductionKernel(np.float64, neutral="0", reduce_expr="a+b", map_expr="i%step==0?log(x[i]):0", arguments="double *x, int step")
                 
@@ -316,24 +311,24 @@ class VarDTC_GPU(object):
             logL_R = -np.log(beta).sum()
         else:
             logL_R = -num_data*np.log(beta)
-        logL_old = -(output_dim*(num_data*log_2_pi+logL_R+psi0_full-np.trace(LmInvPsi2LmInvT))+YRY_full-bbt)/2.-output_dim*(-np.log(np.diag(Lm)).sum()+np.log(np.diag(LL)).sum())
+#         logL_old = -(output_dim*(num_data*log_2_pi+logL_R+psi0_full-np.trace(LmInvPsi2LmInvT))+YRY_full-bbt)/2.-output_dim*(-np.log(np.diag(Lm)).sum()+np.log(np.diag(LL)).sum())
         
         logdetKmm = float(logDiagSum(Lm_gpu,num_inducing+1).get())
         logdetLambda = float(logDiagSum(LL_gpu,num_inducing+1).get())
         logL = -(output_dim*(num_data*log_2_pi+logL_R+psi0_full-tr_LmInvPsi2LmInvT)+YRY_full-bbt)/2.+output_dim*(logdetKmm-logdetLambda)
-        print np.abs(logL_old - logL)
+#         print np.abs(logL_old - logL)
 
         #======================================================================
         # Compute dL_dKmm
         #======================================================================
         
-        dL_dKmm =  -(output_dim*np.einsum('md,od->mo',KmmInvPsi2LLInvT,KmmInvPsi2LLInvT) + vvt)/2.
+#         dL_dKmm =  -(output_dim*np.einsum('md,od->mo',KmmInvPsi2LLInvT,KmmInvPsi2LLInvT) + vvt)/2.
         #
         dL_dKmm_gpu = self.gpuCache['dL_dKmm_gpu']
         cublas.cublasDgemm(self.cublas_handle, 'N', 'T', num_inducing, num_inducing, num_inducing, np.float64(1.0), KmmInvPsi2LLInvT_gpu.gpudata, num_inducing, KmmInvPsi2LLInvT_gpu.gpudata, num_inducing, np.float64(0.), dL_dKmm_gpu.gpudata, num_inducing)
         cublas.cublasDaxpy(self.cublas_handle, dL_dKmm_gpu.size, np.float64(1./output_dim), vvt_gpu.gpudata, 1, dL_dKmm_gpu.gpudata, 1)
         cublas.cublasDscal(self.cublas_handle, dL_dKmm_gpu.size, np.float64(-output_dim/2.), dL_dKmm_gpu.gpudata, 1)
-        print np.abs(dL_dKmm - dL_dKmm_gpu.get()).max()
+#         print np.abs(dL_dKmm - dL_dKmm_gpu.get()).max()
 
         #======================================================================
         # Compute the Posterior distribution of inducing points p(u|Y)
@@ -341,7 +336,7 @@ class VarDTC_GPU(object):
                 
         post = Posterior(woodbury_inv=KmmInvPsi2P_gpu.get(), woodbury_vector=v_gpu.get(), K=Kmm_gpu.get(), mean=None, cov=None, K_chol=Lm_gpu.get())
 
-        return logL, dL_dKmm, post
+        return logL, dL_dKmm_gpu.get(), post
 
     def inference_minibatch(self, kern, X, Z, likelihood, Y):
         """

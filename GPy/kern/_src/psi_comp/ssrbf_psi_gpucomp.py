@@ -260,11 +260,11 @@ class PSICOMP_SSRBF(object):
         self.gpuCache = None
     
     def _initGPUCache(self, N, M, Q):
-        if self.gpuCache and self.gpuCacheAll['mu_gpu'].shape[0]!=N:
+        if self.gpuCache and self.gpuCache['mu_gpu'].shape[0]!=N:
             self._releaseMemory()
             
         if self.gpuCache == None:
-            self.gpuCacheAll = {
+            self.gpuCache = {
                              'l_gpu'                :gpuarray.empty((Q,),np.float64,order='F'),
                              'Z_gpu'                :gpuarray.empty((M,Q),np.float64,order='F'),
                              'mu_gpu'               :gpuarray.empty((N,Q),np.float64,order='F'),
@@ -306,11 +306,11 @@ class PSICOMP_SSRBF(object):
                              }
     
     def _releaseMemory(self):
-        if not self.gpuCacheAll:
-            for k,v in self.gpuCacheAll:
+        if not self.gpuCache:
+            for k,v in self.gpuCache:
                 v.gpudata.free()
                 del v
-            self.gpuCacheAll = None
+            del self.gpuCache
             self.gpuCache = None
 
     def psicomputations(self, variance, lengthscale, Z, mu, S, gamma):

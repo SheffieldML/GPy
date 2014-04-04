@@ -258,13 +258,17 @@ class PSICOMP_SSRBF(object):
     def __init__(self):
         self.cublas_handle = cublas.cublasCreate()
         self.gpuCache = None
+        self.gpuCacheAll = None
     
     def _initGPUCache(self, N, M, Q):
-        if self.gpuCache and self.gpuCache['mu_gpu'].shape[0]!=N:
+        if self.gpuCache!=None and self.gpuCache['mu_gpu'].shape[0] == N:
+            return
+        
+        if self.gpuCacheAll!=None and self.gpuCacheAll['mu_gpu'].shape[0]<N: # Too small cache -> reallocate
             self._releaseMemory()
             
-        if self.gpuCache == None:
-            self.gpuCache = {
+        if self.gpuCacheAll == None:
+            self.gpuCacheAll = {
                              'l_gpu'                :gpuarray.empty((Q,),np.float64,order='F'),
                              'Z_gpu'                :gpuarray.empty((M,Q),np.float64,order='F'),
                              'mu_gpu'               :gpuarray.empty((N,Q),np.float64,order='F'),
@@ -304,13 +308,24 @@ class PSICOMP_SSRBF(object):
                              'grad_S_gpu'           :gpuarray.empty((N,Q),np.float64,order='F'),
                              'grad_gamma_gpu'       :gpuarray.empty((N,Q),np.float64,order='F'),
                              }
+            self.gpuCache = self.gpuCacheAll
+        elif self.gpuCacheAll['mu_gpu'].shape[0]==N:
+            self.gpuCache = self.gpuCacheAll
+        else:
+            # remap to a smaller cache
+            self.gpuCache = self.gpuCacheAll.copy()
+            Nlist=['mu_gpu','S_gpu','gamma_gpu','logGamma_gpu','log1Gamma_gpu','logpsi1denom_gpu','logpsi2denom_gpu','psi0_gpu','psi1_gpu','psi2_gpu',
+                   'psi1_neq_gpu','psi1exp1_gpu','psi1exp2_gpu','dpsi1_dvar_gpu','dpsi1_dl_gpu','dpsi1_dZ_gpu','dpsi1_dgamma_gpu','dpsi1_dmu_gpu',
+                   'dpsi1_dS_gpu','psi2_neq_gpu','psi2exp1_gpu','dpsi2_dvar_gpu','dpsi2_dl_gpu','dpsi2_dZ_gpu','dpsi2_dgamma_gpu','dpsi2_dmu_gpu','dpsi2_dS_gpu','grad_mu_gpu','grad_S_gpu','grad_gamma_gpu',]
+            oldN = self.gpuCacheAll['mu_gpu'].shape[0]
+            for v in Nlist:
+                u = self.gpuCacheAll[v]
+                self.gpuCache[v] = u.ravel()[:u.size/oldN*N].reshape(*((N,)+u.shape[1:]))
     
     def _releaseMemory(self):
-        if not self.gpuCache:
-            for k,v in self.gpuCache:
-                v.gpudata.free()
-                del v
-            del self.gpuCache
+        if self.gpuCacheAll!=None:
+            [v.gpudata.free() for v in self.gpuCacheAll.values()]
+            self.gpuCacheAll = None
             self.gpuCache = None
 
     def psicomputations(self, variance, lengthscale, Z, mu, S, gamma):
@@ -351,6 +366,7 @@ class PSICOMP_SSRBF(object):
         comp_logpsidenom(logpsi1denom_gpu, S_gpu,l_gpu,1.0,N)
         comp_logpsidenom(logpsi2denom_gpu, S_gpu,l_gpu,2.0,N)
         
+        psi0_gpu.fill(variance)
         comp_psi1(psi1_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi1denom_gpu, N, M, Q)
         comp_psi2(psi2_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi2denom_gpu, N, M, Q)
         

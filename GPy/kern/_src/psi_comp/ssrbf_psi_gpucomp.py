@@ -328,6 +328,7 @@ class PSICOMP_SSRBF(object):
             self.gpuCacheAll = None
             self.gpuCache = None
 
+    @Cache_this(limit=1)
     def psicomputations(self, variance, lengthscale, Z, mu, S, gamma):
         """Compute Psi statitsitcs"""
         if isinstance(lengthscale, np.ndarray) and len(lengthscale)>1:
@@ -370,9 +371,9 @@ class PSICOMP_SSRBF(object):
         comp_psi1(psi1_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi1denom_gpu, N, M, Q)
         comp_psi2(psi2_gpu, variance, l_gpu, Z_gpu, mu_gpu, S_gpu, logGamma_gpu, log1Gamma_gpu, logpsi2denom_gpu, N, M, Q)
         
-#         return psi0_gpu.get(), psi1_gpu.get(), psi2_gpu.get()
         return psi0_gpu, psi1_gpu, psi2_gpu
-
+    
+    @Cache_this(limit=1)
     def _psiDercomputations(self, variance, lengthscale, Z, mu, S, gamma):
         """Compute the derivatives w.r.t. Psi statistics"""        
         N, M, Q = mu.shape[0],Z.shape[0], mu.shape[1]

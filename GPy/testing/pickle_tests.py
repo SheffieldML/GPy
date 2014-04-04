@@ -197,6 +197,7 @@ class Test(ListDictTestCase):
         self.assertTrue(par.checkgrad())
         self.assertTrue(pcopy.checkgrad())
         self.assertTrue(pcopy.kern.checkgrad())
+        import ipdb;ipdb.set_trace()
         self.assertIn(par.observers[0], pcopy.observers)
         self.assertEqual(par.count, 3)
         self.assertEqual(pcopy.count, 6) # 3 of each call to checkgrad

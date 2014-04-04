@@ -324,7 +324,7 @@ class ParamConcatenation(object):
         if update:
             self.update_all_params()
     def values(self):
-        return numpy.hstack([p.param_array for p in self.params])
+        return numpy.hstack([p.param_array.flat for p in self.params])
     #===========================================================================
     # parameter operations:
     #===========================================================================

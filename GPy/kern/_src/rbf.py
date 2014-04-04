@@ -74,10 +74,10 @@ class RBF(Stationary):
         # Spike-and-Slab GPLVM
         if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             if self.useGPU:
-                dL_dpsi0_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi0))
-                dL_dpsi1_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi1))
-                dL_dpsi2_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi2))
-                self.psicomp.update_gradients_expectations(dL_dpsi0_gpu, dL_dpsi1_gpu, dL_dpsi2_gpu, self.variance, self.lengthscale, Z, variational_posterior)
+#                 dL_dpsi0_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi0))
+#                 dL_dpsi1_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi1))
+#                 dL_dpsi2_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi2))
+                self.psicomp.update_gradients_expectations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variance, self.lengthscale, Z, variational_posterior)
             else:
                 
                 _, _dpsi1_dvariance, _, _, _, _, _dpsi1_dlengthscale = ssrbf_psi_comp._psi1computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
@@ -139,9 +139,9 @@ class RBF(Stationary):
         # Spike-and-Slab GPLVM
         if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             if self.useGPU:
-                dL_dpsi1_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi1))
-                dL_dpsi2_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi2))
-                return self.psicomp.gradients_Z_expectations(dL_dpsi1_gpu, dL_dpsi2_gpu, self.variance, self.lengthscale, Z, variational_posterior)
+#                 dL_dpsi1_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi1))
+#                 dL_dpsi2_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi2))
+                return self.psicomp.gradients_Z_expectations(dL_dpsi1, dL_dpsi2, self.variance, self.lengthscale, Z, variational_posterior)
             else:
                 _, _, _, _, _, _dpsi1_dZ, _ = ssrbf_psi_comp._psi1computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
                 _, _, _, _, _, _dpsi2_dZ, _ = ssrbf_psi_comp._psi2computations(self.variance, self.lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
@@ -177,9 +177,9 @@ class RBF(Stationary):
         # Spike-and-Slab GPLVM
         if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             if self.useGPU:
-                dL_dpsi1_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi1))
-                dL_dpsi2_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi2))
-                return self.psicomp.gradients_qX_expectations(dL_dpsi1_gpu, dL_dpsi2_gpu, self.variance, self.lengthscale, Z, variational_posterior)
+#                 dL_dpsi1_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi1))
+#                 dL_dpsi2_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi2))
+                return self.psicomp.gradients_qX_expectations(dL_dpsi1, dL_dpsi2, self.variance, self.lengthscale, Z, variational_posterior)
             else:   
                 ndata = variational_posterior.mean.shape[0]
     

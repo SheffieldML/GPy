@@ -5,6 +5,7 @@ Created on 27 Feb 2014
 '''
 
 from collections import defaultdict
+import weakref
 
 def intarray_default_factory():
     import numpy as np
@@ -41,49 +42,40 @@ class ObservablesList(object):
     def __init__(self):
         self._poc = []
 
-    def remove(self, value):
-        return self._poc.remove(value)
-
-
-    def __delitem__(self, ind):
-        return self._poc.__delitem__(ind)
-
-
-    def __setitem__(self, ind, item):
-        return self._poc.__setitem__(ind, item)
-
-
-    def __getitem__(self, ind):
-        return self._poc.__getitem__(ind)
-
+    def remove(self, priority, observable, callble):
+        """
+        """
+        self._poc.remove((priority, observable, callble))
 
     def __repr__(self):
         return self._poc.__repr__()
 
-
-    def append(self, obj):
-        return self._poc.append(obj)
-
-
-    def index(self, value):
-        return self._poc.index(value)
-
-
-    def extend(self, iterable):
-        return self._poc.extend(iterable)
-
-
+    def add(self, priority, observable, callble):
+        i = 0
+        for i, [p, _, _] in enumerate(self._poc):
+            if p < priority:
+                break
+        self._poc.insert(i, (priority, weakref.ref(observable), callble))
+        
     def __str__(self):
-        return self._poc.__str__()
-
+        ret = []
+        curr_p = None
+        for p, o, c in self:
+            curr = ''
+            if curr_p != p:
+                pre = "{!s}: ".format(p)
+                curr_pre = pre
+            else: curr_pre = " "*len(pre)
+            curr_p = p
+            curr += curr_pre
+            ret.append(curr + ", ".join(map(str, [o,c])))
+        return '\n'.join(ret)
 
     def __iter__(self):
-        return self._poc.__iter__()
-
-
-    def insert(self, index, obj):
-        return self._poc.insert(index, obj)
-
+        self._poc = [(p,o,c) for p,o,c in self._poc if o() is not None]
+        for p, o, c in self._poc:
+            if o() is not None:
+                yield p, o(), c 
 
     def __len__(self):
         return self._poc.__len__()
@@ -106,6 +98,6 @@ class ObservablesList(object):
     def __setstate__(self, state):
         self._poc = []
         for p, o, c in state:
-            self._poc.append((p,o,getattr(o, c)))
+            self.add(p,o,getattr(o, c))
 
     pass

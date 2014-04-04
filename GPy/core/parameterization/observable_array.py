@@ -25,7 +25,7 @@ class ObsAr(np.ndarray, Pickleable, Observable):
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
-        self._observer_callables_ = getattr(obj, '_observer_callables_', None)
+        self.observers = getattr(obj, 'observers', None)
 
     def __array_wrap__(self, out_arr, context=None):
         return out_arr.view(np.ndarray)

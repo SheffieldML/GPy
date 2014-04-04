@@ -44,22 +44,23 @@ class Observable(object):
     def __init__(self, *args, **kwargs):
         super(Observable, self).__init__()
         from lists_and_dicts import ObservablesList
-        self._observer_callables_ = ObservablesList()
+        self.observers = ObservablesList()
 
     def add_observer(self, observer, callble, priority=0):
-        self._insert_sorted(priority, observer, callble)
+        self.observers.add(priority, observer, callble)
 
     def remove_observer(self, observer, callble=None):
         to_remove = []
-        for p, obs, clble in self._observer_callables_:
+        for poc in self.observers:
+            _, obs, clble = poc
             if callble is not None:
                 if (obs == observer) and (callble == clble):
-                    to_remove.append((p, obs, clble))
+                    to_remove.append(poc)
             else:
                 if obs is observer:
-                    to_remove.append((p, obs, clble))
+                    to_remove.append(poc)
         for r in to_remove:
-            self._observer_callables_.remove(r)
+            self.observers.remove(*r)
 
     def notify_observers(self, which=None, min_priority=None):
         """
@@ -74,20 +75,12 @@ class Observable(object):
         if which is None:
             which = self
         if min_priority is None:
-            [callble(self, which=which) for _, _, callble in self._observer_callables_]
+            [callble(self, which=which) for _, _, callble in self.observers]
         else:
-            for p, _, callble in self._observer_callables_:
+            for p, _, callble in self.observers:
                 if p <= min_priority:
                     break
                 callble(self, which=which)
-
-    def _insert_sorted(self, p, o, c):
-        ins = 0
-        for pr, _, _ in self._observer_callables_:
-            if p > pr:
-                break
-            ins += 1
-        self._observer_callables_.insert(ins, (p, o, c))
 
 #===============================================================================
 # Foundation framework for parameterized and param objects:
@@ -192,7 +185,7 @@ class Pickleable(object):
 
     def __getstate__(self):
         ignore_list = ([#'_parent_', '_parent_index_',
-                        #'_observer_callables_',
+                        #'observers',
                         '_param_array_', '_gradient_array_', '_fixes_',
                         '_Cacher_wrap__cachers']
                        #+ self.parameter_names(recursive=False)

@@ -191,13 +191,13 @@ class Test(ListDictTestCase):
         par.count = 0
         par.add_observer(self, self._callback, 1)
         pcopy = GPRegression(par.X.copy(), par.Y.copy(), kernel=par.kern.copy())
-        self.assertNotIn(par._observer_callables_[0], pcopy._observer_callables_)
+        self.assertNotIn(par.observers[0], pcopy.observers)
         pcopy = par.copy()
         pcopy.name = "copy"
         self.assertTrue(par.checkgrad())
         self.assertTrue(pcopy.checkgrad())
         self.assertTrue(pcopy.kern.checkgrad())
-        self.assertIn(par._observer_callables_[0], pcopy._observer_callables_)
+        self.assertIn(par.observers[0], pcopy.observers)
         self.assertEqual(par.count, 3)
         self.assertEqual(pcopy.count, 6) # 3 of each call to checkgrad
 

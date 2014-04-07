@@ -302,18 +302,19 @@ def update_gradients(model):
     while not isEnd:
         isEnd, n_range, grad_dict = model.inference_method.inference_minibatch(model.kern, model.X, model.Z, model.likelihood, model.Y)
         if isinstance(model.X, VariationalPosterior):
+            X_slice = model.X[n_range[0]:n_range[1]]
             
             #gradients w.r.t. kernel
-            model.kern.update_gradients_expectations(variational_posterior=model.X[n_range[0]:n_range[1]], Z=model.Z, dL_dpsi0=grad_dict['dL_dpsi0'], dL_dpsi1=grad_dict['dL_dpsi1'], dL_dpsi2=grad_dict['dL_dpsi2'])
+            model.kern.update_gradients_expectations(variational_posterior=X_slice, Z=model.Z, dL_dpsi0=grad_dict['dL_dpsi0'], dL_dpsi1=grad_dict['dL_dpsi1'], dL_dpsi2=grad_dict['dL_dpsi2'])
             kern_grad += model.kern.gradient
     
             #gradients w.r.t. Z
             model.Z.gradient[:,model.kern.active_dims] += model.kern.gradients_Z_expectations(
-                               grad_dict['dL_dpsi1'], grad_dict['dL_dpsi2'], Z=model.Z, variational_posterior=model.X[n_range[0]:n_range[1]])
+                               grad_dict['dL_dpsi1'], grad_dict['dL_dpsi2'], Z=model.Z, variational_posterior=X_slice)
         
             #gradients w.r.t. posterior parameters of X
-            X_grad = model.kern.gradients_qX_expectations(variational_posterior=model.X[n_range[0]:n_range[1]], Z=model.Z, dL_dpsi0=grad_dict['dL_dpsi0'], dL_dpsi1=grad_dict['dL_dpsi1'], dL_dpsi2=grad_dict['dL_dpsi2'])
-            model.set_X_gradients(model.X[n_range[0]:n_range[1]], X_grad)
+            X_grad = model.kern.gradients_qX_expectations(variational_posterior=X_slice, Z=model.Z, dL_dpsi0=grad_dict['dL_dpsi0'], dL_dpsi1=grad_dict['dL_dpsi1'], dL_dpsi2=grad_dict['dL_dpsi2'])
+            model.set_X_gradients(X_slice, X_grad)
                 
             if het_noise:
                 dL_dthetaL[n_range[0]:n_range[1]] = grad_dict['dL_dthetaL']

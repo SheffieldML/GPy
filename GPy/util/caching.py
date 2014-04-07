@@ -66,6 +66,7 @@ class Cacher(object):
                 #first make sure the depth limit isn't exceeded
                 if len(self.cached_inputs) == self.limit:
                     args_ = self.cached_inputs.pop(0)
+                    args_ = [a for i,a in enumerate(args_) if i not in self.ignore_args and i not in self.force_kwargs]
                     [a.remove_observer(self, self.on_cache_changed) for a in args_ if a is not None]
                     self.inputs_changed.pop(0)
                     self.cached_outputs.pop(0)

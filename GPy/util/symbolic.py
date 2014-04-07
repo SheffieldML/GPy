@@ -1,6 +1,56 @@
+import sympy as sym
 from sympy import Function, S, oo, I, cos, sin, asin, log, erf, pi, exp, sqrt, sign, gamma,polygamma
 
+def stabilise(e):
+    """Attempt to find the most numerically stable form of an expression"""
+    return e #sym.expand(e)
+
+class logistic(Function):
+    """The logistic function as a symbolic function."""
+    nargs = 1
+    def fdiff(self, argindex=1):
+        x = self.args[0]
+        return logistic(x)*(1-logistic(x))
+
+    @classmethod
+    def eval(cls, x):
+        if x.is_Number:
+            return 1/(1+exp(-x))
+    
+class logisticln(Function):
+    """The log logistic, which can often be computed with more precision than the simply taking log(logistic(x)) when x is small or large."""
+    nargs = 1
+
+    def fdiff(self, argindex=1):
+        x = self.args[0]
+        return 1-logistic(x)
+
+    @classmethod
+    def eval(cls, x):
+        if x.is_Number:
+            return -np.log(1+exp(-x))
+
+class erfc(Function):
+    """The complementary error function, erfc(x) = 1-erf(x). Used as a helper function, particularly for erfcx, the scaled complementary error function. and the normal distributions cdf."""
+    nargs = 1
+    
+    @classmethod
+    def eval(cls, arg):
+        return 1-erf(arg)
+
+class erfcx(Function):
+    nargs = 1
+    def fdiff(self, argindex=1):
+        x = self.args[0]
+        return x*erfcx(x)-2/sqrt(pi)
+        
+    @classmethod
+    def eval(cls, x):
+        if x.is_Number:
+            return exp(x**2)*erfc(x)
+
 class gammaln(Function):
+    """The log of the gamma function, which is often needed instead of log(gamma(x)) for better accuracy for large x."""
     nargs = 1
 
     def fdiff(self, argindex=1):
@@ -13,22 +63,26 @@ class gammaln(Function):
             return log(gamma(x))
     
 
-class ln_cum_gaussian(Function):
+class normcdfln(Function):
+    """The log of the normal cdf. Can often be computed with better accuracy than log(normcdf(x)), particulary when x is either small or large."""
     nargs = 1
 
     def fdiff(self, argindex=1):
         x = self.args[0]
-        return exp(-ln_cum_gaussian(x) - 0.5*x*x)/sqrt(2*pi)
+        #return -erfcx(-x/sqrt(2))/sqrt(2*pi)
+        #return exp(-normcdfln(x) - 0.5*x*x)/sqrt(2*pi)
+        return sqrt(2/pi)*1/erfcx(-x/sqrt(2))
 
     @classmethod
     def eval(cls, x):
         if x.is_Number:
-            return log(cum_gaussian(x))
+            return log(normcdf(x))
 
     def _eval_is_real(self):
         return self.args[0].is_real
 
-class cum_gaussian(Function):
+class normcdf(Function):
+    """The cumulative distribution function of the standard normal. Provided as a convenient helper function. It is computed throught -0.5*erfc(-x/sqrt(2))."""
     nargs = 1
     def fdiff(self, argindex=1):
         x = self.args[0]
@@ -37,12 +91,30 @@ class cum_gaussian(Function):
     @classmethod
     def eval(cls, x):
         if x.is_Number:
-            return 0.5*(1+erf(sqrt(2)/2*x))
+            return 0.5*(erfc(-x/sqrt(2)))
 
     def _eval_is_real(self):
         return self.args[0].is_real
 
-class gaussian(Function):
+class normalln(Function):
+    """The log of the standard normal distribution."""
+    nargs = 1
+    def fdiff(self, argindex=1):
+         x = self.args[0]
+         return -x
+     
+    @classmethod
+    def eval(cls, x):
+        if x.is_Number:
+            return 0.5*sqrt(2*pi) - 0.5*x*x
+
+
+    def _eval_is_real(self):
+        return True
+
+
+class normal(Function):
+    """The standard normal distribution. Provided as a convenience function."""
     nargs = 1
     @classmethod
     def eval(cls, x):
@@ -273,17 +345,5 @@ class h(Function):
                 #           *(erf(tprime/l - d_j/2.*l)
                 #             + erf(d_j/2.*l))))
 
-class erfc(Function):
-    nargs = 1
-    
-    @classmethod
-    def eval(cls, arg):
-        return 1-erf(arg)
 
-class erfcx(Function):
-    nargs = 1
-
-    @classmethod
-    def eval(cls, arg):
-        return erfc(arg)*exp(arg*arg)
 

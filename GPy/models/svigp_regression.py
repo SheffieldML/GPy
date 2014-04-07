@@ -43,10 +43,3 @@ class SVIGPRegression(SVIGP):
         SVIGP.__init__(self, X, likelihood, kernel, Z, q_u=q_u, batchsize=batchsize)
         self.load_batch()
 
-    def _getstate(self):
-        return GPBase._getstate(self)
-
-
-    def _setstate(self, state):
-        return GPBase._setstate(self, state)
-

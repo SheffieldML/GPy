@@ -23,7 +23,6 @@ class Prod(CombinationKernel):
 
     @Cache_this(limit=2, force_kwargs=['which_parts'])
     def K(self, X, X2=None, which_parts=None):
-        assert X.shape[1] == self.input_dim
         if which_parts is None:
             which_parts = self.parts
         elif not isinstance(which_parts, (list, tuple)):
@@ -33,7 +32,6 @@ class Prod(CombinationKernel):
 
     @Cache_this(limit=2, force_kwargs=['which_parts'])
     def Kdiag(self, X, which_parts=None):
-        assert X.shape[1] == self.input_dim
         if which_parts is None:
             which_parts = self.parts
         return reduce(np.multiply, (p.Kdiag(X) for p in which_parts))
@@ -58,8 +56,6 @@ class Prod(CombinationKernel):
     def gradients_X_diag(self, dL_dKdiag, X):
         target = np.zeros(X.shape)
         for k1,k2 in itertools.combinations(self.parts, 2):
-            target += k1.gradients_X(dL_dKdiag*k2.Kdiag(X), X)
-            target += k2.gradients_X(dL_dKdiag*k1.Kdiag(X), X)
+            target += k1.gradients_X_diag(dL_dKdiag*k2.Kdiag(X), X)
+            target += k2.gradients_X_diag(dL_dKdiag*k1.Kdiag(X), X)
         return target
-
-

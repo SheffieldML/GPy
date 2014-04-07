@@ -48,7 +48,7 @@ class Cacher(object):
                 if k in kw and kw[k] is not None:
                     return self.operation(*args, **kw)
         # TODO: WARNING !!! Cache OFFSWITCH !!! WARNING
-        #return self.operation(*args)
+        # return self.operation(*args, **kw)
 
         #if the result is cached, return the cached computation
         state = [all(a is b for a, b in itertools.izip_longest(args, cached_i)) for cached_i in self.cached_inputs]
@@ -98,11 +98,20 @@ class Cacher(object):
         self.cached_outputs = []
         self.inputs_changed = []
 
+    def __deepcopy__(self, memo=None):
+        return Cacher(self.operation, self.limit, self.ignore_args, self.force_kwargs)
+
+    def __getstate__(self, memo=None):
+        raise NotImplementedError, "Trying to pickle Cacher object with function {}, pickling functions not possible.".format(str(self.operation))
+
+    def __setstate__(self, memo=None):
+        raise NotImplementedError, "Trying to pickle Cacher object with function {}, pickling functions not possible.".format(str(self.operation))
+
     @property
     def __name__(self):
         return self.operation.__name__
 
-from functools import partial
+from functools import partial, update_wrapper
 
 class Cacher_wrap(object):
     def __init__(self, f, limit, ignore_args, force_kwargs):
@@ -110,6 +119,7 @@ class Cacher_wrap(object):
         self.ignore_args = ignore_args
         self.force_kwargs = force_kwargs
         self.f = f
+        update_wrapper(self, self.f)
     def __get__(self, obj, objtype=None):
         return partial(self, obj)
     def __call__(self, *args, **kwargs):

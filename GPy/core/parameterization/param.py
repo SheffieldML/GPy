@@ -4,7 +4,7 @@
 import itertools
 import numpy
 from parameter_core import OptimizationHandlable, adjust_name_for_printing
-from array_core import ObsAr
+from observable_array import ObsAr
 
 ###### printing
 __constraints_name__ = "Constraint"
@@ -43,14 +43,13 @@ class Param(OptimizationHandlable, ObsAr):
     _fixes_ = None
     _parameters_ = []
     def __new__(cls, name, input_array, default_constraint=None):
-        obj = numpy.atleast_1d(super(Param, cls).__new__(cls, input_array=input_array, name=name, default_constraint=default_constraint))
+        obj = numpy.atleast_1d(super(Param, cls).__new__(cls, input_array=input_array))
         cls.__name__ = "Param"
         obj._current_slice_ = (slice(obj.shape[0]),)
         obj._realshape_ = obj.shape
         obj._realsize_ = obj.size
         obj._realndim_ = obj.ndim
         obj._original_ = True
-        obj._gradient_array_ = numpy.zeros(obj.shape, dtype=numpy.float64)
         return obj
 
     def __init__(self, name, input_array, default_constraint=None, *a, **kw):
@@ -60,7 +59,7 @@ class Param(OptimizationHandlable, ObsAr):
         import pydot
         node = pydot.Node(id(self), shape='record', label=self.name)
         G.add_node(node)
-        for o in self._observer_callables_.keys():
+        for o in self.observers.keys():
             label = o.name if hasattr(o, 'name') else str(o)
             observed_node = pydot.Node(id(o), label=label)
             G.add_node(observed_node)
@@ -87,74 +86,24 @@ class Param(OptimizationHandlable, ObsAr):
         self.priors = getattr(obj, 'priors', None)
 
     @property
-    def _param_array_(self):
+    def param_array(self):
         return self
 
     @property
     def gradient(self):
+        """
+        Return a view on the gradient, which is in the same shape as this parameter is.
+        Note: this is not the real gradient array, it is just a view on it.
+
+        To work on the real gradient array use: self.full_gradient
+        """
+        if getattr(self, '_gradient_array_', None) is None:
+            self._gradient_array_ = numpy.empty(self._realshape_, dtype=numpy.float64)
         return self._gradient_array_[self._current_slice_]
 
     @gradient.setter
     def gradient(self, val):
-        self.gradient[:] = val
-
-    #===========================================================================
-    # Pickling operations
-    #===========================================================================
-    def __reduce__(self):
-        func, args, state = super(Param, self).__reduce__()
-        return func, args, (state,
-                            (self._name,
-                             self._parent_,
-                             self._parent_index_,
-                             self._default_constraint_,
-                             self._current_slice_,
-                             self._realshape_,
-                             self._realsize_,
-                             self._realndim_,
-                             self.constraints,
-                             self.priors
-                            )
-                            )
-
-    def __setstate__(self, state):
-        super(Param, self).__setstate__(state[0])
-        state = list(state[1])
-        self.priors = state.pop()
-        self.constraints = state.pop()
-        self._realndim_ = state.pop()
-        self._realsize_ = state.pop()
-        self._realshape_ = state.pop()
-        self._current_slice_ = state.pop()
-        self._default_constraint_ = state.pop()
-        self._parent_index_ = state.pop()
-        self._parent_ = state.pop()
-        self._name = state.pop()
-
-    def copy(self, *args):
-        constr = self.constraints.copy()
-        priors = self.priors.copy()
-        p = Param(self.name, self.view(numpy.ndarray).copy(), self._default_constraint_)
-        p.constraints = constr
-        p.priors = priors
-        return p
-    #===========================================================================
-    # get/set parameters
-    #===========================================================================
-#     def _set_params(self, param, trigger_parent=True):
-#         self.flat = param
-#         if trigger_parent: min_priority = None
-#         else: min_priority = -numpy.inf
-#         self.notify_observers(None, min_priority)
-#
-#     def _get_params(self):
-#         return self.flat
-#
-#     def _collect_gradient(self, target):
-#         target += self.gradient.flat
-#
-#     def _set_gradient(self, g):
-#         self.gradient = g.reshape(self._realshape_)
+        self._gradient_array_[self._current_slice_] = val
 
     #===========================================================================
     # Array operations -> done
@@ -172,24 +121,6 @@ class Param(OptimizationHandlable, ObsAr):
     def __setitem__(self, s, val):
         super(Param, self).__setitem__(s, val)
 
-    #===========================================================================
-    # Index Operations:
-    #===========================================================================
-    #def _internal_offset(self):
-    #    internal_offset = 0
-    #    extended_realshape = numpy.cumprod((1,) + self._realshape_[:0:-1])[::-1]
-    #    for i, si in enumerate(self._current_slice_[:self._realndim_]):
-    #        if numpy.all(si == Ellipsis):
-    #            continue
-    #        if isinstance(si, slice):
-    #            a = si.indices(self._realshape_[i])[0]
-    #        elif isinstance(si, (list,numpy.ndarray,tuple)):
-    #            a = si[0]
-    #        else: a = si
-    #        if a < 0:
-    #            a = self._realshape_[i] + a
-    #        internal_offset += a * extended_realshape[i]
-    #    return internal_offset
 
     def _raveled_index(self, slice_index=None):
         # return an index array on the raveled array, which is formed by the current_slice
@@ -235,13 +166,21 @@ class Param(OptimizationHandlable, ObsAr):
     def is_fixed(self):
         from transformations import __fixed__
         return self.constraints[__fixed__].size == self.size
-    #def round(self, decimals=0, out=None):
-    #    view = super(Param, self).round(decimals, out).view(Param)
-    #    view.__array_finalize__(self)
-    #    return view
-    #round.__doc__ = numpy.round.__doc__
+
     def _get_original(self, param):
         return self
+
+    #===========================================================================
+    # Pickling and copying
+    #===========================================================================
+    def __deepcopy__(self, memo):
+        s = self.__new__(self.__class__, name=self.name, input_array=self.view(numpy.ndarray).copy())
+        memo[id(self)] = s
+        import copy
+        s.__dict__.update(copy.deepcopy(self.__dict__, memo))
+        return s
+
+
     #===========================================================================
     # Printing -> done
     #===========================================================================
@@ -250,7 +189,8 @@ class Param(OptimizationHandlable, ObsAr):
         if self.size <= 1:
             return [str(self.view(numpy.ndarray)[0])]
         else: return [str(self.shape)]
-    def parameter_names(self, add_self=False, adjust_for_printing=False):
+    def parameter_names(self, add_self=False, adjust_for_printing=False, recursive=True):
+        # this is just overwrighting the parameterized calls to parameter names, in order to maintain OOP
         if adjust_for_printing:
             return [adjust_name_for_printing(self.name)]
         return [self.name]
@@ -260,6 +200,9 @@ class Param(OptimizationHandlable, ObsAr):
     @property
     def parameter_shapes(self):
         return [self.shape]
+    @property
+    def num_params(self):
+        return 0
     @property
     def _constraints_str(self):
         return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self.constraints.iteritems()))]
@@ -282,8 +225,8 @@ class Param(OptimizationHandlable, ObsAr):
         if isinstance(slice_index, (tuple, list)):
             clean_curr_slice = [s for s in slice_index if numpy.any(s != Ellipsis)]
             for i in range(self._realndim_-len(clean_curr_slice)):
-                i+=len(clean_curr_slice)
-                clean_curr_slice += range(self._realshape_[i])
+                i+=1
+                clean_curr_slice += [range(self._realshape_[i])]
             if (all(isinstance(n, (numpy.ndarray, list, tuple)) for n in clean_curr_slice)
                 and len(set(map(len, clean_curr_slice))) <= 1):
                 return numpy.fromiter(itertools.izip(*clean_curr_slice),
@@ -368,7 +311,7 @@ class ParamConcatenation(object):
     #===========================================================================
     def __getitem__(self, s):
         ind = numpy.zeros(sum(self._param_sizes), dtype=bool); ind[s] = True;
-        params = [p._param_array_[ind[ps]] for p,ps in zip(self.params, self._param_slices_) if numpy.any(p._param_array_[ind[ps]])]
+        params = [p.param_array[ind[ps]] for p,ps in zip(self.params, self._param_slices_) if numpy.any(p.param_array[ind[ps]])]
         if len(params)==1: return params[0]
         return ParamConcatenation(params)
     def __setitem__(self, s, val, update=True):
@@ -381,7 +324,7 @@ class ParamConcatenation(object):
         if update:
             self.update_all_params()
     def values(self):
-        return numpy.hstack([p._param_array_ for p in self.params])
+        return numpy.hstack([p.param_array.flat for p in self.params])
     #===========================================================================
     # parameter operations:
     #===========================================================================

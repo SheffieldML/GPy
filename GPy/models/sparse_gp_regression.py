@@ -51,14 +51,6 @@ class SparseGPRegression(SparseGP):
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method=VarDTC())
 
-    def _getstate(self):
-        return SparseGP._getstate(self)
-
-    def _setstate(self, state):
-        return SparseGP._setstate(self, state)
-
-
-
 class SparseGPRegressionUncertainInput(SparseGP):
     """
     Gaussian Process model for regression with Gaussian variance on the inputs (X_variance)

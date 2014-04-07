@@ -23,6 +23,7 @@ class VarDTC(object):
     def __init__(self, limit=1):
         #self._YYTfactor_cache = caching.cache()
         from ...util.caching import Cacher
+        self.limit = limit
         self.get_trYYT = Cacher(self._get_trYYT, limit)
         self.get_YYTfactor = Cacher(self._get_YYTfactor, limit)
 
@@ -32,6 +33,17 @@ class VarDTC(object):
 
     def _get_trYYT(self, Y):
         return param_to_array(np.sum(np.square(Y)))
+
+    def __getstate__(self):
+        # has to be overridden, as Cacher objects cannot be pickled. 
+        return self.limit
+
+    def __setstate__(self, state):
+        # has to be overridden, as Cacher objects cannot be pickled. 
+        self.limit = state
+        from ...util.caching import Cacher
+        self.get_trYYT = Cacher(self._get_trYYT, self.limit)
+        self.get_YYTfactor = Cacher(self._get_YYTfactor, self.limit)
 
     def _get_YYTfactor(self, Y):
         """
@@ -126,7 +138,7 @@ class VarDTC(object):
         delit += output_dim * np.eye(num_inducing)
         # Compute dL_dKmm
         dL_dKmm = backsub_both_sides(Lm, delit)
-        
+
         # derivatives of L w.r.t. psi
         dL_dpsi0, dL_dpsi1, dL_dpsi2 = _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm,
             VVT_factor, Cpsi1Vf, DBi_plus_BiPBi,
@@ -179,6 +191,7 @@ class VarDTC(object):
         return post, log_marginal, grad_dict
 
 class VarDTCMissingData(object):
+    const_jitter = 1e-6
     def __init__(self, limit=1):
         from ...util.caching import Cacher
         self._Y = Cacher(self._subarray_computations, limit)
@@ -250,7 +263,7 @@ class VarDTCMissingData(object):
 
         for y, trYYT, [v, ind] in itertools.izip(Ys, traces, self._subarray_indices):
             if het_noise: beta = beta_all[ind]
-            else: beta = beta_all[0]
+            else: beta = beta_all
 
             VVT_factor = (beta*y)
             VVT_factor_all[v, ind].flat = VVT_factor.flat
@@ -311,7 +324,7 @@ class VarDTCMissingData(object):
                 het_noise, uncertain_inputs, LB,
                 _LBi_Lmi_psi1Vf, DBi_plus_BiPBi, Lm, A,
                 psi0, psi1, beta,
-                data_fit, num_data, output_dim, trYYT)
+                data_fit, num_data, output_dim, trYYT, Y)
 
             if full_VVT_factor: woodbury_vector[:, ind] = Cpsi1Vf
             else:

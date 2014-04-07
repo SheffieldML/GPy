@@ -121,7 +121,7 @@ class Linear(Kern):
             gamma = variational_posterior.binary_prob
             mu = variational_posterior.mean
             return np.einsum('nq,q,mq,nq->nm',gamma,self.variances,Z,mu)
-#            return (self.variances*gamma*mu).sum(axis=1)       
+#            return (self.variances*gamma*mu).sum(axis=1)
         else:
             return self.K(variational_posterior.mean, Z) #the variance, it does nothing
 
@@ -177,7 +177,7 @@ class Linear(Kern):
 
             grad =  np.einsum('nm,nq,q,nq->mq',dL_dpsi1,gamma, self.variances,mu) +\
                  np.einsum('nmo,noq->mq',dL_dpsi2,_dpsi2_dZ)
-            
+
             return grad
         else:
             #psi1
@@ -191,15 +191,15 @@ class Linear(Kern):
             gamma = variational_posterior.binary_prob
             mu = variational_posterior.mean
             S = variational_posterior.variance
-            mu2S = np.square(mu)+S            
+            mu2S = np.square(mu)+S
             _, _dpsi2_dgamma, _dpsi2_dmu, _dpsi2_dS, _ = linear_psi_comp._psi2computations(self.variances, Z, mu, S, gamma)
-            
+
             grad_gamma = np.einsum('n,q,nq->nq',dL_dpsi0,self.variances,mu2S) + np.einsum('nm,q,mq,nq->nq',dL_dpsi1,self.variances,Z,mu) +\
                  np.einsum('nmo,nmoq->nq',dL_dpsi2,_dpsi2_dgamma)
             grad_mu = np.einsum('n,nq,q,nq->nq',dL_dpsi0,gamma,2.*self.variances,mu) + np.einsum('nm,nq,q,mq->nq',dL_dpsi1,gamma,self.variances,Z) +\
                  np.einsum('nmo,nmoq->nq',dL_dpsi2,_dpsi2_dmu)
             grad_S = np.einsum('n,nq,q->nq',dL_dpsi0,gamma,self.variances) + np.einsum('nmo,nmoq->nq',dL_dpsi2,_dpsi2_dS)
-            
+
             return grad_mu, grad_S, grad_gamma
         else:
             grad_mu, grad_S = np.zeros(variational_posterior.mean.shape), np.zeros(variational_posterior.mean.shape)
@@ -210,7 +210,7 @@ class Linear(Kern):
             grad_mu += (dL_dpsi1[:, :, None] * (Z * self.variances)).sum(1)
             # psi2
             self._weave_dpsi2_dmuS(dL_dpsi2, Z, variational_posterior, grad_mu, grad_S)
-    
+
             return grad_mu, grad_S
 
     #--------------------------------------------------#
@@ -313,3 +313,47 @@ class Linear(Kern):
 
     def input_sensitivity(self):
         return np.ones(self.input_dim) * self.variances
+
+class LinearFull(Kern):
+    def __init__(self, input_dim, rank, W=None, kappa=None, active_dims=None, name='linear_full'):
+        super(LinearFull, self).__init__(input_dim, active_dims, name)
+        if W is None:
+            W = np.ones((input_dim, rank))
+        if kappa is None:
+            kappa = np.ones(input_dim)
+        assert W.shape == (input_dim, rank)
+        assert kappa.shape == (input_dim,)
+
+        self.W = Param('W', W)
+        self.kappa = Param('kappa', kappa, Logexp())
+        self.add_parameters(self.W, self.kappa)
+
+    def K(self, X, X2=None):
+        P = np.dot(self.W, self.W.T) + np.diag(self.kappa)
+        return np.einsum('ij,jk,lk->il', X, P, X if X2 is None else X2)
+
+    def update_gradients_full(self, dL_dK, X, X2=None):
+        self.kappa.gradient = np.einsum('ij,ik,kj->j', X, dL_dK, X if X2 is None else X2)
+        self.W.gradient = np.einsum('ij,kl,ik,lm->jm', X, X if X2 is None else X2, dL_dK, self.W)
+        self.W.gradient += np.einsum('ij,kl,ik,jm->lm', X, X if X2 is None else X2, dL_dK, self.W)
+
+    def Kdiag(self, X):
+        P = np.dot(self.W, self.W.T) + np.diag(self.kappa)
+        return np.einsum('ij,jk,ik->i', X, P, X)
+
+    def update_gradients_diag(self, dL_dKdiag, X):
+        self.kappa.gradient = np.einsum('ij,i->j', np.square(X), dL_dKdiag)
+        self.W.gradient = 2.*np.einsum('ij,ik,jl,i->kl', X, X, self.W, dL_dKdiag)
+
+    def gradients_X(self, dL_dK, X, X2=None):
+        P = np.dot(self.W, self.W.T) + np.diag(self.kappa)
+        if X2 is None:
+            return 2.*np.einsum('ij,jk,kl->il', dL_dK, X, P)
+        else:
+            return np.einsum('ij,jk,kl->il', dL_dK, X2, P)
+
+    def gradients_X_diag(self, dL_dKdiag, X):
+        P = np.dot(self.W, self.W.T) + np.diag(self.kappa)
+        return 2.*np.einsum('jk,i,ij->ik', P, dL_dKdiag, X)
+
+

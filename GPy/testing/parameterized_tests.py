@@ -7,7 +7,7 @@ import unittest
 import GPy
 import numpy as np
 from GPy.core.parameterization.parameter_core import HierarchyError
-from GPy.core.parameterization.array_core import ObsAr
+from GPy.core.parameterization.observable_array import ObsAr
 
 class ArrayCoreTest(unittest.TestCase):
     def setUp(self):
@@ -34,6 +34,7 @@ class ParameterizedTest(unittest.TestCase):
         self.param = Param('param', np.random.rand(25,2), Logistic(0, 1))
 
         self.test1 = GPy.core.Parameterized("test model")
+        self.test1.param = self.param
         self.test1.kern = self.rbf+self.white
         self.test1.add_parameter(self.test1.kern)
         self.test1.add_parameter(self.param, 0)
@@ -58,6 +59,9 @@ class ParameterizedTest(unittest.TestCase):
         self.assertListEqual(self.test1._fixes_.tolist(),[FIXED,UNFIXED,UNFIXED])
         self.test1.kern.rbf.fix()
         self.assertListEqual(self.test1._fixes_.tolist(),[FIXED]*3)
+        self.test1.fix()
+        self.assertTrue(self.test1.is_fixed)
+        self.assertListEqual(self.test1._fixes_.tolist(),[FIXED]*self.test1.size)
 
     def test_remove_parameter(self):
         from GPy.core.parameterization.transformations import FIXED, UNFIXED, __fixed__, Logexp
@@ -86,9 +90,9 @@ class ParameterizedTest(unittest.TestCase):
         self.assertListEqual(self.test1.constraints[Logexp()].tolist(), range(self.param.size, self.param.size+self.rbf.size))
 
     def test_remove_parameter_param_array_grad_array(self):
-        val = self.test1.kern._param_array_.copy()
+        val = self.test1.kern.param_array.copy()
         self.test1.kern.remove_parameter(self.white)
-        self.assertListEqual(self.test1.kern._param_array_.tolist(), val[:2].tolist())
+        self.assertListEqual(self.test1.kern.param_array.tolist(), val[:2].tolist())
 
     def test_add_parameter_already_in_hirarchy(self):
         self.assertRaises(HierarchyError, self.test1.add_parameter, self.white._parameters_[0])

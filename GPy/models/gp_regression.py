@@ -29,8 +29,3 @@ class GPRegression(GP):
 
         super(GPRegression, self).__init__(X, Y, kernel, likelihood, name='GP regression', Y_metadata=Y_metadata)
 
-    def _getstate(self):
-        return GP._getstate(self)
-
-    def _setstate(self, state):
-        return GP._setstate(self, state)

@@ -11,9 +11,9 @@ from kern import Kern
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 
-class Sympykern(Kern):
+class Symbolic(Kern):
     """
-    A kernel object, where all the hard work in done by sympy.
+    A kernel object, where all the hard work is done by sympy.
 
     :param k: the covariance function
     :type k: a positive definite sympy function of x_0, z_0, x_1, z_1, x_2, z_2...
@@ -26,10 +26,8 @@ class Sympykern(Kern):
      - to handle multiple inputs, call them x_1, z_1, etc
      - to handle multpile correlated outputs, you'll need to add parameters with an index, such as lengthscale_i and lengthscale_j.
     """
-    def __init__(self, input_dim, k=None, output_dim=1, name=None, param=None, active_dims=None):
+    def __init__(self, input_dim, k=None, output_dim=1, name='symbolic', param=None, active_dims=None, operators=None):
 
-        if name is None:
-            name='sympykern'
         if k is None:
             raise ValueError, "You must provide an argument for the covariance function."
         super(Sympykern, self).__init__(input_dim, active_dims, name)
@@ -59,7 +57,6 @@ class Sympykern(Kern):
 
         # extract parameter names from the covariance
         thetas = sorted([e for e in sp_vars if not (e.name[0:2]=='x_' or e.name[0:2]=='z_')],key=lambda e:e.name)
-
 
         # Look for parameters with index (subscripts), they are associated with different outputs.
         if self.output_dim>1:
@@ -97,8 +94,8 @@ class Sympykern(Kern):
             val = 1.0
             # TODO: what if user has passed a parameter vector, how should that be stored and interpreted? This is the old way before params class.
             if param is not None:
-                if param.has_key(theta):
-                    val = param[theta]
+                if param.has_key(theta.name):
+                    val = param[theta.name]
             setattr(self, theta.name, Param(theta.name, val, None))
             self.add_parameters(getattr(self, theta.name))
 
@@ -117,6 +114,12 @@ class Sympykern(Kern):
             self.arg_list += self._sp_theta_i + self._sp_theta_j
             self.diag_arg_list += self._sp_theta_i
 
+        # Check if there are additional linear operators on the covariance.
+        self._sp_operators = operators
+        # TODO: Deal with linear operators
+        #if self._sp_operators:
+        #    for operator in self._sp_operators:
+                
         # psi_stats aren't yet implemented.
         if False:
             self.compute_psi_stats()
@@ -254,3 +257,176 @@ class Sympykern(Kern):
                     self._reverse_arguments[theta_i.name] = self._arguments[theta_j.name].T
                     self._reverse_arguments[theta_j.name] = self._arguments[theta_i.name].T
 
+if False:
+    class Symcombine(CombinationKernel):
+        """
+        Combine list of given sympy covariances together with the provided operations.
+        """
+        def __init__(self, subkerns, operations, name='sympy_combine'):
+            super(Symcombine, self).__init__(subkerns, name)
+            for subkern, operation in zip(subkerns, operations):
+                self._sp_k += self._k_double_operate(subkern._sp_k, operation)
+
+        #def _double_operate(self, k, operation):
+
+
+        @Cache_this(limit=2, force_kwargs=['which_parts'])
+        def K(self, X, X2=None, which_parts=None):
+            """
+            Combine covariances with a linear operator.
+            """
+            assert X.shape[1] == self.input_dim
+            if which_parts is None:
+                which_parts = self.parts
+            elif not isinstance(which_parts, (list, tuple)):
+                # if only one part is given
+                which_parts = [which_parts]
+            return reduce(np.add, (p.K(X, X2) for p in which_parts))
+
+        @Cache_this(limit=2, force_kwargs=['which_parts'])
+        def Kdiag(self, X, which_parts=None):
+            assert X.shape[1] == self.input_dim
+            if which_parts is None:
+                which_parts = self.parts
+            elif not isinstance(which_parts, (list, tuple)):
+                # if only one part is given
+                which_parts = [which_parts]
+            return reduce(np.add, (p.Kdiag(X) for p in which_parts))
+
+        def update_gradients_full(self, dL_dK, X, X2=None):
+            [p.update_gradients_full(dL_dK, X, X2) for p in self.parts]
+
+        def update_gradients_diag(self, dL_dK, X):
+            [p.update_gradients_diag(dL_dK, X) for p in self.parts]
+
+        def gradients_X(self, dL_dK, X, X2=None):
+            """Compute the gradient of the objective function with respect to X.
+
+            :param dL_dK: An array of gradients of the objective function with respect to the covariance function.
+            :type dL_dK: np.ndarray (num_samples x num_inducing)
+            :param X: Observed data inputs
+            :type X: np.ndarray (num_samples x input_dim)
+            :param X2: Observed data inputs (optional, defaults to X)
+            :type X2: np.ndarray (num_inducing x input_dim)"""
+
+            target = np.zeros(X.shape)
+            [target.__iadd__(p.gradients_X(dL_dK, X, X2)) for p in self.parts]
+            return target
+
+        def gradients_X_diag(self, dL_dKdiag, X):
+            target = np.zeros(X.shape)
+            [target.__iadd__(p.gradients_X_diag(dL_dKdiag, X)) for p in self.parts]
+            return target
+
+        def psi0(self, Z, variational_posterior):
+            return reduce(np.add, (p.psi0(Z, variational_posterior) for p in self.parts))
+
+        def psi1(self, Z, variational_posterior):
+            return reduce(np.add, (p.psi1(Z, variational_posterior) for p in self.parts))
+
+        def psi2(self, Z, variational_posterior):
+            psi2 = reduce(np.add, (p.psi2(Z, variational_posterior) for p in self.parts))
+            #return psi2
+            # compute the "cross" terms
+            from static import White, Bias
+            from rbf import RBF
+            #from rbf_inv import RBFInv
+            from linear import Linear
+            #ffrom fixed import Fixed
+
+            for p1, p2 in itertools.combinations(self.parts, 2):
+                # i1, i2 = p1.active_dims, p2.active_dims
+                # white doesn;t combine with anything
+                if isinstance(p1, White) or isinstance(p2, White):
+                    pass
+                # rbf X bias
+                #elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, (RBF, RBFInv)):
+                elif isinstance(p1,  Bias) and isinstance(p2, (RBF, Linear)):
+                    tmp = p2.psi1(Z, variational_posterior)
+                    psi2 += p1.variance * (tmp[:, :, None] + tmp[:, None, :])
+                #elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, (RBF, RBFInv)):
+                elif isinstance(p2, Bias) and isinstance(p1, (RBF, Linear)):
+                    tmp = p1.psi1(Z, variational_posterior)
+                    psi2 += p2.variance * (tmp[:, :, None] + tmp[:, None, :])
+                elif isinstance(p2, (RBF, Linear)) and isinstance(p1, (RBF, Linear)):
+                    assert np.intersect1d(p1.active_dims, p2.active_dims).size == 0, "only non overlapping kernel dimensions allowed so far"
+                    tmp1 = p1.psi1(Z, variational_posterior)
+                    tmp2 = p2.psi1(Z, variational_posterior)
+                    psi2 += (tmp1[:, :, None] * tmp2[:, None, :]) + (tmp2[:, :, None] * tmp1[:, None, :])
+                else:
+                    raise NotImplementedError, "psi2 cannot be computed for this kernel"
+            return psi2
+
+        def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+            from static import White, Bias
+            for p1 in self.parts:
+                #compute the effective dL_dpsi1. Extra terms appear becaue of the cross terms in psi2!
+                eff_dL_dpsi1 = dL_dpsi1.copy()
+                for p2 in self.parts:
+                    if p2 is p1:
+                        continue
+                    if isinstance(p2, White):
+                        continue
+                    elif isinstance(p2, Bias):
+                        eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
+                    else:# np.setdiff1d(p1.active_dims, ar2, assume_unique): # TODO: Careful, not correct for overlapping active_dims
+                        eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
+                p1.update_gradients_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
+
+        def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+            from static import White, Bias
+            target = np.zeros(Z.shape)
+            for p1 in self.parts:
+                #compute the effective dL_dpsi1. extra terms appear becaue of the cross terms in psi2!
+                eff_dL_dpsi1 = dL_dpsi1.copy()
+                for p2 in self.parts:
+                    if p2 is p1:
+                        continue
+                    if isinstance(p2, White):
+                        continue
+                    elif isinstance(p2, Bias):
+                        eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
+                    else:
+                        eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
+                target += p1.gradients_Z_expectations(eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
+            return target
+
+        def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+            from static import White, Bias
+            target_mu = np.zeros(variational_posterior.shape)
+            target_S = np.zeros(variational_posterior.shape)
+            for p1 in self._parameters_:
+                #compute the effective dL_dpsi1. extra terms appear becaue of the cross terms in psi2!
+                eff_dL_dpsi1 = dL_dpsi1.copy()
+                for p2 in self._parameters_:
+                    if p2 is p1:
+                        continue
+                    if isinstance(p2, White):
+                        continue
+                    elif isinstance(p2, Bias):
+                        eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
+                    else:
+                        eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
+                a, b = p1.gradients_qX_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
+                target_mu += a
+                target_S += b
+            return target_mu, target_S
+
+        def _getstate(self):
+            """
+            Get the current state of the class,
+            here just all the indices, rest can get recomputed
+            """
+            return super(Add, self)._getstate()
+
+        def _setstate(self, state):
+            super(Add, self)._setstate(state)
+
+        def add(self, other, name='sum'):
+            if isinstance(other, Add):
+                other_params = other._parameters_.copy()
+                for p in other_params:
+                    other.remove_parameter(p)
+                self.add_parameters(*other_params)
+            else: self.add_parameter(other)
+            return self

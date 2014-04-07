@@ -27,7 +27,10 @@ class BayesianGPLVM(SparseGP):
                  Z=None, kernel=None, inference_method=None, likelihood=None, name='bayesian gplvm', **kwargs):
         if X == None:
             from ..util.initialization import initialize_latent
-            X = initialize_latent(init, input_dim, Y)
+            X, fracs = initialize_latent(init, input_dim, Y)
+        else:
+            fracs = np.ones(input_dim)
+
         self.init = init
 
         if X_variance is None:
@@ -39,7 +42,7 @@ class BayesianGPLVM(SparseGP):
         assert Z.shape[1] == X.shape[1]
 
         if kernel is None:
-            kernel = kern.RBF(input_dim) # + kern.white(input_dim)
+            kernel = kern.RBF(input_dim, lengthscale=fracs, ARD=True) # + kern.white(input_dim)
 
         if likelihood is None:
             likelihood = Gaussian()
@@ -48,20 +51,16 @@ class BayesianGPLVM(SparseGP):
         self.variational_prior = NormalPrior()
         X = NormalPosterior(X, X_variance)
 
+        if inference_method is None:
+            if np.any(np.isnan(Y)):
+                from ..inference.latent_function_inference.var_dtc import VarDTCMissingData
+                inference_method = VarDTCMissingData()
+            else:
+                from ..inference.latent_function_inference.var_dtc import VarDTC
+                inference_method = VarDTC()
+
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)
         self.add_parameter(self.X, index=0)
-
-    def _getstate(self):
-        """
-        Get the current state of the class,
-        here just all the indices, rest can get recomputed
-        """
-        return SparseGP._getstate(self) + [self.init]
-
-    def _setstate(self, state):
-        self._const_jitter = None
-        self.init = state.pop()
-        SparseGP._setstate(self, state)
 
     def set_X_gradients(self, X, X_grad):
         """Set the gradients of the posterior distribution of X in its specific form."""

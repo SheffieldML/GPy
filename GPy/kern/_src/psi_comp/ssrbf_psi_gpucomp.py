@@ -8,11 +8,12 @@ The package for the psi statistics computation on GPU
 import numpy as np
 from GPy.util.caching import Cache_this
 
+from ....util import gpu_init
+assert gpu_init.initSuccess
+
 try:
-    import scikits.cuda.linalg as culinalg
     import pycuda.gpuarray as gpuarray
     from scikits.cuda import cublas
-    import pycuda.autoinit
     from pycuda.reduction import ReductionKernel    
     from pycuda.elementwise import ElementwiseKernel
     from ....util import linalg_gpu
@@ -256,7 +257,7 @@ except:
 
 class PSICOMP_SSRBF(object):
     def __init__(self):
-        self.cublas_handle = cublas.cublasCreate()
+        self.cublas_handle = gpu_init.cublas_handle
         self.gpuCache = None
         self.gpuCacheAll = None
     
@@ -327,6 +328,17 @@ class PSICOMP_SSRBF(object):
             [v.gpudata.free() for v in self.gpuCacheAll.values()]
             self.gpuCacheAll = None
             self.gpuCache = None
+    
+    def estimateMemoryOccupation(self, N, M, Q):
+        """
+        Estimate the best batch size.
+        N - the number of total datapoints
+        M - the number of inducing points
+        Q - the number of hidden (input) dimensions
+        return: the constant memory size, the memory occupation of batchsize=1
+        unit: GB
+        """
+        return (2.*Q+2.*M*Q+M*M*Q)*8./1024./1024./1024., (1.+2.*M+10.*Q+2.*M*M+8.*M*Q+7.*M*M*Q)*8./1024./1024./1024.
 
     @Cache_this(limit=1,ignore_args=(0,))
     def psicomputations(self, variance, lengthscale, Z, mu, S, gamma):

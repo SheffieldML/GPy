@@ -9,12 +9,12 @@ import numpy as np
 from ...util.misc import param_to_array
 log_2_pi = np.log(2*np.pi)
 
+from ...util import gpu_init
+assert gpu_init.initSuccess
+
 try:
-    import scikits.cuda.linalg as culinalg
     import pycuda.gpuarray as gpuarray
     from scikits.cuda import cublas
-    import pycuda.autoinit
-    from pycuda.reduction import ReductionKernel
     from ...util.linalg_gpu import logDiagSum, strideSum, mul_bcast, sum_axis, outer_prod, mul_bcast_first, join_prod
 except:
     pass
@@ -30,25 +30,24 @@ class VarDTC_GPU(object):
 
     """
     const_jitter = np.float64(1e-6)
-    def __init__(self, batchsize=None, limit=1):
+    def __init__(self, batchsize=None, gpu_memory=4., limit=1):
         
         self.batchsize = batchsize
+        self.gpu_memory = gpu_memory
                 
         self.midRes = {}
         self.batch_pos = 0 # the starting position of the current mini-batch
         
-        # Initialize GPU environment
-        culinalg.init()
-        self.cublas_handle = cublas.cublasCreate()
+        self.cublas_handle = gpu_init.cublas_handle
         
         # Initialize GPU caches
         self.gpuCache = None
         
-    def _initGPUCache(self, num_inducing, output_dim, Y):
+    def _initGPUCache(self, kern, num_inducing, input_dim, output_dim, Y):
+        ndata = Y.shape[0]
         if self.batchsize==None:
-            self.batchsize = Y.shape[0]
+            self.batchsize = self._estimateBatchSize(kern, ndata, num_inducing, input_dim, output_dim)
         if self.gpuCache == None:
-            ndata = Y.shape[0]
             self.gpuCache = {# inference_likelihood
                              'Kmm_gpu'              :gpuarray.empty((num_inducing,num_inducing),np.float64,order='F'),
                              'Lm_gpu'               :gpuarray.empty((num_inducing,num_inducing),np.float64,order='F'),
@@ -83,6 +82,34 @@ class VarDTC_GPU(object):
             
             YT_gpu = self.gpuCache['YT_gpu']
             self._trYYT = cublas.cublasDdot(self.cublas_handle, YT_gpu.size, YT_gpu.gpudata, 1, YT_gpu.gpudata, 1)
+            
+    def _estimateMemoryOccupation(self, N, M, D):
+        """
+        Estimate the best batch size.
+        N - the number of total datapoints
+        M - the number of inducing points
+        D - the number of observed (output) dimensions
+        return: the constant memory size, the memory occupation of batchsize=1
+        unit: GB
+        """
+        return (M+9.*M*M+3*M*D+N+2.*N*D)*8./1024./1024./1024., (4.+3.*M+D+3.*M*M)*8./1024./1024./1024.
+    
+    def _estimateBatchSize(self, kern, N, M, Q, D):
+        """
+        Estimate the best batch size.
+        N - the number of total datapoints
+        M - the number of inducing points
+        D - the number of observed (output) dimensions
+        return: the constant memory size, the memory occupation of batchsize=1
+        unit: GB
+        """
+        if kern.useGPU:
+            x0,x1 = kern.psicomp.estimateMemoryOccupation(N,M,Q)
+        else:
+            x0, x1 = 0.,0.
+        y0, y1 = self._estimateMemoryOccupation(N, M, D)
+        
+        return int((self.gpu_memory-y0-x0)/(x1+y1))
         
     def _get_YYTfactor(self, Y):
         """
@@ -104,10 +131,10 @@ class VarDTC_GPU(object):
         Cached intermediate results: Kmm, KmmInv,
         """
         
-        num_inducing = Z.shape[0]
+        num_inducing, input_dim = Z.shape[0], Z.shape[1]
         num_data, output_dim = Y.shape
         
-        self._initGPUCache(num_inducing, output_dim, Y)
+        self._initGPUCache(kern, num_inducing, input_dim, output_dim, Y)
 
         if isinstance(X, VariationalPosterior):
             uncertain_inputs = True
@@ -238,7 +265,7 @@ class VarDTC_GPU(object):
         
         Kmm = kern.K(Z).copy()
         Kmm_gpu = self.gpuCache['Kmm_gpu']
-        Kmm_gpu.set(Kmm)
+        Kmm_gpu.set(np.asfortranarray(Kmm))
         diag.add(Kmm, self.const_jitter)
         ones_gpu = self.gpuCache['ones_gpu']
         cublas.cublasDaxpy(self.cublas_handle, num_inducing, self.const_jitter, ones_gpu.gpudata, 1, Kmm_gpu.gpudata, num_inducing+1)
@@ -310,9 +337,7 @@ class VarDTC_GPU(object):
         cublas.cublasDaxpy(self.cublas_handle, KmmInvPsi2P_gpu.size, np.float64(-output_dim), KmmInvPsi2P_gpu.gpudata, 1, dL_dpsi2R_gpu.gpudata, 1)
         cublas.cublasDscal(self.cublas_handle, dL_dpsi2R_gpu.size, np.float64(-0.5), dL_dpsi2R_gpu.gpudata, 1)
 #         print np.abs(dL_dpsi2R_gpu.get()-dL_dpsi2R).max()
-        
-        #logDiagSum = ReductionKernel(np.float64, neutral="0", reduce_expr="a+b", map_expr="i%step==0?log(x[i]):0", arguments="double *x, int step")
-                
+                        
         #======================================================================
         # Compute log-likelihood
         #======================================================================
@@ -488,22 +513,6 @@ class VarDTC_GPU(object):
         cublas.cublasDgemm(self.cublas_handle, 'T', 'T', output_dim, nSlice, num_inducing, -1.0, v_gpu.gpudata, num_inducing, betapsi1_gpu.gpudata, nSlice, 0.0, betaYT2_gpu.gpudata, output_dim)
         mul_bcast(betaYT2_gpu,betaYT2_gpu,betaYT_gpu_slice,betaYT2_gpu.size)
         sum_axis(dL_dthetaL_gpu, betaYT2_gpu, 1, output_dim)
-
-#         if het_noise:
-#             if uncertain_inputs:
-#                 psiR = np.einsum('mo,nmo->n',dL_dpsi2R,psi2)
-#             else:
-#                 psiR = np.einsum('nm,no,mo->n',psi1,psi1,dL_dpsi2R)
-#             
-#             dL_dthetaL = ((np.square(betaY)).sum(axis=-1) + np.square(beta)*(output_dim*psi0)-output_dim*beta)/2. - np.square(beta)*psiR- (betaY*np.dot(betapsi1,v)).sum(axis=-1)
-#         else:
-#             if uncertain_inputs:
-#                 psiR = np.einsum('mo,nmo->',dL_dpsi2R,psi2)
-#             else:
-#                 psiR = np.einsum('nm,no,mo->',psi1,psi1,dL_dpsi2R)
-#             
-#             dL_dthetaL = ((np.square(betaY)).sum() + np.square(beta)*output_dim*(psi0.sum())-num_slice*output_dim*beta)/2. - np.square(beta)*psiR- (betaY*np.dot(betapsi1,v)).sum()
-
 
         if kern.useGPU:
             dL_dpsi0 = dL_dpsi0_gpu

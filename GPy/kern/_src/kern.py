@@ -13,7 +13,7 @@ class Kern(Parameterized):
     #===========================================================================
     # This adds input slice support. The rather ugly code for slicing can be
     # found in kernel_slice_operations
-    __metaclass__ = KernCallsViaSlicerMeta
+    #__metaclass__ = KernCallsViaSlicerMeta
     #===========================================================================
     _support_GPU=False
     def __init__(self, input_dim, active_dims, name, useGPU=False, *a, **kw):

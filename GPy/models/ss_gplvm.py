@@ -30,9 +30,12 @@ class SSGPLVM(SparseGP):
     def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
                  Z=None, kernel=None, inference_method=None, likelihood=None, name='Spike-and-Slab GPLVM', group_spike=False, **kwargs):
 
-        if X == None: # The mean of variational approximation (mu)
+        if X == None:
             from ..util.initialization import initialize_latent
-            X = initialize_latent(init, input_dim, Y)
+            X, fracs = initialize_latent(init, input_dim, Y)
+        else:
+            fracs = np.ones(input_dim)
+
         self.init = init
 
         if X_variance is None: # The variance of the variational approximation (S)
@@ -52,7 +55,7 @@ class SSGPLVM(SparseGP):
             likelihood = Gaussian()
 
         if kernel is None:
-            kernel = kern.SSRBF(input_dim)
+            kernel = kern.RBF(input_dim, lengthscale=fracs, ARD=True) # + kern.white(input_dim)
                 
         pi = np.empty((input_dim))
         pi[:] = 0.5

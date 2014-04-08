@@ -10,9 +10,9 @@ from ...util.misc import param_to_array
 log_2_pi = np.log(2*np.pi)
 
 from ...util import gpu_init
-assert gpu_init.initSuccess
 
 try:
+    import scikits.cuda.linalg as culinalg
     import pycuda.gpuarray as gpuarray
     from scikits.cuda import cublas
     from ...util.linalg_gpu import logDiagSum, strideSum, mul_bcast, sum_axis, outer_prod, mul_bcast_first, join_prod

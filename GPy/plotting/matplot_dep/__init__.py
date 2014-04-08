@@ -15,3 +15,5 @@ import latent_space_visualizations
 import netpbmfile
 import inference_plots
 import maps
+import img_plots
+from ssgplvm import SSGPLVM_plot

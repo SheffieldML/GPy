@@ -9,7 +9,6 @@ import numpy as np
 from GPy.util.caching import Cache_this
 
 from ....util import gpu_init
-assert gpu_init.initSuccess
 
 try:
     import pycuda.gpuarray as gpuarray
@@ -257,6 +256,7 @@ except:
 
 class PSICOMP_SSRBF(object):
     def __init__(self):
+        assert gpu_init.initSuccess, "GPU initialization failed!"
         self.cublas_handle = gpu_init.cublas_handle
         self.gpuCache = None
         self.gpuCacheAll = None

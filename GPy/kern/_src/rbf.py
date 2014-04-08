@@ -11,9 +11,6 @@ from ...core.parameterization import variational
 from psi_comp import ssrbf_psi_comp
 from psi_comp.ssrbf_psi_gpucomp import PSICOMP_SSRBF
 
-import pycuda.gpuarray as gpuarray
-import pycuda.autoinit
-
 class RBF(Stationary):
     """
     Radial Basis Function kernel, aka squared-exponential, exponentiated quadratic or Gaussian kernel:

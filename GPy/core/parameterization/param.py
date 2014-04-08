@@ -4,7 +4,7 @@
 import itertools
 import numpy
 from parameter_core import OptimizationHandlable, adjust_name_for_printing
-from observable_array import ObsAr
+from array_core import ObsAr
 
 ###### printing
 __constraints_name__ = "Constraint"

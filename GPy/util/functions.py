@@ -19,3 +19,7 @@ def normcdfln(x):
 
 def clip_exp(x):
     return np.where(x<lim_val, np.where(x>-lim_val, np.exp(x), epsilon), 1/epsilon)
+
+def differfln(x0, x1):
+    # this is a, hopefully!, a numerically more stable variant of log(erf(x0)-erf(x1)) = log(erfc(x1)-erfc(x0)).
+    return np.where(x0>x1, -x1*x1 + np.log(erfcx(x1)-np.exp(-x0**2+x1**2)*erfcx(x0)), -x0*x0 + np.log(np.exp(-x1**2+x0**2)*erfcx(x1) - erfcx(x0)))

@@ -10,7 +10,7 @@ except ImportError:
 import numpy as np
 from kern import Kern
 from scipy.special import gammaln, gamma, erf, erfc, erfcx, polygamma
-from GPy.util.functions import normcdf, normcdfln, logistic, logisticln
+from GPy.util.functions import normcdf, normcdfln, logistic, logisticln, differfln
 from ...core.parameterization import Param
 
 class Symbolic(Kern):
@@ -39,6 +39,7 @@ class Symbolic(Kern):
                                'erf':erf, 'erfc':erfc,
                                'erfcx':erfcx,
                                'polygamma':polygamma,
+                               'differfln':differfln,
                                'normcdf':normcdf,
                                'normcdfln':normcdfln,
                                'logistic':logistic,

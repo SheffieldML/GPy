@@ -117,21 +117,30 @@ if sympy_available:
             # generate the code for the pdf and derivatives
             self._gen_code()
 
+        def list_functions(self):
+            """Return a list of all symbolic functions in the model and their names."""
         def _gen_code(self):
             """Generate the code from the symbolic parts that will be used for likleihod computation."""
             # TODO: Check here whether theano is available and set up
             # functions accordingly.
-            self._log_pdf_function = lambdify(self.arg_list, self._sym_log_pdf, self.func_modules)
-
-            # compute code for derivatives 
-            self._derivative_code = {key: lambdify(self.arg_list, self._log_pdf_derivatives[key], self.func_modules) for key in self._log_pdf_derivatives.keys()}
-            self._second_derivative_code = {key: lambdify(self.arg_list, self._log_pdf_second_derivatives[key], self.func_modules) for key in self._log_pdf_second_derivatives.keys()}
-            self._third_derivative_code = {key: lambdify(self.arg_list, self._log_pdf_third_derivatives[key], self.func_modules) for key in self._log_pdf_third_derivatives.keys()}
-
+            symbolic_functions = [self._sym_log_pdf]
+            deriv_list = [self._log_pdf_derivatives, self._log_pdf_second_derivatives, self._log_pdf_third_derivatives]
+            symbolic_functions += [deriv[key] for key in sorted(deriv.keys()) for deriv in deriv_list]
             if self.missing_data:
-                self._missing_derivative_code = {key: lambdify(self.arg_list, self._missing_log_pdf_derivatives[key], self.func_modules) for key in self._missing_log_pdf_derivatives.keys()}
-                self._missing_second_derivative_code = {key: lambdify(self.arg_list, self._missing_log_pdf_second_derivatives[key], self.func_modules) for key in self._missing_log_pdf_second_derivatives.keys()}
-                self._missing_third_derivative_code = {key: lambdify(self.arg_list, self._missing_log_pdf_third_derivatives[key], self.func_modules) for key in self._missing_log_pdf_third_derivatives.keys()}
+                symbolic_functions+=[self._sym_missing_log_pdf]
+                deriv_list = [self._missing_log_pdf_derivatives, self._missing_log_pdf_second_derivatives, self._missing_log_pdf_third_derivatives]
+                symbolic_functions += [deriv[key] for key in sorted(deriv.keys()) for deriv in deriv_list]
+            # self._log_pdf_function = lambdify(self.arg_list, self._sym_log_pdf, self.func_modules)
+
+            # # compute code for derivatives 
+            # self._derivative_code = {key: lambdify(self.arg_list, self._log_pdf_derivatives[key], self.func_modules) for key in self._log_pdf_derivatives.keys()}
+            # self._second_derivative_code = {key: lambdify(self.arg_list, self._log_pdf_second_derivatives[key], self.func_modules) for key in self._log_pdf_second_derivatives.keys()}
+            # self._third_derivative_code = {key: lambdify(self.arg_list, self._log_pdf_third_derivatives[key], self.func_modules) for key in self._log_pdf_third_derivatives.keys()}
+
+            # if self.missing_data:
+            #     self._missing_derivative_code = {key: lambdify(self.arg_list, self._missing_log_pdf_derivatives[key], self.func_modules) for key in self._missing_log_pdf_derivatives.keys()}
+            #     self._missing_second_derivative_code = {key: lambdify(self.arg_list, self._missing_log_pdf_second_derivatives[key], self.func_modules) for key in self._missing_log_pdf_second_derivatives.keys()}
+            #     self._missing_third_derivative_code = {key: lambdify(self.arg_list, self._missing_log_pdf_third_derivatives[key], self.func_modules) for key in self._missing_log_pdf_third_derivatives.keys()}
 
             # TODO: compute EP code parts based on logZ. We need dlogZ/dmu, d2logZ/dmu2 and dlogZ/dtheta
 

@@ -21,4 +21,5 @@ except ImportError:
 if sympy_available:
     from _src.symbolic import Symbolic
     from _src.heat_eqinit import Heat_eqinit
+    from _src.ode1_eq_lfm import Ode1_eq_lfm
     

@@ -1,9 +1,51 @@
 import sympy as sym
-from sympy import Function, S, oo, I, cos, sin, asin, log, erf, pi, exp, sqrt, sign, gamma,polygamma
-
+from sympy import Function, S, oo, I, cos, sin, asin, log, erf, pi, exp, sqrt, sign, gamma, polygamma
+from sympy.utilities.lambdify import lambdastr
+from sympy.utilities.iterables import numbered_symbols
 def stabilise(e):
     """Attempt to find the most numerically stable form of an expression"""
     return e #sym.expand(e)
+
+
+def gen_code(expressions, prefix='sub'):
+    """Generate code for the list of expressions provided using the common sub-expression eliminator."""
+    # First convert the expressions to a list.
+    # We should find the following type of expressions: 'function', 'derivative', 'second_derivative', 'third_derivative'. 
+
+    expression_list = []
+    expression_keys = []
+    function_code = {}
+    for key in expressions.key():
+        if key == 'function':
+            expression_list.append(expressions[key])
+            expression_keys.append(key)
+            function_code[key] = ''
+        elif key[-9:] == 'derivative':
+            function_code[key] = {}
+            for dkey in expressions[key]:
+                expression_list.append(expressions[key][dkey])
+                expression_keys.append([key, dkey])
+                function_code[key][dkey] = ''
+
+    symbols, functions = sym.cse(expression_list, numbered_symbols(prefix=prefix))
+    
+    # Create strings that lambda strings from the expressions. 
+    sub_expressions = []
+    for sub, expr in symbols:
+        arg_list = [e for e in expr.atoms() if e.is_Symbol]
+        sub_code += [lambdastr(sorted(arg_list), expr)]
+
+    function_expressions = []
+    for expr, keys in zip(functions, expression_keys):
+        arg_list = [e for e in expr.atoms() if e.is_Symbol]
+        function_code += [lambdastr(sorted(arg_list), expr)]
+
+    for key in function_code.key():
+        if key == 'function':
+            function_code[key] = 
+
+    return sub_code, func_code
+    
 
 class logistic(Function):
     """The logistic function as a symbolic function."""
@@ -123,23 +165,23 @@ class normal(Function):
     def _eval_is_real(self):
         return True
 
-class ln_diff_erf(Function):
+class differfln(Function):
     nargs = 2
 
     def fdiff(self, argindex=2):
         if argindex == 2:
             x0, x1 = self.args
-            return -2*exp(-x1**2)/(sqrt(pi)*(erf(x0)-erf(x1)))
+            return -2/(sqrt(pi)*(erfcx(x1)-exp(x1**2-x0**2)*erfcx(x0)))
         elif argindex == 1:
             x0, x1 = self.args
-            return 2.*exp(-x0**2)/(sqrt(pi)*(erf(x0)-erf(x1)))
+            return 2/(sqrt(pi)*(exp(x0**2-x1**2)*erfcx(x1)-erfcx(x0)))
         else:
             raise ArgumentIndexError(self, argindex)
         
     @classmethod
     def eval(cls, x0, x1):
         if x0.is_Number and x1.is_Number:            
-            return log(erf(x0)-erf(x1))
+            return log(erfc(x1)-erfc(x0))
 
 class dh_dd_i(Function):
     nargs = 5
@@ -304,7 +346,6 @@ class h(Function):
     
     @classmethod
     def eval(cls, t, tprime, d_i, d_j, l):
-        # putting in the is_Number stuff forces it to look for a fdiff method for derivative. If it's left out, then when asking for self.diff, it just does the diff on the eval symbolic terms directly. We want to avoid that because we are looking to ensure everything is numerically stable. Maybe it's because of the if statement that this happens? 
         if (t.is_Number
             and tprime.is_Number
             and d_i.is_Number

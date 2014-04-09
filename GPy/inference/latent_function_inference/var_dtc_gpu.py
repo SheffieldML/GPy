@@ -109,7 +109,9 @@ class VarDTC_GPU(object):
             x0, x1 = 0.,0.
         y0, y1 = self._estimateMemoryOccupation(N, M, D)
         
-        return int((self.gpu_memory-y0-x0)/(x1+y1))
+        opt_batchsize = min(int((self.gpu_memory-y0-x0)/(x1+y1)), N)
+        
+        return opt_batchsize
         
     def _get_YYTfactor(self, Y):
         """

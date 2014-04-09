@@ -29,7 +29,7 @@ def plot_2D_images(figure, arr, symmetric=False, pad=None, zoom=None, mode=None,
         pad = max(int(min(y_size,x_size)/10),1)
     
     figsize = _calculateFigureSize(x_size, y_size, fig_ncols, fig_nrows, pad)
-    figure.set_size_inches(figsize,forward=True)
+    #figure.set_size_inches(figsize,forward=True)
     #figure.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)
     
     if symmetric:
@@ -37,7 +37,7 @@ def plot_2D_images(figure, arr, symmetric=False, pad=None, zoom=None, mode=None,
         mval = max(abs(arr.max()),abs(arr.min()))
         arr = arr/(2.*mval)+0.5
     else:
-        minval,maxval = arr.max(),arr.min()
+        minval,maxval = arr.min(),arr.max()
         arr = (arr-minval)/(maxval-minval)
 
     if mode=='L':

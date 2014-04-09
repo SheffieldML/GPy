@@ -409,12 +409,12 @@ def stick(kernel=None, optimize=True, verbose=True, plot=True):
     # optimize
     m = GPy.models.GPLVM(data['Y'], 2, kernel=kernel)
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
-    if plot and GPy.plotting.matplot_dep.visualize.visual_available:
+    if plot:
         plt.clf
         ax = m.plot_latent()
-        y = m.likelihood.Y[0, :]
+        y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data['connect'])
-        GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        vis = GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, latent_axes=ax)
         raw_input('Press enter to finish')
 
     return m

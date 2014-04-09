@@ -32,7 +32,7 @@ class ExactGaussianInference(object):
             return Y
         else:
             #if Y in self.cache, return self.Cache[Y], else store Y in cache and return L.
-            print "WARNING: N>D of Y, we need caching of L, such that L*L^T = Y, returning Y still!"
+            #print "WARNING: N>D of Y, we need caching of L, such that L*L^T = Y, returning Y still!"
             return Y
 
     def inference(self, kern, X, likelihood, Y, Y_metadata=None):

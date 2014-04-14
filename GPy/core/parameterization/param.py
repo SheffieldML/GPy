@@ -59,7 +59,7 @@ class Param(OptimizationHandlable, ObsAr):
         import pydot
         node = pydot.Node(id(self), shape='record', label=self.name)
         G.add_node(node)
-        for o in self._observer_callables_.keys():
+        for o in self.observers.keys():
             label = o.name if hasattr(o, 'name') else str(o)
             observed_node = pydot.Node(id(o), label=label)
             G.add_node(observed_node)
@@ -324,7 +324,7 @@ class ParamConcatenation(object):
         if update:
             self.update_all_params()
     def values(self):
-        return numpy.hstack([p.param_array for p in self.params])
+        return numpy.hstack([p.param_array.flat for p in self.params])
     #===========================================================================
     # parameter operations:
     #===========================================================================

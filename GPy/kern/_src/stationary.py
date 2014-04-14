@@ -41,8 +41,8 @@ class Stationary(Kern):
 
     """
 
-    def __init__(self, input_dim, variance, lengthscale, ARD, active_dims, name):
-        super(Stationary, self).__init__(input_dim, active_dims, name)
+    def __init__(self, input_dim, variance, lengthscale, ARD, active_dims, name, useGPU=False):
+        super(Stationary, self).__init__(input_dim, active_dims, name,useGPU=useGPU)
         self.ARD = ARD
         if not ARD:
             if lengthscale is None:

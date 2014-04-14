@@ -121,7 +121,7 @@ class GP(Model):
            If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
            This is to allow for different normalizations of the output dimensions.
 
-        """
+        """        
         #predict the latent function values
         mu, var = self._raw_predict(Xnew, full_cov=full_cov)
 

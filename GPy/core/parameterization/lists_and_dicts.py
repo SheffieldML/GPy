@@ -5,6 +5,7 @@ Created on 27 Feb 2014
 '''
 
 from collections import defaultdict
+import weakref
 
 def intarray_default_factory():
     import numpy as np
@@ -41,60 +42,66 @@ class ObservablesList(object):
     def __init__(self):
         self._poc = []
 
-    def remove(self, value):
-        return self._poc.remove(value)
-
-
-    def __delitem__(self, ind):
-        return self._poc.__delitem__(ind)
-
-
-    def __setitem__(self, ind, item):
-        return self._poc.__setitem__(ind, item)
-
-
     def __getitem__(self, ind):
-        return self._poc.__getitem__(ind)
+        p,o,c = self._poc[ind]
+        return p, o(), c
 
+    def remove(self, priority, observable, callble):
+        """
+        """
+        self.flush()
+        for i in range(len(self) - 1, -1, -1):
+            p,o,c = self[i]
+            if priority==p and observable==o and callble==c:
+                del self._poc[i]
 
     def __repr__(self):
         return self._poc.__repr__()
 
-
-    def append(self, obj):
-        return self._poc.append(obj)
-
-
-    def index(self, value):
-        return self._poc.index(value)
-
-
-    def extend(self, iterable):
-        return self._poc.extend(iterable)
-
-
+    def add(self, priority, observable, callble):
+        ins = 0
+        for pr, _, _ in self:
+            if priority > pr:
+                break
+            ins += 1
+        self._poc.insert(ins, (priority, weakref.ref(observable), callble))
+        
     def __str__(self):
-        return self._poc.__str__()
+        ret = []
+        curr_p = None
+        for p, o, c in self:
+            curr = ''
+            if curr_p != p:
+                pre = "{!s}: ".format(p)
+                curr_pre = pre
+            else: curr_pre = " "*len(pre)
+            curr_p = p
+            curr += curr_pre
+            ret.append(curr + ", ".join(map(repr, [o,c])))
+        return '\n'.join(ret)
 
+    def flush(self):
+        self._poc = [(p,o,c) for p,o,c in self._poc if o() is not None]
 
     def __iter__(self):
-        return self._poc.__iter__()
-
-
-    def insert(self, index, obj):
-        return self._poc.insert(index, obj)
-
+        self.flush()
+        for p, o, c in self._poc:
+            if o() is not None:
+                yield p, o(), c 
 
     def __len__(self):
+        self.flush()
         return self._poc.__len__()
 
     def __deepcopy__(self, memo):
+        self.flush()
         s = ObservablesList()
         import copy
         s._poc = copy.deepcopy(self._poc, memo)
         return s
 
     def __getstate__(self):
+        self.flush()
         from ...util.caching import Cacher
         obs = []
         for p, o, c in self:
@@ -106,6 +113,6 @@ class ObservablesList(object):
     def __setstate__(self, state):
         self._poc = []
         for p, o, c in state:
-            self._poc.append((p,o,getattr(o, c)))
+            self.add(p,o,getattr(o, c))
 
     pass

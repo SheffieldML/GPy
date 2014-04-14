@@ -7,7 +7,9 @@ from ..core import SparseGP
 from ..likelihoods import Gaussian
 from ..inference.optimization import SCG
 from ..util import linalg
-from ..core.parameterization.variational import NormalPosterior, NormalPrior,VariationalPosterior
+from ..core.parameterization.variational import NormalPosterior, NormalPrior, VariationalPosterior
+from ..inference.latent_function_inference.var_dtc_parallel import update_gradients
+from ..inference.latent_function_inference.var_dtc_gpu import VarDTC_GPU
 
 class BayesianGPLVM(SparseGP):
     """
@@ -65,6 +67,10 @@ class BayesianGPLVM(SparseGP):
         X.mean.gradient, X.variance.gradient = X_grad
 
     def parameters_changed(self):
+        if isinstance(self.inference_method, VarDTC_GPU):
+            update_gradients(self)
+            return
+    
         super(BayesianGPLVM, self).parameters_changed()
         self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
 
@@ -153,57 +159,7 @@ class BayesianGPLVM(SparseGP):
         from ..plotting.matplot_dep import dim_reduction_plots
 
         return dim_reduction_plots.plot_steepest_gradient_map(self,*args,**kwargs)
-
-
-def update_gradients(model):
-    model._log_marginal_likelihood, dL_dKmm, model.posterior = model.inference_method.inference_likelihood(model.kern, model.X, model.Z, model.likelihood, model.Y)
     
-    het_noise = model.likelihood.variance.size > 1
-    
-    if het_noise:
-        dL_dthetaL = np.empty((model.Y.shape[0],))
-    else:
-        dL_dthetaL = 0
-
-    #gradients w.r.t. kernel
-    model.kern.update_gradients_full(dL_dKmm, model.Z, None)
-    kern_grad = model.kern.gradient.copy()
-            
-    #gradients w.r.t. Z
-    model.Z.gradient[:,model.kern.active_dims] = model.kern.gradients_X(dL_dKmm, model.Z)
-    
-    isEnd = False
-    while not isEnd:
-        isEnd, n_range, grad_dict = model.inference_method.inference_minibatch(model.kern, model.X, model.Z, model.likelihood, model.Y)
-        if isinstance(model.X, VariationalPosterior):
-            
-            #gradients w.r.t. kernel
-            model.kern.update_gradients_expectations(variational_posterior=model.X[n_range[0]:n_range[1]], Z=model.Z, dL_dpsi0=grad_dict['dL_dpsi0'], dL_dpsi1=grad_dict['dL_dpsi1'], dL_dpsi2=grad_dict['dL_dpsi2'])
-            kern_grad += model.kern.gradient
-    
-            #gradients w.r.t. Z
-            model.Z.gradient[:,model.kern.active_dims] += model.kern.gradients_Z_expectations(
-                               grad_dict['dL_dpsi1'], grad_dict['dL_dpsi2'], Z=model.Z, variational_posterior=model.X[n_range[0]:n_range[1]])
-        
-            #gradients w.r.t. posterior parameters of X
-            X_grad = model.kern.gradients_qX_expectations(variational_posterior=model.X[n_range[0]:n_range[1]], Z=model.Z, dL_dpsi0=grad_dict['dL_dpsi0'], dL_dpsi1=grad_dict['dL_dpsi1'], dL_dpsi2=grad_dict['dL_dpsi2'])
-            model.set_X_gradients(model.X[n_range[0]:n_range[1]], X_grad)
-                
-            if het_noise:
-                dL_dthetaL[n_range[0]:n_range[1]] = grad_dict['dL_dthetaL']
-            else:
-                dL_dthetaL += grad_dict['dL_dthetaL']
-    
-    # Set the gradients w.r.t. kernel
-    model.kern.gradient = kern_grad
-
-    # Update Log-likelihood
-    model._log_marginal_likelihood -= model.variational_prior.KL_divergence(model.X)
-    # update for the KL divergence
-    model.variational_prior.update_gradients_KL(model.X)
-    
-    # dL_dthetaL
-    model.likelihood.update_gradients(dL_dthetaL)
 
 def latent_cost_and_grad(mu_S, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
     """

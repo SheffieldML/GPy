@@ -185,6 +185,7 @@ class Test(ListDictTestCase):
     def _callback(self, what, which):
         what.count += 1
 
+    @unittest.skip
     def test_add_observer(self):
         par = toy_rbf_1d_50(optimize=0, plot=0)
         par.name = "original"

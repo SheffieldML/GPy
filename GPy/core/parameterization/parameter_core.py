@@ -15,8 +15,9 @@ Observable Pattern for patameterization
 
 from transformations import Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
+import re
 
-__updated__ = '2014-03-31'
+__updated__ = '2014-04-15'
 
 class HierarchyError(Exception):
     """
@@ -28,7 +29,15 @@ def adjust_name_for_printing(name):
     Make sure a name can be printed, alongside used as a variable name.
     """
     if name is not None:
-        return name.replace(" ", "_").replace(".", "_").replace("-", "_m_").replace("+", "_p_").replace("!", "_I_").replace("**", "_xx_").replace("*", "_x_").replace("/", "_l_").replace("@", '_at_')
+        name2 = name
+        name = name.replace(" ", "_").replace(".", "_").replace("-", "_m_")
+        name = name.replace("+", "_p_").replace("!", "_I_")
+        name = name.replace("**", "_xx_").replace("*", "_x_")
+        name = name.replace("/", "_l_").replace("@", '_at_')
+        name = name.replace("(", "_of_").replace(")", "")
+        if re.match(r'^[a-zA-Z_][a-zA-Z0-9-_]*$', name) is None:
+            raise NameError, "name {} converted to {} cannot be further converted to valid python variable name!".format(name2, name)
+        return name
     return ''
 
 

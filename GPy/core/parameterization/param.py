@@ -3,6 +3,7 @@
 
 import itertools
 import numpy
+np = numpy
 from parameter_core import OptimizationHandlable, adjust_name_for_printing
 from observable_array import ObsAr
 
@@ -117,10 +118,6 @@ class Param(OptimizationHandlable, ObsAr):
         try: new_arr._current_slice_ = s; new_arr._original_ = self.base is new_arr.base
         except AttributeError: pass  # returning 0d array or float, double etc
         return new_arr
-
-    def __setitem__(self, s, val):
-        super(Param, self).__setitem__(s, val)
-
 
     def _raveled_index(self, slice_index=None):
         # return an index array on the raveled array, which is formed by the current_slice
@@ -311,15 +308,15 @@ class ParamConcatenation(object):
     #===========================================================================
     def __getitem__(self, s):
         ind = numpy.zeros(sum(self._param_sizes), dtype=bool); ind[s] = True;
-        params = [p.param_array[ind[ps]] for p,ps in zip(self.params, self._param_slices_) if numpy.any(p.param_array[ind[ps]])]
+        params = [p.param_array.flat[ind[ps]] for p,ps in zip(self.params, self._param_slices_) if numpy.any(p.param_array.flat[ind[ps]])]
         if len(params)==1: return params[0]
         return ParamConcatenation(params)
     def __setitem__(self, s, val, update=True):
         if isinstance(val, ParamConcatenation):
             val = val.values()
         ind = numpy.zeros(sum(self._param_sizes), dtype=bool); ind[s] = True;
-        vals = self.values(); vals[s] = val; del val
-        [numpy.place(p, ind[ps], vals[ps])
+        vals = self.values(); vals[s] = val
+        [numpy.copyto(p, vals[ps], where=ind[ps])
          for p, ps in zip(self.params, self._param_slices_)]
         if update:
             self.update_all_params()
@@ -411,3 +408,42 @@ class ParamConcatenation(object):
         return "\n".join(strings)
     def __repr__(self):
         return "\n".join(map(repr,self.params))
+
+    def __ilshift__(self, *args, **kwargs):
+        self[:] = np.ndarray.__ilshift__(self.values(), *args, **kwargs)
+
+    def __irshift__(self, *args, **kwargs):
+        self[:] = np.ndarray.__irshift__(self.values(), *args, **kwargs)
+
+    def __ixor__(self, *args, **kwargs):
+        self[:] = np.ndarray.__ixor__(self.values(), *args, **kwargs)
+
+    def __ipow__(self, *args, **kwargs):
+        self[:] = np.ndarray.__ipow__(self.values(), *args, **kwargs)
+
+    def __ifloordiv__(self, *args, **kwargs):
+        self[:] = np.ndarray.__ifloordiv__(self.values(), *args, **kwargs)
+
+    def __isub__(self, *args, **kwargs):
+        self[:] = np.ndarray.__isub__(self.values(), *args, **kwargs)
+
+    def __ior__(self, *args, **kwargs):
+        self[:] = np.ndarray.__ior__(self.values(), *args, **kwargs)
+
+    def __itruediv__(self, *args, **kwargs):
+        self[:] = np.ndarray.__itruediv__(self.values(), *args, **kwargs)
+
+    def __idiv__(self, *args, **kwargs):
+        self[:] = np.ndarray.__idiv__(self.values(), *args, **kwargs)
+
+    def __iand__(self, *args, **kwargs):
+        self[:] = np.ndarray.__iand__(self.values(), *args, **kwargs)
+
+    def __imod__(self, *args, **kwargs):
+        self[:] = np.ndarray.__imod__(self.values(), *args, **kwargs)
+
+    def __iadd__(self, *args, **kwargs):
+        self[:] = np.ndarray.__iadd__(self.values(), *args, **kwargs)
+
+    def __imul__(self, *args, **kwargs):
+        self[:] = np.ndarray.__imul__(self.values(), *args, **kwargs)

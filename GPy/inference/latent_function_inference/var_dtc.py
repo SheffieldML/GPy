@@ -192,17 +192,22 @@ class VarDTC(object):
 
 class VarDTCMissingData(object):
     const_jitter = 1e-6
-    def __init__(self, limit=1):
+    def __init__(self, limit=1, inan=None):
         from ...util.caching import Cacher
         self._Y = Cacher(self._subarray_computations, limit)
+        self._inan = inan
         pass
 
     def set_limit(self, limit):
         self._Y.limit = limit
 
     def _subarray_computations(self, Y):
-        inan = np.isnan(Y)
-        has_none = inan.any()
+        if self._inan is None:
+            inan = np.isnan(Y)
+            has_none = inan.any()
+        else:
+            inan = self._inan
+            has_none = True
         if has_none:
             from ...util.subarray_and_sorting import common_subarrays
             self._subarray_indices = []

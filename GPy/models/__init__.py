@@ -16,4 +16,3 @@ from gradient_checker import GradientChecker
 from ss_gplvm import SSGPLVM
 from gp_coregionalized_regression import GPCoregionalizedRegression
 from sparse_gp_coregionalized_regression import SparseGPCoregionalizedRegression
-#.py file not included!!! #from sparse_gp_coregionalized_regression import SparseGPCoregionalizedRegression

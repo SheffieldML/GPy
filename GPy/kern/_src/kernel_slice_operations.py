@@ -33,8 +33,8 @@ class _Slice_wrap(object):
     def __init__(self, k, X, X2=None):
         self.k = k
         self.shape = X.shape
-        if self.k._sliced_X == 0:
-            assert X.shape[1] > max(np.r_[self.k.active_dims]), "At least {} dimensional X needed".format(max(np.r_[self.k.active_dims]))
+        if (self.k.active_dims is not None) and (self.k._sliced_X == 0):
+            #assert X.shape[1] > len(np.r_[self.k.active_dims]), "At least {} dimensional X needed".format(len(np.r_[self.k.active_dims]))
             self.X = self.k._slice_X(X)
             self.X2 = self.k._slice_X(X2) if X2 is not None else X2
             self.ret = True

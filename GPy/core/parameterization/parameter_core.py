@@ -17,7 +17,7 @@ from transformations import Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, 
 import numpy as np
 import re
 
-__updated__ = '2014-04-15'
+__updated__ = '2014-04-16'
 
 class HierarchyError(Exception):
     """
@@ -467,7 +467,7 @@ class Constrainable(Nameable, Indexable, Observable):
         Constrain the parameter to the given
         :py:class:`GPy.core.transformations.Transformation`.
         """
-        self.param_array[:] = transform.initialize(self.param_array)
+        self.param_array[...] = transform.initialize(self.param_array)
         reconstrained = self.unconstrain()
         self._add_to_index_operations(self.constraints, reconstrained, transform, warning)
         self.notify_observers(self, None if trigger_parent else -np.inf)

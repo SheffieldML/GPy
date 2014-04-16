@@ -22,7 +22,7 @@ class EP(object):
     def reset(self):
         self.old_mutilde, self.old_vtilde = None, None
 
-    def inference(self, kern, X, likelihood, Y, Y_metadata=None):
+    def inference(self, kern, X, likelihood, Y, Y_metadata=None, Z=None):
         num_data, output_dim = X.shape
         assert output_dim ==1, "ep in 1D only (for now!)"
 

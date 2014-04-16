@@ -31,6 +31,7 @@ class KernCallsViaSlicerMeta(ParametersChangedMeta):
 
 class _Slice_wrap(object):
     def __init__(self, k, X, X2=None):
+        assert X.ndim == 2, "only matrices are allowed as inputs to kernels for now, given X.shape={!s}".format(X.shape)
         self.k = k
         self.shape = X.shape
         if (self.k.active_dims is not None) and (self.k._sliced_X == 0):

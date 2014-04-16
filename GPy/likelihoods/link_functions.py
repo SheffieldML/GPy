@@ -71,6 +71,7 @@ class Probit(GPTransformation):
 
         g(f) = \\Phi^{-1} (mu)
 
+    
     """
     def transf(self,f):
         return std_norm_cdf(f)

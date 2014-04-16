@@ -23,7 +23,6 @@ class Add(CombinationKernel):
         If a list of parts (of this kernel!) `which_parts` is given, only
         the parts of the list are taken to compute the covariance.
         """
-        assert X.shape[1] > max(np.r_[self.active_dims])
         if which_parts is None:
             which_parts = self.parts
         elif not isinstance(which_parts, (list, tuple)):
@@ -33,7 +32,6 @@ class Add(CombinationKernel):
 
     @Cache_this(limit=2, force_kwargs=['which_parts'])
     def Kdiag(self, X, which_parts=None):
-        assert X.shape[1] > max(np.r_[self.active_dims])
         if which_parts is None:
             which_parts = self.parts
         elif not isinstance(which_parts, (list, tuple)):
@@ -160,21 +158,13 @@ class Add(CombinationKernel):
             target_S += b
         return target_mu, target_S
 
-    def _getstate(self):
-        """
-        Get the current state of the class,
-        here just all the indices, rest can get recomputed
-        """
-        return super(Add, self)._getstate()
-
-    def _setstate(self, state):
-        super(Add, self)._setstate(state)
-
     def add(self, other, name='sum'):
         if isinstance(other, Add):
             other_params = other._parameters_[:]
             for p in other_params:
                 other.remove_parameter(p)
             self.add_parameters(*other_params)
-        else: self.add_parameter(other)
+        else:
+            self.add_parameter(other)
+        self.input_dim, self.active_dims = self.get_input_dim_active_dims(self.parts)
         return self

@@ -1,4 +1,4 @@
-# Copyright (c) 2013, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2013, 2014 GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 #
 #Parts of this file were influenced by the Matlab GPML framework written by
@@ -91,7 +91,11 @@ class Laplace(object):
         iteration = 0
         while difference > self._mode_finding_tolerance and iteration < self._mode_finding_max_iter:
             W = -likelihood.d2logpdf_df2(f, Y, Y_metadata=Y_metadata)
+            if np.any(np.isnan(W)):
+                raise ValueError('One or more element(s) of W is NaN')
             grad = likelihood.dlogpdf_df(f, Y, Y_metadata=Y_metadata)
+            if np.any(np.isnan(grad)):
+                raise ValueError('One or more element(s) of grad is NaN')
 
             W_f = W*f
 
@@ -141,25 +145,30 @@ class Laplace(object):
         """
         #At this point get the hessian matrix (or vector as W is diagonal)
         W = -likelihood.d2logpdf_df2(f_hat, Y, Y_metadata=Y_metadata)
+        if np.any(np.isnan(W)):
+            raise ValueError('One or more element(s) of W is NaN')
 
         K_Wi_i, L, LiW12 = self._compute_B_statistics(K, W, likelihood.log_concave)
 
         #compute vital matrices
         C = np.dot(LiW12, K)
-        Ki_W_i  = K - C.T.dot(C) #Could this be wrong?
+        Ki_W_i  = K - C.T.dot(C) 
 
         #compute the log marginal
         log_marginal = -0.5*np.dot(Ki_f.flatten(), f_hat.flatten()) + likelihood.logpdf(f_hat, Y, Y_metadata=Y_metadata) - np.sum(np.log(np.diag(L)))
 
-        #Compute vival matrices for derivatives
+        # Compute matrices for derivatives
         dW_df = -likelihood.d3logpdf_df3(f_hat, Y, Y_metadata=Y_metadata) # -d3lik_d3fhat
-        dL_dfhat = -0.5*(np.diag(Ki_W_i)[:, None]*dW_df) #why isn't this -0.5? s2 in R&W p126 line 9.
+        if np.any(np.isnan(dW_df)):
+            raise ValueError('One or more element(s) of dW_df is NaN')
+
+        dL_dfhat = -0.5*(np.diag(Ki_W_i)[:, None]*dW_df) # s2 in R&W p126 line 9.
         #BiK, _ = dpotrs(L, K, lower=1)
         #dL_dfhat = 0.5*np.diag(BiK)[:, None]*dW_df
         I_KW_i = np.eye(Y.shape[0]) - np.dot(K, K_Wi_i)
 
         ####################
-        #compute dL_dK#
+        #  compute dL_dK   #
         ####################
         if kern.size > 0 and not kern.is_fixed:
             #Explicit
@@ -202,12 +211,12 @@ class Laplace(object):
     def _compute_B_statistics(self, K, W, log_concave):
         """
         Rasmussen suggests the use of a numerically stable positive definite matrix B
-        Which has a positive diagonal element and can be easyily inverted
+        Which has a positive diagonal elements and can be easily inverted
 
         :param K: Prior Covariance matrix evaluated at locations X
         :type K: NxN matrix
         :param W: Negative hessian at a point (diagonal matrix)
-        :type W: Vector of diagonal values of hessian (1xN)
+        :type W: Vector of diagonal values of Hessian (1xN)
         :returns: (W12BiW12, L_B, Li_W12)
         """
         if not log_concave:
@@ -218,7 +227,8 @@ class Laplace(object):
                                 # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
                                 # To cause the posterior to become less certain than the prior and likelihood,
                                 # This is a property only held by non-log-concave likelihoods
-
+        if np.any(np.isnan(W)):
+            raise ValueError('One or more element(s) of W is NaN')
         #W is diagonal so its sqrt is just the sqrt of the diagonal elements
         W_12 = np.sqrt(W)
         B = np.eye(K.shape[0]) + W_12*K*W_12.T

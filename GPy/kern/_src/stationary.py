@@ -41,8 +41,8 @@ class Stationary(Kern):
 
     """
 
-    def __init__(self, input_dim, variance, lengthscale, ARD, active_dims, name):
-        super(Stationary, self).__init__(input_dim, active_dims, name)
+    def __init__(self, input_dim, variance, lengthscale, ARD, active_dims, name, useGPU=False):
+        super(Stationary, self).__init__(input_dim, active_dims, name,useGPU=useGPU)
         self.ARD = ARD
         if not ARD:
             if lengthscale is None:
@@ -139,7 +139,7 @@ class Stationary(Kern):
             #self.lengthscale.gradient = -((dL_dr*rinv)[:,:,None]*x_xl3).sum(0).sum(0)/self.lengthscale**3
             tmp = dL_dr*self._inv_dist(X, X2)
             if X2 is None: X2 = X
-            self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(self._slice_X(X)[:,q:q+1] - self._slice_X(X2)[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in xrange(self.input_dim)])
+            self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(X[:,q:q+1] - X2[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in xrange(self.input_dim)])
         else:
             r = self._scaled_dist(X, X2)
             self.lengthscale.gradient = -np.sum(dL_dr*r)/self.lengthscale

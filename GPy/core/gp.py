@@ -121,7 +121,7 @@ class GP(Model):
            If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
            This is to allow for different normalizations of the output dimensions.
 
-        """
+        """        
         #predict the latent function values
         mu, var = self._raw_predict(Xnew, full_cov=full_cov)
 
@@ -208,27 +208,9 @@ class GP(Model):
         from ..plotting.matplot_dep import models_plots
         return models_plots.plot_fit(self,*args,**kwargs)
 
-    def _getstate(self):
+    def input_sensitivity(self):
         """
-
-        Get the current state of the class, here we return everything that is
-        needed to recompute the model.
-
+        Returns the sensitivity for each dimension of this model
         """
+        return self.kern.input_sensitivity()
 
-        return Model._getstate(self) + [self.X,
-                self.num_data,
-                self.input_dim,
-                self.kern,
-                self.likelihood,
-                self.output_dim,
-                ]
-
-    def _setstate(self, state):
-        self.output_dim = state.pop()
-        self.likelihood = state.pop()
-        self.kern = state.pop()
-        self.input_dim = state.pop()
-        self.num_data = state.pop()
-        self.X = state.pop()
-        Model._setstate(self, state)

@@ -15,6 +15,7 @@ import caching
 import diag
 import initialization
 import multioutput
+import linalg_gpu
 
 try:
     import sympy

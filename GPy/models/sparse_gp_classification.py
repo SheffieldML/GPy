@@ -44,11 +44,3 @@ class SparseGPClassification(SparseGP):
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method=expectation_propagation_dtc.EPDTC(), name='SparseGPClassification',Y_metadata=Y_metadata)
     #def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None, name='sparse gp', Y_metadata=None):
-
-
-    def _getstate(self):
-        return SparseGP._getstate(self)
-
-
-    def _setstate(self, state):
-        return SparseGP._setstate(self, state)

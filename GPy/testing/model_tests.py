@@ -130,7 +130,25 @@ class MiscTests(unittest.TestCase):
         m2.kern[:] = m.kern[''].values()
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
 
-class GradientTests(unittest.TestCase):
+    def test_model_set_params(self):
+        m = GPy.models.GPRegression(self.X, self.Y)
+        lengthscale = np.random.uniform()
+        m.kern.lengthscale = lengthscale
+        np.testing.assert_equal(m.kern.lengthscale, lengthscale)
+        m.kern.lengthscale *= 1
+        m['.*var'] -= .1
+        np.testing.assert_equal(m.kern.lengthscale, lengthscale)
+        m.optimize()
+        print m
+
+    def test_model_optimize(self):
+        X = np.random.uniform(-3., 3., (20, 1))
+        Y = np.sin(X) + np.random.randn(20, 1) * 0.05
+        m = GPy.models.GPRegression(X,Y)
+        m.optimize()
+        print m
+
+class GradientTests(np.testing.TestCase):
     def setUp(self):
         ######################################
         # # 1 dimensional example

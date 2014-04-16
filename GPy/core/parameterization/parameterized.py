@@ -17,7 +17,7 @@ class ParametersChangedMeta(type):
         instance.parameters_changed()
         return instance
 
-class Parameterized(Parameterizable, Pickleable):
+class Parameterized(Parameterizable):
     """
     Parameterized class
 
@@ -63,7 +63,7 @@ class Parameterized(Parameterizable, Pickleable):
     # Metaclass for parameters changed after init. 
     # This makes sure, that parameters changed will always be called after __init__
     # **Never** call parameters_changed() yourself 
-    __metaclass__ = ParametersChangedMeta    
+    __metaclass__ = ParametersChangedMeta
     #===========================================================================
     def __init__(self, name=None, parameters=[], *a, **kw):
         super(Parameterized, self).__init__(name=name, *a, **kw)
@@ -90,7 +90,7 @@ class Parameterized(Parameterizable, Pickleable):
             child_node = child.build_pydot(G)
             G.add_edge(pydot.Edge(node, child_node))
 
-        for o in self._observer_callables_.keys():
+        for o in self.observers.keys():
             label = o.name if hasattr(o, 'name') else str(o)
             observed_node = pydot.Node(id(o), label=label)
             G.add_node(observed_node)
@@ -101,48 +101,13 @@ class Parameterized(Parameterizable, Pickleable):
             return G
         return node
 
-    def _getstate(self):
-        """
-        Get the current state of the class,
-        here just all the indices, rest can get recomputed
-        For inheriting from Parameterized:
-
-        Allways append the state of the inherited object
-        and call down to the inherited object in _setstate!!
-        """
-        return [
-                self._fixes_,
-                self.priors,
-                self.constraints,
-                self._parameters_,
-                self._name,
-                self._added_names_,
-                ]
-
-    def _setstate(self, state):
-        self._added_names_ = state.pop()
-        self._name = state.pop()
-        self._parameters_ = state.pop()
-        self.constraints = state.pop()
-        self.priors = state.pop()
-        self._fixes_ = state.pop()
-        self._connect_parameters()
-        self.parameters_changed()
-    #===========================================================================
-    # Override copy to handle programmatically added observers
-    #===========================================================================
-    def copy(self):
-        c = super(Pickleable, self).copy()
-        c.add_observer(c, c._parameters_changed_notification, -100)
-        return c
-
     #===========================================================================
     # Gradient control
     #===========================================================================
     def _transform_gradients(self, g):
         if self.has_parent():
             return g
-        [numpy.put(g, i, g[i] * c.gradfactor(self._param_array_[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
+        [numpy.put(g, i, g[i] * c.gradfactor(self.param_array[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g
 
@@ -174,7 +139,7 @@ class Parameterized(Parameterizable, Pickleable):
         this is not in the global view of things!
         """
         return numpy.r_[:self.size]
-    
+
     #===========================================================================
     # Convenience for fixed, tied checking of param:
     #===========================================================================
@@ -189,7 +154,7 @@ class Parameterized(Parameterizable, Pickleable):
         # you can retrieve the original param through this method, by passing
         # the copy here
         return self._parameters_[param._parent_index_]
-    
+
     #===========================================================================
     # Get/set parameters:
     #===========================================================================
@@ -206,7 +171,7 @@ class Parameterized(Parameterizable, Pickleable):
 
     def __getitem__(self, name, paramlist=None):
         if isinstance(name, (int, slice, tuple, np.ndarray)):
-            return self._param_array_[name]
+            return self.param_array[name]
         else:
             if paramlist is None:
                 paramlist = self.grep_param_names(name)
@@ -220,9 +185,11 @@ class Parameterized(Parameterizable, Pickleable):
             return ParamConcatenation(paramlist)
 
     def __setitem__(self, name, value, paramlist=None):
+        if value is None:
+            return # nothing to do here
         if isinstance(name, (slice, tuple, np.ndarray)):
             try:
-                self._param_array_[name] = value
+                self.param_array[name] = value
             except:
                 raise ValueError, "Setting by slice or index only allowed with array-like"
             self._trigger_params_changed()
@@ -232,8 +199,8 @@ class Parameterized(Parameterizable, Pickleable):
             param[:] = value
 
     def __setattr__(self, name, val):
-        # override the default behaviour, if setting a param, so broadcasting can by used        
-        if hasattr(self, '_parameters_'):
+        # override the default behaviour, if setting a param, so broadcasting can by used
+        if hasattr(self, "_parameters_"):
             pnames = self.parameter_names(False, adjust_for_printing=True, recursive=False)
             if name in pnames: self._parameters_[pnames.index(name)][:] = val; return
         object.__setattr__(self, name, val);

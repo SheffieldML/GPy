@@ -1,5 +1,55 @@
-from sympy import Function, S, oo, I, cos, sin, asin, log, erf, pi, exp, sqrt, sign
+from sympy import Function, S, oo, I, cos, sin, asin, log, erf, pi, exp, sqrt, sign, gamma,polygamma
 
+class gammaln(Function):
+    nargs = 1
+
+    def fdiff(self, argindex=1):
+        x=self.args[0]
+        return polygamma(0, x)
+
+    @classmethod
+    def eval(cls, x):
+        if x.is_Number:
+            return log(gamma(x))
+    
+
+class ln_cum_gaussian(Function):
+    nargs = 1
+
+    def fdiff(self, argindex=1):
+        x = self.args[0]
+        return exp(-ln_cum_gaussian(x) - 0.5*x*x)/sqrt(2*pi)
+
+    @classmethod
+    def eval(cls, x):
+        if x.is_Number:
+            return log(cum_gaussian(x))
+
+    def _eval_is_real(self):
+        return self.args[0].is_real
+
+class cum_gaussian(Function):
+    nargs = 1
+    def fdiff(self, argindex=1):
+        x = self.args[0]
+        return gaussian(x)
+
+    @classmethod
+    def eval(cls, x):
+        if x.is_Number:
+            return 0.5*(1+erf(sqrt(2)/2*x))
+
+    def _eval_is_real(self):
+        return self.args[0].is_real
+
+class gaussian(Function):
+    nargs = 1
+    @classmethod
+    def eval(cls, x):
+        return 1/sqrt(2*pi)*exp(-0.5*x*x)
+
+    def _eval_is_real(self):
+        return True
 
 class ln_diff_erf(Function):
     nargs = 2

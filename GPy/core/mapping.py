@@ -34,7 +34,7 @@ class Mapping(Parameterized):
         raise NotImplementedError
 
     def df_dtheta(self, dL_df, X):
-        """The gradient of the outputs of the multi-layer perceptron with respect to each of the parameters.
+        """The gradient of the outputs of the mapping with respect to each of the parameters.
 
         :param dL_df: gradient of the objective with respect to the function.
         :type dL_df: ndarray (num_data x output_dim)
@@ -50,7 +50,7 @@ class Mapping(Parameterized):
         """
         Plots the mapping associated with the model.
           - In one dimension, the function is plotted.
-          - In two dimsensions, a contour-plot shows the function
+          - In two dimensions, a contour-plot shows the function
           - In higher dimensions, we've not implemented this yet !TODO!
 
         Can plot only part of the data and part of the posterior functions

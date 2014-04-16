@@ -2,10 +2,10 @@
 # Copyright (c) 2013, the GPy Authors (see AUTHORS.txt)
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import numpy as np
 from ..core import GP
 from .. import likelihoods
 from .. import kern
+from ..inference.latent_function_inference.expectation_propagation import EP
 
 class GPClassification(GP):
     """
@@ -27,4 +27,4 @@ class GPClassification(GP):
 
         likelihood = likelihoods.Bernoulli()
 
-        GP.__init__(self, X=X, Y=Y,  kernel=kernel, likelihood=likelihood, name='GPClassification',Y_metadata=Y_metadata)
+        GP.__init__(self, X=X, Y=Y,  kernel=kernel, likelihood=likelihood, inference_method=EP(), name='gp_classification')

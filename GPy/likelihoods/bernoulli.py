@@ -15,7 +15,7 @@ class Bernoulli(Likelihood):
         p(y_{i}|\\lambda(f_{i})) = \\lambda(f_{i})^{y_{i}}(1-f_{i})^{1-y_{i}}
 
     .. Note::
-        Y is expected to take values in {-1, 1} TODO: {0, 1}??
+        Y takes values in either {-1, 1} or {0, 1}.
         link function should have the domain [0, 1], e.g. probit (default) or Heaviside
 
     .. See also::
@@ -54,10 +54,10 @@ class Bernoulli(Likelihood):
         """
         if Y_i == 1:
             sign = 1.
-        elif Y_i == 0:
+        elif Y_i == 0 or Y_i == -1:
             sign = -1
         else:
-            raise ValueError("bad value for Bernouilli observation (0, 1)")
+            raise ValueError("bad value for Bernoulli observation (0, 1)")
         if isinstance(self.gp_link, link_functions.Probit):
             z = sign*v_i/np.sqrt(tau_i**2 + tau_i)
             Z_hat = std_norm_cdf(z)
@@ -95,15 +95,15 @@ class Bernoulli(Likelihood):
         else:
             return np.nan
 
-    def pdf_link(self, link_f, y, Y_metadata=None):
+    def pdf_link(self, inv_link_f, y, Y_metadata=None):
         """
-        Likelihood function given link(f)
+        Likelihood function given inverse link of f.
 
         .. math::
             p(y_{i}|\\lambda(f_{i})) = \\lambda(f_{i})^{y_{i}}(1-f_{i})^{1-y_{i}}
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
         :param Y_metadata: Y_metadata not used in bernoulli
@@ -113,102 +113,106 @@ class Bernoulli(Likelihood):
         .. Note:
             Each y_i must be in {0, 1}
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        #objective = (link_f**y) * ((1.-link_f)**(1.-y))
-        objective = np.where(y, link_f, 1.-link_f)
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        #objective = (inv_link_f**y) * ((1.-inv_link_f)**(1.-y))
+        objective = np.where(y, inv_link_f, 1.-inv_link_f)
         return np.exp(np.sum(np.log(objective)))
 
-    def logpdf_link(self, link_f, y, Y_metadata=None):
+    def logpdf_link(self, inv_link_f, y, Y_metadata=None):
         """
-        Log Likelihood function given link(f)
+        Log Likelihood function given inverse link of f.
 
         .. math::
             \\ln p(y_{i}|\\lambda(f_{i})) = y_{i}\\log\\lambda(f_{i}) + (1-y_{i})\\log (1-f_{i})
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
         :param Y_metadata: Y_metadata not used in bernoulli
-        :returns: log likelihood evaluated at points link(f)
+        :returns: log likelihood evaluated at points inverse link of f.
         :rtype: float
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        #objective = y*np.log(link_f) + (1.-y)*np.log(link_f)
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        #objective = y*np.log(inv_link_f) + (1.-y)*np.log(inv_link_f)
         state = np.seterr(divide='ignore')
-        objective = np.where(y==1, np.log(link_f), np.log(1-link_f))
+        # TODO check y \in {0, 1} or {-1, 1}
+        objective = np.where(y==1, np.log(inv_link_f), np.log(1-inv_link_f))
         np.seterr(**state)
         return np.sum(objective)
 
-    def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
+    def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
         """
-        Gradient of the pdf at y, given link(f) w.r.t link(f)
+        Gradient of the pdf at y, given inverse link of f w.r.t inverse link of f.
 
         .. math::
             \\frac{d\\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)} = \\frac{y_{i}}{\\lambda(f_{i})} - \\frac{(1 - y_{i})}{(1 - \\lambda(f_{i}))}
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
         :param Y_metadata: Y_metadata not used in bernoulli
-        :returns: gradient of log likelihood evaluated at points link(f)
+        :returns: gradient of log likelihood evaluated at points inverse link of f.
         :rtype: Nx1 array
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        #grad = (y/link_f) - (1.-y)/(1-link_f)
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        #grad = (y/inv_link_f) - (1.-y)/(1-inv_link_f)
         state = np.seterr(divide='ignore')
-        grad = np.where(y, 1./link_f, -1./(1-link_f))
+        # TODO check y \in {0, 1} or {-1, 1}
+        grad = np.where(y, 1./inv_link_f, -1./(1-inv_link_f))
         np.seterr(**state)
         return grad
 
-    def d2logpdf_dlink2(self, link_f, y, Y_metadata=None):
+    def d2logpdf_dlink2(self, inv_link_f, y, Y_metadata=None):
         """
-        Hessian at y, given link_f, w.r.t link_f the hessian will be 0 unless i == j
-        i.e. second derivative logpdf at y given link(f_i) link(f_j)  w.r.t link(f_i) and link(f_j)
+        Hessian at y, given inv_link_f, w.r.t inv_link_f the hessian will be 0 unless i == j
+        i.e. second derivative logpdf at y given inverse link of f_i and inverse link of f_j  w.r.t inverse link of f_i and inverse link of f_j.
 
 
         .. math::
             \\frac{d^{2}\\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)^{2}} = \\frac{-y_{i}}{\\lambda(f)^{2}} - \\frac{(1-y_{i})}{(1-\\lambda(f))^{2}}
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
         :param Y_metadata: Y_metadata not used in bernoulli
-        :returns: Diagonal of log hessian matrix (second derivative of log likelihood evaluated at points link(f))
+        :returns: Diagonal of log hessian matrix (second derivative of log likelihood evaluated at points inverse link of f.
         :rtype: Nx1 array
 
         .. Note::
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
-            (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
+            (the distribution for y_i depends only on inverse link of f_i not on inverse link of f_(j!=i)
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        #d2logpdf_dlink2 = -y/(link_f**2) - (1-y)/((1-link_f)**2)
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        #d2logpdf_dlink2 = -y/(inv_link_f**2) - (1-y)/((1-inv_link_f)**2)
         state = np.seterr(divide='ignore')
-        d2logpdf_dlink2 = np.where(y, -1./np.square(link_f), -1./np.square(1.-link_f))
+        # TODO check y \in {0, 1} or {-1, 1}
+        d2logpdf_dlink2 = np.where(y, -1./np.square(inv_link_f), -1./np.square(1.-inv_link_f))
         np.seterr(**state)
         return d2logpdf_dlink2
 
-    def d3logpdf_dlink3(self, link_f, y, Y_metadata=None):
+    def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):
         """
-        Third order derivative log-likelihood function at y given link(f) w.r.t link(f)
+        Third order derivative log-likelihood function at y given inverse link of f w.r.t inverse link of f
 
         .. math::
             \\frac{d^{3} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{3}\\lambda(f)} = \\frac{2y_{i}}{\\lambda(f)^{3}} - \\frac{2(1-y_{i}}{(1-\\lambda(f))^{3}}
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
+        :param inv_link_f: latent variables passed through inverse link of f.
+        :type inv_link_f: Nx1 array
         :param y: data
         :type y: Nx1 array
         :param Y_metadata: Y_metadata not used in bernoulli
-        :returns: third derivative of log likelihood evaluated at points link(f)
+        :returns: third derivative of log likelihood evaluated at points inverse_link(f)
         :rtype: Nx1 array
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        #d3logpdf_dlink3 = 2*(y/(link_f**3) - (1-y)/((1-link_f)**3))
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        #d3logpdf_dlink3 = 2*(y/(inv_link_f**3) - (1-y)/((1-inv_link_f)**3))
         state = np.seterr(divide='ignore')
-        d3logpdf_dlink3 = np.where(y, 2./(link_f**3), -2./((1.-link_f)**3))
+        # TODO check y \in {0, 1} or {-1, 1}
+        d3logpdf_dlink3 = np.where(y, 2./(inv_link_f**3), -2./((1.-inv_link_f)**3))
         np.seterr(**state)
         return d3logpdf_dlink3
 

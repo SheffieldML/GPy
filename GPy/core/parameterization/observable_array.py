@@ -1,12 +1,12 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-__updated__ = '2014-03-21'
+__updated__ = '2014-04-15'
 
 import numpy as np
-from parameter_core import Observable
+from parameter_core import Observable, Pickleable
 
-class ObsAr(np.ndarray, Observable):
+class ObsAr(np.ndarray, Pickleable, Observable):
     """
     An ndarray which reports changes to its observers.
     The observers can add themselves with a callable, which
@@ -25,49 +25,40 @@ class ObsAr(np.ndarray, Observable):
     def __array_finalize__(self, obj):
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
-        self._observer_callables_ = getattr(obj, '_observer_callables_', None)
+        self.observers = getattr(obj, 'observers', None)
 
     def __array_wrap__(self, out_arr, context=None):
         return out_arr.view(np.ndarray)
 
+    def copy(self):
+        memo = {}
+        memo[id(self)] = self
+        return self.__deepcopy__(memo)
+
+    def __deepcopy__(self, memo):
+        s = self.__new__(self.__class__, input_array=self.view(np.ndarray).copy())
+        memo[id(self)] = s
+        import copy
+        s.__dict__.update(copy.deepcopy(self.__dict__, memo))
+        return s
+
     def __reduce__(self):
-        func, args, state = np.ndarray.__reduce__(self)
-        return func, args, (state, Observable._getstate(self))
+        func, args, state = super(ObsAr, self).__reduce__()
+        return func, args, (state, Pickleable.__getstate__(self))
 
     def __setstate__(self, state):
         np.ndarray.__setstate__(self, state[0])
-        Observable._setstate(self, state[1])
-
-    def _s_not_empty(self, s):
-        # this checks whether there is something picked by this slice.
-        return True
-        # TODO:  disarmed, for performance increase,
-        if not isinstance(s, (list,tuple,np.ndarray)):
-            return True
-        if isinstance(s, (list,tuple)):
-            return len(s)!=0
-        if isinstance(s, np.ndarray):
-            if s.dtype is bool:
-                return np.all(s)
-            else:
-                return s.size != 0
+        Pickleable.__setstate__(self, state[1])
 
     def __setitem__(self, s, val):
-        if self._s_not_empty(s):
-            super(ObsAr, self).__setitem__(s, val)
-            self.notify_observers()
+        super(ObsAr, self).__setitem__(s, val)
+        self.notify_observers()
 
     def __getslice__(self, start, stop):
         return self.__getitem__(slice(start, stop))
 
     def __setslice__(self, start, stop, val):
         return self.__setitem__(slice(start, stop), val)
-
-    def __copy__(self, *args):
-        return ObsAr(self.view(np.ndarray).copy())
-
-    def copy(self, *args):
-        return self.__copy__(*args)
 
     def __ilshift__(self, *args, **kwargs):
         r = np.ndarray.__ilshift__(self, *args, **kwargs)
@@ -144,76 +135,3 @@ class ObsAr(np.ndarray, Observable):
         r = np.ndarray.__imul__(self, *args, **kwargs)
         self.notify_observers()
         return r
-
-
-#     def __rrshift__(self, *args, **kwargs):
-#         r = np.ndarray.__rrshift__(self, *args, **kwargs)
-#         self.notify_observers()
-#         return r
-
-
-#     def __ror__(self, *args, **kwargs):
-#         r =  np.ndarray.__ror__(self, *args, **kwargs)
-#         self.notify_observers()
-#         return r
-
-
-#     def __rxor__(self, *args, **kwargs):
-#         r = np.ndarray.__rxor__(self, *args, **kwargs)
-#         self.notify_observers()
-#         return r
-
-
-
-#     def __rdivmod__(self, *args, **kwargs):
-#         r = np.ndarray.__rdivmod__(self, *args, **kwargs)
-#         self.notify_observers()
-#         return r
-
-
-#     def __radd__(self, *args, **kwargs):
-#         r = np.ndarray.__radd__(self, *args, **kwargs)
-#         self.notify_observers()
-#         return r
-
-
-#     def __rdiv__(self, *args, **kwargs):
-#         r = np.ndarray.__rdiv__(self, *args, **kwargs)
-#         self.notify_observers()
-#         return r
-
-
-#     def __rtruediv__(self, *args, **kwargs):
-#         r = np.ndarray.__rtruediv__(self, *args, **kwargs)
-#         self.notify_observers()
-#         return r
-
-
-#     def __rshift__(self, *args, **kwargs):
-#         r = np.ndarray.__rshift__(self, *args, **kwargs)
-#         self.notify_observers()
-#         return r
-
-
-#     def __rmul__(self, *args, **kwargs):
-#         r = np.ndarray.__rmul__(self, *args, **kwargs)
-#         self.notify_observers()
-#         return r
-
-
-#     def __rpow__(self, *args, **kwargs):
-#         r = np.ndarray.__rpow__(self, *args, **kwargs)
-#         self.notify_observers()
-#         return r
-
-
-#     def __rsub__(self, *args, **kwargs):
-#         r = np.ndarray.__rsub__(self, *args, **kwargs)
-#         self.notify_observers()
-#         return r
-
-#     def __rfloordiv__(self, *args, **kwargs):
-#         r = np.ndarray.__rfloordiv__(self, *args, **kwargs)
-#         self.notify_observers()
-#         return r
-

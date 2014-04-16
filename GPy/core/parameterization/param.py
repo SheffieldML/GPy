@@ -339,8 +339,8 @@ class ParamConcatenation(object):
         self.update_all_params()
     constrain_positive.__doc__ = Param.constrain_positive.__doc__
 
-    def constrain_fixed(self, warning=True):
-        [param.constrain_fixed(warning) for param in self.params]
+    def constrain_fixed(self, value=None, warning=True, trigger_parent=True):
+        [param.constrain_fixed(value, warning, trigger_parent) for param in self.params]
     constrain_fixed.__doc__ = Param.constrain_fixed.__doc__
     fix = constrain_fixed
 

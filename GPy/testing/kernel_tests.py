@@ -9,8 +9,6 @@ from GPy.core.parameterization.param import Param
 
 verbose = 0
 
-np.random.seed(50)
-
 
 class Kern_check_model(GPy.core.Model):
     """

@@ -142,6 +142,17 @@ class ParameterizedTest(unittest.TestCase):
         self.testmodel.randomize()
         self.assertEqual(val, self.testmodel.kern.lengthscale)
 
+    def test_regular_expression_misc(self):
+        self.testmodel.kern.lengthscale.fix()
+        val = float(self.testmodel.kern.lengthscale)
+        self.testmodel.randomize()
+        self.assertEqual(val, self.testmodel.kern.lengthscale)
+
+        variances = self.testmodel['.*var'].values()
+        self.testmodel['.*var'].fix()
+        self.testmodel.randomize()
+        np.testing.assert_equal(variances, self.testmodel['.*var'].values())
+
     def test_printing(self):
         print self.test1
         print self.param

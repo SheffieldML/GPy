@@ -185,6 +185,8 @@ class Parameterized(Parameterizable):
             return ParamConcatenation(paramlist)
 
     def __setitem__(self, name, value, paramlist=None):
+        if value is None:
+            return # nothing to do here
         if isinstance(name, (slice, tuple, np.ndarray)):
             try:
                 self.param_array[name] = value
@@ -197,8 +199,8 @@ class Parameterized(Parameterizable):
             param[:] = value
 
     def __setattr__(self, name, val):
-        # override the default behaviour, if setting a param, so broadcasting can by used        
-        if hasattr(self, '_parameters_'):
+        # override the default behaviour, if setting a param, so broadcasting can by used
+        if hasattr(self, "_parameters_"):
             pnames = self.parameter_names(False, adjust_for_printing=True, recursive=False)
             if name in pnames: self._parameters_[pnames.index(name)][:] = val; return
         object.__setattr__(self, name, val);

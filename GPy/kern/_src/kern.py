@@ -13,7 +13,7 @@ class Kern(Parameterized):
     #===========================================================================
     # This adds input slice support. The rather ugly code for slicing can be
     # found in kernel_slice_operations
-    #__metaclass__ = KernCallsViaSlicerMeta
+    __metaclass__ = KernCallsViaSlicerMeta
     #===========================================================================
     _support_GPU=False
     def __init__(self, input_dim, active_dims, name, useGPU=False, *a, **kw):
@@ -21,26 +21,50 @@ class Kern(Parameterized):
         The base class for a kernel: a positive definite function
         which forms of a covariance function (kernel).
 
+        input_dim:
+
+            is the number of dimensions to work on. Make sure to give the 
+            tight dimensionality of inputs.
+            You most likely want this to be the integer telling the number of 
+            input dimensions of the kernel.
+            If this is not an integer (!) we will work on the whole input matrix X,
+            and not check whether dimensions match or not (!).
+
+        active_dims:
+
+            is the active_dimensions of inputs X we will work on.
+            All kernels will get sliced Xes as inputs, if active_dims is not None
+            if active_dims is None, slicing is switched off and all X will be passed through as given.
+
         :param int input_dim: the number of input dimensions to the function
-        :param array-like|slice active_dims: list of indices on which dimensions this kernel works on
+        :param array-like|slice|None active_dims: list of indices on which dimensions this kernel works on, or none if no slicing
 
         Do not instantiate.
         """
         super(Kern, self).__init__(name=name, *a, **kw)
-        self.active_dims = active_dims if active_dims is not None else slice(0, input_dim)
-        self.input_dim = input_dim
-        assert isinstance(self.active_dims, (slice, list, tuple, np.ndarray)), 'active_dims needs to be an array-like or slice object over dimensions, {} given'.format(self.active_dims.__class__)
-        if isinstance(self.active_dims, slice):
-            self.active_dims = slice(self.active_dims.start or 0, self.active_dims.stop or self.input_dim, self.active_dims.step or 1)
-            active_dim_size = int(np.round((self.active_dims.stop-self.active_dims.start)/self.active_dims.step))
-        elif isinstance(self.active_dims, np.ndarray):
-            assert self.active_dims.ndim == 1, 'only flat indices allowed, given active_dims.shape={}, provide only indexes to the dimensions of the input'.format(self.active_dims.shape)
-            active_dim_size = self.active_dims.size
-        else:
-            active_dim_size = len(self.active_dims)
-        assert active_dim_size == self.input_dim, "input_dim={} does not match len(active_dim)={}, active_dims={}".format(self.input_dim, active_dim_size, self.active_dims)
+        try:
+            self.input_dim = int(input_dim)
+            self.active_dims = active_dims# if active_dims is not None else slice(0, input_dim, 1)
+        except TypeError:
+            # input_dim is something else then an integer
+            self.input_dim = input_dim
+            if active_dims is not None:
+                print "WARNING: given input_dim={} is not an integer and active_dims={} is given, switching off slicing"
+            self.active_dims = None
+
+        if self.active_dims is not None and self.input_dim is not None:
+            assert isinstance(self.active_dims, (slice, list, tuple, np.ndarray)), 'active_dims needs to be an array-like or slice object over dimensions, {} given'.format(self.active_dims.__class__)
+            if isinstance(self.active_dims, slice):
+                self.active_dims = slice(self.active_dims.start or 0, self.active_dims.stop or self.input_dim, self.active_dims.step or 1)
+                active_dim_size = int(np.round((self.active_dims.stop-self.active_dims.start)/self.active_dims.step))
+            elif isinstance(self.active_dims, np.ndarray):
+                #assert np.all(self.active_dims >= 0), 'active dimensions need to be positive. negative indexing is not allowed'
+                assert self.active_dims.ndim == 1, 'only flat indices allowed, given active_dims.shape={}, provide only indexes to the dimensions (columns) of the input'.format(self.active_dims.shape)
+                active_dim_size = self.active_dims.size
+            else:
+                active_dim_size = len(self.active_dims)
+            assert active_dim_size == self.input_dim, "input_dim={} does not match len(active_dim)={}, active_dims={}".format(self.input_dim, active_dim_size, self.active_dims)
         self._sliced_X = 0
-        
         self.useGPU = self._support_GPU and useGPU
 
     @Cache_this(limit=10)
@@ -205,9 +229,12 @@ class CombinationKernel(Kern):
         return self._parameters_
 
     def get_input_dim_active_dims(self, kernels, extra_dims = None):
-        active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
-        input_dim = active_dims.max()+1 + (len(np.r_[extra_dims]) if extra_dims is not None else 0)
-        active_dims = slice(0, input_dim, 1)
+        #active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
+        #active_dims = np.array(np.concatenate((active_dims, extra_dims if extra_dims is not None else [])), dtype=int)
+        input_dim = np.array([k.input_dim for k in kernels])
+        if np.all(input_dim[0]==input_dim):
+            input_dim = input_dim[0]
+        active_dims = None
         return input_dim, active_dims
 
     def input_sensitivity(self):

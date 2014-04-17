@@ -304,8 +304,8 @@ def football_data(season='1314', data_set='football_data'):
     data_set_season = data_set + '_' + season
     data_resources[data_set_season] = copy.deepcopy(data_resources[data_set])
     data_resources[data_set_season]['urls'][0]+=season + '/'
-    start_year = int(year[0:2])
-    end_year = int(year[2:4])
+    start_year = int(season[0:2])
+    end_year = int(season[2:4])
     files = ['E0.csv', 'E1.csv', 'E2.csv', 'E3.csv']
     if start_year>4 and start_year < 93:
         files += ['EC.csv']

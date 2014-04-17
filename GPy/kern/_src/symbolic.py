@@ -169,7 +169,7 @@ class Symbolic(Kern):
     def gradients_X(self, dL_dK, X, X2=None):
         #if self._X is None or X.base is not self._X.base or X2 is not None:
         self._K_computations(X, X2)
-        gradients_X = np.zeros((X.shape[0], X.shape[1]))
+        gradients_X = np.zeros_like(X)
         for i, x in enumerate(self._sym_x):
             gf = self._K_derivatives_code[x.name]
             gradients_X[:, i] = (gf(**self._arguments)*dL_dK).sum(1)

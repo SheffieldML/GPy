@@ -5,7 +5,6 @@ try:
     import sympy as sym
     sympy_available=True
     from sympy.utilities.lambdify import lambdify
-    from GPy.util.symbolic import stabilise
 except ImportError:
     sympy_available=False
 

@@ -24,12 +24,14 @@ class Test(unittest.TestCase):
         self.assertDictEqual(self.param_index._properties, {})
 
     def test_remove(self):
-        self.param_index.remove(three, np.r_[3:10])
+        removed = self.param_index.remove(three, np.r_[3:10])
+        self.assertListEqual(removed.tolist(), [4, 7])
         self.assertListEqual(self.param_index[three].tolist(), [2])
-        self.param_index.remove(one, [1])
+        removed = self.param_index.remove(one, [1])
+        self.assertListEqual(removed.tolist(), [])
         self.assertListEqual(self.param_index[one].tolist(), [3])
         self.assertListEqual(self.param_index.remove('not in there', []).tolist(), [])
-        self.param_index.remove(one, [9])
+        removed = self.param_index.remove(one, [9])
         self.assertListEqual(self.param_index[one].tolist(), [3])
         self.assertListEqual(self.param_index.remove('not in there', [2,3,4]).tolist(), [])
 
@@ -77,6 +79,13 @@ class Test(unittest.TestCase):
         for [i,v],[i2,v2] in zip(sorted(param_index.items()), sorted(self.param_index.items())):
             self.assertEqual(i, i2)
             self.assertTrue(np.all(v == v2))
+
+    def test_indexview_remove(self):
+        removed = self.view.remove(two, [3])
+        self.assertListEqual(removed.tolist(), [3])        
+        removed = self.view.remove(three, np.r_[:5])
+        self.assertListEqual(removed.tolist(), [0, 2])        
+        
 
     def test_misc(self):
         for k,v in self.param_index.copy()._properties.iteritems():

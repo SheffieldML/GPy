@@ -6,7 +6,7 @@ try:
     import sympy as sym
     sympy_available=True
     from sympy.utilities.lambdify import lambdify
-    from GPy.util.symbolic import gammaln, ln_cum_gaussian, cum_gaussian
+    from GPy.util.symbolic import gammaln, logisticln
 except ImportError:
     sympy_available=False
 
@@ -33,12 +33,14 @@ if sympy_available:
         """
         def __init__(self, gp_link=None):
             if gp_link is None:
-                gp_link = link_functions.Log()
+                gp_link = link_functions.Identity()
 
             dispersion = sym.Symbol('dispersion', positive=True, real=True)
             y = sym.Symbol('y', nonnegative=True, integer=True)
             f = sym.Symbol('f', positive=True, real=True) 
+            gp_link = link_functions.Log()
             log_pdf=dispersion*sym.log(dispersion) - (dispersion+y)*sym.log(dispersion+f) + gammaln(y+dispersion) - gammaln(y+1) - gammaln(dispersion) + y*sym.log(f)  
+            #log_pdf= -(dispersion+y)*logisticln(f-sym.log(dispersion)) + gammaln(y+dispersion) - gammaln(y+1) - gammaln(dispersion) + y*(f-sym.log(dispersion))  
             super(Negative_binomial, self).__init__(log_pdf=log_pdf, gp_link=gp_link, name='Negative_binomial')
 
             # TODO: Check this.

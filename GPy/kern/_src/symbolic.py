@@ -1,15 +1,17 @@
 # Check Matthew Rocklin's blog post.
 try:
-    import sympy as sp
+    import sympy as sym
     sympy_available=True
     from sympy.utilities.lambdify import lambdify
+    from GPy.util.symbolic import stabilise
 except ImportError:
     sympy_available=False
 
 import numpy as np
 from kern import Kern
+from scipy.special import gammaln, gamma, erf, erfc, erfcx, polygamma
+from GPy.util.functions import normcdf, normcdfln, logistic, logisticln, differfln
 from ...core.parameterization import Param
-from ...core.parameterization.transformations import Logexp
 
 class Symbolic(Kern):
     """
@@ -26,28 +28,42 @@ class Symbolic(Kern):
      - to handle multiple inputs, call them x_1, z_1, etc
      - to handle multpile correlated outputs, you'll need to add parameters with an index, such as lengthscale_i and lengthscale_j.
     """
-    def __init__(self, input_dim, k=None, output_dim=1, name='symbolic', param=None, active_dims=None, operators=None):
+    def __init__(self, input_dim, k=None, output_dim=1, name='symbolic', param=None, active_dims=None, operators=None, func_modules=[]):
 
         if k is None:
             raise ValueError, "You must provide an argument for the covariance function."
-        super(Sympykern, self).__init__(input_dim, active_dims, name)
 
-        self._sp_k = k
+        self.func_modules = func_modules
+        self.func_modules += [{'gamma':gamma,
+                               'gammaln':gammaln,
+                               'erf':erf, 'erfc':erfc,
+                               'erfcx':erfcx,
+                               'polygamma':polygamma,
+                               'differfln':differfln,
+                               'normcdf':normcdf,
+                               'normcdfln':normcdfln,
+                               'logistic':logistic,
+                               'logisticln':logisticln},
+                              'numpy']
+
+        super(Symbolic, self).__init__(input_dim, active_dims, name)
+
+        self._sym_k = k
 
         # pull the variable names out of the symbolic covariance function.
-        sp_vars = [e for e in k.atoms() if e.is_Symbol]
-        self._sp_x= sorted([e for e in sp_vars if e.name[0:2]=='x_'],key=lambda x:int(x.name[2:]))
-        self._sp_z= sorted([e for e in sp_vars if e.name[0:2]=='z_'],key=lambda z:int(z.name[2:]))
+        sym_vars = [e for e in k.atoms() if e.is_Symbol]
+        self._sym_x= sorted([e for e in sym_vars if e.name[0:2]=='x_'],key=lambda x:int(x.name[2:]))
+        self._sym_z= sorted([e for e in sym_vars if e.name[0:2]=='z_'],key=lambda z:int(z.name[2:]))
 
         # Check that variable names make sense.
-        assert all([x.name=='x_%i'%i for i,x in enumerate(self._sp_x)])
-        assert all([z.name=='z_%i'%i for i,z in enumerate(self._sp_z)])
-        assert len(self._sp_x)==len(self._sp_z)
-        x_dim=len(self._sp_x)
+        assert all([x.name=='x_%i'%i for i,x in enumerate(self._sym_x)])
+        assert all([z.name=='z_%i'%i for i,z in enumerate(self._sym_z)])
+        assert len(self._sym_x)==len(self._sym_z)
+        x_dim=len(self._sym_x)
 
-        self._sp_kdiag = k
-        for x, z in zip(self._sp_x, self._sp_z):
-            self._sp_kdiag = self._sp_kdiag.subs(z, x)
+        self._sym_kdiag = k
+        for x, z in zip(self._sym_x, self._sym_z):
+            self._sym_kdiag = self._sym_kdiag.subs(z, x)
 
         # If it is a multi-output covariance, add an input for indexing the outputs.
         self._real_input_dim = x_dim
@@ -56,22 +72,22 @@ class Symbolic(Kern):
         self.output_dim = output_dim
 
         # extract parameter names from the covariance
-        thetas = sorted([e for e in sp_vars if not (e.name[0:2]=='x_' or e.name[0:2]=='z_')],key=lambda e:e.name)
+        thetas = sorted([e for e in sym_vars if not (e.name[0:2]=='x_' or e.name[0:2]=='z_')],key=lambda e:e.name)
 
         # Look for parameters with index (subscripts), they are associated with different outputs.
         if self.output_dim>1:
-            self._sp_theta_i = sorted([e for e in thetas if (e.name[-2:]=='_i')], key=lambda e:e.name)
-            self._sp_theta_j = sorted([e for e in thetas if (e.name[-2:]=='_j')], key=lambda e:e.name)
+            self._sym_theta_i = sorted([e for e in thetas if (e.name[-2:]=='_i')], key=lambda e:e.name)
+            self._sym_theta_j = sorted([e for e in thetas if (e.name[-2:]=='_j')], key=lambda e:e.name)
 
             # Make sure parameter appears with both indices!
-            assert len(self._sp_theta_i)==len(self._sp_theta_j)
-            assert all([theta_i.name[:-2]==theta_j.name[:-2] for theta_i, theta_j in zip(self._sp_theta_i, self._sp_theta_j)])
+            assert len(self._sym_theta_i)==len(self._sym_theta_j)
+            assert all([theta_i.name[:-2]==theta_j.name[:-2] for theta_i, theta_j in zip(self._sym_theta_i, self._sym_theta_j)])
 
             # Extract names of shared parameters (those without a subscript)
-            self._sp_theta = [theta for theta in thetas if theta not in self._sp_theta_i and theta not in self._sp_theta_j]
+            self._sym_theta = [theta for theta in thetas if theta not in self._sym_theta_i and theta not in self._sym_theta_j]
 
-            self.num_split_params = len(self._sp_theta_i)
-            self._split_theta_names = ["%s"%theta.name[:-2] for theta in self._sp_theta_i]
+            self.num_split_params = len(self._sym_theta_i)
+            self._split_theta_names = ["%s"%theta.name[:-2] for theta in self._sym_theta_i]
             # Add split parameters to the model.
             for theta in self._split_theta_names:
                 # TODO: what if user has passed a parameter vector, how should that be stored and interpreted?
@@ -79,18 +95,18 @@ class Symbolic(Kern):
                 self.add_parameter(getattr(self, theta))
 
 
-            self.num_shared_params = len(self._sp_theta)
-            for theta_i, theta_j in zip(self._sp_theta_i, self._sp_theta_j):
-                self._sp_kdiag = self._sp_kdiag.subs(theta_j, theta_i)
+            self.num_shared_params = len(self._sym_theta)
+            for theta_i, theta_j in zip(self._sym_theta_i, self._sym_theta_j):
+                self._sym_kdiag = self._sym_kdiag.subs(theta_j, theta_i)
 
         else:
             self.num_split_params = 0
             self._split_theta_names = []
-            self._sp_theta = thetas
-            self.num_shared_params = len(self._sp_theta)
+            self._sym_theta = thetas
+            self.num_shared_params = len(self._sym_theta)
 
         # Add parameters to the model.
-        for theta in self._sp_theta:
+        for theta in self._sym_theta:
             val = 1.0
             # TODO: what if user has passed a parameter vector, how should that be stored and interpreted? This is the old way before params class.
             if param is not None:
@@ -100,25 +116,25 @@ class Symbolic(Kern):
             self.add_parameters(getattr(self, theta.name))
 
         # Differentiate with respect to parameters.
-        derivative_arguments = self._sp_x + self._sp_theta
+        derivative_arguments = self._sym_x + self._sym_theta
         if self.output_dim > 1:
-            derivative_arguments += self._sp_theta_i
+            derivative_arguments += self._sym_theta_i
 
-        self.derivatives = {theta.name : sp.diff(self._sp_k,theta).simplify() for theta in derivative_arguments}
-        self.diag_derivatives = {theta.name : sp.diff(self._sp_kdiag,theta).simplify() for theta in derivative_arguments}
+        self.derivatives = {theta.name : stabilise(sym.diff(self._sym_k,theta)) for theta in derivative_arguments}
+        self.diag_derivatives = {theta.name : stabilise(sym.diff(self._sym_kdiag,theta)) for theta in derivative_arguments}
 
         # This gives the parameters for the arg list.
-        self.arg_list = self._sp_x + self._sp_z + self._sp_theta
-        self.diag_arg_list = self._sp_x + self._sp_theta
+        self.arg_list = self._sym_x + self._sym_z + self._sym_theta
+        self.diag_arg_list = self._sym_x + self._sym_theta
         if self.output_dim > 1:
-            self.arg_list += self._sp_theta_i + self._sp_theta_j
-            self.diag_arg_list += self._sp_theta_i
+            self.arg_list += self._sym_theta_i + self._sym_theta_j
+            self.diag_arg_list += self._sym_theta_i
 
         # Check if there are additional linear operators on the covariance.
-        self._sp_operators = operators
+        self._sym_operators = operators
         # TODO: Deal with linear operators
-        #if self._sp_operators:
-        #    for operator in self._sp_operators:
+        #if self._sym_operators:
+        #    for operator in self._sym_operators:
                 
         # psi_stats aren't yet implemented.
         if False:
@@ -128,17 +144,14 @@ class Symbolic(Kern):
         self._gen_code()
 
     def __add__(self,other):
-        return spkern(self._sp_k+other._sp_k)
+        return spkern(self._sym_k+other._sym_k)
 
     def _gen_code(self):
-        #fn_theano = theano_function([self.arg_lists], [self._sp_k + self.derivatives], dims={x: 1}, dtypes={x_0: 'float64', z_0: 'float64'})
-        self._K_function = lambdify(self.arg_list, self._sp_k, 'numpy')
-        for key in self.derivatives.keys():
-            setattr(self, '_K_diff_' + key, lambdify(self.arg_list, self.derivatives[key], 'numpy'))
-
-        self._Kdiag_function = lambdify(self.diag_arg_list, self._sp_kdiag, 'numpy')
-        for key in self.derivatives.keys():
-            setattr(self, '_Kdiag_diff_' + key, lambdify(self.diag_arg_list, self.diag_derivatives[key], 'numpy'))
+        #fn_theano = theano_function([self.arg_lists], [self._sym_k + self.derivatives], dims={x: 1}, dtypes={x_0: 'float64', z_0: 'float64'})
+        self._K_function = lambdify(self.arg_list, self._sym_k, self.func_modules)
+        self._K_derivatives_code = {key: lambdify(self.arg_list, self.derivatives[key], self.func_modules) for key in self.derivatives.keys()}
+        self._Kdiag_function = lambdify(self.diag_arg_list, self._sym_kdiag, self.func_modules)
+        self._Kdiag_derivatives_code = {key: lambdify(self.diag_arg_list, self.diag_derivatives[key], self.func_modules) for key in self.diag_derivatives.keys()}
 
     def K(self,X,X2=None):
         self._K_computations(X, X2)
@@ -156,9 +169,9 @@ class Symbolic(Kern):
     def gradients_X(self, dL_dK, X, X2=None):
         #if self._X is None or X.base is not self._X.base or X2 is not None:
         self._K_computations(X, X2)
-        gradients_X = np.zeros((X.shape[0], X.shape[1]))
-        for i, x in enumerate(self._sp_x):
-            gf = getattr(self, '_K_diff_' + x.name)
+        gradients_X = np.zeros_like(X)
+        for i, x in enumerate(self._sym_x):
+            gf = self._K_derivatives_code[x.name]
             gradients_X[:, i] = (gf(**self._arguments)*dL_dK).sum(1)
         if X2 is None:
             gradients_X *= 2
@@ -167,25 +180,25 @@ class Symbolic(Kern):
     def gradients_X_diag(self, dL_dK, X):
         self._K_computations(X)
         dX = np.zeros_like(X)
-        for i, x in enumerate(self._sp_x):
-            gf = getattr(self, '_Kdiag_diff_' + x.name)
+        for i, x in enumerate(self._sym_x):
+            gf = self._Kdiag_derivatives_code[x.name]
             dX[:, i] = gf(**self._diag_arguments)*dL_dK
         return dX
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         # Need to extract parameters to local variables first
         self._K_computations(X, X2)
-        for theta in self._sp_theta:
+        for theta in self._sym_theta:
             parameter = getattr(self, theta.name)
-            gf = getattr(self, '_K_diff_' + theta.name)
+            gf = self._K_derivatives_code[theta.name]
             gradient = (gf(**self._arguments)*dL_dK).sum()
             if X2 is not None:
                 gradient += (gf(**self._reverse_arguments)*dL_dK).sum()
             setattr(parameter, 'gradient', gradient)
         if self.output_dim>1:
-            for theta in self._sp_theta_i:
+            for theta in self._sym_theta_i:
                 parameter = getattr(self, theta.name[:-2])
-                gf = getattr(self, '_K_diff_' + theta.name)
+                gf = self._K_derivatives_code[theta.name]
                 A = gf(**self._arguments)*dL_dK
                 gradient = np.asarray([A[np.where(self._output_ind==i)].T.sum()
                                        for i in np.arange(self.output_dim)])
@@ -200,14 +213,14 @@ class Symbolic(Kern):
 
     def update_gradients_diag(self, dL_dKdiag, X):
         self._K_computations(X)
-        for theta in self._sp_theta:
+        for theta in self._sym_theta:
             parameter = getattr(self, theta.name)
-            gf = getattr(self, '_Kdiag_diff_' + theta.name)
+            gf = self._Kdiag_derivatives_code[theta.name]
             setattr(parameter, 'gradient', (gf(**self._diag_arguments)*dL_dKdiag).sum())
         if self.output_dim>1:
-            for theta in self._sp_theta_i:
+            for theta in self._sym_theta_i:
                 parameter = getattr(self, theta.name[:-2])
-                gf = getattr(self, '_Kdiag_diff_' + theta.name)
+                gf = self._Kdiag_derivatives_code[theta.name]
                 a = gf(**self._diag_arguments)*dL_dKdiag
                 setattr(parameter, 'gradient',
                         np.asarray([a[np.where(self._output_ind==i)].sum()
@@ -220,40 +233,40 @@ class Symbolic(Kern):
         # parameter updates here.
         self._arguments = {}
         self._diag_arguments = {}
-        for i, x in enumerate(self._sp_x):
+        for i, x in enumerate(self._sym_x):
             self._arguments[x.name] =  X[:, i][:, None]
             self._diag_arguments[x.name] =  X[:, i][:, None]
         if self.output_dim > 1:
             self._output_ind = np.asarray(X[:, -1], dtype='int')
-            for i, theta in enumerate(self._sp_theta_i):
+            for i, theta in enumerate(self._sym_theta_i):
                 self._arguments[theta.name] = np.asarray(getattr(self, theta.name[:-2])[self._output_ind])[:, None]
                 self._diag_arguments[theta.name] = self._arguments[theta.name]
-        for theta in self._sp_theta:
+        for theta in self._sym_theta:
             self._arguments[theta.name] = np.asarray(getattr(self, theta.name))
             self._diag_arguments[theta.name] = self._arguments[theta.name]
 
         if X2 is not None:
-            for i, z in enumerate(self._sp_z):
+            for i, z in enumerate(self._sym_z):
                 self._arguments[z.name] =  X2[:, i][None, :]
             if self.output_dim > 1:
                 self._output_ind2 = np.asarray(X2[:, -1], dtype='int')
-                for i, theta in enumerate(self._sp_theta_j):
+                for i, theta in enumerate(self._sym_theta_j):
                     self._arguments[theta.name] = np.asarray(getattr(self, theta.name[:-2])[self._output_ind2])[None, :]
         else:
-            for z in self._sp_z:
+            for z in self._sym_z:
                 self._arguments[z.name] =  self._arguments['x_'+z.name[2:]].T
             if self.output_dim > 1:
                 self._output_ind2 = self._output_ind
-                for theta in self._sp_theta_j:
+                for theta in self._sym_theta_j:
                     self._arguments[theta.name] = self._arguments[theta.name[:-2] + '_i'].T
         if X2 is not None:
             # These arguments are needed in gradients when X2 is not equal to X.
             self._reverse_arguments = self._arguments
-            for x, z in zip(self._sp_x, self._sp_z):
+            for x, z in zip(self._sym_x, self._sym_z):
                 self._reverse_arguments[x.name] = self._arguments[z.name].T
                 self._reverse_arguments[z.name] = self._arguments[x.name].T
             if self.output_dim > 1:
-                for theta_i, theta_j in zip(self._sp_theta_i, self._sp_theta_j):
+                for theta_i, theta_j in zip(self._sym_theta_i, self._sym_theta_j):
                     self._reverse_arguments[theta_i.name] = self._arguments[theta_j.name].T
                     self._reverse_arguments[theta_j.name] = self._arguments[theta_i.name].T
 
@@ -265,7 +278,7 @@ if False:
         def __init__(self, subkerns, operations, name='sympy_combine'):
             super(Symcombine, self).__init__(subkerns, name)
             for subkern, operation in zip(subkerns, operations):
-                self._sp_k += self._k_double_operate(subkern._sp_k, operation)
+                self._sym_k += self._k_double_operate(subkern._sym_k, operation)
 
         #def _double_operate(self, k, operation):
 

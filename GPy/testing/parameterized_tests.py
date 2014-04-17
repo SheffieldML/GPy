@@ -153,6 +153,18 @@ class ParameterizedTest(unittest.TestCase):
         self.testmodel.randomize()
         np.testing.assert_equal(variances, self.testmodel['.*var'].values())
 
+    def test_fix_unfix(self):
+        fixed = self.testmodel.kern.lengthscale.fix()
+        self.assertListEqual(fixed.tolist(), [0])
+        unfixed = self.testmodel.kern.lengthscale.unfix()
+        self.testmodel.kern.lengthscale.constrain_positive()
+        self.assertListEqual(unfixed.tolist(), [0])
+
+        fixed = self.testmodel.kern.fix()
+        self.assertListEqual(fixed.tolist(), [0,1])
+        unfixed = self.testmodel.kern.unfix()
+        self.assertListEqual(unfixed.tolist(), [0,1])
+
     def test_printing(self):
         print self.test1
         print self.param

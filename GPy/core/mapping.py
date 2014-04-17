@@ -65,6 +65,14 @@ class Mapping(Parameterized):
         else:
             raise NameError, "matplotlib package has not been imported."
 
+class Bijective_mapping(Mapping):
+    """This is a mapping that is bijective, i.e. you can go from X to f and also back from f to X. The inverse mapping is called g()."""
+    def __init__(self, input_dim, output_dim, name='bijective_mapping'):
+        super(Bijective_apping, self).__init__(name=name)
+
+    def g(self, f):
+        """Inverse mapping from output domain of the function to the inputs."""
+        raise NotImplementedError
 
 from model import Model
 

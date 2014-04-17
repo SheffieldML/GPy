@@ -106,9 +106,30 @@ def download_url(url, store_directory, save_name = None, messages = True, suffix
             raise ValueError('Tried url ' + url + suffix + ' and received client error ' + str(response.code))
         elif response.code > 499:
             raise ValueError('Tried url ' + url + suffix + ' and received server error ' + str(response.code))
-    # if we wanted to get more sophisticated maybe we should check the response code here again even for successes.
     with open(save_name, 'wb') as f:
-        f.write(response.read())
+        meta = response.info()
+        file_size = int(meta.getheaders("Content-Length")[0])
+        status = ""
+        file_size_dl = 0
+        block_sz = 8192
+        line_length=30
+        while True:
+            buff = response.read(block_sz)
+            if not buff:
+                break
+            file_size_dl += len(buff)
+            f.write(buff)
+            sys.stdout.write(" "*(len(status)) + "\r")
+            status = r"[{perc: <{ll}}] {dl:7.3f}/{full:.3f}MB".format(dl=file_size_dl/(1.*1e6), 
+                                                                       full=file_size/(1.*1e6), ll=line_length, 
+                                                                       perc="="*int(line_length*float(file_size_dl)/file_size))
+            sys.stdout.write(status)
+            sys.stdout.flush()
+        sys.stdout.write(" "*(len(status)) + "\r")
+        print status
+    # if we wanted to get more sophisticated maybe we should check the response code here again even for successes.
+    #with open(save_name, 'wb') as f:
+    #    f.write(response.read())
 
     #urllib.urlretrieve(url+suffix, save_name, reporthook)
 
@@ -552,6 +573,151 @@ def swiss_roll_generated(num_samples=1000, sigma=0.0):
     c = c[so, :]
     return {'Y':Y, 't':t, 'colors':c}
 
+def hapmap3(data_set='hapmap3'):
+    """
+    The HapMap phase three SNP dataset - 1184 samples out of 11 populations.
+
+    SNP_matrix (A) encoding [see Paschou et all. 2007 (PCA-Correlated SNPs...)]:
+    Let (B1,B2) be the alphabetically sorted bases, which occur in the j-th SNP, then
+
+          /  1, iff SNPij==(B1,B1)
+    Aij = |  0, iff SNPij==(B1,B2)
+          \ -1, iff SNPij==(B2,B2)
+
+    The SNP data and the meta information (such as iid, sex and phenotype) are
+    stored in the dataframe datadf, index is the Individual ID, 
+    with following columns for metainfo:
+
+        * family_id   -> Family ID
+        * paternal_id -> Paternal ID
+        * maternal_id -> Maternal ID
+        * sex         -> Sex (1=male; 2=female; other=unknown)
+        * phenotype   -> Phenotype (-9, or 0 for unknown)
+        * population  -> Population string (e.g. 'ASW' - 'YRI')
+        * rest are SNP rs (ids)
+
+    More information is given in infodf:
+
+        * Chromosome:
+            - autosomal chromosemes                -> 1-22
+            - X    X chromosome                    -> 23
+            - Y    Y chromosome                    -> 24
+            - XY   Pseudo-autosomal region of X    -> 25
+            - MT   Mitochondrial                   -> 26
+        * Relative Positon (to Chromosome) [base pairs]
+    """
+    try:
+        from pandas import read_pickle, DataFrame
+        from sys import stdout
+        import bz2
+    except ImportError as i:
+        raise i, "Need pandas for hapmap dataset, make sure to install pandas (http://pandas.pydata.org/) before loading the hapmap dataset"
+    if not data_available(data_set):
+        download_data(data_set)
+    dirpath = os.path.join(data_path,'hapmap3')
+    hapmap_file_name = 'hapmap3_r2_b36_fwd.consensus.qc.poly'
+    preprocessed_data_paths = [os.path.join(dirpath,hapmap_file_name + file_name) for file_name in \
+                               ['.snps.pickle',
+                                '.info.pickle',
+                                '.nan.pickle']]
+    if not reduce(lambda a,b: a and b, map(os.path.exists, preprocessed_data_paths)):
+        if not overide_manual_authorize and not prompt_user("Preprocessing requires ~25GB "
+                            "of memory and can take a (very) long time, continue? [Y/n]"):
+            print "Preprocessing required for further usage."
+            return
+        status = "Preprocessing data, please be patient..."
+        print status
+        def write_status(message, progress, status):
+            stdout.write(" "*len(status)); stdout.write("\r"); stdout.flush()
+            status = r"[{perc: <{ll}}] {message: <13s}".format(message=message, ll=20,
+                                                               perc="="*int(20.*progress/100.))
+            stdout.write(status); stdout.flush()
+            return status
+        unpacked_files = [os.path.join(dirpath, hapmap_file_name+ending) for ending in ['.ped', '.map']]
+        if not reduce(lambda a,b: a and b, map(os.path.exists, unpacked_files)):
+            status=write_status('unpacking...', 0, '')
+            curr = 0
+            for newfilepath in unpacked_files:
+                if not os.path.exists(newfilepath):
+                    filepath = newfilepath + '.bz2'
+                    file_size = os.path.getsize(filepath)
+                    with open(newfilepath, 'wb') as new_file, open(filepath, 'rb') as f:
+                        decomp = bz2.BZ2Decompressor()
+                        file_processed = 0
+                        buffsize = 100 * 1024
+                        for data in iter(lambda : f.read(buffsize), b''):
+                            new_file.write(decomp.decompress(data))
+                            file_processed += len(data)
+                            status=write_status('unpacking...', curr+12.*file_processed/(file_size), status)
+                curr += 12
+                status=write_status('unpacking...', curr, status)
+        status=write_status('reading .ped...', 25, status)
+        # Preprocess data:    
+        snpstrnp = np.loadtxt(unpacked_files[0], dtype=str)
+        status=write_status('reading .map...', 33, status)
+        mapnp = np.loadtxt(unpacked_files[1], dtype=str)
+        status=write_status('reading relationships.txt...', 42, status)
+        # and metainfo:
+        infodf = DataFrame.from_csv(os.path.join(dirpath,'./relationships_w_pops_121708.txt'), header=0, sep='\t')
+        infodf.set_index('IID', inplace=1)
+        status=write_status('filtering nan...', 45, status)
+        snpstr = snpstrnp[:,6:].astype('S1').reshape(snpstrnp.shape[0], -1, 2)
+        inan = snpstr[:,:,0] == '0'
+        status=write_status('filtering reference alleles...', 55, status)
+        ref = np.array(map(lambda x: np.unique(x)[-2:], snpstr.swapaxes(0,1)[:,:,:]))
+        status=write_status('encoding snps...', 70, status)
+        # Encode the information for each gene in {-1,0,1}:
+        status=write_status('encoding snps...', 73, status)
+        snps = (snpstr==ref[None,:,:])
+        status=write_status('encoding snps...', 76, status)
+        snps = (snps*np.array([1,-1])[None,None,:])
+        status=write_status('encoding snps...', 78, status)
+        snps = snps.sum(-1)
+        status=write_status('encoding snps...', 81, status)
+        snps = snps.astype('i8')
+        status=write_status('marking nan values...', 88, status)
+        # put in nan values (masked as -128):
+        snps[inan] = -128
+        status=write_status('setting up meta...', 94, status)
+        # get meta information:
+        metaheader = np.r_[['family_id', 'iid', 'paternal_id', 'maternal_id', 'sex', 'phenotype']]
+        metadf = DataFrame(columns=metaheader, data=snpstrnp[:,:6])
+        metadf.set_index('iid', inplace=1)
+        metadf = metadf.join(infodf.population)
+        metadf.to_pickle(preprocessed_data_paths[1])
+        # put everything together:
+        status=write_status('setting up snps...', 96, status)
+        snpsdf = DataFrame(index=metadf.index, data=snps, columns=mapnp[:,1])
+        with open(preprocessed_data_paths[0], 'wb') as f:
+            pickle.dump(f, snpsdf, protocoll=-1)
+        status=write_status('setting up snps...', 98, status)
+        inandf = DataFrame(index=metadf.index, data=inan, columns=mapnp[:,1])
+        inandf.to_pickle(preprocessed_data_paths[2])
+        status=write_status('done :)', 100, status)
+        print ''
+    else:
+        print "loading snps..."
+        snpsdf = read_pickle(preprocessed_data_paths[0])
+        print "loading metainfo..."
+        metadf = read_pickle(preprocessed_data_paths[1])
+        print "loading nan entries..."
+        inandf = read_pickle(preprocessed_data_paths[2])
+    snps = snpsdf.values
+    populations = metadf.population.values.astype('S3')
+    hapmap = dict(name=data_set,
+                  description='The HapMap phase three SNP dataset - '
+                  '1184 samples out of 11 populations. inan is a '
+                  'boolean array, containing wheather or not the '
+                  'given entry is nan (nans are masked as '
+                  '-128 in snps).',
+                  snpsdf=snpsdf,
+                  metadf=metadf,
+                  snps=snps,
+                  inan=inandf.values,
+                  inandf=inandf,
+                  populations=populations)
+    return hapmap
+    
 def swiss_roll_1000():
     return swiss_roll(num_samples=1000)
 

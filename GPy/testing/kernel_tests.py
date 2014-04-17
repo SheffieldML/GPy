@@ -312,13 +312,14 @@ class KernelTestsMiscellaneous(unittest.TestCase):
         self.sumkern.randomize()
 
     def test_active_dims(self):
-        #self.assertEqual(self.sumkern.input_dim, 10)
-        #self.assertEqual(list(self.sumkern.active_dims), [0,1,2,3,7,9])
         # test the automatic dim detection expression for slices:
         start, stop = 0, 277
         for i in range(start,stop,7):
             for j in range(1,4):
                 GPy.kern.Kern(int(np.round((i+1)/j)), slice(0, i+1, j), "testkern")
+        # test the ability to have only one dim
+        sk = GPy.kern.RBF(2) + GPy.kern.Matern32(2)
+        self.assertEqual(sk.input_dim, 2)
 
     def test_which_parts(self):
         self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=[self.linear, self.matern]), self.linear.K(self.X)+self.matern.K(self.X)))

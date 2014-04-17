@@ -25,7 +25,7 @@ class Kern(Parameterized):
 
             is the number of dimensions to work on. Make sure to give the 
             tight dimensionality of inputs.
-            You moset likely want this to be the integer telling the number of 
+            You most likely want this to be the integer telling the number of 
             input dimensions of the kernel.
             If this is not an integer (!) we will work on the whole input matrix X,
             and not check whether dimensions match or not (!).
@@ -44,7 +44,7 @@ class Kern(Parameterized):
         super(Kern, self).__init__(name=name, *a, **kw)
         try:
             self.input_dim = int(input_dim)
-            self.active_dims = active_dims if active_dims is not None else slice(0, input_dim, 1)
+            self.active_dims = active_dims# if active_dims is not None else slice(0, input_dim, 1)
         except TypeError:
             # input_dim is something else then an integer
             self.input_dim = input_dim
@@ -231,7 +231,9 @@ class CombinationKernel(Kern):
     def get_input_dim_active_dims(self, kernels, extra_dims = None):
         #active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
         #active_dims = np.array(np.concatenate((active_dims, extra_dims if extra_dims is not None else [])), dtype=int)
-        input_dim = [k.input_dim for k in kernels]
+        input_dim = np.array([k.input_dim for k in kernels])
+        if np.all(input_dim[0]==input_dim):
+            input_dim = input_dim[0]
         active_dims = None
         return input_dim, active_dims
 

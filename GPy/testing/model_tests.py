@@ -401,6 +401,16 @@ class GradientTests(np.testing.TestCase):
         m.constrain_fixed('.*rbf_var', 1.)
         self.assertTrue(m.checkgrad())
 
+    def test_gp_heteroscedastic_regression(self):
+        num_obs = 25
+        X = np.random.randint(0,140,num_obs)
+        X = X[:,None]
+        Y = 25. + np.sin(X/20.) * 2. + np.random.rand(num_obs)[:,None]
+        kern = GPy.kern.Bias(1) + GPy.kern.RBF(1)
+        m = GPy.models.GPHeteroscedasticRegression(X,Y,kern)
+        self.assertTrue(m.checkgrad())
+
+
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."
     unittest.main()

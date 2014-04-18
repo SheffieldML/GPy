@@ -312,7 +312,8 @@ class Indexable(object):
         This does not need to account for shaped parameters, as it
         basically just sums up the parameter sizes which come before param.
         """
-        raise NotImplementedError, "shouldnt happen, offset required from non parameterization object?"
+        return 0
+        #raise NotImplementedError, "shouldnt happen, offset required from non parameterization object?"
 
     def _raveled_index_for(self, param):
         """
@@ -320,7 +321,8 @@ class Indexable(object):
         that is an int array, containing the indexes for the flattened
         param inside this parameterized logic.
         """
-        raise NotImplementedError, "shouldnt happen, raveld index transformation required from non parameterization object?"
+        return param._raveled_index()
+        #raise NotImplementedError, "shouldnt happen, raveld index transformation required from non parameterization object?"
 
 
 class Constrainable(Nameable, Indexable, Observable):
@@ -368,10 +370,10 @@ class Constrainable(Nameable, Indexable, Observable):
         if value is not None:
             self[:] = value
         reconstrained = self.unconstrain()
-        self._add_to_index_operations(self.constraints, reconstrained, __fixed__, warning)
-        rav_i = self._highest_parent_._raveled_index_for(self)
-        self._highest_parent_._set_fixed(rav_i)
+        index = self._add_to_index_operations(self.constraints, reconstrained, __fixed__, warning)
+        self._highest_parent_._set_fixed(self, index)
         self.notify_observers(self, None if trigger_parent else -np.inf)
+        return index
     fix = constrain_fixed
 
     def unconstrain_fixed(self):
@@ -379,7 +381,8 @@ class Constrainable(Nameable, Indexable, Observable):
         This parameter will no longer be fixed.
         """
         unconstrained = self.unconstrain(__fixed__)
-        self._highest_parent_._set_unfixed(unconstrained)
+        self._highest_parent_._set_unfixed(self, unconstrained)
+        return unconstrained
     unfix = unconstrain_fixed
 
     def _ensure_fixes(self):
@@ -388,14 +391,16 @@ class Constrainable(Nameable, Indexable, Observable):
         # Param: ones(self._realsize_
         if not self._has_fixes(): self._fixes_ = np.ones(self.size, dtype=bool)
 
-    def _set_fixed(self, index):
+    def _set_fixed(self, param, index):
         self._ensure_fixes()
-        self._fixes_[index] = FIXED
+        offset = self._offset_for(param)
+        self._fixes_[index+offset] = FIXED
         if np.all(self._fixes_): self._fixes_ = None  # ==UNFIXED
 
-    def _set_unfixed(self, index):
+    def _set_unfixed(self, param, index):
         self._ensure_fixes()
-        self._fixes_[index] = UNFIXED
+        offset = self._offset_for(param)
+        self._fixes_[index+offset] = UNFIXED
         if np.all(self._fixes_): self._fixes_ = None  # ==UNFIXED
 
     def _connect_fixes(self):
@@ -469,8 +474,9 @@ class Constrainable(Nameable, Indexable, Observable):
         """
         self.param_array[...] = transform.initialize(self.param_array)
         reconstrained = self.unconstrain()
-        self._add_to_index_operations(self.constraints, reconstrained, transform, warning)
+        added = self._add_to_index_operations(self.constraints, reconstrained, transform, warning)
         self.notify_observers(self, None if trigger_parent else -np.inf)
+        return added
 
     def unconstrain(self, *transforms):
         """
@@ -549,7 +555,9 @@ class Constrainable(Nameable, Indexable, Observable):
         if warning and reconstrained.size > 0:
             # TODO: figure out which parameters have changed and only print those
             print "WARNING: reconstraining parameters {}".format(self.parameter_names() or self.name)
-        which.add(what, self._raveled_index())
+        index = self._raveled_index()
+        which.add(what, index)
+        return index
 
     def _remove_from_index_operations(self, which, transforms):
         """
@@ -561,9 +569,10 @@ class Constrainable(Nameable, Indexable, Observable):
         removed = np.empty((0,), dtype=int)
         for t in transforms:
             unconstrained = which.remove(t, self._raveled_index())
+            print unconstrained
             removed = np.union1d(removed, unconstrained)
             if t is __fixed__:
-                self._highest_parent_._set_unfixed(unconstrained)
+                self._highest_parent_._set_unfixed(self, unconstrained)
 
         return removed
 

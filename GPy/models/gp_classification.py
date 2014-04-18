@@ -21,7 +21,7 @@ class GPClassification(GP):
 
     """
 
-    def __init__(self, X, Y, kernel=None):
+    def __init__(self, X, Y, kernel=None,Y_metadata=None):
         if kernel is None:
             kernel = kern.RBF(X.shape[1])
 

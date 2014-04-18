@@ -61,9 +61,9 @@ def toy_linear_1d_classification(seed=default_seed, optimize=True, plot=True):
     if optimize:
         #m.update_likelihood_approximation()
         # Parameters optimization:
-        #m.optimize()
+        m.optimize()
         #m.update_likelihood_approximation()
-        m.pseudo_EM()
+        #m.pseudo_EM()
 
     # Plot
     if plot:

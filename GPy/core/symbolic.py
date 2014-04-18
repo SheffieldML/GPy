@@ -17,7 +17,7 @@ class Symbolic_core():
     Base model symbolic class.
     """
 
-    def __init__(self, expression, cacheable, derivatives=None, param=None, func_modules=[]):
+    def __init__(self, expressions, cacheable, derivatives=None, parameters=None, func_modules=[]):
         # Base class init, do some basic derivatives etc.
 
         # Func_modules sets up the right mapping for functions.
@@ -33,14 +33,28 @@ class Symbolic_core():
                                'logisticln':logisticln},
                               'numpy']
 
+        self._set_expressions(expressions)
+        self._set_variables(cacheable)
+        self._set_derivatives(derivatives)
+        self._set_parameters(parameters)
+        self.namespace = [globals(), self.__dict__]
+        self._gen_code()
+
+    def _set_expressions(self, expressions):
+        """Extract expressions and variables from the user provided expressions."""
         self.expressions = {}
-        self.expressions['function'] = expression
-        self.cacheable = cacheable
+        for key, item in expressions.items():
+            self.expressions[key] = {'function': item}
 
+    def _set_variables(self, cacheable):
+        """Pull the variable names out of the provided expressions and separate into cacheable expressions and normal parameters. Those that are only stored in the cache, the parameters are stored in this object."""
         # pull the parameters and inputs out of the symbolic pdf
+        self.cacheable = cacheable
         self.variables = {}
-        vars = [e for e in expression.atoms() if e.is_Symbol]
-
+        vars = []
+        for expression in self.expressions.values():
+            vars += [e for e in expression['function'].atoms() if e.is_Symbol and e not in vars]
+        print vars
         # inputs are assumed to be those things that are
         # cacheable. I.e. those things that aren't stored within the
         # object except as cached. For covariance functions this is X
@@ -56,6 +70,7 @@ class Symbolic_core():
         # things that aren't cacheable are assumed to be parameters.
         self.variables['theta'] = sorted([e for e in vars if not e in self.cacheable_vars],key=lambda e:e.name)
 
+    def _set_derivatives(self, derivatives):
         # these are arguments for computing derivatives.
         derivative_arguments = []
         if derivatives is not None:
@@ -63,93 +78,113 @@ class Symbolic_core():
                 derivative_arguments += self.variables[derivative]
 
             # Do symbolic work to compute derivatives.        
-            self.expressions['derivative'] = {theta.name : sym.diff(self.expressions['function'],theta) for theta in derivative_arguments}
-                    # Add parameters to the model.
+            for key, func in self.expressions.items():
+                self.expressions[key]['derivative'] = {theta.name : sym.diff(func['function'],theta) for theta in derivative_arguments}
+
+    def _set_parameters(self, parameters):
+        """Add parameters to the model and initialize with given values."""
         for theta in self.variables['theta']:
             val = 1.0
-            # TODO: need to decide how to handle user passing values for the se parameter vectors.
-            if param is not None:
-                if param.has_key(theta.name):
-                    val = param[theta.name]
+            # TODO: improve approach for initializing parameters.
+            if parameters is not None:
+                if parameters.has_key(theta.name):
+                    val = parameters[theta.name]
             # Add parameter.
-            setattr(self, theta.name, Param(theta.name, val, None))
-            self.add_parameters(getattr(self, theta.name))
-
-        self.namespace = [globals(), self.__dict__]
-        self._gen_code()
+            
+            self.add_parameters(Param(theta.name, val, None))
+            #setattr(self, theta.name, )
 
     def eval_parameters_changed(self):
         # TODO: place checks for inf/nan in here
         # do all the precomputation codes.
-        for variable, code in sorted(self.code['params_change'].iteritems()):
+        for variable, code in sorted(self.code['parameters_change'].iteritems()):
             setattr(self, variable, eval(code, *self.namespace))
         self.eval_update_cache()
 
-    def eval_update_cache(self, X=None):
+    def eval_update_cache(self, **kwargs):
         # TODO: place checks for inf/nan in here
-        if X is not None:
-            for i, theta in enumerate(self.variables['X']):
-                setattr(self, theta.name, X[:, i][:, None])
+        # for all provided keywords
+        for variable, value in kwargs.items():
+            # update their cached values
+            if value is not None:
+                if variable == 'X' or variable == 'F' or variable == 'Mu':
+                    for i, theta in enumerate(self.variables[variable]):
+                        setattr(self, theta.name, value[:, i][:, None])
+                elif variable.name == 'Z':
+                    for i, theta in enumerate(self.variables[variable]):
+                        setattr(self, theta.name, value[:, i][None, :])
+                else:
+                    setattr(self, theta.name, value[:, i])
 
         for variable, code in sorted(self.code['update_cache'].iteritems()):
             setattr(self, variable, eval(code, *self.namespace))
 
-    def eval_update_gradients(self, partial, X):
+    def eval_update_gradients(self, function, partial, **kwargs):
         # TODO: place checks for inf/nan in here
+        self.eval_update_cache(**kwargs)
         for theta in self.variables['theta']:
-            code = self.code['derivative'][theta.name]
+            code = self.code[function]['derivative'][theta.name]
             setattr(getattr(self, theta.name),
                     'gradient',
                     (partial*eval(code, *self.namespace)).sum())
 
-    def eval_gradients_X(self, partial, X):
-        gradients_X = np.zeros_like(X)
-        self.eval_update_cache(X)
+    def eval_gradients_X(self, function, partial, **kwargs):
+        if kwargs.has_key('X'):
+            gradients_X = np.zeros_like(kwargs['X'])
+        self.eval_update_cache(**kwargs)
         for i, theta in enumerate(self.variables['X']):
-            code = self.code['derivative'][theta.name]
+            code = self.code[function]['derivative'][theta.name]
             gradients_X[:, i:i+1] = partial*eval(code, *self.namespace)
         return gradients_X
 
-    def eval_f(self, X):
-        self.eval_update_cache(X)
-        return eval(self.code['function'], *self.namespace)
+    def eval_function(self, function, **kwargs):
+        self.eval_update_cache(**kwargs)
+        return eval(self.code[function]['function'], *self.namespace)
 
     def code_parameters_changed(self):
         # do all the precomputation codes.
         lcode = ''
-        for variable, code in sorted(self.code['params_change'].iteritems()):
-            lcode += variable + ' = ' + self._print_code(code) + '\n'
+        for variable, code in sorted(self.code['parameters_change'].iteritems()):
+            lcode += self._print_code(variable) + ' = ' + self._print_code(code) + '\n'
         return lcode
     
     def code_update_cache(self):
-        lcode = 'if X is not None:\n'
-        for i, theta in enumerate(self.variables['X']):
-            lcode+= "\t" + self._print_code(theta.name) + ' = X[:, ' + str(i) + "][:, None]\n"
+        lcode = ''
+        for var in self.cacheable:
+            lcode += 'if ' + var + ' is not None:\n'
+            if var == 'X':
+                reorder = '[:, None]'
+            elif var == 'Z':
+                reorder = '[None, :]'
+            else:
+                reorder = ''
+            for i, theta in enumerate(self.variables[var]):
+                lcode+= "\t" + self._print_code(theta.name) + ' = ' + var + '[:, ' + str(i) + "]" + reorder + "\n"
     
         for variable, code in sorted(self.code['update_cache'].iteritems()):
             lcode+= self._print_code(variable) + ' = ' + self._print_code(code) + "\n"
 
         return lcode
 
-    def code_update_gradients(self):
+    def code_update_gradients(self, function):
         lcode = ''
         for theta in self.variables['theta']:
-            code = self.code['derivative'][theta.name]
+            code = self.code[function]['derivative'][theta.name]
             lcode += self._print_code(theta.name) + '.gradient = (partial*(' + self._print_code(code) + ')).sum()\n'
         return lcode
 
-    def code_gradients_X(self):
+    def code_gradients_X(self, function):
         lcode = 'gradients_X = np.zeros_like(X)\n'
-        lcode += 'self.update_cache(X)\n'
+        lcode += 'self.update_cache(' + ', '.join(self.cacheable) + ')\n'
         for i, theta in enumerate(self.variables['X']):
-            code = self.code['derivative'][theta.name]
+            code = self.code[function]['derivative'][theta.name]
             lcode += 'gradients_X[:, ' + str(i) + ':' + str(i) + '+1] = partial*' + self._print_code(code) + '\n'
         lcode += 'return gradients_X\n'
         return lcode
 
-    def code_f(self):
-        lcode = 'self.update_cache(X)\n'
-        lcode += 'return ' + self._print_code(self.code['function'])
+    def code_function(self, function):
+        lcode = 'self.update_cache(' + ', '.join(self.cacheable) + ')\n'
+        lcode += 'return ' + self._print_code(self.code[function]['function'])
         return lcode
 
     def stabilise(self):
@@ -208,30 +243,31 @@ class Symbolic_core():
         """Extract a list of expressions from the dictionary of expressions."""
         self.expression_list = [] # code arrives in dictionary, but is passed in this list
         self.expression_keys = [] # Keep track of the dictionary keys.
-        self.expression_order = [] # This may be unecessary. It's to give ordering for cse 
-        for key in self.expressions.keys():
-            if key == 'function':
-                self.expression_list.append(self.expressions[key])            
-                self.expression_keys.append([key])
-                self.expression_order.append(1) 
-                self.code[key] = ''
-            elif key[-10:] == 'derivative':
-                self.code[key] = {}
-                for dkey in self.expressions[key].keys():
-                    self.expression_list.append(self.expressions[key][dkey])
-                    self.expression_keys.append([key, dkey])
-                    if key[:-10] == 'first' or key[:-10] == '':
-                        self.expression_order.append(3) #sym.count_ops(self.expressions[key][dkey]))
-                    elif key[:-10] == 'second':
-                        self.expression_order.append(4) #sym.count_ops(self.expressions[key][dkey]))
-                    elif key[:-10] == 'third':
-                        self.expression_order.append(5) #sym.count_ops(self.expressions[key][dkey]))
-                    self.code[key][dkey] = ''
-            else:
-                self.expression_list.append(self.expressions[key])            
-                self.expression_keys.append([key])
-                self.expression_order.append(2) 
-                self.code[key] = ''
+        self.expression_order = [] # This may be unecessary. It's to give ordering for cse
+        for fname, fexpressions in self.expressions.items():
+            for type, texpressions in fexpressions.items():
+                if type == 'function':
+                    self.expression_list.append(texpressions)            
+                    self.expression_keys.append([fname, type])
+                    self.expression_order.append(1) 
+                    self.code[fname] = {type: ''}
+                elif type[-10:] == 'derivative':
+                    self.code[fname] = {type:{}}
+                    for dtype, expression in texpressions.items():
+                        self.expression_list.append(expression)
+                        self.expression_keys.append([fname, type, dtype])
+                        if type[:-10] == 'first' or type[:-10] == '':
+                            self.expression_order.append(3) #sym.count_ops(self.expressions[type][dtype]))
+                        elif type[:-10] == 'second':
+                            self.expression_order.append(4) #sym.count_ops(self.expressions[type][dtype]))
+                        elif type[:-10] == 'third':
+                            self.expression_order.append(5) #sym.count_ops(self.expressions[type][dtype]))
+                        self.code[fname][type][dtype] = ''
+                else:
+                    self.expression_list.append(fexpressions[type])            
+                    self.expression_keys.append([fname, type])
+                    self.expression_order.append(2) 
+                    self.code[fname][type] = ''
 
         # This step may be unecessary.
         # Not 100% sure if the sub expression elimination is order sensitive. This step orders the list with the 'function' code first and derivatives after.
@@ -263,7 +299,7 @@ class Symbolic_core():
         cacheable_list = []
 
         # Sort out any expression that's dependent on something that scales with data size (these are listed in cacheable).
-        self.expressions['params_change'] = []
+        self.expressions['parameters_change'] = []
         self.expressions['update_cache'] = []
         cache_expressions_list = []
         sub_expression_list = []
@@ -276,7 +312,7 @@ class Symbolic_core():
                 cacheable_list.append(expr[0])
                 cache_expressions_list.append(expr[0].name)
             else:
-                self.expressions['params_change'].append((expr[0].name, self._expr2code(arg_list, expr[1])))
+                self.expressions['parameters_change'].append((expr[0].name, self._expr2code(arg_list, expr[1])))
                 sub_expression_list.append(expr[0].name)
 
         # Replace original code with code including subexpressions.
@@ -322,15 +358,15 @@ class Symbolic_core():
             self.code['update_cache'][cache_dict[key]] = expr
 
         self.expressions['update_cache'] = dict(self.expressions['update_cache'])
-        self.code['params_change'] = {}
-        for key, val in self.expressions['params_change']:
+        self.code['parameters_change'] = {}
+        for key, val in self.expressions['parameters_change']:
             expr = val
             for key2, val2 in cache_dict.iteritems():
                 expr = expr.replace(key2, val2)
             for key2, val2 in sub_dict.iteritems():
                 expr = expr.replace(key2, val2)
-            self.code['params_change'][sub_dict[key]] = expr
-        self.expressions['params_change'] = dict(self.expressions['params_change'])
+            self.code['parameters_change'][sub_dict[key]] = expr
+        self.expressions['parameters_change'] = dict(self.expressions['parameters_change'])
  
     def _expr2code(self, arg_list, expr):
         """Convert the given symbolic expression into code."""
@@ -343,6 +379,7 @@ class Symbolic_core():
 
     def _print_code(self, code):
         """Prepare code for string writing."""
+        # This needs a rewrite --- it doesn't check for match clashes! So sub11 would be replaced by sub1 before being replaced with sub11!!
         for key in self.variables.keys():
             for arg in self.variables[key]:
                 code = code.replace(arg.name, 'self.'+arg.name)

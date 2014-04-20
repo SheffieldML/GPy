@@ -26,8 +26,8 @@ class Symbolic(Mapping, Symbolic_core):
         self.parameters_changed()
 
     def _initialize_cache(self):
-        self.x_0 = np.random.normal(size=(3, self.input_dim))
-
+        self._set_attribute('x_0', np.random.normal(size=(3, self.input_dim)))
+        
 
     def parameters_changed(self):
         self.eval_parameters_changed()

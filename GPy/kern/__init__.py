@@ -12,15 +12,16 @@ from _src.ssrbf import SSRBF # TODO: ZD: did you remove this?
 from _src.ODE_UY import ODE_UY
 
 # TODO: put this in an init file somewhere
-try:
-    import sympy as sym
-    sympy_available=True
-except ImportError:
-    sympy_available=False
+#I'm commenting this out because the files were not added. JH. Remember to add the files before commiting
+#try:
+    #import sympy as sym
+    #sympy_available=True
+#except ImportError:
+    #sympy_available=False
+#
+#if sympy_available:
+    #from _src.symbolic2 import Symbolic
+    #from _src.eq import Eq
+    #from _src.heat_eqinit import Heat_eqinit
+    #from _src.ode1_eq_lfm import Ode1_eq_lfm
 
-if sympy_available:
-    from _src.symbolic2 import Symbolic
-    from _src.eq import Eq
-    from _src.heat_eqinit import Heat_eqinit
-    from _src.ode1_eq_lfm import Ode1_eq_lfm
-    

@@ -36,7 +36,8 @@ class Symbolic(Mapping, Symbolic_core):
         self.eval_update_cache(X=X)
 
     def update_gradients(self, partial, X=None):
-        self.eval_update_gradients('f', partial, X=X)
+        for name, val in self.eval_update_gradients('f', partial, X=X).iteritems():
+            setattr(getattr(self, name), 'gradient', val)
 
     def gradients_X(self, partial, X=None):
         return self.eval_gradients_X('f', partial, X=X)

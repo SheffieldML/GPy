@@ -32,20 +32,21 @@ def index_to_slices(index):
     [ret[ind_i].append(slice(*indexes_i)) for ind_i,indexes_i in zip(ind[switchpoints[:-1]],zip(switchpoints,switchpoints[1:]))]
     return ret
 
-class IndependentOutputs(CombinationKernel):
+class IndependentOutputs(Kern):
     """
-    A kernel which can represent several independent functions.
-    this kernel 'switches off' parts of the matrix where the output indexes are different.
+    A kernel which can represent several independent functions.  this kernel
+    'switches off' parts of the matrix where the output indexes are different.
 
-    The index of the functions is given by the last column in the input X
-    the rest of the columns of X are passed to the underlying kernel for computation (in blocks).
-    
-    :param kernels: either a kernel, or list of kernels to work with. If it is a list of kernels 
-    the indices in the index_dim, index the kernels you gave!
+    The index of the functions is given by the last column in the input X the
+    rest of the columns of X are passed to the underlying kernel for
+    computation (in blocks).
+
+    :param kernels: either a kernel, or list of kernels to work with. If it is
+    a list of kernels the indices in the index_dim, index the kernels you gave!
     """
     def __init__(self, kernels, index_dim=-1, name='independ'):
-        assert isinstance(index_dim, int), "IndependentOutputs kernel is only defined with one input dimension being the indeces"
-        if not isinstance(kernels, list): 
+        assert isinstance(index_dim, int), "IndependentOutputs kernel is only defined with one input dimension being the index"
+        if not isinstance(kernels, list):
             self.single_kern = True
             self.kern = kernels
             kernels = [kernels]
@@ -142,38 +143,41 @@ class IndependentOutputs(CombinationKernel):
         if self.single_kern: kern.gradient = target
         else:[kern.gradient.__setitem__(Ellipsis, target[i]) for i, [kern, _] in enumerate(zip(kerns, slices))]
 
-class Hierarchical(CombinationKernel):
+class Hierarchical(Kern):
     """
-    A kernel which can reopresent a simple hierarchical model.
+    A kernel which can represent a simple hierarchical model.
 
     See Hensman et al 2013, "Hierarchical Bayesian modelling of gene expression time
     series across irregularly sampled replicates and clusters"
     http://www.biomedcentral.com/1471-2105/14/252
 
-    The index of the functions is given by additional columns in the input X.
+    To construct this kernel, you must pass a list of kernels. the first kernel
+    will be assumed to be the 'base' kernel, and will be computed everywhere.
+    For every additional kernel, we assume another layer in the hierachy, with
+    a corresponding column of the input matrix which indexes which function the
+    data are in at that level.
 
+    For more, see the ipython notebook documentation on Hierarchical
+    covariances.
     """
-    def __init__(self, kern, name='hierarchy'):
-        assert all([k.input_dim==kerns[0].input_dim for k in kerns])
-        super(Hierarchical, self).__init__(kerns[0].input_dim + len(kerns) - 1, name)
-        kerns = kerns
-        self.add_parameters(kerns)
+    def __init__(self, kernels, name='hierarchy'):
+        assert all([k.input_dim==kernels[0].input_dim for k in kernels])
+        assert len(kernels) > 1
+        self.levels = len(kernels) -1
+        input_max = max([k.input_dim for k in kernels])
+        super(Hierarchical, self).__init__(kernels=kernels, extra_dims = range(input_max, input_max + len(kernels)-1), name=name)
 
     def K(self,X ,X2=None):
-        X, slices = X[:,:-self.levels], [index_to_slices(X[:,i]) for i in range(kerns[0].input_dim, self.input_dim)]
-        K = kerns[0].K(X, X2)
+        K = self.parts[0].K(X, X2) # compute 'base' kern everywhere
+        slices = [index_to_slices(X[:,i]) for i in self.extra_dims]
         if X2 is None:
-            [[[np.copyto(K[s,s], k.K(X[s], None)) for s in slices_i] for slices_i in slices_k] for k, slices_k in zip(kerns[1:], slices)]
+            pass
+            #[[[np.add(K[s,s], k.K(X[s], None), K[s, s]) for s in slices_i] for slices_i in slices_k] for k, slices_k in zip(self.parts[1:], slices)]
+            #[[[K.__setitem__((s,ss), kern.K(X[s,:], X[ss,:])) for s,ss in itertools.product(slices_i, slices_i)] for kern, slices_i in zip(self.parts[1:], slices)]
         else:
             X2, slices2 = X2[:,:-1],index_to_slices(X2[:,-1])
-            [[[[np.copyto(K[s, s2], self.kern.K(X[s],X2[s2])) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices_k,slices_k2)] for k, slices_k, slices_k2 in zip(kerns[1:], slices, slices2)]
-        return target
-
-    def Kdiag(self,X):
-        X, slices = X[:,:-self.levels], [index_to_slices(X[:,i]) for i in range(kerns[0].input_dim, self.input_dim)]
-        K = kerns[0].K(X, X2)
-        [[[np.copyto(target[s], self.kern.Kdiag(X[s])) for s in slices_i] for slices_i in slices_k] for k, slices_k in zip(kerns[1:], slices)]
-        return target
+            [[[[np.copyto(K[s, s2], self.kern.K(X[s],X2[s2])) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices_k,slices_k2)] for k, slices_k, slices_k2 in zip(parts[1:], slices, slices2)]
+        return K
 
     def update_gradients_full(self,dL_dK,X,X2=None):
         X,slices = X[:,:-1],index_to_slices(X[:,-1])

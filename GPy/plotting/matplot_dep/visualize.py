@@ -131,10 +131,10 @@ class lvm(matplotlib_show):
 
     def modify(self, vals):
         """When latent values are modified update the latent representation and ulso update the output visualization."""
-        self.vals = vals[None,:].copy()
+        self.vals = vals.copy()
         y = self.model.predict(self.vals)[0]
         self.data_visualize.modify(y)
-        self.latent_handle.set_data(self.vals[:,self.latent_index[0]], self.vals[:,self.latent_index[1]])
+        self.latent_handle.set_data(self.vals[0,self.latent_index[0]], self.vals[0,self.latent_index[1]])
         self.axes.figure.canvas.draw()
 
 
@@ -153,8 +153,8 @@ class lvm(matplotlib_show):
         if event.inaxes!=self.latent_axes: return
         if self.called and self.move_on:
             # Call modify code on move
-            self.latent_values[self.latent_index[0]]=event.xdata
-            self.latent_values[self.latent_index[1]]=event.ydata
+            self.latent_values[:, self.latent_index[0]]=event.xdata
+            self.latent_values[:, self.latent_index[1]]=event.ydata
             self.modify(self.latent_values)
 
     def show_sensitivities(self):

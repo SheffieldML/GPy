@@ -37,12 +37,12 @@ class _Slice_wrap(object):
         if X2 is not None:
             assert X2.ndim == 2, "only matrices are allowed as inputs to kernels for now, given X2.shape={!s}".format(X2.shape)
         if (self.k.active_dims is not None) and (self.k._sliced_X == 0):
-            assert X.shape[1] >= len(np.r_[self.k.active_dims]), "At least {} dimensional X needed, X.shape={!s}".format(len(np.r_[self.k.active_dims]), X.shape)
+            self.k._check_active_dims(X)
             self.X = self.k._slice_X(X)
             self.X2 = self.k._slice_X(X2) if X2 is not None else X2
             self.ret = True
         else:
-            assert X.shape[1] == self.k.input_dim, "You did not specify active_dims and X has wrong shape: X_dim={} -- input_dim={}".format(X.shape[1], self.k.input_dim)
+            self.k._check_input_dim(X)
             self.X = X
             self.X2 = X2
             self.ret = False

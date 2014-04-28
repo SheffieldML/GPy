@@ -201,6 +201,13 @@ class Kern(Parameterized):
         #else: kernels.append(other)
         return Prod([self, other], name)
 
+    def _check_input_dim(self, X):
+        assert X.shape[1] == self.input_dim, "You did not specify active_dims and X has wrong shape: X_dim={}, whereas input_dim={}".format(X.shape[1], self.input_dim)
+    
+    def _check_active_dims(self, X):
+        assert X.shape[1] >= len(np.r_[self.active_dims]), "At least {} dimensional X needed, X.shape={!s}".format(len(np.r_[self.active_dims]), X.shape)
+
+            
 class CombinationKernel(Kern):
     """
     Abstract super class for combination kernels.
@@ -239,3 +246,10 @@ class CombinationKernel(Kern):
 
     def input_sensitivity(self):
         raise NotImplementedError("Choose the kernel you want to get the sensitivity for. You need to override the default behaviour for getting the input sensitivity to be able to get the input sensitivity. For sum kernel it is the sum of all sensitivities, TODO: product kernel? Other kernels?, also TODO: shall we return all the sensitivities here in the combination kernel? So we can combine them however we want? This could lead to just plot all the sensitivities here...")
+
+    def _check_input_dim(self, X):
+        return
+
+    def _check_input_dim(self, X):
+        # As combination kernels cannot always know, what their inner kernels have as input dims, the check will be done inside them, respectively
+        return

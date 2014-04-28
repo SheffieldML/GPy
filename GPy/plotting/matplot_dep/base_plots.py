@@ -16,10 +16,9 @@ def ax_default(fignum, ax):
 
 def meanplot(x, mu, color=Tango.colorsHex['darkBlue'], ax=None, fignum=None, linewidth=2,**kw):
     _, axes = ax_default(fignum, ax)
-    #here's the mean
     return axes.plot(x,mu,color=color,linewidth=linewidth,**kw)
 
-def gpplot(x,mu,lower,upper,edgecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue'],ax=None,fignum=None,xlabel='x',ylabel='y',**kwargs):
+def gpplot(x, mu, lower, upper, edgecol=Tango.colorsHex['darkBlue'], fillcol=Tango.colorsHex['lightBlue'], ax=None, fignum=None, **kwargs):
     _, axes = ax_default(fignum, ax)
 
     mu = mu.flatten()
@@ -42,9 +41,6 @@ def gpplot(x,mu,lower,upper,edgecol=Tango.colorsHex['darkBlue'],fillcol=Tango.co
     plots.append(meanplot(x, upper,color=edgecol,linewidth=0.2,ax=axes))
     plots.append(meanplot(x, lower,color=edgecol,linewidth=0.2,ax=axes))
 
-    axes.set_xlabel(xlabel)
-    axes.set_ylabel(ylabel)
-
     return plots
 
 
@@ -53,11 +49,13 @@ def removeRightTicks(ax=None):
     for i, line in enumerate(ax.get_yticklines()):
         if i%2 == 1:   # odd indices
             line.set_visible(False)
+
 def removeUpperTicks(ax=None):
     ax = ax or pb.gca()
     for i, line in enumerate(ax.get_xticklines()):
         if i%2 == 1:   # odd indices
             line.set_visible(False)
+
 def fewerXticks(ax=None,divideby=2):
     ax = ax or pb.gca()
     ax.set_xticks(ax.get_xticks()[::divideby])

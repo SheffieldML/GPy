@@ -42,7 +42,7 @@ class _Slice_wrap(object):
             self.X2 = self.k._slice_X(X2) if X2 is not None else X2
             self.ret = True
         else:
-            assert X.shape[1] == self.k.input_dim, "You did not specify active_dims and X has wrong shape: X_dim={} -- input_dim={}".format(X.shape[1], self.input_dim)
+            assert X.shape[1] == self.k.input_dim, "You did not specify active_dims and X has wrong shape: X_dim={} -- input_dim={}".format(X.shape[1], self.k.input_dim)
             self.X = X
             self.X2 = X2
             self.ret = False

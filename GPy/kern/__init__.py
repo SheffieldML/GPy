@@ -20,7 +20,7 @@ except ImportError:
     sympy_available=False
 
 if sympy_available:
-    from _src.symbolic2 import Symbolic
+    #from _src.symbolic2 import Symbolic #NOTE Missing file
     from _src.eq import Eq
     from _src.heat_eqinit import Heat_eqinit
     #from _src.ode1_eq_lfm import Ode1_eq_lfm

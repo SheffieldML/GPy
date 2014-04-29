@@ -143,7 +143,7 @@ class IndependentOutputs(Kern):
         if self.single_kern: kern.gradient = target
         else:[kern.gradient.__setitem__(Ellipsis, target[i]) for i, [kern, _] in enumerate(zip(kerns, slices))]
 
-class Hierarchical(Kern):
+class Hierarchical(CombinationKernel):
     """
     A kernel which can represent a simple hierarchical model.
 
@@ -171,34 +171,27 @@ class Hierarchical(Kern):
         K = self.parts[0].K(X, X2) # compute 'base' kern everywhere
         slices = [index_to_slices(X[:,i]) for i in self.extra_dims]
         if X2 is None:
-            pass
-            #[[[np.add(K[s,s], k.K(X[s], None), K[s, s]) for s in slices_i] for slices_i in slices_k] for k, slices_k in zip(self.parts[1:], slices)]
-            #[[[K.__setitem__((s,ss), kern.K(X[s,:], X[ss,:])) for s,ss in itertools.product(slices_i, slices_i)] for kern, slices_i in zip(self.parts[1:], slices)]
+            [[[np.add(K[s,s], k.K(X[s], None), K[s, s]) for s in slices_i] for slices_i in slices_k] for k, slices_k in zip(self.parts[1:], slices)]
         else:
-            X2, slices2 = X2[:,:-1],index_to_slices(X2[:,-1])
-            [[[[np.copyto(K[s, s2], self.kern.K(X[s],X2[s2])) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices_k,slices_k2)] for k, slices_k, slices_k2 in zip(parts[1:], slices, slices2)]
+            slices2 = [index_to_slices(X2[:,i]) for i in self.extra_dims]
+            [[[np.add(K[s,ss], k.K(X[s], X2[ss]), K[s, ss]) for s,ss in zip(slices_i, slices_j)] for slices_i, slices_j in zip(slices_k1, slices_k2)] for k, slices_k1, slices_k2 in zip(self.parts[1:], slices, slices2)]
         return K
 
+    def Kdiag(self,X):
+        return np.diag(self.K(X))
+
     def update_gradients_full(self,dL_dK,X,X2=None):
-        X,slices = X[:,:-1],index_to_slices(X[:,-1])
+        slices = [index_to_slices(X[:,i]) for i in self.extra_dims]
         if X2 is None:
-            kerns[0].update_gradients_full(dL_dK, X, None)
-            for k, slices_k in zip(kerns[1:], slices):
+            self.parts[0].update_gradients_full(dL_dK, X, None)
+            for k, slices_k in zip(self.parts[1:], slices):
                 target = np.zeros(k.size)
-                def collate_grads(dL, X, X2):
+                def collate_grads(dL, X, X2, target):
                     k.update_gradients_full(dL,X,X2)
-                    k._collect_gradient(target)
-                [[k.update_gradients_full(dL_dK[s,s], X[s], None) for s in slices_i] for slices_i in slices_k]
-                k._set_gradient(target)
+                    target += k.gradient
+                [[collate_grads(dL_dK[s,s], X[s], None, target) for s in slices_i] for slices_i in slices_k]
+                k.gradient[:] = target
         else:
-            X2, slices2 = X2[:,:-1], index_to_slices(X2[:,-1])
-            kerns[0].update_gradients_full(dL_dK, X, None)
-            for k, slices_k in zip(kerns[1:], slices):
-                target = np.zeros(k.size)
-                def collate_grads(dL, X, X2):
-                    k.update_gradients_full(dL,X,X2)
-                    k._collect_gradient(target)
-                [[[collate_grads(dL_dK[s,s2],X[s],X2[s2]) for s in slices_i] for s2 in slices_j] for slices_i,slices_j in zip(slices,slices2)]
-                k._set_gradient(target)
+            raise NotImplementedError
 
 

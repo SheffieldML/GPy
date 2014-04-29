@@ -2,15 +2,22 @@ import sys
 import numpy as np
 import sympy as sym
 from sympy import Function, S, oo, I, cos, sin, asin, log, erf, pi, exp, sqrt, sign, gamma, polygamma
-
+from sympy.matrices import Matrix
 ########################################
 ## Try to do some matrix functions: problem, you can't do derivatives
 ## with respect to matrix functions :-(
 
+class GPySymMatrix(Matrix):
+    def __init__(self, indices):
+        Matrix.__init__(self)
+    def atoms(self):
+        return [e2 for e in self for e2 in e.atoms()]
+        
 class selector(Function):
     """A function that returns an element of a Matrix depending on input indices."""
     nargs = 3
-
+    def fdiff(self, argindex=1):
+        return selector(*self.args)
     @classmethod
     def eval(cls, X, i, j):
         if i.is_Number and j.is_Number:

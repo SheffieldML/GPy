@@ -176,7 +176,7 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     if plot:
         y = m.Y
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
-        m.plot_latent(ax=latent_axes)
+        m.plot_latent(ax=latent_axes, labels=m.data_labels)
         data_show = GPy.plotting.matplot_dep.visualize.vector_show(y)
         lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(param_to_array(m.X.mean), # @UnusedVariable
             m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)

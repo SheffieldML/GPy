@@ -273,7 +273,7 @@ class image_show(matplotlib_show):
     :type preset_mean: double
     :param preset_std: the preset standard deviation of a scaled image.
     :type preset_std: double"""
-    def __init__(self, vals, axes=None, dimensions=(16,16), transpose=False, order='C', invert=False, scale=False, palette=[], preset_mean = 0., preset_std = -1., select_image=0):
+    def __init__(self, vals, axes=None, dimensions=(16,16), transpose=False, order='C', invert=False, scale=False, palette=[], preset_mean=0., preset_std=1., select_image=0):
         matplotlib_show.__init__(self, vals, axes)
         self.dimensions = dimensions
         self.transpose = transpose
@@ -323,13 +323,12 @@ class image_show(matplotlib_show):
             self.vals = -self.vals
 
         # un-normalizing, for visualisation purposes:
-        if self.preset_std >= 0: # The Mean is assumed to be in the range (0,255)
-            self.vals = self.vals*self.preset_std + self.preset_mean
-            # Clipping the values:
-            self.vals[self.vals < 0] = 0
-            self.vals[self.vals > 255] = 255
-        else:
-            self.vals = 255*(self.vals - self.vals.min())/(self.vals.max() - self.vals.min())
+        self.vals = self.vals*self.preset_std + self.preset_mean
+        # Clipping the values:
+        #self.vals[self.vals < 0] = 0
+        #self.vals[self.vals > 255] = 255
+        #else:
+            #self.vals = 255*(self.vals - self.vals.min())/(self.vals.max() - self.vals.min())
         if not self.palette == []: # applying using an image palette (e.g. if the image has been quantized)
             from PIL import Image
             self.vals = Image.fromarray(self.vals.astype('uint8'))

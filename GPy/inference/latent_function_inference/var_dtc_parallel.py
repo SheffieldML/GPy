@@ -70,11 +70,12 @@ class VarDTC_minibatch(object):
         #see whether we've got a different noise variance for each datum
         beta = 1./np.fmax(likelihood.variance, 1e-6)
         het_noise = beta.size > 1
+        if het_noise:
+            self.batchsize = 1
         # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
         #self.YYTfactor = beta*self.get_YYTfactor(Y)
         YYT_factor = Y
         trYYT = self.get_trYYT(Y)
-        
         
         psi2_full = np.zeros((num_inducing,num_inducing))
         psi1Y_full = np.zeros((output_dim,num_inducing)) # DxM
@@ -104,19 +105,18 @@ class VarDTC_minibatch(object):
                 YRY_full += (beta_slice*np.square(Y_slice).sum(axis=-1)).sum()
             else:
                 psi0_full += psi0.sum()
-                psi1Y_full += np.dot(Y_slice.T,psi1) # DxM
-                
+                psi1Y_full += np.dot(Y_slice.T,psi1) # DxM                
                 
             if uncertain_inputs:
                 if het_noise:
-                    psi2_full += np.einsum('n,nmo->mo',beta_slice,psi2)
+                    psi2_full += beta_slice*psi2
                 else:
-                    psi2_full += psi2.sum(axis=0)
+                    psi2_full += psi2
             else:
                 if het_noise:
-                    psi2_full += np.einsum('n,nm,no->mo',beta_slice,psi1,psi1)
+                    psi2_full += beta_slice*np.outer(psi1,psi1)
                 else:
-                    psi2_full += tdot(psi1.T)
+                    psi2_full += np.outer(psi1,psi1)
                 
         if not het_noise:
             psi0_full *= beta
@@ -223,7 +223,7 @@ class VarDTC_minibatch(object):
             psi2 = None
             
         if het_noise:
-            beta = beta[n_start:n_end]
+            beta = beta[n_start] # assuming batchsize==1
 
         betaY = beta*Y_slice
         betapsi1 = np.einsum('n,nm->nm',beta,psi1)
@@ -244,7 +244,7 @@ class VarDTC_minibatch(object):
         dL_dpsi1 = np.dot(betaY,v.T)
         
         if uncertain_inputs:
-            dL_dpsi2 = np.einsum('n,mo->nmo',beta * np.ones((n_end-n_start,)),dL_dpsi2R)
+            dL_dpsi2 = beta* dL_dpsi2R
         else:
             dL_dpsi1 += np.dot(betapsi1,dL_dpsi2R)*2.
             dL_dpsi2 = None
@@ -262,11 +262,11 @@ class VarDTC_minibatch(object):
             dL_dthetaL = ((np.square(betaY)).sum(axis=-1) + np.square(beta)*(output_dim*psi0)-output_dim*beta)/2. - np.square(beta)*psiR- (betaY*np.dot(betapsi1,v)).sum(axis=-1)
         else:
             if uncertain_inputs:
-                psiR = np.einsum('mo,nmo->',dL_dpsi2R,psi2)
+                psiR = np.einsum('mo,mo->',dL_dpsi2R,psi2)
             else:
                 psiR = np.einsum('nm,no,mo->',psi1,psi1,dL_dpsi2R)
             
-            dL_dthetaL = ((np.square(betaY)).sum() + np.square(beta)*output_dim*(psi0.sum())-num_slice*output_dim*beta)/2. - np.square(beta)*psiR- (betaY*np.dot(betapsi1,v)).sum()
+            dL_dthetaL = ((np.square(betaY)).sum() + beta*beta*output_dim*(psi0.sum())-num_slice*output_dim*beta)/2. - beta*beta*psiR- (betaY*np.dot(betapsi1,v)).sum()
 
         if uncertain_inputs:
             grad_dict = {'dL_dpsi0':dL_dpsi0,
@@ -296,7 +296,7 @@ def update_gradients(model):
     kern_grad = model.kern.gradient.copy()
             
     #gradients w.r.t. Z
-    model.Z.gradient[:,model.kern.active_dims] = model.kern.gradients_X(dL_dKmm, model.Z)
+    model.Z.gradient = model.kern.gradients_X(dL_dKmm, model.Z)
     
     isEnd = False
     while not isEnd:
@@ -309,8 +309,8 @@ def update_gradients(model):
             kern_grad += model.kern.gradient
     
             #gradients w.r.t. Z
-            model.Z.gradient[:,model.kern.active_dims] += model.kern.gradients_Z_expectations(
-                               grad_dict['dL_dpsi1'], grad_dict['dL_dpsi2'], Z=model.Z, variational_posterior=X_slice)
+            model.Z.gradient += model.kern.gradients_Z_expectations(
+                               dL_dpsi0=grad_dict['dL_dpsi0'], dL_dpsi1=grad_dict['dL_dpsi1'], dL_dpsi2=grad_dict['dL_dpsi2'], Z=model.Z, variational_posterior=X_slice)
         
             #gradients w.r.t. posterior parameters of X
             X_grad = model.kern.gradients_qX_expectations(variational_posterior=X_slice, Z=model.Z, dL_dpsi0=grad_dict['dL_dpsi0'], dL_dpsi1=grad_dict['dL_dpsi1'], dL_dpsi2=grad_dict['dL_dpsi2'])

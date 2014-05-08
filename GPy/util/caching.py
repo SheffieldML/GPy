@@ -123,7 +123,8 @@ class Cacher_wrap(object):
     def __get__(self, obj, objtype=None):
         return partial(self, obj)
     def __call__(self, *args, **kwargs):
-        obj = args[0]
+        obj = args[0] # <------------------- WHAT IF IT IS ONLY A FUNCTION!
+        
         #import ipdb;ipdb.set_trace()
         try:
             caches = obj.__cachers

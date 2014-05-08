@@ -19,6 +19,9 @@ try:
     
     strideSum = ReductionKernel(np.float64, neutral="0", reduce_expr="a+b", map_expr="i%step==0?x[i]:0", arguments="double *x, int step")
     
+    # np.trace(np.dot(A,B)) (also equivalent to (A*B.T).sum() ) A - n x m, B - m x n
+    traceDot = ReductionKernel(np.float64, neutral="0", reduce_expr="a+b", map_expr="A[i]*B[(i%n)*m+i/n]", arguments="double *A, double *B, int n, int m")
+    
     #=======================================================================================
     # Element-wise functions
     #=======================================================================================

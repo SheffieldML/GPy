@@ -116,7 +116,7 @@ class VarDTC_minibatch(object):
                 if het_noise:
                     psi2_full += beta_slice*np.outer(psi1,psi1)
                 else:
-                    psi2_full += np.outer(psi1,psi1)
+                    psi2_full += np.outer(psi1.T,psi1.T)
                 
         if not het_noise:
             psi0_full *= beta
@@ -169,13 +169,16 @@ class VarDTC_minibatch(object):
         #======================================================================
         # Compute the Posterior distribution of inducing points p(u|Y)
         #======================================================================
-        
-#         phi_u_mean = np.dot(Kmm,v)
-#         LLInvKmm,_ = dtrtrs(LL,Kmm)
-# #        phi_u_var = np.einsum('ma,mb->ab',LLInvKmm,LLInvKmm)
-#         phi_u_var = Kmm - np.dot(LLInvKmm.T,LLInvKmm)
-        
+                
         post = Posterior(woodbury_inv=KmmInvPsi2P, woodbury_vector=v, K=Kmm, mean=None, cov=None, K_chol=Lm)
+        
+        #======================================================================
+        # Compute dL_dthetaL for uncertian input and non-heter noise
+        #======================================================================        
+        
+        if uncertain_inputs and not het_noise:
+            dL_dthetaL = (YRY_full*beta + beta*output_dim*psi0_full - num_data*output_dim*beta)/2. - beta*(dL_dpsi2R*psi2_full).sum() - beta*(v.T*psi1Y_full).sum()
+            self.midRes['dL_dthetaL'] = dL_dthetaL
 
         return logL, dL_dKmm, post
 
@@ -213,20 +216,21 @@ class VarDTC_minibatch(object):
         Y_slice = YYT_factor[n_start:n_end]
         X_slice = X[n_start:n_end]
         
-        if uncertain_inputs:
-            psi0 = kern.psi0(Z, X_slice)
-            psi1 = kern.psi1(Z, X_slice)
-            psi2 = kern.psi2(Z, X_slice)
-        else:
+        if not uncertain_inputs:
             psi0 = kern.Kdiag(X_slice)
             psi1 = kern.K(X_slice, Z)
             psi2 = None
+            betapsi1 = np.einsum('n,nm->nm',beta,psi1)
+        elif het_noise:
+            psi0 = kern.psi0(Z, X_slice)
+            psi1 = kern.psi1(Z, X_slice)
+            psi2 = kern.psi2(Z, X_slice)
+            betapsi1 = np.einsum('n,nm->nm',beta,psi1)
             
         if het_noise:
             beta = beta[n_start] # assuming batchsize==1
 
         betaY = beta*Y_slice
-        betapsi1 = np.einsum('n,nm->nm',beta,psi1)
         
         #======================================================================
         # Load Intermediate Results
@@ -234,12 +238,12 @@ class VarDTC_minibatch(object):
         
         dL_dpsi2R = self.midRes['dL_dpsi2R']
         v = self.midRes['v']
-
+        
         #======================================================================
         # Compute dL_dpsi
         #======================================================================
         
-        dL_dpsi0 = -0.5 * output_dim * (beta * np.ones((n_end-n_start,)))
+        dL_dpsi0 = -output_dim * (beta * np.ones((n_end-n_start,)))/2.
         
         dL_dpsi1 = np.dot(betaY,v.T)
         
@@ -255,19 +259,21 @@ class VarDTC_minibatch(object):
 
         if het_noise:
             if uncertain_inputs:
-                psiR = np.einsum('mo,nmo->n',dL_dpsi2R,psi2)
-            else:
-                psiR = np.einsum('nm,no,mo->n',psi1,psi1,dL_dpsi2R)
-            
-            dL_dthetaL = ((np.square(betaY)).sum(axis=-1) + np.square(beta)*(output_dim*psi0)-output_dim*beta)/2. - np.square(beta)*psiR- (betaY*np.dot(betapsi1,v)).sum(axis=-1)
-        else:
-            if uncertain_inputs:
                 psiR = np.einsum('mo,mo->',dL_dpsi2R,psi2)
             else:
                 psiR = np.einsum('nm,no,mo->',psi1,psi1,dL_dpsi2R)
             
-            dL_dthetaL = ((np.square(betaY)).sum() + beta*beta*output_dim*(psi0.sum())-num_slice*output_dim*beta)/2. - beta*beta*psiR- (betaY*np.dot(betapsi1,v)).sum()
-
+            dL_dthetaL = ((np.square(betaY)).sum(axis=-1) + np.square(beta)*(output_dim*psi0)-output_dim*beta)/2. - np.square(beta)*psiR- (betaY*np.dot(betapsi1,v)).sum(axis=-1)
+        else:
+            if uncertain_inputs:
+                if isEnd:
+                    dL_dthetaL = self.midRes['dL_dthetaL']
+                else:
+                    dL_dthetaL = 0.
+            else:
+                psiR = np.einsum('nm,no,mo->',psi1,psi1,dL_dpsi2R)
+                dL_dthetaL = ((np.square(betaY)).sum() + beta*beta*output_dim*(psi0.sum())-num_slice*output_dim*beta)/2. - beta*beta*psiR- (betaY*np.dot(betapsi1,v)).sum()
+                
         if uncertain_inputs:
             grad_dict = {'dL_dpsi0':dL_dpsi0,
                          'dL_dpsi1':dL_dpsi1,
@@ -320,7 +326,7 @@ def update_gradients(model):
                 dL_dthetaL[n_range[0]:n_range[1]] = grad_dict['dL_dthetaL']
             else:
                 dL_dthetaL += grad_dict['dL_dthetaL']
-    
+        
     # Set the gradients w.r.t. kernel
     model.kern.gradient = kern_grad
 

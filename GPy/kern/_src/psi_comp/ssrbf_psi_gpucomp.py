@@ -58,19 +58,22 @@ try:
         __device__ double comp_psi2_element(double var, double *l, double *Z, double *mu, double *S, double *logGamma, double *log1Gamma, double *logpsi2denom, int N, int M, int Q, int idx)
         {
             // psi2 (n,m1,m2)
-            int m2 = idx/(M*N);
-            int m1 = (idx%(M*N))/N;
-            int n = idx%N;
-
-            double psi2_exp=0;
-            for(int q=0;q<Q;q++){ 
-                double dZ = Z[IDX_MQ(m1,q)]-Z[IDX_MQ(m2,q)];
-                double muZ = mu[IDX_NQ(n,q)] - (Z[IDX_MQ(m1,q)]+Z[IDX_MQ(m2,q)])/2.0;
-                double exp1 = logGamma[IDX_NQ(n,q)] - (logpsi2denom[IDX_NQ(n,q)])/2.0 - dZ*dZ/(l[q]*4.0) - muZ*muZ/(2*S[IDX_NQ(n,q)]+l[q]);
-                double exp2 = log1Gamma[IDX_NQ(n,q)] - (Z[IDX_MQ(m1,q)]*Z[IDX_MQ(m1,q)]+Z[IDX_MQ(m2,q)]*Z[IDX_MQ(m2,q)])/(l[q]*2.0);
-                psi2_exp += LOGEXPSUM(exp1,exp2);
+            int m2 = idx/M;
+            int m1 = idx%M;
+            
+            double psi2=0;            
+            for(int n=0;n<N;n++){
+                double psi2_exp=0;
+                for(int q=0;q<Q;q++){ 
+                    double dZ = Z[IDX_MQ(m1,q)]-Z[IDX_MQ(m2,q)];
+                    double muZ = mu[IDX_NQ(n,q)] - (Z[IDX_MQ(m1,q)]+Z[IDX_MQ(m2,q)])/2.0;
+                    double exp1 = logGamma[IDX_NQ(n,q)] - (logpsi2denom[IDX_NQ(n,q)])/2.0 - dZ*dZ/(l[q]*4.0) - muZ*muZ/(2*S[IDX_NQ(n,q)]+l[q]);
+                    double exp2 = log1Gamma[IDX_NQ(n,q)] - (Z[IDX_MQ(m1,q)]*Z[IDX_MQ(m1,q)]+Z[IDX_MQ(m2,q)]*Z[IDX_MQ(m2,q)])/(l[q]*2.0);
+                    psi2_exp += LOGEXPSUM(exp1,exp2);
+                }
+                psi2 += exp(psi2_exp);
             }
-            return var*var*exp(psi2_exp);
+            return var*var*psi2;
         }
         """) 
     
@@ -281,7 +284,7 @@ class PSICOMP_SSRBF(object):
                              'logpsi2denom_gpu'      :gpuarray.empty((N,Q),np.float64,order='F'),
                              'psi0_gpu'             :gpuarray.empty((N,),np.float64,order='F'),
                              'psi1_gpu'             :gpuarray.empty((N,M),np.float64,order='F'),
-                             'psi2_gpu'             :gpuarray.empty((N,M,M),np.float64,order='F'),
+                             'psi2_gpu'             :gpuarray.empty((M,M),np.float64,order='F'),
                              # derivatives psi1
                              'psi1_neq_gpu'         :gpuarray.empty((N,M,Q),np.float64, order='F'),
                              'psi1exp1_gpu'         :gpuarray.empty((N,M,Q),np.float64, order='F'),

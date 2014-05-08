@@ -6,7 +6,7 @@ The package for the psi statistics computation
 """
 
 import numpy as np
-from GPy.util.caching import Cache_this
+from GPy.util.caching import Cache_this,Cacher
 
 @Cache_this(limit=1)
 def psicomputations(variance, lengthscale, Z, mu, S, gamma):
@@ -88,7 +88,7 @@ def _psi2computations(variance, lengthscale, Z, mu, S, gamma):
 
     return _psi2
 
-def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
+def _psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
     ARD = (len(lengthscale)!=1)
     
     dvar_psi1, dl_psi1, dZ_psi1, dmu_psi1, dS_psi1, dgamma_psi1 = _psi1compDer(dL_dpsi1, variance, lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
@@ -211,3 +211,5 @@ def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S, gamma):
 #     _dpsi2_dlengthscale = 2.*lengthscale* _psi2_q * (_psi2_common*(S[:,None,None,:]/lengthscale2+_psi2_Zdist_sq*_psi2_denom+_psi2_mudist_sq)*_psi2_exp_dist_sq+(1-gamma[:,None,None,:])*_psi2_Z_sq_sum*0.5/lengthscale2*_psi2_exp_Z) # NxMxMxQ
 
     return _dL_dvariance, _dL_dlengthscale, _dL_dZ, _dL_dmu, _dL_dS, _dL_dgamma
+
+psiDerivativecomputations = Cacher(_psiDerivativecomputations, limit=1, ignore_args=(0,1,2,))

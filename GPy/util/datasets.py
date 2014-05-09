@@ -717,7 +717,19 @@ def hapmap3(data_set='hapmap3'):
                   inandf=inandf,
                   populations=populations)
     return hapmap
-    
+
+def singlecell(data_set='singlecell'):
+    if not data_available(data_set):
+        download_data(data_set)
+    dirpath = os.path.join(data_path, data_set)
+    data = np.loadtxt(os.path.join(dirpath, 'singlecell.csv'), delimiter=",", dtype=str)
+    genes = data[0, 1:]
+    labels = data[1:, 0]
+    Y = np.array(data[1:, 1:], dtype=float)
+    return data_details_return({'Y': Y, 'info' : "qPCR Singlecell experiment in Mouse, measuring 48 gene expressions in 1-64 cell states. The labels have been created as in Guo et al. [2010]",
+                                'genes':genes, 'labels':labels,
+                                }, data_set)
+
 def swiss_roll_1000():
     return swiss_roll(num_samples=1000)
 

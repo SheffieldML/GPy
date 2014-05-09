@@ -161,6 +161,14 @@ data_resources = {'ankur_pose_data' : {'urls' : [neil_url + 'ankur_pose_data/'],
                                  'citation': """Gibbs, Richard A., et al. "The international HapMap project." Nature 426.6968 (2003): 789-796.""",
                                  'license' : """International HapMap Project Public Access License (http://hapmap.ncbi.nlm.nih.gov/cgi-perl/registration#licence)""",
                                  'size' : 2*1729092237 + 62265},
+
+                  'singlecell' : {'urls' : ["http://staffwww.dcs.sheffield.ac.uk/people/M.Zwiessele/data/singlecell/"],
+                                  'files' : [['singlecell.csv']],
+                                  'details' : "qPCR Singlecell experiment in Mouse, measuring 48 gene expressions in 1-64 cell states. The labels have been created as in Guo et al. [2010]",
+                                  'citation' : "Guoji Guo, Mikael Huss, Guo Qing Tong, Chaoyang Wang, Li Li Sun, Neil D. Clarke, Paul Robson, Resolution of Cell Fate Decisions Revealed by Single-Cell Gene Expression Analysis from Zygote to Blastocyst, Developmental Cell, Volume 18, Issue 4, 20 April 2010, Pages 675-685, ISSN 1534-5807, http://dx.doi.org/10.1016/j.devcel.2010.02.012. (http://www.sciencedirect.com/science/article/pii/S1534580710001103) Keywords: DEVBIO",
+                                  'license' : "ScienceDirect: http://www.elsevier.com/locate/termsandconditions?utm_source=sciencedirect&utm_medium=link&utm_campaign=terms",
+                                  'size' : 233.1,
+                                  }
                   }
 
 with open('data_resources.json', 'w') as f:

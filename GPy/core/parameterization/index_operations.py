@@ -1,22 +1,48 @@
-'''
-Created on Oct 2, 2013
-
-@author: maxzwiessele
-'''
+# Copyright (c) 2014, Max Zwiessele
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 import numpy
 from numpy.lib.function_base import vectorize
 from lists_and_dicts import IntArrayDict
 
 class ParameterIndexOperations(object):
-    '''
-    Index operations for storing param index _properties
-    This class enables index with slices retrieved from object.__getitem__ calls.
-    Adding an index will add the selected indexes by the slice of an indexarray
-    indexing a shape shaped array to the flattened index array. Remove will
-    remove the selected slice indices from the flattened array.
-    You can give an offset to set an offset for the given indices in the
-    index array, for multi-param handling.
-    '''
+    """
+    This object wraps a dictionary, whos keys are _operations_ that we'd like
+    to apply to a parameter array, and whose values are np integer arrays which
+    index the parameter array appropriately.
+
+    A model instance will contain one instance of this class for each thing
+    that needs indexing (i.e. constraints, ties and priors). Parameters within
+    the model constain instances of the ParameterIndexOperationsView class,
+    which can map from a 'local' index (starting 0) to this global index.
+
+    Here's an illustration:
+
+    #=======================================================================
+    model :       0    1    2    3    4    5    6    7    8    9
+    key1:                             4    5
+    key2:                                            7    8
+
+    param1:                 0    1    2    3    4    5
+    key1:                             2    3
+    key2:                                            5
+
+    param2:                                0    1    2    3    4
+    key1:                                  0
+    key2:                                            2    3
+    #=======================================================================
+
+    The views of this global index have a subset of the keys in this global
+    (model) index.
+
+    Adding a new key (e.g. a constraint) to a view will cause the view to pass
+    the new key to the global index, along with the local index and an offset.
+    This global index then stores the key and the appropriate global index
+    (which can be seen by the view).
+
+    See also:
+        ParameterIndexOperationsView
+
+    """
     _offset = 0
     def __init__(self, constraints=None):
         self._properties = IntArrayDict()

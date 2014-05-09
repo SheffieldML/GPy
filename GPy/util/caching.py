@@ -119,7 +119,7 @@ class Cacher(object):
         """
         Totally reset the cache
         """
-        [a().remove_observer(self, self.on_cache_changed) if (a() is not None) else None for a in self.cached_input_ids.values()]
+        [a().remove_observer(self, self.on_cache_changed) if (a() is not None) else None for [a, _] in self.cached_input_ids.values()]
         self.cached_input_ids = {}
         self.cached_outputs = {}
         self.inputs_changed = {}

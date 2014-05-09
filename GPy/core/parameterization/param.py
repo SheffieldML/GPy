@@ -316,8 +316,8 @@ class ParamConcatenation(object):
             val = val.values()
         ind = numpy.zeros(sum(self._param_sizes), dtype=bool); ind[s] = True;
         vals = self.values(); vals[s] = val
-        [numpy.copyto(p, vals[ps], where=ind[ps])
-         for p, ps in zip(self.params, self._param_slices_)]
+        for p, ps in zip(self.params, self._param_slices_):
+            p.flat[ind[ps]] = vals[ps]
         if update:
             self.update_all_params()
     def values(self):

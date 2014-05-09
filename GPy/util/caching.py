@@ -44,7 +44,8 @@ class Cacher(object):
             # we have reached the limit, so lets release one element
             cache_id = self.order.popleft()
             combined_args_kw = self.cached_inputs[cache_id]
-            for ind_id in combined_args_kw:
+            for ind in combined_args_kw:
+                ind_id = id(ind)
                 ref, cache_ids = self.cached_input_ids[ind_id]
                 if len(cache_ids) == 1 and ref() is not None:
                     ref().remove_observer(self, self.on_cache_changed)

@@ -32,7 +32,7 @@ def index_to_slices(index):
     [ret[ind_i].append(slice(*indexes_i)) for ind_i,indexes_i in zip(ind[switchpoints[:-1]],zip(switchpoints,switchpoints[1:]))]
     return ret
 
-class IndependentOutputs(Kern):
+class IndependentOutputs(CombinationKernel):
     """
     A kernel which can represent several independent functions.  this kernel
     'switches off' parts of the matrix where the output indexes are different.

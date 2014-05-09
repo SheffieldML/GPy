@@ -45,7 +45,7 @@ class Kern(Parameterized):
         try:
             self.input_dim = int(input_dim)
             self.active_dims = active_dims# if active_dims is not None else slice(0, input_dim, 1)
-        except TypeError:
+        except ValueError:
             # input_dim is something else then an integer
             self.input_dim = input_dim
             if active_dims is not None:
@@ -202,12 +202,12 @@ class Kern(Parameterized):
         return Prod([self, other], name)
 
     def _check_input_dim(self, X):
-        assert X.shape[1] == self.input_dim, "You did not specify active_dims and X has wrong shape: X_dim={}, whereas input_dim={}".format(X.shape[1], self.input_dim)
-    
+        assert X.shape[1] == self.input_dim, "{} did not specify active_dims and X has wrong shape: X_dim={}, whereas input_dim={}".format(self.name, X.shape[1], self.input_dim)
+
     def _check_active_dims(self, X):
         assert X.shape[1] >= len(np.r_[self.active_dims]), "At least {} dimensional X needed, X.shape={!s}".format(len(np.r_[self.active_dims]), X.shape)
 
-            
+
 class CombinationKernel(Kern):
     """
     Abstract super class for combination kernels.
@@ -238,16 +238,16 @@ class CombinationKernel(Kern):
     def get_input_dim_active_dims(self, kernels, extra_dims = None):
         #active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
         #active_dims = np.array(np.concatenate((active_dims, extra_dims if extra_dims is not None else [])), dtype=int)
-        input_dim = np.array([k.input_dim for k in kernels])
-        if np.all(input_dim[0]==input_dim):
-            input_dim = input_dim[0]
+        input_dim = " ".join(map(lambda k: "{!s}:{!s}".format(k.name, k.input_dim), kernels))
+        if extra_dims is not None:
+            input_dim += " + extra:{!s}".format(extra_dims)
         active_dims = None
         return input_dim, active_dims
 
     def input_sensitivity(self):
         raise NotImplementedError("Choose the kernel you want to get the sensitivity for. You need to override the default behaviour for getting the input sensitivity to be able to get the input sensitivity. For sum kernel it is the sum of all sensitivities, TODO: product kernel? Other kernels?, also TODO: shall we return all the sensitivities here in the combination kernel? So we can combine them however we want? This could lead to just plot all the sensitivities here...")
 
-    def _check_input_dim(self, X):
+    def _check_active_dims(self, X):
         return
 
     def _check_input_dim(self, X):

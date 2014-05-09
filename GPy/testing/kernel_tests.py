@@ -319,7 +319,7 @@ class KernelTestsMiscellaneous(unittest.TestCase):
                 GPy.kern.Kern(int(np.round((i+1)/j)), slice(0, i+1, j), "testkern")
         # test the ability to have only one dim
         sk = GPy.kern.RBF(2) + GPy.kern.Matern32(2)
-        self.assertEqual(sk.input_dim, 2)
+        self.assertEqual(sk.input_dim, "rbf:2 Mat32:2 + extra:[]")
 
     def test_which_parts(self):
         self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=[self.linear, self.matern]), self.linear.K(self.X)+self.matern.K(self.X)))
@@ -344,10 +344,15 @@ class KernelTestsNonContinuous(unittest.TestCase):
         self.X2[(N0*2):, -1] = 1
 
     def test_IndependentOutputs(self):
-        k = GPy.kern.RBF(self.D)
+        k = GPy.kern.RBF(self.D, active_dims=range(self.D))
         kern = GPy.kern.IndependentOutputs(k, -1, 'ind_single')
         self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
-        k = [GPy.kern.RBF(1, active_dims=[1], name='rbf1'), GPy.kern.RBF(self.D, name='rbf012'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf02')]
+        k = [GPy.kern.RBF(1, active_dims=[1], name='rbf1'), GPy.kern.RBF(self.D, active_dims=range(self.D), name='rbf012'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf02')]
+        kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
+        self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
+
+    def test_Hierarchical(self):
+        k = [GPy.kern.RBF(2, active_dims=[0,2], name='rbf1'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf2')]
         kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
         self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
 

@@ -42,7 +42,8 @@ class SSGPLVM(SparseGP):
             X_variance = np.random.uniform(0,.1,X.shape)
             
         gamma = np.empty_like(X, order='F') # The posterior probabilities of the binary variable in the variational approximation
-        gamma[:] = 0.5 + 0.01 * np.random.randn(X.shape[0], input_dim)
+        #gamma[:] = 0.5 + 0.01 * np.random.randn(X.shape[0], input_dim)
+        gamma[:] = 0.5
         
         if group_spike:
             gamma[:] = gamma.mean(axis=0)

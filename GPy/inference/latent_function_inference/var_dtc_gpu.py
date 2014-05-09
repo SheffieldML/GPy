@@ -70,10 +70,6 @@ class VarDTC_GPU(object):
                              'dL_dpsi0_gpu'         :gpuarray.empty((self.batchsize,),np.float64,order='F'),
                              'dL_dpsi1_gpu'         :gpuarray.empty((self.batchsize,num_inducing),np.float64,order='F'),
                              'dL_dpsi2_gpu'         :gpuarray.empty((num_inducing,num_inducing),np.float64,order='F'),
-                             'dL_dthetaL_gpu'       :gpuarray.empty((self.batchsize,),np.float64,order='F'),
-                             'betapsi1_gpu'         :gpuarray.empty((self.batchsize,num_inducing),np.float64,order='F'),
-                             'thetaL_t_gpu'         :gpuarray.empty((self.batchsize,),np.float64,order='F'),
-                             'betaYT2_gpu'          :gpuarray.empty((output_dim,self.batchsize),np.float64,order='F'),
                              'psi0p_gpu'            :gpuarray.empty((self.batchsize,),np.float64,order='F'),
                              'psi1p_gpu'            :gpuarray.empty((self.batchsize,num_inducing),np.float64,order='F'),
                              'psi2p_gpu'            :gpuarray.empty((num_inducing,num_inducing),np.float64,order='F'),
@@ -377,13 +373,12 @@ class VarDTC_GPU(object):
         # Compute dL_dthetaL for uncertian input and non-heter noise
         #======================================================================        
         
-        if uncertain_inputs and not het_noise:
-            dL_dthetaL = (YRY_full*beta + beta*output_dim*psi0_full - num_data*output_dim*beta)/2.
-            dL_dthetaL += -beta*cublas.cublasDdot(self.cublas_handle,dL_dpsi2R_gpu.size, dL_dpsi2R_gpu.gpudata,1,psi2_gpu.gpudata,1)
-            dL_dthetaL += -beta*cublas.cublasDdot(self.cublas_handle,dL_dpsi2R_gpu.size, dL_dpsi2R_gpu.gpudata,1,psi2_gpu.gpudata,1)
-            dL_dthetaL += traceDot(v_gpu, psi1Y_gpu, num_inducing, output_dim)
-            self.midRes['dL_dthetaL'] = dL_dthetaL
-
+        if not het_noise:
+            dL_dthetaL = (YRY_full + output_dim*psi0_full - num_data*output_dim)/-2.
+            dL_dthetaL += cublas.cublasDdot(self.cublas_handle,dL_dpsi2R_gpu.size, dL_dpsi2R_gpu.gpudata,1,psi2_gpu.gpudata,1)
+            dL_dthetaL += cublas.cublasDdot(self.cublas_handle,v_gpu.size, v_gpu.gpudata,1,psi1Y_gpu.gpudata,1)
+            self.midRes['dL_dthetaL'] = -beta*dL_dthetaL
+            
         return logL, dL_dKmm_gpu.get(), post
 
     def inference_minibatch(self, kern, X, Z, likelihood, Y):
@@ -419,22 +414,22 @@ class VarDTC_GPU(object):
             beta = beta[n_start] # nSlice==1
         
         if kern.useGPU:
-            if uncertain_inputs:
-                psi0p_gpu = kern.psi0(Z, X_slice)
-                psi1p_gpu = kern.psi1(Z, X_slice)
-                psi2p_gpu = kern.psi2(Z, X_slice)
-            else:
+            if not uncertain_inputs:
                 psi0p_gpu = kern.Kdiag(X_slice)
                 psi1p_gpu = kern.K(X_slice, Z)
                 psi2p_gpu = self.gpuCache['psi2p_gpu']
-        else:
-            if uncertain_inputs:
+            elif het_noise:
+                psi0p_gpu = kern.psi0(Z, X_slice)
+                psi1p_gpu = kern.psi1(Z, X_slice)
+                psi2p_gpu = kern.psi2(Z, X_slice)
+        elif not uncertain_inputs or het_noise:
+            if not uncertain_inputs:
+                psi0 = kern.Kdiag(X_slice)
+                psi1 = kern.K(X_slice, Z)
+            elif het_noise:
                 psi0 = kern.psi0(Z, X_slice)
                 psi1 = kern.psi1(Z, X_slice)
                 psi2 = kern.psi2(Z, X_slice)
-            else:
-                psi0 = kern.Kdiag(X_slice)
-                psi1 = kern.K(X_slice, Z)
 
             psi0p_gpu = self.gpuCache['psi0p_gpu']
             psi1p_gpu = self.gpuCache['psi1p_gpu']
@@ -446,43 +441,23 @@ class VarDTC_GPU(object):
             psi1p_gpu.set(np.asfortranarray(psi1))
             if uncertain_inputs:
                 psi2p_gpu.set(np.asfortranarray(psi2))
-                
-        #======================================================================
-        # Prepare gpu memory
-        #======================================================================
-        
-        dL_dpsi2R_gpu = self.gpuCache['dL_dpsi2R_gpu']
-        v_gpu = self.gpuCache['v_gpu']        
-        betaYT_gpu = self.gpuCache['betaYT_gpu']
-        beta_gpu = self.gpuCache['beta_gpu']
-        dL_dpsi0_gpu = self.gpuCache['dL_dpsi0_gpu']
-        dL_dpsi1_gpu = self.gpuCache['dL_dpsi1_gpu']
-        dL_dpsi2_gpu = self.gpuCache['dL_dpsi2_gpu']
-        dL_dthetaL_gpu = self.gpuCache['dL_dthetaL_gpu']
-        psi2R_gpu = self.gpuCache['psi2_t_gpu'][:nSlice*num_inducing*num_inducing].reshape(nSlice,num_inducing,num_inducing)
-        betapsi1_gpu = self.gpuCache['betapsi1_gpu']
-        thetaL_t_gpu = self.gpuCache['thetaL_t_gpu']
-        betaYT2_gpu = self.gpuCache['betaYT2_gpu']
-        
-        betaYT_gpu_slice = betaYT_gpu[:,n_start:n_end]
-        beta_gpu_slice = beta_gpu[n_start:n_end]
-
-        # Adjust to the batch size
-        if dL_dpsi0_gpu.shape[0] > nSlice:
-            betaYT2_gpu = betaYT2_gpu[:,:nSlice]
-            dL_dpsi0_gpu = dL_dpsi0_gpu.ravel()[:nSlice]
-            dL_dpsi1_gpu = dL_dpsi1_gpu.ravel()[:nSlice*num_inducing].reshape(nSlice,num_inducing)
-            dL_dpsi2_gpu = dL_dpsi2_gpu.ravel()[:nSlice*num_inducing*num_inducing].reshape(nSlice,num_inducing,num_inducing)
-            dL_dthetaL_gpu = dL_dthetaL_gpu.ravel()[:nSlice]
-            psi2R_gpu = psi2R_gpu.ravel()[:nSlice*num_inducing*num_inducing].reshape(nSlice,num_inducing,num_inducing)
-            thetaL_t_gpu = thetaL_t_gpu.ravel()[:nSlice]
-            betapsi1_gpu = betapsi1_gpu.ravel()[:nSlice*num_inducing].reshape(nSlice,num_inducing)
-        
-        mul_bcast(betapsi1_gpu,beta_gpu_slice,psi1p_gpu,beta_gpu_slice.size)
-
+                            
         #======================================================================
         # Compute dL_dpsi
         #======================================================================
+
+        dL_dpsi2R_gpu = self.gpuCache['dL_dpsi2R_gpu']
+        v_gpu = self.gpuCache['v_gpu']        
+        dL_dpsi0_gpu = self.gpuCache['dL_dpsi0_gpu']
+        dL_dpsi1_gpu = self.gpuCache['dL_dpsi1_gpu']
+        dL_dpsi2_gpu = self.gpuCache['dL_dpsi2_gpu']
+        betaYT_gpu = self.gpuCache['betaYT_gpu']
+        betaYT_gpu_slice = betaYT_gpu[:,n_start:n_end]
+        
+        # Adjust to the batch size
+        if dL_dpsi0_gpu.shape[0] > nSlice:
+            dL_dpsi0_gpu = dL_dpsi0_gpu.ravel()[:nSlice]
+            dL_dpsi1_gpu = dL_dpsi1_gpu.ravel()[:nSlice*num_inducing].reshape(nSlice,num_inducing)
         
         dL_dpsi0_gpu.fill(-output_dim *beta/2.)
         
@@ -490,52 +465,18 @@ class VarDTC_GPU(object):
         
         if uncertain_inputs:
             cublas.cublasDcopy(self.cublas_handle, dL_dpsi2R_gpu.size, dL_dpsi2R_gpu.gpudata, 1, dL_dpsi2_gpu.gpudata, 1)
-            cublas.cublasDscal(self.cublas_handle, dL_dpsi2_gpu.szie, beta, dL_dpsi2_gpu.gpudata, 1)
+            cublas.cublasDscal(self.cublas_handle, dL_dpsi2_gpu.size, beta, dL_dpsi2_gpu.gpudata, 1)
         else:
-            cublas.cublasDgemm(self.cublas_handle, 'N', 'N', nSlice, num_inducing, output_dim, 1.0, betapsi1_gpu.gpudata, nSlice, dL_dpsi2R_gpu.gpudata, num_inducing, 1.0, dL_dpsi1_gpu.gpudata, nSlice)
-            
+            cublas.cublasDgemm(self.cublas_handle, 'N', 'N', nSlice, num_inducing, output_dim, beta, psi1p_gpu.gpudata, nSlice, dL_dpsi2R_gpu.gpudata, num_inducing, 1.0, dL_dpsi1_gpu.gpudata, nSlice)
+
         #======================================================================
         # Compute dL_dthetaL
         #======================================================================
-        
-        if uncertain_inputs and not het_noise:
-            if isEnd:
-                dL_dthetaL = self.midRes['dL_dthetaL']
-            else:
-                dL_dthetaL = 0
-        
-#         if not uncertain_inputs:
-#             cublas.cublasDgemm(self.cublas_handle, 'T', 'N', num_inducing, num_inducing, nSlice, beta, psi1p_gpu.gpudata, nSlice, psi1p_gpu.gpudata, nSlice, 1.0, psi2p_gpu.gpudata, num_inducing)
-#            join_prod(psi2p_gpu,psi1p_gpu,psi1p_gpu,nSlice,num_inducing)
-
-#             psiR = cublas.cublasDdot(self.cublas_handle, dL_dpsi2R_gpu.size, dL_dpsi2R_gpu.gpudata, 1, psi2p_gpu.gpudata, 1)
-#     #        mul_bcast_first(psi2R_gpu,dL_dpsi2R_gpu,psi2p_gpu,nSlice)
-#     
-#             dL_dthetaL_gpu.fill(0.)
-#             dL_dthetaL = 0.
-#             
-#             dL_dthetaL += cublas.cublasDdot(self.cublas_handle, betaYT_gpu_slice.size, betaYT_gpu_slice.gpudata,1,betaYT_gpu_slice.gpudata,1)
-#             
-#             cublas.cublasDcopy(self.cublas_handle, betaYT_gpu_slice.size, betaYT_gpu_slice.gpudata, 1, betaYT2_gpu.gpudata, 1)
-#             mul_bcast(betaYT2_gpu,betaYT2_gpu,betaYT2_gpu,betaYT2_gpu.size)
-#             cublas.cublasDscal(self.cublas_handle, betaYT2_gpu.size, 0.5, betaYT2_gpu.gpudata, 1)
-#             sum_axis(dL_dthetaL_gpu, betaYT2_gpu, 1, output_dim)
-#             
-#             cublas.cublasDaxpy(self.cublas_handle, dL_dthetaL_gpu.size, output_dim/(-2.0), beta_gpu_slice.gpudata, 1, dL_dthetaL_gpu.gpudata, 1)
-#             cublas.cublasDcopy(self.cublas_handle, beta_gpu_slice.size, beta_gpu_slice.gpudata, 1, thetaL_t_gpu.gpudata, 1)
-#             mul_bcast(thetaL_t_gpu,thetaL_t_gpu,thetaL_t_gpu,thetaL_t_gpu.size)
-#             mul_bcast(thetaL_t_gpu,thetaL_t_gpu,psi0p_gpu,thetaL_t_gpu.size)
-#             cublas.cublasDaxpy(self.cublas_handle, dL_dthetaL_gpu.size, output_dim/2.0, thetaL_t_gpu.gpudata, 1, dL_dthetaL_gpu.gpudata, 1)
-#             
-#             thetaL_t_gpu.fill(0.)
-#             sum_axis(thetaL_t_gpu, psi2R_gpu, nSlice, num_inducing*num_inducing)
-#             mul_bcast(thetaL_t_gpu,thetaL_t_gpu,beta_gpu_slice,thetaL_t_gpu.size)
-#             mul_bcast(thetaL_t_gpu,thetaL_t_gpu,beta_gpu_slice,thetaL_t_gpu.size)
-#             cublas.cublasDaxpy(self.cublas_handle, dL_dthetaL_gpu.size, -1.0, thetaL_t_gpu.gpudata, 1, dL_dthetaL_gpu.gpudata, 1)
-#             
-#             cublas.cublasDgemm(self.cublas_handle, 'T', 'T', output_dim, nSlice, num_inducing, -1.0, v_gpu.gpudata, num_inducing, betapsi1_gpu.gpudata, nSlice, 0.0, betaYT2_gpu.gpudata, output_dim)
-#             mul_bcast(betaYT2_gpu,betaYT2_gpu,betaYT_gpu_slice,betaYT2_gpu.size)
-#             sum_axis(dL_dthetaL_gpu, betaYT2_gpu, 1, output_dim)
+        if het_noise:
+            betaY = betaYT_gpu_slice.get()
+            dL_dthetaL = ((np.square(betaY)).sum(axis=-1) + np.square(beta)*(output_dim*psi0p_gpu.get())-output_dim*beta)/2.
+            dL_dthetaL += -beta*beta*cublas.cublasDdot(self.cublas_handle,dL_dpsi2R_gpu.size, dL_dpsi2R_gpu.gpudata,1,psi2p_gpu.gpudata,1)
+            dL_dthetaL += -beta*(betaY*np.dot(psi1p_gpu.get(),v_gpu.get())).sum(axis=-1)
 
         if kern.useGPU:
             dL_dpsi0 = dL_dpsi0_gpu
@@ -548,10 +489,11 @@ class VarDTC_GPU(object):
                 dL_dpsi2 = dL_dpsi2_gpu
             else:
                 dL_dpsi2 = dL_dpsi2_gpu.get()
-        if het_noise:
-            dL_dthetaL = dL_dthetaL_gpu.get()
-        else:
-            dL_dthetaL = gpuarray.sum(dL_dthetaL_gpu).get()
+        if not het_noise:
+            if isEnd:
+                dL_dthetaL = self.midRes['dL_dthetaL']
+            else:
+                dL_dthetaL = 0.
         if uncertain_inputs:
             grad_dict = {'dL_dpsi0':dL_dpsi0,
                          'dL_dpsi1':dL_dpsi1,

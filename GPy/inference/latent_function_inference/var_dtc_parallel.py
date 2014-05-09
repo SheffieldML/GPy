@@ -116,7 +116,7 @@ class VarDTC_minibatch(object):
                 if het_noise:
                     psi2_full += beta_slice*np.outer(psi1,psi1)
                 else:
-                    psi2_full += np.outer(psi1.T,psi1.T)
+                    psi2_full += np.dot(psi1.T,psi1)
                 
         if not het_noise:
             psi0_full *= beta
@@ -176,7 +176,7 @@ class VarDTC_minibatch(object):
         # Compute dL_dthetaL for uncertian input and non-heter noise
         #======================================================================        
         
-        if uncertain_inputs and not het_noise:
+        if not het_noise:
             dL_dthetaL = (YRY_full*beta + beta*output_dim*psi0_full - num_data*output_dim*beta)/2. - beta*(dL_dpsi2R*psi2_full).sum() - beta*(v.T*psi1Y_full).sum()
             self.midRes['dL_dthetaL'] = dL_dthetaL
 
@@ -265,14 +265,10 @@ class VarDTC_minibatch(object):
             
             dL_dthetaL = ((np.square(betaY)).sum(axis=-1) + np.square(beta)*(output_dim*psi0)-output_dim*beta)/2. - np.square(beta)*psiR- (betaY*np.dot(betapsi1,v)).sum(axis=-1)
         else:
-            if uncertain_inputs:
-                if isEnd:
-                    dL_dthetaL = self.midRes['dL_dthetaL']
-                else:
-                    dL_dthetaL = 0.
+            if isEnd:
+                dL_dthetaL = self.midRes['dL_dthetaL']
             else:
-                psiR = np.einsum('nm,no,mo->',psi1,psi1,dL_dpsi2R)
-                dL_dthetaL = ((np.square(betaY)).sum() + beta*beta*output_dim*(psi0.sum())-num_slice*output_dim*beta)/2. - beta*beta*psiR- (betaY*np.dot(betapsi1,v)).sum()
+                dL_dthetaL = 0.
                 
         if uncertain_inputs:
             grad_dict = {'dL_dpsi0':dL_dpsi0,

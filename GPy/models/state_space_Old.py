@@ -26,18 +26,21 @@ class StateSpace_Old(Model):
     def __init__(self, X, Y, kernel=None):
         super(StateSpace_Old, self).__init__()
         self.num_data, input_dim = X.shape
-        assert input_dim==1, "State space methods for time only"
+        assert input_dim==1, "State space methods for time only but for two outputs"
         num_data_Y, self.output_dim = Y.shape
         assert num_data_Y == self.num_data, "X and Y data don't match"
-        assert self.output_dim == 1, "State space methods for single outputs only"
+        assert self.output_dim == 2, "State space methods for single outputs only"
 
         # Make sure the observations are ordered in time
         sort_index = np.argsort(X[:,0])
         self.X = X[sort_index]
         self.Y = Y[sort_index]
 
+        self.a = 1.
+        self.b = 1.
+
         # Noise variance
-        self.sigma2 = 1.
+        self.sigma2 = .1
 
         # Default kernel
         if kernel is None:
@@ -53,13 +56,16 @@ class StateSpace_Old(Model):
 
     def _set_params(self, x):
         self.kern._set_params(x[:self.kern.num_params_transformed()])
-        self.sigma2 = x[-1]
+        self.sigma2 = x[-3]
+        self.a = x[-2]
+        self.b = x[-1]
 
     def _get_params(self):
-        return np.append(self.kern._get_params_transformed(), self.sigma2)
+        #return np.append(self.kern._get_params_transformed(), self.sigma2, self.a, self.b)
+        return np.hstack([ self.kern._get_params_transformed(), self.sigma2, self.a, self.b ])
 
     def _get_param_names(self):
-        return self.kern._get_param_names_transformed() + ['noise_variance']
+        return self.kern._get_param_names_transformed() + ['noise_variance','a','b']
 
     def log_likelihood(self):
 
@@ -67,8 +73,22 @@ class StateSpace_Old(Model):
         #(F,L,Qc,H,Pinf) = self.kern.sde()
         (F,L,Qc,H,Pinf,use1,use2,use3) = self.kern.sde()
 
+        Fm = np.zeros((3,3))
+        Fm[1:,1:] = F
+        Fm[0,0] = -self.a
+        Fm[0,1] = self.b
+
+        Lm = np.zeros((3,1))
+        Lm[1:,0] = L.flatten()
+
+        Hm = np.zeros((2,3))
+        Hm[0,0] = 1
+        Hm[1,1:] = H
+
+        Pinfm = linalg.solve_lyapunov(Fm,-Lm.dot(Qc).dot(Lm.T))
         # Use the Kalman filter to evaluate the likelihood
-        return self.kf_likelihood(F,L,Qc,H,self.sigma2,Pinf,self.X.T,self.Y.T)
+        #return self.kf_likelihood(F,L,Qc,H,self.sigma2,Pinf,self.X.T,self.Y.T)
+        return self.kf_likelihood(Fm,Lm,Qc,Hm,self.sigma2,Pinfm,self.X.T,self.Y.T)
 
     def _log_likelihood_gradients(self):
 
@@ -84,7 +104,7 @@ class StateSpace_Old(Model):
 
         # Make a single matrix containing training and testing points
         X = np.vstack((self.X, Xnew))
-        Y = np.vstack((self.Y, np.nan*np.zeros(Xnew.shape)))
+        Y = np.vstack((self.Y, np.nan*np.zeros((Xnew.shape[0],2))))
 
         # Sort the matrix (save the order)
         _, return_index, return_inverse = np.unique(X,True,True)
@@ -94,13 +114,27 @@ class StateSpace_Old(Model):
         # Get the model matrices from the kernel
         #(F,L,Qc,H,Pinf) = self.kern.sde()
         (F,L,Qc,H,Pinf,use1,use2,use3) = self.kern.sde()
+        
+        Fm = np.zeros((3,3))
+        Fm[1:,1:] = F
+        Fm[0,0] = -self.a
+        Fm[0,1] = self.b
 
+        Lm = np.zeros((3,1))
+        Lm[1:,0] = L.flatten()
+
+        Hm = np.zeros((2,3))
+        Hm[0,0] = 1
+        Hm[1,1:] = H
+
+        Pinfm = linalg.solve_lyapunov(Fm,-Lm.dot(Qc).dot(Lm.T))
         # Run the Kalman filter
-        (M, P) = self.kalman_filter(F,L,Qc,H,self.sigma2,Pinf,X.T,Y.T)
-
+        #stop
+        (M, P) = self.kalman_filter(Fm,Lm,Qc,Hm,self.sigma2,Pinfm,X.T,Y.T)
+        
         # Run the Rauch-Tung-Striebel smoother
-        if not filter:
-            (M, P) = self.rts_smoother(F,L,Qc,X.T,M,P)
+        #if not filter:
+        (M, P) = self.rts_smoother(Fm,Lm,Qc,X.T,M,P)
 
         # Put the data back in the original order
         M = M[:,return_inverse]
@@ -109,13 +143,14 @@ class StateSpace_Old(Model):
         # Only return the values for Xnew
         M = M[:,self.num_data:]
         P = P[:,:,self.num_data:]
-
+        
         # Calculate the mean and variance
-        m = H.dot(M).T
-        V = np.tensordot(H[0],P,(0,0))
-        V = np.tensordot(V,H[0],(0,0))
-        V = V[:,None]
-        stop
+        m = Hm.dot(M).T
+        V=P[0:2,0:2,:]
+        #V = np.tensordot(H[0],P,(0,0))
+        #V = np.tensordot(V,H[0],(0,0))
+        #V = V[:,None]
+        #stop
         # Return the posterior of the state
         return (m, V)
 
@@ -125,14 +160,15 @@ class StateSpace_Old(Model):
         (m, V) = self.predict_raw(Xnew,filteronly=filteronly)
 
         # Add the noise variance to the state variance
-        V += self.sigma2
-
+        V[0,0,:] += self.sigma2
+        V[1,1,:] += self.sigma2
+        
         # Lower and upper bounds
-        lower = m - 2*np.sqrt(V)
-        upper = m + 2*np.sqrt(V)
-
+        lower = m[:,0] - 2*np.sqrt(V[0,0,:])
+        upper = m[:,0] + 2*np.sqrt(V[0,0,:])
+        #stop
         # Return mean and variance
-        return (m, V, lower, upper)
+        return (m[:,0], V[0,0,:], lower, upper)
 
     def plot(self, plot_limits=None, levels=20, samples=0, fignum=None,
             ax=None, resolution=None, plot_raw=False, plot_filter=False,
@@ -145,8 +181,11 @@ class StateSpace_Old(Model):
 
         # Define the frame on which to plot
         resolution = resolution or 200
-        Xgrid, xmin, xmax = x_frame1D(self.X, plot_limits=plot_limits)
-
+        Xnew, xmin, xmax = x_frame1D(self.X, plot_limits=plot_limits)
+        Xgrid = np.empty((Xnew.shape[0],2))
+        Xgrid[:,0] = Xnew.flatten()
+        Xgrid[:,1] = 0
+        #stop
         # Make a prediction on the frame and plot it
         if plot_raw:
             m, v = self.predict_raw(Xgrid,filteronly=plot_filter)
@@ -154,12 +193,14 @@ class StateSpace_Old(Model):
             upper = m + 2*np.sqrt(v)
             Y = self.Y
         else:
-            m, v, lower, upper = self.predict(Xgrid,filteronly=plot_filter)
+            #m, v, lower, upper = self.predict(Xgrid,filteronly=plot_filter)
+            m, v, lower, upper = self.predict(Xnew,filteronly=plot_filter)
             Y = self.Y
-
+            #stop
         # Plot the values
-        gpplot(Xgrid, m, lower, upper, axes=ax, edgecol=linecol, fillcol=fillcol)
-        ax.plot(self.X, self.Y, 'kx', mew=1.5)
+        gpplot(Xnew, m, lower, upper, axes=ax, edgecol=linecol, fillcol=fillcol)
+        #ax.plot(self.X, self.Y, 'kx', mew=1.5)
+        ax.plot(self.X, self.Y[:,0], 'kx', mew=1.5)
 
         # Optionally plot some samples
         if samples:
@@ -225,7 +266,7 @@ class StateSpace_Old(Model):
 
         # Solve the LTI SDE for these time steps
         As, Qs, index = self.lti_disc(F,L,Qc,dt)
-
+        #stop
         # Kalman filter
         for k in range(0,Y.shape[1]):
 
@@ -239,10 +280,12 @@ class StateSpace_Old(Model):
             PF[:,:,k] = A.dot(PF[:,:,k-1]).dot(A.T) + Q
 
             # Update step (only if there is data)
-            if not np.isnan(Y[:,k]):
+            #if not np.isnan(Y[:,k]):
+            if not np.isnan(Y[0,k]):
                  if Y.shape[0]==1:
                      K = PF[:,:,k].dot(H.T)/(H.dot(PF[:,:,k]).dot(H.T) + R)
                  else:
+                     #stop
                      LL = linalg.cho_factor(H.dot(PF[:,:,k]).dot(H.T) + R)
                      K = linalg.cho_solve(LL, H.dot(PF[:,:,k].T)).T
                  MF[:,k] += K.dot(Y[:,k]-H.dot(MF[:,k]))
@@ -306,10 +349,10 @@ class StateSpace_Old(Model):
             # Prediction step
             m = A.dot(m)
             P = A.dot(P).dot(A.T) + Q
-
+            #stop
             # Update step only if there is data
-            if not np.isnan(Y[:,k]):
-                 v = Y[:,k]-H.dot(m)
+            if not np.isnan(Y[0,k]):
+                 v = Y[:,k][:,None]-H.dot(m)
                  if Y.shape[0]==1:
                      S = H.dot(P).dot(H.T) + R
                      K = P.dot(H.T)/S
@@ -317,16 +360,17 @@ class StateSpace_Old(Model):
                      lik -= 0.5*v.shape[0]*np.log(2*np.pi)
                      lik -= 0.5*v*v/S
                  else:
-                     LL, isupper = linalg.cho_factor(H.dot(P).dot(H.T) + R)
+                     LL, isupper = linalg.cho_factor(H.dot(P).dot(H.T) + R*np.eye(Y.shape[0]))
                      lik -= np.sum(np.log(np.diag(LL)))
                      lik -= 0.5*v.shape[0]*np.log(2*np.pi)
-                     lik -= 0.5*linalg.cho_solve((LL, isupper),v).dot(v)
+                     lik -= 0.5*linalg.cho_solve((LL, isupper),v).T.dot(v)
                      K = linalg.cho_solve((LL, isupper), H.dot(P.T)).T
                  m += K.dot(v)
                  P -= K.dot(H).dot(P)
-
+        #stop
         # Return likelihood
         return lik[0,0]
+        #return lik
 
     def simulate(self,F,L,Qc,Pinf,X):
         # Simulate a trajectory using the state space model

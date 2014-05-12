@@ -157,6 +157,13 @@ class Param(OptimizationHandlable, ObsAr):
         if not self._has_fixes(): self._fixes_ = numpy.ones(self._realsize_, dtype=bool)
 
     #===========================================================================
+    # parameterizable
+    #===========================================================================
+    def traverse(self, visit, *args, **kwargs):
+        visit(self, *args, **kwargs)
+
+
+    #===========================================================================
     # Convenience
     #===========================================================================
     @property

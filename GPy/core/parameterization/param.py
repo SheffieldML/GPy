@@ -137,6 +137,8 @@ class Param(OptimizationHandlable, ObsAr):
             slice_index = self._current_slice_
         def f(a):
             a, b = a
+            if isinstance(a, numpy.ndarray) and a.dtype == bool:
+                raise ValueError, "Boolean indexing not implemented, use Param[np.where(index)] to index by boolean arrays!"
             if a not in (slice(None), Ellipsis):
                 if isinstance(a, slice):
                     start, stop, step = a.indices(b)

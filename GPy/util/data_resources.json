@@ -152,7 +152,7 @@
     "fruitfly_tomancak": {
         "citation": "'Systematic determination of patterns of gene expression during Drosophila embryogenesis' Pavel Tomancak, Amy Beaton, Richard Weiszmann, Elaine Kwan, ShengQiang Shu, Suzanna E Lewis, Stephen Richards, Michael Ashburner, Volker Hartenstein, Susan E Celniker, and Gerald M Rubin",
         "details": "Gene expression results from blastoderm development in Drosophila Melanogaster.",
-        "files": [
+        "files": [ 
             [
                 "embryo_tc_4_1.CEL",
                 "embryo_tc_4_2.CEL",

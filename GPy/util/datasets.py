@@ -108,7 +108,11 @@ def download_url(url, store_directory, save_name = None, messages = True, suffix
             raise ValueError('Tried url ' + url + suffix + ' and received server error ' + str(response.code))
     with open(save_name, 'wb') as f:
         meta = response.info()
-        file_size = int(meta.getheaders("Content-Length")[0])
+        content_length_str = meta.getheaders("Content-Length")
+        if content_length_str:
+            file_size = int(content_length_str[0])
+        else:
+            file_size = 1e10
         status = ""
         file_size_dl = 0
         block_sz = 8192
@@ -349,6 +353,13 @@ def football_data(season='1314', data_set='football_data'):
         X = table[:, :4]
         Y = table[:, 4:]
     return data_details_return({'X': X, 'Y': Y}, data_set)
+
+def fruitfly_tomancak(data_set='fruitfly_tomancak', gene_number=None):
+    if not data_available(data_set):
+        download_data(data_set)
+    X = None
+    Y = None
+    return data_details_return({'X': X, 'Y': Y, 'gene_number' : gene_number}, data_set)
 
 # This will be for downloading google trends data.
 def google_trends(query_terms=['big data', 'machine learning', 'data science'], data_set='google_trends'):

@@ -74,13 +74,17 @@ class vector_show(matplotlib_show):
     """
     def __init__(self, vals, axes=None):
         matplotlib_show.__init__(self, vals, axes)
-        self.handle = self.axes.plot(np.arange(0, len(vals))[:, None], self.vals)
+        #assert vals.ndim == 2, "Please give a vector in [n x 1] to plot"
+        #assert vals.shape[1] == 1, "only showing a vector in one dimension"
+        self.size = vals.size
+        
+        self.handle = self.axes.plot(np.arange(0, vals.size)[:, None], self.vals)[0]
 
     def modify(self, vals):
         self.vals = vals.copy()
-        for handle, vals in zip(self.handle, self.vals.T):
-            xdata, ydata = handle.get_data()
-            handle.set_data(xdata, vals)
+        xdata, ydata = self.handle.get_data()
+        assert vals.size == self.size, "values passed into modify changed size! vals:{} != in:{}".format(vals.size, self.size)
+        self.handle.set_data(xdata, self.vals)
         self.axes.figure.canvas.draw()
 
 
@@ -94,12 +98,12 @@ class lvm(matplotlib_show):
         :type data_visualize: visualize.data_show  type.
         :param latent_axes: the axes where the latent visualization should be plotted.
         """
-        if vals == None:
+        if vals is None:
             if isinstance(model.X, VariationalPosterior):
                 vals = param_to_array(model.X.mean)
             else:
                 vals = param_to_array(model.X)
-         
+
         vals = param_to_array(vals)
         matplotlib_show.__init__(self, vals, axes=latent_axes)
 

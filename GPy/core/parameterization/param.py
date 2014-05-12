@@ -45,7 +45,6 @@ class Param(OptimizationHandlable, ObsAr):
     _parameters_ = []
     def __new__(cls, name, input_array, default_constraint=None):
         obj = numpy.atleast_1d(super(Param, cls).__new__(cls, input_array=input_array))
-        cls.__name__ = "Param"
         obj._current_slice_ = (slice(obj.shape[0]),)
         obj._realshape_ = obj.shape
         obj._realsize_ = obj.size
@@ -112,8 +111,8 @@ class Param(OptimizationHandlable, ObsAr):
     def __getitem__(self, s, *args, **kwargs):
         if not isinstance(s, tuple):
             s = (s,)
-        if not reduce(lambda a, b: a or numpy.any(b is Ellipsis), s, False) and len(s) <= self.ndim:
-            s += (Ellipsis,)
+        #if not reduce(lambda a, b: a or numpy.any(b is Ellipsis), s, False) and len(s) <= self.ndim:
+        #    s += (Ellipsis,)
         new_arr = super(Param, self).__getitem__(s, *args, **kwargs)
         try: new_arr._current_slice_ = s; new_arr._original_ = self.base is new_arr.base
         except AttributeError: pass  # returning 0d array or float, double etc

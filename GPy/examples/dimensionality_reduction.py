@@ -177,7 +177,7 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     if plot:
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         m.plot_latent(ax=latent_axes, labels=m.data_labels)
-        data_show = GPy.plotting.matplot_dep.visualize.vector_show(np.zeros((m.Y.shape[1], 1)))
+        data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0,:]))
         lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(param_to_array(m.X.mean)[0:1,:], # @UnusedVariable
             m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
         raw_input('Press enter to finish')
@@ -186,7 +186,7 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
 
 def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
     _np.random.seed(1234)
-    
+
     x = _np.linspace(0, 4 * _np.pi, N)[:, None]
     s1 = _np.vectorize(lambda x: _np.sin(x))
     s2 = _np.vectorize(lambda x: _np.cos(x)**2)

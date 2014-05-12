@@ -77,13 +77,12 @@ class vector_show(matplotlib_show):
         #assert vals.ndim == 2, "Please give a vector in [n x 1] to plot"
         #assert vals.shape[1] == 1, "only showing a vector in one dimension"
         self.size = vals.size
-        
-        self.handle = self.axes.plot(np.arange(0, vals.size)[:, None], self.vals)[0]
+        self.handle = self.axes.plot(np.arange(0, vals.size)[:, None], vals)[0]
 
     def modify(self, vals):
         self.vals = vals.copy()
         xdata, ydata = self.handle.get_data()
-        assert vals.size == self.size, "values passed into modify changed size! vals:{} != in:{}".format(vals.size, self.size)
+        assert vals.size == self.size, "values passed into modify changed size! vals.size:{} != in.size:{}".format(vals.size, self.size)
         self.handle.set_data(xdata, self.vals)
         self.axes.figure.canvas.draw()
 

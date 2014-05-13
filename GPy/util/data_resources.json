@@ -472,8 +472,8 @@
         "details": "Gene expression data from two separate strains of mice: C57 and 129Sv in wild type and SOD1 mutant strains.",
         "files": [
             [
-                "sod1_C59_129_exprs.csv",
-                "sod1_C59_129_se.csv"
+                "sod1_C57_129_exprs.csv",
+                "sod1_C57_129_se.csv"
             ]
         ],
         "license": null,

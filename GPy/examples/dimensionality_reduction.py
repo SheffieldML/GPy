@@ -480,18 +480,14 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
 
     data = GPy.util.datasets.osu_run1()
     Q = 6
-    kernel = GPy.kern.RBF(Q, lengthscale=np.repeat(.5, Q), ARD=True) + GPy.kern.Bias(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF(Q, lengthscale=np.repeat(.5, Q), ARD=True) 
     m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20, kernel=kernel)
     
     m.data = data
-    
-    m.X.mean -= m.X.mean.mean(0); m.X.mean /= m.X.mean.var(0)
-    m.X.variance /= 100
     m.likelihood.variance = 0.001
-    m.Z.randomize()
     
     # optimize
-    if optimize: m.optimize('bfgs', messages=verbose, max_iters=1500, xtol=1e-300, ftol=1e-300)
+    if optimize: m.optimize('bfgs', messages=verbose, max_iters=800, xtol=1e-300, ftol=1e-300)
     if plot:
         plt.clf, (latent_axes, sense_axes) = plt.subplots(1, 2)
         plt.sca(latent_axes)
@@ -499,7 +495,8 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
         y = m.Y[:1, :].copy()
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y, connect=data['connect'])
         GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X.mean[:1, :].copy(), m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
-        raw_input('Press enter to finish')
+        plt.draw()
+        #raw_input('Press enter to finish')
 
     return m
 
@@ -516,7 +513,7 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
     if plot:
         ax = m.plot_latent()
-        y = m.likelihood.Y[0, :]
+        y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.skeleton_show(y[None, :], data['skel'])
         lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
         raw_input('Press enter to finish')

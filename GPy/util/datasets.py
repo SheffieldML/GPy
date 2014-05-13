@@ -31,7 +31,7 @@ def reporthook(a,b,c):
     sys.stdout.flush()
 
 # Global variables
-data_path = os.path.expandvar(config.get('datasets', 'dir'))
+data_path = os.path.expandvars(config.get('datasets', 'dir'))
 #data_path = os.path.join(os.path.dirname(__file__), 'datasets')
 default_seed = 10000
 overide_manual_authorize=False

@@ -57,6 +57,7 @@ class ObservablesList(object):
 
     def __repr__(self):
         return self._poc.__repr__()
+    
 
     def add(self, priority, observable, callble):
         if observable is not None:

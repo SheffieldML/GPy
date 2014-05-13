@@ -97,7 +97,7 @@ def plot_latent(model, labels=None, which_indices=None,
         elif type(ul) is np.int64:
             this_label = 'class %i' % ul
         else:
-            this_label = unicode(i)
+            this_label = unicode(ul)
         m = marker.next()
 
         index = np.nonzero(labels == ul)[0]

@@ -467,6 +467,21 @@
             "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/singlecell/"
         ]
     },
+    "sod1_mouse": {
+        "citation": "Transcriptomic indices of fast and slow disease progression in two mouse models of amyotrophic lateral sclerosis' Nardo G1, Iennaco R, Fusi N, Heath PR, Marino M, Trolese MC, Ferraiuolo L, Lawrence N, Shaw PJ, Bendotti C Brain. 2013 Nov;136(Pt 11):3305-32. doi: 10.1093/brain/awt250. Epub 2013 Sep 24.",
+        "details": "Gene expression data from two separate strains of mice: C57 and 129Sv in wild type and SOD1 mutant strains.",
+        "files": [
+            [
+                "sod1_C59_129_exprs.csv",
+                "sod1_C59_129_se.csv"
+            ]
+        ],
+        "license": null,
+        "size": 0,
+        "urls": [
+            "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/singlecell/sod1_mouse/"
+        ]
+    },
     "swiss_roll": {
         "citation": "A Global Geometric Framework for Nonlinear Dimensionality Reduction, J. B. Tenenbaum, V. de Silva and J. C. Langford, Science 290 (5500): 2319-2323, 22 December 2000",
         "details": "Swiss roll data made available by Tenenbaum, de Silva and Langford to demonstrate isomap, available from http://isomap.stanford.edu/datasets.html.",

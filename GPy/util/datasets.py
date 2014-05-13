@@ -12,6 +12,8 @@ import datetime
 import json
 import re
 
+from config import *
+
 ipython_available=True
 try:
     import IPython
@@ -29,7 +31,8 @@ def reporthook(a,b,c):
     sys.stdout.flush()
 
 # Global variables
-data_path = os.path.join(os.path.dirname(__file__), 'datasets')
+data_path = os.path.expandvar(config.get('datasets', 'dir'))
+#data_path = os.path.join(os.path.dirname(__file__), 'datasets')
 default_seed = 10000
 overide_manual_authorize=False
 neil_url = 'http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/'
@@ -360,11 +363,25 @@ def football_data(season='1314', data_set='football_data'):
         Y = table[:, 4:]
     return data_details_return({'X': X, 'Y': Y}, data_set)
 
+def sod1_mouse(data_set='sod1_mouse'):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    dirpath = os.path.join(data_path, data_set)
+    filename = os.path.join(dirpath, 'sod1_C57_129_exprs.csv')
+    Y = read_csv(filename, header=0, index_col=0).T
+    num_repeats=4
+    num_time=4
+    num_cond=4
+    X = 1
+    return data_details_return({'X': X, 'Y': Y}, data_set)
+    
 def fruitfly_tomancak(data_set='fruitfly_tomancak', gene_number=None):
     if not data_available(data_set):
         download_data(data_set)
     from pandas import read_csv
-    filename = os.path.join(data_path, 'tomancak_expr.csv')
+    dirpath = os.path.join(data_path, data_set)
+    filename = os.path.join(dirpath, 'tomancak_expr.csv')
     Y = read_csv(filename, header=0, index_col=0).T
     num_repeats = 3
     num_time = 12

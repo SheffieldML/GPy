@@ -713,6 +713,10 @@ class Parameterizable(OptimizationHandlable):
 
     @property
     def param_array(self):
+        """
+        Array representing the parameters of this class.
+        There is only one copy of all parameters in memory, two during optimization.
+        """
         if self._param_array_ is None:
             self._param_array_ = np.empty(self.size, dtype=np.float64)
         return self._param_array_

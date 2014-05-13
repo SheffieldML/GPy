@@ -90,6 +90,13 @@ class Param(OptimizationHandlable, ObsAr):
         return self
 
     @property
+    def values(self):
+        """
+        Return self as numpy array view
+        """
+        return self.view(np.ndarray)
+
+    @property
     def gradient(self):
         """
         Return a view on the gradient, which is in the same shape as this parameter is.
@@ -99,11 +106,11 @@ class Param(OptimizationHandlable, ObsAr):
         """
         if getattr(self, '_gradient_array_', None) is None:
             self._gradient_array_ = numpy.empty(self._realshape_, dtype=numpy.float64)
-        return self._gradient_array_[self._current_slice_]
+        return self._gradient_array_#[self._current_slice_]
 
     @gradient.setter
     def gradient(self, val):
-        self._gradient_array_[self._current_slice_] = val
+        self._gradient_array_[:] = val
 
     #===========================================================================
     # Array operations -> done
@@ -114,7 +121,10 @@ class Param(OptimizationHandlable, ObsAr):
         #if not reduce(lambda a, b: a or numpy.any(b is Ellipsis), s, False) and len(s) <= self.ndim:
         #    s += (Ellipsis,)
         new_arr = super(Param, self).__getitem__(s, *args, **kwargs)
-        try: new_arr._current_slice_ = s; new_arr._original_ = self.base is new_arr.base
+        try: 
+            new_arr._current_slice_ = s
+            new_arr._gradient_array_ = self.gradient[s]
+            new_arr._original_ = self.base is new_arr.base
         except AttributeError: pass  # returning 0d array or float, double etc
         return new_arr
 

@@ -599,14 +599,13 @@ class OptimizationHandlable(Constrainable):
         return p
 
     def _set_params_transformed(self, p):
-        if p is self.param_array:
-            p = p.copy()
-        if self.has_parent() and self.constraints[__fixed__].size != 0:
-            fixes = np.ones(self.size).astype(bool)
-            fixes[self.constraints[__fixed__]] = FIXED
-            self.param_array.flat[fixes] = p
-        elif self._has_fixes(): self.param_array.flat[self._fixes_] = p
-        else: self.param_array.flat = p
+        if not(p is self.param_array):
+            if self.has_parent() and self.constraints[__fixed__].size != 0:
+                fixes = np.ones(self.size).astype(bool)
+                fixes[self.constraints[__fixed__]] = FIXED
+                self.param_array.flat[fixes] = p
+            elif self._has_fixes(): self.param_array.flat[self._fixes_] = p
+            else: self.param_array.flat = p
         self.untransform()
         self._trigger_params_changed()
 
@@ -621,7 +620,7 @@ class OptimizationHandlable(Constrainable):
     def num_params(self):
         """
         Return the number of parameters of this parameter_handle.
-        Param objects will allways return 0.
+        Param objects will always return 0.
         """
         raise NotImplemented, "Abstract, please implement in respective classes"
 
@@ -742,14 +741,15 @@ class Parameterizable(OptimizationHandlable):
             self.__visited = True
             for c in self._parameters_:
                 c.traverse(visit, *args, **kwargs)
+            self.__visited = False
 
     def traverse_parents(self, visit, *args, **kwargs):
         """
         Traverse the hierarchy upwards, visiting all parents and their children.
         See "visitor pattern" in literature. This is implemented in pre-order fashion.
-
+    
         Example:
-
+    
         parents = []
         self.traverse_parents(parents.append)
         print parents

@@ -57,9 +57,9 @@ class Param(OptimizationHandlable, ObsAr):
 
     def build_pydot(self,G):
         import pydot
-        node = pydot.Node(id(self), shape='record', label=self.name)
+        node = pydot.Node(id(self), shape='trapezium', label=self.name)#, fontcolor='white', color='white')
         G.add_node(node)
-        for o in self.observers.keys():
+        for _, o, _ in self.observers:
             label = o.name if hasattr(o, 'name') else str(o)
             observed_node = pydot.Node(id(o), label=label)
             G.add_node(observed_node)

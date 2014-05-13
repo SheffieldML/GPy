@@ -369,7 +369,7 @@ def sod1_mouse(data_set='sod1_mouse'):
     from pandas import read_csv
     dirpath = os.path.join(data_path, data_set)
     filename = os.path.join(dirpath, 'sod1_C57_129_exprs.csv')
-    Y = read_csv(filename, header=0, index_col=0).T
+    Y = read_csv(filename, header=0, index_col=0)
     num_repeats=4
     num_time=4
     num_cond=4
@@ -381,7 +381,7 @@ def fruitfly_tomancak(data_set='fruitfly_tomancak', gene_number=None):
         download_data(data_set)
     from pandas import read_csv
     dirpath = os.path.join(data_path, data_set)
-    filename = os.path.join(dirpath, 'tomancak_expr.csv')
+    filename = os.path.join(dirpath, 'tomancak_exprs.csv')
     Y = read_csv(filename, header=0, index_col=0).T
     num_repeats = 3
     num_time = 12

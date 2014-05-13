@@ -192,6 +192,27 @@ class Exponential(Stationary):
     def dK_dr(self, r):
         return -0.5*self.K_of_r(r)
 
+
+class OU(Stationary):
+    """
+    OU kernel:
+
+    .. math::
+
+       k(r) = \\sigma^2 \exp(- r) \\ \\ \\ \\  \\text{ where  } r = \sqrt{\sum_{i=1}^input_dim \\frac{(x_i-y_i)^2}{\ell_i^2} }
+
+    """
+
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='OU'):
+        super(OU, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
+
+    def K_of_r(self, r):
+        return self.variance * np.exp(-r)
+
+    def dK_dr(self,r):
+        return -1.*self.variance*np.exp(-r)
+
+
 class Matern32(Stationary):
     """
     Matern 3/2 kernel:

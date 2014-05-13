@@ -27,11 +27,11 @@ class ArrayCoreTest(unittest.TestCase):
 class ParameterizedTest(unittest.TestCase):
 
     def setUp(self):
-        self.rbf = GPy.kern.RBF(1)
+        self.rbf = GPy.kern.RBF(20)
         self.white = GPy.kern.White(1)
         from GPy.core.parameterization import Param
         from GPy.core.parameterization.transformations import Logistic
-        self.param = Param('param', np.random.rand(25,2), Logistic(0, 1))
+        self.param = Param('param', np.random.uniform(0,1,(25,2)), Logistic(0, 1))
 
         self.test1 = GPy.core.Parameterized("test model")
         self.test1.param = self.param
@@ -142,6 +142,8 @@ class ParameterizedTest(unittest.TestCase):
         self.testmodel.randomize()
         self.assertEqual(val, self.testmodel.kern.lengthscale)
 
+    
+    
     def test_regular_expression_misc(self):
         self.testmodel.kern.lengthscale.fix()
         val = float(self.testmodel.kern.lengthscale)

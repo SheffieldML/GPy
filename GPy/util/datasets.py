@@ -391,6 +391,40 @@ def fruitfly_tomancak(data_set='fruitfly_tomancak', gene_number=None):
     X = np.vstack((xtime.flatten(), xrepeat.flatten())).T    
     return data_details_return({'X': X, 'Y': Y, 'gene_number' : gene_number}, data_set)
 
+def drosophila_protein(data_set='drosophila_protein'):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    dirpath = os.path.join(data_path, data_set)
+    filename = os.path.join(dirpath, 'becker_et_al.csv')
+    Y = read_csv(filename, header=0)
+    return data_details_return({'Y': Y}, data_set)
+
+def drosophila_knirps(data_set='drosophila_protein'):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    dirpath = os.path.join(data_path, data_set)
+    filename = os.path.join(dirpath, 'becker_et_al.csv')
+    # in the csv file we have facts_kni and ext_kni. We treat facts_kni as protein and ext_kni as mRNA
+    df = read_csv(filename, header=0)
+    t = df['t'][:,None]
+    x = df['x'][:,None]
+
+    g = df['expression1'][:,None]
+    p = df['expression2'][:,None]
+
+    leng = x.shape[0]
+
+    T = np.vstack([t,t])
+    S = np.vstack([x,x])
+    inx = np.zeros(leng*2)[:,None]
+
+    inx[leng*2/2:leng*2]=1
+    X = np.hstack([T,S,inx])
+    Y = np.vstack([g,p])
+    return data_details_return({'Y': Y, 'X': X}, data_set)
+
 # This will be for downloading google trends data.
 def google_trends(query_terms=['big data', 'machine learning', 'data science'], data_set='google_trends'):
     """Data downloaded from Google trends for given query terms. Warning, if you use this function multiple times in a row you get blocked due to terms of service violations."""

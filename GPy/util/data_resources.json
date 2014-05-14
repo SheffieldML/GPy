@@ -114,6 +114,20 @@
             "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/della_gatta/"
         ]
     },
+    "drosophila_protein": {
+        "citation": "Becker K, Balsa-Canto E, Cicin-Sain D, Hoermann A, Janssens H, et al. (2013) Reverse-Engineering Post-Transcriptional Regulation of Gap Genes in Drosophila melanogaster. PLoS Comput Biol 9(10): e1003281. doi:10.1371/journal.pcbi.1003281",
+        "details": "Expression of the gap genes Krüppel, knirps, and giant in Drosophila melanogaster. Data includes quantitative datasets of gap gene mRNA and protein expression to solve and fit a model of post-transcriptional regulation, and establish its structural and practical identifiability",
+        "files": [
+            [
+                "becker_et_al.csv"
+            ]
+        ],
+        "license": null,
+        "size": 0,
+        "urls": [
+            "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/drosophila_protein/"
+        ]
+    },
     "epomeo_gpx": {
         "citation": "",
         "details": "Five different GPS traces of the same run up Mount Epomeo in Ischia. The traces are from different sources. endomondo_1 and endomondo_2 are traces from the mobile phone app Endomondo, with a split in the middle. garmin_watch_via_endomondo is the trace from a Garmin watch, with a segment missing about 4 kilometers in. viewranger_phone and viewranger_tablet are traces from a phone and a tablet through the viewranger app. The viewranger_phone data comes from the same mobile phone as the Endomondo data (i.e. there are 3 GPS devices, but one device recorded two traces).",

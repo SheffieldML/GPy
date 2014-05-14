@@ -16,6 +16,7 @@ import diag
 import initialization
 import multioutput
 import linalg_gpu
+import mpi
 
 try:
     import sympy

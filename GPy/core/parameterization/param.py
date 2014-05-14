@@ -265,9 +265,16 @@ class Param(OptimizationHandlable, ObsAr):
                 and len(set(map(len, clean_curr_slice))) <= 1):
                 return numpy.fromiter(itertools.izip(*clean_curr_slice),
                     dtype=[('', int)] * self._realndim_, count=len(clean_curr_slice[0])).view((int, self._realndim_))
-        expanded_index = list(self._expand_index(slice_index))
-        return numpy.fromiter(itertools.product(*expanded_index),
+        try:
+            expanded_index = list(self._expand_index(slice_index))
+            indices = numpy.fromiter(itertools.product(*expanded_index),
                  dtype=[('', int)] * self._realndim_, count=reduce(lambda a, b: a * b.size, expanded_index, 1)).view((int, self._realndim_))
+        except:
+            print "Warning: extended indexing was used"
+            indices = np.indices(self._realshape_, dtype=int)
+            indices = indices[(slice(None),)+slice_index]
+            indices = np.rollaxis(indices, 0, indices.ndim)
+        return indices
     def _max_len_names(self, gen, header):
         gen = map(lambda x: " ".join(map(str, x)), gen)
         return reduce(lambda a, b:max(a, len(b)), gen, len(header))

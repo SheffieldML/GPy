@@ -541,7 +541,7 @@ class Constrainable(Nameable, Indexable, Observable):
     def _add_to_index_operations(self, which, reconstrained, what, warning):
         """
         Helper preventing copy code.
-        This addes the given what (transformation, prior etc) to parameter index operations which.
+        This adds the given what (transformation, prior etc) to parameter index operations which.
         revonstrained are reconstrained indices.
         warn when reconstraining parameters if warning is True.
         TODO: find out which parameters have changed specifically
@@ -710,7 +710,7 @@ class Parameterizable(OptimizationHandlable):
         Array representing the parameters of this class.
         There is only one copy of all parameters in memory, two during optimization.
         """
-        if self._param_array_ is None:
+        if self.__dict__.get('_param_array_', None) is None:
             self._param_array_ = np.empty(self.size, dtype=np.float64)
         return self._param_array_
 
@@ -769,7 +769,7 @@ class Parameterizable(OptimizationHandlable):
     #=========================================================================
     @property
     def gradient(self):
-        if not hasattr(self, '_gradient_array_'):
+        if self.__dict__.get('_gradient_array_', None) is None:
             self._gradient_array_ = np.empty(self.size, dtype=np.float64)
         return self._gradient_array_
 
@@ -909,10 +909,12 @@ class Parameterizable(OptimizationHandlable):
         if not hasattr(self, "_parameters_") or len(self._parameters_) < 1:
             # no parameters for this class
             return
-        old_size = 0
-        self.param_array = np.empty(self.size, dtype=np.float64)
-        self._gradient_array_ = np.empty(self.size, dtype=np.float64)
+        if self.param_array.size != self.size:
+            self.param_array = np.empty(self.size, dtype=np.float64)
+        if self.gradient.size != self.size:
+            self._gradient_array_ = np.empty(self.size, dtype=np.float64)
 
+        old_size = 0
         self._param_slices_ = []
         for i, p in enumerate(self._parameters_):
             p._parent_ = self
@@ -927,6 +929,7 @@ class Parameterizable(OptimizationHandlable):
 
             if not p.param_array.flags['C_CONTIGUOUS']:
                 raise ValueError, "This should not happen! Please write an email to the developers with the code, which reproduces this error. All parameter arrays must be C_CONTIGUOUS"
+            
             p.param_array.data = self.param_array[pslice].data
             p.full_gradient.data = self.full_gradient[pslice].data
 

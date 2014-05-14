@@ -32,7 +32,7 @@ def print_out(len_maxiters, fnow, current_grad, beta, iteration):
     sys.stdout.flush()
 
 def exponents(fnow, current_grad):
-    exps = [np.abs(fnow), current_grad]
+    exps = [np.abs(np.float(fnow)), current_grad]
     return np.sign(exps) * np.log10(exps).astype(int)
 
 def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, xtol=None, ftol=None, gtol=None):

@@ -180,6 +180,9 @@ class Hierarchical(CombinationKernel):
     def Kdiag(self,X):
         return np.diag(self.K(X))
 
+    def gradients_X(self, dL_dK, X, X2=None):
+        raise NotImplementedError
+
     def update_gradients_full(self,dL_dK,X,X2=None):
         slices = [index_to_slices(X[:,i]) for i in self.extra_dims]
         if X2 is None:

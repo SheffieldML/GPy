@@ -150,6 +150,26 @@
         ]
     },
     "fruitfly_tomancak": {
+        "citation": "",
+        "details": "",
+        "files": [
+            [
+                "tomancak_exprs.csv",
+                "tomancak_se.csv",
+                "tomancak_prctile5.csv",
+                "tomancak_prctile25.csv",
+                "tomancak_prctile50.csv",
+                "tomancak_prctile75.csv",
+                "tomancak_prctile95.csv"
+            ]
+        ],
+        "license": null,
+        "size": 59000000,
+        "urls": [
+            "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/fruitfly_tomancak/"
+        ]
+    },
+    "fruitfly_tomancak_cel_files": {
         "citation": "'Systematic determination of patterns of gene expression during Drosophila embryogenesis' Pavel Tomancak, Amy Beaton, Richard Weiszmann, Elaine Kwan, ShengQiang Shu, Suzanna E Lewis, Stephen Richards, Michael Ashburner, Volker Hartenstein, Susan E Celniker, and Gerald M Rubin",
         "details": "Gene expression results from blastoderm development in Drosophila Melanogaster.",
         "files": [ 
@@ -198,7 +218,7 @@
             ]
         ],
         "license": null,
-        "size": 1,
+        "size": 389000000,
         "urls": [
             "ftp://ftp.fruitfly.org/pub/embryo_tc_array_data/"
         ]
@@ -217,6 +237,7 @@
             "http://www.google.com/trends/"
         ]
     },
+    
     "hapmap3": {
         "citation": "Gibbs, Richard A., et al. 'The international HapMap project.' Nature 426.6968 (2003): 789-796.",
         "details": "HapMap Project: Single Nucleotide Polymorphism sequenced in all human populations. \n        The HapMap phase three SNP dataset - 1184 samples out of 11 populations.\n        See http://www.nature.com/nature/journal/v426/n6968/abs/nature02168.html for details.\n\n        SNP_matrix (A) encoding [see Paschou et all. 2007 (PCA-Correlated SNPs...)]:\n        Let (B1,B2) be the alphabetically sorted bases, which occur in the j-th SNP, then\n\n              /  1, iff SNPij==(B1,B1)\n        Aij = |  0, iff SNPij==(B1,B2)\n              \\\\ -1, iff SNPij==(B2,B2)\n\n        The SNP data and the meta information (such as iid, sex and phenotype) are\n        stored in the dataframe datadf, index is the Individual ID, \n        with following columns for metainfo:\n\n            * family_id   -> Family ID\n            * paternal_id -> Paternal ID\n            * maternal_id -> Maternal ID\n            * sex         -> Sex (1=male; 2=female; other=unknown)\n            * phenotype   -> Phenotype (-9, or 0 for unknown)\n            * population  -> Population string (e.g. 'ASW' - 'YRI')\n            * rest are SNP rs (ids)\n\n        More information is given in infodf:\n\n            * Chromosome:\n                - autosomal chromosemes                -> 1-22\n                - X    X chromosome                    -> 23\n                - Y    Y chromosome                    -> 24\n                - XY   Pseudo-autosomal region of X    -> 25\n                - MT   Mitochondrial                   -> 26\n            * Relative Positon (to Chromosome) [base pairs]\n\n        ",
@@ -434,7 +455,7 @@
     },
     "singlecell": {
         "citation": "Guoji Guo, Mikael Huss, Guo Qing Tong, Chaoyang Wang, Li Li Sun, Neil D. Clarke, Paul Robson, Resolution of Cell Fate Decisions Revealed by Single-Cell Gene Expression Analysis from Zygote to Blastocyst, Developmental Cell, Volume 18, Issue 4, 20 April 2010, Pages 675-685, ISSN 1534-5807, http://dx.doi.org/10.1016/j.devcel.2010.02.012. (http://www.sciencedirect.com/science/article/pii/S1534580710001103) Keywords: DEVBIO",
-        "details": "qPCR Singlecell experiment in Mouse, measuring 48 gene expressions in 1-64 cell states. The labels have been created as in Guo et al. [2010]",
+        "details": "qPCR TaqMan array single cell experiment in mouse. The data is taken from the early stages of development when the Blastocyst is forming. At the 32 cell stage the data is already separated into the trophectoderm (TE) which goes onto form the placenta and the inner cellular mass (ICM). The ICM further differentiates into the epiblast (EPI)---which gives rise to the endoderm, mesoderm and ectoderm---and the primitive endoderm (PE) which develops into the amniotic sack. Guo et al selected 48 genes for expression measurement. They labelled the resulting cells and their labels are included as an aide to visualization.",
         "files": [
             [
                 "singlecell.csv"
@@ -443,7 +464,22 @@
         "license": "ScienceDirect: http://www.elsevier.com/locate/termsandconditions?utm_source=sciencedirect&utm_medium=link&utm_campaign=terms",
         "size": 233.1,
         "urls": [
-            "http://staffwww.dcs.sheffield.ac.uk/people/M.Zwiessele/data/singlecell/"
+            "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/singlecell/"
+        ]
+    },
+    "sod1_mouse": {
+        "citation": "Transcriptomic indices of fast and slow disease progression in two mouse models of amyotrophic lateral sclerosis' Nardo G1, Iennaco R, Fusi N, Heath PR, Marino M, Trolese MC, Ferraiuolo L, Lawrence N, Shaw PJ, Bendotti C Brain. 2013 Nov;136(Pt 11):3305-32. doi: 10.1093/brain/awt250. Epub 2013 Sep 24.",
+        "details": "Gene expression data from two separate strains of mice: C57 and 129Sv in wild type and SOD1 mutant strains.",
+        "files": [
+            [
+                "sod1_C57_129_exprs.csv",
+                "sod1_C57_129_se.csv"
+            ]
+        ],
+        "license": null,
+        "size": 0,
+        "urls": [
+            "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/sod1_mouse/"
         ]
     },
     "swiss_roll": {

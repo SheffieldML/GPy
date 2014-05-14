@@ -130,14 +130,14 @@ def fast_array_equal(A, B):
     """ % pragma_string
 
     if config.getboolean('parallel', 'openmp'):
-        pragma_string = '#include <omp.h>'
+        header_string = '#include <omp.h>'
     else:
-        pragma_string = ''
+        header_string = ''
 
     support_code = """
     %s
     #include <math.h>
-    """ % pragma_string
+    """ % header_string
 
 
     weave_options_openmp = {'headers'           : ['<omp.h>'],

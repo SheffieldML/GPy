@@ -57,9 +57,9 @@ class Param(OptimizationHandlable, ObsAr):
 
     def build_pydot(self,G):
         import pydot
-        node = pydot.Node(id(self), shape='record', label=self.name)
+        node = pydot.Node(id(self), shape='trapezium', label=self.name)#, fontcolor='white', color='white')
         G.add_node(node)
-        for o in self.observers.keys():
+        for _, o, _ in self.observers:
             label = o.name if hasattr(o, 'name') else str(o)
             observed_node = pydot.Node(id(o), label=label)
             G.add_node(observed_node)
@@ -169,8 +169,29 @@ class Param(OptimizationHandlable, ObsAr):
     # parameterizable
     #===========================================================================
     def traverse(self, visit, *args, **kwargs):
-        visit(self, *args, **kwargs)
+        """
+        Traverse the hierarchy performing visit(self, *args, **kwargs) at every node passed by.
+        See "visitor pattern" in literature. This is implemented in pre-order fashion.
 
+        This will function will just call visit on self, as Param are leaf nodes.
+        """
+        visit(self, *args, **kwargs)
+    
+    def traverse_parents(self, visit, *args, **kwargs):
+        """
+        Traverse the hierarchy upwards, visiting all parents and their children, except self.
+        See "visitor pattern" in literature. This is implemented in pre-order fashion.
+    
+        Example:
+    
+        parents = []
+        self.traverse_parents(parents.append)
+        print parents
+        """
+        if self.has_parent():
+            self.__visited = True
+            self._parent_._traverse_parents(visit, *args, **kwargs)
+            self.__visited = False
 
     #===========================================================================
     # Convenience

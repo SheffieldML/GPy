@@ -107,14 +107,14 @@ class Symbolic_core():
 
             # Do symbolic work to compute derivatives.        
             for key, func in self.expressions.items():
-                if func['function'].is_Matrix:
-                    rows = func['function'].shape[0]
-                    cols = func['function'].shape[1]
-                    self.expressions[key]['derivative'] = sym.zeros(rows, cols)
-                    for i in xrange(rows):
-                        for j in xrange(cols):
-                            self.expressions[key]['derivative'][i, j] = extract_derivative(func['function'][i, j], derivative_arguments)
-                else:
+                # if func['function'].is_Matrix:
+                #     rows = func['function'].shape[0]
+                #     cols = func['function'].shape[1]
+                #     self.expressions[key]['derivative'] = sym.zeros(rows, cols)
+                #     for i in xrange(rows):
+                #         for j in xrange(cols):
+                #             self.expressions[key]['derivative'][i, j] = extract_derivative(func['function'][i, j], derivative_arguments)
+                # else:
                     self.expressions[key]['derivative'] = extract_derivative(func['function'], derivative_arguments)
 
     def _set_parameters(self, parameters):

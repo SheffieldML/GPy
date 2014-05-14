@@ -57,15 +57,17 @@ class ObservablesList(object):
 
     def __repr__(self):
         return self._poc.__repr__()
+    
 
     def add(self, priority, observable, callble):
-        ins = 0
-        for pr, _, _ in self:
-            if priority > pr:
-                break
-            ins += 1
-        self._poc.insert(ins, (priority, weakref.ref(observable), callble))
-        
+        if observable is not None:
+            ins = 0
+            for pr, _, _ in self:
+                if priority > pr:
+                    break
+                ins += 1
+            self._poc.insert(ins, (priority, weakref.ref(observable), callble))
+
     def __str__(self):
         ret = []
         curr_p = None
@@ -86,18 +88,18 @@ class ObservablesList(object):
     def __iter__(self):
         self.flush()
         for p, o, c in self._poc:
-            if o() is not None:
-                yield p, o(), c 
+            yield p, o(), c 
 
     def __len__(self):
         self.flush()
         return self._poc.__len__()
 
     def __deepcopy__(self, memo):
-        self.flush()
         s = ObservablesList()
-        import copy
-        s._poc = copy.deepcopy(self._poc, memo)
+        for p,o,c in self:
+            import copy
+            s.add(p, copy.deepcopy(o, memo), copy.deepcopy(c, memo))
+        s.flush()
         return s
 
     def __getstate__(self):

@@ -45,7 +45,6 @@ class Param(OptimizationHandlable, ObsAr):
     _parameters_ = []
     def __new__(cls, name, input_array, default_constraint=None):
         obj = numpy.atleast_1d(super(Param, cls).__new__(cls, input_array=input_array))
-        cls.__name__ = "Param"
         obj._current_slice_ = (slice(obj.shape[0]),)
         obj._realshape_ = obj.shape
         obj._realsize_ = obj.size
@@ -58,9 +57,9 @@ class Param(OptimizationHandlable, ObsAr):
 
     def build_pydot(self,G):
         import pydot
-        node = pydot.Node(id(self), shape='record', label=self.name)
+        node = pydot.Node(id(self), shape='trapezium', label=self.name)#, fontcolor='white', color='white')
         G.add_node(node)
-        for o in self.observers.keys():
+        for _, o, _ in self.observers:
             label = o.name if hasattr(o, 'name') else str(o)
             observed_node = pydot.Node(id(o), label=label)
             G.add_node(observed_node)
@@ -91,6 +90,13 @@ class Param(OptimizationHandlable, ObsAr):
         return self
 
     @property
+    def values(self):
+        """
+        Return self as numpy array view
+        """
+        return self.view(np.ndarray)
+
+    @property
     def gradient(self):
         """
         Return a view on the gradient, which is in the same shape as this parameter is.
@@ -100,11 +106,11 @@ class Param(OptimizationHandlable, ObsAr):
         """
         if getattr(self, '_gradient_array_', None) is None:
             self._gradient_array_ = numpy.empty(self._realshape_, dtype=numpy.float64)
-        return self._gradient_array_[self._current_slice_]
+        return self._gradient_array_#[self._current_slice_]
 
     @gradient.setter
     def gradient(self, val):
-        self._gradient_array_[self._current_slice_] = val
+        self._gradient_array_[:] = val
 
     #===========================================================================
     # Array operations -> done
@@ -112,10 +118,13 @@ class Param(OptimizationHandlable, ObsAr):
     def __getitem__(self, s, *args, **kwargs):
         if not isinstance(s, tuple):
             s = (s,)
-        if not reduce(lambda a, b: a or numpy.any(b is Ellipsis), s, False) and len(s) <= self.ndim:
-            s += (Ellipsis,)
+        #if not reduce(lambda a, b: a or numpy.any(b is Ellipsis), s, False) and len(s) <= self.ndim:
+        #    s += (Ellipsis,)
         new_arr = super(Param, self).__getitem__(s, *args, **kwargs)
-        try: new_arr._current_slice_ = s; new_arr._original_ = self.base is new_arr.base
+        try: 
+            new_arr._current_slice_ = s
+            new_arr._gradient_array_ = self.gradient[s]
+            new_arr._original_ = self.base is new_arr.base
         except AttributeError: pass  # returning 0d array or float, double etc
         return new_arr
 
@@ -155,6 +164,34 @@ class Param(OptimizationHandlable, ObsAr):
     #===========================================================================
     def _ensure_fixes(self):
         if not self._has_fixes(): self._fixes_ = numpy.ones(self._realsize_, dtype=bool)
+
+    #===========================================================================
+    # parameterizable
+    #===========================================================================
+    def traverse(self, visit, *args, **kwargs):
+        """
+        Traverse the hierarchy performing visit(self, *args, **kwargs) at every node passed by.
+        See "visitor pattern" in literature. This is implemented in pre-order fashion.
+
+        This will function will just call visit on self, as Param are leaf nodes.
+        """
+        visit(self, *args, **kwargs)
+    
+    def traverse_parents(self, visit, *args, **kwargs):
+        """
+        Traverse the hierarchy upwards, visiting all parents and their children, except self.
+        See "visitor pattern" in literature. This is implemented in pre-order fashion.
+    
+        Example:
+    
+        parents = []
+        self.traverse_parents(parents.append)
+        print parents
+        """
+        if self.has_parent():
+            self.__visited = True
+            self._parent_._traverse_parents(visit, *args, **kwargs)
+            self.__visited = False
 
     #===========================================================================
     # Convenience
@@ -316,8 +353,8 @@ class ParamConcatenation(object):
             val = val.values()
         ind = numpy.zeros(sum(self._param_sizes), dtype=bool); ind[s] = True;
         vals = self.values(); vals[s] = val
-        [numpy.copyto(p, vals[ps], where=ind[ps])
-         for p, ps in zip(self.params, self._param_slices_)]
+        for p, ps in zip(self.params, self._param_slices_):
+            p.flat[ind[ps]] = vals[ps]
         if update:
             self.update_all_params()
     def values(self):

@@ -74,13 +74,16 @@ class vector_show(matplotlib_show):
     """
     def __init__(self, vals, axes=None):
         matplotlib_show.__init__(self, vals, axes)
-        self.handle = self.axes.plot(np.arange(0, len(vals))[:, None], self.vals)
+        #assert vals.ndim == 2, "Please give a vector in [n x 1] to plot"
+        #assert vals.shape[1] == 1, "only showing a vector in one dimension"
+        self.size = vals.size
+        self.handle = self.axes.plot(np.arange(0, vals.size)[:, None], vals)[0]
 
     def modify(self, vals):
         self.vals = vals.copy()
-        for handle, vals in zip(self.handle, self.vals.T):
-            xdata, ydata = handle.get_data()
-            handle.set_data(xdata, vals)
+        xdata, ydata = self.handle.get_data()
+        assert vals.size == self.size, "values passed into modify changed size! vals.size:{} != in.size:{}".format(vals.size, self.size)
+        self.handle.set_data(xdata, self.vals)
         self.axes.figure.canvas.draw()
 
 
@@ -94,13 +97,12 @@ class lvm(matplotlib_show):
         :type data_visualize: visualize.data_show  type.
         :param latent_axes: the axes where the latent visualization should be plotted.
         """
-        if vals == None:
+        if vals is None:
             if isinstance(model.X, VariationalPosterior):
                 vals = param_to_array(model.X.mean)
             else:
                 vals = param_to_array(model.X)
-         
-        vals = param_to_array(vals)
+
         matplotlib_show.__init__(self, vals, axes=latent_axes)
 
         if isinstance(latent_axes,mpl.axes.Axes):
@@ -273,7 +275,7 @@ class image_show(matplotlib_show):
     :type preset_mean: double
     :param preset_std: the preset standard deviation of a scaled image.
     :type preset_std: double"""
-    def __init__(self, vals, axes=None, dimensions=(16,16), transpose=False, order='C', invert=False, scale=False, palette=[], preset_mean = 0., preset_std = -1., select_image=0):
+    def __init__(self, vals, axes=None, dimensions=(16,16), transpose=False, order='C', invert=False, scale=False, palette=[], preset_mean=0., preset_std=1., select_image=0):
         matplotlib_show.__init__(self, vals, axes)
         self.dimensions = dimensions
         self.transpose = transpose
@@ -323,13 +325,12 @@ class image_show(matplotlib_show):
             self.vals = -self.vals
 
         # un-normalizing, for visualisation purposes:
-        if self.preset_std >= 0: # The Mean is assumed to be in the range (0,255)
-            self.vals = self.vals*self.preset_std + self.preset_mean
-            # Clipping the values:
-            self.vals[self.vals < 0] = 0
-            self.vals[self.vals > 255] = 255
-        else:
-            self.vals = 255*(self.vals - self.vals.min())/(self.vals.max() - self.vals.min())
+        self.vals = self.vals*self.preset_std + self.preset_mean
+        # Clipping the values:
+        #self.vals[self.vals < 0] = 0
+        #self.vals[self.vals > 255] = 255
+        #else:
+            #self.vals = 255*(self.vals - self.vals.min())/(self.vals.max() - self.vals.min())
         if not self.palette == []: # applying using an image palette (e.g. if the image has been quantized)
             from PIL import Image
             self.vals = Image.fromarray(self.vals.astype('uint8'))

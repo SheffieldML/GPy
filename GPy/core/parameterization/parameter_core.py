@@ -17,7 +17,7 @@ from transformations import Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, 
 import numpy as np
 import re
 
-__updated__ = '2014-04-16'
+__updated__ = '2014-05-12'
 
 class HierarchyError(Exception):
     """
@@ -124,7 +124,7 @@ class Parentable(object):
         """
         Disconnect this object from its parent
         """
-        raise NotImplementedError, "Abstaract superclass"
+        raise NotImplementedError, "Abstract superclass"
 
     @property
     def _highest_parent_(self):
@@ -162,14 +162,13 @@ class Pickleable(object):
         :param protocol: pickling protocol to use, python-pickle for details.
         """
         import cPickle as pickle
-        import pickle #TODO: cPickle
         if isinstance(f, str):
             with open(f, 'w') as f:
                 pickle.dump(self, f, protocol)
         else:
             pickle.dump(self, f, protocol)
 
-        #===========================================================================
+    #===========================================================================
     # copy and pickling
     #===========================================================================
     def copy(self):
@@ -177,19 +176,23 @@ class Pickleable(object):
         #raise NotImplementedError, "Copy is not yet implemented, TODO: Observable hierarchy"
         import copy
         memo = {}
-        memo[id(self._parent_)] = None
-        memo[id(self.gradient)] = None
-        memo[id(self.param_array)] = None
-        memo[id(self._fixes_)] = None
-        c = copy.deepcopy(self, memo)
+        # the next part makes sure that we do not include parents in any form:
+        parents = []
+        self.traverse_parents(parents.append) # collect parents
+        for p in parents:
+            memo[id(p)] = None # set all parents to be None, so they will not be copied
+        memo[id(self.gradient)] = None # reset the gradient
+        memo[id(self.param_array)] = None # and param_array
+        memo[id(self._fixes_)] = None # fixes have to be reset, as this is now highest parent
+        c = copy.deepcopy(self, memo) # and start the copy
         c._parent_index_ = None
         return c
 
     def __deepcopy__(self, memo):
-        s = self.__new__(self.__class__)
-        memo[id(self)] = s
+        s = self.__new__(self.__class__) # fresh instance
+        memo[id(self)] = s # be sure to break all cycles --> self is already done
         import copy
-        s.__dict__.update(copy.deepcopy(self.__dict__, memo))
+        s.__dict__.update(copy.deepcopy(self.__dict__, memo)) # standard copy
         return s
 
     def __getstate__(self):
@@ -202,21 +205,12 @@ class Pickleable(object):
         dc = dict()
         for k,v in self.__dict__.iteritems():
             if k not in ignore_list:
-                #if hasattr(v, "__getstate__"):
-                #dc[k] = v.__getstate__()
-                #else:
                 dc[k] = v
         return dc
  
     def __setstate__(self, state):
         self.__dict__.update(state)
         return self
-
-    #def __getstate__(self, memo):
-    #    raise NotImplementedError, "get state must be implemented to be able to pickle objects"
-
-    #def __setstate__(self, memo):
-    #    raise NotImplementedError, "set state must be implemented to be able to pickle objects"
 
 class Gradcheckable(Pickleable, Parentable):
     """
@@ -585,12 +579,6 @@ class OptimizationHandlable(Constrainable):
     def __init__(self, name, default_constraint=None, *a, **kw):
         super(OptimizationHandlable, self).__init__(name, default_constraint=default_constraint, *a, **kw)
 
-    def transform(self):
-        [np.put(self.param_array, ind, c.finv(self.param_array.flat[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-
-    def untransform(self):
-        [np.put(self.param_array, ind, c.f(self.param_array.flat[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-
     def _get_params_transformed(self):
         # transformed parameters (apply transformation rules)
         p = self.param_array.copy()
@@ -604,15 +592,15 @@ class OptimizationHandlable(Constrainable):
         return p
 
     def _set_params_transformed(self, p):
-        if p is self.param_array:
-            p = p.copy()
-        if self.has_parent() and self.constraints[__fixed__].size != 0:
-            fixes = np.ones(self.size).astype(bool)
-            fixes[self.constraints[__fixed__]] = FIXED
-            self.param_array.flat[fixes] = p
-        elif self._has_fixes(): self.param_array.flat[self._fixes_] = p
-        else: self.param_array.flat = p
-        self.untransform()
+        if not(p is self.param_array):
+            if self.has_parent() and self.constraints[__fixed__].size != 0:
+                fixes = np.ones(self.size).astype(bool)
+                fixes[self.constraints[__fixed__]] = FIXED
+                self.param_array.flat[fixes] = p
+            elif self._has_fixes(): self.param_array.flat[self._fixes_] = p
+            else: self.param_array.flat = p
+        [np.put(self.param_array, ind, c.f(self.param_array.flat[ind])) 
+         for c, ind in self.constraints.iteritems() if c != __fixed__]
         self._trigger_params_changed()
 
     def _trigger_params_changed(self, trigger_parent=True):
@@ -626,7 +614,7 @@ class OptimizationHandlable(Constrainable):
     def num_params(self):
         """
         Return the number of parameters of this parameter_handle.
-        Param objects will allways return 0.
+        Param objects will always return 0.
         """
         raise NotImplemented, "Abstract, please implement in respective classes"
 
@@ -644,6 +632,7 @@ class OptimizationHandlable(Constrainable):
         else: names = [adjust(x.name) for x in self._parameters_]
         if add_self: names = map(lambda x: adjust(self.name) + "." + x, names)
         return names
+
     def _get_param_names(self):
         n = np.array([p.hierarchy_name() + '[' + str(i) + ']' for p in self.flattened_parameters for i in p._indices()])
         return n
@@ -710,18 +699,70 @@ class Parameterizable(OptimizationHandlable):
         super(Parameterizable, self).__init__(*args, **kwargs)
         from GPy.core.parameterization.lists_and_dicts import ArrayList
         self._parameters_ = ArrayList()
+        self._param_array_ = None
         self.size = 0
         self._added_names_ = set()
+        self.__visited = False # for traversing in reverse order we need to know if we were here already
 
     @property
     def param_array(self):
-        if not hasattr(self, '_param_array_'):
+        """
+        Array representing the parameters of this class.
+        There is only one copy of all parameters in memory, two during optimization.
+        """
+        if self._param_array_ is None:
             self._param_array_ = np.empty(self.size, dtype=np.float64)
         return self._param_array_
 
     @param_array.setter
     def param_array(self, arr):
         self._param_array_ = arr
+
+    def traverse(self, visit, *args, **kwargs):
+        """
+        Traverse the hierarchy performing visit(self, *args, **kwargs) 
+        at every node passed by downwards. This function includes self!
+
+        See "visitor pattern" in literature. This is implemented in pre-order fashion.
+
+        Example:
+        Collect all children:
+
+        children = []
+        self.traverse(children.append)
+        print children
+        """
+        if not self.__visited:
+            visit(self, *args, **kwargs)
+            self.__visited = True
+            for c in self._parameters_:
+                c.traverse(visit, *args, **kwargs)
+            self.__visited = False
+
+    def traverse_parents(self, visit, *args, **kwargs):
+        """
+        Traverse the hierarchy upwards, visiting all parents and their children except self.
+        See "visitor pattern" in literature. This is implemented in pre-order fashion.
+    
+        Example:
+    
+        parents = []
+        self.traverse_parents(parents.append)
+        print parents
+        """
+        if self.has_parent():
+            self.__visited = True
+            self._parent_._traverse_parents(visit, *args, **kwargs)
+            self.__visited = False
+        
+    def _traverse_parents(self, visit, *args, **kwargs):
+        if not self.__visited:
+            self.__visited = True
+            visit(self, *args, **kwargs)
+            if self.has_parent():
+                self._parent_._traverse_parents(visit, *args, **kwargs)
+                self._parent_.traverse(visit, *args, **kwargs)
+            self.__visited = False
 
     #=========================================================================
     # Gradient handling
@@ -789,11 +830,10 @@ class Parameterizable(OptimizationHandlable):
         #    raise HierarchyError, "parameter {} already in another model ({}), create new object (or copy) for adding".format(param._short(), param._highest_parent_._short())
         elif param not in self._parameters_:
             if param.has_parent():
-                parent = param._parent_
-                while parent is not None:
+                def visit(parent, self):
                     if parent is self:
                         raise HierarchyError, "You cannot add a parameter twice into the hierarchy"
-                    parent = parent._parent_
+                param.traverse_parents(visit, self)
                 param._parent_.remove_parameter(param)
             # make sure the size is set
             if index is None:
@@ -837,7 +877,7 @@ class Parameterizable(OptimizationHandlable):
         :param param: param object to remove from being a parameter of this parameterized object.
         """
         if not param in self._parameters_:
-            raise RuntimeError, "Parameter {} does not belong to this object, remove parameters directly from their respective parents".format(param._short())
+            raise RuntimeError, "Parameter {} does not belong to this object {}, remove parameters directly from their respective parents".format(param._short(), self.name)
 
         start = sum([p.size for p in self._parameters_[:param._parent_index_]])
         self._remove_parameter_name(param)

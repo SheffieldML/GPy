@@ -72,7 +72,7 @@ class GP(Model):
     def log_likelihood(self):
         return self._log_marginal_likelihood
 
-    def _raw_predict(self, _Xnew, full_cov=False):
+    def _raw_predict(self, _Xnew, full_cov=False, kern=None):
         """
         For making predictions, does not account for normalization or likelihood
 
@@ -87,14 +87,17 @@ class GP(Model):
         $$
 
         """
-        Kx = self.kern.K(_Xnew, self.X).T
+        if kern is None:
+            kern = self.kern
+
+        Kx = kern.K(_Xnew, self.X).T
         WiKx = np.dot(self.posterior.woodbury_inv, Kx)
         mu = np.dot(Kx.T, self.posterior.woodbury_vector)
         if full_cov:
-            Kxx = self.kern.K(_Xnew)
+            Kxx = kern.K(_Xnew)
             var = Kxx - np.dot(Kx.T, WiKx)
         else:
-            Kxx = self.kern.Kdiag(_Xnew)
+            Kxx = kern.Kdiag(_Xnew)
             var = Kxx - np.sum(WiKx*Kx, 0)
             var = var.reshape(-1, 1)
 
@@ -102,7 +105,7 @@ class GP(Model):
         if len(mu.shape)==1: mu = mu[:,None]
         return mu, var
 
-    def predict(self, Xnew, full_cov=False, Y_metadata=None):
+    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None):
         """
         Predict the function(s) at the new point(s) Xnew.
 
@@ -111,6 +114,9 @@ class GP(Model):
         :param full_cov: whether to return the full covariance matrix, or just
                          the diagonal
         :type full_cov: bool
+        :param Y_metadata: metadata about the predicting point to pass to the likelihood
+        :param kern: The kernel to use for prediction (defaults to the model
+                     kern). this is useful for examining e.g. subprocesses.
         :returns: mean: posterior mean,  a Numpy array, Nnew x self.input_dim
         :returns: var: posterior variance, a Numpy array, Nnew x 1 if
                        full_cov=False, Nnew x Nnew otherwise
@@ -121,9 +127,9 @@ class GP(Model):
            If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
            This is to allow for different normalizations of the output dimensions.
 
-        """        
+        """
         #predict the latent function values
-        mu, var = self._raw_predict(Xnew, full_cov=full_cov)
+        mu, var = self._raw_predict(Xnew, full_cov=full_cov, kern=kern)
 
         # now push through likelihood
         mean, var = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata)

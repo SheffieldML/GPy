@@ -170,7 +170,4 @@ class Add(CombinationKernel):
         return self
 
     def input_sensitivity(self):
-        in_sen = np.zeros(self.input_dim)
-        for i, p in enumerate(self.parts):
-            in_sen[p.active_dims] += p.input_sensitivity()
-        return in_sen
+        return reduce(np.add, [k.input_sensitivity() for k in self.parts])

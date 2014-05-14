@@ -100,6 +100,9 @@ class VariationalPosterior(Parameterized):
             n.__dict__.update(dc)
             n._parameters_[dc['mean']._parent_index_] = dc['mean']
             n._parameters_[dc['variance']._parent_index_] = dc['variance']
+            n._gradient_array_ = None
+            oversize = self.size - self.mean.size - self.variance.size
+            n.size = n.mean.size + n.variance.size + oversize
             n.ndim = n.mean.ndim
             n.shape = n.mean.shape
             n.num_data = n.mean.shape[0]

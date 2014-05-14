@@ -70,7 +70,7 @@ class BayesianGPLVM(SparseGP):
         if isinstance(self.inference_method, VarDTC_GPU):
             update_gradients(self)
             return
-    
+
         super(BayesianGPLVM, self).parameters_changed()
         self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
 
@@ -82,7 +82,7 @@ class BayesianGPLVM(SparseGP):
     def plot_latent(self, labels=None, which_indices=None,
                 resolution=50, ax=None, marker='o', s=40,
                 fignum=None, plot_inducing=True, legend=True,
-                plot_limits=None, 
+                plot_limits=None,
                 aspect='auto', updates=False, **kwargs):
         import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
@@ -159,7 +159,7 @@ class BayesianGPLVM(SparseGP):
         from ..plotting.matplot_dep import dim_reduction_plots
 
         return dim_reduction_plots.plot_steepest_gradient_map(self,*args,**kwargs)
-    
+
 
 def latent_cost_and_grad(mu_S, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
     """

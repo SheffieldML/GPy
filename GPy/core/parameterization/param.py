@@ -316,7 +316,7 @@ class Param(OptimizationHandlable, ObsAr):
 class ParamConcatenation(object):
     def __init__(self, params):
         """
-        Parameter concatenation for convienience of printing regular expression matched arrays
+        Parameter concatenation for convenience of printing regular expression matched arrays
         you can index this concatenation as if it was the flattened concatenation
         of all the parameters it contains, same for setting parameters (Broadcasting enabled).
 

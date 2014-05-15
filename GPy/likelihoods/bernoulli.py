@@ -227,3 +227,6 @@ class Bernoulli(Likelihood):
         ns = np.ones_like(gp, dtype=int)
         Ysim = np.random.binomial(ns, self.gp_link.transf(gp))
         return Ysim.reshape(orig_shape)
+
+    def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
+        pass

@@ -25,6 +25,20 @@ etc.
 
 """
 
+class LatentFunctionInference(object):
+    def on_optimization_start(self):
+        """
+        This function gets called, just before the optimization loop to start.
+        """
+        pass
+
+    def on_optimization_end(self):
+        """
+        This function gets called, just after the optimization loop ended.
+        """
+        pass
+
+
 from exact_gaussian_inference import ExactGaussianInference
 from laplace import Laplace
 from GPy.inference.latent_function_inference.var_dtc import VarDTC
@@ -38,11 +52,26 @@ from var_dtc_gpu import VarDTC_GPU
 # class FullLatentFunctionData(object):
 #
 #
-# class LatentFunctionInference(object):
-#     def inference(self, kern, X, likelihood, Y, Y_metadata=None):
+
+# class EMLikeLatentFunctionInference(LatentFunctionInference):
+#     def update_approximation(self):
+#         """
+#         This function gets called when the 
+#         """
+#     
+#     def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None):
 #         """
 #         Do inference on the latent functions given a covariance function `kern`,
-#         inputs and outputs `X` and `Y`, and a likelihood `likelihood`.
+#         inputs and outputs `X` and `Y`, inducing_inputs `Z`, and a likelihood `likelihood`.
+#         Additional metadata for the outputs `Y` can be given in `Y_metadata`.
+#         """
+#         raise NotImplementedError, "Abstract base class for full inference"
+# 
+# class VariationalLatentFunctionInference(LatentFunctionInference):
+#     def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None):
+#         """
+#         Do inference on the latent functions given a covariance function `kern`,
+#         inputs and outputs `X` and `Y`, inducing_inputs `Z`, and a likelihood `likelihood`.
 #         Additional metadata for the outputs `Y` can be given in `Y_metadata`.
 #         """
 #         raise NotImplementedError, "Abstract base class for full inference"

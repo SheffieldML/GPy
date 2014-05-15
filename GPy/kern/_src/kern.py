@@ -183,9 +183,9 @@ class Kern(Parameterized):
         assert isinstance(other, Kern), "only kernels can be added to kernels..."
         from prod import Prod
         #kernels = []
-        #if isinstance(self, Prod): kernels.extend(self._parameters_)
+        #if isinstance(self, Prod): kernels.extend(self.parameters)
         #else: kernels.append(self)
-        #if isinstance(other, Prod): kernels.extend(other._parameters_)
+        #if isinstance(other, Prod): kernels.extend(other.parameters)
         #else: kernels.append(other)
         return Prod([self, other], name)
 
@@ -222,7 +222,7 @@ class CombinationKernel(Kern):
 
     @property
     def parts(self):
-        return self._parameters_
+        return self.parameters
 
     def get_input_dim_active_dims(self, kernels, extra_dims = None):
         #active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))

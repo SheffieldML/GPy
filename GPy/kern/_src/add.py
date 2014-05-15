@@ -141,10 +141,10 @@ class Add(CombinationKernel):
         from static import White, Bias
         target_mu = np.zeros(variational_posterior.shape)
         target_S = np.zeros(variational_posterior.shape)
-        for p1 in self._parameters_:
+        for p1 in self.parameters:
             #compute the effective dL_dpsi1. extra terms appear becaue of the cross terms in psi2!
             eff_dL_dpsi1 = dL_dpsi1.copy()
-            for p2 in self._parameters_:
+            for p2 in self.parameters:
                 if p2 is p1:
                     continue
                 if isinstance(p2, White):
@@ -160,7 +160,7 @@ class Add(CombinationKernel):
 
     def add(self, other, name='sum'):
         if isinstance(other, Add):
-            other_params = other._parameters_[:]
+            other_params = other.parameters[:]
             for p in other_params:
                 other.remove_parameter(p)
             self.add_parameters(*other_params)

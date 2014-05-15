@@ -4,7 +4,7 @@
 import itertools
 import numpy
 np = numpy
-from parameter_core import OptimizationHandlable, adjust_name_for_printing
+from parameter_core import Parameterizable, adjust_name_for_printing
 from observable_array import ObsAr
 
 ###### printing
@@ -16,7 +16,7 @@ __precision__ = numpy.get_printoptions()['precision'] # numpy printing precision
 __print_threshold__ = 5
 ######
 
-class Param(OptimizationHandlable, ObsAr):
+class Param(Parameterizable, ObsAr):
     """
     Parameter object for GPy models.
 
@@ -42,7 +42,7 @@ class Param(OptimizationHandlable, ObsAr):
     """
     __array_priority__ = -1 # Never give back Param
     _fixes_ = None
-    _parameters_ = []
+    parameters = []
     def __new__(cls, name, input_array, default_constraint=None):
         obj = numpy.atleast_1d(super(Param, cls).__new__(cls, input_array=input_array))
         obj._current_slice_ = (slice(obj.shape[0]),)
@@ -87,6 +87,9 @@ class Param(OptimizationHandlable, ObsAr):
 
     @property
     def param_array(self):
+        """
+        As we are a leaf, this just returns self
+        """
         return self
 
     @property
@@ -139,6 +142,9 @@ class Param(OptimizationHandlable, ObsAr):
     def _raveled_index_for(self, obj):
         return self._raveled_index()
 
+    #===========================================================================
+    # Index recreation
+    #===========================================================================
     def _expand_index(self, slice_index=None):
         # this calculates the full indexing arrays from the slicing objects given by get_item for _real..._ attributes
         # it basically translates slices to their respective index arrays and turns negative indices around
@@ -177,15 +183,17 @@ class Param(OptimizationHandlable, ObsAr):
 
         This will function will just call visit on self, as Param are leaf nodes.
         """
+        self.__visited = True
         visit(self, *args, **kwargs)
-    
+        self.__visited = False
+
     def traverse_parents(self, visit, *args, **kwargs):
         """
         Traverse the hierarchy upwards, visiting all parents and their children, except self.
         See "visitor pattern" in literature. This is implemented in pre-order fashion.
-    
+
         Example:
-    
+
         parents = []
         self.traverse_parents(parents.append)
         print parents

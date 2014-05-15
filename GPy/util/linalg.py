@@ -123,7 +123,7 @@ def dtrtrs(A, B, lower=1, trans=0, unitdiag=0):
     :returns:
 
     """
-    A = force_F_ordered(A)
+    A = np.asfortranarray(A)
     #Note: B does not seem to need to be F ordered!
     return lapack.dtrtrs(A, B, lower=lower, trans=trans, unitdiag=unitdiag)
 

@@ -119,7 +119,7 @@ class Add(CombinationKernel):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
             p1.update_gradients_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
 
-    def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_Z_expectations(self, dL_psi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         from static import White, Bias
         target = np.zeros(Z.shape)
         for p1 in self.parts:

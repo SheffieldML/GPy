@@ -4,9 +4,10 @@
 from posterior import Posterior
 from ...util.linalg import jitchol, tdot, dtrtrs, dpotri, pdinv
 import numpy as np
+from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
 
-class DTC(object):
+class DTC(LatentFunctionInference):
     """
     An object for inference when the likelihood is Gaussian, but we want to do sparse inference.
 

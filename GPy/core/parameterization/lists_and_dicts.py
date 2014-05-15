@@ -38,7 +38,12 @@ class ArrayList(list):
         raise ValueError, "{} is not in list".format(item)
     pass
 
-class ObservablesList(object):
+class ObserverList(object):
+    """
+    A list which containts the observables.
+    It only holds weak references to observers, such that unbound
+    observers dont dangle in memory.
+    """
     def __init__(self):
         self._poc = []
 
@@ -46,26 +51,31 @@ class ObservablesList(object):
         p,o,c = self._poc[ind]
         return p, o(), c
 
-    def remove(self, priority, observable, callble):
+    def remove(self, priority, observer, callble):
         """
+        Remove one observer, which had priority and callble.
         """
         self.flush()
         for i in range(len(self) - 1, -1, -1):
             p,o,c = self[i]
-            if priority==p and observable==o and callble==c:
+            if priority==p and observer==o and callble==c:
                 del self._poc[i]
 
     def __repr__(self):
         return self._poc.__repr__()
 
-    def add(self, priority, observable, callble):
-        ins = 0
-        for pr, _, _ in self:
-            if priority > pr:
-                break
-            ins += 1
-        self._poc.insert(ins, (priority, weakref.ref(observable), callble))
-        
+    def add(self, priority, observer, callble):
+        """
+        Add an observer with priority and callble
+        """
+        if observer is not None:
+            ins = 0
+            for pr, _, _ in self:
+                if priority > pr:
+                    break
+                ins += 1
+            self._poc.insert(ins, (priority, weakref.ref(observer), callble))
+
     def __str__(self):
         ret = []
         curr_p = None
@@ -81,23 +91,26 @@ class ObservablesList(object):
         return '\n'.join(ret)
 
     def flush(self):
+        """
+        Make sure all weak references, which point to nothing are flushed (deleted)
+        """
         self._poc = [(p,o,c) for p,o,c in self._poc if o() is not None]
 
     def __iter__(self):
         self.flush()
         for p, o, c in self._poc:
-            if o() is not None:
-                yield p, o(), c 
+            yield p, o(), c 
 
     def __len__(self):
         self.flush()
         return self._poc.__len__()
 
     def __deepcopy__(self, memo):
-        self.flush()
-        s = ObservablesList()
-        import copy
-        s._poc = copy.deepcopy(self._poc, memo)
+        s = ObserverList()
+        for p,o,c in self:
+            import copy
+            s.add(p, copy.deepcopy(o, memo), copy.deepcopy(c, memo))
+        s.flush()
         return s
 
     def __getstate__(self):

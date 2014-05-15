@@ -34,40 +34,28 @@ class Kern(Parameterized):
 
             is the active_dimensions of inputs X we will work on.
             All kernels will get sliced Xes as inputs, if active_dims is not None
+            Only positive integers are allowed in active_dims!
             if active_dims is None, slicing is switched off and all X will be passed through as given.
 
         :param int input_dim: the number of input dimensions to the function
-        :param array-like|slice|None active_dims: list of indices on which dimensions this kernel works on, or none if no slicing
+        :param array-like|None active_dims: list of indices on which dimensions this kernel works on, or none if no slicing
 
         Do not instantiate.
         """
         super(Kern, self).__init__(name=name, *a, **kw)
-        try:
-            self.input_dim = int(input_dim)
-            self.active_dims = active_dims# if active_dims is not None else slice(0, input_dim, 1)
-        except TypeError:
-            # input_dim is something else then an integer
-            self.input_dim = input_dim
-            if active_dims is not None:
-                print "WARNING: given input_dim={} is not an integer and active_dims={} is given, switching off slicing"
-            self.active_dims = None
+        self.input_dim = int(input_dim)
 
-        if self.active_dims is not None and self.input_dim is not None:
-            assert isinstance(self.active_dims, (slice, list, tuple, np.ndarray)), 'active_dims needs to be an array-like or slice object over dimensions, {} given'.format(self.active_dims.__class__)
-            if isinstance(self.active_dims, slice):
-                self.active_dims = slice(self.active_dims.start or 0, self.active_dims.stop or self.input_dim, self.active_dims.step or 1)
-                active_dim_size = int(np.round((self.active_dims.stop-self.active_dims.start)/self.active_dims.step))
-            elif isinstance(self.active_dims, np.ndarray):
-                #assert np.all(self.active_dims >= 0), 'active dimensions need to be positive. negative indexing is not allowed'
-                assert self.active_dims.ndim == 1, 'only flat indices allowed, given active_dims.shape={}, provide only indexes to the dimensions (columns) of the input'.format(self.active_dims.shape)
-                active_dim_size = self.active_dims.size
-            else:
-                active_dim_size = len(self.active_dims)
-            assert active_dim_size == self.input_dim, "input_dim={} does not match len(active_dim)={}, active_dims={}".format(self.input_dim, active_dim_size, self.active_dims)
+        if active_dims is None:
+            active_dims = np.arange(input_dim)
+
+        self.active_dims = np.array(active_dims, dtype=int)
+
+        assert self.active_dims.size == self.input_dim, "input_dim={} does not match len(active_dim)={}, active_dims={}".format(self.input_dim, self.active_dims.size, self.active_dims)
+
         self._sliced_X = 0
         self.useGPU = self._support_GPU and useGPU
 
-    @Cache_this(limit=10)
+    @Cache_this(limit=20)
     def _slice_X(self, X):
         return X[:, self.active_dims]
 
@@ -176,8 +164,8 @@ class Kern(Parameterized):
         """
         Shortcut for tensor `prod`.
         """
-        assert self.active_dims == range(self.input_dim), "Can only use kernels, which have their input_dims defined from 0"
-        assert other.active_dims == range(other.input_dim), "Can only use kernels, which have their input_dims defined from 0"
+        assert np.all(self.active_dims == range(self.input_dim)), "Can only use kernels, which have their input_dims defined from 0"
+        assert np.all(other.active_dims == range(other.input_dim)), "Can only use kernels, which have their input_dims defined from 0"
         other.active_dims += self.input_dim
         return self.prod(other)
 
@@ -195,19 +183,19 @@ class Kern(Parameterized):
         assert isinstance(other, Kern), "only kernels can be added to kernels..."
         from prod import Prod
         #kernels = []
-        #if isinstance(self, Prod): kernels.extend(self._parameters_)
+        #if isinstance(self, Prod): kernels.extend(self.parameters)
         #else: kernels.append(self)
-        #if isinstance(other, Prod): kernels.extend(other._parameters_)
+        #if isinstance(other, Prod): kernels.extend(other.parameters)
         #else: kernels.append(other)
         return Prod([self, other], name)
 
     def _check_input_dim(self, X):
-        assert X.shape[1] == self.input_dim, "You did not specify active_dims and X has wrong shape: X_dim={}, whereas input_dim={}".format(X.shape[1], self.input_dim)
-    
-    def _check_active_dims(self, X):
-        assert X.shape[1] >= len(np.r_[self.active_dims]), "At least {} dimensional X needed, X.shape={!s}".format(len(np.r_[self.active_dims]), X.shape)
+        assert X.shape[1] == self.input_dim, "{} did not specify active_dims and X has wrong shape: X_dim={}, whereas input_dim={}".format(self.name, X.shape[1], self.input_dim)
 
-            
+    def _check_active_dims(self, X):
+        assert X.shape[1] >= len(self.active_dims), "At least {} dimensional X needed, X.shape={!s}".format(len(self.active_dims), X.shape)
+
+
 class CombinationKernel(Kern):
     """
     Abstract super class for combination kernels.
@@ -222,9 +210,10 @@ class CombinationKernel(Kern):
 
         :param list kernels: List of kernels to combine (can be only one element)
         :param str name: name of the combination kernel
-        :param array-like|slice extra_dims: if needed extra dimensions for the combination kernel to work on
+        :param array-like extra_dims: if needed extra dimensions for the combination kernel to work on
         """
         assert all([isinstance(k, Kern) for k in kernels])
+        extra_dims = np.array(extra_dims, dtype=int)
         input_dim, active_dims = self.get_input_dim_active_dims(kernels, extra_dims)
         # initialize the kernel with the full input_dim
         super(CombinationKernel, self).__init__(input_dim, active_dims, name)
@@ -233,21 +222,23 @@ class CombinationKernel(Kern):
 
     @property
     def parts(self):
-        return self._parameters_
+        return self.parameters
 
     def get_input_dim_active_dims(self, kernels, extra_dims = None):
         #active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
         #active_dims = np.array(np.concatenate((active_dims, extra_dims if extra_dims is not None else [])), dtype=int)
-        input_dim = np.array([k.input_dim for k in kernels])
-        if np.all(input_dim[0]==input_dim):
-            input_dim = input_dim[0]
-        active_dims = None
+        input_dim = reduce(max, (k.active_dims.max() for k in kernels)) + 1
+
+        if extra_dims is not None:
+            input_dim += extra_dims.size
+
+        active_dims = np.arange(input_dim)
         return input_dim, active_dims
 
     def input_sensitivity(self):
         raise NotImplementedError("Choose the kernel you want to get the sensitivity for. You need to override the default behaviour for getting the input sensitivity to be able to get the input sensitivity. For sum kernel it is the sum of all sensitivities, TODO: product kernel? Other kernels?, also TODO: shall we return all the sensitivities here in the combination kernel? So we can combine them however we want? This could lead to just plot all the sensitivities here...")
 
-    def _check_input_dim(self, X):
+    def _check_active_dims(self, X):
         return
 
     def _check_input_dim(self, X):

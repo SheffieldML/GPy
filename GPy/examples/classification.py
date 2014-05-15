@@ -96,14 +96,10 @@ def toy_linear_1d_classification_laplace(seed=default_seed, optimize=True, plot=
 
     # Optimize
     if optimize:
-        #m.update_likelihood_approximation()
-        # Parameters optimization:
         try:
             m.optimize('scg', messages=1)
         except Exception as e:
             return m
-
-        #m.pseudo_EM()
 
     # Plot
     if plot:
@@ -133,10 +129,7 @@ def sparse_toy_linear_1d_classification(num_inducing=10, seed=default_seed, opti
 
     # Optimize
     if optimize:
-        #m.update_likelihood_approximation()
-        # Parameters optimization:
-        #m.optimize()
-        m.pseudo_EM()
+        m.optimize()
 
     # Plot
     if plot:

@@ -12,6 +12,8 @@ import datetime
 import json
 import re
 
+from config import *
+
 ipython_available=True
 try:
     import IPython
@@ -29,7 +31,8 @@ def reporthook(a,b,c):
     sys.stdout.flush()
 
 # Global variables
-data_path = os.path.join(os.path.dirname(__file__), 'datasets')
+data_path = os.path.expandvars(config.get('datasets', 'dir'))
+#data_path = os.path.join(os.path.dirname(__file__), 'datasets')
 default_seed = 10000
 overide_manual_authorize=False
 neil_url = 'http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/'
@@ -108,7 +111,11 @@ def download_url(url, store_directory, save_name = None, messages = True, suffix
             raise ValueError('Tried url ' + url + suffix + ' and received server error ' + str(response.code))
     with open(save_name, 'wb') as f:
         meta = response.info()
-        file_size = int(meta.getheaders("Content-Length")[0])
+        content_length_str = meta.getheaders("Content-Length")
+        if content_length_str:
+            file_size = int(content_length_str[0])
+        else:
+            file_size = None
         status = ""
         file_size_dl = 0
         block_sz = 8192
@@ -120,9 +127,15 @@ def download_url(url, store_directory, save_name = None, messages = True, suffix
             file_size_dl += len(buff)
             f.write(buff)
             sys.stdout.write(" "*(len(status)) + "\r")
-            status = r"[{perc: <{ll}}] {dl:7.3f}/{full:.3f}MB".format(dl=file_size_dl/(1.*1e6), 
-                                                                       full=file_size/(1.*1e6), ll=line_length, 
+            if file_size:
+                status = r"[{perc: <{ll}}] {dl:7.3f}/{full:.3f}MB".format(dl=file_size_dl/(1048576.), 
+                                                                       full=file_size/(1048576.), ll=line_length, 
                                                                        perc="="*int(line_length*float(file_size_dl)/file_size))
+            else:
+                status = r"[{perc: <{ll}}] {dl:7.3f}MB".format(dl=file_size_dl/(1048576.), 
+                                                                       ll=line_length, 
+                                                                       perc="."*int(line_length*float(file_size_dl/(10*1048576.))))
+                
             sys.stdout.write(status)
             sys.stdout.flush()
         sys.stdout.write(" "*(len(status)) + "\r")
@@ -349,6 +362,68 @@ def football_data(season='1314', data_set='football_data'):
         X = table[:, :4]
         Y = table[:, 4:]
     return data_details_return({'X': X, 'Y': Y}, data_set)
+
+def sod1_mouse(data_set='sod1_mouse'):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    dirpath = os.path.join(data_path, data_set)
+    filename = os.path.join(dirpath, 'sod1_C57_129_exprs.csv')
+    Y = read_csv(filename, header=0, index_col=0)
+    num_repeats=4
+    num_time=4
+    num_cond=4
+    X = 1
+    return data_details_return({'X': X, 'Y': Y}, data_set)
+    
+def fruitfly_tomancak(data_set='fruitfly_tomancak', gene_number=None):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    dirpath = os.path.join(data_path, data_set)
+    filename = os.path.join(dirpath, 'tomancak_exprs.csv')
+    Y = read_csv(filename, header=0, index_col=0).T
+    num_repeats = 3
+    num_time = 12
+    xt = np.linspace(0, num_time-1, num_time)
+    xr = np.linspace(0, num_repeats-1, num_repeats)
+    xtime, xrepeat = np.meshgrid(xt, xr)
+    X = np.vstack((xtime.flatten(), xrepeat.flatten())).T    
+    return data_details_return({'X': X, 'Y': Y, 'gene_number' : gene_number}, data_set)
+
+def drosophila_protein(data_set='drosophila_protein'):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    dirpath = os.path.join(data_path, data_set)
+    filename = os.path.join(dirpath, 'becker_et_al.csv')
+    Y = read_csv(filename, header=0)
+    return data_details_return({'Y': Y}, data_set)
+
+def drosophila_knirps(data_set='drosophila_protein'):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    dirpath = os.path.join(data_path, data_set)
+    filename = os.path.join(dirpath, 'becker_et_al.csv')
+    # in the csv file we have facts_kni and ext_kni. We treat facts_kni as protein and ext_kni as mRNA
+    df = read_csv(filename, header=0)
+    t = df['t'][:,None]
+    x = df['x'][:,None]
+
+    g = df['expression1'][:,None]
+    p = df['expression2'][:,None]
+
+    leng = x.shape[0]
+
+    T = np.vstack([t,t])
+    S = np.vstack([x,x])
+    inx = np.zeros(leng*2)[:,None]
+
+    inx[leng*2/2:leng*2]=1
+    X = np.hstack([T,S,inx])
+    Y = np.vstack([g,p])
+    return data_details_return({'Y': Y, 'X': X}, data_set)
 
 # This will be for downloading google trends data.
 def google_trends(query_terms=['big data', 'machine learning', 'data science'], data_set='google_trends'):
@@ -717,7 +792,22 @@ def hapmap3(data_set='hapmap3'):
                   inandf=inandf,
                   populations=populations)
     return hapmap
+
+def singlecell(data_set='singlecell'):
+    if not data_available(data_set):
+        download_data(data_set)
     
+    from pandas import read_csv
+    dirpath = os.path.join(data_path, data_set)
+    filename = os.path.join(dirpath, 'singlecell.csv')
+    Y = read_csv(filename, header=0, index_col=0)
+    genes = Y.columns
+    labels = Y.index
+    # data = np.loadtxt(os.path.join(dirpath, 'singlecell.csv'), delimiter=",", dtype=str)
+    return data_details_return({'Y': Y, 'info' : "qPCR singlecell experiment in Mouse, measuring 48 gene expressions in 1-64 cell states. The labels have been created as in Guo et al. [2010]",
+                                'genes': genes, 'labels':labels,
+                                }, data_set)
+
 def swiss_roll_1000():
     return swiss_roll(num_samples=1000)
 

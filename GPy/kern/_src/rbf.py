@@ -10,6 +10,7 @@ from GPy.util.caching import Cache_this
 from ...core.parameterization import variational
 from psi_comp import ssrbf_psi_comp
 from psi_comp import ssrbf_psi_gpucomp
+from ...util.config import *
 
 class RBF(Stationary):
     """
@@ -31,7 +32,6 @@ class RBF(Stationary):
             self.psicomp = ssrbf_psi_gpucomp.PSICOMP_SSRBF()
         else:
             self.psicomp = ssrbf_psi_comp
-            
 
     def K_of_r(self, r):
         return self.variance * np.exp(-0.5 * r**2)
@@ -246,6 +246,16 @@ class RBF(Stationary):
 
     @Cache_this(limit=1)
     def _psi2computations(self, Z, vp):
+
+        if config.getboolean('parallel', 'openmp'):
+            pragma_string = '#pragma omp parallel for private(tmp, exponent_tmp)'
+            header_string = '#include <omp.h>'
+            libraries = ['gomp']
+        else:
+            pragma_string = ''
+            header_string = ''
+            libraries = []
+
         mu, S = vp.mean, vp.variance
 
         N, Q = mu.shape
@@ -268,8 +278,7 @@ class RBF(Stationary):
         variance_sq = float(np.square(self.variance))
         code = """
         double tmp, exponent_tmp;
-
-        #pragma omp parallel for private(tmp, exponent_tmp)
+        %s 
         for (int n=0; n<N; n++)
         {
             for (int m=0; m<M; m++)
@@ -293,20 +302,20 @@ class RBF(Stationary):
                         tmp = -Zdist_sq(m,mm,q) - tmp - half_log_denom(n,q);
                         exponent_tmp += tmp;
                     }
-                    //compute psi2 by exponontiating
+                    //compute psi2 by exponentiating
                     psi2(n,m,mm) = variance_sq * exp(exponent_tmp);
                     psi2(n,mm,m) = psi2(n,m,mm);
                 }
             }
         }
-        """
+        """ % pragma_string
 
         support_code = """
-        #include <omp.h>
+        %s
         #include <math.h>
-        """
+        """ % header_string
         mu = param_to_array(mu)
-        weave.inline(code, support_code=support_code, libraries=['gomp'],
+        weave.inline(code, support_code=support_code, libraries=libraries,
                      arg_names=['N', 'M', 'Q', 'mu', 'Zhat', 'mudist_sq', 'mudist', 'denom_l2', 'Zdist_sq', 'half_log_denom', 'psi2', 'variance_sq'],
                      type_converters=weave.converters.blitz, **self.weave_options)
 
@@ -318,12 +327,20 @@ class RBF(Stationary):
         #return 2.*np.einsum( 'ijk,ijk,ijkl,il->l', dL_dpsi2, psi2, Zdist_sq * (2.*S[:,None,None,:]/l2 + 1.) + mudist_sq + S[:, None, None, :] / l2, 1./(2.*S + l2))*self.lengthscale
 
         result = np.zeros(self.input_dim)
+        if config.getboolean('parallel', 'openmp'):
+            pragma_string = '#pragma omp parallel for reduction(+:tmp)'
+            header_string = '#include <omp.h>'
+            libraries = ['gomp']
+        else:
+            pragma_string = ''
+            header_string = ''
+            libraries = []
         code = """
         double tmp;
         for(int q=0; q<Q; q++)
         {
             tmp = 0.0;
-            #pragma omp parallel for reduction(+:tmp)
+            %s
             for(int n=0; n<N; n++)
             {
                 for(int m=0; m<M; m++)
@@ -341,16 +358,16 @@ class RBF(Stationary):
             result(q) = tmp;
         }
 
-        """
+        """ % pragma_string
         support_code = """
-        #include <omp.h>
+        %s
         #include <math.h>
-        """
+        """ % header_string
         N,Q = S.shape
         M = psi2.shape[-1]
 
         S = param_to_array(S)
-        weave.inline(code, support_code=support_code, libraries=['gomp'],
+        weave.inline(code, support_code=support_code, libraries=libraries,
                      arg_names=['psi2', 'dL_dpsi2', 'N', 'M', 'Q', 'mudist_sq', 'l2', 'Zdist_sq', 'S', 'result'],
                      type_converters=weave.converters.blitz, **self.weave_options)
 

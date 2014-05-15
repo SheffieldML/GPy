@@ -7,6 +7,7 @@ from ...util import diag
 from ...core.parameterization.variational import VariationalPosterior
 import numpy as np
 from ...util.misc import param_to_array
+from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
 
 from ...util import gpu_init
@@ -19,7 +20,7 @@ try:
 except:
     pass
 
-class VarDTC_GPU(object):
+class VarDTC_GPU(LatentFunctionInference):
     """
     An object for inference when the likelihood is Gaussian, but we want to do sparse inference.
 

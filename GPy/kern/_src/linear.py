@@ -12,6 +12,7 @@ from ...core.parameterization.transformations import Logexp
 from ...util.caching import Cache_this
 from ...core.parameterization import variational
 from psi_comp import linear_psi_comp
+from ...util.config import *
 
 class Linear(Kern):
     """
@@ -188,12 +189,23 @@ class Linear(Kern):
         AZZA = ZA.T[:, None, :, None] * ZA[None, :, None, :]
         AZZA = AZZA + AZZA.swapaxes(1, 2)
         AZZA_2 = AZZA/2.
+        if config.getboolean('parallel', 'openmp'):
+            pragma_string = '#pragma omp parallel for private(m,mm,q,qq,factor,tmp)'
+            header_string = '#include <omp.h>'
+            weave_options = {'headers'           : ['<omp.h>'],
+                                'extra_compile_args': ['-fopenmp -O3'],
+                                'extra_link_args'   : ['-lgomp'],
+                                'libraries': ['gomp']}
+        else:
+            pragma_string = ''
+            header_string = ''
+            weave_options = {'extra_compile_args': ['-O3']}
 
         #Using weave, we can exploit the symmetry of this problem:
         code = """
         int n, m, mm,q,qq;
         double factor,tmp;
-        #pragma omp parallel for private(m,mm,q,qq,factor,tmp)
+        %s
         for(n=0;n<N;n++){
           for(m=0;m<num_inducing;m++){
             for(mm=0;mm<=m;mm++){
@@ -217,26 +229,36 @@ class Linear(Kern):
             }
           }
         }
-        """
+        """ % pragma_string
         support_code = """
-        #include <omp.h>
+        %s
         #include <math.h>
-        """
-        weave_options = {'headers'           : ['<omp.h>'],
-                         'extra_compile_args': ['-fopenmp -O3'],  #-march=native'],
-                         'extra_link_args'   : ['-lgomp']}
+        """ % header_string
         mu = vp.mean
         N,num_inducing,input_dim,mu = mu.shape[0],Z.shape[0],mu.shape[1],param_to_array(mu)
-        weave.inline(code, support_code=support_code, libraries=['gomp'],
+        weave.inline(code, support_code=support_code,
                      arg_names=['N','num_inducing','input_dim','mu','AZZA','AZZA_2','target_mu','target_S','dL_dpsi2'],
                      type_converters=weave.converters.blitz,**weave_options)
 
 
     def _weave_dpsi2_dZ(self, dL_dpsi2, Z, vp, target):
         AZA = self.variances*self._ZAinner(vp, Z)
+
+        if config.getboolean('parallel', 'openmp'):
+            pragma_string = '#pragma omp parallel for private(n,mm,q)'
+            header_string = '#include <omp.h>'
+            weave_options =  {'headers'           : ['<omp.h>'],
+                              'extra_compile_args': ['-fopenmp -O3'],
+                              'extra_link_args'   : ['-lgomp'],
+                              'libraries': ['gomp']}
+        else:
+            pragma_string = ''
+            header_string = ''
+            weave_options = {'extra_compile_args': ['-O3']}
+
         code="""
         int n,m,mm,q;
-        #pragma omp parallel for private(n,mm,q)
+        %s
         for(m=0;m<num_inducing;m++){
           for(q=0;q<input_dim;q++){
             for(mm=0;mm<num_inducing;mm++){
@@ -246,18 +268,15 @@ class Linear(Kern):
             }
           }
         }
-        """
+        """ % pragma_string
         support_code = """
-        #include <omp.h>
+        %s
         #include <math.h>
-        """
-        weave_options = {'headers'           : ['<omp.h>'],
-                         'extra_compile_args': ['-fopenmp -O3'],  #-march=native'],
-                         'extra_link_args'   : ['-lgomp']}
+        """ % header_string
 
         N,num_inducing,input_dim = vp.mean.shape[0],Z.shape[0],vp.mean.shape[1]
         mu = param_to_array(vp.mean)
-        weave.inline(code, support_code=support_code, libraries=['gomp'],
+        weave.inline(code, support_code=support_code,
                      arg_names=['N','num_inducing','input_dim','AZA','target','dL_dpsi2'],
                      type_converters=weave.converters.blitz,**weave_options)
 

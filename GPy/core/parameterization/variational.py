@@ -81,7 +81,7 @@ class VariationalPosterior(Parameterized):
     def _raveled_index(self):
         index = np.empty(dtype=int, shape=0)
         size = 0
-        for p in self._parameters_:
+        for p in self.parameters:
             index = np.hstack((index, p._raveled_index()+size))
             size += p._realsize_ if hasattr(p, '_realsize_') else p.size
         return index
@@ -96,10 +96,13 @@ class VariationalPosterior(Parameterized):
             dc = self.__dict__.copy()
             dc['mean'] = self.mean[s]
             dc['variance'] = self.variance[s]
-            dc['_parameters_'] = copy.copy(self._parameters_)
+            dc['parameters'] = copy.copy(self.parameters)
             n.__dict__.update(dc)
-            n._parameters_[dc['mean']._parent_index_] = dc['mean']
-            n._parameters_[dc['variance']._parent_index_] = dc['variance']
+            n.parameters[dc['mean']._parent_index_] = dc['mean']
+            n.parameters[dc['variance']._parent_index_] = dc['variance']
+            n._gradient_array_ = None
+            oversize = self.size - self.mean.size - self.variance.size
+            n.size = n.mean.size + n.variance.size + oversize
             n.ndim = n.mean.ndim
             n.shape = n.mean.shape
             n.num_data = n.mean.shape[0]
@@ -147,11 +150,11 @@ class SpikeAndSlabPosterior(VariationalPosterior):
             dc['mean'] = self.mean[s]
             dc['variance'] = self.variance[s]
             dc['binary_prob'] = self.binary_prob[s]
-            dc['_parameters_'] = copy.copy(self._parameters_)
+            dc['parameters'] = copy.copy(self.parameters)
             n.__dict__.update(dc)
-            n._parameters_[dc['mean']._parent_index_] = dc['mean']
-            n._parameters_[dc['variance']._parent_index_] = dc['variance']
-            n._parameters_[dc['binary_prob']._parent_index_] = dc['binary_prob']
+            n.parameters[dc['mean']._parent_index_] = dc['mean']
+            n.parameters[dc['variance']._parent_index_] = dc['variance']
+            n.parameters[dc['binary_prob']._parent_index_] = dc['binary_prob']
             n.ndim = n.mean.ndim
             n.shape = n.mean.shape
             n.num_data = n.mean.shape[0]

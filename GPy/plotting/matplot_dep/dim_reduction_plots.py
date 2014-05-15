@@ -97,7 +97,7 @@ def plot_latent(model, labels=None, which_indices=None,
         elif type(ul) is np.int64:
             this_label = 'class %i' % ul
         else:
-            this_label = 'class %i' % i
+            this_label = unicode(ul)
         m = marker.next()
 
         index = np.nonzero(labels == ul)[0]
@@ -121,7 +121,7 @@ def plot_latent(model, labels=None, which_indices=None,
     if plot_inducing:
         Z = param_to_array(model.Z)
         ax.plot(Z[:, input_1], Z[:, input_2], '^w')
-    
+
     ax.set_xlim((xmin, xmax))
     ax.set_ylim((ymin, ymax))
 
@@ -132,7 +132,7 @@ def plot_latent(model, labels=None, which_indices=None,
     except Exception as e:
         print "Could not invoke tight layout: {}".format(e)
         pass
-    
+
     if updates:
         try:
             ax.figure.canvas.show()

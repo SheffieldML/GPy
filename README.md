@@ -10,6 +10,16 @@ A Gaussian processes framework in Python.
 
 Continuous integration status: ![CI status](https://travis-ci.org/SheffieldML/GPy.png)
 
+Citation
+========
+
+    @Misc{gpy2014,
+      author =   {The GPy authors},
+      title =    {{GPy}: A Gaussian process framework in python},
+      howpublished = {\url{http://github.com/SheffieldML/GPy}},
+      year = {2012--2014}
+    }
+
 Getting started
 ===============
 Installing with pip

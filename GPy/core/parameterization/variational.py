@@ -160,7 +160,7 @@ class SpikeAndSlabPosterior(VariationalPosterior):
         else:
             return super(VariationalPrior, self).__getitem__(s)
 
-    def plot(self, *args):
+    def plot(self, *args, **kwargs):
         """
         Plot latent space X in 1D:
 
@@ -169,4 +169,4 @@ class SpikeAndSlabPosterior(VariationalPosterior):
         import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ...plotting.matplot_dep import variational_plots
-        return variational_plots.plot_SpikeSlab(self,*args)
+        return variational_plots.plot_SpikeSlab(self,*args, **kwargs)

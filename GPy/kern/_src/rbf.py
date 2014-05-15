@@ -9,7 +9,7 @@ from stationary import Stationary
 from GPy.util.caching import Cache_this
 from ...core.parameterization import variational
 from psi_comp import ssrbf_psi_comp
-from psi_comp.ssrbf_psi_gpucomp import PSICOMP_SSRBF
+from psi_comp import ssrbf_psi_gpucomp
 
 class RBF(Stationary):
     """
@@ -26,8 +26,11 @@ class RBF(Stationary):
         self.weave_options = {}
         self.group_spike_prob = False
         
+    def set_for_SpikeAndSlab(self):
         if self.useGPU:
-            self.psicomp = PSICOMP_SSRBF()
+            self.psicomp = ssrbf_psi_gpucomp.PSICOMP_SSRBF()
+        else:
+            self.psicomp = ssrbf_psi_comp
             
 
     def K_of_r(self, r):

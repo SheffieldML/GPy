@@ -7,9 +7,10 @@ from ...util import diag
 from ...core.parameterization.variational import VariationalPosterior
 import numpy as np
 from ...util.misc import param_to_array
+from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
 
-class VarDTC(object):
+class VarDTC(LatentFunctionInference):
     """
     An object for inference when the likelihood is Gaussian, but we want to do sparse inference.
 
@@ -190,7 +191,7 @@ class VarDTC(object):
         post = Posterior(woodbury_inv=woodbury_inv, woodbury_vector=woodbury_vector, K=Kmm, mean=None, cov=None, K_chol=Lm)
         return post, log_marginal, grad_dict
 
-class VarDTCMissingData(object):
+class VarDTCMissingData(LatentFunctionInference):
     const_jitter = 1e-6
     def __init__(self, limit=1, inan=None):
         from ...util.caching import Cacher

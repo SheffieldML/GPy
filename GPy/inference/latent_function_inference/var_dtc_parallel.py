@@ -7,9 +7,10 @@ from ...util import diag
 from ...core.parameterization.variational import VariationalPosterior
 import numpy as np
 from ...util.misc import param_to_array
+from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
 
-class VarDTC_minibatch(object):
+class VarDTC_minibatch(LatentFunctionInference):
     """
     An object for inference when the likelihood is Gaussian, but we want to do sparse inference.
 

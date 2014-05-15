@@ -68,24 +68,6 @@ class PSICOMP_SSLinear(object):
         variance2 = np.square(variance)
         mu2S = mu2+S # NxQ
         common_sum = np.einsum('nq,q,mq,nq->nm',gamma,variance,Z,mu) # NxM
-                
-#         _dpsi2_dvariance = np.einsum('nq,q,mq,oq->nmoq',2.*(gamma*mu2S-gamma2*mu2),variance,Z,Z)+\
-#             np.einsum('nq,mq,nq,no->nmoq',gamma,Z,mu,common_sum)+\
-#             np.einsum('nq,oq,nq,nm->nmoq',gamma,Z,mu,common_sum)
-#             
-#         _dpsi2_dgamma = np.einsum('q,mq,oq,nq->nmoq',variance2,Z,Z,(mu2S-2.*gamma*mu2))+\
-#             np.einsum('q,mq,nq,no->nmoq',variance,Z,mu,common_sum)+\
-#             np.einsum('q,oq,nq,nm->nmoq',variance,Z,mu,common_sum)
-#         
-        _dpsi2_dmu = np.einsum('q,mq,oq,nq,nq->nmoq',variance2,Z,Z,mu,2.*(gamma-gamma2))+\
-            np.einsum('nq,q,mq,no->nmoq',gamma,variance,Z,common_sum)+\
-            np.einsum('nq,q,oq,nm->nmoq',gamma,variance,Z,common_sum)
-#             
-#         _dpsi2_dS = np.einsum('nq,q,mq,oq->nmoq',gamma,variance2,Z,Z)
-#         
-#         _dpsi2_dZ = 2.*(np.einsum('nq,q,mq,nq->nmq',gamma,variance2,Z,mu2S)+np.einsum('nq,q,nq,nm->nmq',gamma,variance,mu,common_sum)
-#                         -np.einsum('nq,q,mq,nq->nmq',gamma2,variance2,Z,mu2))
-        dL_dmu = np.einsum('mo,nmoq->nq', dL_dpsi2, _dpsi2_dmu)
 
         dL_dvar = np.einsum('mo,nq,q,mq,oq->q',dL_dpsi2,2.*(gamma*mu2S-gamma2*mu2),variance,Z,Z)+\
             np.einsum('mo,nq,mq,nq,no->q',dL_dpsi2,gamma,Z,mu,common_sum)+\
@@ -95,10 +77,10 @@ class PSICOMP_SSLinear(object):
             np.einsum('mo,q,mq,nq,no->nq',dL_dpsi2,variance,Z,mu,common_sum)+\
             np.einsum('mo,q,oq,nq,nm->nq',dL_dpsi2,variance,Z,mu,common_sum)
         
-#         dL_dmu = np.einsum('mo,q,mq,oq,nq,nq->nq',dL_dpsi2,variance2,Z,Z,mu,2.*(gamma-gamma2))+\
-#             np.einsum('mo,nq,q,mq,no->nq',dL_dpsi2,gamma,variance,Z,common_sum)+\
-#             np.einsum('mo,nq,q,oq,nm->nq',dL_dpsi2,gamma,variance,Z,common_sum)
-            
+        dL_dmu = np.einsum('mo,q,mq,oq,nq,nq->nq',dL_dpsi2,variance2,Z,Z,mu,2.*(gamma-gamma2))+\
+            np.einsum('mo,nq,q,mq,no->nq',dL_dpsi2,gamma,variance,Z,common_sum)+\
+            np.einsum('mo,nq,q,oq,nm->nq',dL_dpsi2,gamma,variance,Z,common_sum)
+                        
         dL_dS = np.einsum('mo,nq,q,mq,oq->nq',dL_dpsi2,gamma,variance2,Z,Z)
         
         dL_dZ = 2.*(np.einsum('om,nq,q,mq,nq->oq',dL_dpsi2,gamma,variance2,Z,mu2S)+np.einsum('om,nq,q,nq,nm->oq',dL_dpsi2,gamma,variance,mu,common_sum)

@@ -103,7 +103,6 @@ class lvm(matplotlib_show):
             else:
                 vals = param_to_array(model.X)
 
-        vals = param_to_array(vals)
         matplotlib_show.__init__(self, vals, axes=latent_axes)
 
         if isinstance(latent_axes,mpl.axes.Axes):

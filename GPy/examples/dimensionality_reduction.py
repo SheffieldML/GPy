@@ -408,13 +408,13 @@ def stick(kernel=None, optimize=True, verbose=True, plot=True):
     data = GPy.util.datasets.osu_run1()
     # optimize
     m = GPy.models.GPLVM(data['Y'], 2, kernel=kernel)
-    if optimize: m.optimize(messages=verbose, max_f_eval=10000)
+    if optimize: m.optimize('bfgs', messages=verbose, max_f_eval=10000)
     if plot:
         plt.clf
         ax = m.plot_latent()
         y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data['connect'])
-        vis = GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, latent_axes=ax)
+        vis = GPy.plotting.matplot_dep.visualize.lvm(m.X[:1, :].copy(), m, data_show, latent_axes=ax)
         raw_input('Press enter to finish')
 
     return m
@@ -475,24 +475,28 @@ def robot_wireless(optimize=True, verbose=True, plot=True):
 def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
     from GPy.models import BayesianGPLVM
     from matplotlib import pyplot as plt
+    import numpy as np
     import GPy
 
     data = GPy.util.datasets.osu_run1()
     Q = 6
-    kernel = GPy.kern.RBF(Q, ARD=True) + GPy.kern.Bias(Q, _np.exp(-2)) + GPy.kern.White(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF(Q, lengthscale=np.repeat(.5, Q), ARD=True) 
     m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20, kernel=kernel)
+    
+    m.data = data
+    m.likelihood.variance = 0.001
+    
     # optimize
-    m.ensure_default_constraints()
-    if optimize: m.optimize('scg', messages=verbose, max_iters=200, xtol=1e-300, ftol=1e-300)
-    m._set_params(m._get_params())
+    if optimize: m.optimize('bfgs', messages=verbose, max_iters=800, xtol=1e-300, ftol=1e-300)
     if plot:
         plt.clf, (latent_axes, sense_axes) = plt.subplots(1, 2)
         plt.sca(latent_axes)
-        m.plot_latent()
-        y = m.likelihood.Y[0, :].copy()
-        data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data['connect'])
-        GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X[0, :].copy(), m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
-        raw_input('Press enter to finish')
+        m.plot_latent(ax=latent_axes)
+        y = m.Y[:1, :].copy()
+        data_show = GPy.plotting.matplot_dep.visualize.stick_show(y, connect=data['connect'])
+        GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X.mean[:1, :].copy(), m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
+        plt.draw()
+        #raw_input('Press enter to finish')
 
     return m
 
@@ -509,7 +513,7 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
     if plot:
         ax = m.plot_latent()
-        y = m.likelihood.Y[0, :]
+        y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.skeleton_show(y[None, :], data['skel'])
         lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
         raw_input('Press enter to finish')

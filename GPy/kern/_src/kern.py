@@ -55,7 +55,7 @@ class Kern(Parameterized):
         self._sliced_X = 0
         self.useGPU = self._support_GPU and useGPU
 
-    @Cache_this(limit=10)
+    @Cache_this(limit=20)
     def _slice_X(self, X):
         return X[:, self.active_dims]
 

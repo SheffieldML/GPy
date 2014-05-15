@@ -57,9 +57,9 @@ class Param(OptimizationHandlable, ObsAr):
 
     def build_pydot(self,G):
         import pydot
-        node = pydot.Node(id(self), shape='record', label=self.name)
+        node = pydot.Node(id(self), shape='trapezium', label=self.name)#, fontcolor='white', color='white')
         G.add_node(node)
-        for o in self.observers.keys():
+        for _, o, _ in self.observers:
             label = o.name if hasattr(o, 'name') else str(o)
             observed_node = pydot.Node(id(o), label=label)
             G.add_node(observed_node)
@@ -90,6 +90,13 @@ class Param(OptimizationHandlable, ObsAr):
         return self
 
     @property
+    def values(self):
+        """
+        Return self as numpy array view
+        """
+        return self.view(np.ndarray)
+
+    @property
     def gradient(self):
         """
         Return a view on the gradient, which is in the same shape as this parameter is.
@@ -99,11 +106,11 @@ class Param(OptimizationHandlable, ObsAr):
         """
         if getattr(self, '_gradient_array_', None) is None:
             self._gradient_array_ = numpy.empty(self._realshape_, dtype=numpy.float64)
-        return self._gradient_array_[self._current_slice_]
+        return self._gradient_array_#[self._current_slice_]
 
     @gradient.setter
     def gradient(self, val):
-        self._gradient_array_[self._current_slice_] = val
+        self._gradient_array_[:] = val
 
     #===========================================================================
     # Array operations -> done
@@ -114,7 +121,10 @@ class Param(OptimizationHandlable, ObsAr):
         #if not reduce(lambda a, b: a or numpy.any(b is Ellipsis), s, False) and len(s) <= self.ndim:
         #    s += (Ellipsis,)
         new_arr = super(Param, self).__getitem__(s, *args, **kwargs)
-        try: new_arr._current_slice_ = s; new_arr._original_ = self.base is new_arr.base
+        try: 
+            new_arr._current_slice_ = s
+            new_arr._gradient_array_ = self.gradient[s]
+            new_arr._original_ = self.base is new_arr.base
         except AttributeError: pass  # returning 0d array or float, double etc
         return new_arr
 
@@ -161,8 +171,29 @@ class Param(OptimizationHandlable, ObsAr):
     # parameterizable
     #===========================================================================
     def traverse(self, visit, *args, **kwargs):
-        visit(self, *args, **kwargs)
+        """
+        Traverse the hierarchy performing visit(self, *args, **kwargs) at every node passed by.
+        See "visitor pattern" in literature. This is implemented in pre-order fashion.
 
+        This will function will just call visit on self, as Param are leaf nodes.
+        """
+        visit(self, *args, **kwargs)
+    
+    def traverse_parents(self, visit, *args, **kwargs):
+        """
+        Traverse the hierarchy upwards, visiting all parents and their children, except self.
+        See "visitor pattern" in literature. This is implemented in pre-order fashion.
+    
+        Example:
+    
+        parents = []
+        self.traverse_parents(parents.append)
+        print parents
+        """
+        if self.has_parent():
+            self.__visited = True
+            self._parent_._traverse_parents(visit, *args, **kwargs)
+            self.__visited = False
 
     #===========================================================================
     # Convenience
@@ -236,9 +267,16 @@ class Param(OptimizationHandlable, ObsAr):
                 and len(set(map(len, clean_curr_slice))) <= 1):
                 return numpy.fromiter(itertools.izip(*clean_curr_slice),
                     dtype=[('', int)] * self._realndim_, count=len(clean_curr_slice[0])).view((int, self._realndim_))
-        expanded_index = list(self._expand_index(slice_index))
-        return numpy.fromiter(itertools.product(*expanded_index),
+        try:
+            expanded_index = list(self._expand_index(slice_index))
+            indices = numpy.fromiter(itertools.product(*expanded_index),
                  dtype=[('', int)] * self._realndim_, count=reduce(lambda a, b: a * b.size, expanded_index, 1)).view((int, self._realndim_))
+        except:
+            print "Warning: extended indexing was used"
+            indices = np.indices(self._realshape_, dtype=int)
+            indices = indices[(slice(None),)+slice_index]
+            indices = np.rollaxis(indices, 0, indices.ndim)
+        return indices
     def _max_len_names(self, gen, header):
         gen = map(lambda x: " ".join(map(str, x)), gen)
         return reduce(lambda a, b:max(a, len(b)), gen, len(header))
@@ -280,7 +318,7 @@ class Param(OptimizationHandlable, ObsAr):
 class ParamConcatenation(object):
     def __init__(self, params):
         """
-        Parameter concatenation for convienience of printing regular expression matched arrays
+        Parameter concatenation for convenience of printing regular expression matched arrays
         you can index this concatenation as if it was the flattened concatenation
         of all the parameters it contains, same for setting parameters (Broadcasting enabled).
 

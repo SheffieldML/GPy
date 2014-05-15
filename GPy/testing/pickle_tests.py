@@ -132,6 +132,9 @@ class Test(ListDictTestCase):
         self.assertIsNot(par.full_gradient, pcopy.full_gradient)
         self.assertTrue(pcopy.checkgrad())
         self.assert_(np.any(pcopy.gradient!=0.0))
+        pcopy.optimize('bfgs')
+        par.optimize('bfgs')
+        np.testing.assert_allclose(pcopy.param_array, par.param_array, atol=.001)
         with tempfile.TemporaryFile('w+b') as f:
             par.pickle(f)
             f.seek(0)

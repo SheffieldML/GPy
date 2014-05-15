@@ -176,24 +176,23 @@ class Pickleable(object):
         #raise NotImplementedError, "Copy is not yet implemented, TODO: Observable hierarchy"
         import copy
         memo = {}
+        # the next part makes sure that we do not include parents in any form:
         parents = []
-        self.traverse_parents(parents.append)
-        # remove self, which is the first arguments
-        parents = [p for p in parents if p is not self]
+        self.traverse_parents(parents.append) # collect parents
         for p in parents:
-            memo[id(p)] = None
-        memo[id(self.gradient)] = None
-        memo[id(self.param_array)] = None
-        memo[id(self._fixes_)] = None
-        c = copy.deepcopy(self, memo)
+            memo[id(p)] = None # set all parents to be None, so they will not be copied
+        memo[id(self.gradient)] = None # reset the gradient
+        memo[id(self.param_array)] = None # and param_array
+        memo[id(self._fixes_)] = None # fixes have to be reset, as this is now highest parent
+        c = copy.deepcopy(self, memo) # and start the copy
         c._parent_index_ = None
         return c
 
     def __deepcopy__(self, memo):
-        s = self.__new__(self.__class__)
-        memo[id(self)] = s
+        s = self.__new__(self.__class__) # fresh instance
+        memo[id(self)] = s # be sure to break all cycles --> self is already done
         import copy
-        s.__dict__.update(copy.deepcopy(self.__dict__, memo))
+        s.__dict__.update(copy.deepcopy(self.__dict__, memo)) # standard copy
         return s
 
     def __getstate__(self):
@@ -542,7 +541,7 @@ class Constrainable(Nameable, Indexable, Observable):
     def _add_to_index_operations(self, which, reconstrained, what, warning):
         """
         Helper preventing copy code.
-        This addes the given what (transformation, prior etc) to parameter index operations which.
+        This adds the given what (transformation, prior etc) to parameter index operations which.
         revonstrained are reconstrained indices.
         warn when reconstraining parameters if warning is True.
         TODO: find out which parameters have changed specifically
@@ -580,12 +579,6 @@ class OptimizationHandlable(Constrainable):
     def __init__(self, name, default_constraint=None, *a, **kw):
         super(OptimizationHandlable, self).__init__(name, default_constraint=default_constraint, *a, **kw)
 
-    def transform(self):
-        [np.put(self.param_array, ind, c.finv(self.param_array.flat[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-
-    def untransform(self):
-        [np.put(self.param_array, ind, c.f(self.param_array.flat[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-
     def _get_params_transformed(self):
         # transformed parameters (apply transformation rules)
         p = self.param_array.copy()
@@ -599,15 +592,15 @@ class OptimizationHandlable(Constrainable):
         return p
 
     def _set_params_transformed(self, p):
-        if p is self.param_array:
-            p = p.copy()
-        if self.has_parent() and self.constraints[__fixed__].size != 0:
-            fixes = np.ones(self.size).astype(bool)
-            fixes[self.constraints[__fixed__]] = FIXED
-            self.param_array.flat[fixes] = p
-        elif self._has_fixes(): self.param_array.flat[self._fixes_] = p
-        else: self.param_array.flat = p
-        self.untransform()
+        if not(p is self.param_array):
+            if self.has_parent() and self.constraints[__fixed__].size != 0:
+                fixes = np.ones(self.size).astype(bool)
+                fixes[self.constraints[__fixed__]] = FIXED
+                self.param_array.flat[fixes] = p
+            elif self._has_fixes(): self.param_array.flat[self._fixes_] = p
+            else: self.param_array.flat = p
+        [np.put(self.param_array, ind, c.f(self.param_array.flat[ind])) 
+         for c, ind in self.constraints.iteritems() if c != __fixed__]
         self._trigger_params_changed()
 
     def _trigger_params_changed(self, trigger_parent=True):
@@ -621,7 +614,7 @@ class OptimizationHandlable(Constrainable):
     def num_params(self):
         """
         Return the number of parameters of this parameter_handle.
-        Param objects will allways return 0.
+        Param objects will always return 0.
         """
         raise NotImplemented, "Abstract, please implement in respective classes"
 
@@ -713,7 +706,11 @@ class Parameterizable(OptimizationHandlable):
 
     @property
     def param_array(self):
-        if self._param_array_ is None:
+        """
+        Array representing the parameters of this class.
+        There is only one copy of all parameters in memory, two during optimization.
+        """
+        if self.__dict__.get('_param_array_', None) is None:
             self._param_array_ = np.empty(self.size, dtype=np.float64)
         return self._param_array_
 
@@ -723,7 +720,9 @@ class Parameterizable(OptimizationHandlable):
 
     def traverse(self, visit, *args, **kwargs):
         """
-        Traverse the hierarchy performing visit(self, *args, **kwargs) at every node passed by.
+        Traverse the hierarchy performing visit(self, *args, **kwargs) 
+        at every node passed by downwards. This function includes self!
+
         See "visitor pattern" in literature. This is implemented in pre-order fashion.
 
         Example:
@@ -738,31 +737,39 @@ class Parameterizable(OptimizationHandlable):
             self.__visited = True
             for c in self._parameters_:
                 c.traverse(visit, *args, **kwargs)
+            self.__visited = False
 
     def traverse_parents(self, visit, *args, **kwargs):
         """
-        Traverse the hierarchy upwards, visiting all parents and their children.
+        Traverse the hierarchy upwards, visiting all parents and their children except self.
         See "visitor pattern" in literature. This is implemented in pre-order fashion.
-
+    
         Example:
-
+    
         parents = []
         self.traverse_parents(parents.append)
         print parents
         """
-        if not self.__visited:
-            visit(self, *args, **kwargs)
+        if self.has_parent():
             self.__visited = True
+            self._parent_._traverse_parents(visit, *args, **kwargs)
+            self.__visited = False
+        
+    def _traverse_parents(self, visit, *args, **kwargs):
+        if not self.__visited:
+            self.__visited = True
+            visit(self, *args, **kwargs)
             if self.has_parent():
-                self._parent_.traverse_parents(visit, *args, **kwargs)
+                self._parent_._traverse_parents(visit, *args, **kwargs)
                 self._parent_.traverse(visit, *args, **kwargs)
             self.__visited = False
+
     #=========================================================================
     # Gradient handling
     #=========================================================================
     @property
     def gradient(self):
-        if not hasattr(self, '_gradient_array_'):
+        if self.__dict__.get('_gradient_array_', None) is None:
             self._gradient_array_ = np.empty(self.size, dtype=np.float64)
         return self._gradient_array_
 
@@ -823,11 +830,10 @@ class Parameterizable(OptimizationHandlable):
         #    raise HierarchyError, "parameter {} already in another model ({}), create new object (or copy) for adding".format(param._short(), param._highest_parent_._short())
         elif param not in self._parameters_:
             if param.has_parent():
-                parent = param._parent_
-                while parent is not None:
+                def visit(parent, self):
                     if parent is self:
                         raise HierarchyError, "You cannot add a parameter twice into the hierarchy"
-                    parent = parent._parent_
+                param.traverse_parents(visit, self)
                 param._parent_.remove_parameter(param)
             # make sure the size is set
             if index is None:
@@ -871,7 +877,7 @@ class Parameterizable(OptimizationHandlable):
         :param param: param object to remove from being a parameter of this parameterized object.
         """
         if not param in self._parameters_:
-            raise RuntimeError, "Parameter {} does not belong to this object, remove parameters directly from their respective parents".format(param._short())
+            raise RuntimeError, "Parameter {} does not belong to this object {}, remove parameters directly from their respective parents".format(param._short(), self.name)
 
         start = sum([p.size for p in self._parameters_[:param._parent_index_]])
         self._remove_parameter_name(param)
@@ -903,10 +909,12 @@ class Parameterizable(OptimizationHandlable):
         if not hasattr(self, "_parameters_") or len(self._parameters_) < 1:
             # no parameters for this class
             return
-        old_size = 0
-        self.param_array = np.empty(self.size, dtype=np.float64)
-        self._gradient_array_ = np.empty(self.size, dtype=np.float64)
+        if self.param_array.size != self.size:
+            self.param_array = np.empty(self.size, dtype=np.float64)
+        if self.gradient.size != self.size:
+            self._gradient_array_ = np.empty(self.size, dtype=np.float64)
 
+        old_size = 0
         self._param_slices_ = []
         for i, p in enumerate(self._parameters_):
             p._parent_ = self
@@ -921,6 +929,7 @@ class Parameterizable(OptimizationHandlable):
 
             if not p.param_array.flags['C_CONTIGUOUS']:
                 raise ValueError, "This should not happen! Please write an email to the developers with the code, which reproduces this error. All parameter arrays must be C_CONTIGUOUS"
+            
             p.param_array.data = self.param_array[pslice].data
             p.full_gradient.data = self.full_gradient[pslice].data
 

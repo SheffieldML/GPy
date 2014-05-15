@@ -82,15 +82,15 @@ class Parameterized(Parameterizable):
         import pydot  # @UnresolvedImport
         iamroot = False
         if G is None:
-            G = pydot.Dot(graph_type='digraph')
+            G = pydot.Dot(graph_type='digraph', bgcolor=None)
             iamroot=True
-        node = pydot.Node(id(self), shape='record', label=self.name)
+        node = pydot.Node(id(self), shape='box', label=self.name)#, color='white')
         G.add_node(node)
         for child in self._parameters_:
             child_node = child.build_pydot(G)
-            G.add_edge(pydot.Edge(node, child_node))
+            G.add_edge(pydot.Edge(node, child_node))#, color='white'))
 
-        for o in self.observers.keys():
+        for _, o, _ in self.observers:
             label = o.name if hasattr(o, 'name') else str(o)
             observed_node = pydot.Node(id(o), label=label)
             G.add_node(observed_node)

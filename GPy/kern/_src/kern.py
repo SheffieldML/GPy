@@ -103,7 +103,7 @@ class Kern(Parameterized):
         """
         raise NotImplementedError
 
-    def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """
         Returns the derivative of the objective wrt Z, using the chain rule
         through the expectation variables.

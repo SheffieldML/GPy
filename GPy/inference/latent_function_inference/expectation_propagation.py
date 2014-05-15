@@ -1,9 +1,10 @@
 import numpy as np
 from ...util.linalg import pdinv,jitchol,DSYR,tdot,dtrtrs, dpotrs
 from posterior import Posterior
+from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
 
-class EP(object):
+class EP(LatentFunctionInference):
     def __init__(self, epsilon=1e-6, eta=1., delta=1.):
         """
         The expectation-propagation algorithm.

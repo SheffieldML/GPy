@@ -220,7 +220,7 @@ class Model(Parameterized):
         if self.is_fixed:
             raise RuntimeError, "Cannot optimize, when everything is fixed"
         if self.size == 0:
-            raise RuntimeError, "Model without parameters cannot be minimized"
+            raise RuntimeError, "Model without parameters cannot be optimized"
 
         if optimizer is None:
             optimizer = self.preferred_optimizer

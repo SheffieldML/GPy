@@ -16,8 +16,9 @@ from ...util.misc import param_to_array
 from posterior import Posterior
 import warnings
 from scipy import optimize
+from . import LatentFunctionInference
 
-class Laplace(object):
+class Laplace(LatentFunctionInference):
 
     def __init__(self):
         """

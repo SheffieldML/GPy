@@ -10,7 +10,7 @@ from model import Model
 from parameterization import ObsAr
 from .. import likelihoods
 from ..likelihoods.gaussian import Gaussian
-from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
+from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation, LatentFunctionInference
 from parameterization.variational import VariationalPosterior
 
 class GP(Model):
@@ -21,6 +21,7 @@ class GP(Model):
     :param Y: output observations
     :param kernel: a GPy kernel, defaults to rbf+white
     :param likelihood: a GPy likelihood
+    :param :class:`~GPy.inference.latent_function_inference.LatentFunctionInference` inference_method: The inference method to use for this GP
     :rtype: model object
 
     .. Note:: Multiple independent outputs are allowed using columns of Y
@@ -220,3 +221,20 @@ class GP(Model):
         """
         return self.kern.input_sensitivity()
 
+    def optimize(self, optimizer=None, start=None, **kwargs):
+        """
+        Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
+        kwargs are passed to the optimizer. They can be:
+
+        :param max_f_eval: maximum number of function evaluations
+        :type max_f_eval: int
+        :messages: whether to display during optimisation
+        :type messages: bool
+        :param optimizer: which optimizer to use (defaults to self.preferred optimizer)
+        :type optimizer: string
+
+        TODO: valid args
+        """
+        self.inference_method.on_optimization_start()
+        super(GP, self).optimize(optimizer, start, **kwargs)
+        self.inference_method.on_optimization_end()

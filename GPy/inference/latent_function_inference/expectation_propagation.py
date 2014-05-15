@@ -24,6 +24,13 @@ class EP(LatentFunctionInference):
         self.old_mutilde, self.old_vtilde = None, None
         self._ep_approximation = None
 
+    def on_optimization_start(self):
+        self._ep_approximation = None
+
+    def on_optimization_end(self):
+        # TODO: update approximation in the end as well? Maybe even with a switch?
+        pass
+
     def inference(self, kern, X, likelihood, Y, Y_metadata=None, Z=None):
         num_data, output_dim = X.shape
         assert output_dim ==1, "ep in 1D only (for now!)"
@@ -46,8 +53,6 @@ class EP(LatentFunctionInference):
         dL_dthetaL = np.zeros(likelihood.size)#TODO: derivatives of the likelihood parameters
 
         return Posterior(woodbury_inv=Wi, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK, 'dL_dthetaL':dL_dthetaL}
-
-
 
     def expectation_propagation(self, K, Y, likelihood, Y_metadata):
 
@@ -113,4 +118,3 @@ class EP(LatentFunctionInference):
 
         mu_tilde = v_tilde/tau_tilde
         return mu, Sigma, mu_tilde, tau_tilde, Z_hat
-

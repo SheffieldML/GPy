@@ -496,7 +496,8 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y, connect=data['connect'])
         GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X.mean[:1, :].copy(), m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
         plt.draw()
-        #raw_input('Press enter to finish')
+        plt.show()
+        raw_input('Press enter to finish')
 
     return m
 

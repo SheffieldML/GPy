@@ -95,7 +95,7 @@ class ParameterizedTest(unittest.TestCase):
         self.assertListEqual(self.test1.kern.param_array.tolist(), val[:2].tolist())
 
     def test_add_parameter_already_in_hirarchy(self):
-        self.assertRaises(HierarchyError, self.test1.add_parameter, self.white._parameters_[0])
+        self.assertRaises(HierarchyError, self.test1.add_parameter, self.white.parameters[0])
 
     def test_default_constraints(self):
         self.assertIs(self.rbf.variance.constraints._param_index_ops, self.rbf.constraints._param_index_ops)

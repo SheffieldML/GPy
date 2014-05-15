@@ -169,7 +169,7 @@ class Linear(Kern):
             else:
                 self.variances.gradient += 2.*np.sum(dL_dpsi2 * self.psi2(Z, variational_posterior))/self.variances
 
-    def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             gamma = variational_posterior.binary_prob
             mu = variational_posterior.mean

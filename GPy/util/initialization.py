@@ -8,7 +8,7 @@ import numpy as np
 from GPy.util.pca import pca
 
 def initialize_latent(init, input_dim, Y):
-    Xr = np.random.randn(Y.shape[0], input_dim)
+    Xr = np.asfortranarray(np.random.randn(Y.shape[0], input_dim))
     if init == 'PCA':
         p = pca(Y)
         PC = p.project(Y, min(input_dim, Y.shape[1]))

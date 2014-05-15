@@ -414,9 +414,10 @@ def stick(kernel=None, optimize=True, verbose=True, plot=True):
         ax = m.plot_latent()
         y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data['connect'])
-        vis = GPy.plotting.matplot_dep.visualize.lvm(m.X[:1, :].copy(), m, data_show, latent_axes=ax)
+        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm(m.X[:1, :].copy(), m, data_show, latent_axes=ax)
         raw_input('Press enter to finish')
-
+        lvm_visualizer.close()
+        data_show.close()
     return m
 
 def bcgplvm_linear_stick(kernel=None, optimize=True, verbose=True, plot=True):
@@ -515,9 +516,10 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose
         ax = m.plot_latent()
         y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.skeleton_show(y[None, :], data['skel'])
-        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm(m.X[0].copy(), m, data_show, latent_axes=ax)
         raw_input('Press enter to finish')
         lvm_visualizer.close()
+        data_show.close()
 
     return m
 

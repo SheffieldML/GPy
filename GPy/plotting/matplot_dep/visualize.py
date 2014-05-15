@@ -102,7 +102,8 @@ class lvm(matplotlib_show):
                 vals = param_to_array(model.X.mean)
             else:
                 vals = param_to_array(model.X)
-
+        if len(vals.shape)==1:
+            vals = vals[None,:]
         matplotlib_show.__init__(self, vals, axes=latent_axes)
 
         if isinstance(latent_axes,mpl.axes.Axes):
@@ -393,14 +394,13 @@ class mocap_data_show_vpython(vpython_show):
     def process_values(self):
         raise NotImplementedError, "this needs to be implemented to use the data_show class"
 
-
 class mocap_data_show(matplotlib_show):
     """Base class for visualizing motion capture data."""
 
     def __init__(self, vals, axes=None, connect=None):
         if axes==None:
             fig = plt.figure()
-            axes = fig.add_subplot(111, projection='3d')
+            axes = fig.add_subplot(111, projection='3d',aspect='equal')
         matplotlib_show.__init__(self, vals, axes)
 
         self.connect = connect
@@ -445,11 +445,12 @@ class mocap_data_show(matplotlib_show):
     def process_values(self):
         raise NotImplementedError, "this needs to be implemented to use the data_show class"
 
-    def initialize_axes(self):
+    def initialize_axes(self, boundary=0.05):
         """Set up the axes with the right limits and scaling."""
-        self.x_lim = np.array([self.vals[:, 0].min(), self.vals[:, 0].max()])
-        self.y_lim = np.array([self.vals[:, 1].min(), self.vals[:, 1].max()])
-        self.z_lim = np.array([self.vals[:, 2].min(), self.vals[:, 2].max()])
+        bs = [(self.vals[:, i].max()-self.vals[:, i].min())*boundary for i in xrange(3)]
+        self.x_lim = np.array([self.vals[:, 0].min()-bs[0], self.vals[:, 0].max()+bs[0]])
+        self.y_lim = np.array([self.vals[:, 1].min()-bs[1], self.vals[:, 1].max()+bs[1]])
+        self.z_lim = np.array([self.vals[:, 2].min()-bs[2], self.vals[:, 2].max()+bs[2]])
 
     def initialize_axes_modify(self):
         self.points_handle.remove()
@@ -472,6 +473,8 @@ class mocap_data_show(matplotlib_show):
 class stick_show(mocap_data_show):
     """Show a three dimensional point cloud as a figure. Connect elements of the figure together using the matrix connect."""
     def __init__(self, vals, connect=None, axes=None):
+        if len(vals.shape)==1:
+            vals = vals[None,:]
         mocap_data_show.__init__(self, vals, axes=axes, connect=connect)
 
     def process_values(self):

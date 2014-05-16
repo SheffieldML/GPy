@@ -195,6 +195,9 @@ class Logistic(Transformation):
         self.lower, self.upper = float(lower), float(upper)
         self.difference = self.upper - self.lower
     def f(self, x):
+        if (x<-300.).any():
+            x = x.copy()
+            x[x<-300.] = -300.
         return self.lower + self.difference / (1. + np.exp(-x))
     def finv(self, f):
         return np.log(np.clip(f - self.lower, 1e-10, np.inf) / np.clip(self.upper - f, 1e-10, np.inf))

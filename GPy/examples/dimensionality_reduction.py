@@ -303,9 +303,11 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
 
     inan = _np.random.binomial(1, .6, size=Y.shape).astype(bool)
-    m = BayesianGPLVM(Y.copy(), Q, init="random", num_inducing=num_inducing, kernel=k)
-    m.inference_method = VarDTCMissingData()
-    m.Y[inan] = _np.nan
+    Y[inan] = _np.nan
+
+    m = BayesianGPLVM(Y.copy(), Q, init="random", num_inducing=num_inducing, 
+                      inference_method=VarDTCMissingData(inan=inan), kernel=k)
+
     m.X.variance[:] = _np.random.uniform(0,.01,m.X.shape)
     m.likelihood.variance = .01
     m.parameters_changed()
@@ -338,7 +340,40 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
         print "Optimizing Model:"
         m.optimize(messages=verbose, max_iters=8e3, gtol=.1)
     if plot:
-        m.plot_X_1d("MRD Latent Space 1D")
+        m.X.plot("MRD Latent Space 1D")
+        m.plot_scales("MRD Scales")
+    return m
+
+def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
+    from GPy import kern
+    from GPy.models import MRD
+    from GPy.inference.latent_function_inference.var_dtc import VarDTCMissingData
+
+    D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
+    _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
+
+    #Ylist = [Ylist[0]]
+    k = kern.Linear(Q, ARD=True)
+    inanlist = []
+
+    for Y in Ylist:
+        inan = _np.random.binomial(1, .6, size=Y.shape).astype(bool)
+        inanlist.append(inan)
+        Y[inan] = _np.nan
+
+    imlist = []
+    for inan in inanlist:
+        imlist.append(VarDTCMissingData(limit=1, inan=inan))
+
+    m = MRD(Ylist, input_dim=Q, num_inducing=num_inducing, 
+            kernel=k, inference_method=imlist,
+            initx="random", initz='permute', **kw)
+
+    if optimize:
+        print "Optimizing Model:"
+        m.optimize('bfgs', messages=verbose, max_iters=8e3, gtol=.1)
+    if plot:
+        m.X.plot("MRD Latent Space 1D")
         m.plot_scales("MRD Scales")
     return m
 

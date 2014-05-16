@@ -6,11 +6,12 @@ The package for the Psi statistics computation of the linear kernel for SSGPLVM
 """
 
 import numpy as np
+from . import PSICOMP
 from GPy.util.caching import Cache_this
 
-class PSICOMP_SSLinear(object):
-    #@Cache_this(limit=1, ignore_args=(0,))
-    def psicomputations(self, variance, Z, mu, S, gamma):
+class PSICOMP_SSLinear(PSICOMP):
+    @Cache_this(limit=1, ignore_args=(0,))
+    def psicomputations(self, variance, Z, variational_posterior):
         """
         Compute psi-statistics for ss-linear kernel
         """
@@ -19,6 +20,9 @@ class PSICOMP_SSLinear(object):
         # psi0    N
         # psi1    NxM
         # psi2    MxM
+        mu = variational_posterior.mean
+        S = variational_posterior.variance
+        gamma = variational_posterior.binary_prob
 
         psi0 = np.einsum('q,nq,nq->n',variance,gamma,np.square(mu)+S)
         psi1 = np.einsum('nq,q,mq,nq->nm',gamma,variance,Z,mu)
@@ -30,7 +34,7 @@ class PSICOMP_SSLinear(object):
 
         return psi0, psi1, psi2
     
-    #@Cache_this(limit=1, ignore_args=(0,1,2,3))
+    @Cache_this(limit=1, ignore_args=(0,1,2,3))
     def psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior):
         mu = variational_posterior.mean
         S = variational_posterior.variance

@@ -111,20 +111,20 @@ class Linear(Kern):
 
     def psi0(self, Z, variational_posterior):
         if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
-            return self.psicomp.psicomputations(self.variances, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)[0]
+            return self.psicomp.psicomputations(self.variances, Z, variational_posterior)[0]
         else:
             return np.sum(self.variances * self._mu2S(variational_posterior), 1)
 
     def psi1(self, Z, variational_posterior):
         if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
-            return self.psicomp.psicomputations(self.variances, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)[1]
+            return self.psicomp.psicomputations(self.variances, Z, variational_posterior)[1]
         else:
             return self.K(variational_posterior.mean, Z) #the variance, it does nothing
 
     @Cache_this(limit=1)
     def psi2(self, Z, variational_posterior):
         if isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
-            return self.psicomp.psicomputations(self.variances, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)[2]
+            return self.psicomp.psicomputations(self.variances, Z, variational_posterior)[2]
         else:
             ZA = Z * self.variances
             ZAinner = self._ZAinner(variational_posterior, Z)

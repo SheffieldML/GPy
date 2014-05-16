@@ -288,7 +288,6 @@ class Parameterized(Parameterizable):
             self._connect_parameters()
             self._connect_fixes()
             self._notify_parent_change()
-    
             self.parameters_changed()
         except Exception as e:
             print "WARNING: caught exception {!s}, trying to continue".format(e)

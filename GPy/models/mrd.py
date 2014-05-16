@@ -203,6 +203,7 @@ class MRD(SparseGP):
             fig = pylab.figure(num=fignum)
         sharex_ax = None
         sharey_ax = None
+        plots = []
         for i, g in enumerate(self.bgplvms):
             try:
                 if sharex:
@@ -219,15 +220,16 @@ class MRD(SparseGP):
                 ax = axes[i]
             else:
                 raise ValueError("Need one axes per latent dimension input_dim")
-            plotf(i, g, ax)
+            plots.append(plotf(i, g, ax))
             if sharey_ax is not None:
                 pylab.setp(ax.get_yticklabels(), visible=False)
         pylab.draw()
         if axes is None:
-            fig.tight_layout()
-            return fig
-        else:
-            return pylab.gcf()
+            try:
+                fig.tight_layout()
+            except:
+                pass
+        return plots
 
     def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None, Yindex=0):
         """
@@ -259,10 +261,10 @@ class MRD(SparseGP):
         """
         if titles is None:
             titles = [r'${}$'.format(name) for name in self.names]
-        ymax = reduce(max, [np.ceil(max(g.kernels.input_sensitivity())) for g in self.bgplvms])
+        ymax = reduce(max, [np.ceil(max(g.kern.input_sensitivity())) for g in self.bgplvms])
         def plotf(i, g, ax):
             ax.set_ylim([0,ymax])
-            g.kernels.plot_ARD(ax=ax, title=titles[i], *args, **kwargs)
+            return g.kern.plot_ARD(ax=ax, title=titles[i], *args, **kwargs)
         fig = self._handle_plotting(fignum, ax, plotf, sharex=sharex, sharey=sharey)
         return fig
 
@@ -270,30 +272,33 @@ class MRD(SparseGP):
                 resolution=50, ax=None, marker='o', s=40,
                 fignum=None, plot_inducing=True, legend=True,
                 plot_limits=None, 
-                aspect='auto', updates=False, predict_kwargs=dict(Yindex=0), imshow_kwargs={}):
+                aspect='auto', updates=False, predict_kwargs={}, imshow_kwargs={}):
         """
+        see plotting.matplot_dep.dim_reduction_plots.plot_latent
+        if predict_kwargs is None, will plot latent spaces for 0th dataset (and kernel), otherwise give
+        predict_kwargs=dict(Yindex='index') for plotting only the latent space of dataset with 'index'.
         """
         import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import dim_reduction_plots
+        if "Yindex" not in predict_kwargs:
+            predict_kwargs['Yindex'] = 0
+        if ax is None:
+            fig = pylab.figure(num=fignum)
+            ax = fig.add_subplot(111)
+        else:
+            fig = ax.figure
+        plot = dim_reduction_plots.plot_latent(self, labels, which_indices,
+                                        resolution, ax, marker, s,
+                                        fignum, plot_inducing, legend,
+                                        plot_limits, aspect, updates, predict_kwargs, imshow_kwargs)
+        ax.set_title(self.bgplvms[predict_kwargs['Yindex']].name)
+        try:
+            fig.tight_layout()
+        except:
+            pass
 
-        return dim_reduction_plots.plot_latent(self, labels, which_indices,
-                resolution, ax, marker, s,
-                fignum, plot_inducing, legend,
-                plot_limits, aspect, updates, predict_kwargs, imshow_kwargs)
-
-    def _debug_plot(self):
-        self.plot_X_1d()
-        fig = pylab.figure("MRD DEBUG PLOT", figsize=(4 * len(self.bgplvms), 9))
-        fig.clf()
-        axes = [fig.add_subplot(3, len(self.bgplvms), i + 1) for i in range(len(self.bgplvms))]
-        self.plot_X(ax=axes)
-        axes = [fig.add_subplot(3, len(self.bgplvms), i + len(self.bgplvms) + 1) for i in range(len(self.bgplvms))]
-        self.plot_latent(ax=axes)
-        axes = [fig.add_subplot(3, len(self.bgplvms), i + 2 * len(self.bgplvms) + 1) for i in range(len(self.bgplvms))]
-        self.plot_scales(ax=axes)
-        pylab.draw()
-        fig.tight_layout()
+        return plot
 
     def __getstate__(self):
         # TODO:

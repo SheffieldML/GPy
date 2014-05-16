@@ -32,7 +32,7 @@ class EP(LatentFunctionInference):
         pass
 
     def inference(self, kern, X, likelihood, Y, Y_metadata=None, Z=None):
-        num_data, output_dim = X.shape
+        num_data, output_dim = Y.shape
         assert output_dim ==1, "ep in 1D only (for now!)"
 
         K = kern.K(X)

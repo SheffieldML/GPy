@@ -56,7 +56,7 @@ class EPDTC(LatentFunctionInference):
         self._ep_approximation = None
 
     def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None):
-        num_data, output_dim = X.shape
+        num_data, output_dim = Y.shape
         assert output_dim ==1, "ep in 1D only (for now!)"
 
         Kmm = kern.K(Z)

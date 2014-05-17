@@ -78,7 +78,7 @@ class VarDTC_minibatch(LatentFunctionInference):
         num_inducing = Z.shape[0]        
         num_data, output_dim = Y.shape
         
-        if self.batchsize == None or self.batchsize>num_data:
+        if self.batchsize == None:
             self.batchsize = num_data
 
         trYYT = self.get_trYYT(Y)

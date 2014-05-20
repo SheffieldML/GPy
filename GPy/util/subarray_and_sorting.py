@@ -4,7 +4,7 @@
 .. moduleauthor:: Max Zwiessele <ibinbei@gmail.com>
 
 '''
-__updated__ = '2013-12-02'
+__updated__ = '2014-05-20'
 
 import numpy as np
 

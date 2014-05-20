@@ -9,17 +9,24 @@ from ..core import Model
 from ..kern import Kern
 from ..core.parameterization.variational import NormalPosterior, NormalPrior
 from ..core.parameterization import Param, Parameterized
+from ..core.parameterization.observable_array import ObsAr
 from ..inference.latent_function_inference.var_dtc import VarDTCMissingData, VarDTC
+from ..inference.latent_function_inference import InferenceMethodList
 from ..likelihoods import Gaussian
 from ..util.initialization import initialize_latent
 from ..core.sparse_gp import SparseGP, GP
-from ..inference.latent_function_inference import InferenceMethodList
 
 class MRD(SparseGP):
     """
+    !WARNING: This is bleeding edge code and still in development. 
+    Functionality may change fundamentally during development!
+
     Apply MRD to all given datasets Y in Ylist.
 
     Y_i in [n x p_i]
+
+    If Ylist is a dictionary, the keys of the dictionary are the names, and the
+    values are the different datasets to compare. 
 
     The samples n in the datasets need
     to match up, whereas the dimensionality p_d can differ.
@@ -57,16 +64,46 @@ class MRD(SparseGP):
         self.input_dim = input_dim
         self.num_inducing = num_inducing
 
-        self.Ylist = Ylist
+        if isinstance(Ylist, dict):
+            Ynames, Ylist = zip(*Ylist.items())
+
+        self.Ylist = [ObsAr(Y) for Y in Ylist]
+
+        if Ynames is None:
+            Ynames = ['Y{}'.format(i) for i in range(len(Ylist))]
+        self.names = Ynames
+        assert len(self.names) == len(self.Ylist), "one name per dataset, or None if Ylist is a dict"
+
+        if inference_method is None:
+            self.inference_method= InferenceMethodList()
+            warned = False
+            for y in Ylist:
+                inan = np.isnan(y)
+                if np.any(inan):
+                    if not warned:
+                        print "WARING: NaN values detected, make sure initx method can cope with NaN values or provide starting latent space X"
+                        warned = True
+                    self.inference_method.append(VarDTCMissingData(limit=1, inan=inan))
+                else:
+                    self.inference_method.append(VarDTC(limit=1))
+        else:
+            if not isinstance(inference_method, InferenceMethodList):
+                inference_method = InferenceMethodList(inference_method)
+            self.inference_method = inference_method
+
+
         self._in_init_ = True
-        X, fracs = self._init_X(initx, Ylist)
+        if X is None:
+            X, fracs = self._init_X(initx, Ylist)
+        else:
+            fracs = [X.var(0)]*len(Ylist)
         self.Z = Param('inducing inputs', self._init_Z(initz, X))
         self.num_inducing = self.Z.shape[0] # ensure M==N if M>N
 
         # sort out the kernels
         if kernel is None:
             from ..kern import RBF
-            self.kernels = [RBF(input_dim, ARD=1, lengthscale=fracs[i], name='rbf'.format(i)) for i in range(len(Ylist))]
+            self.kernels = [RBF(input_dim, ARD=1, lengthscale=fracs[i]) for i in range(len(Ylist))]
         elif isinstance(kernel, Kern):
             self.kernels = []
             for i in range(len(Ylist)):
@@ -87,24 +124,7 @@ class MRD(SparseGP):
             self.likelihoods = [Gaussian(name='Gaussian_noise'.format(i)) for i in range(len(Ylist))]
         else: self.likelihoods = likelihoods
 
-        if inference_method is None:
-            self.inference_method= InferenceMethodList()
-            for y in Ylist:
-                inan = np.isnan(y)
-                if np.any(inan):
-                    self.inference_method.append(VarDTCMissingData(limit=1, inan=inan))
-                else:
-                    self.inference_method.append(VarDTC(limit=1))
-        else:
-            if not isinstance(inference_method, InferenceMethodList):
-                inference_method = InferenceMethodList(inference_method)
-            self.inference_method = inference_method
-
         self.add_parameters(self.X, self.Z)
-
-        if Ynames is None:
-            Ynames = ['Y{}'.format(i) for i in range(len(Ylist))]
-        self.names = Ynames
 
         self.bgplvms = []
         self.num_data = Ylist[0].shape[0]
@@ -173,7 +193,7 @@ class MRD(SparseGP):
             Ylist = self.Ylist
         if init in "PCA_concat":
             X, fracs = initialize_latent('PCA', self.input_dim, np.hstack(Ylist))
-            fracs = [fracs]*self.input_dim
+            fracs = [fracs]*len(Ylist)
         elif init in "PCA_single":
             X = np.zeros((Ylist[0].shape[0], self.input_dim))
             fracs = []
@@ -184,7 +204,7 @@ class MRD(SparseGP):
         else: # init == 'random':
             X = np.random.randn(Ylist[0].shape[0], self.input_dim)
             fracs = X.var(0)
-            fracs = [fracs]*self.input_dim
+            fracs = [fracs]*len(Ylist)
         X -= X.mean()
         X /= X.std()
         return X, fracs

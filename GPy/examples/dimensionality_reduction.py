@@ -518,21 +518,21 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
     Q = 6
     kernel = GPy.kern.RBF(Q, lengthscale=np.repeat(.5, Q), ARD=True) 
     m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20, kernel=kernel)
-    
+
     m.data = data
     m.likelihood.variance = 0.001
-    
+
     # optimize
-    if optimize: m.optimize('bfgs', messages=verbose, max_iters=800, xtol=1e-300, ftol=1e-300)
+    if optimize: m.optimize('bfgs', messages=verbose, max_iters=5e3, bfgs_factor=10)
     if plot:
-        plt.clf, (latent_axes, sense_axes) = plt.subplots(1, 2)
+        fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         plt.sca(latent_axes)
         m.plot_latent(ax=latent_axes)
         y = m.Y[:1, :].copy()
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y, connect=data['connect'])
-        GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X.mean[:1, :].copy(), m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
-        plt.draw()
-        plt.show()
+        dim_select = GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X.mean[:1, :].copy(), m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
+        fig.canvas.draw()
+        fig.canvas.show()
         raw_input('Press enter to finish')
 
     return m

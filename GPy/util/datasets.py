@@ -687,14 +687,20 @@ def hapmap3(data_set='hapmap3'):
         import bz2
     except ImportError as i:
         raise i, "Need pandas for hapmap dataset, make sure to install pandas (http://pandas.pydata.org/) before loading the hapmap dataset"
-    if not data_available(data_set):
-        download_data(data_set)
+
     dirpath = os.path.join(data_path,'hapmap3')
     hapmap_file_name = 'hapmap3_r2_b36_fwd.consensus.qc.poly'
+    unpacked_files = [os.path.join(dirpath, hapmap_file_name+ending) for ending in ['.ped', '.map']]
+    unpacked_files_exist = reduce(lambda a, b:a and b, map(os.path.exists, unpacked_files))
+
+    if not unpacked_files_exist and not data_available(data_set):
+        download_data(data_set)
+
     preprocessed_data_paths = [os.path.join(dirpath,hapmap_file_name + file_name) for file_name in \
                                ['.snps.pickle',
                                 '.info.pickle',
                                 '.nan.pickle']]
+
     if not reduce(lambda a,b: a and b, map(os.path.exists, preprocessed_data_paths)):
         if not overide_manual_authorize and not prompt_user("Preprocessing requires ~25GB "
                             "of memory and can take a (very) long time, continue? [Y/n]"):
@@ -708,8 +714,7 @@ def hapmap3(data_set='hapmap3'):
                                                                perc="="*int(20.*progress/100.))
             stdout.write(status); stdout.flush()
             return status
-        unpacked_files = [os.path.join(dirpath, hapmap_file_name+ending) for ending in ['.ped', '.map']]
-        if not reduce(lambda a,b: a and b, map(os.path.exists, unpacked_files)):
+        if not unpacked_files_exist:
             status=write_status('unpacking...', 0, '')
             curr = 0
             for newfilepath in unpacked_files:
@@ -726,6 +731,7 @@ def hapmap3(data_set='hapmap3'):
                             status=write_status('unpacking...', curr+12.*file_processed/(file_size), status)
                 curr += 12
                 status=write_status('unpacking...', curr, status)
+                os.remove(filepath)
         status=write_status('reading .ped...', 25, status)
         # Preprocess data:    
         snpstrnp = np.loadtxt(unpacked_files[0], dtype=str)
@@ -796,7 +802,7 @@ def hapmap3(data_set='hapmap3'):
 def singlecell(data_set='singlecell'):
     if not data_available(data_set):
         download_data(data_set)
-    
+
     from pandas import read_csv
     dirpath = os.path.join(data_path, data_set)
     filename = os.path.join(dirpath, 'singlecell.csv')

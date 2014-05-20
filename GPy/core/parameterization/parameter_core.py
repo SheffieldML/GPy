@@ -17,7 +17,7 @@ from transformations import Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, 
 import numpy as np
 import re
 
-__updated__ = '2014-05-15'
+__updated__ = '2014-05-20'
 
 class HierarchyError(Exception):
     """
@@ -50,10 +50,23 @@ class Observable(object):
     self as only argument to all its observers.
     """
     _updated = True
+    _updates = True
     def __init__(self, *args, **kwargs):
         super(Observable, self).__init__()
         from lists_and_dicts import ObserverList
         self.observers = ObserverList()
+
+    @property
+    def updates(self):
+        self._updates = self._highest_parent_._updates
+        return self._updates
+
+    @updates.setter
+    def updates(self, ups):
+        assert isinstance(ups, bool), "updates are either on (True) or off (False)"
+        self._highest_parent_._updates = ups
+        if ups:
+            self._trigger_params_changed()
 
     def add_observer(self, observer, callble, priority=0):
         """
@@ -91,6 +104,8 @@ class Observable(object):
         :param min_priority: only notify observers with priority > min_priority
                              if min_priority is None, notify all observers in order
         """
+        if not self.updates:
+            return
         if which is None:
             which = self
         if min_priority is None:

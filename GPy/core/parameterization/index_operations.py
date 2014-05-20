@@ -7,6 +7,20 @@ import numpy
 from numpy.lib.function_base import vectorize
 from lists_and_dicts import IntArrayDict
 
+def extract_properties_to_index(index, props):
+    prop_index = dict()
+    for i, cl in enumerate(props):
+        for c in cl:
+            ind = prop_index.get(c, list())
+            ind.append(index[i])
+            prop_index[c] = ind
+
+    for c, i in prop_index.items():
+        prop_index[c] = numpy.array(i, dtype=int)
+
+    return prop_index
+
+
 class ParameterIndexOperations(object):
     '''
     Index operations for storing param index _properties
@@ -66,7 +80,33 @@ class ParameterIndexOperations(object):
         return self._properties.values()
 
     def properties_for(self, index):
+        """
+        Returns a list of properties, such that each entry in the list corresponds
+        to the element of the index given.
+
+        Example:
+        let properties: 'one':[1,2,3,4], 'two':[3,5,6]
+
+        >>> properties_for([2,3,5])
+        [['one'], ['one', 'two'], ['two']]
+        """
         return vectorize(lambda i: [prop for prop in self.iterproperties() if i in self[prop]], otypes=[list])(index)
+
+    def properties_to_index_dict(self, index):
+        """
+        Return a dictionary, containing properties as keys and indices as index
+        Thus, the indices for each constraint, which is contained will be collected as
+        one dictionary
+
+        Example:
+        let properties: 'one':[1,2,3,4], 'two':[3,5,6]
+
+        >>> properties_to_index_dict([2,3,5])
+        {'one':[2,3], 'two':[3,5]}
+        """
+        props = self.properties_for(index)
+        prop_index = extract_properties_to_index(index, props)
+        return prop_index
 
     def add(self, prop, indices):
         self._properties[prop] = combine_indices(self._properties[prop], indices)
@@ -174,7 +214,31 @@ class ParameterIndexOperationsView(object):
 
 
     def properties_for(self, index):
+        """
+        Returns a list of properties, such that each entry in the list corresponds
+        to the element of the index given.
+
+        Example:
+        let properties: 'one':[1,2,3,4], 'two':[3,5,6]
+
+        >>> properties_for([2,3,5])
+        [['one'], ['one', 'two'], ['two']]
+        """
         return vectorize(lambda i: [prop for prop in self.iterproperties() if i in self[prop]], otypes=[list])(index)
+
+    def properties_to_index_dict(self, index):
+        """
+        Return a dictionary, containing properties as keys and indices as index
+        Thus, the indices for each constraint, which is contained will be collected as
+        one dictionary
+
+        Example:
+        let properties: 'one':[1,2,3,4], 'two':[3,5,6]
+
+        >>> properties_to_index_dict([2,3,5])
+        {'one':[2,3], 'two':[3,5]}
+        """
+        return extract_properties_to_index(index, self.properties_for(index))
 
 
     def add(self, prop, indices):

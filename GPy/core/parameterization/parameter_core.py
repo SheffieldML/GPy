@@ -324,6 +324,7 @@ class Indexable(Nameable, Observable):
         self._default_constraint_ = default_constraint
         from index_operations import ParameterIndexOperations
         self.constraints = ParameterIndexOperations()
+        self._old_constraints = ParameterIndexOperations()
         self.priors = ParameterIndexOperations()
         if self._default_constraint_ is not None:
             self.constrain(self._default_constraint_)
@@ -386,8 +387,10 @@ class Indexable(Nameable, Observable):
         """
         if value is not None:
             self[:] = value
-        reconstrained = self.unconstrain()
-        index = self._add_to_index_operations(self.constraints, reconstrained, __fixed__, warning)
+
+        index = self._raveled_index()
+        # reconstrained = self.unconstrain()
+        index = self._add_to_index_operations(self.constraints, index, __fixed__, warning)
         self._highest_parent_._set_fixed(self, index)
         self.notify_observers(self, None if trigger_parent else -np.inf)
         return index

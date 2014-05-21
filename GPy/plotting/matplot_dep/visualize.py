@@ -88,7 +88,6 @@ class vector_show(matplotlib_show):
 
 
 class lvm(matplotlib_show):
-    
     def __init__(self, vals, model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0,1], disable_drag=False):
         """Visualize a latent variable model
 
@@ -150,7 +149,6 @@ class lvm(matplotlib_show):
         pass
 
     def on_click(self, event):
-        print 'click!'
         if event.inaxes!=self.latent_axes: return
         if self.disable_drag:
             self.move_on = True
@@ -228,11 +226,10 @@ class lvm_dimselect(lvm):
         self.labels = labels
         lvm.__init__(self,vals,model,data_visualize,latent_axes,sense_axes,latent_index)
         self.show_sensitivities()
-        print "use left and right mouse butons to select dimensions"
+        print "use left and right mouse buttons to select dimensions"
 
 
     def on_click(self, event):
-
         if event.inaxes==self.sense_axes:
             new_index = max(0,min(int(np.round(event.xdata-0.5)),self.model.input_dim-1))
             if event.button == 1:

@@ -4,7 +4,8 @@ Created on 13 Mar 2014
 @author: maxz
 '''
 import unittest, itertools
-import cPickle as pickle
+#import cPickle as pickle
+import pickle
 import numpy as np
 from GPy.core.parameterization.index_operations import ParameterIndexOperations,\
     ParameterIndexOperationsView

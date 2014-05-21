@@ -94,12 +94,12 @@ class Test(unittest.TestCase):
     def test_set_params(self):
         self.assertEqual(self.par.params_changed_count, 0, 'no params changed yet')
         self.par.param_array[:] = 1
-        self.par._trigger_params_changed()
+        self.par.update_model()
         self.assertEqual(self.par.params_changed_count, 1, 'now params changed')
         self.assertEqual(self.parent.parent_changed_count, self.par.params_changed_count)
 
         self.par.param_array[:] = 2
-        self.par._trigger_params_changed()
+        self.par.update_model()
         self.assertEqual(self.par.params_changed_count, 2, 'now params changed')
         self.assertEqual(self.parent.parent_changed_count, self.par.params_changed_count)
 

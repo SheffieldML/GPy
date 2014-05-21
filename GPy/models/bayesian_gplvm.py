@@ -10,6 +10,7 @@ from ..util import linalg
 from ..core.parameterization.variational import NormalPosterior, NormalPrior, VariationalPosterior
 from ..inference.latent_function_inference.var_dtc_parallel import update_gradients
 from ..inference.latent_function_inference.var_dtc_gpu import VarDTC_GPU
+import logging
 
 class BayesianGPLVM(SparseGP):
     """
@@ -25,8 +26,10 @@ class BayesianGPLVM(SparseGP):
     """
     def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
                  Z=None, kernel=None, inference_method=None, likelihood=None, name='bayesian gplvm', **kwargs):
+        self.logger = logging.getLogger("Bayesian GPLVM <{}>".format(hex(id(self))))
         if X == None:
             from ..util.initialization import initialize_latent
+            self.logger.info("initializing latent space X with method {}".format(init))
             X, fracs = initialize_latent(init, input_dim, Y)
         else:
             fracs = np.ones(input_dim)
@@ -35,7 +38,6 @@ class BayesianGPLVM(SparseGP):
 
         if X_variance is None:
             X_variance = np.random.uniform(0,.1,X.shape)
-
 
         if Z is None:
             Z = np.random.permutation(X.copy())[:num_inducing]
@@ -52,11 +54,14 @@ class BayesianGPLVM(SparseGP):
         X = NormalPosterior(X, X_variance)
 
         if inference_method is None:
-            if np.any(np.isnan(Y)):
+            inan = np.isnan(Y)
+            if np.any(inan):
                 from ..inference.latent_function_inference.var_dtc import VarDTCMissingData
-                inference_method = VarDTCMissingData()
+                self.logger.debug("creating inference_method with var_dtc missing data")
+                inference_method = VarDTCMissingData(inan=inan)
             else:
                 from ..inference.latent_function_inference.var_dtc import VarDTC
+                self.logger.debug("creating inference_method var_dtc")
                 inference_method = VarDTC()
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)

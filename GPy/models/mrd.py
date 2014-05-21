@@ -2,10 +2,8 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-import itertools
-import pylab
+import itertools, logging
 
-from ..core import Model
 from ..kern import Kern
 from ..core.parameterization.variational import NormalPosterior, NormalPrior
 from ..core.parameterization import Param, Parameterized
@@ -61,15 +59,18 @@ class MRD(SparseGP):
                  inference_method=None, likelihoods=None, name='mrd', Ynames=None):
         super(GP, self).__init__(name)
 
+        self.logger = logging.getLogger("MRD <{}>".format(hex(id(self))))
         self.input_dim = input_dim
         self.num_inducing = num_inducing
 
         if isinstance(Ylist, dict):
             Ynames, Ylist = zip(*Ylist.items())
 
+        self.logger.debug("creating observable arrays")
         self.Ylist = [ObsAr(Y) for Y in Ylist]
 
         if Ynames is None:
+            self.logger.debug("creating Ynames")
             Ynames = ['Y{}'.format(i) for i in range(len(Ylist))]
         self.names = Ynames
         assert len(self.names) == len(self.Ylist), "one name per dataset, or None if Ylist is a dict"
@@ -81,13 +82,15 @@ class MRD(SparseGP):
                 inan = np.isnan(y)
                 if np.any(inan):
                     if not warned:
-                        print "WARING: NaN values detected, make sure initx method can cope with NaN values or provide starting latent space X"
+                        self.logger.warn("WARNING: NaN values detected, make sure initx method can cope with NaN values or provide starting latent space X")
                         warned = True
                     self.inference_method.append(VarDTCMissingData(limit=1, inan=inan))
                 else:
                     self.inference_method.append(VarDTC(limit=1))
+                self.logger.debug("created inference method <{}>".format(hex(id(self.inference_method[-1]))))
         else:
             if not isinstance(inference_method, InferenceMethodList):
+                self.logger.debug("making inference_method an InferenceMethodList")
                 inference_method = InferenceMethodList(inference_method)
             self.inference_method = inference_method
 
@@ -101,6 +104,7 @@ class MRD(SparseGP):
         self.num_inducing = self.Z.shape[0] # ensure M==N if M>N
 
         # sort out the kernels
+        self.logger.info("building kernels")
         if kernel is None:
             from ..kern import RBF
             self.kernels = [RBF(input_dim, ARD=1, lengthscale=fracs[i]) for i in range(len(Ylist))]
@@ -124,6 +128,7 @@ class MRD(SparseGP):
             self.likelihoods = [Gaussian(name='Gaussian_noise'.format(i)) for i in range(len(Ylist))]
         else: self.likelihoods = likelihoods
 
+        self.logger.info("adding X and Z")
         self.add_parameters(self.X, self.Z)
 
         self.bgplvms = []
@@ -141,6 +146,7 @@ class MRD(SparseGP):
             self.bgplvms.append(p)
 
         self.posterior = None
+        self.logger.info("init done")
         self._in_init_ = False
 
     def parameters_changed(self):
@@ -148,17 +154,19 @@ class MRD(SparseGP):
         self.posteriors = []
         self.Z.gradient[:] = 0.
         self.X.gradient[:] = 0.
-
         for y, k, l, i in itertools.izip(self.Ylist, self.kernels, self.likelihoods, self.inference_method):
+            self.logger.info('working on im <{}>'.format(hex(id(i))))
             posterior, lml, grad_dict = i.inference(k, self.X, self.Z, l, y)
 
             self.posteriors.append(posterior)
             self._log_marginal_likelihood += lml
 
             # likelihoods gradients
+            self.logger.info("likelihood gradients")
             l.update_gradients(grad_dict.pop('dL_dthetaL'))
 
             #gradients wrt kernel
+            self.logger.info("kernel gradients")
             dL_dKmm = grad_dict.pop('dL_dKmm')
             k.update_gradients_full(dL_dKmm, self.Z, None)
             target = k.gradient.copy()
@@ -166,6 +174,7 @@ class MRD(SparseGP):
             k.gradient += target
 
             #gradients wrt Z
+            self.logger.info("Z gradients")
             self.Z.gradient += k.gradients_X(dL_dKmm, self.Z)
             self.Z.gradient += k.gradients_Z_expectations(
                                grad_dict['dL_dpsi0'], 
@@ -173,6 +182,7 @@ class MRD(SparseGP):
                                grad_dict['dL_dpsi2'], 
                                Z=self.Z, variational_posterior=self.X)
 
+            self.logger.info("X gradients")
             dL_dmean, dL_dS = k.gradients_qX_expectations(variational_posterior=self.X, Z=self.Z, **grad_dict)
             self.X.mean.gradient += dL_dmean
             self.X.variance.gradient += dL_dS
@@ -219,8 +229,9 @@ class MRD(SparseGP):
         return Z
 
     def _handle_plotting(self, fignum, axes, plotf, sharex=False, sharey=False):
+        import matplotlib.pyplot as plt
         if axes is None:
-            fig = pylab.figure(num=fignum)
+            fig = plt.figure(num=fignum)
         sharex_ax = None
         sharey_ax = None
         plots = []
@@ -242,8 +253,8 @@ class MRD(SparseGP):
                 raise ValueError("Need one axes per latent dimension input_dim")
             plots.append(plotf(i, g, ax))
             if sharey_ax is not None:
-                pylab.setp(ax.get_yticklabels(), visible=False)
-        pylab.draw()
+                plt.setp(ax.get_yticklabels(), visible=False)
+        plt.draw()
         if axes is None:
             try:
                 fig.tight_layout()
@@ -300,11 +311,12 @@ class MRD(SparseGP):
         """
         import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        import matplotlib.pyplot as plt
         from ..plotting.matplot_dep import dim_reduction_plots
         if "Yindex" not in predict_kwargs:
             predict_kwargs['Yindex'] = 0
         if ax is None:
-            fig = pylab.figure(num=fignum)
+            fig = plt.figure(num=fignum)
             ax = fig.add_subplot(111)
         else:
             fig = ax.figure

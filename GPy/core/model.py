@@ -20,7 +20,7 @@ class Model(Parameterized):
         super(Model, self).__init__(name)  # Parameterized.__init__(self)
         self.optimization_runs = []
         self.sampling_runs = []
-        self.preferred_optimizer = 'scg'
+        self.preferred_optimizer = 'bfgs'
 
     def log_likelihood(self):
         raise NotImplementedError, "this needs to be implemented to use the model class"

@@ -7,7 +7,7 @@ The package for the psi statistics computation
 
 import numpy as np
 from . import PSICOMP
-from GPy.util.caching import Cache_this,Cacher
+from GPy.util.caching import Cache_this
 
 class PSICOMP_SSRBF(PSICOMP):
     

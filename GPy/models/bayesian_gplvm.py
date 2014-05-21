@@ -8,7 +8,7 @@ from ..likelihoods import Gaussian
 from ..inference.optimization import SCG
 from ..util import linalg
 from ..core.parameterization.variational import NormalPosterior, NormalPrior, VariationalPosterior
-from ..inference.latent_function_inference.var_dtc_parallel import update_gradients
+from ..inference.latent_function_inference.var_dtc_parallel import update_gradients, VarDTC_minibatch
 from ..inference.latent_function_inference.var_dtc_gpu import VarDTC_GPU
 
 class BayesianGPLVM(SparseGP):
@@ -67,7 +67,7 @@ class BayesianGPLVM(SparseGP):
         X.mean.gradient, X.variance.gradient = X_grad
 
     def parameters_changed(self):
-        if isinstance(self.inference_method, VarDTC_GPU):
+        if isinstance(self.inference_method, VarDTC_GPU) or isinstance(self.inference_method, VarDTC_minibatch):
             update_gradients(self)
             return
 

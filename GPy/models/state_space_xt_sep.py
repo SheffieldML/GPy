@@ -1,4 +1,4 @@
-# Copyright (c) 2013,  Arno Solin, Mu Niu, Simo Sarkka.
+# Copyright (c) 2013,   Mu Niu,Arno Solin, Simo Sarkka.
 # Licensed under the BSD 3-clause license (see LICENSE.txt) ??
 #
 # This implementation of converting GPs to state space models is based on the article:

@@ -64,7 +64,6 @@ class SSGPLVM(SparseGP):
 
         if kernel is None:
             kernel = kern.RBF(input_dim, lengthscale=fracs, ARD=True) # + kern.white(input_dim)
-        kernel.set_for_SpikeAndSlab()
         
         if inference_method is None:
             inference_method = VarDTC_minibatch(mpi_comm=mpi_comm)

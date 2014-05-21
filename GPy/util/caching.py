@@ -15,9 +15,9 @@ class Cacher(object):
         self.limit = int(limit)
         self.ignore_args = ignore_args
         self.force_kwargs = force_kwargs
-        self.operation=operation
+        self.operation = operation
         self.order = collections.deque()
-        self.cached_inputs = {} # point from cache_ids to a list of [ind_ids], which where used in cache cache_id
+        self.cached_inputs = {}  # point from cache_ids to a list of [ind_ids], which where used in cache cache_id
         self.logger = logging.getLogger("cache")
 
         #=======================================================================
@@ -27,8 +27,8 @@ class Cacher(object):
         self.cached_input_ids = {} 
         #=======================================================================
 
-        self.cached_outputs = {} # point from cache_ids to outputs
-        self.inputs_changed = {} # point from cache_ids to bools
+        self.cached_outputs = {}  # point from cache_ids to outputs
+        self.inputs_changed = {}  # point from cache_ids to bools
 
     def id(self, obj):
         """returns the self.id of an object, to be used in caching individual self.ids"""
@@ -41,7 +41,7 @@ class Cacher(object):
 
     def prepare_cache_id(self, combined_args_kw, ignore_args):
         "get the cacheid (conc. string of argument self.ids in order) ignoring ignore_args"
-        cache_id = "".join(self.id(a) for i,a in enumerate(combined_args_kw) if i not in ignore_args)
+        cache_id = "".join(self.id(a) for i, a in enumerate(combined_args_kw) if i not in ignore_args)
         self.logger.debug("cache_id={} was created".format(cache_id))
         return cache_id
 
@@ -105,10 +105,10 @@ class Cacher(object):
         inputs = self.combine_inputs(args, kw)
         cache_id = self.prepare_cache_id(inputs, self.ignore_args)
         # 2: if anything is not cachable, we will just return the operation, without caching
-        if reduce(lambda a,b: a or (not (isinstance(b, Observable) or b is None)), inputs, False):
+        if reduce(lambda a, b: a or (not (isinstance(b, Observable) or b is None)), inputs, False):
             self.logger.info("some inputs are not observable: returning without caching")
-            self.logger.info(str(map(lambda x: isinstance(x, Observable) or x is None, inputs)))
-            self.logger.info(str(map(repr, inputs)))
+            self.logger.debug(str(map(lambda x: isinstance(x, Observable) or x is None, inputs)))
+            self.logger.debug(str(map(repr, inputs)))
             return self.operation(*args, **kw)
         # 3&4: check whether this cache_id has been cached, then has it changed?
         try:
@@ -179,7 +179,7 @@ class Cacher_wrap(object):
         return partial(self, obj)
     def __call__(self, *args, **kwargs):
         obj = args[0]
-        #import ipdb;ipdb.set_trace()
+        # import ipdb;ipdb.set_trace()
         try:
             caches = obj.__cachers
         except AttributeError:

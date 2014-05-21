@@ -94,22 +94,18 @@ class MiscTests(unittest.TestCase):
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
 
         m.kern.lengthscale.randomize()
-        m.update_model()
         m2.kern.lengthscale = m.kern.lengthscale
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
 
         m.kern.lengthscale.randomize()
-        m.update_model()
         m2['.*lengthscale'] = m.kern.lengthscale
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
 
         m.kern.lengthscale.randomize()
-        m.update_model()
         m2['.*lengthscale'] = m.kern['.*lengthscale']
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
 
         m.kern.lengthscale.randomize()
-        m.update_model()
         m2.kern.lengthscale = m.kern['.*lengthscale']
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
 

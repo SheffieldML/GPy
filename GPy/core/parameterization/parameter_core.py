@@ -17,7 +17,7 @@ from transformations import Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, 
 import numpy as np
 import re
 
-__updated__ = '2014-05-20'
+__updated__ = '2014-05-21'
 
 class HierarchyError(Exception):
     """
@@ -389,7 +389,7 @@ class Indexable(Nameable, Observable):
             self[:] = value
 
         index = self._raveled_index()
-        # reconstrained = self.unconstrain()
+        reconstrained = self.unconstrain()
         index = self._add_to_index_operations(self.constraints, index, __fixed__, warning)
         self._highest_parent_._set_fixed(self, index)
         self.notify_observers(self, None if trigger_parent else -np.inf)

@@ -57,13 +57,15 @@ class Cacher(object):
             for ind in combined_args_kw:
                 if ind is not None:
                     ind_id = self.id(ind)
-                    ref, cache_ids = self.cached_input_ids[ind_id]
-                    if len(cache_ids) == 1 and ref() is not None:
-                        ref().remove_observer(self, self.on_cache_changed)
-                        del self.cached_input_ids[ind_id]
-                    else:
-                        cache_ids.remove(cache_id)
-                        self.cached_input_ids[ind_id] = [ref, cache_ids]
+                    tmp = self.cached_input_ids.get(ind_id, None)
+                    if tmp is not None:
+                        ref, cache_ids = tmp
+                        if len(cache_ids) == 1 and ref() is not None:
+                            ref().remove_observer(self, self.on_cache_changed)
+                            del self.cached_input_ids[ind_id]
+                        else:
+                            cache_ids.remove(cache_id)
+                            self.cached_input_ids[ind_id] = [ref, cache_ids]
             self.logger.debug("removing caches")
             del self.cached_outputs[cache_id]
             del self.inputs_changed[cache_id]

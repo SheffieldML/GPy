@@ -499,9 +499,8 @@ def robot_wireless(optimize=True, verbose=True, plot=True):
 
     data = GPy.util.datasets.robot_wireless()
     # optimize
-    m = GPy.models.GPLVM(data['Y'], 2)
+    m = GPy.models.BayesianGPLVM(data['Y'], 4, num_inducing=25)
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
-    m._set_params(m._get_params())
     if plot:
         m.plot_latent()
 

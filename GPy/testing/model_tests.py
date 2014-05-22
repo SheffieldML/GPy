@@ -126,6 +126,23 @@ class MiscTests(unittest.TestCase):
         m2.kern[:] = m.kern[''].values()
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
 
+    def test_big_model(self):
+        m = GPy.examples.dimensionality_reduction.mrd_simulation(optimize=0, plot=0, plot_sim=0)
+        m.X.fix()
+        print m
+        m.unfix()
+        m.checkgrad()
+        print m
+        m.fix()
+        print m
+        m.inducing_inputs.unfix()
+        print m
+        m.checkgrad()
+        m.unfix()
+        m.checkgrad()
+        m.checkgrad()
+        print m
+
     def test_model_set_params(self):
         m = GPy.models.GPRegression(self.X, self.Y)
         lengthscale = np.random.uniform()

@@ -245,7 +245,7 @@ class Pickleable(object):
  
     def __setstate__(self, state):
         self.__dict__.update(state)
-        self._transformed = True
+        self._optimizer_copy_transformed = False
 
 
 class Gradcheckable(Pickleable, Parentable):
@@ -400,7 +400,7 @@ class Indexable(Nameable, Observable):
             self[:] = value
 
         index = self._raveled_index()
-        reconstrained = self.unconstrain()
+        #reconstrained = self.unconstrain()
         index = self._add_to_index_operations(self.constraints, index, __fixed__, warning)
         self._highest_parent_._set_fixed(self, index)
         self.notify_observers(self, None if trigger_parent else -np.inf)
@@ -624,12 +624,12 @@ class OptimizationHandlable(Indexable):
     """
     This enables optimization handles on an Object as done in GPy 0.4.
 
-    `..._transformed`: make sure the transformations and constraints etc are handled
+    `..._optimizer_copy_transformed`: make sure the transformations and constraints etc are handled
     """
     def __init__(self, name, default_constraint=None, *a, **kw):
         super(OptimizationHandlable, self).__init__(name, default_constraint=default_constraint, *a, **kw)
         self._optimizer_copy_ = None
-        self._transformed = True
+        self._optimizer_copy_transformed = False
 
     #===========================================================================
     # Optimizer copy
@@ -651,7 +651,7 @@ class OptimizationHandlable(Indexable):
         if self.__dict__.get('_optimizer_copy_', None) is None or self.size != self._optimizer_copy_.size:
             self._optimizer_copy_ = np.empty(self.size)
         
-        if self._transformed:
+        if not self._optimizer_copy_transformed:
             self._optimizer_copy_.flat = self.param_array.flat
             [np.put(self._optimizer_copy_, ind, c.finv(self.param_array[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
             if self.has_parent() and self.constraints[__fixed__].size != 0:
@@ -660,7 +660,7 @@ class OptimizationHandlable(Indexable):
                 return self._optimizer_copy_[fixes]
             elif self._has_fixes():
                 return self._optimizer_copy_[self._fixes_]
-            self._transformed = False
+            self._optimizer_copy_transformed = True
         
         return self._optimizer_copy_
     
@@ -672,29 +672,26 @@ class OptimizationHandlable(Indexable):
         
         Also we want to update param_array in here.
         """
-        if self.__dict__.get('_optimizer_copy_', None) is None or self.size != self._optimizer_copy_.size:
-            self._optimizer_copy_ = np.empty(self.size)
-        
-        self._optimizer_copy_.flat = self.param_array.flat
-        
+        f = None
         if self.has_parent() and self.constraints[__fixed__].size != 0:
-            fixes = np.ones(self.size).astype(bool)
-            fixes[self.constraints[__fixed__]] = FIXED
-            self._optimizer_copy_.flat[fixes] = p
-        elif self._has_fixes(): self._optimizer_copy_.flat[self._fixes_] = p
-        else: self._optimizer_copy_.flat = p
-        
-        self.param_array.flat = self._optimizer_copy_.flat
+            f = np.ones(self.size).astype(bool)
+            f[self.constraints[__fixed__]] = FIXED
+        elif self._has_fixes(): 
+            f = self._fixes_
+        if f is None:
+            self.param_array.flat = p
+            [np.put(self.param_array, ind, c.f(self.param_array.flat[ind])) 
+             for c, ind in self.constraints.iteritems() if c != __fixed__]
+        else:
+            self.param_array.flat[f] = p
+            [np.put(self.param_array, ind[f[ind]], c.f(self.param_array.flat[ind[f[ind]]])) 
+             for c, ind in self.constraints.iteritems() if c != __fixed__]
     
-        [np.put(self.param_array, ind, c.f(self._optimizer_copy_.flat[ind])) 
-         for c, ind in self.constraints.iteritems() if c != __fixed__]
-        
-        self._transformed = True
-        
+        self._optimizer_copy_transformed = False
         self._trigger_params_changed()
 
     def _get_params_transformed(self):
-        raise DeprecationWarning, "_get|set_params{_transformed} is deprecated, use self.optimizer array insetad!"
+        raise DeprecationWarning, "_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!"
 #         # transformed parameters (apply un-transformation rules)
 #         p = self.param_array.copy()
 #         [np.put(p, ind, c.finv(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
@@ -707,7 +704,7 @@ class OptimizationHandlable(Indexable):
 #         return p
 # 
     def _set_params_transformed(self, p):
-        raise DeprecationWarning, "_get|set_params{_transformed} is deprecated, use self.optimizer array insetad!"
+        raise DeprecationWarning, "_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!"
 
 #         """
 #         Set parameters p, but make sure they get transformed before setting.

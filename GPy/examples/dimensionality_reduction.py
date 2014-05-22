@@ -172,14 +172,14 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     m.data_labels = data['Y'][:N].argmax(axis=1)
     
     if optimize:
-        m.optimize('scg', messages=verbose, max_iters=max_iters, gtol=.05)
+        m.optimize('bfgs', messages=verbose, max_iters=max_iters, gtol=.05)
 
     if plot:
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         m.plot_latent(ax=latent_axes, labels=m.data_labels)
         data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0,:]))
         lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(param_to_array(m.X.mean)[0:1,:], # @UnusedVariable
-            m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
+            m, data_show, latent_axes=latent_axes, sense_axes=sense_axes, labels=m.data_labels)
         raw_input('Press enter to finish')
         plt.close(fig)
     return m
@@ -386,18 +386,17 @@ def brendan_faces(optimize=True, verbose=True, plot=True):
     Yn = Y - Y.mean()
     Yn /= Yn.std()
 
-    m = GPy.models.GPLVM(Yn, Q)
+    m = GPy.models.BayesianGPLVM(Yn, Q, num_inducing=20)
 
     # optimize
-    m.constrain('rbf|noise|white', GPy.transformations.LogexpClipped())
 
-    if optimize: m.optimize('scg', messages=verbose, max_iters=1000)
+    if optimize: m.optimize('bfgs', messages=verbose, max_iters=1000)
 
     if plot:
         ax = m.plot_latent(which_indices=(0, 1))
-        y = m.likelihood.Y[0, :]
+        y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, order='F', invert=False, scale=False)
-        GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        lvm = GPy.plotting.matplot_dep.visualize.lvm(m.X.mean[0, :].copy(), m, data_show, ax)
         raw_input('Press enter to finish')
 
     return m
@@ -411,13 +410,14 @@ def olivetti_faces(optimize=True, verbose=True, plot=True):
     Yn = Y - Y.mean()
     Yn /= Yn.std()
 
-    m = GPy.models.GPLVM(Yn, Q)
-    if optimize: m.optimize('scg', messages=verbose, max_iters=1000)
+    m = GPy.models.BayesianGPLVM(Yn, Q, num_inducing=20)
+    
+    if optimize: m.optimize('bfgs', messages=verbose, max_iters=1000)
     if plot:
         ax = m.plot_latent(which_indices=(0, 1))
         y = m.likelihood.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.image_show(y[None, :], dimensions=(112, 92), transpose=False, invert=False, scale=False)
-        GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        lvm = GPy.plotting.matplot_dep.visualize.lvm(m.X.mean[0, :].copy(), m, data_show, ax)
         raw_input('Press enter to finish')
 
     return m

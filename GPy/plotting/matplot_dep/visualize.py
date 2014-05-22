@@ -98,9 +98,9 @@ class lvm(matplotlib_show):
         """
         if vals is None:
             if isinstance(model.X, VariationalPosterior):
-                vals = param_to_array(model.X.mean)
+                vals = model.X.mean
             else:
-                vals = param_to_array(model.X)
+                vals = model.X
         if len(vals.shape)==1:
             vals = vals[None,:]
         matplotlib_show.__init__(self, vals, axes=latent_axes)
@@ -133,7 +133,7 @@ class lvm(matplotlib_show):
 
     def modify(self, vals):
         """When latent values are modified update the latent representation and ulso update the output visualization."""
-        self.vals = vals.copy()
+        self.vals = vals.view(np.ndarray).copy()
         y = self.model.predict(self.vals)[0]
         self.data_visualize.modify(y)
         self.latent_handle.set_data(self.vals[0,self.latent_index[0]], self.vals[0,self.latent_index[1]])

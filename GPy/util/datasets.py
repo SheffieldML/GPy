@@ -635,7 +635,7 @@ def osu_run1(data_set='osu_run1', sample_every=4):
     return data_details_return({'Y': Y, 'connect' : connect}, data_set)
 
 def swiss_roll_generated(num_samples=1000, sigma=0.0):
-    with open(os.path.join(data_path, 'swiss_roll.pickle')) as f:
+    with open(os.path.join(os.path.dirname(__file__), 'datasets', 'swiss_roll.pickle')) as f:
         data = pickle.load(f)
     Na = data['Y'].shape[0]
     perm = np.random.permutation(np.r_[:Na])[:num_samples]

@@ -16,8 +16,7 @@ from GPy.core.parameterization.priors import Gaussian
 from GPy.kern._src.rbf import RBF
 from GPy.kern._src.linear import Linear
 from GPy.kern._src.static import Bias, White
-from GPy.examples.dimensionality_reduction import mrd_simulation,\
-    bgplvm_simulation
+from GPy.examples.dimensionality_reduction import mrd_simulation
 from GPy.examples.regression import toy_rbf_1d_50
 from GPy.core.parameterization.variational import NormalPosterior
 from GPy.models.gp_regression import GPRegression
@@ -90,6 +89,7 @@ class Test(ListDictTestCase):
         self.assertIs(pcopy.constraints, pcopy.rbf.lengthscale.constraints._param_index_ops)
         self.assertIs(pcopy.constraints, pcopy.linear.constraints._param_index_ops)
         self.assertListEqual(par.param_array.tolist(), pcopy.param_array.tolist())
+        pcopy.gradient = 10 # gradient does not get copied anymore
         self.assertListEqual(par.gradient_full.tolist(), pcopy.gradient_full.tolist())
         self.assertSequenceEqual(str(par), str(pcopy))
         self.assertIsNot(par.param_array, pcopy.param_array)
@@ -151,6 +151,7 @@ class Test(ListDictTestCase):
         par = NormalPosterior(X,Xv)
         par.gradient = 10
         pcopy = par.copy()
+        pcopy.gradient = 10
         self.assertListEqual(par.param_array.tolist(), pcopy.param_array.tolist())
         self.assertListEqual(par.gradient_full.tolist(), pcopy.gradient_full.tolist())
         self.assertSequenceEqual(str(par), str(pcopy))

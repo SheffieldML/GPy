@@ -16,6 +16,7 @@ Observable Pattern for patameterization
 from transformations import Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
 import re
+import logging
 
 __updated__ = '2014-05-21'
 
@@ -49,7 +50,6 @@ class Observable(object):
     as an observer. Every time the observable changes, it sends a notification with
     self as only argument to all its observers.
     """
-    _updated = True
     _updates = True
     def __init__(self, *args, **kwargs):
         super(Observable, self).__init__()
@@ -58,13 +58,19 @@ class Observable(object):
 
     @property
     def updates(self):
-        self._updates = self._highest_parent_._updates
+        p = getattr(self, '_highest_parent_', None)
+        if p is not None:
+            self._updates = p._updates
         return self._updates
 
     @updates.setter
     def updates(self, ups):
         assert isinstance(ups, bool), "updates are either on (True) or off (False)"
-        self._highest_parent_._updates = ups
+        p = getattr(self, '_highest_parent_', None)
+        if p is not None:
+            p._updates = ups
+        else:
+            self._updates = ups
         if ups:
             self._trigger_params_changed()
 
@@ -172,6 +178,7 @@ class Pickleable(object):
     """
     def __init__(self, *a, **kw):
         super(Pickleable, self).__init__()
+
     #===========================================================================
     # Pickling operations
     #===========================================================================
@@ -208,21 +215,25 @@ class Pickleable(object):
             memo[id(p)] = None # set all parents to be None, so they will not be copied
         memo[id(self.gradient)] = None # reset the gradient
         memo[id(self.param_array)] = None # and param_array
+        memo[id(self.optimizer_array)] = None # and param_array
         memo[id(self._fixes_)] = None # fixes have to be reset, as this is now highest parent
         c = copy.deepcopy(self, memo) # and start the copy
         c._parent_index_ = None
+        c._trigger_params_changed()
         return c
 
     def __deepcopy__(self, memo):
         s = self.__new__(self.__class__) # fresh instance
         memo[id(self)] = s # be sure to break all cycles --> self is already done
         import copy
-        s.__dict__.update(copy.deepcopy(self.__dict__, memo)) # standard copy
+        s.__setstate__(copy.deepcopy(self.__getstate__(), memo)) # standard copy
         return s
 
     def __getstate__(self):
         ignore_list = ['_param_array_', # parameters get set from bottom to top
                        '_gradient_array_', # as well as gradients
+                       '_optimizer_copy_',
+                       'logger',
                        '_fixes_', # and fixes
                        '_Cacher_wrap__cachers', # never pickle cachers
                        ]
@@ -234,7 +245,8 @@ class Pickleable(object):
  
     def __setstate__(self, state):
         self.__dict__.update(state)
-        return self
+        self._transformed = True
+
 
 class Gradcheckable(Pickleable, Parentable):
     """
@@ -324,7 +336,6 @@ class Indexable(Nameable, Observable):
         self._default_constraint_ = default_constraint
         from index_operations import ParameterIndexOperations
         self.constraints = ParameterIndexOperations()
-        self._old_constraints = ParameterIndexOperations()
         self.priors = ParameterIndexOperations()
         if self._default_constraint_ is not None:
             self.constrain(self._default_constraint_)
@@ -617,35 +628,102 @@ class OptimizationHandlable(Indexable):
     """
     def __init__(self, name, default_constraint=None, *a, **kw):
         super(OptimizationHandlable, self).__init__(name, default_constraint=default_constraint, *a, **kw)
+        self._optimizer_copy_ = None
+        self._transformed = True
 
-    def _get_params_transformed(self):
-        # transformed parameters (apply un-transformation rules)
-        p = self.param_array.copy()
-        [np.put(p, ind, c.finv(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-        if self.has_parent() and self.constraints[__fixed__].size != 0:
-            fixes = np.ones(self.size).astype(bool)
-            fixes[self.constraints[__fixed__]] = FIXED
-            return p[fixes]
-        elif self._has_fixes():
-            return p[self._fixes_]
-        return p
-
-    def _set_params_transformed(self, p):
+    #===========================================================================
+    # Optimizer copy
+    #===========================================================================    
+    @property
+    def optimizer_array(self):
         """
-        Set parameters p, but make sure they get transformed before setting.
-        This means, the optimizer sees p, whereas the model sees transformed(p), 
-        such that, the parameters the model sees are in the right domain.
+        Array for the optimizer to work on.
+        This array always lives in the space for the optimizer.
+        Thus, it is untransformed, going from Transformations.
+        
+        Setting this array, will make sure the transformed parameters for this model
+        will be set accordingly. It has to be set with an array, retrieved from
+        this method, as e.g. fixing will resize the array.  
+        
+        The optimizer should only interfere with this array, such that transofrmations
+        are secured.
         """
-        if not(p is self.param_array):
+        if self.__dict__.get('_optimizer_copy_', None) is None or self.size != self._optimizer_copy_.size:
+            self._optimizer_copy_ = np.empty(self.size)
+        
+        if self._transformed:
+            self._optimizer_copy_.flat = self.param_array.flat
+            [np.put(self._optimizer_copy_, ind, c.finv(self.param_array[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
             if self.has_parent() and self.constraints[__fixed__].size != 0:
                 fixes = np.ones(self.size).astype(bool)
                 fixes[self.constraints[__fixed__]] = FIXED
-                self.param_array.flat[fixes] = p
-            elif self._has_fixes(): self.param_array.flat[self._fixes_] = p
-            else: self.param_array.flat = p
-        [np.put(self.param_array, ind, c.f(self.param_array.flat[ind])) 
+                return self._optimizer_copy_[fixes]
+            elif self._has_fixes():
+                return self._optimizer_copy_[self._fixes_]
+            self._transformed = False
+        
+        return self._optimizer_copy_
+    
+    @optimizer_array.setter
+    def optimizer_array(self, p):
+        """
+        Make sure the optimizer copy does not get touched, thus, we only want to 
+        set the values *inside* not the array itself.
+        
+        Also we want to update param_array in here.
+        """
+        if self.__dict__.get('_optimizer_copy_', None) is None or self.size != self._optimizer_copy_.size:
+            self._optimizer_copy_ = np.empty(self.size)
+        
+        self._optimizer_copy_.flat = self.param_array.flat
+        
+        if self.has_parent() and self.constraints[__fixed__].size != 0:
+            fixes = np.ones(self.size).astype(bool)
+            fixes[self.constraints[__fixed__]] = FIXED
+            self._optimizer_copy_.flat[fixes] = p
+        elif self._has_fixes(): self._optimizer_copy_.flat[self._fixes_] = p
+        else: self._optimizer_copy_.flat = p
+        
+        self.param_array.flat = self._optimizer_copy_.flat
+    
+        [np.put(self.param_array, ind, c.f(self._optimizer_copy_.flat[ind])) 
          for c, ind in self.constraints.iteritems() if c != __fixed__]
+        
+        self._transformed = True
+        
         self._trigger_params_changed()
+
+    def _get_params_transformed(self):
+        raise DeprecationWarning, "_get|set_params{_transformed} is deprecated, use self.optimizer array insetad!"
+#         # transformed parameters (apply un-transformation rules)
+#         p = self.param_array.copy()
+#         [np.put(p, ind, c.finv(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
+#         if self.has_parent() and self.constraints[__fixed__].size != 0:
+#             fixes = np.ones(self.size).astype(bool)
+#             fixes[self.constraints[__fixed__]] = FIXED
+#             return p[fixes]
+#         elif self._has_fixes():
+#             return p[self._fixes_]
+#         return p
+# 
+    def _set_params_transformed(self, p):
+        raise DeprecationWarning, "_get|set_params{_transformed} is deprecated, use self.optimizer array insetad!"
+
+#         """
+#         Set parameters p, but make sure they get transformed before setting.
+#         This means, the optimizer sees p, whereas the model sees transformed(p), 
+#         such that, the parameters the model sees are in the right domain.
+#         """
+#         if not(p is self.param_array):
+#             if self.has_parent() and self.constraints[__fixed__].size != 0:
+#                 fixes = np.ones(self.size).astype(bool)
+#                 fixes[self.constraints[__fixed__]] = FIXED
+#                 self.param_array.flat[fixes] = p
+#             elif self._has_fixes(): self.param_array.flat[self._fixes_] = p
+#             else: self.param_array.flat = p
+#         [np.put(self.param_array, ind, c.f(self.param_array.flat[ind])) 
+#          for c, ind in self.constraints.iteritems() if c != __fixed__]
+#         self._trigger_params_changed()
 
     def _trigger_params_changed(self, trigger_parent=True):
         """
@@ -725,7 +803,7 @@ class OptimizationHandlable(Indexable):
         x = rand_gen(loc=loc, scale=scale, size=self._size_transformed(), *args, **kwargs)
         # now draw from prior where possible
         [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
-        self._set_params_transformed(x)  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
+        self.optimizer_array = x  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
 
     #===========================================================================
     # For shared memory arrays. This does nothing in Param, but sets the memory
@@ -784,6 +862,7 @@ class Parameterizable(OptimizationHandlable):
         self.parameters = ArrayList()
         self._param_array_ = None
         self._added_names_ = set()
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.__visited = False # for traversing in reverse order we need to know if we were here already
 
     @property
@@ -893,6 +972,11 @@ class Parameterizable(OptimizationHandlable):
     def _name_changed(self, param, old_name):
         self._remove_parameter_name(None, old_name)
         self._add_parameter_name(param)
+
+    def __setstate__(self, state):
+        super(Parameterizable, self).__setstate__(state)
+        self.logger = logging.getLogger(self.__class__.__name__)
+        return self
 
     #===========================================================================
     # notification system

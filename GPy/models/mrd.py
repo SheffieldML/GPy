@@ -59,7 +59,7 @@ class MRD(SparseGP):
                  inference_method=None, likelihoods=None, name='mrd', Ynames=None):
         super(GP, self).__init__(name)
 
-        self.logger = logging.getLogger("MRD <{}>".format(hex(id(self))))
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.input_dim = input_dim
         self.num_inducing = num_inducing
 
@@ -107,16 +107,16 @@ class MRD(SparseGP):
         self.logger.info("building kernels")
         if kernel is None:
             from ..kern import RBF
-            self.kernels = [RBF(input_dim, ARD=1, lengthscale=fracs[i]) for i in range(len(Ylist))]
+            kernels = [RBF(input_dim, ARD=1, lengthscale=fracs[i]) for i in range(len(Ylist))]
         elif isinstance(kernel, Kern):
-            self.kernels = []
+            kernels = []
             for i in range(len(Ylist)):
                 k = kernel.copy()
-                self.kernels.append(k)
+                kernels.append(k)
         else:
             assert len(kernel) == len(Ylist), "need one kernel per output"
             assert all([isinstance(k, Kern) for k in kernel]), "invalid kernel object detected!"
-            self.kernels = kernel
+            kernels = kernel
 
         if X_variance is None:
             X_variance = np.random.uniform(0.1, 0.2, X.shape)
@@ -125,8 +125,8 @@ class MRD(SparseGP):
         self.X = NormalPosterior(X, X_variance)
 
         if likelihoods is None:
-            self.likelihoods = [Gaussian(name='Gaussian_noise'.format(i)) for i in range(len(Ylist))]
-        else: self.likelihoods = likelihoods
+            likelihoods = [Gaussian(name='Gaussian_noise'.format(i)) for i in range(len(Ylist))]
+        else: likelihoods = likelihoods
 
         self.logger.info("adding X and Z")
         self.add_parameters(self.X, self.Z)
@@ -134,9 +134,8 @@ class MRD(SparseGP):
         self.bgplvms = []
         self.num_data = Ylist[0].shape[0]
 
-        for i, n, k, l, Y in itertools.izip(itertools.count(), Ynames, self.kernels, self.likelihoods, self.Ylist):
+        for i, n, k, l, Y in itertools.izip(itertools.count(), Ynames, kernels, likelihoods, Ylist):
             assert Y.shape[0] == self.num_data, "All datasets need to share the number of datapoints, and those have to correspond to one another"
-
             p = Parameterized(name=n)
             p.add_parameter(k)
             p.kern = k
@@ -154,19 +153,18 @@ class MRD(SparseGP):
         self.posteriors = []
         self.Z.gradient[:] = 0.
         self.X.gradient[:] = 0.
-        for y, k, l, i in itertools.izip(self.Ylist, self.kernels, self.likelihoods, self.inference_method):
+        for y, b, i in itertools.izip(self.Ylist, self.bgplvms, self.inference_method):
             self.logger.info('working on im <{}>'.format(hex(id(i))))
+            k, l = b.kern, b.likelihood
             posterior, lml, grad_dict = i.inference(k, self.X, self.Z, l, y)
 
             self.posteriors.append(posterior)
             self._log_marginal_likelihood += lml
 
             # likelihoods gradients
-            self.logger.info("likelihood gradients")
             l.update_gradients(grad_dict.pop('dL_dthetaL'))
 
             #gradients wrt kernel
-            self.logger.info("kernel gradients")
             dL_dKmm = grad_dict.pop('dL_dKmm')
             k.update_gradients_full(dL_dKmm, self.Z, None)
             target = k.gradient.copy()
@@ -174,7 +172,6 @@ class MRD(SparseGP):
             k.gradient += target
 
             #gradients wrt Z
-            self.logger.info("Z gradients")
             self.Z.gradient += k.gradients_X(dL_dKmm, self.Z)
             self.Z.gradient += k.gradients_Z_expectations(
                                grad_dict['dL_dpsi0'], 
@@ -182,16 +179,15 @@ class MRD(SparseGP):
                                grad_dict['dL_dpsi2'], 
                                Z=self.Z, variational_posterior=self.X)
 
-            self.logger.info("X gradients")
             dL_dmean, dL_dS = k.gradients_qX_expectations(variational_posterior=self.X, Z=self.Z, **grad_dict)
             self.X.mean.gradient += dL_dmean
             self.X.variance.gradient += dL_dS
 
-        # update for the KL divergence
         self.posterior = self.posteriors[0]
-        self.kern = self.kernels[0]
-        self.likelihood = self.likelihoods[0]
+        self.kern = self.bgplvms[0].kern
+        self.likelihood = self.bgplvms[0].likelihood
 
+        # update for the KL divergence
         self.variational_prior.update_gradients_KL(self.X)
         self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
 
@@ -268,8 +264,8 @@ class MRD(SparseGP):
         This predicts the output mean and variance for the dataset given in Ylist[Yindex]
         """
         self.posterior = self.posteriors[Yindex]
-        self.kern = self.kernels[Yindex]
-        self.likelihood = self.likelihoods[Yindex]
+        self.kern = self.bgplvms[0].kern
+        self.likelihood = self.bgplvms[0].likelihood
         return super(MRD, self).predict(Xnew, full_cov, Y_metadata, kern)
 
     #===============================================================================
@@ -311,7 +307,7 @@ class MRD(SparseGP):
         """
         import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        import matplotlib.pyplot as plt
+        from matplotlib import pyplot as plt
         from ..plotting.matplot_dep import dim_reduction_plots
         if "Yindex" not in predict_kwargs:
             predict_kwargs['Yindex'] = 0
@@ -333,10 +329,7 @@ class MRD(SparseGP):
         return plot
 
     def __getstate__(self):
-        # TODO:
-        import copy
-        state = copy.copy(self.__dict__)
-        del state['kernels']
+        state = super(MRD, self).__getstate__()
         del state['kern']
         del state['likelihood']
         return state
@@ -344,7 +337,6 @@ class MRD(SparseGP):
     def __setstate__(self, state):
         # TODO:
         super(MRD, self).__setstate__(state)
-        self.kernels = [p.kern for p in self.bgplvms]
-        self.kern = self.kernels[0]
-        self.likelihood = self.likelihoods[0]
+        self.kern = self.bgplvms[0].kern
+        self.likelihood = self.bgplvms[0].likelihood
         self.parameters_changed()

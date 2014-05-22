@@ -26,7 +26,7 @@ class BayesianGPLVM(SparseGP):
     """
     def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
                  Z=None, kernel=None, inference_method=None, likelihood=None, name='bayesian gplvm', **kwargs):
-        self.logger = logging.getLogger("Bayesian GPLVM <{}>".format(hex(id(self))))
+        self.logger = logging.getLogger(self.__class__.__name__)
         if X == None:
             from ..util.initialization import initialize_latent
             self.logger.info("initializing latent space X with method {}".format(init))

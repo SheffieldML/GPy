@@ -39,7 +39,7 @@ class ObsAr(np.ndarray, Pickleable, Observable):
         s = self.__new__(self.__class__, input_array=self.view(np.ndarray).copy())
         memo[id(self)] = s
         import copy
-        s.__dict__.update(copy.deepcopy(self.__dict__, memo))
+        Pickleable.__setstate__(s, copy.deepcopy(self.__getstate__(), memo))
         return s
 
     def __reduce__(self):

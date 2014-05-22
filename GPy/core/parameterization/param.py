@@ -4,7 +4,7 @@
 import itertools
 import numpy
 np = numpy
-from parameter_core import Parameterizable, adjust_name_for_printing
+from parameter_core import Parameterizable, adjust_name_for_printing, Pickleable
 from observable_array import ObsAr
 
 ###### printing
@@ -221,9 +221,8 @@ class Param(Parameterizable, ObsAr):
         s = self.__new__(self.__class__, name=self.name, input_array=self.view(numpy.ndarray).copy())
         memo[id(self)] = s
         import copy
-        s.__dict__.update(copy.deepcopy(self.__dict__, memo))
+        Pickleable.__setstate__(s, copy.deepcopy(self.__getstate__(), memo))
         return s
-
 
     #===========================================================================
     # Printing -> done

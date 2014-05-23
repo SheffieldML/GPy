@@ -176,6 +176,7 @@ class Test(ListDictTestCase):
         self.assertSequenceEqual(str(par), str(pcopy))
         self.assertIsNot(par.param_array, pcopy.param_array)
         self.assertIsNot(par.gradient_full, pcopy.gradient_full)
+        self.assertTrue(par.checkgrad())
         self.assertTrue(pcopy.checkgrad())
         self.assert_(np.any(pcopy.gradient!=0.0))
         with tempfile.TemporaryFile('w+b') as f:

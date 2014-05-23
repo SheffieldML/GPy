@@ -521,7 +521,11 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
     m.likelihood.variance = 0.001
 
     # optimize
-    if optimize: m.optimize('bfgs', messages=verbose, max_iters=5e3, bfgs_factor=10)
+    try:
+        if optimize: m.optimize('bfgs', messages=verbose, max_iters=5e3, bfgs_factor=10)
+    except KeyboardInterrupt:
+        print "Keyboard interrupt, continuing to plot and return"
+
     if plot:
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         plt.sca(latent_axes)

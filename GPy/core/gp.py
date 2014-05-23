@@ -276,5 +276,9 @@ class GP(Model):
         TODO: valid args
         """
         self.inference_method.on_optimization_start()
-        super(GP, self).optimize(optimizer, start, **kwargs)
-        self.inference_method.on_optimization_end()
+        try:
+            super(GP, self).optimize(optimizer, start, **kwargs)
+        except KeyboardInterrupt:
+            print "KeyboardInterrupt caught, calling on_optimization_end() to round things up"
+            self.inference_method.on_optimization_end()
+            raise

@@ -292,12 +292,16 @@ class Parameterized(Parameterizable):
         except Exception as e:
             print "WARNING: caught exception {!s}, trying to continue".format(e)
 
-    def copy(self):
-        c = super(Parameterized, self).copy()
-        c._connect_parameters()
-        c._connect_fixes()
-        c._notify_parent_change()
-        return c
+    def copy(self, memo=None):
+        if memo is None:
+            memo = {}
+        memo[id(self.optimizer_array)] = None # and param_array
+        memo[id(self.param_array)] = None # and param_array
+        copy = super(Parameterized, self).copy(memo)
+        copy._connect_parameters()
+        copy._connect_fixes()
+        copy._notify_parent_change()
+        return copy
 
     #===========================================================================
     # Printing:

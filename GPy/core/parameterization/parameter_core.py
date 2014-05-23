@@ -92,7 +92,7 @@ class Observable(object):
         for poc in self.observers:
             _, obs, clble = poc
             if callble is not None:
-                if (obs == observer) and (callble == clble):
+                if (obs is observer) and (callble == clble):
                     to_remove.append(poc)
             else:
                 if obs is observer:
@@ -199,28 +199,32 @@ class Pickleable(object):
     #===========================================================================
     # copy and pickling
     #===========================================================================
-    def copy(self):
+    def copy(self, memo=None, which=None):
         """
         Returns a (deep) copy of the current parameter handle. 
 
         All connections to parents of the copy will be cut.
+        
+        :param dict memo: memo for deepcopy
+        :param Parameterized which: parameterized object which started the copy process [default: self] 
         """
         #raise NotImplementedError, "Copy is not yet implemented, TODO: Observable hierarchy"
+        if memo is None:
+            memo = {}
         import copy
-        memo = {}
         # the next part makes sure that we do not include parents in any form:
         parents = []
-        self.traverse_parents(parents.append) # collect parents
+        if which is None:
+            which = self
+        which.traverse_parents(parents.append) # collect parents
         for p in parents:
-            memo[id(p)] = None # set all parents to be None, so they will not be copied
-        memo[id(self.gradient)] = None # reset the gradient
-        memo[id(self.param_array)] = None # and param_array
-        memo[id(self.optimizer_array)] = None # and param_array
-        memo[id(self._fixes_)] = None # fixes have to be reset, as this is now highest parent
-        c = copy.deepcopy(self, memo) # and start the copy
-        c._parent_index_ = None
-        c._trigger_params_changed()
-        return c
+            if not memo.has_key(id(p)):memo[id(p)] = None # set all parents to be None, so they will not be copied
+        if not memo.has_key(id(self.gradient)):memo[id(self.gradient)] = None # reset the gradient
+        if not memo.has_key(id(self._fixes_)):memo[id(self._fixes_)] = None # fixes have to be reset, as this is now highest parent
+        copy = copy.deepcopy(self, memo) # and start the copy
+        copy._parent_index_ = None
+        copy._trigger_params_changed()
+        return copy
 
     def __deepcopy__(self, memo):
         s = self.__new__(self.__class__) # fresh instance
@@ -234,6 +238,7 @@ class Pickleable(object):
                        '_gradient_array_', # as well as gradients
                        '_optimizer_copy_',
                        'logger',
+                       'observers',
                        '_fixes_', # and fixes
                        '_Cacher_wrap__cachers', # never pickle cachers
                        ]
@@ -245,6 +250,9 @@ class Pickleable(object):
  
     def __setstate__(self, state):
         self.__dict__.update(state)
+        from lists_and_dicts import ObserverList
+        self.observers = ObserverList()
+        self._setup_observers()
         self._optimizer_copy_transformed = False
 
 
@@ -982,7 +990,16 @@ class Parameterizable(OptimizationHandlable):
         self.parameters_changed()
     def _pass_through_notify_observers(self, me, which=None):
         self.notify_observers(which=which)
-
+    def _setup_observers(self):
+        """
+        Setup the default observers
+        
+        1: parameters_changed_notify
+        2: pass through to parent, if present
+        """
+        self.add_observer(self, self._parameters_changed_notification, -100)
+        if self.has_parent():
+            self.add_observer(self._parent_, self._parent_._pass_through_notify_observers, -np.inf)
     #===========================================================================
     # From being parentable, we have to define the parent_change notification
     #===========================================================================

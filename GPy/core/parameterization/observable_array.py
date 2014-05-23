@@ -30,9 +30,15 @@ class ObsAr(np.ndarray, Pickleable, Observable):
     def __array_wrap__(self, out_arr, context=None):
         return out_arr.view(np.ndarray)
 
+    def _setup_observers(self):
+        # do not setup anything, as observable arrays do not have default observers
+        pass
+    
     def copy(self):
+        from lists_and_dicts import ObserverList
         memo = {}
         memo[id(self)] = self
+        memo[id(self.observers)] = ObserverList()
         return self.__deepcopy__(memo)
 
     def __deepcopy__(self, memo):

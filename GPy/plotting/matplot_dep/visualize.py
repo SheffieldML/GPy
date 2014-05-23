@@ -98,9 +98,9 @@ class lvm(matplotlib_show):
         """
         if vals is None:
             if isinstance(model.X, VariationalPosterior):
-                vals = model.X.mean
+                vals = model.X.mean.values
             else:
-                vals = model.X
+                vals = model.X.values
         if len(vals.shape)==1:
             vals = vals[None,:]
         matplotlib_show.__init__(self, vals, axes=latent_axes)
@@ -218,6 +218,7 @@ class lvm_dimselect(lvm):
         self.labels = labels
         lvm.__init__(self,vals,model,data_visualize,latent_axes,sense_axes,latent_index)
         self.show_sensitivities()
+        print self.latent_values
         print "use left and right mouse buttons to select dimensions"
 
 
@@ -247,6 +248,7 @@ class lvm_dimselect(lvm):
 
 
     def on_leave(self,event):
+        print type(self.latent_values)
         latent_values = self.latent_values.copy()
         y = self.model.predict(latent_values[None,:])[0]
         self.data_visualize.modify(y)

@@ -1,9 +1,10 @@
 import numpy as np
 from ...util.linalg import pdinv,jitchol,DSYR,tdot,dtrtrs, dpotrs
 from posterior import Posterior
+from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
 
-class EP(object):
+class EP(LatentFunctionInference):
     def __init__(self, epsilon=1e-6, eta=1., delta=1.):
         """
         The expectation-propagation algorithm.
@@ -21,14 +22,25 @@ class EP(object):
 
     def reset(self):
         self.old_mutilde, self.old_vtilde = None, None
+        self._ep_approximation = None
+
+    def on_optimization_start(self):
+        self._ep_approximation = None
+
+    def on_optimization_end(self):
+        # TODO: update approximation in the end as well? Maybe even with a switch?
+        pass
 
     def inference(self, kern, X, likelihood, Y, Y_metadata=None, Z=None):
-        num_data, output_dim = X.shape
+        num_data, output_dim = Y.shape
         assert output_dim ==1, "ep in 1D only (for now!)"
 
         K = kern.K(X)
 
-        mu, Sigma, mu_tilde, tau_tilde, Z_hat = self.expectation_propagation(K, Y, likelihood, Y_metadata)
+        if self._ep_approximation is None:
+            mu, Sigma, mu_tilde, tau_tilde, Z_hat = self._ep_approximation = self.expectation_propagation(K, Y, likelihood, Y_metadata)
+        else:
+            mu, Sigma, mu_tilde, tau_tilde, Z_hat = self._ep_approximation
 
         Wi, LW, LWi, W_logdet = pdinv(K + np.diag(1./tau_tilde))
 
@@ -41,8 +53,6 @@ class EP(object):
         dL_dthetaL = np.zeros(likelihood.size)#TODO: derivatives of the likelihood parameters
 
         return Posterior(woodbury_inv=Wi, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK, 'dL_dthetaL':dL_dthetaL}
-
-
 
     def expectation_propagation(self, K, Y, likelihood, Y_metadata):
 
@@ -108,4 +118,3 @@ class EP(object):
 
         mu_tilde = v_tilde/tau_tilde
         return mu, Sigma, mu_tilde, tau_tilde, Z_hat
-

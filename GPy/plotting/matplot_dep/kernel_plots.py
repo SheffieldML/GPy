@@ -68,7 +68,7 @@ def plot_ARD(kernel, fignum=None, ax=None, title='', legend=False):
     
     for i in range(ard_params.shape[0]):
         c = Tango.nextMedium()
-        bars.append(plot_bars(fig, ax, x, ard_params[i,:], c, kernel._parameters_[i].name, bottom=bottom))
+        bars.append(plot_bars(fig, ax, x, ard_params[i,:], c, kernel.parameters[i].name, bottom=bottom))
         bottom += ard_params[i,:]
     
     ax.set_xlim(-.5, kernel.input_dim - .5)

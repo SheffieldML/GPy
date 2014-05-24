@@ -55,7 +55,7 @@ class Kern(Parameterized):
         self._sliced_X = 0
         self.useGPU = self._support_GPU and useGPU
 
-    @Cache_this(limit=10)
+    @Cache_this(limit=20)
     def _slice_X(self, X):
         return X[:, self.active_dims]
 
@@ -103,7 +103,7 @@ class Kern(Parameterized):
         """
         raise NotImplementedError
 
-    def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """
         Returns the derivative of the objective wrt Z, using the chain rule
         through the expectation variables.
@@ -183,9 +183,9 @@ class Kern(Parameterized):
         assert isinstance(other, Kern), "only kernels can be added to kernels..."
         from prod import Prod
         #kernels = []
-        #if isinstance(self, Prod): kernels.extend(self._parameters_)
+        #if isinstance(self, Prod): kernels.extend(self.parameters)
         #else: kernels.append(self)
-        #if isinstance(other, Prod): kernels.extend(other._parameters_)
+        #if isinstance(other, Prod): kernels.extend(other.parameters)
         #else: kernels.append(other)
         return Prod([self, other], name)
 
@@ -222,7 +222,7 @@ class CombinationKernel(Kern):
 
     @property
     def parts(self):
-        return self._parameters_
+        return self.parameters
 
     def get_input_dim_active_dims(self, kernels, extra_dims = None):
         #active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))

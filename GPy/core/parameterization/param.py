@@ -4,7 +4,7 @@
 import itertools
 import numpy
 np = numpy
-from parameter_core import OptimizationHandlable, adjust_name_for_printing
+from parameter_core import Parameterizable, adjust_name_for_printing, Pickleable
 from observable_array import ObsAr
 
 ###### printing
@@ -16,7 +16,7 @@ __precision__ = numpy.get_printoptions()['precision'] # numpy printing precision
 __print_threshold__ = 5
 ######
 
-class Param(OptimizationHandlable, ObsAr):
+class Param(Parameterizable, ObsAr):
     """
     Parameter object for GPy models.
 
@@ -42,7 +42,7 @@ class Param(OptimizationHandlable, ObsAr):
     """
     __array_priority__ = -1 # Never give back Param
     _fixes_ = None
-    _parameters_ = []
+    parameters = []
     def __new__(cls, name, input_array, default_constraint=None):
         obj = numpy.atleast_1d(super(Param, cls).__new__(cls, input_array=input_array))
         obj._current_slice_ = (slice(obj.shape[0]),)
@@ -87,6 +87,9 @@ class Param(OptimizationHandlable, ObsAr):
 
     @property
     def param_array(self):
+        """
+        As we are a leaf, this just returns self
+        """
         return self
 
     @property
@@ -139,6 +142,9 @@ class Param(OptimizationHandlable, ObsAr):
     def _raveled_index_for(self, obj):
         return self._raveled_index()
 
+    #===========================================================================
+    # Index recreation
+    #===========================================================================
     def _expand_index(self, slice_index=None):
         # this calculates the full indexing arrays from the slicing objects given by get_item for _real..._ attributes
         # it basically translates slices to their respective index arrays and turns negative indices around
@@ -147,6 +153,8 @@ class Param(OptimizationHandlable, ObsAr):
             slice_index = self._current_slice_
         def f(a):
             a, b = a
+            if isinstance(a, numpy.ndarray) and a.dtype == bool:
+                raise ValueError, "Boolean indexing not implemented, use Param[np.where(index)] to index by boolean arrays!"
             if a not in (slice(None), Ellipsis):
                 if isinstance(a, slice):
                     start, stop, step = a.indices(b)
@@ -166,34 +174,6 @@ class Param(OptimizationHandlable, ObsAr):
         if not self._has_fixes(): self._fixes_ = numpy.ones(self._realsize_, dtype=bool)
 
     #===========================================================================
-    # parameterizable
-    #===========================================================================
-    def traverse(self, visit, *args, **kwargs):
-        """
-        Traverse the hierarchy performing visit(self, *args, **kwargs) at every node passed by.
-        See "visitor pattern" in literature. This is implemented in pre-order fashion.
-
-        This will function will just call visit on self, as Param are leaf nodes.
-        """
-        visit(self, *args, **kwargs)
-    
-    def traverse_parents(self, visit, *args, **kwargs):
-        """
-        Traverse the hierarchy upwards, visiting all parents and their children, except self.
-        See "visitor pattern" in literature. This is implemented in pre-order fashion.
-    
-        Example:
-    
-        parents = []
-        self.traverse_parents(parents.append)
-        print parents
-        """
-        if self.has_parent():
-            self.__visited = True
-            self._parent_._traverse_parents(visit, *args, **kwargs)
-            self.__visited = False
-
-    #===========================================================================
     # Convenience
     #===========================================================================
     @property
@@ -207,14 +187,24 @@ class Param(OptimizationHandlable, ObsAr):
     #===========================================================================
     # Pickling and copying
     #===========================================================================
+    def copy(self):
+        return Parameterizable.copy(self, which=self)
+    
     def __deepcopy__(self, memo):
         s = self.__new__(self.__class__, name=self.name, input_array=self.view(numpy.ndarray).copy())
-        memo[id(self)] = s
+        memo[id(self)] = s        
         import copy
-        s.__dict__.update(copy.deepcopy(self.__dict__, memo))
+        Pickleable.__setstate__(s, copy.deepcopy(self.__getstate__(), memo))
         return s
-
-
+    def _setup_observers(self):
+        """
+        Setup the default observers
+        
+        1: pass through to parent, if present
+        """
+        if self.has_parent():
+            self.add_observer(self._parent_, self._parent_._pass_through_notify_observers, -np.inf)
+    
     #===========================================================================
     # Printing -> done
     #===========================================================================
@@ -316,7 +306,7 @@ class Param(OptimizationHandlable, ObsAr):
 class ParamConcatenation(object):
     def __init__(self, params):
         """
-        Parameter concatenation for convienience of printing regular expression matched arrays
+        Parameter concatenation for convenience of printing regular expression matched arrays
         you can index this concatenation as if it was the flattened concatenation
         of all the parameters it contains, same for setting parameters (Broadcasting enabled).
 

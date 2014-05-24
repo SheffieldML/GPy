@@ -38,7 +38,12 @@ class ArrayList(list):
         raise ValueError, "{} is not in list".format(item)
     pass
 
-class ObservablesList(object):
+class ObserverList(object):
+    """
+    A list which containts the observables.
+    It only holds weak references to observers, such that unbound
+    observers dont dangle in memory.
+    """
     def __init__(self):
         self._poc = []
 
@@ -46,31 +51,44 @@ class ObservablesList(object):
         p,o,c = self._poc[ind]
         return p, o(), c
 
-    def remove(self, priority, observable, callble):
+    def remove(self, priority, observer, callble):
         """
+        Remove one observer, which had priority and callble.
         """
         self.flush()
         for i in range(len(self) - 1, -1, -1):
             p,o,c = self[i]
-            if priority==p and observable==o and callble==c:
+            if priority==p and observer==o and callble==c:
                 del self._poc[i]
 
     def __repr__(self):
         return self._poc.__repr__()
-    
 
-    def add(self, priority, observable, callble):
-        if observable is not None:
+    def add(self, priority, observer, callble):
+        """
+        Add an observer with priority and callble
+        """
+        if observer is not None:
             ins = 0
             for pr, _, _ in self:
                 if priority > pr:
                     break
                 ins += 1
-            self._poc.insert(ins, (priority, weakref.ref(observable), callble))
+            self._poc.insert(ins, (priority, weakref.ref(observer), callble))
 
     def __str__(self):
+        from . import ObsAr, Param
+        from parameter_core import Parameterizable
         ret = []
         curr_p = None
+        
+        def frmt(o):
+            if isinstance(o, ObsAr):
+                return 'ObsArr <{}>'.format(hex(id(o)))
+            elif isinstance(o, (Param,Parameterizable)):
+                return '{}'.format(o.hierarchy_name())
+            else:
+                return repr(o)                
         for p, o, c in self:
             curr = ''
             if curr_p != p:
@@ -79,10 +97,14 @@ class ObservablesList(object):
             else: curr_pre = " "*len(pre)
             curr_p = p
             curr += curr_pre
-            ret.append(curr + ", ".join(map(repr, [o,c])))
-        return '\n'.join(ret)
+            
+            ret.append(curr + ", ".join([frmt(o), str(c)]))
+            return '\n'.join(ret)
 
     def flush(self):
+        """
+        Make sure all weak references, which point to nothing are flushed (deleted)
+        """
         self._poc = [(p,o,c) for p,o,c in self._poc if o() is not None]
 
     def __iter__(self):
@@ -95,7 +117,7 @@ class ObservablesList(object):
         return self._poc.__len__()
 
     def __deepcopy__(self, memo):
-        s = ObservablesList()
+        s = ObserverList()
         for p,o,c in self:
             import copy
             s.add(p, copy.deepcopy(o, memo), copy.deepcopy(c, memo))

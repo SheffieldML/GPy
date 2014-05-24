@@ -20,7 +20,7 @@ class Model(Parameterized):
         super(Model, self).__init__(name)  # Parameterized.__init__(self)
         self.optimization_runs = []
         self.sampling_runs = []
-        self.preferred_optimizer = 'scg'
+        self.preferred_optimizer = 'bfgs'
 
     def log_likelihood(self):
         raise NotImplementedError, "this needs to be implemented to use the model class"
@@ -61,7 +61,7 @@ class Model(Parameterized):
         on the current machine.
 
         """
-        initial_parameters = self._get_params_transformed()
+        initial_parameters = self.optimizer_array
 
         if parallel:
             try:
@@ -124,13 +124,15 @@ class Model(Parameterized):
 
         For probabilistic models this is the negative log_likelihood
         (including the MAP prior), so we return it here. If your model is not 
-        probabilistic, just return your objective here!
+        probabilistic, just return your objective to minimize here!
         """
         return -float(self.log_likelihood()) - self.log_prior()
 
     def objective_function_gradients(self):
         """
         The gradients for the objective function for the given algorithm.
+        The gradients are w.r.t. the *negative* objective function, as 
+        this framework works with *negative* log-likelihoods as a default.
 
         You can find the gradient for the parameters in self.gradient at all times.
         This is the place, where gradients get stored for parameters.
@@ -141,7 +143,7 @@ class Model(Parameterized):
 
         For probabilistic models this is the gradient of the negative log_likelihood
         (including the MAP prior), so we return it here. If your model is not 
-        probabilistic, just return your gradient here!
+        probabilistic, just return your *negative* gradient here!
         """
         return -(self._log_likelihood_gradients() + self._log_prior_gradients())
 
@@ -157,7 +159,8 @@ class Model(Parameterized):
         :type x: np.array
         """
         try:
-            self._set_params_transformed(x)
+            # self._set_params_transformed(x)
+            self.optimizer_array = x
             obj_grads = self._transform_gradients(self.objective_function_gradients())
             self._fail_count = 0
         except (LinAlgError, ZeroDivisionError, ValueError):
@@ -180,7 +183,7 @@ class Model(Parameterized):
         :parameter type: np.array
         """
         try:
-            self._set_params_transformed(x)
+            self.optimizer_array = x
             obj = self.objective_function()
             self._fail_count = 0
         except (LinAlgError, ZeroDivisionError, ValueError):
@@ -192,7 +195,7 @@ class Model(Parameterized):
 
     def _objective_grads(self, x):
         try:
-            self._set_params_transformed(x)
+            self.optimizer_array = x
             obj_f, obj_grads = self.objective_function(), self._transform_gradients(self.objective_function_gradients())
             self._fail_count = 0
         except (LinAlgError, ZeroDivisionError, ValueError):
@@ -220,13 +223,13 @@ class Model(Parameterized):
         if self.is_fixed:
             raise RuntimeError, "Cannot optimize, when everything is fixed"
         if self.size == 0:
-            raise RuntimeError, "Model without parameters cannot be minimized"
+            raise RuntimeError, "Model without parameters cannot be optimized"
 
         if optimizer is None:
             optimizer = self.preferred_optimizer
 
         if start == None:
-            start = self._get_params_transformed()
+            start = self.optimizer_array
 
         optimizer = optimization.get_optimizer(optimizer)
         opt = optimizer(start, model=self, **kwargs)
@@ -235,7 +238,7 @@ class Model(Parameterized):
 
         self.optimization_runs.append(opt)
 
-        self._set_params_transformed(opt.x_opt)
+        self.optimizer_array = opt.x_opt
 
     def optimize_SGD(self, momentum=0.1, learning_rate=0.01, iterations=20, **kwargs):
         # assert self.Y.shape[1] > 1, "SGD only works with D > 1"
@@ -260,7 +263,7 @@ class Model(Parameterized):
            The gradient is considered correct if the ratio of the analytical
            and numerical gradients is within <tolerance> of unity.
         """
-        x = self._get_params_transformed().copy()
+        x = self.optimizer_array.copy()
 
         if not verbose:
             # make sure only to test the selected parameters
@@ -270,8 +273,8 @@ class Model(Parameterized):
                 transformed_index = self._raveled_index_for(target_param)
                 if self._has_fixes():
                     indices = np.r_[:self.size]
-                    which = (transformed_index[:,None]==indices[self._fixes_][None,:]).nonzero()
-                    transformed_index = (indices-(~self._fixes_).cumsum())[transformed_index[which[0]]]
+                    which = (transformed_index[:, None] == indices[self._fixes_][None, :]).nonzero()
+                    transformed_index = (indices - (~self._fixes_).cumsum())[transformed_index[which[0]]]
 
                 if transformed_index.size == 0:
                     print "No free parameters to check"
@@ -290,7 +293,7 @@ class Model(Parameterized):
             gradient = gradient[transformed_index]
 
             denominator = (2 * np.dot(dx, gradient))
-            global_ratio = (f1 - f2) / np.where(denominator==0., 1e-32, denominator)
+            global_ratio = (f1 - f2) / np.where(denominator == 0., 1e-32, denominator)
             global_diff = np.abs(f1 - f2) < tolerance and np.allclose(gradient, 0, atol=tolerance)
             if global_ratio is np.nan:
                 global_ratio = 0
@@ -319,10 +322,10 @@ class Model(Parameterized):
                 param_index = self._raveled_index_for(target_param)
                 if self._has_fixes():
                     indices = np.r_[:self.size]
-                    which = (param_index[:,None]==indices[self._fixes_][None,:]).nonzero()
+                    which = (param_index[:, None] == indices[self._fixes_][None, :]).nonzero()
                     param_index = param_index[which[0]]
-                    transformed_index = (indices-(~self._fixes_).cumsum())[param_index]
-                    #print param_index, transformed_index
+                    transformed_index = (indices - (~self._fixes_).cumsum())[param_index]
+                    # print param_index, transformed_index
                 else:
                     transformed_index = param_index
 
@@ -340,7 +343,7 @@ class Model(Parameterized):
                 xx[xind] -= 2.*step
                 f2 = self._objective(xx)
                 numerical_gradient = (f1 - f2) / (2 * step)
-                if np.all(gradient[xind]==0): ratio = (f1-f2) == gradient[xind]
+                if np.all(gradient[xind] == 0): ratio = (f1 - f2) == gradient[xind]
                 else: ratio = (f1 - f2) / (2 * step * gradient[xind])
                 difference = np.abs((f1 - f2) / 2 / step - gradient[xind])
 
@@ -358,7 +361,7 @@ class Model(Parameterized):
                 grad_string = "{0:<{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name, r, d, g, ng, c0=cols[0] + 9, c1=cols[1], c2=cols[2], c3=cols[3], c4=cols[4])
                 print grad_string
 
-            self._set_params_transformed(x)
+            self.optimizer_array = x
             return ret
 
 

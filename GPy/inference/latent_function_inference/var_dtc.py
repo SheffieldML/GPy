@@ -7,9 +7,10 @@ from ...util import diag
 from ...core.parameterization.variational import VariationalPosterior
 import numpy as np
 from ...util.misc import param_to_array
+from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
 
-class VarDTC(object):
+class VarDTC(LatentFunctionInference):
     """
     An object for inference when the likelihood is Gaussian, but we want to do sparse inference.
 
@@ -190,7 +191,7 @@ class VarDTC(object):
         post = Posterior(woodbury_inv=woodbury_inv, woodbury_vector=woodbury_vector, K=Kmm, mean=None, cov=None, K_chol=Lm)
         return post, log_marginal, grad_dict
 
-class VarDTCMissingData(object):
+class VarDTCMissingData(LatentFunctionInference):
     const_jitter = 1e-6
     def __init__(self, limit=1, inan=None):
         from ...util.caching import Cacher
@@ -200,6 +201,17 @@ class VarDTCMissingData(object):
 
     def set_limit(self, limit):
         self._Y.limit = limit
+
+    def __getstate__(self):
+        # has to be overridden, as Cacher objects cannot be pickled. 
+        return self._Y.limit, self._inan
+
+    def __setstate__(self, state):
+        # has to be overridden, as Cacher objects cannot be pickled. 
+        from ...util.caching import Cacher
+        self.limit = state[0]
+        self._inan = state[1]
+        self._Y = Cacher(self._subarray_computations, self.limit)
 
     def _subarray_computations(self, Y):
         if self._inan is None:
@@ -271,7 +283,11 @@ class VarDTCMissingData(object):
             else: beta = beta_all
 
             VVT_factor = (beta*y)
-            VVT_factor_all[v, ind].flat = VVT_factor.flat
+            try:
+                VVT_factor_all[v, ind].flat = VVT_factor.flat
+            except ValueError:
+                mult = np.ravel_multi_index((v.nonzero()[0][:,None],ind[None,:]), VVT_factor_all.shape)
+                VVT_factor_all.flat[mult] = VVT_factor
             output_dim = y.shape[1]
 
             psi0 = psi0_all[v]

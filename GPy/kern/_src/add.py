@@ -119,7 +119,7 @@ class Add(CombinationKernel):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
             p1.update_gradients_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
 
-    def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_Z_expectations(self, dL_psi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         from static import White, Bias
         target = np.zeros(Z.shape)
         for p1 in self.parts:
@@ -134,17 +134,17 @@ class Add(CombinationKernel):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
                 else:
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
-            target += p1.gradients_Z_expectations(eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
+            target += p1.gradients_Z_expectations(dL_psi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         return target
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         from static import White, Bias
         target_mu = np.zeros(variational_posterior.shape)
         target_S = np.zeros(variational_posterior.shape)
-        for p1 in self._parameters_:
+        for p1 in self.parameters:
             #compute the effective dL_dpsi1. extra terms appear becaue of the cross terms in psi2!
             eff_dL_dpsi1 = dL_dpsi1.copy()
-            for p2 in self._parameters_:
+            for p2 in self.parameters:
                 if p2 is p1:
                     continue
                 if isinstance(p2, White):
@@ -160,7 +160,7 @@ class Add(CombinationKernel):
 
     def add(self, other, name='sum'):
         if isinstance(other, Add):
-            other_params = other._parameters_[:]
+            other_params = other.parameters[:]
             for p in other_params:
                 other.remove_parameter(p)
             self.add_parameters(*other_params)

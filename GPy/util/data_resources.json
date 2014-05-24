@@ -123,9 +123,37 @@
             ]
         ],
         "license": null,
-        "size": 0,
+        "size": 20258,
         "urls": [
             "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/drosophila_protein/"
+        ]
+    },
+    "spellman_yeast": {
+        "citation": "Paul T. Spellman, Gavin Sherlock, Michael Q. Zhang, Vishwanath R. Iyer, Kirk Anders, Michael B. Eisen, Patrick O. Brown, David Botstein, and Bruce Futcher 'Comprehensive Identification of Cell Cycle-regulated Genes of the Yeast Saccharomyces cerevisiae by Microarray Hybridization.'  Molecular Biology of the Cell 9, 3273-3297",
+        "details": "Two colour spotted cDNA array data set of a series of experiments to identify which genes in Yeast are cell cycle regulated.",
+        "files": [
+            [
+                "combined.txt"
+            ]
+        ],
+        "license": null,
+        "size": 2510955,
+        "urls": [
+            "http://genome-www.stanford.edu/cellcycle/data/rawdata/"
+        ]
+    },
+    "lee_yeast_ChIP": {
+        "citation": "Tong Ihn Lee, Nicola J. Rinaldi, Francois Robert, Duncan T. Odom, Ziv Bar-Joseph, Georg K. Gerber, Nancy M. Hannett, Christopher T. Harbison, Craig M. Thompson, Itamar Simon, Julia Zeitlinger, Ezra G. Jennings, Heather L. Murray, D. Benjamin Gordon, Bing Ren, John J. Wyrick, Jean-Bosco Tagne, Thomas L. Volkert, Ernest Fraenkel, David K. Gifford, Richard A. Young 'Transcriptional Regulatory Networks in Saccharomyces cerevisiae' Science 298 (5594) pg 799--804. DOI: 10.1126/science.1075090",
+        "details": "Binding location analysis for 106 regulators in yeast. The data consists of p-values for binding of regulators to genes derived from ChIP-chip experiments.",
+        "files": [
+            [
+                "binding_by_gene.tsv"
+            ]
+        ],
+        "license": null,
+        "size": 1674161,
+        "urls": [
+            "http://jura.wi.mit.edu/young_public/regulatory_network/"
         ]
     },
     "epomeo_gpx": {

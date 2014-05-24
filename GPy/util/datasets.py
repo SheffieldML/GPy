@@ -375,7 +375,43 @@ def sod1_mouse(data_set='sod1_mouse'):
     num_cond=4
     X = 1
     return data_details_return({'X': X, 'Y': Y}, data_set)
+
+def spellman_yeast(data_set='spellman_yeast'):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    dirpath = os.path.join(data_path, data_set)
+    filename = os.path.join(dirpath, 'combined.txt')
+    Y = read_csv(filename, header=0, index_col=0, sep='\t')
+    return data_details_return({'Y': Y}, data_set)
+
+def spellman_yeast_cdc(data_set='spellman_yeast'):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    dirpath = os.path.join(data_path, data_set)
+    filename = os.path.join(dirpath, 'combined.txt')
+    Y = read_csv(filename, header=0, index_col=0, sep='\t')
+    t = np.asarray([10, 30, 50, 70, 80, 90, 100, 110, 120, 130, 140, 150, 170, 180, 190, 200, 210, 220, 230, 240, 250, 270, 290])
+    times = ['cdc15_'+str(time) for time in t]
+    Y = Y[times].T
+    t = t[:, None]
+    return data_details_return({'Y' : Y, 't': t, 'info': 'Time series of synchronized yeast cells from the CDC-15 experiment of Spellman et al (1998).'}, data_set)
+
+def lee_yeast_ChIP(data_set='lee_yeast_ChIP'):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    import zipfile
+    dirpath = os.path.join(data_path, data_set)
+    filename = os.path.join(dirpath, 'binding_by_gene.tsv')
+    X = read_csv(filename, header=1, index_col=0, sep='\t')
+    transcription_factors = [col for col in X.columns if col[:7] != 'Unnamed']    
+    annotations = X[['Unnamed: 1', 'Unnamed: 2', 'Unnamed: 3']]
+    X = X[transcription_factors]
+    return data_details_return({'annotations' : annotations, 'X' : X, 'transcription_factors', transcription_factors}, data_set)
     
+
 def fruitfly_tomancak(data_set='fruitfly_tomancak', gene_number=None):
     if not data_available(data_set):
         download_data(data_set)

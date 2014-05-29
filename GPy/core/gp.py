@@ -33,13 +33,13 @@ class GP(Model):
 
         assert X.ndim == 2
         if isinstance(X, (ObsAr, VariationalPosterior)):
-            self.X = X
-        else: self.X = ObsAr(X)
+            self.X = X.copy()
+        else: self.X = ObsAr(X.copy())
 
         self.num_data, self.input_dim = self.X.shape
 
         assert Y.ndim == 2
-        self.Y = ObsAr(Y)
+        self.Y = ObsAr(Y.copy())
         assert Y.shape[0] == self.num_data
         _, self.output_dim = self.Y.shape
 
@@ -276,5 +276,9 @@ class GP(Model):
         TODO: valid args
         """
         self.inference_method.on_optimization_start()
-        super(GP, self).optimize(optimizer, start, **kwargs)
-        self.inference_method.on_optimization_end()
+        try:
+            super(GP, self).optimize(optimizer, start, **kwargs)
+        except KeyboardInterrupt:
+            print "KeyboardInterrupt caught, calling on_optimization_end() to round things up"
+            self.inference_method.on_optimization_end()
+            raise

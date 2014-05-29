@@ -57,6 +57,20 @@
             "http://www.cs.nyu.edu/~roweis/data/"
         ]
     },
+    "cifar-10": {
+        "citation": "Learning Multiple Layers of Features from Tiny Images, Alex Krizhevsky, 2009, Tech report available here: http://www.cs.toronto.edu/~kriz/learning-features-2009-TR.pdf",
+        "details": "The CIFAR-10 and CIFAR-100 are labeled subsets of the 80 million tiny images dataset. They were collected by Alex Krizhevsky, Vinod Nair, and Geoffrey Hinton. Details are available on this webpage: http://www.cs.toronto.edu/~kriz/cifar.html. The CIFAR-10 dataset consists of 60000 32x32 colour images in 10 classes, with 6000 images per class. There are 50000 training images and 10000 test images.",
+        "files": [
+            [
+                "cifar-10-python.tar.gz"
+            ]
+        ],
+        "license": null,
+        "size": 0,
+        "urls": [
+            "http://www.cs.toronto.edu/~kriz/"
+        ]
+    },
     "cmu_mocap_full": {
         "citation": "Please include this in your acknowledgements: The data used in this project was obtained from mocap.cs.cmu.edu.\\nThe database was created with funding from NSF EIA-0196217.",
         "details": "CMU Motion Capture data base. Captured by a Vicon motion capture system consisting of 12 infrared MX-40 cameras, each of which is capable of recording at 120 Hz with images of 4 megapixel resolution. Motions are captured in a working volume of approximately 3m x 8m. The capture subject wears 41 markers and a stylish black garment.",
@@ -123,9 +137,37 @@
             ]
         ],
         "license": null,
-        "size": 0,
+        "size": 20258,
         "urls": [
             "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/drosophila_protein/"
+        ]
+    },
+    "spellman_yeast": {
+        "citation": "Paul T. Spellman, Gavin Sherlock, Michael Q. Zhang, Vishwanath R. Iyer, Kirk Anders, Michael B. Eisen, Patrick O. Brown, David Botstein, and Bruce Futcher 'Comprehensive Identification of Cell Cycle-regulated Genes of the Yeast Saccharomyces cerevisiae by Microarray Hybridization.'  Molecular Biology of the Cell 9, 3273-3297",
+        "details": "Two colour spotted cDNA array data set of a series of experiments to identify which genes in Yeast are cell cycle regulated.",
+        "files": [
+            [
+                "combined.txt"
+            ]
+        ],
+        "license": null,
+        "size": 2510955,
+        "urls": [
+            "http://genome-www.stanford.edu/cellcycle/data/rawdata/"
+        ]
+    },
+    "lee_yeast_ChIP": {
+        "citation": "Tong Ihn Lee, Nicola J. Rinaldi, Francois Robert, Duncan T. Odom, Ziv Bar-Joseph, Georg K. Gerber, Nancy M. Hannett, Christopher T. Harbison, Craig M. Thompson, Itamar Simon, Julia Zeitlinger, Ezra G. Jennings, Heather L. Murray, D. Benjamin Gordon, Bing Ren, John J. Wyrick, Jean-Bosco Tagne, Thomas L. Volkert, Ernest Fraenkel, David K. Gifford, Richard A. Young 'Transcriptional Regulatory Networks in Saccharomyces cerevisiae' Science 298 (5594) pg 799--804. DOI: 10.1126/science.1075090",
+        "details": "Binding location analysis for 106 regulators in yeast. The data consists of p-values for binding of regulators to genes derived from ChIP-chip experiments.",
+        "files": [
+            [
+                "binding_by_gene.tsv"
+            ]
+        ],
+        "license": null,
+        "size": 1674161,
+        "urls": [
+            "http://jura.wi.mit.edu/young_public/regulatory_network/"
         ]
     },
     "epomeo_gpx": {

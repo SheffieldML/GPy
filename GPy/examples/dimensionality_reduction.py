@@ -99,7 +99,7 @@ def sparse_gplvm_oil(optimize=True, verbose=0, plot=True, N=100, Q=6, num_induci
         m.kern.plot_ARD()
     return m
 
-def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=15, Q=4, sigma=.2):
+def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=25, Q=4, sigma=.2):
     import GPy
     from GPy.util.datasets import swiss_roll_generated
     from GPy.models import BayesianGPLVM
@@ -144,16 +144,15 @@ def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=15, Q=4
     m = BayesianGPLVM(Y, Q, X=X, X_variance=S, num_inducing=num_inducing, Z=Z, kernel=kernel)
     m.data_colors = c
     m.data_t = t
-    m['noise_variance'] = Y.var() / 100.
-
+    
     if optimize:
-        m.optimize('scg', messages=verbose, max_iters=2e3)
+        m.optimize('bfgs', messages=verbose, max_iters=2e3)
 
     if plot:
         fig = plt.figure('fitted')
         ax = fig.add_subplot(111)
         s = m.input_sensitivity().argsort()[::-1][:2]
-        ax.scatter(*m.X.T[s], c=c)
+        ax.scatter(*m.X.mean.T[s], c=c)
 
     return m
 
@@ -172,14 +171,14 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     m.data_labels = data['Y'][:N].argmax(axis=1)
     
     if optimize:
-        m.optimize('scg', messages=verbose, max_iters=max_iters, gtol=.05)
+        m.optimize('bfgs', messages=verbose, max_iters=max_iters, gtol=.05)
 
     if plot:
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         m.plot_latent(ax=latent_axes, labels=m.data_labels)
         data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0,:]))
         lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(param_to_array(m.X.mean)[0:1,:], # @UnusedVariable
-            m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
+            m, data_show, latent_axes=latent_axes, sense_axes=sense_axes, labels=m.data_labels)
         raw_input('Press enter to finish')
         plt.close(fig)
     return m
@@ -386,18 +385,17 @@ def brendan_faces(optimize=True, verbose=True, plot=True):
     Yn = Y - Y.mean()
     Yn /= Yn.std()
 
-    m = GPy.models.GPLVM(Yn, Q)
+    m = GPy.models.BayesianGPLVM(Yn, Q, num_inducing=20)
 
     # optimize
-    m.constrain('rbf|noise|white', GPy.transformations.LogexpClipped())
 
-    if optimize: m.optimize('scg', messages=verbose, max_iters=1000)
+    if optimize: m.optimize('bfgs', messages=verbose, max_iters=1000)
 
     if plot:
         ax = m.plot_latent(which_indices=(0, 1))
-        y = m.likelihood.Y[0, :]
+        y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, order='F', invert=False, scale=False)
-        GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        lvm = GPy.plotting.matplot_dep.visualize.lvm(m.X.mean[0, :].copy(), m, data_show, ax)
         raw_input('Press enter to finish')
 
     return m
@@ -411,13 +409,14 @@ def olivetti_faces(optimize=True, verbose=True, plot=True):
     Yn = Y - Y.mean()
     Yn /= Yn.std()
 
-    m = GPy.models.GPLVM(Yn, Q)
-    if optimize: m.optimize('scg', messages=verbose, max_iters=1000)
+    m = GPy.models.BayesianGPLVM(Yn, Q, num_inducing=20)
+    
+    if optimize: m.optimize('bfgs', messages=verbose, max_iters=1000)
     if plot:
         ax = m.plot_latent(which_indices=(0, 1))
         y = m.likelihood.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.image_show(y[None, :], dimensions=(112, 92), transpose=False, invert=False, scale=False)
-        GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        lvm = GPy.plotting.matplot_dep.visualize.lvm(m.X.mean[0, :].copy(), m, data_show, ax)
         raw_input('Press enter to finish')
 
     return m
@@ -500,9 +499,8 @@ def robot_wireless(optimize=True, verbose=True, plot=True):
 
     data = GPy.util.datasets.robot_wireless()
     # optimize
-    m = GPy.models.GPLVM(data['Y'], 2)
+    m = GPy.models.BayesianGPLVM(data['Y'], 4, num_inducing=25)
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
-    m._set_params(m._get_params())
     if plot:
         m.plot_latent()
 
@@ -523,7 +521,11 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
     m.likelihood.variance = 0.001
 
     # optimize
-    if optimize: m.optimize('bfgs', messages=verbose, max_iters=5e3, bfgs_factor=10)
+    try:
+        if optimize: m.optimize('bfgs', messages=verbose, max_iters=5e3, bfgs_factor=10)
+    except KeyboardInterrupt:
+        print "Keyboard interrupt, continuing to plot and return"
+
     if plot:
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         plt.sca(latent_axes)

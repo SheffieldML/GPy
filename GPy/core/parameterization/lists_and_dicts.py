@@ -77,8 +77,18 @@ class ObserverList(object):
             self._poc.insert(ins, (priority, weakref.ref(observer), callble))
 
     def __str__(self):
+        from . import ObsAr, Param
+        from parameter_core import Parameterizable
         ret = []
         curr_p = None
+        
+        def frmt(o):
+            if isinstance(o, ObsAr):
+                return 'ObsArr <{}>'.format(hex(id(o)))
+            elif isinstance(o, (Param,Parameterizable)):
+                return '{}'.format(o.hierarchy_name())
+            else:
+                return repr(o)                
         for p, o, c in self:
             curr = ''
             if curr_p != p:
@@ -87,8 +97,9 @@ class ObserverList(object):
             else: curr_pre = " "*len(pre)
             curr_p = p
             curr += curr_pre
-            ret.append(curr + ", ".join(map(repr, [o,c])))
-        return '\n'.join(ret)
+            
+            ret.append(curr + ", ".join([frmt(o), str(c)]))
+            return '\n'.join(ret)
 
     def flush(self):
         """

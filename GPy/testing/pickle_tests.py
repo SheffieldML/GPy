@@ -16,8 +16,7 @@ from GPy.core.parameterization.priors import Gaussian
 from GPy.kern._src.rbf import RBF
 from GPy.kern._src.linear import Linear
 from GPy.kern._src.static import Bias, White
-from GPy.examples.dimensionality_reduction import mrd_simulation,\
-    bgplvm_simulation
+from GPy.examples.dimensionality_reduction import mrd_simulation
 from GPy.examples.regression import toy_rbf_1d_50
 from GPy.core.parameterization.variational import NormalPosterior
 from GPy.models.gp_regression import GPRegression
@@ -90,6 +89,7 @@ class Test(ListDictTestCase):
         self.assertIs(pcopy.constraints, pcopy.rbf.lengthscale.constraints._param_index_ops)
         self.assertIs(pcopy.constraints, pcopy.linear.constraints._param_index_ops)
         self.assertListEqual(par.param_array.tolist(), pcopy.param_array.tolist())
+        pcopy.gradient = 10 # gradient does not get copied anymore
         self.assertListEqual(par.gradient_full.tolist(), pcopy.gradient_full.tolist())
         self.assertSequenceEqual(str(par), str(pcopy))
         self.assertIsNot(par.param_array, pcopy.param_array)
@@ -126,8 +126,8 @@ class Test(ListDictTestCase):
     def test_modelrecreation(self):
         par = toy_rbf_1d_50(optimize=0, plot=0)
         pcopy = GPRegression(par.X.copy(), par.Y.copy(), kernel=par.kern.copy())
-        self.assertListEqual(par.param_array.tolist(), pcopy.param_array.tolist())
-        self.assertListEqual(par.gradient_full.tolist(), pcopy.gradient_full.tolist())
+        np.testing.assert_allclose(par.param_array, pcopy.param_array)
+        np.testing.assert_allclose(par.gradient_full, pcopy.gradient_full)
         self.assertSequenceEqual(str(par), str(pcopy))
         self.assertIsNot(par.param_array, pcopy.param_array)
         self.assertIsNot(par.gradient_full, pcopy.gradient_full)
@@ -140,7 +140,7 @@ class Test(ListDictTestCase):
             par.pickle(f)
             f.seek(0)
             pcopy = pickle.load(f)
-        self.assertListEqual(par.param_array.tolist(), pcopy.param_array.tolist())
+        np.testing.assert_allclose(par.param_array, pcopy.param_array)
         np.testing.assert_allclose(par.gradient_full, pcopy.gradient_full)
         self.assertSequenceEqual(str(par), str(pcopy))
         self.assert_(pcopy.checkgrad())
@@ -151,6 +151,7 @@ class Test(ListDictTestCase):
         par = NormalPosterior(X,Xv)
         par.gradient = 10
         pcopy = par.copy()
+        pcopy.gradient = 10
         self.assertListEqual(par.param_array.tolist(), pcopy.param_array.tolist())
         self.assertListEqual(par.gradient_full.tolist(), pcopy.gradient_full.tolist())
         self.assertSequenceEqual(str(par), str(pcopy))
@@ -175,6 +176,7 @@ class Test(ListDictTestCase):
         self.assertSequenceEqual(str(par), str(pcopy))
         self.assertIsNot(par.param_array, pcopy.param_array)
         self.assertIsNot(par.gradient_full, pcopy.gradient_full)
+        self.assertTrue(par.checkgrad())
         self.assertTrue(pcopy.checkgrad())
         self.assert_(np.any(pcopy.gradient!=0.0))
         with tempfile.TemporaryFile('w+b') as f:

@@ -4,7 +4,7 @@
 import itertools
 import numpy
 np = numpy
-from parameter_core import Parameterizable, adjust_name_for_printing
+from parameter_core import Parameterizable, adjust_name_for_printing, Pickleable
 from observable_array import ObsAr
 
 ###### printing
@@ -174,36 +174,6 @@ class Param(Parameterizable, ObsAr):
         if not self._has_fixes(): self._fixes_ = numpy.ones(self._realsize_, dtype=bool)
 
     #===========================================================================
-    # parameterizable
-    #===========================================================================
-    def traverse(self, visit, *args, **kwargs):
-        """
-        Traverse the hierarchy performing visit(self, *args, **kwargs) at every node passed by.
-        See "visitor pattern" in literature. This is implemented in pre-order fashion.
-
-        This will function will just call visit on self, as Param are leaf nodes.
-        """
-        self.__visited = True
-        visit(self, *args, **kwargs)
-        self.__visited = False
-
-    def traverse_parents(self, visit, *args, **kwargs):
-        """
-        Traverse the hierarchy upwards, visiting all parents and their children, except self.
-        See "visitor pattern" in literature. This is implemented in pre-order fashion.
-
-        Example:
-
-        parents = []
-        self.traverse_parents(parents.append)
-        print parents
-        """
-        if self.has_parent():
-            self.__visited = True
-            self._parent_._traverse_parents(visit, *args, **kwargs)
-            self.__visited = False
-
-    #===========================================================================
     # Convenience
     #===========================================================================
     @property
@@ -217,14 +187,24 @@ class Param(Parameterizable, ObsAr):
     #===========================================================================
     # Pickling and copying
     #===========================================================================
+    def copy(self):
+        return Parameterizable.copy(self, which=self)
+    
     def __deepcopy__(self, memo):
         s = self.__new__(self.__class__, name=self.name, input_array=self.view(numpy.ndarray).copy())
-        memo[id(self)] = s
+        memo[id(self)] = s        
         import copy
-        s.__dict__.update(copy.deepcopy(self.__dict__, memo))
+        Pickleable.__setstate__(s, copy.deepcopy(self.__getstate__(), memo))
         return s
-
-
+    def _setup_observers(self):
+        """
+        Setup the default observers
+        
+        1: pass through to parent, if present
+        """
+        if self.has_parent():
+            self.add_observer(self._parent_, self._parent_._pass_through_notify_observers, -np.inf)
+    
     #===========================================================================
     # Printing -> done
     #===========================================================================

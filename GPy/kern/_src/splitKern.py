@@ -6,7 +6,6 @@ import numpy as np
 from kern import Kern,CombinationKernel
 from .independent_outputs import index_to_slices
 import itertools
-from .rbf import RBF
 
 class DiffGenomeKern(Kern):
 
@@ -14,7 +13,6 @@ class DiffGenomeKern(Kern):
         self.idx_p = idx_p
         self.index_dim=index_dim
         self.kern = SplitKern(kernel,Xp, index_dim=index_dim)
-#         self.kern = RBF(1)
         super(DiffGenomeKern, self).__init__(input_dim=kernel.input_dim+1, active_dims=None, name=name)
         self.add_parameter(self.kern)
     

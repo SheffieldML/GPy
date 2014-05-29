@@ -6,21 +6,66 @@ import numpy as np
 from kern import Kern,CombinationKernel
 from .independent_outputs import index_to_slices
 import itertools
-from GPy.kern import Linear,RBF
 
+class DiffGenomeKern(Kern):
+
+    def __init__(self, kernel, idx_p, Xp, index_dim=-1, name='DiffGenomeKern'):
+        self.idx_p = idx_p
+        self.index_dim=index_dim
+        self.kern = SplitKern(kernel,Xp, index_dim=index_dim)
+        super(DiffGenomeKern, self).__init__(input_dim=kernel.input_dim+1, name=name)
+        self.add_parameter(self.kern)
+    
+    def K(self, X, X2=None):
+        assert X2==None
+        K = self.kern.K(X,X2)
+        
+        slices = index_to_slices(X[:,self.index_dim])
+        idx_start = slices[1][0]
+        idx_end = idx_start+self.idx_p
+        K[idx_start:idx_end,:] = K[:self.idx_p,:]
+        K[:,idx_start:idx_end] = K[:,self.idx_p]
+        
+        return K
+    
+    def Kdiag(self,X):
+        Kdiag = self.kern.Kdiag(X)
+
+        slices = index_to_slices(X[:,self.index_dim])
+        idx_start = slices[1][0]
+        idx_end = idx_start+self.idx_p
+        Kdiag[idx_start:idx_end] = Kdiag[:self.idx_p]
+        
+        return Kdiag
+    
+    def update_gradients_full(self,dL_dK,X,X2=None):
+        assert X2==None
+        slices = index_to_slices(X[:,self.index_dim])
+        idx_start = slices[1][0]
+        idx_end = idx_start+self.idx_p
+        
+        self.kern.update_gradients_full(dL_dK, X[:self.idx_p],X)
+        grad_p1 = self.kern.gradient.copy()
+        self.kern.update_gradients_full(dL_dK, X, X[:self.idx_p])
+        grad_p2 = self.kern.gradient.copy()
+        self.kern.update_gradients_full(dL_dK, X[:self.idx_p], X[:self.idx_p])
+        grad_p3 = self.kern.gradient.copy()
+
+        self.kern.update_gradients_full(dL_dK, X[idx_start:idx_end],X)
+        grad_n1 = self.kern.gradient.copy()
+        self.kern.update_gradients_full(dL_dK, X, X[idx_start:idx_end])
+        grad_n2 = self.kern.gradient.copy()
+        self.kern.update_gradients_full(dL_dK, X[idx_start:idx_end], X[idx_start:idx_end])
+        grad_n3 = self.kern.gradient.copy()
+
+        self.kern.update_gradients_full(dL_dK, X)
+        self.kern.gradient += grad_p1+grad_p2+grad_p3-grad_n1-grad_n2-grad_n3
+
+    def update_gradients_diag(self, dL_dKdiag, X):
+        pass
 
 class SplitKern(CombinationKernel):
-    """
-    A kernel which can represent several independent functions.  this kernel
-    'switches off' parts of the matrix where the output indexes are different.
 
-    The index of the functions is given by the last column in the input X the
-    rest of the columns of X are passed to the underlying kernel for
-    computation (in blocks).
-
-    :param kernels: either a kernel, or list of kernels to work with. If it is
-    a list of kernels the indices in the index_dim, index the kernels you gave!
-    """
     def __init__(self, kernel, Xp, index_dim=-1, name='SplitKern'):
         assert isinstance(index_dim, int), "The index dimension must be an integer!"
         self.kern = kernel
@@ -89,6 +134,8 @@ class SplitKern_cross(Kern):
     def __init__(self, kernel, Xp, name='SplitKern_cross'):
         assert isinstance(kernel, Kern)
         self.kern = kernel
+        if not isinstance(Xp,np.ndarray):
+            Xp = np.array([[Xp]])
         self.Xp = Xp
         super(SplitKern_cross, self).__init__(input_dim=kernel.input_dim, active_dims=None, name=name)
         

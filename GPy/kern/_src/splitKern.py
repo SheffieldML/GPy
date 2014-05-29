@@ -13,7 +13,7 @@ class DiffGenomeKern(Kern):
         self.idx_p = idx_p
         self.index_dim=index_dim
         self.kern = SplitKern(kernel,Xp, index_dim=index_dim)
-        super(DiffGenomeKern, self).__init__(input_dim=kernel.input_dim+1, name=name)
+        super(DiffGenomeKern, self).__init__(input_dim=kernel.input_dim+1, active_dims=None, name=name)
         self.add_parameter(self.kern)
     
     def K(self, X, X2=None):
@@ -21,10 +21,12 @@ class DiffGenomeKern(Kern):
         K = self.kern.K(X,X2)
         
         slices = index_to_slices(X[:,self.index_dim])
-        idx_start = slices[1][0]
+        idx_start = slices[1][0].start
         idx_end = idx_start+self.idx_p
+        K_c = K[idx_start:idx_end,idx_start:idx_end].copy()
         K[idx_start:idx_end,:] = K[:self.idx_p,:]
-        K[:,idx_start:idx_end] = K[:,self.idx_p]
+        K[:,idx_start:idx_end] = K[:,:self.idx_p]
+        K[idx_start:idx_end,idx_start:idx_end] = K_c
         
         return K
     
@@ -32,7 +34,7 @@ class DiffGenomeKern(Kern):
         Kdiag = self.kern.Kdiag(X)
 
         slices = index_to_slices(X[:,self.index_dim])
-        idx_start = slices[1][0]
+        idx_start = slices[1][0].start
         idx_end = idx_start+self.idx_p
         Kdiag[idx_start:idx_end] = Kdiag[:self.idx_p]
         
@@ -41,7 +43,7 @@ class DiffGenomeKern(Kern):
     def update_gradients_full(self,dL_dK,X,X2=None):
         assert X2==None
         slices = index_to_slices(X[:,self.index_dim])
-        idx_start = slices[1][0]
+        idx_start = slices[1][0].start
         idx_end = idx_start+self.idx_p
         
         self.kern.update_gradients_full(dL_dK, X[:self.idx_p],X)
@@ -59,7 +61,7 @@ class DiffGenomeKern(Kern):
         grad_n3 = self.kern.gradient.copy()
 
         self.kern.update_gradients_full(dL_dK, X)
-        self.kern.gradient += grad_p1+grad_p2+grad_p3-grad_n1-grad_n2-grad_n3
+        self.kern.gradient += grad_p1+grad_p2-2*grad_p3-grad_n1-grad_n2+2*grad_n3
 
     def update_gradients_diag(self, dL_dKdiag, X):
         pass

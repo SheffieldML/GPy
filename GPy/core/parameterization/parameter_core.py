@@ -407,8 +407,7 @@ class Indexable(Nameable, Observable):
         if value is not None:
             self[:] = value
 
-        index = self._raveled_index()
-        #reconstrained = self.unconstrain()
+        index = self.unconstrain()
         index = self._add_to_index_operations(self.constraints, index, __fixed__, warning)
         self._highest_parent_._set_fixed(self, index)
         self.notify_observers(self, None if trigger_parent else -np.inf)

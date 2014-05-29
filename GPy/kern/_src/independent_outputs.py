@@ -22,7 +22,7 @@ def index_to_slices(index):
     """
 
     #contruct the return structure
-    ind = np.asarray(index,dtype=np.int64)
+    ind = np.asarray(index,dtype=np.int)
     ret = [[] for i in range(ind.max()+1)]
 
     #find the switchpoints

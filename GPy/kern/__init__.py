@@ -14,6 +14,7 @@ from _src.ODE_UYC import ODE_UYC
 from _src.ODE_st import ODE_st
 from _src.ODE_t import ODE_t
 from _src.poly import Poly
+from _src.splitKern import SplitKern
 
 # TODO: put this in an init file somewhere
 #I'm commenting this out because the files were not added. JH. Remember to add the files before commiting

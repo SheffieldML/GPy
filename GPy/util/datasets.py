@@ -385,7 +385,7 @@ def spellman_yeast(data_set='spellman_yeast'):
     Y = read_csv(filename, header=0, index_col=0, sep='\t')
     return data_details_return({'Y': Y}, data_set)
 
-def spellman_yeast_cdc(data_set='spellman_yeast'):
+def spellman_yeast_cdc15(data_set='spellman_yeast'):
     if not data_available(data_set):
         download_data(data_set)
     from pandas import read_csv

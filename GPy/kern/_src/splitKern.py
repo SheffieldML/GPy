@@ -106,10 +106,10 @@ class SplitKern_cross(Kern):
         k1 = self.kern.K(X,self.Xp)
         k2 = self.kern.K(self.Xp,X2)
         k3 = self.kern.K(self.Xp,self.Xp)
-        dL_dk1 = np.einsum('ij,j->i',dL_dK,k2[0])/k3
-        dL_dk2 = np.einsum('ij,i->j',dL_dK,k1[:,0])/k3
-        dL_dk3 = np.einsum('ij,ij->',dL_dK,-np.dot(k1,k2)/(k3*k3))
-        
+        dL_dk1 = np.einsum('ij,j->i',dL_dK,k2.flat)/k3.flat
+        dL_dk2 = np.einsum('ij,i->j',dL_dK,k1.flat)/k3.flat
+        dL_dk3 = np.einsum('ij,ij->',dL_dK,-np.dot(k1,k2)/(k3.flat*k3.flat))
+                
         self.kern.update_gradients_full(dL_dk1[:,None],X,self.Xp)
         grad1 = self.kern.gradient.copy()
         self.kern.update_gradients_full(dL_dk2[None,:],self.Xp,X)

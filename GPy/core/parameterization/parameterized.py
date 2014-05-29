@@ -272,8 +272,11 @@ class Parameterized(Parameterizable):
     def __setattr__(self, name, val):
         # override the default behaviour, if setting a param, so broadcasting can by used
         if hasattr(self, "parameters"):
-            pnames = self.parameter_names(False, adjust_for_printing=True, recursive=False)
-            if name in pnames: self.parameters[pnames.index(name)][:] = val; return
+            try:
+                pnames = self.parameter_names(False, adjust_for_printing=True, recursive=False)
+                if name in pnames: self.parameters[pnames.index(name)][:] = val; return
+            except AttributeError:
+                pass
         object.__setattr__(self, name, val);
 
     #===========================================================================
@@ -281,17 +284,24 @@ class Parameterized(Parameterizable):
     #===========================================================================
     def __setstate__(self, state):
         super(Parameterized, self).__setstate__(state)
-        self._connect_parameters()
-        self._connect_fixes()
-        self._notify_parent_change()
+        try:
+            self._connect_parameters()
+            self._connect_fixes()
+            self._notify_parent_change()
+            self.parameters_changed()
+        except Exception as e:
+            print "WARNING: caught exception {!s}, trying to continue".format(e)
 
-        self.parameters_changed()
-    def copy(self):
-        c = super(Parameterized, self).copy()
-        c._connect_parameters()
-        c._connect_fixes()
-        c._notify_parent_change()
-        return c
+    def copy(self, memo=None):
+        if memo is None:
+            memo = {}
+        memo[id(self.optimizer_array)] = None # and param_array
+        memo[id(self.param_array)] = None # and param_array
+        copy = super(Parameterized, self).copy(memo)
+        copy._connect_parameters()
+        copy._connect_fixes()
+        copy._notify_parent_change()
+        return copy
 
     #===========================================================================
     # Printing:

@@ -38,6 +38,25 @@ class LatentFunctionInference(object):
         """
         pass
 
+class InferenceMethodList(LatentFunctionInference, list):
+
+    def on_optimization_start(self):
+        for inf in self:
+            inf.on_optimization_start()
+
+    def on_optimization_end(self):
+        for inf in self:
+            inf.on_optimization_end()
+    
+    def __getstate__(self):
+        state = []
+        for inf in self:
+            state.append(inf)
+        return state
+    
+    def __setstate__(self, state):
+        for inf in state:
+            self.append(inf)
 
 from exact_gaussian_inference import ExactGaussianInference
 from laplace import Laplace

@@ -134,7 +134,7 @@ class Add(CombinationKernel):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
                 else:
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
-            target += p1.gradients_Z_expectations(eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
+            target += p1.gradients_Z_expectations(dL_psi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         return target
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):

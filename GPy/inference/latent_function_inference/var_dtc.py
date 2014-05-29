@@ -202,6 +202,17 @@ class VarDTCMissingData(LatentFunctionInference):
     def set_limit(self, limit):
         self._Y.limit = limit
 
+    def __getstate__(self):
+        # has to be overridden, as Cacher objects cannot be pickled. 
+        return self._Y.limit, self._inan
+
+    def __setstate__(self, state):
+        # has to be overridden, as Cacher objects cannot be pickled. 
+        from ...util.caching import Cacher
+        self.limit = state[0]
+        self._inan = state[1]
+        self._Y = Cacher(self._subarray_computations, self.limit)
+
     def _subarray_computations(self, Y):
         if self._inan is None:
             inan = np.isnan(Y)
@@ -272,7 +283,11 @@ class VarDTCMissingData(LatentFunctionInference):
             else: beta = beta_all
 
             VVT_factor = (beta*y)
-            VVT_factor_all[v, ind].flat = VVT_factor.flat
+            try:
+                VVT_factor_all[v, ind].flat = VVT_factor.flat
+            except ValueError:
+                mult = np.ravel_multi_index((v.nonzero()[0][:,None],ind[None,:]), VVT_factor_all.shape)
+                VVT_factor_all.flat[mult] = VVT_factor
             output_dim = y.shape[1]
 
             psi0 = psi0_all[v]

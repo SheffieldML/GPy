@@ -31,7 +31,7 @@ def plot_latent(model, labels=None, which_indices=None,
                 resolution=50, ax=None, marker='o', s=40,
                 fignum=None, plot_inducing=False, legend=True,
                 plot_limits=None, 
-                aspect='auto', updates=False, **kwargs):
+                aspect='auto', updates=False, predict_kwargs={}, imshow_kwargs={}):
     """
     :param labels: a np.array of size model.num_data containing labels for the points (can be number, strings, etc)
     :param resolution: the resolution of the grid on which to evaluate the predictive variance
@@ -60,7 +60,7 @@ def plot_latent(model, labels=None, which_indices=None,
     def plot_function(x):
         Xtest_full = np.zeros((x.shape[0], model.X.shape[1]))
         Xtest_full[:, [input_1, input_2]] = x
-        _, var = model.predict(Xtest_full)
+        _, var = model.predict(Xtest_full, **predict_kwargs)
         var = var[:, :1]
         return np.log(var)
 
@@ -81,7 +81,7 @@ def plot_latent(model, labels=None, which_indices=None,
     view = ImshowController(ax, plot_function,
                             (xmin, ymin, xmax, ymax),
                             resolution, aspect=aspect, interpolation='bilinear',
-                            cmap=pb.cm.binary, **kwargs)
+                            cmap=pb.cm.binary, **imshow_kwargs)
 
     # make sure labels are in order of input:
     ulabels = []

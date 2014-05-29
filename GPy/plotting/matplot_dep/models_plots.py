@@ -97,7 +97,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         for d in which_data_ycols:
             plots['gpplot'] = gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], ax=ax, edgecol=linecol, fillcol=fillcol)
-            plots['dataplot'] = ax.plot(X[which_data_rows,free_dims], Y[which_data_rows, d], data_symbol, mew=1.5)
+            if not plot_raw: plots['dataplot'] = ax.plot(X[which_data_rows,free_dims], Y[which_data_rows, d], data_symbol, mew=1.5)
 
         #optionally plot some samples
         if samples: #NOTE not tested with fixed_inputs
@@ -151,7 +151,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         for d in which_data_ycols:
             m_d = m[:,d].reshape(resolution, resolution).T
             plots['contour'] = ax.contour(x, y, m_d, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
-            plots['dataplot'] = ax.scatter(X[which_data_rows, free_dims[0]], X[which_data_rows, free_dims[1]], 40, Y[which_data_rows, d], cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.)
+            if not plot_raw: plots['dataplot'] = ax.scatter(X[which_data_rows, free_dims[0]], X[which_data_rows, free_dims[1]], 40, Y[which_data_rows, d], cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.)
 
         #set the limits of the plot to some sensible values
         ax.set_xlim(xmin[0], xmax[0])

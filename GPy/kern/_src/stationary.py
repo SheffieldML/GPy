@@ -180,7 +180,7 @@ class Stationary(Kern):
         return np.zeros(X.shape)
 
     def input_sensitivity(self):
-        return np.ones(self.input_dim)/self.lengthscale
+        return np.ones(self.input_dim)/self.lengthscale**2
 
 class Exponential(Stationary):
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Exponential'):

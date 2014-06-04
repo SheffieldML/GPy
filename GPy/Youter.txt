@@ -1,0 +1,12 @@
+models/generalized_FITC.py:        self.Youter = np.dot(self.mu_tilde,self.mu_tilde.T)
+models/generalized_FITC.py:        B = -.5*np.sum(self.Qi*self.Youter)
+models/GP_regression.py:            # then it's more efficient to store Youter
+models/GP_regression.py:            self.Youter = np.dot(self.Y, self.Y.T)
+models/GP_regression.py:            self.Youter = None
+models/GP_regression.py:        Computes the model fit using Youter if it's available
+models/GP_regression.py:        if self.Youter is None:
+models/GP_regression.py:            return -0.5*np.sum(np.multiply(self.Ki, self.Youter))
+models/GP_regression.py:        if self.Youter is None:
+models/GP_regression.py:            dL_dK = 0.5*(mdot(self.Ki, self.Youter, self.Ki) - self.D*self.Ki)
+models/warped_GP.py:            self.Youter = np.dot(self.Y, self.Y.T)
+models/warped_GP.py:            self.Youter = None

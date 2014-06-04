@@ -1,0 +1,1 @@
+core/model.py:    def get(self,name):

@@ -1,0 +1,149 @@
+# Copyright (c) 2014 GPy Authors
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
+try:
+    import sympy as sym
+    sympy_available=True
+    from sympy.utilities.lambdify import lambdify
+    from GPy.util.symbolic import stabilise
+except ImportError:
+    sympy_available=False
+
+from ..core.mapping import Mapping, Bijective_mapping
+import numpy as np
+from scipy.special import gammaln, gamma, erf, erfc, erfcx, polygamma
+from GPy.util.functions import normcdf, normcdfln, logistic, logisticln
+from ..core.parameterization import Param
+
+
+if sympy_available:
+    class Symbolic(Mapping):
+        """
+        Symbolic likelihood.
+
+        Likelihood where the form of the likelihood is provided by a sympy expression.
+
+        """
+        def __init__(self, f=None, logZ=None, name='symbolic', param=None, func_modules=[]):
+
+
+            if f is None:
+                raise ValueError, "You must provide an argument for the function."
+
+            self.func_modules = func_modules
+            self.func_modules += [{'gamma':gamma,
+                                   'gammaln':gammaln,
+                                   'erf':erf, 'erfc':erfc,
+                                   'erfcx':erfcx,
+                                   'polygamma':polygamma,
+                                   'normcdf':normcdf,
+                                   'normcdfln':normcdfln,
+                                   'logistic':logistic,
+                                   'logisticln':logisticln},
+                                  'numpy']
+
+            super(Symbolic, self).__init__(gp_link, name=name)
+            self.symbolic['function'] = f
+
+            # pull the variable names out of the symbolic pdf
+            sym_vars = [e for e in f.atoms() if e.is_Symbol]
+            self.symbolic['x'] = [e for e in sym_vars if e.name[:2]=='x_']
+            if not self.symbolic['f']:
+                raise ValueError('No variable x in f().')
+            self.symbolic['theta'] = sorted([e for e in sym_vars if not e.name[:2]=='x_'],key=lambda e:e.name)
+
+            theta_names = [theta.name for theta in self.symbolic['theta']
+
+            # These are all the arguments need to compute the mapping.
+            self.arg_list = self.symbolic['x'] + self.symbolic['theta']
+
+            # these are arguments for computing derivatives.
+            derivative_arguments = self.arg_list
+
+            # Do symbolic work to compute derivatives.
+            self.symbolic['derivatives'] = {theta.name : stabilise(sym.diff(f,theta)) for theta in derivative_arguments}
+            
+            # Add parameters to the model.
+            for theta in self._sym_theta:
+                val = 1.0
+                # TODO: need to decide how to handle user passing values for the se parameter vectors.
+                if param is not None:
+                    if param.has_key(theta.name):
+                        val = param[theta.name]
+                setattr(self, theta.name, Param(theta.name, val, None))
+                self.add_parameters(getattr(self, theta.name))
+
+            # initialise code arguments
+            self._arguments = {} 
+
+            # generate the code for the pdf and derivatives
+            self._gen_code()
+
+        def _gen_code(self):
+            """Generate the code from the symbolic parts that will be used for likleihod computation."""
+
+            self.code = GPy.util.function.gen_code(self.symbolic)
+
+        def parameters_changed(self):
+            # do all the precomputation codes.
+            for variable, code in self.code['precompute'].items():
+                self.setattr(variable, eval(code, self.namespace))
+
+        def update_gradients(self, grads):
+            """
+            """
+            for param, code in self.code['derivatives'].items():
+                self.getattr(param).setattr('gradient',
+                                            eval(code, self.namespace))
+            pass
+
+        def _arguments_update(self, x):
+            """Set up argument lists for the derivatives."""
+            # If we do make use of Theano, then at this point we would
+            # need to do a lot of precomputation to ensure that the
+            # likelihoods and gradients are computed together, then check
+            # for parameter changes before updating.
+            for i, fvar in enumerate(self._sym_x):
+                self._arguments[fvar.name] =  x[:, i]
+            for theta in self._sym_theta:
+                self._arguments[theta.name] = np.asarray(getattr(self, theta.name))
+
+        def f(self, x):
+            """
+            Likelihood function given inverse link of f.
+
+            :param inv_link_f: inverse link of latent variables.
+            :type inv_link_f: Nx1 array
+            :param y: data
+            :type y: Nx1 array
+            :param Y_metadata: Y_metadata which is not used in student t distribution
+            :returns: likelihood evaluated for this point
+            :rtype: float
+            """
+            self._arguments_update(inv_link_f, y)
+            return self._f_function(x)
+
+
+        def df_dX(self, X):
+            """
+            Gradient of log likelihood with respect to the inverse link function.
+
+            :param inv_inv_link_f: latent variables (inverse link of f)
+            :type inv_inv_link_f: Nx1 array
+            :param y: data
+            :type y: Nx1 array
+            :param Y_metadata: Y_metadata 
+            :returns: gradient of likelihood with respect to each point.
+            :rtype: Nx1 array
+
+            """
+            self._arguments_update(X)
+            return self._derivative_code['X'](**self._arguments)
+
+        def df_dtheta(self, X):
+            self._arguments_update(X)
+            g = np.zeros((np.atleast_1d(X).shape[0], len(self._sym_theta)))
+            for i, theta in enumerate(self._sym_theta):
+                g[:, i:i+1] = self._derivative_code[theta.name](**self._arguments)
+            return g.sum(0)
+

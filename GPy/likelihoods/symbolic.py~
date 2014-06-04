@@ -1,0 +1,234 @@
+# Copyright (c) 2014 GPy Authors
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
+import numpy as np
+import sympy as sp
+from scipy import stats, special
+import scipy as sp
+import link_functions
+from scipy import stats, integrate
+from scipy.special import gammaln, gamma
+from likelihood import Likelihood
+from ..core.parameterization import Param
+from ..core.parameterization.transformations import Logexp
+
+class Symbolic(Likelihood):
+    """
+    Symbolic likelihood.
+
+    Likelihood where the form of the likelihood is provided by a sympy expression.
+
+    """
+    def __init__(self, likelihood=None, log_likelihood=None, gp_link=None, name='symbolic', log_concave=False):
+        if gp_link is None:
+            gp_link = link_functions.Identity()
+
+        if likelihood is None and log_likelihood is None:
+            raise ValueError, "You must provide an argument for the likelihood or the log likelihood."
+
+        super(Symbolic, self).__init__(gp_link, name=name)
+
+        if likelihood is None:
+            self._sp_likelihood = sp.exp(log_likelihood).simplify()
+            self._sp_log_likelihood = log_likelihood
+
+        if log_likelihood is None:
+            self._sp_likelihood = likelihood
+            self._sp_log_likelihood = sp.log(likelihood).simplify()
+
+        # extract parameter names from the covariance
+        # pull the variable names out of the symbolic covariance function.
+        sp_vars = [e for e in self._sp_likelihood.atoms() if e.is_Symbol]
+        # f subscript allows the likelihood of y to be dependent on multiple functions of f. The index of these functions would need to be specified in y_meta.
+        self._sp_f = sorted([e for e in sp_vars if e.name[0:2]=='f_'],key=lambda x:int(x.name[2:]))
+        self._sp_y = sorted([e for e in sp_vars if e.name=='y'],key=lambda x:int(x.name[2:]))
+        self._sp_theta = sorted([e for e in sp_vars if not (e.name[0:2]=='f_' or e.name=='y')],key=lambda e:e.name)
+
+        self.arg_list = self._sp_y + self._sp_f + self._sp_theta
+        # this gives us the arguments for first derivative
+        first_derivative_arguments = self._sp_f + self._sp_theta
+        second_derivative_arguments = {}
+        for arg in first_derivative_arguments:
+            if arg.name[0:2] == 'f_':
+                # take all second derivatives with respect to everything
+                second_derivative_arguments[arg.name] = first_derivative_arguments
+        second_derivative_arguments = self._sp_f + self._sp_theta
+        third_derivative_arguments = self._sp_f + self._sp_theta
+        self._likelihood_derivatives = {theta.name : sp.diff(self._sp_likelihood,theta).simplify() for theta in derivative_arguments}
+        self._log_likelihood_derivatives = {theta.name : sp.diff(self._sp_log_likelihood,theta).simplify() for theta in derivative_arguments}
+
+        # Add parameters to the model.
+        for theta in self._sp_theta:
+            val = 1.0
+            # TODO: what if user has passed a parameter vector, how should that be stored and interpreted? This is the old way before params class.
+            if param is not None:
+                if param.has_key(theta):
+                    val = param[theta]
+            setattr(self, theta.name, Param(theta.name, val, None))
+            self.add_parameters(getattr(self, theta.name))
+
+
+        # By default it won't be log concave. It would be nice to check for this somehow though!
+        self.log_concave = log_concave
+
+        # initialise code arguments
+        self._arguments = {} 
+
+        # generate the code for the likelihood and derivatives
+        self._gen_code()
+
+    def _gen_code(self):
+        # Potentially run theano here as an option.
+        self._likelihood_function = lambdify(self.arg_list, self._sp_likelihood, 'numpy')
+        self._log_likelihood_function = lambdify(self.arg_list, self._sp_log_likelihood, 'numpy')
+        # for derivatives we need gradient of the likelihood, gradient of log likelihood
+        for key in self.derivatives.keys():
+            setattr(self, '_log_likelihood_diff_' + key, lambdify(self.arg_list, self.derivatives[key], 'numpy'))
+            
+
+        pass
+
+    def parameters_changed(self):
+        pass
+
+    def update_gradients(self, grads):
+        """
+        Pull out the gradients, be careful as the order must match the order
+        in which the parameters are added
+        """
+        for grad, theta in zip(grads, self._sp_theta):
+            parameter = getattr(self, theta.name)
+            setattr(parameter, 'gradient', grad)
+
+    def _arguments_update(self, f, y):
+        """Set up argument lists for the derivatives."""
+        # Could check if this needs doing or not, there could
+        # definitely be some computational savings by checking for
+        # parameter updates here.
+        for i, f in enumerate(self._sp_f):
+            self._arguments[f.name] =  f[:, i][:, None]
+        for i, y in enumerate(self._sp_y):
+            self._arguments[y.name] = y[:, i][:, None]
+
+        for theta in self._sp_theta:
+            self._arguments[theta.name] = np.asarray(getattr(self, theta.name))
+
+    def pdf_link(self, inv_link_f, y, Y_metadata=None):
+        """
+        Likelihood function given inverse link of f.
+
+        :param inv_link_f: inverse link of latent variables.
+        :type inv_link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param Y_metadata: Y_metadata which is not used in student t distribution
+        :returns: likelihood evaluated for this point
+        :rtype: float
+        """
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        self._arguments_update(inv_link_f, y)
+        l = self._likelihood_function(**self._arguments)
+        return np.prod(l)
+
+    def logpdf_link(self, inv_link_f, y, Y_metadata=None):
+        """
+        Log Likelihood Function given inverse link of latent variables.
+
+        :param inv_inv_link_f: latent variables (inverse link of f)
+        :type inv_inv_link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param Y_metadata: Y_metadata 
+        :returns: likelihood evaluated for this point
+        :rtype: float
+
+        """
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        self._arguments_update(inv_link_f, y)
+        ll = self._log_likelihood_function(**self._arguments)
+        return np.sum(ll)
+
+    def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
+        """
+        Gradient of log likelihood with respect to the inverse link function.
+
+        :param inv_inv_link_f: latent variables (inverse link of f)
+        :type inv_inv_link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param Y_metadata: Y_metadata 
+        :returns: gradient of likelihood with respect to each point.
+        :rtype: Nx1 array
+
+        """
+
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        self._arguments_update(inv_link_f, y)
+        return self._log_likelihood_diff['f_0'](**self._arguments)
+
+    def d2logpdf_dlink2(self, inv_link_f, y, Y_metadata=None):
+        raise NotImplementedError
+
+    def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):
+        raise NotImplementedError
+
+    def dlogpdf_link_dtheta(self, inv_link_f, y, Y_metadata=None):
+        raise NotImplementedError
+
+    def dlogpdf_dlink_dtheta(self, inv_link_f, y, Y_metadata=None):
+        raise NotImplementedError
+
+    def d2logpdf_dlink2_dtheta(self, inv_link_f, y, Y_metadata=None):
+        raise NotImplementedError
+
+
+    def d2logpdf_dlink2(self, inv_link_f, y, Y_metadata=None):
+        """
+        Hessian at y, given link(f), w.r.t link(f)
+        i.e. second derivative logpdf at y given link(f_i) and link(f_j)  w.r.t link(f_i) and link(f_j)
+        The hessian will be 0 unless i == j
+
+        .. math::
+            \\frac{d^{2} \\ln p(y_{i}|\lambda(f_{i}))}{d^{2}\\lambda(f)} = \\frac{(v+1)((y_{i}-\lambda(f_{i}))^{2} - \\sigma^{2}v)}{((y_{i}-\lambda(f_{i}))^{2} + \\sigma^{2}v)^{2}}
+
+        :param inv_link_f: latent variables link(f)
+        :type inv_link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param Y_metadata: Y_metadata which is not used in student t distribution
+        :returns: Diagonal of hessian matrix (second derivative of likelihood evaluated at points f)
+        :rtype: Nx1 array
+
+        .. Note::
+            Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
+            (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
+        """
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        e = y - inv_link_f
+        hess = ((self.v + 1)*(e**2 - self.v*self.sigma2)) / ((self.sigma2*self.v + e**2)**2)
+        return hess
+
+    def predictive_mean(self, mu, sigma, Y_metadata=None):
+        return self.gp_link.transf(mu) # only true in link is monotoci, which it is.
+
+    def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
+        if self.deg_free <2.:
+            return np.empty(mu.shape)*np.nan #not defined for small degress fo freedom
+        else:
+            return super(StudentT, self).predictive_variance(mu, variance, predictive_mean, Y_metadata)
+
+    def conditional_mean(self, gp):
+        return self.gp_link.transf(gp)
+
+    def conditional_variance(self, gp):
+        return self.deg_free/(self.deg_free - 2.)
+
+    def samples(self, gp, Y_metadata=None):
+        """
+        Returns a set of samples of observations based on a given value of the latent variable.
+
+        :param gp: latent variable
+        """
+        orig_shape = gp.shape
+        gp = gp.flatten()
+        pass

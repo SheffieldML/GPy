@@ -151,7 +151,7 @@ def dpotri(A, lower=1):
     assert lower==1, "scipy linalg behaviour is very weird. please use lower, fortran ordered arrays"
 
     A = force_F_ordered(A)
-    R, info = lapack.dpotri(A, lower=1)
+    R, info = lapack.dpotri(A, lower=0) #needs to be zero here, seems to be a scipy bug
     symmetrify(R)
     return R, info
 
@@ -218,7 +218,7 @@ def pdinv(A, *args):
     L = jitchol(A, *args)
     logdet = 2.*np.sum(np.log(np.diag(L)))
     Li = dtrtri(L)
-    Ai, _ = lapack.dpotri(L, lower=1)
+    Ai, _ = dpotri(L, lower=1)
     # Ai = np.tril(Ai) + np.tril(Ai,-1).T
     symmetrify(Ai)
 

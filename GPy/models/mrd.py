@@ -2,24 +2,29 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-import itertools
-import pylab
+import itertools, logging
 
-from ..core import Model
 from ..kern import Kern
 from ..core.parameterization.variational import NormalPosterior, NormalPrior
 from ..core.parameterization import Param, Parameterized
+from ..core.parameterization.observable_array import ObsAr
 from ..inference.latent_function_inference.var_dtc import VarDTCMissingData, VarDTC
+from ..inference.latent_function_inference import InferenceMethodList
 from ..likelihoods import Gaussian
 from ..util.initialization import initialize_latent
 from ..core.sparse_gp import SparseGP, GP
-from ..inference.latent_function_inference import InferenceMethodList
 
 class MRD(SparseGP):
     """
+    !WARNING: This is bleeding edge code and still in development. 
+    Functionality may change fundamentally during development!
+
     Apply MRD to all given datasets Y in Ylist.
 
     Y_i in [n x p_i]
+
+    If Ylist is a dictionary, the keys of the dictionary are the names, and the
+    values are the different datasets to compare. 
 
     The samples n in the datasets need
     to match up, whereas the dimensionality p_d can differ.
@@ -54,28 +59,64 @@ class MRD(SparseGP):
                  inference_method=None, likelihoods=None, name='mrd', Ynames=None):
         super(GP, self).__init__(name)
 
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.input_dim = input_dim
         self.num_inducing = num_inducing
 
-        self.Ylist = Ylist
+        if isinstance(Ylist, dict):
+            Ynames, Ylist = zip(*Ylist.items())
+
+        self.logger.debug("creating observable arrays")
+        self.Ylist = [ObsAr(Y) for Y in Ylist]
+
+        if Ynames is None:
+            self.logger.debug("creating Ynames")
+            Ynames = ['Y{}'.format(i) for i in range(len(Ylist))]
+        self.names = Ynames
+        assert len(self.names) == len(self.Ylist), "one name per dataset, or None if Ylist is a dict"
+
+        if inference_method is None:
+            self.inference_method= InferenceMethodList()
+            warned = False
+            for y in Ylist:
+                inan = np.isnan(y)
+                if np.any(inan):
+                    if not warned:
+                        self.logger.warn("WARNING: NaN values detected, make sure initx method can cope with NaN values or provide starting latent space X")
+                        warned = True
+                    self.inference_method.append(VarDTCMissingData(limit=1, inan=inan))
+                else:
+                    self.inference_method.append(VarDTC(limit=1))
+                self.logger.debug("created inference method <{}>".format(hex(id(self.inference_method[-1]))))
+        else:
+            if not isinstance(inference_method, InferenceMethodList):
+                self.logger.debug("making inference_method an InferenceMethodList")
+                inference_method = InferenceMethodList(inference_method)
+            self.inference_method = inference_method
+
+
         self._in_init_ = True
-        X, fracs = self._init_X(initx, Ylist)
+        if X is None:
+            X, fracs = self._init_X(initx, Ylist)
+        else:
+            fracs = [X.var(0)]*len(Ylist)
         self.Z = Param('inducing inputs', self._init_Z(initz, X))
         self.num_inducing = self.Z.shape[0] # ensure M==N if M>N
 
         # sort out the kernels
+        self.logger.info("building kernels")
         if kernel is None:
             from ..kern import RBF
-            self.kernels = [RBF(input_dim, ARD=1, lengthscale=fracs[i], name='rbf'.format(i)) for i in range(len(Ylist))]
+            kernels = [RBF(input_dim, ARD=1, lengthscale=fracs[i]) for i in range(len(Ylist))]
         elif isinstance(kernel, Kern):
-            self.kernels = []
+            kernels = []
             for i in range(len(Ylist)):
                 k = kernel.copy()
-                self.kernels.append(k)
+                kernels.append(k)
         else:
             assert len(kernel) == len(Ylist), "need one kernel per output"
             assert all([isinstance(k, Kern) for k in kernel]), "invalid kernel object detected!"
-            self.kernels = kernel
+            kernels = kernel
 
         if X_variance is None:
             X_variance = np.random.uniform(0.1, 0.2, X.shape)
@@ -84,34 +125,17 @@ class MRD(SparseGP):
         self.X = NormalPosterior(X, X_variance)
 
         if likelihoods is None:
-            self.likelihoods = [Gaussian(name='Gaussian_noise'.format(i)) for i in range(len(Ylist))]
-        else: self.likelihoods = likelihoods
+            likelihoods = [Gaussian(name='Gaussian_noise'.format(i)) for i in range(len(Ylist))]
+        else: likelihoods = likelihoods
 
-        if inference_method is None:
-            self.inference_method= InferenceMethodList()
-            for y in Ylist:
-                inan = np.isnan(y)
-                if np.any(inan):
-                    self.inference_method.append(VarDTCMissingData(limit=1, inan=inan))
-                else:
-                    self.inference_method.append(VarDTC(limit=1))
-        else:
-            if not isinstance(inference_method, InferenceMethodList):
-                inference_method = InferenceMethodList(inference_method)
-            self.inference_method = inference_method
-
+        self.logger.info("adding X and Z")
         self.add_parameters(self.X, self.Z)
-
-        if Ynames is None:
-            Ynames = ['Y{}'.format(i) for i in range(len(Ylist))]
-        self.names = Ynames
 
         self.bgplvms = []
         self.num_data = Ylist[0].shape[0]
 
-        for i, n, k, l, Y in itertools.izip(itertools.count(), Ynames, self.kernels, self.likelihoods, self.Ylist):
+        for i, n, k, l, Y in itertools.izip(itertools.count(), Ynames, kernels, likelihoods, Ylist):
             assert Y.shape[0] == self.num_data, "All datasets need to share the number of datapoints, and those have to correspond to one another"
-
             p = Parameterized(name=n)
             p.add_parameter(k)
             p.kern = k
@@ -121,6 +145,7 @@ class MRD(SparseGP):
             self.bgplvms.append(p)
 
         self.posterior = None
+        self.logger.info("init done")
         self._in_init_ = False
 
     def parameters_changed(self):
@@ -128,8 +153,9 @@ class MRD(SparseGP):
         self.posteriors = []
         self.Z.gradient[:] = 0.
         self.X.gradient[:] = 0.
-
-        for y, k, l, i in itertools.izip(self.Ylist, self.kernels, self.likelihoods, self.inference_method):
+        for y, b, i in itertools.izip(self.Ylist, self.bgplvms, self.inference_method):
+            self.logger.info('working on im <{}>'.format(hex(id(i))))
+            k, l = b.kern, b.likelihood
             posterior, lml, grad_dict = i.inference(k, self.X, self.Z, l, y)
 
             self.posteriors.append(posterior)
@@ -157,11 +183,11 @@ class MRD(SparseGP):
             self.X.mean.gradient += dL_dmean
             self.X.variance.gradient += dL_dS
 
-        # update for the KL divergence
         self.posterior = self.posteriors[0]
-        self.kern = self.kernels[0]
-        self.likelihood = self.likelihoods[0]
+        self.kern = self.bgplvms[0].kern
+        self.likelihood = self.bgplvms[0].likelihood
 
+        # update for the KL divergence
         self.variational_prior.update_gradients_KL(self.X)
         self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
 
@@ -173,7 +199,7 @@ class MRD(SparseGP):
             Ylist = self.Ylist
         if init in "PCA_concat":
             X, fracs = initialize_latent('PCA', self.input_dim, np.hstack(Ylist))
-            fracs = [fracs]*self.input_dim
+            fracs = [fracs]*len(Ylist)
         elif init in "PCA_single":
             X = np.zeros((Ylist[0].shape[0], self.input_dim))
             fracs = []
@@ -184,7 +210,7 @@ class MRD(SparseGP):
         else: # init == 'random':
             X = np.random.randn(Ylist[0].shape[0], self.input_dim)
             fracs = X.var(0)
-            fracs = [fracs]*self.input_dim
+            fracs = [fracs]*len(Ylist)
         X -= X.mean()
         X /= X.std()
         return X, fracs
@@ -199,8 +225,9 @@ class MRD(SparseGP):
         return Z
 
     def _handle_plotting(self, fignum, axes, plotf, sharex=False, sharey=False):
+        import matplotlib.pyplot as plt
         if axes is None:
-            fig = pylab.figure(num=fignum)
+            fig = plt.figure(num=fignum)
         sharex_ax = None
         sharey_ax = None
         plots = []
@@ -222,8 +249,8 @@ class MRD(SparseGP):
                 raise ValueError("Need one axes per latent dimension input_dim")
             plots.append(plotf(i, g, ax))
             if sharey_ax is not None:
-                pylab.setp(ax.get_yticklabels(), visible=False)
-        pylab.draw()
+                plt.setp(ax.get_yticklabels(), visible=False)
+        plt.draw()
         if axes is None:
             try:
                 fig.tight_layout()
@@ -237,8 +264,8 @@ class MRD(SparseGP):
         This predicts the output mean and variance for the dataset given in Ylist[Yindex]
         """
         self.posterior = self.posteriors[Yindex]
-        self.kern = self.kernels[Yindex]
-        self.likelihood = self.likelihoods[Yindex]
+        self.kern = self.bgplvms[0].kern
+        self.likelihood = self.bgplvms[0].likelihood
         return super(MRD, self).predict(Xnew, full_cov, Y_metadata, kern)
 
     #===============================================================================
@@ -280,11 +307,12 @@ class MRD(SparseGP):
         """
         import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        from matplotlib import pyplot as plt
         from ..plotting.matplot_dep import dim_reduction_plots
         if "Yindex" not in predict_kwargs:
             predict_kwargs['Yindex'] = 0
         if ax is None:
-            fig = pylab.figure(num=fignum)
+            fig = plt.figure(num=fignum)
             ax = fig.add_subplot(111)
         else:
             fig = ax.figure
@@ -301,10 +329,7 @@ class MRD(SparseGP):
         return plot
 
     def __getstate__(self):
-        # TODO:
-        import copy
-        state = copy.copy(self.__dict__)
-        del state['kernels']
+        state = super(MRD, self).__getstate__()
         del state['kern']
         del state['likelihood']
         return state
@@ -312,7 +337,6 @@ class MRD(SparseGP):
     def __setstate__(self, state):
         # TODO:
         super(MRD, self).__setstate__(state)
-        self.kernels = [p.kern for p in self.bgplvms]
-        self.kern = self.kernels[0]
-        self.likelihood = self.likelihoods[0]
+        self.kern = self.bgplvms[0].kern
+        self.likelihood = self.bgplvms[0].likelihood
         self.parameters_changed()

@@ -283,7 +283,11 @@ class VarDTCMissingData(LatentFunctionInference):
             else: beta = beta_all
 
             VVT_factor = (beta*y)
-            VVT_factor_all[v, ind].flat = VVT_factor.flat
+            try:
+                VVT_factor_all[v, ind].flat = VVT_factor.flat
+            except ValueError:
+                mult = np.ravel_multi_index((v.nonzero()[0][:,None],ind[None,:]), VVT_factor_all.shape)
+                VVT_factor_all.flat[mult] = VVT_factor
             output_dim = y.shape[1]
 
             psi0 = psi0_all[v]

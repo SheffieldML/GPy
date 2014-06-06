@@ -88,7 +88,6 @@ class vector_show(matplotlib_show):
 
 
 class lvm(matplotlib_show):
-    
     def __init__(self, vals, model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0,1]):
         """Visualize a latent variable model
 
@@ -99,9 +98,9 @@ class lvm(matplotlib_show):
         """
         if vals is None:
             if isinstance(model.X, VariationalPosterior):
-                vals = param_to_array(model.X.mean)
+                vals = model.X.mean.values
             else:
-                vals = param_to_array(model.X)
+                vals = model.X.values
         if len(vals.shape)==1:
             vals = vals[None,:]
         matplotlib_show.__init__(self, vals, axes=latent_axes)
@@ -134,7 +133,7 @@ class lvm(matplotlib_show):
 
     def modify(self, vals):
         """When latent values are modified update the latent representation and ulso update the output visualization."""
-        self.vals = vals.copy()
+        self.vals = vals.view(np.ndarray).copy()
         y = self.model.predict(self.vals)[0]
         self.data_visualize.modify(y)
         self.latent_handle.set_data(self.vals[0,self.latent_index[0]], self.vals[0,self.latent_index[1]])
@@ -147,7 +146,6 @@ class lvm(matplotlib_show):
         pass
 
     def on_click(self, event):
-        print 'click!'
         if event.inaxes!=self.latent_axes: return
         self.move_on = not self.move_on
         self.called = True
@@ -220,11 +218,11 @@ class lvm_dimselect(lvm):
         self.labels = labels
         lvm.__init__(self,vals,model,data_visualize,latent_axes,sense_axes,latent_index)
         self.show_sensitivities()
-        print "use left and right mouse butons to select dimensions"
+        print self.latent_values
+        print "use left and right mouse buttons to select dimensions"
 
 
     def on_click(self, event):
-
         if event.inaxes==self.sense_axes:
             new_index = max(0,min(int(np.round(event.xdata-0.5)),self.model.input_dim-1))
             if event.button == 1:
@@ -250,6 +248,7 @@ class lvm_dimselect(lvm):
 
 
     def on_leave(self,event):
+        print type(self.latent_values)
         latent_values = self.latent_values.copy()
         y = self.model.predict(latent_values[None,:])[0]
         self.data_visualize.modify(y)

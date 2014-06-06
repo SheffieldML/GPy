@@ -20,9 +20,11 @@ def index_to_slices(index):
     returns
     >>> [[slice(0,2,None),slice(4,5,None)],[slice(2,4,None),slice(8,10,None)],[slice(5,8,None)]]
     """
+    if len(index)==0:
+        return[]
 
     #contruct the return structure
-    ind = np.asarray(index,dtype=np.int64)
+    ind = np.asarray(index,dtype=np.int)
     ret = [[] for i in range(ind.max()+1)]
 
     #find the switchpoints

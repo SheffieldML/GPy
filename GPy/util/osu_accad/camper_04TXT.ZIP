@@ -1,0 +1,213 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<base href="http://accad.osu.edu/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>ACCAD | Page Not Found</title>
+<link rel="alternate" type="application/rss+xml" title="ACCAD RSS feed" href="125.html">
+
+<!-- OSU Navigation Bar: Required CSS. -->
+<link rel="stylesheet" type="text/css" href="/assets/osu-navbar-media/css/navbar.css" />
+<!-- OSU Navigation Bar: Required Conditional CSS. -->
+<!--[if lte IE 6]>  
+<link rel="stylesheet" type="text/css" href="/assets/osu-navbar-media/css/navbar-ie6.css" />
+<link rel="stylesheet" type="text/css" href="/assets/osu-navbar-media/extras/ie6-transparency/navbar-ie6-png.css" />
+<![endif]-->
+<!--[if IE 7]>  
+<link rel="stylesheet" type="text/css" href="/assets/osu-navbar-media/css/navbar-ie7.css" />
+<![endif]-->
+  
+<style type="text/css">
+<!--#page-content {width: 100%;}-->
+</style>
+
+<!-- OSU: Optional Favicon -->
+<link rel="icon" href="/assets/osu-navbar-media/img/favicon.ico" type="image/x-icon" />
+<link rel="shortcut icon" href="/assets/osu-navbar-media/img/favicon.ico" type="image/x-icon" /> 
+    
+<!-- Blueprint: Base CSS -->
+<link href="/assets/css/screen.css" rel="stylesheet" type="text/css" media="screen, projection" />
+<link href="/assets/css/print.css" rel="stylesheet" type="text/css" media="print" />
+<!-- site specific styles -->
+<link href="/assets/css/accad_styles.css" rel="stylesheet" type="text/css" media="screen, projection" />
+
+<!-- [if IE]>
+<link href="/assets/css/ie.css" rel="stylesheet" type="text/css" media="screen, projection" />
+<![endif]--> 
+
+<!-- Base Javascript -->
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.min.js"></script> <!-- base jquery library -->
+<!-- Drop-down menu -->
+<script type="text/javascript" src="/assets/js/hoverIntent.js"></script>
+<script type="text/javascript" src="/assets/js/superfish.js"></script>
+<script type="text/javascript">
+// initialize plugins
+		jQuery(function(){
+			jQuery('ul#topnav').superfish({ 
+            delay: 1000,                          // one second delay on mouseout 
+            animation: {height:'show'},    // slide-down animation 
+            speed:'fast',                           // faster animation speed 
+            dropShadows: false              // disable drop shadows 
+        }); 
+    }); 
+ 
+</script>
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-22129230-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName?('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script> 
+
+</head>
+
+<body>
+
+<div id="osu_navbar">
+	<div id="osu-Navbar">
+ 	<div class="container">
+      <p>
+        <a href="#page-content" id="skip" class="osu-semantic">skip to main content</a>
+      </p>
+      <h2 class="osu-semantic">OSU Navigation Bar</h2>
+      <div id="osu-NavbarBreadcrumb">
+        <p id="osu">
+          <a title="The Ohio State University homepage" href="http://www.osu.edu/">The Ohio State University</a>
+        </p>
+        <p id="site-name">
+           Arts and Sciences
+        </p>
+      </div>
+      <div id="osu-NavbarLinks">
+        <ul>
+          <li><a href="http://www.osu.edu/help.php" title="OSU Help">Help</a></li>
+          <li><a href="http://buckeyelink.osu.edu/" title="Buckeye Link">Buckeye Link</a></li>
+          <li><a href="http://www.osu.edu/map/" title="Campus map">Map</a></li>
+          <li><a href="http://www.osu.edu/findpeople.php" title="Find people at OSU">Find People</a></li>
+          <li><a href="https://webmail.osu.edu" title="OSU Webmail">Webmail</a></li>
+          <li><a href="http://www.osu.edu/search.php" title="Ohio State's main search page">Search Ohio State</a>
+          </li>       
+        </ul>
+      </div>
+		</div>
+   </div>  
+</div>
+
+<div id="header" style="z-index:99999;">
+<div class="container">
+	<h1 class="osu-semantic">ACCAD Advanced Computing Center for the Arts and Design</h1>
+<a href="index.html" title="ACCAD Home"><img src="/assets/images/site/accad_name.png" class="accad_name" alt="Advanced Computing Center for the Arts and Design"/></a>
+<a href="http://www.osu.edu"><img src="/assets/images/site/logo-ohiostate.gif" class="osu_logo" alt="The Ohio State University" /></a>
+</div><!-- end container -->
+</div><!-- end header -->
+
+<div id="global_nav">
+<div class="container">
+   <ul id="topnav">
+			<li ><a href="/about_us.html"  >About Us</a></li>
+			<li ><a href="researchmain/gallery.html"  >Research</a></li>
+			<li ><a href="/academics.html"  >Academics</a></li>
+			<li ><a href="/people.html"  >People</a></li>
+			<li ><a href="/outreach.html"  >Outreach</a></li>
+			<li  class="last"><a href="/news.html"  >News</a></li>
+
+</ul>
+</div><!-- end container -->
+</div><!-- end global_nav -->
+
+
+
+<div id="content" class="container">
+	
+	<div id="subnav" class="span-6 prepend-1 column first">
+
+	</div>
+	<!-- end subnav -->
+  
+  <div id="page_body" class="span-15 prepend-1 column last">
+<h2>Page Not Found</h2>
+<h4>Sorry, we couldn't find the page you are looking for</h4>
+<p>The page may have moved, or been deleted. Please use the upper navigation menu to find what you are looking for, and don't forget to update your bookmarks. Thanks for your understanding.</p>
+  </div>
+  
+  <br class="clear" />
+  
+</div><!-- end content -->
+
+<div id="footer">
+<div class="container">
+<table border="0" cellspacing="0" cellpadding="0">
+<tbody>
+<tr>
+<td width="400px" style="color:white" ><img src="assets/images/Footer_underline1.png"><br><span style="font-size: 90%;"><strong>Contact Us</strong> | (614) 292.3416<br />
+       1224 Kinnear Rd., Columbus, OH 43212
+<br>accad [at] accad [dot] osu [dot] edu
+
+<br><img src="assets/images/Footer_underline2.png"></td>
+<td style="text-align: left;" width="470px">        
+            <div id="searchbox">                
+                
+<form id="ajaxSearch_form" action="316.html" method="post">
+    <fieldset>
+    <input type="hidden" name="advsearch" value="oneword" />
+    <label>
+      <input id="ajaxSearch_input" class="cleardefault" type="text" name="search" value="Search here..." onfocus="this.value=(this.value=='Search here...')? '' : this.value ;" />
+    </label>
+    
+        <label>
+            <input id="ajaxSearch_submit" type="submit" name="sub" value="Go!" />
+        </label>
+    
+    </fieldset>
+</form>
+
+
+
+            </div><!-- end searchbox -->
+<td style="text-align: right;" width="250px">  
+                <a href="https://www.giveto.osu.edu/igive/OnlineGiving/fund_results.aspx?Source_Code=WA&Fund=309285" target="_blank"><img style="vertical-align: middle;" src="assets/images/site/icon-giveto.png"></a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://www.youtube.com/accadosu" target="_blank"><img style="vertical-align: middle;" src="assets/images/site/icon-youtube.png"></a>
+</td>
+</tr>
+<tr>
+<td width="430px" style="color:white"><span style="font-size: 90%;"><strong><a href="http://artsandsciences.osu.edu/privacy-policy
+" target="_blank">Privacy Policy</a>
+<br /><a href="academics/studying_at_accad/information_request.html">Questions, feedback, accessibility</a> &nbsp;&nbsp; </strong></span><img style="vertical-align: top;margin-top:-10px;"src="assets/images/site/icon-accessibility2.png" />
+</td>
+<td width="370px" style="color:white; padding-bottom:20px;" >
+<span style="font-size: 90%;">© 2011, <a href="http://www.osu.edu">The Ohio State University</a>, <a href="http://artsandsciences.osu.edu/">College of Arts and Sciences</a><br />
+</span></td>
+<td style="text-align: right;" width="250px">&nbsp;</td></tr>
+</tbody>
+</table>
+<a href="http://artsandsciences.osu.edu/"><img src="assets/images/site/CollegeofArtsLogo.png" class="asc_badge"></a> 
+
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-22129230-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+
+</div><!-- end container -->
+</div><!-- end footer -->
+
+
+</body>
+</html>

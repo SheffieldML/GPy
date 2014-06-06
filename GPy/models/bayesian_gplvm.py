@@ -10,6 +10,7 @@ from ..util import linalg
 from ..core.parameterization.variational import NormalPosterior, NormalPrior, VariationalPosterior
 from ..inference.latent_function_inference.var_dtc_parallel import update_gradients
 from ..inference.latent_function_inference.var_dtc_gpu import VarDTC_GPU
+import logging
 
 class BayesianGPLVM(SparseGP):
     """
@@ -25,8 +26,10 @@ class BayesianGPLVM(SparseGP):
     """
     def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
                  Z=None, kernel=None, inference_method=None, likelihood=None, name='bayesian gplvm', **kwargs):
+        self.logger = logging.getLogger(self.__class__.__name__)
         if X == None:
             from ..util.initialization import initialize_latent
+            self.logger.info("initializing latent space X with method {}".format(init))
             X, fracs = initialize_latent(init, input_dim, Y)
         else:
             fracs = np.ones(input_dim)
@@ -35,7 +38,6 @@ class BayesianGPLVM(SparseGP):
 
         if X_variance is None:
             X_variance = np.random.uniform(0,.1,X.shape)
-
 
         if Z is None:
             Z = np.random.permutation(X.copy())[:num_inducing]
@@ -52,11 +54,14 @@ class BayesianGPLVM(SparseGP):
         X = NormalPosterior(X, X_variance)
 
         if inference_method is None:
-            if np.any(np.isnan(Y)):
+            inan = np.isnan(Y)
+            if np.any(inan):
                 from ..inference.latent_function_inference.var_dtc import VarDTCMissingData
-                inference_method = VarDTCMissingData()
+                self.logger.debug("creating inference_method with var_dtc missing data")
+                inference_method = VarDTCMissingData(inan=inan)
             else:
                 from ..inference.latent_function_inference.var_dtc import VarDTC
+                self.logger.debug("creating inference_method var_dtc")
                 inference_method = VarDTC()
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)
@@ -100,36 +105,41 @@ class BayesianGPLVM(SparseGP):
         Notes:
         This will only work with a univariate Gaussian likelihood (for now)
         """
-        assert not self.likelihood.is_heteroscedastic
         N_test = Y.shape[0]
         input_dim = self.Z.shape[1]
+        
         means = np.zeros((N_test, input_dim))
         covars = np.zeros((N_test, input_dim))
-
-        dpsi0 = -0.5 * self.input_dim * self.likelihood.precision
-        dpsi2 = self.dL_dpsi2[0][None, :, :] # TODO: this may change if we ignore het. likelihoods
-        V = self.likelihood.precision * Y
+        
+        dpsi0 = -0.5 * self.input_dim / self.likelihood.variance
+        dpsi2 = self.grad_dict['dL_dpsi2'][0][None, :, :] # TODO: this may change if we ignore het. likelihoods
+        V = Y/self.likelihood.variance
 
         #compute CPsi1V
-        if self.Cpsi1V is None:
-            psi1V = np.dot(self.psi1.T, self.likelihood.V)
-            tmp, _ = linalg.dtrtrs(self._Lm, np.asfortranarray(psi1V), lower=1, trans=0)
-            tmp, _ = linalg.dpotrs(self.LB, tmp, lower=1)
-            self.Cpsi1V, _ = linalg.dtrtrs(self._Lm, tmp, lower=1, trans=1)
+        #if self.Cpsi1V is None:
+        #    psi1V = np.dot(self.psi1.T, self.likelihood.V)
+        #    tmp, _ = linalg.dtrtrs(self._Lm, np.asfortranarray(psi1V), lower=1, trans=0)
+        #    tmp, _ = linalg.dpotrs(self.LB, tmp, lower=1)
+        #    self.Cpsi1V, _ = linalg.dtrtrs(self._Lm, tmp, lower=1, trans=1)
 
-        dpsi1 = np.dot(self.Cpsi1V, V.T)
+        dpsi1 = np.dot(self.posterior.woodbury_vector, V.T)
 
-        start = np.zeros(self.input_dim * 2)
+        #start = np.zeros(self.input_dim * 2)
+        
+
+        from scipy.optimize import minimize
 
         for n, dpsi1_n in enumerate(dpsi1.T[:, :, None]):
-            args = (self.kern, self.Z, dpsi0, dpsi1_n.T, dpsi2)
-            xopt, fopt, neval, status = SCG(f=latent_cost, gradf=latent_grad, x=start, optargs=args, display=False)
-
+            args = (input_dim, self.kern.copy(), self.Z, dpsi0, dpsi1_n.T, dpsi2)
+            res = minimize(latent_cost_and_grad, jac=True, x0=np.hstack((means[n], covars[n])), args=args, method='BFGS')
+            xopt = res.x
             mu, log_S = xopt.reshape(2, 1, -1)
             means[n] = mu[0].copy()
             covars[n] = np.exp(log_S[0]).copy()
 
-        return means, covars
+        X = NormalPosterior(means, covars)
+
+        return X 
 
     def dmu_dX(self, Xnew):
         """
@@ -161,57 +171,26 @@ class BayesianGPLVM(SparseGP):
         return dim_reduction_plots.plot_steepest_gradient_map(self,*args,**kwargs)
     
 
-def latent_cost_and_grad(mu_S, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
+def latent_cost_and_grad(mu_S, input_dim, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
     """
     objective function for fitting the latent variables for test points
     (negative log-likelihood: should be minimised!)
     """
-    mu, log_S = mu_S.reshape(2, 1, -1)
+    mu = mu_S[:input_dim][None]
+    log_S = mu_S[input_dim:][None]
     S = np.exp(log_S)
 
-    psi0 = kern.psi0(Z, mu, S)
-    psi1 = kern.psi1(Z, mu, S)
-    psi2 = kern.psi2(Z, mu, S)
+    X = NormalPosterior(mu, S)
 
-    lik = dL_dpsi0 * psi0 + np.dot(dL_dpsi1.flatten(), psi1.flatten()) + np.dot(dL_dpsi2.flatten(), psi2.flatten()) - 0.5 * np.sum(np.square(mu) + S) + 0.5 * np.sum(log_S)
+    psi0 = kern.psi0(Z, X)
+    psi1 = kern.psi1(Z, X)
+    psi2 = kern.psi2(Z, X)
 
-    mu0, S0 = kern.dpsi0_dmuS(dL_dpsi0, Z, mu, S)
-    mu1, S1 = kern.dpsi1_dmuS(dL_dpsi1, Z, mu, S)
-    mu2, S2 = kern.dpsi2_dmuS(dL_dpsi2, Z, mu, S)
-
-    dmu = mu0 + mu1 + mu2 - mu
+    lik = dL_dpsi0 * psi0.sum() + np.einsum('ij,kj->...', dL_dpsi1, psi1) + np.einsum('ijk,lkj->...', dL_dpsi2, psi2) - 0.5 * np.sum(np.square(mu) + S) + 0.5 * np.sum(log_S)
+    
+    dLdmu, dLdS = kern.gradients_qX_expectations(dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, X)    
+    dmu = dLdmu - mu
     # dS = S0 + S1 + S2 -0.5 + .5/S
-    dlnS = S * (S0 + S1 + S2 - 0.5) + .5
+    dlnS = S * (dLdS - 0.5) + .5
+    
     return -lik, -np.hstack((dmu.flatten(), dlnS.flatten()))
-
-def latent_cost(mu_S, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
-    """
-    objective function for fitting the latent variables (negative log-likelihood: should be minimised!)
-    This is the same as latent_cost_and_grad but only for the objective
-    """
-    mu, log_S = mu_S.reshape(2, 1, -1)
-    S = np.exp(log_S)
-
-    psi0 = kern.psi0(Z, mu, S)
-    psi1 = kern.psi1(Z, mu, S)
-    psi2 = kern.psi2(Z, mu, S)
-
-    lik = dL_dpsi0 * psi0 + np.dot(dL_dpsi1.flatten(), psi1.flatten()) + np.dot(dL_dpsi2.flatten(), psi2.flatten()) - 0.5 * np.sum(np.square(mu) + S) + 0.5 * np.sum(log_S)
-    return -float(lik)
-
-def latent_grad(mu_S, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
-    """
-    This is the same as latent_cost_and_grad but only for the grad
-    """
-    mu, log_S = mu_S.reshape(2, 1, -1)
-    S = np.exp(log_S)
-
-    mu0, S0 = kern.dpsi0_dmuS(dL_dpsi0, Z, mu, S)
-    mu1, S1 = kern.dpsi1_dmuS(dL_dpsi1, Z, mu, S)
-    mu2, S2 = kern.dpsi2_dmuS(dL_dpsi2, Z, mu, S)
-
-    dmu = mu0 + mu1 + mu2 - mu
-    # dS = S0 + S1 + S2 -0.5 + .5/S
-    dlnS = S * (S0 + S1 + S2 - 0.5) + .5
-
-    return -np.hstack((dmu.flatten(), dlnS.flatten()))

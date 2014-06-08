@@ -405,11 +405,11 @@ def lee_yeast_ChIP(data_set='lee_yeast_ChIP'):
     import zipfile
     dir_path = os.path.join(data_path, data_set)
     filename = os.path.join(dir_path, 'binding_by_gene.tsv')
-    S = read_csv(filename, header=1, index_col=0, sep='\t')
-    transcription_factors = [col for col in S.columns if col[:7] != 'Unnamed']    
-    annotations = S[['Unnamed: 1', 'Unnamed: 2', 'Unnamed: 3']]
-    S = S[transcription_factors]
-    return data_details_return({'annotations' : annotations, 'Y' : S, 'transcription_factors': transcription_factors}, data_set)
+    X = read_csv(filename, header=1, index_col=0, sep='\t')
+    transcription_factors = [col for col in X.columns if col[:7] != 'Unnamed']    
+    annotations = X[['Unnamed: 1', 'Unnamed: 2', 'Unnamed: 3']]
+    X = X[transcription_factors]
+    return data_details_return({'annotations' : annotations, 'X' : X, 'transcription_factors': transcription_factors}, data_set)
     
 
 def fruitfly_tomancak(data_set='fruitfly_tomancak', gene_number=None):

@@ -6,20 +6,7 @@ from GPy.util.caching import Cache_this
 from ....core.parameterization import variational
 import rbf_psi_comp
 import ssrbf_psi_comp
-
-class PSICOMP(Pickleable):
-
-    def psicomputations(self, variance, Z, variational_posterior):
-        """
-        Compute psi-statistics
-        """
-        pass
-    
-    def psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior):
-        """
-        Compute the derivatives of parameters by combing dL_dpsi and dpsi_dparam
-        """
-        pass
+import sslinear_psi_comp
 
 class PSICOMP_RBF(Pickleable):
 
@@ -38,5 +25,25 @@ class PSICOMP_RBF(Pickleable):
             return rbf_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior)
         elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             return ssrbf_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior)
+        else:
+            raise ValueError, "unknown distriubtion received for psi-statistics"
+        
+class PSICOMP_Linear(Pickleable):
+
+    @Cache_this(limit=1, ignore_args=(0,))
+    def psicomputations(self, variance, Z, variational_posterior):
+        if isinstance(variational_posterior, variational.NormalPosterior):
+            raise NotImplementedError
+        elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
+            return sslinear_psi_comp.psicomputations(variance, Z, variational_posterior)
+        else:
+            raise ValueError, "unknown distriubtion received for psi-statistics"
+                
+    @Cache_this(limit=1, ignore_args=(0,1,2,3))
+    def psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior):
+        if isinstance(variational_posterior, variational.NormalPosterior):
+            raise NotImplementedError
+        elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
+            return sslinear_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior)
         else:
             raise ValueError, "unknown distriubtion received for psi-statistics"

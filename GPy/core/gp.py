@@ -40,7 +40,7 @@ class GP(Model):
 
         assert Y.ndim == 2
         self.Y = ObsAr(Y)
-        assert Y.shape[0] == self.num_data
+#         assert Y.shape[0] == self.num_data
         _, self.output_dim = self.Y.shape
 
         #TODO: check the type of this is okay?

@@ -11,8 +11,8 @@ from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 from ...util.caching import Cache_this
 from ...core.parameterization import variational
-from psi_comp import linear_psi_comp
 from ...util.config import *
+from .psi_comp import PSICOMP_Linear
 
 class Linear(Kern):
     """
@@ -53,10 +53,8 @@ class Linear(Kern):
 
         self.variances = Param('variances', variances, Logexp())
         self.add_parameter(self.variances)
+        self.psicomp = PSICOMP_Linear()
     
-    def set_for_SpikeAndSlab(self):
-        self.psicomp = linear_psi_comp.PSICOMP_SSLinear()
-
     @Cache_this(limit=2)
     def K(self, X, X2=None):
         if self.ARD:

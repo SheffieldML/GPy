@@ -16,8 +16,7 @@ import warnings
 import os
 from config import *
 
-if np.all(np.float64((scipy.__version__).split('.')[:2]) >= np.array([0, 12])):
-    #import scipy.linalg.lapack.clapack as lapack
+if float('.'.join((scipy.__version__).split('.')[:2])) >= 0.12:
     from scipy.linalg import lapack
 else:
     from scipy.linalg.lapack import flapack as lapack

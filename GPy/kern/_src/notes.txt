@@ -1,5 +1,0 @@
-Combination covariances, with a particular flag (partition?) allow interogation of the individual covariance contribution. So if we have k_3 = k_1 + k_2 because f_3 = f_1 + f_2 then we allow a multi output covariance over f_1, f_2 and f_3 jointly. Then users can make observations of f_3 and f_1 and build a posterior over f_2 using multiple output encoding. When this flag is set an extra input is added to deal with it. We allow for a new 'combination covariance' of the form scale and add so that
-
-f_3 = f_1*a + f_2
-
-Where a can also be negative.

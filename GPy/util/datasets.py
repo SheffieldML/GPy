@@ -410,7 +410,8 @@ def lee_yeast_ChIP(data_set='lee_yeast_ChIP'):
     annotations = S[['Unnamed: 1', 'Unnamed: 2', 'Unnamed: 3']]
     S = S[transcription_factors]
     return data_details_return({'annotations' : annotations, 'Y' : S, 'transcription_factors': transcription_factors}, data_set)
-    
+       
+
 
 def fruitfly_tomancak(data_set='fruitfly_tomancak', gene_number=None):
     if not data_available(data_set):

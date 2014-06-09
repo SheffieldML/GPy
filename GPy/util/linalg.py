@@ -16,12 +16,16 @@ import warnings
 import os
 from config import *
 
-if np.all(np.float64((scipy.__version__).split('.')[:2]) >= np.array([0, 12])):
+_scipyversion = np.float64((scipy.__version__).split('.')[:2])
+_fix_dpotri_scipy_bug = True
+if np.all(_scipyversion >= np.array([0, 14])):
+    from scipy.linalg import lapack
+    _fix_dpotri_scipy_bug = False
+elif np.all(_scipyversion >= np.array([0, 12])):
     #import scipy.linalg.lapack.clapack as lapack
     from scipy.linalg import lapack
 else:
     from scipy.linalg.lapack import flapack as lapack
-
 
 if config.getboolean('anaconda', 'installed') and config.getboolean('anaconda', 'MKL'):
     try:
@@ -142,16 +146,23 @@ def dpotrs(A, B, lower=1):
 def dpotri(A, lower=1):
     """
     Wrapper for lapack dpotri function
-
+    
+    DPOTRI - compute the inverse of a real symmetric positive
+      definite matrix A using the Cholesky factorization A =
+      U**T*U or A = L*L**T computed by DPOTRF
+      
     :param A: Matrix A
     :param lower: is matrix lower (true) or upper (false)
     :returns: A inverse
 
     """
-    assert lower==1, "scipy linalg behaviour is very weird. please use lower, fortran ordered arrays"
-
+    if _fix_dpotri_scipy_bug:
+        assert lower==1, "scipy linalg behaviour is very weird. please use lower, fortran ordered arrays"
+        lower = 0
+        
     A = force_F_ordered(A)
-    R, info = lapack.dpotri(A, lower=0) #needs to be zero here, seems to be a scipy bug
+    R, info = lapack.dpotri(A, lower=lower) #needs to be zero here, seems to be a scipy bug
+
     symmetrify(R)
     return R, info
 

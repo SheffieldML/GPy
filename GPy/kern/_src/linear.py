@@ -96,7 +96,7 @@ class Linear(Kern):
 
     def gradients_X(self, dL_dK, X, X2=None):
         if X2 is None:
-            return 2.*(((X[None,:, :] * self.variances)) * dL_dK[:, :, None]).sum(1)
+            return np.einsum('mq,nm->nq',X*self.variances,dL_dK)+np.einsum('nq,nm->mq',X*self.variances,dL_dK)
         else:
             return (((X2[None,:, :] * self.variances)) * dL_dK[:, :, None]).sum(1)
 

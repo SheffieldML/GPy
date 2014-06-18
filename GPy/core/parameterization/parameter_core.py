@@ -793,7 +793,7 @@ class OptimizationHandlable(Indexable):
     #===========================================================================
     # Randomizeable
     #===========================================================================
-    def randomize(self, rand_gen=np.random.normal, loc=0, scale=1, *args, **kwargs):
+    def randomize(self, rand_gen=np.random.normal, *args, **kwargs):
         """
         Randomize the model.
         Make this draw from the prior if one exists, else draw from given random generator
@@ -804,7 +804,7 @@ class OptimizationHandlable(Indexable):
         :param args, kwargs: will be passed through to random number generator
         """
         # first take care of all parameters (from N(0,1))
-        x = rand_gen(loc=loc, scale=scale, size=self._size_transformed(), *args, **kwargs)
+        x = rand_gen(size=self._size_transformed(), *args, **kwargs)
         # now draw from prior where possible
         [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
         self.optimizer_array = x  # makes sure all of the tied parameters get the same init (since there's only one prior object...)

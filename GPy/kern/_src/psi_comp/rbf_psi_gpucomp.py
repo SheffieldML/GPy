@@ -6,11 +6,11 @@ import numpy as np
 from ....util.caching import Cache_this
 from . import PSICOMP_RBF
 from ....util import gpu_init
-from ....util.linalg_gpu import sum_axis
 
 try:
     import pycuda.gpuarray as gpuarray
     from pycuda.compiler import SourceModule
+    from ....util.linalg_gpu import sum_axis
 except:
     pass    
 

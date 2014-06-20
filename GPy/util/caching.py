@@ -30,13 +30,13 @@ class Cacher(object):
         self.cached_outputs = {} # point from cache_ids to outputs
         self.inputs_changed = {} # point from cache_ids to bools
 
-    def combine_inputs(self, args, kw):
+    def combine_inputs(self, args, kw, ignore_args):
         "Combines the args and kw in a unique way, such that ordering of kwargs does not lead to recompute"
-        return args + tuple(c[1] for c in sorted(kw.items(), key=lambda x: x[0]))
+        return tuple(a for i,a in enumerate(args) if i not in ignore_args) + tuple(c[1] for c in sorted(kw.items(), key=lambda x: x[0]))
 
-    def prepare_cache_id(self, combined_args_kw, ignore_args):
+    def prepare_cache_id(self, combined_args_kw):
         "get the cacheid (conc. string of argument ids in order) ignoring ignore_args"
-        return "".join(str(id(a)) for i,a in enumerate(combined_args_kw) if i not in ignore_args)
+        return "".join(str(id(a)) for a in combined_args_kw)
 
     def ensure_cache_length(self, cache_id):
         "Ensures the cache is within its limits and has one place free"
@@ -45,6 +45,8 @@ class Cacher(object):
             cache_id = self.order.popleft()
             combined_args_kw = self.cached_inputs[cache_id]
             for ind in combined_args_kw:
+                if ind is None:
+                    continue
                 ind_id = id(ind)
                 ref, cache_ids = self.cached_input_ids[ind_id]
                 if len(cache_ids) == 1 and ref() is not None:
@@ -63,6 +65,8 @@ class Cacher(object):
         self.order.append(cache_id)
         self.cached_inputs[cache_id] = combined_args_kw
         for a in combined_args_kw:
+            if a is None:
+                continue
             ind_id = id(a)
             v = self.cached_input_ids.get(ind_id, [weakref.ref(a), []])
             v[1].append(cache_id)
@@ -82,11 +86,12 @@ class Cacher(object):
                     return self.operation(*args, **kw)
     
         # 2: prepare_cache_id and get the unique id string for this call
-        inputs = self.combine_inputs(args, kw)
-        cache_id = self.prepare_cache_id(inputs, self.ignore_args)
-    
+        inputs = self.combine_inputs(args, kw, self.ignore_args)
+        cache_id = self.prepare_cache_id(inputs)
+
         # 2: if anything is not cachable, we will just return the operation, without caching
-        if reduce(lambda a,b: a or (not isinstance(b, Observable)), inputs, False):
+        if reduce(lambda a,b: a or (not (isinstance(b, Observable) or (b is None))), inputs, False):
+            # print '['+self.operation.__name__+'] contain un-cachable arguments!'
             return self.operation(*args, **kw)
         # 3&4: check whether this cache_id has been cached, then has it changed?
         try:

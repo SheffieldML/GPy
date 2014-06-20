@@ -79,7 +79,6 @@ class Stationary(Kern):
         #a convenience function, so we can cache dK_dr
         return self.dK_dr(self._scaled_dist(X, X2))
 
-    @Cache_this(limit=5, ignore_args=(0,))
     def _unscaled_dist(self, X, X2=None):
         """
         Compute the Euclidean distance between each row of X and X2, or between

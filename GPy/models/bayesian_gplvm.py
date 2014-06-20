@@ -49,7 +49,6 @@ class BayesianGPLVM(SparseGP):
         if likelihood is None:
             likelihood = Gaussian()
 
-
         self.variational_prior = NormalPrior()
         X = NormalPosterior(X, X_variance)
 
@@ -75,7 +74,7 @@ class BayesianGPLVM(SparseGP):
         if isinstance(self.inference_method, VarDTC_GPU):
             update_gradients(self)
             return
-    
+
         super(BayesianGPLVM, self).parameters_changed()
         self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
 
@@ -87,7 +86,7 @@ class BayesianGPLVM(SparseGP):
     def plot_latent(self, labels=None, which_indices=None,
                 resolution=50, ax=None, marker='o', s=40,
                 fignum=None, plot_inducing=True, legend=True,
-                plot_limits=None, 
+                plot_limits=None,
                 aspect='auto', updates=False, predict_kwargs={}, imshow_kwargs={}):
         import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
@@ -107,10 +106,10 @@ class BayesianGPLVM(SparseGP):
         """
         N_test = Y.shape[0]
         input_dim = self.Z.shape[1]
-        
+
         means = np.zeros((N_test, input_dim))
         covars = np.zeros((N_test, input_dim))
-        
+
         dpsi0 = -0.5 * self.input_dim / self.likelihood.variance
         dpsi2 = self.grad_dict['dL_dpsi2'][0][None, :, :] # TODO: this may change if we ignore het. likelihoods
         V = Y/self.likelihood.variance
@@ -125,7 +124,7 @@ class BayesianGPLVM(SparseGP):
         dpsi1 = np.dot(self.posterior.woodbury_vector, V.T)
 
         #start = np.zeros(self.input_dim * 2)
-        
+
 
         from scipy.optimize import minimize
 
@@ -139,7 +138,7 @@ class BayesianGPLVM(SparseGP):
 
         X = NormalPosterior(means, covars)
 
-        return X 
+        return X
 
     def dmu_dX(self, Xnew):
         """
@@ -169,7 +168,7 @@ class BayesianGPLVM(SparseGP):
         from ..plotting.matplot_dep import dim_reduction_plots
 
         return dim_reduction_plots.plot_steepest_gradient_map(self,*args,**kwargs)
-    
+
 
 def latent_cost_and_grad(mu_S, input_dim, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
     """
@@ -187,10 +186,10 @@ def latent_cost_and_grad(mu_S, input_dim, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2)
     psi2 = kern.psi2(Z, X)
 
     lik = dL_dpsi0 * psi0.sum() + np.einsum('ij,kj->...', dL_dpsi1, psi1) + np.einsum('ijk,lkj->...', dL_dpsi2, psi2) - 0.5 * np.sum(np.square(mu) + S) + 0.5 * np.sum(log_S)
-    
-    dLdmu, dLdS = kern.gradients_qX_expectations(dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, X)    
+
+    dLdmu, dLdS = kern.gradients_qX_expectations(dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, X)
     dmu = dLdmu - mu
     # dS = S0 + S1 + S2 -0.5 + .5/S
     dlnS = S * (dLdS - 0.5) + .5
-    
+
     return -lik, -np.hstack((dmu.flatten(), dlnS.flatten()))

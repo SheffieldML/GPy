@@ -229,6 +229,7 @@ class Model(Parameterized):
             optimizer = self.preferred_optimizer
         elif isinstance(optimizer, optimization.Optimizer):
             opt = optimizer
+            opt.model = self
         else:
             optimizer = optimization.get_optimizer(optimizer)
             opt = optimizer(start, model=self, **kwargs)

@@ -263,7 +263,7 @@ class PSICOMP_SSRBF(object):
         self.cublas_handle = gpu_init.cublas_handle
         self.gpuCache = None
         self.gpuCacheAll = None
-    
+        
     def _initGPUCache(self, N, M, Q):
         if self.gpuCache!=None and self.gpuCache['mu_gpu'].shape[0] == N:
             return

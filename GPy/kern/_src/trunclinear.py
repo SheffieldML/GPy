@@ -73,7 +73,7 @@ class TruncLinear(Kern):
         return XX
 
     def Kdiag(self, X):
-        return self.variances*(np.square(X-self.delta)).sum(axis=-1)
+        return (self.variances*np.square(X-self.delta)).sum(axis=-1)
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         dK_dvar = self._product(X, X2)

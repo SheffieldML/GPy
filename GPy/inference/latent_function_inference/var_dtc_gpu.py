@@ -66,7 +66,6 @@ class VarDTC_GPU(LatentFunctionInference):
                              'beta_gpu'             :gpuarray.empty((ndata,),np.float64,order='F'),
                              'YT_gpu'               :gpuarray.to_gpu(np.asfortranarray(Y.T)), # DxN
                              'betaYT_gpu'           :gpuarray.empty(Y.T.shape,np.float64,order='F'), # DxN
-                             'psi2_t_gpu'           :gpuarray.empty((num_inducing*num_inducing*self.batchsize),np.float64,order='F'),
                              # inference_minibatch
                              'dL_dpsi0_gpu'         :gpuarray.empty((self.batchsize,),np.float64,order='F'),
                              'dL_dpsi1_gpu'         :gpuarray.empty((self.batchsize,num_inducing),np.float64,order='F'),
@@ -122,6 +121,89 @@ class VarDTC_GPU(LatentFunctionInference):
         else:
             return jitchol(tdot(Y))
         
+    def gatherPsiStat(self, kern, X, Z, Y, beta, uncertain_inputs, het_noise):
+        num_inducing, input_dim = Z.shape[0], Z.shape[1]
+        num_data, output_dim = Y.shape
+        trYYT = self._trYYT
+        psi1Y_gpu = self.gpuCache['psi1Y_gpu']
+        psi2_gpu = self.gpuCache['psi2_gpu']
+        beta_gpu = self.gpuCache['beta_gpu']
+        YT_gpu = self.gpuCache['YT_gpu']
+        betaYT_gpu = self.gpuCache['betaYT_gpu']
+        
+        beta_gpu.fill(beta)
+        betaYT_gpu.fill(0.)
+        cublas.cublasDaxpy(self.cublas_handle, betaYT_gpu.size, beta, YT_gpu.gpudata, 1, betaYT_gpu.gpudata, 1)
+        YRY_full = trYYT*beta
+
+        if kern.useGPU:
+            psi1Y_gpu.fill(0.)
+            psi2_gpu.fill(0.)
+            psi0_full = 0
+            
+            for n_start in xrange(0,num_data,self.batchsize):
+                n_end = min(self.batchsize+n_start, num_data)
+                ndata = n_end - n_start
+                X_slice = X[n_start:n_end]
+                betaYT_gpu_slice = betaYT_gpu[:,n_start:n_end]
+
+                if uncertain_inputs:
+                    psi0 = kern.psi0(Z, X_slice)
+                    psi1p_gpu = kern.psi1(Z, X_slice)
+                    psi2p_gpu = kern.psi2(Z, X_slice)
+                else:
+                    psi0 = kern.Kdiag(X_slice)
+                    psi1p_gpu = kern.K(X_slice, Z)
+
+                cublas.cublasDgemm(self.cublas_handle, 'T', 'T', num_inducing, output_dim, ndata, 1.0, psi1p_gpu.gpudata, ndata, betaYT_gpu_slice.gpudata, output_dim, 1.0, psi1Y_gpu.gpudata, num_inducing)
+                
+                psi0_full += psi0.sum()
+                                    
+                if uncertain_inputs:
+                    sum_axis(psi2_gpu,psi2p_gpu,1,1)
+                else:
+                    cublas.cublasDgemm(self.cublas_handle, 'T', 'N', num_inducing, num_inducing, ndata, beta, psi1p_gpu.gpudata, ndata, psi1p_gpu.gpudata, ndata, 1.0, psi2_gpu.gpudata, num_inducing)
+                    
+            psi0_full *= beta
+            if uncertain_inputs:
+                cublas.cublasDscal(self.cublas_handle, psi2_gpu.size, beta, psi2_gpu.gpudata, 1)
+            
+        else:    
+            psi2_full = np.zeros((num_inducing,num_inducing))
+            psi1Y_full = np.zeros((output_dim,num_inducing)) # DxM
+            psi0_full = 0.
+            YRY_full = 0.
+            
+            for n_start in xrange(0,num_data,self.batchsize):            
+                n_end = min(self.batchsize+n_start, num_data)
+                Y_slice = Y[n_start:n_end]
+                X_slice = X[n_start:n_end]
+                
+                if het_noise:
+                    b = beta[n_start]
+                    YRY_full += np.inner(Y_slice, Y_slice)*b
+                else:
+                    b = beta
+                
+                if uncertain_inputs:
+                    psi0 = kern.psi0(Z, X_slice)
+                    psi1 = kern.psi1(Z, X_slice)
+                    psi2_full += kern.psi2(Z, X_slice)*b
+                else:
+                    psi0 = kern.Kdiag(X_slice)
+                    psi1 = kern.K(X_slice, Z)
+                    psi2_full += np.dot(psi1.T,psi1)*b
+                    
+                psi0_full += psi0.sum()*b
+                psi1Y_full += np.dot(Y_slice.T,psi1)*b # DxM                
+    
+            if not het_noise:
+                YRY_full = trYYT*beta
+            psi1Y_gpu.set(psi1Y_full)
+            psi2_gpu.set(psi2_full)
+    
+        return psi0_full, YRY_full
+        
     def inference_likelihood(self, kern, X, Z, likelihood, Y):
         """
         The first phase of inference:
@@ -146,118 +228,10 @@ class VarDTC_GPU(LatentFunctionInference):
         else:
             uncertain_inputs = False
         
-
-        trYYT = self._trYYT
-        
         psi1Y_gpu = self.gpuCache['psi1Y_gpu']
         psi2_gpu = self.gpuCache['psi2_gpu']
-        beta_gpu = self.gpuCache['beta_gpu']
-        YT_gpu = self.gpuCache['YT_gpu']
-        betaYT_gpu = self.gpuCache['betaYT_gpu']
-        psi2_t_gpu = self.gpuCache['psi2_t_gpu']
         
-        if het_noise:
-            beta_gpu.set(np.asfortranarray(beta))
-            mul_bcast(betaYT_gpu,beta_gpu,YT_gpu,beta_gpu.size)
-            YRY_full = cublas.cublasDdot(self.cublas_handle, YT_gpu.size, betaYT_gpu.gpudata, 1, YT_gpu.gpudata, 1)
-        else:
-            beta_gpu.fill(beta)
-            betaYT_gpu.fill(0.)
-            cublas.cublasDaxpy(self.cublas_handle, betaYT_gpu.size, beta, YT_gpu.gpudata, 1, betaYT_gpu.gpudata, 1)
-            YRY_full = trYYT*beta
-
-        if kern.useGPU:
-            psi1Y_gpu.fill(0.)
-            psi2_gpu.fill(0.)
-            psi0_full = 0
-            
-            for n_start in xrange(0,num_data,self.batchsize):
-                n_end = min(self.batchsize+n_start, num_data)
-                ndata = n_end - n_start
-                X_slice = X[n_start:n_end]
-                beta_gpu_slice = beta_gpu[n_start:n_end]
-                betaYT_gpu_slice = betaYT_gpu[:,n_start:n_end]
-                if ndata==self.batchsize:
-                    psi2_t_gpu_slice = psi2_t_gpu
-                else:
-                    psi2_t_gpu_slice = psi2_t_gpu[:num_inducing*num_inducing*ndata]
-                if uncertain_inputs:
-                    psi0p_gpu = kern.psi0(Z, X_slice)
-                    psi1p_gpu = kern.psi1(Z, X_slice)
-                    psi2p_gpu = kern.psi2(Z, X_slice)
-                else:
-                    psi0p_gpu = kern.Kdiag(X_slice)
-                    psi1p_gpu = kern.K(X_slice, Z)
-
-                cublas.cublasDgemm(self.cublas_handle, 'T', 'T', num_inducing, output_dim, ndata, 1.0, psi1p_gpu.gpudata, ndata, betaYT_gpu_slice.gpudata, output_dim, 1.0, psi1Y_gpu.gpudata, num_inducing)
-                
-                if het_noise:
-                    psi0_full += cublas.cublasDdot(self.cublas_handle, psi0p_gpu.size, beta_gpu_slice.gpudata, 1, psi0p_gpu.gpudata, 1)
-                else:
-                    psi0_full += gpuarray.sum(psi0p_gpu).get()
-                                    
-                if uncertain_inputs:
-                    if het_noise:
-                        mul_bcast(psi2_t_gpu_slice,beta_gpu_slice,psi2p_gpu,beta_gpu_slice.size)
-                        sum_axis(psi2_gpu,psi2_t_gpu_slice,1,ndata)
-                    else:
-                        sum_axis(psi2_gpu,psi2p_gpu,1,ndata)
-                else:
-                    if het_noise:
-                        psi1_t_gpu = psi2_t_gpu_slice[:,num_inducing*ndata]
-                        mul_bcast(psi1_t_gpu,beta_gpu_slice,psi1p_gpu,beta_gpu_slice.size)
-                        cublas.cublasDgemm(self.cublas_handle, 'T', 'N', num_inducing, num_inducing, ndata, 1.0, psi1p_gpu.gpudata, ndata, psi1_t_gpu.gpudata, ndata, 1.0, psi2_gpu.gpudata, num_inducing)
-                    else:
-                        cublas.cublasDgemm(self.cublas_handle, 'T', 'N', num_inducing, num_inducing, ndata, beta, psi1p_gpu.gpudata, ndata, psi1p_gpu.gpudata, ndata, 1.0, psi2_gpu.gpudata, num_inducing)
-                    
-            if not het_noise:
-                psi0_full *= beta
-                if uncertain_inputs:
-                    cublas.cublasDscal(self.cublas_handle, psi2_gpu.size, beta, psi2_gpu.gpudata, 1)
-            
-        else:
-            psi2_full = np.zeros((num_inducing,num_inducing),order='F')
-            psi1Y_full = np.zeros((num_inducing,output_dim),order='F') # MxD
-            psi0_full = 0
-            
-            for n_start in xrange(0,num_data,self.batchsize):
-                n_end = min(self.batchsize+n_start, num_data)                
-                Y_slice = Y[n_start:n_end]
-                X_slice = X[n_start:n_end]
-                if uncertain_inputs:
-                    psi0 = kern.psi0(Z, X_slice)
-                    psi1 = kern.psi1(Z, X_slice)
-                    psi2 = kern.psi2(Z, X_slice)
-                else:
-                    psi0 = kern.Kdiag(X_slice)
-                    psi1 = kern.K(X_slice, Z)
-                    
-                if het_noise:
-                    beta_slice = beta[n_start:n_end]
-                    psi0_full += (beta_slice*psi0).sum()
-                    psi1Y_full += np.dot(psi1.T,beta_slice[:,None]*Y_slice) # MxD
-                else:
-                    psi0_full += psi0.sum()
-                    psi1Y_full += np.dot(psi1.T,Y_slice) # MxD
-                                    
-                if uncertain_inputs:
-                    if het_noise:
-                        psi2_full += np.einsum('n,nmo->mo',beta_slice,psi2)
-                    else:
-                        psi2_full += psi2
-                else:
-                    if het_noise:
-                        psi2_full += np.einsum('n,nm,no->mo',beta_slice,psi1,psi1)
-                    else:
-                        psi2_full += np.outer(psi1.T, psi1.T)
-                    
-            if not het_noise:
-                psi0_full *= beta
-                psi1Y_full *= beta
-                psi2_full *= beta
-            
-            psi1Y_gpu.set(psi1Y_full)
-            psi2_gpu.set(psi2_full)
+        psi0_full, YRY_full = self.gatherPsiStat(kern, X, Z, Y, beta, uncertain_inputs, het_noise)
         
         #======================================================================
         # Compute Common Components

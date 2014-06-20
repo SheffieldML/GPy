@@ -248,7 +248,6 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
                              'Z_gpu'                :gpuarray.empty((M,Q),np.float64,order='F'),
                              'mu_gpu'               :gpuarray.empty((N,Q),np.float64,order='F'),
                              'S_gpu'                :gpuarray.empty((N,Q),np.float64,order='F'),
-                             'psi0_gpu'             :gpuarray.empty((N,),np.float64,order='F'),
                              'psi1_gpu'             :gpuarray.empty((N,M),np.float64,order='F'),
                              'psi2_gpu'             :gpuarray.empty((M,M),np.float64,order='F'),
                              'psi2n_gpu'            :gpuarray.empty((N,M,M),np.float64,order='F'),
@@ -265,6 +264,10 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
                              'grad_mu_gpu'              :gpuarray.empty((N,Q,),np.float64, order='F'),
                              'grad_S_gpu'               :gpuarray.empty((N,Q,),np.float64, order='F'),
                              }
+        else:
+            assert N==self.gpuCache['mu_gpu'].shape[0]
+            assert M==self.gpuCache['Z_gpu'].shape[0]
+            assert Q==self.gpuCache['l_gpu'].shape[0]
     
     def sync_params(self, lengthscale, Z, mu, S):
         if len(lengthscale)==1:
@@ -299,7 +302,6 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         self._initGPUCache(N,M,Q)
         self.sync_params(lengthscale, Z, variational_posterior.mean, variational_posterior.variance)
         
-        psi0_gpu = self.gpuCache['psi0_gpu']
         psi1_gpu = self.gpuCache['psi1_gpu']
         psi2_gpu = self.gpuCache['psi2_gpu']
         psi2n_gpu = self.gpuCache['psi2n_gpu']
@@ -308,14 +310,15 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         mu_gpu = self.gpuCache['mu_gpu']
         S_gpu = self.gpuCache['S_gpu']
         
-        psi0_gpu.fill(variance)
+        psi0 = np.empty((N,))
+        psi0[:] = variance
         self.g_psi1computations(psi1_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1))
         self.g_psi2computations(psi2_gpu, psi2n_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1))
          
         if self.GPU_direct:
-            return psi0_gpu, psi1_gpu, psi2_gpu
+            return psi0, psi1_gpu, psi2_gpu
         else:
-            return psi0_gpu.get(), psi1_gpu.get(), psi2_gpu.get()
+            return psi0, psi1_gpu.get(), psi2_gpu.get()
 
     @Cache_this(limit=1, ignore_args=(0,1,2,3))
     def psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
@@ -340,17 +343,19 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         if self.GPU_direct:
             dL_dpsi1_gpu = dL_dpsi1
             dL_dpsi2_gpu = dL_dpsi2
+            dL_dpsi0_sum = gpuarray.sum(dL_dpsi0).get()
         else:
             dL_dpsi1_gpu = self.gpuCache['dL_dpsi1_gpu']
             dL_dpsi2_gpu = self.gpuCache['dL_dpsi2_gpu']
             dL_dpsi1_gpu.set(np.asfortranarray(dL_dpsi1))
             dL_dpsi2_gpu.set(np.asfortranarray(dL_dpsi2))
+            dL_dpsi0_sum = dL_dpsi0.sum()
 
         self.reset_derivative()
         self.g_psi1compDer(dvar_gpu,dl_gpu,dZ_gpu,dmu_gpu,dS_gpu,dL_dpsi1_gpu,psi1_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1))
         self.g_psi2compDer(dvar_gpu,dl_gpu,dZ_gpu,dmu_gpu,dS_gpu,dL_dpsi2_gpu,psi2n_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1))
 
-        dL_dvar = np.sum(dL_dpsi0) + gpuarray.sum(dvar_gpu).get()
+        dL_dvar = dL_dpsi0_sum + gpuarray.sum(dvar_gpu).get()
         sum_axis(grad_mu_gpu,dmu_gpu,N*Q,self.blocknum)
         dL_dmu = grad_mu_gpu.get()
         sum_axis(grad_S_gpu,dS_gpu,N*Q,self.blocknum)

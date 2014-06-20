@@ -62,6 +62,9 @@ class BayesianGPLVM(SparseGP):
             else:
                 from ..inference.latent_function_inference.var_dtc import VarDTC
                 inference_method = VarDTC()
+                
+        if kernel.useGPU and isinstance(inference_method, VarDTC_GPU):
+            kernel.psicomp.GPU_direct = True
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)
         self.add_parameter(self.X, index=0)

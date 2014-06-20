@@ -12,6 +12,9 @@ from ..util import gpu_init
 try:
     from pycuda.reduction import ReductionKernel
     from pycuda.elementwise import ElementwiseKernel
+    import scikits.cuda.linalg as culinalg
+    from scikits.cuda import cublas
+    from scikits.cuda.cula import culaExceptions
     
     # log|A| for A is a low triangle matrix
     # logDiagSum(A, A.shape[0]+1)
@@ -60,3 +63,27 @@ try:
 
 except:
     pass
+
+def jitchol(A, L, cublas_handle, maxtries=5):
+    try:
+        cublas.cublasDcopy(cublas_handle, A.size, A.gpudata, 1, L.gpudata, 1)
+        culinalg.cho_factor(L,'L')
+    except culaExceptions:
+        
+        
+        diagA = np.diag(A)
+        if np.any(diagA <= 0.):
+            raise linalg.LinAlgError, "not pd: non-positive diagonal elements"
+        jitter = diagA.mean() * 1e-6
+        while maxtries > 0 and np.isfinite(jitter):
+            print 'Warning: adding jitter of {:.10e}'.format(jitter)
+            try:
+                return linalg.cholesky(A + np.eye(A.shape[0]).T * jitter, lower=True)
+            except:
+                jitter *= 10
+            finally:
+                maxtries -= 1
+        raise linalg.LinAlgError, "not positive definite, even with jitter."
+    
+    
+    

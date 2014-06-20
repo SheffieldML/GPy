@@ -29,6 +29,8 @@ class RBF(Stationary):
         self.psicomp = PSICOMP_RBF()
         if self.useGPU:
             self.psicomp = PSICOMP_RBF_GPU()
+        else:
+            self.psicomp = PSICOMP_RBF()
 
     def K_of_r(self, r):
         return self.variance * np.exp(-0.5 * r**2)
@@ -41,41 +43,22 @@ class RBF(Stationary):
     #---------------------------------------#
 
     def psi0(self, Z, variational_posterior):
-        if self.useGPU:
-            return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior)[0]
-        else:
-            return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior)[0]
+        return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior)[0]
 
     def psi1(self, Z, variational_posterior):
-        if self.useGPU:
-            return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior)[1]
-        else:
-            return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior)[1]
+        return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior)[1]
 
     def psi2(self, Z, variational_posterior):
-        if self.useGPU:
-            return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior)[2]
-        else:
-            return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior)[2]
+        return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior)[2]
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        if self.useGPU:
-            dL_dvar, dL_dlengscale = self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variance, self.lengthscale, Z, variational_posterior)[:2]
-            self.variance.gradient = dL_dvar
-            self.lengthscale.gradient = dL_dlengscale
-        else:
-            dL_dvar, dL_dlengscale = self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variance, self.lengthscale, Z, variational_posterior)[:2]
-            self.variance.gradient = dL_dvar
-            self.lengthscale.gradient = dL_dlengscale
+        dL_dvar, dL_dlengscale = self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variance, self.lengthscale, Z, variational_posterior)[:2]
+        self.variance.gradient = dL_dvar
+        self.lengthscale.gradient = dL_dlengscale
 
     def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        if self.useGPU:
-            return self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variance, self.lengthscale, Z, variational_posterior)[2]
-        else:
-            return self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variance, self.lengthscale, Z, variational_posterior)[2]
+        return self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variance, self.lengthscale, Z, variational_posterior)[2]
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        if self.useGPU:
-            return self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variance, self.lengthscale, Z, variational_posterior)[3:]
-        else:
-            return self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variance, self.lengthscale, Z, variational_posterior)[3:]
+        return self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variance, self.lengthscale, Z, variational_posterior)[3:]
+

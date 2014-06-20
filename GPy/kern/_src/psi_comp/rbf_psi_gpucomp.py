@@ -3,9 +3,10 @@ The module for psi-statistics for RBF kernel
 """
 
 import numpy as np
-from GPy.util.caching import Cacher
+from ....util.caching import Cache_this
 from . import PSICOMP_RBF
 from ....util import gpu_init
+from ....util.linalg_gpu import sum_axis
 
 try:
     import pycuda.gpuarray as gpuarray
@@ -251,19 +252,25 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
                              'psi1_gpu'             :gpuarray.empty((N,M),np.float64,order='F'),
                              'psi2_gpu'             :gpuarray.empty((M,M),np.float64,order='F'),
                              'psi2n_gpu'            :gpuarray.empty((N,M,M),np.float64,order='F'),
+                             'dL_dpsi1_gpu'         :gpuarray.empty((N,M),np.float64,order='F'),
+                             'dL_dpsi2_gpu'         :gpuarray.empty((M,M),np.float64,order='F'),
                              # derivatives
                              'dvar_gpu'             :gpuarray.empty((self.blocknum,),np.float64, order='F'),
                              'dl_gpu'               :gpuarray.empty((Q,self.blocknum),np.float64, order='F'),
                              'dZ_gpu'               :gpuarray.empty((M,Q),np.float64, order='F'),
                              'dmu_gpu'              :gpuarray.empty((N,Q,self.blocknum),np.float64, order='F'),
                              'dS_gpu'               :gpuarray.empty((N,Q,self.blocknum),np.float64, order='F'),
-                             # gradients
-                             'grad_l_gpu'           :gpuarray.empty((Q,),np.float64,order='F'),
-                             'grad_Z_gpu'           :gpuarray.empty((M,Q),np.float64,order='F'),
+                             # grad
+                             'grad_l_gpu'               :gpuarray.empty((Q,),np.float64, order='F'),
+                             'grad_mu_gpu'              :gpuarray.empty((N,Q,),np.float64, order='F'),
+                             'grad_S_gpu'               :gpuarray.empty((N,Q,),np.float64, order='F'),
                              }
     
     def sync_params(self, lengthscale, Z, mu, S):
-        self.gpuCache['l_gpu'].set(np.asfortranarray(lengthscale))
+        if len(lengthscale)==1:
+            self.gpuCache['l_gpu'].fill(lengthscale)
+        else:
+            self.gpuCache['l_gpu'].set(np.asfortranarray(lengthscale))
         self.gpuCache['Z_gpu'].set(np.asfortranarray(Z))
         self.gpuCache['mu_gpu'].set(np.asfortranarray(mu))
         self.gpuCache['S_gpu'].set(np.asfortranarray(S))
@@ -274,23 +281,21 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         self.gpuCache['dZ_gpu'].fill(0.)
         self.gpuCache['dmu_gpu'].fill(0.)
         self.gpuCache['dS_gpu'].fill(0.)
+        self.gpuCache['grad_l_gpu'].fill(0.)
+        self.gpuCache['grad_mu_gpu'].fill(0.)
+        self.gpuCache['grad_S_gpu'].fill(0.)
+    
+    def get_dimensions(self, Z, variational_posterior):
+        return variational_posterior.mean.shape[0], Z.shape[0], Z.shape[1]
 
-#     @Cache_this(limit=1, ignore_args=(0,))
+    @Cache_this(limit=1, ignore_args=(0,))
     def psicomputations(self, variance, lengthscale, Z, variational_posterior):
         """
         Z - MxQ
         mu - NxQ
         S - NxQ
-        gamma - NxQ
         """
-        # here are the "statistics" for psi0, psi1 and psi2
-        # Produced intermediate results:
-        # _psi1                NxM
-        mu = variational_posterior.mean
-        S = variational_posterior.variance
-        N = mu.shape[0]
-        M = Z.shape[0]
-        Q = Z.shape[1]
+        N,M,Q = self.get_dimensions(Z, variational_posterior)
         self._initGPUCache(N,M,Q)
         self.sync_params(lengthscale, Z, variational_posterior.mean, variational_posterior.variance)
         
@@ -312,33 +317,11 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         else:
             return psi0_gpu.get(), psi1_gpu.get(), psi2_gpu.get()
 
-        psi0 = np.empty(mu.shape[0])
-        psi0[:] = variance
-        
-        psi1 = _psi1computations(variance, lengthscale, Z, mu, S)
-        self.g_psi1computations(psi1_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1))
-        psi1g = psi1_gpu.get()
-        print np.abs(psi1-psi1g).max()
-
-        psi2 = _psi2computations(variance, lengthscale, Z, mu, S).sum(axis=0)
-        self.g_psi2computations(psi2_gpu, psi2n_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1))
-        psi2g = psi2_gpu.get()
-        print np.abs(psi2-psi2g).max()
-
-        return psi0, psi1, psi2
-
-#     @Cache_this(limit=1, ignore_args=(0,1,2,3))
+    @Cache_this(limit=1, ignore_args=(0,1,2,3))
     def psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
         ARD = (len(lengthscale)!=1)
         
-        dvar_psi1, dl_psi1, dZ_psi1, dmu_psi1, dS_psi1 = _psi1compDer(dL_dpsi1, variance, lengthscale, Z, variational_posterior.mean, variational_posterior.variance)
-        dvar_psi2, dl_psi2, dZ_psi2, dmu_psi2, dS_psi2 = _psi2compDer(dL_dpsi2, variance, lengthscale, Z, variational_posterior.mean, variational_posterior.variance)
-
-        mu = variational_posterior.mean
-        S = variational_posterior.variance
-        N = mu.shape[0]
-        M = Z.shape[0]
-        Q = Z.shape[1]
+        N,M,Q = self.get_dimensions(Z, variational_posterior)
         psi1_gpu = self.gpuCache['psi1_gpu']
         psi2n_gpu = self.gpuCache['psi2n_gpu']
         l_gpu = self.gpuCache['l_gpu']
@@ -350,207 +333,35 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         dZ_gpu = self.gpuCache['dZ_gpu']
         dmu_gpu = self.gpuCache['dmu_gpu']
         dS_gpu = self.gpuCache['dS_gpu']
+        grad_l_gpu = self.gpuCache['grad_l_gpu']
+        grad_mu_gpu = self.gpuCache['grad_mu_gpu']
+        grad_S_gpu = self.gpuCache['grad_S_gpu']
         
         if self.GPU_direct:
             dL_dpsi1_gpu = dL_dpsi1
             dL_dpsi2_gpu = dL_dpsi2
         else:
-            dL_dpsi1_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi1))
-            dL_dpsi2_gpu = gpuarray.to_gpu(np.asfortranarray(dL_dpsi2))
+            dL_dpsi1_gpu = self.gpuCache['dL_dpsi1_gpu']
+            dL_dpsi2_gpu = self.gpuCache['dL_dpsi2_gpu']
+            dL_dpsi1_gpu.set(np.asfortranarray(dL_dpsi1))
+            dL_dpsi2_gpu.set(np.asfortranarray(dL_dpsi2))
 
         self.reset_derivative()
         self.g_psi1compDer(dvar_gpu,dl_gpu,dZ_gpu,dmu_gpu,dS_gpu,dL_dpsi1_gpu,psi1_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1))
-#         print np.abs(dvar_psi1-dvar_gpu.get().sum(axis=-1)).max()
-#         print np.abs(dl_psi1-dl_gpu.get().sum(axis=-1)).max()
-#         print np.abs(dmu_psi1-dmu_gpu.get().sum(axis=-1)).max()
-#         print np.abs(dS_psi1-dS_gpu.get().sum(axis=-1)).max()
-#         print np.abs(dZ_psi1-dZ_gpu.get()).max()
-
-#         self.reset_derivative()
         self.g_psi2compDer(dvar_gpu,dl_gpu,dZ_gpu,dmu_gpu,dS_gpu,dL_dpsi2_gpu,psi2n_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1))
-#         print np.abs(dvar_psi2-dvar_gpu.get().sum(axis=-1)).max()
-#         print np.abs(dl_psi2-dl_gpu.get().sum(axis=-1)).max()
-#         print np.abs(dmu_psi2-dmu_gpu.get().sum(axis=-1)).max()
-#         print np.abs(dS_psi2-dS_gpu.get().sum(axis=-1)).max()
-#         print np.abs(dZ_psi2-dZ_gpu.get()).max()
 
-        dL_dvar = np.sum(dL_dpsi0) + dvar_gpu.get().sum()
-        dL_dmu = dmu_gpu.get().sum(axis=-1)
-        dL_dS = dS_gpu.get().sum(axis=-1)
+        dL_dvar = np.sum(dL_dpsi0) + gpuarray.sum(dvar_gpu).get()
+        sum_axis(grad_mu_gpu,dmu_gpu,N*Q,self.blocknum)
+        dL_dmu = grad_mu_gpu.get()
+        sum_axis(grad_S_gpu,dS_gpu,N*Q,self.blocknum)
+        dL_dS = grad_S_gpu.get()
         dL_dZ = dZ_gpu.get()
         if ARD:
-            dL_dlengscale = dl_gpu.get().sum(axis=-1)
+            sum_axis(grad_l_gpu,dl_gpu,Q,self.blocknum)
+            dL_dlengscale = grad_l_gpu.get()
         else:
-            dL_dlengscale = dl_gpu.get().sum()
+            dL_dlengscale = gpuarray.sum(dl_gpu).get()
             
-#         print np.abs(dL_dlengscale - dl_psi1-dl_psi2).max()
-        
-#     
-#         dL_dvar = np.sum(dL_dpsi0) + dvar_psi1 + dvar_psi2
-#         
-#         dL_dlengscale = dl_psi1 + dl_psi2
-#         if not ARD:
-#             dL_dlengscale = dL_dlengscale.sum()
-#     
-#         dL_dmu = dmu_psi1 + dmu_psi2
-#         dL_dS = dS_psi1 + dS_psi2
-#         dL_dZ = dZ_psi1 + dZ_psi2
-        
         return dL_dvar, dL_dlengscale, dL_dZ, dL_dmu, dL_dS
     
 
-def psicomputations(variance, lengthscale, Z, variational_posterior):
-    """
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    """
-    # here are the "statistics" for psi0, psi1 and psi2
-    # Produced intermediate results:
-    # _psi1                NxM
-    mu = variational_posterior.mean
-    S = variational_posterior.variance
-    
-    psi0 = np.empty(mu.shape[0])
-    psi0[:] = variance
-    psi1 = _psi1computations(variance, lengthscale, Z, mu, S)
-    psi2 = _psi2computations(variance, lengthscale, Z, mu, S).sum(axis=0)
-    return psi0, psi1, psi2
-
-def __psi1computations(variance, lengthscale, Z, mu, S):
-    """
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    """
-    # here are the "statistics" for psi1
-    # Produced intermediate results:
-    # _psi1                NxM
-
-    lengthscale2 = np.square(lengthscale)
-
-    # psi1
-    _psi1_logdenom = np.log(S/lengthscale2+1.).sum(axis=-1) # N
-    _psi1_log = (_psi1_logdenom[:,None]+np.einsum('nmq,nq->nm',np.square(mu[:,None,:]-Z[None,:,:]),1./(S+lengthscale2)))/(-2.)
-    _psi1 = variance*np.exp(_psi1_log)
-        
-    return _psi1
-
-def __psi2computations(variance, lengthscale, Z, mu, S):
-    """
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    """
-    # here are the "statistics" for psi2
-    # Produced intermediate results:
-    # _psi2                MxM
-    
-    lengthscale2 = np.square(lengthscale)
-    
-    _psi2_logdenom = np.log(2.*S/lengthscale2+1.).sum(axis=-1)/(-2.) # N
-    _psi2_exp1 = (np.square(Z[:,None,:]-Z[None,:,:])/lengthscale2).sum(axis=-1)/(-4.) #MxM
-    Z_hat = (Z[:,None,:]+Z[None,:,:])/2. #MxMxQ
-    denom = 1./(2.*S+lengthscale2)
-    _psi2_exp2 = -(np.square(mu)*denom).sum(axis=-1)[:,None,None]+2.*np.einsum('nq,moq,nq->nmo',mu,Z_hat,denom)-np.einsum('moq,nq->nmo',np.square(Z_hat),denom)
-    _psi2 = variance*variance*np.exp(_psi2_logdenom[:,None,None]+_psi2_exp1[None,:,:]+_psi2_exp2)
-    
-
-    return _psi2
-
-def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
-    ARD = (len(lengthscale)!=1)
-    
-    dvar_psi1, dl_psi1, dZ_psi1, dmu_psi1, dS_psi1 = _psi1compDer(dL_dpsi1, variance, lengthscale, Z, variational_posterior.mean, variational_posterior.variance)
-    dvar_psi2, dl_psi2, dZ_psi2, dmu_psi2, dS_psi2 = _psi2compDer(dL_dpsi2, variance, lengthscale, Z, variational_posterior.mean, variational_posterior.variance)
-
-    dL_dvar = np.sum(dL_dpsi0) + dvar_psi1 + dvar_psi2
-    
-    dL_dlengscale = dl_psi1 + dl_psi2
-    if not ARD:
-        dL_dlengscale = dL_dlengscale.sum()
-
-    dL_dmu = dmu_psi1 + dmu_psi2
-    dL_dS = dS_psi1 + dS_psi2
-    dL_dZ = dZ_psi1 + dZ_psi2
-    
-    return dL_dvar, dL_dlengscale, dL_dZ, dL_dmu, dL_dS
-
-def _psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S):
-    """
-    dL_dpsi1 - NxM
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    """
-    # here are the "statistics" for psi1
-    # Produced intermediate results: dL_dparams w.r.t. psi1
-    # _dL_dvariance     1
-    # _dL_dlengthscale  Q
-    # _dL_dZ            MxQ
-    # _dL_dgamma        NxQ
-    # _dL_dmu           NxQ
-    # _dL_dS            NxQ
-    
-    lengthscale2 = np.square(lengthscale)
-    
-    _psi1 = _psi1computations(variance, lengthscale, Z, mu, S)
-    Lpsi1 = dL_dpsi1*_psi1
-    Zmu = Z[None,:,:]-mu[:,None,:] # NxMxQ
-    denom = 1./(S+lengthscale2)
-    Zmu2_denom = np.square(Zmu)*denom[:,None,:] #NxMxQ
-    _dL_dvar = Lpsi1.sum()/variance
-    _dL_dmu = np.einsum('nm,nmq,nq->nq',Lpsi1,Zmu,denom)
-    _dL_dS = np.einsum('nm,nmq,nq->nq',Lpsi1,(Zmu2_denom-1.),denom)/2.
-    _dL_dZ = -np.einsum('nm,nmq,nq->mq',Lpsi1,Zmu,denom)
-    _dL_dl = np.einsum('nm,nmq,nq->q',Lpsi1,(Zmu2_denom+(S/lengthscale2)[:,None,:]),denom*lengthscale)
-    
-    return _dL_dvar, _dL_dl, _dL_dZ, _dL_dmu, _dL_dS
-
-def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S):
-    """
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    dL_dpsi2 - MxM
-    """
-    # here are the "statistics" for psi2
-    # Produced the derivatives w.r.t. psi2:
-    # _dL_dvariance      1
-    # _dL_dlengthscale   Q
-    # _dL_dZ             MxQ
-    # _dL_dgamma         NxQ
-    # _dL_dmu            NxQ
-    # _dL_dS             NxQ
-    
-    lengthscale2 = np.square(lengthscale)
-    denom = 1./(2*S+lengthscale2)
-    denom2 = np.square(denom)
-
-    _psi2 = _psi2computations(variance, lengthscale, Z, mu, S) # NxMxM
-    
-    Lpsi2 = dL_dpsi2[None,:,:]*_psi2
-    Lpsi2sum = np.einsum('nmo->n',Lpsi2) #N
-    Lpsi2Z = np.einsum('nmo,oq->nq',Lpsi2,Z) #NxQ
-    Lpsi2Z2 = np.einsum('nmo,oq,oq->nq',Lpsi2,Z,Z) #NxQ
-    Lpsi2Z2p = np.einsum('nmo,mq,oq->nq',Lpsi2,Z,Z) #NxQ
-    Lpsi2Zhat = Lpsi2Z
-    Lpsi2Zhat2 = (Lpsi2Z2+Lpsi2Z2p)/2
-    
-    _dL_dvar = Lpsi2sum.sum()*2/variance
-    _dL_dmu = (-2*denom) * (mu*Lpsi2sum[:,None]-Lpsi2Zhat)
-    _dL_dS = (2*np.square(denom))*(np.square(mu)*Lpsi2sum[:,None]-2*mu*Lpsi2Zhat+Lpsi2Zhat2) - denom*Lpsi2sum[:,None]
-    _dL_dZ = -np.einsum('nmo,oq->oq',Lpsi2,Z)/lengthscale2+np.einsum('nmo,oq->mq',Lpsi2,Z)/lengthscale2+ \
-             2*np.einsum('nmo,nq,nq->mq',Lpsi2,mu,denom) - np.einsum('nmo,nq,mq->mq',Lpsi2,denom,Z) - np.einsum('nmo,oq,nq->mq',Lpsi2,Z,denom)
-    _dL_dl = 2*lengthscale* ((S/lengthscale2*denom+np.square(mu*denom))*Lpsi2sum[:,None]+(Lpsi2Z2-Lpsi2Z2p)/(2*np.square(lengthscale2))-
-                             (2*mu*denom2)*Lpsi2Zhat+denom2*Lpsi2Zhat2).sum(axis=0)
-
-    return _dL_dvar, _dL_dl, _dL_dZ, _dL_dmu, _dL_dS
-    
-_psi1computations = Cacher(__psi1computations, limit=1)
-_psi2computations = Cacher(__psi2computations, limit=1)

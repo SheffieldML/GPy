@@ -225,6 +225,9 @@ class Model(Parameterized):
         if self.size == 0:
             raise RuntimeError, "Model without parameters cannot be optimized"
 
+        if start == None:
+            start = self.optimizer_array
+
         if optimizer is None:
             optimizer = self.preferred_optimizer
         elif isinstance(optimizer, optimization.Optimizer):
@@ -233,9 +236,6 @@ class Model(Parameterized):
         else:
             optimizer = optimization.get_optimizer(optimizer)
             opt = optimizer(start, model=self, **kwargs)
-
-        if start == None:
-            start = self.optimizer_array
 
         opt.run(f_fp=self._objective_grads, f=self._objective, fp=self._grads)
 

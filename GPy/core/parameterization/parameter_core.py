@@ -423,12 +423,15 @@ class Indexable(Nameable, Observable):
         if np.all(self._fixes_): self._fixes_ = None  # ==UNFIXED
 
     def _connect_fixes(self):
-        fixed_indices = self.constraints[__fixed__]
-        if fixed_indices.size > 0:
-            self._ensure_fixes()
-            self._fixes_[fixed_indices] = FIXED
-        else:
-            self._fixes_ = None
+        from ties_and_remappings import Tie
+        self._ensure_fixes()
+#         for c, ind in self.constraints.iteritems():
+#             if c == __fixed__ or isinstance(c,Tie):
+#                 self._fixes_[ind] = FIXED
+        [np.put(self._fixes_, ind, FIXED) for c, ind in self.constraints.iteritems()
+            if c == __fixed__ or isinstance(c,Tie)]
+        if np.all(self._fixes_): self._fixes_ = None
+        if self.constraints[__fixed__]==0:
             del self.constraints[__fixed__]
 
     #===========================================================================
@@ -501,29 +504,25 @@ class Indexable(Nameable, Observable):
         old_const = self.constraints.properties()[:]
         self.unconstrain()
 
-        #set these parameters to be 'fixed' as in, not optimized
-        self._highest_parent_._set_fixed(self, self._raveled_index())
-
         #see if a tie exists with that name
         if name in self._highest_parent_.ties:
             t = self._highest_parent_.ties[name]
         else:
             #create a tie object
             value = np.atleast_1d(self.param_array)[0]*1
-            import ties_and_remappings
-            t = ties_and_remappings.Tie(value=value, name=name)
+            from ties_and_remappings import Tie
+            t = Tie(value=value, name=name)
 
             #add the new tie object to the global index
             self._highest_parent_.ties[name] = t
             self._highest_parent_.add_parameter(t)
-
             #constrain the tie as we were constrained
             if len(old_const)==1:
                 t.constrain(old_const[0])
-
-
+        
         self.constraints.add(t, self._raveled_index())
         t.add_tied_parameter(self)
+        self._highest_parent_._connect_fixes()        
 
     def constrain(self, transform, warning=True, trigger_parent=True):
         """
@@ -649,10 +648,12 @@ class OptimizationHandlable(Indexable):
     def _get_params_transformed(self):
         # transformed parameters (apply un-transformation rules)
         p = self.param_array.copy()
-        [np.put(p, ind, c.finv(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
+        from ties_and_remappings import Tie
+        [np.put(p, ind, c.finv(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__ and not isinstance(c,Tie)]
         if self.has_parent() and self.constraints[__fixed__].size != 0:
             fixes = np.ones(self.size).astype(bool)
-            fixes[self.constraints[__fixed__]] = FIXED
+            [np.put(fixes,ind,FIXED) for c, ind in self.constraints.iteritems()
+             if c == __fixed__ or isinstance(c,Tie)]
             return p[fixes]
         elif self._has_fixes():
             return p[self._fixes_]
@@ -664,15 +665,21 @@ class OptimizationHandlable(Indexable):
         This means, the optimizer sees p, whereas the model sees transformed(p), 
         such that, the parameters the model sees are in the right domain.
         """
+        from ties_and_remappings import Tie
         if not(p is self.param_array):
             if self.has_parent() and self.constraints[__fixed__].size != 0:
                 fixes = np.ones(self.size).astype(bool)
-                fixes[self.constraints[__fixed__]] = FIXED
+#                 fixes[self.constraints[__fixed__]] = FIXED
+                for c, ind in self.constraints.iteritems():
+                    if c == __fixed__ or isinstance(c,Tie):
+                        fixes[ind] = FIXED
                 self.param_array.flat[fixes] = p
             elif self._has_fixes(): self.param_array.flat[self._fixes_] = p
             else: self.param_array.flat = p
-        [np.put(self.param_array, ind, c.f(self.param_array.flat[ind])) 
-         for c, ind in self.constraints.iteritems() if c != __fixed__]
+        [np.put(self.param_array, ind, c.f(self.param_array.flat[ind]))
+         for c, ind in self.constraints.iteritems() if c != __fixed__ and not isinstance(c,Tie)]
+        [np.put(self.param_array, ind, c.val)
+         for c, ind in self.constraints.iteritems() if isinstance(c,Tie)]
         self._trigger_params_changed()
 
     def _trigger_params_changed(self, trigger_parent=True):
@@ -699,7 +706,9 @@ class OptimizationHandlable(Indexable):
         """
         if self.has_parent():
             return g
-        [np.put(g, i, g[i] * c.gradfactor(self.param_array[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
+        from ties_and_remappings import Tie
+        [np.put(g, self._raveled_index_for(c.val), g[i].sum()) for c, i in self.constraints.iteritems() if isinstance(c,Tie)]
+        [np.put(g, i, g[i] * c.gradfactor(self.param_array[i])) for c, i in self.constraints.iteritems() if c != __fixed__ and not isinstance(c,Tie)]
         if self._has_fixes(): return g[self._fixes_]
         return g
 

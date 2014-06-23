@@ -54,6 +54,7 @@ class Tie(Remapping):
         index = self._highest_parent_.constraints[self]
         if len(index)==0:
             return # nothing to tie together, this tie exists without any tied parameters
+        self.value.gradient[:] = self._highest_parent_.gradient[index].sum()
         vals = self._highest_parent_.param_array[index]
         uvals = np.unique(vals)
         if len(uvals)==1:
@@ -66,6 +67,9 @@ class Tie(Remapping):
         else:
             #more than one of the tied things changed. panic.
             raise ValueError, "something is wrong with the tieing"
+    def parameters_changed(self):
+        super(Tie,self).parameters_changed()
+        self.value.gradient[:] = self._highest_parent_.gradient[self._highest_parent_.constraints[self]].sum()
 
     def mapping(self):
         return self.value

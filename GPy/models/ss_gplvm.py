@@ -31,7 +31,8 @@ class SSGPLVM(SparseGP):
 
         self.mpi_comm = mpi_comm
         self.__IN_OPTIMIZATION__ = False
-            
+        self.group_spike = group_spike
+        
         if X == None:
             from ..util.initialization import initialize_latent
             X, fracs = initialize_latent(init, input_dim, Y)
@@ -50,7 +51,7 @@ class SSGPLVM(SparseGP):
         gamma[:] = 0.5
         
         if group_spike:
-            gamma[:] = gamma.mean(axis=0)
+            gamma[:] = gamma[:,0]
         
         if Z is None:
             Z = np.random.permutation(X.copy())[:num_inducing]

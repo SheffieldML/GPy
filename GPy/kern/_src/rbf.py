@@ -38,6 +38,15 @@ class RBF(Stationary):
     def dK_dr(self, r):
         return -r*self.K_of_r(r)
 
+    def __getstate__(self):
+        dc = super(RBF, self).__getstate__()
+        if self.useGPU:
+            dc['psicomp'] = PSICOMP_RBF()
+        return dc
+ 
+    def __setstate__(self, state):
+        return super(RBF, self).__setstate__(state)
+
     #---------------------------------------#
     #             PSI statistics            #
     #---------------------------------------#

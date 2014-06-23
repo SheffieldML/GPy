@@ -495,6 +495,35 @@ class Indexable(Nameable, Observable):
     #===========================================================================
     # Constrain operations -> done
     #===========================================================================
+    
+    def tie(self, name):
+        #remove any constraints
+        old_const = self.constraints.properties()[:]
+        self.unconstrain()
+
+        #set these parameters to be 'fixed' as in, not optimized
+        self._highest_parent_._set_fixed(self, self._raveled_index())
+
+        #see if a tie exists with that name
+        if name in self._highest_parent_.ties:
+            t = self._highest_parent_.ties[name]
+        else:
+            #create a tie object
+            value = np.atleast_1d(self.param_array)[0]*1
+            import ties_and_remappings
+            t = ties_and_remappings.Tie(value=value, name=name)
+
+            #add the new tie object to the global index
+            self._highest_parent_.ties[name] = t
+            self._highest_parent_.add_parameter(t)
+
+            #constrain the tie as we were constrained
+            if len(old_const)==1:
+                t.constrain(old_const[0])
+
+
+        self.constraints.add(t, self._raveled_index())
+        t.add_tied_parameter(self)
 
     def constrain(self, transform, warning=True, trigger_parent=True):
         """
@@ -784,6 +813,7 @@ class Parameterizable(OptimizationHandlable):
         self._param_array_ = None
         self._added_names_ = set()
         self.__visited = False # for traversing in reverse order we need to know if we were here already
+        self.ties = {}
 
     @property
     def param_array(self):

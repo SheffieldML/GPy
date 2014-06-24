@@ -3,11 +3,7 @@
 
 
 import numpy as np
-from scipy import weave
-from ...util.misc import param_to_array
 from stationary import Stationary
-from GPy.util.caching import Cache_this
-from ...core.parameterization import variational
 from psi_comp import PSICOMP_RBF
 from psi_comp.rbf_psi_gpucomp import PSICOMP_RBF_GPU
 from ...util.config import *

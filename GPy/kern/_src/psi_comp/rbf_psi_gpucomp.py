@@ -112,7 +112,6 @@ gpu_code = """
                     double Snq = S[IDX_NQ(n,q)];
                     double lq = l[q]*l[q];
                     log_psi2_n += dZ*dZ/(-4.*lq)-muZhat*muZhat/(2.*Snq+lq) + log_denom2[IDX_NQ(n,q)]/(-2.);
-                    //log_psi2_n += log(2.*Snq/lq+1)/(-2.);
                 }
                 double exp_psi2_n = exp(log_psi2_n);
                 psi2n[IDX_NMM(n,m1,m2)] = var*var*exp_psi2_n;

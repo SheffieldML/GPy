@@ -157,9 +157,10 @@ gpu_code = """
                 double dmu_local = 0;
                 double dS_local = 0;
                 double dgamma_local = 0;
-                double Snq,mu_nq,gnq,log_gnq,log_gnq1;
+                double Snq,mu_nq,gnq,log_gnq,log_gnq1,log_de;
                 if(n<N) {Snq = S[IDX_NQ(n,q)]; mu_nq=mu[IDX_NQ(n,q)]; gnq = gamma[IDX_NQ(n,q)];
-                        log_gnq = log_gamma[IDX_NQ(n,q)]; log_gnq1 = log_gamma1[IDX_NQ(n,q)];}
+                        log_gnq = log_gamma[IDX_NQ(n,q)]; log_gnq1 = log_gamma1[IDX_NQ(n,q)];
+                        log_de = log_denom1[IDX_NQ(n,q)];}
                 for(int m=m_start; m<m_end; m++) {
                     if(n<N) {
                         double lpsi1 = psi1[IDX_NM(n,m)]*dL_dpsi1[IDX_NM(n,m)];
@@ -170,7 +171,7 @@ gpu_code = """
                         double denom = Snq+lq;
                         double Zmu2_denom = Zmu*Zmu/denom;
                         
-                        double exp1 = log_gnq-(Zmu*Zmu/(Snq+lq)+log_denom1[IDX_NQ(n,q)])/(2.);
+                        double exp1 = log_gnq-(Zmu*Zmu/(Snq+lq)+log_de)/(2.);
                         double exp2 = log_gnq1-Zmq*Zmq/(2.*lq);
                         double d_exp1,d_exp2;
                         if(exp1>exp2) {
@@ -227,9 +228,10 @@ gpu_code = """
                 double dmu_local = 0;
                 double dS_local = 0;
                 double dgamma_local = 0;
-                double Snq,mu_nq,gnq,log_gnq,log_gnq1;
+                double Snq,mu_nq,gnq,log_gnq,log_gnq1,log_de;
                 if(n<N) {Snq = S[IDX_NQ(n,q)]; mu_nq=mu[IDX_NQ(n,q)]; gnq = gamma[IDX_NQ(n,q)];
-                        log_gnq = log_gamma[IDX_NQ(n,q)]; log_gnq1 = log_gamma1[IDX_NQ(n,q)];}
+                        log_gnq = log_gamma[IDX_NQ(n,q)]; log_gnq1 = log_gamma1[IDX_NQ(n,q)];
+                        log_de = log_denom2[IDX_NQ(n,q)];}
                 for(int m1=m_start; m1<m_end; m1++) {
                     g_local[threadIdx.x] = 0;
                     for(int m2=0;m2<M;m2++) {
@@ -245,7 +247,7 @@ gpu_code = """
                             double denom = 2.*Snq+lq;
                             double muZhat2_denom = muZhat*muZhat/denom;
                             
-                            double exp1 = dZ*dZ/(-4.*lq)-muZhat*muZhat/(2.*Snq+lq) - log_denom2[IDX_NQ(n,q)]/2. + log_gnq;
+                            double exp1 = dZ*dZ/(-4.*lq)-muZhat*muZhat/(2.*Snq+lq) - log_de/2. + log_gnq;
                             double exp2 = log_gnq1 - Z2/(2.*lq);
                             double d_exp1,d_exp2;
                             if(exp1>exp2) {

@@ -70,7 +70,12 @@ class Tie(Remapping):
             #more than one of the tied things changed. panic.
             raise ValueError, "something is wrong with the tieing"
     def parameters_changed(self):
-        super(Tie,self).parameters_changed()
+        #ensure all out parameters have the correct value, as specified by our mapping
+        index = self._highest_parent_.constraints[self]
+        if (self._highest_parent_.param_array[index]==self.value).all():
+            return # STOP TRIGGER THE UPDATE LOOP MULTIPLE TIMES!!!
+        self._highest_parent_.param_array[index] = self.mapping()
+        [p.notify_observers(which=self) for p in self.tied_parameters]
         self.collate_gradient()
 
     def mapping(self):

@@ -40,7 +40,6 @@ class SpikeAndSlabPrior(VariationalPrior):
         self.pi = Param('pi', pi, Logistic(1e-10,1.-1e-10))
         self.variance = Param('variance',variance)
         self.add_parameters(self.pi)
-        self.group_spike_prob = False
 
     def KL_divergence(self, variational_posterior):
         mu = variational_posterior.mean
@@ -56,11 +55,7 @@ class SpikeAndSlabPrior(VariationalPrior):
         S = variational_posterior.variance
         gamma = variational_posterior.binary_prob
 
-        if self.group_spike_prob:
-            gamma_grad = np.log((1-self.pi)/self.pi*gamma/(1.-gamma))+(np.square(mu)+S-np.log(S)-1.)/2.
-            gamma.gradient -= gamma_grad.mean(axis=0)
-        else:
-            gamma.gradient -= np.log((1-self.pi)/self.pi*gamma/(1.-gamma))+(np.square(mu)+S-np.log(S)-1.)/2.
+        gamma.gradient -= np.log((1-self.pi)/self.pi*gamma/(1.-gamma))+(np.square(mu)+S-np.log(S)-1.)/2.
         mu.gradient -= gamma*mu
         S.gradient -= (1. - (1. / (S))) * gamma /2.
         self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum(axis=0)

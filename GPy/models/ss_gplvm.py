@@ -44,15 +44,12 @@ class SSGPLVM(SparseGP):
         if X_variance is None: # The variance of the variational approximation (S)
             X_variance = np.random.uniform(0,.1,X.shape)
             
-        gamma = np.empty_like(X, order='F') # The posterior probabilities of the binary variable in the variational approximation
+        gamma = np.empty_like(X) # The posterior probabilities of the binary variable in the variational approximation
         gamma[:] = 0.5 + 0.1 * np.random.randn(X.shape[0], input_dim)
         gamma[gamma>1.-1e-9] = 1.-1e-9
         gamma[gamma<1e-9] = 1e-9
         gamma[:] = 0.5
-        
-        if group_spike:
-            gamma[:] = gamma[:,0]
-        
+                
         if Z is None:
             Z = np.random.permutation(X.copy())[:num_inducing]
         assert Z.shape[1] == X.shape[1]
@@ -73,13 +70,12 @@ class SSGPLVM(SparseGP):
         
         X = SpikeAndSlabPosterior(X, X_variance, gamma)
         
-        if group_spike:
-            kernel.group_spike_prob = True
-            self.variational_prior.group_spike_prob = True
-
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)
         self.add_parameter(self.X, index=0)
         self.add_parameter(self.variational_prior)
+        
+        if self.group_spike:
+            [self.X.gamma[:,i].tie('tieGamma'+str(i)) for i in xrange(self.X.gamma.shape[1])] # Tie columns together
         
         if mpi_comm != None:
             from ..util.mpi import divide_data

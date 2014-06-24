@@ -500,8 +500,9 @@ class Indexable(Nameable, Observable):
     #===========================================================================
     
     def tie(self, name):
+        from ties_and_remappings import Tie
         #remove any constraints
-        old_const = self.constraints.properties()[:]
+        old_const = [c for c in self.constraints.properties() if not isinstance(c,Tie)]
         self.unconstrain()
 
         #see if a tie exists with that name
@@ -510,14 +511,14 @@ class Indexable(Nameable, Observable):
         else:
             #create a tie object
             value = np.atleast_1d(self.param_array)[0]*1
-            from ties_and_remappings import Tie
             t = Tie(value=value, name=name)
 
             #add the new tie object to the global index
             self._highest_parent_.ties[name] = t
             self._highest_parent_.add_parameter(t)
+
             #constrain the tie as we were constrained
-            if len(old_const)==1:
+            if len(old_const)>0:
                 t.constrain(old_const[0])
         
         self.constraints.add(t, self._raveled_index())

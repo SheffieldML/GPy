@@ -46,7 +46,7 @@ class Tie(Remapping):
     def callback(self, param=None, which=None):
         """
         This gets called whenever any of the tied parameters changes. we spend
-        considerable effort working out whhat has changed ant to what value.
+        considerable effort working out what has changed and to what value.
         Then we store that value in self.value, and broadcast it everywhere
         with parameters_changed.
         """
@@ -54,11 +54,13 @@ class Tie(Remapping):
         index = self._highest_parent_.constraints[self]
         if len(index)==0:
             return # nothing to tie together, this tie exists without any tied parameters
-        self.value.gradient[:] = self._highest_parent_.gradient[index].sum()
+        self.collate_gradient()
         vals = self._highest_parent_.param_array[index]
         uvals = np.unique(vals)
         if len(uvals)==1:
             #all of the tied things are at the same value
+            if (self.value==uvals[0]).all():
+                return # DO NOT DO ANY CHANGES IF THE TIED PART IS NOT CHANGED!
             self.value[...] = uvals[0]
         elif len(uvals)==2:
             #only *one* of the tied things has changed. it must be different to self.value
@@ -69,7 +71,7 @@ class Tie(Remapping):
             raise ValueError, "something is wrong with the tieing"
     def parameters_changed(self):
         super(Tie,self).parameters_changed()
-        self.value.gradient[:] = self._highest_parent_.gradient[self._highest_parent_.constraints[self]].sum()
+        self.collate_gradient()
 
     def mapping(self):
         return self.value

@@ -242,14 +242,14 @@ gpu_code = """
 
 class PSICOMP_RBF_GPU(PSICOMP_RBF):
 
-    def __init__(self, GPU_direct=False):
+    def __init__(self, threadnum=128, blocknum=15, GPU_direct=False):
         assert gpu_init.initSuccess, "GPU initialization failed!"
         self.GPU_direct = GPU_direct
         self.cublas_handle = gpu_init.cublas_handle
         self.gpuCache = None
         
-        self.threadnum = 128
-        self.blocknum = 15
+        self.threadnum = threadnum
+        self.blocknum = blocknum
         module = SourceModule("#define THREADNUM "+str(self.threadnum)+"\n"+gpu_code)
         self.g_psi1computations = module.get_function('psi1computations')
         self.g_psi1computations.prepare('PPdPPPPiii')

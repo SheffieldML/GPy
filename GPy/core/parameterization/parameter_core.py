@@ -986,6 +986,11 @@ class Parameterizable(OptimizationHandlable):
     # notification system
     #===========================================================================
     def _parameters_changed_notification(self, me, which=None):
+        """
+        In parameterizable we just need to make sure, that the next call to optimizer_array
+        will update the optimizer_array to the latest parameters
+        """
+        self._optimizer_copy_transformed = False # tells the optimizer array to update on next request
         self.parameters_changed()
     def _pass_through_notify_observers(self, me, which=None):
         self.notify_observers(which=which)
@@ -1017,4 +1022,3 @@ class Parameterizable(OptimizationHandlable):
         updates get passed through. See :py:function:``GPy.core.param.Observable.add_observer``
         """
         pass
-

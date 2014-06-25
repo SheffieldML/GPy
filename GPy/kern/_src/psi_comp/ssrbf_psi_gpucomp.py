@@ -339,7 +339,7 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
                              'grad_l_gpu'               :gpuarray.empty((Q,),np.float64, order='F'),
                              'grad_mu_gpu'              :gpuarray.empty((N,Q,),np.float64, order='F'),
                              'grad_S_gpu'               :gpuarray.empty((N,Q,),np.float64, order='F'),
-                             'grad_gamma_gpu'               :gpuarray.empty((N,Q,),np.float64, order='F'),
+                             'grad_gamma_gpu'           :gpuarray.empty((N,Q,),np.float64, order='F'),
                              }
         else:
             assert N==self.gpuCache['mu_gpu'].shape[0]
@@ -356,8 +356,6 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         self.gpuCache['S_gpu'].set(np.asfortranarray(S))
         self.gpuCache['gamma_gpu'].set(np.asfortranarray(gamma))
         N,Q = self.gpuCache['S_gpu'].shape
-        # t=self.g_compDenom(self.gpuCache['log_denom1_gpu'],self.gpuCache['log_denom2_gpu'],self.gpuCache['l_gpu'],self.gpuCache['S_gpu'], np.int32(N), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
-        # print 'g_compDenom '+str(t)
         self.g_compDenom.prepared_call((self.blocknum,1),(self.threadnum,1,1), self.gpuCache['log_denom1_gpu'].gpudata,self.gpuCache['log_denom2_gpu'].gpudata,self.gpuCache['log_gamma_gpu'].gpudata,self.gpuCache['log_gamma1_gpu'].gpudata,self.gpuCache['gamma_gpu'].gpudata,self.gpuCache['l_gpu'].gpudata,self.gpuCache['S_gpu'].gpudata, np.int32(N), np.int32(Q))
         
     def reset_derivative(self):
@@ -393,7 +391,6 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         Z_gpu = self.gpuCache['Z_gpu']
         mu_gpu = self.gpuCache['mu_gpu']
         S_gpu = self.gpuCache['S_gpu']
-        gamma_gpu = self.gpuCache['gamma_gpu']
         log_denom1_gpu = self.gpuCache['log_denom1_gpu']
         log_denom2_gpu = self.gpuCache['log_denom2_gpu']
         log_gamma_gpu = self.gpuCache['log_gamma_gpu']
@@ -403,11 +400,7 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         psi0[:] = variance
         self.g_psi1computations.prepared_call((self.blocknum,1),(self.threadnum,1,1),psi1_gpu.gpudata, log_denom1_gpu.gpudata, log_gamma_gpu.gpudata, log_gamma1_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
         self.g_psi2computations.prepared_call((self.blocknum,1),(self.threadnum,1,1),psi2_gpu.gpudata, psi2n_gpu.gpudata, log_denom2_gpu.gpudata, log_gamma_gpu.gpudata, log_gamma1_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
-        # t = self.g_psi1computations(psi1_gpu, log_denom1_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
-        # print 'g_psi1computations '+str(t)
-        # t = self.g_psi2computations(psi2_gpu, psi2n_gpu, log_denom2_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
-        # print 'g_psi2computations '+str(t)
-         
+        
         if self.GPU_direct:
             return psi0, psi1_gpu, psi2_gpu
         else:

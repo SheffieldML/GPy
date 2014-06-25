@@ -59,7 +59,7 @@ class Tie(Remapping):
         uvals = np.unique(vals)
         if len(uvals)==1:
             #all of the tied things are at the same value
-            if (self.value==uvals[0]).all():
+            if np.all(self.value==uvals[0]):
                 return # DO NOT DO ANY CHANGES IF THE TIED PART IS NOT CHANGED!
             self.value[...] = uvals[0]
         elif len(uvals)==2:
@@ -72,7 +72,7 @@ class Tie(Remapping):
     def parameters_changed(self):
         #ensure all out parameters have the correct value, as specified by our mapping
         index = self._highest_parent_.constraints[self]
-        if (self._highest_parent_.param_array[index]==self.value).all():
+        if np.all(self._highest_parent_.param_array[index]==self.value):
             return # STOP TRIGGER THE UPDATE LOOP MULTIPLE TIMES!!!
         self._highest_parent_.param_array[index] = self.mapping()
         [p.notify_observers(which=self) for p in self.tied_parameters]

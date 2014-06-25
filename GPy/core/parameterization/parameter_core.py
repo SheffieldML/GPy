@@ -425,9 +425,6 @@ class Indexable(Nameable, Observable):
     def _connect_fixes(self):
         from ties_and_remappings import Tie
         self._ensure_fixes()
-#         for c, ind in self.constraints.iteritems():
-#             if c == __fixed__ or isinstance(c,Tie):
-#                 self._fixes_[ind] = FIXED
         [np.put(self._fixes_, ind, FIXED) for c, ind in self.constraints.iteritems()
             if c == __fixed__ or isinstance(c,Tie)]
         if np.all(self._fixes_): self._fixes_ = None

@@ -150,6 +150,9 @@ class SpikeAndSlabPosterior(VariationalPosterior):
             n.parameters[dc['mean']._parent_index_] = dc['mean']
             n.parameters[dc['variance']._parent_index_] = dc['variance']
             n.parameters[dc['binary_prob']._parent_index_] = dc['binary_prob']
+            n._gradient_array_ = None
+            oversize = self.size - self.mean.size - self.variance.size
+            n.size = n.mean.size + n.variance.size + oversize
             n.ndim = n.mean.ndim
             n.shape = n.mean.shape
             n.num_data = n.mean.shape[0]

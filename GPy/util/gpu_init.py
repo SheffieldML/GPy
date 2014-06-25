@@ -14,3 +14,9 @@ try:
     initSuccess = True
 except:
     initSuccess = False
+    
+def initGPU(gpuid=None):
+    if gpuid==None:
+        return pycuda.tools.make_default_context()
+    else:
+        return pycuda.driver.Device(gpuid).make_context()

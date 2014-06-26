@@ -292,7 +292,6 @@ gpu_code = """
 class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
 
     def __init__(self, threadnum=128, blocknum=15, GPU_direct=False):
-        assert gpu_init.initSuccess, "GPU initialization failed!"
         self.GPU_direct = GPU_direct
         self.cublas_handle = gpu_init.cublas_handle
         self.gpuCache = None

@@ -6,6 +6,7 @@ import numpy as np
 from stationary import Stationary
 from psi_comp import PSICOMP_RBF
 from psi_comp.rbf_psi_gpucomp import PSICOMP_RBF_GPU
+from ...util.gpu_init import initGPU
 from ...util.config import *
 
 class RBF(Stationary):
@@ -24,6 +25,7 @@ class RBF(Stationary):
         self.group_spike_prob = False
         self.psicomp = PSICOMP_RBF()
         if self.useGPU:
+            initGPU()
             self.psicomp = PSICOMP_RBF_GPU()
         else:
             self.psicomp = PSICOMP_RBF()

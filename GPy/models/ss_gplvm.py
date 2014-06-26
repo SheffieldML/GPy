@@ -125,7 +125,6 @@ class SSGPLVM(SparseGP):
             del dc['N_range']
             del dc['N_list']
             del dc['Y_local']
-            del dc['X_local']
         return dc
  
     def __setstate__(self, state):

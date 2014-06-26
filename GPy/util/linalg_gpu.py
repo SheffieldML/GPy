@@ -12,9 +12,6 @@ from ..util import gpu_init
 try:
     from pycuda.reduction import ReductionKernel
     from pycuda.elementwise import ElementwiseKernel
-    import scikits.cuda.linalg as culinalg
-    from scikits.cuda import cublas
-    from scikits.cuda.cula import culaExceptions
     
     # log|A| for A is a low triangle matrix
     # logDiagSum(A, A.shape[0]+1)
@@ -61,6 +58,13 @@ try:
     # the outer product between two vectors (out = np.einsum('na,nb->nab',m1,m2) a=dim1, b=dim2 )
     join_prod = ElementwiseKernel("double *out, double *m1, double *m2, int dim1, int dim2", "out[i] = m1[(i%dim1)*dim1+(i%(dim1*dim2))/dim1]*m2[(i%dim1)*dim1+i/(dim1*dim2)]", "join_prod")
 
+except:
+    pass
+
+try:
+    import scikits.cuda.linalg as culinalg
+    from scikits.cuda import cublas
+    from scikits.cuda.cula import culaExceptions
 except:
     pass
 

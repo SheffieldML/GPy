@@ -17,7 +17,7 @@ except:
     pass
 
 try:
-    if MPI_enabled and MPI.COMM_WORLD.size>1:
+    if MPI_enabled: #and MPI.COMM_WORLD.size>1:
         from .parallel import get_id_within_node
         gpuid = get_id_within_node()
         import pycuda.driver

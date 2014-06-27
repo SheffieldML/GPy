@@ -36,11 +36,11 @@ class VarDTC(LatentFunctionInference):
         return param_to_array(np.sum(np.square(Y)))
 
     def __getstate__(self):
-        # has to be overridden, as Cacher objects cannot be pickled. 
+        # has to be overridden, as Cacher objects cannot be pickled.
         return self.limit
 
     def __setstate__(self, state):
-        # has to be overridden, as Cacher objects cannot be pickled. 
+        # has to be overridden, as Cacher objects cannot be pickled.
         self.limit = state
         from ...util.caching import Cacher
         self.get_trYYT = Cacher(self._get_trYYT, self.limit)
@@ -203,11 +203,11 @@ class VarDTCMissingData(LatentFunctionInference):
         self._Y.limit = limit
 
     def __getstate__(self):
-        # has to be overridden, as Cacher objects cannot be pickled. 
+        # has to be overridden, as Cacher objects cannot be pickled.
         return self._Y.limit, self._inan
 
     def __setstate__(self, state):
-        # has to be overridden, as Cacher objects cannot be pickled. 
+        # has to be overridden, as Cacher objects cannot be pickled.
         from ...util.caching import Cacher
         self.limit = state[0]
         self._inan = state[1]
@@ -273,21 +273,16 @@ class VarDTCMissingData(LatentFunctionInference):
         Lm = jitchol(Kmm)
         if uncertain_inputs: LmInv = dtrtri(Lm)
 
-        VVT_factor_all = np.empty(Y.shape)
-        full_VVT_factor = VVT_factor_all.shape[1] == Y.shape[1]
-        if not full_VVT_factor:
-            psi1V = np.dot(Y.T*beta_all, psi1_all).T
+        #VVT_factor_all = np.empty(Y.shape)
+        #full_VVT_factor = VVT_factor_all.shape[1] == Y.shape[1]
+        #if not full_VVT_factor:
+        #    psi1V = np.dot(Y.T*beta_all, psi1_all).T
 
         for y, trYYT, [v, ind] in itertools.izip(Ys, traces, self._subarray_indices):
             if het_noise: beta = beta_all[ind]
             else: beta = beta_all
 
             VVT_factor = (beta*y)
-            try:
-                VVT_factor_all[v, ind].flat = VVT_factor.flat
-            except ValueError:
-                mult = np.ravel_multi_index((v.nonzero()[0][:,None],ind[None,:]), VVT_factor_all.shape)
-                VVT_factor_all.flat[mult] = VVT_factor
             output_dim = y.shape[1]
 
             psi0 = psi0_all[v]
@@ -347,12 +342,13 @@ class VarDTCMissingData(LatentFunctionInference):
                 psi0, psi1, beta,
                 data_fit, num_data, output_dim, trYYT, Y)
 
-            if full_VVT_factor: woodbury_vector[:, ind] = Cpsi1Vf
-            else:
-                print 'foobar'
-                tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
-                tmp, _ = dpotrs(LB, tmp, lower=1)
-                woodbury_vector[:, ind] = dtrtrs(Lm, tmp, lower=1, trans=1)[0]
+            #if full_VVT_factor:
+            woodbury_vector[:, ind] = Cpsi1Vf
+            #else:
+            #    print 'foobar'
+            #    tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
+            #    tmp, _ = dpotrs(LB, tmp, lower=1)
+            #    woodbury_vector[:, ind] = dtrtrs(Lm, tmp, lower=1, trans=1)[0]
 
             #import ipdb;ipdb.set_trace()
             Bi, _ = dpotri(LB, lower=1)
@@ -375,23 +371,6 @@ class VarDTCMissingData(LatentFunctionInference):
                          'dL_dKdiag':dL_dpsi0_all,
                          'dL_dKnm':dL_dpsi1_all,
                          'dL_dthetaL':dL_dthetaL}
-
-        #get sufficient things for posterior prediction
-        #TODO: do we really want to do this in  the loop?
-        #if not full_VVT_factor:
-        #    print 'foobar'
-        #    psi1V = np.dot(Y.T*beta_all, psi1_all).T
-        #    tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
-        #    tmp, _ = dpotrs(LB_all, tmp, lower=1)
-        #    woodbury_vector, _ = dtrtrs(Lm, tmp, lower=1, trans=1)
-        #import ipdb;ipdb.set_trace()
-        #Bi, _ = dpotri(LB_all, lower=1)
-        #symmetrify(Bi)
-        #Bi = -dpotri(LB_all, lower=1)[0]
-        #from ...util import diag
-        #diag.add(Bi, 1)
-
-        #woodbury_inv = backsub_both_sides(Lm, Bi)
 
         post = Posterior(woodbury_inv=woodbury_inv_all, woodbury_vector=woodbury_vector, K=Kmm, mean=None, cov=None, K_chol=Lm)
 

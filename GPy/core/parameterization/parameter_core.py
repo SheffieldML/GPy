@@ -874,6 +874,9 @@ class Parameterizable(OptimizationHandlable):
         """
         Array representing the parameters of this class.
         There is only one copy of all parameters in memory, two during optimization.
+
+        !WARNING!: setting the parameter array MUST always be done in memory:
+        m.param_array[:] = m_copy.param_array
         """
         if self.__dict__.get('_param_array_', None) is None:
             self._param_array_ = np.empty(self.size, dtype=np.float64)

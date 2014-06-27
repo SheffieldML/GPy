@@ -16,13 +16,13 @@ def common_subarrays(X, axis=0):
     for the subarray in X, where index is the index to the remaining axis.
 
     :param :class:`np.ndarray` X: 2d array to check for common subarrays in
-    :param int axis: axis to apply subarray detection over. 
-        When the index is 0, compare rows -- columns, otherwise.   
+    :param int axis: axis to apply subarray detection over.
+        When the index is 0, compare rows -- columns, otherwise.
 
     Examples:
     =========
 
-    In a 2d array:    
+    In a 2d array:
     >>> import numpy as np
     >>> X = np.zeros((3,6), dtype=bool)
     >>> X[[1,1,1],[0,4,5]] = 1; X[1:,[2,3]] = 1
@@ -48,6 +48,8 @@ def common_subarrays(X, axis=0):
     assert X.ndim == 2 and axis in (0,1), "Only implemented for 2D arrays"
     subarrays = defaultdict(list)
     cnt = count()
+    if axis == 0: size = X.shape[0]
+    else: size = X.shape[1]
     logger = logging.getLogger("common_subarrays")
     def accumulate(x, s, c):
         logger.debug("creating tuple")
@@ -55,7 +57,7 @@ def common_subarrays(X, axis=0):
         logger.debug("tuple done")
         col = c.next()
         iadd(s[t], [col])
-        logger.debug("added col {}".format(col))
+        logger.info("added col {} {:.2%}".format(col, col/float(size)))
         return None
     if axis == 0: [accumulate(x, subarrays, cnt) for x in X]
     else: [accumulate(x, subarrays, cnt) for x in X.T]

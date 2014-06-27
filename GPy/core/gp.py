@@ -14,6 +14,9 @@ from ..inference.latent_function_inference import exact_gaussian_inference, expe
 from parameterization.variational import VariationalPosterior
 from scipy.sparse.base import issparse
 
+import logging
+logger = logging.getLogger("GP")
+
 class GP(Model):
     """
     General purpose Gaussian process model
@@ -40,6 +43,7 @@ class GP(Model):
         self.num_data, self.input_dim = self.X.shape
 
         assert Y.ndim == 2
+        logger.info("initializing Y")
         if issparse(Y): self.Y = Y
         else: self.Y = ObsAr(Y)
         assert Y.shape[0] == self.num_data
@@ -56,6 +60,7 @@ class GP(Model):
         self.likelihood = likelihood
 
         #find a sensible inference method
+        logger.info("initializing inference method")
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian) or isinstance(likelihood, likelihoods.MixedNoise):
                 inference_method = exact_gaussian_inference.ExactGaussianInference()
@@ -64,6 +69,7 @@ class GP(Model):
                 print "defaulting to ", inference_method, "for latent function inference"
         self.inference_method = inference_method
 
+        logger.info("adding kernel and likelihood as parameters")
         self.add_parameter(self.kern)
         self.add_parameter(self.likelihood)
 

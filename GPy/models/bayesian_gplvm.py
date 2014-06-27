@@ -37,13 +37,16 @@ class BayesianGPLVM(SparseGP):
         self.init = init
 
         if X_variance is None:
+            self.logger.info("initializing latent space variance ~ N(0,.1)")
             X_variance = np.random.uniform(0,.1,X.shape)
 
         if Z is None:
+            self.logger.info("initializing inducing inputs")
             Z = np.random.permutation(X.copy())[:num_inducing]
         assert Z.shape[1] == X.shape[1]
 
         if kernel is None:
+            self.logger.info("initializing kernel RBF")
             kernel = kern.RBF(input_dim, lengthscale=1./fracs, ARD=True) # + kern.white(input_dim)
 
         if likelihood is None:

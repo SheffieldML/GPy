@@ -9,6 +9,8 @@ import numpy as np
 from ...util.misc import param_to_array
 from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
+import logging
+logger = logging.getLogger('vardtc')
 
 class VarDTC(LatentFunctionInference):
     """
@@ -225,14 +227,18 @@ class VarDTCMissingData(LatentFunctionInference):
             from ...util.subarray_and_sorting import common_subarrays
             self._subarray_indices = []
             csa = common_subarrays(inan, 1)
-            for v,ind in csa.iteritems():
+            size = len(csa)
+            for i, (v,ind) in enumerate(csa.iteritems()):
                 if not np.all(v):
+                    logger.info('preparing subarrays {:.3%}'.format((i+1.)/size))
                     v = ~np.array(v, dtype=bool)
                     ind = np.array(ind, dtype=int)
                     if ind.size == Y.shape[1]:
                         ind = slice(None)
                     self._subarray_indices.append([v,ind])
+            logger.info('preparing subarrays Y')
             Ys = [Y[v, :][:, ind] for v, ind in self._subarray_indices]
+            logger.info('preparing traces Y')
             traces = [(y**2).sum() for y in Ys]
             return Ys, traces
         else:
@@ -280,7 +286,10 @@ class VarDTCMissingData(LatentFunctionInference):
         #if not full_VVT_factor:
         #    psi1V = np.dot(Y.T*beta_all, psi1_all).T
 
+        #logger.info('computing dimension-wise likelihood and derivatives')
+        #size = len(Ys)
         for y, trYYT, [v, ind] in itertools.izip(Ys, traces, self._subarray_indices):
+            #logger.info('{:.3%} dimensions:{}'.format((i+1.)/size, ind))
             if het_noise: beta = beta_all[ind]
             else: beta = beta_all
 

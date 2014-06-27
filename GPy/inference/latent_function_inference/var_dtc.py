@@ -239,7 +239,7 @@ class VarDTCMissingData(LatentFunctionInference):
             logger.info('preparing subarrays Y')
             Ys = [Y[v, :][:, ind] for v, ind in self._subarray_indices]
             logger.info('preparing traces Y')
-            traces = [(y**2).sum() for y in Ys]
+            traces = [np.einsum('ij,ij->', y,y) for y in Ys]
             return Ys, traces
         else:
             self._subarray_indices = [[slice(None),slice(None)]]

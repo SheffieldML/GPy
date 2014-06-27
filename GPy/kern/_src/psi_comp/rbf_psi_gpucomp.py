@@ -258,6 +258,11 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         self.g_psi2compDer.prepare('PPPPPPPdPPPPiii')
         self.g_compDenom = module.get_function('compDenom')
         self.g_compDenom.prepare('PPPPii')
+        
+    def __deepcopy__(self, memo):
+        s = PSICOMP_RBF_GPU(threadnum=self.threadnum, blocknum=self.blocknum, GPU_direct=self.GPU_direct)
+        memo[id(self)] = s 
+        return s
     
     def _initGPUCache(self, N, M, Q):            
         if self.gpuCache == None:

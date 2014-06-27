@@ -24,7 +24,7 @@ class SSGPLVM(SparseGP):
 
     """
     def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
-                 Z=None, kernel=None, inference_method=None, likelihood=None, name='Spike-and-Slab GPLVM', group_spike=False, mpi_comm=None, **kwargs):
+                 Z=None, kernel=None, inference_method=None, likelihood=None, name='Spike_and_Slab GPLVM', group_spike=False, mpi_comm=None, **kwargs):
 
         self.mpi_comm = mpi_comm
         self.__IN_OPTIMIZATION__ = False

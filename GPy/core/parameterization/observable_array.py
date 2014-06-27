@@ -33,7 +33,7 @@ class ObsAr(np.ndarray, Pickleable, Observable):
     def _setup_observers(self):
         # do not setup anything, as observable arrays do not have default observers
         pass
-    
+
     def copy(self):
         from lists_and_dicts import ObserverList
         memo = {}

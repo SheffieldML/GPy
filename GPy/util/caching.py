@@ -99,8 +99,6 @@ class Cacher(object):
         cache_id = self.prepare_cache_id(inputs, self.ignore_args)
         # 2: if anything is not cachable, we will just return the operation, without caching
         if reduce(lambda a, b: a or (not (isinstance(b, Observable) or b is None)), inputs, False):
-            self.logger.debug(str(map(lambda x: isinstance(x, Observable) or x is None, inputs)))
-            self.logger.debug(str(map(repr, inputs)))
             return self.operation(*args, **kw)
         # 3&4: check whether this cache_id has been cached, then has it changed?
         try:

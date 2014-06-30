@@ -8,6 +8,7 @@ import GPy
 import numpy as np
 from GPy.core.parameterization.parameter_core import HierarchyError
 from GPy.core.parameterization.observable_array import ObsAr
+from GPy.core.parameterization.transformations import NegativeLogexp
 
 class ArrayCoreTest(unittest.TestCase):
     def setUp(self):
@@ -38,10 +39,25 @@ class ParameterizedTest(unittest.TestCase):
         self.test1.kern = self.rbf+self.white
         self.test1.add_parameter(self.test1.kern)
         self.test1.add_parameter(self.param, 0)
+        # print self.test1:
+        #=============================================================================
+        # test_model.          |    Value    |  Constraint   |  Prior  |  Tied to
+        # param                |  (25L, 2L)  |   {0.0,1.0}   |         |
+        # add.rbf.variance     |        1.0  |  0.0,1.0 +ve  |         |
+        # add.rbf.lengthscale  |        1.0  |  0.0,1.0 +ve  |         |
+        # add.white.variance   |        1.0  |  0.0,1.0 +ve  |         |
+        #=============================================================================
 
         x = np.linspace(-2,6,4)[:,None]
         y = np.sin(x)
         self.testmodel = GPy.models.GPRegression(x,y)
+        # print self.testmodel:
+        #=============================================================================
+        # GP_regression.           |  Value  |  Constraint  |  Prior  |  Tied to
+        # rbf.variance             |    1.0  |     +ve      |         |
+        # rbf.lengthscale          |    1.0  |     +ve      |         |
+        # Gaussian_noise.variance  |    1.0  |     +ve      |         |
+        #=============================================================================
 
     def test_add_parameter(self):
         self.assertEquals(self.rbf._parent_index_, 0)
@@ -142,8 +158,13 @@ class ParameterizedTest(unittest.TestCase):
         self.testmodel.randomize()
         self.assertEqual(val, self.testmodel.kern.lengthscale)
 
-    
-    
+    def test_add_parameter_in_hierarchy(self):
+        from GPy.core import Param
+        self.test1.kern.rbf.add_parameter(Param("NEW", np.random.rand(2), NegativeLogexp()), 1)
+        self.assertListEqual(self.test1.constraints[NegativeLogexp()].tolist(), range(self.param.size+1, self.param.size+1 + 2))
+        self.assertListEqual(self.test1.constraints[GPy.transformations.Logistic(0,1)].tolist(), range(self.param.size))
+        self.assertListEqual(self.test1.constraints[GPy.transformations.Logexp(0,1)].tolist(), np.r_[50, 53:55].tolist())
+
     def test_regular_expression_misc(self):
         self.testmodel.kern.lengthscale.fix()
         val = float(self.testmodel.kern.lengthscale)

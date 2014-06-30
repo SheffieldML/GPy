@@ -835,6 +835,11 @@ class OptimizationHandlable(Indexable):
         1.) connect param_array of children to self.param_array
         2.) tell all children to propagate further
         """
+        if self.param_array.size != self.size:
+            self._param_array_ = np.empty(self.size, dtype=np.float64)
+        if self.gradient.size != self.size:
+            self._gradient_array_ = np.empty(self.size, dtype=np.float64)
+
         pi_old_size = 0
         for pi in self.parameters:
             pislice = slice(pi_old_size, pi_old_size + pi.size)

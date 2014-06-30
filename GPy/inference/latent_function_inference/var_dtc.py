@@ -230,7 +230,7 @@ class VarDTCMissingData(LatentFunctionInference):
             size = len(csa)
             for i, (v,ind) in enumerate(csa.iteritems()):
                 if not np.all(v):
-                    logger.info('preparing subarrays {:.3%}'.format((i+1.)/size))
+                    logger.info('preparing subarrays {:3.3%}'.format((i+1.)/size))
                     v = ~np.array(v, dtype=bool)
                     ind = np.array(ind, dtype=int)
                     if ind.size == Y.shape[1]:

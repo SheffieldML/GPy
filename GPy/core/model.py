@@ -253,7 +253,7 @@ class Model(Parameterized):
     def _checkgrad(self, target_param=None, verbose=False, step=1e-6, tolerance=1e-3):
         """
         Check the gradient of the ,odel by comparing to a numerical
-        estimate.  If the verbose flag is passed, invividual
+        estimate.  If the verbose flag is passed, individual
         components are tested (and printed)
 
         :param verbose: If True, print a "full" checking of each parameter

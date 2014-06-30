@@ -57,9 +57,9 @@ class Parameterized(Parameterizable):
         and concatenate them. Printing m[''] will result in printing of all parameters in detail.
     """
     #===========================================================================
-    # Metaclass for parameters changed after init. 
+    # Metaclass for parameters changed after init.
     # This makes sure, that parameters changed will always be called after __init__
-    # **Never** call parameters_changed() yourself 
+    # **Never** call parameters_changed() yourself
     __metaclass__ = ParametersChangedMeta
     #===========================================================================
     def __init__(self, name=None, parameters=[], *a, **kw):
@@ -124,17 +124,16 @@ class Parameterized(Parameterizable):
                 param.traverse_parents(visit, self)
                 param._parent_.remove_parameter(param)
             # make sure the size is set
-            if index is None:
-                self.constraints.update(param.constraints, self.size)
-                self.priors.update(param.priors, self.size)
-                self.parameters.append(param)
-            else:
-                start = sum(p.size for p in self.parameters[:index])
-                self.constraints.shift_right(start, param.size)
-                self.priors.shift_right(start, param.size)
-                self.constraints.update(param.constraints, start)
-                self.priors.update(param.priors, start)
-                self.parameters.insert(index, param)
+            if index is None: start = self.size
+            else: start = sum(p.size for p in self.parameters[:index])
+
+            self.constraints.shift_right(start, param.size)
+            self.priors.shift_right(start, param.size)
+            self.constraints.update(param.constraints, self.size)
+            self.priors.update(param.priors, self.size)
+
+            if index is None: self.parameters.append(param)
+            else: self.parameters.insert(index, param)
 
             param.add_observer(self, self._pass_through_notify_observers, -np.inf)
 
@@ -332,7 +331,7 @@ class Parameterized(Parameterizable):
     def __str__(self, header=True):
 
         name = adjust_name_for_printing(self.name) + "."
-        constrs = self._constraints_str; 
+        constrs = self._constraints_str;
         ts = self._ties_str
         prirs = self._priors_str
         desc = self._description_str; names = self.parameter_names()

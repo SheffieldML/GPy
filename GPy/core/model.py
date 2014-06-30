@@ -230,7 +230,8 @@ class Model(Parameterized):
 
         if optimizer is None:
             optimizer = self.preferred_optimizer
-        elif isinstance(optimizer, optimization.Optimizer):
+
+        if isinstance(optimizer, optimization.Optimizer):
             opt = optimizer
             opt.model = self
         else:

@@ -520,7 +520,7 @@ class Indexable(Nameable, Observable):
         
         self.constraints.add(t, self._raveled_index())
         t.add_tied_parameter(self)
-        self._highest_parent_._connect_fixes()        
+        self._highest_parent_._connect_fixes()
 
     def constrain(self, transform, warning=True, trigger_parent=True):
         """

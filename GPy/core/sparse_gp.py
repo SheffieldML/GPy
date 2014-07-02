@@ -8,6 +8,9 @@ from ..inference.latent_function_inference import var_dtc
 from .. import likelihoods
 from parameterization.variational import VariationalPosterior
 
+import logging
+logger = logging.getLogger("sparse gp")
+
 class SparseGP(GP):
     """
     A general purpose Sparse GP model
@@ -46,7 +49,7 @@ class SparseGP(GP):
         self.num_inducing = Z.shape[0]
 
         GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata)
-        self.logger.info("Adding Z as parameter")
+        logger.info("Adding Z as parameter")
         self.add_parameter(self.Z, index=0)
 
     def has_uncertain_inputs(self):

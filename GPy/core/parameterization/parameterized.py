@@ -8,15 +8,21 @@ from re import compile, _pattern_type
 from param import ParamConcatenation
 from parameter_core import HierarchyError, Parameterizable, adjust_name_for_printing
 
+import logging
+logger = logging.getLogger("parameters changed meta")
+
 class ParametersChangedMeta(type):
     def __call__(self, *args, **kw):
         self._in_init_ = True
         #import ipdb;ipdb.set_trace()
         self = super(ParametersChangedMeta, self).__call__(*args, **kw)
+        logger.debug("finished init")
         self._in_init_ = False
+        logger.debug("connecting parameters")
         self._highest_parent_._connect_parameters()
         self._highest_parent_._notify_parent_change()
         self._highest_parent_._connect_fixes()
+        logger.debug("calling parameters changed")
         self.parameters_changed()
         return self
 

@@ -853,6 +853,9 @@ class OptimizationHandlable(Indexable):
             pi._propagate_param_grad(parray[pislice], garray[pislice])
             pi_old_size += pi.size
 
+    def _connect_parameters(self):
+        pass
+
 class Parameterizable(OptimizationHandlable):
     """
     A parameterisable class.

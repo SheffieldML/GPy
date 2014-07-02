@@ -223,7 +223,7 @@ class VarDTCMissingData(LatentFunctionInference):
             inan = self._inan
             has_none = True
         if has_none:
-            print "caching missing data slices, this can take several minutes..."
+            print "caching missing data slices, this can take several minutes depending on the number of unique dimensions of the data..."
             from ...util.subarray_and_sorting import common_subarrays
             self._subarray_indices = []
             csa = common_subarrays(inan, 1)

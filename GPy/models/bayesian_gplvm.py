@@ -37,7 +37,7 @@ class BayesianGPLVM(SparseGP):
         self.init = init
 
         if X_variance is None:
-            self.logger.info("initializing latent space variance ~ N(0,.1)")
+            self.logger.info("initializing latent space variance ~ uniform(0,.1)")
             X_variance = np.random.uniform(0,.1,X.shape)
 
         if Z is None:

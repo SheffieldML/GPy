@@ -43,15 +43,6 @@ class RBF(Stationary):
     def __setstate__(self, state):
         return super(RBF, self).__setstate__(state)
 
-#     def copy(self):
-#         k = super(RBF, self).copy()
-#         # Make sure the copy of the kernel instance has different instance of psicomp
-#         if k.useGPU:
-#             k.psicomp = PSICOMP_RBF_GPU()
-#         else:
-#             k.psicomp = PSICOMP_RBF()
-#         return k
-
     #---------------------------------------#
     #             PSI statistics            #
     #---------------------------------------#

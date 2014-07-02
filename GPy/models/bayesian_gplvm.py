@@ -67,6 +67,7 @@ class BayesianGPLVM(SparseGP):
                 inference_method = VarDTC()
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)
+        self.logger.info("Adding X as parameter")
         self.add_parameter(self.X, index=0)
 
     def set_X_gradients(self, X, X_grad):

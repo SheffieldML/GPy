@@ -32,3 +32,16 @@ class SparseGPLVM(SparseGPRegression):
     def parameters_changed(self):
         super(SparseGPLVM, self).parameters_changed()
         self.X.gradient = self.kern.gradients_X(self.grad_dict['dL_dKnm'], self.X, self.Z)
+
+    def plot_latent(self, labels=None, which_indices=None,
+                resolution=50, ax=None, marker='o', s=40,
+                fignum=None, plot_inducing=True, legend=True,
+                plot_limits=None, 
+                aspect='auto', updates=False, predict_kwargs={}, imshow_kwargs={}):
+        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        from ..plotting.matplot_dep import dim_reduction_plots
+
+        return dim_reduction_plots.plot_latent(self, labels, which_indices,
+                resolution, ax, marker, s,
+                fignum, plot_inducing, legend,
+                plot_limits, aspect, updates, predict_kwargs, imshow_kwargs)

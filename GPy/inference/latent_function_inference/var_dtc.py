@@ -198,7 +198,8 @@ class VarDTCMissingData(LatentFunctionInference):
     def __init__(self, limit=1, inan=None):
         from ...util.caching import Cacher
         self._Y = Cacher(self._subarray_computations, limit)
-        self._inan = inan
+        if inan is not None: self._inan = ~inan
+        else: self._inan = None
         pass
 
     def set_limit(self, limit):
@@ -219,7 +220,7 @@ class VarDTCMissingData(LatentFunctionInference):
         if self._inan is None:
             inan = np.isnan(Y)
             has_none = inan.any()
-            self._inan = inan
+            self._inan = ~inan
         else:
             inan = self._inan
             has_none = True
@@ -236,7 +237,7 @@ class VarDTCMissingData(LatentFunctionInference):
                 if ((i+1.)/size) >= next_ten[0]:
                     logger.info('preparing traces {:> 3.1%}'.format((i+1.)/size))
                     next_ten[0] += .1
-                y = y[~inan[:,i],i:i+1]
+                y = y[inan[:,i],i:i+1]
                 return np.einsum('ij,ij->', y,y)
             traces = [trace(Y) for _ in xrange(size)]
             return traces
@@ -260,7 +261,6 @@ class VarDTCMissingData(LatentFunctionInference):
         beta_all = 1./np.fmax(likelihood.gaussian_variance(Y_metadata), 1e-6)
         het_noise = beta_all.size != 1
 
-        import itertools
         num_inducing = Z.shape[0]
 
         dL_dpsi0_all = np.zeros(Y.shape[0])
@@ -287,10 +287,8 @@ class VarDTCMissingData(LatentFunctionInference):
 
         #logger.info('computing dimension-wise likelihood and derivatives')
         #size = len(Ys)
-        for i, trYYT in enumerate(traces):
-            v = ~self._inan[:, i]
-            y = Y[v,i:i+1]#[:,ind]
-            #y = Y[v]
+        for i, [y, v, trYYT] in enumerate(itertools.izip(Y.T[:,:,None], self._inan.T, traces)):
+            y = y[v]
             #logger.info('{:.3%} dimensions:{}'.format((i+1.)/size, ind))
             if het_noise: beta = beta_all[i]
             else: beta = beta_all

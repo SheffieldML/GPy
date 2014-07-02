@@ -237,10 +237,13 @@ class VarDTCMissingData(LatentFunctionInference):
                         ind = slice(None)
                     self._subarray_indices.append([v,ind])
             logger.info('preparing subarrays Y')
-            Ys = [Y[v, :][:, ind] for v, ind in self._subarray_indices]
+            #Ys = [Y[v, :][:, ind] for v, ind in self._subarray_indices]
             logger.info('preparing traces Y')
-            traces = [np.einsum('ij,ij->', y,y) for y in Ys]
-            return Ys, traces
+            def trace(y, v, ind):
+                y = y[v,:][:,ind]
+                return np.einsum('ij,ij->', y,y)
+            traces = [trace(Y, v, ind) for v, ind in self._subarray_indices]
+            return traces
         else:
             self._subarray_indices = [[slice(None),slice(None)]]
             return [Y], [(Y**2).sum()]
@@ -257,7 +260,7 @@ class VarDTCMissingData(LatentFunctionInference):
             psi1_all = kern.K(X, Z)
             psi2_all = None
 
-        Ys, traces = self._Y(Y)
+        traces = self._Y(Y)
         beta_all = 1./np.fmax(likelihood.gaussian_variance(Y_metadata), 1e-6)
         het_noise = beta_all.size != 1
 
@@ -288,7 +291,8 @@ class VarDTCMissingData(LatentFunctionInference):
 
         #logger.info('computing dimension-wise likelihood and derivatives')
         #size = len(Ys)
-        for y, trYYT, [v, ind] in itertools.izip(Ys, traces, self._subarray_indices):
+        for trYYT, [v, ind] in itertools.izip(traces, self._subarray_indices):
+            y = Y[v,:][:,ind]
             #logger.info('{:.3%} dimensions:{}'.format((i+1.)/size, ind))
             if het_noise: beta = beta_all[ind]
             else: beta = beta_all

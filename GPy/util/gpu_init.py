@@ -24,7 +24,7 @@ try:
         pycuda.driver.init()
         if gpuid>=pycuda.driver.Device.count():
             print '['+MPI.Get_processor_name()+'] more processes than the GPU numbers!'
-            MPI.COMM_WORLD.Abort()
+            #MPI.COMM_WORLD.Abort()
             raise
         gpu_device = pycuda.driver.Device(gpuid)
         gpu_context = gpu_device.make_context()

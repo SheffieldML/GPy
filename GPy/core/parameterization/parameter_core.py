@@ -751,8 +751,6 @@ class OptimizationHandlable(Indexable):
         Transform the gradients by multiplying the gradient factor for each
         constraint to it.
         """
-        if self.has_parent():
-            return g
         [np.put(g, i, g[i] * c.gradfactor(self.param_array[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g

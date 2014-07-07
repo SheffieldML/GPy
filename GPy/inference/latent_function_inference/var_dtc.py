@@ -302,7 +302,6 @@ class VarDTCMissingData(LatentFunctionInference):
             #if ((i+1.)/size) >= next_ten:
             #    logger.info('preparing traces {:> 6.1%}'.format((i+1.)/size))
             #    next_ten += .1
-
             #y = y[v]
             if het_noise: beta = beta_all[i]
             else: beta = beta_all

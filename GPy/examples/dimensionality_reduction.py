@@ -296,7 +296,7 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     from GPy.models import BayesianGPLVM
     from GPy.inference.latent_function_inference.var_dtc import VarDTCMissingData
 
-    D1, D2, D3, N, num_inducing, Q = 1000, 5, 8, 400, 3, 4
+    D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 400, 3, 4
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)

@@ -296,13 +296,12 @@ class VarDTCMissingData(LatentFunctionInference):
 
         #logger.info('computing dimension-wise likelihood and derivatives')
         #size = len(Ys)
-        #size = Y.shape[1]
-        #next_ten = 0
+        size = Y.shape[1]
+        next_ten = 0
         for i, [y, v, trYYT] in enumerate(itertools.izip(Ys, self._inan.T, traces)):
-            #if ((i+1.)/size) >= next_ten:
-            #    logger.info('preparing traces {:> 6.1%}'.format((i+1.)/size))
-            #    next_ten += .1
-            #y = y[v]
+            if ((i+1.)/size) >= next_ten:
+                logger.info('inference {:> 6.1%}'.format((i+1.)/size))
+                next_ten += .1
             if het_noise: beta = beta_all[i]
             else: beta = beta_all
 

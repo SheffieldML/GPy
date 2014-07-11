@@ -20,6 +20,9 @@ class DiffGenomeKern(Kern):
         assert X2==None
         K = self.kern.K(X,X2)
         
+        if self.idx_p<=0 or self.idx_p>X.shape[0]/2:
+            return K
+        
         slices = index_to_slices(X[:,self.index_dim])
         idx_start = slices[1][0].start
         idx_end = idx_start+self.idx_p
@@ -33,6 +36,9 @@ class DiffGenomeKern(Kern):
     def Kdiag(self,X):
         Kdiag = self.kern.Kdiag(X)
 
+        if self.idx_p<=0 or self.idx_p>X.shape[0]/2:
+            return Kdiag
+
         slices = index_to_slices(X[:,self.index_dim])
         idx_start = slices[1][0].start
         idx_end = idx_start+self.idx_p
@@ -42,6 +48,10 @@ class DiffGenomeKern(Kern):
     
     def update_gradients_full(self,dL_dK,X,X2=None):
         assert X2==None
+        if self.idx_p<=0 or self.idx_p>X.shape[0]/2:
+            self.kern.update_gradients_full(dL_dK, X)
+            return
+        
         slices = index_to_slices(X[:,self.index_dim])
         idx_start = slices[1][0].start
         idx_end = idx_start+self.idx_p

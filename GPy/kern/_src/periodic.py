@@ -101,6 +101,7 @@ class PeriodicExponential(Periodic):
         Flower = np.array(self._cos(self.basis_alpha,self.basis_omega,self.basis_phi)(self.lower))[:,None]
         return(self.lengthscale/(2*self.variance) * Gint + 1./self.variance*np.dot(Flower,Flower.T))
 
+    @silence_errors
     def update_gradients_full(self, dL_dK, X, X2=None):
         """derivative of the covariance matrix with respect to the parameters (shape is N x num_inducing x num_params)"""
         if X2 is None: X2 = X
@@ -213,7 +214,7 @@ class PeriodicMatern32(Periodic):
         return(self.lengthscale**3/(12*np.sqrt(3)*self.variance) * Gint + 1./self.variance*np.dot(Flower,Flower.T) + self.lengthscale**2/(3.*self.variance)*np.dot(F1lower,F1lower.T))
 
 
-    #@silence_errors
+    @silence_errors
     def update_gradients_full(self,dL_dK,X,X2):
         """derivative of the covariance matrix with respect to the parameters (shape is num_data x num_inducing x num_params)"""
         if X2 is None: X2 = X

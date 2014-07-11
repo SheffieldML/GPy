@@ -18,13 +18,12 @@ class Cacher(object):
         self.operation = operation
         self.order = collections.deque()
         self.cached_inputs = {}  # point from cache_ids to a list of [ind_ids], which where used in cache cache_id
-        self.logger = logging.getLogger("cache")
 
         #=======================================================================
         # point from each ind_id to [ref(obj), cache_ids]
         # 0: a weak reference to the object itself
         # 1: the cache_ids in which this ind_id is used (len will be how many times we have seen this ind_id)
-        self.cached_input_ids = {} 
+        self.cached_input_ids = {}
         #=======================================================================
 
         self.cached_outputs = {}  # point from cache_ids to outputs
@@ -36,23 +35,18 @@ class Cacher(object):
 
     def combine_inputs(self, args, kw):
         "Combines the args and kw in a unique way, such that ordering of kwargs does not lead to recompute"
-        self.logger.debug("combining args and kw")
         return args + tuple(c[1] for c in sorted(kw.items(), key=lambda x: x[0]))
 
     def prepare_cache_id(self, combined_args_kw, ignore_args):
         "get the cacheid (conc. string of argument self.ids in order) ignoring ignore_args"
         cache_id = "".join(self.id(a) for i, a in enumerate(combined_args_kw) if i not in ignore_args)
-        self.logger.debug("cache_id={} was created".format(cache_id))
         return cache_id
 
     def ensure_cache_length(self, cache_id):
         "Ensures the cache is within its limits and has one place free"
-        self.logger.debug("cache length gets ensured")
         if len(self.order) == self.limit:
-            self.logger.debug("cache limit of l={} was reached".format(self.limit))
             # we have reached the limit, so lets release one element
             cache_id = self.order.popleft()
-            self.logger.debug("cach_id '{}' gets removed".format(cache_id))
             combined_args_kw = self.cached_inputs[cache_id]
             for ind in combined_args_kw:
                 if ind is not None:
@@ -66,7 +60,6 @@ class Cacher(object):
                         else:
                             cache_ids.remove(cache_id)
                             self.cached_input_ids[ind_id] = [ref, cache_ids]
-            self.logger.debug("removing caches")
             del self.cached_outputs[cache_id]
             del self.inputs_changed[cache_id]
             del self.cached_inputs[cache_id]
@@ -81,10 +74,8 @@ class Cacher(object):
             if a is not None:
                 ind_id = self.id(a)
                 v = self.cached_input_ids.get(ind_id, [weakref.ref(a), []])
-                self.logger.debug("cache_id '{}' gets stored".format(cache_id))
                 v[1].append(cache_id)
                 if len(v[1]) == 1:
-                    self.logger.debug("adding observer to object {}".format(repr(a)))
                     a.add_observer(self, self.on_cache_changed)
                 self.cached_input_ids[ind_id] = v
 
@@ -108,28 +99,21 @@ class Cacher(object):
         cache_id = self.prepare_cache_id(inputs, self.ignore_args)
         # 2: if anything is not cachable, we will just return the operation, without caching
         if reduce(lambda a, b: a or (not (isinstance(b, Observable) or b is None)), inputs, False):
-            self.logger.info("some inputs are not observable: returning without caching")
-            self.logger.debug(str(map(lambda x: isinstance(x, Observable) or x is None, inputs)))
-            self.logger.debug(str(map(repr, inputs)))
             return self.operation(*args, **kw)
         # 3&4: check whether this cache_id has been cached, then has it changed?
         try:
             if(self.inputs_changed[cache_id]):
-                self.logger.debug("{} already seen, but inputs changed. refreshing cacher".format(cache_id))
                 # 4: This happens, when elements have changed for this cache self.id
                 self.inputs_changed[cache_id] = False
                 self.cached_outputs[cache_id] = self.operation(*args, **kw)
         except KeyError:
-            self.logger.info("{} never seen, creating cache entry".format(cache_id))
             # 3: This is when we never saw this chache_id:
             self.ensure_cache_length(cache_id)
             self.add_to_cache(cache_id, inputs, self.operation(*args, **kw))
         except:
-            self.logger.error("an error occurred while trying to run caching for {}, resetting".format(cache_id))
             self.reset()
             raise
         # 5: We have seen this cache_id and it is cached:
-        self.logger.info("returning cache {}".format(cache_id))
         return self.cached_outputs[cache_id]
 
     def on_cache_changed(self, direct, which=None):
@@ -143,7 +127,6 @@ class Cacher(object):
                 ind_id = self.id(what)
                 _, cache_ids = self.cached_input_ids.get(ind_id, [None, []])
                 for cache_id in cache_ids:
-                    self.logger.info("callback from {} changed inputs from {}".format(ind_id, self.inputs_changed[cache_id]))
                     self.inputs_changed[cache_id] = True
 
     def reset(self):

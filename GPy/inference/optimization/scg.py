@@ -56,13 +56,13 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
     if gtol is None:
         gtol = 1e-5
 
-    sigma0 = 1.0e-8
+    sigma0 = 1.0e-7
     fold = f(x, *optargs) # Initial function value.
     function_eval = 1
     fnow = fold
     gradnew = gradf(x, *optargs) # Initial gradient.
-    if any(np.isnan(gradnew)):
-        raise UnexpectedInfOrNan, "Gradient contribution resulted in a NaN value"
+    #if any(np.isnan(gradnew)):
+    #    raise UnexpectedInfOrNan, "Gradient contribution resulted in a NaN value"
     current_grad = np.dot(gradnew, gradnew)
     gradold = gradnew.copy()
     d = -gradnew # Initial search direction.
@@ -168,13 +168,13 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
         if Delta < 0.25:
             beta = min(4.0 * beta, betamax)
         if Delta > 0.75:
-            beta = max(0.5 * beta, betamin)
+            beta = max(0.25 * beta, betamin)
 
         # Update search direction using Polak-Ribiere formula, or re-start
         # in direction of negative gradient after nparams steps.
         if nsuccess == x.size:
             d = -gradnew
-#             beta = 1.  # TODO: betareset!!
+            beta = 1. # This is not in the original paper
             nsuccess = 0
         elif success:
             Gamma = np.dot(gradold - gradnew, gradnew) / (mu)

@@ -76,11 +76,11 @@ class Uniform(Prior):
         o = super(Prior, cls).__new__(cls, lower, upper)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
-    
+
     def __init__(self, lower, upper):
         self.lower = float(lower)
         self.upper = float(upper)
-    
+
     def __str__(self):
         return "[" + str(np.round(self.lower)) + ', ' + str(np.round(self.upper)) + ']'
 
@@ -93,7 +93,7 @@ class Uniform(Prior):
 
     def rvs(self, n):
         return np.random.uniform(self.lower, self.upper, size=n)
-    
+
 class LogGaussian(Prior):
     """
     Implementation of the univariate *log*-Gaussian probability function, coupled with random variables.
@@ -246,7 +246,7 @@ class Gamma(Prior):
         """
         Creates an instance of a Gamma Prior  by specifying the Expected value(s)
         and Variance(s) of the distribution.
-    
+
         :param E: expected value
         :param V: variance
         """

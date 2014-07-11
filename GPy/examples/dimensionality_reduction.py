@@ -37,7 +37,7 @@ def bgplvm_test_model(optimize=False, verbose=1, plot=False, output_dim=200, nan
     # k = GPy.kern.RBF(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.linear(input_dim, _np.ones(input_dim) * .2, ARD=True)
 
     p = .3
-    
+
     m = GPy.models.BayesianGPLVM(Y, input_dim, kernel=k, num_inducing=num_inducing)
 
     if nan:
@@ -144,7 +144,7 @@ def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=25, Q=4
     m = BayesianGPLVM(Y, Q, X=X, X_variance=S, num_inducing=num_inducing, Z=Z, kernel=kernel)
     m.data_colors = c
     m.data_t = t
-    
+
     if optimize:
         m.optimize('bfgs', messages=verbose, max_iters=2e3)
 
@@ -169,7 +169,7 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     Y = data['X'][:N]
     m = GPy.models.BayesianGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing, **k)
     m.data_labels = data['Y'][:N].argmax(axis=1)
-    
+
     if optimize:
         m.optimize('bfgs', messages=verbose, max_iters=max_iters, gtol=.05)
 
@@ -296,15 +296,16 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     from GPy.models import BayesianGPLVM
     from GPy.inference.latent_function_inference.var_dtc import VarDTCMissingData
 
-    D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 7, 9
+    D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 400, 3, 4
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
 
-    inan = _np.random.binomial(1, .6, size=Y.shape).astype(bool)
-    Y[inan] = _np.nan
+    inan = _np.random.binomial(1, .8, size=Y.shape).astype(bool) # 80% missing data
+    Ymissing = Y.copy()
+    Ymissing[inan] = _np.nan
 
-    m = BayesianGPLVM(Y.copy(), Q, init="random", num_inducing=num_inducing, 
+    m = BayesianGPLVM(Ymissing, Q, init="random", num_inducing=num_inducing,
                       inference_method=VarDTCMissingData(inan=inan), kernel=k)
 
     m.X.variance[:] = _np.random.uniform(0,.01,m.X.shape)
@@ -364,7 +365,7 @@ def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim
     for inan in inanlist:
         imlist.append(VarDTCMissingData(limit=1, inan=inan))
 
-    m = MRD(Ylist, input_dim=Q, num_inducing=num_inducing, 
+    m = MRD(Ylist, input_dim=Q, num_inducing=num_inducing,
             kernel=k, inference_method=imlist,
             initx="random", initz='permute', **kw)
 
@@ -410,11 +411,11 @@ def olivetti_faces(optimize=True, verbose=True, plot=True):
     Yn /= Yn.std()
 
     m = GPy.models.BayesianGPLVM(Yn, Q, num_inducing=20)
-    
+
     if optimize: m.optimize('bfgs', messages=verbose, max_iters=1000)
     if plot:
         ax = m.plot_latent(which_indices=(0, 1))
-        y = m.likelihood.Y[0, :]
+        y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.image_show(y[None, :], dimensions=(112, 92), transpose=False, invert=False, scale=False)
         lvm = GPy.plotting.matplot_dep.visualize.lvm(m.X.mean[0, :].copy(), m, data_show, ax)
         raw_input('Press enter to finish')
@@ -514,7 +515,7 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
 
     data = GPy.util.datasets.osu_run1()
     Q = 6
-    kernel = GPy.kern.RBF(Q, lengthscale=np.repeat(.5, Q), ARD=True) 
+    kernel = GPy.kern.RBF(Q, lengthscale=np.repeat(.5, Q), ARD=True)
     m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20, kernel=kernel)
 
     m.data = data
@@ -566,7 +567,7 @@ def ssgplvm_simulation_linear():
     import GPy
     N, D, Q = 1000, 20, 5
     pi = 0.2
-    
+
     def sample_X(Q, pi):
         x = np.empty(Q)
         dies = np.random.rand(Q)
@@ -576,7 +577,7 @@ def ssgplvm_simulation_linear():
             else:
                 x[q] = 0.
         return x
-    
+
     Y = np.empty((N,D))
     X = np.empty((N,Q))
     # Generate data from random sampled weight matrices
@@ -584,4 +585,4 @@ def ssgplvm_simulation_linear():
         X[n] = sample_X(Q,pi)
         w = np.random.randn(D,Q)
         Y[n] = np.dot(w,X[n])
-    
+

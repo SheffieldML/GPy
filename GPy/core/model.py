@@ -61,7 +61,7 @@ class Model(Parameterized):
         on the current machine.
 
         """
-        initial_parameters = self.optimizer_array
+        initial_parameters = self.optimizer_array.copy()
 
         if parallel:
             try:
@@ -97,9 +97,9 @@ class Model(Parameterized):
 
         if len(self.optimization_runs):
             i = np.argmin([o.f_opt for o in self.optimization_runs])
-            self._set_params_transformed(self.optimization_runs[i].x_opt)
+            self.optimizer_array = self.optimization_runs[i].x_opt
         else:
-            self._set_params_transformed(initial_parameters)
+            self.optimizer_array = initial_parameters
 
     def ensure_default_constraints(self, warning=True):
         """

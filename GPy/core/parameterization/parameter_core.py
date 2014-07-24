@@ -751,8 +751,6 @@ class OptimizationHandlable(Indexable):
         Transform the gradients by multiplying the gradient factor for each
         constraint to it.
         """
-        if self.has_parent():
-            return g
         [np.put(g, i, g[i] * c.gradfactor(self.param_array[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g
@@ -793,7 +791,7 @@ class OptimizationHandlable(Indexable):
     #===========================================================================
     # Randomizeable
     #===========================================================================
-    def randomize(self, rand_gen=np.random.normal, loc=0, scale=1, *args, **kwargs):
+    def randomize(self, rand_gen=np.random.normal, *args, **kwargs):
         """
         Randomize the model.
         Make this draw from the prior if one exists, else draw from given random generator
@@ -804,7 +802,7 @@ class OptimizationHandlable(Indexable):
         :param args, kwargs: will be passed through to random number generator
         """
         # first take care of all parameters (from N(0,1))
-        x = rand_gen(loc=loc, scale=scale, size=self._size_transformed(), *args, **kwargs)
+        x = rand_gen(size=self._size_transformed(), *args, **kwargs)
         # now draw from prior where possible
         [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
         self.optimizer_array = x  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
@@ -835,6 +833,11 @@ class OptimizationHandlable(Indexable):
         1.) connect param_array of children to self.param_array
         2.) tell all children to propagate further
         """
+        if self.param_array.size != self.size:
+            self._param_array_ = np.empty(self.size, dtype=np.float64)
+        if self.gradient.size != self.size:
+            self._gradient_array_ = np.empty(self.size, dtype=np.float64)
+
         pi_old_size = 0
         for pi in self.parameters:
             pislice = slice(pi_old_size, pi_old_size + pi.size)
@@ -847,6 +850,9 @@ class OptimizationHandlable(Indexable):
 
             pi._propagate_param_grad(parray[pislice], garray[pislice])
             pi_old_size += pi.size
+
+    def _connect_parameters(self):
+        pass
 
 class Parameterizable(OptimizationHandlable):
     """
@@ -874,6 +880,9 @@ class Parameterizable(OptimizationHandlable):
         """
         Array representing the parameters of this class.
         There is only one copy of all parameters in memory, two during optimization.
+
+        !WARNING!: setting the parameter array MUST always be done in memory:
+        m.param_array[:] = m_copy.param_array
         """
         if self.__dict__.get('_param_array_', None) is None:
             self._param_array_ = np.empty(self.size, dtype=np.float64)
@@ -986,6 +995,11 @@ class Parameterizable(OptimizationHandlable):
     # notification system
     #===========================================================================
     def _parameters_changed_notification(self, me, which=None):
+        """
+        In parameterizable we just need to make sure, that the next call to optimizer_array
+        will update the optimizer_array to the latest parameters
+        """
+        self._optimizer_copy_transformed = False # tells the optimizer array to update on next request
         self.parameters_changed()
     def _pass_through_notify_observers(self, me, which=None):
         self.notify_observers(which=which)
@@ -1017,4 +1031,3 @@ class Parameterizable(OptimizationHandlable):
         updates get passed through. See :py:function:``GPy.core.param.Observable.add_observer``
         """
         pass
-

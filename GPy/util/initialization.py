@@ -16,8 +16,8 @@ def initialize_latent(init, input_dim, Y):
         var = p.fracs[:input_dim]
     else:
         var = Xr.var(0)
-    
+
     Xr -= Xr.mean(0)
-    Xr /= Xr.var(0)
-    
+    Xr /= Xr.std(0)
+
     return Xr, var/var.max()

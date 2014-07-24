@@ -8,6 +8,9 @@ from ..inference.latent_function_inference import var_dtc
 from .. import likelihoods
 from parameterization.variational import VariationalPosterior
 
+import logging
+logger = logging.getLogger("sparse gp")
+
 class SparseGP(GP):
     """
     A general purpose Sparse GP model
@@ -46,7 +49,7 @@ class SparseGP(GP):
         self.num_inducing = Z.shape[0]
 
         GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata)
-
+        logger.info("Adding Z as parameter")
         self.add_parameter(self.Z, index=0)
 
     def has_uncertain_inputs(self):
@@ -57,19 +60,23 @@ class SparseGP(GP):
         self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])
         if isinstance(self.X, VariationalPosterior):
             #gradients wrt kernel
-            dL_dKmm = self.grad_dict.pop('dL_dKmm')
+            dL_dKmm = self.grad_dict['dL_dKmm']
             self.kern.update_gradients_full(dL_dKmm, self.Z, None)
             target = self.kern.gradient.copy()
-            self.kern.update_gradients_expectations(variational_posterior=self.X, Z=self.Z, dL_dpsi0=self.grad_dict['dL_dpsi0'], dL_dpsi1=self.grad_dict['dL_dpsi1'], dL_dpsi2=self.grad_dict['dL_dpsi2'])
+            self.kern.update_gradients_expectations(variational_posterior=self.X,
+                                                    Z=self.Z,
+                                                    dL_dpsi0=self.grad_dict['dL_dpsi0'],
+                                                    dL_dpsi1=self.grad_dict['dL_dpsi1'],
+                                                    dL_dpsi2=self.grad_dict['dL_dpsi2'])
             self.kern.gradient += target
 
             #gradients wrt Z
             self.Z.gradient = self.kern.gradients_X(dL_dKmm, self.Z)
             self.Z.gradient += self.kern.gradients_Z_expectations(
-                               self.grad_dict['dL_dpsi0'], 
-                               self.grad_dict['dL_dpsi1'], 
-                               self.grad_dict['dL_dpsi2'], 
-                               Z=self.Z, 
+                               self.grad_dict['dL_dpsi0'],
+                               self.grad_dict['dL_dpsi1'],
+                               self.grad_dict['dL_dpsi2'],
+                               Z=self.Z,
                                variational_posterior=self.X)
         else:
             #gradients wrt kernel

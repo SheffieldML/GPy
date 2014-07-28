@@ -289,6 +289,31 @@ def bgplvm_simulation(optimize=True, verbose=1,
         m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
     return m
 
+def ssgplvm_simulation(optimize=True, verbose=1,
+                      plot=True, plot_sim=False,
+                      max_iters=2e4,
+                      ):
+    from GPy import kern
+    from GPy.models import SSGPLVM
+
+    D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
+    _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
+    Y = Ylist[0]
+    k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    #k = kern.RBF(Q, ARD=True, lengthscale=10.)
+    m = SSGPLVM(Y, Q, init="pca", num_inducing=num_inducing, kernel=k)
+    m.X.variance[:] = _np.random.uniform(0,.01,m.X.shape)
+    m.likelihood.variance = .1
+
+    if optimize:
+        print "Optimizing model:"
+        m.optimize('scg', messages=verbose, max_iters=max_iters,
+                   gtol=.05)
+    if plot:
+        m.X.plot("SSGPLVM Latent Space 1D")
+        m.kern.plot_ARD('SSGPLVM Simulation ARD Parameters')
+    return m
+
 def bgplvm_simulation_missing_data(optimize=True, verbose=1,
                       plot=True, plot_sim=False,
                       max_iters=2e4,

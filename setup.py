@@ -9,8 +9,7 @@ version = '0.4.6'
 
 from pkg_resources import Requirement, resource_string
 def read(fname):
-    return resource_string(Requirement.parse("GPy"),fname)
-    #return open(os.path.join(os.path.dirname(__file__), fname)).read()
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(name = 'GPy',
       version = version,

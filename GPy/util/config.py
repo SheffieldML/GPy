@@ -8,9 +8,9 @@ config = ConfigParser.ConfigParser()
 # This is the default configuration file that always needs to be present.
 default_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'defaults.cfg'))
 
-# These files are optional 
+# These files are optional
 # This specifies configurations that are typically specific to the machine (it is found alongside the GPy installation).
-local_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'machine.cfg'))
+local_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'installation.cfg'))
 
 # This specifies configurations specific to the user (it is found in the user home directory)
 home = os.getenv('HOME') or os.getenv('USERPROFILE')

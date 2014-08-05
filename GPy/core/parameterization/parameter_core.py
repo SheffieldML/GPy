@@ -699,35 +699,9 @@ class OptimizationHandlable(Indexable):
 
     def _get_params_transformed(self):
         raise DeprecationWarning, "_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!"
-#         # transformed parameters (apply un-transformation rules)
-#         p = self.param_array.copy()
-#         [np.put(p, ind, c.finv(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-#         if self.has_parent() and self.constraints[__fixed__].size != 0:
-#             fixes = np.ones(self.size).astype(bool)
-#             fixes[self.constraints[__fixed__]] = FIXED
-#             return p[fixes]
-#         elif self._has_fixes():
-#             return p[self._fixes_]
-#         return p
 #
     def _set_params_transformed(self, p):
         raise DeprecationWarning, "_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!"
-
-#         """
-#         Set parameters p, but make sure they get transformed before setting.
-#         This means, the optimizer sees p, whereas the model sees transformed(p),
-#         such that, the parameters the model sees are in the right domain.
-#         """
-#         if not(p is self.param_array):
-#             if self.has_parent() and self.constraints[__fixed__].size != 0:
-#                 fixes = np.ones(self.size).astype(bool)
-#                 fixes[self.constraints[__fixed__]] = FIXED
-#                 self.param_array.flat[fixes] = p
-#             elif self._has_fixes(): self.param_array.flat[self._fixes_] = p
-#             else: self.param_array.flat = p
-#         [np.put(self.param_array, ind, c.f(self.param_array.flat[ind]))
-#          for c, ind in self.constraints.iteritems() if c != __fixed__]
-#         self._trigger_params_changed()
 
     def _trigger_params_changed(self, trigger_parent=True):
         """
@@ -736,7 +710,7 @@ class OptimizationHandlable(Indexable):
 
         If trigger_parent is True, we will tell the parent, otherwise not.
         """
-        [p._trigger_params_changed(trigger_parent=False) for p in self.parameters]
+        [p._trigger_params_changed(trigger_parent=False) for p in self.parameters if not p.is_fixed]
         self.notify_observers(None, None if trigger_parent else -np.inf)
 
     def _size_transformed(self):

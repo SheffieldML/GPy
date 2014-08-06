@@ -15,6 +15,7 @@ import scipy
 import warnings
 import os
 from config import *
+import logging
 
 _scipyversion = np.float64((scipy.__version__).split('.')[:2])
 _fix_dpotri_scipy_bug = True
@@ -93,14 +94,20 @@ def jitchol(A, maxtries=5):
             raise linalg.LinAlgError, "not pd: non-positive diagonal elements"
         jitter = diagA.mean() * 1e-6
         while maxtries > 0 and np.isfinite(jitter):
-            print 'Warning: adding jitter of {:.10e}'.format(jitter)
             try:
-                return linalg.cholesky(A + np.eye(A.shape[0]).T * jitter, lower=True)
+                L = linalg.cholesky(A + np.eye(A.shape[0]) * jitter, lower=True)
             except:
                 jitter *= 10
             finally:
                 maxtries -= 1
         raise linalg.LinAlgError, "not positive definite, even with jitter."
+    import traceback
+    try: raise
+    except:
+        logging.warning('\n'.join(['Added jitter of {:.10e}'.format(jitter),
+            '  in '+traceback.format_list(traceback.extract_stack(limit=2)[-2:-1])[0][2:]]))
+    import ipdb;ipdb.set_trace()
+    return L
 
 
 
@@ -110,7 +117,7 @@ def jitchol(A, maxtries=5):
 #     """
 #     Wrapper for lapack dtrtri function
 #     Inverse of L
-# 
+#
 #     :param L: Triangular Matrix L
 #     :param lower: is matrix lower (true) or upper (false)
 #     :returns: Li, info
@@ -122,10 +129,17 @@ def dtrtrs(A, B, lower=1, trans=0, unitdiag=0):
     """
     Wrapper for lapack dtrtrs function
 
+    DTRTRS solves a triangular system of the form
+
+        A * X = B  or  A**T * X = B,
+
+    where A is a triangular matrix of order N, and B is an N-by-NRHS
+    matrix.  A check is made to verify that A is nonsingular.
+
     :param A: Matrix A(triangular)
     :param B: Matrix B
     :param lower: is matrix lower (true) or upper (false)
-    :returns:
+    :returns: Solution to A * X = B or A**T * X = B
 
     """
     A = np.asfortranarray(A)
@@ -146,11 +160,11 @@ def dpotrs(A, B, lower=1):
 def dpotri(A, lower=1):
     """
     Wrapper for lapack dpotri function
-    
+
     DPOTRI - compute the inverse of a real symmetric positive
       definite matrix A using the Cholesky factorization A =
       U**T*U or A = L*L**T computed by DPOTRF
-      
+
     :param A: Matrix A
     :param lower: is matrix lower (true) or upper (false)
     :returns: A inverse
@@ -159,7 +173,7 @@ def dpotri(A, lower=1):
     if _fix_dpotri_scipy_bug:
         assert lower==1, "scipy linalg behaviour is very weird. please use lower, fortran ordered arrays"
         lower = 0
-        
+
     A = force_F_ordered(A)
     R, info = lapack.dpotri(A, lower=lower) #needs to be zero here, seems to be a scipy bug
 

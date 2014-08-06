@@ -194,7 +194,7 @@ class VarDTC(LatentFunctionInference):
         return post, log_marginal, grad_dict
 
 class VarDTCMissingData(LatentFunctionInference):
-    const_jitter = 1e-6
+    const_jitter = 1e-10
     def __init__(self, limit=1, inan=None):
         from ...util.caching import Cacher
         self._Y = Cacher(self._subarray_computations, limit)
@@ -289,13 +289,6 @@ class VarDTCMissingData(LatentFunctionInference):
         Lm = jitchol(Kmm)
         if uncertain_inputs: LmInv = dtrtri(Lm)
 
-        #VVT_factor_all = np.empty(Y.shape)
-        #full_VVT_factor = VVT_factor_all.shape[1] == Y.shape[1]
-        #if not full_VVT_factor:
-        #    psi1V = np.dot(Y.T*beta_all, psi1_all).T
-
-        #logger.info('computing dimension-wise likelihood and derivatives')
-        #size = len(Ys)
         size = Y.shape[1]
         next_ten = 0
         for i, [y, v, trYYT] in enumerate(itertools.izip(Ys, self._inan.T, traces)):
@@ -348,7 +341,6 @@ class VarDTCMissingData(LatentFunctionInference):
                 VVT_factor, Cpsi1Vf, DBi_plus_BiPBi,
                 psi1, het_noise, uncertain_inputs)
 
-            #import ipdb;ipdb.set_trace()
             dL_dpsi0_all[v] += dL_dpsi0
             dL_dpsi1_all[v, :] += dL_dpsi1
             if uncertain_inputs:

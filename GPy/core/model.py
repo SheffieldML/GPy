@@ -61,7 +61,7 @@ class Model(Parameterized):
         on the current machine.
 
         """
-        initial_parameters = self.optimizer_array
+        initial_parameters = self.optimizer_array.copy()
 
         if parallel:
             try:
@@ -97,9 +97,9 @@ class Model(Parameterized):
 
         if len(self.optimization_runs):
             i = np.argmin([o.f_opt for o in self.optimization_runs])
-            self._set_params_transformed(self.optimization_runs[i].x_opt)
+            self.optimizer_array = self.optimization_runs[i].x_opt
         else:
-            self._set_params_transformed(initial_parameters)
+            self.optimizer_array = initial_parameters
 
     def ensure_default_constraints(self, warning=True):
         """
@@ -349,7 +349,7 @@ class Model(Parameterized):
                 numerical_gradient = (f1 - f2) / (2 * step)
                 if np.all(gradient[xind] == 0): ratio = (f1 - f2) == gradient[xind]
                 else: ratio = (f1 - f2) / (2 * step * gradient[xind])
-                difference = np.abs((f1 - f2) / 2 / step - gradient[xind])
+                difference = np.abs(numerical_gradient - gradient[xind])
 
                 if (np.abs(1. - ratio) < tolerance) or np.abs(difference) < tolerance:
                     formatted_name = "\033[92m {0} \033[0m".format(names[nind])

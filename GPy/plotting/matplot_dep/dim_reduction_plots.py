@@ -30,7 +30,7 @@ def most_significant_input_dimensions(model, which_indices):
 def plot_latent(model, labels=None, which_indices=None,
                 resolution=50, ax=None, marker='o', s=40,
                 fignum=None, plot_inducing=False, legend=True,
-                plot_limits=None, 
+                plot_limits=None,
                 aspect='auto', updates=False, predict_kwargs={}, imshow_kwargs={}):
     """
     :param labels: a np.array of size model.num_data containing labels for the points (can be number, strings, etc)
@@ -84,6 +84,7 @@ def plot_latent(model, labels=None, which_indices=None,
                             cmap=pb.cm.binary, **imshow_kwargs)
 
     # make sure labels are in order of input:
+    labels = np.asarray(labels)
     ulabels = []
     for lab in labels:
         if not lab in ulabels:

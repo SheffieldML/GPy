@@ -28,14 +28,11 @@ class HMC:
             H_new = self._computeH()
 
             k = np.exp(H_old-H_new)
-            print H_old,H_new
-            print k
             a = np.random.rand()
             if a<k:
                 thetas[i] = self.model.optimizer_array
                 ps[i] = self.p
             else:
-                print '###'
                 thetas[i] = theta_old
                 ps[i] = p_old
                 self.model.optimizer_array = theta_old
@@ -45,7 +42,6 @@ class HMC:
         for i in xrange(hmc_iters):
             self.p[:] += -self.stepsize/2.*self.model._transform_gradients(self.model.objective_function_gradients())
             self.model.optimizer_array = self.model.optimizer_array + self.stepsize*np.dot(self.Minv, self.p)
-            print self.model.objective_function()
             self.p[:] += -self.stepsize/2.*self.model._transform_gradients(self.model.objective_function_gradients())
 
     def _computeH(self,):

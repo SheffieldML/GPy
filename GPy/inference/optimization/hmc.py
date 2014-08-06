@@ -18,8 +18,7 @@ class HMC:
         thetas = np.empty((m_iters,self.p.size))
         ps = np.empty((m_iters,self.p.size))
         for i in xrange(m_iters):
-            #Gibbs
-            self.p[:] = np.random.multivariate_normal(np.ones(self.p.size),self.M)
+            self.p[:] = np.random.multivariate_normal(np.zeros(self.p.size),self.M)
             H_old = self._computeH()
             p_old = self.p.copy()
             theta_old = self.model.optimizer_array.copy()
@@ -27,9 +26,11 @@ class HMC:
             self._update(hmc_iters)
             H_new = self._computeH()
 
-            k = np.exp(H_old-H_new)
-            a = np.random.rand()
-            if a<k:
+            if H_old>H_new:
+                k = 1.
+            else:
+                k = np.exp(H_old-H_new)
+            if np.random.rand()<k:
                 thetas[i] = self.model.optimizer_array
                 ps[i] = self.p
             else:

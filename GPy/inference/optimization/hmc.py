@@ -28,11 +28,14 @@ class HMC:
             H_new = self._computeH()
 
             k = np.exp(H_old-H_new)
+            print H_old,H_new
             print k
-            if np.random.rand()<k:
+            a = np.random.rand()
+            if a<k:
                 thetas[i] = self.model.optimizer_array
                 ps[i] = self.p
             else:
+                print '###'
                 thetas[i] = theta_old
                 ps[i] = p_old
                 self.model.optimizer_array = theta_old
@@ -40,13 +43,10 @@ class HMC:
 
     def _update(self, hmc_iters):
         for i in xrange(hmc_iters):
-            g = self.p.copy()
-            g[:] = 1e-2
-#            self.p[:] += self.stepsize/2.*self.model.grad()[:,0]#*-self.model._transform_gradients(self.model.objective_function_gradients())
-            self.p[:] += self.stepsize/2.*-self.model._transform_gradients(self.model.objective_function_gradients())
-            self.model.optimizer_array[:] = self.model.optimizer_array[:] + self.stepsize*np.dot(self.Minv, self.p[:,None])[:,0]
-            self.p[:] += self.stepsize/2.*-self.model._transform_gradients(self.model.objective_function_gradients())
-            #self.model.optimizer_array = self.model.optimizer_array - self.stepsize*self.model._transform_gradients(self.model.objective_function_gradients())
+            self.p[:] += -self.stepsize/2.*self.model._transform_gradients(self.model.objective_function_gradients())
+            self.model.optimizer_array = self.model.optimizer_array + self.stepsize*np.dot(self.Minv, self.p)
+            print self.model.objective_function()
+            self.p[:] += -self.stepsize/2.*self.model._transform_gradients(self.model.objective_function_gradients())
 
     def _computeH(self,):
         return self.model.objective_function()+self.p.size*np.log(2*np.pi)/2.+np.log(np.linalg.det(self.M))/2.+np.dot(self.p, np.dot(self.Minv,self.p[:,None]))/2.
@@ -54,10 +54,10 @@ class HMC:
 class Gmodel:
     def __init__(self,):
         self.cov = np.array([[1., 0.99],[0.99, 1.]])
-        self.optimizer_array = np.random.rand(2)
+        self.param_array = np.random.rand(2)
 
     def grad(self,):
-        return -np.dot(np.linalg.inv(self.cov),self.optimizer_array[:,None])
+        return -np.dot(np.linalg.inv(self.cov),self.param_array[:,None])
 
     def objective_function(self,):
-        return np.dot(self.optimizer_array, np.dot(np.linalg.inv(self.cov),self.optimizer_array[:,None]))/2.
+        return np.dot(self.param_array, np.dot(np.linalg.inv(self.cov),self.param_array[:,None]))/2.

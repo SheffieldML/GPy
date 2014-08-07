@@ -281,7 +281,7 @@ class Gradcheckable(Pickleable, Parentable):
         """
         if self.has_parent():
             return self._highest_parent_._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance)
-        return self._checkgrad(self[''], verbose=verbose, step=step, tolerance=tolerance)
+        return self._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance)
 
     def _checkgrad(self, param, verbose=0, step=1e-6, tolerance=1e-3):
         """

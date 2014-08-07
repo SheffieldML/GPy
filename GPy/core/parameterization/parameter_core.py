@@ -372,8 +372,9 @@ class Indexable(Nameable, Observable):
         basically just sums up the parameter sizes which come before param.
         """
         if param.has_parent():
-            if param._parent_._get_original(param) in self.parameters:
-                return self._param_slices_[param._parent_._get_original(param)._parent_index_].start
+            p = param._parent_._get_original(param)
+            if p in self.parameters:
+                return reduce(lambda a,b: a + b.size, self.parameters[:p._parent_index_], 0)
             return self._offset_for(param._parent_) + param._parent_._offset_for(param)
         return 0
 

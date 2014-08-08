@@ -281,7 +281,7 @@ class Gradcheckable(Pickleable, Parentable):
         """
         if self.has_parent():
             return self._highest_parent_._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance)
-        return self._checkgrad(self[''], verbose=verbose, step=step, tolerance=tolerance)
+        return self._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance)
 
     def _checkgrad(self, param, verbose=0, step=1e-6, tolerance=1e-3):
         """
@@ -372,8 +372,9 @@ class Indexable(Nameable, Observable):
         basically just sums up the parameter sizes which come before param.
         """
         if param.has_parent():
-            if param._parent_._get_original(param) in self.parameters:
-                return self._param_slices_[param._parent_._get_original(param)._parent_index_].start
+            p = param._parent_._get_original(param)
+            if p in self.parameters:
+                return reduce(lambda a,b: a + b.size, self.parameters[:p._parent_index_], 0)
             return self._offset_for(param._parent_) + param._parent_._offset_for(param)
         return 0
 
@@ -699,35 +700,9 @@ class OptimizationHandlable(Indexable):
 
     def _get_params_transformed(self):
         raise DeprecationWarning, "_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!"
-#         # transformed parameters (apply un-transformation rules)
-#         p = self.param_array.copy()
-#         [np.put(p, ind, c.finv(p[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-#         if self.has_parent() and self.constraints[__fixed__].size != 0:
-#             fixes = np.ones(self.size).astype(bool)
-#             fixes[self.constraints[__fixed__]] = FIXED
-#             return p[fixes]
-#         elif self._has_fixes():
-#             return p[self._fixes_]
-#         return p
 #
     def _set_params_transformed(self, p):
         raise DeprecationWarning, "_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!"
-
-#         """
-#         Set parameters p, but make sure they get transformed before setting.
-#         This means, the optimizer sees p, whereas the model sees transformed(p),
-#         such that, the parameters the model sees are in the right domain.
-#         """
-#         if not(p is self.param_array):
-#             if self.has_parent() and self.constraints[__fixed__].size != 0:
-#                 fixes = np.ones(self.size).astype(bool)
-#                 fixes[self.constraints[__fixed__]] = FIXED
-#                 self.param_array.flat[fixes] = p
-#             elif self._has_fixes(): self.param_array.flat[self._fixes_] = p
-#             else: self.param_array.flat = p
-#         [np.put(self.param_array, ind, c.f(self.param_array.flat[ind]))
-#          for c, ind in self.constraints.iteritems() if c != __fixed__]
-#         self._trigger_params_changed()
 
     def _trigger_params_changed(self, trigger_parent=True):
         """
@@ -736,7 +711,7 @@ class OptimizationHandlable(Indexable):
 
         If trigger_parent is True, we will tell the parent, otherwise not.
         """
-        [p._trigger_params_changed(trigger_parent=False) for p in self.parameters]
+        [p._trigger_params_changed(trigger_parent=False) for p in self.parameters if not p.is_fixed]
         self.notify_observers(None, None if trigger_parent else -np.inf)
 
     def _size_transformed(self):
@@ -887,6 +862,25 @@ class Parameterizable(OptimizationHandlable):
         if self.__dict__.get('_param_array_', None) is None:
             self._param_array_ = np.empty(self.size, dtype=np.float64)
         return self._param_array_
+
+    @property
+    def unfixed_param_array(self):
+        """
+        Array representing the parameters of this class.
+        There is only one copy of all parameters in memory, two during optimization.
+
+        !WARNING!: setting the parameter array MUST always be done in memory:
+        m.param_array[:] = m_copy.param_array
+        """
+        if self.__dict__.get('_param_array_', None) is None:
+            self._param_array_ = np.empty(self.size, dtype=np.float64)
+                    
+        if self.constraints[__fixed__].size !=0:
+            fixes = np.ones(self.size).astype(bool)
+            fixes[self.constraints[__fixed__]] = FIXED
+            return self._param_array_[fixes]
+        else:
+            return self._param_array_
 
     @param_array.setter
     def param_array(self, arr):

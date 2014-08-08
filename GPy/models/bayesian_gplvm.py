@@ -84,6 +84,22 @@ class BayesianGPLVM(SparseGP):
 
         self.X.mean.gradient, self.X.variance.gradient = self.kern.gradients_qX_expectations(variational_posterior=self.X, Z=self.Z, dL_dpsi0=self.grad_dict['dL_dpsi0'], dL_dpsi1=self.grad_dict['dL_dpsi1'], dL_dpsi2=self.grad_dict['dL_dpsi2'])
 
+        # This is testing code -------------------------
+#         i = np.random.randint(self.X.shape[0])
+#         X_ = self.X.mean
+#         which = np.sqrt(((X_ - X_[i:i+1])**2).sum(1)).argsort()>(max(0, self.X.shape[0]-51))
+#         _, _, grad_dict = self.inference_method.inference(self.kern, self.X[which], self.Z, self.likelihood, self.Y[which], self.Y_metadata)
+#         grad = self.kern.gradients_qX_expectations(variational_posterior=self.X[which], Z=self.Z, dL_dpsi0=grad_dict['dL_dpsi0'], dL_dpsi1=grad_dict['dL_dpsi1'], dL_dpsi2=grad_dict['dL_dpsi2'])
+#
+#         self.X.mean.gradient[:] = 0
+#         self.X.variance.gradient[:] = 0
+#         self.X.mean.gradient[which] = grad[0]
+#         self.X.variance.gradient[which] = grad[1]
+
+        # update for the KL divergence
+#         self.variational_prior.update_gradients_KL(self.X, which)
+        # -----------------------------------------------
+
         # update for the KL divergence
         self.variational_prior.update_gradients_KL(self.X)
 

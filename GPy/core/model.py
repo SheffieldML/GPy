@@ -349,7 +349,7 @@ class Model(Parameterized):
                 numerical_gradient = (f1 - f2) / (2 * step)
                 if np.all(gradient[xind] == 0): ratio = (f1 - f2) == gradient[xind]
                 else: ratio = (f1 - f2) / (2 * step * gradient[xind])
-                difference = np.abs((f1 - f2) / 2 / step - gradient[xind])
+                difference = np.abs(numerical_gradient - gradient[xind])
 
                 if (np.abs(1. - ratio) < tolerance) or np.abs(difference) < tolerance:
                     formatted_name = "\033[92m {0} \033[0m".format(names[nind])

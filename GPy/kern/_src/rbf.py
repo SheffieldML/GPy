@@ -37,6 +37,10 @@ class RBF(Stationary):
     def dK_dr(self, r):
         return -r*self.K_of_r(r)
 
+    def spectrum(self, omega):
+        assert self.input_dim == 1 #TODO: higher dim spectra?
+        return self.variance*np.sqrt(2*np.pi)*self.lengthscale*np.exp(-self.lengthscale*2*omega**2/2)
+
     #---------------------------------------#
     #             PSI statistics            #
     #---------------------------------------#

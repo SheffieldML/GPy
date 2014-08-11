@@ -1,9 +1,7 @@
 from ..core.parameterization.parameter_core import Observable
-import itertools, collections, weakref
+import collections, weakref, logging
 
 class Cacher(object):
-
-
     def __init__(self, operation, limit=5, ignore_args=(), force_kwargs=()):
         """
         Parameters:
@@ -12,31 +10,37 @@ class Cacher(object):
         :param int limit: depth of cacher
         :param [int] ignore_args: list of indices, pointing at arguments to ignore in *args of operation(*args). This includes self!
         :param [str] force_kwargs: list of kwarg names (strings). If a kwarg with that name is given, the cacher will force recompute and wont cache anything.
+        :param int verbose: verbosity level. 0: no print outs, 1: casual print outs, 2: debug level print outs
         """
         self.limit = int(limit)
         self.ignore_args = ignore_args
         self.force_kwargs = force_kwargs
-        self.operation=operation
+        self.operation = operation
         self.order = collections.deque()
-        self.cached_inputs = {} # point from cache_ids to a list of [ind_ids], which where used in cache cache_id
+        self.cached_inputs = {}  # point from cache_ids to a list of [ind_ids], which where used in cache cache_id
 
         #=======================================================================
         # point from each ind_id to [ref(obj), cache_ids]
         # 0: a weak reference to the object itself
         # 1: the cache_ids in which this ind_id is used (len will be how many times we have seen this ind_id)
-        self.cached_input_ids = {} 
+        self.cached_input_ids = {}
         #=======================================================================
 
-        self.cached_outputs = {} # point from cache_ids to outputs
-        self.inputs_changed = {} # point from cache_ids to bools
+        self.cached_outputs = {}  # point from cache_ids to outputs
+        self.inputs_changed = {}  # point from cache_ids to bools
 
-    def combine_inputs(self, args, kw, ignore_args):
+    def id(self, obj):
+        """returns the self.id of an object, to be used in caching individual self.ids"""
+        return hex(id(obj))
+
+    def combine_inputs(self, args, kw):
         "Combines the args and kw in a unique way, such that ordering of kwargs does not lead to recompute"
-        return tuple(a for i,a in enumerate(args) if i not in ignore_args) + tuple(c[1] for c in sorted(kw.items(), key=lambda x: x[0]))
+        return args + tuple(c[1] for c in sorted(kw.items(), key=lambda x: x[0]))
 
-    def prepare_cache_id(self, combined_args_kw):
-        "get the cacheid (conc. string of argument ids in order) ignoring ignore_args"
-        return "".join(str(id(a)) for a in combined_args_kw)
+    def prepare_cache_id(self, combined_args_kw, ignore_args):
+        "get the cacheid (conc. string of argument self.ids in order) ignoring ignore_args"
+        cache_id = "".join(self.id(a) for i, a in enumerate(combined_args_kw) if i not in ignore_args)
+        return cache_id
 
     def ensure_cache_length(self, cache_id):
         "Ensures the cache is within its limits and has one place free"
@@ -45,58 +49,61 @@ class Cacher(object):
             cache_id = self.order.popleft()
             combined_args_kw = self.cached_inputs[cache_id]
             for ind in combined_args_kw:
-                if ind is None:
-                    continue
-                ind_id = id(ind)
-                ref, cache_ids = self.cached_input_ids[ind_id]
-                if len(cache_ids) == 1 and ref() is not None:
-                    ref().remove_observer(self, self.on_cache_changed)
-                    del self.cached_input_ids[ind_id]
-                else:
-                    cache_ids.remove(cache_id)
-                    self.cached_input_ids[ind_id] = [ref, cache_ids]
+                if ind is not None:
+                    ind_id = self.id(ind)
+                    tmp = self.cached_input_ids.get(ind_id, None)
+                    if tmp is not None:
+                        ref, cache_ids = tmp
+                        if len(cache_ids) == 1 and ref() is not None:
+                            ref().remove_observer(self, self.on_cache_changed)
+                            del self.cached_input_ids[ind_id]
+                        else:
+                            cache_ids.remove(cache_id)
+                            self.cached_input_ids[ind_id] = [ref, cache_ids]
             del self.cached_outputs[cache_id]
             del self.inputs_changed[cache_id]
             del self.cached_inputs[cache_id]
 
-    def add_to_cache(self, cache_id, combined_args_kw, output):
+    def add_to_cache(self, cache_id, inputs, output):
+        """This adds cache_id to the cache, with inputs and output"""
         self.inputs_changed[cache_id] = False
         self.cached_outputs[cache_id] = output
         self.order.append(cache_id)
-        self.cached_inputs[cache_id] = combined_args_kw
-        for a in combined_args_kw:
-            if a is None:
-                continue
-            ind_id = id(a)
-            v = self.cached_input_ids.get(ind_id, [weakref.ref(a), []])
-            v[1].append(cache_id)
-            if len(v[1]) == 1:
-                a.add_observer(self, self.on_cache_changed)
-            self.cached_input_ids[ind_id] = v
+        self.cached_inputs[cache_id] = inputs
+        for a in inputs:
+            if a is not None:
+                ind_id = self.id(a)
+                v = self.cached_input_ids.get(ind_id, [weakref.ref(a), []])
+                v[1].append(cache_id)
+                if len(v[1]) == 1:
+                    a.add_observer(self, self.on_cache_changed)
+                self.cached_input_ids[ind_id] = v
 
     def __call__(self, *args, **kw):
         """
         A wrapper function for self.operation,
         """
-    
+        #=======================================================================
+        # !WARNING CACHE OFFSWITCH!
+        # return self.operation(*args, **kw)
+        #=======================================================================
+
         # 1: Check whether we have forced recompute arguments:
         if len(self.force_kwargs) != 0:
             for k in self.force_kwargs:
                 if k in kw and kw[k] is not None:
                     return self.operation(*args, **kw)
-    
-        # 2: prepare_cache_id and get the unique id string for this call
-        inputs = self.combine_inputs(args, kw, self.ignore_args)
-        cache_id = self.prepare_cache_id(inputs)
 
+        # 2: prepare_cache_id and get the unique self.id string for this call
+        inputs = self.combine_inputs(args, kw)
+        cache_id = self.prepare_cache_id(inputs, self.ignore_args)
         # 2: if anything is not cachable, we will just return the operation, without caching
-        if reduce(lambda a,b: a or (not (isinstance(b, Observable) or (b is None))), inputs, False):
-            # print '['+self.operation.__name__+'] contain un-cachable arguments!'
+        if reduce(lambda a, b: a or (not (isinstance(b, Observable) or b is None)), inputs, False):
             return self.operation(*args, **kw)
         # 3&4: check whether this cache_id has been cached, then has it changed?
         try:
             if(self.inputs_changed[cache_id]):
-                # 4: This happens, when elements have changed for this cache id
+                # 4: This happens, when elements have changed for this cache self.id
                 self.inputs_changed[cache_id] = False
                 self.cached_outputs[cache_id] = self.operation(*args, **kw)
         except KeyError:
@@ -115,10 +122,12 @@ class Cacher(object):
 
         this function gets 'hooked up' to the inputs when we cache them, and upon their elements being changed we update here.
         """
-        for ind_id in [id(direct), id(which)]:
-            _, cache_ids = self.cached_input_ids.get(ind_id, [None, []])
-            for cache_id in cache_ids:
-                self.inputs_changed[cache_id] = True
+        for what in [direct, which]:
+            if what is not None:
+                ind_id = self.id(what)
+                _, cache_ids = self.cached_input_ids.get(ind_id, [None, []])
+                for cache_id in cache_ids:
+                    self.inputs_changed[cache_id] = True
 
     def reset(self):
         """
@@ -133,8 +142,7 @@ class Cacher(object):
         return Cacher(self.operation, self.limit, self.ignore_args, self.force_kwargs)
 
     def __getstate__(self, memo=None):
-        return (self.limit)
-#        raise NotImplementedError, "Trying to pickle Cacher object with function {}, pickling functions not possible.".format(str(self.operation))
+        raise NotImplementedError, "Trying to pickle Cacher object with function {}, pickling functions not possible.".format(str(self.operation))
 
     def __setstate__(self, memo=None):
         raise NotImplementedError, "Trying to pickle Cacher object with function {}, pickling functions not possible.".format(str(self.operation))
@@ -155,9 +163,8 @@ class Cacher_wrap(object):
     def __get__(self, obj, objtype=None):
         return partial(self, obj)
     def __call__(self, *args, **kwargs):
-        obj = args[0] # <------------------- WHAT IF IT IS ONLY A FUNCTION!
-        
-        #import ipdb;ipdb.set_trace()
+        obj = args[0]
+        # import ipdb;ipdb.set_trace()
         try:
             caches = obj.__cachers
         except AttributeError:

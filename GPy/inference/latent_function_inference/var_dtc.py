@@ -9,6 +9,8 @@ import numpy as np
 from ...util.misc import param_to_array
 from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
+import logging, itertools
+logger = logging.getLogger('vardtc')
 
 class VarDTC(LatentFunctionInference):
     """
@@ -180,11 +182,12 @@ class VarDTC(LatentFunctionInference):
         return post, log_marginal, grad_dict
 
 class VarDTCMissingData(LatentFunctionInference):
-    const_jitter = 1e-6
+    const_jitter = 1e-10
     def __init__(self, limit=1, inan=None):
         from ...util.caching import Cacher
         self._Y = Cacher(self._subarray_computations, limit)
-        self._inan = inan
+        if inan is not None: self._inan = ~inan
+        else: self._inan = None
         pass
 
     def set_limit(self, limit):
@@ -205,21 +208,35 @@ class VarDTCMissingData(LatentFunctionInference):
         if self._inan is None:
             inan = np.isnan(Y)
             has_none = inan.any()
+            self._inan = ~inan
         else:
             inan = self._inan
             has_none = True
         if has_none:
-            from ...util.subarray_and_sorting import common_subarrays
-            self._subarray_indices = []
-            for v,ind in common_subarrays(inan, 1).iteritems():
-                if not np.all(v):
-                    v = ~np.array(v, dtype=bool)
-                    ind = np.array(ind, dtype=int)
-                    if ind.size == Y.shape[1]:
-                        ind = slice(None)
-                    self._subarray_indices.append([v,ind])
-            Ys = [Y[v, :][:, ind] for v, ind in self._subarray_indices]
-            traces = [(y**2).sum() for y in Ys]
+            #print "caching missing data slices, this can take several minutes depending on the number of unique dimensions of the data..."
+            #csa = common_subarrays(inan, 1)
+            size = Y.shape[1]
+            #logger.info('preparing subarrays {:3.3%}'.format((i+1.)/size))
+            Ys = []
+            next_ten = [0.]
+            count = itertools.count()
+            for v, y in itertools.izip(inan.T, Y.T[:,:,None]):
+                i = count.next()
+                if ((i+1.)/size) >= next_ten[0]:
+                    logger.info('preparing subarrays {:>6.1%}'.format((i+1.)/size))
+                    next_ten[0] += .1
+                Ys.append(y[v,:])
+
+            next_ten = [0.]
+            count = itertools.count()
+            def trace(y):
+                i = count.next()
+                if ((i+1.)/size) >= next_ten[0]:
+                    logger.info('preparing traces {:>6.1%}'.format((i+1.)/size))
+                    next_ten[0] += .1
+                y = y[inan[:,i],i:i+1]
+                return np.einsum('ij,ij->', y,y)
+            traces = [trace(Y) for _ in xrange(size)]
             return Ys, traces
         else:
             self._subarray_indices = [[slice(None),slice(None)]]
@@ -241,7 +258,6 @@ class VarDTCMissingData(LatentFunctionInference):
         beta_all = 1./np.fmax(likelihood.gaussian_variance(Y_metadata), 1e-6)
         het_noise = beta_all.size != 1
 
-        import itertools
         num_inducing = Z.shape[0]
 
         dL_dpsi0_all = np.zeros(Y.shape[0])
@@ -261,22 +277,17 @@ class VarDTCMissingData(LatentFunctionInference):
         Lm = jitchol(Kmm)
         if uncertain_inputs: LmInv = dtrtri(Lm)
 
-        VVT_factor_all = np.empty(Y.shape)
-        full_VVT_factor = VVT_factor_all.shape[1] == Y.shape[1]
-        if not full_VVT_factor:
-            psi1V = np.dot(Y.T*beta_all, psi1_all).T
-
-        for y, trYYT, [v, ind] in itertools.izip(Ys, traces, self._subarray_indices):
-            if het_noise: beta = beta_all[ind]
+        size = Y.shape[1]
+        next_ten = 0
+        for i, [y, v, trYYT] in enumerate(itertools.izip(Ys, self._inan.T, traces)):
+            if ((i+1.)/size) >= next_ten:
+                logger.info('inference {:> 6.1%}'.format((i+1.)/size))
+                next_ten += .1
+            if het_noise: beta = beta_all[i]
             else: beta = beta_all
 
-            VVT_factor = (beta*y)
-            try:
-                VVT_factor_all[v, ind].flat = VVT_factor.flat
-            except ValueError:
-                mult = np.ravel_multi_index((v.nonzero()[0][:,None],ind[None,:]), VVT_factor_all.shape)
-                VVT_factor_all.flat[mult] = VVT_factor
-            output_dim = y.shape[1]
+            VVT_factor = (y*beta)
+            output_dim = 1#len(ind)
 
             psi0 = psi0_all[v]
             psi1 = psi1_all[v, :]
@@ -318,7 +329,6 @@ class VarDTCMissingData(LatentFunctionInference):
                 VVT_factor, Cpsi1Vf, DBi_plus_BiPBi,
                 psi1, het_noise, uncertain_inputs)
 
-            #import ipdb;ipdb.set_trace()
             dL_dpsi0_all[v] += dL_dpsi0
             dL_dpsi1_all[v, :] += dL_dpsi1
             if uncertain_inputs:
@@ -335,19 +345,20 @@ class VarDTCMissingData(LatentFunctionInference):
                 psi0, psi1, beta,
                 data_fit, num_data, output_dim, trYYT, Y)
 
-            if full_VVT_factor: woodbury_vector[:, ind] = Cpsi1Vf
-            else:
-                print 'foobar'
-                tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
-                tmp, _ = dpotrs(LB, tmp, lower=1)
-                woodbury_vector[:, ind] = dtrtrs(Lm, tmp, lower=1, trans=1)[0]
+            #if full_VVT_factor:
+            woodbury_vector[:, i:i+1] = Cpsi1Vf
+            #else:
+            #    print 'foobar'
+            #    tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
+            #    tmp, _ = dpotrs(LB, tmp, lower=1)
+            #    woodbury_vector[:, ind] = dtrtrs(Lm, tmp, lower=1, trans=1)[0]
 
             #import ipdb;ipdb.set_trace()
             Bi, _ = dpotri(LB, lower=1)
             symmetrify(Bi)
             Bi = -dpotri(LB, lower=1)[0]
             diag.add(Bi, 1)
-            woodbury_inv_all[:, :, ind] = backsub_both_sides(Lm, Bi)[:,:,None]
+            woodbury_inv_all[:, :, i:i+1] = backsub_both_sides(Lm, Bi)[:,:,None]
 
         dL_dthetaL = likelihood.exact_inference_gradients(dL_dR)
 
@@ -363,23 +374,6 @@ class VarDTCMissingData(LatentFunctionInference):
                          'dL_dKdiag':dL_dpsi0_all,
                          'dL_dKnm':dL_dpsi1_all,
                          'dL_dthetaL':dL_dthetaL}
-
-        #get sufficient things for posterior prediction
-        #TODO: do we really want to do this in  the loop?
-        #if not full_VVT_factor:
-        #    print 'foobar'
-        #    psi1V = np.dot(Y.T*beta_all, psi1_all).T
-        #    tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
-        #    tmp, _ = dpotrs(LB_all, tmp, lower=1)
-        #    woodbury_vector, _ = dtrtrs(Lm, tmp, lower=1, trans=1)
-        #import ipdb;ipdb.set_trace()
-        #Bi, _ = dpotri(LB_all, lower=1)
-        #symmetrify(Bi)
-        #Bi = -dpotri(LB_all, lower=1)[0]
-        #from ...util import diag
-        #diag.add(Bi, 1)
-
-        #woodbury_inv = backsub_both_sides(Lm, Bi)
 
         post = Posterior(woodbury_inv=woodbury_inv_all, woodbury_vector=woodbury_vector, K=Kmm, mean=None, cov=None, K_chol=Lm)
 

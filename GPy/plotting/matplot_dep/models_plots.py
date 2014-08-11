@@ -8,7 +8,7 @@ from base_plots import gpplot, x_frame1D, x_frame2D
 from ...util.misc import param_to_array
 from ...models.gp_coregionalized_regression import GPCoregionalizedRegression
 from ...models.sparse_gp_coregionalized_regression import SparseGPCoregionalizedRegression
-
+from scipy import sparse
 
 def plot_fit(model, plot_limits=None, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=[],
@@ -61,11 +61,14 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
     if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs():
         X = model.X.mean
-        X_variance = param_to_array(model.X.variance)
+        X_variance = model.X.variance
     else:
         X = model.X
-    X, Y = param_to_array(X, model.Y)
-    if hasattr(model, 'Z'): Z = param_to_array(model.Z)
+    #X, Y = param_to_array(X, model.Y)
+    Y = model.Y
+    if sparse.issparse(Y): Y = Y.todense().view(np.ndarray)
+
+    if hasattr(model, 'Z'): Z = model.Z
 
     #work out what the inputs are for plotting (1D or 2D)
     fixed_dims = np.array([i for i,v in fixed_inputs])
@@ -147,7 +150,11 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         if plot_raw:
             m, _ = model._raw_predict(Xgrid)
         else:
-            m, _ = model.predict(Xgrid)
+            if isinstance(model,GPCoregionalizedRegression) or isinstance(model,SparseGPCoregionalizedRegression):
+                meta = {'output_index': Xgrid[:,-1:].astype(np.int)}
+            else:
+                meta = None
+            m, v = model.predict(Xgrid, full_cov=False, Y_metadata=meta)
         for d in which_data_ycols:
             m_d = m[:,d].reshape(resolution, resolution).T
             plots['contour'] = ax.contour(x, y, m_d, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)

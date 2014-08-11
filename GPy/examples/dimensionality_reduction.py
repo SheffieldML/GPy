@@ -37,7 +37,7 @@ def bgplvm_test_model(optimize=False, verbose=1, plot=False, output_dim=200, nan
     # k = GPy.kern.RBF(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.linear(input_dim, _np.ones(input_dim) * .2, ARD=True)
 
     p = .3
-    
+
     m = GPy.models.BayesianGPLVM(Y, input_dim, kernel=k, num_inducing=num_inducing)
 
     if nan:
@@ -99,7 +99,7 @@ def sparse_gplvm_oil(optimize=True, verbose=0, plot=True, N=100, Q=6, num_induci
         m.kern.plot_ARD()
     return m
 
-def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=15, Q=4, sigma=.2):
+def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=25, Q=4, sigma=.2):
     import GPy
     from GPy.util.datasets import swiss_roll_generated
     from GPy.models import BayesianGPLVM
@@ -144,16 +144,15 @@ def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=15, Q=4
     m = BayesianGPLVM(Y, Q, X=X, X_variance=S, num_inducing=num_inducing, Z=Z, kernel=kernel)
     m.data_colors = c
     m.data_t = t
-    m['noise_variance'] = Y.var() / 100.
 
     if optimize:
-        m.optimize('scg', messages=verbose, max_iters=2e3)
+        m.optimize('bfgs', messages=verbose, max_iters=2e3)
 
     if plot:
         fig = plt.figure('fitted')
         ax = fig.add_subplot(111)
         s = m.input_sensitivity().argsort()[::-1][:2]
-        ax.scatter(*m.X.T[s], c=c)
+        ax.scatter(*m.X.mean.T[s], c=c)
 
     return m
 
@@ -170,16 +169,43 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     Y = data['X'][:N]
     m = GPy.models.BayesianGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing, **k)
     m.data_labels = data['Y'][:N].argmax(axis=1)
-    
+
     if optimize:
-        m.optimize('scg', messages=verbose, max_iters=max_iters, gtol=.05)
+        m.optimize('bfgs', messages=verbose, max_iters=max_iters, gtol=.05)
 
     if plot:
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         m.plot_latent(ax=latent_axes, labels=m.data_labels)
         data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0,:]))
         lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(param_to_array(m.X.mean)[0:1,:], # @UnusedVariable
-            m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
+            m, data_show, latent_axes=latent_axes, sense_axes=sense_axes, labels=m.data_labels)
+        raw_input('Press enter to finish')
+        plt.close(fig)
+    return m
+
+def ssgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40, max_iters=1000, **k):
+    import GPy
+    from matplotlib import pyplot as plt
+    from ..util.misc import param_to_array
+    import numpy as np
+
+    _np.random.seed(0)
+    data = GPy.util.datasets.oil()
+
+    kernel = GPy.kern.RBF(Q, 1., 1./_np.random.uniform(0,1,(Q,)), ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
+    Y = data['X'][:N]
+    m = GPy.models.SSGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing, **k)
+    m.data_labels = data['Y'][:N].argmax(axis=1)
+
+    if optimize:
+        m.optimize('bfgs', messages=verbose, max_iters=max_iters, gtol=.05)
+
+    if plot:
+        fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
+        m.plot_latent(ax=latent_axes, labels=m.data_labels)
+        data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0,:]))
+        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(param_to_array(m.X.mean)[0:1,:], # @UnusedVariable
+            m, data_show, latent_axes=latent_axes, sense_axes=sense_axes, labels=m.data_labels)
         raw_input('Press enter to finish')
         plt.close(fig)
     return m
@@ -322,15 +348,16 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     from GPy.models import BayesianGPLVM
     from GPy.inference.latent_function_inference.var_dtc import VarDTCMissingData
 
-    D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 7, 9
+    D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 400, 3, 4
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
 
-    inan = _np.random.binomial(1, .6, size=Y.shape).astype(bool)
-    Y[inan] = _np.nan
+    inan = _np.random.binomial(1, .8, size=Y.shape).astype(bool) # 80% missing data
+    Ymissing = Y.copy()
+    Ymissing[inan] = _np.nan
 
-    m = BayesianGPLVM(Y.copy(), Q, init="random", num_inducing=num_inducing, 
+    m = BayesianGPLVM(Ymissing, Q, init="random", num_inducing=num_inducing,
                       inference_method=VarDTCMissingData(inan=inan), kernel=k)
 
     m.X.variance[:] = _np.random.uniform(0,.01,m.X.shape)
@@ -390,7 +417,7 @@ def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim
     for inan in inanlist:
         imlist.append(VarDTCMissingData(limit=1, inan=inan))
 
-    m = MRD(Ylist, input_dim=Q, num_inducing=num_inducing, 
+    m = MRD(Ylist, input_dim=Q, num_inducing=num_inducing,
             kernel=k, inference_method=imlist,
             initx="random", initz='permute', **kw)
 
@@ -411,18 +438,17 @@ def brendan_faces(optimize=True, verbose=True, plot=True):
     Yn = Y - Y.mean()
     Yn /= Yn.std()
 
-    m = GPy.models.GPLVM(Yn, Q)
+    m = GPy.models.BayesianGPLVM(Yn, Q, num_inducing=20)
 
     # optimize
-    m.constrain('rbf|noise|white', GPy.transformations.LogexpClipped())
 
-    if optimize: m.optimize('scg', messages=verbose, max_iters=1000)
+    if optimize: m.optimize('bfgs', messages=verbose, max_iters=1000)
 
     if plot:
         ax = m.plot_latent(which_indices=(0, 1))
-        y = m.likelihood.Y[0, :]
+        y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, order='F', invert=False, scale=False)
-        GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        lvm = GPy.plotting.matplot_dep.visualize.lvm(m.X.mean[0, :].copy(), m, data_show, ax)
         raw_input('Press enter to finish')
 
     return m
@@ -436,13 +462,14 @@ def olivetti_faces(optimize=True, verbose=True, plot=True):
     Yn = Y - Y.mean()
     Yn /= Yn.std()
 
-    m = GPy.models.GPLVM(Yn, Q)
-    if optimize: m.optimize('scg', messages=verbose, max_iters=1000)
+    m = GPy.models.BayesianGPLVM(Yn, Q, num_inducing=20)
+
+    if optimize: m.optimize('bfgs', messages=verbose, max_iters=1000)
     if plot:
         ax = m.plot_latent(which_indices=(0, 1))
-        y = m.likelihood.Y[0, :]
+        y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.image_show(y[None, :], dimensions=(112, 92), transpose=False, invert=False, scale=False)
-        GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
+        lvm = GPy.plotting.matplot_dep.visualize.lvm(m.X.mean[0, :].copy(), m, data_show, ax)
         raw_input('Press enter to finish')
 
     return m
@@ -525,9 +552,8 @@ def robot_wireless(optimize=True, verbose=True, plot=True):
 
     data = GPy.util.datasets.robot_wireless()
     # optimize
-    m = GPy.models.GPLVM(data['Y'], 2)
+    m = GPy.models.BayesianGPLVM(data['Y'], 4, num_inducing=25)
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
-    m._set_params(m._get_params())
     if plot:
         m.plot_latent()
 
@@ -541,14 +567,18 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
 
     data = GPy.util.datasets.osu_run1()
     Q = 6
-    kernel = GPy.kern.RBF(Q, lengthscale=np.repeat(.5, Q), ARD=True) 
+    kernel = GPy.kern.RBF(Q, lengthscale=np.repeat(.5, Q), ARD=True)
     m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20, kernel=kernel)
 
     m.data = data
     m.likelihood.variance = 0.001
 
     # optimize
-    if optimize: m.optimize('bfgs', messages=verbose, max_iters=5e3, bfgs_factor=10)
+    try:
+        if optimize: m.optimize('bfgs', messages=verbose, max_iters=5e3, bfgs_factor=10)
+    except KeyboardInterrupt:
+        print "Keyboard interrupt, continuing to plot and return"
+
     if plot:
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         plt.sca(latent_axes)
@@ -589,7 +619,7 @@ def ssgplvm_simulation_linear():
     import GPy
     N, D, Q = 1000, 20, 5
     pi = 0.2
-    
+
     def sample_X(Q, pi):
         x = np.empty(Q)
         dies = np.random.rand(Q)
@@ -599,7 +629,7 @@ def ssgplvm_simulation_linear():
             else:
                 x[q] = 0.
         return x
-    
+
     Y = np.empty((N,D))
     X = np.empty((N,Q))
     # Generate data from random sampled weight matrices
@@ -607,4 +637,4 @@ def ssgplvm_simulation_linear():
         X[n] = sample_X(Q,pi)
         w = np.random.randn(D,Q)
         Y[n] = np.dot(w,X[n])
-    
+

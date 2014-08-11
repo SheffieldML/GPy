@@ -64,7 +64,7 @@ class SSGPLVM(SparseGP):
         if inference_method is None:
             inference_method = VarDTC_minibatch(mpi_comm=mpi_comm)
 
-        self.variational_prior = SpikeAndSlabPrior(pi=pi) # the prior probability of the latent binary variable b
+        self.variational_prior = SpikeAndSlabPrior(pi=pi,learnPi=True) # the prior probability of the latent binary variable b
         
         X = SpikeAndSlabPosterior(X, X_variance, gamma)
         

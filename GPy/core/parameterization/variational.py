@@ -38,6 +38,7 @@ class SpikeAndSlabPrior(VariationalPrior):
         super(VariationalPrior, self).__init__(name=name, **kw)
         self.pi = Param('pi', pi, Logistic(1e-10,1.-1e-10))
         self.variance = Param('variance',variance)
+        self.learnPi = learnPi
         if learnPi:
             self.add_parameters(self.pi)
 
@@ -58,12 +59,13 @@ class SpikeAndSlabPrior(VariationalPrior):
         gamma.gradient -= np.log((1-self.pi)/self.pi*gamma/(1.-gamma))+((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.
         mu.gradient -= gamma*mu/self.variance
         S.gradient -= (1./self.variance - 1./S) * gamma /2.
-        if len(self.pi)==1:
-            self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum()
-        if len(self.pi.shape)==1:
-            self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum(axis=0)
-        else:
-            self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi))
+        if self.learnPi:
+            if len(self.pi)==1:
+                self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum()
+            elif len(self.pi.shape)==1:
+                self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum(axis=0)
+            else:
+                self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi))
 
 class VariationalPosterior(Parameterized):
     def __init__(self, means=None, variances=None, name='latent space', *a, **kw):

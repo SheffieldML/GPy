@@ -89,13 +89,14 @@ class Stationary(Kern):
             Xsq = np.sum(np.square(X),1)
             r2 = -2.*tdot(X) + (Xsq[:,None] + Xsq[None,:])
             util.diag.view(r2)[:,]= 0. # force diagnoal to be zero: sometime numerically a little negative
+            r2 = np.clip(r2, 0, np.inf)
             return np.sqrt(r2)
         else:
             #X2, = self._slice_X(X2)
             X1sq = np.sum(np.square(X),1)
             X2sq = np.sum(np.square(X2),1)
             r2 = -2.*np.dot(X, X2.T) + X1sq[:,None] + X2sq[None,:]
-            r2[r2<0] = 0. # A bit hacky
+            r2 = np.clip(r2, 0, np.inf)
             return np.sqrt(r2)
 
     @Cache_this(limit=5, ignore_args=())

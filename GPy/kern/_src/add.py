@@ -10,7 +10,7 @@ class Add(CombinationKernel):
     """
     Add given list of kernels together.
     propagates gradients through.
-    
+
     This kernel will take over the active dims of it's subkernels passed in.
     """
     def __init__(self, subkerns, name='add'):
@@ -40,7 +40,7 @@ class Add(CombinationKernel):
         return reduce(np.add, (p.Kdiag(X) for p in which_parts))
 
     def update_gradients_full(self, dL_dK, X, X2=None):
-        [p.update_gradients_full(dL_dK, X, X2) for p in self.parts]
+        [p.update_gradients_full(dL_dK, X, X2) for p in self.parts if not p.is_fixed]
 
     def update_gradients_diag(self, dL_dK, X):
         [p.update_gradients_diag(dL_dK, X) for p in self.parts]

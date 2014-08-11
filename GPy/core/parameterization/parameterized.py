@@ -8,11 +8,23 @@ from re import compile, _pattern_type
 from param import ParamConcatenation
 from parameter_core import HierarchyError, Parameterizable, adjust_name_for_printing
 
+import logging
+logger = logging.getLogger("parameters changed meta")
+
 class ParametersChangedMeta(type):
     def __call__(self, *args, **kw):
-        instance = super(ParametersChangedMeta, self).__call__(*args, **kw)
-        instance.parameters_changed()
-        return instance
+        self._in_init_ = True
+        #import ipdb;ipdb.set_trace()
+        self = super(ParametersChangedMeta, self).__call__(*args, **kw)
+        logger.debug("finished init")
+        self._in_init_ = False
+        logger.debug("connecting parameters")
+        self._highest_parent_._connect_parameters()
+        self._highest_parent_._notify_parent_change()
+        self._highest_parent_._connect_fixes()
+        logger.debug("calling parameters changed")
+        self.parameters_changed()
+        return self
 
 class Parameterized(Parameterizable):
     """
@@ -57,21 +69,19 @@ class Parameterized(Parameterizable):
         and concatenate them. Printing m[''] will result in printing of all parameters in detail.
     """
     #===========================================================================
-    # Metaclass for parameters changed after init. 
+    # Metaclass for parameters changed after init.
     # This makes sure, that parameters changed will always be called after __init__
-    # **Never** call parameters_changed() yourself 
+    # **Never** call parameters_changed() yourself
     __metaclass__ = ParametersChangedMeta
     #===========================================================================
     def __init__(self, name=None, parameters=[], *a, **kw):
         super(Parameterized, self).__init__(name=name, *a, **kw)
-        self._in_init_ = True
         self.size = sum(p.size for p in self.parameters)
         self.add_observer(self, self._parameters_changed_notification, -100)
         if not self._has_fixes():
             self._fixes_ = None
         self._param_slices_ = []
-        self._connect_parameters()
-        del self._in_init_
+        #self._connect_parameters()
         self.add_parameters(*parameters)
 
     def build_pydot(self, G=None):
@@ -125,6 +135,9 @@ class Parameterized(Parameterizable):
                 param._parent_.remove_parameter(param)
             # make sure the size is set
             if index is None:
+                start = sum(p.size for p in self.parameters)
+                self.constraints.shift_right(start, param.size)
+                self.priors.shift_right(start, param.size)
                 self.constraints.update(param.constraints, self.size)
                 self.priors.update(param.priors, self.size)
                 self.parameters.append(param)
@@ -143,14 +156,16 @@ class Parameterized(Parameterizable):
                 parent.size += param.size
                 parent = parent._parent_
 
-            self._connect_parameters()
+            if not self._in_init_:
+                self._connect_parameters()
+                self._notify_parent_change()
 
-            self._highest_parent_._connect_parameters(ignore_added_names=_ignore_added_names)
-            self._highest_parent_._notify_parent_change()
-            self._highest_parent_._connect_fixes()
+                self._highest_parent_._connect_parameters(ignore_added_names=_ignore_added_names)
+                self._highest_parent_._notify_parent_change()
+                self._highest_parent_._connect_fixes()
 
         else:
-            raise HierarchyError, """Parameter exists already and no copy made"""
+            raise HierarchyError, """Parameter exists already, try making a copy"""
 
 
     def add_parameters(self, *parameters):
@@ -198,25 +213,27 @@ class Parameterized(Parameterizable):
             # no parameters for this class
             return
         if self.param_array.size != self.size:
-            self.param_array = np.empty(self.size, dtype=np.float64)
+            self._param_array_ = np.empty(self.size, dtype=np.float64)
         if self.gradient.size != self.size:
             self._gradient_array_ = np.empty(self.size, dtype=np.float64)
 
         old_size = 0
         self._param_slices_ = []
         for i, p in enumerate(self.parameters):
+            if not p.param_array.flags['C_CONTIGUOUS']:
+                raise ValueError, "This should not happen! Please write an email to the developers with the code, which reproduces this error. All parameter arrays must be C_CONTIGUOUS"
+
             p._parent_ = self
             p._parent_index_ = i
 
             pslice = slice(old_size, old_size + p.size)
+
             # first connect all children
             p._propagate_param_grad(self.param_array[pslice], self.gradient_full[pslice])
+
             # then connect children to self
             self.param_array[pslice] = p.param_array.flat  # , requirements=['C', 'W']).ravel(order='C')
             self.gradient_full[pslice] = p.gradient_full.flat  # , requirements=['C', 'W']).ravel(order='C')
-
-            if not p.param_array.flags['C_CONTIGUOUS']:
-                raise ValueError, "This should not happen! Please write an email to the developers with the code, which reproduces this error. All parameter arrays must be C_CONTIGUOUS"
 
             p.param_array.data = self.param_array[pslice].data
             p.gradient_full.data = self.gradient_full[pslice].data
@@ -292,12 +309,16 @@ class Parameterized(Parameterizable):
         except Exception as e:
             print "WARNING: caught exception {!s}, trying to continue".format(e)
 
-    def copy(self):
-        c = super(Parameterized, self).copy()
-        c._connect_parameters()
-        c._connect_fixes()
-        c._notify_parent_change()
-        return c
+    def copy(self, memo=None):
+        if memo is None:
+            memo = {}
+        memo[id(self.optimizer_array)] = None # and param_array
+        memo[id(self.param_array)] = None # and param_array
+        copy = super(Parameterized, self).copy(memo)
+        copy._connect_parameters()
+        copy._connect_fixes()
+        copy._notify_parent_change()
+        return copy
 
     #===========================================================================
     # Printing:
@@ -328,7 +349,7 @@ class Parameterized(Parameterizable):
     def __str__(self, header=True):
 
         name = adjust_name_for_printing(self.name) + "."
-        constrs = self._constraints_str; 
+        constrs = self._constraints_str;
         ts = self._ties_str
         prirs = self._priors_str
         desc = self._description_str; names = self.parameter_names()

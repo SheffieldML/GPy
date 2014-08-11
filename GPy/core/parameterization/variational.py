@@ -34,31 +34,36 @@ class NormalPrior(VariationalPrior):
         variational_posterior.variance.gradient -= (1. - (1. / (variational_posterior.variance))) * 0.5
 
 class SpikeAndSlabPrior(VariationalPrior):
-    def __init__(self, pi, variance = 1.0, name='SpikeAndSlabPrior', **kw):
+    def __init__(self, pi=None, learnPi=False, variance = 1.0, name='SpikeAndSlabPrior', **kw):
         super(VariationalPrior, self).__init__(name=name, **kw)
-        assert variance==1.0, "Not Implemented!"
         self.pi = Param('pi', pi, Logistic(1e-10,1.-1e-10))
         self.variance = Param('variance',variance)
-        self.add_parameters(self.pi)
+        if learnPi:
+            self.add_parameters(self.pi)
 
     def KL_divergence(self, variational_posterior):
         mu = variational_posterior.mean
         S = variational_posterior.variance
         gamma = variational_posterior.binary_prob
-        var_mean = np.square(mu)
-        var_S = (S - np.log(S))
+        var_mean = np.square(mu)/self.variance
+        var_S = (S/self.variance - np.log(S))
         var_gamma = (gamma*np.log(gamma/self.pi)).sum()+((1-gamma)*np.log((1-gamma)/(1-self.pi))).sum()
-        return var_gamma+ 0.5 * (gamma* (var_mean + var_S -1)).sum()
+        return var_gamma+ (gamma* (np.log(self.variance)-1. +var_mean + var_S)).sum()/2.
 
     def update_gradients_KL(self, variational_posterior):
         mu = variational_posterior.mean
         S = variational_posterior.variance
         gamma = variational_posterior.binary_prob
 
-        gamma.gradient -= np.log((1-self.pi)/self.pi*gamma/(1.-gamma))+(np.square(mu)+S-np.log(S)-1.)/2.
-        mu.gradient -= gamma*mu
-        S.gradient -= (1. - (1. / (S))) * gamma /2.
-        self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum(axis=0)
+        gamma.gradient -= np.log((1-self.pi)/self.pi*gamma/(1.-gamma))+((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.
+        mu.gradient -= gamma*mu/self.variance
+        S.gradient -= (1./self.variance - 1./S) * gamma /2.
+        if len(self.pi)==1:
+            self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum()
+        if len(self.pi.shape)==1:
+            self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum(axis=0)
+        else:
+            self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi))
 
 class VariationalPosterior(Parameterized):
     def __init__(self, means=None, variances=None, name='latent space', *a, **kw):

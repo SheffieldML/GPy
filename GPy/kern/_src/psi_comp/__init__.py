@@ -7,6 +7,7 @@ from ....core.parameterization import variational
 import rbf_psi_comp
 import ssrbf_psi_comp
 import sslinear_psi_comp
+import linear_psi_comp
 
 class PSICOMP_RBF(Pickleable):
 
@@ -33,7 +34,7 @@ class PSICOMP_Linear(Pickleable):
     @Cache_this(limit=2, ignore_args=(0,))
     def psicomputations(self, variance, Z, variational_posterior):
         if isinstance(variational_posterior, variational.NormalPosterior):
-            raise NotImplementedError
+            return linear_psi_comp.psicomputations(variance, Z, variational_posterior)
         elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             return sslinear_psi_comp.psicomputations(variance, Z, variational_posterior)
         else:
@@ -42,7 +43,7 @@ class PSICOMP_Linear(Pickleable):
     @Cache_this(limit=2, ignore_args=(0,1,2,3))
     def psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior):
         if isinstance(variational_posterior, variational.NormalPosterior):
-            raise NotImplementedError
+            return linear_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior)
         elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             return sslinear_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior)
         else:

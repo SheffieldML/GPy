@@ -317,7 +317,7 @@ def bgplvm_simulation(optimize=True, verbose=1,
 
 def ssgplvm_simulation(optimize=True, verbose=1,
                       plot=True, plot_sim=False,
-                      max_iters=2e4,
+                      max_iters=2e4, useGPU=False
                       ):
     from GPy import kern
     from GPy.models import SSGPLVM
@@ -325,7 +325,7 @@ def ssgplvm_simulation(optimize=True, verbose=1,
     D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
     Y = Ylist[0]
-    k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    k = kern.Linear(Q, ARD=True, useGPU=useGPU)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     #k = kern.RBF(Q, ARD=True, lengthscale=10.)
     m = SSGPLVM(Y, Q, init="pca", num_inducing=num_inducing, kernel=k)
     m.X.variance[:] = _np.random.uniform(0,.01,m.X.shape)

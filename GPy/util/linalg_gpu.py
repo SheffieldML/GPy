@@ -19,6 +19,9 @@ try:
     
     strideSum = ReductionKernel(np.float64, neutral="0", reduce_expr="a+b", map_expr="i%step==0?x[i]:0", arguments="double *x, int step")
     
+    # np.trace(np.dot(A,B)) (also equivalent to (A*B.T).sum() ) A - a1 x a2, B - a2 x a1
+    traceDot = ReductionKernel(np.float64, neutral="0", reduce_expr="a+b", map_expr="A[i]*B[(i%a1)*a2+i/a1]", arguments="double *A, double *B, int a1, int a2")
+    
     #=======================================================================================
     # Element-wise functions
     #=======================================================================================
@@ -57,3 +60,34 @@ try:
 
 except:
     pass
+
+try:
+    import scikits.cuda.linalg as culinalg
+    from scikits.cuda import cublas
+    from scikits.cuda.cula import culaExceptions
+except:
+    pass
+
+def jitchol(A, L, cublas_handle, maxtries=5):
+    try:
+        cublas.cublasDcopy(cublas_handle, A.size, A.gpudata, 1, L.gpudata, 1)
+        culinalg.cho_factor(L,'L')
+    except culaExceptions:
+        
+        
+        diagA = np.diag(A)
+        if np.any(diagA <= 0.):
+            raise linalg.LinAlgError, "not pd: non-positive diagonal elements"
+        jitter = diagA.mean() * 1e-6
+        while maxtries > 0 and np.isfinite(jitter):
+            print 'Warning: adding jitter of {:.10e}'.format(jitter)
+            try:
+                return linalg.cholesky(A + np.eye(A.shape[0]).T * jitter, lower=True)
+            except:
+                jitter *= 10
+            finally:
+                maxtries -= 1
+        raise linalg.LinAlgError, "not positive definite, even with jitter."
+    
+    
+    

@@ -183,6 +183,33 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
         plt.close(fig)
     return m
 
+def ssgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40, max_iters=1000, **k):
+    import GPy
+    from matplotlib import pyplot as plt
+    from ..util.misc import param_to_array
+    import numpy as np
+
+    _np.random.seed(0)
+    data = GPy.util.datasets.oil()
+
+    kernel = GPy.kern.RBF(Q, 1., 1./_np.random.uniform(0,1,(Q,)), ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
+    Y = data['X'][:N]
+    m = GPy.models.SSGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing, **k)
+    m.data_labels = data['Y'][:N].argmax(axis=1)
+
+    if optimize:
+        m.optimize('bfgs', messages=verbose, max_iters=max_iters, gtol=.05)
+
+    if plot:
+        fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
+        m.plot_latent(ax=latent_axes, labels=m.data_labels)
+        data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0,:]))
+        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(param_to_array(m.X.mean)[0:1,:], # @UnusedVariable
+            m, data_show, latent_axes=latent_axes, sense_axes=sense_axes, labels=m.data_labels)
+        raw_input('Press enter to finish')
+        plt.close(fig)
+    return m
+
 def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
     _np.random.seed(1234)
 
@@ -286,6 +313,31 @@ def bgplvm_simulation(optimize=True, verbose=1,
     if plot:
         m.X.plot("BGPLVM Latent Space 1D")
         m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
+    return m
+
+def ssgplvm_simulation(optimize=True, verbose=1,
+                      plot=True, plot_sim=False,
+                      max_iters=2e4, useGPU=False
+                      ):
+    from GPy import kern
+    from GPy.models import SSGPLVM
+
+    D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
+    _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
+    Y = Ylist[0]
+    k = kern.Linear(Q, ARD=True, useGPU=useGPU)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    #k = kern.RBF(Q, ARD=True, lengthscale=10.)
+    m = SSGPLVM(Y, Q, init="pca", num_inducing=num_inducing, kernel=k)
+    m.X.variance[:] = _np.random.uniform(0,.01,m.X.shape)
+    m.likelihood.variance = .1
+
+    if optimize:
+        print "Optimizing model:"
+        m.optimize('scg', messages=verbose, max_iters=max_iters,
+                   gtol=.05)
+    if plot:
+        m.X.plot("SSGPLVM Latent Space 1D")
+        m.kern.plot_ARD('SSGPLVM Simulation ARD Parameters')
     return m
 
 def bgplvm_simulation_missing_data(optimize=True, verbose=1,

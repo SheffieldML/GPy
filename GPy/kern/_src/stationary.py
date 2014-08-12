@@ -79,7 +79,6 @@ class Stationary(Kern):
         #a convenience function, so we can cache dK_dr
         return self.dK_dr(self._scaled_dist(X, X2))
 
-    @Cache_this(limit=5, ignore_args=(0,))
     def _unscaled_dist(self, X, X2=None):
         """
         Compute the Euclidean distance between each row of X and X2, or between
@@ -169,11 +168,18 @@ class Stationary(Kern):
 
         #the lower memory way with a loop
         tmp = invdist*dL_dr
-        if X2 is None:
-            tmp *= 2.
-            X2 = X
         ret = np.empty(X.shape, dtype=np.float64)
+<<<<<<< HEAD
         [np.sum(tmp*(X[:,q:q+1]-X2[:,q:q+1]), axis=1, out=ret[:,q]) for q in xrange(self.input_dim)]
+=======
+        if X2 is None:
+            [np.einsum('ij,ij->i', tmp, X[:,q][:,None]-X[:,q][None,:], out=ret[:,q]) for q in xrange(self.input_dim)]
+            ret2 = np.empty(X.shape, dtype=np.float64)
+            [np.einsum('ij,ji->j', tmp, X[:,q][:,None]-X[:,q][None,:], out=ret2[:,q]) for q in xrange(self.input_dim)]
+            ret += ret2
+        else:
+            [np.einsum('ij,ij->i', tmp, X[:,q][:,None]-X2[:,q][None,:], out=ret[:,q]) for q in xrange(self.input_dim)]
+>>>>>>> 1061bf52482aa3bf6769db810c955d5fbf51ceae
         ret /= self.lengthscale**2
         return ret
 

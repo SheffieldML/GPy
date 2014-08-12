@@ -6,10 +6,8 @@ The package for the psi statistics computation
 """
 
 import numpy as np
-from GPy.util.caching import Cache_this
 
-@Cache_this(limit=1)
-def psicomputations(variance, lengthscale, Z, mu, S, gamma):
+def psicomputations(variance, lengthscale, Z, variational_posterior):
     """
     Z - MxQ
     mu - NxQ
@@ -19,6 +17,9 @@ def psicomputations(variance, lengthscale, Z, mu, S, gamma):
     # here are the "statistics" for psi0, psi1 and psi2
     # Produced intermediate results:
     # _psi1                NxM
+    mu = variational_posterior.mean
+    S = variational_posterior.variance
+    gamma = variational_posterior.binary_prob
     
     psi0 = np.empty(mu.shape[0])
     psi0[:] = variance
@@ -37,7 +38,6 @@ def _psi1computations(variance, lengthscale, Z, mu, S, gamma):
     # Produced intermediate results:
     # _psi1                NxM
 
-    
     lengthscale2 = np.square(lengthscale)
 
     # psi1
@@ -147,11 +147,6 @@ def _psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S, gamma):
     _dL_dS = np.einsum('nm,nmq,nmq,nq,nmq->nq',dL_dpsi1,_psi1_q,_psi1_exp_dist_sq,_psi1_common,(_psi1_dist_sq-1.))/2.  # NxQ
     _dL_dZ = np.einsum('nm,nmq,nmq->mq',dL_dpsi1,_psi1_q, (- _psi1_common[:,None,:] * _psi1_dist * _psi1_exp_dist_sq - (1-gamma[:,None,:])/lengthscale2*Z[None,:,:]*_psi1_exp_Z))
     _dL_dlengthscale = lengthscale* np.einsum('nm,nmq,nmq->q',dL_dpsi1,_psi1_q,(_psi1_common[:,None,:]*(S[:,None,:]/lengthscale2+_psi1_dist_sq)*_psi1_exp_dist_sq + (1-gamma[:,None,:])*np.square(Z[None,:,:]/lengthscale2)*_psi1_exp_Z))
-    
-#     _dpsi1_dmu = _psi1_q * (_psi1_exp_dist_sq * _psi1_dist * _psi1_common) # NxMxQ
-#     _dpsi1_dS = _psi1_q * (_psi1_exp_dist_sq * _psi1_common * 0.5 * (_psi1_dist_sq - 1.)) # NxMxQ
-#     _dpsi1_dZ = _psi1_q * (- _psi1_common * _psi1_dist * _psi1_exp_dist_sq - (1-gamma[:,None,:])/lengthscale2*Z[None,:,:]*_psi1_exp_Z) # NxMxQ
-#     _dpsi1_dlengthscale = 2.*lengthscale*_psi1_q * (0.5*_psi1_common*(S[:,None,:]/lengthscale2+_psi1_dist_sq)*_psi1_exp_dist_sq + 0.5*(1-gamma[:,None,:])*np.square(Z[None,:,:]/lengthscale2)*_psi1_exp_Z) # NxMxQ
 
     return _dL_dvariance, _dL_dlengthscale, _dL_dZ, _dL_dmu, _dL_dS, _dL_dgamma 
 
@@ -199,15 +194,6 @@ def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S, gamma):
     _dL_dmu = -2.*np.einsum('mo,nmoq,nq,nmoq,nmoq->nq',dL_dpsi2,_psi2_q,_psi2_common,_psi2_mudist,_psi2_exp_dist_sq)
     _dL_dS = np.einsum('mo,nmoq,nq,nmoq,nmoq->nq',dL_dpsi2,_psi2_q, _psi2_common, (2.*_psi2_mudist_sq-1.), _psi2_exp_dist_sq)
     _dL_dZ = 2.*np.einsum('mo,nmoq,nmoq->mq',dL_dpsi2,_psi2_q,(_psi2_common[:,None,None,:]*(-_psi2_Zdist*_psi2_denom[:,None,None,:]+_psi2_mudist)*_psi2_exp_dist_sq - (1-gamma[:,None,None,:])*Z[:,None,:]/lengthscale2*_psi2_exp_Z))
-#    print _psi2_common[:,None,None,:]*(S[:,None,None,:]/lengthscale2+_psi2_Zdist_sq*_psi2_denom[:,None,None,:]+_psi2_mudist_sq)*_psi2_exp_dist_sq #+(1-gamma[:,None,None,:])*_psi2_Z_sq_sum*0.5/lengthscale2*_psi2_exp_Z)
     _dL_dlengthscale = 2.*lengthscale* np.einsum('mo,nmoq,nmoq->q',dL_dpsi2,_psi2_q,(_psi2_common[:,None,None,:]*(S[:,None,None,:]/lengthscale2+_psi2_Zdist_sq*_psi2_denom[:,None,None,:]+_psi2_mudist_sq)*_psi2_exp_dist_sq+(1-gamma[:,None,None,:])*_psi2_Z_sq_sum*0.5/lengthscale2*_psi2_exp_Z))
-    
-    
-#     _dpsi2_dvariance = 2. * _psi2/variance # NxMxM
-#     _dpsi2_dgamma = _psi2_q * (_psi2_exp_dist_sq/_psi2_denom_sqrt - _psi2_exp_Z) # NxMxMxQ
-#     _dpsi2_dmu = _psi2_q * (-2.*_psi2_common*_psi2_mudist * _psi2_exp_dist_sq) # NxMxMxQ
-#     _dpsi2_dS = _psi2_q * (_psi2_common * (2.*_psi2_mudist_sq - 1.) * _psi2_exp_dist_sq) # NxMxMxQ
-#     _dpsi2_dZ = 2.*_psi2_q * (_psi2_common*(-_psi2_Zdist*_psi2_denom+_psi2_mudist)*_psi2_exp_dist_sq - (1-gamma[:,None,None,:])*Z[:,None,:]/lengthscale2*_psi2_exp_Z) # NxMxMxQ
-#     _dpsi2_dlengthscale = 2.*lengthscale* _psi2_q * (_psi2_common*(S[:,None,None,:]/lengthscale2+_psi2_Zdist_sq*_psi2_denom+_psi2_mudist_sq)*_psi2_exp_dist_sq+(1-gamma[:,None,None,:])*_psi2_Z_sq_sum*0.5/lengthscale2*_psi2_exp_Z) # NxMxMxQ
 
     return _dL_dvariance, _dL_dlengthscale, _dL_dZ, _dL_dmu, _dL_dS, _dL_dgamma

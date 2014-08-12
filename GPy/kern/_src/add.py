@@ -63,13 +63,16 @@ class Add(CombinationKernel):
         target = np.zeros(X.shape)
         [target.__iadd__(p.gradients_X_diag(dL_dKdiag, X)) for p in self.parts]
         return target
-
+    
+    @Cache_this(limit=2, force_kwargs=['which_parts'])
     def psi0(self, Z, variational_posterior):
         return reduce(np.add, (p.psi0(Z, variational_posterior) for p in self.parts))
-
+    
+    @Cache_this(limit=2, force_kwargs=['which_parts'])
     def psi1(self, Z, variational_posterior):
         return reduce(np.add, (p.psi1(Z, variational_posterior) for p in self.parts))
 
+    @Cache_this(limit=2, force_kwargs=['which_parts'])
     def psi2(self, Z, variational_posterior):
         psi2 = reduce(np.add, (p.psi2(Z, variational_posterior) for p in self.parts))
         #return psi2
@@ -88,17 +91,18 @@ class Add(CombinationKernel):
             # rbf X bias
             #elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, (RBF, RBFInv)):
             elif isinstance(p1,  Bias) and isinstance(p2, (RBF, Linear)):
-                tmp = p2.psi1(Z, variational_posterior)
-                psi2 += p1.variance * (tmp[:, :, None] + tmp[:, None, :])
+                tmp = p2.psi1(Z, variational_posterior).sum(axis=0)
+                psi2 += p1.variance * (tmp[:,None]+tmp[None,:]) #(tmp[:, :, None] + tmp[:, None, :])
             #elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, (RBF, RBFInv)):
             elif isinstance(p2, Bias) and isinstance(p1, (RBF, Linear)):
-                tmp = p1.psi1(Z, variational_posterior)
-                psi2 += p2.variance * (tmp[:, :, None] + tmp[:, None, :])
+                tmp = p1.psi1(Z, variational_posterior).sum(axis=0)
+                psi2 += p2.variance * (tmp[:,None]+tmp[None,:]) #(tmp[:, :, None] + tmp[:, None, :])
             elif isinstance(p2, (RBF, Linear)) and isinstance(p1, (RBF, Linear)):
                 assert np.intersect1d(p1.active_dims, p2.active_dims).size == 0, "only non overlapping kernel dimensions allowed so far"
                 tmp1 = p1.psi1(Z, variational_posterior)
                 tmp2 = p2.psi1(Z, variational_posterior)
-                psi2 += (tmp1[:, :, None] * tmp2[:, None, :]) + (tmp2[:, :, None] * tmp1[:, None, :])
+                psi2 += np.einsum('nm,no->mo',tmp1,tmp2)+np.einsum('nm,no->mo',tmp2,tmp1)
+                #(tmp1[:, :, None] * tmp2[:, None, :]) + (tmp2[:, :, None] * tmp1[:, None, :])
             else:
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
         return psi2

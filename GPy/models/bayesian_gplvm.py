@@ -8,7 +8,7 @@ from ..likelihoods import Gaussian
 from ..inference.optimization import SCG
 from ..util import linalg
 from ..core.parameterization.variational import NormalPosterior, NormalPrior, VariationalPosterior
-from ..inference.latent_function_inference.var_dtc_parallel import update_gradients
+from ..inference.latent_function_inference.var_dtc_parallel import update_gradients, VarDTC_minibatch
 from ..inference.latent_function_inference.var_dtc_gpu import VarDTC_GPU
 import logging
 
@@ -25,7 +25,9 @@ class BayesianGPLVM(SparseGP):
 
     """
     def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
-                 Z=None, kernel=None, inference_method=None, likelihood=None, name='bayesian gplvm', **kwargs):
+                 Z=None, kernel=None, inference_method=None, likelihood=None, name='bayesian gplvm', mpi_comm=None, **kwargs):
+        self.mpi_comm = mpi_comm
+        self.__IN_OPTIMIZATION__ = False
         self.logger = logging.getLogger(self.__class__.__name__)
         if X == None:
             from ..util.initialization import initialize_latent
@@ -61,22 +63,42 @@ class BayesianGPLVM(SparseGP):
                 from ..inference.latent_function_inference.var_dtc import VarDTCMissingData
                 self.logger.debug("creating inference_method with var_dtc missing data")
                 inference_method = VarDTCMissingData(inan=inan)
+            elif mpi_comm is not None:
+                inference_method = VarDTC_minibatch(mpi_comm=mpi_comm)
             else:
                 from ..inference.latent_function_inference.var_dtc import VarDTC
                 self.logger.debug("creating inference_method var_dtc")
                 inference_method = VarDTC()
+        if isinstance(inference_method,VarDTC_minibatch):
+            inference_method.mpi_comm = mpi_comm
+                
+        if kernel.useGPU and isinstance(inference_method, VarDTC_GPU):
+            kernel.psicomp.GPU_direct = True
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)
         self.logger.info("Adding X as parameter")
         self.add_parameter(self.X, index=0)
 
+        if mpi_comm != None:
+            from ..util.mpi import divide_data
+            N_start, N_end, N_list = divide_data(Y.shape[0], mpi_comm)
+            self.N_range = (N_start, N_end)
+            self.N_list = np.array(N_list)
+            self.Y_local = self.Y[N_start:N_end]
+            print 'MPI RANK: '+str(self.mpi_comm.rank)+' with datasize: '+str(self.N_range)
+            mpi_comm.Bcast(self.param_array, root=0)
+
     def set_X_gradients(self, X, X_grad):
         """Set the gradients of the posterior distribution of X in its specific form."""
         X.mean.gradient, X.variance.gradient = X_grad
+    
+    def get_X_gradients(self, X):
+        """Get the gradients of the posterior distribution of X in its specific form."""
+        return X.mean.gradient, X.variance.gradient
 
     def parameters_changed(self):
-        if isinstance(self.inference_method, VarDTC_GPU):
-            update_gradients(self)
+        if isinstance(self.inference_method, VarDTC_GPU) or isinstance(self.inference_method, VarDTC_minibatch):
+            update_gradients(self, mpi_comm=self.mpi_comm)
             return
 
         super(BayesianGPLVM, self).parameters_changed()
@@ -188,6 +210,50 @@ class BayesianGPLVM(SparseGP):
         from ..plotting.matplot_dep import dim_reduction_plots
 
         return dim_reduction_plots.plot_steepest_gradient_map(self,*args,**kwargs)
+    def __getstate__(self):
+        dc = super(BayesianGPLVM, self).__getstate__()
+        dc['mpi_comm'] = None
+        if self.mpi_comm != None:
+            del dc['N_range']
+            del dc['N_list']
+            del dc['Y_local']
+        return dc
+ 
+    def __setstate__(self, state):
+        return super(BayesianGPLVM, self).__setstate__(state)
+    
+    #=====================================================
+    # The MPI parallelization 
+    #     - can move to model at some point
+    #=====================================================
+    
+    def _set_params_transformed(self, p):
+        if self.mpi_comm != None:
+            if self.__IN_OPTIMIZATION__ and self.mpi_comm.rank==0:
+                self.mpi_comm.Bcast(np.int32(1),root=0)
+            self.mpi_comm.Bcast(p, root=0)
+        super(BayesianGPLVM, self)._set_params_transformed(p)
+        
+    def optimize(self, optimizer=None, start=None, **kwargs):
+        self.__IN_OPTIMIZATION__ = True
+        if self.mpi_comm==None:
+            super(BayesianGPLVM, self).optimize(optimizer,start,**kwargs)
+        elif self.mpi_comm.rank==0:
+            super(BayesianGPLVM, self).optimize(optimizer,start,**kwargs)
+            self.mpi_comm.Bcast(np.int32(-1),root=0)
+        elif self.mpi_comm.rank>0:
+            x = self._get_params_transformed().copy()
+            flag = np.empty(1,dtype=np.int32)
+            while True:
+                self.mpi_comm.Bcast(flag,root=0)
+                if flag==1:
+                    self._set_params_transformed(x)
+                elif flag==-1:
+                    break
+                else:
+                    self.__IN_OPTIMIZATION__ = False
+                    raise Exception("Unrecognizable flag for synchronization!")
+        self.__IN_OPTIMIZATION__ = False
 
 
 def latent_cost_and_grad(mu_S, input_dim, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):

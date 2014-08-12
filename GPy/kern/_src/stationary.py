@@ -173,7 +173,7 @@ class Stationary(Kern):
             tmp *= 2.
             X2 = X
         ret = np.empty(X.shape, dtype=np.float64)
-        [np.einsum('ij,ij->i', tmp, X[:,q][:,None]-X2[:,q][None,:], out=ret[:,q]) for q in xrange(self.input_dim)]
+        [np.sum(tmp*(X[:,q:q+1]-X2[:,q:q+1]), axis=1, out=ret[:,q]) for q in xrange(self.input_dim)]
         ret /= self.lengthscale**2
         return ret
 

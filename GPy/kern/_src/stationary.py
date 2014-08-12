@@ -169,17 +169,10 @@ class Stationary(Kern):
         #the lower memory way with a loop
         tmp = invdist*dL_dr
         ret = np.empty(X.shape, dtype=np.float64)
-<<<<<<< HEAD
-        [np.sum(tmp*(X[:,q:q+1]-X2[:,q:q+1]), axis=1, out=ret[:,q]) for q in xrange(self.input_dim)]
-=======
         if X2 is None:
-            [np.einsum('ij,ij->i', tmp, X[:,q][:,None]-X[:,q][None,:], out=ret[:,q]) for q in xrange(self.input_dim)]
-            ret2 = np.empty(X.shape, dtype=np.float64)
-            [np.einsum('ij,ji->j', tmp, X[:,q][:,None]-X[:,q][None,:], out=ret2[:,q]) for q in xrange(self.input_dim)]
-            ret += ret2
-        else:
-            [np.einsum('ij,ij->i', tmp, X[:,q][:,None]-X2[:,q][None,:], out=ret[:,q]) for q in xrange(self.input_dim)]
->>>>>>> 1061bf52482aa3bf6769db810c955d5fbf51ceae
+            tmp = tmp + tmp.T
+            X2 = X
+        [np.einsum('ij,ij->i', tmp, X[:,q][:,None]-X2[:,q][None,:], out=ret[:,q]) for q in xrange(self.input_dim)]
         ret /= self.lengthscale**2
         return ret
 

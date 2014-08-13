@@ -160,20 +160,20 @@ class Stationary(Kern):
         """
         invdist = self._inv_dist(X, X2)
         dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
-        #The high-memory numpy way:
-        #d =  X[:, None, :] - X2[None, :, :]
-        #ret = np.sum((invdist*dL_dr)[:,:,None]*d,1)/self.lengthscale**2
-        #if X2 is None:
-            #ret *= 2.
-
-        #the lower memory way with a loop
         tmp = invdist*dL_dr
-        ret = np.empty(X.shape, dtype=np.float64)
         if X2 is None:
             tmp = tmp + tmp.T
             X2 = X
-        [np.einsum('ij,ij->i', tmp, X[:,q][:,None]-X2[:,q][None,:], out=ret[:,q]) for q in xrange(self.input_dim)]
+
+        #The high-memory numpy way:
+        #d =  X[:, None, :] - X2[None, :, :]
+        #ret = np.sum(tmp[:,:,None]*d,1)/self.lengthscale**2
+
+        #the lower memory way with a loop
+        ret = np.empty(X.shape, dtype=np.float64)
+        [np.sum(tmp*(X[:,q][:,None]-X2[:,q][None,:]), axis=1, out=ret[:,q]) for q in xrange(self.input_dim)]
         ret /= self.lengthscale**2
+
         return ret
 
     def gradients_X_diag(self, dL_dKdiag, X):

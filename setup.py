@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#import os
+import os
 from setuptools import setup
 
 # Version number
 version = '0.4.6'
 
-from pkg_resources import Requirement, resource_string
+from pkg_resources import Requirement
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 

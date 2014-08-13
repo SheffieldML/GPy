@@ -6,7 +6,6 @@ from kern import Kern
 import numpy as np
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
-import numpy as np
 
 class Static(Kern):
     def __init__(self, input_dim, variance, active_dims, name):
@@ -39,7 +38,7 @@ class Static(Kern):
 
     def psi2(self, Z, variational_posterior):
         K = self.K(variational_posterior.mean, Z)
-        return K[:,:,None]*K[:,None,:] # NB. more efficient implementations on inherriting classes
+        return np.einsum('ij,ik->jk',K,K) #K[:,:,None]*K[:,None,:] # NB. more efficient implementations on inherriting classes
 
 
 class White(Static):
@@ -53,7 +52,7 @@ class White(Static):
             return np.zeros((X.shape[0], X2.shape[0]))
 
     def psi2(self, Z, variational_posterior):
-        return np.zeros((variational_posterior.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)
+        return np.zeros((Z.shape[0], Z.shape[0]), dtype=np.float64)
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         self.variance.gradient = np.trace(dL_dK)
@@ -82,12 +81,12 @@ class Bias(Static):
         self.variance.gradient = dL_dKdiag.sum()
 
     def psi2(self, Z, variational_posterior):
-        ret = np.empty((variational_posterior.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)
-        ret[:] = self.variance**2
+        ret = np.empty((Z.shape[0], Z.shape[0]), dtype=np.float64)
+        ret[:] = self.variance*self.variance*variational_posterior.shape[0]
         return ret
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        self.variance.gradient = dL_dpsi0.sum() + dL_dpsi1.sum() + 2.*self.variance*dL_dpsi2.sum()
+        self.variance.gradient = dL_dpsi0.sum() + dL_dpsi1.sum() + 2.*self.variance*dL_dpsi2.sum()*variational_posterior.shape[0]
 
 class Fixed(Static):
     def __init__(self, input_dim, covariance_matrix, variance=1., active_dims=None, name='fixed'):
@@ -97,7 +96,7 @@ class Fixed(Static):
         :param variance: the variance of the kernel
         :type variance: float
         """
-        super(Bias, self).__init__(input_dim, variance, active_dims, name)
+        super(Fixed, self).__init__(input_dim, variance, active_dims, name)
         self.fixed_K = covariance_matrix
     def K(self, X, X2):
         return self.variance * self.fixed_K
@@ -112,7 +111,7 @@ class Fixed(Static):
         self.variance.gradient = np.einsum('i,i', dL_dKdiag, self.fixed_K)
 
     def psi2(self, Z, variational_posterior):
-        return np.zeros((variational_posterior.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)
+        return np.zeros((Z.shape[0], Z.shape[0]), dtype=np.float64)
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dpsi0.sum()

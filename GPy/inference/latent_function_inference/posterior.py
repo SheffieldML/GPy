@@ -153,9 +153,14 @@ class Posterior(object):
         $$
         """
         if self._woodbury_inv is None:
-            self._woodbury_inv, _ = dpotri(self.woodbury_chol, lower=1)
-            #self._woodbury_inv, _ = dpotrs(self.woodbury_chol, np.eye(self.woodbury_chol.shape[0]), lower=1)
-            symmetrify(self._woodbury_inv)
+            if self._woodbury_chol is not None:
+                self._woodbury_inv, _ = dpotri(self._woodbury_chol, lower=1)
+                #self._woodbury_inv, _ = dpotrs(self.woodbury_chol, np.eye(self.woodbury_chol.shape[0]), lower=1)
+                symmetrify(self._woodbury_inv)
+            elif self._covariance is not None:
+                B = self._K - self._covariance
+                tmp, _ = dpotrs(self.K_chol, B)
+                self._woodbury_inv, _ = dpotrs(self.K_chol, tmp.T)                
         return self._woodbury_inv
 
     @property

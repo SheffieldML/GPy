@@ -148,6 +148,28 @@ class GP(Model):
         m, v = self._raw_predict(X,  full_cov=False)
         return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
 
+    def predictive_gradients(self, Xnew):
+        """
+        Compute the derivatives of the latent function with respect to X*
+
+        Given a set of points at which to predict X* (size [N*,Q]), compute the
+        derivatives of the mean and variance. Resulting arrays are sized:
+         dmu_dX* -- [N*, Q ,D], where D is the number of output in this GP (usually one).
+         dv_dX*  -- [N*, Q],    (since all outputs have the same variance)
+
+        """
+        dmu_dX = np.empty((Xnew.shape[0],Xnew.shape[1],self.output_dim))
+        for i in range(self.output_dim):
+            dmu_dX[:,:,i] = self.kern.gradients_X(self.posterior.woodbury_vector[:,i:i+1].T, Xnew, self.X)
+
+        # gradients wrt the diagonal part k_{xx}
+        dv_dX = self.kern.gradients_X(np.eye(Xnew.shape[0]), Xnew)
+        #grads wrt 'Schur' part K_{xf}K_{ff}^{-1}K_{fx}
+        alpha = -2.*np.dot(self.kern.K(Xnew, self.X),self.posterior.woodbury_inv)
+        dv_dX += self.kern.gradients_X(alpha, Xnew, self.X)
+        return dmu_dX, dv_dX
+
+
     def posterior_samples_f(self,X,size=10, full_cov=True):
         """
         Samples the posterior GP at the points X.

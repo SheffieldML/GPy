@@ -1,6 +1,5 @@
-
 """
-The module for psi-statistics for RBF kernel for Spike-and-Slab GPLVM
+The module for psi-statistics for RBF kernel
 """
 
 import numpy as np
@@ -59,7 +58,7 @@ gpu_code = """
         }
     }
 
-    __global__ void compDenom(double *log_denom1, double *log_denom2, double *log_gamma, double*log_gamma1, double *gamma, double *l, double *S, int N, int Q)
+    __global__ void compDenom(double *log_denom1, double *log_denom2, double *l, double *S, int N, int Q)
     {
         int n_start, n_end;
         divide_data(N, gridDim.x, blockIdx.x, &n_start, &n_end);
@@ -70,15 +69,12 @@ gpu_code = """
 
             double Snq = S[IDX_NQ(n,q)];
             double lq = l[q]*l[q];
-            double gnq = gamma[IDX_NQ(n,q)];
             log_denom1[IDX_NQ(n,q)] = log(Snq/lq+1.);
             log_denom2[IDX_NQ(n,q)] = log(2.*Snq/lq+1.);
-            log_gamma[IDX_NQ(n,q)] = log(gnq);
-            log_gamma1[IDX_NQ(n,q)] = log(1.-gnq);
         }
     }
 
-    __global__ void psi1computations(double *psi1, double *log_denom1, double *log_gamma, double*log_gamma1, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)
+    __global__ void psi1computations(double *psi1, double *log_denom1, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)
     {
         int m_start, m_end;
         divide_data(M, gridDim.x, blockIdx.x, &m_start, &m_end);
@@ -87,20 +83,17 @@ gpu_code = """
             for(int n=threadIdx.x; n<N; n+= blockDim.x) {            
                 double log_psi1 = 0;
                 for(int q=0;q<Q;q++) {
-                    double Zmq = Z[IDX_MQ(m,q)];
-                    double muZ = mu[IDX_NQ(n,q)]-Zmq;
+                    double muZ = mu[IDX_NQ(n,q)]-Z[IDX_MQ(m,q)];
                     double Snq = S[IDX_NQ(n,q)];
                     double lq = l[q]*l[q];
-                    double exp1 = log_gamma[IDX_NQ(n,q)]-(muZ*muZ/(Snq+lq)+log_denom1[IDX_NQ(n,q)])/(2.);
-                    double exp2 = log_gamma1[IDX_NQ(n,q)]-Zmq*Zmq/(2.*lq);
-                    log_psi1 += (exp1>exp2)?exp1+log1p(exp(exp2-exp1)):exp2+log1p(exp(exp1-exp2));
+                    log_psi1 += (muZ*muZ/(Snq+lq)+log_denom1[IDX_NQ(n,q)])/(-2.);
                 }
                 psi1[IDX_NM(n,m)] = var*exp(log_psi1);
             }
         }
     }
     
-    __global__ void psi2computations(double *psi2, double *psi2n, double *log_denom2, double *log_gamma, double*log_gamma1, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)
+    __global__ void psi2computations(double *psi2, double *psi2n, double *log_denom2, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)
     {
         int psi2_idx_start, psi2_idx_end;
         __shared__ double psi2_local[THREADNUM];
@@ -114,16 +107,11 @@ gpu_code = """
             for(int n=threadIdx.x;n<N;n+=blockDim.x) {
                 double log_psi2_n = 0;
                 for(int q=0;q<Q;q++) {
-                    double Zm1q = Z[IDX_MQ(m1,q)];
-                    double Zm2q = Z[IDX_MQ(m2,q)];
-                    double dZ = Zm1q - Zm2q;
-                    double muZhat = mu[IDX_NQ(n,q)]- (Zm1q+Zm2q)/2.;
-                    double Z2 = Zm1q*Zm1q+Zm2q*Zm2q;
+                    double dZ = Z[IDX_MQ(m1,q)] - Z[IDX_MQ(m2,q)];
+                    double muZhat = mu[IDX_NQ(n,q)]- (Z[IDX_MQ(m1,q)]+Z[IDX_MQ(m2,q)])/2.;
                     double Snq = S[IDX_NQ(n,q)];
                     double lq = l[q]*l[q];
-                    double exp1 = dZ*dZ/(-4.*lq)-muZhat*muZhat/(2.*Snq+lq) - log_denom2[IDX_NQ(n,q)]/2. + log_gamma[IDX_NQ(n,q)];
-                    double exp2 = log_gamma1[IDX_NQ(n,q)] - Z2/(2.*lq);
-                    log_psi2_n += (exp1>exp2)?exp1+log1p(exp(exp2-exp1)):exp2+log1p(exp(exp1-exp2));
+                    log_psi2_n += dZ*dZ/(-4.*lq)-muZhat*muZhat/(2.*Snq+lq) + log_denom2[IDX_NQ(n,q)]/(-2.);
                 }
                 double exp_psi2_n = exp(log_psi2_n);
                 psi2n[IDX_NMM(n,m1,m2)] = var*var*exp_psi2_n;
@@ -140,7 +128,7 @@ gpu_code = """
         }
     }
     
-    __global__ void psi1compDer(double *dvar, double *dl, double *dZ, double *dmu, double *dS, double *dgamma, double *dL_dpsi1, double *psi1, double *log_denom1, double *log_gamma, double*log_gamma1, double var, double *l, double *Z, double *mu, double *S, double *gamma, int N, int M, int Q)
+    __global__ void psi1compDer(double *dvar, double *dl, double *dZ, double *dmu, double *dS, double *dL_dpsi1, double *psi1, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)
     {
         int m_start, m_end;
         __shared__ double g_local[THREADNUM];
@@ -156,38 +144,21 @@ gpu_code = """
                 int n = p*THREADNUM + threadIdx.x;
                 double dmu_local = 0;
                 double dS_local = 0;
-                double dgamma_local = 0;
-                double Snq,mu_nq,gnq,log_gnq,log_gnq1,log_de;
-                if(n<N) {Snq = S[IDX_NQ(n,q)]; mu_nq=mu[IDX_NQ(n,q)]; gnq = gamma[IDX_NQ(n,q)];
-                        log_gnq = log_gamma[IDX_NQ(n,q)]; log_gnq1 = log_gamma1[IDX_NQ(n,q)];
-                        log_de = log_denom1[IDX_NQ(n,q)];}
+                double Snq,mu_nq;
+                if(n<N) {Snq = S[IDX_NQ(n,q)]; mu_nq=mu[IDX_NQ(n,q)];}
                 for(int m=m_start; m<m_end; m++) {
                     if(n<N) {
                         double lpsi1 = psi1[IDX_NM(n,m)]*dL_dpsi1[IDX_NM(n,m)];
                         if(q==0) {dvar_local += lpsi1;}
                         
-                        double Zmq = Z[IDX_MQ(m,q)];
-                        double Zmu = Zmq - mu_nq;
+                        double Zmu = Z[IDX_MQ(m,q)] - mu_nq;
                         double denom = Snq+lq;
                         double Zmu2_denom = Zmu*Zmu/denom;
                         
-                        double exp1 = log_gnq-(Zmu*Zmu/(Snq+lq)+log_de)/(2.);
-                        double exp2 = log_gnq1-Zmq*Zmq/(2.*lq);
-                        double d_exp1,d_exp2;
-                        if(exp1>exp2) {
-                            d_exp1 = 1.;
-                            d_exp2 = exp(exp2-exp1);
-                        } else {
-                            d_exp1 = exp(exp1-exp2);
-                            d_exp2 = 1.;
-                        }
-                        double exp_sum = d_exp1+d_exp2;
-                        
-                        dmu_local += lpsi1*Zmu*d_exp1/(denom*exp_sum);
-                        dS_local += lpsi1*(Zmu2_denom-1.)*d_exp1/(denom*exp_sum);
-                        dgamma_local += lpsi1*(d_exp1/gnq-d_exp2/(1.-gnq))/exp_sum;
-                        dl_local += lpsi1*((Zmu2_denom+Snq/lq)/denom*d_exp1+Zmq*Zmq/(lq*lq)*d_exp2)/(2.*exp_sum);
-                        g_local[threadIdx.x] = lpsi1*(-Zmu/denom*d_exp1-Zmq/lq*d_exp2)/exp_sum;
+                        dmu_local += lpsi1*Zmu/denom;
+                        dS_local += lpsi1*(Zmu2_denom-1.)/denom;
+                        dl_local += lpsi1*(Zmu2_denom+Snq/lq)/denom;
+                        g_local[threadIdx.x] = -lpsi1*Zmu/denom;
                     }
                     __syncthreads();
                     reduce_sum(g_local, p<P-1?THREADNUM:N-(P-1)*THREADNUM);
@@ -196,11 +167,10 @@ gpu_code = """
                 if(n<N) {
                     dmu[IDX_NQB(n,q,blockIdx.x)] += dmu_local;
                     dS[IDX_NQB(n,q,blockIdx.x)] += dS_local/2.;
-                    dgamma[IDX_NQB(n,q,blockIdx.x)] += dgamma_local;
                 }
                 __threadfence_block();
             }
-            g_local[threadIdx.x] = dl_local*2.*lq_sqrt;
+            g_local[threadIdx.x] = dl_local*lq_sqrt;
             __syncthreads();
             reduce_sum(g_local, THREADNUM);
             if(threadIdx.x==0) {dl[IDX_QB(q,blockIdx.x)] += g_local[0];}
@@ -208,10 +178,10 @@ gpu_code = """
         g_local[threadIdx.x] = dvar_local;
         __syncthreads();
         reduce_sum(g_local, THREADNUM);
-        if(threadIdx.x==0) {dvar[blockIdx.x] += g_local[0]/var;}
+        if(threadIdx.x==0) {dvar[blockIdx.x] += g_local[0]/var;}        
     }
     
-    __global__ void psi2compDer(double *dvar, double *dl, double *dZ, double *dmu, double *dS, double *dgamma, double *dL_dpsi2, double *psi2n, double *log_denom2, double *log_gamma, double*log_gamma1, double var, double *l, double *Z, double *mu, double *S, double *gamma, int N, int M, int Q)
+    __global__ void psi2compDer(double *dvar, double *dl, double *dZ, double *dmu, double *dS, double *dL_dpsi2, double *psi2n, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)
     {
         int m_start, m_end;
         __shared__ double g_local[THREADNUM];
@@ -227,11 +197,8 @@ gpu_code = """
                 int n = p*THREADNUM + threadIdx.x;
                 double dmu_local = 0;
                 double dS_local = 0;
-                double dgamma_local = 0;
-                double Snq,mu_nq,gnq,log_gnq,log_gnq1,log_de;
-                if(n<N) {Snq = S[IDX_NQ(n,q)]; mu_nq=mu[IDX_NQ(n,q)]; gnq = gamma[IDX_NQ(n,q)];
-                        log_gnq = log_gamma[IDX_NQ(n,q)]; log_gnq1 = log_gamma1[IDX_NQ(n,q)];
-                        log_de = log_denom2[IDX_NQ(n,q)];}
+                double Snq,mu_nq;
+                if(n<N) {Snq = S[IDX_NQ(n,q)]; mu_nq=mu[IDX_NQ(n,q)];}
                 for(int m1=m_start; m1<m_end; m1++) {
                     g_local[threadIdx.x] = 0;
                     for(int m2=0;m2<M;m2++) {
@@ -239,31 +206,15 @@ gpu_code = """
                             double lpsi2 = psi2n[IDX_NMM(n,m1,m2)]*dL_dpsi2[IDX_MM(m1,m2)];
                             if(q==0) {dvar_local += lpsi2;}
                             
-                            double Zm1q = Z[IDX_MQ(m1,q)];
-                            double Zm2q = Z[IDX_MQ(m2,q)];
-                            double dZ = Zm1q - Zm2q;
-                            double Z2 = Zm1q*Zm1q+Zm2q*Zm2q;
-                            double muZhat =  mu_nq - (Zm1q + Zm2q)/2.;
+                            double dZ = Z[IDX_MQ(m1,q)] - Z[IDX_MQ(m2,q)];
+                            double muZhat =  mu_nq - (Z[IDX_MQ(m1,q)] + Z[IDX_MQ(m2,q)])/2.;
                             double denom = 2.*Snq+lq;
                             double muZhat2_denom = muZhat*muZhat/denom;
                             
-                            double exp1 = dZ*dZ/(-4.*lq)-muZhat*muZhat/(2.*Snq+lq) - log_de/2. + log_gnq;
-                            double exp2 = log_gnq1 - Z2/(2.*lq);
-                            double d_exp1,d_exp2;
-                            if(exp1>exp2) {
-                                d_exp1 = 1.;
-                                d_exp2 = exp(exp2-exp1);
-                            } else {
-                                d_exp1 = exp(exp1-exp2);
-                                d_exp2 = 1.;
-                            }
-                            double exp_sum = d_exp1+d_exp2;
-                            
-                            dmu_local += lpsi2*muZhat/denom*d_exp1/exp_sum;
-                            dS_local += lpsi2*(2.*muZhat2_denom-1.)/denom*d_exp1/exp_sum;
-                            dgamma_local += lpsi2*(d_exp1/gnq-d_exp2/(1.-gnq))/exp_sum;
-                            dl_local += lpsi2*(((Snq/lq+muZhat2_denom)/denom+dZ*dZ/(4.*lq*lq))*d_exp1+Z2/(2.*lq*lq)*d_exp2)/exp_sum;
-                            g_local[threadIdx.x] += 2.*lpsi2*((muZhat/denom-dZ/(2*lq))*d_exp1-Zm1q/lq*d_exp2)/exp_sum;
+                            dmu_local += lpsi2*muZhat/denom;
+                            dS_local += lpsi2*(2.*muZhat2_denom-1.)/denom;
+                            dl_local += lpsi2*((Snq/lq+muZhat2_denom)/denom+dZ*dZ/(4.*lq*lq));
+                            g_local[threadIdx.x] += 2.*lpsi2*(muZhat/denom-dZ/(2*lq));
                         }
                     }
                     __syncthreads();
@@ -273,7 +224,6 @@ gpu_code = """
                 if(n<N) {
                     dmu[IDX_NQB(n,q,blockIdx.x)] += -2.*dmu_local;
                     dS[IDX_NQB(n,q,blockIdx.x)] += dS_local;
-                    dgamma[IDX_NQB(n,q,blockIdx.x)] += dgamma_local;
                 }
                 __threadfence_block();
             }
@@ -289,7 +239,7 @@ gpu_code = """
     }
     """
 
-class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
+class PSICOMP_RBF_GPU(PSICOMP_RBF):
 
     def __init__(self, threadnum=128, blocknum=15, GPU_direct=False):
         self.GPU_direct = GPU_direct
@@ -299,21 +249,21 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         self.blocknum = blocknum
         module = SourceModule("#define THREADNUM "+str(self.threadnum)+"\n"+gpu_code)
         self.g_psi1computations = module.get_function('psi1computations')
-        self.g_psi1computations.prepare('PPPPdPPPPiii')
+        self.g_psi1computations.prepare('PPdPPPPiii')
         self.g_psi2computations = module.get_function('psi2computations')
-        self.g_psi2computations.prepare('PPPPPdPPPPiii')
+        self.g_psi2computations.prepare('PPPdPPPPiii')
         self.g_psi1compDer = module.get_function('psi1compDer')
-        self.g_psi1compDer.prepare('PPPPPPPPPPPdPPPPPiii')
+        self.g_psi1compDer.prepare('PPPPPPPdPPPPiii')
         self.g_psi2compDer = module.get_function('psi2compDer')
-        self.g_psi2compDer.prepare('PPPPPPPPPPPdPPPPPiii')
+        self.g_psi2compDer.prepare('PPPPPPPdPPPPiii')
         self.g_compDenom = module.get_function('compDenom')
-        self.g_compDenom.prepare('PPPPPPPii')
-
+        self.g_compDenom.prepare('PPPPii')
+        
     def __deepcopy__(self, memo):
-        s = PSICOMP_SSRBF_GPU(threadnum=self.threadnum, blocknum=self.blocknum, GPU_direct=self.GPU_direct)
+        s = PSICOMP_RBF_GPU(threadnum=self.threadnum, blocknum=self.blocknum, GPU_direct=self.GPU_direct)
         memo[id(self)] = s 
         return s
-
+    
     def _initGPUCache(self, N, M, Q):            
         if self.gpuCache == None:
             self.gpuCache = {
@@ -321,7 +271,6 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
                              'Z_gpu'                :gpuarray.empty((M,Q),np.float64,order='F'),
                              'mu_gpu'               :gpuarray.empty((N,Q),np.float64,order='F'),
                              'S_gpu'                :gpuarray.empty((N,Q),np.float64,order='F'),
-                             'gamma_gpu'            :gpuarray.empty((N,Q),np.float64,order='F'),
                              'psi1_gpu'             :gpuarray.empty((N,M),np.float64,order='F'),
                              'psi2_gpu'             :gpuarray.empty((M,M),np.float64,order='F'),
                              'psi2n_gpu'            :gpuarray.empty((N,M,M),np.float64,order='F'),
@@ -329,27 +278,23 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
                              'dL_dpsi2_gpu'         :gpuarray.empty((M,M),np.float64,order='F'),
                              'log_denom1_gpu'       :gpuarray.empty((N,Q),np.float64,order='F'),
                              'log_denom2_gpu'       :gpuarray.empty((N,Q),np.float64,order='F'),
-                             'log_gamma_gpu'        :gpuarray.empty((N,Q),np.float64,order='F'),
-                             'log_gamma1_gpu'       :gpuarray.empty((N,Q),np.float64,order='F'),
                              # derivatives
                              'dvar_gpu'             :gpuarray.empty((self.blocknum,),np.float64, order='F'),
                              'dl_gpu'               :gpuarray.empty((Q,self.blocknum),np.float64, order='F'),
                              'dZ_gpu'               :gpuarray.empty((M,Q),np.float64, order='F'),
                              'dmu_gpu'              :gpuarray.empty((N,Q,self.blocknum),np.float64, order='F'),
                              'dS_gpu'               :gpuarray.empty((N,Q,self.blocknum),np.float64, order='F'),
-                             'dgamma_gpu'           :gpuarray.empty((N,Q,self.blocknum),np.float64, order='F'),
                              # grad
                              'grad_l_gpu'               :gpuarray.empty((Q,),np.float64, order='F'),
                              'grad_mu_gpu'              :gpuarray.empty((N,Q,),np.float64, order='F'),
                              'grad_S_gpu'               :gpuarray.empty((N,Q,),np.float64, order='F'),
-                             'grad_gamma_gpu'           :gpuarray.empty((N,Q,),np.float64, order='F'),
                              }
         else:
             assert N==self.gpuCache['mu_gpu'].shape[0]
             assert M==self.gpuCache['Z_gpu'].shape[0]
             assert Q==self.gpuCache['l_gpu'].shape[0]
     
-    def sync_params(self, lengthscale, Z, mu, S, gamma):
+    def sync_params(self, lengthscale, Z, mu, S):
         if len(lengthscale)==1:
             self.gpuCache['l_gpu'].fill(lengthscale)
         else:
@@ -357,9 +302,10 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         self.gpuCache['Z_gpu'].set(np.asfortranarray(Z))
         self.gpuCache['mu_gpu'].set(np.asfortranarray(mu))
         self.gpuCache['S_gpu'].set(np.asfortranarray(S))
-        self.gpuCache['gamma_gpu'].set(np.asfortranarray(gamma))
         N,Q = self.gpuCache['S_gpu'].shape
-        self.g_compDenom.prepared_call((self.blocknum,1),(self.threadnum,1,1), self.gpuCache['log_denom1_gpu'].gpudata,self.gpuCache['log_denom2_gpu'].gpudata,self.gpuCache['log_gamma_gpu'].gpudata,self.gpuCache['log_gamma1_gpu'].gpudata,self.gpuCache['gamma_gpu'].gpudata,self.gpuCache['l_gpu'].gpudata,self.gpuCache['S_gpu'].gpudata, np.int32(N), np.int32(Q))
+        # t=self.g_compDenom(self.gpuCache['log_denom1_gpu'],self.gpuCache['log_denom2_gpu'],self.gpuCache['l_gpu'],self.gpuCache['S_gpu'], np.int32(N), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
+        # print 'g_compDenom '+str(t)
+        self.g_compDenom.prepared_call((self.blocknum,1),(self.threadnum,1,1), self.gpuCache['log_denom1_gpu'].gpudata,self.gpuCache['log_denom2_gpu'].gpudata,self.gpuCache['l_gpu'].gpudata,self.gpuCache['S_gpu'].gpudata, np.int32(N), np.int32(Q))
         
     def reset_derivative(self):
         self.gpuCache['dvar_gpu'].fill(0.)
@@ -367,11 +313,9 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         self.gpuCache['dZ_gpu'].fill(0.)
         self.gpuCache['dmu_gpu'].fill(0.)
         self.gpuCache['dS_gpu'].fill(0.)
-        self.gpuCache['dgamma_gpu'].fill(0.)
         self.gpuCache['grad_l_gpu'].fill(0.)
         self.gpuCache['grad_mu_gpu'].fill(0.)
         self.gpuCache['grad_S_gpu'].fill(0.)
-        self.gpuCache['grad_gamma_gpu'].fill(0.)
     
     def get_dimensions(self, Z, variational_posterior):
         return variational_posterior.mean.shape[0], Z.shape[0], Z.shape[1]
@@ -385,7 +329,7 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         """
         N,M,Q = self.get_dimensions(Z, variational_posterior)
         self._initGPUCache(N,M,Q)
-        self.sync_params(lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
+        self.sync_params(lengthscale, Z, variational_posterior.mean, variational_posterior.variance)
         
         psi1_gpu = self.gpuCache['psi1_gpu']
         psi2_gpu = self.gpuCache['psi2_gpu']
@@ -396,14 +340,16 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         S_gpu = self.gpuCache['S_gpu']
         log_denom1_gpu = self.gpuCache['log_denom1_gpu']
         log_denom2_gpu = self.gpuCache['log_denom2_gpu']
-        log_gamma_gpu = self.gpuCache['log_gamma_gpu']
-        log_gamma1_gpu = self.gpuCache['log_gamma1_gpu']
 
         psi0 = np.empty((N,))
         psi0[:] = variance
-        self.g_psi1computations.prepared_call((self.blocknum,1),(self.threadnum,1,1),psi1_gpu.gpudata, log_denom1_gpu.gpudata, log_gamma_gpu.gpudata, log_gamma1_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
-        self.g_psi2computations.prepared_call((self.blocknum,1),(self.threadnum,1,1),psi2_gpu.gpudata, psi2n_gpu.gpudata, log_denom2_gpu.gpudata, log_gamma_gpu.gpudata, log_gamma1_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
-        
+        self.g_psi1computations.prepared_call((self.blocknum,1),(self.threadnum,1,1),psi1_gpu.gpudata, log_denom1_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
+        self.g_psi2computations.prepared_call((self.blocknum,1),(self.threadnum,1,1),psi2_gpu.gpudata, psi2n_gpu.gpudata, log_denom2_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
+        # t = self.g_psi1computations(psi1_gpu, log_denom1_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
+        # print 'g_psi1computations '+str(t)
+        # t = self.g_psi2computations(psi2_gpu, psi2n_gpu, log_denom2_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
+        # print 'g_psi2computations '+str(t)
+         
         if self.GPU_direct:
             return psi0, psi1_gpu, psi2_gpu
         else:
@@ -420,21 +366,14 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         Z_gpu = self.gpuCache['Z_gpu']
         mu_gpu = self.gpuCache['mu_gpu']
         S_gpu = self.gpuCache['S_gpu']
-        gamma_gpu = self.gpuCache['gamma_gpu']
         dvar_gpu = self.gpuCache['dvar_gpu']
         dl_gpu = self.gpuCache['dl_gpu']
         dZ_gpu = self.gpuCache['dZ_gpu']
         dmu_gpu = self.gpuCache['dmu_gpu']
         dS_gpu = self.gpuCache['dS_gpu']
-        dgamma_gpu = self.gpuCache['dgamma_gpu']
         grad_l_gpu = self.gpuCache['grad_l_gpu']
         grad_mu_gpu = self.gpuCache['grad_mu_gpu']
         grad_S_gpu = self.gpuCache['grad_S_gpu']
-        grad_gamma_gpu = self.gpuCache['grad_gamma_gpu']
-        log_denom1_gpu = self.gpuCache['log_denom1_gpu']
-        log_denom2_gpu = self.gpuCache['log_denom2_gpu']
-        log_gamma_gpu = self.gpuCache['log_gamma_gpu']
-        log_gamma1_gpu = self.gpuCache['log_gamma1_gpu']
         
         if self.GPU_direct:
             dL_dpsi1_gpu = dL_dpsi1
@@ -452,16 +391,14 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         # print 'g_psi1compDer '+str(t)
         # t=self.g_psi2compDer(dvar_gpu,dl_gpu,dZ_gpu,dmu_gpu,dS_gpu,dL_dpsi2_gpu,psi2n_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
         # print 'g_psi2compDer '+str(t)
-        self.g_psi1compDer.prepared_call((self.blocknum,1),(self.threadnum,1,1),dvar_gpu.gpudata,dl_gpu.gpudata,dZ_gpu.gpudata,dmu_gpu.gpudata,dS_gpu.gpudata,dgamma_gpu.gpudata,dL_dpsi1_gpu.gpudata,psi1_gpu.gpudata, log_denom1_gpu.gpudata, log_gamma_gpu.gpudata, log_gamma1_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata,gamma_gpu.gpudata,np.int32(N), np.int32(M), np.int32(Q))
-        self.g_psi2compDer.prepared_call((self.blocknum,1),(self.threadnum,1,1),dvar_gpu.gpudata,dl_gpu.gpudata,dZ_gpu.gpudata,dmu_gpu.gpudata,dS_gpu.gpudata,dgamma_gpu.gpudata,dL_dpsi2_gpu.gpudata,psi2n_gpu.gpudata, log_denom2_gpu.gpudata, log_gamma_gpu.gpudata, log_gamma1_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata,gamma_gpu.gpudata,np.int32(N), np.int32(M), np.int32(Q))
+        self.g_psi1compDer.prepared_call((self.blocknum,1),(self.threadnum,1,1),dvar_gpu.gpudata,dl_gpu.gpudata,dZ_gpu.gpudata,dmu_gpu.gpudata,dS_gpu.gpudata,dL_dpsi1_gpu.gpudata,psi1_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
+        self.g_psi2compDer.prepared_call((self.blocknum,1),(self.threadnum,1,1),dvar_gpu.gpudata,dl_gpu.gpudata,dZ_gpu.gpudata,dmu_gpu.gpudata,dS_gpu.gpudata,dL_dpsi2_gpu.gpudata,psi2n_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
 
         dL_dvar = dL_dpsi0_sum + gpuarray.sum(dvar_gpu).get()
         sum_axis(grad_mu_gpu,dmu_gpu,N*Q,self.blocknum)
         dL_dmu = grad_mu_gpu.get()
         sum_axis(grad_S_gpu,dS_gpu,N*Q,self.blocknum)
         dL_dS = grad_S_gpu.get()
-        sum_axis(grad_gamma_gpu,dgamma_gpu,N*Q,self.blocknum)
-        dL_dgamma = grad_gamma_gpu.get()
         dL_dZ = dZ_gpu.get()
         if ARD:
             sum_axis(grad_l_gpu,dl_gpu,Q,self.blocknum)
@@ -469,6 +406,6 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         else:
             dL_dlengscale = gpuarray.sum(dl_gpu).get()
             
-        return dL_dvar, dL_dlengscale, dL_dZ, dL_dmu, dL_dS, dL_dgamma
+        return dL_dvar, dL_dlengscale, dL_dZ, dL_dmu, dL_dS
     
 

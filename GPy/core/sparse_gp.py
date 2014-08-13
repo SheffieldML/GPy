@@ -118,5 +118,3 @@ class SparseGP(GP):
                 psi2 = kern.psi2(self.Z, Xnew)
                 var = Kxx - np.sum(np.sum(psi2 * Kmmi_LmiBLmi[None, :, :], 1), 1)
         return mu, var
-
-

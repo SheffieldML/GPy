@@ -79,7 +79,6 @@ class Stationary(Kern):
         #a convenience function, so we can cache dK_dr
         return self.dK_dr(self._scaled_dist(X, X2))
 
-    @Cache_this(limit=5, ignore_args=(0,))
     def _unscaled_dist(self, X, X2=None):
         """
         Compute the Euclidean distance between each row of X and X2, or between
@@ -90,13 +89,14 @@ class Stationary(Kern):
             Xsq = np.sum(np.square(X),1)
             r2 = -2.*tdot(X) + (Xsq[:,None] + Xsq[None,:])
             util.diag.view(r2)[:,]= 0. # force diagnoal to be zero: sometime numerically a little negative
+            r2 = np.clip(r2, 0, np.inf)
             return np.sqrt(r2)
         else:
             #X2, = self._slice_X(X2)
             X1sq = np.sum(np.square(X),1)
             X2sq = np.sum(np.square(X2),1)
             r2 = -2.*np.dot(X, X2.T) + X1sq[:,None] + X2sq[None,:]
-            r2[r2<0] = 0. # A bit hacky
+            r2 = np.clip(r2, 0, np.inf)
             return np.sqrt(r2)
 
     @Cache_this(limit=5, ignore_args=())
@@ -160,20 +160,20 @@ class Stationary(Kern):
         """
         invdist = self._inv_dist(X, X2)
         dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
-        #The high-memory numpy way:
-        #d =  X[:, None, :] - X2[None, :, :]
-        #ret = np.sum((invdist*dL_dr)[:,:,None]*d,1)/self.lengthscale**2
-        #if X2 is None:
-            #ret *= 2.
-
-        #the lower memory way with a loop
         tmp = invdist*dL_dr
         if X2 is None:
-            tmp *= 2.
+            tmp = tmp + tmp.T
             X2 = X
+
+        #The high-memory numpy way:
+        #d =  X[:, None, :] - X2[None, :, :]
+        #ret = np.sum(tmp[:,:,None]*d,1)/self.lengthscale**2
+
+        #the lower memory way with a loop
         ret = np.empty(X.shape, dtype=np.float64)
-        [np.einsum('ij,ij->i', tmp, X[:,q][:,None]-X2[:,q][None,:], out=ret[:,q]) for q in xrange(self.input_dim)]
+        [np.sum(tmp*(X[:,q][:,None]-X2[:,q][None,:]), axis=1, out=ret[:,q]) for q in xrange(self.input_dim)]
         ret /= self.lengthscale**2
+
         return ret
 
     def gradients_X_diag(self, dL_dKdiag, X):

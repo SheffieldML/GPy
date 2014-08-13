@@ -93,7 +93,7 @@ def plot_SpikeSlab(parameterized, fignum=None, ax=None, colors=None, side_by_sid
             a.set_xticklabels('')
         # binary prob plot
         a = fig.add_subplot(*sub2)
-        a.bar(x,gamma[:,i],bottom=0.,linewidth=0,align='center')
+        a.bar(x,gamma[:,i],bottom=0.,linewidth=0,width=1.0,align='center')
         a.set_xlim(x.min(), x.max())
         a.set_ylim([0.,1.])
     pb.draw()

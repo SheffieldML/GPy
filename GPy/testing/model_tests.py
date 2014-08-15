@@ -423,6 +423,45 @@ class GradientTests(np.testing.TestCase):
         m = GPy.models.GPHeteroscedasticRegression(X,Y,kern)
         self.assertTrue(m.checkgrad())
 
+    def test_gp_kronecker_gaussian(self):
+        N1, N2 = 30, 20
+        X1 = np.random.randn(N1, 1)
+        X2 = np.random.randn(N2, 1)
+        X1.sort(0); X2.sort(0)
+        k1 = GPy.kern.RBF(1)  # + GPy.kern.White(1)
+        k2 = GPy.kern.RBF(1)  # + GPy.kern.White(1)
+        Y = np.random.randn(N1, N2)
+        m = GPy.models.GPKroneckerGaussianRegression(X1, X2, Y, k1, k2)
+
+        # build the model the dumb way
+        assert (N1*N2<1000), "too much data for standard GPs!"
+        yy, xx = np.meshgrid(X2, X1)
+        Xgrid = np.vstack((xx.flatten(order='F'), yy.flatten(order='F'))).T
+        kg = GPy.kern.RBF(1, active_dims=[0]) * GPy.kern.RBF(1, active_dims=[1])
+        mm = GPy.models.GPRegression(Xgrid, Y.reshape(-1, 1, order='F'), kernel=kg)
+
+        m.randomize()
+        mm[:] = m[:]
+        assert np.allclose(m.log_likelihood(), mm.log_likelihood())
+        assert np.allclose(m.gradient, mm.gradient)
+        X1test = np.random.randn(100, 1)
+        X2test = np.random.randn(100, 1)
+        mean1, var1 = m.predict(X1test, X2test)
+        yy, xx = np.meshgrid(X2test, X1test)
+        Xgrid = np.vstack((xx.flatten(order='F'), yy.flatten(order='F'))).T
+        mean2, var2 = mm.predict(Xgrid)
+        assert np.allclose(mean1, mean2)
+        assert np.allclose(var1, var2)
+
+    def test_gp_VGPC(self):
+        num_obs = 25
+        X = np.random.randint(0,140,num_obs)
+        X = X[:,None]
+        Y = 25. + np.sin(X/20.) * 2. + np.random.rand(num_obs)[:,None]
+        kern = GPy.kern.Bias(1) + GPy.kern.RBF(1)
+        m = GPy.models.GPVariationalGaussianApproximation(X,Y,kern)
+        self.assertTrue(m.checkgrad())
+
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."

@@ -180,7 +180,10 @@ class Parameterized(Parameterizable):
         :param param: param object to remove from being a parameter of this parameterized object.
         """
         if not param in self.parameters:
-            raise RuntimeError, "Parameter {} does not belong to this object {}, remove parameters directly from their respective parents".format(param._short(), self.name)
+            try:
+                raise RuntimeError, "{} does not belong to this object {}, remove parameters directly from their respective parents".format(param._short(), self.name)
+            except AttributeError:
+                raise RuntimeError, "{} does not seem to be a parameter, remove parameters directly from their respective parents".format(str(param))
 
         start = sum([p.size for p in self.parameters[:param._parent_index_]])
         self._remove_parameter_name(param)

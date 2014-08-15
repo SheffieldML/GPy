@@ -111,7 +111,7 @@ class VariationalPosterior(Parameterized):
             n.input_dim = n.mean.shape[1] if n.ndim != 1 else 1
             return n
         else:
-            return super(VariationalPrior, self).__getitem__(s)
+            return super(VariationalPosterior, self).__getitem__(s)
 
 class NormalPosterior(VariationalPosterior):
     '''

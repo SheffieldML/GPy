@@ -23,7 +23,7 @@ class SSGPLVM(SparseGP):
     :type init: 'PCA'|'random'
 
     """
-    def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
+    def __init__(self, Y, input_dim, X=None, X_variance=None, Gamma=None, init='PCA', num_inducing=10,
                  Z=None, kernel=None, inference_method=None, likelihood=None, name='Spike_and_Slab GPLVM', group_spike=False, mpi_comm=None, pi=None, learnPi=True, **kwargs):
 
         self.mpi_comm = mpi_comm
@@ -41,10 +41,13 @@ class SSGPLVM(SparseGP):
         if X_variance is None: # The variance of the variational approximation (S)
             X_variance = np.random.uniform(0,.1,X.shape)
             
-        gamma = np.empty_like(X) # The posterior probabilities of the binary variable in the variational approximation
-        gamma[:] = 0.5 + 0.1 * np.random.randn(X.shape[0], input_dim)
-        gamma[gamma>1.-1e-9] = 1.-1e-9
-        gamma[gamma<1e-9] = 1e-9
+        if Gamma is None:
+            gamma = np.empty_like(X) # The posterior probabilities of the binary variable in the variational approximation
+            gamma[:] = 0.5 + 0.1 * np.random.randn(X.shape[0], input_dim)
+            gamma[gamma>1.-1e-9] = 1.-1e-9
+            gamma[gamma<1e-9] = 1e-9
+        else:
+            gamma = Gamma.copy()
                 
         if Z is None:
             Z = np.random.permutation(X.copy())[:num_inducing]

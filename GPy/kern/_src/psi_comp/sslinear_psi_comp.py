@@ -22,11 +22,8 @@ def psicomputations(variance, Z, variational_posterior):
 
     psi0 = np.einsum('q,nq,nq->n',variance,gamma,np.square(mu)+S)
     psi1 = np.einsum('nq,q,mq,nq->nm',gamma,variance,Z,mu)
-    mu2 = np.square(mu)
-    variances2 = np.square(variance)
-    tmp = np.einsum('nq,q,mq,nq->nm',gamma,variance,Z,mu)
-    psi2 = np.einsum('nq,q,mq,oq,nq->mo',gamma,variances2,Z,Z,mu2+S)+\
-           np.einsum('nm,no->mo',tmp,tmp) - np.einsum('nq,q,mq,oq,nq->mo',np.square(gamma),variances2,Z,Z,mu2)
+    psi2 = np.einsum('nq,q,mq,oq,nq->mo',gamma,np.square(variance),Z,Z,(1-gamma)*np.square(mu)+S) +\
+                np.einsum('nm,no->mo',psi1,psi1) 
 
     return psi0, psi1, psi2
 
@@ -67,18 +64,17 @@ def _psi2computations(dL_dpsi2, variance, Z, mu, S, gamma):
     variance2 = np.square(variance)
     mu2S = mu2+S # NxQ
     common_sum = np.einsum('nq,q,mq,nq->nm',gamma,variance,Z,mu) # NxM
+    
+    dL_dpsi2_2 = dL_dpsi2+dL_dpsi2.T
 
     dL_dvar = np.einsum('mo,nq,q,mq,oq->q',dL_dpsi2,2.*(gamma*mu2S-gamma2*mu2),variance,Z,Z)+\
-        np.einsum('mo,nq,mq,nq,no->q',dL_dpsi2,gamma,Z,mu,common_sum)+\
-        np.einsum('mo,nq,oq,nq,nm->q',dL_dpsi2,gamma,Z,mu,common_sum)
+        np.einsum('mo,nq,mq,nq,no->q',dL_dpsi2_2,gamma,Z,mu,common_sum)
         
     dL_dgamma = np.einsum('mo,q,mq,oq,nq->nq',dL_dpsi2,variance2,Z,Z,(mu2S-2.*gamma*mu2))+\
-        np.einsum('mo,q,mq,nq,no->nq',dL_dpsi2,variance,Z,mu,common_sum)+\
-        np.einsum('mo,q,oq,nq,nm->nq',dL_dpsi2,variance,Z,mu,common_sum)
+        np.einsum('mo,q,mq,nq,no->nq',dL_dpsi2_2,variance,Z,mu,common_sum)
     
     dL_dmu = np.einsum('mo,q,mq,oq,nq,nq->nq',dL_dpsi2,variance2,Z,Z,mu,2.*(gamma-gamma2))+\
-        np.einsum('mo,nq,q,mq,no->nq',dL_dpsi2,gamma,variance,Z,common_sum)+\
-        np.einsum('mo,nq,q,oq,nm->nq',dL_dpsi2,gamma,variance,Z,common_sum)
+        np.einsum('mo,nq,q,mq,no->nq',dL_dpsi2_2,gamma,variance,Z,common_sum)
                     
     dL_dS = np.einsum('mo,nq,q,mq,oq->nq',dL_dpsi2,gamma,variance2,Z,Z)
     

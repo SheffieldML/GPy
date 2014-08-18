@@ -118,9 +118,9 @@ class Add(CombinationKernel):
                 if isinstance(p2, White):
                     continue
                 elif isinstance(p2, Bias):
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
+                    eff_dL_dpsi1 += dL_dpsi2.sum(0) * p2.variance * 2.
                 else:# np.setdiff1d(p1.active_dims, ar2, assume_unique): # TODO: Careful, not correct for overlapping active_dims
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
+                    eff_dL_dpsi1 += dL_dpsi2.sum(0) * p2.psi1(Z, variational_posterior) * 2.
             p1.update_gradients_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
 
     def gradients_Z_expectations(self, dL_psi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
@@ -135,16 +135,15 @@ class Add(CombinationKernel):
                 if isinstance(p2, White):
                     continue
                 elif isinstance(p2, Bias):
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
+                    eff_dL_dpsi1 += dL_dpsi2.sum(0) * p2.variance * 2.
                 else:
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
+                    eff_dL_dpsi1 += dL_dpsi2.sum(0) * p2.psi1(Z, variational_posterior) * 2.
             target += p1.gradients_Z_expectations(dL_psi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         return target
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         from static import White, Bias
-        target_mu = np.zeros(variational_posterior.shape)
-        target_S = np.zeros(variational_posterior.shape)
+        target_grads = [np.zeros(v.shape) for v in variational_posterior.parameters]
         for p1 in self.parameters:
             #compute the effective dL_dpsi1. extra terms appear becaue of the cross terms in psi2!
             eff_dL_dpsi1 = dL_dpsi1.copy()
@@ -154,13 +153,12 @@ class Add(CombinationKernel):
                 if isinstance(p2, White):
                     continue
                 elif isinstance(p2, Bias):
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
+                    eff_dL_dpsi1 += dL_dpsi2.sum(0) * p2.variance * 2.
                 else:
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
-            a, b = p1.gradients_qX_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
-            target_mu += a
-            target_S += b
-        return target_mu, target_S
+                    eff_dL_dpsi1 += dL_dpsi2.sum(0) * p2.psi1(Z, variational_posterior) * 2.
+            grads = p1.gradients_qX_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
+            [np.add(target_grads[i],grads[i],target_grads[i]) for i in xrange(len(grads))]
+        return target_grads
 
     def add(self, other, name='sum'):
         if isinstance(other, Add):

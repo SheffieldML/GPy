@@ -113,7 +113,6 @@ class Linear(Kern):
     def psi1(self, Z, variational_posterior):
         return self.psicomp.psicomputations(self.variances, Z, variational_posterior)[1]
 
-    @Cache_this(limit=1)
     def psi2(self, Z, variational_posterior):
         return self.psicomp.psicomputations(self.variances, Z, variational_posterior)[2]
 

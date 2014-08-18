@@ -64,21 +64,20 @@ def _psi2computations(dL_dpsi2, variance, Z, mu, S, gamma):
     variance2 = np.square(variance)
     mu2S = mu2+S # NxQ
     common_sum = np.einsum('nq,q,mq,nq->nm',gamma,variance,Z,mu) # NxM
+    Z_expect = np.einsum('mo,mq,oq->q',dL_dpsi2,Z,Z)
+    common_expect = np.einsum('mo,mq,no->nq',dL_dpsi2+dL_dpsi2.T,Z,common_sum)
     
-    dL_dpsi2_2 = dL_dpsi2+dL_dpsi2.T
-
-    dL_dvar = np.einsum('mo,nq,q,mq,oq->q',dL_dpsi2,2.*(gamma*mu2S-gamma2*mu2),variance,Z,Z)+\
-        np.einsum('mo,nq,mq,nq,no->q',dL_dpsi2_2,gamma,Z,mu,common_sum)
+    dL_dvar = np.einsum('nq,q,q->q',2.*(gamma*mu2S-gamma2*mu2),variance,Z_expect)+\
+        np.einsum('nq,nq,nq->q',common_expect,gamma,mu)
         
-    dL_dgamma = np.einsum('mo,q,mq,oq,nq->nq',dL_dpsi2,variance2,Z,Z,(mu2S-2.*gamma*mu2))+\
-        np.einsum('mo,q,mq,nq,no->nq',dL_dpsi2_2,variance,Z,mu,common_sum)
+    dL_dgamma = np.einsum('q,q,nq->nq',Z_expect,variance2,(mu2S-2.*gamma*mu2))+\
+        np.einsum('nq,q,nq->nq',common_expect,variance,mu)
     
-    dL_dmu = np.einsum('mo,q,mq,oq,nq,nq->nq',dL_dpsi2,variance2,Z,Z,mu,2.*(gamma-gamma2))+\
-        np.einsum('mo,nq,q,mq,no->nq',dL_dpsi2_2,gamma,variance,Z,common_sum)
+    dL_dmu = np.einsum('q,q,nq,nq->nq',Z_expect,variance2,mu,2.*(gamma-gamma2))+\
+            np.einsum('nq,nq,q->nq',common_expect,gamma,variance)
                     
-    dL_dS = np.einsum('mo,nq,q,mq,oq->nq',dL_dpsi2,gamma,variance2,Z,Z)
+    dL_dS = np.einsum('q,nq,q->nq',Z_expect,gamma,variance2)
     
-    dL_dZ = 2.*(np.einsum('om,nq,q,mq,nq->oq',dL_dpsi2,gamma,variance2,Z,mu2S)+np.einsum('om,nq,q,nq,nm->oq',dL_dpsi2,gamma,variance,mu,common_sum)
-                -np.einsum('om,nq,q,mq,nq->oq',dL_dpsi2,gamma2,variance2,Z,mu2))
+    dL_dZ = 2.*(np.einsum('om,nq,q,mq,nq->oq',dL_dpsi2,gamma,variance2,Z,(mu2S-gamma*mu2))+np.einsum('om,nq,q,nq,nm->oq',dL_dpsi2,gamma,variance,mu,common_sum))
 
     return dL_dvar, dL_dgamma, dL_dmu, dL_dS, dL_dZ

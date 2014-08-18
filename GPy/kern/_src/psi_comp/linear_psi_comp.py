@@ -56,15 +56,15 @@ def _psi2computations(dL_dpsi2, variance, Z, mu, S):
     
     variance2 = np.square(variance)
     common_sum = np.einsum('q,mq,nq->nm',variance,Z,mu) # NxM
-    dL_dpsi2_2 = dL_dpsi2+dL_dpsi2.T
+    Z_expect = np.einsum('mo,mq,oq->q',dL_dpsi2,Z,Z)
+    common_expect = np.einsum('mo,mq,no->nq',dL_dpsi2+dL_dpsi2.T,Z,common_sum)
 
-    dL_dvar = np.einsum('mo,nq,q,mq,oq->q',dL_dpsi2,2.*S,variance,Z,Z)+\
-        np.einsum('mo,mq,nq,no->q',dL_dpsi2_2,Z,mu,common_sum)
+    dL_dvar = np.einsum('q,nq,q->q',Z_expect,2.*S,variance)+ np.einsum('nq,nq->q',common_expect,mu)
             
-    dL_dmu = np.einsum('mo,q,mq,no->nq',dL_dpsi2_2,variance,Z,common_sum)
+    dL_dmu = np.einsum('nq,q->nq',common_expect,variance)
     
     dL_dS = np.empty(S.shape)
-    dL_dS[:] = np.einsum('mo,q,mq,oq->q',dL_dpsi2,variance2,Z,Z)
+    dL_dS[:] = np.einsum('q,q->q',Z_expect,variance2)
     
     dL_dZ = 2.*(np.einsum('om,q,mq,nq->oq',dL_dpsi2,variance2,Z,S)+np.einsum('om,q,nq,nm->oq',dL_dpsi2,variance,mu,common_sum))
 

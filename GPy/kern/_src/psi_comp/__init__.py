@@ -48,3 +48,6 @@ class PSICOMP_Linear(Pickleable):
             return sslinear_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior)
         else:
             raise ValueError, "unknown distriubtion received for psi-statistics"
+        
+    def _setup_observers(self):
+        pass

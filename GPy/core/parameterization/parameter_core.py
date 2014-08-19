@@ -191,7 +191,7 @@ class Pickleable(object):
         """
         import cPickle as pickle
         if isinstance(f, str):
-            with open(f, 'w') as f:
+            with open(f, 'wb') as f:
                 pickle.dump(self, f, protocol)
         else:
             pickle.dump(self, f, protocol)

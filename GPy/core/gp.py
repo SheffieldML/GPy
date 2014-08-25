@@ -285,11 +285,11 @@ class GP(Model):
                                      plot_raw=plot_raw, Y_metadata=Y_metadata,
                                      data_symbol=data_symbol, **kw)
 
-    def input_sensitivity(self):
+    def input_sensitivity(self, summarize=True):
         """
         Returns the sensitivity for each dimension of this model
         """
-        return self.kern.input_sensitivity()
+        return self.kern.input_sensitivity(summarize=summarize)
 
     def optimize(self, optimizer=None, start=None, **kwargs):
         """

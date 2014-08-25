@@ -132,7 +132,6 @@ class Linear(Kern):
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         return self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variances, Z, variational_posterior)[2:]
 
-
 class LinearFull(Kern):
     def __init__(self, input_dim, rank, W=None, kappa=None, active_dims=None, name='linear_full'):
         super(LinearFull, self).__init__(input_dim, active_dims, name)

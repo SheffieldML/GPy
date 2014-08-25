@@ -23,9 +23,9 @@ class Kern(Parameterized):
 
         input_dim:
 
-            is the number of dimensions to work on. Make sure to give the 
+            is the number of dimensions to work on. Make sure to give the
             tight dimensionality of inputs.
-            You most likely want this to be the integer telling the number of 
+            You most likely want this to be the integer telling the number of
             input dimensions of the kernel.
             If this is not an integer (!) we will work on the whole input matrix X,
             and not check whether dimensions match or not (!).
@@ -134,7 +134,7 @@ class Kern(Parameterized):
         from ...plotting.matplot_dep import kernel_plots
         return kernel_plots.plot_ARD(self,*args,**kw)
 
-    def input_sensitivity(self):
+    def input_sensitivity(self, summarize=True):
         """
         Returns the sensitivity for each dimension of this kernel.
         """
@@ -142,6 +142,9 @@ class Kern(Parameterized):
 
     def __add__(self, other):
         """ Overloading of the '+' operator. for more control, see self.add """
+        return self.add(other)
+
+    def __iadd__(self, other):
         return self.add(other)
 
     def add(self, other, name='add'):
@@ -235,7 +238,12 @@ class CombinationKernel(Kern):
         active_dims = np.arange(input_dim)
         return input_dim, active_dims
 
-    def input_sensitivity(self):
+    def input_sensitivity(self, summarize=True):
+        """
+        If summize is true, we want to get the summerized view of the sensitivities,
+        otherwise put everything into an array with shape (#kernels, input_dim)
+        in the order of appearance of the kernels in the parameterized object.
+        """
         raise NotImplementedError("Choose the kernel you want to get the sensitivity for. You need to override the default behaviour for getting the input sensitivity to be able to get the input sensitivity. For sum kernel it is the sum of all sensitivities, TODO: product kernel? Other kernels?, also TODO: shall we return all the sensitivities here in the combination kernel? So we can combine them however we want? This could lead to just plot all the sensitivities here...")
 
     def _check_active_dims(self, X):

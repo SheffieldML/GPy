@@ -54,7 +54,7 @@ class Transformation(object):
 class Logexp(Transformation):
     domain = _POSITIVE
     def f(self, x):
-        return np.where(x>_lim_val, x, np.log(1. + np.exp(np.clip(x, -_lim_val, _lim_val)))) + epsilon
+        return np.where(x>_lim_val, x, np.log1p(np.exp(np.clip(x, -_lim_val, _lim_val)))) + epsilon
         #raises overflow warning: return np.where(x>_lim_val, x, np.log(1. + np.exp(x)))
     def finv(self, f):
         return np.where(f>_lim_val, f, np.log(np.exp(f+1e-20) - 1.))

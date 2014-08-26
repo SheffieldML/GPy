@@ -179,7 +179,7 @@ class Stationary(Kern):
     def gradients_X_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
 
-    def input_sensitivity(self):
+    def input_sensitivity(self, summarize=True):
         return np.ones(self.input_dim)/self.lengthscale**2
 
 class Exponential(Stationary):
@@ -340,7 +340,7 @@ class RatQuad(Stationary):
     """
 
 
-    def __init__(self, input_dim, variance=1., lengthscale=None, power=2., ARD=False, active_dims=None, name='ExpQuad'):
+    def __init__(self, input_dim, variance=1., lengthscale=None, power=2., ARD=False, active_dims=None, name='RatQuad'):
         super(RatQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
         self.power = Param('power', power, Logexp())
         self.add_parameters(self.power)

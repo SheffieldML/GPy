@@ -378,7 +378,7 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         if self.GPU_direct:
             dL_dpsi1_gpu = dL_dpsi1
             dL_dpsi2_gpu = dL_dpsi2
-            dL_dpsi0_sum = gpuarray.sum(dL_dpsi0).get()
+            dL_dpsi0_sum = dL_dpsi0.get().sum() #gpuarray.sum(dL_dpsi0).get()
         else:
             dL_dpsi1_gpu = self.gpuCache['dL_dpsi1_gpu']
             dL_dpsi2_gpu = self.gpuCache['dL_dpsi2_gpu']
@@ -394,7 +394,7 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         self.g_psi1compDer.prepared_call((self.blocknum,1),(self.threadnum,1,1),dvar_gpu.gpudata,dl_gpu.gpudata,dZ_gpu.gpudata,dmu_gpu.gpudata,dS_gpu.gpudata,dL_dpsi1_gpu.gpudata,psi1_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
         self.g_psi2compDer.prepared_call((self.blocknum,1),(self.threadnum,1,1),dvar_gpu.gpudata,dl_gpu.gpudata,dZ_gpu.gpudata,dmu_gpu.gpudata,dS_gpu.gpudata,dL_dpsi2_gpu.gpudata,psi2n_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
 
-        dL_dvar = dL_dpsi0_sum + gpuarray.sum(dvar_gpu).get()
+        dL_dvar = dL_dpsi0_sum + dvar_gpu.get().sum()#gpuarray.sum(dvar_gpu).get()
         sum_axis(grad_mu_gpu,dmu_gpu,N*Q,self.blocknum)
         dL_dmu = grad_mu_gpu.get()
         sum_axis(grad_S_gpu,dS_gpu,N*Q,self.blocknum)
@@ -404,7 +404,7 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
             sum_axis(grad_l_gpu,dl_gpu,Q,self.blocknum)
             dL_dlengscale = grad_l_gpu.get()
         else:
-            dL_dlengscale = gpuarray.sum(dl_gpu).get()
+            dL_dlengscale = dl_gpu.get().sum() #gpuarray.sum(dl_gpu).get()
             
         return dL_dvar, dL_dlengscale, dL_dZ, dL_dmu, dL_dS
     

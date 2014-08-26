@@ -191,7 +191,7 @@ class Pickleable(object):
         """
         import cPickle as pickle
         if isinstance(f, str):
-            with open(f, 'w') as f:
+            with open(f, 'wb') as f:
                 pickle.dump(self, f, protocol)
         else:
             pickle.dump(self, f, protocol)
@@ -954,19 +954,30 @@ class Parameterizable(OptimizationHandlable):
         if ignore_added_names:
             self.__dict__[pname] = param
             return
+
+        def warn_and_retry():
+            print """
+            WARNING: added a parameter with formatted name {},
+            which is already assigned to {}.
+            Trying to change the parameter name to
+
+            {}.{}
+            """.format(pname, self.hierarchy_name(), self.hierarchy_name(), param.name + "_")
+            param.name += "_"
+            self._add_parameter_name(param, ignore_added_names)
         # and makes sure to not delete programmatically added parameters
         if pname in self.__dict__:
             if not (param is self.__dict__[pname]):
                 if pname in self._added_names_:
                     del self.__dict__[pname]
                     self._add_parameter_name(param)
+                else:
+                    warn_and_retry()
         elif pname not in dir(self):
             self.__dict__[pname] = param
             self._added_names_.add(pname)
         else:
-            print "WARNING: added a parameter with formatted name {}, which is already a member of {} object. Trying to change the parameter name to\n   {}".format(pname, self.__class__, param.name + "_")
-            param.name += "_"
-            self._add_parameter_name(param, ignore_added_names)
+            warn_and_retry()
 
     def _remove_parameter_name(self, param=None, pname=None):
         assert param is None or pname is None, "can only delete either param by name, or the name of a param"

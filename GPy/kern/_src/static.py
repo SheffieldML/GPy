@@ -40,6 +40,11 @@ class Static(Kern):
         K = self.K(variational_posterior.mean, Z)
         return np.einsum('ij,ik->jk',K,K) #K[:,:,None]*K[:,None,:] # NB. more efficient implementations on inherriting classes
 
+    def input_sensitivity(self, summarize=True):
+        if summarize:
+            return super(Static, self).input_sensitivity(summarize=summarize)
+        else:
+            return np.ones(self.input_dim) * self.variance
 
 class White(Static):
     def __init__(self, input_dim, variance=1., active_dims=None, name='white'):
@@ -62,7 +67,6 @@ class White(Static):
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dpsi0.sum()
-
 
 class Bias(Static):
     def __init__(self, input_dim, variance=1., active_dims=None, name='bias'):

@@ -9,7 +9,7 @@ import ssrbf_psi_comp
 import sslinear_psi_comp
 import linear_psi_comp
 
-class PSICOMP_RBF(object):
+class PSICOMP_RBF(Pickleable):
 
     @Cache_this(limit=2, ignore_args=(0,))
     def psicomputations(self, variance, lengthscale, Z, variational_posterior):
@@ -29,7 +29,7 @@ class PSICOMP_RBF(object):
         else:
             raise ValueError, "unknown distriubtion received for psi-statistics"
         
-class PSICOMP_Linear(object):
+class PSICOMP_Linear(Pickleable):
 
     @Cache_this(limit=2, ignore_args=(0,))
     def psicomputations(self, variance, Z, variational_posterior):
@@ -48,3 +48,6 @@ class PSICOMP_Linear(object):
             return sslinear_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior)
         else:
             raise ValueError, "unknown distriubtion received for psi-statistics"
+        
+    def _setup_observers(self):
+        pass

@@ -84,18 +84,17 @@ class SSGPLVM(SparseGP_MPI):
         """Get the gradients of the posterior distribution of X in its specific form."""
         return X.mean.gradient, X.variance.gradient, X.binary_prob.gradient
 
-#     def parameters_changed(self):
-#         if isinstance(self.inference_method, VarDTC_GPU) or isinstance(self.inference_method, VarDTC_minibatch):
-#             update_gradients(self, mpi_comm=self.mpi_comm)
-#             return
-#         
-#         super(SSGPLVM, self).parameters_changed()
-#         self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
-# 
-#         self.X.mean.gradient, self.X.variance.gradient, self.X.binary_prob.gradient = self.kern.gradients_qX_expectations(variational_posterior=self.X, Z=self.Z, dL_dpsi0=self.grad_dict['dL_dpsi0'], dL_dpsi1=self.grad_dict['dL_dpsi1'], dL_dpsi2=self.grad_dict['dL_dpsi2'])
-# 
-#         # update for the KL divergence
-#         self.variational_prior.update_gradients_KL(self.X)
+    def parameters_changed(self):
+        super(SSGPLVM,self).parameters_changed()
+        if isinstance(self.inference_method, VarDTC_minibatch):
+            return
+        
+        self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
+
+        self.X.mean.gradient, self.X.variance.gradient, self.X.binary_prob.gradient = self.kern.gradients_qX_expectations(variational_posterior=self.X, Z=self.Z, dL_dpsi0=self.grad_dict['dL_dpsi0'], dL_dpsi1=self.grad_dict['dL_dpsi1'], dL_dpsi2=self.grad_dict['dL_dpsi2'])
+
+        # update for the KL divergence
+        self.variational_prior.update_gradients_KL(self.X)
 
     def input_sensitivity(self):
         if self.kern.ARD:

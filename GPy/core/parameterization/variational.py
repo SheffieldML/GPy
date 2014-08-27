@@ -46,9 +46,15 @@ class SpikeAndSlabPrior(VariationalPrior):
         mu = variational_posterior.mean
         S = variational_posterior.variance
         gamma = variational_posterior.binary_prob
+        if len(self.pi.shape)==2:
+            idx = np.unique(gamma._raveled_index()/gamma.shape[-1])
+            pi = self.pi[idx]
+        else:
+            pi = self.pi
+            
         var_mean = np.square(mu)/self.variance
         var_S = (S/self.variance - np.log(S))
-        var_gamma = (gamma*np.log(gamma/self.pi)).sum()+((1-gamma)*np.log((1-gamma)/(1-self.pi))).sum()
+        var_gamma = (gamma*np.log(gamma/pi)).sum()+((1-gamma)*np.log((1-gamma)/(1-pi))).sum()
         return var_gamma+ (gamma* (np.log(self.variance)-1. +var_mean + var_S)).sum()/2.
 
     def update_gradients_KL(self, variational_posterior):

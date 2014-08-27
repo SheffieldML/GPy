@@ -95,12 +95,12 @@ class SparseGP_MPI(SparseGP):
             super(SparseGP_MPI, self).optimize(optimizer,start,**kwargs)
             self.mpi_comm.Bcast(np.int32(-1),root=0)
         elif self.mpi_comm.rank>0:
-            x = self._get_params_transformed().copy()
+            x = self.optimizer_array.copy()
             flag = np.empty(1,dtype=np.int32)
             while True:
                 self.mpi_comm.Bcast(flag,root=0)
                 if flag==1:
-                    self._set_params_transformed(x)
+                    self.optimizer_array = x
                 elif flag==-1:
                     break
                 else:
@@ -109,5 +109,8 @@ class SparseGP_MPI(SparseGP):
         self._IN_OPTIMIZATION_ = False
 
     def parameters_changed(self):
-        update_gradients(self, mpi_comm=self.mpi_comm)
+        if isinstance(self.inference_method,VarDTC_minibatch):
+            update_gradients(self, mpi_comm=self.mpi_comm)
+        else:
+            super(SparseGP_MPI,self).parameters_changed()
 

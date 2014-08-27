@@ -159,17 +159,17 @@ class GP(Model):
         """
         #predict the latent function values
         mu, var = self._raw_predict(Xnew, full_cov=full_cov, kern=kern)
+        if self.normalizer is not None:
+            mu, var = self.normalizer.inverse_mean(mu), self.normalizer.inverse_variance(var)
 
         # now push through likelihood
         mean, var = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata)
-
-        if self.normalizer is not None:
-            return self.normalizer.inverse_mean(mean), self.normalizer.inverse_variance(var)
-        else:
-            return mean, var
+        return mean, var
 
     def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None):
         m, v = self._raw_predict(X,  full_cov=False)
+        if self.normalizer is not None:
+            m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
         return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
 
     def predictive_gradients(self, Xnew):
@@ -207,6 +207,8 @@ class GP(Model):
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
         m, v = self._raw_predict(X,  full_cov=full_cov)
+        if self.normalizer is not None:
+            m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
         v = v.reshape(m.size,-1) if len(v.shape)==3 else v
         if not full_cov:
             Ysim = np.random.multivariate_normal(m.flatten(), np.diag(v.flatten()), size).T

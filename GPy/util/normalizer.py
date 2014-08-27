@@ -37,6 +37,7 @@ class GaussianNorm(Norm):
         Y = np.ma.masked_invalid(Y, copy=False)
         self.mean = Y.mean(0).view(np.ndarray)
         self.std = Y.std(0).view(np.ndarray)
+        self.std[self.std==0] = 1.
     def normalize(self, Y):
         return ((Y-self.mean)/self.std)
     def inverse_mean(self, X):

@@ -68,6 +68,8 @@ def plot_ARD(kernel, fignum=None, ax=None, title='', legend=False, filtering=Non
 
     ard_params = np.atleast_2d(kernel.input_sensitivity(summarize=False))
     bottom = 0
+    last_bottom = bottom
+
     x = np.arange(kernel.input_dim)
 
     if order is None:
@@ -77,12 +79,13 @@ def plot_ARD(kernel, fignum=None, ax=None, title='', legend=False, filtering=Non
         if kernel.parameters[i].name in order:
             c = Tango.nextMedium()
             bars.append(plot_bars(fig, ax, x, ard_params[i,:], c, kernel.parameters[i].name, bottom=bottom))
-            bottom += ard_params[i,:]
+            last_bottom = ard_params[i,:]
+            bottom += last_bottom
         else:
             print "filtering out {}".format(kernel.parameters[i].name)
 
     ax.set_xlim(-.5, kernel.input_dim - .5)
-    add_bar_labels(fig, ax, [bars[-1]], bottom=bottom-ard_params[i,:])
+    add_bar_labels(fig, ax, [bars[-1]], bottom=bottom-last_bottom)
 
     if legend:
         if title is '':

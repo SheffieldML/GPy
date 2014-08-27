@@ -34,7 +34,7 @@ class SparseGP(GP):
 
     """
 
-    def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None, name='sparse gp', Y_metadata=None):
+    def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None, name='sparse gp', Y_metadata=None, normalizer=False):
 
         #pick a sensible inference method
         if inference_method is None:
@@ -48,7 +48,7 @@ class SparseGP(GP):
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]
 
-        GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata)
+        GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
         logger.info("Adding Z as parameter")
         self.add_parameter(self.Z, index=0)
 
@@ -56,7 +56,7 @@ class SparseGP(GP):
         return isinstance(self.X, VariationalPosterior)
 
     def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood, self.Y, self.Y_metadata)
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood, self.Y_normalized, self.Y_metadata)
         self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])
         if isinstance(self.X, VariationalPosterior):
             #gradients wrt kernel

@@ -15,7 +15,7 @@ from parameterization.variational import VariationalPosterior
 from scipy.sparse.base import issparse
 
 import logging
-from GPy.util.normalizer import GaussianNorm
+from GPy.util.normalizer import MeanNorm
 logger = logging.getLogger("GP")
 
 class GP(Model):
@@ -31,7 +31,7 @@ class GP(Model):
     :param Norm normalizer:
         normalize the outputs Y.
         Prediction will be un-normalized using this normalizer.
-        If normalizer is None, we will normalize using GaussianNorm.
+        If normalizer is None, we will normalize using MeanNorm.
         If normalizer is False, no normalization will be done.
 
     .. Note:: Multiple independent outputs are allowed using columns of Y
@@ -52,7 +52,7 @@ class GP(Model):
         logger.info("initializing Y")
 
         if normalizer is None:
-            self.normalizer = GaussianNorm()
+            self.normalizer = MeanNorm()
         elif normalizer is False:
             self.normalizer = None
         else:

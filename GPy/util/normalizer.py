@@ -24,25 +24,22 @@ class Norm(object):
         Project the normalized object X into space of Y
         """
         raise NotImplementedError
+    def inverse_variance(self, var):
+        return var
     def scaled(self):
         """
         Whether this Norm object has been initialized.
         """
         raise NotImplementedError
-class GaussianNorm(Norm):
+class MeanNorm(Norm):
     def __init__(self):
         self.mean = None
-        self.std = None
     def scale_by(self, Y):
         Y = np.ma.masked_invalid(Y, copy=False)
         self.mean = Y.mean(0).view(np.ndarray)
-        self.std = Y.std(0).view(np.ndarray)
-        self.std[self.std==0] = 1.
     def normalize(self, Y):
-        return ((Y-self.mean)/self.std)
+        return Y-self.mean
     def inverse_mean(self, X):
-        return ((X*self.std)+self.mean)
-    def inverse_variance(self, var):
-        return (var*self.std**2)
+        return X+self.mean
     def scaled(self):
-        return self.mean is not None and self.std is not None
+        return self.mean is not None

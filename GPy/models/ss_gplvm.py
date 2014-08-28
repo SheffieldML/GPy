@@ -24,7 +24,7 @@ class SSGPLVM(SparseGP_MPI):
 
     """
     def __init__(self, Y, input_dim, X=None, X_variance=None, Gamma=None, init='PCA', num_inducing=10,
-                 Z=None, kernel=None, inference_method=None, likelihood=None, name='Spike_and_Slab GPLVM', group_spike=False, mpi_comm=None, pi=None, learnPi=True, **kwargs):
+                 Z=None, kernel=None, inference_method=None, likelihood=None, name='Spike_and_Slab GPLVM', group_spike=False, mpi_comm=None, pi=None, learnPi=True,normalizer=False, **kwargs):
 
         self.group_spike = group_spike
         
@@ -69,7 +69,7 @@ class SSGPLVM(SparseGP_MPI):
         
         X = SpikeAndSlabPosterior(X, X_variance, gamma)
                 
-        super(SSGPLVM,self).__init__(X, Y, Z, kernel, likelihood, variational_prior=self.variational_prior, inference_method=inference_method, name=name, mpi_comm=mpi_comm, **kwargs)
+        super(SSGPLVM,self).__init__(X, Y, Z, kernel, likelihood, variational_prior=self.variational_prior, inference_method=inference_method, name=name, mpi_comm=mpi_comm, normalizer=normalizer, **kwargs)
         self.X.unfix()
         self.X.variance.constrain_positive()
                 

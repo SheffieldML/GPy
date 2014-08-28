@@ -778,9 +778,15 @@ class OptimizationHandlable(Indexable):
         """
         # first take care of all parameters (from N(0,1))
         x = rand_gen(size=self._size_transformed(), *args, **kwargs)
-        # now draw from prior where possible
-        [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
+        self.updates = False # Switch off the updates
         self.optimizer_array = x  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
+        # now draw from prior where possible
+        x = self.param_array.copy()
+        [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
+        unfixlist = np.ones((self.size,),dtype=np.bool)
+        unfixlist[self.constraints[__fixed__]] = False
+        self.param_array[unfixlist] = x[unfixlist]
+        self.updates = True 
 
     #===========================================================================
     # For shared memory arrays. This does nothing in Param, but sets the memory

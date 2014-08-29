@@ -511,6 +511,22 @@ class Indexable(Nameable, Observable):
             [np.put(ret, ind, p.lnpdf_grad(x[ind])) for p, ind in self.priors.iteritems()]
             return ret
         return 0.
+    
+    #===========================================================================
+    # Tie parameters together
+    #===========================================================================
+    
+    def _has_ties(self):
+        if self._highest_parent_.tie.tied_param is None:
+            return False
+        if self.has_parent():
+            return self._highest_parent_.tie.label_buf[self._highest_parent_._raveled_index_for(self)].sum()>0
+        return True
+    
+    def tie_together(self):
+        self._highest_parent_.tie.add_tied_parameter(self)
+        self._highest_parent_._set_fixed(self,self._raveled_index())
+        self._trigger_params_changed()
 
     #===========================================================================
     # Constrain operations -> done
@@ -653,7 +669,7 @@ class OptimizationHandlable(Indexable):
         will be set accordingly. It has to be set with an array, retrieved from
         this method, as e.g. fixing will resize the array.
 
-        The optimizer should only interfere with this array, such that transofrmations
+        The optimizer should only interfere with this array, such that transformations
         are secured.
         """
         if self.__dict__.get('_optimizer_copy_', None) is None or self.size != self._optimizer_copy_.size:
@@ -662,12 +678,13 @@ class OptimizationHandlable(Indexable):
         if not self._optimizer_copy_transformed:
             self._optimizer_copy_.flat = self.param_array.flat
             [np.put(self._optimizer_copy_, ind, c.finv(self.param_array[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-            if self.has_parent() and self.constraints[__fixed__].size != 0:
+            if self.has_parent() and (self.constraints[__fixed__].size != 0 or self._has_ties()):
                 fixes = np.ones(self.size).astype(bool)
                 fixes[self.constraints[__fixed__]] = FIXED
-                return self._optimizer_copy_[fixes]
+                return self._optimizer_copy_[np.logical_and(fixes, self._highest_parent_.tie.getTieFlag(self))]
             elif self._has_fixes():
-                return self._optimizer_copy_[self._fixes_]
+                    return self._optimizer_copy_[self._fixes_]
+
             self._optimizer_copy_transformed = True
 
         return self._optimizer_copy_
@@ -694,6 +711,7 @@ class OptimizationHandlable(Indexable):
             self.param_array.flat[f] = p
             [np.put(self.param_array, ind[f[ind]], c.f(self.param_array.flat[ind[f[ind]]]))
              for c, ind in self.constraints.iteritems() if c != __fixed__]
+        self._highest_parent_.tie.propagate_val()
 
         self._optimizer_copy_transformed = False
         self._trigger_params_changed()
@@ -726,6 +744,7 @@ class OptimizationHandlable(Indexable):
         Transform the gradients by multiplying the gradient factor for each
         constraint to it.
         """
+        self._highest_parent_.tie.collate_gradient()
         [np.put(g, i, g[i] * c.gradfactor(self.param_array[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g

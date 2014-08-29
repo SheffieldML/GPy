@@ -21,6 +21,10 @@ class Model(Parameterized):
         self.optimization_runs = []
         self.sampling_runs = []
         self.preferred_optimizer = 'bfgs'
+        from .parameterization.ties_and_remappings import Tie
+        self.tie = Tie()
+        self.add_parameter(self.tie, -1)
+        self.add_observer(self.tie, self.tie._parameters_changed_notification, priority=-500)
 
     def log_likelihood(self):
         raise NotImplementedError, "this needs to be implemented to use the model class"

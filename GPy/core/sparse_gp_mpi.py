@@ -3,12 +3,7 @@
 
 import numpy as np
 from sparse_gp import SparseGP
-from parameterization.param import Param
-from ..inference.latent_function_inference import var_dtc
-from .. import likelihoods
-from parameterization.variational import VariationalPosterior
 from ..inference.latent_function_inference.var_dtc_parallel import update_gradients, VarDTC_minibatch
-from ..core.parameterization.parameter_core import OptimizationHandlable
 
 import logging
 logger = logging.getLogger("sparse gp mpi")
@@ -80,11 +75,15 @@ class SparseGP_MPI(SparseGP):
     #=====================================================
     
     @SparseGP.optimizer_array.setter
-    def optimizer_array(self, p):        
+    def optimizer_array(self, p):
         if self.mpi_comm != None:
             if self._IN_OPTIMIZATION_ and self.mpi_comm.rank==0:
                 self.mpi_comm.Bcast(np.int32(1),root=0)
             self.mpi_comm.Bcast(p, root=0)
+            
+        from ..util.debug import checkFinite
+        checkFinite(p, 'optimizer_array')
+        
         SparseGP.optimizer_array.fset(self,p)
         
     def optimize(self, optimizer=None, start=None, **kwargs):

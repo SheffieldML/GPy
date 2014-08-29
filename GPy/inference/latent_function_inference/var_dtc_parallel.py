@@ -166,12 +166,16 @@ class VarDTC_minibatch(LatentFunctionInference):
         # Compute Common Components
         #======================================================================
         
+        from ...util.debug import checkFullRank
+        
         Kmm = kern.K(Z).copy()
         diag.add(Kmm, self.const_jitter)
+        checkFullRank(Kmm)
         Lm = jitchol(Kmm)
         
         LmInvPsi2LmInvT = backsub_both_sides(Lm,psi2_full,transpose='right')
         Lambda = np.eye(Kmm.shape[0])+LmInvPsi2LmInvT
+        checkFullRank(Lambda)
         LL = jitchol(Lambda)
         LL = np.dot(Lm,LL)
         b,_ = dtrtrs(LL, psi1Y_full.T)

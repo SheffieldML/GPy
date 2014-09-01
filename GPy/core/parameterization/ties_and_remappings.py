@@ -53,7 +53,9 @@ class Tie(Parameterized):
     ================================
     
     TODO:
-    * EVERYTHING
+    1. Properly handling parameters with constraints
+    2. Properly handling the merging of two models
+    3. Properly handling initialization
     
     """
     def __init__(self, name='tie'):

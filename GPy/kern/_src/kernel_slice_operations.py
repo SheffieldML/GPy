@@ -124,9 +124,9 @@ def _slice_update_gradients_expectations(f):
 
 def _slice_gradients_Z_expectations(f):
     @wraps(f)
-    def wrap(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def wrap(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         with _Slice_wrap(self, Z, variational_posterior) as s:
-            ret = s.handle_return_array(f(self, dL_dpsi1, dL_dpsi2, s.X, s.X2))
+            ret = s.handle_return_array(f(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, s.X, s.X2))
         return ret
     return wrap
 

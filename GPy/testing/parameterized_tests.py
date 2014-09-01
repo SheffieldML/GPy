@@ -8,6 +8,7 @@ import GPy
 import numpy as np
 from GPy.core.parameterization.parameter_core import HierarchyError
 from GPy.core.parameterization.observable_array import ObsAr
+from GPy.core.parameterization.transformations import NegativeLogexp
 
 class ArrayCoreTest(unittest.TestCase):
     def setUp(self):
@@ -27,21 +28,36 @@ class ArrayCoreTest(unittest.TestCase):
 class ParameterizedTest(unittest.TestCase):
 
     def setUp(self):
-        self.rbf = GPy.kern.RBF(1)
+        self.rbf = GPy.kern.RBF(20)
         self.white = GPy.kern.White(1)
         from GPy.core.parameterization import Param
         from GPy.core.parameterization.transformations import Logistic
-        self.param = Param('param', np.random.rand(25,2), Logistic(0, 1))
+        self.param = Param('param', np.random.uniform(0,1,(25,2)), Logistic(0, 1))
 
         self.test1 = GPy.core.Parameterized("test model")
         self.test1.param = self.param
         self.test1.kern = self.rbf+self.white
         self.test1.add_parameter(self.test1.kern)
         self.test1.add_parameter(self.param, 0)
+        # print self.test1:
+        #=============================================================================
+        # test_model.          |    Value    |  Constraint   |  Prior  |  Tied to
+        # param                |  (25L, 2L)  |   {0.0,1.0}   |         |
+        # add.rbf.variance     |        1.0  |  0.0,1.0 +ve  |         |
+        # add.rbf.lengthscale  |        1.0  |  0.0,1.0 +ve  |         |
+        # add.white.variance   |        1.0  |  0.0,1.0 +ve  |         |
+        #=============================================================================
 
         x = np.linspace(-2,6,4)[:,None]
         y = np.sin(x)
         self.testmodel = GPy.models.GPRegression(x,y)
+        # print self.testmodel:
+        #=============================================================================
+        # GP_regression.           |  Value  |  Constraint  |  Prior  |  Tied to
+        # rbf.variance             |    1.0  |     +ve      |         |
+        # rbf.lengthscale          |    1.0  |     +ve      |         |
+        # Gaussian_noise.variance  |    1.0  |     +ve      |         |
+        #=============================================================================
 
     def test_add_parameter(self):
         self.assertEquals(self.rbf._parent_index_, 0)
@@ -95,7 +111,7 @@ class ParameterizedTest(unittest.TestCase):
         self.assertListEqual(self.test1.kern.param_array.tolist(), val[:2].tolist())
 
     def test_add_parameter_already_in_hirarchy(self):
-        self.assertRaises(HierarchyError, self.test1.add_parameter, self.white._parameters_[0])
+        self.assertRaises(HierarchyError, self.test1.add_parameter, self.white.parameters[0])
 
     def test_default_constraints(self):
         self.assertIs(self.rbf.variance.constraints._param_index_ops, self.rbf.constraints._param_index_ops)
@@ -141,6 +157,13 @@ class ParameterizedTest(unittest.TestCase):
         val = float(self.testmodel.kern.lengthscale)
         self.testmodel.randomize()
         self.assertEqual(val, self.testmodel.kern.lengthscale)
+
+    def test_add_parameter_in_hierarchy(self):
+        from GPy.core import Param
+        self.test1.kern.rbf.add_parameter(Param("NEW", np.random.rand(2), NegativeLogexp()), 1)
+        self.assertListEqual(self.test1.constraints[NegativeLogexp()].tolist(), range(self.param.size+1, self.param.size+1 + 2))
+        self.assertListEqual(self.test1.constraints[GPy.transformations.Logistic(0,1)].tolist(), range(self.param.size))
+        self.assertListEqual(self.test1.constraints[GPy.transformations.Logexp(0,1)].tolist(), np.r_[50, 53:55].tolist())
 
     def test_regular_expression_misc(self):
         self.testmodel.kern.lengthscale.fix()

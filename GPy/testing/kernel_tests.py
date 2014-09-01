@@ -304,22 +304,12 @@ class KernelTestsMiscellaneous(unittest.TestCase):
     def setUp(self):
         N, D = 100, 10
         self.X = np.linspace(-np.pi, +np.pi, N)[:,None] * np.random.uniform(-10,10,D)
-        self.rbf = GPy.kern.RBF(2, active_dims=slice(0,4,2))
+        self.rbf = GPy.kern.RBF(2, active_dims=np.arange(0,4,2))
         self.linear = GPy.kern.Linear(2, active_dims=(3,9))
         self.matern = GPy.kern.Matern32(3, active_dims=np.array([1,7,9]))
         self.sumkern = self.rbf + self.linear
         self.sumkern += self.matern
         self.sumkern.randomize()
-
-    def test_active_dims(self):
-        # test the automatic dim detection expression for slices:
-        start, stop = 0, 277
-        for i in range(start,stop,7):
-            for j in range(1,4):
-                GPy.kern.Kern(int(np.round((i+1)/j)), slice(0, i+1, j), "testkern")
-        # test the ability to have only one dim
-        sk = GPy.kern.RBF(2) + GPy.kern.Matern32(2)
-        self.assertEqual(sk.input_dim, 2)
 
     def test_which_parts(self):
         self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=[self.linear, self.matern]), self.linear.K(self.X)+self.matern.K(self.X)))
@@ -344,10 +334,15 @@ class KernelTestsNonContinuous(unittest.TestCase):
         self.X2[(N0*2):, -1] = 1
 
     def test_IndependentOutputs(self):
-        k = GPy.kern.RBF(self.D)
+        k = GPy.kern.RBF(self.D, active_dims=range(self.D))
         kern = GPy.kern.IndependentOutputs(k, -1, 'ind_single')
         self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
-        k = [GPy.kern.RBF(1, active_dims=[1], name='rbf1'), GPy.kern.RBF(self.D, name='rbf012'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf02')]
+        k = [GPy.kern.RBF(1, active_dims=[1], name='rbf1'), GPy.kern.RBF(self.D, active_dims=range(self.D), name='rbf012'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf02')]
+        kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
+        self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
+
+    def test_Hierarchical(self):
+        k = [GPy.kern.RBF(2, active_dims=[0,2], name='rbf1'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf2')]
         kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
         self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
 

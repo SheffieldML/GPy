@@ -1,7 +1,7 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-__updated__ = '2014-04-15'
+__updated__ = '2014-05-12'
 
 import numpy as np
 from parameter_core import Observable, Pickleable
@@ -15,10 +15,10 @@ class ObsAr(np.ndarray, Pickleable, Observable):
     """
     __array_priority__ = -1 # Never give back ObsAr
     def __new__(cls, input_array, *a, **kw):
+        # allways make a copy of input paramters, as we need it to be in C order:
         if not isinstance(input_array, ObsAr):
-            obj = np.atleast_1d(np.require(input_array, dtype=np.float64, requirements=['W', 'C'])).view(cls)
+            obj = np.atleast_1d(np.require(np.copy(input_array), dtype=np.float64, requirements=['W', 'C'])).view(cls)
         else: obj = input_array
-        #cls.__name__ = "ObsAr" # because of fixed printing of `array` in np printing
         super(ObsAr, obj).__init__(*a, **kw)
         return obj
 
@@ -30,16 +30,22 @@ class ObsAr(np.ndarray, Pickleable, Observable):
     def __array_wrap__(self, out_arr, context=None):
         return out_arr.view(np.ndarray)
 
+    def _setup_observers(self):
+        # do not setup anything, as observable arrays do not have default observers
+        pass
+
     def copy(self):
+        from lists_and_dicts import ObserverList
         memo = {}
         memo[id(self)] = self
+        memo[id(self.observers)] = ObserverList()
         return self.__deepcopy__(memo)
 
     def __deepcopy__(self, memo):
         s = self.__new__(self.__class__, input_array=self.view(np.ndarray).copy())
         memo[id(self)] = s
         import copy
-        s.__dict__.update(copy.deepcopy(self.__dict__, memo))
+        Pickleable.__setstate__(s, copy.deepcopy(self.__getstate__(), memo))
         return s
 
     def __reduce__(self):

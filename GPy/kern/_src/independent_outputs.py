@@ -20,9 +20,11 @@ def index_to_slices(index):
     returns
     >>> [[slice(0,2,None),slice(4,5,None)],[slice(2,4,None),slice(8,10,None)],[slice(5,8,None)]]
     """
+    if len(index)==0:
+        return[]
 
     #contruct the return structure
-    ind = np.asarray(index,dtype=np.int64)
+    ind = np.asarray(index,dtype=np.int)
     ret = [[] for i in range(ind.max()+1)]
 
     #find the switchpoints
@@ -32,7 +34,7 @@ def index_to_slices(index):
     [ret[ind_i].append(slice(*indexes_i)) for ind_i,indexes_i in zip(ind[switchpoints[:-1]],zip(switchpoints,switchpoints[1:]))]
     return ret
 
-class IndependentOutputs(Kern):
+class IndependentOutputs(CombinationKernel):
     """
     A kernel which can represent several independent functions.  this kernel
     'switches off' parts of the matrix where the output indexes are different.
@@ -179,6 +181,9 @@ class Hierarchical(CombinationKernel):
 
     def Kdiag(self,X):
         return np.diag(self.K(X))
+
+    def gradients_X(self, dL_dK, X, X2=None):
+        raise NotImplementedError
 
     def update_gradients_full(self,dL_dK,X,X2=None):
         slices = [index_to_slices(X[:,i]) for i in self.extra_dims]

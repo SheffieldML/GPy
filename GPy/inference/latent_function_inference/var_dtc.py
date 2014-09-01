@@ -7,9 +7,12 @@ from ...util import diag
 from ...core.parameterization.variational import VariationalPosterior
 import numpy as np
 from ...util.misc import param_to_array
+from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
+import logging, itertools
+logger = logging.getLogger('vardtc')
 
-class VarDTC(object):
+class VarDTC(LatentFunctionInference):
     """
     An object for inference when the likelihood is Gaussian, but we want to do sparse inference.
 
@@ -35,11 +38,11 @@ class VarDTC(object):
         return param_to_array(np.sum(np.square(Y)))
 
     def __getstate__(self):
-        # has to be overridden, as Cacher objects cannot be pickled. 
+        # has to be overridden, as Cacher objects cannot be pickled.
         return self.limit
 
     def __setstate__(self, state):
-        # has to be overridden, as Cacher objects cannot be pickled. 
+        # has to be overridden, as Cacher objects cannot be pickled.
         self.limit = state
         from ...util.caching import Cacher
         self.get_trYYT = Cacher(self._get_trYYT, self.limit)
@@ -61,20 +64,9 @@ class VarDTC(object):
         return Y * prec # TODO chache this, and make it effective
 
     def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None):
-        if isinstance(X, VariationalPosterior):
-            uncertain_inputs = True
-            psi0 = kern.psi0(Z, X)
-            psi1 = kern.psi1(Z, X)
-            psi2 = kern.psi2(Z, X)
-        else:
-            uncertain_inputs = False
-            psi0 = kern.Kdiag(X)
-            psi1 = kern.K(X, Z)
-            psi2 = None
-
-        #see whether we're using variational uncertain inputs
 
         _, output_dim = Y.shape
+        uncertain_inputs = isinstance(X, VariationalPosterior)
 
         #see whether we've got a different noise variance for each datum
         beta = 1./np.fmax(likelihood.gaussian_variance(Y_metadata), 1e-6)
@@ -95,23 +87,21 @@ class VarDTC(object):
         diag.add(Kmm, self.const_jitter)
         Lm = jitchol(Kmm)
 
-        # The rather complex computations of A
+
+        # The rather complex computations of A, and the psi stats
         if uncertain_inputs:
+            psi0 = kern.psi0(Z, X)
+            psi1 = kern.psi1(Z, X)
             if het_noise:
-                psi2_beta = psi2 * (beta.flatten().reshape(num_data, 1, 1)).sum(0)
+                psi2_beta = np.sum([kern.psi2(Z,X[i:i+1,:]) * beta_i for i,beta_i in enumerate(beta)],0)
             else:
-                psi2_beta = psi2.sum(0) * beta
-            #if 0:
-            #    evals, evecs = linalg.eigh(psi2_beta)
-            #    clipped_evals = np.clip(evals, 0., 1e6) # TODO: make clipping configurable
-            #    if not np.array_equal(evals, clipped_evals):
-            #        pass # print evals
-            #    tmp = evecs * np.sqrt(clipped_evals)
-            #    tmp = tmp.T
-            # no backsubstitution because of bound explosion on tr(A) if not...
+                psi2_beta = kern.psi2(Z,X) * beta
             LmInv = dtrtri(Lm)
             A = LmInv.dot(psi2_beta.dot(LmInv.T))
         else:
+            psi0 = kern.Kdiag(X)
+            psi1 = kern.K(X, Z)
+            psi2 = None
             if het_noise:
                 tmp = psi1 * (np.sqrt(beta.reshape(num_data, 1)))
             else:
@@ -148,7 +138,7 @@ class VarDTC(object):
         log_marginal = _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise,
             psi0, A, LB, trYYT, data_fit, VVT_factor)
 
-        #put the gradients in the right places
+        #noise derivatives
         dL_dR = _compute_dL_dR(likelihood,
             het_noise, uncertain_inputs, LB,
             _LBi_Lmi_psi1Vf, DBi_plus_BiPBi, Lm, A,
@@ -157,6 +147,7 @@ class VarDTC(object):
 
         dL_dthetaL = likelihood.exact_inference_gradients(dL_dR,Y_metadata)
 
+        #put the gradients in the right places
         if uncertain_inputs:
             grad_dict = {'dL_dKmm': dL_dKmm,
                          'dL_dpsi0':dL_dpsi0,
@@ -190,36 +181,62 @@ class VarDTC(object):
         post = Posterior(woodbury_inv=woodbury_inv, woodbury_vector=woodbury_vector, K=Kmm, mean=None, cov=None, K_chol=Lm)
         return post, log_marginal, grad_dict
 
-class VarDTCMissingData(object):
-    const_jitter = 1e-6
+class VarDTCMissingData(LatentFunctionInference):
+    const_jitter = 1e-10
     def __init__(self, limit=1, inan=None):
         from ...util.caching import Cacher
         self._Y = Cacher(self._subarray_computations, limit)
-        self._inan = inan
+        if inan is not None: self._inan = ~inan
+        else: self._inan = None
         pass
 
     def set_limit(self, limit):
         self._Y.limit = limit
 
+    def __getstate__(self):
+        # has to be overridden, as Cacher objects cannot be pickled.
+        return self._Y.limit, self._inan
+
+    def __setstate__(self, state):
+        # has to be overridden, as Cacher objects cannot be pickled.
+        from ...util.caching import Cacher
+        self.limit = state[0]
+        self._inan = state[1]
+        self._Y = Cacher(self._subarray_computations, self.limit)
+
     def _subarray_computations(self, Y):
         if self._inan is None:
             inan = np.isnan(Y)
             has_none = inan.any()
+            self._inan = ~inan
         else:
             inan = self._inan
             has_none = True
         if has_none:
-            from ...util.subarray_and_sorting import common_subarrays
-            self._subarray_indices = []
-            for v,ind in common_subarrays(inan, 1).iteritems():
-                if not np.all(v):
-                    v = ~np.array(v, dtype=bool)
-                    ind = np.array(ind, dtype=int)
-                    if ind.size == Y.shape[1]:
-                        ind = slice(None)
-                    self._subarray_indices.append([v,ind])
-            Ys = [Y[v, :][:, ind] for v, ind in self._subarray_indices]
-            traces = [(y**2).sum() for y in Ys]
+            #print "caching missing data slices, this can take several minutes depending on the number of unique dimensions of the data..."
+            #csa = common_subarrays(inan, 1)
+            size = Y.shape[1]
+            #logger.info('preparing subarrays {:3.3%}'.format((i+1.)/size))
+            Ys = []
+            next_ten = [0.]
+            count = itertools.count()
+            for v, y in itertools.izip(inan.T, Y.T[:,:,None]):
+                i = count.next()
+                if ((i+1.)/size) >= next_ten[0]:
+                    logger.info('preparing subarrays {:>6.1%}'.format((i+1.)/size))
+                    next_ten[0] += .1
+                Ys.append(y[v,:])
+
+            next_ten = [0.]
+            count = itertools.count()
+            def trace(y):
+                i = count.next()
+                if ((i+1.)/size) >= next_ten[0]:
+                    logger.info('preparing traces {:>6.1%}'.format((i+1.)/size))
+                    next_ten[0] += .1
+                y = y[inan[:,i],i:i+1]
+                return np.einsum('ij,ij->', y,y)
+            traces = [trace(Y) for _ in xrange(size)]
             return Ys, traces
         else:
             self._subarray_indices = [[slice(None),slice(None)]]
@@ -241,7 +258,6 @@ class VarDTCMissingData(object):
         beta_all = 1./np.fmax(likelihood.gaussian_variance(Y_metadata), 1e-6)
         het_noise = beta_all.size != 1
 
-        import itertools
         num_inducing = Z.shape[0]
 
         dL_dpsi0_all = np.zeros(Y.shape[0])
@@ -261,18 +277,17 @@ class VarDTCMissingData(object):
         Lm = jitchol(Kmm)
         if uncertain_inputs: LmInv = dtrtri(Lm)
 
-        VVT_factor_all = np.empty(Y.shape)
-        full_VVT_factor = VVT_factor_all.shape[1] == Y.shape[1]
-        if not full_VVT_factor:
-            psi1V = np.dot(Y.T*beta_all, psi1_all).T
-
-        for y, trYYT, [v, ind] in itertools.izip(Ys, traces, self._subarray_indices):
-            if het_noise: beta = beta_all[ind]
+        size = Y.shape[1]
+        next_ten = 0
+        for i, [y, v, trYYT] in enumerate(itertools.izip(Ys, self._inan.T, traces)):
+            if ((i+1.)/size) >= next_ten:
+                logger.info('inference {:> 6.1%}'.format((i+1.)/size))
+                next_ten += .1
+            if het_noise: beta = beta_all[i]
             else: beta = beta_all
 
-            VVT_factor = (beta*y)
-            VVT_factor_all[v, ind].flat = VVT_factor.flat
-            output_dim = y.shape[1]
+            VVT_factor = (y*beta)
+            output_dim = 1#len(ind)
 
             psi0 = psi0_all[v]
             psi1 = psi1_all[v, :]
@@ -314,7 +329,6 @@ class VarDTCMissingData(object):
                 VVT_factor, Cpsi1Vf, DBi_plus_BiPBi,
                 psi1, het_noise, uncertain_inputs)
 
-            #import ipdb;ipdb.set_trace()
             dL_dpsi0_all[v] += dL_dpsi0
             dL_dpsi1_all[v, :] += dL_dpsi1
             if uncertain_inputs:
@@ -331,19 +345,20 @@ class VarDTCMissingData(object):
                 psi0, psi1, beta,
                 data_fit, num_data, output_dim, trYYT, Y)
 
-            if full_VVT_factor: woodbury_vector[:, ind] = Cpsi1Vf
-            else:
-                print 'foobar'
-                tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
-                tmp, _ = dpotrs(LB, tmp, lower=1)
-                woodbury_vector[:, ind] = dtrtrs(Lm, tmp, lower=1, trans=1)[0]
+            #if full_VVT_factor:
+            woodbury_vector[:, i:i+1] = Cpsi1Vf
+            #else:
+            #    print 'foobar'
+            #    tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
+            #    tmp, _ = dpotrs(LB, tmp, lower=1)
+            #    woodbury_vector[:, ind] = dtrtrs(Lm, tmp, lower=1, trans=1)[0]
 
             #import ipdb;ipdb.set_trace()
             Bi, _ = dpotri(LB, lower=1)
             symmetrify(Bi)
             Bi = -dpotri(LB, lower=1)[0]
             diag.add(Bi, 1)
-            woodbury_inv_all[:, :, ind] = backsub_both_sides(Lm, Bi)[:,:,None]
+            woodbury_inv_all[:, :, i:i+1] = backsub_both_sides(Lm, Bi)[:,:,None]
 
         dL_dthetaL = likelihood.exact_inference_gradients(dL_dR)
 
@@ -359,23 +374,6 @@ class VarDTCMissingData(object):
                          'dL_dKdiag':dL_dpsi0_all,
                          'dL_dKnm':dL_dpsi1_all,
                          'dL_dthetaL':dL_dthetaL}
-
-        #get sufficient things for posterior prediction
-        #TODO: do we really want to do this in  the loop?
-        #if not full_VVT_factor:
-        #    print 'foobar'
-        #    psi1V = np.dot(Y.T*beta_all, psi1_all).T
-        #    tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
-        #    tmp, _ = dpotrs(LB_all, tmp, lower=1)
-        #    woodbury_vector, _ = dtrtrs(Lm, tmp, lower=1, trans=1)
-        #import ipdb;ipdb.set_trace()
-        #Bi, _ = dpotri(LB_all, lower=1)
-        #symmetrify(Bi)
-        #Bi = -dpotri(LB_all, lower=1)[0]
-        #from ...util import diag
-        #diag.add(Bi, 1)
-
-        #woodbury_inv = backsub_both_sides(Lm, Bi)
 
         post = Posterior(woodbury_inv=woodbury_inv_all, woodbury_vector=woodbury_vector, K=Kmm, mean=None, cov=None, K_chol=Lm)
 
@@ -393,10 +391,7 @@ def _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm, VVT_factor, C
             dL_dpsi2 = None
     else:
         dL_dpsi2 = beta * dL_dpsi2_beta
-        if uncertain_inputs:
-            # repeat for each of the N psi_2 matrices
-            dL_dpsi2 = np.repeat(dL_dpsi2[None, :, :], num_data, axis=0)
-        else:
+        if not uncertain_inputs:
             # subsume back into psi1 (==Kmn)
             dL_dpsi1 += 2.*np.dot(psi1, dL_dpsi2)
             dL_dpsi2 = None

@@ -5,10 +5,11 @@ from posterior import Posterior
 from ...util.linalg import pdinv, dpotrs, tdot
 from ...util import diag
 import numpy as np
+from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
 
 
-class ExactGaussianInference(object):
+class ExactGaussianInference(LatentFunctionInference):
     """
     An object for inference when the likelihood is Gaussian.
 

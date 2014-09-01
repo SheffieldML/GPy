@@ -1,47 +1,64 @@
-# Copyright (c) 2014, Max Zwiessele
-# Licensed under the BSD 3-clause license (see LICENSE.txt)
+'''
+Created on Oct 2, 2013
+
+@author: maxzwiessele
+'''
 import numpy
 from numpy.lib.function_base import vectorize
 from lists_and_dicts import IntArrayDict
+
+def extract_properties_to_index(index, props):
+    prop_index = dict()
+    for i, cl in enumerate(props):
+        for c in cl:
+            ind = prop_index.get(c, list())
+            ind.append(index[i])
+            prop_index[c] = ind
+
+    for c, i in prop_index.items():
+        prop_index[c] = numpy.array(i, dtype=int)
+
+    return prop_index
+
 
 class ParameterIndexOperations(object):
     """
     This object wraps a dictionary, whos keys are _operations_ that we'd like
     to apply to a parameter array, and whose values are np integer arrays which
     index the parameter array appropriately.
-
+    
     A model instance will contain one instance of this class for each thing
     that needs indexing (i.e. constraints, ties and priors). Parameters within
     the model constain instances of the ParameterIndexOperationsView class,
     which can map from a 'local' index (starting 0) to this global index.
-
+    
     Here's an illustration:
-
+    
     #=======================================================================
-    model :       0    1    2    3    4    5    6    7    8    9
-    key1:                             4    5
-    key2:                                            7    8
-
-    param1:                 0    1    2    3    4    5
-    key1:                             2    3
-    key2:                                            5
-
-    param2:                                0    1    2    3    4
-    key1:                                  0
-    key2:                                            2    3
+    model : 0 1 2 3 4 5 6 7 8 9
+    key1: 4 5
+    key2: 7 8
+    
+    param1: 0 1 2 3 4 5
+    key1: 2 3
+    key2: 5
+    
+    param2: 0 1 2 3 4
+    key1: 0
+    key2: 2 3
     #=======================================================================
-
+    
     The views of this global index have a subset of the keys in this global
     (model) index.
-
+    
     Adding a new key (e.g. a constraint) to a view will cause the view to pass
     the new key to the global index, along with the local index and an offset.
     This global index then stores the key and the appropriate global index
     (which can be seen by the view).
-
+    
     See also:
-        ParameterIndexOperationsView
-
+    ParameterIndexOperationsView
+    
     """
     _offset = 0
     def __init__(self, constraints=None):
@@ -92,7 +109,33 @@ class ParameterIndexOperations(object):
         return self._properties.values()
 
     def properties_for(self, index):
+        """
+        Returns a list of properties, such that each entry in the list corresponds
+        to the element of the index given.
+
+        Example:
+        let properties: 'one':[1,2,3,4], 'two':[3,5,6]
+
+        >>> properties_for([2,3,5])
+        [['one'], ['one', 'two'], ['two']]
+        """
         return vectorize(lambda i: [prop for prop in self.iterproperties() if i in self[prop]], otypes=[list])(index)
+
+    def properties_to_index_dict(self, index):
+        """
+        Return a dictionary, containing properties as keys and indices as index
+        Thus, the indices for each constraint, which is contained will be collected as
+        one dictionary
+
+        Example:
+        let properties: 'one':[1,2,3,4], 'two':[3,5,6]
+
+        >>> properties_to_index_dict([2,3,5])
+        {'one':[2,3], 'two':[3,5]}
+        """
+        props = self.properties_for(index)
+        prop_index = extract_properties_to_index(index, props)
+        return prop_index
 
     def add(self, prop, indices):
         self._properties[prop] = combine_indices(self._properties[prop], indices)
@@ -200,7 +243,31 @@ class ParameterIndexOperationsView(object):
 
 
     def properties_for(self, index):
+        """
+        Returns a list of properties, such that each entry in the list corresponds
+        to the element of the index given.
+
+        Example:
+        let properties: 'one':[1,2,3,4], 'two':[3,5,6]
+
+        >>> properties_for([2,3,5])
+        [['one'], ['one', 'two'], ['two']]
+        """
         return vectorize(lambda i: [prop for prop in self.iterproperties() if i in self[prop]], otypes=[list])(index)
+
+    def properties_to_index_dict(self, index):
+        """
+        Return a dictionary, containing properties as keys and indices as index
+        Thus, the indices for each constraint, which is contained will be collected as
+        one dictionary
+
+        Example:
+        let properties: 'one':[1,2,3,4], 'two':[3,5,6]
+
+        >>> properties_to_index_dict([2,3,5])
+        {'one':[2,3], 'two':[3,5]}
+        """
+        return extract_properties_to_index(index, self.properties_for(index))
 
 
     def add(self, prop, indices):

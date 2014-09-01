@@ -45,10 +45,10 @@ class GPLVM(GP):
         self.X.gradient = self.kern.gradients_X(self.grad_dict['dL_dK'], self.X, None)
 
     def jacobian(self,X):
-        target = np.zeros((X.shape[0],X.shape[1],self.output_dim))
+        J = np.zeros((X.shape[0],X.shape[1],self.output_dim))
         for i in range(self.output_dim):
-            target[:,:,i]=self.kern.gradients_X(np.dot(self.Ki,self.likelihood.Y[:,i])[None, :],X,self.X)
-        return target
+            J[:,:,i] = self.kern.gradients_X(self.posterior.woodbury_vector[:,i:i+1], X, self.X)
+        return J
 
     def magnification(self,X):
         target=np.zeros(X.shape[0])

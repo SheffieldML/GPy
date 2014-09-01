@@ -17,3 +17,6 @@ from ss_gplvm import SSGPLVM
 from gp_coregionalized_regression import GPCoregionalizedRegression
 from sparse_gp_coregionalized_regression import SparseGPCoregionalizedRegression
 from gp_heteroscedastic_regression import GPHeteroscedasticRegression
+from ss_mrd import SSMRD
+from gp_kronecker_gaussian_regression import GPKroneckerGaussianRegression
+from gp_var_gauss import GPVariationalGaussianApproximation

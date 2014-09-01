@@ -10,10 +10,17 @@ class Add(CombinationKernel):
     """
     Add given list of kernels together.
     propagates gradients through.
-    
+
     This kernel will take over the active dims of it's subkernels passed in.
     """
     def __init__(self, subkerns, name='add'):
+        for i, kern in enumerate(subkerns[:]):
+            if isinstance(kern, Add):
+                del subkerns[i]
+                for part in kern.parts[::-1]:
+                    kern.remove_parameter(part)
+                    subkerns.insert(i, part)
+
         super(Add, self).__init__(subkerns, name)
 
     @Cache_this(limit=2, force_kwargs=['which_parts'])
@@ -40,7 +47,7 @@ class Add(CombinationKernel):
         return reduce(np.add, (p.Kdiag(X) for p in which_parts))
 
     def update_gradients_full(self, dL_dK, X, X2=None):
-        [p.update_gradients_full(dL_dK, X, X2) for p in self.parts]
+        [p.update_gradients_full(dL_dK, X, X2) for p in self.parts if not p.is_fixed]
 
     def update_gradients_diag(self, dL_dK, X):
         [p.update_gradients_diag(dL_dK, X) for p in self.parts]
@@ -63,13 +70,16 @@ class Add(CombinationKernel):
         target = np.zeros(X.shape)
         [target.__iadd__(p.gradients_X_diag(dL_dKdiag, X)) for p in self.parts]
         return target
-
+    
+    @Cache_this(limit=2, force_kwargs=['which_parts'])
     def psi0(self, Z, variational_posterior):
         return reduce(np.add, (p.psi0(Z, variational_posterior) for p in self.parts))
-
+    
+    @Cache_this(limit=2, force_kwargs=['which_parts'])
     def psi1(self, Z, variational_posterior):
         return reduce(np.add, (p.psi1(Z, variational_posterior) for p in self.parts))
 
+    @Cache_this(limit=2, force_kwargs=['which_parts'])
     def psi2(self, Z, variational_posterior):
         psi2 = reduce(np.add, (p.psi2(Z, variational_posterior) for p in self.parts))
         #return psi2
@@ -88,17 +98,18 @@ class Add(CombinationKernel):
             # rbf X bias
             #elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, (RBF, RBFInv)):
             elif isinstance(p1,  Bias) and isinstance(p2, (RBF, Linear)):
-                tmp = p2.psi1(Z, variational_posterior)
-                psi2 += p1.variance * (tmp[:, :, None] + tmp[:, None, :])
+                tmp = p2.psi1(Z, variational_posterior).sum(axis=0)
+                psi2 += p1.variance * (tmp[:,None]+tmp[None,:]) #(tmp[:, :, None] + tmp[:, None, :])
             #elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, (RBF, RBFInv)):
             elif isinstance(p2, Bias) and isinstance(p1, (RBF, Linear)):
-                tmp = p1.psi1(Z, variational_posterior)
-                psi2 += p2.variance * (tmp[:, :, None] + tmp[:, None, :])
+                tmp = p1.psi1(Z, variational_posterior).sum(axis=0)
+                psi2 += p2.variance * (tmp[:,None]+tmp[None,:]) #(tmp[:, :, None] + tmp[:, None, :])
             elif isinstance(p2, (RBF, Linear)) and isinstance(p1, (RBF, Linear)):
                 assert np.intersect1d(p1.active_dims, p2.active_dims).size == 0, "only non overlapping kernel dimensions allowed so far"
                 tmp1 = p1.psi1(Z, variational_posterior)
                 tmp2 = p2.psi1(Z, variational_posterior)
-                psi2 += (tmp1[:, :, None] * tmp2[:, None, :]) + (tmp2[:, :, None] * tmp1[:, None, :])
+                psi2 += np.einsum('nm,no->mo',tmp1,tmp2)+np.einsum('nm,no->mo',tmp2,tmp1)
+                #(tmp1[:, :, None] * tmp2[:, None, :]) + (tmp2[:, :, None] * tmp1[:, None, :])
             else:
                 raise NotImplementedError, "psi2 cannot be computed for this kernel"
         return psi2
@@ -114,12 +125,12 @@ class Add(CombinationKernel):
                 if isinstance(p2, White):
                     continue
                 elif isinstance(p2, Bias):
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
+                    eff_dL_dpsi1 += dL_dpsi2.sum(0) * p2.variance * 2.
                 else:# np.setdiff1d(p1.active_dims, ar2, assume_unique): # TODO: Careful, not correct for overlapping active_dims
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
+                    eff_dL_dpsi1 += dL_dpsi2.sum(0) * p2.psi1(Z, variational_posterior) * 2.
             p1.update_gradients_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
 
-    def gradients_Z_expectations(self, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_Z_expectations(self, dL_psi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         from static import White, Bias
         target = np.zeros(Z.shape)
         for p1 in self.parts:
@@ -131,36 +142,34 @@ class Add(CombinationKernel):
                 if isinstance(p2, White):
                     continue
                 elif isinstance(p2, Bias):
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
+                    eff_dL_dpsi1 += dL_dpsi2.sum(0) * p2.variance * 2.
                 else:
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
-            target += p1.gradients_Z_expectations(eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
+                    eff_dL_dpsi1 += dL_dpsi2.sum(0) * p2.psi1(Z, variational_posterior) * 2.
+            target += p1.gradients_Z_expectations(dL_psi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         return target
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         from static import White, Bias
-        target_mu = np.zeros(variational_posterior.shape)
-        target_S = np.zeros(variational_posterior.shape)
-        for p1 in self._parameters_:
+        target_grads = [np.zeros(v.shape) for v in variational_posterior.parameters]
+        for p1 in self.parameters:
             #compute the effective dL_dpsi1. extra terms appear becaue of the cross terms in psi2!
             eff_dL_dpsi1 = dL_dpsi1.copy()
-            for p2 in self._parameters_:
+            for p2 in self.parameters:
                 if p2 is p1:
                     continue
                 if isinstance(p2, White):
                     continue
                 elif isinstance(p2, Bias):
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
+                    eff_dL_dpsi1 += dL_dpsi2.sum(0) * p2.variance * 2.
                 else:
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
-            a, b = p1.gradients_qX_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
-            target_mu += a
-            target_S += b
-        return target_mu, target_S
+                    eff_dL_dpsi1 += dL_dpsi2.sum(0) * p2.psi1(Z, variational_posterior) * 2.
+            grads = p1.gradients_qX_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
+            [np.add(target_grads[i],grads[i],target_grads[i]) for i in xrange(len(grads))]
+        return target_grads
 
-    def add(self, other, name='sum'):
+    def add(self, other):
         if isinstance(other, Add):
-            other_params = other._parameters_[:]
+            other_params = other.parameters[:]
             for p in other_params:
                 other.remove_parameter(p)
             self.add_parameters(*other_params)
@@ -169,8 +178,11 @@ class Add(CombinationKernel):
         self.input_dim, self.active_dims = self.get_input_dim_active_dims(self.parts)
         return self
 
-    def input_sensitivity(self):
-        in_sen = np.zeros(self.input_dim)
-        for i, p in enumerate(self.parts):
-            in_sen[p.active_dims] += p.input_sensitivity()
-        return in_sen
+    def input_sensitivity(self, summarize=True):
+        if summarize:
+            return reduce(np.add, [k.input_sensitivity(summarize) for k in self.parts])
+        else:
+            i_s = np.zeros((len(self.parts), self.input_dim))
+            from operator import setitem
+            [setitem(i_s, (i, Ellipsis), k.input_sensitivity(summarize)) for i, k in enumerate(self.parts)]
+            return i_s

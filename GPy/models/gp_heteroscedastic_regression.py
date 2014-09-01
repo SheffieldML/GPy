@@ -30,7 +30,9 @@ class GPHeteroscedasticRegression(GP):
             kernel = kern.RBF(X.shape[1])
 
         #Likelihood
-        likelihoods_list = [likelihoods.Gaussian(name="Gaussian_noise_%s" %j) for j in range(Ny)]
+        #likelihoods_list = [likelihoods.Gaussian(name="Gaussian_noise_%s" %j) for j in range(Ny)]
+        noise_terms = np.unique(Y_metadata['output_index'].flatten())
+        likelihoods_list = [likelihoods.Gaussian(name="Gaussian_noise_%s" %j) for j in noise_terms]
         likelihood = likelihoods.MixedNoise(likelihoods_list=likelihoods_list)
 
         super(GPHeteroscedasticRegression, self).__init__(X,Y,kernel,likelihood, Y_metadata=Y_metadata)

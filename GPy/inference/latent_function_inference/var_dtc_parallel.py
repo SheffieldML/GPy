@@ -170,12 +170,14 @@ class VarDTC_minibatch(LatentFunctionInference):
         
         Kmm = kern.K(Z).copy()
         diag.add(Kmm, self.const_jitter)
-        checkFullRank(Kmm)
+        r1 = checkFullRank(Kmm,name='Kmm')
         Lm = jitchol(Kmm)
         
         LmInvPsi2LmInvT = backsub_both_sides(Lm,psi2_full,transpose='right')
         Lambda = np.eye(Kmm.shape[0])+LmInvPsi2LmInvT
-        checkFullRank(Lambda)
+        r2 = checkFullRank(Lambda,name='Lambda')
+        if (not r1) or (not r2):
+            raise
         LL = jitchol(Lambda)
         LL = np.dot(Lm,LL)
         b,_ = dtrtrs(LL, psi1Y_full.T)
@@ -339,7 +341,13 @@ def update_gradients(model, mpi_comm=None):
         Y = model.Y_local
         X = model.X[model.N_range[0]:model.N_range[1]]
 
-    model._log_marginal_likelihood, dL_dKmm, model.posterior = model.inference_method.inference_likelihood(model.kern, X, model.Z, model.likelihood, Y)
+    try:
+        model._log_marginal_likelihood, dL_dKmm, model.posterior = model.inference_method.inference_likelihood(model.kern, X, model.Z, model.likelihood, Y)
+    except Exception:
+        if model.mpi_comm is None or model.mpi_comm.rank==0:
+            import time
+            model.pickle('model_'+str(int(time.time()))+'.pickle')
+        raise
     
     het_noise = model.likelihood.variance.size > 1
     

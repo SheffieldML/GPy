@@ -31,9 +31,6 @@ def checkFullRank(m, tol=1e-10, name=None, force_check=False):
     if s.min()/s.max()<tol:
         print name+' is close to singlar!'
         print 'The eigen values of '+name+' is '+str(s)
-        if m.mpi_comm is None or m.mpi_comm.rank==0:
-            import time
-            m.pickle('model_'+str(int(time.time()))+'.pickle')
         return False
     return True
     

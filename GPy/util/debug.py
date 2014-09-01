@@ -26,11 +26,14 @@ def checkFullRank(m, tol=1e-10, name=None, force_check=False):
         print 'The size of '+name+'is too big to check (>=10000)!'
         return True
     
-    s = np.linalg.eigvals(m)
+    s = np.real(np.linalg.eigvals(m))
     
     if s.min()/s.max()<tol:
         print name+' is close to singlar!'
         print 'The eigen values of '+name+' is '+str(s)
+        if m.mpi_comm is None or m.mpi_comm.rank==0:
+            import time
+            m.pickle('model_'+str(int(time.time()))+'.pickle')
         return False
     return True
     

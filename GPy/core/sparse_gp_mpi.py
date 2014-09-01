@@ -67,6 +67,9 @@ class SparseGP_MPI(SparseGP):
             del dc['N_range']
             del dc['N_list']
             del dc['Y_local']
+        if 'normalizer' not in dc:
+            dc['normalizer'] = None
+            dc['Y_normalized'] = dc['Y']
         return dc
 
     #=====================================================

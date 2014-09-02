@@ -70,8 +70,8 @@ class SSGPLVM(SparseGP_MPI):
         X = SpikeAndSlabPosterior(X, X_variance, gamma)
                 
         super(SSGPLVM,self).__init__(X, Y, Z, kernel, likelihood, variational_prior=self.variational_prior, inference_method=inference_method, name=name, mpi_comm=mpi_comm, normalizer=normalizer, **kwargs)
-        self.X.unfix()
-        self.X.variance.constrain_positive()
+#         self.X.unfix()
+#         self.X.variance.constrain_positive()
                 
         if self.group_spike:
             [self.X.gamma[:,i].tie('tieGamma'+str(i)) for i in xrange(self.X.gamma.shape[1])] # Tie columns together

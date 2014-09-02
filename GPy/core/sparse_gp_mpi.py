@@ -46,7 +46,7 @@ class SparseGP_MPI(SparseGP):
         self.add_parameter(self.X, index=0)
         if variational_prior is not None:
             self.add_parameter(variational_prior)
-        self.X.fix()
+#         self.X.fix()
 
         self.mpi_comm = mpi_comm
         # Manage the data (Y) division

@@ -291,7 +291,7 @@ class Model(Parameterized):
             # just check the global ratio
             dx = np.zeros(x.shape)
             dx[transformed_index] = step * (np.sign(np.random.uniform(-1, 1, transformed_index.size)) if transformed_index.size != 2 else 1.)
-
+            
             # evaulate around the point x
             f1 = self._objective(x + dx)
             f2 = self._objective(x - dx)
@@ -303,7 +303,6 @@ class Model(Parameterized):
             denominator = (2 * np.dot(dx, gradient))
             global_ratio = (f1 - f2) / np.where(denominator == 0., 1e-32, denominator)
             global_diff = np.abs(f1 - f2) < tolerance and np.allclose(gradient, 0, atol=tolerance)
-            print self.mpi_comm.rank,global_ratio,global_diff
             if global_ratio is np.nan:
                 global_ratio = 0
             return np.abs(1. - global_ratio) < tolerance or global_diff

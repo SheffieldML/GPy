@@ -13,7 +13,7 @@ Observable Pattern for patameterization
 
 """
 
-from transformations import Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
+from transformations import Transformation,Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
 import re
 import logging
@@ -541,7 +541,8 @@ class Indexable(Nameable, Observable):
         Constrain the parameter to the given
         :py:class:`GPy.core.transformations.Transformation`.
         """
-        self.param_array[...] = transform.initialize(self.param_array)
+        if isinstance(transform, Transformation):
+            self.param_array[...] = transform.initialize(self.param_array)
         reconstrained = self.unconstrain()
         added = self._add_to_index_operations(self.constraints, reconstrained, transform, warning)
         self.notify_observers(self, None if trigger_parent else -np.inf)
@@ -617,7 +618,7 @@ class Indexable(Nameable, Observable):
         """
         Helper preventing copy code.
         This adds the given what (transformation, prior etc) to parameter index operations which.
-        revonstrained are reconstrained indices.
+        reconstrained are reconstrained indices.
         warn when reconstraining parameters if warning is True.
         TODO: find out which parameters have changed specifically
         """

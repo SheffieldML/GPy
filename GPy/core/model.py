@@ -303,6 +303,7 @@ class Model(Parameterized):
             denominator = (2 * np.dot(dx, gradient))
             global_ratio = (f1 - f2) / np.where(denominator == 0., 1e-32, denominator)
             global_diff = np.abs(f1 - f2) < tolerance and np.allclose(gradient, 0, atol=tolerance)
+            print self.mpi_comm.rank,global_ratio,global_diff
             if global_ratio is np.nan:
                 global_ratio = 0
             return np.abs(1. - global_ratio) < tolerance or global_diff

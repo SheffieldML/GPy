@@ -524,7 +524,7 @@ class Indexable(Nameable, Observable):
         return True
     
     def tie_together(self):
-        self._highest_parent_.tie.add_tied_parameter(self)
+        self._highest_parent_.tie.tie_together([self])
         self._highest_parent_._set_fixed(self,self._raveled_index())
         self._trigger_params_changed()
 

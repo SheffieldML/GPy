@@ -82,6 +82,12 @@ class Parameterized(Parameterizable):
         self._param_slices_ = []
         #self._connect_parameters()
         self.add_parameters(*parameters)
+        
+        from ties_and_remappings import Tie
+        if not isinstance(self,Tie):
+            self.ties = Tie()
+            self.add_parameter(self.ties, -1)
+            self.add_observer(self.ties, self.ties._parameters_changed_notification, priority=-500)
 
     def build_pydot(self, G=None):
         import pydot  # @UnresolvedImport
@@ -163,6 +169,12 @@ class Parameterized(Parameterizable):
                 self._highest_parent_._notify_parent_change()
                 self._highest_parent_._connect_fixes()
 
+            if isinstance(param,Parameterized):
+                from ties_and_remappings import Tie
+                if not isinstance(param,Tie):
+                    self._highest_parent_.ties.mergeTies(param)
+            else:
+                self._highest_parent_.ties._update_label_buf()
         else:
             raise HierarchyError, """Parameter exists already, try making a copy"""
 

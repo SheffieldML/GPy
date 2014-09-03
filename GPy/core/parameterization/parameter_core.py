@@ -517,14 +517,16 @@ class Indexable(Nameable, Observable):
     #===========================================================================
     
     def _has_ties(self):
-        if self._highest_parent_.tie.tied_param is None:
+        if self._highest_parent_.ties.tied_param is None:
             return False
         if self.has_parent():
-            return self._highest_parent_.tie.label_buf[self._highest_parent_._raveled_index_for(self)].sum()>0
+            return self._highest_parent_.ties.label_buf[self._highest_parent_._raveled_index_for(self)].sum()>0
         return True
     
-    def tie_together(self):
-        self._highest_parent_.tie.tie_together([self])
+    def tie_together(self, *plist):
+        plist = list(plist)
+        plist.append(self)
+        self._highest_parent_.ties.tie_together(plist)
         self._highest_parent_._set_fixed(self,self._raveled_index())
         self._trigger_params_changed()
 
@@ -681,7 +683,7 @@ class OptimizationHandlable(Indexable):
             if self.has_parent() and (self.constraints[__fixed__].size != 0 or self._has_ties()):
                 fixes = np.ones(self.size).astype(bool)
                 fixes[self.constraints[__fixed__]] = FIXED
-                return self._optimizer_copy_[np.logical_and(fixes, self._highest_parent_.tie.getTieFlag(self))]
+                return self._optimizer_copy_[np.logical_and(fixes, self._highest_parent_.ties.getTieFlag(self))]
             elif self._has_fixes():
                     return self._optimizer_copy_[self._fixes_]
 
@@ -711,7 +713,7 @@ class OptimizationHandlable(Indexable):
             self.param_array.flat[f] = p
             [np.put(self.param_array, ind[f[ind]], c.f(self.param_array.flat[ind[f[ind]]]))
              for c, ind in self.constraints.iteritems() if c != __fixed__]
-        self._highest_parent_.tie.propagate_val()
+        self._highest_parent_.ties.propagate_val()
 
         self._optimizer_copy_transformed = False
         self._trigger_params_changed()
@@ -744,7 +746,7 @@ class OptimizationHandlable(Indexable):
         Transform the gradients by multiplying the gradient factor for each
         constraint to it.
         """
-        self._highest_parent_.tie.collate_gradient()
+        self._highest_parent_.ties.collate_gradient()
         [np.put(g, i, g[i] * c.gradfactor(self.param_array[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g

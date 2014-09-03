@@ -29,8 +29,6 @@ class Fix(Remapping):
     pass
 
 
-
-
 class Tie(Parameterized):
     """
     The new parameter tie framework. (under development)
@@ -61,25 +59,39 @@ class Tie(Parameterized):
     4. Properly handling initialization
     
     """
-    def __init__(self, name='tie'):
+    def __init__(self, name='Ties'):
         # whether it has just propagated tied parameter values during optimization
         # If ture, it does not need to check consistency
         self._PROPAGATE_VAL_ = False
         super(Tie, self).__init__(name)
+        self.size = sum(p.size for p in self.parameters)
         self.tied_param = None
         # The buffer keeps track of tie status
         self.label_buf = None
         self.buf_idx = None
         
-    def _get_raveled_index(self,plist):
-        indices = []
+    def mergeTies(self, p):
+        """Merge the tie tree with another tie tree"""
+        assert hasattr(p,'ties') and isinstance(p.ties,Tie)
+        self.updates = False
+        if p.ties.tied_param is not None:
+            tie_labels = self._expand_tie_param(p.ties.tied_param.size)
+            self.tied_param[-p.ties.tied_param.size:] = p.ties.tied_param
+            pairs = zip(self.tied_param.tie,tie_labels)
+            self._replace_labels(p, pairs)
+        p.remove_observer(p.ties)
+        p.remove_parameter(p.ties)
+        del p.ties
+        self._update_label_buf()
+        self.updates = True
+        
+    def _sync_val_group(self, plist):
+        val = np.asarray([p.param_array for p in plist]).mean()
+        def _set_val(p):
+            p[:] = val
         for p in plist:
-            indices.extend(self._highest_parent_._raveled_index_for(p))
-        return indices
-
-    def _sync_val_group(self, idx):
-        self._highest_parent_.param_array[idx] = self._highest_parent_.param_array[idx].mean()
-        return self._highest_parent_.param_array[idx][0]
+            self._traverse_param(_set_val, p, [])
+        return val
         
     def _traverse_param(self, func, p, res):
         """
@@ -93,10 +105,11 @@ class Tie(Parameterized):
             for pc in p.parameters:
                 self._traverse_param(func,pc,res)
 
-    def _get_labels(self,idx):
-        if self.label_buf is None:
-            self.label_buf = np.zeros((self._highest_parent_.size,),dtype=np.uint32)
-        return np.unique(self.label_buf[idx])
+    def _get_labels(self, plist):
+        labels = []
+        for p in plist:
+            self._traverse_param(lambda x: x.tie, p, labels)
+        return np.unique(np.asarray(labels))
     
     def _set_labels(self, plist, labels):
         """
@@ -133,6 +146,7 @@ class Tie(Parameterized):
             self.tied_param.tie[:old_size] = old_tie_
             self.tied_param.tie[old_size:] = range(start_label,start_label+num)
         self.add_parameter(self.tied_param)
+        self.size = sum(p.size for p in self.parameters)
         return range(start_label,start_label+num)
 
     def _remove_tie_param(self, labels):
@@ -149,7 +163,7 @@ class Tie(Parameterized):
             self.tied_param = Param('tied',new_buf)
             self.tied_param.tie[:] = old_tie_[idx]
             self.add_parameter(self.tied_param)
-
+        self.size = sum(p.size for p in self.parameters)
     
     def _merge_tie_labels(self, labels):
         """Merge all the labels in the list to the first one"""
@@ -169,9 +183,9 @@ class Tie(Parameterized):
         
     def tie_together(self,plist):
         """tie a list of parameters"""
-        indices = self._get_raveled_index(plist)
-        labels = self._get_labels(indices)
-        val = self._sync_val_group(indices)
+        self.updates = False
+        labels = self._get_labels(plist)
+        val = self._sync_val_group(plist)
         if labels[0]==0 and labels.size==1:
             # None of parameters in plist has been tied before.
             tie_labels = self._expand_tie_param(1)
@@ -185,102 +199,7 @@ class Tie(Parameterized):
             self._set_labels(plist, [tie_labels[0]])
         self._update_label_buf()
         self.tied_param[self.tied_param.tie==tie_labels[0]] = val
-
-#     def add_tied_parameter(self, p, p2=None):
-#         """
-#         Tie the list of parameters p together (p2==None) or 
-#         Tie the list of parameters p with the list of parameters p2 (p2!=None) 
-#         """
-#         self._init_labelBuf()
-#         if p2 is None:
-#             idx = self._highest_parent_._raveled_index_for(p)
-#             val = self._sync_val_group(idx)            
-#             if np.all(self.label_buf[idx]==0):
-#                 # None of p has been tied before.
-#                 tie_idx = self._expandTieParam(1)
-#                 print tie_idx
-#                 tie_id = self.label_buf.max()+1
-#                 self.label_buf[tie_idx] = tie_id
-#             else:
-#                 b = self.label_buf[idx]
-#                 ids = np.unique(b[b>0])
-#                 tie_id, tie_idx = self._merge_tie_param(ids)
-#             self._highest_parent_.param_array[tie_idx] = val
-#             idx = self._highest_parent_._raveled_index_for(p)
-#             self.label_buf[idx] = tie_id
-#         else:
-#             pass
-#         self._updateTieFlag()
-#         
-#     def _merge_tie_param(self, ids):
-#         """Merge the tie parameters with ids in the list."""
-#         if len(ids)==1:
-#             id_final_idx = self.buf_idx[self.label_buf[self.buf_idx]==ids[0]][0]
-#             return ids[0],id_final_idx
-#         id_final = ids[0]
-#         ids_rm = ids[1:]
-#         label_buf_param = self.label_buf[self.buf_idx]
-#         idx_param = [np.where(label_buf_param==i)[0][0] for i in ids_rm]
-#         self._removeTieParam(idx_param)
-#         [np.put(self.label_buf, np.where(self.label_buf==i), id_final) for i in ids_rm]
-#         id_final_idx = self.buf_idx[self.label_buf[self.buf_idx]==id_final][0]
-#         return id_final, id_final_idx
-#         
-#     def _sync_val_group(self, idx):
-#         self._highest_parent_.param_array[idx] = self._highest_parent_.param_array[idx].mean()
-#         return self._highest_parent_.param_array[idx][0]
-#         
-#     def _expandTieParam(self, num):
-#         """Expand the tie param with the number of *num* parameters"""
-#         if self.tied_param is None:
-#             new_buf = np.empty((num,))
-#         else:
-#             new_buf = np.empty((self.tied_param.size+num,))
-#             new_buf[:self.tied_param.size] = self.tied_param.param_array.copy()
-#             self.remove_parameter(self.tied_param)
-#         self.tied_param = Param('tied',new_buf)
-#         self.add_parameter(self.tied_param)
-#         buf_idx_new = self._highest_parent_._raveled_index_for(self.tied_param)
-#         self._expand_label_buf(self.buf_idx, buf_idx_new)
-#         self.buf_idx = buf_idx_new
-#         return self.buf_idx[-num:]
-# 
-#     def _removeTieParam(self, idx):
-#         """idx within tied_param"""
-#         new_buf = np.empty((self.tied_param.size-len(idx),))
-#         bool_list = np.ones((self.tied_param.size,),dtype=np.bool)
-#         bool_list[idx] = False
-#         new_buf[:] = self.tied_param.param_array[bool_list]
-#         self.remove_parameter(self.tied_param)
-#         self.tied_param = Param('tied',new_buf)
-#         self.add_parameter(self.tied_param)
-#         buf_idx_new = self._highest_parent_._raveled_index_for(self.tied_param)
-#         self._shrink_label_buf(self.buf_idx, buf_idx_new, bool_list)
-#         self.buf_idx = buf_idx_new
-#         
-#     def _expand_label_buf(self, idx_old, idx_new):
-#         """Expand label buffer accordingly"""
-#         if idx_old is None:
-#             self.label_buf = np.zeros(self._highest_parent_.param_array.shape, dtype=np.int)
-#         else:
-#             bool_old = np.zeros((self.label_buf.size,),dtype=np.bool)
-#             bool_old[idx_old] = True
-#             bool_new = np.zeros((self._highest_parent_.param_array.size,),dtype=np.bool)
-#             bool_new[idx_new] = True
-#             label_buf_new = np.zeros(self._highest_parent_.param_array.shape, dtype=np.int)
-#             label_buf_new[np.logical_not(bool_new)] = self.label_buf[np.logical_not(bool_old)]
-#             label_buf_new[idx_new[:len(idx_old)]] = self.label_buf[idx_old]
-#             self.label_buf = label_buf_new
-# 
-#     def _shrink_label_buf(self, idx_old, idx_new, bool_list):
-#         bool_old = np.zeros((self.label_buf.size,),dtype=np.bool)
-#         bool_old[idx_old] = True
-#         bool_new = np.zeros((self._highest_parent_.param_array.size,),dtype=np.bool)
-#         bool_new[idx_new] = True
-#         label_buf_new = np.empty(self._highest_parent_.param_array.shape, dtype=np.int)
-#         label_buf_new[np.logical_not(bool_new)] = self.label_buf[np.logical_not(bool_old)]
-#         label_buf_new[idx_new] = self.label_buf[idx_old[bool_list]]
-#         self.label_buf = label_buf_new
+        self.updates = True
 
     def _check_change(self):
         changed = False

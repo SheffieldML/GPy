@@ -515,19 +515,12 @@ class Indexable(Nameable, Observable):
     #===========================================================================
     # Tie parameters together
     #===========================================================================
-    
-    def _has_ties(self):
-        if self._highest_parent_.ties.tied_param is None:
-            return False
-        if self.has_parent():
-            return self._highest_parent_.ties.label_buf[self._highest_parent_._raveled_index_for(self)].sum()>0
-        return True
-    
+        
     def tie_together(self, *plist):
         plist = list(plist)
         plist.append(self)
         self._highest_parent_.ties.tie_together(plist)
-        self._highest_parent_._set_fixed(self,self._raveled_index())
+#         self._highest_parent_._set_fixed(self,self._raveled_index())
         self._trigger_params_changed()
 
     #===========================================================================
@@ -683,9 +676,10 @@ class OptimizationHandlable(Indexable):
             if self.has_parent() and (self.constraints[__fixed__].size != 0 or self._has_ties()):
                 fixes = np.ones(self.size).astype(bool)
                 fixes[self.constraints[__fixed__]] = FIXED
-                return self._optimizer_copy_[np.logical_and(fixes, self._highest_parent_.ties.getTieFlag(self))]
+                fixes[self._highest_parent_.ties.label_buf[self._highest_parent_._raveled_index_for(self)]] = FIXED
+                return self._optimizer_copy_[fixes]
             elif self._has_fixes():
-                    return self._optimizer_copy_[self._fixes_]
+                    return self._optimizer_copy_[np.logical_and(self._fixes_,self.ties.label_buf==0)]
 
             self._optimizer_copy_transformed = True
 

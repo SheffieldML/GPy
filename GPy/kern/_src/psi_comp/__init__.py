@@ -28,6 +28,9 @@ class PSICOMP_RBF(Pickleable):
             return ssrbf_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior)
         else:
             raise ValueError, "unknown distriubtion received for psi-statistics"
+
+    def _setup_observers(self):
+        pass
         
 class PSICOMP_Linear(Pickleable):
 

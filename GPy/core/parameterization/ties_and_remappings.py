@@ -55,7 +55,7 @@ class Tie(Parameterized):
     TODO:
     1. Add the support for multiple parameter tie_together and tie_vector
     2. Properly handling parameters with constraints
-    3. Properly handling the merging of two models
+    3. Properly handling the merging of two models [DONE]
     4. Properly handling initialization
     
     """
@@ -64,7 +64,6 @@ class Tie(Parameterized):
         # If ture, it does not need to check consistency
         self._PROPAGATE_VAL_ = False
         super(Tie, self).__init__(name)
-        self.size = sum(p.size for p in self.parameters)
         self.tied_param = None
         # The buffer keeps track of tie status
         self.label_buf = None
@@ -146,7 +145,6 @@ class Tie(Parameterized):
             self.tied_param.tie[:old_size] = old_tie_
             self.tied_param.tie[old_size:] = range(start_label,start_label+num)
         self.add_parameter(self.tied_param)
-        self.size = sum(p.size for p in self.parameters)
         return range(start_label,start_label+num)
 
     def _remove_tie_param(self, labels):
@@ -163,7 +161,6 @@ class Tie(Parameterized):
             self.tied_param = Param('tied',new_buf)
             self.tied_param.tie[:] = old_tie_[idx]
             self.add_parameter(self.tied_param)
-        self.size = sum(p.size for p in self.parameters)
     
     def _merge_tie_labels(self, labels):
         """Merge all the labels in the list to the first one"""
@@ -177,7 +174,7 @@ class Tie(Parameterized):
             self.label_buf = None
             self.buf_idx = None
         else:
-            self.label_buf = np.zeros((self._highest_parent_.size,),dtype=np.uint32)
+            self.label_buf = np.zeros((self._highest_parent_.param_array.size,),dtype=np.uint32)
             self._traverse_param(lambda x:np.put(self.label_buf,self._highest_parent_._raveled_index_for(x),x.tie), self._highest_parent_, [])
             self.buf_idx = self._highest_parent_._raveled_index_for(self.tied_param)
         

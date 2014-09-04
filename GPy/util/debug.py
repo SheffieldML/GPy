@@ -26,7 +26,7 @@ def checkFullRank(m, tol=1e-10, name=None, force_check=False):
         print 'The size of '+name+'is too big to check (>=10000)!'
         return True
     
-    s = np.linalg.eigvals(m)
+    s = np.real(np.linalg.eigvals(m))
     
     if s.min()/s.max()<tol:
         print name+' is close to singlar!'

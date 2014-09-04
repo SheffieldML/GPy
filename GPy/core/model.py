@@ -287,7 +287,7 @@ class Model(Parameterized):
             # just check the global ratio
             dx = np.zeros(x.shape)
             dx[transformed_index] = step * (np.sign(np.random.uniform(-1, 1, transformed_index.size)) if transformed_index.size != 2 else 1.)
-
+            
             # evaulate around the point x
             f1 = self._objective(x + dx)
             f2 = self._objective(x - dx)

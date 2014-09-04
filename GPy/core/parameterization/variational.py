@@ -7,7 +7,7 @@ Created on 6 Nov 2013
 import numpy as np
 from parameterized import Parameterized
 from param import Param
-from transformations import Logexp, Logistic
+from transformations import Logexp, Logistic,__fixed__
 
 class VariationalPrior(Parameterized):
     def __init__(self, name='latent space', **kw):
@@ -35,12 +35,15 @@ class NormalPrior(VariationalPrior):
 
 class SpikeAndSlabPrior(VariationalPrior):
     def __init__(self, pi=None, learnPi=False, variance = 1.0, name='SpikeAndSlabPrior', **kw):
-        super(VariationalPrior, self).__init__(name=name, **kw)
-        self.pi = Param('pi', pi, Logistic(1e-10,1.-1e-10))
+        super(SpikeAndSlabPrior, self).__init__(name=name, **kw)        
         self.variance = Param('variance',variance)
         self.learnPi = learnPi
         if learnPi:
-            self.add_parameters(self.pi)
+            self.pi = Param('Pi', pi, Logistic(1e-10,1.-1e-10))
+        else:
+            self.pi = Param('Pi', pi, __fixed__)
+        self.add_parameter(self.pi)
+
 
     def KL_divergence(self, variational_posterior):
         mu = variational_posterior.mean

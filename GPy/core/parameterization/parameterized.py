@@ -161,12 +161,11 @@ class Parameterized(Parameterizable):
                 parent.size += param.size
                 parent = parent._parent_
 
+            self._notify_parent_change()
+            self._highest_parent_._notify_parent_change()
             if not self._in_init_:
                 self._connect_parameters()
-                self._notify_parent_change()
-
                 self._highest_parent_._connect_parameters(ignore_added_names=_ignore_added_names)
-                self._highest_parent_._notify_parent_change()
                 self._highest_parent_._connect_fixes()
 
             if isinstance(param,Parameterized):

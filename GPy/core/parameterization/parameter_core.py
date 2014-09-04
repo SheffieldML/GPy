@@ -554,6 +554,11 @@ class Indexable(Nameable, Observable):
         plist = list(plist)
         plist.append(self)
         self._highest_parent_.ties.tie_together(plist)
+        
+    def untie(self, *plist):
+        plist = list(plist)
+        plist.append(self)
+        self._highest_parent_.ties.untie(plist)
 
     #===========================================================================
     # Constrain operations -> done

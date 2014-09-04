@@ -56,7 +56,7 @@ class Tie(Parameterized):
     1. Add the support for multiple parameter tie_together and tie_vector
     2. Properly handling parameters with constraints
     3. Properly handling the merging of two models [DONE]
-    4. Properly handling initialization
+    4. Properly handling initialization [DONE]
     
     """
     def __init__(self, name='Ties'):
@@ -102,7 +102,7 @@ class Tie(Parameterized):
             self._remove_unnecessary_ties()
             self._update_label_buf()
             self.updates = True
-        
+
     def _sync_val_group(self, plist):
         val = np.asarray([p.param_array for p in plist]).mean()
         def _set_val(p):
@@ -238,7 +238,6 @@ class Tie(Parameterized):
         self._update_label_buf()
         self.updates = True
         
-
     def _check_change(self):
         changed = False
         if self.tied_param is not None:

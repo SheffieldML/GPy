@@ -39,7 +39,7 @@ class Additive(Mapping):
         return self.mapping1._get_param_names + self.mapping2._get_param_names
 
     def _get_params(self):
-        return np.hstack((self.mapping1._get_params() self.mapping2._get_params()))
+        return np.hstack((self.mapping1._get_params(), self.mapping2._get_params()))
 
     def _set_params(self, x):
         self.mapping1._set_params(x[:self.mapping1.num_params])

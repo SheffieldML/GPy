@@ -110,6 +110,29 @@ class Tie(Parameterized):
         for p in plist:
             self._traverse_param(_set_val, p, [])
         return val
+
+    def _sync_constraint_group(self, plist, hastie=False, tie_con=None, warning=True):
+        if not hastie:
+            cons = []
+            for p in plist:
+                cons.extend(p.constraints.properties())
+            cons = list(set(cons))
+            if len(cons)==0:
+                tie_con = None
+            else:
+                tie_con = cons[0]
+        if tie_con is not None:
+            for p in plist:
+                if len(p.constraints.properties())!=1 or p.constraints[tie_con].size != p.size:
+                    print 'WARNING: '+p.name+' have different constraints! They will be constrained '+str(cons[0])+'!'
+                    p.constrain(cons[0])
+            return cons[0]
+        elif hastie:
+            for p in plist:
+                if p.constraints.size>0:
+                    print 'WARNING: '+p.name+' have different constraints! They will be unconstrained!'
+                p.unconstrain()
+        return None
         
     def _traverse_param(self, func, p, res):
         """
@@ -218,6 +241,12 @@ class Tie(Parameterized):
             # None of parameters in plist has been tied before.
             tie_labels = self._expand_tie_param(1)
             self._set_labels(plist, tie_labels)
+            tie_con = self._sync_constraint_group(plist)
+            print tie_con
+            if tie_con is not None:
+                print self.tied_param[self.tied_param.tie==tie_labels[0]]
+                self.tied_param[self.tied_param.tie==tie_labels[0]].constrain(tie_con)
+#                 self.tied_param.constrain(tie_con)
         else:
             # Some of parameters has been tied already.
             # Merge the tie param
@@ -225,6 +254,9 @@ class Tie(Parameterized):
             if tie_labels.size>1:
                 self._merge_tie_labels(tie_labels)
             self._set_labels(plist, [tie_labels[0]])
+            tie_p = self.tied_param[self.tied_param.tie==tie_labels[0]]
+            tie_con = tie_p.constraints.properties()[0] if tie_p.constraints.size>0 else None
+            self._sync_constraint_group(plist, True, tie_con)
         self._update_label_buf()
         self.tied_param[self.tied_param.tie==tie_labels[0]] = val
         self.updates = True

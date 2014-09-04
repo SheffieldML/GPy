@@ -515,13 +515,45 @@ class Indexable(Nameable, Observable):
     #===========================================================================
     # Tie parameters together
     #===========================================================================
+    
+    def _has_ties(self):
+        if self._highest_parent_.ties.label_buf is None:
+            return False
+        if self.has_parent():
+            return not np.all(self._highest_parent_.ties._untie_[self._highest_parent_._raveled_index_for(self)])
+        else:
+            return not np.all(self._highest_parent_.ties._untie_)
+    
+
+    def _has_hidden(self):
+        if self.has_parent():
+            return self.constraints[__fixed__].size != 0 or self._has_ties()
+        else:
+            return self._has_fixes() or self._has_ties()
+    
+    @property
+    def _exposed_(self):
+        if self.has_parent():
+            fixes = np.ones(self.size).astype(bool)
+            fixes[self.constraints[__fixed__]] = FIXED
+            fixes[np.logical_not(self._highest_parent_.ties._untie_[self._highest_parent_._raveled_index_for(self)])] = FIXED
+            return fixes
+        else:
+            hf = self._has_fixes()
+            ht = self._has_ties()
+            if hf and ht:
+                return np.logical_and(self._fixes_,self.ties._untie_)
+            elif hf and not ht:
+                return self._fixes_
+            elif not hf and ht:
+                return self.ties._untie_
+            else:
+                return np.ones((self._highest_parent_.param_array.size,),dtype=np.bool)
         
     def tie_together(self, *plist):
         plist = list(plist)
         plist.append(self)
         self._highest_parent_.ties.tie_together(plist)
-#         self._highest_parent_._set_fixed(self,self._raveled_index())
-        self._trigger_params_changed()
 
     #===========================================================================
     # Constrain operations -> done
@@ -673,13 +705,10 @@ class OptimizationHandlable(Indexable):
         if not self._optimizer_copy_transformed:
             self._optimizer_copy_.flat = self.param_array.flat
             [np.put(self._optimizer_copy_, ind, c.finv(self.param_array[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-            if self.has_parent() and (self.constraints[__fixed__].size != 0 or self._has_ties()):
-                fixes = np.ones(self.size).astype(bool)
-                fixes[self.constraints[__fixed__]] = FIXED
-                fixes[self._highest_parent_.ties.label_buf[self._highest_parent_._raveled_index_for(self)]] = FIXED
-                return self._optimizer_copy_[fixes]
-            elif self._has_fixes():
-                    return self._optimizer_copy_[np.logical_and(self._fixes_,self.ties.label_buf==0)]
+            if self.has_parent() and self._has_hidden():
+                return self._optimizer_copy_[self._exposed_]
+            elif self._has_hidden():
+                    return self._optimizer_copy_[self._exposed_]
 
             self._optimizer_copy_transformed = True
 
@@ -694,11 +723,8 @@ class OptimizationHandlable(Indexable):
         Also we want to update param_array in here.
         """
         f = None
-        if self.has_parent() and self.constraints[__fixed__].size != 0:
-            f = np.ones(self.size).astype(bool)
-            f[self.constraints[__fixed__]] = FIXED
-        elif self._has_fixes():
-            f = self._fixes_
+        if self._has_hidden():
+            f = self._exposed_
         if f is None:
             self.param_array.flat = p
             [np.put(self.param_array, ind, c.f(self.param_array.flat[ind]))
@@ -742,7 +768,7 @@ class OptimizationHandlable(Indexable):
         """
         self._highest_parent_.ties.collate_gradient()
         [np.put(g, i, g[i] * c.gradfactor(self.param_array[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
-        if self._has_fixes(): return g[self._fixes_]
+        if self._has_hidden(): return g[self._exposed_]
         return g
 
     @property
@@ -774,8 +800,8 @@ class OptimizationHandlable(Indexable):
 
     def _get_param_names_transformed(self):
         n = self._get_param_names()
-        if self._has_fixes():
-            return n[self._fixes_]
+        if self._has_hidden():
+            return n[self._exposed_]
         return n
 
     #===========================================================================

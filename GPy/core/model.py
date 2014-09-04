@@ -275,10 +275,10 @@ class Model(Parameterized):
                 transformed_index = range(len(x))
             else:
                 transformed_index = self._raveled_index_for(target_param)
-                if self._has_fixes():
+                if self._has_hidden():
                     indices = np.r_[:self.size]
-                    which = (transformed_index[:, None] == indices[self._fixes_][None, :]).nonzero()
-                    transformed_index = (indices - (~self._fixes_).cumsum())[transformed_index[which[0]]]
+                    which = (transformed_index[:, None] == indices[self._exposed_][None, :]).nonzero()
+                    transformed_index = (indices - (~self._exposed_).cumsum())[transformed_index[which[0]]]
 
                 if transformed_index.size == 0:
                     print "No free parameters to check"
@@ -324,11 +324,11 @@ class Model(Parameterized):
                 transformed_index = param_index
             else:
                 param_index = self._raveled_index_for(target_param)
-                if self._has_fixes():
+                if self._has_hidden():
                     indices = np.r_[:self.size]
-                    which = (param_index[:, None] == indices[self._fixes_][None, :]).nonzero()
+                    which = (param_index[:, None] == indices[self._exposed_][None, :]).nonzero()
                     param_index = param_index[which[0]]
-                    transformed_index = (indices - (~self._fixes_).cumsum())[param_index]
+                    transformed_index = (indices - (~self._exposed_).cumsum())[param_index]
                     # print param_index, transformed_index
                 else:
                     transformed_index = param_index

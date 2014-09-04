@@ -68,10 +68,11 @@ class Tie(Parameterized):
         # The buffer keeps track of tie status
         self.label_buf = None
         self.buf_idx = None
-        
+        self._untie_ = None
+                
     def mergeTies(self, p):
         """Merge the tie tree with another tie tree"""
-        assert hasattr(p,'ties') and isinstance(p.ties,Tie)
+        assert hasattr(p,'ties') and isinstance(p.ties,Tie), str(type(p))
         self.updates = False
         if p.ties.tied_param is not None:
             tie_labels = self._expand_tie_param(p.ties.tied_param.size)
@@ -173,10 +174,13 @@ class Tie(Parameterized):
         if self.tied_param is None:
             self.label_buf = None
             self.buf_idx = None
+            self._untie_ = None
         else:
             self.label_buf = np.zeros((self._highest_parent_.param_array.size,),dtype=np.uint32)
             self._traverse_param(lambda x:np.put(self.label_buf,self._highest_parent_._raveled_index_for(x),x.tie), self._highest_parent_, [])
             self.buf_idx = self._highest_parent_._raveled_index_for(self.tied_param)
+            self._untie_ = self.label_buf==0
+            self._untie_[self.buf_idx] = True
         
     def tie_together(self,plist):
         """tie a list of parameters"""

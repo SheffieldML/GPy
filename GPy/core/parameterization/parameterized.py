@@ -216,6 +216,13 @@ class Parameterized(Parameterizable):
         self._highest_parent_._connect_parameters()
         self._highest_parent_._connect_fixes()
         self._highest_parent_._notify_parent_change()
+        
+        if isinstance(param,Parameterized):
+            from ties_and_remappings import Tie
+            if not isinstance(param,Tie):
+                self._highest_parent_.ties.splitTies(param)
+        else:
+            self._highest_parent_.ties._update_label_buf()
 
     def _connect_parameters(self, ignore_added_names=False):
         # connect parameterlist to this parameterized object

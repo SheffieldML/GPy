@@ -254,7 +254,6 @@ class Param(Parameterizable, ObsAr):
             #if not np.all(indices==indices__):
             #    import ipdb; ipdb.set_trace()
         except:
-            print "Warning: extended indexing was used"
             indices = np.indices(self._realshape_, dtype=int)
             indices = indices[(slice(None),)+slice_index]
             indices = np.rollaxis(indices, 0, indices.ndim)

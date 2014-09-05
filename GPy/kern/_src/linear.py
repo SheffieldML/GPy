@@ -103,7 +103,7 @@ class Linear(Kern):
     def gradients_X_diag(self, dL_dKdiag, X):
         return 2.*self.variances*dL_dKdiag[:,None]*X
 
-    def input_sensitivity(self):
+    def input_sensitivity(self, summarize=True):
         return np.ones(self.input_dim) * self.variances
 
     #---------------------------------------#

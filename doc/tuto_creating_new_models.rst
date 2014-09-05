@@ -39,8 +39,9 @@ Obligatory methods
 :py:meth:`~GPy.core.model.Model.parameters_changed` :
     Updates the internal state of the model and sets the gradient of
     each parameter handle in the hierarchy with respect to the
-    log_likelihod. Thus here we need to put the negative derivative of
-    the rosenbrock function:
+    log_likelihod. Thus here we need to set the negative derivative of
+    the rosenbrock function for the parameters. In this case it is the
+    gradient for self.X:
 
  		self.X.gradient = -scipy.optimize.rosen_der(self.X)
 

@@ -58,22 +58,50 @@ class Observable(object):
 
     @property
     def updates(self):
-        p = getattr(self, '_highest_parent_', None)
-        if p is not None:
-            self._updates = p._updates
-        return self._updates
+        raise DeprecationWarning("updates is now a function, see update(True|False|None)")
 
     @updates.setter
     def updates(self, ups):
-        assert isinstance(ups, bool), "updates are either on (True) or off (False)"
+        raise DeprecationWarning("updates is now a function, see update(True|False|None)")
+    
+    def update_model(self, updates=None):
+        """
+        Get or set, whether automatic updates are performed. When updates are
+        off, the model might be in a non-working state. To make the model work
+        turn updates on again.
+
+        :param bool|None updates:
+
+            bool: whether to do updates
+            None: get the current update state
+        """
+        if updates is None:
+            p = getattr(self, '_highest_parent_', None)
+            if p is not None:
+                self._updates = p._updates
+            return self._updates
+        assert isinstance(updates, bool), "updates are either on (True) or off (False)"
         p = getattr(self, '_highest_parent_', None)
         if p is not None:
-            p._updates = ups
+            p._updates = updates
         else:
-            self._updates = ups
-        if ups:
-            self._trigger_params_changed()
+            self._updates = updates
+        self.trigger_update()
+                            
+    def toggle_update(self):
+        self.update_model(not self.update())
 
+    def trigger_update(self):
+        """
+        Update the model from the current state.
+        Make sure that updates are on, otherwise this
+        method will do nothing
+        """
+        if not self.update_model():
+            #print "Warning: updates are off, updating the model will do nothing"
+            return
+        self._trigger_params_changed()
+                
     def add_observer(self, observer, callble, priority=0):
         """
         Add an observer `observer` with the callback `callble`
@@ -110,7 +138,7 @@ class Observable(object):
         :param min_priority: only notify observers with priority > min_priority
                              if min_priority is None, notify all observers in order
         """
-        if not self.updates:
+        if not self.update_model():
             return
         if which is None:
             which = self
@@ -831,7 +859,7 @@ class OptimizationHandlable(Indexable):
         """
         # first take care of all parameters (from N(0,1))
         x = rand_gen(size=self._size_transformed(), *args, **kwargs)
-        self.updates = False # Switch off the updates
+        self.update_model(False) # Switch off the updates
         self.optimizer_array = x  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
         # now draw from prior where possible
         x = self.param_array.copy()
@@ -839,7 +867,7 @@ class OptimizationHandlable(Indexable):
         unfixlist = np.ones((self.size,),dtype=np.bool)
         unfixlist[self.constraints[__fixed__]] = False
         self.param_array[unfixlist] = x[unfixlist]
-        self.updates = True 
+        self.update_model(True) 
 
     #===========================================================================
     # For shared memory arrays. This does nothing in Param, but sets the memory

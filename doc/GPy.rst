@@ -13,6 +13,7 @@ Subpackages
     GPy.likelihoods
     GPy.mappings
     GPy.models
+    GPy.plotting
     GPy.testing
     GPy.util
 

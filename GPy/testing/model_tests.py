@@ -19,9 +19,10 @@ class MiscTests(unittest.TestCase):
         k = GPy.kern.RBF(1)
         m = GPy.models.GPRegression(self.X, self.Y, kernel=k)
         m.randomize()
-        Kinv = np.linalg.pinv(k.K(self.X) + np.eye(self.N)*m.Gaussian_noise.variance)
+        m.likelihood.variance = .5
+        Kinv = np.linalg.pinv(k.K(self.X) + np.eye(self.N)*m.likelihood.variance)
         K_hat = k.K(self.X_new) - k.K(self.X_new, self.X).dot(Kinv).dot(k.K(self.X, self.X_new))
-        mu_hat = k.K(self.X_new, self.X).dot(Kinv).dot(self.Y)
+        mu_hat = k.K(self.X_new, self.X).dot(Kinv).dot(m.Y_normalized)
 
         mu, covar = m._raw_predict(self.X_new, full_cov=True)
         self.assertEquals(mu.shape, (self.N_new, self.D))
@@ -431,6 +432,8 @@ class GradientTests(np.testing.TestCase):
         k1 = GPy.kern.RBF(1)  # + GPy.kern.White(1)
         k2 = GPy.kern.RBF(1)  # + GPy.kern.White(1)
         Y = np.random.randn(N1, N2)
+        Y = Y-Y.mean(0)
+        Y = Y/Y.std(0)
         m = GPy.models.GPKroneckerGaussianRegression(X1, X2, Y, k1, k2)
 
         # build the model the dumb way

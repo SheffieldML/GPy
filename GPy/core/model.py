@@ -368,4 +368,13 @@ class Model(Parameterized):
             self.optimizer_array = x
             return ret
 
+    def __str__(self):
+        model_details = [['Name', self.name],
+                         ['Log-likelihood', '{}'.format(float(self.log_likelihood()))],
+                         ["Number of Parameters", '{}'.format(self.size)]]
+        from operator import itemgetter
+        max_len = reduce(lambda a, b: max(len(b[0]), a), model_details, 0)
+        to_print = [""] + ["{0:{l}} : {1}".format(name, detail, l=max_len) for name, detail in model_details] + ["Parameters:"]
+        to_print.append(super(Model, self).__str__())
+        return "\n".join(to_print)
 

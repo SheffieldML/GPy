@@ -152,6 +152,12 @@ class ParameterizedTest(unittest.TestCase):
         self.test1.kern.randomize()
         self.assertEqual(val, self.rbf.variance)
 
+    def test_updates(self):
+        self.test1.update_model(False)
+        val = float(self.rbf.variance)
+        self.test1.kern.randomize()
+        self.assertEqual(val, self.rbf.variance)
+
     def test_fixing_optimize(self):
         self.testmodel.kern.lengthscale.fix()
         val = float(self.testmodel.kern.lengthscale)

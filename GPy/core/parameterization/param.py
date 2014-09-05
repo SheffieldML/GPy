@@ -155,31 +155,6 @@ class Param(Parameterizable, ObsAr):
         return self._raveled_index()
 
     #===========================================================================
-    # Index recreation
-    #===========================================================================
-    def _expand_index(self, slice_index=None):
-        # this calculates the full indexing arrays from the slicing objects given by get_item for _real..._ attributes
-        # it basically translates slices to their respective index arrays and turns negative indices around
-        # it tells you in the second return argument if it has only seen arrays as indices
-        if slice_index is None:
-            slice_index = self._current_slice_
-        def f(a):
-            a, b = a
-            if isinstance(a, numpy.ndarray) and a.dtype == bool:
-                raise ValueError, "Boolean indexing not implemented, use Param[np.where(index)] to index by boolean arrays!"
-            if a not in (slice(None), Ellipsis):
-                if isinstance(a, slice):
-                    start, stop, step = a.indices(b)
-                    return numpy.r_[start:stop:step]
-                elif isinstance(a, (list, numpy.ndarray, tuple)):
-                    a = numpy.asarray(a, dtype=int)
-                    a[a < 0] = b + a[a < 0]
-                elif a < 0:
-                    a = b + a
-                return numpy.r_[a]
-            return numpy.r_[:b]
-        return itertools.imap(f, itertools.izip_longest(slice_index[:self._realndim_], self._realshape_, fillvalue=slice(self.size)))
-    #===========================================================================
     # Constrainable
     #===========================================================================
     def _ensure_fixes(self):
@@ -261,7 +236,7 @@ class Param(Parameterizable, ObsAr):
         try:
             indices = np.indices(self._realshape_, dtype=int)
             indices = indices[(slice(None),)+slice_index]
-            indices = np.rollaxis(indices, 0, indices.ndim).reshape(-1,2)
+            indices = np.rollaxis(indices, 0, indices.ndim).reshape(-1,self._realndim_)
             #print indices_
             #if not np.all(indices==indices__):
             #    import ipdb; ipdb.set_trace()

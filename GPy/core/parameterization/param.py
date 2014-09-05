@@ -249,7 +249,7 @@ class Param(Parameterizable, ObsAr):
         try:
             indices = np.indices(self._realshape_, dtype=int)
             indices = indices[(slice(None),)+slice_index]
-            indices = np.rollaxis(indices, 0, indices.ndim).reshape(-1,2)
+            indices = np.rollaxis(indices, 0, indices.ndim).reshape(-1,self._realndim_)
             #print indices_
             #if not np.all(indices==indices__):
             #    import ipdb; ipdb.set_trace()

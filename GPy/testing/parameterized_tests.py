@@ -153,7 +153,7 @@ class ParameterizedTest(unittest.TestCase):
         self.assertEqual(val, self.rbf.variance)
 
     def test_updates(self):
-        self.test1.updates = False
+        self.test1.update_model(False)
         val = float(self.rbf.variance)
         self.test1.kern.randomize()
         self.assertEqual(val, self.rbf.variance)

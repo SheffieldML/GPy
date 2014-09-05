@@ -50,13 +50,21 @@ class Observable(object):
     as an observer. Every time the observable changes, it sends a notification with
     self as only argument to all its observers.
     """
+    _updates = True
     def __init__(self, *args, **kwargs):
         super(Observable, self).__init__()
         from lists_and_dicts import ObserverList
         self.observers = ObserverList()
-        self._updates = True
 
-    def updates(self, updates=None):
+    @property
+    def updates(self):
+        raise DeprecationWarning("updates is now a function, see update(True|False|None)")
+
+    @updates.setter
+    def updates(self, ups):
+        raise DeprecationWarning("updates is now a function, see update(True|False|None)")
+                
+    def update_model(self, updates=None):
         """
         Get or set, whether automatic updates are performed. When updates are
         off, the model might be in a non-working state. To make the model work
@@ -78,18 +86,18 @@ class Observable(object):
             p._updates = updates
         else:
             self._updates = updates
-        self.update_model()
+        self.trigger_update()
                             
-    def toggle_updates(self):
-        self.updates(not self.updates())
+    def toggle_update(self):
+        self.update_model(not self.update())
 
-    def update_model(self):
+    def trigger_update(self):
         """
         Update the model from the current state.
         Make sure that updates are on, otherwise this
         method will do nothing
         """
-        if not self.updates():
+        if not self.update_model():
             #print "Warning: updates are off, updating the model will do nothing"
             return
         self._trigger_params_changed()
@@ -130,7 +138,7 @@ class Observable(object):
         :param min_priority: only notify observers with priority > min_priority
                              if min_priority is None, notify all observers in order
         """
-        if not self.updates():
+        if not self.update_model():
             return
         if which is None:
             which = self
@@ -818,7 +826,7 @@ class OptimizationHandlable(Indexable):
         """
         # first take care of all parameters (from N(0,1))
         x = rand_gen(size=self._size_transformed(), *args, **kwargs)
-        self.updates(False) # Switch off the updates
+        self.update_model(False) # Switch off the updates
         self.optimizer_array = x  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
         # now draw from prior where possible
         x = self.param_array.copy()
@@ -826,7 +834,7 @@ class OptimizationHandlable(Indexable):
         unfixlist = np.ones((self.size,),dtype=np.bool)
         unfixlist[self.constraints[__fixed__]] = False
         self.param_array[unfixlist] = x[unfixlist]
-        self.updates(True) 
+        self.update_model(True) 
 
     #===========================================================================
     # For shared memory arrays. This does nothing in Param, but sets the memory

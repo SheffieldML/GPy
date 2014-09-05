@@ -551,6 +551,7 @@ class Indexable(Nameable, Observable):
                 return np.ones((self._highest_parent_.param_array.size,),dtype=np.bool)
         
     def tie_together(self, *plist):
+        """Tie a list of parameters together"""
         plist = list(plist)
         plist.append(self)
         self._highest_parent_.ties.tie_together(plist)
@@ -559,6 +560,11 @@ class Indexable(Nameable, Observable):
         plist = list(plist)
         plist.append(self)
         self._highest_parent_.ties.untie(plist)
+
+    def tie_vector(self, *plist):
+        """Tie a vector of parameters to other vectors of parameters"""
+        for p in plist:
+            self._highest_parent_.ties.tie_vector(self,p)
 
     #===========================================================================
     # Constrain operations -> done

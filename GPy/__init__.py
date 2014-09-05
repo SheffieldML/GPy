@@ -5,6 +5,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 import core
 from core.parameterization import transformations, priors
+constraints = transformations
 import models
 import mappings
 import inference

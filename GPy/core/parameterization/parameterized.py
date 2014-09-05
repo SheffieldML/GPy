@@ -350,7 +350,6 @@ class Parameterized(Parameterizable):
     def _ties_str(self):
         return [','.join(x._ties_str) for x in self.flattened_parameters]
     def __str__(self, header=True):
-
         name = adjust_name_for_printing(self.name) + "."
         constrs = self._constraints_str;
         ts = self._ties_str
@@ -365,11 +364,9 @@ class Parameterized(Parameterizable):
         to_print = []
         for n, d, c, t, p in itertools.izip(names, desc, constrs, ts, prirs):
             to_print.append(format_spec.format(name=n, desc=d, const=c, t=t, pri=p))
-        # to_print = [format_spec.format(p=p, const=c, t=t) if isinstance(p, Param) else p.__str__(header=False) for p, c, t in itertools.izip(self.parameters, constrs, ts)]
         sep = '-' * (nl + sl + cl + + pl + tl + 8 * 2 + 3)
         if header:
             header = "  {{0:<{0}s}}  |  {{1:^{1}s}}  |  {{2:^{2}s}}  |  {{3:^{3}s}}  |  {{4:^{4}s}}".format(nl, sl, cl, pl, tl).format(name, "Value", "Constraint", "Prior", "Tied to")
-            # header += '\n' + sep
             to_print.insert(0, header)
         return '\n'.format(sep).join(to_print)
     pass

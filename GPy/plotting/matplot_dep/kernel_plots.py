@@ -72,11 +72,11 @@ def plot_ARD(kernel, fignum=None, ax=None, title='', legend=False, filtering=Non
 
     x = np.arange(kernel.input_dim)
 
-    if order is None:
-        order = kernel.parameter_names(recursive=False)
+    if filtering is None:
+        filtering = kernel.parameter_names(recursive=False)
 
     for i in range(ard_params.shape[0]):
-        if kernel.parameters[i].name in order:
+        if kernel.parameters[i].name in filtering:
             c = Tango.nextMedium()
             bars.append(plot_bars(fig, ax, x, ard_params[i,:], c, kernel.parameters[i].name, bottom=bottom))
             last_bottom = ard_params[i,:]

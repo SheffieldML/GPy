@@ -40,24 +40,21 @@ is shown. For each parameter, the table contains the name
 of the parameter, the current value, and in case there are 
 defined: constraints, ties and prior distrbutions associated. ::
 
-	Log-likelihood: 6.309e+02
+  Name                 : sparse gp
+  Log-likelihood       : -405.646051581
+  Number of Parameters : 8
+  Parameters:
+    sparse_gp.               |  Value   |  Constraint  |  Prior  |  Tied to
+    inducing inputs          |  (5, 1)  |              |         |         
+    rbf.variance             |     1.0  |     +ve      |         |         
+    rbf.lengthscale          |     1.0  |     +ve      |         |         
+    Gaussian_noise.variance  |     1.0  |     +ve      |         |         
+  
 
-	     Name        |   Value   |  Constraints  |  Ties  |  Prior  
-	------------------------------------------------------------------
-	    iip_0_0      |  -1.4671  |               |        |         
-	    iip_1_0      |  2.6378   |               |        |         
-	    iip_2_0      |  -0.0396  |               |        |         
-	    iip_3_0      |  -2.6372  |               |        |         
-	    iip_4_0      |  1.4704   |               |        |         
-	 rbf_variance    |  1.5672   |     (+ve)     |        |         
-	rbf_lengthscale  |  2.5625   |     (+ve)     |        |         
-	white_variance   |  0.0000   |     (+ve)     |        |         
-	noise_variance   |  0.0022   |     (+ve)     |        |         
-
-In this case the kernel parameters (``rbf_variance``, 
-``rbf_lengthscale`` and ``white_variance``) as well as 
-the noise parameter (``noise_variance``), are constrained 
-to be positive, while the inducing inputs have not 
+In this case the kernel parameters (``rbf.variance``, 
+``rbf.lengthscale``) as well as 
+the likelihood noise parameter (``Gaussian_noise.variance``), are constrained 
+to be positive, while the inducing inputs have no
 constraints associated. Also there are no ties or prior defined.
 
 Setting and fetching parameters by name

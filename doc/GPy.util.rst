@@ -1,20 +1,21 @@
 GPy.util package
 ================
 
-Subpackages
------------
-
-.. toctree::
-
-    GPy.util.latent_space_visualizations
-
 Submodules
 ----------
 
-GPy.util.Tango module
----------------------
+GPy.util.block_matrices module
+------------------------------
 
-.. automodule:: GPy.util.Tango
+.. automodule:: GPy.util.block_matrices
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.caching module
+-----------------------
+
+.. automodule:: GPy.util.caching
     :members:
     :undoc-members:
     :show-inheritance:
@@ -27,10 +28,26 @@ GPy.util.classification module
     :undoc-members:
     :show-inheritance:
 
+GPy.util.config module
+----------------------
+
+.. automodule:: GPy.util.config
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.util.datasets module
 ------------------------
 
 .. automodule:: GPy.util.datasets
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.debug module
+---------------------
+
+.. automodule:: GPy.util.debug
     :members:
     :undoc-members:
     :show-inheritance:
@@ -43,10 +60,66 @@ GPy.util.decorators module
     :undoc-members:
     :show-inheritance:
 
+GPy.util.diag module
+--------------------
+
+.. automodule:: GPy.util.diag
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.erfcx module
+---------------------
+
+.. automodule:: GPy.util.erfcx
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.functions module
+-------------------------
+
+.. automodule:: GPy.util.functions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.gpu_init module
+------------------------
+
+.. automodule:: GPy.util.gpu_init
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.initialization module
+------------------------------
+
+.. automodule:: GPy.util.initialization
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.util.linalg module
 ----------------------
 
 .. automodule:: GPy.util.linalg
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.linalg_gpu module
+--------------------------
+
+.. automodule:: GPy.util.linalg_gpu
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.ln_diff_erfs module
+----------------------------
+
+.. automodule:: GPy.util.ln_diff_erfs
     :members:
     :undoc-members:
     :show-inheritance:
@@ -67,6 +140,14 @@ GPy.util.mocap module
     :undoc-members:
     :show-inheritance:
 
+GPy.util.mpi module
+-------------------
+
+.. automodule:: GPy.util.mpi
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.util.multioutput module
 ---------------------------
 
@@ -75,18 +156,34 @@ GPy.util.multioutput module
     :undoc-members:
     :show-inheritance:
 
-GPy.util.plot module
---------------------
+GPy.util.netpbmfile module
+--------------------------
 
-.. automodule:: GPy.util.plot
+.. automodule:: GPy.util.netpbmfile
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.util.plot_latent module
----------------------------
+GPy.util.normalizer module
+--------------------------
 
-.. automodule:: GPy.util.plot_latent
+.. automodule:: GPy.util.normalizer
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.parallel module
+------------------------
+
+.. automodule:: GPy.util.parallel
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.pca module
+-------------------
+
+.. automodule:: GPy.util.pca
     :members:
     :undoc-members:
     :show-inheritance:
@@ -99,18 +196,26 @@ GPy.util.squashers module
     :undoc-members:
     :show-inheritance:
 
-GPy.util.univariate_Gaussian module
------------------------------------
+GPy.util.subarray_and_sorting module
+------------------------------------
 
-.. automodule:: GPy.util.univariate_Gaussian
+.. automodule:: GPy.util.subarray_and_sorting
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.util.visualize module
--------------------------
+GPy.util.symbolic module
+------------------------
 
-.. automodule:: GPy.util.visualize
+.. automodule:: GPy.util.symbolic
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.univariate_Gaussian module
+-----------------------------------
+
+.. automodule:: GPy.util.univariate_Gaussian
     :members:
     :undoc-members:
     :show-inheritance:

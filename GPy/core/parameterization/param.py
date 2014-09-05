@@ -258,21 +258,14 @@ class Param(Parameterizable, ObsAr):
         # get a int-array containing all indices in the first axis.
         if slice_index is None:
             slice_index = self._current_slice_
-        if isinstance(slice_index, (tuple, list)):
-            clean_curr_slice = [s for s in slice_index if numpy.any(s != Ellipsis)]
-            for i in range(self._realndim_-len(clean_curr_slice)):
-                i+=1
-                clean_curr_slice += [range(self._realshape_[i])]
-            if (all(isinstance(n, (numpy.ndarray, list, tuple)) for n in clean_curr_slice)
-                and len(set(map(len, clean_curr_slice))) <= 1):
-                return numpy.fromiter(itertools.izip(*clean_curr_slice),
-                    dtype=[('', int)] * self._realndim_, count=len(clean_curr_slice[0])).view((int, self._realndim_))
         try:
-            expanded_index = list(self._expand_index(slice_index))
-            indices = numpy.fromiter(itertools.product(*expanded_index),
-                 dtype=[('', int)] * self._realndim_, count=reduce(lambda a, b: a * b.size, expanded_index, 1)).view((int, self._realndim_))
+            indices = np.indices(self._realshape_, dtype=int)
+            indices = indices[(slice(None),)+slice_index]
+            indices = np.rollaxis(indices, 0, indices.ndim).reshape(-1,2)
+            #print indices_
+            #if not np.all(indices==indices__):
+            #    import ipdb; ipdb.set_trace()
         except:
-            print "Warning: extended indexing was used"
             indices = np.indices(self._realshape_, dtype=int)
             indices = indices[(slice(None),)+slice_index]
             indices = np.rollaxis(indices, 0, indices.ndim)

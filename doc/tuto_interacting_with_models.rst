@@ -41,15 +41,14 @@ of the parameter, the current value, and in case there are
 defined: constraints, ties and prior distrbutions associated. ::
 
   Name                 : sparse gp
-  Log-likelihood       : -405.646051581
+  Log-likelihood       : 588.947189413
   Number of Parameters : 8
   Parameters:
-    sparse_gp.               |  Value   |  Constraint  |  Prior  |  Tied to
-    inducing inputs          |  (5, 1)  |              |         |         
-    rbf.variance             |     1.0  |     +ve      |         |         
-    rbf.lengthscale          |     1.0  |     +ve      |         |         
-    Gaussian_noise.variance  |     1.0  |     +ve      |         |         
-  
+    sparse_gp.               |       Value        |  Constraint  |  Prior  |  Tied to
+    inducing inputs          |            (5, 1)  |              |         |         
+    rbf.variance             |     1.91644016819  |     +ve      |         |         
+    rbf.lengthscale          |     2.62103621347  |     +ve      |         |         
+    Gaussian_noise.variance  |  0.00269870373421  |     +ve      |         |           
 
 In this case the kernel parameters (``rbf.variance``, 
 ``rbf.lengthscale``) as well as 
@@ -57,53 +56,152 @@ the likelihood noise parameter (``Gaussian_noise.variance``), are constrained
 to be positive, while the inducing inputs have no
 constraints associated. Also there are no ties or prior defined.
 
-Setting and fetching parameters by name
-=======================================
-Another way to interact with the model's parameters is through
-the functions ``_get_param_names()``, ``_get_params()`` and 
-``_set_params()``.
+You can also print all subparts of the model, by printing the
+subcomponents individually::
 
-``_get_param_names()`` returns a list of the parameters names ::
+  print m.rbf
 
-	['iip_0_0',
-	 'iip_1_0',
-	 'iip_2_0',
-	 'iip_3_0',
-	 'iip_4_0',
-	 'rbf_variance',
-	 'rbf_lengthscale',
-	 'white_variance',
-	 'noise_variance']
+This will print the details of this particular parameter handle::
 
-``_get_params()`` returns an array of the parameters values ::
+    rbf.         |      Value      |  Constraint  |  Prior  |  Tied to
+    variance     |  1.91644016819  |     +ve      |         |         
+    lengthscale  |  2.62103621347  |     +ve      |         |         
 
-	array([ -1.46705227e+00,   2.63782176e+00,  -3.96422982e-02,
-		-2.63715255e+00,   1.47038653e+00,   1.56724596e+00,
-		 2.56248679e+00,   2.20963633e-10,   2.18379922e-03])
+When you want to get a closer look into
+multivalue parameters, print them directly::
 
-``_set_params()`` takes an array as input and substitutes 
-the current values of the parameters for those of the array. For example,
-we can define a new array of values and change the parameters as follows: ::
+  print m.inducing_indputs
 
-	new_params = np.array([1.,2.,3.,4.,1.,1.,1.,1.,1.])
-	m._set_params(new_params)
+  Index  |  sparse_gp.inducing_inputs  |  Constraint  |   Prior   |  Tied to
+  [0 0]  |                  2.7189499  |              |           |    N/A    
+  [1 0]  |                 0.02006533  |              |           |    N/A    
+  [2 0]  |                 -1.5299386  |              |           |    N/A    
+  [3 0]  |                 -2.7001675  |              |           |    N/A    
+  [4 0]  |                  1.4654162  |              |           |    N/A    
 
-If we call the function ``_get_params()`` again, we will obtain the new
-parameters we have just set.
+Interacting with Parameters:
+=======================
+The preferred way of interacting with parameters is to act on the
+parameter handle itself.
+Interacting with parameter handles is simple. The names, printed by `print m`
+are accessible interactively and programatically. For example try to
+set kernels (`rbf`) `lengthscale` to `.2` and print the result::
 
-Parameters can be also set by name using dictionary notations. For example,
-let's change the lengthscale to .5: ::
+  m.rbf.lengthscale = .2
+  print m
 
-	m['rbf_lengthscale'] = .5
+You should see this::
 
-Here, the matching accepts a regular expression and therefore all parameters matching that regular expression are set to the given value. In this case rather 
-than passing as second output a single value, we can also 
-use a list of arrays. For example, lets change the inducing 
-inputs: ::
+  Name                 : sparse gp
+  Log-likelihood       : 588.947189413
+  Number of Parameters : 8
+  Parameters:
+    sparse_gp.               |       Value        |  Constraint  |  Prior  |  Tied to
+    inducing inputs          |            (5, 1)  |              |         |         
+    rbf.variance             |     1.91644016819  |     +ve      |         |         
+    rbf.lengthscale          |              0.2  |     +ve      |         |         
+    Gaussian_noise.variance  |  0.00269870373421  |     +ve      |         |           
 
-	m['iip'] = np.arange(-5,0)
+This will already have updated the model's inner state, so you can
+plot it or see the changes in the posterior `m.posterior` of the model.
 
-Getting the model's likelihood and gradients
+Regular expressions
+----------------
+The model's parameters can also be accessed through regular
+expressions, by 'indexing' the model with a regular expression,
+matching the parameter name. Through indexing by regular expression,
+you can only retrieve leafs of the hierarchy, and you can retrieve the
+values matched by calling `values()` on the returned object::
+
+  >>> print m['.*var']
+    Index  |       sparse_gp.rbf.variance        |  Constraint  |    Prior     |  Tied to
+     [0]   |                          2.1500132  |              |              |    N/A    
+    -----  |  sparse_gp.Gaussian_noise.variance  |  ----------  |  ----------  |  -------
+     [0]   |                       0.0024268215  |              |              |    N/A    
+  >>> print m['.*var'].values()
+  [ 2.1500132   0.00242682]
+  >>> print m['rbf']
+     Index  |   sparse_gp.rbf.variance    |  Constraint  |    Prior     |  Tied to
+     [0]   |                  2.1500132  |              |              |    N/A    
+    -----  |  sparse_gp.rbf.lengthscale  |  ----------  |  ----------  |  -------
+     [0]   |                  2.6782803  |              |              |    N/A    
+  
+There is access to setting parameters by regular expression,
+as well. Here are a few examples of how to set parameters by regular expression::
+
+  >>> m['.*var'] = .1
+  >>> print m['.*var']
+    Index  |       sparse_gp.rbf.variance        |  Constraint  |    Prior     |  Tied to
+     [0]   |                                0.1  |              |              |    N/A    
+    -----  |  sparse_gp.Gaussian_noise.variance  |  ----------  |  ----------  |  -------
+     [0]   |                                0.1  |              |              |    N/A    
+  >>> m['.*var'] = [.1, .2]
+  >>> print m['.*var']
+    Index  |       sparse_gp.rbf.variance        |  Constraint  |    Prior     |  Tied to
+     [0]   |                                0.1  |              |              |    N/A    
+    -----  |  sparse_gp.Gaussian_noise.variance  |  ----------  |  ----------  |  -------
+     [0]   |                                0.2  |              |              |    N/A    
+  
+The fact that only leaf nodes can be accesses we can print all
+parameters in a flattened view, by printing the regular expression
+match of matching all objects::
+
+  >>> print m['']
+    Index  |      sparse_gp.inducing_inputs      |  Constraint  |    Prior     |  Tied to
+    [0 0]  |                         -2.6716041  |              |              |    N/A    
+    [1 0]  |                         -1.4665111  |              |              |    N/A    
+    [2 0]  |                       -0.031010293  |              |              |    N/A    
+    [3 0]  |                          1.4563711  |              |              |    N/A    
+    [4 0]  |                          2.6803046  |              |              |    N/A    
+    -----  |       sparse_gp.rbf.variance        |  ----------  |  ----------  |  -------
+     [0]   |                                0.1  |              |              |    N/A    
+    -----  |      sparse_gp.rbf.lengthscale      |  ----------  |  ----------  |  -------
+     [0]   |                          2.6782803  |              |              |    N/A    
+    -----  |  sparse_gp.Gaussian_noise.variance  |  ----------  |  ----------  |  -------
+     [0]   |                                0.2  |              |              |    N/A    
+
+Setting and fetching parameters `parameter_array`
+------------------------------------------
+Another way to interact with the model's parameters is through the
+`parameter_array`. The Parameter array holds all the parameters of the
+model in one place and is editable. It can be accessed through
+indexing the model for example you can set all the parameters through
+this mechanism::
+
+  >>> new_params = np.r_[[-4,-2,0,2,4], [.5,2], [.3]]
+  >>> print new_params
+  array([-4. , -2. ,  0. ,  2. ,  4. ,  0.5,  2. ,  0.3])
+  >>> m[:] = new_params
+  >>> print m
+  Name                 : sparse gp
+  Log-likelihood       : -147.561160209
+  Number of Parameters : 8
+  Parameters:
+    sparse_gp.               |  Value   |  Constraint  |  Prior  |  Tied to
+    inducing inputs          |  (5, 1)  |              |         |         
+    rbf.variance             |     0.5  |     +sq      |         |         
+    rbf.lengthscale          |     2.0  |     +ve      |         |         
+    Gaussian_noise.variance  |     0.3  |     +sq      |         |         
+ 
+Parameters themselves (leafs of the hierarchy) can be indexed and used
+the same way as numpy arrays. First let us set a slice of the
+`inducing_inputs`::
+
+  >>> m.inducing_inputs[2:, 0] = [1,3,5]
+  >>> print m.inducing_indputs
+    Index  |  sparse_gp.inducing_inputs  |  Constraint  |   Prior   |  Tied to
+    [0 0]  |                         -4  |              |           |    N/A    
+    [1 0]  |                         -2  |              |           |    N/A    
+    [2 0]  |                          1  |              |           |    N/A    
+    [3 0]  |                          3  |              |           |    N/A    
+    [4 0]  |                          5  |              |           |    N/A    
+
+Or you use the parameters as normal numpy arrays for calculations::
+
+  >>> precision = 1./m.Gaussian_noise.variance
+  array([ 3.33333333])
+
+Getting the model's log likelihood
 =============================================
 Appart form the printing the model,  the marginal 
 log-likelihood can be obtained by using the function
@@ -111,15 +209,32 @@ log-likelihood can be obtained by using the function
 wrt. each parameter can be obtained with the funcion
 ``_log_likelihood_gradients()``. ::
 
-    m.log_likelihood()
-    -791.15371409346153
+    >>> m.log_likelihood()
+    array([-152.83377316])
 
-    m._log_likelihood_gradients()
-    array([  7.08278455e-03,   1.37118783e+01,   2.66948031e+00,
-             3.50184014e+00,   7.08278455e-03,  -1.43501702e+02,
-	     6.10662266e+01,  -2.18472649e+02,   2.14663691e+02])
+If you want to ensure the log likelihood as a float, call `float()`
+around it::
 
-Removing the model's constraints
+  >>> float(m.log_likelihood())
+  -152.83377316356177
+
+Getting the model parameter's gradients
+============================
+The gradients of a model can shed light on understanding the
+(possibly hard) optimization process. The gradients of each parameter
+handle can be accessed through their `gradient` field.::
+
+  >>> print m.gradient
+  [   5.51170031    9.71735112   -4.20282106   -3.45667035   -1.58828165
+   -2.11549358   12.40292787 -627.75467803]
+  >>> print m.rbf.gradient
+  [ -2.11549358  12.40292787]
+  >>> m.optimize()
+  >>> print m.gradient
+  [ -5.98046560e-04  -3.64576085e-04   1.98005930e-04   3.43381219e-04
+  -6.85685104e-04  -1.28800748e-05   1.08552429e-03   2.74058081e-01]
+
+Adjusting the model's constraints
 ================================
 When we initially call the example, it was optimized and hence the
 log-likelihood gradients were close to zero. However, since
@@ -127,21 +242,26 @@ we have been changing the parameters, the gradients are far from zero now.
 Next we are going to show how to optimize the model setting different 
 restrictions on the parameters. 
 
-Once a constrain has been set on a parameter, it is possible to remove it
-with the command ``unconstrain()``, and
-just as the previous matching commands, it also accepts regular expression.
-In this case we will remove all the constraints: ::
+Once a constraint has been set on a parameter, it is possible to remove
+it with the command ``unconstrain()``, which can be called on any
+parameter handle of the model. The methods `constrain()` and
+`unconstrain()` return the indices which were actually unconstrained,
+relative to the parameter handle the method was called on. This is
+particularly handy for reporting which parameters where reconstrained,
+when reconstraining a parameter, which was already constrained::
 
-	m.unconstrain('')
+	>>> m.rbf.variance.unconstrain()
+	array([0])
+	>>>m.unconstrain()
+	array([6, 7])
 
-Constraining and optimising the model
-=====================================
-A requisite needed for some parameters, such as variances,
-is to be positive. This is constraint is easily set 
-with the function ``constrain_positive()``. Regular expressions
-are also accepted. ::
+The parameter handles come with default constraints, so you will
+rarely be needing to adjust the constraints of a model. In the rare
+cases of needing to adjust the constraints of a model, or in need of
+fixing some parameters, you can do so with the functions
+``constrain_{positive|negative|bounded|fixed}()``.::
 
-    m.constrain_positive('.*var')
+    m['.*var'].constrain_positive()
 
 For convenience, GPy also provides a catch all function 
 which ensures that anything which appears to require 

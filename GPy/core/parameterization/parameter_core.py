@@ -63,7 +63,7 @@ class Observable(object):
     @updates.setter
     def updates(self, ups):
         raise DeprecationWarning("updates is now a function, see update(True|False|None)")
-                
+    
     def update_model(self, updates=None):
         """
         Get or set, whether automatic updates are performed. When updates are

@@ -162,11 +162,11 @@ class Parameterized(Parameterizable):
                 parent = parent._parent_
 
             self._notify_parent_change()
+            self._connect_parameters()
+#             if not self._in_init_:
             self._highest_parent_._notify_parent_change()
-            if not self._in_init_:
-                self._connect_parameters()
-                self._highest_parent_._connect_parameters(ignore_added_names=_ignore_added_names)
-                self._highest_parent_._connect_fixes()
+            self._highest_parent_._connect_parameters(ignore_added_names=_ignore_added_names)
+            self._highest_parent_._connect_fixes()
 
             if isinstance(param,Parameterized):
                 from ties_and_remappings import Tie

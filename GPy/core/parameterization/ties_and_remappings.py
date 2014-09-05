@@ -54,7 +54,7 @@ class Tie(Parameterized):
     
     TODO:
     1. Add the support for multiple parameter tie_together and tie_vector
-    2. Properly handling parameters with constraints
+    2. Properly handling parameters with constraints [DONE]
     3. Properly handling the merging of two models [DONE]
     4. Properly handling initialization [DONE]
     
@@ -104,7 +104,7 @@ class Tie(Parameterized):
             self.updates = True
 
     def _sync_val_group(self, plist):
-        val = np.asarray([p.param_array for p in plist]).mean()
+        val = np.hstack([p.param_array.flat for p in plist]).mean()
         def _set_val(p):
             p[:] = val
         for p in plist:
@@ -124,9 +124,9 @@ class Tie(Parameterized):
         if tie_con is not None:
             for p in plist:
                 if len(p.constraints.properties())!=1 or p.constraints[tie_con].size != p.size:
-                    print 'WARNING: '+p.name+' have different constraints! They will be constrained '+str(cons[0])+'!'
-                    p.constrain(cons[0])
-            return cons[0]
+                    print 'WARNING: '+p.name+' have different constraints! They will be constrained '+str(tie_con)+'!'
+                    p.constrain(tie_con)
+            return tie_con
         elif hastie:
             for p in plist:
                 if p.constraints.size>0:
@@ -149,8 +149,8 @@ class Tie(Parameterized):
     def _get_labels(self, plist):
         labels = []
         for p in plist:
-            self._traverse_param(lambda x: x.tie, p, labels)
-        return np.unique(np.asarray(labels))
+            self._traverse_param(lambda x: x.tie.flat, p, labels)
+        return np.unique(np.hstack(labels))
     
     def _set_labels(self, plist, labels):
         """
@@ -234,7 +234,7 @@ class Tie(Parameterized):
         
     def tie_together(self,plist):
         """tie a list of parameters"""
-        self.updates = False
+        #self.updates = False
         labels = self._get_labels(plist)
         val = self._sync_val_group(plist)
         if labels[0]==0 and labels.size==1:
@@ -242,11 +242,8 @@ class Tie(Parameterized):
             tie_labels = self._expand_tie_param(1)
             self._set_labels(plist, tie_labels)
             tie_con = self._sync_constraint_group(plist)
-            print tie_con
             if tie_con is not None:
-                print self.tied_param[self.tied_param.tie==tie_labels[0]]
                 self.tied_param[self.tied_param.tie==tie_labels[0]].constrain(tie_con)
-#                 self.tied_param.constrain(tie_con)
         else:
             # Some of parameters has been tied already.
             # Merge the tie param
@@ -259,7 +256,7 @@ class Tie(Parameterized):
             self._sync_constraint_group(plist, True, tie_con)
         self._update_label_buf()
         self.tied_param[self.tied_param.tie==tie_labels[0]] = val
-        self.updates = True
+        #self.updates = True
         
     def untie(self,plist):
         """Untie a list of parameters"""

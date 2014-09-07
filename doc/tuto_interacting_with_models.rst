@@ -70,7 +70,7 @@ This will print the details of this particular parameter handle::
 When you want to get a closer look into
 multivalue parameters, print them directly::
 
-  print m.inducing_indputs
+  print m.inducing_inputs
 
   Index  |  sparse_gp.inducing_inputs  |  Constraint  |   Prior   |  Tied to
   [0 0]  |                  2.7189499  |              |           |    N/A    
@@ -99,7 +99,7 @@ You should see this::
     sparse_gp.               |       Value        |  Constraint  |  Prior  |  Tied to
     inducing inputs          |            (5, 1)  |              |         |         
     rbf.variance             |     1.91644016819  |     +ve      |         |         
-    rbf.lengthscale          |              0.2  |     +ve      |         |         
+    rbf.lengthscale          |               0.2  |     +ve      |         |         
     Gaussian_noise.variance  |  0.00269870373421  |     +ve      |         |           
 
 This will already have updated the model's inner state, so you can
@@ -121,7 +121,7 @@ values matched by calling `values()` on the returned object::
   >>> print m['.*var'].values()
   [ 2.1500132   0.00242682]
   >>> print m['rbf']
-     Index  |   sparse_gp.rbf.variance    |  Constraint  |    Prior     |  Tied to
+    Index  |   sparse_gp.rbf.variance    |  Constraint  |    Prior     |  Tied to
      [0]   |                  2.1500132  |              |              |    N/A    
     -----  |  sparse_gp.rbf.lengthscale  |  ----------  |  ----------  |  -------
      [0]   |                  2.6782803  |              |              |    N/A    
@@ -205,9 +205,7 @@ Getting the model's log likelihood
 =============================================
 Appart form the printing the model,  the marginal 
 log-likelihood can be obtained by using the function
-``log_likelihood()``. Also, the log-likelihood gradients
-wrt. each parameter can be obtained with the funcion
-``_log_likelihood_gradients()``. ::
+``log_likelihood()``.::
 
     >>> m.log_likelihood()
     array([-152.83377316])
@@ -255,6 +253,28 @@ when reconstraining a parameter, which was already constrained::
 	>>>m.unconstrain()
 	array([6, 7])
 
+If you want to unconstrain only a specific constraint, you can pass it
+as an argument of ``unconstrain(Transformation)`` (:py:class:`~GPy.constraints.Transformation`), or call
+the respective method, such as ``unconstrain_fixed()`` (or
+``unfix()``) to only unfix fixed parameters.::
+
+  >>> m.inducing_input[0].fix()
+  >>> m.unfix()
+  >>> m.rbf.constrain_positive()
+  >>> print m
+  Name                 : sparse gp
+  Log-likelihood       : 620.741066698
+  Number of Parameters : 8
+  Parameters:
+    sparse_gp.               |       Value        |  Constraint  |  Prior  |  Tied to
+    inducing inputs          |            (5, 1)  |              |         |         
+    rbf.variance             |     1.48329711218  |     +ve      |         |         
+    rbf.lengthscale          |      2.5430947048  |     +ve      |         |         
+    Gaussian_noise.variance  |  0.00229714444128  |              |         |         
+
+As you can see, ``unfix()`` only unfixed the inducing_input, and did
+not change the positive constraint of the kernel.
+
 The parameter handles come with default constraints, so you will
 rarely be needing to adjust the constraints of a model. In the rare
 cases of needing to adjust the constraints of a model, or in need of
@@ -263,72 +283,59 @@ fixing some parameters, you can do so with the functions
 
     m['.*var'].constrain_positive()
 
-For convenience, GPy also provides a catch all function 
-which ensures that anything which appears to require 
-positivity is constrianed appropriately::
+Available Constraints
+==============
 
-    m.ensure_default_constraints()
+* :py:meth:`~GPy.constraints.Logexp`
+* :py:meth:`~GPy.constraints.Exponent`
+* :py:meth:`~GPy.constraints.Square`
+* :py:meth:`~GPy.constraints.Logistic`
+* :py:meth:`~GPy.constraints.LogexpNeg`
+* :py:meth:`~GPy.constraints.NegativeExponent`  
+* :py:meth:`~GPy.constraints.NegativeLogexp`
 
-Fixing parameters
-=================
-Parameters values can be fixed using ``constrain_fixed()``. 
-For example we can define the first inducing input to be 
-fixed on zero: ::
-
-    m.constrain_fixed('iip_0',0)
-	
-Bounding parameters
-===================
-Defining bounding constraints is an easily task in GPy too,
-it only requires to use the function ``constrain_bounded()``.
-For example, lets bound inducing inputs 2 and 3 to have
-values between -4 and -1: ::
-
-    m.constrain_bounded('iip_(1|2)',-4,-1)
 
 Tying Parameters
-================
-The values of two or more parameters can be tied together,
-so that they share the same value during optimization.
-The function to do so is ``tie_params()``. For the example
-we are using, it doesn't make sense to tie parameters together,
-however for the sake of the example we will tie the white noise
-and the variance together. See `A kernel overview <tuto_kernel_overview.html>`_.
-for a proper use of the tying capabilities.::
+============
+Not yet implemented for GPy version 0.6.0
 
-    m.tie_params('.*e_var')
 
 Optimizing the model
 ====================
+
 Once we have finished defining the constraints, 
 we can now optimize the model with the function
 ``optimize``.::
 
-    m.optimize()
+  m.Gaussian_noise.constrain_positive()
+  m.rbf.constrain_positive()
+  m.optimize()
 
-We can print again the model and check the new results.
-The table now shows that ``iip_0_0`` is fixed, ``iip_1_0`` 
-and ``iip_2_0`` are bounded and the kernel parameters are constrained to
-be positive. In addition the table now indicates that
-white_variance and noise_variance are tied together.::
+By deafult, GPy uses the lbfgsb optimizer.
+ 
+Some optional parameters may be discussed here.
 
-	Log-likelihood: 9.967e+01
+* ``optimizer``: which optimizer to use, currently there are ``lbfgsb, fmin_tnc,
+  scg, simplex`` or any unique identifier uniquely identifying an
+  optimizer. Thus, you can say ``m.optimize('bfgs') for using the
+  ``lbfgsb`` optimizer
+* ``messages``: if the optimizer is verbose. Each optimizer has its
+  own way of printing, so do not be confused by differing messages of
+  different optimizers
+* ``max_iters``: Maximum number of iterations to take. Some optimizers
+  see iterations as function calls, others as iterations of the
+  algorithm. Please be advised to look into ``scipy.optimize`` for
+  more instructions, if the number of iterations matter, so you can
+  give the right parameters to ``optimize()``
+* ``gtol``: only for some optimizers. Will determine the convergence
+  criterion, as the tolerance of gradient to finish the optimization.
 
-  	     Name        |   Value   |  Constraints  |  Ties  |  Prior  
-	------------------------------------------------------------------
-	    iip_0_0      |  0.0000   |     Fixed     |        |         
-	    iip_1_0      |  -2.8834  |   (-4, -1)    |        |         
-	    iip_2_0      |  -1.9152  |   (-4, -1)    |        |         
-	    iip_3_0      |  1.5034   |               |        |         
-	    iip_4_0      |  -1.0162  |               |        |         
-	 rbf_variance    |  0.0158   |     (+ve)     |        |         
-	rbf_lengthscale  |  0.9760   |     (+ve)     |        |         
-	white_variance   |  0.0049   |     (+ve)     |  (0)   |         
-	noise_variance   |  0.0049   |     (+ve)     |  (0)   |         
+Further Reading 
+=============== 
 
-
-Further Reading
-===============
-All of the mechansiams for dealing with parameters are baked right into GPy.core.model, from which all of the classes in GPy.models inherrit. To learn how to construct your own model, you might want to read :ref:`creating_new_models`. 
-
-By deafult, GPy uses the scg optimizer. To use other optimisers, and to control the setting of those optimisers, as well as other funky features like automated restarts and diagnostics, you can read the optimization tutorial ??link??.
+All of the mechansiams for dealing
+with parameters are baked right into GPy.core.model, from which all of
+the classes in GPy.models inherrit. To learn how to construct your own
+model, you might want to read :ref:`creating_new_models`.  If you want
+to learn how to create kernels, please refer to
+:ref:`creating_new_kernels`

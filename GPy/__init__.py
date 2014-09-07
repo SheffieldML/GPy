@@ -18,6 +18,10 @@ from nose.tools import nottest
 import kern
 import plotting
 
+# Direct imports for convenience:
+from core import Model
+from core.parameterization import Param, Parameterized, ObsAr
+
 @nottest
 def tests():
     Tester(testing).test(verbose=10)

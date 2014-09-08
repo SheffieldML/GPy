@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from posterior import Posterior
-from ...util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs
+from ...util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri
 from ...util import diag
 from ...core.parameterization.variational import VariationalPosterior
 import numpy as np
@@ -172,7 +172,9 @@ class VarDTC_minibatch(LatentFunctionInference):
         diag.add(Kmm, self.const_jitter)
         r1 = checkFullRank(Kmm,name='Kmm')
         Lm = jitchol(Kmm)
+        LmInv = dtrtri(Lm)
         
+        #LmInvPsi2LmInvT = LmInv.dot(psi2_full).dot(LmInv.T)
         LmInvPsi2LmInvT = backsub_both_sides(Lm,psi2_full,transpose='right')
         Lambda = np.eye(Kmm.shape[0])+LmInvPsi2LmInvT
         r2 = checkFullRank(Lambda,name='Lambda')

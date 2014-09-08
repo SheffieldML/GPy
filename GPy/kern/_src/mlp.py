@@ -36,7 +36,7 @@ class MLP(Kern):
         self.variance = Param('variance', variance, Logexp())
         self.weight_variance = Param('weight_variance', weight_variance, Logexp())
         self.bias_variance = Param('bias_variance', bias_variance, Logexp())
-        self.add_parameters(self.variance, self.weight_variance, self.bias_variance)
+        self.link_parameters(self.variance, self.weight_variance, self.bias_variance)
 
 
     def K(self, X, X2=None):

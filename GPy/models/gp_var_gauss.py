@@ -32,13 +32,13 @@ class GPVariationalGaussianApproximation(Model):
         if kernel is None:
             kernel = kern.RBF(X.shape[1]) + kern.White(X.shape[1], 0.01)
         self.kern = kernel
-        self.add_parameter(self.kern)
+        self.link_parameter(self.kern)
         self.num_data, self.input_dim = self.X.shape
 
         self.alpha = Param('alpha', np.zeros(self.num_data))
         self.beta = Param('beta', np.ones(self.num_data))
-        self.add_parameter(self.alpha)
-        self.add_parameter(self.beta)
+        self.link_parameter(self.alpha)
+        self.link_parameter(self.beta)
 
         self.gh_x, self.gh_w = np.polynomial.hermite.hermgauss(20)
         self.Ysign = np.where(Y==1, 1, -1).flatten()

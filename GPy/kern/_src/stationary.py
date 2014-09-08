@@ -61,7 +61,7 @@ class Stationary(Kern):
         self.lengthscale = Param('lengthscale', lengthscale, Logexp())
         self.variance = Param('variance', variance, Logexp())
         assert self.variance.size==1
-        self.add_parameters(self.variance, self.lengthscale)
+        self.link_parameters(self.variance, self.lengthscale)
 
     def K_of_r(self, r):
         raise NotImplementedError, "implement the covariance function as a fn of r to use this class"
@@ -343,7 +343,7 @@ class RatQuad(Stationary):
     def __init__(self, input_dim, variance=1., lengthscale=None, power=2., ARD=False, active_dims=None, name='RatQuad'):
         super(RatQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
         self.power = Param('power', power, Logexp())
-        self.add_parameters(self.power)
+        self.link_parameters(self.power)
 
     def K_of_r(self, r):
         r2 = np.power(r, 2.)

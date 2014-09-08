@@ -29,8 +29,8 @@ class StudentT(Likelihood):
         # sigma2 is not a noise parameter, it is a squared scale.
         self.sigma2 = Param('t_scale2', float(sigma2), Logexp())
         self.v = Param('deg_free', float(deg_free))
-        self.add_parameter(self.sigma2)
-        self.add_parameter(self.v)
+        self.link_parameter(self.sigma2)
+        self.link_parameter(self.v)
         self.v.constrain_fixed()
 
         self.log_concave = False

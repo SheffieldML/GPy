@@ -23,7 +23,7 @@ class Model(Parameterized):
         self.preferred_optimizer = 'bfgs'
         from .parameterization.ties_and_remappings import Tie
         self.tie = Tie()
-        self.add_parameter(self.tie, -1)
+        self.link_parameter(self.tie, -1)
         self.add_observer(self.tie, self.tie._parameters_changed_notification, priority=-500)
 
     def log_likelihood(self):

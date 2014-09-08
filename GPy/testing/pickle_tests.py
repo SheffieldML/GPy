@@ -108,7 +108,7 @@ class Test(ListDictTestCase):
         par = toy_rbf_1d_50(optimize=0, plot=0)
         pcopy = par.copy()
         self.assertListEqual(par.param_array.tolist(), pcopy.param_array.tolist())
-        self.assertListEqual(par.gradient_full.tolist(), pcopy.gradient_full.tolist())
+        np.testing.assert_allclose(par.gradient_full, pcopy.gradient_full)
         self.assertSequenceEqual(str(par), str(pcopy))
         self.assertIsNot(par.param_array, pcopy.param_array)
         self.assertIsNot(par.gradient_full, pcopy.gradient_full)
@@ -141,7 +141,7 @@ class Test(ListDictTestCase):
             f.seek(0)
             pcopy = pickle.load(f)
         np.testing.assert_allclose(par.param_array, pcopy.param_array)
-        np.testing.assert_allclose(par.gradient_full, pcopy.gradient_full)
+        np.testing.assert_allclose(par.gradient_full, pcopy.gradient_full, atol=1e-6)
         self.assertSequenceEqual(str(par), str(pcopy))
         self.assert_(pcopy.checkgrad())
 

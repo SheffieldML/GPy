@@ -24,7 +24,7 @@ class Linear(Bijective_mapping):
         Bijective_mapping.__init__(self, input_dim=input_dim, output_dim=output_dim, name=name)
         self.W = Param('W',np.array((self.input_dim, self.output_dim)))
         self.bias = Param('bias',np.array(self.output_dim))
-        self.add_parameters(self.W, self.bias)
+        self.link_parameters(self.W, self.bias)
 
     def f(self, X):
         return np.dot(X,self.W) + self.bias

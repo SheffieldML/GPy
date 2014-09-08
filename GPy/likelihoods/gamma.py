@@ -25,7 +25,7 @@ class Gamma(Likelihood):
         super(Gamma, self).__init__(gp_link, 'Gamma')
 
         self.beta = Param('beta', beta)
-        self.add_parameter(self.beta)
+        self.link_parameter(self.beta)
         self.beta.fix()#TODO: gradients!
 
     def pdf_link(self, link_f, y, Y_metadata=None):

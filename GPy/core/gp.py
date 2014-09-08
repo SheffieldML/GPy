@@ -90,8 +90,8 @@ class GP(Model):
         self.inference_method = inference_method
 
         logger.info("adding kernel and likelihood as parameters")
-        self.add_parameter(self.kern)
-        self.add_parameter(self.likelihood)
+        self.link_parameter(self.kern)
+        self.link_parameter(self.likelihood)
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y_normalized, self.Y_metadata)

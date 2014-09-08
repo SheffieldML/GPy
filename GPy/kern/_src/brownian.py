@@ -22,7 +22,7 @@ class Brownian(Kern):
         super(Brownian, self).__init__(input_dim, active_dims, name)
 
         self.variance = Param('variance', variance, Logexp())
-        self.add_parameters(self.variance)
+        self.link_parameters(self.variance)
 
     def K(self,X,X2=None):
         if X2 is None:

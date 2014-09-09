@@ -204,7 +204,7 @@ class VarDTC_minibatch(LatentFunctionInference):
         #======================================================================
         
 #         dL_dKmm =  -(output_dim*np.einsum('md,od->mo',KmmInvPsi2LLInvT,KmmInvPsi2LLInvT) + vvt)/2.
-        dL_dKmm =  dL_dpsi2R - KmmInv.dot(psi2_full).dot(KmmInv)/2.
+        dL_dKmm =  dL_dpsi2R - output_dim*KmmInv.dot(psi2_full).dot(KmmInv)/2.
 
         #======================================================================
         # Compute the Posterior distribution of inducing points p(u|Y)

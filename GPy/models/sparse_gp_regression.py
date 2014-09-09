@@ -30,7 +30,7 @@ class SparseGPRegression(SparseGP):
 
     """
 
-    def __init__(self, X, Y, kernel=None, Z=None, num_inducing=10, X_variance=None):
+    def __init__(self, X, Y, kernel=None, Z=None, num_inducing=10, X_variance=None, normalizer=None):
         num_data, input_dim = X.shape
 
         # kern defaults to rbf (plus white for stability)
@@ -49,7 +49,7 @@ class SparseGPRegression(SparseGP):
         if not (X_variance is None):
             X = NormalPosterior(X,X_variance)
 
-        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method=VarDTC())
+        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method=VarDTC(), normalizer=normalizer)
 
 class SparseGPRegressionUncertainInput(SparseGP):
     """
@@ -59,7 +59,7 @@ class SparseGPRegressionUncertainInput(SparseGP):
 
     """
 
-    def __init__(self, X, X_variance, Y, kernel=None, Z=None, num_inducing=10):
+    def __init__(self, X, X_variance, Y, kernel=None, Z=None, num_inducing=10, normalizer=None):
         """
         :param X: input observations
         :type X: np.ndarray (num_data x input_dim)
@@ -91,5 +91,5 @@ class SparseGPRegressionUncertainInput(SparseGP):
 
         likelihood = likelihoods.Gaussian()
 
-        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, X_variance=X_variance, inference_method=VarDTC())
+        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, X_variance=X_variance, inference_method=VarDTC(), normalizer=normalizer)
         self.ensure_default_constraints()

@@ -7,7 +7,7 @@ Created on 6 Nov 2013
 import numpy as np
 from parameterized import Parameterized
 from param import Param
-from transformations import Logexp, Logistic
+from transformations import Logexp, Logistic,__fixed__
 
 class VariationalPrior(Parameterized):
     def __init__(self, name='latent space', **kw):
@@ -35,28 +35,42 @@ class NormalPrior(VariationalPrior):
 
 class SpikeAndSlabPrior(VariationalPrior):
     def __init__(self, pi=None, learnPi=False, variance = 1.0, name='SpikeAndSlabPrior', **kw):
-        super(VariationalPrior, self).__init__(name=name, **kw)
-        self.pi = Param('pi', pi, Logistic(1e-10,1.-1e-10))
+        super(SpikeAndSlabPrior, self).__init__(name=name, **kw)        
         self.variance = Param('variance',variance)
         self.learnPi = learnPi
         if learnPi:
-            self.add_parameters(self.pi)
+            self.pi = Param('Pi', pi, Logistic(1e-10,1.-1e-10))
+        else:
+            self.pi = Param('Pi', pi, __fixed__)
+        self.link_parameter(self.pi)
+
 
     def KL_divergence(self, variational_posterior):
         mu = variational_posterior.mean
         S = variational_posterior.variance
         gamma = variational_posterior.binary_prob
+        if len(self.pi.shape)==2:
+            idx = np.unique(gamma._raveled_index()/gamma.shape[-1])
+            pi = self.pi[idx]
+        else:
+            pi = self.pi
+            
         var_mean = np.square(mu)/self.variance
         var_S = (S/self.variance - np.log(S))
-        var_gamma = (gamma*np.log(gamma/self.pi)).sum()+((1-gamma)*np.log((1-gamma)/(1-self.pi))).sum()
+        var_gamma = (gamma*np.log(gamma/pi)).sum()+((1-gamma)*np.log((1-gamma)/(1-pi))).sum()
         return var_gamma+ (gamma* (np.log(self.variance)-1. +var_mean + var_S)).sum()/2.
 
     def update_gradients_KL(self, variational_posterior):
         mu = variational_posterior.mean
         S = variational_posterior.variance
         gamma = variational_posterior.binary_prob
+        if len(self.pi.shape)==2:
+            idx = np.unique(gamma._raveled_index()/gamma.shape[-1])
+            pi = self.pi[idx]
+        else:
+            pi = self.pi
 
-        gamma.gradient -= np.log((1-self.pi)/self.pi*gamma/(1.-gamma))+((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.
+        gamma.gradient -= np.log((1-pi)/pi*gamma/(1.-gamma))+((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.
         mu.gradient -= gamma*mu/self.variance
         S.gradient -= (1./self.variance - 1./S) * gamma /2.
         if self.learnPi:
@@ -65,7 +79,7 @@ class SpikeAndSlabPrior(VariationalPrior):
             elif len(self.pi.shape)==1:
                 self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum(axis=0)
             else:
-                self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi))
+                self.pi[idx].gradient = (gamma/self.pi[idx] - (1.-gamma)/(1.-self.pi[idx]))
 
 class VariationalPosterior(Parameterized):
     def __init__(self, means=None, variances=None, name='latent space', *a, **kw):
@@ -75,7 +89,7 @@ class VariationalPosterior(Parameterized):
         self.ndim = self.mean.ndim
         self.shape = self.mean.shape
         self.num_data, self.input_dim = self.mean.shape
-        self.add_parameters(self.mean, self.variance)
+        self.link_parameters(self.mean, self.variance)
         self.num_data, self.input_dim = self.mean.shape
         if self.has_uncertain_inputs():
             assert self.variance.shape == self.mean.shape, "need one variance per sample and dimenion"
@@ -142,7 +156,7 @@ class SpikeAndSlabPosterior(VariationalPosterior):
         """
         super(SpikeAndSlabPosterior, self).__init__(means, variances, name)
         self.gamma = Param("binary_prob",binary_prob, Logistic(1e-10,1.-1e-10))
-        self.add_parameter(self.gamma)
+        self.link_parameter(self.gamma)
 
     def __getitem__(self, s):
         if isinstance(s, (int, slice, tuple, list, np.ndarray)):

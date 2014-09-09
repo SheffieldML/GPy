@@ -51,7 +51,7 @@ class Kern_check_dK_dtheta(Kern_check_model):
     """
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
         Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
-        self.add_parameter(self.kernel)
+        self.link_parameter(self.kernel)
 
     def parameters_changed(self):
         return self.kernel.update_gradients_full(self.dL_dK, self.X, self.X2)
@@ -64,7 +64,7 @@ class Kern_check_dKdiag_dtheta(Kern_check_model):
     """
     def __init__(self, kernel=None, dL_dK=None, X=None):
         Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=None)
-        self.add_parameter(self.kernel)
+        self.link_parameter(self.kernel)
 
     def log_likelihood(self):
         return (np.diag(self.dL_dK)*self.kernel.Kdiag(self.X)).sum()
@@ -77,7 +77,7 @@ class Kern_check_dK_dX(Kern_check_model):
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
         Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
         self.X = Param('X',X)
-        self.add_parameter(self.X)
+        self.link_parameter(self.X)
 
     def parameters_changed(self):
         self.X.gradient[:] =  self.kernel.gradients_X(self.dL_dK, self.X, self.X2)

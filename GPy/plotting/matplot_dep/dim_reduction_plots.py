@@ -56,6 +56,57 @@ def plot_latent(model, labels=None, which_indices=None,
         X = param_to_array(X)
 
 
+    if X.shape[0] > 1000:
+        print "Warning: subsampling X, as it has more samples then 1000. X.shape={!s}".format(X.shape)
+        subsample = np.random.choice(X.shape[0], size=1000, replace=False)
+        X = X[subsample]
+        labels = labels[subsample]
+        #=======================================================================
+        #     <<<WORK IN PROGRESS>>>
+        #     <<<DO NOT DELETE>>>
+        #     plt.close('all')
+        #     fig, ax = plt.subplots(1,1)
+        #     from GPy.plotting.matplot_dep.dim_reduction_plots import most_significant_input_dimensions
+        #     import matplotlib.patches as mpatches
+        #     i1, i2 = most_significant_input_dimensions(m, None)
+        #     xmin, xmax = 100, -100
+        #     ymin, ymax = 100, -100
+        #     legend_handles = []
+        #
+        #     X = m.X.mean[:, [i1, i2]]
+        #     X = m.X.variance[:, [i1, i2]]
+        #
+        #     xmin = X[:,0].min(); xmax = X[:,0].max()
+        #     ymin = X[:,1].min(); ymax = X[:,1].max()
+        #     range_ = [[xmin, xmax], [ymin, ymax]]
+        #     ul = np.unique(labels)
+        #
+        #     for i, l in enumerate(ul):
+        #         #cdict = dict(red  =[(0., colors[i][0], colors[i][0]), (1., colors[i][0], colors[i][0])],
+        #         #             green=[(0., colors[i][0], colors[i][1]), (1., colors[i][1], colors[i][1])],
+        #         #             blue =[(0., colors[i][0], colors[i][2]), (1., colors[i][2], colors[i][2])],
+        #         #             alpha=[(0., 0., .0), (.5, .5, .5), (1., .5, .5)])
+        #         #cmap = LinearSegmentedColormap('{}'.format(l), cdict)
+        #         cmap = LinearSegmentedColormap.from_list('cmap_{}'.format(str(l)), [colors[i], colors[i]], 255)
+        #         cmap._init()
+        #         #alphas = .5*(1+scipy.special.erf(np.linspace(-2,2, cmap.N+3)))#np.log(np.linspace(np.exp(0), np.exp(1.), cmap.N+3))
+        #         alphas = (scipy.special.erf(np.linspace(0,2.4, cmap.N+3)))#np.log(np.linspace(np.exp(0), np.exp(1.), cmap.N+3))
+        #         cmap._lut[:, -1] = alphas
+        #         print l
+        #         x, y = X[labels==l].T
+        #
+        #         heatmap, xedges, yedges = np.histogram2d(x, y, bins=300, range=range_)
+        #         #heatmap, xedges, yedges = np.histogram2d(x, y, bins=100)
+        #
+        #         im = ax.imshow(heatmap, extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]], cmap=cmap, aspect='auto', interpolation='nearest', label=str(l))
+        #         legend_handles.append(mpatches.Patch(color=colors[i], label=l))
+        #     ax.set_xlim(xmin, xmax)
+        #     ax.set_ylim(ymin, ymax)
+        #     plt.legend(legend_handles, [l.get_label() for l in legend_handles])
+        #     plt.draw()
+        #     plt.show()
+        #=======================================================================
+
     # create a function which computes the shading of latent space according to the output variance
     def plot_function(x):
         Xtest_full = np.zeros((x.shape[0], model.X.shape[1]))

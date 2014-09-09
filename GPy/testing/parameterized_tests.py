@@ -37,8 +37,8 @@ class ParameterizedTest(unittest.TestCase):
         self.test1 = GPy.core.Parameterized("test model")
         self.test1.param = self.param
         self.test1.kern = self.rbf+self.white
-        self.test1.add_parameter(self.test1.kern)
-        self.test1.add_parameter(self.param, 0)
+        self.test1.link_parameter(self.test1.kern)
+        self.test1.link_parameter(self.param, 0)
         # print self.test1:
         #=============================================================================
         # test_model.          |    Value    |  Constraint   |  Prior  |  Tied to
@@ -67,11 +67,11 @@ class ParameterizedTest(unittest.TestCase):
 
     def test_fixes(self):
         self.white.fix(warning=False)
-        self.test1.remove_parameter(self.param)
+        self.test1.unlink_parameter(self.param)
         self.assertTrue(self.test1._has_fixes())
         from GPy.core.parameterization.transformations import FIXED, UNFIXED
         self.assertListEqual(self.test1._fixes_.tolist(),[UNFIXED,UNFIXED,FIXED])
-        self.test1.kern.add_parameter(self.white, 0)
+        self.test1.kern.link_parameter(self.white, 0)
         self.assertListEqual(self.test1._fixes_.tolist(),[FIXED,UNFIXED,UNFIXED])
         self.test1.kern.rbf.fix()
         self.assertListEqual(self.test1._fixes_.tolist(),[FIXED]*3)
@@ -82,7 +82,7 @@ class ParameterizedTest(unittest.TestCase):
     def test_remove_parameter(self):
         from GPy.core.parameterization.transformations import FIXED, UNFIXED, __fixed__, Logexp
         self.white.fix()
-        self.test1.kern.remove_parameter(self.white)
+        self.test1.kern.unlink_parameter(self.white)
         self.assertIs(self.test1._fixes_,None)
 
         self.assertListEqual(self.white._fixes_.tolist(), [FIXED])
@@ -90,7 +90,7 @@ class ParameterizedTest(unittest.TestCase):
         self.assertIs(self.test1.constraints, self.rbf.constraints._param_index_ops)
         self.assertIs(self.test1.constraints, self.param.constraints._param_index_ops)
 
-        self.test1.add_parameter(self.white, 0)
+        self.test1.link_parameter(self.white, 0)
         self.assertIs(self.test1.constraints, self.white.constraints._param_index_ops)
         self.assertIs(self.test1.constraints, self.rbf.constraints._param_index_ops)
         self.assertIs(self.test1.constraints, self.param.constraints._param_index_ops)
@@ -98,7 +98,7 @@ class ParameterizedTest(unittest.TestCase):
         self.assertIs(self.white._fixes_,None)
         self.assertListEqual(self.test1._fixes_.tolist(),[FIXED] + [UNFIXED] * 52)
 
-        self.test1.remove_parameter(self.white)
+        self.test1.unlink_parameter(self.white)
         self.assertIs(self.test1._fixes_,None)
         self.assertListEqual(self.white._fixes_.tolist(), [FIXED])
         self.assertIs(self.test1.constraints, self.rbf.constraints._param_index_ops)
@@ -107,11 +107,11 @@ class ParameterizedTest(unittest.TestCase):
 
     def test_remove_parameter_param_array_grad_array(self):
         val = self.test1.kern.param_array.copy()
-        self.test1.kern.remove_parameter(self.white)
+        self.test1.kern.unlink_parameter(self.white)
         self.assertListEqual(self.test1.kern.param_array.tolist(), val[:2].tolist())
 
     def test_add_parameter_already_in_hirarchy(self):
-        self.assertRaises(HierarchyError, self.test1.add_parameter, self.white.parameters[0])
+        self.assertRaises(HierarchyError, self.test1.link_parameter, self.white.parameters[0])
 
     def test_default_constraints(self):
         self.assertIs(self.rbf.variance.constraints._param_index_ops, self.rbf.constraints._param_index_ops)
@@ -119,7 +119,7 @@ class ParameterizedTest(unittest.TestCase):
         self.assertListEqual(self.rbf.constraints.indices()[0].tolist(), range(2))
         from GPy.core.parameterization.transformations import Logexp
         kern = self.test1.kern
-        self.test1.remove_parameter(kern)
+        self.test1.unlink_parameter(kern)
         self.assertListEqual(kern.constraints[Logexp()].tolist(), range(3))
 
     def test_constraints(self):
@@ -127,7 +127,7 @@ class ParameterizedTest(unittest.TestCase):
         self.assertListEqual(self.test1.constraints[GPy.transformations.Square()].tolist(), range(self.param.size, self.param.size+self.rbf.size))
         self.assertListEqual(self.test1.constraints[GPy.transformations.Logexp()].tolist(), [self.param.size+self.rbf.size])
 
-        self.test1.kern.remove_parameter(self.rbf)
+        self.test1.kern.unlink_parameter(self.rbf)
         self.assertListEqual(self.test1.constraints[GPy.transformations.Square()].tolist(), [])
 
     def test_constraints_views(self):
@@ -152,6 +152,12 @@ class ParameterizedTest(unittest.TestCase):
         self.test1.kern.randomize()
         self.assertEqual(val, self.rbf.variance)
 
+    def test_updates(self):
+        self.test1.update_model(False)
+        val = float(self.rbf.variance)
+        self.test1.kern.randomize()
+        self.assertEqual(val, self.rbf.variance)
+
     def test_fixing_optimize(self):
         self.testmodel.kern.lengthscale.fix()
         val = float(self.testmodel.kern.lengthscale)
@@ -160,7 +166,7 @@ class ParameterizedTest(unittest.TestCase):
 
     def test_add_parameter_in_hierarchy(self):
         from GPy.core import Param
-        self.test1.kern.rbf.add_parameter(Param("NEW", np.random.rand(2), NegativeLogexp()), 1)
+        self.test1.kern.rbf.link_parameter(Param("NEW", np.random.rand(2), NegativeLogexp()), 1)
         self.assertListEqual(self.test1.constraints[NegativeLogexp()].tolist(), range(self.param.size+1, self.param.size+1 + 2))
         self.assertListEqual(self.test1.constraints[GPy.transformations.Logistic(0,1)].tolist(), range(self.param.size))
         self.assertListEqual(self.test1.constraints[GPy.transformations.Logexp(0,1)].tolist(), np.r_[50, 53:55].tolist())

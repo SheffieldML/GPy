@@ -15,17 +15,22 @@ class GPRegression(GP):
     :param X: input observations
     :param Y: observed values
     :param kernel: a GPy kernel, defaults to rbf
+    :param Norm normalizer: [False]
+
+        Normalize Y with the norm given.
+        If normalizer is False, no normalization will be done
+        If it is None, we use GaussianNorm(alization)
 
     .. Note:: Multiple independent outputs are allowed using columns of Y
 
     """
 
-    def __init__(self, X, Y, kernel=None, Y_metadata=None):
+    def __init__(self, X, Y, kernel=None, Y_metadata=None, normalizer=None):
 
         if kernel is None:
             kernel = kern.RBF(X.shape[1])
 
         likelihood = likelihoods.Gaussian()
 
-        super(GPRegression, self).__init__(X, Y, kernel, likelihood, name='GP regression', Y_metadata=Y_metadata)
+        super(GPRegression, self).__init__(X, Y, kernel, likelihood, name='GP regression', Y_metadata=Y_metadata, normalizer=normalizer)
 

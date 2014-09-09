@@ -127,7 +127,7 @@ class Symbolic_core():
                     val = parameters[theta.name]
             # Add parameter.
             
-            self.add_parameters(Param(theta.name, val, None))
+            self.link_parameters(Param(theta.name, val, None))
             #self._set_attribute(theta.name, )
 
     def eval_parameters_changed(self):

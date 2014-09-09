@@ -20,18 +20,34 @@ GPy.models.bcgplvm module
     :undoc-members:
     :show-inheritance:
 
-GPy.models.fitc_classification module
--------------------------------------
-
-.. automodule:: GPy.models.fitc_classification
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 GPy.models.gp_classification module
 -----------------------------------
 
 .. automodule:: GPy.models.gp_classification
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.models.gp_coregionalized_regression module
+----------------------------------------------
+
+.. automodule:: GPy.models.gp_coregionalized_regression
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.models.gp_heteroscedastic_regression module
+-----------------------------------------------
+
+.. automodule:: GPy.models.gp_heteroscedastic_regression
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.models.gp_kronecker_gaussian_regression module
+--------------------------------------------------
+
+.. automodule:: GPy.models.gp_kronecker_gaussian_regression
     :members:
     :undoc-members:
     :show-inheritance:
@@ -48,6 +64,14 @@ GPy.models.gp_regression module
 -------------------------------
 
 .. automodule:: GPy.models.gp_regression
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.models.gp_var_gauss module
+------------------------------
+
+.. automodule:: GPy.models.gp_var_gauss
     :members:
     :undoc-members:
     :show-inheritance:
@@ -84,6 +108,14 @@ GPy.models.sparse_gp_classification module
     :undoc-members:
     :show-inheritance:
 
+GPy.models.sparse_gp_coregionalized_regression module
+-----------------------------------------------------
+
+.. automodule:: GPy.models.sparse_gp_coregionalized_regression
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.models.sparse_gp_multioutput_regression module
 --------------------------------------------------
 
@@ -104,6 +136,22 @@ GPy.models.sparse_gplvm module
 ------------------------------
 
 .. automodule:: GPy.models.sparse_gplvm
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.models.ss_gplvm module
+--------------------------
+
+.. automodule:: GPy.models.ss_gplvm
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.models.ss_mrd module
+------------------------
+
+.. automodule:: GPy.models.ss_mrd
     :members:
     :undoc-members:
     :show-inheritance:

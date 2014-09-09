@@ -4,22 +4,6 @@ GPy.testing package
 Submodules
 ----------
 
-GPy.testing.bgplvm_tests module
--------------------------------
-
-.. automodule:: GPy.testing.bgplvm_tests
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.testing.cgd_tests module
-----------------------------
-
-.. automodule:: GPy.testing.cgd_tests
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 GPy.testing.examples_tests module
 ---------------------------------
 
@@ -28,10 +12,18 @@ GPy.testing.examples_tests module
     :undoc-members:
     :show-inheritance:
 
-GPy.testing.gplvm_tests module
-------------------------------
+GPy.testing.fitc module
+-----------------------
 
-.. automodule:: GPy.testing.gplvm_tests
+.. automodule:: GPy.testing.fitc
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.testing.index_operations_tests module
+-----------------------------------------
+
+.. automodule:: GPy.testing.index_operations_tests
     :members:
     :undoc-members:
     :show-inheritance:
@@ -44,18 +36,42 @@ GPy.testing.kernel_tests module
     :undoc-members:
     :show-inheritance:
 
-GPy.testing.mapping_tests module
---------------------------------
+GPy.testing.likelihood_tests module
+-----------------------------------
 
-.. automodule:: GPy.testing.mapping_tests
+.. automodule:: GPy.testing.likelihood_tests
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.testing.mrd_tests module
-----------------------------
+GPy.testing.model_tests module
+------------------------------
 
-.. automodule:: GPy.testing.mrd_tests
+.. automodule:: GPy.testing.model_tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.testing.observable_tests module
+-----------------------------------
+
+.. automodule:: GPy.testing.observable_tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.testing.parameterized_tests module
+--------------------------------------
+
+.. automodule:: GPy.testing.parameterized_tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.testing.pickle_tests module
+-------------------------------
+
+.. automodule:: GPy.testing.pickle_tests
     :members:
     :undoc-members:
     :show-inheritance:
@@ -64,38 +80,6 @@ GPy.testing.prior_tests module
 ------------------------------
 
 .. automodule:: GPy.testing.prior_tests
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.testing.psi_stat_expectation_tests module
----------------------------------------------
-
-.. automodule:: GPy.testing.psi_stat_expectation_tests
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.testing.psi_stat_gradient_tests module
-------------------------------------------
-
-.. automodule:: GPy.testing.psi_stat_gradient_tests
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.testing.sparse_gplvm_tests module
--------------------------------------
-
-.. automodule:: GPy.testing.sparse_gplvm_tests
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.testing.unit_tests module
------------------------------
-
-.. automodule:: GPy.testing.unit_tests
     :members:
     :undoc-members:
     :show-inheritance:

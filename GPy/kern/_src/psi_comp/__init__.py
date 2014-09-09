@@ -29,6 +29,9 @@ class PSICOMP_RBF(Pickleable):
         else:
             raise ValueError, "unknown distriubtion received for psi-statistics"
         
+    def _setup_observers(self):
+        pass
+        
 class PSICOMP_Linear(Pickleable):
 
     @Cache_this(limit=2, ignore_args=(0,))

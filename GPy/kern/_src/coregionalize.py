@@ -50,7 +50,7 @@ class Coregionalize(Kern):
         else:
             assert kappa.shape==(self.output_dim, )
         self.kappa = Param('kappa', kappa, Logexp())
-        self.add_parameters(self.W, self.kappa)
+        self.link_parameters(self.W, self.kappa)
 
     def parameters_changed(self):
         self.B = np.dot(self.W, self.W.T) + np.diag(self.kappa)

@@ -129,7 +129,7 @@ class MRD(SparseGP):
         else: likelihoods = likelihoods
 
         self.logger.info("adding X and Z")
-        self.add_parameters(self.X, self.Z)
+        self.link_parameters(self.X, self.Z)
 
         self.bgplvms = []
         self.num_data = Ylist[0].shape[0]
@@ -137,11 +137,11 @@ class MRD(SparseGP):
         for i, n, k, l, Y in itertools.izip(itertools.count(), Ynames, kernels, likelihoods, Ylist):
             assert Y.shape[0] == self.num_data, "All datasets need to share the number of datapoints, and those have to correspond to one another"
             p = Parameterized(name=n)
-            p.add_parameter(k)
+            p.link_parameter(k)
             p.kern = k
-            p.add_parameter(l)
+            p.link_parameter(l)
             p.likelihood = l
-            self.add_parameter(p)
+            self.link_parameter(p)
             self.bgplvms.append(p)
 
         self.posterior = None

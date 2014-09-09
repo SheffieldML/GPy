@@ -25,9 +25,10 @@ class BayesianGPLVM(SparseGP):
 
     """
     def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
-                 Z=None, kernel=None, inference_method=None, likelihood=None, name='bayesian gplvm', mpi_comm=None, **kwargs):
+                 Z=None, kernel=None, inference_method=None, likelihood=None, name='bayesian gplvm', mpi_comm=None, normalizer=None):
         self.mpi_comm = mpi_comm
         self.__IN_OPTIMIZATION__ = False
+
         self.logger = logging.getLogger(self.__class__.__name__)
         if X == None:
             from ..util.initialization import initialize_latent
@@ -49,7 +50,7 @@ class BayesianGPLVM(SparseGP):
 
         if kernel is None:
             self.logger.info("initializing kernel RBF")
-            kernel = kern.RBF(input_dim, lengthscale=1./fracs, ARD=True) # + kern.white(input_dim)
+            kernel = kern.RBF(input_dim, lengthscale=1./fracs, ARD=True) #+ kern.Bias(input_dim) + kern.White(input_dim)
 
         if likelihood is None:
             likelihood = Gaussian()
@@ -71,13 +72,13 @@ class BayesianGPLVM(SparseGP):
                 inference_method = VarDTC()
         if isinstance(inference_method,VarDTC_minibatch):
             inference_method.mpi_comm = mpi_comm
-                
+
         if kernel.useGPU and isinstance(inference_method, VarDTC_GPU):
             kernel.psicomp.GPU_direct = True
 
-        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, **kwargs)
+        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, normalizer=normalizer)
         self.logger.info("Adding X as parameter")
-        self.add_parameter(self.X, index=0)
+        self.link_parameter(self.X, index=0)
 
         if mpi_comm != None:
             from ..util.mpi import divide_data
@@ -91,7 +92,7 @@ class BayesianGPLVM(SparseGP):
     def set_X_gradients(self, X, X_grad):
         """Set the gradients of the posterior distribution of X in its specific form."""
         X.mean.gradient, X.variance.gradient = X_grad
-    
+
     def get_X_gradients(self, X):
         """Get the gradients of the posterior distribution of X in its specific form."""
         return X.mean.gradient, X.variance.gradient
@@ -218,22 +219,22 @@ class BayesianGPLVM(SparseGP):
             del dc['N_list']
             del dc['Y_local']
         return dc
- 
+
     def __setstate__(self, state):
         return super(BayesianGPLVM, self).__setstate__(state)
-    
+
     #=====================================================
-    # The MPI parallelization 
+    # The MPI parallelization
     #     - can move to model at some point
     #=====================================================
-    
+
     def _set_params_transformed(self, p):
         if self.mpi_comm != None:
             if self.__IN_OPTIMIZATION__ and self.mpi_comm.rank==0:
                 self.mpi_comm.Bcast(np.int32(1),root=0)
             self.mpi_comm.Bcast(p, root=0)
         super(BayesianGPLVM, self)._set_params_transformed(p)
-        
+
     def optimize(self, optimizer=None, start=None, **kwargs):
         self.__IN_OPTIMIZATION__ = True
         if self.mpi_comm==None:

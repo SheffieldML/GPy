@@ -35,12 +35,12 @@ class GPKroneckerGaussianRegression(Model):
         self.X2 = ObsAr(X2)
         self.Y = Y
         self.kern1, self.kern2 = kern1, kern2
-        self.add_parameter(self.kern1)
-        self.add_parameter(self.kern2)
+        self.link_parameter(self.kern1)
+        self.link_parameter(self.kern2)
 
         self.likelihood = likelihoods.Gaussian()
         self.likelihood.variance = noise_var
-        self.add_parameter(self.likelihood)
+        self.link_parameter(self.likelihood)
 
         self.num_data1, self.input_dim1 = self.X1.shape
         self.num_data2, self.input_dim2 = self.X2.shape

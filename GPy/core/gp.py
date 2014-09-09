@@ -15,6 +15,7 @@ from parameterization.variational import VariationalPosterior
 from scipy.sparse.base import issparse
 
 import logging
+from GPy.util.normalizer import MeanNorm
 logger = logging.getLogger("GP")
 
 class GP(Model):
@@ -27,12 +28,17 @@ class GP(Model):
     :param likelihood: a GPy likelihood
     :param :class:`~GPy.inference.latent_function_inference.LatentFunctionInference` inference_method: The inference method to use for this GP
     :rtype: model object
+    :param Norm normalizer:
+        normalize the outputs Y.
+        Prediction will be un-normalized using this normalizer.
+        If normalizer is None, we will normalize using MeanNorm.
+        If normalizer is False, no normalization will be done.
 
     .. Note:: Multiple independent outputs are allowed using columns of Y
 
 
     """
-    def __init__(self, X, Y, kernel, likelihood, inference_method=None, name='gp', Y_metadata=None):
+    def __init__(self, X, Y, kernel, likelihood, inference_method=None, name='gp', Y_metadata=None, normalizer=False):
         super(GP, self).__init__(name)
 
         assert X.ndim == 2
@@ -44,8 +50,22 @@ class GP(Model):
 
         assert Y.ndim == 2
         logger.info("initializing Y")
-        if issparse(Y): self.Y = Y
-        else: self.Y = ObsAr(Y)
+
+        if normalizer is None:
+            self.normalizer = MeanNorm()
+        elif normalizer is False:
+            self.normalizer = None
+        else:
+            self.normalizer = normalizer
+
+        if self.normalizer is not None:
+            self.normalizer.scale_by(Y)
+            self.Y_normalized = ObsAr(self.normalizer.normalize(Y))
+            self.Y = Y
+        else:
+            self.Y = ObsAr(Y)
+            self.Y_normalized = self.Y
+
         assert Y.shape[0] == self.num_data
         _, self.output_dim = self.Y.shape
 
@@ -70,11 +90,11 @@ class GP(Model):
         self.inference_method = inference_method
 
         logger.info("adding kernel and likelihood as parameters")
-        self.add_parameter(self.kern)
-        self.add_parameter(self.likelihood)
+        self.link_parameter(self.kern)
+        self.link_parameter(self.likelihood)
 
     def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y, self.Y_metadata)
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y_normalized, self.Y_metadata)
         self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])
         self.kern.update_gradients_full(self.grad_dict['dL_dK'], self.X)
 
@@ -139,6 +159,8 @@ class GP(Model):
         """
         #predict the latent function values
         mu, var = self._raw_predict(Xnew, full_cov=full_cov, kern=kern)
+        if self.normalizer is not None:
+            mu, var = self.normalizer.inverse_mean(mu), self.normalizer.inverse_variance(var)
 
         # now push through likelihood
         mean, var = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata)
@@ -146,6 +168,8 @@ class GP(Model):
 
     def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None):
         m, v = self._raw_predict(X,  full_cov=False)
+        if self.normalizer is not None:
+            m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
         return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
 
     def predictive_gradients(self, Xnew):
@@ -183,6 +207,8 @@ class GP(Model):
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
         m, v = self._raw_predict(X,  full_cov=full_cov)
+        if self.normalizer is not None:
+            m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
         v = v.reshape(m.size,-1) if len(v.shape)==3 else v
         if not full_cov:
             Ysim = np.random.multivariate_normal(m.flatten(), np.diag(v.flatten()), size).T

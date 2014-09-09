@@ -14,7 +14,7 @@ class MixedNoise(Likelihood):
         #NOTE at the moment this likelihood only works for using a list of gaussians
         super(Likelihood, self).__init__(name=name)
 
-        self.add_parameters(*likelihoods_list)
+        self.link_parameters(*likelihoods_list)
         self.likelihoods_list = likelihoods_list
         self.log_concave = False
 

@@ -18,7 +18,7 @@ class Add(CombinationKernel):
             if isinstance(kern, Add):
                 del subkerns[i]
                 for part in kern.parts[::-1]:
-                    kern.remove_parameter(part)
+                    kern.unlink_parameter(part)
                     subkerns.insert(i, part)
 
         super(Add, self).__init__(subkerns, name)
@@ -171,10 +171,10 @@ class Add(CombinationKernel):
         if isinstance(other, Add):
             other_params = other.parameters[:]
             for p in other_params:
-                other.remove_parameter(p)
-            self.add_parameters(*other_params)
+                other.unlink_parameter(p)
+            self.link_parameters(*other_params)
         else:
-            self.add_parameter(other)
+            self.link_parameter(other)
         self.input_dim, self.active_dims = self.get_input_dim_active_dims(self.parts)
         return self
 

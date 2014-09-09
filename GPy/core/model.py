@@ -21,6 +21,10 @@ class Model(Parameterized):
         self.optimization_runs = []
         self.sampling_runs = []
         self.preferred_optimizer = 'bfgs'
+        from .parameterization.ties_and_remappings import Tie
+        self.tie = Tie()
+        self.link_parameter(self.tie, -1)
+        self.add_observer(self.tie, self.tie._parameters_changed_notification, priority=-500)
 
     def log_likelihood(self):
         raise NotImplementedError, "this needs to be implemented to use the model class"
@@ -287,7 +291,7 @@ class Model(Parameterized):
             # just check the global ratio
             dx = np.zeros(x.shape)
             dx[transformed_index] = step * (np.sign(np.random.uniform(-1, 1, transformed_index.size)) if transformed_index.size != 2 else 1.)
-
+            
             # evaulate around the point x
             f1 = self._objective(x + dx)
             f2 = self._objective(x - dx)
@@ -368,4 +372,13 @@ class Model(Parameterized):
             self.optimizer_array = x
             return ret
 
+    def __str__(self):
+        model_details = [['Name', self.name],
+                         ['Log-likelihood', '{}'.format(float(self.log_likelihood()))],
+                         ["Number of Parameters", '{}'.format(self.size)]]
+        from operator import itemgetter
+        max_len = reduce(lambda a, b: max(len(b[0]), a), model_details, 0)
+        to_print = [""] + ["{0:{l}} : {1}".format(name, detail, l=max_len) for name, detail in model_details] + ["Parameters:"]
+        to_print.append(super(Model, self).__str__())
+        return "\n".join(to_print)
 

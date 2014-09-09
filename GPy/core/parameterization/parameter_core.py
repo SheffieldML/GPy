@@ -13,7 +13,7 @@ Observable Pattern for patameterization
 
 """
 
-from transformations import Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
+from transformations import Transformation,Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
 import re
 import logging
@@ -58,22 +58,50 @@ class Observable(object):
 
     @property
     def updates(self):
-        p = getattr(self, '_highest_parent_', None)
-        if p is not None:
-            self._updates = p._updates
-        return self._updates
+        raise DeprecationWarning("updates is now a function, see update(True|False|None)")
 
     @updates.setter
     def updates(self, ups):
-        assert isinstance(ups, bool), "updates are either on (True) or off (False)"
+        raise DeprecationWarning("updates is now a function, see update(True|False|None)")
+    
+    def update_model(self, updates=None):
+        """
+        Get or set, whether automatic updates are performed. When updates are
+        off, the model might be in a non-working state. To make the model work
+        turn updates on again.
+
+        :param bool|None updates:
+
+            bool: whether to do updates
+            None: get the current update state
+        """
+        if updates is None:
+            p = getattr(self, '_highest_parent_', None)
+            if p is not None:
+                self._updates = p._updates
+            return self._updates
+        assert isinstance(updates, bool), "updates are either on (True) or off (False)"
         p = getattr(self, '_highest_parent_', None)
         if p is not None:
-            p._updates = ups
+            p._updates = updates
         else:
-            self._updates = ups
-        if ups:
-            self._trigger_params_changed()
+            self._updates = updates
+        self.trigger_update()
+                            
+    def toggle_update(self):
+        self.update_model(not self.update())
 
+    def trigger_update(self):
+        """
+        Update the model from the current state.
+        Make sure that updates are on, otherwise this
+        method will do nothing
+        """
+        if not self.update_model():
+            #print "Warning: updates are off, updating the model will do nothing"
+            return
+        self._trigger_params_changed()
+                
     def add_observer(self, observer, callble, priority=0):
         """
         Add an observer `observer` with the callback `callble`
@@ -110,7 +138,7 @@ class Observable(object):
         :param min_priority: only notify observers with priority > min_priority
                              if min_priority is None, notify all observers in order
         """
-        if not self.updates:
+        if not self.update_model():
             return
         if which is None:
             which = self
@@ -511,6 +539,22 @@ class Indexable(Nameable, Observable):
             [np.put(ret, ind, p.lnpdf_grad(x[ind])) for p, ind in self.priors.iteritems()]
             return ret
         return 0.
+    
+    #===========================================================================
+    # Tie parameters together
+    #===========================================================================
+    
+    def _has_ties(self):
+        if self._highest_parent_.tie.tied_param is None:
+            return False
+        if self.has_parent():
+            return self._highest_parent_.tie.label_buf[self._highest_parent_._raveled_index_for(self)].sum()>0
+        return True
+    
+    def tie_together(self):
+        self._highest_parent_.tie.add_tied_parameter(self)
+        self._highest_parent_._set_fixed(self,self._raveled_index())
+        self._trigger_params_changed()
 
     #===========================================================================
     # Constrain operations -> done
@@ -525,7 +569,8 @@ class Indexable(Nameable, Observable):
         Constrain the parameter to the given
         :py:class:`GPy.core.transformations.Transformation`.
         """
-        self.param_array[...] = transform.initialize(self.param_array)
+        if isinstance(transform, Transformation):
+            self.param_array[...] = transform.initialize(self.param_array)
         reconstrained = self.unconstrain()
         added = self._add_to_index_operations(self.constraints, reconstrained, transform, warning)
         self.notify_observers(self, None if trigger_parent else -np.inf)
@@ -601,13 +646,13 @@ class Indexable(Nameable, Observable):
         """
         Helper preventing copy code.
         This adds the given what (transformation, prior etc) to parameter index operations which.
-        revonstrained are reconstrained indices.
+        reconstrained are reconstrained indices.
         warn when reconstraining parameters if warning is True.
         TODO: find out which parameters have changed specifically
         """
         if warning and reconstrained.size > 0:
             # TODO: figure out which parameters have changed and only print those
-            print "WARNING: reconstraining parameters {}".format(self.parameter_names() or self.name)
+            print "WARNING: reconstraining parameters {}".format(self.hierarchy_name() or self.name)
         index = self._raveled_index()
         which.add(what, index)
         return index
@@ -653,7 +698,7 @@ class OptimizationHandlable(Indexable):
         will be set accordingly. It has to be set with an array, retrieved from
         this method, as e.g. fixing will resize the array.
 
-        The optimizer should only interfere with this array, such that transofrmations
+        The optimizer should only interfere with this array, such that transformations
         are secured.
         """
         if self.__dict__.get('_optimizer_copy_', None) is None or self.size != self._optimizer_copy_.size:
@@ -662,12 +707,13 @@ class OptimizationHandlable(Indexable):
         if not self._optimizer_copy_transformed:
             self._optimizer_copy_.flat = self.param_array.flat
             [np.put(self._optimizer_copy_, ind, c.finv(self.param_array[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
-            if self.has_parent() and self.constraints[__fixed__].size != 0:
+            if self.has_parent() and (self.constraints[__fixed__].size != 0 or self._has_ties()):
                 fixes = np.ones(self.size).astype(bool)
                 fixes[self.constraints[__fixed__]] = FIXED
-                return self._optimizer_copy_[fixes]
+                return self._optimizer_copy_[np.logical_and(fixes, self._highest_parent_.tie.getTieFlag(self))]
             elif self._has_fixes():
-                return self._optimizer_copy_[self._fixes_]
+                    return self._optimizer_copy_[self._fixes_]
+
             self._optimizer_copy_transformed = True
 
         return self._optimizer_copy_
@@ -694,6 +740,7 @@ class OptimizationHandlable(Indexable):
             self.param_array.flat[f] = p
             [np.put(self.param_array, ind[f[ind]], c.f(self.param_array.flat[ind[f[ind]]]))
              for c, ind in self.constraints.iteritems() if c != __fixed__]
+        self._highest_parent_.tie.propagate_val()
 
         self._optimizer_copy_transformed = False
         self._trigger_params_changed()
@@ -726,6 +773,7 @@ class OptimizationHandlable(Indexable):
         Transform the gradients by multiplying the gradient factor for each
         constraint to it.
         """
+        self._highest_parent_.tie.collate_gradient()
         [np.put(g, i, g[i] * c.gradfactor(self.param_array[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g
@@ -778,9 +826,15 @@ class OptimizationHandlable(Indexable):
         """
         # first take care of all parameters (from N(0,1))
         x = rand_gen(size=self._size_transformed(), *args, **kwargs)
-        # now draw from prior where possible
-        [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
+        self.update_model(False) # Switch off the updates
         self.optimizer_array = x  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
+        # now draw from prior where possible
+        x = self.param_array.copy()
+        [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
+        unfixlist = np.ones((self.size,),dtype=np.bool)
+        unfixlist[self.constraints[__fixed__]] = False
+        self.param_array[unfixlist] = x[unfixlist]
+        self.update_model(True) 
 
     #===========================================================================
     # For shared memory arrays. This does nothing in Param, but sets the memory

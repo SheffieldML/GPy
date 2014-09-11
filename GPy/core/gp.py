@@ -51,7 +51,7 @@ class GP(Model):
         assert Y.ndim == 2
         logger.info("initializing Y")
 
-        if normalizer is None:
+        if normalizer is True:
             self.normalizer = MeanNorm()
         elif normalizer is False:
             self.normalizer = None

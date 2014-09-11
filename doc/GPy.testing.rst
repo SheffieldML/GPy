@@ -84,6 +84,14 @@ GPy.testing.prior_tests module
     :undoc-members:
     :show-inheritance:
 
+GPy.testing.tie_tests module
+----------------------------
+
+.. automodule:: GPy.testing.tie_tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------

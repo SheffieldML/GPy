@@ -14,6 +14,7 @@ Observable Pattern for patameterization
 """
 
 from transformations import Transformation,Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
+from ...util.misc import param_to_array
 import numpy as np
 import re
 import logging
@@ -740,7 +741,6 @@ class OptimizationHandlable(Indexable):
             self.param_array.flat[f] = p
             [np.put(self.param_array, ind[f[ind]], c.f(self.param_array.flat[ind[f[ind]]]))
              for c, ind in self.constraints.iteritems() if c != __fixed__]
-        self._highest_parent_.tie.propagate_val()
 
         self._optimizer_copy_transformed = False
         self._trigger_params_changed()
@@ -829,11 +829,11 @@ class OptimizationHandlable(Indexable):
         self.update_model(False) # Switch off the updates
         self.optimizer_array = x  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
         # now draw from prior where possible
-        x = self.param_array.copy()
+        x = param_to_array(self.param_array).flat.copy()
         [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
         unfixlist = np.ones((self.size,),dtype=np.bool)
         unfixlist[self.constraints[__fixed__]] = False
-        self.param_array[unfixlist] = x[unfixlist]
+        self.param_array.flat[unfixlist] = x[unfixlist]
         self.update_model(True) 
 
     #===========================================================================

@@ -143,8 +143,9 @@ class ParameterizedTest(unittest.TestCase):
 
     def test_randomize(self):
         ps = self.test1.param.view(np.ndarray).copy()
+        self.test1.param[2:5].fix()
         self.test1.param.randomize()
-        self.assertFalse(np.all(ps==self.test1.param))
+        self.assertFalse(np.all(ps==self.test1.param),str(ps)+str(self.test1.param))
 
     def test_fixing_randomize_parameter_handling(self):
         self.rbf.fix(warning=True)
@@ -152,11 +153,12 @@ class ParameterizedTest(unittest.TestCase):
         self.test1.kern.randomize()
         self.assertEqual(val, self.rbf.variance)
 
-    def test_updates(self):
-        self.test1.update_model(False)
-        val = float(self.rbf.variance)
-        self.test1.kern.randomize()
-        self.assertEqual(val, self.rbf.variance)
+#     def test_updates(self):
+#         # WHAT DO YOU WANT TO TEST HERE?
+#         self.test1.update_model(False)
+#         val = float(self.rbf.variance)
+#         self.test1.kern.randomize()
+#         self.assertEqual(val, self.rbf.variance,str(self.test1))
 
     def test_fixing_optimize(self):
         self.testmodel.kern.lengthscale.fix()

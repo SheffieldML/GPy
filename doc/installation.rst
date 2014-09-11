@@ -26,9 +26,6 @@ To install the latest version of GPy, *git* is required. A *git* client on Windo
 ::
     pip install git+https://github.com/SheffieldML/GPy.git@devel
 
-Note that some of the functionalities in GPy require a *C/C++* compiler. One option would be to install a MSVC compiler, e.g., an Express Edition can be found `here <http://www.microsoft.com/express/download>`_.
-
-
 MacOSX
 ===================================
 

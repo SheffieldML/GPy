@@ -3,8 +3,6 @@
 
 
 import numpy as np
-import pylab as pb
-import sys, pdb
 from ..core import GP
 from ..models import GPLVM
 from ..mappings import *

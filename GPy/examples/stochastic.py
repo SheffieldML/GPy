@@ -1,7 +1,10 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import pylab as pb
+try:
+    import pylab as pb
+except:
+    pass
 import numpy as np
 import GPy
 

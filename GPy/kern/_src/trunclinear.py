@@ -3,14 +3,10 @@
 
 
 import numpy as np
-from scipy import weave
 from kern import Kern
-from ...util.linalg import tdot
-from ...util.misc import param_to_array
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 from ...util.caching import Cache_this
-from ...core.parameterization import variational
 from ...util.config import *
 
 class TruncLinear(Kern):

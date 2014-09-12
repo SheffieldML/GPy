@@ -4,7 +4,10 @@
 """
 Gaussian Processes regression examples
 """
-import pylab as pb
+try:
+    import pylab as pb
+except:
+    pass
 import numpy as np
 import GPy
 

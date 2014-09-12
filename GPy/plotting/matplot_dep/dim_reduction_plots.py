@@ -1,12 +1,16 @@
-import pylab as pb
+
 import numpy as np
 from latent_space_visualizations.controllers.imshow_controller import ImshowController,ImAnnotateController
 from ...util.misc import param_to_array
 from ...core.parameterization.variational import VariationalPosterior
 from .base_plots import x_frame2D
 import itertools
-import Tango
-from matplotlib.cm import get_cmap
+try:
+    import Tango
+    from matplotlib.cm import get_cmap
+    import pylab as pb
+except:
+    pass
 
 def most_significant_input_dimensions(model, which_indices):
     """

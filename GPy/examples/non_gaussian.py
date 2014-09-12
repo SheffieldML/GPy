@@ -1,7 +1,10 @@
 import GPy
 import numpy as np
-import matplotlib.pyplot as plt
 from GPy.util import datasets
+try:
+    import matplotlib.pyplot as plt
+except:
+    pass
 
 def student_t_approx(optimize=True, plot=True):
     """

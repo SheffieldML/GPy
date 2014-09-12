@@ -6,7 +6,6 @@ import pylab
 
 from ...models import SSGPLVM
 from img_plots import plot_2D_images
-from ...util.misc import param_to_array
 
 class SSGPLVM_plot(object):
     def __init__(self,model, imgsize):

@@ -1,9 +1,12 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import pylab as pb
 import numpy as np
-import Tango
+try:
+    import Tango
+    import pylab as pb
+except:
+    pass
 from base_plots import x_frame1D, x_frame2D
 
 

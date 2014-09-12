@@ -1,5 +1,8 @@
 import numpy as np
-import pylab as pb
+try:
+    import pylab as pb
+except:
+    pass
 import GPy
 pb.ion()
 pb.close('all')

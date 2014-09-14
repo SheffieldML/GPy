@@ -94,6 +94,17 @@ Run nosetests from the root directory of the repository:
 
     nosetests -v
 
+
+How to cite GPy:
+================
+        @misc{GPy2014,
+              Author = {the GPy authors},
+              Title = { {GPy }:  A Gaussian process framework in python},
+              Year  = {2014},
+              Howpublished = {\url{https://github.com/SheffieldML/GPy}}
+        }
+
+
 Funding Acknowledgements
 ========================
 

@@ -171,7 +171,8 @@ class Stationary(Kern):
 
         #the lower memory way with a loop
         ret = np.empty(X.shape, dtype=np.float64)
-        [np.sum(tmp*(X[:,q][:,None]-X2[:,q][None,:]), axis=1, out=ret[:,q]) for q in xrange(self.input_dim)]
+        for q in xrange(self.input_dim):
+            np.sum(tmp*(X[:,q][:,None]-X2[:,q][None,:]), axis=1, out=ret[:,q])
         ret /= self.lengthscale**2
 
         return ret

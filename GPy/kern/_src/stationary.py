@@ -310,6 +310,19 @@ class Matern52(Stationary):
 
 
 class ExpQuad(Stationary):
+    """
+    The Exponentiated quadratic covariance function. 
+
+    .. math::
+
+       k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r)
+
+    notes::
+     - Yes, this is exactly the same as the RBF covariance function, but the
+       RBF implementation also has some features for doing variational kernels
+       (the psi-statistics).
+
+    """
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='ExpQuad'):
         super(ExpQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 

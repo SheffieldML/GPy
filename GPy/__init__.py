@@ -5,6 +5,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 import core
 from core.parameterization import transformations, priors
+constraints = transformations
 import models
 import mappings
 import inference
@@ -16,6 +17,10 @@ from numpy.testing import Tester
 from nose.tools import nottest
 import kern
 import plotting
+
+# Direct imports for convenience:
+from core import Model
+from core.parameterization import Param, Parameterized, ObsAr
 
 @nottest
 def tests():

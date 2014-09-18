@@ -221,7 +221,7 @@ class CombinationKernel(Kern):
         # initialize the kernel with the full input_dim
         super(CombinationKernel, self).__init__(input_dim, active_dims, name)
         self.extra_dims = extra_dims
-        self.add_parameters(*kernels)
+        self.link_parameters(*kernels)
 
     @property
     def parts(self):

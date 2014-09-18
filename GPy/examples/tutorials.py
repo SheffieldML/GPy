@@ -6,8 +6,11 @@
 Code of Tutorials
 """
 
-import pylab as pb
-pb.ion()
+try:
+    import pylab as pb
+    pb.ion()
+except:
+    pass
 import numpy as np
 import GPy
 

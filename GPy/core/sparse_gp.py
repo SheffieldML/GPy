@@ -50,7 +50,7 @@ class SparseGP(GP):
 
         GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
         logger.info("Adding Z as parameter")
-        self.add_parameter(self.Z, index=0)
+        self.link_parameter(self.Z, index=0)
 
     def has_uncertain_inputs(self):
         return isinstance(self.X, VariationalPosterior)

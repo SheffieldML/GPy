@@ -19,8 +19,9 @@ You may also be interested by some examples in the GPy/examples folder.
 Contents:
 
 .. toctree::
-   :maxdepth: 4
-
+   :maxdepth: 2
+   
+   installation
    GPy
 
 

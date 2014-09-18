@@ -3,13 +3,8 @@
 
 
 import numpy as np
-import pylab as pb
-import sys, pdb
+import sys
 from GPy.models.sparse_gp_regression import SparseGPRegression
-from GPy.models.gplvm import GPLVM
-# from .. import kern
-# from ..core import model
-# from ..util.linalg import pdinv, PCA
 
 class SparseGPLVM(SparseGPRegression):
     """

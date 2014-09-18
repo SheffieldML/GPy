@@ -11,7 +11,7 @@ class Static(Kern):
     def __init__(self, input_dim, variance, active_dims, name):
         super(Static, self).__init__(input_dim, active_dims, name)
         self.variance = Param('variance', variance, Logexp())
-        self.add_parameters(self.variance)
+        self.link_parameters(self.variance)
 
     def Kdiag(self, X):
         ret = np.empty((X.shape[0],), dtype=np.float64)

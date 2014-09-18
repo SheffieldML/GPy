@@ -42,7 +42,7 @@ class SpikeAndSlabPrior(VariationalPrior):
             self.pi = Param('Pi', pi, Logistic(1e-10,1.-1e-10))
         else:
             self.pi = Param('Pi', pi, __fixed__)
-        self.add_parameter(self.pi)
+        self.link_parameter(self.pi)
 
 
     def KL_divergence(self, variational_posterior):
@@ -89,7 +89,7 @@ class VariationalPosterior(Parameterized):
         self.ndim = self.mean.ndim
         self.shape = self.mean.shape
         self.num_data, self.input_dim = self.mean.shape
-        self.add_parameters(self.mean, self.variance)
+        self.link_parameters(self.mean, self.variance)
         self.num_data, self.input_dim = self.mean.shape
         if self.has_uncertain_inputs():
             assert self.variance.shape == self.mean.shape, "need one variance per sample and dimenion"
@@ -156,7 +156,7 @@ class SpikeAndSlabPosterior(VariationalPosterior):
         """
         super(SpikeAndSlabPosterior, self).__init__(means, variances, name)
         self.gamma = Param("binary_prob",binary_prob, Logistic(1e-10,1.-1e-10))
-        self.add_parameter(self.gamma)
+        self.link_parameter(self.gamma)
 
     def __getitem__(self, s):
         if isinstance(s, (int, slice, tuple, list, np.ndarray)):

@@ -14,7 +14,7 @@ class Poly(Kern):
     def __init__(self, input_dim, variance=1., order=3., active_dims=None, name='poly'):
         super(Poly, self).__init__(input_dim, active_dims, name)
         self.variance = Param('variance', variance, Logexp())
-        self.add_parameter(self.variance)
+        self.link_parameter(self.variance)
         self.order=order
 
     def K(self, X, X2=None):

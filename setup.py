@@ -24,9 +24,9 @@ setup(name = 'GPy',
       package_data = {'GPy': ['defaults.cfg', 'installation.cfg', 'util/data_resources.json', 'util/football_teams.json']},
       py_modules = ['GPy.__init__'],
       long_description=read('README.md'),
-      install_requires=['numpy>=1.6', 'scipy>=0.9','matplotlib>=1.1', 'nose'],
+      install_requires=['numpy>=1.6', 'scipy>=0.9'],
       extras_require = {
-        'docs':['Sphinx', 'ipython'],
+        'docs':['matplotlib>=1.1','Sphinx','ipython'],
       },
       classifiers=[
       "License :: OSI Approved :: BSD License"],

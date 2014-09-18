@@ -5,8 +5,12 @@
 """
 Gaussian Processes classification
 """
-import pylab as pb
 import GPy
+
+try:
+    import pylab as pb
+except:
+    pass
 
 default_seed = 10000
 

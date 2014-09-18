@@ -3,7 +3,10 @@
 
 
 import numpy as np
-import pylab as pb
+try:
+    import pylab as pb
+except:
+    pass
 
 
 def univariate_plot(prior):

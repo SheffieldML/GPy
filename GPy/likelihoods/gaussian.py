@@ -40,7 +40,7 @@ class Gaussian(Likelihood):
         super(Gaussian, self).__init__(gp_link, name=name)
 
         self.variance = Param('variance', variance, Logexp())
-        self.add_parameter(self.variance)
+        self.link_parameter(self.variance)
 
         if isinstance(gp_link, link_functions.Identity):
             self.log_concave = True

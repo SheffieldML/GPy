@@ -3,6 +3,7 @@
 
 import numpy as np
 from sparse_gp import SparseGP
+from numpy.linalg.linalg import LinAlgError
 from ..inference.latent_function_inference.var_dtc_parallel import update_gradients, VarDTC_minibatch
 
 import logging
@@ -42,10 +43,10 @@ class SparseGP_MPI(SparseGP):
                 assert isinstance(inference_method, VarDTC_minibatch), 'inference_method has to support MPI!'
                         
         super(SparseGP_MPI, self).__init__(X, Y, Z, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
-        self.updates = False
-        self.add_parameter(self.X, index=0)
+        self.update_model(False)
+        self.link_parameter(self.X, index=0)
         if variational_prior is not None:
-            self.add_parameter(variational_prior)
+            self.link_parameter(variational_prior)
 #         self.X.fix()
 
         self.mpi_comm = mpi_comm
@@ -58,7 +59,8 @@ class SparseGP_MPI(SparseGP):
             self.Y_local = self.Y[N_start:N_end]
             print 'MPI RANK '+str(self.mpi_comm.rank)+' with the data range '+str(self.N_range)
             mpi_comm.Bcast(self.param_array, root=0)
-        self.updates = True
+        self.update_model(True)
+
 
     def __getstate__(self):
         dc = super(SparseGP_MPI, self).__getstate__()
@@ -82,11 +84,7 @@ class SparseGP_MPI(SparseGP):
         if self.mpi_comm != None:
             if self._IN_OPTIMIZATION_ and self.mpi_comm.rank==0:
                 self.mpi_comm.Bcast(np.int32(1),root=0)
-            self.mpi_comm.Bcast(p, root=0)
-            
-        from ..util.debug import checkFinite
-        checkFinite(p, 'optimizer_array')
-        
+            self.mpi_comm.Bcast(p, root=0)        
         SparseGP.optimizer_array.fset(self,p)
         
     def optimize(self, optimizer=None, start=None, **kwargs):
@@ -102,7 +100,13 @@ class SparseGP_MPI(SparseGP):
             while True:
                 self.mpi_comm.Bcast(flag,root=0)
                 if flag==1:
-                    self.optimizer_array = x
+                    try:
+                        self.optimizer_array = x
+                        self._fail_count = 0
+                    except (LinAlgError, ZeroDivisionError, ValueError):
+                        if self._fail_count >= self._allowed_failures:
+                            raise
+                        self._fail_count += 1
                 elif flag==-1:
                     break
                 else:

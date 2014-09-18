@@ -10,11 +10,11 @@ class Hierarchical(Kernpart):
     A kernel part which can reopresent a hierarchy of indepencnce: a generalisation of independent_outputs
 
     """
-    def __init__(self,parts):
+    def __init__(self,parts,name='hierarchy'):
         self.levels = len(parts)
         self.input_dim = parts[0].input_dim + 1
         self.num_params = np.sum([k.num_params for k in parts])
-        self.name = 'hierarchy'
+        self.name = name
         self.parts = parts
 
         self.param_starts = np.hstack((0,np.cumsum([k.num_params for k in self.parts[:-1]])))

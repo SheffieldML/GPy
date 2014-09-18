@@ -78,7 +78,7 @@ class BayesianGPLVM(SparseGP):
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, normalizer=normalizer)
         self.logger.info("Adding X as parameter")
-        self.add_parameter(self.X, index=0)
+        self.link_parameter(self.X, index=0)
 
         if mpi_comm != None:
             from ..util.mpi import divide_data

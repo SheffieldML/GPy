@@ -65,28 +65,28 @@ class MiscTests(unittest.TestCase):
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
         m.randomize()
         m2[:] = m[''].values()
-        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        np.testing.assert_almost_equal(m.log_likelihood(), m2.log_likelihood())
         m.randomize()
         m2[''] = m[:]
-        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        np.testing.assert_almost_equal(m.log_likelihood(), m2.log_likelihood())
         m.randomize()
         m2[:] = m[:]
-        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        np.testing.assert_almost_equal(m.log_likelihood(), m2.log_likelihood())
         m.randomize()
         m2[''] = m['']
-        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        np.testing.assert_almost_equal(m.log_likelihood(), m2.log_likelihood())
 
         m.kern.lengthscale.randomize()
         m2[:] = m[:]
-        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        np.testing.assert_almost_equal(m.log_likelihood(), m2.log_likelihood())
 
         m.Gaussian_noise.randomize()
         m2[:] = m[:]
-        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        np.testing.assert_almost_equal(m.log_likelihood(), m2.log_likelihood())
 
         m['.*var'] = 2
         m2['.*var'] = m['.*var']
-        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        np.testing.assert_almost_equal(m.log_likelihood(), m2.log_likelihood())
 
 
     def test_likelihood_set(self):

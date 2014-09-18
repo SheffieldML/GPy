@@ -3,7 +3,6 @@
 
 
 import numpy as np
-import pylab as pb
 from .. import kern
 from ..core import GP, Param
 from ..likelihoods import Gaussian
@@ -38,7 +37,7 @@ class GPLVM(GP):
 
         super(GPLVM, self).__init__(X, Y, kernel, likelihood, name='GPLVM')
         self.X = Param('latent_mean', X)
-        self.add_parameter(self.X, index=0)
+        self.link_parameter(self.X, index=0)
 
     def parameters_changed(self):
         super(GPLVM, self).parameters_changed()
@@ -55,7 +54,7 @@ class GPLVM(GP):
         #J = np.zeros((X.shape[0],X.shape[1],self.output_dim))
         J = self.jacobian(X)
         for i in range(X.shape[0]):
-            target[i]=np.sqrt(pb.det(np.dot(J[i,:,:],np.transpose(J[i,:,:]))))
+            target[i]=np.sqrt(np.linalg.det(np.dot(J[i,:,:],np.transpose(J[i,:,:]))))
         return target
 
     def plot(self):
@@ -63,6 +62,7 @@ class GPLVM(GP):
         pb.scatter(self.likelihood.Y[:, 0], self.likelihood.Y[:, 1], 40, self.X[:, 0].copy(), linewidth=0, cmap=pb.cm.jet)  # @UndefinedVariable
         Xnew = np.linspace(self.X.min(), self.X.max(), 200)[:, None]
         mu, _ = self.predict(Xnew)
+        import pylab as pb
         pb.plot(mu[:, 0], mu[:, 1], 'k', linewidth=1.5)
 
     def plot_latent(self, labels=None, which_indices=None,

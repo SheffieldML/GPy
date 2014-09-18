@@ -81,6 +81,7 @@ class Parameterized(Parameterizable):
             self._fixes_ = None
         self._param_slices_ = []
         #self._connect_parameters()
+<<<<<<< HEAD
         self.add_parameters(*parameters)
         
         from ties_and_remappings import Tie
@@ -88,6 +89,9 @@ class Parameterized(Parameterizable):
             self.ties = Tie()
             self.add_parameter(self.ties, -1)
             self.add_observer(self.ties, self.ties._parameters_changed_notification, priority=-500)
+=======
+        self.link_parameters(*parameters)
+>>>>>>> 48fb60489160de6fb0e84f6559b85b07dd16e274
 
     def build_pydot(self, G=None):
         import pydot  # @UnresolvedImport
@@ -115,7 +119,7 @@ class Parameterized(Parameterizable):
     #===========================================================================
     # Add remove parameters:
     #===========================================================================
-    def add_parameter(self, param, index=None, _ignore_added_names=False):
+    def link_parameter(self, param, index=None, _ignore_added_names=False):
         """
         :param parameters:  the parameters to add
         :type parameters:   list of or one :py:class:`GPy.core.param.Param`
@@ -127,8 +131,8 @@ class Parameterized(Parameterizable):
         at any given index using the :func:`list.insert` syntax
         """
         if param in self.parameters and index is not None:
-            self.remove_parameter(param)
-            self.add_parameter(param, index)
+            self.unlink_parameter(param)
+            self.link_parameter(param, index)
         # elif param.has_parent():
         #    raise HierarchyError, "parameter {} already in another model ({}), create new object (or copy) for adding".format(param._short(), param._highest_parent_._short())
         elif param not in self.parameters:
@@ -137,7 +141,7 @@ class Parameterized(Parameterizable):
                     if parent is self:
                         raise HierarchyError, "You cannot add a parameter twice into the hierarchy"
                 param.traverse_parents(visit, self)
-                param._parent_.remove_parameter(param)
+                param._parent_.unlink_parameter(param)
             # make sure the size is set
             if index is None:
                 start = sum(p.size for p in self.parameters)
@@ -178,14 +182,14 @@ class Parameterized(Parameterizable):
             raise HierarchyError, """Parameter exists already, try making a copy"""
 
 
-    def add_parameters(self, *parameters):
+    def link_parameters(self, *parameters):
         """
         convenience method for adding several
         parameters without gradient specification
         """
-        [self.add_parameter(p) for p in parameters]
+        [self.link_parameter(p) for p in parameters]
 
-    def remove_parameter(self, param):
+    def unlink_parameter(self, param):
         """
         :param param: param object to remove from being a parameter of this parameterized object.
         """
@@ -222,6 +226,11 @@ class Parameterized(Parameterizable):
                 self._highest_parent_.ties.splitTies(param)
         else:
             self._highest_parent_.ties._update_label_buf()
+
+    def add_parameter(self, *args, **kwargs):
+        raise DeprecationWarning, "add_parameter was renamed to link_parameter to avoid confusion of setting variables"
+    def remove_parameter(self, *args, **kwargs):
+        raise DeprecationWarning, "remove_parameter was renamed to link_parameter to avoid confusion of setting variables"
 
     def _connect_parameters(self, ignore_added_names=False):
         # connect parameterlist to this parameterized object
@@ -311,7 +320,9 @@ class Parameterized(Parameterizable):
         if hasattr(self, "parameters"):
             try:
                 pnames = self.parameter_names(False, adjust_for_printing=True, recursive=False)
-                if name in pnames: self.parameters[pnames.index(name)][:] = val; return
+                if name in pnames:
+                    param = self.parameters[pnames.index(name)]
+                    param[:] = val; return
             except AttributeError:
                 pass
         object.__setattr__(self, name, val);

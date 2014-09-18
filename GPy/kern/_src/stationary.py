@@ -61,7 +61,7 @@ class Stationary(Kern):
         self.lengthscale = Param('lengthscale', lengthscale, Logexp())
         self.variance = Param('variance', variance, Logexp())
         assert self.variance.size==1
-        self.add_parameters(self.variance, self.lengthscale)
+        self.link_parameters(self.variance, self.lengthscale)
 
     def K_of_r(self, r):
         raise NotImplementedError, "implement the covariance function as a fn of r to use this class"
@@ -171,7 +171,8 @@ class Stationary(Kern):
 
         #the lower memory way with a loop
         ret = np.empty(X.shape, dtype=np.float64)
-        [np.sum(tmp*(X[:,q][:,None]-X2[:,q][None,:]), axis=1, out=ret[:,q]) for q in xrange(self.input_dim)]
+        for q in xrange(self.input_dim):
+            np.sum(tmp*(X[:,q][:,None]-X2[:,q][None,:]), axis=1, out=ret[:,q])
         ret /= self.lengthscale**2
 
         return ret
@@ -309,6 +310,19 @@ class Matern52(Stationary):
 
 
 class ExpQuad(Stationary):
+    """
+    The Exponentiated quadratic covariance function. 
+
+    .. math::
+
+       k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r)
+
+    notes::
+     - Yes, this is exactly the same as the RBF covariance function, but the
+       RBF implementation also has some features for doing variational kernels
+       (the psi-statistics).
+
+    """
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='ExpQuad'):
         super(ExpQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
@@ -343,7 +357,7 @@ class RatQuad(Stationary):
     def __init__(self, input_dim, variance=1., lengthscale=None, power=2., ARD=False, active_dims=None, name='RatQuad'):
         super(RatQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
         self.power = Param('power', power, Logexp())
-        self.add_parameters(self.power)
+        self.link_parameters(self.power)
 
     def K_of_r(self, r):
         r2 = np.power(r, 2.)

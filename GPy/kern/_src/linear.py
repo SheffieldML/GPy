@@ -49,7 +49,7 @@ class Linear(Kern):
                 variances = np.ones(self.input_dim)
 
         self.variances = Param('variances', variances, Logexp())
-        self.add_parameter(self.variances)
+        self.link_parameter(self.variances)
         self.psicomp = PSICOMP_Linear()
 
     @Cache_this(limit=2)
@@ -144,7 +144,7 @@ class LinearFull(Kern):
 
         self.W = Param('W', W)
         self.kappa = Param('kappa', kappa, Logexp())
-        self.add_parameters(self.W, self.kappa)
+        self.link_parameters(self.W, self.kappa)
 
     def K(self, X, X2=None):
         P = np.dot(self.W, self.W.T) + np.diag(self.kappa)

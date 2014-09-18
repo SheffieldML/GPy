@@ -209,6 +209,7 @@ class Model(Parameterized):
     def optimize(self, optimizer=None, start=None, **kwargs):
         """
         Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
+        
         kwargs are passed to the optimizer. They can be:
 
         :param max_f_eval: maximum number of function evaluations
@@ -218,7 +219,15 @@ class Model(Parameterized):
         :param optimizer: which optimizer to use (defaults to self.preferred optimizer)
         :type optimizer: string
 
-        TODO: valid args
+        Valid optimizers are:
+          - 'scg': scaled conjugate gradient method, recommended for stability.
+                   See also GPy.inference.optimization.scg
+          - 'fmin_tnc': truncated Newton method (see scipy.optimize.fmin_tnc)
+          - 'simplex': the Nelder-Mead simplex method (see scipy.optimize.fmin),
+          - 'lbfgsb': the l-bfgs-b method (see scipy.optimize.fmin_l_bfgs_b),
+          - 'sgd': stochastic gradient decsent (see scipy.optimize.sgd). For experts only!
+
+ 
         """
         if self.is_fixed:
             raise RuntimeError, "Cannot optimize, when everything is fixed"

@@ -225,7 +225,7 @@ class CombinationKernel(Kern):
 
     @property
     def parts(self):
-        return self.parameters
+        return [p for p in self.parameters if isinstance(p,Kern)]
 
     def get_input_dim_active_dims(self, kernels, extra_dims = None):
         #active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))

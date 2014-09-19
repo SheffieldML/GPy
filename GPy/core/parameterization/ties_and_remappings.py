@@ -69,26 +69,45 @@ class Tie(Parameterized):
         self.label_buf = None
         self.buf_idx = None
         self._untie_ = None
-                
+        
+    @staticmethod
+    def recoverTies(p):
+        """Recover the Tie object from the param objects"""
+        if not p.has_parent():
+            p.ties = Tie()
+            p.link_parameter(p.ties, -1)
+            p.add_observer(p.ties, p.ties._parameters_changed_notification, priority=-500)
+            
+            p.update_model(False)
+            labels = p.ties._get_labels([p])
+            labels = labels[labels>0]
+            if len(labels)>0:
+                p._expand_tie_param(len(labels))
+                vals = p.ties._get_sync_val(p, labels)
+                p.tied_param[:] = vals
+                p.tied_param.tie[:] = labels
+            p._update_label_buf()
+            p.update_model(True)
+
     def mergeTies(self, p):
         """Merge the tie tree with another tie tree"""
         assert hasattr(p,'ties') and isinstance(p.ties,Tie), str(type(p))
-        self.update_model(False)
+        #self.update_model(False)
         if p.ties.tied_param is not None:
             tie_labels,_ = self._expand_tie_param(p.ties.tied_param.size)
             self.tied_param[-p.ties.tied_param.size:] = p.ties.tied_param
             pairs = zip(self.tied_param.tie,tie_labels)
             self._replace_labels(p, pairs)
         p.remove_observer(p.ties)
-        p.remove_parameter(p.ties)
+        p.unlink_parameter(p.ties)
         del p.ties
         self._update_label_buf()
-        self.update_model(True)
+        #self.update_model(True)
 
     def splitTies(self, p):
-        """Split the tie subtree with the tie tree"""
+        """Split the tie subtree from the original tie tree"""
         p.ties = Tie()
-        p.add_parameter(p.ties, -1)
+        p.link_parameter(p.ties, -1)
         p.add_observer(p.ties, p.ties._parameters_changed_notification, priority=-500)
         if self.tied_param is not None:
             self.update_model(False)
@@ -101,7 +120,23 @@ class Tie(Parameterized):
                 p.tied_param.tie[:] = self.tied_param.tie[idx]
             self._remove_unnecessary_ties()
             self._update_label_buf()
+            p._update_label_buf()
             self.update_model(True)
+            
+    def _get_sync_val(self, p, labels):
+        vals = np.empty((labels.size,))
+        read = np.zeros((labels.size,),dtype=np.uint8)
+        def _get_sync_v(p, labels, vals, read):
+            for i in xrange(labels.size):
+                if read[i]==1:
+                    p[p.tie==labels[i]] = vals[i]
+                elif np.any(p.tie==labels[i]):
+                    vals[i] = p[p.tie==labels[i]][0]
+                    p[p.tie==labels[i]][0] = vals[i]
+                    read[i] = 1
+        self._traverse_param(_get_sync_v, (p,labels,vals,read), [])
+        return vals
+                    
 
     def _sync_val_group(self, plist):
         val = np.hstack([p.param_array.flat for p in plist]).mean()
@@ -227,27 +262,27 @@ class Tie(Parameterized):
             old_size = self.tied_param.size
             labellist = np.array(range(start_label,start_label+num),dtype=np.int)
             idxlist = np.array(range(old_size,old_size+num),dtype=np.int)
-            self.remove_parameter(self.tied_param)
+            self.unlink_parameter(self.tied_param)
             self.tied_param = Param('tied',new_buf)
             self.tied_param.tie[:old_size] = old_tie_
             self.tied_param.tie[old_size:] = labellist
-        self.add_parameter(self.tied_param)
+        self.link_parameter(self.tied_param)
         return labellist, idxlist
 
     def _remove_tie_param(self, labels):
         """Remove the tie param corresponding to *labels*"""
         if len(labels) == self.tied_param.size:
-            self.remove_parameter(self.tied_param)
+            self.unlink_parameter(self.tied_param)
             self.tied_param = None
         else:
             new_buf = np.empty((self.tied_param.size-len(labels),))
             idx = np.logical_not(np.in1d(self.tied_param.tie,labels))
             new_buf[:] = self.tied_param[idx]
             old_tie_ = self.tied_param.tie.copy()
-            self.remove_parameter(self.tied_param)            
+            self.unlink_parameter(self.tied_param)            
             self.tied_param = Param('tied',new_buf)
             self.tied_param.tie[:] = old_tie_[idx]
-            self.add_parameter(self.tied_param)
+            self.link_parameter(self.tied_param)
     
     def _merge_tie_labels(self, labels):
         """Merge all the labels in the list to the first one"""

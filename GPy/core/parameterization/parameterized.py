@@ -80,18 +80,13 @@ class Parameterized(Parameterizable):
         if not self._has_fixes():
             self._fixes_ = None
         self._param_slices_ = []
-        #self._connect_parameters()
-<<<<<<< HEAD
-        self.add_parameters(*parameters)
+        self.link_parameters(*parameters)
         
         from ties_and_remappings import Tie
         if not isinstance(self,Tie):
             self.ties = Tie()
-            self.add_parameter(self.ties, -1)
+            self.link_parameter(self.ties, -1)
             self.add_observer(self.ties, self.ties._parameters_changed_notification, priority=-500)
-=======
-        self.link_parameters(*parameters)
->>>>>>> 48fb60489160de6fb0e84f6559b85b07dd16e274
 
     def build_pydot(self, G=None):
         import pydot  # @UnresolvedImport
@@ -230,7 +225,7 @@ class Parameterized(Parameterizable):
     def add_parameter(self, *args, **kwargs):
         raise DeprecationWarning, "add_parameter was renamed to link_parameter to avoid confusion of setting variables"
     def remove_parameter(self, *args, **kwargs):
-        raise DeprecationWarning, "remove_parameter was renamed to link_parameter to avoid confusion of setting variables"
+        raise DeprecationWarning, "remove_parameter was renamed to unlink_parameter to avoid confusion of setting variables"
 
     def _connect_parameters(self, ignore_added_names=False):
         # connect parameterlist to this parameterized object
@@ -245,6 +240,10 @@ class Parameterized(Parameterizable):
             self._param_array_ = np.empty(self.size, dtype=np.float64)
         if self.gradient.size != self.size:
             self._gradient_array_ = np.empty(self.size, dtype=np.float64)
+            
+        if not self.has_parent() and not hasattr(self, 'ties'):
+            from ties_and_remappings import Tie
+            Tie.recoverTies(self)
 
         old_size = 0
         self._param_slices_ = []

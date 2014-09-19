@@ -565,7 +565,8 @@ class Indexable(Nameable, Observable):
         if self.has_parent():
             fixes = np.ones(self.size).astype(bool)
             fixes[self.constraints[__fixed__]] = FIXED
-            fixes[np.logical_not(self._highest_parent_.ties._untie_[self._highest_parent_._raveled_index_for(self)])] = FIXED
+            if self._has_ties():
+                fixes[np.logical_not(self._highest_parent_.ties._untie_[self._highest_parent_._raveled_index_for(self)])] = FIXED
             return fixes
         else:
             hf = self._has_fixes()
@@ -775,10 +776,7 @@ class OptimizationHandlable(Indexable):
             self.param_array.flat[f] = p
             [np.put(self.param_array, ind[f[ind]], c.f(self.param_array.flat[ind[f[ind]]]))
              for c, ind in self.constraints.iteritems() if c != __fixed__]
-<<<<<<< HEAD
         self._highest_parent_.ties.propagate_val()
-=======
->>>>>>> 48fb60489160de6fb0e84f6559b85b07dd16e274
 
         self._optimizer_copy_transformed = False
         self._trigger_params_changed()

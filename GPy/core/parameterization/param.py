@@ -49,7 +49,7 @@ class Param(Parameterizable, ObsAr):
         obj._realshape_ = obj.shape
         obj._realsize_ = obj.size
         obj._realndim_ = obj.ndim
-        obj._original_ = True
+        obj._original_ = obj
         return obj
 
     def __init__(self, name, input_array, default_constraint=None, *a, **kw):
@@ -139,7 +139,7 @@ class Param(Parameterizable, ObsAr):
             new_arr._current_slice_ = s
             new_arr._gradient_array_ = self.gradient[s]
             new_arr._tie_ = self.tie[s]
-            new_arr._original_ = self.base is new_arr.base
+            new_arr._original_ = self #self.base is new_arr.base
         except AttributeError: pass  # returning 0d array or float, double etc
         return new_arr
 

@@ -439,7 +439,7 @@ def sparse_GP_regression_2D(num_samples=400, num_inducing=50, max_iters=100, opt
     if plot:
         m.plot()
 
-    print m
+    #print m
     return m
 
 def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):

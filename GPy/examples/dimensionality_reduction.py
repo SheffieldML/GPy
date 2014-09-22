@@ -210,7 +210,62 @@ def ssgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40
         plt.close(fig)
     return m
 
-def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
+def _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim=False):
+    Q_signal = 4
+    import GPy
+    import numpy as np
+    np.random.seed(0)
+
+    k = GPy.kern.Matern32(Q_signal, 1., lengthscale=np.random.uniform(1,6,Q_signal), ARD=1)
+    t = np.c_[[np.linspace(-1,5,N) for _ in range(Q_signal)]].T
+    K = k.K(t)
+    s1, s2, s3, sS = np.random.multivariate_normal(np.zeros(K.shape[0]), K, size=(4))[:,:,None]
+
+    Y1, Y2, Y3, S1, S2, S3 = _generate_high_dimensional_output(D1, D2, D3, s1, s2, s3, sS)
+
+    slist = [sS, s1, s2, s3]
+    slist_names = ["sS", "s1", "s2", "s3"]
+    Ylist = [Y1, Y2, Y3]
+
+    if plot_sim:
+        import pylab
+        import matplotlib.cm as cm
+        import itertools
+        fig = pylab.figure("MRD Simulation Data", figsize=(8, 6))
+        fig.clf()
+        ax = fig.add_subplot(2, 1, 1)
+        labls = slist_names
+        for S, lab in itertools.izip(slist, labls):
+            ax.plot(S, label=lab)
+        ax.legend()
+        for i, Y in enumerate(Ylist):
+            ax = fig.add_subplot(2, len(Ylist), len(Ylist) + 1 + i)
+            ax.imshow(Y, aspect='auto', cmap=cm.gray) # @UndefinedVariable
+            ax.set_title("Y{}".format(i + 1))
+        pylab.draw()
+        pylab.tight_layout()
+
+    return slist, [S1, S2, S3], Ylist
+
+def _generate_high_dimensional_output(D1, D2, D3, s1, s2, s3, sS):
+    S1 = _np.hstack([s1, sS])
+    S2 = _np.hstack([s2, s3, sS])
+    S3 = _np.hstack([s3, sS])
+    Y1 = S1.dot(_np.random.randn(S1.shape[1], D1))
+    Y2 = S2.dot(_np.random.randn(S2.shape[1], D2))
+    Y3 = S3.dot(_np.random.randn(S3.shape[1], D3))
+    Y1 += .3 * _np.random.randn(*Y1.shape)
+    Y2 += .2 * _np.random.randn(*Y2.shape)
+    Y3 += .25 * _np.random.randn(*Y3.shape)
+    Y1 -= Y1.mean(0)
+    Y2 -= Y2.mean(0)
+    Y3 -= Y3.mean(0)
+    Y1 /= Y1.std(0)
+    Y2 /= Y2.std(0)
+    Y3 /= Y3.std(0)
+    return Y1, Y2, Y3, S1, S2, S3
+
+def _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim=False):
     _np.random.seed(1234)
 
     x = _np.linspace(0, 4 * _np.pi, N)[:, None]
@@ -229,24 +284,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim=False):
     s3 -= s3.mean(); s3 /= s3.std(0)
     sS -= sS.mean(); sS /= sS.std(0)
 
-    S1 = _np.hstack([s1, sS])
-    S2 = _np.hstack([s2, s3, sS])
-    S3 = _np.hstack([s3, sS])
-
-    Y1 = S1.dot(_np.random.randn(S1.shape[1], D1))
-    Y2 = S2.dot(_np.random.randn(S2.shape[1], D2))
-    Y3 = S3.dot(_np.random.randn(S3.shape[1], D3))
-
-    Y1 += .3 * _np.random.randn(*Y1.shape)
-    Y2 += .2 * _np.random.randn(*Y2.shape)
-    Y3 += .25 * _np.random.randn(*Y3.shape)
-
-    Y1 -= Y1.mean(0)
-    Y2 -= Y2.mean(0)
-    Y3 -= Y3.mean(0)
-    Y1 /= Y1.std(0)
-    Y2 /= Y2.std(0)
-    Y3 /= Y3.std(0)
+    Y1, Y2, Y3, S1, S2, S3 = _generate_high_dimensional_output(D1, D2, D3, s1, s2, s3, sS)
 
     slist = [sS, s1, s2, s3]
     slist_names = ["sS", "s1", "s2", "s3"]
@@ -298,7 +336,7 @@ def bgplvm_simulation(optimize=True, verbose=1,
     from GPy.models import BayesianGPLVM
 
     D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
-    _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
+    _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     #k = kern.RBF(Q, ARD=True, lengthscale=10.)
@@ -323,7 +361,7 @@ def ssgplvm_simulation(optimize=True, verbose=1,
     from GPy.models import SSGPLVM
 
     D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
-    _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
+    _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True, useGPU=useGPU)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     #k = kern.RBF(Q, ARD=True, lengthscale=10.)
@@ -349,7 +387,7 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     from GPy.inference.latent_function_inference.var_dtc import VarDTCMissingData
 
     D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 400, 3, 4
-    _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
+    _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
 
@@ -380,7 +418,7 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     from GPy.models import MRD
 
     D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
-    _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
+    _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
 
     #Ylist = [Ylist[0]]
     k = kern.Linear(Q, ARD=True)
@@ -390,7 +428,7 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
 
     if optimize:
         print "Optimizing Model:"
-        m.optimize(messages=verbose, max_iters=8e3, gtol=.1)
+        m.optimize(messages=verbose, max_iters=8e3)
     if plot:
         m.X.plot("MRD Latent Space 1D")
         m.plot_scales("MRD Scales")
@@ -402,7 +440,7 @@ def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim
     from GPy.inference.latent_function_inference.var_dtc import VarDTCMissingData
 
     D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
-    _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
+    _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
 
     #Ylist = [Ylist[0]]
     k = kern.Linear(Q, ARD=True)
@@ -542,7 +580,7 @@ def bcgplvm_stick(kernel=None, optimize=True, verbose=True, plot=True):
         y = m.likelihood.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data['connect'])
         GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
-        raw_input('Press enter to finish')
+        #raw_input('Press enter to finish')
 
     return m
 

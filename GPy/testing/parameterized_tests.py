@@ -32,7 +32,7 @@ class ParameterizedTest(unittest.TestCase):
         self.white = GPy.kern.White(1)
         from GPy.core.parameterization import Param
         from GPy.core.parameterization.transformations import Logistic
-        self.param = Param('param', np.random.uniform(0,1,(25,2)), Logistic(0, 1))
+        self.param = Param('param', np.random.uniform(0,1,(10,5)), Logistic(0, 1))
 
         self.test1 = GPy.core.Parameterized("test model")
         self.test1.param = self.param
@@ -153,16 +153,21 @@ class ParameterizedTest(unittest.TestCase):
         self.assertEqual(val, self.rbf.variance)
 
     def test_updates(self):
-        self.test1.update_model(False)
-        val = float(self.rbf.variance)
-        self.test1.kern.randomize()
-        self.assertEqual(val, self.rbf.variance)
+        val = float(self.testmodel.log_likelihood())
+        self.testmodel.update_model(False)
+        self.testmodel.kern.randomize()
+        self.testmodel.likelihood.randomize()
+        self.assertEqual(val, self.testmodel.log_likelihood())
+        self.testmodel.update_model(True)
+        self.assertNotEqual(val, self.testmodel.log_likelihood())
 
     def test_fixing_optimize(self):
         self.testmodel.kern.lengthscale.fix()
         val = float(self.testmodel.kern.lengthscale)
+        val2 = float(self.testmodel.kern.variance)
         self.testmodel.randomize()
         self.assertEqual(val, self.testmodel.kern.lengthscale)
+        self.assertNotEqual(val2, self.testmodel.kern.variance)
 
     def test_add_parameter_in_hierarchy(self):
         from GPy.core import Param

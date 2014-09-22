@@ -49,7 +49,7 @@ class Param(Parameterizable, ObsAr):
         obj._realshape_ = obj.shape
         obj._realsize_ = obj.size
         obj._realndim_ = obj.ndim
-        obj._original_ = True
+        obj._original_ = obj
         return obj
 
     def __init__(self, name, input_array, default_constraint=None, *a, **kw):
@@ -124,10 +124,10 @@ class Param(Parameterizable, ObsAr):
         #if not reduce(lambda a, b: a or numpy.any(b is Ellipsis), s, False) and len(s) <= self.ndim:
         #    s += (Ellipsis,)
         new_arr = super(Param, self).__getitem__(s, *args, **kwargs)
-        try: 
+        try:
             new_arr._current_slice_ = s
             new_arr._gradient_array_ = self.gradient[s]
-            new_arr._original_ = self.base is new_arr.base
+            new_arr._original_ = self._original_
         except AttributeError: pass  # returning 0d array or float, double etc
         return new_arr
 
@@ -157,29 +157,29 @@ class Param(Parameterizable, ObsAr):
         return self.constraints[__fixed__].size == self.size
 
     def _get_original(self, param):
-        return self
+        return self._original_
 
     #===========================================================================
     # Pickling and copying
     #===========================================================================
     def copy(self):
         return Parameterizable.copy(self, which=self)
-    
+
     def __deepcopy__(self, memo):
         s = self.__new__(self.__class__, name=self.name, input_array=self.view(numpy.ndarray).copy())
-        memo[id(self)] = s        
+        memo[id(self)] = s
         import copy
         Pickleable.__setstate__(s, copy.deepcopy(self.__getstate__(), memo))
         return s
     def _setup_observers(self):
         """
         Setup the default observers
-        
+
         1: pass through to parent, if present
         """
         if self.has_parent():
             self.add_observer(self._parent_, self._parent_._pass_through_notify_observers, -np.inf)
-    
+
     #===========================================================================
     # Printing -> done
     #===========================================================================

@@ -2,7 +2,6 @@ import csv
 import os
 import copy
 import numpy as np
-import pylab as pb
 import GPy
 import scipy.io
 import cPickle as pickle
@@ -346,6 +345,7 @@ def football_data(season='1314', data_set='football_data'):
     data_resources[data_set_season]['files'] = [files]
     if not data_available(data_set_season):
         download_data(data_set_season)
+    import pylab as pb
     for file in reversed(files):
         filename = os.path.join(data_path, data_set_season, file)
         # rewrite files removing blank rows.

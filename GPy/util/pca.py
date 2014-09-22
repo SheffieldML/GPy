@@ -5,8 +5,11 @@ Created on 10 Sep 2012
 @copyright: Max Zwiessele 2012
 '''
 import numpy
-import pylab
-import matplotlib
+try:
+    import pylab
+    import matplotlib
+except:
+    pass
 from numpy.linalg.linalg import LinAlgError
 
 class pca(object):
@@ -88,13 +91,15 @@ class pca(object):
 
     def plot_2d(self, X, labels=None, s=20, marker='o',
                 dimensions=(0, 1), ax=None, colors=None,
-                fignum=None, cmap=matplotlib.cm.jet, # @UndefinedVariable
+                fignum=None, cmap=None, # @UndefinedVariable
                 ** kwargs):
         """
         Plot dimensions `dimensions` with given labels against each other in 
         PC space. Labels can be any sequence of labels of dimensions X.shape[0].
         Labels can be drawn with a subsequent call to legend()
         """
+        if cmap is None:
+            cmap = matplotlib.cm.jet
         if ax is None:
             fig = pylab.figure(fignum)
             ax = fig.add_subplot(111)

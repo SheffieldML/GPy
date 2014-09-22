@@ -143,8 +143,9 @@ class ParameterizedTest(unittest.TestCase):
 
     def test_randomize(self):
         ps = self.test1.param.view(np.ndarray).copy()
+        self.test1.param[2:5].fix()
         self.test1.param.randomize()
-        self.assertFalse(np.all(ps==self.test1.param))
+        self.assertFalse(np.all(ps==self.test1.param),str(ps)+str(self.test1.param))
 
     def test_fixing_randomize_parameter_handling(self):
         self.rbf.fix(warning=True)
@@ -164,10 +165,8 @@ class ParameterizedTest(unittest.TestCase):
     def test_fixing_optimize(self):
         self.testmodel.kern.lengthscale.fix()
         val = float(self.testmodel.kern.lengthscale)
-        val2 = float(self.testmodel.kern.variance)
         self.testmodel.randomize()
         self.assertEqual(val, self.testmodel.kern.lengthscale)
-        self.assertNotEqual(val2, self.testmodel.kern.variance)
 
     def test_add_parameter_in_hierarchy(self):
         from GPy.core import Param

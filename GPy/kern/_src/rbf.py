@@ -20,8 +20,6 @@ class RBF(Stationary):
     _support_GPU = True
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='rbf', useGPU=False):
         super(RBF, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name, useGPU=useGPU)
-        self.weave_options = {}
-        self.group_spike_prob = False
         self.psicomp = PSICOMP_RBF()
         if self.useGPU:
             self.psicomp = PSICOMP_RBF_GPU()

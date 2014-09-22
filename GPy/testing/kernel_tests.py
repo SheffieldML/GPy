@@ -215,7 +215,10 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     if verbose:
         print("Checking gradients of Kdiag(X) wrt X.")
     try:
-        result = Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=verbose)
+        testmodel = Kern_check_dKdiag_dX(kern, X=X)
+        if fixed_X_dims is not None:
+            testmodel.X[:,fixed_X_dims].fix()
+        result = testmodel.checkgrad(verbose=verbose)
     except NotImplementedError:
         result=True
         if verbose:
@@ -345,6 +348,7 @@ class KernelTestsNonContinuous(unittest.TestCase):
         k = [GPy.kern.RBF(2, active_dims=[0,2], name='rbf1'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf2')]
         kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
         self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
+
 
     def test_ODE_UY(self):
         kern = GPy.kern.ODE_UY(2, active_dims=[0, self.D])

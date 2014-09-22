@@ -2,8 +2,11 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-import Tango
-import pylab as pb
+try:
+    import Tango
+    import pylab as pb
+except:
+    pass
 import numpy as np
 
 def ax_default(fignum, ax):

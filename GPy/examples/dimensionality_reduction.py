@@ -163,7 +163,7 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     import numpy as np
 
     _np.random.seed(0)
-    data = GPy.util.datasets.oil()
+    data = GPy.util.datasets.oil_100()
 
     kernel = GPy.kern.RBF(Q, 1., 1./_np.random.uniform(0,1,(Q,)), ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
     Y = data['X'][:N]
@@ -189,12 +189,12 @@ def ssgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40
     from ..util.misc import param_to_array
     import numpy as np
 
-    _np.random.seed(0)
-    data = GPy.util.datasets.oil()
+    #_np.random.seed(0)
+    data = GPy.util.datasets.oil_100()
 
     kernel = GPy.kern.RBF(Q, 1., 1./_np.random.uniform(0,1,(Q,)), ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
     Y = data['X'][:N]
-    m = GPy.models.SSGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing, **k)
+    m = GPy.models.SSGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing, group_spike=True, **k)
     m.data_labels = data['Y'][:N].argmax(axis=1)
 
     if optimize:
@@ -327,13 +327,19 @@ def ssgplvm_simulation(optimize=True, verbose=1, group_spike=True,
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     #k = kern.RBF(Q, ARD=True, lengthscale=10.)
-    m = SSGPLVM(Y, Q, init="init", num_inducing=num_inducing, kernel=k, group_spike=group_spike)
+    m = SSGPLVM(Y, Q, init="init", num_inducing=num_inducing, kernel=k, group_spike=group_spike, learnPi=True)
     m.X.variance[:] = _np.random.uniform(0,.01,m.X.shape)
     m.likelihood.variance = .1
 
     if optimize:
         print "Optimizing model:"
-        m.optimize('scg', messages=verbose, max_iters=max_iters,
+        m.likelihood.variance[:] = 0.01
+        m.likelihood.variance.fix()
+        m.optimize('bfgs', messages=verbose, max_iters=max_iters,
+                   gtol=.05)
+        m.likelihood.variance.unfix()
+        m.likelihood.variance.constrain_positive()
+        m.optimize('bfgs', messages=verbose, max_iters=max_iters,
                    gtol=.05)
     if plot:
         m.X.plot("SSGPLVM Latent Space 1D")

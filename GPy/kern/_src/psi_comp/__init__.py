@@ -31,10 +31,7 @@ class PSICOMP_RBF(Pickleable):
 
     def _setup_observers(self):
         pass
-        
-    def _setup_observers(self):
-        pass
-        
+                
 class PSICOMP_Linear(Pickleable):
 
     @Cache_this(limit=2, ignore_args=(0,))

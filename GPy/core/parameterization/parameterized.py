@@ -149,6 +149,7 @@ class Parameterized(Parameterizable):
                 self.priors.update(param.priors, start)
                 self.parameters.insert(index, param)
 
+            self._notify_parent_change()
             param.add_observer(self, self._pass_through_notify_observers, -np.inf)
 
             parent = self

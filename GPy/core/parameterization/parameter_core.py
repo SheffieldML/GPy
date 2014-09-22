@@ -636,10 +636,18 @@ class Indexable(Nameable, Observable):
         """
         From Parentable:
         Called when the parent changed
+
+        update the constraints and priors view, so that
+        constraining is automized for the parent.
         """
         from index_operations import ParameterIndexOperationsView
-        self.constraints = ParameterIndexOperationsView(parent.constraints, parent._offset_for(self), self.size)
-        self.priors = ParameterIndexOperationsView(parent.priors, parent._offset_for(self), self.size)
+        #if getattr(self, "_in_init_"):
+            #import ipdb;ipdb.set_trace()
+            #self.constraints.update(param.constraints, start)
+            #self.priors.update(param.priors, start)
+        offset = parent._offset_for(self)
+        self.constraints = ParameterIndexOperationsView(parent.constraints, offset, self.size)
+        self.priors = ParameterIndexOperationsView(parent.priors, offset, self.size)
         self._fixes_ = None
         for p in self.parameters:
             p._parent_changed(parent)

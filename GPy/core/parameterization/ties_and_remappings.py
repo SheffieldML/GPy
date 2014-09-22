@@ -240,9 +240,10 @@ class Tie(Parameterized):
             for p in plist:
                 self._traverse_param(_set_l1, (p,), [])
         else:
+            idx = [0]
             for p in plist:
-                self._traverse_param(_set_list, (p,[0]), [])
-                        
+                self._traverse_param(_set_list, (p,idx), [])
+
     def _replace_labels(self, p, label_pairs):
         def _replace_l(p):
             for l1,l2 in label_pairs:
@@ -258,6 +259,7 @@ class Tie(Parameterized):
             new_buf = np.empty((num,))
             self.tied_param = Param('tied',new_buf)
             self.tied_param.tie[:] = labellist
+            self.link_parameter(self.tied_param)
         else:
             start_label = self.tied_param.tie.max()+1
             new_buf = np.empty((self.tied_param.size+num,))
@@ -266,11 +268,13 @@ class Tie(Parameterized):
             old_size = self.tied_param.size
             labellist = np.array(range(start_label,start_label+num),dtype=np.int)
             idxlist = np.array(range(old_size,old_size+num),dtype=np.int)
+            cons = self.tied_param.constraints.copy()
             self.unlink_parameter(self.tied_param)
             self.tied_param = Param('tied',new_buf)
             self.tied_param.tie[:old_size] = old_tie_
             self.tied_param.tie[old_size:] = labellist
-        self.link_parameter(self.tied_param)
+            self.link_parameter(self.tied_param)
+            self.tied_param.constraints.update(cons)
         return labellist, idxlist
 
     def _remove_tie_param(self, labels):
@@ -283,10 +287,17 @@ class Tie(Parameterized):
             idx = np.logical_not(np.in1d(self.tied_param.tie,labels))
             new_buf[:] = self.tied_param[idx]
             old_tie_ = self.tied_param.tie.copy()
-            self.unlink_parameter(self.tied_param)            
+            cons = {}
+            for c,ind in self.tied_param.constraints.iteritems():
+                buf = np.zeros((old_tie_.size,),dtype=np.uint8)
+                buf[ind] = 1
+                if (buf[idx]==1).sum()>0:
+                    cons[c] = np.where(buf[idx]==1)[0]
+            self.unlink_parameter(self.tied_param)
             self.tied_param = Param('tied',new_buf)
             self.tied_param.tie[:] = old_tie_[idx]
             self.link_parameter(self.tied_param)
+            [self.tied_param.constraints.add(c,ind) for c,ind in cons.iteritems()]
     
     def _merge_tie_labels(self, labels):
         """Merge all the labels in the list to the first one"""
@@ -322,7 +333,10 @@ class Tie(Parameterized):
             assert(np.all(self.tied_param.tie>0))
             
     def _keepParamList(self,plist):
-        return [(p._original_, p._current_slice_) for p in plist]
+        paramlist = []
+        for p in plist:
+            self._traverse_param(lambda p: (p._original_, p._current_slice_), (p,), paramlist)
+        return paramlist
     
     def _updateParamList(self, p_split):
         return [p_org[p_slice] for p_org,p_slice in p_split]
@@ -355,16 +369,20 @@ class Tie(Parameterized):
         """tie a pair of vectors"""
         self.update_model(False)        
         expandlist,removelist,labellist = self._get_labels_vector(p1, p2)
-        p_split = self._keepParamList([p1,p2])
+        p_split1 = self._keepParamList([p1])
+        p_split2 = self._keepParamList([p2])
         if len(expandlist)>0:
             tie_labels,idxlist = self._expand_tie_param(len(expandlist))
             labellist[expandlist] = tie_labels
         if len(removelist[0])>0:
             self._merge_tie_labelpair(removelist)
-        p1,p2 = self._updateParamList(p_split)
-        self._set_labels([p1,p2], labellist)
-        self._sync_val([p1,p2],toTiedParam=True)
-        self._sync_constraints([p1,p2], toTiedParam=True)
+        p1 = self._updateParamList(p_split1)
+        p2 = self._updateParamList(p_split2)
+        ps = p1+p2
+        self._set_labels(p1, labellist)
+        self._set_labels(p2, labellist)
+        self._sync_val(ps,toTiedParam=True)
+        self._sync_constraints(ps, toTiedParam=True)
         self._update_label_buf()
         self.update_model(True)
         

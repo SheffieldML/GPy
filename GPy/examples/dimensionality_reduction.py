@@ -163,6 +163,32 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     import numpy as np
 
     _np.random.seed(0)
+    data = GPy.util.datasets.oil()
+
+    kernel = GPy.kern.RBF(Q, 1., 1./_np.random.uniform(0,1,(Q,)), ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
+    Y = data['X'][:N]
+    m = GPy.models.BayesianGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing, **k)
+    m.data_labels = data['Y'][:N].argmax(axis=1)
+
+    if optimize:
+        m.optimize('bfgs', messages=verbose, max_iters=max_iters, gtol=.05)
+
+    if plot:
+        fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
+        m.plot_latent(ax=latent_axes, labels=m.data_labels)
+        data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0,:]))
+        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(param_to_array(m.X.mean)[0:1,:], # @UnusedVariable
+            m, data_show, latent_axes=latent_axes, sense_axes=sense_axes, labels=m.data_labels)
+        raw_input('Press enter to finish')
+        plt.close(fig)
+    return m
+
+def bgplvm_oil_100(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40, max_iters=1000, **k):
+    import GPy
+    from matplotlib import pyplot as plt
+    from ..util.misc import param_to_array
+
+    _np.random.seed(0)
     data = GPy.util.datasets.oil_100()
 
     kernel = GPy.kern.RBF(Q, 1., 1./_np.random.uniform(0,1,(Q,)), ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))

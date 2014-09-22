@@ -2,6 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import unittest
+import numpy as np
 import GPy
 
 class TieTests(unittest.TestCase):
@@ -53,6 +54,28 @@ class TieTests(unittest.TestCase):
         self.assertTrue(m.ties.checkValueConsistency())
         self.assertTrue(m.ties.checkConstraintConsistency())
         self.assertTrue(m.ties.checkTieVector([m.Z[:10],m.Z[10:20],m.Z[20:30],m.Z[30:40]]))
+        self.assertTrue(m.checkgrad())
+        
+    def test_remove_tie(self):
+        x = np.random.rand(100,1)
+        y = np.random.rand(100,1)
+        m = GPy.models.SparseGPRegression(x,y,kernel=GPy.kern.RBF(1)+GPy.kern.Matern32(1))
+        m.kern.rbf.lengthscale.tie_together(m.kern.Mat32.lengthscale)
+        m.Z[:1].tie_together(m.Z[1:2])
+        m.kern.rbf.variance.tie_together(m.kern.Mat32.variance)
+        m.kern.rbf.lengthscale.untie()
+        self.assertTrue(m.ties.checkValueConsistency())
+        self.assertTrue(m.ties.checkConstraintConsistency())
+        self.assertTrue(m.ties.checkTieTogether([m.kern.rbf.variance,m.kern.Mat32.variance]))
+        self.assertTrue(m.ties.checkTieVector([m.Z[:1],m.Z[1:2]]))
+        self.assertTrue(m.checkgrad())
+
+    def test_tie_variational_posterior(self):
+        m = GPy.examples.dimensionality_reduction.bgplvm_oil_100(plot=False,optimize=False)
+        m.X[:10].tie_vector(m.X[10:20])
+        self.assertTrue(m.ties.checkValueConsistency())
+        self.assertTrue(m.ties.checkConstraintConsistency())
+        self.assertTrue(m.ties.checkTieVector([m.X[:10],m.X[10:20]]))
         self.assertTrue(m.checkgrad())
 
 if __name__ == "__main__":

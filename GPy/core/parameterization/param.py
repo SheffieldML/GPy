@@ -224,7 +224,7 @@ class Param(Parameterizable, ObsAr):
     def _ties_str(self):
         return ['']
     def _ties_for(self, ravi):
-        return [['N/A' if self.tie.flat[i]==0 else str(self.tie[i])] for i in xrange(ravi.size)]
+        return [['N/A' if self.tie.flat[i]==0 else str(self.tie.flat[i])] for i in xrange(ravi.size)]
     def __repr__(self, *args, **kwargs):
         name = "\033[1m{x:s}\033[0;0m:\n".format(
                             x=self.hierarchy_name())

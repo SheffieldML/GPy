@@ -65,7 +65,7 @@ class SSGPLVM(SparseGP_MPI):
         if pi is None:
             pi = np.empty((input_dim))
             pi[:] = 0.5
-        self.variational_prior = SpikeAndSlabPrior(pi=pi,learnPi=learnPi) # the prior probability of the latent binary variable b
+        self.variational_prior = SpikeAndSlabPrior(pi=pi,learnPi=learnPi, group_spike=group_spike) # the prior probability of the latent binary variable b
         
         X = SpikeAndSlabPosterior(X, X_variance, gamma)
                 

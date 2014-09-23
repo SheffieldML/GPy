@@ -2,7 +2,6 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from scipy import weave
 from config import *
 
 def chain_1(df_dg, dg_dx):

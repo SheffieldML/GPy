@@ -13,6 +13,39 @@ def std_norm_cdf(x):
     Cumulative standard Gaussian distribution
     Based on Abramowitz, M. and Stegun, I. (1970)
     """
+    x_shape = np.asarray(x).shape
+
+    if len(x_shape) == 0 or x_shape[0] == 1:
+        sign = np.sign(x)
+        x *= sign
+        x /= np.sqrt(2.)
+        t = 1.0/(1.0 +  0.3275911*x)
+        erf = 1. - np.exp(-x**2)*t*(0.254829592 + t*(-0.284496736 + t*(1.421413741 + t*(-1.453152027 + t*(1.061405429)))))
+        cdf_x = 0.5*(1.0 + sign*erf)
+        return cdf_x
+    else:
+        x = np.atleast_1d(x).copy()
+        cdf_x = np.zeros_like(x)
+        sign = np.ones_like(x)
+        neg_x_ind = x<0
+        sign[neg_x_ind] = -1.0
+        x[neg_x_ind] = -x[neg_x_ind]
+        x /= np.sqrt(2.)
+        t = 1.0/(1.0 +  0.3275911*x)
+        erf = 1. - np.exp(-x**2)*t*(0.254829592 + t*(-0.284496736 + t*(1.421413741 + t*(-1.453152027 + t*(1.061405429)))))
+        cdf_x = 0.5*(1.0 + sign*erf)
+        cdf_x = cdf_x.reshape(x_shape)
+    return cdf_x
+
+def std_norm_cdf_weave(x):
+    """
+    Cumulative standard Gaussian distribution
+    Based on Abramowitz, M. and Stegun, I. (1970)
+
+    A weave implementation of std_norm_cdf, which is faster. this is unused,
+    because of the difficulties of a weave dependency. (see github issue #94)
+
+    """
     #Generalize for many x
     x = np.asarray(x).copy()
     cdf_x = np.zeros_like(x)
@@ -39,37 +72,6 @@ def std_norm_cdf(x):
     """
     weave.inline(code, arg_names=['x', 'cdf_x', 'N'], support_code=support_code)
     return cdf_x
-
-def std_norm_cdf_np(x):
-    """
-    Cumulative standard Gaussian distribution
-    Based on Abramowitz, M. and Stegun, I. (1970)
-    Around 3 times slower when x is a scalar otherwise quite a lot slower
-    """
-    x_shape = np.asarray(x).shape
-
-    if len(x_shape) == 0 or x_shape[0] == 1:
-        sign = np.sign(x)
-        x *= sign
-        x /= np.sqrt(2.)
-        t = 1.0/(1.0 +  0.3275911*x)
-        erf = 1. - np.exp(-x**2)*t*(0.254829592 + t*(-0.284496736 + t*(1.421413741 + t*(-1.453152027 + t*(1.061405429)))))
-        cdf_x = 0.5*(1.0 + sign*erf)
-        return cdf_x
-    else:
-        x = np.atleast_1d(x).copy()
-        cdf_x = np.zeros_like(x)
-        sign = np.ones_like(x)
-        neg_x_ind = x<0
-        sign[neg_x_ind] = -1.0
-        x[neg_x_ind] = -x[neg_x_ind]
-        x /= np.sqrt(2.)
-        t = 1.0/(1.0 +  0.3275911*x)
-        erf = 1. - np.exp(-x**2)*t*(0.254829592 + t*(-0.284496736 + t*(1.421413741 + t*(-1.453152027 + t*(1.061405429)))))
-        cdf_x = 0.5*(1.0 + sign*erf)
-        cdf_x = cdf_x.reshape(x_shape)
-    return cdf_x
-
 
 def inv_std_norm_cdf(x):
     """

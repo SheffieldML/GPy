@@ -10,11 +10,10 @@ from scipy import linalg, weave
 import types
 import ctypes
 from ctypes import byref, c_char, c_int, c_double # TODO
-# import scipy.lib.lapack
 import scipy
 import warnings
 import os
-from config import *
+from config import config
 import logging
 
 _scipyversion = np.float64((scipy.__version__).split('.')[:2])
@@ -521,6 +520,27 @@ def symmetrify(A, upper=False):
     Take the square matrix A and make it symmetrical by copting elements from the lower half to the upper
 
     works IN PLACE.
+
+    note: tries to use weave, falls back to a slower numpy version
+    """
+    if config.getboolean('weave', 'working'):
+        try:
+            symmetrify_weave(A, upper)
+        except:
+            print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
+            config.set('weave', 'working', False)
+            symmetrify_numpy(A, upper)
+    else:
+        symmetrify_numpy(A, upper)
+
+
+def symmetrify_weave(A, upper=False):
+    """
+    Take the square matrix A and make it symmetrical by copting elements from the lower half to the upper
+
+    works IN PLACE.
+
+
     """
     N, M = A.shape
     assert N == M
@@ -563,10 +583,15 @@ def symmetrify(A, upper=False):
         A += np.tril(tmp, -1).T
 
 
-def symmetrify_murray(A):
-    A += A.T
-    nn = A.shape[0]
-    A[[range(nn), range(nn)]] /= 2.0
+def symmetrify_numpy(A, upper=False):
+    """
+    Force a matrix to be symmetric
+    """
+    triu = np.triu_indices_from(A,k=1)
+    if upper:
+        A.T[triu] = A[triu]
+    else:
+        A[triu] = A.T[triu]
 
 def cholupdate(L, x):
     """

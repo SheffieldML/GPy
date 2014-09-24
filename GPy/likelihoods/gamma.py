@@ -5,7 +5,6 @@
 import numpy as np
 from scipy import stats,special
 import scipy as sp
-from ..util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
 from ..core.parameterization import Param
 import link_functions
 from likelihood import Likelihood

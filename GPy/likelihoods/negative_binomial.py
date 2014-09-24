@@ -11,7 +11,6 @@ except ImportError:
     sympy_available=False
 
 import numpy as np
-from ..util.univariate_Gaussian import std_norm_pdf, std_norm_cdf
 import link_functions
 from symbolic import Symbolic
 from scipy import stats

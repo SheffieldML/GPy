@@ -18,6 +18,12 @@ class Prod(CombinationKernel):
 
     """
     def __init__(self, kernels, name='mul'):
+        for i, kern in enumerate(kernels[:]):
+            if isinstance(kern, Prod):
+                del kernels[i]
+                for part in kern.parts[::-1]:
+                    kern.unlink_parameter(part)
+                    kernels.insert(i, part)
         super(Prod, self).__init__(kernels, name)
 
     @Cache_this(limit=2, force_kwargs=['which_parts'])

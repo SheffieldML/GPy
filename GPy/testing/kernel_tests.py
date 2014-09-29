@@ -356,6 +356,50 @@ class KernelTestsNonContinuous(unittest.TestCase):
         X2 = self.X2[self.X2[:,-1]!=2]
         self.assertTrue(check_kernel_gradient_functions(kern, X=X, X2=X2, verbose=verbose, fixed_X_dims=-1))
 
+class Coregionalize_weave_test(unittest.TestCase):
+    """
+    Make sure that the coregionalize kernel work with and without weave enabled
+    """
+    k = GPy.kern.coregionalize(1, output_dim=12)
+    N1, N2 = 100, 200
+    X = np.random.randint(0,12,(N1,1))
+    X2 = np.random.randint(0,12,(N2,1))
+
+    #symmetric case
+    dL_dK = np.random.randn(N1, N1)
+    GPy.util.config.config.set('weave', 'working', True)
+    K_weave = k.K(X)
+    k.update_gradients_full(dL_dK, X)
+    grads_weave = k.gradient.copy()
+
+    GPy.util.config.config.set('weave', 'working', False)
+    K_numpy = k.K(X)
+    k.update_gradients_full(dL_dK, X)
+    grads_numpy = k.gradient.copy()
+
+    self.assertTrue(np.allclose(K_numpy, K_weave))
+    self.assertTrue(np.allclose(grads_numpy, grads_weave))
+
+    #non-symmetric case
+    dL_dK = np.random.randn(N1, N2)
+    GPy.util.config.config.set('weave', 'working', True)
+    K_weave = k.K(X, X2)
+    k.update_gradients_full(dL_dK, X, X2)
+    grads_weave = k.gradient.copy()
+
+    GPy.util.config.config.set('weave', 'working', False)
+    K_numpy = k.K(X, X2)
+    k.update_gradients_full(dL_dK, X, X2)
+    grads_numpy = k.gradient.copy()
+
+    self.assertTrue(np.allclose(K_numpy, K_weave))
+    self.assertTrue(np.allclose(grads_numpy, grads_weave))
+
+    #reset the weave state for any other tests
+    GPy.util.config.config.set('weave', 'working', False)
+
+
+
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."

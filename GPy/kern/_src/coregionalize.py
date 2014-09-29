@@ -6,6 +6,7 @@ import numpy as np
 from scipy import weave
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
+from ...util.config import config # for assesing whether to use weave
 
 class Coregionalize(Kern):
     """
@@ -56,6 +57,27 @@ class Coregionalize(Kern):
         self.B = np.dot(self.W, self.W.T) + np.diag(self.kappa)
 
     def K(self, X, X2=None):
+        if config.getboolean('weave', 'working'):
+            try:
+                return self._K_weave(X, X2)
+            except:
+                print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
+                config.set('weave', 'working', False)
+                return self._K_numpy(X, X2)
+        else:
+            return self._K_numpy(X, X2)
+
+
+    def _K_numpy(self, X, X2=None):
+        index = np.asarray(X, dtype=np.int)
+        if X2 is None:
+            return self.B[index,index.T]
+        else:
+            index2 = np.asarray(X2, dtype=np.int)
+            return self.B[index,index2.T]
+
+    def _K_weave(self, X, X2=None):
+        """compute the kernel function using scipy.weave"""
         index = np.asarray(X, dtype=np.int)
 
         if X2 is None:
@@ -91,12 +113,33 @@ class Coregionalize(Kern):
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         index = np.asarray(X, dtype=np.int)
-        dL_dK_small = np.zeros_like(self.B)
         if X2 is None:
             index2 = index
         else:
             index2 = np.asarray(X2, dtype=np.int)
 
+        #attempt to use weave for a nasty double indexing loop: fall back to numpy
+        if config.getboolean('weave', 'working'):
+            try:
+                dL_dK_small = self._gradient_reduce_weave(dL_dK, index1, index2)
+            except:
+                print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
+                config.set('weave', 'working', False)
+                dL_dK_small = self._gradient_reduce_weave(dL_dK, index1, index2)
+        else:
+            dL_dK_small = self._gradient_reduce_weave(dL_dK, index1, index2)
+
+
+
+        dkappa = np.diag(dL_dK_small)
+        dL_dK_small += dL_dK_small.T
+        dW = (self.W[:, None, :]*dL_dK_small[:, :, None]).sum(0)
+
+        self.W.gradient = dW
+        self.kappa.gradient = dkappa
+
+    def _gradient_reduce_weave(self, dL_dK, index, index2):
+        dL_dK_small = np.zeros_like(self.B)
         code="""
         for(int i=0; i<num_inducing; i++){
           for(int j=0; j<N; j++){
@@ -106,13 +149,19 @@ class Coregionalize(Kern):
         """
         N, num_inducing, output_dim = index.size, index2.size, self.output_dim
         weave.inline(code, ['N', 'num_inducing', 'output_dim', 'dL_dK', 'dL_dK_small', 'index', 'index2'])
+        return dL_dK_small
+1
+    def _gradient_reduce_numpy(self, dL_dK, index, index2):
+        index, index2 = index[:,0], index2[:,0]
+        for i in range(k.output_dim):
+        dL_dK_small = np.zeros_like(self.B)
+            tmp1 = dL_dK[index==i]
+            for j in range(k.output_dim):
+                dL_dK_small[j,i] = tmp1[:,index2==j].sum()
+        return dL_dK_small
 
-        dkappa = np.diag(dL_dK_small)
-        dL_dK_small += dL_dK_small.T
-        dW = (self.W[:, None, :]*dL_dK_small[:, :, None]).sum(0)
 
-        self.W.gradient = dW
-        self.kappa.gradient = dkappa
+
 
     def update_gradients_diag(self, dL_dKdiag, X):
         index = np.asarray(X, dtype=np.int).flatten()

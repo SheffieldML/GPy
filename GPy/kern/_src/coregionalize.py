@@ -62,7 +62,7 @@ class Coregionalize(Kern):
                 return self._K_weave(X, X2)
             except:
                 print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
-                config.set('weave', 'working', False)
+                config.set('weave', 'working', 'False')
                 return self._K_numpy(X, X2)
         else:
             return self._K_numpy(X, X2)
@@ -121,13 +121,13 @@ class Coregionalize(Kern):
         #attempt to use weave for a nasty double indexing loop: fall back to numpy
         if config.getboolean('weave', 'working'):
             try:
-                dL_dK_small = self._gradient_reduce_weave(dL_dK, index1, index2)
+                dL_dK_small = self._gradient_reduce_weave(dL_dK, index, index2)
             except:
                 print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
-                config.set('weave', 'working', False)
-                dL_dK_small = self._gradient_reduce_weave(dL_dK, index1, index2)
+                config.set('weave', 'working', 'False')
+                dL_dK_small = self._gradient_reduce_weave(dL_dK, index, index2)
         else:
-            dL_dK_small = self._gradient_reduce_weave(dL_dK, index1, index2)
+            dL_dK_small = self._gradient_reduce_weave(dL_dK, index, index2)
 
 
 
@@ -150,18 +150,15 @@ class Coregionalize(Kern):
         N, num_inducing, output_dim = index.size, index2.size, self.output_dim
         weave.inline(code, ['N', 'num_inducing', 'output_dim', 'dL_dK', 'dL_dK_small', 'index', 'index2'])
         return dL_dK_small
-1
+
     def _gradient_reduce_numpy(self, dL_dK, index, index2):
         index, index2 = index[:,0], index2[:,0]
-        for i in range(k.output_dim):
         dL_dK_small = np.zeros_like(self.B)
+        for i in range(k.output_dim):
             tmp1 = dL_dK[index==i]
             for j in range(k.output_dim):
                 dL_dK_small[j,i] = tmp1[:,index2==j].sum()
         return dL_dK_small
-
-
-
 
     def update_gradients_diag(self, dL_dKdiag, X):
         index = np.asarray(X, dtype=np.int).flatten()

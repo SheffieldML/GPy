@@ -320,7 +320,6 @@ class HalfT(Prior):
         return "hT(" + str(np.round(self.A)) + ', ' + str(np.round(self.nu)) + ')'
 
     def lnpdf(self,theta):
-        stop
         return (theta>0) * ( self.constant -.5*(self.nu+1) * np.log( 1.+ (1./self.nu) * (theta/self.A)**2 ) )
 
         #theta = theta if isinstance(theta,np.ndarray) else np.array([theta])

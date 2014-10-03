@@ -254,7 +254,7 @@ class Gamma(Prior):
         b = E / V
         return Gamma(a, b)
 
-class inverse_gamma(Prior):
+class InverseGamma(Prior):
     """
     Implementation of the inverse-Gamma probability function, coupled with random variables.
 
@@ -265,6 +265,7 @@ class inverse_gamma(Prior):
 
     """
     domain = _POSITIVE
+    _instances = []
     def __new__(cls, a, b): # Singleton:
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
@@ -291,7 +292,7 @@ class inverse_gamma(Prior):
     def rvs(self, n):
         return 1. / np.random.gamma(scale=1. / self.b, shape=self.a, size=n)
 
-class half_t(Prior):
+class HalfT(Prior):
     """
     Implementation of the half student t probability function, coupled with random variables.
 
@@ -313,25 +314,27 @@ class half_t(Prior):
     def __init__(self, A, nu):
         self.A = float(A)
         self.nu = float(nu)
-        #self.constant = -gammaln(self.a) + a * np.log(b)
+        self.constant = gammaln(.5*(self.nu+1.)) - gammaln(.5*self.nu) - .5*np.log(np.pi*self.A*self.nu)
 
     def __str__(self):
-        return "half_t(" + str(np.round(self.A)) + ', ' + str(np.round(self.nu)) + ')'
+        return "hT(" + str(np.round(self.A)) + ', ' + str(np.round(self.nu)) + ')'
 
     def lnpdf(self,theta):
-        theta = theta if isinstance(theta,np.ndarray) else np.array([theta])
-        lnpdfs = np.zeros_like(theta)
-        theta = np.array([theta])
-        above_zero = theta.flatten()>1e-6
-        v = self.nu
-        sigma2=self.A
-        lnpdfs[above_zero] = (+ gammaln((v + 1) * 0.5)
-            - gammaln(v * 0.5)
-            - 0.5*np.log(sigma2 * v * np.pi)
-            - 0.5*(v + 1)*np.log(1 + (1/np.float(v))*((theta[above_zero][0]**2)/sigma2))
-        )
-        #return np.sum(objective)
-        return lnpdfs
+        return self.constant*(theta>0) -.5*(self.nu+1) * np.log( 1.+ (1./self.nu) * (theta/self.A)**2 )
+
+        #theta = theta if isinstance(theta,np.ndarray) else np.array([theta])
+        #lnpdfs = np.zeros_like(theta)
+        #theta = np.array([theta])
+        #above_zero = theta.flatten()>1e-6
+        #v = self.nu
+        #sigma2=self.A
+        #stop
+        #lnpdfs[above_zero] = (+ gammaln((v + 1) * 0.5)
+        #    - gammaln(v * 0.5)
+        #    - 0.5*np.log(sigma2 * v * np.pi)
+        #    - 0.5*(v + 1)*np.log(1 + (1/np.float(v))*((theta[above_zero][0]**2)/sigma2))
+        #)
+        #return lnpdfs
 
     def lnpdf_grad(self,theta):
         theta = theta if isinstance(theta,np.ndarray) else np.array([theta])

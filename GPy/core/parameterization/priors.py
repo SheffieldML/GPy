@@ -290,3 +290,63 @@ class inverse_gamma(Prior):
 
     def rvs(self, n):
         return 1. / np.random.gamma(scale=1. / self.b, shape=self.a, size=n)
+
+class half_t(Prior):
+    """
+    Implementation of the half student t probability function, coupled with random variables.
+
+    :param A: scale parameter
+    :param nu: degrees of freedom
+
+    """
+    domain = _POSITIVE
+    _instances = []
+    def __new__(cls, A, nu): # Singleton:
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if instance().A == A and instance().nu == nu:
+                   return instance()
+        o = super(Prior, cls).__new__(cls, A, nu)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
+    def __init__(self, A, nu):
+        self.A = float(A)
+        self.nu = float(nu)
+        #self.constant = -gammaln(self.a) + a * np.log(b)
+
+    def __str__(self):
+        return "half_t(" + str(np.round(self.A)) + ', ' + str(np.round(self.nu)) + ')'
+
+    def lnpdf(self,theta):
+        theta = theta if isinstance(theta,np.ndarray) else np.array([theta])
+        lnpdfs = np.zeros_like(theta)
+        theta = np.array([theta])
+        above_zero = theta.flatten()>1e-6
+        v = self.nu
+        sigma2=self.A
+        lnpdfs[above_zero] = (+ gammaln((v + 1) * 0.5)
+            - gammaln(v * 0.5)
+            - 0.5*np.log(sigma2 * v * np.pi)
+            - 0.5*(v + 1)*np.log(1 + (1/np.float(v))*((theta[above_zero][0]**2)/sigma2))
+        )
+        #return np.sum(objective)
+        return lnpdfs
+
+    def lnpdf_grad(self,theta):
+        theta = theta if isinstance(theta,np.ndarray) else np.array([theta])
+        grad = np.zeros_like(theta)
+        above_zero = theta>1e-6
+        v = self.nu
+        sigma2=self.A
+        grad[above_zero] = -0.5*(v+1)*(2*theta[above_zero])/(v*sigma2 + theta[above_zero][0]**2)
+        return grad
+
+    def rvs(self, n):
+         #return np.random.randn(n) * self.sigma + self.mu
+         from scipy.stats import t
+         #[np.abs(x) for x in t.rvs(df=4,loc=0,scale=50, size=10000)])
+         ret = t.rvs(self.nu,loc=0,scale=self.A, size=n)
+         ret[ret<0] = 0
+         return ret
+

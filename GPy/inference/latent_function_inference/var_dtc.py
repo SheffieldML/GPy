@@ -6,7 +6,6 @@ from ...util.linalg import mdot, jitchol, backsub_both_sides, tdot, dtrtrs, dtrt
 from ...util import diag
 from ...core.parameterization.variational import VariationalPosterior
 import numpy as np
-from ...util.misc import param_to_array
 from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
 import logging, itertools
@@ -35,7 +34,7 @@ class VarDTC(LatentFunctionInference):
         self.get_YYTfactor.limit = limit
 
     def _get_trYYT(self, Y):
-        return param_to_array(np.sum(np.square(Y)))
+        return np.sum(np.square(Y))
 
     def __getstate__(self):
         # has to be overridden, as Cacher objects cannot be pickled.
@@ -56,7 +55,7 @@ class VarDTC(LatentFunctionInference):
         """
         N, D = Y.shape
         if (N>=D):
-            return param_to_array(Y)
+            return Y.view(np.ndarray)
         else:
             return jitchol(tdot(Y))
 

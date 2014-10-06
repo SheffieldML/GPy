@@ -82,20 +82,32 @@ def prompt_user(prompt):
 
 def data_available(dataset_name=None):
     """Check if the data set is available on the local machine already."""
-    for file_list in data_resources[dataset_name]['files']:
-        for file in file_list:
-            if not os.path.exists(os.path.join(data_path, dataset_name, file)):
+    from itertools import izip_longest
+    dr = data_resources[dataset_name]
+    zip_urls = (dr['files'], )
+    if dr.has_key('save_names'): zip_urls += (dr['save_names'], )
+    else: zip_urls += ([],)
+
+    for file_list, save_list in izip_longest(*zip_urls, fillvalue=[]):
+        for f, s in izip_longest(file_list, save_list, fillvalue=None):
+            if s is not None: f=s # If there is a save_name given, use that one
+            if not os.path.exists(os.path.join(data_path, dataset_name, f)):
                 return False
     return True
 
-def download_url(url, store_directory, save_name = None, messages = True, suffix=''):
+def download_url(url, store_directory, save_name=None, messages=True, suffix=''):
     """Download a file from a url and save it to disk."""
     i = url.rfind('/')
     file = url[i+1:]
     print file
     dir_name = os.path.join(data_path, store_directory)
-    save_name = os.path.join(dir_name, file)
-    print "Downloading ", url, "->", os.path.join(store_directory, file)
+
+    if save_name is None: save_name = os.path.join(dir_name, file)
+    else: save_name = os.path.join(dir_name, save_name)
+
+    if suffix is None: suffix=''
+
+    print "Downloading ", url, "->", save_name
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
     try:
@@ -178,19 +190,24 @@ def authorize_download(dataset_name=None):
 
 def download_data(dataset_name=None):
     """Check with the user that the are happy with terms and conditions for the data set, then download it."""
+    import itertools
 
     dr = data_resources[dataset_name]
     if not authorize_download(dataset_name):
         raise Exception("Permission to download data set denied.")
 
-    if dr.has_key('suffices'):
-        for url, files, suffices in zip(dr['urls'], dr['files'], dr['suffices']):
-            for file, suffix in zip(files, suffices):
-                download_url(os.path.join(url,file), dataset_name, dataset_name, suffix=suffix)
-    else:
-        for url, files in zip(dr['urls'], dr['files']):
-            for file in files:
-                download_url(os.path.join(url,file), dataset_name, dataset_name)
+    zip_urls = (dr['urls'], dr['files'])
+
+    if dr.has_key('save_names'): zip_urls += (dr['save_names'], )
+    else: zip_urls += ([],)
+
+    if dr.has_key('suffices'): zip_urls += (dr['suffices'], )
+    else: zip_urls += ([],)
+
+    for url, files, save_names, suffices in itertools.izip_longest(*zip_urls, fillvalue=[]):
+        for f, save_name, suffix in itertools.izip_longest(files, save_names, suffices, fillvalue=None):
+            download_url(os.path.join(url,f), dataset_name, save_name, suffix=suffix)
+
     return True
 
 def data_details_return(data, data_set):
@@ -894,6 +911,128 @@ def singlecell(data_set='singlecell'):
     return data_details_return({'Y': Y, 'info' : "qPCR singlecell experiment in Mouse, measuring 48 gene expressions in 1-64 cell states. The labels have been created as in Guo et al. [2010]",
                                 'genes': genes, 'labels':labels,
                                 }, data_set)
+
+def singlecell_rna_seq_islam(dataset='singlecell_islam'):
+    if not data_available(dataset):
+        download_data(dataset)
+
+    from pandas import read_csv, DataFrame, concat
+    dir_path = os.path.join(data_path, dataset)
+    filename = os.path.join(dir_path, 'GSE29087_L139_expression_tab.txt.gz')
+    data = read_csv(filename, sep='\t', skiprows=6, compression='gzip', header=None)
+    header1 = read_csv(filename, sep='\t', header=None, skiprows=5, nrows=1, compression='gzip')
+    header2 = read_csv(filename, sep='\t', header=None, skiprows=3, nrows=1, compression='gzip')
+    data.columns = np.concatenate((header1.ix[0, :], header2.ix[0, 7:]))
+    Y = data.set_index("Feature").ix[8:, 6:-4].T.astype(float)
+
+    # read the info .soft
+    filename = os.path.join(dir_path, 'GSE29087_family.soft.gz')
+    info = read_csv(filename, sep='\t', skiprows=0, compression='gzip', header=None)
+    # split at ' = '
+    info = DataFrame(info.ix[:,0].str.split(' = ').tolist())
+    # only take samples:
+    info = info[info[0].str.contains("!Sample")]
+    info[0] = info[0].apply(lambda row: row[len("!Sample_"):])
+
+    groups = info.groupby(0).groups
+    # remove 'GGG' from barcodes
+    barcode = info[1][groups['barcode']].apply(lambda row: row[:-3])
+
+    title = info[1][groups['title']]
+    title.index = barcode
+    title.name = 'title'
+    geo_accession = info[1][groups['geo_accession']]
+    geo_accession.index = barcode
+    geo_accession.name = 'geo_accession'
+    case_id = info[1][groups['source_name_ch1']]
+    case_id.index = barcode
+    case_id.name = 'source_name_ch1'
+
+    info = concat([title, geo_accession, case_id], axis=1)
+    labels = info.join(Y).source_name_ch1[:-4]
+    labels[labels=='Embryonic stem cell'] = "ES"
+    labels[labels=='Embryonic fibroblast'] = "MEF"
+
+    return data_details_return({'Y': Y,
+                                'info': '92 single cells (48 mouse ES cells, 44 mouse embryonic fibroblasts and 4 negative controls) were analyzed by single-cell tagged reverse transcription (STRT)',
+                                'genes': Y.columns,
+                                'labels': labels,
+                                'datadf': data,
+                                'infodf': info}, dataset)
+
+def singlecell_rna_seq_deng(dataset='singlecell_deng'):
+    if not data_available(dataset):
+        download_data(dataset)
+
+    from pandas import read_csv
+    dir_path = os.path.join(data_path, dataset)
+
+    # read the info .soft
+    filename = os.path.join(dir_path, 'GSE45719_series_matrix.txt.gz')
+    info = read_csv(filename, sep='\t', skiprows=0, compression='gzip', header=None, nrows=29, index_col=0)
+    summary = info.loc['!Series_summary'][1]
+    design = info.loc['!Series_overall_design']
+
+    # only take samples:
+    sample_info = read_csv(filename, sep='\t', skiprows=30, compression='gzip', header=0, index_col=0).T
+    sample_info.columns = sample_info.columns.to_series().apply(lambda row: row[len("!Sample_"):])
+    sample_info.columns.name = sample_info.columns.name[len("!Sample_"):]
+    sample_info = sample_info[['geo_accession', 'characteristics_ch1',  'description']]
+    sample_info = sample_info.ix[:, np.r_[0:3, 5:sample_info.shape[1]]]
+    c = sample_info.columns.to_series()
+    c[1:4] = ['strain', 'cross', 'developmental_stage']
+    sample_info.columns = c
+
+    # Extract the tar file
+    filename = os.path.join(dir_path, 'GSE45719_Raw.tar')
+    with tarfile.open(filename, 'r') as files:
+        data = None
+        gene_info = None
+        message = ''
+        members = files.getmembers()
+        overall = len(members)
+        for i, file_info in enumerate(members):
+            f = files.extractfile(file_info)
+            inner = read_csv(f, sep='\t', header=0, compression='gzip', index_col=0)
+            sys.stdout.write(' '*(len(message)+1) + '\r')
+            sys.stdout.flush()
+            message = "{: >7.2%}: Extracting: {}".format(float(i+1)/overall, file_info.name[:20]+"...txt.gz")
+            sys.stdout.write(message)
+            if data is None:
+                data = inner.RPKM.to_frame()
+                data.columns = [file_info.name[:-18]]
+                gene_info = inner.Refseq_IDs.to_frame()
+                gene_info.columns = [file_info.name[:-18]]
+            else:
+                data[file_info.name[:-18]] = inner.RPKM
+                gene_info[file_info.name[:-18]] = inner.Refseq_IDs
+
+    # Strip GSM number off data index
+    rep = re.compile('GSM\d+_')
+    data.columns = data.columns.to_series().apply(lambda row: row[rep.match(row).end():])
+    data = data.T
+
+    # make sure the same index gets used
+    sample_info.index = data.index
+
+    # get the labels from the description
+    rep = re.compile('fibroblast|\d+-cell|embryo|liver|blastocyst|blastomere|zygote', re.IGNORECASE)
+    labels = sample_info.developmental_stage.apply(lambda row: " ".join(rep.findall(row)))
+
+    sys.stdout.write(' '*len(message) + '\r')
+    sys.stdout.flush()
+    print "Read Archive {}".format(files.name)
+
+    return data_details_return({'Y': data,
+                                'series_info': info,
+                                'sample_info': sample_info,
+                                'gene_info': gene_info,
+                                'summary': summary,
+                                'design': design,
+                                'genes': data.columns,
+                                'labels': labels,
+                                }, dataset)
+
 
 def swiss_roll_1000():
     return swiss_roll(num_samples=1000)

@@ -4,7 +4,6 @@ import GPy
 import numpy as np
 import matplotlib as mpl
 import time
-from ...util.misc import param_to_array
 from GPy.core.parameterization.variational import VariationalPosterior
 try:
     import visual
@@ -127,7 +126,7 @@ class lvm(matplotlib_show):
         self.latent_index = latent_index
         self.latent_dim = model.input_dim
         self.disable_drag = disable_drag
- 
+
         # The red cross which shows current latent point.
         self.latent_values = vals
         self.latent_handle = self.latent_axes.plot([0],[0],'rx',mew=2)[0]
@@ -474,7 +473,7 @@ class mocap_data_show(matplotlib_show):
         self.axes.set_ylim(self.y_lim)
         self.axes.set_zlim(self.z_lim)
         self.axes.auto_scale_xyz([-1., 1.], [-1., 1.], [-1., 1.])
-        
+
 #        self.axes.set_aspect('equal')
 #         self.axes.autoscale(enable=False)
 
@@ -500,7 +499,7 @@ class skeleton_show(mocap_data_show):
         :param vals: set of modeled angles to use for printing in the axis when it's first created.
         :type vals: np.array
         :param skel: skeleton object that has the parameters of the motion capture skeleton associated with it.
-        :type skel: mocap.skeleton object 
+        :type skel: mocap.skeleton object
         :param padding:
         :type int
         """
@@ -512,7 +511,7 @@ class skeleton_show(mocap_data_show):
         """Takes a set of angles and converts them to the x,y,z coordinates in the internal prepresentation of the class, ready for plotting.
 
         :param vals: the values that are being modelled."""
-        
+
         if self.padding>0:
             channels = np.zeros((self.vals.shape[0], self.vals.shape[1]+self.padding))
             channels[:, 0:self.vals.shape[0]] = self.vals
@@ -524,7 +523,7 @@ class skeleton_show(mocap_data_show):
         self.vals[:, 0] = vals_mat[:, 0].copy()
         self.vals[:, 1] = vals_mat[:, 2].copy()
         self.vals[:, 2] = vals_mat[:, 1].copy()
-        
+
     def wrap_around(self, lim, connect):
         quot = lim[1] - lim[0]
         self.vals = rem(self.vals, quot)+lim[0]
@@ -546,7 +545,7 @@ def data_play(Y, visualizer, frame_rate=30):
     Example usage:
 
     This example loads in the CMU mocap database (http://mocap.cs.cmu.edu) subject number 35 motion number 01. It then plays it using the mocap_show visualize object.
-    
+
     .. code-block:: python
 
        data = GPy.util.datasets.cmu_mocap(subject='35', train_motions=['01'])
@@ -556,7 +555,7 @@ def data_play(Y, visualizer, frame_rate=30):
        GPy.util.visualize.data_play(Y, visualize)
 
     """
-    
+
 
     for y in Y:
         visualizer.modify(y[None, :])

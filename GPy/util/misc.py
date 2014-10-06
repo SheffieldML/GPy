@@ -90,6 +90,8 @@ Convert an arbitrary number of parameters to :class:ndarray class objects. This 
 converting parameter objects to numpy arrays, when using scipy.weave.inline routine.
 In scipy.weave.blitz there is no automatic array detection (even when the array inherits
 from :class:ndarray)"""
+    import warnings
+    warnings.warn("Please use param.values, as this function will be deprecated in the next release.", DeprecationWarning)
     assert len(param) > 0, "At least one parameter needed"
     if len(param) == 1:
         return param[0].view(np.ndarray)

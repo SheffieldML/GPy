@@ -228,7 +228,7 @@
     "fruitfly_tomancak_cel_files": {
         "citation": "'Systematic determination of patterns of gene expression during Drosophila embryogenesis' Pavel Tomancak, Amy Beaton, Richard Weiszmann, Elaine Kwan, ShengQiang Shu, Suzanna E Lewis, Stephen Richards, Michael Ashburner, Volker Hartenstein, Susan E Celniker, and Gerald M Rubin",
         "details": "Gene expression results from blastoderm development in Drosophila Melanogaster.",
-        "files": [ 
+        "files": [
             [
                 "embryo_tc_4_1.CEL",
                 "embryo_tc_4_2.CEL",
@@ -284,7 +284,7 @@
         "details": "Google trends results.",
         "files": [
             [
-                
+
             ]
         ],
         "license": null,
@@ -293,7 +293,7 @@
             "http://www.google.com/trends/"
         ]
     },
-    
+
     "hapmap3": {
         "citation": "Gibbs, Richard A., et al. 'The international HapMap project.' Nature 426.6968 (2003): 789-796.",
         "details": "HapMap Project: Single Nucleotide Polymorphism sequenced in all human populations. \n        The HapMap phase three SNP dataset - 1184 samples out of 11 populations.\n        See http://www.nature.com/nature/journal/v426/n6968/abs/nature02168.html for details.\n\n        SNP_matrix (A) encoding [see Paschou et all. 2007 (PCA-Correlated SNPs...)]:\n        Let (B1,B2) be the alphabetically sorted bases, which occur in the j-th SNP, then\n\n              /  1, iff SNPij==(B1,B1)\n        Aij = |  0, iff SNPij==(B1,B2)\n              \\\\ -1, iff SNPij==(B2,B2)\n\n        The SNP data and the meta information (such as iid, sex and phenotype) are\n        stored in the dataframe datadf, index is the Individual ID, \n        with following columns for metainfo:\n\n            * family_id   -> Family ID\n            * paternal_id -> Paternal ID\n            * maternal_id -> Maternal ID\n            * sex         -> Sex (1=male; 2=female; other=unknown)\n            * phenotype   -> Phenotype (-9, or 0 for unknown)\n            * population  -> Population string (e.g. 'ASW' - 'YRI')\n            * rest are SNP rs (ids)\n\n        More information is given in infodf:\n\n            * Chromosome:\n                - autosomal chromosemes                -> 1-22\n                - X    X chromosome                    -> 23\n                - Y    Y chromosome                    -> 24\n                - XY   Pseudo-autosomal region of X    -> 25\n                - MT   Mitochondrial                   -> 26\n            * Relative Positon (to Chromosome) [base pairs]\n\n        ",
@@ -522,6 +522,23 @@
         "urls": [
             "http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/singlecell/"
         ]
+    },
+    "singlecell_islam": {
+        "citation": "Single-Cell RNA-Seq Reveals Dynamic, Random Monoallelic Gene Expression in Mammalian Cells Qiaolin Deng, Daniel Ramskoeld, Bjoern Reinius, and Rickard Sandberg Science 10 January 2014: 343 (6167), 193-196. [DOI:10.1126/science.1245316]",
+        "details" : "92 single cells (48 mouse ES cells, 44 mouse embryonic fibroblasts and 4 negative controls) were analyzed by single-cell tagged reverse transcription (STRT)",
+        "files"   : [["GSE29087_L139_expression_tab.txt.gz"], ["GSE29087_family.soft.gz"]],
+        "license" : "Gene Expression Omnibus: http://www.ncbi.nlm.nih.gov/geo/info/disclaimer.html",
+        "size"    : 1159449,
+        "urls"    : ["ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE29nnn/GSE29087/suppl/", "ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE29nnn/GSE29087/soft/"]
+    },
+    "singlecell_deng": {
+        "citation": "Deng Q, Ramsköld D, Reinius B, Sandberg R. Single-cell RNA-seq reveals dynamic, random monoallelic gene expression in mammalian cells. Science 2014 Jan 10;343(6167):193-6. PMID: 24408435",
+        "details" : "First generation mouse strain crosses were used to study monoallelic expression on the single cell level",
+        "files"   : [["?acc=GSE45719&format=file"], ["GSE45719_series_matrix.txt.gz"]],
+        "license" : "Gene Expression Omnibus: http://www.ncbi.nlm.nih.gov/geo/info/disclaimer.html",
+        "size"    : 1159449,
+        "save_names": [["GSE45719_Raw.tar"], [null]],
+        "urls"    : ["http://www.ncbi.nlm.nih.gov/geo/download/", "ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE45nnn/GSE45719/matrix/"]
     },
     "sod1_mouse": {
         "citation": "Transcriptomic indices of fast and slow disease progression in two mouse models of amyotrophic lateral sclerosis' Nardo G1, Iennaco R, Fusi N, Heath PR, Marino M, Trolese MC, Ferraiuolo L, Lawrence N, Shaw PJ, Bendotti C Brain. 2013 Nov;136(Pt 11):3305-32. doi: 10.1093/brain/awt250. Epub 2013 Sep 24.",

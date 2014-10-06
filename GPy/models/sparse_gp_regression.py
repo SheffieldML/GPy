@@ -7,7 +7,6 @@ from ..core import SparseGP
 from .. import likelihoods
 from .. import kern
 from ..inference.latent_function_inference import VarDTC
-from ..util.misc import param_to_array
 from ..core.parameterization.variational import NormalPosterior
 
 class SparseGPRegression(SparseGP):
@@ -40,7 +39,7 @@ class SparseGPRegression(SparseGP):
         # Z defaults to a subset of the data
         if Z is None:
             i = np.random.permutation(num_data)[:min(num_inducing, num_data)]
-            Z = param_to_array(X)[i].copy()
+            Z = X.view(np.ndarray)[i].copy()
         else:
             assert Z.shape[1] == input_dim
 

@@ -1,7 +1,6 @@
 import numpy as np
 from ...util import diag
 from ...util.linalg import mdot, jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri, dpotri, dpotrs, symmetrify, DSYR
-from ...util.misc import param_to_array
 from ...core.parameterization.variational import VariationalPosterior
 from . import LatentFunctionInference
 from posterior import Posterior
@@ -23,7 +22,7 @@ class EPDTC(LatentFunctionInference):
         self.get_YYTfactor.limit = limit
 
     def _get_trYYT(self, Y):
-        return param_to_array(np.sum(np.square(Y)))
+        return np.sum(np.square(Y))
 
     def __getstate__(self):
         # has to be overridden, as Cacher objects cannot be pickled.
@@ -44,7 +43,7 @@ class EPDTC(LatentFunctionInference):
         """
         N, D = Y.shape
         if (N>=D):
-            return param_to_array(Y)
+            return Y
         else:
             return jitchol(tdot(Y))
 

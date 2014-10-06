@@ -92,7 +92,7 @@ class GP(Model):
         logger.info("adding kernel and likelihood as parameters")
         self.link_parameter(self.kern)
         self.link_parameter(self.likelihood)
-        
+
     def set_X(self,X):
         # TODO: it does not work with BGPLVM
         if isinstance(X, ObsAr):
@@ -107,7 +107,7 @@ class GP(Model):
             self.Y = Y
         else:
             self.Y = ObsAr(Y)
-            self.Y_normalized = self.Y        
+            self.Y_normalized = self.Y
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y_normalized, self.Y_metadata)

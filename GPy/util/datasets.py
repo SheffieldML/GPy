@@ -986,6 +986,7 @@ def singlecell_rna_seq_deng(dataset='singlecell_deng'):
     # Extract the tar file
     filename = os.path.join(dir_path, 'GSE45719_Raw.tar')
     with tarfile.open(filename, 'r') as files:
+        print "Extracting Archive {}...".format(files.name)
         data = None
         gene_info = None
         message = ''
@@ -994,10 +995,9 @@ def singlecell_rna_seq_deng(dataset='singlecell_deng'):
         for i, file_info in enumerate(members):
             f = files.extractfile(file_info)
             inner = read_csv(f, sep='\t', header=0, compression='gzip', index_col=0)
-            sys.stdout.write(' '*(len(message)+1) + '\r')
-            sys.stdout.flush()
+            print ' '*(len(message)+1) + '\r',
             message = "{: >7.2%}: Extracting: {}".format(float(i+1)/overall, file_info.name[:20]+"...txt.gz")
-            sys.stdout.write(message)
+            print message,
             if data is None:
                 data = inner.RPKM.to_frame()
                 data.columns = [file_info.name[:-18]]
@@ -1021,6 +1021,7 @@ def singlecell_rna_seq_deng(dataset='singlecell_deng'):
 
     sys.stdout.write(' '*len(message) + '\r')
     sys.stdout.flush()
+    print
     print "Read Archive {}".format(files.name)
 
     return data_details_return({'Y': data,

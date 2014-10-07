@@ -119,7 +119,11 @@ class Param(Parameterizable, ObsAr):
     @property
     def tie(self):
         if getattr(self, '_tie_', None) is None:
-            self._tie_ = numpy.zeros(self._realshape_, dtype=numpy.uint32)
+            if self._original_ is not self:
+                self._original_._tie_ = numpy.zeros(self._original_._realshape_, dtype=numpy.uint32)
+                self._tie_ = self._original_._tie_[self._current_slice_]
+            else:
+                self._tie_ = numpy.zeros(self._realshape_, dtype=numpy.uint32)
         return self._tie_
 
     @tie.setter
@@ -138,7 +142,7 @@ class Param(Parameterizable, ObsAr):
         try: 
             new_arr._current_slice_ = s
             new_arr._gradient_array_ = self.gradient[s]
-            new_arr._tie_ = self.tie[s]
+            new_arr._tie_ = None if getattr(self, '_tie_', None) is None else self.tie[s]
             new_arr._original_ = self #self.base is new_arr.base
         except AttributeError: pass  # returning 0d array or float, double etc
         return new_arr

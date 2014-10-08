@@ -367,14 +367,14 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
 
-    inan = _np.random.binomial(1, .8, size=Y.shape).astype(bool) # 80% missing data
+    inan = _np.random.binomial(1, .2, size=Y.shape).astype(bool) # 80% missing data
     Ymissing = Y.copy()
     Ymissing[inan] = _np.nan
 
     m = BayesianGPLVM(Ymissing, Q, init="random", num_inducing=num_inducing,
-                      inference_method=VarDTCMissingData(inan=inan), kernel=k)
+                      kernel=k, missing_data=True)
 
-    m.X.variance[:] = _np.random.uniform(0,.01,m.X.shape)
+    m.X.variance[:] = _np.random.uniform(0,.1,m.X.shape)
     m.likelihood.variance = .01
     m.parameters_changed()
     m.Yreal = Y

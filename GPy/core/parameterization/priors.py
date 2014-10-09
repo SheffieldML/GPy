@@ -188,11 +188,6 @@ class MultivariateGaussian:
         from ..plotting.matplot_dep import priors_plots
         priors_plots.multivariate_plot(self)
 
-def gamma_from_EV(E, V):
-    warnings.warn("use Gamma.from_EV to create Gamma Prior", FutureWarning)
-    return Gamma.from_EV(E, V)
-
-
 class Gamma(Prior):
     """
     Implementation of the Gamma probability function, coupled with random variables.
@@ -254,7 +249,7 @@ class Gamma(Prior):
         b = E / V
         return Gamma(a, b)
 
-class inverse_gamma(Prior):
+class InverseGamma(Prior):
     """
     Implementation of the inverse-Gamma probability function, coupled with random variables.
 
@@ -265,6 +260,7 @@ class inverse_gamma(Prior):
 
     """
     domain = _POSITIVE
+    _instances = []
     def __new__(cls, a, b): # Singleton:
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]

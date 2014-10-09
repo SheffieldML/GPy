@@ -53,7 +53,9 @@ class Param(Parameterizable, ObsAr):
         return obj
 
     def __init__(self, name, input_array, default_constraint=None, *a, **kw):
+        self._in_init_ = True
         super(Param, self).__init__(name=name, default_constraint=default_constraint, *a, **kw)
+        self._in_init_ = False
 
     def build_pydot(self,G):
         import pydot

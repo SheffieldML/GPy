@@ -32,7 +32,7 @@ class BayesianGPLVM(SparseGP_MPI):
         self.__IN_OPTIMIZATION__ = False
 
         self.logger = logging.getLogger(self.__class__.__name__)
-        if X == None:
+        if X is None:
             from ..util.initialization import initialize_latent
             self.logger.info("initializing latent space X with method {}".format(init))
             X, fracs = initialize_latent(init, input_dim, Y)
@@ -97,14 +97,19 @@ class BayesianGPLVM(SparseGP_MPI):
                                             Z=Z, dL_dpsi0=grad_dict['dL_dpsi0'],
                                             dL_dpsi1=grad_dict['dL_dpsi1'],
                                             dL_dpsi2=grad_dict['dL_dpsi2'])
+
+        # Subsetting Variational Posterior objects, makes the gradients
+        # empty. We need them to be 0 though:
         X.mean.gradient[:] = 0
         X.variance.gradient[:] = 0
+
         self.variational_prior.update_gradients_KL(X)
         current_values['meangrad'] += X.mean.gradient
         current_values['vargrad'] += X.variance.gradient
 
-        value_indices['meangrad'] = subset_indices['samples']
-        value_indices['vargrad'] = subset_indices['samples']
+        if subset_indices is not None:
+            value_indices['meangrad'] = subset_indices['samples']
+            value_indices['vargrad'] = subset_indices['samples']
         return posterior, log_marginal_likelihood, grad_dict, current_values, value_indices
 
     def _outer_values_update(self, full_values):

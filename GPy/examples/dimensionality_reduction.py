@@ -374,9 +374,6 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     m = BayesianGPLVM(Ymissing, Q, init="random", num_inducing=num_inducing,
                       kernel=k, missing_data=True)
 
-    m.X.variance[:] = _np.random.uniform(0,.1,m.X.shape)
-    m.likelihood.variance = .01
-    m.parameters_changed()
     m.Yreal = Y
 
     if optimize:

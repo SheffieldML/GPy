@@ -218,6 +218,7 @@ class SparseGP(GP):
         print message,
         for d in xrange(self.output_dim):
             ninan = self.ninan[:, d]
+
             print ' '*(len(message)) + '\r',
             message = m_f(d)
             print message,
@@ -249,9 +250,8 @@ class SparseGP(GP):
         if self.missing_data:
             self._outer_loop_for_missing_data()
         else:
-            self.posterior, self._log_marginal_likelihood, self.grad_dict, gradients, _ = self._inner_parameters_changed(self.kern, self.X, self.Z, self.likelihood, self.Y_normalized, self.Y_metadata)
-            self.kern.gradient = gradients['kerngrad']
-            self.Z.gradient = gradients['Zgrad']
+            self.posterior, self._log_marginal_likelihood, self.grad_dict, full_values, _ = self._inner_parameters_changed(self.kern, self.X, self.Z, self.likelihood, self.Y_normalized, self.Y_metadata)
+            self._outer_values_update(full_values)
 
     def _raw_predict(self, Xnew, full_cov=False, kern=None):
         """

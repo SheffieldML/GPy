@@ -52,7 +52,7 @@ class Gaussian(Prior):
         self.constant = -0.5 * np.log(2 * np.pi * self.sigma2)
 
     def __str__(self):
-        return "N(" + str(np.round(self.mu)) + ', ' + str(np.round(self.sigma2)) + ')'
+        return "N({:.2g}, {:.2g})".format(self.mu, self.sigma)
 
     def lnpdf(self, x):
         return self.constant - 0.5 * np.square(x - self.mu) / self.sigma2
@@ -82,7 +82,7 @@ class Uniform(Prior):
         self.upper = float(upper)
 
     def __str__(self):
-        return "[" + str(np.round(self.lower)) + ', ' + str(np.round(self.upper)) + ']'
+        return "[{:.2g}, {:.2g}]".format(self.lower, self.upper)
 
     def lnpdf(self, x):
         region = (x>=self.lower) * (x<=self.upper)
@@ -122,7 +122,7 @@ class LogGaussian(Prior):
         self.constant = -0.5 * np.log(2 * np.pi * self.sigma2)
 
     def __str__(self):
-        return "lnN(" + str(np.round(self.mu)) + ', ' + str(np.round(self.sigma2)) + ')'
+        return "lnN({:.2g}, {:.2g})".format(self.mu, self.sigma)
 
     def lnpdf(self, x):
         return self.constant - 0.5 * np.square(np.log(x) - self.mu) / self.sigma2 - np.log(x)
@@ -220,7 +220,7 @@ class Gamma(Prior):
         self.constant = -gammaln(self.a) + a * np.log(b)
 
     def __str__(self):
-        return "Ga(" + str(np.round(self.a)) + ', ' + str(np.round(self.b)) + ')'
+        return "Ga({:.2g}, {:.2g})".format(self.a, self.b)
 
     def summary(self):
         ret = {"E[x]": self.a / self.b, \
@@ -281,7 +281,7 @@ class InverseGamma(Prior):
         self.constant = -gammaln(self.a) + a * np.log(b)
 
     def __str__(self):
-        return "iGa(" + str(np.round(self.a)) + ', ' + str(np.round(self.b)) + ')'
+        return "iGa({:.2g}, {:.2g})".format(self.a, self.b)
 
     def lnpdf(self, x):
         return self.constant - (self.a + 1) * np.log(x) - self.b / x
@@ -317,7 +317,7 @@ class HalfT(Prior):
         self.constant = gammaln(.5*(self.nu+1.)) - gammaln(.5*self.nu) - .5*np.log(np.pi*self.A*self.nu)
 
     def __str__(self):
-        return "hT(" + str(np.round(self.A)) + ', ' + str(np.round(self.nu)) + ')'
+        return "hT({:.2g}, {:.2g})".format(self.A, self.nu)
 
     def lnpdf(self,theta):
         return (theta>0) * ( self.constant -.5*(self.nu+1) * np.log( 1.+ (1./self.nu) * (theta/self.A)**2 ) )

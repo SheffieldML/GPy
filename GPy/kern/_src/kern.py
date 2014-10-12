@@ -162,6 +162,10 @@ class Kern(Parameterized):
     def __mul__(self, other):
         """ Here we overload the '*' operator. See self.prod for more information"""
         return self.prod(other)
+    
+    def __imul__(self, other):
+        """ Here we overload the '*' operator. See self.prod for more information"""
+        return self.prod(other)
 
     def __pow__(self, other):
         """
@@ -183,7 +187,7 @@ class Kern(Parameterized):
         :type tensor: bool
 
         """
-        assert isinstance(other, Kern), "only kernels can be added to kernels..."
+        assert isinstance(other, Kern), "only kernels can be multiplied to kernels..."
         from prod import Prod
         #kernels = []
         #if isinstance(self, Prod): kernels.extend(self.parameters)

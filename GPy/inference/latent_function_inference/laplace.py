@@ -12,7 +12,6 @@
 
 import numpy as np
 from ...util.linalg import mdot, jitchol, dpotrs, dtrtrs, dpotri, symmetrify, pdinv
-from ...util.misc import param_to_array
 from posterior import Posterior
 import warnings
 from scipy import optimize
@@ -38,9 +37,6 @@ class Laplace(LatentFunctionInference):
         """
         Returns a Posterior class containing essential quantities of the posterior
         """
-
-        #make Y a normal array!
-        Y = param_to_array(Y)
 
         # Compute K
         K = kern.K(X)
@@ -153,7 +149,7 @@ class Laplace(LatentFunctionInference):
 
         #compute vital matrices
         C = np.dot(LiW12, K)
-        Ki_W_i  = K - C.T.dot(C) 
+        Ki_W_i  = K - C.T.dot(C)
 
         #compute the log marginal
         log_marginal = -0.5*np.dot(Ki_f.flatten(), f_hat.flatten()) + likelihood.logpdf(f_hat, Y, Y_metadata=Y_metadata) - np.sum(np.log(np.diag(L)))

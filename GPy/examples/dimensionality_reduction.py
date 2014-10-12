@@ -23,9 +23,6 @@ def bgplvm_test_model(optimize=False, verbose=1, plot=False, output_dim=200, nan
     X = _np.random.rand(num_inputs, input_dim)
     lengthscales = _np.random.rand(input_dim)
     k = GPy.kern.RBF(input_dim, .5, lengthscales, ARD=True)
-         ##+ GPy.kern.white(input_dim, 0.01)
-         #)
-    #k = GPy.kern.Linear(input_dim, ARD=1)# + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
     K = k.K(X)
     Y = _np.random.multivariate_normal(_np.zeros(num_inputs), K, (output_dim,)).T
 
@@ -159,7 +156,6 @@ def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=25, Q=4
 def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40, max_iters=1000, **k):
     import GPy
     from matplotlib import pyplot as plt
-    from ..util.misc import param_to_array
     import numpy as np
 
     _np.random.seed(0)
@@ -177,7 +173,7 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         m.plot_latent(ax=latent_axes, labels=m.data_labels)
         data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0,:]))
-        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(param_to_array(m.X.mean)[0:1,:], # @UnusedVariable
+        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X.mean.values[0:1,:], # @UnusedVariable
             m, data_show, latent_axes=latent_axes, sense_axes=sense_axes, labels=m.data_labels)
         raw_input('Press enter to finish')
         plt.close(fig)
@@ -186,8 +182,6 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
 def ssgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40, max_iters=1000, **k):
     import GPy
     from matplotlib import pyplot as plt
-    from ..util.misc import param_to_array
-    import numpy as np
 
     _np.random.seed(0)
     data = GPy.util.datasets.oil()
@@ -204,7 +198,7 @@ def ssgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         m.plot_latent(ax=latent_axes, labels=m.data_labels)
         data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0,:]))
-        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(param_to_array(m.X.mean)[0:1,:], # @UnusedVariable
+        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X.mean.values[0:1,:], # @UnusedVariable
             m, data_show, latent_axes=latent_axes, sense_axes=sense_axes, labels=m.data_labels)
         raw_input('Press enter to finish')
         plt.close(fig)
@@ -228,10 +222,10 @@ def _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim=False):
     Ylist = [Y1, Y2, Y3]
 
     if plot_sim:
-        import pylab
+        from matplotlib import pyplot as plt
         import matplotlib.cm as cm
         import itertools
-        fig = pylab.figure("MRD Simulation Data", figsize=(8, 6))
+        fig = plt.figure("MRD Simulation Data", figsize=(8, 6))
         fig.clf()
         ax = fig.add_subplot(2, 1, 1)
         labls = slist_names
@@ -242,28 +236,10 @@ def _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim=False):
             ax = fig.add_subplot(2, len(Ylist), len(Ylist) + 1 + i)
             ax.imshow(Y, aspect='auto', cmap=cm.gray) # @UndefinedVariable
             ax.set_title("Y{}".format(i + 1))
-        pylab.draw()
-        pylab.tight_layout()
+        plt.draw()
+        plt.tight_layout()
 
     return slist, [S1, S2, S3], Ylist
-
-def _generate_high_dimensional_output(D1, D2, D3, s1, s2, s3, sS):
-    S1 = _np.hstack([s1, sS])
-    S2 = _np.hstack([s2, s3, sS])
-    S3 = _np.hstack([s3, sS])
-    Y1 = S1.dot(_np.random.randn(S1.shape[1], D1))
-    Y2 = S2.dot(_np.random.randn(S2.shape[1], D2))
-    Y3 = S3.dot(_np.random.randn(S3.shape[1], D3))
-    Y1 += .3 * _np.random.randn(*Y1.shape)
-    Y2 += .2 * _np.random.randn(*Y2.shape)
-    Y3 += .25 * _np.random.randn(*Y3.shape)
-    Y1 -= Y1.mean(0)
-    Y2 -= Y2.mean(0)
-    Y3 -= Y3.mean(0)
-    Y1 /= Y1.std(0)
-    Y2 /= Y2.std(0)
-    Y3 /= Y3.std(0)
-    return Y1, Y2, Y3, S1, S2, S3
 
 def _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim=False):
     _np.random.seed(1234)
@@ -291,10 +267,10 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim=False):
     Ylist = [Y1, Y2, Y3]
 
     if plot_sim:
-        import pylab
+        from matplotlib import pyplot as plt
         import matplotlib.cm as cm
         import itertools
-        fig = pylab.figure("MRD Simulation Data", figsize=(8, 6))
+        fig = plt.figure("MRD Simulation Data", figsize=(8, 6))
         fig.clf()
         ax = fig.add_subplot(2, 1, 1)
         labls = slist_names
@@ -305,28 +281,28 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim=False):
             ax = fig.add_subplot(2, len(Ylist), len(Ylist) + 1 + i)
             ax.imshow(Y, aspect='auto', cmap=cm.gray) # @UndefinedVariable
             ax.set_title("Y{}".format(i + 1))
-        pylab.draw()
-        pylab.tight_layout()
+        plt.draw()
+        plt.tight_layout()
 
     return slist, [S1, S2, S3], Ylist
 
-# def bgplvm_simulation_matlab_compare():
-#     from GPy.util.datasets import simulation_BGPLVM
-#     from GPy import kern
-#     from GPy.models import BayesianGPLVM
-#
-#     sim_data = simulation_BGPLVM()
-#     Y = sim_data['Y']
-#     mu = sim_data['mu']
-#     num_inducing, [_, Q] = 3, mu.shape
-#
-#     k = kern.linear(Q, ARD=True) + kern.bias(Q, _np.exp(-2)) + kern.white(Q, _np.exp(-2))
-#     m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k,
-#                        _debug=False)
-#     m.auto_scale_factor = True
-#     m['noise'] = Y.var() / 100.
-#     m['linear_variance'] = .01
-#     return m
+def _generate_high_dimensional_output(D1, D2, D3, s1, s2, s3, sS):
+    S1 = _np.hstack([s1, sS])
+    S2 = _np.hstack([s2, s3, sS])
+    S3 = _np.hstack([s3, sS])
+    Y1 = S1.dot(_np.random.randn(S1.shape[1], D1))
+    Y2 = S2.dot(_np.random.randn(S2.shape[1], D2))
+    Y3 = S3.dot(_np.random.randn(S3.shape[1], D3))
+    Y1 += .3 * _np.random.randn(*Y1.shape)
+    Y2 += .2 * _np.random.randn(*Y2.shape)
+    Y3 += .25 * _np.random.randn(*Y3.shape)
+    Y1 -= Y1.mean(0)
+    Y2 -= Y2.mean(0)
+    Y3 -= Y3.mean(0)
+    Y1 /= Y1.std(0)
+    Y2 /= Y2.std(0)
+    Y3 /= Y3.std(0)
+    return Y1, Y2, Y3, S1, S2, S3
 
 def bgplvm_simulation(optimize=True, verbose=1,
                       plot=True, plot_sim=False,
@@ -391,16 +367,13 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
 
-    inan = _np.random.binomial(1, .8, size=Y.shape).astype(bool) # 80% missing data
+    inan = _np.random.binomial(1, .2, size=Y.shape).astype(bool) # 80% missing data
     Ymissing = Y.copy()
     Ymissing[inan] = _np.nan
 
     m = BayesianGPLVM(Ymissing, Q, init="random", num_inducing=num_inducing,
-                      inference_method=VarDTCMissingData(inan=inan), kernel=k)
+                      kernel=k, missing_data=True)
 
-    m.X.variance[:] = _np.random.uniform(0,.01,m.X.shape)
-    m.likelihood.variance = .01
-    m.parameters_changed()
     m.Yreal = Y
 
     if optimize:

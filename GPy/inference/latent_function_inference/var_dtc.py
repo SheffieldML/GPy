@@ -6,7 +6,6 @@ from ...util.linalg import mdot, jitchol, backsub_both_sides, tdot, dtrtrs, dtrt
 from ...util import diag
 from ...core.parameterization.variational import VariationalPosterior
 import numpy as np
-from ...util.misc import param_to_array
 from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
 import logging, itertools
@@ -35,7 +34,7 @@ class VarDTC(LatentFunctionInference):
         self.get_YYTfactor.limit = limit
 
     def _get_trYYT(self, Y):
-        return param_to_array(np.sum(np.square(Y)))
+        return np.sum(np.square(Y))
 
     def __getstate__(self):
         # has to be overridden, as Cacher objects cannot be pickled.
@@ -56,14 +55,16 @@ class VarDTC(LatentFunctionInference):
         """
         N, D = Y.shape
         if (N>=D):
-            return param_to_array(Y)
+            return Y.view(np.ndarray)
         else:
             return jitchol(tdot(Y))
 
     def get_VVTfactor(self, Y, prec):
         return Y * prec # TODO chache this, and make it effective
 
-    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None):
+
+
+    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None, Lm=None, dL_dKmm=None):
 
         _, output_dim = Y.shape
         uncertain_inputs = isinstance(X, VariationalPosterior)
@@ -85,8 +86,8 @@ class VarDTC(LatentFunctionInference):
 
         Kmm = kern.K(Z).copy()
         diag.add(Kmm, self.const_jitter)
-        Lm = jitchol(Kmm)
-
+        if Lm is None:
+            Lm = jitchol(Kmm)
 
         # The rather complex computations of A, and the psi stats
         if uncertain_inputs:
@@ -101,7 +102,6 @@ class VarDTC(LatentFunctionInference):
         else:
             psi0 = kern.Kdiag(X)
             psi1 = kern.K(X, Z)
-            psi2 = None
             if het_noise:
                 tmp = psi1 * (np.sqrt(beta.reshape(num_data, 1)))
             else:
@@ -123,11 +123,12 @@ class VarDTC(LatentFunctionInference):
         delit = tdot(_LBi_Lmi_psi1Vf)
         data_fit = np.trace(delit)
         DBi_plus_BiPBi = backsub_both_sides(LB, output_dim * np.eye(num_inducing) + delit)
-        delit = -0.5 * DBi_plus_BiPBi
-        delit += -0.5 * B * output_dim
-        delit += output_dim * np.eye(num_inducing)
-        # Compute dL_dKmm
-        dL_dKmm = backsub_both_sides(Lm, delit)
+        if dL_dKmm is None:
+            delit = -0.5 * DBi_plus_BiPBi
+            delit += -0.5 * B * output_dim
+            delit += output_dim * np.eye(num_inducing)
+            # Compute dL_dKmm
+            dL_dKmm = backsub_both_sides(Lm, delit)
 
         # derivatives of L w.r.t. psi
         dL_dpsi0, dL_dpsi1, dL_dpsi2 = _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm,
@@ -209,6 +210,7 @@ class VarDTCMissingData(LatentFunctionInference):
             inan = np.isnan(Y)
             has_none = inan.any()
             self._inan = ~inan
+            inan = self._inan
         else:
             inan = self._inan
             has_none = True
@@ -242,17 +244,15 @@ class VarDTCMissingData(LatentFunctionInference):
             self._subarray_indices = [[slice(None),slice(None)]]
             return [Y], [(Y**2).sum()]
 
-    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None):
+    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None, Lm=None):
         if isinstance(X, VariationalPosterior):
             uncertain_inputs = True
             psi0_all = kern.psi0(Z, X)
             psi1_all = kern.psi1(Z, X)
-            psi2_all = kern.psi2(Z, X)
         else:
             uncertain_inputs = False
             psi0_all = kern.Kdiag(X)
             psi1_all = kern.K(X, Z)
-            psi2_all = None
 
         Ys, traces = self._Y(Y)
         beta_all = 1./np.fmax(likelihood.gaussian_variance(Y_metadata), 1e-6)
@@ -274,10 +274,11 @@ class VarDTCMissingData(LatentFunctionInference):
         Kmm = kern.K(Z).copy()
         diag.add(Kmm, self.const_jitter)
         #factor Kmm
-        Lm = jitchol(Kmm)
+        if Lm is None:
+            Lm = jitchol(Kmm)
         if uncertain_inputs: LmInv = dtrtri(Lm)
 
-        size = Y.shape[1]
+        size = len(Ys)
         next_ten = 0
         for i, [y, v, trYYT] in enumerate(itertools.izip(Ys, self._inan.T, traces)):
             if ((i+1.)/size) >= next_ten:
@@ -285,19 +286,19 @@ class VarDTCMissingData(LatentFunctionInference):
                 next_ten += .1
             if het_noise: beta = beta_all[i]
             else: beta = beta_all
-
             VVT_factor = (y*beta)
             output_dim = 1#len(ind)
 
             psi0 = psi0_all[v]
             psi1 = psi1_all[v, :]
-            if uncertain_inputs: psi2 = psi2_all[v, :]
+            if uncertain_inputs:
+                psi2 = kern.psi2(Z, X[v, :])
             else: psi2 = None
             num_data = psi1.shape[0]
 
             if uncertain_inputs:
                 if het_noise: psi2_beta = psi2 * (beta.flatten().reshape(num_data, 1, 1)).sum(0)
-                else: psi2_beta = psi2.sum(0) * beta
+                else: psi2_beta = psi2 * (beta)
                 A = LmInv.dot(psi2_beta.dot(LmInv.T))
             else:
                 if het_noise: tmp = psi1 * (np.sqrt(beta.reshape(num_data, 1)))
@@ -332,11 +333,11 @@ class VarDTCMissingData(LatentFunctionInference):
             dL_dpsi0_all[v] += dL_dpsi0
             dL_dpsi1_all[v, :] += dL_dpsi1
             if uncertain_inputs:
-                dL_dpsi2_all[v, :] += dL_dpsi2
+                dL_dpsi2_all[v, :, :] += dL_dpsi2
 
             # log marginal likelihood
             log_marginal += _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise,
-                psi0, A, LB, trYYT, data_fit,VVT_factor)
+                psi0, A, LB, trYYT, data_fit, VVT_factor)
 
             #put the gradients in the right places
             dL_dR += _compute_dL_dR(likelihood,
@@ -395,7 +396,6 @@ def _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm, VVT_factor, C
             # subsume back into psi1 (==Kmn)
             dL_dpsi1 += 2.*np.dot(psi1, dL_dpsi2)
             dL_dpsi2 = None
-
     return dL_dpsi0, dL_dpsi1, dL_dpsi2
 
 

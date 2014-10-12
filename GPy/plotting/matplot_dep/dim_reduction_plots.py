@@ -1,7 +1,6 @@
 
 import numpy as np
 from latent_space_visualizations.controllers.imshow_controller import ImshowController,ImAnnotateController
-from ...util.misc import param_to_array
 from ...core.parameterization.variational import VariationalPosterior
 from .base_plots import x_frame2D
 import itertools
@@ -55,9 +54,9 @@ def plot_latent(model, labels=None, which_indices=None,
     #fethch the data points X that we'd like to plot
     X = model.X
     if isinstance(X, VariationalPosterior):
-        X = param_to_array(X.mean)
+        X = X.mean
     else:
-        X = param_to_array(X)
+        X = X
 
 
     if X.shape[0] > 1000:
@@ -175,7 +174,7 @@ def plot_latent(model, labels=None, which_indices=None,
     ax.set_aspect('auto') # set a nice aspect ratio
 
     if plot_inducing:
-        Z = param_to_array(model.Z)
+        Z = model.Z
         ax.plot(Z[:, input_1], Z[:, input_2], '^w')
 
     ax.set_xlim((xmin, xmax))

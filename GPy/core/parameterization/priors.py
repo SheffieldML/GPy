@@ -52,7 +52,7 @@ class Gaussian(Prior):
         self.constant = -0.5 * np.log(2 * np.pi * self.sigma2)
 
     def __str__(self):
-        return "N(" + str(np.round(self.mu)) + ', ' + str(np.round(self.sigma2)) + ')'
+        return "N({:.2g}, {:.2g})".format(self.mu, self.sigma)
 
     def lnpdf(self, x):
         return self.constant - 0.5 * np.square(x - self.mu) / self.sigma2
@@ -82,7 +82,7 @@ class Uniform(Prior):
         self.upper = float(upper)
 
     def __str__(self):
-        return "[" + str(np.round(self.lower)) + ', ' + str(np.round(self.upper)) + ']'
+        return "[{:.2g}, {:.2g}]".format(self.lower, self.upper)
 
     def lnpdf(self, x):
         region = (x>=self.lower) * (x<=self.upper)
@@ -122,7 +122,7 @@ class LogGaussian(Prior):
         self.constant = -0.5 * np.log(2 * np.pi * self.sigma2)
 
     def __str__(self):
-        return "lnN(" + str(np.round(self.mu)) + ', ' + str(np.round(self.sigma2)) + ')'
+        return "lnN({:.2g}, {:.2g})".format(self.mu, self.sigma)
 
     def lnpdf(self, x):
         return self.constant - 0.5 * np.square(np.log(x) - self.mu) / self.sigma2 - np.log(x)
@@ -220,7 +220,7 @@ class Gamma(Prior):
         self.constant = -gammaln(self.a) + a * np.log(b)
 
     def __str__(self):
-        return "Ga(" + str(np.round(self.a)) + ', ' + str(np.round(self.b)) + ')'
+        return "Ga({:.2g}, {:.2g})".format(self.a, self.b)
 
     def summary(self):
         ret = {"E[x]": self.a / self.b, \
@@ -254,7 +254,7 @@ class Gamma(Prior):
         b = E / V
         return Gamma(a, b)
 
-class inverse_gamma(Prior):
+class InverseGamma(Prior):
     """
     Implementation of the inverse-Gamma probability function, coupled with random variables.
 
@@ -265,6 +265,7 @@ class inverse_gamma(Prior):
 
     """
     domain = _POSITIVE
+    _instances = []
     def __new__(cls, a, b): # Singleton:
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
@@ -280,7 +281,7 @@ class inverse_gamma(Prior):
         self.constant = -gammaln(self.a) + a * np.log(b)
 
     def __str__(self):
-        return "iGa(" + str(np.round(self.a)) + ', ' + str(np.round(self.b)) + ')'
+        return "iGa({:.2g}, {:.2g})".format(self.a, self.b)
 
     def lnpdf(self, x):
         return self.constant - (self.a + 1) * np.log(x) - self.b / x
@@ -290,3 +291,65 @@ class inverse_gamma(Prior):
 
     def rvs(self, n):
         return 1. / np.random.gamma(scale=1. / self.b, shape=self.a, size=n)
+
+class HalfT(Prior):
+    """
+    Implementation of the half student t probability function, coupled with random variables.
+
+    :param A: scale parameter
+    :param nu: degrees of freedom
+
+    """
+    domain = _POSITIVE
+    _instances = []
+    def __new__(cls, A, nu): # Singleton:
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if instance().A == A and instance().nu == nu:
+                   return instance()
+        o = super(Prior, cls).__new__(cls, A, nu)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
+    def __init__(self, A, nu):
+        self.A = float(A)
+        self.nu = float(nu)
+        self.constant = gammaln(.5*(self.nu+1.)) - gammaln(.5*self.nu) - .5*np.log(np.pi*self.A*self.nu)
+
+    def __str__(self):
+        return "hT({:.2g}, {:.2g})".format(self.A, self.nu)
+
+    def lnpdf(self,theta):
+        return (theta>0) * ( self.constant -.5*(self.nu+1) * np.log( 1.+ (1./self.nu) * (theta/self.A)**2 ) )
+
+        #theta = theta if isinstance(theta,np.ndarray) else np.array([theta])
+        #lnpdfs = np.zeros_like(theta)
+        #theta = np.array([theta])
+        #above_zero = theta.flatten()>1e-6
+        #v = self.nu
+        #sigma2=self.A
+        #stop
+        #lnpdfs[above_zero] = (+ gammaln((v + 1) * 0.5)
+        #    - gammaln(v * 0.5)
+        #    - 0.5*np.log(sigma2 * v * np.pi)
+        #    - 0.5*(v + 1)*np.log(1 + (1/np.float(v))*((theta[above_zero][0]**2)/sigma2))
+        #)
+        #return lnpdfs
+
+    def lnpdf_grad(self,theta):
+        theta = theta if isinstance(theta,np.ndarray) else np.array([theta])
+        grad = np.zeros_like(theta)
+        above_zero = theta>1e-6
+        v = self.nu
+        sigma2=self.A
+        grad[above_zero] = -0.5*(v+1)*(2*theta[above_zero])/(v*sigma2 + theta[above_zero][0]**2)
+        return grad
+
+    def rvs(self, n):
+         #return np.random.randn(n) * self.sigma + self.mu
+         from scipy.stats import t
+         #[np.abs(x) for x in t.rvs(df=4,loc=0,scale=50, size=10000)])
+         ret = t.rvs(self.nu,loc=0,scale=self.A, size=n)
+         ret[ret<0] = 0
+         return ret
+

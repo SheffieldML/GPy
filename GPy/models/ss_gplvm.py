@@ -35,20 +35,11 @@ class SSGPLVM(SparseGP_MPI):
             fracs = np.ones(input_dim)
 
         self.init = init
-
-        if X_variance is None: # The variance of the variational approximation (S)
-            X_variance = np.random.uniform(0,.1,X.shape)
-            
-        if Gamma is None:
-            gamma = np.empty_like(X) # The posterior probabilities of the binary variable in the variational approximation
-            gamma[:] = 0.5 + 0.1 * np.random.randn(X.shape[0], input_dim)
-            gamma[gamma>1.-1e-9] = 1.-1e-9
-            gamma[gamma<1e-9] = 1e-9
-        else:
-            gamma = Gamma.copy()
+        
+        X = self._init_X(input_dim, Y, X, X_variance, Gamma, init)
                 
         if Z is None:
-            Z = np.random.permutation(X.copy())[:num_inducing]
+            Z = np.random.permutation(X.mean.copy())[:num_inducing]
         assert Z.shape[1] == X.shape[1]
         
         if likelihood is None:
@@ -67,14 +58,33 @@ class SSGPLVM(SparseGP_MPI):
             pi[:] = 0.5
         self.variational_prior = SpikeAndSlabPrior(pi=pi,learnPi=learnPi, group_spike=group_spike) # the prior probability of the latent binary variable b
         
-        X = SpikeAndSlabPosterior(X, X_variance, gamma)
-                
         super(SSGPLVM,self).__init__(X, Y, Z, kernel, likelihood, variational_prior=self.variational_prior, inference_method=inference_method, name=name, mpi_comm=mpi_comm, normalizer=normalizer, **kwargs)
 #         self.X.unfix()
 #         self.X.variance.constrain_positive()
                 
         if self.group_spike:
             [self.X.gamma[:,i].tie_together() for i in xrange(self.X.gamma.shape[1])] # Tie columns together
+    
+    def _init_X(self, input_dim, Y=None, X=None, X_variance=None, Gamma=None, init='PCA'):
+        if X == None:
+            from ..util.initialization import initialize_latent
+            X, fracs = initialize_latent(init, input_dim, Y)
+        else:
+            fracs = np.ones(input_dim)
+
+        if X_variance is None: # The variance of the variational approximation (S)
+            X_variance = np.random.uniform(0,.1,X.shape)
+            
+        if Gamma is None:
+            gamma = np.empty_like(X) # The posterior probabilities of the binary variable in the variational approximation
+            gamma[:] = 0.5 + 0.1 * np.random.randn(X.shape[0], input_dim)
+            gamma[gamma>1.-1e-9] = 1.-1e-9
+            gamma[gamma<1e-9] = 1e-9
+        else:
+            gamma = Gamma.copy()
+        
+        return SpikeAndSlabPosterior(X, X_variance, gamma)
+        
         
     def set_X_gradients(self, X, X_grad):
         """Set the gradients of the posterior distribution of X in its specific form."""
@@ -102,10 +112,17 @@ class SSGPLVM(SparseGP_MPI):
         else:
             return self.variational_prior.pi
 
-    def plot_latent(self, plot_inducing=True, *args, **kwargs):
+    def plot_latent(self, plot_inducing=True, interactive=False, *args, **kwargs):
         import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import dim_reduction_plots
 
-        return dim_reduction_plots.plot_latent(self, plot_inducing=plot_inducing, *args, **kwargs)
+        if interactive:
+            return dim_reduction_plots.plot_latent_interactive(self, **kwargs)
+        else:
+            return dim_reduction_plots.plot_latent(self, plot_inducing=plot_inducing, *args, **kwargs)
+        
+    def inference_X(self, Y_new):
+        from ..inference.latent_function_inference.inference_X import inference_newX
+        return inference_newX(self, Y_new)
 

@@ -89,6 +89,7 @@ class BayesianGPLVM(SparseGP):
             print 'MPI RANK: '+str(self.mpi_comm.rank)+' with datasize: '+str(self.N_range)
             mpi_comm.Bcast(self.param_array, root=0)
 
+
     def set_X_gradients(self, X, X_grad):
         """Set the gradients of the posterior distribution of X in its specific form."""
         X.mean.gradient, X.variance.gradient = X_grad
@@ -255,6 +256,10 @@ class BayesianGPLVM(SparseGP):
                     self.__IN_OPTIMIZATION__ = False
                     raise Exception("Unrecognizable flag for synchronization!")
         self.__IN_OPTIMIZATION__ = False
+
+    def inference_X(self, Y_new):
+        from ..inference.latent_function_inference.inference_X import inference_newX
+        return inference_newX(self, Y_new)
 
 
 def latent_cost_and_grad(mu_S, input_dim, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):

@@ -406,3 +406,4 @@ def update_gradients(model, mpi_comm=None):
 
     # dL_dthetaL
     model.likelihood.update_gradients(dL_dthetaL)
+    

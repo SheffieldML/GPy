@@ -189,7 +189,7 @@ def bgplvm_oil_100(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing
     from ..util.misc import param_to_array
 
     _np.random.seed(0)
-    data = GPy.util.datasets.oil_100()
+    data = GPy.util.datasets.oil()
 
     kernel = GPy.kern.RBF(Q, 1., 1./_np.random.uniform(0,1,(Q,)), ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
     Y = data['X'][:N]
@@ -209,18 +209,18 @@ def bgplvm_oil_100(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing
         plt.close(fig)
     return m
 
-def ssgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40, max_iters=1000, **k):
+def ssgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40, max_iters=1000, useGPU=False, **k):
     import GPy
     from matplotlib import pyplot as plt
     from ..util.misc import param_to_array
     import numpy as np
 
     #_np.random.seed(0)
-    data = GPy.util.datasets.oil_100()
+    data = GPy.util.datasets.oil()
 
-    kernel = GPy.kern.RBF(Q, 1., 1./_np.random.uniform(0,1,(Q,)), ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF(Q, 1., 1./_np.random.uniform(0,1,(Q,)), ARD=True, useGPU=useGPU)# + GPy.kern.Bias(Q, _np.exp(-2))
     Y = data['X'][:N]
-    m = GPy.models.SSGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing, group_spike=True, **k)
+    m = GPy.models.SSGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing, group_spike=True, learnPi=False, **k)
     m.data_labels = data['Y'][:N].argmax(axis=1)
 
     if optimize:

@@ -12,6 +12,16 @@ try:
 except:
     pass
 
+def plot_latent_interactive(model, labels=None, **kwargs):
+        fig, (latent_axes, sense_axes) = pb.subplots(1, 2)
+        model.plot_latent(ax=latent_axes, labels=labels, **kwargs)
+        from .visualize import vector_show,lvm_dimselect
+        data_show = vector_show((model.Y[0,:]))
+        lvm_visualizer = lvm_dimselect(param_to_array(model.X.mean)[0:1,:], # @UnusedVariable
+            model, data_show, latent_axes=latent_axes, sense_axes=sense_axes, labels=labels)
+        raw_input('Press enter to finish')
+        pb.close(fig)
+
 def most_significant_input_dimensions(model, which_indices):
     """
     Determine which dimensions should be plotted

@@ -2,8 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from .. import likelihoods
-from ..inference import optimization
+from ..inference.optimization import get_optimizer, Optimizer
 from ..util.misc import opt_wrapper
 from parameterization import Parameterized
 import multiprocessing as mp
@@ -240,11 +239,11 @@ class Model(Parameterized):
         if optimizer is None:
             optimizer = self.preferred_optimizer
 
-        if isinstance(optimizer, optimization.Optimizer):
+        if isinstance(optimizer, Optimizer):
             opt = optimizer
             opt.model = self
         else:
-            optimizer = optimization.get_optimizer(optimizer)
+            optimizer = get_optimizer(optimizer)
             opt = optimizer(start, model=self, **kwargs)
 
         opt.run(f_fp=self._objective_grads, f=self._objective, fp=self._grads)

@@ -38,7 +38,7 @@ class ODE_st(Kern):
         self.b = Param('b', b, Logexp())
         self.c = Param('c', c, Logexp())
 
-        self.add_parameters(self.a, self.b, self.c, self.variance_Yt, self.variance_Yx, self.lengthscale_Yt,self.lengthscale_Yx)
+        self.link_parameters(self.a, self.b, self.c, self.variance_Yt, self.variance_Yx, self.lengthscale_Yt,self.lengthscale_Yx)
 
 
     def K(self, X, X2=None):        

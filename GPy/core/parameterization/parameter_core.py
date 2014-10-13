@@ -954,21 +954,14 @@ class Parameterizable(OptimizationHandlable):
         return self._param_array_
 
     @property
-    def unfixed_param_array(self):
+    def exposed_param_array(self):
         """
-        Array representing the parameters of this class.
-        There is only one copy of all parameters in memory, two during optimization.
-
-        !WARNING!: setting the parameter array MUST always be done in memory:
-        m.param_array[:] = m_copy.param_array
         """
         if self.__dict__.get('_param_array_', None) is None:
             self._param_array_ = np.empty(self.size, dtype=np.float64)
-                    
-        if self.constraints[__fixed__].size !=0:
-            fixes = np.ones(self.size).astype(bool)
-            fixes[self.constraints[__fixed__]] = FIXED
-            return self._param_array_[fixes]
+        
+        if self._has_hidden():
+            return self._param_array_[self._exposed_]
         else:
             return self._param_array_
 

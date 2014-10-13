@@ -20,7 +20,7 @@ class HMC:
             self.p[:] = np.random.multivariate_normal(np.zeros(self.p.size),self.M)
             H_old = self._computeH()
             theta_old = self.model.optimizer_array.copy()
-            params[i] = self.model.unfixed_param_array
+            params[i] = self.model.exposed_param_array
             #Matropolis
             self._update(hmc_iters)
             H_new = self._computeH()
@@ -30,7 +30,7 @@ class HMC:
             else:
                 k = np.exp(H_old-H_new)
             if np.random.rand()<k:
-                params[i] = self.model.unfixed_param_array
+                params[i] = self.model.exposed_param_array
             else:
                 self.model.optimizer_array = theta_old
         return params
@@ -64,7 +64,7 @@ class HMC_shortcut:
             stepsize = np.exp(np.random.rand()*(self.stepsize_range[1]-self.stepsize_range[0])+self.stepsize_range[0])
             self.p[:] = np.random.multivariate_normal(np.zeros(self.p.size),self.M)
             H_old = self._computeH()
-            params[i] = self.model.unfixed_param_array
+            params[i] = self.model.exposed_param_array
             theta_old = self.model.optimizer_array.copy()
             #Matropolis
             self._update(hmc_iters, stepsize)
@@ -75,7 +75,7 @@ class HMC_shortcut:
             else:
                 k = np.exp(H_old-H_new)
             if np.random.rand()<k:
-                params[i] = self.model.unfixed_param_array
+                params[i] = self.model.exposed_param_array
             else:
                 self.model.optimizer_array = theta_old
         return params

@@ -172,7 +172,8 @@ class Parameterized(Parameterizable):
                 if not isinstance(param,Tie):
                     self._highest_parent_.ties.mergeTies(param)
             else:
-                self._highest_parent_.ties._update_label_buf()
+                if hasattr(self._highest_parent_,'ties'):
+                    self._highest_parent_.ties._update_label_buf()
         else:
             raise HierarchyError, """Parameter exists already, try making a copy"""
 
@@ -220,7 +221,8 @@ class Parameterized(Parameterizable):
             if not isinstance(param,Tie):
                 self._highest_parent_.ties.splitTies(param)
         else:
-            self._highest_parent_.ties._update_label_buf()
+            if hasattr(self._highest_parent_,'ties'):
+                self._highest_parent_.ties._update_label_buf()
 
     def add_parameter(self, *args, **kwargs):
         raise DeprecationWarning, "add_parameter was renamed to link_parameter to avoid confusion of setting variables"

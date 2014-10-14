@@ -122,7 +122,7 @@ class SSGPLVM(SparseGP_MPI):
         else:
             return dim_reduction_plots.plot_latent(self, plot_inducing=plot_inducing, *args, **kwargs)
         
-    def inference_X(self, Y_new):
+    def inference_X(self, Y_new, optimize=True):
         from ..inference.latent_function_inference.inference_X import inference_newX
-        return inference_newX(self, Y_new)
+        return inference_newX(self, Y_new, optimize=optimize)
 

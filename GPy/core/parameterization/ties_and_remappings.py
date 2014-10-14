@@ -156,7 +156,7 @@ class Tie(Parameterized):
                 p.ties.tied_param.tie[:] = labels
                 p.ties._sync_val([p],toTiedParam=True)
                 p.ties._sync_constraints([p], toTiedParam=True)
-            p._update_label_buf()
+            p.ties._update_label_buf()
             p.update_model(True)
 
     def mergeTies(self, p):
@@ -190,7 +190,7 @@ class Tie(Parameterized):
                 p.tied_param.tie[:] = self.tied_param.tie[idx]
             self._remove_unnecessary_ties()
             self._update_label_buf()
-            p._update_label_buf()
+            p.ties._update_label_buf()
             self.update_model(True)
         
     def _traverse_param(self, func, p, res):

@@ -18,7 +18,12 @@ class Prod(CombinationKernel):
 
     """
     def __init__(self, kernels, name='mul'):
-        assert len(kernels) == 2, 'only implemented for two kernels as of yet'
+        for i, kern in enumerate(kernels[:]):
+            if isinstance(kern, Prod):
+                del kernels[i]
+                for part in kern.parts[::-1]:
+                    kern.unlink_parameter(part)
+                    kernels.insert(i, part)
         super(Prod, self).__init__(kernels, name)
 
     @Cache_this(limit=2, force_kwargs=['which_parts'])
@@ -37,25 +42,25 @@ class Prod(CombinationKernel):
         return reduce(np.multiply, (p.Kdiag(X) for p in which_parts))
 
     def update_gradients_full(self, dL_dK, X, X2=None):
-        for k1,k2 in itertools.combinations(self.parts, 2):
-            k1.update_gradients_full(dL_dK*k2.K(X, X2), X, X2)
-            k2.update_gradients_full(dL_dK*k1.K(X, X2), X, X2)
+        k = self.K(X,X2)*dL_dK
+        for p in self.parts:
+            p.update_gradients_full(k/p.K(X,X2),X,X2)
 
     def update_gradients_diag(self, dL_dKdiag, X):
-        for k1,k2 in itertools.combinations(self.parts, 2):
-            k1.update_gradients_diag(dL_dKdiag*k2.Kdiag(X), X)
-            k2.update_gradients_diag(dL_dKdiag*k1.Kdiag(X), X)
+        k = self.Kdiag(X)*dL_dKdiag
+        for p in self.parts:
+            p.update_gradients_diag(k/p.Kdiag(X),X)
 
     def gradients_X(self, dL_dK, X, X2=None):
         target = np.zeros(X.shape)
-        for k1,k2 in itertools.combinations(self.parts, 2):
-            target += k1.gradients_X(dL_dK*k2.K(X, X2), X, X2)
-            target += k2.gradients_X(dL_dK*k1.K(X, X2), X, X2)
+        k = self.K(X,X2)*dL_dK
+        for p in self.parts:
+            target += p.gradients_X(k/p.K(X,X2),X,X2)
         return target
 
     def gradients_X_diag(self, dL_dKdiag, X):
         target = np.zeros(X.shape)
-        for k1,k2 in itertools.combinations(self.parts, 2):
-            target += k1.gradients_X_diag(dL_dKdiag*k2.Kdiag(X), X)
-            target += k2.gradients_X_diag(dL_dKdiag*k1.Kdiag(X), X)
+        k = self.Kdiag(X)*dL_dKdiag
+        for p in self.parts:
+            target += p.gradients_X_diag(k/p.Kdiag(X),X)
         return target

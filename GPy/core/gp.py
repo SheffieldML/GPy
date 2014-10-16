@@ -93,6 +93,22 @@ class GP(Model):
         self.link_parameter(self.kern)
         self.link_parameter(self.likelihood)
 
+    def set_X(self,X):
+        # TODO: it does not work with BGPLVM
+        if isinstance(X, ObsAr):
+            self.X = X
+        else:
+            self.X = ObsAr(X)
+
+    def set_Y(self,Y):
+        if self.normalizer is not None:
+            self.normalizer.scale_by(Y)
+            self.Y_normalized = ObsAr(self.normalizer.normalize(Y))
+            self.Y = Y
+        else:
+            self.Y = ObsAr(Y)
+            self.Y_normalized = self.Y
+
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y_normalized, self.Y_metadata)
         self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])

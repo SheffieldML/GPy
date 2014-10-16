@@ -8,7 +8,9 @@ import GPy
 import numpy as np
 from GPy.core.parameterization.parameter_core import HierarchyError
 from GPy.core.parameterization.observable_array import ObsAr
-from GPy.core.parameterization.transformations import NegativeLogexp
+from GPy.core.parameterization.transformations import NegativeLogexp, Logistic
+from GPy.core.parameterization.parameterized import Parameterized
+from GPy.core.parameterization.param import Param
 
 class ArrayCoreTest(unittest.TestCase):
     def setUp(self):
@@ -32,7 +34,7 @@ class ParameterizedTest(unittest.TestCase):
         self.white = GPy.kern.White(1)
         from GPy.core.parameterization import Param
         from GPy.core.parameterization.transformations import Logistic
-        self.param = Param('param', np.random.uniform(0,1,(25,2)), Logistic(0, 1))
+        self.param = Param('param', np.random.uniform(0,1,(10,5)), Logistic(0, 1))
 
         self.test1 = GPy.core.Parameterized("test model")
         self.test1.param = self.param
@@ -153,12 +155,14 @@ class ParameterizedTest(unittest.TestCase):
         self.test1.kern.randomize()
         self.assertEqual(val, self.rbf.variance)
 
-#     def test_updates(self):
-#         # WHAT DO YOU WANT TO TEST HERE?
-#         self.test1.update_model(False)
-#         val = float(self.rbf.variance)
-#         self.test1.kern.randomize()
-#         self.assertEqual(val, self.rbf.variance,str(self.test1))
+    def test_updates(self):
+        val = float(self.testmodel.log_likelihood())
+        self.testmodel.update_model(False)
+        self.testmodel.kern.randomize()
+        self.testmodel.likelihood.randomize()
+        self.assertEqual(val, self.testmodel.log_likelihood())
+        self.testmodel.update_model(True)
+        self.assertNotEqual(val, self.testmodel.log_likelihood())
 
     def test_fixing_optimize(self):
         self.testmodel.kern.lengthscale.fix()
@@ -195,6 +199,20 @@ class ParameterizedTest(unittest.TestCase):
         self.assertListEqual(fixed.tolist(), [0,1])
         unfixed = self.testmodel.kern.unfix()
         self.assertListEqual(unfixed.tolist(), [0,1])
+
+    def test_constraints_in_init(self):
+        class Test(Parameterized):
+            def __init__(self, name=None, parameters=[], *a, **kw):
+                super(Test, self).__init__(name=name)
+                self.x = Param('x', np.random.uniform(0,1,(3,4)))
+                self.x[0].constrain_bounded(0,1)
+                self.link_parameter(self.x)
+                self.x[1].fix()
+        t = Test()
+        c = {Logistic(0,1): np.array([0, 1, 2, 3]), 'fixed': np.array([4, 5, 6, 7])}
+        np.testing.assert_equal(t.x.constraints[Logistic(0,1)], c[Logistic(0,1)])
+        np.testing.assert_equal(t.x.constraints['fixed'], c['fixed'])
+
 
     def test_printing(self):
         print self.test1

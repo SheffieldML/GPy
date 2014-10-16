@@ -70,7 +70,6 @@ class Probit(GPTransformation):
     .. math::
 
         g(f) = \\Phi^{-1} (mu)
-
     
     """
     def transf(self,f):
@@ -87,6 +86,34 @@ class Probit(GPTransformation):
         #FIXME
         f2 = f**2
         return -(1/(np.sqrt(2*np.pi)))*np.exp(-0.5*(f2))*(1-f2)
+
+
+class Cloglog(GPTransformation):
+    """
+    Complementary log-log link
+    .. math::
+
+        p(f) = 1 - e^{-e^f}
+
+        or
+
+        f = \log (-\log(1-p))
+    
+    """
+    def transf(self,f):
+        return 1-np.exp(-np.exp(f))
+
+    def dtransf_df(self,f):
+        return np.exp(f-np.exp(f))
+
+    def d2transf_df2(self,f):
+        ef = np.exp(f)
+        return -np.exp(f-ef)*(ef-1.)
+
+    def d3transf_df3(self,f):
+        ef = np.exp(f)
+        return np.exp(f-ef)*(1.-3*ef + ef**2)
+
 
 class Log(GPTransformation):
     """

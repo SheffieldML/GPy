@@ -37,7 +37,7 @@ class RBF(Stationary):
         if self.useGPU:
             dc['psicomp'] = PSICOMP_RBF()
         return dc
- 
+
     def __setstate__(self, state):
         return super(RBF, self).__setstate__(state)
 

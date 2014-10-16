@@ -13,11 +13,7 @@ class Mapping(Parameterized):
     def __init__(self, input_dim, output_dim, name='mapping'):
         self.input_dim = input_dim
         self.output_dim = output_dim
-
         super(Mapping, self).__init__(name=name)
-        # Model.__init__(self)
-        # All leaf nodes should call self._set_params(self._get_params()) at
-        # the end
 
     def f(self, X):
         raise NotImplementedError
@@ -56,7 +52,8 @@ class Mapping(Parameterized):
         Can plot only part of the data and part of the posterior functions
         using which_data and which_functions
 
-        This is a convenience function: arguments are passed to GPy.plotting.matplot_dep.models_plots.plot_mapping
+        This is a convenience function: arguments are passed to
+        GPy.plotting.matplot_dep.models_plots.plot_mapping
         """
 
         if "matplotlib" in sys.modules:
@@ -66,7 +63,10 @@ class Mapping(Parameterized):
             raise NameError, "matplotlib package has not been imported."
 
 class Bijective_mapping(Mapping):
-    """This is a mapping that is bijective, i.e. you can go from X to f and also back from f to X. The inverse mapping is called g()."""
+    """
+    This is a mapping that is bijective, i.e. you can go from X to f and
+    also back from f to X. The inverse mapping is called g().
+    """
     def __init__(self, input_dim, output_dim, name='bijective_mapping'):
         super(Bijective_apping, self).__init__(name=name)
 
@@ -77,7 +77,11 @@ class Bijective_mapping(Mapping):
 from model import Model
 
 class Mapping_check_model(Model):
-    """This is a dummy model class used as a base class for checking that the gradients of a given mapping are implemented correctly. It enables checkgradient() to be called independently on each mapping."""
+    """
+    This is a dummy model class used as a base class for checking that the
+    gradients of a given mapping are implemented correctly. It enables
+    checkgradient() to be called independently on each mapping.
+    """
     def __init__(self, mapping=None, dL_df=None, X=None):
         num_samples = 20
         if mapping==None:

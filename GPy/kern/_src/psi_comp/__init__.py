@@ -10,7 +10,6 @@ import sslinear_psi_comp
 import linear_psi_comp
 
 class PSICOMP_RBF(Pickleable):
-
     @Cache_this(limit=2, ignore_args=(0,))
     def psicomputations(self, variance, lengthscale, Z, variational_posterior):
         if isinstance(variational_posterior, variational.NormalPosterior):
@@ -19,7 +18,7 @@ class PSICOMP_RBF(Pickleable):
             return ssrbf_psi_comp.psicomputations(variance, lengthscale, Z, variational_posterior)
         else:
             raise ValueError, "unknown distriubtion received for psi-statistics"
-                
+
     @Cache_this(limit=2, ignore_args=(0,1,2,3))
     def psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
         if isinstance(variational_posterior, variational.NormalPosterior):
@@ -28,10 +27,10 @@ class PSICOMP_RBF(Pickleable):
             return ssrbf_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior)
         else:
             raise ValueError, "unknown distriubtion received for psi-statistics"
-        
+
     def _setup_observers(self):
         pass
-        
+
 class PSICOMP_Linear(Pickleable):
 
     @Cache_this(limit=2, ignore_args=(0,))
@@ -42,7 +41,7 @@ class PSICOMP_Linear(Pickleable):
             return sslinear_psi_comp.psicomputations(variance, Z, variational_posterior)
         else:
             raise ValueError, "unknown distriubtion received for psi-statistics"
-                
+
     @Cache_this(limit=2, ignore_args=(0,1,2,3))
     def psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior):
         if isinstance(variational_posterior, variational.NormalPosterior):
@@ -51,6 +50,6 @@ class PSICOMP_Linear(Pickleable):
             return sslinear_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior)
         else:
             raise ValueError, "unknown distriubtion received for psi-statistics"
-        
+
     def _setup_observers(self):
         pass

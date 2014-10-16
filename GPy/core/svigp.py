@@ -42,10 +42,10 @@ class SVIGP(GP):
     """
 
 
-    def __init__(self, X, likelihood, kernel, Z, q_u=None, batchsize=10, X_variance=None):
-        GP.__init__(self, X, likelihood, kernel, normalize_X=False)
+    def __init__(self, X, Y, kernel, Z, q_u=None, batchsize=10):
+        raise NotImplementedError, "This is a work in progress, see github issue "
+        GP.__init__(self, X, Y, kernel)
         self.batchsize=batchsize
-        self.Y = self.likelihood.Y.copy()
         self.Z = Z
         self.num_inducing = Z.shape[0]
 
@@ -57,15 +57,9 @@ class SVIGP(GP):
         self.param_steplength = 1e-5
         self.momentum = 0.9
 
-        if X_variance is None:
-            self.has_uncertain_inputs = False
-        else:
-            self.has_uncertain_inputs = True
-            self.X_variance = X_variance
-
-
         if q_u is None:
              q_u = np.hstack((np.random.randn(self.num_inducing*self.output_dim),-.5*np.eye(self.num_inducing).flatten()))
+
         self.set_vb_param(q_u)
 
         self._permutation = np.random.permutation(self.num_data)
@@ -76,82 +70,25 @@ class SVIGP(GP):
         self._grad_trace = []
 
         #set the adaptive steplength parameters
-        self.hbar_t = 0.0
-        self.tau_t = 100.0
-        self.gbar_t = 0.0
-        self.gbar_t1 = 0.0
-        self.gbar_t2 = 0.0
-        self.hbar_tp = 0.0
-        self.tau_tp = 10000.0
-        self.gbar_tp = 0.0
-        self.adapt_param_steplength = True
-        self.adapt_vb_steplength = True
-        self._param_steplength_trace = []
-        self._vb_steplength_trace = []
-
-#     def _getstate(self):
-#         steplength_params = [self.hbar_t, self.tau_t, self.gbar_t, self.gbar_t1, self.gbar_t2, self.hbar_tp, self.tau_tp, self.gbar_tp, self.adapt_param_steplength, self.adapt_vb_steplength, self.vb_steplength, self.param_steplength]
-#         return GP._getstate(self) + \
-#             [self.get_vb_param(),
-#              self.Z,
-#              self.num_inducing,
-#              self.has_uncertain_inputs,
-#              self.X_variance,
-#              self.X_batch,
-#              self.X_variance_batch,
-#              steplength_params,
-#              self.batchcounter,
-#              self.batchsize,
-#              self.epochs,
-#              self.momentum,
-#              self.data_prop,
-#              self._param_trace,
-#              self._param_steplength_trace,
-#              self._vb_steplength_trace,
-#              self._ll_trace,
-#              self._grad_trace,
-#              self.Y,
-#              self._permutation,
-#              self.iterations
-#             ]
-# 
-#     def _setstate(self, state):
-#         self.iterations = state.pop()
-#         self._permutation = state.pop()
-#         self.Y = state.pop()
-#         self._grad_trace = state.pop()
-#         self._ll_trace = state.pop()
-#         self._vb_steplength_trace = state.pop()
-#         self._param_steplength_trace = state.pop()
-#         self._param_trace = state.pop()
-#         self.data_prop = state.pop()
-#         self.momentum = state.pop()
-#         self.epochs = state.pop()
-#         self.batchsize = state.pop()
-#         self.batchcounter = state.pop()
-#         steplength_params = state.pop()
-#         (self.hbar_t, self.tau_t, self.gbar_t, self.gbar_t1, self.gbar_t2, self.hbar_tp, self.tau_tp, self.gbar_tp, self.adapt_param_steplength, self.adapt_vb_steplength, self.vb_steplength, self.param_steplength) = steplength_params
-#         self.X_variance_batch = state.pop()
-#         self.X_batch = state.pop()
-#         self.X_variance = state.pop()
-#         self.has_uncertain_inputs = state.pop()
-#         self.num_inducing = state.pop()
-#         self.Z = state.pop()
-#         vb_param = state.pop()
-#         GP._setstate(self, state)
-#         self.set_vb_param(vb_param)
+        #self.hbar_t = 0.0
+        #self.tau_t = 100.0
+        #self.gbar_t = 0.0
+        #self.gbar_t1 = 0.0
+        #self.gbar_t2 = 0.0
+        #self.hbar_tp = 0.0
+        #self.tau_tp = 10000.0
+        #self.gbar_tp = 0.0
+        #self.adapt_param_steplength = True
+        #self.adapt_vb_steplength = True
+        #self._param_steplength_trace = []
+        #self._vb_steplength_trace = []
 
     def _compute_kernel_matrices(self):
         # kernel computations, using BGPLVM notation
         self.Kmm = self.kern.K(self.Z)
-        if self.has_uncertain_inputs:
-            self.psi0 = self.kern.psi0(self.Z, self.X_batch, self.X_variance_batch)
-            self.psi1 = self.kern.psi1(self.Z, self.X_batch, self.X_variance_batch)
-            self.psi2 = self.kern.psi2(self.Z, self.X_batch, self.X_variance_batch)
-        else:
-            self.psi0 = self.kern.Kdiag(self.X_batch)
-            self.psi1 = self.kern.K(self.X_batch, self.Z)
-            self.psi2 = None
+        self.psi0 = self.kern.Kdiag(self.X_batch)
+        self.psi1 = self.kern.K(self.X_batch, self.Z)
+        self.psi2 = None
 
     def dL_dtheta(self):
         dL_dtheta = self.kern._param_grad_helper(self.dL_dKmm, self.Z)
@@ -179,7 +116,7 @@ class SVIGP(GP):
 
     def load_batch(self):
         """
-        load a batch of data (set self.X_batch and self.likelihood.Y from self.X, self.Y)
+        load a batch of data (set self.X_batch and self.Y_batch from self.X, self.Y)
         """
 
         #if we've seen all the data, start again with them in a new random order
@@ -191,9 +128,7 @@ class SVIGP(GP):
         this_perm = self._permutation[self.batchcounter:self.batchcounter+self.batchsize]
 
         self.X_batch = self.X[this_perm]
-        self.likelihood.set_data(self.Y[this_perm])
-        if self.has_uncertain_inputs:
-            self.X_variance_batch = self.X_variance[this_perm]
+        self.Y_batch = self.Y[this_perm]
 
         self.batchcounter += self.batchsize
 
@@ -288,7 +223,9 @@ class SVIGP(GP):
         Compute the gradients of the lower bound wrt the canonical and
         Expectation parameters of u.
 
-        Note that the natural gradient in either is given by the gradient in the other (See Hensman et al 2012 Fast Variational inference in the conjugate exponential Family)
+        Note that the natural gradient in either is given by the gradient in
+        the other (See Hensman et al 2012 Fast Variational inference in the
+        conjugate exponential Family)
         """
 
         # Gradient for eta

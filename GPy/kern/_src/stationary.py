@@ -8,7 +8,8 @@ from ...core.parameterization.transformations import Logexp
 from ...util.linalg import tdot
 from ... import util
 import numpy as np
-from scipy import integrate
+from scipy import integrate, weave
+from ...util.config import config # for assesing whether to use weave
 from ...util.caching import Cache_this
 
 class Stationary(Kern):
@@ -71,6 +72,13 @@ class Stationary(Kern):
 
     @Cache_this(limit=5, ignore_args=())
     def K(self, X, X2=None):
+        """
+        Kernel function applied on inputs X and X2.
+        In the stationary case there is an inner function depending on the
+        distances from X to X2, called r.
+
+        K(X, X2) = K_of_r((X-X2)**2)
+        """
         r = self._scaled_dist(X, X2)
         return self.K_of_r(r)
 
@@ -124,10 +132,22 @@ class Stationary(Kern):
         return ret
 
     def update_gradients_diag(self, dL_dKdiag, X):
+        """
+        Given the derivative of the objective with respect to the diagonal of
+        the covariance matrix, compute the derivative wrt the parameters of
+        this kernel and stor in the <parameter>.gradient field.
+
+        See also update_gradients_full
+        """
         self.variance.gradient = np.sum(dL_dKdiag)
         self.lengthscale.gradient = 0.
 
     def update_gradients_full(self, dL_dK, X, X2=None):
+        """
+        Given the derivative of the objective wrt the covariance matrix
+        (dL_dK), compute the gradient wrt the parameters of this kernel,
+        and store in the parameters object as e.g. self.variance.gradient
+        """
         self.variance.gradient = np.einsum('ij,ij,i', self.K(X, X2), dL_dK, 1./self.variance)
 
         #now the lengthscale gradient(s)
@@ -139,7 +159,17 @@ class Stationary(Kern):
             #self.lengthscale.gradient = -((dL_dr*rinv)[:,:,None]*x_xl3).sum(0).sum(0)/self.lengthscale**3
             tmp = dL_dr*self._inv_dist(X, X2)
             if X2 is None: X2 = X
-            self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(X[:,q:q+1] - X2[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in xrange(self.input_dim)])
+            
+
+            if config.getboolean('weave', 'working'):
+                try:
+                    self.lengthscale.gradient = self.weave_lengthscale_grads(tmp, X, X2)
+                except:
+                    print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
+                    config.set('weave', 'working', 'False')
+                    self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(X[:,q:q+1] - X2[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in xrange(self.input_dim)])
+            else:
+                self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(X[:,q:q+1] - X2[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in xrange(self.input_dim)])
         else:
             r = self._scaled_dist(X, X2)
             self.lengthscale.gradient = -np.sum(dL_dr*r)/self.lengthscale
@@ -154,10 +184,43 @@ class Stationary(Kern):
         dist = self._scaled_dist(X, X2).copy()
         return 1./np.where(dist != 0., dist, np.inf)
 
+    def weave_lengthscale_grads(self, tmp, X, X2):
+        """Use scipy.weave to compute derivatives wrt the lengthscales"""
+        N,M = tmp.shape
+        Q = X.shape[1]
+        if hasattr(X, 'values'):X = X.values
+        if hasattr(X2, 'values'):X2 = X2.values
+        grads = np.zeros(self.input_dim)
+        code = """
+        double gradq;
+        for(int q=0; q<Q; q++){
+          gradq = 0;
+          for(int n=0; n<N; n++){
+            for(int m=0; m<M; m++){
+              gradq += tmp(n,m)*(X(n,q)-X2(m,q))*(X(n,q)-X2(m,q));
+            }
+          }
+          grads[q] = gradq;
+        }
+        """
+        weave.inline(code, ['tmp', 'X', 'X2', 'grads', 'N', 'M', 'Q'], type_converters=weave.converters.blitz, support_code="#include <math.h>")
+        return -grads/self.lengthscale**3
+
     def gradients_X(self, dL_dK, X, X2=None):
         """
         Given the derivative of the objective wrt K (dL_dK), compute the derivative wrt X
         """
+        if config.getboolean('weave', 'working'):
+            try:
+                return self.gradients_X_weave(dL_dK, X, X2)
+            except:
+                print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
+                config.set('weave', 'working', 'False')
+                return self.gradients_X_(dL_dK, X, X2)
+        else:
+            return self.gradients_X_(dL_dK, X, X2)
+
+    def gradients_X_(self, dL_dK, X, X2=None):
         invdist = self._inv_dist(X, X2)
         dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
         tmp = invdist*dL_dr
@@ -171,11 +234,40 @@ class Stationary(Kern):
 
         #the lower memory way with a loop
         ret = np.empty(X.shape, dtype=np.float64)
-        [np.sum(tmp*(X[:,q][:,None]-X2[:,q][None,:]), axis=1, out=ret[:,q]) for q in xrange(self.input_dim)]
+        for q in xrange(self.input_dim):
+            np.sum(tmp*(X[:,q][:,None]-X2[:,q][None,:]), axis=1, out=ret[:,q])
         ret /= self.lengthscale**2
 
         return ret
 
+    def gradients_X_weave(self, dL_dK, X, X2=None):
+        invdist = self._inv_dist(X, X2)
+        dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
+        tmp = invdist*dL_dr
+        if X2 is None:
+            tmp = tmp + tmp.T
+            X2 = X
+
+        ret = np.zeros(X.shape)
+        code = """
+        int n,q,d;
+        double retnd;
+        for(n=0;n<N;n++){
+          for(d=0;d<D;d++){
+            retnd = 0;
+            for(q=0;q<Q;q++){
+              retnd += tmp(n,q)*(X(n,d)-X2(q,d));
+            }
+            ret(n,d) = retnd;
+          }
+        }
+        """
+        from scipy import weave
+        N,D = X.shape
+        Q = tmp.shape[1]
+        weave.inline(code, ['ret', 'N', 'D', 'Q', 'tmp', 'X', 'X2'], type_converters=weave.converters.blitz)
+        return ret/self.lengthscale**2
+    
     def gradients_X_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
 
@@ -309,6 +401,19 @@ class Matern52(Stationary):
 
 
 class ExpQuad(Stationary):
+    """
+    The Exponentiated quadratic covariance function.
+
+    .. math::
+
+       k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r)
+
+    notes::
+     - Yes, this is exactly the same as the RBF covariance function, but the
+       RBF implementation also has some features for doing variational kernels
+       (the psi-statistics).
+
+    """
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='ExpQuad'):
         super(ExpQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 

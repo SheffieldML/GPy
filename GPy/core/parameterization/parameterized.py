@@ -357,6 +357,35 @@ class Parameterized(Parameterizable):
     @property
     def _ties_str(self):
         return [','.join(x._ties_str) for x in self.flattened_parameters]
+
+    def _repr_html_(self, header=True):
+        """Representation of the parameters in html for notebook display."""
+        name = adjust_name_for_printing(self.name) + "."
+        constrs = self._constraints_str;
+        ts = self._ties_str
+        prirs = self._priors_str
+        desc = self._description_str; names = self.parameter_names()
+        nl = max([len(str(x)) for x in names + [name]])
+        sl = max([len(str(x)) for x in desc + ["Value"]])
+        cl = max([len(str(x)) if x else 0 for x in constrs + ["Constraint"]])
+        tl = max([len(str(x)) if x else 0 for x in ts + ["Tied to"]])
+        pl = max([len(str(x)) if x else 0 for x in prirs + ["Prior"]])
+        format_spec = "<tr><td>{{name:<{0}s}}</td><td>{{desc:>{1}s}}</td><td>{{const:^{2}s}}</td><td>{{pri:^{3}s}}</td><td>{{t:^{4}s}}</td></tr>".format(nl, sl, cl, pl, tl)
+        to_print = []
+        for n, d, c, t, p in itertools.izip(names, desc, constrs, ts, prirs):
+            to_print.append(format_spec.format(name=n, desc=d, const=c, t=t, pri=p))
+        sep = '-' * (nl + sl + cl + + pl + tl + 8 * 2 + 3)
+        if header:
+            header = """
+<tr>
+  <td><b>{name}</b>
+  <td><b>Value</b></td>
+  <td><b>Constraint</b></td>
+  <td><b>Prior</b></td>
+  <td><b>Tied to</b></td>""".format(name=name)
+            to_print.insert(0, header)
+        return '<table>' + '\n'.format(sep).join(to_print) + '\n</table>'
+
     def __str__(self, header=True):
         name = adjust_name_for_printing(self.name) + "."
         constrs = self._constraints_str;

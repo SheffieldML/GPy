@@ -25,5 +25,6 @@ try:
 except ImportError as e:
     _sympy_available = False
 
-if _sympy_available:
-    import symbolic
+#@NDL: you deleted the symbolic.py file!
+#if _sympy_available:
+    #import symbolic

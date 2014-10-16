@@ -352,7 +352,7 @@ class TestNoiseModels(object):
         print model
         #print model._get_params()
         np.testing.assert_almost_equal(
-                               model.pdf(f.copy(), Y.copy()),
+                model.pdf(f.copy(), Y.copy()).prod(),
                                np.exp(model.logpdf(f.copy(), Y.copy()).sum())
                                )
 

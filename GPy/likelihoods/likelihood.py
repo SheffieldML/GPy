@@ -146,20 +146,26 @@ class Likelihood(Parameterized):
 
         if gh_points is None:
             gh_x, gh_w = np.polynomial.hermite.hermgauss(20)
+        else:
+            gh_x, gh_w = gh_points
 
         shape = m.shape
         m,v,Y = m.flatten(), v.flatten(), Y.flatten()
 
         #make a grid of points
         X = gh_x[None,:]*np.sqrt(2.*v[:,None]) + m[:,None]
-        logp = self.logpdf(X,Y[:,None])
 
-        p = np.clip(p, 1e-9, 1.-1e-9) # for numerical stability
-        N = stats.norm.pdf(X)
-        F = np.log(p).dot(self.gh_w)
-        NoverP = N/p
-        dF_dm = (NoverP*self.Ysign[:,None]).dot(self.gh_w)
-        dF_dv = -0.5*(NoverP**2 + NoverP*X).dot(self.gh_w)
+        #evaluate the likelhood for the grid. First ax indexes the data (and mu, var) and the second indexes the grid.
+        # broadcast needs to be handled carefully. 
+        logp = self.logpdf(X,Y[:,None])
+        dlogp_dx = self.dlogpdf_df(X, Y[:,None])
+        d2logp_dx2 = self.d2logpdf_df2(X, Y[:,None])
+
+        #average over the gird to get derivatives of the Gaussian's parameters
+        F = np.dot(logp, gh_w)
+        dF_dm = np.dot(dlogp_dx, gh_w)
+        dF_dv = np.dot(d2logp_dx2, gh_w)/2.
+
         return F, dF_dm, dF_dv
 
 

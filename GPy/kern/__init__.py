@@ -17,17 +17,3 @@ from _src.poly import Poly
 from _src.trunclinear import TruncLinear,TruncLinear_inf
 from _src.splitKern import SplitKern,DiffGenomeKern
 
-# TODO: put this in an init file somewhere
-#I'm commenting this out because the files were not added. JH. Remember to add the files before commiting
-try:
-    import sympy as sym
-    sympy_available=True
-except ImportError:
-    sympy_available=False
-
-if sympy_available:
-    from _src.symbolic import Symbolic
-    #from _src.eq import Eq
-    #from _src.heat_eqinit import Heat_eqinit
-    #from _src.ode1_eq_lfm import Ode1_eq_lfm
-

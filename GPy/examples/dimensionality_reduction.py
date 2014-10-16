@@ -1,6 +1,7 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 import numpy as _np
+
 #default_seed = _np.random.seed(123344)
 
 def bgplvm_test_model(optimize=False, verbose=1, plot=False, output_dim=200, nan=False):
@@ -68,7 +69,8 @@ def bgplvm_test_model(optimize=False, verbose=1, plot=False, output_dim=200, nan
 
 def gplvm_oil_100(optimize=True, verbose=1, plot=True):
     import GPy
-    data = GPy.util.datasets.oil_100()
+    import pods
+    data = pods.datasets.oil_100()
     Y = data['X']
     # create simple GP model
     kernel = GPy.kern.RBF(6, ARD=True) + GPy.kern.Bias(6)
@@ -80,8 +82,10 @@ def gplvm_oil_100(optimize=True, verbose=1, plot=True):
 
 def sparse_gplvm_oil(optimize=True, verbose=0, plot=True, N=100, Q=6, num_inducing=15, max_iters=50):
     import GPy
+    import pods
+
     _np.random.seed(0)
-    data = GPy.util.datasets.oil()
+    data = pods.datasets.oil()
     Y = data['X'][:N]
     Y = Y - Y.mean(0)
     Y /= Y.std(0)
@@ -98,7 +102,7 @@ def sparse_gplvm_oil(optimize=True, verbose=0, plot=True, N=100, Q=6, num_induci
 
 def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=25, Q=4, sigma=.2):
     import GPy
-    from GPy.util.datasets import swiss_roll_generated
+    from pods.datasets import swiss_roll_generated
     from GPy.models import BayesianGPLVM
 
     data = swiss_roll_generated(num_samples=N, sigma=sigma)
@@ -157,9 +161,10 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     import GPy
     from matplotlib import pyplot as plt
     import numpy as np
+    import pods
 
     _np.random.seed(0)
-    data = GPy.util.datasets.oil()
+    data = pods.datasets.oil()
 
     kernel = GPy.kern.RBF(Q, 1., 1./_np.random.uniform(0,1,(Q,)), ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
     Y = data['X'][:N]
@@ -182,9 +187,10 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
 def ssgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40, max_iters=1000, **k):
     import GPy
     from matplotlib import pyplot as plt
+    import pods
 
     _np.random.seed(0)
-    data = GPy.util.datasets.oil()
+    data = pods.datasets.oil()
 
     kernel = GPy.kern.RBF(Q, 1., 1./_np.random.uniform(0,1,(Q,)), ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
     Y = data['X'][:N]
@@ -441,8 +447,9 @@ def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim
 
 def brendan_faces(optimize=True, verbose=True, plot=True):
     import GPy
+    import pods
 
-    data = GPy.util.datasets.brendan_faces()
+    data = pods.datasets.brendan_faces()
     Q = 2
     Y = data['Y']
     Yn = Y - Y.mean()
@@ -465,8 +472,9 @@ def brendan_faces(optimize=True, verbose=True, plot=True):
 
 def olivetti_faces(optimize=True, verbose=True, plot=True):
     import GPy
+    import pods
 
-    data = GPy.util.datasets.olivetti_faces()
+    data = pods.datasets.olivetti_faces()
     Q = 2
     Y = data['Y']
     Yn = Y - Y.mean()
@@ -486,7 +494,9 @@ def olivetti_faces(optimize=True, verbose=True, plot=True):
 
 def stick_play(range=None, frame_rate=15, optimize=False, verbose=True, plot=True):
     import GPy
-    data = GPy.util.datasets.osu_run1()
+    import pods 
+
+    data = pods.datasets.osu_run1()
     # optimize
     if range == None:
         Y = data['Y'].copy()
@@ -501,8 +511,9 @@ def stick_play(range=None, frame_rate=15, optimize=False, verbose=True, plot=Tru
 def stick(kernel=None, optimize=True, verbose=True, plot=True):
     from matplotlib import pyplot as plt
     import GPy
+    import pods
 
-    data = GPy.util.datasets.osu_run1()
+    data = pods.datasets.osu_run1()
     # optimize
     m = GPy.models.GPLVM(data['Y'], 2, kernel=kernel)
     if optimize: m.optimize('bfgs', messages=verbose, max_f_eval=10000)
@@ -520,8 +531,9 @@ def stick(kernel=None, optimize=True, verbose=True, plot=True):
 def bcgplvm_linear_stick(kernel=None, optimize=True, verbose=True, plot=True):
     from matplotlib import pyplot as plt
     import GPy
+    import pods
 
-    data = GPy.util.datasets.osu_run1()
+    data = pods.datasets.osu_run1()
     # optimize
     mapping = GPy.mappings.Linear(data['Y'].shape[1], 2)
     m = GPy.models.BCGPLVM(data['Y'], 2, kernel=kernel, mapping=mapping)
@@ -539,8 +551,9 @@ def bcgplvm_linear_stick(kernel=None, optimize=True, verbose=True, plot=True):
 def bcgplvm_stick(kernel=None, optimize=True, verbose=True, plot=True):
     from matplotlib import pyplot as plt
     import GPy
+    import pods
 
-    data = GPy.util.datasets.osu_run1()
+    data = pods.datasets.osu_run1()
     # optimize
     back_kernel=GPy.kern.RBF(data['Y'].shape[1], lengthscale=5.)
     mapping = GPy.mappings.Kernel(X=data['Y'], output_dim=2, kernel=back_kernel)
@@ -559,8 +572,9 @@ def bcgplvm_stick(kernel=None, optimize=True, verbose=True, plot=True):
 def robot_wireless(optimize=True, verbose=True, plot=True):
     from matplotlib import pyplot as plt
     import GPy
+    import pods
 
-    data = GPy.util.datasets.robot_wireless()
+    data = pods.datasets.robot_wireless()
     # optimize
     m = GPy.models.BayesianGPLVM(data['Y'], 4, num_inducing=25)
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
@@ -574,8 +588,9 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
     from matplotlib import pyplot as plt
     import numpy as np
     import GPy
+    import pods
 
-    data = GPy.util.datasets.osu_run1()
+    data = pods.datasets.osu_run1()
     Q = 6
     kernel = GPy.kern.RBF(Q, lengthscale=np.repeat(.5, Q), ARD=True)
     m = BayesianGPLVM(data['Y'], Q, init="PCA", num_inducing=20, kernel=kernel)
@@ -605,8 +620,9 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
 
 def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose=True, plot=True):
     import GPy
+    import pods
 
-    data = GPy.util.datasets.cmu_mocap(subject, motion)
+    data = pods.datasets.cmu_mocap(subject, motion)
     if in_place:
         # Make figure move in place.
         data['Y'][:, 0:3] = 0.0

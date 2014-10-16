@@ -1,5 +1,4 @@
 import pylab as pb, numpy as np
-from ...util.misc import param_to_array
 
 def plot(parameterized, fignum=None, ax=None, colors=None):
     """
@@ -21,7 +20,7 @@ def plot(parameterized, fignum=None, ax=None, colors=None):
     else:
         colors = iter(colors)
     plots = []
-    means, variances = param_to_array(parameterized.mean, parameterized.variance)
+    means, variances = parameterized.mean, parameterized.variance
     x = np.arange(means.shape[0])
     for i in range(means.shape[1]):
         if ax is None:
@@ -68,7 +67,7 @@ def plot_SpikeSlab(parameterized, fignum=None, ax=None, colors=None, side_by_sid
     else:
         colors = iter(colors)
     plots = []
-    means, variances, gamma = param_to_array(parameterized.mean, parameterized.variance, parameterized.binary_prob)
+    means, variances, gamma = parameterized.mean, parameterized.variance, parameterized.binary_prob
     x = np.arange(means.shape[0])
     for i in range(means.shape[1]):
         if side_by_side:
@@ -77,7 +76,7 @@ def plot_SpikeSlab(parameterized, fignum=None, ax=None, colors=None, side_by_sid
         else:
             sub1 = (means.shape[1]*2,1,2*i+1)
             sub2 = (means.shape[1]*2,1,2*i+2)
-            
+
         # mean and variance plot
         a = fig.add_subplot(*sub1)
         a.plot(means, c='k', alpha=.3)

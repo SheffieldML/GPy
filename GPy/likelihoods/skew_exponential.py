@@ -5,8 +5,6 @@
 import sympy as sym
 from GPy.util.symbolic import normcdfln
 import numpy as np
-from ..util.univariate_Gaussian import std_norm_pdf, std_norm_cdf
-#from GPy.util.functions import clip_exp
 import link_functions
 from symbolic import Symbolic
 from scipy import stats

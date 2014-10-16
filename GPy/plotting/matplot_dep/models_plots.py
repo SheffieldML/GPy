@@ -8,7 +8,6 @@ except:
     pass
 import numpy as np
 from base_plots import gpplot, x_frame1D, x_frame2D
-from ...util.misc import param_to_array
 from ...models.gp_coregionalized_regression import GPCoregionalizedRegression
 from ...models.sparse_gp_coregionalized_regression import SparseGPCoregionalizedRegression
 from scipy import sparse
@@ -67,7 +66,6 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         X_variance = model.X.variance
     else:
         X = model.X
-    #X, Y = param_to_array(X, model.Y)
     Y = model.Y
     if sparse.issparse(Y): Y = Y.todense().view(np.ndarray)
 

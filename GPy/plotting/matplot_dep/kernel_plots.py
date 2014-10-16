@@ -35,8 +35,7 @@ def add_bar_labels(fig, ax, bars, bottom=0):
 
 
 def plot_bars(fig, ax, x, ard_params, color, name, bottom=0):
-    from ...util.misc import param_to_array
-    return ax.bar(left=x, height=param_to_array(ard_params), width=.8,
+    return ax.bar(left=x, height=ard_params.view(np.ndarray), width=.8,
                   bottom=bottom, align='center',
                   color=color, edgecolor='k', linewidth=1.2,
                   label=name.replace("_"," "))

@@ -528,7 +528,7 @@ def symmetrify(A, upper=False):
             symmetrify_weave(A, upper)
         except:
             print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
-            config.set('weave', 'working', False)
+            config.set('weave', 'working', 'False')
             symmetrify_numpy(A, upper)
     else:
         symmetrify_numpy(A, upper)

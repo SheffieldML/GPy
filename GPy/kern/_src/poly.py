@@ -3,7 +3,6 @@
 
 import numpy as np
 from kern import Kern
-from ...util.misc import param_to_array
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 class Poly(Kern):

@@ -131,6 +131,40 @@ class Likelihood(Parameterized):
 
         return z, mean, variance
 
+    def variational_expectations(self, Y, m, v, gh_points=None):
+        """
+        Use Gauss-Hermite Quadrature to compute 
+
+           E_p(f) [ log p(y|f) ]
+           d/dm E_p(f) [ log p(y|f) ]
+           d/dv E_p(f) [ log p(y|f) ]
+
+        where p(f) is a Gaussian with mean m and variance v. The shapes of Y, m and v should match.
+
+        if no gh_points are passed, we construct them using defualt options
+        """
+
+        if gh_points is None:
+            gh_x, gh_w = np.polynomial.hermite.hermgauss(20)
+
+        shape = m.shape
+        m,v,Y = m.flatten(), v.flatten(), Y.flatten()
+
+        #make a grid of points
+        X = gh_x[None,:]*np.sqrt(2.*v[:,None]) + m[:,None]
+        logp = self.logpdf(X,Y[:,None])
+
+        p = np.clip(p, 1e-9, 1.-1e-9) # for numerical stability
+        N = stats.norm.pdf(X)
+        F = np.log(p).dot(self.gh_w)
+        NoverP = N/p
+        dF_dm = (NoverP*self.Ysign[:,None]).dot(self.gh_w)
+        dF_dv = -0.5*(NoverP**2 + NoverP*X).dot(self.gh_w)
+        return F, dF_dm, dF_dv
+
+
+
+
     def predictive_mean(self, mu, variance, Y_metadata=None):
         """
         Quadrature calculation of the predictive mean: E(Y_star|Y) = E( E(Y_star|f_star, Y) )

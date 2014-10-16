@@ -136,10 +136,8 @@ class Bernoulli(Likelihood):
         assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         #objective = y*np.log(inv_link_f) + (1.-y)*np.log(inv_link_f)
         state = np.seterr(divide='ignore')
-        # TODO check y \in {0, 1} or {-1, 1}
-        objective = np.where(y==1, np.log(inv_link_f), np.log(1-inv_link_f))
-        np.seterr(**state)
-        return np.sum(objective)
+        p = np.where(y==1, inv_link_f, 1.-inv_link_f)
+        return np.log(p)
 
     def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
         """

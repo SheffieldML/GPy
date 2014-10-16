@@ -82,7 +82,7 @@ class Laplace(LatentFunctionInference):
 
         #define the objective function (to be maximised)
         def obj(Ki_f, f):
-            return -0.5*np.dot(Ki_f.flatten(), f.flatten()) + likelihood.logpdf(f, Y, Y_metadata=Y_metadata)
+            return -0.5*np.dot(Ki_f.flatten(), f.flatten()) + np.sum(likelihood.logpdf(f, Y, Y_metadata=Y_metadata))
 
         difference = np.inf
         iteration = 0
@@ -152,7 +152,7 @@ class Laplace(LatentFunctionInference):
         Ki_W_i  = K - C.T.dot(C)
 
         #compute the log marginal
-        log_marginal = -0.5*np.dot(Ki_f.flatten(), f_hat.flatten()) + likelihood.logpdf(f_hat, Y, Y_metadata=Y_metadata) - np.sum(np.log(np.diag(L)))
+        log_marginal = -0.5*np.dot(Ki_f.flatten(), f_hat.flatten()) + likelihood.logpdf(f_hat, Y, Y_metadata=Y_metadata).sum() - np.sum(np.log(np.diag(L)))
 
         # Compute matrices for derivatives
         dW_df = -likelihood.d3logpdf_df3(f_hat, Y, Y_metadata=Y_metadata) # -d3lik_d3fhat

@@ -3,7 +3,7 @@
 
 
 import sympy as sym
-from GPy.util.symbolic import normcdfln
+#from GPy.util.symbolic import normcdfln
 import numpy as np
 import link_functions
 from symbolic import Symbolic

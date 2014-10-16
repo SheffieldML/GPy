@@ -145,7 +145,7 @@ class Likelihood(Parameterized):
         """
 
         if gh_points is None:
-            gh_x, gh_w = np.polynomial.hermite.hermgauss(20)
+            gh_x, gh_w = np.polynomial.hermite.hermgauss(12)
         else:
             gh_x, gh_w = gh_points
 
@@ -161,12 +161,22 @@ class Likelihood(Parameterized):
         dlogp_dx = self.dlogpdf_df(X, Y[:,None])
         d2logp_dx2 = self.d2logpdf_df2(X, Y[:,None])
 
+        #clipping for numerical stability
+        logp = np.clip(logp,-1e6,1e6)
+        dlogp_dx = np.clip(dlogp_dx,-1e6,1e6)
+        d2logp_dx2 = np.clip(d2logp_dx2,-1e6,1e6)
+
         #average over the gird to get derivatives of the Gaussian's parameters
         F = np.dot(logp, gh_w)
         dF_dm = np.dot(dlogp_dx, gh_w)
         dF_dv = np.dot(d2logp_dx2, gh_w)/2.
 
-        return F, dF_dm, dF_dv
+        if np.any(np.isnan(dF_dv)) or np.any(np.isinf(dF_dv)):
+            stop
+        if np.any(np.isnan(dF_dm)) or np.any(np.isinf(dF_dm)):
+            stop
+
+        return F.reshape(*shape), dF_dm.reshape(*shape), dF_dv.reshape(*shape)
 
 
 

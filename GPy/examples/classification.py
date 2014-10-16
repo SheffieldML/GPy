@@ -9,7 +9,7 @@ import GPy
 import pods
 
 try:
-    import pylab as pb
+    from matplotlib import pyplot as plt
 except:
     pass
 
@@ -72,7 +72,7 @@ def toy_linear_1d_classification(seed=default_seed, optimize=True, plot=True):
 
     # Plot
     if plot:
-        fig, axes = pb.subplots(2, 1)
+        fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
 
@@ -108,7 +108,7 @@ def toy_linear_1d_classification_laplace(seed=default_seed, optimize=True, plot=
 
     # Plot
     if plot:
-        fig, axes = pb.subplots(2, 1)
+        fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
 
@@ -138,7 +138,7 @@ def sparse_toy_linear_1d_classification(num_inducing=10, seed=default_seed, opti
 
     # Plot
     if plot:
-        fig, axes = pb.subplots(2, 1)
+        fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
 
@@ -172,7 +172,7 @@ def toy_heaviside(seed=default_seed, optimize=True, plot=True):
 
     # Plot
     if plot:
-        fig, axes = pb.subplots(2, 1)
+        fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
 

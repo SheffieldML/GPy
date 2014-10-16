@@ -71,6 +71,13 @@ class Stationary(Kern):
 
     @Cache_this(limit=5, ignore_args=())
     def K(self, X, X2=None):
+        """
+        Kernel function applied on inputs X and X2.
+        In the stationary case there is an inner function depending on the
+        distances from X to X2, called r.
+
+        K(X, X2) = K_of_r((X-X2)**2)
+        """
         r = self._scaled_dist(X, X2)
         return self.K_of_r(r)
 
@@ -311,7 +318,7 @@ class Matern52(Stationary):
 
 class ExpQuad(Stationary):
     """
-    The Exponentiated quadratic covariance function. 
+    The Exponentiated quadratic covariance function.
 
     .. math::
 

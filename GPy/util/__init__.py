@@ -18,13 +18,3 @@ import multioutput
 import linalg_gpu
 import mpi
 
-try:
-    import sympy
-    _sympy_available = True
-    del sympy
-except ImportError as e:
-    _sympy_available = False
-
-#@NDL: you deleted the symbolic.py file!
-#if _sympy_available:
-    #import symbolic

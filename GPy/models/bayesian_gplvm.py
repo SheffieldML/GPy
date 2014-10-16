@@ -27,7 +27,7 @@ class BayesianGPLVM(SparseGP_MPI):
     def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
                  Z=None, kernel=None, inference_method=None, likelihood=None,
                  name='bayesian gplvm', mpi_comm=None, normalizer=None,
-                 missing_data=False):
+                 missing_data=False, stochastic=False, batchsize=1):
         self.mpi_comm = mpi_comm
         self.__IN_OPTIMIZATION__ = False
 
@@ -77,7 +77,8 @@ class BayesianGPLVM(SparseGP_MPI):
                                            name=name, inference_method=inference_method,
                                            normalizer=normalizer, mpi_comm=mpi_comm,
                                            variational_prior=self.variational_prior,
-                                           missing_data=missing_data)
+                                           missing_data=missing_data, stochastic=stochastic,
+                                           batchsize=batchsize)
 
     def set_X_gradients(self, X, X_grad):
         """Set the gradients of the posterior distribution of X in its specific form."""
@@ -90,7 +91,12 @@ class BayesianGPLVM(SparseGP_MPI):
     def _inner_parameters_changed(self, kern, X, Z, likelihood, Y, Y_metadata, Lm=None, dL_dKmm=None, subset_indices=None):
         posterior, log_marginal_likelihood, grad_dict, current_values, value_indices = super(BayesianGPLVM, self)._inner_parameters_changed(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm, dL_dKmm=dL_dKmm, subset_indices=subset_indices)
 
-        log_marginal_likelihood -= self.variational_prior.KL_divergence(X)
+        kl_fctr = 1.
+        if self.missing_data:
+            d = self.output_dim
+            log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(X)/d
+        else:
+            log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(X)
 
         current_values['meangrad'], current_values['vargrad'] = self.kern.gradients_qX_expectations(
                                             variational_posterior=X,
@@ -104,8 +110,12 @@ class BayesianGPLVM(SparseGP_MPI):
         X.variance.gradient[:] = 0
 
         self.variational_prior.update_gradients_KL(X)
-        current_values['meangrad'] += X.mean.gradient
-        current_values['vargrad'] += X.variance.gradient
+        if self.missing_data:
+            current_values['meangrad'] += kl_fctr*X.mean.gradient/d
+            current_values['vargrad'] += kl_fctr*X.variance.gradient/d
+        else:
+            current_values['meangrad'] += kl_fctr*X.mean.gradient
+            current_values['vargrad'] += kl_fctr*X.variance.gradient
 
         if subset_indices is not None:
             value_indices['meangrad'] = subset_indices['samples']

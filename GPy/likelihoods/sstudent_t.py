@@ -4,7 +4,7 @@
 
 import sympy as sym
 from sympy.utilities.lambdify import lambdify
-from GPy.util.symbolic import gammaln
+# does not exist! JH from GPy.util.symbolic import gammaln
 
 import numpy as np
 import link_functions

@@ -81,7 +81,7 @@ class BayesianGPLVM(SparseGP):
         self.link_parameter(self.X, index=0)
 
         if mpi_comm != None:
-            from ..util.mpi import divide_data
+            from ..util.parallel import divide_data
             N_start, N_end, N_list = divide_data(Y.shape[0], mpi_comm)
             self.N_range = (N_start, N_end)
             self.N_list = np.array(N_list)

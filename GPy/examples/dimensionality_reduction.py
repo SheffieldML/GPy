@@ -428,6 +428,27 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
         m.plot_scales("MRD Scales")
     return m
 
+def ssmrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
+    from GPy import kern
+    from GPy.models import SSMRD
+
+    D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
+    _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
+
+    #Ylist = [Ylist[0]]
+    k = kern.RBF(Q, ARD=True)
+    m = SSMRD(Ylist, input_dim=Q, num_inducing=num_inducing, kernel=k, initx="PCA_concat", initz='permute', **kw)
+    
+    m['.*noise'] = [Y.var()/40. for Y in Ylist]
+
+    if optimize:
+        print "Optimizing Model:"
+        m.optimize(messages=verbose, max_iters=8e3, gtol=.1)
+    if plot:
+        m.X.plot("MRD Latent Space 1D")
+        m.plot_scales("MRD Scales")
+    return m
+
 def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     from GPy import kern
     from GPy.models import MRD

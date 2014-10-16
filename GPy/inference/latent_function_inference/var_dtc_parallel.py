@@ -389,9 +389,9 @@ def update_gradients(model, mpi_comm=None):
     model.Z.gradient += model.kern.gradients_X(dL_dKmm, model.Z)
     
     # Update Log-likelihood
-    KL_div = model.variational_prior.KL_divergence(X)
+    KL_div = model.variational_prior.KL_divergence(X, N=model.Y.shape[0])
     # update for the KL divergence
-    model.variational_prior.update_gradients_KL(X)
+    model.variational_prior.update_gradients_KL(X, N=model.Y.shape[0])
 
     if mpi_comm != None:
         KL_div_all = np.array(KL_div)

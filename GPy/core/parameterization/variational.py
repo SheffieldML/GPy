@@ -45,8 +45,7 @@ class SpikeAndSlabPrior(VariationalPrior):
             self.pi = Param('Pi', pi, __fixed__)
         self.link_parameter(self.pi)
 
-
-    def KL_divergence(self, variational_posterior):
+    def KL_divergence(self, variational_posterior, N=None):
         mu = variational_posterior.mean
         S = variational_posterior.variance
         gamma = variational_posterior.binary_prob
@@ -58,14 +57,14 @@ class SpikeAndSlabPrior(VariationalPrior):
             
         var_mean = np.square(mu)/self.variance
         var_S = (S/self.variance - np.log(S))
-        # TODO: sovle group_spike for parallelization
         if self.group_spike:
-            var_gamma = (gamma*np.log(gamma/pi)).sum()/gamma.shape[0]+((1-gamma)*np.log((1-gamma)/(1-pi))).sum()/gamma.shape[0]
+            assert N is not None
+            var_gamma = ((gamma*np.log(gamma/pi)).sum()+((1-gamma)*np.log((1-gamma)/(1-pi))).sum())/N
         else:
             var_gamma = (gamma*np.log(gamma/pi)).sum()+((1-gamma)*np.log((1-gamma)/(1-pi))).sum()
         return var_gamma+ (gamma* (np.log(self.variance)-1. +var_mean + var_S)).sum()/2.
 
-    def update_gradients_KL(self, variational_posterior):
+    def update_gradients_KL(self, variational_posterior, N=None):
         mu = variational_posterior.mean
         S = variational_posterior.variance
         gamma = variational_posterior.binary_prob
@@ -76,7 +75,8 @@ class SpikeAndSlabPrior(VariationalPrior):
             pi = self.pi
 
         if self.group_spike:
-            gamma.gradient -= np.log((1-pi)/pi*gamma/(1.-gamma))/gamma.shape[0]+((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.
+            assert N is not None
+            gamma.gradient -= np.log((1-pi)/pi*gamma/(1.-gamma))/N+((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.
         else:
             gamma.gradient -= np.log((1-pi)/pi*gamma/(1.-gamma))+((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.
         mu.gradient -= gamma*mu/self.variance
@@ -84,17 +84,17 @@ class SpikeAndSlabPrior(VariationalPrior):
         if self.learnPi:
             if len(self.pi)==1:
                 if self.group_spike:
-                    self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum()/gamma.shape[0]
+                    self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum()/N
                 else:
                     self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum()
             elif len(self.pi.shape)==1:
                 if self.group_spike:
-                    self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum(axis=0)/gamma.shape[0]
+                    self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum(axis=0)/N
                 else:
                     self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum(axis=0)
             else:
                 if self.group_spike:
-                    self.pi[idx].gradient = (gamma/self.pi[idx] - (1.-gamma)/(1.-self.pi[idx]))/gamma.shape[0]
+                    self.pi[idx].gradient = (gamma/self.pi[idx] - (1.-gamma)/(1.-self.pi[idx]))/N
                 else:
                     self.pi[idx].gradient = (gamma/self.pi[idx] - (1.-gamma)/(1.-self.pi[idx]))
 

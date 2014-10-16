@@ -112,6 +112,8 @@ class Tie(Parameterized):
         def _sync_constraints_p(p, tieparam, read, cons):
             if p.tie is not None:
                 p = p._original_
+                if p is tieparam:
+                    return
                 labels = np.unique(p.tie)
                 labels = labels[labels>0]
                 for l in labels:
@@ -146,7 +148,6 @@ class Tie(Parameterized):
         if not p.has_parent():
             p.ties = Tie()
             p.link_parameter(p.ties, -1)
-            p.add_observer(p.ties, p.ties._parameters_changed_notification, priority=-500)
             
             p.update_model(False)
             labels = p.ties._get_labels([p])
@@ -157,6 +158,7 @@ class Tie(Parameterized):
                 p.ties._sync_val([p],toTiedParam=True)
                 p.ties._sync_constraints([p], toTiedParam=True)
             p.ties._update_label_buf()
+            p.add_observer(p.ties, p.ties._parameters_changed_notification, priority=-500)
             p.update_model(True)
 
     def mergeTies(self, p):
@@ -168,6 +170,7 @@ class Tie(Parameterized):
             self.tied_param[-p.ties.tied_param.size:] = p.ties.tied_param
             pairs = zip(self.tied_param.tie,tie_labels)
             self._replace_labels(p, pairs)
+            self._sync_constraints([self._parent_], toTiedParam=True)
         p.remove_observer(p.ties)
         p.unlink_parameter(p.ties)
         del p.ties
@@ -184,11 +187,13 @@ class Tie(Parameterized):
             labels = self._get_labels([p])
             labels = labels[labels>0]
             if len(labels)>0:
-                p._expand_tie_param(len(labels))
-                idx = np.in1d(self.tied_param.tie,labels)
-                p.tied_param[:] = self.tied_param[idx]
-                p.tied_param.tie[:] = self.tied_param.tie[idx]
+                Tie.recoverTies(p)
+#                 p._expand_tie_param(len(labels))
+#                 idx = np.in1d(self.tied_param.tie,labels)
+#                 p.tied_param[:] = self.tied_param[idx]
+#                 p.tied_param.tie[:] = self.tied_param.tie[idx]
             self._remove_unnecessary_ties()
+            self._sync_constraints([self._parent_], toTiedParam=True)
             self._update_label_buf()
             p.ties._update_label_buf()
             self.update_model(True)

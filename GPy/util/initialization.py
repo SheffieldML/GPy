@@ -19,5 +19,8 @@ def initialize_latent(init, input_dim, Y):
 
     Xr -= Xr.mean(0)
     Xr /= Xr.std(0)
+    
+    fracs = np.ones((input_dim,))
+    fracs[:var.shape[0]] = var/var.max()
 
-    return Xr, var/var.max()
+    return Xr, fracs

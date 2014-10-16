@@ -36,6 +36,7 @@ class SparseGP_MPI(SparseGP):
 
     def __init__(self, X, Y, Z, kernel, likelihood, variational_prior=None, inference_method=None, name='sparse gp mpi', Y_metadata=None, mpi_comm=None, normalizer=False):
         self._IN_OPTIMIZATION_ = False
+        self.mpi_comm = mpi_comm
         if mpi_comm != None:
             if inference_method is None:
                 inference_method = VarDTC_minibatch(mpi_comm=mpi_comm)
@@ -49,10 +50,9 @@ class SparseGP_MPI(SparseGP):
             self.link_parameter(variational_prior)
 #         self.X.fix()
 
-        self.mpi_comm = mpi_comm
         # Manage the data (Y) division
         if mpi_comm != None:
-            from ..util.mpi import divide_data
+            from ..util.parallel import divide_data
             N_start, N_end, N_list = divide_data(Y.shape[0], mpi_comm)
             self.N_range = (N_start, N_end)
             self.N_list = np.array(N_list)

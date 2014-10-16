@@ -45,6 +45,14 @@ class TieTests(unittest.TestCase):
         self.assertTrue(m.ties.checkTieVector([m.Z[:2],m.Z[2:4]]))
         self.assertTrue(m.checkgrad())
         
+    def test_tie_multi_vector(self):
+        m = GPy.examples.dimensionality_reduction.bgplvm_oil(N=100, optimize=False,plot=False)
+        m.X.mean[:1].tie_vector(m.X.mean[1:2], m.X.mean[2:3])
+        self.assertTrue(m.ties.checkValueConsistency())
+        self.assertTrue(m.ties.checkConstraintConsistency())
+        self.assertTrue(m.ties.checkTieVector([m.X.mean[:1],m.X.mean[1:2], m.X.mean[2:3]]))
+        self.assertTrue(m.checkgrad())
+        
     def test_tie_vector_merge(self):
         m = GPy.examples.regression.sparse_GP_regression_2D(optimize=False, plot=False)
         m.Z.constrain_positive(warning=False)

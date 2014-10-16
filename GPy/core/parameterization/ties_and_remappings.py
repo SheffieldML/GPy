@@ -223,7 +223,7 @@ class Tie(Parameterized):
         label2 = []
         self._traverse_param(lambda x: x.tie.flat, (p2,), label2)
         label2 = np.hstack(label2)
-        expandlist = np.where(label1*label2==0)[0]
+        expandlist = np.where(label1+label2==0)[0]
         labellist =label1.copy()
         idx = np.logical_and(label1==0,label2>0)
         labellist[idx] = label2[idx]
@@ -369,8 +369,11 @@ class Tie(Parameterized):
         self._sync_constraints(plist, toTiedParam)
         self._update_label_buf()
         self.update_model(True)
+    
+    def tie_vector(self, plist):
+        p_splits = [self._keepParamList([p]) for p in plist]
                 
-    def tie_vector(self, p1, p2):
+    def _tie_vector(self, p1, p2):
         """tie a pair of vectors"""
         self.update_model(False)        
         expandlist,removelist,labellist = self._get_labels_vector(p1, p2)

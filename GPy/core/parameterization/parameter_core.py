@@ -594,8 +594,9 @@ class Indexable(Nameable, Observable):
     def tie_vector(self, *plist):
         """Tie a vector of parameters to other vectors of parameters"""
         for p in plist:
-            self._highest_parent_.ties.tie_vector(self,p)
+            self._highest_parent_.ties.tie_vector(self, p)
         self._highest_parent_._trigger_params_changed()
+
 
     #===========================================================================
     # Constrain operations -> done

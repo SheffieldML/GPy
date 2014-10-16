@@ -251,6 +251,29 @@ class Param(Parameterizable, ObsAr):
         if ind.size > 4: indstr = ','.join(map(str, ind[:2])) + "..." + ','.join(map(str, ind[-2:]))
         else: indstr = ','.join(map(str, ind))
         return name + '[' + indstr + ']'
+
+    def _repr_html_(self, constr_matrix=None, indices=None, prirs=None, ties=None):
+        """Representation of the parameter in html for notebook display."""
+        filter_ = self._current_slice_
+        vals = self.flat
+        if indices is None: indices = self._indices(filter_)
+        ravi = self._raveled_index(filter_)
+        if constr_matrix is None: constr_matrix = self.constraints.properties_for(ravi)
+        if prirs is None: prirs = self.priors.properties_for(ravi)
+        if ties is None: ties = self._ties_for(ravi)
+        ties = [' '.join(map(lambda x: x, t)) for t in ties]
+        header_format = """
+<tr>
+  <td><b>{i}</b></td>
+  <td><b>{x}</b></td>
+  <td><b>{c}</b></td>
+  <td><b>{p}</b></td>
+  <td><b>{t}</b></td>
+</tr>"""
+        header = header_format.format(x=self.hierarchy_name(), c=__constraints_name__, i=__index_name__, t=__tie_name__, p=__priors_name__)  # nice header for printing
+        if not ties: ties = itertools.cycle([''])
+        return "\n".join(['<table>'] + [header] + ["<tr><td>{i}</td><td align=\"right\">{x}</td><td>{c}</td><td>{p}</td><td>{t}</td></tr>".format(x=x, c=" ".join(map(str, c)), p=" ".join(map(str, p)), t=(t or ''), i=i) for i, x, c, t, p in itertools.izip(indices, vals, constr_matrix, ties, prirs)] + ["</table>"])  
+
     def __str__(self, constr_matrix=None, indices=None, prirs=None, ties=None, lc=None, lx=None, li=None, lp=None, lt=None, only_name=False):
         filter_ = self._current_slice_
         vals = self.flat

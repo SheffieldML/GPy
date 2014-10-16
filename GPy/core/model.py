@@ -381,6 +381,16 @@ class Model(Parameterized):
             self.optimizer_array = x
             return ret
 
+    def _repr_html_(self):
+        """Representation of the model in html for notebook display."""
+        model_details = [['<b>Model</b>', self.name + '<br>'],
+                         ['<b>Log-likelihood</b>', '{}<br>'.format(float(self.log_likelihood()))],
+                         ["<b>Number of Parameters</b>", '{}<br>'.format(self.size)]]
+        from operator import itemgetter
+        to_print = [""] + ["{}: {}".format(name, detail) for name, detail in model_details] + ["<br><b>Parameters</b>:"]
+        to_print.append(super(Model, self)._repr_html_())
+        return "\n".join(to_print)
+
     def __str__(self):
         model_details = [['Name', self.name],
                          ['Log-likelihood', '{}'.format(float(self.log_likelihood()))],

@@ -139,7 +139,7 @@ def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S):
     denom2 = np.square(denom)
 
     _psi2 = _psi2computations(variance, lengthscale, Z, mu, S) # NxMxM
-    Lpsi2 = dL_dpsi2[None,:,:]*_psi2
+    Lpsi2 = dL_dpsi2*_psi2 # dL_dpsi2 is MxM, using broadcast to multiply N out
     Lpsi2sum = np.einsum('nmo->n',Lpsi2) #N
     Lpsi2Z = np.einsum('nmo,oq->nq',Lpsi2,Z) #NxQ
     Lpsi2Z2 = np.einsum('nmo,oq,oq->nq',Lpsi2,Z,Z) #NxQ

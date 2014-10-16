@@ -370,7 +370,7 @@ class Parameterized(Parameterizable):
         cl = max([len(str(x)) if x else 0 for x in constrs + ["Constraint"]])
         tl = max([len(str(x)) if x else 0 for x in ts + ["Tied to"]])
         pl = max([len(str(x)) if x else 0 for x in prirs + ["Prior"]])
-        format_spec = "<tr><td>{{name:<{0}s}}</td><td>{{desc:>{1}s}}</td><td>{{const:^{2}s}}</td><td>{{pri:^{3}s}}</td><td>{{t:^{4}s}}</td></tr>".format(nl, sl, cl, pl, tl)
+        format_spec = "<tr><td>{{name:<{0}s}}</td><td align=\"right\">{{desc:>{1}s}}</td><td>{{const:^{2}s}}</td><td>{{pri:^{3}s}}</td><td>{{t:^{4}s}}</td></tr>".format(nl, sl, cl, pl, tl)
         to_print = []
         for n, d, c, t, p in itertools.izip(names, desc, constrs, ts, prirs):
             to_print.append(format_spec.format(name=n, desc=d, const=c, t=t, pri=p))

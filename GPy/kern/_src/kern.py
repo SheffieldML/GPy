@@ -6,6 +6,7 @@ import numpy as np
 from ...core.parameterization.parameterized import Parameterized
 from kernel_slice_operations import KernCallsViaSlicerMeta
 from ...util.caching import Cache_this
+from GPy.core.parameterization.observable_array import ObsAr
 
 
 
@@ -54,6 +55,20 @@ class Kern(Parameterized):
 
         self._sliced_X = 0
         self.useGPU = self._support_GPU and useGPU
+        self._return_psi2_n_flag = ObsAr(np.zeros(1)).astype(bool)
+
+    @property
+    def return_psi2_n(self):
+        """
+        Flag whether to pass back psi2 as NxMxM or MxM, by summing out N.
+        """
+        return self._return_psi2_n_flag[0]
+    @return_psi2_n.setter
+    def return_psi2_n(self, val):
+        def visit(self):
+            if isinstance(self, Kern):
+                self._return_psi2_n_flag[0]=val
+        self.traverse(visit)
 
     @Cache_this(limit=20)
     def _slice_X(self, X):
@@ -162,7 +177,7 @@ class Kern(Parameterized):
     def __mul__(self, other):
         """ Here we overload the '*' operator. See self.prod for more information"""
         return self.prod(other)
-    
+
     def __imul__(self, other):
         """ Here we overload the '*' operator. See self.prod for more information"""
         return self.prod(other)

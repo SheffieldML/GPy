@@ -208,12 +208,12 @@ def _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim=False):
     Q_signal = 4
     import GPy
     import numpy as np
-    np.random.seed(0)
+    np.random.seed(3000)
 
-    k = GPy.kern.Matern32(Q_signal, 1., lengthscale=np.random.uniform(1,6,Q_signal), ARD=1)
+    k = GPy.kern.Matern32(Q_signal, 10., lengthscale=1+(np.random.uniform(1,6,Q_signal)), ARD=1)
     t = np.c_[[np.linspace(-1,5,N) for _ in range(Q_signal)]].T
     K = k.K(t)
-    s1, s2, s3, sS = np.random.multivariate_normal(np.zeros(K.shape[0]), K, size=(4))[:,:,None]
+    s2, s1, s3, sS = np.random.multivariate_normal(np.zeros(K.shape[0]), K, size=(4))[:,:,None]
 
     Y1, Y2, Y3, S1, S2, S3 = _generate_high_dimensional_output(D1, D2, D3, s1, s2, s3, sS)
 
@@ -360,7 +360,6 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
                       ):
     from GPy import kern
     from GPy.models import BayesianGPLVM
-    from GPy.inference.latent_function_inference.var_dtc import VarDTCMissingData
 
     D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 400, 3, 4
     _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)

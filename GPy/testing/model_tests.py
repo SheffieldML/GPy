@@ -139,16 +139,16 @@ class MiscTests(unittest.TestCase):
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
         m.kern.randomize()
         m2.kern[''] = m.kern[:]
-        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        np.testing.assert_almost_equal(m.log_likelihood(), m2.log_likelihood())
         m.kern.randomize()
         m2.kern[:] = m.kern[:]
-        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        np.testing.assert_almost_equal(m.log_likelihood(), m2.log_likelihood())
         m.kern.randomize()
         m2.kern[''] = m.kern['']
-        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        np.testing.assert_almost_equal(m.log_likelihood(), m2.log_likelihood())
         m.kern.randomize()
         m2.kern[:] = m.kern[''].values()
-        np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
+        np.testing.assert_almost_equal(m.log_likelihood(), m2.log_likelihood())
 
     def test_big_model(self):
         m = GPy.examples.dimensionality_reduction.mrd_simulation(optimize=0, plot=0, plot_sim=0)

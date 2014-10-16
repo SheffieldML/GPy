@@ -272,7 +272,7 @@ class Param(Parameterizable, ObsAr):
 </tr>"""
         header = header_format.format(x=self.hierarchy_name(), c=__constraints_name__, i=__index_name__, t=__tie_name__, p=__priors_name__)  # nice header for printing
         if not ties: ties = itertools.cycle([''])
-        return "\n".join(['<table>'] + [header] + ["<tr><td>{i}</td><td>{x}</td><td>{c}</td><td>{p}</td><td>{t}</td></tr>".format(x=x, c=" ".join(map(str, c)), p=" ".join(map(str, p)), t=(t or ''), i=i) for i, x, c, t, p in itertools.izip(indices, vals, constr_matrix, ties, prirs)] + ["</table>"])  
+        return "\n".join(['<table>'] + [header] + ["<tr><td>{i}</td><td align=\"right\">{x}</td><td>{c}</td><td>{p}</td><td>{t}</td></tr>".format(x=x, c=" ".join(map(str, c)), p=" ".join(map(str, p)), t=(t or ''), i=i) for i, x, c, t, p in itertools.izip(indices, vals, constr_matrix, ties, prirs)] + ["</table>"])  
 
     def __str__(self, constr_matrix=None, indices=None, prirs=None, ties=None, lc=None, lx=None, li=None, lp=None, lt=None, only_name=False):
         filter_ = self._current_slice_

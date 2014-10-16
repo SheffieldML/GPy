@@ -10,6 +10,10 @@ from parameterization.variational import VariationalPosterior
 
 import logging
 from GPy.inference.latent_function_inference.posterior import Posterior
+from GPy.inference.optimization.stochastics import SparseGPStochastics,\
+    SparseGPMissing
+#no stochastics.py file added! from GPy.inference.optimization.stochastics import SparseGPStochastics,\
+    #SparseGPMissing
 logger = logging.getLogger("sparse gp")
 
 class SparseGP(GP):
@@ -37,12 +41,7 @@ class SparseGP(GP):
 
     def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None,
                  name='sparse gp', Y_metadata=None, normalizer=False,
-                 missing_data=False):
-
-        self.missing_data = missing_data
-        if self.missing_data:
-            self.ninan = ~np.isnan(Y)
-
+                 missing_data=False, stochastic=False, batchsize=1):
         #pick a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
@@ -56,6 +55,22 @@ class SparseGP(GP):
         self.num_inducing = Z.shape[0]
 
         GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
+        self.missing_data = missing_data
+
+        if stochastic and missing_data:
+            self.missing_data = True
+            self.ninan = ~np.isnan(Y)
+            self.stochastics = SparseGPStochastics(self, batchsize)
+        elif stochastic and not missing_data:
+            self.missing_data = False
+            self.stochastics = SparseGPStochastics(self, batchsize)
+        elif missing_data:
+            self.missing_data = True
+            self.ninan = ~np.isnan(Y)
+            self.stochastics = SparseGPMissing(self)
+        else:
+            self.stochastics = False
+
         logger.info("Adding Z as parameter")
         self.link_parameter(self.Z, index=0)
         if self.missing_data:
@@ -71,6 +86,7 @@ class SparseGP(GP):
                 print message,
             print ''
 
+        self.posterior = None
 
     def has_uncertain_inputs(self):
         return isinstance(self.X, VariationalPosterior)
@@ -156,7 +172,31 @@ class SparseGP(GP):
 
         value_indices:
             dictionary holding indices for the update in full_values.
-            if the key exists the update rule is:
+            if the key exists the update rule is:def df(x):
+    m.stochastics.do_stochastics()
+    grads = m._grads(x)
+    print '\r',
+    message = "Lik: {: 6.4E} Grad: {: 6.4E} Dim: {} Lik: {} Len: {!s}".format(float(m.log_likelihood()), np.einsum('i,i->', grads, grads), m.stochastics.d, float(m.likelihood.variance), " ".join(["{:3.2E}".format(l) for l in m.kern.lengthscale.values]))
+    print message,
+    return grads
+
+def grad_stop(threshold):
+    def inner(args):
+        g = args['gradient']
+        return np.sqrt(np.einsum('i,i->',g,g)) < threshold
+    return inner
+
+def maxiter_stop(maxiter):
+    def inner(args):
+        return args['n_iter'] == maxiter
+    return inner
+
+def optimize(m, maxiter=1000):
+    #opt = climin.RmsProp(m.optimizer_array.copy(), df, 1e-6, decay=0.9, momentum=0.9, step_adapt=1e-7)
+    opt = climin.Adadelta(m.optimizer_array.copy(), df, 1e-2, decay=0.9)
+    ret = opt.minimize_until((grad_stop(.1), maxiter_stop(maxiter)))
+    print
+    return ret
             full_values[key][value_indices[key]] += current_values[key]
         """
         for key in current_values.keys():
@@ -206,22 +246,29 @@ class SparseGP(GP):
     def _outer_loop_for_missing_data(self):
         Lm = None
         dL_dKmm = None
-        Kmm = None
 
         self._log_marginal_likelihood = 0
         full_values = self._outer_init_full_values()
 
-        woodbury_inv = np.zeros((self.num_inducing, self.num_inducing, self.output_dim))
-        woodbury_vector = np.zeros((self.num_inducing, self.output_dim))
-        m_f = lambda i: "Inference with missing data: {: >7.2%}".format(float(i+1)/self.output_dim)
-        message = m_f(-1)
-        print message,
-        for d in xrange(self.output_dim):
+        if self.posterior is None:
+            woodbury_inv = np.zeros((self.num_inducing, self.num_inducing, self.output_dim))
+            woodbury_vector = np.zeros((self.num_inducing, self.output_dim))
+        else:
+            woodbury_inv = self.posterior._woodbury_inv
+            woodbury_vector = self.posterior._woodbury_vector
+
+        if not self.stochastics:
+            m_f = lambda i: "Inference with missing_data: {: >7.2%}".format(float(i+1)/self.output_dim)
+            message = m_f(-1)
+            print message,
+
+        for d in self.stochastics.d:
             ninan = self.ninan[:, d]
 
-            print ' '*(len(message)) + '\r',
-            message = m_f(d)
-            print message,
+            if not self.stochastics:
+                print ' '*(len(message)) + '\r',
+                message = m_f(d)
+                print message,
 
             posterior, log_marginal_likelihood, \
                 grad_dict, current_values, value_indices = self._inner_parameters_changed(
@@ -236,19 +283,50 @@ class SparseGP(GP):
 
             Lm = posterior.K_chol
             dL_dKmm = grad_dict['dL_dKmm']
-            Kmm = posterior._K
             woodbury_inv[:, :, d] = posterior.woodbury_inv
             woodbury_vector[:, d:d+1] = posterior.woodbury_vector
             self._log_marginal_likelihood += log_marginal_likelihood
-        print ''
+        if not self.stochastics:
+            print ''
 
-        self.posterior = Posterior(woodbury_inv=woodbury_inv, woodbury_vector=woodbury_vector,
-                                   K=Kmm, mean=None, cov=None, K_chol=Lm)
+        if self.posterior is None:
+            self.posterior = Posterior(woodbury_inv=woodbury_inv, woodbury_vector=woodbury_vector,
+                                   K=posterior._K, mean=None, cov=None, K_chol=posterior.K_chol)
         self._outer_values_update(full_values)
+
+    def _outer_loop_without_missing_data(self):
+        self._log_marginal_likelihood = 0
+
+        if self.posterior is None:
+            woodbury_inv = np.zeros((self.num_inducing, self.num_inducing, self.output_dim))
+            woodbury_vector = np.zeros((self.num_inducing, self.output_dim))
+        else:
+            woodbury_inv = self.posterior._woodbury_inv
+            woodbury_vector = self.posterior._woodbury_vector
+
+        d = self.stochastics.d
+        posterior, log_marginal_likelihood, \
+            grad_dict, current_values, _ = self._inner_parameters_changed(
+                            self.kern, self.X,
+                            self.Z, self.likelihood,
+                            self.Y_normalized[:, d], self.Y_metadata)
+        self.grad_dict = grad_dict
+
+        self._log_marginal_likelihood += log_marginal_likelihood
+
+        self._outer_values_update(current_values)
+
+        woodbury_inv[:, :, d] = posterior.woodbury_inv[:, :, None]
+        woodbury_vector[:, d] = posterior.woodbury_vector
+        if self.posterior is None:
+            self.posterior = Posterior(woodbury_inv=woodbury_inv, woodbury_vector=woodbury_vector,
+                                   K=posterior._K, mean=None, cov=None, K_chol=posterior.K_chol)
 
     def parameters_changed(self):
         if self.missing_data:
             self._outer_loop_for_missing_data()
+        elif self.stochastics:
+            self._outer_loop_without_missing_data()
         else:
             self.posterior, self._log_marginal_likelihood, self.grad_dict, full_values, _ = self._inner_parameters_changed(self.kern, self.X, self.Z, self.likelihood, self.Y_normalized, self.Y_metadata)
             self._outer_values_update(full_values)

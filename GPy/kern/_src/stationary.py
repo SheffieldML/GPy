@@ -8,9 +8,9 @@ from ...core.parameterization.transformations import Logexp
 from ...util.linalg import tdot
 from ... import util
 import numpy as np
-from scipy import integrate
-from ...util.caching import Cache_this
+from scipy import integrate, weave
 from ...util.config import config # for assesing whether to use weave
+from ...util.caching import Cache_this
 
 class Stationary(Kern):
     """
@@ -72,6 +72,13 @@ class Stationary(Kern):
 
     @Cache_this(limit=5, ignore_args=())
     def K(self, X, X2=None):
+        """
+        Kernel function applied on inputs X and X2.
+        In the stationary case there is an inner function depending on the
+        distances from X to X2, called r.
+
+        K(X, X2) = K_of_r((X-X2)**2)
+        """
         r = self._scaled_dist(X, X2)
         return self.K_of_r(r)
 
@@ -125,10 +132,22 @@ class Stationary(Kern):
         return ret
 
     def update_gradients_diag(self, dL_dKdiag, X):
+        """
+        Given the derivative of the objective with respect to the diagonal of
+        the covariance matrix, compute the derivative wrt the parameters of
+        this kernel and stor in the <parameter>.gradient field.
+
+        See also update_gradients_full
+        """
         self.variance.gradient = np.sum(dL_dKdiag)
         self.lengthscale.gradient = 0.
 
     def update_gradients_full(self, dL_dK, X, X2=None):
+        """
+        Given the derivative of the objective wrt the covariance matrix
+        (dL_dK), compute the gradient wrt the parameters of this kernel,
+        and store in the parameters object as e.g. self.variance.gradient
+        """
         self.variance.gradient = np.einsum('ij,ij,i', self.K(X, X2), dL_dK, 1./self.variance)
 
         #now the lengthscale gradient(s)
@@ -166,6 +185,7 @@ class Stationary(Kern):
         return 1./np.where(dist != 0., dist, np.inf)
 
     def weave_lengthscale_grads(self, tmp, X, X2):
+        """Use scipy.weave to compute derivatives wrt the lengthscales"""
         N,M = tmp.shape
         Q = X.shape[1]
         if hasattr(X, 'values'):X = X.values
@@ -183,7 +203,6 @@ class Stationary(Kern):
           grads[q] = gradq;
         }
         """
-        from scipy import weave
         weave.inline(code, ['tmp', 'X', 'X2', 'grads', 'N', 'M', 'Q'], type_converters=weave.converters.blitz, support_code="#include <math.h>")
         return -grads/self.lengthscale**3
 
@@ -383,7 +402,7 @@ class Matern52(Stationary):
 
 class ExpQuad(Stationary):
     """
-    The Exponentiated quadratic covariance function. 
+    The Exponentiated quadratic covariance function.
 
     .. math::
 

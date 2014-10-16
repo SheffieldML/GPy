@@ -12,7 +12,7 @@ from sympy.utilities.iterables import numbered_symbols
 import scipy
 import GPy
 #from scipy.special import gammaln, gamma, erf, erfc, erfcx, polygamma
-from GPy.util.symbolic import normcdf, normcdfln, logistic, logisticln, erfcx, erfc, gammaln
+#@NDL you removed this file! #from GPy.util.symbolic import normcdf, normcdfln, logistic, logisticln, erfcx, erfc, gammaln
 def getFromDict(dataDict, mapList):
     return reduce(lambda d, k: d[k], mapList, dataDict)
 

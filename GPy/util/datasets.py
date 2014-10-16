@@ -964,7 +964,7 @@ def singlecell_rna_seq_deng(dataset='singlecell_deng'):
     if not data_available(dataset):
         download_data(dataset)
 
-    from pandas import read_csv
+    from pandas import read_csv, isnull
     dir_path = os.path.join(data_path, dataset)
 
     # read the info .soft
@@ -982,6 +982,21 @@ def singlecell_rna_seq_deng(dataset='singlecell_deng'):
     c = sample_info.columns.to_series()
     c[1:4] = ['strain', 'cross', 'developmental_stage']
     sample_info.columns = c
+
+    # get the labels right:
+    rep = re.compile('\(.*\)')
+    def filter_dev_stage(row):
+        if isnull(row):
+            row = "2-cell stage embryo"
+        if row.startswith("developmental stage: "):
+            row = row[len("developmental stage: "):]
+        if row == 'adult':
+            row += " liver"
+        row = row.replace(' stage ', ' ')
+        row = rep.sub(' ', row)
+        row = row.strip(' ')
+        return row
+    labels = sample_info.developmental_stage.apply(filter_dev_stage)
 
     # Extract the tar file
     filename = os.path.join(dir_path, 'GSE45719_Raw.tar')
@@ -1016,8 +1031,7 @@ def singlecell_rna_seq_deng(dataset='singlecell_deng'):
     sample_info.index = data.index
 
     # get the labels from the description
-    rep = re.compile('fibroblast|\d+-cell|embryo|liver|blastocyst|blastomere|zygote', re.IGNORECASE)
-    labels = sample_info.developmental_stage.apply(lambda row: " ".join(rep.findall(row)))
+    #rep = re.compile('fibroblast|\d+-cell|embryo|liver|early blastocyst|mid blastocyst|late blastocyst|blastomere|zygote', re.IGNORECASE)
 
     sys.stdout.write(' '*len(message) + '\r')
     sys.stdout.flush()

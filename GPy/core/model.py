@@ -213,7 +213,7 @@ class Model(Parameterized):
     def optimize(self, optimizer=None, start=None, **kwargs):
         """
         Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
-        
+
         kwargs are passed to the optimizer. They can be:
 
         :param max_f_eval: maximum number of function evaluations
@@ -231,7 +231,7 @@ class Model(Parameterized):
           - 'lbfgsb': the l-bfgs-b method (see scipy.optimize.fmin_l_bfgs_b),
           - 'sgd': stochastic gradient decsent (see scipy.optimize.sgd). For experts only!
 
- 
+
         """
         if self.is_fixed:
             raise RuntimeError, "Cannot optimize, when everything is fixed"
@@ -300,7 +300,7 @@ class Model(Parameterized):
             # just check the global ratio
             dx = np.zeros(x.shape)
             dx[transformed_index] = step * (np.sign(np.random.uniform(-1, 1, transformed_index.size)) if transformed_index.size != 2 else 1.)
-            
+
             # evaulate around the point x
             f1 = self._objective(x + dx)
             f2 = self._objective(x - dx)

@@ -177,11 +177,12 @@ class Bernoulli(Likelihood):
             (the distribution for y_i depends only on inverse link of f_i not on inverse link of f_(j!=i)
         """
         #d2logpdf_dlink2 = -y/(inv_link_f**2) - (1-y)/((1-inv_link_f)**2)
-        state = np.seterr(divide='ignore')
-        # TODO check y \in {0, 1} or {-1, 1}
         #d2logpdf_dlink2 = np.where(y, -1./np.square(inv_link_f), -1./np.square(1.-inv_link_f))
         arg = np.where(y, inv_link_f, 1.-inv_link_f)
-        return -1./np.square(arg)
+        ret =  -1./np.square(np.clip(arg, 1e-3, np.inf))
+        if np.any(np.isinf(ret)):
+            stop
+        return ret
 
     def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):
         """

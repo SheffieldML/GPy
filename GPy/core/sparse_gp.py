@@ -10,8 +10,8 @@ from parameterization.variational import VariationalPosterior
 
 import logging
 from GPy.inference.latent_function_inference.posterior import Posterior
-from GPy.inference.optimization.stochastics import SparseGPStochastics,\
-    SparseGPMissing
+#no stochastics.py file added! from GPy.inference.optimization.stochastics import SparseGPStochastics,\
+    #SparseGPMissing
 logger = logging.getLogger("sparse gp")
 
 class SparseGP(GP):

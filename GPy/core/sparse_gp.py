@@ -110,7 +110,10 @@ class SparseGP(GP):
         like them into this dictionary for inner use of the indices inside the
         algorithm.
         """
-        posterior, log_marginal_likelihood, grad_dict = self.inference_method.inference(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm, dL_dKmm=None)
+        try:
+            posterior, log_marginal_likelihood, grad_dict = self.inference_method.inference(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm, dL_dKmm=None)
+        except:
+            posterior, log_marginal_likelihood, grad_dict = self.inference_method.inference(kern, X, Z, likelihood, Y, Y_metadata)
         current_values = {}
         likelihood.update_gradients(grad_dict['dL_dthetaL'])
         current_values['likgrad'] = likelihood.gradient.copy()

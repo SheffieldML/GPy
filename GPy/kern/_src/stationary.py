@@ -248,7 +248,6 @@ class Stationary(Kern):
             tmp = tmp + tmp.T
             X2 = X
 
-        ret = np.zeros(X.shape)
         code = """
         int n,q,d;
         double retnd;
@@ -262,9 +261,12 @@ class Stationary(Kern):
           }
         }
         """
-        from scipy import weave
+        if hasattr(X, 'values'):X = X.values #remove the GPy wrapping to make passing into weave safe
+        if hasattr(X2, 'values'):X2 = X2.values
+        ret = np.zeros(X.shape)
         N,D = X.shape
         Q = tmp.shape[1]
+        from scipy import weave
         weave.inline(code, ['ret', 'N', 'D', 'Q', 'tmp', 'X', 'X2'], type_converters=weave.converters.blitz)
         return ret/self.lengthscale**2
     

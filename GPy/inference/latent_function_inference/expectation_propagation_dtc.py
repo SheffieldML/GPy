@@ -21,6 +21,13 @@ class EPDTC(LatentFunctionInference):
         self.get_trYYT.limit = limit
         self.get_YYTfactor.limit = limit
 
+    def on_optimization_start(self):
+        self._ep_approximation = None
+
+    def on_optimization_end(self):
+        # TODO: update approximation in the end as well? Maybe even with a switch?
+        pass
+
     def _get_trYYT(self, Y):
         return np.sum(np.square(Y))
 

@@ -49,7 +49,7 @@ class Kern(Parameterized):
         if active_dims is None:
             active_dims = np.arange(input_dim)
 
-        self.active_dims = np.array(active_dims, dtype=int)
+        self.active_dims = np.atleast_1d(active_dims).astype(int)
 
         assert self.active_dims.size == self.input_dim, "input_dim={} does not match len(active_dim)={}, active_dims={}".format(self.input_dim, self.active_dims.size, self.active_dims)
 

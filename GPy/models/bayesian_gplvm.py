@@ -3,7 +3,7 @@
 
 import numpy as np
 from .. import kern
-from ..core import SparseGP
+from ..core.sparse_gp_mpi import SparseGP_MPI
 from ..likelihoods import Gaussian
 from ..inference.optimization import SCG
 from ..util import linalg
@@ -12,7 +12,7 @@ from ..inference.latent_function_inference.var_dtc_parallel import update_gradie
 from ..inference.latent_function_inference.var_dtc_gpu import VarDTC_GPU
 import logging
 
-class BayesianGPLVM(SparseGP):
+class BayesianGPLVM(SparseGP_MPI):
     """
     Bayesian Gaussian Process Latent Variable Model
 
@@ -76,19 +76,7 @@ class BayesianGPLVM(SparseGP):
         if kernel.useGPU and isinstance(inference_method, VarDTC_GPU):
             kernel.psicomp.GPU_direct = True
 
-        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method, name, normalizer=normalizer)
-        self.logger.info("Adding X as parameter")
-        self.link_parameter(self.X, index=0)
-
-        if mpi_comm != None:
-            from ..util.parallel import divide_data
-            N_start, N_end, N_list = divide_data(Y.shape[0], mpi_comm)
-            self.N_range = (N_start, N_end)
-            self.N_list = np.array(N_list)
-            self.Y_local = self.Y[N_start:N_end]
-            print 'MPI RANK: '+str(self.mpi_comm.rank)+' with datasize: '+str(self.N_range)
-            mpi_comm.Bcast(self.param_array, root=0)
-
+        super(BayesianGPLVM,self).__init__(X, Y, Z, kernel, likelihood=likelihood, name=name, inference_method=inference_method, normalizer=normalizer, mpi_comm=mpi_comm, variational_prior=self.variational_prior)
 
     def set_X_gradients(self, X, X_grad):
         """Set the gradients of the posterior distribution of X in its specific form."""
@@ -99,8 +87,8 @@ class BayesianGPLVM(SparseGP):
         return X.mean.gradient, X.variance.gradient
 
     def parameters_changed(self):
-        if isinstance(self.inference_method, VarDTC_GPU) or isinstance(self.inference_method, VarDTC_minibatch):
-            update_gradients(self, mpi_comm=self.mpi_comm)
+        super(BayesianGPLVM,self).parameters_changed()
+        if isinstance(self.inference_method, VarDTC_minibatch):
             return
 
         super(BayesianGPLVM, self).parameters_changed()
@@ -212,55 +200,10 @@ class BayesianGPLVM(SparseGP):
         from ..plotting.matplot_dep import dim_reduction_plots
 
         return dim_reduction_plots.plot_steepest_gradient_map(self,*args,**kwargs)
-    def __getstate__(self):
-        dc = super(BayesianGPLVM, self).__getstate__()
-        dc['mpi_comm'] = None
-        if self.mpi_comm != None:
-            del dc['N_range']
-            del dc['N_list']
-            del dc['Y_local']
-        return dc
-
-    def __setstate__(self, state):
-        return super(BayesianGPLVM, self).__setstate__(state)
-
-    #=====================================================
-    # The MPI parallelization
-    #     - can move to model at some point
-    #=====================================================
-
-    def _set_params_transformed(self, p):
-        if self.mpi_comm != None:
-            if self.__IN_OPTIMIZATION__ and self.mpi_comm.rank==0:
-                self.mpi_comm.Bcast(np.int32(1),root=0)
-            self.mpi_comm.Bcast(p, root=0)
-        super(BayesianGPLVM, self)._set_params_transformed(p)
-
-    def optimize(self, optimizer=None, start=None, **kwargs):
-        self.__IN_OPTIMIZATION__ = True
-        if self.mpi_comm==None:
-            super(BayesianGPLVM, self).optimize(optimizer,start,**kwargs)
-        elif self.mpi_comm.rank==0:
-            super(BayesianGPLVM, self).optimize(optimizer,start,**kwargs)
-            self.mpi_comm.Bcast(np.int32(-1),root=0)
-        elif self.mpi_comm.rank>0:
-            x = self._get_params_transformed().copy()
-            flag = np.empty(1,dtype=np.int32)
-            while True:
-                self.mpi_comm.Bcast(flag,root=0)
-                if flag==1:
-                    self._set_params_transformed(x)
-                elif flag==-1:
-                    break
-                else:
-                    self.__IN_OPTIMIZATION__ = False
-                    raise Exception("Unrecognizable flag for synchronization!")
-        self.__IN_OPTIMIZATION__ = False
 
     def inference_X(self, Y_new):
         from ..inference.latent_function_inference.inference_X import inference_newX
         return inference_newX(self, Y_new)
-
 
 def latent_cost_and_grad(mu_S, input_dim, kern, Z, dL_dpsi0, dL_dpsi1, dL_dpsi2):
     """

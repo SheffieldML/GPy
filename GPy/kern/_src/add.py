@@ -151,10 +151,10 @@ class Add(CombinationKernel):
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         from static import White, Bias
         target_grads = [np.zeros(v.shape) for v in variational_posterior.parameters]
-        for p1 in self.parameters:
+        for p1 in self.parts:
             #compute the effective dL_dpsi1. extra terms appear becaue of the cross terms in psi2!
             eff_dL_dpsi1 = dL_dpsi1.copy()
-            for p2 in self.parameters:
+            for p2 in self.parts:
                 if p2 is p1:
                     continue
                 if isinstance(p2, White):
@@ -169,7 +169,7 @@ class Add(CombinationKernel):
 
     def add(self, other):
         if isinstance(other, Add):
-            other_params = other.parameters[:]
+            other_params = other.parts[:]
             for p in other_params:
                 other.unlink_parameter(p)
             self.link_parameters(*other_params)

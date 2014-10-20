@@ -64,7 +64,7 @@ class SSGPLVM(SparseGP_MPI):
             [self.X.gamma[:,i].tie_together() for i in xrange(self.X.gamma.shape[1])] # Tie columns together
             
     def _init_X(self, input_dim, Y=None, X=None, X_variance=None, Gamma=None, init='PCA'):
-        if X == None:
+        if X is None:
             from ..util.initialization import initialize_latent
             X, fracs = initialize_latent(init, input_dim, Y)
         else:

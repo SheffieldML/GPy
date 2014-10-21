@@ -27,12 +27,20 @@ class Transformation(object):
         if not cls._instance or cls._instance.__class__ is not cls:
             cls._instance = super(Transformation, cls).__new__(cls, *args, **kwargs)
         return cls._instance
-    def f(self, x):
+    def f(self, opt_param):
         raise NotImplementedError
-    def finv(self, x):
+    def finv(self, model_param):
         raise NotImplementedError
-    def gradfactor(self, f):
-        """ df_dx evaluated at self.f(x)=f"""
+    def gradfactor(self, model_param, dL_dmodel_param):
+        """ df(opt_param)_dopt_param evaluated at self.f(opt_param)=model_param, times the gradient dL_dmodel_param,
+
+        i.e.:
+        define
+
+        .. math::
+
+            \frac{\frac{\partial L}{\partial f}\left(\left.\partial f(x)}{\partial x}\right|_{x=f^{-1}(f)\right)}
+        """
         raise NotImplementedError
     def initialize(self, f):
         """ produce a sensible initial value for f(x)"""
@@ -58,14 +66,200 @@ class Logexp(Transformation):
         #raises overflow warning: return np.where(x>_lim_val, x, np.log(1. + np.exp(x)))
     def finv(self, f):
         return np.where(f>_lim_val, f, np.log(np.exp(f+1e-20) - 1.))
-    def gradfactor(self, f):
-        return np.where(f>_lim_val, 1., 1. - np.exp(-f))
+    def gradfactor(self, f, df):
+        return np.einsum('i,i->i', df, np.where(f>_lim_val, 1., 1. - np.exp(-f)))
     def initialize(self, f):
         if np.any(f < 0.):
             print "Warning: changing parameters to satisfy constraints"
         return np.abs(f)
     def __str__(self):
         return '+ve'
+
+class NormalTheta(Transformation):
+    _instances = []
+    def __new__(cls, mu_indices, var_indices):
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if np.all(instance().mu_indices==mu_indices, keepdims=False) and np.all(instance().var_indices==var_indices, keepdims=False):
+                    return instance()
+        o = super(Transformation, cls).__new__(cls, mu_indices, var_indices)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
+
+    def __init__(self, mu_indices, var_indices):
+        self.mu_indices = mu_indices
+        self.var_indices = var_indices
+
+    def f(self, theta):
+        # In here abs is only a trick to make sure the numerics are ok.
+        # The variance will never go below zero, but at initialization we need to make sure
+        # that the values are ok
+        theta[self.var_indices] = np.abs(-.5/theta[self.var_indices])
+        theta[self.mu_indices] *= theta[self.var_indices]
+        return theta # which is now {mu, var}
+
+    def finv(self, muvar):
+        varp = muvar[self.var_indices]
+        muvar[self.mu_indices] /= varp
+        muvar[self.var_indices] = -.5/varp
+        return muvar # which is now {theta1, theta2}
+
+    def gradfactor(self, muvar, dmuvar):
+        mu = muvar[self.mu_indices]
+        var = muvar[self.var_indices]
+
+        #=======================================================================
+        # theta gradients
+        # This works and the gradient checks!
+        dmuvar[self.mu_indices] = dmu = dmuvar[self.mu_indices] * var
+        dmuvar[self.var_indices] = (dmuvar[self.var_indices] * 2) * var * var
+        dmuvar[self.var_indices] += 2 * dmu * mu
+        #=======================================================================
+
+        return dmuvar # which is now the gradient multiplicator
+
+    def initialize(self, f):
+        if np.any(f[self.var_indices] < 0.):
+            print "Warning: changing parameters to satisfy constraints"
+            f[self.var_indices] = np.abs(f[self.var_indices])
+        return f
+
+    def __str__(self):
+        return "theta"
+
+class NormalNatural(NormalTheta):
+    _instances = []
+    def __new__(cls, mu_indices, var_indices):
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if np.all(instance().mu_indices==mu_indices, keepdims=False) and np.all(instance().var_indices==var_indices, keepdims=False):
+                    return instance()
+        o = super(Transformation, cls).__new__(cls, mu_indices, var_indices)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
+
+    def __init__(self, mu_indices, var_indices):
+        self.mu_indices = mu_indices
+        self.var_indices = var_indices
+
+    def gradfactor(self, muvar, dmuvar):
+        mu = muvar[self.mu_indices]
+        var = muvar[self.var_indices]
+
+        #=======================================================================
+        # theta gradients
+        # This works and the gradient checks!
+        #dmuvar[self.mu_indices] = dmu = np.einsum('i,i->i', dmuvar[self.mu_indices], var)
+        #dmuvar[self.var_indices] = np.einsum('i,i,i,i->i', dmuvar[self.var_indices], [2], var, var)
+        #dmuvar[self.var_indices] += np.einsum('i,i,i->i', dmu, [2], mu)
+        #=======================================================================
+
+        #=======================================================================
+        # Lets try natural gradients instead:
+        # This should be instead of getting the gradient in
+        # theta, we take the gradient in eta
+        # and return this.
+        # This will not gradcheck!!!
+        #dmuvar[self.mu_indices] -= 2*mu*dmuvar[self.var_indices]
+        #dmuvar[self.var_indices] = np.einsum('i,i,i,i->i', dmuvar[self.var_indices], [2], var, var)
+        #dmuvar[self.var_indices] += np.einsum('i,i,i,i->i', dmuvar[self.mu_indices], var, [2], mu)
+        #=======================================================================
+        dmu = dmuvar[self.mu_indices]
+        dmuvar[self.var_indices] += dmu*mu*(var + 4/var)
+        return dmuvar # which is now the gradient multiplicator
+
+    def __str__(self):
+        return "natgrad"
+
+class NormalNaturalAntti(Transformation):
+    _instances = []
+    _logexp = Logexp()
+    def __new__(cls, mu_indices, var_indices):
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if np.all(instance().mu_indices==mu_indices, keepdims=False) and np.all(instance().var_indices==var_indices, keepdims=False):
+                    return instance()
+        o = super(Transformation, cls).__new__(cls, mu_indices, var_indices)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
+
+    def __init__(self, mu_indices, var_indices):
+        self.mu_indices = mu_indices
+        self.var_indices = var_indices
+
+    def f(self, theta):
+        theta[self.var_indices] = np.abs(theta[self.var_indices])
+        return theta # which is now {mu, var}
+
+    def finv(self, muvar):
+        return muvar # which is now {theta1, theta2}
+
+    def gradfactor(self, muvar, dmuvar):
+        mu = muvar[self.mu_indices]
+        var = muvar[self.var_indices]
+
+        #=======================================================================
+        # theta gradients
+        # This works and the gradient checks!
+        dmuvar[self.mu_indices] *= var
+        dmuvar[self.var_indices] = np.einsum('i,i,i,i->i', dmuvar[self.var_indices], [2], var, var)
+        #=======================================================================
+
+        return dmuvar # which is now the gradient multiplicator
+
+    def initialize(self, f):
+        if np.any(f[self.var_indices] < 0.):
+            print "Warning: changing parameters to satisfy constraints"
+            f[self.var_indices] = np.abs(f[self.var_indices])
+        return f
+
+    def __str__(self):
+        return "natantti"
+
+class NormalEta(Transformation):
+    _instances = []
+    def __new__(cls, mu_indices, var_indices):
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if np.all(instance().mu_indices==mu_indices, keepdims=False) and np.all(instance().var_indices==var_indices, keepdims=False):
+                    return instance()
+        o = super(Transformation, cls).__new__(cls, mu_indices, var_indices)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
+
+    def __init__(self, mu_indices, var_indices):
+        self.mu_indices = mu_indices
+        self.var_indices = var_indices
+
+    def f(self, theta):
+        theta[self.var_indices] = np.abs(theta[self.var_indices] - theta[self.mu_indices]**2)
+        return theta # which is now {mu, var}
+
+    def finv(self, muvar):
+        muvar[self.var_indices] += muvar[self.mu_indices]**2
+        return muvar # which is now {eta1, eta2}
+
+    def gradfactor(self, muvar, dmuvar):
+        mu = muvar[self.mu_indices]
+        #=======================================================================
+        # Lets try natural gradients instead: Not working with bfgs... try stochastic!
+        dmuvar[self.mu_indices] -= 2*mu*dmuvar[self.var_indices]
+        #=======================================================================
+        return dmuvar # which is now the gradient multiplicator
+
+    def initialize(self, f):
+        if np.any(f[self.var_indices] < 0.):
+            print "Warning: changing parameters to satisfy constraints"
+            f[self.var_indices] = np.abs(f[self.var_indices])
+        return f
+
+    def __str__(self):
+        return "eta"
+
 
 
 class LogexpNeg(Transformation):
@@ -75,8 +269,8 @@ class LogexpNeg(Transformation):
         #raises overflow warning: return np.where(x>_lim_val, x, np.log(1. + np.exp(x)))
     def finv(self, f):
         return np.where(f>_lim_val, 0, np.log(np.exp(-f) - 1.))
-    def gradfactor(self, f):
-        return np.where(f>_lim_val, -1, -1 + np.exp(-f))
+    def gradfactor(self, f, df):
+        return np.einsum('i,i->i', df, np.where(f>_lim_val, -1, -1 + np.exp(-f)))
     def initialize(self, f):
         if np.any(f < 0.):
             print "Warning: changing parameters to satisfy constraints"
@@ -92,8 +286,8 @@ class NegativeLogexp(Transformation):
         return -self.logexp.f(x)  # np.log(1. + np.exp(x))
     def finv(self, f):
         return self.logexp.finv(-f)  # np.log(np.exp(-f) - 1.)
-    def gradfactor(self, f):
-        return -self.logexp.gradfactor(-f)
+    def gradfactor(self, f, df):
+        return np.einsum('i,i->i', df, -self.logexp.gradfactor(-f))
     def initialize(self, f):
         return -self.logexp.initialize(f)  # np.abs(f)
     def __str__(self):
@@ -125,10 +319,10 @@ class LogexpClipped(Logexp):
         return np.clip(f, self.min_bound, self.max_bound)
     def finv(self, f):
         return np.log(np.exp(f - 1.))
-    def gradfactor(self, f):
+    def gradfactor(self, f, df):
         ef = np.exp(f) # np.clip(f, self.min_bound, self.max_bound))
         gf = (ef - 1.) / ef
-        return gf # np.where(f < self.lower, 0, gf)
+        return np.einsum('i,i->i', df, gf) # np.where(f < self.lower, 0, gf)
     def initialize(self, f):
         if np.any(f < 0.):
             print "Warning: changing parameters to satisfy constraints"
@@ -143,8 +337,8 @@ class Exponent(Transformation):
         return np.where(x<_lim_val, np.where(x>-_lim_val, np.exp(x), np.exp(-_lim_val)), np.exp(_lim_val))
     def finv(self, x):
         return np.log(x)
-    def gradfactor(self, f):
-        return f
+    def gradfactor(self, f, df):
+        return np.einsum('i,i->i', df, f)
     def initialize(self, f):
         if np.any(f < 0.):
             print "Warning: changing parameters to satisfy constraints"
@@ -158,8 +352,8 @@ class NegativeExponent(Exponent):
         return -Exponent.f(x)
     def finv(self, f):
         return Exponent.finv(-f)
-    def gradfactor(self, f):
-        return f
+    def gradfactor(self, f, df):
+        return np.einsum('i,i->i', df, f)
     def initialize(self, f):
         return -Exponent.initialize(f) #np.abs(f)
     def __str__(self):
@@ -171,8 +365,8 @@ class Square(Transformation):
         return x ** 2
     def finv(self, x):
         return np.sqrt(x)
-    def gradfactor(self, f):
-        return 2 * np.sqrt(f)
+    def gradfactor(self, f, df):
+        return np.einsum('i,i->i', df, 2 * np.sqrt(f))
     def initialize(self, f):
         return np.abs(f)
     def __str__(self):
@@ -201,8 +395,8 @@ class Logistic(Transformation):
         return self.lower + self.difference / (1. + np.exp(-x))
     def finv(self, f):
         return np.log(np.clip(f - self.lower, 1e-10, np.inf) / np.clip(self.upper - f, 1e-10, np.inf))
-    def gradfactor(self, f):
-        return (f - self.lower) * (self.upper - f) / self.difference
+    def gradfactor(self, f, df):
+        return np.einsum('i,i->i', df, (f - self.lower) * (self.upper - f) / self.difference)
     def initialize(self, f):
         if np.any(np.logical_or(f < self.lower, f > self.upper)):
             print "Warning: changing parameters to satisfy constraints"
@@ -211,6 +405,5 @@ class Logistic(Transformation):
         return np.where(np.logical_or(f < self.lower, f > self.upper), self.f(np.zeros_like(f)), f)
     def __str__(self):
         return '{},{}'.format(self.lower, self.upper)
-
 
 

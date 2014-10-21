@@ -18,7 +18,7 @@ import numpy as np
 import re
 import logging
 
-__updated__ = '2014-10-09'
+__updated__ = '2014-10-20'
 
 class HierarchyError(Exception):
     """
@@ -784,7 +784,7 @@ class OptimizationHandlable(Indexable):
         constraint to it.
         """
         self._highest_parent_.tie.collate_gradient()
-        [np.put(g, i, g[i] * c.gradfactor(self.param_array[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
+        [np.put(g, i, c.gradfactor(self.param_array[i], g[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g
 
@@ -845,6 +845,7 @@ class OptimizationHandlable(Indexable):
         unfixlist = np.ones((self.size,),dtype=np.bool)
         unfixlist[self.constraints[__fixed__]] = False
         self.param_array.flat[unfixlist] = x.view(np.ndarray).ravel()[unfixlist]
+        [np.put(self.param_array, ind, c.initialize(self.param_array[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
         self.update_model(updates)
 
     #===========================================================================

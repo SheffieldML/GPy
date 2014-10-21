@@ -436,8 +436,8 @@ def ssmrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, Q, plot_sim)
 
     #Ylist = [Ylist[0]]
-    k = kern.RBF(Q, ARD=True)
-    m = SSMRD(Ylist, input_dim=Q, num_inducing=num_inducing, kernel=k, initx="PCA_concat", initz='permute', **kw)
+    ks = [kern.RBF(Q, ARD=True) for i in xrange(3)]
+    m = SSMRD(Ylist, input_dim=Q, num_inducing=num_inducing, kernels=ks, initx="PCA_concat", initz='permute', **kw)
     
     m['.*noise'] = [Y.var()/40. for Y in Ylist]
 

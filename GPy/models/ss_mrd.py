@@ -31,7 +31,7 @@ class SSMRD(Model):
             inference_methods = [None]* len(Ylist)
         
         self.var_priors = [VarPrior_SSMRD(nModels=len(Ylist),pi=pi,learnPi=False, group_spike=True) for i in xrange(len(Ylist))]
-        self.models = [SSGPLVM(y, input_dim, X=X, X_variance=X_variance, Gamma=Gammas[i], num_inducing=num_inducing,Z=Zs[i], learnPi=False, group_spike=True,
+        self.models = [SSGPLVM(y, input_dim, X=X.copy(), X_variance=X_variance, Gamma=Gammas[i], num_inducing=num_inducing,Z=Zs[i], learnPi=False, group_spike=True,
                                kernel=kernel.copy(),inference_method=inference_methods[i],likelihood=likelihoods[i], variational_prior=self.var_priors[i],
                                name='model_'+str(i), mpi_comm=mpi_comm) for i,y in enumerate(Ylist)]
         self.link_parameters(*(self.models))

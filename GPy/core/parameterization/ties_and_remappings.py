@@ -91,7 +91,7 @@ class Tie(Parameterized):
             def _sync_val_p(p, tieparam, read):
                 if p.tie is not None:
 #                    ltoi = self._label_to_idx
-                    ltoi = np.zeros((self.tied_param.size+1,),dtype=np.int32)
+                    ltoi = np.zeros((self.tied_param.tie.max()+1,),dtype=np.int32)
                     ltoi[self.tied_param.tie] = range(self.tied_param.size)
                     totie = 1 if toTiedParam else 0
                     p_idx = p._raveled_index()
@@ -142,7 +142,7 @@ class Tie(Parameterized):
                 if p is tieparam:
                     return
 #                    ltoi = self._label_to_idx
-                ltoi = np.zeros((self.tied_param.size+1,),dtype=np.int32)
+                ltoi = np.zeros((self.tied_param.tie.max()+1,),dtype=np.int32)
                 ltoi[self.tied_param.tie] = range(self.tied_param.size)
                 p_tie = p.tie.flatten()
                 p_size = p.size
@@ -195,7 +195,7 @@ class Tie(Parameterized):
                 if p is tieparam:
                     return
 #                    ltoi = self._label_to_idx
-                ltoi = np.zeros((self.tied_param.size+1,),dtype=np.int32)
+                ltoi = np.zeros((self.tied_param.tie.max()+1,),dtype=np.int32)
                 ltoi[self.tied_param.tie] = range(self.tied_param.size)
                 p_tie = p.tie.flatten()
                 p_size = p.size
@@ -477,6 +477,30 @@ class Tie(Parameterized):
             self.buf_idx = self._highest_parent_._raveled_index_for(self.tied_param)
             self._untie_ = self.label_buf==0
             self._untie_[self.buf_idx] = True
+            self.tie_pairs = np.empty(((self.label_buf>0).sum()-self.tied_param.size,2),dtype=np.uint32)
+            try:
+                from scipy import weave
+                self._label_to_idx = np.zeros((self.tied_param.tie.max()+1,),dtype=np.int32)
+                self._label_to_idx[self.tied_param.tie] = range(self.tied_param.size)
+                ltoi = self._label_to_idx
+                t_start=int(self.buf_idx[0])
+                t_end=int(self.buf_idx[-1])
+                label_buf = self.label_buf
+                buf_size = self.label_buf.size
+                t_pairs = self.tie_pairs
+                code = """
+                int j=0;
+                for(int i=0;i<buf_size;i++) {
+                    if(label_buf[i]>0 && !(i>=t_start && i<=t_end)) {
+                        t_pairs[j*2] = i;
+                        t_pairs[j*2+1] = ltoi[label_buf[i]];
+                        j++;
+                    }
+                }
+                """
+                weave.inline(code, arg_names=['ltoi','t_start','t_end','label_buf','buf_size','t_pairs'])
+            except:
+                pass
             assert(np.all(self.tied_param.tie>0))
             
     def _keepParamList(self,plist):
@@ -592,23 +616,19 @@ class Tie(Parameterized):
             try:
                 from scipy import weave
                 pa_grad = self._highest_parent_.gradient
-                label_buf = self.label_buf
-                buf_idx = self.buf_idx
                 tied_grad = self.tied_param.gradient
                 t_size = self.tied_param.size
-                p_size = self._highest_parent_.gradient.size
+                t_pairs = self.tie_pairs
+                t_pairs_size = self.tie_pairs.size
                 code="""
-                for(int i=0;i<t_size;i++) {
-                    int l = label_buf[buf_idx[i]];
-                    tied_grad[i] = 0;
-                    double g=0;
-                    for(int j=0;j<p_size;j++) {
-                        if(label_buf[j]==l) {g += pa_grad[j];}
-                    }
-                    tied_grad[i] = g;
+                for(int i=0;i<t_size;i++) { tied_grad[i]=0;}
+                for(int i=0;i<t_pairs_size;i+=2) {
+                    int pidx = t_pairs[i];
+                    int tidx = t_pairs[i+1];
+                    tied_grad[tidx] += pa_grad[pidx]; 
                 }
                 """
-                weave.inline(code, arg_names=['pa_grad','label_buf','buf_idx','tied_grad','t_size','p_size'])
+                weave.inline(code, arg_names=['pa_grad','t_pairs','t_pairs_size','tied_grad','t_size'])
             except:
                 self.tied_param.gradient = 0.
                 [np.put(self.tied_param.gradient, i, self._highest_parent_.gradient[self.label_buf==self.label_buf[self.buf_idx[i]]].sum()) 
@@ -619,20 +639,17 @@ class Tie(Parameterized):
             try:
                 from scipy import weave
                 param_array = self._highest_parent_.param_array
-                label_buf = self.label_buf
-                buf_idx = self.buf_idx
                 tied_param = self.tied_param
-                t_size = self.tied_param.size
-                p_size = param_array.size
+                t_pairs = self.tie_pairs
+                t_pairs_size = self.tie_pairs.size
                 code="""
-                for(int i=0;i<t_size;i++) {
-                    int l = label_buf[buf_idx[i]];
-                    for(int j=0;j<p_size;j++) {
-                        if(label_buf[j]==l) {param_array[j] = tied_param[i];}
-                    }
+                for(int i=0;i<t_pairs_size;i+=2) {
+                    int pidx = t_pairs[i];
+                    int tidx = t_pairs[i+1];
+                    param_array[pidx] = tied_param[tidx];
                 }
                 """
-                weave.inline(code, arg_names=['param_array','label_buf','buf_idx','tied_param','t_size','p_size'])
+                weave.inline(code, arg_names=['param_array','t_pairs','t_pairs_size','tied_param'])
             except:
                 for i in xrange(self.tied_param.size):
                     self._highest_parent_.param_array[self.label_buf==self.label_buf[self.buf_idx[i]]] = self.tied_param[i]

@@ -13,7 +13,7 @@ from numpy.linalg.linalg import LinAlgError
 class SSMRD(Model):
     
     def __init__(self, Ylist, input_dim, X=None, X_variance=None, Gammas=None, initx = 'PCA_concat', initz = 'permute', 
-                 num_inducing=10, Zs=None, kernel=None, inference_methods=None, likelihoods=None, 
+                 num_inducing=10, Zs=None, kernels=None, inference_methods=None, likelihoods=None, 
                  pi=0.5, name='ss_mrd', Ynames=None, mpi_comm=None):
         super(SSMRD, self).__init__(name)
         self.mpi_comm = mpi_comm
@@ -21,8 +21,8 @@ class SSMRD(Model):
         # initialize X for individual models
         X, X_variance, Gammas, fracs = self._init_X(Ylist, input_dim, X, X_variance, Gammas, initx)
         
-        if kernel is None:
-            kernel = RBF(input_dim, lengthscale=1./fracs, ARD=True)
+        if kernels is None:
+            kernels = [RBF(input_dim, lengthscale=1./fracs, ARD=True) for i in xrange(len(Ylist))]
         if Zs is None:
             Zs = [None]* len(Ylist)
         if likelihoods is None:
@@ -31,8 +31,8 @@ class SSMRD(Model):
             inference_methods = [None]* len(Ylist)
         
         self.var_priors = [VarPrior_SSMRD(nModels=len(Ylist),pi=pi,learnPi=False, group_spike=True) for i in xrange(len(Ylist))]
-        self.models = [SSGPLVM(y, input_dim, X=X.copy(), X_variance=X_variance, Gamma=Gammas[i], num_inducing=num_inducing,Z=Zs[i], learnPi=False, group_spike=True,
-                               kernel=kernel.copy(),inference_method=inference_methods[i],likelihood=likelihoods[i], variational_prior=self.var_priors[i],
+        self.models = [SSGPLVM(y, input_dim, X=X.copy(), X_variance=X_variance.copy(), Gamma=Gammas[i], num_inducing=num_inducing,Z=Zs[i], learnPi=False, group_spike=True,
+                               kernel=kernels[i],inference_method=inference_methods[i],likelihood=likelihoods[i], variational_prior=self.var_priors[i],
                                name='model_'+str(i), mpi_comm=mpi_comm) for i,y in enumerate(Ylist)]
         self.link_parameters(*(self.models))
         

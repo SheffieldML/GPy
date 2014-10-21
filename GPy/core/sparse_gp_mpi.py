@@ -84,7 +84,7 @@ class SparseGP_MPI(SparseGP):
         if self.mpi_comm != None:
             if self._IN_OPTIMIZATION_ and self.mpi_comm.rank==0:
                 self.mpi_comm.Bcast(np.int32(1),root=0)
-            self.mpi_comm.Bcast(p, root=0)        
+            self.mpi_comm.Bcast(p, root=0)
         SparseGP.optimizer_array.fset(self,p)
         
     def optimize(self, optimizer=None, start=None, **kwargs):

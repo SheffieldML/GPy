@@ -69,6 +69,7 @@ class Tie(Parameterized):
         self.label_buf = None
         self.buf_idx = None
         self._untie_ = None
+        self._label_to_idx = None
         
     def getTiedParamList(self):
         if self.tied_param is None:
@@ -85,18 +86,44 @@ class Tie(Parameterized):
         """
         assert self.tied_param is not None
         read = np.zeros((self.tied_param.size,),dtype=np.uint8)
-        def _sync_val_p(p, tieparam, read):
-            if p.tie is not None:
-                labels = np.unique(p.tie)
-                labels = labels[labels>0]
-                for l in labels:
-                    if toTiedParam and read[tieparam.tie==l] == 0:
-                        val = p[p.tie==l][0]
-                        tieparam[tieparam.tie==l] = val
-                        read[tieparam.tie==l] = 1
-                    else:
-                        val = tieparam[tieparam.tie==l]                        
-                    p[p.tie==l] = val
+        try:
+            from scipy import weave
+            def _sync_val_p(p, tieparam, read):
+                if p.tie is not None:
+#                    ltoi = self._label_to_idx
+                    ltoi = np.zeros((self.tied_param.size+1,),dtype=np.int32)
+                    ltoi[self.tied_param.tie] = range(self.tied_param.size)
+                    totie = 1 if toTiedParam else 0
+                    p_idx = p._raveled_index()
+                    p_tie = p.tie.flatten()
+                    p_org = p._original_.flat
+                    p_size = p.size
+                    code = """
+                    for(int i=0;i<p_size;i++) {
+                        if(p_tie[i]>0) {
+                            if(totie==1 && read[ltoi[p_tie[i]]]==0) {
+                                tieparam[ltoi[p_tie[i]]] = p_org[int(p_idx[i])];
+                                read[ltoi[p_tie[i]]] = 1;
+                            } else {
+                                p_org[int(p_idx[i])] = tieparam[ltoi[p_tie[i]]];
+                            }
+                        }
+                    }
+                    """
+                    weave.inline(code, arg_names=['p_org','p_idx','tieparam','p_tie','p_size','ltoi','read','totie'])
+        except:
+            def _sync_val_p(p, tieparam, read):
+                if p.tie is not None:
+                    labels = np.unique(p.tie)
+                    labels = labels[labels>0]
+                    for l in labels:
+                        if toTiedParam and read[tieparam.tie==l] == 0:
+                            val = p[p.tie==l][0]
+                            tieparam[tieparam.tie==l] = val
+                            read[tieparam.tie==l] = 1
+                        else:
+                            val = tieparam[tieparam.tie==l]                        
+                        p[p.tie==l] = val
         for p in plist:
             self._traverse_param(_sync_val_p, (p,self.tied_param,read), [])
             
@@ -108,38 +135,151 @@ class Tie(Parameterized):
         """
         assert self.tied_param is not None
         read = np.zeros((self.tied_param.size,),dtype=np.uint8)
-        cons = [c[0] if len(c)>0 else None for c in self.tied_param.constraints.properties_for(range(self.tied_param.size))]
-        def _sync_constraints_p(p, tieparam, read, cons):
+        from scipy import weave
+        def _sync_constraint_totie(p, tieparam, read):
             if p.tie is not None:
                 p = p._original_
                 if p is tieparam:
                     return
-                labels = np.unique(p.tie)
-                labels = labels[labels>0]
-                for l in labels:
-                    idx = np.where(tieparam.tie==l)[0][0]
-                    conslist = p.constraints.properties_to_index_dict(np.where(p.tie.flat==l)[0])
-                    if toTiedParam and read[tieparam.tie==l] == 0:
-                        if len(conslist)==0:
-                            if cons[idx] is not None:
-                                tieparam[idx:idx+1].unconstrain()
-                        else:
-                            c = conslist.keys()[0]
-                            if len(conslist)>1 or len(conslist[c])!= (p.tie==l).sum():
-                                p[p.tie==l].constrain(c)
-                            if c != cons[idx]:
-                                tieparam[idx:idx+1].constrain(c)
-                                cons[idx] = c
-                        read[tieparam.tie==l] = 1
-                    else:
-                        if cons[idx] is None:
-                            if len(conslist)>0:
-                                p[p.tie==l].unconstrain()
-                        else:
-                            if len(conslist)!=1 or conslist.keys()[0]!=cons[idx] or len(conslist[cons[idx]])!= (p.tie==l).sum():
-                                p[p.tie==l].constrain(cons[idx])
+#                    ltoi = self._label_to_idx
+                ltoi = np.zeros((self.tied_param.size+1,),dtype=np.int32)
+                ltoi[self.tied_param.tie] = range(self.tied_param.size)
+                p_tie = p.tie.flatten()
+                p_size = p.size
+                cons_tie = self.tied_param.constraints
+                cons_p = p.constraints
+                for c in cons_p.properties():
+                    idx_p = cons_p[c]
+                    idx_p_size = idx_p.size
+                    idx_tie = cons_tie[c]
+                    flag = np.zeros((self.tied_param.size,),dtype=np.uint8)
+                    flag[idx_tie] = -1
+                    flag[read==1] = -1
+                    code1 = """
+                    for(int i=0;i<idx_p_size;i++) {
+                        int label = int(p_tie[int(idx_p[i])]);
+                        if(label>0) {
+                            int idx_tie=ltoi[label];
+                            if(flag[idx_tie]==0) {flag[idx_tie]=1;}
+                        }
+                    }
+                    """
+                    weave.inline(code1, arg_names=['idx_p_size','idx_p','p_tie','ltoi','flag'])
+                    if (flag==1).sum()>0:
+                        tieparam[flag==1].constrain(c)
+                        read[flag==1] = 1
+                flag = np.zeros((self.tied_param.size,),dtype=np.uint8)
+                flag[:]= -1
+                uncons_p = np.ones((p.size,),dtype=np.uint8)
+                for c,ind in cons_tie.iteritems():
+                    flag[ind] = 0
+                flag[read==1] = -1
+                for c,ind in cons_p.iteritems():
+                    uncons_p[ind] = 0
+                code2 = """
+                for(int i=0;i<p_size;i++) {
+                    if(uncons_p[i]==1 && p_tie[i]>0){
+                        int idx_tie=ltoi[p_tie[i]];
+                        if(flag[idx_tie]==0) {flag[idx_tie]=1;}
+                    }
+                }
+                """
+                weave.inline(code2, arg_names=['p_size','uncons_p','p_tie','ltoi','flag'])
+                if (flag==1).sum()>0:
+                    tieparam[flag==1].unconstrain()
+                    read[flag==1] = 1
+
+        def _sync_constraint_toparam(p, tieparam):
+            if p.tie is not None:
+                p = p._original_
+                if p is tieparam:
+                    return
+#                    ltoi = self._label_to_idx
+                ltoi = np.zeros((self.tied_param.size+1,),dtype=np.int32)
+                ltoi[self.tied_param.tie] = range(self.tied_param.size)
+                p_tie = p.tie.flatten()
+                p_size = p.size
+                cons_tie = self.tied_param.constraints
+                cons_p = p.constraints
+                for c in cons_tie.properties():
+                    idx_p = cons_p[c]
+                    idx_tie = cons_tie[c]
+                    flag_tie = np.zeros((tieparam.size,),dtype=np.uint8)
+                    flag_tie[idx_tie]=1
+                    flag = np.zeros((p.size,),dtype=np.uint8)
+                    flag[idx_p] = -1
+
+                    code1 = """
+                    for(int i=0;i<p_size;i++) {
+                        if(flag[i]==0 && p_tie[i]>0 && flag_tie[ltoi[p_tie[i]]]==1) {flag[i]=1;}
+                    }
+                    """
+                    weave.inline(code1, arg_names=['p_size','p_tie','ltoi','flag','flag_tie'])
+                    if (flag==1).sum()>0:
+                        flag = flag.reshape(*p.shape)
+                        p[flag==1].constrain(c)
+                uncons_tie = np.ones((self.tied_param.size,),dtype=np.uint8)
+                flag = np.zeros((p.size,),dtype=np.uint8)
+                flag[:]= -1
+                for c,ind in cons_tie.iteritems():
+                    uncons_tie[ind] = 0
+                for c,ind in cons_p.iteritems():
+                    flag[ind] = 0
+                code2 = """
+                for(int i=0;i<p_size;i++) {
+                    if(flag[i]==0 && p_tie[i]>0 && uncons_tie[ltoi[p_tie[i]]]==1){ flag[i]=1;}
+                }
+                """
+                weave.inline(code2, arg_names=['p_size','uncons_tie','p_tie','ltoi','flag'])
+                if (flag==1).sum()>0:
+                    flag = flag.reshape(*p.shape)
+                    p[flag==1].unconstrain()
+        if toTiedParam:
+            for p in plist:
+                self._traverse_param(_sync_constraint_totie, (p,self.tied_param,read), [])
         for p in plist:
-            self._traverse_param(_sync_constraints_p, (p,self.tied_param,read, cons), [])        
+            self._traverse_param(_sync_constraint_toparam, (p,self.tied_param), [])
+            
+#     def _sync_constraints(self, plist, toTiedParam=True):
+#         """
+#         Ensure the consistency of the constraints of tied parameters.
+#         if toTieParam is true, the constraints of tied parameters will be synchronized among themselves and to the *TiedParam*,
+#         otherwise all the tied parameters will be synchronized according to the constraints in *TiedParam*.
+#         """
+#         assert self.tied_param is not None
+#         read = np.zeros((self.tied_param.size,),dtype=np.uint8)
+#         cons = [c[0] if len(c)>0 else None for c in self.tied_param.constraints.properties_for(range(self.tied_param.size))]
+#         def _sync_constraints_p(p, tieparam, read, cons):
+#             if p.tie is not None:
+#                 p = p._original_
+#                 if p is tieparam:
+#                     return
+#                 labels = np.unique(p.tie)
+#                 labels = labels[labels>0]
+#                 for l in labels:
+#                     idx = np.where(tieparam.tie==l)[0][0]
+#                     conslist = p.constraints.properties_to_index_dict(np.where(p.tie.flat==l)[0])
+#                     if toTiedParam and read[tieparam.tie==l] == 0:
+#                         if len(conslist)==0:
+#                             if cons[idx] is not None:
+#                                 tieparam[idx:idx+1].unconstrain()
+#                         else:
+#                             c = conslist.keys()[0]
+#                             if len(conslist)>1 or len(conslist[c])!= (p.tie==l).sum():
+#                                 p[p.tie==l].constrain(c)
+#                             if c != cons[idx]:
+#                                 tieparam[idx:idx+1].constrain(c)
+#                                 cons[idx] = c
+#                         read[tieparam.tie==l] = 1
+#                     else:
+#                         if cons[idx] is None:
+#                             if len(conslist)>0:
+#                                 p[p.tie==l].unconstrain()
+#                         else:
+#                             if len(conslist)!=1 or conslist.keys()[0]!=cons[idx] or len(conslist[cons[idx]])!= (p.tie==l).sum():
+#                                 p[p.tie==l].constrain(cons[idx])
+#         for p in plist:
+#             self._traverse_param(_sync_constraints_p, (p,self.tied_param,read, cons), [])        
         
         
     @staticmethod
@@ -449,14 +589,53 @@ class Tie(Parameterized):
 
     def collate_gradient(self):
         if self.tied_param is not None:
-            self.tied_param.gradient = 0.
-            [np.put(self.tied_param.gradient, i, self._highest_parent_.gradient[self.label_buf==self.label_buf[self.buf_idx[i]]].sum()) 
-                for i in xrange(self.tied_param.size)]
+            try:
+                from scipy import weave
+                pa_grad = self._highest_parent_.gradient
+                label_buf = self.label_buf
+                buf_idx = self.buf_idx
+                tied_grad = self.tied_param.gradient
+                t_size = self.tied_param.size
+                p_size = self._highest_parent_.gradient.size
+                code="""
+                for(int i=0;i<t_size;i++) {
+                    int l = label_buf[buf_idx[i]];
+                    tied_grad[i] = 0;
+                    double g=0;
+                    for(int j=0;j<p_size;j++) {
+                        if(label_buf[j]==l) {g += pa_grad[j];}
+                    }
+                    tied_grad[i] = g;
+                }
+                """
+                weave.inline(code, arg_names=['pa_grad','label_buf','buf_idx','tied_grad','t_size','p_size'])
+            except:
+                self.tied_param.gradient = 0.
+                [np.put(self.tied_param.gradient, i, self._highest_parent_.gradient[self.label_buf==self.label_buf[self.buf_idx[i]]].sum()) 
+                    for i in xrange(self.tied_param.size)]
     
     def propagate_val(self):
         if self.tied_param is not None:
-            for i in xrange(self.tied_param.size):
-                self._highest_parent_.param_array[self.label_buf==self.label_buf[self.buf_idx[i]]] = self.tied_param[i]
+            try:
+                from scipy import weave
+                param_array = self._highest_parent_.param_array
+                label_buf = self.label_buf
+                buf_idx = self.buf_idx
+                tied_param = self.tied_param
+                t_size = self.tied_param.size
+                p_size = param_array.size
+                code="""
+                for(int i=0;i<t_size;i++) {
+                    int l = label_buf[buf_idx[i]];
+                    for(int j=0;j<p_size;j++) {
+                        if(label_buf[j]==l) {param_array[j] = tied_param[i];}
+                    }
+                }
+                """
+                weave.inline(code, arg_names=['param_array','label_buf','buf_idx','tied_param','t_size','p_size'])
+            except:
+                for i in xrange(self.tied_param.size):
+                    self._highest_parent_.param_array[self.label_buf==self.label_buf[self.buf_idx[i]]] = self.tied_param[i]
         self._PROPAGATE_VAL_ = True
         
     #=========================================

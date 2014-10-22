@@ -23,6 +23,11 @@ class StochasticStorage(object):
 
 class SparseGPMissing(StochasticStorage):
     def __init__(self, model, batchsize=1):
+        """
+        Here we want to loop over all dimensions everytime.
+        Thus, we can just make sure the loop goes over self.d every
+        time.
+        """
         self.d = xrange(model.Y_normalized.shape[1])
 
 class SparseGPStochastics(StochasticStorage):

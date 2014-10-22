@@ -38,7 +38,7 @@ class SSMRD(Model):
         
         self.models[0].X.mean.tie_vector(*[m.X.mean for m in self.models[1:]])
         self.models[0].X.variance.tie_vector(*[m.X.variance for m in self.models[1:]])
-        self.models[0].kern.tie_vector(*[m.kern for m in self.models[1:]])
+#        self.models[0].kern.tie_vector(*[m.kern for m in self.models[1:]])
         
     def parameters_changed(self):
         varp_list = [m.X for m in self.models]
@@ -51,6 +51,7 @@ class SSMRD(Model):
     
     def _init_X(self, Ylist, input_dim, X=None, X_variance=None, Gammas=None, initx='PCA_concat'):
         
+
         # Divide latent dimensions
         idx = np.empty((input_dim,),dtype=np.int)
         residue = (input_dim)%(len(Ylist))
@@ -63,18 +64,24 @@ class SSMRD(Model):
                 idx[i*size+residue:(i+1)*size+residue] = i
         
         if X is None:
-            X = np.empty((Ylist[0].shape[0],input_dim))
-            fracs = np.empty((input_dim,))
-            from ..util.initialization import initialize_latent
-            for i in xrange(len(Ylist)):
-                Y = Ylist[i]
-                dim = (idx==i).sum()
-                if dim>0:
-                    x, fr = initialize_latent('PCA', dim, Y)
-                    X[:,idx==i] = x
-                    fracs[idx==i] = fr
+            if initx == 'PCA_concat':
+                X = np.empty((Ylist[0].shape[0],input_dim))
+                fracs = np.empty((input_dim,))
+                from ..util.initialization import initialize_latent
+                for i in xrange(len(Ylist)):
+                    Y = Ylist[i]
+                    dim = (idx==i).sum()
+                    if dim>0:
+                        x, fr = initialize_latent('PCA', dim, Y)
+                        X[:,idx==i] = x
+                        fracs[idx==i] = fr
+            elif initx=='PCA_joint':
+                y = np.hstack(Ylist)
+                from ..util.initialization import initialize_latent
+                X, fracs = initialize_latent('PCA', input_dim, y)
         else:
             fracs = np.ones(input_dim)
+            
     
         if X_variance is None: # The variance of the variational approximation (S)
             X_variance = np.random.uniform(0,.1,X.shape)

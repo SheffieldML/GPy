@@ -75,6 +75,7 @@ class Logexp(Transformation):
     def __str__(self):
         return '+ve'
 
+
 class NormalTheta(Transformation):
     _instances = []
     def __new__(cls, mu_indices, var_indices):
@@ -95,29 +96,31 @@ class NormalTheta(Transformation):
         # In here abs is only a trick to make sure the numerics are ok.
         # The variance will never go below zero, but at initialization we need to make sure
         # that the values are ok
+        # Before:
         theta[self.var_indices] = np.abs(-.5/theta[self.var_indices])
         theta[self.mu_indices] *= theta[self.var_indices]
         return theta # which is now {mu, var}
 
     def finv(self, muvar):
+        # before:
         varp = muvar[self.var_indices]
         muvar[self.mu_indices] /= varp
         muvar[self.var_indices] = -.5/varp
+
         return muvar # which is now {theta1, theta2}
 
     def gradfactor(self, muvar, dmuvar):
         mu = muvar[self.mu_indices]
         var = muvar[self.var_indices]
-
         #=======================================================================
         # theta gradients
         # This works and the gradient checks!
-        dmuvar[self.mu_indices] = dmu = dmuvar[self.mu_indices] * var
-        dmuvar[self.var_indices] = (dmuvar[self.var_indices] * 2) * var * var
-        dmuvar[self.var_indices] += 2 * dmu * mu
+        dmuvar[self.mu_indices] *= var
+        dmuvar[self.var_indices] *= 2*(var)**2
+        dmuvar[self.var_indices] += 2*dmuvar[self.mu_indices]*mu
         #=======================================================================
 
-        return dmuvar # which is now the gradient multiplicator
+        return dmuvar # which is now the gradient multiplicator for {theta1, theta2}
 
     def initialize(self, f):
         if np.any(f[self.var_indices] < 0.):
@@ -128,52 +131,7 @@ class NormalTheta(Transformation):
     def __str__(self):
         return "theta"
 
-class NormalNatural(NormalTheta):
-    _instances = []
-    def __new__(cls, mu_indices, var_indices):
-        if cls._instances:
-            cls._instances[:] = [instance for instance in cls._instances if instance()]
-            for instance in cls._instances:
-                if np.all(instance().mu_indices==mu_indices, keepdims=False) and np.all(instance().var_indices==var_indices, keepdims=False):
-                    return instance()
-        o = super(Transformation, cls).__new__(cls, mu_indices, var_indices)
-        cls._instances.append(weakref.ref(o))
-        return cls._instances[-1]()
-
-    def __init__(self, mu_indices, var_indices):
-        self.mu_indices = mu_indices
-        self.var_indices = var_indices
-
-    def gradfactor(self, muvar, dmuvar):
-        mu = muvar[self.mu_indices]
-        var = muvar[self.var_indices]
-
-        #=======================================================================
-        # theta gradients
-        # This works and the gradient checks!
-        #dmuvar[self.mu_indices] = dmu = np.einsum('i,i->i', dmuvar[self.mu_indices], var)
-        #dmuvar[self.var_indices] = np.einsum('i,i,i,i->i', dmuvar[self.var_indices], [2], var, var)
-        #dmuvar[self.var_indices] += np.einsum('i,i,i->i', dmu, [2], mu)
-        #=======================================================================
-
-        #=======================================================================
-        # Lets try natural gradients instead:
-        # This should be instead of getting the gradient in
-        # theta, we take the gradient in eta
-        # and return this.
-        # This will not gradcheck!!!
-        #dmuvar[self.mu_indices] -= 2*mu*dmuvar[self.var_indices]
-        #dmuvar[self.var_indices] = np.einsum('i,i,i,i->i', dmuvar[self.var_indices], [2], var, var)
-        #dmuvar[self.var_indices] += np.einsum('i,i,i,i->i', dmuvar[self.mu_indices], var, [2], mu)
-        #=======================================================================
-        dmu = dmuvar[self.mu_indices]
-        dmuvar[self.var_indices] += dmu*mu*(var + 4/var)
-        return dmuvar # which is now the gradient multiplicator
-
-    def __str__(self):
-        return "natgrad"
-
-class NormalNaturalAntti(Transformation):
+class NormalNaturalAntti(NormalTheta):
     _instances = []
     _logexp = Logexp()
     def __new__(cls, mu_indices, var_indices):
@@ -190,13 +148,6 @@ class NormalNaturalAntti(Transformation):
         self.mu_indices = mu_indices
         self.var_indices = var_indices
 
-    def f(self, theta):
-        theta[self.var_indices] = np.abs(theta[self.var_indices])
-        return theta # which is now {mu, var}
-
-    def finv(self, muvar):
-        return muvar # which is now {theta1, theta2}
-
     def gradfactor(self, muvar, dmuvar):
         mu = muvar[self.mu_indices]
         var = muvar[self.var_indices]
@@ -205,7 +156,7 @@ class NormalNaturalAntti(Transformation):
         # theta gradients
         # This works and the gradient checks!
         dmuvar[self.mu_indices] *= var
-        dmuvar[self.var_indices] = np.einsum('i,i,i,i->i', dmuvar[self.var_indices], [2], var, var)
+        dmuvar[self.var_indices] *= 2*var**2#np.einsum('i,i,i,i->i', dmuvar[self.var_indices], [2], var, var)
         #=======================================================================
 
         return dmuvar # which is now the gradient multiplicator
@@ -260,6 +211,72 @@ class NormalEta(Transformation):
     def __str__(self):
         return "eta"
 
+class NormalNaturalThroughTheta(NormalTheta):
+    _instances = []
+    def __new__(cls, mu_indices, var_indices):
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if np.all(instance().mu_indices==mu_indices, keepdims=False) and np.all(instance().var_indices==var_indices, keepdims=False):
+                    return instance()
+        o = super(Transformation, cls).__new__(cls, mu_indices, var_indices)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
+
+    def __init__(self, mu_indices, var_indices):
+        self.mu_indices = mu_indices
+        self.var_indices = var_indices
+
+    def gradfactor(self, muvar, dmuvar):
+        mu = muvar[self.mu_indices]
+        var = muvar[self.var_indices]
+
+        #=======================================================================
+        # This is just eta direction:
+        dmuvar[self.mu_indices] -= 2*mu*dmuvar[self.var_indices]
+        #=======================================================================
+
+
+        #=======================================================================
+        # This is by going through theta fully and then going into eta direction:
+        #dmu = dmuvar[self.mu_indices]
+        #dmuvar[self.var_indices] += dmu*mu*(var + 4/var)
+        #=======================================================================
+        return dmuvar # which is now the gradient multiplicator
+
+    def __str__(self):
+        return "natgrad"
+
+class NormalNaturalThroughEta(NormalEta):
+    _instances = []
+    def __new__(cls, mu_indices, var_indices):
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if np.all(instance().mu_indices==mu_indices, keepdims=False) and np.all(instance().var_indices==var_indices, keepdims=False):
+                    return instance()
+        o = super(Transformation, cls).__new__(cls, mu_indices, var_indices)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
+
+    def __init__(self, mu_indices, var_indices):
+        self.mu_indices = mu_indices
+        self.var_indices = var_indices
+
+    def gradfactor(self, muvar, dmuvar):
+        mu = muvar[self.mu_indices]
+        var = muvar[self.var_indices]
+        #=======================================================================
+        # theta gradients
+        # This works and the gradient checks!
+        dmuvar[self.mu_indices] *= var
+        dmuvar[self.var_indices] *= 2*(var)**2
+        dmuvar[self.var_indices] += 2*dmuvar[self.mu_indices]*mu
+        #=======================================================================
+        return dmuvar
+
+    def __str__(self):
+        return "natgrad"
 
 
 class LogexpNeg(Transformation):

@@ -151,16 +151,16 @@ def multiple_optima(gene_number=937, resolution=80, model_restarts=10, seed=1000
         kern = GPy.kern.RBF(1, variance=np.random.uniform(1e-3, 1), lengthscale=np.random.uniform(5, 50))
 
         m = GPy.models.GPRegression(data['X'], data['Y'], kernel=kern)
-        m['noise_variance'] = np.random.uniform(1e-3, 1)
-        optim_point_x[0] = m['rbf_lengthscale']
-        optim_point_y[0] = np.log10(m['rbf_variance']) - np.log10(m['noise_variance']);
+        m.likelihood.variance = np.random.uniform(1e-3, 1)
+        optim_point_x[0] = m.rbf.lengthscale
+        optim_point_y[0] = np.log10(m.rbf.variance) - np.log10(m.likelihood.variance);
 
         # optimize
         if optimize:
             m.optimize('scg', xtol=1e-6, ftol=1e-6, max_iters=max_iters)
 
-        optim_point_x[1] = m['rbf_lengthscale']
-        optim_point_y[1] = np.log10(m['rbf_variance']) - np.log10(m['noise_variance']);
+        optim_point_x[1] = m.rbf.lengthscale
+        optim_point_y[1] = np.log10(m.rbf.variance) - np.log10(m.likelihood.variance);
 
         if plot:
             pb.arrow(optim_point_x[0], optim_point_y[0], optim_point_x[1] - optim_point_x[0], optim_point_y[1] - optim_point_y[0], label=str(i), head_length=1, head_width=0.5, fc='k', ec='k')
@@ -191,7 +191,7 @@ def _contour_data(data, length_scales, log_SNRs, kernel_call=GPy.kern.RBF):
         noise_var = total_var / (1. + SNR)
         signal_var = total_var - noise_var
         model.kern['.*variance'] = signal_var
-        model['noise_variance'] = noise_var
+        model.likelihood.variance = noise_var
         length_scale_lls = []
 
         for length_scale in length_scales:

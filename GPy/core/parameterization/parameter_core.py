@@ -18,7 +18,7 @@ import numpy as np
 import re
 import logging
 
-__updated__ = '2014-09-22'
+__updated__ = '2014-10-22'
 
 class HierarchyError(Exception):
     """
@@ -99,7 +99,7 @@ class Observable(object):
 
         :param bool trigger_parent: Whether to trigger the parent, after self has updated
         """
-        if not self.update_model():
+        if not self.update_model() or self._in_init_:
             #print "Warning: updates are off, updating the model will do nothing"
             return
         self._trigger_params_changed(trigger_parent)
@@ -784,7 +784,7 @@ class OptimizationHandlable(Indexable):
         constraint to it.
         """
         self._highest_parent_.tie.collate_gradient()
-        [np.put(g, i, g[i] * c.gradfactor(self.param_array[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
+        [np.put(g, i, c.gradfactor(self.param_array[i], g[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g
 

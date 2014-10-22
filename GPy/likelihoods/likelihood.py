@@ -131,6 +131,56 @@ class Likelihood(Parameterized):
 
         return z, mean, variance
 
+    def variational_expectations(self, Y, m, v, gh_points=None):
+        """
+        Use Gauss-Hermite Quadrature to compute 
+
+           E_p(f) [ log p(y|f) ]
+           d/dm E_p(f) [ log p(y|f) ]
+           d/dv E_p(f) [ log p(y|f) ]
+
+        where p(f) is a Gaussian with mean m and variance v. The shapes of Y, m and v should match.
+
+        if no gh_points are passed, we construct them using defualt options
+        """
+
+        if gh_points is None:
+            gh_x, gh_w = np.polynomial.hermite.hermgauss(12)
+        else:
+            gh_x, gh_w = gh_points
+
+        shape = m.shape
+        m,v,Y = m.flatten(), v.flatten(), Y.flatten()
+
+        #make a grid of points
+        X = gh_x[None,:]*np.sqrt(2.*v[:,None]) + m[:,None]
+
+        #evaluate the likelhood for the grid. First ax indexes the data (and mu, var) and the second indexes the grid.
+        # broadcast needs to be handled carefully. 
+        logp = self.logpdf(X,Y[:,None])
+        dlogp_dx = self.dlogpdf_df(X, Y[:,None])
+        d2logp_dx2 = self.d2logpdf_df2(X, Y[:,None])
+
+        #clipping for numerical stability
+        logp = np.clip(logp,-1e6,1e6)
+        dlogp_dx = np.clip(dlogp_dx,-1e6,1e6)
+        d2logp_dx2 = np.clip(d2logp_dx2,-1e6,1e6)
+
+        #average over the gird to get derivatives of the Gaussian's parameters
+        F = np.dot(logp, gh_w)
+        dF_dm = np.dot(dlogp_dx, gh_w)
+        dF_dv = np.dot(d2logp_dx2, gh_w)/2.
+
+        if np.any(np.isnan(dF_dv)) or np.any(np.isinf(dF_dv)):
+            stop
+        if np.any(np.isnan(dF_dm)) or np.any(np.isinf(dF_dm)):
+            stop
+
+        return F.reshape(*shape), dF_dm.reshape(*shape), dF_dv.reshape(*shape)
+
+
+
+
     def predictive_mean(self, mu, variance, Y_metadata=None):
         """
         Quadrature calculation of the predictive mean: E(Y_star|Y) = E( E(Y_star|f_star, Y) )

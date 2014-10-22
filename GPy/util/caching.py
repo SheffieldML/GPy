@@ -188,4 +188,6 @@ class Cache_this(object):
         self.ignore_args = ignore_args
         self.force_args = force_kwargs
     def __call__(self, f):
-        return Cacher_wrap(f, self.limit, self.ignore_args, self.force_args)
+        newf = Cacher_wrap(f, self.limit, self.ignore_args, self.force_args)
+        update_wrapper(newf, f)
+        return newf

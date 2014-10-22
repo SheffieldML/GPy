@@ -7,11 +7,6 @@ Gaussian Processes classification
 """
 import GPy
 
-try:
-    import pylab as pb
-except:
-    pass
-
 default_seed = 10000
 
 def oil(num_inducing=50, max_iters=100, kernel=None, optimize=True, plot=True):
@@ -19,7 +14,9 @@ def oil(num_inducing=50, max_iters=100, kernel=None, optimize=True, plot=True):
     Run a Gaussian process classification on the three phase oil data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
 
     """
-    data = GPy.util.datasets.oil()
+    try:import pods
+    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    data = pods.datasets.oil()
     X = data['X']
     Xtest = data['Xtest']
     Y = data['Y'][:, 0:1]
@@ -54,7 +51,9 @@ def toy_linear_1d_classification(seed=default_seed, optimize=True, plot=True):
 
     """
 
-    data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
+    try:import pods
+    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    data = pods.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
     Y[Y.flatten() == -1] = 0
 
@@ -71,7 +70,8 @@ def toy_linear_1d_classification(seed=default_seed, optimize=True, plot=True):
 
     # Plot
     if plot:
-        fig, axes = pb.subplots(2, 1)
+        from matplotlib import pyplot as plt
+        fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
 
@@ -87,7 +87,9 @@ def toy_linear_1d_classification_laplace(seed=default_seed, optimize=True, plot=
 
     """
 
-    data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
+    try:import pods
+    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    data = pods.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
     Y[Y.flatten() == -1] = 0
 
@@ -107,7 +109,8 @@ def toy_linear_1d_classification_laplace(seed=default_seed, optimize=True, plot=
 
     # Plot
     if plot:
-        fig, axes = pb.subplots(2, 1)
+        from matplotlib import pyplot as plt
+        fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
 
@@ -123,7 +126,9 @@ def sparse_toy_linear_1d_classification(num_inducing=10, seed=default_seed, opti
 
     """
 
-    data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
+    try:import pods
+    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    data = pods.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
     Y[Y.flatten() == -1] = 0
 
@@ -137,7 +142,8 @@ def sparse_toy_linear_1d_classification(num_inducing=10, seed=default_seed, opti
 
     # Plot
     if plot:
-        fig, axes = pb.subplots(2, 1)
+        from matplotlib import pyplot as plt
+        fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
 
@@ -153,7 +159,9 @@ def toy_heaviside(seed=default_seed, optimize=True, plot=True):
 
     """
 
-    data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
+    try:import pods
+    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    data = pods.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
     Y[Y.flatten() == -1] = 0
 
@@ -171,7 +179,8 @@ def toy_heaviside(seed=default_seed, optimize=True, plot=True):
 
     # Plot
     if plot:
-        fig, axes = pb.subplots(2, 1)
+        from matplotlib import pyplot as plt
+        fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
 
@@ -190,7 +199,9 @@ def crescent_data(model_type='Full', num_inducing=10, seed=default_seed, kernel=
     :param kernel: kernel to use in the model
     :type kernel: a GPy kernel
     """
-    data = GPy.util.datasets.crescent_data(seed=seed)
+    try:import pods
+    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    data = pods.datasets.crescent_data(seed=seed)
     Y = data['Y']
     Y[Y.flatten()==-1] = 0
 

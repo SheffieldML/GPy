@@ -11,14 +11,16 @@ try:
 except:
     pass
 from numpy.linalg.linalg import LinAlgError
+from operator import setitem
+import itertools
 
-class pca(object):
+class PCA(object):
     """
-    pca module with automatic primal/dual determination.
+    PCA module with automatic primal/dual determination.
     """
     def __init__(self, X):
-        self.mu = X.mean(0)
-        self.sigma = X.std(0)
+        self.mu = None
+        self.sigma = None
 
         X = self.center(X)
 
@@ -37,8 +39,15 @@ class pca(object):
 
     def center(self, X):
         """
-        Center `X` in pca space.
+        Center `X` in PCA space.
         """
+        X = X.copy()
+        inan = numpy.isnan(X)
+        if self.mu is None:
+            X_ = numpy.ma.masked_array(X, inan)
+            self.mu = X_.mean(0).base
+            self.sigma = X_.std(0).base
+        reduce(lambda y,x: setitem(x[0], x[1], x[2]), itertools.izip(X.T, inan.T, self.mu), None)
         X = X - self.mu
         X = X / numpy.where(self.sigma == 0, 1e-30, self.sigma)
         return X
@@ -57,7 +66,7 @@ class pca(object):
 
     def project(self, X, Q=None):
         """
-        Project X into pca space, defined by the Q highest eigenvalues.
+        Project X into PCA space, defined by the Q highest eigenvalues.
         Y = X dot V
         """
         if Q is None:
@@ -71,13 +80,16 @@ class pca(object):
         """
         Plot fractions of Eigenvalues sorted in descending order.
         """
+        from GPy.plotting.matplot_dep import Tango
+        Tango.reset()
+        col = Tango.nextMedium()
         if ax is None:
             fig = pylab.figure(fignum)
             ax = fig.add_subplot(111)
         if Q is None:
             Q = self.Q
         ticks = numpy.arange(Q)
-        bar = ax.bar(ticks - .4, self.fracs[:Q])
+        bar = ax.bar(ticks - .4, self.fracs[:Q], color=col)
         ax.set_xticks(ticks, map(lambda x: r"${}$".format(x), ticks + 1))
         ax.set_ylabel("Eigenvalue fraction")
         ax.set_xlabel("PC")
@@ -94,7 +106,7 @@ class pca(object):
                 fignum=None, cmap=None, # @UndefinedVariable
                 ** kwargs):
         """
-        Plot dimensions `dimensions` with given labels against each other in 
+        Plot dimensions `dimensions` with given labels against each other in
         PC space. Labels can be any sequence of labels of dimensions X.shape[0].
         Labels can be drawn with a subsequent call to legend()
         """

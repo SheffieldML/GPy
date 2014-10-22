@@ -5,15 +5,15 @@ Created on 24 Feb 2014
 '''
 
 import numpy as np
-from GPy.util.pca import pca
+from GPy.util.pca import PCA
 
 def initialize_latent(init, input_dim, Y):
     Xr = np.asfortranarray(np.random.randn(Y.shape[0], input_dim))
     if init == 'PCA':
-        p = pca(Y)
+        p = PCA(Y)
         PC = p.project(Y, min(input_dim, Y.shape[1]))
         Xr[:PC.shape[0], :PC.shape[1]] = PC
-        var = p.fracs[:input_dim]
+        var = .1*p.fracs[:input_dim]
     else:
         var = Xr.var(0)
 

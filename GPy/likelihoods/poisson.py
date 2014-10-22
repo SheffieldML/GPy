@@ -5,7 +5,6 @@ from __future__ import division
 import numpy as np
 from scipy import stats,special
 import scipy as sp
-from GPy.util.univariate_Gaussian import std_norm_pdf,std_norm_cdf
 import link_functions
 from likelihood import Likelihood
 

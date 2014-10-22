@@ -200,7 +200,7 @@ class Stationary(Kern):
               gradq += tmp(n,m)*(X(n,q)-X2(m,q))*(X(n,q)-X2(m,q));
             }
           }
-          grads[q] = gradq;
+          grads(q) = gradq;
         }
         """
         weave.inline(code, ['tmp', 'X', 'X2', 'grads', 'N', 'M', 'Q'], type_converters=weave.converters.blitz, support_code="#include <math.h>")

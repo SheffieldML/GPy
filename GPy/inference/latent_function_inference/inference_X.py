@@ -83,8 +83,17 @@ class Inference_X(Model):
         X_grad = self.kern.gradients_qX_expectations(variational_posterior=self.X, Z=self.Z, dL_dpsi0=self.dL_dpsi0, dL_dpsi1=self.dL_dpsi1, dL_dpsi2=self.dL_dpsi2)
         self.X.set_gradients(X_grad)
         
-        self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
-        self.variational_prior.update_gradients_KL(self.X)
+        from ...core.parameterization.variational import SpikeAndSlabPrior
+        if isinstance(self.variational_prior, SpikeAndSlabPrior):
+            # Update Log-likelihood
+            KL_div = self.variational_prior.KL_divergence(self.X, N=self.Y.shape[0])
+            # update for the KL divergence
+            self.variational_prior.update_gradients_KL(self.X, N=self.Y.shape[0])
+        else:
+            # Update Log-likelihood
+            KL_div = self.variational_prior.KL_divergence(self.X)
+            # update for the KL divergence
+            self.variational_prior.update_gradients_KL(self.X)
         
     def log_likelihood(self):
         return self._log_marginal_likelihood

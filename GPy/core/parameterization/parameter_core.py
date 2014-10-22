@@ -18,7 +18,7 @@ import numpy as np
 import re
 import logging
 
-__updated__ = '2014-10-20'
+__updated__ = '2014-10-22'
 
 class HierarchyError(Exception):
     """
@@ -845,7 +845,6 @@ class OptimizationHandlable(Indexable):
         unfixlist = np.ones((self.size,),dtype=np.bool)
         unfixlist[self.constraints[__fixed__]] = False
         self.param_array.flat[unfixlist] = x.view(np.ndarray).ravel()[unfixlist]
-        [np.put(self.param_array, ind, c.initialize(self.param_array[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
         self.update_model(updates)
 
     #===========================================================================

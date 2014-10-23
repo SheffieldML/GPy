@@ -26,7 +26,7 @@ class RBF(Stationary):
         else:
             self.psicomp = PSICOMP_RBF()
             
-    def useGPU(self,flag=True):
+    def GPU(self,flag=True):
         if flag:
             if isinstance(self.psicomp,PSICOMP_RBF):
                 self.useGPU = True

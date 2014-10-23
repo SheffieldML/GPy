@@ -4,8 +4,8 @@ import numpy as np
 from ...core import Model
 from ...core.parameterization import variational
 
-def inference_newX(model, Y_new, optimize=True):
-    infr_m = Inference_X(model, Y_new)
+def inference_newX(model, Y_new, optimize=True, init='L2'):
+    infr_m = Inference_X(model, Y_new, init=init)
     
     if optimize:
         infr_m.optimize()

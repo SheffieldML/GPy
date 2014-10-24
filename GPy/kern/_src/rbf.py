@@ -40,6 +40,16 @@ class RBF(Stationary):
         else:
             if isinstance(self.psicomp,PSICOMP_RBF_GPU):
                 self.psicomp = PSICOMP_RBF()
+                
+    def GPU_SSRBF(self,flag=True):
+        if flag:
+            if isinstance(self.psicomp,PSICOMP_RBF):
+                self.useGPU = True
+                from psi_comp.ssrbf_psi_gpucomp import PSICOMP_SSRBF_GPU
+                self.psicomp = PSICOMP_SSRBF_GPU()
+        else:
+            if isinstance(self.psicomp,PSICOMP_RBF_GPU):
+                self.psicomp = PSICOMP_RBF()
 
     def K_of_r(self, r):
         return self.variance * np.exp(-0.5 * r**2)

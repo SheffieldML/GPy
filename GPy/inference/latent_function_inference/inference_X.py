@@ -26,7 +26,11 @@ class Inference_X(Model):
         self.likelihood = model.likelihood.copy()
         self.kern = model.kern.copy()
         if model.kern.useGPU:
-            self.kern.GPU(True)
+            from ...models import SSGPLVM
+            if isinstance(model, SSGPLVM):
+                self.kern.GPU_SSRBF(True)
+            else:
+                self.kern.GPU(True)
         from copy import deepcopy
         self.posterior = deepcopy(model.posterior)
         self.variational_prior = model.variational_prior.copy()

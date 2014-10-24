@@ -57,7 +57,8 @@ class Inference_X(Model):
         if isinstance(model, SSGPLVM):
             X = variational.SpikeAndSlabPosterior(param_to_array(model.X.mean[idx]), param_to_array(model.X.variance[idx]), param_to_array(model.X.gamma[idx]))
             if model.group_spike:
-                [X.gamma[:,i].tie_together() for i in xrange(X.gamma.shape[1])] # Tie columns together
+                #[X.gamma[:,i].tie_together() for i in xrange(X.gamma.shape[1])] # Tie columns together
+                X.gamma.fix()
         else:
             X = variational.NormalPosterior(param_to_array(model.X.mean[idx]), param_to_array(model.X.variance[idx]))
         

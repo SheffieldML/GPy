@@ -30,7 +30,13 @@ class RBF(Stationary):
         if flag:
             if isinstance(self.psicomp,PSICOMP_RBF):
                 self.useGPU = True
-                self.psicomp = PSICOMP_RBF_GPU()
+
+                from ...models import SSGPLVM,SSMRD
+                if isinstance(self._highest_parent_, SSGPLVM) or isinstance(self._highest_parent_, SSGPLVM):
+                    from psi_comp.ssrbf_psi_gpucomp import PSICOMP_SSRBF_GPU
+                    self.psicomp = PSICOMP_SSRBF_GPU()
+                else:
+                    self.psicomp = PSICOMP_RBF_GPU()
         else:
             if isinstance(self.psicomp,PSICOMP_RBF_GPU):
                 self.psicomp = PSICOMP_RBF()

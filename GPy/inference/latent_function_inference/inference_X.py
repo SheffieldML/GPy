@@ -25,6 +25,8 @@ class Inference_X(Model):
         super(Inference_X, self).__init__(name)
         self.likelihood = model.likelihood.copy()
         self.kern = model.kern.copy()
+        if model.kern.useGPU:
+            self.kern.GPU(True)
         from copy import deepcopy
         self.posterior = deepcopy(model.posterior)
         self.variational_prior = model.variational_prior.copy()

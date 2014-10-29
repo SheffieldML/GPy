@@ -162,7 +162,7 @@ def plot_latent(model, labels=None, which_indices=None,
         else:
             x = X[index, input_1]
             y = X[index, input_2]
-        ax.scatter(x, y, marker=m, s=s, color=Tango.nextMedium(), label=this_label)
+        ax.scatter(x, y, marker=m, s=s, c=Tango.nextMedium(), label=this_label, linewidth=.5, edgecolor='k', alpha=.9)
 
     ax.set_xlabel('latent dimension %i' % input_1)
     ax.set_ylabel('latent dimension %i' % input_2)
@@ -175,7 +175,7 @@ def plot_latent(model, labels=None, which_indices=None,
 
     if plot_inducing:
         Z = model.Z
-        ax.plot(Z[:, input_1], Z[:, input_2], '^w')
+        ax.scatter(Z[:, input_1], Z[:, input_2], c='w', s=14, marker="^", edgecolor='k', linewidth=.3, alpha=.6)
 
     ax.set_xlim((xmin, xmax))
     ax.set_ylim((ymin, ymax))

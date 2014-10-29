@@ -80,7 +80,10 @@ class Gaussian(Likelihood):
 
     def predictive_values(self, mu, var, full_cov=False, Y_metadata=None):
         if full_cov:
-            var += np.eye(var.shape[0])*self.variance
+            if var.ndim == 2:
+                var += np.eye(var.shape[0])*self.variance
+            if var.ndim == 3:
+                var += np.atleast_3d(np.eye(var.shape[0])*self.variance)
         else:
             var += self.variance
         return mu, var

@@ -346,9 +346,11 @@ def optimize(m, maxiter=1000):
             mu = np.dot(Kx.T, self.posterior.woodbury_vector)
             if full_cov:
                 Kxx = kern.K(Xnew)
-                var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
-                #var = Kxx[:,:,None] - np.tensordot(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx).T, Kx, [1,0]).swapaxes(1,2)
-                var = var.squeeze()
+                if self.posterior.woodbury_inv.ndim == 2:
+                    var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
+                elif self.posterior.woodbury_inv.ndim == 3:
+                    var = Kxx[:,:,None] - np.tensordot(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx).T, Kx, [1,0]).swapaxes(1,2)
+                var = var
             else:
                 Kxx = kern.Kdiag(Xnew)
                 var = (Kxx - np.sum(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx) * Kx[None,:,:], 1)).T

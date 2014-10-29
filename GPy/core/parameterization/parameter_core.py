@@ -18,7 +18,7 @@ import numpy as np
 import re
 import logging
 
-__updated__ = '2014-10-22'
+__updated__ = '2014-10-28'
 
 class HierarchyError(Exception):
     """
@@ -99,7 +99,7 @@ class Observable(object):
 
         :param bool trigger_parent: Whether to trigger the parent, after self has updated
         """
-        if not self.update_model() or self._in_init_:
+        if not self.update_model() or (hasattr(self, "_in_init_") and self._in_init_):
             #print "Warning: updates are off, updating the model will do nothing"
             return
         self._trigger_params_changed(trigger_parent)

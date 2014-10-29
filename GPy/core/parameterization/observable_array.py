@@ -1,7 +1,7 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-__updated__ = '2014-10-22'
+__updated__ = '2014-10-29'
 
 import numpy as np
 from parameter_core import Observable, Pickleable
@@ -17,7 +17,7 @@ class ObsAr(np.ndarray, Pickleable, Observable):
     def __new__(cls, input_array, *a, **kw):
         # allways make a copy of input paramters, as we need it to be in C order:
         if not isinstance(input_array, ObsAr):
-            obj = np.atleast_1d(np.require(np.copy(input_array), dtype=np.float64, requirements=['W', 'C'])).view(cls)
+            obj = np.atleast_1d(np.require(input_array, dtype=np.float64, requirements=['W', 'C'])).view(cls)
         else: obj = input_array
         super(ObsAr, obj).__init__(*a, **kw)
         return obj

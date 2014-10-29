@@ -25,3 +25,15 @@ from core.parameterization import Param, Parameterized, ObsAr
 @nottest
 def tests():
     Tester(testing).test(verbose=10)
+
+
+def load(file_path):
+    """
+    Load a previously pickled model, using `m.pickle('path/to/file.pickle)'
+
+    :param file_name: path/to/file.pickle
+    """
+    import cPickle as pickle
+    with open(file_path, 'rb') as f:
+        m = pickle.load(f)
+    return m

@@ -85,6 +85,14 @@ class TieTests(unittest.TestCase):
         self.assertTrue(m.ties.checkConstraintConsistency())
         self.assertTrue(m.ties.checkTieVector([m.X[:10],m.X[10:20]]))
         self.assertTrue(m.checkgrad())
+        
+    def test_tie_variational_posterior_columns(self):
+        m = GPy.examples.dimensionality_reduction.bgplvm_oil_100(plot=False,optimize=False)
+        m.X.variance[:,:3].tie_vector(m.X.variance[:,3:6])
+        self.assertTrue(m.ties.checkValueConsistency())
+        self.assertTrue(m.ties.checkConstraintConsistency())
+        self.assertTrue(m.ties.checkTieVector([m.X.variance[:,:3],m.X.variance[:,3:6]]))
+        self.assertTrue(m.checkgrad())
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."

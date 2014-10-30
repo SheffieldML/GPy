@@ -473,7 +473,7 @@ class Tie(Parameterized):
             self._untie_ = None
         else:
             self.label_buf = np.zeros((self._highest_parent_.param_array.size,),dtype=np.uint32)
-            self._traverse_param(lambda x:np.put(self.label_buf,xrange(self._highest_parent_._offset_for(x),x.size),x.tie.flat), (self._highest_parent_,), [])
+            self._traverse_param(lambda x:np.put(self.label_buf,xrange(self._highest_parent_._offset_for(x),self._highest_parent_._offset_for(x)+x.size),x.tie.flat), (self._highest_parent_,), [])
             self.buf_idx = self._highest_parent_._raveled_index_for(self.tied_param)
             self._untie_ = self.label_buf==0
             self._untie_[self.buf_idx] = True

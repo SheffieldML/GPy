@@ -11,6 +11,7 @@ from GPy.core.parameterization.observable_array import ObsAr
 from GPy.core.parameterization.transformations import NegativeLogexp, Logistic
 from GPy.core.parameterization.parameterized import Parameterized
 from GPy.core.parameterization.param import Param
+from GPy.core.parameterization.index_operations import ParameterIndexOperations
 
 class ArrayCoreTest(unittest.TestCase):
     def setUp(self):
@@ -41,6 +42,7 @@ class ParameterizedTest(unittest.TestCase):
         self.test1.kern = self.rbf+self.white
         self.test1.link_parameter(self.test1.kern)
         self.test1.link_parameter(self.param, 0)
+
         # print self.test1:
         #=============================================================================
         # test_model.          |    Value    |  Constraint   |  Prior  |  Tied to
@@ -87,8 +89,8 @@ class ParameterizedTest(unittest.TestCase):
         self.test1.kern.unlink_parameter(self.white)
         self.assertIs(self.test1._fixes_,None)
 
+        self.assertIsInstance(self.white.constraints, ParameterIndexOperations)
         self.assertListEqual(self.white._fixes_.tolist(), [FIXED])
-        self.assertEquals(self.white.constraints._offset, 0)
         self.assertIs(self.test1.constraints, self.rbf.constraints._param_index_ops)
         self.assertIs(self.test1.constraints, self.param.constraints._param_index_ops)
 
@@ -132,6 +134,13 @@ class ParameterizedTest(unittest.TestCase):
         self.test1.kern.unlink_parameter(self.rbf)
         self.assertListEqual(self.test1.constraints[GPy.transformations.Square()].tolist(), [])
 
+    def test_constraints_link_unlink(self):
+        self.test1.unlink_parameter(self.test1.kern)
+        self.test1.kern.rbf.unlink_parameter(self.test1.kern.rbf.lengthscale)
+        self.test1.kern.rbf.link_parameter(self.test1.kern.rbf.lengthscale)
+        self.test1.kern.rbf.unlink_parameter(self.test1.kern.rbf.lengthscale)
+        self.test1.link_parameter(self.test1.kern)
+
     def test_constraints_views(self):
         self.assertEqual(self.white.constraints._offset, self.param.size+self.rbf.size)
         self.assertEqual(self.rbf.constraints._offset, self.param.size)
@@ -171,7 +180,6 @@ class ParameterizedTest(unittest.TestCase):
         self.assertEqual(val, self.testmodel.kern.lengthscale)
 
     def test_add_parameter_in_hierarchy(self):
-        from GPy.core import Param
         self.test1.kern.rbf.link_parameter(Param("NEW", np.random.rand(2), NegativeLogexp()), 1)
         self.assertListEqual(self.test1.constraints[NegativeLogexp()].tolist(), range(self.param.size+1, self.param.size+1 + 2))
         self.assertListEqual(self.test1.constraints[GPy.transformations.Logistic(0,1)].tolist(), range(self.param.size))

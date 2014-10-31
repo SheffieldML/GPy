@@ -176,30 +176,6 @@ class SparseGP(GP):
         value_indices:
             dictionary holding indices for the update in full_values.
             if the key exists the update rule is:def df(x):
-    m.stochastics.do_stochastics()
-    grads = m._grads(x)
-    print '\r',
-    message = "Lik: {: 6.4E} Grad: {: 6.4E} Dim: {} Lik: {} Len: {!s}".format(float(m.log_likelihood()), np.einsum('i,i->', grads, grads), m.stochastics.d, float(m.likelihood.variance), " ".join(["{:3.2E}".format(l) for l in m.kern.lengthscale.values]))
-    print message,
-    return grads
-
-def grad_stop(threshold):
-    def inner(args):
-        g = args['gradient']
-        return np.sqrt(np.einsum('i,i->',g,g)) < threshold
-    return inner
-
-def maxiter_stop(maxiter):
-    def inner(args):
-        return args['n_iter'] == maxiter
-    return inner
-
-def optimize(m, maxiter=1000):
-    #opt = climin.RmsProp(m.optimizer_array.copy(), df, 1e-6, decay=0.9, momentum=0.9, step_adapt=1e-7)
-    opt = climin.Adadelta(m.optimizer_array.copy(), df, 1e-2, decay=0.9)
-    ret = opt.minimize_until((grad_stop(.1), maxiter_stop(maxiter)))
-    print
-    return ret
             full_values[key][value_indices[key]] += current_values[key]
         """
         for key in current_values.keys():
@@ -251,7 +227,7 @@ def optimize(m, maxiter=1000):
         dL_dKmm = None
 
         self._log_marginal_likelihood = 0
-        full_values = self._outer_init_full_values()
+        self.full_values = self._outer_init_full_values()
 
         if self.posterior is None:
             woodbury_inv = np.zeros((self.num_inducing, self.num_inducing, self.output_dim))
@@ -281,7 +257,7 @@ def optimize(m, maxiter=1000):
                                 Lm, dL_dKmm,
                                 subset_indices=dict(outputs=d, samples=ninan))
 
-            self._inner_take_over_or_update(full_values, current_values, value_indices)
+            self._inner_take_over_or_update(self.full_values, current_values, value_indices)
             self._inner_values_update(current_values)
 
             Lm = posterior.K_chol
@@ -295,7 +271,7 @@ def optimize(m, maxiter=1000):
         if self.posterior is None:
             self.posterior = Posterior(woodbury_inv=woodbury_inv, woodbury_vector=woodbury_vector,
                                    K=posterior._K, mean=None, cov=None, K_chol=posterior.K_chol)
-        self._outer_values_update(full_values)
+        self._outer_values_update(self.full_values)
 
     def _outer_loop_without_missing_data(self):
         self._log_marginal_likelihood = 0
@@ -309,7 +285,7 @@ def optimize(m, maxiter=1000):
 
         d = self.stochastics.d
         posterior, log_marginal_likelihood, \
-            grad_dict, current_values, _ = self._inner_parameters_changed(
+            grad_dict, self.full_values, _ = self._inner_parameters_changed(
                             self.kern, self.X,
                             self.Z, self.likelihood,
                             self.Y_normalized[:, d], self.Y_metadata)
@@ -317,7 +293,7 @@ def optimize(m, maxiter=1000):
 
         self._log_marginal_likelihood += log_marginal_likelihood
 
-        self._outer_values_update(current_values)
+        self._outer_values_update(self.full_values)
 
         woodbury_inv[:, :, d] = posterior.woodbury_inv[:, :, None]
         woodbury_vector[:, d] = posterior.woodbury_vector
@@ -331,8 +307,8 @@ def optimize(m, maxiter=1000):
         elif self.stochastics:
             self._outer_loop_without_missing_data()
         else:
-            self.posterior, self._log_marginal_likelihood, self.grad_dict, full_values, _ = self._inner_parameters_changed(self.kern, self.X, self.Z, self.likelihood, self.Y_normalized, self.Y_metadata)
-            self._outer_values_update(full_values)
+            self.posterior, self._log_marginal_likelihood, self.grad_dict, self.full_values, _ = self._inner_parameters_changed(self.kern, self.X, self.Z, self.likelihood, self.Y_normalized, self.Y_metadata)
+            self._outer_values_update(self.full_values)
 
     def _raw_predict(self, Xnew, full_cov=False, kern=None):
         """

@@ -8,15 +8,18 @@ from ..kern import Kern
 from ..core.parameterization.variational import NormalPosterior, NormalPrior
 from ..core.parameterization import Param, Parameterized
 from ..core.parameterization.observable_array import ObsAr
-from ..inference.latent_function_inference.var_dtc import VarDTCMissingData, VarDTC
+from ..inference.latent_function_inference.var_dtc import VarDTC
 from ..inference.latent_function_inference import InferenceMethodList
 from ..likelihoods import Gaussian
 from ..util.initialization import initialize_latent
 from ..core.sparse_gp import SparseGP, GP
+from GPy.models.bayesian_gplvm import BayesianGPLVM
+from GPy.core.parameterization.variational import VariationalPosterior
+from GPy.core.sparse_gp_mpi import SparseGP_MPI
 
-class MRD(SparseGP):
+class MRD(BayesianGPLVM):
     """
-    !WARNING: This is bleeding edge code and still in development. 
+    !WARNING: This is bleeding edge code and still in development.
     Functionality may change fundamentally during development!
 
     Apply MRD to all given datasets Y in Ylist.
@@ -24,7 +27,7 @@ class MRD(SparseGP):
     Y_i in [n x p_i]
 
     If Ylist is a dictionary, the keys of the dictionary are the names, and the
-    values are the different datasets to compare. 
+    values are the different datasets to compare.
 
     The samples n in the datasets need
     to match up, whereas the dimensionality p_d can differ.
@@ -47,17 +50,20 @@ class MRD(SparseGP):
     :param Z: initial inducing inputs
     :param kernel: list of kernels or kernel to copy for each output
     :type kernel: [GPy.kernels.kernels] | GPy.kernels.kernels | None (default)
-    :param :class:`~GPy.inference.latent_function_inference inference_method: 
+    :param :class:`~GPy.inference.latent_function_inference inference_method:
         InferenceMethodList of inferences, or one inference method for all
     :param :class:`~GPy.likelihoodss.likelihoods.likelihoods` likelihoods: the likelihoods to use
     :param str name: the name of this model
     :param [str] Ynames: the names for the datasets given, must be of equal length as Ylist or None
+    :param bool|Norm normalizer: How to normalize the data?
+    :param bool stochastic: Should this model be using stochastic gradient descent over the dimensions?
+    :param bool|[bool] batchsize: either one batchsize for all, or one batchsize per dataset.
     """
     def __init__(self, Ylist, input_dim, X=None, X_variance=None,
                  initx = 'PCA', initz = 'permute',
                  num_inducing=10, Z=None, kernel=None,
-                 inference_method=None, likelihoods=None, name='mrd', Ynames=None):
-        super(GP, self).__init__(name)
+                 inference_method=None, likelihoods=None, name='mrd',
+                 Ynames=None, normalizer=False, stochastic=False, batchsize=10):
 
         self.logger = logging.getLogger(self.__class__.__name__)
         self.input_dim = input_dim
@@ -76,30 +82,16 @@ class MRD(SparseGP):
         assert len(self.names) == len(self.Ylist), "one name per dataset, or None if Ylist is a dict"
 
         if inference_method is None:
-            self.inference_method= InferenceMethodList()
-            warned = False
-            for y in Ylist:
-                inan = np.isnan(y)
-                if np.any(inan):
-                    if not warned:
-                        self.logger.warn("WARNING: NaN values detected, make sure initx method can cope with NaN values or provide starting latent space X")
-                        warned = True
-                    self.inference_method.append(VarDTCMissingData(limit=1, inan=inan))
-                else:
-                    self.inference_method.append(VarDTC(limit=1))
-                self.logger.debug("created inference method <{}>".format(hex(id(self.inference_method[-1]))))
+            self.inference_method = InferenceMethodList([VarDTC() for _ in xrange(len(self.Ylist))])
         else:
-            if not isinstance(inference_method, InferenceMethodList):
-                self.logger.debug("making inference_method an InferenceMethodList")
-                inference_method = InferenceMethodList(inference_method)
+            assert isinstance(inference_method, InferenceMethodList), "please provide one inference method per Y in the list and provide it as InferenceMethodList, inference_method given: {}".format(inference_method)
             self.inference_method = inference_method
 
-
-        self._in_init_ = True
         if X is None:
             X, fracs = self._init_X(initx, Ylist)
         else:
             fracs = [X.var(0)]*len(Ylist)
+
         self.Z = Param('inducing inputs', self._init_Z(initz, X))
         self.num_inducing = self.Z.shape[0] # ensure M==N if M>N
 
@@ -129,67 +121,80 @@ class MRD(SparseGP):
         else: likelihoods = likelihoods
 
         self.logger.info("adding X and Z")
-        self.link_parameters(self.X, self.Z)
+        super(MRD, self).__init__(Y, input_dim, X=X, X_variance=X_variance, num_inducing=num_inducing,
+                 Z=self.Z, kernel=None, inference_method=self.inference_method, likelihood=Gaussian(),
+                 name='bayesian gplvm', mpi_comm=None, normalizer=None,
+                 missing_data=False, stochastic=False, batchsize=1)
 
-        self.bgplvms = []
+        import GPy
+        self._log_marginal_likelihood = 0
+
+        print "------------"
+        print self.size
+        print self.constraints[GPy.constraints.Logexp()][-10:]
+        print "------------"
+        self.unlink_parameter(self.likelihood)
+        print self.size
+        print self.constraints[GPy.constraints.Logexp()][-10:]
+        print "------------"
+        self.unlink_parameter(self.kern)
+        print self.size
+        print self.constraints[GPy.constraints.Logexp()][-10:]
+        print "------------"
+
+        print
+        print '================='
+
         self.num_data = Ylist[0].shape[0]
+        if isinstance(batchsize, int):
+            batchsize = itertools.repeat(batchsize)
 
-        for i, n, k, l, Y in itertools.izip(itertools.count(), Ynames, kernels, likelihoods, Ylist):
+        print self.size
+        print self.constraints[GPy.constraints.Logexp()][-10:]
+
+        for i, n, k, l, Y, im, bs in itertools.izip(itertools.count(), Ynames, kernels, likelihoods, Ylist, self.inference_method, batchsize):
             assert Y.shape[0] == self.num_data, "All datasets need to share the number of datapoints, and those have to correspond to one another"
-            p = Parameterized(name=n)
-            p.link_parameter(k)
-            p.kern = k
-            p.link_parameter(l)
-            p.likelihood = l
-            self.link_parameter(p)
-            self.bgplvms.append(p)
+            md = np.isnan(Y).any()
+            spgp = SparseGP(self.X, Y, self.Z, k, l, im, n, None, normalizer, md, stochastic, bs)
+            spgp.unlink_parameter(spgp.Z)
+            spgp.Z = self.Z
+            self.link_parameter(spgp, i+2)
+
+        print self.constraints[GPy.constraints.Logexp()][-10:]
+        self.link_parameter(self.Z, 2)
+        print self.size
+        print self.constraints[GPy.constraints.Logexp()][-10:]
+        print "==========="
 
         self.posterior = None
         self.logger.info("init done")
-        self._in_init_ = False
 
     def parameters_changed(self):
         self._log_marginal_likelihood = 0
-        self.posteriors = []
         self.Z.gradient[:] = 0.
         self.X.gradient[:] = 0.
-        for y, b, i in itertools.izip(self.Ylist, self.bgplvms, self.inference_method):
+        for b, i in itertools.izip(self.parameters[3:], self.inference_method):
             self.logger.info('working on im <{}>'.format(hex(id(i))))
-            k, l = b.kern, b.likelihood
-            posterior, lml, grad_dict = i.inference(k, self.X, self.Z, l, y)
+            self.Z.gradient[:] += b.full_values['Zgrad']
+            grad_dict = b.grad_dict
 
-            self.posteriors.append(posterior)
-            self._log_marginal_likelihood += lml
+            if isinstance(self.X, VariationalPosterior):
+                dL_dmean, dL_dS = b.kern.gradients_qX_expectations(
+                        grad_dict['dL_dpsi0'],
+                        grad_dict['dL_dpsi1'],
+                        grad_dict['dL_dpsi2'],
+                        self.Z, self.X)
+                self.X.mean.gradient += dL_dmean
+                self.X.variance.gradient += dL_dS
 
-            # likelihoods gradients
-            l.update_gradients(grad_dict.pop('dL_dthetaL'))
+            else:
+                #gradients wrt kernel
+                self.X.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'], self.X, self.Z)
 
-            #gradients wrt kernel
-            dL_dKmm = grad_dict.pop('dL_dKmm')
-            k.update_gradients_full(dL_dKmm, self.Z, None)
-            target = k.gradient.copy()
-            k.update_gradients_expectations(variational_posterior=self.X, Z=self.Z, **grad_dict)
-            k.gradient += target
-
-            #gradients wrt Z
-            self.Z.gradient += k.gradients_X(dL_dKmm, self.Z)
-            self.Z.gradient += k.gradients_Z_expectations(
-                               grad_dict['dL_dpsi0'], 
-                               grad_dict['dL_dpsi1'], 
-                               grad_dict['dL_dpsi2'], 
-                               Z=self.Z, variational_posterior=self.X)
-
-            dL_dmean, dL_dS = k.gradients_qX_expectations(variational_posterior=self.X, Z=self.Z, **grad_dict)
-            self.X.mean.gradient += dL_dmean
-            self.X.variance.gradient += dL_dS
-
-        self.posterior = self.posteriors[0]
-        self.kern = self.bgplvms[0].kern
-        self.likelihood = self.bgplvms[0].likelihood
-
-        # update for the KL divergence
-        self.variational_prior.update_gradients_KL(self.X)
-        self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
+        if isinstance(self.X, VariationalPosterior):
+            # update for the KL divergence
+            self.variational_prior.update_gradients_KL(self.X)
+            self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
 
     def log_likelihood(self):
         return self._log_marginal_likelihood
@@ -263,9 +268,10 @@ class MRD(SparseGP):
         Prediction for data set Yindex[default=0].
         This predicts the output mean and variance for the dataset given in Ylist[Yindex]
         """
-        self.posterior = self.posteriors[Yindex]
-        self.kern = self.bgplvms[0].kern
-        self.likelihood = self.bgplvms[0].likelihood
+        b = self.parameters[Yindex+2]
+        self.posterior = b.posterior
+        self.kern = b.kern
+        self.likelihood = b.likelihood
         return super(MRD, self).predict(Xnew, full_cov, Y_metadata, kern)
 
     #===============================================================================
@@ -298,7 +304,7 @@ class MRD(SparseGP):
     def plot_latent(self, labels=None, which_indices=None,
                 resolution=50, ax=None, marker='o', s=40,
                 fignum=None, plot_inducing=True, legend=True,
-                plot_limits=None, 
+                plot_limits=None,
                 aspect='auto', updates=False, predict_kwargs={}, imshow_kwargs={}):
         """
         see plotting.matplot_dep.dim_reduction_plots.plot_latent

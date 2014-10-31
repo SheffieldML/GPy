@@ -29,6 +29,7 @@ class GPBase(Model):
         if normalize_X:
             self._Xoffset = X.mean(0)[None, :]
             self._Xscale = X.std(0)[None, :]
+            self._Xscale[np.where(self._Xscale==0)] = 1
             self.X = (X.copy() - self._Xoffset) / self._Xscale
         else:
             self._Xoffset = np.zeros((1, self.input_dim))

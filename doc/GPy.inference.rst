@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
 
     GPy.inference.latent_function_inference
+    GPy.inference.mcmc
     GPy.inference.optimization
 
 Module contents

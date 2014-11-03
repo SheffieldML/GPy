@@ -17,9 +17,14 @@ from GPy.kern._src.rbf import RBF
 from GPy.kern._src.linear import Linear
 from GPy.kern._src.static import Bias, White
 from GPy.examples.dimensionality_reduction import mrd_simulation
-from GPy.examples.regression import toy_rbf_1d_50
 from GPy.core.parameterization.variational import NormalPosterior
 from GPy.models.gp_regression import GPRegression
+
+def toy_model():
+    X = np.linspace(0,1,50)[:, None]
+    Y = np.sin(X)
+    m = GPRegression(X=X, Y=Y)
+    return m
 
 class ListDictTestCase(unittest.TestCase):
     def assertListDictEquals(self, d1, d2, msg=None):
@@ -105,7 +110,7 @@ class Test(ListDictTestCase):
         self.assertSequenceEqual(str(par), str(pcopy))
 
     def test_model(self):
-        par = toy_rbf_1d_50(optimize=0, plot=0)
+        par = toy_model()
         pcopy = par.copy()
         self.assertListEqual(par.param_array.tolist(), pcopy.param_array.tolist())
         np.testing.assert_allclose(par.gradient_full, pcopy.gradient_full)
@@ -124,7 +129,7 @@ class Test(ListDictTestCase):
         self.assert_(pcopy.checkgrad())
 
     def test_modelrecreation(self):
-        par = toy_rbf_1d_50(optimize=0, plot=0)
+        par = toy_model()
         pcopy = GPRegression(par.X.copy(), par.Y.copy(), kernel=par.kern.copy())
         np.testing.assert_allclose(par.param_array, pcopy.param_array)
         np.testing.assert_allclose(par.gradient_full, pcopy.gradient_full)
@@ -135,7 +140,7 @@ class Test(ListDictTestCase):
         self.assert_(np.any(pcopy.gradient!=0.0))
         pcopy.optimize('bfgs')
         par.optimize('bfgs')
-        np.testing.assert_allclose(pcopy.param_array, par.param_array, atol=.001)
+        np.testing.assert_allclose(pcopy.param_array, par.param_array, atol=1e-6)
         with tempfile.TemporaryFile('w+b') as f:
             par.pickle(f)
             f.seek(0)
@@ -193,7 +198,7 @@ class Test(ListDictTestCase):
 
     @unittest.skip
     def test_add_observer(self):
-        par = toy_rbf_1d_50(optimize=0, plot=0)
+        par = toy_model()
         par.name = "original"
         par.count = 0
         par.add_observer(self, self._callback, 1)

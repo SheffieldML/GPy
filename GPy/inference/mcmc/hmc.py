@@ -4,7 +4,19 @@ import numpy as np
 
 
 class HMC:
-    def __init__(self,model,M=None,stepsize=1e-1):
+    """
+    An implementation of Hybrid Monte Carlo (HMC) for GPy models 
+    """
+    def __init__(self, model, M=None,stepsize=1e-1):
+        """
+        Initialize an object for HMC sampling. Note that the status of the model (model parameters) will be changed during sampling
+        :param model: the GPy model that will be sampled
+        :type model: GPy.core.Model
+        :param M: the mass matrix (an identity matrix by default)
+        :type M: numpy.ndarray
+        :param stepsize: the step size for HMC sampling
+        :type stepsize: float
+        """
         self.model = model
         self.stepsize = stepsize
         self.p = np.empty_like(model.optimizer_array.copy())
@@ -14,9 +26,18 @@ class HMC:
             self.M = M
         self.Minv = np.linalg.inv(self.M)
 
-    def sample(self, m_iters=1000, hmc_iters=20):
-        params = np.empty((m_iters,self.p.size))
-        for i in xrange(m_iters):
+    def sample(self, num_samples=1000, hmc_iters=20):
+        """
+        Sample the (unfixed) model parameters.
+        :param num_samples: the number of samples to draw (1000 by default)
+        :type num_samples: int
+        :param hmc_iters: the number of leap-frog iterations (20 by default)
+        :type hmc_iters: int
+        :return: the list of parameters samples with the size N x P (N - the number of samples, P - the number of parameters to sample) 
+        :rtype: numpy.ndarray
+        """
+        params = np.empty((num_samples,self.p.size))
+        for i in xrange(num_samples):
             self.p[:] = np.random.multivariate_normal(np.zeros(self.p.size),self.M)
             H_old = self._computeH()
             theta_old = self.model.optimizer_array.copy()
@@ -125,8 +146,6 @@ class HMC_shortcut:
                             break
                 else:
                     Hlist = range(hmc_iters+pos,hmc_iters+pos+self.groupsize)
-#                    print Hlist
-#                    print self._testH(H_buf[Hlist])
 
                     if self._testH(H_buf[Hlist]):
                         pos += -1
@@ -139,14 +158,10 @@ class HMC_shortcut:
                             pos_new = pos + r
                         self.model.optimizer_array = theta_buf[hmc_iters+pos_new]
                         self.p[:] = p_buf[hmc_iters+pos_new] # the sign of momentum might be wrong!
-#                        print reversal[0],pos,pos_new
-#                        print H_buf
                         break
 
     def _testH(self, Hlist):
         Hstd = np.std(Hlist)
-#        print Hlist
-#        print Hstd
         if Hstd<self.Hstd_th[0] or Hstd>self.Hstd_th[1]:
             return False
         else:

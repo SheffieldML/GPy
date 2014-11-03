@@ -36,14 +36,6 @@ GPy.mappings.mlp module
     :undoc-members:
     :show-inheritance:
 
-GPy.mappings.symbolic module
-----------------------------
-
-.. automodule:: GPy.mappings.symbolic
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 
 Module contents
 ---------------

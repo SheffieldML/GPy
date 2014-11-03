@@ -204,14 +204,6 @@ GPy.util.subarray_and_sorting module
     :undoc-members:
     :show-inheritance:
 
-GPy.util.symbolic module
-------------------------
-
-.. automodule:: GPy.util.symbolic
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 GPy.util.univariate_Gaussian module
 -----------------------------------
 

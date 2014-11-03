@@ -114,7 +114,7 @@ class GP(Model):
                 # LVM models
                 from ..core.parameterization.variational import VariationalPosterior
                 if isinstance(self.X, VariationalPosterior):
-                    assert isinstance(X, type(self.X), "The given X must have the same type as the X in the model!")
+                    assert isinstance(X, type(self.X)), "The given X must have the same type as the X in the model!"
                     self.unlink_parameter(self.X)
                     self.X = X
                     self.link_parameters(self.X)

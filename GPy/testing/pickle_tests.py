@@ -141,6 +141,7 @@ class Test(ListDictTestCase):
         pcopy.optimize('bfgs')
         par.optimize('bfgs')
         np.testing.assert_allclose(pcopy.param_array, par.param_array, atol=1e-6)
+        par.randomize()
         with tempfile.TemporaryFile('w+b') as f:
             par.pickle(f)
             f.seek(0)

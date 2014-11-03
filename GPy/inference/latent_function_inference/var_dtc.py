@@ -167,6 +167,7 @@ class VarDTC(LatentFunctionInference):
             woodbury_vector = Cpsi1Vf # == Cpsi1V
         else:
             print 'foobar'
+            stop
             psi1V = np.dot(Y.T*beta, psi1).T
             tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
             tmp, _ = dpotrs(LB, tmp, lower=1)

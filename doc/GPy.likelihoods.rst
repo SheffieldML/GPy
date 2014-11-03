@@ -60,14 +60,6 @@ GPy.likelihoods.mixed_noise module
     :undoc-members:
     :show-inheritance:
 
-GPy.likelihoods.negative_binomial module
-----------------------------------------
-
-.. automodule:: GPy.likelihoods.negative_binomial
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 GPy.likelihoods.ordinal module
 ------------------------------
 
@@ -84,42 +76,10 @@ GPy.likelihoods.poisson module
     :undoc-members:
     :show-inheritance:
 
-GPy.likelihoods.skew_exponential module
----------------------------------------
-
-.. automodule:: GPy.likelihoods.skew_exponential
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.likelihoods.skew_normal module
-----------------------------------
-
-.. automodule:: GPy.likelihoods.skew_normal
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.likelihoods.sstudent_t module
----------------------------------
-
-.. automodule:: GPy.likelihoods.sstudent_t
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 GPy.likelihoods.student_t module
 --------------------------------
 
 .. automodule:: GPy.likelihoods.student_t
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.likelihoods.symbolic module
--------------------------------
-
-.. automodule:: GPy.likelihoods.symbolic
     :members:
     :undoc-members:
     :show-inheritance:

@@ -12,6 +12,14 @@ GPy.models.bayesian_gplvm module
     :undoc-members:
     :show-inheritance:
 
+GPy.models.bayesian_gplvm_minibatch module
+------------------------------------------
+
+.. automodule:: GPy.models.bayesian_gplvm_minibatch
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.models.bcgplvm module
 -------------------------
 
@@ -112,6 +120,14 @@ GPy.models.sparse_gp_coregionalized_regression module
 -----------------------------------------------------
 
 .. automodule:: GPy.models.sparse_gp_coregionalized_regression
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.models.sparse_gp_minibatch module
+-------------------------------------
+
+.. automodule:: GPy.models.sparse_gp_minibatch
     :members:
     :undoc-members:
     :show-inheritance:

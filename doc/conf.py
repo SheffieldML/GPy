@@ -11,6 +11,9 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+autodoc_default_flags = ['members', 'show-inheritance', 'private-members', 'special-members']
+autodoc_member_order = "source"
+
 import sys
 import os
 
@@ -114,7 +117,7 @@ for mod_name in MOCK_MODULES:
 # ----------------------- READTHEDOCS ------------------
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
-on_rtd = True
+#on_rtd = True
 if on_rtd:
     sys.path.append(os.path.abspath('../GPy'))
 
@@ -126,7 +129,8 @@ if on_rtd:
     proc = subprocess.Popen("ls ../", stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
     print "program output:", out
-    proc = subprocess.Popen("sphinx-apidoc -f -o . ../GPy", stdout=subprocess.PIPE, shell=True)
+    #proc = subprocess.Popen("sphinx-apidoc -f -o . ../GPy", stdout=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen("make html", stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
     print "program output:", out
     #proc = subprocess.Popen("whereis numpy", stdout=subprocess.PIPE, shell=True)
@@ -397,5 +401,3 @@ epub_copyright = u'2013, Author'
 
 # Allow duplicate toc entries.
 #epub_tocdup = True
-
-autodoc_member_order = "source"

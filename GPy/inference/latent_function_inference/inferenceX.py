@@ -51,8 +51,18 @@ class InferenceX(Model):
                 self.kern.GPU(True)
         from copy import deepcopy
         self.posterior = deepcopy(model.posterior)
-        self.variational_prior = model.variational_prior.copy()
-        self.Z = model.Z.copy()
+        if hasattr(model, 'variational_prior'):
+            self.uncertain_input = True
+            self.variational_prior = model.variational_prior.copy()
+        else:
+            self.uncertain_input = False
+        if hasattr(model, 'inducing_inputs'):
+            self.sparse_gp = True
+            self.Z = model.Z.copy()
+        else:
+            self.sparse_gp = False
+            self.uncertain_input = False
+            self.Z = model.X.copy()
         self.Y = Y
         self.X = self._init_X(model, Y, init=init)
         self.compute_dL()
@@ -72,6 +82,8 @@ class InferenceX(Model):
                 dist = -2.*Y_new.dot(Y.T) + np.square(Y_new).sum(axis=1)[:,None]+ np.square(Y).sum(axis=1)[None,:]
             elif init=='NCC':
                 dist = Y_new.dot(Y.T)
+            elif init=='rand':
+                dist = np.random.rand(Y_new.shape[0],Y.shape[0])
         idx = dist.argmin(axis=1)
         
         from ...models import SSGPLVM
@@ -81,7 +93,11 @@ class InferenceX(Model):
             if model.group_spike:
                 X.gamma.fix()
         else:
-            X = variational.NormalPosterior(param_to_array(model.X.mean[idx]), param_to_array(model.X.variance[idx]))
+            if self.uncertain_input and self.sparse_gp:
+                X = variational.NormalPosterior(param_to_array(model.X.mean[idx]), param_to_array(model.X.variance[idx]))
+            else:
+                from ...core import Param
+                X = Param('latent mean',param_to_array(model.X[idx]).copy())
         
         return X
         
@@ -99,29 +115,42 @@ class InferenceX(Model):
         else:
             self.dL_dpsi2 = beta*(output_dim*self.posterior.woodbury_inv - np.einsum('md,od->mo',wv, wv))/2.
             self.dL_dpsi1 = beta*np.dot(self.Y, wv.T)
-            self.dL_dpsi0 = -beta/2.* np.ones(self.Y.shape[0])            #self.dL_dpsi0[:] = 0
+            self.dL_dpsi0 = -beta/2.* np.ones(self.Y.shape[0])
                 
     def parameters_changed(self):
-        psi0 = self.kern.psi0(self.Z, self.X)
-        psi1 = self.kern.psi1(self.Z, self.X)
-        psi2 = self.kern.psi2(self.Z, self.X)
+        if self.uncertain_input:
+            psi0 = self.kern.psi0(self.Z, self.X)
+            psi1 = self.kern.psi1(self.Z, self.X)
+            psi2 = self.kern.psi2(self.Z, self.X)
+        else:
+            psi0 = self.kern.Kdiag(self.X)
+            psi1 = self.kern.K(self.X, self.Z)
+            psi2 = np.dot(psi1.T,psi1)
 
         self._log_marginal_likelihood = (self.dL_dpsi2*psi2).sum()+(self.dL_dpsi1*psi1).sum()+(self.dL_dpsi0*psi0).sum()
-        X_grad = self.kern.gradients_qX_expectations(variational_posterior=self.X, Z=self.Z, dL_dpsi0=self.dL_dpsi0, dL_dpsi1=self.dL_dpsi1, dL_dpsi2=self.dL_dpsi2)
-        self.X.set_gradients(X_grad)
         
-        from ...core.parameterization.variational import SpikeAndSlabPrior
-        if isinstance(self.variational_prior, SpikeAndSlabPrior):
-            # Update Log-likelihood
-            KL_div = self.variational_prior.KL_divergence(self.X, N=self.Y.shape[0])
-            # update for the KL divergence
-            self.variational_prior.update_gradients_KL(self.X, N=self.Y.shape[0])
+        if self.uncertain_input:
+            X_grad = self.kern.gradients_qX_expectations(variational_posterior=self.X, Z=self.Z, dL_dpsi0=self.dL_dpsi0, dL_dpsi1=self.dL_dpsi1, dL_dpsi2=self.dL_dpsi2)
+            self.X.set_gradients(X_grad)
         else:
-            # Update Log-likelihood
-            KL_div = self.variational_prior.KL_divergence(self.X)
-            # update for the KL divergence
-            self.variational_prior.update_gradients_KL(self.X)
-        self._log_marginal_likelihood += -KL_div
+            dL_dpsi1 = self.dL_dpsi1 + 2.*np.dot(psi1,self.dL_dpsi2)
+            X_grad = self.kern.gradients_X_diag(self.dL_dpsi0, self.X)
+            X_grad += self.kern.gradients_X(dL_dpsi1, self.X, self.Z)
+            self.X.gradient = X_grad
+        
+        if self.uncertain_input:
+            from ...core.parameterization.variational import SpikeAndSlabPrior
+            if isinstance(self.variational_prior, SpikeAndSlabPrior):
+                # Update Log-likelihood
+                KL_div = self.variational_prior.KL_divergence(self.X, N=self.Y.shape[0])
+                # update for the KL divergence
+                self.variational_prior.update_gradients_KL(self.X, N=self.Y.shape[0])
+            else:
+                # Update Log-likelihood
+                KL_div = self.variational_prior.KL_divergence(self.X)
+                # update for the KL divergence
+                self.variational_prior.update_gradients_KL(self.X)
+            self._log_marginal_likelihood += -KL_div
         
     def log_likelihood(self):
         return self._log_marginal_likelihood

@@ -9,6 +9,7 @@ from param import ParamConcatenation
 from parameter_core import HierarchyError, Parameterizable, adjust_name_for_printing
 
 import logging
+from GPy.core.parameterization.index_operations import ParameterIndexOperationsView
 logger = logging.getLogger("parameters changed meta")
 
 class ParametersChangedMeta(type):
@@ -20,7 +21,7 @@ class ParametersChangedMeta(type):
         self._in_init_ = False
         logger.debug("connecting parameters")
         self._highest_parent_._connect_parameters()
-        self._highest_parent_._notify_parent_change()
+        #self._highest_parent_._notify_parent_change()
         self._highest_parent_._connect_fixes()
         logger.debug("calling parameters changed")
         self.parameters_changed()
@@ -140,6 +141,8 @@ class Parameterized(Parameterizable):
                 self.priors.shift_right(start, param.size)
                 self.constraints.update(param.constraints, self.size)
                 self.priors.update(param.priors, self.size)
+                param._parent_ = self
+                param._parent_index_ = len(self.parameters)
                 self.parameters.append(param)
             else:
                 start = sum(p.size for p in self.parameters[:index])
@@ -147,19 +150,23 @@ class Parameterized(Parameterizable):
                 self.priors.shift_right(start, param.size)
                 self.constraints.update(param.constraints, start)
                 self.priors.update(param.priors, start)
+                param._parent_ = self
+                param._parent_index_ = index if index>=0 else len(self.parameters[:index])
+                for p in self.parameters[index:]:
+                    p._parent_index_ += 1
                 self.parameters.insert(index, param)
 
-            self._notify_parent_change()
             param.add_observer(self, self._pass_through_notify_observers, -np.inf)
 
             parent = self
             while parent is not None:
                 parent.size += param.size
                 parent = parent._parent_
+            self._notify_parent_change()
 
             if not self._in_init_:
-                self._connect_parameters()
-                self._notify_parent_change()
+                #self._connect_parameters()
+                #self._notify_parent_change()
 
                 self._highest_parent_._connect_parameters(ignore_added_names=_ignore_added_names)
                 self._highest_parent_._notify_parent_change()

@@ -1,22 +1,23 @@
-"""HMC implementation"""
+# ## Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
 
 
 class HMC:
     """
-    An implementation of Hybrid Monte Carlo (HMC) for GPy models 
+    An implementation of Hybrid Monte Carlo (HMC) for GPy models
+    
+    Initialize an object for HMC sampling. Note that the status of the model (model parameters) will be changed during sampling.
+    
+    :param model: the GPy model that will be sampled
+    :type model: GPy.core.Model
+    :param M: the mass matrix (an identity matrix by default)
+    :type M: numpy.ndarray
+    :param stepsize: the step size for HMC sampling
+    :type stepsize: float
     """
     def __init__(self, model, M=None,stepsize=1e-1):
-        """
-        Initialize an object for HMC sampling. Note that the status of the model (model parameters) will be changed during sampling
-        :param model: the GPy model that will be sampled
-        :type model: GPy.core.Model
-        :param M: the mass matrix (an identity matrix by default)
-        :type M: numpy.ndarray
-        :param stepsize: the step size for HMC sampling
-        :type stepsize: float
-        """
         self.model = model
         self.stepsize = stepsize
         self.p = np.empty_like(model.optimizer_array.copy())
@@ -29,6 +30,7 @@ class HMC:
     def sample(self, num_samples=1000, hmc_iters=20):
         """
         Sample the (unfixed) model parameters.
+        
         :param num_samples: the number of samples to draw (1000 by default)
         :type num_samples: int
         :param hmc_iters: the number of leap-frog iterations (20 by default)

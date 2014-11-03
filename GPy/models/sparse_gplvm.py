@@ -26,7 +26,8 @@ class SparseGPLVM(SparseGPRegression):
 
     def parameters_changed(self):
         super(SparseGPLVM, self).parameters_changed()
-        self.X.gradient = self.kern.gradients_X(self.grad_dict['dL_dKnm'], self.X, self.Z)
+        self.X.gradient = self.kern.gradients_X_diag(self.grad_dict['dL_dKdiag'], self.X)
+        self.X.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'], self.X, self.Z)
 
     def plot_latent(self, labels=None, which_indices=None,
                 resolution=50, ax=None, marker='o', s=40,

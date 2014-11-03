@@ -141,22 +141,6 @@ class BayesianGPLVM(SparseGP_MPI):
                 resolution, ax, marker, s,
                 fignum, plot_inducing, legend,
                 plot_limits, aspect, updates, predict_kwargs, imshow_kwargs)
-        
-    def infer_newX(self, Y_new, optimize=True, ):
-        """
-        Infer the distribution of X for the new observed data *Y_new*.
-        
-        :param model: the GPy model used in inference
-        :type model: GPy.core.Model
-        :param Y_new: the new observed data for inference
-        :type Y_new: numpy.ndarray
-        :param optimize: whether to optimize the location of new X (True by default)
-        :type optimize: boolean
-        :return: a tuple containing the estimated posterior distribution of X and the model that optimize X 
-        :rtype: (GPy.core.parameterization.variational.VariationalPosterior, GPy.core.Model)
-        """
-        from ..inference.latent_function_inference.inferenceX import infer_newX
-        return infer_newX(self, Y_new, optimize=optimize)
 
     def do_test_latents(self, Y):
         """

@@ -13,11 +13,11 @@ from ..inference.latent_function_inference import InferenceMethodList
 from ..likelihoods import Gaussian
 from ..util.initialization import initialize_latent
 from ..core.sparse_gp import SparseGP, GP
-from GPy.models.bayesian_gplvm import BayesianGPLVM
 from GPy.core.parameterization.variational import VariationalPosterior
-from GPy.core.sparse_gp_mpi import SparseGP_MPI
+from GPy.models.bayesian_gplvm_minibatch import BayesianGPLVMMiniBatch
+from GPy.models.sparse_gp_minibatch import SparseGPMiniBatch
 
-class MRD(BayesianGPLVM):
+class MRD(BayesianGPLVMMiniBatch):
     """
     !WARNING: This is bleeding edge code and still in development.
     Functionality may change fundamentally during development!
@@ -92,7 +92,8 @@ class MRD(BayesianGPLVM):
         else:
             fracs = [X.var(0)]*len(Ylist)
 
-        self.Z = Param('inducing inputs', self._init_Z(initz, X))
+        Z = self._init_Z(initz, X)
+        self.Z = Param('inducing inputs', Z)
         self.num_inducing = self.Z.shape[0] # ensure M==N if M>N
 
         # sort out the kernels
@@ -104,6 +105,7 @@ class MRD(BayesianGPLVM):
             kernels = []
             for i in range(len(Ylist)):
                 k = kernel.copy()
+                print k is kernel, k.observers, k.constraints
                 kernels.append(k)
         else:
             assert len(kernel) == len(Ylist), "need one kernel per output"
@@ -114,7 +116,7 @@ class MRD(BayesianGPLVM):
             X_variance = np.random.uniform(0.1, 0.2, X.shape)
 
         self.variational_prior = NormalPrior()
-        self.X = NormalPosterior(X, X_variance)
+        #self.X = NormalPosterior(X, X_variance)
 
         if likelihoods is None:
             likelihoods = [Gaussian(name='Gaussian_noise'.format(i)) for i in range(len(Ylist))]
@@ -123,48 +125,33 @@ class MRD(BayesianGPLVM):
         self.logger.info("adding X and Z")
         super(MRD, self).__init__(Y, input_dim, X=X, X_variance=X_variance, num_inducing=num_inducing,
                  Z=self.Z, kernel=None, inference_method=self.inference_method, likelihood=Gaussian(),
-                 name='bayesian gplvm', mpi_comm=None, normalizer=None,
+                 name='manifold relevance determination', normalizer=None,
                  missing_data=False, stochastic=False, batchsize=1)
 
-        import GPy
         self._log_marginal_likelihood = 0
 
-        print "------------"
-        print self.size
-        print self.constraints[GPy.constraints.Logexp()][-10:]
-        print "------------"
         self.unlink_parameter(self.likelihood)
-        print self.size
-        print self.constraints[GPy.constraints.Logexp()][-10:]
-        print "------------"
         self.unlink_parameter(self.kern)
-        print self.size
-        print self.constraints[GPy.constraints.Logexp()][-10:]
-        print "------------"
-
-        print
-        print '================='
+        del self.kern
+        del self.likelihood
 
         self.num_data = Ylist[0].shape[0]
         if isinstance(batchsize, int):
             batchsize = itertools.repeat(batchsize)
 
-        print self.size
-        print self.constraints[GPy.constraints.Logexp()][-10:]
+        self.bgplvms = []
 
         for i, n, k, l, Y, im, bs in itertools.izip(itertools.count(), Ynames, kernels, likelihoods, Ylist, self.inference_method, batchsize):
             assert Y.shape[0] == self.num_data, "All datasets need to share the number of datapoints, and those have to correspond to one another"
             md = np.isnan(Y).any()
-            spgp = SparseGP(self.X, Y, self.Z, k, l, im, n, None, normalizer, md, stochastic, bs)
+            spgp = SparseGPMiniBatch(self.X, Y, Z, k, l, im, n, None, normalizer, md, stochastic, bs)
             spgp.unlink_parameter(spgp.Z)
+            del spgp.Z
+            del spgp.X
             spgp.Z = self.Z
+            spgp.X = self.X
             self.link_parameter(spgp, i+2)
-
-        print self.constraints[GPy.constraints.Logexp()][-10:]
-        self.link_parameter(self.Z, 2)
-        print self.size
-        print self.constraints[GPy.constraints.Logexp()][-10:]
-        print "==========="
+            self.bgplvms.append(spgp)
 
         self.posterior = None
         self.logger.info("init done")
@@ -173,7 +160,9 @@ class MRD(BayesianGPLVM):
         self._log_marginal_likelihood = 0
         self.Z.gradient[:] = 0.
         self.X.gradient[:] = 0.
-        for b, i in itertools.izip(self.parameters[3:], self.inference_method):
+        for b, i in itertools.izip(self.bgplvms, self.inference_method):
+            self._log_marginal_likelihood += b._log_marginal_likelihood
+
             self.logger.info('working on im <{}>'.format(hex(id(i))))
             self.Z.gradient[:] += b.full_values['Zgrad']
             grad_dict = b.grad_dict
@@ -195,6 +184,7 @@ class MRD(BayesianGPLVM):
             # update for the KL divergence
             self.variational_prior.update_gradients_KL(self.X)
             self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
+            pass
 
     def log_likelihood(self):
         return self._log_marginal_likelihood
@@ -268,7 +258,7 @@ class MRD(BayesianGPLVM):
         Prediction for data set Yindex[default=0].
         This predicts the output mean and variance for the dataset given in Ylist[Yindex]
         """
-        b = self.parameters[Yindex+2]
+        b = self.bgplvms[Yindex]
         self.posterior = b.posterior
         self.kern = b.kern
         self.likelihood = b.likelihood
@@ -317,16 +307,20 @@ class MRD(BayesianGPLVM):
         from ..plotting.matplot_dep import dim_reduction_plots
         if "Yindex" not in predict_kwargs:
             predict_kwargs['Yindex'] = 0
+
+        Yindex = predict_kwargs['Yindex']
         if ax is None:
             fig = plt.figure(num=fignum)
             ax = fig.add_subplot(111)
         else:
             fig = ax.figure
+        self.kern = self.bgplvms[Yindex].kern
+        self.likelihood = self.bgplvms[Yindex].likelihood
         plot = dim_reduction_plots.plot_latent(self, labels, which_indices,
                                         resolution, ax, marker, s,
                                         fignum, plot_inducing, legend,
                                         plot_limits, aspect, updates, predict_kwargs, imshow_kwargs)
-        ax.set_title(self.bgplvms[predict_kwargs['Yindex']].name)
+        ax.set_title(self.bgplvms[Yindex].name)
         try:
             fig.tight_layout()
         except:
@@ -336,8 +330,10 @@ class MRD(BayesianGPLVM):
 
     def __getstate__(self):
         state = super(MRD, self).__getstate__()
-        del state['kern']
-        del state['likelihood']
+        if state.has_key('kern'):
+            del state['kern']
+        if state.has_key('likelihood'):
+            del state['likelihood']
         return state
 
     def __setstate__(self, state):

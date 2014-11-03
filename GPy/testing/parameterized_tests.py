@@ -221,6 +221,31 @@ class ParameterizedTest(unittest.TestCase):
         np.testing.assert_equal(t.x.constraints[Logistic(0,1)], c[Logistic(0,1)])
         np.testing.assert_equal(t.x.constraints['fixed'], c['fixed'])
 
+    def test_parameter_modify_in_init(self):
+        class TestLikelihood(Parameterized):
+            def __init__(self, param1 = 2., param2 = 3.):
+                super(TestLikelihood, self).__init__("TestLike")
+                self.p1 = Param('param1', param1)
+                self.p2 = Param('param2', param2)
+
+                self.link_parameter(self.p1)
+                self.link_parameter(self.p2)
+
+                self.p1.fix()
+                self.p1.unfix()
+                self.p2.constrain_negative()
+                self.p1.fix()
+                self.p2.constrain_positive()
+                self.p2.fix()
+                self.p2.constrain_positive()
+
+        m = TestLikelihood()
+        print m
+        val = m.p1.values.copy()
+        self.assert_(m.p1.is_fixed)
+        self.assert_(m.constraints[GPy.constraints.Logexp()].tolist(), [1])
+        m.randomize()
+        self.assertEqual(m.p1, val)
 
     def test_printing(self):
         print self.test1

@@ -3,10 +3,10 @@ GPy
 
 A Gaussian processes framework in Python.
 
+* [GPy homepage](http://sheffieldml.github.io/GPy/)
 * [User mailing list](https://lists.shef.ac.uk/sympa/subscribe/gpy-users)
 * [Online documentation](https://gpy.readthedocs.org/en/latest/)
 * [Unit tests (Travis-CI)](https://travis-ci.org/SheffieldML/GPy)
-
 
 Continuous integration status: ![CI status](https://travis-ci.org/SheffieldML/GPy.png)
 
@@ -19,6 +19,10 @@ Citation
       howpublished = {\url{http://github.com/SheffieldML/GPy}},
       year = {2012--2014}
     }
+
+Pronounciation
+==============
+We like to pronounce it 'Gee-pie'.
 
 Getting started
 ===============

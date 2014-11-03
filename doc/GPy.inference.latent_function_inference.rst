@@ -44,6 +44,14 @@ GPy.inference.latent_function_inference.fitc module
     :undoc-members:
     :show-inheritance:
 
+GPy.inference.latent_function_inference.inferenceX module
+---------------------------------------------------------
+
+.. automodule:: GPy.inference.latent_function_inference.inferenceX
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.inference.latent_function_inference.laplace module
 ------------------------------------------------------
 

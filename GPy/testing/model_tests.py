@@ -447,6 +447,7 @@ class GradientTests(np.testing.TestCase):
         m = GPy.models.GPHeteroscedasticRegression(X, Y, kern)
         self.assertTrue(m.checkgrad())
 
+
     def test_gp_kronecker_gaussian(self):
         N1, N2 = 30, 20
         X1 = np.random.randn(N1, 1)

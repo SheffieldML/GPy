@@ -415,7 +415,6 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
 def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     from GPy import kern
     from GPy.models import MRD
-    from GPy.inference.latent_function_inference.var_dtc import VarDTCMissingData
 
     D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
     _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
@@ -429,12 +428,8 @@ def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim
         inanlist.append(inan)
         Y[inan] = _np.nan
 
-    imlist = []
-    for inan in inanlist:
-        imlist.append(VarDTCMissingData(limit=1, inan=inan))
-
     m = MRD(Ylist, input_dim=Q, num_inducing=num_inducing,
-            kernel=k, inference_method=imlist,
+            kernel=k, inference_method=None,
             initx="random", initz='permute', **kw)
 
     if optimize:
@@ -494,7 +489,7 @@ def olivetti_faces(optimize=True, verbose=True, plot=True):
 
 def stick_play(range=None, frame_rate=15, optimize=False, verbose=True, plot=True):
     import GPy
-    import pods 
+    import pods
 
     data = pods.datasets.osu_run1()
     # optimize

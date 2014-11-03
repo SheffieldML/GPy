@@ -95,11 +95,11 @@ class InferenceX(Model):
             output_dim = self.valid_dim.sum()
             self.dL_dpsi2 = beta*(output_dim*self.posterior.woodbury_inv - np.einsum('md,od->mo',wv, wv))/2.
             self.dL_dpsi1 = beta*np.dot(self.Y[:,self.valid_dim], wv.T)
-            self.dL_dpsi0 = -output_dim * beta/2.* np.ones(self.Y.shape[0])
+            self.dL_dpsi0 = - beta/2.* np.ones(self.Y.shape[0])
         else:
             self.dL_dpsi2 = beta*(output_dim*self.posterior.woodbury_inv - np.einsum('md,od->mo',wv, wv))/2.
             self.dL_dpsi1 = beta*np.dot(self.Y, wv.T)
-            self.dL_dpsi0 = -output_dim * beta/2.* np.ones(self.Y.shape[0])
+            self.dL_dpsi0 = -beta/2.* np.ones(self.Y.shape[0])            #self.dL_dpsi0[:] = 0
                 
     def parameters_changed(self):
         psi0 = self.kern.psi0(self.Z, self.X)
@@ -121,6 +121,7 @@ class InferenceX(Model):
             KL_div = self.variational_prior.KL_divergence(self.X)
             # update for the KL divergence
             self.variational_prior.update_gradients_KL(self.X)
+        self._log_marginal_likelihood += -KL_div
         
     def log_likelihood(self):
         return self._log_marginal_likelihood

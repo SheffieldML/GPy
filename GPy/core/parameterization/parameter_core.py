@@ -18,7 +18,7 @@ import numpy as np
 import re
 import logging
 
-__updated__ = '2014-10-28'
+__updated__ = '2014-11-03'
 
 class HierarchyError(Exception):
     """
@@ -924,7 +924,7 @@ class Parameterizable(OptimizationHandlable):
         !WARNING!: setting the parameter array MUST always be done in memory:
         m.param_array[:] = m_copy.param_array
         """
-        if self.__dict__.get('_param_array_', None) is None:
+        if (self.__dict__.get('_param_array_', None) is None) or (self._param_array_.size != self.size):
             self._param_array_ = np.empty(self.size, dtype=np.float64)
         return self._param_array_
 
@@ -1002,7 +1002,7 @@ class Parameterizable(OptimizationHandlable):
     #=========================================================================
     @property
     def gradient(self):
-        if self.__dict__.get('_gradient_array_', None) is None:
+        if (self.__dict__.get('_gradient_array_', None) is None) or self._gradient_array_.size != self.size:
             self._gradient_array_ = np.empty(self.size, dtype=np.float64)
         return self._gradient_array_
 

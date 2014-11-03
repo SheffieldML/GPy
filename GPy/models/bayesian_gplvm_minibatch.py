@@ -26,8 +26,6 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
                  Z=None, kernel=None, inference_method=None, likelihood=None,
                  name='bayesian gplvm', normalizer=None,
                  missing_data=False, stochastic=False, batchsize=1):
-        self.__IN_OPTIMIZATION__ = False
-
         self.logger = logging.getLogger(self.__class__.__name__)
         if X is None:
             from ..util.initialization import initialize_latent
@@ -70,6 +68,8 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
                                            normalizer=normalizer,
                                            missing_data=missing_data, stochastic=stochastic,
                                            batchsize=batchsize)
+        self.X = X
+        self.link_parameter(self.X, 0)
 
     def set_X_gradients(self, X, X_grad):
         """Set the gradients of the posterior distribution of X in its specific form."""

@@ -75,8 +75,7 @@ class BayesianGPLVM(SparseGP_MPI):
                                            name=name, inference_method=inference_method,
                                            normalizer=normalizer, mpi_comm=mpi_comm,
                                            variational_prior=self.variational_prior,
-                                           missing_data=missing_data, stochastic=stochastic,
-                                           batchsize=batchsize)
+                                           )
 
     def set_X_gradients(self, X, X_grad):
         """Set the gradients of the posterior distribution of X in its specific form."""
@@ -86,55 +85,22 @@ class BayesianGPLVM(SparseGP_MPI):
         """Get the gradients of the posterior distribution of X in its specific form."""
         return X.mean.gradient, X.variance.gradient
 
-    def _inner_parameters_changed(self, kern, X, Z, likelihood, Y, Y_metadata, Lm=None, dL_dKmm=None, subset_indices=None):
-        posterior, log_marginal_likelihood, grad_dict, current_values, value_indices = super(BayesianGPLVM, self)._inner_parameters_changed(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm, dL_dKmm=dL_dKmm, subset_indices=subset_indices)
-
-        kl_fctr = 1.
-        if self.missing_data:
-            d = self.output_dim
-            log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(X)/d
-        else:
-            log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(X)
-
-        current_values['meangrad'], current_values['vargrad'] = self.kern.gradients_qX_expectations(
-                                            variational_posterior=X,
-                                            Z=Z, dL_dpsi0=grad_dict['dL_dpsi0'],
-                                            dL_dpsi1=grad_dict['dL_dpsi1'],
-                                            dL_dpsi2=grad_dict['dL_dpsi2'])
-
-        # Subsetting Variational Posterior objects, makes the gradients
-        # empty. We need them to be 0 though:
-        X.mean.gradient[:] = 0
-        X.variance.gradient[:] = 0
-
-        self.variational_prior.update_gradients_KL(X)
-        if self.missing_data:
-            current_values['meangrad'] += kl_fctr*X.mean.gradient/d
-            current_values['vargrad'] += kl_fctr*X.variance.gradient/d
-        else:
-            current_values['meangrad'] += kl_fctr*X.mean.gradient
-            current_values['vargrad'] += kl_fctr*X.variance.gradient
-
-        if subset_indices is not None:
-            value_indices['meangrad'] = subset_indices['samples']
-            value_indices['vargrad'] = subset_indices['samples']
-        return posterior, log_marginal_likelihood, grad_dict, current_values, value_indices
-
-    def _outer_values_update(self, full_values):
-        """
-        Here you put the values, which were collected before in the right places.
-        E.g. set the gradients of parameters, etc.
-        """
-        super(BayesianGPLVM, self)._outer_values_update(full_values)
-        self.X.mean.gradient = full_values['meangrad']
-        self.X.variance.gradient = full_values['vargrad']
-
-    def _outer_init_full_values(self):
-        return dict(meangrad=np.zeros(self.X.mean.shape),
-                    vargrad=np.zeros(self.X.variance.shape))
-
     def parameters_changed(self):
         super(BayesianGPLVM,self).parameters_changed()
+
+        kl_fctr = 1.
+        self._log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(self.X)
+
+        self.X.mean.gradient, self.X.variance.gradient = self.kern.gradients_qX_expectations(
+                                            variational_posterior=self.X,
+                                            Z=self.Z,
+                                            dL_dpsi0=self.grad_dict['dL_dpsi0'],
+                                            dL_dpsi1=self.grad_dict['dL_dpsi1'],
+                                            dL_dpsi2=self.grad_dict['dL_dpsi2'])
+
+        self.variational_prior.update_gradients_KL(self.X)
+
+
         if isinstance(self.inference_method, VarDTC_minibatch):
             return
 

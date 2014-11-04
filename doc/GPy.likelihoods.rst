@@ -60,14 +60,6 @@ GPy.likelihoods.mixed_noise module
     :undoc-members:
     :show-inheritance:
 
-GPy.likelihoods.ordinal module
-------------------------------
-
-.. automodule:: GPy.likelihoods.ordinal
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 GPy.likelihoods.poisson module
 ------------------------------
 

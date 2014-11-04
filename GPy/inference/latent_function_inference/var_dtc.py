@@ -34,7 +34,9 @@ class VarDTC(LatentFunctionInference):
         self.get_YYTfactor.limit = limit
 
     def _get_trYYT(self, Y):
-        return np.sum(np.square(Y))
+        return np.einsum("ij,ij->", Y, Y)
+        # faster than, but same as:
+        # return np.sum(np.square(Y))
 
     def __getstate__(self):
         # has to be overridden, as Cacher objects cannot be pickled.
@@ -103,7 +105,7 @@ class VarDTC(LatentFunctionInference):
             psi0 = kern.Kdiag(X)
             psi1 = kern.K(X, Z)
             if het_noise:
-                tmp = psi1 * (np.sqrt(beta.reshape(num_data, 1)))
+                tmp = psi1 * (np.sqrt(beta))
             else:
                 tmp = psi1 * (np.sqrt(beta))
             tmp, _ = dtrtrs(Lm, tmp.T, lower=1)
@@ -137,14 +139,14 @@ class VarDTC(LatentFunctionInference):
 
         # log marginal likelihood
         log_marginal = _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise,
-            psi0, A, LB, trYYT, data_fit, VVT_factor)
+            psi0, A, LB, trYYT, data_fit, Y)
 
         #noise derivatives
         dL_dR = _compute_dL_dR(likelihood,
             het_noise, uncertain_inputs, LB,
             _LBi_Lmi_psi1Vf, DBi_plus_BiPBi, Lm, A,
             psi0, psi1, beta,
-            data_fit, num_data, output_dim, trYYT, Y)
+            data_fit, num_data, output_dim, trYYT, Y, VVT_factor)
 
         dL_dthetaL = likelihood.exact_inference_gradients(dL_dR,Y_metadata)
 
@@ -184,14 +186,14 @@ class VarDTC(LatentFunctionInference):
         return post, log_marginal, grad_dict
 
 def _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm, VVT_factor, Cpsi1Vf, DBi_plus_BiPBi, psi1, het_noise, uncertain_inputs):
-    dL_dpsi0 = -0.5 * output_dim * (beta[:,None] * np.ones([num_data, 1])).flatten()
+    dL_dpsi0 = -0.5 * output_dim * (beta* np.ones([num_data, 1])).flatten()
     dL_dpsi1 = np.dot(VVT_factor, Cpsi1Vf.T)
     dL_dpsi2_beta = 0.5 * backsub_both_sides(Lm, output_dim * np.eye(num_inducing) - DBi_plus_BiPBi)
     if het_noise:
         if uncertain_inputs:
-            dL_dpsi2 = beta[:, None, None] * dL_dpsi2_beta[None, :, :]
+            dL_dpsi2 = beta[:, None] * dL_dpsi2_beta[None, :, :]
         else:
-            dL_dpsi1 += 2.*np.dot(dL_dpsi2_beta, (psi1 * beta.reshape(num_data, 1)).T).T
+            dL_dpsi1 += 2.*np.dot(dL_dpsi2_beta, (psi1 * beta).T).T
             dL_dpsi2 = None
     else:
         dL_dpsi2 = beta * dL_dpsi2_beta
@@ -202,7 +204,7 @@ def _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm, VVT_factor, C
     return dL_dpsi0, dL_dpsi1, dL_dpsi2
 
 
-def _compute_dL_dR(likelihood, het_noise, uncertain_inputs, LB, _LBi_Lmi_psi1Vf, DBi_plus_BiPBi, Lm, A, psi0, psi1, beta, data_fit, num_data, output_dim, trYYT, Y):
+def _compute_dL_dR(likelihood, het_noise, uncertain_inputs, LB, _LBi_Lmi_psi1Vf, DBi_plus_BiPBi, Lm, A, psi0, psi1, beta, data_fit, num_data, output_dim, trYYT, Y, VVT_factr=None):
     # the partial derivative vector for the likelihood
     if likelihood.size == 0:
         # save computation here.
@@ -217,8 +219,7 @@ def _compute_dL_dR(likelihood, het_noise, uncertain_inputs, LB, _LBi_Lmi_psi1Vf,
 
             Lmi_psi1, nil = dtrtrs(Lm, psi1.T, lower=1, trans=0)
             _LBi_Lmi_psi1, _ = dtrtrs(LB, Lmi_psi1, lower=1, trans=0)
-
-            dL_dR = -0.5 * beta + 0.5 * (beta*Y)**2
+            dL_dR = -0.5 * beta + 0.5 * VVT_factr**2
             dL_dR += 0.5 * output_dim * (psi0 - np.sum(Lmi_psi1**2,0))[:,None] * beta**2
 
             dL_dR += 0.5*np.sum(mdot(LBi.T,LBi,Lmi_psi1)*Lmi_psi1,0)[:,None]*beta**2
@@ -232,10 +233,10 @@ def _compute_dL_dR(likelihood, het_noise, uncertain_inputs, LB, _LBi_Lmi_psi1Vf,
         dL_dR += beta * (0.5 * np.sum(A * DBi_plus_BiPBi) - data_fit)
     return dL_dR
 
-def _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise, psi0, A, LB, trYYT, data_fit,Y):
+def _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise, psi0, A, LB, trYYT, data_fit, Y):
     #compute log marginal likelihood
     if het_noise:
-        lik_1 = -0.5 * num_data * output_dim * np.log(2. * np.pi) + 0.5 * np.sum(np.log(beta)) - 0.5 * np.sum(beta * np.square(Y).sum(axis=-1))
+        lik_1 = -0.5 * num_data * output_dim * np.log(2. * np.pi) + 0.5 * output_dim * np.sum(np.log(beta)) - 0.5 * np.sum(beta.ravel() * np.square(Y).sum(axis=-1))
         lik_2 = -0.5 * output_dim * (np.sum(beta.flatten() * psi0) - np.trace(A))
     else:
         lik_1 = -0.5 * num_data * output_dim * (np.log(2. * np.pi) - np.log(beta)) - 0.5 * beta * trYYT

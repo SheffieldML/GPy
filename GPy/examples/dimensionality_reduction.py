@@ -161,10 +161,13 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     import GPy
     from matplotlib import pyplot as plt
     import numpy as np
-    import pods
-
     _np.random.seed(0)
-    data = pods.datasets.oil()
+    try:
+        import pods
+        data = pods.datasets.oil()
+    except ImportError:
+        data = GPy.util.datasets.oil()
+
 
     kernel = GPy.kern.RBF(Q, 1., 1./_np.random.uniform(0,1,(Q,)), ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
     Y = data['X'][:N]

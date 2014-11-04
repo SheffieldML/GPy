@@ -23,7 +23,7 @@ class MixedNoise(Likelihood):
         variance = np.zeros(ind.size)
         for lik, j in zip(self.likelihoods_list, range(len(self.likelihoods_list))):
             variance[ind==j] = lik.variance
-        return variance
+        return variance[:,None]
 
     def betaY(self,Y,Y_metadata):
         #TODO not here.

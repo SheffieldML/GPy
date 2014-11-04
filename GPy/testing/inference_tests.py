@@ -65,6 +65,17 @@ class InferenceXTestCase(unittest.TestCase):
 
         self.assertTrue(np.allclose(m.X.mean, mi.X.mean))
         self.assertTrue(np.allclose(m.X.variance, mi.X.variance))
+
+    def test_inferenceX_GPLVM(self):
+        Ys = self.genData()
+        m = GPy.models.GPLVM(Ys[0],3,kernel=GPy.kern.RBF(3,ARD=True))
+        
+        x,mi = m.infer_newX(m.Y, optimize=False)
+        self.assertTrue(mi.checkgrad())
+        
+#         m.optimize(max_iters=10000)
+#         x,mi = m.infer_newX(m.Y)
+#         self.assertTrue(np.allclose(m.X, x))
         
 
 if __name__ == "__main__":

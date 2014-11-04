@@ -161,7 +161,6 @@ def plot(kernel,x=None, fignum=None, ax=None, title=None, plot_limits=None, reso
         Xnew = np.vstack((xx.flatten(), yy.flatten())).T
         Kx = kernel.K(Xnew, x)
         Kx = Kx.reshape(resolution, resolution).T
-        stop
         ax.contour(xx, yy, Kx, vmin=Kx.min(), vmax=Kx.max(), cmap=pb.cm.jet, **mpl_kwargs) # @UndefinedVariable
         ax.set_xlim(xmin[0], xmax[0])
         ax.set_ylim(xmin[1], xmax[1])

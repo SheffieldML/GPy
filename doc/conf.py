@@ -151,8 +151,8 @@ if on_rtd:
     proc = subprocess.Popen("ls ../", stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
     print "program output:", out
-    #proc = subprocess.Popen("sphinx-apidoc -f -o . ../GPy", stdout=subprocess.PIPE, shell=True)
-    proc = subprocess.Popen("make html", stdout=subprocess.PIPE, shell=True)
+    #Lets regenerate our rst files from the source, -P adds private modules (i.e kern._src)
+    proc = subprocess.Popen("sphinx-apidoc -P -f -o . ../GPy", stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
     print "program output:", out
     #proc = subprocess.Popen("whereis numpy", stdout=subprocess.PIPE, shell=True)

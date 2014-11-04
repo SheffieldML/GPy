@@ -11,8 +11,29 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-autodoc_default_flags = ['members', 'show-inheritance', 'private-members', 'special-members']
-autodoc_member_order = "source"
+#autodoc_default_flags = ['members', 'show-inheritance', 'private-members', 'special-members']
+#autodoc_default_flags = ['private-members', 'special-members']
+#autodoc_default_flags = 'private-members'
+#autodoc_member_order = "source"
+
+#def autodoc_skip_member(app, what, name, obj, skip, options):
+    #exclusions = ('__weakref__',  # special-members
+                  #'__doc__', '__module__', '__dict__',  # undoc-members
+                  #)
+    #exclude = name in exclusions
+
+    #inclusions = ('_src')
+    #include = name in inclusions
+    #if include:
+        #print app, what, name, obj, skip, options
+        #return False
+    #return skip or exclude
+
+#def setup(app):
+    ##app.connect('autodoc-process-docstring', cut_lines(2))
+    ##app.connect('autodoc_default_flags', autodoc_default_flags)
+    ##app.connect('autodoc_member_order', autodoc_member_order)
+    #app.connect('autodoc-skip-member', autodoc_skip_member)
 
 import sys
 import os
@@ -113,6 +134,7 @@ MOCK_MODULES = ['sympy',
     ]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
+
 
 # ----------------------- READTHEDOCS ------------------
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'

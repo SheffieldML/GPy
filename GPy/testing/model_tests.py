@@ -112,7 +112,7 @@ class MiscTests(unittest.TestCase):
 
     def test_missing_data(self):
         from GPy import kern
-        from GPy.models import BayesianGPLVM
+        from GPy.models.bayesian_gplvm_minibatch import BayesianGPLVMMiniBatch
         from GPy.examples.dimensionality_reduction import _simulate_matern
 
         D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 400, 3, 4
@@ -124,12 +124,12 @@ class MiscTests(unittest.TestCase):
         Ymissing[inan] = np.nan
 
         k = kern.Linear(Q, ARD=True) + kern.White(Q, np.exp(-2)) # + kern.bias(Q)
-        m = BayesianGPLVM(Ymissing, Q, init="random", num_inducing=num_inducing,
+        m = BayesianGPLVMMiniBatch(Ymissing, Q, init="random", num_inducing=num_inducing,
                           kernel=k, missing_data=True)
         assert(m.checkgrad())
 
         k = kern.RBF(Q, ARD=True) + kern.White(Q, np.exp(-2)) # + kern.bias(Q)
-        m = BayesianGPLVM(Ymissing, Q, init="random", num_inducing=num_inducing,
+        m = BayesianGPLVMMiniBatch(Ymissing, Q, init="random", num_inducing=num_inducing,
                           kernel=k, missing_data=True)
         assert(m.checkgrad())
 
@@ -446,6 +446,7 @@ class GradientTests(np.testing.TestCase):
         kern = GPy.kern.Bias(1) + GPy.kern.RBF(1)
         m = GPy.models.GPHeteroscedasticRegression(X, Y, kern)
         self.assertTrue(m.checkgrad())
+
 
     def test_gp_kronecker_gaussian(self):
         N1, N2 = 30, 20

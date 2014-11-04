@@ -14,7 +14,6 @@ import examples
 import likelihoods
 import testing
 from numpy.testing import Tester
-from nose.tools import nottest
 import kern
 import plotting
 
@@ -22,10 +21,16 @@ import plotting
 from core import Model
 from core.parameterization import Param, Parameterized, ObsAr
 
-@nottest
-def tests():
-    Tester(testing).test(verbose=10)
-
+#@nottest
+try:
+    #Get rid of nose dependency by only ignoring if you have nose installed
+    from nose.tools import nottest
+    @nottest
+    def tests():
+        Tester(testing).test(verbose=10)
+except:
+    def tests():
+        Tester(testing).test(verbose=10)
 
 def load(file_path):
     """

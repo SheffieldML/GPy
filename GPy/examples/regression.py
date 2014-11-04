@@ -468,7 +468,7 @@ def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
 
     k = GPy.kern.RBF(1)
     # create simple GP Model - no input uncertainty on this one
-    m = GPy.models.SparseGPRegression(X, Y, kernel=GPy.kern.RBF(1), Z=Z)
+    m = GPy.models.SparseGPRegression(X, Y, kernel=k, Z=Z)
 
     if optimize:
         m.optimize('scg', messages=1, max_iters=max_iters)

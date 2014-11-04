@@ -94,6 +94,9 @@ class VariationalPosterior(Parameterized):
         if self.has_uncertain_inputs():
             assert self.variance.shape == self.mean.shape, "need one variance per sample and dimenion"
 
+    def set_gradients(self, grad):
+        self.mean.gradient, self.variance.gradient = grad
+
     def _raveled_index(self):
         index = np.empty(dtype=int, shape=0)
         size = 0
@@ -157,6 +160,9 @@ class SpikeAndSlabPosterior(VariationalPosterior):
         super(SpikeAndSlabPosterior, self).__init__(means, variances, name)
         self.gamma = Param("binary_prob",binary_prob, Logistic(1e-10,1.-1e-10))
         self.link_parameter(self.gamma)
+
+    def set_gradients(self, grad):
+        self.mean.gradient, self.variance.gradient, self.gamma.gradient = grad
 
     def __getitem__(self, s):
         if isinstance(s, (int, slice, tuple, list, np.ndarray)):

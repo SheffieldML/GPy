@@ -93,21 +93,51 @@ class GP(Model):
         self.link_parameter(self.kern)
         self.link_parameter(self.likelihood)
 
+    def set_XY(self, X=None, Y=None):
+        """
+        Set the input / output of the model
+        
+        :param X: input observations
+        :param Y: output observations
+        """
+        self.update_model(False)
+        if Y is not None:
+            if self.normalizer is not None:
+                self.normalizer.scale_by(Y)
+                self.Y_normalized = ObsAr(self.normalizer.normalize(Y))
+                self.Y = Y
+            else:
+                self.Y = ObsAr(Y)
+                self.Y_normalized = self.Y
+        if X is not None:
+            if self.X in self.parameters:
+                # LVM models
+                from ..core.parameterization.variational import VariationalPosterior
+                if isinstance(self.X, VariationalPosterior):
+                    assert isinstance(X, type(self.X)), "The given X must have the same type as the X in the model!"
+                    self.unlink_parameter(self.X)
+                    self.X = X
+                    self.link_parameters(self.X)
+                else:
+                    self.unlink_parameter(self.X)
+                    from ..core import Param
+                    self.X = Param('latent mean',X)
+                    self.link_parameters(self.X)
+            else:
+                self.X = ObsAr(X)
+        self.update_model(True)
+
     def set_X(self,X):
-        # TODO: it does not work with BGPLVM
-        if isinstance(X, ObsAr):
-            self.X = X
-        else:
-            self.X = ObsAr(X)
+        """
+        Set the input of the model
+        """
+        self.set_XY(X=X)
 
     def set_Y(self,Y):
-        if self.normalizer is not None:
-            self.normalizer.scale_by(Y)
-            self.Y_normalized = ObsAr(self.normalizer.normalize(Y))
-            self.Y = Y
-        else:
-            self.Y = ObsAr(Y)
-            self.Y_normalized = self.Y
+        """
+        Set the input of the model
+        """
+        self.set_XY(Y=Y)
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y_normalized, self.Y_metadata)
@@ -354,3 +384,17 @@ class GP(Model):
             print "KeyboardInterrupt caught, calling on_optimization_end() to round things up"
             self.inference_method.on_optimization_end()
             raise
+        
+    def infer_newX(self, Y_new, optimize=True, ):
+        """
+        Infer the distribution of X for the new observed data *Y_new*.
+        
+        :param Y_new: the new observed data for inference
+        :type Y_new: numpy.ndarray
+        :param optimize: whether to optimize the location of new X (True by default)
+        :type optimize: boolean
+        :return: a tuple containing the posterior estimation of X and the model that optimize X 
+        :rtype: (GPy.core.parameterization.variational.VariationalPosterior or numpy.ndarray, GPy.core.Model)
+        """
+        from ..inference.latent_function_inference.inferenceX import infer_newX
+        return infer_newX(self, Y_new, optimize=optimize)

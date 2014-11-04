@@ -28,6 +28,14 @@ GPy.testing.index_operations_tests module
     :undoc-members:
     :show-inheritance:
 
+GPy.testing.inference_tests module
+----------------------------------
+
+.. automodule:: GPy.testing.inference_tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.testing.kernel_tests module
 -------------------------------
 
@@ -80,14 +88,6 @@ GPy.testing.prior_tests module
 ------------------------------
 
 .. automodule:: GPy.testing.prior_tests
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.testing.sparse_tests module
--------------------------------
-
-.. automodule:: GPy.testing.sparse_tests
     :members:
     :undoc-members:
     :show-inheritance:

@@ -18,7 +18,7 @@ import numpy as np
 import re
 import logging
 
-__updated__ = '2014-10-28'
+__updated__ = '2014-11-03'
 
 class HierarchyError(Exception):
     """
@@ -518,7 +518,7 @@ class Indexable(Nameable, Observable):
             self.constrain_negative(warning)
         elif prior.domain is _REAL:
             rav_i = self._raveled_index()
-            assert all(all(c.domain is _REAL for c in con) for con in self.constraints.properties_for(rav_i))
+            assert all(all(False if c is __fixed__ else c.domain is _REAL for c in con) for con in self.constraints.properties_for(rav_i)), 'Domain of prior and constraint have to match, please unconstrain if you REALLY wish to use this prior'
 
     def unset_priors(self, *priors):
         """
@@ -824,7 +824,7 @@ class OptimizationHandlable(Indexable):
     #===========================================================================
     # Randomizeable
     #===========================================================================
-    def randomize(self, rand_gen=np.random.normal, *args, **kwargs):
+    def randomize(self, rand_gen=None, *args, **kwargs):
         """
         Randomize the model.
         Make this draw from the prior if one exists, else draw from given random generator
@@ -834,6 +834,8 @@ class OptimizationHandlable(Indexable):
         :param float scale: scale parameter for random number generator
         :param args, kwargs: will be passed through to random number generator
         """
+        if rand_gen is None:
+            rand_gen = np.random.normal
         # first take care of all parameters (from N(0,1))
         x = rand_gen(size=self._size_transformed(), *args, **kwargs)
         updates = self.update_model()
@@ -924,7 +926,7 @@ class Parameterizable(OptimizationHandlable):
         !WARNING!: setting the parameter array MUST always be done in memory:
         m.param_array[:] = m_copy.param_array
         """
-        if self.__dict__.get('_param_array_', None) is None:
+        if (self.__dict__.get('_param_array_', None) is None) or (self._param_array_.size != self.size):
             self._param_array_ = np.empty(self.size, dtype=np.float64)
         return self._param_array_
 
@@ -1002,7 +1004,7 @@ class Parameterizable(OptimizationHandlable):
     #=========================================================================
     @property
     def gradient(self):
-        if self.__dict__.get('_gradient_array_', None) is None:
+        if (self.__dict__.get('_gradient_array_', None) is None) or self._gradient_array_.size != self.size:
             self._gradient_array_ = np.empty(self.size, dtype=np.float64)
         return self._gradient_array_
 

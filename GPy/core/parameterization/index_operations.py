@@ -26,39 +26,39 @@ class ParameterIndexOperations(object):
     This object wraps a dictionary, whos keys are _operations_ that we'd like
     to apply to a parameter array, and whose values are np integer arrays which
     index the parameter array appropriately.
-    
+
     A model instance will contain one instance of this class for each thing
     that needs indexing (i.e. constraints, ties and priors). Parameters within
     the model constain instances of the ParameterIndexOperationsView class,
     which can map from a 'local' index (starting 0) to this global index.
-    
+
     Here's an illustration:
-    
+
     #=======================================================================
     model : 0 1 2 3 4 5 6 7 8 9
     key1: 4 5
     key2: 7 8
-    
+
     param1: 0 1 2 3 4 5
     key1: 2 3
     key2: 5
-    
+
     param2: 0 1 2 3 4
     key1: 0
     key2: 2 3
     #=======================================================================
-    
+
     The views of this global index have a subset of the keys in this global
     (model) index.
-    
+
     Adding a new key (e.g. a constraint) to a view will cause the view to pass
     the new key to the global index, along with the local index and an offset.
     This global index then stores the key and the appropriate global index
     (which can be seen by the view).
-    
+
     See also:
     ParameterIndexOperationsView
-    
+
     """
     _offset = 0
     def __init__(self, constraints=None):
@@ -221,8 +221,6 @@ class ParameterIndexOperationsView(object):
 
     def shift_left(self, start, size):
         self._param_index_ops.shift_left(start+self._offset, size)
-        self._offset -= size
-        self._size -= size
 
     def clear(self):
         for i, ind in self.items():

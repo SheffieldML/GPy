@@ -130,7 +130,6 @@ class Test(unittest.TestCase):
         self.assertEqual(self._first, self._trigger, 'priority should be second')
         self.assertEqual(self._second, self._trigger_priority, 'priority should be second')
 
-
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

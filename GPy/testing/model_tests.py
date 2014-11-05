@@ -377,17 +377,14 @@ class GradientTests(np.testing.TestCase):
         m = GPy.models.GPLVM(Y, input_dim, init='PCA', kernel=k)
         self.assertTrue(m.checkgrad())
 
-    @unittest.expectedFailure
     def test_GP_EP_probit(self):
         N = 20
         X = np.hstack([np.random.normal(5, 2, N / 2), np.random.normal(10, 2, N / 2)])[:, None]
         Y = np.hstack([np.ones(N / 2), np.zeros(N / 2)])[:, None]
         kernel = GPy.kern.RBF(1)
         m = GPy.models.GPClassification(X, Y, kernel=kernel)
-        m.update_likelihood_approximation()
         self.assertTrue(m.checkgrad())
 
-    @unittest.expectedFailure
     def test_sparse_EP_DTC_probit(self):
         N = 20
         X = np.hstack([np.random.normal(5, 2, N / 2), np.random.normal(10, 2, N / 2)])[:, None]
@@ -399,7 +396,6 @@ class GradientTests(np.testing.TestCase):
         # likelihood = GPy.likelihoods.EP(Y, distribution)
         # m = GPy.core.SparseGP(X, likelihood, kernel, Z)
         # m.ensure_default_constraints()
-        m.update_likelihood_approximation()
         self.assertTrue(m.checkgrad())
 
     @unittest.expectedFailure
@@ -412,7 +408,8 @@ class GradientTests(np.testing.TestCase):
         m.update_likelihood_approximation()
         self.assertTrue(m.checkgrad())
 
-    def multioutput_regression_1D(self):
+    @unittest.expectedFailure
+    def test_multioutput_regression_1D(self):
         X1 = np.random.rand(50, 1) * 8
         X2 = np.random.rand(30, 1) * 5
         X = np.vstack((X1, X2))
@@ -422,10 +419,12 @@ class GradientTests(np.testing.TestCase):
 
         k1 = GPy.kern.RBF(1)
         m = GPy.models.GPMultioutputRegression(X_list=[X1, X2], Y_list=[Y1, Y2], kernel_list=[k1])
+        import ipdb;ipdb.set_trace()
         m.constrain_fixed('.*rbf_var', 1.)
         self.assertTrue(m.checkgrad())
 
-    def multioutput_sparse_regression_1D(self):
+    @unittest.expectedFailure
+    def test_multioutput_sparse_regression_1D(self):
         X1 = np.random.rand(500, 1) * 8
         X2 = np.random.rand(300, 1) * 5
         X = np.vstack((X1, X2))
@@ -447,6 +446,21 @@ class GradientTests(np.testing.TestCase):
         m = GPy.models.GPHeteroscedasticRegression(X, Y, kern)
         self.assertTrue(m.checkgrad())
 
+    def test_sparse_gp_heteroscedastic_regression(self):
+        num_obs = 25
+        X = np.random.randint(0, 140, num_obs)
+        X = X[:, None]
+        Y = 25. + np.sin(X / 20.) * 2. + np.random.rand(num_obs)[:, None]
+        kern = GPy.kern.Bias(1) + GPy.kern.RBF(1)
+        Y_metadata = {'output_index':np.arange(num_obs)[:,None]}
+        noise_terms = np.unique(Y_metadata['output_index'].flatten())
+        likelihoods_list = [GPy.likelihoods.Gaussian(name="Gaussian_noise_%s" %j) for j in noise_terms]
+        likelihood = GPy.likelihoods.MixedNoise(likelihoods_list=likelihoods_list)
+        m = GPy.core.SparseGP(X, Y, X[np.random.choice(num_obs, 10)],
+                              kern, likelihood,
+                              GPy.inference.latent_function_inference.VarDTC(),
+                              Y_metadata=Y_metadata)
+        self.assertTrue(m.checkgrad())
 
     def test_gp_kronecker_gaussian(self):
         N1, N2 = 30, 20

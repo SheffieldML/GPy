@@ -35,7 +35,7 @@ class SparseGPCoregionalizedRegression(SparseGP):
     :type kernel_name: string
     """
 
-    def __init__(self, X_list, Y_list, Z_list=[], kernel=None, likelihoods_list=None, num_inducing=10, X_variance=None, name='SGPCR',W_rank=1,kernel_name='X'):
+    def __init__(self, X_list, Y_list, Z_list=[], kernel=None, likelihoods_list=None, num_inducing=10, X_variance=None, name='SGPCR',W_rank=1,kernel_name='coreg'):
 
         #Input and Output
         X,Y,self.output_index = util.multioutput.build_XY(X_list,Y_list)

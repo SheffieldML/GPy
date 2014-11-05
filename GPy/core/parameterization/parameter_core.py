@@ -294,7 +294,7 @@ class Gradcheckable(Pickleable, Parentable):
     def __init__(self, *a, **kw):
         super(Gradcheckable, self).__init__(*a, **kw)
 
-    def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3):
+    def checkgrad(self, verbose=0, step=1e-6, tolerance=1e-3, df_tolerance=1e-12):
         """
         Check the gradient of this parameter with respect to the highest parent's
         objective function.
@@ -305,11 +305,17 @@ class Gradcheckable(Pickleable, Parentable):
 
         :param bool verbose: whether each parameter shall be checked individually.
         :param float step: the stepsize for the numerical three point gradient estimate.
-        :param flaot tolerance: the tolerance for the gradient ratio or difference.
+        :param float tolerance: the tolerance for the gradient ratio or difference.
+        :param float df_tolerance: the tolerance for df_tolerance
+        
+        Note:-
+           The *dF_ratio* indicates the limit of accuracy of numerical gradients. 
+           If it is too small, e.g., smaller than 1e-12, the numerical gradients 
+           are usually not accurate enough for the tests (shown with blue). 
         """
         if self.has_parent():
-            return self._highest_parent_._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance)
-        return self._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance)
+            return self._highest_parent_._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance, df_tolerance=df_tolerance)
+        return self._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance, df_tolerance=df_tolerance)
 
     def _checkgrad(self, param, verbose=0, step=1e-6, tolerance=1e-3):
         """

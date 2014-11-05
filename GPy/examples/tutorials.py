@@ -150,7 +150,7 @@ def tuto_kernel_overview(optimize=True, plot=True):
 def model_interaction(optimize=True, plot=True):
     X = np.random.randn(20,1)
     Y = np.sin(X) + np.random.randn(*X.shape)*0.01 + 5.
-    k = GPy.kern.rbf(1) + GPy.kern.bias(1)
+    k = GPy.kern.RBF(1) + GPy.kern.Bias(1)
     m = GPy.models.GPRegression(X, Y, kernel=k)
     return m
 

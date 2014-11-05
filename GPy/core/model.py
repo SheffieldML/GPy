@@ -263,7 +263,7 @@ class Model(Parameterized):
         sgd.run()
         self.optimization_runs.append(sgd)
 
-    def _checkgrad(self, target_param=None, verbose=False, step=1e-6, tolerance=1e-3):
+    def _checkgrad(self, target_param=None, verbose=False, step=1e-6, tolerance=1e-3, df_tolerance=1e-12):
         """
         Check the gradient of the ,odel by comparing to a numerical
         estimate.  If the verbose flag is passed, individual
@@ -322,7 +322,7 @@ class Model(Parameterized):
             except NotImplementedError:
                 names = ['Variable %i' % i for i in range(len(x))]
             # Prepare for pretty-printing
-            header = ['Name', 'Ratio', 'Difference', 'Analytical', 'Numerical']
+            header = ['Name', 'Ratio', 'Difference', 'Analytical', 'Numerical', 'dF_ratio']
             max_names = max([len(names[i]) for i in range(len(names))] + [len(header[0])])
             float_len = 10
             cols = [max_names]
@@ -359,6 +359,8 @@ class Model(Parameterized):
                 f1 = self._objective(xx)
                 xx[xind] -= 2.*step
                 f2 = self._objective(xx)
+                df_ratio = np.abs((f1-f2)/f1)
+                df_unstable = df_ratio<df_tolerance
                 numerical_gradient = (f1 - f2) / (2 * step)
                 if np.all(gradient[xind] == 0): ratio = (f1 - f2) == gradient[xind]
                 else: ratio = (f1 - f2) / (2 * step * gradient[xind])
@@ -370,12 +372,15 @@ class Model(Parameterized):
                 else:
                     formatted_name = "\033[91m {0} \033[0m".format(names[nind])
                     ret &= False
+                if df_unstable:
+                    formatted_name = "\033[94m {0} \033[0m".format(names[nind])
 
                 r = '%.6f' % float(ratio)
                 d = '%.6f' % float(difference)
                 g = '%.6f' % gradient[xind]
                 ng = '%.6f' % float(numerical_gradient)
-                grad_string = "{0:<{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}".format(formatted_name, r, d, g, ng, c0=cols[0] + 9, c1=cols[1], c2=cols[2], c3=cols[3], c4=cols[4])
+                df = '%1.e' % float(df_ratio)
+                grad_string = "{0:<{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}|{5:^{c5}}".format(formatted_name, r, d, g, ng, df, c0=cols[0] + 9, c1=cols[1], c2=cols[2], c3=cols[3], c4=cols[4], c5=cols[5])
                 print grad_string
 
             self.optimizer_array = x

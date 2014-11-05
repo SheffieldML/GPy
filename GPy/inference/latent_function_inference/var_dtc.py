@@ -76,12 +76,14 @@ class VarDTC(LatentFunctionInference):
         # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
         #self.YYTfactor = self.get_YYTfactor(Y)
         #VVT_factor = self.get_VVTfactor(self.YYTfactor, beta)
+        het_noise = beta.size > 1
+        if beta.ndim == 1:
+            beta = beta[:, None]
         VVT_factor = beta*Y
         #VVT_factor = beta*Y
         trYYT = self.get_trYYT(Y)
 
         # do the inference:
-        het_noise = beta.size > 1
         num_inducing = Z.shape[0]
         num_data = Y.shape[0]
         # kernel computations, using BGPLVM notation

@@ -18,8 +18,6 @@ import numpy as np
 import re
 import logging
 
-__updated__ = '2014-11-03'
-
 class HierarchyError(Exception):
     """
     Gets thrown when something is wrong with the parameter hierarchy.
@@ -896,6 +894,7 @@ class OptimizationHandlable(Indexable):
     def _connect_parameters(self):
         pass
 
+_name_digit = re.compile("(?P<name>.*)_(?P<digit>\d+)$")
 class Parameterizable(OptimizationHandlable):
     """
     A parameterisable class.
@@ -1022,29 +1021,38 @@ class Parameterizable(OptimizationHandlable):
             self.__dict__[pname] = param
             return
 
-        def warn_and_retry():
-            print """
-            WARNING: added a parameter with formatted name {},
-            which is already assigned to {}.
-            Trying to change the parameter name to
-
-            {}.{}
-            """.format(pname, self.hierarchy_name(), self.hierarchy_name(), param.name + "_")
-            param.name += "_"
+        def warn_and_retry(param, match=None):
+            #===================================================================
+            # print """
+            # WARNING: added a parameter with formatted name {},
+            # which is already assigned to {}.
+            # Trying to change the parameter name to
+            #
+            # {}.{}
+            # """.format(pname, self.hierarchy_name(), self.hierarchy_name(), param.name + "_")
+            #===================================================================
+            if match is None:
+                param.name += "_1"
+            else:
+                param.name = match.group('name') + "_" + str(int(match.group('digit'))+1)
             self._add_parameter_name(param, ignore_added_names)
         # and makes sure to not delete programmatically added parameters
-        if pname in self.__dict__:
-            if not (param is self.__dict__[pname]):
-                if pname in self._added_names_:
-                    del self.__dict__[pname]
-                    self._add_parameter_name(param)
-                else:
-                    warn_and_retry()
-        elif pname not in dir(self):
+        for other in self.parameters[::-1]:
+            if other is not param and other.name.startswith(param.name):
+                warn_and_retry(param, _name_digit.match(other.name))
+                return
+        if pname not in dir(self):
             self.__dict__[pname] = param
             self._added_names_.add(pname)
-        else:
-            warn_and_retry()
+        elif pname in self.__dict__:
+            if pname in self._added_names_:
+                other = self.__dict__[pname]
+                if not (param is other):
+                    del self.__dict__[pname]
+                    self._added_names_.remove(pname)
+                    warn_and_retry(other)
+                    warn_and_retry(param, _name_digit.match(other.name))
+            return
 
     def _remove_parameter_name(self, param=None, pname=None):
         assert param is None or pname is None, "can only delete either param by name, or the name of a param"

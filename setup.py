@@ -5,9 +5,8 @@ import os
 from setuptools import setup
 
 # Version number
-version = '0.4.6'
+version = '0.6.0'
 
-from pkg_resources import Requirement
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
@@ -19,14 +18,25 @@ setup(name = 'GPy',
       license = "BSD 3-clause",
       keywords = "machine-learning gaussian-processes kernels",
       url = "http://sheffieldml.github.com/GPy/",
-      packages = ["GPy.models", "GPy.inference.optimization", "GPy.inference", "GPy.inference.latent_function_inference", "GPy.likelihoods", "GPy.mappings", "GPy.examples", "GPy.core.parameterization", "GPy.core", "GPy.testing", "GPy", "GPy.util", "GPy.kern", "GPy.kern._src.psi_comp", "GPy.kern._src", "GPy.plotting.matplot_dep.latent_space_visualizations.controllers", "GPy.plotting.matplot_dep.latent_space_visualizations", "GPy.plotting.matplot_dep", "GPy.plotting"],
+      packages = ["GPy.models",
+                  "GPy.inference.optimization",
+                  "GPy.inference",
+                  "GPy.inference.latent_function_inference",
+                  "GPy.likelihoods", "GPy.mappings",
+                  "GPy.examples", "GPy.core.parameterization",
+                  "GPy.core", "GPy.testing",
+                  "GPy", "GPy.util", "GPy.kern",
+                  "GPy.kern._src.psi_comp", "GPy.kern._src",
+                  "GPy.plotting.matplot_dep.latent_space_visualizations.controllers",
+                  "GPy.plotting.matplot_dep.latent_space_visualizations",
+                  "GPy.plotting.matplot_dep", "GPy.plotting"],
       package_dir={'GPy': 'GPy'},
       package_data = {'GPy': ['defaults.cfg', 'installation.cfg', 'util/data_resources.json', 'util/football_teams.json']},
       py_modules = ['GPy.__init__'],
       long_description=read('README.md'),
-      install_requires=['numpy>=1.6', 'scipy>=0.9'],
+      install_requires=['numpy>=1.8', 'scipy>=0.14'],
       extras_require = {
-        'docs':['matplotlib>=1.1','Sphinx','ipython'],
+        'docs':['matplotlib>=1.4','Sphinx','ipython'],
       },
       classifiers=[
       "License :: OSI Approved :: BSD License"],

@@ -18,6 +18,7 @@ class Kern_check_model(GPy.core.Model):
     """
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
         GPy.core.Model.__init__(self, 'kernel_test_model')
+        np.random.seed()
         if kernel==None:
             kernel = GPy.kern.RBF(1)
         if X is None:

@@ -15,7 +15,7 @@ class GPLVM(GP):
 
 
     """
-    def __init__(self, Y, input_dim, init='PCA', X=None, kernel=None, normalize_Y=False, name="gplvm"):
+    def __init__(self, Y, input_dim, init='PCA', X=None, kernel=None, name="gplvm"):
 
         """
         :param Y: observed data
@@ -68,7 +68,7 @@ class GPLVM(GP):
     def plot_latent(self, labels=None, which_indices=None,
                 resolution=50, ax=None, marker='o', s=40,
                 fignum=None, legend=True,
-                plot_limits=None, 
+                plot_limits=None,
                 aspect='auto', updates=False, **kwargs):
         import sys
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."

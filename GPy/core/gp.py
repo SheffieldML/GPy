@@ -26,7 +26,7 @@ class GP(Model):
     :param Y: output observations
     :param kernel: a GPy kernel, defaults to rbf+white
     :param likelihood: a GPy likelihood
-    :param :class:`~GPy.inference.latent_function_inference.LatentFunctionInference` inference_method: The inference method to use for this GP
+    :param inference_method: The :class:`~GPy.inference.latent_function_inference.LatentFunctionInference` inference method to use for this GP
     :rtype: model object
     :param Norm normalizer:
         normalize the outputs Y.
@@ -95,10 +95,13 @@ class GP(Model):
 
     def set_XY(self, X=None, Y=None):
         """
-        Set the input / output of the model
-        
+        Set the input / output data of the model
+        This is useful if we wish to change our existing data but maintain the same model
+
         :param X: input observations
+        :type X: np.ndarray
         :param Y: output observations
+        :type Y: np.ndarray
         """
         self.update_model(False)
         if Y is not None:
@@ -129,22 +132,39 @@ class GP(Model):
 
     def set_X(self,X):
         """
-        Set the input of the model
+        Set the input data of the model
+
+        :param X: input observations
+        :type X: np.ndarray
         """
         self.set_XY(X=X)
 
     def set_Y(self,Y):
         """
-        Set the input of the model
+        Set the output data of the model
+
+        :param X: output observations
+        :type X: np.ndarray
         """
         self.set_XY(Y=Y)
 
     def parameters_changed(self):
+        """
+        Method that is called upon any changes to :class:`~GPy.core.parameterization.param.Param` variables within the model.
+        In particular in the GP class this method reperforms inference, recalculating the posterior and log marginal likelihood and gradients of the model
+
+        .. warning::
+            This method is not designed to be called manually, the framework is set up to automatically call this method upon changes to parameters, if you call
+            this method yourself, there may be unexpected consequences.
+        """
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y_normalized, self.Y_metadata)
         self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])
         self.kern.update_gradients_full(self.grad_dict['dL_dK'], self.X)
 
     def log_likelihood(self):
+        """
+        The log marginal likelihood of the model, :math:`p(\mathbf{y})`, this is the objective function of the model being optimised
+        """
         return self._log_marginal_likelihood
 
     def _raw_predict(self, _Xnew, full_cov=False, kern=None):
@@ -155,12 +175,10 @@ class GP(Model):
         of the prediction is computed. If full_cov is False (default), only the
         diagonal of the covariance is returned.
 
-        $$
-        p(f*|X*, X, Y) = \int^{\inf}_{\inf} p(f*|f,X*)p(f|X,Y) df
-                       = N(f*| K_{x*x}(K_{xx} + \Sigma)^{-1}Y, K_{x*x*} - K_{xx*}(K_{xx} + \Sigma)^{-1}K_{xx*}
-        \Sigma := \texttt{Likelihood.variance / Approximate likelihood covariance}
-        $$
-
+        .. math::
+            p(f*|X*, X, Y) = \int^{\inf}_{\inf} p(f*|f,X*)p(f|X,Y) df
+                        = N(f*| K_{x*x}(K_{xx} + \Sigma)^{-1}Y, K_{x*x*} - K_{xx*}(K_{xx} + \Sigma)^{-1}K_{xx*}
+            \Sigma := \texttt{Likelihood.variance / Approximate likelihood covariance}
         """
         if kern is None:
             kern = self.kern
@@ -185,23 +203,20 @@ class GP(Model):
         Predict the function(s) at the new point(s) Xnew.
 
         :param Xnew: The points at which to make a prediction
-        :type Xnew: np.ndarray, Nnew x self.input_dim
+        :type Xnew: np.ndarray (Nnew x self.input_dim)
         :param full_cov: whether to return the full covariance matrix, or just
                          the diagonal
         :type full_cov: bool
         :param Y_metadata: metadata about the predicting point to pass to the likelihood
         :param kern: The kernel to use for prediction (defaults to the model
                      kern). this is useful for examining e.g. subprocesses.
-        :returns: mean: posterior mean,  a Numpy array, Nnew x self.input_dim
-        :returns: var: posterior variance, a Numpy array, Nnew x 1 if
-                       full_cov=False, Nnew x Nnew otherwise
-        :returns: lower and upper boundaries of the 95% confidence intervals,
-                  Numpy arrays,  Nnew x self.input_dim
-
+        :returns: (mean, var, lower_upper):
+            mean: posterior mean, a Numpy array, Nnew x self.input_dim
+            var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
+            lower_upper: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
 
            If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
            This is to allow for different normalizations of the output dimensions.
-
         """
         #predict the latent function values
         mu, var = self._raw_predict(Xnew, full_cov=full_cov, kern=kern)
@@ -213,6 +228,16 @@ class GP(Model):
         return mean, var
 
     def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None):
+        """
+        Get the predictive quantiles around the prediction at X
+
+        :param X: The points at which to make a prediction
+        :type X: np.ndarray (Xnew x self.input_dim)
+        :param quantiles: tuple of quantiles, default is (2.5, 97.5) which is the 95% interval
+        :type quantiles: tuple
+        :returns: list of quantiles for each X and predictive quantiles for interval combination
+        :rtype: [np.ndarray (Xnew x self.input_dim), np.ndarray (Xnew x self.input_dim)]
+        """
         m, v = self._raw_predict(X,  full_cov=False)
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
@@ -225,7 +250,12 @@ class GP(Model):
         Given a set of points at which to predict X* (size [N*,Q]), compute the
         derivatives of the mean and variance. Resulting arrays are sized:
          dmu_dX* -- [N*, Q ,D], where D is the number of output in this GP (usually one).
+
          dv_dX*  -- [N*, Q],    (since all outputs have the same variance)
+        :param X: The points at which to get the predictive gradients
+        :type X: np.ndarray (Xnew x self.input_dim)
+        :returns: dmu_dX, dv_dX
+        :rtype: [np.ndarray (N*, Q ,D), np.ndarray (N*,Q) ]
 
         """
         dmu_dX = np.empty((Xnew.shape[0],Xnew.shape[1],self.output_dim))
@@ -245,12 +275,13 @@ class GP(Model):
         Samples the posterior GP at the points X.
 
         :param X: The points at which to take the samples.
-        :type X: np.ndarray, Nnew x self.input_dim.
+        :type X: np.ndarray (Nnew x self.input_dim)
         :param size: the number of a posteriori samples.
         :type size: int.
         :param full_cov: whether to return the full covariance matrix, or just the diagonal.
         :type full_cov: bool.
-        :returns: Ysim: set of simulations, a Numpy array (N x samples).
+        :returns: Ysim: set of simulations
+        :rtype: np.ndarray (N x samples)
         """
         m, v = self._raw_predict(X,  full_cov=full_cov)
         if self.normalizer is not None:
@@ -268,7 +299,7 @@ class GP(Model):
         Samples the posterior GP at the points X.
 
         :param X: the points at which to take the samples.
-        :type X: np.ndarray, Nnew x self.input_dim.
+        :type X: np.ndarray (Nnew x self.input_dim.)
         :param size: the number of a posteriori samples.
         :type size: int.
         :param full_cov: whether to return the full covariance matrix, or just the diagonal.
@@ -292,6 +323,37 @@ class GP(Model):
         This is a call to plot with plot_raw=True.
         Data will not be plotted in this, as the GP's view of the world
         may live in another space, or units then the data.
+
+        Can plot only part of the data and part of the posterior functions
+        using which_data_rowsm which_data_ycols.
+
+        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
+        :type plot_limits: np.array
+        :param which_data_rows: which of the training data to plot (default all)
+        :type which_data_rows: 'all' or a slice object to slice model.X, model.Y
+        :param which_data_ycols: when the data has several columns (independant outputs), only plot these
+        :type which_data_ycols: 'all' or a list of integers
+        :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
+        :type fixed_inputs: a list of tuples
+        :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
+        :type resolution: int
+        :param levels: number of levels to plot in a contour plot.
+        :param levels: for 2D plotting, the number of contour levels to use is ax is None, create a new figure
+        :type levels: int
+        :param samples: the number of a posteriori samples to plot
+        :type samples: int
+        :param fignum: figure to plot on.
+        :type fignum: figure number
+        :param ax: axes to plot on.
+        :type ax: axes handle
+        :param linecol: color of line to plot [Tango.colorsHex['darkBlue']]
+        :type linecol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
+        :param fillcol: color of fill [Tango.colorsHex['lightBlue']]
+        :type fillcol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
+        :param Y_metadata: additional data associated with Y which may be needed
+        :type Y_metadata: dict
+        :param data_symbol: symbol as used matplotlib, by default this is a black cross ('kx')
+        :type data_symbol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) alongside marker type, as is standard in matplotlib.
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
@@ -325,12 +387,13 @@ class GP(Model):
         :param which_data_rows: which of the training data to plot (default all)
         :type which_data_rows: 'all' or a slice object to slice model.X, model.Y
         :param which_data_ycols: when the data has several columns (independant outputs), only plot these
-        :type which_data_rows: 'all' or a list of integers
+        :type which_data_ycols: 'all' or a list of integers
         :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
         :type fixed_inputs: a list of tuples
         :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
         :type resolution: int
         :param levels: number of levels to plot in a contour plot.
+        :param levels: for 2D plotting, the number of contour levels to use is ax is None, create a new figure
         :type levels: int
         :param samples: the number of a posteriori samples to plot
         :type samples: int
@@ -338,11 +401,14 @@ class GP(Model):
         :type fignum: figure number
         :param ax: axes to plot on.
         :type ax: axes handle
-        :type output: integer (first output is 0)
         :param linecol: color of line to plot [Tango.colorsHex['darkBlue']]
-        :type linecol:
+        :type linecol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
         :param fillcol: color of fill [Tango.colorsHex['lightBlue']]
-        :param levels: for 2D plotting, the number of contour levels to use is ax is None, create a new figure
+        :type fillcol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
+        :param Y_metadata: additional data associated with Y which may be needed
+        :type Y_metadata: dict
+        :param data_symbol: symbol as used matplotlib, by default this is a black cross ('kx')
+        :type data_symbol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) alongside marker type, as is standard in matplotlib.
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
@@ -372,10 +438,8 @@ class GP(Model):
         :type max_f_eval: int
         :messages: whether to display during optimisation
         :type messages: bool
-        :param optimizer: which optimizer to use (defaults to self.preferred optimizer)
+        :param optimizer: which optimizer to use (defaults to self.preferred optimizer), a range of optimisers can be found in :module:`~GPy.inference.optimization`, they include 'scg', 'lbfgs', 'tnc'.
         :type optimizer: string
-
-        TODO: valid args
         """
         self.inference_method.on_optimization_start()
         try:
@@ -384,17 +448,17 @@ class GP(Model):
             print "KeyboardInterrupt caught, calling on_optimization_end() to round things up"
             self.inference_method.on_optimization_end()
             raise
-        
+
     def infer_newX(self, Y_new, optimize=True, ):
         """
         Infer the distribution of X for the new observed data *Y_new*.
-        
+
         :param Y_new: the new observed data for inference
         :type Y_new: numpy.ndarray
         :param optimize: whether to optimize the location of new X (True by default)
         :type optimize: boolean
-        :return: a tuple containing the posterior estimation of X and the model that optimize X 
-        :rtype: (GPy.core.parameterization.variational.VariationalPosterior or numpy.ndarray, GPy.core.Model)
+        :return: a tuple containing the posterior estimation of X and the model that optimize X
+        :rtype: (:class:`~GPy.core.parameterization.variational.VariationalPosterior` or numpy.ndarray, :class:`~GPy.core.model.Model`)
         """
         from ..inference.latent_function_inference.inferenceX import infer_newX
         return infer_newX(self, Y_new, optimize=optimize)

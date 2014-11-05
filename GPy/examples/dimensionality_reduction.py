@@ -624,7 +624,10 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose
     if in_place:
         # Make figure move in place.
         data['Y'][:, 0:3] = 0.0
-    m = GPy.models.GPLVM(data['Y'], 2, normalize_Y=True)
+    Y = data['Y']
+    Y_mean = Y.mean(0)
+    Y_std = Y.std(0)
+    m = GPy.models.GPLVM((Y-Y_mean)/Y_std, 2)
 
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
     if plot:

@@ -25,8 +25,6 @@ class BayesianGPLVM(SparseGP_MPI):
                  Z=None, kernel=None, inference_method=None, likelihood=None,
                  name='bayesian gplvm', mpi_comm=None, normalizer=None,
                  missing_data=False, stochastic=False, batchsize=1):
-        self.mpi_comm = mpi_comm
-        self.__IN_OPTIMIZATION__ = False
 
         self.logger = logging.getLogger(self.__class__.__name__)
         if X is None:

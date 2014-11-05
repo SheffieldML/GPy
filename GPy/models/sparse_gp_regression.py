@@ -9,6 +9,7 @@ from .. import likelihoods
 from .. import kern
 from ..inference.latent_function_inference import VarDTC
 from ..core.parameterization.variational import NormalPosterior
+from GPy.inference.latent_function_inference.var_dtc_parallel import VarDTC_minibatch
 
 class SparseGPRegression(SparseGP_MPI):
     """
@@ -30,7 +31,7 @@ class SparseGPRegression(SparseGP_MPI):
 
     """
 
-    def __init__(self, X, Y, kernel=None, Z=None, num_inducing=10, X_variance=None, normalizer=None):
+    def __init__(self, X, Y, kernel=None, Z=None, num_inducing=10, X_variance=None, normalizer=None, mpi_comm=None):
         num_data, input_dim = X.shape
 
         # kern defaults to rbf (plus white for stability)
@@ -48,8 +49,14 @@ class SparseGPRegression(SparseGP_MPI):
 
         if not (X_variance is None):
             X = NormalPosterior(X,X_variance)
+            
+        if mpi_comm is not None:
+            from ..inference.latent_function_inference.var_dtc_parallel import VarDTC_minibatch
+            infr = VarDTC_minibatch(mpi_comm=mpi_comm)
+        else:
+            infr = VarDTC()
 
-        SparseGP_MPI.__init__(self, X, Y, Z, kernel, likelihood, inference_method=VarDTC(), normalizer=normalizer)
+        SparseGP_MPI.__init__(self, X, Y, Z, kernel, likelihood, inference_method=infr, normalizer=normalizer, mpi_comm=mpi_comm)
 
     def parameters_changed(self):
         from ..inference.latent_function_inference.var_dtc_parallel import update_gradients_sparsegp,VarDTC_minibatch

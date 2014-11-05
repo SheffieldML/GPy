@@ -47,7 +47,7 @@ class SparseGP_MPI(SparseGP):
         
         if variational_prior is not None:
             self.link_parameter(variational_prior)
-
+            
         self.mpi_comm = mpi_comm
         # Manage the data (Y) division
         if mpi_comm != None:
@@ -59,7 +59,6 @@ class SparseGP_MPI(SparseGP):
             print 'MPI RANK '+str(self.mpi_comm.rank)+' with the data range '+str(self.N_range)
             mpi_comm.Bcast(self.param_array, root=0)
         self.update_model(True)
-
 
     def __getstate__(self):
         dc = super(SparseGP_MPI, self).__getstate__()

@@ -368,7 +368,7 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
                       max_iters=2e4,
                       ):
     from GPy import kern
-    from GPy.models import BayesianGPLVM
+    from GPy.models.bayesian_gplvm_minibatch import BayesianGPLVMMiniBatch
 
     D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 400, 3, 4
     _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
@@ -379,7 +379,7 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     Ymissing = Y.copy()
     Ymissing[inan] = _np.nan
 
-    m = BayesianGPLVM(Ymissing, Q, init="random", num_inducing=num_inducing,
+    m = BayesianGPLVMMiniBatch(Ymissing, Q, init="random", num_inducing=num_inducing,
                       kernel=k, missing_data=True)
 
     m.Yreal = Y

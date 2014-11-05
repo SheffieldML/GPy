@@ -6,7 +6,6 @@ from .. import kern
 from ..likelihoods import Gaussian
 from ..core.parameterization.variational import NormalPosterior, NormalPrior
 from ..inference.latent_function_inference.var_dtc_parallel import VarDTC_minibatch
-from ..inference.latent_function_inference.var_dtc_gpu import VarDTC_GPU
 import logging
 from GPy.models.sparse_gp_minibatch import SparseGPMiniBatch
 

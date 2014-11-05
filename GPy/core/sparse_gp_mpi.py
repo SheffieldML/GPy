@@ -44,16 +44,15 @@ class SparseGP_MPI(SparseGP):
 
         super(SparseGP_MPI, self).__init__(X, Y, Z, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
         self.update_model(False)
-        self.link_parameter(self.X, index=0)
+        
         if variational_prior is not None:
             self.link_parameter(variational_prior)
-#         self.X.fix()
 
         self.mpi_comm = mpi_comm
         # Manage the data (Y) division
         if mpi_comm != None:
-            from ..util.mpi import divide_data
-            N_start, N_end, N_list = divide_data(Y.shape[0], mpi_comm)
+            from ..util.parallel import divide_data
+            N_start, N_end, N_list = divide_data(Y.shape[0], mpi_comm.rank, mpi_comm.size)
             self.N_range = (N_start, N_end)
             self.N_list = np.array(N_list)
             self.Y_local = self.Y[N_start:N_end]

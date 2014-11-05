@@ -359,7 +359,7 @@ class Model(Parameterized):
                 f1 = self._objective(xx)
                 xx[xind] -= 2.*step
                 f2 = self._objective(xx)
-                df_ratio = np.abs((f1-f2)/f1)
+                df_ratio = np.abs((f1-f2)/min(f1,f2))
                 df_unstable = df_ratio<df_tolerance
                 numerical_gradient = (f1 - f2) / (2 * step)
                 if np.all(gradient[xind] == 0): ratio = (f1 - f2) == gradient[xind]

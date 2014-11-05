@@ -8,7 +8,6 @@ from .. import kern
 from ..likelihoods import Gaussian
 from ..core.parameterization.variational import SpikeAndSlabPrior, SpikeAndSlabPosterior
 from ..inference.latent_function_inference.var_dtc_parallel import update_gradients, VarDTC_minibatch
-from ..inference.latent_function_inference.var_dtc_gpu import VarDTC_GPU
 from ..kern._src.psi_comp.ssrbf_psi_gpucomp import PSICOMP_SSRBF_GPU
 
 class SSGPLVM(SparseGP_MPI):
@@ -72,6 +71,7 @@ class SSGPLVM(SparseGP_MPI):
         super(SSGPLVM,self).__init__(X, Y, Z, kernel, likelihood, variational_prior=self.variational_prior, inference_method=inference_method, name=name, mpi_comm=mpi_comm, normalizer=normalizer, **kwargs)
 #         self.X.unfix()
 #         self.X.variance.constrain_positive()
+        self.link_parameter(self.X, index=0)
                 
         if self.group_spike:
             [self.X.gamma[:,i].tie('tieGamma'+str(i)) for i in xrange(self.X.gamma.shape[1])] # Tie columns together

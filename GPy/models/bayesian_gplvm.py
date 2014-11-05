@@ -7,7 +7,6 @@ from ..core.sparse_gp_mpi import SparseGP_MPI
 from ..likelihoods import Gaussian
 from ..core.parameterization.variational import NormalPosterior, NormalPrior
 from ..inference.latent_function_inference.var_dtc_parallel import VarDTC_minibatch
-from ..inference.latent_function_inference.var_dtc_gpu import VarDTC_GPU
 import logging
 
 class BayesianGPLVM(SparseGP_MPI):
@@ -68,14 +67,12 @@ class BayesianGPLVM(SparseGP_MPI):
         if isinstance(inference_method,VarDTC_minibatch):
             inference_method.mpi_comm = mpi_comm
 
-        if kernel.useGPU and isinstance(inference_method, VarDTC_GPU):
-            kernel.psicomp.GPU_direct = True
-
         super(BayesianGPLVM,self).__init__(X, Y, Z, kernel, likelihood=likelihood,
                                            name=name, inference_method=inference_method,
                                            normalizer=normalizer, mpi_comm=mpi_comm,
                                            variational_prior=self.variational_prior,
                                            )
+        self.link_parameter(self.X, index=0)
 
     def set_X_gradients(self, X, X_grad):
         """Set the gradients of the posterior distribution of X in its specific form."""

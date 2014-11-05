@@ -84,6 +84,8 @@ class BayesianGPLVM(SparseGP_MPI):
 
     def parameters_changed(self):
         super(BayesianGPLVM,self).parameters_changed()
+        if isinstance(self.inference_method, VarDTC_minibatch):
+            return        
 
         kl_fctr = 1.
         self._log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(self.X)
@@ -97,9 +99,6 @@ class BayesianGPLVM(SparseGP_MPI):
 
         self.variational_prior.update_gradients_KL(self.X)
 
-
-        if isinstance(self.inference_method, VarDTC_minibatch):
-            return
 
         #super(BayesianGPLVM, self).parameters_changed()
         #self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)

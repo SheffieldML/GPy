@@ -368,7 +368,7 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
                       max_iters=2e4,
                       ):
     from GPy import kern
-    from GPy.models import BayesianGPLVM
+    from GPy.models.bayesian_gplvm_minibatch import BayesianGPLVMMiniBatch
 
     D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 400, 3, 4
     _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
@@ -379,7 +379,7 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     Ymissing = Y.copy()
     Ymissing[inan] = _np.nan
 
-    m = BayesianGPLVM(Ymissing, Q, init="random", num_inducing=num_inducing,
+    m = BayesianGPLVMMiniBatch(Ymissing, Q, init="random", num_inducing=num_inducing,
                       kernel=k, missing_data=True)
 
     m.Yreal = Y
@@ -624,7 +624,10 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose
     if in_place:
         # Make figure move in place.
         data['Y'][:, 0:3] = 0.0
-    m = GPy.models.GPLVM(data['Y'], 2, normalize_Y=True)
+    Y = data['Y']
+    Y_mean = Y.mean(0)
+    Y_std = Y.std(0)
+    m = GPy.models.GPLVM((Y-Y_mean)/Y_std, 2)
 
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
     if plot:

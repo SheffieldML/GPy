@@ -6,7 +6,6 @@ import models_plots
 import priors_plots
 import variational_plots
 import kernel_plots
-import svig_plots
 import dim_reduction_plots
 import mapping_plots
 import Tango

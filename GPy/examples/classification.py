@@ -28,13 +28,13 @@ def oil(num_inducing=50, max_iters=100, kernel=None, optimize=True, plot=True):
     m = GPy.models.SparseGPClassification(X, Y, kernel=kernel, num_inducing=num_inducing)
 
     # Contrain all parameters to be positive
-    m.tie_params('.*len')
+    #m.tie_params('.*len')
     m['.*len'] = 10.
-    m.update_likelihood_approximation()
 
     # Optimize
     if optimize:
-        m.optimize(max_iters=max_iters)
+        for _ in range(5):
+            m.optimize(max_iters=int(max_iters/5))
     print(m)
 
     #Test
@@ -150,7 +150,7 @@ def sparse_toy_linear_1d_classification(num_inducing=10, seed=default_seed, opti
     print m
     return m
 
-def toy_heaviside(seed=default_seed, optimize=True, plot=True):
+def toy_heaviside(seed=default_seed, max_iters=100, optimize=True, plot=True):
     """
     Simple 1D classification example using a heavy side gp transformation
 
@@ -166,16 +166,18 @@ def toy_heaviside(seed=default_seed, optimize=True, plot=True):
     Y[Y.flatten() == -1] = 0
 
     # Model definition
-    noise_model = GPy.likelihoods.bernoulli(GPy.likelihoods.noise_models.gp_transformations.Heaviside())
-    likelihood = GPy.likelihoods.EP(Y, noise_model)
-    m = GPy.models.GPClassification(data['X'], likelihood=likelihood)
+    kernel = GPy.kern.RBF(1)
+    likelihood = GPy.likelihoods.Bernoulli(gp_link=GPy.likelihoods.link_functions.Heaviside())
+    ep = GPy.inference.latent_function_inference.expectation_propagation.EP()
+    m = GPy.core.GP(X=data['X'], Y=Y, kernel=kernel, likelihood=likelihood, inference_method=ep, name='gp_classification_heaviside')
+    #m = GPy.models.GPClassification(data['X'], likelihood=likelihood)
 
     # Optimize
     if optimize:
-        m.update_likelihood_approximation()
         # Parameters optimization:
-        m.optimize()
-        #m.pseudo_EM()
+        for _ in range(5):
+            m.optimize(max_iters=int(max_iters/5))
+        print m
 
     # Plot
     if plot:

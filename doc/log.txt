@@ -1,7 +1,7 @@
 /home/alans/Work/GPy/GPy/__init__.py:docstring of GPy.load:1: WARNING: Inline interpreted text or phrase reference start-string without end-string.
-/home/alans/Work/GPy/GPy/core/gp.py:docstring of GPy.core.gp.GP:7: WARNING: Field list ends without a blank line; unexpected unindent.
-/home/alans/Work/GPy/GPy/core/gp.py:docstring of GPy.core.gp.GP:10: ERROR: Unexpected indentation.
+/home/alans/Work/GPy/GPy/core/gp.py:docstring of GPy.core.gp.GP.optimize:8: ERROR: Unknown interpreted text role "module".
 /home/alans/Work/GPy/GPy/core/gp.py:docstring of GPy.core.gp.GP.predictive_gradients:5: ERROR: Unexpected indentation.
+/home/alans/Work/GPy/GPy/core/gp.py:docstring of GPy.core.gp.GP.predictive_gradients:8: WARNING: Block quote ends without a blank line; unexpected unindent.
 /home/alans/Work/GPy/GPy/core/model.py:docstring of GPy.core.model.Model.optimize_restarts:29: WARNING: Explicit markup ends without a blank line; unexpected unindent.
 /home/alans/Work/GPy/doc/GPy.core.rst:65: WARNING: autodoc: failed to import module u'GPy.core.symbolic'; the following exception was raised:
 Traceback (most recent call last):
@@ -23,31 +23,6 @@ ImportError: No module named lambdify
 /home/alans/Work/GPy/GPy/core/parameterization/ties_and_remappings.py:docstring of GPy.core.parameterization.ties_and_remappings.Tie:18: SEVERE: Unexpected section title or transition.
 
 ================================
-/home/alans/Work/GPy/doc/GPy.examples.rst:18: WARNING: autodoc: failed to import module u'GPy.examples.coreg_example'; the following exception was raised:
-Traceback (most recent call last):
-  File "/home/alans/anaconda/envs/GPy/lib/python2.7/site-packages/sphinx/ext/autodoc.py", line 335, in import_object
-    __import__(self.modname)
-  File "/home/alans/Work/GPy/GPy/examples/coreg_example.py", line 44, in <module>
-    m = GPy.models.SparseGPCoregionalizedRegression(X_list=[X1], Y_list=[Y1], Z_list = [Z1], kernel=kern)
-  File "/home/alans/Work/GPy/GPy/core/parameterization/parameterized.py", line 19, in __call__
-    self = super(ParametersChangedMeta, self).__call__(*args, **kw)
-  File "/home/alans/Work/GPy/GPy/models/sparse_gp_coregionalized_regression.py", line 66, in __init__
-    self['.*inducing'][:,-1].fix()
-  File "/home/alans/Work/GPy/GPy/core/parameterization/parameter_core.py", line 444, in constrain_fixed
-    self.notify_observers(self, None if trigger_parent else -np.inf)
-  File "/home/alans/Work/GPy/GPy/core/parameterization/parameter_core.py", line 148, in notify_observers
-    [callble(self, which=which) for _, _, callble in self.observers]
-  File "/home/alans/Work/GPy/GPy/core/parameterization/parameter_core.py", line 1077, in _pass_through_notify_observers
-    self.notify_observers(which=which)
-  File "/home/alans/Work/GPy/GPy/core/parameterization/parameter_core.py", line 148, in notify_observers
-    [callble(self, which=which) for _, _, callble in self.observers]
-  File "/home/alans/Work/GPy/GPy/core/parameterization/parameter_core.py", line 1075, in _parameters_changed_notification
-    self.parameters_changed()
-  File "/home/alans/Work/GPy/GPy/core/sparse_gp.py", line 66, in parameters_changed
-    self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood, self.Y, self.Y_metadata)
-  File "/home/alans/Work/GPy/GPy/inference/latent_function_inference/var_dtc.py", line 170, in inference
-    import ipdb; ipdb.set_trace()
-ImportError: No module named ipdb
 /home/alans/Work/GPy/GPy/kern/_src/coregionalize.py:docstring of GPy.kern._src.coregionalize.Coregionalize:5: ERROR: Unexpected indentation.
 /home/alans/Work/GPy/doc/GPy.kern._src.rst:73: WARNING: autodoc: failed to import module u'GPy.kern._src.hierarchical'; the following exception was raised:
 Traceback (most recent call last):
@@ -187,6 +162,7 @@ Parameter handles
 
 :py:class:`~GPy.core.parameterization.param.Param`
 ===========
+/home/alans/Work/GPy/doc/installation.rst:: WARNING: document isn't included in any toctree
 /home/alans/Work/GPy/doc/kernel_implementation.rst:: WARNING: document isn't included in any toctree
 /home/alans/Work/GPy/doc/modules.rst:: WARNING: document isn't included in any toctree
 /home/alans/Work/GPy/doc/tuto_GP_regression.rst:: WARNING: document isn't included in any toctree

@@ -8,5 +8,4 @@ from parameterization.observable_array import ObsAr
 
 from gp import GP
 from sparse_gp import SparseGP
-from svigp import SVIGP
 from mapping import *

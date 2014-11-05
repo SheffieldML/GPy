@@ -36,7 +36,7 @@ def flatten_nested(lst):
             result.append(element)
     return result
 
-#@nottest
+@nottest
 def test_models():
     optimize=False
     plot=True

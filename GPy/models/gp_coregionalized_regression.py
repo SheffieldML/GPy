@@ -28,7 +28,7 @@ class GPCoregionalizedRegression(GP):
     :param kernel_name: name of the kernel
     :type kernel_name: string
     """
-    def __init__(self, X_list, Y_list, kernel=None, likelihoods_list=None, name='GPCR',W_rank=1,kernel_name='X'):
+    def __init__(self, X_list, Y_list, kernel=None, likelihoods_list=None, name='GPCR',W_rank=1,kernel_name='coreg'):
 
         #Input and Output
         X,Y,self.output_index = util.multioutput.build_XY(X_list,Y_list)

@@ -348,7 +348,7 @@ def ssgplvm_simulation(optimize=True, verbose=1,
     D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
     _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
     Y = Ylist[0]
-    k = kern.Linear(Q, ARD=True, useGPU=useGPU)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     #k = kern.RBF(Q, ARD=True, lengthscale=10.)
     m = SSGPLVM(Y, Q, init="pca", num_inducing=num_inducing, kernel=k)
     m.X.variance[:] = _np.random.uniform(0,.01,m.X.shape)

@@ -4,12 +4,13 @@
 
 import numpy as np
 from ..core import SparseGP
+from ..core.sparse_gp_mpi import SparseGP_MPI
 from .. import likelihoods
 from .. import kern
 from ..inference.latent_function_inference import VarDTC
 from ..core.parameterization.variational import NormalPosterior
 
-class SparseGPRegression(SparseGP):
+class SparseGPRegression(SparseGP_MPI):
     """
     Gaussian Process model for regression
 
@@ -48,7 +49,14 @@ class SparseGPRegression(SparseGP):
         if not (X_variance is None):
             X = NormalPosterior(X,X_variance)
 
-        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method=VarDTC(), normalizer=normalizer)
+        SparseGP_MPI.__init__(self, X, Y, Z, kernel, likelihood, inference_method=VarDTC(), normalizer=normalizer)
+
+    def parameters_changed(self):
+        from ..inference.latent_function_inference.var_dtc_parallel import update_gradients_sparsegp,VarDTC_minibatch
+        if isinstance(self.inference_method,VarDTC_minibatch):
+            update_gradients_sparsegp(self, mpi_comm=self.mpi_comm)
+        else:
+            super(SparseGPRegression, self).parameters_changed()
 
 class SparseGPRegressionUncertainInput(SparseGP):
     """

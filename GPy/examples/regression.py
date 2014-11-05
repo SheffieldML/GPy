@@ -14,7 +14,9 @@ import GPy
 def olympic_marathon_men(optimize=True, plot=True):
     """Run a standard Gaussian process regression on the Olympic marathon data."""
     try:import pods
-    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    except ImportError:
+        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        return
     data = pods.datasets.olympic_marathon_men()
 
     # create simple GP Model
@@ -85,7 +87,9 @@ def epomeo_gpx(max_iters=200, optimize=True, plot=True):
     to load in the data.
     """
     try:import pods
-    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    except ImportError:
+        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        return
     data = pods.datasets.epomeo_gpx()
     num_data_list = []
     for Xpart in data['X']:
@@ -130,7 +134,9 @@ def multiple_optima(gene_number=937, resolution=80, model_restarts=10, seed=1000
     log_SNRs = np.linspace(-3., 4., resolution)
 
     try:import pods
-    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    except ImportError:
+        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        return
     data = pods.datasets.della_gatta_TRP63_gene_expression(data_set='della_gatta',gene_number=gene_number)
     # data['Y'] = data['Y'][0::2, :]
     # data['X'] = data['X'][0::2, :]
@@ -212,7 +218,9 @@ def _contour_data(data, length_scales, log_SNRs, kernel_call=GPy.kern.RBF):
 def olympic_100m_men(optimize=True, plot=True):
     """Run a standard Gaussian process regression on the Rogers and Girolami olympics data."""
     try:import pods
-    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    except ImportError:
+        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        return
     data = pods.datasets.olympic_100m_men()
 
     # create simple GP Model
@@ -231,7 +239,9 @@ def olympic_100m_men(optimize=True, plot=True):
 def toy_rbf_1d(optimize=True, plot=True):
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
     try:import pods
-    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    except ImportError:
+        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        return
     data = pods.datasets.toy_rbf_1d()
 
     # create simple GP Model
@@ -247,7 +257,9 @@ def toy_rbf_1d(optimize=True, plot=True):
 def toy_rbf_1d_50(optimize=True, plot=True):
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
     try:import pods
-    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    except ImportError:
+        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        return
     data = pods.datasets.toy_rbf_1d_50()
 
     # create simple GP Model
@@ -364,7 +376,9 @@ def toy_ARD_sparse(max_iters=1000, kernel_type='linear', num_samples=300, D=4, o
 def robot_wireless(max_iters=100, kernel=None, optimize=True, plot=True):
     """Predict the location of a robot given wirelss signal strength readings."""
     try:import pods
-    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    except ImportError:
+        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        return
     data = pods.datasets.robot_wireless()
 
     # create simple GP Model
@@ -390,7 +404,9 @@ def robot_wireless(max_iters=100, kernel=None, optimize=True, plot=True):
 def silhouette(max_iters=100, optimize=True, plot=True):
     """Predict the pose of a figure given a silhouette. This is a task from Agarwal and Triggs 2004 ICML paper."""
     try:import pods
-    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    except ImportError:
+        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        return
     data = pods.datasets.silhouette()
 
     # create simple GP Model

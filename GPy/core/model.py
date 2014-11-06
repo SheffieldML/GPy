@@ -234,9 +234,9 @@ class Model(Parameterized):
 
         """
         if self.is_fixed:
-            raise RuntimeError, "Cannot optimize, when everything is fixed"
+            print 'nothing to optimize'
         if self.size == 0:
-            raise RuntimeError, "Model without parameters cannot be optimized"
+            print 'nothing to optimize'
 
         if start == None:
             start = self.optimizer_array

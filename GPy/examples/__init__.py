@@ -4,6 +4,4 @@
 import classification
 import regression
 import dimensionality_reduction
-import tutorials
-import stochastic
 import non_gaussian

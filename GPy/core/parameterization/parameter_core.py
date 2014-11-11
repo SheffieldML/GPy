@@ -17,6 +17,7 @@ from transformations import Transformation,Logexp, NegativeLogexp, Logistic, __f
 import numpy as np
 import re
 import logging
+from updateable import Updateable
 
 class HierarchyError(Exception):
     """
@@ -40,115 +41,6 @@ def adjust_name_for_printing(name):
     return ''
 
 
-class Observable(object):
-    """
-    Observable pattern for parameterization.
-
-    This Object allows for observers to register with self and a (bound!) function
-    as an observer. Every time the observable changes, it sends a notification with
-    self as only argument to all its observers.
-    """
-    _updates = True
-    def __init__(self, *args, **kwargs):
-        super(Observable, self).__init__()
-        from lists_and_dicts import ObserverList
-        self.observers = ObserverList()
-
-    @property
-    def updates(self):
-        raise DeprecationWarning("updates is now a function, see update(True|False|None)")
-
-    @updates.setter
-    def updates(self, ups):
-        raise DeprecationWarning("updates is now a function, see update(True|False|None)")
-
-    def update_model(self, updates=None):
-        """
-        Get or set, whether automatic updates are performed. When updates are
-        off, the model might be in a non-working state. To make the model work
-        turn updates on again.
-
-        :param bool|None updates:
-
-            bool: whether to do updates
-            None: get the current update state
-        """
-        if updates is None:
-            p = getattr(self, '_highest_parent_', None)
-            if p is not None:
-                self._updates = p._updates
-            return self._updates
-        assert isinstance(updates, bool), "updates are either on (True) or off (False)"
-        p = getattr(self, '_highest_parent_', None)
-        if p is not None:
-            p._updates = updates
-        else:
-            self._updates = updates
-        self.trigger_update()
-
-    def toggle_update(self):
-        self.update_model(not self.update())
-
-    def trigger_update(self, trigger_parent=True):
-        """
-        Update the model from the current state.
-        Make sure that updates are on, otherwise this
-        method will do nothing
-
-        :param bool trigger_parent: Whether to trigger the parent, after self has updated
-        """
-        if not self.update_model() or (hasattr(self, "_in_init_") and self._in_init_):
-            #print "Warning: updates are off, updating the model will do nothing"
-            return
-        self._trigger_params_changed(trigger_parent)
-
-    def add_observer(self, observer, callble, priority=0):
-        """
-        Add an observer `observer` with the callback `callble`
-        and priority `priority` to this observers list.
-        """
-        self.observers.add(priority, observer, callble)
-
-    def remove_observer(self, observer, callble=None):
-        """
-        Either (if callble is None) remove all callables,
-        which were added alongside observer,
-        or remove callable `callble` which was added alongside
-        the observer `observer`.
-        """
-        to_remove = []
-        for poc in self.observers:
-            _, obs, clble = poc
-            if callble is not None:
-                if (obs is observer) and (callble == clble):
-                    to_remove.append(poc)
-            else:
-                if obs is observer:
-                    to_remove.append(poc)
-        for r in to_remove:
-            self.observers.remove(*r)
-
-    def notify_observers(self, which=None, min_priority=None):
-        """
-        Notifies all observers. Which is the element, which kicked off this
-        notification loop. The first argument will be self, the second `which`.
-
-        NOTE: notifies only observers with priority p > min_priority!
-                                                    ^^^^^^^^^^^^^^^^
-        :param min_priority: only notify observers with priority > min_priority
-                             if min_priority is None, notify all observers in order
-        """
-        if not self.update_model():
-            return
-        if which is None:
-            which = self
-        if min_priority is None:
-            [callble(self, which=which) for _, _, callble in self.observers]
-        else:
-            for p, _, callble in self.observers:
-                if p <= min_priority:
-                    break
-                callble(self, which=which)
 
 class Parentable(object):
     """
@@ -307,11 +199,11 @@ class Gradcheckable(Pickleable, Parentable):
         :param float step: the stepsize for the numerical three point gradient estimate.
         :param float tolerance: the tolerance for the gradient ratio or difference.
         :param float df_tolerance: the tolerance for df_tolerance
-        
+
         Note:-
-           The *dF_ratio* indicates the limit of accuracy of numerical gradients. 
-           If it is too small, e.g., smaller than 1e-12, the numerical gradients 
-           are usually not accurate enough for the tests (shown with blue). 
+           The *dF_ratio* indicates the limit of accuracy of numerical gradients.
+           If it is too small, e.g., smaller than 1e-12, the numerical gradients
+           are usually not accurate enough for the tests (shown with blue).
         """
         if self.has_parent():
             return self._highest_parent_._checkgrad(self, verbose=verbose, step=step, tolerance=tolerance, df_tolerance=df_tolerance)
@@ -363,7 +255,7 @@ class Nameable(Gradcheckable):
         return adjust(self.name)
 
 
-class Indexable(Nameable, Observable):
+class Indexable(Nameable, Updateable):
     """
     Make an object constrainable with Priors and Transformations.
     TODO: Mappings!!
@@ -726,7 +618,7 @@ class OptimizationHandlable(Indexable):
                 fixes[self.constraints[__fixed__]] = FIXED
                 return self._optimizer_copy_[np.logical_and(fixes, self._highest_parent_.tie.getTieFlag(self))]
             elif self._has_fixes():
-                    return self._optimizer_copy_[self._fixes_]
+                return self._optimizer_copy_[self._fixes_]
 
             self._optimizer_copy_transformed = True
 
@@ -757,7 +649,7 @@ class OptimizationHandlable(Indexable):
         #self._highest_parent_.tie.propagate_val()
 
         self._optimizer_copy_transformed = False
-        self._trigger_params_changed()
+        self.trigger_update()
 
     def _get_params_transformed(self):
         raise DeprecationWarning, "_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!"

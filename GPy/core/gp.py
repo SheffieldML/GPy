@@ -96,7 +96,7 @@ class GP(Model):
     def set_XY(self, X=None, Y=None):
         """
         Set the input / output of the model
-        
+
         :param X: input observations
         :param Y: output observations
         """
@@ -384,16 +384,16 @@ class GP(Model):
             print "KeyboardInterrupt caught, calling on_optimization_end() to round things up"
             self.inference_method.on_optimization_end()
             raise
-        
+
     def infer_newX(self, Y_new, optimize=True, ):
         """
         Infer the distribution of X for the new observed data *Y_new*.
-        
+
         :param Y_new: the new observed data for inference
         :type Y_new: numpy.ndarray
         :param optimize: whether to optimize the location of new X (True by default)
         :type optimize: boolean
-        :return: a tuple containing the posterior estimation of X and the model that optimize X 
+        :return: a tuple containing the posterior estimation of X and the model that optimize X
         :rtype: (GPy.core.parameterization.variational.VariationalPosterior or numpy.ndarray, GPy.core.Model)
         """
         from ..inference.latent_function_inference.inferenceX import infer_newX

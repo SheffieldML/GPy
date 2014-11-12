@@ -1009,3 +1009,29 @@ class Parameterizable(OptimizationHandlable):
         updates get passed through. See :py:function:``GPy.core.param.Observable.add_observer``
         """
         pass
+
+    def save(self, filename, ftype='HDF5'):
+        """
+        Save all the model parameters into a file (HDF5 by default).
+        """
+        from . import Param
+        from ...util.misc import param_to_array
+        def gather_params(self, plist):
+            if isinstance(self,Param):
+                plist.append(self)
+        plist = []
+        self.traverse(gather_params, plist)
+        names = self.parameter_names(adjust_for_printing=True)
+        if ftype=='HDF5':
+            try:
+                import h5py
+                f = h5py.File(filename,'w')
+                for p,n in zip(plist,names):
+                    n = n.replace('.','_')
+                    p = param_to_array(p)
+                    d = f.create_dataset(n,p.shape,dtype=p.dtype)
+                    d[:] = p
+                f.close()
+            except:
+                raise 'Fails to write the parameters into a HDF5 file!'
+

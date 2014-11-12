@@ -105,7 +105,6 @@ class MRD(BayesianGPLVMMiniBatch):
             kernels = []
             for i in range(len(Ylist)):
                 k = kernel.copy()
-                print k is kernel, k.observers, k.constraints
                 kernels.append(k)
         else:
             assert len(kernel) == len(Ylist), "need one kernel per output"
@@ -144,8 +143,16 @@ class MRD(BayesianGPLVMMiniBatch):
         for i, n, k, l, Y, im, bs in itertools.izip(itertools.count(), Ynames, kernels, likelihoods, Ylist, self.inference_method, batchsize):
             assert Y.shape[0] == self.num_data, "All datasets need to share the number of datapoints, and those have to correspond to one another"
             md = np.isnan(Y).any()
-            spgp = SparseGPMiniBatch(self.X, Y, Z, k, l, im, n, None, normalizer, md, stochastic, bs)
+            spgp = BayesianGPLVMMiniBatch(Y, input_dim, X, X_variance,
+                                          Z=Z, kernel=k, likelihood=l,
+                                          inference_method=im, name=n,
+                                          normalizer=normalizer,
+                                          missing_data=md,
+                                          stochastic=stochastic,
+                                          batchsize=bs)
+            spgp.kl_factr = 1./len(Ynames)
             spgp.unlink_parameter(spgp.Z)
+            spgp.unlink_parameter(spgp.X)
             del spgp.Z
             del spgp.X
             spgp.Z = self.Z
@@ -165,20 +172,10 @@ class MRD(BayesianGPLVMMiniBatch):
 
             self.logger.info('working on im <{}>'.format(hex(id(i))))
             self.Z.gradient[:] += b.full_values['Zgrad']
-            grad_dict = b.grad_dict
+            grad_dict = b.full_values
 
-            if isinstance(self.X, VariationalPosterior):
-                dL_dmean, dL_dS = b.kern.gradients_qX_expectations(
-                        grad_dict['dL_dpsi0'],
-                        grad_dict['dL_dpsi1'],
-                        grad_dict['dL_dpsi2'],
-                        self.Z, self.X)
-                self.X.mean.gradient += dL_dmean
-                self.X.variance.gradient += dL_dS
-
-            else:
-                #gradients wrt kernel
-                self.X.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'], self.X, self.Z)
+            self.X.mean.gradient += grad_dict['meangrad']
+            self.X.variance.gradient += grad_dict['vargrad']
 
         if isinstance(self.X, VariationalPosterior):
             # update for the KL divergence
@@ -238,7 +235,7 @@ class MRD(BayesianGPLVMMiniBatch):
                 pass
             if axes is None:
                 ax = fig.add_subplot(1, len(self.bgplvms), i + 1, sharex=sharex_ax, sharey=sharey_ax)
-            elif isinstance(axes, (tuple, list)):
+            elif isinstance(axes, (tuple, list, np.ndarray)):
                 ax = axes[i]
             else:
                 raise ValueError("Need one axes per latent dimension input_dim")
@@ -286,7 +283,7 @@ class MRD(BayesianGPLVMMiniBatch):
             titles = [r'${}$'.format(name) for name in self.names]
         ymax = reduce(max, [np.ceil(max(g.kern.input_sensitivity())) for g in self.bgplvms])
         def plotf(i, g, ax):
-            ax.set_ylim([0,ymax])
+            #ax.set_ylim([0,ymax])
             return g.kern.plot_ARD(ax=ax, title=titles[i], *args, **kwargs)
         fig = self._handle_plotting(fignum, ax, plotf, sharex=sharex, sharey=sharey)
         return fig

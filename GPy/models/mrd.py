@@ -100,7 +100,7 @@ class MRD(BayesianGPLVMMiniBatch):
         self.logger.info("building kernels")
         if kernel is None:
             from ..kern import RBF
-            kernels = [RBF(input_dim, ARD=1, lengthscale=fracs[i]) for i in range(len(Ylist))]
+            kernels = [RBF(input_dim, ARD=1, lengthscale=1./fracs[i]) for i in range(len(Ylist))]
         elif isinstance(kernel, Kern):
             kernels = []
             for i in range(len(Ylist)):

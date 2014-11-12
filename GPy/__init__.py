@@ -39,6 +39,11 @@ def load(file_path):
     :param file_name: path/to/file.pickle
     """
     import cPickle as pickle
-    with open(file_path, 'rb') as f:
-        m = pickle.load(f)
+    try:
+        with open(file_path, 'rb') as f:
+            m = pickle.load(f)
+    except:
+        import pickle as pickle
+        with open(file_path, 'rb') as f:
+            m = pickle.load(f)
     return m

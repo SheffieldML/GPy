@@ -54,6 +54,8 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
         self.variational_prior = NormalPrior()
         X = NormalPosterior(X, X_variance)
 
+        self.kl_factr = 1.
+
         if inference_method is None:
             from ..inference.latent_function_inference.var_dtc import VarDTC
             self.logger.debug("creating inference_method var_dtc")

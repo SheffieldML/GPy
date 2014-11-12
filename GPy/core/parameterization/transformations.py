@@ -131,6 +131,13 @@ class NormalTheta(Transformation):
     def __str__(self):
         return "theta"
 
+    def __getstate__(self):
+        return [self.mu_indices, self.var_indices]
+
+    def __setstate__(self, state):
+        self.mu_indices = state[0]
+        self.var_indices = state[1]
+
 class NormalNaturalAntti(NormalTheta):
     _instances = []
     _logexp = Logexp()

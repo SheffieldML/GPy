@@ -39,10 +39,7 @@ class SSGPLVM(SparseGP_MPI):
             X_variance = np.random.uniform(0,.1,X.shape)
             
         if Gamma is None:
-            gamma = np.empty_like(X) # The posterior probabilities of the binary variable in the variational approximation
-            gamma[:] = 0.5 + 0.1 * np.random.randn(X.shape[0], input_dim)
-            gamma[gamma>1.-1e-9] = 1.-1e-9
-            gamma[gamma<1e-9] = 1e-9
+            gamma = np.random.randn(X.shape[0], input_dim)
         else:
             gamma = Gamma.copy()
                 

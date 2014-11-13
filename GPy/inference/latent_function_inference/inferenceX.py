@@ -115,7 +115,7 @@ class InferenceX(Model):
         else:
             self.dL_dpsi2 = beta*(output_dim*self.posterior.woodbury_inv - np.einsum('md,od->mo',wv, wv))/2.
             self.dL_dpsi1 = beta*np.dot(self.Y, wv.T)
-            self.dL_dpsi0 = -beta/2.* np.ones(self.Y.shape[0])
+            self.dL_dpsi0 = -beta/2.*output_dim* np.ones(self.Y.shape[0])
                 
     def parameters_changed(self):
         if self.uncertain_input:

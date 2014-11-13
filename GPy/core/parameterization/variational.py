@@ -169,7 +169,7 @@ class SpikeAndSlabPosterior(VariationalPosterior):
     def gamma_probabilities(self):
         prob = np.zeros_like(param_to_array(self.gamma))
         prob[self.gamma>-710] = 1./(1.+np.exp(-self.gamma[self.gamma>-710]))
-        prob1 = np.zeros_like(param_to_array(self.gamma))
+        prob1 = -np.zeros_like(param_to_array(self.gamma))
         prob1[self.gamma<710] = 1./(1.+np.exp(self.gamma[self.gamma<710]))
         return prob, prob1
     

@@ -177,8 +177,8 @@ class SpikeAndSlabPosterior(VariationalPosterior):
     def gamma_log_prob(self):
         loggamma = param_to_array(self.gamma).copy()
         loggamma[loggamma>-40] = -np.log1p(np.exp(-loggamma[loggamma>-40]))
-        loggamma1 = param_to_array(self.gamma).copy()
-        loggamma1[loggamma1<40] = -np.log1p(np.exp(loggamma1[loggamma1<40]))
+        loggamma1 = -param_to_array(self.gamma).copy()
+        loggamma1[loggamma1>-40] = -np.log1p(np.exp(-loggamma1[loggamma1>-40]))
         return loggamma,loggamma1
 
     def set_gradients(self, grad):

@@ -1,10 +1,11 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-__updated__ = '2014-10-29'
+__updated__ = '2014-11-11'
 
 import numpy as np
-from parameter_core import Observable, Pickleable
+from parameter_core import Pickleable
+from observable import Observable
 
 class ObsAr(np.ndarray, Pickleable, Observable):
     """

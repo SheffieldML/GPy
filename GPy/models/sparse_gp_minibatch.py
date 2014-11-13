@@ -56,6 +56,7 @@ Created on 3 Nov 2014
                 raise NotImplementedError, "what to do what to do?"
             print "defaulting to ", inference_method, "for latent function inference"
 
+        self.kl_factr = 1.
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]
 

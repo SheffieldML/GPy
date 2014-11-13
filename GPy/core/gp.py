@@ -3,16 +3,12 @@
 
 import numpy as np
 import sys
-import warnings
 from .. import kern
-from ..util.linalg import dtrtrs
 from model import Model
 from parameterization import ObsAr
 from .. import likelihoods
-from ..likelihoods.gaussian import Gaussian
-from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation, LatentFunctionInference
+from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
 from parameterization.variational import VariationalPosterior
-from scipy.sparse.base import issparse
 
 import logging
 from GPy.util.normalizer import MeanNorm
@@ -115,7 +111,6 @@ class GP(Model):
         if X is not None:
             if self.X in self.parameters:
                 # LVM models
-                from ..core.parameterization.variational import VariationalPosterior
                 if isinstance(self.X, VariationalPosterior):
                     assert isinstance(X, type(self.X)), "The given X must have the same type as the X in the model!"
                     self.unlink_parameter(self.X)
@@ -458,7 +453,11 @@ class GP(Model):
         :param optimize: whether to optimize the location of new X (True by default)
         :type optimize: boolean
         :return: a tuple containing the posterior estimation of X and the model that optimize X
+<<<<<<< HEAD
+        :rtype: (GPy.core.parameterization.variational.VariationalPosterior or numpy.ndarray, GPy.core.Model)
+=======
         :rtype: (:class:`~GPy.core.parameterization.variational.VariationalPosterior` or numpy.ndarray, :class:`~GPy.core.model.Model`)
+>>>>>>> 22d30d9d39c70f806fe5bcb815cce9c8eb0f8dca
         """
         from ..inference.latent_function_inference.inferenceX import infer_newX
         return infer_newX(self, Y_new, optimize=optimize)

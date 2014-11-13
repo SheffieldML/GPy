@@ -8,6 +8,8 @@ import numpy as np
 from parameterized import Parameterized
 from param import Param
 from transformations import Logexp, Logistic,__fixed__
+from GPy.util.misc import param_to_array
+from GPy.util.caching import Cache_this
 
 class VariationalPrior(Parameterized):
     def __init__(self, name='latent space', **kw):
@@ -48,7 +50,8 @@ class SpikeAndSlabPrior(VariationalPrior):
     def KL_divergence(self, variational_posterior):
         mu = variational_posterior.mean
         S = variational_posterior.variance
-        gamma = variational_posterior.binary_prob
+        gamma,gamma1 = variational_posterior.gamma_probabilities()
+        log_gamma,log_gamma1 = variational_posterior.gamma_log_prob()
         if len(self.pi.shape)==2:
             idx = np.unique(gamma._raveled_index()/gamma.shape[-1])
             pi = self.pi[idx]
@@ -57,20 +60,21 @@ class SpikeAndSlabPrior(VariationalPrior):
             
         var_mean = np.square(mu)/self.variance
         var_S = (S/self.variance - np.log(S))
-        var_gamma = (gamma*np.log(gamma/pi)).sum()+((1-gamma)*np.log((1-gamma)/(1-pi))).sum()
+        var_gamma = (gamma*(log_gamma-np.log(pi))).sum()+(gamma1*(log_gamma1-np.log(1-pi))).sum()
         return var_gamma+ (gamma* (np.log(self.variance)-1. +var_mean + var_S)).sum()/2.
 
     def update_gradients_KL(self, variational_posterior):
         mu = variational_posterior.mean
         S = variational_posterior.variance
-        gamma = variational_posterior.binary_prob
+        gamma,gamma1 = variational_posterior.gamma_probabilities()
+        log_gamma,log_gamma1 = variational_posterior.gamma_log_prob()
         if len(self.pi.shape)==2:
             idx = np.unique(gamma._raveled_index()/gamma.shape[-1])
             pi = self.pi[idx]
         else:
             pi = self.pi
 
-        gamma.gradient -= np.log((1-pi)/pi*gamma/(1.-gamma))+((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.
+        variational_posterior.binary_prob.gradient -= (np.log((1-pi)/pi)+log_gamma-log_gamma1+((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.)*gamma*gamma1
         mu.gradient -= gamma*mu/self.variance
         S.gradient -= (1./self.variance - 1./S) * gamma /2.
         if self.learnPi:
@@ -158,8 +162,24 @@ class SpikeAndSlabPosterior(VariationalPosterior):
         binary_prob : the probability of the distribution on the slab part.
         """
         super(SpikeAndSlabPosterior, self).__init__(means, variances, name)
-        self.gamma = Param("binary_prob",binary_prob, Logistic(1e-10,1.-1e-10))
+        self.gamma = Param("binary_prob",binary_prob)
         self.link_parameter(self.gamma)
+        
+    @Cache_this(limit=5)
+    def gamma_probabilities(self):
+        prob = np.zeros_like(param_to_array(self.gamma))
+        prob[self.gamma>-710] = 1./(1.+np.exp(-self.gamma[self.gamma>-710]))
+        prob1 = np.zeros_like(param_to_array(self.gamma))
+        prob1[self.gamma<710] = 1./(1.+np.exp(self.gamma[self.gamma<710]))
+        return prob, prob1
+    
+    @Cache_this(limit=5)
+    def gamma_log_prob(self):
+        loggamma = param_to_array(self.gamma).copy()
+        loggamma[loggamma>-40] = -np.log1p(np.exp(-loggamma[loggamma>-40]))
+        loggamma1 = param_to_array(self.gamma).copy()
+        loggamma1[loggamma1<40] = -np.log1p(np.exp(loggamma1[loggamma1<40]))
+        return loggamma,loggamma1
 
     def set_gradients(self, grad):
         self.mean.gradient, self.variance.gradient, self.gamma.gradient = grad

@@ -54,6 +54,8 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
         self.variational_prior = NormalPrior()
         X = NormalPosterior(X, X_variance)
 
+        self.kl_factr = 1.
+
         if inference_method is None:
             from ..inference.latent_function_inference.var_dtc import VarDTC
             self.logger.debug("creating inference_method var_dtc")
@@ -81,18 +83,19 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
     def _inner_parameters_changed(self, kern, X, Z, likelihood, Y, Y_metadata, Lm=None, dL_dKmm=None, subset_indices=None):
         posterior, log_marginal_likelihood, grad_dict, current_values, value_indices = super(BayesianGPLVMMiniBatch, self)._inner_parameters_changed(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm, dL_dKmm=dL_dKmm, subset_indices=subset_indices)
 
-        kl_fctr = 1.
+        current_values['meangrad'], current_values['vargrad'] = self.kern.gradients_qX_expectations(
+                                            variational_posterior=X,
+                                            Z=Z, dL_dpsi0=grad_dict['dL_dpsi0'],
+                                            dL_dpsi1=grad_dict['dL_dpsi1'],
+                                            dL_dpsi2=grad_dict['dL_dpsi2'])
+
+        kl_fctr = self.kl_factr
         if self.missing_data:
             d = self.output_dim
             log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(X)/d
         else:
             log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(X)
 
-        current_values['meangrad'], current_values['vargrad'] = self.kern.gradients_qX_expectations(
-                                            variational_posterior=X,
-                                            Z=Z, dL_dpsi0=grad_dict['dL_dpsi0'],
-                                            dL_dpsi1=grad_dict['dL_dpsi1'],
-                                            dL_dpsi2=grad_dict['dL_dpsi2'])
 
         # Subsetting Variational Posterior objects, makes the gradients
         # empty. We need them to be 0 though:

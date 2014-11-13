@@ -238,6 +238,10 @@ class Model(Parameterized):
         if self.size == 0:
             print 'nothing to optimize'
 
+        if not self.update_model():
+            print "setting updates on again"
+            self.update_model(True)
+
         if start == None:
             start = self.optimizer_array
 
@@ -279,10 +283,10 @@ class Model(Parameterized):
         Note:-
            The gradient is considered correct if the ratio of the analytical
            and numerical gradients is within <tolerance> of unity.
-           
-           The *dF_ratio* indicates the limit of numerical accuracy of numerical gradients. 
-           If it is too small, e.g., smaller than 1e-12, the numerical gradients are usually 
-           not accurate enough for the tests (shown with blue). 
+
+           The *dF_ratio* indicates the limit of numerical accuracy of numerical gradients.
+           If it is too small, e.g., smaller than 1e-12, the numerical gradients are usually
+           not accurate enough for the tests (shown with blue).
         """
         x = self.optimizer_array.copy()
 

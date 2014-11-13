@@ -162,7 +162,7 @@ def plot_latent(model, labels=None, which_indices=None,
         else:
             x = X[index, input_1]
             y = X[index, input_2]
-        ax.scatter(x, y, marker=m, s=s, c=Tango.nextMedium(), label=this_label, linewidth=.5, edgecolor='k', alpha=.9)
+        ax.scatter(x, y, marker=m, s=s, c=Tango.nextMedium(), label=this_label, linewidth=.2, edgecolor='k', alpha=.9)
 
     ax.set_xlabel('latent dimension %i' % input_1)
     ax.set_ylabel('latent dimension %i' % input_2)

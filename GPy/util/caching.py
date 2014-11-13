@@ -1,5 +1,5 @@
-from ..core.parameterization.parameter_core import Observable
-import collections, weakref, logging
+from ..core.parameterization.observable import Observable
+import collections, weakref
 
 class Cacher(object):
     def __init__(self, operation, limit=5, ignore_args=(), force_kwargs=()):

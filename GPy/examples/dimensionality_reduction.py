@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 import numpy as _np
 
-#default_seed = _np.random.seed(123344)
+# default_seed = _np.random.seed(123344)
 
 def bgplvm_test_model(optimize=False, verbose=1, plot=False, output_dim=200, nan=False):
     """
@@ -28,7 +28,7 @@ def bgplvm_test_model(optimize=False, verbose=1, plot=False, output_dim=200, nan
     Y = _np.random.multivariate_normal(_np.zeros(num_inputs), K, (output_dim,)).T
 
     # k = GPy.kern.RBF_inv(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim)
-    #k = GPy.kern.linear(input_dim)# + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
+    # k = GPy.kern.linear(input_dim)# + GPy.kern.bias(input_dim) + GPy.kern.white(input_dim, 0.00001)
     # k = GPy.kern.RBF(input_dim, ARD = False)  + GPy.kern.white(input_dim, 0.00001)
     # k = GPy.kern.RBF(input_dim, .5, _np.ones(input_dim) * 2., ARD=True) + GPy.kern.RBF(input_dim, .3, _np.ones(input_dim) * .2, ARD=True)
     # k = GPy.kern.RBF(input_dim, .5, 2., ARD=0) + GPy.kern.RBF(input_dim, .3, .2, ARD=0)
@@ -40,30 +40,30 @@ def bgplvm_test_model(optimize=False, verbose=1, plot=False, output_dim=200, nan
 
     if nan:
         m.inference_method = GPy.inference.latent_function_inference.var_dtc.VarDTCMissingData()
-        m.Y[_np.random.binomial(1,p,size=(Y.shape)).astype(bool)] = _np.nan
+        m.Y[_np.random.binomial(1, p, size=(Y.shape)).astype(bool)] = _np.nan
         m.parameters_changed()
 
     #===========================================================================
     # randomly obstruct data with percentage p
     #===========================================================================
-    #m2 = GPy.models.BayesianGPLVMWithMissingData(Y_obstruct, input_dim, kernel=k, num_inducing=num_inducing)
-    #m.lengthscales = lengthscales
+    # m2 = GPy.models.BayesianGPLVMWithMissingData(Y_obstruct, input_dim, kernel=k, num_inducing=num_inducing)
+    # m.lengthscales = lengthscales
 
     if plot:
         import matplotlib.pyplot as pb
         m.plot()
         pb.title('PCA initialisation')
-        #m2.plot()
-        #pb.title('PCA initialisation')
+        # m2.plot()
+        # pb.title('PCA initialisation')
 
     if optimize:
         m.optimize('scg', messages=verbose)
-        #m2.optimize('scg', messages=verbose)
+        # m2.optimize('scg', messages=verbose)
         if plot:
             m.plot()
             pb.title('After optimisation')
-            #m2.plot()
-            #pb.title('After optimisation')
+            # m2.plot()
+            # pb.title('After optimisation')
 
     return m
 
@@ -169,7 +169,7 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
         data = GPy.util.datasets.oil()
 
 
-    kernel = GPy.kern.RBF(Q, 1., 1./_np.random.uniform(0,1,(Q,)), ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF(Q, 1., 1. / _np.random.uniform(0, 1, (Q,)), ARD=True)  # + GPy.kern.Bias(Q, _np.exp(-2))
     Y = data['X'][:N]
     m = GPy.models.BayesianGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing, **k)
     m.data_labels = data['Y'][:N].argmax(axis=1)
@@ -180,8 +180,8 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     if plot:
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         m.plot_latent(ax=latent_axes, labels=m.data_labels)
-        data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0,:]))
-        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X.mean.values[0:1,:], # @UnusedVariable
+        data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0, :]))
+        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X.mean.values[0:1, :],  # @UnusedVariable
             m, data_show, latent_axes=latent_axes, sense_axes=sense_axes, labels=m.data_labels)
         raw_input('Press enter to finish')
         plt.close(fig)
@@ -195,7 +195,7 @@ def ssgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40
     _np.random.seed(0)
     data = pods.datasets.oil()
 
-    kernel = GPy.kern.RBF(Q, 1., 1./_np.random.uniform(0,1,(Q,)), ARD=True)# + GPy.kern.Bias(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF(Q, 1., 1. / _np.random.uniform(0, 1, (Q,)), ARD=True)  # + GPy.kern.Bias(Q, _np.exp(-2))
     Y = data['X'][:N]
     m = GPy.models.SSGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing, **k)
     m.data_labels = data['Y'][:N].argmax(axis=1)
@@ -206,8 +206,8 @@ def ssgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40
     if plot:
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         m.plot_latent(ax=latent_axes, labels=m.data_labels)
-        data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0,:]))
-        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X.mean.values[0:1,:], # @UnusedVariable
+        data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0, :]))
+        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X.mean.values[0:1, :],  # @UnusedVariable
             m, data_show, latent_axes=latent_axes, sense_axes=sense_axes, labels=m.data_labels)
         raw_input('Press enter to finish')
         plt.close(fig)
@@ -219,10 +219,12 @@ def _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim=False):
     import numpy as np
     np.random.seed(3000)
 
-    k = GPy.kern.Matern32(Q_signal, 10., lengthscale=1+(np.random.uniform(1,6,Q_signal)), ARD=1)
-    t = np.c_[[np.linspace(-1,5,N) for _ in range(Q_signal)]].T
+    k = GPy.kern.Matern32(Q_signal, 1., lengthscale=(np.random.uniform(1, 6, Q_signal)), ARD=1)
+    for i in range(Q_signal):
+        k += GPy.kern.PeriodicExponential(1, variance=1., active_dims=[i], period=3., lower=-2, upper=6)
+    t = np.c_[[np.linspace(-1, 5, N) for _ in range(Q_signal)]].T
     K = k.K(t)
-    s2, s1, s3, sS = np.random.multivariate_normal(np.zeros(K.shape[0]), K, size=(4))[:,:,None]
+    s2, s1, s3, sS = np.random.multivariate_normal(np.zeros(K.shape[0]), K, size=(4))[:, :, None]
 
     Y1, Y2, Y3, S1, S2, S3 = _generate_high_dimensional_output(D1, D2, D3, s1, s2, s3, sS)
 
@@ -243,7 +245,7 @@ def _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim=False):
         ax.legend()
         for i, Y in enumerate(Ylist):
             ax = fig.add_subplot(2, len(Ylist), len(Ylist) + 1 + i)
-            ax.imshow(Y, aspect='auto', cmap=cm.gray) # @UndefinedVariable
+            ax.imshow(Y, aspect='auto', cmap=cm.gray)  # @UndefinedVariable
             ax.set_title("Y{}".format(i + 1))
         plt.draw()
         plt.tight_layout()
@@ -255,7 +257,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim=False):
 
     x = _np.linspace(0, 4 * _np.pi, N)[:, None]
     s1 = _np.vectorize(lambda x: _np.sin(x))
-    s2 = _np.vectorize(lambda x: _np.cos(x)**2)
+    s2 = _np.vectorize(lambda x: _np.cos(x) ** 2)
     s3 = _np.vectorize(lambda x:-_np.exp(-_np.cos(2 * x)))
     sS = _np.vectorize(lambda x: _np.cos(x))
 
@@ -288,7 +290,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim=False):
         ax.legend()
         for i, Y in enumerate(Ylist):
             ax = fig.add_subplot(2, len(Ylist), len(Ylist) + 1 + i)
-            ax.imshow(Y, aspect='auto', cmap=cm.gray) # @UndefinedVariable
+            ax.imshow(Y, aspect='auto', cmap=cm.gray)  # @UndefinedVariable
             ax.set_title("Y{}".format(i + 1))
         plt.draw()
         plt.tight_layout()
@@ -323,10 +325,10 @@ def bgplvm_simulation(optimize=True, verbose=1,
     D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
     _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
     Y = Ylist[0]
-    k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
-    #k = kern.RBF(Q, ARD=True, lengthscale=10.)
+    k = kern.Linear(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    # k = kern.RBF(Q, ARD=True, lengthscale=10.)
     m = BayesianGPLVM(Y, Q, init="PCA", num_inducing=num_inducing, kernel=k)
-    m.X.variance[:] = _np.random.uniform(0,.01,m.X.shape)
+    m.X.variance[:] = _np.random.uniform(0, .01, m.X.shape)
     m.likelihood.variance = .1
 
     if optimize:
@@ -348,10 +350,10 @@ def ssgplvm_simulation(optimize=True, verbose=1,
     D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
     _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
     Y = Ylist[0]
-    k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
-    #k = kern.RBF(Q, ARD=True, lengthscale=10.)
+    k = kern.Linear(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    # k = kern.RBF(Q, ARD=True, lengthscale=10.)
     m = SSGPLVM(Y, Q, init="pca", num_inducing=num_inducing, kernel=k)
-    m.X.variance[:] = _np.random.uniform(0,.01,m.X.shape)
+    m.X.variance[:] = _np.random.uniform(0, .01, m.X.shape)
     m.likelihood.variance = .1
 
     if optimize:
@@ -365,7 +367,7 @@ def ssgplvm_simulation(optimize=True, verbose=1,
 
 def bgplvm_simulation_missing_data(optimize=True, verbose=1,
                       plot=True, plot_sim=False,
-                      max_iters=2e4,
+                      max_iters=2e4, percent_missing=.1,
                       ):
     from GPy import kern
     from GPy.models.bayesian_gplvm_minibatch import BayesianGPLVMMiniBatch
@@ -373,9 +375,9 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 400, 3, 4
     _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
     Y = Ylist[0]
-    k = kern.Linear(Q, ARD=True)# + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    k = kern.Linear(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
 
-    inan = _np.random.binomial(1, .2, size=Y.shape).astype(bool) # 80% missing data
+    inan = _np.random.binomial(1, percent_missing, size=Y.shape).astype(bool)  # 80% missing data
     Ymissing = Y.copy()
     Ymissing[inan] = _np.nan
 
@@ -401,11 +403,11 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
     _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
 
-    #Ylist = [Ylist[0]]
+    # Ylist = [Ylist[0]]
     k = kern.Linear(Q, ARD=True)
     m = MRD(Ylist, input_dim=Q, num_inducing=num_inducing, kernel=k, initx="PCA_concat", initz='permute', **kw)
 
-    m['.*noise'] = [Y.var()/40. for Y in Ylist]
+    m['.*noise'] = [Y.var() / 40. for Y in Ylist]
 
     if optimize:
         print "Optimizing Model:"
@@ -422,7 +424,7 @@ def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim
     D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
     _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
 
-    #Ylist = [Ylist[0]]
+    # Ylist = [Ylist[0]]
     k = kern.Linear(Q, ARD=True)
     inanlist = []
 
@@ -553,7 +555,7 @@ def bcgplvm_stick(kernel=None, optimize=True, verbose=True, plot=True):
 
     data = pods.datasets.osu_run1()
     # optimize
-    back_kernel=GPy.kern.RBF(data['Y'].shape[1], lengthscale=5.)
+    back_kernel = GPy.kern.RBF(data['Y'].shape[1], lengthscale=5.)
     mapping = GPy.mappings.Kernel(X=data['Y'], output_dim=2, kernel=back_kernel)
     m = GPy.models.BCGPLVM(data['Y'], 2, kernel=kernel, mapping=mapping)
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
@@ -563,7 +565,7 @@ def bcgplvm_stick(kernel=None, optimize=True, verbose=True, plot=True):
         y = m.likelihood.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data['connect'])
         GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
-        #raw_input('Press enter to finish')
+        # raw_input('Press enter to finish')
 
     return m
 
@@ -627,7 +629,7 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose
     Y = data['Y']
     Y_mean = Y.mean(0)
     Y_std = Y.std(0)
-    m = GPy.models.GPLVM((Y-Y_mean)/Y_std, 2)
+    m = GPy.models.GPLVM((Y - Y_mean) / Y_std, 2)
 
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
     if plot:
@@ -651,17 +653,17 @@ def ssgplvm_simulation_linear():
         x = np.empty(Q)
         dies = np.random.rand(Q)
         for q in xrange(Q):
-            if dies[q]<pi:
+            if dies[q] < pi:
                 x[q] = np.random.randn()
             else:
                 x[q] = 0.
         return x
 
-    Y = np.empty((N,D))
-    X = np.empty((N,Q))
+    Y = np.empty((N, D))
+    X = np.empty((N, Q))
     # Generate data from random sampled weight matrices
     for n in xrange(N):
-        X[n] = sample_X(Q,pi)
-        w = np.random.randn(D,Q)
-        Y[n] = np.dot(w,X[n])
+        X[n] = sample_X(Q, pi)
+        w = np.random.randn(D, Q)
+        Y[n] = np.dot(w, X[n])
 

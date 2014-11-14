@@ -2,11 +2,13 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from ..core import GP
+from . import SparseGPClassification
 from .. import likelihoods
 from .. import kern
 from ..inference.latent_function_inference.expectation_propagation import EP
+import numpy as np
 
-class OneVsAllClassification(GP):
+class OneVsAllClassification(object):
     """
     Gaussian Process classification: One vs all
 
@@ -20,7 +22,7 @@ class OneVsAllClassification(GP):
 
     """
 
-    def __init__(self, X, Y, kernel=None,Y_metadata=None):
+    def __init__(self, X, Y, kernel=None,Y_metadata=None,messages=True):
         if kernel is None:
             kernel = kern.RBF(X.shape[1])
 
@@ -36,6 +38,7 @@ class OneVsAllClassification(GP):
             Ynew[Y.flatten()!=yj] = 0
             Ynew[Y.flatten()==yj] = 1
 
-            m = GPy.models.GPClassification(X,Ynew,kernel=kernel,Y_metadata=Y_metadata,inference_method=inference_method)
-            m.optimize()
+            m = SparseGPClassification(X,Ynew,kernel=kernel,Y_metadata=Y_metadata)
+            m.optimize(messages=messages)
+            stop
             self.results[yj] = m.predict(X)

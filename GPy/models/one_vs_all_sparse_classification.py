@@ -18,9 +18,9 @@ class OneVsAllSparseClassification(object):
 
     """
 
-    def __init__(self, X, Y, kernel=None,Y_metadata=None,messages=True):
+    def __init__(self, X, Y, kernel=None,Y_metadata=None,messages=True,num_inducing=10):
         if kernel is None:
-            kernel = GPy.kern.RBF(X.shape[1])
+            kernel = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1]) + GPy.kern.Bias(X.shape[1])
 
         likelihood = GPy.likelihoods.Bernoulli()
 
@@ -35,6 +35,8 @@ class OneVsAllSparseClassification(object):
             Ynew[Y.flatten()!=yj] = 0
             Ynew[Y.flatten()==yj] = 1
 
-            m = GPy.models.SparseGPClassification(X,Ynew,kernel=kernel,Y_metadata=Y_metadata)
+            m = GPy.models.SparseGPClassification(X,Ynew,kernel=kernel.copy(),Y_metadata=Y_metadata,num_inducing=num_inducing)
             m.optimize(messages=messages)
             self.results[yj] = m.predict(X)[0]
+            del m
+            del Ynew

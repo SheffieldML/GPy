@@ -40,4 +40,5 @@ class OneVsAllClassification(object):
 
             m = SparseGPClassification(X,Ynew,kernel=kernel,Y_metadata=Y_metadata)
             m.optimize(messages=messages)
+            stop
             self.results[yj] = m.predict(X)

@@ -169,7 +169,7 @@ class SpikeAndSlabPosterior(VariationalPosterior):
     def gamma_probabilities(self):
         prob = np.zeros_like(param_to_array(self.gamma))
         prob[self.gamma>-710] = 1./(1.+np.exp(-self.gamma[self.gamma>-710]))
-        prob1 = np.zeros_like(param_to_array(self.gamma))
+        prob1 = -np.zeros_like(param_to_array(self.gamma))
         prob1[self.gamma<710] = 1./(1.+np.exp(self.gamma[self.gamma<710]))
         return prob, prob1
     
@@ -177,8 +177,8 @@ class SpikeAndSlabPosterior(VariationalPosterior):
     def gamma_log_prob(self):
         loggamma = param_to_array(self.gamma).copy()
         loggamma[loggamma>-40] = -np.log1p(np.exp(-loggamma[loggamma>-40]))
-        loggamma1 = param_to_array(self.gamma).copy()
-        loggamma1[loggamma1<40] = -np.log1p(np.exp(loggamma1[loggamma1<40]))
+        loggamma1 = -param_to_array(self.gamma).copy()
+        loggamma1[loggamma1>-40] = -np.log1p(np.exp(-loggamma1[loggamma1>-40]))
         return loggamma,loggamma1
 
     def set_gradients(self, grad):

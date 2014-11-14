@@ -7,37 +7,38 @@ from ...core.parameterization import variational
 def infer_newX(model, Y_new, optimize=True, init='L2'):
     """
     Infer the distribution of X for the new observed data *Y_new*.
-    
+
     :param model: the GPy model used in inference
     :type model: GPy.core.Model
     :param Y_new: the new observed data for inference
     :type Y_new: numpy.ndarray
     :param optimize: whether to optimize the location of new X (True by default)
     :type optimize: boolean
-    :return: a tuple containing the estimated posterior distribution of X and the model that optimize X 
+    :return: a tuple containing the estimated posterior distribution of X and the model that optimize X
     :rtype: (GPy.core.parameterization.variational.VariationalPosterior, GPy.core.Model)
     """
     infr_m = InferenceX(model, Y_new, init=init)
-    
+
     if optimize:
         infr_m.optimize()
-        
+
     return infr_m.X, infr_m
 
 class InferenceX(Model):
     """
     The class for inference of new X with given new Y. (do_test_latent)
-    
+
     :param model: the GPy model used in inference
     :type model: GPy.core.Model
     :param Y: the new observed data for inference
     :type Y: numpy.ndarray
     """
     def __init__(self, model, Y, name='inferenceX', init='L2'):
-        if np.isnan(Y).any():
+        if np.isnan(Y).any() or getattr(model, 'missing_data', False):
             assert Y.shape[0]==1, "The current implementation of inference X only support one data point at a time with missing data!"
             self.missing_data = True
             self.valid_dim = np.logical_not(np.isnan(Y[0]))
+            self.ninan = getattr(model, 'ninan', None)
         else:
             self.missing_data = False
         super(InferenceX, self).__init__(name)
@@ -66,12 +67,12 @@ class InferenceX(Model):
         self.Y = Y
         self.X = self._init_X(model, Y, init=init)
         self.compute_dL()
-        
+
         self.link_parameter(self.X)
-    
+
     def _init_X(self, model, Y_new, init='L2'):
         # Initialize the new X by finding the nearest point in Y space.
-        
+
         Y = model.Y
         if self.missing_data:
             Y = Y[:,self.valid_dim]
@@ -85,7 +86,7 @@ class InferenceX(Model):
             elif init=='rand':
                 dist = np.random.rand(Y_new.shape[0],Y.shape[0])
         idx = dist.argmin(axis=1)
-        
+
         from ...models import SSGPLVM
         from ...util.misc import param_to_array
         if isinstance(model, SSGPLVM):
@@ -98,9 +99,9 @@ class InferenceX(Model):
             else:
                 from ...core import Param
                 X = Param('latent mean',param_to_array(model.X[idx]).copy())
-        
+
         return X
-        
+
     def compute_dL(self):
         # Common computation
         beta = 1./np.fmax(self.likelihood.variance, 1e-6)
@@ -108,15 +109,18 @@ class InferenceX(Model):
         wv = self.posterior.woodbury_vector
         if self.missing_data:
             wv = wv[:,self.valid_dim]
-            output_dim = self.valid_dim.sum()
-            self.dL_dpsi2 = beta*(output_dim*self.posterior.woodbury_inv - np.einsum('md,od->mo',wv, wv))/2.
+            if self.ninan is not None:
+                self.dL_dpsi2 = beta/2.*(self.posterior.woodbury_inv[:, :, self.valid_dim] - np.einsum('md,od->mo',wv, wv)[:, :, None])
+                self.dL_dpsi2 = self.dL_dpsi2.sum(-1)
+            else:
+                self.dL_dpsi2 = beta/2.*(self.valid_dim.sum() * self.posterior.woodbury_inv - np.einsum('md,od->mo',wv, wv))
             self.dL_dpsi1 = beta*np.dot(self.Y[:,self.valid_dim], wv.T)
             self.dL_dpsi0 = - beta/2.* np.ones(self.Y.shape[0])
         else:
-            self.dL_dpsi2 = beta*(output_dim*self.posterior.woodbury_inv - np.einsum('md,od->mo',wv, wv))/2.
+            self.dL_dpsi2 = beta/2.*(output_dim*self.posterior.woodbury_inv - np.einsum('md,od->mo',wv, wv))
             self.dL_dpsi1 = beta*np.dot(self.Y, wv.T)
             self.dL_dpsi0 = -beta/2.* np.ones(self.Y.shape[0])
-                
+
     def parameters_changed(self):
         if self.uncertain_input:
             psi0 = self.kern.psi0(self.Z, self.X)
@@ -128,7 +132,7 @@ class InferenceX(Model):
             psi2 = np.dot(psi1.T,psi1)
 
         self._log_marginal_likelihood = (self.dL_dpsi2*psi2).sum()+(self.dL_dpsi1*psi1).sum()+(self.dL_dpsi0*psi0).sum()
-        
+
         if self.uncertain_input:
             X_grad = self.kern.gradients_qX_expectations(variational_posterior=self.X, Z=self.Z, dL_dpsi0=self.dL_dpsi0, dL_dpsi1=self.dL_dpsi1, dL_dpsi2=self.dL_dpsi2)
             self.X.set_gradients(X_grad)
@@ -137,7 +141,7 @@ class InferenceX(Model):
             X_grad = self.kern.gradients_X_diag(self.dL_dpsi0, self.X)
             X_grad += self.kern.gradients_X(dL_dpsi1, self.X, self.Z)
             self.X.gradient = X_grad
-        
+
         if self.uncertain_input:
             from ...core.parameterization.variational import SpikeAndSlabPrior
             if isinstance(self.variational_prior, SpikeAndSlabPrior):
@@ -151,7 +155,7 @@ class InferenceX(Model):
                 # update for the KL divergence
                 self.variational_prior.update_gradients_KL(self.X)
             self._log_marginal_likelihood += -KL_div
-        
+
     def log_likelihood(self):
         return self._log_marginal_likelihood
 

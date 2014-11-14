@@ -1,4 +1,3 @@
-# Copyright (c) 2013, Ricardo Andrade
 # Copyright (c) 2013, the GPy Authors (see AUTHORS.txt)
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
@@ -31,7 +30,7 @@ class OneVsAllClassification(GP):
 
         labels = np.unique(Y.flatten())
 
-        self.predictions = {}
+        self.results = {}
         for yj in labels:
             Ynew = Y.copy()
             Ynew[Y.flatten()!=yj] = 0
@@ -39,4 +38,4 @@ class OneVsAllClassification(GP):
 
             m = GPy.models.GPClassification(X,Ynew,kernel=kernel,Y_metadata=Y_metadata,inference_method=inference_method)
             m.optimize()
-            self.predictions[yj] = m.predict(X)
+            self.results[yj] = m.predict(X)

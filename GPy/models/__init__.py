@@ -19,3 +19,4 @@ from gp_heteroscedastic_regression import GPHeteroscedasticRegression
 from ss_mrd import SSMRD
 from gp_kronecker_gaussian_regression import GPKroneckerGaussianRegression
 from gp_var_gauss import GPVariationalGaussianApproximation
+from one_vs_all_classification import OneVsAllClassification

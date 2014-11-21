@@ -18,9 +18,10 @@ before_install:
 
 install:
   - pip install --upgrade numpy==1.7.1 
+  - pip install --upgrade scipy==0.12
   - pip install sphinx 
   - pip install nose
-  - pip install . --use-mirrors
+  - pip install .
 # command to run tests, e.g. python setup.py test
 script: 
   - nosetests GPy/testing

@@ -225,13 +225,11 @@ class opt_SCG(Optimizer):
         self.status = opt_result[3]
 
 def get_optimizer(f_min):
-    from sgd import opt_SGD
 
     optimizers = {'fmin_tnc': opt_tnc,
           'simplex': opt_simplex,
           'lbfgsb': opt_lbfgsb,
-          'scg': opt_SCG,
-          'sgd': opt_SGD}
+          'scg': opt_SCG}
 
     if rasm_available:
         optimizers['rasmussen'] = opt_rasm

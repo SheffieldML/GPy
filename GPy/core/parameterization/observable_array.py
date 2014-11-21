@@ -1,7 +1,6 @@
-# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2014, Max Zwiessele
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-__updated__ = '2014-11-11'
 
 import numpy as np
 from parameter_core import Pickleable

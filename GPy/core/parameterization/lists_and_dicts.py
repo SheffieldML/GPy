@@ -1,8 +1,5 @@
-'''
-Created on 27 Feb 2014
-
-@author: maxz
-'''
+# Copyright (c) 2014, Max Zwiessele
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from collections import defaultdict
 import weakref

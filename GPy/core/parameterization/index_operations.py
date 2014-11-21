@@ -1,8 +1,6 @@
-'''
-Created on Oct 2, 2013
+# Copyright (c) 2014, Max Zwiessele
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-@author: maxzwiessele
-'''
 import numpy
 from numpy.lib.function_base import vectorize
 from lists_and_dicts import IntArrayDict

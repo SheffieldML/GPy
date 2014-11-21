@@ -1,8 +1,5 @@
-'''
-Created on 30 Oct 2014
-
-@author: maxz
-'''
+# Copyright (c) 2014, Max Zwiessele
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
 class Observable(object):

@@ -11,8 +11,8 @@ from sympy.utilities.lambdify import lambdastr, _imp_namespace, _get_namespace
 from sympy.utilities.iterables import numbered_symbols
 import scipy
 import GPy
-#from scipy.special import gammaln, gamma, erf, erfc, erfcx, polygamma
-#@NDL you removed this file! #from GPy.util.symbolic import normcdf, normcdfln, logistic, logisticln, erfcx, erfc, gammaln
+
+
 def getFromDict(dataDict, mapList):
     return reduce(lambda d, k: d[k], mapList, dataDict)
 

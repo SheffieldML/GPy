@@ -1,8 +1,6 @@
-'''
-Created on 12 Feb 2014
+# Copyright (c) 2014, Max Zwiessele
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-@author: maxz
-'''
 import unittest
 import numpy as np
 from GPy.core.parameterization.index_operations import ParameterIndexOperations,\

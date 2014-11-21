@@ -1,10 +1,8 @@
-# ## Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
 import numpy as np
-import pylab as pb
-import sys, pdb
 from ..core import GP
 from ..models import GPLVM
 from ..mappings import Kernel
@@ -44,7 +42,7 @@ class BCGPLVM(GPLVM):
         GP._set_params(self, x[self.mapping.num_params:])
 
     def _log_likelihood_gradients(self):
-        dL_df = self.kern.dK_dX(self.dL_dK, self.X)
+        dL_df = self.kern.gradients_X(self.dL_dK, self.X)
         dL_dtheta = self.mapping.df_dtheta(dL_df, self.likelihood.Y)
         return np.hstack((dL_dtheta.flatten(), GP._log_likelihood_gradients(self)))
 

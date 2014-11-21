@@ -8,57 +8,93 @@ In GPy all models inherit from the base class :py:class:`~GPy.core.parameterized
 
 The :py:class:`~GPy.core.model.Model` class provides parameter introspection, objective function and optimization.
 
-In order to fully use all functionality of :py:class:`~GPy.core.model.Model` some methods need to be implemented / overridden. In order to explain the functionality of those methods we will use a wrapper to the numpy ``rosen`` function, which holds input parameters :math:`\mathbf{X}`. Where :math:`\mathbf{X}\in\mathbb{R}^{N\times 1}`.
+In order to fully use all functionality of
+:py:class:`~GPy.core.model.Model` some methods need to be implemented
+/ overridden. And the model needs to be  told its parameters, such
+that it can provide optimized parameter distribution and handling. 
+In order to explain the functionality of those methods
+we will use a wrapper to the numpy ``rosen`` function, which holds
+input parameters :math:`\mathbf{X}`. Where
+:math:`\mathbf{X}\in\mathbb{R}^{N\times 1}`.
 
 Obligatory methods
 ==================
 
-:py:meth:`~GPy.core.model.Model.__init__` :
-	Initialize the model with the given parameters. In our example we have to store shape information of :math:`\mathbf X` and the parameters themselves::
+:py:func:`~GPy.core.model.Model.__init__` :
+	Initialize the model with the given parameters. These need to
+	be added to the model by calling
+	`self.add_parameter(<param>)`, where param needs to be a
+	parameter handle (See parameterized_ for details).::
 	
-		self.X = X
-		self.num_inputs = self.X.shape[0]
-		assert self.X.ndim == 1, only vector inputs allowed
-
-:py:meth:`~GPy.core.model.Model._get_params` : 
-    Return parameters of the model as a flattened numpy array-like. So, in our example we have to return the input parameters::
-    
-    	return self.X.flatten()
-
-:py:meth:`~GPy.core.model.Model._set_params` : 
-    Set parameters, which have been fetched through :py:meth:`~GPy.core.model.Model._get_params`. In other words, "invert" the functionality of :py:meth:`~GPy.core.model.Model._get_params`::
-
-    	self.X = params[:self.num_inputs*self.input_dim].reshape(self.num_inputs)
-
+		self.X = GPy.Param("input", X)
+		self.add_parameter(self.X)
+		
 :py:meth:`~GPy.core.model.Model.log_likelihood` :
-	Returns the log-likelihood of the new model. For our example this is just the call to ``rosen``::
+	Returns the log-likelihood of the new model. For our example
+	this is just the call to ``rosen`` and as we want to minimize
+	it, we need to negate the objective.::
 
-		return scipy.optimize.rosen(self.X)
+		return -scipy.optimize.rosen(self.X)
 
-:py:meth:`~GPy.core.model.Model._log_likelihood_gradients` :
-	Returns the gradients with respect to all parameters::
+:py:meth:`~GPy.core.model.Model.parameters_changed` :
+    Updates the internal state of the model and sets the gradient of
+    each parameter handle in the hierarchy with respect to the
+    log_likelihod. Thus here we need to set the negative derivative of
+    the rosenbrock function for the parameters. In this case it is the
+    gradient for self.X.::
 
-		return scipy.optimize.rosen_der(self.X)
+ 		self.X.gradient = -scipy.optimize.rosen_der(self.X)
 
+
+Here the full code for the `Rosen` class::
+
+  from GPy import Model, Param
+  import scipy
+  class Rosen(Model):
+      def __init__(self, X, name='rosenbrock'):
+          super(Rosen, self).__init__(name=name)
+          self.X = Param("input", X)
+	  self.add_parameter(self.X)
+      def log_likelihood(self):
+          return -scipy.optimize.rosen(self.X)
+      def parameters_changed(self):
+          self.X.gradient = -scipy.optimize.rosen_der(self.X)
+
+In order to test the newly created model, we can check the gradients
+and optimize a standard rosenbrock run::
+
+  >>> m = Rosen(np.array([-1,-1]))
+  >>> print m
+  Name                 : rosenbrock
+  Log-likelihood       : -404.0
+  Number of Parameters : 2
+  Parameters:
+    rosenbrock.  |  Value  |  Constraint  |  Prior  |  Tied to
+    input        |   (2,)  |              |         |         
+  >>> m.checkgrad(verbose=True)
+             Name           |     Ratio     |  Difference   |  Analytical   |   Numerical   
+  ------------------------------------------------------------------------------------------
+   rosenbrock.input[[0]]    |   1.000000    |   0.000000    |  -804.000000  |  -804.000000  
+   rosenbrock.input[[1]]    |   1.000000    |   0.000000    |  -400.000000  |  -400.000000  
+  >>> m.optimize()
+  >>> print m
+  Name                 : rosenbrock
+  Log-likelihood       : -6.52150088871e-15
+  Number of Parameters : 2
+  Parameters:
+    rosenbrock.  |  Value  |  Constraint  |  Prior  |  Tied to
+    input        |   (2,)  |              |         |         
+  >>> print m.input
+    Index  |  rosenbrock.input  |  Constraint  |   Prior   |  Tied to
+     [0]   |        0.99999994  |              |           |    N/A    
+     [1]   |        0.99999987  |              |           |    N/A    
+  >>> print m.gradient
+  [ -1.91169809e-06,   1.01852309e-06]
+  
+This is the optimium for the 2D Rosenbrock function, as expected, and
+the gradient of the inputs are almost zero.
 
 Optional methods
 ================
 
-If you want some special functionality please provide the following methods:
-
-Using the pickle functionality
-------------------------------
-
-To be able to use the pickle functionality ``m.pickle(<path>)`` the methods ``getstate(self)`` and ``setstate(self, state)`` have to be provided. The convention for a ``state`` in ``GPy`` is a list of all parameters, which are needed to restore the model. All classes provided in ``GPy`` follow this convention, thus you can just append to the state of the inherited class and call the inherited class' ``setstate`` with the appropriate state.
-
-:py:meth:`~GPy.core.model.Model.getstate` :
-	This method returns a state of the model, following the memento pattern. As we are inheriting from :py:class:`~GPy.core.model.Model`, we have to return the state of Model as well. In out example we have `X` and `num_inputs` as state::
-
-		return Model.getstate(self) + [self.X, self.num_inputs]
-
-:py:meth:`~GPy.core.model.Model.setstate` :
-	This method restores this model with the given ``state``::
-
-		self.num_inputs = state.pop()
-		self.X = state.pop()
-		return Model.setstate(self, state)
+Currently none.

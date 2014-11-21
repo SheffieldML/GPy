@@ -1,7 +1,13 @@
+# Copyright (c) 2014, Alan Saul
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
 import GPy
 import numpy as np
-import matplotlib.pyplot as plt
 from GPy.util import datasets
+try:
+    import matplotlib.pyplot as plt
+except:
+    pass
 
 def student_t_approx(optimize=True, plot=True):
     """
@@ -30,47 +36,53 @@ def student_t_approx(optimize=True, plot=True):
     #Yc = Yc/Yc.max()
 
     #Add student t random noise to datapoints
-    deg_free = 5
+    deg_free = 1
     print "Real noise: ", real_std
     initial_var_guess = 0.5
     edited_real_sd = initial_var_guess
 
     # Kernel object
-    kernel1 = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1])
-    kernel2 = kernel1.copy()
-    kernel3 = kernel1.copy()
-    kernel4 = kernel1.copy()
+    kernel1 = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
+    kernel2 = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
+    kernel3 = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
+    kernel4 = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
 
     #Gaussian GP model on clean data
     m1 = GPy.models.GPRegression(X, Y.copy(), kernel=kernel1)
     # optimize
-    m1.ensure_default_constraints()
-    m1.constrain_fixed('white', 1e-5)
+    m1['.*white'].constrain_fixed(1e-5)
     m1.randomize()
 
     #Gaussian GP model on corrupt data
     m2 = GPy.models.GPRegression(X, Yc.copy(), kernel=kernel2)
-    m2.ensure_default_constraints()
-    m2.constrain_fixed('white', 1e-5)
+    m2['.*white'].constrain_fixed(1e-5)
     m2.randomize()
 
     #Student t GP model on clean data
-    t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=edited_real_sd)
-    stu_t_likelihood = GPy.likelihoods.Laplace(Y.copy(), t_distribution)
-    m3 = GPy.models.GPRegression(X, Y.copy(), kernel3, likelihood=stu_t_likelihood)
-    m3.ensure_default_constraints()
-    m3.constrain_bounded('t_noise', 1e-6, 10.)
-    m3.constrain_fixed('white', 1e-5)
+    t_distribution = GPy.likelihoods.StudentT(deg_free=deg_free, sigma2=edited_real_sd)
+    laplace_inf = GPy.inference.latent_function_inference.Laplace()
+    m3 = GPy.core.GP(X, Y.copy(), kernel3, likelihood=t_distribution, inference_method=laplace_inf)
+    m3['.*t_scale2'].constrain_bounded(1e-6, 10.)
+    m3['.*white'].constrain_fixed(1e-5)
     m3.randomize()
 
     #Student t GP model on corrupt data
-    t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=deg_free, sigma2=edited_real_sd)
-    corrupt_stu_t_likelihood = GPy.likelihoods.Laplace(Yc.copy(), t_distribution)
-    m4 = GPy.models.GPRegression(X, Yc.copy(), kernel4, likelihood=corrupt_stu_t_likelihood)
-    m4.ensure_default_constraints()
-    m4.constrain_bounded('t_noise', 1e-6, 10.)
-    m4.constrain_fixed('white', 1e-5)
+    t_distribution = GPy.likelihoods.StudentT(deg_free=deg_free, sigma2=edited_real_sd)
+    laplace_inf = GPy.inference.latent_function_inference.Laplace()
+    m4 = GPy.core.GP(X, Yc.copy(), kernel4, likelihood=t_distribution, inference_method=laplace_inf)
+    m4['.*t_scale2'].constrain_bounded(1e-6, 10.)
+    m4['.*white'].constrain_fixed(1e-5)
     m4.randomize()
+    print m4
+    debug=True
+    if debug:
+        m4.optimize(messages=1)
+        import pylab as pb
+        pb.plot(m4.X, m4.inference_method.f_hat)
+        pb.plot(m4.X, m4.Y, 'rx')
+        m4.plot()
+        print m4
+        return m4
 
     if optimize:
         optimizer='scg'
@@ -115,6 +127,7 @@ def student_t_approx(optimize=True, plot=True):
     return m1, m2, m3, m4
 
 def boston_example(optimize=True, plot=True):
+    raise NotImplementedError("Needs updating")
     import sklearn
     from sklearn.cross_validation import KFold
     optimizer='bfgs'
@@ -143,8 +156,8 @@ def boston_example(optimize=True, plot=True):
         noise = 1e-1 #np.exp(-2)
         rbf_len = 0.5
         data_axis_plot = 4
-        kernelstu = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1]) + GPy.kern.bias(X.shape[1])
-        kernelgp = GPy.kern.rbf(X.shape[1]) + GPy.kern.white(X.shape[1]) + GPy.kern.bias(X.shape[1])
+        kernelstu = GPy.kern.RBF(X.shape[1]) + GPy.kern.white(X.shape[1]) + GPy.kern.bias(X.shape[1])
+        kernelgp = GPy.kern.RBF(X.shape[1]) + GPy.kern.white(X.shape[1]) + GPy.kern.bias(X.shape[1])
 
         #Baseline
         score_folds[0, n] = rmse(Y_test, np.mean(Y_train))
@@ -152,10 +165,9 @@ def boston_example(optimize=True, plot=True):
         #Gaussian GP
         print "Gauss GP"
         mgp = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelgp.copy())
-        mgp.ensure_default_constraints()
-        mgp.constrain_fixed('white', 1e-5)
-        mgp['rbf_len'] = rbf_len
-        mgp['noise'] = noise
+        mgp.constrain_fixed('.*white', 1e-5)
+        mgp['.*len'] = rbf_len
+        mgp['.*noise'] = noise
         print mgp
         if optimize:
             mgp.optimize(optimizer=optimizer, messages=messages)
@@ -170,9 +182,8 @@ def boston_example(optimize=True, plot=True):
         g_distribution = GPy.likelihoods.noise_model_constructors.gaussian(variance=noise, N=N, D=D)
         g_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), g_distribution)
         mg = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=g_likelihood)
-        mg.ensure_default_constraints()
         mg.constrain_positive('noise_variance')
-        mg.constrain_fixed('white', 1e-5)
+        mg.constrain_fixed('.*white', 1e-5)
         mg['rbf_len'] = rbf_len
         mg['noise'] = noise
         print mg
@@ -190,11 +201,10 @@ def boston_example(optimize=True, plot=True):
             t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=df, sigma2=noise)
             stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
             mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=stu_t_likelihood)
-            mstu_t.ensure_default_constraints()
-            mstu_t.constrain_fixed('white', 1e-5)
-            mstu_t.constrain_bounded('t_noise', 0.0001, 1000)
+            mstu_t.constrain_fixed('.*white', 1e-5)
+            mstu_t.constrain_bounded('.*t_scale2', 0.0001, 1000)
             mstu_t['rbf_len'] = rbf_len
-            mstu_t['t_noise'] = noise
+            mstu_t['.*t_scale2'] = noise
             print mstu_t
             if optimize:
                 mstu_t.optimize(optimizer=optimizer, messages=messages)

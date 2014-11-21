@@ -10,60 +10,174 @@ from scipy import linalg, weave
 import types
 import ctypes
 from ctypes import byref, c_char, c_int, c_double # TODO
-# import scipy.lib.lapack
 import scipy
 import warnings
+import os
+from config import config
+import logging
 
-if np.all(np.float64((scipy.__version__).split('.')[:2]) >= np.array([0, 12])):
-    import scipy.linalg.lapack as lapack
+_scipyversion = np.float64((scipy.__version__).split('.')[:2])
+_fix_dpotri_scipy_bug = True
+if np.all(_scipyversion >= np.array([0, 14])):
+    from scipy.linalg import lapack
+    _fix_dpotri_scipy_bug = False
+elif np.all(_scipyversion >= np.array([0, 12])):
+    #import scipy.linalg.lapack.clapack as lapack
+    from scipy.linalg import lapack
 else:
     from scipy.linalg.lapack import flapack as lapack
 
-try:
-    _blaslib = ctypes.cdll.LoadLibrary(np.core._dotblas.__file__) # @UndefinedVariable
-    _blas_available = True
-    assert hasattr(_blaslib, 'dsyrk_')
-    assert hasattr(_blaslib, 'dsyr_')
-except AssertionError:
-    _blas_available = False
-except AttributeError as e:
-    _blas_available = False
-    warnings.warn("warning: caught this exception:" + str(e))
+if config.getboolean('anaconda', 'installed') and config.getboolean('anaconda', 'MKL'):
+    try:
+        anaconda_path = str(config.get('anaconda', 'location'))
+        mkl_rt = ctypes.cdll.LoadLibrary(os.path.join(anaconda_path, 'DLLs', 'mkl_rt.dll'))
+        dsyrk = mkl_rt.dsyrk
+        dsyr = mkl_rt.dsyr
+        _blas_available = True
+        print 'anaconda installed and mkl is loaded'
+    except:
+        _blas_available = False
+else:
+    try:
+        _blaslib = ctypes.cdll.LoadLibrary(np.core._dotblas.__file__) # @UndefinedVariable
+        dsyrk = _blaslib.dsyrk_
+        dsyr = _blaslib.dsyr_
+        _blas_available = True
+    except AttributeError as e:
+        _blas_available = False
+        warnings.warn("warning: caught this exception:" + str(e))
 
-def dtrtrs(A, B, lower=0, trans=0, unitdiag=0):
+def force_F_ordered_symmetric(A):
+    """
+    return a F ordered version of A, assuming A is symmetric
+    """
+    if A.flags['F_CONTIGUOUS']:
+        return A
+    if A.flags['C_CONTIGUOUS']:
+        return A.T
+    else:
+        return np.asfortranarray(A)
+
+def force_F_ordered(A):
+    """
+    return a F ordered version of A, assuming A is triangular
+    """
+    if A.flags['F_CONTIGUOUS']:
+        return A
+    print "why are your arrays not F order?"
+    return np.asfortranarray(A)
+
+# def jitchol(A, maxtries=5):
+#     A = force_F_ordered_symmetric(A)
+#     L, info = lapack.dpotrf(A, lower=1)
+#     if info == 0:
+#         return L
+#     else:
+#         if maxtries==0:
+#             raise linalg.LinAlgError, "not positive definite, even with jitter."
+#         diagA = np.diag(A)
+#         if np.any(diagA <= 0.):
+#             raise linalg.LinAlgError, "not pd: non-positive diagonal elements"
+#         jitter = diagA.mean() * 1e-6
+
+#         return jitchol(A+np.eye(A.shape[0])*jitter, maxtries-1)
+
+def jitchol(A, maxtries=5):
+    A = np.ascontiguousarray(A)
+    L, info = lapack.dpotrf(A, lower=1)
+    if info == 0:
+        return L
+    else:
+        diagA = np.diag(A)
+        if np.any(diagA <= 0.):
+            raise linalg.LinAlgError, "not pd: non-positive diagonal elements"
+        jitter = diagA.mean() * 1e-6
+        while maxtries > 0 and np.isfinite(jitter):
+            try:
+                L = linalg.cholesky(A + np.eye(A.shape[0]) * jitter, lower=True)
+            except:
+                jitter *= 10
+            finally:
+                maxtries -= 1
+        raise linalg.LinAlgError, "not positive definite, even with jitter."
+    import traceback
+    try: raise
+    except:
+        logging.warning('\n'.join(['Added jitter of {:.10e}'.format(jitter),
+            '  in '+traceback.format_list(traceback.extract_stack(limit=2)[-2:-1])[0][2:]]))
+    import ipdb;ipdb.set_trace()
+    return L
+
+
+
+
+
+# def dtrtri(L, lower=1):
+#     """
+#     Wrapper for lapack dtrtri function
+#     Inverse of L
+#
+#     :param L: Triangular Matrix L
+#     :param lower: is matrix lower (true) or upper (false)
+#     :returns: Li, info
+#     """
+#     L = force_F_ordered(L)
+#     return lapack.dtrtri(L, lower=lower)
+
+def dtrtrs(A, B, lower=1, trans=0, unitdiag=0):
     """
     Wrapper for lapack dtrtrs function
 
-    :param A: Matrix A
+    DTRTRS solves a triangular system of the form
+
+        A * X = B  or  A**T * X = B,
+
+    where A is a triangular matrix of order N, and B is an N-by-NRHS
+    matrix.  A check is made to verify that A is nonsingular.
+
+    :param A: Matrix A(triangular)
     :param B: Matrix B
     :param lower: is matrix lower (true) or upper (false)
-    :returns:
+    :returns: Solution to A * X = B or A**T * X = B
 
     """
+    A = np.asfortranarray(A)
+    #Note: B does not seem to need to be F ordered!
     return lapack.dtrtrs(A, B, lower=lower, trans=trans, unitdiag=unitdiag)
 
-def dpotrs(A, B, lower=0):
+def dpotrs(A, B, lower=1):
     """
     Wrapper for lapack dpotrs function
-
     :param A: Matrix A
     :param B: Matrix B
     :param lower: is matrix lower (true) or upper (false)
     :returns:
-
     """
+    A = force_F_ordered(A)
     return lapack.dpotrs(A, B, lower=lower)
 
-def dpotri(A, lower=0):
+def dpotri(A, lower=1):
     """
     Wrapper for lapack dpotri function
+
+    DPOTRI - compute the inverse of a real symmetric positive
+      definite matrix A using the Cholesky factorization A =
+      U**T*U or A = L*L**T computed by DPOTRF
 
     :param A: Matrix A
     :param lower: is matrix lower (true) or upper (false)
     :returns: A inverse
 
     """
-    return lapack.dpotri(A, lower=lower)
+    if _fix_dpotri_scipy_bug:
+        assert lower==1, "scipy linalg behaviour is very weird. please use lower, fortran ordered arrays"
+        lower = 0
+
+    A = force_F_ordered(A)
+    R, info = lapack.dpotri(A, lower=lower) #needs to be zero here, seems to be a scipy bug
+
+    symmetrify(R)
+    return R, info
 
 def pddet(A):
     """
@@ -111,60 +225,8 @@ def _mdot_r(a, b):
             b = b[0]
     return np.dot(a, b)
 
-def jitchol(A, maxtries=5):
-    A = np.asfortranarray(A)
-    L, info = lapack.dpotrf(A, lower=1)
-    if info == 0:
-        return L
-    else:
-        diagA = np.diag(A)
-        if np.any(diagA <= 0.):
-            raise linalg.LinAlgError, "not pd: non-positive diagonal elements"
-        jitter = diagA.mean() * 1e-6
-        while maxtries > 0 and np.isfinite(jitter):
-            print 'Warning: adding jitter of {:.10e}'.format(jitter)
-            try:
-                return linalg.cholesky(A + np.eye(A.shape[0]).T * jitter, lower=True)
-            except:
-                jitter *= 10
-            finally:
-                maxtries -= 1
-        raise linalg.LinAlgError, "not positive definite, even with jitter."
-
-
-
-def jitchol_old(A, maxtries=5):
-    """
-    :param A: An almost pd square matrix
-
-    :rval L: the Cholesky decomposition of A
-
-    .. note:
-
-      Adds jitter to K, to enforce positive-definiteness
-      if stuff breaks, please check:
-      np.allclose(sp.linalg.cholesky(XXT, lower = True), np.triu(sp.linalg.cho_factor(XXT)[0]).T)
-
-    """
-    try:
-        return linalg.cholesky(A, lower=True)
-    except linalg.LinAlgError:
-        diagA = np.diag(A)
-        if np.any(diagA < 0.):
-            raise linalg.LinAlgError, "not pd: negative diagonal elements"
-        jitter = diagA.mean() * 1e-6
-        for i in range(1, maxtries + 1):
-            print '\rWarning: adding jitter of {:.10e}                        '.format(jitter),
-            try:
-                return linalg.cholesky(A + np.eye(A.shape[0]).T * jitter, lower=True)
-            except:
-                jitter *= 10
-
-        raise linalg.LinAlgError, "not positive definite, even with jitter."
-
 def pdinv(A, *args):
     """
-
     :param A: A DxD pd numpy array
 
     :rval Ai: the inverse of A
@@ -179,15 +241,15 @@ def pdinv(A, *args):
     """
     L = jitchol(A, *args)
     logdet = 2.*np.sum(np.log(np.diag(L)))
-    Li = chol_inv(L)
-    Ai, _ = lapack.dpotri(L)
+    Li = dtrtri(L)
+    Ai, _ = dpotri(L, lower=1)
     # Ai = np.tril(Ai) + np.tril(Ai,-1).T
     symmetrify(Ai)
 
     return Ai, L, Li, logdet
 
 
-def chol_inv(L):
+def dtrtri(L):
     """
     Inverts a Cholesky lower triangular matrix
 
@@ -196,7 +258,8 @@ def chol_inv(L):
 
     """
 
-    return lapack.dtrtri(L, lower=True)[0]
+    L = force_F_ordered(L)
+    return lapack.dtrtri(L, lower=1)[0]
 
 
 def multiple_pdinv(A):
@@ -212,7 +275,7 @@ def multiple_pdinv(A):
     N = A.shape[-1]
     chols = [jitchol(A[:, :, i]) for i in range(N)]
     halflogdets = [np.sum(np.log(np.diag(L[0]))) for L in chols]
-    invs = [lapack.dpotri(L[0], True)[0] for L in chols]
+    invs = [dpotri(L[0], True)[0] for L in chols]
     invs = [np.triu(I) + np.triu(I, 1).T for I in invs]
     return np.dstack(invs), np.array(halflogdets)
 
@@ -265,101 +328,6 @@ def ppca(Y, Q, iterations=100):
         pass
     return np.asarray_chkfinite(exp_x), np.asarray_chkfinite(W)
 
-def ppca_missing_data_at_random(Y, Q, iters=100):
-    """
-    EM implementation of Probabilistic pca for when there is missing data.
-    
-    Taken from <SheffieldML, https://github.com/SheffieldML>
-
-    .. math:
-        \\mathbf{Y} = \mathbf{XW} + \\epsilon \\text{, where}
-        \\epsilon = \\mathcal{N}(0, \\sigma^2 \mathbf{I})
-        
-    :returns: X, W, sigma^2 
-    """
-    from numpy.ma import dot as madot
-    import diag
-    from GPy.util.subarray_and_sorting import common_subarrays
-    import time
-    debug = 1
-    # Initialise W randomly
-    N, D = Y.shape
-    W = np.random.randn(Q, D) * 1e-3
-    Y = np.ma.masked_invalid(Y, copy=1)
-    nu = 1.
-    #num_obs_i = 1./Y.count()
-    Ycentered = Y - Y.mean(0)
-    
-    X = np.zeros((N,Q))
-    cs = common_subarrays(Y.mask)
-    cr = common_subarrays(Y.mask, 1)
-    Sigma = np.zeros((N, Q, Q))
-    Sigma2 = np.zeros((N, Q, Q))
-    mu = np.zeros(D)
-    if debug:
-        import matplotlib.pyplot as pylab
-        fig = pylab.figure("FIT MISSING DATA"); 
-        ax = fig.gca()
-        ax.cla()
-        lines = pylab.plot(np.zeros((N,Q)).dot(W))
-    W2 = np.zeros((Q,D))
-
-    for i in range(iters):
-#         Sigma = np.linalg.solve(diag.add(madot(W,W.T), nu), diag.times(np.eye(Q),nu))
-#         exp_x = madot(madot(Ycentered, W.T),Sigma)/nu
-#         Ycentered = (Y - exp_x.dot(W).mean(0))
-#         #import ipdb;ipdb.set_trace()
-#         #Ycentered = mu
-#         W = np.linalg.solve(madot(exp_x.T,exp_x) + Sigma, madot(exp_x.T, Ycentered))
-#         nu = (((Ycentered - madot(exp_x, W))**2).sum(0) + madot(W.T,madot(Sigma,W)).sum(0)).sum()/N
-        for csi, (mask, index) in enumerate(cs.iteritems()):
-            mask = ~np.array(mask)
-            Sigma2[index, :, :] = nu * np.linalg.inv(diag.add(W2[:,mask].dot(W2[:,mask].T), nu))
-            #X[index,:] = madot((Sigma[csi]/nu),madot(W,Ycentered[index].T))[:,0]
-        X2 = ((Sigma2/nu) * (madot(Ycentered,W2.T).base)[:,:,None]).sum(-1)
-        mu2 = (Y - X.dot(W)).mean(0)
-        for n in range(N):
-            Sigma[n] = nu * np.linalg.inv(diag.add(W[:,~Y.mask[n]].dot(W[:,~Y.mask[n]].T), nu))
-            X[n, :] = (Sigma[n]/nu).dot(W[:,~Y.mask[n]].dot(Ycentered[n,~Y.mask[n]].T))
-        for d in range(D):
-            mu[d] = (Y[~Y.mask[:,d], d] - X[~Y.mask[:,d]].dot(W[:, d])).mean()
-        Ycentered = (Y - mu)
-        nu3 = 0.
-        for cri, (mask, index) in enumerate(cr.iteritems()):
-            mask = ~np.array(mask)
-            W2[:,index] = np.linalg.solve(X[mask].T.dot(X[mask]) + Sigma[mask].sum(0), madot(X[mask].T, Ycentered[mask,index]))[:,None]
-            W2[:,index] = np.linalg.solve(X.T.dot(X) + Sigma.sum(0), madot(X.T, Ycentered[:,index]))
-            #nu += (((Ycentered[mask,index] - X[mask].dot(W[:,index]))**2).sum(0) + W[:,index].T.dot(Sigma[mask].sum(0).dot(W[:,index])).sum(0)).sum()
-            nu3 += (((Ycentered[index] - X.dot(W[:,index]))**2).sum(0) + W[:,index].T.dot(Sigma.sum(0).dot(W[:,index])).sum(0)).sum()
-        nu3 /= N
-        nu = 0.
-        nu2 = 0.
-        W = np.zeros((Q,D))
-        for j in range(D):
-            W[:,j] = np.linalg.solve(X[~Y.mask[:,j]].T.dot(X[~Y.mask[:,j]]) + Sigma[~Y.mask[:,j]].sum(0), madot(X[~Y.mask[:,j]].T, Ycentered[~Y.mask[:,j],j]))
-            nu2f = np.tensordot(W[:,j].T, Sigma[~Y.mask[:,j],:,:], [0,1]).dot(W[:,j])
-            nu2s = W[:,j].T.dot(Sigma[~Y.mask[:,j],:,:].sum(0).dot(W[:,j]))
-            nu2 += (((Ycentered[~Y.mask[:,j],j] - X[~Y.mask[:,j],:].dot(W[:,j]))**2) + nu2f).sum()
-            for i in range(N):
-                if not Y.mask[i,j]:
-                    nu += ((Ycentered[i,j] - X[i,:].dot(W[:,j]))**2) + W[:,j].T.dot(Sigma[i,:,:].dot(W[:,j]))
-        nu /= N
-        nu2 /= N
-        nu4 = (((Ycentered - X.dot(W))**2).sum(0) + W.T.dot(Sigma.sum(0).dot(W)).sum(0)).sum()/N
-        import ipdb;ipdb.set_trace()
-        if debug:
-            #print Sigma[0]
-            print "nu:", nu, "sum(X):", X.sum()
-            pred_y = X.dot(W)
-            for x, l in zip(pred_y.T, lines):
-                l.set_ydata(x)
-            ax.autoscale_view()
-            ax.set_ylim(pred_y.min(), pred_y.max())
-            fig.canvas.draw()
-            time.sleep(.3)
-    return np.asarray_chkfinite(X), np.asarray_chkfinite(W), nu
-
-
 def tdot_numpy(mat, out=None):
     return np.dot(mat, mat.T, out)
 
@@ -394,12 +362,13 @@ def tdot_blas(mat, out=None):
     BETA = c_double(0.0)
     C = out.ctypes.data_as(ctypes.c_void_p)
     LDC = c_int(np.max(out.strides) / 8)
-    _blaslib.dsyrk_(byref(UPLO), byref(TRANS), byref(N), byref(K),
+    dsyrk(byref(UPLO), byref(TRANS), byref(N), byref(K),
             byref(ALPHA), A, byref(LDA), byref(BETA), C, byref(LDC))
 
     symmetrify(out, upper=True)
 
-    return out
+
+    return np.ascontiguousarray(out)
 
 def tdot(*args, **kwargs):
     if _blas_available:
@@ -424,7 +393,7 @@ def DSYR_blas(A, x, alpha=1.):
     A_ = A.ctypes.data_as(ctypes.c_void_p)
     x_ = x.ctypes.data_as(ctypes.c_void_p)
     INCX = c_int(1)
-    _blaslib.dsyr_(byref(UPLO), byref(N), byref(ALPHA),
+    dsyr(byref(UPLO), byref(N), byref(ALPHA),
             x_, byref(INCX), A_, byref(LDA))
     symmetrify(A, upper=True)
 
@@ -452,10 +421,31 @@ def symmetrify(A, upper=False):
     Take the square matrix A and make it symmetrical by copting elements from the lower half to the upper
 
     works IN PLACE.
+
+    note: tries to use weave, falls back to a slower numpy version
+    """
+    if config.getboolean('weave', 'working'):
+        try:
+            symmetrify_weave(A, upper)
+        except:
+            print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
+            config.set('weave', 'working', 'False')
+            symmetrify_numpy(A, upper)
+    else:
+        symmetrify_numpy(A, upper)
+
+
+def symmetrify_weave(A, upper=False):
+    """
+    Take the square matrix A and make it symmetrical by copting elements from the lower half to the upper
+
+    works IN PLACE.
+
+
     """
     N, M = A.shape
     assert N == M
-    
+
     c_contig_code = """
     int iN;
     for (int i=1; i<N; i++){
@@ -494,10 +484,15 @@ def symmetrify(A, upper=False):
         A += np.tril(tmp, -1).T
 
 
-def symmetrify_murray(A):
-    A += A.T
-    nn = A.shape[0]
-    A[[range(nn), range(nn)]] /= 2.0
+def symmetrify_numpy(A, upper=False):
+    """
+    Force a matrix to be symmetric
+    """
+    triu = np.triu_indices_from(A,k=1)
+    if upper:
+        A.T[triu] = A[triu]
+    else:
+        A[triu] = A.T[triu]
 
 def cholupdate(L, x):
     """
@@ -531,8 +526,9 @@ def cholupdate(L, x):
 def backsub_both_sides(L, X, transpose='left'):
     """ Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky"""
     if transpose == 'left':
-        tmp, _ = lapack.dtrtrs(L, np.asfortranarray(X), lower=1, trans=1)
-        return lapack.dtrtrs(L, np.asfortranarray(tmp.T), lower=1, trans=1)[0].T
+        tmp, _ = dtrtrs(L, X, lower=1, trans=1)
+        return dtrtrs(L, tmp.T, lower=1, trans=1)[0].T
     else:
-        tmp, _ = lapack.dtrtrs(L, np.asfortranarray(X), lower=1, trans=0)
-        return lapack.dtrtrs(L, np.asfortranarray(tmp.T), lower=1, trans=0)[0].T
+        tmp, _ = dtrtrs(L, X, lower=1, trans=0)
+        return dtrtrs(L, tmp.T, lower=1, trans=0)[0].T
+

@@ -12,6 +12,14 @@ GPy.examples.classification module
     :undoc-members:
     :show-inheritance:
 
+GPy.examples.coreg_example module
+---------------------------------
+
+.. automodule:: GPy.examples.coreg_example
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.examples.dimensionality_reduction module
 --------------------------------------------
 

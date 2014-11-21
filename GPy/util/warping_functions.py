@@ -3,8 +3,6 @@
 
 
 import numpy as np
-import scipy as sp
-import pylab as plt
 
 class WarpingFunction(object):
     """
@@ -39,6 +37,7 @@ class WarpingFunction(object):
     def plot(self, psi, xmin, xmax):
         y = np.arange(xmin, xmax, 0.01)
         f_y = self.f(y, psi)
+        from matplotlib import pyplot as plt
         plt.figure()
         plt.plot(y, f_y)
         plt.xlabel('y')

@@ -4,12 +4,11 @@
 import os
 from setuptools import setup
 
+# Version number
+version = '0.6.0'
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
-
-# Version number
-version = read('GPy/version')
 
 setup(name = 'GPy',
       version = version,
@@ -19,17 +18,34 @@ setup(name = 'GPy',
       license = "BSD 3-clause",
       keywords = "machine-learning gaussian-processes kernels",
       url = "http://sheffieldml.github.com/GPy/",
-      packages = ['GPy', 'GPy.core', 'GPy.kern', 'GPy.util', 'GPy.models_modules', 'GPy.inference', 'GPy.examples', 'GPy.likelihoods', 'GPy.testing', 'GPy.util.latent_space_visualizations', 'GPy.util.latent_space_visualizations.controllers', 'GPy.likelihoods.noise_models', 'GPy.kern.parts', 'GPy.mappings'],
+      packages = ["GPy.models",
+                  "GPy.inference.optimization",
+                  "GPy.inference.mcmc",
+                  "GPy.inference",
+                  "GPy.inference.latent_function_inference",
+                  "GPy.likelihoods", "GPy.mappings",
+                  "GPy.examples", "GPy.core.parameterization",
+                  "GPy.core", "GPy.testing",
+                  "GPy", "GPy.util", "GPy.kern",
+                  "GPy.kern._src.psi_comp", "GPy.kern._src",
+                  "GPy.plotting.matplot_dep.latent_space_visualizations.controllers",
+                  "GPy.plotting.matplot_dep.latent_space_visualizations",
+                  "GPy.plotting.matplot_dep", "GPy.plotting"],
       package_dir={'GPy': 'GPy'},
-      package_data = {'GPy': ['GPy/examples', 'gpy_config.cfg', 'util/data_resources.json', 'version']},
+      package_data = {'GPy': ['defaults.cfg', 'installation.cfg',
+                              'util/data_resources.json',
+                              'util/football_teams.json']},
+      include_package_data = True,
       py_modules = ['GPy.__init__'],
+      test_suite = 'GPy.testing',
       long_description=read('README.md'),
-      install_requires=['scipy >= 0.12','matplotlib >= 1.2', 'nose'],
-      extras_require = {
-        'docs':['Sphinx', 'ipython'],
-      },
-      classifiers=[
-      "License :: OSI Approved :: BSD License"],
-      #ext_modules =  [Extension(name = 'GPy.kern.lfmUpsilonf2py',
-      #          sources = ['GPy/kern/src/lfmUpsilonf2py.f90'])],
+      install_requires=['numpy>=1.7', 'scipy>=0.12'],
+      extras_require = {'docs':['matplotlib >=1.3','Sphinx','IPython']},
+      classifiers=['License :: OSI Approved :: BSD License',
+                   'Natural Language :: English',
+                   'Operating System :: MacOS :: MacOS X',
+                   'Operating System :: Microsoft :: Windows',
+                   'Operating System :: POSIX :: Linux',
+                   'Programming Language :: Python :: 2.7',
+                   'Topic :: Scientific/Engineering :: Artificial Intelligence']
       )

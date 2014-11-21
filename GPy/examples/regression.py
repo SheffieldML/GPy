@@ -1,22 +1,29 @@
-# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 """
 Gaussian Processes regression examples
 """
-import pylab as pb
+try:
+    import pylab as pb
+except:
+    pass
 import numpy as np
 import GPy
 
 def olympic_marathon_men(optimize=True, plot=True):
     """Run a standard Gaussian process regression on the Olympic marathon data."""
-    data = GPy.util.datasets.olympic_marathon_men()
+    try:import pods
+    except ImportError:
+        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        return
+    data = pods.datasets.olympic_marathon_men()
 
     # create simple GP Model
     m = GPy.models.GPRegression(data['X'], data['Y'])
 
     # set the lengthscale to be something sensible (defaults to 1)
-    m['rbf_lengthscale'] = 10
+    m.kern.lengthscale = 10.
 
     if optimize:
         m.optimize('bfgs', max_iters=200)
@@ -25,79 +32,51 @@ def olympic_marathon_men(optimize=True, plot=True):
 
     return m
 
-def coregionalization_toy2(optimize=True, plot=True):
+def coregionalization_toy(optimize=True, plot=True):
     """
     A simple demonstration of coregionalization on two sinusoidal functions.
     """
     #build a design matrix with a column of integers indicating the output
     X1 = np.random.rand(50, 1) * 8
     X2 = np.random.rand(30, 1) * 5
-    index = np.vstack((np.zeros_like(X1), np.ones_like(X2)))
-    X = np.hstack((np.vstack((X1, X2)), index))
 
     #build a suitable set of observed variables
     Y1 = np.sin(X1) + np.random.randn(*X1.shape) * 0.05
     Y2 = np.sin(X2) + np.random.randn(*X2.shape) * 0.05 + 2.
-    Y = np.vstack((Y1, Y2))
 
-    #build the kernel
-    k1 = GPy.kern.rbf(1) + GPy.kern.bias(1)
-    k2 = GPy.kern.coregionalize(2,1)
-    k = k1**k2
-    m = GPy.models.GPRegression(X, Y, kernel=k)
-    m.constrain_fixed('.*rbf_var', 1.)
+    m = GPy.models.GPCoregionalizedRegression(X_list=[X1,X2], Y_list=[Y1,Y2])
 
     if optimize:
         m.optimize('bfgs', max_iters=100)
 
     if plot:
-        m.plot(fixed_inputs=[(1,0)])
-        m.plot(fixed_inputs=[(1,1)], ax=pb.gca())
-
+        slices = GPy.util.multioutput.get_slices([X1,X2])
+        m.plot(fixed_inputs=[(1,0)],which_data_rows=slices[0],Y_metadata={'output_index':0})
+        m.plot(fixed_inputs=[(1,1)],which_data_rows=slices[1],Y_metadata={'output_index':1},ax=pb.gca())
     return m
-
-#FIXME: Needs recovering once likelihoods are consolidated
-#def coregionalization_toy(optimize=True, plot=True):
-#    """
-#    A simple demonstration of coregionalization on two sinusoidal functions.
-#    """
-#    X1 = np.random.rand(50, 1) * 8
-#    X2 = np.random.rand(30, 1) * 5
-#    X = np.vstack((X1, X2))
-#    Y1 = np.sin(X1) + np.random.randn(*X1.shape) * 0.05
-#    Y2 = -np.sin(X2) + np.random.randn(*X2.shape) * 0.05
-#    Y = np.vstack((Y1, Y2))
-#
-#    k1 = GPy.kern.rbf(1)
-#    m = GPy.models.GPMultioutputRegression(X_list=[X1,X2],Y_list=[Y1,Y2],kernel_list=[k1])
-#    m.constrain_fixed('.*rbf_var', 1.)
-#    m.optimize(max_iters=100)
-#
-#    fig, axes = pb.subplots(2,1)
-#    m.plot(fixed_inputs=[(1,0)],ax=axes[0])
-#    m.plot(fixed_inputs=[(1,1)],ax=axes[1])
-#    axes[0].set_title('Output 0')
-#    axes[1].set_title('Output 1')
-#    return m
 
 def coregionalization_sparse(optimize=True, plot=True):
     """
     A simple demonstration of coregionalization on two sinusoidal functions using sparse approximations.
     """
-    #fetch the data from the non sparse examples
-    m = coregionalization_toy2(optimize=False, plot=False)
-    X, Y = m.X, m.likelihood.Y
+    #build a design matrix with a column of integers indicating the output
+    X1 = np.random.rand(50, 1) * 8
+    X2 = np.random.rand(30, 1) * 5
 
-    #construct a model
-    m = GPy.models.SparseGPRegression(X,Y)
-    m.constrain_fixed('iip_\d+_1') # don't optimize the inducing input indexes
+    #build a suitable set of observed variables
+    Y1 = np.sin(X1) + np.random.randn(*X1.shape) * 0.05
+    Y2 = np.sin(X2) + np.random.randn(*X2.shape) * 0.05 + 2.
+
+    m = GPy.models.SparseGPCoregionalizedRegression(X_list=[X1,X2], Y_list=[Y1,Y2])
 
     if optimize:
-        m.optimize('bfgs', max_iters=100, messages=1)
+        m.optimize('bfgs', max_iters=100)
 
     if plot:
-        m.plot(fixed_inputs=[(1,0)])
-        m.plot(fixed_inputs=[(1,1)], ax=pb.gca())
+        slices = GPy.util.multioutput.get_slices([X1,X2])
+        m.plot(fixed_inputs=[(1,0)],which_data_rows=slices[0],Y_metadata={'output_index':0})
+        m.plot(fixed_inputs=[(1,1)],which_data_rows=slices[1],Y_metadata={'output_index':1},ax=pb.gca())
+        pb.ylim(-3,)
 
     return m
 
@@ -107,7 +86,11 @@ def epomeo_gpx(max_iters=200, optimize=True, plot=True):
     from the Mount Epomeo runs. Requires gpxpy to be installed on your system
     to load in the data.
     """
-    data = GPy.util.datasets.epomeo_gpx()
+    try:import pods
+    except ImportError:
+        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        return
+    data = pods.datasets.epomeo_gpx()
     num_data_list = []
     for Xpart in data['X']:
         num_data_list.append(Xpart.shape[0])
@@ -127,14 +110,14 @@ def epomeo_gpx(max_iters=200, optimize=True, plot=True):
     Z = np.hstack((np.linspace(t[:,0].min(), t[:, 0].max(), num_inducing)[:, None],
                    np.random.randint(0, 4, num_inducing)[:, None]))
 
-    k1 = GPy.kern.rbf(1)
-    k2 = GPy.kern.coregionalize(output_dim=5, rank=5)
+    k1 = GPy.kern.RBF(1)
+    k2 = GPy.kern.Coregionalize(output_dim=5, rank=5)
     k = k1**k2
 
     m = GPy.models.SparseGPRegression(t, Y, kernel=k, Z=Z, normalize_Y=True)
-    m.constrain_fixed('.*rbf_var', 1.)
-    m.constrain_fixed('iip')
-    m.constrain_bounded('noise_variance', 1e-3, 1e-1)
+    m.constrain_fixed('.*variance', 1.)
+    m.inducing_inputs.constrain_fixed()
+    m.Gaussian_noise.variance.constrain_bounded(1e-3, 1e-1)
     m.optimize(max_iters=max_iters,messages=True)
 
     return m
@@ -150,13 +133,17 @@ def multiple_optima(gene_number=937, resolution=80, model_restarts=10, seed=1000
     length_scales = np.linspace(0.1, 60., resolution)
     log_SNRs = np.linspace(-3., 4., resolution)
 
-    data = GPy.util.datasets.della_gatta_TRP63_gene_expression(data_set='della_gatta',gene_number=gene_number)
+    try:import pods
+    except ImportError:
+        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        return
+    data = pods.datasets.della_gatta_TRP63_gene_expression(data_set='della_gatta',gene_number=gene_number)
     # data['Y'] = data['Y'][0::2, :]
     # data['X'] = data['X'][0::2, :]
 
     data['Y'] = data['Y'] - np.mean(data['Y'])
 
-    lls = GPy.examples.regression._contour_data(data, length_scales, log_SNRs, GPy.kern.rbf)
+    lls = GPy.examples.regression._contour_data(data, length_scales, log_SNRs, GPy.kern.RBF)
     if plot:
         pb.contour(length_scales, log_SNRs, np.exp(lls), 20, cmap=pb.cm.jet)
         ax = pb.gca()
@@ -172,20 +159,20 @@ def multiple_optima(gene_number=937, resolution=80, model_restarts=10, seed=1000
     optim_point_y = np.empty(2)
     np.random.seed(seed=seed)
     for i in range(0, model_restarts):
-        # kern = GPy.kern.rbf(1, variance=np.random.exponential(1.), lengthscale=np.random.exponential(50.))
-        kern = GPy.kern.rbf(1, variance=np.random.uniform(1e-3, 1), lengthscale=np.random.uniform(5, 50))
+        # kern = GPy.kern.RBF(1, variance=np.random.exponential(1.), lengthscale=np.random.exponential(50.))
+        kern = GPy.kern.RBF(1, variance=np.random.uniform(1e-3, 1), lengthscale=np.random.uniform(5, 50))
 
         m = GPy.models.GPRegression(data['X'], data['Y'], kernel=kern)
-        m['noise_variance'] = np.random.uniform(1e-3, 1)
-        optim_point_x[0] = m['rbf_lengthscale']
-        optim_point_y[0] = np.log10(m['rbf_variance']) - np.log10(m['noise_variance']);
+        m.likelihood.variance = np.random.uniform(1e-3, 1)
+        optim_point_x[0] = m.rbf.lengthscale
+        optim_point_y[0] = np.log10(m.rbf.variance) - np.log10(m.likelihood.variance);
 
         # optimize
         if optimize:
             m.optimize('scg', xtol=1e-6, ftol=1e-6, max_iters=max_iters)
 
-        optim_point_x[1] = m['rbf_lengthscale']
-        optim_point_y[1] = np.log10(m['rbf_variance']) - np.log10(m['noise_variance']);
+        optim_point_x[1] = m.rbf.lengthscale
+        optim_point_y[1] = np.log10(m.rbf.variance) - np.log10(m.likelihood.variance);
 
         if plot:
             pb.arrow(optim_point_x[0], optim_point_y[0], optim_point_x[1] - optim_point_x[0], optim_point_y[1] - optim_point_y[0], label=str(i), head_length=1, head_width=0.5, fc='k', ec='k')
@@ -196,7 +183,7 @@ def multiple_optima(gene_number=937, resolution=80, model_restarts=10, seed=1000
         ax.set_ylim(ylim)
     return m # (models, lls)
 
-def _contour_data(data, length_scales, log_SNRs, kernel_call=GPy.kern.rbf):
+def _contour_data(data, length_scales, log_SNRs, kernel_call=GPy.kern.RBF):
     """
     Evaluate the GP objective function for a given data set for a range of
     signal to noise ratios and a range of lengthscales.
@@ -216,7 +203,7 @@ def _contour_data(data, length_scales, log_SNRs, kernel_call=GPy.kern.rbf):
         noise_var = total_var / (1. + SNR)
         signal_var = total_var - noise_var
         model.kern['.*variance'] = signal_var
-        model['noise_variance'] = noise_var
+        model.likelihood.variance = noise_var
         length_scale_lls = []
 
         for length_scale in length_scales:
@@ -230,13 +217,17 @@ def _contour_data(data, length_scales, log_SNRs, kernel_call=GPy.kern.rbf):
 
 def olympic_100m_men(optimize=True, plot=True):
     """Run a standard Gaussian process regression on the Rogers and Girolami olympics data."""
-    data = GPy.util.datasets.olympic_100m_men()
+    try:import pods
+    except ImportError:
+        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        return
+    data = pods.datasets.olympic_100m_men()
 
     # create simple GP Model
     m = GPy.models.GPRegression(data['X'], data['Y'])
 
     # set the lengthscale to be something sensible (defaults to 1)
-    m['rbf_lengthscale'] = 10
+    m.rbf.lengthscale = 10
 
     if optimize:
         m.optimize('bfgs', max_iters=200)
@@ -247,7 +238,11 @@ def olympic_100m_men(optimize=True, plot=True):
 
 def toy_rbf_1d(optimize=True, plot=True):
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
-    data = GPy.util.datasets.toy_rbf_1d()
+    try:import pods
+    except ImportError:
+        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        return
+    data = pods.datasets.toy_rbf_1d()
 
     # create simple GP Model
     m = GPy.models.GPRegression(data['X'], data['Y'])
@@ -261,7 +256,11 @@ def toy_rbf_1d(optimize=True, plot=True):
 
 def toy_rbf_1d_50(optimize=True, plot=True):
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
-    data = GPy.util.datasets.toy_rbf_1d_50()
+    try:import pods
+    except ImportError:
+        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        return
+    data = pods.datasets.toy_rbf_1d_50()
 
     # create simple GP Model
     m = GPy.models.GPRegression(data['X'], data['Y'])
@@ -278,14 +277,15 @@ def toy_poisson_rbf_1d_laplace(optimize=True, plot=True):
     optimizer='scg'
     x_len = 30
     X = np.linspace(0, 10, x_len)[:, None]
-    f_true = np.random.multivariate_normal(np.zeros(x_len), GPy.kern.rbf(1).K(X))
+    f_true = np.random.multivariate_normal(np.zeros(x_len), GPy.kern.RBF(1).K(X))
     Y = np.array([np.random.poisson(np.exp(f)) for f in f_true])[:,None]
 
-    noise_model = GPy.likelihoods.poisson()
-    likelihood = GPy.likelihoods.Laplace(Y,noise_model)
+    kern = GPy.kern.RBF(1)
+    poisson_lik = GPy.likelihoods.Poisson()
+    laplace_inf = GPy.inference.latent_function_inference.Laplace()
 
     # create simple GP Model
-    m = GPy.models.GPRegression(X, Y, likelihood=likelihood)
+    m = GPy.core.GP(X, Y, kernel=kern, likelihood=poisson_lik, inference_method=laplace_inf)
 
     if optimize:
         m.optimize(optimizer)
@@ -316,23 +316,22 @@ def toy_ARD(max_iters=1000, kernel_type='linear', num_samples=300, D=4, optimize
     Y /= Y.std()
 
     if kernel_type == 'linear':
-        kernel = GPy.kern.linear(X.shape[1], ARD=1)
+        kernel = GPy.kern.Linear(X.shape[1], ARD=1)
     elif kernel_type == 'rbf_inv':
-        kernel = GPy.kern.rbf_inv(X.shape[1], ARD=1)
+        kernel = GPy.kern.RBF_inv(X.shape[1], ARD=1)
     else:
-        kernel = GPy.kern.rbf(X.shape[1], ARD=1)
-    kernel += GPy.kern.white(X.shape[1]) + GPy.kern.bias(X.shape[1])
+        kernel = GPy.kern.RBF(X.shape[1], ARD=1)
+    kernel += GPy.kern.White(X.shape[1]) + GPy.kern.Bias(X.shape[1])
     m = GPy.models.GPRegression(X, Y, kernel)
     # len_prior = GPy.priors.inverse_gamma(1,18) # 1, 25
     # m.set_prior('.*lengthscale',len_prior)
 
     if optimize:
-        m.optimize(optimizer='scg', max_iters=max_iters, messages=1)
+        m.optimize(optimizer='scg', max_iters=max_iters)
 
     if plot:
         m.kern.plot_ARD()
 
-    print m
     return m
 
 def toy_ARD_sparse(max_iters=1000, kernel_type='linear', num_samples=300, D=4, optimize=True, plot=True):
@@ -355,36 +354,39 @@ def toy_ARD_sparse(max_iters=1000, kernel_type='linear', num_samples=300, D=4, o
     Y /= Y.std()
 
     if kernel_type == 'linear':
-        kernel = GPy.kern.linear(X.shape[1], ARD=1)
+        kernel = GPy.kern.Linear(X.shape[1], ARD=1)
     elif kernel_type == 'rbf_inv':
-        kernel = GPy.kern.rbf_inv(X.shape[1], ARD=1)
+        kernel = GPy.kern.RBF_inv(X.shape[1], ARD=1)
     else:
-        kernel = GPy.kern.rbf(X.shape[1], ARD=1)
-    kernel += GPy.kern.bias(X.shape[1])
+        kernel = GPy.kern.RBF(X.shape[1], ARD=1)
+    #kernel += GPy.kern.Bias(X.shape[1])
     X_variance = np.ones(X.shape) * 0.5
     m = GPy.models.SparseGPRegression(X, Y, kernel, X_variance=X_variance)
     # len_prior = GPy.priors.inverse_gamma(1,18) # 1, 25
     # m.set_prior('.*lengthscale',len_prior)
 
     if optimize:
-        m.optimize(optimizer='scg', max_iters=max_iters, messages=1)
+        m.optimize(optimizer='scg', max_iters=max_iters)
 
     if plot:
         m.kern.plot_ARD()
 
-    print m
     return m
 
 def robot_wireless(max_iters=100, kernel=None, optimize=True, plot=True):
     """Predict the location of a robot given wirelss signal strength readings."""
-    data = GPy.util.datasets.robot_wireless()
+    try:import pods
+    except ImportError:
+        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        return
+    data = pods.datasets.robot_wireless()
 
     # create simple GP Model
     m = GPy.models.GPRegression(data['Y'], data['X'], kernel=kernel)
 
     # optimize
     if optimize:
-        m.optimize(messages=True, max_iters=max_iters)
+        m.optimize(max_iters=max_iters)
 
     Xpredict = m.predict(data['Ytest'])[0]
     if plot:
@@ -396,13 +398,16 @@ def robot_wireless(max_iters=100, kernel=None, optimize=True, plot=True):
 
     sse = ((data['Xtest'] - Xpredict)**2).sum()
 
-    print m
     print('Sum of squares error on test data: ' + str(sse))
     return m
 
 def silhouette(max_iters=100, optimize=True, plot=True):
     """Predict the pose of a figure given a silhouette. This is a task from Agarwal and Triggs 2004 ICML paper."""
-    data = GPy.util.datasets.silhouette()
+    try:import pods
+    except ImportError:
+        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        return
+    data = pods.datasets.silhouette()
 
     # create simple GP Model
     m = GPy.models.GPRegression(data['X'], data['Y'])
@@ -414,32 +419,38 @@ def silhouette(max_iters=100, optimize=True, plot=True):
     print m
     return m
 
-def sparse_GP_regression_1D(num_samples=400, num_inducing=5, max_iters=100, optimize=True, plot=True):
+def sparse_GP_regression_1D(num_samples=400, num_inducing=5, max_iters=100, optimize=True, plot=True, checkgrad=False):
     """Run a 1D example of a sparse GP regression."""
     # sample inputs and outputs
     X = np.random.uniform(-3., 3., (num_samples, 1))
     Y = np.sin(X) + np.random.randn(num_samples, 1) * 0.05
     # construct kernel
-    rbf = GPy.kern.rbf(1)
+    rbf = GPy.kern.RBF(1)
     # create simple GP Model
     m = GPy.models.SparseGPRegression(X, Y, kernel=rbf, num_inducing=num_inducing)
-    m.checkgrad(verbose=1)
+
+    if checkgrad:
+        m.checkgrad()
 
     if optimize:
-        m.optimize('tnc', messages=1, max_iters=max_iters)
+        m.optimize('tnc', max_iters=max_iters)
 
     if plot:
         m.plot()
 
     return m
 
-def sparse_GP_regression_2D(num_samples=400, num_inducing=50, max_iters=100, optimize=True, plot=True):
+def sparse_GP_regression_2D(num_samples=400, num_inducing=50, max_iters=100, optimize=True, plot=True, nan=False):
     """Run a 2D example of a sparse GP regression."""
+    np.random.seed(1234)
     X = np.random.uniform(-3., 3., (num_samples, 2))
     Y = np.sin(X[:, 0:1]) * np.sin(X[:, 1:2]) + np.random.randn(num_samples, 1) * 0.05
+    if nan:
+        inan = np.random.binomial(1,.2,size=Y.shape)
+        Y[inan] = np.nan
 
     # construct kernel
-    rbf = GPy.kern.rbf(2)
+    rbf = GPy.kern.RBF(2)
 
     # create simple GP Model
     m = GPy.models.SparseGPRegression(X, Y, kernel=rbf, num_inducing=num_inducing)
@@ -462,7 +473,7 @@ def sparse_GP_regression_2D(num_samples=400, num_inducing=50, max_iters=100, opt
 
 def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
     """Run a 1D example of a sparse GP regression with uncertain inputs."""
-    fig, axes = pb.subplots(1, 2, figsize=(12, 5))
+    fig, axes = pb.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
 
     # sample inputs and outputs
     S = np.ones((20, 1))
@@ -471,8 +482,7 @@ def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
     # likelihood = GPy.likelihoods.Gaussian(Y)
     Z = np.random.uniform(-3., 3., (7, 1))
 
-    k = GPy.kern.rbf(1)
-
+    k = GPy.kern.RBF(1)
     # create simple GP Model - no input uncertainty on this one
     m = GPy.models.SparseGPRegression(X, Y, kernel=k, Z=Z)
 
@@ -485,7 +495,7 @@ def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
     print m
 
     # the same Model with uncertainty
-    m = GPy.models.SparseGPRegression(X, Y, kernel=k, Z=Z, X_variance=S)
+    m = GPy.models.SparseGPRegression(X, Y, kernel=GPy.kern.RBF(1), Z=Z, X_variance=S)
     if optimize:
         m.optimize('scg', messages=1, max_iters=max_iters)
     if plot:

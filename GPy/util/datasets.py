@@ -1,4 +1,6 @@
+import csv
 import os
+import copy
 import numpy as np
 import GPy
 import scipy.io
@@ -7,6 +9,10 @@ import zipfile
 import tarfile
 import datetime
 import json
+import re
+
+from config import *
+
 ipython_available=True
 try:
     import IPython
@@ -24,18 +30,27 @@ def reporthook(a,b,c):
     sys.stdout.flush()
 
 # Global variables
-data_path = os.path.join(os.path.dirname(__file__), 'datasets')
+data_path = os.path.expandvars(config.get('datasets', 'dir'))
+#data_path = os.path.join(os.path.dirname(__file__), 'datasets')
 default_seed = 10000
-overide_manual_authorize=True
+overide_manual_authorize=False
 neil_url = 'http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/dataset_mirror/'
 
 # Read data resources from json file.
 # Don't do this when ReadTheDocs is scanning as it breaks things
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True' #Checks if RTD is scanning
+
 if not (on_rtd):
     path = os.path.join(os.path.dirname(__file__), 'data_resources.json')
     json_data=open(path).read()
     data_resources = json.loads(json_data)
+
+if not (on_rtd):
+    path = os.path.join(os.path.dirname(__file__), 'football_teams.json')
+    json_data=open(path).read()
+    football_dict = json.loads(json_data)
+
+
 
 def prompt_user(prompt):
     """Ask user for agreeing to data set licenses."""
@@ -67,20 +82,32 @@ def prompt_user(prompt):
 
 def data_available(dataset_name=None):
     """Check if the data set is available on the local machine already."""
-    for file_list in data_resources[dataset_name]['files']:
-        for file in file_list:
-            if not os.path.exists(os.path.join(data_path, dataset_name, file)):
+    from itertools import izip_longest
+    dr = data_resources[dataset_name]
+    zip_urls = (dr['files'], )
+    if dr.has_key('save_names'): zip_urls += (dr['save_names'], )
+    else: zip_urls += ([],)
+
+    for file_list, save_list in izip_longest(*zip_urls, fillvalue=[]):
+        for f, s in izip_longest(file_list, save_list, fillvalue=None):
+            if s is not None: f=s # If there is a save_name given, use that one
+            if not os.path.exists(os.path.join(data_path, dataset_name, f)):
                 return False
     return True
 
-def download_url(url, store_directory, save_name = None, messages = True, suffix=''):
+def download_url(url, store_directory, save_name=None, messages=True, suffix=''):
     """Download a file from a url and save it to disk."""
     i = url.rfind('/')
     file = url[i+1:]
     print file
     dir_name = os.path.join(data_path, store_directory)
-    save_name = os.path.join(dir_name, file)
-    print "Downloading ", url, "->", os.path.join(store_directory, file)
+
+    if save_name is None: save_name = os.path.join(dir_name, file)
+    else: save_name = os.path.join(dir_name, save_name)
+
+    if suffix is None: suffix=''
+
+    print "Downloading ", url, "->", save_name
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
     try:
@@ -95,7 +122,11 @@ def download_url(url, store_directory, save_name = None, messages = True, suffix
             raise ValueError('Tried url ' + url + suffix + ' and received server error ' + str(response.code))
     with open(save_name, 'wb') as f:
         meta = response.info()
-        file_size = int(meta.getheaders("Content-Length")[0])
+        content_length_str = meta.getheaders("Content-Length")
+        if content_length_str:
+            file_size = int(content_length_str[0])
+        else:
+            file_size = None
         status = ""
         file_size_dl = 0
         block_sz = 8192
@@ -107,9 +138,15 @@ def download_url(url, store_directory, save_name = None, messages = True, suffix
             file_size_dl += len(buff)
             f.write(buff)
             sys.stdout.write(" "*(len(status)) + "\r")
-            status = r"[{perc: <{ll}}] {dl:7.3f}/{full:.3f}MB".format(dl=file_size_dl/(1.*1e6), 
-                                                                       full=file_size/(1.*1e6), ll=line_length, 
+            if file_size:
+                status = r"[{perc: <{ll}}] {dl:7.3f}/{full:.3f}MB".format(dl=file_size_dl/(1048576.),
+                                                                       full=file_size/(1048576.), ll=line_length,
                                                                        perc="="*int(line_length*float(file_size_dl)/file_size))
+            else:
+                status = r"[{perc: <{ll}}] {dl:7.3f}MB".format(dl=file_size_dl/(1048576.),
+                                                                       ll=line_length,
+                                                                       perc="."*int(line_length*float(file_size_dl/(10*1048576.))))
+
             sys.stdout.write(status)
             sys.stdout.flush()
         sys.stdout.write(" "*(len(status)) + "\r")
@@ -153,19 +190,24 @@ def authorize_download(dataset_name=None):
 
 def download_data(dataset_name=None):
     """Check with the user that the are happy with terms and conditions for the data set, then download it."""
+    import itertools
 
     dr = data_resources[dataset_name]
     if not authorize_download(dataset_name):
         raise Exception("Permission to download data set denied.")
 
-    if dr.has_key('suffices'):
-        for url, files, suffices in zip(dr['urls'], dr['files'], dr['suffices']):
-            for file, suffix in zip(files, suffices):
-                download_url(os.path.join(url,file), dataset_name, dataset_name, suffix=suffix)
-    else:
-        for url, files in zip(dr['urls'], dr['files']):
-            for file in files:
-                download_url(os.path.join(url,file), dataset_name, dataset_name)
+    zip_urls = (dr['urls'], dr['files'])
+
+    if dr.has_key('save_names'): zip_urls += (dr['save_names'], )
+    else: zip_urls += ([],)
+
+    if dr.has_key('suffices'): zip_urls += (dr['suffices'], )
+    else: zip_urls += ([],)
+
+    for url, files, save_names, suffices in itertools.izip_longest(*zip_urls, fillvalue=[]):
+        for f, save_name, suffix in itertools.izip_longest(files, save_names, suffices, fillvalue=None):
+            download_url(os.path.join(url,f), dataset_name, save_name, suffix=suffix)
+
     return True
 
 def data_details_return(data, data_set):
@@ -214,7 +256,7 @@ def cmu_urls_files(subj_motions, messages = True):
         if not os.path.exists(cur_skel_file):
             # Current skel file doesn't exist.
             if not os.path.isdir(skel_dir):
-                os.mkdir(skel_dir)
+                os.makedirs(skel_dir)
             # Add skel file to list.
             url_required = True
             file_download.append(subjects[i] + '.asf')
@@ -295,6 +337,202 @@ def della_gatta_TRP63_gene_expression(data_set='della_gatta', gene_number=None):
     return data_details_return({'X': X, 'Y': Y, 'gene_number' : gene_number}, data_set)
 
 
+
+def football_data(season='1314', data_set='football_data'):
+    """Football data from English games since 1993. This downloads data from football-data.co.uk for the given season. """
+    def league2num(string):
+        league_dict = {'E0':0, 'E1':1, 'E2': 2, 'E3': 3, 'EC':4}
+        return league_dict[string]
+
+    def football2num(string):
+        if football_dict.has_key(string):
+            return football_dict[string]
+        else:
+            football_dict[string] = len(football_dict)+1
+            return len(football_dict)+1
+
+    data_set_season = data_set + '_' + season
+    data_resources[data_set_season] = copy.deepcopy(data_resources[data_set])
+    data_resources[data_set_season]['urls'][0]+=season + '/'
+    start_year = int(season[0:2])
+    end_year = int(season[2:4])
+    files = ['E0.csv', 'E1.csv', 'E2.csv', 'E3.csv']
+    if start_year>4 and start_year < 93:
+        files += ['EC.csv']
+    data_resources[data_set_season]['files'] = [files]
+    if not data_available(data_set_season):
+        download_data(data_set_season)
+    import pylab as pb
+    for file in reversed(files):
+        filename = os.path.join(data_path, data_set_season, file)
+        # rewrite files removing blank rows.
+        writename = os.path.join(data_path, data_set_season, 'temp.csv')
+        input = open(filename, 'rb')
+        output = open(writename, 'wb')
+        writer = csv.writer(output)
+        for row in csv.reader(input):
+            if any(field.strip() for field in row):
+                writer.writerow(row)
+        input.close()
+        output.close()
+        table = np.loadtxt(writename,skiprows=1, usecols=(0, 1, 2, 3, 4, 5), converters = {0: league2num, 1: pb.datestr2num, 2:football2num, 3:football2num}, delimiter=',')
+        X = table[:, :4]
+        Y = table[:, 4:]
+    return data_details_return({'X': X, 'Y': Y}, data_set)
+
+def sod1_mouse(data_set='sod1_mouse'):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    dir_path = os.path.join(data_path, data_set)
+    filename = os.path.join(dir_path, 'sod1_C57_129_exprs.csv')
+    Y = read_csv(filename, header=0, index_col=0)
+    num_repeats=4
+    num_time=4
+    num_cond=4
+    X = 1
+    return data_details_return({'X': X, 'Y': Y}, data_set)
+
+def spellman_yeast(data_set='spellman_yeast'):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    dir_path = os.path.join(data_path, data_set)
+    filename = os.path.join(dir_path, 'combined.txt')
+    Y = read_csv(filename, header=0, index_col=0, sep='\t')
+    return data_details_return({'Y': Y}, data_set)
+
+def spellman_yeast_cdc15(data_set='spellman_yeast'):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    dir_path = os.path.join(data_path, data_set)
+    filename = os.path.join(dir_path, 'combined.txt')
+    Y = read_csv(filename, header=0, index_col=0, sep='\t')
+    t = np.asarray([10, 30, 50, 70, 80, 90, 100, 110, 120, 130, 140, 150, 170, 180, 190, 200, 210, 220, 230, 240, 250, 270, 290])
+    times = ['cdc15_'+str(time) for time in t]
+    Y = Y[times].T
+    t = t[:, None]
+    return data_details_return({'Y' : Y, 't': t, 'info': 'Time series of synchronized yeast cells from the CDC-15 experiment of Spellman et al (1998).'}, data_set)
+
+def lee_yeast_ChIP(data_set='lee_yeast_ChIP'):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    import zipfile
+    dir_path = os.path.join(data_path, data_set)
+    filename = os.path.join(dir_path, 'binding_by_gene.tsv')
+    S = read_csv(filename, header=1, index_col=0, sep='\t')
+    transcription_factors = [col for col in S.columns if col[:7] != 'Unnamed']
+    annotations = S[['Unnamed: 1', 'Unnamed: 2', 'Unnamed: 3']]
+    S = S[transcription_factors]
+    return data_details_return({'annotations' : annotations, 'Y' : S, 'transcription_factors': transcription_factors}, data_set)
+
+
+
+def fruitfly_tomancak(data_set='fruitfly_tomancak', gene_number=None):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    dir_path = os.path.join(data_path, data_set)
+    filename = os.path.join(dir_path, 'tomancak_exprs.csv')
+    Y = read_csv(filename, header=0, index_col=0).T
+    num_repeats = 3
+    num_time = 12
+    xt = np.linspace(0, num_time-1, num_time)
+    xr = np.linspace(0, num_repeats-1, num_repeats)
+    xtime, xrepeat = np.meshgrid(xt, xr)
+    X = np.vstack((xtime.flatten(), xrepeat.flatten())).T
+    return data_details_return({'X': X, 'Y': Y, 'gene_number' : gene_number}, data_set)
+
+def drosophila_protein(data_set='drosophila_protein'):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    dir_path = os.path.join(data_path, data_set)
+    filename = os.path.join(dir_path, 'becker_et_al.csv')
+    Y = read_csv(filename, header=0)
+    return data_details_return({'Y': Y}, data_set)
+
+def drosophila_knirps(data_set='drosophila_protein'):
+    if not data_available(data_set):
+        download_data(data_set)
+    from pandas import read_csv
+    dir_path = os.path.join(data_path, data_set)
+    filename = os.path.join(dir_path, 'becker_et_al.csv')
+    # in the csv file we have facts_kni and ext_kni. We treat facts_kni as protein and ext_kni as mRNA
+    df = read_csv(filename, header=0)
+    t = df['t'][:,None]
+    x = df['x'][:,None]
+
+    g = df['expression1'][:,None]
+    p = df['expression2'][:,None]
+
+    leng = x.shape[0]
+
+    T = np.vstack([t,t])
+    S = np.vstack([x,x])
+    inx = np.zeros(leng*2)[:,None]
+
+    inx[leng*2/2:leng*2]=1
+    X = np.hstack([T,S,inx])
+    Y = np.vstack([g,p])
+    return data_details_return({'Y': Y, 'X': X}, data_set)
+
+# This will be for downloading google trends data.
+def google_trends(query_terms=['big data', 'machine learning', 'data science'], data_set='google_trends', refresh_data=False):
+    """Data downloaded from Google trends for given query terms. Warning, if you use this function multiple times in a row you get blocked due to terms of service violations. The function will cache the result of your query, if you wish to refresh an old query set refresh_data to True. The function is inspired by this notebook: http://nbviewer.ipython.org/github/sahuguet/notebooks/blob/master/GoogleTrends%20meet%20Notebook.ipynb"""
+    query_terms.sort()
+    import pandas
+
+    # Create directory name for data
+    dir_path = os.path.join(data_path,'google_trends')
+    if not os.path.isdir(dir_path):
+        os.makedirs(dir_path)
+    dir_name = '-'.join(query_terms)
+    dir_name = dir_name.replace(' ', '_')
+    dir_path = os.path.join(dir_path,dir_name)
+    file = 'data.csv'
+    file_name = os.path.join(dir_path,file)
+    if not os.path.exists(file_name) or refresh_data:
+        print "Accessing Google trends to acquire the data. Note that repeated accesses will result in a block due to a google terms of service violation. Failure at this point may be due to such blocks."
+        # quote the query terms.
+        quoted_terms = []
+        for term in query_terms:
+            quoted_terms.append(urllib2.quote(term))
+        print "Query terms: ", ', '.join(query_terms)
+
+        print "Fetching query:"
+        query = 'http://www.google.com/trends/fetchComponent?q=%s&cid=TIMESERIES_GRAPH_0&export=3' % ",".join(quoted_terms)
+
+        data = urllib2.urlopen(query).read()
+        print "Done."
+        # In the notebook they did some data cleaning: remove Javascript header+footer, and translate new Date(....,..,..) into YYYY-MM-DD.
+        header = """// Data table response\ngoogle.visualization.Query.setResponse("""
+        data = data[len(header):-2]
+        data = re.sub('new Date\((\d+),(\d+),(\d+)\)', (lambda m: '"%s-%02d-%02d"' % (m.group(1).strip(), 1+int(m.group(2)), int(m.group(3)))), data)
+        timeseries = json.loads(data)
+        columns = [k['label'] for k in timeseries['table']['cols']]
+        rows = map(lambda x: [k['v'] for k in x['c']], timeseries['table']['rows'])
+        df = pandas.DataFrame(rows, columns=columns)
+        if not os.path.isdir(dir_path):
+            os.makedirs(dir_path)
+
+        df.to_csv(file_name)
+    else:
+        print "Reading cached data for google trends. To refresh the cache set 'refresh_data=True' when calling this function."
+        print "Query terms: ", ', '.join(query_terms)
+
+        df = pandas.read_csv(file_name, parse_dates=[0])
+
+    columns = df.columns
+    terms = len(query_terms)
+    import datetime
+    X = np.asarray([(row, i) for i in range(terms) for row in df.index])
+    Y = np.asarray([[df.ix[row][query_terms[i]]] for i in range(terms) for row in df.index ])
+    output_info = columns[1:]
+
+    return data_details_return({'data frame' : df, 'X': X, 'Y': Y, 'query_terms': output_info, 'info': "Data downloaded from google trends with query terms: " + ', '.join(output_info) + '.'}, data_set)
 
 # The data sets
 def oil(data_set='three_phase_oil_flow'):
@@ -415,6 +653,18 @@ def silhouette(data_set='ankur_pose_data'):
     Ytest = mat_data['Z_test']
     return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest}, data_set)
 
+def decampos_digits(data_set='decampos_characters', which_digits=[0,1,2,3,4,5,6,7,8,9]):
+    if not data_available(data_set):
+        download_data(data_set)
+    path = os.path.join(data_path, data_set)
+    digits = np.load(os.path.join(path, 'digits.npy'))
+    digits = digits[which_digits,:,:,:]
+    num_classes, num_samples, height, width = digits.shape
+    Y = digits.reshape((digits.shape[0]*digits.shape[1],digits.shape[2]*digits.shape[3]))
+    lbls = np.array([[l]*num_samples for l in which_digits]).reshape(Y.shape[0], 1)
+    str_lbls = np.array([[str(l)]*num_samples for l in which_digits])
+    return data_details_return({'Y': Y, 'lbls': lbls, 'str_lbls' : str_lbls, 'info': 'Digits data set from the de Campos characters data'}, data_set)
+
 def ripley_synth(data_set='ripley_prnn_data'):
     if not data_available(data_set):
         download_data(data_set)
@@ -424,7 +674,52 @@ def ripley_synth(data_set='ripley_prnn_data'):
     test = np.genfromtxt(os.path.join(data_path, data_set, 'synth.te'), skip_header=1)
     Xtest = test[:, 0:2]
     ytest = test[:, 2:3]
-    return data_details_return({'X': X, 'y': y, 'Xtest': Xtest, 'ytest': ytest, 'info': 'Synthetic data generated by Ripley for a two class classification problem.'}, data_set)
+    return data_details_return({'X': X, 'Y': y, 'Xtest': Xtest, 'Ytest': ytest, 'info': 'Synthetic data generated by Ripley for a two class classification problem.'}, data_set)
+
+def global_average_temperature(data_set='global_temperature', num_train=1000, refresh_data=False):
+    path = os.path.join(data_path, data_set)
+    if data_available(data_set) and not refresh_data:
+        print 'Using cached version of the data set, to use latest version set refresh_data to True'
+    else:
+        download_data(data_set)
+    data = np.loadtxt(os.path.join(data_path, data_set, 'GLBTS.long.data'))
+    print 'Most recent data observation from month ', data[-1, 1], ' in year ', data[-1, 0]
+    allX = data[data[:, 3]!=-99.99, 2:3]
+    allY = data[data[:, 3]!=-99.99, 3:4]
+    X = allX[:num_train, 0:1]
+    Xtest = allX[num_train:, 0:1]
+    Y = allY[:num_train, 0:1]
+    Ytest = allY[num_train:, 0:1]
+    return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'info': "Mauna Loa data with " + str(num_train) + " values used as training points."}, data_set)
+
+def mauna_loa(data_set='mauna_loa', num_train=545, refresh_data=False):
+    path = os.path.join(data_path, data_set)
+    if data_available(data_set) and not refresh_data:
+        print 'Using cached version of the data set, to use latest version set refresh_data to True'
+    else:
+        download_data(data_set)
+    data = np.loadtxt(os.path.join(data_path, data_set, 'co2_mm_mlo.txt'))
+    print 'Most recent data observation from month ', data[-1, 1], ' in year ', data[-1, 0]
+    allX = data[data[:, 3]!=-99.99, 2:3]
+    allY = data[data[:, 3]!=-99.99, 3:4]
+    X = allX[:num_train, 0:1]
+    Xtest = allX[num_train:, 0:1]
+    Y = allY[:num_train, 0:1]
+    Ytest = allY[num_train:, 0:1]
+    return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'info': "Mauna Loa data with " + str(num_train) + " values used as training points."}, data_set)
+
+
+def boxjenkins_airline(data_set='boxjenkins_airline', num_train=96):
+    path = os.path.join(data_path, data_set)
+    if not data_available(data_set):
+        download_data(data_set)
+    data = np.loadtxt(os.path.join(data_path, data_set, 'boxjenkins_airline.csv'), delimiter=',')
+    Y = data[:num_train, 1:2]
+    X = data[:num_train, 0:1]
+    Xtest = data[num_train:, 0:1]
+    Ytest = data[num_train:, 1:2]
+    return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'info': "Montly airline passenger data from Box & Jenkins 1976."}, data_set)
+
 
 def osu_run1(data_set='osu_run1', sample_every=4):
     path = os.path.join(data_path, data_set)
@@ -438,7 +733,7 @@ def osu_run1(data_set='osu_run1', sample_every=4):
     return data_details_return({'Y': Y, 'connect' : connect}, data_set)
 
 def swiss_roll_generated(num_samples=1000, sigma=0.0):
-    with open(os.path.join(data_path, 'swiss_roll.pickle')) as f:
+    with open(os.path.join(os.path.dirname(__file__), 'datasets', 'swiss_roll.pickle')) as f:
         data = pickle.load(f)
     Na = data['Y'].shape[0]
     perm = np.random.permutation(np.r_[:Na])[:num_samples]
@@ -452,23 +747,61 @@ def swiss_roll_generated(num_samples=1000, sigma=0.0):
     return {'Y':Y, 't':t, 'colors':c}
 
 def hapmap3(data_set='hapmap3'):
+    """
+    The HapMap phase three SNP dataset - 1184 samples out of 11 populations.
+
+    SNP_matrix (A) encoding [see Paschou et all. 2007 (PCA-Correlated SNPs...)]:
+    Let (B1,B2) be the alphabetically sorted bases, which occur in the j-th SNP, then
+
+          /  1, iff SNPij==(B1,B1)
+    Aij = |  0, iff SNPij==(B1,B2)
+          \ -1, iff SNPij==(B2,B2)
+
+    The SNP data and the meta information (such as iid, sex and phenotype) are
+    stored in the dataframe datadf, index is the Individual ID,
+    with following columns for metainfo:
+
+        * family_id   -> Family ID
+        * paternal_id -> Paternal ID
+        * maternal_id -> Maternal ID
+        * sex         -> Sex (1=male; 2=female; other=unknown)
+        * phenotype   -> Phenotype (-9, or 0 for unknown)
+        * population  -> Population string (e.g. 'ASW' - 'YRI')
+        * rest are SNP rs (ids)
+
+    More information is given in infodf:
+
+        * Chromosome:
+            - autosomal chromosemes                -> 1-22
+            - X    X chromosome                    -> 23
+            - Y    Y chromosome                    -> 24
+            - XY   Pseudo-autosomal region of X    -> 25
+            - MT   Mitochondrial                   -> 26
+        * Relative Positon (to Chromosome) [base pairs]
+    """
     try:
         from pandas import read_pickle, DataFrame
         from sys import stdout
         import bz2
     except ImportError as i:
         raise i, "Need pandas for hapmap dataset, make sure to install pandas (http://pandas.pydata.org/) before loading the hapmap dataset"
-    if not data_available(data_set):
-        download_data(data_set)
-    dirpath = os.path.join(data_path,'hapmap3')
+
+    dir_path = os.path.join(data_path,'hapmap3')
     hapmap_file_name = 'hapmap3_r2_b36_fwd.consensus.qc.poly'
-    preprocessed_data_paths = [os.path.join(dirpath,hapmap_file_name + file_name) for file_name in \
+    unpacked_files = [os.path.join(dir_path, hapmap_file_name+ending) for ending in ['.ped', '.map']]
+    unpacked_files_exist = reduce(lambda a, b:a and b, map(os.path.exists, unpacked_files))
+
+    if not unpacked_files_exist and not data_available(data_set):
+        download_data(data_set)
+
+    preprocessed_data_paths = [os.path.join(dir_path,hapmap_file_name + file_name) for file_name in \
                                ['.snps.pickle',
                                 '.info.pickle',
                                 '.nan.pickle']]
+
     if not reduce(lambda a,b: a and b, map(os.path.exists, preprocessed_data_paths)):
-        if not overide_manual_authorize and prompt_user("Preprocessing requires 17GB "
-                            "of memory and can take a long time, continue? [Y/n]\n"):
+        if not overide_manual_authorize and not prompt_user("Preprocessing requires ~25GB "
+                            "of memory and can take a (very) long time, continue? [Y/n]"):
             print "Preprocessing required for further usage."
             return
         status = "Preprocessing data, please be patient..."
@@ -479,8 +812,7 @@ def hapmap3(data_set='hapmap3'):
                                                                perc="="*int(20.*progress/100.))
             stdout.write(status); stdout.flush()
             return status
-        unpacked_files = [os.path.join(dirpath, hapmap_file_name+ending) for ending in ['.ped', '.map']]
-        if not reduce(lambda a,b: a and b, map(os.path.exists, unpacked_files)):
+        if not unpacked_files_exist:
             status=write_status('unpacking...', 0, '')
             curr = 0
             for newfilepath in unpacked_files:
@@ -494,17 +826,18 @@ def hapmap3(data_set='hapmap3'):
                         for data in iter(lambda : f.read(buffsize), b''):
                             new_file.write(decomp.decompress(data))
                             file_processed += len(data)
-                            write_status('unpacking...', curr+12.*file_processed/(file_size), status)
+                            status=write_status('unpacking...', curr+12.*file_processed/(file_size), status)
                 curr += 12
                 status=write_status('unpacking...', curr, status)
+                os.remove(filepath)
         status=write_status('reading .ped...', 25, status)
-        # Preprocess data:    
-        snpstrnp = np.loadtxt('hapmap3_r2_b36_fwd.consensus.qc.poly.ped', dtype=str)
+        # Preprocess data:
+        snpstrnp = np.loadtxt(unpacked_files[0], dtype=str)
         status=write_status('reading .map...', 33, status)
-        mapnp = np.loadtxt('hapmap3_r2_b36_fwd.consensus.qc.poly.map', dtype=str)
+        mapnp = np.loadtxt(unpacked_files[1], dtype=str)
         status=write_status('reading relationships.txt...', 42, status)
         # and metainfo:
-        infodf = DataFrame.from_csv('./relationships_w_pops_121708.txt', header=0, sep='\t')
+        infodf = DataFrame.from_csv(os.path.join(dir_path,'./relationships_w_pops_121708.txt'), header=0, sep='\t')
         infodf.set_index('IID', inplace=1)
         status=write_status('filtering nan...', 45, status)
         snpstr = snpstrnp[:,6:].astype('S1').reshape(snpstrnp.shape[0], -1, 2)
@@ -519,8 +852,8 @@ def hapmap3(data_set='hapmap3'):
         snps = (snps*np.array([1,-1])[None,None,:])
         status=write_status('encoding snps...', 78, status)
         snps = snps.sum(-1)
-        status=write_status('encoding snps', 81, status)
-        snps = snps.astype('S1')
+        status=write_status('encoding snps...', 81, status)
+        snps = snps.astype('i8')
         status=write_status('marking nan values...', 88, status)
         # put in nan values (masked as -128):
         snps[inan] = -128
@@ -534,7 +867,8 @@ def hapmap3(data_set='hapmap3'):
         # put everything together:
         status=write_status('setting up snps...', 96, status)
         snpsdf = DataFrame(index=metadf.index, data=snps, columns=mapnp[:,1])
-        snpsdf.to_pickle(preprocessed_data_paths[0])
+        with open(preprocessed_data_paths[0], 'wb') as f:
+            pickle.dump(f, snpsdf, protocoll=-1)
         status=write_status('setting up snps...', 98, status)
         inandf = DataFrame(index=metadf.index, data=inan, columns=mapnp[:,1])
         inandf.to_pickle(preprocessed_data_paths[2])
@@ -562,7 +896,159 @@ def hapmap3(data_set='hapmap3'):
                   inandf=inandf,
                   populations=populations)
     return hapmap
-    
+
+def singlecell(data_set='singlecell'):
+    if not data_available(data_set):
+        download_data(data_set)
+
+    from pandas import read_csv
+    dir_path = os.path.join(data_path, data_set)
+    filename = os.path.join(dir_path, 'singlecell.csv')
+    Y = read_csv(filename, header=0, index_col=0)
+    genes = Y.columns
+    labels = Y.index
+    # data = np.loadtxt(os.path.join(dir_path, 'singlecell.csv'), delimiter=",", dtype=str)
+    return data_details_return({'Y': Y, 'info' : "qPCR singlecell experiment in Mouse, measuring 48 gene expressions in 1-64 cell states. The labels have been created as in Guo et al. [2010]",
+                                'genes': genes, 'labels':labels,
+                                }, data_set)
+
+def singlecell_rna_seq_islam(dataset='singlecell_islam'):
+    if not data_available(dataset):
+        download_data(dataset)
+
+    from pandas import read_csv, DataFrame, concat
+    dir_path = os.path.join(data_path, dataset)
+    filename = os.path.join(dir_path, 'GSE29087_L139_expression_tab.txt.gz')
+    data = read_csv(filename, sep='\t', skiprows=6, compression='gzip', header=None)
+    header1 = read_csv(filename, sep='\t', header=None, skiprows=5, nrows=1, compression='gzip')
+    header2 = read_csv(filename, sep='\t', header=None, skiprows=3, nrows=1, compression='gzip')
+    data.columns = np.concatenate((header1.ix[0, :], header2.ix[0, 7:]))
+    Y = data.set_index("Feature").ix[8:, 6:-4].T.astype(float)
+
+    # read the info .soft
+    filename = os.path.join(dir_path, 'GSE29087_family.soft.gz')
+    info = read_csv(filename, sep='\t', skiprows=0, compression='gzip', header=None)
+    # split at ' = '
+    info = DataFrame(info.ix[:,0].str.split(' = ').tolist())
+    # only take samples:
+    info = info[info[0].str.contains("!Sample")]
+    info[0] = info[0].apply(lambda row: row[len("!Sample_"):])
+
+    groups = info.groupby(0).groups
+    # remove 'GGG' from barcodes
+    barcode = info[1][groups['barcode']].apply(lambda row: row[:-3])
+
+    title = info[1][groups['title']]
+    title.index = barcode
+    title.name = 'title'
+    geo_accession = info[1][groups['geo_accession']]
+    geo_accession.index = barcode
+    geo_accession.name = 'geo_accession'
+    case_id = info[1][groups['source_name_ch1']]
+    case_id.index = barcode
+    case_id.name = 'source_name_ch1'
+
+    info = concat([title, geo_accession, case_id], axis=1)
+    labels = info.join(Y).source_name_ch1[:-4]
+    labels[labels=='Embryonic stem cell'] = "ES"
+    labels[labels=='Embryonic fibroblast'] = "MEF"
+
+    return data_details_return({'Y': Y,
+                                'info': '92 single cells (48 mouse ES cells, 44 mouse embryonic fibroblasts and 4 negative controls) were analyzed by single-cell tagged reverse transcription (STRT)',
+                                'genes': Y.columns,
+                                'labels': labels,
+                                'datadf': data,
+                                'infodf': info}, dataset)
+
+def singlecell_rna_seq_deng(dataset='singlecell_deng'):
+    if not data_available(dataset):
+        download_data(dataset)
+
+    from pandas import read_csv, isnull
+    dir_path = os.path.join(data_path, dataset)
+
+    # read the info .soft
+    filename = os.path.join(dir_path, 'GSE45719_series_matrix.txt.gz')
+    info = read_csv(filename, sep='\t', skiprows=0, compression='gzip', header=None, nrows=29, index_col=0)
+    summary = info.loc['!Series_summary'][1]
+    design = info.loc['!Series_overall_design']
+
+    # only take samples:
+    sample_info = read_csv(filename, sep='\t', skiprows=30, compression='gzip', header=0, index_col=0).T
+    sample_info.columns = sample_info.columns.to_series().apply(lambda row: row[len("!Sample_"):])
+    sample_info.columns.name = sample_info.columns.name[len("!Sample_"):]
+    sample_info = sample_info[['geo_accession', 'characteristics_ch1',  'description']]
+    sample_info = sample_info.iloc[:, np.r_[0:4, 5:sample_info.shape[1]]]
+    c = sample_info.columns.to_series()
+    c[1:4] = ['strain', 'cross', 'developmental_stage']
+    sample_info.columns = c
+
+    # get the labels right:
+    rep = re.compile('\(.*\)')
+    def filter_dev_stage(row):
+        if isnull(row):
+            row = "2-cell stage embryo"
+        if row.startswith("developmental stage: "):
+            row = row[len("developmental stage: "):]
+        if row == 'adult':
+            row += " liver"
+        row = row.replace(' stage ', ' ')
+        row = rep.sub(' ', row)
+        row = row.strip(' ')
+        return row
+    labels = sample_info.developmental_stage.apply(filter_dev_stage)
+
+    # Extract the tar file
+    filename = os.path.join(dir_path, 'GSE45719_Raw.tar')
+    with tarfile.open(filename, 'r') as files:
+        print "Extracting Archive {}...".format(files.name)
+        data = None
+        gene_info = None
+        message = ''
+        members = files.getmembers()
+        overall = len(members)
+        for i, file_info in enumerate(members):
+            f = files.extractfile(file_info)
+            inner = read_csv(f, sep='\t', header=0, compression='gzip', index_col=0)
+            print ' '*(len(message)+1) + '\r',
+            message = "{: >7.2%}: Extracting: {}".format(float(i+1)/overall, file_info.name[:20]+"...txt.gz")
+            print message,
+            if data is None:
+                data = inner.RPKM.to_frame()
+                data.columns = [file_info.name[:-18]]
+                gene_info = inner.Refseq_IDs.to_frame()
+                gene_info.columns = [file_info.name[:-18]]
+            else:
+                data[file_info.name[:-18]] = inner.RPKM
+                gene_info[file_info.name[:-18]] = inner.Refseq_IDs
+
+    # Strip GSM number off data index
+    rep = re.compile('GSM\d+_')
+    data.columns = data.columns.to_series().apply(lambda row: row[rep.match(row).end():])
+    data = data.T
+
+    # make sure the same index gets used
+    sample_info.index = data.index
+
+    # get the labels from the description
+    #rep = re.compile('fibroblast|\d+-cell|embryo|liver|early blastocyst|mid blastocyst|late blastocyst|blastomere|zygote', re.IGNORECASE)
+
+    sys.stdout.write(' '*len(message) + '\r')
+    sys.stdout.flush()
+    print
+    print "Read Archive {}".format(files.name)
+
+    return data_details_return({'Y': data,
+                                'series_info': info,
+                                'sample_info': sample_info,
+                                'gene_info': gene_info,
+                                'summary': summary,
+                                'design': design,
+                                'genes': data.columns,
+                                'labels': labels,
+                                }, dataset)
+
+
 def swiss_roll_1000():
     return swiss_roll(num_samples=1000)
 
@@ -604,8 +1090,8 @@ def toy_rbf_1d(seed=default_seed, num_samples=500):
     num_in = 1
     X = np.random.uniform(low= -1.0, high=1.0, size=(num_samples, num_in))
     X.sort(axis=0)
-    rbf = GPy.kern.rbf(num_in, variance=1., lengthscale=np.array((0.25,)))
-    white = GPy.kern.white(num_in, variance=1e-2)
+    rbf = GPy.kern.RBF(num_in, variance=1., lengthscale=np.array((0.25,)))
+    white = GPy.kern.White(num_in, variance=1e-2)
     kernel = rbf + white
     K = kernel.K(X)
     y = np.reshape(np.random.multivariate_normal(np.zeros(num_samples), K), (num_samples, 1))
@@ -629,6 +1115,21 @@ def toy_linear_1d_classification(seed=default_seed):
     X = (np.r_[x1, x2])[:, None]
     return {'X': X, 'Y':  sample_class(2.*X), 'F': 2.*X, 'seed' : seed}
 
+def olivetti_glasses(data_set='olivetti_glasses', num_training=200, seed=default_seed):
+    path = os.path.join(data_path, data_set)
+    if not data_available(data_set):
+        download_data(data_set)
+    y = np.load(os.path.join(path, 'has_glasses.np'))
+    y = np.where(y=='y',1,0).reshape(-1,1)
+    faces = scipy.io.loadmat(os.path.join(path, 'olivettifaces.mat'))['faces'].T
+    np.random.seed(seed=seed)
+    index = np.random.permutation(faces.shape[0])
+    X = faces[index[:num_training],:]
+    Xtest = faces[index[num_training:],:]
+    Y = y[index[:num_training],:]
+    Ytest = y[index[num_training:]]
+    return data_details_return({'X': X, 'Y': Y, 'Xtest': Xtest, 'Ytest': Ytest, 'seed' : seed, 'info': "ORL Faces with labels identifiying who is wearing glasses and who isn't. Data is randomly partitioned according to given seed. Presence or absence of glasses was labelled by James Hensman."}, 'olivetti_faces')
+
 def olivetti_faces(data_set='olivetti_faces'):
     path = os.path.join(data_path, data_set)
     if not data_available(data_set):
@@ -641,7 +1142,8 @@ def olivetti_faces(data_set='olivetti_faces'):
     for subject in range(40):
         for image in range(10):
             image_path = os.path.join(path, 'orl_faces', 's'+str(subject+1), str(image+1) + '.pgm')
-            Y.append(GPy.util.netpbmfile.imread(image_path).flatten())
+            from GPy.util import netpbmfile
+            Y.append(netpbmfile.imread(image_path).flatten())
             lbls.append(subject)
     Y = np.asarray(Y)
     lbls = np.asarray(lbls)[:, None]
@@ -842,6 +1344,30 @@ def creep_data(data_set='creep_rupture'):
     features.extend(range(2, 31))
     X = all_data[:, features].copy()
     return data_details_return({'X': X, 'y': y}, data_set)
+
+def cifar10_patches(data_set='cifar-10'):
+    """The Candian Institute for Advanced Research 10 image data set. Code for loading in this data is taken from this Boris Babenko's blog post, original code available here: http://bbabenko.tumblr.com/post/86756017649/learning-low-level-vision-feautres-in-10-lines-of-code"""
+    dir_path = os.path.join(data_path, data_set)
+    filename = os.path.join(dir_path, 'cifar-10-python.tar.gz')
+    if not data_available(data_set):
+        download_data(data_set)
+        import tarfile
+        # This code is from Boris Babenko's blog post.
+        # http://bbabenko.tumblr.com/post/86756017649/learning-low-level-vision-feautres-in-10-lines-of-code
+        tfile = tarfile.open(filename, 'r:gz')
+        tfile.extractall(dir_path)
+
+    with open(os.path.join(dir_path, 'cifar-10-batches-py','data_batch_1'),'rb') as f:
+        data = pickle.load(f)
+
+    images = data['data'].reshape((-1,3,32,32)).astype('float32')/255
+    images = np.rollaxis(images, 1, 4)
+    patches = np.zeros((0,5,5,3))
+    for x in range(0,32-5,5):
+        for y in range(0,32-5,5):
+            patches = np.concatenate((patches, images[:,x:x+5,y:y+5,:]), axis=0)
+    patches = patches.reshape((patches.shape[0],-1))
+    return data_details_return({'Y': patches, "info" : "32x32 pixel patches extracted from the CIFAR-10 data by Boris Babenko to demonstrate k-means features."}, data_set)
 
 def cmu_mocap_49_balance(data_set='cmu_mocap'):
     """Load CMU subject 49's one legged balancing motion that was used by Alvarez, Luengo and Lawrence at AISTATS 2009."""

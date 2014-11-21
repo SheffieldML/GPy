@@ -1,3 +1,6 @@
+# Copyright (c) 2012, James Hensman
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
 __doc__ = """
 Inference over Gaussian process latent functions
 

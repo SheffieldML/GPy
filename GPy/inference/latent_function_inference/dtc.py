@@ -1,4 +1,4 @@
-# Copyright (c) 2012, James Hensman
+# Copyright (c) 2012-2014, James Hensman
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from posterior import Posterior

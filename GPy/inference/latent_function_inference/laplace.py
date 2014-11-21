@@ -1,4 +1,4 @@
-# Copyright (c) 2013, 2014 GPy authors (see AUTHORS.txt).
+# Copyright (c) 2013, 2014 Alan Saul
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 #
 #Parts of this file were influenced by the Matlab GPML framework written by

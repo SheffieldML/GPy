@@ -1,4 +1,4 @@
-# Copyright I. Nabney, N.Lawrence and James Hensman (1996 - 2012)
+# Copyright I. Nabney, N.Lawrence and James Hensman (1996 - 2014)
 
 # Scaled Conjuagte Gradients, originally in Matlab as part of the Netlab toolbox by I. Nabney, converted to python N. Lawrence and given a pythonic interface by James Hensman
 

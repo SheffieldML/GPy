@@ -1,8 +1,6 @@
-'''
-Created on 24 Apr 2013
+# Copyright (c) 2012-2014, Max Zwiessele
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-@author: maxz
-'''
 import numpy
 
 class GDUpdateRule():

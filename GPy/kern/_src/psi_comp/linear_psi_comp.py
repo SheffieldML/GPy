@@ -6,6 +6,7 @@ The package for the Psi statistics computation of the linear kernel for Bayesian
 """
 
 import numpy as np
+from ....util.linalg import tdot
 
 def psicomputations(variance, Z, variational_posterior):
     """
@@ -19,9 +20,9 @@ def psicomputations(variance, Z, variational_posterior):
     mu = variational_posterior.mean
     S = variational_posterior.variance
 
-    psi0 = np.einsum('q,nq->n',variance,np.square(mu)+S)
-    psi1 = np.einsum('q,mq,nq->nm',variance,Z,mu)
-    psi2 = np.einsum('q,mq,oq,nq->mo',np.square(variance),Z,Z,S) + np.einsum('nm,no->mo',psi1,psi1)
+    psi0 = (variance*(np.square(mu)+S)).sum(axis=1)
+    psi1 = np.dot(mu,(variance*Z).T)
+    psi2 = np.dot(S.sum(axis=0)*np.square(variance)*Z,Z.T)+ tdot(psi1.T)
 
     return psi0, psi1, psi2
 
@@ -33,10 +34,12 @@ def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variati
 
     # Compute for psi0 and psi1
     mu2S = np.square(mu)+S
-    dL_dvar += np.einsum('n,nq->q',dL_dpsi0,mu2S) + np.einsum('nm,mq,nq->q',dL_dpsi1,Z,mu)
-    dL_dmu += np.einsum('n,q,nq->nq',dL_dpsi0,2.*variance,mu) + np.einsum('nm,q,mq->nq',dL_dpsi1,variance,Z)
-    dL_dS += np.einsum('n,q->nq',dL_dpsi0,variance)
-    dL_dZ +=  np.einsum('nm,q,nq->mq',dL_dpsi1, variance,mu)
+    dL_dpsi0_var = dL_dpsi0[:,None]*variance[None,:]
+    dL_dpsi1_mu = np.dot(dL_dpsi1.T,mu)
+    dL_dvar += (dL_dpsi0[:,None]*mu2S).sum(axis=0)+ (dL_dpsi1_mu*Z).sum(axis=0)
+    dL_dmu += 2.*dL_dpsi0_var*mu+np.dot(dL_dpsi1,Z)*variance
+    dL_dS += dL_dpsi0_var
+    dL_dZ += dL_dpsi1_mu*variance
     
     return dL_dvar, dL_dZ, dL_dmu, dL_dS
 
@@ -55,17 +58,20 @@ def _psi2computations(dL_dpsi2, variance, Z, mu, S):
     # _psi2_dS             NxQ
     
     variance2 = np.square(variance)
-    common_sum = np.einsum('q,mq,nq->nm',variance,Z,mu) # NxM
-    Z_expect = np.einsum('mo,mq,oq->q',dL_dpsi2,Z,Z)
-    common_expect = np.einsum('mo,mq,no->nq',dL_dpsi2+dL_dpsi2.T,Z,common_sum)
+    common_sum = np.dot(mu,(variance*Z).T)
+    Z_expect = (np.dot(dL_dpsi2,Z)*Z).sum(axis=0)
+    dL_dpsi2T = dL_dpsi2+dL_dpsi2.T
+    common_expect = np.dot(common_sum,np.dot(dL_dpsi2T,Z))
+    Z2_expect = np.inner(common_sum,dL_dpsi2T)
+    Z1_expect = np.dot(dL_dpsi2T,Z)
 
-    dL_dvar = np.einsum('q,nq,q->q',Z_expect,2.*S,variance)+ np.einsum('nq,nq->q',common_expect,mu)
+    dL_dvar = 2.*S.sum(axis=0)*variance*Z_expect+(common_expect*mu).sum(axis=0)
             
-    dL_dmu = np.einsum('nq,q->nq',common_expect,variance)
+    dL_dmu = common_expect*variance
     
     dL_dS = np.empty(S.shape)
-    dL_dS[:] = np.einsum('q,q->q',Z_expect,variance2)
+    dL_dS[:] = Z_expect*variance2
     
-    dL_dZ = 2.*(np.einsum('om,q,mq,nq->oq',dL_dpsi2,variance2,Z,S)+np.einsum('om,q,nq,nm->oq',dL_dpsi2,variance,mu,common_sum))
+    dL_dZ = variance2*S.sum(axis=0)*Z1_expect+np.dot(Z2_expect.T,variance*mu)
 
     return dL_dvar, dL_dmu, dL_dS, dL_dZ

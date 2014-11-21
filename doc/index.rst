@@ -22,9 +22,6 @@ The code can be found on our `Github project page <https://github.com/SheffieldM
 
 .. You may also be interested by some examples in the GPy/examples folder.
 
-The detailed Developers Documentation is listed below
-=====================================================
-
 Contents:
 
 .. toctree::

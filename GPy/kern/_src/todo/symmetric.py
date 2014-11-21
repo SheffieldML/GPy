@@ -45,7 +45,7 @@ class Symmetric(Kernpart):
         AX = np.dot(X,self.transform)
         if X2 is None:
             X2 = X
-            AX2 = AX
+            ZX2 = AX
         else:
             AX2 = np.dot(X2, self.transform)
         self.k._param_grad_helper(dL_dK,X,X2,target)

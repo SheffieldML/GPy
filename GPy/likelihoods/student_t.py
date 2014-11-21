@@ -1,4 +1,4 @@
-# Copyright (c) 2012, 2013 Ricardo Andrade
+# Copyright (c) 2012-2014 Ricardo Andrade, Alan Saul
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np

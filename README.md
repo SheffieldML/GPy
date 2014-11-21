@@ -4,6 +4,7 @@
 A Gaussian processes framework in Python.
 
 * [GPy homepage](http://sheffieldml.github.io/GPy/)
+* [Tutorial notebooks](http://nbviewer.ipython.org/github/SheffieldML/notebook/blob/master/GPy/index.ipynb)
 * [User mailing list](https://lists.shef.ac.uk/sympa/subscribe/gpy-users)
 * [Online documentation](https://gpy.readthedocs.org/en/latest/)
 * [Unit tests (Travis-CI)](https://travis-ci.org/SheffieldML/GPy)

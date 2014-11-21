@@ -35,45 +35,74 @@ The implementation of this function in mandatory.
 
 For all kernparts the first parameter ``input_dim`` corresponds to the dimension of the input space, and the following parameters stand for the parameterization of the kernel.
 
-The following attributes are compulsory: ``self.input_dim`` (the dimension, integer), ``self.name`` (name of the kernel, string), ``self.num_params`` (number of parameters, integer). ::
+You have to call ``super(<class_name>, self).__init__(input_dim,
+name)`` to make sure the input dimension and name of the kernel are
+stored in the right place. These attributes are available as
+``self.input_dim`` and ``self.name`` at runtime.
+.. The following attributes are compulsory: ``self.input_dim`` (the dimension, integer), ``self.name`` (name of the kernel, string), ``self.num_params`` (number of parameters, integer). ::
+Parameterization is done by adding
+:py:class:``GPy.core.parameter.Param`` objects to ``self`` and use
+them as normal numpy ``array-like``s in yout code. The parameters have
+to be added by calling
+:py:function:``GPy.core.parameterized:Parameterized.add_parameters``
+with the :py:class:``GPy.core.parameter.Param`` objects as arguments.
 
     def __init__(self,input_dim,variance=1.,lengthscale=1.,power=1.):
-        assert input_dim == 1, "For this kernel we assume input_dim=1"
-        self.input_dim = input_dim
-        self.num_params = 3
-        self.name = 'rat_quad'
-        self.variance = variance
-        self.lengthscale = lengthscale
-        self.power = power
+        super(RationalQuadratic, self).__init__(input_dim, 'rat_quad')
+	assert input_dim == 1, "For this kernel we assume input_dim=1"
+        self.variance = Param('variance', variance)
+        self.lengthscale = Param('lengtscale', lengthscale)
+        self.power = Param('power', power)
+	self.add_parameters(self.variance, self.lengthscale, self.power)
 
-**_get_params(self)**
+From now on you can use the parameters ``self.variance,
+self.lengthscale, self.power`` as normal numpy ``array-like``s in your
+code. Updates from the optimization routine will be done
+automatically.
 
-The implementation of this function in mandatory.
+**parameters_changed(self)**
 
-This function returns a one dimensional array of length ``self.num_params`` containing the value of the parameters. ::
+The implementation of this function is optional.
 
-    def _get_params(self):
-        return np.hstack((self.variance,self.lengthscale,self.power))
+This functions deals as a callback for each optimization iteration. If
+one optimization step was successfull and the parameters (added by
+:py:function:``GPy.core.parameterized:Parameterized.add_parameters``)
+this callback function will be called to be able to update any
+precomputations for the kernel.
 
-**_set_params(self,x)**
+    def parameters_changed(self):
+        # nothing todo here
 
-The implementation of this function in mandatory.
 
-The input is a one dimensional array of length ``self.num_params`` containing the value of the parameters. The function has no output but it updates the values of the attribute associated to the parameters (such as ``self.variance``, ``self.lengthscale``, ...). ::
 
-    def _set_params(self,x):
-        self.variance = x[0]
-        self.lengthscale = x[1]
-        self.power = x[2]
+.. **_get_params(self)**
 
-**_get_param_names(self)**
+.. The implementation of this function in mandatory.
 
-The implementation of this function in mandatory.
+.. This function returns a one dimensional array of length ``self.num_params`` containing the value of the parameters. ::
 
-It returns a list of strings of length ``self.num_params`` corresponding to the parameter names. ::
+..     def _get_params(self):
+..         return np.hstack((self.variance,self.lengthscale,self.power))
 
-    def _get_param_names(self):
-        return ['variance','lengthscale','power']
+.. **_set_params(self,x)**
+
+.. The implementation of this function in mandatory.
+
+.. The input is a one dimensional array of length ``self.num_params`` containing the value of the parameters. The function has no output but it updates the values of the attribute associated to the parameters (such as ``self.variance``, ``self.lengthscale``, ...). ::
+
+..     def _set_params(self,x):
+..         self.variance = x[0]
+..         self.lengthscale = x[1]
+..         self.power = x[2]
+
+.. **_get_param_names(self)**
+
+.. The implementation of this function in mandatory.
+
+.. It returns a list of strings of length ``self.num_params`` corresponding to the parameter names. ::
+
+..     def _get_param_names(self):
+..         return ['variance','lengthscale','power']
 
 **K(self,X,X2,target)**
 

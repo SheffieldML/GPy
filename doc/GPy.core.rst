@@ -1,37 +1,20 @@
 GPy.core package
 ================
 
+Subpackages
+-----------
+
+.. toctree::
+
+    GPy.core.parameterization
+
 Submodules
 ----------
-
-GPy.core.domains module
------------------------
-
-.. automodule:: GPy.core.domains
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.core.fitc module
---------------------
-
-.. automodule:: GPy.core.fitc
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 GPy.core.gp module
 ------------------
 
 .. automodule:: GPy.core.gp
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.core.gp_base module
------------------------
-
-.. automodule:: GPy.core.gp_base
     :members:
     :undoc-members:
     :show-inheritance:
@@ -52,26 +35,18 @@ GPy.core.model module
     :undoc-members:
     :show-inheritance:
 
-GPy.core.parameterized module
------------------------------
-
-.. automodule:: GPy.core.parameterized
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.core.priors module
-----------------------
-
-.. automodule:: GPy.core.priors
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 GPy.core.sparse_gp module
 -------------------------
 
 .. automodule:: GPy.core.sparse_gp
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.core.sparse_gp_mpi module
+-----------------------------
+
+.. automodule:: GPy.core.sparse_gp_mpi
     :members:
     :undoc-members:
     :show-inheritance:
@@ -84,10 +59,10 @@ GPy.core.svigp module
     :undoc-members:
     :show-inheritance:
 
-GPy.core.transformations module
--------------------------------
+GPy.core.symbolic module
+------------------------
 
-.. automodule:: GPy.core.transformations
+.. automodule:: GPy.core.symbolic
     :members:
     :undoc-members:
     :show-inheritance:

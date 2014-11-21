@@ -4,118 +4,426 @@
 import unittest
 import numpy as np
 import GPy
+import sys
+from GPy.core.parameterization.param import Param
 
-verbose = False
-
-try:
-    import sympy
-    SYMPY_AVAILABLE=True
-except ImportError:
-    SYMPY_AVAILABLE=False
+verbose = 0
 
 
-class KernelTests(unittest.TestCase):
-    def test_kerneltie(self):
-        K = GPy.kern.rbf(5, ARD=True)
-        K.tie_params('.*[01]')
-        K.constrain_fixed('2')
-        X = np.random.rand(5,5)
-        Y = np.ones((5,1))
-        m = GPy.models.GPRegression(X,Y,K)
-        self.assertTrue(m.checkgrad())
+class Kern_check_model(GPy.core.Model):
+    """
+    This is a dummy model class used as a base class for checking that the
+    gradients of a given kernel are implemented correctly. It enables
+    checkgrad() to be called independently on a kernel.
+    """
+    def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
+        GPy.core.Model.__init__(self, 'kernel_test_model')
+        if kernel==None:
+            kernel = GPy.kern.RBF(1)
+        kernel.randomize(loc=1, scale=0.1)
+        if X is None:
+            X = np.random.randn(20, kernel.input_dim)
+        if dL_dK is None:
+            if X2 is None:
+                dL_dK = np.ones((X.shape[0], X.shape[0]))
+            else:
+                dL_dK = np.ones((X.shape[0], X2.shape[0]))
 
-    def test_rbfkernel(self):
-        kern = GPy.kern.rbf(5)
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+        self.kernel = kernel
+        self.X = X
+        self.X2 = X2
+        self.dL_dK = dL_dK
 
-    def test_rbf_sympykernel(self):
-        if SYMPY_AVAILABLE:
-            kern = GPy.kern.rbf_sympy(5)
-            self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+    def is_positive_semi_definite(self):
+        v = np.linalg.eig(self.kernel.K(self.X))[0]
+        if any(v.real<=-1e-10):
+            print v.real.min()
+            return False
+        else:
+            return True
 
-    def test_eq_sympykernel(self):
-        if SYMPY_AVAILABLE:
-            kern = GPy.kern.eq_sympy(5, 3)
-            self.assertTrue(GPy.kern.kern_test(kern, output_ind=4, verbose=verbose))
+    def log_likelihood(self):
+        return np.sum(self.dL_dK*self.kernel.K(self.X, self.X2))
 
-    def test_ode1_eqkernel(self):
-        if SYMPY_AVAILABLE:
-            kern = GPy.kern.ode1_eq(3)
-            self.assertTrue(GPy.kern.kern_test(kern, output_ind=1, verbose=verbose, X_positive=True))
+class Kern_check_dK_dtheta(Kern_check_model):
+    """
+    This class allows gradient checks for the gradient of a kernel with
+    respect to parameters.
+    """
+    def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
+        Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
+        self.link_parameter(self.kernel)
 
-    def test_rbf_invkernel(self):
-        kern = GPy.kern.rbf_inv(5)
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+    def parameters_changed(self):
+        return self.kernel.update_gradients_full(self.dL_dK, self.X, self.X2)
 
-    def test_Matern32kernel(self):
-        kern = GPy.kern.Matern32(5)
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
-    def test_Matern52kernel(self):
-        kern = GPy.kern.Matern52(5)
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+class Kern_check_dKdiag_dtheta(Kern_check_model):
+    """
+    This class allows gradient checks of the gradient of the diagonal of a
+    kernel with respect to the parameters.
+    """
+    def __init__(self, kernel=None, dL_dK=None, X=None):
+        Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=None)
+        self.link_parameter(self.kernel)
 
-    def test_linearkernel(self):
-        kern = GPy.kern.linear(5)
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+    def log_likelihood(self):
+        return (np.diag(self.dL_dK)*self.kernel.Kdiag(self.X)).sum()
 
-    def test_periodic_exponentialkernel(self):
-        kern = GPy.kern.periodic_exponential(1)
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+    def parameters_changed(self):
+        self.kernel.update_gradients_diag(np.diag(self.dL_dK), self.X)
 
-    def test_periodic_Matern32kernel(self):
-        kern = GPy.kern.periodic_Matern32(1)
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+class Kern_check_dK_dX(Kern_check_model):
+    """This class allows gradient checks for the gradient of a kernel with respect to X. """
+    def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
+        Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
+        self.X = Param('X',X)
+        self.link_parameter(self.X)
 
-    def test_periodic_Matern52kernel(self):
-        kern = GPy.kern.periodic_Matern52(1)
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+    def parameters_changed(self):
+        self.X.gradient[:] =  self.kernel.gradients_X(self.dL_dK, self.X, self.X2)
 
-    def test_rational_quadratickernel(self):
-        kern = GPy.kern.rational_quadratic(1)
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+class Kern_check_dKdiag_dX(Kern_check_dK_dX):
+    """This class allows gradient checks for the gradient of a kernel diagonal with respect to X. """
+    def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
+        Kern_check_dK_dX.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=None)
 
-    def test_gibbskernel(self):
-        kern = GPy.kern.gibbs(5, mapping=GPy.mappings.Linear(5, 1))
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+    def log_likelihood(self):
+        return (np.diag(self.dL_dK)*self.kernel.Kdiag(self.X)).sum()
 
-    def test_heterokernel(self):
-        kern = GPy.kern.hetero(5, mapping=GPy.mappings.Linear(5, 1), transform=GPy.core.transformations.logexp())
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+    def parameters_changed(self):
+        self.X.gradient[:] =  self.kernel.gradients_X_diag(self.dL_dK.diagonal(), self.X)
 
-    def test_mlpkernel(self):
-        kern = GPy.kern.mlp(5)
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
-    def test_polykernel(self):
-        kern = GPy.kern.poly(5, degree=4)
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
 
-    def test_fixedkernel(self):
-        """
-        Fixed effect kernel test
-        """
-        X = np.random.rand(30, 4)
-        K = np.dot(X, X.T)
-        kernel = GPy.kern.fixed(4, K)
-        kern = GPy.kern.poly(5, degree=4)
-        self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verbose=False, fixed_X_dims=None):
+    """
+    This function runs on kernels to check the correctness of their
+    implementation. It checks that the covariance function is positive definite
+    for a randomly generated data set.
 
-    # def test_coregionalization(self):
-    #     X1 = np.random.rand(50,1)*8
-    #     X2 = np.random.rand(30,1)*5
-    #     index = np.vstack((np.zeros_like(X1),np.ones_like(X2)))
-    #     X = np.hstack((np.vstack((X1,X2)),index))
-    #     Y1 = np.sin(X1) + np.random.randn(*X1.shape)*0.05
-    #     Y2 = np.sin(X2) + np.random.randn(*X2.shape)*0.05 + 2.
-    #     Y = np.vstack((Y1,Y2))
+    :param kern: the kernel to be tested.
+    :type kern: GPy.kern.Kernpart
+    :param X: X input values to test the covariance function.
+    :type X: ndarray
+    :param X2: X2 input values to test the covariance function.
+    :type X2: ndarray
 
-    #     k1 = GPy.kern.rbf(1) + GPy.kern.bias(1)
-    #     k2 = GPy.kern.coregionalize(2,1)
-    #     kern = k1**k2
-    #     self.assertTrue(GPy.kern.kern_test(kern, verbose=verbose))
+    """
+    pass_checks = True
+    if X is None:
+        X = np.random.randn(10, kern.input_dim)
+        if output_ind is not None:
+            X[:, output_ind] = np.random.randint(kern.output_dim, X.shape[0])
+    if X2 is None:
+        X2 = np.random.randn(20, kern.input_dim)
+        if output_ind is not None:
+            X2[:, output_ind] = np.random.randint(kern.output_dim, X2.shape[0])
+
+    if verbose:
+        print("Checking covariance function is positive definite.")
+    result = Kern_check_model(kern, X=X).is_positive_semi_definite()
+    if result and verbose:
+        print("Check passed.")
+    if not result:
+        print("Positive definite check failed for " + kern.name + " covariance function.")
+        pass_checks = False
+        assert(result)
+        return False
+
+    if verbose:
+        print("Checking gradients of K(X, X) wrt theta.")
+    result = Kern_check_dK_dtheta(kern, X=X, X2=None).checkgrad(verbose=verbose)
+    if result and verbose:
+        print("Check passed.")
+    if not result:
+        print("Gradient of K(X, X) wrt theta failed for " + kern.name + " covariance function. Gradient values as follows:")
+        Kern_check_dK_dtheta(kern, X=X, X2=None).checkgrad(verbose=True)
+        pass_checks = False
+        assert(result)
+        return False
+
+    if verbose:
+        print("Checking gradients of K(X, X2) wrt theta.")
+    result = Kern_check_dK_dtheta(kern, X=X, X2=X2).checkgrad(verbose=verbose)
+    if result and verbose:
+        print("Check passed.")
+    if not result:
+        print("Gradient of K(X, X) wrt theta failed for " + kern.name + " covariance function. Gradient values as follows:")
+        Kern_check_dK_dtheta(kern, X=X, X2=X2).checkgrad(verbose=True)
+        pass_checks = False
+        assert(result)
+        return False
+
+    if verbose:
+        print("Checking gradients of Kdiag(X) wrt theta.")
+    try:
+        result = Kern_check_dKdiag_dtheta(kern, X=X).checkgrad(verbose=verbose)
+    except NotImplementedError:
+        result=True
+        if verbose:
+            print("update_gradients_diag not implemented for " + kern.name)
+    if result and verbose:
+        print("Check passed.")
+    if not result:
+        print("Gradient of Kdiag(X) wrt theta failed for " + kern.name + " covariance function. Gradient values as follows:")
+        Kern_check_dKdiag_dtheta(kern, X=X).checkgrad(verbose=True)
+        pass_checks = False
+        assert(result)
+        return False
+
+    if verbose:
+        print("Checking gradients of K(X, X) wrt X.")
+    try:
+        testmodel = Kern_check_dK_dX(kern, X=X, X2=None)
+        if fixed_X_dims is not None:
+            testmodel.X[:,fixed_X_dims].fix()
+        result = testmodel.checkgrad(verbose=verbose)
+    except NotImplementedError:
+        result=True
+        if verbose:
+            print("gradients_X not implemented for " + kern.name)
+    if result and verbose:
+        print("Check passed.")
+    if not result:
+        print("Gradient of K(X, X) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:")
+        testmodel.checkgrad(verbose=True)
+        import ipdb;ipdb.set_trace()
+        assert(result)
+        pass_checks = False
+        return False
+
+    if verbose:
+        print("Checking gradients of K(X, X2) wrt X.")
+    try:
+        testmodel = Kern_check_dK_dX(kern, X=X, X2=X2)
+        if fixed_X_dims is not None:
+            testmodel.X[:,fixed_X_dims].fix()
+        result = testmodel.checkgrad(verbose=verbose)
+    except NotImplementedError:
+        result=True
+        if verbose:
+            print("gradients_X not implemented for " + kern.name)
+    if result and verbose:
+        print("Check passed.")
+    if not result:
+        print("Gradient of K(X, X2) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:")
+        testmodel.checkgrad(verbose=True)
+        assert(result)
+        pass_checks = False
+        return False
+
+    if verbose:
+        print("Checking gradients of Kdiag(X) wrt X.")
+    try:
+        testmodel = Kern_check_dKdiag_dX(kern, X=X)
+        if fixed_X_dims is not None:
+            testmodel.X[:,fixed_X_dims].fix()
+        result = testmodel.checkgrad(verbose=verbose)
+    except NotImplementedError:
+        result=True
+        if verbose:
+            print("gradients_X not implemented for " + kern.name)
+    if result and verbose:
+        print("Check passed.")
+    if not result:
+        print("Gradient of Kdiag(X) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:")
+        Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=True)
+        pass_checks = False
+        assert(result)
+        return False
+
+    return pass_checks
+
+
+
+class KernelGradientTestsContinuous(unittest.TestCase):
+    def setUp(self):
+        self.N, self.D = 10, 5
+        self.X = np.random.randn(self.N,self.D)
+        self.X2 = np.random.randn(self.N+10,self.D)
+
+        continuous_kerns = ['RBF', 'Linear']
+        self.kernclasses = [getattr(GPy.kern, s) for s in continuous_kerns]
+
+    def test_Matern32(self):
+        k = GPy.kern.Matern32(self.D)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_Prod(self):
+        k = GPy.kern.Matern32(2, active_dims=[2,3]) * GPy.kern.RBF(2, active_dims=[0,4]) + GPy.kern.Linear(self.D)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_Prod2(self):
+        k = (GPy.kern.RBF(2, active_dims=[0,4]) * GPy.kern.Linear(self.D))
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_Prod3(self):
+        k = (GPy.kern.RBF(2, active_dims=[0,4]) * GPy.kern.Linear(self.D))
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_Add(self):
+        k = GPy.kern.Matern32(2, active_dims=[2,3]) + GPy.kern.RBF(2, active_dims=[0,4]) + GPy.kern.Linear(self.D)
+        k += GPy.kern.Matern32(2, active_dims=[2,3]) + GPy.kern.RBF(2, active_dims=[0,4]) + GPy.kern.Linear(self.D)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_Add_dims(self):
+        k = GPy.kern.Matern32(2, active_dims=[2,self.D]) + GPy.kern.RBF(2, active_dims=[0,4]) + GPy.kern.Linear(self.D)
+        k.randomize()
+        self.assertRaises(IndexError, k.K, self.X)
+        k = GPy.kern.Matern32(2, active_dims=[2,self.D-1]) + GPy.kern.RBF(2, active_dims=[0,4]) + GPy.kern.Linear(self.D)
+        k.randomize()
+        # assert it runs:
+        try:
+            k.K(self.X)
+        except AssertionError:
+            raise AssertionError, "k.K(X) should run on self.D-1 dimension"
+
+    def test_Matern52(self):
+        k = GPy.kern.Matern52(self.D)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_RBF(self):
+        k = GPy.kern.RBF(self.D)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_Linear(self):
+        k = GPy.kern.Linear(self.D)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_LinearFull(self):
+        k = GPy.kern.LinearFull(self.D, self.D-1)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+class KernelTestsMiscellaneous(unittest.TestCase):
+    def setUp(self):
+        N, D = 100, 10
+        self.X = np.linspace(-np.pi, +np.pi, N)[:,None] * np.random.uniform(-10,10,D)
+        self.rbf = GPy.kern.RBF(2, active_dims=np.arange(0,4,2))
+        self.linear = GPy.kern.Linear(2, active_dims=(3,9))
+        self.matern = GPy.kern.Matern32(3, active_dims=np.array([1,7,9]))
+        self.sumkern = self.rbf + self.linear
+        self.sumkern += self.matern
+        self.sumkern.randomize()
+
+    def test_which_parts(self):
+        self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=[self.linear, self.matern]), self.linear.K(self.X)+self.matern.K(self.X)))
+        self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=[self.linear, self.rbf]), self.linear.K(self.X)+self.rbf.K(self.X)))
+        self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=self.sumkern.parts[0]), self.rbf.K(self.X)))
+
+class KernelTestsNonContinuous(unittest.TestCase):
+    def setUp(self):
+        N0 = 3
+        N1 = 9
+        N2 = 4
+        N = N0+N1+N2
+        self.D = 3
+        self.X = np.random.randn(N, self.D+1)
+        indices = np.random.random_integers(0, 2, size=N)
+        self.X[indices==0, -1] = 0
+        self.X[indices==1, -1] = 1
+        self.X[indices==2, -1] = 2
+        #self.X = self.X[self.X[:, -1].argsort(), :]
+        self.X2 = np.random.randn((N0+N1)*2, self.D+1)
+        self.X2[:(N0*2), -1] = 0
+        self.X2[(N0*2):, -1] = 1
+
+    def test_IndependentOutputs(self):
+        k = GPy.kern.RBF(self.D, active_dims=range(self.D))
+        kern = GPy.kern.IndependentOutputs(k, -1, 'ind_single')
+        self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
+        k = [GPy.kern.RBF(1, active_dims=[1], name='rbf1'), GPy.kern.RBF(self.D, active_dims=range(self.D), name='rbf012'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf02')]
+        kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
+        self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
+
+    def test_Hierarchical(self):
+        k = [GPy.kern.RBF(2, active_dims=[0,2], name='rbf1'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf2')]
+        kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
+        self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
+
+
+    def test_ODE_UY(self):
+        kern = GPy.kern.ODE_UY(2, active_dims=[0, self.D])
+        X = self.X[self.X[:,-1]!=2]
+        X2 = self.X2[self.X2[:,-1]!=2]
+        self.assertTrue(check_kernel_gradient_functions(kern, X=X, X2=X2, verbose=verbose, fixed_X_dims=-1))
+
+class Coregionalize_weave_test(unittest.TestCase):
+    """
+    Make sure that the coregionalize kernel work with and without weave enabled
+    """
+    def setUp(self):
+        self.k = GPy.kern.Coregionalize(1, output_dim=12)
+        self.N1, self.N2 = 100, 200
+        self.X = np.random.randint(0,12,(self.N1,1))
+        self.X2 = np.random.randint(0,12,(self.N2,1))
+
+    def test_sym(self):
+        dL_dK = np.random.randn(self.N1, self.N1)
+        GPy.util.config.config.set('weave', 'working', 'True')
+        K_weave = self.k.K(self.X)
+        self.k.update_gradients_full(dL_dK, self.X)
+        grads_weave = self.k.gradient.copy()
+
+        GPy.util.config.config.set('weave', 'working', 'False')
+        K_numpy = self.k.K(self.X)
+        self.k.update_gradients_full(dL_dK, self.X)
+        grads_numpy = self.k.gradient.copy()
+
+        self.assertTrue(np.allclose(K_numpy, K_weave))
+        self.assertTrue(np.allclose(grads_numpy, grads_weave))
+
+    def test_nonsym(self):
+        dL_dK = np.random.randn(self.N1, self.N2)
+        GPy.util.config.config.set('weave', 'working', 'True')
+        K_weave = self.k.K(self.X, self.X2)
+        self.k.update_gradients_full(dL_dK, self.X, self.X2)
+        grads_weave = self.k.gradient.copy()
+
+        GPy.util.config.config.set('weave', 'working', 'False')
+        K_numpy = self.k.K(self.X, self.X2)
+        self.k.update_gradients_full(dL_dK, self.X, self.X2)
+        grads_numpy = self.k.gradient.copy()
+
+        self.assertTrue(np.allclose(K_numpy, K_weave))
+        self.assertTrue(np.allclose(grads_numpy, grads_weave))
+
+    #reset the weave state for any other tests
+    GPy.util.config.config.set('weave', 'working', 'False')
+
+
 
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."
     unittest.main()
+#     np.random.seed(0)
+#     N0 = 3
+#     N1 = 9
+#     N2 = 4
+#     N = N0+N1+N2
+#     D = 3
+#     X = np.random.randn(N, D+1)
+#     indices = np.random.random_integers(0, 2, size=N)
+#     X[indices==0, -1] = 0
+#     X[indices==1, -1] = 1
+#     X[indices==2, -1] = 2
+#     #X = X[X[:, -1].argsort(), :]
+#     X2 = np.random.randn((N0+N1)*2, D+1)
+#     X2[:(N0*2), -1] = 0
+#     X2[(N0*2):, -1] = 1
+#     k = [GPy.kern.RBF(1, active_dims=[1], name='rbf1'), GPy.kern.RBF(D, name='rbf012'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf02')]
+#     kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
+#     assert(check_kernel_gradient_functions(kern, X=X, X2=X2, verbose=verbose, fixed_X_dims=-1))
+#     k = GPy.kern.RBF(D)
+#     kern = GPy.kern.IndependentOutputs(k, -1, 'ind_single')
+#     assert(check_kernel_gradient_functions(kern, X=X, X2=X2, verbose=verbose, fixed_X_dims=-1))

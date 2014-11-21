@@ -4,6 +4,14 @@ GPy.mappings package
 Submodules
 ----------
 
+GPy.mappings.additive module
+----------------------------
+
+.. automodule:: GPy.mappings.additive
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.mappings.kernel module
 --------------------------
 

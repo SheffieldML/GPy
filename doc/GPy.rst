@@ -12,21 +12,10 @@ Subpackages
     GPy.kern
     GPy.likelihoods
     GPy.mappings
-    GPy.models_modules
+    GPy.models
+    GPy.plotting
     GPy.testing
     GPy.util
-
-Submodules
-----------
-
-GPy.models module
------------------
-
-.. automodule:: GPy.models
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 
 Module contents
 ---------------

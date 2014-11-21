@@ -1,28 +1,29 @@
 GPy.likelihoods package
 =======================
 
-Subpackages
------------
-
-.. toctree::
-
-    GPy.likelihoods.noise_models
-
 Submodules
 ----------
 
-GPy.likelihoods.ep module
--------------------------
+GPy.likelihoods.bernoulli module
+--------------------------------
 
-.. automodule:: GPy.likelihoods.ep
+.. automodule:: GPy.likelihoods.bernoulli
     :members:
     :undoc-members:
     :show-inheritance:
 
-GPy.likelihoods.ep_mixed_noise module
--------------------------------------
+GPy.likelihoods.exponential module
+----------------------------------
 
-.. automodule:: GPy.likelihoods.ep_mixed_noise
+.. automodule:: GPy.likelihoods.exponential
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.likelihoods.gamma module
+----------------------------
+
+.. automodule:: GPy.likelihoods.gamma
     :members:
     :undoc-members:
     :show-inheritance:
@@ -35,22 +36,6 @@ GPy.likelihoods.gaussian module
     :undoc-members:
     :show-inheritance:
 
-GPy.likelihoods.gaussian_mixed_noise module
--------------------------------------------
-
-.. automodule:: GPy.likelihoods.gaussian_mixed_noise
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.likelihoods.laplace module
-------------------------------
-
-.. automodule:: GPy.likelihoods.laplace
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 GPy.likelihoods.likelihood module
 ---------------------------------
 
@@ -59,10 +44,34 @@ GPy.likelihoods.likelihood module
     :undoc-members:
     :show-inheritance:
 
-GPy.likelihoods.noise_model_constructors module
------------------------------------------------
+GPy.likelihoods.link_functions module
+-------------------------------------
 
-.. automodule:: GPy.likelihoods.noise_model_constructors
+.. automodule:: GPy.likelihoods.link_functions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.likelihoods.mixed_noise module
+----------------------------------
+
+.. automodule:: GPy.likelihoods.mixed_noise
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.likelihoods.poisson module
+------------------------------
+
+.. automodule:: GPy.likelihoods.poisson
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.likelihoods.student_t module
+--------------------------------
+
+.. automodule:: GPy.likelihoods.student_t
     :members:
     :undoc-members:
     :show-inheritance:

@@ -1,7 +1,8 @@
-from ep import EP
-from laplace import Laplace
-from ep_mixed_noise import EP_Mixed_Noise
+from bernoulli import Bernoulli
+from exponential import Exponential
 from gaussian import Gaussian
-from gaussian_mixed_noise import Gaussian_Mixed_Noise
-import noise_models
-from noise_model_constructors import *
+from gamma import Gamma
+from poisson import Poisson
+from student_t import StudentT
+from likelihood import Likelihood
+from mixed_noise import MixedNoise

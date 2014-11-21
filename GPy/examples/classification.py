@@ -1,11 +1,10 @@
-# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
 """
-Gaussian Processes classification
+Gaussian Processes classification examples
 """
-import pylab as pb
 import GPy
 
 default_seed = 10000
@@ -15,7 +14,9 @@ def oil(num_inducing=50, max_iters=100, kernel=None, optimize=True, plot=True):
     Run a Gaussian process classification on the three phase oil data. The demonstration calls the basic GP classification model and uses EP to approximate the likelihood.
 
     """
-    data = GPy.util.datasets.oil()
+    try:import pods
+    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    data = pods.datasets.oil()
     X = data['X']
     Xtest = data['Xtest']
     Y = data['Y'][:, 0:1]
@@ -27,13 +28,13 @@ def oil(num_inducing=50, max_iters=100, kernel=None, optimize=True, plot=True):
     m = GPy.models.SparseGPClassification(X, Y, kernel=kernel, num_inducing=num_inducing)
 
     # Contrain all parameters to be positive
-    m.tie_params('.*len')
+    #m.tie_params('.*len')
     m['.*len'] = 10.
-    m.update_likelihood_approximation()
 
     # Optimize
     if optimize:
-        m.optimize(max_iters=max_iters)
+        for _ in range(5):
+            m.optimize(max_iters=int(max_iters/5))
     print(m)
 
     #Test
@@ -50,7 +51,9 @@ def toy_linear_1d_classification(seed=default_seed, optimize=True, plot=True):
 
     """
 
-    data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
+    try:import pods
+    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    data = pods.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
     Y[Y.flatten() == -1] = 0
 
@@ -61,13 +64,14 @@ def toy_linear_1d_classification(seed=default_seed, optimize=True, plot=True):
     if optimize:
         #m.update_likelihood_approximation()
         # Parameters optimization:
-        #m.optimize()
+        m.optimize()
         #m.update_likelihood_approximation()
-        m.pseudo_EM()
+        #m.pseudo_EM()
 
     # Plot
     if plot:
-        fig, axes = pb.subplots(2, 1)
+        from matplotlib import pyplot as plt
+        fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
 
@@ -83,27 +87,30 @@ def toy_linear_1d_classification_laplace(seed=default_seed, optimize=True, plot=
 
     """
 
-    data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
+    try:import pods
+    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    data = pods.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
     Y[Y.flatten() == -1] = 0
 
-    bern_noise_model = GPy.likelihoods.bernoulli()
-    laplace_likelihood = GPy.likelihoods.Laplace(Y.copy(), bern_noise_model)
+    likelihood = GPy.likelihoods.Bernoulli()
+    laplace_inf = GPy.inference.latent_function_inference.Laplace()
+    kernel = GPy.kern.RBF(1)
 
     # Model definition
-    m = GPy.models.GPClassification(data['X'], Y, likelihood=laplace_likelihood)
-    print m
+    m = GPy.core.GP(data['X'], Y, kernel=kernel, likelihood=likelihood, inference_method=laplace_inf)
 
     # Optimize
     if optimize:
-        #m.update_likelihood_approximation()
-        # Parameters optimization:
-        m.optimize('bfgs', messages=1)
-        #m.pseudo_EM()
+        try:
+            m.optimize('scg', messages=1)
+        except Exception as e:
+            return m
 
     # Plot
     if plot:
-        fig, axes = pb.subplots(2, 1)
+        from matplotlib import pyplot as plt
+        fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
 
@@ -119,7 +126,9 @@ def sparse_toy_linear_1d_classification(num_inducing=10, seed=default_seed, opti
 
     """
 
-    data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
+    try:import pods
+    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    data = pods.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
     Y[Y.flatten() == -1] = 0
 
@@ -129,21 +138,19 @@ def sparse_toy_linear_1d_classification(num_inducing=10, seed=default_seed, opti
 
     # Optimize
     if optimize:
-        #m.update_likelihood_approximation()
-        # Parameters optimization:
-        #m.optimize()
-        m.pseudo_EM()
+        m.optimize()
 
     # Plot
     if plot:
-        fig, axes = pb.subplots(2, 1)
+        from matplotlib import pyplot as plt
+        fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
 
     print m
     return m
 
-def toy_heaviside(seed=default_seed, optimize=True, plot=True):
+def toy_heaviside(seed=default_seed, max_iters=100, optimize=True, plot=True):
     """
     Simple 1D classification example using a heavy side gp transformation
 
@@ -152,25 +159,30 @@ def toy_heaviside(seed=default_seed, optimize=True, plot=True):
 
     """
 
-    data = GPy.util.datasets.toy_linear_1d_classification(seed=seed)
+    try:import pods
+    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    data = pods.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
     Y[Y.flatten() == -1] = 0
 
     # Model definition
-    noise_model = GPy.likelihoods.bernoulli(GPy.likelihoods.noise_models.gp_transformations.Heaviside())
-    likelihood = GPy.likelihoods.EP(Y, noise_model)
-    m = GPy.models.GPClassification(data['X'], likelihood=likelihood)
+    kernel = GPy.kern.RBF(1)
+    likelihood = GPy.likelihoods.Bernoulli(gp_link=GPy.likelihoods.link_functions.Heaviside())
+    ep = GPy.inference.latent_function_inference.expectation_propagation.EP()
+    m = GPy.core.GP(X=data['X'], Y=Y, kernel=kernel, likelihood=likelihood, inference_method=ep, name='gp_classification_heaviside')
+    #m = GPy.models.GPClassification(data['X'], likelihood=likelihood)
 
     # Optimize
     if optimize:
-        m.update_likelihood_approximation()
         # Parameters optimization:
-        m.optimize()
-        #m.pseudo_EM()
+        for _ in range(5):
+            m.optimize(max_iters=int(max_iters/5))
+        print m
 
     # Plot
     if plot:
-        fig, axes = pb.subplots(2, 1)
+        from matplotlib import pyplot as plt
+        fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
 
@@ -189,7 +201,9 @@ def crescent_data(model_type='Full', num_inducing=10, seed=default_seed, kernel=
     :param kernel: kernel to use in the model
     :type kernel: a GPy kernel
     """
-    data = GPy.util.datasets.crescent_data(seed=seed)
+    try:import pods
+    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    data = pods.datasets.crescent_data(seed=seed)
     Y = data['Y']
     Y[Y.flatten()==-1] = 0
 

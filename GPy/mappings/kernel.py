@@ -17,7 +17,7 @@ class Kernel(Mapping):
     :type X: ndarray
     :param output_dim: dimension of output.
     :type output_dim: int
-    :param kernel: a GPy kernel, defaults to GPy.kern.rbf
+    :param kernel: a GPy kernel, defaults to GPy.kern.RBF
     :type kernel: GPy.kern.kern
 
     """
@@ -25,7 +25,7 @@ class Kernel(Mapping):
     def __init__(self, X, output_dim=1, kernel=None):
         Mapping.__init__(self, input_dim=X.shape[1], output_dim=output_dim)
         if kernel is None:
-            kernel = GPy.kern.rbf(self.input_dim)
+            kernel = GPy.kern.RBF(self.input_dim)
         self.kern = kernel
         self.X = X
         self.num_data = X.shape[0]
@@ -43,7 +43,7 @@ class Kernel(Mapping):
     def _set_params(self, x):
         self.A = x[:self.num_data * self.output_dim].reshape(self.num_data, self.output_dim).copy()
         self.bias = x[self.num_data*self.output_dim:].copy()
-        
+
     def randomize(self):
         self.A = np.random.randn(self.num_data, self.output_dim)/np.sqrt(self.num_data+1)
         self.bias = np.random.randn(self.output_dim)/np.sqrt(self.num_data+1)
@@ -57,4 +57,4 @@ class Kernel(Mapping):
         return np.hstack((self._df_dA.flatten(), self._df_dbias))
 
     def df_dX(self, dL_df, X):
-        return self.kern.dK_dX((dL_df[:, None, :]*self.A[None, :, :]).sum(2), X, self.X) 
+        return self.kern.gradients_X((dL_df[:, None, :]*self.A[None, :, :]).sum(2), X, self.X)

@@ -25,7 +25,7 @@ def add_bar_labels(fig, ax, bars, bottom=0):
             c = 'w'
             t = TextPath((0, 0), "${xi}$".format(xi=xi), rotation=0, ha='center')
             transform = transOffset
-            if patch.get_extents().height <= t.get_extents().height + 3:
+            if patch.get_extents().height <= t.get_extents().height + 5:
                 va = 'bottom'
                 c = 'k'
                 transform = transOffsetUp

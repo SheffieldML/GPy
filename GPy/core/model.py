@@ -239,7 +239,7 @@ class Model(Parameterized):
             print 'nothing to optimize'
 
         if not self.update_model():
-            print "setting updates on again"
+            print "Updates were off, setting updates on again"
             self.update_model(True)
 
         if start == None:

@@ -47,10 +47,11 @@ Created on 3 Nov 2014
     def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None,
                  name='sparse gp', Y_metadata=None, normalizer=False,
                  missing_data=False, stochastic=False, batchsize=1):
-        #pick a sensible inference method
+        
+        # pick a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
-                inference_method = var_dtc.VarDTC(limit=1 if not self.missing_data else Y.shape[1])
+                inference_method = var_dtc.VarDTC(limit=1 if not missing_data else Y.shape[1])
             else:
                 #inference_method = ??
                 raise NotImplementedError, "what to do what to do?"

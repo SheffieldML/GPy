@@ -29,7 +29,7 @@ class Model(Parameterized):
     def log_likelihood(self):
         raise NotImplementedError, "this needs to be implemented to use the model class"
     def _log_likelihood_gradients(self):
-        return self.gradient
+        return self.gradient.copy()
 
     def optimize_restarts(self, num_restarts=10, robust=False, verbose=True, parallel=False, num_processes=None, **kwargs):
         """
@@ -207,7 +207,7 @@ class Model(Parameterized):
                 raise
             self._fail_count += 1
             obj_f = np.inf
-            obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e100, 1e100)
+            obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e10, 1e10)
         return obj_f, obj_grads
 
     def optimize(self, optimizer=None, start=None, **kwargs):

@@ -393,11 +393,11 @@ class Parameterized(Parameterizable):
 </tr>""".format(name=name)
             to_print.insert(0, header)
         style = """<style type="text/css">
-.tg  {border-collapse:collapse;border-spacing:0;border-color:#999;}
-.tg td{font-family:Arial, sans-serif;font-size:14px;padding:2px 3px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#999;color:#444;background-color:#F7FDFA;}
-.tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:2px 3px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#999;color:#fff;background-color:#26ADE4;}
-.tg .tg-left{font-family:"Courier New", Courier, monospace !important;;text-align:left}
-.tg .tg-right{font-family:"Courier New", Courier, monospace !important;;text-align:right}
+.tg  {font-family:"Courier New", Courier, monospace !important;padding:2px 3px;word-break:normal;border-collapse:collapse;border-spacing:0;border-color:#DCDCDC;margin:0px auto;}
+.tg td{font-weight:bold;color:#444;background-color:#F7FDFA;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#DCDCDC;}
+.tg th{font-weight:normal;color:#fff;background-color:#26ADE4;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#DCDCDC;}
+.tg .tg-left{text-align:left;}
+.tg .tg-right{text-align:right;}
 </style>"""
         return style + '\n' + '<table class="tg">' + '\n'.format(sep).join(to_print) + '\n</table>'
 

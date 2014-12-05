@@ -400,7 +400,11 @@ class Model(Parameterized):
                          ['<b>Log-likelihood</b>', '{}<br>'.format(float(self.log_likelihood()))],
                          ["<b>Number of Parameters</b>", '{}<br>'.format(self.size)]]
         from operator import itemgetter
-        to_print = [""] + ["{}: {}".format(name, detail) for name, detail in model_details] + ["<br><b>Parameters</b>:"]
+        to_print = ["""<style type="text/css">
+.pd{
+    font-family:"Courier New", Courier, monospace !important;
+}
+</style>\n"""] + ["<p class=pd>"] + ["{}: {}".format(name, detail) for name, detail in model_details] + ["</p>"]
         to_print.append(super(Model, self)._repr_html_())
         return "\n".join(to_print)
 

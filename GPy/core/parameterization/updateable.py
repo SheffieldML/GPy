@@ -15,14 +15,6 @@ class Updateable(Observable):
     def __init__(self, *args, **kwargs):
         super(Updateable, self).__init__(*args, **kwargs)
 
-    @property
-    def updates(self):
-        raise DeprecationWarning("updates is now a function, see update(True|False|None)")
-
-    @updates.setter
-    def updates(self, ups):
-        raise DeprecationWarning("updates is now a function, see update(True|False|None)")
-
     def update_model(self, updates=None):
         """
         Get or set, whether automatic updates are performed. When updates are

@@ -5,26 +5,8 @@ import numpy as np
 from posterior import Posterior
 
 class SVGP(LatentFunctionInference):
-    def likelihood_quadrature(self, Y, m, v):
-        Ysign = np.where(Y==1,1,-1).flatten()
-        from scipy import stats
-        self.gh_x, self.gh_w = np.polynomial.hermite.hermgauss(20)
-
-        #assume probit for now.
-        X = self.gh_x[None,:]*np.sqrt(2.*v[:,None]) + (m*Ysign)[:,None]
-        p = stats.norm.cdf(X)
-        p = np.clip(p, 1e-9, 1.-1e-9) # for numerical stability
-        N = stats.norm.pdf(X)
-        F = np.log(p).dot(self.gh_w)
-        NoverP = N/p
-        dF_dm = (NoverP*Ysign[:,None]).dot(self.gh_w)
-        dF_dv = -0.5*(NoverP**2 + NoverP*X).dot(self.gh_w)
-        return F, dF_dm, dF_dv
-
-
     def inference(self, q_u_mean, q_u_chol, kern, X, Z, likelihood, Y, Y_metadata=None):
         assert Y.shape[1]==1, "multi outputs not implemented"
-
 
         num_inducing = Z.shape[0]
         #expand cholesky representation
@@ -57,9 +39,7 @@ class SVGP(LatentFunctionInference):
         dKL_dKmm = 0.5*Kmmi - 0.5*Kmmi.dot(S).dot(Kmmi) - 0.5*Kmmim[:,None]*Kmmim[None,:]
 
         #quadrature for the likelihood
-        #F, dF_dmu, dF_dv = likelihood.variational_expectations(Y, mu, v)
-        F, dF_dmu, dF_dv = self.likelihood_quadrature(Y, mu, v)
-
+        F, dF_dmu, dF_dv, dF_dthetaL = likelihood.variational_expectations(Y, mu, v)
 
         #rescale the F term if working on a batch
         #F, dF_dmu, dF_dv =  F*batch_scale, dF_dmu*batch_scale, dF_dv*batch_scale
@@ -82,7 +62,7 @@ class SVGP(LatentFunctionInference):
         dL_dchol = 2.*np.dot(dL_dS, L)
         dL_dchol = choleskies.triang_to_flat(dL_dchol[:,:,None]).squeeze()
 
-        return Posterior(mean=q_u_mean, cov=S, K=Kmm), log_marginal, {'dL_dKmm':dL_dKmm, 'dL_dKmn':dL_dKmn, 'dL_dKdiag': dF_dv, 'dL_dm':dL_dm, 'dL_dchol':dL_dchol}
+        return Posterior(mean=q_u_mean, cov=S, K=Kmm), log_marginal, {'dL_dKmm':dL_dKmm, 'dL_dKmn':dL_dKmn, 'dL_dKdiag': dF_dv, 'dL_dm':dL_dm, 'dL_dchol':dL_dchol, 'dL_dthetaL':dF_dthetaL}
 
 
 

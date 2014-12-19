@@ -133,7 +133,7 @@ class Bernoulli(Likelihood):
         """
         #objective = y*np.log(inv_link_f) + (1.-y)*np.log(inv_link_f)
         p = np.where(y==1, inv_link_f, 1.-inv_link_f)
-        return np.log(np.clip(p, 1e-6 ,np.inf))
+        return np.log(np.clip(p, 1e-9 ,np.inf))
 
     def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
         """
@@ -152,7 +152,7 @@ class Bernoulli(Likelihood):
         """
         #grad = (y/inv_link_f) - (1.-y)/(1-inv_link_f)
         #grad = np.where(y, 1./inv_link_f, -1./(1-inv_link_f))
-        ff = np.clip(inv_link_f, 1e-6, 1-1e-6)
+        ff = np.clip(inv_link_f, 1e-9, 1-1e-9)
         denom = np.where(y, ff, -(1-ff))
         return 1./denom
 
@@ -180,7 +180,7 @@ class Bernoulli(Likelihood):
         #d2logpdf_dlink2 = -y/(inv_link_f**2) - (1-y)/((1-inv_link_f)**2)
         #d2logpdf_dlink2 = np.where(y, -1./np.square(inv_link_f), -1./np.square(1.-inv_link_f))
         arg = np.where(y, inv_link_f, 1.-inv_link_f)
-        ret =  -1./np.square(np.clip(arg, 1e-3, np.inf))
+        ret =  -1./np.square(np.clip(arg, 1e-9, 1e9))
         if np.any(np.isinf(ret)):
             stop
         return ret

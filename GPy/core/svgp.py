@@ -56,6 +56,7 @@ class SVGP(SparseGP):
             self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z) + self.kern.gradients_X(self.grad_dict['dL_dKmn'], self.Z, self.X)
 
 
+        self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])
         #update the variational parameter gradients:
         self.m.gradient = self.grad_dict['dL_dm']
         self.chol.gradient = self.grad_dict['dL_dchol']

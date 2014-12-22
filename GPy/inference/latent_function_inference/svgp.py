@@ -10,15 +10,16 @@ class SVGP(LatentFunctionInference):
 
         num_inducing = Z.shape[0]
         #expand cholesky representation
-        L = choleskies.flat_to_triang(q_u_chol[:,None]).squeeze()
-        S = L.dot(L.T)
-        Si,_ = linalg.dpotri(np.asfortranarray(L), lower=1)
-        logdetS = 2.*np.sum(np.log(np.abs(np.diag(L))))
+        L = choleskies.flat_to_triang(q_u_chol)
+        S = np.einsum('ijk,ljk->ilk', L, L) #L.dot(L.T)
+        #Si,_ = linalg.dpotri(np.asfortranarray(L), lower=1)
+        Si = choleskies.multiple_dpotri(L)
+        logdetS = np.array([2.*np.sum(np.log(np.abs(np.diag(L[:,:,i])))) for i in range(L.shape[-1])])
 
         if np.any(np.isinf(Si)):
-            print "warning:Cholesky representation unstable"
-            S = S + np.eye(S.shape[0])*1e-5*np.max(np.max(S))
-            Si, Lnew, _,_ = linalg.pdinv(S)
+            raise ValueError("Cholesky representation unstable")
+            #S = S + np.eye(S.shape[0])*1e-5*np.max(np.max(S))
+            #Si, Lnew, _,_ = linalg.pdinv(S)
 
         #compute kernel related stuff
         Kmm = kern.K(Z)

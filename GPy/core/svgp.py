@@ -33,9 +33,9 @@ class SVGP(SparseGP):
 
         #?? self.set_data(X, Y)
 
-        self.m = Param('q_u_mean', np.zeros(self.num_inducing))
-        chol = choleskies.triang_to_flat(np.eye(self.num_inducing)[:,:,None])
-        self.chol = Param('q_u_chol', chol.flatten())
+        self.m = Param('q_u_mean', np.zeros((self.num_inducing, Y.shape[1])))
+        chol = choleskies.triang_to_flat(np.tile(np.eye(self.num_inducing)[:,:,None], (1,1,Y.shape[1])))
+        self.chol = Param('q_u_chol', chol)
         self.link_parameter(self.chol)
         self.link_parameter(self.m)
 

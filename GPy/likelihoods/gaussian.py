@@ -318,9 +318,9 @@ class Gaussian(Likelihood):
 
     def variational_expectations(self, Y, m, v, gh_points=None):
         lik_var = float(self.variance)
-        F = -0.5*np.log(2*np.pi) -0.5*np.log(lik_var) - 0.5*(np.square(Y) + np.square(m) + v - 2*m.dot(Y))/lik_var
+        F = -0.5*np.log(2*np.pi) -0.5*np.log(lik_var) - 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/lik_var
         dF_dmu = (Y - m)/lik_var
-        dF_dv = -0.5/lik_var
-        dF_dlik_var = -0.5/lik_var + 0.5(np.square(Y) + np.square(m) + v - 2*m.dot(Y))/(lik_var**2)
+        dF_dv = np.ones_like(v)*(-0.5/lik_var)
+        dF_dlik_var = np.sum(-0.5/lik_var + 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/(lik_var**2))
         dF_dtheta = [dF_dlik_var]
         return F, dF_dmu, dF_dv, dF_dtheta

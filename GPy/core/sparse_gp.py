@@ -121,12 +121,15 @@ class SparseGP(GP):
                 Kxx = kern.Kdiag(Xnew)
                 var = (Kxx - np.sum(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx) * Kx[None,:,:], 1)).T
         else:
-            Kx = kern.psi1(self.Z, Xnew)
-            mu = np.dot(Kx, self.posterior.woodbury_vector)
+            Kx = kern.psi1(self.Z, Xnew).T
+            mu = np.dot(Kx.T, self.posterior.woodbury_vector)
             if full_cov:
-                raise NotImplementedError, "TODO"
+                Kxx = kern.K(Xnew.mean)
+                if self.posterior.woodbury_inv.ndim == 2:
+                    var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
+                elif self.posterior.woodbury_inv.ndim == 3:
+                    var = Kxx[:,:,None] - np.tensordot(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx).T, Kx, [1,0]).swapaxes(1,2)
             else:
                 Kxx = kern.psi0(self.Z, Xnew)
-                psi2 = kern.psi2(self.Z, Xnew)
-                var = Kxx - np.sum(np.sum(psi2 * Kmmi_LmiBLmi[None, :, :], 1), 1)
+                var = (Kxx - np.sum(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx) * Kx[None,:,:], 1)).T
         return mu, var

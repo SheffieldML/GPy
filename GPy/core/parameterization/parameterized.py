@@ -377,7 +377,7 @@ class Parameterized(Parameterizable):
         cl = max([len(str(x)) if x else 0 for x in constrs + ["Constraint"]])
         tl = max([len(str(x)) if x else 0 for x in ts + ["Tied to"]])
         pl = max([len(str(x)) if x else 0 for x in prirs + ["Prior"]])
-        format_spec = "<tr><td>{{name:<{0}s}}</td><td align=\"right\">{{desc:>{1}s}}</td><td>{{const:^{2}s}}</td><td>{{pri:^{3}s}}</td><td>{{t:^{4}s}}</td></tr>".format(nl, sl, cl, pl, tl)
+        format_spec = "<tr><td class=tg-left>{{name:<{0}s}}</td><td class=tg-right>{{desc:>{1}s}}</td><td class=tg-left>{{const:^{2}s}}</td><td class=tg-left>{{pri:^{3}s}}</td><td class=tg-left>{{t:^{4}s}}</td></tr>".format(nl, sl, cl, pl, tl)
         to_print = []
         for n, d, c, t, p in itertools.izip(names, desc, constrs, ts, prirs):
             to_print.append(format_spec.format(name=n, desc=d, const=c, t=t, pri=p))
@@ -385,13 +385,21 @@ class Parameterized(Parameterizable):
         if header:
             header = """
 <tr>
-  <td><b>{name}</b>
-  <td><b>Value</b></td>
-  <td><b>Constraint</b></td>
-  <td><b>Prior</b></td>
-  <td><b>Tied to</b></td>""".format(name=name)
+  <th><b>{name}</b></th>
+  <th><b>Value</b></th>
+  <th><b>Constraint</b></th>
+  <th><b>Prior</b></th>
+  <th><b>Tied to</b></th>
+</tr>""".format(name=name)
             to_print.insert(0, header)
-        return '<table>' + '\n'.format(sep).join(to_print) + '\n</table>'
+        style = """<style type="text/css">
+.tg  {border-collapse:collapse;border-spacing:0;border-color:#999;}
+.tg td{font-family:Arial, sans-serif;font-size:14px;padding:2px 3px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#999;color:#444;background-color:#F7FDFA;}
+.tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:2px 3px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#999;color:#fff;background-color:#26ADE4;}
+.tg .tg-left{font-family:"Courier New", Courier, monospace !important;;text-align:left}
+.tg .tg-right{font-family:"Courier New", Courier, monospace !important;;text-align:right}
+</style>"""
+        return style + '\n' + '<table class="tg">' + '\n'.format(sep).join(to_print) + '\n</table>'
 
     def __str__(self, header=True):
         name = adjust_name_for_printing(self.name) + "."

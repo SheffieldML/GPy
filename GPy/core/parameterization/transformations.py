@@ -243,6 +243,41 @@ class NormalNaturalThroughTheta(NormalTheta):
         dmuvar[self.mu_indices] -= 2*mu*dmuvar[self.var_indices]
         #=======================================================================
 
+        #=======================================================================
+        # This is by going through theta fully and then going into eta direction:
+        #dmu = dmuvar[self.mu_indices]
+        #dmuvar[self.var_indices] += dmu*mu*(var + 4/var)
+        #=======================================================================
+        return dmuvar # which is now the gradient multiplicator
+
+    def __str__(self):
+        return "natgrad"
+
+
+class NormalNaturalWhooot(NormalTheta):
+    _instances = []
+    def __new__(cls, mu_indices, var_indices):
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if np.all(instance().mu_indices==mu_indices, keepdims=False) and np.all(instance().var_indices==var_indices, keepdims=False):
+                    return instance()
+        o = super(Transformation, cls).__new__(cls, mu_indices, var_indices)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
+
+    def __init__(self, mu_indices, var_indices):
+        self.mu_indices = mu_indices
+        self.var_indices = var_indices
+
+    def gradfactor(self, muvar, dmuvar):
+        #mu = muvar[self.mu_indices]
+        #var = muvar[self.var_indices]
+
+        #=======================================================================
+        # This is just eta direction:
+        #dmuvar[self.mu_indices] -= 2*mu*dmuvar[self.var_indices]
+        #=======================================================================
 
         #=======================================================================
         # This is by going through theta fully and then going into eta direction:

@@ -151,7 +151,7 @@ class Model(Parameterized):
         """
         return -(self._log_likelihood_gradients() + self._log_prior_gradients())
 
-    def _grads(self, x):
+    def _objective_grads(self, x):
         """
         Gets the gradients from the likelihood and the priors.
 
@@ -197,7 +197,7 @@ class Model(Parameterized):
             return np.inf
         return obj
 
-    def _objective_grads(self, x):
+    def _objective_and_grads(self, x):
         try:
             self.optimizer_array = x
             obj_f, obj_grads = self.objective_function(), self._transform_gradients(self.objective_function_gradients())
@@ -233,9 +233,7 @@ class Model(Parameterized):
 
 
         """
-        if self.is_fixed:
-            print 'nothing to optimize'
-        if self.size == 0:
+        if self.is_fixed or self.size == 0:
             print 'nothing to optimize'
 
         if not self.update_model():
@@ -255,7 +253,7 @@ class Model(Parameterized):
             optimizer = optimization.get_optimizer(optimizer)
             opt = optimizer(start, model=self, **kwargs)
 
-        opt.run(f_fp=self._objective_grads, f=self._objective, fp=self._grads)
+        opt.run(f_fp=self._objective_and_grads, f=self._objective, fp=self._objective_grads)
 
         self.optimization_runs.append(opt)
 
@@ -312,7 +310,7 @@ class Model(Parameterized):
             # evaulate around the point x
             f1 = self._objective(x + dx)
             f2 = self._objective(x - dx)
-            gradient = self._grads(x)
+            gradient = self._objective_grads(x)
 
             dx = dx[transformed_index]
             gradient = gradient[transformed_index]
@@ -358,7 +356,7 @@ class Model(Parameterized):
                     print "No free parameters to check"
                     return
 
-            gradient = self._grads(x).copy()
+            gradient = self._objective_grads(x).copy()
             np.where(gradient == 0, 1e-312, gradient)
             ret = True
             for nind, xind in itertools.izip(param_index, transformed_index):
@@ -367,8 +365,8 @@ class Model(Parameterized):
                 f1 = self._objective(xx)
                 xx[xind] -= 2.*step
                 f2 = self._objective(xx)
-                df_ratio = np.abs((f1-f2)/min(f1,f2))
-                df_unstable = df_ratio<df_tolerance
+                df_ratio = np.abs((f1 - f2) / min(f1, f2))
+                df_unstable = df_ratio < df_tolerance
                 numerical_gradient = (f1 - f2) / (2 * step)
                 if np.all(gradient[xind] == 0): ratio = (f1 - f2) == gradient[xind]
                 else: ratio = (f1 - f2) / (2 * step * gradient[xind])

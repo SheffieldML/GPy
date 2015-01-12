@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 try:
-    import Tango
+#    import Tango
     import pylab as pb
 except:
     pass
@@ -16,7 +16,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=[],
         levels=20, samples=0, fignum=None, ax=None, resolution=None,
         plot_raw=False,
-        linecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue'], Y_metadata=None, data_symbol='kx'):
+        linecol='#3300FF',fillcol='#00FFFF', Y_metadata=None, data_symbol='kx'):
     """
     Plot the posterior of the GP.
       - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
@@ -107,7 +107,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         if samples: #NOTE not tested with fixed_inputs
             Ysim = model.posterior_samples(Xgrid, samples)
             for yi in Ysim.T:
-                plots['posterior_samples'] = ax.plot(Xnew, yi[:,None], Tango.colorsHex['darkBlue'], linewidth=0.25)
+                plots['posterior_samples'] = ax.plot(Xnew, yi[:,None], '#3300FF', linewidth=0.25)
                 #ax.plot(Xnew, yi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.
 
 

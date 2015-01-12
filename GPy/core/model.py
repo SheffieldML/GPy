@@ -237,7 +237,7 @@ class Model(Parameterized):
             print 'nothing to optimize'
 
         if not self.update_model():
-            print "Updates were off, setting updates on again"
+            print "updates were off, setting updates on again"
             self.update_model(True)
 
         if start == None:
@@ -396,7 +396,9 @@ class Model(Parameterized):
         """Representation of the model in html for notebook display."""
         model_details = [['<b>Model</b>', self.name + '<br>'],
                          ['<b>Log-likelihood</b>', '{}<br>'.format(float(self.log_likelihood()))],
-                         ["<b>Number of Parameters</b>", '{}<br>'.format(self.size)]]
+                         ["<b>Number of Parameters</b>", '{}<br>'.format(self.size)],
+                         ["<b>Updates</b>", '{}<br>'.format(self._updates)],
+                         ]
         from operator import itemgetter
         to_print = ["""<style type="text/css">
 .pd{
@@ -409,7 +411,9 @@ class Model(Parameterized):
     def __str__(self):
         model_details = [['Name', self.name],
                          ['Log-likelihood', '{}'.format(float(self.log_likelihood()))],
-                         ["Number of Parameters", '{}'.format(self.size)]]
+                         ["Number of Parameters", '{}'.format(self.size)],
+                         ["Updates", '{}'.format(self._updates)],
+                         ]
         from operator import itemgetter
         max_len = reduce(lambda a, b: max(len(b[0]), a), model_details, 0)
         to_print = [""] + ["{0:{l}} : {1}".format(name, detail, l=max_len) for name, detail in model_details] + ["Parameters:"]

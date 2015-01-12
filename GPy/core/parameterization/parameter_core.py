@@ -683,7 +683,7 @@ class OptimizationHandlable(Indexable):
         [np.put(g, i, c.gradfactor(self.param_array[i], g[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g
-    
+
     def _transform_gradients_non_natural(self, g):
         """
         Transform the gradients by multiplying the gradient factor for each
@@ -809,7 +809,7 @@ class Parameterizable(OptimizationHandlable):
     A parameterisable class.
 
     This class provides the parameters list (ArrayList) and standard parameter handling,
-    such as {add|remove}_parameter(), traverse hierarchy and param_array, gradient_array
+    such as {link|unlink}_parameter(), traverse hierarchy and param_array, gradient_array
     and the empty parameters_changed().
 
     This class is abstract and should not be instantiated.

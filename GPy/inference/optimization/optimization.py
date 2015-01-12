@@ -31,7 +31,8 @@ class Optimizer():
                  ftol=None, gtol=None, xtol=None, bfgs_factor=None):
         self.opt_name = None
         self.x_init = x_init
-        self.messages = messages
+        # Turning messages off and using internal structure for print outs:
+        self.messages = False #messages
         self.f_opt = None
         self.x_opt = None
         self.funct_eval = None

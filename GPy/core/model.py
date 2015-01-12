@@ -10,6 +10,8 @@ import multiprocessing as mp
 import numpy as np
 from numpy.linalg.linalg import LinAlgError
 import itertools
+import sys
+from .verbose_optimization import VerboseOptimization
 # import numdifftools as ndt
 
 class Model(Parameterized):
@@ -24,6 +26,7 @@ class Model(Parameterized):
         from .parameterization.ties_and_remappings import Tie
         self.tie = Tie()
         self.link_parameter(self.tie, -1)
+        self.obj_grads = None
         self.add_observer(self.tie, self.tie._parameters_changed_notification, priority=-500)
 
     def log_likelihood(self):
@@ -165,14 +168,14 @@ class Model(Parameterized):
         try:
             # self._set_params_transformed(x)
             self.optimizer_array = x
-            obj_grads = self._transform_gradients(self.objective_function_gradients())
+            self.obj_grads = self._transform_gradients(self.objective_function_gradients())
             self._fail_count = 0
         except (LinAlgError, ZeroDivisionError, ValueError):
             if self._fail_count >= self._allowed_failures:
                 raise
             self._fail_count += 1
-            obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e100, 1e100)
-        return obj_grads
+            self.obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e100, 1e100)
+        return self.obj_grads
 
     def _objective(self, x):
         """
@@ -200,17 +203,17 @@ class Model(Parameterized):
     def _objective_and_grads(self, x):
         try:
             self.optimizer_array = x
-            obj_f, obj_grads = self.objective_function(), self._transform_gradients(self.objective_function_gradients())
+            obj_f, self.obj_grads = self.objective_function(), self._transform_gradients(self.objective_function_gradients())
             self._fail_count = 0
         except (LinAlgError, ZeroDivisionError, ValueError):
             if self._fail_count >= self._allowed_failures:
                 raise
             self._fail_count += 1
             obj_f = np.inf
-            obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e10, 1e10)
-        return obj_f, obj_grads
+            self.obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e10, 1e10)
+        return obj_f, self.obj_grads
 
-    def optimize(self, optimizer=None, start=None, **kwargs):
+    def optimize(self, optimizer=None, start=None, messages=False, max_iters=1000, ipython_notebook=False, **kwargs):
         """
         Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
 
@@ -218,8 +221,8 @@ class Model(Parameterized):
 
         :param max_f_eval: maximum number of function evaluations
         :type max_f_eval: int
-        :messages: whether to display during optimisation
-        :type messages: bool
+        :messages: True: Display messages during optimisation, "ipython_notebook":
+        :type messages: bool"string
         :param optimizer: which optimizer to use (defaults to self.preferred optimizer)
         :type optimizer: string
 
@@ -251,9 +254,10 @@ class Model(Parameterized):
             opt.model = self
         else:
             optimizer = optimization.get_optimizer(optimizer)
-            opt = optimizer(start, model=self, **kwargs)
+            opt = optimizer(start, model=self, max_iters=max_iters, **kwargs)
 
-        opt.run(f_fp=self._objective_and_grads, f=self._objective, fp=self._objective_grads)
+        with VerboseOptimization(self, maxiters=max_iters, verbose=messages, ipython_notebook=ipython_notebook):
+            opt.run(f_fp=self._objective_and_grads, f=self._objective, fp=self._objective_grads)
 
         self.optimization_runs.append(opt)
 

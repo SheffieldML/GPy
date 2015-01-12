@@ -3,7 +3,7 @@
 
 
 try:
-    import Tango
+    #import Tango
     import pylab as pb
 except:
     pass
@@ -17,11 +17,11 @@ def ax_default(fignum, ax):
         fig = ax.figure
     return fig, ax
 
-def meanplot(x, mu, color=Tango.colorsHex['darkBlue'], ax=None, fignum=None, linewidth=2,**kw):
+def meanplot(x, mu, color='#3300FF', ax=None, fignum=None, linewidth=2,**kw):
     _, axes = ax_default(fignum, ax)
     return axes.plot(x,mu,color=color,linewidth=linewidth,**kw)
 
-def gpplot(x, mu, lower, upper, edgecol=Tango.colorsHex['darkBlue'], fillcol=Tango.colorsHex['lightBlue'], ax=None, fignum=None, **kwargs):
+def gpplot(x, mu, lower, upper, edgecol='#3300FF', fillcol='#33CCFF', ax=None, fignum=None, **kwargs):
     _, axes = ax_default(fignum, ax)
 
     mu = mu.flatten()

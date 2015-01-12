@@ -156,7 +156,7 @@ class Parameterized(Parameterizable):
                     p._parent_index_ += 1
                 self.parameters.insert(index, param)
 
-            param.add_observer(self, self._pass_through_notify_observers, -np.inf)
+            param.add_observer(self, self._pass_through_notify_observers, -1000)
 
             parent = self
             while parent is not None:
@@ -215,9 +215,9 @@ class Parameterized(Parameterizable):
         self._highest_parent_._notify_parent_change()
 
     def add_parameter(self, *args, **kwargs):
-        raise DeprecationWarning, "add_parameter was renamed to link_parameter to avoid confusion of setting variables"
+        raise DeprecationWarning, "add_parameter was renamed to link_parameter to avoid confusion of setting variables, use link_parameter instead"
     def remove_parameter(self, *args, **kwargs):
-        raise DeprecationWarning, "remove_parameter was renamed to link_parameter to avoid confusion of setting variables"
+        raise DeprecationWarning, "remove_parameter was renamed to unlink_parameter to avoid confusion of setting variables, use unlink_parameter instead"
 
     def _connect_parameters(self, ignore_added_names=False):
         # connect parameterlist to this parameterized object

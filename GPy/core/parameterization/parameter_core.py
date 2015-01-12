@@ -683,6 +683,17 @@ class OptimizationHandlable(Indexable):
         [np.put(g, i, c.gradfactor(self.param_array[i], g[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g
+    
+    def _transform_gradients_non_natural(self, g):
+        """
+        Transform the gradients by multiplying the gradient factor for each
+        constraint to it.
+        """
+        self._highest_parent_.tie.collate_gradient()
+        [np.put(g, i, c.gradfactor_non_natural(self.param_array[i], g[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
+        if self._has_fixes(): return g[self._fixes_]
+        return g
+
 
     @property
     def num_params(self):

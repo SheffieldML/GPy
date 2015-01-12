@@ -42,6 +42,8 @@ class Transformation(object):
             \frac{\frac{\partial L}{\partial f}\left(\left.\partial f(x)}{\partial x}\right|_{x=f^{-1}(f)\right)}
         """
         raise NotImplementedError
+    def gradfactor_non_natural(self, model_param, dL_dmodel_param):
+        return self.gradfactor(model_param, dL_dmodel_param)
     def initialize(self, f):
         """ produce a sensible initial value for f(x)"""
         raise NotImplementedError
@@ -98,6 +100,7 @@ class NormalTheta(Transformation):
         # that the values are ok
         # Before:
         theta[self.var_indices] = np.abs(-.5/theta[self.var_indices])
+        #theta[self.var_indices] = np.exp(-.5/theta[self.var_indices])
         theta[self.mu_indices] *= theta[self.var_indices]
         return theta # which is now {mu, var}
 
@@ -106,6 +109,7 @@ class NormalTheta(Transformation):
         varp = muvar[self.var_indices]
         muvar[self.mu_indices] /= varp
         muvar[self.var_indices] = -.5/varp
+        #muvar[self.var_indices] = -.5/np.log(varp)
 
         return muvar # which is now {theta1, theta2}
 
@@ -249,6 +253,19 @@ class NormalNaturalThroughTheta(NormalTheta):
         #dmuvar[self.var_indices] += dmu*mu*(var + 4/var)
         #=======================================================================
         return dmuvar # which is now the gradient multiplicator
+
+    def gradfactor_non_natural(self, muvar, dmuvar):
+        mu = muvar[self.mu_indices]
+        var = muvar[self.var_indices]
+        #=======================================================================
+        # theta gradients
+        # This works and the gradient checks!
+        dmuvar[self.mu_indices] *= var
+        dmuvar[self.var_indices] *= 2*(var)**2
+        dmuvar[self.var_indices] += 2*dmuvar[self.mu_indices]*mu
+        #=======================================================================
+
+        return dmuvar # which is now the gradient multiplicator for {theta1, theta2}
 
     def __str__(self):
         return "natgrad"

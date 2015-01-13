@@ -12,12 +12,11 @@ def exponents(fnow, current_grad):
 
 class VerboseOptimization(object):
     def __init__(self, model, opt, maxiters, verbose=True, current_iteration=0, ipython_notebook=False):
-        self.verbose = verbose or ipython_notebook
+        self.verbose = verbose
         self.ipython_notebook = ipython_notebook
         if self.verbose:
             self.model = model
             self.iteration = current_iteration
-            self.ipython_notebook = ipython_notebook
             self.p_iter = self.iteration
             self.maxiters = maxiters
             self.len_maxiters = len(str(maxiters))

@@ -13,7 +13,7 @@ def exponents(fnow, current_grad):
 class VerboseOptimization(object):
     def __init__(self, model, opt, maxiters, verbose=True, current_iteration=0, ipython_notebook=False):
         self.verbose = verbose
-        if self.verbose:
+        if self.verbose or ipython_notebook:
             self.model = model
             self.iteration = current_iteration
             self.ipython_notebook = ipython_notebook
@@ -129,7 +129,7 @@ class VerboseOptimization(object):
             self.current_gradient = np.nan
 
     def __exit__(self, type, value, traceback):
-        if self.verbose:
+        if self.verbose or self.ipython_notebook:
             self.model.remove_observer(self)
         self.stop = time.time()
 

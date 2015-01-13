@@ -471,7 +471,7 @@ class Indexable(Nameable, Updateable):
             self.param_array[...] = transform.initialize(self.param_array)
         reconstrained = self.unconstrain()
         added = self._add_to_index_operations(self.constraints, reconstrained, transform, warning)
-        self.notify_observers(self, None if trigger_parent else -np.inf)
+        self.trigger_update(trigger_parent)
         return added
 
     def unconstrain(self, *transforms):

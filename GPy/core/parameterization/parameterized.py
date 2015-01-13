@@ -156,7 +156,7 @@ class Parameterized(Parameterizable):
                     p._parent_index_ += 1
                 self.parameters.insert(index, param)
 
-            param.add_observer(self, self._pass_through_notify_observers, -1000)
+            param.add_observer(self, self._pass_through_notify_observers, -np.inf)
 
             parent = self
             while parent is not None:
@@ -296,7 +296,7 @@ class Parameterized(Parameterizable):
                 self.param_array[name] = value
             except:
                 raise ValueError, "Setting by slice or index only allowed with array-like"
-            self._trigger_params_changed()
+            self.trigger_update()
         else:
             try: param = self.__getitem__(name, paramlist)
             except: raise

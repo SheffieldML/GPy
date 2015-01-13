@@ -84,6 +84,7 @@ class Param(Parameterizable, ObsAr):
         self._original_ = getattr(obj, '_original_', None)
         self._name = getattr(obj, '_name', None)
         self._gradient_array_ = getattr(obj, '_gradient_array_', None)
+        self._update_on = getattr(obj, '_update_on', None)
         self.constraints = getattr(obj, 'constraints', None)
         self.priors = getattr(obj, 'priors', None)
 
@@ -360,7 +361,7 @@ class ParamConcatenation(object):
     #===========================================================================
     def update_all_params(self):
         for par in self.parents:
-            par.notify_observers()
+            par.trigger_update(trigger_parent=False)
 
     def constrain(self, constraint, warning=True):
         [param.constrain(constraint, trigger_parent=False) for param in self.params]

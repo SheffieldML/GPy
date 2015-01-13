@@ -178,6 +178,24 @@ class MiscTests(unittest.TestCase):
         m.optimize()
         print m
 
+    def test_model_updates(self):
+        Y1 = np.random.normal(0, 1, (40, 13))
+        Y2 = np.random.normal(0, 1, (40, 6))
+        m = GPy.models.MRD([Y1, Y2], 5)
+        self.count = 0
+        m.add_observer(self, self._count_updates, -2000)
+        m.update_model(False)
+        m['.*Gaussian'] = .001
+        self.assertEquals(self.count, 0)
+        m['.*Gaussian'].constrain_bounded(0,.01)
+        self.assertEquals(self.count, 0)
+        m.Z.fix()
+        self.assertEquals(self.count, 0)
+        m.update_model(True)
+        self.assertEquals(self.count, 1)
+    def _count_updates(self, me, which):
+        self.count+=1
+
     def test_model_optimize(self):
         X = np.random.uniform(-3., 3., (20, 1))
         Y = np.sin(X) + np.random.randn(20, 1) * 0.05

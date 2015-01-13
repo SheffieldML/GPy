@@ -256,7 +256,7 @@ class Model(Parameterized):
             optimizer = optimization.get_optimizer(optimizer)
             opt = optimizer(start, model=self, max_iters=max_iters, **kwargs)
 
-        with VerboseOptimization(self, maxiters=max_iters, verbose=messages, ipython_notebook=ipython_notebook):
+        with VerboseOptimization(self, opt, maxiters=max_iters, verbose=messages, ipython_notebook=ipython_notebook):
             opt.run(f_fp=self._objective_and_grads, f=self._objective, fp=self._objective_grads)
 
         self.optimization_runs.append(opt)
@@ -406,7 +406,9 @@ class Model(Parameterized):
         from operator import itemgetter
         to_print = ["""<style type="text/css">
 .pd{
-    font-family:"Courier New", Courier, monospace !important;
+    font-family: "Courier New", Courier, monospace !important;
+    width: 100%;
+    padding: 3px;
 }
 </style>\n"""] + ["<p class=pd>"] + ["{}: {}".format(name, detail) for name, detail in model_details] + ["</p>"]
         to_print.append(super(Model, self)._repr_html_())

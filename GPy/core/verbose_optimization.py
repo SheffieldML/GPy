@@ -12,8 +12,9 @@ def exponents(fnow, current_grad):
 
 class VerboseOptimization(object):
     def __init__(self, model, opt, maxiters, verbose=True, current_iteration=0, ipython_notebook=False):
-        self.verbose = verbose
-        if self.verbose or ipython_notebook:
+        self.verbose = verbose or ipython_notebook
+        self.ipython_notebook = ipython_notebook
+        if self.verbose:
             self.model = model
             self.iteration = current_iteration
             self.ipython_notebook = ipython_notebook
@@ -130,12 +131,11 @@ class VerboseOptimization(object):
 
     def __exit__(self, type, value, traceback):
         if self.verbose or self.ipython_notebook:
+            self.stop = time.time()
             self.model.remove_observer(self)
-        self.stop = time.time()
+            self.print_out()
 
-        self.print_out()
-
-        if not self.ipython_notebook:
-            print
-            print 'Optimization finished in {0:.5g} Seconds'.format(self.stop-self.start)
-            print
+            if not self.ipython_notebook:
+                print
+                print 'Optimization finished in {0:.5g} Seconds'.format(self.stop-self.start)
+                print

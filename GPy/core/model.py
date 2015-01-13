@@ -257,7 +257,7 @@ class Model(Parameterized):
             opt = optimizer(start, model=self, max_iters=max_iters, **kwargs)
 
         with VerboseOptimization(self, opt, maxiters=max_iters, verbose=messages, ipython_notebook=ipython_notebook):
-            opt.run(f_fp=self._objective_and_grads, f=self._objective, fp=self._objective_grads)
+            opt.run(f_fp=self._objective_grads, f=self._objective, fp=self._grads)
 
         self.optimization_runs.append(opt)
 
@@ -314,7 +314,7 @@ class Model(Parameterized):
             # evaulate around the point x
             f1 = self._objective(x + dx)
             f2 = self._objective(x - dx)
-            gradient = self._objective_grads(x)
+            gradient = self._grads(x)
 
             dx = dx[transformed_index]
             gradient = gradient[transformed_index]
@@ -360,7 +360,7 @@ class Model(Parameterized):
                     print "No free parameters to check"
                     return
 
-            gradient = self._objective_grads(x).copy()
+            gradient = self._grads(x).copy()
             np.where(gradient == 0, 1e-312, gradient)
             ret = True
             for nind, xind in itertools.izip(param_index, transformed_index):

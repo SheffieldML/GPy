@@ -129,7 +129,7 @@ class VerboseOptimization(object):
             self.current_gradient = np.nan
 
     def __exit__(self, type, value, traceback):
-        if self.verbose or self.ipython_notebook:
+        if self.verbose:
             self.stop = time.time()
             self.model.remove_observer(self)
             self.print_out()

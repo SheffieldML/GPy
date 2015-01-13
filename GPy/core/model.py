@@ -154,7 +154,7 @@ class Model(Parameterized):
         """
         return -(self._log_likelihood_gradients() + self._log_prior_gradients())
 
-    def _objective_grads(self, x):
+    def _grads(self, x):
         """
         Gets the gradients from the likelihood and the priors.
 
@@ -200,7 +200,7 @@ class Model(Parameterized):
             return np.inf
         return obj
 
-    def _objective_and_grads(self, x):
+    def _objective_grads(self, x):
         try:
             self.optimizer_array = x
             obj_f, self.obj_grads = self.objective_function(), self._transform_gradients(self.objective_function_gradients())

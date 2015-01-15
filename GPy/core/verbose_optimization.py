@@ -22,6 +22,7 @@ class VerboseOptimization(object):
             self.len_maxiters = len(str(maxiters))
             self.opt_name = opt.opt_name
             self.model.add_observer(self, self.print_status)
+            self.status = 'running'
 
             self.update()
 
@@ -65,7 +66,7 @@ class VerboseOptimization(object):
             else:
                 self.exps = exponents(self.fnow, self.current_gradient)
                 print 'Running {} Code:'.format(self.opt_name)
-                print ' {3:5s}   {0:{mi}s}   {1:11s}    {2:11s}'.format("i", "f", "|g|", "secs", mi=self.len_maxiters)
+                print ' {3:7s}   {0:{mi}s}   {1:11s}    {2:11s}'.format("i", "f", "|g|", "secs", mi=self.len_maxiters)
 
     def __enter__(self):
         self.start = time.time()
@@ -78,6 +79,7 @@ class VerboseOptimization(object):
                           ['evaluation', "{:>0{l}}".format(self.iteration, l=self.len_maxiters)],
                           ['objective', "{: > 12.3E}".format(self.fnow)],
                           ['||gradient||', "{: >+12.3E}".format(float(self.current_gradient))],
+                          ['status', "{:s}".format(self.status)],
                       ]
             #message = "Lik:{:5.3E} Grad:{:5.3E} Lik:{:5.3E} Len:{!s}".format(float(m.log_likelihood()), np.einsum('i,i->', grads, grads), float(m.likelihood.variance), " ".join(["{:3.2E}".format(l) for l in m.kern.lengthscale.values]))
             html_begin = """<style type="text/css">
@@ -109,7 +111,7 @@ class VerboseOptimization(object):
                 if b:
                     self.exps = n_exps
             print '\r',
-            print '{3:> 6.2g}  {0:>0{mi}g}  {1:> 12e}  {2:> 12e}'.format(self.iteration, float(self.fnow), float(self.current_gradient), time.time()-self.start, mi=self.len_maxiters), # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
+            print '{3:> 7.2g}  {0:>0{mi}g}  {1:> 12e}  {2:> 12e}'.format(self.iteration, float(self.fnow), float(self.current_gradient), time.time()-self.start, mi=self.len_maxiters), # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
             sys.stdout.flush()
 
     def print_status(self, me, which=None):
@@ -127,6 +129,9 @@ class VerboseOptimization(object):
             self.current_gradient = np.dot(grad, grad)
         else:
             self.current_gradient = np.nan
+
+    def finish(self, opt):
+        self.status = opt.status
 
     def __exit__(self, type, value, traceback):
         if self.verbose:

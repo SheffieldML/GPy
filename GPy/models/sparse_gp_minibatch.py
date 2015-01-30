@@ -97,7 +97,7 @@ Created on 3 Nov 2014
     def has_uncertain_inputs(self):
         return isinstance(self.X, VariationalPosterior)
 
-    def _inner_parameters_changed(self, kern, X, Z, likelihood, Y, Y_metadata, Lm=None, dL_dKmm=None, subset_indices=None):
+    def _inner_parameters_changed(self, kern, X, Z, likelihood, Y, Y_metadata, Lm=None, dL_dKmm=None, subset_indices=None, **kwargs):
         """
         This is the standard part, which usually belongs in parameters_changed.
 
@@ -117,7 +117,7 @@ Created on 3 Nov 2014
         algorithm.
         """
         try:
-            posterior, log_marginal_likelihood, grad_dict = self.inference_method.inference(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm, dL_dKmm=None)
+            posterior, log_marginal_likelihood, grad_dict = self.inference_method.inference(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm, dL_dKmm=None, **kwargs)
         except:
             posterior, log_marginal_likelihood, grad_dict = self.inference_method.inference(kern, X, Z, likelihood, Y, Y_metadata)
         current_values = {}

@@ -400,12 +400,27 @@ class Coregionalize_weave_test(unittest.TestCase):
     #reset the weave state for any other tests
     GPy.util.config.config.set('weave', 'working', 'False')
 
+class KernelTestsProductWithZeroValues(unittest.TestCase):
+
+    def test_zero_valued_kernel(self):
+        X = np.array([[0,1],[1,0]])
+        Y = np.array([[1],[10]])
+        lin = GPy.kern.Linear(2)
+        bias = GPy.kern.Bias(2)
+        k = lin * bias
+        #k = lin
+        m = GPy.models.GPRegression(X, Y, kernel=k)
+        #m['mul.bias.variance'].constrain_fixed(0)
+        m.optimize(messages=False)
 
 
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."
     unittest.main()
+    #suite = unittest.TestLoader().loadTestsFromTestCase(KernelTestsProductWithZeroValues)
+    #unittest.TextTestRunner().run(suite)
+
 #     np.random.seed(0)
 #     N0 = 3
 #     N1 = 9

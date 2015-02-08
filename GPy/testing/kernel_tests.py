@@ -408,11 +408,9 @@ class KernelTestsProductWithZeroValues(unittest.TestCase):
         lin = GPy.kern.Linear(2)
         bias = GPy.kern.Bias(2)
         k = lin * bias
-        m = GPy.models.GPRegression(X, Y, kernel=k)
-        try:
-            m.optimize()
-        except np.linalg.LinAlgError:
-            self.fail("Zero-valued kernel raised exception!")
+        k.update_gradients_full(1, X)
+        self.assertFalse(np.isnan(k['linear.variances'].gradient),
+                         "Gradient resulted in NaN")
 
 
 

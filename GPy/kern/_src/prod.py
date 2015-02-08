@@ -61,7 +61,6 @@ class Prod(CombinationKernel):
             for p in self.parts:
                 p.update_gradients_full(k/p.K(X,X2),X,X2)
         except FloatingPointError:
-            #print "WARNING: gradient calculation falling back to slow version due to zero-valued kernel"
             for combination in itertools.combinations(self.parts, len(self.parts) - 1):
                 prod = reduce(np.multiply, [p.K(X, X2) for p in combination])
                 to_update = list(set(self.parts) - set(combination))[0]

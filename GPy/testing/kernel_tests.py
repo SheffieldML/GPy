@@ -408,10 +408,11 @@ class KernelTestsProductWithZeroValues(unittest.TestCase):
         lin = GPy.kern.Linear(2)
         bias = GPy.kern.Bias(2)
         k = lin * bias
-        #k = lin
         m = GPy.models.GPRegression(X, Y, kernel=k)
-        #m['mul.bias.variance'].constrain_fixed(0)
-        m.optimize(messages=False)
+        try:
+            m.optimize()
+        except np.linalg.LinAlgError:
+            self.fail("Zero-valued kernel raised exception!")
 
 
 

@@ -7,6 +7,19 @@ from ...util.caching import Cache_this
 import itertools
 import operator
 
+
+def numpy_invalid_op_as_exception(func):
+    """
+    A decorator that allows catching numpy invalid operations
+    as exceptions (the default behaviour is raising warnings).
+    """
+    def func_wrapper(*args, **kwargs):
+        np.seterr(invalid='raise')
+        func(*args, **kwargs)
+        np.seterr(invalid='warn')
+    return func_wrapper
+
+
 class Prod(CombinationKernel):
     """
     Computes the product of 2 kernels
@@ -42,15 +55,14 @@ class Prod(CombinationKernel):
             which_parts = self.parts
         return reduce(np.multiply, (p.Kdiag(X) for p in which_parts))
 
+    @numpy_invalid_op_as_exception
     def update_gradients_full(self, dL_dK, X, X2=None):
-        np.seterr(invalid='raise')
         k = self.K(X,X2)*dL_dK
         try:
             for p in self.parts:
                 p.update_gradients_full(k/p.K(X,X2),X,X2)
         except FloatingPointError:
-            np.seterr(invalid='warn')
-            print "Gradient warning: falling back to slow version due to zero-valued kernel"
+            #print "WARNING: gradient calculation falling back to slow version due to zero-valued kernel"
             for combination in itertools.combinations(self.parts, len(self.parts) - 1):
                 prod = reduce(operator.mul, [p.K(X, X2) for p in combination])
                 to_update = list(set(self.parts) - set(combination))[0]
@@ -75,3 +87,5 @@ class Prod(CombinationKernel):
         for p in self.parts:
             target += p.gradients_X_diag(k/p.Kdiag(X),X)
         return target
+
+

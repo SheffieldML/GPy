@@ -5,7 +5,6 @@ import numpy as np
 from kern import CombinationKernel
 from ...util.caching import Cache_this
 import itertools
-import operator
 
 
 def numpy_invalid_op_as_exception(func):
@@ -64,7 +63,7 @@ class Prod(CombinationKernel):
         except FloatingPointError:
             #print "WARNING: gradient calculation falling back to slow version due to zero-valued kernel"
             for combination in itertools.combinations(self.parts, len(self.parts) - 1):
-                prod = reduce(operator.mul, [p.K(X, X2) for p in combination])
+                prod = reduce(np.multiply, [p.K(X, X2) for p in combination])
                 to_update = list(set(self.parts) - set(combination))[0]
                 to_update.update_gradients_full(dL_dK * prod, X, X2)
 

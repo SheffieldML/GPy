@@ -37,7 +37,7 @@ class Optimizer():
         self.x_opt = None
         self.funct_eval = None
         self.status = None
-        self.max_f_eval = int(max_f_eval)
+        self.max_f_eval = int(max_iters)
         self.max_iters = int(max_iters)
         self.bfgs_factor = bfgs_factor
         self.trace = None

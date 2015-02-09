@@ -79,8 +79,10 @@ class Logexp(Transformation):
 
 
 class NormalTheta(Transformation):
+    "Do not use, not officially supported!"
     _instances = []
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
@@ -143,9 +145,10 @@ class NormalTheta(Transformation):
         self.var_indices = state[1]
 
 class NormalNaturalAntti(NormalTheta):
+    "Do not use, not officially supported!"
     _instances = []
-    _logexp = Logexp()
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
@@ -182,8 +185,10 @@ class NormalNaturalAntti(NormalTheta):
         return "natantti"
 
 class NormalEta(Transformation):
+    "Do not use, not officially supported!"
     _instances = []
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
@@ -223,8 +228,10 @@ class NormalEta(Transformation):
         return "eta"
 
 class NormalNaturalThroughTheta(NormalTheta):
+    "Do not use, not officially supported!"
     _instances = []
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
@@ -272,8 +279,10 @@ class NormalNaturalThroughTheta(NormalTheta):
 
 
 class NormalNaturalWhooot(NormalTheta):
+    "Do not use, not officially supported!"
     _instances = []
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
@@ -307,8 +316,10 @@ class NormalNaturalWhooot(NormalTheta):
         return "natgrad"
 
 class NormalNaturalThroughEta(NormalEta):
+    "Do not use, not officially supported!"
     _instances = []
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:

@@ -83,8 +83,8 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
         """Get the gradients of the posterior distribution of X in its specific form."""
         return X.mean.gradient, X.variance.gradient
 
-    def _inner_parameters_changed(self, kern, X, Z, likelihood, Y, Y_metadata, Lm=None, dL_dKmm=None, subset_indices=None):
-        posterior, log_marginal_likelihood, grad_dict, current_values, value_indices = super(BayesianGPLVMMiniBatch, self)._inner_parameters_changed(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm, dL_dKmm=dL_dKmm, subset_indices=subset_indices)
+    def _inner_parameters_changed(self, kern, X, Z, likelihood, Y, Y_metadata, Lm=None, dL_dKmm=None, subset_indices=None, **kw):
+        posterior, log_marginal_likelihood, grad_dict, current_values, value_indices = super(BayesianGPLVMMiniBatch, self)._inner_parameters_changed(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm, dL_dKmm=dL_dKmm, subset_indices=subset_indices, **kw)
 
         if self.has_uncertain_inputs():
             current_values['meangrad'], current_values['vargrad'] = self.kern.gradients_qX_expectations(

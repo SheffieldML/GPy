@@ -27,8 +27,10 @@ class LinalgTests(np.testing.TestCase):
 
     def test_jitchol_failure(self):
         try:
-            """ Expecting an exception to be thrown as we expect it to require
-            5 rounds of jitter to be added to enforce PDness"""
+            """
+            Expecting an exception to be thrown as we expect it to require
+            5 rounds of jitter to be added to enforce PDness
+            """
             jitchol(self.A_corrupt, maxtries=4)
             return False
         except sp.linalg.LinAlgError:

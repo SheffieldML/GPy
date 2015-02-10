@@ -172,7 +172,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         if hasattr(model,"Z"):
             #Zu = model.Z[:,free_dims] * model._Xscale[:,free_dims] + model._Xoffset[:,free_dims]
             Zu = Z[:,free_dims]
-            plots['inducing_inputs'] = ax.plot(Zu[:,free_dims[0]], Zu[:,free_dims[1]], 'wo')
+            plots['inducing_inputs'] = ax.plot(Zu[:,0], Zu[:,1], 'wo')
 
     else:
         raise NotImplementedError, "Cannot define a frame with more than two input dimensions"

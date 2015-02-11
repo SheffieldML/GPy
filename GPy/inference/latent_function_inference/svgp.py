@@ -5,11 +5,8 @@ import numpy as np
 from posterior import Posterior
 
 class SVGP(LatentFunctionInference):
-    def __init__(self, KL_scale=1., batch_scale=1.):
-        self.KL_scale = KL_scale
-        self.batch_scale = batch_scale
 
-    def inference(self, q_u_mean, q_u_chol, kern, X, Z, likelihood, Y, Y_metadata=None):
+    def inference(self, q_u_mean, q_u_chol, kern, X, Z, likelihood, Y, Y_metadata=None, KL_scale=1.0, batch_scale=1.0):
         num_inducing = Z.shape[0]
         num_data, num_outputs = Y.shape
 
@@ -44,9 +41,6 @@ class SVGP(LatentFunctionInference):
         dKL_dS = 0.5*(Kmmi[:,:,None] - Si)
         dKL_dKmm = 0.5*num_outputs*Kmmi - 0.5*Kmmi.dot(S.sum(-1)).dot(Kmmi) - 0.5*Kmmim.dot(Kmmim.T)
 
-        KL_scale = self.KL_scale
-        batch_scale = self.batch_scale
-        KL, dKL_dKmm, dKL_dS, dKL_dm = KL_scale*KL, KL_scale*dKL_dKmm, KL_scale*dKL_dS, KL_scale*dKL_dm
 
         #quadrature for the likelihood
         F, dF_dmu, dF_dv, dF_dthetaL = likelihood.variational_expectations(Y, mu, v)

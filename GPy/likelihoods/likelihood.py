@@ -178,7 +178,7 @@ class Likelihood(Parameterized):
             stop
 
         dF_dtheta = None # Not yet implemented
-        return F.reshape(*shape), dF_dm.reshape(*shape), dF_dv.reshape(*shape), None
+        return F.reshape(*shape), dF_dm.reshape(*shape), dF_dv.reshape(*shape), dF_dtheta
 
     def predictive_mean(self, mu, variance, Y_metadata=None):
         """

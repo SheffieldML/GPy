@@ -127,7 +127,7 @@ class Coregionalize(Kern):
                 config.set('weave', 'working', 'False')
                 dL_dK_small = self._gradient_reduce_weave(dL_dK, index, index2)
         else:
-            dL_dK_small = self._gradient_reduce_weave(dL_dK, index, index2)
+            dL_dK_small = self._gradient_reduce_numpy(dL_dK, index, index2)
 
 
 

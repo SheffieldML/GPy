@@ -9,7 +9,7 @@ try:
     try:
         __IPYTHON__
         pb.ion()
-    except:
+    except NameError:
         pass
 except:
     pass

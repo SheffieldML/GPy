@@ -1042,6 +1042,9 @@ class Parameterizable(OptimizationHandlable):
                     p = param_to_array(p)
                     d = f.create_dataset(n,p.shape,dtype=p.dtype)
                     d[:] = p
+                if hasattr(self, 'param_array'):
+                    d = f.create_dataset('param_array',self.param_array.shape, dtype=self.param_array.dtype)
+                    d[:] = self.param_array
                 f.close()
             except:
                 raise 'Fails to write the parameters into a HDF5 file!'

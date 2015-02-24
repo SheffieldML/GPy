@@ -255,7 +255,16 @@ class Model(Parameterized):
         else:
             optimizer = optimization.get_optimizer(optimizer)
             opt = optimizer(start, model=self, max_iters=max_iters, **kwargs)
-
+            
+        try:
+            from IPython.display import display
+            from IPython.html import widgets
+            display(widgets.TextWidget())
+            ipython_notebook = True
+        except:
+            # Not in Ipython notebook
+            ipython_notebook = False
+            
         with VerboseOptimization(self, opt, maxiters=max_iters, verbose=messages, ipython_notebook=ipython_notebook) as vo:
             opt.run(f_fp=self._objective_grads, f=self._objective, fp=self._grads)
             vo.finish(opt)
@@ -402,7 +411,7 @@ class Model(Parameterized):
         model_details = [['<b>Model</b>', self.name + '<br>'],
                          ['<b>Log-likelihood</b>', '{}<br>'.format(float(self.log_likelihood()))],
                          ["<b>Number of Parameters</b>", '{}<br>'.format(self.size)],
-                         ["<b>Updates</b>", '{}<br>'.format(self._updates)],
+                         ["<b>Updates</b>", '{}<br>'.format(self._update_on)],
                          ]
         from operator import itemgetter
         to_print = ["""<style type="text/css">
@@ -419,7 +428,7 @@ class Model(Parameterized):
         model_details = [['Name', self.name],
                          ['Log-likelihood', '{}'.format(float(self.log_likelihood()))],
                          ["Number of Parameters", '{}'.format(self.size)],
-                         ["Updates", '{}'.format(self._updates)],
+                         ["Updates", '{}'.format(self._update_on)],
                          ]
         from operator import itemgetter
         max_len = reduce(lambda a, b: max(len(b[0]), a), model_details, 0)

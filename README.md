@@ -105,7 +105,7 @@ Ensure nose is installed via pip:
 
 Run nosetests from the root directory of the repository:
 
-    nosetests -v
+    nosetests -v GPy/testing
 
 or from within IPython
 

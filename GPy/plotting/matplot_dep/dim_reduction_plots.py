@@ -62,7 +62,7 @@ def plot_latent(model, labels=None, which_indices=None,
 
 
     if X.shape[0] > 1000:
-        print "Warning: subsampling X, as it has more samples then 1000. X.shape={!s}".format(X.shape)
+        print("Warning: subsampling X, as it has more samples then 1000. X.shape={!s}".format(X.shape))
         subsample = np.random.choice(X.shape[0], size=1000, replace=False)
         X = X[subsample]
         labels = labels[subsample]
@@ -187,14 +187,14 @@ def plot_latent(model, labels=None, which_indices=None,
         fig.tight_layout()
         fig.canvas.draw()
     except Exception as e:
-        print "Could not invoke tight layout: {}".format(e)
+        print("Could not invoke tight layout: {}".format(e))
         pass
 
     if updates:
         try:
             ax.figure.canvas.show()
         except Exception as e:
-            print "Could not invoke show: {}".format(e)
+            print("Could not invoke show: {}".format(e))
         raw_input('Enter to continue')
         view.deactivate()
     return ax

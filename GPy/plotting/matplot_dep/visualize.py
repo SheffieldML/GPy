@@ -225,8 +225,8 @@ class lvm_dimselect(lvm):
         self.labels = labels
         lvm.__init__(self,vals,model,data_visualize,latent_axes,sense_axes,latent_index)
         self.show_sensitivities()
-        print self.latent_values
-        print "use left and right mouse buttons to select dimensions"
+        print(self.latent_values)
+        print("use left and right mouse buttons to select dimensions")
 
 
     def on_click(self, event):
@@ -255,7 +255,7 @@ class lvm_dimselect(lvm):
 
 
     def on_leave(self,event):
-        print type(self.latent_values)
+        print(type(self.latent_values))
         latent_values = self.latent_values.copy()
         y = self.model.predict(latent_values[None,:])[0]
         self.data_visualize.modify(y)

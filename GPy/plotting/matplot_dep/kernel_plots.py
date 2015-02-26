@@ -81,7 +81,7 @@ def plot_ARD(kernel, fignum=None, ax=None, title='', legend=False, filtering=Non
             last_bottom = ard_params[i,:]
             bottom += last_bottom
         else:
-            print "filtering out {}".format(kernel.parameters[i].name)
+            print("filtering out {}".format(kernel.parameters[i].name))
 
     ax.set_xlim(-.5, kernel.input_dim - .5)
     add_bar_labels(fig, ax, [bars[-1]], bottom=bottom-last_bottom)

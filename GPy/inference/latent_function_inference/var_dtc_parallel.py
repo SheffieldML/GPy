@@ -24,7 +24,7 @@ class VarDTC_minibatch(LatentFunctionInference):
     For efficiency, we sometimes work with the cholesky of Y*Y.T. To save repeatedly recomputing this, we cache it.
 
     """
-    const_jitter = 1e-6
+    const_jitter = 1e-8
     def __init__(self, batchsize=None, limit=1, mpi_comm=None):
 
         self.batchsize = batchsize

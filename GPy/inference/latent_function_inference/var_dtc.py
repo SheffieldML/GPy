@@ -21,7 +21,7 @@ class VarDTC(LatentFunctionInference):
     For efficiency, we sometimes work with the cholesky of Y*Y.T. To save repeatedly recomputing this, we cache it.
 
     """
-    const_jitter = 1e-10
+    const_jitter = 1e-8
     def __init__(self, limit=1):
         #self._YYTfactor_cache = caching.cache()
         from ...util.caching import Cacher

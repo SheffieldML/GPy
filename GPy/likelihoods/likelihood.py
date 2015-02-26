@@ -203,7 +203,7 @@ class Likelihood(Parameterized):
 
     def _conditional_mean(self, f):
         """Quadrature calculation of the conditional mean: E(Y_star|f)"""
-        raise NotImplementedError, "implement this function to make predictions"
+        raise NotImplementedError("implement this function to make predictions")
 
     def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
         """

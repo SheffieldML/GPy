@@ -149,7 +149,7 @@ class SparseGP(GP):
 
                 var_ = mdot(la.T, tmp, la)
                 p0 = psi0_star[i]
-                t = self.posterior.woodbury_inv
+                t = np.atleast_3d(self.posterior.woodbury_inv)
                 t2 = np.trace(t.T.dot(psi2_star), axis1=1, axis2=2)
                 
                 if full_cov:

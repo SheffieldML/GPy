@@ -785,7 +785,7 @@ def hapmap3(data_set='hapmap3'):
         from sys import stdout
         import bz2
     except ImportError as i:
-        raise i, "Need pandas for hapmap dataset, make sure to install pandas (http://pandas.pydata.org/) before loading the hapmap dataset"
+        raise i("Need pandas for hapmap dataset, make sure to install pandas (http://pandas.pydata.org/) before loading the hapmap dataset")
 
     dir_path = os.path.join(data_path,'hapmap3')
     hapmap_file_name = 'hapmap3_r2_b36_fwd.consensus.qc.poly'

@@ -91,7 +91,7 @@ def jitchol(A, maxtries=5):
     else:
         diagA = np.diag(A)
         if np.any(diagA <= 0.):
-            raise linalg.LinAlgError, "not pd: non-positive diagonal elements"
+            raise linalg.LinAlgError("not pd: non-positive diagonal elements")
         jitter = diagA.mean() * 1e-6
         num_tries = 1
         while num_tries <= maxtries and np.isfinite(jitter):
@@ -105,7 +105,7 @@ def jitchol(A, maxtries=5):
     import traceback
     logging.warning('\n'.join(['Added {} rounds of jitter, jitter of {:.10e}'.format(num_tries-1, jitter),
                                 '  in '+traceback.format_list(traceback.extract_stack(limit=2)[-2:-1])[0][2:]]))
-    raise linalg.LinAlgError, "not positive definite, even with jitter."
+    raise linalg.LinAlgError("not positive definite, even with jitter.")
 
 # def dtrtri(L, lower=1):
 #     """

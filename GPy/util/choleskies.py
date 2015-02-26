@@ -10,7 +10,7 @@ def safe_root(N):
     i = np.sqrt(N)
     j = int(i)
     if i != j:
-        raise ValueError, "N is not square!"
+        raise ValueError("N is not square!")
     return j
 
 def flat_to_triang(flat):

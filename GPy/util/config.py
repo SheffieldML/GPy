@@ -20,4 +20,4 @@ user_file = os.path.join(home,'.gpy_user.cfg')
 config.readfp(open(default_file))
 config.read([local_file, user_file])
 if not config:
-    raise ValueError, "No configuration file found at either " + user_file + " or " + local_file + " or " + default_file + "."
+    raise ValueError("No configuration file found at either " + user_file + " or " + local_file + " or " + default_file + ".")

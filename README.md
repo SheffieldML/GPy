@@ -11,12 +11,12 @@ A Gaussian processes framework in Python.
 Continuous integration status: ![CI status](https://travis-ci.org/SheffieldML/GPy.png)
 
 ### Moving to Python 3
-Work is underway to make GPy run on Python 3. We are not there yet! Changes performed so far have retained compatibility with Python 2.6 and abive.
+Work is underway to make GPy run on Python 3. We are not there yet! Changes performed so far have retained compatibility with Python 2.6 and above.
 
 Work done so far:
 
-* Use 2to3 to fix relative imports
-* use 2to3 to convert print from statement to function. Some advanced uses of print meant that this could not be done in a way that retained compatibility with old versions of Python. The oldest version of Python that is supported by this version is 2.6 due to the required future imports.
+* Used 2to3 to fix relative imports
+* Used 2to3 to convert print from statement to function. Some advanced uses of print meant that this could not be done in a way that retained compatibility with old versions of Python. The oldest version of Python that is supported by this version is 2.6 due to the required future imports.
 
 ### Citation
 

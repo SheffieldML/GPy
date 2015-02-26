@@ -11,7 +11,7 @@ import datetime
 import json
 import re
 
-from config import *
+from .config import *
 
 ipython_available=True
 try:

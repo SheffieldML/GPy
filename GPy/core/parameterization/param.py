@@ -4,8 +4,8 @@
 import itertools
 import numpy
 np = numpy
-from parameter_core import Parameterizable, adjust_name_for_printing, Pickleable
-from observable_array import ObsAr
+from .parameter_core import Parameterizable, adjust_name_for_printing, Pickleable
+from .observable_array import ObsAr
 
 ###### printing
 __constraints_name__ = "Constraint"
@@ -156,7 +156,7 @@ class Param(Parameterizable, ObsAr):
     #===========================================================================
     @property
     def is_fixed(self):
-        from transformations import __fixed__
+        from .transformations import __fixed__
         return self.constraints[__fixed__].size == self.size
 
     def _get_original(self, param):
@@ -313,7 +313,7 @@ class ParamConcatenation(object):
         See :py:class:`GPy.core.parameter.Param` for more details on constraining.
         """
         # self.params = params
-        from lists_and_dicts import ArrayList
+        from .lists_and_dicts import ArrayList
         self.params = ArrayList([])
         for p in params:
             for p in p.flattened_parameters:

@@ -6,7 +6,7 @@ try:
     from scipy.special import erfcx, erf
 except ImportError:
     from scipy.special import erf
-    from erfcx import erfcx
+    from .erfcx import erfcx
 
 import numpy as np
 

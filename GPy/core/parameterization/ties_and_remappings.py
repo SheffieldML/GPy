@@ -2,8 +2,8 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from parameterized import Parameterized
-from param import Param
+from .parameterized import Parameterized
+from .param import Param
 
 class Remapping(Parameterized):
     def mapping(self):

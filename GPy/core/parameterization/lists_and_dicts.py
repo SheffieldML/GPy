@@ -75,7 +75,7 @@ class ObserverList(object):
 
     def __str__(self):
         from . import ObsAr, Param
-        from parameter_core import Parameterizable
+        from .parameter_core import Parameterizable
         ret = []
         curr_p = None
         

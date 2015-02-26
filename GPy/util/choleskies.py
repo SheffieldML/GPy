@@ -3,7 +3,7 @@
 
 import numpy as np
 from scipy import weave
-import linalg
+from . import linalg
 
 
 def safe_root(N):

@@ -13,11 +13,11 @@ Observable Pattern for patameterization
 
 """
 
-from transformations import Transformation,Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
+from .transformations import Transformation,Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
 import re
 import logging
-from updateable import Updateable
+from .updateable import Updateable
 
 class HierarchyError(Exception):
     """
@@ -170,7 +170,7 @@ class Pickleable(object):
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        from lists_and_dicts import ObserverList
+        from .lists_and_dicts import ObserverList
         self.observers = ObserverList()
         self._setup_observers()
         self._optimizer_copy_transformed = False
@@ -268,7 +268,7 @@ class Indexable(Nameable, Updateable):
     def __init__(self, name, default_constraint=None, *a, **kw):
         super(Indexable, self).__init__(name=name, *a, **kw)
         self._default_constraint_ = default_constraint
-        from index_operations import ParameterIndexOperations
+        from .index_operations import ParameterIndexOperations
         self.constraints = ParameterIndexOperations()
         self.priors = ParameterIndexOperations()
         if self._default_constraint_ is not None:
@@ -310,7 +310,7 @@ class Indexable(Nameable, Updateable):
         that is an int array, containing the indexes for the flattened
         param inside this parameterized logic.
         """
-        from param import ParamConcatenation
+        from .param import ParamConcatenation
         if isinstance(param, ParamConcatenation):
             return np.hstack((self._raveled_index_for(p) for p in param.params))
         return param._raveled_index() + self._offset_for(param)
@@ -407,7 +407,7 @@ class Indexable(Nameable, Updateable):
         repriorized = self.unset_priors()
         self._add_to_index_operations(self.priors, repriorized, prior, warning)
 
-        from domains import _REAL, _POSITIVE, _NEGATIVE
+        from .domains import _REAL, _POSITIVE, _NEGATIVE
         if prior.domain is _POSITIVE:
             self.constrain_positive(warning)
         elif prior.domain is _NEGATIVE:
@@ -536,7 +536,7 @@ class Indexable(Nameable, Updateable):
         update the constraints and priors view, so that
         constraining is automized for the parent.
         """
-        from index_operations import ParameterIndexOperationsView
+        from .index_operations import ParameterIndexOperationsView
         #if getattr(self, "_in_init_"):
             #import ipdb;ipdb.set_trace()
             #self.constraints.update(param.constraints, start)

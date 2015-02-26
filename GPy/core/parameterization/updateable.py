@@ -3,7 +3,7 @@ Created on 11 Nov 2014
 
 @author: maxz
 '''
-from observable import Observable
+from .observable import Observable
 
 
 class Updateable(Observable):

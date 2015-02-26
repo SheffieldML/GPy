@@ -5,8 +5,8 @@
 import numpy; np = numpy
 import itertools
 from re import compile, _pattern_type
-from param import ParamConcatenation
-from parameter_core import HierarchyError, Parameterizable, adjust_name_for_printing
+from .param import ParamConcatenation
+from .parameter_core import HierarchyError, Parameterizable, adjust_name_for_printing
 
 import logging
 from GPy.core.parameterization.index_operations import ParameterIndexOperationsView

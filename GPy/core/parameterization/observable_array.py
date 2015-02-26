@@ -3,8 +3,8 @@
 
 
 import numpy as np
-from parameter_core import Pickleable
-from observable import Observable
+from .parameter_core import Pickleable
+from .observable import Observable
 
 class ObsAr(np.ndarray, Pickleable, Observable):
     """
@@ -39,7 +39,7 @@ class ObsAr(np.ndarray, Pickleable, Observable):
         return self.view(np.ndarray)
 
     def copy(self):
-        from lists_and_dicts import ObserverList
+        from .lists_and_dicts import ObserverList
         memo = {}
         memo[id(self)] = self
         memo[id(self.observers)] = ObserverList()

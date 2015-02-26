@@ -13,7 +13,7 @@ from ctypes import byref, c_char, c_int, c_double # TODO
 import scipy
 import warnings
 import os
-from config import config
+from .config import config
 import logging
 
 _scipyversion = np.float64((scipy.__version__).split('.')[:2])

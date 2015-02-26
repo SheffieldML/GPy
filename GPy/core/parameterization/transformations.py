@@ -3,7 +3,7 @@
 
 
 import numpy as np
-from domains import _POSITIVE,_NEGATIVE, _BOUNDED
+from .domains import _POSITIVE,_NEGATIVE, _BOUNDED
 import weakref
 
 import sys

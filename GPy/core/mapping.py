@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import sys
-from parameterization import Parameterized
+from .parameterization import Parameterized
 import numpy as np
 
 class Mapping(Parameterized):
@@ -74,7 +74,7 @@ class Bijective_mapping(Mapping):
         """Inverse mapping from output domain of the function to the inputs."""
         raise NotImplementedError
 
-from model import Model
+from .model import Model
 
 class Mapping_check_model(Model):
     """

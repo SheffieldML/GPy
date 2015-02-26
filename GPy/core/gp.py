@@ -4,11 +4,11 @@
 import numpy as np
 import sys
 from .. import kern
-from model import Model
-from parameterization import ObsAr
+from .model import Model
+from .parameterization import ObsAr
 from .. import likelihoods
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
-from parameterization.variational import VariationalPosterior
+from .parameterization.variational import VariationalPosterior
 
 import logging
 from GPy.util.normalizer import MeanNorm

@@ -3,8 +3,8 @@
 
 import numpy as np
 from ..util.univariate_Gaussian import std_norm_pdf, std_norm_cdf
-import link_functions
-from likelihood import Likelihood
+from . import link_functions
+from .likelihood import Likelihood
 from scipy import stats
 
 class Bernoulli(Likelihood):

@@ -165,7 +165,7 @@ class Stationary(Kern):
                 try:
                     self.lengthscale.gradient = self.weave_lengthscale_grads(tmp, X, X2)
                 except:
-                    print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
+                    print("\n Weave compilation failed. Falling back to (slower) numpy implementation\n")
                     config.set('weave', 'working', 'False')
                     self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(X[:,q:q+1] - X2[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in xrange(self.input_dim)])
             else:
@@ -214,7 +214,7 @@ class Stationary(Kern):
             try:
                 return self.gradients_X_weave(dL_dK, X, X2)
             except:
-                print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
+                print("\n Weave compilation failed. Falling back to (slower) numpy implementation\n")
                 config.set('weave', 'working', 'False')
                 return self.gradients_X_(dL_dK, X, X2)
         else:

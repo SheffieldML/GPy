@@ -61,7 +61,7 @@ class Coregionalize(Kern):
             try:
                 return self._K_weave(X, X2)
             except:
-                print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
+                print("\n Weave compilation failed. Falling back to (slower) numpy implementation\n")
                 config.set('weave', 'working', 'False')
                 return self._K_numpy(X, X2)
         else:
@@ -123,7 +123,7 @@ class Coregionalize(Kern):
             try:
                 dL_dK_small = self._gradient_reduce_weave(dL_dK, index, index2)
             except:
-                print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
+                print("\n Weave compilation failed. Falling back to (slower) numpy implementation\n")
                 config.set('weave', 'working', 'False')
                 dL_dK_small = self._gradient_reduce_weave(dL_dK, index, index2)
         else:

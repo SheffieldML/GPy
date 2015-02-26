@@ -489,34 +489,35 @@ def symmetrify_numpy(A, upper=False):
     else:
         A[triu] = A.T[triu]
 
-def cholupdate(L, x):
-    """
-    update the LOWER cholesky factor of a pd matrix IN PLACE
-
-    if L is the lower chol. of K, then this function computes L\_
-    where L\_ is the lower chol of K + x*x^T
-
-    """
-    support_code = """
-    #include <math.h>
-    """
-    code = """
-    double r,c,s;
-    int j,i;
-    for(j=0; j<N; j++){
-      r = sqrt(L(j,j)*L(j,j) + x(j)*x(j));
-      c = r / L(j,j);
-      s = x(j) / L(j,j);
-      L(j,j) = r;
-      for (i=j+1; i<N; i++){
-        L(i,j) = (L(i,j) + s*x(i))/c;
-        x(i) = c*x(i) - s*L(i,j);
-      }
-    }
-    """
-    x = x.copy()
-    N = x.size
-    weave.inline(code, support_code=support_code, arg_names=['N', 'L', 'x'], type_converters=weave.converters.blitz)
+#This function appears to be unused. It's use of weave makes it problematic
+#Commenting out for now
+#def cholupdate(L, x):
+#    """
+#    update the LOWER cholesky factor of a pd matrix IN PLACE
+#
+#    if L is the lower chol. of K, then this function computes L\_
+#    where L\_ is the lower chol of K + x*x^T
+#    """
+#    support_code = """
+#    #include <math.h>
+#    """
+#    code = """
+#    double r,c,s;
+#    int j,i;
+#    for(j=0; j<N; j++){
+#      r = sqrt(L(j,j)*L(j,j) + x(j)*x(j));
+#      c = r / L(j,j);
+#      s = x(j) / L(j,j);
+#      L(j,j) = r;
+#      for (i=j+1; i<N; i++){
+#        L(i,j) = (L(i,j) + s*x(i))/c;
+#        x(i) = c*x(i) - s*L(i,j);
+#      }
+#    }
+#    """
+#    x = x.copy()
+#    N = x.size
+#    weave.inline(code, support_code=support_code, arg_names=['N', 'L', 'x'], type_converters=weave.converters.blitz)
 
 def backsub_both_sides(L, X, transpose='left'):
     """ Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky"""

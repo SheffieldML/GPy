@@ -179,7 +179,7 @@ class EPDTC(LatentFunctionInference):
         if VVT_factor.shape[1] == Y.shape[1]:
             woodbury_vector = Cpsi1Vf # == Cpsi1V
         else:
-            print 'foobar'
+            print('foobar')
             psi1V = np.dot(mu_tilde[:,None].T*beta, psi1).T
             tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
             tmp, _ = dpotrs(LB, tmp, lower=1)

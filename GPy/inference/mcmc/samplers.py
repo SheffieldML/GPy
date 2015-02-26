@@ -40,7 +40,7 @@ class Metropolis_Hastings:
         fcurrent = self.model.log_likelihood() + self.model.log_prior()
         accepted = np.zeros(Ntotal,dtype=np.bool)
         for it in range(Ntotal):
-            print "sample %d of %d\r"%(it,Ntotal),
+            print("sample %d of %d\r"%(it,Ntotal), end=' ')
             sys.stdout.flush()
             prop = np.random.multivariate_normal(current, self.cov*self.scale*self.scale)
             self.model._set_params_transformed(prop)

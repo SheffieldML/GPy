@@ -17,6 +17,7 @@ Work done so far:
 
 * Used 2to3 to fix relative imports
 * Used 2to3 to convert print from statement to function. Some advanced uses of print meant that this could not be done in a way that retained compatibility with old versions of Python. The oldest version of Python that is supported by this version is 2.6 due to the required future imports.
+* Used 2to3 to convert exceptions to Python 3 friendly versions. There are a few oustanding string exceptions to take care of that 2to3 doesn't handle. Will need to do these manually
 
 ### Citation
 

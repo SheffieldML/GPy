@@ -27,7 +27,7 @@ def most_significant_input_dimensions(model, which_indices):
             try:
                 input_1, input_2 = np.argsort(model.input_sensitivity())[::-1][:2]
             except:
-                raise ValueError, "cannot automatically determine which dimensions to plot, please pass 'which_indices'"
+                raise ValueError("cannot automatically determine which dimensions to plot, please pass 'which_indices'")
     else:
         input_1, input_2 = which_indices
     return input_1, input_2
@@ -133,7 +133,7 @@ def plot_latent(model, labels=None, which_indices=None,
         try:
             xmin, xmax, ymin, ymax = plot_limits
         except (TypeError, ValueError) as e:
-            raise e.__class__, "Wrong plot limits: {} given -> need (xmin, xmax, ymin, ymax)".format(plot_limits)
+            raise e.__class__("Wrong plot limits: {} given -> need (xmin, xmax, ymin, ymax)".format(plot_limits))
     view = ImshowController(ax, plot_function,
                             (xmin, ymin, xmax, ymax),
                             resolution, aspect=aspect, interpolation='bilinear',

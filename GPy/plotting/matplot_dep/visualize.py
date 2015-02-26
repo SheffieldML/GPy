@@ -25,10 +25,10 @@ class data_show:
         # If no axes are defined, create some.
 
     def modify(self, vals):
-        raise NotImplementedError, "this needs to be implemented to use the data_show class"
+        raise NotImplementedError("this needs to be implemented to use the data_show class")
 
     def close(self):
-        raise NotImplementedError, "this needs to be implemented to use the data_show class"
+        raise NotImplementedError("this needs to be implemented to use the data_show class")
 
 class vpython_show(data_show):
     """
@@ -403,7 +403,7 @@ class mocap_data_show_vpython(vpython_show):
         self.modify_vertices()
 
     def process_values(self):
-        raise NotImplementedError, "this needs to be implemented to use the data_show class"
+        raise NotImplementedError("this needs to be implemented to use the data_show class")
 
 class mocap_data_show(matplotlib_show):
     """Base class for visualizing motion capture data."""
@@ -455,7 +455,7 @@ class mocap_data_show(matplotlib_show):
         self.axes.figure.canvas.draw()
 
     def process_values(self):
-        raise NotImplementedError, "this needs to be implemented to use the data_show class"
+        raise NotImplementedError("this needs to be implemented to use the data_show class")
 
     def initialize_axes(self, boundary=0.05):
         """Set up the axes with the right limits and scaling."""

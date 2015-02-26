@@ -175,7 +175,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
             plots['inducing_inputs'] = ax.plot(Zu[:,0], Zu[:,1], 'wo')
 
     else:
-        raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
+        raise NotImplementedError("Cannot define a frame with more than two input dimensions")
     return plots
 
 def plot_fit_f(model, *args, **kwargs):

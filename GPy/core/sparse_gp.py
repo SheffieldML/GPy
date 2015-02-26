@@ -49,7 +49,7 @@ class SparseGP(GP):
             else:
                 #inference_method = ??
                 raise NotImplementedError, "what to do what to do?"
-            print "defaulting to ", inference_method, "for latent function inference"
+            print("defaulting to ", inference_method, "for latent function inference")
 
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]

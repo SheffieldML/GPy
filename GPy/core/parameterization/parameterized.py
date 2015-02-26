@@ -325,7 +325,7 @@ class Parameterized(Parameterizable):
             self._notify_parent_change()
             self.parameters_changed()
         except Exception as e:
-            print "WARNING: caught exception {!s}, trying to continue".format(e)
+            print("WARNING: caught exception {!s}, trying to continue".format(e))
 
     def copy(self, memo=None):
         if memo is None:

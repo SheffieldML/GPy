@@ -82,7 +82,7 @@ class GP(Model):
                 inference_method = exact_gaussian_inference.ExactGaussianInference()
             else:
                 inference_method = expectation_propagation.EP()
-                print "defaulting to ", inference_method, "for latent function inference"
+                print("defaulting to ", inference_method, "for latent function inference")
         self.inference_method = inference_method
 
         logger.info("adding kernel and likelihood as parameters")
@@ -441,7 +441,7 @@ class GP(Model):
         try:
             super(GP, self).optimize(optimizer, start, **kwargs)
         except KeyboardInterrupt:
-            print "KeyboardInterrupt caught, calling on_optimization_end() to round things up"
+            print("KeyboardInterrupt caught, calling on_optimization_end() to round things up")
             self.inference_method.on_optimization_end()
             raise
 

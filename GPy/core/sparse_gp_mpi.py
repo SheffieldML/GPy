@@ -56,7 +56,7 @@ class SparseGP_MPI(SparseGP):
             self.N_range = (N_start, N_end)
             self.N_list = np.array(N_list)
             self.Y_local = self.Y[N_start:N_end]
-            print 'MPI RANK '+str(self.mpi_comm.rank)+' with the data range '+str(self.N_range)
+            print('MPI RANK '+str(self.mpi_comm.rank)+' with the data range '+str(self.N_range))
             mpi_comm.Bcast(self.param_array, root=0)
         self.update_model(True)
 

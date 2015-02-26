@@ -558,7 +558,7 @@ class Indexable(Nameable, Updateable):
         """
         if warning and reconstrained.size > 0:
             # TODO: figure out which parameters have changed and only print those
-            print "WARNING: reconstraining parameters {}".format(self.hierarchy_name() or self.name)
+            print("WARNING: reconstraining parameters {}".format(self.hierarchy_name() or self.name))
         index = self._raveled_index()
         which.add(what, index)
         return index

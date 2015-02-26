@@ -98,7 +98,7 @@ class Tie(Parameterized):
             if np.all(self.label_buf[idx]==0):
                 # None of p has been tied before.
                 tie_idx = self._expandTieParam(1)
-                print tie_idx
+                print(tie_idx)
                 tie_id = self.label_buf.max()+1
                 self.label_buf[tie_idx] = tie_id
             else:
@@ -189,14 +189,14 @@ class Tie(Parameterized):
                 b0 = self.label_buf==self.label_buf[self.buf_idx[i]]
                 b = self._highest_parent_.param_array[b0]!=self.tied_param[i]
                 if b.sum()==0:
-                    print 'XXX'
+                    print('XXX')
                     continue
                 elif b.sum()==1:
-                    print '!!!'
+                    print('!!!')
                     val = self._highest_parent_.param_array[b0][b][0]
                     self._highest_parent_.param_array[b0] = val
                 else:
-                    print '@@@'
+                    print('@@@')
                     self._highest_parent_.param_array[b0] = self.tied_param[i]
                 changed = True
         return changed

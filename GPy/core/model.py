@@ -82,7 +82,7 @@ class Model(Parameterized):
                 pool.close()  # signal that no more data coming in
                 pool.join()  # wait for all the tasks to complete
             except KeyboardInterrupt:
-                print "Ctrl+c received, terminating and joining pool."
+                print("Ctrl+c received, terminating and joining pool.")
                 pool.terminate()
                 pool.join()
 
@@ -95,10 +95,10 @@ class Model(Parameterized):
                     self.optimization_runs.append(jobs[i].get())
 
                 if verbose:
-                    print("Optimization restart {0}/{1}, f = {2}".format(i + 1, num_restarts, self.optimization_runs[-1].f_opt))
+                    print(("Optimization restart {0}/{1}, f = {2}".format(i + 1, num_restarts, self.optimization_runs[-1].f_opt)))
             except Exception as e:
                 if robust:
-                    print("Warning - optimization restart {0}/{1} failed".format(i + 1, num_restarts))
+                    print(("Warning - optimization restart {0}/{1} failed".format(i + 1, num_restarts)))
                 else:
                     raise e
 
@@ -237,10 +237,10 @@ class Model(Parameterized):
 
         """
         if self.is_fixed or self.size == 0:
-            print 'nothing to optimize'
+            print('nothing to optimize')
 
         if not self.update_model():
-            print "updates were off, setting updates on again"
+            print("updates were off, setting updates on again")
             self.update_model(True)
 
         if start == None:
@@ -305,7 +305,7 @@ class Model(Parameterized):
                     transformed_index = (indices - (~self._fixes_).cumsum())[transformed_index[which[0]]]
 
                 if transformed_index.size == 0:
-                    print "No free parameters to check"
+                    print("No free parameters to check")
                     return
 
             # just check the global ratio
@@ -342,7 +342,7 @@ class Model(Parameterized):
             header_string = ["{h:^{col}}".format(h=header[i], col=cols[i]) for i in range(len(cols))]
             header_string = map(lambda x: '|'.join(x), [header_string])
             separator = '-' * len(header_string[0])
-            print '\n'.join([header_string[0], separator])
+            print('\n'.join([header_string[0], separator]))
             if target_param is None:
                 param_index = range(len(x))
                 transformed_index = param_index
@@ -358,7 +358,7 @@ class Model(Parameterized):
                     transformed_index = param_index
 
                 if param_index.size == 0:
-                    print "No free parameters to check"
+                    print("No free parameters to check")
                     return
 
             gradient = self._grads(x).copy()
@@ -392,7 +392,7 @@ class Model(Parameterized):
                 ng = '%.6f' % float(numerical_gradient)
                 df = '%1.e' % float(df_ratio)
                 grad_string = "{0:<{c0}}|{1:^{c1}}|{2:^{c2}}|{3:^{c3}}|{4:^{c4}}|{5:^{c5}}".format(formatted_name, r, d, g, ng, df, c0=cols[0] + 9, c1=cols[1], c2=cols[2], c3=cols[3], c4=cols[4], c5=cols[5])
-                print grad_string
+                print(grad_string)
 
             self.optimizer_array = x
             return ret

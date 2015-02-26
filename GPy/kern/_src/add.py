@@ -111,7 +111,7 @@ class Add(CombinationKernel):
                 psi2 += np.einsum('nm,no->mo',tmp1,tmp2)+np.einsum('nm,no->mo',tmp2,tmp1)
                 #(tmp1[:, :, None] * tmp2[:, None, :]) + (tmp2[:, :, None] * tmp1[:, None, :])
             else:
-                raise NotImplementedError, "psi2 cannot be computed for this kernel"
+                raise NotImplementedError("psi2 cannot be computed for this kernel")
         return psi2
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):

@@ -135,7 +135,7 @@ class ODE_st(Kern):
                     Kdiag[s1]+= b**2*k1 - 2*a*c*k2 + a**2*k3 + c**2*vyt*vyx
                     #Kdiag[s1]+= Vu*Vy*(k1+k2+k3)
                 else:
-                    raise ValueError, "invalid input/output index"
+                    raise ValueError("invalid input/output index")
 
         return Kdiag
         

@@ -65,10 +65,10 @@ class Stationary(Kern):
         self.link_parameters(self.variance, self.lengthscale)
 
     def K_of_r(self, r):
-        raise NotImplementedError, "implement the covariance function as a fn of r to use this class"
+        raise NotImplementedError("implement the covariance function as a fn of r to use this class")
 
     def dK_dr(self, r):
-        raise NotImplementedError, "implement derivative of the covariance function wrt r to use this class"
+        raise NotImplementedError("implement derivative of the covariance function wrt r to use this class")
 
     @Cache_this(limit=5, ignore_args=())
     def K(self, X, X2=None):

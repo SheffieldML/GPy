@@ -114,7 +114,7 @@ class ODE_UY(Kern):
                 elif i==1:
                     Kdiag[s1]+= Vu*Vy*(k1+k2+k3)
                 else:
-                    raise ValueError, "invalid input/output index"
+                    raise ValueError("invalid input/output index")
         #Kdiag[slices[0][0]]+= self.variance_U   #matern32 diag
         #Kdiag[slices[1][0]]+= self.variance_U*self.variance_Y*(k1+k2+k3)  #  diag
         return Kdiag

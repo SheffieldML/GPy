@@ -36,7 +36,7 @@ def adjust_name_for_printing(name):
         name = name.replace("/", "_l_").replace("@", '_at_')
         name = name.replace("(", "_of_").replace(")", "")
         if re.match(r'^[a-zA-Z_][a-zA-Z0-9-_]*$', name) is None:
-            raise NameError, "name {} converted to {} cannot be further converted to valid python variable name!".format(name2, name)
+            raise NameError("name {} converted to {} cannot be further converted to valid python variable name!".format(name2, name))
         return name
     return ''
 
@@ -65,13 +65,13 @@ class Parentable(object):
         Gets called, when the parent changed, so we can adjust our
         inner attributes according to the new parent.
         """
-        raise NotImplementedError, "shouldnt happen, Parentable objects need to be able to change their parent"
+        raise NotImplementedError("shouldnt happen, Parentable objects need to be able to change their parent")
 
     def _disconnect_parent(self, *args, **kw):
         """
         Disconnect this object from its parent
         """
-        raise NotImplementedError, "Abstract superclass"
+        raise NotImplementedError("Abstract superclass")
 
     @property
     def _highest_parent_(self):
@@ -214,7 +214,7 @@ class Gradcheckable(Pickleable, Parentable):
         Perform the checkgrad on the model.
         TODO: this can be done more efficiently, when doing it inside here
         """
-        raise HierarchyError, "This parameter is not in a model with a likelihood, and, therefore, cannot be gradient checked!"
+        raise HierarchyError("This parameter is not in a model with a likelihood, and, therefore, cannot be gradient checked!")
 
 class Nameable(Gradcheckable):
     """
@@ -652,10 +652,10 @@ class OptimizationHandlable(Indexable):
         self.trigger_update()
 
     def _get_params_transformed(self):
-        raise DeprecationWarning, "_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!"
+        raise DeprecationWarning("_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!")
 #
     def _set_params_transformed(self, p):
-        raise DeprecationWarning, "_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!"
+        raise DeprecationWarning("_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!")
 
     def _trigger_params_changed(self, trigger_parent=True):
         """
@@ -701,7 +701,7 @@ class OptimizationHandlable(Indexable):
         Return the number of parameters of this parameter_handle.
         Param objects will always return 0.
         """
-        raise NotImplemented, "Abstract, please implement in respective classes"
+        raise NotImplemented("Abstract, please implement in respective classes")
 
     def parameter_names(self, add_self=False, adjust_for_printing=False, recursive=True):
         """

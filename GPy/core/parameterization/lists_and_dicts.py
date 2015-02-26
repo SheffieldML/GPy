@@ -32,7 +32,7 @@ class ArrayList(list):
             if el is item:
                 return index
             index += 1
-        raise ValueError, "{} is not in list".format(item)
+        raise ValueError("{} is not in list".format(item))
     pass
 
 class ObserverList(object):

@@ -30,7 +30,7 @@ class Model(Parameterized):
         self.add_observer(self.tie, self.tie._parameters_changed_notification, priority=-500)
 
     def log_likelihood(self):
-        raise NotImplementedError, "this needs to be implemented to use the model class"
+        raise NotImplementedError("this needs to be implemented to use the model class")
     def _log_likelihood_gradients(self):
         return self.gradient.copy()
 
@@ -119,7 +119,7 @@ class Model(Parameterized):
 
         DEPRECATED.
         """
-        raise DeprecationWarning, 'parameters now have default constraints'
+        raise DeprecationWarning('parameters now have default constraints')
 
     def objective_function(self):
         """

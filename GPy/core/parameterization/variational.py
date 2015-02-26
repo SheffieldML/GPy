@@ -16,13 +16,13 @@ class VariationalPrior(Parameterized):
         super(VariationalPrior, self).__init__(name=name, **kw)
 
     def KL_divergence(self, variational_posterior):
-        raise NotImplementedError, "override this for variational inference of latent space"
+        raise NotImplementedError("override this for variational inference of latent space")
 
     def update_gradients_KL(self, variational_posterior):
         """
         updates the gradients for mean and variance **in place**
         """
-        raise NotImplementedError, "override this for variational inference of latent space"
+        raise NotImplementedError("override this for variational inference of latent space")
 
 class NormalPrior(VariationalPrior):
     def KL_divergence(self, variational_posterior):

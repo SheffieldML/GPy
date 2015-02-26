@@ -48,7 +48,7 @@ class SparseGP(GP):
                 inference_method = var_dtc.VarDTC(limit=1 if not self.missing_data else Y.shape[1])
             else:
                 #inference_method = ??
-                raise NotImplementedError, "what to do what to do?"
+                raise NotImplementedError("what to do what to do?")
             print("defaulting to ", inference_method, "for latent function inference")
 
         self.Z = Param('inducing inputs', Z)

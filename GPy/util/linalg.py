@@ -34,7 +34,7 @@ if config.getboolean('anaconda', 'installed') and config.getboolean('anaconda', 
         dsyrk = mkl_rt.dsyrk
         dsyr = mkl_rt.dsyr
         _blas_available = True
-        print 'anaconda installed and mkl is loaded'
+        print('anaconda installed and mkl is loaded')
     except:
         _blas_available = False
 else:
@@ -64,7 +64,7 @@ def force_F_ordered(A):
     """
     if A.flags['F_CONTIGUOUS']:
         return A
-    print "why are your arrays not F order?"
+    print("why are your arrays not F order?")
     return np.asfortranarray(A)
 
 # def jitchol(A, maxtries=5):
@@ -288,7 +288,7 @@ def pca(Y, input_dim):
 
     """
     if not np.allclose(Y.mean(axis=0), 0.0):
-        print "Y is not zero mean, centering it locally (GPy.util.linalg.pca)"
+        print("Y is not zero mean, centering it locally (GPy.util.linalg.pca)")
 
         # Y -= Y.mean(axis=0)
 
@@ -423,7 +423,7 @@ def symmetrify(A, upper=False):
         try:
             symmetrify_weave(A, upper)
         except:
-            print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
+            print("\n Weave compilation failed. Falling back to (slower) numpy implementation\n")
             config.set('weave', 'working', 'False')
             symmetrify_numpy(A, upper)
     else:

@@ -213,7 +213,7 @@ class Model(Parameterized):
             self.obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e10, 1e10)
         return obj_f, self.obj_grads
 
-    def optimize(self, optimizer=None, start=None, messages=False, max_iters=1000, ipython_notebook=False, **kwargs):
+    def optimize(self, optimizer=None, start=None, messages=False, max_iters=1000, ipython_notebook=True, **kwargs):
         """
         Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
 
@@ -255,16 +255,7 @@ class Model(Parameterized):
         else:
             optimizer = optimization.get_optimizer(optimizer)
             opt = optimizer(start, model=self, max_iters=max_iters, **kwargs)
-            
-        try:
-            from IPython.display import display
-            from IPython.html import widgets
-            display(widgets.TextWidget())
-            ipython_notebook = True
-        except:
-            # Not in Ipython notebook
-            ipython_notebook = False
-            
+                        
         with VerboseOptimization(self, opt, maxiters=max_iters, verbose=messages, ipython_notebook=ipython_notebook) as vo:
             opt.run(f_fp=self._objective_grads, f=self._objective, fp=self._grads)
             vo.finish(opt)

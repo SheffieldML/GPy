@@ -11,7 +11,6 @@ class Updateable(Observable):
     A model can be updated or not.
     Make sure updates can be switched on and off.
     """
-    _updates = True
     def __init__(self, *args, **kwargs):
         super(Updateable, self).__init__(*args, **kwargs)
 

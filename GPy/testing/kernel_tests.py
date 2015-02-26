@@ -282,7 +282,7 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         try:
             k.K(self.X)
         except AssertionError:
-            raise AssertionError, "k.K(X) should run on self.D-1 dimension"
+            raise AssertionError("k.K(X) should run on self.D-1 dimension")
 
     def test_Matern52(self):
         k = GPy.kern.Matern52(self.D)

@@ -174,7 +174,7 @@ class skeleton(tree):
         return connection
 
     def to_xyz(self, channels):
-        raise NotImplementedError, "this needs to be implemented to use the skeleton class"
+        raise NotImplementedError("this needs to be implemented to use the skeleton class")
 
 
     def finalize(self):

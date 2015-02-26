@@ -13,8 +13,8 @@ James 11/12/13
 
 import numpy as np
 from scipy import stats, special
-import link_functions
-from likelihood import Likelihood
+from . import link_functions
+from .likelihood import Likelihood
 from ..core.parameterization import Param
 from ..core.parameterization.transformations import Logexp
 from scipy import stats

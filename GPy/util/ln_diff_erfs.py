@@ -6,7 +6,7 @@ try:
     from scipy.special import erfcx, erf
 except ImportError:
     from scipy.special import erf
-    from erfcx import erfcx
+    from .erfcx import erfcx
 
 import numpy as np
 
@@ -35,7 +35,7 @@ def ln_diff_erfs(x1, x2, return_sign=False):
         elif x2.size==1:
             v = np.zeros(x1.shape)
         else:
-            raise ValueError, "This function does not broadcast unless provided with a scalar."
+            raise ValueError("This function does not broadcast unless provided with a scalar.")
     
     if x1.size == 1:
         x1 = np.tile(x1, x2.shape)

@@ -23,4 +23,4 @@ if __name__=='__main__':
     A = np.zeros((5,5))
     B = get_blocks(A,[2,3])
     B[0,0] += 7
-    print B
+    print(B)

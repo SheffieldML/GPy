@@ -1,6 +1,5 @@
 # GPy
 
-
 A Gaussian processes framework in Python.
 
 * [GPy homepage](http://sheffieldml.github.io/GPy/)
@@ -10,6 +9,15 @@ A Gaussian processes framework in Python.
 * [Unit tests (Travis-CI)](https://travis-ci.org/SheffieldML/GPy)
 
 Continuous integration status: ![CI status](https://travis-ci.org/SheffieldML/GPy.png)
+
+### Moving to Python 3
+Work is underway to make GPy run on Python 3. We are not there yet! Changes performed so far have retained compatibility with Python 2.6 and above.
+
+Work done so far:
+
+* Used 2to3 to fix relative imports
+* Used 2to3 to convert print from statement to function. Some advanced uses of print meant that this could not be done in a way that retained compatibility with old versions of Python. The oldest version of Python that is supported by this version is 2.6 due to the required future imports.
+* Used 2to3 to convert exceptions to Python 3 friendly versions. There are a few oustanding string exceptions to take care of that 2to3 doesn't handle. Will need to do these manually
 
 ### Citation
 
@@ -105,7 +113,7 @@ Ensure nose is installed via pip:
 
 Run nosetests from the root directory of the repository:
 
-    nosetests -v
+    nosetests -v GPy/testing
 
 or from within IPython
 

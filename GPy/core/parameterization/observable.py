@@ -12,7 +12,7 @@ class Observable(object):
     """
     def __init__(self, *args, **kwargs):
         super(Observable, self).__init__()
-        from lists_and_dicts import ObserverList
+        from .lists_and_dicts import ObserverList
         self.observers = ObserverList()
         self._update_on = True
 

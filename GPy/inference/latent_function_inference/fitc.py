@@ -26,7 +26,7 @@ class FITC(LatentFunctionInference):
         #make sure the noise is not hetero
         sigma_n = likelihood.gaussian_variance(Y_metadata)
         if sigma_n.size >1:
-            raise NotImplementedError, "no hetero noise with this implementation of FITC"
+            raise NotImplementedError("no hetero noise with this implementation of FITC")
 
         Kmm = kern.K(Z)
         Knn = kern.Kdiag(X)

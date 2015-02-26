@@ -54,7 +54,7 @@ class Optimizer():
         self.time = str(end - start)
 
     def opt(self, f_fp=None, f=None, fp=None):
-        raise NotImplementedError, "this needs to be implemented to use the optimizer class"
+        raise NotImplementedError("this needs to be implemented to use the optimizer class")
 
     def plot(self):
         """

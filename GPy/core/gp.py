@@ -1,4 +1,4 @@
-# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
@@ -124,6 +124,7 @@ class GP(Model):
             else:
                 self.X = ObsAr(X)
         self.update_model(True)
+        self._trigger_params_changed()
 
     def set_X(self,X):
         """

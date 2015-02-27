@@ -1,4 +1,4 @@
-# Copyright (c) 2012, 2013 GPy Authors
+# Copyright (c) 2012-2014 GPy Authors
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 

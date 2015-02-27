@@ -1,4 +1,4 @@
-# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2014, Max Zwiessele, James Hensman
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
@@ -215,9 +215,9 @@ class Parameterized(Parameterizable):
         self._highest_parent_._notify_parent_change()
 
     def add_parameter(self, *args, **kwargs):
-        raise DeprecationWarning, "add_parameter was renamed to link_parameter to avoid confusion of setting variables"
+        raise DeprecationWarning, "add_parameter was renamed to link_parameter to avoid confusion of setting variables, use link_parameter instead"
     def remove_parameter(self, *args, **kwargs):
-        raise DeprecationWarning, "remove_parameter was renamed to link_parameter to avoid confusion of setting variables"
+        raise DeprecationWarning, "remove_parameter was renamed to unlink_parameter to avoid confusion of setting variables, use unlink_parameter instead"
 
     def _connect_parameters(self, ignore_added_names=False):
         # connect parameterlist to this parameterized object
@@ -296,7 +296,7 @@ class Parameterized(Parameterizable):
                 self.param_array[name] = value
             except:
                 raise ValueError, "Setting by slice or index only allowed with array-like"
-            self._trigger_params_changed()
+            self.trigger_update()
         else:
             try: param = self.__getitem__(name, paramlist)
             except: raise
@@ -377,7 +377,7 @@ class Parameterized(Parameterizable):
         cl = max([len(str(x)) if x else 0 for x in constrs + ["Constraint"]])
         tl = max([len(str(x)) if x else 0 for x in ts + ["Tied to"]])
         pl = max([len(str(x)) if x else 0 for x in prirs + ["Prior"]])
-        format_spec = "<tr><td>{{name:<{0}s}}</td><td align=\"right\">{{desc:>{1}s}}</td><td>{{const:^{2}s}}</td><td>{{pri:^{3}s}}</td><td>{{t:^{4}s}}</td></tr>".format(nl, sl, cl, pl, tl)
+        format_spec = "<tr><td class=tg-left>{{name:<{0}s}}</td><td class=tg-right>{{desc:>{1}s}}</td><td class=tg-left>{{const:^{2}s}}</td><td class=tg-left>{{pri:^{3}s}}</td><td class=tg-left>{{t:^{4}s}}</td></tr>".format(nl, sl, cl, pl, tl)
         to_print = []
         for n, d, c, t, p in itertools.izip(names, desc, constrs, ts, prirs):
             to_print.append(format_spec.format(name=n, desc=d, const=c, t=t, pri=p))
@@ -385,13 +385,21 @@ class Parameterized(Parameterizable):
         if header:
             header = """
 <tr>
-  <td><b>{name}</b>
-  <td><b>Value</b></td>
-  <td><b>Constraint</b></td>
-  <td><b>Prior</b></td>
-  <td><b>Tied to</b></td>""".format(name=name)
+  <th><b>{name}</b></th>
+  <th><b>Value</b></th>
+  <th><b>Constraint</b></th>
+  <th><b>Prior</b></th>
+  <th><b>Tied to</b></th>
+</tr>""".format(name=name)
             to_print.insert(0, header)
-        return '<table>' + '\n'.format(sep).join(to_print) + '\n</table>'
+        style = """<style type="text/css">
+.tg  {font-family:"Courier New", Courier, monospace !important;padding:2px 3px;word-break:normal;border-collapse:collapse;border-spacing:0;border-color:#DCDCDC;margin:0px auto;width:100%;}
+.tg td{font-family:"Courier New", Courier, monospace !important;font-weight:bold;color:#444;background-color:#F7FDFA;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#DCDCDC;}
+.tg th{font-family:"Courier New", Courier, monospace !important;font-weight:normal;color:#fff;background-color:#26ADE4;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#DCDCDC;}
+.tg .tg-left{font-family:"Courier New", Courier, monospace !important;font-weight:normal;text-align:left;}
+.tg .tg-right{font-family:"Courier New", Courier, monospace !important;font-weight:normal;text-align:right;}
+</style>"""
+        return style + '\n' + '<table class="tg">' + '\n'.format(sep).join(to_print) + '\n</table>'
 
     def __str__(self, header=True):
         name = adjust_name_for_printing(self.name) + "."

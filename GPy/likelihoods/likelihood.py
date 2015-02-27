@@ -1,4 +1,4 @@
-# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2012-2014 The GPy authors (see AUTHORS.txt)
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
@@ -133,7 +133,7 @@ class Likelihood(Parameterized):
 
     def variational_expectations(self, Y, m, v, gh_points=None):
         """
-        Use Gauss-Hermite Quadrature to compute 
+        Use Gauss-Hermite Quadrature to compute
 
            E_p(f) [ log p(y|f) ]
            d/dm E_p(f) [ log p(y|f) ]
@@ -143,9 +143,10 @@ class Likelihood(Parameterized):
 
         if no gh_points are passed, we construct them using defualt options
         """
+        #May be broken
 
         if gh_points is None:
-            gh_x, gh_w = np.polynomial.hermite.hermgauss(12)
+            gh_x, gh_w = np.polynomial.hermite.hermgauss(20)
         else:
             gh_x, gh_w = gh_points
 
@@ -156,15 +157,15 @@ class Likelihood(Parameterized):
         X = gh_x[None,:]*np.sqrt(2.*v[:,None]) + m[:,None]
 
         #evaluate the likelhood for the grid. First ax indexes the data (and mu, var) and the second indexes the grid.
-        # broadcast needs to be handled carefully. 
+        # broadcast needs to be handled carefully.
         logp = self.logpdf(X,Y[:,None])
         dlogp_dx = self.dlogpdf_df(X, Y[:,None])
         d2logp_dx2 = self.d2logpdf_df2(X, Y[:,None])
 
         #clipping for numerical stability
-        logp = np.clip(logp,-1e6,1e6)
-        dlogp_dx = np.clip(dlogp_dx,-1e6,1e6)
-        d2logp_dx2 = np.clip(d2logp_dx2,-1e6,1e6)
+        #logp = np.clip(logp,-1e9,1e9)
+        #dlogp_dx = np.clip(dlogp_dx,-1e9,1e9)
+        #d2logp_dx2 = np.clip(d2logp_dx2,-1e9,1e9)
 
         #average over the gird to get derivatives of the Gaussian's parameters
         F = np.dot(logp, gh_w)
@@ -176,10 +177,8 @@ class Likelihood(Parameterized):
         if np.any(np.isnan(dF_dm)) or np.any(np.isinf(dF_dm)):
             stop
 
-        return F.reshape(*shape), dF_dm.reshape(*shape), dF_dv.reshape(*shape)
-
-
-
+        dF_dtheta = None # Not yet implemented
+        return F.reshape(*shape), dF_dm.reshape(*shape), dF_dv.reshape(*shape), dF_dtheta
 
     def predictive_mean(self, mu, variance, Y_metadata=None):
         """

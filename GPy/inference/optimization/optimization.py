@@ -1,4 +1,4 @@
-# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import datetime as dt
@@ -31,12 +31,13 @@ class Optimizer():
                  ftol=None, gtol=None, xtol=None, bfgs_factor=None):
         self.opt_name = None
         self.x_init = x_init
-        self.messages = messages
+        # Turning messages off and using internal structure for print outs:
+        self.messages = False #messages
         self.f_opt = None
         self.x_opt = None
         self.funct_eval = None
         self.status = None
-        self.max_f_eval = int(max_f_eval)
+        self.max_f_eval = int(max_iters)
         self.max_iters = int(max_iters)
         self.bfgs_factor = bfgs_factor
         self.trace = None
@@ -225,13 +226,11 @@ class opt_SCG(Optimizer):
         self.status = opt_result[3]
 
 def get_optimizer(f_min):
-    from sgd import opt_SGD
 
     optimizers = {'fmin_tnc': opt_tnc,
           'simplex': opt_simplex,
           'lbfgsb': opt_lbfgsb,
-          'scg': opt_SCG,
-          'sgd': opt_SGD}
+          'scg': opt_SCG}
 
     if rasm_available:
         optimizers['rasmussen'] = opt_rasm

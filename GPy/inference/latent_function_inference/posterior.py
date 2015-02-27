@@ -158,9 +158,11 @@ class Posterior(object):
                 #self._woodbury_inv, _ = dpotrs(self.woodbury_chol, np.eye(self.woodbury_chol.shape[0]), lower=1)
                 symmetrify(self._woodbury_inv)
             elif self._covariance is not None:
-                B = self._K - self._covariance
-                tmp, _ = dpotrs(self.K_chol, B)
-                self._woodbury_inv, _ = dpotrs(self.K_chol, tmp.T)                
+                B = np.atleast_3d(self._K) - np.atleast_3d(self._covariance)
+                self._woodbury_inv = np.empty_like(B)
+                for i in xrange(B.shape[-1]):
+                    tmp, _ = dpotrs(self.K_chol, B[:,:,i])
+                    self._woodbury_inv[:,:,i], _ = dpotrs(self.K_chol, tmp.T)
         return self._woodbury_inv
 
     @property

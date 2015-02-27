@@ -1,3 +1,5 @@
+# Copyright (c) 2014, Alan Saul
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 import numpy as np
 import unittest
 import GPy

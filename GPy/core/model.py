@@ -1,4 +1,4 @@
-# Copyright (c) 2012, 2013, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
@@ -10,6 +10,8 @@ import multiprocessing as mp
 import numpy as np
 from numpy.linalg.linalg import LinAlgError
 import itertools
+import sys
+from .verbose_optimization import VerboseOptimization
 # import numdifftools as ndt
 
 class Model(Parameterized):
@@ -24,12 +26,13 @@ class Model(Parameterized):
         from .parameterization.ties_and_remappings import Tie
         self.tie = Tie()
         self.link_parameter(self.tie, -1)
+        self.obj_grads = None
         self.add_observer(self.tie, self.tie._parameters_changed_notification, priority=-500)
 
     def log_likelihood(self):
         raise NotImplementedError, "this needs to be implemented to use the model class"
     def _log_likelihood_gradients(self):
-        return self.gradient
+        return self.gradient.copy()
 
     def optimize_restarts(self, num_restarts=10, robust=False, verbose=True, parallel=False, num_processes=None, **kwargs):
         """
@@ -165,14 +168,14 @@ class Model(Parameterized):
         try:
             # self._set_params_transformed(x)
             self.optimizer_array = x
-            obj_grads = self._transform_gradients(self.objective_function_gradients())
+            self.obj_grads = self._transform_gradients(self.objective_function_gradients())
             self._fail_count = 0
         except (LinAlgError, ZeroDivisionError, ValueError):
             if self._fail_count >= self._allowed_failures:
                 raise
             self._fail_count += 1
-            obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e100, 1e100)
-        return obj_grads
+            self.obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e100, 1e100)
+        return self.obj_grads
 
     def _objective(self, x):
         """
@@ -200,17 +203,17 @@ class Model(Parameterized):
     def _objective_grads(self, x):
         try:
             self.optimizer_array = x
-            obj_f, obj_grads = self.objective_function(), self._transform_gradients(self.objective_function_gradients())
+            obj_f, self.obj_grads = self.objective_function(), self._transform_gradients(self.objective_function_gradients())
             self._fail_count = 0
         except (LinAlgError, ZeroDivisionError, ValueError):
             if self._fail_count >= self._allowed_failures:
                 raise
             self._fail_count += 1
             obj_f = np.inf
-            obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e100, 1e100)
-        return obj_f, obj_grads
+            self.obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e10, 1e10)
+        return obj_f, self.obj_grads
 
-    def optimize(self, optimizer=None, start=None, **kwargs):
+    def optimize(self, optimizer=None, start=None, messages=False, max_iters=1000, ipython_notebook=True, **kwargs):
         """
         Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
 
@@ -218,8 +221,8 @@ class Model(Parameterized):
 
         :param max_f_eval: maximum number of function evaluations
         :type max_f_eval: int
-        :messages: whether to display during optimisation
-        :type messages: bool
+        :messages: True: Display messages during optimisation, "ipython_notebook":
+        :type messages: bool"string
         :param optimizer: which optimizer to use (defaults to self.preferred optimizer)
         :type optimizer: string
 
@@ -233,13 +236,11 @@ class Model(Parameterized):
 
 
         """
-        if self.is_fixed:
-            print 'nothing to optimize'
-        if self.size == 0:
+        if self.is_fixed or self.size == 0:
             print 'nothing to optimize'
 
         if not self.update_model():
-            print "setting updates on again"
+            print "updates were off, setting updates on again"
             self.update_model(True)
 
         if start == None:
@@ -253,9 +254,11 @@ class Model(Parameterized):
             opt.model = self
         else:
             optimizer = optimization.get_optimizer(optimizer)
-            opt = optimizer(start, model=self, **kwargs)
-
-        opt.run(f_fp=self._objective_grads, f=self._objective, fp=self._grads)
+            opt = optimizer(start, model=self, max_iters=max_iters, **kwargs)
+                        
+        with VerboseOptimization(self, opt, maxiters=max_iters, verbose=messages, ipython_notebook=ipython_notebook) as vo:
+            opt.run(f_fp=self._objective_grads, f=self._objective, fp=self._grads)
+            vo.finish(opt)
 
         self.optimization_runs.append(opt)
 
@@ -367,8 +370,8 @@ class Model(Parameterized):
                 f1 = self._objective(xx)
                 xx[xind] -= 2.*step
                 f2 = self._objective(xx)
-                df_ratio = np.abs((f1-f2)/min(f1,f2))
-                df_unstable = df_ratio<df_tolerance
+                df_ratio = np.abs((f1 - f2) / min(f1, f2))
+                df_unstable = df_ratio < df_tolerance
                 numerical_gradient = (f1 - f2) / (2 * step)
                 if np.all(gradient[xind] == 0): ratio = (f1 - f2) == gradient[xind]
                 else: ratio = (f1 - f2) / (2 * step * gradient[xind])
@@ -398,16 +401,26 @@ class Model(Parameterized):
         """Representation of the model in html for notebook display."""
         model_details = [['<b>Model</b>', self.name + '<br>'],
                          ['<b>Log-likelihood</b>', '{}<br>'.format(float(self.log_likelihood()))],
-                         ["<b>Number of Parameters</b>", '{}<br>'.format(self.size)]]
+                         ["<b>Number of Parameters</b>", '{}<br>'.format(self.size)],
+                         ["<b>Updates</b>", '{}<br>'.format(self._update_on)],
+                         ]
         from operator import itemgetter
-        to_print = [""] + ["{}: {}".format(name, detail) for name, detail in model_details] + ["<br><b>Parameters</b>:"]
+        to_print = ["""<style type="text/css">
+.pd{
+    font-family: "Courier New", Courier, monospace !important;
+    width: 100%;
+    padding: 3px;
+}
+</style>\n"""] + ["<p class=pd>"] + ["{}: {}".format(name, detail) for name, detail in model_details] + ["</p>"]
         to_print.append(super(Model, self)._repr_html_())
         return "\n".join(to_print)
 
     def __str__(self):
         model_details = [['Name', self.name],
                          ['Log-likelihood', '{}'.format(float(self.log_likelihood()))],
-                         ["Number of Parameters", '{}'.format(self.size)]]
+                         ["Number of Parameters", '{}'.format(self.size)],
+                         ["Updates", '{}'.format(self._update_on)],
+                         ]
         from operator import itemgetter
         max_len = reduce(lambda a, b: max(len(b[0]), a), model_details, 0)
         to_print = [""] + ["{0:{l}} : {1}".format(name, detail, l=max_len) for name, detail in model_details] + ["Parameters:"]

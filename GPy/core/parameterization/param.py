@@ -1,4 +1,4 @@
-# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2014, Max Zwiessele
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import itertools
@@ -84,6 +84,7 @@ class Param(Parameterizable, ObsAr):
         self._original_ = getattr(obj, '_original_', None)
         self._name = getattr(obj, '_name', None)
         self._gradient_array_ = getattr(obj, '_gradient_array_', None)
+        self._update_on = getattr(obj, '_update_on', None)
         self.constraints = getattr(obj, 'constraints', None)
         self.priors = getattr(obj, 'priors', None)
 
@@ -264,15 +265,21 @@ class Param(Parameterizable, ObsAr):
         ties = [' '.join(map(lambda x: x, t)) for t in ties]
         header_format = """
 <tr>
-  <td><b>{i}</b></td>
-  <td><b>{x}</b></td>
-  <td><b>{c}</b></td>
-  <td><b>{p}</b></td>
-  <td><b>{t}</b></td>
+  <th><b>{i}</b></th>
+  <th><b>{x}</b></th>
+  <th><b>{c}</b></th>
+  <th><b>{p}</b></th>
+  <th><b>{t}</b></th>
 </tr>"""
         header = header_format.format(x=self.hierarchy_name(), c=__constraints_name__, i=__index_name__, t=__tie_name__, p=__priors_name__)  # nice header for printing
         if not ties: ties = itertools.cycle([''])
-        return "\n".join(['<table>'] + [header] + ["<tr><td>{i}</td><td align=\"right\">{x}</td><td>{c}</td><td>{p}</td><td>{t}</td></tr>".format(x=x, c=" ".join(map(str, c)), p=" ".join(map(str, p)), t=(t or ''), i=i) for i, x, c, t, p in itertools.izip(indices, vals, constr_matrix, ties, prirs)] + ["</table>"])  
+        return "\n".join(["""<style type="text/css">
+.tg  {padding:2px 3px;word-break:normal;border-collapse:collapse;border-spacing:0;border-color:#DCDCDC;margin:0px auto;width:100%;}
+.tg td{font-family:"Courier New", Courier, monospace !important;font-weight:bold;color:#444;background-color:#F7FDFA;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#DCDCDC;}
+.tg th{font-family:"Courier New", Courier, monospace !important;font-weight:normal;color:#fff;background-color:#26ADE4;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#DCDCDC;}
+.tg .tg-left{font-family:"Courier New", Courier, monospace !important;font-weight:normal;text-align:left;}
+.tg .tg-right{font-family:"Courier New", Courier, monospace !important;font-weight:normal;text-align:right;}
+</style>"""] + ['<table class="tg">'] + [header] + ["<tr><td class=tg-left>{i}</td><td  class=tg-right>{x}</td><td class=tg-left>{c}</td><td class=tg-left>{p}</td><td class=tg-left>{t}</td></tr>".format(x=x, c=" ".join(map(str, c)), p=" ".join(map(str, p)), t=(t or ''), i=i) for i, x, c, t, p in itertools.izip(indices, vals, constr_matrix, ties, prirs)] + ["</table>"])
 
     def __str__(self, constr_matrix=None, indices=None, prirs=None, ties=None, lc=None, lx=None, li=None, lp=None, lt=None, only_name=False):
         filter_ = self._current_slice_
@@ -354,7 +361,7 @@ class ParamConcatenation(object):
     #===========================================================================
     def update_all_params(self):
         for par in self.parents:
-            par.notify_observers()
+            par.trigger_update(trigger_parent=False)
 
     def constrain(self, constraint, warning=True):
         [param.constrain(constraint, trigger_parent=False) for param in self.params]

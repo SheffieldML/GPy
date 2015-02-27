@@ -1,4 +1,4 @@
-# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2012-2014 The GPy authors (see AUTHORS.txt)
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 #TODO
 """
@@ -316,3 +316,11 @@ class Gaussian(Likelihood):
         v = var_star + self.variance
         return -0.5*np.log(2*np.pi) -0.5*np.log(v) - 0.5*np.square(y_test - mu_star)/v
 
+    def variational_expectations(self, Y, m, v, gh_points=None):
+        lik_var = float(self.variance)
+        F = -0.5*np.log(2*np.pi) -0.5*np.log(lik_var) - 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/lik_var
+        dF_dmu = (Y - m)/lik_var
+        dF_dv = np.ones_like(v)*(-0.5/lik_var)
+        dF_dlik_var = np.sum(-0.5/lik_var + 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/(lik_var**2))
+        dF_dtheta = [dF_dlik_var]
+        return F, dF_dmu, dF_dv, dF_dtheta

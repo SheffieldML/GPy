@@ -42,6 +42,8 @@ class Transformation(object):
             \frac{\frac{\partial L}{\partial f}\left(\left.\partial f(x)}{\partial x}\right|_{x=f^{-1}(f)\right)}
         """
         raise NotImplementedError
+    def gradfactor_non_natural(self, model_param, dL_dmodel_param):
+        return self.gradfactor(model_param, dL_dmodel_param)
     def initialize(self, f):
         """ produce a sensible initial value for f(x)"""
         raise NotImplementedError
@@ -77,8 +79,10 @@ class Logexp(Transformation):
 
 
 class NormalTheta(Transformation):
+    "Do not use, not officially supported!"
     _instances = []
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
@@ -98,6 +102,7 @@ class NormalTheta(Transformation):
         # that the values are ok
         # Before:
         theta[self.var_indices] = np.abs(-.5/theta[self.var_indices])
+        #theta[self.var_indices] = np.exp(-.5/theta[self.var_indices])
         theta[self.mu_indices] *= theta[self.var_indices]
         return theta # which is now {mu, var}
 
@@ -106,6 +111,7 @@ class NormalTheta(Transformation):
         varp = muvar[self.var_indices]
         muvar[self.mu_indices] /= varp
         muvar[self.var_indices] = -.5/varp
+        #muvar[self.var_indices] = -.5/np.log(varp)
 
         return muvar # which is now {theta1, theta2}
 
@@ -139,9 +145,10 @@ class NormalTheta(Transformation):
         self.var_indices = state[1]
 
 class NormalNaturalAntti(NormalTheta):
+    "Do not use, not officially supported!"
     _instances = []
-    _logexp = Logexp()
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
@@ -178,8 +185,10 @@ class NormalNaturalAntti(NormalTheta):
         return "natantti"
 
 class NormalEta(Transformation):
+    "Do not use, not officially supported!"
     _instances = []
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
@@ -219,8 +228,10 @@ class NormalEta(Transformation):
         return "eta"
 
 class NormalNaturalThroughTheta(NormalTheta):
+    "Do not use, not officially supported!"
     _instances = []
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
@@ -243,6 +254,56 @@ class NormalNaturalThroughTheta(NormalTheta):
         dmuvar[self.mu_indices] -= 2*mu*dmuvar[self.var_indices]
         #=======================================================================
 
+        #=======================================================================
+        # This is by going through theta fully and then going into eta direction:
+        #dmu = dmuvar[self.mu_indices]
+        #dmuvar[self.var_indices] += dmu*mu*(var + 4/var)
+        #=======================================================================
+        return dmuvar # which is now the gradient multiplicator
+
+    def gradfactor_non_natural(self, muvar, dmuvar):
+        mu = muvar[self.mu_indices]
+        var = muvar[self.var_indices]
+        #=======================================================================
+        # theta gradients
+        # This works and the gradient checks!
+        dmuvar[self.mu_indices] *= var
+        dmuvar[self.var_indices] *= 2*(var)**2
+        dmuvar[self.var_indices] += 2*dmuvar[self.mu_indices]*mu
+        #=======================================================================
+
+        return dmuvar # which is now the gradient multiplicator for {theta1, theta2}
+
+    def __str__(self):
+        return "natgrad"
+
+
+class NormalNaturalWhooot(NormalTheta):
+    "Do not use, not officially supported!"
+    _instances = []
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if np.all(instance().mu_indices==mu_indices, keepdims=False) and np.all(instance().var_indices==var_indices, keepdims=False):
+                    return instance()
+        o = super(Transformation, cls).__new__(cls, mu_indices, var_indices)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
+
+    def __init__(self, mu_indices, var_indices):
+        self.mu_indices = mu_indices
+        self.var_indices = var_indices
+
+    def gradfactor(self, muvar, dmuvar):
+        #mu = muvar[self.mu_indices]
+        #var = muvar[self.var_indices]
+
+        #=======================================================================
+        # This is just eta direction:
+        #dmuvar[self.mu_indices] -= 2*mu*dmuvar[self.var_indices]
+        #=======================================================================
 
         #=======================================================================
         # This is by going through theta fully and then going into eta direction:
@@ -255,8 +316,10 @@ class NormalNaturalThroughTheta(NormalTheta):
         return "natgrad"
 
 class NormalNaturalThroughEta(NormalEta):
+    "Do not use, not officially supported!"
     _instances = []
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:

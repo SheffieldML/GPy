@@ -471,7 +471,7 @@ class Indexable(Nameable, Updateable):
             self.param_array[...] = transform.initialize(self.param_array)
         reconstrained = self.unconstrain()
         added = self._add_to_index_operations(self.constraints, reconstrained, transform, warning)
-        self.notify_observers(self, None if trigger_parent else -np.inf)
+        self.trigger_update(trigger_parent)
         return added
 
     def unconstrain(self, *transforms):
@@ -684,6 +684,17 @@ class OptimizationHandlable(Indexable):
         if self._has_fixes(): return g[self._fixes_]
         return g
 
+    def _transform_gradients_non_natural(self, g):
+        """
+        Transform the gradients by multiplying the gradient factor for each
+        constraint to it.
+        """
+        self._highest_parent_.tie.collate_gradient()
+        [np.put(g, i, c.gradfactor_non_natural(self.param_array[i], g[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
+        if self._has_fixes(): return g[self._fixes_]
+        return g
+
+
     @property
     def num_params(self):
         """
@@ -798,7 +809,7 @@ class Parameterizable(OptimizationHandlable):
     A parameterisable class.
 
     This class provides the parameters list (ArrayList) and standard parameter handling,
-    such as {add|remove}_parameter(), traverse hierarchy and param_array, gradient_array
+    such as {link|unlink}_parameter(), traverse hierarchy and param_array, gradient_array
     and the empty parameters_changed().
 
     This class is abstract and should not be instantiated.
@@ -1031,6 +1042,9 @@ class Parameterizable(OptimizationHandlable):
                     p = param_to_array(p)
                     d = f.create_dataset(n,p.shape,dtype=p.dtype)
                     d[:] = p
+                if hasattr(self, 'param_array'):
+                    d = f.create_dataset('param_array',self.param_array.shape, dtype=self.param_array.dtype)
+                    d[:] = self.param_array
                 f.close()
             except:
                 raise 'Fails to write the parameters into a HDF5 file!'

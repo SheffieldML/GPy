@@ -111,9 +111,6 @@ class MRD(BayesianGPLVMMiniBatch):
             assert all([isinstance(k, Kern) for k in kernel]), "invalid kernel object detected!"
             kernels = kernel
 
-        if X_variance is None:
-            X_variance = np.random.uniform(0.1, 0.2, X.shape)
-
         self.variational_prior = NormalPrior()
         #self.X = NormalPosterior(X, X_variance)
 
@@ -174,10 +171,13 @@ class MRD(BayesianGPLVMMiniBatch):
             self.Z.gradient[:] += b.full_values['Zgrad']
             grad_dict = b.full_values
 
-            self.X.mean.gradient += grad_dict['meangrad']
-            self.X.variance.gradient += grad_dict['vargrad']
+            if self.has_uncertain_inputs():
+                self.X.mean.gradient += grad_dict['meangrad']
+                self.X.variance.gradient += grad_dict['vargrad']
+            else:
+                self.X.gradient += grad_dict['Xgrad']
 
-        if isinstance(self.X, VariationalPosterior):
+        if self.has_uncertain_inputs():
             # update for the KL divergence
             self.variational_prior.update_gradients_KL(self.X)
             self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)

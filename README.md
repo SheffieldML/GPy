@@ -1,17 +1,17 @@
-GPy
-===
+# GPy
+
 
 A Gaussian processes framework in Python.
 
 * [GPy homepage](http://sheffieldml.github.io/GPy/)
+* [Tutorial notebooks](http://nbviewer.ipython.org/github/SheffieldML/notebook/blob/master/GPy/index.ipynb)
 * [User mailing list](https://lists.shef.ac.uk/sympa/subscribe/gpy-users)
 * [Online documentation](https://gpy.readthedocs.org/en/latest/)
 * [Unit tests (Travis-CI)](https://travis-ci.org/SheffieldML/GPy)
 
 Continuous integration status: ![CI status](https://travis-ci.org/SheffieldML/GPy.png)
 
-Citation
-========
+### Citation
 
     @Misc{gpy2014,
       author =   {The GPy authors},
@@ -20,23 +20,29 @@ Citation
       year = {2012--2014}
     }
 
-Pronounciation
-==============
+### Pronounciation
+
 We like to pronounce it 'Gee-pie'.
 
-Getting started
-===============
-Installing with pip
--------------------
-The simplest way to install GPy is using pip. ubuntu users can do:
+### Getting started: installing with pip
+
+The simplest way to install GPy is using pip. Ubuntu users can do:
 
     sudo apt-get install python-pip
     pip install gpy
+    
+On windows, we recommend the ![anaconda python distribution](http://continuum.io/downloads). We've also had luck with ![enthought](http://www.enthought.com).
+
+On a fresh install of windows 8.1, we downloaded the Anaconda python distribution, started the anaconda command prompt and typed 
+
+    pip install GPy
+
+Everything seems to work: from here you can type `ipython` and then `import GPy; GPy.tests()`. Working as of 21/11/14
 
 If you'd like to install from source, or want to contribute to the project (e.g. by sending pull requests via github), read on.
 
-Ubuntu
-------
+### Ubuntu hackers
+
 For the most part, the developers are using ubuntu. To install the required packages:
 
     sudo apt-get install python-numpy python-scipy python-matplotlib
@@ -47,32 +53,25 @@ clone this git repository and add it to your path:
     echo 'PYTHONPATH=$PYTHONPATH:~/SheffieldML' >> ~/.bashrc
 
 
-Windows
--------
-On windows, we recommend the ![anaconda python distribution](http://continuum.io/downloads). We've also had luck with ![enthought](http://www.enthought.com). git clone or unzip the source to a suitable directory, and add an approptiate PYTHONPATH environment variable. 
+ 
+### OSX
 
-On windows 7 (and possibly earlier versions) there's a bug in scipy version 0.13 which tries to write very long filenames. Reverting to scipy 0.12 seems to do the trick:
-
-    conda install scipy=0.12
-
-OSX
----
 Everything appears to work out-of-the box using ![enthought](http://www.enthought.com) on osx Mavericks. Download/clone GPy, and then add GPy to your PYTHONPATH
 
     git clone git@github.com:SheffieldML/GPy.git ~/SheffieldML
     echo 'PYTHONPATH=$PYTHONPATH:~/SheffieldML' >> ~/.profile
 
 
-Compiling documentation:
-========================
+### Compiling documentation:
+
 
 The documentation is stored in doc/ and is compiled with the Sphinx Python documentation generator, and is written in the reStructuredText format.
 
 The Sphinx documentation is available here: http://sphinx-doc.org/latest/contents.html
 
 
-Installing dependencies:
-------------------------
+##### Installing dependencies:
+
 
 To compile the documentation, first ensure that Sphinx is installed. On Debian-based systems, this can be achieved as follows:
 
@@ -86,8 +85,8 @@ A LaTeX distribution is also required to compile the equations. Note that the ex
     sudo apt-get install ipython
 
 
-Compiling documentation:
-------------------------
+#### Compiling documentation:
+
 
 The documentation can be compiled as follows:
 
@@ -97,8 +96,8 @@ The documentation can be compiled as follows:
 The HTML files are then stored in doc/_build/
 
 
-Running unit tests:
-===================
+## Running unit tests:
+
 
 Ensure nose is installed via pip:
 
@@ -108,8 +107,14 @@ Run nosetests from the root directory of the repository:
 
     nosetests -v
 
-Funding Acknowledgements
-========================
+or from within IPython
+
+    import GPy; GPy.tests()
+
+
+
+## Funding Acknowledgements
+
 
 Current support for the GPy software is coming through the following projects. 
 

@@ -127,7 +127,7 @@ class Coregionalize(Kern):
                 config.set('weave', 'working', 'False')
                 dL_dK_small = self._gradient_reduce_weave(dL_dK, index, index2)
         else:
-            dL_dK_small = self._gradient_reduce_weave(dL_dK, index, index2)
+            dL_dK_small = self._gradient_reduce_numpy(dL_dK, index, index2)
 
 
 
@@ -154,9 +154,9 @@ class Coregionalize(Kern):
     def _gradient_reduce_numpy(self, dL_dK, index, index2):
         index, index2 = index[:,0], index2[:,0]
         dL_dK_small = np.zeros_like(self.B)
-        for i in range(k.output_dim):
+        for i in range(self.output_dim):
             tmp1 = dL_dK[index==i]
-            for j in range(k.output_dim):
+            for j in range(self.output_dim):
                 dL_dK_small[j,i] = tmp1[:,index2==j].sum()
         return dL_dK_small
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2012, 2013 The GPy authors (see AUTHORS.txt)
+# Copyright (c) 2012-2014 The GPy authors (see AUTHORS.txt)
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
@@ -77,6 +77,32 @@ class Bernoulli(Likelihood):
 
         return Z_hat, mu_hat, sigma2_hat
 
+    def variational_expectations(self, Y, m, v, gh_points=None):
+        if isinstance(self.gp_link, link_functions.Probit):
+
+            if gh_points is None:
+                gh_x, gh_w = np.polynomial.hermite.hermgauss(20)
+            else:
+                gh_x, gh_w = gh_points
+
+            from scipy import stats
+
+            shape = m.shape
+            m,v,Y = m.flatten(), v.flatten(), Y.flatten()
+            Ysign = np.where(Y==1,1,-1)
+            X = gh_x[None,:]*np.sqrt(2.*v[:,None]) + (m*Ysign)[:,None]
+            p = stats.norm.cdf(X)
+            p = np.clip(p, 1e-9, 1.-1e-9) # for numerical stability
+            N = stats.norm.pdf(X)
+            F = np.log(p).dot(gh_w)
+            NoverP = N/p
+            dF_dm = (NoverP*Ysign[:,None]).dot(gh_w)
+            dF_dv = -0.5*(NoverP**2 + NoverP*X).dot(gh_w)
+            return F.reshape(*shape), dF_dm.reshape(*shape), dF_dv.reshape(*shape), None
+        else:
+            raise NotImplementedError
+
+
     def predictive_mean(self, mu, variance, Y_metadata=None):
 
         if isinstance(self.gp_link, link_functions.Probit):
@@ -133,7 +159,7 @@ class Bernoulli(Likelihood):
         """
         #objective = y*np.log(inv_link_f) + (1.-y)*np.log(inv_link_f)
         p = np.where(y==1, inv_link_f, 1.-inv_link_f)
-        return np.log(np.clip(p, 1e-6 ,np.inf))
+        return np.log(np.clip(p, 1e-9 ,np.inf))
 
     def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
         """
@@ -152,7 +178,7 @@ class Bernoulli(Likelihood):
         """
         #grad = (y/inv_link_f) - (1.-y)/(1-inv_link_f)
         #grad = np.where(y, 1./inv_link_f, -1./(1-inv_link_f))
-        ff = np.clip(inv_link_f, 1e-6, 1-1e-6)
+        ff = np.clip(inv_link_f, 1e-9, 1-1e-9)
         denom = np.where(y, ff, -(1-ff))
         return 1./denom
 
@@ -180,7 +206,7 @@ class Bernoulli(Likelihood):
         #d2logpdf_dlink2 = -y/(inv_link_f**2) - (1-y)/((1-inv_link_f)**2)
         #d2logpdf_dlink2 = np.where(y, -1./np.square(inv_link_f), -1./np.square(1.-inv_link_f))
         arg = np.where(y, inv_link_f, 1.-inv_link_f)
-        ret =  -1./np.square(np.clip(arg, 1e-3, np.inf))
+        ret =  -1./np.square(np.clip(arg, 1e-9, 1e9))
         if np.any(np.isinf(ret)):
             stop
         return ret

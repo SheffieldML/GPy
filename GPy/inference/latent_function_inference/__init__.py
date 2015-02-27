@@ -1,3 +1,6 @@
+# Copyright (c) 2012-2014, Max Zwiessele, James Hensman
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
 __doc__ = """
 Inference over Gaussian process latent functions
 
@@ -66,6 +69,7 @@ from expectation_propagation_dtc import EPDTC
 from dtc import DTC
 from fitc import FITC
 from var_dtc_parallel import VarDTC_minibatch
+from svgp import SVGP
 
 # class FullLatentFunctionData(object):
 #

@@ -18,6 +18,7 @@ import numpy as np
 import re
 import logging
 from .updateable import Updateable
+from functools import reduce
 
 class HierarchyError(Exception):
     """

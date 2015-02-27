@@ -549,7 +549,7 @@ class DGPLVM(Prior):
         M_i = np.zeros((self.classnum, self.dim))
         for i in cls:
             # Mean of each class
-	    class_i = cls[i]
+            class_i = cls[i]
             M_i[i] = np.mean(class_i, axis=0)
         return M_i
 
@@ -663,7 +663,7 @@ class DGPLVM(Prior):
         # Sb_inv_N = np.linalg.inv(Sb + np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))
         #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
         #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
-	Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.1)[0]
+        Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.1)[0]
         return (-1 / self.sigma2) * np.trace(Sb_inv_N.dot(Sw))
 
     # This function calculates derivative of the log of prior function
@@ -684,7 +684,7 @@ class DGPLVM(Prior):
         # Sb_inv_N = np.linalg.inv(Sb + np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))
         #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
         #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
-	Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.1)[0]
+        Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.1)[0]
         Sb_inv_N_trans = np.transpose(Sb_inv_N)
         Sb_inv_N_trans_minus = -1 * Sb_inv_N_trans
         Sw_trans = np.transpose(Sw)
@@ -742,7 +742,7 @@ class DGPLVM_T(Prior):
         self.datanum = lbl.shape[0]
         self.x_shape = x_shape
         self.dim = x_shape[1]
-	self.vec = vec
+        self.vec = vec
 
 
     def get_class_label(self, y):
@@ -768,7 +768,7 @@ class DGPLVM_T(Prior):
         M_i = np.zeros((self.classnum, self.dim))
         for i in cls:
             # Mean of each class
-	    class_i = np.multiply(cls[i],vec)
+            class_i = np.multiply(cls[i],vec)
             M_i[i] = np.mean(class_i, axis=0)
         return M_i
 
@@ -883,7 +883,7 @@ class DGPLVM_T(Prior):
         #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
 	#print 'SB_inv: ', Sb_inv_N
         #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
-	Sb_inv_N = pdinv(Sb+np.eye(Sb.shape[0])*0.1)[0]
+        Sb_inv_N = pdinv(Sb+np.eye(Sb.shape[0])*0.1)[0]
         return (-1 / self.sigma2) * np.trace(Sb_inv_N.dot(Sw))
 
     # This function calculates derivative of the log of prior function
@@ -905,7 +905,7 @@ class DGPLVM_T(Prior):
         #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
 	#print 'SB_inv: ',Sb_inv_N
         #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
-	Sb_inv_N = pdinv(Sb+np.eye(Sb.shape[0])*0.1)[0]
+        Sb_inv_N = pdinv(Sb+np.eye(Sb.shape[0])*0.1)[0]
         Sb_inv_N_trans = np.transpose(Sb_inv_N)
         Sb_inv_N_trans_minus = -1 * Sb_inv_N_trans
         Sw_trans = np.transpose(Sw)

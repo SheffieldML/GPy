@@ -3,10 +3,14 @@
 
 from .kern import Kern
 import numpy as np
-from scipy import weave
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 from ...util.config import config # for assesing whether to use weave
+
+try:
+    from scipy import weave
+except ImportError:
+    config.set('weave', 'working', 'False')
 
 class Coregionalize(Kern):
     """

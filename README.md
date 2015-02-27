@@ -10,15 +10,6 @@ A Gaussian processes framework in Python.
 
 Continuous integration status: ![CI status](https://travis-ci.org/SheffieldML/GPy.png)
 
-### Moving to Python 3
-Work is underway to make GPy run on Python 3. We are not there yet! Changes performed so far have retained compatibility with Python 2.6 and above.
-
-Work done so far:
-
-* Used 2to3 to fix relative imports
-* Used 2to3 to convert print from statement to function. Some advanced uses of print meant that this could not be done in a way that retained compatibility with old versions of Python. The oldest version of Python that is supported by this version is 2.6 due to the required future imports.
-* Used 2to3 to convert exceptions to Python 3 friendly versions. There are a few oustanding string exceptions to take care of that 2to3 doesn't handle. Will need to do these manually
-
 ### Citation
 
     @Misc{gpy2014,
@@ -118,6 +109,20 @@ Run nosetests from the root directory of the repository:
 or from within IPython
 
     import GPy; GPy.tests()
+
+### Moving to Python 3
+Work is underway to make GPy run on Python 3. We are not there yet! Changes performed so far have retained compatibility with Python 2.6 and above.
+
+Work done so far:
+
+* Used 2to3 to fix relative imports
+* Used 2to3 to convert print from statement to function. Some advanced uses of print meant that this could not be done in a way that retained compatibility with old versions of Python. The oldest version of Python that is supported by this version is 2.6 due to the required future imports.
+* Used 2to3 to convert exceptions to Python 3 friendly versions. There are a few oustanding string exceptions to take care of that 2to3 doesn't handle. Will need to do these manually
+* Handled the different imports required for ConfigParser/configparser in Py2/Py3
+* In utils/linalg.py:
+    * Commented out the function cholupdate(L, x) since it doesn't appear to be used. Its definitely not in the tests.s
+    * Put the import for scipy.weave in a try/except block so that it will gracefully fail in Py3
+		       
 
 
 

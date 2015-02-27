@@ -6,7 +6,7 @@
 # http://homepages.inf.ed.ac.uk/imurray2/code/tdot/tdot.py
 
 import numpy as np
-from scipy import linalg, weave
+from scipy import linalg
 import types
 import ctypes
 from ctypes import byref, c_char, c_int, c_double # TODO
@@ -15,6 +15,12 @@ import warnings
 import os
 from .config import config
 import logging
+
+try:
+    from scipy import weave
+except ImportError:
+    config.set('weave', 'working', 'False')
+    
 
 _scipyversion = np.float64((scipy.__version__).split('.')[:2])
 _fix_dpotri_scipy_bug = True

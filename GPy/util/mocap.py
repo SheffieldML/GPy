@@ -2,7 +2,6 @@ import os
 import numpy as np
 import math
 from GPy.util import datasets as dat
-import urllib2
 
 class vertex:
     def __init__(self, name, id, parents=[], children=[], meta = {}):

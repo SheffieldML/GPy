@@ -5,7 +5,6 @@ import copy
 import numpy as np
 import GPy
 import scipy.io
-import cPickle as pickle
 import zipfile
 import tarfile
 import datetime
@@ -20,6 +19,12 @@ try:
 except ImportError:
     ipython_available=False
 
+try:
+    #In Python 2, cPickle is faster. It does not exist in Python 3 but the underlying code is always used
+    #if available
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 import sys, urllib2
 

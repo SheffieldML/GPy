@@ -240,7 +240,7 @@ class ParameterizedTest(unittest.TestCase):
                 self.p2.constrain_positive()
 
         m = TestLikelihood()
-        print m
+        print(m)
         val = m.p1.values.copy()
         self.assert_(m.p1.is_fixed)
         self.assert_(m.constraints[GPy.constraints.Logexp()].tolist(), [1])
@@ -248,9 +248,9 @@ class ParameterizedTest(unittest.TestCase):
         self.assertEqual(m.p1, val)
 
     def test_printing(self):
-        print self.test1
-        print self.param
-        print self.test1['']
+        print(self.test1)
+        print(self.param)
+        print(self.test1[''])
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.test_add_parameter']

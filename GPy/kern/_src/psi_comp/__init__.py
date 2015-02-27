@@ -4,10 +4,10 @@
 from ....core.parameterization.parameter_core import Pickleable
 from GPy.util.caching import Cache_this
 from ....core.parameterization import variational
-import rbf_psi_comp
-import ssrbf_psi_comp
-import sslinear_psi_comp
-import linear_psi_comp
+from . import rbf_psi_comp
+from . import ssrbf_psi_comp
+from . import sslinear_psi_comp
+from . import linear_psi_comp
 
 class PSICOMP_RBF(Pickleable):
     @Cache_this(limit=2, ignore_args=(0,))

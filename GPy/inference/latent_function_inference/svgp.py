@@ -2,7 +2,7 @@ from . import LatentFunctionInference
 from ...util import linalg
 from ...util import choleskies
 import numpy as np
-from posterior import Posterior
+from .posterior import Posterior
 
 class SVGP(LatentFunctionInference):
 

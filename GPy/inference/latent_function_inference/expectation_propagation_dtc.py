@@ -6,7 +6,7 @@ from ...util import diag
 from ...util.linalg import mdot, jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri, dpotri, dpotrs, symmetrify, DSYR
 from ...core.parameterization.variational import VariationalPosterior
 from . import LatentFunctionInference
-from posterior import Posterior
+from .posterior import Posterior
 log_2_pi = np.log(2*np.pi)
 
 class EPDTC(LatentFunctionInference):

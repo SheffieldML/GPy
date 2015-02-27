@@ -10,7 +10,7 @@ import tarfile
 import datetime
 import json
 import re
-
+import sys
 from .config import *
 
 ipython_available=True
@@ -26,7 +26,13 @@ try:
 except ImportError:
     import pickle
 
-import sys, urllib2
+#A Python2/3 import handler - urllib2 changed its name in Py3 and was also reorganised
+try:
+    from urllib2 import urlopen
+    from urllib2 import URLError
+except ImportError:
+    from urllib.request import urlopen
+    from urllib.error import URLError
 
 def reporthook(a,b,c):
     # ',' at the end of the line is important!
@@ -117,8 +123,8 @@ def download_url(url, store_directory, save_name=None, messages=True, suffix='')
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
     try:
-        response = urllib2.urlopen(url+suffix)
-    except urllib2.URLError as e:
+        response = urlopen(url+suffix)
+    except URLError as e:
         if not hasattr(e, "code"):
             raise
         response = e
@@ -511,7 +517,7 @@ def google_trends(query_terms=['big data', 'machine learning', 'data science'], 
         print("Fetching query:")
         query = 'http://www.google.com/trends/fetchComponent?q=%s&cid=TIMESERIES_GRAPH_0&export=3' % ",".join(quoted_terms)
 
-        data = urllib2.urlopen(query).read()
+        data = urlopen(query).read()
         print("Done.")
         # In the notebook they did some data cleaning: remove Javascript header+footer, and translate new Date(....,..,..) into YYYY-MM-DD.
         header = """// Data table response\ngoogle.visualization.Query.setResponse("""

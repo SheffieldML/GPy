@@ -147,4 +147,4 @@ class VerboseOptimization(object):
                 print()
                 print('Optimization finished in {0:.5g} Seconds'.format(self.stop-self.start))
                 print('Optimization status: {0:.5g}'.format(self.status))             
-		print()
+                print()

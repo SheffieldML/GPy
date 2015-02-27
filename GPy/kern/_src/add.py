@@ -4,7 +4,7 @@
 import numpy as np
 import itertools
 from ...util.caching import Cache_this
-from kern import CombinationKernel
+from .kern import CombinationKernel
 
 class Add(CombinationKernel):
     """
@@ -84,10 +84,10 @@ class Add(CombinationKernel):
         psi2 = reduce(np.add, (p.psi2(Z, variational_posterior) for p in self.parts))
         #return psi2
         # compute the "cross" terms
-        from static import White, Bias
-        from rbf import RBF
+        from .static import White, Bias
+        from .rbf import RBF
         #from rbf_inv import RBFInv
-        from linear import Linear
+        from .linear import Linear
         #ffrom fixed import Fixed
 
         for p1, p2 in itertools.combinations(self.parts, 2):
@@ -115,7 +115,7 @@ class Add(CombinationKernel):
         return psi2
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        from static import White, Bias
+        from .static import White, Bias
         for p1 in self.parts:
             #compute the effective dL_dpsi1. Extra terms appear becaue of the cross terms in psi2!
             eff_dL_dpsi1 = dL_dpsi1.copy()
@@ -131,7 +131,7 @@ class Add(CombinationKernel):
             p1.update_gradients_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
 
     def gradients_Z_expectations(self, dL_psi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        from static import White, Bias
+        from .static import White, Bias
         target = np.zeros(Z.shape)
         for p1 in self.parts:
             #compute the effective dL_dpsi1. extra terms appear becaue of the cross terms in psi2!
@@ -149,7 +149,7 @@ class Add(CombinationKernel):
         return target
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        from static import White, Bias
+        from .static import White, Bias
         target_grads = [np.zeros(v.shape) for v in variational_posterior.parameters]
         for p1 in self.parameters:
             #compute the effective dL_dpsi1. extra terms appear becaue of the cross terms in psi2!

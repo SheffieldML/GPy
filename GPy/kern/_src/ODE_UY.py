@@ -1,11 +1,11 @@
 # Copyright (c) 2013, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from kern import Kern
+from .kern import Kern
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 import numpy as np
-from independent_outputs import index_to_slices
+from .independent_outputs import index_to_slices
 
 class ODE_UY(Kern):
     def __init__(self, input_dim, variance_U=3., variance_Y=1., lengthscale_U=1., lengthscale_Y=1., active_dims=None, name='ode_uy'):

@@ -1,8 +1,8 @@
-from kern import Kern
+from .kern import Kern
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 import numpy as np
-from independent_outputs import index_to_slices
+from .independent_outputs import index_to_slices
 
 
 class ODE_t(Kern):

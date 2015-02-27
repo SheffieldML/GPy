@@ -1,9 +1,18 @@
 #
 # This loads the configuration
 #
-import ConfigParser
 import os
-config = ConfigParser.ConfigParser()
+try:
+    #Attempt Python 2 ConfigParser setup
+    import ConfigParser
+    config = ConfigParser.ConfigParser()
+except ImportError:
+    #Attempt Python 3 ConfigParser setup
+    import configparser
+    config = configparser.ConfigParser()
+    
+
+    
 
 # This is the default configuration file that always needs to be present.
 default_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'defaults.cfg'))

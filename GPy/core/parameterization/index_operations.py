@@ -66,7 +66,11 @@ class ParameterIndexOperations(object):
                 self.add(t, i)
 
     def iteritems(self):
-        return self._properties.iteritems()
+        try:
+            return self._properties.iteritems()
+        except AttributeError:
+	#Changed this from iteritems to items for Py3 compatibility. It didn't break the test suite.
+            return self._properties.items()
 
     def items(self):
         return self._properties.items()
@@ -101,7 +105,11 @@ class ParameterIndexOperations(object):
         return reduce(lambda a,b: a+b.size, self.iterindices(), 0)
 
     def iterindices(self):
-        return self._properties.itervalues()
+        try:
+            return self._properties.itervalues()
+        except AttributeError:
+	#Changed this from itervalues to values for Py3 compatibility. It didn't break the test suite.
+            return self._properties.values()
 
     def indices(self):
         return self._properties.values()

@@ -10,7 +10,7 @@ try:
     rasm_available = True
 except ImportError:
     rasm_available = False
-from scg import SCG
+from .scg import SCG
 
 class Optimizer():
     """

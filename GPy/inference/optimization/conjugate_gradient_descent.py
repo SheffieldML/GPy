@@ -1,7 +1,7 @@
 # Copyright (c) 2012-2014, Max Zwiessele
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from gradient_descent_update_rules import FletcherReeves, \
+from .gradient_descent_update_rules import FletcherReeves, \
     PolakRibiere
 from Queue import Empty
 from multiprocessing import Value

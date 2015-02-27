@@ -113,7 +113,7 @@ def download_url(url, store_directory, save_name=None, messages=True, suffix='')
         os.makedirs(dir_name)
     try:
         response = urllib2.urlopen(url+suffix)
-    except urllib2.URLError, e:
+    except urllib2.URLError as e:
         if not hasattr(e, "code"):
             raise
         response = e

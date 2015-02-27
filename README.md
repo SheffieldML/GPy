@@ -122,6 +122,7 @@ Work done so far:
 * In utils/linalg.py:
     * Commented out the function cholupdate(L, x) since it doesn't appear to be used. Its definitely not in the tests.s
     * Put the import for scipy.weave in a try/except block so that it will gracefully fail in Py3
+* Fixed a couple of urllib2 issues - had to be done mannual since 2to3 didn't help
 		       
 
 

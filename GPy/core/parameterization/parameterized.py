@@ -27,7 +27,7 @@ class ParametersChangedMeta(type):
         self.parameters_changed()
         return self
 
-class Parameterized(Parameterizable):
+class Parameterized(Parameterizable,metaclass=ParametersChangedMeta):
     """
     Parameterized class
 
@@ -73,6 +73,7 @@ class Parameterized(Parameterizable):
     # Metaclass for parameters changed after init.
     # This makes sure, that parameters changed will always be called after __init__
     # **Never** call parameters_changed() yourself
+    #This is ignored in Python 3 -- you need to put the meta class in the 
     __metaclass__ = ParametersChangedMeta
     #===========================================================================
     def __init__(self, name=None, parameters=[], *a, **kw):

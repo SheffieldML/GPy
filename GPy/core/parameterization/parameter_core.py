@@ -139,9 +139,9 @@ class Pickleable(object):
             which = self
         which.traverse_parents(parents.append) # collect parents
         for p in parents:
-            if not memo.has_key(id(p)):memo[id(p)] = None # set all parents to be None, so they will not be copied
-        if not memo.has_key(id(self.gradient)):memo[id(self.gradient)] = None # reset the gradient
-        if not memo.has_key(id(self._fixes_)):memo[id(self._fixes_)] = None # fixes have to be reset, as this is now highest parent
+            if not id(p) in memo :memo[id(p)] = None # set all parents to be None, so they will not be copied
+        if not id(self.gradient) in memo:memo[id(self.gradient)] = None # reset the gradient
+        if not id(self._fixes_) in memo :memo[id(self._fixes_)] = None # fixes have to be reset, as this is now highest parent
         copy = copy.deepcopy(self, memo) # and start the copy
         copy._parent_index_ = None
         copy._trigger_params_changed()

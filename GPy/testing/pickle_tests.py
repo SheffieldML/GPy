@@ -19,6 +19,7 @@ from GPy.kern._src.static import Bias, White
 from GPy.examples.dimensionality_reduction import mrd_simulation
 from GPy.core.parameterization.variational import NormalPosterior
 from GPy.models.gp_regression import GPRegression
+from functools import reduce
 
 def toy_model():
     X = np.linspace(0,1,50)[:, None]

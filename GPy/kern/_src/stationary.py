@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kern import Kern
+from .kern import Kern
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 from ...util.linalg import tdot
@@ -65,10 +65,10 @@ class Stationary(Kern):
         self.link_parameters(self.variance, self.lengthscale)
 
     def K_of_r(self, r):
-        raise NotImplementedError, "implement the covariance function as a fn of r to use this class"
+        raise NotImplementedError("implement the covariance function as a fn of r to use this class")
 
     def dK_dr(self, r):
-        raise NotImplementedError, "implement derivative of the covariance function wrt r to use this class"
+        raise NotImplementedError("implement derivative of the covariance function wrt r to use this class")
 
     @Cache_this(limit=5, ignore_args=())
     def K(self, X, X2=None):
@@ -165,7 +165,7 @@ class Stationary(Kern):
                 try:
                     self.lengthscale.gradient = self.weave_lengthscale_grads(tmp, X, X2)
                 except:
-                    print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
+                    print("\n Weave compilation failed. Falling back to (slower) numpy implementation\n")
                     config.set('weave', 'working', 'False')
                     self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(X[:,q:q+1] - X2[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in xrange(self.input_dim)])
             else:
@@ -214,7 +214,7 @@ class Stationary(Kern):
             try:
                 return self.gradients_X_weave(dL_dK, X, X2)
             except:
-                print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
+                print("\n Weave compilation failed. Falling back to (slower) numpy implementation\n")
                 config.set('weave', 'working', 'False')
                 return self.gradients_X_(dL_dK, X, X2)
         else:

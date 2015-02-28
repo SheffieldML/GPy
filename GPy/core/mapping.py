@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import sys
-from parameterization import Parameterized
+from .parameterization import Parameterized
 import numpy as np
 
 class Mapping(Parameterized):
@@ -60,7 +60,7 @@ class Mapping(Parameterized):
             from ..plotting.matplot_dep import models_plots
             mapping_plots.plot_mapping(self,*args)
         else:
-            raise NameError, "matplotlib package has not been imported."
+            raise NameError("matplotlib package has not been imported.")
 
 class Bijective_mapping(Mapping):
     """
@@ -74,7 +74,7 @@ class Bijective_mapping(Mapping):
         """Inverse mapping from output domain of the function to the inputs."""
         raise NotImplementedError
 
-from model import Model
+from .model import Model
 
 class Mapping_check_model(Model):
     """
@@ -111,7 +111,7 @@ class Mapping_check_model(Model):
         return (self.dL_df*self.mapping.f(self.X)).sum()
 
     def _log_likelihood_gradients(self):
-        raise NotImplementedError, "This needs to be implemented to use the Mapping_check_model class."
+        raise NotImplementedError("This needs to be implemented to use the Mapping_check_model class.")
 
 class Mapping_check_df_dtheta(Mapping_check_model):
     """This class allows gradient checks for the gradient of a mapping with respect to parameters. """

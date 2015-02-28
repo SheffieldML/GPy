@@ -6,7 +6,7 @@ from ...util import diag
 from ...util.linalg import mdot, jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri, dpotri, dpotrs, symmetrify, DSYR
 from ...core.parameterization.variational import VariationalPosterior
 from . import LatentFunctionInference
-from posterior import Posterior
+from .posterior import Posterior
 log_2_pi = np.log(2*np.pi)
 
 class EPDTC(LatentFunctionInference):
@@ -179,7 +179,7 @@ class EPDTC(LatentFunctionInference):
         if VVT_factor.shape[1] == Y.shape[1]:
             woodbury_vector = Cpsi1Vf # == Cpsi1V
         else:
-            print 'foobar'
+            print('foobar')
             psi1V = np.dot(mu_tilde[:,None].T*beta, psi1).T
             tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
             tmp, _ = dpotrs(LB, tmp, lower=1)
@@ -314,7 +314,7 @@ def _compute_dL_dR(likelihood, het_noise, uncertain_inputs, LB, _LBi_Lmi_psi1Vf,
         dL_dR = None
     elif het_noise:
         if uncertain_inputs:
-            raise NotImplementedError, "heteroscedatic derivates with uncertain inputs not implemented"
+            raise NotImplementedError("heteroscedatic derivates with uncertain inputs not implemented")
         else:
             #from ...util.linalg import chol_inv
             #LBi = chol_inv(LB)

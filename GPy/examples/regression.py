@@ -15,7 +15,7 @@ def olympic_marathon_men(optimize=True, plot=True):
     """Run a standard Gaussian process regression on the Olympic marathon data."""
     try:import pods
     except ImportError:
-        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        print('pods unavailable, see https://github.com/sods/ods for example datasets')
         return
     data = pods.datasets.olympic_marathon_men()
 
@@ -88,7 +88,7 @@ def epomeo_gpx(max_iters=200, optimize=True, plot=True):
     """
     try:import pods
     except ImportError:
-        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        print('pods unavailable, see https://github.com/sods/ods for example datasets')
         return
     data = pods.datasets.epomeo_gpx()
     num_data_list = []
@@ -135,7 +135,7 @@ def multiple_optima(gene_number=937, resolution=80, model_restarts=10, seed=1000
 
     try:import pods
     except ImportError:
-        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        print('pods unavailable, see https://github.com/sods/ods for example datasets')
         return
     data = pods.datasets.della_gatta_TRP63_gene_expression(data_set='della_gatta',gene_number=gene_number)
     # data['Y'] = data['Y'][0::2, :]
@@ -219,7 +219,7 @@ def olympic_100m_men(optimize=True, plot=True):
     """Run a standard Gaussian process regression on the Rogers and Girolami olympics data."""
     try:import pods
     except ImportError:
-        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        print('pods unavailable, see https://github.com/sods/ods for example datasets')
         return
     data = pods.datasets.olympic_100m_men()
 
@@ -240,7 +240,7 @@ def toy_rbf_1d(optimize=True, plot=True):
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
     try:import pods
     except ImportError:
-        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        print('pods unavailable, see https://github.com/sods/ods for example datasets')
         return
     data = pods.datasets.toy_rbf_1d()
 
@@ -258,7 +258,7 @@ def toy_rbf_1d_50(optimize=True, plot=True):
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
     try:import pods
     except ImportError:
-        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        print('pods unavailable, see https://github.com/sods/ods for example datasets')
         return
     data = pods.datasets.toy_rbf_1d_50()
 
@@ -377,7 +377,7 @@ def robot_wireless(max_iters=100, kernel=None, optimize=True, plot=True):
     """Predict the location of a robot given wirelss signal strength readings."""
     try:import pods
     except ImportError:
-        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        print('pods unavailable, see https://github.com/sods/ods for example datasets')
         return
     data = pods.datasets.robot_wireless()
 
@@ -398,14 +398,14 @@ def robot_wireless(max_iters=100, kernel=None, optimize=True, plot=True):
 
     sse = ((data['Xtest'] - Xpredict)**2).sum()
 
-    print('Sum of squares error on test data: ' + str(sse))
+    print(('Sum of squares error on test data: ' + str(sse)))
     return m
 
 def silhouette(max_iters=100, optimize=True, plot=True):
     """Predict the pose of a figure given a silhouette. This is a task from Agarwal and Triggs 2004 ICML paper."""
     try:import pods
     except ImportError:
-        print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+        print('pods unavailable, see https://github.com/sods/ods for example datasets')
         return
     data = pods.datasets.silhouette()
 
@@ -416,7 +416,7 @@ def silhouette(max_iters=100, optimize=True, plot=True):
     if optimize:
         m.optimize(messages=True, max_iters=max_iters)
 
-    print m
+    print(m)
     return m
 
 def sparse_GP_regression_1D(num_samples=400, num_inducing=5, max_iters=100, optimize=True, plot=True, checkgrad=False):
@@ -468,7 +468,7 @@ def sparse_GP_regression_2D(num_samples=400, num_inducing=50, max_iters=100, opt
     if plot:
         m.plot()
 
-    print m
+    print(m)
     return m
 
 def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
@@ -492,7 +492,7 @@ def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
     if plot:
         m.plot(ax=axes[0])
         axes[0].set_title('no input uncertainty')
-    print m
+    print(m)
 
     # the same Model with uncertainty
     m = GPy.models.SparseGPRegression(X, Y, kernel=GPy.kern.RBF(1), Z=Z, X_variance=S)
@@ -503,5 +503,5 @@ def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
         axes[1].set_title('with input uncertainty')
         fig.canvas.draw()
 
-    print m
+    print(m)
     return m

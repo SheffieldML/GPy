@@ -52,7 +52,7 @@ class Posterior(object):
                 or ((mean is not None) and (cov is not None)):
             pass # we have sufficient to compute the posterior
         else:
-            raise ValueError, "insufficient information to compute the posterior"
+            raise ValueError("insufficient information to compute the posterior")
 
         self._K_chol = K_chol
         self._K = K
@@ -134,13 +134,13 @@ class Posterior(object):
                 #self._woodbury_chol = jitchol(W)
             #try computing woodbury chol from cov
             elif self._covariance is not None:
-                raise NotImplementedError, "TODO: check code here"
+                raise NotImplementedError("TODO: check code here")
                 B = self._K - self._covariance
                 tmp, _ = dpotrs(self.K_chol, B)
                 self._woodbury_inv, _ = dpotrs(self.K_chol, tmp.T)
                 _, _, self._woodbury_chol, _ = pdinv(self._woodbury_inv)
             else:
-                raise ValueError, "insufficient information to compute posterior"
+                raise ValueError("insufficient information to compute posterior")
         return self._woodbury_chol
 
     @property

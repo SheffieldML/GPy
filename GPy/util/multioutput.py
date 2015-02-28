@@ -51,7 +51,7 @@ def ICM(input_dim, num_outputs, kernel, W_rank=1,W=None,kappa=None,name='ICM'):
     :param W_rank: number tuples of the corregionalization parameters 'W'
     :type W_rank: integer
     """
-    if kernel.input_dim <> input_dim:
+    if kernel.input_dim != input_dim:
         kernel.input_dim = input_dim
         warnings.warn("kernel's input dimension overwritten to fit input_dim parameter.")
 

@@ -1,7 +1,7 @@
 # Copyright (c) 2012, James Hensman
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from posterior import Posterior
+from .posterior import Posterior
 from ...util.linalg import jitchol, tdot, dtrtrs, dpotri, pdinv
 from ...util import diag
 import numpy as np
@@ -26,7 +26,7 @@ class FITC(LatentFunctionInference):
         #make sure the noise is not hetero
         sigma_n = likelihood.gaussian_variance(Y_metadata)
         if sigma_n.size >1:
-            raise NotImplementedError, "no hetero noise with this implementation of FITC"
+            raise NotImplementedError("no hetero noise with this implementation of FITC")
 
         Kmm = kern.K(Z)
         Knn = kern.Kdiag(X)

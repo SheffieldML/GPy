@@ -3,7 +3,7 @@
 
 
 import numpy as np
-from kern import Kern
+from .kern import Kern
 from ...util.linalg import mdot
 from ...util.decorators import silence_errors
 from ...core.parameterization.param import Param

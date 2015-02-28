@@ -1,7 +1,7 @@
 # Copyright (c) 2012-2014, James Hensman
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from posterior import Posterior
+from .posterior import Posterior
 from ...util.linalg import jitchol, tdot, dtrtrs, dpotri, pdinv
 import numpy as np
 from . import LatentFunctionInference
@@ -29,7 +29,7 @@ class DTC(LatentFunctionInference):
         #make sure the noise is not hetero
         beta = 1./likelihood.gaussian_variance(Y_metadata)
         if beta.size > 1:
-            raise NotImplementedError, "no hetero noise with this implementation of DTC"
+            raise NotImplementedError("no hetero noise with this implementation of DTC")
 
         Kmm = kern.K(Z)
         Knn = kern.Kdiag(X)
@@ -97,7 +97,7 @@ class vDTC(object):
         #make sure the noise is not hetero
         beta = 1./likelihood.gaussian_variance(Y_metadata)
         if beta.size > 1:
-            raise NotImplementedError, "no hetero noise with this implementation of DTC"
+            raise NotImplementedError("no hetero noise with this implementation of DTC")
 
         Kmm = kern.K(Z)
         Knn = kern.Kdiag(X)

@@ -5,8 +5,8 @@
 import numpy; np = numpy
 import itertools
 from re import compile, _pattern_type
-from param import ParamConcatenation
-from parameter_core import HierarchyError, Parameterizable, adjust_name_for_printing
+from .param import ParamConcatenation
+from .parameter_core import HierarchyError, Parameterizable, adjust_name_for_printing
 
 import logging
 from GPy.core.parameterization.index_operations import ParameterIndexOperationsView
@@ -27,7 +27,7 @@ class ParametersChangedMeta(type):
         self.parameters_changed()
         return self
 
-class Parameterized(Parameterizable):
+class Parameterized(Parameterizable,metaclass=ParametersChangedMeta):
     """
     Parameterized class
 
@@ -73,6 +73,7 @@ class Parameterized(Parameterizable):
     # Metaclass for parameters changed after init.
     # This makes sure, that parameters changed will always be called after __init__
     # **Never** call parameters_changed() yourself
+    #This is ignored in Python 3 -- you need to put the meta class in the 
     __metaclass__ = ParametersChangedMeta
     #===========================================================================
     def __init__(self, name=None, parameters=[], *a, **kw):
@@ -131,7 +132,7 @@ class Parameterized(Parameterizable):
             if param.has_parent():
                 def visit(parent, self):
                     if parent is self:
-                        raise HierarchyError, "You cannot add a parameter twice into the hierarchy"
+                        raise HierarchyError("You cannot add a parameter twice into the hierarchy")
                 param.traverse_parents(visit, self)
                 param._parent_.unlink_parameter(param)
             # make sure the size is set
@@ -173,7 +174,7 @@ class Parameterized(Parameterizable):
                 self._highest_parent_._connect_fixes()
 
         else:
-            raise HierarchyError, """Parameter exists already, try making a copy"""
+            raise HierarchyError("""Parameter exists already, try making a copy""")
 
 
     def link_parameters(self, *parameters):
@@ -189,9 +190,9 @@ class Parameterized(Parameterizable):
         """
         if not param in self.parameters:
             try:
-                raise RuntimeError, "{} does not belong to this object {}, remove parameters directly from their respective parents".format(param._short(), self.name)
+                raise RuntimeError("{} does not belong to this object {}, remove parameters directly from their respective parents".format(param._short(), self.name))
             except AttributeError:
-                raise RuntimeError, "{} does not seem to be a parameter, remove parameters directly from their respective parents".format(str(param))
+                raise RuntimeError("{} does not seem to be a parameter, remove parameters directly from their respective parents".format(str(param)))
 
         start = sum([p.size for p in self.parameters[:param._parent_index_]])
         self._remove_parameter_name(param)
@@ -215,9 +216,9 @@ class Parameterized(Parameterizable):
         self._highest_parent_._notify_parent_change()
 
     def add_parameter(self, *args, **kwargs):
-        raise DeprecationWarning, "add_parameter was renamed to link_parameter to avoid confusion of setting variables, use link_parameter instead"
+        raise DeprecationWarning("add_parameter was renamed to link_parameter to avoid confusion of setting variables, use link_parameter instead")
     def remove_parameter(self, *args, **kwargs):
-        raise DeprecationWarning, "remove_parameter was renamed to unlink_parameter to avoid confusion of setting variables, use unlink_parameter instead"
+        raise DeprecationWarning("remove_parameter was renamed to unlink_parameter to avoid confusion of setting variables, use unlink_parameter instead")
 
     def _connect_parameters(self, ignore_added_names=False):
         # connect parameterlist to this parameterized object
@@ -237,7 +238,7 @@ class Parameterized(Parameterizable):
         self._param_slices_ = []
         for i, p in enumerate(self.parameters):
             if not p.param_array.flags['C_CONTIGUOUS']:
-                raise ValueError, "This should not happen! Please write an email to the developers with the code, which reproduces this error. All parameter arrays must be C_CONTIGUOUS"
+                raise ValueError("This should not happen! Please write an email to the developers with the code, which reproduces this error. All parameter arrays must be C_CONTIGUOUS")
 
             p._parent_ = self
             p._parent_index_ = i
@@ -279,7 +280,7 @@ class Parameterized(Parameterizable):
         else:
             if paramlist is None:
                 paramlist = self.grep_param_names(name)
-            if len(paramlist) < 1: raise AttributeError, name
+            if len(paramlist) < 1: raise AttributeError(name)
             if len(paramlist) == 1:
                 if isinstance(paramlist[-1], Parameterized):
                     paramlist = paramlist[-1].flattened_parameters
@@ -295,7 +296,7 @@ class Parameterized(Parameterizable):
             try:
                 self.param_array[name] = value
             except:
-                raise ValueError, "Setting by slice or index only allowed with array-like"
+                raise ValueError("Setting by slice or index only allowed with array-like")
             self.trigger_update()
         else:
             try: param = self.__getitem__(name, paramlist)
@@ -325,7 +326,7 @@ class Parameterized(Parameterizable):
             self._notify_parent_change()
             self.parameters_changed()
         except Exception as e:
-            print "WARNING: caught exception {!s}, trying to continue".format(e)
+            print("WARNING: caught exception {!s}, trying to continue".format(e))
 
     def copy(self, memo=None):
         if memo is None:

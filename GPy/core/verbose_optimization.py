@@ -1,7 +1,7 @@
 # Copyright (c) 2012-2014, Max Zwiessele.
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-
+from __future__ import print_function
 import numpy as np
 import sys
 import time
@@ -69,8 +69,8 @@ class VerboseOptimization(object):
                 #self.progress.add_class('box-flex1')
             else:
                 self.exps = exponents(self.fnow, self.current_gradient)
-                print 'Running {} Code:'.format(self.opt_name)
-                print ' {3:7s}   {0:{mi}s}   {1:11s}    {2:11s}'.format("i", "f", "|g|", "secs", mi=self.len_maxiters)
+                print('Running {} Code:'.format(self.opt_name))
+                print(' {3:7s}   {0:{mi}s}   {1:11s}    {2:11s}'.format("i", "f", "|g|", "secs", mi=self.len_maxiters))
 
     def __enter__(self):
         self.start = time.time()
@@ -111,11 +111,11 @@ class VerboseOptimization(object):
                 b = np.any(n_exps < self.exps)
                 if a or b:
                     self.p_iter = self.iteration
-                    print ''
+                    print('')
                 if b:
                     self.exps = n_exps
-            print '\r',
-            print '{3:> 7.2g}  {0:>0{mi}g}  {1:> 12e}  {2:> 12e}'.format(self.iteration, float(self.fnow), float(self.current_gradient), time.time()-self.start, mi=self.len_maxiters), # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
+            print('\r', end=' ')
+            print('{3:> 7.2g}  {0:>0{mi}g}  {1:> 12e}  {2:> 12e}'.format(self.iteration, float(self.fnow), float(self.current_gradient), time.time()-self.start, mi=self.len_maxiters), end=' ') # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
             sys.stdout.flush()
 
     def print_status(self, me, which=None):
@@ -144,7 +144,7 @@ class VerboseOptimization(object):
             self.print_out()
 
             if not self.ipython_notebook:
-                print ''
-                print 'Optimization finished in {0:.5g} Seconds'.format(self.stop-self.start)
-                print 'Optimization status: {0:.5g}'.format(self.status)
-                print
+                print()
+                print('Optimization finished in {0:.5g} Seconds'.format(self.stop-self.start))
+                print('Optimization status: {0:.5g}'.format(self.status))             
+                print()

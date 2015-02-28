@@ -9,7 +9,13 @@ import sys
 import re
 import numdifftools as ndt
 import pdb
-import cPickle
+
+try:
+    #In Python 2, cPickle is faster. It does not exist in Python 3 but the underlying code is always used
+    #if available
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 
 class Metropolis_Hastings:
@@ -40,7 +46,7 @@ class Metropolis_Hastings:
         fcurrent = self.model.log_likelihood() + self.model.log_prior()
         accepted = np.zeros(Ntotal,dtype=np.bool)
         for it in range(Ntotal):
-            print "sample %d of %d\r"%(it,Ntotal),
+            print("sample %d of %d\r"%(it,Ntotal), end=' ')
             sys.stdout.flush()
             prop = np.random.multivariate_normal(current, self.cov*self.scale*self.scale)
             self.model._set_params_transformed(prop)

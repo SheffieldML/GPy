@@ -5,7 +5,7 @@
 import numpy as np
 from scipy.special import gammaln, digamma
 from ...util.linalg import pdinv
-from domains import _REAL, _POSITIVE
+from .domains import _REAL, _POSITIVE
 import warnings
 import weakref
 
@@ -15,8 +15,12 @@ class Prior(object):
     _instance = None
     def __new__(cls, *args, **kwargs):
         if not cls._instance or cls._instance.__class__ is not cls:
-            cls._instance = super(Prior, cls).__new__(cls, *args, **kwargs)
-        return cls._instance
+                newfunc = super(Prior, cls).__new__
+                if newfunc is object.__new__:
+                    cls._instance = newfunc(cls)  
+                else:
+                    cls._instance = newfunc(cls, *args, **kwargs)
+                return cls._instance
 
     def pdf(self, x):
         return np.exp(self.lnpdf(x))
@@ -52,7 +56,11 @@ class Gaussian(Prior):
             for instance in cls._instances:
                 if instance().mu == mu and instance().sigma == sigma:
                     return instance()
-        o = super(Prior, cls).__new__(cls, mu, sigma)
+        newfunc = super(Prior, cls).__new__
+        if newfunc is object.__new__:
+            o = newfunc(cls)  
+        else:
+            o = newfunc(cls, mu, sigma)            
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
@@ -140,7 +148,11 @@ class LogGaussian(Gaussian):
             for instance in cls._instances:
                 if instance().mu == mu and instance().sigma == sigma:
                     return instance()
-        o = super(Prior, cls).__new__(cls, mu, sigma)
+        newfunc = super(Prior, cls).__new__
+        if newfunc is object.__new__:
+            o = newfunc(cls)  
+        else:
+            o = newfunc(cls, mu, sigma)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
@@ -258,7 +270,11 @@ class Gamma(Prior):
             for instance in cls._instances:
                 if instance().a == a and instance().b == b:
                     return instance()
-        o = super(Prior, cls).__new__(cls, a, b)
+        newfunc = super(Prior, cls).__new__
+        if newfunc is object.__new__:
+            o = newfunc(cls)  
+        else:
+            o = newfunc(cls, a, b)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
@@ -549,7 +565,7 @@ class DGPLVM(Prior):
         M_i = np.zeros((self.classnum, self.dim))
         for i in cls:
             # Mean of each class
-	    class_i = cls[i]
+            class_i = cls[i]
             M_i[i] = np.mean(class_i, axis=0)
         return M_i
 
@@ -663,7 +679,7 @@ class DGPLVM(Prior):
         # Sb_inv_N = np.linalg.inv(Sb + np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))
         #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
         #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
-	Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.1)[0]
+        Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.1)[0]
         return (-1 / self.sigma2) * np.trace(Sb_inv_N.dot(Sw))
 
     # This function calculates derivative of the log of prior function
@@ -684,7 +700,7 @@ class DGPLVM(Prior):
         # Sb_inv_N = np.linalg.inv(Sb + np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))
         #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
         #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
-	Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.1)[0]
+        Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.1)[0]
         Sb_inv_N_trans = np.transpose(Sb_inv_N)
         Sb_inv_N_trans_minus = -1 * Sb_inv_N_trans
         Sw_trans = np.transpose(Sw)
@@ -742,7 +758,7 @@ class DGPLVM_T(Prior):
         self.datanum = lbl.shape[0]
         self.x_shape = x_shape
         self.dim = x_shape[1]
-	self.vec = vec
+        self.vec = vec
 
 
     def get_class_label(self, y):
@@ -768,7 +784,7 @@ class DGPLVM_T(Prior):
         M_i = np.zeros((self.classnum, self.dim))
         for i in cls:
             # Mean of each class
-	    class_i = np.multiply(cls[i],vec)
+            class_i = np.multiply(cls[i],vec)
             M_i[i] = np.mean(class_i, axis=0)
         return M_i
 
@@ -883,7 +899,7 @@ class DGPLVM_T(Prior):
         #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
 	#print 'SB_inv: ', Sb_inv_N
         #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
-	Sb_inv_N = pdinv(Sb+np.eye(Sb.shape[0])*0.1)[0]
+        Sb_inv_N = pdinv(Sb+np.eye(Sb.shape[0])*0.1)[0]
         return (-1 / self.sigma2) * np.trace(Sb_inv_N.dot(Sw))
 
     # This function calculates derivative of the log of prior function
@@ -905,7 +921,7 @@ class DGPLVM_T(Prior):
         #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
 	#print 'SB_inv: ',Sb_inv_N
         #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
-	Sb_inv_N = pdinv(Sb+np.eye(Sb.shape[0])*0.1)[0]
+        Sb_inv_N = pdinv(Sb+np.eye(Sb.shape[0])*0.1)[0]
         Sb_inv_N_trans = np.transpose(Sb_inv_N)
         Sb_inv_N_trans_minus = -1 * Sb_inv_N_trans
         Sw_trans = np.transpose(Sw)

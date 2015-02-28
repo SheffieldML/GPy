@@ -6,15 +6,21 @@
 # http://homepages.inf.ed.ac.uk/imurray2/code/tdot/tdot.py
 
 import numpy as np
-from scipy import linalg, weave
+from scipy import linalg
 import types
 import ctypes
 from ctypes import byref, c_char, c_int, c_double # TODO
 import scipy
 import warnings
 import os
-from config import config
+from .config import config
 import logging
+
+try:
+    from scipy import weave
+except ImportError:
+    config.set('weave', 'working', 'False')
+    
 
 _scipyversion = np.float64((scipy.__version__).split('.')[:2])
 _fix_dpotri_scipy_bug = True
@@ -34,7 +40,7 @@ if config.getboolean('anaconda', 'installed') and config.getboolean('anaconda', 
         dsyrk = mkl_rt.dsyrk
         dsyr = mkl_rt.dsyr
         _blas_available = True
-        print 'anaconda installed and mkl is loaded'
+        print('anaconda installed and mkl is loaded')
     except:
         _blas_available = False
 else:
@@ -64,7 +70,7 @@ def force_F_ordered(A):
     """
     if A.flags['F_CONTIGUOUS']:
         return A
-    print "why are your arrays not F order?"
+    print("why are your arrays not F order?")
     return np.asfortranarray(A)
 
 # def jitchol(A, maxtries=5):
@@ -91,7 +97,7 @@ def jitchol(A, maxtries=5):
     else:
         diagA = np.diag(A)
         if np.any(diagA <= 0.):
-            raise linalg.LinAlgError, "not pd: non-positive diagonal elements"
+            raise linalg.LinAlgError("not pd: non-positive diagonal elements")
         jitter = diagA.mean() * 1e-6
         num_tries = 1
         while num_tries <= maxtries and np.isfinite(jitter):
@@ -105,7 +111,7 @@ def jitchol(A, maxtries=5):
     import traceback
     logging.warning('\n'.join(['Added {} rounds of jitter, jitter of {:.10e}'.format(num_tries-1, jitter),
                                 '  in '+traceback.format_list(traceback.extract_stack(limit=2)[-2:-1])[0][2:]]))
-    raise linalg.LinAlgError, "not positive definite, even with jitter."
+    raise linalg.LinAlgError("not positive definite, even with jitter.")
 
 # def dtrtri(L, lower=1):
 #     """
@@ -288,7 +294,7 @@ def pca(Y, input_dim):
 
     """
     if not np.allclose(Y.mean(axis=0), 0.0):
-        print "Y is not zero mean, centering it locally (GPy.util.linalg.pca)"
+        print("Y is not zero mean, centering it locally (GPy.util.linalg.pca)")
 
         # Y -= Y.mean(axis=0)
 
@@ -347,16 +353,16 @@ def tdot_blas(mat, out=None):
     # of C order. However, I tried that and had errors with large matrices:
     # http://homepages.inf.ed.ac.uk/imurray2/code/tdot/tdot_broken.py
     mat = np.asfortranarray(mat)
-    TRANS = c_char('n')
+    TRANS = c_char('n'.encode('ascii'))
     N = c_int(mat.shape[0])
     K = c_int(mat.shape[1])
     LDA = c_int(mat.shape[0])
-    UPLO = c_char('l')
+    UPLO = c_char('l'.encode('ascii'))
     ALPHA = c_double(1.0)
     A = mat.ctypes.data_as(ctypes.c_void_p)
     BETA = c_double(0.0)
     C = out.ctypes.data_as(ctypes.c_void_p)
-    LDC = c_int(np.max(out.strides) / 8)
+    LDC = c_int(np.max(out.strides) // 8)
     dsyrk(byref(UPLO), byref(TRANS), byref(N), byref(K),
             byref(ALPHA), A, byref(LDA), byref(BETA), C, byref(LDC))
 
@@ -423,7 +429,7 @@ def symmetrify(A, upper=False):
         try:
             symmetrify_weave(A, upper)
         except:
-            print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
+            print("\n Weave compilation failed. Falling back to (slower) numpy implementation\n")
             config.set('weave', 'working', 'False')
             symmetrify_numpy(A, upper)
     else:
@@ -489,34 +495,35 @@ def symmetrify_numpy(A, upper=False):
     else:
         A[triu] = A.T[triu]
 
-def cholupdate(L, x):
-    """
-    update the LOWER cholesky factor of a pd matrix IN PLACE
-
-    if L is the lower chol. of K, then this function computes L\_
-    where L\_ is the lower chol of K + x*x^T
-
-    """
-    support_code = """
-    #include <math.h>
-    """
-    code = """
-    double r,c,s;
-    int j,i;
-    for(j=0; j<N; j++){
-      r = sqrt(L(j,j)*L(j,j) + x(j)*x(j));
-      c = r / L(j,j);
-      s = x(j) / L(j,j);
-      L(j,j) = r;
-      for (i=j+1; i<N; i++){
-        L(i,j) = (L(i,j) + s*x(i))/c;
-        x(i) = c*x(i) - s*L(i,j);
-      }
-    }
-    """
-    x = x.copy()
-    N = x.size
-    weave.inline(code, support_code=support_code, arg_names=['N', 'L', 'x'], type_converters=weave.converters.blitz)
+#This function appears to be unused. It's use of weave makes it problematic
+#Commenting out for now
+#def cholupdate(L, x):
+#    """
+#    update the LOWER cholesky factor of a pd matrix IN PLACE
+#
+#    if L is the lower chol. of K, then this function computes L\_
+#    where L\_ is the lower chol of K + x*x^T
+#    """
+#    support_code = """
+#    #include <math.h>
+#    """
+#    code = """
+#    double r,c,s;
+#    int j,i;
+#    for(j=0; j<N; j++){
+#      r = sqrt(L(j,j)*L(j,j) + x(j)*x(j));
+#      c = r / L(j,j);
+#      s = x(j) / L(j,j);
+#      L(j,j) = r;
+#      for (i=j+1; i<N; i++){
+#        L(i,j) = (L(i,j) + s*x(i))/c;
+#        x(i) = c*x(i) - s*L(i,j);
+#      }
+#    }
+#    """
+#    x = x.copy()
+#    N = x.size
+#    weave.inline(code, support_code=support_code, arg_names=['N', 'L', 'x'], type_converters=weave.converters.blitz)
 
 def backsub_both_sides(L, X, transpose='left'):
     """ Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky"""

@@ -3,8 +3,8 @@
 
 import numpy as np
 from ..util import choleskies
-from sparse_gp import SparseGP
-from parameterization.param import Param
+from .sparse_gp import SparseGP
+from .parameterization.param import Param
 from ..inference.latent_function_inference import SVGP as svgp_inf
 
 

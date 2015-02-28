@@ -12,7 +12,7 @@
 
 import numpy as np
 from ...util.linalg import mdot, jitchol, dpotrs, dtrtrs, dpotri, symmetrify, pdinv
-from posterior import Posterior
+from .posterior import Posterior
 import warnings
 def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
     return ' %s:%s: %s:%s\n' % (filename, lineno, category.__name__, message)

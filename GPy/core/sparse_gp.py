@@ -2,11 +2,11 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from gp import GP
-from parameterization.param import Param
+from .gp import GP
+from .parameterization.param import Param
 from ..inference.latent_function_inference import var_dtc
 from .. import likelihoods
-from parameterization.variational import VariationalPosterior, NormalPosterior
+from .parameterization.variational import VariationalPosterior, NormalPosterior
 from ..util.linalg import mdot
 
 import logging
@@ -48,8 +48,8 @@ class SparseGP(GP):
                 inference_method = var_dtc.VarDTC(limit=1 if not self.missing_data else Y.shape[1])
             else:
                 #inference_method = ??
-                raise NotImplementedError, "what to do what to do?"
-            print "defaulting to ", inference_method, "for latent function inference"
+                raise NotImplementedError("what to do what to do?")
+            print("defaulting to ", inference_method, "for latent function inference")
 
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]

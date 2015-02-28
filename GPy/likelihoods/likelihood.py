@@ -4,7 +4,7 @@
 import numpy as np
 from scipy import stats,special
 import scipy as sp
-import link_functions
+from . import link_functions
 from ..util.misc import chain_1, chain_2, chain_3
 from scipy.integrate import quad
 import warnings
@@ -203,7 +203,7 @@ class Likelihood(Parameterized):
 
     def _conditional_mean(self, f):
         """Quadrature calculation of the conditional mean: E(Y_star|f)"""
-        raise NotImplementedError, "implement this function to make predictions"
+        raise NotImplementedError("implement this function to make predictions")
 
     def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
         """

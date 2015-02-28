@@ -4,9 +4,10 @@
 import sys
 import numpy as np
 from ...core.parameterization.parameterized import Parameterized
-from kernel_slice_operations import KernCallsViaSlicerMeta
+from .kernel_slice_operations import KernCallsViaSlicerMeta
 from ...util.caching import Cache_this
 from GPy.core.parameterization.observable_array import ObsAr
+from functools import reduce
 
 
 
@@ -178,7 +179,7 @@ class Kern(Parameterized):
 
         """
         assert isinstance(other, Kern), "only kernels can be added to kernels..."
-        from add import Add
+        from .add import Add
         return Add([self, other], name=name)
 
     def __mul__(self, other):
@@ -210,7 +211,7 @@ class Kern(Parameterized):
 
         """
         assert isinstance(other, Kern), "only kernels can be multiplied to kernels..."
-        from prod import Prod
+        from .prod import Prod
         #kernels = []
         #if isinstance(self, Prod): kernels.extend(self.parameters)
         #else: kernels.append(self)

@@ -15,7 +15,7 @@ def oil(num_inducing=50, max_iters=100, kernel=None, optimize=True, plot=True):
 
     """
     try:import pods
-    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    except ImportError:print('pods unavailable, see https://github.com/sods/ods for example datasets')
     data = pods.datasets.oil()
     X = data['X']
     Xtest = data['Xtest']
@@ -52,7 +52,7 @@ def toy_linear_1d_classification(seed=default_seed, optimize=True, plot=True):
     """
 
     try:import pods
-    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    except ImportError:print('pods unavailable, see https://github.com/sods/ods for example datasets')
     data = pods.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
     Y[Y.flatten() == -1] = 0
@@ -75,7 +75,7 @@ def toy_linear_1d_classification(seed=default_seed, optimize=True, plot=True):
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
 
-    print m
+    print(m)
     return m
 
 def toy_linear_1d_classification_laplace(seed=default_seed, optimize=True, plot=True):
@@ -88,7 +88,7 @@ def toy_linear_1d_classification_laplace(seed=default_seed, optimize=True, plot=
     """
 
     try:import pods
-    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    except ImportError:print('pods unavailable, see https://github.com/sods/ods for example datasets')
     data = pods.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
     Y[Y.flatten() == -1] = 0
@@ -114,7 +114,7 @@ def toy_linear_1d_classification_laplace(seed=default_seed, optimize=True, plot=
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
 
-    print m
+    print(m)
     return m
 
 def sparse_toy_linear_1d_classification(num_inducing=10, seed=default_seed, optimize=True, plot=True):
@@ -127,7 +127,7 @@ def sparse_toy_linear_1d_classification(num_inducing=10, seed=default_seed, opti
     """
 
     try:import pods
-    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    except ImportError:print('pods unavailable, see https://github.com/sods/ods for example datasets')
     data = pods.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
     Y[Y.flatten() == -1] = 0
@@ -147,7 +147,7 @@ def sparse_toy_linear_1d_classification(num_inducing=10, seed=default_seed, opti
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
 
-    print m
+    print(m)
     return m
 
 def toy_heaviside(seed=default_seed, max_iters=100, optimize=True, plot=True):
@@ -160,7 +160,7 @@ def toy_heaviside(seed=default_seed, max_iters=100, optimize=True, plot=True):
     """
 
     try:import pods
-    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    except ImportError:print('pods unavailable, see https://github.com/sods/ods for example datasets')
     data = pods.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
     Y[Y.flatten() == -1] = 0
@@ -177,7 +177,7 @@ def toy_heaviside(seed=default_seed, max_iters=100, optimize=True, plot=True):
         # Parameters optimization:
         for _ in range(5):
             m.optimize(max_iters=int(max_iters/5))
-        print m
+        print(m)
 
     # Plot
     if plot:
@@ -186,7 +186,7 @@ def toy_heaviside(seed=default_seed, max_iters=100, optimize=True, plot=True):
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
 
-    print m
+    print(m)
     return m
 
 def crescent_data(model_type='Full', num_inducing=10, seed=default_seed, kernel=None, optimize=True, plot=True):
@@ -202,7 +202,7 @@ def crescent_data(model_type='Full', num_inducing=10, seed=default_seed, kernel=
     :type kernel: a GPy kernel
     """
     try:import pods
-    except ImportError:print 'pods unavailable, see https://github.com/sods/ods for example datasets'
+    except ImportError:print('pods unavailable, see https://github.com/sods/ods for example datasets')
     data = pods.datasets.crescent_data(seed=seed)
     Y = data['Y']
     Y[Y.flatten()==-1] = 0
@@ -224,5 +224,5 @@ def crescent_data(model_type='Full', num_inducing=10, seed=default_seed, kernel=
     if plot:
         m.plot()
 
-    print m
+    print(m)
     return m

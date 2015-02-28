@@ -468,7 +468,11 @@ class Logistic(Transformation):
             for instance in cls._instances:
                 if instance().lower == lower and instance().upper == upper:
                     return instance()
-        o = super(Transformation, cls).__new__(cls, lower, upper, *args, **kwargs)
+        newfunc = super(Transformation, cls).__new__
+        if newfunc is object.__new__:
+            o = newfunc(cls)  
+        else:
+            o = newfunc(cls, lower, upper, *args, **kwargs)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
     def __init__(self, lower, upper):

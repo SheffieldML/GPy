@@ -4,6 +4,7 @@
 import numpy
 from numpy.lib.function_base import vectorize
 from .lists_and_dicts import IntArrayDict
+from functools import reduce
 
 def extract_properties_to_index(index, props):
     prop_index = dict()

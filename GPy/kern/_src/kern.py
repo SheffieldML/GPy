@@ -7,6 +7,7 @@ from ...core.parameterization.parameterized import Parameterized
 from .kernel_slice_operations import KernCallsViaSlicerMeta
 from ...util.caching import Cache_this
 from GPy.core.parameterization.observable_array import ObsAr
+from functools import reduce
 
 
 

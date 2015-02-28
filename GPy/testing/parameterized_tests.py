@@ -12,6 +12,7 @@ from GPy.core.parameterization.transformations import NegativeLogexp, Logistic
 from GPy.core.parameterization.parameterized import Parameterized
 from GPy.core.parameterization.param import Param
 from GPy.core.parameterization.index_operations import ParameterIndexOperations
+from functools import reduce
 
 class ArrayCoreTest(unittest.TestCase):
     def setUp(self):

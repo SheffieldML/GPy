@@ -362,7 +362,7 @@ def tdot_blas(mat, out=None):
     A = mat.ctypes.data_as(ctypes.c_void_p)
     BETA = c_double(0.0)
     C = out.ctypes.data_as(ctypes.c_void_p)
-    LDC = c_int(np.max(out.strides) / 8)
+    LDC = c_int(np.max(out.strides) // 8)
     dsyrk(byref(UPLO), byref(TRANS), byref(N), byref(K),
             byref(ALPHA), A, byref(LDA), byref(BETA), C, byref(LDC))
 

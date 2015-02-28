@@ -148,7 +148,11 @@ class LogGaussian(Gaussian):
             for instance in cls._instances:
                 if instance().mu == mu and instance().sigma == sigma:
                     return instance()
-        o = super(Prior, cls).__new__(cls, mu, sigma)
+        newfunc = super(Prior, cls).__new__
+        if newfunc is object.__new__:
+            o = newfunc(cls)  
+        else:
+            o = newfunc(cls, mu, sigma)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 

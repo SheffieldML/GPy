@@ -353,11 +353,11 @@ def tdot_blas(mat, out=None):
     # of C order. However, I tried that and had errors with large matrices:
     # http://homepages.inf.ed.ac.uk/imurray2/code/tdot/tdot_broken.py
     mat = np.asfortranarray(mat)
-    TRANS = c_char('n')
+    TRANS = c_char('n'.encode('ascii'))
     N = c_int(mat.shape[0])
     K = c_int(mat.shape[1])
     LDA = c_int(mat.shape[0])
-    UPLO = c_char('l')
+    UPLO = c_char('l'.encode('ascii'))
     ALPHA = c_double(1.0)
     A = mat.ctypes.data_as(ctypes.c_void_p)
     BETA = c_double(0.0)

@@ -15,8 +15,12 @@ class Prior(object):
     _instance = None
     def __new__(cls, *args, **kwargs):
         if not cls._instance or cls._instance.__class__ is not cls:
-            cls._instance = super(Prior, cls).__new__(cls, *args, **kwargs)
-        return cls._instance
+                newfunc = super(Prior, cls).__new__
+                if newfunc is object.__new__:
+                    cls._instance = newfunc(cls)  
+                else:
+                    cls._instance = newfunc(cls, *args, **kwargs)
+                return cls._instance
 
     def pdf(self, x):
         return np.exp(self.lnpdf(x))
@@ -52,7 +56,11 @@ class Gaussian(Prior):
             for instance in cls._instances:
                 if instance().mu == mu and instance().sigma == sigma:
                     return instance()
-        o = super(Prior, cls).__new__(cls, mu, sigma)
+        newfunc = super(Prior, cls).__new__
+        if newfunc is object.__new__:
+            o = newfunc(cls)  
+        else:
+            o = newfunc(cls, mu, sigma)            
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 

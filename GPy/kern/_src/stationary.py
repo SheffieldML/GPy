@@ -8,9 +8,14 @@ from ...core.parameterization.transformations import Logexp
 from ...util.linalg import tdot
 from ... import util
 import numpy as np
-from scipy import integrate, weave
+from scipy import integrate
 from ...util.config import config # for assesing whether to use weave
 from ...util.caching import Cache_this
+
+try:
+    from scipy import weave
+except ImportError:
+    config.set('weave', 'working', 'False')
 
 class Stationary(Kern):
     """
@@ -167,9 +172,9 @@ class Stationary(Kern):
                 except:
                     print("\n Weave compilation failed. Falling back to (slower) numpy implementation\n")
                     config.set('weave', 'working', 'False')
-                    self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(X[:,q:q+1] - X2[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in xrange(self.input_dim)])
+                    self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(X[:,q:q+1] - X2[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in range(self.input_dim)])
             else:
-                self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(X[:,q:q+1] - X2[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in xrange(self.input_dim)])
+                self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(X[:,q:q+1] - X2[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in range(self.input_dim)])
         else:
             r = self._scaled_dist(X, X2)
             self.lengthscale.gradient = -np.sum(dL_dr*r)/self.lengthscale
@@ -234,7 +239,7 @@ class Stationary(Kern):
 
         #the lower memory way with a loop
         ret = np.empty(X.shape, dtype=np.float64)
-        for q in xrange(self.input_dim):
+        for q in range(self.input_dim):
             np.sum(tmp*(X[:,q][:,None]-X2[:,q][None,:]), axis=1, out=ret[:,q])
         ret /= self.lengthscale**2
 

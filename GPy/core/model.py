@@ -364,7 +364,7 @@ class Model(Parameterized):
             gradient = self._grads(x).copy()
             np.where(gradient == 0, 1e-312, gradient)
             ret = True
-            for nind, xind in itertools.izip(param_index, transformed_index):
+            for nind, xind in zip(param_index, transformed_index):
                 xx = x.copy()
                 xx[xind] += step
                 f1 = self._objective(xx)

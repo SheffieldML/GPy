@@ -269,7 +269,7 @@ class Parameterized(Parameterizable,metaclass=ParametersChangedMeta):
         """
         if not isinstance(regexp, _pattern_type): regexp = compile(regexp)
         found_params = []
-        for n, p in itertools.izip(self.parameter_names(False, False, True), self.flattened_parameters):
+        for n, p in zip(self.parameter_names(False, False, True), self.flattened_parameters):
             if regexp.match(n) is not None:
                 found_params.append(p)
         return found_params
@@ -380,7 +380,7 @@ class Parameterized(Parameterizable,metaclass=ParametersChangedMeta):
         pl = max([len(str(x)) if x else 0 for x in prirs + ["Prior"]])
         format_spec = "<tr><td class=tg-left>{{name:<{0}s}}</td><td class=tg-right>{{desc:>{1}s}}</td><td class=tg-left>{{const:^{2}s}}</td><td class=tg-left>{{pri:^{3}s}}</td><td class=tg-left>{{t:^{4}s}}</td></tr>".format(nl, sl, cl, pl, tl)
         to_print = []
-        for n, d, c, t, p in itertools.izip(names, desc, constrs, ts, prirs):
+        for n, d, c, t, p in zip(names, desc, constrs, ts, prirs):
             to_print.append(format_spec.format(name=n, desc=d, const=c, t=t, pri=p))
         sep = '-' * (nl + sl + cl + + pl + tl + 8 * 2 + 3)
         if header:
@@ -415,7 +415,7 @@ class Parameterized(Parameterizable,metaclass=ParametersChangedMeta):
         pl = max([len(str(x)) if x else 0 for x in prirs + ["Prior"]])
         format_spec = "  \033[1m{{name:<{0}s}}\033[0;0m  |  {{desc:>{1}s}}  |  {{const:^{2}s}}  |  {{pri:^{3}s}}  |  {{t:^{4}s}}".format(nl, sl, cl, pl, tl)
         to_print = []
-        for n, d, c, t, p in itertools.izip(names, desc, constrs, ts, prirs):
+        for n, d, c, t, p in zip(names, desc, constrs, ts, prirs):
             to_print.append(format_spec.format(name=n, desc=d, const=c, t=t, pri=p))
         sep = '-' * (nl + sl + cl + + pl + tl + 8 * 2 + 3)
         if header:

@@ -14,7 +14,6 @@ Continuous integration status: ![CI status](https://travis-ci.org/SheffieldML/GP
 Work is underway to make GPy run on Python 3.
 
 * Python 2.x compatibility is currently broken in this fork
-* Running the 'dict' fixer from 2to3 caused more problems than it fixed! Trying to figure out why.
 * The test suite runs but with fewer tests for some reason -- not sure why yet.
 * Many tests in the suite fail! Don't even think about using this fork for production use
 * All weave functions not covered by the test suite are simply commented out. Can add equivalents later as test functions become available

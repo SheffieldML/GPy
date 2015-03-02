@@ -5,6 +5,7 @@ import numpy as np
 from .kern import CombinationKernel
 from ...util.caching import Cache_this
 import itertools
+from functools import reduce
 
 class Prod(CombinationKernel):
     """

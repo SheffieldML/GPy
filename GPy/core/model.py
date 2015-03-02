@@ -13,6 +13,7 @@ import itertools
 import sys
 from .verbose_optimization import VerboseOptimization
 # import numdifftools as ndt
+from functools import reduce
 
 class Model(Parameterized):
     _fail_count = 0  # Count of failed optimization steps (see objective)

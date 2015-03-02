@@ -82,7 +82,7 @@ class MRD(BayesianGPLVMMiniBatch):
         assert len(self.names) == len(self.Ylist), "one name per dataset, or None if Ylist is a dict"
 
         if inference_method is None:
-            self.inference_method = InferenceMethodList([VarDTC() for _ in xrange(len(self.Ylist))])
+            self.inference_method = InferenceMethodList([VarDTC() for _ in range(len(self.Ylist))])
         else:
             assert isinstance(inference_method, InferenceMethodList), "please provide one inference method per Y in the list and provide it as InferenceMethodList, inference_method given: {}".format(inference_method)
             self.inference_method = inference_method

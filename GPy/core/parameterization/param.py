@@ -6,6 +6,7 @@ import numpy
 np = numpy
 from .parameter_core import Parameterizable, adjust_name_for_printing, Pickleable
 from .observable_array import ObsAr
+from functools import reduce
 
 ###### printing
 __constraints_name__ = "Constraint"

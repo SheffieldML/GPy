@@ -164,7 +164,9 @@ class Pickleable(object):
                        '_Cacher_wrap__cachers', # never pickle cachers
                        ]
         dc = dict()
-        for k,v in self.__dict__.iteritems():
+        #py3 fix
+        #for k,v in self.__dict__.iteritems():
+        for k,v in self.__dict__.items():
             if k not in ignore_list:
                 dc[k] = v
         return dc
@@ -427,7 +429,9 @@ class Indexable(Nameable, Updateable):
         """evaluate the prior"""
         if self.priors.size > 0:
             x = self.param_array
-            return reduce(lambda a, b: a + b, (p.lnpdf(x[ind]).sum() for p, ind in self.priors.iteritems()), 0)
+            #py3 fix
+            #return reduce(lambda a, b: a + b, (p.lnpdf(x[ind]).sum() for p, ind in self.priors.iteritems()), 0)
+            return reduce(lambda a, b: a + b, (p.lnpdf(x[ind]).sum() for p, ind in self.priors.items()), 0)
         return 0.
 
     def _log_prior_gradients(self):
@@ -435,7 +439,9 @@ class Indexable(Nameable, Updateable):
         if self.priors.size > 0:
             x = self.param_array
             ret = np.zeros(x.size)
-            [np.put(ret, ind, p.lnpdf_grad(x[ind])) for p, ind in self.priors.iteritems()]
+            #py3 fix
+            #[np.put(ret, ind, p.lnpdf_grad(x[ind])) for p, ind in self.priors.iteritems()]
+            [np.put(ret, ind, p.lnpdf_grad(x[ind])) for p, ind in self.priors.items()]
             return ret
         return 0.
 
@@ -613,7 +619,9 @@ class OptimizationHandlable(Indexable):
 
         if not self._optimizer_copy_transformed:
             self._optimizer_copy_.flat = self.param_array.flat
-            [np.put(self._optimizer_copy_, ind, c.finv(self.param_array[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
+            #py3 fix
+            #[np.put(self._optimizer_copy_, ind, c.finv(self.param_array[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
+            [np.put(self._optimizer_copy_, ind, c.finv(self.param_array[ind])) for c, ind in self.constraints.items() if c != __fixed__]
             if self.has_parent() and (self.constraints[__fixed__].size != 0 or self._has_ties()):
                 fixes = np.ones(self.size).astype(bool)
                 fixes[self.constraints[__fixed__]] = FIXED
@@ -642,11 +650,15 @@ class OptimizationHandlable(Indexable):
         if f is None:
             self.param_array.flat = p
             [np.put(self.param_array, ind, c.f(self.param_array.flat[ind]))
-             for c, ind in self.constraints.iteritems() if c != __fixed__]
+             #py3 fix
+             #for c, ind in self.constraints.iteritems() if c != __fixed__]
+             for c, ind in self.constraints.items() if c != __fixed__]
         else:
             self.param_array.flat[f] = p
             [np.put(self.param_array, ind[f[ind]], c.f(self.param_array.flat[ind[f[ind]]]))
-             for c, ind in self.constraints.iteritems() if c != __fixed__]
+             #py3 fix
+             #for c, ind in self.constraints.iteritems() if c != __fixed__]
+             for c, ind in self.constraints.items() if c != __fixed__]
         #self._highest_parent_.tie.propagate_val()
 
         self._optimizer_copy_transformed = False
@@ -681,7 +693,9 @@ class OptimizationHandlable(Indexable):
         constraint to it.
         """
         self._highest_parent_.tie.collate_gradient()
-        [np.put(g, i, c.gradfactor(self.param_array[i], g[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
+        #py3 fix
+        #[np.put(g, i, c.gradfactor(self.param_array[i], g[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
+        [np.put(g, i, c.gradfactor(self.param_array[i], g[i])) for c, i in self.constraints.items() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g
 
@@ -691,6 +705,8 @@ class OptimizationHandlable(Indexable):
         constraint to it.
         """
         self._highest_parent_.tie.collate_gradient()
+        #py3 fix
+        #[np.put(g, i, c.gradfactor_non_natural(self.param_array[i], g[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
         [np.put(g, i, c.gradfactor_non_natural(self.param_array[i], g[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g
@@ -751,7 +767,9 @@ class OptimizationHandlable(Indexable):
         self.optimizer_array = x  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
         # now draw from prior where possible
         x = self.param_array.copy()
-        [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
+        #Py3 fix
+        #[np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
+        [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.items() if not p is None]
         unfixlist = np.ones((self.size,),dtype=np.bool)
         unfixlist[self.constraints[__fixed__]] = False
         self.param_array.flat[unfixlist] = x.view(np.ndarray).ravel()[unfixlist]

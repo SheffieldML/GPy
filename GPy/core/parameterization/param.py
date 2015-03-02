@@ -207,10 +207,14 @@ class Param(Parameterizable, ObsAr):
         return 0
     @property
     def _constraints_str(self):
-        return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self.constraints.iteritems()))]
+        #py3 fix
+        #return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self.constraints.iteritems()))]
+        return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self.constraints.items()))]
     @property
     def _priors_str(self):
-        return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self.priors.iteritems()))]
+        #py3 fix
+        #return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self.priors.iteritems()))]
+        return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self.priors.items()))]
     @property
     def _ties_str(self):
         return ['']
@@ -336,7 +340,9 @@ class ParamConcatenation(object):
                     level += 1
                     parent = parent._parent_
         import operator
-        self.parents = map(lambda x: x[0], sorted(parents.iteritems(), key=operator.itemgetter(1)))
+        #py3 fix
+        #self.parents = map(lambda x: x[0], sorted(parents.iteritems(), key=operator.itemgetter(1)))
+        self.parents = map(lambda x: x[0], sorted(parents.tems(), key=operator.itemgetter(1)))
     #===========================================================================
     # Get/set items, enable broadcasting
     #===========================================================================

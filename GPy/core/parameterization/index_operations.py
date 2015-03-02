@@ -63,16 +63,15 @@ class ParameterIndexOperations(object):
     def __init__(self, constraints=None):
         self._properties = IntArrayDict()
         if constraints is not None:
-            for t, i in constraints.iteritems():
+            #python 3 fix
+            #for t, i in constraints.iteritems():
+            for t, i in constraints.items():
                 self.add(t, i)
 
-    def iteritems(self):
-        try:
-            return self._properties.iteritems()
-        except AttributeError:
-	#Changed this from iteritems to items for Py3 compatibility. It didn't break the test suite.
-            return self._properties.items()
-
+    #iteritems has gone in python 3
+    #def iteritems(self):
+    #    return self._properties.iteritems()
+        
     def items(self):
         return self._properties.items()
 
@@ -159,14 +158,18 @@ class ParameterIndexOperations(object):
         return numpy.array([]).astype(int)
 
     def update(self, parameter_index_view, offset=0):
-        for i, v in parameter_index_view.iteritems():
+        #py3 fix
+        #for i, v in parameter_index_view.iteritems():
+        for i, v in parameter_index_view.items():
             self.add(i, v+offset)
 
     def copy(self):
         return self.__deepcopy__(None)
 
     def __deepcopy__(self, memo):
-        return ParameterIndexOperations(dict(self.iteritems()))
+        #py3 fix
+        #return ParameterIndexOperations(dict(self.iteritems()))
+        return ParameterIndexOperations(dict(self.items()))
 
     def __getitem__(self, prop):
         return self._properties[prop]
@@ -204,22 +207,25 @@ class ParameterIndexOperationsView(object):
     def _filter_index(self, ind):
         return ind[(ind >= self._offset) * (ind < (self._offset + self._size))] - self._offset
 
-
-    def iteritems(self):
-        for i, ind in self._param_index_ops.iteritems():
+    #iteritems has gone in python 3. It has been renamed items()
+    def items(self):
+        for i, ind in self._param_index_ops.items():
             ind2 = self._filter_index(ind)
             if ind2.size > 0:
                 yield i, ind2
-
-    def items(self):
-        return [[i,v] for i,v in self.iteritems()]
+    
+    #Python 3 items() is now implemented as per py2 iteritems
+    #def items(self):
+    #    return [[i,v] for i,v in self.iteritems()]
 
     def properties(self):
         return [i for i in self.iterproperties()]
 
 
     def iterproperties(self):
-        for i, _ in self.iteritems():
+        #py3 fix
+        #for i, _ in self.iteritems():
+        for i, _ in self.items():
             yield i
 
 
@@ -239,7 +245,9 @@ class ParameterIndexOperationsView(object):
 
 
     def iterindices(self):
-        for _, ind in self.iteritems():
+        #py3 fix
+        #for _, ind in self.iteritems():
+        for _, ind in self.items():
             yield ind
 
 
@@ -295,10 +303,14 @@ class ParameterIndexOperationsView(object):
 
     def __str__(self, *args, **kwargs):
         import pprint
-        return pprint.pformat(dict(self.iteritems()))
+        #py3 fixes
+        #return pprint.pformat(dict(self.iteritems()))
+        return pprint.pformat(dict(self.items()))
 
     def update(self, parameter_index_view, offset=0):
-        for i, v in parameter_index_view.iteritems():
+        #py3 fixes
+        #for i, v in parameter_index_view.iteritems():
+        for i, v in parameter_index_view.items():
             self.add(i, v+offset)
 
 
@@ -306,6 +318,8 @@ class ParameterIndexOperationsView(object):
         return self.__deepcopy__(None)
 
     def __deepcopy__(self, memo):
-        return ParameterIndexOperations(dict(self.iteritems()))
+        #py3 fix
+        #return ParameterIndexOperations(dict(self.iteritems()))
+        return ParameterIndexOperations(dict(self.items()))
     pass
 

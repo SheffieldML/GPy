@@ -110,7 +110,10 @@ class Pickleable(object):
                   it properly.
         :param protocol: pickling protocol to use, python-pickle for details.
         """
-        import cPickle as pickle
+        try: #Py2
+            import cPickle as pickle
+        except ImportError: #Py3
+            import pickle
         if isinstance(f, str):
             with open(f, 'wb') as f:
                 pickle.dump(self, f, protocol)

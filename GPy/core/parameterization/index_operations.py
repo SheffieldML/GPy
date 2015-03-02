@@ -87,7 +87,7 @@ class ParameterIndexOperations(object):
             ind[toshift] += size
 
     def shift_left(self, start, size):
-        for v, ind in self.items():
+        for v, ind in list(self.items()):
             todelete = (ind>=start) * (ind<start+size)
             if todelete.size != 0:
                 ind = ind[~todelete]
@@ -209,7 +209,8 @@ class ParameterIndexOperationsView(object):
 
     #iteritems has gone in python 3. It has been renamed items()
     def items(self):
-        for i, ind in self._param_index_ops.items():
+        _items_list = list(self._param_index_ops.items())
+        for i, ind in _items_list:
             ind2 = self._filter_index(ind)
             if ind2.size > 0:
                 yield i, ind2

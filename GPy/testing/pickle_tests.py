@@ -29,7 +29,9 @@ def toy_model():
 
 class ListDictTestCase(unittest.TestCase):
     def assertListDictEquals(self, d1, d2, msg=None):
-        for k,v in d1.iteritems():
+        #py3 fix
+        #for k,v in d1.iteritems():
+        for k,v in d1.items():
             self.assertListEqual(list(v), list(d2[k]), msg)
     def assertArrayListEquals(self, l1, l2):
         for a1, a2 in itertools.izip(l1,l2):
@@ -39,8 +41,13 @@ class Test(ListDictTestCase):
     def test_parameter_index_operations(self):
         pio = ParameterIndexOperations(dict(test1=np.array([4,3,1,6,4]), test2=np.r_[2:130]))
         piov = ParameterIndexOperationsView(pio, 20, 250)
-        self.assertListDictEquals(dict(piov.items()), dict(piov.copy().iteritems()))
-        self.assertListDictEquals(dict(pio.iteritems()), dict(pio.copy().items()))
+        #py3 fix
+        #self.assertListDictEquals(dict(piov.items()), dict(piov.copy().iteritems()))
+        self.assertListDictEquals(dict(piov.items()), dict(piov.copy().items()))
+
+        #py3 fix
+        #self.assertListDictEquals(dict(pio.iteritems()), dict(pio.copy().items()))
+        self.assertListDictEquals(dict(pio.items()), dict(pio.copy().items()))
 
         self.assertArrayListEquals(pio.copy().indices(), pio.indices())
         self.assertArrayListEquals(piov.copy().indices(), piov.indices())
@@ -55,7 +62,9 @@ class Test(ListDictTestCase):
             pickle.dump(piov, f)
             f.seek(0)
             pio2 = pickle.load(f)
-            self.assertListDictEquals(dict(piov.items()), dict(pio2.iteritems()))
+            #py3 fix
+            #self.assertListDictEquals(dict(piov.items()), dict(pio2.iteritems()))
+            self.assertListDictEquals(dict(piov.items()), dict(pio2.items()))
 
     def test_param(self):
         param = Param('test', np.arange(4*2).reshape(4,2))

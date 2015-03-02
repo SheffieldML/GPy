@@ -342,7 +342,7 @@ class ParamConcatenation(object):
         import operator
         #py3 fix
         #self.parents = map(lambda x: x[0], sorted(parents.iteritems(), key=operator.itemgetter(1)))
-        self.parents = map(lambda x: x[0], sorted(parents.tems(), key=operator.itemgetter(1)))
+        self.parents = map(lambda x: x[0], sorted(parents.items(), key=operator.itemgetter(1)))
     #===========================================================================
     # Get/set items, enable broadcasting
     #===========================================================================

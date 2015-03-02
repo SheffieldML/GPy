@@ -710,7 +710,7 @@ class OptimizationHandlable(Indexable):
         self._highest_parent_.tie.collate_gradient()
         #py3 fix
         #[np.put(g, i, c.gradfactor_non_natural(self.param_array[i], g[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
-        [np.put(g, i, c.gradfactor_non_natural(self.param_array[i], g[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
+        [np.put(g, i, c.gradfactor_non_natural(self.param_array[i], g[i])) for c, i in self.constraints.items() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g
 

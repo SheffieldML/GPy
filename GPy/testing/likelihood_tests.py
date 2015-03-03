@@ -29,7 +29,7 @@ def dparam_partial(inst_func, *args):
     def param_func(param_val, param_name, inst_func, args):
         #inst_func.im_self._set_params(param)
         #inst_func.im_self.add_parameter(Param(param_name, param_val))
-        inst_func.im_self[param_name] = param_val
+        inst_func.__self__[param_name] = param_val
         return inst_func(*args)
     return functools.partial(param_func, inst_func=inst_func, args=args)
 
@@ -44,7 +44,7 @@ def dparam_checkgrad(func, dfunc, params, params_names, args, constraints=None, 
     The number of parameters and N is the number of data
     Need to take a slice out from f and a slice out of df
     """
-    print("\n{} likelihood: {} vs {}".format(func.im_self.__class__.__name__,
+    print("\n{} likelihood: {} vs {}".format(func.__self__.__class__.__name__,
                                            func.__name__, dfunc.__name__))
     partial_f = dparam_partial(func, *args)
     partial_df = dparam_partial(dfunc, *args)
@@ -278,7 +278,7 @@ class TestNoiseModels(object):
                         #}
                     }
 
-        for name, attributes in noise_models.iteritems():
+        for name, attributes in noise_models.items():
             model = attributes["model"]
             if "grad_params" in attributes:
                 params = attributes["grad_params"]

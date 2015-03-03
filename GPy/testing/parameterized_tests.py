@@ -108,7 +108,7 @@ class ParameterizedTest(unittest.TestCase):
         self.assertListEqual(self.white._fixes_.tolist(), [FIXED])
         self.assertIs(self.test1.constraints, self.rbf.constraints._param_index_ops)
         self.assertIs(self.test1.constraints, self.param.constraints._param_index_ops)
-        self.assertListEqual(self.test1.constraints[Logexp()].tolist(), range(self.param.size, self.param.size+self.rbf.size))
+        self.assertListEqual(self.test1.constraints[Logexp()].tolist(), list(range(self.param.size, self.param.size+self.rbf.size)))
 
     def test_remove_parameter_param_array_grad_array(self):
         val = self.test1.kern.param_array.copy()

@@ -79,7 +79,7 @@ class ParameterIndexOperations(object):
         return self._properties.keys()
 
     def iterproperties(self):
-        return self._properties.iterkeys()
+        return iter(self._properties)
 
     def shift_right(self, start, size):
         for ind in self.iterindices():

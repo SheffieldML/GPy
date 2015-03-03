@@ -121,7 +121,9 @@ class Test(unittest.TestCase):
         self.assertListEqual(removed.tolist(), [0, 2])
 
     def test_misc(self):
-        for k,v in self.param_index.copy()._properties.iteritems():
+        #py3 fix
+        #for k,v in self.param_index.copy()._properties.iteritems():
+        for k,v in self.param_index.copy()._properties.items():
             self.assertListEqual(self.param_index[k].tolist(), v.tolist())
         self.assertEqual(self.param_index.size, 8)
         self.assertEqual(self.view.size, 5)

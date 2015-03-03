@@ -341,7 +341,7 @@ class Model(Parameterized):
             cols.extend([max(float_len, len(header[i])) for i in range(1, len(header))])
             cols = np.array(cols) + 5
             header_string = ["{h:^{col}}".format(h=header[i], col=cols[i]) for i in range(len(cols))]
-            header_string = map(lambda x: '|'.join(x), [header_string])
+            header_string = list(map(lambda x: '|'.join(x), [header_string]))
             separator = '-' * len(header_string[0])
             print('\n'.join([header_string[0], separator]))
             if target_param is None:

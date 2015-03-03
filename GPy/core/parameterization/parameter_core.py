@@ -581,7 +581,7 @@ class Indexable(Nameable, Updateable):
         if len(transforms) == 0:
             transforms = which.properties()
         removed = np.empty((0,), dtype=int)
-        for t in transforms:
+        for t in list(transforms):
             unconstrained = which.remove(t, self._raveled_index())
             removed = np.union1d(removed, unconstrained)
             if t is __fixed__:

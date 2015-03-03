@@ -214,12 +214,12 @@ def mdot(*args):
 
 def _mdot_r(a, b):
     """Recursive helper for mdot"""
-    if type(a) == types.TupleType:
+    if type(a) == tuple:
         if len(a) > 1:
             a = mdot(*a)
         else:
             a = a[0]
-    if type(b) == types.TupleType:
+    if type(b) == tuple:
         if len(b) > 1:
             b = mdot(*b)
         else:
@@ -362,7 +362,7 @@ def tdot_blas(mat, out=None):
     A = mat.ctypes.data_as(ctypes.c_void_p)
     BETA = c_double(0.0)
     C = out.ctypes.data_as(ctypes.c_void_p)
-    LDC = c_int(np.max(out.strides) // 8)
+    LDC = c_int(np.max(out.strides) / 8)
     dsyrk(byref(UPLO), byref(TRANS), byref(N), byref(K),
             byref(ALPHA), A, byref(LDA), byref(BETA), C, byref(LDC))
 

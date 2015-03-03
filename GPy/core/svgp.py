@@ -25,20 +25,21 @@ class SVGP(SparseGP):
 
         Hensman, Matthews and Ghahramani, Scalable Variational GP Classification, ArXiv 1411.2005
         """
-        if batchsize is None:
-            batchsize = X.shape[0]
-
-        self.X_all, self.Y_all = X, Y
-        # how to rescale the batch likelihood in case of minibatches
         self.batchsize = batchsize
-        batch_scale = float(self.X_all.shape[0])/float(self.batchsize)
-        #KL_scale = 1./np.float64(self.mpi_comm.size)
-        KL_scale = 1.0
+        if batchsize is None:
+            X_batch, Y_batch = X, Y
+            KL_scale, batch_scale = 1., 1.
 
-        import climin.util
-        #Make a climin slicer to make drawing minibatches much quicker
-        self.slicer = climin.util.draw_mini_slices(self.X_all.shape[0], self.batchsize)
-        X_batch, Y_batch = self.new_batch()
+        else:
+            self.X_all, self.Y_all = X, Y
+            # how to rescale the batch likelihood in case of minibatches
+            batch_scale = float(self.X_all.shape[0])/float(self.batchsize)
+            KL_scale = 1.0
+
+            import climin.util
+            #Make a climin slicer to make drawing minibatches much quicker
+            self.slicer = climin.util.draw_mini_slices(self.X_all.shape[0], self.batchsize)
+            X_batch, Y_batch = self.new_batch()
 
         #create the SVI inference method
         inf_method = svgp_inf(KL_scale=KL_scale, batch_scale=batch_scale)

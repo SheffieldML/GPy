@@ -188,7 +188,6 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     if not result:
         print(("Gradient of K(X, X) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:"))
         testmodel.checkgrad(verbose=True)
-        import ipdb;ipdb.set_trace()
         assert(result)
         pass_checks = False
         return False

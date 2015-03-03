@@ -124,6 +124,7 @@ class GP(Model):
             else:
                 self.X = ObsAr(X)
         self.update_model(True)
+        self._trigger_params_changed()
 
     def set_X(self,X):
         """

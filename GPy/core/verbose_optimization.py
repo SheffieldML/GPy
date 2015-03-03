@@ -11,9 +11,8 @@ def exponents(fnow, current_grad):
     return np.sign(exps) * np.log10(exps).astype(int)
 
 class VerboseOptimization(object):
-    def __init__(self, model, opt, maxiters, verbose=True, current_iteration=0, ipython_notebook=False):
+    def __init__(self, model, opt, maxiters, verbose=False, current_iteration=0, ipython_notebook=True):
         self.verbose = verbose
-        self.ipython_notebook = ipython_notebook
         if self.verbose:
             self.model = model
             self.iteration = current_iteration
@@ -26,13 +25,18 @@ class VerboseOptimization(object):
 
             self.update()
 
-            if self.ipython_notebook:
+            try:
                 from IPython.display import display
                 from IPython.html.widgets import FloatProgressWidget, HTMLWidget, ContainerWidget
                 self.text = HTMLWidget()
                 self.progress = FloatProgressWidget()
                 self.model_show = HTMLWidget()
+                self.ipython_notebook = ipython_notebook
+            except:
+                # Not in Ipython notebook
+                self.ipython_notebook = False
 
+            if self.ipython_notebook:
                 self.text.set_css('width', '100%')
                 #self.progress.set_css('width', '100%')
 
@@ -140,6 +144,7 @@ class VerboseOptimization(object):
             self.print_out()
 
             if not self.ipython_notebook:
-                print
+                print ''
                 print 'Optimization finished in {0:.5g} Seconds'.format(self.stop-self.start)
+                print 'Optimization status: {0:.5g}'.format(self.status)
                 print

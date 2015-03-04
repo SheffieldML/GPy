@@ -82,7 +82,7 @@ class SparseGPMiniBatch(SparseGP):
             m_f = lambda i: "Precomputing Y for missing data: {: >7.2%}".format(float(i+1)/overall)
             message = m_f(-1)
             print(message, end=' ')
-            for d in xrange(overall):
+            for d in range(overall):
                 self.Ylist.append(self.Y_normalized[self.ninan[:, d], d][:, None])
                 print(' '*(len(message)+1) + '\r', end=' ')
                 message = m_f(d)
@@ -182,11 +182,11 @@ class SparseGPMiniBatch(SparseGP):
             full_values[key][value_indices[key]] += current_values[key]
         """
         for key in current_values.keys():
-            if value_indices is not None and value_indices.has_key(key):
+            if value_indices is not None and key in value_indices:
                 index = value_indices[key]
             else:
                 index = slice(None)
-            if full_values.has_key(key):
+            if key in full_values:
                 full_values[key][index] += current_values[key]
             else:
                 full_values[key] = current_values[key]

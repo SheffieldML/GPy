@@ -165,7 +165,7 @@ class Add(CombinationKernel):
                 else:
                     eff_dL_dpsi1 += dL_dpsi2.sum(0) * p2.psi1(Z, variational_posterior) * 2.
             grads = p1.gradients_qX_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
-            [np.add(target_grads[i],grads[i],target_grads[i]) for i in xrange(len(grads))]
+            [np.add(target_grads[i],grads[i],target_grads[i]) for i in range(len(grads))]
         return target_grads
 
     def add(self, other):

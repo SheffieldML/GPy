@@ -11,10 +11,11 @@ from functools import reduce
 
 
 
-class Kern(Parameterized):
+class Kern(Parameterized,metaclass=KernCallsViaSlicerMeta):
     #===========================================================================
     # This adds input slice support. The rather ugly code for slicing can be
     # found in kernel_slice_operations
+    # __mataclass__ is ignored in Python 3 - needs to be put in the function definiton
     __metaclass__ = KernCallsViaSlicerMeta
     #===========================================================================
     _support_GPU=False

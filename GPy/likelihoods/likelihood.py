@@ -131,7 +131,7 @@ class Likelihood(Parameterized):
 
         return z, mean, variance
 
-    def variational_expectations(self, Y, m, v, gh_points=None):
+    def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
         """
         Use Gauss-Hermite Quadrature to compute
 
@@ -158,9 +158,9 @@ class Likelihood(Parameterized):
 
         #evaluate the likelhood for the grid. First ax indexes the data (and mu, var) and the second indexes the grid.
         # broadcast needs to be handled carefully.
-        logp = self.logpdf(X,Y[:,None])
-        dlogp_dx = self.dlogpdf_df(X, Y[:,None])
-        d2logp_dx2 = self.d2logpdf_df2(X, Y[:,None])
+        logp = self.logpdf(X,Y[:,None], Y_metadata=Y_metadata)
+        dlogp_dx = self.dlogpdf_df(X, Y[:,None], Y_metadata=Y_metadata)
+        d2logp_dx2 = self.d2logpdf_df2(X, Y[:,None], Y_metadata=Y_metadata)
 
         #clipping for numerical stability
         #logp = np.clip(logp,-1e9,1e9)

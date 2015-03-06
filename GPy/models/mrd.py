@@ -74,6 +74,8 @@ class MRD(BayesianGPLVMMiniBatch):
 
         self.logger.debug("creating observable arrays")
         self.Ylist = [ObsAr(Y) for Y in Ylist]
+        #The next line is a fix for Python 3. It replicates the python 2 behaviour from the above comprehension
+        Y = Ylist[-1]
 
         if Ynames is None:
             self.logger.debug("creating Ynames")

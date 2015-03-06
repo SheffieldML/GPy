@@ -139,7 +139,7 @@ class MRD(BayesianGPLVMMiniBatch):
 
         self.bgplvms = []
 
-        for i, n, k, l, Y, im, bs in itertools.izip(itertools.count(), Ynames, kernels, likelihoods, Ylist, self.inference_method, batchsize):
+        for i, n, k, l, Y, im, bs in zip(itertools.count(), Ynames, kernels, likelihoods, Ylist, self.inference_method, batchsize):
             assert Y.shape[0] == self.num_data, "All datasets need to share the number of datapoints, and those have to correspond to one another"
             md = np.isnan(Y).any()
             spgp = BayesianGPLVMMiniBatch(Y, input_dim, X, X_variance,
@@ -166,7 +166,7 @@ class MRD(BayesianGPLVMMiniBatch):
         self._log_marginal_likelihood = 0
         self.Z.gradient[:] = 0.
         self.X.gradient[:] = 0.
-        for b, i in itertools.izip(self.bgplvms, self.inference_method):
+        for b, i in zip(self.bgplvms, self.inference_method):
             self._log_marginal_likelihood += b._log_marginal_likelihood
 
             self.logger.info('working on im <{}>'.format(hex(id(i))))
@@ -197,7 +197,7 @@ class MRD(BayesianGPLVMMiniBatch):
         elif init in "PCA_single":
             X = np.zeros((Ylist[0].shape[0], self.input_dim))
             fracs = []
-            for qs, Y in itertools.izip(np.array_split(np.arange(self.input_dim), len(Ylist)), Ylist):
+            for qs, Y in zip(np.array_split(np.arange(self.input_dim), len(Ylist)), Ylist):
                 x,frcs = initialize_latent('PCA', len(qs), Y)
                 X[:, qs] = x
                 fracs.append(frcs)

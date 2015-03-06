@@ -329,9 +329,9 @@ class MRD(BayesianGPLVMMiniBatch):
 
     def __getstate__(self):
         state = super(MRD, self).__getstate__()
-        if state.has_key('kern'):
+        if 'kern' in state:
             del state['kern']
-        if state.has_key('likelihood'):
+        if 'likelihood' in state:
             del state['likelihood']
         return state
 

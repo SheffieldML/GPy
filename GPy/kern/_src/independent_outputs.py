@@ -94,10 +94,10 @@ class IndependentOutputs(CombinationKernel):
         else:
             slices2 = index_to_slices(X2[:,self.index_dim])
             [[[collate_grads(kern, i, dL_dK[s,s2],X[s],X2[s2]) for s in slices_i] for s2 in slices_j] for i,(kern,slices_i,slices_j) in enumerate(zip(kerns,slices,slices2))]
-        
         if self.single_kern: 
-            kern.gradient = target
-        else:[kern.gradient.__setitem__(Ellipsis, target[i]) for i, [kern, _] in enumerate(zip(kerns, slices))]
+            self.kern.gradient = target
+        else:
+            [kern.gradient.__setitem__(Ellipsis, target[i]) for i, [kern, _] in enumerate(zip(kerns, slices))]
 
     def gradients_X(self,dL_dK, X, X2=None):
         target = np.zeros(X.shape)
@@ -144,7 +144,7 @@ class IndependentOutputs(CombinationKernel):
             if self.single_kern: target[:] += kern.gradient
             else: target[i][:] += kern.gradient
         [[collate_grads(kern, i, dL_dKdiag[s], X[s,:]) for s in slices_i] for i, (kern, slices_i) in enumerate(zip(kerns, slices))]
-        if self.single_kern: kern.gradient = target
+        if self.single_kern: self.kern.gradient = target
         else:[kern.gradient.__setitem__(Ellipsis, target[i]) for i, [kern, _] in enumerate(zip(kerns, slices))]
 
 class Hierarchical(CombinationKernel):

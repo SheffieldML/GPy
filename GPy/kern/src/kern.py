@@ -305,6 +305,50 @@ class Kern(Parameterized):
     def _check_active_dims(self, X):
         assert X.shape[1] >= len(self._all_dims_active), "At least {} dimensional X needed, X.shape={!s}".format(len(self._all_dims_active), X.shape)
 
+    def sde(self):
+         # TODO: should support adding kernels together
+
+         #raise NameError('Problem')
+
+         # Find out state dimensions
+         n = 0
+         nq = 0
+         nd = 0
+         for p in self.parts:
+             (F,L,Qc,H,Pinf,dF,dQc,dPinf) = p.sde()
+             n  += F.shape[0]
+             nq += Qc.shape[0]
+             nd += dF.shape[2]
+
+         # Allocate space for the matrices
+         F     = np.zeros((n,n))
+         L     = np.zeros((n,nq))
+         Qc    = np.zeros((nq,nq))
+         H     = np.zeros((1,n))
+         Pinf  = np.zeros((n,n))
+         dF    = np.zeros((n,n,nd))
+         dQc   = np.zeros((nq,nq,nd))
+         dPinf = np.zeros((n,n,nd))
+         n = 0
+         nq = 0
+         nd = 0
+
+         # Assign models
+         for p in self.parts:
+             (Ft,Lt,Qct,Ht,Pinft,dFt,dQct,dPinft) = p.sde()
+             F[n:n+Ft.shape[0],n:n+Ft.shape[1]] = Ft
+             L[n:n+Lt.shape[0],nq:nq+Lt.shape[1]] = Lt
+             Qc[nq:nq+Qct.shape[0],nq:nq+Qct.shape[1]] = Qct
+             H[0,n:n+Ht.shape[1]] = Ht
+             Pinf[n:n+Pinft.shape[0],n:n+Pinft.shape[1]] = Pinft
+             dF[n:n+Ft.shape[0],n:n+Ft.shape[1],nd:nd+dFt.shape[2]] = dFt
+             dQc[nq:nq+Qct.shape[0],nq:nq+Qct.shape[1],nd:nd+dQct.shape[2]] = dQct
+             dPinf[n:n+Pinft.shape[0],n:n+Pinft.shape[1],nd:nd+dPinft.shape[2]] = dPinft
+             n += Ft.shape[0]
+             nq += Qct.shape[0]
+             nd += dFt.shape[2]
+
+         return (F,L,Qc,H,Pinf,dF,dQc,dPinf) 
 
 class CombinationKernel(Kern):
     """

@@ -16,6 +16,7 @@ Work is underway to make GPy run on Python 3.
 * Python 2.x compatibility is currently broken in this fork
 * All tests in the testsuite now run on Python3. To see this for yourself, in Ubuntu 14.04, you can do
 
+
     git clone https://github.com/mikecroucher/GPy.git
     cd GPy
     git checkout devel

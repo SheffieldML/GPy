@@ -10,14 +10,24 @@ A Gaussian processes framework in Python.
 
 Continuous integration status: ![CI status](https://travis-ci.org/SheffieldML/GPy.png)
 
-### Moving to Python 3
+### Python 3 Compatibility
 Work is underway to make GPy run on Python 3.
 
 * Python 2.x compatibility is currently broken in this fork
-* The test suite runs but with fewer tests for some reason -- not sure why yet.
-* Many tests in the suite fail! Don't even think about using this fork for production use
-* All weave functions not covered by the test suite are simply commented out. Can add equivalents later as test functions become available
-* Examples that required optimised versions of functions for speed reasons would be valued
+* All tests in the testsuite now run on Python3. To see this for yourself, in Ubuntu 14.04, you can do
+
+    git clone https://github.com/mikecroucher/GPy.git
+    cd GPy
+    git checkout devel
+    nosetests3 GPy/testing
+
+nosetests3 is Ubuntu's way of reffering to the Python 3 version of nosetests. You install it with 
+
+    sudo apt-get install python3-nose
+
+* Test coverage is less than 100% so it is expected that there is still more work to be done. We need more tests and examples to try out.
+* All weave functions not covered by the test suite are *simply commented out*. Can add equivalents later as test functions become available
+* A set of benchmarks would be useful! 
 
 ### Citation
 

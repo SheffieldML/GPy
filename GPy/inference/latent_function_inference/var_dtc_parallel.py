@@ -92,7 +92,7 @@ class VarDTC_minibatch(LatentFunctionInference):
         psi0_full = 0.
         YRY_full = 0.
 
-        for n_start in xrange(0,num_data,batchsize):
+        for n_start in range(0,num_data,batchsize):
             n_end = min(batchsize+n_start, num_data)
             if batchsize==num_data:
                 Y_slice = Y

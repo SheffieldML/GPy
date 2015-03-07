@@ -66,12 +66,12 @@ def safe_root(N):
 #    return flat
 
 def triang_to_cov(L):
-    return np.dstack([np.dot(L[:,:,i], L[:,:,i].T) for i in xrange(L.shape[-1])])
+    return np.dstack([np.dot(L[:,:,i], L[:,:,i].T) for i in range(L.shape[-1])])
 
 def multiple_dpotri_old(Ls):
     M, _, D = Ls.shape
     Kis = np.rollaxis(Ls, -1).copy()
-    [dpotri(Kis[i,:,:], overwrite_c=1, lower=1) for i in xrange(D)]
+    [dpotri(Kis[i,:,:], overwrite_c=1, lower=1) for i in range(D)]
     code = """
     for(int d=0; d<D; d++)
     {

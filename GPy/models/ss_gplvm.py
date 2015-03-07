@@ -71,7 +71,7 @@ class SSGPLVM(SparseGP_MPI):
         self.link_parameter(self.X, index=0)
                 
         if self.group_spike:
-            [self.X.gamma[:,i].tie('tieGamma'+str(i)) for i in xrange(self.X.gamma.shape[1])] # Tie columns together
+            [self.X.gamma[:,i].tie('tieGamma'+str(i)) for i in range(self.X.gamma.shape[1])] # Tie columns together
         
     def set_X_gradients(self, X, X_grad):
         """Set the gradients of the posterior distribution of X in its specific form."""

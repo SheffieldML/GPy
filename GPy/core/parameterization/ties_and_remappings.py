@@ -185,7 +185,7 @@ class Tie(Parameterized):
     def _check_change(self):
         changed = False
         if self.tied_param is not None:
-            for i in xrange(self.tied_param.size):
+            for i in range(self.tied_param.size):
                 b0 = self.label_buf==self.label_buf[self.buf_idx[i]]
                 b = self._highest_parent_.param_array[b0]!=self.tied_param[i]
                 if b.sum()==0:
@@ -212,11 +212,11 @@ class Tie(Parameterized):
         if self.tied_param is not None:
             self.tied_param.gradient = 0.
             [np.put(self.tied_param.gradient, i, self._highest_parent_.gradient[self.label_buf==self.label_buf[self.buf_idx[i]]].sum()) 
-                for i in xrange(self.tied_param.size)]
+                for i in range(self.tied_param.size)]
     
     def propagate_val(self):
         if self.tied_param is not None:
-            for i in xrange(self.tied_param.size):
+            for i in range(self.tied_param.size):
                 self._highest_parent_.param_array[self.label_buf==self.label_buf[self.buf_idx[i]]] = self.tied_param[i]
 
 

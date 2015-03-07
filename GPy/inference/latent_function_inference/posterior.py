@@ -107,7 +107,7 @@ class Posterior(object):
         if self._precision is None:
             cov = np.atleast_3d(self.covariance)
             self._precision = np.zeros(cov.shape) # if one covariance per dimension
-            for p in xrange(cov.shape[-1]):
+            for p in range(cov.shape[-1]):
                 self._precision[:,:,p] = pdinv(cov[:,:,p])[0]
         return self._precision
 
@@ -125,7 +125,7 @@ class Posterior(object):
             if self._woodbury_inv is not None:
                 winv = np.atleast_3d(self._woodbury_inv)
                 self._woodbury_chol = np.zeros(winv.shape)
-                for p in xrange(winv.shape[-1]):
+                for p in range(winv.shape[-1]):
                     self._woodbury_chol[:,:,p] = pdinv(winv[:,:,p])[2]
                 #Li = jitchol(self._woodbury_inv)
                 #self._woodbury_chol, _ = dtrtri(Li)
@@ -160,7 +160,7 @@ class Posterior(object):
             elif self._covariance is not None:
                 B = np.atleast_3d(self._K) - np.atleast_3d(self._covariance)
                 self._woodbury_inv = np.empty_like(B)
-                for i in xrange(B.shape[-1]):
+                for i in range(B.shape[-1]):
                     tmp, _ = dpotrs(self.K_chol, B[:,:,i])
                     self._woodbury_inv[:,:,i], _ = dpotrs(self.K_chol, tmp.T)
         return self._woodbury_inv

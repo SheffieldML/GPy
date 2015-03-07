@@ -459,7 +459,7 @@ class mocap_data_show(matplotlib_show):
 
     def initialize_axes(self, boundary=0.05):
         """Set up the axes with the right limits and scaling."""
-        bs = [(self.vals[:, i].max()-self.vals[:, i].min())*boundary for i in xrange(3)]
+        bs = [(self.vals[:, i].max()-self.vals[:, i].min())*boundary for i in range(3)]
         self.x_lim = np.array([self.vals[:, 0].min()-bs[0], self.vals[:, 0].max()+bs[0]])
         self.y_lim = np.array([self.vals[:, 1].min()-bs[1], self.vals[:, 1].max()+bs[1]])
         self.z_lim = np.array([self.vals[:, 2].min()-bs[2], self.vals[:, 2].max()+bs[2]])

@@ -166,7 +166,7 @@ class Coregionalize(Kern):
 
     def update_gradients_diag(self, dL_dKdiag, X):
         index = np.asarray(X, dtype=np.int).flatten()
-        dL_dKdiag_small = np.array([dL_dKdiag[index==i].sum() for i in xrange(self.output_dim)])
+        dL_dKdiag_small = np.array([dL_dKdiag[index==i].sum() for i in range(self.output_dim)])
         self.W.gradient = 2.*self.W*dL_dKdiag_small[:, None]
         self.kappa.gradient = dL_dKdiag_small
 

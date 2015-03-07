@@ -34,7 +34,7 @@ def plot(shape_records,facecolor='w',edgecolor='k',linewidths=.5, ax=None,xlims=
         par = list(sparts) + [points.shape[0]]
 
         polygs = []
-        for pj in xrange(len(sparts)):
+        for pj in range(len(sparts)):
             polygs.append(Polygon(points[par[pj]:par[pj+1]]))
         ax.add_collection(PatchCollection(polygs,facecolor=facecolor,edgecolor=edgecolor, linewidths=linewidths))
 

@@ -653,7 +653,7 @@ def ssgplvm_simulation_linear():
     def sample_X(Q, pi):
         x = np.empty(Q)
         dies = np.random.rand(Q)
-        for q in xrange(Q):
+        for q in range(Q):
             if dies[q] < pi:
                 x[q] = np.random.randn()
             else:
@@ -663,7 +663,7 @@ def ssgplvm_simulation_linear():
     Y = np.empty((N, D))
     X = np.empty((N, Q))
     # Generate data from random sampled weight matrices
-    for n in xrange(N):
+    for n in range(N):
         X[n] = sample_X(Q, pi)
         w = np.random.randn(D, Q)
         Y[n] = np.dot(w, X[n])

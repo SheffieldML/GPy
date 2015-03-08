@@ -61,6 +61,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
     function_eval = 1
     fnow = fold
     gradnew = gradf(x, *optargs) # Initial gradient.
+    function_eval += 1
     #if any(np.isnan(gradnew)):
     #    raise UnexpectedInfOrNan, "Gradient contribution resulted in a NaN value"
     current_grad = np.dot(gradnew, gradnew)
@@ -96,6 +97,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
             sigma = sigma0 / np.sqrt(kappa)
             xplus = x + sigma * d
             gplus = gradf(xplus, *optargs)
+            function_eval += 1
             theta = np.dot(d, (gplus - gradnew)) / sigma
 
         # Increase effective curvature and evaluate step size alpha.
@@ -111,10 +113,10 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
         fnew = f(xnew, *optargs)
         function_eval += 1
 
-#         if function_eval >= max_f_eval:
-#             status = "maximum number of function evaluations exceeded"
-#             break
-#             return x, flog, function_eval, status
+        if function_eval >= max_f_eval:
+            status = "maximum number of function evaluations exceeded"
+            break
+            return x, flog, function_eval, status
 
         Delta = 2.*(fnew - fold) / (alpha * mu)
         if Delta >= 0.:
@@ -156,6 +158,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
                 # Update variables for new position
                 gradold = gradnew
                 gradnew = gradf(x, *optargs)
+                function_eval += 1
                 current_grad = np.dot(gradnew, gradnew)
                 fold = fnew
                 # If the gradient is zero then we are done.

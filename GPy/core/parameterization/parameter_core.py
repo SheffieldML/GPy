@@ -471,7 +471,7 @@ class Indexable(Nameable, Updateable):
             self.param_array[...] = transform.initialize(self.param_array)
         reconstrained = self.unconstrain()
         added = self._add_to_index_operations(self.constraints, reconstrained, transform, warning)
-        self.notify_observers(self, None if trigger_parent else -np.inf)
+        self.trigger_update(trigger_parent)
         return added
 
     def unconstrain(self, *transforms):
@@ -1042,6 +1042,9 @@ class Parameterizable(OptimizationHandlable):
                     p = param_to_array(p)
                     d = f.create_dataset(n,p.shape,dtype=p.dtype)
                     d[:] = p
+                if hasattr(self, 'param_array'):
+                    d = f.create_dataset('param_array',self.param_array.shape, dtype=self.param_array.dtype)
+                    d[:] = self.param_array
                 f.close()
             except:
                 raise 'Fails to write the parameters into a HDF5 file!'

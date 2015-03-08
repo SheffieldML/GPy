@@ -156,7 +156,7 @@ class Parameterized(Parameterizable):
                     p._parent_index_ += 1
                 self.parameters.insert(index, param)
 
-            param.add_observer(self, self._pass_through_notify_observers, -1000)
+            param.add_observer(self, self._pass_through_notify_observers, -np.inf)
 
             parent = self
             while parent is not None:
@@ -296,7 +296,7 @@ class Parameterized(Parameterizable):
                 self.param_array[name] = value
             except:
                 raise ValueError, "Setting by slice or index only allowed with array-like"
-            self._trigger_params_changed()
+            self.trigger_update()
         else:
             try: param = self.__getitem__(name, paramlist)
             except: raise
@@ -393,7 +393,7 @@ class Parameterized(Parameterizable):
 </tr>""".format(name=name)
             to_print.insert(0, header)
         style = """<style type="text/css">
-.tg  {font-family:"Courier New", Courier, monospace !important;padding:2px 3px;word-break:normal;border-collapse:collapse;border-spacing:0;border-color:#DCDCDC;margin:0px auto;}
+.tg  {font-family:"Courier New", Courier, monospace !important;padding:2px 3px;word-break:normal;border-collapse:collapse;border-spacing:0;border-color:#DCDCDC;margin:0px auto;width:100%;}
 .tg td{font-family:"Courier New", Courier, monospace !important;font-weight:bold;color:#444;background-color:#F7FDFA;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#DCDCDC;}
 .tg th{font-family:"Courier New", Courier, monospace !important;font-weight:normal;color:#fff;background-color:#26ADE4;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#DCDCDC;}
 .tg .tg-left{font-family:"Courier New", Courier, monospace !important;font-weight:normal;text-align:left;}

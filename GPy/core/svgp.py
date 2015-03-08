@@ -25,23 +25,18 @@ class SVGP(SparseGP):
 
         Hensman, Matthews and Ghahramani, Scalable Variational GP Classification, ArXiv 1411.2005
         """
-        if batchsize is None:
-            batchsize = X.shape[0]
-
-        self.X_all, self.Y_all = X, Y
-        # how to rescale the batch likelihood in case of minibatches
         self.batchsize = batchsize
-        batch_scale = float(self.X_all.shape[0])/float(self.batchsize)
-        #KL_scale = 1./np.float64(self.mpi_comm.size)
-        KL_scale = 1.0
-
-        import climin.util
-        #Make a climin slicer to make drawing minibatches much quicker
-        self.slicer = climin.util.draw_mini_slices(self.X_all.shape[0], self.batchsize)
-        X_batch, Y_batch = self.new_batch()
+        self.X_all, self.Y_all = X, Y
+        if batchsize is None:
+            X_batch, Y_batch = X, Y
+        else:
+            import climin.util
+            #Make a climin slicer to make drawing minibatches much quicker
+            self.slicer = climin.util.draw_mini_slices(self.X_all.shape[0], self.batchsize)
+            X_batch, Y_batch = self.new_batch()
 
         #create the SVI inference method
-        inf_method = svgp_inf(KL_scale=KL_scale, batch_scale=batch_scale)
+        inf_method = svgp_inf()
 
         SparseGP.__init__(self, X_batch, Y_batch, Z, kernel, likelihood, inference_method=inf_method,
                  name=name, Y_metadata=Y_metadata, normalizer=False)
@@ -53,7 +48,7 @@ class SVGP(SparseGP):
         self.link_parameter(self.m)
 
     def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.q_u_mean, self.q_u_chol, self.kern, self.X, self.Z, self.likelihood, self.Y, self.Y_metadata)
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.q_u_mean, self.q_u_chol, self.kern, self.X, self.Z, self.likelihood, self.Y, self.Y_metadata, KL_scale=1.0, batch_scale=float(self.X_all.shape[0])/float(self.X.shape[0]))
 
         #update the kernel gradients
         self.kern.update_gradients_full(self.grad_dict['dL_dKmm'], self.Z)

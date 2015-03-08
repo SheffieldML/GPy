@@ -154,7 +154,7 @@ class Model(Parameterized):
         """
         return -(self._log_likelihood_gradients() + self._log_prior_gradients())
 
-    def _objective_grads(self, x):
+    def _grads(self, x):
         """
         Gets the gradients from the likelihood and the priors.
 
@@ -200,7 +200,7 @@ class Model(Parameterized):
             return np.inf
         return obj
 
-    def _objective_and_grads(self, x):
+    def _objective_grads(self, x):
         try:
             self.optimizer_array = x
             obj_f, self.obj_grads = self.objective_function(), self._transform_gradients(self.objective_function_gradients())
@@ -213,7 +213,7 @@ class Model(Parameterized):
             self.obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e10, 1e10)
         return obj_f, self.obj_grads
 
-    def optimize(self, optimizer=None, start=None, messages=False, max_iters=1000, ipython_notebook=False, **kwargs):
+    def optimize(self, optimizer=None, start=None, messages=False, max_iters=1000, ipython_notebook=True, **kwargs):
         """
         Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
 
@@ -255,9 +255,10 @@ class Model(Parameterized):
         else:
             optimizer = optimization.get_optimizer(optimizer)
             opt = optimizer(start, model=self, max_iters=max_iters, **kwargs)
-
-        with VerboseOptimization(self, maxiters=max_iters, verbose=messages, ipython_notebook=ipython_notebook):
-            opt.run(f_fp=self._objective_and_grads, f=self._objective, fp=self._objective_grads)
+                        
+        with VerboseOptimization(self, opt, maxiters=max_iters, verbose=messages, ipython_notebook=ipython_notebook) as vo:
+            opt.run(f_fp=self._objective_grads, f=self._objective, fp=self._grads)
+            vo.finish(opt)
 
         self.optimization_runs.append(opt)
 
@@ -314,7 +315,7 @@ class Model(Parameterized):
             # evaulate around the point x
             f1 = self._objective(x + dx)
             f2 = self._objective(x - dx)
-            gradient = self._objective_grads(x)
+            gradient = self._grads(x)
 
             dx = dx[transformed_index]
             gradient = gradient[transformed_index]
@@ -360,7 +361,7 @@ class Model(Parameterized):
                     print "No free parameters to check"
                     return
 
-            gradient = self._objective_grads(x).copy()
+            gradient = self._grads(x).copy()
             np.where(gradient == 0, 1e-312, gradient)
             ret = True
             for nind, xind in itertools.izip(param_index, transformed_index):
@@ -401,12 +402,14 @@ class Model(Parameterized):
         model_details = [['<b>Model</b>', self.name + '<br>'],
                          ['<b>Log-likelihood</b>', '{}<br>'.format(float(self.log_likelihood()))],
                          ["<b>Number of Parameters</b>", '{}<br>'.format(self.size)],
-                         ["<b>Updates</b>", '{}<br>'.format(self._updates)],
+                         ["<b>Updates</b>", '{}<br>'.format(self._update_on)],
                          ]
         from operator import itemgetter
         to_print = ["""<style type="text/css">
 .pd{
-    font-family:"Courier New", Courier, monospace !important;
+    font-family: "Courier New", Courier, monospace !important;
+    width: 100%;
+    padding: 3px;
 }
 </style>\n"""] + ["<p class=pd>"] + ["{}: {}".format(name, detail) for name, detail in model_details] + ["</p>"]
         to_print.append(super(Model, self)._repr_html_())
@@ -416,7 +419,7 @@ class Model(Parameterized):
         model_details = [['Name', self.name],
                          ['Log-likelihood', '{}'.format(float(self.log_likelihood()))],
                          ["Number of Parameters", '{}'.format(self.size)],
-                         ["Updates", '{}'.format(self._updates)],
+                         ["Updates", '{}'.format(self._update_on)],
                          ]
         from operator import itemgetter
         max_len = reduce(lambda a, b: max(len(b[0]), a), model_details, 0)

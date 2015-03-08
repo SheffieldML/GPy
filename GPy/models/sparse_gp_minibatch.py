@@ -3,6 +3,7 @@
 
 import numpy as np
 from ..core.parameterization.param import Param
+from ..core.sparse_gp import SparseGP
 from ..core.gp import GP
 from ..inference.latent_function_inference import var_dtc
 from .. import likelihoods
@@ -16,14 +17,9 @@ from GPy.inference.optimization.stochastics import SparseGPStochastics,\
     #SparseGPMissing
 logger = logging.getLogger("sparse gp")
 
-class SparseGPMiniBatch(GP):
+class SparseGPMiniBatch(SparseGP):
     """
-    A general purpose Sparse GP model
-'''
-Created on 3 Nov 2014
-
-@author: maxz
-'''
+    A general purpose Sparse GP model, allowing missing data and stochastics across dimensions.
 
     This model allows (approximate) inference using variational DTC or FITC
     (Gaussian likelihoods) as well as non-conjugate sparse methods based on
@@ -97,7 +93,7 @@ Created on 3 Nov 2014
     def has_uncertain_inputs(self):
         return isinstance(self.X, VariationalPosterior)
 
-    def _inner_parameters_changed(self, kern, X, Z, likelihood, Y, Y_metadata, Lm=None, dL_dKmm=None, subset_indices=None):
+    def _inner_parameters_changed(self, kern, X, Z, likelihood, Y, Y_metadata, Lm=None, dL_dKmm=None, subset_indices=None, **kwargs):
         """
         This is the standard part, which usually belongs in parameters_changed.
 
@@ -117,7 +113,7 @@ Created on 3 Nov 2014
         algorithm.
         """
         try:
-            posterior, log_marginal_likelihood, grad_dict = self.inference_method.inference(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm, dL_dKmm=None)
+            posterior, log_marginal_likelihood, grad_dict = self.inference_method.inference(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm, dL_dKmm=None, **kwargs)
         except:
             posterior, log_marginal_likelihood, grad_dict = self.inference_method.inference(kern, X, Z, likelihood, Y, Y_metadata)
         current_values = {}
@@ -315,34 +311,3 @@ Created on 3 Nov 2014
         else:
             self.posterior, self._log_marginal_likelihood, self.grad_dict, self.full_values, _ = self._inner_parameters_changed(self.kern, self.X, self.Z, self.likelihood, self.Y_normalized, self.Y_metadata)
             self._outer_values_update(self.full_values)
-
-    def _raw_predict(self, Xnew, full_cov=False, kern=None):
-        """
-        Make a prediction for the latent function values
-        """
-
-        if kern is None: kern = self.kern
-
-        if not isinstance(Xnew, VariationalPosterior):
-            Kx = kern.K(self.Z, Xnew)
-            mu = np.dot(Kx.T, self.posterior.woodbury_vector)
-            if full_cov:
-                Kxx = kern.K(Xnew)
-                if self.posterior.woodbury_inv.ndim == 2:
-                    var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
-                elif self.posterior.woodbury_inv.ndim == 3:
-                    var = Kxx[:,:,None] - np.tensordot(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx).T, Kx, [1,0]).swapaxes(1,2)
-                var = var
-            else:
-                Kxx = kern.Kdiag(Xnew)
-                var = (Kxx - np.sum(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx) * Kx[None,:,:], 1)).T
-        else:
-            Kx = kern.psi1(self.Z, Xnew)
-            mu = np.dot(Kx, self.posterior.woodbury_vector)
-            if full_cov:
-                raise NotImplementedError, "TODO"
-            else:
-                Kxx = kern.psi0(self.Z, Xnew)
-                psi2 = kern.psi2(self.Z, Xnew)
-                var = Kxx - np.sum(np.sum(psi2 * Kmmi_LmiBLmi[None, :, :], 1), 1)
-        return mu, var

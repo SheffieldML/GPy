@@ -1,4 +1,4 @@
-# ## Copyright (c) 2014, Zhenwen Dai
+# ## Copyright (c) 2014 Mu Niu, Zhenwen Dai and GPy Authors
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np

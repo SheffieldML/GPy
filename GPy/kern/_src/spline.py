@@ -1,4 +1,4 @@
-# Copyright (c) 2014, James Hensman
+# Copyright (c) 2015, Thomas Hornung
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
@@ -7,7 +7,12 @@ from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 class Spline(Kern):
     """
-    Spline kernel
+    Linear spline kernel. You need to specify 2 parameters: the variance and c.
+    The variance is defined in powers of 10. Thus specifying -2 means 10^-2.
+    The parameter c allows to define the stiffness of the spline fit. A very stiff
+    spline equals linear regression.
+    See https://www.youtube.com/watch?v=50Vgw11qn0o starting at minute 1:17:28
+    Lit: Wahba, 1990
     """
 
     def __init__(self, input_dim, variance=1., c=1., active_dims=None, name='spline'):

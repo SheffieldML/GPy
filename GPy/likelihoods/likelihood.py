@@ -425,7 +425,7 @@ class Likelihood(Parameterized):
             return np.zeros([f.shape[0], 0])
 
     def _laplace_gradients(self, f, y, Y_metadata=None):
-        dlogpdf_dtheta = self.dlogpdf_dtheta(f, y, Y_metadata=Y_metadata)
+        dlogpdf_dtheta = self.dlogpdf_dtheta(f, y, Y_metadata=Y_metadata).sum(axis=0)
         dlogpdf_df_dtheta = self.dlogpdf_df_dtheta(f, y, Y_metadata=Y_metadata)
         d2logpdf_df2_dtheta = self.d2logpdf_df2_dtheta(f, y, Y_metadata=Y_metadata)
 

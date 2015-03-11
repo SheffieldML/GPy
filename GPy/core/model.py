@@ -219,8 +219,8 @@ class Model(Parameterized):
 
         kwargs are passed to the optimizer. They can be:
 
-        :param max_f_eval: maximum number of function evaluations
-        :type max_f_eval: int
+        :param max_iters: maximum number of function evaluations
+        :type max_iters: int
         :messages: True: Display messages during optimisation, "ipython_notebook":
         :type messages: bool"string
         :param optimizer: which optimizer to use (defaults to self.preferred optimizer)

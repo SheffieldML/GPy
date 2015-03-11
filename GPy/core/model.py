@@ -213,7 +213,7 @@ class Model(Parameterized):
             self.obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e10, 1e10)
         return obj_f, self.obj_grads
 
-    def optimize(self, optimizer=None, start=None, messages=False, max_iters=1000, ipython_notebook=True, **kwargs):
+    def optimize(self, optimizer=None, start=None, messages=False, max_iters=1000, ipython_notebook=True, clear_after_finish=False, **kwargs):
         """
         Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
 

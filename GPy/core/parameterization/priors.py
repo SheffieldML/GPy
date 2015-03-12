@@ -712,6 +712,304 @@ class DGPLVM(Prior):
         return 'DGPLVM_prior_Raq'
 
 
+# ******************************************
+
+class DGPLVM_Lamda(Prior):
+    """
+    Implementation of the Discriminative Gaussian Process Latent Variable model paper, by Raquel.
+
+    :param sigma2: constant
+
+    .. Note:: DGPLVM for Classification paper implementation
+
+    """
+    domain = _REAL
+    # _instances = []
+    # def __new__(cls, mu, sigma): # Singleton:
+    #     if cls._instances:
+    #         cls._instances[:] = [instance for instance in cls._instances if instance()]
+    #         for instance in cls._instances:
+    #             if instance().mu == mu and instance().sigma == sigma:
+    #                 return instance()
+    #     o = super(Prior, cls).__new__(cls, mu, sigma)
+    #     cls._instances.append(weakref.ref(o))
+    #     return cls._instances[-1]()
+
+    def __init__(self, sigma2, lbl, x_shape, lamda):
+        self.sigma2 = sigma2
+        # self.x = x
+        self.lbl = lbl
+	self.lamda = lamda
+        self.classnum = lbl.shape[1]
+        self.datanum = lbl.shape[0]
+        self.x_shape = x_shape
+        self.dim = x_shape[1]
+	#self.lamda = Param('lamda', np.diag(lamda))
+        #self.link_parameter(self.lamda)
+
+    def get_class_label(self, y):
+        for idx, v in enumerate(y):
+            if v == 1:
+                return idx
+        return -1
+
+    # This function assigns each data point to its own class
+    # and returns the dictionary which contains the class name and parameters.
+    def compute_cls(self, x):
+        cls = {}
+        # Appending each data point to its proper class
+        for j in xrange(self.datanum):
+            class_label = self.get_class_label(self.lbl[j])
+            if class_label not in cls:
+                cls[class_label] = []
+            cls[class_label].append(x[j])
+        return cls
+
+    # This function computes mean of each class. The mean is calculated through each dimension
+    def compute_Mi(self, cls):
+        M_i = np.zeros((self.classnum, self.dim))
+        for i in cls:
+            # Mean of each class
+	    class_i = cls[i]
+            M_i[i] = np.mean(class_i, axis=0)
+        return M_i
+
+    # Adding data points as tuple to the dictionary so that we can access indices
+    def compute_indices(self, x):
+        data_idx = {}
+        for j in xrange(self.datanum):
+            class_label = self.get_class_label(self.lbl[j])
+            if class_label not in data_idx:
+                data_idx[class_label] = []
+            t = (j, x[j])
+            data_idx[class_label].append(t)
+        return data_idx
+
+    # Adding indices to the list so we can access whole the indices
+    def compute_listIndices(self, data_idx):
+        lst_idx = []
+        lst_idx_all = []
+        for i in data_idx:
+            if len(lst_idx) == 0:
+                pass
+                #Do nothing, because it is the first time list is created so is empty
+            else:
+                lst_idx = []
+            # Here we put indices of each class in to the list called lst_idx_all
+            for m in xrange(len(data_idx[i])):
+                lst_idx.append(data_idx[i][m][0])
+            lst_idx_all.append(lst_idx)
+        return lst_idx_all
+
+    # This function calculates between classes variances
+    def compute_Sb(self, cls, M_i, M_0):
+        Sb = np.zeros((self.dim, self.dim))
+        for i in cls:
+            B = (M_i[i] - M_0).reshape(self.dim, 1)
+            B_trans = B.transpose()
+            Sb += (float(len(cls[i])) / self.datanum) * B.dot(B_trans)
+        return Sb
+
+    # This function calculates within classes variances
+    def compute_Sw(self, cls, M_i):
+        Sw = np.zeros((self.dim, self.dim))
+        for i in cls:
+            N_i = float(len(cls[i]))
+            W_WT = np.zeros((self.dim, self.dim))
+            for xk in cls[i]:
+                W = (xk - M_i[i])
+                W_WT += np.outer(W, W)
+            Sw += (N_i / self.datanum) * ((1. / N_i) * W_WT)
+        return Sw
+
+    # Calculating beta and Bi for Sb
+    def compute_sig_beta_Bi(self, data_idx, M_i, M_0, lst_idx_all):
+        import pdb
+        # pdb.set_trace()
+        B_i = np.zeros((self.classnum, self.dim))
+        Sig_beta_B_i_all = np.zeros((self.datanum, self.dim))
+        for i in data_idx:
+            # pdb.set_trace()
+            # Calculating Bi
+            B_i[i] = (M_i[i] - M_0).reshape(1, self.dim)
+        for k in xrange(self.datanum):
+            for i in data_idx:
+                N_i = float(len(data_idx[i]))
+                if k in lst_idx_all[i]:
+                    beta = (float(1) / N_i) - (float(1) / self.datanum)
+                    Sig_beta_B_i_all[k] += float(N_i) / self.datanum * (beta * B_i[i])
+                else:
+                    beta = -(float(1) / self.datanum)
+                    Sig_beta_B_i_all[k] += float(N_i) / self.datanum * (beta * B_i[i])
+        Sig_beta_B_i_all = Sig_beta_B_i_all.transpose()
+        return Sig_beta_B_i_all
+
+
+    # Calculating W_j s separately so we can access all the W_j s anytime
+    def compute_wj(self, data_idx, M_i):
+        W_i = np.zeros((self.datanum, self.dim))
+        for i in data_idx:
+            N_i = float(len(data_idx[i]))
+            for tpl in data_idx[i]:
+                xj = tpl[1]
+                j = tpl[0]
+                W_i[j] = (xj - M_i[i])
+        return W_i
+
+    # Calculating alpha and Wj for Sw
+    def compute_sig_alpha_W(self, data_idx, lst_idx_all, W_i):
+        Sig_alpha_W_i = np.zeros((self.datanum, self.dim))
+        for i in data_idx:
+            N_i = float(len(data_idx[i]))
+            for tpl in data_idx[i]:
+                k = tpl[0]
+                for j in lst_idx_all[i]:
+                    if k == j:
+                        alpha = 1 - (float(1) / N_i)
+                        Sig_alpha_W_i[k] += (alpha * W_i[j])
+                    else:
+                        alpha = 0 - (float(1) / N_i)
+                        Sig_alpha_W_i[k] += (alpha * W_i[j])
+        Sig_alpha_W_i = (1. / self.datanum) * np.transpose(Sig_alpha_W_i)
+        return Sig_alpha_W_i
+
+    # This function calculates log of our prior
+    def lnpdf(self, x):
+	#xprime = x.dot(np.diagflat(self.lambda))
+        x = x.reshape(self.x_shape)
+        cls = self.compute_cls(x)
+        M_0 = np.mean(x, axis=0)
+        M_i = self.compute_Mi(cls)
+        Sb = self.compute_Sb(cls, M_i, M_0)
+        Sw = self.compute_Sw(cls, M_i)
+        # Sb_inv_N = np.linalg.inv(Sb + np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))
+        #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
+        #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
+	Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.1)[0]
+        return (-1 / self.sigma2) * np.trace(Sb_inv_N.dot(Sw))
+
+    # This function calculates derivative of the log of prior function
+    def lnpdf_grad(self, x):
+	#xprime = x.dot(np.diagflat(self.lambda))
+	# pdb.set_trace()
+	#print 'before:', x.shape
+        x = x.reshape(self.x_shape)
+	#print 'after:', x.shape
+        cls = self.compute_cls(x)
+        M_0 = np.mean(x, axis=0)
+        M_i = self.compute_Mi(cls)
+	# print M_i.shape
+        Sb = self.compute_Sb(cls, M_i, M_0)
+	# print Sb.shape
+        Sw = self.compute_Sw(cls, M_i)
+	# print Sw.shape
+        data_idx = self.compute_indices(x)
+        lst_idx_all = self.compute_listIndices(data_idx)
+        Sig_beta_B_i_all = self.compute_sig_beta_Bi(data_idx, M_i, M_0, lst_idx_all)
+        W_i = self.compute_wj(data_idx, M_i)
+        Sig_alpha_W_i = self.compute_sig_alpha_W(data_idx, lst_idx_all, W_i)
+
+        # Calculating inverse of Sb and its transpose and minus
+        # Sb_inv_N = np.linalg.inv(Sb + np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))
+        #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
+        #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
+	Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.1)[0]
+        Sb_inv_N_trans = np.transpose(Sb_inv_N)
+        Sb_inv_N_trans_minus = -1 * Sb_inv_N_trans
+        Sw_trans = np.transpose(Sw)
+
+        # Calculating DJ/DXk
+	# pdb.set_trace()
+        DJ_Dxk = 2 * (
+            Sb_inv_N_trans_minus.dot(Sw_trans).dot(Sb_inv_N_trans).dot(Sig_beta_B_i_all) + Sb_inv_N_trans.dot(
+                Sig_alpha_W_i))
+	#print 'DJ_Dxk:', DJ_Dxk.shape
+        # Calculating derivative of the log of the prior
+        DPx_Dx = ((-1 / self.sigma2) * DJ_Dxk)
+	#print 'x.shape:', x.shape 	
+	#print 'DPx_Dx.shape:', DPx_Dx.shape
+
+
+	# DPxprim_Dlamda = DPx_Dx.dot(x)
+	# #DPxprim_Dlamda = (x.T).dot(DPx_Dx.T)
+	# # Because of the GPy we need to transpose our matrix so that it gets the same shape as out matrix (denominator layout!!!)
+	# DPxprim_Dlamda = DPxprim_Dlamda.T
+	# print 'DPxprim_Dlamda:', DPxprim_Dlamda.shape
+	# print DPxprim_Dlamda
+	# return DPxprim_Dlamda
+
+
+        DPxprim_Dx = self.lamda.dot(DPx_Dx)
+        print 'before :DPxprim_Dx:', DPxprim_Dx.shape
+        # Because of the GPy we need to transpose our matrix so that it gets the same shape as out matrix (denominator layout!!!)
+        DPxprim_Dx = DPxprim_Dx.T
+        print 'after: DPxprim_Dx:', DPxprim_Dx.shape
+        #return DPxprim_Dx
+    
+    	DPxprim_Dlamda = DPx_Dx.dot(x)
+    	#DPxprim_Dlamda = (x.T).dot(DPx_Dx.T)
+    	# Because of the GPy we need to transpose our matrix so that it gets the same shape as out matrix (denominator layout!!!)
+    	DPxprim_Dlamda = DPxprim_Dlamda.T
+    	print 'DPxprim_Dlamda:', DPxprim_Dlamda.shape
+    	print DPxprim_Dlamda
+    	c = DPxprim_Dx.dot(DPxprim_Dlamda)
+    	print 'c.shape:', c.shape
+
+	#self.lamda.gradient = np.diag(DPxprim_Dlamda)
+    	return c
+
+
+ #    def lnpdf_grad(self, x):
+	# x = x.reshape(self.x_shape)
+ #    	cls = self.compute_cls(x)
+ #    	M_0 = np.mean(x, axis=0)
+ #    	M_i = self.compute_Mi(cls)
+ #    	Sb = self.compute_Sb(cls, M_i, M_0)
+ #    	Sw = self.compute_Sw(cls, M_i)
+ #    	data_idx = self.compute_indices(x)
+ #    	lst_idx_all = self.compute_listIndices(data_idx)
+ #    	Sig_beta_B_i_all = self.compute_sig_beta_Bi(data_idx, M_i, M_0, lst_idx_all)
+ #    	W_i = self.compute_wj(data_idx, M_i)
+ #    	Sig_alpha_W_i = self.compute_sig_alpha_W(data_idx, lst_idx_all, W_i)
+
+ #    	# Calculating inverse of Sb and its transpose and minus
+ #    	Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.1)[0]
+ #    	Sb_inv_N_trans = np.transpose(Sb_inv_N)
+ #    	Sb_inv_N_trans_minus = -1 * Sb_inv_N_trans
+ #    	Sw_trans = np.transpose(Sw)
+
+ #    	# Calculating DJ/DXk
+ #    	DJ_Dxk = 2 * (
+	#     Sb_inv_N_trans_minus.dot(Sw_trans).dot(Sb_inv_N_trans).dot(Sig_beta_B_i_all) + Sb_inv_N_trans.dot(
+	#     Sig_alpha_W_i))
+ #    	print 'DJ_Dxk:', DJ_Dxk.shape
+ #    	# Calculating derivative of the log of the prior
+ #   	DPx_Dx = ((-1 / self.sigma2) * DJ_Dxk)
+ #    	print 'x.shape:', x.shape 
+ #    	print 'DPx_Dx.shape:', DPx_Dx.shape
+ #    	DPxprim_Dx = self.lamda.dot(DPx_Dx)
+ #    	print 'before :DPxprim_Dx:', DPxprim_Dx.shape
+ #    	# Because of the GPy we need to transpose our matrix so that it gets the same shape as out matrix (denominator layout!!!)
+ #    	DPxprim_Dx = DPxprim_Dx.T
+ #    	print 'after: DPxprim_Dx:', DPxprim_Dx.shape
+ #    	return DPxprim_Dx
+
+
+    # def frb(self, x):
+    #     from functools import partial
+    #     from GPy.models import GradientChecker
+    #     f = partial(self.lnpdf)
+    #     df = partial(self.lnpdf_grad)
+    #     grad = GradientChecker(f, df, x, 'X')
+    #     grad.checkgrad(verbose=1)
+
+    def rvs(self, n):
+        return np.random.rand(n)  # A WRONG implementation
+
+    def __str__(self):
+        return 'DGPLVM_prior_Raq_Lamda'
+
+# ******************************************
 
 class DGPLVM_T(Prior):
     """

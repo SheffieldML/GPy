@@ -22,3 +22,5 @@ from .gp_var_gauss import GPVariationalGaussianApproximation
 from .one_vs_all_classification import OneVsAllClassification
 from .one_vs_all_sparse_classification import OneVsAllSparseClassification
 from .dpgplvm import DPBayesianGPLVM
+
+from state_space import StateSpace

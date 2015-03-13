@@ -180,9 +180,12 @@ class Add(CombinationKernel):
 
     def input_sensitivity(self, summarize=True):
         if summarize:
-            return reduce(np.add, [k.input_sensitivity(summarize) for k in self.parts])
+            i_s = np.zeros((self.input_dim))
+            for k in self.parts:
+                i_s[k.active_dims] += k.input_sensitivity(summarize)
+            return i_s
         else:
             i_s = np.zeros((len(self.parts), self.input_dim))
             from operator import setitem
-            [setitem(i_s, (i, Ellipsis), k.input_sensitivity(summarize)) for i, k in enumerate(self.parts)]
+            [setitem(i_s, (i, k.active_dims), k.input_sensitivity(summarize)) for i, k in enumerate(self.parts)]
             return i_s

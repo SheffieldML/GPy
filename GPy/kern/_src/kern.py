@@ -8,15 +8,16 @@ from .kernel_slice_operations import KernCallsViaSlicerMeta
 from ...util.caching import Cache_this
 from GPy.core.parameterization.observable_array import ObsAr
 from functools import reduce
+import six
 
-
-
-class Kern(Parameterized,metaclass=KernCallsViaSlicerMeta):
+@six.add_metaclass(KernCallsViaSlicerMeta)
+class Kern(Parameterized):
     #===========================================================================
     # This adds input slice support. The rather ugly code for slicing can be
     # found in kernel_slice_operations
-    # __mataclass__ is ignored in Python 3 - needs to be put in the function definiton
-    __metaclass__ = KernCallsViaSlicerMeta
+    # __meataclass__ is ignored in Python 3 - needs to be put in the function definiton
+    #__metaclass__ = KernCallsViaSlicerMeta
+    #Here, we use the Python module six to support Py3 and Py2 simultaneously
     #===========================================================================
     _support_GPU=False
     def __init__(self, input_dim, active_dims, name, useGPU=False, *a, **kw):

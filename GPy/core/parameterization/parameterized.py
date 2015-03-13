@@ -1,7 +1,7 @@
 # Copyright (c) 2014, Max Zwiessele, James Hensman
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-
+import six # For metaclass support in Python 2 and 3 simultaneously
 import numpy; np = numpy
 import itertools
 from re import compile, _pattern_type
@@ -27,7 +27,8 @@ class ParametersChangedMeta(type):
         self.parameters_changed()
         return self
 
-class Parameterized(Parameterizable,metaclass=ParametersChangedMeta):
+@six.add_metaclass(ParametersChangedMeta)
+class Parameterized(Parameterizable):
     """
     Parameterized class
 
@@ -73,8 +74,9 @@ class Parameterized(Parameterizable,metaclass=ParametersChangedMeta):
     # Metaclass for parameters changed after init.
     # This makes sure, that parameters changed will always be called after __init__
     # **Never** call parameters_changed() yourself
-    #This is ignored in Python 3 -- you need to put the meta class in the 
-    __metaclass__ = ParametersChangedMeta
+    #This is ignored in Python 3 -- you need to put the meta class in the function definition. 
+    #__metaclass__ = ParametersChangedMeta
+    #The six module is used to support both Python 2 and 3 simultaneously
     #===========================================================================
     def __init__(self, name=None, parameters=[], *a, **kw):
         super(Parameterized, self).__init__(name=name, *a, **kw)

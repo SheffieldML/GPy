@@ -130,11 +130,10 @@ class Gaussian(Likelihood):
         :returns: log likelihood evaluated for this point
         :rtype: float
         """
-        assert np.asarray(link_f).shape == np.asarray(y).shape
         N = y.shape[0]
-        ln_det_cov = N*np.log(self.variance)
+        ln_det_cov = np.log(self.variance)
 
-        return -0.5*(np.sum((y-link_f)**2/self.variance) + ln_det_cov + N*np.log(2.*np.pi))
+        return -0.5*((y-link_f)**2/self.variance + ln_det_cov + np.log(2.*np.pi))
 
     def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
         """
@@ -151,8 +150,7 @@ class Gaussian(Likelihood):
         :returns: gradient of log likelihood evaluated at points link(f)
         :rtype: Nx1 array
         """
-        assert np.asarray(link_f).shape == np.asarray(y).shape
-        s2_i = (1.0/self.variance)
+        s2_i = 1.0/self.variance
         grad = s2_i*y - s2_i*link_f
         return grad
 
@@ -178,9 +176,9 @@ class Gaussian(Likelihood):
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
             (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
         """
-        assert np.asarray(link_f).shape == np.asarray(y).shape
         N = y.shape[0]
-        hess = -(1.0/self.variance)*np.ones((N, 1))
+        D = link_f.shape[1]
+        hess = -(1.0/self.variance)*np.ones((N, D))
         return hess
 
     def d3logpdf_dlink3(self, link_f, y, Y_metadata=None):
@@ -198,9 +196,9 @@ class Gaussian(Likelihood):
         :returns: third derivative of log likelihood evaluated at points link(f)
         :rtype: Nx1 array
         """
-        assert np.asarray(link_f).shape == np.asarray(y).shape
         N = y.shape[0]
-        d3logpdf_dlink3 = np.zeros((N,1))
+        D = link_f.shape[1]
+        d3logpdf_dlink3 = np.zeros((N,D))
         return d3logpdf_dlink3
 
     def dlogpdf_link_dvar(self, link_f, y, Y_metadata=None):
@@ -218,12 +216,11 @@ class Gaussian(Likelihood):
         :returns: derivative of log likelihood evaluated at points link(f) w.r.t variance parameter
         :rtype: float
         """
-        assert np.asarray(link_f).shape == np.asarray(y).shape
         e = y - link_f
         s_4 = 1.0/(self.variance**2)
         N = y.shape[0]
-        dlik_dsigma = -0.5*N/self.variance + 0.5*s_4*np.sum(np.square(e))
-        return np.sum(dlik_dsigma) # Sure about this sum?
+        dlik_dsigma = -0.5/self.variance + 0.5*s_4*np.square(e)
+        return dlik_dsigma
 
     def dlogpdf_dlink_dvar(self, link_f, y, Y_metadata=None):
         """
@@ -240,7 +237,6 @@ class Gaussian(Likelihood):
         :returns: derivative of log likelihood evaluated at points link(f) w.r.t variance parameter
         :rtype: Nx1 array
         """
-        assert np.asarray(link_f).shape == np.asarray(y).shape
         s_4 = 1.0/(self.variance**2)
         dlik_grad_dsigma = -s_4*y + s_4*link_f
         return dlik_grad_dsigma
@@ -260,15 +256,15 @@ class Gaussian(Likelihood):
         :returns: derivative of log hessian evaluated at points link(f_i) and link(f_j) w.r.t variance parameter
         :rtype: Nx1 array
         """
-        assert np.asarray(link_f).shape == np.asarray(y).shape
         s_4 = 1.0/(self.variance**2)
         N = y.shape[0]
-        d2logpdf_dlink2_dvar = np.ones((N,1))*s_4
+        D = link_f.shape[1]
+        d2logpdf_dlink2_dvar = np.ones((N, D))*s_4
         return d2logpdf_dlink2_dvar
 
     def dlogpdf_link_dtheta(self, f, y, Y_metadata=None):
         dlogpdf_dvar = self.dlogpdf_link_dvar(f, y, Y_metadata=Y_metadata)
-        return np.asarray([[dlogpdf_dvar]])
+        return dlogpdf_dvar
 
     def dlogpdf_dlink_dtheta(self, f, y, Y_metadata=None):
         dlogpdf_dlink_dvar = self.dlogpdf_dlink_dvar(f, y, Y_metadata=Y_metadata)

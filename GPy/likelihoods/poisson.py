@@ -64,8 +64,7 @@ class Poisson(Likelihood):
         :rtype: float
 
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        return np.sum(-link_f + y*np.log(link_f) - special.gammaln(y+1))
+        return -link_f + y*np.log(link_f) - special.gammaln(y+1)
 
     def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
         """
@@ -83,7 +82,6 @@ class Poisson(Likelihood):
         :rtype: Nx1 array
 
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         return y/link_f - 1
 
     def d2logpdf_dlink2(self, link_f, y, Y_metadata=None):
@@ -107,12 +105,7 @@ class Poisson(Likelihood):
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
             (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        hess = -y/(link_f**2)
-        return hess
-        #d2_df = self.gp_link.d2transf_df2(gp)
-        #transf = self.gp_link.transf(gp)
-        #return obs * ((self.gp_link.dtransf_df(gp)/transf)**2 - d2_df/transf) + d2_df
+        return -y/(link_f**2)
 
     def d3logpdf_dlink3(self, link_f, y, Y_metadata=None):
         """
@@ -129,7 +122,6 @@ class Poisson(Likelihood):
         :returns: third derivative of likelihood evaluated at points f
         :rtype: Nx1 array
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         d3lik_dlink3 = 2*y/(link_f)**3
         return d3lik_dlink3
 

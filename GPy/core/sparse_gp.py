@@ -62,6 +62,15 @@ class SparseGP(GP):
 
     def has_uncertain_inputs(self):
         return isinstance(self.X, VariationalPosterior)
+    
+    def set_Z(self, Z, trigger_update=True):
+        if trigger_update: self.update_model(False)
+        self.unlink_parameter(self.Z)
+        from ..core import Param
+        self.Z = Param('inducing inputs',Z)
+        self.link_parameter(self.Z, index=0)
+        if trigger_update: self.update_model(True)
+        if trigger_update: self._trigger_params_changed()
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood, self.Y, self.Y_metadata)

@@ -89,7 +89,7 @@ class GP(Model):
         self.link_parameter(self.kern)
         self.link_parameter(self.likelihood)
 
-    def set_XY(self, X=None, Y=None):
+    def set_XY(self, X=None, Y=None, trigger_update=True):
         """
         Set the input / output data of the model
         This is useful if we wish to change our existing data but maintain the same model
@@ -99,7 +99,7 @@ class GP(Model):
         :param Y: output observations
         :type Y: np.ndarray
         """
-        self.update_model(False)
+        if trigger_update: self.update_model(False)
         if Y is not None:
             if self.normalizer is not None:
                 self.normalizer.scale_by(Y)
@@ -123,26 +123,26 @@ class GP(Model):
                     self.link_parameters(self.X)
             else:
                 self.X = ObsAr(X)
-        self.update_model(True)
-        self._trigger_params_changed()
+        if trigger_update: self.update_model(True)
+        if trigger_update: self._trigger_params_changed()
 
-    def set_X(self,X):
+    def set_X(self,X, trigger_update=True):
         """
         Set the input data of the model
 
         :param X: input observations
         :type X: np.ndarray
         """
-        self.set_XY(X=X)
+        self.set_XY(X=X, trigger_update=trigger_update)
 
-    def set_Y(self,Y):
+    def set_Y(self,Y, trigger_update=True):
         """
         Set the output data of the model
 
         :param X: output observations
         :type X: np.ndarray
         """
-        self.set_XY(Y=Y)
+        self.set_XY(Y=Y, trigger_update=trigger_update)
 
     def parameters_changed(self):
         """

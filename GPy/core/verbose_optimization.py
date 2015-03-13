@@ -11,7 +11,7 @@ def exponents(fnow, current_grad):
     return np.sign(exps) * np.log10(exps).astype(int)
 
 class VerboseOptimization(object):
-    def __init__(self, model, opt, maxiters, verbose=False, current_iteration=0, ipython_notebook=True):
+    def __init__(self, model, opt, maxiters, verbose=False, current_iteration=0, ipython_notebook=True, clear_after_finish=False):
         self.verbose = verbose
         if self.verbose:
             self.model = model
@@ -22,6 +22,7 @@ class VerboseOptimization(object):
             self.opt_name = opt.opt_name
             self.model.add_observer(self, self.print_status)
             self.status = 'running'
+            self.clear = clear_after_finish
 
             self.update()
 
@@ -37,30 +38,31 @@ class VerboseOptimization(object):
                 self.ipython_notebook = False
 
             if self.ipython_notebook:
-                self.text.set_css('width', '100%')
-                #self.progress.set_css('width', '100%')
-
                 left_col = ContainerWidget(children = [self.progress, self.text])
                 right_col = ContainerWidget(children = [self.model_show])
-                hor_align = ContainerWidget(children = [left_col, right_col])
+                self.hor_align = ContainerWidget(children = [left_col, right_col])
 
-                display(hor_align)
+                display(self.hor_align)
+                                
+                try:
+                    self.text.set_css('width', '100%')
+                    left_col.set_css({
+                             'padding': '2px',
+                             'width': "100%",
+                             })
+    
+                    right_col.set_css({
+                             'padding': '2px',
+                             })
+    
+                    self.hor_align.set_css({
+                             'width': "100%",
+                             })
+                except:
+                    pass
 
-                left_col.set_css({
-                         'padding': '2px',
-                         'width': "100%",
-                         })
-
-                right_col.set_css({
-                         'padding': '2px',
-                         })
-
-                hor_align.set_css({
-                         'width': "100%",
-                         })
-
-                hor_align.remove_class('vbox')
-                hor_align.add_class('hbox')
+                self.hor_align.remove_class('vbox')
+                self.hor_align.add_class('hbox')
 
                 left_col.add_class("box-flex1")
                 right_col.add_class('box-flex0')
@@ -148,3 +150,5 @@ class VerboseOptimization(object):
                 print('Optimization finished in {0:.5g} Seconds'.format(self.stop-self.start))
                 print('Optimization status: {0:.5g}'.format(self.status))             
                 print()
+            elif self.clear:
+                self.hor_align.close()

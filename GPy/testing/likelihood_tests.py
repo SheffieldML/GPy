@@ -362,7 +362,7 @@ class TestNoiseModels(object):
     def t_dlogpdf_df(self, model, Y, f):
         print("\n{}".format(inspect.stack()[0][3]))
         self.description = "\n{}".format(inspect.stack()[0][3])
-        logpdf = functools.partial(model.logpdf, y=Y)
+        logpdf = functools.partial(np.sum(model.logpdf), y=Y)
         dlogpdf_df = functools.partial(model.dlogpdf_df, y=Y)
         grad = GradientChecker(logpdf, dlogpdf_df, f.copy(), 'g')
         grad.randomize()
@@ -652,9 +652,9 @@ class LaplaceTests(unittest.TestCase):
             print(m2)
         optimizer = 'scg'
         print("Gaussian")
-        m1.optimize(optimizer, messages=debug)
-        print("Laplace Gaussian")
-        m2.optimize(optimizer, messages=debug)
+        m1.optimize(optimizer, messages=debug, ipython_notebook=False)
+        print ("Laplace Gaussian")
+        m2.optimize(optimizer, messages=debug, ipython_notebook=False)
         if debug:
             print(m1)
             print(m2)

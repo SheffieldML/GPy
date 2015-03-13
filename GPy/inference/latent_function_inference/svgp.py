@@ -43,7 +43,7 @@ class SVGP(LatentFunctionInference):
 
 
         #quadrature for the likelihood
-        F, dF_dmu, dF_dv, dF_dthetaL = likelihood.variational_expectations(Y, mu, v)
+        F, dF_dmu, dF_dv, dF_dthetaL = likelihood.variational_expectations(Y, mu, v, Y_metadata=Y_metadata)
 
         #rescale the F term if working on a batch
         F, dF_dmu, dF_dv =  F*batch_scale, dF_dmu*batch_scale, dF_dv*batch_scale

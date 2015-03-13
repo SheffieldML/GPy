@@ -86,7 +86,6 @@ class StudentT(Likelihood):
         :rtype: float
 
         """
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         e = y - inv_link_f
         #FIXME:
         #Why does np.log(1 + (1/self.v)*((y-inv_link_f)**2)/self.sigma2) suppress the divide by zero?!
@@ -97,7 +96,7 @@ class StudentT(Likelihood):
                     - 0.5*np.log(self.sigma2 * self.v * np.pi)
                     - 0.5*(self.v + 1)*np.log(1 + (1/np.float(self.v))*((e**2)/self.sigma2))
                     )
-        return np.sum(objective)
+        return objective
 
     def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
         """
@@ -115,7 +114,6 @@ class StudentT(Likelihood):
         :rtype: Nx1 array
 
         """
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         e = y - inv_link_f
         grad = ((self.v + 1) * e) / (self.v * self.sigma2 + (e**2))
         return grad
@@ -141,7 +139,6 @@ class StudentT(Likelihood):
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
             (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
         """
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         e = y - inv_link_f
         hess = ((self.v + 1)*(e**2 - self.v*self.sigma2)) / ((self.sigma2*self.v + e**2)**2)
         return hess
@@ -161,7 +158,6 @@ class StudentT(Likelihood):
         :returns: third derivative of likelihood evaluated at points f
         :rtype: Nx1 array
         """
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         e = y - inv_link_f
         d3lik_dlink3 = ( -(2*(self.v + 1)*(-e)*(e**2 - 3*self.v*self.sigma2)) /
                        ((e**2 + self.sigma2*self.v)**3)
@@ -183,10 +179,9 @@ class StudentT(Likelihood):
         :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
         :rtype: float
         """
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         e = y - inv_link_f
         dlogpdf_dvar = self.v*(e**2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e**2))
-        return np.sum(dlogpdf_dvar)
+        return dlogpdf_dvar
 
     def dlogpdf_dlink_dvar(self, inv_link_f, y, Y_metadata=None):
         """
@@ -203,7 +198,6 @@ class StudentT(Likelihood):
         :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
         :rtype: Nx1 array
         """
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         e = y - inv_link_f
         dlogpdf_dlink_dvar = (self.v*(self.v+1)*(-e))/((self.sigma2*self.v + e**2)**2)
         return dlogpdf_dlink_dvar
@@ -223,7 +217,6 @@ class StudentT(Likelihood):
         :returns: derivative of hessian evaluated at points f and f_j w.r.t variance parameter
         :rtype: Nx1 array
         """
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         e = y - inv_link_f
         d2logpdf_dlink2_dvar = ( (self.v*(self.v+1)*(self.sigma2*self.v - 3*(e**2)))
                               / ((self.sigma2*self.v + (e**2))**3)
@@ -246,7 +239,7 @@ class StudentT(Likelihood):
         return np.hstack((d2logpdf_dlink2_dvar, d2logpdf_dlink2_dv))
 
     def predictive_mean(self, mu, sigma, Y_metadata=None):
-        # The comment here confuses mean and median. 
+        # The comment here confuses mean and median.
         return self.gp_link.transf(mu) # only true if link is monotonic, which it is.
 
     def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):

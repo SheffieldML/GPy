@@ -955,7 +955,6 @@ class Parameterizable(OptimizationHandlable):
             self._added_names_.add(pname)
         elif pname in self.__dict__:
             if pname in self._added_names_:
-                print self._added_names_
                 other = self.__dict__[pname]
                 if not (param is other):
                     del self.__dict__[pname]

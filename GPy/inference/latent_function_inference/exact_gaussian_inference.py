@@ -36,10 +36,12 @@ class ExactGaussianInference(LatentFunctionInference):
             #print "WARNING: N>D of Y, we need caching of L, such that L*L^T = Y, returning Y still!"
             return Y
 
-    def inference(self, kern, X, likelihood, Y, Y_metadata=None):
+    def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None):
         """
         Returns a Posterior class containing essential quantities of the posterior
         """
+        assert mean_function is None, "inference with a mean function not implemented"
+
         YYT_factor = self.get_YYTfactor(Y)
 
         K = kern.K(X)

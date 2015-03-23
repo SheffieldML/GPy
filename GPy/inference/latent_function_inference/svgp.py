@@ -6,7 +6,8 @@ from posterior import Posterior
 
 class SVGP(LatentFunctionInference):
 
-    def inference(self, q_u_mean, q_u_chol, kern, X, Z, likelihood, Y, Y_metadata=None, KL_scale=1.0, batch_scale=1.0):
+    def inference(self, q_u_mean, q_u_chol, kern, X, Z, likelihood, Y, mean_function=None, Y_metadata=None, KL_scale=1.0, batch_scale=1.0):
+        assert mean_function is None, "inference with a mean function not implemented"
         num_inducing = Z.shape[0]
         num_data, num_outputs = Y.shape
 

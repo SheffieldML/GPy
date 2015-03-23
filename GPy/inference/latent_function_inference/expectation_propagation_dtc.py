@@ -64,7 +64,8 @@ class EPDTC(LatentFunctionInference):
         self.old_mutilde, self.old_vtilde = None, None
         self._ep_approximation = None
 
-    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None):
+    def inference(self, kern, X, Z, likelihood, Y, mean_function=None, Y_metadata=None):
+        assert mean_function is None, "inference with a mean function not implemented"
         num_data, output_dim = Y.shape
         assert output_dim ==1, "ep in 1D only (for now!)"
 

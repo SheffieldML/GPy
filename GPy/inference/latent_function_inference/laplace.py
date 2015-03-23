@@ -39,10 +39,11 @@ class Laplace(LatentFunctionInference):
         self.first_run = True
         self._previous_Ki_fhat = None
 
-    def inference(self, kern, X, likelihood, Y, Y_metadata=None):
+    def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None):
         """
         Returns a Posterior class containing essential quantities of the posterior
         """
+        assert mean_function is None, "inference with a mean function not implemented"
 
         # Compute K
         K = kern.K(X)

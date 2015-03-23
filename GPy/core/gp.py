@@ -5,6 +5,7 @@ import numpy as np
 import sys
 from .. import kern
 from model import Model
+from mapping import Mapping
 from parameterization import ObsAr
 from .. import likelihoods
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
@@ -201,6 +202,10 @@ class GP(Model):
 
         #force mu to be a column vector
         if len(mu.shape)==1: mu = mu[:,None]
+
+        #add the mean function in
+        if not self.mean_function is None:
+            mu += self.mean_function.f(_Xnew)
         return mu, var
 
     def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None):

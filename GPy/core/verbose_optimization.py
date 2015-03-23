@@ -28,19 +28,20 @@ class VerboseOptimization(object):
 
             try:
                 from IPython.display import display
-                from IPython.html.widgets import FloatProgressWidget, HTMLWidget, ContainerWidget
-                self.text = HTMLWidget()
-                self.progress = FloatProgressWidget()
-                self.model_show = HTMLWidget()
+                from IPython.html.widgets import IntProgress, HTML, Box, VBox, HBox, FlexBox
+                self.text = HTML(width='100%')
+                self.progress = IntProgress(description='Progress:', min=0, max=maxiters)
+                #self.progresstext = Text(width='100%', disabled=True, value='0/{}'.format(maxiters))
+                self.model_show = HTML()
                 self.ipython_notebook = ipython_notebook
             except:
                 # Not in Ipython notebook
                 self.ipython_notebook = False
 
             if self.ipython_notebook:
-                left_col = ContainerWidget(children = [self.progress, self.text])
-                right_col = ContainerWidget(children = [self.model_show])
-                self.hor_align = ContainerWidget(children = [left_col, right_col])
+                left_col = VBox(children=[self.progress, self.text], padding=2, width='40%')
+                right_col = Box(children=[self.model_show], padding=2, width='60%')
+                self.hor_align = FlexBox(children = [left_col, right_col], width='100%', orientation='horizontal')
 
                 display(self.hor_align)
                                 
@@ -105,7 +106,8 @@ class VerboseOptimization(object):
                 html_body += "<td class='tg-right'>{}</td>".format(val)
                 html_body += "</tr>"
             self.text.value = html_begin + html_body + html_end
-            self.progress.value = 100*(self.iteration+1)/self.maxiters
+            self.progress.value = (self.iteration+1)
+            #self.progresstext.value = '0/{}'.format((self.iteration+1))
             self.model_show.value = self.model._repr_html_()
         else:
             n_exps = exponents(self.fnow, self.current_gradient)
@@ -149,7 +151,7 @@ class VerboseOptimization(object):
             if not self.ipython_notebook:
                 print ''
                 print 'Optimization finished in {0:.5g} Seconds'.format(self.stop-self.start)
-                print 'Optimization status: {0:.5g}'.format(self.status)
+                print 'Optimization status: {0:s}'.format(self.status)
                 print
             elif self.clear:
                 self.hor_align.close()

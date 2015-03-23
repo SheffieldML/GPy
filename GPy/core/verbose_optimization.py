@@ -58,14 +58,15 @@ class VerboseOptimization(object):
                     self.hor_align.set_css({
                              'width': "100%",
                              })
+
+                    self.hor_align.remove_class('vbox')
+                    self.hor_align.add_class('hbox')
+    
+                    left_col.add_class("box-flex1")
+                    right_col.add_class('box-flex0')
+
                 except:
                     pass
-
-                self.hor_align.remove_class('vbox')
-                self.hor_align.add_class('hbox')
-
-                left_col.add_class("box-flex1")
-                right_col.add_class('box-flex0')
 
                 #self.text.add_class('box-flex2')
                 #self.progress.add_class('box-flex1')

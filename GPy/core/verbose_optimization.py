@@ -30,7 +30,7 @@ class VerboseOptimization(object):
                 from IPython.display import display
                 from IPython.html.widgets import IntProgress, HTML, Box, VBox, HBox, FlexBox
                 self.text = HTML(width='100%')
-                self.progress = IntProgress(description='Progress:', min=0, max=maxiters)
+                self.progress = IntProgress(min=0, max=maxiters)
                 #self.progresstext = Text(width='100%', disabled=True, value='0/{}'.format(maxiters))
                 self.model_show = HTML()
                 self.ipython_notebook = ipython_notebook

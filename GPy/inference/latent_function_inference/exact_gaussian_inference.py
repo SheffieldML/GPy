@@ -40,9 +40,14 @@ class ExactGaussianInference(LatentFunctionInference):
         """
         Returns a Posterior class containing essential quantities of the posterior
         """
-        assert mean_function is None, "inference with a mean function not implemented"
 
-        YYT_factor = self.get_YYTfactor(Y)
+        if mean_function is None:
+            m = 0
+        else:
+            m = mean_function.f(X)
+
+
+        YYT_factor = self.get_YYTfactor(Y-m)
 
         K = kern.K(X)
 

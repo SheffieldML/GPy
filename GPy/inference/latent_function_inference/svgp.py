@@ -47,6 +47,8 @@ class SVGP(LatentFunctionInference):
 
         #rescale the F term if working on a batch
         F, dF_dmu, dF_dv =  F*batch_scale, dF_dmu*batch_scale, dF_dv*batch_scale
+        if dF_dthetaL is not None:
+            dF_dthetaL =  dF_dthetaL.sum(1)*batch_scale
 
         #derivatives of expected likelihood
         Adv = A.T[:,:,None]*dF_dv[None,:,:] # As if dF_Dv is diagonal

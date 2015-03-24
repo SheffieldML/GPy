@@ -77,7 +77,7 @@ class Bernoulli(Likelihood):
 
         return Z_hat, mu_hat, sigma2_hat
 
-    def variational_expectations(self, Y, m, v, gh_points=None):
+    def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
         if isinstance(self.gp_link, link_functions.Probit):
 
             if gh_points is None:

@@ -35,8 +35,8 @@ class StudentT(Likelihood):
 
         self.log_concave = False
 
-    def parameters_changed(self):
-        self.variance = (self.v / float(self.v - 2)) * self.sigma2
+    #def parameters_changed(self):
+        #self.variance = (self.v / float(self.v - 2)) * self.sigma2
 
     def update_gradients(self, grads):
         """

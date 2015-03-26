@@ -82,7 +82,7 @@ class GP(Model):
             assert isinstance(self.mean_function, Mapping)
             assert mean_function.input_dim == self.input_dim
             assert mean_function.output_dim == self.output_dim
-            self.add_parameter(mean_function)
+            self.link_parameter(mean_function)
 
 
         #find a sensible inference method
@@ -166,6 +166,8 @@ class GP(Model):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y_normalized, self.mean_function, self.Y_metadata)
         self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])
         self.kern.update_gradients_full(self.grad_dict['dL_dK'], self.X)
+        if self.mean_function is not None:
+            self.mean_function.update_gradients(self.grad_dict['dL_dm'], self.X)
 
     def log_likelihood(self):
         """

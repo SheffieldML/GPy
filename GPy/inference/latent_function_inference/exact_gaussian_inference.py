@@ -63,4 +63,4 @@ class ExactGaussianInference(LatentFunctionInference):
 
         dL_dthetaL = likelihood.exact_inference_gradients(np.diag(dL_dK),Y_metadata)
 
-        return Posterior(woodbury_chol=LW, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK, 'dL_dthetaL':dL_dthetaL}
+        return Posterior(woodbury_chol=LW, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK, 'dL_dthetaL':dL_dthetaL, 'dL_dm':alpha}

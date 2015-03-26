@@ -80,6 +80,7 @@ class Prod(CombinationKernel):
         if len(self.parts)==2:
             target += self.parts[0].gradients_X(dL_dK*self.parts[1].K(X, X2), X, X2)
             target += self.parts[1].gradients_X(dL_dK*self.parts[0].K(X, X2), X, X2)
+        else:
             for combination in itertools.combinations(self.parts, len(self.parts) - 1):
                 prod = reduce(np.multiply, [p.K(X, X2) for p in combination])
                 to_update = list(set(self.parts) - set(combination))[0]

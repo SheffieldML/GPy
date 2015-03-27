@@ -529,7 +529,7 @@ class Likelihood(Parameterized):
 
     def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None):
         #compute the quantiles by sampling!!!
-        N_samp = 50
+        N_samp = 500
         s = np.random.randn(mu.shape[0], N_samp)*np.sqrt(var) + mu
         #ss_f = s.flatten()
         #ss_y = self.samples(ss_f, Y_metadata)

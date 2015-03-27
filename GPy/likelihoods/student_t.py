@@ -35,8 +35,8 @@ class StudentT(Likelihood):
 
         self.log_concave = False
 
-    def parameters_changed(self):
-        self.variance = (self.v / float(self.v - 2)) * self.sigma2
+    #def parameters_changed(self):
+        #self.variance = (self.v / float(self.v - 2)) * self.sigma2
 
     def update_gradients(self, grads):
         """
@@ -180,7 +180,8 @@ class StudentT(Likelihood):
         :rtype: float
         """
         e = y - inv_link_f
-        dlogpdf_dvar = self.v*(e**2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e**2))
+        e2 = np.square(e)
+        dlogpdf_dvar = self.v*(e2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e2))
         return dlogpdf_dvar
 
     def dlogpdf_dlink_dvar(self, inv_link_f, y, Y_metadata=None):

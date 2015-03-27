@@ -310,18 +310,17 @@ class Gaussian(Likelihood):
         Ysim = np.array([np.random.normal(self.gp_link.transf(gpj), scale=np.sqrt(self.variance), size=1) for gpj in gp])
         return Ysim.reshape(orig_shape)
 
-    def log_predictive_density(self, y_test, mu_star, var_star):
+    def log_predictive_density(self, y_test, mu_star, var_star, Y_metadata=None):
         """
         assumes independence
         """
         v = var_star + self.variance
         return -0.5*np.log(2*np.pi) -0.5*np.log(v) - 0.5*np.square(y_test - mu_star)/v
 
-    def variational_expectations(self, Y, m, v, gh_points=None):
+    def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
         lik_var = float(self.variance)
         F = -0.5*np.log(2*np.pi) -0.5*np.log(lik_var) - 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/lik_var
         dF_dmu = (Y - m)/lik_var
         dF_dv = np.ones_like(v)*(-0.5/lik_var)
-        dF_dlik_var = np.sum(-0.5/lik_var + 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/(lik_var**2))
-        dF_dtheta = [dF_dlik_var]
-        return F, dF_dmu, dF_dv, dF_dtheta
+        dF_dtheta = -0.5/lik_var + 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/(lik_var**2)
+        return F, dF_dmu, dF_dv, dF_dtheta.reshape(1, Y.shape[0], Y.shape[1])

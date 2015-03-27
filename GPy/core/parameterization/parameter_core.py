@@ -947,7 +947,7 @@ class Parameterizable(OptimizationHandlable):
             self._add_parameter_name(param, ignore_added_names)
         # and makes sure to not delete programmatically added parameters
         for other in self.parameters[::-1]:
-            if other is not param and other.name.startswith(param.name):
+            if other is not param and other.name == param.name:
                 warn_and_retry(param, _name_digit.match(other.name))
                 return
         if pname not in dir(self):

@@ -180,6 +180,7 @@ class Likelihood(Parameterized):
         if self.size:
             dF_dtheta = self.dlogpdf_dtheta(X, Y[:,None]) # Ntheta x (orig size) x N_{quad_points}
             dF_dtheta = np.dot(dF_dtheta, gh_w)
+            dF_dtheta = dF_dtheta.reshape(self.size, shape[0], shape[1])
         else:
             dF_dtheta = None # Not yet implemented
         return F.reshape(*shape), dF_dm.reshape(*shape), dF_dv.reshape(*shape), dF_dtheta

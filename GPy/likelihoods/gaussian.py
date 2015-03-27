@@ -34,7 +34,9 @@ class Gaussian(Likelihood):
         if gp_link is None:
             gp_link = link_functions.Identity()
 
-        assert isinstance(gp_link, link_functions.Identity), "the likelihood only implemented for the identity link"
+        if not isinstance(gp_link, link_functions.Identity):
+            print "Warning, Exact inference is not implemeted for non-identity link functions,\
+            if you are not already, ensure Laplace inference_method is used"
 
         super(Gaussian, self).__init__(gp_link, name=name)
 
@@ -263,16 +265,19 @@ class Gaussian(Likelihood):
         return d2logpdf_dlink2_dvar
 
     def dlogpdf_link_dtheta(self, f, y, Y_metadata=None):
-        dlogpdf_dvar = self.dlogpdf_link_dvar(f, y, Y_metadata=Y_metadata)
-        return dlogpdf_dvar
+        dlogpdf_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
+        dlogpdf_dtheta[0,:,:] = self.dlogpdf_link_dvar(f, y, Y_metadata=Y_metadata)
+        return dlogpdf_dtheta
 
     def dlogpdf_dlink_dtheta(self, f, y, Y_metadata=None):
-        dlogpdf_dlink_dvar = self.dlogpdf_dlink_dvar(f, y, Y_metadata=Y_metadata)
-        return dlogpdf_dlink_dvar
+        dlogpdf_dlink_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
+        dlogpdf_dlink_dtheta[0, :, :]= self.dlogpdf_dlink_dvar(f, y, Y_metadata=Y_metadata)
+        return dlogpdf_dlink_dtheta
 
     def d2logpdf_dlink2_dtheta(self, f, y, Y_metadata=None):
-        d2logpdf_dlink2_dvar = self.d2logpdf_dlink2_dvar(f, y, Y_metadata=Y_metadata)
-        return d2logpdf_dlink2_dvar
+        d2logpdf_dlink2_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
+        d2logpdf_dlink2_dtheta[0, :, :] = self.d2logpdf_dlink2_dvar(f, y, Y_metadata=Y_metadata)
+        return d2logpdf_dlink2_dtheta
 
     def _mean(self, gp):
         """

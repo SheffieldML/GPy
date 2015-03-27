@@ -25,7 +25,7 @@ def fit_svgp_st():
     X, Y = load_housing_data()
 
     Z = X[np.random.permutation(X.shape[0])[:100]]
-    k = GPy.kern.RBF(X.shape[1], ARD=True) + GPy.kern.Linear(X.shape[1]) + GPy.kern.White(1,0.01)
+    k = GPy.kern.RBF(X.shape[1], ARD=True) + GPy.kern.Linear(X.shape[1], ARD=True) + GPy.kern.White(1,0.01) + GPy.kern.Bias(1)
 
     lik = GPy.likelihoods.StudentT(deg_free=3.)
     m = GPy.core.SVGP(X, Y, Z=Z, kernel=k, likelihood=lik)

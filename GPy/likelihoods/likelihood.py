@@ -5,7 +5,7 @@ import numpy as np
 from scipy import stats,special
 import scipy as sp
 import link_functions
-from ..util.misc import chain_1, chain_2, chain_3, blockify_dhess_dtheta, blockify_third, blockify_hessian
+from ..util.misc import chain_1, chain_2, chain_3, blockify_dhess_dtheta, blockify_third, blockify_hessian, safe_exp
 from scipy.integrate import quad
 import warnings
 from ..core.parameterization import Parameterized

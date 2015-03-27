@@ -325,7 +325,7 @@ class Likelihood(Parameterized):
     def logpdf_sum(self, f, y, Y_metadata=None):
         """
         Convenience function that can overridden for functions where this could
-        be computed more efficiently (Theano?)
+        be computed more efficiently
         """
         return np.sum(self.logpdf(f, y, Y_metadata=Y_metadata))
 

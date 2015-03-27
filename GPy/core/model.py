@@ -213,14 +213,14 @@ class Model(Parameterized):
             self.obj_grads = np.clip(self._transform_gradients(self.objective_function_gradients()), -1e10, 1e10)
         return obj_f, self.obj_grads
 
-    def optimize(self, optimizer=None, start=None, messages=False, max_iters=1000, ipython_notebook=True, **kwargs):
+    def optimize(self, optimizer=None, start=None, messages=False, max_iters=1000, ipython_notebook=True, clear_after_finish=False, **kwargs):
         """
         Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
 
         kwargs are passed to the optimizer. They can be:
 
-        :param max_f_eval: maximum number of function evaluations
-        :type max_f_eval: int
+        :param max_iters: maximum number of function evaluations
+        :type max_iters: int
         :messages: True: Display messages during optimisation, "ipython_notebook":
         :type messages: bool"string
         :param optimizer: which optimizer to use (defaults to self.preferred optimizer)
@@ -402,6 +402,7 @@ class Model(Parameterized):
         model_details = [['<b>Model</b>', self.name + '<br>'],
                          ['<b>Log-likelihood</b>', '{}<br>'.format(float(self.log_likelihood()))],
                          ["<b>Number of Parameters</b>", '{}<br>'.format(self.size)],
+                         ["<b>Number of Optimization Parameters</b>", '{}<br>'.format(self._size_transformed())],
                          ["<b>Updates</b>", '{}<br>'.format(self._update_on)],
                          ]
         from operator import itemgetter
@@ -419,6 +420,7 @@ class Model(Parameterized):
         model_details = [['Name', self.name],
                          ['Log-likelihood', '{}'.format(float(self.log_likelihood()))],
                          ["Number of Parameters", '{}'.format(self.size)],
+                         ["Number of Optimization Parameters", '{}'.format(self._size_transformed())],
                          ["Updates", '{}'.format(self._update_on)],
                          ]
         from operator import itemgetter

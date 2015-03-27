@@ -10,11 +10,6 @@ from parameterization.variational import VariationalPosterior, NormalPosterior
 from ..util.linalg import mdot
 
 import logging
-from GPy.inference.latent_function_inference.posterior import Posterior
-from GPy.inference.optimization.stochastics import SparseGPStochastics,\
-    SparseGPMissing
-#no stochastics.py file added! from GPy.inference.optimization.stochastics import SparseGPStochastics,\
-    #SparseGPMissing
 logger = logging.getLogger("sparse gp")
 
 class SparseGP(GP):
@@ -24,6 +19,10 @@ class SparseGP(GP):
     This model allows (approximate) inference using variational DTC or FITC
     (Gaussian likelihoods) as well as non-conjugate sparse methods based on
     these.
+    
+    This is not for missing data, as the implementation for missing data involves
+    some inefficient optimization routine decisions.
+    See missing data SparseGP implementation in py:class:'~GPy.models.sparse_gp_minibatch.SparseGPMiniBatch'.
 
     :param X: inputs
     :type X: np.ndarray (num_data x input_dim)
@@ -62,6 +61,14 @@ class SparseGP(GP):
 
     def has_uncertain_inputs(self):
         return isinstance(self.X, VariationalPosterior)
+    
+    def set_Z(self, Z, trigger_update=True):
+        if trigger_update: self.update_model(False)
+        self.unlink_parameter(self.Z)
+        self.Z = Param('inducing inputs',Z)
+        self.link_parameter(self.Z, index=0)
+        if trigger_update: self.update_model(True)
+        if trigger_update: self._trigger_params_changed()
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood, self.Y, self.Y_metadata)
@@ -111,7 +118,7 @@ class SparseGP(GP):
         
         For uncertain inputs, the SparseGP bound produces a full covariance structure across D, so for full_cov we 
         return a NxDxD matrix and in the not full_cov case, we return the diagonal elements across D (NxD).
-        This is for both with and without missing data.
+        This is for both with and without missing data. See for missing data SparseGP implementation py:class:'~GPy.models.sparse_gp_minibatch.SparseGPMiniBatch'.
         """
 
         if kern is None: kern = self.kern

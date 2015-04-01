@@ -36,16 +36,16 @@ class Kernel(Mapping):
         Mapping.__init__(self, input_dim=input_dim, output_dim=output_dim, name=name)
         self.kern = kernel
         self.Z = Z
-        self.num_bases, Zdim = X.shape
+        self.num_bases, Zdim = Z.shape
         assert Zdim == self.input_dim
-        self.A = GPy.core.Param('A', np.random.randn(self.num_bases, self.output_dim))
-        self.add_parameter(self.A)
+        self.A = Param('A', np.random.randn(self.num_bases, self.output_dim))
+        self.link_parameter(self.A)
 
     def f(self, X):
         return np.dot(self.kern.K(X, self.Z), self.A)
 
     def update_gradients(self, dL_dF, X):
-        self.kern.update_gradients_full(np.dot(dL_dF, self.A.T))
+        self.kern.update_gradients_full(np.dot(dL_dF, self.A.T), X, self.Z)
         self.A.gradient = np.dot( self.kern.K(self.Z, X), dL_dF)
 
     def gradients_X(self, dL_dF, X):

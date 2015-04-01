@@ -9,7 +9,7 @@ from ..inference.latent_function_inference import SVGP as svgp_inf
 
 
 class SVGP(SparseGP):
-    def __init__(self, X, Y, Z, kernel, likelihood, name='SVGP', Y_metadata=None, batchsize=None):
+    def __init__(self, X, Y, Z, kernel, likelihood, mean_function=None, name='SVGP', Y_metadata=None, batchsize=None):
         """
         Stochastic Variational GP.
 
@@ -38,7 +38,7 @@ class SVGP(SparseGP):
         #create the SVI inference method
         inf_method = svgp_inf()
 
-        SparseGP.__init__(self, X_batch, Y_batch, Z, kernel, likelihood, inference_method=inf_method,
+        SparseGP.__init__(self, X_batch, Y_batch, Z, kernel, likelihood, mean_function=mean_function, inference_method=inf_method,
                  name=name, Y_metadata=Y_metadata, normalizer=False)
 
         self.m = Param('q_u_mean', np.zeros((self.num_inducing, Y.shape[1])))
@@ -48,7 +48,7 @@ class SVGP(SparseGP):
         self.link_parameter(self.m)
 
     def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.q_u_mean, self.q_u_chol, self.kern, self.X, self.Z, self.likelihood, self.Y, self.Y_metadata, KL_scale=1.0, batch_scale=float(self.X_all.shape[0])/float(self.X.shape[0]))
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.q_u_mean, self.q_u_chol, self.kern, self.X, self.Z, self.likelihood, self.Y, self.mean_function, self.Y_metadata, KL_scale=1.0, batch_scale=float(self.X_all.shape[0])/float(self.X.shape[0]))
 
         #update the kernel gradients
         self.kern.update_gradients_full(self.grad_dict['dL_dKmm'], self.Z)
@@ -64,6 +64,13 @@ class SVGP(SparseGP):
         #update the variational parameter gradients:
         self.m.gradient = self.grad_dict['dL_dm']
         self.chol.gradient = self.grad_dict['dL_dchol']
+
+        if self.mean_function is not None:
+            self.mean_function.update_gradients(self.grad_dict['dL_dmfX'], self.X)
+            g = self.mean_function.gradient[:].copy()
+            self.mean_function.update_gradients(self.grad_dict['dL_dmfZ'], self.Z)
+            self.mean_function.gradient[:] += g
+            self.Z.gradient[:] += self.mean_function.gradients_X(self.grad_dict['dL_dmfZ'], self.Z)
 
     def set_data(self, X, Y):
         """

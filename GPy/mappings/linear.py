@@ -26,8 +26,8 @@ class Linear(Mapping):
 
     def __init__(self, input_dim, output_dim, name='linmap'):
         Mapping.__init__(self, input_dim=input_dim, output_dim=output_dim, name=name)
-        self.A = GPy.core.Param('A', np.random.randn(self.input_dim, self.output_dim))
-        self.add_parameter(self.A)
+        self.A = Param('A', np.random.randn(self.input_dim, self.output_dim))
+        self.link_parameter(self.A)
 
     def f(self, X):
         return np.dot(X, self.A)

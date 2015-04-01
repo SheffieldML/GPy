@@ -170,7 +170,7 @@ class VarDTC_minibatch(LatentFunctionInference):
         Kmm = kern.K(Z).copy()
         diag.add(Kmm, self.const_jitter)
         if not np.isfinite(Kmm).all():
-            print Kmm
+            print(Kmm)
         Lm = jitchol(Kmm)
 
         LmInvPsi2LmInvT = backsub_both_sides(Lm,psi2_full,transpose='right')

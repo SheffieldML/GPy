@@ -102,14 +102,14 @@ def jitchol(A, maxtries=5):
         num_tries = 1
         while num_tries <= maxtries and np.isfinite(jitter):
             try:
-                print jitter
+                print(jitter)
                 L = linalg.cholesky(A + np.eye(A.shape[0]) * jitter, lower=True)
                 return L
             except:
                 jitter *= 10
             finally:
                 num_tries += 1
-        raise linalg.LinAlgError, "not positive definite, even with jitter."
+        raise linalg.LinAlgError("not positive definite, even with jitter.")
     import traceback
     try: raise
     except:

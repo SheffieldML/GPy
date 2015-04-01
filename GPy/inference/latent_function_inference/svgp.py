@@ -72,7 +72,7 @@ class SVGP(LatentFunctionInference):
         #rescale the F term if working on a batch
         F, dF_dmu, dF_dv =  F*batch_scale, dF_dmu*batch_scale, dF_dv*batch_scale
         if dF_dthetaL is not None:
-            dF_dthetaL =  dF_dthetaL.sum(1)*batch_scale
+            dF_dthetaL =  dF_dthetaL.sum(1).sum(1)*batch_scale
 
         #derivatives of expected likelihood, assuming zero mean function
         Adv = A.T[:,:,None]*dF_dv[None,:,:] # As if dF_Dv is diagonal
@@ -101,7 +101,7 @@ class SVGP(LatentFunctionInference):
         dL_dchol = np.dstack([2.*np.dot(dL_dS[:,:,i], L[:,:,i]) for i in range(num_outputs)])
         dL_dchol = choleskies.triang_to_flat(dL_dchol)
 
-        grad_dict = {'dL_dKmm':dL_dKmm, 'dL_dKmn':dL_dKmn, 'dL_dKdiag': dF_dv, 'dL_dm':dL_dm, 'dL_dchol':dL_dchol, 'dL_dthetaL':dF_dthetaL}
+        grad_dict = {'dL_dKmm':dL_dKmm, 'dL_dKmn':dL_dKmn, 'dL_dKdiag': dF_dv.sum(1), 'dL_dm':dL_dm, 'dL_dchol':dL_dchol, 'dL_dthetaL':dF_dthetaL}
         if mean_function is not None:
             grad_dict['dL_dmfZ'] = dF_dmfZ - dKL_dmfZ
             grad_dict['dL_dmfX'] = dF_dmfX

@@ -34,7 +34,9 @@ class Gaussian(Likelihood):
         if gp_link is None:
             gp_link = link_functions.Identity()
 
-        assert isinstance(gp_link, link_functions.Identity), "the likelihood only implemented for the identity link"
+        if not isinstance(gp_link, link_functions.Identity):
+            print "Warning, Exact inference is not implemeted for non-identity link functions,\
+            if you are not already, ensure Laplace inference_method is used"
 
         super(Gaussian, self).__init__(gp_link, name=name)
 
@@ -263,16 +265,19 @@ class Gaussian(Likelihood):
         return d2logpdf_dlink2_dvar
 
     def dlogpdf_link_dtheta(self, f, y, Y_metadata=None):
-        dlogpdf_dvar = self.dlogpdf_link_dvar(f, y, Y_metadata=Y_metadata)
-        return dlogpdf_dvar
+        dlogpdf_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
+        dlogpdf_dtheta[0,:,:] = self.dlogpdf_link_dvar(f, y, Y_metadata=Y_metadata)
+        return dlogpdf_dtheta
 
     def dlogpdf_dlink_dtheta(self, f, y, Y_metadata=None):
-        dlogpdf_dlink_dvar = self.dlogpdf_dlink_dvar(f, y, Y_metadata=Y_metadata)
-        return dlogpdf_dlink_dvar
+        dlogpdf_dlink_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
+        dlogpdf_dlink_dtheta[0, :, :]= self.dlogpdf_dlink_dvar(f, y, Y_metadata=Y_metadata)
+        return dlogpdf_dlink_dtheta
 
     def d2logpdf_dlink2_dtheta(self, f, y, Y_metadata=None):
-        d2logpdf_dlink2_dvar = self.d2logpdf_dlink2_dvar(f, y, Y_metadata=Y_metadata)
-        return d2logpdf_dlink2_dvar
+        d2logpdf_dlink2_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
+        d2logpdf_dlink2_dtheta[0, :, :] = self.d2logpdf_dlink2_dvar(f, y, Y_metadata=Y_metadata)
+        return d2logpdf_dlink2_dtheta
 
     def _mean(self, gp):
         """
@@ -305,18 +310,17 @@ class Gaussian(Likelihood):
         Ysim = np.array([np.random.normal(self.gp_link.transf(gpj), scale=np.sqrt(self.variance), size=1) for gpj in gp])
         return Ysim.reshape(orig_shape)
 
-    def log_predictive_density(self, y_test, mu_star, var_star):
+    def log_predictive_density(self, y_test, mu_star, var_star, Y_metadata=None):
         """
         assumes independence
         """
         v = var_star + self.variance
         return -0.5*np.log(2*np.pi) -0.5*np.log(v) - 0.5*np.square(y_test - mu_star)/v
 
-    def variational_expectations(self, Y, m, v, gh_points=None):
+    def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
         lik_var = float(self.variance)
         F = -0.5*np.log(2*np.pi) -0.5*np.log(lik_var) - 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/lik_var
         dF_dmu = (Y - m)/lik_var
         dF_dv = np.ones_like(v)*(-0.5/lik_var)
-        dF_dlik_var = np.sum(-0.5/lik_var + 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/(lik_var**2))
-        dF_dtheta = [dF_dlik_var]
-        return F, dF_dmu, dF_dv, dF_dtheta
+        dF_dtheta = -0.5/lik_var + 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/(lik_var**2)
+        return F, dF_dmu, dF_dv, dF_dtheta.reshape(1, Y.shape[0], Y.shape[1])

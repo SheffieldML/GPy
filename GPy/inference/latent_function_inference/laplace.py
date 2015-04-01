@@ -43,28 +43,31 @@ class Laplace(LatentFunctionInference):
         """
         Returns a Posterior class containing essential quantities of the posterior
         """
-
         # Compute K
         K = kern.K(X)
 
         #Find mode
         if self.bad_fhat or self.first_run:
             Ki_f_init = np.zeros_like(Y)
-            first_run = False
+            self.first_run = False
         else:
             Ki_f_init = self._previous_Ki_fhat
 
+        Ki_f_init = np.zeros_like(Y)# FIXME: take this out
+
         f_hat, Ki_fhat = self.rasm_mode(K, Y, likelihood, Ki_f_init, Y_metadata=Y_metadata)
+
         self.f_hat = f_hat
-        self.Ki_fhat =  Ki_fhat
-        self.K = K.copy()
+        #self.Ki_fhat =  Ki_fhat
+        #self.K = K.copy()
+
         #Compute hessian and other variables at mode
         log_marginal, woodbury_inv, dL_dK, dL_dthetaL = self.mode_computations(f_hat, Ki_fhat, K, Y, likelihood, kern, Y_metadata)
 
         self._previous_Ki_fhat = Ki_fhat.copy()
         return Posterior(woodbury_vector=Ki_fhat, woodbury_inv=woodbury_inv, K=K), log_marginal, {'dL_dK':dL_dK, 'dL_dthetaL':dL_dthetaL}
 
-    def rasm_mode(self, K, Y, likelihood, Ki_f_init, Y_metadata=None):
+    def rasm_mode(self, K, Y, likelihood, Ki_f_init, Y_metadata=None, *args, **kwargs):
         """
         Rasmussen's numerically stable mode finding
         For nomenclature see Rasmussen & Williams 2006
@@ -89,7 +92,12 @@ class Laplace(LatentFunctionInference):
 
         #define the objective function (to be maximised)
         def obj(Ki_f, f):
-            return -0.5*np.dot(Ki_f.flatten(), f.flatten()) + np.sum(likelihood.logpdf(f, Y, Y_metadata=Y_metadata))
+            ll = -0.5*np.sum(np.dot(Ki_f.T, f)) + np.sum(likelihood.logpdf(f, Y, Y_metadata=Y_metadata))
+            if np.isnan(ll):
+                return -np.inf
+            else:
+                return ll
+
 
         difference = np.inf
         iteration = 0
@@ -104,7 +112,7 @@ class Laplace(LatentFunctionInference):
             W_f = W*f
 
             b = W_f + grad # R+W p46 line 6.
-            W12BiW12, _, _ = self._compute_B_statistics(K, W, likelihood.log_concave)
+            W12BiW12, _, _, _ = self._compute_B_statistics(K, W, likelihood.log_concave, *args, **kwargs)
             W12BiW12Kb = np.dot(W12BiW12, np.dot(K, b))
 
             #Work out the DIRECTION that we want to move in, but don't choose the stepsize yet
@@ -121,7 +129,9 @@ class Laplace(LatentFunctionInference):
             step = optimize.brent(inner_obj, tol=1e-4, maxiter=12)
             Ki_f_new = Ki_f + step*dKi_f
             f_new = np.dot(K, Ki_f_new)
-
+            #print "new {} vs old {}".format(obj(Ki_f_new, f_new), obj(Ki_f, f))
+            if obj(Ki_f_new, f_new) < obj(Ki_f, f):
+                raise ValueError("Shouldn't happen, brent optimization failing")
             difference = np.abs(np.sum(f_new - f)) + np.abs(np.sum(Ki_f_new - Ki_f))
             Ki_f = Ki_f_new
             f = f_new
@@ -152,14 +162,10 @@ class Laplace(LatentFunctionInference):
         if np.any(np.isnan(W)):
             raise ValueError('One or more element(s) of W is NaN')
 
-        K_Wi_i, L, LiW12 = self._compute_B_statistics(K, W, likelihood.log_concave)
-
-        #compute vital matrices
-        C = np.dot(LiW12, K)
-        Ki_W_i  = K - C.T.dot(C)
+        K_Wi_i, logdet_I_KW, I_KW_i, Ki_W_i = self._compute_B_statistics(K, W, likelihood.log_concave)
 
         #compute the log marginal
-        log_marginal = -0.5*np.dot(Ki_f.flatten(), f_hat.flatten()) + np.sum(likelihood.logpdf(f_hat, Y, Y_metadata=Y_metadata)) - np.sum(np.log(np.diag(L)))
+        log_marginal = -0.5*np.sum(np.dot(Ki_f.T, f_hat)) + np.sum(likelihood.logpdf(f_hat, Y, Y_metadata=Y_metadata)) - 0.5*logdet_I_KW
 
         # Compute matrices for derivatives
         dW_df = -likelihood.d3logpdf_df3(f_hat, Y, Y_metadata=Y_metadata) # -d3lik_d3fhat
@@ -196,23 +202,23 @@ class Laplace(LatentFunctionInference):
             dL_dthetaL = np.zeros(num_params)
             for thetaL_i in range(num_params):
                 #Explicit
-                dL_dthetaL_exp = ( np.sum(dlik_dthetaL[thetaL_i])
+                dL_dthetaL_exp = ( np.sum(dlik_dthetaL[thetaL_i,:, :])
                                 # The + comes from the fact that dlik_hess_dthetaL == -dW_dthetaL
-                                + 0.5*np.sum(np.diag(Ki_W_i).flatten()*dlik_hess_dthetaL[:, thetaL_i].flatten())
+                                  + 0.5*np.sum(np.diag(Ki_W_i)*np.squeeze(dlik_hess_dthetaL[thetaL_i, :, :]))
                                 )
 
                 #Implicit
-                dfhat_dthetaL = mdot(I_KW_i, K, dlik_grad_dthetaL[:, thetaL_i])
-                #dfhat_dthetaL = mdot(Ki_W_i, dlik_grad_dthetaL[:, thetaL_i])
+                dfhat_dthetaL = mdot(I_KW_i, K, dlik_grad_dthetaL[thetaL_i, :, :])
+                #dfhat_dthetaL = mdot(Ki_W_i, dlik_grad_dthetaL[thetaL_i, :, :])
                 dL_dthetaL_imp = np.dot(dL_dfhat.T, dfhat_dthetaL)
-                dL_dthetaL[thetaL_i] = dL_dthetaL_exp + dL_dthetaL_imp
+                dL_dthetaL[thetaL_i] = np.sum(dL_dthetaL_exp + dL_dthetaL_imp)
 
         else:
             dL_dthetaL = np.zeros(likelihood.size)
 
         return log_marginal, K_Wi_i, dL_dK, dL_dthetaL
 
-    def _compute_B_statistics(self, K, W, log_concave):
+    def _compute_B_statistics(self, K, W, log_concave, *args, **kwargs):
         """
         Rasmussen suggests the use of a numerically stable positive definite matrix B
         Which has a positive diagonal elements and can be easily inverted
@@ -225,7 +231,7 @@ class Laplace(LatentFunctionInference):
         """
         if not log_concave:
             #print "Under 1e-10: {}".format(np.sum(W < 1e-6))
-            W[W<1e-6] = 1e-6
+            W = np.clip(W, 1e-6, 1e+30)
             # NOTE: when setting a parameter inside parameters_changed it will allways come to closed update circles!!!
             #W.__setitem__(W < 1e-6, 1e-6, update=False)  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                 # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
@@ -247,5 +253,160 @@ class Laplace(LatentFunctionInference):
         #K_Wi_i_2 , _= dpotri(L2)
         #symmetrify(K_Wi_i_2)
 
-        return K_Wi_i, L, LiW12
+        #compute vital matrices
+        C = np.dot(LiW12, K)
+        Ki_W_i  = K - C.T.dot(C)
 
+        I_KW_i = np.eye(K.shape[0]) - np.dot(K, K_Wi_i)
+        logdet_I_KW = 2*np.sum(np.log(np.diag(L)))
+
+        return K_Wi_i, logdet_I_KW, I_KW_i, Ki_W_i
+
+class LaplaceBlock(Laplace):
+    def rasm_mode(self, K, Y, likelihood, Ki_f_init, Y_metadata=None, *args, **kwargs):
+        Ki_f = Ki_f_init.copy()
+        f = np.dot(K, Ki_f)
+
+        #define the objective function (to be maximised)
+        def obj(Ki_f, f):
+            ll = -0.5*np.dot(Ki_f.T, f) + np.sum(likelihood.logpdf_sum(f, Y, Y_metadata=Y_metadata))
+            if np.isnan(ll):
+                return -np.inf
+            else:
+                return ll
+
+        difference = np.inf
+        iteration = 0
+
+        I = np.eye(K.shape[0])
+        while difference > self._mode_finding_tolerance and iteration < self._mode_finding_max_iter:
+            W = -likelihood.d2logpdf_df2(f, Y, Y_metadata=Y_metadata)
+
+            W[np.diag_indices_from(W)] = np.clip(np.diag(W), 1e-6, 1e+30)
+
+            W_f = np.dot(W, f)
+            grad = likelihood.dlogpdf_df(f, Y, Y_metadata=Y_metadata)
+
+            b = W_f + grad # R+W p46 line 6.
+            K_Wi_i, _, _, _ = self._compute_B_statistics(K, W, likelihood.log_concave, *args, **kwargs)
+
+            #Work out the DIRECTION that we want to move in, but don't choose the stepsize yet
+            #a = (I - (K+Wi)i*K)*b
+            full_step_Ki_f = np.dot(I - np.dot(K_Wi_i, K), b)
+            dKi_f = full_step_Ki_f - Ki_f
+
+            #define an objective for the line search (minimize this one)
+            def inner_obj(step_size):
+                Ki_f_trial = Ki_f + step_size*dKi_f
+                f_trial = np.dot(K, Ki_f_trial)
+                return -obj(Ki_f_trial, f_trial)
+
+            #use scipy for the line search, the compute new values of f, Ki_f
+            step = optimize.brent(inner_obj, tol=1e-4, maxiter=12)
+
+            Ki_f_new = Ki_f + step*dKi_f
+            f_new = np.dot(K, Ki_f_new)
+
+            difference = np.abs(np.sum(f_new - f)) + np.abs(np.sum(Ki_f_new - Ki_f))
+            Ki_f = Ki_f_new
+            f = f_new
+            iteration += 1
+
+        #Warn of bad fits
+        if difference > self._mode_finding_tolerance:
+            if not self.bad_fhat:
+                warnings.warn("Not perfect f_hat fit difference: {}".format(difference))
+            self._previous_Ki_fhat = np.zeros_like(Y)
+            self.bad_fhat = True
+        elif self.bad_fhat:
+            self.bad_fhat = False
+            warnings.warn("f_hat now fine again")
+        if iteration > self._mode_finding_max_iter:
+            warnings.warn("didn't find the best")
+
+        return f, Ki_f
+
+    def mode_computations(self, f_hat, Ki_f, K, Y, likelihood, kern, Y_metadata):
+        #At this point get the hessian matrix (or vector as W is diagonal)
+        W = -likelihood.d2logpdf_df2(f_hat, Y, Y_metadata=Y_metadata)
+
+        W[np.diag_indices_from(W)] = np.clip(np.diag(W), 1e-6, 1e+30)
+
+        K_Wi_i, log_B_det, I_KW_i, Ki_W_i = self._compute_B_statistics(K, W, likelihood.log_concave)
+
+        #compute the log marginal
+        #FIXME: The derterminant should be output_dim*0.5 I think, gradients may now no longer check
+        log_marginal = -0.5*np.dot(f_hat.T, Ki_f) + np.sum(likelihood.logpdf_sum(f_hat, Y, Y_metadata=Y_metadata)) - 0.5*log_B_det
+
+        #Compute vival matrices for derivatives
+        dW_df = -likelihood.d3logpdf_df3(f_hat, Y, Y_metadata=Y_metadata) # -d3lik_d3fhat
+
+        #dL_dfhat = np.zeros((f_hat.shape[0]))
+        #for i in range(f_hat.shape[0]):
+            #dL_dfhat[i] = -0.5*np.trace(np.dot(Ki_W_i, dW_df[:,:,i]))
+
+        dL_dfhat = -0.5*np.einsum('ij,ijk->k', Ki_W_i, dW_df)
+
+        woodbury_vector = likelihood.dlogpdf_df(f_hat, Y, Y_metadata=Y_metadata)
+
+        ####################
+        #compute dL_dK#
+        ####################
+        if kern.size > 0 and not kern.is_fixed:
+            #Explicit
+            explicit_part = 0.5*(np.dot(Ki_f, Ki_f.T) - K_Wi_i)
+
+            #Implicit
+            implicit_part = woodbury_vector.dot(dL_dfhat[None,:]).dot(I_KW_i)
+            #implicit_part = Ki_f.dot(dL_dfhat[None,:]).dot(I_KW_i)
+
+            dL_dK = explicit_part + implicit_part
+        else:
+            dL_dK = np.zeros_like(K)
+
+        ####################
+        #compute dL_dthetaL#
+        ####################
+        if likelihood.size > 0 and not likelihood.is_fixed:
+            raise NotImplementedError
+        else:
+            dL_dthetaL = np.zeros(likelihood.size)
+
+        #self.K_Wi_i = K_Wi_i
+        #self.Ki_W_i = Ki_W_i
+        #self.W = W
+        #self.K = K
+        #self.dL_dfhat = dL_dfhat
+        #self.explicit_part = explicit_part
+        #self.implicit_part = implicit_part
+        return log_marginal, K_Wi_i, dL_dK, dL_dthetaL
+
+    def _compute_B_statistics(self, K, W, log_concave, *args, **kwargs):
+        """
+        Rasmussen suggests the use of a numerically stable positive definite matrix B
+        Which has a positive diagonal element and can be easyily inverted
+
+        :param K: Prior Covariance matrix evaluated at locations X
+        :type K: NxN matrix
+        :param W: Negative hessian at a point (diagonal matrix)
+        :type W: Vector of diagonal values of hessian (1xN)
+        :returns: (K_Wi_i, L_B, not_provided)
+        """
+        #w = GPy.util.diag.view(W)
+        #W[:] = np.where(w<1e-6, 1e-6, w)
+
+        #B = I + KW
+        B = np.eye(K.shape[0]) + np.dot(K, W)
+        #Bi, L, Li, logdetB = pdinv(B)
+        Bi = np.linalg.inv(B)
+
+        #K_Wi_i = np.eye(K.shape[0]) - mdot(W, Bi, K)
+        K_Wi_i = np.dot(W, Bi)
+
+        #self.K_Wi_i_brute = np.linalg.inv(K + np.linalg.inv(W))
+        #self.B = B
+        #self.Bi = Bi
+        Ki_W_i = np.dot(Bi, K)
+
+        sign, logdetB = np.linalg.slogdet(B)
+        return K_Wi_i, sign*logdetB, Bi, Ki_W_i

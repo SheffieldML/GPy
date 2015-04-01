@@ -40,8 +40,11 @@ class EP(LatentFunctionInference):
         K = kern.K(X)
 
         if self._ep_approximation is None:
+
+            #if we don't yet have the results of runnign EP, run EP and store the computed factors in self._ep_approximation
             mu, Sigma, mu_tilde, tau_tilde, Z_hat = self._ep_approximation = self.expectation_propagation(K, Y, likelihood, Y_metadata)
         else:
+            #if we've already run EP, just use the existing approximation stored in self._ep_approximation
             mu, Sigma, mu_tilde, tau_tilde, Z_hat = self._ep_approximation
 
         Wi, LW, LWi, W_logdet = pdinv(K + np.diag(1./tau_tilde))

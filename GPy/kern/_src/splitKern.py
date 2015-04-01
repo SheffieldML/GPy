@@ -7,7 +7,7 @@ from .kern import Kern,CombinationKernel
 from .independent_outputs import index_to_slices
 import itertools
 
-class DiffGenomeKern(Kern):
+class DEtime(Kern):
 
     def __init__(self, kernel, idx_p, Xp, index_dim=-1, name='DiffGenomeKern'):
         self.idx_p = idx_p

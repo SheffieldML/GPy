@@ -403,6 +403,7 @@ class Model(Parameterized):
         model_details = [['<b>Model</b>', self.name + '<br>'],
                          ['<b>Log-likelihood</b>', '{}<br>'.format(float(self.log_likelihood()))],
                          ["<b>Number of Parameters</b>", '{}<br>'.format(self.size)],
+                         ["<b>Number of Optimization Parameters</b>", '{}<br>'.format(self._size_transformed())],
                          ["<b>Updates</b>", '{}<br>'.format(self._update_on)],
                          ]
         from operator import itemgetter
@@ -420,6 +421,7 @@ class Model(Parameterized):
         model_details = [['Name', self.name],
                          ['Log-likelihood', '{}'.format(float(self.log_likelihood()))],
                          ["Number of Parameters", '{}'.format(self.size)],
+                         ["Number of Optimization Parameters", '{}'.format(self._size_transformed())],
                          ["Updates", '{}'.format(self._update_on)],
                          ]
         from operator import itemgetter

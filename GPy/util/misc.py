@@ -24,7 +24,7 @@ def chain_1(df_dg, dg_dx):
     if np.all(dg_dx==1.):
         return df_dg
     if len(df_dg) > 1 and df_dg.shape[-1] > 1:
-        import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+        #import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
         raise NotImplementedError('Not implemented for matricies yet')
     return df_dg * dg_dx
 

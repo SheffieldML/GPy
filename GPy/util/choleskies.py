@@ -2,7 +2,7 @@
 # Licensed under the GNU GPL version 3.0
 
 import numpy as np
-#from scipy import weave
+from scipy import weave
 from . import linalg
 
 def safe_root(N):
@@ -12,58 +12,58 @@ def safe_root(N):
         raise ValueError("N is not square!")
     return j
 
-#def flat_to_triang(flat):
-#    """take a matrix N x D and return a M X M x D array where
-#
-#    N = M(M+1)/2
-#
-#    the lower triangluar portion of the d'th slice of the result is filled by the d'th column of flat.
-#    """
-#    N, D = flat.shape
-#    M = (-1 + safe_root(8*N+1))/2
-#    ret = np.zeros((M, M, D))
-#    flat = np.ascontiguousarray(flat)
-#
-#    code = """
-#    int count = 0;
-#    for(int m=0; m<M; m++)
-#    {
-#      for(int mm=0; mm<=m; mm++)
-#      {
-#        for(int d=0; d<D; d++)
-#        {
-#          ret[d + m*D*M + mm*D] = flat[count];
-#          count++;
-#        }
-#      }
-#    }
-#    """
-#   weave.inline(code, ['flat', 'ret', 'D', 'M'])
-#    return ret
+def flat_to_triang(flat):
+    """take a matrix N x D and return a M X M x D array where
 
-#def triang_to_flat(L):
-#    M, _, D = L.shape
-#
-#    L = np.ascontiguousarray(L) # should do nothing if L was created by flat_to_triang
-#
-#    N = M*(M+1)/2
-#    flat = np.empty((N, D))
-#    code = """
-#    int count = 0;
-#    for(int m=0; m<M; m++)
-#    {
-#      for(int mm=0; mm<=m; mm++)
-#      {
-#        for(int d=0; d<D; d++)
-#        {
-#          flat[count] = L[d + m*D*M + mm*D];
-#          count++;
-#        }
-#      }
-#    }
-#    """
-#    weave.inline(code, ['flat', 'L', 'D', 'M'])
-#    return flat
+    N = M(M+1)/2
+
+    the lower triangluar portion of the d'th slice of the result is filled by the d'th column of flat.
+    """
+    N, D = flat.shape
+    M = (-1 + safe_root(8*N+1))/2
+    ret = np.zeros((M, M, D))
+    flat = np.ascontiguousarray(flat)
+
+    code = """
+    int count = 0;
+    for(int m=0; m<M; m++)
+    {
+      for(int mm=0; mm<=m; mm++)
+      {
+        for(int d=0; d<D; d++)
+        {
+          ret[d + m*D*M + mm*D] = flat[count];
+          count++;
+        }
+      }
+    }
+    """
+    weave.inline(code, ['flat', 'ret', 'D', 'M'])
+    return ret
+
+def triang_to_flat(L):
+    M, _, D = L.shape
+
+    L = np.ascontiguousarray(L) # should do nothing if L was created by flat_to_triang
+
+    N = M*(M+1)/2
+    flat = np.empty((N, D))
+    code = """
+    int count = 0;
+    for(int m=0; m<M; m++)
+    {
+      for(int mm=0; mm<=m; mm++)
+      {
+        for(int d=0; d<D; d++)
+        {
+          flat[count] = L[d + m*D*M + mm*D];
+          count++;
+        }
+      }
+    }
+    """
+    weave.inline(code, ['flat', 'L', 'D', 'M'])
+    return flat
 
 def triang_to_cov(L):
     return np.dstack([np.dot(L[:,:,i], L[:,:,i].T) for i in range(L.shape[-1])])

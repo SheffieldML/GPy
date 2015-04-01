@@ -48,7 +48,7 @@ class MLP(Mapping):
         # Backpropagation to hidden layer.
         dL_dact = np.dot(dL_dF, self.W2.T)
         dL_dlayer1 = dL_dact / np.square(np.cosh(layer1))
-        
+
         return np.dot(dL_dlayer1, self.W1.T)
 
 

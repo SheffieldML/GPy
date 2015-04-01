@@ -505,3 +505,48 @@ def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
 
     print(m)
     return m
+
+def simple_mean_function(max_iters=100, optimize=True, plot=True):
+    """
+    The simplest possible mean function. No parameters, just a simple Sinusoid.
+    """
+    #create  simple mean function
+    mf = GPy.core.Mapping(1,1)
+    mf.f = np.sin
+    mf.update_gradients = lambda a,b: None
+
+    X = np.linspace(0,10,50).reshape(-1,1)
+    Y = np.sin(X) + 0.5*np.cos(3*X) + 0.1*np.random.randn(*X.shape)
+
+    k =GPy.kern.RBF(1)
+    lik = GPy.likelihoods.Gaussian()
+    m = GPy.core.GP(X, Y, kernel=k, likelihood=lik, mean_function=mf)
+    if optimize:
+        m.optimize(max_iters=max_iters)
+    if plot:
+        m.plot(plot_limits=(-10,15))
+    return m
+
+def parametric_mean_function(max_iters=100, optimize=True, plot=True):
+    """
+    A linear mean function with parameters that we'll learn alongside the kernel
+    """
+    #create  simple mean function
+    mf = GPy.core.Mapping(1,1)
+    mf.f = np.sin
+
+    X = np.linspace(0,10,50).reshape(-1,1)
+    Y = np.sin(X) + 0.5*np.cos(3*X) + 0.1*np.random.randn(*X.shape) + 3*X
+
+    mf = GPy.mappings.Linear(1,1)
+
+    k =GPy.kern.RBF(1)
+    lik = GPy.likelihoods.Gaussian()
+    m = GPy.core.GP(X, Y, kernel=k, likelihood=lik, mean_function=mf)
+    if optimize:
+        m.optimize(max_iters=max_iters)
+    if plot:
+        m.plot()
+    return m
+
+

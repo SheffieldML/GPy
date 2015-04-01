@@ -6,7 +6,11 @@ try:
     from matplotlib.patches import Polygon
     from matplotlib.collections import PatchCollection
     #from matplotlib import cm
-    pb.ion()
+    try:
+        __IPYTHON__
+        pb.ion()
+    except NameError:
+        pass
 except:
     pass
 import re

@@ -15,7 +15,7 @@ class Posterior(object):
     the function at any new point x_* by integrating over this posterior.
 
     """
-    def __init__(self, woodbury_chol=None, woodbury_vector=None, K=None, mean=None, cov=None, K_chol=None, woodbury_inv=None):
+    def __init__(self, woodbury_chol=None, woodbury_vector=None, K=None, mean=None, cov=None, K_chol=None, woodbury_inv=None, prior_mean=0):
         """
         woodbury_chol : a lower triangular matrix L that satisfies posterior_covariance = K - K L^{-T} L^{-1} K
         woodbury_vector : a matrix (or vector, as Nx1 matrix) M which satisfies posterior_mean = K M
@@ -67,6 +67,7 @@ class Posterior(object):
         #option 2:
         self._mean = mean
         self._covariance = cov
+        self._prior_mean = prior_mean
 
         #compute this lazily
         self._precision = None
@@ -175,7 +176,7 @@ class Posterior(object):
         $$
         """
         if self._woodbury_vector is None:
-            self._woodbury_vector, _ = dpotrs(self.K_chol, self.mean)
+            self._woodbury_vector, _ = dpotrs(self.K_chol, self.mean - self._prior_mean)
         return self._woodbury_vector
 
     @property

@@ -36,11 +36,18 @@ class ExactGaussianInference(LatentFunctionInference):
             #print "WARNING: N>D of Y, we need caching of L, such that L*L^T = Y, returning Y still!"
             return Y
 
-    def inference(self, kern, X, likelihood, Y, Y_metadata=None):
+    def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None):
         """
         Returns a Posterior class containing essential quantities of the posterior
         """
-        YYT_factor = self.get_YYTfactor(Y)
+
+        if mean_function is None:
+            m = 0
+        else:
+            m = mean_function.f(X)
+
+
+        YYT_factor = self.get_YYTfactor(Y-m)
 
         K = kern.K(X)
 
@@ -56,4 +63,4 @@ class ExactGaussianInference(LatentFunctionInference):
 
         dL_dthetaL = likelihood.exact_inference_gradients(np.diag(dL_dK),Y_metadata)
 
-        return Posterior(woodbury_chol=LW, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK, 'dL_dthetaL':dL_dthetaL}
+        return Posterior(woodbury_chol=LW, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK, 'dL_dthetaL':dL_dthetaL, 'dL_dm':alpha}

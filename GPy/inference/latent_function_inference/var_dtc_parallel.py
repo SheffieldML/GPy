@@ -169,11 +169,13 @@ class VarDTC_minibatch(LatentFunctionInference):
 
         Kmm = kern.K(Z).copy()
         diag.add(Kmm, self.const_jitter)
-        Lm = jitchol(Kmm, maxtries=100)
+        if not np.isfinite(Kmm).all():
+            print Kmm
+        Lm = jitchol(Kmm)
 
         LmInvPsi2LmInvT = backsub_both_sides(Lm,psi2_full,transpose='right')
         Lambda = np.eye(Kmm.shape[0])+LmInvPsi2LmInvT
-        LL = jitchol(Lambda, maxtries=100)
+        LL = jitchol(Lambda)
         logdet_L = 2.*np.sum(np.log(np.diag(LL)))
         b = dtrtrs(LL,dtrtrs(Lm,psi1Y_full.T)[0])[0]
         bbt = np.square(b).sum()

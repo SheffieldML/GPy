@@ -4,4 +4,6 @@
 from .kernel import Kernel
 from .linear import Linear
 from .mlp import MLP
-#from rbf import RBF
+from .additive import Additive
+from .compound import Compound
+

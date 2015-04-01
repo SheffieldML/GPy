@@ -255,13 +255,23 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
+    def test_Prod1(self):
+        k = GPy.kern.RBF(self.D) * GPy.kern.Linear(self.D)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
     def test_Prod2(self):
-        k = (GPy.kern.RBF(2, active_dims=[0,4]) * GPy.kern.Linear(self.D))
+        k = GPy.kern.RBF(2, active_dims=[0,4]) * GPy.kern.Linear(self.D)
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
     def test_Prod3(self):
-        k = (GPy.kern.RBF(2, active_dims=[0,4]) * GPy.kern.Linear(self.D))
+        k = GPy.kern.RBF(self.D) * GPy.kern.Linear(self.D) * GPy.kern.Bias(self.D)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_Prod4(self):
+        k = GPy.kern.RBF(2, active_dims=[0,4]) * GPy.kern.Linear(self.D) * GPy.kern.Matern32(2, active_dims=[0,1])
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
@@ -400,11 +410,27 @@ class Coregionalize_weave_test(unittest.TestCase):
     GPy.util.config.config.set('weave', 'working', 'False')
 
 
+class KernelTestsProductWithZeroValues(unittest.TestCase):
+
+    def setUp(self):
+        self.X = np.array([[0,1],[1,0]])
+        self.k = GPy.kern.Linear(2) * GPy.kern.Bias(2)
+
+    def test_zero_valued_kernel_full(self):
+        self.k.update_gradients_full(1, self.X)
+        self.assertFalse(np.isnan(self.k['linear.variances'].gradient),
+                         "Gradient resulted in NaN")
+
+    def test_zero_valued_kernel_gradients_X(self):
+        target = self.k.gradients_X(1, self.X)
+        self.assertFalse(np.any(np.isnan(target)),
+                         "Gradient resulted in NaN")
 
 
 if __name__ == "__main__":
     print("Running unit tests, please be (very) patient...")
     unittest.main()
+
 #     np.random.seed(0)
 #     N0 = 3
 #     N1 = 9

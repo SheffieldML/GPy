@@ -565,7 +565,7 @@ class Likelihood(Parameterized):
         :param burnin: number of samples to use for burnin (will need modifying)
         :param Y_metadata: Y_metadata for pdf
         """
-        print "Warning, using MCMC for sampling y*, needs to be tuned!"
+        print("Warning, using MCMC for sampling y*, needs to be tuned!")
         if starting_loc is None:
             starting_loc = fNew
         from functools import partial
@@ -619,8 +619,8 @@ class Likelihood(Parameterized):
 
             #Show progress
             if i % int((burn_in+num_samples)*0.1) == 0:
-                print "{}% of samples taken ({})".format((i/int((burn_in+num_samples)*0.1)*10), i)
-                print "Last run accept ratio: ", accept_ratio[i]
+                print("{}% of samples taken ({})".format((i/int((burn_in+num_samples)*0.1)*10), i))
+                print("Last run accept ratio: ", accept_ratio[i])
 
-        print "Average accept ratio: ", np.mean(accept_ratio)
+        print("Average accept ratio: ", np.mean(accept_ratio))
         return chain_values

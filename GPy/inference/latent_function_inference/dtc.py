@@ -20,7 +20,8 @@ class DTC(LatentFunctionInference):
     def __init__(self):
         self.const_jitter = 1e-6
 
-    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None):
+    def inference(self, kern, X, Z, likelihood, Y, mean_function=None, Y_metadata=None):
+        assert mean_function is None, "inference with a mean function not implemented"
         assert X_variance is None, "cannot use X_variance with DTC. Try varDTC."
 
         num_inducing, _ = Z.shape
@@ -88,7 +89,8 @@ class vDTC(object):
     def __init__(self):
         self.const_jitter = 1e-6
 
-    def inference(self, kern, X, X_variance, Z, likelihood, Y, Y_metadata):
+    def inference(self, kern, X, Z, likelihood, Y, mean_function=None, Y_metadata=None):
+        assert mean_function is None, "inference with a mean function not implemented"
         assert X_variance is None, "cannot use X_variance with DTC. Try varDTC."
 
         num_inducing, _ = Z.shape

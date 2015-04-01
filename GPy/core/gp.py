@@ -6,6 +6,9 @@ import sys
 from .. import kern
 from .model import Model
 from .parameterization import ObsAr
+from .model import Model
+from .mapping import Mapping
+from .parameterization import ObsAr
 from .. import likelihoods
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
 from .parameterization.variational import VariationalPosterior
@@ -34,7 +37,7 @@ class GP(Model):
 
 
     """
-    def __init__(self, X, Y, kernel, likelihood, inference_method=None, name='gp', Y_metadata=None, normalizer=False):
+    def __init__(self, X, Y, kernel, likelihood, mean_function=None, inference_method=None, name='gp', Y_metadata=None, normalizer=False):
         super(GP, self).__init__(name)
 
         assert X.ndim == 2
@@ -74,6 +77,15 @@ class GP(Model):
 
         assert isinstance(likelihood, likelihoods.Likelihood)
         self.likelihood = likelihood
+
+        #handle the mean function
+        self.mean_function = mean_function
+        if mean_function is not None:
+            assert isinstance(self.mean_function, Mapping)
+            assert mean_function.input_dim == self.input_dim
+            assert mean_function.output_dim == self.output_dim
+            self.link_parameter(mean_function)
+
 
         #find a sensible inference method
         logger.info("initializing inference method")
@@ -153,9 +165,11 @@ class GP(Model):
             This method is not designed to be called manually, the framework is set up to automatically call this method upon changes to parameters, if you call
             this method yourself, there may be unexpected consequences.
         """
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y_normalized, self.Y_metadata)
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y_normalized, self.mean_function, self.Y_metadata)
         self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])
         self.kern.update_gradients_full(self.grad_dict['dL_dK'], self.X)
+        if self.mean_function is not None:
+            self.mean_function.update_gradients(self.grad_dict['dL_dm'], self.X)
 
     def log_likelihood(self):
         """
@@ -192,6 +206,10 @@ class GP(Model):
 
         #force mu to be a column vector
         if len(mu.shape)==1: mu = mu[:,None]
+
+        #add the mean function in
+        if not self.mean_function is None:
+            mu += self.mean_function.f(_Xnew)
         return mu, var
 
     def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None):
@@ -241,11 +259,13 @@ class GP(Model):
 
     def predictive_gradients(self, Xnew):
         """
-        Compute the derivatives of the latent function with respect to X*
+        Compute the derivatives of the predicted latent function with respect to X*
 
         Given a set of points at which to predict X* (size [N*,Q]), compute the
         derivatives of the mean and variance. Resulting arrays are sized:
          dmu_dX* -- [N*, Q ,D], where D is the number of output in this GP (usually one).
+
+        Note that this is not the same as computing the mean and variance of the derivative of the function!
 
          dv_dX*  -- [N*, Q],    (since all outputs have the same variance)
         :param X: The points at which to get the predictive gradients

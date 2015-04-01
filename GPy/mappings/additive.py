@@ -2,8 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ..core.mapping import Mapping
-import GPy
+from ..core import Mapping
 
 class Additive(Mapping):
     """
@@ -27,8 +26,6 @@ class Additive(Mapping):
         Mapping.__init__(self, input_dim=input_dim, output_dim=output_dim)
         self.mapping1 = mapping1
         self.mapping2 = mapping2
-        self.num_params = self.mapping1.num_params + self.mapping2.num_params
-        self.name = self.mapping1.name + '+' + self.mapping2.name
 
     def f(self, X):
         return self.mapping1.f(X) + self.mapping2.f(X)

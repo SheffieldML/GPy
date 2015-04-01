@@ -33,7 +33,8 @@ class EP(LatentFunctionInference):
         # TODO: update approximation in the end as well? Maybe even with a switch?
         pass
 
-    def inference(self, kern, X, likelihood, Y, Y_metadata=None, Z=None):
+    def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None, Z=None):
+        assert mean_function is None, "inference with a mean function not implemented"
         num_data, output_dim = Y.shape
         assert output_dim ==1, "ep in 1D only (for now!)"
 

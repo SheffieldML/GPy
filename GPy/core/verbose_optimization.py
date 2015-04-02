@@ -151,7 +151,7 @@ class VerboseOptimization(object):
             if not self.ipython_notebook:
                 print()
                 print('Optimization finished in {0:.5g} Seconds'.format(self.stop-self.start))
-                print('Optimization status: {0:.5g}'.format(self.status))             
+                print('Optimization status: {0}'.format(self.status))             
                 print()
             elif self.clear:
                 self.hor_align.close()

@@ -70,7 +70,7 @@ class Likelihood(Parameterized):
         """
         raise NotImplementedError
 
-    def log_predictive_density(self, y_test, mu_star, var_star):
+    def log_predictive_density(self, y_test, mu_star, var_star, Y_metadata=None):
         """
         Calculation of the log predictive density
 
@@ -87,13 +87,46 @@ class Likelihood(Parameterized):
         assert y_test.shape==mu_star.shape
         assert y_test.shape==var_star.shape
         assert y_test.shape[1] == 1
-        def integral_generator(y, m, v):
+
+        flat_y_test = y_test.flatten()
+        flat_mu_star = mu_star.flatten()
+        flat_var_star = var_star.flatten()
+
+        if Y_metadata is not None:
+            #Need to zip individual elements of Y_metadata aswell
+            Y_metadata_flat = {}
+            if Y_metadata is not None:
+                for key, val in Y_metadata.items():
+                    Y_metadata_flat[key] = np.atleast_1d(val).reshape(-1,1)
+
+            zipped_values = []
+
+            for i in range(y_test.shape[0]):
+                y_m = {}
+                for key, val in Y_metadata_flat.items():
+                    if np.isscalar(val) or val.shape[0] == 1:
+                        y_m[key] = val
+                    else:
+                        #Won't broadcast yet
+                        y_m[key] = val[i]
+                zipped_values.append((flat_y_test[i], flat_mu_star[i], flat_var_star[i], y_m))
+        else:
+            #Otherwise just pass along None's
+            zipped_values = zip(flat_y_test, flat_mu_star, flat_var_star, [None]*y_test.shape[0])
+
+        def integral_generator(y, m, v, y_m):
             """Generate a function which can be integrated to give p(Y*|Y) = int p(Y*|f*)p(f*|Y) df*"""
             def f(f_star):
-                return self.pdf(f_star, y)*np.exp(-(1./(2*v))*np.square(m-f_star))
+                #exponent = np.exp(-(1./(2*v))*np.square(m-f_star))
+                #from GPy.util.misc import safe_exp
+                #exponent = safe_exp(exponent)
+                #return self.pdf(f_star, y, y_m)*exponent
+
+                #More stable in the log space
+                return np.exp(self.logpdf(f_star, y, y_m) -(1./(2*v))*np.square(m-f_star))
             return f
 
-        scaled_p_ystar, accuracy = zip(*[quad(integral_generator(y, m, v), -np.inf, np.inf) for y, m, v in zip(y_test.flatten(), mu_star.flatten(), var_star.flatten())])
+        scaled_p_ystar, accuracy = zip(*[quad(integral_generator(y, m, v, y_m), -np.inf, np.inf) for y, m, v, y_m in zipped_values])
         scaled_p_ystar = np.array(scaled_p_ystar).reshape(-1,1)
         p_ystar = scaled_p_ystar/np.sqrt(2*np.pi*var_star)
         return np.log(p_ystar)
